@@ -59,6 +59,8 @@ struct ListEntry
     WORD flags;   /* see below */
 };
 
+#define ENTRY_SELECTED   (1<<0)
+
 
 struct ColumnInfo
 {
@@ -82,7 +84,7 @@ struct MUI_ListData
 
     APTR intern_pool;    /* The internal pool which the class has allocated */
     LONG intern_puddle_size;
-    LONG intern_tresh_size;
+    LONG intern_thresh_size;
     APTR pool;           /* the pool which is used to allocate list entries */
 
     struct Hook *construct_hook;
@@ -92,7 +94,7 @@ struct MUI_ListData
 
     struct Hook default_compare_hook;
 
-    /* List managment, currently we use a simple flat array, which is not
+    /* List management, currently we use a simple flat array, which is not
      * good if many entries are inserted/deleted */
     LONG entries_num;           /* Number of Entries in the list */
     LONG entries_allocated;
@@ -632,7 +634,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->columns = 1;
     data->entries_active = MUIV_List_Active_Off;
     data->intern_puddle_size = 2008;
-    data->intern_tresh_size = 1024;
+    data->intern_thresh_size = 1024;
     data->input = 1;
     data->default_compare_hook.h_Entry = (HOOKFUNC) default_compare_func;
     data->default_compare_hook.h_SubEntry = 0;
@@ -656,7 +658,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_List_PoolThreshSize:
-            data->intern_tresh_size = tag->ti_Data;
+            data->intern_thresh_size = tag->ti_Data;
             break;
 
         case MUIA_List_CompareHook:
@@ -708,7 +710,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         /* No memory pool given, so we create our own */
         data->pool = data->intern_pool =
             CreatePool(0, data->intern_puddle_size,
-            data->intern_tresh_size);
+            data->intern_thresh_size);
         if (!data->pool)
         {
             CoerceMethod(cl, obj, OM_DISPOSE);
@@ -937,12 +939,15 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                     /* Selectchange stuff */
                     if (old != -1)
                     {
+                        data->entries[old]->flags &= ~ENTRY_SELECTED;
                         DoMethod(obj, MUIM_List_SelectChange, old,
                             MUIV_List_Select_Off, 0);
                     }
 
                     if (new_entries_active != -1)
                     {
+                        data->entries[new_entries_active]->flags |=
+                            ENTRY_SELECTED;
                         DoMethod(obj, MUIM_List_SelectChange,
                             new_entries_active, MUIV_List_Select_On, 0);
                         DoMethod(obj, MUIM_List_SelectChange,
@@ -1967,6 +1972,84 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
 }
 
 /**************************************************************************
+ MUIM_List_Select
+**************************************************************************/
+IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
+    struct MUIP_List_Select *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    LONG pos,i,count,selcount=0,state=0;
+
+    /* Establish the range of entries affected */
+    switch (msg->pos)
+    {
+    case MUIV_List_Select_Active:
+        pos = data->entries_active;
+        if (pos == MUIV_List_Active_Off)
+            count = 0;
+        else
+            count = 1;
+        break;
+
+    case MUIV_List_Select_All:
+        pos = 0;
+        count = data->entries_num;
+        break;
+
+    default:
+        pos = msg->pos;
+        count = 1;
+        if (pos < 0 || pos >= data->entries_num)
+            return 0;
+        break;
+    }
+
+    /* Change or check state of each entry in the range */
+    for (i = pos; i < pos + count; i++)
+    {
+        state = data->entries[i]->flags & ENTRY_SELECTED;
+        switch (msg->seltype)
+        {
+        case MUIV_List_Select_Off:
+            data->entries[i]->flags &= ~ENTRY_SELECTED;
+            break;
+
+        case MUIV_List_Select_On:
+            data->entries[i]->flags |= ENTRY_SELECTED;
+            break;
+
+        case MUIV_List_Select_Toggle:
+            data->entries[i]->flags ^= ENTRY_SELECTED;
+            break;
+
+        default:
+            if (data->entries[i]->flags & ENTRY_SELECTED)
+                selcount++;
+            break;
+        }
+    }
+
+    /* Report old state or number of selected entries */
+    if (msg->info)
+    {
+        if (msg->pos == MUIV_List_Select_All
+            && msg->seltype == MUIV_List_Select_Ask)
+            *msg->info = selcount;
+        else
+            *msg->info = state;
+    }
+
+    /* Redraw unless it was just an enquiry */
+    if (msg->seltype != MUIV_List_Select_Ask)
+    {
+        data->update = 1;
+        MUI_Redraw(obj,MADF_DRAWUPDATE);
+    }
+   
+    return 0;
+}
+
+/**************************************************************************
  MUIM_List_Insert
 **************************************************************************/
 
@@ -1999,7 +2082,7 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
         if (data->entries_active != -1)
             pos = data->entries_active;
         else
-            pos = data->entries_active;
+            pos = data->entries_num;
         break;
 
     case MUIV_List_Insert_Sorted:
@@ -2463,6 +2546,41 @@ IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
 }
 
 /**************************************************************************
+ MUIM_List_NextSelected
+**************************************************************************/
+IPTR List__MUIM_NextSelected(struct IClass *cl, Object *obj,
+    struct MUIP_List_NextSelected *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    LONG pos, i;
+    BOOL found = FALSE;
+
+    /* Get the first entry to check */
+    pos = *msg->pos;
+    if (pos == MUIV_List_NextSelected_Start)
+        pos = 0;
+    else
+        pos++;
+
+    /* Find the next selected entry */
+    for (i = pos; i < data->entries_num && !found; i++)
+    {
+        if (data->entries[i]->flags & ENTRY_SELECTED)
+        {
+            pos = i;
+            found = TRUE;
+        }
+    }
+
+    /* Return index of selected entry, or indicate there are no more */
+    if (!found)
+        pos = MUIV_List_NextSelected_End;
+    *msg->pos = pos;
+
+    return TRUE;
+}
+
+/**************************************************************************
  Dispatcher
 **************************************************************************/
 BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
@@ -2512,7 +2630,8 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
         return List__MUIM_Redraw(cl, obj, (APTR) msg);
     case MUIM_List_Remove:
         return List__MUIM_Remove(cl, obj, (APTR) msg);
-
+    case MUIM_List_Select:
+        return List__MUIM_Select(cl, obj, (APTR) msg);
     case MUIM_List_Construct:
         return List__MUIM_Construct(cl, obj, (APTR) msg);
     case MUIM_List_Destruct:
@@ -2531,6 +2650,9 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
         return List__MUIM_Jump(cl, obj, (APTR) msg);
     case MUIM_List_Move:
         return List__MUIM_Move(cl, obj, (struct MUIP_List_Move *)msg);
+    case MUIM_List_NextSelected:
+        return List__MUIM_NextSelected(cl, obj,
+           (struct MUIP_List_NextSelected *)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

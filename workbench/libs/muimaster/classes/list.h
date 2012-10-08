@@ -150,7 +150,7 @@ struct MUIP_List_Select
     STACKED ULONG MethodID;
     STACKED LONG pos;
     STACKED LONG seltype;
-    STACKED LONG *state;
+    STACKED LONG *info;
 };
 
 struct MUIP_List_Sort
