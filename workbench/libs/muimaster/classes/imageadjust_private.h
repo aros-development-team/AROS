@@ -7,6 +7,7 @@ struct Imageadjust_DATA
     Object *bitmap_string;
     Object *bitmap_image;
     struct Hook bitmap_hook;
+    struct Hook appmessage_hook;
 
     struct Hook gradient_hook;
     struct Hook gradient_swap_hook;

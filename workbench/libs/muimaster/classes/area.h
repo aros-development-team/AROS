@@ -459,7 +459,7 @@ struct MUI_AreaData
     struct MUI_ImageSpec_intern *mad_Background;        /* bg setting - *private* ! */
     struct TextFont *mad_Font;  /* Font which is used to draw */
     struct MUI_MinMax mad_MinMax;       /* min/max/default dimensions */
-    struct IBox mad_Box;        /* coordinates and dim of this object after layouted */
+    struct IBox mad_Box;        /* coordinates and dim of this object after layout */
     BYTE mad_addleft;           /* left offset (frame & innerspacing) */
     BYTE mad_addtop;            /* top offset (frame & innerspacing) */
     BYTE mad_subwidth;          /* additional width (frame & innerspacing) */

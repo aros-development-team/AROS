@@ -10,7 +10,8 @@
 
 #include <graphics/gfx.h>
 #include <graphics/view.h>
-#include <clib/alib_protos.h>
+#include <workbench/startup.h>
+#include <workbench/workbench.h>
 
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -18,6 +19,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <clib/alib_protos.h>
 
 #include <string.h>
 
@@ -55,6 +57,26 @@ static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
     {
         snprintf(buf, 255, "5:%s", name);
         set(data->bitmap_image, MUIA_Imagedisplay_Spec, (IPTR) buf);
+    }
+}
+
+
+static void AppMessage_Function(struct Hook *hook, Object *obj, void **msg)
+{
+    struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
+    struct AppMessage *appmsg = msg[1];
+    char buf[255];
+    struct WBArg *wbarg;
+
+    wbarg = &appmsg->am_ArgList[0];
+    buf[0] = '5', buf[1] = ':';
+    if (NameFromLock(wbarg->wa_Lock, buf + 2, 253))
+    {
+        if (AddPart(buf + 2, wbarg->wa_Name, 253))
+        {
+            set(data->bitmap_image, MUIA_Imagedisplay_Spec, (IPTR)buf);
+            set(data->bitmap_string, MUIA_String_Contents, (IPTR)buf + 2);
+        }
     }
 }
 
@@ -657,6 +679,23 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->originator =
         (APTR) GetTagData(MUIA_Imageadjust_Originator, 0,
         msg->ops_AttrList);
+
+    if (bitmap_group != NULL)
+    {
+        data->appmessage_hook.h_Data = data;
+        data->appmessage_hook.h_Entry = HookEntry;
+        data->appmessage_hook.h_SubEntry = (HOOKFUNC)AppMessage_Function;
+        if (bitmap_image != NULL)
+            DoMethod(bitmap_image, MUIM_Notify,
+                MUIA_AppMessage, MUIV_EveryTime,
+                (IPTR)obj, 4, MUIM_CallHook, &data->appmessage_hook, data,
+                MUIV_TriggerValue);
+        if (bitmap_string != NULL)
+            DoMethod(bitmap_string, MUIM_Notify,
+                MUIA_AppMessage, MUIV_EveryTime,
+                (IPTR)obj, 4, MUIM_CallHook, &data->appmessage_hook, data,
+                MUIV_TriggerValue);
+    }
 
     if (adjust_type != MUIV_Imageadjust_Type_Pen)
     {
