@@ -26,6 +26,7 @@
 #include <proto/layers.h>
 #include <proto/gadtools.h>
 #include <proto/muimaster.h>
+#include <proto/workbench.h>
 
 #define MUI_OBSOLETE            /* for the obsolete menu stuff */
 
@@ -106,6 +107,7 @@ struct MUI_WindowData
     Object *wd_DropObject;      /* the destination object */
     struct DragNDrop *wd_dnd;
     struct MUI_DragImage *wd_DragImage;
+    struct AppWindow *wd_AppWindow;
 
     Object *wd_Menustrip;       /* The menustrip object which is actually
                                  * used (either apps or windows or NULL) */
@@ -185,6 +187,9 @@ struct __dummyXFC3__
 };
 
 #define muiWindowData(obj)   (&(((struct __dummyXFC3__ *)(obj))->mwd))
+
+static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
+    struct IntuiMessage *event);
 
 static ULONG DoHalfshineGun(ULONG a, ULONG b)
 {
@@ -473,7 +478,7 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
 
     if (data->wd_CrtFlags & WFLG_BORDERLESS)
     {
-        /* Infact borderless windows could also have borders (if they have
+        /* In fact borderless windows could also have borders (if they have
          * a window title e.g. but since they look ugly anyway we ignore it
          * for now */
         mri->mri_BorderLeft = 0;
@@ -814,7 +819,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         data->wd_RenderInfo.mri_VertProp = data->wd_VertProp;
         data->wd_RenderInfo.mri_HorizProp = data->wd_HorizProp;
         SetDrMd(win->RPort, JAM1);
-            //text is draw wrong in toolbarclass if not set
+            //text is drawn wrong in toolbarclass if not set
 
         if (menu)
         {
@@ -825,6 +830,12 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         if (flags & WFLG_ACTIVATE)
         {
             data->wd_Flags |= MUIWF_ACTIVE;
+        }
+
+        if (data->wd_Flags & MUIWF_ISAPPWINDOW)
+        {
+            data->wd_AppWindow = AddAppWindowA(0, (IPTR) obj, win,
+                muiGlobalInfo(obj)->mgi_AppPort, NULL);
         }
 
         return TRUE;
@@ -1358,9 +1369,6 @@ static void ActivateObject(struct MUI_WindowData *data)
 
 /**************/
 
-static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
-    struct IntuiMessage *event);
-
 /* handle intuimessage while an object is being dragged
  * (reply imsg before returning)
  */
@@ -1368,7 +1376,7 @@ void HandleDragging(Object *oWin, struct MUI_WindowData *data,
     struct IntuiMessage *imsg)
 {
     struct Window *iWin;
-    int finish_drag = 0;
+    BOOL finish_drag = FALSE;
 
     iWin = imsg->IDCMPWindow;
 
@@ -1407,7 +1415,7 @@ void HandleDragging(Object *oWin, struct MUI_WindowData *data,
         {
             Object *dest_wnd = NULL;
 
-            /* Find out if app has an openend window at this position */
+            /* Find out if app has an open window at this position */
             if (layer)
             {
                 Object *cstate;
@@ -1496,9 +1504,9 @@ void HandleDragging(Object *oWin, struct MUI_WindowData *data,
     {
         if ((imsg->Code == MENUDOWN) || (imsg->Code == SELECTUP))
         {
+            UndrawDragNDrop(data->wd_dnd);
             if (imsg->Code == SELECTUP && data->wd_DropObject)
             {
-                UndrawDragNDrop(data->wd_dnd);
                 DoMethod(data->wd_DropObject, MUIM_DragFinish,
                     (IPTR) data->wd_DragObject);
                 DoMethod(data->wd_DropObject, MUIM_DragDrop,
@@ -1514,18 +1522,18 @@ void HandleDragging(Object *oWin, struct MUI_WindowData *data,
                 DoMethod(data->wd_DragObject, MUIM_UnknownDropDestination,
                     imsg);
             }
-            finish_drag = 1;
+            finish_drag = TRUE;
         }
     }
 
     if (imsg->Class == IDCMP_CLOSEWINDOW)
-        finish_drag = 1;
+        finish_drag = TRUE;
 
     if (finish_drag)
     {
-        UndrawDragNDrop(data->wd_dnd);
         if (data->wd_DropObject)
         {
+            UndrawDragNDrop(data->wd_dnd);
             DoMethod(data->wd_DropObject, MUIM_DragFinish,
                 (IPTR) data->wd_DragObject);
             data->wd_DropObject = NULL;
@@ -2014,7 +2022,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
         ievent.ie_Code = event->Code;
         ievent.ie_Qualifier = event->Qualifier;
         /* ie_EventAddress is not used by MatchIX. If needed, it should be
-         * ensured that it is still a valid adress because of the shallow
+         * ensured that it is still a valid address because of the shallow
          * IntuiMessage copy currently done in _zune_window_message before
          * message is replied.
          */
@@ -2366,7 +2374,7 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 }
 
 
-/* process window message, this does a ReplyMsg() to the message */
+/* process window message; this does a ReplyMsg() to the message */
 /* Called from application.c */
 void _zune_window_message(struct IntuiMessage *imsg)
 {
@@ -2624,6 +2632,44 @@ static void SetActiveObject(struct MUI_WindowData *data, Object *obj,
         D(bug("Activate=%p\n", data->wd_ActiveObject));
         DoMethod(data->wd_ActiveObject, MUIM_GoActive);
         data->wd_Flags |= MUIWF_OBJECTGOACTIVESENT;
+    }
+}
+
+
+static BOOL InBox(struct IBox *box, WORD x, WORD y)
+{
+    return x >= box->Left && x < box->Left + box->Width
+        && y >= box->Top && y < box->Top + box->Height;
+}
+
+
+/*
+ * Pass on an AppMessage to all objects that it landed on.
+ */
+static void ForwardAppMessage(struct MUI_WindowData *data, Object *child,
+    struct AppMessage *appmsg)
+{
+    WORD x = appmsg->am_MouseX, y = appmsg->am_MouseY;
+    Object *cstate;
+    struct List *children = NULL;
+
+    ASSERT_VALID_PTR(data);
+    ASSERT_VALID_PTR(child);
+
+    set(child, MUIA_AppMessage, appmsg);
+
+    children = (struct List *)XGET(child, MUIA_Group_ChildList);
+
+    if (children != NULL)
+    {
+        cstate = (Object *) children->lh_Head;
+        while ((child = NextObject(&cstate)))
+        {
+            if (InBox(&muiAreaData(child)->mad_Box, x, y))
+            {
+                ForwardAppMessage(data, child, appmsg);
+            }
+        }
     }
 }
 
@@ -2992,6 +3038,11 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
+        case MUIA_AppMessage:
+            ForwardAppMessage(data, data->wd_RootObject,
+                (struct AppMessage *)tag->ti_Data);
+            break;
+
         case MUIA_Window_Activate:
             if (data->wd_RenderInfo.mri_Window)
             {

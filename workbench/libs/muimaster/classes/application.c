@@ -92,7 +92,8 @@ struct MUI_ApplicationData
     struct TrackingNode     app_TrackingNode;
     BOOL                    app_is_TNode_in_list;
     ULONG searchwinid;
-    LONG winposused;       //dont add other vars before windowpos all is save together
+    LONG winposused;       //dont add other vars before windowpos all is save
+                           //together
     struct windowpos        winpos[MAXWINS];
     struct MsgPort          *app_RexxPort;
     struct RexxMsg          *app_RexxMsg;
@@ -100,10 +101,13 @@ struct MUI_ApplicationData
     struct MUI_Command      *app_Commands;
     STRPTR                  app_RexxString;
     BOOL                    app_UseRexx;
-    struct MsgPort          *app_AppPort; /* Port for handling AppIcon / AppMenu */
+    struct MsgPort          *app_AppPort; /* Port for AppIcon/AppMenu/AppWindow */
     struct AppIcon          *app_AppIcon;
-    struct DiskObject       *app_DiskObject; /* This is only pointer to client-managed object */
-    struct DiskObject       *app_DefaultDiskObject; /* This is complete object managed by the class */
+    struct DiskObject       *app_DiskObject; /* This is only pointer to
+                                              * client-managed object */
+    struct DiskObject       *app_DefaultDiskObject; /* This is complete
+                                                     * object managed by
+                                                     * the class */
 };
 
 struct timerequest_ext
@@ -137,7 +141,7 @@ MUIA_Application_Copyright [I.G]          done
 MUIA_Application_Description [I.G]        done
 MUIA_Application_DiskObject [ISG]         done
 MUIA_Application_DoubleStart [..G]        not triggered yet (todo)
-MUIA_Application_DropObject [IS.]         needs AppMessage
+MUIA_Application_DropObject [IS.]         todo
 MUIA_Application_ForceQuit [..G]          not triggered yet
 MUIA_Application_HelpFile [ISG]           unused/dummy
 MUIA_Application_Iconified [.SG]          done
@@ -391,7 +395,8 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
         ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
         if ((other_app = find_application_by_base(cl, obj, data->app_Base)))
         {
-            //FIXME "Is calling MUIM_Application_PushMethod on an alien application object safe?"
+            //FIXME "Is calling MUIM_Application_PushMethod on an alien
+            //application object safe?"
             DoMethod(other_app, MUIM_Application_PushMethod,
                 (IPTR) other_app, 3, MUIM_Set, MUIA_Application_DoubleStart,
                 TRUE);
@@ -689,6 +694,12 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
         DoMethod(data->app_Menustrip, MUIM_ConnectParent, (IPTR) obj);
 
     data->app_AppPort = CreateMsgPort();
+    data->app_GlobalInfo.mgi_AppPort = data->app_AppPort;
+    if (data->app_AppPort == NULL)
+    {
+        CoerceMethod(cl, obj, OM_DISPOSE);
+        return 0;
+    }
 
     ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
     data->app_TrackingNode.tn_Application = obj;
@@ -814,8 +825,7 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
         }
         DeleteIORequest((struct IORequest *)data->app_TimerReq);
     }
-    if (data->app_TimerPort)
-        DeleteMsgPort(data->app_TimerPort);
+    DeleteMsgPort(data->app_TimerPort);
 
     if (data->app_RexxPort)
     {
@@ -826,9 +836,7 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
         }
         RemPort(data->app_RexxPort);
 
-        if (data->app_RexxPort->mp_Node.ln_Name != NULL)
-            FreeVec(data->app_RexxPort->mp_Node.ln_Name);
-
+        FreeVec(data->app_RexxPort->mp_Node.ln_Name);
         DeleteMsgPort(data->app_RexxPort);
     }
 
@@ -850,8 +858,7 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
     if (data->app_GlobalInfo.mgi_Configdata)
         MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
 
-    if (data->app_GlobalInfo.mgi_WindowsPort)
-        DeleteMsgPort(data->app_GlobalInfo.mgi_WindowsPort);
+    DeleteMsgPort(data->app_GlobalInfo.mgi_WindowsPort);
 
     FreeVec(data->app_Base);
 
@@ -1361,6 +1368,7 @@ static IPTR Application__OM_REMMEMBER(struct IClass *cl, Object *obj,
 
     DoMethod(msg->opam_Object, MUIM_DisconnectParent);
     DoMethodA(data->app_WindowFamily, (Msg) msg);
+
     return TRUE;
 }
 
@@ -1620,6 +1628,11 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
                     ReplyMsg((struct Message *)appmsg);
                     set(obj, MUIA_Application_Iconified, FALSE);
                     continue;
+                }
+                else if (appmsg->am_Type == AMTYPE_APPWINDOW)
+                {
+                    set((Object *) appmsg->am_UserData, MUIA_AppMessage,
+                        appmsg);
                 }
 
                 ReplyMsg((struct Message *)appmsg);
