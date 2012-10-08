@@ -4,27 +4,28 @@
 
 include $(TOP)/config/make.cfg
 
-FILES  := test      	    \
-    	  virttest  	    \
-	  gradient  	    \
-	  volumelist	    \
-	  dirlist   	    \
-          disable           \
-	  dtpic		    \
-	  font		    \
-	  string            \
-	  numericbutton     \
-	  poplist   	    \
-	  popscreen 	    \
-	  crawling	    \
-	  levelmeter	    \
-	  knob              \
-	  texticonlist	    \
-	  loginwindow	    \
-	  busy              \
-	  hideshow          \
-	  settings          \
-	  dynlist
+FILES  := test             \
+          virttest         \
+          gradient         \
+          volumelist       \
+          dirlist          \
+          disable          \
+          dtpic            \
+          font             \
+          string           \
+          numericbutton    \
+          poplist          \
+          popscreen        \
+          crawling         \
+          levelmeter       \
+          knob             \
+          texticonlist     \
+          loginwindow      \
+          busy             \
+          hideshow         \
+          settings         \
+          dynlist          \
+          listinsertactive
 
 USER_CFLAGS := -I $(SRCDIR)/workbench/system/Wanderer/Classes
 
