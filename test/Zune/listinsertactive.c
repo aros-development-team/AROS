@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
                                         MUIA_Listview_List,
                                                 ListObject, InputListFrame, End,
                                         End,
+                                Child, List(str),
                                 Child, bt = SimpleButton("Click me!"),
                                 End,
                         End,
