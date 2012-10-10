@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000 Neil Cafferkey
+Copyright (C) 2005 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,26 +19,20 @@ MA 02111-1307, USA.
 
 */
 
-#include <exec/types.h>
+#ifndef EXPANSION_PROTOS_H
+#define EXPANSION_PROTOS_H
 
 
-LONG Main(VOID);
-int __main(void);
+#include "device.h"
 
+ULONG GetExpansionCount(struct DevBase *base);
+struct BusContext *AllocExpansionCard(ULONG index, struct DevBase *base);
+VOID FreeExpansionCard(struct BusContext *context, struct DevBase *base);
+BOOL AddExpansionIntServer(APTR card, struct Interrupt *interrupt,
+   struct DevBase *base);
+VOID RemExpansionIntServer(APTR card, struct Interrupt *interrupt,
+   struct DevBase *base);
 
-int main(void)
-{
-   return Main();
-}
-
-
-
-#ifdef __mc68000
-int __main(void)
-{
-   return 0;
-}
 #endif
-
 
 

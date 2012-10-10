@@ -1,7 +1,5 @@
 /*
 
-File: pci_protos.h
-Author: Neil Cafferkey
 Copyright (C) 2004 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify

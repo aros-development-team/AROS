@@ -1,8 +1,6 @@
 /*
 
-File: pci.c
-Author: Neil Cafferkey
-Copyright (C) 2004,2005 Neil Cafferkey
+Copyright (C) 2004-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,18 +31,11 @@ MA 02111-1307, USA.
 
 #include "pci_protos.h"
 #include "device_protos.h"
-#if !(defined(__MORPHOS__) || defined(__amigaos4__))
 #include "prometheus_protos.h"
-#endif
-#if defined(__mc68000) && !defined(__AROS__)
 #include "powerpci_protos.h"
-#endif
-#ifdef __amigaos4__
+#include "cybpci_protos.h"
 #include "expansion_protos.h"
-#endif
-#ifdef __MORPHOS__
 #include "openpci_protos.h"
-#endif
 #include "unit_protos.h"
 
 
@@ -78,6 +69,7 @@ static VOID BEWordOutIOHook(struct BusContext *context, ULONG offset,
 static UWORD LEWordInIOHook(struct BusContext *context, ULONG offset);
 static VOID LEWordOutIOHook(struct BusContext *context, ULONG offset,
    UWORD value);
+
 
 const UWORD product_codes[] =
 {
@@ -145,6 +137,8 @@ ULONG GetPCICount(struct DevBase *base)
 #if defined(__mc68000) && !defined(__AROS__)
    if(base->powerpci_base != NULL)
       count = GetPowerPCICount(base);
+   if(base->cybpci_base != NULL)
+      count = GetCybPCICount(base);
 #endif
 #ifdef __amigaos4__
    if(base->expansion_base != NULL)
@@ -283,9 +277,26 @@ static struct DevUnit *CreatePCIUnit(ULONG index, struct DevBase *base)
       if(!(WrapInt(&unit->status_int, base)
          && WrapInt(&unit->rx_int, base)
          && WrapInt(&unit->tx_int, base)
-         && WrapInt(&unit->info_int, base)))
+         && WrapInt(&unit->info_int, base)
+         && WrapInt(&unit->reset_handler, base)))
          success = FALSE;
-      success = AddPCIIntServer(context->card, &unit->status_int, base);
+   }
+
+   /* Add hardware interrupt and reset handler */
+
+   if(success)
+   {
+      if(AddPCIIntServer(context->card, &unit->status_int, base))
+         unit->flags |= UNITF_INTADDED;
+      else
+         success = FALSE;
+
+#if defined(__amigaos4__) || defined(__AROS__)
+      if(AddResetCallback(&unit->reset_handler))
+         unit->flags |= UNITF_RESETADDED;
+      else
+         success = FALSE;
+#endif
    }
 
    if(!success)
@@ -333,7 +344,13 @@ VOID DeletePCIUnit(struct DevUnit *unit, struct DevBase *base)
    if(unit != NULL)
    {
       context = unit->card;
-      RemPCIIntServer(context->card, &unit->status_int, base);
+#if defined(__amigaos4__) || defined(__AROS__)
+      if((unit->flags & UNITF_RESETADDED) != 0)
+         RemResetCallback(&unit->reset_handler);
+#endif
+      if((unit->flags & UNITF_INTADDED) != 0)
+         RemPCIIntServer(context->card, &unit->status_int, base);
+      UnwrapInt(&unit->reset_handler, base);
       UnwrapInt(&unit->info_int, base);
       UnwrapInt(&unit->tx_int, base);
       UnwrapInt(&unit->rx_int, base);
@@ -372,6 +389,8 @@ static struct BusContext *AllocCard(ULONG index, struct DevBase *base)
 #if defined(__mc68000) && !defined(__AROS__)
    if(base->powerpci_base != NULL)
       context = AllocPowerPCICard(index, base);
+   if(base->cybpci_base != NULL)
+      context = AllocCybPCICard(index, base);
 #endif
 #ifdef __amigaos4__
    if(base->expansion_base != NULL)
@@ -413,6 +432,8 @@ static VOID FreeCard(struct BusContext *context, struct DevBase *base)
 #if defined(__mc68000) && !defined(__AROS__)
       if(base->powerpci_base != NULL)
          FreePowerPCICard(context, base);
+      if(base->cybpci_base != NULL)
+         FreeCybPCICard(context, base);
 #endif
 #ifdef __amigaos4__
       if(base->expansion_base != NULL)
@@ -435,9 +456,9 @@ static VOID FreeCard(struct BusContext *context, struct DevBase *base)
 *	AddPCIIntServer
 *
 *   SYNOPSIS
-*	context = AddPCIIntServer(index)
+*	success = AddPCIIntServer(card, interrupt)
 *
-*	struct BusContext *AddPCIIntServer(ULONG);
+*	BOOL AddPCIIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *
@@ -455,6 +476,8 @@ static BOOL AddPCIIntServer(APTR card, struct Interrupt *interrupt,
 #if defined(__mc68000) && !defined(__AROS__)
    if(base->powerpci_base != NULL)
       success = AddPowerPCIIntServer(card, interrupt, base);
+   if(base->cybpci_base != NULL)
+      success = AddCybPCIIntServer(card, interrupt, base);
 #endif
 #ifdef __amigaos4__
    if(base->expansion_base != NULL)
@@ -476,9 +499,9 @@ static BOOL AddPCIIntServer(APTR card, struct Interrupt *interrupt,
 *	RemPCIIntServer
 *
 *   SYNOPSIS
-*	RemPCIIntServer()
+*	RemPCIIntServer(card, interrupt)
 *
-*	VOID RemPCIIntServer(ULONG);
+*	VOID RemPCIIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *
@@ -494,6 +517,8 @@ static VOID RemPCIIntServer(APTR card, struct Interrupt *interrupt,
 #if defined(__mc68000) && !defined(__AROS__)
    if(base->powerpci_base != NULL)
       RemPowerPCIIntServer(card, interrupt, base);
+   if(base->cybpci_base != NULL)
+      RemCybPCIIntServer(card, interrupt, base);
 #endif
 #ifdef __amigaos4__
    if(base->expansion_base != NULL)
@@ -819,5 +844,6 @@ static VOID LEWordOutIOHook(struct BusContext *context, ULONG offset,
 
    return;
 }
+
 
 

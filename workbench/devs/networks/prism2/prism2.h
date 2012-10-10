@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004-2006 Neil Cafferkey
+Copyright (C) 2004-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ MA 02111-1307, USA.
 #define P2_MAXMCASTENTRIES 16
 #define P2_AIROWEPRECLEN   0x1c
 #define P2_ALTWEPRECLEN    0x21
+#define P2_APRECLEN        0x32 /* ALT... ? */
 
 #define P2_MSGTYPE_RFC1042 1
 #define P2_MSGTYPE_TUNNEL  2
@@ -131,20 +132,20 @@ MA 02111-1307, USA.
 #define P2_REC_OWNSSID     0xFC04
 #define P2_REC_SYSTEMSCALE 0xFC06
 #define P2_REC_MAXDATALEN  0xFC07
-#define P2_REC_AUTHTYPE    0xFC21
 #define P2_REC_ROAMINGMODE 0xFC2D   /* ??? */
 #define P2_REC_MCASTLIST   0xFC80
 #define P2_REC_CREATEIBSS  0xFC81
 #define P2_REC_RTSTHRESH   0xFC83
-#define P2_REC_TXRATE      0xFC84   /* ??? */
+#define P2_REC_TXRATE      0xFC84
 #define P2_REC_PROMISC     0xFC85
 #define P2_REC_PRIIDENTITY 0xFD02
+#define P2_REC_NICIDENTITY 0xFD0B
 #define P2_REC_STAIDENTITY 0xFD20
 #define P2_REC_LINKQUALITY 0xFD43
 #define P2_REC_CURTXRATE   0xFD44   /* ??? */
 #define P2_REC_HASWEP      0xFD4F
 
-/* Intersil-specific records */
+/* Intersil/Symbol-specific records */
 
 #define P2_REC_TXCRYPTKEY     0xFC23
 #define P2_REC_CRYPTKEY0      0xFC24
@@ -152,14 +153,29 @@ MA 02111-1307, USA.
 #define P2_REC_CRYPTKEY2      0xFC26
 #define P2_REC_CRYPTKEY3      0xFC27
 #define P2_REC_ENCRYPTION     0xFC28
+#define P2_REC_AUTHTYPE       0xFC2A
+#define P2_REC_ROAMINGMODE    0xFC2D
 #define P2_REC_DBMOFFSET      0xFC46
+#define P2_REC_WPAIE          0xFC48
+#define P2_REC_ALTHOSTSCAN    0xFCAB /* ??? */
+#define P2_REC_RXMGMTFRAMES   0xFCBB
+#define P2_REC_JOIN           0xFCE2
+#define P2_REC_HOSTSCAN       0xFCE5
 /*#define P2_REC_PRIMARYID      0xFD02*/ /* ??? */
 
 /* Lucent-specific records */
 
-#define P2_REC_ALTTXCRYPTKEY  0xFCB1
+#define P2_REC_ALTENCRYPTION  0xFC20
+#define P2_REC_ALTAUTHTYPE    0xFC21
 #define P2_REC_DEFLTCRYPTKEYS 0xFCB0
-#define P2_REC_ALTENCRYPTION  0xFC20 /* enable/disable WEP */
+#define P2_REC_ALTTXCRYPTKEY  0xFCB1
+#define P2_REC_SCANSSID       0xFCB2
+#define P2_REC_ADDDEFAULTTKIPKEY  0xFCB4
+#define P2_REC_KEYMGMTSUITE   0xFCB5
+#define P2_REC_REMDEFAULTTKIPKEY  0xFCB6
+#define P2_REC_ADDMAPPEDTKIPKEY  0xFCB7
+#define P2_REC_REMMAPPEDTKIPKEY  0xFCB8
+#define P2_REC_SCANCHANNELS   0xFCC2
 
 /* Symbol-specific records */
 
@@ -207,9 +223,11 @@ MA 02111-1307, USA.
 #define P2_INFO_NOTIFY          0xF000
 #define P2_INFO_COUNTERS        0xF100
 #define P2_INFO_SCANRESULTS     0xF101
-#define P2_INFO_HOSTSCANRESULTS 0xF104
+#define P2_INFO_SCANRESULT      0xF102
+#define P2_INFO_HOSTSCANRESULTS 0xF103
+//#define P2_INFO_ALTHOSTSCANRESULTS 0xF104
 #define P2_INFO_LINKSTATUS      0xF200
-#define P2_INFO_ASSOCSTATUS     0xF201
+/*#define P2_INFO_ASSOCSTATUS     0xF201*/ /* AP only? */
 
 
 /* Register Details */
@@ -244,6 +262,12 @@ MA 02111-1307, USA.
 /* Record Details */
 /* ============== */
 
+#if 0 /* Contrary to docs in Agere code, these should be bit numbers */
+#define P2_REC_ALTAUTHTYPE_OPEN   0
+#define P2_REC_ALTAUTHTYPE_SHARED 1
+#define P2_REC_ALTAUTHTYPE_LEAP   2
+#endif
+
 #define P2_REC_ENCRYPTIONB_ENABLE      0
 #define P2_REC_ENCRYPTIONB_NOPLAINTEXT 1
 #define P2_REC_ENCRYPTIONB_HOSTENCRYPT 4
@@ -254,6 +278,12 @@ MA 02111-1307, USA.
 #define P2_REC_ENCRYPTIONF_HOSTENCRYPT (1 << P2_REC_ENCRYPTIONB_HOSTENCRYPT)
 #define P2_REC_ENCRYPTIONF_HOSTDECRYPT (1 << P2_REC_ENCRYPTIONB_HOSTDECRYPT)
 
+#define P2_REC_AUTHTYPEB_OPEN   0
+#define P2_REC_AUTHTYPEB_SHARED 1
+
+#define P2_REC_AUTHTYPEF_OPEN   (1 << P2_REC_AUTHTYPEB_OPEN)
+#define P2_REC_AUTHTYPEF_SHARED (1 << P2_REC_AUTHTYPEB_SHARED)
+
 #define P2_REC_CAPABILITIES_OEMADDR 0x40
 
 #define P2_REC_CONFIG_OPMODE    0x2
@@ -261,15 +291,40 @@ MA 02111-1307, USA.
 #define P2_REC_CONFIG_DSCHANNEL 0x66
 
 
+/* Information Frame Details */
+/* ========================= */
 
-/* Frame descriptor */
-/* ================ */
+#define P2_APREC_CHANNEL 0x0
+#define P2_APREC_NOISE 0x2
+#define P2_APREC_SIGNAL 0x4
+#define P2_APREC_BSSID 0x6
+#define P2_APREC_INTERVAL 0xc
+#define P2_APREC_CAPABILITIES 0xe
+#define P2_APREC_NAMELEN 0x10
+#define P2_APREC_NAME 0x12
 
-#define P2_FRM_STATUS    0x0
-#define P2_FRM_HEADER    0xe
-#define P2_FRM_ETHFRAME 0x2e
 
-#define P2_H2FRM_ETHFRAME 0x3a
+/* Frame descriptors */
+/* ================= */
+
+/* Standard frame */
+
+#define P2_FRM_STATUS       0x0
+#define P2_FRM_NOISE        0x6
+#define P2_FRM_SIGNAL       0x7
+#define P2_FRM_TXCONTROL    0xc
+#define P2_FRM_HEADER       0xe
+#define P2_FRM_DATALEN      0x2c
+#define P2_FRM_ALTTXCONTROL 0x2c
+#define P2_FRM_ETHFRAME     0x2e
+#define P2_FRM_DATA         0x3c
+
+/* Hermes-II frame */
+
+#define P2_H2FRM_TXCONTROL 0x36
+#define P2_H2FRM_DATALEN   0x38
+#define P2_H2FRM_ETHFRAME  0x3a
+#define P2_H2FRM_DATA      0x48
 
 #define P2_AIROFRM_STATUS  0x4
 #define P2_AIROFRM_FRAME  0x14
@@ -295,5 +350,17 @@ MA 02111-1307, USA.
 #define P2_FRM_STATUSF_MACPORT    (7 << P2_FRM_STATUSB_MACPORT)
 #define P2_FRM_STATUSF_PCF        (1 << P2_FRM_STATUSB_PCF)
 #define P2_FRM_STATUSF_MSGTYPE    (7 << P2_FRM_STATUSB_MSGTYPE)
+
+/* TX Control field */
+
+#define P2_FRM_TXCONTROLB_NATIVE    3
+#define P2_FRM_TXCONTROLB_MIC       4 // HERMES only
+#define P2_FRM_TXCONTROLB_NOENC     7
+#define P2_FRM_TXCONTROLB_MICKEYID 11 // HERMES only
+
+#define P2_FRM_TXCONTROLF_NATIVE   (1 << P2_FRM_TXCONTROLB_NATIVE)
+#define P2_FRM_TXCONTROLF_MIC      (1 << P2_FRM_TXCONTROLB_MIC)
+#define P2_FRM_TXCONTROLF_NOENC    (1 << P2_FRM_TXCONTROLB_NOENC)
+#define P2_FRM_TXCONTROLF_MICKEYID (3 << P2_FRM_TXCONTROLB_MICKEYID)
 
 #endif

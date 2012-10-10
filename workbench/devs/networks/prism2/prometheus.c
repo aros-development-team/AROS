@@ -1,8 +1,6 @@
 /*
 
-File: prometheus.c
-Author: Neil Cafferkey
-Copyright (C) 2004,2005 Neil Cafferkey
+Copyright (C) 2004-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,23 +26,13 @@ MA 02111-1307, USA.
 #include <proto/exec.h>
 #include <proto/prometheus.h>
 
-#include "device.h"
 #include "pci.h"
+#include "plx9052.h"
+#include "prism2.h"
 
 #include "pci_protos.h"
 #include "prometheus_protos.h"
-
-
-#define RETRY_COUNT 15
-
-#define PLX9052_INTS 0x4c
-#define PLX9052_CNTRL 0x50
-
-#define PLX9052_CNTRLB_PCI21   14
-#define PLX9052_CNTRLB_RETRIES 19
-
-#define PLX9052_CNTRLF_PCI21   (1 << PLX9052_CNTRLB_PCI21)
-#define PLX9052_CNTRLF_RETRIES (0xf << PLX9052_CNTRLB_RETRIES)
+#include "timer_protos.h"
 
 
 /****i* prism2.device/GetPrometheusCount ***********************************
@@ -100,10 +88,10 @@ struct BusContext *AllocPrometheusCard(ULONG index, struct DevBase *base)
    struct BusContext *context;
    PCIBoard *card = NULL;
    UWORD i = 0;
-   UPINT vendor_id, product_id, plx_base;
+   UPINT vendor_id, product_id, plx_base, int_reg;
    UBYTE io_range_no;
+   ULONG value;
    volatile UBYTE *cor_reg;
-   __unused ULONG pci_control;
 
    /* Find a compatible card */
 
@@ -139,34 +127,31 @@ struct BusContext *AllocPrometheusCard(ULONG index, struct DevBase *base)
 
          Prm_GetBoardAttrsTags(card, PRM_MemoryAddr1, (UPINT)&cor_reg,
             TAG_END);
-         BYTEOUT((UPINT)cor_reg, COR_VALUE);
+         BYTEOUT((UPINT)cor_reg, COR_RESET);
+         BusyMilliDelay(RESET_DELAY, base);
+         BYTEOUT((UPINT)cor_reg, COR_ENABLE);
+         BusyMilliDelay(RESET_DELAY, base);
          io_range_no = 2;
       }
       else if(context->bus_type == PLX_BUS)
       {
-         /* Enable interrupts on the bridge */
-
-         Prm_GetBoardAttrsTags(card, PRM_MemoryAddr1, (UPINT)&plx_base,
-            TAG_END);
-         LELONGOUT(plx_base + PLX9052_INTS,
-            LELONGIN(plx_base + PLX9052_INTS) | (1 << 6));
-
-#ifdef __mc68000
-         /* Delay PCI retries as long as possible, so that they will
-            hopefully never occur */
-
-         pci_control = LELONGIN(plx_base + PLX9052_CNTRL);
-         pci_control &= ~(PLX9052_CNTRLF_RETRIES | PLX9052_CNTRLF_PCI21);
-         pci_control |= RETRY_COUNT << PLX9052_CNTRLB_RETRIES;
-         LELONGOUT(plx_base + PLX9052_CNTRL, pci_control);
-#endif
-
-         /* Enable the PCCard */
+         /* Reset and enable the PCCard */
 
          Prm_GetBoardAttrsTags(card, PRM_MemoryAddr2, (UPINT)&cor_reg,
             TAG_END);
          cor_reg += 0x3e0;
-         *cor_reg = COR_VALUE;
+         *cor_reg = COR_ENABLE;
+         BusyMilliDelay(RESET_DELAY, base);
+
+         /* Enable interrupts on the bridge */
+
+         Prm_GetBoardAttrsTags(card, PRM_MemoryAddr1, (UPINT)&plx_base,
+            TAG_END);
+         int_reg = plx_base + PLX9052_INTS;
+         value = LELONGIN(int_reg);
+         LELONGOUT(int_reg, value | (1 << 6));
+         if((LELONGIN(int_reg) & (1 << 6)) == 0)
+            success = FALSE;
          io_range_no = 3;
       }
       else
@@ -178,6 +163,17 @@ struct BusContext *AllocPrometheusCard(ULONG index, struct DevBase *base)
          (UPINT)&context->io_base, TAG_END);
       if(context->io_base == 0)
          success = FALSE;
+
+      if(context->bus_type == PCI_BUS)
+      {
+         /* Reset and enable the card */
+
+         cor_reg = (volatile UBYTE *)context->io_base + (P2_REG_PCICOR * 2);
+         *cor_reg = COR_RESET;
+         BusyMilliDelay(250, base);
+         *cor_reg = 0;
+         BusyMilliDelay(500, base);
+      }
    }
 
    /* Lock card */
@@ -216,6 +212,9 @@ struct BusContext *AllocPrometheusCard(ULONG index, struct DevBase *base)
 VOID FreePrometheusCard(struct BusContext *context, struct DevBase *base)
 {
    PCIBoard *card;
+   ULONG value;
+   UPINT plx_base, int_reg;
+   volatile UBYTE *cor_reg;
    APTR owner;
 
    if(context != NULL)
@@ -223,6 +222,34 @@ VOID FreePrometheusCard(struct BusContext *context, struct DevBase *base)
       card = context->card;
       if(card != NULL)
       {
+         if(context->bus_type == TMD_BUS)
+         {
+            /* Disable the PCCard */
+
+            Prm_GetBoardAttrsTags(card, PRM_MemoryAddr1, (UPINT)&cor_reg,
+               TAG_END);
+            BYTEOUT((UPINT)cor_reg, 0);
+         }
+         else if(context->bus_type == PLX_BUS)
+         {
+            /* Disable interrupts on the bridge */
+
+            Prm_GetBoardAttrsTags(card, PRM_MemoryAddr1, (UPINT)&plx_base,
+               TAG_END);
+            int_reg = plx_base + PLX9052_INTS;
+            value = LELONGIN(int_reg);
+            LELONGOUT(int_reg, value & ~(1 << 6));
+
+            /* Disable the PCCard */
+
+            Prm_GetBoardAttrsTags(card, PRM_MemoryAddr2, (UPINT)&cor_reg,
+               TAG_END);
+            cor_reg += 0x3e0;
+            *cor_reg = COR_RESET;
+            BusyMilliDelay(250, base);
+            *cor_reg = 0;
+         }
+
          /* Unlock board */
 
          Prm_GetBoardAttrsTags(card, PRM_BoardOwner, (UPINT)&owner,
@@ -245,9 +272,9 @@ VOID FreePrometheusCard(struct BusContext *context, struct DevBase *base)
 *	AddPrometheusIntServer
 *
 *   SYNOPSIS
-*	context = AddPrometheusIntServer(index)
+*	success = AddPrometheusIntServer(card, interrupt)
 *
-*	struct BusContext *AddPrometheusIntServer(ULONG);
+*	BOOL AddPrometheusIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *
@@ -267,9 +294,9 @@ BOOL AddPrometheusIntServer(APTR card, struct Interrupt *interrupt,
 *	RemPrometheusIntServer
 *
 *   SYNOPSIS
-*	RemPrometheusIntServer()
+*	RemPrometheusIntServer(card, interrupt)
 *
-*	VOID RemPrometheusIntServer(ULONG);
+*	VOID RemPrometheusIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *

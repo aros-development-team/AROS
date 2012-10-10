@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000 Neil Cafferkey
+Copyright (C) 2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,26 +19,16 @@ MA 02111-1307, USA.
 
 */
 
-#include <exec/types.h>
+#ifndef TIMER_PROTOS_H
+#define TIMER_PROTOS_H
 
 
-LONG Main(VOID);
-int __main(void);
+#include "device.h"
+
+VOID BusyMilliDelay(ULONG millis, struct DevBase *base);
+VOID BusyMicroDelay(ULONG micros, struct DevBase *base);
 
 
-int main(void)
-{
-   return Main();
-}
-
-
-
-#ifdef __mc68000
-int __main(void)
-{
-   return 0;
-}
 #endif
-
 
 

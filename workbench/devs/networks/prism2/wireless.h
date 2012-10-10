@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2005,2006 Neil Cafferkey
+Copyright (C) 2005-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,71 +23,52 @@ MA 02111-1307, USA.
 #define WIRELESS_H
 
 
-#include <exec/types.h>
-#include <devices/sana2.h>
-#include <devices/sana2specialstats.h>
-
-
 /* IEEE 802.11 definitions */
 
-#define IEEE802_11_MAXIDLEN 32
-#define IEEE802_11_WEP64LEN 5
-#define IEEE802_11_WEP128LEN 13
-#define IEEE802_11_WEPKEYCOUNT 4
+#define WIFI_MAXIDLEN 32
+#define WIFI_WEP64LEN 5
+#define WIFI_WEP128LEN 13
+#define WIFI_KEYCOUNT 4
 
-#define IEEE802_11_FRM_CONTROL  0x00
-#define IEEE802_11_FRM_DURATION 0x02
-/*#define IEEE802_11_FRM_BODY     0x20*/
-#define IEEE802_11_FRM_BODY     0x1e
+#define WIFI_FRM_CONTROL    0x00
+#define WIFI_FRM_DURATION   0x02
+#define WIFI_FRM_ADDRESS1   0x04
+#define WIFI_FRM_ADDRESS2   0x0a
+#define WIFI_FRM_ADDRESS3   0x10
+#define WIFI_FRM_SEQCONTROL 0x16
+#define WIFI_FRM_ADDRESS4   0x18
+#define WIFI_FRM_DATA       0x18
 
-#define IEEE802_11_FRM_CONTROLB_TYPE 2
-#define IEEE802_11_FRM_CONTROLF_TYPE (0x3 << IEEE802_11_FRM_CONTROLB_TYPE)
+#define WIFI_FRM_CONTROLB_VERSION    0
+#define WIFI_FRM_CONTROLB_TYPE       2
+#define WIFI_FRM_CONTROLB_SUBTYPE    4
+#define WIFI_FRM_CONTROLB_TODS       8
+#define WIFI_FRM_CONTROLB_FROMDS     9
+#define WIFI_FRM_CONTROLB_MOREFRAGS 10
+#define WIFI_FRM_CONTROLB_WEP       14
+#define WIFI_FRM_CONTROLB_ORDER     15
 
-#define IEEE802_11_FRMTYPE_DATA 2
+#define WIFI_FRM_CONTROLF_VERSION   (0x3 << WIFI_FRM_CONTROLB_VERSION)
+#define WIFI_FRM_CONTROLF_TYPE      (0x3 << WIFI_FRM_CONTROLB_TYPE)
+#define WIFI_FRM_CONTROLF_SUBTYPE   (0xf << WIFI_FRM_CONTROLB_SUBTYPE)
+#define WIFI_FRM_CONTROLF_TODS      (0x1 << WIFI_FRM_CONTROLB_TODS)
+#define WIFI_FRM_CONTROLF_FROMDS    (0x1 << WIFI_FRM_CONTROLB_FROMDS)
+#define WIFI_FRM_CONTROLF_MOREFRAGS (0x1 << WIFI_FRM_CONTROLB_MOREFRAGS)
+#define WIFI_FRM_CONTROLF_WEP       (0x1 << WIFI_FRM_CONTROLB_WEP)
+#define WIFI_FRM_CONTROLF_ORDER     (0x1 << WIFI_FRM_CONTROLB_ORDER)
 
+#define WIFI_FRMTYPE_MGMT 0
+#define WIFI_FRMTYPE_DATA 2
 
-/* Possible SANA 2 extensions */
+#define WIFI_BEACON_TIMESTAMP    0x0
+#define WIFI_BEACON_INTERVAL     0x8
+#define WIFI_BEACON_CAPABILITIES 0xa
+#define WIFI_BEACON_IES          0xc
 
-#define S2DUPLEX_AUTO 0
-#define S2DUPLEX_HALF 1
-#define S2DUPLEX_FULL 2
-
-#define S2ENC_NONE 0
-#define S2ENC_WEP  1
-#define S2ENC_WPA  2
-
-#define S2PORT_AUTO    1   /* eg. device may look for an active link */
-#define S2PORT_SAVED   2   /* eg. from ROM */
-#define S2PORT_DEFAULT 2   /* eg. from ROM */
-#define S2PORT_10BASE2 3
-#define S2PORT_TP      4
-#define S2PORT_MII     5
-#define S2PORT_AUI     6
-#define S2PORT_MANAGED 7
-#define S2PORT_ADHOC   8
-
-#define P2_GETSIGNALQUALITY 0x8000
-
-struct Sana2SignalQuality
-{
-   LONG SignalLevel;   /* signal level in dBm */
-   LONG NoiseLevel;   /* noise level in dBm */
-};
-
-
-/* Support for SetPrism2Defualts command */
-
-struct WEPKey
-{
-   UBYTE key[13];
-   UBYTE length;
-};
-
-#define P2OPT_SSID (TAG_USER + 0)
-#define P2OPT_WEPKey (TAG_USER + 1)
-#define P2OPT_Encryption (TAG_USER + 4)
-#define P2OPT_PortType (TAG_USER + 5)
-#define P2OPT_Channel (TAG_USER + 7)
+#define WIFI_IE_SSID      0
+#define WIFI_IE_CHANNEL   3
+#define WIFI_IE_RSN      48
+#define WIFI_IE_CUSTOM  221
 
 
 #endif

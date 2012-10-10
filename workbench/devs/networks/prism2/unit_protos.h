@@ -1,8 +1,6 @@
 /*
 
-File: unit_protos.h
-Author: Neil Cafferkey
-Copyright (C) 2004,2005 Neil Cafferkey
+Copyright (C) 2004-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,8 +31,13 @@ VOID DeleteUnit(struct DevUnit *unit, struct DevBase *base);
 BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
    struct DevBase *base);
 VOID ConfigureAdapter(struct DevUnit *unit, struct DevBase *base);
+VOID ReconfigureAdapter(struct DevUnit *unit, struct DevBase *base);
 VOID GoOnline(struct DevUnit *unit, struct DevBase *base);
 VOID GoOffline(struct DevUnit *unit, struct DevBase *base);
+VOID SetOptions(struct DevUnit *unit, const struct TagItem *tag_list,
+   struct DevBase *base);
+VOID SetKey(struct DevUnit *unit, ULONG index, ULONG type, const UBYTE *key,
+   ULONG key_length, const UBYTE *rx_counter, struct DevBase *base);
 BOOL AddMulticastRange(struct DevUnit *unit, const UBYTE *lower_bound,
    const UBYTE *upper_bound, struct DevBase *base);
 BOOL RemMulticastRange(struct DevUnit *unit, const UBYTE *lower_bound,
@@ -45,7 +48,11 @@ VOID FlushUnit(struct DevUnit *unit, UBYTE last_queue, BYTE error,
    struct DevBase *base);
 BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code));
 VOID UpdateStats(struct DevUnit *unit, struct DevBase *base);
+struct TagItem *GetNetworkInfo(struct DevUnit *unit, APTR pool,
+   struct DevBase *base);
 VOID UpdateSignalQuality(struct DevUnit *unit, struct DevBase *base);
+VOID StartScan(struct DevUnit *unit, const TEXT *ssid,
+   struct DevBase *base);
 
 
 #endif

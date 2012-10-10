@@ -1,7 +1,5 @@
 /*
 
-File: prometheus_protos.h
-Author: Neil Cafferkey
 Copyright (C) 2005 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
