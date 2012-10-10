@@ -17,9 +17,14 @@
 #include "ahci.h"
 #include "timer.h"
 
-void callout_init(struct callout *co)
+void callout_init_mp(struct callout *co)
 {
     memset(co, 0, sizeof(*co));
+}
+
+void callout_init(struct callout *co)
+{
+    callout_init_mp(co);
 }
 
 void callout_stop(struct callout *co)
@@ -30,6 +35,11 @@ void callout_stop(struct callout *co)
         co->co_Task = NULL;
     }
     Permit();
+}
+
+void callout_stop_sync(struct callout *co)
+{
+    callout_stop(co);
 }
 
 static void callout_handler(struct callout *co, unsigned ticks, timeout_t *func, void *arg)
@@ -130,11 +140,13 @@ static void ahci_port_thread(void *arg)
 	 */
 	mask = ap->ap_signal;
 	while ((mask & AP_SIGF_STOP) == 0) {
-		atomic_clear_int(&ap->ap_signal, mask);
 		ahci_port_thread_core(ap, mask);
+		// lockmgr(&ap->ap_sig_lock, LK_EXCLUSIVE);
 		if (ap->ap_signal == 0)
 			Wait(SIGF_DOS);
 		mask = ap->ap_signal;
+		atomic_clear_int(&ap->ap_signal, mask);
+		// lockmgr(&ap->ap_sig_lock, LK_RELEASE);
 	}
 	ap->ap_thread = NULL;
 }
@@ -144,7 +156,7 @@ void	ahci_os_start_port(struct ahci_port *ap)
 	char name[16];
 
 	atomic_set_int(&ap->ap_signal, AP_SIGF_INIT | AP_SIGF_THREAD_SYNC);
-	lockinit(&ap->ap_lock, "ahcipo", 0, 0);
+	lockinit(&ap->ap_lock, "ahcipo", 0, LK_CANRECURSE);
 	lockinit(&ap->ap_sim_lock, "ahcicam", 0, LK_CANRECURSE);
 	ksnprintf(name, sizeof(name), "%d", ap->ap_num);
 

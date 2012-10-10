@@ -53,7 +53,7 @@
 #define SCSI_DA_READ_16				0x88
 #define SCSI_DA_READ_BUFFER			0x3c
 #define SCSI_DA_READ_CAPACITY			0x25
-#define SCSI_DA_SERVICEACTIONIN     0x9e
+#define SCSI_DA_SERVICEACTIONIN			0x9e
 #define SCSI_DA_READ_DEFECT_DATA		0x37
 #define SCSI_DA_READ_LONG			0x3e
 #define SCSI_DA_REASSIGN_BLOCKS			0x07
@@ -72,13 +72,14 @@
 #define SCSI_DA_START_STOP_UNIT			0x1b
 #define SCSI_DA_SYNCHRONIZE_CACHE		0x35
 #define SCSI_DA_TEST_UNIT_READY			0x00
+#define SCSI_DA_UNMAP				0x42
 #define SCSI_DA_VERIFY				0x2f
-#define SCSI_DA_WRITE_6				 0x0a
-#define SCSI_DA_WRITE_10			 0x2a
-#define SCSI_DA_WRITE_12				0xaa
-#define SCSI_DA_WRITE_16			 0x8a
-#define SCSI_DA_WRITE_AND_VERIFY_10			  0x2e
-#define SCSI_DA_WRITE_AND_VERIFY_16			  0x8e
+#define SCSI_DA_WRITE_6				0x0a
+#define SCSI_DA_WRITE_10			0x2a
+#define SCSI_DA_WRITE_12			0xaa
+#define SCSI_DA_WRITE_16			0x8a
+#define SCSI_DA_WRITE_AND_VERIFY_10		0x2e
+#define SCSI_DA_WRITE_AND_VERIFY_16		0x8e
 
 
 /* Sequential access devices */
