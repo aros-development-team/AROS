@@ -1,8 +1,6 @@
 /*
 
-File: request.c
-Author: Neil Cafferkey
-Copyright (C) 2001-2006 Neil Cafferkey
+Copyright (C) 2001-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,7 +19,6 @@ MA 02111-1307, USA.
 
 */
 
-#include <string.h>
 
 #include <exec/types.h>
 #include <exec/errors.h>
@@ -39,7 +36,8 @@ MA 02111-1307, USA.
 
 #define KNOWN_EVENTS \
    (S2EVENT_ERROR | S2EVENT_TX | S2EVENT_RX | S2EVENT_ONLINE \
-   | S2EVENT_OFFLINE | S2EVENT_BUFF | S2EVENT_HARDWARE | S2EVENT_SOFTWARE)
+   | S2EVENT_OFFLINE | S2EVENT_BUFF | S2EVENT_HARDWARE | S2EVENT_SOFTWARE \
+   | S2EVENT_CONNECT | S2EVENT_DISCONNECT)
 
 
 static BOOL CmdInvalid(struct IOSana2Req *request, struct DevBase *base);
@@ -77,6 +75,12 @@ static BOOL CmdDelMulticastAddresses(struct IOSana2Req *request,
    struct DevBase *base);
 static BOOL CmdGetSignalQuality(struct IOSana2Req *request,
    struct DevBase *base);
+static BOOL CmdGetNetworks(struct IOSana2Req *request,
+   struct DevBase *base);
+static BOOL CmdSetOptions(struct IOSana2Req *request, struct DevBase *base);
+static BOOL CmdSetKey(struct IOSana2Req *request, struct DevBase *base);
+static BOOL CmdGetNetworkInfo(struct IOSana2Req *request,
+   struct DevBase *base);
 
 
 static const UWORD supported_commands[] =
@@ -103,7 +107,12 @@ static const UWORD supported_commands[] =
    NSCMD_DEVICEQUERY,
    S2_ADDMULTICASTADDRESSES,
    S2_DELMULTICASTADDRESSES,
-   P2_GETSIGNALQUALITY,
+   S2_GETSIGNALQUALITY,
+   S2_GETNETWORKS,
+   S2_SETOPTIONS,
+   S2_SETKEY,
+   S2_GETNETWORKINFO,
+//   P2_DISASSOCIATE,
    0
 };
 
@@ -240,8 +249,20 @@ VOID ServiceRequest(struct IOSana2Req *request, struct DevBase *base)
    case S2_DELMULTICASTADDRESSES:
       complete = CmdDelMulticastAddresses(request, base);
       break;
-   case P2_GETSIGNALQUALITY:
+   case S2_GETSIGNALQUALITY:
       complete = CmdGetSignalQuality(request, base);
+      break;
+   case S2_GETNETWORKS:
+      complete = CmdGetNetworks(request, base);
+      break;
+   case S2_SETOPTIONS:
+      complete = CmdSetOptions(request, base);
+      break;
+   case S2_SETKEY:
+      complete = CmdSetKey(request, base);
+      break;
+   case S2_GETNETWORKINFO:
+      complete = CmdGetNetworkInfo(request, base);
       break;
    default:
       complete = CmdInvalid(request, base);
@@ -436,6 +457,7 @@ static BOOL CmdWrite(struct IOSana2Req *request, struct DevBase *base)
 
    /* Queue request for sending */
 
+//error = 1;
    if(error == 0)
       PutRequest(unit->request_ports[WRITE_QUEUE], (APTR)request, base);
    else
@@ -618,7 +640,7 @@ static BOOL CmdConfigInterface(struct IOSana2Req *request,
 {
    struct DevUnit *unit;
    BYTE error = 0;
-   ULONG wire_error = S2WERR_UNIT_OFFLINE;
+   ULONG wire_error = S2WERR_GENERIC_ERROR;
 
    /* Configure adapter */
 
@@ -631,7 +653,6 @@ static BOOL CmdConfigInterface(struct IOSana2Req *request,
    else if((unit->flags & UNITF_HAVEADAPTER) == 0)
    {
       error = S2ERR_BAD_STATE;
-      wire_error = S2WERR_GENERIC_ERROR;
    }
 
    if(error == 0)
@@ -686,9 +707,12 @@ static BOOL CmdConfigInterface(struct IOSana2Req *request,
 static BOOL CmdBroadcast(struct IOSana2Req *request,
    struct DevBase *base)
 {
+   UWORD i;
+
    /* Fill in the broadcast address as destination */
 
-   memset(request->ios2_DstAddr, 0xff, 6);
+   for(i = 0; i < ETH_ADDRESSSIZE; i++)
+      request->ios2_DstAddr[i] = 0xff;
 
    /* Queue the write as normal */
 
@@ -1103,6 +1127,7 @@ static BOOL CmdOnEvent(struct IOSana2Req *request, struct DevBase *base)
    }
 
    /* Reply request if a wanted event has already occurred */
+//if(wanted_events & S2EVENT_CONNECT) unit->special_stats[8]++;
 
    if(events != 0)
    {
@@ -1237,7 +1262,7 @@ static BOOL CmdOnline(struct IOSana2Req *request, struct DevBase *base)
 
    /* Clear global and special stats and put adapter back online */
 
-   if((error == 0) && ((unit->flags & UNITF_ONLINE) == 0))
+   if(error == 0 && (unit->flags & UNITF_ONLINE) == 0)
    {
       unit->stats.PacketsReceived = 0;
       unit->stats.PacketsSent = 0;
@@ -1518,10 +1543,10 @@ static BOOL CmdDelMulticastAddresses(struct IOSana2Req *request,
 
 
 
-/****** prism2.device/P2_GETSIGNALQUALITY **********************************
+/****** prism2.device/S2_GETSIGNALQUALITY **********************************
 *
 *   NAME
-*	P2_GETSIGNALQUALITY -- Get signal quality statistics.
+*	S2_GETSIGNALQUALITY -- Get signal quality statistics.
 *
 *   FUNCTION
 *	This command fills in the supplied Sana2SignalQuality structure with
@@ -1549,8 +1574,7 @@ static BOOL CmdGetSignalQuality(struct IOSana2Req *request,
    unit = (APTR)request->ios2_Req.io_Unit;
    if((unit->flags & UNITF_ONLINE) != 0)
    {
-      if((unit->flags & UNITF_ONLINE) != 0)
-         UpdateSignalQuality(unit, base);
+      UpdateSignalQuality(unit, base);
       CopyMem(&unit->signal_quality, request->ios2_StatData,
          sizeof(struct Sana2SignalQuality));
    }
@@ -1560,6 +1584,210 @@ static BOOL CmdGetSignalQuality(struct IOSana2Req *request,
       request->ios2_WireError = S2WERR_UNIT_OFFLINE;
    }
 
+   /* Return */
+
+   return TRUE;
+}
+
+
+
+/****** prism2.device/S2_GETNETWORKS ***************************************
+*
+*   NAME
+*	S2_GETNETWORKS -- Scan for available networks.
+*
+*   FUNCTION
+*	This command supplies details of available networks. If the scan
+*	should be limited to one specific network, the S2INFO_SSID tag
+*	should specify its name.
+*
+*	If this command completes successfully, ios2_StatData will contain
+*	an array of pointers to tag lists, each of which contains
+*	information on a single network. The device will set ios2_DataLength
+*	to the number of elements in this array.
+*
+*	The returned taglists are allocated from the supplied memory pool.
+*	To discard the results of this command, the entire memory pool
+*	should be destroyed.
+*
+*   INPUTS
+*	ios2_Data - Pointer to an Exec memory pool.
+*	ios2_StatData - Pointer to taglist that specifies parameters to use.
+*
+*   RESULTS
+*	io_Error - Zero if successful; non-zero otherwise.
+*	ios2_WireError - More specific error code.
+*	ios2_DataLength - Number of tag lists returned.
+*	ios2_Data - Remains unchanged.
+*	ios2_StatData - Pointer to an array of tag lists.
+*
+****************************************************************************
+*
+*/
+
+static BOOL CmdGetNetworks(struct IOSana2Req *request,
+   struct DevBase *base)
+{
+   struct DevUnit *unit;
+   BOOL complete = FALSE;
+   const TEXT *ssid;
+   const struct TagItem *tag_list;
+
+   /* Request a new scan and queue request to receive results */
+
+   unit = (APTR)request->ios2_Req.io_Unit;
+   if((unit->flags & UNITF_ONLINE) != 0)
+   {
+      PutRequest(unit->request_ports[SCAN_QUEUE], (APTR)request, base);
+      tag_list = (const struct TagItem *)request->ios2_StatData;
+      ssid = (const TEXT *)GetTagData(S2INFO_SSID, (UPINT)NULL, tag_list);
+      StartScan(unit, ssid, base);
+   }
+   else
+   {
+      request->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
+      request->ios2_WireError = S2WERR_UNIT_OFFLINE;
+      complete = TRUE;
+   }
+
+   /* Return */
+
+   return complete;
+}
+
+
+
+/****** prism2.device/S2_SETOPTIONS ****************************************
+*
+*   NAME
+*	S2_SETOPTIONS -- Associate with a network.
+*
+*   FUNCTION
+*	Associate with a specified network using the parameters supplied.[?]
+*	Set various parameters for the network interface. This command
+*	should be called before going online to set any essential parameters
+*	not covered elsewhere.
+*
+*   INPUTS
+*	ios2_Data - Pointer to taglist that specifies the network and
+*	    parameters to use.
+*
+*   RESULTS
+*	io_Error - Zero if successful; non-zero otherwise.
+*	ios2_WireError - More specific error code.
+*
+****************************************************************************
+*
+*/
+
+static BOOL CmdSetOptions(struct IOSana2Req *request, struct DevBase *base)
+{
+   struct DevUnit *unit;
+
+   /*  */
+
+   unit = (APTR)request->ios2_Req.io_Unit;
+   SetOptions(unit, request->ios2_Data, base);
+#if 1
+   if((unit->flags & UNITF_ONLINE) != 0)
+//&& FindTagItem(P2OPT_Key, request->ios2_Data) == NULL)
+      ConfigureAdapter(unit, base);
+#endif
+   unit->stats.Reconfigurations++;
+
+   /* Return */
+
+   return TRUE;
+}
+
+
+
+/****** prism2.device/S2_SETKEY ********************************************
+*
+*   NAME
+*	S2_SETKEY -- Set an encryption key.
+*
+*   FUNCTION
+*
+*   INPUTS
+*	ios2_WireError - Key index.
+*	ios2_PacketType - Encryption type (e.g. S2ENC_WEP).
+*	ios2_DataLength - Key length.
+*	ios2_Data - Key.
+*	ios2_StatData - RX counter number (NULL if unused).
+*
+*   RESULTS
+*	io_Error
+*
+*   EXAMPLE
+*
+*   NOTES
+*
+*   BUGS
+*
+*   SEE ALSO
+*
+****************************************************************************
+*
+*/
+
+static BOOL CmdSetKey(struct IOSana2Req *request, struct DevBase *base)
+{
+   struct DevUnit *unit;
+
+   unit = (APTR)request->ios2_Req.io_Unit;
+   SetKey(unit, request->ios2_WireError, request->ios2_PacketType,
+      request->ios2_Data, request->ios2_DataLength, request->ios2_StatData,
+      base);
+
+   /* Return */
+
+   return TRUE;
+}
+
+
+
+/****** prism2.device/S2_GETNETWORKINFO ************************************
+*
+*   NAME
+*	S2_GETNETWORKINFO -- Get information on current network.
+*
+*   FUNCTION
+*
+*   INPUTS
+*	ios2_Data - Pointer to an Exec memory pool.
+*
+*   RESULTS
+*	ios2_Data - Remains unchanged.
+*	ios2_StatData - Pointer to a tag list.
+*	io_Error - Zero if successful; non-zero otherwise.
+*	ios2_WireError - More specific error code.
+*
+****************************************************************************
+*
+*/
+
+static BOOL CmdGetNetworkInfo(struct IOSana2Req *request,
+   struct DevBase *base)
+{
+   struct DevUnit *unit;
+   APTR pool;
+
+   /* Request information on current network */
+
+   unit = (APTR)request->ios2_Req.io_Unit;
+   pool = request->ios2_Data;
+   if((unit->flags & UNITF_ONLINE) != 0)
+   {
+      request->ios2_StatData = GetNetworkInfo(unit, pool, base);
+      if(request->ios2_StatData == NULL)
+         request->ios2_Req.io_Error = S2ERR_NO_RESOURCES;
+   }
+   else
+   {
+      request->ios2_Req.io_Error = S2ERR_OUTOFSERVICE;
+      request->ios2_WireError = S2WERR_UNIT_OFFLINE;
+   }
 
    /* Return */
 

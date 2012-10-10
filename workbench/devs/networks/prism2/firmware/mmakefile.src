@@ -1,0 +1,10 @@
+#   $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-devs-networks-prism2 : workbench-devs-networks-prism2-firmware
+
+%copy_files_q mmake=workbench-devs-networks-prism2-firmware \
+    files="HermesI HermesII" src=. dst=$(AROS_DEVS)/Firmware
+
+%common

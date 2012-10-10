@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000 Neil Cafferkey
+Copyright (C) 2005 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,26 +19,20 @@ MA 02111-1307, USA.
 
 */
 
-#include <exec/types.h>
+#ifndef OPENPCI_PROTOS_H
+#define OPENPCI_PROTOS_H
 
 
-LONG Main(VOID);
-int __main(void);
+#include "device.h"
 
+ULONG GetOpenPCICount(struct DevBase *base);
+struct BusContext *AllocOpenPCICard(ULONG index, struct DevBase *base);
+VOID FreeOpenPCICard(struct BusContext *context, struct DevBase *base);
+BOOL AddOpenPCIIntServer(APTR card, struct Interrupt *interrupt,
+   struct DevBase *base);
+VOID RemOpenPCIIntServer(APTR card, struct Interrupt *interrupt,
+   struct DevBase *base);
 
-int main(void)
-{
-   return Main();
-}
-
-
-
-#ifdef __mc68000
-int __main(void)
-{
-   return 0;
-}
 #endif
-
 
 

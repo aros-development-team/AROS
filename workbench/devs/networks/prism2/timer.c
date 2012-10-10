@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000 Neil Cafferkey
+Copyright (C) 2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,26 +19,42 @@ MA 02111-1307, USA.
 
 */
 
-#include <exec/types.h>
+
+#include <proto/timer.h>
+
+#include "device.h"
+
+#include "timer_protos.h"
 
 
-LONG Main(VOID);
-int __main(void);
+/****i* prism2.device/BusyMilliDelay ***************************************
+*
+*   NAME
+*	BusyMilliDelay - Busy-wait for specified number of milliseconds.
+*
+*   SYNOPSIS
+*	BusyMilliDelay(millis)
+*
+*	VOID BusyMilliDelay(ULONG);
+*
+****************************************************************************
+*
+*/
 
-
-int main(void)
+VOID BusyMilliDelay(ULONG millis, struct DevBase *base)
 {
-   return Main();
+   struct timeval time, end_time;
+
+   GetSysTime(&end_time);
+   time.tv_secs = 0;
+   time.tv_micro = millis * 1000;
+   AddTime(&end_time, &time);
+
+   while(CmpTime(&end_time, &time) < 0)
+      GetSysTime(&time);
+
+   return;
 }
-
-
-
-#ifdef __mc68000
-int __main(void)
-{
-   return 0;
-}
-#endif
 
 
 

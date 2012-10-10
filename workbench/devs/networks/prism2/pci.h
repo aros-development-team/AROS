@@ -1,8 +1,6 @@
 /*
 
-File: pci.h
-Author: Neil Cafferkey
-Copyright (C) 2004,2005 Neil Cafferkey
+Copyright (C) 2004-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,15 +19,19 @@ MA 02111-1307, USA.
 
 */
 
+#ifndef PCI_H
+#define PCI_H
+
 
 #include <exec/types.h>
 #include <utility/tagitem.h>
 
-
 #include "device.h"
 
 
-#define COR_VALUE 0x41
+#define COR_RESET 0x80
+#define COR_ENABLE 0x45
+#define RESET_DELAY 30
 
 
 struct BusContext
@@ -44,3 +46,4 @@ struct BusContext
 };
 
 
+#endif

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000 Neil Cafferkey
+Copyright (C) 2008 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,26 +19,26 @@ MA 02111-1307, USA.
 
 */
 
-#include <exec/types.h>
+#ifndef PLX9052_H
+#define PLX9052_H
 
 
-LONG Main(VOID);
-int __main(void);
+/* Registers */
+/* ========= */
+
+#define PLX9052_INTS 0x4c
+#define PLX9052_CNTRL 0x50
 
 
-int main(void)
-{
-   return Main();
-}
+/* Register Details */
+/* ================ */
 
+/* Control Register */
 
+#define PLX9052_CNTRLB_PCI21   14
+#define PLX9052_CNTRLB_RETRIES 19
 
-#ifdef __mc68000
-int __main(void)
-{
-   return 0;
-}
+#define PLX9052_CNTRLF_PCI21   (1 << PLX9052_CNTRLB_PCI21)
+#define PLX9052_CNTRLF_RETRIES (0xf << PLX9052_CNTRLB_RETRIES)
+
 #endif
-
-
-

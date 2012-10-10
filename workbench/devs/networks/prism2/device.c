@@ -1,8 +1,6 @@
 /*
 
-File: device.c
-Author: Neil Cafferkey
-Copyright (C) 2000-2006 Neil Cafferkey
+Copyright (C) 2000-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,7 +28,7 @@ MA 02111-1307, USA.
 #include "initializers.h"
 
 #include <proto/exec.h>
-#include <proto/alib.h>
+#include <clib/alib_protos.h>
 #include <proto/utility.h>
 
 #include "device.h"
@@ -45,6 +43,7 @@ MA 02111-1307, USA.
 
 static VOID DeleteDevice(struct DevBase *base);
 
+
 /* Return an error immediately if someone tries to run the device */
 
 LONG Main()
@@ -56,13 +55,14 @@ LONG Main()
 const TEXT device_name[] = DEVICE_NAME;
 const TEXT version_string[] =
    DEVICE_NAME " " STR(VERSION) "." STR(REVISION) " (" DATE ")\n";
-static const TEXT utility_name[] = UTILITYNAME;
+const TEXT utility_name[] = UTILITYNAME;
 static const TEXT prometheus_name[] = "prometheus.library";
 static const TEXT powerpci_name[] = "powerpci.library";
-static const TEXT pccard_name[] = "pccard.library";
-static const TEXT card_name[] = "card.resource";
-static const TEXT dos_name[] = DOSNAME;
-static const TEXT timer_name[] = TIMERNAME;
+static const TEXT cybpci_name[] = "cybpci.library";
+const TEXT pccard_name[] = "pccard.library";
+const TEXT card_name[] = "card.resource";
+const TEXT dos_name[] = DOSNAME;
+const TEXT timer_name[] = TIMERNAME;
 
 
 static const APTR vectors[] =
@@ -177,28 +177,22 @@ struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
    base->utility_base = (APTR)OpenLibrary(utility_name, UTILITY_VERSION);
    base->prometheus_base = OpenLibrary(prometheus_name, PROMETHEUS_VERSION);
    if(base->prometheus_base == NULL)
+   {
       base->powerpci_base = OpenLibrary(powerpci_name, POWERPCI_VERSION);
-#ifdef __MORPHOS__
-   base->openpci_base = OpenLibrary(openpci_name, OPENPCI_VERSION);
-#endif
+      if(base->powerpci_base == NULL)
+         base->cybpci_base = OpenLibrary(cybpci_name, CYBPCI_VERSION);
+   }
    base->pccard_base = OpenLibrary(pccard_name, PCCARD_VERSION);
    if(base->pccard_base != NULL)
       base->card_base = OpenResource(card_name);
    base->dos_base = (APTR)OpenLibrary(dos_name, DOS_VERSION);
 
-   if(base->utility_base == NULL || base->prometheus_base == NULL
-      && base->powerpci_base == NULL && base->openpci_base == NULL
-      && (base->pccard_base == NULL || base->card_base == NULL)
-      || base->dos_base == NULL)
+   if(base->utility_base == NULL || base->dos_base == NULL)
       success = FALSE;
 
    if(OpenDevice(timer_name, UNIT_VBLANK, (APTR)&base->timer_request, 0)
       != 0)
       success = FALSE;
-
-#ifdef __MORPHOS__
-   base->wrapper_int_code = (APTR)&int_trap;
-#endif
 
    if(!success)
    {
@@ -294,10 +288,10 @@ BYTE DevOpen(REG(a1, struct IOSana2Req *request),
          opener->tx_function = (APTR)GetTagData(tx_tags[i],
             (UPINT)opener->tx_function, tag_list);
 
-      opener->filter_hook = (APTR)GetTagData(S2_PacketFilter, (IPTR)NULL,
+      opener->filter_hook = (APTR)GetTagData(S2_PacketFilter, (UPINT)NULL,
          tag_list);
       opener->dma_tx_function =
-         (APTR)GetTagData(S2_DMACopyFromBuff32, (IPTR)NULL, tag_list);
+         (APTR)GetTagData(S2_DMACopyFromBuff32, (UPINT)NULL, tag_list);
 
       Disable();
       AddTail((APTR)&unit->openers, (APTR)opener);
@@ -307,7 +301,7 @@ BYTE DevOpen(REG(a1, struct IOSana2Req *request),
    /* Back out if anything went wrong */
 
    if(error != 0)
-      DevClose(request, base);
+      CloseUnit(request, base);
 
    /* Return */
 
@@ -334,48 +328,15 @@ BYTE DevOpen(REG(a1, struct IOSana2Req *request),
 APTR DevClose(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base))
 {
-   struct DevUnit *unit;
-   APTR seg_list;
-   struct Opener *opener;
+   APTR seg_list = NULL;
 
-   /* Free buffer-management resources */
+   /* Close the unit */
 
-   opener = (APTR)request->ios2_BufferManagement;
-   if(opener != NULL)
-   {
-      Disable();
-      Remove((APTR)opener);
-      Enable();
-      FreeVec(opener);
-   }
-
-   /* Delete the unit if it's no longer in use */
-
-   unit = (APTR)request->ios2_Req.io_Unit;
-   if(unit != NULL)
-   {
-      if((--unit->open_count) == 0)
-      {
-         Remove((APTR)unit);
-         switch(unit->bus)
-         {
-         case PCI_BUS:
-         case TMD_BUS:
-         case PLX_BUS:
-            DeletePCIUnit(unit, base);
-            break;
-         case PCCARD_BUS:
-            DeletePCCardUnit(unit, base);
-            break;
-         }
-      }
-   }
+   CloseUnit(request, base);
 
    /* Expunge the device if a delayed expunge is pending */
 
-   seg_list = NULL;
-
-   if((--base->device.dd_Library.lib_OpenCnt) == 0)
+   if(base->device.dd_Library.lib_OpenCnt == 0)
    {
       if((base->device.dd_Library.lib_Flags & LIBF_DELEXP) != 0)
          seg_list = DevExpunge(base);
@@ -489,8 +450,6 @@ VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
 *
 ****************************************************************************
 *
-* Disable() used instead of a semaphore because device uses interrupts.
-*
 */
 
 VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
@@ -542,6 +501,8 @@ VOID DeleteDevice(struct DevBase *base)
       CloseLibrary(base->openpci_base);
    if(base->pccard_base != NULL)
       CloseLibrary(base->pccard_base);
+   if(base->cybpci_base != NULL)
+      CloseLibrary(base->cybpci_base);
    if(base->powerpci_base != NULL)
       CloseLibrary(base->powerpci_base);
    if(base->prometheus_base != NULL)
@@ -554,6 +515,64 @@ VOID DeleteDevice(struct DevBase *base)
    neg_size = base->device.dd_Library.lib_NegSize;
    pos_size = base->device.dd_Library.lib_PosSize;
    FreeMem((UBYTE *)base - neg_size, pos_size + neg_size);
+
+   return;
+}
+
+
+
+/****i* prism2.device/CloseUnit ********************************************
+*
+*   NAME
+*	CloseUnit
+*
+*   SYNOPSIS
+*	CloseUnit(request)
+*
+*	VOID CloseUnit(struct IOSana2Req *);
+*
+****************************************************************************
+*
+*/
+
+VOID CloseUnit(struct IOSana2Req *request, struct DevBase *base)
+{
+   struct DevUnit *unit;
+   struct Opener *opener;
+
+   /* Decrement device usage count and free buffer-management resources */
+
+   base->device.dd_Library.lib_OpenCnt--;
+   opener = (APTR)request->ios2_BufferManagement;
+   if(opener != NULL)
+   {
+      Disable();
+      Remove((APTR)opener);
+      Enable();
+      FreeVec(opener);
+   }
+
+   /* Delete the unit if it's no longer in use */
+
+   unit = (APTR)request->ios2_Req.io_Unit;
+   if(unit != NULL)
+   {
+      if((--unit->open_count) == 0)
+      {
+         Remove((APTR)unit);
+         switch(unit->bus)
+         {
+         case PCI_BUS:
+         case TMD_BUS:
+         case PLX_BUS:
+            DeletePCIUnit(unit, base);
+            break;
+         case PCCARD_BUS:
+            DeletePCCardUnit(unit, base);
+            break;
+         }
+      }
+   }
 
    return;
 }
@@ -577,8 +596,7 @@ VOID DeleteDevice(struct DevBase *base)
 struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
 {
    struct DevUnit *unit;
-   ULONG pci_limit;
-   ULONG pccard_limit;
+   ULONG pci_limit, pccard_limit;
 
    pci_limit = GetPCICount(base);
    pccard_limit = pci_limit + GetPCCardCount(base);
@@ -592,6 +610,8 @@ struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
 
    return unit;
 }
+
+
 
 /****i* prism2.device/WrapInt **********************************************
 *
@@ -623,6 +643,8 @@ BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base)
 
    return success;
 }
+
+
 
 /****i* prism2.device/UnwrapInt ********************************************
 *
@@ -692,3 +714,6 @@ VOID UnwrapCardInt(struct Interrupt *interrupt, struct DevBase *base)
 
    return;
 }
+
+
+
