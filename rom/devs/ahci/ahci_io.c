@@ -204,7 +204,7 @@ AROS_LH1(void, BeginIO,
     io->io_Message.mn_Node.ln_Type = NT_MESSAGE;
     io->io_Error = 0;
 
-    D(bug("[AHCI%02ld] BeginIO: Start, io_Flags = %d, io_Command = %d\n", 0, io->io_Flags, io->io_Command));
+    D(bug("[AHCI%02ld] IO %p Start, io_Flags = %d, io_Command = %d\n", unit->sim_Unit, io, io->io_Flags, io->io_Command));
 
     /* Unit going offline? Don't permit new commands. */
     if (unit->sim_Flags & SIMF_OffLine) {
@@ -216,9 +216,7 @@ AROS_LH1(void, BeginIO,
 
     ObtainSemaphore(&unit->sim_Lock);
 
-    Forbid();
     AddHead(&unit->sim_IOs, &io->io_Message.mn_Node);
-    Permit();
 
     switch (io->io_Command) {
     case NSCMD_DEVICEQUERY:
@@ -354,11 +352,10 @@ bad_address:
     }
 
     /* The IO is finished, so no need to keep it around anymore */
-    if (done) {
-        Forbid();
+    if (done)
         Remove(&io->io_Message.mn_Node);
-        Permit();
-    }
+    else
+        io->io_Flags &= ~IOF_QUICK;
         
     ReleaseSemaphore(&unit->sim_Lock);
 
@@ -366,7 +363,9 @@ bad_address:
     if (done && !(io->io_Flags & IOF_QUICK))
         ReplyMsg(&io->io_Message);
 
-    D(bug("[AHCI%02ld] BeginIO: Done, io_Flags = %d, io_Error = %d\n", unit->sim_Unit, io->io_Flags, io->io_Error));
+    if (done)
+        D(bug("[AHCI%02ld] IO %p Quick, io_Flags = %d, io_Error = %d\n", unit->sim_Unit, io, io->io_Flags, io->io_Error));
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -376,7 +375,7 @@ AROS_LH1(LONG, AbortIO,
 {
     AROS_LIBFUNC_INIT
 
-    /* Cannot Abort IO */
+    /* Aborting IOs is not (yet) supported */
     return 0;
 
     AROS_LIBFUNC_EXIT

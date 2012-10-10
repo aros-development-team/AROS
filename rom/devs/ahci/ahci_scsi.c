@@ -191,6 +191,7 @@ static void ahci_io_complete(struct ata_xfer *xa)
 {
     struct IORequest *io = xa->atascsi_private;
     const int sense_length = offsetof(struct scsi_sense_data, extra_bytes[0]);
+    struct cam_sim *unit = (struct cam_sim *)io->io_Unit;
 
     switch (xa->state) {
     case ATA_S_COMPLETE:
@@ -243,12 +244,15 @@ static void ahci_io_complete(struct ata_xfer *xa)
     }
 
     ahci_ata_put_xfer(xa);
-    if (!(io->io_Flags & IOF_QUICK)) {
-        Forbid();
-        Remove(&io->io_Message.mn_Node);
-        Permit();
-        ReplyMsg(&io->io_Message);
-    }
+
+    ObtainSemaphore(&unit->sim_Lock);
+    Remove(&io->io_Message.mn_Node);
+    ReleaseSemaphore(&unit->sim_Lock);
+
+    assert(!(io->io_Flags & IOF_QUICK));
+
+    D(bug("[AHCI%02ld] IO %p Final, io_Flags = %d, io_Error = %d\n", unit->sim_Unit, io, io->io_Flags, io->io_Error));
+    ReplyMsg(&io->io_Message);
 }
 
 
@@ -495,8 +499,7 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
          */
         if (at->at_ncqdepth > 1 &&
             ap->ap_type == ATA_PORT_T_DISK &&
-            (ap->ap_sc->sc_cap & AHCI_REG_CAP_SNCQ) &&
-            (io->io_Flags & IOF_QUICK) == 0) {
+            (ap->ap_sc->sc_cap & AHCI_REG_CAP_SNCQ)) {
             /*
              * Use NCQ - always uses 48 bit addressing
              */
@@ -540,8 +543,6 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
         if (xa->timeout > 10000)    /* XXX - debug */
             xa->timeout = 10000;
 #endif
-        if (io->io_Flags & IOF_QUICK)
-            xa->flags |= ATA_F_POLL;
         break;
     }
 
@@ -635,9 +636,6 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
     xa->datalen = scsi->scsi_Length;
     xa->timeout = 1000;    /* milliseconds */
 
-    if (io->io_Flags & IOF_QUICK)
-        xa->flags |= ATA_F_POLL;
-
     /*
      * Copy the cdb to the packetcmd buffer in the FIS using a
      * convenient pointer in the xa.
@@ -716,6 +714,6 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
     ahci_ata_cmd(xa);
     ahci_os_unlock_port(ap);
 
-    return (io->io_Flags & IOF_QUICK) ? TRUE : FALSE;
+    return FALSE;
 }
 
