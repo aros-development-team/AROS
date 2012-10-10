@@ -240,7 +240,7 @@ AROS_INTH1(ahci_Interrupt, void **, fa)
 /* IRQ management */
 int bus_setup_intr(device_t dev, struct resource *r, int flags, driver_intr_t func, void *arg, void **cookiep, void *serializer)
 {
-    struct Interrupt *handler = AllocVec(sizeof(struct Interrupt)+sizeof(void *)*2, MEMF_PUBLIC);
+    struct Interrupt *handler = AllocVec(sizeof(struct Interrupt)+sizeof(void *)*2, MEMF_PUBLIC | MEMF_CLEAR);
     void **fa;
     
     if (handler == NULL)
