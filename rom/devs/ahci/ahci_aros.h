@@ -226,6 +226,8 @@ typedef struct {
 } bus_dma_segment_t;
 
 typedef struct {
+    bus_size_t dt_alignment;
+    bus_size_t dt_maxsize;
     bus_size_t dt_size;
 } *bus_dma_tag_t;
 
@@ -239,11 +241,14 @@ typedef int bus_dma_filter_t(void *arg, bus_addr_t paddr);
 
 static inline int bus_dma_tag_create(bus_dma_tag_t parent, bus_size_t alignment, bus_size_t boundary, bus_addr_t lowaddr, bus_addr_t highaddr, bus_dma_filter_t *filter, void *filterarg, bus_size_t maxsize, int nsegments, bus_size_t maxsegsz, int flags, bus_dma_tag_t *dmat)
 {
+    D(bug("%s: Allocating tag, %d objects of size %d, aligned by %d\n", __func__, nsegments, maxsegsz, alignment));
     *dmat = AllocVec(sizeof(**dmat), MEMF_ANY);
     if (*dmat == NULL)
         return -ENOMEM;
 
-    (*dmat)->dt_size = maxsize;
+    (*dmat)->dt_alignment = alignment;
+    (*dmat)->dt_maxsize = maxsize;
+    (*dmat)->dt_size = maxsegsz;
     return 0;
 }
 
@@ -256,13 +261,21 @@ static inline int bus_dma_tag_destroy(bus_dma_tag_t tag)
 #define BUS_DMA_ALLOCNOW (1 << 0)
 #define BUS_DMA_ZERO     (1 << 1)
 
+struct bus_chunk {
+    ULONG negoffset;
+};
+
 static inline int bus_dmamem_alloc(bus_dma_tag_t tag, void **vaddr, unsigned flags, bus_dmamap_t *map)
 {
-    /* FIXME: Allocate DMAable memory */
-    void *addr = AllocMem(tag->dt_size, MEMF_ANY);
-    if (addr == NULL)
+    struct bus_chunk *addr;
+    void *mem = AllocVec(sizeof(struct bus_chunk) + tag->dt_size + tag->dt_alignment, MEMF_ANY);
+    if (mem == NULL)
         return -ENOMEM;
 
+    addr = (struct bus_chunk *)(((IPTR)mem + sizeof(struct bus_chunk) + tag->dt_alignment - 1) & ~(tag->dt_alignment-1));
+    addr[-1].negoffset = ((IPTR)addr - (IPTR)mem);
+
+    D(bug("%s: Allocated %p: size %d, real start %p\n", __func__, addr, tag->dt_size, mem));
     if (vaddr)
         *vaddr = addr;
 
@@ -272,12 +285,14 @@ static inline int bus_dmamem_alloc(bus_dma_tag_t tag, void **vaddr, unsigned fla
 
 static inline bus_size_t bus_dma_tag_getmaxsize(bus_dma_tag_t tag)
 {
-    return tag->dt_size;
+    return tag->dt_maxsize;
 }
 
 static inline void bus_dmamem_free(bus_dma_tag_t tag, void *vaddr, bus_dmamap_t map)
 {
-    FreeMem(map, tag->dt_size);
+    struct bus_chunk *mem = (void *)map;
+    D(bug("%s: Free %p: size %d, real start %p\n", __func__, map, tag->dt_size, (APTR)((IPTR)mem - mem[-1].negoffset)));
+    FreeVec((APTR)((IPTR)mem - mem[-1].negoffset));
 }
 
 static inline int bus_dmamap_create(bus_dma_tag_t tag, unsigned flags, bus_dmamap_t *map)
