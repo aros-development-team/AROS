@@ -373,6 +373,16 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
             rdata->inquiry_data.version = SCSI_REV_SPC2;
             rdata->inquiry_data.response_format = 2;
             rdata->inquiry_data.additional_length = 32;
+
+            /* 
+             * Use the vendor specific area to set the TRIM status
+             */
+            if (at->at_identify.support_dsm) {
+                rdata->inquiry_data.vendor_specific[0] =
+                    at->at_identify.support_dsm &ATA_SUPPORT_DSM_TRIM;
+                rdata->inquiry_data.vendor_specific[1] =
+                    at->at_identify.max_dsm_blocks;
+            }
             CopyMem("SATA    ", rdata->inquiry_data.vendor, 8);
             CopyMem(at->at_identify.model,
                   rdata->inquiry_data.product,

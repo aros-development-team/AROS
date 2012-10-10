@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
+#include <assert.h>
 
 #include <sys/types.h>
 #include <sys/select.h>
@@ -57,7 +58,7 @@ typedef struct {
 
 /* Kernel stuff */
 
-#define KKASSERT(expr)  do { if (expr); } while (0)
+#define KKASSERT(expr)  assert(expr)
 
 int kvsnrprintf(char *str, size_t size, int radix, const char *format, va_list ap);
 int kvsnprintf(char *str, size_t size, const char *format, va_list ap);
@@ -505,9 +506,13 @@ struct callout {
     struct Task *co_Task;
 };
 
+void callout_init_mp(struct callout *c);
+
 void callout_init(struct callout *c);
 
 void callout_stop(struct callout *c);
+
+void callout_stop_sync(struct callout *c);
 
 int callout_reset(struct callout *c, unsigned int ticks, void (*func)(void *), void *arg);
 

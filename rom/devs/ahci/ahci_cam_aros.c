@@ -328,8 +328,8 @@ void ahci_cam_detach(struct ahci_port *ap)
 /*
  * The state of the port has changed.
  *
- * If at is NULL the physical port has changed state.
- * If at is non-NULL a particular target behind a PM has changed state.
+ * If atx is NULL the physical port has changed state.
+ * If atx is non-NULL a particular target behind a PM has changed state.
  *
  * If found is -1 the target state must be queued to a non-interrupt context.
  * (only works with at == NULL).
