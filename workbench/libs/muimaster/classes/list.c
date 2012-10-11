@@ -2082,7 +2082,7 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
         if (data->entries_active != -1)
             pos = data->entries_active;
         else
-            pos = data->entries_num;
+            pos = 0;
         break;
 
     case MUIV_List_Insert_Sorted:
