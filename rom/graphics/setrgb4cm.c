@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function SetRGB4CM()
@@ -63,12 +63,12 @@
 	/* Preserve the highest nibble. Needed for interoperability
 	   with m68k graphics.library. Exact purpose is currently
 	   unknown - sonic */
-        UWORD a = ((UWORD *)cm->ColorTable)[n] & 0xF000;
+        UWORD a = cm->ColorTable[n] & 0xF000;
 
-        ((UWORD *)cm->ColorTable)[n]   = a | (r << 16) | (g <<  8) | b;
+        cm->ColorTable[n] = a | (r << 8) | (g <<  4) | b;
 
         if (cm->Type > COLORMAP_TYPE_V1_2)
-            ((UWORD *)cm->LowColorBits)[n] = 0;
+            cm->LowColorBits[n] = 0;
     }
 
     AROS_LIBFUNC_EXIT
