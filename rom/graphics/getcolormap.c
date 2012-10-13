@@ -1,14 +1,14 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetColorMap()
     Lang: english
 */
-#include "exec/memory.h"
-#include "exec/types.h"
-#include "proto/exec.h"
-#include "graphics/view.h"
+#include <exec/memory.h>
+#include <exec/types.h>
+#include <proto/exec.h>
+#include <graphics/view.h>
 #include "graphics_intern.h"
 
 /*****************************************************************************
@@ -75,7 +75,7 @@
 	/* get memory for the ColorTable */
 	NewCM -> ColorTable = AllocMem(entries * sizeof(UWORD), MEMF_CLEAR|MEMF_PUBLIC);
 
-	/* get memory for LowColorbits !!!how much memory we need for that?? */
+	/* get memory for LowColorBits */
 	NewCM -> LowColorBits = AllocMem(entries * sizeof(UWORD), MEMF_CLEAR|MEMF_PUBLIC);
 
 	ptr1 = NewCM -> ColorTable;
