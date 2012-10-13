@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO include file
@@ -24,6 +24,7 @@
 
 /* Android is not a real Linux :-) */
 #ifdef HOST_OS_android
+#define __off_t off_t
 #undef HOST_OS_linux
 #endif
 
@@ -32,6 +33,7 @@
 #endif
 
 #ifdef HOST_OS_darwin
+#define __off_t off_t
 #define LIBC_NAME "libSystem.dylib"
 #endif
 
@@ -66,7 +68,7 @@ struct unixio_base
     struct UnixIOBase	   uio_Public;		/* Public portion				*/
     OOP_AttrBase	   UnixIOAB;		/* Our attribute base	    			*/
     OOP_Class		  *uio_unixioclass;	/* Our class		    			*/
-    OOP_Object		  *obj;			/* Our singletone	    			*/
+    OOP_Object		  *obj;			/* Our singleton	    			*/
     APTR		   irqHandle;		/* SIGIO IRQ handle	    			*/
     APTR		   KernelBase;		/* Resource bases	    			*/
     APTR		   HostLibBase;
@@ -74,7 +76,7 @@ struct unixio_base
     struct LibCInterface  *SysIFace;		/* Our libc interface				*/
     pid_t		   aros_PID;		/* PID of AROS process (for F_SETOWN fcntl)	*/
     struct MinList	   intList;		/* User's interrupts list			*/
-    struct SignalSemaphore lock;		/* Singletone creation lock			*/
+    struct SignalSemaphore lock;		/* Singleton creation lock			*/
 };
 
 #define UD(cl) ((struct unixio_base *)cl->UserData)
