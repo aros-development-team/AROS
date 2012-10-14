@@ -392,9 +392,9 @@ $(TMP_TARGETBASE).o : %(basename).cpp
 
 ifeq (%(dflags),)
   ifeq (%(nix),yes)
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(cflags)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix $(TMP_CXXFLAGS)
   else
-    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(cflags)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(TMP_CXXFLAGS)
   endif
 else
   ifeq (%(nix),yes)
@@ -561,7 +561,7 @@ $(TMP_TARGETS) : $(TMP_WILDCARD).o : %.cpp
 	%compile_q cmd=$(CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
 ifeq (%(dflags),)
-$(TMP_DTARGETS) : DFLAGS:=%(cflags)
+$(TMP_DTARGETS) : DFLAGS:=$(TMP_CXXFLAGS)
 else
 $(TMP_DTARGETS) : DFLAGS:=%(dflags)
 endif
