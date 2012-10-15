@@ -276,7 +276,7 @@ ahci_pci_attach(device_t dev)
 	error += bus_dma_tag_create(
 			NULL,				/* parent tag */
 			32,				/* alignment */
-			4096 * 1024,			/* boundary */
+			1024,				/* boundary */
 			addr,				/* loaddr? */
 			BUS_SPACE_MAXADDR,		/* hiaddr */
 			NULL,				/* filter */
@@ -293,7 +293,7 @@ ahci_pci_attach(device_t dev)
 	error += bus_dma_tag_create(
 			NULL,				/* parent tag */
 			sizeof(struct ahci_cmd_table),	/* alignment */
-			4096 * 1024,			/* boundary */
+			1024,				/* boundary */
 			addr,				/* loaddr? */
 			BUS_SPACE_MAXADDR,		/* hiaddr */
 			NULL,				/* filter */
