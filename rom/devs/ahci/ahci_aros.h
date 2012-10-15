@@ -225,11 +225,11 @@ typedef struct {
     bus_size_t ds_len;
 } bus_dma_segment_t;
 
-typedef struct {
-    bus_size_t dt_alignment;
-    bus_size_t dt_maxsize;
-    bus_size_t dt_size;
-} *bus_dma_tag_t;
+struct bus_dma_tag;
+typedef struct bus_dma_tag *bus_dma_tag_t;
+
+#define BUS_DMA_MAX_SLABS       16
+#define BUS_DMA_MAX_SEGMENTS    64
 
 typedef IPTR bus_space_tag_t;
 typedef APTR bus_dmamap_t;
@@ -239,97 +239,38 @@ typedef int bus_dma_filter_t(void *arg, bus_addr_t paddr);
 #define BUS_SPACE_MAXADDR       ~0
 #define BUS_SPACE_MAXADDR_32BIT ((ULONG)~0)
 
-static inline int bus_dma_tag_create(bus_dma_tag_t parent, bus_size_t alignment, bus_size_t boundary, bus_addr_t lowaddr, bus_addr_t highaddr, bus_dma_filter_t *filter, void *filterarg, bus_size_t maxsize, int nsegments, bus_size_t maxsegsz, int flags, bus_dma_tag_t *dmat)
-{
-    D(bug("%s: Allocating tag, %d objects of size %d, aligned by %d\n", __func__, nsegments, maxsegsz, alignment));
-    *dmat = AllocVec(sizeof(**dmat), MEMF_ANY);
-    if (*dmat == NULL)
-        return -ENOMEM;
+int bus_dma_tag_create(bus_dma_tag_t parent, bus_size_t alignment, bus_size_t boundary, bus_addr_t lowaddr, bus_addr_t highaddr, bus_dma_filter_t *filter, void *filterarg, bus_size_t maxsize, int nsegments, bus_size_t maxsegsz, int flags, bus_dma_tag_t *dmat);
 
-    (*dmat)->dt_alignment = alignment;
-    (*dmat)->dt_maxsize = maxsize;
-    (*dmat)->dt_size = maxsegsz;
-    return 0;
-}
+int bus_dma_tag_destroy(bus_dma_tag_t tag);
 
-static inline int bus_dma_tag_destroy(bus_dma_tag_t tag)
-{
-    FreeVec(tag);
-    return 0;
-}
+#define BUS_DMA_ALLOCNOW 0
+#define BUS_DMA_ZERO     MEMF_CLEAR
 
-#define BUS_DMA_ALLOCNOW (1 << 0)
-#define BUS_DMA_ZERO     (1 << 1)
+int bus_dmamem_alloc(bus_dma_tag_t tag, void **vaddr, unsigned flags, bus_dmamap_t *map);
 
-struct bus_chunk {
-    ULONG negoffset;
-};
+bus_size_t bus_dma_tag_getmaxsize(bus_dma_tag_t tag);
 
-static inline int bus_dmamem_alloc(bus_dma_tag_t tag, void **vaddr, unsigned flags, bus_dmamap_t *map)
-{
-    struct bus_chunk *addr;
-    void *mem = AllocVec(sizeof(struct bus_chunk) + tag->dt_size + tag->dt_alignment, MEMF_ANY);
-    if (mem == NULL)
-        return -ENOMEM;
+void bus_dmamem_free(bus_dma_tag_t tag, void *vaddr, bus_dmamap_t map);
 
-    addr = (struct bus_chunk *)(((IPTR)mem + sizeof(struct bus_chunk) + tag->dt_alignment - 1) & ~(tag->dt_alignment-1));
-    addr[-1].negoffset = ((IPTR)addr - (IPTR)mem);
+int bus_dmamap_create(bus_dma_tag_t tag, unsigned flags, bus_dmamap_t *map);
 
-    D(bug("%s: Allocated %p: size %d, real start %p\n", __func__, addr, tag->dt_size, mem));
-    if (vaddr)
-        *vaddr = addr;
-
-    *map = addr;
-    return 0;
-}
-
-static inline bus_size_t bus_dma_tag_getmaxsize(bus_dma_tag_t tag)
-{
-    return tag->dt_maxsize;
-}
-
-static inline void bus_dmamem_free(bus_dma_tag_t tag, void *vaddr, bus_dmamap_t map)
-{
-    struct bus_chunk *mem = (void *)map;
-    D(bug("%s: Free %p: size %d, real start %p\n", __func__, map, tag->dt_size, (APTR)((IPTR)mem - mem[-1].negoffset)));
-    FreeVec((APTR)((IPTR)mem - mem[-1].negoffset));
-}
-
-static inline int bus_dmamap_create(bus_dma_tag_t tag, unsigned flags, bus_dmamap_t *map)
-{
-    bus_dmamem_alloc(tag, NULL, 0, map);
-    return 0;
-}
-
-static inline void bus_dmamap_destroy(bus_dma_tag_t tag, bus_dmamap_t map)
-{
-    bus_dmamem_free(tag, NULL, map);
-}
+void bus_dmamap_destroy(bus_dma_tag_t tag, bus_dmamap_t map);
 
 typedef void bus_dmamap_callback_t(void *info, bus_dma_segment_t *segs, int nsegs, int error);
 
 #define BUS_DMA_NOWAIT  0
 #define BUS_DMA_WAITOK  0
-#define BUS_DMASYNC_POSTREAD 0
-#define BUS_DMASYNC_POSTWRITE 0
 
-static inline int bus_dmamap_load(bus_dma_tag_t tag, bus_dmamap_t map, void *data, size_t len, bus_dmamap_callback_t *callback, void *info, unsigned flags)
-{
-    bus_dma_segment_t seg = { .ds_addr = (bus_addr_t)data, .ds_len = (bus_size_t)len };
-    callback(info, &seg, 1, 0);
-    return 0;
-}
+int bus_dmamap_load(bus_dma_tag_t tag, bus_dmamap_t map, void *data, size_t len, bus_dmamap_callback_t *callback, void *info, unsigned flags);
 
 #define BUS_DMASYNC_PREREAD     0
-#define BUS_DMASYNC_PREWRITE    0
+#define BUS_DMASYNC_PREWRITE    DMA_ReadFromRAM
+#define BUS_DMASYNC_POSTREAD    (1 << 31)
+#define BUS_DMASYNC_POSTWRITE   (1 << 31) | DMA_ReadFromRAM
 
-static inline void bus_dmamap_sync(bus_dma_tag_t tag, bus_dmamap_t map, unsigned flags)
-{
-}
+void bus_dmamap_sync(bus_dma_tag_t tag, bus_dmamap_t map, unsigned flags);
 
-static inline void bus_dmamap_unload(bus_dma_tag_t tag, bus_dmamap_t map)
-{
-}
+void bus_dmamap_unload(bus_dma_tag_t tag, bus_dmamap_t map);
 
 /* Generic bus operations */
 enum bus_resource_t {
@@ -348,66 +289,9 @@ struct resource {
 #define RF_SHAREABLE    (1 << 0)
 #define RF_ACTIVE       (1 << 1)
 
-static inline struct resource *bus_alloc_resource_any(device_t dev, enum bus_resource_t type, int *rid, u_int flags)
-{
-    struct resource *resource;
-    IPTR INTLine;
-    OOP_AttrBase HiddPCIDeviceAttrBase = dev->dev_AHCIBase->ahci_HiddPCIDeviceAttrBase;
+struct resource *bus_alloc_resource_any(device_t dev, enum bus_resource_t type, int *rid, u_int flags);
 
-    resource = AllocPooled(dev->dev_AHCIBase->ahci_MemPool, sizeof(*resource));
-    if (!resource)
-        return NULL;
-
-    switch (type) {
-    case SYS_RES_IRQ:
-        OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_INTLine, &INTLine);
-        resource->res_tag = INTLine;
-        break;
-    case SYS_RES_MEMORY:
-        resource->res_tag = pci_read_config(dev, *rid, 4);
-        break;
-    }
-
-    if (type == SYS_RES_MEMORY && (*rid) >= PCIR_BAR(0) && (*rid) < PCIR_BAR(6)) {
-        struct pHidd_PCIDriver_MapPCI map;
-        IPTR hba_size;
-        OOP_Object *Driver;
-
-        OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Driver, (IPTR *)&Driver);
-        OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Size0 + (((*rid) - PCIR_BAR(0))/4)*3, &hba_size);
-        resource->res_size = hba_size;
-
-        map.mID = dev->dev_AHCIBase->ahci_HiddPCIDriverMethodBase + moHidd_PCIDriver_MapPCI;
-        map.PCIAddress = (APTR)resource->res_tag;
-        map.Length = resource->res_size;
-        resource->res_handle = OOP_DoMethod(Driver, (OOP_Msg)&map);
-    } else {
-        /* FIXME: Map IRQ? */
-        resource->res_handle = resource->res_tag;
-        resource->res_size = 1;
-    }
-
-    return resource;
-}
-
-static inline int bus_release_resource(device_t dev, enum bus_resource_t type, int rid, struct resource *res)
-{
-    OOP_AttrBase HiddPCIDeviceAttrBase = dev->dev_AHCIBase->ahci_HiddPCIDeviceAttrBase;
-
-    if (type == SYS_RES_MEMORY && rid > PCIR_BAR(0) && rid < PCIR_BAR(6)) {
-        struct pHidd_PCIDriver_UnmapPCI unmap;
-        OOP_Object *Driver;
-
-        OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Driver, (IPTR *)&Driver);
-        unmap.mID = dev->dev_AHCIBase->ahci_HiddPCIDriverMethodBase + moHidd_PCIDriver_UnmapPCI;
-        unmap.CPUAddress = (APTR)res->res_handle;
-        unmap.Length = res->res_size;
-        OOP_DoMethod(Driver, (OOP_Msg)&unmap);
-    }
-    FreePooled(dev->dev_AHCIBase->ahci_MemPool, res, sizeof(*res));
-    return 0;
-}
-
+int bus_release_resource(device_t dev, enum bus_resource_t type, int rid, struct resource *res);
 
 static inline bus_space_tag_t rman_get_bustag(struct resource *r)
 {

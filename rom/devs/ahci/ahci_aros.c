@@ -223,47 +223,4 @@ void ahci_os_unlock_port(struct ahci_port *ap)
 	lockmgr(&ap->ap_lock, LK_RELEASE);
 }
 
-AROS_INTH1(ahci_Interrupt, void **, fa)
-{
-    AROS_INTFUNC_INIT
 
-    driver_intr_t *func = fa[0];
-    void *arg =  fa[1];
-
-    func(arg);
-
-    return FALSE;
-
-    AROS_INTFUNC_EXIT
-}
-
-/* IRQ management */
-int bus_setup_intr(device_t dev, struct resource *r, int flags, driver_intr_t func, void *arg, void **cookiep, void *serializer)
-{
-    struct Interrupt *handler = AllocVec(sizeof(struct Interrupt)+sizeof(void *)*2, MEMF_PUBLIC | MEMF_CLEAR);
-    void **fa;
-    
-    if (handler == NULL)
-        return ENOMEM;
-
-    handler->is_Node.ln_Pri = 10;
-    handler->is_Node.ln_Name = device_get_name(dev);
-    handler->is_Code = (VOID_FUNC)ahci_Interrupt;
-    fa = (void **)&handler[1];
-    fa[0] = func;
-    fa[1] = arg;
-    handler->is_Data = fa;
-
-    AddIntServer(INTB_KERNEL + r->res_tag, handler);
-    *cookiep = handler;
-    
-    return 0;
-}
-
-int bus_teardown_intr(device_t dev, struct resource *r, void *cookie)
-{
-    RemIntServer(INTB_KERNEL + r->res_tag, (struct Interrupt *)cookie);
-    FreeVec(cookie);
-
-    return 0;
-}

@@ -6,6 +6,7 @@ FILES = ahci_init \
         ahci_scsi \
         ahci_cam_aros \
         ahci_aros \
+        ahci_aros_bus \
         ahci \
         ahci_attach \
         ahci_pm \
