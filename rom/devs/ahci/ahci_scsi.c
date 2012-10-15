@@ -581,6 +581,7 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
     struct ata_fis_h2d *fis;
     scsi_cdb_t cdbs;
     scsi_cdb_t cdbd;
+    uint32_t offset, len;
     int flags;
 
     if (scsi->scsi_Flags & SCSIF_READ) {
@@ -611,6 +612,10 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
      * XXX not passing NULL at for direct attach!
      */
     xa = ahci_ata_get_xfer(ap, at);
+    if (xa == NULL) {
+        io->io_Error = IOERR_UNITBUSY;
+        return TRUE;
+    }
     fis = xa->fis;
 
     fis->flags = ATA_H2D_FLAGS_CMD | at->at_target;
@@ -686,20 +691,26 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
         break;
     case SCSI_DA_READ_6:
     case SCSI_DA_WRITE_6:
+        offset = (cdbd->rw_6.addr[0] << 16) |
+                 (cdbd->rw_6.addr[1] << 8) |
+                 (cdbd->rw_6.addr[2]);
+        len    = cdbd->rw_6.length;
         /*
          * Convert *_6 to *_10 commands.  Most ATAPI devices
          * cannot handle the SCSI READ_6 and WRITE_6 commands.
          */
         cdbd->rw_10.opcode |= 0x20;
-        cdbd->rw_10.byte2 = 0;
-        cdbd->rw_10.addr[0] = 0;
-        cdbd->rw_10.addr[1] = cdbs->rw_6.addr[0] & 0x1F;
-        cdbd->rw_10.addr[2] = cdbs->rw_6.addr[1];
-        cdbd->rw_10.addr[3] = cdbs->rw_6.addr[2];
-        cdbd->rw_10.reserved = 0;
-        cdbd->rw_10.length[0] = 0;
-        cdbd->rw_10.length[1] = cdbs->rw_6.length;
         cdbd->rw_10.control = cdbs->rw_6.control;
+        cdbd->rw_10.byte2 = 0;
+        cdbd->rw_10.reserved = 0;
+
+        cdbd->rw_10.addr[0] = (offset >> 24) & 0xff;
+        cdbd->rw_10.addr[1] = (offset >> 16) & 0xff;
+        cdbd->rw_10.addr[2] = (offset >>  8) & 0xff;
+        cdbd->rw_10.addr[3] = (offset >>  0) & 0xff;
+
+        cdbd->rw_10.length[0] = (len >> 8) & 0xff;
+        cdbd->rw_10.length[1] = (len >> 0) & 0xff;
         break;
     default:
         break;
