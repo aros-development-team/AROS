@@ -552,6 +552,7 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
      * Otherwise the request was completed.
      */
     if (!done) {
+        io->io_Flags &= ~IOF_QUICK;
         KKASSERT(xa->complete != NULL);
         xa->atascsi_private = io;
         ahci_os_lock_port(ap);
@@ -595,7 +596,8 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
      * still allowing the chip to run commands in parallel to
      * ATAPI devices behind a PM.
      */
-    flags |= ATA_F_AUTOSENSE;
+    if (scsi->scsi_Flags & (SCSIF_AUTOSENSE | SCSIF_OLDAUTOSENSE))
+        flags |= ATA_F_AUTOSENSE;
 
     /*
      * The command has to fit in the packet command buffer.
@@ -719,6 +721,7 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
     /*
      * And dispatch
      */
+    io->io_Flags &= ~IOF_QUICK;
     xa->complete = ahci_io_complete;
     xa->atascsi_private = io;
     ahci_os_lock_port(ap);
