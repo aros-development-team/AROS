@@ -445,7 +445,7 @@ nomem:
 	if (ap->ap_sc->sc_cap & AHCI_REG_CAP_SSNTF)
 		data |= AHCI_PREG_IE_IPME;
 #ifdef AHCI_COALESCE
-	if (sc->sc_ccc_ports & (1 << port)
+	if (sc->sc_ccc_ports & (1 << port))
 		data &= ~(AHCI_PREG_IE_SDBE | AHCI_PREG_IE_DHRE);
 #endif
 	ap->ap_intmask = data;

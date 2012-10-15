@@ -399,7 +399,7 @@ ahci_pci_attach(device_t dev)
 		sc->sc_ccc_mask = 1 << AHCI_REG_CCC_CTL_INT(ccc_ctl);
 		if (pi & sc->sc_ccc_mask) {
 			/* A conflict with the implemented port list? */
-			printf("%s: coalescing interrupt/implemented port list "
+			kprintf("%s: coalescing interrupt/implemented port list "
 			    "conflict, PI: %08x, ccc_mask: %08x\n",
 			    DEVNAME(sc), pi, sc->sc_ccc_mask);
 			sc->sc_ccc_mask = 0;
