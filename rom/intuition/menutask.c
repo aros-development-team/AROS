@@ -170,7 +170,7 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
                 mhd->scrmousex          = mhd->scr->MouseX;
                 mhd->scrmousey          = mhd->scr->MouseY;
                 mhd->firstmenupick      = MENUNULL;
-        mhd->keepmenuup         = TRUE;
+                mhd->keepmenuup         = TRUE;
                 mhd->TrueColor          = GetBitMapAttr(&mhd->scr->BitMap, BMA_DEPTH) > 8 ? TRUE: FALSE;
 
                 /* close windows in the back first because
@@ -191,6 +191,8 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
                     switch(msg->ie.ie_Class)
                     {
                         case IECLASS_RAWMOUSE:
+                        /* at least AmigaOS 3.1 also reacts on IECLASS_NEWPOINTERPOS messages: */
+                        case IECLASS_NEWPOINTERPOS:
                             if (msg->ie.ie_Code == IECODE_NOBUTTON)
                             {   
                                 HandleMouseMove(mhd, IntuitionBase);
