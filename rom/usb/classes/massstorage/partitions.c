@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Find and mount partitions.
@@ -271,9 +271,8 @@ static VOID AddPartitionVolume(struct NepClassMS *ncm,
                     }
                     AROS_BSTR_setstrlen(devnode->dn_Handler, i);
                     AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, ADNF_STARTPROC, devnode, NULL);
-                    D(bug("[Boot] AddBootNode(%s,0x%lx,'%s')\n",
-                        devnode->dn_Ext.dn_AROS.dn_DevName,
-                        pp[4 + DE_DOSTYPE], handler));
+                    D(bug("[Boot] AddBootNode(%b, 0, 0x%p, NULL)\n",
+                        devnode->dn_Name, pp[4 + DE_DOSTYPE]));
                     return;
                 }
             }
