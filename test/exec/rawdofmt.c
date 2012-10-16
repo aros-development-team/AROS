@@ -72,7 +72,7 @@ int main(void)
     /* Intentionally %d with no 'l'! UWORD argument! */
     RawDoFmt("This should be negative: %d", args, (APTR)RAWFMTFUNC_STRING, buf);
     printf("RawDoFmt sign test: %s\n", buf);
-    TEST(!strcmp(buf, "This should be negative: -24416"))
+    TEST(!strncmp(buf, "This should be negative: -", 26))
 
     /* This is actually implemented by locale.library's patch */
     NewRawDoFmt("%s %llx %llx", (APTR)RAWFMTFUNC_STRING, buf, "Hello", 0x1122334455667788ULL, 0xAABBCCDDEEFF9988ULL);
