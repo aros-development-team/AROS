@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Find a resident segment.
     Lang: english
 */
+
+#include <aros/debug.h>
 #include "dos_intern.h"
 #include <string.h>
 
@@ -62,7 +64,7 @@
 
     struct DosInfo *dinf = BADDR(DOSBase->dl_Root->rn_Info);
 
-    /* Segment seg was the last match, lets start from the next one */
+    /* Segment seg was the last match, let's start from the next one */
     if( seg != NULL )
 	seg = BADDR(seg->seg_Next);
     else
@@ -70,6 +72,8 @@
 
     while( seg != NULL )
     {
+        D(bug("[FindSegment] Checking segment '%s'\n",
+            AROS_BSTR_ADDR(MKBADDR(&seg->seg_Name[0]))));
 	if
 	(
 	    (system || (system == FALSE && (seg->seg_UC >=0)))  &&
