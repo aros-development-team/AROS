@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Execute a loaded command synchronously
@@ -27,7 +27,7 @@ void BCPL_RunHandler(void);
 
 struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, struct DosLibrary *DOSBase)
 {
-	D(struct FileSysStartupMsg *fssm;)
+	D(struct FileSysStartupMsg *fssm = NULL;)
 	struct DosPacket *dp;
 	struct MsgPort *reply_port;
 	struct Process *process = NULL;
@@ -103,7 +103,8 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 
 	D(bug("[RunHandler] in open by Task '%s'\n", FindTask(NULL)->tc_Node.ln_Name));
 
-	D(fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);)
+        D(if ((IPTR)deviceNode->dn_Startup >= 64))    /* really an FSSM? */
+            D(fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);)
 
    	D(bug("[RunHandler] devicenode=%08lx path='%b' devicename '%b' unit %d dosname '%b' handler=%x seg=%08lx startup=%08lx\n",
             deviceNode,
