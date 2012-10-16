@@ -2,7 +2,7 @@ dnl Copyright © 1997-2012, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
-dnl Lang: english
+dnl Lang: english 
 
 # Note: After file changes, generate configure anew and commit _both_ files.
 
