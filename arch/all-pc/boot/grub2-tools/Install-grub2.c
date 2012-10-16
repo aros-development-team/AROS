@@ -57,6 +57,7 @@
 #include <aros/debug.h>
 
 #include <string.h>
+#include <proto/debug.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/partition.h>
@@ -112,10 +113,12 @@ struct BlockNode
 const TEXT version[] = "$VER: Install-grub2 41.3 " ADATE;
 
 static CONST_STRPTR CORE_IMG_FILE_NAME = "core.img";
-static CONST_STRPTR template ="DEVICE/A,UNIT/N/K/A,PARTITIONNUMBER=PN/K/N,GRUB/K/A,FORCELBA/S";
+static CONST_STRPTR template ="DEVICE/A,UNIT/N/K/A,PARTITIONNUMBER=PN/K/N,GRUB/K/A,FORCELBA/S,TEST/S";
 
 struct PartitionBase *PartitionBase;
-IPTR myargs[7] = { 0, 0, 0, 0, 0, 0 };
+IPTR myargs[7] = { 0, 0, 0, 0, 0, 0, 0 };
+
+#define ARG_TESTING 5
 
 struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path)
 {
@@ -175,12 +178,20 @@ BOOL fillGeometry(struct Volume *volume, struct DosEnvec *de)
     D(bug("[install] fillGeometry(%x)\n", volume));
 
     spc = de->de_Surfaces * de->de_BlocksPerTrack;
-    volume->SizeBlock = de->de_SizeBlock;
+    volume->SizeBlock = de->de_SizeBlock << 2;
     volume->startblock = de->de_LowCyl * spc;
     volume->countblock =
 	((de->de_HighCyl - de->de_LowCyl + 1) * spc) - 1 + de->de_Reserved;
     volume->part = volume->root;
     return AllocBuffer(volume);
+}
+
+void DumpVolume(struct Volume *volume, const char *header)
+{
+    if (!myargs[ARG_TESTING])
+        return;
+
+    Printf("%s: %s unit %lu partition %ld\n", header, volume->device, volume->unitnum, volume->partnum);
 }
 
 struct Volume *initVolume(CONST_STRPTR device, ULONG unit)
@@ -246,6 +257,9 @@ ULONG writeBlock(struct Volume * volume, ULONG block, APTR buffer, ULONG size)
     D(bug("[install] writeBlock(vol:%x, block:%d, %d bytes)\n",
       volume, block, size));
 
+    if (myargs[ARG_TESTING])
+        return 0;
+
     return WritePartitionData(volume->startblock + block, volume->part, buffer, size);
 }
 
@@ -266,13 +280,15 @@ static BOOL isKnownFs(ULONG dos_id)
     return FALSE;
 }
 
-static BOOL GetPartitionNum(struct Volume *volume, struct PartitionTableHandler *table,
+static BOOL GetPartitionNum(struct Volume *volume, struct PartitionHandle *parent,
                             struct PartitionHandle **extph)
 {
     struct PartitionHandle *pn;
-    UQUAD start, end;
+    UQUAD offset, start, end;
 
-    for (pn = (struct PartitionHandle *) table->list.lh_Head;
+    GetPartitionAttrsTags(parent, PT_STARTBLOCK, &offset, TAG_DONE);
+
+    for (pn = (struct PartitionHandle *) parent->table->list.lh_Head;
          pn->ln.ln_Succ;
          pn = (struct PartitionHandle *) pn->ln.ln_Succ)
     {
@@ -289,6 +305,10 @@ static BOOL GetPartitionNum(struct Volume *volume, struct PartitionTableHandler 
         }
 
         GetPartitionAttrsTags(pn, PT_STARTBLOCK, &start, PT_ENDBLOCK, &end, TAG_DONE);
+        start += offset;
+        end   += offset;
+
+        D(KPrintF("[install] checking partition start %llu end %llu\n", start, end));
         if ((volume->startblock >= start) && (volume->startblock <= end))
         {
             GetPartitionAttrsTags(pn, PT_POSITION, &volume->partnum, TAG_DONE);
@@ -301,11 +321,9 @@ static BOOL GetPartitionNum(struct Volume *volume, struct PartitionTableHandler 
 BOOL isvalidFileSystem(struct Volume *volume)
 {
     BOOL retval = FALSE;
-    struct PartitionBase *PartitionBase;
-    struct PartitionHandle *ph;
     ULONG dos_id;
 
-    D(bug("[install] isvalidFileSystem(%s, %d)\n", volume->device, volume->unit));
+    D(bug("[install] isvalidFileSystem(%s, %d)\n", volume->device, volume->unitnum));
 
     if (readBlock(volume, 0, volume->blockbuffer, volume->SizeBlock))
     {
@@ -329,12 +347,11 @@ BOOL isvalidFileSystem(struct Volume *volume)
 
         if (!isKnownFs(dos_id))
             return FALSE;
-        else
-            volume->dos_id = dos_id;
     }
-    else
-        volume->dos_id = dos_id;
+    D(bug("[install] Detected known DOSType 0x%08X\n", dos_id));
+    volume->dos_id = dos_id;
 
+    D(bug("[install] Looking for partition startblock %lu\n", volume->startblock));
     if (OpenPartitionTable(volume->root) == 0)
     {
         struct TagItem tags[2];
@@ -349,7 +366,8 @@ BOOL isvalidFileSystem(struct Volume *volume)
         {
             struct PartitionHandle *extph = NULL;
 
-            if (GetPartitionNum(volume, volume->root->table, &extph))
+            D(bug("[install] Found MBR table\n"));
+            if (GetPartitionNum(volume, volume->root, &extph))
             {
                 retval = TRUE;
                 D(bug("[install] Primary partition found: partnum=%d\n", volume->partnum));
@@ -361,7 +379,8 @@ BOOL isvalidFileSystem(struct Volume *volume)
                     GetPartitionTableAttrs(extph, tags);
                     if (type == PHPTT_EBR)
                     {
-                        if (GetPartitionNum(volume, extph->table, NULL))
+                        D(bug("[install] Found EBR table\n"));
+                        if (GetPartitionNum(volume, extph, NULL))
                         {
                             volume->partnum += MBR_MAX_PARTITIONS;
                             retval = TRUE;
@@ -379,8 +398,8 @@ BOOL isvalidFileSystem(struct Volume *volume)
         }
         else
             Printf("only MBR and RDB partition tables are supported\n");
-    
-        ClosePartitionTable(ph);
+
+        ClosePartitionTable(volume->root);
     }
     else
     {
@@ -1032,6 +1051,9 @@ BOOL writeCoreIMG(BPTR fh, UBYTE *buffer, struct Volume *volume)
 {
     BOOL retval = FALSE;
 
+    if (myargs[ARG_TESTING])
+        return TRUE;
+    
     D(bug("[install] writeCoreIMG(%x)\n", volume));
 
     if (Seek(fh, 0, OFFSET_BEGINNING) != -1)
@@ -1219,6 +1241,8 @@ int main(int argc, char **argv)
         D(bug("[install] FORCELBA = %d\n", myargs[4]));
         if (myargs[4])
             Printf("FORCELBA ignored\n");
+        if (myargs[ARG_TESTING])
+            Printf("Test mode. No data will be changed!\n");
 
         if (partnum)
         {
@@ -1241,10 +1265,13 @@ int main(int argc, char **argv)
                                  fssm->fssm_Flags, dosEnvec);
                 if (grubvol)
                 {
+                    DumpVolume(grubvol, "GRUB volume");
 
                     bbvol = getBBVolume(bootDevice, unit, partnum);
                     if (bbvol)
                     {
+                        DumpVolume(bbvol, "Bootblock volume");
+
                         if (!installGrubFiles(grubvol, grubpath,
                                        fssm->fssm_Unit, bbvol))
                             ret = RETURN_ERROR;
