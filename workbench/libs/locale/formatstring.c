@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -34,7 +34,7 @@ static inline APTR stream_addr(APTR *args, ULONG len)
     APTR ret = *args;
 
     /* LONG data are actually IPTR-aligned */
-    *args += (len > sizeof(UWORD)) ? sizeof(IPTR) : len;
+    *args += (len == sizeof(ULONG)) ? sizeof(IPTR) : len;
     return ret;
 }
 
@@ -112,16 +112,11 @@ static inline APTR va_addr(va_list args, ULONG len)
 
 #else
 
-/* This works for i386 and m68k */
-static inline APTR _va_addr(va_list *args)
-{
-    va_list ret = *args;
-
-    *args += sizeof(IPTR);
-    return ret;
-}
-
-#define va_addr(args, len) _va_addr(&args)
+/*
+ * It is OK to reuse stream_addr() here because for C-style varargs
+ * 'len' will never be 2 (see default data size condition below)
+ */
+#define va_addr(args, len) stream_addr((APTR *)&args, len)
 
 #endif
 
