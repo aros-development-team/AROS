@@ -2,7 +2,7 @@
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    AutoPoint commodity -- activates windows under the mouse pointer.
+    AutoPoint commodity -- activates the window under the mouse pointer.
 */
 
 /******************************************************************************
@@ -28,6 +28,9 @@
         CX_PRIORITY  --  The priority of the commodity
 
         LAG  --  Wait for the next timer event to activate the window
+
+        MIDMOUSEPREVENTSACTIVATION  --  Don't activate the window under the
+                                        mouse if middle mouse button is pressed
 
     RESULT
 
@@ -75,7 +78,7 @@
 
 /***************************************************************************/
 
-UBYTE version[] = "$VER: AutoPoint 0.3 (15.04.2006)";
+UBYTE version[] = "\0$VER: AutoPoint 0.4 (17.10.2012)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,LAG/S,MIDMOUSEPREVENTSACTIVATION=MMPA/S"
 
