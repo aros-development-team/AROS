@@ -77,11 +77,12 @@
 
 UBYTE version[] = "$VER: AutoPoint 0.3 (15.04.2006)";
 
-#define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,LAG/S"
+#define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,LAG/S,MIDMOUSEPREVENTSACTIVATION=MMPA/S"
 
 #define ARG_PRI   0
 #define ARG_LAG   1
-#define NUM_ARGS  2
+#define ARG_MMPA  2
+#define NUM_ARGS  3
 
 
 static struct NewBroker nb =
@@ -110,12 +111,20 @@ typedef struct AP
     struct Window *ai_thisWindow;
     struct Window *ai_lastActivatedWindow;
     BOOL           ai_mouseHasMoved;
+    BOOL           ai_leftButtonDown;
+    BOOL           ai_rightButtonDown;
+    BOOL           ai_middleButtonDown;
+    BOOL           ai_midMousePreventsActivation;
 } AP;
-
 
 static AP apInfo = 
 {
     NULL,
+    NULL,
+    FALSE,
+    FALSE,
+    FALSE,
+    FALSE,
     FALSE
 };
 
@@ -209,7 +218,7 @@ static BOOL initiate(int argc, char **argv, APState *as)
     if (Cli() != NULL)
     {
 	struct RDArgs *rda;
-	IPTR          *args[] = { NULL, (IPTR)FALSE };
+	IPTR          *args[] = { NULL, (IPTR)FALSE, (IPTR)FALSE };
 
 	rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
 
@@ -223,6 +232,10 @@ static BOOL initiate(int argc, char **argv, APState *as)
 	    {
 		activateFunc = autoActivateLag;
 	    }
+	    if (args[ARG_MMPA])
+	    {
+		apInfo.ai_midMousePreventsActivation = TRUE;
+	    }
 	}
 	FreeArgs(rda);
     }
@@ -235,6 +248,10 @@ static BOOL initiate(int argc, char **argv, APState *as)
 	if (ArgString(array, "LAG", 0))
 	{
 	    activateFunc = autoActivateLag;
+	}
+	if (ArgString(array, "MIDMOUSEPREVENTSACTIVATION", 0))
+	{
+	    apInfo.ai_midMousePreventsActivation = TRUE;
 	}
 
 	ArgArrayDone();
@@ -317,6 +334,11 @@ static void autoActivateLag(CxMsg *msg, CxObj *co)
 	struct Screen *screen;
 	struct Layer  *layer;
 
+        if (apInfo.ai_leftButtonDown  ||
+            apInfo.ai_rightButtonDown ||
+            apInfo.ai_middleButtonDown  )
+            return;
+
 	if (IntuitionBase->ActiveWindow != NULL)
 	{
 	    screen = IntuitionBase->ActiveWindow->WScreen;
@@ -366,10 +388,32 @@ static void autoActivateLag(CxMsg *msg, CxObj *co)
 
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
-	if (ie->ie_Code == IECODE_NOBUTTON)
-	{
-	    apInfo.ai_mouseHasMoved = TRUE;
-	}
+        apInfo.ai_mouseHasMoved = FALSE;
+        switch (ie->ie_Code)
+        {
+            case IECODE_NOBUTTON:
+                apInfo.ai_mouseHasMoved = TRUE;
+                break;
+            case MIDDLEDOWN:
+                if (apInfo.ai_midMousePreventsActivation)
+                    apInfo.ai_middleButtonDown = TRUE;
+                break;
+            case SELECTDOWN:
+                apInfo.ai_leftButtonDown = TRUE;
+                break;
+            case MENUDOWN:
+                apInfo.ai_rightButtonDown = TRUE;
+                break;
+            case MIDDLEUP:
+                apInfo.ai_middleButtonDown = FALSE;
+                break;
+            case SELECTUP:
+                apInfo.ai_leftButtonDown = FALSE;
+                break;
+            case MENUUP:
+                apInfo.ai_rightButtonDown = FALSE;
+                break;
+        }
     }
 }
 
@@ -386,8 +430,35 @@ static void autoActivate(CxMsg *msg, CxObj *co)
 
 	if (ie->ie_Code != IECODE_NOBUTTON)
 	{
+            switch (ie->ie_Code)
+            {
+                case MIDDLEDOWN:
+                    if (apInfo.ai_midMousePreventsActivation)
+                        apInfo.ai_middleButtonDown = TRUE;
+                    break;
+                case SELECTDOWN:
+                    apInfo.ai_leftButtonDown = TRUE;
+                    break;
+                case MENUDOWN:
+                    apInfo.ai_rightButtonDown = TRUE;
+                    break;
+                case MIDDLEUP:
+                    apInfo.ai_middleButtonDown = FALSE;
+                    break;
+                case SELECTUP:
+                    apInfo.ai_leftButtonDown = FALSE;
+                    break;
+                case MENUUP:
+                    apInfo.ai_rightButtonDown = FALSE;
+                    break;
+            }
 	    return;
 	}
+
+        if (apInfo.ai_leftButtonDown  ||
+            apInfo.ai_rightButtonDown ||
+            apInfo.ai_middleButtonDown  )
+            return;
 
 	if (IntuitionBase->ActiveWindow != NULL)
 	{
