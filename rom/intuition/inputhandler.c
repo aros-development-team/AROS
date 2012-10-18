@@ -2096,8 +2096,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     ie->ie_X = pp->iepp_Position.X + pp->iepp_Screen->LeftEdge;
                     ie->ie_Y = pp->iepp_Position.Y + pp->iepp_Screen->TopEdge;
 
-            ActivateMonitor(GetPrivScreen(pp->iepp_Screen)->MonitorObject, ie->ie_X, ie->ie_Y, IntuitionBase);
+                    ActivateMonitor(GetPrivScreen(pp->iepp_Screen)->MonitorObject, ie->ie_X, ie->ie_Y, IntuitionBase);
                 }
+                ie->ie_Class = IECLASS_RAWMOUSE; /* otherwise a lot of code would ignore this message */
                 ie->ie_Code = IECODE_NOBUTTON;
                 break;
 

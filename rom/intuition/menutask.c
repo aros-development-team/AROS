@@ -191,8 +191,6 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
                     switch(msg->ie.ie_Class)
                     {
                         case IECLASS_RAWMOUSE:
-                        /* at least AmigaOS 3.1 also reacts on IECLASS_NEWPOINTERPOS messages: */
-                        case IECLASS_NEWPOINTERPOS:
                             if (msg->ie.ie_Code == IECODE_NOBUTTON)
                             {   
                                 HandleMouseMove(mhd, IntuitionBase);
