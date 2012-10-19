@@ -80,18 +80,18 @@ void PrintPInfo(struct PartitionHandle *ph, ULONG i)
 
     for (a = i + 1; a; a--)
         printf("  ");
-    printf("StartBlock     = %llu\n", start);
+    printf("StartBlock     = %llu\n", (unsigned long long)start);
     for (a = i + 1; a; a--)
         printf("  ");    
-    printf("EndBlock       = %llu\n", end);
+    printf("EndBlock       = %llu\n", (unsigned long long)end);
 
     abs = getStartBlock(ph->root);
     for (a = i + 1; a; a--)
         printf("  ");
-    printf("Abs StartBlock = %llu\n", start + abs);
+    printf("Abs StartBlock = %llu\n", (unsigned long long)(start + abs));
     for (a = i + 1; a; a--)
         printf("  ");    
-    printf("Abs EndBlock   = %llu\n", end + abs);
+    printf("Abs EndBlock   = %llu\n", (unsigned long long)(end + abs));
 
     PrintPartitionTable(ph, i + 1);
 }
