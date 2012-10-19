@@ -825,6 +825,8 @@ typedef unsigned int (*ULONG_FUNC)();
 /* DOS/CreateProc() entry point definition
  */
 #ifndef AROS_PROCH
+struct ExecBase;
+
 #define AROS_PROCH(n, _argptr, _argsize, _SysBase) \
     AROS_UFH3(SIPTR, n,                           \
         AROS_UFHA(STRPTR, _argptr, A0),           \
