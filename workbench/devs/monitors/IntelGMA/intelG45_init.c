@@ -1,11 +1,12 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <oop/oop.h>
+#include <graphics/driver.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
@@ -18,7 +19,6 @@
 
 #include "intelG45_intern.h"
 #include "intelG45_regs.h"
-#include "intelG45_logo.h"
 #include "compositing.h"
 
 #define KBYTES 1024
@@ -39,8 +39,6 @@ static uint32_t max(uint32_t a, uint32_t b)
 	else
 		return b;
 }
-
-static const char __attribute__((used)) __greet[] = "!!! This driver is sponsored by iMica !!!\n";
 
 static BOOL IsCompatible(UWORD product_id)
 {
@@ -157,9 +155,6 @@ static BOOL probe_monitor(struct g45staticdata *sd, uint32_t port)
 
 			bug("[GMA]   I2C device found\n");
 			
-			// there is at least something?,so... 
-            result = TRUE;
-			
 			OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
 
 			if (obj)
@@ -185,6 +180,7 @@ static BOOL probe_monitor(struct g45staticdata *sd, uint32_t port)
 						edid[0] == 0 && edid[1] == 0xff && edid[2] == 0xff && edid[3] == 0xff &&
 						edid[4] == 0xff && edid[5] == 0xff && edid[6] == 0xff && edid[7] == 0)
 				{
+					result = TRUE;
 					if (edid[0x14] & 0x80)
 					{
 						bug("[GMA]       Digital device\n");
@@ -443,14 +439,12 @@ AROS_UFH3(void, Enumerator,
     	sd->Engine2DOwner = NULL;
 
     	sd->HardwareStatusPage = (void*)(((intptr_t)AllocPooled(sd->MemPool, 4096 + 4095) + 4095) & ~4095);
-    	writel((LONG)(IPTR)sd->HardwareStatusPage, sd->Card.MMIO + 0x2080);
+    	writel((ULONG)(IPTR)sd->HardwareStatusPage, sd->Card.MMIO + 0x2080);
 
 //    	sd->HardwareStatusPage = (APTR)readl(sd->Card.MMIO + 0x2080);
     	D(bug("[GMA] Hardware status page: %08x\n", readl(sd->Card.MMIO + 0x2080)));
     	writel(1, &sd->HardwareStatusPage[16]);
 
-    	sd->DDCPort = G45_GPIOA;
-		
         BOOL lvds = FALSE;
 
         // lvds port enabled ?
@@ -476,9 +470,7 @@ AROS_UFH3(void, Enumerator,
 	}
 
     	/*
-    	 * Boot logo.
-    	 *
-    	 * Since development of this driver is sponsored, I kindly ask to keep the boot logo with a small "commercial" in this place!
+    	 * Set up initial screen mode.
     	 */
 
     	sd->initialState = AllocVecPooled(sd->MemPool, sizeof(GMAState_t));
@@ -488,41 +480,11 @@ AROS_UFH3(void, Enumerator,
 								656, 752, 800,
 								490, 492, 525, 0);
 
-
-    	uint32_t *pixel = (uint32_t *)(sd->initialBitMap + sd->Card.Framebuffer);
-    	uint8_t *stream = header_data;
-	int count=logo_width * logo_height;
-	uint8_t split = *stream++;
-
-	do
-	{
-	    uint8_t cnt = *stream++;
-		
-	    if (cnt >= split)
-	    {
-		cnt -= split-1;
-
-		while(cnt-- && count > 0)
-		{
-		    uint8_t color = *stream++;
-
-		    count--;
-		    *pixel++ = 0xff000000 | (header_data_cmap[color][0] << 16) | (header_data_cmap[color][1] << 8) | (header_data_cmap[color][2]);
-		}
-	    }
-	    else
-	    {
-		uint8_t color = *stream++;
-
-		cnt += 3;
-		while(cnt-- && count > 0)
-		{
-		    count--;
-		    *pixel++ = 0xff000000 | (header_data_cmap[color][0] << 16) | (header_data_cmap[color][1] << 8) | (header_data_cmap[color][2]);
-		}
-	    }
-
-	} while (count > 0);
+        /* Clear initial buffer */
+        uint32_t i,
+            *pixel = (uint32_t *)(sd->initialBitMap + sd->Card.Framebuffer);
+        for(i = 0; i < 640 * 480; i++)
+            *pixel++ = 0;
 
 	/*
 	 * URGENT FIXME!!!
@@ -535,17 +497,6 @@ AROS_UFH3(void, Enumerator,
 	G45_LoadState(sd, sd->initialState);
 
 	AddDisplayDriverA(sd->IntelG45Class, NULL, NULL);
-
-
-	// Z   |\      _,,,---,,_
-	//  z  /,`.-'`'    -.  ;-;;,_
-	//    |,4-  ) )-,_..;\ (  `'-'
-	//   '---''(_/--'  `-'\_)
-	// In VGA, Kitty runs away too fast.
-	if (sd->pipe == PIPE_A )
-	    delay_ms(sd,1500);
-
-	D(bug("[GMA] %s", __greet));
     }
 
     AROS_LIBFUNC_EXIT
