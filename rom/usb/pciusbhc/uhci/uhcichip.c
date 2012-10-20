@@ -24,6 +24,8 @@ static AROS_INTH1(UhciResetHandler, struct PCIController *, hc)
     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
 
+    return FALSE;
+
     AROS_INTFUNC_EXIT
 }
 
@@ -930,7 +932,7 @@ static AROS_INTH1(uhciCompleteInt, struct PCIController *, hc) {
 
     KPRINTF(1, ("CompleteDone\n"));
 
-    return 0;
+    return FALSE;
 
     AROS_INTFUNC_EXIT
 }
@@ -939,7 +941,7 @@ static AROS_INTH1(uhciIntCode, struct PCIController *, hc)
 {
     AROS_INTFUNC_INIT
 
-//    struct PCIDevice *base = hc->hc_Device;
+    struct PCIDevice *base = hc->hc_Device;
     UWORD intr;
 
     intr = READIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS);
@@ -952,16 +954,16 @@ static AROS_INTH1(uhciIntCode, struct PCIController *, hc)
         }
 
         if (!(hc->hc_Flags & HCF_ONLINE)) {
-            return;
+            return FALSE;
         }
 
         if(intr & (UHSF_USBINT|UHSF_USBERRORINT)) {
-            //SureCause(base, &hc->hc_CompleteInt);
-            uhciCompleteInt(hc);
+            SureCause(base, &hc->hc_CompleteInt);
+//            uhciCompleteInt(hc);
         }
     }
 
-    return 0;
+    return FALSE;
 
     AROS_INTFUNC_EXIT
 }
@@ -1001,7 +1003,7 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     hc->hc_CompleteInt.is_Node.ln_Name = "UHCI CompleteInt";
     hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
     hc->hc_CompleteInt.is_Data = hc;
-    hc->hc_CompleteInt.is_Code = uhciCompleteInt;
+    hc->hc_CompleteInt.is_Code = (VOID_FUNC)uhciCompleteInt;
 
     hc->hc_PCIMemSize = sizeof(ULONG) * UHCI_FRAMELIST_SIZE + UHCI_FRAMELIST_ALIGNMENT + 1;
     hc->hc_PCIMemSize += sizeof(struct UhciQH) * UHCI_QH_POOLSIZE;
@@ -1174,7 +1176,7 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, UHIF_TIMEOUTCRC|UHIF_INTONCOMPLETE|UHIF_SHORTPACKET);
 
         // install reset handler
-        hc->hc_ResetInt.is_Code = UhciResetHandler;
+        hc->hc_ResetInt.is_Code = (VOID_FUNC)UhciResetHandler;
         hc->hc_ResetInt.is_Data = hc;
         AddResetCallback(&hc->hc_ResetInt);
 
@@ -1182,7 +1184,7 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         hc->hc_PCIIntHandler.is_Node.ln_Name = "UHCI PCI (pciuhci.device)";
         hc->hc_PCIIntHandler.is_Node.ln_Pri = 5;
         hc->hc_PCIIntHandler.is_Node.ln_Type = NT_INTERRUPT;
-        hc->hc_PCIIntHandler.is_Code = uhciIntCode;
+        hc->hc_PCIIntHandler.is_Code = (VOID_FUNC)uhciIntCode;
         hc->hc_PCIIntHandler.is_Data = hc;
         AddIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
 

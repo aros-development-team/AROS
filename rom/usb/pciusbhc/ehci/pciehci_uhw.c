@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved
+    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,6 +8,7 @@
 #include "pciehci_uhw.h"
 
 BOOL uhwOpenTimer(struct ehu_unit *ehu, LIBBASETYPEPTR LIBBASE) {
+    return FALSE;
 }
 
 void uhwDelayMS(ULONG milli, struct ehu_unit *ehu) {

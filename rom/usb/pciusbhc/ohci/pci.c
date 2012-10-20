@@ -60,7 +60,7 @@ AROS_UFH3(void, pciEnumerator,
 
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Bus, &bus);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev, &dev);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev, &sub);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Sub, &sub);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &intline);
 
     devid = (bus << 16) | dev;

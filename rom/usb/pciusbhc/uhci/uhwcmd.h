@@ -37,8 +37,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base);
 
 void TermIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base);
 
-AROS_UFP1(void, uhwNakTimeoutInt,
-          AROS_UFPA(struct PCIUnit *,  unit, A1));
+AROS_INTP(uhwNakTimeoutInt);
 
 BOOL pciInit(struct PCIDevice *hd);
 void pciExpunge(struct PCIDevice *hd);
@@ -55,7 +54,6 @@ void uhciScheduleCtrlTDs(struct PCIController *hc);
 void uhciScheduleIntTDs(struct PCIController *hc);
 void uhciScheduleBulkTDs(struct PCIController *hc);
 void uhciUpdateFrameCounter(struct PCIController *hc);
-void uhciCompleteInt(struct PCIController *hc);
 BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu);
 void uhciFree(struct PCIController *hc, struct PCIUnit *hu);
 
