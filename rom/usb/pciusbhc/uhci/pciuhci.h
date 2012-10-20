@@ -158,7 +158,6 @@ struct PCIDevice {
 
     struct List         hd_TempHCIList;
     OOP_Object         *hd_PCIHidd;
-    OOP_Object         *hd_IRQHidd;
     OOP_AttrBase        hd_HiddAB;
     OOP_AttrBase        hd_HiddPCIDeviceAB;
 

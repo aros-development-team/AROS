@@ -47,7 +47,7 @@ AROS_UFH3(void, pciEnumerator,
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Interface, &hcitype);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Bus, &bus);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev, &dev);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev, &sub);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Sub, &sub);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &intline);
 
     devid = (bus<<16)|dev;
@@ -98,11 +98,6 @@ BOOL pciInit(struct PCIDevice *hd) {
 
     NEWLIST(&hd->hd_TempHCIList);
 
-    if(!(hd->hd_IRQHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_IRQ, NULL))) {
-        KPRINTF(20, ("Unable to create IRQHidd object!\n"));
-        return FALSE;
-    }
-
     if((hd->hd_PCIHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_PCI, NULL))) {
         struct TagItem tags[] = {
             { tHidd_PCI_Class,      PCI_BASE_CLASS_SERIAL },
@@ -129,7 +124,6 @@ BOOL pciInit(struct PCIDevice *hd) {
         HIDD_PCI_EnumDevices(hd->hd_PCIHidd, &findHook, (struct TagItem *) &tags);
     } else {
         KPRINTF(20, ("Unable to create PCIHidd object!\n"));
-        OOP_DisposeObject(hd->hd_IRQHidd);
         return FALSE;
     }
 
@@ -247,9 +241,9 @@ void pciFreeUnit(struct PCIUnit *hu) {
     while(hc->hc_Node.ln_Succ)
     {
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivate); // deactivate busmaster and IO/Mem
-        if(hc->hc_PCIIntHandler.h_Node.ln_Name) {
+        if(hc->hc_PCIIntHandler.is_Node.ln_Name) {
             RemIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
-            hc->hc_PCIIntHandler.h_Node.ln_Name = NULL;
+            hc->hc_PCIIntHandler.is_Node.ln_Name = NULL;
         }
 
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
@@ -285,9 +279,6 @@ void pciExpunge(struct PCIDevice *hd) {
         OOP_ReleaseAttrBases(attrbases);
 
         OOP_DisposeObject(hd->hd_PCIHidd);
-    }
-    if(hd->hd_IRQHidd) {
-        OOP_DisposeObject(hd->hd_IRQHidd);
     }
 }
 

@@ -7,6 +7,6 @@ FILES := pci_aros uhcichip dev uhwcmd
 	modname=pciuhci modtype=device      \
 	moduledir=Devs/USBHardware \
 	files="$(FILES)"                    \
-	uselibs="oop rom hiddstubs debug"
+	uselibs="oop hiddstubs debug"
 
 %common

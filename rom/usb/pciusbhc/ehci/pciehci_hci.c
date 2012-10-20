@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2011, The AROS Development Team. All rights reserved
+    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -148,5 +148,6 @@ void ehciUpdateIntTree(struct ehc_controller *ehc) {
 }
 
 BOOL ehciInit(struct ehc_controller *ehc, struct ehu_unit *ehu) {
+    return FALSE;
 }
 
