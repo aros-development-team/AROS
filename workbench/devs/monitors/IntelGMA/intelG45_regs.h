@@ -199,6 +199,10 @@
 #define G45_CURPOS_YSHIFT			16
 #define G45_CURPOS_SIGN			0x8000
 
+#define   MI_READ_FLUSH		(1 << 0)
+#define   MI_EXE_FLUSH		(1 << 1)
+#define   MI_NO_WRITE_FLUSH	(1 << 2)
+
 #define PIPE_A 0
 #define PIPE_B 1
 

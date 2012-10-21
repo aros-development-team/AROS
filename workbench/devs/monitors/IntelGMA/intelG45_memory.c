@@ -4,6 +4,7 @@
 */
 
 #include <exec/memory.h>
+#include <proto/exec.h>
 #include <inttypes.h>
 
 #include "intelG45_intern.h"
@@ -44,6 +45,7 @@ void G45_AttachMemory(struct g45staticdata *sd, intptr_t physical, intptr_t virt
 			page++;
 		} while((page < sd->Card.GATT_size / 4) && length);
 	}
+    CacheClearU();
 }
 
 void G45_AttachCacheableMemory(struct g45staticdata *sd, intptr_t physical, intptr_t virtual, intptr_t length)
@@ -63,6 +65,7 @@ void G45_AttachCacheableMemory(struct g45staticdata *sd, intptr_t physical, intp
 			page++;
 		} while((page < sd->Card.GATT_size / 4) && length);
 	}
+    CacheClearU();
 }
 
 void G45_DetachMemory(struct g45staticdata *sd, intptr_t virtual, intptr_t length)
@@ -76,4 +79,5 @@ void G45_DetachMemory(struct g45staticdata *sd, intptr_t virtual, intptr_t lengt
 		page++;
 		length--;
 	} while(length && page < (sd->Card.GATT_size / 4));
+    CacheClearU();
 }

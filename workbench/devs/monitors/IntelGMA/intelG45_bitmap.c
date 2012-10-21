@@ -316,33 +316,30 @@ VOID METHOD(GMABM, Root, Set)
         }
     }
 
+    /* If there was a change requested, validate it */
+    struct pHidd_Compositing_ValidateBitMapPositionChange vbpcmsg =
+    {
+        mID : SD(cl)->mid_ValidateBitMapPositionChange,
+        bm : o,
+        newxoffset : &newxoffset,
+        newyoffset : &newyoffset
+    };
+    
+    OOP_DoMethod(bmdata->compositing, (OOP_Msg)&vbpcmsg);
+    
     if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
     {
-        /* If there was a change requested, validate it */
-        struct pHidd_Compositing_ValidateBitMapPositionChange vbpcmsg =
+        /* If change passed validation, execute it */
+        struct pHidd_Compositing_BitMapPositionChanged bpcmsg =
         {
-            mID : SD(cl)->mid_ValidateBitMapPositionChange,
-            bm : o,
-            newxoffset : &newxoffset,
-            newyoffset : &newyoffset
+            mID : SD(cl)->mid_BitMapPositionChanged,
+            bm : o
         };
-        
-        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&vbpcmsg);
-        
-        if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
-        {
-            /* If change passed validation, execute it */
-            struct pHidd_Compositing_BitMapPositionChanged bpcmsg =
-            {
-                mID : SD(cl)->mid_BitMapPositionChanged,
-                bm : o
-            };
-
-            bmdata->xoffset = newxoffset;
-            bmdata->yoffset = newyoffset;
-        
-            OOP_DoMethod(bmdata->compositing, (OOP_Msg)&bpcmsg);
-        }
+    
+        bmdata->xoffset = newxoffset;
+        bmdata->yoffset = newyoffset;
+    
+        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&bpcmsg);
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
