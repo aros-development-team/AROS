@@ -121,6 +121,7 @@ struct g45staticdata
 {
     void *MemPool;
     BOOL forced;
+    BOOL force_gallium;
     ULONG memsize;
 
     /* The rest should be moved to object data */
@@ -156,8 +157,10 @@ struct g45staticdata
 	OOP_Class *				IntelI2C;
 	OOP_Class *				BMClass;
     OOP_Class *				compositingclass;
+    OOP_Class *				galliumclass;
+    
 	OOP_Object          *compositing;
-
+    
 	OOP_Object *			PCIObject;
 	OOP_Object *			PCIDevice;
 	OOP_Object * 			GMAObject;
@@ -212,6 +215,7 @@ enum {
 
 #define IS_BM_ATTR(attr, idx) (((idx)=(attr)-HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 #define IS_GMABM_ATTR(attr, idx) (((idx)=(attr)-HiddGMABitMapAttrBase) < num_Hidd_GMABitMap_Attrs)
+#define HIDD_BM_OBJ(bitmap)     (*(OOP_Object **)&((bitmap)->Planes[0]))
 
 #define SD(cl) ((struct g45staticdata *)cl->UserData)
 
@@ -265,5 +269,10 @@ void SetCursorPosition(struct g45staticdata *sd,LONG x,LONG y);
 
 BOOL HIDD_INTELG45_SetFramebuffer(OOP_Object * bm);
 BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm);
+BOOL copybox3d_supported();
+BOOL copybox3d( GMABitMap_t *bm_dst, GMABitMap_t *bm_src,
+               ULONG dst_x,ULONG dst_y,ULONG dst_width, ULONG dst_height,
+               ULONG src_x,ULONG src_y,ULONG src_width, ULONG src_height );
 
+//#define GALLIUM_SIMULATION             
 #endif /* INTELG45_INTERN_H_ */

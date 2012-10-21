@@ -82,7 +82,7 @@ static struct StackBitMapNode * HIDDCompositingCanUseFramebuffer(struct HIDDComp
 
 static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * compdata)
 {
-    ULONG lastscreenvisibleline = compdata->screenrect.MaxY;
+    ULONG lastscreenvisibleline = compdata->screenrect.MaxY + 1;
     struct StackBitMapNode * n = NULL;
 	
     ForeachNode(&compdata->bitmapstack, n)
@@ -97,22 +97,15 @@ static VOID HIDDCompositingRecalculateVisibleRects(struct HIDDCompositingData * 
         tmprect = compdata->screenrect;
         /* Set bottom and top values */
         tmprect.MinY = topedge;
-        tmprect.MaxY = lastscreenvisibleline;
+        tmprect.MaxY = lastscreenvisibleline - 1;
         /* Intersect both to make sure values are withint screen limit */
         if (AndRectRect(&tmprect, &compdata->screenrect, &n->screenvisiblerect))
         {
             lastscreenvisibleline = n->screenvisiblerect.MinY;
-            n->isscreenvisible = TRUE;			
+            n->isscreenvisible = TRUE;
         }
         else
             n->isscreenvisible = FALSE;
-
-        /* if visible size is 0 ,bitmap is invisible */
-        if(n->screenvisiblerect.MinX == n->screenvisiblerect.MaxX ||
-           n->screenvisiblerect.MinY == n->screenvisiblerect.MaxY )
-        {
-            n->isscreenvisible = FALSE;
-        }
 
         D(bug("[Compositing] Bitmap %x, visible %d, (%d, %d) , (%d, %d)\n", 
             n->bm, n->isscreenvisible, 
@@ -268,30 +261,17 @@ static BOOL HIDDCompositingCanCompositeWithScreenBitMap(struct HIDDCompositingDa
     /* If bitmaps have the same modeid, they can be composited */
     if (compdata->screenmodeid == bmmodeid)
         return TRUE;
-	else
-		return FALSE; // if front screen resolution is lower,weird things happen...
 
     /* If bitmaps have different pixel formats, they cannot be composited */
-    /* FIXME: actually they can, but CopyBox for different formats is not
-       optimized so let's not make user experience worse */
-    if (screenbmstdpixfmt != bmstdpixfmt)
+    /* actually they can, if hw conversion is supported. */
+    if ( ( screenbmstdpixfmt != bmstdpixfmt ) && !copybox3d_supported() )
         return FALSE;
 
-    /* If screenbm is not bigger than bm, bitmaps can be composited, because
-       bm will start scrolling on smaller resolution of screenbm */
-    /* FIXME: the opposite situation might also work - smaller bitmap on bigger
-       resolution. In such case, left out areas need to be cleared up. Also it
-       needs to be checked if mouse clicks outside of bitmap will not cause
-       problems */
-    if ((screenbmwidth <= bmwidth) && (screenbmheight <= bmheight))
-        return TRUE;
-
-    /* Last decision, bitmaps cannot be composited */
-    return FALSE;
+    return TRUE;
 }
 
 static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
-    OOP_Object * bm, WORD x, WORD y, WORD width, WORD height)
+    OOP_Object * bm, WORD x, WORD y, WORD width, WORD height, BOOL clean)
 {
     struct StackBitMapNode * n = NULL;
     
@@ -339,6 +319,28 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
                 dstandvisrect.MaxX - dstandvisrect.MinX + 1,
                 dstandvisrect.MaxY - dstandvisrect.MinY + 1,
                 compdata->gc);
+                
+            if( clean && dstandvisrect.MaxX+1 <  n->screenvisiblerect.MaxX )
+            {
+                /* Clean right side.*/
+                D(bug("[Compositing] clean right %d,%d-%d,%d\n",dstandvisrect.MaxX+1, dstandvisrect.MinY, 
+                    n->screenvisiblerect.MaxX, dstandvisrect.MaxY));
+                HIDD_BM_FillRect(compdata->screenbitmap, compdata->gc,
+                    dstandvisrect.MaxX+1, dstandvisrect.MinY-1, 
+                    n->screenvisiblerect.MaxX, dstandvisrect.MaxY);
+            }
+            
+            if( clean && dstandvisrect.MaxY+1 <  n->screenvisiblerect.MaxY )
+            {
+                /* Clean bottom.*/
+                D(bug("[Compositing] clean bottom %d,%d-%d,%d\n",
+                    dstandvisrect.MinX, dstandvisrect.MaxY+1, 
+                    n->screenvisiblerect.MaxX, n->screenvisiblerect.MaxY));
+                HIDD_BM_FillRect(compdata->screenbitmap, compdata->gc,
+                    dstandvisrect.MinX, dstandvisrect.MaxY+1, 
+                    n->screenvisiblerect.MaxX, n->screenvisiblerect.MaxY);
+            }
+            
         }
     }
 }
@@ -379,7 +381,7 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
             OOP_GetAttr(n->bm, aHidd_BitMap_Width, &width);
             OOP_GetAttr(n->bm, aHidd_BitMap_Height, &height);
 
-            HIDDCompositingRedrawBitmap(compdata, n->bm, 0, 0, width, height);
+            HIDDCompositingRedrawBitmap(compdata, n->bm, 0, 0, width, height, TRUE);
             if (lastscreenvisibleline > n->screenvisiblerect.MinY)
                 lastscreenvisibleline = n->screenvisiblerect.MinY;
         }
@@ -388,12 +390,12 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
     /* Clean up area revealed by drag */
     /* TODO: Find all areas which might have been releaved, not only top - 
        This will happen when there are bitmaps of different sizes composited */
-    if (lastscreenvisibleline > 1)
+    if (lastscreenvisibleline > 0)
     {
         IPTR viswidth;
 
         OOP_GetAttr(compdata->screenbitmap, aHidd_BitMap_Width, &viswidth); 
-
+        D(bug("[Compositing] Clean upper area %d,%d-%d,%d\n",0, 0, viswidth - 1, lastscreenvisibleline - 1));
         HIDD_BM_FillRect(compdata->screenbitmap, 
             compdata->gc, 0, 0, viswidth - 1, lastscreenvisibleline - 1);
     }
@@ -510,7 +512,7 @@ VOID METHOD(Compositing, Hidd_Compositing, BitMapRectChanged)
     //D(bug("[Compositing] BitMapRectChanged\n"));
 	if( ! compdata->directbitmap ){
 		LOCK_COMPOSITING_READ
-		HIDDCompositingRedrawBitmap(compdata, msg->bm, msg->x, msg->y, msg->width, msg->height);
+		HIDDCompositingRedrawBitmap(compdata, msg->bm, msg->x, msg->y, msg->width, msg->height, FALSE);
 		UNLOCK_COMPOSITING
 	}
 }
@@ -550,7 +552,7 @@ VOID METHOD(Compositing, Hidd_Compositing, ValidateBitMapPositionChange)
         OOP_GetAttr(msg->bm, aHidd_BitMap_Height, &height);
 
         /* Check x position */
-        limit = n->displayedwidth - width;
+        limit = n->displayedwidth < width ? n->displayedwidth - width : 0;
         if (*(msg->newxoffset) > 0)
             *(msg->newxoffset) = 0;
 
@@ -558,7 +560,7 @@ VOID METHOD(Compositing, Hidd_Compositing, ValidateBitMapPositionChange)
             *(msg->newxoffset) = limit;
 
         /* Check y position */
-        limit = n->displayedheight - height;
+        limit = n->displayedheight < height ? n->displayedheight - height : 0;
         if (*(msg->newyoffset) > n->displayedheight - 15) /* Limit for drag */
             *(msg->newyoffset) = n->displayedheight - 15;
 

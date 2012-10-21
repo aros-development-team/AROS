@@ -20,6 +20,7 @@
 
 #include "intelG45_intern.h"
 #include "compositing_intern.h"
+#include "gallium_intern.h"
 
 struct Library *OOPBase;
 struct Library *UtilityBase;
@@ -66,7 +67,7 @@ static const struct OOP_ABDescr attrbases[] =
     {NULL, NULL }
 };
 
-const TEXT version_string[] = "$VER: IntelGMA 2.3 (26.10.2011)\n";
+const TEXT version_string[] = "$VER: IntelGMA 3.7 (18.07.2012)\n";
 
 extern struct WBStartup *WBenchMsg;
 int __nocommandline = 1;
@@ -77,7 +78,7 @@ int main(void)
     STRPTR myname;
     struct DiskObject *icon;
     struct RDArgs *rdargs = NULL;
-    IPTR args[2] = {0};
+    IPTR args[3] = {0};
     int ret = RETURN_FAIL;
 
     memset(&sd, 0, sizeof(sd));
@@ -133,21 +134,25 @@ int main(void)
     if (icon)
     {
         STRPTR str;
-
-	str = FindToolType(icon->do_ToolTypes, "FORCEGMA");
-	args[0] = str ? TRUE : FALSE;
-
-	str = FindToolType(icon->do_ToolTypes, "GMA_MEM=");
-	if (str)
-	    sd.memsize = atoi(str);
+        
+        str = FindToolType(icon->do_ToolTypes, "FORCEGMA");
+        args[0] = str ? TRUE : FALSE;
+        
+        str = FindToolType(icon->do_ToolTypes, "GMA_MEM=");
+        if (str)
+            sd.memsize = atoi(str);
+        
+        str = FindToolType(icon->do_ToolTypes, "FORCEGALLIUM");
+        args[2] = str ? TRUE : FALSE;
     }
 
     if (!WBenchMsg)
-        rdargs = ReadArgs("FORCEGMA/S,GMA_MEM/N", args, NULL);
+        rdargs = ReadArgs("FORCEGMA/S,GMA_MEM/N,FORCEGALLIUM/S", args, NULL);
 
     sd.forced  = args[0];
     if (args[1])
-	sd.memsize = *((ULONG *)args[1]);
+        sd.memsize = *((ULONG *)args[1]);
+    sd.force_gallium  = args[2];
 
     if (rdargs)
         FreeArgs(rdargs);
@@ -212,16 +217,24 @@ int main(void)
 		    sd.compositingclass = OOP_NewObject(NULL, CLID_HiddMeta, Compositing_tags);
 		    if (sd.compositingclass)
 		    {
+
+            #ifndef GALLIUM_SIMULATION
 			/* Init internal stuff */
 			if (G45_Init(&sd))
+            #endif
 			{
 			    struct Process *me = (struct Process *)FindTask(NULL);
 
+                #ifndef GALLIUM_SIMULATION
 			    /* 
 			     * Register our gfx class as public, we use it as a
 			     * protection against double start
 			     */
 			    OOP_AddClass(sd.IntelG45Class);
+                #endif
+
+                /* Init Galliumclass */
+                InitGalliumClass();
 
 			    /* Everything is okay, stay resident and exit */
 

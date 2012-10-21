@@ -858,14 +858,26 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
             UNLOCK_BITMAP_BM(bm_src)
             UNLOCK_BITMAP_BM(bm_dst)
         }
-        else /* Case 2: different bitmaps. HELP? */
+        else /* Case 2: different bitmaps.Use 3d hardware. */
         {
         	D(bug("[GMA] Depth mismatch! CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
         			bm_src->framebuffer,msg->srcX,msg->srcY,bm_src->depth,
         			bm_dst->framebuffer,msg->destX,msg->destY,bm_dst->depth,
         			msg->width, msg->height));
 
-            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+            LOCK_MULTI_BITMAP
+            LOCK_BITMAP_BM(bm_src)
+            LOCK_BITMAP_BM(bm_dst)
+            UNLOCK_MULTI_BITMAP
+
+            BOOL done = copybox3d( bm_dst, bm_src,
+                           msg->destX, msg->destY, msg->width, msg->height,
+                           msg->srcX, msg->srcY, msg->width, msg->height );
+
+            UNLOCK_BITMAP_BM(bm_src)
+            UNLOCK_BITMAP_BM(bm_dst)
+
+            if( ! done ) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
     }
 }
