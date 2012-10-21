@@ -1,4 +1,4 @@
-#   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+#   Copyright © 1995-2012, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: Makefile for ilbmtoicon
@@ -46,3 +46,4 @@ $(INFOINFO) : infoinfo.c
 
 clean:
 	@$(RM) -f $(ILBMTOICON)
+	@$(RM) -f $(INFOINFO)
