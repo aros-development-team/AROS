@@ -1,4 +1,4 @@
-# Copyright © 2000-2011, The AROS Development Team. All rights reserved.
+# Copyright © 2000-2012, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Main makefile for AROS
@@ -92,11 +92,11 @@ $(ILBMTOC) : $(SRCDIR)/tools/ilbmtoc/ilbmtoc.c
 
 $(ILBMTOICON) : $(SRCDIR)/tools/ilbmtoicon/ilbmtoicon.c
 	@$(ECHO) Building ilbmtoicon...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/ilbmtoicon SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) $(basename $@) -C $(SRCDIR)/tools/ilbmtoicon SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(INFOINFO) : $(SRCDIR)/tools/ilbmtoicon/infoinfo.c
 	@$(ECHO) Building infoinfo...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/ilbmtoicon SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) $(basename $@) -C $(SRCDIR)/tools/ilbmtoicon SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(COLLECT-AROS) : $(wildcard $(SRCDIR)/tools/collect-aros/*.[hc])
 	@$(ECHO) Building collect-aros...
