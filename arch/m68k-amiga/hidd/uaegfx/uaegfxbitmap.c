@@ -55,7 +55,7 @@ static void freertgbitmap(struct uaegfx_staticdata *csd, struct bm_data *bm)
 	Deallocate(csd->vmem, bm->VideoData, bm->memsize);
 	SetMemoryMode(csd, bm->rgbformat);
 	csd->vram_used -= bm->memsize;
-    } else {
+    } else if (bm->VideoData) {
     	FreeMem(bm->VideoData, bm->memsize);
     	csd->fram_used -= bm->memsize;
     }
