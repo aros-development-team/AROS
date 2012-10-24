@@ -639,7 +639,7 @@ int request_irq(struct net_device *unit)
 
     D(bug("[%s] %s: IRQ Handlers configured\n", unit->e1ku_name, __PRETTY_FUNCTION__));
 
-    return 1;
+    return 0;
 }
 
 #if 0
