@@ -21,7 +21,7 @@ struct bm_data
     UBYTE *VideoData;
     ULONG memsize;
     BOOL invram;
-    WORD width, height;
+    WORD width, height, align;
     WORD disp_width, disp_height;
     WORD bytesperpixel;
     WORD bytesperline;
