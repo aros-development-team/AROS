@@ -123,7 +123,7 @@ BOOL ReadPrefs (PrefsObject *dict, CONST_STRPTR filename) {
 }
 
 static void stop_parser (parser_data *data) {
-	struct Library *ExpatBase = data->expatbase;
+	struct Library __unused *ExpatBase = data->expatbase;
 	data->error = TRUE;
 	XML_StopParser(data->parser, XML_TRUE);
 }

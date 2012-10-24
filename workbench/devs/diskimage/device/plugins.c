@@ -52,7 +52,7 @@ static struct DiskImagePlugin * const builtin_plugin_array[] = {
 static struct DiskImagePluginTable builtin_plugin_table = {
 	PLUGIN_MAGIC,
 	USED_PLUGIN_API_VERSION,
-	-1UL,
+	-1L,
 	builtin_plugin_array
 };
 

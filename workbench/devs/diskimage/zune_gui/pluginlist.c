@@ -161,7 +161,7 @@ HOOKPROTO(PluginList_CompareFunc, IPTR, const struct PluginEntry *e2, const stru
 
 HOOKPROTO(PluginList_DisplayFunc, IPTR, CONST_STRPTR *array, struct PluginEntry *e) {
 	if (e) {
-		e->list_pos = (ULONG)array[-1];
+		e->list_pos = (IPTR)array[-1];
 		array[PLUG_COL_ICON] = image_str[PLUG_ICO_PLUGIN];
 		array[PLUG_COL_PRI] = e->priority;
 		array[PLUG_COL_WRITE] = e->has_write ? image_str[PLUG_ICO_CHECKMARK] : (STRPTR)"";
