@@ -68,7 +68,17 @@
 	    
 	case BMA_WIDTH:
 	  /* must return width in pixel! */
-            retval = (IPTR)(bitmap->BytesPerRow * 8);
+	    if (IS_HIDD_BM(bitmap))
+	    {
+	        OOP_Object *o;
+	        retval = 0;
+	        if ((o = OBTAIN_HIDD_BM(bitmap))) {
+	            OOP_GetAttr(o, aHidd_BitMap_Width, &retval);
+	            RELEASE_HIDD_BM(o, bitmap);
+	        }
+	    } else {
+	        retval = (IPTR)(bitmap->BytesPerRow * 8);
+	    }
 	    break;
 	    
 	case BMA_DEPTH:
