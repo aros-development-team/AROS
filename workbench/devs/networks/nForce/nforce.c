@@ -713,15 +713,24 @@ static void drain_ring(struct net_device *dev)
 
 static int request_irq(struct net_device *dev)
 {
-    AddIntServer(INTB_KERNEL + dev->nu_IRQ, &dev->nu_irqhandler);
-    AddIntServer(INTB_VERTB, &dev->nu_touthandler);
+    if (!dev->nu_IntsAdded)
+    {
+        AddIntServer(INTB_KERNEL + dev->nu_IRQ, &dev->nu_irqhandler);
+        AddIntServer(INTB_VERTB, &dev->nu_touthandler);
+        dev->nu_IntsAdded = TRUE;
+    }
+
     return 0;
 }
 
 static void free_irq(struct net_device *dev)
 {
-    RemIntServer(INTB_KERNEL + dev->nu_IRQ, &dev->nu_irqhandler);
-    RemIntServer(INTB_VERTB, &dev->nu_touthandler);
+    if (dev->nu_IntsAdded)
+    {
+        RemIntServer(INTB_KERNEL + dev->nu_IRQ, &dev->nu_irqhandler);
+        RemIntServer(INTB_VERTB, &dev->nu_touthandler);
+        dev->nu_IntsAdded = FALSE;
+    }
 }
 
 static void nv_set_mac(struct net_device *dev)

@@ -126,6 +126,7 @@ struct NFUnit {
 
     struct timeval          nu_toutPOLL;
     BOOL                    nu_toutNEED;
+    BOOL                    nu_IntsAdded;
 
     struct MsgPort          *nu_TimerSlowPort;
     struct timerequest      *nu_TimerSlowReq;

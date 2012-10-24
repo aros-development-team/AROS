@@ -152,6 +152,7 @@ struct SiS900Unit {
     OOP_Object              *sis900u_PCIDevice;
     OOP_Object              *sis900u_PCIDriver;
     IPTR                    sis900u_IRQ;
+    BOOL                    sis900u_IntsAdded;
 
     int                     sis900u_open_count;
     struct SignalSemaphore  sis900u_unit_lock;

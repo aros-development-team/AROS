@@ -451,17 +451,27 @@ static int request_irq(struct net_device *unit)
 {
 RTLD(bug("[%s] request_irq()\n", unit->rtl8139u_name))
 
-    AddIntServer(INTB_KERNEL + unit->rtl8139u_IRQ, &unit->rtl8139u_irqhandler);
-    AddIntServer(INTB_VERTB, &unit->rtl8139u_touthandler);
-
+    if (!unit->rtl8139u_IntsAdded)
+    {
+        AddIntServer(INTB_KERNEL + unit->rtl8139u_IRQ,
+            &unit->rtl8139u_irqhandler);
+        AddIntServer(INTB_VERTB, &unit->rtl8139u_touthandler);
+        unit->rtl8139u_IntsAdded = TRUE;
+    }
 RTLD(bug("[%s] request_irq: IRQ Handlers configured\n", unit->rtl8139u_name))
-	return 1;
+
+    return 1;
 }
 
 static void free_irq(struct net_device *unit)
 {
-    RemIntServer(INTB_KERNEL + unit->rtl8139u_IRQ, &unit->rtl8139u_irqhandler);
-    RemIntServer(INTB_VERTB, &unit->rtl8139u_touthandler);
+    if (unit->rtl8139u_IntsAdded)
+    {
+        RemIntServer(INTB_KERNEL + unit->rtl8139u_IRQ,
+            &unit->rtl8139u_irqhandler);
+        RemIntServer(INTB_VERTB, &unit->rtl8139u_touthandler);
+        unit->rtl8139u_IntsAdded = FALSE;
+    }
 }
 
 int rtl8139nic_set_rxmode(struct net_device *unit)

@@ -902,15 +902,26 @@ static int request_irq(struct net_device *unit)
 {
 D(bug("[%s]: request_irq()\n", unit->sis900u_name));
 
-    AddIntServer(INTB_KERNEL + unit->sis900u_IRQ, &unit->sis900u_irqhandler);
-    AddIntServer(INTB_VERTB, &unit->sis900u_touthandler);
+    if (!unit->sis900u_IntsAdded)
+    {
+        AddIntServer(INTB_KERNEL + unit->sis900u_IRQ,
+            &unit->sis900u_irqhandler);
+        AddIntServer(INTB_VERTB, &unit->sis900u_touthandler);
+        unit->sis900u_IntsAdded = TRUE;
+    }
+
     return 1;
 }
 
 static void free_irq(struct net_device *unit)
 {
-    RemIntServer(INTB_KERNEL + unit->sis900u_IRQ, &unit->sis900u_irqhandler);
-    RemIntServer(INTB_VERTB, &unit->sis900u_touthandler);
+    if (unit->sis900u_IntsAdded)
+    {
+        RemIntServer(INTB_KERNEL + unit->sis900u_IRQ,
+            &unit->sis900u_irqhandler);
+        RemIntServer(INTB_VERTB, &unit->sis900u_touthandler);
+        unit->sis900u_IntsAdded = FALSE;
+    }
 }
 
 void sis900func_set_mac(struct net_device *unit)
@@ -961,7 +972,7 @@ D(bug("[%s]: sis900_reset()\n", unit->sis900u_name));
 		status ^= (LONGIN(isr + ioaddr) & status);
 	}
 
-	if( (unit->sis900u_RevisionID >= SIS635A_900_REV) || (unit->sis900u_RevisionID == SIS900B_900_REV) )
+	if ( (unit->sis900u_RevisionID >= SIS635A_900_REV) || (unit->sis900u_RevisionID == SIS900B_900_REV) )
 		LONGOUT(ioaddr + cfg, PESEL | RND_CNT);
 	else
 		LONGOUT(ioaddr + cfg, PESEL);

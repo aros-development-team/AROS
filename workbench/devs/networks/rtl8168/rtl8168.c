@@ -1203,8 +1203,13 @@ static int request_irq(struct net_device *unit)
 
 RTLD(bug("[%s] request_irq()\n", unit->rtl8168u_name))
 
-    AddIntServer(INTB_KERNEL + unit->rtl8168u_IRQ, &unit->rtl8168u_irqhandler);
-    AddIntServer(INTB_VERTB, &unit->rtl8168u_touthandler);
+    if (!unit->rtl8168u_IntsAdded)
+    {
+        AddIntServer(INTB_KERNEL + unit->rtl8168u_IRQ,
+            &unit->rtl8168u_irqhandler);
+        AddIntServer(INTB_VERTB, &unit->rtl8168u_touthandler);
+        unit->rtl8168u_IntsAdded = TRUE;
+    }
 
 RTLD(bug("[%s] request_irq: IRQ Handlers configured\n", unit->rtl8168u_name))
     return 1;
@@ -1212,8 +1217,13 @@ RTLD(bug("[%s] request_irq: IRQ Handlers configured\n", unit->rtl8168u_name))
 
 static void free_irq(struct net_device *unit)
 {
-    RemIntServer(INTB_KERNEL + unit->rtl8168u_IRQ, &unit->rtl8168u_irqhandler);
-    RemIntServer(INTB_VERTB, &unit->rtl8168u_touthandler);
+    if (unit->rtl8168u_IntsAdded)
+    {
+        RemIntServer(INTB_KERNEL + unit->rtl8168u_IRQ,
+            &unit->rtl8168u_irqhandler);
+        RemIntServer(INTB_VERTB, &unit->rtl8168u_touthandler);
+        unit->rtl8168u_IntsAdded = FALSE;
+    }
 }
 
 static void rtl8168nic_SetRXBufSize(struct net_device *unit)

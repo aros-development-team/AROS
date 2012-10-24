@@ -132,6 +132,7 @@ struct VIARHINEUnit {
 
     struct timeval          rhineu_toutPOLL;
     BOOL                    rhineu_toutNEED;
+    BOOL                    rhineu_IntsAdded;
 
     struct MsgPort          *rhineu_TimerSlowPort;
     struct timerequest      *rhineu_TimerSlowReq;

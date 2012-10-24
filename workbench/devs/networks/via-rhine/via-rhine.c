@@ -268,8 +268,12 @@ static int request_irq(struct net_device *dev)
 {
 D(bug("%s: request_irq()\n", dev->rhineu_name));
 
-    AddIntServer(INTB_KERNEL + dev->rhineu_IRQ, &dev->rhineu_irqhandler);
-    AddIntServer(INTB_VERTB, &dev->rhineu_touthandler);
+    if (!dev->rhineu_IntsAdded)
+    {
+        AddIntServer(INTB_KERNEL + dev->rhineu_IRQ, &dev->rhineu_irqhandler);
+        AddIntServer(INTB_VERTB, &dev->rhineu_touthandler);
+        dev->rhineu_IntsAdded = TRUE;
+    }
 
 D(bug("%s: request_irq: IRQ Handlers configured\n", dev->rhineu_name));
     return 0;
@@ -277,8 +281,12 @@ D(bug("%s: request_irq: IRQ Handlers configured\n", dev->rhineu_name));
 
 static void free_irq(struct net_device *dev)
 {
-    RemIntServer(INTB_KERNEL + dev->rhineu_IRQ, &dev->rhineu_irqhandler);
-    RemIntServer(INTB_VERTB, &dev->rhineu_touthandler);
+    if (dev->rhineu_IntsAdded)
+    {
+        RemIntServer(INTB_KERNEL + dev->rhineu_IRQ, &dev->rhineu_irqhandler);
+        RemIntServer(INTB_VERTB, &dev->rhineu_touthandler);
+        dev->rhineu_IntsAdded = FALSE;
+    }
 }
 
 int viarhinenic_rx_setmode(struct net_device *dev)
