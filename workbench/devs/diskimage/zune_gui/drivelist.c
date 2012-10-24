@@ -176,7 +176,7 @@ static inline LONG GetDeviceIcon (UBYTE devtype) {
 
 HOOKPROTO(DriveList_DisplayFunc, IPTR, CONST_STRPTR *array, struct DriveEntry *e) {
 	if (e) {
-		e->list_pos = (ULONG)array[-1];
+		e->list_pos = (IPTR)array[-1];
 		array[DRIVE_COL_ICON] = image_str[GetDeviceIcon(e->device_type)];
 		array[DRIVE_COL_UNIT] = e->unit ? e->unit : (STRPTR)"";
 		array[DRIVE_COL_DEVICE] = e->drive ? e->drive : (STRPTR)"";

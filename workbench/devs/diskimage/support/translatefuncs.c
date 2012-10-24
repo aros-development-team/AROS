@@ -29,7 +29,7 @@
 void TranslateMenus (struct LocaleInfo *li, struct NewMenu *nm) {
 	while (nm->nm_Type != NM_END) {
 		if (nm->nm_Label && nm->nm_Label != NM_BARLABEL)
-			nm->nm_Label = (STRPTR)GetString(li, (LONG)nm->nm_Label);
+			nm->nm_Label = (STRPTR)GetString(li, (LONG)(IPTR)nm->nm_Label);
 		nm++;
 	}
 }
@@ -37,7 +37,7 @@ void TranslateMenus (struct LocaleInfo *li, struct NewMenu *nm) {
 void TranslateArray (struct LocaleInfo *li, CONST_STRPTR *array) {
 	while (*array) {
 		if (*array != (CONST_STRPTR)-1) {
-			*array = GetString(li, (int32)*array);
+			*array = GetString(li, (int32)(IPTR)*array);
 		}
 		array++;
 	}

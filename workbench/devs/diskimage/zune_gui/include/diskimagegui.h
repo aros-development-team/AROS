@@ -98,7 +98,7 @@ struct DriveEntry {
 	STRPTR unit;
 	STRPTR drive;
 	STRPTR diskimage;
-	ULONG list_pos;
+	IPTR  list_pos;
 };
 
 struct PluginEntry {
@@ -107,7 +107,7 @@ struct PluginEntry {
 	UBYTE has_write;
 	STRPTR priority;
 	STRPTR name;
-	ULONG list_pos;
+	IPTR  list_pos;
 };
 
 /* main.c */

@@ -39,10 +39,10 @@ CONST_STRPTR GetString (struct LocaleInfo *li, LONG stringNum) {
 
 	while (rbe32(l) != stringNum)
 	{
-		w = (UWORD *)((ULONG)l + 4);
-		l = (LONG *)((ULONG)l + (ULONG)rbe16(w) + 6);
+		w = (UWORD *)((IPTR)l + 4);
+		l = (LONG *)((IPTR)l + (ULONG)rbe16(w) + 6);
 	}
-	builtIn = (CONST_STRPTR)((ULONG)l + 6);
+	builtIn = (CONST_STRPTR)((IPTR)l + 6);
 
 	if (LocaleBase) {
 		return GetCatalogStr(li->li_Catalog, stringNum, (STRPTR)builtIn);
