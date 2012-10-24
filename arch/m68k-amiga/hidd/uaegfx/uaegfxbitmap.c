@@ -206,8 +206,8 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
  
     data->rgbformat = getrtgformat(csd, data->pixfmtobj);
     data->width = width;
-    if (!displayable)
-        width = (width + 16 - 1) & ~(16 - 1);
+    data->align = displayable ? 32 : 16;
+   	width = (width + data->align - 1) & ~(data->align - 1);
     width = CalculateBytesPerRow(csd, width, data->rgbformat);
     data->bytesperline = width;
     data->height = height;
@@ -305,7 +305,8 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    modeinfo = getrtgmodeinfo(csd, sync, pf, csd->fakemodeinfo);
 		    csd->modeinfo = modeinfo;
 		    csd->rgbformat = data->rgbformat;
-		    pw(csd->bitmapextra + PSSO_BitMapExtra_Width, width);
+		    /* PSSO_BitMapExtra_Width needs to be aligned */
+		    pw(csd->bitmapextra + PSSO_BitMapExtra_Width, (width + data->align - 1) & ~(data->align - 1));
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
 		    D(bug("Show %p: (%p:%d) %dx%dx%d (%dx%d) BF=%08x\n",
 			data, data->VideoData, data->memsize,
@@ -385,8 +386,11 @@ VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 	    *msg->storage = csd->disp == data;
 	    return;
 	case aoHidd_BitMap_Align:
-	    *msg->storage = 16;
+	    *msg->storage = data->align;
 	    return;
+	case aoHidd_BitMap_BytesPerRow:
+		*msg->storage = data->bytesperline;
+		return;
 	case aoHidd_BitMap_IsLinearMem:
 	    *msg->storage = TRUE;
 	    return;
