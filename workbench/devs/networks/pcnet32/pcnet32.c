@@ -261,15 +261,24 @@ static int request_irq(struct net_device *dev)
 {
 D(bug("%s: request_irq()\n", dev->pcnu_name));
 
-    AddIntServer(INTB_KERNEL | dev->pcnu_IRQ, &dev->pcnu_irqhandler);
-    AddIntServer(INTB_VERTB, &dev->pcnu_touthandler);
+    if (!dev->pcnu_IntsAdded)
+    {
+        AddIntServer(INTB_KERNEL + dev->pcnu_IRQ, &dev->pcnu_irqhandler);
+        AddIntServer(INTB_VERTB, &dev->pcnu_touthandler);
+        dev->pcnu_IntsAdded = TRUE;
+    }
+
     return 1;
 }
 
 static void free_irq(struct net_device *dev)
 {
-    RemIntServer(INTB_KERNEL | dev->pcnu_IRQ, &dev->pcnu_irqhandler);
-    RemIntServer(INTB_VERTB, &dev->pcnu_touthandler);
+    if (dev->pcnu_IntsAdded)
+    {
+        RemIntServer(INTB_KERNEL + dev->pcnu_IRQ, &dev->pcnu_irqhandler);
+        RemIntServer(INTB_VERTB, &dev->pcnu_touthandler);
+        dev->pcnu_IntsAdded = FALSE;
+    }
 }
 
 static void pcnet32_set_mac(struct net_device *dev)

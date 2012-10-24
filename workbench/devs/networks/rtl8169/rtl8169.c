@@ -939,15 +939,26 @@ static int request_irq(struct net_device *unit)
 {
     RTLD(bug("[%s] request_irq()\n", unit->rtl8169u_name))
 
-    AddIntServer(INTB_KERNEL + unit->rtl8169u_IRQ, &unit->rtl8169u_irqhandler);
-    AddIntServer(INTB_VERTB, &unit->rtl8169u_touthandler);
+    if (!unit->rtl8169u_IntsAdded)
+    {
+        AddIntServer(INTB_KERNEL + unit->rtl8169u_IRQ,
+            &unit->rtl8169u_irqhandler);
+        AddIntServer(INTB_VERTB, &unit->rtl8169u_touthandler);
+        unit->rtl8169u_IntsAdded = TRUE;
+    }
+
     return 1;
 }
 
 static void free_irq(struct net_device *unit)
 {
-    RemIntServer(INTB_KERNEL + unit->rtl8169u_IRQ, &unit->rtl8169u_irqhandler);
-    RemIntServer(INTB_VERTB, &unit->rtl8169u_touthandler);
+    if (unit->rtl8169u_IntsAdded)
+    {
+        RemIntServer(INTB_KERNEL + unit->rtl8169u_IRQ,
+            &unit->rtl8169u_irqhandler);
+        RemIntServer(INTB_VERTB, &unit->rtl8169u_touthandler);
+        unit->rtl8169u_IntsAdded = FALSE;
+    }
 }
 
 void rtl_set_rx_max_size(struct net_device *unit)

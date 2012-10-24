@@ -669,7 +669,8 @@ D(bug("%s: S2CmdOnline()\n", unit->rhineu_name));
         for(i = 0; i < STAT_COUNT; i++)
             unit->rhineu_special_stats[i] = 0;
 
-        if (unit->start(unit)) {
+        if (unit->start(unit))
+        {
             error = S2ERR_OUTOFSERVICE;
             wire_error = S2WERR_GENERIC_ERROR;
         }

@@ -680,7 +680,8 @@ D(bug("[%s]: S2CmdOnline()\n", unit->sis900u_name));
         for(i = 0; i < SANA2_SPECIAL_STAT_COUNT; i++)
             unit->sis900u_special_stats[i] = 0;
 
-        if (sis900func_open(unit)) {
+        if (sis900func_open(unit))
+        {
             error = S2ERR_OUTOFSERVICE;
             wire_error = S2WERR_GENERIC_ERROR;
         }

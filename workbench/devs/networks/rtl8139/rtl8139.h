@@ -189,6 +189,7 @@ struct RTL8139Unit {
 
 	struct timeval          rtl8139u_toutPOLL;
 	BOOL                    rtl8139u_toutNEED;
+	BOOL                    rtl8139u_IntsAdded;
 
 	struct MsgPort          *rtl8139u_TimerSlowPort;
 	struct timerequest      *rtl8139u_TimerSlowReq;
