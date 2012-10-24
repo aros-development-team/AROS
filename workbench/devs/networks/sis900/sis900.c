@@ -910,7 +910,7 @@ D(bug("[%s]: request_irq()\n", unit->sis900u_name));
         unit->sis900u_IntsAdded = TRUE;
     }
 
-    return 1;
+    return 0;
 }
 
 static void free_irq(struct net_device *unit)

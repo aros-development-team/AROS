@@ -947,7 +947,7 @@ static int request_irq(struct net_device *unit)
         unit->rtl8169u_IntsAdded = TRUE;
     }
 
-    return 1;
+    return 0;
 }
 
 static void free_irq(struct net_device *unit)

@@ -268,7 +268,7 @@ D(bug("%s: request_irq()\n", dev->pcnu_name));
         dev->pcnu_IntsAdded = TRUE;
     }
 
-    return 1;
+    return 0;
 }
 
 static void free_irq(struct net_device *dev)

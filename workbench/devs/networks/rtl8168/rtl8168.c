@@ -1212,7 +1212,7 @@ RTLD(bug("[%s] request_irq()\n", unit->rtl8168u_name))
     }
 
 RTLD(bug("[%s] request_irq: IRQ Handlers configured\n", unit->rtl8168u_name))
-    return 1;
+    return 0;
 }
 
 static void free_irq(struct net_device *unit)
