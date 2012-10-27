@@ -113,6 +113,7 @@ f_void	Miami_UserFuncTable[] =
 	FUNCARRAY_32BIT_NATIVE,
 #endif
 	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Open() is never called */
+	AROS_SLIB_ENTRY(Close, Miami, 2),
 	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Expunge() is never called */
 	AROS_SLIB_ENTRY(Null, LIB, 0),	     /* ELL_Reserved() is never called */
 	AROS_SLIB_ENTRY(MiamiSysCtl, Miami, 5),
