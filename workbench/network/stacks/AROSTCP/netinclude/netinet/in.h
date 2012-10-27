@@ -168,7 +168,7 @@
  * Internet address (a structure for historical reasons)
  */
 struct in_addr {
-	u_int32_t s_addr;
+	uint32_t s_addr;
 };
 
 /*
@@ -211,9 +211,9 @@ struct in_addr {
  * Socket address, internet style.
  */
 struct sockaddr_in {
-	u_char	sin_len;
-	u_char	sin_family;
-	u_short	sin_port;
+	uint8_t	sin_len;
+	uint8_t	sin_family;
+	uint16_t	sin_port;
 	struct	in_addr sin_addr;
 	char	sin_zero[8];
 };
