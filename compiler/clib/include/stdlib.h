@@ -138,7 +138,7 @@ int   on_exit(void (*func)(int, void *), void *);
 
 
 #if !defined(_STDC_NOINLINE_MBTOWC)
-static inline
+static __inline__
 int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n)
 {
     if (s == NULL)
@@ -163,7 +163,7 @@ int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n)
 
 
 #if !defined(_STDC_NOINLINE_WCTOMB)
-static inline
+static __inline__
 int wctomb(char *s, wchar_t wchar)
 {
     if (s == NULL)
@@ -184,7 +184,7 @@ int wctomb(char *s, wchar_t wchar)
 
 
 #if !defined(_STDC_NOINLINE_MBSTOWCS)
-static inline
+static __inline__
 size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n)
 {
     size_t l;
@@ -205,7 +205,7 @@ size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n)
 
 
 #if !defined(_STDC_NOINLINE_WCSTOMBS)
-static inline
+static __inline__
 size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n)
 {
     size_t l;

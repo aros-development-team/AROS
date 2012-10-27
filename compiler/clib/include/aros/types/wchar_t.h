@@ -8,7 +8,11 @@
 
 #ifndef __cplusplus
 
-typedef char wchar_t;
+#ifdef __WCHAR_TYPE__
+typedef __WCHAR_TYPE__ wchar_t;
+#else
+typedef short wchar_t;
+#endif
 
 #endif
 

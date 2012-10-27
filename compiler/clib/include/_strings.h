@@ -32,27 +32,27 @@ char *strchr (const char * s, int c);
 char *strrchr (const char * s, int c);
 
 /* Deprecated, removed in POSIX.1-2008 */
-static inline int bcmp(const void * s1, const void * s2, size_t n)
+static __inline__ int bcmp(const void * s1, const void * s2, size_t n)
 {
     return memcmp(s1, s2, n);
 }
 
-static inline void bcopy(const void * src, void * dest, size_t n)
+static __inline__ void bcopy(const void * src, void * dest, size_t n)
 {
     memmove(dest, src, n);
 }
 
-static inline void bzero(void * dest, size_t n)
+static __inline__ void bzero(void * dest, size_t n)
 {
     memset(dest, 0, n);
 }
 
-static inline char *index(const char * s, int c)
+static __inline__ char *index(const char * s, int c)
 {
     return strchr(s, c);
 }
 
-static inline char *rindex(const char * s, int c)
+static __inline__ char *rindex(const char * s, int c)
 {
     return strrchr(s, c);
 }
