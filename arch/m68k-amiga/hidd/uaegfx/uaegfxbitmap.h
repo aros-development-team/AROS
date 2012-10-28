@@ -22,7 +22,6 @@ struct bm_data
     ULONG memsize;
     BOOL invram;
     WORD width, height, align;
-    WORD disp_width, disp_height;
     WORD bytesperpixel;
     WORD bytesperline;
     UBYTE *palette;

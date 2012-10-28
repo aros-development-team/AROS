@@ -183,7 +183,6 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     struct bm_data *data;
     IPTR 	    	     width, height, multi;
     IPTR		     displayable;
-    HIDDT_ModeID 	     modeid;
     struct TagItem tags[2];
 
     DB2(bug("UAEGFXBitmap__Root__New\n"));
@@ -205,11 +204,10 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel, &multi);
  
     data->rgbformat = getrtgformat(csd, data->pixfmtobj);
-    data->width = width;
     data->align = displayable ? 32 : 16;
-   	width = (width + data->align - 1) & ~(data->align - 1);
-    width = CalculateBytesPerRow(csd, width, data->rgbformat);
-    data->bytesperline = width;
+    width = (width + data->align - 1) & ~(data->align - 1);
+    data->bytesperline = CalculateBytesPerRow(csd, width, data->rgbformat);
+    data->width = width;
     data->height = height;
     data->bytesperpixel = multi;
     allocrtgbitmap(csd, data, TRUE);
@@ -220,22 +218,10 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     tags[1].ti_Tag = TAG_DONE;
     OOP_SetAttrs(o, tags);
 
-    DB2(bug("%dx%dx%d %d RGBF=%08x P=%08x\n", data->width, height, multi, width, data->rgbformat, data->VideoData));
+    DB2(bug("%dx%dx%d %d RGBF=%08x P=%08x\n", width, height, multi, data->bytesperline, data->rgbformat, data->VideoData));
 
     if (data->VideoData == NULL)
     	ok = FALSE;
-
-    OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
-    if (ok && modeid != vHidd_ModeID_Invalid) {
-	OOP_Object *sync, *pf;
-	IPTR dwidth, dheight;
-
-	HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pf);
-	OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
-	OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
-	data->disp_width  = dwidth;
-	data->disp_height = dheight;
-    }
 
     if (!ok) {
  	OOP_MethodID dispose_mid;
@@ -293,8 +279,8 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
     		    IPTR dwidth, dheight, depth, width, height;
     		    struct ModeInfo *modeinfo;
 
-		    OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
-		    OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
+		    width = data->width;
+		    height = data->height;
 		    OOP_GetAttr(o, aHidd_BitMap_ModeID , &modeid);
     		    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 		    HIDD_Gfx_GetMode(gfxhidd, modeid, &sync, &pf);
@@ -305,8 +291,7 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    modeinfo = getrtgmodeinfo(csd, sync, pf, csd->fakemodeinfo);
 		    csd->modeinfo = modeinfo;
 		    csd->rgbformat = data->rgbformat;
-		    /* PSSO_BitMapExtra_Width needs to be aligned */
-		    pw(csd->bitmapextra + PSSO_BitMapExtra_Width, (width + data->align - 1) & ~(data->align - 1));
+		    pw(csd->bitmapextra + PSSO_BitMapExtra_Width, width);
 		    pw(csd->bitmapextra + PSSO_BitMapExtra_Height, height);
 		    D(bug("Show %p: (%p:%d) %dx%dx%d (%dx%d) BF=%08x\n",
 			data, data->VideoData, data->memsize,
@@ -331,7 +316,7 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    SetGC(csd, modeinfo, 0);
  		    SetClock(csd);
 		    SetDAC(csd);
-		    SetPanning(csd, data->VideoData, dwidth, 0, 0);
+		    SetPanning(csd, data->VideoData, width, 0, 0);
 		    SetDisplay(csd, TRUE);
 		    SetSwitch(csd, TRUE);
 	    	    SetInterrupt(csd, TRUE);
