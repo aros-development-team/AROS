@@ -68,7 +68,11 @@ extern const union __nan_un {
 
 #define	MATH_ERRNO	1
 #define	MATH_ERREXCEPT	2
+#ifdef __mc68000__
+#define	math_errhandling	MATH_ERRNO
+#else
 #define	math_errhandling	MATH_ERREXCEPT
+#endif
 
 /* XXX We need a <machine/math.h>. */
 #if defined(__ia64__) || defined(__sparc64__)
