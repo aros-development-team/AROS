@@ -2693,7 +2693,7 @@ ifneq (%(excludes),)
     %(mmake)-exclude := -X ./exclude.patterns
 endif
 
-ifneq (%srcdir),)
+ifneq (%(srcdir),)
     %(mmake)-srcdir := %(srcdir)
 else
     %(mmake)-srcdir := %(archive)
