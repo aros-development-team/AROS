@@ -836,7 +836,8 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                     if (fssm != NULL)
                     {
                         boot_Device = fssm->fssm_Device;
-                        if (strcmp(fssm->fssm_Device, "ahci.device") != 0)
+                        if (strcmp(fssm->fssm_Device, "ahci.device") != 0
+                            && strcmp(fssm->fssm_Device, "ata.device") != 0)
                             boot_Unit = fssm->fssm_Unit;
                     }
                     else
