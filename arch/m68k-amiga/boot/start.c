@@ -498,9 +498,15 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 #endif
 
 	struct TagItem bootmsg[] = {
+	    /* nomonitors - Until we have working m68k PCI support,
+	     *              attempting to load the monitor drivers
+	     *              just wastes a lot of time during boot
+	     */
 #if AROS_SERIAL_DEBUG
-	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode" },
-//	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode,debugmmu,mungwall" },
+	    { KRN_CmdLine, (IPTR)"nomonitors sysdebug=InitCode" },
+//	    { KRN_CmdLine, (IPTR)"nomonitors sysdebug=InitCode,debugmmu,mungwall" },
+#else
+            { KRN_CmdLine, (IPTR)"nomonitors" },
 #endif
             { KRN_KernelStackBase, (IPTR)&_ss },
             { KRN_KernelStackSize, (IPTR)(&_ss_end - &_ss) },
