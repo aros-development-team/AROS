@@ -307,7 +307,7 @@ static void unloadCommand(ShellState *ss, BPTR commandSeg,
 
 /* Function: loadCommand
  *
- * Action:   Load a command, searching the paths, C: and the resident lists.
+ * Action:   Load a command, searching the resident lists, paths and C:
  *
  * Input:    ShellState    *ss              --  this state
  *           STRPTR	    commandName     --  the command to load
