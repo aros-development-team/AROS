@@ -21,6 +21,7 @@ Q ?= @
 #MM     kernel-amiga-m68k-wbtag-kobj \
 #MM     kernel-ata-kobj \
 #MM     kernel-bootloader-amiga-m68k-kobj \
+#MM     kernel-bootloader-kobj \
 #MM     kernel-cia-kobj \
 #MM     kernel-debug-kobj \
 #MM     kernel-disk-kobj \
@@ -79,7 +80,7 @@ KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
-KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell cardres
+KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell cardres bootloader
 KHOOKS  := diag romboot
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
