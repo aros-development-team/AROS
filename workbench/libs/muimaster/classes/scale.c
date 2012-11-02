@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -227,7 +227,7 @@ IPTR Scale__MUIM_Draw(struct IClass *cl, Object *obj,
                 Draw(_rp(obj), _mright(obj), _mtop(obj) + 3);
                 drawpct = FALSE;
             }
-            else if (drawpct == TRUE)   /* draw intermediate values and lines */
+            else if (drawpct)   /* draw intermediate values and lines */
             {
                 ZText *ztext;
                 int val = k * 100 / i;
