@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1405,7 +1405,7 @@ LONG InitListNode(struct ListNode *node, struct ListNode *parent)
 
 void UninitListNode(struct ListNode *node)
 {
-    struct ListNode *parent;
+    struct ListNode *parent, *next;
 
     D(bug("[HDToolBox] UninitListNode()\n"));
 
@@ -1413,13 +1413,14 @@ void UninitListNode(struct ListNode *node)
     parent = (struct ListNode *)node->list.lh_Head;
     while (parent->ln.ln_Succ)
     {
+        next = (struct ListNode *)parent->ln.ln_Succ;
         if (parent->ln.ln_Type == LNT_Parent)
         {
             Remove(&parent->ln);
             FreeMem(parent, sizeof(struct ListNode));
             return;
         }
-        parent = (struct ListNode *)parent->ln.ln_Succ;
+        parent = next;
     }
 }
 
@@ -1720,8 +1721,8 @@ LONG initGUI(void)
 
     app = ApplicationObject,
                 MUIA_Application_Title      , "HDToolBox",
-                MUIA_Application_Version    , "$VER: HDToolbox 0.1 (09-Apr-2003)",
-                MUIA_Application_Copyright  , "(c) 1995-2003 by the AROS Development Team",
+                MUIA_Application_Version    , "$VER: HDToolBox 0.2 (2.11.2012)",
+                MUIA_Application_Copyright  , "(c) 1995-2012 AROS Development Team",
                 MUIA_Application_Author     , "Bearly, Ogun, Fats and others at AROS",
                 MUIA_Application_Description, "Partition your disks.",
                 MUIA_Application_Base       , "HDTOOLBOX",

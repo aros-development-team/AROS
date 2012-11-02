@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -65,13 +65,14 @@ void uninitEnv()
     D(bug("[HDToolBox] uninitEnv()\n"));
 
     deinitGUI();
+    freeDeviceList();
+
     if (PartitionBase)
         CloseLibrary((struct Library *)PartitionBase);
     if (GfxBase)
         CloseLibrary((struct Library *)GfxBase);
     if (IntuitionBase)
         CloseLibrary((struct Library *)IntuitionBase);
-    freeDeviceList();
 }
 
 void waitMessage()
