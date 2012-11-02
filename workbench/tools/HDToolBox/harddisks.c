@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,21 +23,23 @@ extern struct GUIGadgets gadgets;
 
 void w2strcpy(STRPTR name, UWORD *wstr, ULONG len)
 {
+    STRPTR p = name;
+
     while (len)
     {
-        *((UWORD *)name) = AROS_BE2WORD(*wstr);
-        name += sizeof(UWORD);
+        *((UWORD *)p) = AROS_BE2WORD(*wstr);
+        p += sizeof(UWORD);
         len -= 2;
         wstr++;
     }
-    name -= 2;
-    while ((*name==0) || (*name==' '))
-        *name-- = 0;
+    p -= 2;
+    while (p >= name && (*p == 0 || *p == ' '))
+        *p-- = 0;
 }
 
 BOOL identify(struct IOStdReq *ioreq, STRPTR name)
 {
-    struct SCSICmd scsicmd;
+    struct SCSICmd scsicmd = {0};
     UWORD data[256];
     UBYTE cmd = 0xEC; /* identify */
 
@@ -140,7 +142,7 @@ void freeHDList(struct List *list)
     struct HDNode *node;
     struct HDNode *next;
 
-    D(bug("[HDToolBox] freeHDList()\n"));
+    D(bug("[HDToolBox] freeHDList(%p)\n", list));
 
     node = (struct HDNode *)list->lh_Head;
     while (node->root_partition.listnode.ln.ln_Succ)

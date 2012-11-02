@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -164,8 +164,7 @@ void findPartitions(struct ListNode *parent, struct HDTBPartition *partition)
             }
 
 	    /*
-	     * check if partition is active
-	     * (what's the difference between this and automount?)
+	     * check if partition is active (MBR-specific)
 	     */
             if (getAttrInfo(pn->root->table->pattrlist, PTA_ACTIVE) & PLAM_READ)
             {
@@ -194,10 +193,11 @@ void findPartitions(struct ListNode *parent, struct HDTBPartition *partition)
 
 void freePartitionNode(struct HDTBPartition *node)
 {
-    D(bug("[HDToolBox] freePartitionNode()\n"));
+    D(bug("[HDToolBox] freePartitionNode(%p)\n", node));
 
     if (node->table)
     {
+        D(bug("[HDToolBox] Freeing sub-table %p\n", node->table));
         freePartitionList(&node->listnode.list);
         freePartitionTable(node);
     }
@@ -211,7 +211,7 @@ void freePartitionList(struct List *list)
     struct HDTBPartition *node;
     struct HDTBPartition *next;
 
-    D(bug("[HDToolBox] freePartitionList()\n"));
+    D(bug("[HDToolBox] freePartitionList(%p)\n", list));
 
     node = (struct HDTBPartition *)list->lh_Head;
     while (node->listnode.ln.ln_Succ)
