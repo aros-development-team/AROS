@@ -7,6 +7,10 @@
 #include <aros/autoinit.h>
 #include <aros/debug.h>
 
+#ifndef ZUNE_CUSTOMCLASS_PASS
+#define ZUNE_CUSTOMCLASS_PASS   100
+#endif
+
 #define __ZUNE_CUSTOMCLASS_START(name)                                      \
 BOOPSI_DISPATCHER_PROTO(IPTR, name ## _Dispatcher, __class, __self, __msg); \
 BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg)        \
@@ -53,8 +57,8 @@ void name ## _Deinitialize(void)                                      \
     MUI_DeleteCustomClass(name ## _CLASS);                            \
 }                                                                     \
                                                                       \
-ADD2INIT(name ## _Initialize,   100);                                 \
-ADD2EXIT(name ## _Deinitialize, 100);                                 \
+ADD2INIT(name ## _Initialize,   ZUNE_CUSTOMCLASS_PASS);               \
+ADD2EXIT(name ## _Deinitialize, ZUNE_CUSTOMCLASS_PASS);               \
 
 #if !defined(ZCC_QUIET)
 
