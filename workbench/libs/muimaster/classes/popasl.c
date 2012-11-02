@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -69,8 +69,7 @@ SAVEDS static LONG Asl_Entry(void)
         DoMethod(app, MUIM_Application_PushMethod, (IPTR) pop, 2,
             MUIM_Popstring_Close, FALSE);
 
-    if (buf != NULL)
-        FreeVec(buf);
+    FreeVec(buf);
 
     return 0;
 }

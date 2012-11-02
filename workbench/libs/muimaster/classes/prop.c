@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -154,15 +154,15 @@ IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             data->first = tag->ti_Data;
             break;
         case MUIA_Prop_Horiz:
-            data->horiz = tag->ti_Data;
+            data->horiz = tag->ti_Data != 0;
             break;
         case MUIA_Prop_Slider:
             break;
         case MUIA_Prop_UseWinBorder:
-            data->usewinborder = tag->ti_Data;
+            data->usewinborder = tag->ti_Data != 0;
             break;
         case MUIA_Prop_Visible:
-            data->visible = tag->ti_Data;
+            data->visible = tag->ti_Data != 0;
             break;
 
         case MUIA_Prop_DeltaFactor:
@@ -171,7 +171,7 @@ IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         }
     }
 
-    if (data->horiz == TRUE)
+    if (data->horiz)
     {
         data->minwidth = 6;
         data->minheight = 6;
@@ -409,7 +409,7 @@ IPTR Prop__MUIM_Setup(struct IClass *cl, Object *obj,
     if (!data->usewinborder)
     {
         data->gadgetid = DoMethod(_win(obj), MUIM_Window_AllocGadgetID);
-        if (data->horiz == TRUE)
+        if (data->horiz)
         {
             data->minwidth = 6;
             data->minheight = 6;
@@ -442,7 +442,7 @@ IPTR Prop__MUIM_Setup(struct IClass *cl, Object *obj,
                     {
                         set(obj, MUIA_Frame, MUIV_Frame_None);
 
-                        if (data->horiz == TRUE)
+                        if (data->horiz)
                         {
                             data->minheight =
                                 node->img_horizontalcontainer->h >> 1;
@@ -882,7 +882,7 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
                                 data->obj = obj;
                                 dhook = &data->dhook;
 
-                                if (data->horiz == TRUE)
+                                if (data->horiz)
                                     height =
                                         node->img_horizontalcontainer->
                                         h >> 1;
