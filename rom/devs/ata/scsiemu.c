@@ -1,6 +1,6 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved
-    $Id: scsiemu.c $
+    Copyright © 2011-2012, The AROS Development Team. All rights reserved
+    $Id$
 
     Desc: Simple HD_SCSICMD emulator.
     Lang: English
@@ -144,12 +144,12 @@ static UBYTE scsi_readcapacity(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG
     return 0;
 }
 
-UBYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
+BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
 {
     ULONG len, offset;
     ULONG scsi_len;
     UWORD scsi_sense_len = (cmd->scsi_Flags & (1 << SCSIB_OLDAUTOSENSE)) ? 4 :
-    	(cmd->scsi_Flags & (1 << SCSIB_AUTOSENSE)) ? cmd->scsi_SenseLength : 32;
+    	(cmd->scsi_Flags & (1 << SCSIB_AUTOSENSE)) ? cmd->scsi_SenseLength : 0;
     UBYTE *cmdbuf = cmd->scsi_Command;
     UBYTE sense[32];
     UWORD senselen;
@@ -222,7 +222,7 @@ UBYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
 	break;
 
 	case 0x1d: /* SEND DIAGNOSTICS */
-	case 0x35: /* SYNCRONIZE CACHE */
+	case 0x35: /* SYNCHRONIZE CACHE */
 	break;
 	
 	default:
@@ -237,10 +237,10 @@ UBYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
 	sense[0] = 0x70;
 	sense[2] = 5; /* ILLEGAL REQUEST */
 	sense[12] = 0x24; /* ILLEGAL FIELD IN CDB */
-	err = 0;
+	err = TDERR_NotSpecified;
     }
     
-    if (senselen) {
+    if (senselen && scsi_sense_len) {
     	if (senselen > scsi_sense_len)
     	    senselen = scsi_sense_len;
     	CopyMem(sense, cmd->scsi_SenseData, senselen);

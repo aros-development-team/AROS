@@ -2,40 +2,12 @@
 #define _ATA_H
 
 /*
-   Copyright © 2004-2011, The AROS Development Team. All rights reserved.
-   $Id$
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
+    $Id$
 
-Desc: ata.device main private include file
-Lang: English
+    Desc: ata.device main private include file
+    Lang: English
 */
-/*
- * PARTIAL CHANGELOG:
- * DATE        NAME                ENTRY
- * ----------  ------------------  -------------------------------------------------------------------
- * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
- *                                 Enabled implementation to scan for other PCI IDE controllers
- *                                 Implemented ATAPI Packet Support for both read and write
- *                                 Corrected ATAPI DMA handling
- *                                 Fixed major IDE enumeration bugs severely handicapping transfers with more than one controller
- *                                 Compacted source and implemented major ATA support procedure
- *                                 Improved DMA and Interrupt management
- *                                 Removed obsolete code
- * 2008-03-23  T. Wiszkowski       Corrected DMA PRD issue (x86_64 systems)
- * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
- *                                 nForce and Intel SATA chipsets should now be operational.
- * 2008-03-31  M. Schulz           We do have asm/io.h include for ages... No need to define io functions here anymore.
- *                                 Redefined ata_in and ata_out. On x86-like systems they use inb/outb directly. On other systems
- *                                 they use pci_inb and pci_outb.
- * 2008-04-05  T. Wiszkowski       Improved IRQ management
- * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
- * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling
- *                                 medium removal, device detection, bus management and much more
- * 2008-06-24  P. Fedin            Added 'nomulti' flag to disable multisector operations
- * 2009-02-21  M. Schulz           ata_in/ata_out declared as functions, if no PCI-io operations are defined.
- * 2009-10-07  M. Weiss            Rely on definition of AROS_PCI_IO_FUNCS to check if PCI-io operations are defined.
- * 2011-04-05  P. Fedin		   Store PCI HIDD attribute and method bases in ata.device base
- * 2011-05-19  P. Fedin		   The Big rework. Separated bus-specific code. Made 64-bit-friendly.
- */
 
 #include <exec/types.h>
 #include <exec/devices.h>
@@ -526,7 +498,7 @@ struct atapi_StartStop
     UBYTE   pad2[7];
 };
 
-UBYTE SCSIEmu(struct ata_Unit*, struct SCSICmd*);
+BYTE SCSIEmu(struct ata_Unit*, struct SCSICmd*);
 
 #endif // _ATA_H
 

@@ -7,58 +7,6 @@
 */
 
 /*
- * PARTIAL CHANGELOG:
- * DATE        NAME                ENTRY
- * ----------  ------------------  -------------------------------------------------------------------
- * 2006-12-20  T. Wiszkowski       Updated ATA Packet Interface to handle ATAPI/SCSI Commands
- * 2008-01-06  T. Wiszkowski       Corrected and completed ATA Packet Interface handling. PIO transfers fully operational.
- * 2008-01-07  T. Wiszkowski       Added initial DMA support for Direct SCSI commands. Corrected atapi
- *                                 READ and WRITE commands to pass proper transfer size to the atapi_SendPacket
- *                                 as discovered by mschulz
- * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
- *                                 Enabled implementation to scan for other PCI IDE controllers
- *                                 Implemented ATAPI Packet Support for both read and write
- *                                 Corrected ATAPI DMA handling
- *                                 Fixed major IDE enumeration bugs severely handicapping transfers with more than one controller
- *                                 Compacted source and implemented major ATA support procedure
- *                                 Improved DMA and Interrupt management
- *                                 Removed obsolete code
- * 2008-01-26  T. Wiszkowski       Restored 32bit io
- *                                 Removed memory dump upon RequestSense
- * 2008-02-08  T. Wiszkowski       Fixed DMA accesses for direct scsi devices,
- *                                 Corrected IO Areas to allow ATA to talk to PCI controllers
- * 2008-03-03  T. Wiszkowski       Added drive reselection + setup delay on Init
- * 2008-03-29  T. Wiszkowski       Restored error on 64bit R/W access to non-64bit capable atapi devices
- *                                 cleared debug flag
- * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
- *                                 nForce and Intel SATA chipsets should now be operational (nForce confirmed)
- * 2008-03-31  M. Schulz           The ins/outs function definitions used only in case of x86 and x86_64 architectures.
- *                                 Otherwise, function declaratons are emitted.
- * 2008-04-01  M. Schulz           Use C functions ata_ins[wl] ata_outs[wl]
- * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code
- * 2008-04-05  T. Wiszkowski       Improved IRQ management
- * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
- *                                 increased failure timeout values to cover rainy day scenarios
- * 2008-04-20  T. Wiszkowski       Corrected the flaw in drive identification routines leading to ocassional system hangups
- * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling
- *                                 medium removal, device detection, bus management and much more
- * 2008-05-12  P. Fedin	           Explicitly enable multisector transfers on the drive
- * 2008-05-18  T. Wiszkowski       Added extra checks to prevent duplicating drive0 in drive0 only configs
- * 2008-05-18  T. Wiszkowski       Replaced static C/H/S with more accurate calcs, should make HDTB and other tools see right capacity
- * 2008-05-19  T. Wiszkowski       Updated ATA DMA handling and transfer wait operation to allow complete transfer before dma_StopDMA()
- * 2008-05-30  T. Wiszkowski       Corrected CHS calculation for larger disks
- * 2008-06-03  K. Smiechowicz      Added 400ns delay in ata_WaitBusyTO before read of device status.
- * 2008-06-25  P. Fedin            Added "nomulti" flag
- *                                 PIO works correctly again
- * 2008-11-28  T. Wiszkowski       updated test unit ready to suit individual taste of hw manufacturers
- * 2009-01-20  J. Koivisto         Modified bus reseting scheme
- * 2009-02-04  T. Wiszkowski       Disabled ATA debug on official builds
- * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
- * 2011-05-19  P. Fedin            The Big Rework. Separated bus-specific code. Made 64-bit-friendly.
- * 2012-02-12  T. Wilen            DEVHEAD_VAL, ata_HandleIRQ returns BOOL.
- * 2012-03-17  T. Wilen            AckInterrupt(). Required by A600/A1200 Gayle IDE hardware.
- */
-/*
  * TODO:
  * - put a critical section around DMA transfers (shared dma channels)
  */

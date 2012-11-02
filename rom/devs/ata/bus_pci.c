@@ -1,6 +1,6 @@
 /*
     Copyright © 2004-2011, The AROS Development Team. All rights reserved.
-    $Id: lowlevel.c 34191 2010-08-17 16:19:51Z neil $
+    $Id$
 
     Desc: PCI bus driver for ata.device
     Lang: English

@@ -1,28 +1,10 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
     Lang: English
 */
-/*
- * PARTIAL CHANGELOG:
- * DATE        NAME                ENTRY
- * ----------  ------------------  -------------------------------------------------------------------
- * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
- *                                 Enabled implementation to scan for other PCI IDE controllers
- *                                 Implemented ATAPI Packet Support for both read and write
- *                                 Corrected ATAPI DMA handling                            
- *                                 Fixed major IDE enumeration bugs severely handicapping transfers with more than one controller
- *                                 Compacted source and implemented major ATA support procedure
- *                                 Improved DMA and Interrupt management
- *                                 Removed obsolete code
- * 2008-04-03  M. Schulz           inb, outb and outl are not used directly anymore. Instead, the ata_* macros are taken.
- *                                 PRD should be set in little endian mode up (at least I guess so...)
- * 2008-04-07  M. Schulz           Once PRD is ready one has to clear data caches. PRD might still be in cache only on
- *                                 writeback systems otherwise 
- * 2011-05-19  P. Fedin		   The Big rework. Separated bus-specific code. Made 64-bit-friendly.
- */
 
 #include <aros/debug.h>
 
