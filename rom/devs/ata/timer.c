@@ -1,17 +1,10 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved
+    Copyright © 2009-2012, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
     Lang: English
 */
-/*
- * PARTIAL CHANGELOG:
- * DATE        NAME                ENTRY
- * ----------  ------------------  -------------------------------------------------------------------
- * 2005-03-06  T. Wiszkowski       few corrections (thanks, Georg)
- * 2005-03-05  T. Wiszkowski       created file; initial benchmarked nanowait and timer-based micro/sec wait
- */
 
 #include <exec/types.h>
 #include <devices/timer.h>

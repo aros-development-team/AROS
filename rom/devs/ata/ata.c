@@ -5,29 +5,6 @@
     Desc:
     Lang: English
 */
-/*
- * PARTIAL CHANGELOG:
- * DATE        NAME                ENTRY
- * ----------  ------------------  -------------------------------------------------------------------
- * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
- *                                 Enabled implementation to scan for other PCI IDE controllers
- *                                 Implemented ATAPI Packet Support for both read and write
- *                                 Corrected ATAPI DMA handling
- *                                 Fixed major IDE enumeration bugs severely handicapping transfers with more than one controller
- *                                 Compacted source and implemented major ATA support procedure
- *                                 Improved DMA and Interrupt management
- *                                 Removed obsolete code
- * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
- *                                 nForce and Intel SATA chipsets should now be operational.
- * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code
- * 2008-04-05  T. Wiszkowski       Improved IRQ management
- * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
- * 2008-04-20  T. Wiszkowski       Corrected the flaw in drive identification routines leading to ocassional system hangups
- * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling
- *                                 medium removal, device detection, bus management and much more
- * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
- * 2012-02-12  T. Wilen            Put "USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST" inside D()
- */
 
 #include <aros/debug.h>
 

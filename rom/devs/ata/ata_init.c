@@ -1,47 +1,10 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
     Lang: English
 */
-/*
- * PARTIAL CHANGELOG:
- * DATE        NAME                ENTRY
- * ----------  ------------------  -------------------------------------------------------------------
- * 2008-04-25  P. Fedin		   Brought back device discovery for old machines without PCI IDE controllers
- * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
- *                                 Enabled implementation to scan for other PCI IDE controllers
- *                                 Implemented ATAPI Packet Support for both read and write
- *                                 Corrected ATAPI DMA handling                            
- *                                 Fixed major IDE enumeration bugs severely handicapping transfers with more than one controller
- *                                 Compacted source and implemented major ATA support procedure
- *                                 Improved DMA and Interrupt management
- *                                 Removed obsolete code
- * 2008-01-26  T. Wiszkowski       Added 'nodma' flag for ata driver
- *                                 Moved variables out of global scope
- *                                 Replaced static variables
- * 2008-02-08  T. Wiszkowski       Fixed DMA accesses for direct scsi devices,
- *                                 Corrected IO Areas to allow ATA to talk to PCI controllers
- * 2008-02-24  T. Wiszkowski       Corrected unit open function
- * 2008-03-03  T. Wiszkowski       Added drive reselection + setup delay on Init
- * 2008-03-23  T. Wiszkowski       Corrected Alternative Command block position
- * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
- *                                 nForce and Intel SATA chipsets should now be operational.
- * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
- * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
- * 2008-04-07  M. Schulz           The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will 
- *                                 not be find with the generic enumeration. Do an explicit search after it 
- *                                 since ata.device may handle it in legacy mode without any issues.
- * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling 
- *                                 medium removal, device detection, bus management and much more
- * 2008-05-18  T. Wiszkowski       corrected device naming to handle cases where more than 10 physical units may be available
- * 2008-06-24  P. Fedin            Added 'NoMulti' flag to disable multisector transfers
- * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
- * 2011-04-05  P. Fedin            Addid basic SATA handling, needed for Mac.
- * 2011-05-19  P. Fedin            The Big Rework. Separated bus-specific code. Made 64-bit-friendly.
- * 2012-02-12  T. Wilen            ata_RegisterBus() Flags parameter introduced and optional early interrupt setup.
- */
 
 #include <aros/bootloader.h>
 #include <aros/debug.h>
