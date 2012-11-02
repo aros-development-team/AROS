@@ -302,7 +302,7 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
         SET(dest_volume, MUIA_String_Contents, USB_SYS_PART_NAME);
         SET(work_volume, MUIA_String_Contents, USB_WORK_PART_NAME);
 
-        SET(cycle_drivetype, MUIA_Cycle_Active, 1);
+        SET(cycle_drivetype, MUIA_Cycle_Active, 2);
     }
     UnLock(lock);
 
@@ -980,12 +980,12 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
             data->instc_options_main->partitioned = TRUE;
             next_stage = EDoneStage;
             DoMethod(data->page, MUIM_Group_InitChange);
-            if (XGET(cycle_drivetype, MUIA_Cycle_Active) == 0)
+            if (XGET(cycle_drivetype, MUIA_Cycle_Active) != 2)
                 SET(data->doneMsg, MUIA_Text_Contents, KMsgDoneReboot);
             else
                 SET(data->doneMsg, MUIA_Text_Contents, KMsgDoneUSB);
             SET(reboot_group, MUIA_ShowMe, TRUE);
-            if (XGET(cycle_drivetype, MUIA_Cycle_Active) == 0)
+            if (XGET(cycle_drivetype, MUIA_Cycle_Active) != 2)
                 SET(data->instc_options_main->opt_reboot, MUIA_Selected,
                     TRUE);
             DoMethod(data->page, MUIM_Group_ExitChange);
@@ -2275,7 +2275,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
             /* Add entry to boot MS Windows if present */
             if ((part_no =
                     FindWindowsPartition(boot_Device, boot_Unit)) != -1
-                && XGET(cycle_drivetype, MUIA_Cycle_Active) == 0)
+                && XGET(cycle_drivetype, MUIA_Cycle_Active) != 2)
             {
                 sprintf(tmp, "%s", dstPath);
                 AddPart(tmp, "grub.cfg", 256);
@@ -3424,7 +3424,7 @@ int main(int argc, char *argv[])
 
     Object *app = ApplicationObject,
         MUIA_Application_Title,       (IPTR) "AROS Installer",
-        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.13 (15.9.2012)",
+        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.14 (2.11.2012)",
         MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2012, The AROS Development Team. All rights reserved.",
         MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
         MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
@@ -3791,11 +3791,17 @@ int main(int argc, char *argv[])
         SYS_PART_NAME);
     DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 1,
         (IPTR) sys_devname, 3, MUIM_Set, MUIA_String_Contents,
+        SYS_PART_NAME);
+    DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 2,
+        (IPTR) sys_devname, 3, MUIM_Set, MUIA_String_Contents,
         USB_SYS_PART_NAME);
     DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 0,
         (IPTR) work_devname, 3, MUIM_Set, MUIA_String_Contents,
         WORK_PART_NAME);
     DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 1,
+        (IPTR) work_devname, 3, MUIM_Set, MUIA_String_Contents,
+        WORK_PART_NAME);
+    DoMethod(cycle_drivetype, MUIM_Notify, (IPTR) MUIA_Cycle_Active, 2,
         (IPTR) work_devname, 3, MUIM_Set, MUIA_String_Contents,
         USB_WORK_PART_NAME);
 
