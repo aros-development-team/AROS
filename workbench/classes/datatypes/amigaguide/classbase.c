@@ -38,6 +38,8 @@
 #include <exec/initializers.h>
 #include <exec/resident.h>
 
+#include <SDI/SDI_hook.h>
+
 /* ------------------------------ prototypes ------------------------------ */
 
 #ifdef __MORPHOS__
@@ -188,25 +190,9 @@ struct ExecBase *SysBase;
 
 /* ---------------------------- implementation ---------------------------- */
 
-extern ULONG class_dispatcher(Class *cl, Object *obj, Msg msg);
+DISPATCHERPROTO(class_dispatcher);
 
-static ClassCall
-ULONG dispatcher REGARGS((REG(a0,Class *cl),
-                          REG(a2,Object *obj),
-                          REG(a1,Msg msg)))
-{
-   MREG(a0, Class *, cl);
-   MREG(a2, Object *, obj);
-   MREG(a1, Msg, msg);
-
-   return class_dispatcher(cl, obj, msg);
-}
-#ifdef __MORPHOS__
-static struct EmulLibEntry GATEhook = {
-    TRAP_LIB, 0, (void (*)(void)) dispatcher
-};
-#endif
-
+const MakeStaticHook(class_Hook, class_dispatcher);
 
 static Class *InitClass(struct ClassBase *cb)
 {
@@ -214,11 +200,7 @@ static Class *InitClass(struct ClassBase *cb)
 
    if((cl = MakeClass(CLASSNAME,SUPERCLASSNAME,NULL,INSTANCESIZE,0)) != NULL)
    {
-#ifdef __MORPHOS__
-      cl->cl_Dispatcher.h_Entry = (HOOKFUNC) &GATEhook;
-#else
-      cl->cl_Dispatcher.h_Entry = (HOOKFUNC) dispatcher;
-#endif
+      cl->cl_Dispatcher = class_Hook;
       cl->cl_UserData = (ULONG) cb;
 
       DB(("dispatcher : %lx,size : %ld\n",cl->cl_Dispatcher.h_Entry,INSTANCESIZE));
