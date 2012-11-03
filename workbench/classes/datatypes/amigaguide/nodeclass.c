@@ -11,6 +11,7 @@
 
 #include "classbase.h"
 
+#include <SDI/SDI_hook.h>
 #include <datatypes/textclass.h>
 
 /* -------------------------- private structures -------------------------- */
@@ -1646,8 +1647,7 @@ IPTR dtm_trigger(Class *cl, Object *obj, struct dtTrigger *msg)
    return rv;
 }
 
-static
-IPTR nodeclass_dispatcher(Class *cl, Object *obj, Msg msg)
+SDISPATCHER(nodeclass_dispatcher)
 {
    IPTR rv = 0;
 
@@ -1698,35 +1698,7 @@ IPTR nodeclass_dispatcher(Class *cl, Object *obj, Msg msg)
 
 /* ------------------------------ class init ------------------------------ */
 
-static ClassCall
-ULONG dispatcher REGARGS((REG(a0,Class *cl),
-                          REG(a2,Object *obj),
-                          REG(a1,Msg msg)))
-{
-   MREG(a0, Class *, cl);
-   MREG(a2, Object *, obj);
-   MREG(a1, Msg, msg);
-
-   return nodeclass_dispatcher(cl, obj, msg);
-}
-#ifdef __MORPHOS__
-static struct EmulLibEntry GATEhook = {
-    TRAP_LIB, 0, (void (*)(void)) dispatcher
-};
-#endif
-#ifdef __AROS__
-AROS_UFH3S(IPTR, arosdispatcher,
-    AROS_UFHA(Class *, cl, A0),
-    AROS_UFHA(Object *, obj, A2),
-    AROS_UFHA(Msg, msg, A1))
-{
-    AROS_USERFUNC_INIT
-    
-    return dispatcher(cl, obj, msg);
-    
-    AROS_USERFUNC_EXIT
-}
-#endif
+const MakeStaticHook(nodeclass_Hook, nodeclass_dispatcher);
 
 Class *MakeNodeClass(struct ClassBase *cb)
 {
@@ -1736,13 +1708,7 @@ Class *MakeNodeClass(struct ClassBase *cb)
    {
       if((cl = MakeClass("amigaguidenode.datatype", "text.datatype",NULL,sizeof(struct NodeData),0)) != NULL)
       {
-#ifdef __MORPHOS__
-         cl->cl_Dispatcher.h_Entry = (HOOKFUNC) &GATEhook;
-#elif defined(__AROS__)
-         cl->cl_Dispatcher.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(arosdispatcher);
-#else
-         cl->cl_Dispatcher.h_Entry = (HOOKFUNC) dispatcher;
-#endif
+	 cl->cl_Dispatcher = nodeclass_Hook;
 	 cl->cl_UserData = (IPTR) cb;
 
 	 AddClass(cl);

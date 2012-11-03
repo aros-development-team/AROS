@@ -18,6 +18,8 @@
 
 #include "navigator.h"
 
+#include <SDI/SDI_hook.h>
+
 #undef INSTDATA
 #define INSTDATA  struct NavigatorData *data = INST_DATA(cl,obj)
 
@@ -49,25 +51,9 @@ struct NavigatorData
 
 /* --------------------------- public interface --------------------------- */
 
-static IPTR navclass_dispatcher(Class *cl, Object *obj, Msg msg);
+DISPATCHERPROTO(navclass_dispatcher);
 
-static ClassCall
-ULONG dispatcher REGARGS((REG(a0,Class *cl),
-                          REG(a2,Object *obj),
-                          REG(a1,Msg msg)))
-{
-   MREG(a0, Class *, cl);
-   MREG(a2, Object *, obj);
-   MREG(a1, Msg, msg);
-
-   return navclass_dispatcher(cl, obj, msg);
-}
-#ifdef __MORPHOS__
-static struct EmulLibEntry GATEhook = {
-    TRAP_LIB, 0, (void (*)(void)) dispatcher
-};
-#endif
-
+MakeHook(navclass_Hook, navclass_dispatcher);
 
 Class *MakeNavigatorClass(struct ClassBase *cb)
 {
@@ -75,16 +61,14 @@ Class *MakeNavigatorClass(struct ClassBase *cb)
 
    if((cl = MakeClass(NULL,"gadgetclass",NULL,sizeof(struct NavigatorData),0)) != NULL)
    {
-#ifdef __MORPHOS__
-      cl->cl_Dispatcher.h_Entry = (HOOKFUNC) &GATEhook;
-#else
-      cl->cl_Dispatcher.h_Entry = (HOOKFUNC) dispatcher;
-#endif
+      cl->cl_Dispatcher = navclass_Hook; 
       cl->cl_UserData = (IPTR) cb;
    }
 
    return cl;
 }
+
+
 BOOL FreeNavigatorClass(struct ClassBase *cb, Class *cl)
 {
    return FreeClass(cl);
@@ -471,8 +455,7 @@ ULONG nvm_changed(Class *cl, Object *obj, Msg msg)
    return rv;
 }
 
-static
-IPTR navclass_dispatcher(Class *cl, Object *obj, Msg msg)
+DISPATCHER(navclass_dispatcher)
 {
    IPTR rv = 0;
 
