@@ -10,18 +10,28 @@ set follow-fork-mode child
 # Case 2: ROM (ie amiga-m68k)
 #         Provides AbsExecBase and SysBase
 #
-define _debug_init
+define _sysbase_init
     init-if-undefined $AbsExecBase = 0
+    if $AbsExecBase != 0
+        set $AbsExecBase = (struct IntExecBase *)$AbsExecBase
+    end
+end
+document _sysbase_init
+Initialize $AbsExecBase convenience variables
+end
+
+define _debug_init
+    _sysbase_init
     init-if-undefined $_debug_DebugBase = 0
 
     # This is the case for ROM debugging - the user must
     #  'set $AbsExecBase = 4', then this kicks in.
     if $AbsExecBase != 0 && $_debug_DebugBase == 0
-        set $AbsExecBase = (struct IntExecBase *)$AbsExecBase
         set $_debug_DebugBase = (struct DebugBase *)($AbsExecBase->DebugBase)
     end
 
     if $_debug_DebugBase != 0
+        set $_debug_DebugBase = (struct DebugBase *)($_debug_DebugBase)
         # This is the case for debugging a ROM
         set $_debug_ModList = &($_debug_DebugBase->db_Modules)
         set $_debug_KickList = $_debug_DebugBase->db_KernelModules
@@ -36,7 +46,7 @@ Initialize debugging convenience variables
 end
 
 define liblist
-    _debug_init
+    _sysbase_init
     set $lib = ((struct ExecBase *)$AbsExecBase)->LibList.lh_Head
 
     printf "Base     OpenC   Name\n"
