@@ -763,6 +763,7 @@ int main(int argc, char **argv)
     	/* Set up new handler
     	 */
     	Disable();
+    	*(UWORD *)0 = 0x4e41;
     	oldTaskTrapCode = UpdateTrapCode(trapHandler);
     	oldAddTask  = SetFunction((struct Library *)SysBase, -47 * LIB_VECTSIZE, myAddTask);
     	/* Patch Alert() to generate a breakpoint */
