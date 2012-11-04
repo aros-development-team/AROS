@@ -30,7 +30,7 @@
 	 * SD_ACTION_COLDREBOOT - cold reboot the machine (not only AROS).
 
     RESULT
-	This function does not return in case of success. Otherwise is returns
+	This function does not return in case of success. Otherwise it returns
 	zero.
 
     NOTES

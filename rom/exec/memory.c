@@ -197,7 +197,7 @@ APTR stdAlloc(struct MemHeader *mh, IPTR size, ULONG requirements, struct TraceL
 
     /*
      * Follow the memory list. p1 is the previous MemChunk, p2 is the current one.
-     * On 1st pass p1 points to mh->mh_First, so that chaning p1->mc_Next actually
+     * On 1st pass p1 points to mh->mh_First, so that changing p1->mc_Next actually
      * changes mh->mh_First.
      */
     while (p2 != NULL)

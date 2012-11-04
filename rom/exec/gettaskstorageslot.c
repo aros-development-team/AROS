@@ -30,7 +30,7 @@
         id - slot ID returned from AllocTaskStorageSlot().
 
     RESULT
-        Value stored by SetTaskStorage(), or (IPTR)NULL if the slot was
+        Value stored by SetTaskStorageSlot(), or (IPTR)NULL if the slot was
         never used.
 
     NOTES
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-        AllocTaskStorage(), FreeTaskStorage(), SetTaskStorageSlot()
+        AllocTaskStorageSlot(), FreeTaskStorageSlot(), SetTaskStorageSlot()
 
     INTERNALS
 
