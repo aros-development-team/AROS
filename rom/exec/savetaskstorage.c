@@ -25,14 +25,14 @@
 /*  FUNCTION
         This function remembers the current state of the task storage slots.
         An ID will be returned with which the current state can be restored
-        using RestoreTaskStorageSlots(). NULL is returned when not enough
-        memory is available.
+        using RestoreTaskStorage(). NULL is returned when not enough memory
+        is available.
 
     INPUTS
         None.
 
     RESULT
-        id - ID for use with RestoreTaskStorageSlots(), or NULL.
+        id - ID for use with RestoreTaskStorage(), or NULL.
 
     NOTES
 
