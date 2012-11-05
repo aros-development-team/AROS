@@ -1698,7 +1698,6 @@ SDISPATCHER(nodeclass_dispatcher)
 
 /* ------------------------------ class init ------------------------------ */
 
-const MakeStaticHook(nodeclass_Hook, nodeclass_dispatcher);
 
 Class *MakeNodeClass(struct ClassBase *cb)
 {
@@ -1708,7 +1707,7 @@ Class *MakeNodeClass(struct ClassBase *cb)
    {
       if((cl = MakeClass("amigaguidenode.datatype", "text.datatype",NULL,sizeof(struct NodeData),0)) != NULL)
       {
-	 cl->cl_Dispatcher = nodeclass_Hook;
+         cl->cl_Dispatcher.h_Entry = (HOOKFUNC)ENTRY(nodeclass_dispatcher);
 	 cl->cl_UserData = (IPTR) cb;
 
 	 AddClass(cl);

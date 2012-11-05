@@ -53,7 +53,6 @@ struct NavigatorData
 
 DISPATCHERPROTO(navclass_dispatcher);
 
-MakeHook(navclass_Hook, navclass_dispatcher);
 
 Class *MakeNavigatorClass(struct ClassBase *cb)
 {
@@ -61,7 +60,7 @@ Class *MakeNavigatorClass(struct ClassBase *cb)
 
    if((cl = MakeClass(NULL,"gadgetclass",NULL,sizeof(struct NavigatorData),0)) != NULL)
    {
-      cl->cl_Dispatcher = navclass_Hook; 
+      cl->cl_Dispatcher.h_Entry = (HOOKFUNC)ENTRY(navclass_dispatcher);
       cl->cl_UserData = (IPTR) cb;
    }
 
