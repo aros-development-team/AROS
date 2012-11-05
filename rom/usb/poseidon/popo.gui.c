@@ -304,7 +304,7 @@ AROS_UFH0(void, pPoPoGUITask)
 
                 if(po->po_GadgetList.lh_Head->ln_Succ)
                 {
-					if(po->po_OpenRequest)
+                    if(po->po_OpenRequest)
                     {
                         if(!isopen)
                         {
@@ -691,20 +691,28 @@ struct PsdPoPoGadgets * pGenerateAddBox(LIBBASETYPEPTR ps, struct PsdDevice *pd,
             }
         }
     }
-    for(cnt = 0; cnt < 4; cnt++)
+    if(pog)
     {
-        DoMethod(pog->pog_GadgetObj[cnt], MUIM_KillNotify, MUIA_Pressed);
-    	if(gad[cnt])
-    	{
-            DoMethod(pog->pog_GadgetObj[cnt], MUIM_Notify, MUIA_Pressed, FALSE,
-                     po->po_AppObj, 5, MUIM_Application_PushMethod, po->po_PoPoObj, 2, methods[cnt], pog);
-    	}
+        for(cnt = 0; cnt < 4; cnt++)
+        {
+            DoMethod(pog->pog_GadgetObj[cnt], MUIM_KillNotify, MUIA_Pressed);
+            if(gad[cnt])
+            {
+                DoMethod(pog->pog_GadgetObj[cnt], MUIM_Notify, MUIA_Pressed,
+                    FALSE, po->po_AppObj, 5, MUIM_Application_PushMethod,
+                    po->po_PoPoObj, 2, methods[cnt], pog);
+       	    }
+        }
     }
 
     psdFreeVec(bindingsstr);
     psdFreeVec(bindinginfo);
     psdFreeVec(bodyinfo);
     psdFreeVec(wholebodyinfo);
+
+    /* Everything after this depends on having gadgets */
+    if(!pog)
+        return NULL;
 
     /* update delay */
     if(updatetime && pog)
