@@ -23,8 +23,7 @@ extern "C" {
 #define DEBUGFUNC
 #endif
 
-#define DEBUG 1
-#ifdef DEBUG
+#if DEBUG
 
 #define KPrintF kprintf
 #ifdef __AROS__
