@@ -111,7 +111,7 @@ BOOL InitGalliumClass()
                 return TRUE;
             }
     
-            OOP_ReleaseAttrBase((STRPTR)HiddGalliumAttrBase);
+            OOP_ReleaseAttrBase(IID_Hidd_Gallium);
         }
     }
 
@@ -226,7 +226,7 @@ VOID METHOD(i915Gallium, Hidd_Gallium, DisplayResource)
 
     br11 = tex->stride;
     br26 = msg->srcx | (msg->srcy << 16);
-    br12 = (uint32_t)tex->buffer->map - (uint32_t)sd->Card.Framebuffer;
+    br12 = (IPTR)tex->buffer->map - (IPTR)sd->Card.Framebuffer;
 
     while(buffer_is_busy(0,tex->buffer)){};
     

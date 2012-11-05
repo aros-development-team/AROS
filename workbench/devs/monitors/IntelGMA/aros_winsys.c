@@ -57,7 +57,7 @@ extern struct g45staticdata sd;
 #define LOCK_BB          { ObtainSemaphore(&BatchBufferLock); }
 #define UNLOCK_BB        { ReleaseSemaphore(&BatchBufferLock); }
 
-#define BASEADDRESS(p) ((uint32_t)(p) - (uint32_t)sd->Card.Framebuffer)
+#define BASEADDRESS(p) ((IPTR)(p) - (IPTR)sd->Card.Framebuffer)
 struct i915_winsys_batchbuffer *batchbuffer_create(struct i915_winsys *iws);
 
 ULONG reserve_status_index()
@@ -188,7 +188,7 @@ struct i915_winsys_batchbuffer *batchbuffer_create(struct i915_winsys *iws)
     
     batch->allocated_size = batch->actual_size + 4096;
     if( !(batch->allocated_map = AllocGfxMem(batch->allocated_size) ) ) return NULL;
-    batch->gfxmap = (APTR)(((uint32_t)batch->allocated_map + 4095)& ~4095);
+    batch->gfxmap = (APTR)(((IPTR)batch->allocated_map + 4095)& ~4095);
     
     batch->base.ptr = NULL;
     batch->base.size = 0;
@@ -480,7 +480,7 @@ struct i915_winsys_buffer *
     // allocate page aligned gfx memory
     buf->allocated_size = size + 4096;
     if( !(buf->allocated_map = AllocGfxMem(buf->allocated_size) ) ) return NULL;
-    buf->map = (APTR)(((uint32_t)buf->allocated_map + 4095)& ~4095);
+    buf->map = (APTR)(((IPTR)buf->allocated_map + 4095)& ~4095);
     buf->size = size;
     buf->magic = MAGIC;
     D(bug("[GMA winsys] buffer_create size %d type %s = %p map %p\n",size,i915_type_to_name(type),buf,buf->map));
