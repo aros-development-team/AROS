@@ -215,6 +215,7 @@ enum {
 
 #define IS_BM_ATTR(attr, idx) (((idx)=(attr)-HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 #define IS_GMABM_ATTR(attr, idx) (((idx)=(attr)-HiddGMABitMapAttrBase) < num_Hidd_GMABitMap_Attrs)
+#define HIDD_BM_OBJ(bitmap)     (*(OOP_Object **)&((bitmap)->Planes[0]))
 
 #define SD(cl) ((struct g45staticdata *)cl->UserData)
 
