@@ -76,7 +76,7 @@
 	{
 	    OOP_Object *gc  = GetDriverData(rp, GfxBase);
 	    struct Rectangle rr;
-	    HIDDT_Pixel oldfg;
+	    HIDDT_Pixel oldfg = 0;
 
 	    if (rp->DrawMode & INVERSVID) {
 	        oldfg = GC_FG(gc);
