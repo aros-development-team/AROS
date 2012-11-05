@@ -192,7 +192,6 @@ struct ExecBase *SysBase;
 
 DISPATCHERPROTO(class_dispatcher);
 
-const MakeStaticHook(class_Hook, class_dispatcher);
 
 static Class *InitClass(struct ClassBase *cb)
 {
@@ -200,7 +199,7 @@ static Class *InitClass(struct ClassBase *cb)
 
    if((cl = MakeClass(CLASSNAME,SUPERCLASSNAME,NULL,INSTANCESIZE,0)) != NULL)
    {
-      cl->cl_Dispatcher = class_Hook;
+      cl->cl_Dispatcher.h_Entry = ENTRY(class_dispatcher);
       cl->cl_UserData = (ULONG) cb;
 
       DB(("dispatcher : %lx,size : %ld\n",cl->cl_Dispatcher.h_Entry,INSTANCESIZE));
