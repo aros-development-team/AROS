@@ -3382,6 +3382,16 @@ int main(int argc, char *argv[])
     source_Path = AllocVec(pathend + 1, MEMF_CLEAR | MEMF_PUBLIC);
     CopyMem(source_path, source_Path, pathend);
     D(bug("[INST-APP] Launched from '%s'\n", source_Path));
+
+    /* Let GRUB text/graphics choice default to same as on boot media */
+    source_path[pathend] = '\0';
+    AddPart(source_path, "boot/grub/unicode.pf2", 256);
+    if ((lock = Lock(source_path, SHARED_LOCK)) != BNULL)
+    {
+        SET(cycle_grub2mode, MUIA_Cycle_Active, 1);
+        UnLock(lock);
+    }
+
     FreeVec(source_path);
 
     /* Get source location for Extras dir */
@@ -3424,7 +3434,7 @@ int main(int argc, char *argv[])
 
     Object *app = ApplicationObject,
         MUIA_Application_Title,       (IPTR) "AROS Installer",
-        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.14 (2.11.2012)",
+        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.15 (5.11.2012)",
         MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2012, The AROS Development Team. All rights reserved.",
         MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
         MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
