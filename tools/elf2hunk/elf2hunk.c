@@ -1040,8 +1040,10 @@ static int copy(const char *src, const char *dst, int flags)
 
     if (strcmp(dst,"-") == 0)
         hunk_fd = 1; /* stdout */
-    else
+    else {
+        unlink(dst);
         hunk_fd = open(dst, O_RDWR | O_CREAT | O_TRUNC, mode);
+    }
     if (hunk_fd < 0) {
     	perror(dst);
     	return EXIT_FAILURE;
