@@ -47,13 +47,16 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TaskStorageFreeSlot *tsfs = (struct TaskStorageFreeSlot *)GetHead(&PrivExecBase(SysBase)->TaskStorageSlots);
+    struct TaskStorageFreeSlot *tsfs;
     LONG slot;
     struct IntETask *iet = GetIntETask(FindTask(NULL));
 
     if (!iet)
         return 0;
 
+    Forbid();
+    tsfs = (struct TaskStorageFreeSlot *)
+        GetHead(&PrivExecBase(SysBase)->TaskStorageSlots);
     if (!tsfs)
         Alert(AT_DeadEnd|AN_MemoryInsane);
 
@@ -71,6 +74,7 @@
         Remove((struct Node *) tsfs);
         FreeMem(tsfs, sizeof(struct TaskStorageFreeSlot));
     }
+    Permit();
 
     return slot;
 
