@@ -27,9 +27,9 @@
         None.
 
     NOTES
-        Currently no checks are performed if one is the owner of the slot.
-        This may be added in the future so one should deallocate a slot
-        from the same task that allocated the slot.
+        Currently no checks are performed to determine if one is the owner
+        of the slot. This may be added in the future, so one should
+        deallocate a slot from the same task that allocated the slot.
 
     EXAMPLE
 
@@ -55,7 +55,9 @@
 
     tsfs->FreeSlot = slot;
 
+    Forbid();
     AddHead((struct List *)&PrivExecBase(SysBase)->TaskStorageSlots, (struct Node *)tsfs);
+    Permit();
 
     AROS_LIBFUNC_EXIT
 }
