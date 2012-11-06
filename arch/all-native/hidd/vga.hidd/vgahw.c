@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VGA Inside...
@@ -480,7 +480,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, struct Box *pbox)
     /* Now adjust bottom-right corner */
     if (right >= bmap->disp_width)
         right = bmap->disp_width - 1;
-    if (pbox->y2 >= bmap->disp_height)
+    if (pbox->y2 <= bmap->disp_height)
         height = pbox->y2 - pbox->y1 + 1;
     else
         height = bmap->disp_height - pbox->y1;
