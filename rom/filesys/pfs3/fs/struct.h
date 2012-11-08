@@ -465,6 +465,12 @@ struct reftable
 /* globaldata structure                                                      */
 /*****************************************************************************/
 
+#define ACCESS_UNDETECTED 0
+#define ACCESS_STD 1
+#define ACCESS_DS 2
+#define ACCESS_TD64 3
+#define ACCESS_NSD 4
+
 /* ALL globals are defined here */
 struct globaldata
 {
@@ -495,6 +501,7 @@ struct globaldata
 	/* partition info (volume dependent) %7 */
 	ULONG firstblock;                   /* first and last block of partition    */
 	ULONG lastblock;
+	ULONG maxtransfer;
 	struct diskcache dc;                /* cache to make '196 byte mode' faster */
 
 	/* LRU stuff */
@@ -539,7 +546,7 @@ struct globaldata
 	UBYTE deldirenabled;                /* flag: deldir enabled?                */
 	UBYTE sleepmode;                    /* flag: sleepmode?                     */
 	UBYTE supermode;					/* flag: supermode? (104 bmi blocks)	*/
-	UBYTE td64mode;						/* flag: use td64?						*/
+	UBYTE tdmode;						/* ACCESS_x mode                        */
 	UBYTE pad;
 	UWORD blockshift;                   /* 2 log van block size                 */
 	UWORD fnsize;						/* filename size (18+)					*/
@@ -984,6 +991,25 @@ typedef struct lockentry
 #define TD_SEEK64	26
 #define TD_FORMAT64	27
 #endif
+
+
+/* NSD support */
+#ifndef NSCMD_DEVICEQUERY
+#define NSCMD_DEVICEQUERY 0x4000
+#define NSCMD_TD_READ64 0xc000
+#define NSCMD_TD_WRITE64 0xc001
+#define NSDEVTYPE_TRACKDISK 5
+struct NSDeviceQueryResult
+{
+    ULONG   DevQueryFormat;
+    ULONG   SizeAvailable;
+    UWORD   DeviceType;
+    UWORD   DeviceSubType;
+    UWORD   *SupportedCommands;
+};
+#endif
+
+#define ACCESS_DETECT (TD64 + NSD + SCSIDIRECT > 1)
 
 /*
  * Includes messages

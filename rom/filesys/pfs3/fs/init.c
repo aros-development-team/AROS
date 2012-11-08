@@ -249,16 +249,22 @@ Removed because of problems with Phase 5 boards
 	g->blockshift = i;
 	g->directsize = 16*1024>>i;
 
+#if ACCESS_DETECT
+	g->tdmode = ACCESS_UNDETECTED;
+#else
 #define DE(x) g->dosenvec->de_##x
-	g->td64mode = 0;
+	g->tdmode = ACCESS_STD;
 	if ((DE(HighCyl)+1)*DE(BlocksPerTrack)*DE(Surfaces) >= (1UL << (32-BLOCKSHIFT))) {
 #if TD64
-		g->td64mode = 1;
+		g->tdmode = ACCESS_TD64;
+#elif NSD
+		g->tdmode = ACCESS_NSD;
 #elif SCSIDIRECT
-		/* kan ook */
+		g->tdmode = ACCESS_DS;
 #endif
 	}
 #undef DE
+#endif
 
 	if (!(g->geom = AllocMemP (sizeof(struct DriveGeometry), g)))
 		return FALSE;

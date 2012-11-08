@@ -21,10 +21,8 @@ ULONG RawWrite(UBYTE * , ULONG , ULONG , globaldata * );
 
 void MotorOff(globaldata * );
 
-void UpdateCache (globaldata *g);
-void FlushDataCache (globaldata *g);
-void UpdateDataCache (globaldata *g);
+void UpdateCache(globaldata *g);
+void FlushDataCache(globaldata *g);
+void UpdateDataCache(globaldata *g);
 
-#if SCSIDIRECT
-int DoSCSICommand(UBYTE *data, ULONG datlen, UBYTE *cmd, UWORD cmdlen, UBYTE dir, globaldata *g);
-#endif /* SCSIDIRECT */
+BOOL detectaccessmode(UBYTE *buffer, globaldata *g);

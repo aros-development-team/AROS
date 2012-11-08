@@ -1,4 +1,6 @@
 
+#define DETECTDEBUG 0
+
 #ifdef KS13WRAPPER
 
 #define KS13WRAPPER_DEBUG 0

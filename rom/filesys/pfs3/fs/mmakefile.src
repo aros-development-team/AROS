@@ -32,9 +32,11 @@ PFS3_CFLAGS := \
 	-DVERSION23=1 \
 	-DROLLOVER=1 \
 	-DTD64=1 \
-	-DSCSIDIRECT=0 \
+	-DNSD=1 \
+	-DSCSIDIRECT=1 \
 	-DTRACKDISK=1 \
-	-DUNSAFEQUIT=1
+	-DUNSAFEQUIT=1 \
+	-DLIMIT_MAXTRANSFER=0x1fe00
 
 PFS3DS_CFLAGS := \
 	-DEXTRAPACKETS=1 \
@@ -47,9 +49,11 @@ PFS3DS_CFLAGS := \
 	-DVERSION23=1 \
 	-DROLLOVER=1 \
 	-DTD64=0 \
+	-DNSD=0 \
 	-DSCSIDIRECT=1 \
 	-DTRACKDISK=1 \
-	-DUNSAFEQUIT=1
+	-DUNSAFEQUIT=1 \
+	-DLIMIT_MAXTRANSFER=0x1fe00
 
 USER_CFLAGS := \
     -DAROS_KERNEL $(PFS3_CFLAGS) -DMIN_LIB_VERSION=36 \
@@ -85,27 +89,13 @@ USER_CFLAGS := \
 USER_AFLAGS := \
 	-I$(GENDIR)/include
 
-%build_archspecific mainmmake=kernel-fs-pfs3-ks13 \
-    maindir=$(CURDIR)/pfs3-ks13 arch=$(AROS_TARGET_CPU) \
+%build_archspecific mainmmake=kernel-fs-pfs3-aio \
+    maindir=$(CURDIR)/pfs3-aio arch=$(AROS_TARGET_CPU) \
     asmfiles="$(AROS_TARGET_CPU)/stackswap"
 
-%build_module mmake=kernel-fs-pfs3-ks13 \
-    modname=pfs3_ks13 modtype=handler \
+%build_module mmake=kernel-fs-pfs3-aio \
+    modname=pfs3_aio modtype=handler \
     files="$(FILES) ks13wrapper" \
-    objdir=$(OBJDIR)/pfs3-ks13
-
-USER_CFLAGS := \
-    -DAROS_KERNEL $(PFS3DS_CFLAGS) $(KS13STUFF) \
-	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
-
-%build_archspecific mainmmake=kernel-fs-pfs3ds-ks13 \
-    maindir=$(CURDIR)/pfs3ds-ks13 arch=$(AROS_TARGET_CPU) \
-    asmfiles="$(AROS_TARGET_CPU)/stackswap" 
-
-%build_module mmake=kernel-fs-pfs3ds-ks13 \
-    modname=pfs3ds_ks13 modtype=handler \
-    files="$(FILES) ks13wrapper" \
-    objdir=$(OBJDIR)/pfs3ds-ks13
-
+    objdir=$(OBJDIR)/pfs3-aio
 
 %common
