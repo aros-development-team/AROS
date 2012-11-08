@@ -224,8 +224,9 @@ void ResToBeFreed(ULONG blocknr, globaldata *g)
 
 			/* this should never happen */
 			DB(Trace(10,"ResToBeFreed","reserved to be freed cache full\n"));
+#ifdef BETAVERSION
 			ErrorMsg (AFS_BETA_WARNING_1, NULL, g);
-
+#endif
 			/* hope nobody allocates this block before the disk has been
 			 * updated
 			 */

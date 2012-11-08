@@ -575,7 +575,9 @@ BOOL MakeBlockDirty (struct cachedblock *blk, globaldata *g)
 		}
 		else
 		{
+#ifdef BETAVERSION
 			ErrorMsg(AFS_BETA_WARNING_2, NULL, g);
+#endif
 			blk->changeflag = TRUE;
 			g->blocks_dirty++;
 		}

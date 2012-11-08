@@ -353,6 +353,10 @@ void DiskRemoveSequence(globaldata *g)
 
 	CreateInputEvent(FALSE, g);
 
+#if ACCESS_DETECT
+	g->tdmode = ACCESS_UNDETECTED;
+#endif
+
 	EXIT("DiskRemoveSequence");
 	return;
 }   
@@ -986,6 +990,15 @@ BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 	/* check if disk is PFS disk */
 	*rootblock = AllocBufmemR (BLOCKSIZE, g);
 	g->ErrorMsg = NoErrorMsg;   // prevent readerrormsg
+
+#if ACCESS_DETECT
+	/* detect best access mode, td32, td64, nsd or directscsi */
+	if (g->tdmode == ACCESS_UNDETECTED) {
+		if (!detectaccessmode((UBYTE*)*rootblock, g))
+			goto nrd_error;
+	}
+#endif
+
 	error = RawRead((UBYTE *)*rootblock, 1, BOOTBLOCK1, g);
 	g->ErrorMsg = _NormalErrorMsg;
 
@@ -1087,7 +1100,12 @@ void GetDriveGeometry(globaldata *g)
 
 	g->firstblock = g->dosenvec->de_LowCyl * geom->dg_CylSectors;
 	g->lastblock = (g->dosenvec->de_HighCyl + 1) *  geom->dg_CylSectors - 1;
-
+#if LIMIT_MAXTRANSFER
+	/* A600/A1200/A4000 ROM scsi.device ATA spec max transfer bug workaround */
+	g->maxtransfer = min(g->dosenvec->de_MaxTransfer, LIMIT_MAXTRANSFER);
+#else
+	g->maxtransfer = g->dosenvec->de_MaxTransfer;
+#endif
 	DB(Trace(1,"GetDriveGeometry","firstblk %ld lastblk %ld\n",g->firstblock,g->lastblock));
 }
 

@@ -71,16 +71,18 @@ UBYTE AFS_ERROR_UNSLEEP[]               = "Unsleep error";
 UBYTE AFS_ERROR_DISK_TOO_LARGE[]		= "Disk too large for this version of PFS3.\nPlease install TD64 or direct-scsi version";
 UBYTE AFS_ERROR_ANODE_ERROR[]			= "Anode index invalid";
 UBYTE AFS_ERROR_ANODE_INIT[]            = "Anode initialisation failure";
+UBYTE AFS_ERROR_32BIT_ACCESS_ERROR[]    = "TD32 and Direct SCSI access modes failed!\nCan't read block %ld (<4G)\n%s:%ld";
 
 #if VERSION23
 UBYTE AFS_ERROR_READ_EXTENSION[]        = "Could not read rootblock extension";
 UBYTE AFS_ERROR_EXTENSION_INVALID[]     = "Rootblock extension invalid";
 #endif
 
+#ifdef BETAVERSION
 /* beta messages */
-
 UBYTE AFS_BETA_WARNING_1[]              = "BETA WARNING NR 1";
 UBYTE AFS_BETA_WARNING_2[]              = "BETA WARNING NR 2";
+#endif
 
 /*
  * Message shown when formatting a disk

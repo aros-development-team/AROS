@@ -160,6 +160,7 @@
 #include <exec/memory.h>
 #include <exec/devices.h>
 #include <exec/io.h>
+#include <exec/errors.h>
 #include <dos/filehandler.h>
 //#include <sprof.h>
 #include <string.h>
@@ -1386,7 +1387,7 @@ ULONG DiskWrite(UBYTE *buffer, ULONG blockstowrite, ULONG blocknr, globaldata *g
 
 #if SCSIDIRECT
 
-int DoSCSICommand(UBYTE *data, ULONG datalen, UBYTE *command,
+static int DoSCSICommand(UBYTE *data, ULONG datalen, UBYTE *command,
 	UWORD commandlen, UBYTE direction, globaldata *g)
 {
 	g->scsicmd.scsi_Data = (UWORD *)data;
@@ -1397,28 +1398,33 @@ int DoSCSICommand(UBYTE *data, ULONG datalen, UBYTE *command,
 	g->scsicmd.scsi_SenseData = g->sense;
 	g->scsicmd.scsi_SenseLength = 18;
 	g->scsicmd.scsi_SenseActual = 0;
+	g->scsicmd.scsi_Status = 1;
 
 	g->request->iotd_Req.io_Length = sizeof(struct SCSICmd);
 	g->request->iotd_Req.io_Data = (APTR)&g->scsicmd;
 	g->request->iotd_Req.io_Command = HD_SCSICMD;
-	DoIO((struct IORequest *)g->request);
+	if (DoIO((struct IORequest *)g->request) != 0)
+		return 0;
+#if 0
+	DebugPutHex("doio", err);
+	DebugPutHex("status", g->scsicmd.scsi_Status);
+#endif
 	if (g->scsicmd.scsi_Status)
 		return 0;
 	else 
 		return 1;
 }
 
-
-ULONG RawRead(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+static ULONG RawRead_DS(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
 {
 	UBYTE cmdbuf[10];
 	ULONG transfer, maxtransfer;
 
-retry_read:
 	if(blocknr == (ULONG)-1)   // blocknr of uninitialised anode
 		return 1;
 
 	blocknr += g->firstblock;
+retry_read:
 	if(!(InPartition(blocknr) && InPartition(blocknr+blocks-1)))
 	{
 		ErrorMsg(AFS_ERROR_READ_OUTSIDE, NULL, g);
@@ -1426,7 +1432,7 @@ retry_read:
 	}
 
 	/* chop in maxtransfer chunks */
-	maxtransfer = g->dosenvec->de_MaxTransfer >> BLOCKSHIFT;
+	maxtransfer = g->maxtransfer >> BLOCKSHIFT;
 	while (blocks > 0)
 	{
 		transfer = min(blocks,maxtransfer);
@@ -1466,18 +1472,19 @@ retry_read:
  * VVV Todo: SCSI ErrorNumber in requester
  */
 
-ULONG RawWrite(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+static ULONG RawWrite_DS(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
 {
 	UBYTE cmdbuf[10];
 	ULONG transfer, maxtransfer;
 
-retry_write:
 	if(blocknr == (ULONG)-1)
 		return 1;
+
+	blocknr += g->firstblock;
+retry_write:
 	if(g->softprotect)
 		return ERROR_DISK_WRITE_PROTECTED;
 
-	blocknr += g->firstblock;
 	if (!(InPartition(blocknr) && InPartition(blocknr+blocks-1)))
 	{
 		ErrorMsg (AFS_ERROR_WRITE_OUTSIDE, NULL, g);
@@ -1485,7 +1492,7 @@ retry_write:
 	}
 
 	/* chop in maxtransfer chunks */
-	maxtransfer = g->dosenvec->de_MaxTransfer >> BLOCKSHIFT;
+	maxtransfer = g->maxtransfer >> BLOCKSHIFT;
 	while (blocks > 0)
 	{
 		transfer = min(blocks,maxtransfer);
@@ -1521,7 +1528,9 @@ retry_write:
 	return 0;
 }
 
-#else /* SCSI Direct */
+#endif /* SCSI Direct */
+
+#if TD64
 
 /*
  * Normal commands
@@ -1529,7 +1538,7 @@ retry_write:
 	
 /* Geometry MUST be loaded!!
 */
-ULONG RawRead(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+static ULONG RawRead_TD(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
 {
 	struct IOExtTD *request;
 	ULONG realblocknr;
@@ -1553,7 +1562,7 @@ retry_read:
 	io_length = blocks << BLOCKSHIFT;
 	io_offset = realblocknr << BLOCKSHIFT;
 	io_buffer = buffer;
-	if (g->td64mode) {
+	if (g->tdmode >= ACCESS_TD64) {
 		// upper 32 bit of offset
 		io_actual = realblocknr >> (32-BLOCKSHIFT);
 		io_startblock = realblocknr;
@@ -1561,16 +1570,16 @@ retry_read:
 
 	while (io_length > 0)
 	{
-		io_transfer = min(io_length, g->dosenvec->de_MaxTransfer);
+		io_transfer = min(io_length, g->maxtransfer);
 		io_transfer &= ~(BLOCKSIZE-1);
 		request = g->request;
 		request->iotd_Req.io_Command = CMD_READ;
 		request->iotd_Req.io_Length  = io_transfer;
 		request->iotd_Req.io_Data    = io_buffer;       // bufmemtype ??
 		request->iotd_Req.io_Offset  = io_offset;
-		if (g->td64mode) {
+		if (g->tdmode >= ACCESS_TD64) {
 			request->iotd_Req.io_Actual  = io_actual;
-			request->iotd_Req.io_Command = TD_READ64;
+			request->iotd_Req.io_Command = g->tdmode == ACCESS_NSD ? NSCMD_TD_READ64 : TD_READ64;
 		}
 
 		PROFILE_OFF();
@@ -1598,7 +1607,7 @@ retry_read:
 		PROFILE_ON();
 		io_buffer += io_transfer;
 		io_length -= io_transfer;
-		if (g->td64mode) {
+		if (g->tdmode >= ACCESS_TD64) {
 			io_startblock += (io_transfer >> BLOCKSHIFT);
 			io_offset = io_startblock << BLOCKSHIFT;
 			io_actual = io_startblock >> (32-BLOCKSHIFT);
@@ -1661,10 +1670,11 @@ retry_format:
 	PROFILE_ON();
 	return NULL;
 }
+
 #endif /* TRACKDISK */
 
 
-ULONG RawWrite(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+static ULONG RawWrite_TD(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
 {
 	struct IOExtTD *request;
 	ULONG realblocknr;
@@ -1691,7 +1701,7 @@ retry_write:
 	io_length = blocks << BLOCKSHIFT;
 	io_offset = realblocknr << BLOCKSHIFT;
 	io_buffer = buffer;
-	if (g->td64mode) {
+	if (g->tdmode >= ACCESS_TD64) {
 		// upper 32 bit of offset
 		io_actual = realblocknr >> (32 - BLOCKSHIFT);
 		io_startblock = realblocknr;
@@ -1699,16 +1709,16 @@ retry_write:
 
 	while(io_length > 0)
 	{
-		io_transfer = min(io_length, g->dosenvec->de_MaxTransfer);
+		io_transfer = min(io_length, g->maxtransfer);
 		io_transfer &= ~(BLOCKSIZE-1);
 		request = g->request;
 		request->iotd_Req.io_Command = CMD_WRITE;
 		request->iotd_Req.io_Length  = io_transfer;
 		request->iotd_Req.io_Data    = io_buffer;       // bufmemtype ??
 		request->iotd_Req.io_Offset  = io_offset;
-		if (g->td64mode) {
+		if (g->tdmode >= ACCESS_TD64) {
 			request->iotd_Req.io_Actual = io_actual;
-			request->iotd_Req.io_Command = TD_WRITE64;
+			request->iotd_Req.io_Command = g->tdmode == ACCESS_NSD ? NSCMD_TD_WRITE64 : TD_WRITE64;
 		}
 
 		PROFILE_OFF();
@@ -1736,7 +1746,7 @@ retry_write:
 		PROFILE_ON();
 		io_buffer += io_transfer;
 		io_length -= io_transfer;
-		if (g->td64mode) {
+		if (g->tdmode >= ACCESS_TD64) {
 			io_startblock += (io_transfer >> BLOCKSHIFT);
 			io_offset = io_startblock << BLOCKSHIFT;
 			io_actual = io_startblock >> (32-BLOCKSHIFT);
@@ -1748,7 +1758,311 @@ retry_write:
 	return 0;
 }
 
-#endif /* SCSIDIRECT */
+#endif /* TD64 */
+
+ULONG RawRead(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+{
+#if (TRACKDISK || TD64 || NSD) && SCSIDIRECT
+	if (g->tdmode == ACCESS_DS)
+		return RawRead_DS(buffer, blocks, blocknr, g);
+	else
+		return RawRead_TD(buffer, blocks, blocknr, g);
+#elif SCSIDIRECT
+	return RawRead_DS(buffer,r blocks, blocknr, g);
+#else
+	return RawRead_TD(buffer,r blocks, blocknr, g);
+#endif
+}
+
+ULONG RawWrite(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+{
+#if (TRACKDISK || TD64 || NSD) && SCSIDIRECT
+	if (g->tdmode == ACCESS_DS)
+		return RawWrite_DS(buffer, blocks, blocknr, g);
+	else
+		return RawWrite_TD(buffer, blocks, blocknr, g);
+#elif SCSIDIRECT
+	return RawWrite_DS(buffer,r blocks, blocknr, g);
+#else
+	return RawWrite_TD(buffer,r blocks, blocknr, g);
+#endif
+}
+
+#if ACCESS_DETECT
+
+#if DETECTDEBUG
+static UBYTE ACCESS_DEBUG1[] = "%s:%ld\nfirstblock=%ld\nlastblock=%ld\nblockshift=%ld\nblocksize=%ld\ninside4G=%ld";
+static UBYTE ACCESS_DEBUG2[] = "Test %ld = %ld";
+static UBYTE ACCESS_DEBUG3[] = "SCSI Read Capacity = %ld, Lastblock = %ld";
+#endif
+
+static void fillbuffer(UBYTE *buffer, UBYTE data, globaldata *g)
+{
+	memset (buffer, data + 1, BLOCKSIZE);
+}
+/* Check if at least one byte has changed */
+static BOOL testbuffer(UBYTE *buffer, UBYTE data, globaldata *g)
+{
+	ULONG cnt;
+	
+	for (cnt = 0; cnt < BLOCKSIZE; cnt++) {
+		if (buffer[cnt] != data + 1)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+#if SCSIDIRECT
+static BOOL testread_ds2(UBYTE *buffer, globaldata *g)
+{
+	UBYTE cmdbuf[10];
+	UBYTE cnt;
+
+#if DETECTDEBUG
+	DebugPutStr("testread_ds\n");
+#endif
+
+	for (cnt = 0; cnt < 2; cnt++) {
+		ULONG capacity;
+
+		fillbuffer(buffer, 0xfe, g);
+		/* Read Capacity */
+		*((UWORD *)&cmdbuf[0]) = 0x2500;
+		*((ULONG *)&cmdbuf[2]) = 0;
+		*((ULONG *)&cmdbuf[6]) = 0;
+		if (!DoSCSICommand(buffer, 8, cmdbuf, 10, SCSIF_READ, g)) {
+#if DETECTDEBUG
+			DebugPutStr("DoSCSICommand Read Capacity failed\n");
+#endif
+			return FALSE;
+		}
+		capacity = *((ULONG*)buffer);
+
+#if DETECTDEBUG
+		ULONG args[2];
+		args[0] = capacity;
+		args[1] = g->lastblock;
+		g->ErrorMsg = _NormalErrorMsg;
+		(g->ErrorMsg)(ACCESS_DEBUG3, args, 1, g);
+#endif
+
+		if (g->lastblock > capacity) {
+#if DETECTDEBUG
+			DebugPutStr("DoSCSICommand capacity smaller than last block\n");
+#endif
+			return FALSE;
+		}
+		fillbuffer(buffer, cnt, g);
+		/* Read(10) */
+		*((UWORD *)&cmdbuf[0]) = 0x2800;
+		*((ULONG *)&cmdbuf[2]) = g->lastblock;
+		*((ULONG *)&cmdbuf[6]) = 1 << 8;
+		if (!DoSCSICommand(buffer, 1 << BLOCKSHIFT, cmdbuf, 10, SCSIF_READ, g)) {
+#if DETECTDEBUG
+			DebugPutStr("DoSCSICommand Read(10) failed\n");
+#endif
+			return FALSE;
+		}
+		if (testbuffer(buffer, cnt, g)) {
+#ifdef DETECTDEBUG
+			DebugPutStr("ok\n");
+#endif
+			return TRUE;
+		}
+	}
+#if DETECTDEBUG
+	DebugPutStr("testbuffer fail\n");
+#endif
+	return FALSE;
+}
+#endif
+
+static BOOL testread_ds(UBYTE *buffer, globaldata *g)
+{
+	BOOL ok;
+	
+	ok = testread_ds2(buffer, g);
+#if DETECTDEBUG
+	ULONG args[2];
+	args[0] = g->tdmode;
+	args[1] = ok;
+	g->ErrorMsg = _NormalErrorMsg;
+	(g->ErrorMsg)(ACCESS_DEBUG2, args, 1, g);
+#endif
+	return ok;
+}
+
+static BOOL testread_td2(UBYTE *buffer, globaldata *g)
+{
+	struct IOExtTD *io = g->request;
+	UBYTE cnt;
+
+#if NSD
+	if (g->tdmode == ACCESS_NSD) {
+    	struct NSDeviceQueryResult nsdqr;
+    	UWORD *cmdcheck;
+		nsdqr.SizeAvailable  = 0;
+		nsdqr.DevQueryFormat = 0;
+		io->iotd_Req.io_Command = NSCMD_DEVICEQUERY;
+		io->iotd_Req.io_Length  = sizeof(nsdqr);
+		io->iotd_Req.io_Data    = (APTR)&nsdqr;
+		if (DoIO((struct IORequest*)io) != 0)
+			return FALSE;
+		if (!((io->iotd_Req.io_Actual >= 16) && (io->iotd_Req.io_Actual <= sizeof(nsdqr)) && (nsdqr.SizeAvailable == io->iotd_Req.io_Actual)))
+    		return FALSE;
+		if(nsdqr.DeviceType != NSDEVTYPE_TRACKDISK)
+			return FALSE;
+		for(cmdcheck = nsdqr.SupportedCommands; *cmdcheck; cmdcheck++) {
+			if(*cmdcheck == NSCMD_TD_READ64)
+				break;
+		}
+		if (*cmdcheck == 0)
+			return FALSE;
+	}
+#endif
+#if TD64
+	if (g->tdmode == ACCESS_TD64) {
+		UBYTE err;
+		io->iotd_Req.io_Command = TD_READ64;
+		io->iotd_Req.io_Length = 0;
+		io->iotd_Req.io_Data = 0;
+		io->iotd_Req.io_Offset = 0;
+		io->iotd_Req.io_Actual = 0;
+		err = DoIO((struct IORequest*)io);
+		if (err != 0 && err != IOERR_BADLENGTH && err != IOERR_BADADDRESS)
+			return FALSE;
+	}
+#endif
+	for (cnt = 0; cnt < 2; cnt++) {
+		fillbuffer(buffer, cnt, g);
+		io->iotd_Req.io_Command = CMD_READ;
+		io->iotd_Req.io_Length  = BLOCKSIZE;
+		io->iotd_Req.io_Data    = buffer;
+		io->iotd_Req.io_Offset  = g->lastblock << BLOCKSHIFT;
+		if (g->tdmode >= ACCESS_TD64) {
+			io->iotd_Req.io_Actual  = g->lastblock >> (32 - BLOCKSHIFT);
+			io->iotd_Req.io_Command = g->tdmode == ACCESS_NSD ? NSCMD_TD_READ64 : TD_READ64;
+		}
+		if (DoIO((struct IORequest*)io) != 0)
+			return FALSE;
+		if (testbuffer(buffer, cnt, g))
+			return TRUE;
+	}
+	return TRUE;
+}
+
+static BOOL testread_td(UBYTE *buffer, globaldata *g)
+{
+	BOOL ok;
+
+#if DETECTDEBUG
+	DebugPutHex("testread_td mode=", g->tdmode);
+#endif
+	ok = testread_td2(buffer, g);
+
+#if DETECTDEBUG
+	ULONG args[3];
+	args[0] = g->tdmode;
+	args[1] = ok;
+	g->ErrorMsg = _NormalErrorMsg;
+	(g->ErrorMsg)(ACCESS_DEBUG2, args, 1, g);
+#endif
+
+#if DETECTDEBUG
+	DebugPutHex("testread_td ret=", ok);
+#endif
+	return ok;
+}
+	
+BOOL detectaccessmode(UBYTE *buffer, globaldata *g)
+{
+	UBYTE name[FNSIZE];
+	BOOL inside4G = g->lastblock < (0x80000000ul >> (BLOCKSHIFT - 1));
+
+	BCPLtoCString(name, (UBYTE *)BADDR(g->startup->fssm_Device));
+
+#if DETECTDEBUG
+	ULONG args[8];
+	args[0] = (ULONG)name;
+	args[1] = g->startup->fssm_Unit;
+	args[2] = g->firstblock;
+	args[3] = g->lastblock;
+	args[4] = BLOCKSHIFT;
+	args[5] = BLOCKSIZE;
+	args[6] = inside4G;
+	g->ErrorMsg = _NormalErrorMsg;
+	(g->ErrorMsg)(ACCESS_DEBUG1, args, 1, g);
+
+	DebugPutHex("firstblock", g->firstblock);
+	DebugPutHex("lastblock", g->lastblock);
+	DebugPutHex("inside4G", inside4G);
+	DebugPutHex("maxtransfer", g->maxtransfer);
+#endif
+
+#if SCSIDIRECT
+	/* if dostype = PDSx, test Direct SCSI first and always use if test succeeded */
+	if ((g->dosenvec->de_DosType & 0xffffff00) == 0x50445300) {
+		g->tdmode = ACCESS_DS;
+		if (testread_ds(buffer, g))
+			return TRUE;
+	}
+#endif
+
+	if (g->lastblock < 262144) {
+		/* Don't bother with tests if small enough (<128M) */
+		g->tdmode = ACCESS_STD;
+		return TRUE;
+	}
+
+	if (inside4G) {
+		ULONG args[3];
+		/* inside first 4G? Try standard CMD_READ first. */
+		g->tdmode = ACCESS_STD;
+		if (testread_td(buffer, g))
+			return TRUE;
+#if SCSIDIRECT
+		g->tdmode = ACCESS_DS;
+		/* It failed, we may have 1G limit A590 pre-7.0 ROM or CDTV SCSI, try DS */
+		if (testread_ds(buffer, g))
+			return TRUE;
+#endif
+		g->tdmode = ACCESS_STD;
+		/* Both failed. Panic! */
+		args[0] = g->lastblock;
+		args[1] = (ULONG)name;
+		args[2] = g->startup->fssm_Unit;
+		g->ErrorMsg = _NormalErrorMsg;
+		(g->ErrorMsg)(AFS_ERROR_32BIT_ACCESS_ERROR, args, 1, g);
+		return FALSE;
+	}
+	/* outside of first 4G, must use TD64, NSD or DS */
+#if NSD
+	g->tdmode = ACCESS_NSD;
+	if (testread_td(buffer, g))
+		return TRUE;
+#endif
+#if TD64
+	g->tdmode = ACCESS_TD64;
+	if (testread_td(buffer, g))
+		return TRUE;
+#endif
+#if SCSIDIRECT
+	g->tdmode = ACCESS_DS;
+	if (testread_ds(buffer, g))
+		return TRUE;
+#endif
+
+#if DETECTDEBUG
+	args[0] = -1;
+	args[1] = 0;
+	g->ErrorMsg = _NormalErrorMsg;
+	(g->ErrorMsg)(ACCESS_DEBUG2, args, 1, g);
+#endif
+
+	g->tdmode = ACCESS_STD;
+	return FALSE;
+}
+#endif
 
 /*************************************************************************/
 
@@ -1766,5 +2080,3 @@ void MotorOff(globaldata *g)
 		DoIO((struct IORequest*)request);
 	}
 }
-
-
