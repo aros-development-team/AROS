@@ -159,10 +159,10 @@ IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Prop_Slider:
             break;
         case MUIA_Prop_UseWinBorder:
-            data->usewinborder = tag->ti_Data != 0;
+            data->usewinborder = tag->ti_Data;
             break;
         case MUIA_Prop_Visible:
-            data->visible = tag->ti_Data != 0;
+            data->visible = tag->ti_Data;
             break;
 
         case MUIA_Prop_DeltaFactor:
