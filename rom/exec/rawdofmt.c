@@ -115,7 +115,7 @@
      ? (size == 'i' ? fetch_arg(IPTR)  : (size == 'l' ? fetch_arg(ULONG) : fetch_arg(UWORD)))   \
      : (size == 'i' ? fetch_arg(SIPTR) : (size == 'l' ? fetch_arg(LONG)  : fetch_arg(WORD))))
 
-/* Call the PutCharProc funtion with the given parameters.  */
+/* Call the PutCharProc function with the given parameters.  */
 #define PutCh(ch)                         \
 do                                        \
 {                                         \
@@ -449,7 +449,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 	DataStream   - Pointer to a zone of memory containing the data. Data has to be
 	               WORD aligned.
 
-	PutChProc    - Callback function. In caseCalled for each character, including
+	PutChProc    - Callback function. Called for each character, including
 		       the NULL terminator. The fuction is called as follow:
 
                        AROS_UFC2(void, PutChProc,
