@@ -315,11 +315,8 @@ static void FreeListFormat(struct MUI_ListData *data)
         FreeVec(data->ci);
         data->ci = NULL;
     }
-    if (data->preparses)
-    {
-        FreeVec(data->preparses);
-        data->preparses = NULL;
-    }
+    FreeVec(data->preparses);
+    data->preparses = NULL;
     if (data->strings)
     {
         FreeVec(data->strings - 1);
@@ -480,7 +477,7 @@ static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
 }
 
 /**************************************************************************
- Determine the dims of a single entry and adapt the columinfo according
+ Determine the dims of a single entry and adapt the columninfo according
  to it. pos might be ENTRY_TITLE. Returns 0 if pos entry needs to
  be redrawn after this operation, 1 if all entries need to be redrawn.
 **************************************************************************/
@@ -1287,7 +1284,7 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos,
     struct MUI_ListData *data = INST_DATA(cl, obj);
     int col, x1, x2;
 
-    /* To be surem we don't draw anything if there is no title */
+    /* To be sure we don't draw anything if there is no title */
     if (entry_pos == ENTRY_TITLE && !data->title)
         return;
 
@@ -1978,7 +1975,7 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
     struct MUIP_List_Select *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    LONG pos,i,count,selcount=0,state=0;
+    LONG pos, i, count, selcount=0, state=0;
 
     /* Establish the range of entries affected */
     switch (msg->pos)
@@ -2043,7 +2040,7 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
     if (msg->seltype != MUIV_List_Select_Ask)
     {
         data->update = 1;
-        MUI_Redraw(obj,MADF_DRAWUPDATE);
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
    
     return 0;
@@ -2120,7 +2117,7 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
         if (!(lentry = AllocListEntry(data)))
         {
             /* Panic, but we must be in a consistent state, so remove
-             ** the space where the following list entries should have gone
+             * the space where the following list entries should have gone
              */
             RemoveListEntries(data, pos, until - pos);
             return ~0;
@@ -2320,7 +2317,7 @@ IPTR List__MUIM_SelectChange(struct IClass *cl, Object *obj,
  MUIM_List_CreateImage
 Called by a List subclass in its Setup method.
 Connects an Area subclass object to the list, much like an object gets
-connected to a window. List call Setup and AskMinMax on that object,
+connected to a window. List calls Setup and AskMinMax on that object,
 keeps a reference to it (that reference will be returned).
 Text engine will dereference that pointer and draw the object with its
 default size.
