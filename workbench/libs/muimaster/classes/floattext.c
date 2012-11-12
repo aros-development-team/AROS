@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,6 +15,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
+#include <proto/graphics.h>
 
 #include <string.h>
 
@@ -37,94 +38,323 @@ static long MyStrLen(const char *ptr)
     return (((long)ptr) - ((long)start));
 }
 
-static void SetText(Object *obj, struct Floattext_DATA *data)
+/*
+ * Calculates the number of characters that will fit on a line of a given
+ * pixel width.
+ */
+static UWORD FitParagraphLine(STRPTR text, ULONG length, WORD width,
+   ULONG offset, struct Window *window)
 {
-    DoMethod(obj, MUIM_List_Clear);
+    struct TextExtent temp_extent;
+    ULONG char_count;
+    UBYTE *p, *q = text + offset;
 
-    if (data->text)
+    char_count = TextFit(window->RPort, text + offset,
+        length - offset, &temp_extent, NULL, 1, width, 32767);
+
+    /* Find the last space in the fitted substring */
+
+    if (offset + char_count != length)
     {
-        STRPTR pos = data->text;
-        for (;;)
-        {
-            LONG len = MyStrLen(pos);
-            DoMethod(obj, MUIM_List_InsertSingle, pos,
-                MUIV_List_Insert_Bottom);
-            pos += len;
-            if (*pos == '\0')
-                break;
-            pos++;
-        }
+        for (p = text + offset + char_count; p > q && *p != ' '; p--);
+        for (; p > q && *p == ' '; p--);
+        if (p > q)
+            char_count = p - q + 1;
     }
+
+    return char_count;
 }
 
-AROS_UFH3S(APTR, construct_func,
-    AROS_UFHA(struct Hook *, hook, A0),
-    AROS_UFHA(APTR, pool, A2),
-    AROS_UFHA(STRPTR, entry, A1))
+static void SetText(Object *obj, struct Floattext_DATA *data)
 {
-    AROS_USERFUNC_INIT
+    WORD width;
+    struct Window *window;
+    UWORD i, count, pos, line_size, space_count, extra_space_count,
+        space_width, space_multiple, bonus_space_count,
+        bonus_space_mod, space_no_in, space_no_out, stripped_pos,
+        stripped_count, control_count, tab_count;
+    UBYTE *text, *p, *q, *r, c, *line = NULL, *stripped_text = NULL;
+    LONG len, stripped_len;
+    BOOL justify, found, is_empty;
 
-    // TODO: MUIA_Floattext_Justify
-    struct Floattext_DATA *data = hook->h_Data;
+    /* Avoid redrawing list while inserting lines */
 
-    STRPTR new;
-    ULONG tabs = 0;
-    ULONG i;
-    ULONG slen = MyStrLen(entry);
-    ULONG size = slen + 1;
+    data->typesetting = TRUE;
 
-    // Count tabulators
-    for (i = 0; i < slen; i++)
+    DoMethod(obj, MUIM_List_Clear);
+
+    window = (struct Window *)XGET(obj, MUIA_Window);
+    width = XGET(obj, MUIA_Width) - XGET(obj, MUIA_InnerLeft)
+        - XGET(obj, MUIA_InnerRight) - 8;
+
+    /* Only do layout if we have some text and a window in which to put it */
+
+    if (data->text && window != NULL)
     {
-        if (entry[i] == '\t')
-            tabs++;
-    }
-    size += tabs * data->tabsize;       // Worst case
+        /* Get width of a space character */
 
-    if ((new = AllocVecPooled(pool, size)))
-    {
-        ULONG oldpos = 0;
-        ULONG newpos = 0;
-        for (; oldpos < slen; oldpos++)
+        space_width = TextLength(window->RPort, " ", 1);
+
+        /* Lay out each paragraph */
+
+        for (text = data->text; text[0] != '\0'; text += pos)
         {
-            if (data->skipchars)
-            {
-                if (strchr(data->skipchars, entry[oldpos]))
-                {
-                    continue;
-                }
-            }
+            stripped_pos = pos = 0;
+            len = MyStrLen(text);
 
-            if (entry[oldpos] == '\t')
+            if (len > 0)
             {
-                LONG spaces = data->tabsize - (newpos % data->tabsize);
-                for (; spaces > 0; spaces--)
+                /* Allocate line/paragraph buffers */
+
+                if (line == NULL || len >= line_size)
                 {
-                    new[newpos++] = ' ';
+                    FreeVec(line);
+                    line = AllocVec(len + 1, MEMF_ANY);
+                    stripped_text = AllocVec(len + 1, MEMF_ANY);
+                    line_size = len + 1;
+                }
+                if (line == NULL || stripped_text == NULL)
+                    return;
+
+                /* Make a copy of paragraph text without control sequences
+                 * or skip-chars, and with tabs expanded to spaces */
+
+                for (p = text, q = stripped_text; *p != '\0' && *p != '\n'; )
+                {
+                    if (*p == '\33')
+                        p += 2;
+                    else if (*p == '\t')
+                    {
+                        for (i = 0; i < data->tabsize; i++)
+                            *q++ = ' ';
+                        p++;
+                    }
+                    else if (data->skipchars != NULL)
+                    {
+                        for (r = data->skipchars; *r != '\0' && *r != *p; r++);
+                        if (*r == '\0')
+                            *q++ = *p;
+                        p++;
+                    }
+                    else
+                        *q++ = *p++;
+                }
+                *q = '\0';
+                stripped_len = MyStrLen(stripped_text);
+
+                /* Divide this paragraph into lines */
+
+                line[0] = '\0';
+
+                while ((stripped_count = FitParagraphLine(stripped_text,
+                    stripped_len, width, stripped_pos, window)) != 0)
+                {
+                    /* Count number of characters for this line in original
+                     * text */
+
+                    control_count = tab_count = 0;
+                    for (i = 0, p = text + pos; i < stripped_count
+                        || (i == stripped_count && *p != ' ' && *p != '\t');
+                        p++)
+                    {
+                        if (*p == '\33')
+                        {
+                            control_count += 2;
+                            p++;
+                        }
+                        else if (*p == '\t')
+                        {
+                            control_count++;
+                            tab_count++;
+                            i += data->tabsize;
+                        }
+                        else if (data->skipchars != NULL)
+                        {
+                            for (r = data->skipchars;
+                                *r != '\0' && *r != *p; r++);
+                            if (*r != '\0' || (*p == ' ' && i == 0))
+                                control_count++;
+                            else
+                                i++;
+                        }
+                        else
+                            i++;
+                    }
+                    count =
+                        stripped_count + control_count
+                        - tab_count * data->tabsize;
+
+                    /* Default to justified text if it's enabled and this
+                     * isn't the last line of the paragraph */
+
+                    justify = data->justify;
+                    if (justify)
+                    {
+                        /* Count number of spaces in stripped line */
+
+                        p = stripped_text + stripped_pos;
+                        for (i = 0, space_count = 0; i < stripped_count; i++)
+                        {
+                            if (p[i] == ' ')
+                                space_count++;
+                        }
+                        space_count -= tab_count * data->tabsize;
+
+                        if (space_count == 0)
+                            justify = FALSE;
+                    }
+
+                    if (justify)
+                    {
+                        /* Find out how many extra spaces to insert for fully
+                         * justified text */
+
+                        extra_space_count = (width - TextLength(window->RPort,
+                            stripped_text + stripped_pos, stripped_count))
+                            / space_width;
+
+                        space_multiple = (space_count + extra_space_count)
+                            / space_count;
+                        bonus_space_count = (space_count + extra_space_count)
+                            - space_count * space_multiple;
+                        if (bonus_space_count > 0)
+                            bonus_space_mod =
+                                (space_count + 3) / bonus_space_count;
+                        else
+                            bonus_space_mod = space_count;
+
+                        /* Don't justify on last line if it will be too
+                         * stretched */
+
+                        if (space_multiple > 5
+                            && pos + count == len)
+                            justify = FALSE;
+                    }
+
+                    /* Prefix new line with all control characters contained
+                     * in previous line */
+
+                    for (p = q = line; *p != '\0'; p++)
+                    {
+                        if (*p == '\33')
+                        {
+                            *q++ = *p++;
+                            *q++ = *p;
+                        }
+                    }
+
+                    /* Generate line to insert in List object */
+
+                    is_empty = TRUE;
+                    p = text + pos;
+                    c = p[count];
+                    p[count] = '\0';
+                    space_no_in = space_no_out = 0;
+                    while (*p != '\0')
+                    {
+                        if (*p == ' ' && justify && !is_empty)
+                        {
+                            /* Add extra spaces to justify text */
+
+                            for (i = 0; i < space_multiple; i++)
+                                *q++ = ' ';
+                            space_no_out += space_multiple;
+
+                            if (bonus_space_count > 0
+                                && space_no_in % bonus_space_mod == 0)
+                            {
+                                *q++ = ' ';
+                                bonus_space_count--;
+                            }
+                            space_no_out++;
+
+                            p++;
+                            space_no_in++;
+
+                            /* Last input space? Make it as wide as
+                             * necessary for line to reach right border */
+
+                            if (space_no_in == space_count)
+                            {
+                                while (bonus_space_count-- > 0)
+                                    *q++ = ' ';
+                            }
+                        }
+                        else if (*p == '\t')
+                        {
+                            /* Expand tab to spaces */
+
+                            for (i = 0; i < data->tabsize; i++)
+                                *q++ = ' ';
+                            p++;
+                        }
+                        else if (data->skipchars != NULL)
+                        {
+                            /* Filter out skip-chars */
+
+                            for (r = data->skipchars;
+                                *r != '\0' && *r != *p; r++);
+                            if (*r == '\0' && !(*p == ' ' && is_empty))
+                            {
+                                *q++ = *p;
+                                is_empty = FALSE;
+                            }
+                            p++;
+                        }
+                        else
+                        {
+                            /* No skip-chars, so direct copy */
+
+                            *q++ = *p++;
+                            is_empty = FALSE;
+                        }
+                    }
+                    *q = '\0';
+
+                    /* Add line to list */
+
+                    DoMethod(obj, MUIM_List_InsertSingle, line,
+                        MUIV_List_Insert_Bottom);
+                    *p = c;
+
+                    /* Move on to first word of next line */
+
+                    stripped_pos += stripped_count;
+                    pos += count;
+                    if (pos != len)
+                    {
+                        if (data->skipchars != NULL)
+                        {
+                            for (found = FALSE, p = text + pos;
+                                !found; pos++, p++)
+                            {
+                                for (r = data->skipchars;
+                                    *r != '\0' && *r != *p; r++);
+                                if (*r == '\0' && *p != ' ' && *p != '\t')
+                                    found = TRUE;
+                            }
+                            pos--, p--;
+                        }
+                        else
+                            for (p = text + pos; *p == ' ' || *p == '\t';
+                                pos++, p++);
+                        for (p = stripped_text + stripped_pos; *(p++) == ' ';
+                            stripped_pos++);
+                    }
                 }
             }
             else
-            {
-                new[newpos++] = entry[oldpos];
-            }
+                DoMethod(obj, MUIM_List_InsertSingle, "",
+                    MUIV_List_Insert_Bottom);
+
+            if (text[pos] == '\n')
+                pos++;
         }
-        new[newpos] = '\0';
     }
-    return new;
 
-    AROS_USERFUNC_EXIT
-}
+    data->typesetting = FALSE;
 
-AROS_UFH3S(void, destruct_func,
-    AROS_UFHA(struct Hook *, hook, A0),
-    AROS_UFHA(APTR, pool, A2),
-    AROS_UFHA(STRPTR, entry, A1))
-{
-    AROS_USERFUNC_INIT
-
-    FreeVecPooled(pool, entry);
-
-    AROS_USERFUNC_EXIT
+    DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
 }
 
 IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -142,12 +372,8 @@ IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-    data->construct_hook.h_Entry = (HOOKFUNC) construct_func;
-    data->construct_hook.h_Data = data;
-    data->destruct_hook.h_Entry = (HOOKFUNC) destruct_func;
-
-    SetAttrs(obj, MUIA_List_ConstructHook, (IPTR) & data->construct_hook,
-        MUIA_List_DestructHook, (IPTR) & data->destruct_hook, TAG_DONE);
+    SetAttrs(obj, MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
+        MUIA_List_DestructHook, MUIV_List_DestructHook_String, TAG_DONE);
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
@@ -156,7 +382,6 @@ IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Floattext_Justify:
             data->justify = tag->ti_Data;
             break;
-
 
         case MUIA_Floattext_SkipChars:
             data->skipchars = (STRPTR) tag->ti_Data;
@@ -226,7 +451,7 @@ IPTR Floattext__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         switch (tag->ti_Tag)
         {
         case MUIA_Floattext_Justify:
-            data->justify = tag->ti_Data;
+            data->justify = tag->ti_Data != 0;
             changed = TRUE;
             break;
 
@@ -262,6 +487,26 @@ IPTR Floattext__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/**************************************************************************
+ MUIM_Draw
+**************************************************************************/
+IPTR Floattext__MUIM_Draw(struct IClass *cl, Object *obj,
+    struct MUIP_Draw *msg)
+{
+    struct Floattext_DATA *data = INST_DATA(cl, obj);
+
+    if (!data->typesetting)
+        DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if ((msg->flags & MADF_DRAWOBJECT) != 0 && data->oldwidth != _width(obj))
+    {
+        data->oldwidth = _width(obj);
+        SetText(obj, data);
+    }
+
+    return 0;
+}
+
 #if ZUNE_BUILTIN_FLOATTEXT
 BOOPSI_DISPATCHER(IPTR, Floattext_Dispatcher, cl, obj, msg)
 {
@@ -275,6 +520,8 @@ BOOPSI_DISPATCHER(IPTR, Floattext_Dispatcher, cl, obj, msg)
         return Floattext__OM_GET(cl, obj, msg);
     case OM_SET:
         return Floattext__OM_SET(cl, obj, msg);
+    case MUIM_Draw:
+        return Floattext__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
 
     default:
         return DoSuperMethodA(cl, obj, msg);
