@@ -464,7 +464,7 @@ IPTR Text__MUIM_Draw(struct IClass *cl, Object *obj,
 }
 
 /**************************************************************************
-MUIM_Export : to export an objects "contents" to a dataspace object.
+MUIM_Export : to export an object's "contents" to a dataspace object.
 **************************************************************************/
 IPTR Text__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
@@ -484,7 +484,7 @@ IPTR Text__MUIM_Export(struct IClass *cl, Object *obj,
 
 
 /**************************************************************************
-MUIM_Import : to import an objects "contents" from a dataspace object.
+MUIM_Import : to import an object's "contents" from a dataspace object.
 **************************************************************************/
 IPTR Text__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)
