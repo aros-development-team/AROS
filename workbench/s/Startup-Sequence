@@ -2,77 +2,77 @@ SetClock LOAD
 
 FailAt 21
 
-Makedir RAM:Clipboards
-If NOT EXISTS RAM:T
-    Makedir RAM:T
+Makedir "RAM:Clipboards"
+If NOT EXISTS "RAM:T"
+    Makedir "RAM:T"
 EndIf
-If NOT EXISTS RAM:ENV
-    Makedir RAM:ENV
-    Assign ENV: RAM:ENV
+If NOT EXISTS "RAM:ENV"
+    Makedir "RAM:ENV"
+    Assign "ENV:" "RAM:ENV"
 EndIf
 
-Assign T:       RAM:T
-Assign CLIPS:   RAM:Clipboards
+Assign "T:"       "RAM:T"
+Assign "CLIPS:"   "RAM:Clipboards"
 
-Assign KEYMAPS: DEVS:Keymaps
-Assign LOCALE:  SYS:Locale
-Assign LIBS:    SYS:Classes ADD
-Assign FONTS:   SYS:Fonts
-Assign HELP:    LOCALE:Help DEFER
-Assign THEMES:  SYS:System/Themes >NIL:
-Assign IMAGES:  SYS:System/Images DEFER
-;Assign PRINTERS: DEVS:Printers
-Assign WANDERER: SYS:System/Wanderer DEFER
+Assign "KEYMAPS:" "DEVS:Keymaps"
+Assign "LOCALE:"  "SYS:Locale"
+Assign "LIBS:"    "SYS:Classes" ADD
+Assign "FONTS:"   "SYS:Fonts"
+Assign "HELP:"    "LOCALE:Help" DEFER
+Assign "THEMES:"  "SYS:System/Themes" >NIL:
+Assign "IMAGES:"  "SYS:System/Images" DEFER
+;Assign "PRINTERS:" "DEVS:Printers"
+Assign "WANDERER:" "SYS:System/Wanderer" DEFER
 
-If EXISTS SYS:Classes/USB
-    Assign USBCLASSES: SYS:Classes/USB
+If EXISTS "SYS:Classes/USB"
+    Assign "USBCLASSES:" "SYS:Classes/USB"
     AddUSBClasses >NIL:
 EndIf
 
-If EXISTS SYS:DiskImages
-    Assign FDSK: SYS:DiskImages
+If EXISTS "SYS:DiskImages"
+    Assign "FDSK:" "SYS:DiskImages"
 EndIf
 
 Automount >NIL:
-Mount >NIL: DEVS:DOSDrivers/~((.#?)|(#?.info))
+Mount >NIL: "DEVS:DOSDrivers/~((.#?)|(#?.info))"
 
-Dir >NIL: PIPE:
+Dir >NIL: "PIPE:"
 
-Path C: SYS:System S: SYS:Prefs SYS:Tools SYS:Utilities QUIET
+Path "C:" "SYS:System" "S:" "SYS:Prefs" "SYS:Tools" "SYS:Utilities" QUIET
 
-If EXISTS SYS:Tools/Commodities
-    Path SYS:Tools/Commodities QUIET ADD
+If EXISTS "SYS:Tools/Commodities"
+    Path "SYS:Tools/Commodities" QUIET ADD
 EndIf
 
-If EXISTS SYS:Demos
-    Path SYS:Demos ADD QUIET
+If EXISTS "SYS:Demos"
+    Path "SYS:Demos" ADD QUIET
 EndIf
 
-If EXISTS Sys:Rexxc
-    Path Sys:Rexxc ADD QUIET
+If EXISTS "Sys:RexxC"
+    Path "Sys:RexxC" ADD QUIET
 Endif
 
-Copy >NIL: ENVARC: ENV: ALL NOPRO NOREQ PAT ~(def_#?.info)
+Copy >NIL: "ENVARC:" "ENV:" ALL NOPRO NOREQ PAT "~(def_#?.info)"
 
-If EXISTS ENV:SYS/theme.var
-    Assign THEME: ${SYS/theme.var}
+If EXISTS "ENV:SYS/theme.var"
+    Assign "THEME:" "${SYS/theme.var}"
 else
-    Assign THEME: THEMES:OS3.1/
+    Assign "THEME:" "THEMES:OS3.1/"
 endif
 
-Touch >NIL: FONTS:__TEST__
+Touch >NIL: "FONTS:__TEST__"
 If WARN
-    Makedir RAM:Fonts
-    Assign FONTS: RAM:Fonts
-    Copy >NIL: SYS:Fonts FONTS: ALL CLONE NOREQ
+    Makedir "RAM:Fonts"
+    Assign "FONTS:" "RAM:Fonts"
+    Copy >NIL: "SYS:Fonts" "FONTS:" ALL CLONE NOREQ
 Endif
-Assign >NIL: FONTS: FONTS:Russian ADD
+Assign >NIL: "FONTS:" "FONTS:Russian" ADD
 
-IF EXISTS FONTS:__TEST__
-    Delete FONTS:__TEST__ QUIET
+IF EXISTS "FONTS:__TEST__"
+    Delete "FONTS:__TEST__" QUIET
 Endif
 
-If NOT EXISTS FONTS:fixed.font
+If NOT EXISTS "FONTS:fixed.font"
     FixFonts
 EndIf
 
@@ -80,58 +80,58 @@ AddDatatypes REFRESH QUIET
 IPrefs
 Run <NIL: >NIL: QUIET ConClip
 
-If EXISTS C:RexxMast
-    Assign REXX: S:
+If EXISTS "C:RexxMast"
+    Assign "REXX:" "S:"
     Run <NIL: >NIL: QUIET C:RexxMast
 EndIf
 
-If EXISTS C:Decoration
-    If EXISTS ENV:SYS/theme.var
+If EXISTS "C:Decoration"
+    If EXISTS "ENV:SYS/theme.var"
         C:Decoration <NIL: >NIL:
-        If EXISTS THEME:global.prefs
-            If EXISTS ENV:Zune/usethemeprefs
-                Copy >NIL: THEME:global.prefs ENV:Zune/ NOPRO NOREQ FORCEOVERWRITE
+        If EXISTS "THEME:global.prefs"
+            If EXISTS "ENV:Zune/usethemeprefs"
+                Copy >NIL: "THEME:global.prefs" "ENV:Zune/" NOPRO NOREQ FORCEOVERWRITE
             EndIf
         EndIf
     EndIf
 Endif
 
-Assign EXISTS Extras: >NIL:
+Assign EXISTS "Extras:" >NIL:
 If WARN
-    If Exists $EXTRASPATH
-        Assign Extras: $EXTRASPATH
+    If EXISTS "$EXTRASPATH"
+        Assign "Extras:" "$EXTRASPATH"
     Else
-        Assign Extras: SYS:Extras >NIL:
+        Assign "Extras:" "SYS:Extras" >NIL:
         If WARN
-            Assign Extras: NIL: >NIL:
+            Assign "Extras:" "NIL:" >NIL:
         EndIf
     EndIf
 Endif
 
-Assign EXISTS Development: >NIL:
+Assign EXISTS "Development:" >NIL:
 If WARN
-    If Exists $DEVELPATH
-        Assign Development: $DEVELPATH
+    If EXSITS "$DEVELPATH"
+        Assign "Development:" "$DEVELPATH"
     EndIf
 Endif
-Assign EXISTS Development: >NIL:
+Assign EXISTS "Development:" >NIL:
 If WARN
-    Assign Development: SYS:Development >NIL:
+    Assign "Development:" "SYS:Development" >NIL:
 EndIf
 
 
-If EXISTS ENV:SYS/Packages
-    List ENV:SYS/Packages NOHEAD FILES TO T:P LFORMAT="If EXISTS ${SYS/Packages/%N}*NCD ${SYS/Packages/%N}*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndif*NEndif*N"
-    Execute T:P
-    Delete T:P QUIET
-    CD SYS:
+If EXISTS "ENV:SYS/Packages"
+    List "ENV:SYS/Packages" NOHEAD FILES TO "T:P" LFORMAT="If EXISTS ${SYS/Packages/%N}*NCD ${SYS/Packages/%N}*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndif*NEndif*N"
+    Execute "T:P"
+    Delete "T:P" QUIET
+    CD "SYS:"
 EndIf
 
-Protect S:PCD s ADD QUIET
-Protect S:SPat s ADD QUIET
+Protect "S:PCD" "s" ADD QUIET
+Protect "S:SPat" "s" ADD QUIET
 
-If EXISTS S:User-Startup
-    Execute S:User-Startup
+If EXISTS "S:User-Startup"
+    Execute "S:User-Startup"
 EndIf
 
 WANDERER:Wanderer
