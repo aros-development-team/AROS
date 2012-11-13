@@ -54,7 +54,9 @@
     Lock(), UnLock(), ExNext(), AllocDosObject(), ExAll(), <dos/dos.h>
 
     INTERNALS
-*/
+
+*****************************************************************************/
+
 {
     AROS_LIBFUNC_INIT
 
