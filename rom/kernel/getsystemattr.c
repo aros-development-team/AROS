@@ -36,7 +36,6 @@ AROS_LH1(intptr_t, KrnGetSystemAttr,
     BUGS
 
     SEE ALSO
-	KrnSetSystemAttr()
 
     INTERNALS
 
