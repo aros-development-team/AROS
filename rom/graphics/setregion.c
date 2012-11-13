@@ -47,7 +47,7 @@
     BUGS
 
     SEE ALSO
-	NewRegion(), DisposeRegion(), CopyRegion()
+	NewRegion(), DisposeRegion()
 
     INTERNALS
 
