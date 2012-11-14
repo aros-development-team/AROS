@@ -69,9 +69,9 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
 {
     WORD width;
     struct Window *window;
-    UWORD i, count, pos, line_size, space_count, extra_space_count,
-        space_width, space_multiple, bonus_space_count,
-        bonus_space_mod, space_no_in, space_no_out, stripped_pos,
+    UWORD i, count, pos, line_size, space_count = 0, extra_space_count,
+        space_width, space_multiple = 0, bonus_space_count,
+        bonus_space_mod = 1, space_no_in = 0, space_no_out, stripped_pos,
         stripped_count, control_count, tab_count;
     UBYTE *text, *p, *q, *r, c, *line = NULL, *stripped_text = NULL;
     LONG len, stripped_len;
@@ -261,7 +261,7 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
                             space_no_out += space_multiple;
 
                             if (bonus_space_count > 0
-                                && space_no_in % bonus_space_mod == 0)
+                                && (space_no_in % bonus_space_mod == 0))
                             {
                                 *q++ = ' ';
                                 bonus_space_count--;
