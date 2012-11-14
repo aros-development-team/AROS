@@ -59,7 +59,7 @@
 
             Send the CTRL-C signal to the process named "c:dhcpclient".
 
- **************************************************************************/
+******************************************************************************/
 
 #include <exec/types.h>
 #include <exec/tasks.h>
