@@ -110,7 +110,7 @@ Endif
 
 Assign EXISTS "Development:" >NIL:
 If WARN
-    If EXSITS "$DEVELPATH"
+    If EXISTS "$DEVELPATH"
         Assign "Development:" "$DEVELPATH"
     EndIf
 Endif
