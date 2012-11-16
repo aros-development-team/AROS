@@ -19,6 +19,7 @@
 #define MUIM_Group_AddHead      (MUIB_MUI | 0x0042e200)        /* MUI: V8 */
 #define MUIM_Group_AddTail      (MUIB_MUI | 0x0042d752)        /* MUI: V8 */
 #define MUIM_Group_ExitChange   (MUIB_MUI | 0x0042d1cc)        /* MUI: V11 */
+#define MUIM_Group_ExitChange2  (MUIB_MUI | 0x0042e541)        /* MUI: PRIV */
 #define MUIM_Group_InitChange   (MUIB_MUI | 0x00420887)        /* MUI: V11 */
 #define MUIM_Group_Sort         (MUIB_MUI | 0x00427417)        /* MUI: V4  */
 #define MUIM_Group_Remove       (MUIB_MUI | 0x0042f8a9)        /* MUI: V8 */
@@ -39,6 +40,12 @@ struct MUIP_Group_ExitChange
 {
     STACKED ULONG MethodID;
 };
+
+struct MUIP_Group_ExitChange2 /* PRIV */
+{                             /* PRIV */
+    STACKED ULONG MethodID;   /* PRIV */
+    STACKED ULONG flags;      /* PRIV */
+};                            /* PRIV */
 
 struct MUIP_Group_InitChange
 {
