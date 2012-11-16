@@ -132,6 +132,7 @@ struct MUI_GroupData
 #define GROUP_VIRTUAL     (1<<6)
 #define GROUP_HSPACING    (1<<7)
 #define GROUP_VSPACING    (1<<8)
+#define GROUP_CHANGED     (1<<9)
 
 
 /* During minmax calculations objects with a weight of 0 shall
@@ -254,6 +255,8 @@ static IPTR Group__MUIM_AddObject(struct IClass *cl, Object *obj, Msg msg)
 
     DoMethodA(data->family, (Msg) msg);
     data->num_children++;
+    if ((data->flags & GROUP_CHANGING) != 0)
+        data->flags |= GROUP_CHANGED;
 
     /* if we are in an application tree, propagate pointers */
     if (muiNotifyData(obj)->mnd_GlobalInfo)
@@ -722,6 +725,8 @@ IPTR Group__MUIM_Remove(struct IClass *cl, Object *obj,
         _flags(msg->obj) &= ~MADF_INVIRTUALGROUP;
     }
 
+    if ((data->flags & GROUP_CHANGING) != 0)
+        data->flags |= GROUP_CHANGED;
     data->num_children--;
     DoMethodA(data->family, (Msg) msg);
 
@@ -791,6 +796,7 @@ IPTR Group__MUIM_InitChange(struct IClass *cl, Object *obj,
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
+    data->flags &= ~GROUP_CHANGED;
     data->flags |= GROUP_CHANGING;
     return TRUE;
 }
@@ -804,9 +810,57 @@ IPTR Group__MUIM_ExitChange(struct IClass *cl, Object *obj,
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
+    data->flags &= ~GROUP_CHANGING;
+
+    if (data->flags & GROUP_CHANGED)
+    {
+        data->flags &= ~GROUP_CHANGED;
+
+        if ((_flags(obj) & MADF_SETUP) && _win(obj))
+        {
+            Object *win = _win(obj);
+            Object *parent = obj;
+
+            /* CHECKME: Don't call RecalcDisplay if one of our parents is
+               in GROUP_CHANGING state to prevent  crash with Zune prefs
+               program NListtree page because NList/NListtree when
+               killing tree images in MUIM_Cleanup uses InitChange/
+               ExitChange. Zune prefs program uses InitChange/ExitChange
+               when switching page -> nesting -> mess. */
+
+            while ((parent = _parent(parent)))
+            {
+                struct MUI_GroupData *pdata = INST_DATA(cl, parent);
+
+                if (parent == win)
+                    break;
+
+                if (pdata->flags & GROUP_CHANGING)
+                {
+                    return TRUE;
+                }
+
+            }
+
+            DoMethod(win, MUIM_Window_RecalcDisplay, (IPTR) obj);
+        }
+    }
+
+    return TRUE;
+}
+
+
+/*
+ * Will recalculate display after dynamic adding/removing
+ */
+IPTR Group__MUIM_ExitChange2(struct IClass *cl, Object *obj,
+    struct MUIP_Group_ExitChange2 *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+
     if (data->flags & GROUP_CHANGING)
     {
-        data->flags &= ~GROUP_CHANGING;
+        data->flags &= ~(GROUP_CHANGING | GROUP_CHANGED);
 
         if ((_flags(obj) & MADF_SETUP) && _win(obj))
         {
@@ -3292,6 +3346,8 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
         return Group__MUIM_AskMinMax(cl, obj, (APTR) msg);
     case MUIM_Group_ExitChange:
         return Group__MUIM_ExitChange(cl, obj, (APTR) msg);
+    case MUIM_Group_ExitChange2:
+        return Group__MUIM_ExitChange2(cl, obj, (APTR) msg);
     case MUIM_Group_InitChange:
         return Group__MUIM_InitChange(cl, obj, (APTR) msg);
     case MUIM_Group_Sort:
