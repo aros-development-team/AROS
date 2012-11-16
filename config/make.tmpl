@@ -508,26 +508,25 @@ TMP_CXXFLAGS := $(TMP_CXXFLAGS) -fno-rtti -fno-exceptions -fno-check-new -isyste
 TMP_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_CXXFLAGS)))
 
 ifeq (%(targetdir),)
-TMP_TARGETS := $(addsuffix .o,%(basenames))
-TMP_DTARGETS := $(addsuffix .d,%(basenames))
-TMP_WILDCARD := %
+  TMP_TARGETS := $(addsuffix .o,%(basenames))
+  TMP_DTARGETS := $(addsuffix .d,%(basenames))
+  TMP_WILDCARD := %
 else
-TMP_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,%(basenames)))
-TMP_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,%(basenames)))
-TMP_WILDCARD := %(targetdir)/%
+  TMP_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,%(basenames)))
+  TMP_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,%(basenames)))
+  TMP_WILDCARD := %(targetdir)/%
 
-# Be sure that all .cpp files are generated
-$(TMP_TARGETS) $(TMP_DTARGETS) : | $(addsuffix .cpp,%(basenames))
+  # Be sure that all .cpp files are generated
+  $(TMP_TARGETS) $(TMP_DTARGETS) : | $(addsuffix .cpp,%(basenames))
 
-# Be sure that all .cpp files are found
-TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
-TMP_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
-TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
-ifneq ($(TMP_DIRS),)
+  # Be sure that all .cpp files are found
+  TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+  TMP_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+  TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
+  ifneq ($(TMP_DIRS),)
     TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
     vpath %.cpp $(TMP_DIRS)
-endif
-
+  endif
 endif
 
 # Define the use of cross compiler
@@ -541,19 +540,19 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TMP_CC) $(TARGET_CFLAGS)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TMP_CC) $(TARGET_CFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
-$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_CXX)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_CXX)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CXX) $(KERNEL_CFLAGS)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
-$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CXX) $(KERNEL_CFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
 $(TMP_TARGETS) : CFLAGS := $(TMP_CXXFLAGS)
@@ -561,9 +560,13 @@ $(TMP_TARGETS) : $(TMP_WILDCARD).o : %.cpp
 	%compile_q cmd=$(CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
 ifeq (%(dflags),)
-$(TMP_DTARGETS) : DFLAGS:=$(TMP_CXXFLAGS)
+  $(TMP_DTARGETS) : DFLAGS:=$(TMP_CXXFLAGS)
 else
-$(TMP_DTARGETS) : DFLAGS:=%(dflags)
+  ifeq (%(dflags),%(cflags))
+    $(TMP_DTARGETS) : DFLAGS:=$(TMP_CXXFLAGS)
+  else
+    $(TMP_DTARGETS) : DFLAGS:=%(dflags)
+  endif
 endif
 $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.cpp
 	%mkdepend_q cc=$(CMD) flags=$(DFLAGS)
