@@ -57,6 +57,7 @@
 
 #include <sys/types.h>
 #include <stdint.h>
+#include <endian.h>
 
 /*
  * Endianness conversion macros
@@ -74,7 +75,7 @@
          (FlipWord(_FlipLong_A) << 16) | FlipWord(_FlipLong_A >> 16); \
    })
 
-#if defined(__PPC__) || defined(__m68000)
+#if _BYTE_ORDER == _BIG_ENDIAN
 
 #define BEWord(A) \
    (A)
@@ -87,20 +88,24 @@
 
 #define LELong(A) \
    FlipLong(A)
+
+#elif _BYTE_ORDER == _LITTLE_ENDIAN
+
+#define BEWord(A) \
+   FlipWord(A)
+
+#define BELong(A) \
+   FlipLong(A)
+
+#define LEWord(A) \
+   (A)
+
+#define LELong(A) \
+   (A)
 
 #else
 
-#define BEWord(A) \
-   FlipWord(A)
-
-#define BELong(A) \
-   FlipLong(A)
-
-#define LEWord(A) \
-   (A)
-
-#define LELong(A) \
-   (A)
+#error <netinet/in.h> - Byte order for this architecture is unsupported!
 
 #endif
 
