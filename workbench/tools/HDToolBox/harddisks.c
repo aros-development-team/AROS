@@ -21,34 +21,30 @@
 
 extern struct GUIGadgets gadgets;
 
-void w2strcpy(STRPTR name, UWORD *wstr, ULONG len)
+static void strcatlen(STRPTR dst, UBYTE *src, UBYTE maxlen)
 {
-    STRPTR p = name;
-
-    while (len)
-    {
-        *((UWORD *)p) = AROS_BE2WORD(*wstr);
-        p += sizeof(UWORD);
-        len -= 2;
-        wstr++;
+    dst += strlen(dst);
+    memcpy(dst, src, maxlen);
+    while (maxlen-- > 0) {
+        if (dst[maxlen] != ' ')
+            break;
+        dst[maxlen] = 0;
     }
-    p -= 2;
-    while (p >= name && (*p == 0 || *p == ' '))
-        *p-- = 0;
 }
 
-BOOL identify(struct IOStdReq *ioreq, STRPTR name)
+static BOOL identify(struct IOStdReq *ioreq, STRPTR name)
 {
     struct SCSICmd scsicmd = {0};
-    UWORD data[256];
-    UBYTE cmd = 0xEC; /* identify */
+    UBYTE data[36 + 1];
+    UBYTE cmd[6] = { 0x12, 0, 0, 0, 36, 0 }; /* inquiry */
+    WORD i;
 
-    D(bug("[HDToolBox] identify('%s')\n", name));
+    D(bug("[HDToolBox] inquiry('%s')\n", name));
 
-    scsicmd.scsi_Data = data;
-    scsicmd.scsi_Length = 512;
-    scsicmd.scsi_Command = &cmd;
-    scsicmd.scsi_CmdLength = 1;
+    scsicmd.scsi_Data = (UWORD*)data;
+    scsicmd.scsi_Length = 36;
+    scsicmd.scsi_Command = cmd;
+    scsicmd.scsi_CmdLength = sizeof cmd;
     ioreq->io_Command = HD_SCSICMD;
     ioreq->io_Data = &scsicmd;
     ioreq->io_Length = sizeof(struct SCSICmd);
@@ -56,7 +52,18 @@ BOOL identify(struct IOStdReq *ioreq, STRPTR name)
     if (DoIO((struct IORequest *)ioreq))
         return FALSE;
 
-    w2strcpy(name, &data[27], 40);
+    name[0] = 0;
+    i = 4 + data[4];
+    if (i >= 16)
+        strcatlen(name, &data[8], 8);
+    if (i >= 32) {
+        strcat(name, " ");
+        strcatlen(name, &data[16], 16);
+    }
+    if (i >= 36) {
+        strcat(name, " ");
+        strcatlen(name, &data[32], 4);
+    }
     return TRUE;
 }
 
