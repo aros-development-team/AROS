@@ -17,23 +17,23 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(struct Process *, FindCliProc,
+        AROS_LH1(struct Process *, FindCliProc,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, num, D1),
+        AROS_LHA(ULONG, num, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 91, Dos)
+        struct DosLibrary *, DOSBase, 91, Dos)
 
 /*  FUNCTION
-	Find a CLI process by its task number. The number must be greater
-	than 0. 
+        Find a CLI process by its task number. The number must be greater
+        than 0. 
 
     INPUTS
-	num - The task number of the CLI to find.
+        num - The task number of the CLI to find.
 
     RESULT
-	Pointer to the process if found, NULL otherwise.
+        Pointer to the process if found, NULL otherwise.
 
     NOTES
 
@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	Cli(), MaxCli()
+        Cli(), MaxCli()
 
     INTERNALS
 
@@ -60,11 +60,11 @@
 
     ForeachNode(&root->rn_CliList, node)
     {
-	if (node->ci_Process->pr_TaskNum == num)
-	{
-	    cliProc = node->ci_Process;
-	    break;
-	}
+        if (node->ci_Process->pr_TaskNum == num)
+        {
+            cliProc = node->ci_Process;
+            break;
+        }
     }
 
     ReleaseSemaphore(&root->rn_RootLock);

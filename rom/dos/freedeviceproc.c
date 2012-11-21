@@ -14,22 +14,22 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-	AROS_LH1(void, FreeDeviceProc,
+        AROS_LH1(void, FreeDeviceProc,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DevProc *, dp, D1),
+        AROS_LHA(struct DevProc *, dp, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 108, Dos)
+        struct DosLibrary *, DOSBase, 108, Dos)
 
 /*  FUNCTION
-	FreeDeviceProc() will clean up after a call to GetDeviceProc().
+        FreeDeviceProc() will clean up after a call to GetDeviceProc().
 
     INPUTS
-	dp		- DevProc structure as returned by GetDeviceProc().
+        dp              - DevProc structure as returned by GetDeviceProc().
 
     RESULT
-	Some memory and other resources returned to the system.
+        Some memory and other resources returned to the system.
 
     NOTES
 
@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-	GetDeviceProc()
+        GetDeviceProc()
 
     INTERNALS
 
@@ -48,9 +48,9 @@
 
     if( dp )
     {
-	if( dp->dvp_Flags & DVPF_UNLOCK )
-	    UnLock( dp->dvp_Lock );
-	FreeMem( dp, sizeof(struct DevProc) );
+        if( dp->dvp_Flags & DVPF_UNLOCK )
+            UnLock( dp->dvp_Lock );
+        FreeMem( dp, sizeof(struct DevProc) );
     }
 
     AROS_LIBFUNC_EXIT

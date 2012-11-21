@@ -19,25 +19,25 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 
-	AROS_LH2(BOOL, SetFileDate,
+        AROS_LH2(BOOL, SetFileDate,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR,       name, D1),
-	AROS_LHA(const struct DateStamp *, date, D2),
+        AROS_LHA(CONST_STRPTR,       name, D1),
+        AROS_LHA(const struct DateStamp *, date, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 66, Dos)
+        struct DosLibrary *, DOSBase, 66, Dos)
 
 /*  FUNCTION
-	Change the modification time of a file or directory.
+        Change the modification time of a file or directory.
 
     INPUTS
-	name - name of the file
-	date - new file time
+        name - name of the file
+        date - new file time
 
     RESULT
-	Boolean success indicator. IoErr() gives additional information upon
-	failure.
+        Boolean success indicator. IoErr() gives additional information upon
+        failure.
 
     NOTES
 
@@ -59,8 +59,8 @@
     D(bug("[SetFileDate] '%s' %x\n", name, date));
 
     if (getpacketinfo(DOSBase, name, &phs)) {
-    	status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_DATE, (IPTR)NULL, phs.lock, phs.name, (IPTR)date);
-    	freepacketinfo(DOSBase, &phs);
+        status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_DATE, (IPTR)NULL, phs.lock, phs.name, (IPTR)date);
+        freepacketinfo(DOSBase, &phs);
     }
 
     return status;

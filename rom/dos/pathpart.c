@@ -21,29 +21,29 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(STRPTR, PathPart,
+        AROS_LH1(STRPTR, PathPart,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, path, D1),
+        AROS_LHA(CONST_STRPTR, path, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 146, Dos)
+        struct DosLibrary *, DOSBase, 146, Dos)
 
 /*  FUNCTION
-	Returns a pointer to the character after the last
-	directory in path (see examples).
+        Returns a pointer to the character after the last
+        directory in path (see examples).
 
     INPUTS
-	path - Search this path.
+        path - Search this path.
 
     RESULT
-	A pointer to a character in path.
+        A pointer to a character in path.
 
     NOTES
 
     EXAMPLE
-	PathPart("xxx:yyy/zzz/qqq") would return a pointer to the last '/'.
-	PathPart("xxx:yyy") would return a pointer to the first 'y').
+        PathPart("xxx:yyy/zzz/qqq") would return a pointer to the last '/'.
+        PathPart("xxx:yyy") would return a pointer to the first 'y').
 
     BUGS
 
@@ -60,23 +60,23 @@
     /* '/' at the beginning of the string really is part of the path */
     while (*path == '/')
     {
-	++path;
+        ++path;
     }
 
     ptr = path;
 
     while (*ptr)
     {
-	if (*ptr == '/')
-	{
-	    path = ptr;
-	}
-	else if (*ptr == ':')
-	{
-	    path = ptr + 1;
-	}
-	
-	ptr++;
+        if (*ptr == '/')
+        {
+            path = ptr;
+        }
+        else if (*ptr == ':')
+        {
+            path = ptr + 1;
+        }
+        
+        ptr++;
     }
     
     return (STRPTR)path;
@@ -94,10 +94,10 @@ int main (int argc, char ** argv)
 
     while (--argc)
     {
-	s = *++argv;
-	fileptr = PathPart(s);
+        s = *++argv;
+        fileptr = PathPart(s);
 
-	printf("Pfad:  %s\nErg.: %s\n", s, fileptr);
+        printf("Pfad:  %s\nErg.: %s\n", s, fileptr);
     }
 }
 

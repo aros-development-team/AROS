@@ -16,22 +16,22 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-	AROS_LH0(struct MsgPort *, GetFileSysTask,
+        AROS_LH0(struct MsgPort *, GetFileSysTask,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 87, Dos)
+        struct DosLibrary *, DOSBase, 87, Dos)
 
 /*  FUNCTION
-	Return the default filesystem handler for this process.
+        Return the default filesystem handler for this process.
 
     INPUTS
-	None.
+        None.
 
     RESULT
-	The default filesystem handler for this process.
+        The default filesystem handler for this process.
 
     NOTES
 
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-	SetFileSysTask()
+        SetFileSysTask()
 
     INTERNALS
 

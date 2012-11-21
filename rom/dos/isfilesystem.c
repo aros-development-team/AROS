@@ -18,31 +18,31 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BOOL, IsFileSystem,
+        AROS_LH1(BOOL, IsFileSystem,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, devicename, D1),
+        AROS_LHA(CONST_STRPTR, devicename, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 118, Dos)
+        struct DosLibrary *, DOSBase, 118, Dos)
 
 /*  FUNCTION
-	Query the device whether it is a filesystem.
+        Query the device whether it is a filesystem.
 
     INPUTS
-	devicename	- Name of the device to query.
+        devicename      - Name of the device to query.
 
     RESULT
-	TRUE if the device is a filesystem, FALSE otherwise.
+        TRUE if the device is a filesystem, FALSE otherwise.
 
     NOTES
-	DF0:, HD0:, ... are filesystems.
-	CON:, PIPE:, AUX:, ... are not
+        DF0:, HD0:, ... are filesystems.
+        CON:, PIPE:, AUX:, ... are not
 
         In AmigaOS if devicename contains no ":" then result
-	is always TRUE. Also volume and assign names return
-	TRUE.
-	
+        is always TRUE. Also volume and assign names return
+        TRUE.
+        
     EXAMPLE
 
     BUGS
@@ -61,17 +61,17 @@
 
     /* console is never a filesystem */
     if (Stricmp(devicename, "CONSOLE:") == 0 || Stricmp(devicename, "*") == 0 ||
-    	Stricmp(devicename, "CON:") == 0 || Stricmp(devicename, "RAW:") == 0) {
-    	SetIoErr(err);
+        Stricmp(devicename, "CON:") == 0 || Stricmp(devicename, "RAW:") == 0) {
+        SetIoErr(err);
         return code;
     }
 
     if ((dvp = GetDeviceProc(devicename, dvp))) {
-    	if (dvp->dvp_Port != NULL) // NIL: isn't a filesystem
-    	    code = dopacket0(DOSBase, NULL, dvp->dvp_Port, ACTION_IS_FILESYSTEM);
-    	FreeDeviceProc(dvp);
+        if (dvp->dvp_Port != NULL) // NIL: isn't a filesystem
+            code = dopacket0(DOSBase, NULL, dvp->dvp_Port, ACTION_IS_FILESYSTEM);
+        FreeDeviceProc(dvp);
     } else {
-    	SetIoErr(err);
+        SetIoErr(err);
     }
    
     return code;

@@ -16,14 +16,14 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(LONG, PutStr,
+        AROS_LH1(LONG, PutStr,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, string, D1),
+        AROS_LHA(CONST_STRPTR, string, D1),
 
 /*  LOCATION */
 
-	struct DosLibrary *, DOSBase, 158, Dos)
+        struct DosLibrary *, DOSBase, 158, Dos)
 
 /*  FUNCTION
         This routine writes an unformatted string to the default output.  No 

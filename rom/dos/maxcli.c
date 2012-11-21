@@ -14,22 +14,22 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH0(ULONG, MaxCli,
+        AROS_LH0(ULONG, MaxCli,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 92, Dos)
+        struct DosLibrary *, DOSBase, 92, Dos)
 
 /*  FUNCTION
-	Returns the highest Cli number currently in use. Since processes
-	may be added and removed at any time the returned value may already
-	be wrong.
+        Returns the highest Cli number currently in use. Since processes
+        may be added and removed at any time the returned value may already
+        be wrong.
 
     INPUTS
 
     RESULT
-	Maximum Cli number (_not_ the number of Clis).
+        Maximum Cli number (_not_ the number of Clis).
 
     NOTES
 

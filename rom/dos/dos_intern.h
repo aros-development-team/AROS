@@ -103,10 +103,10 @@ void internal_ReplyPkt(struct DosPacket *dp, struct MsgPort *replyPort, SIPTR re
 
 #define dopacket5(base, res2, port, action, arg1, arg2, arg3, arg4, arg5) dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), (SIPTR)(arg4), (SIPTR)(arg5), 0, 0)
 #define dopacket4(base, res2, port, action, arg1, arg2, arg3, arg4)       dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), (SIPTR)(arg4), 0, 0, 0)
-#define dopacket3(base, res2, port, action, arg1, arg2, arg3)		  dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), 0, 0, 0, 0)
-#define dopacket2(base, res2, port, action, arg1, arg2)			  dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), 0, 0, 0, 0, 0)
-#define dopacket1(base, res2, port, action, arg1)			  dopacket(res2, port, action, (SIPTR)(arg1), 0, 0, 0, 0, 0, 0)
-#define dopacket0(base, res2, port, action)				  dopacket(res2, port, action, 0, 0, 0, 0, 0, 0, 0)
+#define dopacket3(base, res2, port, action, arg1, arg2, arg3)             dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), 0, 0, 0, 0)
+#define dopacket2(base, res2, port, action, arg1, arg2)                   dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), 0, 0, 0, 0, 0)
+#define dopacket1(base, res2, port, action, arg1)                         dopacket(res2, port, action, (SIPTR)(arg1), 0, 0, 0, 0, 0, 0)
+#define dopacket0(base, res2, port, action)                               dopacket(res2, port, action, 0, 0, 0, 0, 0, 0, 0)
 
 #ifdef __mc68000
 extern void BCPL_Fixup(struct Process *me);
@@ -132,7 +132,7 @@ BPTR internal_CopyPath(BPTR boldpath, struct DosLibrary * DOSBase);
 
 /* Pattern matching function used by MatchPattern() and MatchPatternNoCase() */
 BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
-		  struct DosLibrary *DOSBase);
+                  struct DosLibrary *DOSBase);
 
 /* Pattern parsing function used by ParsePattern() and ParsePatternNoCase() */
 LONG patternParse(CONST_STRPTR Source, STRPTR Dest, LONG DestLength,
@@ -154,7 +154,7 @@ LONG InternalFlush( struct FileHandle *fh, struct DosLibrary *DOSBase );
 struct AChain *Match_AllocAChain(LONG extrasize, struct DosLibrary *DOSBase);
 void Match_FreeAChain(struct AChain *ac, struct DosLibrary *DOSBase);
 LONG Match_BuildAChainList(CONST_STRPTR pattern, struct AnchorPath *ap,
-			   struct AChain **retac, struct DosLibrary *DOSBase);
+                           struct AChain **retac, struct DosLibrary *DOSBase);
 LONG Match_MakeResult(struct AnchorPath *ap, struct DosLibrary *DOSBase);
 
 void addprocesstoroot(struct Process * , struct DosLibrary *);
@@ -175,60 +175,60 @@ struct markerarray
 };
 
 #define PUSH(t,p,s)                                                     \
-{									\
+{                                                                       \
     if(macnt==128)                                                      \
-    {									\
-	if(macur->next==NULL)                                           \
-	{								\
-	    macur->next=AllocMem(sizeof(struct markerarray),MEMF_ANY);  \
-	    if(macur->next==NULL)                                       \
-		ERROR(ERROR_NO_FREE_STORE);                             \
-	    macur->next->prev=macur;					\
-	}								\
-	macur=macur->next;						\
-	macnt=0;							\
-    }									\
+    {                                                                   \
+        if(macur->next==NULL)                                           \
+        {                                                               \
+            macur->next=AllocMem(sizeof(struct markerarray),MEMF_ANY);  \
+            if(macur->next==NULL)                                       \
+                ERROR(ERROR_NO_FREE_STORE);                             \
+            macur->next->prev=macur;                                    \
+        }                                                               \
+        macur=macur->next;                                              \
+        macnt=0;                                                        \
+    }                                                                   \
     macur->marker[macnt].type=(t);                                      \
     macur->marker[macnt].pat=(p);                                       \
     macur->marker[macnt].str=(s);                                       \
-    macnt++;								\
+    macnt++;                                                            \
 }
 
 #define POP(t,p,s)                      \
-{					\
-    macnt--;				\
+{                                       \
+    macnt--;                            \
     if(macnt<0)                         \
-    {					\
-	macnt=127;			\
-	macur=macur->prev;		\
-	if(macur==NULL)                 \
-	    ERROR(0);                   \
-    }					\
+    {                                   \
+        macnt=127;                      \
+        macur=macur->prev;              \
+        if(macur==NULL)                 \
+            ERROR(0);                   \
+    }                                   \
     (t)=macur->marker[macnt].type;      \
     (p)=macur->marker[macnt].pat;       \
     (s)=macur->marker[macnt].str;       \
 }
 
-#define MP_ESCAPE		0x81 /* Before characters in [0x81;0x8a] */
-#define MP_MULT 		0x82 /* _#(_a) */
-#define MP_MULT_END		0x83 /* #(a_)_ */
-#define MP_NOT			0x84 /* _~(_a) */
-#define MP_NOT_END		0x85 /* ~(a_)_ */
-#define MP_OR			0x86 /* _(_a|b) */
-#define MP_OR_NEXT		0x87 /* (a_|_b) */
-#define MP_OR_END		0x88 /* (a|b_)_ */
-#define MP_SINGLE		0x89 /* ? */
-#define MP_ALL			0x8a /* #? or * */
-#define MP_SET			0x8b /* _[_ad-g] */
-#define MP_NOT_SET		0x8c /* _[~_ad-g] */
-#define MP_DASH 		0x8d /* [ad_-g_] */
-#define MP_SET_END		0x8e /* [ad-g_]_ */
+#define MP_ESCAPE               0x81 /* Before characters in [0x81;0x8a] */
+#define MP_MULT                 0x82 /* _#(_a) */
+#define MP_MULT_END             0x83 /* #(a_)_ */
+#define MP_NOT                  0x84 /* _~(_a) */
+#define MP_NOT_END              0x85 /* ~(a_)_ */
+#define MP_OR                   0x86 /* _(_a|b) */
+#define MP_OR_NEXT              0x87 /* (a_|_b) */
+#define MP_OR_END               0x88 /* (a|b_)_ */
+#define MP_SINGLE               0x89 /* ? */
+#define MP_ALL                  0x8a /* #? or * */
+#define MP_SET                  0x8b /* _[_ad-g] */
+#define MP_NOT_SET              0x8c /* _[~_ad-g] */
+#define MP_DASH                 0x8d /* [ad_-g_] */
+#define MP_SET_END              0x8e /* [ad-g_]_ */
 
 /* Whether MatchFirst/MatchNext/MatchEnd in case of the base
    AChain should just take the currentdir lock pointer, or
    make a real duplicate with DupLock() */
 
-#define MATCHFUNCS_NO_DUPLOCK 	0
+#define MATCHFUNCS_NO_DUPLOCK   0
 
 #define  __is_task(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_TASK)
 #define  __is_process(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS)
@@ -245,7 +245,7 @@ struct debug_segnode
     struct MinNode node;
     UBYTE          name[200];
     BPTR           seglist;
-    IPTR	   start_address; // start address of loaded executable segment
+    IPTR           start_address; // start address of loaded executable segment
     struct MinList seginfos;
 };
 
@@ -271,7 +271,7 @@ LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary
 
 #define CMPBSTR(x, y)       Stricmp(BADDR(x), BADDR(y))
 #define CMPNICBSTR(x, y, n) Strnicmp(x, BADDR(y), n)
-#define BSTR2C(s)	    ((STRPTR)BADDR(s))
+#define BSTR2C(s)           ((STRPTR)BADDR(s))
 #define FreeCSTR(s)
 
 #else
@@ -285,10 +285,10 @@ char *BSTR2C(BSTR);
 #endif
 
 #ifdef AROS_FAST_BSTR
-#define C2BSTR(x)	((char *)(x))
-#define FREEC2BSTR(x)	do { } while (0)
-#define CMPCBSTR(a,b)	strcmp(a,b)
-#define CMPICBSTR(a,b)	Stricmp(a,b)
+#define C2BSTR(x)       ((char *)(x))
+#define FREEC2BSTR(x)   do { } while (0)
+#define CMPCBSTR(a,b)   strcmp(a,b)
+#define CMPICBSTR(a,b)  Stricmp(a,b)
 #else
 BSTR C2BSTR(CONST_STRPTR);
 #define FREEC2BSTR(bstr) FreeVec(BADDR(bstr))
@@ -300,10 +300,10 @@ void fixfib(struct FileInfoBlock*);
 
 struct PacketHelperStruct
 {
-	BSTR name;
-	struct MsgPort *port;
-	BPTR lock;
-	struct DevProc *dp;
+        BSTR name;
+        struct MsgPort *port;
+        BPTR lock;
+        struct DevProc *dp;
 };
 
 BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR, struct PacketHelperStruct*);
@@ -311,10 +311,10 @@ BOOL getdevpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR devname, CONST_ST
 void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
 
 #define ASSERT_VALID_FILELOCK(lock) do { \
-    	struct FileLock *fl = BADDR(lock); \
-    	if (fl && fl->fl_Access != SHARED_LOCK && fl->fl_Access != EXCLUSIVE_LOCK) { \
-    	    bug("%s() called with a bogus FileLock! Lock=%x FL=%x Access %d %s/%s/%d\n", __FUNCTION__, lock, fl, fl->fl_Access, __FILE__,__FUNCTION__,__LINE__); \
-    	} \
+        struct FileLock *fl = BADDR(lock); \
+        if (fl && fl->fl_Access != SHARED_LOCK && fl->fl_Access != EXCLUSIVE_LOCK) { \
+            bug("%s() called with a bogus FileLock! Lock=%x FL=%x Access %d %s/%s/%d\n", __FUNCTION__, lock, fl, fl->fl_Access, __FILE__,__FUNCTION__,__LINE__); \
+        } \
     } while (0);
 
 /* Shell utilities */

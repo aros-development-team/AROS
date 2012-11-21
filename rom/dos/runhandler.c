@@ -27,86 +27,86 @@ void BCPL_RunHandler(void);
 
 struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, struct DosLibrary *DOSBase)
 {
-	D(struct FileSysStartupMsg *fssm = NULL;)
-	struct DosPacket *dp;
-	struct MsgPort *reply_port;
-	struct Process *process = NULL;
-	BSTR bpath;
-	ULONG len;
-	CONST_STRPTR handler;
-	APTR entry;
+        D(struct FileSysStartupMsg *fssm = NULL;)
+        struct DosPacket *dp;
+        struct MsgPort *reply_port;
+        struct Process *process = NULL;
+        BSTR bpath;
+        ULONG len;
+        CONST_STRPTR handler;
+        APTR entry;
 
-	handler = AROS_BSTR_ADDR(deviceNode->dn_Handler);
+        handler = AROS_BSTR_ADDR(deviceNode->dn_Handler);
 
-	/* No possible way to continue? */
-	if (deviceNode->dn_SegList == BNULL && handler == NULL)
-	    return NULL;
+        /* No possible way to continue? */
+        if (deviceNode->dn_SegList == BNULL && handler == NULL)
+            return NULL;
 
-	if (deviceNode->dn_SegList == BNULL) {
-	    struct Segment *seg = NULL;
+        if (deviceNode->dn_SegList == BNULL) {
+            struct Segment *seg = NULL;
 
-	    /* Try to find in the Resident Segment list */
-	    Forbid();
-	    D(bug("[RunHandler] Looking for handler '%s' in resident list\n",
-	        handler));
-	    seg = FindSegment(handler, NULL, TRUE);
-	    Permit();
+            /* Try to find in the Resident Segment list */
+            Forbid();
+            D(bug("[RunHandler] Looking for handler '%s' in resident list\n",
+                handler));
+            seg = FindSegment(handler, NULL, TRUE);
+            Permit();
 
-	    deviceNode->dn_SegList = seg ? seg->seg_Seg : BNULL;
-	}
-
-	if (deviceNode->dn_SegList == BNULL) {
-	    D(bug("[RunHandler] LoadSeg(\"%s\")\n", handler));
-
-	    deviceNode->dn_SegList = LoadSeg(handler);
+            deviceNode->dn_SegList = seg ? seg->seg_Seg : BNULL;
         }
 
-	if (deviceNode->dn_SegList == BNULL) {
-	    CONST_STRPTR cp = FilePart(handler);
+        if (deviceNode->dn_SegList == BNULL) {
+            D(bug("[RunHandler] LoadSeg(\"%s\")\n", handler));
 
-	    if (cp != NULL) {
-	    	BPTR dir;
-	    	dir = Lock("L:", SHARED_LOCK);
-	    	if (dir != BNULL) {
-	    	    BPTR olddir;
-	    	    olddir = CurrentDir(dir);
-	    	    D(bug("[RunHandler] LoadSeg(\"L:%s\")\n", cp));
-	    	    deviceNode->dn_SegList = LoadSeg(cp);
-	    	    CurrentDir(olddir);
-	    	}
-	    }
-	}
+            deviceNode->dn_SegList = LoadSeg(handler);
+        }
 
-	if (deviceNode->dn_SegList == BNULL) {
-		D(bug("[RunHandler] name '%b' seglist=NULL?\n", deviceNode->dn_Name));
-		return NULL;
-	}
+        if (deviceNode->dn_SegList == BNULL) {
+            CONST_STRPTR cp = FilePart(handler);
 
-	if (path)
-	{
-	    bpath = CreateBSTR(path);
-	    if (bpath == BNULL)
-		return NULL;
-	}
-	else
-	{
-	    path  = AROS_BSTR_ADDR(deviceNode->dn_Name);
-	    len   = AROS_BSTR_strlen(deviceNode->dn_Name);
-	    bpath = MKBADDR(AllocVec(AROS_BSTR_MEMSIZE4LEN(len + 1), MEMF_PUBLIC));
-	    if (bpath == BNULL)
-		return NULL;
+            if (cp != NULL) {
+                BPTR dir;
+                dir = Lock("L:", SHARED_LOCK);
+                if (dir != BNULL) {
+                    BPTR olddir;
+                    olddir = CurrentDir(dir);
+                    D(bug("[RunHandler] LoadSeg(\"L:%s\")\n", cp));
+                    deviceNode->dn_SegList = LoadSeg(cp);
+                    CurrentDir(olddir);
+                }
+            }
+        }
 
-	    CopyMem(path, AROS_BSTR_ADDR(bpath), len);
-	    AROS_BSTR_ADDR(bpath)[len++] = ':';
-	    AROS_BSTR_setstrlen(bpath, len);
-	}
+        if (deviceNode->dn_SegList == BNULL) {
+                D(bug("[RunHandler] name '%b' seglist=NULL?\n", deviceNode->dn_Name));
+                return NULL;
+        }
 
-	D(bug("[RunHandler] in open by Task '%s'\n", FindTask(NULL)->tc_Node.ln_Name));
+        if (path)
+        {
+            bpath = CreateBSTR(path);
+            if (bpath == BNULL)
+                return NULL;
+        }
+        else
+        {
+            path  = AROS_BSTR_ADDR(deviceNode->dn_Name);
+            len   = AROS_BSTR_strlen(deviceNode->dn_Name);
+            bpath = MKBADDR(AllocVec(AROS_BSTR_MEMSIZE4LEN(len + 1), MEMF_PUBLIC));
+            if (bpath == BNULL)
+                return NULL;
+
+            CopyMem(path, AROS_BSTR_ADDR(bpath), len);
+            AROS_BSTR_ADDR(bpath)[len++] = ':';
+            AROS_BSTR_setstrlen(bpath, len);
+        }
+
+        D(bug("[RunHandler] in open by Task '%s'\n", FindTask(NULL)->tc_Node.ln_Name));
 
         D(if ((IPTR)deviceNode->dn_Startup >= 64))    /* really an FSSM? */
             D(fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);)
 
-   	D(bug("[RunHandler] devicenode=%08lx path='%b' devicename '%b' unit %d dosname '%b' handler=%x seg=%08lx startup=%08lx\n",
+        D(bug("[RunHandler] devicenode=%08lx path='%b' devicename '%b' unit %d dosname '%b' handler=%x seg=%08lx startup=%08lx\n",
             deviceNode,
             bpath,
             fssm ? fssm->fssm_Device : BNULL,
@@ -132,13 +132,13 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 
         /* start it up */
         process = CreateNewProcTags(
-		NP_Entry,   (IPTR)entry,
-		NP_Seglist, (IPTR)deviceNode->dn_SegList,
-		NP_FreeSeglist, (IPTR)FALSE,
-		NP_Name,  AROS_BSTR_ADDR(deviceNode->dn_Name), /* GB: always NUL terminated */
-		NP_StackSize, deviceNode->dn_StackSize,
-		NP_Priority,  deviceNode->dn_Priority,
-		TAG_DONE);
+                NP_Entry,   (IPTR)entry,
+                NP_Seglist, (IPTR)deviceNode->dn_SegList,
+                NP_FreeSeglist, (IPTR)FALSE,
+                NP_Name,  AROS_BSTR_ADDR(deviceNode->dn_Name), /* GB: always NUL terminated */
+                NP_StackSize, deviceNode->dn_StackSize,
+                NP_Priority,  deviceNode->dn_Priority,
+                TAG_DONE);
   
         D(bug("[RunHandler] started, process structure is 0x%08x\n", process));
         reply_port = CreateMsgPort();
@@ -168,7 +168,7 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
         GetMsg(reply_port);
 
         DeleteMsgPort(reply_port);
-	FreeVec(BADDR(bpath));
+        FreeVec(BADDR(bpath));
 
         if (dp->dp_Res1 == DOSFALSE)
         {
@@ -180,5 +180,5 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 
         FreeDosObject(DOS_STDPKT, dp);
 
-	return process ? &process->pr_MsgPort : NULL;
+        return process ? &process->pr_MsgPort : NULL;
 }

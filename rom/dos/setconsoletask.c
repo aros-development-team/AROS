@@ -16,34 +16,34 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-	AROS_LH1(struct MsgPort *, SetConsoleTask,
+        AROS_LH1(struct MsgPort *, SetConsoleTask,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MsgPort *, handler, D1),
+        AROS_LHA(struct MsgPort *, handler, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 86, Dos)
+        struct DosLibrary *, DOSBase, 86, Dos)
 
 /*  FUNCTION
-	Set the console handler for the current process, and return the
-	old handler.
+        Set the console handler for the current process, and return the
+        old handler.
 
     INPUTS
-	handler		- The new console handler for the process.
+        handler         - The new console handler for the process.
 
     RESULT
-	The address of the old handler.
+        The address of the old handler.
 
     NOTES
-	The use of Task in the name is because historically filesystem
-	handlers were tasks (instead of Devices).
+        The use of Task in the name is because historically filesystem
+        handlers were tasks (instead of Devices).
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	GetConsoleTask()
+        GetConsoleTask()
 
     INTERNALS
 

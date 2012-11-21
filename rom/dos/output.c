@@ -15,21 +15,21 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH0(BPTR, Output,
+        AROS_LH0(BPTR, Output,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 10, Dos)
+        struct DosLibrary *, DOSBase, 10, Dos)
 
 /*  FUNCTION
-	Returns the current output stream or 0 if there is no current
-	output stream.
+        Returns the current output stream or 0 if there is no current
+        output stream.
 
     INPUTS
 
     RESULT
-	Output stream handle.
+        Output stream handle.
 
     NOTES
 

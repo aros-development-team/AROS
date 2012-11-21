@@ -16,24 +16,24 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, SetProtection,
+        AROS_LH2(LONG, SetProtection,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name,    D1),
-	AROS_LHA(ULONG,  protect, D2),
+        AROS_LHA(CONST_STRPTR, name,    D1),
+        AROS_LHA(ULONG,  protect, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 31, Dos)
+        struct DosLibrary *, DOSBase, 31, Dos)
 
 /*  FUNCTION
 
     INPUTS
-	name	- name of the file
-	protect - new protection bits
+        name    - name of the file
+        protect - new protection bits
 
     RESULT
-	!= 0 if all went well, 0 else. IoErr() gives additional
-	information in that case.
+        != 0 if all went well, 0 else. IoErr() gives additional
+        information in that case.
 
     NOTES
 
@@ -55,8 +55,8 @@
     D(bug("[SetProtection] '%s':%x\n", name, protect));
 
     if (getpacketinfo(DOSBase, name, &phs)) {
-    	status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_PROTECT, BNULL, phs.lock, phs.name, protect);
-    	freepacketinfo(DOSBase, &phs);
+        status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_PROTECT, BNULL, phs.lock, phs.name, protect);
+        freepacketinfo(DOSBase, &phs);
     }
  
     return status;

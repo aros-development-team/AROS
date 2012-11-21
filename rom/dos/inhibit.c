@@ -11,14 +11,14 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, Inhibit,
+        AROS_LH2(LONG, Inhibit,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name,  D1),
-	AROS_LHA(LONG,         onoff, D2),
+        AROS_LHA(CONST_STRPTR, name,  D1),
+        AROS_LHA(LONG,         onoff, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 121, Dos)
+        struct DosLibrary *, DOSBase, 121, Dos)
 
 /*  FUNCTION
 
@@ -55,7 +55,7 @@
     LONG status = DOSFALSE;
 
     if (!getdevpacketinfo(DOSBase, name, NULL, &phs))
-    	return DOSFALSE;
+        return DOSFALSE;
  
     status = dopacket1(DOSBase, NULL, phs.port, ACTION_INHIBIT, onoff);
 

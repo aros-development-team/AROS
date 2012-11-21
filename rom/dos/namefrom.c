@@ -13,7 +13,7 @@
 
 BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LONG length)
 {
-    STRPTR  	    	 s1, s2, name;
+    STRPTR               s1, s2, name;
     D(STRPTR origbuffer;)
     BPTR parentlock, origlock;
     struct FileInfoBlock *fib;
@@ -24,7 +24,7 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
 
     D(origbuffer = buffer);
     D(bug("NameFromX(%x,%x,%d,%d)\n", BADDR(lock), buffer, length));
-	
+        
     if (length < 1)
     {
         SetIoErr(ERROR_LINE_TOO_LONG);
@@ -54,31 +54,31 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     /* Loop over path */
     do
     {
-	error = dopacket2(DOSBase, NULL, port, ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib)) == 0;
-	//bug("name='%s'\n", fib->fib_FileName);
-	if (!error) {
-	    parentlock = (BPTR)dopacket1(DOSBase, &code, port, ACTION_PARENT, lock);
-	    if (!parentlock && !first)
-	    	error = code;
-	    //bug("parentlock=%x\n", parentlock);
-	}
-	if (lock != origlock && lock)
-		UnLock(lock);
-	lock = parentlock;
-   	
-    	/* Move name to the top of the buffer. */
-    	if(!error)
-    	{
-    	    fixfib(fib);
-    	    s1 = s2 = fib->fib_FileName;
+        error = dopacket2(DOSBase, NULL, port, ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib)) == 0;
+        //bug("name='%s'\n", fib->fib_FileName);
+        if (!error) {
+            parentlock = (BPTR)dopacket1(DOSBase, &code, port, ACTION_PARENT, lock);
+            if (!parentlock && !first)
+                error = code;
+            //bug("parentlock=%x\n", parentlock);
+        }
+        if (lock != origlock && lock)
+                UnLock(lock);
+        lock = parentlock;
+        
+        /* Move name to the top of the buffer. */
+        if(!error)
+        {
+            fixfib(fib);
+            s1 = s2 = fib->fib_FileName;
     
-    	    while(*s2++)
+            while(*s2++)
             {
                 ;
             }
-    		
-    	    if(!parentlock)
-    	    {
+                
+            if(!parentlock)
+            {
                 if (name > buffer)
                 {
                     *--name=':';
@@ -87,38 +87,38 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
                 {
                     error = ERROR_LINE_TOO_LONG;
                 }
-    	    }
-    	    else if(!first)
-    	    {
+            }
+            else if(!first)
+            {
                 if (name > buffer)
-                {		    
+                {                   
                     *--name = '/';
                 }
                 else
                 {
                     error = ERROR_LINE_TOO_LONG;
                 }
-    	    }
+            }
 
-    	    if (!error)
-    	    {
-        		s2--;
+            if (!error)
+            {
+                        s2--;
         
-        		if (name - (s2 - s1) >= buffer)
-        		{ 
-        	    	    while(s2 > s1)
+                        if (name - (s2 - s1) >= buffer)
+                        { 
+                            while(s2 > s1)
                         {
                             *--name = *--s2;
                         }
-        		}
-        		else
-        		{
-        	    	    error = ERROR_LINE_TOO_LONG;
-        		}
-    	    }
-    	    
-    	} /* if(!error) */
-    	first = FALSE;
+                        }
+                        else
+                        {
+                            error = ERROR_LINE_TOO_LONG;
+                        }
+            }
+            
+        } /* if(!error) */
+        first = FALSE;
 
     }
     while(!error && parentlock);
@@ -127,19 +127,19 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     if (!error)
     {
         UBYTE c, old_c = '\0';
-	
-    	do
-    	{
-    	    c = *name++;
+        
+        do
+        {
+            c = *name++;
 
-    	    if ((c != '/') || (old_c != ':'))
-    	    {
-    	        *buffer++ = c;
-    	    }
-    	    
-    	    old_c = c;
-    	    
-    	}
+            if ((c != '/') || (old_c != ':'))
+            {
+                *buffer++ = c;
+            }
+            
+            old_c = c;
+            
+        }
         while (c);
     }
 

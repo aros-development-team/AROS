@@ -18,10 +18,10 @@ BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketH
 {
     if (!strchr(name, ':'))
     {
-    	/* no ":" */
-    	struct Process *me = (struct Process *)FindTask(NULL);
+        /* no ":" */
+        struct Process *me = (struct Process *)FindTask(NULL);
         BPTR cur;
-    	BSTR bstrname = C2BSTR(name);
+        BSTR bstrname = C2BSTR(name);
         struct FileLock *fl;
 
         ASSERT_VALID_PROCESS(me);
@@ -39,7 +39,7 @@ BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketH
         phs->name = bstrname;
         return TRUE;
     } else { /* ":" */
-    	BSTR bstrname = C2BSTR(name);
+        BSTR bstrname = C2BSTR(name);
         struct DevProc *dvp = NULL;
         if ((dvp = GetDeviceProc(name, dvp))) {
             phs->name = bstrname;
@@ -67,7 +67,7 @@ BOOL getdevpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR devname, CONST_ST
     phs->lock = BNULL;
     phs->name = BNULL;
     if (!name)
-    	return TRUE;
+        return TRUE;
     phs->name = C2BSTR(name);
     if (!phs->name) {
         FreeDeviceProc(phs->dp);
@@ -80,6 +80,6 @@ BOOL getdevpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR devname, CONST_ST
 void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct *phs)
 {
     if (phs->dp)
-    	FreeDeviceProc(phs->dp);
+        FreeDeviceProc(phs->dp);
     FREEC2BSTR(phs->name);
 }

@@ -17,26 +17,26 @@
 #include <exec/types.h>
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, Rename,
+        AROS_LH2(LONG, Rename,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, oldName, D1),
-	AROS_LHA(CONST_STRPTR, newName, D2),
+        AROS_LHA(CONST_STRPTR, oldName, D1),
+        AROS_LHA(CONST_STRPTR, newName, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 13, Dos)
+        struct DosLibrary *, DOSBase, 13, Dos)
 
 /*  FUNCTION
-	Renames a given file. The old name and the new name must point to the
-	same volume.
+        Renames a given file. The old name and the new name must point to the
+        same volume.
 
     INPUTS
-	oldName - Name of the file to rename
-	newName - New name of the file to rename
+        oldName - Name of the file to rename
+        newName - New name of the file to rename
 
     RESULT
-	boolean - DOSTRUE or DOSFALSE. IoErr() provides additional information
-	on DOSFALSE.
+        boolean - DOSTRUE or DOSFALSE. IoErr() provides additional information
+        on DOSFALSE.
 
     NOTES
 
@@ -47,7 +47,7 @@
     SEE ALSO
 
     INTERNALS
-	Calls the action FSA_RENAME on the filesystem-handler.
+        Calls the action FSA_RENAME on the filesystem-handler.
 
 *****************************************************************************/
 {
@@ -67,86 +67,86 @@
 
     if (len > 0)
     {
-	/* get real name */
-	BPTR lock = Lock(oldName, SHARED_LOCK);
-	if (lock)
-	{
-	    if (NameFromLock(lock, buf1, sizeof(buf1) - 1))
-		oldName = buf1;
-	    UnLock(lock);
-	}
+        /* get real name */
+        BPTR lock = Lock(oldName, SHARED_LOCK);
+        if (lock)
+        {
+            if (NameFromLock(lock, buf1, sizeof(buf1) - 1))
+                oldName = buf1;
+            UnLock(lock);
+        }
     }
     else
     {
-	/* convert to absolute path */
-	if (NameFromLock(me->pr_CurrentDir, buf1, sizeof(buf1) - 1))
-	{
-	    int namelen = strlen(oldName);
-	    len = strlen(buf1);
-	    if (len + namelen < sizeof(buf1) - 1)
-	    {
-		if (buf1[len - 1] != ':')
-		    buf1[len++] = '/';
-		CopyMem(oldName, buf1 + len, namelen + 1);
-		oldName = buf1;
-	    }
-	}
+        /* convert to absolute path */
+        if (NameFromLock(me->pr_CurrentDir, buf1, sizeof(buf1) - 1))
+        {
+            int namelen = strlen(oldName);
+            len = strlen(buf1);
+            if (len + namelen < sizeof(buf1) - 1)
+            {
+                if (buf1[len - 1] != ':')
+                    buf1[len++] = '/';
+                CopyMem(oldName, buf1 + len, namelen + 1);
+                oldName = buf1;
+            }
+        }
     }
 
     len = SplitName(newName, ':', vol, 0, sizeof(vol) - 1);
 
     if (len > 0)
     {
-	/* get real name of destination path */
-	BPTR lock;
-	char *pos;
-	const char *pos2;
+        /* get real name of destination path */
+        BPTR lock;
+        char *pos;
+        const char *pos2;
 
-	strcpy(buf2, newName);
-	pos = strrchr(buf2, '/');
-	if (!pos)
-	{
-	    pos = buf2 + len;
-	    *pos = '\0';
-	}
-	else
-	    *pos++ = '\0';
-	
-	lock = Lock(buf2, SHARED_LOCK);
-	if (lock)
-	{
-	    if (NameFromLock(lock, buf2, sizeof(buf2) - 1))
-	    {
-		int namelen;
-		len = strlen(buf2);
-		pos2 = newName + (int)(pos - buf2);
-		namelen = strlen(pos2);
-		if (len + namelen < sizeof(buf2) - 1)
-		{
-		    if (buf2[len - 1] != ':')
-			buf2[len++] = '/';
-		    CopyMem(pos2, buf2 + len, namelen + 1);
-		    newName = buf2;
-		}
-	    }
-	    UnLock(lock);
-	}
+        strcpy(buf2, newName);
+        pos = strrchr(buf2, '/');
+        if (!pos)
+        {
+            pos = buf2 + len;
+            *pos = '\0';
+        }
+        else
+            *pos++ = '\0';
+        
+        lock = Lock(buf2, SHARED_LOCK);
+        if (lock)
+        {
+            if (NameFromLock(lock, buf2, sizeof(buf2) - 1))
+            {
+                int namelen;
+                len = strlen(buf2);
+                pos2 = newName + (int)(pos - buf2);
+                namelen = strlen(pos2);
+                if (len + namelen < sizeof(buf2) - 1)
+                {
+                    if (buf2[len - 1] != ':')
+                        buf2[len++] = '/';
+                    CopyMem(pos2, buf2 + len, namelen + 1);
+                    newName = buf2;
+                }
+            }
+            UnLock(lock);
+        }
     }
     else
     {
-	/* convert to absolute path */
-	if (NameFromLock(me->pr_CurrentDir, buf2, sizeof(buf2) - 1))
-	{
-	    int namelen = strlen(newName);
-	    len = strlen(buf2);
-	    if (len + namelen < sizeof(buf2) - 1)
-	    {
-		if (buf2[len - 1] != ':')
-		    buf2[len++] = '/';
-		CopyMem(newName, buf2 + len, namelen + 1);
-		newName = buf2;
-	    }
-	}
+        /* convert to absolute path */
+        if (NameFromLock(me->pr_CurrentDir, buf2, sizeof(buf2) - 1))
+        {
+            int namelen = strlen(newName);
+            len = strlen(buf2);
+            if (len + namelen < sizeof(buf2) - 1)
+            {
+                if (buf2[len - 1] != ':')
+                    buf2[len++] = '/';
+                CopyMem(newName, buf2 + len, namelen + 1);
+                newName = buf2;
+            }
+        }
     }
 
     D(bug("[Dos] rename %s %s\n", oldName, newName));

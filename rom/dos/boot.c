@@ -45,14 +45,14 @@ static void load_system_configuration(struct DosLibrary *DOSBase)
 
     fh = Open("DEVS:system-configuration", MODE_OLDFILE);
     if (!fh)
-    	return;
+        return;
     len = Read(fh, &prefs, sizeof prefs);
     Close(fh);
     if (len != sizeof prefs)
-    	return;
+        return;
     IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
     if (IntuitionBase)
-	SetPrefs(&prefs, len, FALSE);
+        SetPrefs(&prefs, len, FALSE);
     CloseLibrary(IntuitionBase);
 }
 
@@ -69,7 +69,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
     BPTR cis = BNULL;
 
     /*  We have been created as a process by DOS, we should now
-    	try and boot the system. */
+        try and boot the system. */
 
     D(bug("[__dos_Boot] generic boot sequence, BootFlags 0x%08X Flags 0x%02X\n", BootFlags, Flags));
 
@@ -94,16 +94,16 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
             STRPTR args = "";
             BPTR oldin, oldout;
 
-	    /*
-	     * Argument strings MUST contain terminating LF because of ReadItem() bugs.
-	     * Their absence causes ReadArgs() crash.
-	     */
+            /*
+             * Argument strings MUST contain terminating LF because of ReadItem() bugs.
+             * Their absence causes ReadArgs() crash.
+             */
             if (BootFlags & BF_NO_COMPOSITION)
-            	args = "NOCOMPOSITION\n";
+                args = "NOCOMPOSITION\n";
             else if (BootFlags & BF_NO_DISPLAY_DRIVERS)
-            	args = "ONLYCOMPOSITION\n";
+                args = "ONLYCOMPOSITION\n";
 
-	    D(bug("[__dos_Boot] Running AROSMonDrvs %s\n", args));
+            D(bug("[__dos_Boot] Running AROSMonDrvs %s\n", args));
 
             /* RunCommand needs a valid Input() handle
              * for passing in its arguments.

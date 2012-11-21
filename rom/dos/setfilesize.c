@@ -14,27 +14,27 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH3(LONG, SetFileSize,
+        AROS_LH3(LONG, SetFileSize,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, file,   D1),
-	AROS_LHA(LONG, offset, D2),
-	AROS_LHA(LONG, mode,   D3),
+        AROS_LHA(BPTR, file,   D1),
+        AROS_LHA(LONG, offset, D2),
+        AROS_LHA(LONG, mode,   D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 76, Dos)
+        struct DosLibrary *, DOSBase, 76, Dos)
 
 /*  FUNCTION
-	Change the size of a file.
+        Change the size of a file.
 
     INPUTS
-	file   - filehandle
-	offset - relative size
-	mode   - OFFSET_BEGINNING, OFFSET_CURRENT or OFFSET_END
+        file   - filehandle
+        offset - relative size
+        mode   - OFFSET_BEGINNING, OFFSET_CURRENT or OFFSET_END
 
     RESULT
-	New size of the file or -1 in case of an error.
-	IoErr() gives additional information in that case.
+        New size of the file or -1 in case of an error.
+        IoErr() gives additional information in that case.
 
     NOTES
 

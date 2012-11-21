@@ -16,23 +16,23 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(STRPTR, SetArgStr,
+        AROS_LH1(STRPTR, SetArgStr,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, string, D1),
+        AROS_LHA(CONST_STRPTR, string, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 90, Dos)
+        struct DosLibrary *, DOSBase, 90, Dos)
 
 /*  FUNCTION
-	Sets the arguments to the current process. The arguments must be
-	reset to the original value before process exit.
+        Sets the arguments to the current process. The arguments must be
+        reset to the original value before process exit.
 
     INPUTS
-	string	-   The new argument string. (A C string).
+        string  -   The new argument string. (A C string).
 
     RESULT
-	The address of the previous argument string. May be NULL.
+        The address of the previous argument string. May be NULL.
 
     NOTES
 
@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	GetArgStr(), RunCommand()
+        GetArgStr(), RunCommand()
 
     INTERNALS
 

@@ -15,20 +15,20 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH0(SIPTR, IoErr,
+        AROS_LH0(SIPTR, IoErr,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 22, Dos)
+        struct DosLibrary *, DOSBase, 22, Dos)
 
 /*  FUNCTION
-	Get the dos error code for the current process.
+        Get the dos error code for the current process.
 
     INPUTS
 
     RESULT
-	Error code.
+        Error code.
 
     NOTES
 

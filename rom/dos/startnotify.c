@@ -18,13 +18,13 @@
 
     NAME */
 
-	AROS_LH1(BOOL, StartNotify,
+        AROS_LH1(BOOL, StartNotify,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct NotifyRequest *, notify, D1),
+        AROS_LHA(struct NotifyRequest *, notify, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 148, Dos)
+        struct DosLibrary *, DOSBase, 148, Dos)
 
 /*  FUNCTION
 
@@ -184,7 +184,7 @@
     /* send the request, with error reporting */
     do
     {
-    	err = fs_AddNotify(notify, dvp, lock, DOSBase);
+        err = fs_AddNotify(notify, dvp, lock, DOSBase);
     } while (err != 0 && ErrorReport(err, REPORT_LOCK, 0, notify->nr_Handler) == DOSFALSE);
 
     /* cleanup */

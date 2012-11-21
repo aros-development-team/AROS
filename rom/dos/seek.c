@@ -13,33 +13,33 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH3(LONG, Seek,
+        AROS_LH3(LONG, Seek,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, file,     D1),
-	AROS_LHA(LONG, position, D2),
-	AROS_LHA(LONG, mode,     D3),
+        AROS_LHA(BPTR, file,     D1),
+        AROS_LHA(LONG, position, D2),
+        AROS_LHA(LONG, mode,     D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 11, Dos)
+        struct DosLibrary *, DOSBase, 11, Dos)
 
 /*  FUNCTION
-	Changes the current read/write position in a file and/or
-	reads the current position, e.g to get the current position
-	do a Seek(file,0,OFFSET_CURRENT).
+        Changes the current read/write position in a file and/or
+        reads the current position, e.g to get the current position
+        do a Seek(file,0,OFFSET_CURRENT).
 
-	This function may fail (obviously) on certain devices such
-	as pipes or console handlers.
+        This function may fail (obviously) on certain devices such
+        as pipes or console handlers.
 
     INPUTS
-	file	 - filehandle
-	position - relative offset in bytes (positive, negative or 0).
-	mode	 - Where to count from. Either OFFSET_BEGINNING,
-		   OFFSET_CURRENT or OFFSET_END.
+        file     - filehandle
+        position - relative offset in bytes (positive, negative or 0).
+        mode     - Where to count from. Either OFFSET_BEGINNING,
+                   OFFSET_CURRENT or OFFSET_END.
 
     RESULT
-	Absolute position in bytes before the Seek(), -1 if an error
-	happened. IoErr() will give additional information in that case.
+        Absolute position in bytes before the Seek(), -1 if an error
+        happened. IoErr() will give additional information in that case.
 
     NOTES
 
@@ -60,32 +60,32 @@
     LONG               offset = 0, ret;
 
     if (fh == NULL) {
-	SetIoErr(ERROR_INVALID_LOCK);
-	return -1;
+        SetIoErr(ERROR_INVALID_LOCK);
+        return -1;
     }
 
     /* If the file is in append mode, seeking is not allowed. */
     if( fh->fh_Flags & FHF_APPEND )
     {
-	return InternalSeek( fh, 0, OFFSET_CURRENT, DOSBase );
+        return InternalSeek( fh, 0, OFFSET_CURRENT, DOSBase );
     }
 
     /* If the file is in write mode flush it. */
     if( fh->fh_Flags & FHF_WRITE )
     {
-	InternalFlush( fh, DOSBase );
+        InternalFlush( fh, DOSBase );
     }
     else
     {
-	/* Read mode. Adjust the offset so that buffering is
-	   taken into account. */
-	if (fh->fh_Pos < fh->fh_End && mode == OFFSET_CURRENT)
-	    offset = (LONG)(fh->fh_Pos - fh->fh_End);
-	    
-	    
+        /* Read mode. Adjust the offset so that buffering is
+           taken into account. */
+        if (fh->fh_Pos < fh->fh_End && mode == OFFSET_CURRENT)
+            offset = (LONG)(fh->fh_Pos - fh->fh_End);
+            
+            
         /* Read mode. Just reinit the buffers. We can't call
            Flush() in this case as that would end up in
-	   recursion. */
+           recursion. */
         fh->fh_Pos = fh->fh_End = 0;
     }
 

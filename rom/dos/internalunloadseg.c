@@ -30,14 +30,14 @@
         struct DosLibrary *, DOSBase, 127, Dos)
 
 /*  FUNCTION
-	Unloads a seglist loaded with InternalLoadSeg().
+        Unloads a seglist loaded with InternalLoadSeg().
 
     INPUTS
-	seglist  - Seglist
-	freefunc - Function to be called to free memory
+        seglist  - Seglist
+        freefunc - Function to be called to free memory
 
     RESULT
-	DOSTRUE if everything wents O.K.
+        DOSTRUE if everything wents O.K.
 
     NOTES
 
@@ -58,32 +58,32 @@
 
     if (seglist)
     {
-	if (DebugBase)
-	    UnregisterModule(seglist);
+        if (DebugBase)
+            UnregisterModule(seglist);
 
 #ifdef __mc68000
-	{
-    	    /* free overlay structures */
-    	    ULONG *seg = BADDR(seglist);
-    	    if (seg[2] == 0x0000abcd && seg[6] == (ULONG)DOSBase->dl_GV) {
-    	    	Close((BPTR)seg[3]); /* file handle */
-    	    	ilsFreeVec((void*)seg[4]); /* overlay table, APTR */
-    	    	ilsFreeVec(BADDR(seg[5])); /* hunk table, BPTR */
-    	    }
-    	}
+        {
+            /* free overlay structures */
+            ULONG *seg = BADDR(seglist);
+            if (seg[2] == 0x0000abcd && seg[6] == (ULONG)DOSBase->dl_GV) {
+                Close((BPTR)seg[3]); /* file handle */
+                ilsFreeVec((void*)seg[4]); /* overlay table, APTR */
+                ilsFreeVec(BADDR(seg[5])); /* hunk table, BPTR */
+            }
+        }
 #endif
 
-	while (seglist)
-	{
-	    next = *(BPTR *)BADDR(seglist);
-	    ilsFreeVec(BADDR(seglist));
-	    seglist = next;
-	}
+        while (seglist)
+        {
+            next = *(BPTR *)BADDR(seglist);
+            ilsFreeVec(BADDR(seglist));
+            seglist = next;
+        }
 
-	return DOSTRUE;
+        return DOSTRUE;
     }
     else
-	return DOSFALSE;
+        return DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* InternalUnLoadSeg */

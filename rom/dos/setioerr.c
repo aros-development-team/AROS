@@ -15,22 +15,22 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(SIPTR, SetIoErr,
+        AROS_LH1(SIPTR, SetIoErr,
 
 /*  SYNOPSIS */
-	AROS_LHA(SIPTR, result, D1),
+        AROS_LHA(SIPTR, result, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 77, Dos)
+        struct DosLibrary *, DOSBase, 77, Dos)
 
 /*  FUNCTION
-	Sets the dos error code for the current process.
+        Sets the dos error code for the current process.
 
     INPUTS
-	result -- new error code
+        result -- new error code
 
     RESULT
-	Old error code.
+        Old error code.
 
     NOTES
 

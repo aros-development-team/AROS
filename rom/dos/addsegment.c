@@ -15,47 +15,47 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-	AROS_LH3(BOOL, AddSegment,
+        AROS_LH3(BOOL, AddSegment,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, D1),
-	AROS_LHA(BPTR  , seg, D2),
-	AROS_LHA(LONG  , type, D3),
+        AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(BPTR  , seg, D2),
+        AROS_LHA(LONG  , type, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 129, Dos)
+        struct DosLibrary *, DOSBase, 129, Dos)
 
 /*  FUNCTION
-	Adds a program segment to the system resident list. You can later
-	use these segments to run programs.
+        Adds a program segment to the system resident list. You can later
+        use these segments to run programs.
 
-	The name field should refer to a NULL terminated strings, which
-	will be copied. The type field determines the type of resident
-	program. Normal programs should have type >= 0, system segments
-	should have type == CMD_SYSTEM.
+        The name field should refer to a NULL terminated strings, which
+        will be copied. The type field determines the type of resident
+        program. Normal programs should have type >= 0, system segments
+        should have type == CMD_SYSTEM.
 
-	Note that all other values of type are reserved.
+        Note that all other values of type are reserved.
 
     INPUTS
-	name		- Name of the segment. This is used by FindSegment().
-	seg		- Segment to add.
-	type		- What type of segment (initial use count).
+        name            - Name of the segment. This is used by FindSegment().
+        seg             - Segment to add.
+        type            - What type of segment (initial use count).
 
     RESULT
-	Segment will have been added to the DOS resident list.
+        Segment will have been added to the DOS resident list.
 
-	!= 0	success
-	== 0	failure
+        != 0    success
+        == 0    failure
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	Uses Forbid() based locking.
+        Uses Forbid() based locking.
 
     SEE ALSO
-	FindSegment(), RemSegment()
+        FindSegment(), RemSegment()
 
     INTERNALS
 
@@ -75,7 +75,7 @@
     }
 
     sptr = AllocVec(sizeof(struct Segment) + namelen - 4 + 1,
-		    MEMF_CLEAR | MEMF_PUBLIC);
+                    MEMF_CLEAR | MEMF_PUBLIC);
 
     if( sptr == NULL ) {
         Permit();

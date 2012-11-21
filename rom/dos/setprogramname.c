@@ -17,35 +17,35 @@
 
 #include <proto/dos.h>
 
-	AROS_LH1(BOOL, SetProgramName,
+        AROS_LH1(BOOL, SetProgramName,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(CONST_STRPTR, name, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 95, Dos)
+        struct DosLibrary *, DOSBase, 95, Dos)
 
 /*  FUNCTION
-	Sets the name for the current program in the CLI structure. If the
-	name doesn't fit the old name is kept and a failure is returned.
-	If the current process doesn't have a CLI structure this function
-	does nothing.
+        Sets the name for the current program in the CLI structure. If the
+        name doesn't fit the old name is kept and a failure is returned.
+        If the current process doesn't have a CLI structure this function
+        does nothing.
 
     INPUTS
-	name  --  Name for the current program.
+        name  --  Name for the current program.
 
     RESULT
-	!= 0 on success, 0 on failure.
+        != 0 on success, 0 on failure.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	Never copies more than 255 bytes.
+        Never copies more than 255 bytes.
 
     SEE ALSO
-	GetProgramName()
+        GetProgramName()
 
     INTERNALS
 
@@ -68,19 +68,19 @@ BOOL internal_SetProgramName(struct CommandLineInterface *cli,
 
     if (cli == NULL)
     {
-	return FALSE;
+        return FALSE;
     }
     
     s = name;
 
     while(*s++)
-	;
+        ;
 
     namelen = s - name - 1;
     
     if (namelen > 255)
     {
-	return FALSE;
+        return FALSE;
     }
     
     bs = AROS_BSTR_ADDR(cli->cli_CommandName);

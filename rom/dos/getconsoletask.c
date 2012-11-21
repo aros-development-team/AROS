@@ -16,34 +16,34 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-	AROS_LH0(struct MsgPort *, GetConsoleTask,
+        AROS_LH0(struct MsgPort *, GetConsoleTask,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 85, Dos)
+        struct DosLibrary *, DOSBase, 85, Dos)
 
 /*  FUNCTION
-	Return the console handler for the current Process. The return
-	type depends upon whether AROS is running binary compatible.
+        Return the console handler for the current Process. The return
+        type depends upon whether AROS is running binary compatible.
 
     INPUTS
-	None.
+        None.
 
     RESULT
-	The address of the console handler, or NULL if none is set.
+        The address of the console handler, or NULL if none is set.
 
     NOTES
-	You will only get NULL from this call if you call it on a Task,
-	or when the Process is not attached to a console.
+        You will only get NULL from this call if you call it on a Task,
+        or when the Process is not attached to a console.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	SetConsoleTask()
+        SetConsoleTask()
 
     INTERNALS
 
@@ -55,7 +55,7 @@
 
     if (__is_task(me))
     {
-	return NULL;
+        return NULL;
     }
     
     return (struct MsgPort *)me->pr_ConsoleTask;

@@ -16,14 +16,14 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, ExNext,
+        AROS_LH2(LONG, ExNext,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR                  , lock, D1),
-	AROS_LHA(struct FileInfoBlock *, fileInfoBlock, D2),
+        AROS_LHA(BPTR                  , lock, D1),
+        AROS_LHA(struct FileInfoBlock *, fileInfoBlock, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 18, Dos)
+        struct DosLibrary *, DOSBase, 18, Dos)
 
 /*  FUNCTION
 
@@ -39,7 +39,7 @@
 
     success  --  a boolean telling whether the operation was successful
                  or not. A failure occurs also if there is no "next" entry in
-		 the directory. Then IoErr() equals ERROR_NO_MORE_ENTRIES.
+                 the directory. Then IoErr() equals ERROR_NO_MORE_ENTRIES.
 
     NOTES
 
@@ -56,7 +56,7 @@
     3.  Do something with the FileInfoBlock returned.
     4.  Call ExNext() repeatedly until it returns FALSE and use the
         information you are provided. When ExNext returns FALSE, check IoErr()
-	to make sure that there was no real failure (ERROR_NO_MORE_ENTRIES).
+        to make sure that there was no real failure (ERROR_NO_MORE_ENTRIES).
 
     BUGS
 
@@ -80,10 +80,10 @@
     D(bug("[ExNext] lock=%x fib=%x\n", fl, fileInfoBlock));
     ret = dopacket2(DOSBase, NULL,  fl->fl_Task, ACTION_EXAMINE_NEXT, lock, MKBADDR(fileInfoBlock));
     if (ret) {
-    	fixfib(fileInfoBlock);
-    	D(bug("[ExNext] '%s'\n", fileInfoBlock->fib_FileName));
+        fixfib(fileInfoBlock);
+        D(bug("[ExNext] '%s'\n", fileInfoBlock->fib_FileName));
     } else {
-    	D(bug("[ExNext] ret=%d err=%d\n", ret, IoErr()));
+        D(bug("[ExNext] ret=%d err=%d\n", ret, IoErr()));
     }
     return ret;
 

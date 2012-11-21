@@ -92,100 +92,100 @@ static LONG getvar_from(const char *name, const char *volume, STRPTR buffer, LON
     AROS_LIBFUNC_INIT
 
     D(bug("GetVar: name = \"%s\", buffer = $%lx, size = %ld, flags = $%lx\n",
-	  name, buffer, size, flags));
+          name, buffer, size, flags));
 
     if (0 == size)
     {
-	D(bug("GetVar: bad size\n"));
+        D(bug("GetVar: bad size\n"));
 
-	SetIoErr(ERROR_BAD_NUMBER);
+        SetIoErr(ERROR_BAD_NUMBER);
 
-	return 0;
+        return 0;
     }
 
     if (name && buffer)
     {
-	/* not global only? */
-	if(0 == (flags & GVF_GLOBAL_ONLY))
-	{
-	    /* look for a local variable */
-	    struct LocalVar *lv;
-	    
-	    D(bug("GetVar: Local variable\n"));
-	    /* look for a variable of the given name */
-	    lv = FindVar(name, flags);
+        /* not global only? */
+        if(0 == (flags & GVF_GLOBAL_ONLY))
+        {
+            /* look for a local variable */
+            struct LocalVar *lv;
+            
+            D(bug("GetVar: Local variable\n"));
+            /* look for a variable of the given name */
+            lv = FindVar(name, flags);
 
-	    if (lv)
-	    {
-		int i;
-		/* which size is shorter: the buffer or the size of
-		   the value? */
-		i = (size < lv->lv_Len) ? size : lv->lv_Len;
-		CopyMem(lv->lv_Value, buffer, i);
-		
-		/* were we supposed to stop after the first "\n"?
-		   = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM
-		*/
-		if (0 == (flags & GVF_BINARY_VAR))
-		{
-		    int j = 0;
+            if (lv)
+            {
+                int i;
+                /* which size is shorter: the buffer or the size of
+                   the value? */
+                i = (size < lv->lv_Len) ? size : lv->lv_Len;
+                CopyMem(lv->lv_Value, buffer, i);
+                
+                /* were we supposed to stop after the first "\n"?
+                   = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM
+                */
+                if (0 == (flags & GVF_BINARY_VAR))
+                {
+                    int j = 0;
 
-		    while ((buffer[j] != '\n') && (j < i))
-		    {
-			j++;
-		    }
-		    
-		    if (j == size)
-		    {
-			j = size - 1;
-		    }
+                    while ((buffer[j] != '\n') && (j < i))
+                    {
+                        j++;
+                    }
+                    
+                    if (j == size)
+                    {
+                        j = size - 1;
+                    }
 
-		    buffer[j]= 0x0; /* mark end of string */
-		    size = j;
-		}
-		else if (0 == (flags & GVF_DONT_NULL_TERM))
-		{
-		    if (i == size)
-		    {
-			i = size - 1;
-		    }
-		    
-		    buffer[i] = 0x0; /* mark end of string */
-		    size = i;
-		}
-		else
-		{
-		    size = i;
-		}
-		
-		SetIoErr(lv->lv_Len);
-		D(bug("GetVar: return %d\n", size));
+                    buffer[j]= 0x0; /* mark end of string */
+                    size = j;
+                }
+                else if (0 == (flags & GVF_DONT_NULL_TERM))
+                {
+                    if (i == size)
+                    {
+                        i = size - 1;
+                    }
+                    
+                    buffer[i] = 0x0; /* mark end of string */
+                    size = i;
+                }
+                else
+                {
+                    size = i;
+                }
+                
+                SetIoErr(lv->lv_Len);
+                D(bug("GetVar: return %d\n", size));
 
-		return size;
-	    } /* Got lv */
-	} /* !global only */
-	
-	/****** GLOBAL VARIABLE TREATMENT ******/
-	
-	if ((flags & 0xff) == LV_VAR && !(flags & GVF_LOCAL_ONLY))
-	{
-	    LONG ret;
+                return size;
+            } /* Got lv */
+        } /* !global only */
+        
+        /****** GLOBAL VARIABLE TREATMENT ******/
+        
+        if ((flags & 0xff) == LV_VAR && !(flags & GVF_LOCAL_ONLY))
+        {
+            LONG ret;
 
-	    /* as standard: look for the file in ENV: if no path is
-	     * given in the variable
-	     */
-	    ret = getvar_from(name, "ENV:", buffer, size, flags, DOSBase);
+            /* as standard: look for the file in ENV: if no path is
+             * given in the variable
+             */
+            ret = getvar_from(name, "ENV:", buffer, size, flags, DOSBase);
 
-	    if (ret >= 0)
-	    	return ret;
+            if (ret >= 0)
+                return ret;
 
-	    /* If not found in ENV:, look in ENVARC: */
-	    ret = getvar_from(name, "ENVARC:", buffer, size, flags, DOSBase);
+            /* If not found in ENV:, look in ENVARC: */
+            ret = getvar_from(name, "ENVARC:", buffer, size, flags, DOSBase);
 
-	    if (ret >= 0)
-	    	return ret;
+            if (ret >= 0)
+                return ret;
 
-	} /* ! local file only */
+        } /* ! local file only */
     } /* name and buffer */
     
     D(bug("GetVar: not found\n"));
@@ -215,64 +215,64 @@ static LONG getvar_from(const char *name, const char *volume, STRPTR buffer, LON
 
     if (file) /* file could be opened */
     {
-	ULONG fSize;
-	struct FileInfoBlock fib;
+        ULONG fSize;
+        struct FileInfoBlock fib;
 
-	if (ExamineFH(file, &fib))
-	{
-	    /* fSize now contains the size of variable. */
-	    fSize = fib.fib_Size;
-	}
-	else
-	{
-	    D(bug("GetVar: can't find size\n"));
+        if (ExamineFH(file, &fib))
+        {
+            /* fSize now contains the size of variable. */
+            fSize = fib.fib_Size;
+        }
+        else
+        {
+            D(bug("GetVar: can't find size\n"));
 
-	    return -1;
-	}
+            return -1;
+        }
 
-	/* We return the number of bytes actually read. */
-	i = Read(file, buffer, size);
-	Close(file);
+        /* We return the number of bytes actually read. */
+        i = Read(file, buffer, size);
+        Close(file);
 
-	/* were we supposed to stop after the first "\n"?
-	   = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM */
-	if (0 == (flags & GVF_BINARY_VAR))
-	{
-	    int j = 0;
-	    /* lets search for the first '\n' (if any) in the
-	     * string and replace it by '\0'. */
-	    while ((buffer[j] != '\n') && (j < i))
-	    {
-		j++;
-	    }
+        /* were we supposed to stop after the first "\n"?
+           = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM */
+        if (0 == (flags & GVF_BINARY_VAR))
+        {
+            int j = 0;
+            /* lets search for the first '\n' (if any) in the
+             * string and replace it by '\0'. */
+            while ((buffer[j] != '\n') && (j < i))
+            {
+                j++;
+            }
     
-	    if (j == size)
-	    {
-		j = size - 1;
-	    }
+            if (j == size)
+            {
+                j = size - 1;
+            }
 
-	    buffer[j]= '\0'; /* mark end of string */
-	    size = j;
-	}
-	else if (0 == (flags & GVF_DONT_NULL_TERM))
-	{
-	    if (i == size)
-	    {
-		i = size - 1;
-	    }
+            buffer[j]= '\0'; /* mark end of string */
+            size = j;
+        }
+        else if (0 == (flags & GVF_DONT_NULL_TERM))
+        {
+            if (i == size)
+            {
+                i = size - 1;
+            }
 
-	    buffer[i] = 0x0; /* mark end of string */
-	    size = i;
-	}
-	else
-	{
-	    size = i;
-	}
+            buffer[i] = 0x0; /* mark end of string */
+            size = i;
+        }
+        else
+        {
+            size = i;
+        }
 
-	SetIoErr(fSize);
-	D(bug("GetVar: return %d\n", size));
+        SetIoErr(fSize);
+        D(bug("GetVar: return %d\n", size));
 
-	return size;
+        return size;
     } /* open(file) */
 
     return -1;

@@ -21,7 +21,7 @@
 
 /*  SYNOPSIS */
         AROS_LHA(CONST_STRPTR, file, D1),
-	AROS_LHA(struct TagItem *, tags, D2),
+        AROS_LHA(struct TagItem *, tags, D2),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 128, Dos)

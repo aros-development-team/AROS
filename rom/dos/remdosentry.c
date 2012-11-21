@@ -13,30 +13,30 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(LONG, RemDosEntry,
+        AROS_LH1(LONG, RemDosEntry,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DosList *, dlist, D1),
+        AROS_LHA(struct DosList *, dlist, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 112, Dos)
+        struct DosLibrary *, DOSBase, 112, Dos)
 
 /*  FUNCTION
-	Removes a given dos list entry from the dos list. Automatically
-	locks the list for writing.
+        Removes a given dos list entry from the dos list. Automatically
+        locks the list for writing.
 
     INPUTS
-	dlist - pointer to dos list entry.
+        dlist - pointer to dos list entry.
 
     RESULT
-	!=0 if all went well, 0 otherwise.
+        !=0 if all went well, 0 otherwise.
 
     NOTES
-	Since anybody who wants to use a device or volume node in the
-	dos list has to lock the list, filesystems may be called with
-	the dos list locked. So if you want to add a dos list entry
-	out of a filesystem don't just wait on the lock but serve all
-	incoming requests until the dos list is free instead.
+        Since anybody who wants to use a device or volume node in the
+        dos list has to lock the list, filesystems may be called with
+        the dos list locked. So if you want to add a dos list entry
+        out of a filesystem don't just wait on the lock but serve all
+        incoming requests until the dos list is free instead.
 
     EXAMPLE
 
@@ -52,7 +52,7 @@
     struct DosList *dl;
 
     if(dlist == NULL)
-	return 0;
+        return 0;
 
     dl = LockDosList(LDF_ALL | LDF_WRITE);
 
@@ -61,12 +61,12 @@
         struct DosList *dl2 = BADDR(dl->dol_Next);
 
         if(dl2 == dlist)
-	{
-	    dl->dol_Next = dlist->dol_Next;
-	    break;
-	}
+        {
+            dl->dol_Next = dlist->dol_Next;
+            break;
+        }
 
-	dl = dl2;
+        dl = dl2;
     }
 
     UnLockDosList(LDF_ALL | LDF_WRITE);

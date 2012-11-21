@@ -17,15 +17,15 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH3(BOOL, Execute,
+        AROS_LH3(BOOL, Execute,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, string, D1),
-	AROS_LHA(BPTR  , input , D2),
-	AROS_LHA(BPTR  , output, D3),
+        AROS_LHA(CONST_STRPTR, string, D1),
+        AROS_LHA(BPTR  , input , D2),
+        AROS_LHA(BPTR  , output, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 37, Dos)
+        struct DosLibrary *, DOSBase, 37, Dos)
 
 /*  FUNCTION
 
@@ -77,10 +77,10 @@
     {
         { SYS_Background, TRUE         },
         { SYS_Asynch,     FALSE        },
-	{ SYS_Input,      (IPTR)input  },
-	{ SYS_Output,     (IPTR)output },
-	{ SYS_Error,      (IPTR)NULL   },
-	{ TAG_DONE,       0            }
+        { SYS_Input,      (IPTR)input  },
+        { SYS_Output,     (IPTR)output },
+        { SYS_Error,      (IPTR)NULL   },
+        { TAG_DONE,       0            }
     };
 
     D(bug("[Execute] input = %p, output = %p, cmd = \"%s\"\n", input, output, string));
@@ -97,9 +97,9 @@
     result = SystemTagList(string, tags);
 
     if(result == 0)
-	return DOSTRUE;
+        return DOSTRUE;
     else
-	return DOSFALSE;
+        return DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* Execute */

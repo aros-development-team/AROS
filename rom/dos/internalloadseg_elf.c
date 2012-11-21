@@ -611,13 +611,13 @@ static inline ULONG readlong_unaligned(ULONG *src)
     ULONG res, tmp;
 
     asm volatile(
-        "ldrb	%0, [%2, #0]\n\t"
-        "ldrb	%1, [%2, #1]\n\t"
-        "orr	%0, %0, %1, lsl #8\n\t"
-        "ldrb	%1, [%2, #2]\n\t"
-        "orr	%0, %0, %1, lsl #16\n\t"
-        "ldrb	%1, [%2, #3]\n\t"
-        "orr	%0, %0, %1, lsl #24"
+        "ldrb   %0, [%2, #0]\n\t"
+        "ldrb   %1, [%2, #1]\n\t"
+        "orr    %0, %0, %1, lsl #8\n\t"
+        "ldrb   %1, [%2, #2]\n\t"
+        "orr    %0, %0, %1, lsl #16\n\t"
+        "ldrb   %1, [%2, #3]\n\t"
+        "orr    %0, %0, %1, lsl #24"
         :"=&r"(res), "=&r"(tmp) : "r"(src)
     );
 

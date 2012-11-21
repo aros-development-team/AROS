@@ -15,21 +15,21 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH0(STRPTR, GetArgStr,
+        AROS_LH0(STRPTR, GetArgStr,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 89, Dos)
+        struct DosLibrary *, DOSBase, 89, Dos)
 
 /*  FUNCTION
-	Returns a pointer to the argument string passed to the current
-	process at startup.
+        Returns a pointer to the argument string passed to the current
+        process at startup.
 
     INPUTS
 
     RESULT
-	Pointer to argument string.
+        Pointer to argument string.
 
     NOTES
 

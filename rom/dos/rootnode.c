@@ -26,7 +26,7 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
     ULONG  i;
 
     struct CommandLineInterface *cli =
-	(struct CommandLineInterface *)BADDR(process->pr_CLI);
+        (struct CommandLineInterface *)BADDR(process->pr_CLI);
 
     struct RootNode *root = DOSBase->dl_Root;
 
@@ -35,12 +35,12 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
     D(bug("Calling addprocesstoroot(%p) with cli = %p\n", process, cli));
 
     if(cli == NULL)
-	return;
+        return;
 
     ci = (struct CLIInfo *)AllocVec(sizeof(struct CLIInfo), MEMF_PUBLIC);
 
     if(ci == NULL)
-	return;
+        return;
 
     ObtainSemaphore(&root->rn_RootLock);
 
@@ -117,7 +117,7 @@ void removefromrootnode(struct Process *process, struct DosLibrary *DOSBase)
     if (!__is_process(process) || process->pr_CLI == BNULL)
     {
         D(bug("[removefromrootnode] Strange. Doesn't seem be a CLI...\n"));
-	return;
+        return;
     }
     
     ObtainSemaphore(&root->rn_RootLock);

@@ -14,17 +14,17 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH5(BOOL, LockRecord,
+        AROS_LH5(BOOL, LockRecord,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR , fh, D1),
-	AROS_LHA(ULONG, offset, D2),
-	AROS_LHA(ULONG, length, D3),
-	AROS_LHA(ULONG, mode, D4),
-	AROS_LHA(ULONG, timeout, D5),
+        AROS_LHA(BPTR , fh, D1),
+        AROS_LHA(ULONG, offset, D2),
+        AROS_LHA(ULONG, length, D3),
+        AROS_LHA(ULONG, mode, D4),
+        AROS_LHA(ULONG, timeout, D5),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 45, Dos)
+        struct DosLibrary *, DOSBase, 45, Dos)
 
 /*  FUNCTION
 
@@ -67,7 +67,7 @@
 
     if (fh == BNULL)
     {
-	return DOSFALSE;
+        return DOSFALSE;
     }
 
     status = dopacket5(DOSBase, NULL, fileH->fh_Type, ACTION_LOCK_RECORD, fileH->fh_Arg1, offset, length, mode, timeout);

@@ -18,24 +18,24 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BOOL, Close,
+        AROS_LH1(BOOL, Close,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, file, D1),
+        AROS_LHA(BPTR, file, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 6, Dos)
+        struct DosLibrary *, DOSBase, 6, Dos)
 
 /*  FUNCTION
-	Close a filehandle opened with Open(). If the file was used
-	with buffered I/O the final write may fail and thus Close()
-	return an error. The file is closed in any case.
+        Close a filehandle opened with Open(). If the file was used
+        with buffered I/O the final write may fail and thus Close()
+        return an error. The file is closed in any case.
 
     INPUTS
-	file  --  filehandle
+        file  --  filehandle
 
     RESULT
-	0 if there was an error. != 0 on success.
+        0 if there was an error. != 0 on success.
 
     NOTES
 
@@ -61,15 +61,15 @@
 
     /* 0 handles are OK */
     if(file == BNULL)
-	return ret;
+        return ret;
 
     /* Func3 == -1: file was already closed. */
     if (fh->fh_Func3 == -1)
-    	Alert(AN_FileReclosed);
+        Alert(AN_FileReclosed);
 
     /* If the filehandle has a pending write on it Flush() the buffer. */
     if(fh->fh_Flags & FHF_WRITE)
-	ret = Flush(file);
+        ret = Flush(file);
 
     ret = dopacket1(DOSBase, NULL, fh->fh_Type, ACTION_END, fh->fh_Arg1);
 

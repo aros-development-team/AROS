@@ -25,40 +25,40 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH5(LONG, SplitName,
+        AROS_LH5(LONG, SplitName,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, D1),
-	AROS_LHA(ULONG , separator, D2),
-	AROS_LHA(STRPTR, buf, D3),
-	AROS_LHA(LONG  , oldpos, D4),
-	AROS_LHA(LONG  , size, D5),
+        AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(ULONG , separator, D2),
+        AROS_LHA(STRPTR, buf, D3),
+        AROS_LHA(LONG  , oldpos, D4),
+        AROS_LHA(LONG  , size, D5),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 69, Dos)
+        struct DosLibrary *, DOSBase, 69, Dos)
 
 /*  FUNCTION
-	Split a path into parts at the position of separator.
+        Split a path into parts at the position of separator.
 
     INPUTS
-	name - Split this path
-	separator - Split it at this separator
-	buf - Copy the current part into this buffer
-	oldpos - Begin at this place with the search for separator.
-		If you call this function for the first time, set it
-		to 0.
-	size - The size of the buffer. If the current part of the
-		path is bigger than size-1, only size-1 bytes will
-		be copied.
+        name - Split this path
+        separator - Split it at this separator
+        buf - Copy the current part into this buffer
+        oldpos - Begin at this place with the search for separator.
+                If you call this function for the first time, set it
+                to 0.
+        size - The size of the buffer. If the current part of the
+                path is bigger than size-1, only size-1 bytes will
+                be copied.
 
     RESULT
-	The next position to continue for the next part or -1 if
-	there is no separator after name+oldpos.
+        The next position to continue for the next part or -1 if
+        there is no separator after name+oldpos.
 
     NOTES
 
     EXAMPLE
-	See below.
+        See below.
 
     BUGS
 
@@ -76,15 +76,15 @@
 
     while (*name != separator && *name && size)
     {
-	size --;
-	*buf++ = *name++;
-	oldpos ++;
+        size --;
+        *buf++ = *name++;
+        oldpos ++;
     }
 
     *buf = 0;
 
     if (*name == separator)
-	return oldpos + 1;
+        return oldpos + 1;
 
     return -1;
     AROS_LIBFUNC_EXIT
@@ -104,17 +104,17 @@ int main (int argc, char ** argv)
 
     if (argc < 3)
     {
-	fprintf (stderr, "Usage: %s <path> <separator>\n", argv[0]);
-	return RETURN_ERROR;
+        fprintf (stderr, "Usage: %s <path> <separator>\n", argv[0]);
+        return RETURN_ERROR;
     }
 
     pos=0;
 
     do
     {
-	pos = SplitName (argv[1], *(argv[2]), buffer, pos, sizeof(buffer));
+        pos = SplitName (argv[1], *(argv[2]), buffer, pos, sizeof(buffer));
 
-	printf ("pos = %3ld  buffer = \"%s\"\n", pos, buffer);
+        printf ("pos = %3ld  buffer = \"%s\"\n", pos, buffer);
     }
     while (pos != -1);
 

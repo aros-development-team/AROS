@@ -14,27 +14,27 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(struct DosList *, LockDosList,
+        AROS_LH1(struct DosList *, LockDosList,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, flags, D1),
+        AROS_LHA(ULONG, flags, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 109, Dos)
+        struct DosLibrary *, DOSBase, 109, Dos)
 
 /*  FUNCTION
-	Waits until the desired dos lists are free then gets a lock on them.
-	A handle is returned that can be used for FindDosEntry().
-	Calls to this function nest, i.e. you must call UnLockDosList()
-	as often as you called LockDosList(). Always lock all lists
-	at once - do not try to get a lock on one of them then on another.
+        Waits until the desired dos lists are free then gets a lock on them.
+        A handle is returned that can be used for FindDosEntry().
+        Calls to this function nest, i.e. you must call UnLockDosList()
+        as often as you called LockDosList(). Always lock all lists
+        at once - do not try to get a lock on one of them then on another.
 
     INPUTS
-	flags - what lists to lock
+        flags - what lists to lock
 
     RESULT
-	Handle to the dos list. This is not a direct pointer
-	to the first list element but to a pseudo element instead.
+        Handle to the dos list. This is not a direct pointer
+        to the first list element but to a pseudo element instead.
 
     NOTES
 
@@ -47,9 +47,9 @@
     INTERNALS
 
     HISTORY
-	04-06-07    sonic   merged back from MorphOS source code
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
+        04-06-07    sonic   merged back from MorphOS source code
+        29-10-95    digulla automatically created from
+                            dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
@@ -60,32 +60,32 @@
     D(bug("LockDosList: flags = $%lx\n", flags));
 
     if (((flags & (LDF_READ|LDF_WRITE)) != LDF_READ &&
-	 (flags & (LDF_READ|LDF_WRITE)) != LDF_WRITE) ||
-	(flags & ~(LDF_READ|LDF_WRITE|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS|LDF_ENTRY|LDF_DELETE)))
-	return NULL;
+         (flags & (LDF_READ|LDF_WRITE)) != LDF_WRITE) ||
+        (flags & ~(LDF_READ|LDF_WRITE|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS|LDF_ENTRY|LDF_DELETE)))
+        return NULL;
 
     if (flags & LDF_ALL)
     {
-	if (flags & LDF_WRITE)
-	    ObtainSemaphore(&di->di_DevLock);
-	else
-	    ObtainSemaphoreShared(&di->di_DevLock);
+        if (flags & LDF_WRITE)
+            ObtainSemaphore(&di->di_DevLock);
+        else
+            ObtainSemaphoreShared(&di->di_DevLock);
     }
 
     if (flags & LDF_ENTRY)
     {
-	if (flags & LDF_WRITE)
-	    ObtainSemaphore(&di->di_EntryLock);
-	else
-	    ObtainSemaphoreShared(&di->di_EntryLock);
+        if (flags & LDF_WRITE)
+            ObtainSemaphore(&di->di_EntryLock);
+        else
+            ObtainSemaphoreShared(&di->di_EntryLock);
     }
 
     if (flags & LDF_DELETE)
     {
-	if (flags & LDF_WRITE)
-	    ObtainSemaphore(&di->di_DeleteLock);
-	else
-	    ObtainSemaphoreShared(&di->di_DeleteLock);
+        if (flags & LDF_WRITE)
+            ObtainSemaphore(&di->di_DeleteLock);
+        else
+            ObtainSemaphoreShared(&di->di_DeleteLock);
     }
 
 /* This strange thing came from MorphOS.

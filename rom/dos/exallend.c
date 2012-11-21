@@ -16,17 +16,17 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH5(void, ExAllEnd,
+        AROS_LH5(void, ExAllEnd,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,                  lock,    D1),
-	AROS_LHA(struct ExAllData *,    buffer,  D2),
-	AROS_LHA(LONG,                  size,    D3),
-	AROS_LHA(LONG,                  data,    D4),
-	AROS_LHA(struct ExAllControl *, control, D5),
+        AROS_LHA(BPTR,                  lock,    D1),
+        AROS_LHA(struct ExAllData *,    buffer,  D2),
+        AROS_LHA(LONG,                  size,    D3),
+        AROS_LHA(LONG,                  data,    D4),
+        AROS_LHA(struct ExAllControl *, control, D5),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 165, Dos)
+        struct DosLibrary *, DOSBase, 165, Dos)
 
 /*  FUNCTION
 
@@ -66,7 +66,7 @@
     {
         /* Get pointer to filehandle */
         struct FileLock *fl = (struct FileLock *)BADDR(lock);
-   	dopacket5(DOSBase, NULL, fl->fl_Task, ACTION_EXAMINE_ALL_END, (SIPTR)lock, (IPTR)buffer, (IPTR)size, (IPTR)data, (IPTR)control);
+        dopacket5(DOSBase, NULL, fl->fl_Task, ACTION_EXAMINE_ALL_END, (SIPTR)lock, (IPTR)buffer, (IPTR)size, (IPTR)data, (IPTR)control);
     }
     else
     {

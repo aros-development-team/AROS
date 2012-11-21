@@ -20,25 +20,25 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, FPutC,
+        AROS_LH2(LONG, FPutC,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, file,      D1),
-	AROS_LHA(LONG, character, D2),
+        AROS_LHA(BPTR, file,      D1),
+        AROS_LHA(LONG, character, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 52, Dos)
+        struct DosLibrary *, DOSBase, 52, Dos)
 
 /*  FUNCTION
-	Write a character to a file.
-	
+        Write a character to a file.
+        
     INPUTS
-	file	  - Filehandle to write to.
-	character - Character to write.
+        file      - Filehandle to write to.
+        character - Character to write.
 
     RESULT
-	The character written or EOF in case of an error.
-	IoErr() gives additional information in that case.
+        The character written or EOF in case of an error.
+        IoErr() gives additional information in that case.
 
     NOTES
 
@@ -47,7 +47,7 @@
     BUGS
 
     SEE ALSO
-	FGetC(), IoErr()
+        FGetC(), IoErr()
 
     INTERNALS
 

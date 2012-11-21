@@ -16,33 +16,33 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH3(LONG, Write,
+        AROS_LH3(LONG, Write,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, file,   D1),
-	AROS_LHA(APTR, buffer, D2),
-	AROS_LHA(LONG, length, D3),
+        AROS_LHA(BPTR, file,   D1),
+        AROS_LHA(APTR, buffer, D2),
+        AROS_LHA(LONG, length, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 8, Dos)
+        struct DosLibrary *, DOSBase, 8, Dos)
 
 /*  FUNCTION
-	Write some data from a given file. The request is directly
-	given to the filesystem - no buffering is involved. For
-	small amounts of data it's probably better to use the
-	buffered I/O routines.
+        Write some data from a given file. The request is directly
+        given to the filesystem - no buffering is involved. For
+        small amounts of data it's probably better to use the
+        buffered I/O routines.
 
     INPUTS
-	file   - filehandle
-	buffer - pointer to buffer for the data
-	length - number of bytes to write. The filesystem is
-		 advised to try to fulfill the request as good
-		 as possible.
+        file   - filehandle
+        buffer - pointer to buffer for the data
+        length - number of bytes to write. The filesystem is
+                 advised to try to fulfill the request as good
+                 as possible.
 
     RESULT
-	The number of bytes actually written, 0 if the end of the
-	file was reached, -1 if an error happened. IoErr() will
-	give additional information in that case.
+        The number of bytes actually written, 0 if the end of the
+        file was reached, -1 if an error happened. IoErr() will
+        give additional information in that case.
 
     NOTES
 
@@ -67,11 +67,11 @@
 
     D(bug("[Write] %x %x %d\n", fh, buffer, length));
     if (fh == NULL)
-    	SetIoErr(ERROR_INVALID_LOCK);
+        SetIoErr(ERROR_INVALID_LOCK);
     else if (fh->fh_Type == BNULL) /* NIL: */
-    	ret = length;
+        ret = length;
     else
-    	ret = dopacket3(DOSBase, NULL, fh->fh_Type, ACTION_WRITE, fh->fh_Arg1, (SIPTR)buffer, length);
+        ret = dopacket3(DOSBase, NULL, fh->fh_Type, ACTION_WRITE, fh->fh_Arg1, (SIPTR)buffer, length);
     D(bug("[Write]=%d\n", ret));
 
     return ret;

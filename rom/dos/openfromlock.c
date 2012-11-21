@@ -17,24 +17,24 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BPTR, OpenFromLock,
+        AROS_LH1(BPTR, OpenFromLock,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, lock, D1),
+        AROS_LHA(BPTR, lock, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 63, Dos)
+        struct DosLibrary *, DOSBase, 63, Dos)
 
 /*  FUNCTION
-	Convert a lock into a filehandle. If all went well the lock
-	will be gone. In case of an error it must still be freed.
+        Convert a lock into a filehandle. If all went well the lock
+        will be gone. In case of an error it must still be freed.
 
     INPUTS
-	lock - Lock to convert.
+        lock - Lock to convert.
 
     RESULT
-	New filehandle or 0 in case of an error. IoErr() will give
-	additional information in that case.
+        New filehandle or 0 in case of an error. IoErr() will give
+        additional information in that case.
 
     NOTES
 
@@ -84,7 +84,7 @@
                 SetVBuf(MKBADDR(fh), NULL, BUF_NONE, -1);
         }
     } else {
-    	SetIoErr(ERROR_NO_FREE_STORE);
+        SetIoErr(ERROR_NO_FREE_STORE);
     }
 
     D(bug("[OpenFromLock] %p => fh = %p (%p), error = %d\n", BADDR(lock), fh, fh->fh_Type, err));

@@ -15,24 +15,24 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BPTR, DupLock,
+        AROS_LH1(BPTR, DupLock,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, lock, D1),
+        AROS_LHA(BPTR, lock, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 16, Dos)
+        struct DosLibrary *, DOSBase, 16, Dos)
 
 /*  FUNCTION
-	Clone a lock on a file or directory. This will only work on shared
-	locks.
+        Clone a lock on a file or directory. This will only work on shared
+        locks.
 
     INPUTS
-	lock - Old lock.
+        lock - Old lock.
 
     RESULT
-	The new lock or NULL in case of an error. IoErr() will give additional
-	information in that case.
+        The new lock or NULL in case of an error. IoErr() will give additional
+        information in that case.
 
     NOTES
 
@@ -52,7 +52,7 @@
     BPTR ret;
 
     if (lock == BNULL)
-    	return BNULL;
+        return BNULL;
     ret = (BPTR)dopacket1(DOSBase, NULL, fl->fl_Task, ACTION_COPY_DIR, lock);
     D(bug("[DupLock] %x -> %x\n", fl, BADDR(ret)));
     return ret;

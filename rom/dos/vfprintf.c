@@ -12,8 +12,8 @@
 #include "dos_intern.h"
 
 AROS_UFH2(void,vfp_hook,
-	  AROS_UFHA(UBYTE,        chr, D0),
-	  AROS_UFHA(struct vfp *, vfp, A3))
+          AROS_UFHA(UBYTE,        chr, D0),
+          AROS_UFHA(struct vfp *, vfp, A3))
 {
     AROS_USERFUNC_INIT
 
@@ -21,14 +21,14 @@ AROS_UFH2(void,vfp_hook,
 
     if (vfp->count >= 0 && chr != '\0')
     {
-	if (FPutC(vfp->file, chr) < 0)
-	{
-	    vfp->count = -1;
+        if (FPutC(vfp->file, chr) < 0)
+        {
+            vfp->count = -1;
 
-	    return;
-	}
+            return;
+        }
 
-	vfp->count++;
+        vfp->count++;
     }
 
     AROS_USERFUNC_EXIT
@@ -39,26 +39,26 @@ AROS_UFH2(void,vfp_hook,
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH3(LONG, VFPrintf,
+        AROS_LH3(LONG, VFPrintf,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,         file,     D1),
-	AROS_LHA(CONST_STRPTR, format,   D2),
-	AROS_LHA(const IPTR *, argarray, D3),
+        AROS_LHA(BPTR,         file,     D1),
+        AROS_LHA(CONST_STRPTR, format,   D2),
+        AROS_LHA(const IPTR *, argarray, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 59, Dos)
+        struct DosLibrary *, DOSBase, 59, Dos)
 
 /*  FUNCTION
-	Write a formatted (RawDoFmt) string to a specified file (buffered).
+        Write a formatted (RawDoFmt) string to a specified file (buffered).
 
     INPUTS
-	file     - Filehandle to write to
-	format   - RawDoFmt() style formatting string
-	argarray - Pointer to array of formatting values
+        file     - Filehandle to write to
+        format   - RawDoFmt() style formatting string
+        argarray - Pointer to array of formatting values
 
     RESULT
-	Number of bytes written or -1 for an error
+        Number of bytes written or -1 for an error
 
     NOTES
 
@@ -81,14 +81,14 @@ AROS_UFH2(void,vfp_hook,
     vfp.DOSBase = DOSBase;
 
     (void)RawDoFmt(format, (APTR)argarray,
-		   (VOID_FUNC)AROS_ASMSYMNAME(vfp_hook), &vfp);
+                   (VOID_FUNC)AROS_ASMSYMNAME(vfp_hook), &vfp);
 
     /* Remove the last character (which is a NUL character) */
     /*
     if (vfp.count > 0)
     {
-	vfp.count--;
-	((struct FileHandle *)BADDR(file))->fh_Pos--;
+        vfp.count--;
+        ((struct FileHandle *)BADDR(file))->fh_Pos--;
     }
     */
 

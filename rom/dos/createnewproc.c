@@ -41,29 +41,29 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(struct Process *, CreateNewProc,
+        AROS_LH1(struct Process *, CreateNewProc,
 
 /*  SYNOPSIS */
-	AROS_LHA(const struct TagItem *, tags, D1),
+        AROS_LHA(const struct TagItem *, tags, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 83, Dos)
+        struct DosLibrary *, DOSBase, 83, Dos)
 
 /*  FUNCTION
-	Create a new process using the tagitem array.
+        Create a new process using the tagitem array.
 
     INPUTS
-	tags - information on the new process.
+        tags - information on the new process.
 
     RESULT
-	Pointer to the new process or NULL on error.
+        Pointer to the new process or NULL on error.
 
     NOTES
-    	It is possible to supply NP_Input, NP_Output and NP_Error tags
-    	with BNULL values. This is equal to NIL: handle, however if NP_Input
-    	is set to BNULL, NP_Arguments tag will not work. Arguments are
-    	passed to the process via input stream, and the stream needs
-    	to be a valid handle for this. This is original AmigaOS(tm) feature.
+        It is possible to supply NP_Input, NP_Output and NP_Error tags
+        with BNULL values. This is equal to NIL: handle, however if NP_Input
+        is set to BNULL, NP_Arguments tag will not work. Arguments are
+        passed to the process via input stream, and the stream needs
+        to be a valid handle for this. This is original AmigaOS(tm) feature.
 
     EXAMPLE
 
@@ -78,13 +78,13 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     AROS_LIBFUNC_INIT
 
     /* Allocated resources */
-    struct Process  	    	*process = NULL;
-    BPTR            	    	 input = 0, output = 0, ces = 0, curdir = 0, homedir = 0, segList, *segArray;
-    STRPTR          	    	 stack = NULL, name = NULL, argptr = NULL;
-    ULONG           	    	 namesize = 0, argsize = 0;
-    struct MemList  	    	*memlist = NULL;
+    struct Process              *process = NULL;
+    BPTR                         input = 0, output = 0, ces = 0, curdir = 0, homedir = 0, segList, *segArray;
+    STRPTR                       stack = NULL, name = NULL, argptr = NULL;
+    ULONG                        namesize = 0, argsize = 0;
+    struct MemList              *memlist = NULL;
     struct CommandLineInterface *cli = NULL;
-    struct Process  	    	*me = (struct Process *)FindTask(NULL);
+    struct Process              *me = (struct Process *)FindTask(NULL);
     ULONG                        old_sig = 0;
     APTR                         entry;
 
@@ -94,32 +94,32 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     struct TagItem defaults[]=
     {
-    /* 0 */    { NP_Seglist 	  , 0                 	    	},
-    /* 1 */    { NP_Entry   	  , (IPTR)NULL        	    	},
-    /* 2 */    { NP_Input   	  , TAGDATA_NOT_SPECIFIED       },
-    /* 3 */    { NP_CloseInput	  , 1           	    	},
-    /* 4 */    { NP_Output  	  , TAGDATA_NOT_SPECIFIED    	},
-    /* 5 */    { NP_CloseOutput   , 1           	    	},
-    /* 6 */    { NP_Error   	  , TAGDATA_NOT_SPECIFIED    	},
-    /* 7 */    { NP_CloseError	  , 1           	    	},
-    /* 8 */    { NP_CurrentDir	  , TAGDATA_NOT_SPECIFIED    	},
-    /* 9 */    { NP_StackSize	  , AROS_STACKSIZE    	        },
-    /*10 */    { NP_Name    	  , (IPTR)"New Process" 	},
-    /*11 */    { NP_Priority	  , me->pr_Task.tc_Node.ln_Pri 	},
-    /*12 */    { NP_Arguments	  , TAGDATA_NOT_SPECIFIED       },
-    /*13 */    { NP_Cli     	  , 0           	    	},
-    /*14 */    { NP_UserData	  , (IPTR)NULL  	    	},
-    /*15 */    { NP_ExitCode	  , (IPTR)NULL  	    	},
-    /*16 */    { NP_ExitData	  , (IPTR)NULL  	    	},
-    /*17 */    { NP_WindowPtr	  , (IPTR)NULL  	    	}, /* Default: default public screen */
-    /*18 */    { NP_CopyVars	  , (IPTR)TRUE  	    	},
-    /*19 */    { NP_Synchronous   , (IPTR)FALSE 	    	},
-    /*20 */    { NP_FreeSeglist   , (IPTR)TRUE  	    	},
-    /*21 */    { NP_HomeDir 	  , TAGDATA_NOT_SPECIFIED     	},
+    /* 0 */    { NP_Seglist       , 0                           },
+    /* 1 */    { NP_Entry         , (IPTR)NULL                  },
+    /* 2 */    { NP_Input         , TAGDATA_NOT_SPECIFIED       },
+    /* 3 */    { NP_CloseInput    , 1                           },
+    /* 4 */    { NP_Output        , TAGDATA_NOT_SPECIFIED       },
+    /* 5 */    { NP_CloseOutput   , 1                           },
+    /* 6 */    { NP_Error         , TAGDATA_NOT_SPECIFIED       },
+    /* 7 */    { NP_CloseError    , 1                           },
+    /* 8 */    { NP_CurrentDir    , TAGDATA_NOT_SPECIFIED       },
+    /* 9 */    { NP_StackSize     , AROS_STACKSIZE              },
+    /*10 */    { NP_Name          , (IPTR)"New Process"         },
+    /*11 */    { NP_Priority      , me->pr_Task.tc_Node.ln_Pri  },
+    /*12 */    { NP_Arguments     , TAGDATA_NOT_SPECIFIED       },
+    /*13 */    { NP_Cli           , 0                           },
+    /*14 */    { NP_UserData      , (IPTR)NULL                  },
+    /*15 */    { NP_ExitCode      , (IPTR)NULL                  },
+    /*16 */    { NP_ExitData      , (IPTR)NULL                  },
+    /*17 */    { NP_WindowPtr     , (IPTR)NULL                  }, /* Default: default public screen */
+    /*18 */    { NP_CopyVars      , (IPTR)TRUE                  },
+    /*19 */    { NP_Synchronous   , (IPTR)FALSE                 },
+    /*20 */    { NP_FreeSeglist   , (IPTR)TRUE                  },
+    /*21 */    { NP_HomeDir       , TAGDATA_NOT_SPECIFIED       },
     /*22 */    { NP_Path          , TAGDATA_NOT_SPECIFIED       }, /* Default: copy path from parent */
     /*23 */    { NP_NotifyOnDeath , (IPTR)FALSE                 },
     /*24 */    { NP_ConsoleTask   , TAGDATA_NOT_SPECIFIED       },
-	       { TAG_END    	  , 0           	    	}
+               { TAG_END          , 0                           }
     };
 
     /* C has no exceptions. This is a simple replacement. */
@@ -131,18 +131,18 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* Inherit the parent process' stacksize if possible */
     if (__is_process(me))
     {
-	struct CommandLineInterface *cli = Cli();
+        struct CommandLineInterface *cli = Cli();
 
-	if (cli)
-	{
-    	    LONG parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
+        if (cli)
+        {
+            LONG parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
 
-	    D(bug("[createnewproc] Parent stack: %u (0x%08X)\n", parentstack, parentstack));
-	    if (parentstack > AROS_STACKSIZE)
-	    {
-	        defaults[9].ti_Data = parentstack;
-	    }
-	}
+            D(bug("[createnewproc] Parent stack: %u (0x%08X)\n", parentstack, parentstack));
+            if (parentstack > AROS_STACKSIZE)
+            {
+                defaults[9].ti_Data = parentstack;
+            }
+        }
     }
 
     ApplyTagChanges(defaults, (struct TagItem *)tags);
@@ -215,7 +215,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* We need a minimum stack to handle interrupt contexts */
     if (process->pr_StackSize < AROS_STACKSIZE)
     {
-	process->pr_StackSize = AROS_STACKSIZE;
+        process->pr_StackSize = AROS_STACKSIZE;
     }
 
     stack = AllocMem(process->pr_StackSize, MEMF_PUBLIC);
@@ -228,26 +228,26 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* NP_Arguments */
     if (defaults[12].ti_Data != TAGDATA_NOT_SPECIFIED)
     {
-    	CONST_STRPTR args = (CONST_STRPTR)defaults[12].ti_Data;
+        CONST_STRPTR args = (CONST_STRPTR)defaults[12].ti_Data;
 
-    	/* If NULL, then it was provided by the user,
-    	 * so use the empty "" arg list
-    	 */
-    	if (args == NULL)
-	{
-    	    args = "";
-	}
+        /* If NULL, then it was provided by the user,
+         * so use the empty "" arg list
+         */
+        if (args == NULL)
+        {
+            args = "";
+        }
 
         argsize = strlen(args);
         argptr  = (STRPTR)AllocVec(argsize+1, MEMF_PUBLIC);
         ENOMEM_IF(argptr == NULL);
         CopyMem(args, argptr, argsize+1);
 
-	D(bug("[createnewproc] Arguments \"%s\"\n", argptr));
+        D(bug("[createnewproc] Arguments \"%s\"\n", argptr));
     }
 
     memlist = AllocMem(sizeof(struct MemList) + 2*sizeof(struct MemEntry),
-		       MEMF_ANY);
+                       MEMF_ANY);
     ENOMEM_IF(memlist == NULL);
 
     /* NP_Cli */
@@ -255,32 +255,32 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     {
         BPTR oldpath = BNULL;
         
-	/* Don't forget to pass tags to AllocDosObject() */
-	cli = (struct CommandLineInterface *)AllocDosObject(DOS_CLI, (struct TagItem *)tags);
-	ENOMEM_IF(cli == NULL);
+        /* Don't forget to pass tags to AllocDosObject() */
+        cli = (struct CommandLineInterface *)AllocDosObject(DOS_CLI, (struct TagItem *)tags);
+        ENOMEM_IF(cli == NULL);
 
-	cli->cli_DefaultStack = (process->pr_StackSize + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
+        cli->cli_DefaultStack = (process->pr_StackSize + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
 
-	if (__is_process(me))
-	{
-	    struct CommandLineInterface *oldcli = Cli();
+        if (__is_process(me))
+        {
+            struct CommandLineInterface *oldcli = Cli();
 
-	    if (oldcli != NULL)
-	    {
-		LONG oldlen = AROS_BSTR_strlen(oldcli->cli_Prompt);
-		LONG newlen = GetTagData(ADO_PromptLen, 255, tags);
+            if (oldcli != NULL)
+            {
+                LONG oldlen = AROS_BSTR_strlen(oldcli->cli_Prompt);
+                LONG newlen = GetTagData(ADO_PromptLen, 255, tags);
 
-		oldpath = oldcli->cli_CommandDir;
+                oldpath = oldcli->cli_CommandDir;
 
-		CopyMem(BADDR(oldcli->cli_Prompt), BADDR(cli->cli_Prompt), (newlen<oldlen?newlen:oldlen) + 1);
-	    }
+                CopyMem(BADDR(oldcli->cli_Prompt), BADDR(cli->cli_Prompt), (newlen<oldlen?newlen:oldlen) + 1);
+            }
 
-	    process->pr_CLI = MKBADDR(cli);
-	    addprocesstoroot(process, DOSBase);
-	}
+            process->pr_CLI = MKBADDR(cli);
+            addprocesstoroot(process, DOSBase);
+        }
 
 
-	if (defaults[22].ti_Data != TAGDATA_NOT_SPECIFIED)
+        if (defaults[22].ti_Data != TAGDATA_NOT_SPECIFIED)
         {
             cli->cli_CommandDir = (BPTR) defaults[22].ti_Data;
         }
@@ -294,65 +294,65 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     if (defaults[2].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	input = OpenNIL(DOSBase);
-	ERROR_IF(!input);
+        input = OpenNIL(DOSBase);
+        ERROR_IF(!input);
 
-	defaults[2].ti_Data = (IPTR)input;
+        defaults[2].ti_Data = (IPTR)input;
     }
 
     /* NP_Output */
 
     if (defaults[4].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	output = OpenNIL(DOSBase);
-	ERROR_IF(!output);
+        output = OpenNIL(DOSBase);
+        ERROR_IF(!output);
 
-	defaults[4].ti_Data = (IPTR)output;
+        defaults[4].ti_Data = (IPTR)output;
     }
 
     /* NP_Error */
 
     if (defaults[6].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	ces = OpenNIL(DOSBase);
-	ERROR_IF(!ces);
+        ces = OpenNIL(DOSBase);
+        ERROR_IF(!ces);
 
-	defaults[6].ti_Data = (IPTR)ces;
+        defaults[6].ti_Data = (IPTR)ces;
     }
 
     /* NP_CurrentDir */
 
     if (defaults[8].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	if (__is_process(me) && me->pr_CurrentDir)
-	{
-	    curdir = Lock("", SHARED_LOCK);
-	    ERROR_IF(!curdir);
+        if (__is_process(me) && me->pr_CurrentDir)
+        {
+            curdir = Lock("", SHARED_LOCK);
+            ERROR_IF(!curdir);
 
-	    defaults[8].ti_Data = (IPTR)curdir;
-	}
-	else
-	{
-	    defaults[8].ti_Data = 0;
-	}
+            defaults[8].ti_Data = (IPTR)curdir;
+        }
+        else
+        {
+            defaults[8].ti_Data = 0;
+        }
     }
 
     /* NP_HomeDir */
 
     if (defaults[21].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-    	defaults[21].ti_Data = 0;
+        defaults[21].ti_Data = 0;
 
-    	if (__is_process(me))
-	{
-	    if (me->pr_HomeDir)
-	    {
-	    	homedir = DupLock(me->pr_HomeDir);
-		ERROR_IF(!homedir);
+        if (__is_process(me))
+        {
+            if (me->pr_HomeDir)
+            {
+                homedir = DupLock(me->pr_HomeDir);
+                ERROR_IF(!homedir);
 
-		defaults[21].ti_Data = (IPTR)homedir;
-	    }
-	}
+                defaults[21].ti_Data = (IPTR)homedir;
+            }
+        }
     }
 
     CopyMem((APTR)defaults[10].ti_Data, name, namesize);
@@ -398,13 +398,13 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     /* Inherit pr_ConsoleTask and pr_FileSystemTask from parent */
     if (defaults[24].ti_Data != TAGDATA_NOT_SPECIFIED)
-    	process->pr_ConsoleTask = (struct MsgPort*)defaults[24].ti_Data;
+        process->pr_ConsoleTask = (struct MsgPort*)defaults[24].ti_Data;
     else if (__is_process(me))
-    	process->pr_ConsoleTask = me->pr_ConsoleTask;
+        process->pr_ConsoleTask = me->pr_ConsoleTask;
     if (__is_process(me))
-    	process->pr_FileSystemTask = me->pr_FileSystemTask;
+        process->pr_FileSystemTask = me->pr_FileSystemTask;
     else
-    	process->pr_FileSystemTask = DOSBase->dl_Root->rn_BootProc;
+        process->pr_FileSystemTask = DOSBase->dl_Root->rn_BootProc;
     D(bug("[createnewproc] pr_ConsoleTask = %p\n", process->pr_ConsoleTask));
     D(bug("[createnewproc] pr_FileSystemTask = %p\n", process->pr_FileSystemTask));
 
@@ -417,23 +417,23 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     process->pr_WindowPtr = (struct Window *)defaults[17].ti_Data;
     process->pr_HomeDir = (BPTR)defaults[21].ti_Data;
     process->pr_Flags = (defaults[3].ti_Data  ? PRF_CLOSEINPUT    : 0) |
-		        (defaults[5].ti_Data  ? PRF_CLOSEOUTPUT   : 0) |
-		        (defaults[7].ti_Data  ? PRF_CLOSEERROR    : 0) |
-			(defaults[8].ti_Data  ? PRF_FREECURRDIR   : 0) |
-		        (defaults[13].ti_Data ? PRF_FREECLI       : 0) |
-	                (defaults[19].ti_Data ? PRF_SYNCHRONOUS   : 0) |
-			(defaults[20].ti_Data ? PRF_FREESEGLIST   : 0) |
-			(defaults[23].ti_Data ? PRF_NOTIFYONDEATH : 0) |
-		        (argptr               ? PRF_FREEARGS      : 0);
+                        (defaults[5].ti_Data  ? PRF_CLOSEOUTPUT   : 0) |
+                        (defaults[7].ti_Data  ? PRF_CLOSEERROR    : 0) |
+                        (defaults[8].ti_Data  ? PRF_FREECURRDIR   : 0) |
+                        (defaults[13].ti_Data ? PRF_FREECLI       : 0) |
+                        (defaults[19].ti_Data ? PRF_SYNCHRONOUS   : 0) |
+                        (defaults[20].ti_Data ? PRF_FREESEGLIST   : 0) |
+                        (defaults[23].ti_Data ? PRF_NOTIFYONDEATH : 0) |
+                        (argptr               ? PRF_FREEARGS      : 0);
     process->pr_ExitCode = (APTR)defaults[15].ti_Data;
     process->pr_ExitData = defaults[16].ti_Data;
     process->pr_Arguments = argptr;
 
     if ((BOOL)defaults[18].ti_Data)      /* NP_CopyVars */
     {
-	BOOL res = copyVars(me, process, DOSBase);
+        BOOL res = copyVars(me, process, DOSBase);
 
-	ENOMEM_IF(res == FALSE);
+        ENOMEM_IF(res == FALSE);
     }
 
     process->pr_ShellPrivate = 0;
@@ -442,7 +442,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     if (defaults[19].ti_Data)
     {
         me->pr_Flags |= PRF_WAITINGFORCHILD;
-	
+        
         old_sig = SetSignal(0L, SIGF_SINGLE) & SIGF_SINGLE; 
     }
 
@@ -466,9 +466,9 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     D(bug("[createnewproc] Creating SegArray %p, segList=%p\n", segArray, BADDR(segList)));
     segArray[0] = (BPTR)SEGARRAY_LENGTH;
-    segArray[1] = (BPTR)-1;	/* 'system' segment */
-    segArray[2] = (BPTR)-2;	/* 'dosbase' segment */
-    segArray[3] = segList; 	/* Program segment */
+    segArray[1] = (BPTR)-1;     /* 'system' segment */
+    segArray[2] = (BPTR)-2;     /* 'dosbase' segment */
+    segArray[3] = segList;      /* Program segment */
 
     process->pr_SegList = MKBADDR(segArray);
 
@@ -536,7 +536,7 @@ enomem:
 
     if (__is_process(me))
     {
-	SetIoErr(ERROR_NO_FREE_STORE);
+        SetIoErr(ERROR_NO_FREE_STORE);
     }
 
     freeLocalVars(process, DOSBase);
@@ -547,59 +547,59 @@ error:
 
     if (cli != NULL)
     {
-	FreeDosObject(DOS_CLI, cli);
+        FreeDosObject(DOS_CLI, cli);
     }
 
     if (homedir != BNULL)
     {
-    	UnLock(homedir);
+        UnLock(homedir);
     }
 
     if (curdir != BNULL)
     {
-	UnLock(curdir);
+        UnLock(curdir);
     }
 
     if (output != BNULL)
     {
-	Close(output);
+        Close(output);
     }
 
     if (input != BNULL)
     {
-	Close(input);
+        Close(input);
     }
 
     if (ces != BNULL)
     {
-	Close(ces);
+        Close(ces);
     }
 
     if (argptr != NULL)
     {
-	FreeVec(argptr);
+        FreeVec(argptr);
     }
 
     if (memlist != NULL)
     {
-	FreeMem(memlist, sizeof(struct MemList) + 2*sizeof(struct MemEntry));
+        FreeMem(memlist, sizeof(struct MemList) + 2*sizeof(struct MemEntry));
     }
 
     if (name != NULL)
     {
-	FreeMem(name, namesize);
+        FreeMem(name, namesize);
     }
 
     if (stack != NULL)
     {
-	FreeMem(stack, process->pr_StackSize);
+        FreeMem(stack, process->pr_StackSize);
     }
 
     if (process != NULL)
     {
-	FreeMem(process, sizeof(struct Process));
+        FreeMem(process, sizeof(struct Process));
 
-	process = NULL;
+        process = NULL;
     }
 
 end:
@@ -618,13 +618,13 @@ static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
     struct Node     *tempNode;
     
     ForeachNodeSafe(&process->pr_LocalVars,
-		    varNode, tempNode)
+                    varNode, tempNode)
     {
-	D(bug("Freeing variable %s with value %s at %p\n",
-		  varNode->lv_Node.ln_Name, varNode->lv_Value, varNode));
-	FreeMem(varNode->lv_Value, varNode->lv_Len);
-	Remove((struct Node *)varNode);
-	FreeVec(varNode);
+        D(bug("Freeing variable %s with value %s at %p\n",
+                  varNode->lv_Node.ln_Name, varNode->lv_Value, varNode));
+        FreeMem(varNode->lv_Value, varNode->lv_Len);
+        Remove((struct Node *)varNode);
+        FreeVec(varNode);
     }
 }
 
@@ -677,44 +677,44 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
     /* We must have variables to copy... */
     if (__is_process(fromProcess))
     {
-	struct LocalVar *varNode;
-	struct LocalVar *newVar;
-	
-	/* We use the same strategy as in the ***Var() functions */
-	ForeachNode(&fromProcess->pr_LocalVars, varNode)
-	{
-	    LONG  copyLength = strlen(varNode->lv_Node.ln_Name) + 1 +
-		sizeof(struct LocalVar);
-	    
-	    newVar = (struct LocalVar *)AllocVec(copyLength,
-						 MEMF_PUBLIC | MEMF_CLEAR);
-	    if (newVar == NULL)
-		return FALSE;
+        struct LocalVar *varNode;
+        struct LocalVar *newVar;
+        
+        /* We use the same strategy as in the ***Var() functions */
+        ForeachNode(&fromProcess->pr_LocalVars, varNode)
+        {
+            LONG  copyLength = strlen(varNode->lv_Node.ln_Name) + 1 +
+                sizeof(struct LocalVar);
+            
+            newVar = (struct LocalVar *)AllocVec(copyLength,
+                                                 MEMF_PUBLIC | MEMF_CLEAR);
+            if (newVar == NULL)
+                return FALSE;
 
-	    CopyMem(varNode, newVar, copyLength);
-	    newVar->lv_Node.ln_Name = (char *)newVar +
-		sizeof(struct LocalVar);
-	    D(bug("Variable with name %s copied.\n", 
-		      newVar->lv_Node.ln_Name));
-	    
+            CopyMem(varNode, newVar, copyLength);
+            newVar->lv_Node.ln_Name = (char *)newVar +
+                sizeof(struct LocalVar);
+            D(bug("Variable with name %s copied.\n", 
+                      newVar->lv_Node.ln_Name));
+            
             if (varNode->lv_Len)
             {
-	        newVar->lv_Value = AllocMem(varNode->lv_Len, MEMF_PUBLIC);
-	    
-	        if (newVar->lv_Value == NULL)
-	        {
-		    /* Free variable node before shutting down */
-		    FreeVec(newVar);
-		
-		    return FALSE;
-	        }
-	    
+                newVar->lv_Value = AllocMem(varNode->lv_Len, MEMF_PUBLIC);
+            
+                if (newVar->lv_Value == NULL)
+                {
+                    /* Free variable node before shutting down */
+                    FreeVec(newVar);
+                
+                    return FALSE;
+                }
+            
                 CopyMem(varNode->lv_Value, newVar->lv_Value, varNode->lv_Len);
-	    }
+            }
 
-	    AddTail((struct List *)&toProcess->pr_LocalVars,
-		    (struct Node *)newVar);
-	}
+            AddTail((struct List *)&toProcess->pr_LocalVars,
+                    (struct Node *)newVar);
+        }
     }
 
     return TRUE;
@@ -755,31 +755,31 @@ static void DosEntry(void)
     if (me->pr_ExitCode != NULL)
     {
         /* 
-	   The Ralph Babel's guru book says that pr_ExitCode
- 	   is passed the process return code in D0 and pr_ExitData in D1,
-	   but the Matt Dillon's DICE C implementation of vfork shows that
-	   those parameters are passed also on the stack. 	   
-	 */
-#ifdef __mc68000
-	asm volatile (
-		"move.l %0, %%d0\n"
-		"move.l %1, %%d1\n"
-		"move.l %2, %%a0\n"
-		"move.l %%d0, %%sp@-\n"
-		"move.l %%d1, %%sp@-\n"
-		"jsr (%%a0)\n"
-		"addq.l #8, %%sp\n"
-		: /* No return values */
-		: "g" (result), "g" (me->pr_ExitData), "g" (me->pr_ExitCode)
-		: "d0", "d1", "a0", "a1"
-	);
-#else
-	/* 
- 	   The AROS macros for functions with register parameters don't
- 	   support both register and stack parameters at once, so we use 
-	   the stack only on non-m68k. This oughta be fixed somehow.
+           The Ralph Babel's guru book says that pr_ExitCode
+           is passed the process return code in D0 and pr_ExitData in D1,
+           but the Matt Dillon's DICE C implementation of vfork shows that
+           those parameters are passed also on the stack.          
          */
- 	me->pr_ExitCode(result, me->pr_ExitData);
+#ifdef __mc68000
+        asm volatile (
+                "move.l %0, %%d0\n"
+                "move.l %1, %%d1\n"
+                "move.l %2, %%a0\n"
+                "move.l %%d0, %%sp@-\n"
+                "move.l %%d1, %%sp@-\n"
+                "jsr (%%a0)\n"
+                "addq.l #8, %%sp\n"
+                : /* No return values */
+                : "g" (result), "g" (me->pr_ExitData), "g" (me->pr_ExitCode)
+                : "d0", "d1", "a0", "a1"
+        );
+#else
+        /* 
+           The AROS macros for functions with register parameters don't
+           support both register and stack parameters at once, so we use 
+           the stack only on non-m68k. This oughta be fixed somehow.
+         */
+        me->pr_ExitCode(result, me->pr_ExitData);
 #endif
     }
 
@@ -809,38 +809,38 @@ static void DosEntry(void)
 
     if (me->pr_Flags & PRF_CLOSEINPUT)
     {
-	Close(cis);
+        Close(cis);
     }
 
     D(bug("Closing output stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEOUTPUT)
     {
-	Close(cos);
+        Close(cos);
     }
 
     D(bug("Closing error stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEERROR)
     {
-	Close(ces);
+        Close(ces);
     }
 
     D(bug("Freeing arguments\n"));
 
     if (me->pr_Flags & PRF_FREEARGS)
     {
-	FreeVec(me->pr_Arguments);
+        FreeVec(me->pr_Arguments);
     }
 
     D(bug("Unloading segment\n"));
 
     if (me->pr_Flags & PRF_FREESEGLIST)
     {
-    	BPTR *segarray = BADDR(me->pr_SegList);
+        BPTR *segarray = BADDR(me->pr_SegList);
 
-    	if (segarray && segarray[3])
-	    UnLoadSeg(segarray[3]);
+        if (segarray && segarray[3])
+            UnLoadSeg(segarray[3]);
     }
 
     if (me->pr_SegList)
@@ -855,7 +855,7 @@ static void DosEntry(void)
 
     if (me->pr_Flags & PRF_FREECURRDIR)
     {
-	UnLock(me->pr_CurrentDir);
+        UnLock(me->pr_CurrentDir);
     }
 
     D(bug("Unlocking home dir\n"));
@@ -865,9 +865,9 @@ static void DosEntry(void)
 
     if (me->pr_Flags & PRF_FREECLI)
     {
-	FreeDosObject(DOS_CLI, BADDR(me->pr_CLI));
-	removefromrootnode(me, DOSBase);
-	me->pr_CLI = BNULL;
+        FreeDosObject(DOS_CLI, BADDR(me->pr_CLI));
+        removefromrootnode(me, DOSBase);
+        me->pr_CLI = BNULL;
     }
 
     /* Synchronous completion must be before

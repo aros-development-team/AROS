@@ -23,9 +23,9 @@ LONG InternalSeek
     ASSERT_VALID_PTR( fh );
     ASSERT
     ( 
-	   mode == OFFSET_BEGINNING 
-	|| mode == OFFSET_END 
-	|| mode == OFFSET_CURRENT 
+           mode == OFFSET_BEGINNING 
+        || mode == OFFSET_END 
+        || mode == OFFSET_CURRENT 
     );
     D(bug("[seek] %x:%d:%d\n", fh, position, mode));
     do {

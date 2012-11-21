@@ -19,24 +19,24 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BOOL, DeleteFile,
+        AROS_LH1(BOOL, DeleteFile,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(CONST_STRPTR, name, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 12, Dos)
+        struct DosLibrary *, DOSBase, 12, Dos)
 
 /*  FUNCTION
-	Tries to delete a file or directory by a given name.
-	May fail if the file is in use or protected from deletion.
+        Tries to delete a file or directory by a given name.
+        May fail if the file is in use or protected from deletion.
 
     INPUTS
-	name	   - NUL terminated name.
+        name       - NUL terminated name.
 
     RESULT
-	!= 0 if the file is gone, 0 if is still there.
-	IoErr() gives additional information in that case.
+        != 0 if the file is gone, 0 if is still there.
+        IoErr() gives additional information in that case.
 
     NOTES
 
@@ -58,8 +58,8 @@
     D(bug("[DeleteFile] '%s'\n", name));
 
     if (getpacketinfo(DOSBase, name, &phs)) {
-    	status = dopacket2(DOSBase, NULL, phs.port, ACTION_DELETE_OBJECT, phs.lock, phs.name);
-    	freepacketinfo(DOSBase, &phs);
+        status = dopacket2(DOSBase, NULL, phs.port, ACTION_DELETE_OBJECT, phs.lock, phs.name);
+        freepacketinfo(DOSBase, &phs);
     }
     
     return status;

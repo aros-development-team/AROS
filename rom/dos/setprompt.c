@@ -16,34 +16,34 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BOOL, SetPrompt,
+        AROS_LH1(BOOL, SetPrompt,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(CONST_STRPTR, name, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 97, Dos)
+        struct DosLibrary *, DOSBase, 97, Dos)
 
 /*  FUNCTION
-	Sets the prompt in the current CLI structure. If the name doesn't
-	fit the old name is kept and a failure is returned. If the current
-	process doesn't have a CLI structure this function does nothing.
+        Sets the prompt in the current CLI structure. If the name doesn't
+        fit the old name is kept and a failure is returned. If the current
+        process doesn't have a CLI structure this function does nothing.
 
     INPUTS
-	name - The prompt to be set.
+        name - The prompt to be set.
 
     RESULT
-	!=0 on success, 0 on failure.
+        !=0 on success, 0 on failure.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	Never copies more than 255 bytes.
+        Never copies more than 255 bytes.
 
     SEE ALSO
-	GetPrompt()
+        GetPrompt()
 
     INTERNALS
 

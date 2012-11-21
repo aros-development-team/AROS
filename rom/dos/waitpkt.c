@@ -17,13 +17,13 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH0I(struct DosPacket *, WaitPkt,
+        AROS_LH0I(struct DosPacket *, WaitPkt,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 42, Dos)
+        struct DosLibrary *, DOSBase, 42, Dos)
 
 /*  FUNCTION
 
@@ -71,18 +71,18 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort)
 
     if (__is_process(me))
     {
-	/*
-	 * Call the packet wait function if the user has one installed.
-	 * Unfortunately, in case of IOFS the user gets something completely different than
-	 * a packet, but we cannot do anything about that...
-	 */
-	if (me->pr_PktWait)
-	{
-	    msg = AROS_UFC3(struct Message *, me->pr_PktWait,
-		AROS_UFCA(APTR, me->pr_PktWait, A0),
-		AROS_UFCA(struct MsgPort *, msgPort, A1),
-		AROS_UFCA(struct ExecBase *, SysBase, A6));
-	}
+        /*
+         * Call the packet wait function if the user has one installed.
+         * Unfortunately, in case of IOFS the user gets something completely different than
+         * a packet, but we cannot do anything about that...
+         */
+        if (me->pr_PktWait)
+        {
+            msg = AROS_UFC3(struct Message *, me->pr_PktWait,
+                AROS_UFCA(APTR, me->pr_PktWait, A0),
+                AROS_UFCA(struct MsgPort *, msgPort, A1),
+                AROS_UFCA(struct ExecBase *, SysBase, A6));
+        }
     }
 
     if (!msg)
@@ -92,8 +92,8 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort)
            message port that waits for packets, too. */
         while ((msg = GetMsg(msgPort)) == NULL)
         {
-	    Wait(1 << msgPort->mp_SigBit);
-	}
+            Wait(1 << msgPort->mp_SigBit);
+        }
     }
 
     D(bug("[DOS] WaitPkt(): got DOS packet 0x%p in message 0x%p\n", msg->mn_Node.ln_Name, msg));

@@ -49,66 +49,66 @@ const char *const Dos_SubstDateTable[]=
 #include <dos/datetime.h>
 #include <proto/dos.h>
 
-	AROS_LH1(BOOL, StrToDate,
+        AROS_LH1(BOOL, StrToDate,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DateTime *, datetime, D1),
+        AROS_LHA(struct DateTime *, datetime, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 125, Dos)
+        struct DosLibrary *, DOSBase, 125, Dos)
 
 /*  FUNCTION
-	Converts a human readable ASCII string into an AmigaDOS
-	DateStamp.
+        Converts a human readable ASCII string into an AmigaDOS
+        DateStamp.
 
     INPUTS
-	DateTime - a pointer to an initialized DateTime structure.
-		The structure should be initialized as follows:
+        DateTime - a pointer to an initialized DateTime structure.
+                The structure should be initialized as follows:
 
-		dat_Stamp: The converted date will be written here
+                dat_Stamp: The converted date will be written here
 
-		dat_Format: How to convert the datestamp into
-		    dat_StrDate. Can be any of the following:
+                dat_Format: How to convert the datestamp into
+                    dat_StrDate. Can be any of the following:
 
-		    FORMAT_DOS: AmigaDOS format (dd-mmm-yy). This
-			    is the default if you specify something other
-			    than any entry in this list.
+                    FORMAT_DOS: AmigaDOS format (dd-mmm-yy). This
+                            is the default if you specify something other
+                            than any entry in this list.
 
-		    FORMAT_INT: International format (yy-mmm-dd).
+                    FORMAT_INT: International format (yy-mmm-dd).
 
-		    FORMAT_USA: American format (mm-dd-yy).
+                    FORMAT_USA: American format (mm-dd-yy).
 
-		    FORMAT_CDN: Canadian format (dd-mm-yy).
+                    FORMAT_CDN: Canadian format (dd-mm-yy).
 
-		    FORMAT_DEF: default format for locale.
+                    FORMAT_DEF: default format for locale.
 
 
-		dat_Flags: Modifies dat_Format. The only flag
-			used by this function is DTF_FUTURE. If set, then
-			a string like "Monday" refers to the next monday.
-			Otherwise it refers to the last monday.
+                dat_Flags: Modifies dat_Format. The only flag
+                        used by this function is DTF_FUTURE. If set, then
+                        a string like "Monday" refers to the next monday.
+                        Otherwise it refers to the last monday.
 
-		dat_StrDay: Ignored.
+                dat_StrDay: Ignored.
 
-		dat_StrDate: Pointer to valid string representing the
-			date. This can be a "DTF_SUBST" style string such
-			as "Today" "Tomorrow" "Monday", or it may be a
-			string as specified by the dat_Format byte. This
-			will be converted to the ds_Days portion of the
-			DateStamp. If this pointer is NULL,
-			DateStamp->ds_Days will not be affected.
+                dat_StrDate: Pointer to valid string representing the
+                        date. This can be a "DTF_SUBST" style string such
+                        as "Today" "Tomorrow" "Monday", or it may be a
+                        string as specified by the dat_Format byte. This
+                        will be converted to the ds_Days portion of the
+                        DateStamp. If this pointer is NULL,
+                        DateStamp->ds_Days will not be affected.
 
-		dat_StrTime: Pointer to a buffer which contains the
-			time in the ASCII format hh:mm:ss. This will be
-			converted to the ds_Minutes and ds_Ticks portions
-			of the DateStamp.  If this pointer is NULL,
-			ds_Minutes and ds_Ticks will be unchanged.
+                dat_StrTime: Pointer to a buffer which contains the
+                        time in the ASCII format hh:mm:ss. This will be
+                        converted to the ds_Minutes and ds_Ticks portions
+                        of the DateStamp.  If this pointer is NULL,
+                        ds_Minutes and ds_Ticks will be unchanged.
 
 
     RESULT
-	A zero return indicates that a conversion could not be performed. A
-	non-zero return indicates that the DateTime.dat_Stamp variable
-	contains the converted values.
+        A zero return indicates that a conversion could not be performed. A
+        non-zero return indicates that the DateTime.dat_Stamp variable
+        contains the converted values.
 
     NOTES
 
@@ -117,7 +117,7 @@ const char *const Dos_SubstDateTable[]=
     BUGS
 
     SEE ALSO
-	DateStamp(), DateToStr()
+        DateStamp(), DateToStr()
 
     INTERNALS
 
@@ -131,201 +131,201 @@ const char *const Dos_SubstDateTable[]=
 
     if ((ptr = datetime->dat_StrDate))
     {
-	DateStamp (&curr);
+        DateStamp (&curr);
 
-	for (t=0; t<3; t++)
-	{
-	    if (!Strnicmp (Dos_SubstDateTable[t], ptr, strlen (Dos_SubstDateTable[t])))
-		break;
-	}
+        for (t=0; t<3; t++)
+        {
+            if (!Strnicmp (Dos_SubstDateTable[t], ptr, strlen (Dos_SubstDateTable[t])))
+                break;
+        }
 
-	if (t != 3)
-	    days = curr.ds_Days + 1 - t;
-	else
-	{
-	    for (t=0; t<7; t++)
-	    {
-		if (!Strnicmp (Dos_WeekTable[t], ptr, strlen (Dos_WeekTable[t])))
-		    break;
-	    }
+        if (t != 3)
+            days = curr.ds_Days + 1 - t;
+        else
+        {
+            for (t=0; t<7; t++)
+            {
+                if (!Strnicmp (Dos_WeekTable[t], ptr, strlen (Dos_WeekTable[t])))
+                    break;
+            }
 
-	    if (t != 7)
-	    {
-	    #if 1
-	    	LONG diffdays;
-		
-		days = curr.ds_Days;
-		
-		diffdays = t - (days % 7);
-		
-		if (datetime->dat_Flags & DTF_FUTURE)
-		{
-		    if (diffdays > 0)
-		    {
-		    	days += diffdays;
-		    }
-		    else
-		    {
-		    	days += 7 + diffdays;
-		    }
-		}
-		else
-		{
-		    if (diffdays < 0)
-		    {
-		    	days += diffdays;
-		    }
-		    else
-		    {
-		    	days += diffdays - 7;
-		    }
-		}		
-	    #else
-		days = curr.ds_Days;
+            if (t != 7)
+            {
+            #if 1
+                LONG diffdays;
+                
+                days = curr.ds_Days;
+                
+                diffdays = t - (days % 7);
+                
+                if (datetime->dat_Flags & DTF_FUTURE)
+                {
+                    if (diffdays > 0)
+                    {
+                        days += diffdays;
+                    }
+                    else
+                    {
+                        days += 7 + diffdays;
+                    }
+                }
+                else
+                {
+                    if (diffdays < 0)
+                    {
+                        days += diffdays;
+                    }
+                    else
+                    {
+                        days += diffdays - 7;
+                    }
+                }               
+            #else
+                days = curr.ds_Days;
 
-		if ((days % 7) == 0)
-		    days -= 7;
-		else
-		    days -= (days % 7);
+                if ((days % 7) == 0)
+                    days -= 7;
+                else
+                    days -= (days % 7);
 
-		days += t;
+                days += t;
 
-		if (datetime->dat_Flags & DTF_FUTURE)
-		    days += 7;
-	    #endif
-	    }
-	    else
-	    {
-		switch (datetime->dat_Format)
-		{
-		case FORMAT_INT: format = "y-M-d"; break;
-		case FORMAT_USA: format = "m-d-y"; break;
-		case FORMAT_CDN: format = "d-m-y"; break;
-		default:	 format = "d-M-y"; break;
-		}
+                if (datetime->dat_Flags & DTF_FUTURE)
+                    days += 7;
+            #endif
+            }
+            else
+            {
+                switch (datetime->dat_Format)
+                {
+                case FORMAT_INT: format = "y-M-d"; break;
+                case FORMAT_USA: format = "m-d-y"; break;
+                case FORMAT_CDN: format = "d-m-y"; break;
+                default:         format = "d-M-y"; break;
+                }
 
-		while (*format)
-		{
-		    switch (*format)
-		    {
-		    case 'y':
-			t = StrToLong (ptr, &year);
+                while (*format)
+                {
+                    switch (*format)
+                    {
+                    case 'y':
+                        t = StrToLong (ptr, &year);
 
-			if (t == -1)
-			    return DOSFALSE;
+                        if (t == -1)
+                            return DOSFALSE;
 
-			if (year < 100)
-			    year += 1900;
+                        if (year < 100)
+                            year += 1900;
 
-			ptr += t;
+                        ptr += t;
 
-			break;
+                        break;
 
-		    case 'M':
-			t = StrToLong (ptr, &month);
+                    case 'M':
+                        t = StrToLong (ptr, &month);
 
-			if (t == -1)
-			    return DOSFALSE;
+                        if (t == -1)
+                            return DOSFALSE;
 
-			ptr += t;
+                        ptr += t;
 
-			break;
+                        break;
 
-		    case 'd':
-			t = StrToLong (ptr, &days);
+                    case 'd':
+                        t = StrToLong (ptr, &days);
 
-			if (t == -1)
-			    return DOSFALSE;
+                        if (t == -1)
+                            return DOSFALSE;
 
-			ptr += t;
+                        ptr += t;
 
-			break;
+                        break;
 
-		    case 'm':
-			for (t=0; t<12; t++)
-			{
-			    if (!Strnicmp (Dos_MonthTable[t], ptr,
-				    strlen (Dos_MonthTable[t])))
-				break;
-			}
+                    case 'm':
+                        for (t=0; t<12; t++)
+                        {
+                            if (!Strnicmp (Dos_MonthTable[t], ptr,
+                                    strlen (Dos_MonthTable[t])))
+                                break;
+                        }
 
-			if (t == 12)
-			    return DOSFALSE;
+                        if (t == 12)
+                            return DOSFALSE;
 
-			month = t+1;
+                        month = t+1;
 
-			ptr += strlen (Dos_MonthTable[t]);
+                        ptr += strlen (Dos_MonthTable[t]);
 
-			break;
+                        break;
 
-		    default:
-			if (*ptr != *format)
-			    return DOSFALSE;
+                    default:
+                        if (*ptr != *format)
+                            return DOSFALSE;
 
-			ptr ++;
+                        ptr ++;
 
-			break;
+                        break;
 
-		    } /* switch */
+                    } /* switch */
 
-		    format ++;
-		} /* while */
+                    format ++;
+                } /* while */
 
-		/* kprintf ("Year=%ld, Month=%ld, Days=%ld\n",
-			year, month, days); */
+                /* kprintf ("Year=%ld, Month=%ld, Days=%ld\n",
+                        year, month, days); */
 
-		/* Days go from 1..x */
-		days --;
+                /* Days go from 1..x */
+                days --;
 
-		/* First year must be 1978 */
-		if (year < 1978)
-		    return DOSFALSE;
+                /* First year must be 1978 */
+                if (year < 1978)
+                    return DOSFALSE;
 
-		/* Is this year a leap year ? */
-		leap = (((year % 400) == 0) ||
-		    (((year % 4) == 0) && !((year % 100) == 0)));
+                /* Is this year a leap year ? */
+                leap = (((year % 400) == 0) ||
+                    (((year % 4) == 0) && !((year % 100) == 0)));
 
-		/* Add the days for all years (without leap years) */
-		days += (year - 1978) * 365;
+                /* Add the days for all years (without leap years) */
+                days += (year - 1978) * 365;
 
 #if 1
-    	    	/* stegerg: we do *not* want a day to be added for *this*
-		   year, if it is a leap year. Only the previous years
-		   are the ones we want to be taken into account. */
-		   
-    	    	year--;
+                /* stegerg: we do *not* want a day to be added for *this*
+                   year, if it is a leap year. Only the previous years
+                   are the ones we want to be taken into account. */
+                   
+                year--;
 #endif
 
-		/* Add leap years */
-		days += ((year / 4) - (year / 100) + (year / 400)
-		    - (494 - 19 + 4));
+                /* Add leap years */
+                days += ((year / 4) - (year / 100) + (year / 400)
+                    - (494 - 19 + 4));
 
-    	    	//kprintf("strtodate: days1 = %d\n", days);
-		/* Add days of months */
-		days += Dos_DayTable[month-1];
-    	    	//kprintf("strtodate: days2 = %d\n", days);
+                //kprintf("strtodate: days1 = %d\n", days);
+                /* Add days of months */
+                days += Dos_DayTable[month-1];
+                //kprintf("strtodate: days2 = %d\n", days);
 
-		/*
-		    In Dos_DayTable, February has 29 days. Correct this in
-		    non-leap years and if the day has not yet been reached.
-		*/
+                /*
+                    In Dos_DayTable, February has 29 days. Correct this in
+                    non-leap years and if the day has not yet been reached.
+                */
 
 #if 1
-    	    	/* stegerg: if this year is *no* leap year, then Dos_DayTable
-		            is wrong by one day when accessing
-			    Dos_DayTable[March..Dec] */
-			    
-    	    	if (!leap && (month >= 3)) days--;
+                /* stegerg: if this year is *no* leap year, then Dos_DayTable
+                            is wrong by one day when accessing
+                            Dos_DayTable[March..Dec] */
+                            
+                if (!leap && (month >= 3)) days--;
 #else
-		if (month >= 2 || (leap && month < 2))
-		    days --;
+                if (month >= 2 || (leap && month < 2))
+                    days --;
 #endif
 
-    	    	//kprintf("strtodate: days3 = %d\n", days);
+                //kprintf("strtodate: days3 = %d\n", days);
 
-	    } /* Normal date */
+            } /* Normal date */
 
-	} /* Not "Tomorrow", "Today" or "Yesterday" */
+        } /* Not "Tomorrow", "Today" or "Yesterday" */
 
         datetime->dat_Stamp.ds_Days   = days;
 
@@ -333,44 +333,44 @@ const char *const Dos_SubstDateTable[]=
 
     if ((ptr = datetime->dat_StrTime))
     {
-	len = StrToLong (ptr, &t);
+        len = StrToLong (ptr, &t);
 
-	if ((len == -1) || (t < 0) || (t > 23))
-	    return DOSFALSE;
-	    
-	min = t * 60;
+        if ((len == -1) || (t < 0) || (t > 23))
+            return DOSFALSE;
+            
+        min = t * 60;
 
-	ptr += len;
+        ptr += len;
 
-	if (*ptr++ != ':')
-	    return DOSFALSE;
+        if (*ptr++ != ':')
+            return DOSFALSE;
 
-	len = StrToLong (ptr, &t);
+        len = StrToLong (ptr, &t);
 
-	if ((len == -1) || (t < 0) || (t > 59))
-	    return DOSFALSE;
+        if ((len == -1) || (t < 0) || (t > 59))
+            return DOSFALSE;
 
-	min += t;
+        min += t;
 
-	ptr += len;
+        ptr += len;
 
-	if (*ptr != '\0')
-	{
-	    if (*ptr++ != ':')
-	        return DOSFALSE;
+        if (*ptr != '\0')
+        {
+            if (*ptr++ != ':')
+                return DOSFALSE;
 
-	    len = StrToLong (ptr, &t);
+            len = StrToLong (ptr, &t);
 
-	    if ((len == -1) || (t < 0) || (t > 59))
-	        return DOSFALSE;
+            if ((len == -1) || (t < 0) || (t > 59))
+                return DOSFALSE;
 
-	    tick = t * TICKS_PER_SECOND;
-	}
-	else
-	    tick = 0;
+            tick = t * TICKS_PER_SECOND;
+        }
+        else
+            tick = 0;
 
-	datetime->dat_Stamp.ds_Minute = min;
-	datetime->dat_Stamp.ds_Tick   = tick;
+        datetime->dat_Stamp.ds_Minute = min;
+        datetime->dat_Stamp.ds_Tick   = tick;
 
     }
 
@@ -391,14 +391,14 @@ int main (int argc, char ** argv)
     char timebuf[LEN_DATSTRING];
 
     if (argc >= 2)
-	date = argv[1];
+        date = argv[1];
     else
-	date = NULL;
+        date = NULL;
 
     if (argc >= 3)
-	time = argv[2];
+        time = argv[2];
     else
-	time = NULL;
+        time = NULL;
 
     dt.dat_StrDate = date;
     dt.dat_StrTime = time;
@@ -407,30 +407,30 @@ int main (int argc, char ** argv)
 
     if (!StrToDate (&dt))
     {
-	printf ("Cannot convert date/time\n");
-	return 10;
+        printf ("Cannot convert date/time\n");
+        return 10;
     }
     else
     {
-	printf ("Result: Days=%ld, Minute=%ld, Ticks=%ld\n"
-	    , dt.dat_Stamp.ds_Days
-	    , dt.dat_Stamp.ds_Minute
-	    , dt.dat_Stamp.ds_Tick
-	);
+        printf ("Result: Days=%ld, Minute=%ld, Ticks=%ld\n"
+            , dt.dat_Stamp.ds_Days
+            , dt.dat_Stamp.ds_Minute
+            , dt.dat_Stamp.ds_Tick
+        );
 
-	dt.dat_StrDay  = daybuf;
-	dt.dat_StrDate = datebuf;
-	dt.dat_StrTime = timebuf;
+        dt.dat_StrDay  = daybuf;
+        dt.dat_StrDate = datebuf;
+        dt.dat_StrTime = timebuf;
 
-	DateToStr (&dt);
+        DateToStr (&dt);
 
-	printf ("Gives: %s, %s %s\n", daybuf, datebuf, timebuf);
+        printf ("Gives: %s, %s %s\n", daybuf, datebuf, timebuf);
 
-	dt.dat_Flags   = DTF_SUBST;
+        dt.dat_Flags   = DTF_SUBST;
 
-	DateToStr (&dt);
+        DateToStr (&dt);
 
-	printf ("(With DTF_SUBST): %s, %s %s\n", daybuf, datebuf, timebuf);
+        printf ("(With DTF_SUBST): %s, %s %s\n", daybuf, datebuf, timebuf);
 
     }
 

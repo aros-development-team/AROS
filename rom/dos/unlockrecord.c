@@ -14,15 +14,15 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH3(BOOL, UnLockRecord,
+        AROS_LH3(BOOL, UnLockRecord,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR , fh, D1),
-	AROS_LHA(ULONG, offset, D2),
-	AROS_LHA(ULONG, length, D3),
+        AROS_LHA(BPTR , fh, D1),
+        AROS_LHA(ULONG, offset, D2),
+        AROS_LHA(ULONG, length, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 47, Dos)
+        struct DosLibrary *, DOSBase, 47, Dos)
 
 /*  FUNCTION
 
@@ -60,7 +60,7 @@
 
     if (fh == BNULL)
     {
-	return DOSFALSE;
+        return DOSFALSE;
     }
 
     status = dopacket3(DOSBase, NULL, fileH->fh_Type, ACTION_FREE_RECORD, fileH->fh_Arg1, offset, length);

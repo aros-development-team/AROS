@@ -39,7 +39,7 @@ void _ilsFreeVec(SIPTR *funcarray, void *buf);
         AROS_UFCA(ULONG, size,  D0), \
         AROS_UFCA(ULONG, flags, D1), \
         AROS_UFCA(struct ExecBase *, SysBase, A6) \
-    )				    
+    )                               
 
 #define ilsFreeMem(addr, size)          \
     AROS_UFC3NR                      \

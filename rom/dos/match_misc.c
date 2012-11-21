@@ -48,11 +48,11 @@ static void RemoveTrailingSlash(STRPTR s)
 
     if (len >= 2)
     {
-	if ((s[len - 1] == '/') &&
-	    ((s[len - 2] != '/') && (s[len - 2] != ':')))
-	{
-	    s[len - 1] = '\0';
-	}
+        if ((s[len - 1] == '/') &&
+            ((s[len - 2] != '/') && (s[len - 2] != ':')))
+        {
+            s[len - 1] = '\0';
+        }
     }
 }
 
@@ -84,16 +84,16 @@ Examples: [<???>] is one AChain
 **************************************************************************/
   
 LONG Match_BuildAChainList(CONST_STRPTR pattern, struct AnchorPath *ap,
-			   struct AChain **retac, struct DosLibrary *DOSBase)
+                           struct AChain **retac, struct DosLibrary *DOSBase)
 {
-    struct AChain 	*baseac = 0, *prevac = 0, *ac;
-    STRPTR 		patterncopy = 0;
-    STRPTR		patternstart, patternend, patternpos;
-    LONG 		len, error = 0;
-    WORD		comptype = COMPTYPE_UNKNOWN;
-    WORD		compcount = 0;
-    WORD		i;
-    UBYTE		c;
+    struct AChain       *baseac = 0, *prevac = 0, *ac;
+    STRPTR              patterncopy = 0;
+    STRPTR              patternstart, patternend, patternpos;
+    LONG                len, error = 0;
+    WORD                comptype = COMPTYPE_UNKNOWN;
+    WORD                compcount = 0;
+    WORD                i;
+    UBYTE               c;
 
     *retac = 0;
 
@@ -103,7 +103,7 @@ LONG Match_BuildAChainList(CONST_STRPTR pattern, struct AnchorPath *ap,
     if (!patterncopy)
     {
         error = ERROR_NO_FREE_STORE;
-	goto done;
+        goto done;
     }
     
     strcpy(patterncopy, pattern);
@@ -115,162 +115,162 @@ LONG Match_BuildAChainList(CONST_STRPTR pattern, struct AnchorPath *ap,
     patternpos = strchr(patterncopy, ':');
     if (!patternpos)
     {
-	comptype = COMPTYPE_UNKNOWN;
-	patternpos = patternstart;
-	patternend = patternstart;
+        comptype = COMPTYPE_UNKNOWN;
+        patternpos = patternstart;
+        patternend = patternstart;
     }
     else
     {
-	comptype = COMPTYPE_NORMAL;
-	patternend = patternpos++;
-	compcount = 1;
+        comptype = COMPTYPE_NORMAL;
+        patternend = patternpos++;
+        compcount = 1;
     }
 
     do
     {
-	for(;;)
-	{
-	    c = *patternpos;
-	    if (c == '/')
-	    {
-		if (comptype == COMPTYPE_UNKNOWN)
-		{
-		    comptype = COMPTYPE_NORMAL;
-		    patternend = patternpos;
-		}
-		else if (comptype == COMPTYPE_NORMAL)
-		{
-		    patternend = patternpos;
-		    compcount++;
-		}
-		if (comptype == COMPTYPE_PATTERN)
-		{
-		    patternend = patternpos;
-		    break;		
-		}
-	    }
-	    else if (c == '\0')
-	    {
-		if (comptype == COMPTYPE_UNKNOWN)
-		{
-		    comptype = COMPTYPE_NORMAL;
-		    patternend = patternpos;
-		    break;
-		}
-		if (comptype == COMPTYPE_NORMAL)
-		{
-		    compcount++;
-		    break;
-		}
-		patternend = patternpos;
-		break;
-	    }
-	    else if ((c == '#') ||
-		     (c == '~') ||
-		     (c == '[') ||
-		     (c == ']') ||
-		     (c == '?') ||
-		     (c == '*') ||
-		     (c == '(') ||
-		     (c == ')') ||
-		     (c == '|') ||
-		     (c == '%'))
-	    {
-		if (comptype == COMPTYPE_NORMAL)
-		{
-		    break;
-		}
-		comptype = COMPTYPE_PATTERN;
-	    }
-	    
-	    patternpos++;
+        for(;;)
+        {
+            c = *patternpos;
+            if (c == '/')
+            {
+                if (comptype == COMPTYPE_UNKNOWN)
+                {
+                    comptype = COMPTYPE_NORMAL;
+                    patternend = patternpos;
+                }
+                else if (comptype == COMPTYPE_NORMAL)
+                {
+                    patternend = patternpos;
+                    compcount++;
+                }
+                if (comptype == COMPTYPE_PATTERN)
+                {
+                    patternend = patternpos;
+                    break;              
+                }
+            }
+            else if (c == '\0')
+            {
+                if (comptype == COMPTYPE_UNKNOWN)
+                {
+                    comptype = COMPTYPE_NORMAL;
+                    patternend = patternpos;
+                    break;
+                }
+                if (comptype == COMPTYPE_NORMAL)
+                {
+                    compcount++;
+                    break;
+                }
+                patternend = patternpos;
+                break;
+            }
+            else if ((c == '#') ||
+                     (c == '~') ||
+                     (c == '[') ||
+                     (c == ']') ||
+                     (c == '?') ||
+                     (c == '*') ||
+                     (c == '(') ||
+                     (c == ')') ||
+                     (c == '|') ||
+                     (c == '%'))
+            {
+                if (comptype == COMPTYPE_NORMAL)
+                {
+                    break;
+                }
+                comptype = COMPTYPE_PATTERN;
+            }
+            
+            patternpos++;
 
-	} /* for(;;) */
+        } /* for(;;) */
 
-	len = (LONG)(patternend - patternstart + 2);
-	if (comptype == COMPTYPE_PATTERN) len = len * 2 + 2;
+        len = (LONG)(patternend - patternstart + 2);
+        if (comptype == COMPTYPE_PATTERN) len = len * 2 + 2;
 
-	ac = Match_AllocAChain(len, DOSBase);
-	if (!ac)
-	{
-	    error = ERROR_NO_FREE_STORE;
-	    goto done;
-	}
+        ac = Match_AllocAChain(len, DOSBase);
+        if (!ac)
+        {
+            error = ERROR_NO_FREE_STORE;
+            goto done;
+        }
 
-	if (comptype == COMPTYPE_NORMAL)
-	{
-	    if (*patternend == '\0')
-	    {
-		strcpy(ac->an_String, patternstart);
-	    } else {
-		c = patternend[1];
-		patternend[1] = '\0';
-		strcpy(ac->an_String, patternstart);
-		patternend[1] = c;
-	    }
-	    
-	} /* if (comptype == COMPTYPE_NORMAL) */
-	else
-	{
-	    if (*patternend == '\0')
-	    {
-		i = ParsePatternNoCase(patternstart, ac->an_String, len);
-		if (i == 0) 
-		{
-		    /* It is not a pattern, although we guessed it was one.
-		       Do the strcpy, otherwise we have uppercase stuff in
-		       ac->an_String because of ParsePatternNOCASE() */
-		    strcpy(ac->an_String, patternstart);
-		}
-	    }
-	    else
-	    {
-		c = patternend[1];
-		patternend[1] = '\0';
-		i = ParsePatternNoCase(patternstart, ac->an_String, len);
-		if (i == 0) 
-		{
-		    /* It is not a pattern, although we guessed it was one.
-		       Do the strcpy, otherwise we have uppercase stuff in
-		       ac->an_String because of ParsePatternNOCASE() */
-		    strcpy(ac->an_String, patternstart);
-		}
-		patternend[1] = c;
-	    }
-	    
-	    if (i == -1)
-	    {
-		error = ERROR_BAD_TEMPLATE;
-		Match_FreeAChain(ac, DOSBase);ac = 0;
-		goto done;
-	    }
-	    
-	    if (i)
-	    {
-	        ac->an_Flags |= DDF_PatternBit;
-		ap->ap_Flags |= APF_ITSWILD;
-	    }
-	    
-	} /* if (comptype == COMPTYPE_NORMAL) else ... */
+        if (comptype == COMPTYPE_NORMAL)
+        {
+            if (*patternend == '\0')
+            {
+                strcpy(ac->an_String, patternstart);
+            } else {
+                c = patternend[1];
+                patternend[1] = '\0';
+                strcpy(ac->an_String, patternstart);
+                patternend[1] = c;
+            }
+            
+        } /* if (comptype == COMPTYPE_NORMAL) */
+        else
+        {
+            if (*patternend == '\0')
+            {
+                i = ParsePatternNoCase(patternstart, ac->an_String, len);
+                if (i == 0) 
+                {
+                    /* It is not a pattern, although we guessed it was one.
+                       Do the strcpy, otherwise we have uppercase stuff in
+                       ac->an_String because of ParsePatternNOCASE() */
+                    strcpy(ac->an_String, patternstart);
+                }
+            }
+            else
+            {
+                c = patternend[1];
+                patternend[1] = '\0';
+                i = ParsePatternNoCase(patternstart, ac->an_String, len);
+                if (i == 0) 
+                {
+                    /* It is not a pattern, although we guessed it was one.
+                       Do the strcpy, otherwise we have uppercase stuff in
+                       ac->an_String because of ParsePatternNOCASE() */
+                    strcpy(ac->an_String, patternstart);
+                }
+                patternend[1] = c;
+            }
+            
+            if (i == -1)
+            {
+                error = ERROR_BAD_TEMPLATE;
+                Match_FreeAChain(ac, DOSBase);ac = 0;
+                goto done;
+            }
+            
+            if (i)
+            {
+                ac->an_Flags |= DDF_PatternBit;
+                ap->ap_Flags |= APF_ITSWILD;
+            }
+            
+        } /* if (comptype == COMPTYPE_NORMAL) else ... */
 
-	RemoveTrailingSlash(ac->an_String);
+        RemoveTrailingSlash(ac->an_String);
 
-	if (!prevac)
-	{
-	    baseac = ac;
-	}
-	else
-	{
-	    prevac->an_Child = ac;
-	    ac->an_Parent = prevac;
-	}
+        if (!prevac)
+        {
+            baseac = ac;
+        }
+        else
+        {
+            prevac->an_Child = ac;
+            ac->an_Parent = prevac;
+        }
 
-	prevac = ac;
+        prevac = ac;
 
-	patternpos = patternend;
-	comptype = COMPTYPE_UNKNOWN;
-	patternstart = patternend = patternpos + 1;
-	compcount = 0;
+        patternpos = patternend;
+        comptype = COMPTYPE_UNKNOWN;
+        patternstart = patternend = patternpos + 1;
+        compcount = 0;
 
     } while (*patternpos++ != '\0');
 
@@ -281,34 +281,34 @@ done:
     {
 #if MATCHFUNCS_NO_DUPLOCK
         /*
-	* No DupLock() here, because then we would have to UnLock it in
-	* MatchEnd and we would not know any valid lock to which we could
-	* CurrentDir after, because we must make sure there is a valid
-	* CurrentDir after MatchEnd.
-	*/
-	
+        * No DupLock() here, because then we would have to UnLock it in
+        * MatchEnd and we would not know any valid lock to which we could
+        * CurrentDir after, because we must make sure there is a valid
+        * CurrentDir after MatchEnd.
+        */
+        
         baseac->an_Lock = CurrentDir(0);
-	CurrentDir(baseac->an_Lock);
+        CurrentDir(baseac->an_Lock);
 #endif
-	
-	*retac = baseac;
+        
+        *retac = baseac;
     }
     else
     {
         ap->ap_Flags |= APF_NOMEMERR;
-	
-     	if (baseac)
-	{
-	    #define nextac prevac /* to not have to add another variable */
+        
+        if (baseac)
+        {
+            #define nextac prevac /* to not have to add another variable */
 
-	    ac = baseac;
-	    while(ac)
-	    {
-		nextac = ac->an_Child;
-		Match_FreeAChain(ac, DOSBase);
-		ac = nextac;
-	    }
-	}
+            ac = baseac;
+            while(ac)
+            {
+                nextac = ac->an_Child;
+                Match_FreeAChain(ac, DOSBase);
+                ac = nextac;
+            }
+        }
     }
 
     return error;}
@@ -325,18 +325,18 @@ LONG Match_MakeResult(struct AnchorPath *ap, struct DosLibrary *DOSBase)
     {
         struct AChain *ac;
 
-	ap->ap_Buf[0] = 0;
-	
-	for(ac = ap->ap_Base; (ac && !error); ac = ac->an_Child)
-	{
-	    if (!AddPart(ap->ap_Buf, 
-	    	    	 ((ac->an_Flags & DDF_PatternBit) ? ac->an_Info.fib_FileName : ac->an_String),
-			 ap->ap_Strlen))
-	    {
-	    	error = IoErr();
-	    }
-	}
-	
+        ap->ap_Buf[0] = 0;
+        
+        for(ac = ap->ap_Base; (ac && !error); ac = ac->an_Child)
+        {
+            if (!AddPart(ap->ap_Buf, 
+                         ((ac->an_Flags & DDF_PatternBit) ? ac->an_Info.fib_FileName : ac->an_String),
+                         ap->ap_Strlen))
+            {
+                error = IoErr();
+            }
+        }
+        
     }
 #else
     LONG error = 0;
@@ -344,16 +344,16 @@ LONG Match_MakeResult(struct AnchorPath *ap, struct DosLibrary *DOSBase)
     ap->ap_Info = ap->ap_Current->an_Info;
     if (ap->ap_Strlen)
     {
-	ap->ap_Buf[0] = 0;
-	if (NameFromLock(ap->ap_Current->an_Lock, ap->ap_Buf, ap->ap_Strlen))
-	{
-	    if (!AddPart(ap->ap_Buf, ap->ap_Current->an_Info.fib_FileName, ap->ap_Strlen))
-	    {
-		error = IoErr();
-	    }
-	} else {
-	    error = IoErr();
-	}
+        ap->ap_Buf[0] = 0;
+        if (NameFromLock(ap->ap_Current->an_Lock, ap->ap_Buf, ap->ap_Strlen))
+        {
+            if (!AddPart(ap->ap_Buf, ap->ap_Current->an_Info.fib_FileName, ap->ap_Strlen))
+            {
+                error = IoErr();
+            }
+        } else {
+            error = IoErr();
+        }
     }
 #endif
 
