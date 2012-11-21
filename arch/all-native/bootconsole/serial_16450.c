@@ -15,7 +15,7 @@
 
 #define SER_MAXBAUD 115200
 
-/* These settings can be kept accross warm reboots in kickstart */
+/* These settings can be kept across warm reboots in kickstart */
 unsigned short Serial_Base = 0x03F8;
 static unsigned int baudRate = 115200;
 

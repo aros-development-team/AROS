@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetRGB32()
@@ -25,7 +25,7 @@
 	struct GfxBase *, GfxBase, 150, Graphics)
 
 /*  FUNCTION
-	Fill the table with with the 32 bit fractional RGB values from the
+	Fill the table with the 32 bit fractional RGB values from the
 	given colormap.
 
     INPUTS

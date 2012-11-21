@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Array of Cities with their time difference to GMT
@@ -11,8 +11,8 @@
 
 struct CityType
 {
-  char  *city_name;
-  LONG         timediff;
+  char *city_name;
+  LONG timediff;
 };
 
 static const struct CityType CityArray[] =
@@ -29,7 +29,7 @@ static const struct CityType CityArray[] =
  {"Beijing", +800},
  {"Berlin", +100},
  {"Bombay", +530},
- {"Budapets", +100},
+ {"Budapest", +100},
  {"Buenos Aires", -300},
  {"Cairo", +200},
  {"Calcutta", +530},

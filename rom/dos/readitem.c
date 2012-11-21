@@ -78,7 +78,7 @@
 
 /*
  * WARNING!!!
- * As mentioned above, this code has some intentional (but not ovbious) bugs.
+ * As mentioned above, this code has some intentional (but not obvious) bugs.
  * They must not be fixed.
  * If you change something here, be sure that the code passes unit tests
  * in test/dos/readitem. Those unit tests are verified to pass on AmigaOS 3.1.

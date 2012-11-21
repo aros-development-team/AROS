@@ -128,7 +128,7 @@ struct ViewPortExtra
  * Color data itself is stored in two tables: ColorTable and LowColorBits.
  * These fields are actually pointer to arrays of UWORDs. Each UWORD corresponds
  * to one color.
- * Number of UWORDs in these array is equal to Count value in this structure.
+ * Number of UWORDs in these arrays is equal to Count value in this structure.
  * ColorTable stores upper nibbles of RGB values, LowColorBits stores low nibbles.
  *
  * Example:

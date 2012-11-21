@@ -628,7 +628,7 @@ static long GetValue(IPTR bufp, char **end)
         if ((c[0]=='-') || (c[0]=='+'))
 		c++;
         /*
-         * If it's a hexadecimal number, use strtoul(), otherwise we can lose our 31th bit.
+         * If it's a hexadecimal number, use strtoul(), otherwise we can lose our 31st bit.
          * Should be okay since i've never seen any usage of minus sign with hexadecimals.
          * For decimals we do support sign, because it makes it very convenient to use negative
          * masks for sign extension on 64 bits.

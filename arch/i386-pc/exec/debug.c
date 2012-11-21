@@ -266,7 +266,7 @@ int	get_irq_list(char *buf);
 			"TI - Show Active task info\n"
 			"RI - Show registers inside task's context\n"
 		    "AM xxxxxxxx yyyyyyyy - AllocVec - size=xxxxxxxx, "
-		    "requiments=yyyyyyyy\n"
+		    "requirements=yyyyyyyy\n"
 		    "FM xxxxxxxx - FreeVec from xxxxxxxx\n"
 		    "RB xxxxxxxx - read byte from xxxxxxxx\n"
 		    "RW xxxxxxxx - read word from xxxxxxxx\n"
