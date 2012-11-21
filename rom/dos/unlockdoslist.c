@@ -14,19 +14,19 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(void, UnLockDosList,
+        AROS_LH1(void, UnLockDosList,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, flags, D1),
+        AROS_LHA(ULONG, flags, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 110, Dos)
+        struct DosLibrary *, DOSBase, 110, Dos)
 
 /*  FUNCTION
-	Frees a lock on the dos lists given by LockDosList().
+        Frees a lock on the dos lists given by LockDosList().
 
     INPUTS
-	flags - the same value as given to LockDosList().
+        flags - the same value as given to LockDosList().
 
     RESULT
 
@@ -41,10 +41,10 @@
     INTERNALS
 
     HISTORY
-	04-06-07    sonic   - imported back from MorphOS source code
-			    - removed Permit()
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
+        04-06-07    sonic   - imported back from MorphOS source code
+                            - removed Permit()
+        29-10-95    digulla automatically created from
+                            dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
@@ -55,13 +55,13 @@
     D(bug("UnLockDosList: flags = $%lx\n", flags));
 
     if (flags & LDF_ALL)
-	ReleaseSemaphore(&di->di_DevLock);
+        ReleaseSemaphore(&di->di_DevLock);
 
     if (flags & LDF_ENTRY)
-	ReleaseSemaphore(&di->di_EntryLock);
+        ReleaseSemaphore(&di->di_EntryLock);
 
     if (flags & LDF_DELETE)
-	ReleaseSemaphore(&di->di_DeleteLock);
+        ReleaseSemaphore(&di->di_DeleteLock);
 
 /* This came from MorphOS. Left for reference.
     Permit(); */

@@ -12,8 +12,8 @@
 #include "dos_intern.h"
 
 static AROS_UFH3(void, FreeFunc,
-	AROS_UFHA(APTR, buffer, A1),
-	AROS_UFHA(ULONG, length, D0),
+        AROS_UFHA(APTR, buffer, A1),
+        AROS_UFHA(ULONG, length, D0),
         AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {

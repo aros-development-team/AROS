@@ -74,7 +74,7 @@
 
     typedef struct _segfunc_t
     {
-    	ULONG id;
+        ULONG id;
         BPTR (*func)(BPTR, BPTR, SIPTR *, LONG *, struct DosLibrary *);
         D(CONST_STRPTR format;)
     } segfunc_t;
@@ -92,23 +92,23 @@
     if (fh)
     {
         UBYTE i;
-	const UBYTE num_funcs = sizeof(funcs) / sizeof(funcs[0]);
-    	ULONG id;
-	LONG len;
+        const UBYTE num_funcs = sizeof(funcs) / sizeof(funcs[0]);
+        ULONG id;
+        LONG len;
 
-    	len = ilsRead(fh, &id, sizeof(id));
-	if (len == sizeof(id)) {
-	    id = AROS_BE2LONG(id);
-	    for (i = 0; i < num_funcs; i++) {
-		if (funcs[i].id == id) {
-		    segs = (*funcs[i].func)(fh, BNULL, (SIPTR *)funcarray,
-			stack, DOSBase);
-		    D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",
-			segs ? "Succeeded" : "FAILED", fh, funcs[i].format));
-		    return segs;
- 		}
- 	    }
- 	}
+        len = ilsRead(fh, &id, sizeof(id));
+        if (len == sizeof(id)) {
+            id = AROS_BE2LONG(id);
+            for (i = 0; i < num_funcs; i++) {
+                if (funcs[i].id == id) {
+                    segs = (*funcs[i].func)(fh, BNULL, (SIPTR *)funcarray,
+                        stack, DOSBase);
+                    D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",
+                        segs ? "Succeeded" : "FAILED", fh, funcs[i].format));
+                    return segs;
+                }
+            }
+        }
     }
 
     /* This routine can be called from partition.library, when
@@ -158,8 +158,8 @@ APTR _ilsAllocVec(SIPTR *funcarray, ULONG size, ULONG req)
 
     D(bug("allocmem %p %d\n", p, size));
     if (!p)
-    	return NULL;
-    	
+        return NULL;
+        
     /* Note that the result is ULONG-aligned even on 64 bits! */
     *((ULONG*)p) = (ULONG)size;
     return p + sizeof(ULONG);       
@@ -170,12 +170,12 @@ void _ilsFreeVec(SIPTR *funcarray, void *buf)
     UBYTE *p = (UBYTE*)buf;
     ULONG size;
     if (!buf)
-    	return;
+        return;
     p -= sizeof(ULONG);
     size = ((ULONG*)p)[0];
     D(bug("freemem %p %d\n", p, size));
     if (!size)
-    	return;
+        return;
 
     ilsFreeMem(p, size);
 }

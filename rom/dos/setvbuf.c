@@ -15,18 +15,18 @@
 #include <dos/stdio.h>
 #include <proto/dos.h>
 
-	AROS_LH4(LONG, SetVBuf,
+        AROS_LH4(LONG, SetVBuf,
 
 /*        SetVBuf -- set buffering modes and size */
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR  , file, D1),
-	AROS_LHA(STRPTR, buff, D2),
-	AROS_LHA(LONG  , type, D3),
-	AROS_LHA(LONG  , size, D4),
+        AROS_LHA(BPTR  , file, D1),
+        AROS_LHA(STRPTR, buff, D2),
+        AROS_LHA(LONG  , type, D3),
+        AROS_LHA(LONG  , size, D4),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 61, Dos)
+        struct DosLibrary *, DOSBase, 61, Dos)
 
 /*  FUNCTION
         Changes the buffering modes and buffer size for a filehandle.
@@ -79,8 +79,8 @@
             fh->fh_Flags = (fh->fh_Flags | FHF_NOBUF) & ~FHF_LINEBUF; 
             break;
         
-    	default:
-    	    return EOF;
+        default:
+            return EOF;
     }
 
     if (size >= 0)
@@ -105,9 +105,9 @@ vbuf_free(FileHandlePtr fh)
 {
     if (fh->fh_Flags & FHF_BUF)
     {
-	/* free buffer allocated by system */
-    	if (fh->fh_Flags & FHF_OWNBUF)
-	    FreeMem(BADDR(fh->fh_Buf), fh->fh_BufSize);
+        /* free buffer allocated by system */
+        if (fh->fh_Flags & FHF_OWNBUF)
+            FreeMem(BADDR(fh->fh_Buf), fh->fh_BufSize);
 
         fh->fh_Buf = BNULL;
         fh->fh_Pos = fh->fh_End = 0;
@@ -123,13 +123,13 @@ APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
     ULONG flags = FHF_BUF;
 
     if (size < 208)
-	size = 208;
+        size = 208;
 
     if (!buf)
     {
-    	buf = AllocMem(size, MEMF_ANY);
-    	fh->fh_OrigBuf = MKBADDR(buf);
-    	flags |= FHF_OWNBUF;
+        buf = AllocMem(size, MEMF_ANY);
+        fh->fh_OrigBuf = MKBADDR(buf);
+        flags |= FHF_OWNBUF;
     }
 
     if (NULL != buf)
@@ -138,7 +138,7 @@ APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size)
         fh->fh_Flags  |= flags;
         fh->fh_Buf     = MKBADDR(buf);
         fh->fh_Pos     = 0;
-	fh->fh_End     = (fh->fh_Flags & FHF_WRITE) ? fh->fh_BufSize : 0;
+        fh->fh_End     = (fh->fh_Flags & FHF_WRITE) ? fh->fh_BufSize : 0;
     }
 
     return buf;
@@ -150,7 +150,7 @@ BOOL vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
     STRPTR buf;
 
     if (!fh || !argptr)
-    	return FALSE;
+        return FALSE;
     fhinput = BADDR(fh);
 
     /* Handle the trivial case, where we have enough room 
@@ -189,16 +189,16 @@ BOOL vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG size, struct DosLibrary *DO
     buf = vbuf_alloc(fhinput, NULL, size);
     if (buf)
     {
-    	D(bug("[vbuf_inject] Handle 0x%p, buffer 0x%p, injecting string: %s, size: %u\n", fh, buf, argptr, size));
+        D(bug("[vbuf_inject] Handle 0x%p, buffer 0x%p, injecting string: %s, size: %u\n", fh, buf, argptr, size));
 
-	/* ugly hack */
-	fhinput->fh_Pos = 0;
-    	if (size > 0)
-    	{
-	    CopyMem(argptr, buf, size);
-	    DB2(bug("[vbuf_inject] Buffer contents:\n"); hexdump(buf, (IPTR)buf, size));
-	}
-	fhinput->fh_End = size;
+        /* ugly hack */
+        fhinput->fh_Pos = 0;
+        if (size > 0)
+        {
+            CopyMem(argptr, buf, size);
+            DB2(bug("[vbuf_inject] Buffer contents:\n"); hexdump(buf, (IPTR)buf, size));
+        }
+        fhinput->fh_End = size;
     }
 
     return TRUE;

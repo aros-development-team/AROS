@@ -13,14 +13,14 @@
 #include <dos/record.h>
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, LockRecords,
+        AROS_LH2(BOOL, LockRecords,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RecordLock *, recArray, D1),
-	AROS_LHA(ULONG              , timeout, D2),
+        AROS_LHA(struct RecordLock *, recArray, D1),
+        AROS_LHA(ULONG              , timeout, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 46, Dos)
+        struct DosLibrary *, DOSBase, 46, Dos)
 
 /*  FUNCTION
 
@@ -61,19 +61,19 @@
 
     while (BADDR(recArray->rec_FH) != NULL)
     {
-	BPTR temp;
+        BPTR temp;
 
-	if (!LockRecord(recArray->rec_FH, recArray->rec_Offset,
-			recArray->rec_Length, recArray->rec_Mode, timeout))
-	{
-	    temp = recArray->rec_FH;
-	    UnLockRecords(rLock);
-	    recArray->rec_FH = temp;
+        if (!LockRecord(recArray->rec_FH, recArray->rec_Offset,
+                        recArray->rec_Length, recArray->rec_Mode, timeout))
+        {
+            temp = recArray->rec_FH;
+            UnLockRecords(rLock);
+            recArray->rec_FH = temp;
 
-	    return DOSFALSE;
-	}
+            return DOSFALSE;
+        }
 
-	recArray++;
+        recArray++;
     }
 
     return DOSTRUE;

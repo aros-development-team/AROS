@@ -12,43 +12,43 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(struct MsgPort *, DeviceProc,
+        AROS_LH1(struct MsgPort *, DeviceProc,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(CONST_STRPTR, name, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 29, Dos)
+        struct DosLibrary *, DOSBase, 29, Dos)
 
 /*  FUNCTION
-	DeviceProc() is an obsolete function that returns the
-	MsgPort responsible for a DOS device.
+        DeviceProc() is an obsolete function that returns the
+        MsgPort responsible for a DOS device.
 
-	DeviceProc() will fail if you ask for the MsgPort of a device
-	created with AssignPath() as there is no process to return.
-	If the device requested is an assign, the IoErr() will contain
-	the Lock to the directory (the function will return the device
-	on which the lock is set).
+        DeviceProc() will fail if you ask for the MsgPort of a device
+        created with AssignPath() as there is no process to return.
+        If the device requested is an assign, the IoErr() will contain
+        the Lock to the directory (the function will return the device
+        on which the lock is set).
 
     INPUTS
-	name - The name of the DOS device, INCLUDING the ':'.
+        name - The name of the DOS device, INCLUDING the ':'.
 
     RESULT
-	Either a pointer to the MsgPort, or NULL.
+        Either a pointer to the MsgPort, or NULL.
 
     NOTES
-	You should really use GetDeviceProc(), as that function
-	returns a more useful structure (DevProc), that will
-	persist until FreeDeviceProc() is called on it.
+        You should really use GetDeviceProc(), as that function
+        returns a more useful structure (DevProc), that will
+        persist until FreeDeviceProc() is called on it.
 
     EXAMPLE
 
     BUGS
-	Does not support late- and non-bound assigns, or multiple
-	path assigns very well.
+        Does not support late- and non-bound assigns, or multiple
+        path assigns very well.
 
     SEE ALSO
-	GetDeviceProc(), FreeDeviceProc()
+        GetDeviceProc(), FreeDeviceProc()
 
     INTERNALS
 
@@ -68,14 +68,14 @@
      * can't return it as there's no cleanup function, so we have to error */
     if (dvp->dvp_Flags & DVPF_UNLOCK)
     {
-    	res = NULL;
-    	err = ERROR_DEVICE_NOT_MOUNTED;
+        res = NULL;
+        err = ERROR_DEVICE_NOT_MOUNTED;
     }
     else
     {
         /* all good. get the lock and device */
-    	res = dvp->dvp_Port;
-    	err = (SIPTR)dvp->dvp_Lock;
+        res = dvp->dvp_Port;
+        err = (SIPTR)dvp->dvp_Lock;
     }
 
     FreeDeviceProc(dvp);

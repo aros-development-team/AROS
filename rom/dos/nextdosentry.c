@@ -13,27 +13,27 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2I(struct DosList *, NextDosEntry,
+        AROS_LH2I(struct DosList *, NextDosEntry,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DosList *, dlist, D1),
-	AROS_LHA(ULONG           , flags, D2),
+        AROS_LHA(struct DosList *, dlist, D1),
+        AROS_LHA(ULONG           , flags, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 115, Dos)
+        struct DosLibrary *, DOSBase, 115, Dos)
 
 /*  FUNCTION
-	Looks for the next dos list entry with the right type. The list
-	must be locked for this.
+        Looks for the next dos list entry with the right type. The list
+        must be locked for this.
 
     INPUTS
-	dlist - the value given by LockDosList() or the last call to
-		FindDosEntry().
-	flags - the same flags as given to LockDosList() or a subset
-		of them.
+        dlist - the value given by LockDosList() or the last call to
+                FindDosEntry().
+        flags - the same flags as given to LockDosList() or a subset
+                of them.
 
     RESULT
-	Pointer to dos list entry found or NULL if the are no more entries.
+        Pointer to dos list entry found or NULL if the are no more entries.
 
     NOTES
 

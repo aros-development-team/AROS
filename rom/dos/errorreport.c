@@ -22,21 +22,21 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH4(BOOL, ErrorReport,
+        AROS_LH4(BOOL, ErrorReport,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG            , code  , D1),
-	AROS_LHA(LONG            , type  , D2),
-	AROS_LHA(IPTR            , arg1  , D3),
-	AROS_LHA(struct MsgPort *, device, D4),
+        AROS_LHA(LONG            , code  , D1),
+        AROS_LHA(LONG            , type  , D2),
+        AROS_LHA(IPTR            , arg1  , D3),
+        AROS_LHA(struct MsgPort *, device, D4),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 80, Dos)
+        struct DosLibrary *, DOSBase, 80, Dos)
 
 /*  FUNCTION
     Displays a requester with Retry/Cancel buttons for an error.
     IoErr() is set to "code".
-	
+        
     INPUTS
 
     code    --  The error to put up the requester for
@@ -44,8 +44,8 @@
 
                 REPORT_LOCK    --  arg1 is a lock (BPTR).
                 REPORT_FH      --  arg1 is a filehandle (BPTR).
-		REPORT_VOLUME  --  arg1 is a volumenode (C pointer).
-		REPORT_INSERT  --  arg1 is the string for the volumename
+                REPORT_VOLUME  --  arg1 is a volumenode (C pointer).
+                REPORT_INSERT  --  arg1 is the string for the volumename
 
     arg1    --  Argument according to type (see above)
     device  --  Optional handler task address (obsolete!)
@@ -53,7 +53,7 @@
     RESULT
     DOSFALSE - user has selected "Retry"
     DOSTRUE  - user has selected "Cancel" or code wasn't understood or
-	       pr_WindowPtr is -1 or if an attempt to open the requester fails.
+               pr_WindowPtr is -1 or if an attempt to open the requester fails.
 
     NOTES
 
@@ -174,7 +174,7 @@
             msgport = ((struct FileHandle *) BADDR(arg1))->fh_Type;
             dl = (struct DeviceList*)BADDR(dopacket1(DOSBase, NULL, msgport, ACTION_CURRENT_VOLUME, ((struct FileHandle *) BADDR(arg1))->fh_Arg1));
             if (dl)
-            	volname = (char*)BADDR(dl->dl_Name) + 1;
+                volname = (char*)BADDR(dl->dl_Name) + 1;
             break;
             
         case REPORT_TASK:
@@ -186,21 +186,21 @@
         {
             struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, 0);
             if (!fib)
-            	return DOSTRUE;
+                return DOSTRUE;
             /* if they provided a lock, just use it */
             if (arg1 != (IPTR)NULL) {
-            	msgport = ((struct FileLock *) BADDR(arg1))->fl_Task;
+                msgport = ((struct FileLock *) BADDR(arg1))->fl_Task;
             } else {
-            	msgport = device;
+                msgport = device;
             }
             if (dopacket2(DOSBase, NULL, msgport, ACTION_EXAMINE_OBJECT, arg1, (SIPTR)MKBADDR(fib))) {
-            	fixfib(fib);
-            	strncpy(buf, fib->fib_FileName, sizeof (buf) - 1);
-            	buf[sizeof(buf) - 1] = 0;
+                fixfib(fib);
+                strncpy(buf, fib->fib_FileName, sizeof (buf) - 1);
+                buf[sizeof(buf) - 1] = 0;
             }
             FreeDosObject(DOS_FIB, fib);
             if (buf[0] == 0)
-            	return DOSTRUE;
+                return DOSTRUE;
             volname = buf;
         }
         break;
@@ -220,7 +220,7 @@
             if (arg1 == (IPTR)NULL)
                 return DOSTRUE;
             if (!getpacketinfo(DOSBase, (STRPTR)arg1, &phs))
-            	return DOSTRUE;
+                return DOSTRUE;
             msgport = phs.port;
             volname = (STRPTR) arg1;
             /* rip off any trailing stuff, if its there */

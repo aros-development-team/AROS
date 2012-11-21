@@ -22,45 +22,45 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH4(LONG, RunCommand,
+        AROS_LH4(LONG, RunCommand,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,   segList,   D1),
-	AROS_LHA(ULONG,  stacksize, D2),
-	AROS_LHA(CONST_STRPTR, argptr,    D3),
-	AROS_LHA(ULONG,  argsize,   D4),
+        AROS_LHA(BPTR,   segList,   D1),
+        AROS_LHA(ULONG,  stacksize, D2),
+        AROS_LHA(CONST_STRPTR, argptr,    D3),
+        AROS_LHA(ULONG,  argsize,   D4),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 84, Dos)
+        struct DosLibrary *, DOSBase, 84, Dos)
 
 /*  FUNCTION
-	RunCommand() will run the command loaded in the |segList| with the
-	arguments specified with a new stack of |stacksize| bytes. Note
-	that the stacksize may be extended if this is required.
+        RunCommand() will run the command loaded in the |segList| with the
+        arguments specified with a new stack of |stacksize| bytes. Note
+        that the stacksize may be extended if this is required.
 
-	The return code of the command run will be returned.
+        The return code of the command run will be returned.
 
-	This call will not return until the command has completed.
+        This call will not return until the command has completed.
 
     INPUTS
-	segList		- segment of program to run.
-	stacksize	- size of the stack to use.
-	argptr		- pointer to NULL-terminated arguments.
-	argsize		- size of the arguments string.
+        segList         - segment of program to run.
+        stacksize       - size of the stack to use.
+        argptr          - pointer to NULL-terminated arguments.
+        argsize         - size of the arguments string.
 
     RESULT
-	The return code from the program. See also IoErr().
+        The return code from the program. See also IoErr().
 
     NOTES
-	Programs expect the argument string to end with a newline ('\n')
-	character (ReadArgs() requires it to work properly).
+        Programs expect the argument string to end with a newline ('\n')
+        character (ReadArgs() requires it to work properly).
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	SystemTagList()
+        SystemTagList()
 
     INTERNALS
 
@@ -83,11 +83,11 @@
     ASSERT_VALID_PROCESS(me);
 
     if(stacksize < AROS_STACKSIZE)
-	stacksize = AROS_STACKSIZE;
+        stacksize = AROS_STACKSIZE;
 
     stack=(UBYTE *)AllocMem(stacksize,MEMF_ANY);
     if(stack==NULL)
-	return -1;
+        return -1;
 
     sss.stk_Lower=stack;
     sss.stk_Upper=stack+stacksize;

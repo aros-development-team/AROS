@@ -17,38 +17,38 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH4(BOOL, Fault,
+        AROS_LH4(BOOL, Fault,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG,         code,   D1),
-	AROS_LHA(CONST_STRPTR, header, D2),
-	AROS_LHA(STRPTR,       buffer, D3),
-	AROS_LHA(LONG,         len,    D4),
+        AROS_LHA(LONG,         code,   D1),
+        AROS_LHA(CONST_STRPTR, header, D2),
+        AROS_LHA(STRPTR,       buffer, D3),
+        AROS_LHA(LONG,         len,    D4),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 78, Dos)
+        struct DosLibrary *, DOSBase, 78, Dos)
 
 /*  FUNCTION
-	Fault will obtain the error message string for the given error
-	code. First the header string is copied to the buffer, followed
-	by a ":" (colon), then the NULL terminated string for the error
-	message into the buffer.
+        Fault will obtain the error message string for the given error
+        code. First the header string is copied to the buffer, followed
+        by a ":" (colon), then the NULL terminated string for the error
+        message into the buffer.
 
-	By convention, error messages are ALWAYS less than 80 (plus 1 for
-	NULL termination), and ideally less than 60 characters.
+        By convention, error messages are ALWAYS less than 80 (plus 1 for
+        NULL termination), and ideally less than 60 characters.
 
-	If the error code is not know, then the string "Unknown error"
-	followed by the error number will be added to the string.
+        If the error code is not know, then the string "Unknown error"
+        followed by the error number will be added to the string.
 
     INPUTS
-	code	-   The error code.
-	header	-   The string to prepend to the buffer before the error
-		    text. This may be NULL in which case nothing is prepended.
-	buffer	-   The destination buffer.
-	len	-   Length of the buffer.
+        code    -   The error code.
+        header  -   The string to prepend to the buffer before the error
+                    text. This may be NULL in which case nothing is prepended.
+        buffer  -   The destination buffer.
+        len     -   Length of the buffer.
 
     RESULT
-	Number of characters placed in the buffer, may be 0.
+        Number of characters placed in the buffer, may be 0.
 
     NOTES
 
@@ -69,8 +69,8 @@
 
     if (code == 0)
     {
-	*buffer = '\0';
-	return 0;
+        *buffer = '\0';
+        return 0;
     }
 
     /* Do this to make sure there is room for a NULL terminator */
@@ -78,62 +78,62 @@
 
     if (header)
     {
-	while((index < len) && *header)
-	{
-	    buffer[index++] = *header++;
-	}
+        while((index < len) && *header)
+        {
+            buffer[index++] = *header++;
+        }
 
-	buffer[index++] = ':';
-	buffer[index++] = ' ';
+        buffer[index++] = ':';
+        buffer[index++] = ' ';
     }
 
     theString = DosGetString(code);
 #if PassThroughErrnos
     if ((!theString) && (code & PassThroughErrnos))
     {
-	theString = strerror (code ^ PassThroughErrnos);
+        theString = strerror (code ^ PassThroughErrnos);
     }
 #endif
     if(theString)
     {
-	while((index < len) && *theString)
-	{
-	    buffer[index++] = *theString++;
-	}
+        while((index < len) && *theString)
+        {
+            buffer[index++] = *theString++;
+        }
     }
     else
     {
-	/* String buffer/index for long 2 string */
-	UBYTE l2str[12], l2idx = 11;
+        /* String buffer/index for long 2 string */
+        UBYTE l2str[12], l2idx = 11;
 
-	theString = "Error";
-	while((index < len) && *theString)
-	{
-	    buffer[index++] = *theString++;
-	}
+        theString = "Error";
+        while((index < len) && *theString)
+        {
+            buffer[index++] = *theString++;
+        }
 
-	/* If the number is negative, whack in a - sign. */
-	if(code < 0)
-	{
-	    code = -code;
-	    buffer[index++] = '-';
-	}
+        /* If the number is negative, whack in a - sign. */
+        if(code < 0)
+        {
+            code = -code;
+            buffer[index++] = '-';
+        }
 
-	/* Convert the number to a string, I work backwards, its easier */
-	l2str[l2idx--] = '\0';
-	while(code != 0)
-	{
-	    l2str[l2idx--] = (code % 10) + '0';
-	    code /= 10;
-	}
+        /* Convert the number to a string, I work backwards, its easier */
+        l2str[l2idx--] = '\0';
+        while(code != 0)
+        {
+            l2str[l2idx--] = (code % 10) + '0';
+            code /= 10;
+        }
 
-	l2str[l2idx] = ' ';
+        l2str[l2idx] = ' ';
 
-	/* Copy the number onto the fault string */
-	while((index < len) && l2str[l2idx])
-	{
-	    buffer[index++] = l2str[l2idx++];
-	}
+        /* Copy the number onto the fault string */
+        while((index < len) && l2str[l2idx])
+        {
+            buffer[index++] = l2str[l2idx++];
+        }
     }
     buffer[index] = '\0';
     return (len - index + 1);

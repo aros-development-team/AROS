@@ -26,19 +26,19 @@ LONG InternalFlush( struct FileHandle *fh, struct DosLibrary *DOSBase )
 
     while( position < fh->fh_Pos )
     {
-    	LONG size;
+        LONG size;
     
-    	size = Write( MKBADDR(fh), BADDR(fh->fh_Buf) + position, fh->fh_Pos - position );
+        size = Write( MKBADDR(fh), BADDR(fh->fh_Buf) + position, fh->fh_Pos - position );
     
-    	/* An error happened? No success. */
-    	if( size < 0 )
-    	{
-    	    fh->fh_Flags &= ~FHF_WRITE;
+        /* An error happened? No success. */
+        if( size < 0 )
+        {
+            fh->fh_Flags &= ~FHF_WRITE;
     
-    	    return FALSE;
-    	}
+            return FALSE;
+        }
     
-    	position += size;
+        position += size;
     }
     
     /* Reset the buffer. */

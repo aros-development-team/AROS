@@ -11,13 +11,13 @@
 
 static void BSTR2CINLINE(char *s)
 {
-	UBYTE len = s[0];
-	memmove(s, s + 1, len);
-	s[len] = 0;
+        UBYTE len = s[0];
+        memmove(s, s + 1, len);
+        s[len] = 0;
 }
 
 void fixfib(struct FileInfoBlock *fib)
 {
-	BSTR2CINLINE(fib->fib_FileName);
-	BSTR2CINLINE(fib->fib_Comment);
+        BSTR2CINLINE(fib->fib_FileName);
+        BSTR2CINLINE(fib->fib_Comment);
 }

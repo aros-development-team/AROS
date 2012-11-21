@@ -39,7 +39,7 @@ const struct Resident Dos_resident =
     RTC_MATCHWORD,
     (struct Resident *)&Dos_resident,
     (APTR)&LIBEND,
-    0,			/* We don't autoinit */
+    0,                  /* We don't autoinit */
     VERSION_NUMBER,
     NT_LIBRARY,
     RESIDENTPRI,
@@ -77,45 +77,45 @@ static void init_fs(struct DosLibrary *DOSBase)
         CloseLibrary(PartitionBase);
     }
 
-   	/*
-   	 * Set dl_Root->rn_FileHandlerSegment to the AFS handler,
-   	 * if it's been loaded. Otherwise, use the first handler
-   	 * on the FileSystemResource list that has fse_PatchFlags
-   	 * set to mark it with a valid SegList
-   	 */
-   	if ((fsr = OpenResource("FileSystem.resource")))
-   	{
+        /*
+         * Set dl_Root->rn_FileHandlerSegment to the AFS handler,
+         * if it's been loaded. Otherwise, use the first handler
+         * on the FileSystemResource list that has fse_PatchFlags
+         * set to mark it with a valid SegList
+         */
+        if ((fsr = OpenResource("FileSystem.resource")))
+        {
         struct FileSysEntry *fse;
-   	    BPTR defseg = BNULL;
-   	    const ULONG DosMagic = 0x444f5301; /* DOS\001 */
+            BPTR defseg = BNULL;
+            const ULONG DosMagic = 0x444f5301; /* DOS\001 */
 
-   	    ForeachNode(&fsr->fsr_FileSysEntries, fse)
-   	    {
-   	        if ((fse->fse_PatchFlags & FSEF_SEGLIST) && fse->fse_SegList)
-   	        {
-	            /* We prefer DOS\001 */
+            ForeachNode(&fsr->fsr_FileSysEntries, fse)
+            {
+                if ((fse->fse_PatchFlags & FSEF_SEGLIST) && fse->fse_SegList)
+                {
+                    /* We prefer DOS\001 */
                 if (fse->fse_DosType == DosMagic)
-   	            {
-   	            	defseg = fse->fse_SegList;
-   	                break;
-   	            }
-    	        /* This will remember the first defined seglist */
-   	    	    if (!defseg)
-   	    	        defseg = fse->fse_SegList;
-   	    	}
-   	    }
+                    {
+                        defseg = fse->fse_SegList;
+                        break;
+                    }
+                /* This will remember the first defined seglist */
+                    if (!defseg)
+                        defseg = fse->fse_SegList;
+                }
+            }
         DOSBase->dl_Root->rn_FileHandlerSegment = defseg;
         /* Add all that have both Handler and SegList defined to the Resident list */
         ForeachNode(&fsr->fsr_FileSysEntries, fse)
         {
-   	    	if ((fse->fse_PatchFlags & FSEF_HANDLER) &&
-   	            (fse->fse_PatchFlags & FSEF_SEGLIST) &&
-   	            (fse->fse_Handler != BNULL) &&
-   	            (fse->fse_SegList != BNULL))
-   	        {
-   	            D(bug("[DosInit] Adding \"%b\" (%p) at %p to the resident list\n",
-   	                fse->fse_Handler, BADDR(fse->fse_Handler), BADDR(fse->fse_SegList)));
-   	            AddSegment(AROS_BSTR_ADDR(fse->fse_Handler), fse->fse_SegList, CMD_SYSTEM);
+                if ((fse->fse_PatchFlags & FSEF_HANDLER) &&
+                    (fse->fse_PatchFlags & FSEF_SEGLIST) &&
+                    (fse->fse_Handler != BNULL) &&
+                    (fse->fse_SegList != BNULL))
+                {
+                    D(bug("[DosInit] Adding \"%b\" (%p) at %p to the resident list\n",
+                        fse->fse_Handler, BADDR(fse->fse_Handler), BADDR(fse->fse_SegList)));
+                    AddSegment(AROS_BSTR_ADDR(fse->fse_Handler), fse->fse_SegList, CMD_SYSTEM);
             }
         }
     }
@@ -150,113 +150,113 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
 
     if (!DOSBase)
     {
-	IPTR *taskarray;
-	struct DosInfo *dosinfo;
+        IPTR *taskarray;
+        struct DosInfo *dosinfo;
 
-	D(bug("[DosInit] Creating dos.library...\n"));
+        D(bug("[DosInit] Creating dos.library...\n"));
 
-    	DOSBase = (struct DosLibrary *)MakeLibrary(GM_UNIQUENAME(FuncTable), NULL, NULL, sizeof(struct IntDosBase), BNULL);
-    	if (!DOSBase)
-    	    return NULL;
+        DOSBase = (struct DosLibrary *)MakeLibrary(GM_UNIQUENAME(FuncTable), NULL, NULL, sizeof(struct IntDosBase), BNULL);
+        if (!DOSBase)
+            return NULL;
 
-	/* Initialize our header */
-	DOSBase->dl_lib.lib_Node.ln_Name = MOD_NAME_STRING;
-	DOSBase->dl_lib.lib_Node.ln_Type = NT_LIBRARY;
-	DOSBase->dl_lib.lib_Node.ln_Pri  = RESIDENTPRI;
-	DOSBase->dl_lib.lib_Version      = VERSION_NUMBER;
-	DOSBase->dl_lib.lib_Revision     = REVISION_NUMBER;
-	DOSBase->dl_lib.lib_IdString     = (char *)&version[6];
-	DOSBase->dl_lib.lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
+        /* Initialize our header */
+        DOSBase->dl_lib.lib_Node.ln_Name = MOD_NAME_STRING;
+        DOSBase->dl_lib.lib_Node.ln_Type = NT_LIBRARY;
+        DOSBase->dl_lib.lib_Node.ln_Pri  = RESIDENTPRI;
+        DOSBase->dl_lib.lib_Version      = VERSION_NUMBER;
+        DOSBase->dl_lib.lib_Revision     = REVISION_NUMBER;
+        DOSBase->dl_lib.lib_IdString     = (char *)&version[6];
+        DOSBase->dl_lib.lib_Flags        = LIBF_SUMUSED|LIBF_CHANGED;
 
-	/*
-	 * These two are allocated together with DOSBase, for reduced fragmentation.
-	 * Structure pointed to by dl_Errors is intentionally read-write - who knows...
-	 */
-	DOSBase->dl_Root   = &((struct IntDosBase *)DOSBase)->rootNode;
-	DOSBase->dl_Errors = &((struct IntDosBase *)DOSBase)->errors;
+        /*
+         * These two are allocated together with DOSBase, for reduced fragmentation.
+         * Structure pointed to by dl_Errors is intentionally read-write - who knows...
+         */
+        DOSBase->dl_Root   = &((struct IntDosBase *)DOSBase)->rootNode;
+        DOSBase->dl_Errors = &((struct IntDosBase *)DOSBase)->errors;
 
-	DOSBase->dl_Errors->estr_Nums    = (LONG *)err_Numbers;
-	DOSBase->dl_Errors->estr_Strings = (STRPTR)err_Strings;
+        DOSBase->dl_Errors->estr_Nums    = (LONG *)err_Numbers;
+        DOSBase->dl_Errors->estr_Strings = (STRPTR)err_Strings;
 
-	/* Init the RootNode structure */
-	dosinfo = AllocMem(sizeof(struct DosInfo), MEMF_PUBLIC|MEMF_CLEAR);
-	if (!dosinfo)
-	{
-	    DosExpunge(DOSBase);
-	    return NULL;
-	}
+        /* Init the RootNode structure */
+        dosinfo = AllocMem(sizeof(struct DosInfo), MEMF_PUBLIC|MEMF_CLEAR);
+        if (!dosinfo)
+        {
+            DosExpunge(DOSBase);
+            return NULL;
+        }
 
-	DOSBase->dl_Root->rn_Info = MKBADDR(dosinfo);
+        DOSBase->dl_Root->rn_Info = MKBADDR(dosinfo);
 
-	taskarray = AllocMem(sizeof(IPTR) + sizeof(APTR) * 20, MEMF_CLEAR);
-	if (!taskarray)
-	{
-	    DosExpunge(DOSBase);
-	    return NULL;
-	}
+        taskarray = AllocMem(sizeof(IPTR) + sizeof(APTR) * 20, MEMF_CLEAR);
+        if (!taskarray)
+        {
+            DosExpunge(DOSBase);
+            return NULL;
+        }
 
-	taskarray[0] = 20;
-	DOSBase->dl_Root->rn_TaskArray = MKBADDR(taskarray);
+        taskarray[0] = 20;
+        DOSBase->dl_Root->rn_TaskArray = MKBADDR(taskarray);
 
-	NEWLIST((struct List *)&DOSBase->dl_Root->rn_CliList);
-	InitSemaphore(&DOSBase->dl_Root->rn_RootLock);
+        NEWLIST((struct List *)&DOSBase->dl_Root->rn_CliList);
+        InitSemaphore(&DOSBase->dl_Root->rn_RootLock);
 
-	InitSemaphore(&dosinfo->di_DevLock);
-	InitSemaphore(&dosinfo->di_EntryLock);
-	InitSemaphore(&dosinfo->di_DeleteLock);
+        InitSemaphore(&dosinfo->di_DevLock);
+        InitSemaphore(&dosinfo->di_EntryLock);
+        InitSemaphore(&dosinfo->di_DeleteLock);
 
-    	/* Initialize for Stricmp */
-    	DOSBase->dl_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
-    	if (!DOSBase->dl_UtilityBase)
-    	{
-    	    DosExpunge(DOSBase);
-    	    return NULL;
-    	}
+        /* Initialize for Stricmp */
+        DOSBase->dl_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+        if (!DOSBase->dl_UtilityBase)
+        {
+            DosExpunge(DOSBase);
+            return NULL;
+        }
 
-	/* Initialize for the fools that illegally used this field */
-	DOSBase->dl_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
+        /* Initialize for the fools that illegally used this field */
+        DOSBase->dl_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
 
-    	/*
-     	 * iaint:
-     	 * I know this is bad, but I also know that the timer.device
-     	 * will never go away during the life of dos.library. I also
-     	 * don't intend to make any I/O calls using this.
-     	 *
-     	 * I also know that timer.device does exist in the device list
-     	 * at this point in time.
-     	 *
-     	 * I can't allocate a timerequest/MsgPort pair here anyway,
-     	 * because I need a separate one for each caller to Delay().
-     	 * However, CreateIORequest() will fail if MsgPort == NULL, so we
-     	 * supply some dummy value.
-     	 */
-    	DOSBase->dl_TimeReq = CreateIORequest((APTR)0xC0DEBAD0, sizeof(struct timerequest));
-    	if (!DOSBase->dl_TimeReq)
-    	{
-    	    DosExpunge(DOSBase);
-    	    return NULL;
-    	}
+        /*
+         * iaint:
+         * I know this is bad, but I also know that the timer.device
+         * will never go away during the life of dos.library. I also
+         * don't intend to make any I/O calls using this.
+         *
+         * I also know that timer.device does exist in the device list
+         * at this point in time.
+         *
+         * I can't allocate a timerequest/MsgPort pair here anyway,
+         * because I need a separate one for each caller to Delay().
+         * However, CreateIORequest() will fail if MsgPort == NULL, so we
+         * supply some dummy value.
+         */
+        DOSBase->dl_TimeReq = CreateIORequest((APTR)0xC0DEBAD0, sizeof(struct timerequest));
+        if (!DOSBase->dl_TimeReq)
+        {
+            DosExpunge(DOSBase);
+            return NULL;
+        }
 
-    	if (OpenDevice("timer.device", UNIT_VBLANK, &DOSBase->dl_TimeReq->tr_node, 0))
-    	{
-    	    DeleteIORequest(DOSBase->dl_TimeReq);
-    	    DOSBase->dl_TimeReq = NULL;
-    	    DosExpunge(DOSBase);
-    	    return NULL;
-    	}
+        if (OpenDevice("timer.device", UNIT_VBLANK, &DOSBase->dl_TimeReq->tr_node, 0))
+        {
+            DeleteIORequest(DOSBase->dl_TimeReq);
+            DOSBase->dl_TimeReq = NULL;
+            DosExpunge(DOSBase);
+            return NULL;
+        }
 
-	/* Call platform-specific init code (if any) */
-    	if (!set_call_libfuncs(SETNAME(INITLIB), 1, 1, DOSBase))
-    	{
-    	    DosExpunge(DOSBase);
-    	    return NULL;
-    	}
+        /* Call platform-specific init code (if any) */
+        if (!set_call_libfuncs(SETNAME(INITLIB), 1, 1, DOSBase))
+        {
+            DosExpunge(DOSBase);
+            return NULL;
+        }
 
-	/* debug.library is optional, so don't check result */
-	DebugBase = OpenLibrary("debug.library", 0);
+        /* debug.library is optional, so don't check result */
+        DebugBase = OpenLibrary("debug.library", 0);
 
-	/* Initialization finished */
-	AddLibrary(&DOSBase->dl_lib);
+        /* Initialization finished */
+        AddLibrary(&DOSBase->dl_lib);
 
     init_fs(DOSBase);
    }
@@ -264,13 +264,13 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
    /* Try to boot */
    if (CliInit(NULL) == RETURN_OK)
    {
-	/*
-	 * We now restart the multitasking - this is done
-	 * automatically by RemTask() when it switches.
-	 */
-	RemTask(NULL);
+        /*
+         * We now restart the multitasking - this is done
+         * automatically by RemTask() when it switches.
+         */
+        RemTask(NULL);
 
-	/* We really really shouldn't ever get to this line. */
+        /* We really really shouldn't ever get to this line. */
     }
 
     DosExpunge(DOSBase);
@@ -305,19 +305,19 @@ static void DosExpunge(struct DosLibrary *DOSBase)
 
     if (DOSBase->dl_lib.lib_OpenCnt)
     {
-    	/*
-    	 * Someone is holding us... Perhaps some handler started subprocess
-    	 * which didn't quit. Who knows...
-    	 */
-    	D(bug("[DosInit] Open count is %d, can't expunge\n"));
-    	return;
+        /*
+         * Someone is holding us... Perhaps some handler started subprocess
+         * which didn't quit. Who knows...
+         */
+        D(bug("[DosInit] Open count is %d, can't expunge\n"));
+        return;
     }
 
     /* Call platform-specific expunge code (if any) */
     if (!set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 1, DOSBase))
     {
-    	D(bug("[DosInit] Platform-dependent code failed to expunge\n"));
-    	return;
+        D(bug("[DosInit] Platform-dependent code failed to expunge\n"));
+        return;
     }
 
     /* Close some libraries */
@@ -328,19 +328,19 @@ static void DosExpunge(struct DosLibrary *DOSBase)
     /* Free the timer device */
     if (DOSBase->dl_TimeReq)
     {
-    	CloseDevice(&DOSBase->dl_TimeReq->tr_node);
-    	DeleteIORequest(DOSBase->dl_TimeReq);
+        CloseDevice(&DOSBase->dl_TimeReq->tr_node);
+        DeleteIORequest(DOSBase->dl_TimeReq);
     }
 
     if (dinfo)
     {
-    	/* Remove all segments */
-    	for (seg = BADDR(dinfo->di_ResList); seg != NULL; seg = stmp)
-    	{
+        /* Remove all segments */
+        for (seg = BADDR(dinfo->di_ResList); seg != NULL; seg = stmp)
+        {
             stmp = BADDR(seg->seg_Next);
             FreeVec(seg);
-    	}
-    	FreeMem(dinfo, sizeof(*dinfo));
+        }
+        FreeMem(dinfo, sizeof(*dinfo));
     }
 
     /* Free memory */
@@ -348,11 +348,11 @@ static void DosExpunge(struct DosLibrary *DOSBase)
 
     if (DOSBase->dl_lib.lib_Node.ln_Succ)
     {
-    	/*
-    	 * A fresh DOSBase after creation is filled with NULLs.
-    	 * ln_Succ will be set to something only after AddLibrary().
-    	 */
-	Remove(&DOSBase->dl_lib.lib_Node);
+        /*
+         * A fresh DOSBase after creation is filled with NULLs.
+         * ln_Succ will be set to something only after AddLibrary().
+         */
+        Remove(&DOSBase->dl_lib.lib_Node);
     }
 
     FreeMem((char *)DOSBase - DOSBase->dl_lib.lib_NegSize, DOSBase->dl_lib.lib_NegSize + DOSBase->dl_lib.lib_PosSize);

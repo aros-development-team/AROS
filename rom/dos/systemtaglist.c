@@ -24,14 +24,14 @@
 
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, SystemTagList,
+        AROS_LH2(LONG, SystemTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR    , command, D1),
-	AROS_LHA(struct TagItem *, tags,    D2),
+        AROS_LHA(CONST_STRPTR    , command, D1),
+        AROS_LHA(struct TagItem *, tags,    D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 101, Dos)
+        struct DosLibrary *, DOSBase, 101, Dos)
 
 /*  FUNCTION
 
@@ -44,19 +44,19 @@
     that conflict with SystemTagList(). Currently, these are
 
         NP_Seglist
-	NP_FreeSeglist
-	NP_Entry
-	NP_Input
-	NP_Error
-	NP_Output
-	NP_CloseInput
-	NP_CloseOutput
-	NP_CloseError
-	NP_HomeDir
-	NP_Cli
+        NP_FreeSeglist
+        NP_Entry
+        NP_Input
+        NP_Error
+        NP_Output
+        NP_CloseInput
+        NP_CloseOutput
+        NP_CloseError
+        NP_HomeDir
+        NP_Cli
         NP_Arguments
-	NP_Synchrounous
-	NP_UserData
+        NP_Synchrounous
+        NP_UserData
 
 
     INPUTS
@@ -135,48 +135,48 @@
 
     while ((tag = NextTagItem(&tags2)))
     {
-    	D(bug("Tag=%08x Data=%08x\n", tag->ti_Tag, tag->ti_Data));
+        D(bug("Tag=%08x Data=%08x\n", tag->ti_Tag, tag->ti_Data));
         switch (tag->ti_Tag)
-	{
-	    case SYS_ScriptInput:
-	        cis = (BPTR)tag->ti_Data;
-	        break;
+        {
+            case SYS_ScriptInput:
+                cis = (BPTR)tag->ti_Data;
+                break;
 
-	    case SYS_Input:
-	        sis = (BPTR)tag->ti_Data;
-		break;
+            case SYS_Input:
+                sis = (BPTR)tag->ti_Data;
+                break;
 
-	    case SYS_Output:
-	        sos = (BPTR)tag->ti_Data;
-		break;
+            case SYS_Output:
+                sos = (BPTR)tag->ti_Data;
+                break;
 
-	    case SYS_Error:
-	        ses = (BPTR)tag->ti_Data;
-		break;
+            case SYS_Error:
+                ses = (BPTR)tag->ti_Data;
+                break;
 
-	    case SYS_CustomShell:
-	        resShell = (STRPTR)tag->ti_Data;
-	        isCustom = TRUE;
-	        isCLI   = FALSE;
-		break;
+            case SYS_CustomShell:
+                resShell = (STRPTR)tag->ti_Data;
+                isCustom = TRUE;
+                isCLI   = FALSE;
+                break;
 
             case SYS_UserShell:
-	        isBoot = !tag->ti_Data;
-	        isCustom = FALSE;
-	        break;
+                isBoot = !tag->ti_Data;
+                isCustom = FALSE;
+                break;
 
-	    case SYS_Asynch:
-		isAsynch = tag->ti_Data ? TRUE : FALSE;
-		break;
+            case SYS_Asynch:
+                isAsynch = tag->ti_Data ? TRUE : FALSE;
+                break;
 
-	    case SYS_Background:
-		isBackground = tag->ti_Data ? TRUE : FALSE;
-		break;
+            case SYS_Background:
+                isBackground = tag->ti_Data ? TRUE : FALSE;
+                break;
 
-	    case SYS_CliType:
-		cliType = (LONG)tag->ti_Data;
-		break;
-	}
+            case SYS_CliType:
+                cliType = (LONG)tag->ti_Data;
+                break;
+        }
     }
 
     /* Validate cliType */
@@ -214,9 +214,9 @@
     if (sis == (BPTR)SYS_DupStream)
     {
         sis = OpenFromLock(DupLockFromFH(Input()));
-	if (!sis) goto end;
+        if (!sis) goto end;
 
-	sis_opened = TRUE;
+        sis_opened = TRUE;
     }
     if (sis == BNULL) {
         sis = Open("NIL:", MODE_OLDFILE);
@@ -233,18 +233,18 @@
     if (sos == (BPTR)SYS_DupStream)
     {
         sos = OpenFromLock(DupLockFromFH(Output()));
-	if (!sos) goto end;
+        if (!sos) goto end;
 
-	sos_opened = TRUE;
+        sos_opened = TRUE;
     }
     D(bug("[SystemTagList] cli_StandardOutput: %p\n", sos));
 
     if (ses == (BPTR)SYS_DupStream)
     {
         ses = OpenFromLock(DupLockFromFH(me->pr_CES));
-	if (!ses) goto end;
+        if (!ses) goto end;
 
-	ses_opened = TRUE;
+        ses_opened = TRUE;
     }
     D(bug("[SystemTagList] cli_StandardError: %p\n", ses));
 
@@ -277,16 +277,16 @@
 
     /* Load the shell */
     if (!isCustom) {
-    	/* Seglist of default shell is stored in RootNode when loaded */
-    	if (isCLI)
-    	    shellseg = findseg_cli(isBoot, DOSBase);
+        /* Seglist of default shell is stored in RootNode when loaded */
+        if (isCLI)
+            shellseg = findseg_cli(isBoot, DOSBase);
         else
-    	    shellseg = findseg_shell(isBoot, DOSBase);
-    	/*
-    	 * Set shell process name.
-    	 */
-    	if (isCLI)
-    	    shellName = "CLI";
+            shellseg = findseg_shell(isBoot, DOSBase);
+        /*
+         * Set shell process name.
+         */
+        if (isCLI)
+            shellName = "CLI";
         else
             shellName = "Shell";
     } else if (resShell != BNULL) {
@@ -336,59 +336,59 @@
     newtags = CloneTagItems(tags);
     if (newtags)
     {
-	struct Process *cliproc;
+        struct Process *cliproc;
 
-	struct TagItem proctags[] =
-	{
-	    { NP_Priority   , me->pr_Task.tc_Node.ln_Pri    }, /* 0  */
-	    { NP_Name       , (IPTR)shellName               }, /* 1  */
-	    { NP_Input      , (IPTR)BNULL                   }, /* 2  */
-	    { NP_Output     , (IPTR)BNULL                   }, /* 3  */
-	    { NP_Error      , (IPTR)ses                     }, /* 4  */
-	    { NP_CloseInput , FALSE                         }, /* 5  */
-	    { NP_CloseOutput, FALSE                         }, /* 6  */
-	    { NP_CloseError , (isAsynch || ses_opened)
-	                              ? TRUE : FALSE,       }, /* 7  */
-	    { NP_Cli        , (cliType == CLI_NEWCLI)
-	                              ?  TRUE : FALSE       }, /* 8  */
-	    { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
-	                      (IPTR)me->pr_WindowPtr        }, /* 9  */
-	    { NP_Seglist    , (IPTR)shellseg                }, /* 10 */
-	    { NP_FreeSeglist, FALSE                         }, /* 11 */
-	    { NP_Synchronous, FALSE                         }, /* 12 */
-	    { NP_Entry      , (IPTR)entry                   }, /* 13 */
-	    { NP_CurrentDir , (IPTR)BNULL                   }, /* 14 */
+        struct TagItem proctags[] =
+        {
+            { NP_Priority   , me->pr_Task.tc_Node.ln_Pri    }, /* 0  */
+            { NP_Name       , (IPTR)shellName               }, /* 1  */
+            { NP_Input      , (IPTR)BNULL                   }, /* 2  */
+            { NP_Output     , (IPTR)BNULL                   }, /* 3  */
+            { NP_Error      , (IPTR)ses                     }, /* 4  */
+            { NP_CloseInput , FALSE                         }, /* 5  */
+            { NP_CloseOutput, FALSE                         }, /* 6  */
+            { NP_CloseError , (isAsynch || ses_opened)
+                                      ? TRUE : FALSE,       }, /* 7  */
+            { NP_Cli        , (cliType == CLI_NEWCLI)
+                                      ?  TRUE : FALSE       }, /* 8  */
+            { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
+                              (IPTR)me->pr_WindowPtr        }, /* 9  */
+            { NP_Seglist    , (IPTR)shellseg                }, /* 10 */
+            { NP_FreeSeglist, FALSE                         }, /* 11 */
+            { NP_Synchronous, FALSE                         }, /* 12 */
+            { NP_Entry      , (IPTR)entry                   }, /* 13 */
+            { NP_CurrentDir , (IPTR)BNULL                   }, /* 14 */
             { NP_ConsoleTask, (IPTR)BNULL,                  }, /* 15 */
-	    { TAG_END       , 0                             }  /* 16 */
-	};
+            { TAG_END       , 0                             }  /* 16 */
+        };
 
-	Tag filterList[] =
-	{
-	    NP_Seglist,
-	    NP_FreeSeglist,
-	    NP_Entry,
-	    NP_Input,
-	    NP_Output,
-	    NP_CloseInput,
+        Tag filterList[] =
+        {
+            NP_Seglist,
+            NP_FreeSeglist,
+            NP_Entry,
+            NP_Input,
+            NP_Output,
+            NP_CloseInput,
             NP_CloseOutput,
-	    NP_CloseError,
-	    NP_HomeDir,
-	    NP_Cli,
-	    NP_Arguments,
-	    NP_Synchronous,
-	    NP_UserData,
-	    0
-	};
+            NP_CloseError,
+            NP_HomeDir,
+            NP_Cli,
+            NP_Arguments,
+            NP_Synchronous,
+            NP_UserData,
+            0
+        };
 
-	struct DosPacket *dp;
+        struct DosPacket *dp;
 
-	FilterTagItems(newtags, filterList, TAGFILTER_NOT);
+        FilterTagItems(newtags, filterList, TAGFILTER_NOT);
 
-	proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Tag  = TAG_MORE;
-	proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Data = (IPTR)newtags;
+        proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Tag  = TAG_MORE;
+        proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Data = (IPTR)newtags;
 
-	dp = AllocDosObject(DOS_STDPKT, NULL);
-	if (dp) {
+        dp = AllocDosObject(DOS_STDPKT, NULL);
+        if (dp) {
             cliproc = CreateNewProc(proctags);
 
             if (cliproc)
@@ -469,7 +469,7 @@
 
             FreeDosObject(DOS_STDPKT, dp);
         }
-	FreeTagItems(newtags);
+        FreeTagItems(newtags);
     }
 
 end:

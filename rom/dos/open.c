@@ -28,28 +28,28 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BPTR, Open,
+        AROS_LH2(BPTR, Open,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name,       D1),
-	AROS_LHA(LONG,         accessMode, D2),
+        AROS_LHA(CONST_STRPTR, name,       D1),
+        AROS_LHA(LONG,         accessMode, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 5, Dos)
+        struct DosLibrary *, DOSBase, 5, Dos)
 
 /*  FUNCTION
-	Opens a file for read and/or write depending on the accessmode given.
+        Opens a file for read and/or write depending on the accessmode given.
 
     INPUTS
-	name	   - NUL terminated name of the file.
-	accessMode - One of MODE_OLDFILE   - open existing file
-			    MODE_NEWFILE   - delete old, create new file
-					     exclusive lock
-			    MODE_READWRITE - open new one if it doesn't exist
+        name       - NUL terminated name of the file.
+        accessMode - One of MODE_OLDFILE   - open existing file
+                            MODE_NEWFILE   - delete old, create new file
+                                             exclusive lock
+                            MODE_READWRITE - open new one if it doesn't exist
 
     RESULT
-	Handle to the file or 0 if the file couldn't be opened.
-	IoErr() gives additional information in that case.
+        Handle to the file or 0 if the file couldn't be opened.
+        IoErr() gives additional information in that case.
 
     NOTES
 
@@ -76,20 +76,20 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 
     if (ret != NULL)
     {
-	LONG ok = InternalOpen(name, accessMode, ret, MAX_SOFT_LINK_NESTING, DOSBase);
-	D(bug("[Open] = %p, Error = %d\n", ok ? MKBADDR(ret) : BNULL, IoErr()));
-	if (ok)
-	{
-	    return MKBADDR(ret);	    
-	}
-	else
-	{
-	    error = IoErr();
-	    FreeDosObject(DOS_FILEHANDLE,ret);
-	}
+        LONG ok = InternalOpen(name, accessMode, ret, MAX_SOFT_LINK_NESTING, DOSBase);
+        D(bug("[Open] = %p, Error = %d\n", ok ? MKBADDR(ret) : BNULL, IoErr()));
+        if (ok)
+        {
+            return MKBADDR(ret);            
+        }
+        else
+        {
+            error = IoErr();
+            FreeDosObject(DOS_FILEHANDLE,ret);
+        }
     }
     else
-	error = ERROR_NO_FREE_STORE;
+        error = ERROR_NO_FREE_STORE;
 
     SetIoErr(error);
     return BNULL;
@@ -146,13 +146,13 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     ASSERT_VALID_PROCESS(me);
 
     D(bug("[Open] %s: 0x%p \"%s\", Name: \"%s\" File: %p\n",
-    	  __is_process(me) ? "Process" : "Task", me, me->pr_Task.tc_Node.ln_Name,
-    	  name, MKBADDR(handle)));
+          __is_process(me) ? "Process" : "Task", me, me->pr_Task.tc_Node.ln_Name,
+          name, MKBADDR(handle)));
 
     if(soft_nesting == 0)
     {
-	SetIoErr(ERROR_TOO_MANY_LEVELS);
-	return DOSFALSE;
+        SetIoErr(ERROR_TOO_MANY_LEVELS);
+        return DOSFALSE;
     }
 
     /* IN:, OUT:, ERR: pseudodevices
@@ -169,47 +169,47 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
      */
     if (!Stricmp(name, "NIL:"))
     {
-    	SetIoErr(0);
+        SetIoErr(0);
 
-    	handle->fh_Type = BNULL;
-    	/* NIL: is not considered interactive */
-    	handle->fh_Interactive = DOSFALSE;
+        handle->fh_Type = BNULL;
+        /* NIL: is not considered interactive */
+        handle->fh_Interactive = DOSFALSE;
         return DOSTRUE;
     }
 
     switch(accessMode)
     {
-	case MODE_NEWFILE:
-	case MODE_READWRITE:
-	    con = me->pr_COS;
-	    ast = me->pr_CES ? me->pr_CES : me->pr_COS;
+        case MODE_NEWFILE:
+        case MODE_READWRITE:
+            con = me->pr_COS;
+            ast = me->pr_CES ? me->pr_CES : me->pr_COS;
 
-	    break;
+            break;
 
-	case MODE_OLDFILE:
-	    ast = con = me->pr_CIS;
-	    break;
+        case MODE_OLDFILE:
+            ast = con = me->pr_CIS;
+            break;
 
-	default:
-	    SetIoErr(ERROR_NOT_IMPLEMENTED);
-	    return DOSFALSE;
+        default:
+            SetIoErr(ERROR_NOT_IMPLEMENTED);
+            return DOSFALSE;
     }
 
     if (!Stricmp(name, "CONSOLE:"))
-    	error = fs_Open(handle, me->pr_ConsoleTask, con, accessMode, name, DOSBase);
+        error = fs_Open(handle, me->pr_ConsoleTask, con, accessMode, name, DOSBase);
     else if (!Stricmp(name, "*"))
-    	error = fs_Open(handle, me->pr_ConsoleTask, ast, accessMode, name, DOSBase);
+        error = fs_Open(handle, me->pr_ConsoleTask, ast, accessMode, name, DOSBase);
     else
     {
         BPTR cur = BNULL;
         struct DevProc *dvp = NULL;
-    	STRPTR filename = strchr(name, ':');
+        STRPTR filename = strchr(name, ':');
 
-	if (!filename)
-	{
-	    struct MsgPort *port;
+        if (!filename)
+        {
+            struct MsgPort *port;
 
-	    /* No ':', pathname relative to current dir */
+            /* No ':', pathname relative to current dir */
             cur = me->pr_CurrentDir;
 
             if (cur && cur != (BPTR)-1) {
@@ -219,27 +219,27 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
                 cur = BNULL;
             }
 
-	    error = fs_Open(handle, port, cur, accessMode, name, DOSBase);
-	}
-    	else 
-    	{
-	    filename++;
-	    do
-	    {
-            	if ((dvp = GetDeviceProc(name, dvp)) == NULL)
-            	{
+            error = fs_Open(handle, port, cur, accessMode, name, DOSBase);
+        }
+        else 
+        {
+            filename++;
+            do
+            {
+                if ((dvp = GetDeviceProc(name, dvp)) == NULL)
+                {
                     error = IoErr();
                     break;
-		}
+                }
 
-	    	error = fs_Open(handle, dvp->dvp_Port, dvp->dvp_Lock, accessMode, filename, DOSBase);
+                error = fs_Open(handle, dvp->dvp_Port, dvp->dvp_Lock, accessMode, filename, DOSBase);
             } while(error == ERROR_OBJECT_NOT_FOUND && accessMode != MODE_NEWFILE);
 
-	    if (error == ERROR_NO_MORE_ENTRIES)
-        	error = ERROR_OBJECT_NOT_FOUND;
+            if (error == ERROR_NO_MORE_ENTRIES)
+                error = ERROR_OBJECT_NOT_FOUND;
         }
 
-	if (error == ERROR_IS_SOFT_LINK)
+        if (error == ERROR_IS_SOFT_LINK)
         {
             STRPTR softname = ResolveSoftlink(cur, dvp, name, DOSBase);
 
@@ -248,27 +248,27 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
                 /* All OK */
                 BPTR olddir = BNULL;
 
-            	if (dvp)
-            	{
+                if (dvp)
+                {
                     olddir = me->pr_CurrentDir;
-            	    error = RootDir(dvp, DOSBase);
-            	}
-            	else
-            	    error = 0;
+                    error = RootDir(dvp, DOSBase);
+                }
+                else
+                    error = 0;
 
-            	if (!error)
-            	{
+                if (!error)
+                {
                     ret = InternalOpen(softname, accessMode, handle, soft_nesting - 1, DOSBase);
                     error = ret ? 0 : IoErr();
 
                     if (olddir)
-                    	UnLock(CurrentDir(olddir));
+                        UnLock(CurrentDir(olddir));
                 }
 
                 FreeVec(softname);
             }
             else
-            	error = IoErr();
+                error = IoErr();
         }
 
         FreeDeviceProc(dvp);
@@ -283,7 +283,7 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     }
     else
     {
-	SetIoErr(error);
-	return DOSFALSE;
+        SetIoErr(error);
+        return DOSFALSE;
     }
 }

@@ -13,23 +13,23 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(LONG, IsInteractive,
+        AROS_LH1(LONG, IsInteractive,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, file, D1),
+        AROS_LHA(BPTR, file, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 36, Dos)
+        struct DosLibrary *, DOSBase, 36, Dos)
 
 /*  FUNCTION
-	Check if file is bound to an interactive device such as a console
-	or shell window.
+        Check if file is bound to an interactive device such as a console
+        or shell window.
 
     INPUTS
-	file   - filehandle
+        file   - filehandle
 
     RESULT
-	!= 0 if the file is interactive, 0 if it is not.
+        != 0 if the file is interactive, 0 if it is not.
 
     NOTES
 

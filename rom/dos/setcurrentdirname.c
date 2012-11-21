@@ -16,35 +16,35 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BOOL, SetCurrentDirName,
+        AROS_LH1(BOOL, SetCurrentDirName,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(CONST_STRPTR, name, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 93, Dos)
+        struct DosLibrary *, DOSBase, 93, Dos)
 
 /*  FUNCTION
-	Sets the name of the current directory in the CLI structure.
-	If the name doesn't fit the old name is kept and a failure
-	returned. If the current process doesn't have a CLI structure
-	this function does nothing.
+        Sets the name of the current directory in the CLI structure.
+        If the name doesn't fit the old name is kept and a failure
+        returned. If the current process doesn't have a CLI structure
+        this function does nothing.
 
     INPUTS
-	name - Name for the current directory.
+        name - Name for the current directory.
 
     RESULT
-	!=0 on success, 0 on failure.
+        !=0 on success, 0 on failure.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	Never copies more than 255 bytes.
+        Never copies more than 255 bytes.
 
     SEE ALSO
-	GetCurrentDirName()
+        GetCurrentDirName()
 
     INTERNALS
 
@@ -58,15 +58,15 @@
     ULONG namelen;
 
     if ((cli = Cli()) == NULL)
-	return DOSFALSE;
+        return DOSFALSE;
 
     s = name;
     while(*s++)
-	;
+        ;
     namelen = s - name - 1;
 
     if (namelen > 255)
-	return DOSFALSE;
+        return DOSFALSE;
 
     bs = AROS_BSTR_ADDR(cli->cli_SetName);
 

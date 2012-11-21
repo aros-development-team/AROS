@@ -21,13 +21,13 @@
 
 #include <string.h>
 
-	AROS_LH1(void, EndNotify,
+        AROS_LH1(void, EndNotify,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct NotifyRequest *, notify, D1),
+        AROS_LHA(struct NotifyRequest *, notify, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 149, Dos)
+        struct DosLibrary *, DOSBase, 149, Dos)
 
 /*  FUNCTION
 
@@ -74,36 +74,36 @@
 
     /* if the filesystem has outstanding messages, they need to be replied */
     if ((notify->nr_Flags & NRF_SEND_MESSAGE) &&
-	((notify->nr_Flags & NRF_WAIT_REPLY) || notify->nr_MsgCount > 0))
+        ((notify->nr_Flags & NRF_WAIT_REPLY) || notify->nr_MsgCount > 0))
     {
-	struct MsgPort *port = notify->nr_stuff.nr_Msg.nr_Port;
-	struct NotifyMessage *nm, *tmp;
+        struct MsgPort *port = notify->nr_stuff.nr_Msg.nr_Port;
+        struct NotifyMessage *nm, *tmp;
 
-	notify->nr_Flags &= ~NRF_MAGIC;
+        notify->nr_Flags &= ~NRF_MAGIC;
 
         /* protect access to the message list */
-	Disable();
+        Disable();
 
         /* loop over the messages */
-	ForeachNodeSafe(&port->mp_MsgList, nm, tmp) {
+        ForeachNodeSafe(&port->mp_MsgList, nm, tmp) {
             /* if its one of our notify messages */
-	    if (nm->nm_Class == NOTIFY_CLASS &&
-		nm->nm_Code == NOTIFY_CODE &&
-		nm->nm_NReq == notify) {
+            if (nm->nm_Class == NOTIFY_CLASS &&
+                nm->nm_Code == NOTIFY_CODE &&
+                nm->nm_NReq == notify) {
 
                 /* remove and reply */
-		Remove((struct Node *) nm);
-		ReplyMsg((struct Message *) nm);
+                Remove((struct Node *) nm);
+                ReplyMsg((struct Message *) nm);
 
                 /* decrement the count. bail early if we've done them all */
                 notify->nr_MsgCount--;
                 if (notify->nr_MsgCount == 0)
                     break;
-	    }
-	}
+            }
+        }
 
         /* unlock the list */
-	Enable();
+        Enable();
     }
 
     AROS_LIBFUNC_EXIT

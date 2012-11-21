@@ -14,23 +14,23 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BPTR, CurrentDir,
+        AROS_LH1(BPTR, CurrentDir,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, lock, D1),
+        AROS_LHA(BPTR, lock, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 21, Dos)
+        struct DosLibrary *, DOSBase, 21, Dos)
 
 /*  FUNCTION
-	Sets a new directory as the current directory. Returns the old one.
-	0 is valid in both cases and represents the boot filesystem.
+        Sets a new directory as the current directory. Returns the old one.
+        0 is valid in both cases and represents the boot filesystem.
 
     INPUTS
-	lock - Lock for the new current directory.
+        lock - Lock for the new current directory.
 
     RESULT
-	Old current directory.
+        Old current directory.
 
     NOTES
 

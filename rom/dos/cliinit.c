@@ -28,12 +28,12 @@ static void PRINT_DOSTYPE(ULONG dt)
 
     for (i = 0; i < 4; i++)
     {
-    	unsigned char c = dt >> (24 - i * 8);
+        unsigned char c = dt >> (24 - i * 8);
 
-	if (isprint(c))
-    	    RawPutChar(c);
-    	else
-    	    bug("\\%02X", c);
+        if (isprint(c))
+            RawPutChar(c);
+        else
+            bug("\\%02X", c);
     }
 
     RawPutChar('\n');
@@ -53,13 +53,13 @@ static long internalBootCliHandler(void);
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-	AROS_LH1(IPTR, CliInit,
+        AROS_LH1(IPTR, CliInit,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DosPacket *, dp, A0),
+        AROS_LHA(struct DosPacket *, dp, A0),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 154, Dos)
+        struct DosLibrary *, DOSBase, 154, Dos)
 
 /*  FUNCTION
 
@@ -169,7 +169,7 @@ static long internalBootCliHandler(void);
         return RETURN_OK;
     /* Make sure we return non-zero error code, 0 == RETURN_OK */
     if (Res2 == 0)
-    	Res2 = ERROR_UNKNOWN;
+        Res2 = ERROR_UNKNOWN;
 
     return Res2;
 
@@ -233,7 +233,7 @@ static void internalPatchBootNode(struct FileSysResource *fsr, struct DeviceNode
     /* If the DosType is 0 and dn_Handler == BNULL, use the default handler */
     if (de->de_DosType == 0 && dn->dn_Handler == BNULL)
     {
-    	D(bug("Dos/CliInit: Neither DosType nor Handler specified, using default filesystem\n"));
+        D(bug("Dos/CliInit: Neither DosType nor Handler specified, using default filesystem\n"));
         dn->dn_SegList = defseg;
         dn->dn_GlobalVec = (BPTR)-1;
         return;
@@ -279,7 +279,7 @@ static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResour
     struct DosList *dl;
 
     if ((dn == NULL) || (dn->dn_Name == BNULL))
-    	return NULL;
+        return NULL;
 
     D(bug("Dos/CliInit: Mounting 0x%p (%b)...\n", dn, dn->dn_Name));
 
@@ -288,8 +288,8 @@ static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResour
     
     while ((dl = NextDosEntry(dl, LDF_DEVICES)))
     {
-    	if (dl == (struct DosList *)dn)
-    	    break;
+        if (dl == (struct DosList *)dn)
+            break;
     }
 
     UnLockDosList(LDF_DEVICES | LDF_READ);
@@ -297,7 +297,7 @@ static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResour
     /* Found in DOS list? Do nothing. */
     if (dl)
     {
-    	return dl->dol_Task;
+        return dl->dol_Task;
     }
 
     /* Patch it up, if needed */
@@ -305,8 +305,8 @@ static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResour
 
     if (!dn->dn_Handler && !dn->dn_SegList)
     {
-    	/* Don't know how to mount? Error... */
-    	return NULL;
+        /* Don't know how to mount? Error... */
+        return NULL;
     }
 
     if (AddDosEntry((struct DosList *)dn) != DOSFALSE)
@@ -314,7 +314,7 @@ static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResour
         /*
          * Do not check for ANDF_STARTPROC because:
          * a) On the Amiga ADNF_STARTPROC was not present in KS 1.3 and earlier, there was no deferred mount.
-	 * b) In fact if we have something in ExpansionBase, we for sure want it to be mounted.
+         * b) In fact if we have something in ExpansionBase, we for sure want it to be mounted.
          */
         D(bug("Dos/CliInit: Added to DOS list, starting up handler... "));
 
@@ -374,7 +374,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
     name = AllocVec(name_len + 2, MEMF_ANY);
     if (name != NULL)
     {
-	SIPTR err = 0;
+        SIPTR err = 0;
 
         /* Make the volume name a volume: name */
         CopyMem(AROS_BSTR_ADDR(dn->dn_Name), name, name_len);
@@ -389,10 +389,10 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
         {
             /* If we have a lock, check the per-platform conditional boot code. */
             if (!__dos_IsBootable(DOSBase, lock))
-	    {
-               	UnLock(lock);
-            	lock = BNULL;
-            	err = ERROR_OBJECT_WRONG_TYPE; /* Something to more or less reflect "This disk is not bootable" */
+            {
+                UnLock(lock);
+                lock = BNULL;
+                err = ERROR_OBJECT_WRONG_TYPE; /* Something to more or less reflect "This disk is not bootable" */
             }
         }
         else
@@ -402,7 +402,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
 
         if (!lock)
         {
-	    SIPTR dead;
+            SIPTR dead;
 
             /* Darn. Not bootable. Try to unmount it. */
             D(bug("Dos/CliInit:   Does not have a bootable filesystem, unmounting...\n"));
@@ -411,18 +411,18 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
             dead = DoPkt(mp, ACTION_DIE, 0, 0, 0, 0, 0);
             D(bug("Dos/CliInit:  ACTION_DIE returned %ld\n", dead));
 
-	    if (dead)
-	    {
-	    	/*
-	    	 * Handlers usually won't remove their DeviceNoces themselves.
-	    	 * And even if they do (ACTION_DIE is poorly documented), RemDosEntry()
-	    	 * on an already removed entry is safe due to nature of DOS list.
-	    	 * What is really prohibited, it's unloading own seglist. Well, resident
-	    	 * handlers will never do it, they know...
-	    	 */
-	    	RemDosEntry((struct DosList *)dn);
-	    	dn->dn_Task = NULL;
-	    }
+            if (dead)
+            {
+                /*
+                 * Handlers usually won't remove their DeviceNoces themselves.
+                 * And even if they do (ACTION_DIE is poorly documented), RemDosEntry()
+                 * on an already removed entry is safe due to nature of DOS list.
+                 * What is really prohibited, it's unloading own seglist. Well, resident
+                 * handlers will never do it, they know...
+                 */
+                RemDosEntry((struct DosList *)dn);
+                dn->dn_Task = NULL;
+            }
             /* DoPkt() clobbered IoErr() */
             SetIoErr(err);
         }
@@ -437,7 +437,7 @@ static void AddBootAssign(CONST_STRPTR path, CONST_STRPTR assign, APTR DOSBase)
 {
     BPTR lock;
     if (!(lock = Lock(path, SHARED_LOCK)))
-    	lock = Lock("SYS:", SHARED_LOCK);
+        lock = Lock("SYS:", SHARED_LOCK);
     if (lock)
         AssignLock(assign, lock);
 }
@@ -472,7 +472,7 @@ static long internalBootCliHandler(void)
 
     ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
     if (!ExpansionBase)
-	return ERROR_INVALID_RESIDENT_LIBRARY;
+        return ERROR_INVALID_RESIDENT_LIBRARY;
 
     /* It's perfectly fine if this fails. */
     fsr = OpenResource("FileSystem.resource");
@@ -483,20 +483,20 @@ static long internalBootCliHandler(void)
 
     if (lock == BNULL)
     {
-    	/*
-    	 * We've failed. Inform our parent and exit.
-    	 * Immediately after we reply the packet, the parent (Boot Task) can expunge DOSBase.
-    	 * This is why we first cleanup, then use internal_ReplyPkt (DOSBase is considered
-    	 * invalid).
-    	 * Alternatively we could Forbid() before ReplyPkt(), but... Forbid() is so unpolite...
-    	 */
-    	IPTR err = IoErr();
+        /*
+         * We've failed. Inform our parent and exit.
+         * Immediately after we reply the packet, the parent (Boot Task) can expunge DOSBase.
+         * This is why we first cleanup, then use internal_ReplyPkt (DOSBase is considered
+         * invalid).
+         * Alternatively we could Forbid() before ReplyPkt(), but... Forbid() is so unpolite...
+         */
+        IPTR err = IoErr();
 
-	CloseLibrary(&ExpansionBase->LibNode);
-	CloseLibrary(&DOSBase->dl_lib);
+        CloseLibrary(&ExpansionBase->LibNode);
+        CloseLibrary(&DOSBase->dl_lib);
 
-	/* Immediately after ReplyPkt() DOSBase can be freed. So Forbid() until we really quit. */
-	internal_ReplyPkt(dp, mp, DOSFALSE, err);
+        /* Immediately after ReplyPkt() DOSBase can be freed. So Forbid() until we really quit. */
+        internal_ReplyPkt(dp, mp, DOSFALSE, err);
         return err;
     }
 
@@ -562,7 +562,7 @@ static long internalBootCliHandler(void)
          * read mappings for disk-based handlers from file.
          * This way we could automount e. g. FAT, NTFS, EXT3/2, whatever else, partitions.
          */
-	mountBootNode(bn->bn_DeviceNode, fsr, DOSBase);
+        mountBootNode(bn->bn_DeviceNode, fsr, DOSBase);
     }
 
     CloseLibrary((APTR)ExpansionBase);

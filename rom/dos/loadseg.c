@@ -15,9 +15,9 @@
 #include "dos_intern.h"
 
 static AROS_UFH4(LONG, ReadFunc,
-	AROS_UFHA(BPTR, file,   D1),
-	AROS_UFHA(APTR, buffer, D2),
-	AROS_UFHA(LONG, length, D3),
+        AROS_UFHA(BPTR, file,   D1),
+        AROS_UFHA(APTR, buffer, D2),
+        AROS_UFHA(LONG, length, D3),
         AROS_UFHA(struct DosLibrary *, DOSBase, A6)
 )
 {
@@ -29,9 +29,9 @@ static AROS_UFH4(LONG, ReadFunc,
 }
 
 static AROS_UFH4(LONG, SeekFunc,
-	AROS_UFHA(BPTR, file,  D1),
-	AROS_UFHA(LONG,   pos, D2),
-	AROS_UFHA(LONG,  mode, D3),
+        AROS_UFHA(BPTR, file,  D1),
+        AROS_UFHA(LONG,   pos, D2),
+        AROS_UFHA(LONG,  mode, D3),
         AROS_UFHA(struct DosLibrary *, DOSBase, A6)
 )
 {
@@ -44,8 +44,8 @@ static AROS_UFH4(LONG, SeekFunc,
 
 
 static AROS_UFH3(APTR, AllocFunc,
-	AROS_UFHA(ULONG, length, D0),
-	AROS_UFHA(ULONG, flags,  D1),
+        AROS_UFHA(ULONG, length, D0),
+        AROS_UFHA(ULONG, flags,  D1),
         AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
@@ -57,8 +57,8 @@ static AROS_UFH3(APTR, AllocFunc,
 }
 
 static AROS_UFH3(void, FreeFunc,
-	AROS_UFHA(APTR, buffer, A1),
-	AROS_UFHA(ULONG, length, D0),
+        AROS_UFHA(APTR, buffer, A1),
+        AROS_UFHA(ULONG, length, D0),
         AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
@@ -113,10 +113,10 @@ static AROS_UFH3(void, FreeFunc,
     BPTR file, segs=0;
     SIPTR err;
     LONG_FUNC FunctionArray[] = {
-    	(LONG_FUNC)ReadFunc,
-    	(LONG_FUNC)AllocFunc,
-    	(LONG_FUNC)FreeFunc,
-    	(LONG_FUNC)SeekFunc,	/* Only needed for ELF */
+        (LONG_FUNC)ReadFunc,
+        (LONG_FUNC)AllocFunc,
+        (LONG_FUNC)FreeFunc,
+        (LONG_FUNC)SeekFunc,    /* Only needed for ELF */
     };
 
     /* Open the file */
@@ -125,21 +125,21 @@ static AROS_UFH3(void, FreeFunc,
 
     if (file)
     {
-	D(bug("[LoadSeg] Loading '%s'...\n", name));
+        D(bug("[LoadSeg] Loading '%s'...\n", name));
 
-	SetVBuf(file, NULL, BUF_FULL, 4096);
-	segs = InternalLoadSeg(file, BNULL, FunctionArray, NULL);
-	/* We cache the IoErr(), since Close() will alter it */
-	err = IoErr();
+        SetVBuf(file, NULL, BUF_FULL, 4096);
+        segs = InternalLoadSeg(file, BNULL, FunctionArray, NULL);
+        /* We cache the IoErr(), since Close() will alter it */
+        err = IoErr();
 
-	D(if (segs == BNULL)
- 	    bug("[LoadSeg] Failed to load '%s'\n", name));
+        D(if (segs == BNULL)
+            bug("[LoadSeg] Failed to load '%s'\n", name));
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
- 	/* overlayed executables return -segs and handle must not be closed */
- 	if ((LONG)segs > 0)
- 	    Close(file);
- 	else
- 	    segs = (BPTR)-((LONG)segs);
+        /* overlayed executables return -segs and handle must not be closed */
+        if ((LONG)segs > 0)
+            Close(file);
+        else
+            segs = (BPTR)-((LONG)segs);
 #else
         Close(file);
 #endif

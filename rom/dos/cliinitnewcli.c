@@ -15,13 +15,13 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-	AROS_LH1(IPTR, CliInitNewcli,
+        AROS_LH1(IPTR, CliInitNewcli,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DosPacket *, dp, A0),
+        AROS_LHA(struct DosPacket *, dp, A0),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 155, Dos)
+        struct DosLibrary *, DOSBase, 155, Dos)
 
 /*  FUNCTION
 

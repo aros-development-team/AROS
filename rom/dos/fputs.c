@@ -17,31 +17,31 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, FPuts,
-/*		FPuts -- Writes a string the the specified output (buffered) */
+        AROS_LH2(LONG, FPuts,
+/*              FPuts -- Writes a string the the specified output (buffered) */
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,         file,   D1),
-	AROS_LHA(CONST_STRPTR, string, D2),
+        AROS_LHA(BPTR,         file,   D1),
+        AROS_LHA(CONST_STRPTR, string, D2),
 
 /*  LOCATION */
 
-	struct DosLibrary *, DOSBase, 57, Dos)
+        struct DosLibrary *, DOSBase, 57, Dos)
 
 /*  FUNCTION
     This routine writes an unformatted string to the filehandle.  No
     newline is appended to the string.  This routine is buffered.
 
     INPUTS
-	file   - Filehandle to write to.
-	string - String to write.
+        file   - Filehandle to write to.
+        string - String to write.
 
     RESULT
-	0 if all went well or EOF in case of an error.
-	IoErr() gives additional information in that case.
+        0 if all went well or EOF in case of an error.
+        IoErr() gives additional information in that case.
 
     SEE ALSO
-	FGetC(), IoErr()
+        FGetC(), IoErr()
 
 *****************************************************************************/
 {

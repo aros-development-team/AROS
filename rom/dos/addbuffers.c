@@ -14,25 +14,25 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, AddBuffers,
+        AROS_LH2(LONG, AddBuffers,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, devicename, D1),
-	AROS_LHA(LONG,         numbuffers, D2),
+        AROS_LHA(CONST_STRPTR, devicename, D1),
+        AROS_LHA(LONG,         numbuffers, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 122, Dos)
+        struct DosLibrary *, DOSBase, 122, Dos)
 
 /*  FUNCTION
-	Add or remove cache memory from a filesystem.
+        Add or remove cache memory from a filesystem.
 
     INPUTS
-	devicename  --  NUL terminated dos device name.
-	numbuffers  --  Number of buffers to add. May be negative.
+        devicename  --  NUL terminated dos device name.
+        numbuffers  --  Number of buffers to add. May be negative.
 
     RESULT
-	!= 0 on success (IoErr() gives the actual number of buffers),
-	0 else (IoErr() gives the error code).
+        != 0 on success (IoErr() gives the actual number of buffers),
+        0 else (IoErr() gives the error code).
 
     NOTES
 

@@ -17,14 +17,14 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, MatchPatternNoCase,
+        AROS_LH2(BOOL, MatchPatternNoCase,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, pat, D1),
-	AROS_LHA(CONST_STRPTR, str, D2),
+        AROS_LHA(CONST_STRPTR, pat, D1),
+        AROS_LHA(CONST_STRPTR, str, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 162, Dos)
+        struct DosLibrary *, DOSBase, 162, Dos)
 
 /*  FUNCTION
 

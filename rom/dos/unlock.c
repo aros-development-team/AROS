@@ -17,20 +17,20 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BOOL, UnLock,
+        AROS_LH1(BOOL, UnLock,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, lock, D1),
+        AROS_LHA(BPTR, lock, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 15, Dos)
+        struct DosLibrary *, DOSBase, 15, Dos)
 
 /*
     FUNCTION
-	Free a lock created with Lock().
+        Free a lock created with Lock().
 
     INPUTS
-	lock -- The lock to free
+        lock -- The lock to free
 
     RESULT
 
@@ -58,7 +58,7 @@
 
     /* 0 handles are OK */
     if(lock == BNULL)
-	return 0;
+        return 0;
 
     return dopacket1(DOSBase, NULL, fl->fl_Task, ACTION_FREE_LOCK, lock) != 0;
 

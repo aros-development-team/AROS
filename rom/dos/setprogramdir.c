@@ -15,37 +15,37 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BPTR, SetProgramDir,
+        AROS_LH1(BPTR, SetProgramDir,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, lock, D1),
+        AROS_LHA(BPTR, lock, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 99, Dos)
+        struct DosLibrary *, DOSBase, 99, Dos)
 
 /*  FUNCTION
-	This function will set a shared lock on the directory that the
-	current program was loaded from. This can be accessed through
-	the path PROGDIR:. The use of this path is to allow the program
-	to easily access files which are supplied with the program.
+        This function will set a shared lock on the directory that the
+        current program was loaded from. This can be accessed through
+        the path PROGDIR:. The use of this path is to allow the program
+        to easily access files which are supplied with the program.
 
     INPUTS
-	lock    -   The lock to set as the new program directory. NULL
-		    is a valid value.
+        lock    -   The lock to set as the new program directory. NULL
+                    is a valid value.
 
     RESULT
-	This function will return the old program directory lock.
+        This function will return the old program directory lock.
 
     NOTES
-	This function will not duplicate the lock, so you should not
-	free the lock.
+        This function will not duplicate the lock, so you should not
+        free the lock.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	GetProgramDir()
+        GetProgramDir()
 
     INTERNALS
 

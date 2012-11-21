@@ -15,30 +15,30 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH3(BOOL, NameFromLock,
+        AROS_LH3(BOOL, NameFromLock,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,   lock,   D1),
-	AROS_LHA(STRPTR, buffer, D2),
-	AROS_LHA(LONG,   length, D3),
+        AROS_LHA(BPTR,   lock,   D1),
+        AROS_LHA(STRPTR, buffer, D2),
+        AROS_LHA(LONG,   length, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 67, Dos)
+        struct DosLibrary *, DOSBase, 67, Dos)
 
 /*  FUNCTION
-	Get the full path name associated with a lock to a file or
-	directory into a user supplied buffer.
-	If the lock is zero the buffer will be filled with "SYS:".
+        Get the full path name associated with a lock to a file or
+        directory into a user supplied buffer.
+        If the lock is zero the buffer will be filled with "SYS:".
 
     INPUTS
-	lock   - Lock to file or directory or 0.
-	buffer - Buffer to fill. Contains a NUL terminated string if
-		 all went well.
-	length - Size of the buffer in bytes.
+        lock   - Lock to file or directory or 0.
+        buffer - Buffer to fill. Contains a NUL terminated string if
+                 all went well.
+        length - Size of the buffer in bytes.
 
     RESULT
-	!=0 if all went well, 0 in case of an error. IoErr() will
-	give additional information in that case.
+        !=0 if all went well, 0 in case of an error. IoErr() will
+        give additional information in that case.
 
 *****************************************************************************/
 
@@ -61,7 +61,7 @@
      *
      * Duplicating a lock here is a brute-force workaround for this problem. When i have more time, i'll
      * pick up my old archive with MorphOS dos.library code, and check theirs implementation.
-     *									Sonic
+     *                                                                  Sonic
      */
     BOOL res;
     BPTR lock2;

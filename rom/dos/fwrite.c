@@ -14,33 +14,33 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH4(LONG, FWrite,
+        AROS_LH4(LONG, FWrite,
 /*      FWrite -- Writes a number of blocks to an output (buffered) */
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR , fh, D1),
-	AROS_LHA(CONST_APTR , block, D2),
-	AROS_LHA(ULONG, blocklen, D3),
-	AROS_LHA(ULONG, numblocks, D4),
+        AROS_LHA(BPTR , fh, D1),
+        AROS_LHA(CONST_APTR , block, D2),
+        AROS_LHA(ULONG, blocklen, D3),
+        AROS_LHA(ULONG, numblocks, D4),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 55, Dos)
+        struct DosLibrary *, DOSBase, 55, Dos)
 
 /*  FUNCTION
-	Write a number of blocks to a file.
+        Write a number of blocks to a file.
 
     INPUTS
-	fh        - Write to this file
-	block     - The data begins here
+        fh        - Write to this file
+        block     - The data begins here
     blocklen  - number of bytes per block.  Must be > 0.
     numblocks - number of blocks to write.  Must be > 0.
 
     RESULT
-	The number of blocks written to the file or EOF on error. IoErr()
-	gives additional information in case of an error.
+        The number of blocks written to the file or EOF on error. IoErr()
+        gives additional information in case of an error.
 
     SEE ALSO
-	Open(), FRead(), FPutc(), Close()
+        Open(), FRead(), FPutc(), Close()
 
 *****************************************************************************/
 {

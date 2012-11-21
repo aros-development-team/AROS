@@ -21,43 +21,43 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(struct DevProc *, GetDeviceProc,
+        AROS_LH2(struct DevProc *, GetDeviceProc,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, D1),
-	AROS_LHA(struct DevProc *, dp, D2),
+        AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(struct DevProc *, dp, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 107, Dos)
+        struct DosLibrary *, DOSBase, 107, Dos)
 
 /*  FUNCTION
-	GetDeviceProc() will search for the filesystem handler which
-	you should send a command to for a specific path.
+        GetDeviceProc() will search for the filesystem handler which
+        you should send a command to for a specific path.
 
-	By calling GetDeviceProc() multiple times, the caller will
-	be able to handle multi-assign paths.
+        By calling GetDeviceProc() multiple times, the caller will
+        be able to handle multi-assign paths.
 
-	The first call to GetDeviceProc() should have the |dp| parameter
-	as NULL.
+        The first call to GetDeviceProc() should have the |dp| parameter
+        as NULL.
 
     INPUTS
-	name		- Name of the object to find.
-	dp		- Previous result of GetDeviceProc() or NULL.
+        name            - Name of the object to find.
+        dp              - Previous result of GetDeviceProc() or NULL.
 
     RESULT
-	A pointer to a DevProc structure containing the information
-	required to send a command to a filesystem.
+        A pointer to a DevProc structure containing the information
+        required to send a command to a filesystem.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	Currently doesn't return dvp_DevNode for locks which are
-	relative to "PROGDIR:", ":", or the current directory.
+        Currently doesn't return dvp_DevNode for locks which are
+        relative to "PROGDIR:", ":", or the current directory.
 
     SEE ALSO
-	FreeDeviceProc()
+        FreeDeviceProc()
 
     INTERNALS
 
@@ -118,7 +118,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         dl = dp->dvp_DevNode;
 
         /* lock the dos list here, to match the result of the next block */
-    	LockDosList(LDF_ALL | LDF_READ);
+        LockDosList(LDF_ALL | LDF_READ);
     }
 
     /* otherwise we need to find a place to start in the doslist based on the
@@ -131,25 +131,25 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         }
 
         /* something real, work out what it's relative to */
-    	if (Strnicmp(name, "PROGDIR:", 8) == 0) {
-    	    lock = pr->pr_HomeDir;
-    	    /* I am not sure if these are correct but AOS does return
-    	     * non-NULL PROGDIR: handle even if pr_HomeDir is cleared */
-    	    if (!lock)
-    	    	lock = pr->pr_CurrentDir;
-    	    if (lock) {
+        if (Strnicmp(name, "PROGDIR:", 8) == 0) {
+            lock = pr->pr_HomeDir;
+            /* I am not sure if these are correct but AOS does return
+             * non-NULL PROGDIR: handle even if pr_HomeDir is cleared */
+            if (!lock)
+                lock = pr->pr_CurrentDir;
+            if (lock) {
                 fl = BADDR(lock);
                 dp->dvp_Port = fl->fl_Task;
                 dp->dvp_Lock = lock;
                 dp->dvp_DevNode = BADDR(fl->fl_Volume);
             } else {
-    	        dp->dvp_Port = DOSBase->dl_Root->rn_BootProc;
-    	        dp->dvp_Lock = BNULL;
+                dp->dvp_Port = DOSBase->dl_Root->rn_BootProc;
+                dp->dvp_Lock = BNULL;
                 dp->dvp_DevNode = NULL;
             } 
             dp->dvp_Flags = 0;
             return dp;
-    	}
+        }
 
         /* extract the volume name */
         len = SplitName(name, ':', vol, 0, sizeof(vol) - 1);
@@ -164,8 +164,8 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
                 dp->dvp_Lock = lock;
                 dp->dvp_DevNode = BADDR(fl->fl_Volume);
             } else {
-    	        dp->dvp_Port = DOSBase->dl_Root->rn_BootProc;
-    	        dp->dvp_Lock = BNULL;
+                dp->dvp_Port = DOSBase->dl_Root->rn_BootProc;
+                dp->dvp_Lock = BNULL;
                 dp->dvp_DevNode = NULL;
             }
 
@@ -251,56 +251,56 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     /* devices and volumes are easy */
     if (dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME)
     {
-    	struct MsgPort *newhandler = NULL;
+        struct MsgPort *newhandler = NULL;
 
-	if (dl->dol_Type == DLT_DEVICE)
-	{
-	    /* Check if the handler is not started */
-	    newhandler = dl->dol_Task;
-	    if (!newhandler)
-	    {
-	    	D(bug("[GetDeviceProc] Accessing device '%b', path='%s'\n", dl->dol_Name, origname));
+        if (dl->dol_Type == DLT_DEVICE)
+        {
+            /* Check if the handler is not started */
+            newhandler = dl->dol_Task;
+            if (!newhandler)
+            {
+                D(bug("[GetDeviceProc] Accessing device '%b', path='%s'\n", dl->dol_Name, origname));
 
-	    	/*
-	    	 * Unlock before starting handler, handler may internally
-	    	 * require dos list locks, for example to add volume node.
-	     	 */
-	    	UnLockDosList(LDF_ALL | LDF_READ);
+                /*
+                 * Unlock before starting handler, handler may internally
+                 * require dos list locks, for example to add volume node.
+                 */
+                UnLockDosList(LDF_ALL | LDF_READ);
 
-	    	newhandler = RunHandler((struct DeviceNode *)dl, origname, DOSBase);
-	    	if (!newhandler)
-	    	{
-		    FreeMem(dp, sizeof(struct DevProc));
-	            SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-        	    return NULL;
-        	}
+                newhandler = RunHandler((struct DeviceNode *)dl, origname, DOSBase);
+                if (!newhandler)
+                {
+                    FreeMem(dp, sizeof(struct DevProc));
+                    SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+                    return NULL;
+                }
 
-	    	LockDosList(LDF_ALL | LDF_READ);
-	    }
-	}
-	else
-	{
-	    res = TRUE;
-
-	    while (res && !dl->dol_Task)
-	    {
-	    	D(bug("[GetDeviceProc] Accessing offline volume '%b'\n", dl->dol_Name));
-		res = !ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (IPTR)dl, NULL);
-	    }
-
-	    if (!res)
-	    {
-	        UnLockDosList(LDF_ALL | LDF_READ);
-            	FreeMem(dp, sizeof(struct DevProc));
-            	SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-            	return NULL;
+                LockDosList(LDF_ALL | LDF_READ);
             }
-	}
+        }
+        else
+        {
+            res = TRUE;
 
-	/*
-	 * A handler theoretically may choose to use custom MsgPort for communications.
-	 * Pick up its preference if specified.
-	 */
+            while (res && !dl->dol_Task)
+            {
+                D(bug("[GetDeviceProc] Accessing offline volume '%b'\n", dl->dol_Name));
+                res = !ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (IPTR)dl, NULL);
+            }
+
+            if (!res)
+            {
+                UnLockDosList(LDF_ALL | LDF_READ);
+                FreeMem(dp, sizeof(struct DevProc));
+                SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+                return NULL;
+            }
+        }
+
+        /*
+         * A handler theoretically may choose to use custom MsgPort for communications.
+         * Pick up its preference if specified.
+         */
         dp->dvp_Port = dl->dol_Task ? dl->dol_Task : newhandler;
         dp->dvp_Lock = BNULL;
         dp->dvp_Flags = 0;

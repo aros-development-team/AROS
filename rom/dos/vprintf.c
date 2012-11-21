@@ -22,24 +22,24 @@ AROS_UFP2(void, vfp_hook,
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, VPrintf,
+        AROS_LH2(LONG, VPrintf,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, format,   D1),
-	AROS_LHA(IPTR *,       argarray, D2),
+        AROS_LHA(CONST_STRPTR, format,   D1),
+        AROS_LHA(IPTR *,       argarray, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 159, Dos)
+        struct DosLibrary *, DOSBase, 159, Dos)
 
 /*  FUNCTION
-	Writes a formatted string to standard output.
+        Writes a formatted string to standard output.
 
     INPUTS
-	format   - RawDoFmt like format string
-	argarray - Pointer to array of formatting values
+        format   - RawDoFmt like format string
+        argarray - Pointer to array of formatting values
 
     RESULT
-	Number of bytes written or -1 for an error
+        Number of bytes written or -1 for an error
 
     NOTES
 
@@ -68,14 +68,14 @@ AROS_UFP2(void, vfp_hook,
     vfp.DOSBase = DOSBase;
 
     (void)RawDoFmt(format, argarray,
-		   (VOID_FUNC)AROS_ASMSYMNAME(vfp_hook), &vfp);
+                   (VOID_FUNC)AROS_ASMSYMNAME(vfp_hook), &vfp);
 
     /* Remove the last character (which is a NUL character) */
     /*
     if (vfp.count > 0)
     {
-	vfp.count--;
-	((struct FileHandle *)BADDR(file))->fh_Pos--;
+        vfp.count--;
+        ((struct FileHandle *)BADDR(file))->fh_Pos--;
     }
     */
 

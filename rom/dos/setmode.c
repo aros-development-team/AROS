@@ -12,30 +12,30 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, SetMode,
+        AROS_LH2(LONG, SetMode,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, fh, D1),
-	AROS_LHA(LONG, mode, D2),
+        AROS_LHA(BPTR, fh, D1),
+        AROS_LHA(LONG, mode, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 71, Dos)
+        struct DosLibrary *, DOSBase, 71, Dos)
 
 /*  FUNCTION
-	SetMode() can be used to change a console handler between
-	RAW: mode and CON: mode.
+        SetMode() can be used to change a console handler between
+        RAW: mode and CON: mode.
 
     INPUTS
-	fh      -   The filehandle describing the console.
-	mode    -   The new mode of the console:
-			1   - RAW: mode
-			0   - CON: mode
+        fh      -   The filehandle describing the console.
+        mode    -   The new mode of the console:
+                        1   - RAW: mode
+                        0   - CON: mode
 
     RESULT
-	This function will return whether it succeeded:
+        This function will return whether it succeeded:
 
-	== DOSTRUE  console mode changed
-	!= DOSTRUE  console mode change failed.
+        == DOSTRUE  console mode changed
+        != DOSTRUE  console mode change failed.
 
     NOTES
 

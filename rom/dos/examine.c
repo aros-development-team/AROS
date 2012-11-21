@@ -16,14 +16,14 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, Examine,
+        AROS_LH2(LONG, Examine,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,                   lock, D1),
-	AROS_LHA(struct FileInfoBlock *, fib,  D2),
+        AROS_LHA(BPTR,                   lock, D1),
+        AROS_LHA(struct FileInfoBlock *, fib,  D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 17, Dos)
+        struct DosLibrary *, DOSBase, 17, Dos)
 
 /*  FUNCTION
 
@@ -69,8 +69,8 @@
     D(bug("[Examine] lock=%x fib=%x\n", fl, fib));
     ret = dopacket2(DOSBase, NULL, fl->fl_Task, ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib));
     if (ret) {
-    	fixfib(fib);
-    	D(bug("[Examine] '%s'\n", fib->fib_FileName));
+        fixfib(fib);
+        D(bug("[Examine] '%s'\n", fib->fib_FileName));
     }
     return ret;
 

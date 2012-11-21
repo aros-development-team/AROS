@@ -21,26 +21,26 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(LONG, FGetC,
+        AROS_LH1(LONG, FGetC,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, file, D1),
+        AROS_LHA(BPTR, file, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 51, Dos)
+        struct DosLibrary *, DOSBase, 51, Dos)
 
 /*  FUNCTION
-	Get a character from a buffered file. Buffered I/O is more efficient
-	for small amounts of data but less for big chunks. You have to
-	use Flush() between buffered and non-buffered I/O or you'll
-	clutter your I/O stream.
+        Get a character from a buffered file. Buffered I/O is more efficient
+        for small amounts of data but less for big chunks. You have to
+        use Flush() between buffered and non-buffered I/O or you'll
+        clutter your I/O stream.
 
     INPUTS
-	file   - filehandle
+        file   - filehandle
 
     RESULT
-	The character read or EOF if the file ended or an error happened.
-	IoErr() gives additional information in that case.
+        The character read or EOF if the file ended or an error happened.
+        IoErr() gives additional information in that case.
 
     NOTES
 
@@ -49,7 +49,7 @@
     BUGS
 
     SEE ALSO
-	IoErr(), Flush()
+        IoErr(), Flush()
 
     INTERNALS
 
@@ -65,7 +65,7 @@
 
     if (fh == NULL)
     {
-    	return EOF;
+        return EOF;
     }
     
     /* If the file is in write mode... */
@@ -80,7 +80,7 @@
 
             /* An error happened? Return it. */
             if(size < 0)
-	    {
+            {
                 return EOF;
             }
 
@@ -131,10 +131,10 @@
 
         /* No data read? Return EOF. */
         if(size == 0)
-	{
+        {
             D(bug("FGetC: Tried to Read() to a %d byte buffer, got 0)\n", bufsize));
             return EOF;
-	}
+        }
     }
 
     /* If fh_End == 0, simulate an EOF */

@@ -12,30 +12,30 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH4(LONG, FRead,
+        AROS_LH4(LONG, FRead,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR , fh, D1),
-	AROS_LHA(APTR , block, D2),
-	AROS_LHA(ULONG, blocklen, D3),
-	AROS_LHA(ULONG, number, D4),
+        AROS_LHA(BPTR , fh, D1),
+        AROS_LHA(APTR , block, D2),
+        AROS_LHA(ULONG, blocklen, D3),
+        AROS_LHA(ULONG, number, D4),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 54, Dos)
+        struct DosLibrary *, DOSBase, 54, Dos)
 
 /*  FUNCTION
-	Read a number of blocks from a file.
+        Read a number of blocks from a file.
 
     INPUTS
-	fh - Read from this file
-	block - The data is put here
-	blocklen - This is the size of a single block
-	number - The number of blocks
+        fh - Read from this file
+        block - The data is put here
+        blocklen - This is the size of a single block
+        number - The number of blocks
 
     RESULT
-	The number of blocks read from the file or 0 on EOF.
-	This function may return fewer than the requested number of blocks.
-	IoErr() gives additional information in case of an error.
+        The number of blocks read from the file or 0 on EOF.
+        This function may return fewer than the requested number of blocks.
+        IoErr() gives additional information in case of an error.
 
     NOTES
 
@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	Open(), FWrite(), FPutc(), Close()
+        Open(), FWrite(), FPutc(), Close()
 
     INTERNALS
 
@@ -64,15 +64,15 @@
 
     for(read = 0; read < number; read++)
     {
-	for(len = blocklen; len--; )
-	{
-	    c = FGetC(fh);
+        for(len = blocklen; len--; )
+        {
+            c = FGetC(fh);
 
-	    if(c < 0)
-		goto finish;
+            if(c < 0)
+                goto finish;
 
-	    *ptr ++ = c;
-	}
+            *ptr ++ = c;
+        }
     }
 finish:
     if(read == 0 && len == blocklen)

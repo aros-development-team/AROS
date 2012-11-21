@@ -26,12 +26,12 @@ AROS_LD4(BPTR, InternalLoadSeg,
  * There's no counterpart since the loaded seglist can be freed by
  * conventional IntrernalUnloadSeg(), even on old AmigaOS.
  */
-#define LoadSegment(fh, table, funcarray, stack)			\
-    	AROS_CALL4(BPTR, AROS_SLIB_ENTRY(InternalLoadSeg, Dos, 126),	\
-		   AROS_LCA(BPTR       , fh           , D0),		\
-       		   AROS_LDA(BPTR       , table        , A0),		\
-       		   AROS_LDA(LONG_FUNC *, funcarray    , A1),		\
-       		   AROS_LDA(LONG *     , stack        , A2),		\
-       		   struct DosLibrary *, DOSBase)
+#define LoadSegment(fh, table, funcarray, stack)                        \
+        AROS_CALL4(BPTR, AROS_SLIB_ENTRY(InternalLoadSeg, Dos, 126),    \
+                   AROS_LCA(BPTR       , fh           , D0),            \
+                   AROS_LDA(BPTR       , table        , A0),            \
+                   AROS_LDA(LONG_FUNC *, funcarray    , A1),            \
+                   AROS_LDA(LONG *     , stack        , A2),            \
+                   struct DosLibrary *, DOSBase)
 
 #endif /* LOADSEG_LOADSEG_H */

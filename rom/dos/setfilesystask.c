@@ -16,23 +16,23 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-	AROS_LH1(struct MsgPort *, SetFileSysTask,
+        AROS_LH1(struct MsgPort *, SetFileSysTask,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MsgPort *, task, D1),
+        AROS_LHA(struct MsgPort *, task, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 88, Dos)
+        struct DosLibrary *, DOSBase, 88, Dos)
 
 /*  FUNCTION
-	Set the default filesystem handler for the current process,
-	the old filesystem handler will be returned.
+        Set the default filesystem handler for the current process,
+        the old filesystem handler will be returned.
 
     INPUTS
-	task		- The new filesystem handler.
+        task            - The new filesystem handler.
 
     RESULT
-	The old filesystem handler.
+        The old filesystem handler.
 
     NOTES
 
@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	GetFileSysTask()
+        GetFileSysTask()
 
     INTERNALS
 

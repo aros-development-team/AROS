@@ -15,28 +15,28 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH0(BPTR, GetProgramDir,
+        AROS_LH0(BPTR, GetProgramDir,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 100, Dos)
+        struct DosLibrary *, DOSBase, 100, Dos)
 
 /*  FUNCTION
-	This function will return the shared lock on the directory that
-	the current process was loaded from. You can use this to help
-	you find data files which were supplied with your program.
+        This function will return the shared lock on the directory that
+        the current process was loaded from. You can use this to help
+        you find data files which were supplied with your program.
 
-	A NULL return is possible, which means that you may be running
-	from the Resident list.
+        A NULL return is possible, which means that you may be running
+        from the Resident list.
 
-	You should NOT under any circumstance UnLock() this lock.
+        You should NOT under any circumstance UnLock() this lock.
 
     INPUTS
 
     RESULT
-	A shared lock on the directory the program was started from.
+        A shared lock on the directory the program was started from.
 
     NOTES
 

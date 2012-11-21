@@ -22,15 +22,15 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH3I(void, SendPkt,
+        AROS_LH3I(void, SendPkt,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DosPacket *, dp, D1),
-	AROS_LHA(struct MsgPort   *, port, D2),
-	AROS_LHA(struct MsgPort   *, replyport, D3),
+        AROS_LHA(struct DosPacket *, dp, D1),
+        AROS_LHA(struct MsgPort   *, port, D2),
+        AROS_LHA(struct MsgPort   *, replyport, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 41, Dos)
+        struct DosLibrary *, DOSBase, 41, Dos)
 
 /*  FUNCTION
 

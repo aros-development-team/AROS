@@ -16,27 +16,27 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, PrintFault,
+        AROS_LH2(BOOL, PrintFault,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG,   code,   D1),
-	AROS_LHA(CONST_STRPTR, header, D2),
+        AROS_LHA(LONG,   code,   D1),
+        AROS_LHA(CONST_STRPTR, header, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 79, Dos)
+        struct DosLibrary *, DOSBase, 79, Dos)
 
 /*  FUNCTION
-	Prints the header and the text associated with the error code to
-	the console (buffered), then sets the value returned by IoErr() to
-	the error code given.
+        Prints the header and the text associated with the error code to
+        the console (buffered), then sets the value returned by IoErr() to
+        the error code given.
 
     INPUTS
-	code    --  Error code.
-	header  --  Text to print before the error message. This may be NULL
+        code    --  Error code.
+        header  --  Text to print before the error message. This may be NULL
                     in which case only the error message is printed.
 
     RESULT
-	Boolean success indicator.
+        Boolean success indicator.
 
     NOTES
 
@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-	IoErr(), Fault(), SetIoErr()
+        IoErr(), Fault(), SetIoErr()
 
     INTERNALS
 
@@ -69,30 +69,30 @@
 
     if (code == 0)
     {
-	ret = DOSTRUE;
+        ret = DOSTRUE;
     }
     else if (header != NULL)
     {
-	if(!FPuts(stream, header) && !FPuts(stream, ": ") &&
-	   !FPuts(stream, buffer) && !FPuts(stream, "\n"))
-	{
-	    ret = DOSTRUE;
-	}
-	else
-	{
-	    ret = DOSFALSE;
-	}
+        if(!FPuts(stream, header) && !FPuts(stream, ": ") &&
+           !FPuts(stream, buffer) && !FPuts(stream, "\n"))
+        {
+            ret = DOSTRUE;
+        }
+        else
+        {
+            ret = DOSFALSE;
+        }
     }
     else
     {
-	if (!FPuts(stream, buffer) && !FPuts(stream,"\n"))
-	{
-	    ret = DOSTRUE;
-	}
-	else
-	{
-	    ret = DOSFALSE;
-	}
+        if (!FPuts(stream, buffer) && !FPuts(stream,"\n"))
+        {
+            ret = DOSTRUE;
+        }
+        else
+        {
+            ret = DOSFALSE;
+        }
     }
 
     /* All done. */

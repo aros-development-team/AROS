@@ -18,15 +18,15 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-	AROS_LH3(void, ReplyPkt,
+        AROS_LH3(void, ReplyPkt,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct DosPacket *, dp, D1),
-	AROS_LHA(SIPTR             , res1, D2),
-	AROS_LHA(LONG              , res2, D3),
+        AROS_LHA(struct DosPacket *, dp, D1),
+        AROS_LHA(SIPTR             , res1, D2),
+        AROS_LHA(LONG              , res2, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 43, Dos)
+        struct DosLibrary *, DOSBase, 43, Dos)
 
 /*  FUNCTION
 

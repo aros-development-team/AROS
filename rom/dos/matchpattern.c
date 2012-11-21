@@ -16,14 +16,14 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BOOL, MatchPattern,
+        AROS_LH2(BOOL, MatchPattern,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, pat, D1),
-	AROS_LHA(CONST_STRPTR, str, D2),
+        AROS_LHA(CONST_STRPTR, pat, D1),
+        AROS_LHA(CONST_STRPTR, str, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 141, Dos)
+        struct DosLibrary *, DOSBase, 141, Dos)
 
 /*  FUNCTION
 
@@ -56,6 +56,6 @@
     AROS_LIBFUNC_INIT
 
     return patternMatch(pat, str, TRUE, DOSBase);
-	
+        
     AROS_LIBFUNC_EXIT
 } /* MatchPattern */

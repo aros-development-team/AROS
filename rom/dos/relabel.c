@@ -14,14 +14,14 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, Relabel,
+        AROS_LH2(LONG, Relabel,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, drive, D1),
-	AROS_LHA(CONST_STRPTR, newname, D2),
+        AROS_LHA(CONST_STRPTR, drive, D1),
+        AROS_LHA(CONST_STRPTR, newname, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 120, Dos)
+        struct DosLibrary *, DOSBase, 120, Dos)
 
 /*  FUNCTION
 
@@ -54,7 +54,7 @@
     LONG status = DOSFALSE;
 
     if (!getdevpacketinfo(DOSBase, drive, newname, &phs))
-    	return DOSFALSE;
+        return DOSFALSE;
  
     status = dopacket1(DOSBase, NULL, phs.port, ACTION_RENAME_DISK, phs.name);
 

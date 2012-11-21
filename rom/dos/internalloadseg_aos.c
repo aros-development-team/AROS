@@ -43,7 +43,7 @@ static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, struct DosLibrar
      * read ahead.
      */
     while (count && !(err = read_block(fd, &tmp, sizeof(tmp), funcarray, DOSBase)))
-    	count--;
+        count--;
 
     return err;
 }
@@ -239,11 +239,11 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           segtypes[(hunktype & 0xFFFFFF)-HUNK_CODE], curhunk, count*4));
 
         if ((hunktype & 0xFFFFFF) != HUNK_BSS && count)
-	{
+        {
           if (read_block(fh, GETHUNKPTR(curhunk), count*4, funcarray, DOSBase))
             goto end;
 
-    	}
+        }
 
         lasthunk = curhunk;
         ++curhunk;
@@ -303,10 +303,10 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           while (1)
           {
             ULONG *addr;
-    	    UWORD word;
-	    
-	    Wordcount++;
-	    
+            UWORD word;
+            
+            Wordcount++;
+            
             if (read_block(fh, &word, sizeof(word), funcarray, DOSBase))
               goto end;
             if (word == 0L)
@@ -315,13 +315,13 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             word = AROS_BE2LONG(word);
 
             i = word;
-	    Wordcount++;
+            Wordcount++;
             if (read_block(fh, &word, sizeof(word), funcarray, DOSBase))
               goto end;
 
             word = AROS_BE2WORD(word);
 
-    	    count = word;
+            count = word;
             D(bug("\tHunk #%ld @%p: %ld relocations\n", count, GETHUNKPTR(lasthunk), i));
             while (i > 0)
             {
@@ -448,13 +448,13 @@ done:
      */
     if (SysBase->LibNode.lib_Version >= 36)
     {
-    	/* Clear caches */
-    	for (t = first; t < numhunks && t <= last; t++)
-    	{
-      	    hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
-      	    if (hunksize)
-	        CacheClearE(BADDR(hunktab[t]), hunksize, CACRF_ClearI | CACRF_ClearD);
-	}
+        /* Clear caches */
+        for (t = first; t < numhunks && t <= last; t++)
+        {
+            hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
+            if (hunksize)
+                CacheClearE(BADDR(hunktab[t]), hunksize, CACRF_ClearI | CACRF_ClearD);
+        }
     }
 #endif
 
@@ -506,9 +506,9 @@ end:
 
 #ifdef __mc68000
 static AROS_UFH4(LONG, ReadFunc,
-	AROS_UFHA(BPTR, file,   D1),
-	AROS_UFHA(APTR, buffer, D2),
-	AROS_UFHA(LONG, length, D3),
+        AROS_UFHA(BPTR, file,   D1),
+        AROS_UFHA(APTR, buffer, D2),
+        AROS_UFHA(LONG, length, D3),
         AROS_UFHA(struct DosLibrary *, DOSBase, A6)
 )
 {
@@ -520,8 +520,8 @@ static AROS_UFH4(LONG, ReadFunc,
 }
 
 static AROS_UFH3(APTR, AllocFunc,
-	AROS_UFHA(ULONG, length, D0),
-	AROS_UFHA(ULONG, flags,  D1),
+        AROS_UFHA(ULONG, length, D0),
+        AROS_UFHA(ULONG, flags,  D1),
         AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
@@ -533,8 +533,8 @@ static AROS_UFH3(APTR, AllocFunc,
 }
 
 static AROS_UFH3(void, FreeFunc,
-	AROS_UFHA(APTR, buffer, A1),
-	AROS_UFHA(ULONG, length, D0),
+        AROS_UFHA(APTR, buffer, A1),
+        AROS_UFHA(ULONG, length, D0),
         AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
@@ -562,10 +562,10 @@ AROS_UFH4(BPTR, LoadSeg_Overlay,
 
     D(bug("LoadSeg_Overlay. table=%x fh=%x\n", hunktable, fh));
     if (read_block(fh, &hunktype, sizeof(hunktype), (SIPTR*)FunctionArray, DosBase))
-    	return BNULL;
+        return BNULL;
     hunktype = AROS_BE2LONG(hunktype);
     if (hunktype != HUNK_HEADER)
-    	return BNULL;
+        return BNULL;
     return InternalLoadSeg_AOS(fh, hunktable, (SIPTR*)FunctionArray, NULL, DosBase);
 
     AROS_USERFUNC_EXIT

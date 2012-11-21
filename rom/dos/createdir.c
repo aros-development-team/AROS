@@ -20,24 +20,24 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BPTR, CreateDir,
+        AROS_LH1(BPTR, CreateDir,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(CONST_STRPTR, name, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 20, Dos)
+        struct DosLibrary *, DOSBase, 20, Dos)
 
 /*  FUNCTION
-	Creates a new directory under the given name. If all went well, an
-	exclusive lock on the new diretory is returned.
+        Creates a new directory under the given name. If all went well, an
+        exclusive lock on the new diretory is returned.
 
     INPUTS
-	name  -- NUL terminated name.
+        name  -- NUL terminated name.
 
     RESULT
-	Exclusive lock to the new directory or 0 if it couldn't be created.
-	IoErr() gives additional information in that case.
+        Exclusive lock to the new directory or 0 if it couldn't be created.
+        IoErr() gives additional information in that case.
 
     NOTES
 
@@ -59,8 +59,8 @@
     D(bug("[CreateDir] '%s'\n", name));
 
     if (getpacketinfo(DOSBase, name, &phs)) {
-    	lock = (BPTR)dopacket2(DOSBase, NULL, phs.port, ACTION_CREATE_DIR, phs.lock, phs.name);
-    	freepacketinfo(DOSBase, &phs);
+        lock = (BPTR)dopacket2(DOSBase, NULL, phs.port, ACTION_CREATE_DIR, phs.lock, phs.name);
+        freepacketinfo(DOSBase, &phs);
     }
 
     return lock;

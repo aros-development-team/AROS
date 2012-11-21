@@ -19,29 +19,29 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, UnGetC,
+        AROS_LH2(LONG, UnGetC,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, file,      D1),
-	AROS_LHA(LONG, character, D2),
+        AROS_LHA(BPTR, file,      D1),
+        AROS_LHA(LONG, character, D2),
 
 /*  LOCATION */
 
-	struct DosLibrary *, DOSBase, 53, Dos)
+        struct DosLibrary *, DOSBase, 53, Dos)
 
 /*  FUNCTION
-	Push a character back into a read filehandle. If you've read
-	a character from that file you may always push at least 1 character
-	back. UnGetC(file,-1) ungets the last character read. This also
-	works for EOF.
+        Push a character back into a read filehandle. If you've read
+        a character from that file you may always push at least 1 character
+        back. UnGetC(file,-1) ungets the last character read. This also
+        works for EOF.
 
     INPUTS
-	file	  - Filehandle you've read from.
-	character - Character to push back or EOF.
+        file      - Filehandle you've read from.
+        character - Character to push back or EOF.
 
     RESULT
-	!=0 if all went well, 0 if the character couldn't be pushed back.
-	IoErr() gives additional information in that case.
+        !=0 if all went well, 0 if the character couldn't be pushed back.
+        IoErr() gives additional information in that case.
 
     NOTES
 
@@ -50,7 +50,7 @@
     BUGS
 
     SEE ALSO
-	FGetC(), IoErr()
+        FGetC(), IoErr()
 
     INTERNALS
 
@@ -71,28 +71,28 @@
     /* If the file is in write mode there was nothing read recently */
     if(fh->fh_Flags&FHF_WRITE)
     {
-	*result=ERROR_SEEK_ERROR;
-	return 0;
+        *result=ERROR_SEEK_ERROR;
+        return 0;
     }
 
     /* Unget EOF character if the last character read was an EOF */
     if(character==EOF&&fh->fh_End==0)
     {
-	fh->fh_Pos++;
-	return EOF;
+        fh->fh_Pos++;
+        return EOF;
     }
 
     /* Test if I may unget a character on this file */
     if(fh->fh_Pos==0)
     {
-	*result=ERROR_SEEK_ERROR;
-	return 0;
+        *result=ERROR_SEEK_ERROR;
+        return 0;
     }
 
     /* OK. Unget character and return. */
     fh->fh_Pos--;
     if(character!=EOF)
-	((UBYTE *)BADDR(fh->fh_Buf))[fh->fh_Pos]=character;
+        ((UBYTE *)BADDR(fh->fh_Buf))[fh->fh_Pos]=character;
     return character?character:1;
     AROS_LIBFUNC_EXIT
 } /* UnGetC */

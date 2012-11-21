@@ -15,15 +15,15 @@
 #include <exec/types.h>
 #include <proto/dos.h>
 
-	AROS_LH3(LONG, MakeLink,
+        AROS_LH3(LONG, MakeLink,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name, D1),
-	AROS_LHA(APTR,   dest, D2),
-	AROS_LHA(LONG  , soft, D3),
+        AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(APTR,   dest, D2),
+        AROS_LHA(LONG  , soft, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 74, Dos)
+        struct DosLibrary *, DOSBase, 74, Dos)
 
 /*  FUNCTION
         MakeLink() will create a link between two files or directories.
@@ -38,14 +38,14 @@
         or directories on the same volume.
 
     INPUTS
-	name - The name of the link to create
-	dest - If 'soft' is TRUE this must be a filename; if it is FALSE a lock
-	       pointing to the file to be hard-linked must be provided
-	soft - TRUE, if a soft link is to be created, FALSE for a hard link
+        name - The name of the link to create
+        dest - If 'soft' is TRUE this must be a filename; if it is FALSE a lock
+               pointing to the file to be hard-linked must be provided
+        soft - TRUE, if a soft link is to be created, FALSE for a hard link
 
     RESULT
-	boolean - DOSTRUE or DOSFALSE. On error, IoErr() will contain more
-	information.
+        boolean - DOSTRUE or DOSFALSE. On error, IoErr() will contain more
+        information.
 
     NOTES
 
@@ -59,8 +59,8 @@
         ReadLink()
  
     INTERNALS
-	This function calls either FSA_CREATE_HARDLINK or FSA_CREATE_SOFTLINK
-	on the filesystem of `name`.
+        This function calls either FSA_CREATE_HARDLINK or FSA_CREATE_SOFTLINK
+        on the filesystem of `name`.
 
 *****************************************************************************/
 {
@@ -72,7 +72,7 @@
     status = DOSFALSE;
     if (getpacketinfo(DOSBase, name, &phs)) {
         status = dopacket4(DOSBase, NULL, phs.port, ACTION_MAKE_LINK, phs.lock, phs.name, (SIPTR)name, (IPTR)soft);
-    	freepacketinfo(DOSBase, &phs);
+        freepacketinfo(DOSBase, &phs);
     }
     
     return status;

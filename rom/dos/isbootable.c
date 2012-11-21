@@ -34,14 +34,14 @@ BOOL __dos_IsBootable(struct DosLibrary * DOSBase, BPTR lock)
     if (!fh)
     {
 #ifdef __mc68000
-	/*
-	 * Original Amiga disks don't contain this signature. They are obviously bootable on m68k.
-	 * However if the disk DOES contain a signature, we should check it. This can happen to be
-	 * a disk for another architecture. Attempting to boot from it will cause crash.
-	 */
-    	return TRUE;
+        /*
+         * Original Amiga disks don't contain this signature. They are obviously bootable on m68k.
+         * However if the disk DOES contain a signature, we should check it. This can happen to be
+         * a disk for another architecture. Attempting to boot from it will cause crash.
+         */
+        return TRUE;
 #else
-	return FALSE;
+        return FALSE;
 #endif
     }
 
@@ -50,30 +50,30 @@ BOOL __dos_IsBootable(struct DosLibrary * DOSBase, BPTR lock)
     abfile_fib = AllocDosObject(DOS_FIB, NULL);
     if (abfile_fib)
     {
-    	if (ExamineFH(fh, abfile_fib))
-    	{
-	    LONG readsize;
+        if (ExamineFH(fh, abfile_fib))
+        {
+            LONG readsize;
 
             bufferLength = abfile_fib->fib_Size + 1;
 
             buffer = AllocMem(bufferLength, MEMF_ANY);
             D(bug("[__dos_IsBootable] Allocated %d bytes for Buffer @ %p\n", bufferLength, buffer));
 
-	    if (!buffer)
+            if (!buffer)
             {
-            	Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
+                Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
             }
 
-	    readsize = Read(fh, buffer, bufferLength - 1);
-	    if (readsize > 0)
+            readsize = Read(fh, buffer, bufferLength - 1);
+            if (readsize > 0)
             {
-            	char *sigptr = NULL;
+                char *sigptr = NULL;
 
                 buffer[readsize] = '\0';
-            	D(bug("[__dos_IsBootable] Buffer contains '%s'\n", buffer));
+                D(bug("[__dos_IsBootable] Buffer contains '%s'\n", buffer));
 
-            	if ((sigptr = strstr(buffer, AROS_CPU)) != 0)
-            	{
+                if ((sigptr = strstr(buffer, AROS_CPU)) != 0)
+                {
                     D(bug("[__dos_IsBootable] Signature '%s' found\n", AROS_CPU));
                     result = TRUE;
                 }
@@ -100,10 +100,10 @@ BOOL __dos_IsBootable(struct DosLibrary * DOSBase, BPTR lock)
     CurrentDir(lock);
     if ((seg = LoadSeg(AROS_BOOT_CHECKEXEC)))
     {
-    	UnLoadSeg(seg);
+        UnLoadSeg(seg);
 
-	D(bug("[__dos_IsBootable] Success!\n"));	
-    	return TRUE;
+        D(bug("[__dos_IsBootable] Success!\n"));        
+        return TRUE;
     }
 
 #else

@@ -15,14 +15,14 @@
 
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, Info,
+        AROS_LH2(LONG, Info,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR             , lock, D1),
-	AROS_LHA(struct InfoData *, parameterBlock, D2),
+        AROS_LHA(BPTR             , lock, D1),
+        AROS_LHA(struct InfoData *, parameterBlock, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 19, Dos)
+        struct DosLibrary *, DOSBase, 19, Dos)
 
 /*  FUNCTION
 

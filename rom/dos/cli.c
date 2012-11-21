@@ -16,24 +16,24 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH0(struct CommandLineInterface *, Cli,
+        AROS_LH0(struct CommandLineInterface *, Cli,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 82, Dos)
+        struct DosLibrary *, DOSBase, 82, Dos)
 
 /*  FUNCTION
-	Returns a pointer to the CLI structure of the current process.
+        Returns a pointer to the CLI structure of the current process.
 
     INPUTS
 
     RESULT
-	Pointer to CLI structure.
+        Pointer to CLI structure.
 
     NOTES
-	Do not use this function to test if the process was started from
-	the shell. Check pr_CLI instead.
+        Do not use this function to test if the process was started from
+        the shell. Check pr_CLI instead.
 
     EXAMPLE
 

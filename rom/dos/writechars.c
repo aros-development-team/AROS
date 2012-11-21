@@ -14,26 +14,26 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(LONG, WriteChars,
+        AROS_LH2(LONG, WriteChars,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, buf, D1),
-	AROS_LHA(ULONG, buflen, D2),
+        AROS_LHA(CONST_STRPTR, buf, D1),
+        AROS_LHA(ULONG, buflen, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 157, Dos)
+        struct DosLibrary *, DOSBase, 157, Dos)
 
 /*  FUNCTION
-	Writes the contents of the buffer to the current output stream.
-	The number of bytes written is returned.
+        Writes the contents of the buffer to the current output stream.
+        The number of bytes written is returned.
 
     INPUTS
-	buf - Buffer to be written.
-	buflen - Size of the buffer in bytes.
+        buf - Buffer to be written.
+        buflen - Size of the buffer in bytes.
 
     RESULT
-	The number of bytes written or EOF on failure. IoErr() gives
-	additional information in that case.
+        The number of bytes written or EOF on failure. IoErr() gives
+        additional information in that case.
 
     NOTES
 
@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-	FPuts(), FPutC(), FWrite(), PutStr()
+        FPuts(), FPutC(), FWrite(), PutStr()
 
     INTERNALS
 
@@ -53,8 +53,8 @@
     BPTR file = Output();
 
     for (i = 0; i < buflen; i++)
-	if (FPutC(file, buf[i]) < 0)
-	    return EOF;
+        if (FPutC(file, buf[i]) < 0)
+            return EOF;
 
     return (LONG)i;
     AROS_LIBFUNC_EXIT

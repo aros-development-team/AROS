@@ -16,25 +16,25 @@
 #include <exec/types.h>
 #include <proto/dos.h>
 
-	AROS_LH1(BPTR, ParentDir,
+        AROS_LH1(BPTR, ParentDir,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, lock, D1),
+        AROS_LHA(BPTR, lock, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 35, Dos)
+        struct DosLibrary *, DOSBase, 35, Dos)
 
 /*  FUNCTION
-	Returns a lock to the parent directory of the supplied lock.
+        Returns a lock to the parent directory of the supplied lock.
 
     INPUTS
-	lock - Lock to get parent directory of.
+        lock - Lock to get parent directory of.
 
     RESULT
-	Returns a lock to the parent directory or NULL, in which case the 
-	supplied lock has no parent directory (because it is the root 
-	directory) or an error occured. IoErr() returns 0 in the former case 
-	and a different value on error.
+        Returns a lock to the parent directory or NULL, in which case the 
+        supplied lock has no parent directory (because it is the root 
+        directory) or an error occured. IoErr() returns 0 in the former case 
+        and a different value on error.
 
     NOTES
 

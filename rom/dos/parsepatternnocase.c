@@ -17,19 +17,19 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH3(LONG, ParsePatternNoCase,
+        AROS_LH3(LONG, ParsePatternNoCase,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, Source,     D1),
-	AROS_LHA(STRPTR,       Dest,       D2),
-	AROS_LHA(LONG,         DestLength, D3),
+        AROS_LHA(CONST_STRPTR, Source,     D1),
+        AROS_LHA(STRPTR,       Dest,       D2),
+        AROS_LHA(LONG,         DestLength, D3),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 161, Dos)
+        struct DosLibrary *, DOSBase, 161, Dos)
 
 /*  FUNCTION
-	Similar to ParsePattern(), only case insensitive (see there
-	for more information). For use with MatchPatternNoCase().
+        Similar to ParsePattern(), only case insensitive (see there
+        for more information). For use with MatchPatternNoCase().
 
     INPUTS
 
@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-	ParsePattern(), MatchPatternNoCase()
+        ParsePattern(), MatchPatternNoCase()
 
     INTERNALS
 

@@ -28,33 +28,33 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH2(BPTR, Lock,
+        AROS_LH2(BPTR, Lock,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, name,       D1),
-	AROS_LHA(LONG,         accessMode, D2),
+        AROS_LHA(CONST_STRPTR, name,       D1),
+        AROS_LHA(LONG,         accessMode, D2),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 14, Dos)
+        struct DosLibrary *, DOSBase, 14, Dos)
 
 /*  FUNCTION
-	Gets a lock on a file or directory. There may be more than one
-	shared lock on a file but only one if it is an exclusive one.
-	Locked files or directories may not be deleted.
+        Gets a lock on a file or directory. There may be more than one
+        shared lock on a file but only one if it is an exclusive one.
+        Locked files or directories may not be deleted.
 
     INPUTS
-	name	   - NUL terminated name of the file or directory.
-	accessMode - One of SHARED_LOCK
-			    EXCLUSIVE_LOCK
+        name       - NUL terminated name of the file or directory.
+        accessMode - One of SHARED_LOCK
+                            EXCLUSIVE_LOCK
 
     RESULT
-	Handle to the file or directory or 0 if the object couldn't be locked.
-	IoErr() gives additional information in that case.
+        Handle to the file or directory or 0 if the object couldn't be locked.
+        IoErr() gives additional information in that case.
 
     NOTES
-	The lock structure returned by this function is different
-	from that of AmigaOS (in fact it is identical to a filehandle).
-	Do not try to read any internal fields.
+        The lock structure returned by this function is different
+        from that of AmigaOS (in fact it is identical to a filehandle).
+        Do not try to read any internal fields.
 
 *****************************************************************************/
 
@@ -73,7 +73,7 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 
     if (InternalLock(name, accessMode, &fl, MAX_SOFT_LINK_NESTING, DOSBase))
     {
-    	D(bug("[Lock] returned 0x%p\n", fl));
+        D(bug("[Lock] returned 0x%p\n", fl));
         return fl;
     }
 
@@ -165,8 +165,8 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 
     if(soft_nesting == 0)
     {
-	SetIoErr(ERROR_TOO_MANY_LEVELS);
-	return DOSFALSE;
+        SetIoErr(ERROR_TOO_MANY_LEVELS);
+        return DOSFALSE;
     }
 
     /* Check for a pseudo-file lock
@@ -181,11 +181,11 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
         struct MsgPort *port;
         BPTR lock;
 
-	/* No ':' in the pathname, path is relative to current directory */
-	cur = me->pr_CurrentDir;
-	if (cur && cur != (BPTR)-1) {
-	    port = ((struct FileLock *)BADDR(cur))->fl_Task;
-	    lock = cur;
+        /* No ':' in the pathname, path is relative to current directory */
+        cur = me->pr_CurrentDir;
+        if (cur && cur != (BPTR)-1) {
+            port = ((struct FileLock *)BADDR(cur))->fl_Task;
+            lock = cur;
         } else {
             port = DOSBase->dl_Root->rn_BootProc;
             lock = BNULL;
@@ -196,7 +196,7 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     }
     else 
     {
-    	filename++;
+        filename++;
         do
         {
             if ((dvp = GetDeviceProc(name, dvp)) == NULL) 
@@ -205,12 +205,12 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
                 break;
             }
 
-	    error = fs_LocateObject(handle, dvp->dvp_Port, dvp->dvp_Lock, filename, accessMode, DOSBase);
+            error = fs_LocateObject(handle, dvp->dvp_Port, dvp->dvp_Lock, filename, accessMode, DOSBase);
 
         } while (error == ERROR_OBJECT_NOT_FOUND);
 
-	/* FIXME: On Linux hosted we sometimes get ERROR_IS_SOFTLINK with dvp == NULL,
-	 * which causes segfaults below if we don't change "error". Adding !dvp below
+        /* FIXME: On Linux hosted we sometimes get ERROR_IS_SOFTLINK with dvp == NULL,
+         * which causes segfaults below if we don't change "error". Adding !dvp below
          * is probably a hack
          */
         if (error == ERROR_NO_MORE_ENTRIES || !dvp)
@@ -234,22 +234,22 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
             if (dvp)
             {
                 olddir = me->pr_CurrentDir;
-            	error = RootDir(dvp, DOSBase);
+                error = RootDir(dvp, DOSBase);
             }
             else
-            	error = 0;
+                error = 0;
 
             if (!error)
             {
-            	ret = InternalLock(softname, accessMode, handle, soft_nesting - 1, DOSBase);
-            	error = ret ? 0 : IoErr();
-            	D(bug("[Lock] Resolve error %d\n", error));
+                ret = InternalLock(softname, accessMode, handle, soft_nesting - 1, DOSBase);
+                error = ret ? 0 : IoErr();
+                D(bug("[Lock] Resolve error %d\n", error));
 
-		if (olddir)
-            	    UnLock(CurrentDir(olddir));
+                if (olddir)
+                    UnLock(CurrentDir(olddir));
             }
 
-	    FreeVec(softname);
+            FreeVec(softname);
         }
         else
             error = IoErr();
@@ -259,11 +259,11 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 
     if (error)
     {
-    	SetIoErr(error);
-    	ret = DOSFALSE;
+        SetIoErr(error);
+        ret = DOSFALSE;
     }
     else
-    	ret = DOSTRUE;
+        ret = DOSTRUE;
 
     return ret;
 }
@@ -293,9 +293,9 @@ STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct 
 
         written = fs_ReadLink(cur, dvp, name, softname, buffer_size, DOSBase);
 
-	switch (written)
-	{
-	case -1:
+        switch (written)
+        {
+        case -1:
             /* An error occured */
             DLINK(bug("[Softlink] Error %d reading softlink\n", IoErr()));
             break;
@@ -308,7 +308,7 @@ STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct 
             DLINK(bug("[Softlink] Increased buffer size up to %u\n", buffer_size));
             break;
 
-	default:
+        default:
             /* All OK */
             DLINK(bug("[Softlink] Resolved path: %s\n", softname));
             return softname;
@@ -331,7 +331,7 @@ LONG RootDir(struct DevProc *dvp, struct DosLibrary *DOSBase)
     error = fs_LocateObject(&lock, dvp->dvp_Port, dvp->dvp_Lock, "", SHARED_LOCK, DOSBase);
 
     if (!error)
-    	CurrentDir(lock);
+        CurrentDir(lock);
 
     return error;
 }

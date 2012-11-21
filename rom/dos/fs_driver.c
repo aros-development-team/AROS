@@ -20,7 +20,7 @@ LONG fs_LocateObject(BPTR *ret, struct MsgPort *port, BPTR parent, CONST_STRPTR 
     BSTR bstrname = C2BSTR(name);
 
     if (!bstrname)
-    	return ERROR_NO_FREE_STORE;
+        return ERROR_NO_FREE_STORE;
 
     *ret = (BPTR)dopacket3(DOSBase, &error, port, ACTION_LOCATE_OBJECT, parent, bstrname, accessMode);
     FREEC2BSTR(bstrname);
@@ -54,17 +54,17 @@ LONG fs_Open(struct FileHandle *handle, struct MsgPort *port, BPTR lock, LONG mo
 
     if (!port)
     {
-    	/* handler pointer not set, return NIL: handle */
-    	SetIoErr(0);
-    	handle->fh_Type = BNULL;
-    	/* NIL: is not considered interactive */
-    	handle->fh_Interactive = DOSFALSE;
-    	return 0;
+        /* handler pointer not set, return NIL: handle */
+        SetIoErr(0);
+        handle->fh_Type = BNULL;
+        /* NIL: is not considered interactive */
+        handle->fh_Interactive = DOSFALSE;
+        return 0;
     }
 
     bstrname = C2BSTR(name);
     if (!bstrname)
-    	return ERROR_NO_FREE_STORE;
+        return ERROR_NO_FREE_STORE;
 
     status = dopacket3(DOSBase, &error, port, action, MKBADDR(handle), lock, bstrname);
     FREEC2BSTR(bstrname);
@@ -79,14 +79,14 @@ LONG fs_ReadLink(BPTR parent, struct DevProc *dvp, CONST_STRPTR path, STRPTR buf
 
     if (parent)
     {
-	struct FileLock *fl = BADDR(parent);
+        struct FileLock *fl = BADDR(parent);
 
-    	port = fl->fl_Task;
+        port = fl->fl_Task;
     }
     else
     {
-    	port   = dvp->dvp_Port;
-    	parent = dvp->dvp_Lock;
+        port   = dvp->dvp_Port;
+        parent = dvp->dvp_Lock;
     }
 
     return ReadLink(port, parent, path, buffer, size);

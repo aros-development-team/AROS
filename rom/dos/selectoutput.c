@@ -15,23 +15,23 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BPTR, SelectOutput,
+        AROS_LH1(BPTR, SelectOutput,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, fh, D1),
+        AROS_LHA(BPTR, fh, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 50, Dos)
+        struct DosLibrary *, DOSBase, 50, Dos)
 
 /*  FUNCTION
-	Sets the current output stream returned by Output() to a new
-	value. Returns the old output stream.
+        Sets the current output stream returned by Output() to a new
+        value. Returns the old output stream.
 
     INPUTS
-	fh - New output stream.
+        fh - New output stream.
 
     RESULT
-	Old output stream handle.
+        Old output stream handle.
 
     NOTES
 

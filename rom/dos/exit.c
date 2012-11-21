@@ -41,28 +41,28 @@ struct StackState
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(void, Exit,
+        AROS_LH1(void, Exit,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, returnCode, D1),
+        AROS_LHA(LONG, returnCode, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 24, Dos)
+        struct DosLibrary *, DOSBase, 24, Dos)
 
 /*  FUNCTION
-	Instantly terminate the program.
+        Instantly terminate the program.
 
     INPUTS
-	returnCode - Process' return code.
+        returnCode - Process' return code.
 
     RESULT
-    	None.
+        None.
 
     NOTES
-	Calling this function bypasses normal termination sequence of your program.
-	Automatically opened libraries will not be closed, destructors will not be
-	called, etc. Do this only if you really know what are you doing. It's not
-	adviced to use this function at all.
+        Calling this function bypasses normal termination sequence of your program.
+        Automatically opened libraries will not be closed, destructors will not be
+        called, etc. Do this only if you really know what are you doing. It's not
+        adviced to use this function at all.
 
     EXAMPLE
 
@@ -113,21 +113,21 @@ ULONG CallEntry(STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct Process *m
 
     if (setjmp(ss.state))
     {
-    	/*
-    	 * We came here from Exit().
-    	 * Restore stack limits because the program might have swapped stack.
-    	 * We are clever enough to recover from this.
-    	 */
-    	me->pr_Task.tc_SPLower = ss.stackLower;
-    	me->pr_Task.tc_SPUpper = ss.stackUpper;
+        /*
+         * We came here from Exit().
+         * Restore stack limits because the program might have swapped stack.
+         * We are clever enough to recover from this.
+         */
+        me->pr_Task.tc_SPLower = ss.stackLower;
+        me->pr_Task.tc_SPUpper = ss.stackUpper;
 
-    	Enable(); /* We Disable()d in Exit() */
+        Enable(); /* We Disable()d in Exit() */
 
-    	return ss.retval;
+        return ss.retval;
     }
     else
-    	return AROS_UFC3(ULONG, entry,
-			 AROS_UFCA(STRPTR, argptr, A0),
-			 AROS_UFCA(ULONG, argsize, D0),
-			 AROS_UFCA(struct ExecBase *, SysBase, A6));
+        return AROS_UFC3(ULONG, entry,
+                         AROS_UFCA(STRPTR, argptr, A0),
+                         AROS_UFCA(ULONG, argsize, D0),
+                         AROS_UFCA(struct ExecBase *, SysBase, A6));
 }

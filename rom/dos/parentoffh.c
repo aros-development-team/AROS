@@ -16,24 +16,24 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(BPTR, ParentOfFH,
+        AROS_LH1(BPTR, ParentOfFH,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR, fh, D1),
+        AROS_LHA(BPTR, fh, D1),
 
 /*  LOCATION */
-	struct DosLibrary *, DOSBase, 64, Dos)
+        struct DosLibrary *, DOSBase, 64, Dos)
 
 /*  FUNCTION
-	Lock the directory a file is located in.
+        Lock the directory a file is located in.
 
     INPUTS
-	fh  - Filhandle of which you want to obtain the parent
-	
+        fh  - Filhandle of which you want to obtain the parent
+        
     RESULT
-	lock - Lock on the parent directory of the filehandle or
-	       NULL for failure.
-	       
+        lock - Lock on the parent directory of the filehandle or
+               NULL for failure.
+               
 
     NOTES
 
@@ -42,8 +42,8 @@
     BUGS
 
     SEE ALSO
-	Lock(), UnLock(), ParentDir() 
-	
+        Lock(), UnLock(), ParentDir() 
+        
     INTERNALS
 
 *****************************************************************************/
