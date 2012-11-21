@@ -512,7 +512,7 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	if(!IsListEmpty(&KBBase->kb_ResetHandlerList))
 	{
 	    /* We may want to install a timer here so that ColdReboot()
-	       will eventually be called even if a reset handler hang. */
+	       will eventually be called even if a reset handler hangs */
 	    ForeachNode(&KBBase->kb_ResetHandlerList, node)
 	    {
 		/* We may be inside an interrupt when we come here. Maybe

@@ -68,7 +68,7 @@
 ** as its reply.  A crash ensues.
 **
 ** This is the reason for the I/O functions in pipedebug.c.  They implement
-** the regualar I/O calls, but use a different ReplyPort.  With no debugging,
+** the regular I/O calls, but use a different ReplyPort.  With no debugging,
 ** these functions are unneeded, since all of the handler's normal I/O is
 ** performed asynchronously, using PutMsg().
 **
@@ -111,7 +111,7 @@
 ** DevNode	: passed as a BPTR in startup packet Arg3.  This is a pointer
 **		to our DeviceNode entry in the system device list (DevInfo).
 **
-** Pipeort	: our DOS MsgPort, as well as our process ID.  See above for
+** PipePort	: our DOS MsgPort, as well as our process ID.  See above for
 **		notes about why we can't let DOS use this.
 **
 ** pipelist	: the list of currently existing pipes.  PIPEDATA nodes are
