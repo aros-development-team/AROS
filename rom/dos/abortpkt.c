@@ -35,8 +35,8 @@
         to return before you can reuse or deallocate it.
 
     INPUTS
-        port -- the message port to where the packet was sent
-        pkt  -- the packet to be aborted
+        port - The message port to where the packet was sent
+        pkt  - The packet to be aborted
 
     RESULT
 
