@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -26,13 +26,17 @@
         struct DosLibrary *, DOSBase, 44, Dos)
 
 /*  FUNCTION
+        This function does currently nothing. You can use WaitForChar()
+        to poll for characters from an interactive handler.
+
+        The planned purpose of this function is:
         Tries to abort an asynchronous packet. There is no guarantee
-        that this succeeds. You must wait for the packet to return
-        before you can reuse or deallocate it.
+        that this succeeds. You must wait with WaitPkt() for the packet
+        to return before you can reuse or deallocate it.
 
     INPUTS
-        port - the message port to where the packet was sent
-        pkt  - the packet to be aborted
+        port -- the message port to where the packet was sent
+        pkt  -- the packet to be aborted
 
     RESULT
 
@@ -43,6 +47,7 @@
     BUGS
 
     SEE ALSO
+        SendPkt(), WaitForChar(), WaitPkt()
 
     INTERNALS
 
