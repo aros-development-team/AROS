@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a node to the head of a list
@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	NewList(), AddTail(), Insert(), Remove(), RemHead(), RemTail(),
+	libamiga/NewList(), AddTail(), Insert(), Remove(), RemHead(), RemTail(),
 	Enqueue()
 
     INTERNALS
