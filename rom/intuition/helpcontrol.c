@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -7,43 +7,45 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
     AROS_LH2(void, HelpControl,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
-         AROS_LHA(ULONG          , flags, D0),
+        AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(ULONG          , flags, D0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 138, Intuition)
+        struct IntuitionBase *, IntuitionBase, 138, Intuition)
 
 /*  FUNCTION
-    Turn on or off Gadget-Help for your window. Gadget-Help will also
-    be changed for all members of the same help-group to make
-    multiple-windows apps to behave well.
- 
+        Turn on or off Gadget-Help for your window. Gadget-Help will also be
+        changed for all members of the same help-group to make
+        multiple-windows apps behave well.
+
     INPUTS
-    window - The window to affect. All windows of the same help-goup will
-        be affected as well.
-    flags - HC_GADGETHELP or zero for turning help on or off.
- 
+        window - The window to affect. All windows of the same help-group
+            will be affected as well.
+        flags - HC_GADGETHELP or zero for turning help on or off.
+
     RESULT
-    None. Toggles gadget-help of one or more windows to on or off.
- 
+        None.
+
     NOTES
- 
+        The WA_HelpGroup and WA_HelpGroupWindow tags are relevant to this
+        function.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    WA_HelpGroup
- 
+        OpenWindowTagList()
+
     INTERNALS
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
