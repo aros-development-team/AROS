@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -68,7 +68,7 @@ static long internalBootCliHandler(void);
     Currently, no DOS Packet arguments are used by this
     routine.
 
-    A new Boot Cli is process is created, and 'dp' is
+    A new Boot Cli process is created, and 'dp' is
     sent to it. If the boot shell succeeds, then 'dp'
     is returned with dp_Res1 = DOSTRUE.
     has started.
@@ -147,7 +147,7 @@ static long internalBootCliHandler(void);
     WaitPort(reply_mp);
     GetMsg(reply_mp);
 
-    /* We know that if we're received a reply packet,
+    /* We know that if we've received a reply packet,
      * that we've been able to execute the handler,
      * therefore we can dispense with the 'CreateSegment'
      * stub.
