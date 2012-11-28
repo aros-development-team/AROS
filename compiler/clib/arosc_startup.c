@@ -21,7 +21,7 @@ static void __arosc_startup(struct ExecBase *SysBase)
         D(bug("[__arosc_startup] setjmp() called\n"));
 
         /* Tell arosc.library a program using it has started */
-        __arosc_program_startup(exitjmp, &__startup_error);
+        __arosc_program_startup(exitjmp, (int *)&__startup_error);
         D(bug("[__arosc_startup] Library startup called\n"));
 
         __startup_entries_next();
