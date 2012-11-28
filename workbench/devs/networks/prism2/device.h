@@ -76,7 +76,7 @@ typedef LONG PINT;
 #define USE_HACKS
 #endif
 
-#if defined(__mc68000)
+#if defined(__mc68000) && !defined(__AROS__)
 #define AddResetCallback(callback) TRUE
 #define RemResetCallback(callback)
 #endif
