@@ -2095,7 +2095,14 @@ int main(int argc, char **argv)
     getarguments(argc, argv);
     parseiconsource();
     loadimage(image1option, &img1);
-    if (image2option) loadimage(image2option, &img2);
+    if (image2option) {
+        loadimage(image2option, &img2);
+        if ((img2.bmh.bmh_Width && img2.bmh.bmh_Width != img1.bmh.bmh_Width) ||
+            (img2.bmh.bmh_Height && img2.bmh.bmh_Height != img1.bmh.bmh_Height)) {
+            fprintf(stderr, "%s: Image %s (%dx%d) is not the same size as Image %s (%dx%d)\n", argv[0], image1option, img1.bmh.bmh_Width, img1.bmh.bmh_Height, image2option, img2.bmh.bmh_Width, img2.bmh.bmh_Height);
+        }
+    }
+                        
     remapicon();
     writeicon();
     
