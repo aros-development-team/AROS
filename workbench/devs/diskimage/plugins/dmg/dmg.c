@@ -827,7 +827,7 @@ LONG DMG_Read (struct DiskImagePlugin *Self, APTR image_ptr, struct IOStdReq *io
 				if (!part->out_size) break;
 				if (image->part_in_buf != part) {
 					LONG status;
-					ULONG out_len;
+					unsigned int out_len;
 					image->part_in_buf = NULL;
 
 					if (!(image->in_buf = ReAllocBuf(image->in_buf, &image->in_size, part->in_size)) ||
