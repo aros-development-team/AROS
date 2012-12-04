@@ -45,7 +45,6 @@ fi
 AC_MSG_RESULT($with_objfiles)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
-AM_C_PROTOTYPES
 AC_C_CONST
 AC_TYPE_SIZE_T
 
