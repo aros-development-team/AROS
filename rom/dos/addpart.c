@@ -1,9 +1,9 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc:
-    Lang: english
+    Desc: Combine paths.
+    Lang: English
 */
 #include "dos_intern.h"
 
@@ -29,13 +29,13 @@
         directory path. It will take into account any pre-existing
         separator characters (':','/').
 
-        If filename is a fully qualified path, then it will replace
+        If filename is an absolute path it will replace
         the current value of dirname.
 
     INPUTS
-        dirname     -   the path to add the new path to
-        filename    -   the path you wish added
-        size        -   The size of the dirname buffer (must NOT be 0)
+        dirname  - The path to add the new path to.
+        filename - The path you wish added.
+        size     - The size of the dirname buffer (must NOT be 0).
 
     RESULT
         Non-zero if everything succeeded, FALSE if the buffer would have

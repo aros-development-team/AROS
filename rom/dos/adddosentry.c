@@ -1,9 +1,9 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc:
-    Lang: english
+    Desc: Adds a given dos list entry to the dos list.
+    Lang: English
 */
 
 #include <aros/debug.h>
@@ -26,32 +26,38 @@
         struct DosLibrary *, DOSBase, 113, Dos)
 
 /*  FUNCTION
-        Adds a given dos list entry to the dos list. Automatically
+        Adds a given dos list entry to the DOS list. Automatically
         locks the list for writing. There may be not more than one device
         or assign node of the same name. There are no restrictions on
-        volume nodes.
+        volume nodes except that the time stamps must differ.
 
     INPUTS
-        dlist - pointer to dos list entry.
+        dlist - Pointer to DOS list entry.
 
     RESULT
-        != 0 if all went well, 0 otherwise.
+        DOSTRUE if all went well.
+        DOSFALSE for errors; IoErr() will return additional error code.
 
     NOTES
         Since anybody who wants to use a device or volume node in the
-        dos list has to lock the list, filesystems may be called with
-        the dos list locked. So if you want to add a dos list entry
+        DOS list has to lock the list, filesystems may be called with
+        the DOS list locked. So if you want to add a DOS list entry
         out of a filesystem don't just wait on the lock but serve all
         incoming requests until the dos list is free instead.
+
+        The dlist pointer may become invalid after a call to AddDosEntry()
+        unless you have locked the DOS list.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        RemDosEntry(), FindDosEntry(), NextDosEntry(), LockDosList(),
+        MakeDosEntry(), FreeDosEntry(), AttemptLockDosList()
 
     INTERNALS
-        Behaviour of this function is slightly different from AmigaOS 3.x
+        Behavior of this function is slightly different from AmigaOS 3.x
         and MorphOS. Instead of LDF_WRITE it locks DosList with LDF_READ
         flag. This is done because in AROS handlers are run with DosList
         locked with LDF_READ flag and this could cause a lockup if we use
