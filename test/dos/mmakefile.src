@@ -7,7 +7,7 @@ FILES           := getenv namefromfh examinefh examinelock \
 		   isinteractive \
 		   notify setfiledate output setenv inhibit doslist \
 		   readargs readitem readitemloop runcommand \
-                   openfromlock r
+                   openfromlock r addpart
 
 PURE_FILES	:= exit
 EXEDIR          := $(AROS_TESTS)/dos
