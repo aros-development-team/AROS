@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add or remove cache memory from a filesystem.
@@ -24,23 +24,35 @@
         struct DosLibrary *, DOSBase, 122, Dos)
 
 /*  FUNCTION
-        Add or remove cache memory from a filesystem.
+        Add or remove cache memory to/from a filesystem. The amount of memory
+        per cache buffer and the limit depends on the filesystem.
 
     INPUTS
-        devicename  --  NUL terminated dos device name.
-        numbuffers  --  Number of buffers to add. May be negative.
+        devicename - DOS device name (with trailing ':' and NUL terminated).
+        numbuffers - Number of buffers to add. May be negative for decreasing.
 
     RESULT
-        != 0 on success (IoErr() gives the actual number of buffers),
-        0 else (IoErr() gives the error code).
+        DOSTRUE on success (IoErr() gives the actual number of buffers).
+        DOSFALSE on error (IoErr() gives the error code).
+        Some old filesystems return the actual buffer size. See the example
+        for a workaround for that case.
 
     NOTES
 
     EXAMPLE
+        LONG res1, res2;
+        res1 = AddBuffers("df0:", 10);
+        res2 = IoErr();
+        if (res1 != DOSFALSE && res1 != DOSTRUE)
+        {
+            res2 = res1;
+            res1 = DOSTRUE;
+        }
 
     BUGS
 
     SEE ALSO
+        IoErr()
 
     INTERNALS
 

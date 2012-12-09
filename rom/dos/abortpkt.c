@@ -2,8 +2,8 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc:
-    Lang: english
+    Desc: Cancel an asynchronous packet.
+    Lang: English
 */
 
 #include <proto/exec.h>
@@ -35,8 +35,8 @@
         to return before you can reuse or deallocate it.
 
     INPUTS
-        port - The message port to where the packet was sent
-        pkt  - The packet to be aborted
+        port - The message port to where the packet was sent.
+        pkt  - The packet to be aborted.
 
     RESULT
 
