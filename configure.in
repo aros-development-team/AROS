@@ -1070,7 +1070,11 @@ case "$target_os" in
                 aros_kernel_ar="ar"
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="ld"
+                aros_kernel_as="as"
                 aros_kernel_ranlib="ranlib"
+                aros_kernel_nm="nm"
+                aros_kernel_strip="strip"
+                kernel_tool_prefix="i686-apple-darwin10-"
                 ;;
             *ppc*)
                 aros_target_cpu="ppc"

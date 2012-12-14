@@ -17,7 +17,7 @@ delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-gcc-version=4.2.1
+execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-kernel-gcc-version=4.2.1
 make
 make    default-x11keymaptable
 
