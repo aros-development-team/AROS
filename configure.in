@@ -1291,9 +1291,9 @@ case "$target_os" in
         esac
     ;;
 
-    raspberrypi)
+    r*pi)
         aros_flavour="standalone"
-        aros_target_arch="raspberrypi"
+        aros_target_arch="raspi"
         aros_target_cpu="arm"
         aros_object_format="armelf_linux_eabi"
         aros_shared_default="no"
@@ -1301,8 +1301,19 @@ case "$target_os" in
 
         gcc_default_cpu="armv6"
         gcc_default_cpu_tune="arm1176jzf-s"
-        gcc_default_fpu="vfp"
-        gcc_default_float_abi="softfp"
+        case "$target_cpu" in
+            *armhf*)
+                gcc_default_fpu="vfp"
+                gcc_default_float_abi="hard"
+                ;;
+            *arm*)
+                gcc_default_fpu="vfp"
+                gcc_default_float_abi="softfp"
+                ;;
+            *)
+                AC_MSG_ERROR("Unknown CPU for RasPi $target_cpu")
+                ;;
+        esac
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
         aros_config_cflags="$aros_config_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
