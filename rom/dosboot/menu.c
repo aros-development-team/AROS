@@ -210,6 +210,29 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
                             exit = PAGE_MAIN;
                     else if (msg->Code >= '1' && msg->Code <= '3')
                             exit = PAGE_MAIN + msg->Code - '0';
+                    else if (msg->Code >= 'a' && msg->Code <='j') {
+                        BYTE pos = msg->Code - 'a', i = 0;
+                        struct BootNode *bn;
+                        DOSBootBase->db_BootNode = NULL;
+
+                        Forbid(); /* .. access to ExpansionBase->MountList */
+                        ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, bn)
+                        {
+                            if (i++ == pos)
+                            {
+                                DOSBootBase->db_BootNode = bn;
+                                break;
+                            }
+                        }
+                        Permit();
+
+                        if (DOSBootBase->db_BootNode != NULL)
+                        {
+                            /* Refresh itself */
+                            exit = PAGE_BOOT;
+                            break;
+                        }
+                    }
                     else
                         toggleMode(DOSBootBase);
                 } else if (msg->Class == IDCMP_GADGETUP)
@@ -225,8 +248,10 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
                         DOSBootBase->db_BootFlags |= BF_NO_STARTUP_SEQUENCE;
                         exit = EXIT_BOOT_WNSS;
                         break;
-                    case BUTTON_USE:
                     case BUTTON_CANCEL:
+                        DOSBootBase->db_BootNode = NULL;
+                        /* Fallthrough */
+                    case BUTTON_USE:
                     case BUTTON_CONTINUE:
                         exit = PAGE_MAIN;
                         break;
@@ -355,7 +380,7 @@ static void setBootDevice(LIBBASETYPEPTR DOSBootBase)
          * to *insure* that this gets to the front of
          * the boot list.
          */
-        AddHead(&DOSBootBase->bm_ExpansionBase->MountList, (struct Node *)&bn);
+        AddHead(&DOSBootBase->bm_ExpansionBase->MountList, (struct Node *)bn);
     }
 
     DOSBootBase->bm_ExpansionBase->eb_BootFlags = DOSBootBase->db_BootFlags;
@@ -393,9 +418,7 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
         }
 
         NewRawDoFmt("%c%10s: %4d %s-%ld", RAWFMTFUNC_STRING, text,
-            IsBootableNode(bn) ? 
-               ((DOSBootBase->db_BootNode == bn) ? '*' : '+') 
-               : ' ',
+            (DOSBootBase->db_BootNode == bn) ? '*' : IsBootableNode(bn) ? '+' : ' ',
             AROS_BSTR_ADDR(dn->dn_Name),
             bn->bn_Node.ln_Pri,
             AROS_BSTR_ADDR(fssm->fssm_Device),
@@ -491,6 +514,9 @@ static void initPage(LIBBASETYPEPTR DOSBootBase, WORD page)
             centertext(DOSBootBase, 1, 30, "(press a key to toggle the display between PAL and NTSC)");
         }
     }
+
+    if (page == PAGE_BOOT)
+        centertext(DOSBootBase, 1, 30, "Press A-J to select boot device");
 }
 
 static WORD initWindow(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg, WORD page)
