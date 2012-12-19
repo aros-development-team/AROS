@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2012, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Main bootmenu code
@@ -68,7 +68,7 @@ static BOOL init_gfx(STRPTR gfxclassname, BOOL bootmode, LIBBASETYPEPTR DOSBootB
     if (gfxclass)
     {
         if (!AddDisplayDriver(gfxclass, NULL, DDRV_BootMode, bootmode, TAG_DONE))
-	    success = TRUE;
+            success = TRUE;
     }
 
     CloseLibrary(&GfxBase->LibNode);
@@ -83,11 +83,11 @@ static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
     D(bug("[BootMenu] initHidds()\n"));
 
     if (bootcfg->gfxhidd) {
-	if (!OpenLibrary(bootcfg->gfxlib, 0))
-	    return FALSE;
+        if (!OpenLibrary(bootcfg->gfxlib, 0))
+            return FALSE;
 
         if (!init_gfx(bootcfg->gfxhidd, bootcfg->bootmode, DOSBootBase))
-	    return FALSE;
+            return FALSE;
     }
 
     D(bug("[BootMenu] initHidds: Hidds initialised\n"));
@@ -113,35 +113,35 @@ static struct Gadget *createGadgetsBoot(LIBBASETYPEPTR DOSBootBase)
                                                         BUTTON_EXPBOARDDIAG, (struct DOSBootBase *)DOSBootBase);
     /* Create BOOT Gadgets */
     DOSBootBase->bm_MainGadgets.boot = createButton(
-                                                        16, DOSBootBase->bottomY, 280, 14,
-                                                        DOSBootBase->bm_MainGadgets.expboarddiag->gadget, "Boot",
-                                                        BUTTON_BOOT, (struct DOSBootBase *)DOSBootBase);
+                                                    16, DOSBootBase->bottomY, 280, 14,
+                                                    DOSBootBase->bm_MainGadgets.expboarddiag->gadget, "Boot",
+                                                    BUTTON_BOOT, (struct DOSBootBase *)DOSBootBase);
     DOSBootBase->bm_MainGadgets.bootnss = createButton(
-                                                        344, DOSBootBase->bottomY, 280, 14,
-                                                        DOSBootBase->bm_MainGadgets.boot->gadget, "Boot With No Startup-Sequence",
-                                                        BUTTON_BOOT_WNSS, (struct DOSBootBase *)DOSBootBase);
+                                                    344, DOSBootBase->bottomY, 280, 14,
+                                                    DOSBootBase->bm_MainGadgets.boot->gadget, "Boot With No Startup-Sequence",
+                                                    BUTTON_BOOT_WNSS, (struct DOSBootBase *)DOSBootBase);
     if (!DOSBootBase->bm_MainGadgets.bootopt ||
-	!DOSBootBase->bm_MainGadgets.displayopt ||
-	!DOSBootBase->bm_MainGadgets.expboarddiag ||
-	!DOSBootBase->bm_MainGadgets.boot ||
-	!DOSBootBase->bm_MainGadgets.bootnss)
-	return NULL;
+        !DOSBootBase->bm_MainGadgets.displayopt ||
+        !DOSBootBase->bm_MainGadgets.expboarddiag ||
+        !DOSBootBase->bm_MainGadgets.boot ||
+        !DOSBootBase->bm_MainGadgets.bootnss)
+        return NULL;
     return DOSBootBase->bm_MainGadgets.bootopt->gadget;
 }
 
 static struct Gadget *createGadgetsUseCancel(LIBBASETYPEPTR DOSBootBase)
 {
     DOSBootBase->bm_MainGadgets.use = createButton(
-                                                        16, DOSBootBase->bottomY, 280, 14,
-                                                        NULL, "Use",
-                                                        BUTTON_USE, (struct DOSBootBase *)DOSBootBase);
+                                                16, DOSBootBase->bottomY, 280, 14,
+                                                NULL, "Use",
+                                                BUTTON_USE, (struct DOSBootBase *)DOSBootBase);
     DOSBootBase->bm_MainGadgets.cancel = createButton(
-                                                        344, DOSBootBase->bottomY, 280, 14,
-                                                        DOSBootBase->bm_MainGadgets.use->gadget, "Cancel",
-                                                        BUTTON_CANCEL, (struct DOSBootBase *)DOSBootBase);
+                                                344, DOSBootBase->bottomY, 280, 14,
+                                                DOSBootBase->bm_MainGadgets.use->gadget, "Cancel",
+                                                BUTTON_CANCEL, (struct DOSBootBase *)DOSBootBase);
     if (!DOSBootBase->bm_MainGadgets.use ||
-	!DOSBootBase->bm_MainGadgets.cancel)
-	return NULL;
+        !DOSBootBase->bm_MainGadgets.cancel)
+        return NULL;
     return DOSBootBase->bm_MainGadgets.use->gadget;
 }
 
@@ -164,16 +164,16 @@ static void freeGadgetsUseCancel(LIBBASETYPEPTR DOSBootBase)
 static struct Gadget *createGadgets(LIBBASETYPEPTR DOSBootBase, WORD page) 
 {
     if (page == PAGE_MAIN)
-	return createGadgetsBoot(DOSBootBase);
+        return createGadgetsBoot(DOSBootBase);
     else
-    	return createGadgetsUseCancel(DOSBootBase);
+        return createGadgetsUseCancel(DOSBootBase);
 }
 static void freeGadgets(LIBBASETYPEPTR DOSBootBase, WORD page)
 {
     if (page == PAGE_MAIN)
-	freeGadgetsBoot(DOSBootBase);
+        freeGadgetsBoot(DOSBootBase);
     else
-	freeGadgetsUseCancel(DOSBootBase);
+        freeGadgetsUseCancel(DOSBootBase);
 }
 
 static void toggleMode(LIBBASETYPEPTR DOSBootBase)
@@ -183,9 +183,9 @@ static void toggleMode(LIBBASETYPEPTR DOSBootBase)
      * On m68k we may have ciaa.resource (if running on classic Amiga HW)
      */
     if (OpenResource("ciaa.resource")) {
-    	volatile UWORD *beamcon0 = (UWORD*)0xdff1dc;
-	GfxBase->DisplayFlags ^= PAL | NTSC;
-	*beamcon0 = (GfxBase->DisplayFlags & PAL) ? 0x0020 : 0x0000;
+        volatile UWORD *beamcon0 = (UWORD*)0xdff1dc;
+        GfxBase->DisplayFlags ^= PAL | NTSC;
+        *beamcon0 = (GfxBase->DisplayFlags & PAL) ? 0x0020 : 0x0000;
     }
 #endif
 }
@@ -205,40 +205,40 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
             WaitPort(win->UserPort);
             while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
             {
-            	if (msg->Class == IDCMP_VANILLAKEY) {
-            	    if (msg->Code == 27)
-            	    	exit = PAGE_MAIN;
-            	    else if (msg->Code >= '1' && msg->Code <= '3')
-            	    	exit = PAGE_MAIN + msg->Code - '0';
-            	    else
-            	        toggleMode(DOSBootBase);
-            	} else if (msg->Class == IDCMP_GADGETUP)
+                if (msg->Class == IDCMP_VANILLAKEY) {
+                    if (msg->Code == 27)
+                            exit = PAGE_MAIN;
+                    else if (msg->Code >= '1' && msg->Code <= '3')
+                            exit = PAGE_MAIN + msg->Code - '0';
+                    else
+                        toggleMode(DOSBootBase);
+                } else if (msg->Class == IDCMP_GADGETUP)
                 {
                     g = msg->IAddress;
                     switch (g->GadgetID)
                     {
                     case BUTTON_BOOT:
-                            DOSBootBase->db_BootFlags &= ~BF_NO_STARTUP_SEQUENCE;
-                            exit = EXIT_BOOT;
-                            break;
+                        DOSBootBase->db_BootFlags &= ~BF_NO_STARTUP_SEQUENCE;
+                        exit = EXIT_BOOT;
+                        break;
                     case BUTTON_BOOT_WNSS:
-                            DOSBootBase->db_BootFlags |= BF_NO_STARTUP_SEQUENCE;
-                            exit = EXIT_BOOT_WNSS;
-                            break;
+                        DOSBootBase->db_BootFlags |= BF_NO_STARTUP_SEQUENCE;
+                        exit = EXIT_BOOT_WNSS;
+                        break;
                     case BUTTON_USE:
                     case BUTTON_CANCEL:
                     case BUTTON_CONTINUE:
-                    	    exit = PAGE_MAIN;
-                    	    break;
+                        exit = PAGE_MAIN;
+                        break;
                     case BUTTON_BOOT_OPTIONS:
-                  	    exit = PAGE_BOOT;
-                  	    break;
+						exit = PAGE_BOOT;
+						break;
                     case BUTTON_EXPBOARDDIAG:
-                  	    exit = PAGE_EXPANSION;
-                  	    break;
+						exit = PAGE_EXPANSION;
+						break;
                     case BUTTON_DISPLAY_OPTIONS:
-                  	    exit = PAGE_DISPLAY;
-                  	    break;
+						exit = PAGE_DISPLAY;
+						break;
                     }
                 }
                 ReplyMsg((struct Message *)msg);
@@ -250,8 +250,10 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
             Wait(0);
         }
     } while (exit < 0);
+
     while ((msg=(struct IntuiMessage *)GetMsg(win->UserPort)))
         ReplyMsg(&msg->ExecMessage);
+
     return exit;
 }
 
@@ -267,23 +269,23 @@ static void initPageExpansion(LIBBASETYPEPTR DOSBootBase)
     cd = NULL;
     cnt = 0;
     while ((cd = FindConfigDev(cd, -1, -1))) {
-	NewRawDoFmt("%2d: %08lx - %08lx (%08lx) %5d %3d %08lx", RAWFMTFUNC_STRING, text,
-    	    ++cnt,
-    	    cd->cd_BoardAddr, cd->cd_BoardAddr + cd->cd_BoardSize - 1, cd->cd_BoardSize,
-    	    cd->cd_Rom.er_Manufacturer, cd->cd_Rom.er_Product, cd->cd_Rom.er_SerialNumber);
-	if ((cd->cd_Rom.er_Type & ERT_TYPEMASK) == ERT_ZORROIII)
-	    strcat(text, " Z3");
-	else if ((cd->cd_Rom.er_Type & ERT_TYPEMASK) == ERT_ZORROII)
-	    strcat(text, " Z2");
+        NewRawDoFmt("%2d: %08lx - %08lx (%08lx) %5d %3d %08lx", RAWFMTFUNC_STRING, text,
+                ++cnt,
+                cd->cd_BoardAddr, cd->cd_BoardAddr + cd->cd_BoardSize - 1, cd->cd_BoardSize,
+                cd->cd_Rom.er_Manufacturer, cd->cd_Rom.er_Product, cd->cd_Rom.er_SerialNumber);
+        if ((cd->cd_Rom.er_Type & ERT_TYPEMASK) == ERT_ZORROIII)
+            strcat(text, " Z3");
+        else if ((cd->cd_Rom.er_Type & ERT_TYPEMASK) == ERT_ZORROII)
+            strcat(text, " Z2");
         else
             strcat(text, "   ");
-	if (cd->cd_Rom.er_Type & ERTF_DIAGVALID)
-	    strcat(text, " ROM");
-	if (cd->cd_Rom.er_Type & ERTF_MEMLIST)
-	    strcat(text, " RAM");
- 	Move(win->RPort, 20, y);
-	Text(win->RPort, text, strlen(text));
-	y += 16;
+        if (cd->cd_Rom.er_Type & ERTF_DIAGVALID)
+            strcat(text, " ROM");
+        if (cd->cd_Rom.er_Type & ERTF_MEMLIST)
+            strcat(text, " RAM");
+         Move(win->RPort, 20, y);
+        Text(win->RPort, text, strlen(text));
+        y += 16;
    }
 }
 
@@ -370,89 +372,89 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 
     ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, bn)
     {
-	struct DeviceNode *dn = bn->bn_DeviceNode;
-	struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
-	struct DosEnvec *de = NULL;
-	struct IOStdReq *io;
-	struct MsgPort *port;
-	char dostype[5];
-	UBYTE i;
-	ULONG size;
-	BOOL devopen, ismedia;
+        struct DeviceNode *dn = bn->bn_DeviceNode;
+        struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
+        struct DosEnvec *de = NULL;
+        struct IOStdReq *io;
+        struct MsgPort *port;
+        char dostype[5];
+        UBYTE i;
+        ULONG size;
+        BOOL devopen, ismedia;
 
-	if (y >= DOSBootBase->bottomY - 20)
-	    break;
-	if (!fssm || !fssm->fssm_Device)
-	    continue;
-	if (fssm->fssm_Environ > (BPTR)0x64) {
-	    de = BADDR(fssm->fssm_Environ);
-	    if (de->de_TableSize < 15)
-		de = NULL;
-	}
+        if (y >= DOSBootBase->bottomY - 20)
+            break;
+        if (!fssm || !fssm->fssm_Device)
+            continue;
+        if (fssm->fssm_Environ > (BPTR)0x64) {
+            de = BADDR(fssm->fssm_Environ);
+            if (de->de_TableSize < 15)
+                de = NULL;
+        }
 
-	NewRawDoFmt("%c%10s: %4d %s-%ld", RAWFMTFUNC_STRING, text,
-	    IsBootableNode(bn) ? 
-	       ((DOSBootBase->db_BootNode == bn) ? '*' : '+') 
-	       : ' ',
-	    AROS_BSTR_ADDR(dn->dn_Name),
-	    bn->bn_Node.ln_Pri,
-	    AROS_BSTR_ADDR(fssm->fssm_Device),
-	    fssm->fssm_Unit);
-	Move(win->RPort, 20, y);
-	Text(win->RPort, text, strlen(text));
+        NewRawDoFmt("%c%10s: %4d %s-%ld", RAWFMTFUNC_STRING, text,
+            IsBootableNode(bn) ? 
+               ((DOSBootBase->db_BootNode == bn) ? '*' : '+') 
+               : ' ',
+            AROS_BSTR_ADDR(dn->dn_Name),
+            bn->bn_Node.ln_Pri,
+            AROS_BSTR_ADDR(fssm->fssm_Device),
+            fssm->fssm_Unit);
+        Move(win->RPort, 20, y);
+        Text(win->RPort, text, strlen(text));
 
-	textp = NULL;
-	devopen = ismedia = FALSE;
-	if ((port = (struct MsgPort*)CreateMsgPort())) {
-	    if ((io = (struct IOStdReq*)CreateIORequest(port, sizeof(struct IOStdReq)))) {
-		if (!OpenDevice(AROS_BSTR_ADDR(fssm->fssm_Device), fssm->fssm_Unit, (struct IORequest*)io, fssm->fssm_Flags)) {
-		    devopen = TRUE;
-		    io->io_Command = TD_CHANGESTATE;
-		    io->io_Actual = 1;
-		    DoIO((struct IORequest*)io);
-		    if (!io->io_Error && io->io_Actual == 0)
-			ismedia = TRUE;
-		    CloseDevice((struct IORequest*)io);
-		}
-		DeleteIORequest((struct IORequest*)io);
-	    }
-	    DeleteMsgPort(port);
-	}
+        textp = NULL;
+        devopen = ismedia = FALSE;
+        if ((port = (struct MsgPort*)CreateMsgPort())) {
+            if ((io = (struct IOStdReq*)CreateIORequest(port, sizeof(struct IOStdReq)))) {
+                if (!OpenDevice(AROS_BSTR_ADDR(fssm->fssm_Device), fssm->fssm_Unit, (struct IORequest*)io, fssm->fssm_Flags)) {
+                    devopen = TRUE;
+                    io->io_Command = TD_CHANGESTATE;
+                    io->io_Actual = 1;
+                    DoIO((struct IORequest*)io);
+                    if (!io->io_Error && io->io_Actual == 0)
+                        ismedia = TRUE;
+                    CloseDevice((struct IORequest*)io);
+                }
+                DeleteIORequest((struct IORequest*)io);
+            }
+            DeleteMsgPort(port);
+        }
 
-	if (de && ismedia) {
-	    for (i = 0; i < 4; i++) {
-		dostype[i] = (de->de_DosType >> ((3 - i) * 8)) & 0xff;
-	        if (dostype[i] < 9)
-		    dostype[i] += '0';
-		else if (dostype[i] < 32)
-		    dostype[i] = '.';
-	    }
-	    dostype[4] = 0;
+        if (de && ismedia) {
+            for (i = 0; i < 4; i++) {
+                dostype[i] = (de->de_DosType >> ((3 - i) * 8)) & 0xff;
+                if (dostype[i] < 9)
+                    dostype[i] += '0';
+                else if (dostype[i] < 32)
+                    dostype[i] = '.';
+            }
+            dostype[4] = 0;
 
-	   size = (de->de_HighCyl - de->de_LowCyl + 1) * de->de_Surfaces * de->de_BlocksPerTrack;
-	   /* try to prevent ULONG overflow */
-	   if (de->de_SizeBlock <= 128)
-	   	size /= 2;
-	    else
-	    	size *= de->de_SizeBlock / 256;
+           size = (de->de_HighCyl - de->de_LowCyl + 1) * de->de_Surfaces * de->de_BlocksPerTrack;
+           /* try to prevent ULONG overflow */
+           if (de->de_SizeBlock <= 128)
+                   size /= 2;
+            else
+                    size *= de->de_SizeBlock / 256;
 
-	    NewRawDoFmt("%s [%08lx] %ldk", RAWFMTFUNC_STRING, text,
-		dostype, de->de_DosType,
-		size);
-	    textp = text;
-	} else if (!devopen) {
-	    textp = "[device open error]";
-	} else if (!ismedia) {
-	    textp = "[no media]";
-	}
-	if (textp) {
-	    Move(win->RPort, 400, y);
-	    Text(win->RPort, textp, strlen(textp));
-	}
+            NewRawDoFmt("%s [%08lx] %ldk", RAWFMTFUNC_STRING, text,
+                dostype, de->de_DosType,
+                size);
+            textp = text;
+        } else if (!devopen) {
+            textp = "[device open error]";
+        } else if (!ismedia) {
+            textp = "[no media]";
+        }
+        if (textp) {
+            Move(win->RPort, 400, y);
+            Text(win->RPort, textp, strlen(textp));
+        }
 
-	y += 16;
-	
-	
+        y += 16;
+        
+        
     }
 }
 
@@ -469,25 +471,25 @@ static void initPage(LIBBASETYPEPTR DOSBootBase, WORD page)
     UBYTE *text;
 
     if (page == PAGE_DISPLAY)
-    	text = "Display Options";
+            text = "Display Options";
     else if (page == PAGE_EXPANSION)
-    	text = "Expansion Board Diagnostic";
+            text = "Expansion Board Diagnostic";
     else if (page == PAGE_BOOT)
-	text = "Boot Options";
+        text = "Boot Options";
     else
-	text = "AROS Early Startup Control";
+        text = "AROS Early Startup Control";
     centertext(DOSBootBase, 2, 10, text);
     
     if (page == PAGE_BOOT)
-	initPageBoot(DOSBootBase);
+        initPageBoot(DOSBootBase);
     else if (page == PAGE_EXPANSION)
-	initPageExpansion(DOSBootBase);
+        initPageExpansion(DOSBootBase);
 
     if (page == PAGE_MAIN && (GfxBase->DisplayFlags & (NTSC | PAL))) {
-    	ULONG modeid = GetVPModeID(&DOSBootBase->bm_Screen->ViewPort);
-    	if (modeid != INVALID_ID && (((modeid & MONITOR_ID_MASK) == NTSC_MONITOR_ID) || ((modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID))) {
-	    centertext(DOSBootBase, 1, 30, "(press a key to toggle the display between PAL and NTSC)");
-	}
+            ULONG modeid = GetVPModeID(&DOSBootBase->bm_Screen->ViewPort);
+            if (modeid != INVALID_ID && (((modeid & MONITOR_ID_MASK) == NTSC_MONITOR_ID) || ((modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID))) {
+            centertext(DOSBootBase, 1, 30, "(press a key to toggle the display between PAL and NTSC)");
+        }
     }
 }
 
@@ -506,12 +508,12 @@ static WORD initWindow(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg, WORD
             0, 1,                            /* DetailPen, BlockPen */
             IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN, /* IDCMPFlags */
             WFLG_SMART_REFRESH | WFLG_BORDERLESS | WFLG_ACTIVATE, /* Flags */
-            first,       	             /* FirstGadget */
-            NULL,       	             /* CheckMark */
-            NULL,       	             /* Title */
-            DOSBootBase->bm_Screen,	     /* Screen */
+            first,                            /* FirstGadget */
+            NULL,                            /* CheckMark */
+            NULL,                            /* Title */
+            DOSBootBase->bm_Screen,             /* Screen */
             NULL,                            /* BitMap */
-            0, 0,                   	     /* MinWidth, MinHeight */
+            0, 0,                                /* MinWidth, MinHeight */
             0, 0,                            /* MaxWidth, MaxHeight */
             CUSTOMSCREEN,                    /* Type */
         };
@@ -543,14 +545,14 @@ static BOOL initScreen(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg)
     DOSBootBase->bm_Screen = OpenBootScreen(DOSBootBase);
     if (DOSBootBase->bm_Screen)
     {
-	DOSBootBase->bottomY = DOSBootBase->bm_Screen->Height - (DOSBootBase->bm_Screen->Height > 256 ? 32 : 16);
-	D(bug("[BootMenu] initScreen: Screen opened @ %p\n",  DOSBootBase->bm_Screen));
+        DOSBootBase->bottomY = DOSBootBase->bm_Screen->Height - (DOSBootBase->bm_Screen->Height > 256 ? 32 : 16);
+        D(bug("[BootMenu] initScreen: Screen opened @ %p\n",  DOSBootBase->bm_Screen));
 
-	page = PAGE_MAIN;
-	do {
-	    page = initWindow(DOSBootBase, bcfg, page);
-	} while (page != EXIT_BOOT && page != EXIT_BOOT_WNSS);
-	CloseBootScreen(DOSBootBase->bm_Screen, DOSBootBase);
+        page = PAGE_MAIN;
+        do {
+            page = initWindow(DOSBootBase, bcfg, page);
+        } while (page != EXIT_BOOT && page != EXIT_BOOT_WNSS);
+        CloseBootScreen(DOSBootBase->bm_Screen, DOSBootBase);
     }
     return page >= 0;
 }
@@ -573,12 +575,12 @@ static BOOL buttonsPressed(LIBBASETYPEPTR DOSBootBase)
      */
     if (OpenResource("ciaa.resource"))
     {
-    	volatile UBYTE *cia = (UBYTE*)0xbfe001;
-    	volatile UWORD *potinp = (UWORD*)0xdff016;
+            volatile UBYTE *cia = (UBYTE*)0xbfe001;
+            volatile UWORD *potinp = (UWORD*)0xdff016;
 
-    	/* check left + right mouse button state */
-    	if ((cia[0] & 0x40) == 0 && (potinp[0] & 0x0400) == 0)
-    	    return TRUE;
+            /* check left + right mouse button state */
+            if ((cia[0] & 0x40) == 0 && (potinp[0] & 0x0400) == 0)
+                return TRUE;
     }
 #endif
 
@@ -634,7 +636,7 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE, BOOL WantBootMenu)
     */
     InitBootConfig(&LIBBASE->bm_BootConfig);
     if (!initHidds(LIBBASE))
-	return FALSE;
+        return FALSE;
 #endif
 
     /* check keyboard if needed */
@@ -645,7 +647,7 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE, BOOL WantBootMenu)
     if (WantBootMenu)
     {
         D(kprintf("[BootMenu] bootmenu_Init: Entering Boot Menu ...\n"));
-	bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
+        bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
     }
 
     /* Make the user's select the top boot device */
