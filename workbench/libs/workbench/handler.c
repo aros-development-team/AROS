@@ -41,6 +41,7 @@ struct HandlerContext
     ULONG           hc_IntuitionSignal;    /* Signal bit field for the above */
     
     ULONG           hc_Signals;            /* Mask from all signals above */
+    struct List    hc_HeldRelayMsgs;        /* Relay messages stored here if no workbench application is available */
 };
 
 
@@ -210,6 +211,8 @@ static BOOL __Initialize_WB
         && (hc->hc_IntuitionPort      = CreateMsgPort()) != NULL
     )
     {
+        NewList(&hc->hc_HeldRelayMsgs);
+
         /* Store command port ----------------------------------------------*/
         hc->hc_CommandPort   = &(WorkbenchBase->wb_HandlerPort);
         
@@ -364,9 +367,23 @@ static VOID __HandleRelay_WB
     struct WBHandlerMessage *relaymsg = message->wbcm_Data.Relay.Message;
     
     D(bug("[WBLIB] __HandleRelay_WB: Relaying message to workbench application\n"));
-    D(bug("[WBLIB] __HandleRelay_WB: destination port %p\n", WorkbenchBase->wb_WorkbenchPort));
     relaymsg->wbhm_Message.mn_ReplyPort = hc->hc_RelayReplyPort;
-    PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *) relaymsg);
+
+    if (WorkbenchBase->wb_WorkbenchPort)
+    {
+        D(bug("[WBLIB] __HandleRelay_WB: destination port %p\n", WorkbenchBase->wb_WorkbenchPort));
+        PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *) relaymsg);
+
+        /* Send held messages */
+        if (!IsListEmpty(&hc->hc_HeldRelayMsgs))
+            while((relaymsg = (struct WBHandlerMessage *)RemHead(&hc->hc_HeldRelayMsgs)) != NULL)
+                PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *) relaymsg);
+    }
+    else
+    {
+        D(bug("[WBLIB] __HandleRelay_WB: destination port not available, keeping the message\n"));
+        AddTail(&hc->hc_HeldRelayMsgs, (struct Node *)relaymsg);
+    }
 }
 
 static void __HandleIntuition_WB
