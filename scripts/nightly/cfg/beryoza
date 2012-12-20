@@ -1,4 +1,4 @@
-CFG_PACKAGES=(hosted.svn.darwin-i386 hosted.svn.darwin-x86_64)
+CFG_PACKAGES=(hosted.svn.darwin-i386 hosted.svn.darwin-x86_64 hosted.svn.darwin-ppc)
 
 CFG_MAIL_ENABLE=yes
 CFG_MAIL_CC=pavel_fedin@mail.ru
