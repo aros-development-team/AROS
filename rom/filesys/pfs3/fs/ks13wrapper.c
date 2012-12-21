@@ -514,4 +514,25 @@ LONG SysReqHandler(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL WaitInput)
     return 0;
 }
 
+void FixStartupPacket(struct DosPacket *pkt)
+{
+	if (pkt->dp_Arg3)
+		return;
+	/* Fix 1.3 bad boot time ACTION_STARTUP: dp_Arg3 = NULL, dp_Arg1 = uninitialized data */
+	struct DosList *dl = getdoslist(SysBase);
+	while(dl->dol_Next)
+	{
+		dl = BADDR(dl->dol_Next);
+		if (dl->dol_Type == DLT_DEVICE && dl->dol_misc.dol_handler.dol_Startup == pkt->dp_Arg2) {
+			/* This is safe, Startup Packet is allocated from BCPL stack
+			 * that goes away after DOS gets message reply.
+			 */
+			pkt->dp_Arg1 = dl->dol_Name;
+			pkt->dp_Arg3 = MKBADDR(dl);
+			break;
+		}
+	}
+	freedoslist(SysBase);
+}
+
 #endif
