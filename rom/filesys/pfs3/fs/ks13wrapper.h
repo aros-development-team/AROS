@@ -11,6 +11,7 @@
 #include <intuition/intuition.h>
 
 LONG wrapper_stackswap(LONG (*func)(struct ExecBase *), struct ExecBase *);
+void FixStartupPacket(struct DosPacket *pkt);
 /* dos */
 BOOL MatchPatternNoCase(CONST_STRPTR pat, CONST_STRPTR str);
 STRPTR FilePart(CONST_STRPTR path);

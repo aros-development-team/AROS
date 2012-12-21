@@ -272,6 +272,9 @@ LONG EntryPoint(struct ExecBase *SysBase)
 	 * ARG2 = Value from dn_Startup
 	 * ARG3 = BPTR to DeviceNode
 	 */
+#ifdef KS13WRAPPER
+	FixStartupPacket(pkt);
+#endif
 	mountname = (UBYTE *)BADDR(pkt->dp_Arg1);
 	fssm = (struct FileSysStartupMsg *)BADDR(pkt->dp_Arg2);
 	devnode = (struct DeviceNode *)BADDR(pkt->dp_Arg3);
