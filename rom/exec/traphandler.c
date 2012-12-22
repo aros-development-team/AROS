@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Default trap handler
@@ -78,49 +78,49 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
      */
     if (task && (task->tc_Flags & TF_ETASK) && (task->tc_State != TS_REMOVED))
     {
-	/* Get internal task structure */
+        /* Get internal task structure */
         struct IntETask *iet = GetIntETask(task);
 
-	if (iet->iet_AlertFlags & AF_Alert)
-	{
-	    /*
-	     * Protection against double-crash. If the task is already in alert state,  we have
-	     * a second crash during processing the first one. Then we just pick up initial alert code
-	     * and call Alert() with it in supervisor mode.
-	     */
-	    trapNum = iet->iet_AlertCode;
-	}
-	else
-	{
-	    /*
-	     * Otherwise we can try to send the crash to user level.
-	     *
-	     * First mark crash condition, and also specify alert code for user-level handler.
-	     * If we double-crash while jumping to user mode, we will know this (ETF_Alert will
-	     * already be set)
-	     */
-	    iet->iet_AlertType     = AT_CPU;
-	    iet->iet_AlertFlags    = AF_Alert|AF_Location;
-	    iet->iet_AlertCode     = trapNum;
-	    iet->iet_AlertLocation = (APTR)ctx->PC;    /* Location is our PC, where we crashed */
-	    iet->iet_AlertStack    = (APTR)ctx->FP;    /* Remember also stack frame for backtrace */
-
-	    /*
-	     * This is a CPU alert. We've got a full CPU context, so we remember it
-	     * in our ETask structure for displaying to the user later.
-	     * Note that we store only GPR part of the context. We don't copy
-	     * attached FPU data (if any). This can be considered TODO.
-	     */
-	    CopyMem(ctx, &iet->iet_AlertData, sizeof(struct ExceptionContext));
+        if (iet->iet_AlertFlags & AF_Alert)
+        {
+            /*
+             * Protection against double-crash. If the task is already in alert state,  we have
+             * a second crash during processing the first one. Then we just pick up initial alert code
+             * and call Alert() with it in supervisor mode.
+             */
+            trapNum = iet->iet_AlertCode;
+        }
+        else
+        {
+            /*
+             * Otherwise we can try to send the crash to user level.
+             *
+             * First mark crash condition, and also specify alert code for user-level handler.
+             * If we double-crash while jumping to user mode, we will know this (ETF_Alert will
+             * already be set)
+             */
+            iet->iet_AlertType     = AT_CPU;
+            iet->iet_AlertFlags    = AF_Alert|AF_Location;
+            iet->iet_AlertCode     = trapNum;
+            iet->iet_AlertLocation = (APTR)ctx->PC;    /* Location is our PC, where we crashed */
+            iet->iet_AlertStack    = (APTR)ctx->FP;    /* Remember also stack frame for backtrace */
 
             /*
-	     * Make the task to jump to crash handler. We don't care about return address etc because
-	     * the alert is deadend anyway.
-	     */
+             * This is a CPU alert. We've got a full CPU context, so we remember it
+             * in our ETask structure for displaying to the user later.
+             * Note that we store only GPR part of the context. We don't copy
+             * attached FPU data (if any). This can be considered TODO.
+             */
+            CopyMem(ctx, &iet->iet_AlertData, sizeof(struct ExceptionContext));
+
+            /*
+             * Make the task to jump to crash handler. We don't care about return address etc because
+             * the alert is deadend anyway.
+             */
             ctx->PC = (IPTR)Exec_CrashHandler;
-	    /* Let the task go */
-	    return;
-	}
+            /* Let the task go */
+            return;
+        }
     }
 
     Exec_ExtAlert(trapNum, (APTR)ctx->PC, (APTR)ctx->FP, AT_CPU, ctx, SysBase);

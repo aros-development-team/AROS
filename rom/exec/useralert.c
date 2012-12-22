@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Display an alert in user mode.
+    Lang: english
+*/
+
 #include <aros/debug.h>
 #include <exec/alerts.h>
 #include <exec/rawfmt.h>
@@ -17,26 +25,25 @@ static LONG SafeEasyRequest(struct EasyStruct *es, BOOL full, struct IntuitionBa
 
     if (!req)
     {
-    	/* Return -1 if requester creation failed. This makes us to fallback to safe-mode alert. */
-	return -1;
+        /* Return -1 if requester creation failed. This makes us to fallback to safe-mode alert. */
+        return -1;
     }
 
     do
     {
-	result = SysReqHandler(req, NULL, TRUE);
-	
-	if (full)
-	{
-	    switch (result)
-	    {
-	    case 1:
-	    	NewRawDoFmt("*** Logged alert:\n%s\n", RAWFMTFUNC_SERIAL, NULL, es->es_TextFormat);
-	    	result = -2;
-	    	break;
-	    }
-	}
-    }
-    while (result == -2);
+        result = SysReqHandler(req, NULL, TRUE);
+        
+        if (full)
+        {
+            switch (result)
+            {
+            case 1:
+                NewRawDoFmt("*** Logged alert:\n%s\n", RAWFMTFUNC_SERIAL, NULL, es->es_TextFormat);
+                result = -2;
+                break;
+            }
+        }
+    } while (result == -2);
 
     FreeSysRequest(req);
     return result;
@@ -61,44 +68,44 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
         if (buffer)
         {
             struct IntETask *iet = GetIntETask(task);
-	    char *buf, *end;
-	    struct EasyStruct es = {
-        	sizeof (struct EasyStruct),
-            	0,
-            	NULL,
-	    	buffer,
-            	NULL,
+            char *buf, *end;
+            struct EasyStruct es = {
+                sizeof (struct EasyStruct),
+                0,
+                NULL,
+                buffer,
+                NULL,
             };
 
-	    buf = Alert_AddString(buffer, startstring);
-	    buf = FormatAlert(buf, alertNum, task, iet ? iet->iet_AlertLocation : NULL, iet ? iet->iet_AlertType : AT_NONE, SysBase);
-	    end = buf;
-	    buf = Alert_AddString(buf, endstring);
-	    *buf = 0;
+            buf = Alert_AddString(buffer, startstring);
+            buf = FormatAlert(buf, alertNum, task, iet ? iet->iet_AlertLocation : NULL, iet ? iet->iet_AlertType : AT_NONE, SysBase);
+            end = buf;
+            buf = Alert_AddString(buf, endstring);
+            *buf = 0;
 
-	    es.es_Title = Alert_GetTitle(alertNum);
+            es.es_Title = Alert_GetTitle(alertNum);
 
-	    /* Determine set of buttons */
-	    es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? deadend_buttons : recoverable_buttons;
+            /* Determine set of buttons */
+            es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? deadend_buttons : recoverable_buttons;
 
-	    D(bug("[UserAlert] Body text:\n%s\n", buffer));
-	    choice = SafeEasyRequest(&es, FALSE, IntuitionBase);
+            D(bug("[UserAlert] Body text:\n%s\n", buffer));
+            choice = SafeEasyRequest(&es, FALSE, IntuitionBase);
 
-	    if (choice == 1)
-	    {
-    		/* 'More' has been pressed. Append full alert data */
-		FormatAlertExtra(end, iet->iet_AlertStack, iet ? iet->iet_AlertType : AT_NONE, iet ? &iet->iet_AlertData : NULL, SysBase);
+            if (choice == 1)
+            {
+                /* 'More' has been pressed. Append full alert data */
+                FormatAlertExtra(end, iet->iet_AlertStack, iet ? iet->iet_AlertType : AT_NONE, iet ? &iet->iet_AlertData : NULL, SysBase);
 
-		/* Re-post the alert, without 'More...' this time */
-		es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? full_deadend_buttons : full_recoverable_buttons;
+                /* Re-post the alert, without 'More...' this time */
+                es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? full_deadend_buttons : full_recoverable_buttons;
 
-		choice = SafeEasyRequest(&es, TRUE, IntuitionBase);
-	    }
+                choice = SafeEasyRequest(&es, TRUE, IntuitionBase);
+            }
 
-	    FreeMem(buffer, ALERT_BUFFER_SIZE);
-	}
+            FreeMem(buffer, ALERT_BUFFER_SIZE);
+        }
 
-	CloseLibrary(&IntuitionBase->LibNode);
+        CloseLibrary(&IntuitionBase->LibNode);
     }
     return choice;
 }
@@ -123,7 +130,8 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
         return alertNum;
 
     /* Get internal task structure */
-    if ((iet = GetIntETask(task))) {
+    if ((iet = GetIntETask(task)))
+    {
         /*
          * If we already have alert number for this task, we are in double-crash during displaying
          * intuition requester. Well, take the initial alert code (because it's more helpful to the programmer)
@@ -166,20 +174,20 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
 
     /* If AskSuspend() failed, fail back to safe-mode alert */
     if (res == -1)
-	return alertNum;
+        return alertNum;
 
     /* Halt if we need to */
     if (alertNum & AT_DeadEnd)
     {
-    	switch (res)
-    	{
-    	case 0:
-    	    ShutdownA(SD_ACTION_POWEROFF);
-    	    break;
-    	
-    	case 3:
-	    ColdReboot();
-	    /* In case if ColdReboot() doesn't work */
+        switch (res)
+        {
+        case 0:
+            ShutdownA(SD_ACTION_POWEROFF);
+            break;
+
+        case 3:
+            ColdReboot();
+            /* In case if ColdReboot() doesn't work */
             ShutdownA(SD_ACTION_COLDREBOOT);
             break;
         }
