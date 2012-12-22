@@ -75,6 +75,7 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
 {
     struct Task *task = SysBase->ThisTask;
     int supervisor = KrnIsSuper();
+    BOOL usesystemalert = !!supervisor;
     struct IntETask *iet = NULL;
 
     D(bug("[exec] Alert 0x%08X, supervisor %d\n", alertNum, supervisor));
@@ -139,14 +140,14 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
          * If we have no task, or the task is being removed,
          * we can't use the user-mode routine.
          */
-        supervisor = TRUE;
+        usesystemalert = TRUE;
     }
 
     /*
      * If we are running in user mode we should first try to report a problem
      * using Intuition display.
      */
-    if (!supervisor)
+    if (!usesystemalert)
     {
         alertNum = Exec_UserAlert(alertNum, SysBase);
         if (!alertNum)
