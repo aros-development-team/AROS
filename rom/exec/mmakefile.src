@@ -40,7 +40,7 @@ ALL_FUNCTIONS := \
 INIT_FILES := exec_init prepareexecbase
 FILES	   := alertextra alert_cpu systemalert initkicktags intservers \
 	      memory memory_nommu mungwall semaphores service traphandler \
-	      exec_debug exec_util
+	      exec_debug exec_util supervisoralert
 
 # platform.h can be overriden in arch-specific directory
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES) -DAROS_ARCH_$(ARCH)
