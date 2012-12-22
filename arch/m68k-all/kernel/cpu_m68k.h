@@ -16,7 +16,7 @@
 /* Number of exceptions supported by the CPU. Needed by kernel_base.h */
 #define EXCEPTIONS_COUNT 256
 
-/* CPU context stored in task's iet_Context. */
+/* CPU context stored in task's et_RegFrame. */
 struct AROSCPUContext
 {
 	struct ExceptionContext cpu;

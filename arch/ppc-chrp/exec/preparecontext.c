@@ -65,7 +65,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     /* Get the memory for CPU context. Alloc it with MEMF_CLEAR flag */
     task->tc_UnionETask.tc_ETask->et_RegFrame = KrnCreateContext();
 
-    D(bug("[exec] PrepareContext: iet_Context = %012p\n", task->tc_UnionETask.tc_ETask->et_RegFrame));
+    D(bug("[exec] PrepareContext: et_RegFrame = %012p\n", task->tc_UnionETask.tc_ETask->et_RegFrame));
 
     if (!(ctx = (context_t *)task->tc_UnionETask.tc_ETask->et_RegFrame))
         return FALSE;
