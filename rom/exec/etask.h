@@ -2,7 +2,7 @@
 #define _ETASK_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal description of the ETask structure
@@ -25,35 +25,35 @@ struct AlertContext
 {
     union
     {
-	struct ExceptionContext acpu;
-	struct MungwallContext	amw;
-	struct MMContext	amm;
+        struct ExceptionContext acpu;
+        struct MungwallContext  amw;
+        struct MMContext        amm;
     } u;
 };
 
 struct IntETask
 {
-    struct ETask	iet_ETask;
-    APTR	 	iet_RT;			/* Structure for resource tracking	 */
-    UQUAD	 	iet_CpuTime;
-    UQUAD	 	iet_private1;
-    ULONG	 	iet_AlertCode;		/* Alert code for crash handler		 */
-    UBYTE		iet_AlertType;		/* Type of the alert context		 */
-    UBYTE		iet_AlertFlags;		/* See below				 */
-    APTR	 	iet_AlertLocation;	/* Alert location for crash handler	 */
-    APTR		iet_AlertStack;		/* Frame pointer for stack backtrace	 */
-    struct AlertContext iet_AlertData;		/* Extra data coming with the crash	 */
+    struct ETask       iet_ETask;
+    APTR                iet_RT;                 /* Structure for resource tracking         */
+    UQUAD               iet_CpuTime;
+    UQUAD               iet_private1;
+    ULONG               iet_AlertCode;          /* Alert code for crash handler            */
+    UBYTE               iet_AlertType;          /* Type of the alert context               */
+    UBYTE               iet_AlertFlags;         /* See below                               */
+    APTR                iet_AlertLocation;      /* Alert location for crash handler        */
+    APTR                iet_AlertStack;         /* Frame pointer for stack backtrace       */
+    struct AlertContext iet_AlertData;         /* Extra data coming with the crash        */
 #ifdef DEBUG_ETASK
-    STRPTR	 	iet_Me;
+    STRPTR              iet_Me;
 #endif
 };
 
 #define GetIntETask(task)   ((struct IntETask *)GetETask(task))
-#define IntETask(etask)	    ((struct IntETask *)(etask))
+#define IntETask(etask)     ((struct IntETask *)(etask))
 
 /* iet_AlertFlags */
-#define AF_Alert    0x01	/* The task is in alert state	  */
-#define AF_Location 0x02	/* iet_AlertLocation is filled in */
+#define AF_Alert    0x01    /* The task is in alert state      */
+#define AF_Location 0x02    /* iet_AlertLocation is filled in */
 
 /*
  * This function resets crash status of the task:
