@@ -65,7 +65,17 @@ void core_Switch(void)
     {
         bug("[KRN] Task %s went out of stack limits\n", task->tc_Node.ln_Name);
         bug("[KRN] Lower %p, upper %p, SP %p\n", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
-        Alert(AT_DeadEnd|AN_StackProbe);
+        /*
+         * Suspend the task to stop it from causing more harm. In some rare cases, if the task is holding
+         * lock on some global/library semaphore it will most likelly mean immenent freeze. In most cases
+         * however, user will be shown an alert.
+         */
+        Remove(&task->tc_Node);
+        task->tc_SigWait    = 0;
+        task->tc_State      = TS_WAIT;
+        Enqueue(&SysBase->TaskWait, &task->tc_Node);
+
+        Alert(AN_StackProbe);
     }
 #endif
 
@@ -119,9 +129,9 @@ struct Task *core_Dispatch(void)
 #ifndef __mc68000
     if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
     {
-        bug("[KRN] Task %s went out of stack limits\n", task->tc_Node.ln_Name);
-        bug("[KRN] Lower %p, upper %p, SP %p\n", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
-        Alert(AT_DeadEnd|AN_StackProbe);
+        /* Don't let the task run, switch it away (raising Alert) and dispatch another task */
+        core_Switch();
+        return core_Dispatch();
     }
 #endif
 
