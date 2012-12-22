@@ -38,6 +38,8 @@ struct IntExecBase
     struct MsgPort *ServicePort;                /* Message port for service task                         */
     struct MinList TaskStorageSlots;            /* List of free slots, always one element with next slot */
     struct Exec_PlatformData PlatformData;      /* Platform-specific stuff                               */
+    struct Task *SupervisorAlertTask;           /* Task that tries to display supervisor-level alerts    */
+    IPTR SupervisorAlertTaskParams[2];
     char   AlertBuffer[ALERT_BUFFER_SIZE];      /* Buffer for alert text                                 */
 };
 

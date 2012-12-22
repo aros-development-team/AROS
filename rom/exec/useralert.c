@@ -56,15 +56,13 @@ static const char recoverable_buttons[]      = "More...|Continue";
 static const char full_deadend_buttons[]     = "Log|Suspend|Reboot|Power off";
 static const char full_recoverable_buttons[] = "Log|Continue";
 
-static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBase)
+LONG Alert_AskSuspend(struct Task *task, ULONG alertNum, char * buffer, struct ExecBase *SysBase)
 {
     LONG choice = -1;
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
 
     if (IntuitionBase)
     {
-        char *buffer = AllocMem(ALERT_BUFFER_SIZE, MEMF_ANY);
-
         if (buffer)
         {
             struct IntETask *iet = GetIntETask(task);
@@ -101,14 +99,24 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 
                 choice = SafeEasyRequest(&es, TRUE, IntuitionBase);
             }
-
-            FreeMem(buffer, ALERT_BUFFER_SIZE);
         }
 
         CloseLibrary(&IntuitionBase->LibNode);
     }
     return choice;
 }
+
+static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBase)
+{
+    char * buffer = AllocMem(ALERT_BUFFER_SIZE, MEMF_ANY);
+
+    LONG choice = Alert_AskSuspend(task, alertNum, buffer, SysBase);
+
+    FreeMem(buffer, ALERT_BUFFER_SIZE);
+
+    return choice;
+}
+
 
 /*
  * This function posts alerts in user-mode via Intuition requester.

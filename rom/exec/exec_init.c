@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: exec.library resident and initialization.
@@ -83,6 +83,8 @@ static const UBYTE name[] = MOD_NAME_STRING;
 static const UBYTE version[] = VERSION_STRING;
 
 extern void debugmem(void);
+
+void SupervisorAlertTask(struct ExecBase *SysBase);
 
 THIS_PROGRAM_HANDLES_SYMBOLSET(INITLIB)
 THIS_PROGRAM_HANDLES_SYMBOLSET(PREINITLIB)
@@ -269,6 +271,13 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
         DINIT("Failed to start up service task");
         return NULL;
     }
+
+    /* Create task for handling supervisor level errors */
+    NewCreateTask(TASKTAG_NAME       , "Exec Guru Task",
+                  TASKTAG_PRI        , 126,
+                  TASKTAG_PC         , SupervisorAlertTask,
+                  TASKTAG_ARG1       , SysBase,
+                  TAG_DONE);
 
     /* Call platform-specific init code (if any) */
     set_call_libfuncs(SETNAME(INITLIB), 1, 1, SysBase);
