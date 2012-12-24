@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/debug.h>
 #include <exec/rawfmt.h>
 #include <proto/kernel.h>
@@ -26,10 +31,10 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
     /* Follow the list of MemHeaders */
     mh = (struct MemHeader *)SysBase->MemList.lh_Head;
 
-    while(mh->mh_Node.ln_Succ != NULL)
+    while (mh->mh_Node.ln_Succ != NULL)
     {
 	/* Check if this MemHeader fits */
-	if(address >= mh->mh_Lower && address < mh->mh_Upper)
+	if (address >= mh->mh_Lower && address < mh->mh_Upper)
 	{
 	    /* Yes. Return it. */
 	    if (usermode) MEM_UNLOCK;
@@ -189,8 +194,8 @@ APTR stdAlloc(struct MemHeader *mh, IPTR size, ULONG requirements, struct TraceL
 
     /*
      * The free memory list is only single linked, i.e. to remove
-     * elements from the list I need node's predessor. For the
-     * first element I can use mh->mh_First instead of a real predessor.
+     * elements from the list I need the node's predecessor. For the
+     * first element I can use mh->mh_First instead of a real predecessor.
      */
     p1 = (struct MemChunk *)&mh->mh_First;
     p2 = p1->mc_Next;
@@ -280,32 +285,32 @@ void stdDealloc(struct MemHeader *freeList, APTR addr, IPTR size, struct TraceLo
     	return;
 
     /* Align size to the requirements */
-    byteSize = size + ((IPTR)addr & (MEMCHUNK_TOTAL-1));
-    byteSize = (byteSize + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
+    byteSize = size + ((IPTR)addr & (MEMCHUNK_TOTAL - 1));
+    byteSize = (byteSize + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL - 1);
 
     /* Align the block as well */
     memoryBlock = (APTR)((IPTR)addr & ~(MEMCHUNK_TOTAL-1));
 
     /*
 	The free memory list is only single linked, i.e. to insert
-	elements into the list I need the node as well as it's
-	predessor. For the first element I can use freeList->mh_First
-	instead of a real predessor.
+	elements into the list I need the node as well as its
+	predecessor. For the first element I can use freeList->mh_First
+	instead of a real predecessor.
     */
-    p1=(struct MemChunk *)&freeList->mh_First;
-    p2=freeList->mh_First;
+    p1 = (struct MemChunk *)&freeList->mh_First;
+    p2 = freeList->mh_First;
 
     /* Start and end(+1) of the block */
-    p3=(struct MemChunk *)memoryBlock;
-    p4=(UBYTE *)p3+byteSize;
+    p3 = (struct MemChunk *)memoryBlock;
+    p4 = (UBYTE *)p3 + byteSize;
 
     /* No chunk in list? Just insert the current one and return. */
-    if(p2==NULL)
+    if (p2 == NULL)
     {
-	p3->mc_Bytes=byteSize;
-	p3->mc_Next=NULL;
-	p1->mc_Next=p3;
-	freeList->mh_Free+=byteSize;
+	p3->mc_Bytes = byteSize;
+	p3->mc_Next = NULL;
+	p1->mc_Next = p3;
+	freeList->mh_Free += byteSize;
 	return;
     }
 
@@ -327,7 +332,7 @@ void stdDealloc(struct MemHeader *freeList, APTR addr, IPTR size, struct TraceLo
 	    {
 		bug("[MM] Chunk allocator error\n");
 		bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
-		bug("[MM] Block overlaps with chunk 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
+		bug("[MM] Block overlaps (1) with chunk 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
 
 		Alert(AN_FreeTwice);
 		return;
@@ -337,54 +342,54 @@ void stdDealloc(struct MemHeader *freeList, APTR addr, IPTR size, struct TraceLo
 	    break;
 	}
 	/* goto next block */
-	p1=p2;
-	p2=p2->mc_Next;
+	p1 = p2;
+	p2 = p2->mc_Next;
 
     /* If the loop ends with p2 zero add it at the end. */
-    }while(p2!=NULL);
+    } while (p2 != NULL);
 
     /* If there was a previous block merge with it. */
-    if(p1!=(struct MemChunk *)&freeList->mh_First)
+    if (p1 != (struct MemChunk *)&freeList->mh_First)
     {
 #if !defined(NO_CONSISTENCY_CHECKS)
 	/* Check if they overlap. */
-	if ((UBYTE *)p1+p1->mc_Bytes>(UBYTE *)p3)
+	if ((UBYTE *)p1 + p1->mc_Bytes > (UBYTE *)p3)
 	{
 	    bug("[MM] Chunk allocator error\n");
 	    bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
-	    bug("[MM] Block overlaps with chunk 0x%p (%u bytes)\n", p1, p1->mc_Bytes);
+	    bug("[MM] Block overlaps (2) with chunk 0x%p (%u bytes)\n", p1, p1->mc_Bytes);
 
 	    Alert(AN_FreeTwice);
 	    return;
 	}
 #endif
 	/* Merge if possible */
-	if((UBYTE *)p1+p1->mc_Bytes==(UBYTE *)p3)
-	    p3=p1;
+	if ((UBYTE *)p1 + p1->mc_Bytes == (UBYTE *)p3)
+	    p3 = p1;
 	else
 	    /* Not possible to merge */
-	    p1->mc_Next=p3;
+	    p1->mc_Next = p3;
     }else
 	/*
 	    There was no previous block. Just insert the memory at
 	    the start of the list.
 	*/
-	p1->mc_Next=p3;
+	p1->mc_Next = p3;
 
     /* Try to merge with next block (if there is one ;-) ). */
-    if(p4==(UBYTE *)p2&&p2!=NULL)
+    if (p4 == (UBYTE *)p2 && p2 != NULL)
     {
 	/*
 	   Overlap checking already done. Doing it here after
 	   the list potentially changed would be a bad idea.
 	*/
-	p4+=p2->mc_Bytes;
-	p2=p2->mc_Next;
+	p4 += p2->mc_Bytes;
+	p2 = p2->mc_Next;
     }
     /* relink the list and return. */
-    p3->mc_Next=p2;
-    p3->mc_Bytes=p4-(UBYTE *)p3;
-    freeList->mh_Free+=byteSize;
+    p3->mc_Next = p2;
+    p3->mc_Bytes = p4 - (UBYTE *)p3;
+    freeList->mh_Free += byteSize;
 }
 
 /* 
@@ -409,7 +414,10 @@ void InternalFreeMem(APTR location, IPTR byteSize, struct TraceLocation *loc, st
     nommu_FreeMem(location, byteSize, loc, SysBase);
 }
 
-/* Allocate a region managed by own header */
+/*
+ * Allocate a region managed by own header. Usable size is reduced by size
+ * of header.
+ */
 APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
     struct MemHeader *mh;
@@ -503,7 +511,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
     /*
      * Memory blocks allocated from the pool store pointers to the MemHeader they were
      * allocated from. This is done in order to avoid slow lookups in InternalFreePooled().
-     * This is done in AllocVec()-alike manner, the pointer is placed right before the block.
+     * This is done in AllocVec()-alike manner; the pointer is placed right before the block.
      */
     memSize += sizeof(struct MemHeader *);
     origSize = memSize;
@@ -524,7 +532,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
 	ULONG physFlags = flags & MEMF_PHYSICAL_MASK;
 
 	/* Are there no more MemHeaders? */
-	if (mh->mh_Node.ln_Succ==NULL)
+	if (mh->mh_Node.ln_Succ == NULL)
 	{
 	    /*
 	     * Get a new one.
@@ -557,7 +565,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
 	    D(bug("[InternalAllocPooled] Allocated new puddle 0x%p, size %u\n", mh, puddleSize));
 
 	    /* No memory left? */
-	    if(mh == NULL)
+	    if (mh == NULL)
 		break;
 
 	    /* Add the new puddle to our pool */
@@ -590,7 +598,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
 	     * move it forward (so that the next allocation will attempt to use it first).
 	     * IMPORTANT: We use modification of Enqueue() because we still sort MemHeaders
 	     * according to their priority (which they inherit from system MemHeaders).
-	     * This allows us to have mixed pools (e. g. with both CHIP and FAST regions). This
+	     * This allows us to have mixed pools (e.g. with both CHIP and FAST regions). This
 	     * will be needed in future for memory protection.
 	     */
             if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)

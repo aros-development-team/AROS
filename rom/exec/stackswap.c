@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: StackSwap() - Swap the stack of a task.
@@ -40,7 +40,7 @@
 	The program will be running on a new stack and sss will contain
 	the old stack.
 
-	Calling StackSwap() twice consequtively will effectively do
+	Calling StackSwap() twice consecutively will effectively do
 	nothing.
 
     NOTES
