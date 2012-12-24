@@ -205,7 +205,7 @@ IPTR om_new(Class *cl, Object *obj, struct opSet *msg)
    data->ag_InitialNode = CopyAGString(cl, obj, nodename);
    data->ag_Creator = FindTask(NULL);
 
-   /* process attributes that only belongs to this class
+   /* process attributes that only belong to this class
       and intialization phase. */
    while((tag = NextTagItem(&tstate)) != NULL)
    {
@@ -449,7 +449,7 @@ IPTR _om_update(Class *cl, Object *obj, struct opSet *msg)
    struct TagItem *tstate = msg->ops_AttrList;
    struct TagItem *tag;
 
-   /* process attributes that only belongs to this class */
+   /* process attributes that only belong to this class */
    while((tag = NextTagItem(&tstate)) != NULL)
    {
       switch(tag->ti_Tag)
@@ -502,7 +502,7 @@ IPTR _om_set(Class *cl,Object *obj,struct opSet *msg)
    struct TagItem *tstate = msg->ops_AttrList;
    struct TagItem *tag;
 
-   /* process attributes that only belongs to this class */
+   /* process attributes that only belong to this class */
    while((tag = NextTagItem(&tstate)) != NULL)
    {
       switch(tag->ti_Tag)

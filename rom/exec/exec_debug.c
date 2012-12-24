@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Runtime debugging support
@@ -9,7 +9,8 @@
 /*
  * You can #define this in order to omit the whole code. Perhaps ROM-based systems
  * will want to do this.
- * However it's not adviced to to so because this is a great aid in debugging on user's side.
+ * However it's not advised to do so because this is a great aid in debugging
+ * on user's side.
  */
 #ifndef NO_RUNTIME_DEBUG
 

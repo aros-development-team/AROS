@@ -808,7 +808,7 @@ AddModeFile ( UBYTE *filename )
                 {
                   case AHIDB_Name:
                   {
-                    // Make sure the string is within the chuck and NUL-term.
+                    // Make sure the string is within the chunk and NUL-term.
                     
                     if( tag->ti_Data <  (IPTR) ci->ci_Data || 
                         tag->ti_Data >= (IPTR) ci->ci_Data + ci->ci_Size )

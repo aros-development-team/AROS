@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2011 The AROS Development Team. All rights reserved.
+    Copyright © 2006-2012, The AROS Development Team. All rights reserved.
     $Id$
     
     Desc: 32-bit bootstrap code used to boot the 64-bit AROS kernel.
@@ -100,8 +100,8 @@ const struct my_mb2_header __header_v2 __attribute__((used,section(".aros.startu
 };
 
 /*
-    First portion of code, called from GRUB dirrectly. It has to set the stack up, disable interrupts
-    and jump to the regular C code
+    First portion of code, called from GRUB directly. It has to set the stack
+    up, disable interrupts and jump to the regular C code
 */
 asm("	.text\n\t"
     "	.globl kernel_bootstrap\n\t"
