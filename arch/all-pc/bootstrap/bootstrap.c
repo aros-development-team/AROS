@@ -1,7 +1,7 @@
 /*
     Copyright © 2006-2012, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Desc: 32-bit bootstrap code used to boot the 64-bit AROS kernel.
     Lang: English
 */
@@ -72,8 +72,8 @@ const struct multiboot_header __header __attribute__((used,section(".aros.startu
 struct my_mb2_header
 {
     struct mb2_header 			header;
-    struct mb2_header_tag_framebuffer	tag_fb;
-    struct mb2_header_tag		tag_end;
+    struct mb2_header_tag_framebuffer	tag_fb __attribute__((aligned(8)));
+    struct mb2_header_tag		tag_end __attribute__((aligned(8)));
 };
 
 const struct my_mb2_header __header_v2 __attribute__((used,section(".aros.startup"),aligned(8))) =

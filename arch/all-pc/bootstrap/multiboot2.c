@@ -83,7 +83,7 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
     AllocFB();
 
     /*
-     * The supplied pointer points to an UQUAD value specifying total length of the
+     * The supplied pointer points to a UQUAD value specifying total length of the
      * whole data array.
      */
     usable = TOP_ADDR(usable, mb + *(unsigned long long *)mb);
