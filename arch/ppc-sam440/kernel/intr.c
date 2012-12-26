@@ -1,5 +1,4 @@
-
-#include <aros/debug.h>
+#define DEBUG 1
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <hardware/intbits.h>
@@ -130,6 +129,10 @@ void dumpregs(context_t *ctx, uint8_t exception)
     bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x ESR=%08x\n",ctx->cpu.srr0, ctx->cpu.srr1, rdspr(DEAR), rdspr(ESR));
     bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->cpu.ctr, ctx->cpu.lr, ctx->cpu.xer, ctx->cpu.ccr);
     bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->cpu.dar, ctx->cpu.dsisr);
+    if (exception == 1)
+    {
+        bug("[KRN] MCSR=%08x\n", rdspr(MCSR));
+    }
 
     for (i = 0; i < 32; i++) {
         if ((i & 3) == 0)
