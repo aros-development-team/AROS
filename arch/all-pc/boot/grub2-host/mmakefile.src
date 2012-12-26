@@ -18,6 +18,9 @@ $(BOOT_GRUB)/i386-pc:
 $(BOOT_EFI):
 	%mkdirs_q $@
 
+$(BOOT_EFI)/i386-efi:
+	%mkdirs_q $@
+
 #MM
 bootloader-grub2gfx-common: $(BOOT_GRUB)/splash.png $(BOOT_GRUB)/_unicode.pf2 $(BOOT_EFI)/splash.png $(BOOT_EFI)/_unicode.pf2
 
@@ -98,12 +101,12 @@ grub2-pc-iso-setup: $(BOOT_GRUB)/i386-pc
 	$(CAT) cdboot.img core.img > $(BOOT_GRUB)/i386-pc/grub2_eltorito
 
 #MM
-grub2-efi-iso-setup: $(BOOT_EFI)
+grub2-efi-iso-setup: $(BOOT_EFI)/i386-efi
 	@$(ECHO) Creating $(BOOT_EFI)...
 	@cd $(HOSTGENDIR)/$(CURDIR)/efi/grub-core                           	&& \
 	../grub-mkimage $(MKIMG_EFI) -d . -o grub.efi $(EFI_MODS) $(GRUB2_MODS) && \
 	$(CP) grub.efi $(AROSDIR)/EFI/BOOT/$(EFI_GRUB_IMG)                     	&& \
-	$(CP) *.mod $(BOOT_EFI)                                         	&& \
-	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_EFI)
+	$(CP) *.mod $(BOOT_EFI)/i386-efi                                         	&& \
+	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_EFI)/i386-efi
 
 %common
