@@ -6,10 +6,15 @@ include $(TOP)/config/make.cfg
 
 #MM- grub2-pc-i386: arch-common-grub2 grub2-iso-setup
 
-bootloader-grub2-pc-i386: $(BINDIR)/boot/grub/grub.cfg
-
-bootloader-grub2gfx-pc-i386: $(BINDIR)/boot/grub/grub.cfg
+bootloader-grub2-pc-i386: \
+ $(BINDIR)/boot/grub/grub.cfg $(BINDIR)/EFI/BOOT/grub/grub.cfg
+bootloader-grub2gfx-pc-i386: \
+ $(BINDIR)/boot/grub/grub.cfg $(BINDIR)/EFI/BOOT/grub/grub.cfg
 
 $(BINDIR)/boot/grub/grub.cfg: grub.cfg
-		$(CP) $< $(BINDIR)/boot/grub/
+	$(CP) $< $(BINDIR)/boot/grub/
+
+$(BINDIR)/EFI/BOOT/grub/grub.cfg: grub-efi.cfg
+	@$(ECHO) Copying $@...
+	@$(CP) $< $@
 
