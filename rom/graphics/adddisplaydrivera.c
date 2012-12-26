@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS-specific function for adding a display driver
@@ -40,71 +40,95 @@
 
     INPUTS
 	gfxhidd - A pointer to an OOP class of the display driver
-	attrs   - Additional attributes to supply to the driver class during object creation
-	tags    - An optional TagList describing how graphics.library should handle the driver.
-		  Valid tags are:
+        attrs   - Additional attributes to supply to the driver class during
+                  object creation
+        tags    - An optional TagList describing how graphics.library should
+            handle the driver. Valid tags are:
 
-	    DDRV_BootMode     - A boolean value telling that a boot mode driver
-			        is being added. Boot mode drivers will automatically
-			        shutdown on next AddDisplayDriverA() call, unless
-			        DDRV_KeepBootMode = TRUE is specified. Defaults to FALSE.
-	    DDRV_MonitorID    - Starting monitor ID to assign to the driver. Use it
-				with care. Attempt to add already existing ID will
-				fail with DD_ID_EXISTS code. By default a next available
-				ID will be picked up automatically.
-	    DDRV_ReserveIDs   - A number of subsequent monitor IDs to reserve. Reserved IDs
-				can be reused only with DDRV_MonitorID tag. This tag is
-				provided as an aid to support possible removable display
-				devices. Defaults to 1.
-	    DDRV_KeepBootMode - Do not shut down boot mode drivers. Use this tag if you
-				are 100% sure that your driver won't conflict with boot mode
-				driver (like VGA or VESA) and won't attempt to take over its
-				hardware. Defaults to FALSE.
-	    DDRV_ResultID     - A pointer to ULONG location where ID assigned to your driver
-	    			will be placed. Useful if you reserve some ID for future use.
-	    			Note that returned ID will be the one just assigned to your
-	    			driver instance. Increment it yourself in order to obtain
-	    			other reserved IDs.
-	    DDRV_IDMask	      - A mask for separating monitor ID from HIDD-specific part.
-	    			This mask specifies what mode ID bits are monitor ID and
-	    			what bits actually specify the mode. A default value is
-	    			0xFFFF0000.
+            DDRV_BootMode     - A boolean value telling that a boot mode
+                                driver is being added. Boot mode drivers
+                                will automatically shut down on next
+                                AddDisplayDriverA() call, unless
+			        DDRV_KeepBootMode = TRUE is specified.
+                                Defaults to FALSE.
+            DDRV_MonitorID    - Starting monitor ID to assign to the driver.
+                                Use it with care. An attempt to add already
+                                existing ID will fail with a DD_ID_EXISTS
+                                code. By default the next available ID will
+                                be picked up automatically.
+            DDRV_ReserveIDs   - The number of subsequent monitor IDs to
+                                reserve. Reserved IDs can be reused only
+                                with DDRV_MonitorID tag. This tag is
+                                provided as an aid to support possible
+                                removable display devices. Defaults to 1.
+            DDRV_KeepBootMode - Do not shut down boot mode drivers. Use this
+                                tag if you are 100% sure that your driver
+                                won't conflict with boot mode driver (like
+                                VGA or VESA) and won't attempt to take over
+                                its hardware. Defaults to FALSE.
+            DDRV_ResultID     - A pointer to a ULONG location where the ID
+                                assigned to your driver will be placed.
+                                Useful if you reserve some ID for future use.
+	    			Note that the returned ID will be the one
+                                just assigned to your driver instance.
+                                Increment it yourself in order to obtain
+                                other reserved IDs.
+            DDRV_IDMask       - A mask for separating the monitor ID from the
+                                HIDD-specific part. This mask specifies what
+                                mode ID bits are the monitor ID and what bits
+                                actually specify the mode. The default value
+                                is 0xFFFF0000.
 	    			
-	    			Using the mask you can split your monitor ID into 'sub-Ids'.
-	    			Example:
+                                Using the mask you can split your monitor ID
+                                into 'sub-Ids'. Example:
 
-	    			Supplied tags: DDRV_IDMask, 0xFFFFFF00, DDRV_ResultID, &myid
+                                Supplied tags: DDRV_IDMask, 0xFFFFFF00,
+                                               DDRV_ResultID, &myid
 
-	    			After succesfull call myid will contain base ID assigned by
-	    			graphics.library to your driver, let's say 0x00140000. However,
-	    			since you specified longer mask, you leave only one byte for mode
-	    			designation, and reserve the whole range of IDs from 0x001400xx to
-	    			0x0014FFxx for different instances of your driver. They can now be
-	    			used by specifying DDRV_MonitorID with corresponding value.
+	    			After a successful call, myid will contain the
+                                base ID assigned by graphics.library to your
+                                driver, let's say 0x00140000. However, since
+                                you specified a longer mask, you leave only
+                                one byte for mode designation, and reserve
+                                the whole range of IDs from 0x001400xx to
+                                0x0014FFxx for different instances of your
+                                driver. They can now be used by specifying
+                                DDRV_MonitorID with corresponding value.
 
-				Note that for this feature to work correctly, you also need to override
-				mode ID processing in your driver class. Default methods provided by
-				hidd.graphics.graphics base class suppose that the whole lower word
-				of mode ID specifies the display mode.
+                                Note that for this feature to work correctly,
+                                you also need to override ID processing in
+                                your driver class. Default methods provided
+                                by the hidd.graphics.graphics base class
+                                suppose that the whole lower word of the mode
+                                ID specifies the display mode.
 
-				It is generally not allowed to specify shorter masks than 0xFFFF0000.
-				The only driver which can do this is Amiga(tm) chipset driver, which
-				need to occupy the reserved range of IDs from 0x0000xxxx to 0x000Axxxx.
-				In any other case supplying short mask will cause undefined behavior.
+                                It is generally not allowed to specify
+                                shorter masks than 0xFFFF0000. The only
+                                driver which can do this is the Amiga(TM)
+                                chipset driver, which needs to occupy the
+                                reserved range of IDs from 0x0000xxxx to
+                                0x000Axxxx. In any other case, supplying a
+                                short mask will cause undefined behavior.
 
-				Since DDRV_ReserveIDs provide simpler way to reserve IDs for your driver
-				(without the need to override mode ID processing), this	option can be
-				considered experimental and even private. In fact the primary reason for
-				it to exist is to provide support for Amiga(tm) chipset	driver.
+                                Since DDRV_ReserveIDs provides a simpler way
+                                to reserve IDs for your driver (without the
+                                need to override mode ID processing), this
+                                option can be considered experimental and
+                                even private. In fact the primary reason for
+				it to exist is to provide support for
+                                Amiga(tm) chipset driver.
 
     RESULT
     	error - One of following codes:
 
-	    DD_OK           - Operation completed OK.
-	    DD_NO_MEM	    - There is not enough memory to set up internal data.
-	    DD_ID_EXISTS    - Attempt to assign monitor IDs that are already used.
-	    DD_IN_USE	    - One of boot-mode drivers is in use and can not be shut down.
-	    DD_DRIVER_ERROR - Failure to create driver object.
+            DD_OK           - Operation completed OK.
+            DD_NO_MEM       - There is not enough memory to set up internal
+                              data.
+            DD_ID_EXISTS    - Attempt to assign monitor IDs that are already
+                              used.
+            DD_IN_USE       - One of boot-mode drivers is in use and cannot
+                              be shut down.
+            DD_DRIVER_ERROR - Failure to create driver object.
 
     NOTES
 	This function is AROS-specific.
@@ -116,10 +140,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {

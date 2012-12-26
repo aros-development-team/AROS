@@ -61,7 +61,7 @@ struct MinNode
 #define NT_RESOURCE	8
 #define NT_LIBRARY	9
 #define NT_MEMORY	10
-#define NT_SOFTINT	11	/* Internal flag used by SoftInits	    */
+#define NT_SOFTINT	11	/* Internal flag used by SoftInts	    */
 #define NT_FONT 	12
 #define NT_PROCESS	13	/* AmigaDOS Process			    */
 #define NT_SEMAPHORE	14
