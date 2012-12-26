@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetRGB4()
@@ -31,7 +31,7 @@
 	entry	 - index into colormap
 
     RESULT
-	-1 	: if no valid entry. (index to high)
+	-1 	: if no valid entry. (index too high)
 	other	: UWORD RGB value, 4 bits per electron gun, right justified
 
     NOTES
@@ -44,7 +44,7 @@
 	GetColorMap(), FreeColorMap(), SetRGB4(), LoadRGB4(), graphics/view.h
 
     INTERNALS
-	This function depends on the strcuture of ColorMap->ColorTable.
+	This function depends on the structure of ColorMap->ColorTable.
 
     HISTORY
 
@@ -52,13 +52,13 @@
 {
     AROS_LIBFUNC_INIT
 
-    WORD * CT;
+    UWORD * CT;
 
     /* anything invalid?  */
     if ( (NULL == colormap) || (entry >= colormap->Count) )
         return -1L;
 
-    /* All we`re currently doing is read the entry and return it. */
+    /* All we're currently doing is read the entry and return it. */
     CT = colormap->ColorTable;
     return CT[entry];
 
