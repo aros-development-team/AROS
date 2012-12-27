@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FILES := efi_init
-FUNCS := findconfigtable shutdowna
+FUNCS := findconfigtable
 
 %build_module mmake=kernel-efi modname=efi modtype=resource \
   files="$(FILES) $(FUNCS)" 

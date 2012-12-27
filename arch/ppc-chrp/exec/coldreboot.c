@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ColdReboot() - Reboot the computer.
@@ -8,7 +8,9 @@
 
 #include <exec/types.h>
 #include <exec/execbase.h>
+#include <exec/tasks.h>
 #include <aros/libcall.h>
+
 #include <proto/exec.h>
 
 #include "exec_util.h"
@@ -43,18 +45,12 @@
     SEE ALSO
 
     INTERNALS
-	This function is not really necessary, and could be left unimplemented
-	on many systems. It is best when using this function to allow the memory
-	contents to remain as they are, since some programs may use this
-	function when installing resident modules.
-
-    HISTORY
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    Exec_DoResetCallbacks((struct IntExecBase *)SysBase);
+    Exec_DoResetCallbacks((struct IntExecBase *)SysBase, SD_ACTION_WARMREBOOT);
 
     asm volatile("li %%r3,%0; sc"::"i"(0x100 /*SC_REBOOT*/):"memory","r3");
 

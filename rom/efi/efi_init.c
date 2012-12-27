@@ -18,6 +18,37 @@ static BOOL CheckTable(struct EFI_TableHeader *t, UQUAD sig)
     return TRUE;
 }
 
+AROS_INTH1(static ResetHandler, struct EFIBase *, EFIBase)
+{
+    AROS_INTFUNC_INIT
+
+    UBYTE action = EFIBase->reset_handler.is_Node.ln_Type;
+    IPTR efiAction;
+
+    switch (action)
+    {
+    case SD_ACTION_COLDREBOOT:
+    	efiAction = EFI_Reset_Cold;
+    	break;
+
+    case SD_ACTION_POWEROFF:
+    	efiAction = EFI_Reset_Shutdown;
+    	break;
+
+    default:
+    	/* Unknown action */
+    	return FALSE;
+    }
+
+    /* Use EFI runtime services to perform the action */
+    EFIBase->Runtime->ResetSystem(efiAction, 0, 0, NULL);
+
+    /* Shut up the compiler, we should never reach this. */
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
 static int efi_Init(struct EFIBase *EFIBase)
 {
     APTR KernelBase;
@@ -53,9 +84,11 @@ static int efi_Init(struct EFIBase *EFIBase)
     	EFIBase->Runtime = EFIBase->System->RuntimeServices;
     	D(bug("[EFI] Valid runtime services table at 0x%p\n", EFIBase->Runtime));
 
-	/* Install ShutdownA() replacement */
-    	SetFunction(&SysBase->LibNode, -173 * LIB_VECTSIZE,
-		    AROS_SLIB_ENTRY(ShutdownA, Efi, 173));
+        /* Install EFI reset/power-off mechanism */
+        EFIBase->reset_handler.is_Node.ln_Pri = -56;
+        EFIBase->reset_handler.is_Code = (VOID_FUNC)ResetHandler;
+        EFIBase->reset_handler.is_Data = EFIBase;
+        AddResetCallback(&EFIBase->reset_handler);
     }
 
     return TRUE;

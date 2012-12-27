@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ColdReboot() - Reboot the computer.
@@ -7,6 +7,8 @@
 */
 
 #include <aros/debug.h>
+
+#include "exec_util.h"
 
 /*****************************************************************************
 
@@ -48,8 +50,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* TODO: Write exec/ColdReboot() */
-    aros_print_not_implemented("ColdReboot");
+    Exec_DoResetCallbacks((struct IntExecBase *)SysBase, SD_ACTION_WARMREBOOT);
 
     AROS_LIBFUNC_EXIT
 } /* ColdReboot() */

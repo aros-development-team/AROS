@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FILES := acpi_init acpi_tables oemblacklist
-FUNCS := findsdt scanentries readreg writereg scansdt shutdowna
+FUNCS := findsdt scanentries readreg writereg scansdt
 
 %build_module mmake=kernel-pc-acpi \
   modname=acpi modtype=resource \

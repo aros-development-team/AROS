@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := coldreboot supervisor shutdowna
+FILES := reset_init supervisor
 
 # From kernel.resource we need only kernel_syscalls.h
 USER_INCLUDES := $(PRIV_EXEC_INCLUDES) -I$(SRCDIR)/rom/kernel
