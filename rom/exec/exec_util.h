@@ -2,7 +2,7 @@
 #define _EXEC_UTIL_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Utility functions for exec.
@@ -104,7 +104,7 @@ APTR UnwindFrame(APTR fp, APTR *caller);
 void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase);
 ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase);
 void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase);
-void Exec_DoResetCallbacks(struct IntExecBase *SysBase);
+void Exec_DoResetCallbacks(struct IntExecBase *SysBase, UBYTE action);
 
 APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
 		      APTR PutChData, va_list VaListStream);

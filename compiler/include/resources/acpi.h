@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS Generic ACPI Definitions.
@@ -10,6 +10,7 @@
 
 #include <exec/lists.h>
 #include <exec/semaphores.h>
+#include <exec/interrupts.h>
 #include <utility/hooks.h>
 
 /********** ACPI DEFINITIONS ****************/
@@ -497,6 +498,8 @@ struct ACPI_TABLE_TYPE_ECDT                                                 /* E
 struct ACPIBase
 {
     struct  Node                            ACPIB_Node;
+
+    struct Interrupt                        ACPIB_ResetHandler;
 
     struct ACPI_TABLE_TYPE_RSDP            *ACPIB_RSDP_Addr;		/* Supervisor-only!!!			*/
     struct ACPI_TABLE_DEF_HEADER     	   *ACPIB_SDT_Addr;		/* Raw XSDT or RSDT pointer	   	*/

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ColdReboot() - Reboot the computer.
@@ -57,19 +57,13 @@ asm (
 
     SEE ALSO
 
-    INTERNALS
-	This function is not really necessary, and could be left unimplemented
-	on many systems. It is best when using this function to allow the memory
-	contents to remain as they are, since some programs may use this
-	function when installing resident modules.
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
     /* Disable interrupts, and do all the reset callbacks
      */
-    Exec_DoResetCallbacks((struct IntExecBase *)SysBase);
+    Exec_DoResetCallbacks((struct IntExecBase *)SysBase, SD_ACTION_WARMREBOOT);
 
     Supervisor((ULONG_FUNC)Exec_MagicResetCode);
 

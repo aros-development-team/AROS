@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ShutdownA() - Shut down the operating system.
@@ -8,6 +8,8 @@
 
 #include <aros/debug.h>
 #include <proto/exec.h>
+
+#include "exec_util.h"
 
 /*****************************************************************************
 
@@ -49,8 +51,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* This is a stub, we don't know what to do here. The actual implementation
-       is entirely arch-specific. */
+    Exec_DoResetCallbacks((struct IntExecBase *)SysBase, action);
+
+    /* We shouldn't get here. If a reset handler has failed to shut down
+     * the system, the system may still be unstable as a result of
+     * peripheral device resets */
     return 0;
 
     AROS_LIBFUNC_EXIT

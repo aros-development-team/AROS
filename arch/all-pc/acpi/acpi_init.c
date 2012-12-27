@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
@@ -246,6 +251,34 @@ static int acpi_CheckSDT(struct ACPIBase *ACPIBase)
     return c;
 }
 
+AROS_INTH1(static ResetHandler, struct ACPIBase *, ACPIBase)
+{
+    AROS_INTFUNC_INIT
+
+    UBYTE action = ACPIBase->ACPIB_ResetHandler.is_Node.ln_Type;
+    struct ACPI_TABLE_TYPE_FADT *fadt =
+        ACPI_FindSDT(ACPI_MAKE_ID('F','A','C','P'));
+
+    D(bug("[ACPI.ShutdownA] FADT 0x%p\n", fadt));
+
+    switch (action)
+    {
+    case SD_ACTION_COLDREBOOT:
+
+        /* Use reset register */
+        D(bug("[ACPI.ShutdownA] Reset register 0x%p, value 0x%02X\n",
+            (IPTR)fadt->reset_reg.address, fadt->reset_value));
+        ACPI_WriteReg(&fadt->reset_reg, fadt->reset_value);
+
+        /* We really should not return from that */
+        break;
+    }
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
 static int acpi_Init(struct ACPIBase *ACPIBase)
 {
     APTR KernelBase;
@@ -313,26 +346,13 @@ static int acpi_Init(struct ACPIBase *ACPIBase)
     }
 #endif
 
-    /*
-     * Now install own ShutdownA() replacement if needed.
-     * We check EFIBase here because EFI has own shutdown/reboot capabilities,
-     * they are better than our ones, and we allow it to supersede us.
-     */
-    if (!EFIBase)
-    {
-    	struct ACPI_TABLE_TYPE_FADT *fadt = ACPI_FindSDT(ACPI_MAKE_ID('F','A','C','P'));
-
-	D(bug("[ACPI] Replacing ShutdownA(), FADT 0x%p\n", fadt));
-
-	if (fadt && (fadt->header.length > offsetof(struct ACPI_TABLE_TYPE_FADT, reset_value)) &&
-	    (fadt->flags & FACP_FF_RESET_REG_SUP))
-	{
-	    D(bug("[ACPI] Have reset register, installing patch\n"));
-
-	    SetFunction(&SysBase->LibNode, -173 * LIB_VECTSIZE,
-			AROS_SLIB_ENTRY(ShutdownA, Acpi, 173));
-	}
-    }
+    /* Install ACPI reset handler. It has a lower priority than the EFI
+     * reset handler (for example), so will only be used if better
+     * mechanisms fail */
+    ACPIBase->ACPIB_ResetHandler.is_Node.ln_Pri = -60;
+    ACPIBase->ACPIB_ResetHandler.is_Code = (VOID_FUNC)ResetHandler;
+    ACPIBase->ACPIB_ResetHandler.is_Data = ACPIBase;
+    AddResetCallback(&ACPIBase->ACPIB_ResetHandler);
 
     return TRUE;
 }
