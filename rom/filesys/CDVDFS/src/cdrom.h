@@ -94,7 +94,7 @@ int Inquire(CDROM *p_cd, t_inquiry_data *p_data);
 t_toc_data *Read_TOC
 	(
 		CDROM *p_cd,
-		t_toc_header *p_toc_header
+		uint32_t *p_toc_len
 	);
 int Has_Audio_Tracks(CDROM *p_cd);
 int Data_Tracks(CDROM *p_cd, uint32_t** p_buf);

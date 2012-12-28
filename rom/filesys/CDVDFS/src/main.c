@@ -11,6 +11,7 @@
  * ----------------------------------------------------------------------
  * History:
  *
+ * 28-Dec-12  neil   Adapted to new Read_TOC API.
  * 06-Mar-09  error  - Removed madness, fixed insanity. Cleanup started
  * 18-Aug-07  sonic  - Now builds on AROS.
  * 06-May-07  sonic  - Added separate "g" option for listing directories in Joliet format.
@@ -785,16 +786,16 @@ void Show_Drive_Information (CDROM *p_cd)
 
 void Show_Table_Of_Contents (CDROM *p_cd)
 {
-  t_toc_header hdr;
+  uint32_t toc_len;
   t_toc_data *toc;
   short i, len;
   
-  if (!(toc = Read_TOC (p_cd, &hdr))) {
+  if (!(toc = Read_TOC (p_cd, &toc_len))) {
     fprintf (stderr, "cannot read table of contents\n");
     return;
   }
   
-  len = hdr.length / 8;
+  len = toc_len / 8;
   for (i=0; i<len; i++) {
     if (toc[i].track_number == 0xAA)
       printf ("Lead-out track at address %lu\n", (unsigned long)toc[i].address);

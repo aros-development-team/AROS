@@ -192,7 +192,7 @@ ULONG __abox__ = 1;
 #endif
 
 #ifndef __AROS__
-char __version__[] = "\0$VER: CDVDFS 1.4 (16-Jun-2008)";
+char __version__[] = "\0$VER: CDVDFS 1.7 (28.12.2012)";
 
 LONG SAVEDS Main(void)
 {
