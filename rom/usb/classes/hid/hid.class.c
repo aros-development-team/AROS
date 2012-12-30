@@ -6483,6 +6483,14 @@ void nCheckReset(struct NepClassHid *nch)
         }
         ColdReboot();
     }
+    else if(nch->nch_CDC->cdc_EnableKBReset &&
+        (nch->nch_KeyQualifiers & IEQUALIFIER_CONTROL) &&
+        (nch->nch_KeyQualifiers & (IEQUALIFIER_LALT|IEQUALIFIER_RALT)) &&
+        nch->nch_FakeEvent.ie_Code == RAWKEY_DELETE)
+    {
+        KPRINTF(20, ("Reboot!\n"));
+        ShutdownA(SD_ACTION_COLDREBOOT);
+    }
 }
 /* \\\ */
 

@@ -485,10 +485,15 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode,
 
     } /* switch(event) */
 
-    if (((kbd_keystate & (FLAG_LCTRL|FLAG_LMETA|FLAG_RMETA))
-        == (FLAG_LCTRL|FLAG_LMETA|FLAG_RMETA)) ||
-        ((kbd_keystate & (FLAG_LCTRL|FLAG_LALT|FLAG_DEL))
-        == (FLAG_LCTRL|FLAG_LALT|FLAG_DEL)) )
+    if ((kbd_keystate & (FLAG_LCTRL | FLAG_RCTRL)) != 0
+        && (kbd_keystate & (FLAG_LALT | FLAG_RALT)) != 0
+        && (kbd_keystate & FLAG_DEL) != 0)
+    {
+        ShutdownA(SD_ACTION_COLDREBOOT);
+    }
+
+    if ((kbd_keystate & (FLAG_LCTRL | FLAG_LMETA | FLAG_RMETA))
+        == (FLAG_LCTRL | FLAG_LMETA | FLAG_RMETA))
     {
         amigacode = 0x78; /* Reset */
     }
