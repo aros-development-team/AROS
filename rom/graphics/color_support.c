@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -41,13 +41,13 @@ ULONG color_distance(struct ColorMap * cm,
 
     WORD dr,dg,db;
 
-    UWORD c1 = ((UWORD *)cm->ColorTable)[index];
+    UWORD c1 = cm->ColorTable[index];
     LONG r1 = (LONG)(c1 >> 4) & 0x00f0;
     LONG g1 = (LONG)(c1 >> 0) & 0x00f0;
     LONG b1 = (LONG)(c1 << 4) & 0x00f0;
 
     if (cm->Type > COLORMAP_TYPE_V1_2) {
-        UWORD c2 = ((UWORD *)cm->LowColorBits)[index];
+        UWORD c2 = cm->LowColorBits[index];
 
 	r1 |= (c2 >> 8) & 0x000f;
 	g1 |= (c2 >> 4) & 0x000f;
@@ -72,13 +72,13 @@ BOOL color_equal(struct ColorMap * cm,
                  ULONG b,
                  ULONG index)
 {
-    if (((UWORD *)cm->ColorTable)[index] != (((r >> 20) & 0x0f00) |
+    if (cm->ColorTable[index] != (((r >> 20) & 0x0f00) |
                                               ((g >> 24) & 0x00f0) |
                                               ((b >> 28) & 0x000f)))
 	return FALSE;
 
     if ((cm->Type > COLORMAP_TYPE_V1_2) &&
-       ((UWORD *)cm->LowColorBits)[index] != (((r >> 16) & 0x0f00) |
+       cm->LowColorBits[index] != (((r >> 16) & 0x0f00) |
                                         	((g >> 20) & 0x00f0) |
                                         	((b >> 24) & 0x000f)))
         return FALSE;
@@ -92,14 +92,14 @@ VOID color_get(struct ColorMap *cm,
 		ULONG *b,
 		ULONG index)
 {
-    UWORD hibits = ((UWORD *)cm->ColorTable)[index];
+    UWORD hibits = cm->ColorTable[index];
 
     ULONG red8   = (hibits & 0x0f00) >> 4;
     ULONG green8 = (hibits & 0x00f0);
     ULONG blue8  = (hibits & 0x000f) << 4;
 
     if (cm->Type > COLORMAP_TYPE_V1_2) {
-        UWORD lobits = ((UWORD *)cm->LowColorBits)[index];
+        UWORD lobits = cm->LowColorBits[index];
 
 	red8   |= (lobits & 0x0f00) >> 8;
         green8 |= (lobits & 0x00f0) >> 4;
