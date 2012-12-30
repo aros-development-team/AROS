@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by AllocMem()
@@ -42,8 +42,8 @@
 	AROS_LH2(void, FreeMem,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR,  memoryBlock, A1),
-	AROS_LHA(ULONG, byteSize,    D0),
+	AROS_LHA(APTR, memoryBlock, A1),
+	AROS_LHA(IPTR, byteSize,    D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 35, Exec)

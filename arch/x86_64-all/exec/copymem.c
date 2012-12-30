@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copy memory.
@@ -47,13 +47,13 @@ static __inline__ void __small_memcpy(const void * src, void * dst, ULONG size)
 {
     register unsigned long int dummy;
     if( size < 4 ) {
-D(bug("[Exec] __byte_memcpy(%p, %p, %d)\n", src, dst, size));
+D(bug("[Exec] __byte_memcpy(%p, %p, %ld)\n", src, dst, size));
 
         __byte_memcpy(src, dst, size);
     }
     else
     {
-D(bug("[Exec] __long_memcpy(%p, %p, %d)\n", src, dst, size));
+D(bug("[Exec] __long_memcpy(%p, %p, %ld)\n", src, dst, size));
 
         __long_memcpy(src, dst, size);
     }
@@ -66,9 +66,9 @@ D(bug("[Exec] __long_memcpy(%p, %p, %d)\n", src, dst, size));
 	AROS_LH3I(void, CopyMem,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_APTR,  source, A0),
-	AROS_LHA(APTR,  dest,   A1),
-	AROS_LHA(ULONG, size,   D0),
+	AROS_LHA(CONST_APTR, source, A0),
+	AROS_LHA(APTR, dest, A1),
+	AROS_LHA(IPTR, size, D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 104, Exec)
@@ -86,9 +86,9 @@ D(bug("[Exec] __long_memcpy(%p, %p, %d)\n", src, dst, size));
 
     NOTES
 	The source and destination area are not allowed to overlap.
-        If the src isnt on a 16byte boundary it is aligned
-        first (so long as theres enough data..)
-        Copies using 4x16byte registers = 64bytes at a time.
+        If the src isn't on a 16-byte boundary, it is aligned
+        first (so long as there's enough data)
+        Copies using 4x16-byte registers = 64 bytes at a time.
 
     EXAMPLE
 
@@ -98,6 +98,7 @@ D(bug("[Exec] __long_memcpy(%p, %p, %d)\n", src, dst, size));
 	CopyMemQuick()
 
     INTERNALS
+	64-bit sizes are not handled yet.
 
 ******************************************************************************/
 {
@@ -110,7 +111,7 @@ D(bug("[Exec] __long_memcpy(%p, %p, %d)\n", src, dst, size));
     const void *src = source;
     void *dst = dest;
 
-D(bug("[Exec] CopyMem(%p, %p, %d)\n", src, dst, size));
+D(bug("[Exec] CopyMem(%p, %p, %ld)\n", src, dst, size));
 
     __asm__ __volatile__ (
                 "    prefetchnta (%0)\n"
@@ -208,7 +209,7 @@ D(bug("[Exec] CopyMem: SSE Unaligned-Copy %p to %p.\n", src, dst));
 
     if (size > 0)
     {
-D(bug("[Exec] CopyMem: Copy remaining %d bytes.\n", size));
+D(bug("[Exec] CopyMem: Copy remaining %ld bytes.\n", size));
         __small_memcpy(src, dst, size);
     }
 

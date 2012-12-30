@@ -2,7 +2,7 @@
 #define  CLIB_AROSSUPPORT_PROTOS_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prototypes for aros.lib
@@ -48,7 +48,7 @@ ULONG   CalcChecksum (APTR mem, ULONG size);
 int     kprintf      (const char * fmt, ...);
 int     vkprintf     (const char * fmt, va_list ap);
 int     rkprintf     (const STRPTR, const STRPTR, int, const UBYTE * fmt, ...);
-void    NastyFreeMem (APTR mem, ULONG size);
+void    NastyFreeMem (APTR mem, IPTR size);
 APTR    RemoveSList  (APTR * list, APTR node);
 void    hexdump      (const void * data, IPTR offset, ULONG count);
 int     strrncasecmp (const char *, const char *, int);

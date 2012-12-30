@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tell how much memory is available.
@@ -23,7 +23,7 @@
 
     NAME */
 
-	AROS_LH1(ULONG, AvailMem,
+	AROS_LH1(IPTR, AvailMem,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, attributes, D1),
@@ -54,7 +54,7 @@
 	Print the size of the largest chunk of chip memory.
 
 	printf("Largest chipmem chunk: %lu bytes\n",
-	       AvailMem(MEMF_CHIP|MEMF_LARGEST));
+	       AvailMem(MEMF_CHIP | MEMF_LARGEST));
 
     BUGS
 
@@ -66,7 +66,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG ret;
+    IPTR ret;
     struct TraceLocation tp = CURRENT_LOCATION("AvailMem");
 
     ret = nommu_AvailMem(attributes, SysBase);
