@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate some memory
@@ -43,7 +43,7 @@
 	AROS_LH2(APTR, AllocMem,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, byteSize,     D0),
+	AROS_LHA(IPTR,  byteSize,     D0),
 	AROS_LHA(ULONG, requirements, D1),
 
 /* LOCATION */

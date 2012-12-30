@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id: copymem.c $
+    $Id$
 
     Desc: CopyMem()
     Lang: english
@@ -23,7 +23,7 @@ extern void AROS_SLIB_ENTRY(CopyMem_020,Exec,104)(void);
 /*  SYNOPSIS */
 	AROS_LHA(CONST_APTR,  source, A0),
 	AROS_LHA(APTR,  dest,   A1),
-	AROS_LHA(ULONG, size,   D0),
+	AROS_LHA(IPTR,  size,   D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 104, Exec)

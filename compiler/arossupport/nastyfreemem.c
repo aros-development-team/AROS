@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Erase contents of memory before freeing it.
@@ -12,7 +12,7 @@
 #include <exec/execbase.h>
 
 #undef FreeMem /* Don't use any kind of macro here :) We want the real thing */
-void FreeMem(void *, ULONG);
+void FreeMem(void *, IPTR);
 
 
 extern struct ExecBase * SysBase;
@@ -25,8 +25,8 @@ extern struct ExecBase * SysBase;
 	void NastyFreeMem (
 
 /*  SYNOPSIS */
-	APTR  mem,
-	ULONG size)
+	APTR mem,
+	IPTR size)
 
 /*  FUNCTION
 	Overwrites the memory with 0xDEADBEEF before actually freeing it.
@@ -49,9 +49,6 @@ extern struct ExecBase * SysBase;
 	exec.library/FreeMem()
 
     INTERNALS
-
-    HISTORY
-	24-12-95    digulla created
 
 ******************************************************************************/
 {

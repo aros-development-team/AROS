@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,9 +10,9 @@
  	AROS_LH3(void, CopyMem_SSE,
 
     SYNOPSIS
- 	AROS_LHA(const void *, source, A0),
- 	AROS_LHA(void *, destination, A1),
- 	AROS_LHA(unsigned long, len, D0),
+ 	AROS_LHA(CONST_APTR, source, A0),
+ 	AROS_LHA(APTR, destination, A1),
+ 	AROS_LHA(IPTR, len, D0),
 
     LOCATION
  	struct ExecBase *, SysBase, 104, Exec) (if we're lucky)

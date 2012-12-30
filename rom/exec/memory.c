@@ -272,7 +272,7 @@ APTR stdAlloc(struct MemHeader *mh, IPTR size, ULONG requirements, struct TraceL
     return mc;
 }
 
-/* Free 'byteSize' bytes starting at 'memoryBlock' belonging to MemHeader 'freeList' */
+/* Free 'size' bytes starting at 'addr' belonging to MemHeader 'freeList' */
 void stdDealloc(struct MemHeader *freeList, APTR addr, IPTR size, struct TraceLocation *tp, struct ExecBase *SysBase)
 {
     APTR memoryBlock;

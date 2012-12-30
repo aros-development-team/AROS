@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by AllocPooled().
@@ -23,7 +23,7 @@
 /*  SYNOPSIS */
 	AROS_LHA(APTR, poolHeader,A0),
 	AROS_LHA(APTR, memory,    A1),
-	AROS_LHA(ULONG,memSize,   D0),
+	AROS_LHA(IPTR, memSize,   D0),
 
 /* LOCATION */
 	struct ExecBase *, SysBase, 119, Exec)

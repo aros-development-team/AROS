@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add memory to the public list of memory.
@@ -22,7 +22,7 @@
 AROS_LH5(void, AddMemList,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG,  size,       D0),
+	AROS_LHA(IPTR,   size,       D0),
 	AROS_LHA(ULONG,  attributes, D1),
 	AROS_LHA(LONG,   pri,        D2),
 	AROS_LHA(APTR,   base,       A0),

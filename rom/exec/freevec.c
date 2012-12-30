@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by AllocVec().
@@ -49,8 +49,8 @@
     /* If there's nothing to free do nothing. */
     if (memoryBlock != NULL)
     {
-	memoryBlock -= AROS_ALIGN(sizeof(ULONG));
-	FreeMem (memoryBlock, *((ULONG *)memoryBlock));
+        memoryBlock -= AROS_ALIGN(sizeof(IPTR));
+        FreeMem(memoryBlock, *((IPTR *)memoryBlock));
     }
     AROS_LIBFUNC_EXIT
 } /* FreeVec */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a memory pool.
@@ -25,8 +25,8 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, requirements, D0),
-	AROS_LHA(ULONG, puddleSize,   D1),
-	AROS_LHA(ULONG, threshSize,   D2),
+	AROS_LHA(IPTR, puddleSize,   D1),
+	AROS_LHA(IPTR, threshSize,   D2),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 116, Exec)
@@ -36,7 +36,7 @@
 
     INPUTS
 	requirements - The type of the memory
-	puddleSize   - The number of bytes that the pool expands
+	puddleSize   - The number of bytes that the pool expands by
 		       if it is too small.
 	threshSize   - Allocations beyond the threshSize are given
 		       directly to the system. threshSize must be
@@ -47,9 +47,10 @@
 	be created
 
     NOTES
-	Since exec.library v41.12 implementation of pools has been rewritten
-	to make use of memory protection capabilities. threshSize parameter
-	is effectively ignored and is present only for backwards compatibility.
+	Since exec.library v41.12, the implementation of pools has been
+        rewritten to make use of memory protection capabilities. The
+        threshSize parameter is effectively ignored and is present only
+        for backwards compatibility.
 
     EXAMPLE
 	\* Get the handle to a private memory pool *\
@@ -79,17 +80,17 @@
 
     struct TraceLocation tp = CURRENT_LOCATION("CreatePool");
     struct MemHeader *firstPuddle = NULL;
-    ULONG align = PrivExecBase(SysBase)->PageSize - 1;
+    IPTR align = PrivExecBase(SysBase)->PageSize - 1;
 
     D(bug("[exec] CreatePool(0x%08X, %u, %u)\n", requirements, puddleSize, threshSize));
     
     /*
      * puddleSize needs to include MEMHEADER_TOTAL and one pointer.
-     * This is because our puddles must be able to accomodate an allocation
+     * This is because our puddles must be able to accommodate an allocation
      * of own size. Allocations of larger size will always use enlarged puddles.
      * Pointer is used for pointing back to the MemHeader from which the block
-     * was allocated, in AllocVec()-alike manner. This way we get rid of slow lookup
-     * in FreePooled().
+     * was allocated, in AllocVec()-alike manner. This way we get rid of slow
+     * lookup in FreePooled().
      */
     puddleSize += MEMHEADER_TOTAL + sizeof(struct MemHeader *);
 
