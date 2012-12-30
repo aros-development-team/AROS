@@ -803,6 +803,15 @@ void nParseKeys(struct NepClassHid *nch, UBYTE *buf)
         DoIO((struct IORequest *) nch->nch_InpIOReq);
     }
     nch->nch_OldQualifier = qualifier;
+
+    /* Reboot machine upon Ctrl-Alt-Del */
+    if((qualifier & IEQUALIFIER_CONTROL) &&
+        (qualifier & (IEQUALIFIER_LALT|IEQUALIFIER_RALT)) &&
+        nch->nch_FakeEvent.ie_Code == RAWKEY_DELETE)
+    {
+        KPRINTF(20, ("Reboot!\n"));
+        ShutdownA(SD_ACTION_COLDREBOOT);
+    }
 }
 /* \\\ */
 

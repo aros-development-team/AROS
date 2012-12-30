@@ -22,6 +22,7 @@
 
 #include <devices/timer.h>
 #include <devices/input.h>
+#include <devices/rawkeycodes.h>
 #include <utility/utility.h>
 #include <dos/dos.h>
 #include <intuition/intuition.h>
