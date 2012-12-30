@@ -1,4 +1,4 @@
-# $Id: $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES := hpet_init

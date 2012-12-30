@@ -1,6 +1,6 @@
 /*
     Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: Legacy Intel 8259A PIC driver.
 */
