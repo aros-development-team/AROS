@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 39345 2011-06-17 05:55:29Z jmcmullan $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES := acpi_init acpi_tables oemblacklist

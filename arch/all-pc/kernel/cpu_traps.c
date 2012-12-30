@@ -1,6 +1,6 @@
 /*
     Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: Common trap handling routines for x86 CPU
     Lang: English

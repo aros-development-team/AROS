@@ -1,6 +1,6 @@
 /*
     Copyright © 2004-2011, The AROS Development Team. All rights reserved.
-    $Id: driverclass.c 38741 2011-05-18 12:56:53Z sonic $
+    $Id$
 
     Desc: PCI configuration mechanism 2 access functions
     Lang: English
