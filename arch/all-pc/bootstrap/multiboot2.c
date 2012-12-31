@@ -1,7 +1,7 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
     $Id$
- 
+
     Desc: Multiboot v2 parser
     Lang: english
 */
@@ -22,14 +22,20 @@
 #include "support.h"
 
 /*
- * AROS expects memory map in original format.
- * We won't bother adding more and more new kernel tags. We convert the memory map instead.
- * The conversion happens in place. We use the fact that sizeof(struct mb_mmap2) >= sizeof(struct mp_mmap).
+ * AROS expects memory map in original format. However, we won't bother 
+ * adding more and more new kernel tags. We convert the memory map instead. 
+ * The conversion happens in place. We use the fact that the layout of 
+ * mb2_mmap is the same as mb_mmap except for the missing 'size' field. An 
+ * mb_mmap can therefore be created by subtracting four bytes from the base 
+ * address and filling in the 'size' field (mb2_mmap's 'pad' field, or the 
+ * end of the tag structure) with the provided entry size. This will still 
+ * work if mb2_mmap is extended in future, but we assume the old mb_mmap 
+ * will not be extended.
  */
 static struct mb_mmap *mmap_convert(struct mb2_tag_mmap *tag, unsigned long *mmap_len)
 {
-    struct mb2_mmap *mmap2 = tag->mmap;
-    struct mb_mmap *mmap = (struct mb_mmap *)tag->mmap;
+    volatile struct mb2_mmap *mmap2 = tag->mmap;
+    volatile struct mb_mmap *mmap = (void *)tag->mmap - 4;
     int mmap2_len = tag->size - sizeof(struct mb2_tag_mmap);
     struct mb_mmap *ret = mmap;
 
@@ -37,23 +43,7 @@ static struct mb_mmap *mmap_convert(struct mb2_tag_mmap *tag, unsigned long *mma
 
     while (mmap2_len >= sizeof(struct mb2_mmap))
     {
-        /*
-         * Since the conversion actually happens in place, and we use two variables
-         * (mmap and mmap2) which actually point to the same region of memory,
-         * we first need to get all values, and then store them.
-         * Compler's attempt to optimize this will ruin the idea, so we use volatile
-         * temporary storage.
-         */
-        volatile unsigned long long addr = mmap2->addr;
-        volatile unsigned long long len  = mmap2->len;
-        volatile unsigned int type       = mmap2->type;
-
-        DMMAP(kprintf("[Multiboot2] Memory map entry 0x%016llX - 0x%016llX, type %u\n", addr, addr + len, type));
-
         mmap->size = sizeof(struct mb_mmap) - 4;
-        mmap->addr = addr;
-        mmap->len  = len;
-        mmap->type = type;
 
         mmap++;
         mmap2 = (void *)mmap2 + tag->entry_size;
