@@ -1,13 +1,13 @@
 /*
-    Copyright Â© 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id: init_multiboot.c 37861 2011-03-28 09:16:54Z sonic $
 
     Desc: Parse multiboot data and init console.
 */
 
+#include <exec/types.h>
 #include <aros/macros.h>
 #include <aros/multiboot2.h>
-#include <exec/types.h>
 
 #include <bootconsole.h>
 
