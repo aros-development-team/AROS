@@ -852,7 +852,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 	
 	/*
 	 * Store pointer to bitmap, so we can get hold of it
-         * from withing LoadRGBxx() functions
+         * from within LoadRGBxx() functions
          */
         screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
 	/* Initialize legacy embedded BitMap structure */

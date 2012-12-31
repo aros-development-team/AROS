@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot AROS
@@ -252,7 +252,7 @@ static inline void dosboot_BootDos(void)
         Alert( AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_DOSLib );
     }
 
-    /* InitResident() of dos.library will not return  on success. */
+    /* InitResident() of dos.library will not return on success. */
     InitResident( DOSResident, BNULL );
 }
 
