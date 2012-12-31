@@ -552,7 +552,7 @@ static void __bootstrap(unsigned int magic, void *mb)
 #ifdef DEBUG_MEM_TYPE
         if (mm2->type == DEBUG_MEM_TYPE)
 #endif
-	    kprintf("[BOOT] Type %d addr %llp len %llp\n", mm2->type, mm2->addr, mm2->len);
+	    kprintf("[BOOT] Type %lu addr %p len %p\n", mm2->type, mm2->addr, mm2->len);
 
         ksize -= mm2->size+4;
         mm2 = (struct mb_mmap *)(mm2->size + (unsigned long)mm2 + 4);
