@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
     $Id: multiboot.h 37698 2011-03-21 07:05:51Z sonic $
  
     Desc: Multiboot v2 information structures
@@ -26,10 +26,10 @@
 
 struct mb2_header
 {
-    unsigned int magic;	   /* MB2_MAGIC					    */
-    unsigned int arch;	   /* Architecture - see below			    */
-    unsigned int size;	   /* Total size of the header (including all tags) */
-    unsigned int checksum; /* Header checksum				    */
+    ULONG magic;   /* MB2_MAGIC					    */
+    ULONG arch;	   /* Architecture - see below			    */
+    ULONG size;	   /* Total size of the header (including all tags) */
+    ULONG checksum; /* Header checksum				    */
     /* Tags follow */
 };
 
@@ -41,9 +41,9 @@ struct mb2_header
 
 struct mb2_header_tag
 {
-    unsigned short type;  /* Tag ID			      */
-    unsigned short flags; /* Flags, see below		      */
-    unsigned int   size;  /* Size of this tag, including data */
+    UWORD type;  /* Tag ID			      */
+    UWORD flags; /* Flags, see below		      */
+    ULONG size;  /* Size of this tag, including data */
 };
 
 /* Tag IDs */
@@ -60,71 +60,71 @@ struct mb2_header_tag
 
 struct mb2_header_tag_info_request
 {
-    unsigned short type;		/* MB2_HEADER_TAG_INFORMATION_REQUEST */
-    unsigned short flags;
-    unsigned int   size;
-    unsigned int   requests[0];
+    UWORD type;		/* MB2_HEADER_TAG_INFORMATION_REQUEST */
+    UWORD flags;
+    ULONG size;
+    ULONG requests[0];
 };
 
 struct mb2_header_tag_address
 {
-    unsigned short type;		/* MB2_HEADER_TAG_ADDRESS */
-    unsigned short flags;
-    unsigned int   size;
-    unsigned int   header_addr;
-    unsigned int   load_addr;
-    unsigned int   load_end_addr;
-    unsigned int   bss_end_addr;
+    UWORD type;		/* MB2_HEADER_TAG_ADDRESS */
+    UWORD flags;
+    ULONG size;
+    ULONG header_addr;
+    ULONG load_addr;
+    ULONG load_end_addr;
+    ULONG bss_end_addr;
 };
 
 struct mb2_header_tag_entry_address
 {
-    unsigned short type;		/* MB2_HEADER_TAG_ENTRY_ADDRESS */
-    unsigned short flags;
-    unsigned int   size;
-    unsigned int   entry_addr;
+    UWORD type;		/* MB2_HEADER_TAG_ENTRY_ADDRESS */
+    UWORD flags;
+    ULONG size;
+    ULONG entry_addr;
 };
 
 struct mb2_header_tag_console_flags
 {
-    unsigned short type;		/* MB2_HEADER_TAG_CONSOLE_FLAGS */
-    unsigned short flags;
-    unsigned int   size;
-    unsigned int   console_flags;
+    UWORD type;		/* MB2_HEADER_TAG_CONSOLE_FLAGS */
+    UWORD flags;
+    ULONG size;
+    ULONG console_flags;
 };
 
 struct mb2_header_tag_framebuffer
 {
-    unsigned short type;		/* MB2_HEADER_TAG_FRAMEBUFFER */
-    unsigned short flags;
-    unsigned int   size;
-    unsigned int   width;
-    unsigned int   height;
-    unsigned int   depth;
+    UWORD type;		/* MB2_HEADER_TAG_FRAMEBUFFER */
+    UWORD flags;
+    ULONG size;
+    ULONG width;
+    ULONG height;
+    ULONG depth;
 };
 
 struct mb2_header_tag_module_align
 {
-    unsigned short type;		/* MB2_HEADER_TAG_MODULE_ALIGN */
-    unsigned short flags;
-    unsigned int   size;
-    unsigned int   width;
-    unsigned int   height;
-    unsigned int   depth;
+    UWORD type;		/* MB2_HEADER_TAG_MODULE_ALIGN */
+    UWORD flags;
+    ULONG size;
+    ULONG width;
+    ULONG height;
+    ULONG depth;
 };
 
 /* This value is passed in by the bootloader */
 #define MB2_STARTUP_MAGIC 0x36d76289
 
 /*
- * Multiboot v2 data is an UQUAD value representing overall length,
+ * Multiboot v2 data is a UQUAD value representing overall length,
  * followed by a sequence of tags.
  * This is the generalized form of a tag.
  */
 struct mb2_tag
 {
-    unsigned int type;	/* ID				*/
-    unsigned int size;	/* Data size (including header)	*/
+    ULONG type;	/* ID				*/
+    ULONG size;	/* Data size (including header)	*/
 };
 
 /* Known tag IDs */
@@ -148,50 +148,50 @@ struct mb2_tag
 
 struct mb2_tag_string
 {
-    unsigned int type;
-    unsigned int size;
-    char         string[0];
+    ULONG type;
+    ULONG size;
+    BYTE  string[0];
 };
 
 struct mb2_tag_module
 {
-    unsigned int type;
-    unsigned int size;
-    unsigned int mod_start;
-    unsigned int mod_end;
-    char         cmdline[0];
+    ULONG type;
+    ULONG size;
+    ULONG mod_start;
+    ULONG mod_end;
+    BYTE  cmdline[0];
 };
 
 struct mb2_tag_basic_meminfo
 {
-    unsigned int type;
-    unsigned int size;
-    unsigned int mem_lower;
-    unsigned int mem_upper;
+    ULONG type;
+    ULONG size;
+    ULONG mem_lower;
+    ULONG mem_upper;
 };
 
 struct mb2_tag_bootdev
 {
-    unsigned int type;
-    unsigned int size;
-    unsigned int biosdev;
-    unsigned int slice;
-    unsigned int part;
+    ULONG type;
+    ULONG size;
+    ULONG biosdev;
+    ULONG slice;
+    ULONG part;
 };
 
 struct mb2_mmap
 {
 #ifdef MULTIBOOT_64BIT
-    unsigned long long addr;	  /* Address end length, 64-bit */
-    unsigned long long len;
+    UQUAD addr;	  /* Address and length, 64-bit */
+    UQUAD len;
 #else
-    unsigned int       addr;
-    unsigned int       addr_high;
-    unsigned int       len;
-    unsigned int       len_high;
+    ULONG addr;
+    ULONG addr_high;
+    ULONG len;
+    ULONG len_high;
 #endif
-    unsigned int       type;	 /* Entry type, see below	*/
-    unsigned int       pad;	 /* Reserved			*/
+    ULONG type;	 /* Entry type, see below	*/
+    ULONG pad;	 /* Reserved			*/
 };
 
 /* Memory map entry types */
@@ -203,22 +203,22 @@ struct mb2_mmap
 
 struct mb2_tag_mmap
 {
-    unsigned int    type;
-    unsigned int    size;
-    unsigned int    entry_size;
-    unsigned int    entry_version;
+    ULONG type;
+    ULONG size;
+    ULONG entry_size;
+    ULONG entry_version;
     struct mb2_mmap mmap[0];
 };
 
 struct mb2_tag_vbe
 {
-    unsigned int   type;
-    unsigned int   size;
+    ULONG type;
+    ULONG size;
 
-    unsigned short vbe_mode;
-    unsigned short vbe_interface_seg;
-    unsigned short vbe_interface_off;
-    unsigned short vbe_interface_len;
+    UWORD vbe_mode;
+    UWORD vbe_interface_seg;
+    UWORD vbe_interface_off;
+    UWORD vbe_interface_len;
 
     struct vbe_controller vbe_control_info;
     struct vbe_mode       vbe_mode_info;
@@ -226,20 +226,20 @@ struct mb2_tag_vbe
 
 struct mb2_tag_framebuffer_common
 {
-    unsigned int       type;			/* Tag ID				*/
-    unsigned int       size;
+    ULONG type;			/* Tag ID				*/
+    ULONG size;
 #ifdef MULTIBOOT_64BIT
-    unsigned long long framebuffer_addr;	/* Framebuffer address, 64-bit pointer	*/
+    UQUAD framebuffer_addr;	/* Framebuffer address, 64-bit pointer	*/
 #else
-    unsigned int       framebuffer_addr;
-    unsigned int       framebuffer_addr_high;
+    ULONG framebuffer_addr;
+    ULONG framebuffer_addr_high;
 #endif
-    unsigned int       framebuffer_pitch;	/* Bytes per line			*/
-    unsigned int       framebuffer_width;	/* Size in pixels or characters		*/
-    unsigned int       framebuffer_height;
-    unsigned char      framebuffer_bpp;		/* Bits per pixel			*/
-    unsigned char      framebuffer_type;	/* See below				*/
-    unsigned short     reserved;
+    ULONG framebuffer_pitch;	/* Bytes per line			*/
+    ULONG framebuffer_width;	/* Size in pixels or characters		*/
+    ULONG framebuffer_height;
+    UBYTE framebuffer_bpp;		/* Bits per pixel			*/
+    UBYTE framebuffer_type;	/* See below				*/
+    UWORD reserved;
 };
 
 /* Framebuffer types */
@@ -249,9 +249,9 @@ struct mb2_tag_framebuffer_common
 
 struct fb_color
 {
-    unsigned char red;
-    unsigned char green;
-    unsigned char blue;
+    UBYTE red;
+    UBYTE green;
+    UBYTE blue;
 };
 
 struct mb2_tag_framebuffer
@@ -262,89 +262,89 @@ struct mb2_tag_framebuffer
   {
     struct
     {
-        unsigned short framebuffer_num_colors;
+        UWORD framebuffer_num_colors;
         struct fb_color framebuffer_palette[0];
     };
     struct
     {
-        unsigned char framebuffer_red_field_position;
-        unsigned char framebuffer_red_mask_size;
-        unsigned char framebuffer_green_field_position;
-        unsigned char framebuffer_green_mask_size;
-        unsigned char framebuffer_blue_field_position;
-        unsigned char framebuffer_blue_mask_size;
+        UBYTE framebuffer_red_field_position;
+        UBYTE framebuffer_red_mask_size;
+        UBYTE framebuffer_green_field_position;
+        UBYTE framebuffer_green_mask_size;
+        UBYTE framebuffer_blue_field_position;
+        UBYTE framebuffer_blue_mask_size;
     };
   };
 };
 
 struct mb2_tag_elf_sections
 {
-    unsigned int type;
-    unsigned int size;
-    unsigned int num;
-    unsigned int entsize;
-    unsigned int shndx;
-    char sections[0];
+    ULONG type;
+    ULONG size;
+    ULONG num;
+    ULONG entsize;
+    ULONG shndx;
+    BYTE sections[0];
 };
 
 struct mb2_tag_apm
 {
-    unsigned int   type;
-    unsigned int   size;
-    unsigned short version;
-    unsigned short cseg;
-    unsigned int   offset;
-    unsigned short cseg_16;
-    unsigned short dseg;
-    unsigned short flags;
-    unsigned short cseg_len;
-    unsigned short cseg_16_len;
-    unsigned short dseg_len;
+    ULONG type;
+    ULONG size;
+    UWORD version;
+    UWORD cseg;
+    ULONG offset;
+    UWORD cseg_16;
+    UWORD dseg;
+    UWORD flags;
+    UWORD cseg_len;
+    UWORD cseg_16_len;
+    UWORD dseg_len;
 };
 
 struct mb2_tag_efi32
 {
-    unsigned int type;
-    unsigned int size;
-    unsigned int pointer;
+    ULONG type;
+    ULONG size;
+    ULONG pointer;
 };
 
 struct mb2_tag_efi64
 {
-    unsigned int       type;
-    unsigned int       size;
-    unsigned long long pointer;
+    ULONG type;
+    ULONG size;
+    UQUAD pointer;
 };
 
 struct mb2_tag_smbios
 {
-    unsigned int  type;
-    unsigned int  size;
-    unsigned char major;
-    unsigned char minor;
-    unsigned char reserved[6];
-    unsigned char tables[0];
+    ULONG type;
+    ULONG size;
+    UBYTE major;
+    UBYTE minor;
+    UBYTE reserved[6];
+    UBYTE tables[0];
 };
 
 struct mb2_tag_old_acpi
 {
-    unsigned int  type;
-    unsigned int  size;
-    unsigned char rsdp[0];
+    ULONG type;
+    ULONG size;
+    UBYTE rsdp[0];
 };
 
 struct mb2_tag_new_acpi
 {
-    unsigned int  type;
-    unsigned int  size;
-    unsigned char rsdp[0];
+    ULONG type;
+    ULONG size;
+    UBYTE rsdp[0];
 };
 
 struct mb2_tag_network
 {
-    unsigned int  type;
-    unsigned int  size;
-    unsigned char dhcpack[0];
+    ULONG type;
+    ULONG size;
+    UBYTE dhcpack[0];
 };
 
 #endif
