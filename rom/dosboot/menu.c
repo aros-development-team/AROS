@@ -676,7 +676,7 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE, BOOL WantBootMenu)
         bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
     }
 
-    /* Make the user's select the top boot device */
+    /* Make the user's selection the top boot device */
     setBootDevice(LIBBASE);
 
     return bmi_RetVal;

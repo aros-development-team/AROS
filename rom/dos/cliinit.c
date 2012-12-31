@@ -414,10 +414,10 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
             if (dead)
             {
                 /*
-                 * Handlers usually won't remove their DeviceNoces themselves.
+                 * Handlers usually won't remove their DeviceNodes themselves.
                  * And even if they do (ACTION_DIE is poorly documented), RemDosEntry()
                  * on an already removed entry is safe due to nature of DOS list.
-                 * What is really prohibited, it's unloading own seglist. Well, resident
+                 * What is really prohibited, is unloading own seglist. Well, resident
                  * handlers will never do it, they know...
                  */
                 RemDosEntry((struct DosList *)dn);
@@ -560,7 +560,7 @@ static long internalBootCliHandler(void)
          * In this case the DeviceNode will not be mounted, but it will stay in
          * ExpansionBase->MountList. It can be picked up by disk-based program which would
          * read mappings for disk-based handlers from file.
-         * This way we could automount e. g. FAT, NTFS, EXT3/2, whatever else, partitions.
+         * This way we could automount e.g. FAT, NTFS, EXT3/2, whatever else, partitions.
          */
         mountBootNode(bn->bn_DeviceNode, fsr, DOSBase);
     }

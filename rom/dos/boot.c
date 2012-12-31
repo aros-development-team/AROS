@@ -170,7 +170,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
                 fh->fh_Flags &= ~0x80000000;
             }
             Close(cos);
-            /* NOTE: 'cas' will will already have been closed by the Shell */
+            /* NOTE: 'cas' will already have been closed by the Shell */
         }
     } else
         Alert(AN_NoWindow);

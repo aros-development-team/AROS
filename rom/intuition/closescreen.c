@@ -1,8 +1,8 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
- 
+
     Close a screen.
 */
 
@@ -193,11 +193,12 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
     /* Free the sprite */
     ReleaseSharedPointer(((struct IntScreen *)screen)->Pointer, IntuitionBase);
 
+    /* Free decoration objects */
     DisposeObject(((struct IntScreen *)screen)->WinDecorObj);
     DisposeObject(((struct IntScreen *)screen)->MenuDecorObj);
     DisposeObject(((struct IntScreen *)screen)->ScrDecorObj);
 
-    /* Free the memory */
+    /* Free decoration buffer */
     if (((struct IntScreen *)screen)->DecorUserBuffer)
     {
         FreeMem((APTR)((struct IntScreen *)screen)->DecorUserBuffer, ((struct IntScreen *)screen)->DecorUserBufferSize);
