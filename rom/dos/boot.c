@@ -129,7 +129,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 
     if (cis) {
         BPTR cos = OpenFromLock(DupLockFromFH(cis));
-        BYTE const C[] = "Copyright © 1995-2012, The AROS Development Team.\n"
+        BYTE const C[] = "Copyright © 1995-2013, The AROS Development Team.\n"
                          "Licensed under the AROS Public License.\n"
                          "Version SVN" SVNREV ", built on " ISODATE ".\n";
 
