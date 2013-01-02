@@ -37,7 +37,7 @@
 #define HiddAttrBase            (PSD(cl)->hiddAB)
 
 #define CFGADD(bus,dev,func,reg)    \
-    ( 0x00000000 | ((bus)<<16) |    \
+    ( psd->CfgBase | ((bus)<<16) |    \
     ((dev)<<11) | ((func)<<8) | ((reg)&~3))
 
 typedef union _pcicfg
@@ -143,8 +143,10 @@ static int PCI440_InitClass(LIBBASETYPEPTR LIBBASE)
     pvr = GetPVR();
     if (pvr == PVR_PPC460EX_B) {
         LIBBASE->psd.IntLine = INTR_UIC0_PCI0_IN;
+        LIBBASE->psd.CfgBase = 0x00000000;
     } else {
         LIBBASE->psd.IntLine = 0xff;
+        LIBBASE->psd.CfgBase = 0x80000000;
     }
 
     struct pHidd_PCI_AddHardwareDriver msg,*pmsg=&msg;

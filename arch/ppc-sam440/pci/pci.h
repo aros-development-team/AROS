@@ -23,6 +23,9 @@ struct pci_staticdata {
     OOP_Class           *driverClass;
 
     UBYTE               IntLine;
+    ULONG               CfgBase;        /* 0x80000000 for 440ex
+                                         * 0x00000000 for 460ex
+                                         */
 };
 
 struct pcibase {
