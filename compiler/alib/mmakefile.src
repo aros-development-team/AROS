@@ -72,6 +72,7 @@ FILES	:= \
     invertstringforward \
     layoutmenuitems \
     layoutmenus \
+    liballocaligned \
     liballocpooled \
     libcreatepool \
     libdeletepool \

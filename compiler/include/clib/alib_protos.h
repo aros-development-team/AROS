@@ -121,6 +121,9 @@ void LibDeletePool (APTR poolHeader);
 APTR LibAllocPooled (APTR poolHeader, ULONG memSize);
 void LibFreePooled (APTR poolHeader, APTR memory, ULONG memSize);
 
+/* Aligned */
+APTR LibAllocAligned (ULONG memSize, ULONG requirements, IPTR alignBytes);
+
 /* Hook Support */
 AROS_UFP3(IPTR, HookEntry,
     AROS_UFPA(struct Hook *, hook,  A0),
