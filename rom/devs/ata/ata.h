@@ -236,6 +236,7 @@ typedef struct
    enum
    {
       CT_NoBlock,
+      CT_CHS,
       CT_LBA28,
       CT_LBA48,
    } type;
@@ -342,11 +343,13 @@ typedef enum
 #define AB_DiscChanged          29     /* disc changed */
 #define AB_Removable            28     /* media removable */
 #define AB_80Wire               27     /* has an 80-wire cable */
+#define AB_CHSOnly              26     /* only supports CHS commands */
 
 #define AF_DiscPresent          (1 << AB_DiscPresent)
 #define AF_DiscChanged          (1 << AB_DiscChanged)
 #define AF_Removable            (1 << AB_Removable)
 #define AF_80Wire               (1 << AB_80Wire)
+#define AF_CHSOnly              (1 << AB_CHSOnly)
 
 /* RegisterBus flags */
 #define ARBB_80Wire              0
@@ -360,8 +363,11 @@ typedef enum
 #define ata_Feature         1
 #define ata_Count           2
 #define ata_LBALow          3
+#define ata_Sector          3
 #define ata_LBAMid          4
+#define ata_CylinderLow     4
 #define ata_LBAHigh         5
+#define ata_CylinderHigh    5
 #define ata_DevHead         6
 #define ata_Status          7
 #define ata_Command         7
