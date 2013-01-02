@@ -69,9 +69,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* At PreDMA stage only data caches need to be flushed */
-    //if (flags & DMA_ReadFromRAM)
-
     void *addr = KrnVirtualToPhysical(address);
 
     D(bug("[exec] CachePreDMA(%08x, %d, %c) = %08x\n", address, *length, flags & DMA_ReadFromRAM ? 'R':'W', addr));
