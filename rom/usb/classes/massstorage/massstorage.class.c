@@ -9,6 +9,8 @@
 
 #include "massstorage.class.h"
 
+#define DEF_NAKTIMEOUT  (100)
+
 /* /// "Lib Stuff" */
 static const STRPTR GM_UNIQUENAME(libname) = MOD_NAME_STRING;
 
@@ -861,7 +863,7 @@ BOOL GM_UNIQUENAME(nLoadClassConfig)(struct NepMSBase *nh)
     cdc = ncm->ncm_CDC;
     cdc->cdc_ChunkID = AROS_LONG2BE(MAKE_ID('M','S','D','C'));
     cdc->cdc_Length = AROS_LONG2BE(sizeof(struct ClsDevCfg)-8);
-    cdc->cdc_NakTimeout = 50;
+    cdc->cdc_NakTimeout = DEF_NAKTIMEOUT;
     cdc->cdc_PatchFlags = PFF_MODE_XLATE|PFF_NO_RESET|PFF_FIX_INQ36|PFF_SIMPLE_SCSI;
     cdc->cdc_FATDosType = 0x46415400;
     cdc->cdc_StartupDelay = 0;
@@ -1221,7 +1223,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
                 // assume 2048 byte blocks
                 ncm->ncm_BlockSize = 2048;
                 ncm->ncm_BlockShift = 11;
-                if(ncm->ncm_CDC->cdc_NakTimeout == 50)
+                if(ncm->ncm_CDC->cdc_NakTimeout == DEF_NAKTIMEOUT)
                 {
                     psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Silently increasing NAK Timeout value to 15 seconds for CD/DVD drives...");
                     ncm->ncm_CDC->cdc_NakTimeout = 150;
