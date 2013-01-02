@@ -329,7 +329,7 @@ static BOOL bstreqcstr(BSTR bstr, CONST_STRPTR cstr)
 
 void selectBootDevice(LIBBASETYPEPTR DOSBootBase)
 {
-    struct BootNode *bn;
+    struct BootNode *bn = NULL;
 
     if (DOSBootBase->db_BootDevice == NULL &&
         DOSBootBase->db_BootNode != NULL)
@@ -343,16 +343,20 @@ void selectBootDevice(LIBBASETYPEPTR DOSBootBase)
     }
     else
     {
-        ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, bn)
+        struct BootNode *i;
+        ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, i)
         {
             struct DeviceNode *dn;
 
-            dn = bn->bn_DeviceNode;
+            dn = i->bn_DeviceNode;
             if (dn == NULL || dn->dn_Name == BNULL)
                 continue;
 
             if (bstreqcstr(dn->dn_Name, DOSBootBase->db_BootDevice))
+            {
+                bn = i;
                 break;
+            }
         }
     }
 
