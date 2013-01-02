@@ -335,21 +335,21 @@ ULONG bmcntz(ULONG *bitmap, LONG bitoffset, LONG bits)
     return count;
 }
 
-void *mh_Alloc(struct MemHeaderExt *mhe, ULONG size, ULONG *flags)
+void *mh_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 {
 	return NULL;
 }
 
-void mh_Free(struct MemHeaderExt *mhe, APTR  mem,  ULONG  size)
+void mh_Free(struct MemHeaderExt *mhe, APTR  mem,  IPTR size)
 {
 }
 
-void *mh_AllocAbs(struct MemHeaderExt *mhe, ULONG size, APTR  mem)
+void *mh_AllocAbs(struct MemHeaderExt *mhe, IPTR size, APTR  mem)
 {
 	return NULL;
 }
 
-void *mh_ReAlloc(struct MemHeaderExt *mhe, APTR  old,  ULONG  size)
+void *mh_ReAlloc(struct MemHeaderExt *mhe, APTR  old,  IPTR size)
 {
 	return NULL;
 }
