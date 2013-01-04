@@ -825,7 +825,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     KPRINTF(10, ("EHCI: Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD"));
                                     KPRINTF(10, ("EHCI: Highspeed=%s\n", newval & EHPF_PORTENABLE ? "YES!" : "NO"));
                                     KPRINTF(10, ("EHCI: Port status=%08lx\n", newval));
-                                    if(!(newval & EHPF_PORTENABLE))
+                                    if(!(newval & EHPF_PORTENABLE) && unit->hu_PortMap11[idx - 1] != NULL)
                                     {
                                         // if not highspeed, release ownership
                                         KPRINTF(20, ("EHCI: Transferring ownership to UHCI/OHCI port %ld\n", unit->hu_PortNum11[idx - 1]));
