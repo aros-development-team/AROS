@@ -349,7 +349,7 @@ LONG AFS_work(struct ExecBase *SysBase)
 	    {
 		struct FileLock   *f1 = BADDR(dp->dp_Arg1);
 		struct FileLock   *f2 = BADDR(dp->dp_Arg2);
-	    	ok = sameLock((struct AfsHandle*)f1->fl_Key, (struct AfsHandle*)f2->fl_Key);
+	    	ok = (sameLock((struct AfsHandle*)f1->fl_Key, (struct AfsHandle*)f2->fl_Key) == LOCK_SAME) ? DOSTRUE : DOSFALSE;
 		break;
 	    }
 	    
