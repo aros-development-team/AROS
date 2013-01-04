@@ -72,7 +72,7 @@ LONG checkValid(struct AFSBase *afs, struct Volume *vol)
 		return 0;
 	}
 
-	return vol->state == ID_VALIDATED ? 1 : 0;
+	return (vol->state == ID_VALIDATED) ? 1 : 0;
 #else
 	return 1;
 #endif
