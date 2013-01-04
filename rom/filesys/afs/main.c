@@ -523,7 +523,7 @@ LONG AFS_work(struct ExecBase *SysBase)
 		case ACTION_SET_FILE_SIZE:
 		    if (!mediacheck(volume, &ok, &res2))
 		    	break;
-		    ok = setFileSize(handler, (struct AfsHandle *)(((struct FileHandle *)(dp->dp_Arg1))->fh_Arg1),(LONG)dp->dp_Arg2, (LONG)dp->dp_Arg3, &res2);
+		    ok = setFileSize(handler, (struct AfsHandle *)(dp->dp_Arg1),(LONG)dp->dp_Arg2, (LONG)dp->dp_Arg3, &res2);
 		    break;
 		case ACTION_FH_FROM_LOCK:
 		{
