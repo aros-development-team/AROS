@@ -68,7 +68,7 @@ typedef struct _ShellState
 } ShellState;
 
 #define DOSBase (ss->ss_DOSBase)
-#define SysBase (ss->ss_SysBase)
+#define SysBase ((struct ExecBase *)ss->ss_SysBase)
 
 /* Function: convertLine
  *
