@@ -216,9 +216,18 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
             { TAG_DONE, 0UL },
     };
 
-    memptr = AllocVecAligned(2000, 0x100);
-    KPRINTF(1000,("AllocVedAligned %p\n", memptr));
-    FreeVecAligned(memptr);
+    APTR T0 = AllocVecAligned(18, 0, 0);
+    T0 = AllocVecAligned(18, 0x200, 0);
+    T0 = AllocVecAligned(0x1000, 0, 0);
+    T0 = AllocVecAligned(0x1000, 8, 0);
+    T0 = AllocVecAligned(0x1000, 16, 0);
+    T0 = AllocVecAligned(0x1000, 32, 0);
+    T0 = AllocVecAligned(0x1000, 64, 0);
+    T0 = AllocVecAligned(0x1000, 64, 0x1000);
+    T0 = AllocVecAligned(0x1000, 64, 0x100);
+    T0 = AllocVecAligned(0x1000, 63, 0x100);
+    while(1);
+
 
     /* Activate Mem and Busmaster as pciFreeUnit will disable them! (along with IO, but we don't have that...) */
     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMemAndBusmaster);
@@ -256,8 +265,8 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     KPRINTF(1000, ("Pagesize 2^(n+12) = 0x%lx\n", hc->xhc_pagesize));
 
     /* Testing scratchpad allocations */
-    hc->xhc_scratchpads = 4;
-//    hc->xhc_scratchpads = XHCV_SPB_Max(capreg_readl(XHCI_HCSPARAMS2));
+    //hc->xhc_scratchpads = 4;
+    hc->xhc_scratchpads = XHCV_SPB_Max(capreg_readl(XHCI_HCSPARAMS2));
     KPRINTF(1000, ("Max Scratchpad Buffers %lx\n",hc->xhc_scratchpads));
 
     hc->xhc_NumPorts = XHCV_MaxPorts(capreg_readl(XHCI_HCSPARAMS1));
@@ -386,9 +395,9 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                 hc->hc_PCIIntHandler.is_Node.ln_Name = "XHCI PCI (pciusb.device)";
                 hc->hc_PCIIntHandler.is_Node.ln_Pri = 5;
                 hc->hc_PCIIntHandler.is_Node.ln_Type = NT_INTERRUPT;
-                hc->hc_PCIIntHandler.is_Code = xhciIntCode;
+                hc->hc_PCIIntHandler.is_Code = (VOID_FUNC)xhciIntCode;
                 hc->hc_PCIIntHandler.is_Data = hc;
-                AddIntServer(INTF_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
+                AddIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
 
                 /* Clears (RW1C) Host System Error(HSE), Event Interrupt(EINT), Port Change Detect(PCD) and Save/Restore Error(SRE) */
                 temp = opreg_readl(XHCI_USBSTS);
@@ -410,16 +419,20 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
                 if(hc->xhc_scratchpads) {
 
-                /*
+                    /*
                         Scratchpad array is 64 byte aligned as is Device Context Base array, neither can cross page boundary
+                        Scratchpad Buffer Array 248, PAGESIZE, 64
                     */
-                    hc->xhc_scratchpadarray = AllocVecAligned( (hc->xhc_scratchpads*sizeof(UQUAD) ), hc->xhc_pagesize);
+                    hc->xhc_scratchpadarray = AllocVecAligned( (hc->xhc_scratchpads*sizeof(UQUAD) ), hc->xhc_pagesize, 64);
                     if( !(hc->xhc_scratchpadarray) ){
                         KPRINTF(1000, ("Unable to allocate scratchpad array, failing!\n"));
                         return FALSE;
                     }
 
-                    hc->xhc_dcbaa = AllocVecAligned( ((hc->xhc_maxslots + 1)*sizeof(UQUAD)) , hc->xhc_pagesize);
+                    /*
+                        Device Context Base Address Array 2048, PAGESIZE, 64
+                    */
+                    hc->xhc_dcbaa = AllocVecAligned( ((hc->xhc_maxslots + 1)*sizeof(UQUAD)) , hc->xhc_pagesize, 64);
                     if( !(hc->xhc_scratchpadarray) ){
                         FreeVecAligned(hc->xhc_scratchpadarray);
                         KPRINTF(1000, ("Unable to allocate device context base array, failing!\n"));
@@ -434,8 +447,9 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
                         /*
                             We are making a bold assumption that pagesize returned by host controller is the same as system pagesize...
-                */
-                        memptr = AllocVecAligned(hc->xhc_pagesize, hc->xhc_pagesize);
+                            Scratchpad Buffer Array 248, PAGESIZE, 64
+                        */
+                        memptr = AllocVecAligned(hc->xhc_pagesize, hc->xhc_pagesize, hc->xhc_pagesize);
                         if(memptr){
                             hc->xhc_scratchpadarray[temp] = (UQUAD) (0xDEADBEEF00000000 | (UQUAD) memptr);
                             /* CHECKME: Not really sure if the 32(or 64) bit address is stored correctly in the QUAD pointer list */
@@ -444,7 +458,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                             for(temp = 0; temp<hc->xhc_scratchpads; temp++){
                                 if(hc->xhc_scratchpadarray[temp]){
                                     FreeVecAligned( (APTR) hc->xhc_scratchpadarray[temp] );
-                }
+                                }
                             }
                             return FALSE;
                         }
@@ -458,8 +472,10 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
                     /*
                         DCBAA can't cross page boundary, make sure it doesn't. This all adds memory usage.
+                        Device Context Base Address Array 2048, PAGESIZE, 64
                     */
-                    hc->xhc_dcbaa = AllocVecAligned( ((hc->xhc_maxslots + 1)*sizeof(UQUAD)), hc->xhc_pagesize);
+                    hc->xhc_dcbaa = AllocVecAligned( ((hc->xhc_maxslots + 1)*sizeof(UQUAD)), hc->xhc_pagesize, 2);
+                    hc->xhc_dcbaa = AllocVecAligned( ((hc->xhc_maxslots + 1)*sizeof(UQUAD)), hc->xhc_pagesize, 64);
                     if( !(hc->xhc_dcbaa) ){
                         KPRINTF(1000, ("Unable to allocate device context base array, failing!\n"));
                         return FALSE;
@@ -534,48 +550,6 @@ void xhciParseSupProtocol(struct PCIController *hc, IPTR extcap) {
     if(XHCV_SPFD_RMAJOR(temp1) == 3) {
         hc->xhc_NumPorts30 = ((XHCV_SPPORT_CPCNT(temp2) - XHCV_SPPORT_CPO(temp2) + 1));
     }
-}
-
-/*
-    Allocate aligned memory (call with ALIGNMENT = PAGESIZE for onpage memory, will result in PAGESIZE overhead memory usage)
-*/
-APTR AllocVecAligned(ULONG bytesize, ULONG alignment) {
-//    KPRINTF(1000, ("AllocVecAligned %ld, %ld\n", bytesize, alignment ));
-
-    IPTR temp, *ret;
-
-    /*
-        Allocate aligned memory by ourself as OS doesn't seem to give us any support for aligned allocations (ONPAGE,ALIGNMENT)
-        -We only support alignment of sizeof(IPTR) and up since we store the original ptr, sizeof(IPTR) is platform dependant
-    */
-    if(alignment<sizeof(IPTR)) {
-        alignment = sizeof(IPTR);
-    }
-
-    temp = (IPTR)AllocVec( bytesize+alignment, (MEMF_PUBLIC | MEMF_CLEAR) );
-    if(temp) {
-//        KPRINTF(1000, ("got memory @ %p with alignment %ld\n", temp, alignment ));
-
-        /*
-            If by coincidence we get aligned memory, we still add the alignment size to the pointer and align it to the next possible aligned address
-            as we need memory below our allocation.
-        */
-        ret = (APTR)((IPTR)(temp+alignment) & ~(alignment-1));
-//        KPRINTF(1000, ("final memory @ %p\n", ret ));
-
-        /*
-            Store our original memory pointer below our aligned memory (we have allocated memory there)
-        */
-        ret[-1] = temp;
-        return ret;
-    }
-    return NULL;
-}
-
-void FreeVecAligned(APTR memory) {
-    IPTR *ptr = memory;
-//    KPRINTF(1000, ("FreeVecAligned @ %p\n", ptr[-1] ));
-    FreeVec((APTR)ptr[-1]);
 }
 
 #endif

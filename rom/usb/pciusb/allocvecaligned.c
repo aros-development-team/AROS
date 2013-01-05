@@ -17,68 +17,111 @@
 
 #include <proto/exec.h>
 
-APTR AllocVecAligned(IPTR byteSize, ULONG boundary, ULONG alignmentMin) {
+void FreeVecAligned(APTR allocation) {
+}
+
+APTR AllocVecAligned(IPTR byteSize, ULONG alignmentMin, IPTR boundary) {
 
 	struct MemHeader *memheader;
-	struct MemChunk *memchunk, *prevchunk;
+	struct MemChunk *prevchunk, *memchunk, *newchunk;
 
     APTR alignedMemStart,alignedMemEnd;
+    IPTR byteSizeRounded = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
+
     APTR res = NULL;
 
-    /*
-        We only allocate from MEMF_FAST
-    */
-    ULONG requirements = MEMF_FAST;
+    if(alignmentMin<MEMCHUNK_TOTAL) {
+        alignmentMin = MEMCHUNK_TOTAL;
+    }
 
-    bug("AllocVecAligned(%d,%x,%d)\n", byteSize, boundary, alignmentMin);
+    /* Some sanity checks */
+    if( ((boundary!=0) && (byteSize>boundary)) || (alignmentMin & (MEMCHUNK_TOTAL-1)) || (byteSize == 0) ) {
+        bug("[AVA] Insane allocation request!\n");
+        return res;
+    }
 
-    /*
-        Minimum alignment is MEMCHUNK_TOTAL
-    */
-    alignmentMin = AROS_ROUNDUP2(alignmentMin, MEMCHUNK_TOTAL);
-
-    bug("AllocVecAligned(%d,%x,%d)\n", byteSize, boundary, alignmentMin);
+    boundary = ~(boundary -1);
 
     Forbid();
 
     ForeachNode(&SysBase->MemList, memheader) {
 
-	    if ( (requirements & ~memheader->mh_Attributes) )
+	    if ( (MEMF_FAST & ~memheader->mh_Attributes) )
 	        continue;
 
 		prevchunk = (struct MemChunk *)(&memheader->mh_First);
 		memchunk = memheader->mh_First;
 
-        while (memchunk != NULL) {
-            /*
-                We need more than the requested size (IPTR address and IPTR size)
-            */
-            if(memchunk->mc_Bytes > AROS_ROUNDUP2((byteSize + sizeof(IPTR)*2), MEMCHUNK_TOTAL)) {
+        while ( memchunk != NULL ) {
 
-                bug("Chunk %p %d\n", memchunk, memchunk->mc_Bytes);
+            /* Minimum free space needed before doing alignments, might still not be enough */
+            if( memchunk->mc_Bytes >= byteSizeRounded + MEMCHUNK_TOTAL ) {
 
-                /* We are at MEMCHUNK_TOTAL alignment (or should be...), preserve space for internal allocation address and size and align to alignmentMin */
-                alignedMemStart = (APTR) AROS_ROUNDUP2(((IPTR)memchunk + sizeof(IPTR)*2), alignmentMin);
-
-                alignedMemEnd = alignedMemStart + byteSize;
+                alignedMemStart = (APTR) AROS_ROUNDUP2( (IPTR) memchunk + MEMCHUNK_TOTAL , alignmentMin);
+                alignedMemEnd = alignedMemStart + byteSizeRounded - 1;
 
                 /* Check if the allocation is still within the chunk */
-                while(alignedMemEnd <= (APTR) (memchunk+memchunk->mc_Bytes) ) {
+                while( (IPTR) alignedMemEnd <= (IPTR) (memchunk + memchunk->mc_Bytes - 1) ) {
 
-                    /* Check if we can fit the allocation within boundary (we didn't round the bytesize at the start because of this comparison) */
-                    if( ((IPTR) alignedMemStart & ~(boundary-1)) == ((IPTR) alignedMemEnd & ~(boundary-1))) {
-                        bug("Aligned %p-%p\n", alignedMemStart, alignedMemEnd);
+                    //bug("alignedMem %p-%p %x\n",alignedMemStart, alignedMemEnd, byteSizeRounded );
+                 
+                    /* Does the allocation need to be within a boundary? */
+                    if( boundary!=0 ) {
+                        if( ((IPTR) alignedMemStart & boundary) == ((IPTR) alignedMemEnd & boundary) ) {
+                            /* Do the bad thing and alter memchunks... */
+                            res = alignedMemStart;
+                            break;
+                        } else {
+                            /* Allocation spans across the boundary. Adjust the alignedMemStart to satisfy boundary requirements */
+                            bug("[AVA] allocation crosses boundary -> reiterating!\n");
+                            alignedMemStart = (APTR) ((IPTR) alignedMemEnd & boundary);
+                            alignedMemEnd = alignedMemStart + byteSizeRounded - 1;
+                        }
+                    }else{
                         /* Do the bad thing and alter memchunks... */
+                        res = alignedMemStart;
                         break;
-                    } else {
-                        /* Nope! Adjust the alignedMemStart to boundary */
-                        bug("Nope!\n");
-                        alignedMemStart = (APTR) AROS_ROUNDUP2((IPTR) alignedMemStart, boundary);
-                        alignedMemEnd = alignedMemStart + byteSize; 
                     }
                 }
 
+                if(res != NULL) {
+
+                    bug("[AVA] MC %p AVA(%x->%x,%x,%x) -> %x(%x)-%x\n", \
+                        memchunk, \
+                        byteSize, \
+                        byteSizeRounded, \
+                        alignmentMin, \
+                        (~boundary)+1, \
+                        alignedMemStart, \
+                        alignedMemStart-MEMCHUNK_TOTAL, \
+                        alignedMemEnd \
+                        );
+
+                    newchunk = alignedMemEnd + 1;
+                    newchunk->mc_Next = memchunk->mc_Next;
+
+                    bug("newchunk %p\n", newchunk);
+
+                    /* If the start of our chunk aligned allocation is near the start of the chunk we allocated from then we snap to it */
+                    if( ((IPTR) alignedMemStart - (IPTR) memchunk) <= 0x100 ) {
+                        /* Destroy this memchunk */
+                        prevchunk->mc_Next = newchunk;
+                        newchunk->mc_Bytes = memchunk->mc_Bytes - ((IPTR) newchunk - ((IPTR) memchunk - 1));
+                    }else{
+                        /* Reuse this memchunk */
+                        memchunk->mc_Next = newchunk;
+
+                        newchunk->mc_Bytes = memchunk->mc_Bytes - ((IPTR) newchunk - ((IPTR) memchunk - 1));
+                        memchunk->mc_Bytes = (IPTR) alignedMemStart - (IPTR) memchunk - 1;
+                    }
+
+		            memheader->mh_Free -= byteSizeRounded + MEMCHUNK_TOTAL;
+                    res = NULL;
+                    break;
+                }
+
             }
+
 			/* Go to next chunk */
 			prevchunk = memchunk;
 			memchunk = memchunk->mc_Next;
