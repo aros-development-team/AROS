@@ -26,7 +26,7 @@ APTR AllocVecAligned(IPTR byteSize, ULONG alignmentMin, IPTR boundary) {
 	struct MemChunk *prevchunk, *memchunk, *newchunk;
 
     APTR alignedMemStart,alignedMemEnd;
-    IPTR byteSizeRounded = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
+    IPTR bytesremoved, byteSizeRounded = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
 
     APTR res = NULL;
 
@@ -70,6 +70,7 @@ APTR AllocVecAligned(IPTR byteSize, ULONG alignmentMin, IPTR boundary) {
                         if( ((IPTR) alignedMemStart & boundary) == ((IPTR) alignedMemEnd & boundary) ) {
                             /* Do the bad thing and alter memchunks... */
                             res = alignedMemStart;
+                            alignedMemStart -= MEMCHUNK_TOTAL;
                             break;
                         } else {
                             /* Allocation spans across the boundary. Adjust the alignedMemStart to satisfy boundary requirements */
@@ -80,43 +81,86 @@ APTR AllocVecAligned(IPTR byteSize, ULONG alignmentMin, IPTR boundary) {
                     }else{
                         /* Do the bad thing and alter memchunks... */
                         res = alignedMemStart;
+                        alignedMemStart -= MEMCHUNK_TOTAL;
                         break;
                     }
                 }
 
                 if(res != NULL) {
 
-                    bug("[AVA] MC %p AVA(%x->%x,%x,%x) -> %x(%x)-%x\n", \
+                    bug("[AVA] MC %p %x AVA(%x->%x,%x,%x) -> %x(%x)-%x\n", \
                         memchunk, \
+                        memchunk->mc_Bytes, \
                         byteSize, \
                         byteSizeRounded, \
                         alignmentMin, \
                         (~boundary)+1, \
                         alignedMemStart, \
-                        alignedMemStart-MEMCHUNK_TOTAL, \
+                        res, \
                         alignedMemEnd \
                         );
 
-                    newchunk = alignedMemEnd + 1;
-                    newchunk->mc_Next = memchunk->mc_Next;
+                    /* alignedMemEnd = memchunk end or near */
+                    if( (((IPTR)memchunk + memchunk->mc_Bytes - 1) - (IPTR)alignedMemEnd) <=0x100 ){
+                        bug("[AVA] Snap to memchunk end %p->%p \n", alignedMemEnd, memchunk + memchunk->mc_Bytes - 1);
+                        alignedMemEnd = memchunk + memchunk->mc_Bytes - 1;
 
-                    bug("newchunk %p\n", newchunk);
+                        /* alignedMemStart = memchunk start */
+                        if( ((IPTR) alignedMemStart - (IPTR) memchunk) <= 0x100 ) {
+                            bug("[AVA] Snap to memchunk start %p->%p \n", res, memchunk);
+                            alignedMemStart = memchunk;
 
-                    /* If the start of our chunk aligned allocation is near the start of the chunk we allocated from then we snap to it */
-                    if( ((IPTR) alignedMemStart - (IPTR) memchunk) <= 0x100 ) {
-                        /* Destroy this memchunk */
-                        prevchunk->mc_Next = newchunk;
-                        newchunk->mc_Bytes = memchunk->mc_Bytes - ((IPTR) newchunk - ((IPTR) memchunk - 1));
+                            /* We have allocated all that this memchunk has */
+                            bytesremoved = memchunk->mc_Bytes;
+                            prevchunk->mc_Next = memchunk->mc_Next;
+
+                        }else{
+                            bug("[AVA] Left some at the beginning\n");
+                            /* We left some at the beginning */
+                            bytesremoved = (IPTR)alignedMemEnd - (IPTR)alignedMemStart + 1;
+                            memchunk->mc_Bytes -=bytesremoved; 
+                        }
+
+                    /* alignedMemEnd < memchunk end */
                     }else{
-                        /* Reuse this memchunk */
-                        memchunk->mc_Next = newchunk;
 
-                        newchunk->mc_Bytes = memchunk->mc_Bytes - ((IPTR) newchunk - ((IPTR) memchunk - 1));
-                        memchunk->mc_Bytes = (IPTR) alignedMemStart - (IPTR) memchunk - 1;
+                        /* alignedMemStart = memchunk start or near */
+                        if( ((IPTR) alignedMemStart - (IPTR) memchunk) <= 0x100 ) {
+                            bug("[AVA] Snap to memchunk start %p->%p \n", res, memchunk);
+                            alignedMemStart = memchunk;
+
+                            bug("[AVA] We left some at the end\n");
+                            /* We left some at the end */
+                            bytesremoved = (IPTR)alignedMemEnd - (IPTR)alignedMemStart + 1;
+
+                            /* Create new memchunk */
+                            newchunk = alignedMemEnd + 1;
+                            newchunk->mc_Next = memchunk->mc_Next;
+                            newchunk->mc_Bytes = memchunk->mc_Bytes - bytesremoved;
+
+                            /* Prevchunk points to newchunk */
+                            prevchunk->mc_Next = newchunk;
+
+                        }else{
+
+                            bug("[AVA] We are somewhere in between\n");
+                            /* We are somewhere in between */
+                            bytesremoved = (IPTR)alignedMemEnd - (IPTR)alignedMemStart + 1;
+
+                            /* Create new memchunk */
+                            newchunk = alignedMemEnd + 1;
+                            newchunk->mc_Next = memchunk->mc_Next;
+                            newchunk->mc_Bytes = ((IPTR)memchunk + memchunk->mc_Bytes) - ((IPTR)alignedMemEnd + 1);
+
+                            /* memchunk points to newchunk */
+                            memchunk->mc_Next = newchunk;
+                            memchunk->mc_Bytes -= (bytesremoved + newchunk->mc_Bytes);
+                        }
+
                     }
 
-		            memheader->mh_Free -= byteSizeRounded + MEMCHUNK_TOTAL;
-                    res = NULL;
+    	            memheader->mh_Free -= bytesremoved;
+                    //res = NULL;
                     break;
                 }
 
