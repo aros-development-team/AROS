@@ -591,11 +591,14 @@ static void HIDDLinuxFBRedrawCursorAt(OOP_Object * gfx, LONG x, LONG y)
     LONG height = data->cinfo.img.height;
 
     /* Clip drawing to screen size */
-    /* TODO: what about negative x, y ? */
     if (x >= X_RES) return;
     if (y >= Y_RES) return;
     if (x + width >= X_RES) width = X_RES - x;
     if (y + height >= Y_RES) height = Y_RES - y;
+
+    /* FIXME: the redraw code will crash for nagative values */
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
 
     /* Restore any saved fb part */
     if (data->sfb.active)
