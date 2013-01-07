@@ -253,19 +253,33 @@ void mmu_init(struct TagItem *tags)
     krn_lowest &= 0xfffff000;
     /* 64K granularity for code sections */
     krn_highest = (krn_highest + 0xffff) & 0xffff0000;
+
+    /* MEMORY
+     *
+     *   Please note the 'TLB_W' flag - this is needed to support
+     *   the AmigaOS semantic of the CacheClearE() routines,
+     *   which appear to assume Write-Through caching.
+     */
     
     /* 
      * The very first entry has to cover the executable part of kernel, 
      * where exception handlers are located
      */
-    map_region(&info, 0x0, krn_base, 0xff000000 + krn_base, krn_highest - krn_base, TLB_SR | TLB_SX | TLB_SW | TLB_UR | TLB_UX);
+    map_region(&info, 0x0, krn_base, 0xff000000 + krn_base, krn_highest - krn_base, TLB_SR | TLB_SX | TLB_SW | TLB_UR | TLB_UX | TLB_W);
     /* Now the data area for kernel. Make it read/write for both user and supervisor. No execution allowed */
-    map_region(&info, 0x0, krn_lowest, 0xff000000 + krn_lowest, krn_base - krn_lowest, TLB_SR | TLB_SW | TLB_UR | TLB_UW);
+    map_region(&info, 0x0, krn_lowest, 0xff000000 + krn_lowest, krn_base - krn_lowest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_W);
     /* The low memory will be RW for the supervisor mode, RO from user */
-    map_region(&info, 0x0, 0, 0xff000000, krn_lowest, TLB_SR | TLB_SW | TLB_UR);
+    map_region(&info, 0x0, 0, 0xff000000, krn_lowest, TLB_SR | TLB_SW | TLB_UR | TLB_W);
     
     /* The regular RAM, make 1GB of it - amcc440 cannot do more. */
-    map_region(&info, 0x0, krn_highest, krn_highest, 0x40000000 - krn_highest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_SX | TLB_UX);
+    map_region(&info, 0x0, krn_highest, krn_highest, 0x40000000 - krn_highest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_SX | TLB_UX | TLB_W);
+
+    /* PERIPHERALS
+     *
+     * Note the 'TLB_G | TLB_I' flags - this is need to prevent caching, and
+     * ensure that all operations to peripheral address space is strictly
+     * ordered.
+     */
 
     if (krnIsPPC440(pvr)) {
         D(bug("[KRN] MMU: Configure for PPC440\n"));
