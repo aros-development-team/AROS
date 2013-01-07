@@ -1583,8 +1583,6 @@ adjust_nsellength()
 void
 usage()
 {
-/* TODO: NicJA - AROS Should also display usage instructions */
-#if !defined(__AROS__)
 	fprintf(stderr,
 	    "usage: ifconfig [ -m ] interface\n%s%s%s%s%s%s%s%s%s%s%s",
 		"\t[ af [alias | -alias | delete] [ address [ dest_addr ] ] [ up ] [ down ] ",
@@ -1602,6 +1600,5 @@ usage()
 		"\t[ link0 | -link0 ] [ link1 | -link1 ] [ link2 | -link2 ]\n",
 		"       ifconfig -a [ -m ] [ -d ] [ -u ] [ af ]\n",
 		"       ifconfig -l [ -d ] [ -u ]\n");
-#endif
 	exit(1);
 }
