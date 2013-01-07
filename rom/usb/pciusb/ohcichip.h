@@ -217,18 +217,6 @@ struct OhciHCCA
 
 struct OhciED
 {
-    /* HC data, aligned to 16 bytes */
-    ULONG           oed_EPCaps;     /* LE MaxPacketSize and other stuff */
-    ULONG           oed_TailPtr;    /* LE PHYSICAL TD Queue Tail Pointer */
-    ULONG           oed_HeadPtr;    /* LE PHYSICAL TD Queue Head Pointer */
-    ULONG           oed_NextED;     /* LE PHYSICAL Next Endpoint Descriptor */
-#ifdef __powerpc__
-    /* Required due to the 32-byte cache line alignment requirements
-     * Otherwise, cache invalidation can clobber oed_Succ etc..
-     */
-    ULONG           oed_Align[4];
-#endif
-
     struct OhciED  *oed_Succ;
     struct OhciED  *oed_Pred;
     ULONG           oed_Self;       /* LE PHYSICAL pointer to self */
@@ -239,31 +227,27 @@ struct OhciED
     IPTR            oed_Continue;   /* Flag for fragmented bulk transfer */
     APTR	    oed_Buffer;	    /* Mirror buffer for data outside of DMA-accessible area */
     struct UsbSetupData *oed_SetupData; /* Mirror buffer for setup packet */
+
+    /* HC data, aligned to 16 bytes */
+    ULONG           oed_EPCaps;     /* LE MaxPacketSize and other stuff */
+    ULONG           oed_TailPtr;    /* LE PHYSICAL TD Queue Tail Pointer */
+    ULONG           oed_HeadPtr;    /* LE PHYSICAL TD Queue Head Pointer */
+    ULONG           oed_NextED;     /* LE PHYSICAL Next Endpoint Descriptor */
 };
 
 struct OhciTD
 {
-    /* HC data, aligned to 16 bytes */
-    ULONG           otd_Ctrl;       /* LE Ctrl stuff */
-    ULONG           otd_BufferPtr;  /* LE PHYSICAL Current Buffer Pointer */
-    ULONG           otd_NextTD;     /* LE PHYSICAL Next TD */
-    ULONG           otd_BufferEnd;  /* LE PHYSICAL End of buffer */
-#ifdef __powerpc__
-    /* Required due to the 32-byte cache line alignment requirements
-     * Otherwise, cache invalidation can clobber otd_Succ etc..
-     */
-    ULONG           oed_Align[4];
-#endif
-
     struct OhciTD  *otd_Succ;
     IPTR            otd_Length;     /* Length of transfer */
     ULONG           otd_Self;       /* LE PHYSICAL pointer to self */
     /* On 64 bits a padding will be inserted here */
     struct OhciED  *otd_ED;         /* Pointer to parent ED this TD belongs to */
-#ifdef __powerpc__
-    /* Pad the structure to a multiple of 32 bytes */
-    ULONG           oed_Align2[4];
-#endif
+
+    /* HC data, aligned to 16 bytes */
+    ULONG           otd_Ctrl;       /* LE Ctrl stuff */
+    ULONG           otd_BufferPtr;  /* LE PHYSICAL Current Buffer Pointer */
+    ULONG           otd_NextTD;     /* LE PHYSICAL Next TD */
+    ULONG           otd_BufferEnd;  /* LE PHYSICAL End of buffer */
 };
 
 /* pointer defines */
