@@ -1443,7 +1443,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             ULONG hubdesclen = 12;
 
                             struct UsbSSHubDesc *uhd = (struct UsbSSHubDesc *) ioreq->iouh_Data;
-                            KPRINTF(1, ("RH: Get(SS)HubDescriptor (%ld)\n", len));
+                            KPRINTF(1000, ("RH: Get(SS)HubDescriptor (%ld)\n", len));
 
                             ioreq->iouh_Actual = (len > hubdesclen) ? hubdesclen : len;
                             CopyMem((APTR) &RHSSHubDesc, ioreq->iouh_Data, ioreq->iouh_Actual);

@@ -202,7 +202,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
     struct PCIDevice *hd = hu->hu_Device;
 
-    ULONG cnt, timeout, temp;
+    ULONG timeout, temp;
     IPTR extcap;
     APTR memptr = NULL;
 
@@ -216,18 +216,9 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
             { TAG_DONE, 0UL },
     };
 
-    APTR T0 = AllocVecAligned(18, 0, 0);
-    T0 = AllocVecAligned(18, 0x200, 0);
-    T0 = AllocVecAligned(0x1000, 0, 0);
-    T0 = AllocVecAligned(0x1000, 8, 0);
-    T0 = AllocVecAligned(0x1000, 16, 0);
-    T0 = AllocVecAligned(0x1000, 32, 0);
-    T0 = AllocVecAligned(0x1000, 64, 0);
-    T0 = AllocVecAligned(0x1000, 64, 0x1000);
-    T0 = AllocVecAligned(0x1000, 64, 0x100);
-    T0 = AllocVecAligned(0x1000, 63, 0x100);
-    while(1);
-
+    APTR T0 = AllocVecAligned(100,128,0);
+    FreeVecAligned(T0);
+    //while(1);
 
     /* Activate Mem and Busmaster as pciFreeUnit will disable them! (along with IO, but we don't have that...) */
     OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMemAndBusmaster);
@@ -255,14 +246,8 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         This xHC supports a page size of 2^(n+12) if bit n is Set. For example,
         if bit 0 is set, the xHC supports 4k byte page sizes.
     */
-    cnt = 12;
-    temp = opreg_readl(XHCI_PAGESIZE)&0xffff;
-    while((~temp&1) & temp){
-        temp = temp>>1;
-        cnt++;
-    }
-    hc->xhc_pagesize = 1<<(cnt);
-    KPRINTF(1000, ("Pagesize 2^(n+12) = 0x%lx\n", hc->xhc_pagesize));
+    hc->xhc_pagesize = 1<<(AROS_LEAST_BIT_POS(opreg_readl(XHCI_PAGESIZE)&0xffff)+12);
+    KPRINTF(1000, ("Pagesize = 0x%lx\n", hc->xhc_pagesize));
 
     /* Testing scratchpad allocations */
     //hc->xhc_scratchpads = 4;
@@ -384,10 +369,10 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                 hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
                 hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
                 hc->hc_CompleteInt.is_Data = hc;
-                hc->hc_CompleteInt.is_Code = xhciCompleteInt;
+                hc->hc_CompleteInt.is_Code = (VOID_FUNC)xhciCompleteInt;
 
                 // add reset handler
-                hc->hc_ResetInt.is_Code = xhciResetHandler;
+                hc->hc_ResetInt.is_Code = (VOID_FUNC)xhciResetHandler;
                 hc->hc_ResetInt.is_Data = hc;
                 AddResetCallback(&hc->hc_ResetInt);
 
@@ -417,80 +402,71 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                 */
                 opreg_writel(XHCI_CONFIG, ((opreg_readl(XHCI_CONFIG) & ~XHCM_CONFIG_MaxSlotsEn) | hc->xhc_maxslots));
 
-                if(hc->xhc_scratchpads) {
+                /*
+                    Device Context Base Address Array 2048, PAGESIZE, 64
+                */
+                hc->xhc_dcbaa = AllocVecAligned( ((hc->xhc_maxslots + 1)*sizeof(UQUAD)), 64, hc->xhc_pagesize);
+                if( !(hc->xhc_dcbaa) ){
+                    KPRINTF(1000, ("Unable to allocate device context base array, failing!\n"));
+                    return FALSE;
+                }else{
 
-                    /*
-                        Scratchpad array is 64 byte aligned as is Device Context Base array, neither can cross page boundary
-                        Scratchpad Buffer Array 248, PAGESIZE, 64
-                    */
-                    hc->xhc_scratchpadarray = AllocVecAligned( (hc->xhc_scratchpads*sizeof(UQUAD) ), hc->xhc_pagesize, 64);
-                    if( !(hc->xhc_scratchpadarray) ){
-                        KPRINTF(1000, ("Unable to allocate scratchpad array, failing!\n"));
-                        return FALSE;
-                    }
-
-                    /*
-                        Device Context Base Address Array 2048, PAGESIZE, 64
-                    */
-                    hc->xhc_dcbaa = AllocVecAligned( ((hc->xhc_maxslots + 1)*sizeof(UQUAD)) , hc->xhc_pagesize, 64);
-                    if( !(hc->xhc_scratchpadarray) ){
-                        FreeVecAligned(hc->xhc_scratchpadarray);
-                        KPRINTF(1000, ("Unable to allocate device context base array, failing!\n"));
-                        return FALSE;
-                    }
-
-                    hc->xhc_dcbaa[0] = (UQUAD) hc->xhc_scratchpadarray;
-
-                    KPRINTF(1000, ("Allocated scratchpad buffer array at %p\n", hc->xhc_scratchpadarray));
-
-                    for(temp = 0; temp<hc->xhc_scratchpads; temp++){
+                    if(hc->xhc_scratchpads) {
 
                         /*
-                            We are making a bold assumption that pagesize returned by host controller is the same as system pagesize...
+                            Scratchpad array is 64 byte aligned and can not cross page boundary
                             Scratchpad Buffer Array 248, PAGESIZE, 64
                         */
-                        memptr = AllocVecAligned(hc->xhc_pagesize, hc->xhc_pagesize, hc->xhc_pagesize);
-                        if(memptr){
-                            hc->xhc_scratchpadarray[temp] = (UQUAD) (0xDEADBEEF00000000 | (UQUAD) memptr);
-                            /* CHECKME: Not really sure if the 32(or 64) bit address is stored correctly in the QUAD pointer list */
-                            KPRINTF(1000, ("hc->xhc_scratchpadarray[%d] = %0lx:%0lx\n", temp, (IPTR) ((UQUAD)(hc->xhc_scratchpadarray[temp])>>32), (IPTR) hc->xhc_scratchpadarray[temp]));
-                        }else{
-                            for(temp = 0; temp<hc->xhc_scratchpads; temp++){
-                                if(hc->xhc_scratchpadarray[temp]){
-                                    FreeVecAligned( (APTR) hc->xhc_scratchpadarray[temp] );
-                                }
-                            }
+                        hc->xhc_scratchpadarray = AllocVecAligned( (hc->xhc_scratchpads*sizeof(UQUAD) ), 64, hc->xhc_pagesize);
+                        if( !(hc->xhc_scratchpadarray) ){
+                            FreeVecAligned(hc->xhc_dcbaa);
+                            KPRINTF(1000, ("Unable to allocate scratchpad buffer array, failing!\n"));
                             return FALSE;
                         }
-                    }
 
-                }else{
-                    /*
-                        Host controller does not use scratchpads (This is the case OnMyHW™)
-                    */
-                    hc->xhc_scratchpadarray = NULL;
+                        KPRINTF(1000, ("Allocated scratchpad buffer array at %p\n", hc->xhc_scratchpadarray));
 
-                    /*
-                        DCBAA can't cross page boundary, make sure it doesn't. This all adds memory usage.
-                        Device Context Base Address Array 2048, PAGESIZE, 64
-                    */
-                    hc->xhc_dcbaa = AllocVecAligned( ((hc->xhc_maxslots + 1)*sizeof(UQUAD)), hc->xhc_pagesize, 2);
-                    hc->xhc_dcbaa = AllocVecAligned( ((hc->xhc_maxslots + 1)*sizeof(UQUAD)), hc->xhc_pagesize, 64);
-                    if( !(hc->xhc_dcbaa) ){
-                        KPRINTF(1000, ("Unable to allocate device context base array, failing!\n"));
-                        return FALSE;
+                        for(temp = 0; temp<hc->xhc_scratchpads; temp++){
+
+                            /*
+                                A Scratchpad Buffer is a PAGESIZE block of system memory located on a PAGESIZE boundary
+                            */
+                            memptr = AllocVecAligned(hc->xhc_pagesize, hc->xhc_pagesize, hc->xhc_pagesize);
+                            if(memptr){
+                                //hc->xhc_scratchpadarray[temp] = (UQUAD) (0xDEADBEEF00000000 | (UQUAD) memptr);
+                                hc->xhc_scratchpadarray[temp] = (UQUAD) memptr;
+                                /* CHECKME: Not really sure if the 32(or 64) bit address is stored correctly in the QUAD pointer list */
+                                KPRINTF(1000, ("hc->xhc_scratchpadarray[%d] = %0lx:%0lx\n", temp, (ULONG) ((UQUAD)(hc->xhc_scratchpadarray[temp])>>32), (ULONG) hc->xhc_scratchpadarray[temp]));
+                            }else{
+                                for(temp = 0; temp<hc->xhc_scratchpads; temp++){
+                                    if(hc->xhc_scratchpadarray[temp]){
+                                        FreeVecAligned( (APTR) hc->xhc_scratchpadarray[temp] );
+                                    }
+                                }
+                                return FALSE;
+                            }
+                        }
+
+                    }else{
+                        /*
+                            Host controller does not use scratchpads (This is the case OnMyHW™)
+                        */
+                        hc->xhc_scratchpadarray = NULL;
                     }
                 }
 
                 KPRINTF(1000, ("Device context base array at %p\n", hc->xhc_dcbaa));
 
-                opreg_writeq(XHCI_DCBAAP, (IPTR)hc->xhc_dcbaa );
+                opreg_writeq(XHCI_DCBAAP, (UQUAD)hc->xhc_dcbaa );
 
                 /* FIXME: Allocate device context data structures and fill rest of the DCBAA array*/
+
+                hc->xhc_dcbaa[0] = (UQUAD) hc->xhc_scratchpadarray;
+
                 /* Define the Command Ring Dequeue Pointer by programming the Command Ring Control Register */
 
                 /* Set Run/Stop(R/S), Interrupter Enable(INTE) and Host System Error Enable(HSEE) */
-                opreg_writel(XHCI_USBCMD, (XHCF_CMD_RS | XHCF_CMD_INTE | XHCF_CMD_HSEE) );
+//                opreg_writel(XHCI_USBCMD, (XHCF_CMD_RS | XHCF_CMD_INTE | XHCF_CMD_HSEE) );
 
                 KPRINTF(1000, ("xhciInit returns TRUE...\n"));
                 return TRUE;
