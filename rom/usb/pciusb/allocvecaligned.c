@@ -18,6 +18,9 @@
 #include <proto/exec.h>
 
 void FreeVecAligned(APTR allocation) {
+    /* Does not work as expected, will leave 20 bytes unfreed */
+    bug("[FVA] %p->%p,%x\n", allocation, *(((IPTR *)allocation)-1), *(((IPTR *)allocation)-2));
+    FreeMem(*(((IPTR *)allocation)-1), *(((IPTR *)allocation)-2));
 }
 
 APTR AllocVecAligned(IPTR byteSize, ULONG alignmentMin, IPTR boundary) {
@@ -25,7 +28,7 @@ APTR AllocVecAligned(IPTR byteSize, ULONG alignmentMin, IPTR boundary) {
 	struct MemHeader *memheader;
 	struct MemChunk *prevchunk, *memchunk, *newchunk;
 
-    APTR alignedMemStart,alignedMemEnd;
+    APTR alignedMemStart = NULL, alignedMemEnd = NULL;
     IPTR bytesremoved, byteSizeRounded = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
 
     APTR res = NULL;
@@ -95,8 +98,8 @@ APTR AllocVecAligned(IPTR byteSize, ULONG alignmentMin, IPTR boundary) {
                         byteSizeRounded, \
                         alignmentMin, \
                         (~boundary)+1, \
-                        alignedMemStart, \
                         res, \
+                        alignedMemStart, \
                         alignedMemEnd \
                         );
 
@@ -174,6 +177,10 @@ APTR AllocVecAligned(IPTR byteSize, ULONG alignmentMin, IPTR boundary) {
     }
 
     Permit();
+    memset(res, 0, byteSizeRounded);
+
+    *(((IPTR *)res)-1) = (IPTR)alignedMemStart;
+    *(((IPTR *)res)-2) = (IPTR)alignedMemEnd - (IPTR)alignedMemStart + 1;
 
     return res;
 }
