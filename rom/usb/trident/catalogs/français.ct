@@ -1,4 +1,4 @@
-## version $VER: Trident.catalog 1.0 (23.01.2011)
+## version $VER: Trident.catalog 1.1 (10.03.2012)
 ## language français
 ## codeset 0
 ;
@@ -20,11 +20,11 @@ Projet
 ; Project
 ;
 MSG_MENU_ABOUT
-À propos ...
+A propos ...
 ; About...
 ;
 MSG_MENU_ABOUTMUI
-À propos de MUI ...
+A propos de MUI ...
 ; About MUI...
 ;
 MSG_MENU_HELP
@@ -224,46 +224,32 @@ Ceci est la liste des contrôleurs disponibles.\nPlusieurs contrôleurs différents
 ; This is the list of available hardware controllers.\nSeveral different controllers can be in the system at\nthe same time.\nTo add an entry, use the 'New' gadget at the bottom.\nYou need to manually set an hardware controller online\nthe first time you add the device.
 ;
 MSG_PANEL_HARDWARE_COLS_NAME
-
+\33uNom
 ; \33uName
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_COLS_UNIT
-
+\33uUnité
 ; \33uUnit
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_COLS_ONLINE
-
+\33uEn ligne
 ; \33uOnline
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_COLS_PRODUCT
-
+\33uProduit
 ; \33uProduct
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_ONLINE_YES
-
+Oui
 ; Yes
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_ONLINE_NO
-
+Non
 ; No
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_UNKNOWN
-
+\33iinconnu tant que hors ligne
 ; \33iunknown until online
-;
-; ***NEW***
 ;
 MSG_PANEL_HARDWARE_LABEL2
 Périphérique :
@@ -342,34 +328,24 @@ Ceci est la liste des périphs. ou fonctions\nUSB actuellement dans le système. C
 ; This is the list of USB devices (functions)\ncurrently in the system. It also shows the\ncurrently existing device or interface bindings.
 ;
 MSG_PANEL_DEVICES_COLS_NAME
-
+\33uNom
 ; \33uName
 ;
-; ***NEW***
-;
 MSG_PANEL_DEVICES_COLS_SPEED
-
+\33uVitesse
 ; \33uSpeed
 ;
-; ***NEW***
-;
 MSG_PANEL_DEVICES_COLS_STATE
-
+\33uEtat
 ; \33uState
 ;
-; ***NEW***
-;
 MSG_PANEL_DEVICES_COLS_CLASS
-
+\33uClasse
 ; \33uClass
 ;
-; ***NEW***
-;
 MSG_PANEL_DEVICES_COLS_BINDINGS
-
+\33uLiaisons
 ; \33uBindings
-;
-; ***NEW***
 ;
 MSG_PANEL_DEVICES_SCAN
 \33c Détection des classes 
@@ -448,22 +424,16 @@ Ceci est la liste des classes USB disponibles.\nChaque classe est un pilote pour
 ; This is the list of USB classes available.\nEach class is a software driver for a group of\nUSB devices. Classes can be manually added using\nthe 'Add' button or automatically with 'Dir Scan'.
 ;
 MSG_PANEL_CLASSES_COLS_NAME
-
+\33uNom
 ; \33uName
 ;
-; ***NEW***
-;
 MSG_PANEL_CLASSES_COLS_USE
-
+\33uUsage#
 ; \33uUse#
 ;
-; ***NEW***
-;
 MSG_PANEL_CLASSES_COLS_DESC
-
+\33uDescription
 ; \33uDescription
-;
-; ***NEW***
 ;
 MSG_PANEL_CLASSES_LABEL
 Bibliothèque de classes :
@@ -722,28 +692,20 @@ Dans cette boite vous pouvez voir toutes\nles préférences sauvées dans ENVARC:.\
 ; In this box you can see all the preferences that are\nsaved along the prefs file in ENVARC:.\nYou can use this panel to delete or export prefs.\n\nUse drag & drop to copy or replace preferences.\n
 ;
 MSG_PANEL_CONFIG_COLS_TYPE
-
+\33uType
 ; \33uType
 ;
-; ***NEW***
-;
 MSG_PANEL_CONFIG_COLS_DESC
-
+\33uDescription
 ; \33uDescription
 ;
-; ***NEW***
-;
 MSG_PANEL_CONFIG_COLS_OWNER
-
+\33uProriétaire
 ; \33uOwner
 ;
-; ***NEW***
-;
 MSG_PANEL_CONFIG_COLS_SIZE
-
+\33uTaille
 ; \33uSize
-;
-; ***NEW***
 ;
 MSG_PANEL_CONFIG_SAVEAS
 \33c Sauver sous
@@ -802,7 +764,7 @@ MSG_PANEL_CONFIG_LOGFLUSH
 ; \33c Flush all
 ;
 MSG_PANEL_CONFIG_LOGFLUSH_HELP
-Effacera tout les messages.\nIl n'y a pas de retour possible.
+Effacera tous les messages.\nIl n'y a pas de retour possible.
 ; Clicking on this button will remove all\nthe messages in the stack. There's no way\nto get them back.
 ;
 MSG_PANEL_CONFIG_LOGHELP
@@ -858,7 +820,7 @@ Fenêtre d'information du pilote
 ; Hardware driver information window
 ;
 MSG_HARDWARE_WINDOW_HELP
-Informations générales concernat le pilote.
+Informations générales concernant le pilote.
 ; These fields show some general information\non the USB hardware driver.
 ;
 MSG_HARDWARE_WINDOW_FRAME
@@ -1102,104 +1064,70 @@ Désolé, le glisser/déposer sur cette cible 'est pas supporté !
 ; Sorry, drag'n drop operation to\nthat target is not supported.
 ;
 MSG_DEVICE_SPEED_LOW
-
+Lente
 ; Low
 ;
-; ***NEW***
-;
 MSG_DEVICE_SPEED_HIGH
-
+Rapide
 ; High
 ;
-; ***NEW***
-;
 MSG_DEVICE_SPEED_FULL
-
+Pleine
 ; Full
 ;
-; ***NEW***
-;
 MSG_DEVICE_SPEED_SUPER
-
+Super
 ; Super
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_SUSPENDED
-
+Suspendu
 ; Suspended
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_DEAD
-
+Mort
 ; Dead
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_DEADLP
-
+Mort \/ BP
 ; Dead \/ LP
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_LOWPOWER
-
+Basse puissance
 ; Low Power
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_CONFIGURED
-
+Fonctionne
 ; Running
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_DEVDESC
-
+Description
 ; DevDesc
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_HASADDRESS
-
+Adr. valide
 ; ValidAddr
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_CONNECTED
-
+Connecté
 ; Connected
 ;
-; ***NEW***
-;
 MSG_LOGLEVEL_OK
-
-; 
-;
-; ***NEW***
+OK
+; OK
 ;
 MSG_LOGLEVEL_WARNING
-
+Attention
 ; Warning
 ;
-; ***NEW***
-;
 MSG_LOGLEVEL_ERROR
-
+Erreur
 ; Error
 ;
-; ***NEW***
-;
 MSG_LOGLEVEL_FAILURE
-
+Echec
 ; Failure
 ;
-; ***NEW***
-;
 MSG_LOGLEVEL_OTHER
-
+???
 ; ???
-;
-; ***NEW***
 ;
