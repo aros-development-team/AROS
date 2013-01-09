@@ -81,10 +81,10 @@ int vcfb_init(void)
         if (!vcmb_msg || (vcmb_msg[1] != VCTAG_RESP))
             return 0;
 
-        count = 2;	/* First tag */
+        count = 2;	                        // locate the allocation request
         while((vcmb_msg[count]))
         {
-            if (vcmb_msg[count] == 0x40001)
+            if (vcmb_msg[count] == VCTAG_FBALLOC)
                     break;
 
             count += 3 + (vcmb_msg[count + 1] >> 2);
