@@ -1,0 +1,26 @@
+# $Id: mmakefile.src 41982 2011-10-22 21:50:04Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+ifneq ($(AROS_TARGET_VARIANT),)
+#MM- kernel-exec-$(ARCH)-$(CPU) : \
+#MM     kernel-exec-includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM     kernel-kernel-includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM     kernel-rtas-$(ARCH)-$(CPU) \
+#MM     includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)
+endif
+
+CFILES          := \
+        superstate userstate
+
+##exec_init
+
+#MM kernel-exec-raspi-arm : kernel-kernel-arm-includes kernel-exec-includes 
+
+USER_CFLAGS     := $(PRIV_EXEC_INCLUDES) -Os
+USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR) -Os
+
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=raspi-arm \
+  files=$(CFILES) modulename=exec
+
+TARGETDIR = $(BD_OBJDIR$(BDID))

@@ -1,0 +1,26 @@
+# $Id: mmakefile.src 41982 2011-10-22 21:50:04Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+CFILES := kernel_startup platform_init kernel_debug tags intr mmu issuper cli sti vars screen_fb font8x14
+AFILES := intvecs
+
+#MM kernel-raspi-arm: setup-raspi-arm kernel-kernel-kobj kernel-exec-kobj
+kernel-raspi-arm: $(OSGENDIR)/boot/core.elf
+
+$(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
+		%mkdirs_q $(OSGENDIR)/boot
+		%mkdirs_q $(BINDIR)/boot
+		$(TARGET_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(LIBDIR) -larossupport -larosc.static -larosm -lautoinit -llibinit -laeabi
+		$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
+	
+
+#MM kernel-kernel-raspi-arm : includes
+#MM kernel-kernel-raspi-arm-kobj : includes
+
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+                 -I$(GENINCDIR) -I$(BINDIR)/Development/include
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=rom/kernel arch=raspi-arm \
+  files="$(CFILES)" asmfiles="$(AFILES)" compiler=kernel
+  

@@ -1,0 +1,2 @@
+kernel=arosraspi.img
+initramfs arosraspi.rom 0x00800000
