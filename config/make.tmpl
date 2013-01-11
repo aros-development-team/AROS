@@ -1081,7 +1081,7 @@ BDID := $(BDTARGETID)
     asmfiles= objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
-    compiler=target linker= srcdir=
+    compiler=target linker=
 
 .PHONY : %(mmake)
 
@@ -1103,8 +1103,8 @@ BD_ARCHOBJS   := $(wildcard $(BD_OBJDIR)/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
-BD_OBJS := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(BD_NARCHFILES) $(BD_CXXFILES) $(BD_ASMFILES)))
-BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(BD_NARCHFILES) $(BD_CXXFILES)))
+BD_OBJS := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES)) $(BD_CXXFILES) $(BD_ASMFILES)))
+BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES)) $(BD_CXXFILES)))
 
 BD_CFLAGS    := %(cflags)
 BD_AFLAGS    := %(aflags)
@@ -1118,7 +1118,7 @@ BD_LDFLAGS   := %(ldflags)
 %(mmake) : $(BD_TARGETDIR)/$(BD_PROGNAME)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
-%rule_compile basename=%(srcdir)% targetdir=$(BD_OBJDIR) \
+%rule_compile_multi basenames=$(BD_NARCHFILES) targetdir=$(BD_OBJDIR) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
 %rule_compile_cxx_multi basenames=$(BD_CXXFILES) targetdir=$(BD_OBJDIR) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
