@@ -5,6 +5,8 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <asm/arm-raspi/registers.h>
+
 #include "serialdebug.h"
 #include "bootconsole.h"
 
