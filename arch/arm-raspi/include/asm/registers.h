@@ -51,7 +51,7 @@
 #define GPAFEN1             (GPIO_BASE + 0x8c)
 #define GPPUD               (GPIO_BASE + 0x94)
 #define GPPUDCLK0           (GPIO_BASE + 0x98)
-#define GPPUDCLK0           (GPIO_BASE + 0x9c)
+#define GPPUDCLK1           (GPIO_BASE + 0x9c)
 
 #define UART_DR                 (0x00)
 #define UART_RSRECR             (0x04)
