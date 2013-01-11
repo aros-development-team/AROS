@@ -9,8 +9,11 @@
 #ifndef REGISTERS_RASPI_H
 #define REGISTERS_RASPI_H
 
+/* This stuff should really be in arm/bcm2835.h */
 #define VIRTIO_BASE         0x20000000
 #define GPIO_BASE           (VIRTIO_BASE + 0x200000)
+#define UART0_BASE          (VIRTIO_BASE + 0x201000)
+#define BSC0_BASE           (VIRTIO_BASE + 0x205000)
 
 #define GPFSEL0             (GPIO_BASE + 0x0)           // GPIO Function Select 0
 #define GPFSEL1             (GPIO_BASE + 0x4)           // GPIO Function Select 1
@@ -34,7 +37,6 @@
 #define GPPUD               (GPIO_BASE + 0x94)
 #define GPPUDCLK0           (GPIO_BASE + 0x98)
 
-#define UART0_BASE          (VIRTIO_BASE + 0x201000)
 #define UART_DR                 (0x00)
 #define UART_RSRECR             (0x04)
 #define UART_FR                 (0x18)
