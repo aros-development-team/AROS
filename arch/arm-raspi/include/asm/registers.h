@@ -10,10 +10,18 @@
 #define REGISTERS_RASPI_H
 
 /* This stuff should really be in arm/bcm2835.h */
-#define VIRTIO_BASE         0x20000000
+#define VIRTIO_BASE         0x20000000                  // Peripheral base address        
+#define GPIO_PADS           (VIRTIO_BASE + 0x100000)
+#define CLOCK_BASE          (VIRTIO_BASE + 0x101000)
 #define GPIO_BASE           (VIRTIO_BASE + 0x200000)
 #define UART0_BASE          (VIRTIO_BASE + 0x201000)
+#define SPI0_BASE           (VIRTIO_BASE + 0x204000)
 #define BSC0_BASE           (VIRTIO_BASE + 0x205000)
+#define GPIO_PWM            (VIRTIO_BASE + 0x20C000)
+
+#define GPIO_PADS_0_27      0x002c
+#define GPIO_PADS_28_45     0x0030
+#define GPIO_PADS_46_53     0x0034 
 
 #define GPFSEL0             (GPIO_BASE + 0x0)           // GPIO Function Select 0
 #define GPFSEL1             (GPIO_BASE + 0x4)           // GPIO Function Select 1
@@ -33,9 +41,17 @@
 #define GPREN1              (GPIO_BASE + 0x50)          // GPIO Pin Rising Edge Detect Enable 1
 #define GPFEN0              (GPIO_BASE + 0x58)          // GPIO Pin Falling Edge Detect Enable 0
 #define GPFEN1              (GPIO_BASE + 0x5C)          // GPIO Pin Falling Edge Detect Enable 1
-
+#define GPHEN0              (GPIO_BASE + 0x64)
+#define GPHEN1              (GPIO_BASE + 0x68)
+#define GPLEN0              (GPIO_BASE + 0x70)
+#define GPLEN1              (GPIO_BASE + 0x74)
+#define GPAREN0             (GPIO_BASE + 0x7c)
+#define GPAREN1             (GPIO_BASE + 0x80)
+#define GPAFEN0             (GPIO_BASE + 0x88)
+#define GPAFEN1             (GPIO_BASE + 0x8c)
 #define GPPUD               (GPIO_BASE + 0x94)
 #define GPPUDCLK0           (GPIO_BASE + 0x98)
+#define GPPUDCLK0           (GPIO_BASE + 0x9c)
 
 #define UART_DR                 (0x00)
 #define UART_RSRECR             (0x04)
@@ -56,10 +72,19 @@
 #define UART_ITOP               (0x88)
 #define UART_TDR                (0x8C)
 
+#if (0)
 #define ONEMS	              (0xb0/4)
 #define UBIR	              (0xa4/4)
 #define UBMR	              (0xa8/4)
 #define UCR2	              (0x84/4)
+#endif
+
+#define SPI0_CS             (0x00)
+#define SPI0_FIFO           (0x04)
+#define SPI0_CLK            (0x08)
+#define SPI0_DLEN           (0x0c)
+#define SPI0_LTOH           (0x10)
+#define SPI0_DC             (0x14)
 
 #define AUX_IRQ             0x20215000  // Auxiliary Interrupt status
 #define AUX_ENABLES         0x20215004  // Auxiliary enables
