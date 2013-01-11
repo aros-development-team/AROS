@@ -1,6 +1,9 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
+
+    These need refining if IO-base is moved to virtual memory, now they reflect the state of Arm physical address space
+
 */
 
 #ifndef REGISTERS_RASPI_H
