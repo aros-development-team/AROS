@@ -9,29 +9,32 @@
 #ifndef REGISTERS_RASPI_H
 #define REGISTERS_RASPI_H
 
-#define GPFSEL0             0x20200000  // GPIO Function Select 0
-#define GPFSEL1             0x20200004  // GPIO Function Select 1
-#define GPFSEL2             0x20200008  // GPIO Function Select 2
-#define GPFSEL3             0x2020000C  // GPIO Function Select 3
-#define GPFSEL4             0x20200010  // GPIO Function Select 4
-#define GPFSEL5             0x20200014  // GPIO Function Select 5
-#define GPSET0              0x2020001C  // GPIO Pin Output Set 0
-#define GPSET1              0x20200020  // GPIO Pin Output Set 1
-#define GPCLR0              0x20200028  // GPIO Pin Output Clear 0
-#define GPCLR1              0x2020002C  // GPIO Pin Output Clear 1
-#define GPLEV0              0x20200034  // GPIO Pin Level 0
-#define GPLEV1              0x20200038  // GPIO Pin Level 1
-#define GPEDS0              0x20200040  // GPIO Pin Event Detect Status 0
-#define GPEDS1              0x20200044  // GPIO Pin Event Detect Status 1
-#define GPREN0              0x2020004C  // GPIO Pin Rising Edge Detect Enable 0
-#define GPREN1              0x20200050  // GPIO Pin Rising Edge Detect Enable 1
-#define GPFEN0              0x20200058  // GPIO Pin Falling Edge Detect Enable 0
-#define GPFEN1              0x2020005C  // GPIO Pin Falling Edge Detect Enable 1
+#define VIRTIO_BASE         0x20000000
+#define GPIO_BASE           (VIRTIO_BASE + 0x200000)
 
-#define GPPUD               0x20200094
-#define GPPUDCLK0           0x20200098
+#define GPFSEL0             (GPIO_BASE + 0x0)           // GPIO Function Select 0
+#define GPFSEL1             (GPIO_BASE + 0x4)           // GPIO Function Select 1
+#define GPFSEL2             (GPIO_BASE + 0x8)           // GPIO Function Select 2
+#define GPFSEL3             (GPIO_BASE + 0xC)           // GPIO Function Select 3
+#define GPFSEL4             (GPIO_BASE + 0x10)          // GPIO Function Select 4
+#define GPFSEL5             (GPIO_BASE + 0x14)          // GPIO Function Select 5
+#define GPSET0              (GPIO_BASE + 0x1C)          // GPIO Pin Output Set 0
+#define GPSET1              (GPIO_BASE + 0x20)          // GPIO Pin Output Set 1
+#define GPCLR0              (GPIO_BASE + 0x28)          // GPIO Pin Output Clear 0
+#define GPCLR1              (GPIO_BASE + 0x2C)          // GPIO Pin Output Clear 1
+#define GPLEV0              (GPIO_BASE + 0x34)          // GPIO Pin Level 0
+#define GPLEV1              (GPIO_BASE + 0x38)          // GPIO Pin Level 1
+#define GPEDS0              (GPIO_BASE + 0x40)          // GPIO Pin Event Detect Status 0
+#define GPEDS1              (GPIO_BASE + 0x44)          // GPIO Pin Event Detect Status 1
+#define GPREN0              (GPIO_BASE + 0x4C)          // GPIO Pin Rising Edge Detect Enable 0
+#define GPREN1              (GPIO_BASE + 0x50)          // GPIO Pin Rising Edge Detect Enable 1
+#define GPFEN0              (GPIO_BASE + 0x58)          // GPIO Pin Falling Edge Detect Enable 0
+#define GPFEN1              (GPIO_BASE + 0x5C)          // GPIO Pin Falling Edge Detect Enable 1
 
-#define UART0_BASE          0x20201000
+#define GPPUD               (GPIO_BASE + 0x94)
+#define GPPUDCLK0           (GPIO_BASE + 0x98)
+
+#define UART0_BASE          (VIRTIO_BASE + 0x201000)
 #define UART_DR                 (0x00)
 #define UART_RSRECR             (0x04)
 #define UART_FR                 (0x18)
