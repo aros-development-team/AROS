@@ -109,7 +109,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     struct MinList memList;
     struct MemHeader *mh;
     struct MemChunk *mc;
-    long unsigned int memlower = 0, memupper = 0;
+    long unsigned int memlower = 0, memupper = 0, protlower = 0, protupper = 0;
     unsigned int delay;
     BootMsg = msg;
 
@@ -143,8 +143,10 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
             memupper = msg->ti_Data;
             break;
         case KRN_ProtAreaStart:
+            protlower = msg->ti_Data;
             break;
         case KRN_ProtAreaEnd:
+            protupper = msg->ti_Data;
             break;
         case KRN_KernelBase:
             /*
@@ -182,8 +184,19 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     NEWLIST(&memList);
 
-    mh = (struct MemHeader *)0x100000;
-    krnCreateMemHeader("System Memory", 0, mh, memupper - (long unsigned int)mh, MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+    mh = (struct MemHeader *)memlower;
+    krnCreateMemHeader("System Memory", 0, mh, protlower - (long unsigned int)mh, MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
+
+    mc = (struct MemChunk *)((protupper + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1));
+    mc->mc_Bytes = memupper - (long unsigned int)mc;
+    mc->mc_Next = NULL;
+
+    if (mh->mh_First->mc_Next == NULL)
+    {
+        mh->mh_First->mc_Next = mc;
+        mh->mh_Upper = memupper;
+        mh->mh_Free += mc->mc_Bytes;
+    }
 
     ranges[0] = (UWORD *)krnGetTagData(KRN_KernelLowest, 0, msg);
     ranges[1] = (UWORD *)krnGetTagData(KRN_KernelHighest, 0, msg);
@@ -204,7 +217,6 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     D(bug("[KRN] InitCode(RTF_COLDSTART) ...\n"));
     asm("cps #0x1f\n");	/* switch to system mode */
-
     InitCode(RTF_COLDSTART, 0);
 
     /* The above should not return */
