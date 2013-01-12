@@ -1,13 +1,9 @@
 
-.org 0x0
+.section .intvecs, "ax"
 
-.section intvec, "ax"
-.global _intvecs_start
-.global _intvecs_end
- 
 /* initial, unpatchable vector table */
 
-_intvecs_start:
+_reset_vec:
            ldr	pc, reset_handler_address
            ldr	pc, undef_handler_address
            ldr	pc, svc_handler_address
@@ -16,7 +12,6 @@ _intvecs_start:
 _loop:   b       .
            ldr	pc, irq_handler_address
            ldr	pc, fiq_handler_address
-_intvecs_end:
 
 reset_handler_address:		       .word	__intrhand_reset
 undef_handler_address:	       .word	__intrhand_undef

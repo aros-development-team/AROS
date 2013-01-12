@@ -133,17 +133,32 @@ __attribute__ ((interrupt ("ABORT"))) void __intrhand_prefetchabort(void)
 }
 
 /* linker exports */
-extern void *_intvecs_start, *_intvecs_end;
+extern void *__intvecs_start, *__intvecs_end;
 
 void core_SetupIntr(void)
 {
-    D(bug("[KRN] Initializing exception handlers\n"));
+    D(bug("[KRN] Initializing cpu vectors\n"));
 
     /* Copy vectors into place */
-    memmove(&_intvecs_start, 0,
-            (unsigned int)&_intvecs_end -
-            (unsigned int)&_intvecs_start);
+    memcpy(0, &__intvecs_start,
+            (unsigned int)&__intvecs_end -
+            (unsigned int)&__intvecs_start);
 
+    D(bug("[KRN] Copied %d bytes from 0x%p to 0x00000000\n", (unsigned int)&__intvecs_end - (unsigned int)&__intvecs_start, &__intvecs_start));
+
+    D(
+        unsigned int x = 0;
+        bug("[KRN]: Vector dump-:");
+        for (x=0; x < (unsigned int)&__intvecs_end - (unsigned int)&__intvecs_start; x++) {
+            if ((x%16) == 0)
+            {
+                bug("\n[KRN]:     %08x:", x);
+            }
+            bug(" %02x", *((volatile UBYTE *)x));
+        }
+        bug("\n");
+    )
+    
     D(bug("[KRN] Initializing IRQs\n"));
 
     /* Turn on interrupts */
