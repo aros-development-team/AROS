@@ -137,7 +137,7 @@ extern void *__intvecs_start, *__intvecs_end;
 
 void core_SetupIntr(void)
 {
-    D(bug("[KRN] Initializing cpu vectors\n"));
+    bug("[KRN] Initializing cpu vectors\n");
 
     /* Copy vectors into place */
     memcpy(0, &__intvecs_start,
@@ -160,7 +160,4 @@ void core_SetupIntr(void)
     )
     
     D(bug("[KRN] Initializing IRQs\n"));
-
-    /* Turn on interrupts */
-//    asm volatile("cpsie i");
 }
