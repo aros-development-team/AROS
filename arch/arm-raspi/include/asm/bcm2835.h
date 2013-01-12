@@ -9,7 +9,7 @@
 #ifndef REGISTERS_RASPI_H
 #define REGISTERS_RASPI_H
 
-#define CLID_I2C_BCM2835	"hidd.i2c.bcm440"
+#define CLID_I2C_BCM2835	"hidd.i2c.bcm2835"
 
 #define VIRTIO_BASE         0x20000000                  // Peripheral base address        
 #define GPIO_PADS           (VIRTIO_BASE + 0x100000)
