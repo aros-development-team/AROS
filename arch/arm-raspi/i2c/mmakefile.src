@@ -1,0 +1,12 @@
+# $Id: mmakefile.src 44918 2012-06-01 03:30:04Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+#MM- hidd-i2c-raspi : hidd-i2c-bcm2835
+
+%build_module mmake=hidd-i2c-bcm2835 \
+  modname=i2c-bcm2835 modtype=hidd \
+  files="i2c-bcm2835" \
+  uselibs="oop"
+
+%common
+  

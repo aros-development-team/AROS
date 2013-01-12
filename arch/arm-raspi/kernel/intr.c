@@ -16,10 +16,33 @@
 
 #include "kernel_intern.h"
 //#include "syscall.h"
+#include "intr.h"
 
-volatile unsigned int *irqEnable1= (unsigned int *) 0x2000b210;
-volatile unsigned int *irqEnable2= (unsigned int *) 0x2000b214;
-volatile unsigned int *irqEnableBasic= (unsigned int *) 0x2000b218;
+#define IRQ_MASK(irq)   (1 << (irq & 31))
+#define IRQ_BANK(irq)   (irq >> 5)
+#define IRQ_INDEX(irq)  (((irq >> 5) * 32) + (irq & 31))
+
+IPTR __irq_handlers[96];
+
+void IRQ_enable(ULONG irq, void *handler)
+{
+    int bank = IRQ_BANK(irq);
+    volatile ULONG *reg = ((bank == 0) ? IRQ_ENBL3 : (bank == 1) ? IRQ_ENBL1 : IRQ_ENBL2);
+
+    *reg |= IRQ_MASK(irq);
+
+    __irq_handlers[IRQ_INDEX(irq)] = handler;
+}
+
+void IRQ_disable(ULONG irq)
+{
+    int bank = IRQ_BANK(irq);
+    volatile ULONG *reg = ((bank == 0) ? IRQ_DIBL3 : (bank == 1) ? IRQ_DIBL1 : IRQ_DIBL2);
+
+    *reg |= IRQ_MASK(irq);
+
+     __irq_handlers[IRQ_INDEX(irq)] = NULL;
+} 
 
 void __intrhand_undef(void)
 {
@@ -137,6 +160,7 @@ extern void *__intvecs_start, *__intvecs_end;
 
 void core_SetupIntr(void)
 {
+    int irq;
     bug("[KRN] Initializing cpu vectors\n");
 
     /* Copy vectors into place */
@@ -158,6 +182,14 @@ void core_SetupIntr(void)
         }
         bug("\n");
     )
-    
-    D(bug("[KRN] Initializing IRQs\n"));
+
+    D(bug("[KRN] Disabling IRQs\n"));
+    *(volatile ULONG *)IRQ_DIBL1 = ~0;
+    *(volatile ULONG *)IRQ_DIBL2 = ~0; 
+    *(volatile ULONG *)IRQ_DIBL3 = ~0;
+
+    for (irq = 0; irq < 96; irq++)
+    {
+        __irq_handlers[irq] = NULL;
+    }
 }
