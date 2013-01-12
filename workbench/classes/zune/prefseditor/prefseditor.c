@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     This file is part of the PrefsEditor class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
@@ -44,12 +44,14 @@ Object *PrefsEditor__OM_NEW
     {
         SETUP_INST_DATA;
 	
-        /*-- Handle initial attribute values -------------------------------*/
-        SetAttrsA(self, message->ops_AttrList);
-        
         /*-- Set defaults --------------------------------------------------*/
         data->ped_CanSave = TRUE;
         data->ped_CanTest = TRUE;
+        data->ped_CanUse = TRUE;
+
+        /*-- Handle initial attribute values -------------------------------*/
+        SetAttrsA(self, message->ops_AttrList);
+        
     }
     
     return self;
@@ -182,6 +184,10 @@ IPTR PrefsEditor__OM_SET
                 data->ped_Testing = tag->ti_Data;
                 break;
                 
+            case MUIA_PrefsEditor_CanTest:
+                data->ped_CanTest = tag->ti_Data;
+                break;
+                
             case MUIA_PrefsEditor_Name:
                 if (data->ped_Name != NULL) FreeVec(data->ped_Name);
                 data->ped_Name = StrDup((CONST_STRPTR) tag->ti_Data);
@@ -195,6 +201,10 @@ IPTR PrefsEditor__OM_SET
             case MUIA_PrefsEditor_IconTool:
                 if (data->ped_IconTool != NULL) FreeVec(data->ped_IconTool);
                 data->ped_IconTool = StrDup((CONST_STRPTR) tag->ti_Data);
+                break;
+
+            case MUIA_PrefsEditor_CanUse:
+                data->ped_CanUse = tag->ti_Data;
                 break;
         }
     }
@@ -241,6 +251,10 @@ IPTR PrefsEditor__OM_GET
             *store = (IPTR) data->ped_IconTool;
             break;
             
+        case MUIA_PrefsEditor_CanUse:
+            *store = data->ped_CanUse;
+            break;
+
         default:
             rv = DoSuperMethodA(CLASS, self, (Msg) message);
     }
