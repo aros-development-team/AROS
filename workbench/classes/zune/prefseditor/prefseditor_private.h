@@ -2,7 +2,7 @@
 #define _PREFSEDITOR_PRIVATE_H_
 
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     This file is part of the PrefsEditor class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
@@ -17,6 +17,7 @@ struct PrefsEditor_DATA
 {
     BOOL   ped_Changed,
            ped_Testing,
+           ped_CanUse,
            ped_CanSave,
            ped_CanTest;
     STRPTR ped_Name,
