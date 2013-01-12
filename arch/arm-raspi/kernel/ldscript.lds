@@ -10,12 +10,12 @@ SECTIONS
         __text_end = .;
     }
 
-    __intvecs_start = .;
     .intvecs :
     {
+        __intvecs_start = .;
         *(.intvecs)
+        __intvecs_end = .;
     }
-    __intvecs_end = .;
 
     .rodata : {
         *(.rodata*)                 /* read-only data (ELF only) */
