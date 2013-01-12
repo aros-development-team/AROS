@@ -24,6 +24,8 @@
 #include "kernel_fb.h"
 #include "kernel_romtags.h"
 
+extern void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
+
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg);
 
 static uint32_t stack[STACK_SIZE] __attribute__((used,aligned(16)));
@@ -179,21 +181,9 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     *gpioGPCLR0 = 1<<16; // LED ON
 
     NEWLIST(&memList);
-    mh = (struct MemHeader *)AROS_ROUNDUP2(0x100000, sizeof(IPTR));
-    mh->mh_Node.ln_Name = "System Memory";
-    mh->mh_Node.ln_Type = NT_MEMORY;
-    mh->mh_Node.ln_Pri  = 0;
-    mh->mh_Attributes   = MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL;
-    mh->mh_Lower        = (APTR)mh;
-    mh->mh_Upper        = (APTR)memupper;
-    mh->mh_First        = NULL;       /* We don't actually have any single MemChunk yet */
 
-    mc = (struct MemChunk *)AROS_ROUNDUP2((long unsigned int)&mh[1], MEMCHUNK_TOTAL);
-    mc->mc_Next  = NULL;
-    mc->mc_Bytes = AROS_ROUNDUP2(memupper, MEMCHUNK_TOTAL) - (long unsigned int)mc;
-
-    ((struct MemChunk *)(&mh->mh_First))->mc_Next = mc;
-    mh->mh_Free = mc->mc_Bytes;
+    mh = (struct MemHeader *)0x100000;
+    krnCreateMemHeader("System Memory", 0, mh, memupper - (long unsigned int)mh, MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL);
 
     ranges[0] = (UWORD *)krnGetTagData(KRN_KernelLowest, 0, msg);
     ranges[1] = (UWORD *)krnGetTagData(KRN_KernelHighest, 0, msg);
