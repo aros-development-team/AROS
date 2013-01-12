@@ -9,7 +9,8 @@
 #ifndef REGISTERS_RASPI_H
 #define REGISTERS_RASPI_H
 
-/* This stuff should really be in arm/bcm2835.h */
+#define CLID_I2C_BCM2835	"hidd.i2c.bcm440"
+
 #define VIRTIO_BASE         0x20000000                  // Peripheral base address        
 #define GPIO_PADS           (VIRTIO_BASE + 0x100000)
 #define CLOCK_BASE          (VIRTIO_BASE + 0x101000)
