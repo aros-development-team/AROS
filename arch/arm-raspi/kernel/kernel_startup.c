@@ -107,7 +107,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     struct MinList memList;
     struct MemHeader *mh;
     struct MemChunk *mc;
-    long unsigned int memupper = 0;
+    long unsigned int memlower = 0, memupper = 0;
     unsigned int delay;
     BootMsg = msg;
 
@@ -134,8 +134,15 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
             _KrnPutC = msg->ti_Data;
             _KrnPutC(0xFF); // Clear the display
             break;
+        case KRN_MEMLower:
+            memlower = msg->ti_Data;
+            break;
         case KRN_MEMUpper:
             memupper = msg->ti_Data;
+            break;
+        case KRN_ProtAreaStart:
+            break;
+        case KRN_ProtAreaEnd:
             break;
         case KRN_KernelBase:
             /*
@@ -172,7 +179,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     *gpioGPCLR0 = 1<<16; // LED ON
 
     NEWLIST(&memList);
-    mh = (struct MemHeader *)AROS_ROUNDUP2(0x3000, sizeof(IPTR));
+    mh = (struct MemHeader *)AROS_ROUNDUP2(0x100000, sizeof(IPTR));
     mh->mh_Node.ln_Name = "System Memory";
     mh->mh_Node.ln_Type = NT_MEMORY;
     mh->mh_Node.ln_Pri  = 0;

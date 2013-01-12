@@ -65,6 +65,9 @@ static void parse_atags(struct tag *tags)
             kprintf("ATAG_MEM (%08x-%08x)\n", t->u.mem.start, t->u.mem.size + t->u.mem.start - 1);
             tag->ti_Tag = KRN_MEMLower;
             tag->ti_Data = t->u.mem.start;
+            if (tag->ti_Data == 0)
+                tag->ti_Data = 0x1000; // Leave space for the cpu vectors.
+
             tag++;
             tag->ti_Tag = KRN_MEMUpper;
             tag->ti_Data = t->u.mem.start + t->u.mem.size;
@@ -190,6 +193,15 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     parse_atags(atags);
 
     kprintf("[BOOT] Bootstrap @ %08x-%08x\n", &__bootstrap_start, &__bootstrap_end);
+
+    tag->ti_Tag = KRN_ProtAreaStart;
+    tag->ti_Data = &__bootstrap_start;
+    tag++;
+
+    tag->ti_Tag = KRN_ProtAreaEnd;
+    tag->ti_Data = &__bootstrap_end;
+    tag++;
+
     kprintf("[BOOT] Topmost address for kernel: %p\n", mem_upper);
 
     if (mem_upper)

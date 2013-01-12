@@ -6,7 +6,7 @@ SECTIONS
     
     __bootstrap_start = . ;
     
-    .text ALIGN(4096) :
+    .text :
     {
         *(.aros.startup)
         *(.text)
