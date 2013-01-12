@@ -77,12 +77,40 @@
 #define UCR2	              (0x84/4)
 #endif
 
-#define SPI0_CS             (0x00)
-#define SPI0_FIFO           (0x04)
-#define SPI0_CLK            (0x08)
-#define SPI0_DLEN           (0x0c)
-#define SPI0_LTOH           (0x10)
-#define SPI0_DC             (0x14)
+#define SPI0_CS                 (0x00)
+#define SPI0_FIFO               (0x04)
+#define SPI0_CLK                (0x08)
+#define SPI0_DLEN               (0x0c)
+#define SPI0_LTOH               (0x10)
+#define SPI0_DC                 (0x14)
+
+#define BSC0_CONTROL            (BSC0_BASE + 0x00)
+#define BSC0_STATUS             (BSC0_BASE + 0x01)
+#define BSC0_DATALEN            (BSC0_BASE + 0x02)
+#define BSC0_FIFO               (BSC0_BASE + 0x04)
+
+#define BSC_CONTROL_CLEAR       (1 << 4)
+#define BSC_CONTROL_ST          (1 << 7)
+#define BSC_CONTROL_INTD        (1 << 8)
+#define BSC_CONTROL_INTT        (1 << 9)
+#define BSC_CONTROL_INTR        (1 << 10)
+#define BSC_CONTROL_I2CEN       (1 << 15)
+
+#define BSC_STATUS_CLKT         (1 << 9)
+#define BSC_STATUS_ERR          (1 << 8)
+#define BSC_STATUS_RXF          (1 << 7)
+#define BSC_STATUS_TXE          (1 << 6)
+#define BSC_STATUS_RXD          (1 << 5)
+#define BSC_STATUS_TXD          (1 << 4)
+#define BSC_STATUS_RXR          (1 << 3)
+#define BSC_STATUS_TXW          (1 << 2)
+#define BSC_STATUS_DONE         (1 << 1)
+#define BSC_STATUS_TA           1
+
+#define BSC_CONTROL_READ        1
+#define BSC_READ                BSC_CONTROL_I2CEN|BSC_CONTROL_ST|BSC_CONTROL_CLEAR|BSC_CONTROL_READ
+#define BSC_WRITE               BSC_CONTROL_I2CEN|BSC_CONTROL_ST
+#define BSC_CLEAR               BSC_STATUS_CLKT|BSC_STATUS_ERR|BSC_STATUS_DONE
 
 #define AUX_IRQ             0x20215000  // Auxiliary Interrupt status
 #define AUX_ENABLES         0x20215004  // Auxiliary enables
