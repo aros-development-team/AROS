@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     This file is part of the SystemPrefsWindow class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
@@ -269,7 +269,7 @@ IPTR SystemPrefsWindow__OM_SET
             case MUIA_PrefsWindow_Save_Disabled:
                 if (!XGET(data->spwd_Editor, MUIA_PrefsEditor_CanSave))
                 {
-                    tag->ti_Tag = TAG_IGNORE;
+                    tag->ti_Data = TRUE;
                 }
                 break;
                 
@@ -277,7 +277,14 @@ IPTR SystemPrefsWindow__OM_SET
             case MUIA_PrefsWindow_Revert_Disabled:
                 if (!XGET(data->spwd_Editor, MUIA_PrefsEditor_CanTest))
                 {
-                    tag->ti_Tag = TAG_IGNORE;
+                    tag->ti_Data = TRUE;
+                }
+                break;
+
+            case MUIA_PrefsWindow_Use_Disabled:
+                if (!XGET(data->spwd_Editor, MUIA_PrefsEditor_CanUse))
+                {
+                    tag->ti_Data = TRUE;
                 }
                 break;
         }
