@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := $(call WILDCARD, aros/*.h)
-%copy_includes mmake=compiler-includes path=aros/arm-raspi dir=aros
+%copy_includes mmake=compiler-includes path=aros dir=aros
 
 INCLUDE_FILES := $(call WILDCARD, asm/*.h)
-%copy_includes mmake=compiler-includes path=asm/arm-raspi dir=asm
+%copy_includes mmake=compiler-includes path=asm dir=asm
