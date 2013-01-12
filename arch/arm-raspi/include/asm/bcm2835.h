@@ -1,13 +1,10 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-
-    These need refining if IO-base is moved to virtual memory, now they reflect the state of Arm physical address space
-
 */
 
-#ifndef REGISTERS_RASPI_H
-#define REGISTERS_RASPI_H
+#ifndef BCM2835_H
+#define BCM2835_H
 
 #define CLID_I2C_BCM2835	"hidd.i2c.bcm2835"
 
@@ -111,4 +108,4 @@
 #define AUX_SPI1_IO_REG     0x202150D0  // SPI 2 Data
 #define AUX_SPI1_PEEK_REG   0x202150D4  // SPI 2 Peek
 
-#endif
+#endif /* BCM2835_H */
