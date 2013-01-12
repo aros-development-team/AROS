@@ -146,6 +146,7 @@
 #define BSC0_DATALEN            (BSC0_BASE + 0x02)
 #define BSC0_FIFO               (BSC0_BASE + 0x04)
 
+#define BSC_CONTROL_READ        (1 << 0)
 #define BSC_CONTROL_CLEAR       (1 << 4)
 #define BSC_CONTROL_ST          (1 << 7)
 #define BSC_CONTROL_INTD        (1 << 8)
@@ -153,18 +154,17 @@
 #define BSC_CONTROL_INTR        (1 << 10)
 #define BSC_CONTROL_I2CEN       (1 << 15)
 
-#define BSC_STATUS_CLKT         (1 << 9)
-#define BSC_STATUS_ERR          (1 << 8)
-#define BSC_STATUS_RXF          (1 << 7)
-#define BSC_STATUS_TXE          (1 << 6)
-#define BSC_STATUS_RXD          (1 << 5)
-#define BSC_STATUS_TXD          (1 << 4)
-#define BSC_STATUS_RXR          (1 << 3)
-#define BSC_STATUS_TXW          (1 << 2)
+#define BSC_STATUS_TA           (1 << 0)
 #define BSC_STATUS_DONE         (1 << 1)
-#define BSC_STATUS_TA           1
+#define BSC_STATUS_TXW          (1 << 2)
+#define BSC_STATUS_RXR          (1 << 3)
+#define BSC_STATUS_TXD          (1 << 4)
+#define BSC_STATUS_RXD          (1 << 5)
+#define BSC_STATUS_TXE          (1 << 6)
+#define BSC_STATUS_RXF          (1 << 7)
+#define BSC_STATUS_ERR          (1 << 8)
+#define BSC_STATUS_CLKT         (1 << 9)
 
-#define BSC_CONTROL_READ        1
 #define BSC_READ                BSC_CONTROL_I2CEN|BSC_CONTROL_ST|BSC_CONTROL_CLEAR|BSC_CONTROL_READ
 #define BSC_WRITE               BSC_CONTROL_I2CEN|BSC_CONTROL_ST
 #define BSC_CLEAR               BSC_STATUS_CLKT|BSC_STATUS_ERR|BSC_STATUS_DONE
