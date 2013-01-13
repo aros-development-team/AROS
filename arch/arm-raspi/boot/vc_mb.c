@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#include "vc_mb.h"
+#include <hardware/vcmbox.h>
 
 volatile unsigned int *vcmb_read(void *mb, unsigned int chan)
 {
