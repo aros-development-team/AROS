@@ -93,7 +93,7 @@ intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
 
-void core_Cause(struct ExecBase *SysBase);
+//void core_Cause(struct ExecBase *SysBase);
 
 struct KernelBase *getKernelBase();
 

@@ -15,7 +15,7 @@
 #include <proto/kernel.h>
 
 #include "kernel_intern.h"
-//#include "syscall.h"
+
 #include "intr.h"
 
 #define IRQ_MASK(irq)   (1 << (irq & 31))
@@ -67,29 +67,7 @@ void __intrhand_reset(void)
     return;
 }
 
-__attribute__ ((interrupt ("SWI"))) void __intrhand_swi(void)
-{
-    register unsigned int addr;
-    register unsigned int swi_no;
-    /* Read link register into addr - contains the address of the
-     * instruction after the SWI
-     */
-    asm volatile("mov %[addr], lr" : [addr] "=r" (addr) );
-
-    addr -= 4;
-    /* Bottom 24 bits of the SWI instruction are the SWI number */
-    swi_no = *((unsigned int *)addr) & 0x00ffffff;
-
-    *gpioGPSET0 = 1<<16; // LED OFF
-    
-    D(bug("[KRN] ## SWI ##\n"));
-    D(bug("[KRN] Address: 0x%p  SWI number %d\n", addr, swi_no));
-
-    while(1)
-    {
-        asm("mov r0,r0\n\t");
-    }
-}
+/** SWI handled in syscall.c */
 
 __attribute__ ((interrupt ("IRQ"))) void __intrhand_irq(void)
 {

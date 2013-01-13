@@ -10,26 +10,27 @@
 
 #define EXCEPTIONS_COUNT	1
 
+#define ARM_FPU_TYPE	        FPU_VFP
+#define ARM_FPU_SIZE	        32*64
+
 typedef struct AROSCPUContext {
 	uint32_t r[16];
 } regs_t;
 
 static inline uint32_t goSuper()
 {
-    asm("cps #0x13\n");	/* switch to SVC (supervisor) mode */
+    asm volatile ("cps #0x13\n");	/* switch to SVC (supervisor) mode */
     return NULL;
 }
 
 static inline void goUser()
 {
-    asm("cps #0x1f\n");	/* switch to system (user) mode */
+    asm volatile ("cps #0x1f\n");	/* switch to system (user) mode */
 }
 
 static inline void krnSysCall(uint8_t n)
 {
+    asm volatile ("swi %[n]\n" : : [n] "I" (n));
 }
-
-#define ARM_FPU_TYPE	FPU_VFP
-#define ARM_FPU_SIZE	32*64
 
 #endif /* CPU_ARM_H_ */
