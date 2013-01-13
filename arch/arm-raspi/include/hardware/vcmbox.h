@@ -3,8 +3,8 @@
     $Id$
 */
 
-#ifndef VCMB_H
-#define VCMB_H
+#ifndef VCMBOX_H
+#define VCMBOX_H
 
 #define VCMB_CHANS      8
 #define VCMB_CHANMASK   0xF
@@ -20,4 +20,4 @@
 #define VCMB_STATUS_READREADY   (1 << 30)
 #define VCMB_STATUS_WRITEREADY  (1 << 31)
 
-#endif	/* VCMB_H */
+#endif	/* VCMBOX_H */
