@@ -2,7 +2,7 @@
 #define _SIGCORE_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macros to handle i386 Linux signals
@@ -10,6 +10,12 @@
 */
 
 #include <aros/i386/cpucontext.h>
+
+/* Allocate legacy 80087 frame together with SSE frame */
+#define USE_LEGACY_8087
+
+/* Allocate 112 bytes for 8087 frame. It contains host_specific portion (status and magic). */
+#define SIZEOF_8087_FRAME 112
 
 #ifdef __AROS_EXEC_LIBRARY__
 
@@ -175,12 +181,6 @@ typedef struct sigcontext regs_t;
 
     Update: We store the registers in our own structure now
 */
-
-/* Allocate legacy 80087 frame together with SSE frame */
-#define USE_LEGACY_8087
-
-/* Allocate 112 bytes for 8087 frame. It contains host_specific portion (status and magic). */
-#define SIZEOF_8087_FRAME 112
 
 /*
  * This macro saves all registers. Use this macro when you
