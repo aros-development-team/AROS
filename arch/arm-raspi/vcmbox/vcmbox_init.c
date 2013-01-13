@@ -29,7 +29,7 @@ static int vcmbox_init(struct VCMBoxBase *VCMBoxBase)
 
 AROS_LH1(unsigned int, VCMBoxStatus,
 		AROS_LHA(void *, mb, A0),
-		struct VCMBoxBase *, VCMBoxBase, 1, Vcmb)
+		struct VCMBoxBase *, VCMBoxBase, 1, Vcmbox)
 {
     AROS_LIBFUNC_INIT
 
