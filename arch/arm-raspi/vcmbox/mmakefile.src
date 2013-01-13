@@ -1,0 +1,6 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+%build_module mmake=kernel-vcmbox 	\
+  modname=vcmbox modtype=resource		\
+  files="vcmbox_init"
