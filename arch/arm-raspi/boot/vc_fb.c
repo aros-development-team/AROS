@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#include <hardware/vcmbox.h>
+
 #include "bootconsole.h"
 #include "vc_mb.h"
 #include "vc_fb.h"
