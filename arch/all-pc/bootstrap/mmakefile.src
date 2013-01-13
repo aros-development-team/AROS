@@ -23,7 +23,7 @@ EXENAME      := bootstrap-pc
 	files=$(FILES) targetdir=$(EXEDIR) \
 	uselibs="bootstrap bootconsole arosc.static" usestartup=no linker=kernel
 
-%rule_link_binary file=$(OBJDIR)/vesa.bin.o name=vesa objs=$(OBJDIR)/vesa.o \
+%rule_link_binary file=$(OBJDIR)/vesa.bin.o name=vesa files=vesa \
 	start=0x1000 ldflags="-m elf_i386"
 
 %compress_file mmake=kernel-bootstrap-pc file=$(EXEDIR)/$(EXENAME)

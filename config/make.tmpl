@@ -1031,16 +1031,21 @@ endif
 # Link %(objs) to binary blob in %(file) using %(name) as name of embedded binary object
 # 'start' is an optional starting address
 # 'ldflags' is optional additional flags for the linker
-%define rule_link_binary file=/A name=/A objs=/A start=0 ldflags=
+%define rule_link_binary file=/A name=/A objs= files= start=0 ldflags=
 
 BD_OUTDIR := $(dir %(file))
 # This trick removes the trailing '/', otherwise findstring below fails, causing a warning
 BD_OUTDIR := $(subst /*,,$(addsuffix *,$(BD_OUTDIR)))
 BD_TMPDIR := $(GENDIR)/$(CURDIR)
+BD_OBJS := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(notdir %(files))))
+BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(notdir %(files))))
+BD_OBJS += %(objs)
 
-%(file) : %(objs) $(BD_OUTDIR)
+%rule_compile_multi basenames=%(files) targetdir=$(BD_OBJDIR)
+
+%(file) : $(BD_OBJS) $(BD_DEPS) $(BD_OUTDIR)
 	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
-	@$(KERNEL_LD) %(ldflags) --entry=%(start) --oformat=binary -Ttext=%(start) -o $(BD_TMPDIR)/%(name) %(objs)
+	@$(KERNEL_LD) %(ldflags) --entry=%(start) --oformat=binary -Ttext=%(start) -o $(BD_TMPDIR)/%(name) $(BD_OBJS)
 	@cd $(BD_TMPDIR) && $(AROS_LD) %(ldflags) -r --format binary %(name) -o $@
 
 ifeq ($(findstring $(BD_OUTDIR),$(GLOB_MKDIRS)),)
