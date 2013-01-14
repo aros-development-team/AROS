@@ -10,7 +10,9 @@
 
 #define STACK_SIZE          4096
 
-#define VIRTIO_BASE         0x20000000                  // Peripheral base address        
+#define PL110_BASE          0x10120000
+#define VIRTIO_BASE         0x20000000                  // Peripheral base address
+#define SYSTIMER_BASE       (VIRTIO_BASE + 0x003000)
 #define GPIO_PADS           (VIRTIO_BASE + 0x100000)
 #define CLOCK_BASE          (VIRTIO_BASE + 0x101000)
 #define GPIO_BASE           (VIRTIO_BASE + 0x200000)
