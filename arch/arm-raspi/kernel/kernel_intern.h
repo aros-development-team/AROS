@@ -22,8 +22,8 @@
 #define KERNEL_PHYS_BASE        0x07800000
 #define KERNEL_VIRT_BASE        0xff800000
 
-#define gpioGPSET0 ((volatile unsigned int *)(GPIO_BASE + 0x1c))
-#define gpioGPCLR0 ((volatile unsigned int *)(GPIO_BASE + 0x28))
+#define gpioGPSET0 ((volatile unsigned int *)(GPSET0))
+#define gpioGPCLR0 ((volatile unsigned int *)(GPCLR0))
 
 struct KernelBase {
     struct Node         kb_Node;
