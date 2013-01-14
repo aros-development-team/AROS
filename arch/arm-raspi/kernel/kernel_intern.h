@@ -15,17 +15,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <asm/bcm2835.h>
+
 #undef KernelBase
 
 #define KERNEL_PHYS_BASE        0x07800000
 #define KERNEL_VIRT_BASE        0xff800000
-
-#define STACK_SIZE 4096
-
-#define PL110_BASE      0x10120000
-#define SYSTIMER_BASE   0x20003000
-#define VCPB_BASE       0x2000B880
-#define GPIO_BASE       0x20200000
 
 #define gpioGPSET0 ((volatile unsigned int *)(GPIO_BASE + 0x1c))
 #define gpioGPCLR0 ((volatile unsigned int *)(GPIO_BASE + 0x28))
@@ -96,13 +91,6 @@ struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
 //void core_Cause(struct ExecBase *SysBase);
 
 struct KernelBase *getKernelBase();
-
-/*
-static inline struct ExecBase *getSysBase()
-{
-    return (struct ExecBase *)SysBase;
-}
-*/
 
 #ifdef bug
 #undef bug

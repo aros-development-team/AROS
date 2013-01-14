@@ -17,7 +17,7 @@
 #include "kernel_intern.h"
 #include "kernel_scheduler.h"
 
-#include "syscall.h"
+#include "kernel_syscall.h"
 
 extern char * __text_start;
 extern char * __text_end;

@@ -28,7 +28,7 @@ extern void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR siz
 
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg);
 
-static uint32_t stack[STACK_SIZE] __attribute__((used,aligned(16)));
+uint32_t stack[STACK_SIZE] __attribute__((used,aligned(16)));
 static uint32_t stack_super[STACK_SIZE] __attribute__((used,aligned(16)));
 static uint32_t stack_abort[STACK_SIZE] __attribute__((used,aligned(16)));
 static uint32_t stack_irq[STACK_SIZE] __attribute__((used,aligned(16)));
