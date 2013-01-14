@@ -6,7 +6,9 @@
 #ifndef BCM2835_H
 #define BCM2835_H
 
-#define CLID_I2C_BCM2835	"hidd.i2c.bcm2835"
+#define CLID_I2C_BCM2835    "hidd.i2c.bcm2835"
+
+#define STACK_SIZE          4096
 
 #define VIRTIO_BASE         0x20000000                  // Peripheral base address        
 #define GPIO_PADS           (VIRTIO_BASE + 0x100000)
