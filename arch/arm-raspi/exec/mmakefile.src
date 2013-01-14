@@ -10,7 +10,7 @@ ifneq ($(AROS_TARGET_VARIANT),)
 endif
 
 CFILES          := \
-        superstate userstate
+        platform_init superstate userstate coldreboot
 
 ##exec_init
 
