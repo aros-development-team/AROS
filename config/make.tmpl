@@ -1081,6 +1081,104 @@ BDID := $(BDTARGETID)
 #############################################################################
 
 #------------------------------------------------------------------------------
+# This one tries to build a binary (boot)image
+%define build_image mmake=/A imagename=/A files= cxxfiles= \
+    asmfiles= objdir=$(GENDIR)/$(CURDIR) targetdir= \
+    cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
+    aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=no detach=no nix=no \
+    compiler=kernel linker= linkerscript= entry= objfiles= map=no
+
+.PHONY : %(mmake)
+
+BD_IMAGENAME := %(imagename)
+BD_TEMPNAME  := $(addsuffix .tmp ,$(basename $(BD_IMAGENAME)))
+BD_OBJDIR    := %(objdir)
+BD_TARGETDIR := %(targetdir)
+BD_LINKER    := %(linker)
+BD_LINKERSCRIPT := %(linkerscript)
+
+# If not supplied, linker is equal to compiler
+ifeq ($(BD_LINKER),)
+    BD_LINKER := %(compiler)
+endif
+
+ifeq ($(BD_TARGETDIR),)
+    BD_TARGETDIR := $(AROSDIR)
+endif
+
+BD_FILES     := %(files)
+BD_CXXFILES  := %(cxxfiles)
+BD_ASMFILES  := %(asmfiles)
+
+BD_ARCHOBJS   := $(wildcard $(BD_OBJDIR)/arch/*.o)
+BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
+BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
+
+BD_OBJS := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES)) $(BD_CXXFILES) $(BD_ASMFILES))) %(objfiles)
+BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES)) $(BD_CXXFILES)))
+
+BD_CFLAGS    := %(cflags)
+BD_AFLAGS    := %(aflags)
+BD_DFLAGS    := %(dflags)
+BD_LDFLAGS   := %(ldflags)
+
+BD_LDFLAGS   += -L$(GENDIR)/lib -L$(BINDIR)/Development/lib
+
+ifeq (%(map),yes)
+    BD_LDFLAGS   += -Wl,-Map=$(BD_TARGETDIR)/$(addsuffix .map ,$(basename $(BD_IMAGENAME)))
+endif
+
+ifneq (%(linkerscript),)
+    BD_LDFLAGS   += -T $(SRCDIR)/$(CURDIR)/%(linkerscript) 
+endif
+
+ifneq (%(entry),)
+    BD_LDFLAGS   += --entry=%(entry)
+endif
+
+#MM
+%(mmake)-quick : %(mmake)
+
+#MM %(mmake) : includes-generate-deps core-linklibs linklibs-%(uselibs)
+%(mmake) : $(BD_TARGETDIR)/$(BD_TEMPNAME)
+
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
+%rule_compile_multi basenames=$(BD_NARCHFILES) targetdir=$(BD_OBJDIR) \
+    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
+%rule_compile_cxx_multi basenames=$(BD_CXXFILES) targetdir=$(BD_OBJDIR) \
+    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
+%rule_assemble_multi basenames=$(BD_ASMFILES) targetdir=$(BD_OBJDIR) \
+    aflags=$(BD_AFLAGS) compiler=%(compiler)
+
+%rule_link_prog prog=$(BD_TARGETDIR)/$(BD_TEMPNAME) \
+    objs="$(BD_OBJS) $(BD_ARCHOBJS) $(USER_OBJS)" ldflags=$(BD_LDFLAGS) \
+    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
+    usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)" \
+    linker=$(BD_LINKER)
+
+	@$(ECHO) "Rolling it into $(BD_IMAGENAME)" && \
+    $(OBJCOPY) -O binary $@ $(BD_TARGETDIR)/$(BD_IMAGENAME) && \
+    $(RM) $@
+
+endif
+
+%include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS)
+
+$(BD_OBJS) $(BD_DEPS) : | $(BD_OBJDIR)
+$(BD_TARGETDIR)/$(BD_TEMPNAME) : | $(BD_TARGETDIR)
+GLOB_MKDIRS += $(BD_OBJDIR) $(BD_TARGETDIR)
+
+%(mmake)-clean : FILES := $(BD_OBJS) $(BD_TARGETDIR)/$(BD_TEMPNAME) $(BD_DEPS)
+#MM
+%(mmake)-clean ::
+	@$(ECHO) "Cleaning up for metatarget %(mmake)"
+	@$(RM) $(FILES)
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Build a program
 %define build_prog mmake=/A progname=/A files=$(BD_PROGNAME) cxxfiles= \
     asmfiles= objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
