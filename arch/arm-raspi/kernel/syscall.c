@@ -37,7 +37,7 @@ asm (".globl __intrhand_swi\n\t"
     "           mov     r0, sp                 \n" // r0 = registers r0-r12 on the stack
     "           mov     r1, sp                 \n"
     "           add     r1, r1, #15*4          \n" // r1 = orig (callers) stack pointer
-    "           bl      handle_syscall             \n"
+    "           bl      handle_syscall         \n"
     "           ldr     r2, [sp, #14*4]        \n" // restore spsr
     "           msr     spsr_c, r2             \n"
     "           ldmfd   sp!, {r0-r12, lr}      \n" // restore registers
@@ -65,7 +65,6 @@ void handle_syscall(void *regs, void *tasksp)
     register unsigned int swi_no;
     struct AROSCPUContext *ctx;
     struct Task *thisTask;
-
 
     /* We determine the SWI number by reading in the return address
        from the link register, subtract the instruction from it and
