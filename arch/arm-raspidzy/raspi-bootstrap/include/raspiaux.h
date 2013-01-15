@@ -12,9 +12,9 @@
 #define RASPIAUX_PHYSBASE (IPTR)0x20215000
 
 struct raspiaux {
-    uint32_t padding1;
+    uint32_t    padding1;
     uint32_t enables;
-    uint32_t padding2[14];
+    uint32_t    padding2[14];
     uint32_t mu_io_reg;
     uint32_t mu_ier_reg;
     uint32_t mu_iir_reg;

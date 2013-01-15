@@ -7,6 +7,8 @@ include $(TOP)/config/make.cfg
 #MM     kernel-kernel-kobj          \
 #MM     kernel-exec-kobj
 
+# kernel.img has to have all things necessary to survive on it's own
+# this includes kernel, exec, dos, intuition, fat/sfs-handler, sdmmc.device, poseidon, raspiusb.device etc.
 KLIBS   :=
 KDEVS   := 
 KHNDLRS := 
