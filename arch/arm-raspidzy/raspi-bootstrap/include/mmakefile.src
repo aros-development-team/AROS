@@ -1,0 +1,7 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(call WILDCARD, *.h)
+%copy_includes path=raspi
+
+%common

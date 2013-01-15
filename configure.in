@@ -1322,6 +1322,37 @@ case "$target_os" in
         aros_target_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
         ;;
 
+    r*pidzy)
+        aros_flavour="standalone"
+        aros_target_arch="raspidzy"
+        aros_target_cpu="arm"
+        aros_object_format="armelf_linux_eabi"
+        aros_shared_default="no"
+        aros_arch_libs="-laeabi"
+
+        gcc_default_cpu="armv6"
+        gcc_default_cpu_tune="arm1176jzf-s"
+        case "$target_cpu" in
+            *armhf*)
+                gcc_default_fpu="vfp"
+                gcc_default_float_abi="hard"
+                ;;
+            *arm*)
+                gcc_default_fpu="vfp"
+                gcc_default_float_abi="softfp"
+                ;;
+            *)
+                AC_MSG_ERROR("Unknown CPU for RasPi $target_cpu")
+                ;;
+        esac
+
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
+        aros_config_cflags="$aros_config_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_config_aflags="$aros_config_aflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_kernel_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_target_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        ;;
+
     amiga*)
         aros_target_arch="amiga"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
@@ -2250,6 +2281,15 @@ if test "$palm_debug_hack" = "yes" ; then
 fi
 AC_MSG_RESULT($palm_debug_hack)
 
+dnl See if dev wants the usb3.0 code
+AC_MSG_CHECKING([if usb3.0 code is enabled])
+AC_ARG_ENABLE(usb30_code,AC_HELP_STRING([--enable-usb30-code],[Enable usb3.0 code (default=no)]),usb30_code="yes",usb30_code="no")
+if test "$usb30_code" = "yes" ; then
+    aros_config_cflags="$aros_config_cflags -DAROS_USB30_CODE"
+    aros_kernel_cflags="$aros_kernel_cflags -DAROS_USB30_CODE"
+fi
+AC_MSG_RESULT($usb30_code)
+
 dnl See if the user wants nesting supervisor activated for unix flavour
 AC_MSG_CHECKING([if nesting supervisor support is enabled])
 AC_ARG_ENABLE(nesting_supervisor,AC_HELP_STRING([--enable-nesting-supervisor],[Enable nesting supervisor support in unix (default=no)]),nesting_supervisor="yes",nesting_supervisor="no")
@@ -2669,6 +2709,9 @@ AC_SUBST(ignore_undefined_symbols)
 
 # C compiler related
 AC_SUBST(gcc_target_cpu)
+
+# USB3.0 code
+AC_SUBST(aros_usb30_code)
 
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
