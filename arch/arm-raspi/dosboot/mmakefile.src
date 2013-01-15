@@ -1,0 +1,9 @@
+# $Id: mmakefile.src 36647 2011-01-17 14:01:23Z neil $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.. -I$(SRCDIR)/rom/dosboot
+
+%build_archspecific \
+  mainmmake=kernel-dosboot maindir=rom/dosboot \
+  arch=raspi-arm \
+  files="bootconfig" modulename=dosboot
