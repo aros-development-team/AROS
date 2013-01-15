@@ -1,0 +1,32 @@
+#$Id$
+include $(TOP)/config/make.cfg
+
+#MM raspi-bootimage:                \
+#MM     linklibs-raspi-bootstrap    \
+#MM     linklibs-raspi-bootconsole  \
+#MM     kernel-kernel-kobj          \
+#MM     kernel-exec-kobj
+
+KLIBS   :=
+KDEVS   := 
+KHNDLRS := 
+KHIDDS  := 
+KRSRCS  :=
+KHOOKS  :=
+
+KOBJS :=                                                            \
+    $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)))     \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)))     \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS)))   \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS)))    \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS)))    \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))   \
+	$(addprefix $(KOBJSDIR)/,$(addsuffix _hook.o    ,$(KHOOKS) ))
+
+FILES :=
+
+%build_image mmake=raspi-bootimage imagename=kernel.img                                             \
+	files=$(FILES) ldflags=$(LDFLAGS) linkerscript=ldscript.lds entry=bootstrap map=yes dump=yes    \
+	uselibs="raspi-bootstrap raspi-bootconsole" objfiles=$(KOBJS)
+
+%common
