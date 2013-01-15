@@ -44,6 +44,9 @@ void coldboot(void) {
 
     volatile struct raspigpio *raspigpio= RASPIGPIO_PHYSBASE;
 
+    raspigpio->gpfsel1 &= ~(GPIOfsel(14, GPIOmask) | GPIOfsel(15, GPIOmask));
+    raspigpio->gpfsel1 |= (GPIOfsel(14, GPIOalt5) | GPIOfsel(15, GPIOalt5));
+
     /*
         Aqcuire system clocks, needed for peripheral usage
     */
