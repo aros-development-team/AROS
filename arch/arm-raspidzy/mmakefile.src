@@ -7,7 +7,8 @@ include $(TOP)/config/make.cfg
 #MM     linklibs-raspi-bootconsole  \
 #MM     kernel-hidd-raspigfx-kobj   \
 #MM     kernel-kernel-kobj          \
-#MM     kernel-exec-kobj
+#MM     kernel-exec-kobj            \
+#MM     kernel-utility-kobj
 
 
 # kernel.img has to have all things necessary to survive on it's own
@@ -15,7 +16,7 @@ include $(TOP)/config/make.cfg
 KLIBS   := exec
 KDEVS   := 
 KHNDLRS := 
-KHIDDS  := raspigfx
+KHIDDS  :=
 KRSRCS  := kernel
 KHOOKS  :=
 
@@ -36,4 +37,5 @@ FILES :=
 	uselibs="raspi-bootstrap raspi-miniuart raspi-bootconsole" objfiles=$(KOBJS)
 
 %common
+
 

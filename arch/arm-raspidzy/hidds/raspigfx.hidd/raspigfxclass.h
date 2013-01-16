@@ -1,5 +1,5 @@
-#ifndef HIDD_VESAGFXCLASS_H
-#define HIDD_VESAGFXCLASS_H
+#ifndef HIDD_RASPIGFXCLASS_H
+#define HIDD_RASPIGFXCLASS_H
 
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
@@ -32,7 +32,7 @@ struct RasPiGfx_staticdata
     OOP_Class 	    	    *raspigfxclass;
     OOP_Class 	    	    *bmclass;
     OOP_Object      	    *raspigfxhidd;
-    OOP_Object       	    *visible;		/* Currently visible bitmap */
+    OOP_Object       	    *visible;       /* Currently visible bitmap */
 
     struct SignalSemaphore  framebufferlock;
     struct SignalSemaphore  HW_acc;
@@ -65,4 +65,4 @@ struct RasPiGfxBase
 #define HiddSyncAttrBase	  XSD(cl)->attrBases[4]
 #define HiddAttrBase		  XSD(cl)->attrBases[5]
 
-#endif /* HIDD_VESAGFXCLASS_H */
+#endif /* HIDD_RASPIGFXCLASS_H */

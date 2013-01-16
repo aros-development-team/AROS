@@ -3,52 +3,34 @@ MEMORY {
   invalid (rwx) : org = 0xdead0000 , l = 0x0
 }
 
-SECTIONS
-{
+SECTIONS {
 
     . = 0x4000;
     SysBase = .;
 
-    . = 0x5000;
-    .bss ALIGN(0x10) : { *(.bss) }
-    BootMsg = .;
-
     . = 0x6000;
-
-    .bootheap ALIGN(0x1000) :
-    {
-    bootheap_start = .;
-    *(.heap)
-    . = 0x1000;
-    bootheap_end = .;
+    .bootheap ALIGN(0x1000) : {
+        bootheap_start = .;
+        *(.heap)
+        . = 0x1000;
+        bootheap_end = .;
     }
 
     . = 0x8000;
-
-    .text ALIGN(0x1000) :
-    {
+    .kernel : {
         *(.aros.startup)
-        *(.text)
-        *(.text.*)
-        *(.stub)
-        *(.gnu.warning)
-        *(.gnu.linkonce.t.*)
-    }
-
-    .rodata ALIGN(0x1000) :
-    {
-        *(.rodata)
-        *(.rodata.*)
-        *(.gnu.linkonce.r.*)
-    }
-    .rodata1 : { *(.rodata1) }
-
-
+        *(.text .rodata .rodata.*)
+         kernel_end = .;   
+    } >valid
 
     /* This should cause angry complaints if .data exists
      * We don't want .data, and we don't need it.
     */
-    .data                       : { *(.data)             } >invalid
+    .data : { *(.data) } >invalid
 
+    /* This should cause angry complaints if .data exists
+     * We don't want .bss, and we don't need it.
+    */
+    .bss : { *(.bss) } >invalid 
     _end = . ;
 }
