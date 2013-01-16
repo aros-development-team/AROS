@@ -42,13 +42,14 @@ asm (".globl __intrhand_swi\n\t"
     "           str     r1, [sp, #13*4]        \n"
     "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
     "           ldr     r2, [sp, #2*4]         \n" // .. and r2 ..
+    "           mov     fp, #0                 \n" // clear fp(??)
     "           bl      handle_syscall         \n"
     "           ldr     lr, [sp, #14*4]        \n" // restore lr
     "           ldr     r2, [sp, #15*4]        \n" // restore spsr
     "           msr     spsr_c, r2             \n"
     "           ldmfd   sp!, {r0-r12}          \n" // restore registers
     "           add     sp, sp, #12            \n" // correct the stack pointer .. 
-    "           mov     pc, lr                 \n" // ..and return
+    "           movs    pc, lr                 \n" // ..and return
 );
 
 void core_Cause(unsigned char n, unsigned int mask)
@@ -99,7 +100,7 @@ void handle_syscall(void *regs)
                 int i;
                 
                 D(bug(", ExceptionContext @ 0x%p\n", ctx));
-                for (i = 1; i < 12; i++)
+                for (i = 0; i < 12; i++)
                 {
                     ctx->r[i] = ((uint32_t *)regs)[i];
                     D(bug("[KRN]      r%02d: 0x%08x\n", i, ctx->r[i]));
