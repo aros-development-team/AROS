@@ -31,8 +31,9 @@ AROS_LH0(void *, KrnCreateContext,
     if (ctx)
     {
         ctx->FPUType    = KernelBase->kb_ContextFlags;
-        ctx->cpsr       = 0x10;		/* Initial value for user mode */
-	ctx->fpuContext = (APTR)((IPTR)ctx + sizeof(struct AROSCPUContext));
+        ctx->cpsr       = 0x10;		        /* Initial value for user mode */
+	ctx->fpuContext = (APTR)&ctx[1];        /* fpu context is directly after the
+                                                   ExceptionContext structure.. */
     }
 
     return ctx;
