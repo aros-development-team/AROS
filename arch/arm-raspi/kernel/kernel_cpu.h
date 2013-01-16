@@ -18,7 +18,7 @@ typedef struct ExceptionContext regs_t;
 static inline uint32_t goSuper()
 {
     asm volatile ("cps #0x13\n");	/* switch to SVC (supervisor) mode */
-    return NULL;
+    return (uint32_t)NULL;
 }
 
 static inline void goUser()
@@ -28,7 +28,12 @@ static inline void goUser()
 
 static inline void krnSysCall(uint8_t n)
 {
-    asm volatile ("swi %[n]\n" : : [n] "I" (n));
+    asm volatile (
+    "push {ip}\n\t" // store the current r12 on the stack ..
+    "add ip, sp, #4\n\t" // put the "callers" sp in ip
+    "swi %[n]\n\t"
+    "pop {ip}\n" // restore r12
+    : : [n] "I" (n));
 }
 
 #endif /* CPU_ARM_H_ */
