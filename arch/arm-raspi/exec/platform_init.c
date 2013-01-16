@@ -32,10 +32,6 @@ static int PlatformInit(struct ExecBase *SysBase)
     /* for our sanity we will tell exec about the correct stack for the boot task */
     BootTask->tc_SPLower = stack;
     BootTask->tc_SPUpper = stack + STACK_SIZE;
-#if (1)
-    // Temp Hack
-    BootTask->tc_SPReg = BootTask->tc_SPUpper - sizeof(IPTR);
-#endif
 
     return TRUE;
 }
