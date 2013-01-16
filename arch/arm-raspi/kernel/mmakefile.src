@@ -1,7 +1,7 @@
 # $Id: mmakefile.src 41982 2011-10-22 21:50:04Z jmcmullan $
 include $(TOP)/config/make.cfg
 
-CFILES := kernel_startup platform_init kernel_debug tags intr syscall mmu issuper cli sti vars screen_fb font8x14
+CFILES := kernel_startup kernel_cpu platform_init kernel_debug tags intr syscall mmu issuper cli sti vars screen_fb font8x14
 AFILES := intvecs
 
 #MM kernel-raspi-arm: setup-raspi-arm kernel-kernel-kobj kernel-exec-kobj

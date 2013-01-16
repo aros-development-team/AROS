@@ -69,7 +69,7 @@ void handle_syscall(void *regs)
 {
     register unsigned int addr;
     register unsigned int swi_no;
-    struct AROSCPUContext *ctx;
+    struct ExceptionContext *ctx;
     struct Task *thisTask;
 
     /* We determine the SWI number by reading in the return address
@@ -97,12 +97,20 @@ void handle_syscall(void *regs)
             {
                 int i;
                 
-                for (i = 1; i < 15; i++)
+                for (i = 1; i < 12; i++)
                 {
                     ctx->r[i] = ((uint32_t *)regs)[i];
-                    D(bug("[KRN]      r%02d 0x%08x\n", i, ctx->r[i]));
+                    D(bug("[KRN]      r%02d: 0x%08x\n", i, ctx->r[i]));
                 }
-                thisTask->tc_SPReg = ctx->r[13];
+                ctx->ip = ((uint32_t *)regs)[12];
+                D(bug("[KRN] (ip) r12: 0x%08x\n", ctx->ip));
+                ctx->sp = ((uint32_t *)regs)[13];
+                D(bug("[KRN] (sp) r13: 0x%08x\n", ctx->sp));
+                ctx->lr = ((uint32_t *)regs)[14];
+                D(bug("[KRN] (lr) r14: 0x%08x\n", ctx->lr));
+                ctx->cpsr = ((uint32_t *)regs)[15];;
+                D(bug("[KRN]     cpsr: 0x%08x\n", ctx->cpsr));
+                thisTask->tc_SPReg = ctx->sp;
             }
         }
     
