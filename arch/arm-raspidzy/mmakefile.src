@@ -3,9 +3,11 @@ include $(TOP)/config/make.cfg
 
 #MM raspi-bootimage:                \
 #MM     linklibs-raspi-bootstrap    \
+#MM     linklibs-raspi-miniuart     \
 #MM     linklibs-raspi-bootconsole  \
 #MM     kernel-kernel-kobj          \
 #MM     kernel-exec-kobj
+
 
 # kernel.img has to have all things necessary to survive on it's own
 # this includes kernel, exec, dos, intuition, fat/sfs-handler, sdmmc.device, poseidon, raspiusb.device etc.
@@ -13,7 +15,7 @@ KLIBS   :=
 KDEVS   := 
 KHNDLRS := 
 KHIDDS  := 
-KRSRCS  :=
+KRSRCS  := kernel
 KHOOKS  :=
 
 KOBJS :=                                                            \
@@ -27,8 +29,10 @@ KOBJS :=                                                            \
 
 FILES :=
 
+
 %build_image mmake=raspi-bootimage imagename=kernel.img                                             \
 	files=$(FILES) ldflags=$(LDFLAGS) linkerscript=ldscript.lds entry=bootstrap map=yes dump=yes    \
-	uselibs="raspi-bootstrap raspi-bootconsole" objfiles=$(KOBJS)
+	uselibs="raspi-bootstrap raspi-miniuart raspi-bootconsole" objfiles=$(KOBJS)
 
 %common
+

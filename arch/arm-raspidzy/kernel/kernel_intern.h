@@ -3,6 +3,7 @@
     $Id$
 */
 
+#ifndef KERNEL_INTERN_H_
+#define KERNEL_INTERN_H_
 
-void con_InitRASPICON(void) {
-}
+#endif /*KERNEL_INTERN_H_*/

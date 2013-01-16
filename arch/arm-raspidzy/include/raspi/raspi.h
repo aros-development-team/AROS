@@ -7,11 +7,11 @@
 #define RASPI_H
 
 #ifndef RASPI_AUX_H
-#include <raspi/raspiaux.h>
+#include <raspi/peripherals/raspiaux.h>
 #endif
 
 #ifndef RASPI_GPIO_H
-#include <raspi/raspigpio.h>
+#include <raspi/peripherals/raspigpio.h>
 #endif
 
 #endif /*RASPI_H*/
