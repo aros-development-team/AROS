@@ -14,4 +14,8 @@
 #include <raspi/peripherals/raspigpio.h>
 #endif
 
+#ifndef RASPI_DMA_H
+#include <raspi/peripherals/raspidma.h>
+#endif
+
 #endif /*RASPI_H*/
