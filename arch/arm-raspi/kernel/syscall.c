@@ -27,22 +27,28 @@ extern char * __text_end;
 #define _CUSTOM NULL
 #endif
 
+/* r0 = passed to function, r1/r2 = temp */
 asm (".globl __intrhand_swi\n\t"
     ".type __intrhand_swi,%function\n"
     "__intrhand_swi:\n"
-    "           sub     sp, sp, #4             \n" // make space to store spsr
-    "           stmfd   sp!, {r0-r12, lr}      \n" // store registers to pass to c handler ..
+    "           sub     sp, sp, #3*4           \n" // make space to store spsr, stack pointer and link register
+    "           stmfd   sp!, {r0-r12}          \n" // store registers to pass to c handler ..
+    "           str     lr, [sp, #14*4]        \n"
     "           mrs     r2, spsr               \n" // store spsr above registers
-    "           str     r2, [sp, #14*4]        \n"
+    "           str     r2, [sp, #15*4]        \n"
     "           mov     r0, sp                 \n" // r0 = registers r0-r12 on the stack
-    "           mov     r1, sp                 \n"
-    "           add     r1, r1, #15*4          \n" // r1 = orig (callers) stack pointer
+    "           mov     r1, r0                 \n"
+    "           add     r1, r1, #16*4          \n" // r1 = orig (callers) stack pointer
+    "           str     r1, [sp, #13*4]        \n"
+    "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
+    "           ldr     r2, [sp, #2*4]         \n" // .. and r2 ..
     "           bl      handle_syscall         \n"
-    "           ldr     r2, [sp, #14*4]        \n" // restore spsr
+    "           ldr     lr, [sp, #14*4]        \n" // restore lr
+    "           ldr     r2, [sp, #15*4]        \n" // restore spsr
     "           msr     spsr_c, r2             \n"
-    "           ldmfd   sp!, {r0-r12, lr}      \n" // restore registers
-    "           add     sp, sp, #4             \n"
-    "           mov     pc, lr                 \n"
+    "           ldmfd   sp!, {r0-r12}          \n" // restore registers
+    "           add     sp, sp, #12            \n" // correct the stack pointer .. 
+    "           mov     pc, lr                 \n" // ..and return
 );
 
 void core_Cause(unsigned char n, unsigned int mask)
@@ -59,7 +65,7 @@ void core_Cause(unsigned char n, unsigned int mask)
     }
 }
 
-void handle_syscall(void *regs, void *tasksp)
+void handle_syscall(void *regs)
 {
     register unsigned int addr;
     register unsigned int swi_no;
@@ -72,7 +78,7 @@ void handle_syscall(void *regs, void *tasksp)
        we have been called from outwith the kernel's code (illegal!)
      */
 
-    addr = ((uint32_t *)regs)[13];
+    addr = ((uint32_t *)regs)[14];
     addr -= 4;
     swi_no = *((unsigned int *)addr) & 0x00ffffff;
 
@@ -87,15 +93,18 @@ void handle_syscall(void *regs, void *tasksp)
     {
         if ((thisTask = SysBase->ThisTask) != NULL)
         {
-            int i;
-            ctx = thisTask->tc_UnionETask.tc_ETask->et_RegFrame;
-            for (i = 1; i < 13; i++)
+            if ((ctx = thisTask->tc_UnionETask.tc_ETask->et_RegFrame) != NULL)
             {
-                ctx->r[i] = ((uint32_t *)regs)[i];
+                int i;
+                
+                for (i = 1; i < 15; i++)
+                {
+                    ctx->r[i] = ((uint32_t *)regs)[i];
+                    D(bug("[KRN]      r%02d 0x%08x\n", i, ctx->r[i]));
+                }
+                thisTask->tc_SPReg = ctx->r[13];
             }
-            thisTask->tc_SPReg = tasksp;
         }
-        
     
         switch (swi_no)
         {
