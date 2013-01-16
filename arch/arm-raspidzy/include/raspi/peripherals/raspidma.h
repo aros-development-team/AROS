@@ -30,14 +30,14 @@
 
 struct raspidmachannel {
     uint32_t cs;        // DMA Channel Control and Status
-    uint32_t conblk_ad  // DMA Channel Control Block Address
-    uint32_t ti         // DMA Channel CB Word 0 (Transfer Information)
-    uint32_t source_ad  // DMA Channel CB Word 1 (Source Address)
-    uint32_t dest_ad    // DMA Channel CB Word 2 (Destination Address)
-    uint32_t txfr_len   // DMA Channel CB Word 3 (Transfer Length)
-    uint32_t stride     // DMA Channel CB Word 4 (2D Stride)
-    uint32_t nextconbk  // DMA Channel CB Word 5 (Next CB Address)
-    uint32_t debug      // DMA Channel Debug
+    uint32_t conblk_ad; // DMA Channel Control Block Address
+    uint32_t ti;        // DMA Channel CB Word 0 (Transfer Information)
+    uint32_t source_ad; // DMA Channel CB Word 1 (Source Address)
+    uint32_t dest_ad;   // DMA Channel CB Word 2 (Destination Address)
+    uint32_t txfr_len;  // DMA Channel CB Word 3 (Transfer Length)
+    uint32_t stride;    // DMA Channel CB Word 4 (2D Stride)
+    uint32_t nextconbk; // DMA Channel CB Word 5 (Next CB Address)
+    uint32_t debug;     // DMA Channel Debug
 }__attribute__((packed));;
 
 struct raspidmastatus {

@@ -8,9 +8,12 @@ SECTIONS
 
     . = 0x4000;
     SysBase = .;
-    BootMsg = .;
 
     . = 0x5000;
+    .bss ALIGN(0x10) : { *(.bss) }
+    BootMsg = .;
+
+    . = 0x6000;
 
     .bootheap ALIGN(0x1000) :
     {
@@ -40,10 +43,7 @@ SECTIONS
     }
     .rodata1 : { *(.rodata1) }
 
-    /* This should cause angry complaints if .data exists
-     * We don't want .bss, and we don't need it.
-    */
-    .bss                        : { *(.bss) }
+
 
     /* This should cause angry complaints if .data exists
      * We don't want .data, and we don't need it.

@@ -5,6 +5,7 @@ include $(TOP)/config/make.cfg
 #MM     linklibs-raspi-bootstrap    \
 #MM     linklibs-raspi-miniuart     \
 #MM     linklibs-raspi-bootconsole  \
+#MM     kernel-hidd-raspigfx-kobj   \
 #MM     kernel-kernel-kobj          \
 #MM     kernel-exec-kobj
 
@@ -14,7 +15,7 @@ include $(TOP)/config/make.cfg
 KLIBS   := exec
 KDEVS   := 
 KHNDLRS := 
-KHIDDS  := 
+KHIDDS  := raspigfx
 KRSRCS  := kernel
 KHOOKS  :=
 
