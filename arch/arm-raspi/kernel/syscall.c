@@ -93,11 +93,12 @@ void handle_syscall(void *regs)
     {
         if ((thisTask = SysBase->ThisTask) != NULL)
         {
-            D(bug("[KRN] SWI invoked in '%s', ExceptionContext @ 0x%p\n", thisTask->tc_Node.ln_Name, ctx));
+            D(bug("[KRN] SWI invoked in '%s'", thisTask->tc_Node.ln_Name));
             if ((ctx = thisTask->tc_UnionETask.tc_ETask->et_RegFrame) != NULL)
             {
                 int i;
                 
+                D(bug(", ExceptionContext @ 0x%p", ctx));
                 for (i = 1; i < 12; i++)
                 {
                     ctx->r[i] = ((uint32_t *)regs)[i];
@@ -113,6 +114,7 @@ void handle_syscall(void *regs)
                 D(bug("[KRN]     cpsr: 0x%08x\n", ctx->cpsr));
                 thisTask->tc_SPReg = ctx->sp;
             }
+            D(bug("\n"));
         }
     
         switch (swi_no)
