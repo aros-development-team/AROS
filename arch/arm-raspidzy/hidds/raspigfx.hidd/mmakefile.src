@@ -1,0 +1,11 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES	:=	\
+	raspigfx_init \
+	raspigfxclass \
+	bitmap
+
+%build_module mmake=kernel-hidd-raspigfx \
+  modname=raspigfx modtype=hidd \
+  files=$(FILES) uselibs="oop"
