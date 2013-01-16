@@ -46,9 +46,14 @@ void IRQ_disable(ULONG irq)
 
 void __intrhand_undef(void)
 {
+    register unsigned int addr;
+
     *gpioGPSET0 = 1<<16; // LED OFF
 
+    asm volatile("mov %[addr], lr" : [addr] "=r" (addr) );
+
     D(bug("[KRN] ## UNDEF ##\n"));
+    D(bug("[KRN] Instruction address: 0x%p\n", (addr - 4)));
     while(1)
     {
         asm("mov r0,r0\n\t");
