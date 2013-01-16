@@ -93,6 +93,7 @@ void handle_syscall(void *regs)
     {
         if ((thisTask = SysBase->ThisTask) != NULL)
         {
+            D(bug("[KRN] SWI invoked in '%s', ExceptionContext @ 0x%p\n", thisTask->tc_Node.ln_Name, ctx));
             if ((ctx = thisTask->tc_UnionETask.tc_ETask->et_RegFrame) != NULL)
             {
                 int i;

@@ -15,6 +15,7 @@
 #include <proto/kernel.h>
 
 #include "kernel_intern.h"
+#include "kernel_debug.h"
 
 #include "intr.h"
 
@@ -45,12 +46,7 @@ void __intrhand_undef(void)
 
     asm volatile("mov %[addr], lr" : [addr] "=r" (addr) );
 
-    D(bug("[KRN] ## UNDEF ##\n"));
-    D(bug("[KRN] Instruction address: 0x%p\n", (addr - 4)));
-    while(1)
-    {
-        asm("mov r0,r0\n\t");
-    }
+    krnPanic(KernelBase, "CPU Unknown Instruction @ 0x%p", (addr - 4));
 }
 
 void __intrhand_reset(void)
@@ -91,6 +87,7 @@ __attribute__ ((interrupt ("FIQ"))) void __intrhand_fiq(void)
     }
 }
 
+#ifndef RASPI_VIRTMEMSUPPORT
 __attribute__ ((interrupt ("ABORT"))) void __intrhand_dataabort(void)
 {
     register unsigned int addr, far;
@@ -100,18 +97,12 @@ __attribute__ ((interrupt ("ABORT"))) void __intrhand_dataabort(void)
 
     *gpioGPSET0 = 1<<16; // LED OFF
 
-    D(bug("[KRN] ## DATA ABORT ##\n"));
-    D(bug("[KRN] Instruction address: 0x%p  fault address: 0x%p\n", (addr - 4), far));
-
     /* Routine terminates by returning to LR-4, which is the instruction
      * after the aborted one
      * GCC doesn't properly deal with data aborts in its interrupt
      * handling - no option to return to the failed instruction
      */
-    while(1)
-    {
-        asm("mov r0,r0\n\t");
-    }
+    krnPanic(KernelBase, "CPU Data Abort @ 0x%p, fault address: 0x%p", (addr - 4), far);
 }
 
 /* Return to this function after a prefetch abort */
@@ -122,14 +113,11 @@ __attribute__ ((interrupt ("ABORT"))) void __intrhand_prefetchabort(void)
 
     *gpioGPSET0 = 1<<16; // LED OFF
 
-    D(bug("[KRN] ## PREFETCH ABORT ##\n"));
-    D(bug("[KRN] Instruction address: 0x%p\n", addr));
-
-    while(1)
-    {
-        asm("mov r0,r0\n\t");
-    }
+    krnPanic(KernelBase, "CPU Prefetch Abort @ 0x%p", (addr - 4));
 }
+#else
+#warning "TODO: Implement support for retrieving pages from medium, and reattempting access"
+#endif
 
 /* linker exports */
 extern void *__intvecs_start, *__intvecs_end;
