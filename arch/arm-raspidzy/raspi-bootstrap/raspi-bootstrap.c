@@ -3,6 +3,10 @@
     $Id$
 */
 
+#include <aros/kernel.h>
+#include <exec/types.h>
+#include <stdint.h>
+
 #include <raspi/raspi.h>
 
 asm("	.section .aros.startup              \n"
@@ -13,7 +17,14 @@ asm("	.section .aros.startup              \n"
 "		b       coldboot                    \n"
 );
 
-extern void con_InitRASPI(void);
+void bprintf(const char *format, ...);
+extern void ser_InitMINIUART(void);
+extern void ser_PutCMINIUART(uint32_t c);
+extern void con_InitRASPICON(void);
+
+void coldboot(void);
+void warmboot(void);
+void init_bootheap(void);
 
 /*
     We're alive...
@@ -23,42 +34,37 @@ extern void con_InitRASPI(void);
         -Bootstrap code has set us up a boot time stack at 0x8000
         -We are running on a flat physical memory layout
         -We don't know any of the system clocks
-        -We don't have any memory expcept the bootstack
+        -We don't have any memory expcept the bootstack and bootheap
         -We dont have any interrupt vectors and interrupts are disabled
 */
 
 void coldboot(void) {
 
-    /*
-        Hackish access to miniuart as we REALLY don't know any of the system clocks
-    */
-    volatile struct raspiaux *raspiaux= RASPIAUX_PHYSBASE;
-
-    raspiaux->enables = 1;
-    raspiaux->mu_ier_reg = 0;
-    raspiaux->mu_iir_reg = 0xc6;
-    raspiaux->mu_lcr_reg = 0;
-    raspiaux->mu_mcr_reg = 0;
-    raspiaux->mu_cntl_reg = 0;
-    raspiaux->mu_baud_reg = 270;
-
-    volatile struct raspigpio *raspigpio= RASPIGPIO_PHYSBASE;
-
-    raspigpio->gpfsel1 &= ~(GPIOfsel(14, GPIOmask) | GPIOfsel(15, GPIOmask));
-    raspigpio->gpfsel1 |= (GPIOfsel(14, GPIOalt5) | GPIOfsel(15, GPIOalt5));
+    init_bootheap();
 
     /*
         Aqcuire system clocks, needed for peripheral usage
+        FIXME: Hunt for the Amba registers, they are there somewhere... or use the mailbox if nothing else
     */
+
+    ser_InitMINIUART();
+    con_InitRASPICON();
 
     /*
         Aqcuire system memory layout
     */
 
-    con_InitRASPI();
+    warmboot();
+}
+
+void warmboot(void) {
+
+    /*
+        We have our own "kprintf" while kernel is dead
+    */
+    bprintf("Welcome to warmboot number %d\n", 69);
     while(1);
 }
 
-void warmboot() {
-    while(1);
+void init_bootheap(void) {
 }

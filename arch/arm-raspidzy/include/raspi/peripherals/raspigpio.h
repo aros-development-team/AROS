@@ -26,6 +26,13 @@ enum {
 #define GPIOfsel(n,function) \
     function<<(3*(n%10))
 
+enum {
+    GPIOpullnone = 0,
+    GPIOpulldown,
+    GPIOpullup,
+    GPIOpullmask
+};
+
 struct raspigpio {
     uint32_t gpfsel0;
     uint32_t gpfsel1;
