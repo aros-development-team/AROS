@@ -29,6 +29,9 @@ void ser_InitMINIUART(void) {
         We need to wait for the circuitry to have at least one clock cycle to fetch the gppud register content
         and then another for it to fetch the gppudclk content and once more when clearing gppudclk to be safe
         as we have no way of knowing who and when will call it next time.
+
+        When creating gpio.resource do these waits so that other tasks can run in the meantime,
+        its 3x(at least 4x)x150 clock cycles after all (check the dump)
     */
 
     volatile struct raspigpio *raspigpio= RASPIGPIO_PHYSBASE;
