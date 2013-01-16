@@ -98,7 +98,7 @@ void handle_syscall(void *regs)
             {
                 int i;
                 
-                D(bug(", ExceptionContext @ 0x%p", ctx));
+                D(bug(", ExceptionContext @ 0x%p\n", ctx));
                 for (i = 1; i < 12; i++)
                 {
                     ctx->r[i] = ((uint32_t *)regs)[i];
@@ -111,7 +111,7 @@ void handle_syscall(void *regs)
                 ctx->lr = ((uint32_t *)regs)[14];
                 D(bug("[KRN] (lr) r14: 0x%08x\n", ctx->lr));
                 ctx->cpsr = ((uint32_t *)regs)[15];;
-                D(bug("[KRN]     cpsr: 0x%08x\n", ctx->cpsr));
+                D(bug("[KRN]     cpsr: 0x%08x", ctx->cpsr));
                 thisTask->tc_SPReg = ctx->sp;
             }
             D(bug("\n"));
