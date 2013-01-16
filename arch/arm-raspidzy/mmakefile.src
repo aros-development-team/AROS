@@ -5,6 +5,7 @@ include $(TOP)/config/make.cfg
 #MM     linklibs-raspi-bootstrap    \
 #MM     linklibs-raspi-miniuart     \
 #MM     linklibs-raspi-bootconsole  \
+#MM     linklibs-raspi-memorybus    \
 #MM     kernel-hidd-raspigfx-kobj   \
 #MM     kernel-kernel-kobj          \
 #MM     kernel-exec-kobj            \
@@ -34,7 +35,7 @@ FILES :=
 
 %build_image mmake=raspi-bootimage imagename=kernel.img                                             \
 	files=$(FILES) ldflags=$(LDFLAGS) linkerscript=ldscript.lds entry=bootstrap map=yes dump=yes    \
-	uselibs="raspi-bootstrap raspi-miniuart raspi-bootconsole" objfiles=$(KOBJS)
+	uselibs="raspi-bootstrap raspi-miniuart raspi-bootconsole raspi-memorybus" objfiles=$(KOBJS)
 
 %common
 
