@@ -27,19 +27,21 @@ extern char * __text_end;
 #define _CUSTOM NULL
 #endif
 
+#define DREGS(x)
+
 /* r0 = passed to function, r1/r2 = temp */
 asm (".globl __intrhand_swi\n\t"
     ".type __intrhand_swi,%function\n"
     "__intrhand_swi:\n"
     "           sub     sp, sp, #3*4           \n" // make space to store spsr, stack pointer and link register
-    "           stmfd   sp!, {r0-r12}          \n" // store registers to pass to c handler ..
+    "           stmfd   sp!, {r0-r11}          \n" // store registers to pass to c handler ..
     "           str     lr, [sp, #14*4]        \n"
     "           mrs     r2, spsr               \n" // store spsr above registers
     "           str     r2, [sp, #15*4]        \n"
     "           mov     r0, sp                 \n" // r0 = registers r0-r12 on the stack
-    "           mov     r1, r0                 \n"
-    "           add     r1, r1, #16*4          \n" // r1 = orig (callers) stack pointer
-    "           str     r1, [sp, #13*4]        \n"
+    "           str     ip, [sp, #13*4]        \n" // store passed in "callers" stack pointer ..
+    "           ldr     ip, [ip, #-4]           \n" // restore r12 from the "callers" stack
+    "           str     ip, [sp, #12*4]        \n" // and store it 
     "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
     "           ldr     r2, [sp, #2*4]         \n" // .. and r2 ..
     "           mov     fp, #0                 \n" // clear fp(??)
@@ -47,7 +49,7 @@ asm (".globl __intrhand_swi\n\t"
     "           ldr     lr, [sp, #14*4]        \n" // restore lr
     "           ldr     r2, [sp, #15*4]        \n" // restore spsr
     "           msr     spsr_c, r2             \n"
-    "           ldmfd   sp!, {r0-r12}          \n" // restore registers
+    "           ldmfd   sp!, {r0-r11}          \n" // restore registers
     "           add     sp, sp, #12            \n" // correct the stack pointer .. 
     "           movs    pc, lr                 \n" // ..and return
 );
@@ -99,20 +101,21 @@ void handle_syscall(void *regs)
             {
                 int i;
                 
-                D(bug(", ExceptionContext @ 0x%p\n", ctx));
+                D(bug(", ExceptionContext @ 0x%p", ctx));
+                DREGS(bug("\n"));
                 for (i = 0; i < 12; i++)
                 {
                     ctx->r[i] = ((uint32_t *)regs)[i];
-                    D(bug("[KRN]      r%02d: 0x%08x\n", i, ctx->r[i]));
+                    DREGS(bug("[KRN]      r%02d: 0x%08x\n", i, ctx->r[i]));
                 }
                 ctx->ip = ((uint32_t *)regs)[12];
-                D(bug("[KRN] (ip) r12: 0x%08x\n", ctx->ip));
+                DREGS(bug("[KRN] (ip) r12: 0x%08x\n", ctx->ip));
                 ctx->sp = ((uint32_t *)regs)[13];
-                D(bug("[KRN] (sp) r13: 0x%08x\n", ctx->sp));
+                DREGS(bug("[KRN] (sp) r13: 0x%08x\n", ctx->sp));
                 ctx->lr = ((uint32_t *)regs)[14];
-                D(bug("[KRN] (lr) r14: 0x%08x\n", ctx->lr));
+                DREGS(bug("[KRN] (lr) r14: 0x%08x\n", ctx->lr));
                 ctx->cpsr = ((uint32_t *)regs)[15];;
-                D(bug("[KRN]     cpsr: 0x%08x", ctx->cpsr));
+                DREGS(bug("[KRN]     cpsr: 0x%08x", ctx->cpsr));
                 thisTask->tc_SPReg = ctx->sp;
             }
             D(bug("\n"));
