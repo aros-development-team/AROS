@@ -21,6 +21,8 @@
 
 #include "vc_fb.h"
 
+#define DBOOT(x)
+
 extern void mem_init(void);
 
 static unsigned char __stack[BOOT_STACK_SIZE] __attribute__((used,aligned(16)));
@@ -187,8 +189,8 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 
     kprintf("[BOOT] AROS %s\n", bootstrapName);
 
-    asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
-    kprintf("[BOOT] control register init:%08x, now:%08x\n", initcr, tmp);
+    DBOOT(asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
+    kprintf("[BOOT] control register init:%08x, now:%08x\n", initcr, tmp);)
 
     parse_atags(atags);
 
@@ -253,7 +255,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     				/* get text length */
     				len = AROS_BE2LONG(*(uint32_t*)file);
     				/* display the file name */
-    				kprintf("[BOOT]    %s ", filename);
+    				kprintf("[BOOT]    %s\n", filename);
 
     				file += len + 5;
 
@@ -325,7 +327,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     				/* get text length */
     				len = AROS_BE2LONG(*(uint32_t*)file);
     				/* display the file name */
-    				kprintf("[BOOT]    %s ", filename);
+    				kprintf("[BOOT]    %s\n", filename);
 
     				file += len + 5;
 

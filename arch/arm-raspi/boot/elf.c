@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DELF(x)
+
 uint32_t        int_shnum;
 uint32_t        int_shstrndx;
 
@@ -83,7 +85,7 @@ int getElfSize(void *elf_file, uint32_t *size_rw, uint32_t *size_ro)
 	uint32_t s_ro = 0;
 	uint32_t s_rw = 0;
 
-	kprintf("[BOOT] getElfSize(%p)", eh);
+	DELF(kprintf("[BOOT:ELF] getElfSize(%p)", eh));
 
 	if (checkHeader(eh))
 	{
@@ -114,7 +116,7 @@ int getElfSize(void *elf_file, uint32_t *size_rw, uint32_t *size_ro)
 			}
 		}
 	}
-	kprintf(": ro=%p, rw=%p\n", s_ro, s_rw);
+	DELF(kprintf(": ro=%p, rw=%p\n", s_ro, s_rw));
 
 	if (size_ro)
 		*size_ro = s_ro;
@@ -242,7 +244,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 		{
 		case SHN_UNDEF:
 			kprintf
-			("[ELF Loader] Undefined symbol '%s' in section '%s'\n",
+			("[BOOT:ELF] Undefined symbol '%s' in section '%s'\n",
 					(char *)((uint32_t) sh[shsymtab->link].addr) +
 					sym->name,
 					(char *)((uint32_t) sh[eh->shstrndx].addr) +
@@ -251,7 +253,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 
 		case SHN_COMMON:
 			kprintf
-			("[ELF Loader] COMMON symbol '%s' in section '%s'\n",
+			("[BOOT:ELF] COMMON symbol '%s' in section '%s'\n",
 					(char *)((uint32_t) sh[shsymtab->link].addr) +
 					sym->name,
 					(char *)((uint32_t) sh[eh->shstrndx].addr) +
@@ -328,7 +330,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 			break;
 
 		default:
-			kprintf("[BOOT] Unknown relocation %d in ELF file\n",
+			kprintf("[BOOT:ELF] Unknown relocation %d in ELF file\n",
 					ELF32_R_TYPE(rel->info));
 			return 0;
 		}
@@ -343,7 +345,7 @@ int loadElf(void *elf_file)
 	uint32_t s_ro = 0;
 	uint32_t s_rw = 0;
 
-	kprintf("[BOOT] loadElf(%p)\n", eh);
+	DELF(kprintf("[BOOT] loadElf(%p)\n", eh));
 
 	if (checkHeader(eh))
 	{
@@ -369,10 +371,10 @@ int loadElf(void *elf_file)
 				{
 					if (sh[i].size)
 					{
-						kprintf("[BOOT] ELF: %s section loaded at %p (Virtual addr: %p)\n",
+						DELF(kprintf("[BOOT:ELF] %s section loaded at %p (Virtual addr: %p)\n",
 								sh[i].flags & SHF_WRITE ? "RW":"RO",
 										sh[i].addr,
-										sh[i].addr + virtoffset);
+										sh[i].addr + virtoffset));
 					}
 				}
 			}
