@@ -71,7 +71,13 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
 
 static int RasPi_Init(LIBBASETYPEPTR LIBBASE)
 {
+
+    
+
+
+
     struct RasPiGfx_staticdata *xsd = &LIBBASE->rpisd;
+
     struct GfxBase *GfxBase;
     ULONG err;
     int res = FALSE;
@@ -80,12 +86,6 @@ static int RasPi_Init(LIBBASETYPEPTR LIBBASE)
     	return FALSE;
 
     InitSemaphore(&xsd->framebufferlock);
-    InitSemaphore(&xsd->HW_acc);
-
-//    if (!initRasPiGfxHW(&xsd->data))
-//    	return FALSE;
-
-    D(bug("[VESA] Init: Everything OK, installing driver\n"));
 
     /*
      * Open graphics.library ourselves because we will close it

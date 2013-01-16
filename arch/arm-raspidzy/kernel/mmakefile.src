@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES   := kernel_globals kernel_debug kernel_panic kernel_cpu kernel_scheduler mm_linear get_bootinfo
+FILES   := kernel_globals kernel_debug kernel_panic kernel_cpu kernel_scheduler mm_linear getbootinfo
 MAINDIR := rom/kernel
 
 USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) -isystem $(GENINCDIR) $(KERNEL_INCLUDES)

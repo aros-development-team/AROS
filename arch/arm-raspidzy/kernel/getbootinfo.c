@@ -42,7 +42,7 @@ AROS_LH0I(struct TagItem *, KrnGetBootInfo,
     AROS_LIBFUNC_INIT
 
     D(bug("[Kernel] KrnGetBootInfo()\n"));
-    return 0;
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 }
