@@ -6,7 +6,7 @@
 #include <exec/types.h>
 #include <stdint.h>
 
-#include <raspi/raspi.h>
+#include <raspi_transitional/raspi.h>
 
 
 
