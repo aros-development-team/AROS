@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define DEBUG 0
+
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
@@ -48,7 +50,9 @@ AROS_LH0I(void, KrnSti,
 {
     AROS_LIBFUNC_INIT
 
-    asm volatile("cpsie i");
+    D(bug("[KRN] KrnSti()\n"));
+
+    asm volatile("cpsie i\n");
 
     AROS_LIBFUNC_EXIT
 }

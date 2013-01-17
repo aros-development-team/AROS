@@ -17,29 +17,33 @@
 #include "kernel_intern.h"
 #include "kernel_debug.h"
 
+#define IRQBANK_POINTER(bank) ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
+
 void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
 {
     int bank = IRQ_BANK(irq);
-    unsigned int val;
-    volatile unsigned int *reg = ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL);
+    unsigned int val, reg;
+    
+    reg = IRQBANK_POINTER(bank);
 
     D(bug("[KRN] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
-    val = *(reg);
+    val = *((volatile unsigned int *)reg);
     val |= IRQ_MASK(irq);
-    *(reg) = val;
+    *((volatile unsigned int *)reg) = val;
 }
 
 void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
 {
     int bank = IRQ_BANK(irq);
-    unsigned int val;
-    volatile unsigned int *reg = ((bank == 0) ? GPUIRQ_DIBL0 : (bank == 1) ? GPUIRQ_DIBL1 : ARMIRQ_DIBL);
+    unsigned int val, reg;
+
+    reg = IRQBANK_POINTER(bank);
 
     D(bug("[KRN] Dissabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
-    val = *(reg);
+    val = *((volatile unsigned int *)reg);
     val |= IRQ_MASK(irq);
-    *(reg) = val;
+    *((volatile unsigned int *)reg) = val;
 } 
 
 void __intrhand_undef(void)
