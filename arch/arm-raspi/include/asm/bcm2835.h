@@ -12,6 +12,7 @@
 
 #define PL110_BASE          0x10120000
 #define VIRTIO_BASE         0x20000000                  // Peripheral base address
+#define ARMTIMER_BASE       (VIRTIO_BASE + 0x00b000)
 #define SYSTIMER_BASE       (VIRTIO_BASE + 0x003000)
 #define GPIO_PADS           (VIRTIO_BASE + 0x100000)
 #define CLOCK_BASE          (VIRTIO_BASE + 0x101000)
@@ -20,6 +21,29 @@
 #define SPI0_BASE           (VIRTIO_BASE + 0x204000)
 #define BSC0_BASE           (VIRTIO_BASE + 0x205000)
 #define GPIO_PWM            (VIRTIO_BASE + 0x20C000)
+
+#define ARMTIMER_LOAD       (ARMTIMER_BASE + 0x400)
+#define ARMTIMER_VALUE      (ARMTIMER_BASE + 0x404)
+#define ARMTIMER_CONTROL    (ARMTIMER_BASE + 0x408)
+#define ARMTIMER_IRQ_ACK    (ARMTIMER_BASE + 0x40c)
+#define ARMTIMER_IRQ_RAW    (ARMTIMER_BASE + 0x410)
+#define ARMTIMER_IRQ_MSK    (ARMTIMER_BASE + 0x414)
+#define ARMTIMER_RELOAD     (ARMTIMER_BASE + 0x418)
+#define ARMTIMER_PREDIV     (ARMTIMER_BASE + 0x41c)
+#define ARMTIMER_FRC        (ARMTIMER_BASE + 0x420)
+
+#define SYSTIMER_CS         (SYSTIMER_BASE + 0x00)
+#define SYSTIMER_CLO        (SYSTIMER_BASE + 0x04)
+#define SYSTIMER_CHI        (SYSTIMER_BASE + 0x08)
+#define SYSTIMER_C0         (SYSTIMER_BASE + 0x0c)
+#define SYSTIMER_C1         (SYSTIMER_BASE + 0x10)
+#define SYSTIMER_C2         (SYSTIMER_BASE + 0x14)
+#define SYSTIMER_C3         (SYSTIMER_BASE + 0x18)
+
+#define SYSTIMER_M0         0x01
+#define SYSTIMER_M1         0x02
+#define SYSTIMER_M2         0x04
+#define SYSTIMER_M3         0x08
 
 #define GPIO_PADS_0_27      0x002c
 #define GPIO_PADS_28_45     0x0030
