@@ -2,6 +2,6 @@
 include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := $(call WILDCARD, peripherals/*.h)
-%copy_includes mmake=compiler-includes path=raspi/peripherals dir=peripherals
+%copy_includes mmake=compiler-includes path=raspi_transitional/peripherals dir=peripherals
 
 %common
