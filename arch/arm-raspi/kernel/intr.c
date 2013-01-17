@@ -17,25 +17,29 @@
 #include "kernel_intern.h"
 #include "kernel_debug.h"
 
-#include "intr.h"
-
-#define IRQ_MASK(irq)   (1 << (irq & 31))
-#define IRQ_BANK(irq)   (irq >> 5)
-
 void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
 {
     int bank = IRQ_BANK(irq);
-    volatile ULONG *reg = ((bank == 0) ? IRQ_ENBL3 : (bank == 1) ? IRQ_ENBL1 : IRQ_ENBL2);
+    unsigned int val;
+    volatile unsigned int *reg = ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL);
 
-    *reg |= IRQ_MASK(irq);
+    D(bug("[KRN] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
+    val = *(reg);
+    val |= IRQ_MASK(irq);
+    *(reg) = val;
 }
 
 void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
 {
     int bank = IRQ_BANK(irq);
-    volatile ULONG *reg = ((bank == 0) ? IRQ_DIBL3 : (bank == 1) ? IRQ_DIBL1 : IRQ_DIBL2);
+    unsigned int val;
+    volatile unsigned int *reg = ((bank == 0) ? GPUIRQ_DIBL0 : (bank == 1) ? GPUIRQ_DIBL1 : ARMIRQ_DIBL);
 
-    *reg |= IRQ_MASK(irq);
+    D(bug("[KRN] Dissabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
+
+    val = *(reg);
+    val |= IRQ_MASK(irq);
+    *(reg) = val;
 } 
 
 void __intrhand_undef(void)
@@ -148,7 +152,7 @@ void core_SetupIntr(void)
     )
 
     D(bug("[KRN] Disabling IRQs\n"));
-    *(volatile ULONG *)IRQ_DIBL1 = ~0;
-    *(volatile ULONG *)IRQ_DIBL2 = ~0; 
-    *(volatile ULONG *)IRQ_DIBL3 = ~0;
+    *(volatile ULONG *)ARMIRQ_DIBL = ~0;
+    *(volatile ULONG *)GPUIRQ_DIBL0 = ~0; 
+    *(volatile ULONG *)GPUIRQ_DIBL1 = ~0;
 }
