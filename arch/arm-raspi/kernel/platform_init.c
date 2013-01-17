@@ -35,9 +35,9 @@ static int PlatformInit(struct KernelBase *KernelBase)
     // clock operates at 1000000hz
     stc = *((volatile unsigned int *)(SYSTIMER_CLO));
     stc += 20000; // (1000000 / 50)
+    *((volatile unsigned int *)(SYSTIMER_CS)) = (1 << 3);
     *((volatile unsigned int *)(SYSTIMER_C0 + (VBLANK_TIMER * 4))) = stc;
-    *((volatile unsigned int *)(SYSTIMER_CS)) = (1 << VBLANK_TIMER);
-
+    
     ictl_enable_irq(IRQ_TIMER0 + VBLANK_TIMER, KernelBase);
 
     D(bug("[Kernel] VBlank timer enabled\n"));
