@@ -23,6 +23,13 @@
 /* Internals of this structure are host-specific, we don't know them here */
 struct HostInterface;
 
+struct SupervisorAlertTask
+{
+    struct Task *   sat_Task;           /* Task that tries to display supervisor-level alerts    */
+    BOOL            sat_IsAvailable;
+    IPTR            sat_Params[2];
+};
+
 /* A private portion of ExecBase */
 struct IntExecBase
 {
@@ -40,8 +47,7 @@ struct IntExecBase
     struct MsgPort *ServicePort;                /* Message port for service task                         */
     struct MinList TaskStorageSlots;            /* List of free slots, always one element with next slot */
     struct Exec_PlatformData PlatformData;      /* Platform-specific stuff                               */
-    struct Task *SupervisorAlertTask;           /* Task that tries to display supervisor-level alerts    */
-    IPTR SupervisorAlertTaskParams[2];
+    struct SupervisorAlertTask SAT;
     char   AlertBuffer[ALERT_BUFFER_SIZE];      /* Buffer for alert text                                 */
 };
 

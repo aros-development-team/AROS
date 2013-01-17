@@ -10,6 +10,7 @@
 #include <exec/execbase.h>
 #include <proto/kernel.h>
 
+#include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 
@@ -42,14 +43,26 @@ void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APT
 {
     D(bug("[SystemAlert] Code 0x%08X, type %d, data 0x%p\n", alertNum, type, data));
 
-    if (PrivExecBase(SysBase)->SupervisorAlertTask && !(alertNum & AT_DeadEnd))
+    if ((SysBase->ThisTask == PrivExecBase(SysBase)->SAT.sat_Task) &&
+            (PrivExecBase(SysBase)->SAT.sat_Params[1] != (IPTR) NULL))
     {
-        /* Task is available, use it */
+        /* SupervisorAlertTask crashed when trying to show crash information for another task */
 
-        PrivExecBase(SysBase)->SupervisorAlertTaskParams[0] = alertNum;
-        PrivExecBase(SysBase)->SupervisorAlertTaskParams[1] = (IPTR)SysBase->ThisTask;
+        struct Task * t = (struct Task*)PrivExecBase(SysBase)->SAT.sat_Params[1];
+        ULONG alertNum = PrivExecBase(SysBase)->SAT.sat_Params[0];
+        struct IntETask * iet = GetIntETask(t);
 
-        Signal(PrivExecBase(SysBase)->SupervisorAlertTask, SIGF_SINGLE);
+        Alert_DisplayKrnAlert(t, alertNum | AT_DeadEnd, iet->iet_AlertLocation, iet->iet_AlertStack,
+                            iet->iet_AlertType, (APTR)&iet->iet_AlertData, SysBase);
+    }
+    else if (PrivExecBase(SysBase)->SAT.sat_IsAvailable && !(alertNum & AT_DeadEnd))
+    {
+        /* SupervisorAlertTask is available, use it */
+
+        PrivExecBase(SysBase)->SAT.sat_Params[0] = alertNum;
+        PrivExecBase(SysBase)->SAT.sat_Params[1] = (IPTR)SysBase->ThisTask;
+
+        Signal(PrivExecBase(SysBase)->SAT.sat_Task, SIGF_SINGLE);
     }
     else
     {
