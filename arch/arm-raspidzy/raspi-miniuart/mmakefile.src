@@ -1,8 +1,0 @@
-#$Id$
-include $(TOP)/config/make.cfg
-
-FILES := raspi-miniuart
-
-%build_linklib mmake=linklibs-raspi-miniuart libname=raspi-miniuart files="$(FILES)" libdir=$(GENDIR)/lib
-
-%common
