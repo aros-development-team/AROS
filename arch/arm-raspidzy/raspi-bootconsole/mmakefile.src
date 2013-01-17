@@ -1,8 +1,0 @@
-#$Id$
-include $(TOP)/config/make.cfg
-
-FILES := raspi-bootconsole
-
-%build_linklib mmake=linklibs-raspi-bootconsole libname=raspi-bootconsole files="$(FILES)" libdir=$(GENDIR)/lib
-
-%common
