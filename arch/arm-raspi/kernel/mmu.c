@@ -20,23 +20,29 @@ unsigned int pagetable0[32]	__attribute__ ((aligned (16384)));
 
 void core_SetupMMU(void)
 {
-    unsigned int x;
+    unsigned int page;
     unsigned int pt_addr = (unsigned int) &pagetable;
     unsigned int pt0_addr = (unsigned int) &pagetable0;
     register unsigned int control;
 
     D(bug("[Kernel] core_SetupMMU: Creating MMU pagetable[0] entries for 4GB address space\n"));
 
-#warning "TODO: lookup optimal mmu table settings for raspi memory"
-    for(x = 0; x < 4096; x ++)
+    for(page = 0; page < 4096; page ++)
     {
-        pagetable[x] = (x>64)?(x<<20 | PAGE_FL_S_BIT | PAGE_C_BIT | PAGE_SECTION):PAGE_TRANSLATIONFAULT;
+        unsigned int pageflags = PAGE_TRANSLATIONFAULT;
+        if (page > 64)
+        {
+            pageflags = (page << 20) | PAGE_FL_S_BIT | PAGE_SECTION;
+            if ((page < VIRTIO_BASE) || (page > (VIRTIO_BASE + 0x2000000)))
+                pageflags |= PAGE_C_BIT;
+        }
+        pagetable[page] = pageflags;
     }
 
     D(bug("[Kernel] core_SetupMMU: Creating MMU pagetable[1] entries for 64MB address space\n"));
-    for(x=0; x<64; x++)
+    for(page = 0; page < 64; page++)
     {
-            pagetable0[x] = x<<20 | PAGE_FL_S_BIT | PAGE_C_BIT | PAGE_SECTION;
+            pagetable0[page] = (page << 20) | PAGE_FL_S_BIT | PAGE_C_BIT | PAGE_SECTION;
     }
 
     /* Invalidate caches */
