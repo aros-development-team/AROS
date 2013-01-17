@@ -33,24 +33,32 @@ extern char * __text_end;
 asm (".globl __intrhand_swi\n\t"
     ".type __intrhand_swi,%function\n"
     "__intrhand_swi:\n"
-    "           sub     sp, sp, #4*4           \n" // make space to store spsr, stack pointer and link register
-    "           stmfd   sp!, {r0-r11}          \n" // store registers to pass to c handler ..
-    "           str     lr, [sp, #14*4]        \n"
-    "           mrs     r2, spsr               \n" // store spsr above registers
-    "           str     r2, [sp, #15*4]        \n"
+    "           sub     sp, sp, #5*4           \n" // make space to store callers cpsr, pc, lr, sp, and ip
+    "           stmfd   sp!, {r0-r11}          \n" // store untouched registers to pass to c handler ..
     "           mov     r0, sp                 \n" // r0 = registers r0-r12 on the stack
-    "           str     ip, [sp, #13*4]        \n" // store passed in "callers" stack pointer ..
-    "           ldr     ip, [ip, #-4]           \n" // restore r12 from the "callers" stack
-    "           str     ip, [sp, #12*4]        \n" // and store it 
+    "           mrs     r2, spsr               \n" // store spsr above registers
+    "           str     r2, [sp, #16*4]        \n"
+    "           str     lr, [sp, #15*4]        \n" // store the lr as the callers pc
+    "           str     ip, [sp, #13*4]        \n" // store callers stack pointer ..
+    "           ldr     r1, [ip, #-8]          \n" // store lr passed in via the callers stack
+    "           str     r1, [sp, #14*4]        \n"
+    "           ldr     ip, [ip, #-4]          \n" // store callers ip
+    "           str     ip, [sp, #12*4]        \n"
     "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
     "           ldr     r2, [sp, #2*4]         \n" // .. and r2 ..
     "           mov     fp, #0                 \n" // clear fp(??)
     "           bl      handle_syscall         \n"
-    "           ldr     lr, [sp, #14*4]        \n" // restore lr
-    "           ldr     r2, [sp, #15*4]        \n" // restore spsr
+    "           ldr     r0, [sp, #13*4]        \n" // get task_sp
+    "           ldr     r1, [sp, #12*4]        \n" // get task_ip
+    "           str     r1, [r0, #-4]          \n" // push task_lp into task_sp
+    "           ldr     r1, [sp, #14*4]        \n" // get task_lr
+    "           str     r1, [r0, #-8]          \n" // push task_lr into task_sp
+    "           ldr     lr, [sp, #15*4]        \n" // put task_pc into lr
+    "           ldr     r2, [sp, #16*4]        \n" // restore task_cpsr
     "           msr     spsr_c, r2             \n"
-    "           ldmfd   sp!, {r0-r11}          \n" // restore registers
-    "           add     sp, sp, #4*4            \n" // correct the stack pointer .. 
+    "           add     sp, sp, #1*4           \n" // skip r0 (contains our return value = task_sp)
+    "           ldmfd   sp!, {r1-r11}          \n" // restore remaining task_registers
+    "           add     sp, sp, #5*4           \n" // correct the stack pointer .. 
     "           movs    pc, lr                 \n" // ..and return
 );
 
@@ -81,7 +89,7 @@ void handle_syscall(void *regs)
        we have been called from outwith the kernel's code (illegal!)
      */
 
-    addr = ((uint32_t *)regs)[14];
+    addr = ((uint32_t *)regs)[15];
     addr -= 4;
     swi_no = *((unsigned int *)addr) & 0x00ffffff;
 
@@ -114,7 +122,9 @@ void handle_syscall(void *regs)
                 DREGS(bug("[KRN] (sp) r13: 0x%08x\n", ctx->sp));
                 ctx->lr = ((uint32_t *)regs)[14];
                 DREGS(bug("[KRN] (lr) r14: 0x%08x\n", ctx->lr));
-                ctx->cpsr = ((uint32_t *)regs)[15];;
+                ctx->pc = ((uint32_t *)regs)[15];;
+                DREGS(bug("[KRN] (pc) r15: 0x%08x\n", ctx->pc));
+                ctx->cpsr = ((uint32_t *)regs)[16];;
                 DREGS(bug("[KRN]     cpsr: 0x%08x", ctx->cpsr));
                 thisTask->tc_SPReg = ctx->sp;
             }
