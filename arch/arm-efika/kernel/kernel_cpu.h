@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: cpu_arm.h
     Lang: english
@@ -13,7 +13,9 @@
 
 #define EXCEPTIONS_COUNT	1
 
-typedef struct AROSCPUContext {
+#define AROSCPUContext ExceptionContext
+
+typedef struct {
 	uint32_t r[16];
 } regs_t;
 
