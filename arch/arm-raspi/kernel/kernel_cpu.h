@@ -13,7 +13,12 @@
 #define ARM_FPU_TYPE	        FPU_VFP
 #define ARM_FPU_SIZE	        32*64
 
-typedef struct ExceptionContext regs_t;
+struct AROSCPUContext
+{
+    struct ExceptionContext regs;
+};
+
+typedef struct AROSCPUContext regs_t;
 
 static inline uint32_t goSuper()
 {
