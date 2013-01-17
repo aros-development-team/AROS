@@ -33,7 +33,7 @@ extern char * __text_end;
 asm (".globl __intrhand_swi\n\t"
     ".type __intrhand_swi,%function\n"
     "__intrhand_swi:\n"
-    "           sub     sp, sp, #3*4           \n" // make space to store spsr, stack pointer and link register
+    "           sub     sp, sp, #4*4           \n" // make space to store spsr, stack pointer and link register
     "           stmfd   sp!, {r0-r11}          \n" // store registers to pass to c handler ..
     "           str     lr, [sp, #14*4]        \n"
     "           mrs     r2, spsr               \n" // store spsr above registers
@@ -50,7 +50,7 @@ asm (".globl __intrhand_swi\n\t"
     "           ldr     r2, [sp, #15*4]        \n" // restore spsr
     "           msr     spsr_c, r2             \n"
     "           ldmfd   sp!, {r0-r11}          \n" // restore registers
-    "           add     sp, sp, #12            \n" // correct the stack pointer .. 
+    "           add     sp, sp, #4*4            \n" // correct the stack pointer .. 
     "           movs    pc, lr                 \n" // ..and return
 );
 
