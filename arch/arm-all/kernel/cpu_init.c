@@ -19,7 +19,7 @@ static int cpu_Init(struct KernelBase *KernelBase)
      * a single FPU type.
      */
     KernelBase->kb_ContextFlags = ARM_FPU_TYPE;
-    KernelBase->kb_ContextSize  = sizeof(struct ExceptionContext) + ARM_FPU_SIZE;
+    KernelBase->kb_ContextSize  = sizeof(struct AROSCPUContext) + ARM_FPU_SIZE;
 
     return TRUE;
 }
