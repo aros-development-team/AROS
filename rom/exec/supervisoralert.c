@@ -24,7 +24,7 @@ void Alert_DisplayKrnAlert(struct Task * task, ULONG alertNum, APTR location, AP
 
 /*
  * This task tries to display alerts that occured in supervisor mode. The task that caused the
- * problem is available in SupervisorAlertTaskParams[1]. The code that raised Alert is responsible for
+ * problem is available in SAT.sat_Params[1]. The code that raised Alert is responsible for
  * stopping/sanitizing the task itself. Since the task is already stopped, AT_DeadEnd is added to
  * when invoking alert functions so that user does not have an option to continue the task.
  */
@@ -36,7 +36,8 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
     struct Task * t = NULL;
     ULONG alertNum = 0;
 
-    IntSysBase->SupervisorAlertTask = FindTask(NULL);
+    IntSysBase->SAT.sat_Task = FindTask(NULL);
+    IntSysBase->SAT.sat_IsAvailable = TRUE;
 
     while(TRUE)
     {
@@ -44,9 +45,9 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
 
         Disable();
         /* Mark task as in use so that nested crash will use critical error path, see Exec_SystemAlert */
-        IntSysBase->SupervisorAlertTask = NULL;
-        t = (struct Task*)IntSysBase->SupervisorAlertTaskParams[1];
-        alertNum = IntSysBase->SupervisorAlertTaskParams[0];
+        IntSysBase->SAT.sat_IsAvailable = FALSE;
+        t = (struct Task*)IntSysBase->SAT.sat_Params[1];
+        alertNum = IntSysBase->SAT.sat_Params[0];
         Enable();
 
         res = Alert_AskSuspend(t, alertNum | AT_DeadEnd, buffer, SysBase);
@@ -91,9 +92,9 @@ void SupervisorAlertTask(struct ExecBase *SysBase)
 
         Disable();
         /* Mark task as available */
-        IntSysBase->SupervisorAlertTask = FindTask(NULL);
+        IntSysBase->SAT.sat_IsAvailable = TRUE;
         for (i = 0; i < 2; i++)
-            IntSysBase->SupervisorAlertTaskParams[i] = (IPTR)NULL;
+            IntSysBase->SAT.sat_Params[i] = (IPTR)NULL;
         t = NULL;
         alertNum = 0;
         Enable();
