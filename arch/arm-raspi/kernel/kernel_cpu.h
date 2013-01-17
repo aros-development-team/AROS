@@ -29,10 +29,11 @@ static inline void goUser()
 static inline void krnSysCall(uint8_t n)
 {
     asm volatile (
-    "push {ip}\n\t" // store the current r12 on the stack ..
-    "add ip, sp, #4\n\t" // put the "callers" sp in ip
+    "push {ip, lr}\n\t"         // store the current ip and lr on the stack ..
+    "add ip, sp, #8\n\t"        // put the "callers" sp in ip
     "swi %[n]\n\t"
-    "pop {ip}\n" // restore r12
+    "sub sp, r0, #8\n\t"        // get the tasks sp and adjust for returned ip/lr
+    "pop {ip, lr}\n"            // .. and restore them
     : : [n] "I" (n));
 }
 
