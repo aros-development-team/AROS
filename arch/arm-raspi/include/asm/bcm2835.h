@@ -59,7 +59,7 @@
 #define IRQ_MASK(irq)           (1 << (irq & 0x1f))
 #define IRQ_BANK(irq)           (irq >> 5)
 
-#define GPUIRQ0_BASE            0
+#define GPUIRQ0_BASE            (0 << 5)
 #define IRQ_TIMER0              (GPUIRQ0_BASE + 0)
 #define IRQ_TIMER1              (GPUIRQ0_BASE + 1)
 #define IRQ_TIMER2              (GPUIRQ0_BASE + 2)
@@ -93,7 +93,7 @@
 #define IRQ_ARM                 (GPUIRQ0_BASE + 30)
 #define IRQ_VPUDMA              (GPUIRQ0_BASE + 31)
 
-#define GPUIRQ1_BASE            32
+#define GPUIRQ1_BASE            (1 << 5)
 #define IRQ_HOSTPORT            (GPUIRQ1_BASE + 0)
 #define IRQ_VIDEOSCALER         (GPUIRQ1_BASE + 1)
 #define IRQ_CCP2TX              (GPUIRQ1_BASE + 2)
@@ -127,7 +127,7 @@
 #define IRQ_VC_ARASANSDIO       (GPUIRQ1_BASE + 30)
 #define IRQ_AVSPMON             (GPUIRQ1_BASE + 31)
 
-#define ARMIRQ_BASE             64
+#define ARMIRQ_BASE             (2 << 5)
 #define IRQ_ARM_TIMER           (ARMIRQ_BASE + 0)
 #define IRQ_ARM_MAILBOX         (ARMIRQ_BASE + 1)
 #define IRQ_ARM_DOORBELL_0      (ARMIRQ_BASE + 2)
