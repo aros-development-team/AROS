@@ -5,7 +5,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
-#include <asm/arm-raspi/registers.h>
+#include <asm/bcm2835.h>
 
 #include "serialdebug.h"
 #include "bootconsole.h"
