@@ -42,7 +42,7 @@ static int PlatformInit(struct KernelBase *KernelBase)
     *((volatile unsigned int *)(SYSTIMER_CS)) = (1 << 3);
     *((volatile unsigned int *)(SYSTIMER_C0 + (VBLANK_TIMER * 4))) = stc;
 
-    KrnAddSysTimerHandler(IRQ_TIMER0 + VBLANK_TIMER, GPUTimerHandler, VBLANK_TIMER, NULL);
+    KrnAddSysTimerHandler(IRQ_TIMER0 + VBLANK_TIMER, GPUSysTimerHandler, VBLANK_TIMER, NULL);
 
     D(bug("[Kernel] VBlank timer enabled\n"));
 
