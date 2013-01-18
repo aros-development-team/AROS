@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AllocConfigDev() - Create a new ConfigDev in a compatible way.
@@ -53,7 +53,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return AllocMem(sizeof(struct ConfigDev), MEMF_CLEAR|MEMF_PUBLIC);
+    return AllocMem(sizeof(struct ConfigDev), MEMF_CLEAR|MEMF_CHIP);
 
     AROS_LIBFUNC_EXIT
 } /* AllocConfigDev */
