@@ -234,9 +234,9 @@ __attribute__ ((interrupt ("ABORT"))) void __intrhand_prefetchabort(void)
 #warning "TODO: Implement support for retrieving pages from medium, and reattempting access"
 #endif
 
-void GPUTimer3Handler(void *unused0, void *unused1)
+void GPUSysTimerHandler(unsigned int timerno, void *unused1)
 {
-    D(bug("[KRN] Timer3Handler()\n"));
+    D(bug("[KRN] GPUSysTimerHandler()\n"));
     /* Signal the Exec VBlankServer */
     if (SysBase && (SysBase->IDNestCnt < 0)) {
         core_Cause(INTB_VERTB, 1L << INTB_VERTB);
