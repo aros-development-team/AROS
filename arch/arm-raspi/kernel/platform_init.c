@@ -23,6 +23,8 @@
 #include "kernel_arch.h"
 #include "kernel_romtags.h"
 
+extern void GPUTimer3Handler(void *, void *);
+
 /* Use system timer 3 for our scheduling heartbeat */
 #define VBLANK_TIMER 3
 
@@ -33,6 +35,9 @@ static int PlatformInit(struct KernelBase *KernelBase)
 
     // Let the fun begin ;)
     // clock operates at 1000000hz
+
+    KrnAddIRQHandler(VBLANK_TIMER, GPUTimer3Handler, NULL, NULL);
+
     stc = *((volatile unsigned int *)(SYSTIMER_CLO));
     stc += 20000; // (1000000 / 50)
     *((volatile unsigned int *)(SYSTIMER_CS)) = (1 << 3);
