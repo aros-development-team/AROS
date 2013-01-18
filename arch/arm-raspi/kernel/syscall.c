@@ -122,9 +122,9 @@ void handle_syscall(void *regs)
                 DREGS(bug("[KRN] (sp) r13: 0x%08x\n", ctx->sp));
                 ctx->lr = ((uint32_t *)regs)[14];
                 DREGS(bug("[KRN] (lr) r14: 0x%08x\n", ctx->lr));
-                ctx->pc = ((uint32_t *)regs)[15];;
+                ctx->pc = ((uint32_t *)regs)[15];
                 DREGS(bug("[KRN] (pc) r15: 0x%08x\n", ctx->pc));
-                ctx->cpsr = ((uint32_t *)regs)[16];;
+                ctx->cpsr = ((uint32_t *)regs)[16];
                 DREGS(bug("[KRN]     cpsr: 0x%08x", ctx->cpsr));
                 thisTask->tc_SPReg = ctx->sp;
             }
