@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS     := -I$(SRCDIR)/rom/expansion \
 		   -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-FUNCTIONS := readexpansionbyte readexpansionrom configchain configboard writeexpansionbyte writeexpansionword allocconfigdev
+FUNCTIONS := readexpansionbyte readexpansionrom configchain configboard writeexpansionbyte writeexpansionword
 
 %build_archspecific \
   mainmmake=kernel-expansion maindir=rom/expansion arch=amiga-m68k \

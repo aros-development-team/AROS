@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: 
+    Desc: Enforce task rescheduling
     Lang: english
 */
 
@@ -12,6 +12,7 @@
 #include <aros/atomic.h>
 #include <proto/kernel.h>
 
+#include "chipset.h"
 #include "exec_intern.h"
 
 /*****************************************************************************
@@ -53,6 +54,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    UWORD oldAttnSwitch = SysBase->AttnResched & ARF_AttnSwitch;
+
     AROS_ATOMIC_OR(SysBase->AttnResched, ARF_AttnSwitch);       /* Set scheduling attention */
 
     if (SysBase->TDNestCnt < 0)                 /* If task switching enabled */
@@ -62,19 +65,14 @@
             D(bug("[Reschedule] Calling scheduler, KernelBase 0x%p\n", KernelBase));
             KrnSchedule();                      /* Call scheduler */
         }
-        /*
-         * FIXME: On m68k-amiga we should request software interrupt here.
-         * Next Enable() will actually enable interrupts, and the interrupt should
-         * happen instantly, with no delay. kernel.resource will see ARF_AttnSwitch
-         * flag and perform rescheduling.
-         *
-         * On other machines we emulate this explicitly in our Enable() function.
-         * There we will check AttnResched value we just set.
-         *
-        else
+        else if (!oldAttnSwitch)
         {
-
-        } */
+            /*
+             * Interrupts are disabled and there was no pending switch before us.
+             * Tag the software interrupt to be executed immediately after Enable().
+             */
+            CUSTOM_CAUSE(INTF_SOFTINT);
+        }
     }
 
     AROS_LIBFUNC_EXIT
