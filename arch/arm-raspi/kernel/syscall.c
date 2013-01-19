@@ -30,9 +30,21 @@ extern char * __text_end;
 #define DREGS(x)
 
 /* r0 = passed to function, r1/r2 = temp */
-asm (".globl __intrhand_swi\n\t"
-    ".type __intrhand_swi,%function\n"
-    "__intrhand_swi:\n"
+
+/*
+
+__vectorhand_swi:
+
+warning : this code will be changes to stoe spsr_svc, and lr_svc onto the system mode stack
+and then switch into that mode - and at the end jump back into svc mode, before returning from the exception
+*/
+asm (
+    ".set	MODE_SUPERVISOR, 0x13          \n"
+    ".set	MODE_SYSTEM, 0x1f              \n"
+
+    ".globl __vectorhand_swi                   \n"
+    ".type __vectorhand_swi,%function          \n"
+    "__vectorhand_swi:                         \n"
     "           sub     sp, sp, #5*4           \n" // make space to store callers cpsr, pc, lr, sp, and ip
     "           stmfd   sp!, {r0-r11}          \n" // store untouched registers to pass to c handler ..
     "           mov     r0, sp                 \n" // r0 = registers r0-r12 on the stack

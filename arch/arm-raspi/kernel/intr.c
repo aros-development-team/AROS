@@ -52,7 +52,7 @@ void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
     *((volatile unsigned int *)reg) = val;
 } 
 
-void __intrhand_undef(void)
+void __vectorhand_undef(void)
 {
     register unsigned int addr;
 
@@ -63,7 +63,7 @@ void __intrhand_undef(void)
     krnPanic(KernelBase, "CPU Unknown Instruction @ 0x%p", (addr - 4));
 }
 
-void __intrhand_reset(void)
+void __vectorhand_reset(void)
 {
     *gpioGPSET0 = 1<<16; // LED OFF
 
@@ -77,29 +77,73 @@ void __intrhand_reset(void)
 
 /** SWI handled in syscall.c */
 
-asm (".globl __intrhand_irq\n\t"
-    ".type __intrhand_irq,%function\n"
-    "__intrhand_irq:\n"
-    "           sub     lr, lr, #4             \n" // save return address and callers cpsr into system mode stack
-    "           srsdb   #0x1f!                 \n" 
-    "           cps     #0x1f                  \n" // switch to system mode
-    "           sub     sp, sp, #3*4           \n" // make space to store callers lr, sp, and ip
-    "           stmfd   sp!, {r0-r11}          \n" // store untouched registers to pass to c handler ..
-    "           mov     r0, sp                 \n" // r0 = registers r0-r12 on the stack
-    "           str     ip, [sp, #12*4]        \n"
-    "           add     ip, sp, #16*4          \n" // store callers stack pointer ..
+/*
+    18 - lr_irq
+    17 - SPSR_irq
+    16 - cpsr
+    15 - pc
+    14 - lr
+    13 - sp
+    12 - ip
+    11 - r11
+    10 - r10
+     9 - r9
+     8 - r8
+     7 - r7
+     6 - r6
+     5 - r5
+     4 - r4
+     3 - r3
+     2 - r2
+     1 - r1
+     0 - r0
+*/
+
+asm (
+    ".set	MODE_IRQ, 0x12                 \n"
+    ".set	MODE_SYSTEM, 0x1f              \n"
+
+    ".globl __vectorhand_irq                   \n"
+    ".type __vectorhand_irq,%function          \n"
+    "__vectorhand_irq:                         \n"
+    "           sub     lr, lr, #4             \n" // save lr_irq and spsr_irq into irq stack, and system mode stack
+    "           srsdb   #MODE_IRQ!             \n"
+    "           srsdb   #MODE_SYSTEM!          \n" 
+    "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
+
+    "           sub     sp, sp, #5*4           \n" // make space to store cpsr, pc, lr, sp, and ip
+    "           stmfd   sp!, {r0-r11}          \n" // store untouched registers
+    "           mov     r0, sp                 \n" // r0 = registers on the stack to pass to c handler ..
+
+    "           str     ip, [sp, #12*4]        \n" // store ip
+    
+    "           ldr     ip, [sp, #17*4]        \n" // store pc from lr_irq
+    "           str     ip, [sp, #15*4]        \n"
+    
+    "           add     ip, sp, #19*4          \n" // store original sp ..
     "           str     ip, [sp, #13*4]        \n"
-    "           str     lr, [sp, #14*4]        \n"
+
+    "           str     lr, [sp, #14*4]        \n" // store lr
+
+    "           mrs     r1, cpsr               \n" // store tasks cpsr with interrupts enabled ..
+    "           bic     r1, r1, #0x80          \n"
+    "           str     r1, [sp, #16*4]        \n"
+    "           msr     cpsr, r1               \n"
+
     "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
     "           ldr     r2, [sp, #2*4]         \n" // .. and r2 ..
     "           mov     fp, #0                 \n" // clear fp(??)
+
     "           bl      handle_irq             \n"
+
     "           ldr     ip, [sp, #12*4]        \n" // get task_ip
     "           ldr     lr, [sp, #14*4]        \n" // get task_lr
     "           ldr     r2, [sp, #16*4]        \n" // restore task_cpsr
     "           msr     cpsr, r2               \n"
     "           ldmfd   sp!, {r0-r11}          \n" // restore remaining task_registers
-    "           add     sp, sp, #3*4           \n" // correct the stack pointer .. 
+    "           add     sp, sp, #7*4           \n" // correct the stack pointer .. 
+
+    "           msr     cpsr, #MODE_IRQ|0x80   \n" // switch back into IRQ mode, IRQs disabled,
     "           rfefd   sp!                    \n" // ..and return
 );
 
@@ -188,10 +232,13 @@ void handle_irq(void *regs)
     }
     if (processed) *((volatile unsigned int *)(ARMIRQ_PEND)) |= ~processed;
 
+    while (1)
+        asm volatile("mov r0, r0\n");
+
     return;
 }
 
-__attribute__ ((interrupt ("FIQ"))) void __intrhand_fiq(void)
+__attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
 {
     *gpioGPSET0 = 1<<16; // LED OFF
 
@@ -203,7 +250,7 @@ __attribute__ ((interrupt ("FIQ"))) void __intrhand_fiq(void)
 }
 
 #ifndef RASPI_VIRTMEMSUPPORT
-__attribute__ ((interrupt ("ABORT"))) void __intrhand_dataabort(void)
+__attribute__ ((interrupt ("ABORT"))) void __vectorhand_dataabort(void)
 {
     register unsigned int addr, far;
     asm volatile("mov %[addr], lr" : [addr] "=r" (addr) );
@@ -221,7 +268,7 @@ __attribute__ ((interrupt ("ABORT"))) void __intrhand_dataabort(void)
 }
 
 /* Return to this function after a prefetch abort */
-__attribute__ ((interrupt ("ABORT"))) void __intrhand_prefetchabort(void)
+__attribute__ ((interrupt ("ABORT"))) void __vectorhand_prefetchabort(void)
 {
     register unsigned int addr;
     asm volatile("mov %[addr], lr" : [addr] "=r" (addr) );
