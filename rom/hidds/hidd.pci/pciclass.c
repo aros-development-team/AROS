@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -30,9 +30,9 @@
 #undef HiddPCIAttrBase
 #undef HiddPCIDeviceAttrBase
 
-#define	HiddPCIAttrBase		(PSD(cl)->hiddPCIAB)
-#define HiddPCIDeviceAttrBase	(PSD(cl)->hiddPCIDeviceAB)
-#define HiddAttrBase		(PSD(cl)->hiddAB)
+#define HiddPCIAttrBase         (PSD(cl)->hiddPCIAB)
+#define HiddPCIDeviceAttrBase   (PSD(cl)->hiddPCIDeviceAB)
+#define HiddAttrBase            (PSD(cl)->hiddAB)
 
 /* 
     Returns 0 for no device, 1 for non-multi device and 2 for
@@ -61,13 +61,13 @@ static int isPCIDeviceAvailable(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE d
 
     if ((Vend == 0xffff) || (Vend == 0x0000))
     {
-	/* 0xffff is an invalid vendor ID, and so is 0x0000
-	 * (Well, actually 0x0000 belongs to Gammagraphx, but this really
-	 * clashes with multifunc device scanning, so lets just hope nobody
-	 * has a card from them :) )
-	 */
+        /* 0xffff is an invalid vendor ID, and so is 0x0000
+         * (Well, actually 0x0000 belongs to Gammagraphx, but this really
+         * clashes with multifunc device scanning, so lets just hope nobody
+         * has a card from them :) )
+         */
 
-	return 0;
+        return 0;
     }
 
     rb.bus = bus;
@@ -78,7 +78,7 @@ static int isPCIDeviceAvailable(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE d
     Type = OOP_DoMethod(o, (OOP_Msg)&rb);
 
     if ((Type & PCIHT_MULTIFUNC) == PCIHT_MULTIFUNC)
-	return 2;
+        return 2;
 
     return 1;
 }
@@ -105,125 +105,125 @@ void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
         dn = AllocPooled(PSD(cl)->MemPool, sizeof(struct DriverNode));
         if (dn)
         {
-	    int bus;
-	    int dev;
-	    int sub;
-	    int type;
-	    IPTR subbus, bridge;
+            int bus;
+            int dev;
+            int sub;
+            int type;
+            IPTR subbus, bridge;
 
-	    OOP_Object *drv;
-	    struct TagItem devtags[] = {
-		{ aHidd_PCIDevice_Bus, 0 },
-		{ aHidd_PCIDevice_Dev, 0 },
-		{ aHidd_PCIDevice_Sub, 0 },
-		{ aHidd_PCIDevice_Driver, 0 },
-		{ TAG_DONE, 0UL }
-	    };
-	    struct PciDevice *pcidev;
-	    STRPTR string, string2;
-	
-	    dn->driverClass = msg->driverClass;
-	    drv = dn->driverObject = OOP_NewObject(dn->driverClass, NULL, NULL);
-	    dn->highBus = 0;
+            OOP_Object *drv;
+            struct TagItem devtags[] = {
+                { aHidd_PCIDevice_Bus, 0 },
+                { aHidd_PCIDevice_Dev, 0 },
+                { aHidd_PCIDevice_Sub, 0 },
+                { aHidd_PCIDevice_Driver, 0 },
+                { TAG_DONE, 0UL }
+            };
+            struct PciDevice *pcidev;
+            STRPTR string, string2;
+        
+            dn->driverClass = msg->driverClass;
+            drv = dn->driverObject = OOP_NewObject(dn->driverClass, NULL, NULL);
+            dn->highBus = 0;
 
-	    if (!drv) {
-	        FreePooled(PSD(cl)->MemPool, dn, sizeof(*dn));
-	        D(bug("[PCI] Driver did not initialize\n"));
-	        return;
-	    }
+            if (!drv) {
+                FreePooled(PSD(cl)->MemPool, dn, sizeof(*dn));
+                D(bug("[PCI] Driver did not initialize\n"));
+                return;
+            }
 
-	    OOP_GetAttr(drv, aHidd_Name, (APTR)&string);
-	    OOP_GetAttr(drv, aHidd_HardwareName, (APTR)&string2);
-	    D(bug("[PCI] Adding driver %s (%s) to the system\n", string, string2));
+            OOP_GetAttr(drv, aHidd_Name, (APTR)&string);
+            OOP_GetAttr(drv, aHidd_HardwareName, (APTR)&string2);
+            D(bug("[PCI] Adding driver %s (%s) to the system\n", string, string2));
 
-	    NEWLIST(&dn->devices);
+            NEWLIST(&dn->devices);
     
-	    devtags[3].ti_Data = (IPTR)drv;
-	
-	    // Scan whole PCI bus looking for devices available
-	    // There is no need for semaphore protected list operations at this
-	    // point, because driver is still not public.
-	    bus = 0;
-	    do
-	    {
-		D(bug("[PCI] Scanning bus %d\n",bus));
+            devtags[3].ti_Data = (IPTR)drv;
+        
+            // Scan whole PCI bus looking for devices available
+            // There is no need for semaphore protected list operations at this
+            // point, because driver is still not public.
+            bus = 0;
+            do
+            {
+                D(bug("[PCI] Scanning bus %d\n",bus));
 
-		devtags[0].ti_Data = bus;
-	    
-		for (dev=0; dev < 32; dev++)
-		{
-		    devtags[1].ti_Data = dev;
-		    devtags[2].ti_Data = 0;
+                devtags[0].ti_Data = bus;
+            
+                for (dev=0; dev < 32; dev++)
+                {
+                    devtags[1].ti_Data = dev;
+                    devtags[2].ti_Data = 0;
 
-		    /* Knock knock! Is any device here? */
-		    type = isPCIDeviceAvailable(cl, drv, bus,dev,0);
-		    switch(type)
-		    {
-			/* Regular device */
-			case 1:
-			    pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
-				sizeof(struct PciDevice));
-			    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
-						(struct TagItem *)&devtags);
+                    /* Knock knock! Is any device here? */
+                    type = isPCIDeviceAvailable(cl, drv, bus,dev,0);
+                    switch(type)
+                    {
+                        /* Regular device */
+                        case 1:
+                            pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
+                                sizeof(struct PciDevice));
+                            pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
+                                                (struct TagItem *)&devtags);
 
-			    OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
-			    if (bridge)
-			    {
-				OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
-				if (subbus > dn->highBus)
-				    dn->highBus = subbus;
-			    }
-			    AddTail(&dn->devices, (struct Node *)pcidev);
-			    break;
-			/* Cool! Multifunction device, search subfunctions then */
-			case 2:
-			    pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
-				sizeof(struct PciDevice));
-			    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
-						(struct TagItem *)&devtags);
-	
-			    OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
-			    if (bridge)
-			    {
-				OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
-				if (subbus > dn->highBus)
-				    dn->highBus = subbus;
-			    }
-			    AddTail(&dn->devices, (struct Node *)pcidev);
-			    
-			    for (sub=1; sub < 8; sub++)
-			    {
-				devtags[2].ti_Data = sub;
-				if (isPCIDeviceAvailable(cl, drv, bus, dev, sub))
-				{
-				    pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
-					sizeof(struct PciDevice));
-				    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
-							(struct TagItem *)&devtags);
-				    OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
-				    if (bridge)
-				    {
-					OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
-					if (subbus > dn->highBus)
-					    dn->highBus = subbus;
-				    }
-				    AddTail(&dn->devices, (struct Node *)pcidev);
-				}
-			    }
-			    break;
-			default:
-			    break;
-		    }
-		}
-		bus++;
-	    } while (bus <= dn->highBus);
+                            OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
+                            if (bridge)
+                            {
+                                OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
+                                if (subbus > dn->highBus)
+                                    dn->highBus = subbus;
+                            }
+                            AddTail(&dn->devices, (struct Node *)pcidev);
+                            break;
+                        /* Cool! Multifunction device, search subfunctions then */
+                        case 2:
+                            pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
+                                sizeof(struct PciDevice));
+                            pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
+                                                (struct TagItem *)&devtags);
+        
+                            OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
+                            if (bridge)
+                            {
+                                OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
+                                if (subbus > dn->highBus)
+                                    dn->highBus = subbus;
+                            }
+                            AddTail(&dn->devices, (struct Node *)pcidev);
+                            
+                            for (sub=1; sub < 8; sub++)
+                            {
+                                devtags[2].ti_Data = sub;
+                                if (isPCIDeviceAvailable(cl, drv, bus, dev, sub))
+                                {
+                                    pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
+                                        sizeof(struct PciDevice));
+                                    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
+                                                        (struct TagItem *)&devtags);
+                                    OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
+                                    if (bridge)
+                                    {
+                                        OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
+                                        if (subbus > dn->highBus)
+                                            dn->highBus = subbus;
+                                    }
+                                    AddTail(&dn->devices, (struct Node *)pcidev);
+                                }
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                bus++;
+            } while (bus <= dn->highBus);
 
-	    // Add the driver to the end of drivers list
+            // Add the driver to the end of drivers list
 
-	    ObtainSemaphore(&PSD(cl)->driver_lock);
-	    AddTail(&PSD(cl)->drivers, (struct Node*)dn);
-	    ReleaseSemaphore(&PSD(cl)->driver_lock);
-	}
+            ObtainSemaphore(&PSD(cl)->driver_lock);
+            AddTail(&PSD(cl)->drivers, (struct Node*)dn);
+            ReleaseSemaphore(&PSD(cl)->driver_lock);
+        }
     }
 }
 
@@ -238,21 +238,21 @@ void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
 void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_EnumDevices *msg)
 {
     ULONG   VendorID, ProductID, RevisionID, Interface, _Class, SubClass, 
-	    SubsystemVendorID, SubsystemID;
+            SubsystemVendorID, SubsystemID;
     
     IPTR   value;
-    struct  DriverNode	*dn;
-    struct  PciDevice	*dev;
+    struct  DriverNode  *dn;
+    struct  PciDevice   *dev;
     BOOL    ok;
     
     /* Get requirements */
-    VendorID	= GetTagData(tHidd_PCI_VendorID,    0xffffffff, msg->requirements);
-    ProductID	= GetTagData(tHidd_PCI_ProductID,   0xffffffff, msg->requirements);
-    RevisionID	= GetTagData(tHidd_PCI_RevisionID,  0xffffffff, msg->requirements);
-    Interface	= GetTagData(tHidd_PCI_Interface,   0xffffffff, msg->requirements);
-    _Class	= GetTagData(tHidd_PCI_Class,	    0xffffffff, msg->requirements);
-    SubClass	= GetTagData(tHidd_PCI_SubClass,    0xffffffff, msg->requirements);
-    SubsystemID	= GetTagData(tHidd_PCI_SubsystemID, 0xffffffff, msg->requirements);
+    VendorID    = GetTagData(tHidd_PCI_VendorID,    0xffffffff, msg->requirements);
+    ProductID   = GetTagData(tHidd_PCI_ProductID,   0xffffffff, msg->requirements);
+    RevisionID  = GetTagData(tHidd_PCI_RevisionID,  0xffffffff, msg->requirements);
+    Interface   = GetTagData(tHidd_PCI_Interface,   0xffffffff, msg->requirements);
+    _Class      = GetTagData(tHidd_PCI_Class,       0xffffffff, msg->requirements);
+    SubClass    = GetTagData(tHidd_PCI_SubClass,    0xffffffff, msg->requirements);
+    SubsystemID = GetTagData(tHidd_PCI_SubsystemID, 0xffffffff, msg->requirements);
     SubsystemVendorID = GetTagData(tHidd_PCI_SubsystemVendorID, 0xffffffff, msg->requirements);
 
     /* Lock driver list for exclusive use */
@@ -261,65 +261,65 @@ void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_E
     /* For every driver in the system... */
     ForeachNode(&PSD(cl)->drivers, dn)
     {
-	/* ...and for every device handled by this driver */
-	ForeachNode(&dn->devices, dev)
-	{
-	    /* check the requirements with its properties */
-	    ok = TRUE;
-	    if (VendorID != 0xffffffff)
-	    {
-		OOP_GetAttr(dev->device, aHidd_PCIDevice_VendorID, &value);
-		ok &= (value == VendorID);
-	    }
+        /* ...and for every device handled by this driver */
+        ForeachNode(&dn->devices, dev)
+        {
+            /* check the requirements with its properties */
+            ok = TRUE;
+            if (VendorID != 0xffffffff)
+            {
+                OOP_GetAttr(dev->device, aHidd_PCIDevice_VendorID, &value);
+                ok &= (value == VendorID);
+            }
 
-	    if (ProductID != 0xffffffff)
-	    {
-		OOP_GetAttr(dev->device, aHidd_PCIDevice_ProductID, &value);
-		ok &= (value == ProductID);
-	    }
+            if (ProductID != 0xffffffff)
+            {
+                OOP_GetAttr(dev->device, aHidd_PCIDevice_ProductID, &value);
+                ok &= (value == ProductID);
+            }
 
-	    if (RevisionID != 0xffffffff)
-	    {
-		OOP_GetAttr(dev->device, aHidd_PCIDevice_RevisionID, &value);
-		ok &= (value == RevisionID);
-	    }
-	    
-	    if (Interface != 0xffffffff)
-	    {
-		OOP_GetAttr(dev->device, aHidd_PCIDevice_Interface, &value);
-		ok &= (value == Interface);
-	    }
+            if (RevisionID != 0xffffffff)
+            {
+                OOP_GetAttr(dev->device, aHidd_PCIDevice_RevisionID, &value);
+                ok &= (value == RevisionID);
+            }
+            
+            if (Interface != 0xffffffff)
+            {
+                OOP_GetAttr(dev->device, aHidd_PCIDevice_Interface, &value);
+                ok &= (value == Interface);
+            }
 
-	    if (_Class != 0xffffffff)
-	    {
-		OOP_GetAttr(dev->device, aHidd_PCIDevice_Class, &value);
-		ok &= (value == _Class);
-	    }
+            if (_Class != 0xffffffff)
+            {
+                OOP_GetAttr(dev->device, aHidd_PCIDevice_Class, &value);
+                ok &= (value == _Class);
+            }
 
-	    if (SubClass != 0xffffffff)
-	    {
-		OOP_GetAttr(dev->device, aHidd_PCIDevice_SubClass, &value);
-		ok &= (value == SubClass);
-	    }
+            if (SubClass != 0xffffffff)
+            {
+                OOP_GetAttr(dev->device, aHidd_PCIDevice_SubClass, &value);
+                ok &= (value == SubClass);
+            }
 
-	    if (SubsystemVendorID != 0xffffffff)
-	    {
-		OOP_GetAttr(dev->device, aHidd_PCIDevice_SubsystemVendorID, &value);
-		ok &= (value == SubsystemVendorID);
-	    }
+            if (SubsystemVendorID != 0xffffffff)
+            {
+                OOP_GetAttr(dev->device, aHidd_PCIDevice_SubsystemVendorID, &value);
+                ok &= (value == SubsystemVendorID);
+            }
 
-	    if (SubsystemID != 0xffffffff)
-	    {
-		OOP_GetAttr(dev->device, aHidd_PCIDevice_SubsystemID, &value);
-		ok &= (value == SubsystemID);
-	    }
+            if (SubsystemID != 0xffffffff)
+            {
+                OOP_GetAttr(dev->device, aHidd_PCIDevice_SubsystemID, &value);
+                ok &= (value == SubsystemID);
+            }
 
-	    /* If requirements met, call Hook */
-	    if (ok)
-	    {
-		CALLHOOKPKT(msg->callback, dev->device, NULL);
-	    }
-	}
+            /* If requirements met, call Hook */
+            if (ok)
+            {
+                CALLHOOKPKT(msg->callback, dev->device, NULL);
+            }
+        }
     }
 
     ReleaseSemaphore(&PSD(cl)->driver_lock);
@@ -332,51 +332,51 @@ BOOL PCI__Hidd_PCI__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd
 
     D(bug("[PCI] Removing hardware driver %x\n",msg->driverClass));
     /*
-	Removing HW driver allowed only if classes unused. That means the users
-	count should be == 1 (only driver itself uses pci to remove its class)
+        Removing HW driver allowed only if classes unused. That means the users
+        count should be == 1 (only driver itself uses pci to remove its class)
     */
     Forbid();
     if (PSD(cl)->users == 1)
     {
-	/* Get exclusive lock on driver list */
-	ObtainSemaphore(&PSD(cl)->driver_lock);
-	ForeachNodeSafe(&PSD(cl)->drivers, dn, next)
-	{
-	    if (dn->driverClass == msg->driverClass)
-	    {
-		Remove((struct Node *)dn);
-		rem = dn;
-	    }
-	}
+        /* Get exclusive lock on driver list */
+        ObtainSemaphore(&PSD(cl)->driver_lock);
+        ForeachNodeSafe(&PSD(cl)->drivers, dn, next)
+        {
+            if (dn->driverClass == msg->driverClass)
+            {
+                Remove((struct Node *)dn);
+                rem = dn;
+            }
+        }
         ReleaseSemaphore(&PSD(cl)->driver_lock);
 
-	/* If driver removed, rem contains pointer to removed DriverNode */
-	if (rem)
-	{
-	    struct PciDevice *dev, *next;
+        /* If driver removed, rem contains pointer to removed DriverNode */
+        if (rem)
+        {
+            struct PciDevice *dev, *next;
 
-	    /* For every device */
-	    ForeachNodeSafe(&rem->devices, dev, next)
-	    {
-		/* Dispose PCIDevice object instance */
-		OOP_DisposeObject(dev->device);
+            /* For every device */
+            ForeachNodeSafe(&rem->devices, dev, next)
+            {
+                /* Dispose PCIDevice object instance */
+                OOP_DisposeObject(dev->device);
 
-		/* Remove device from device list */
-		Remove((struct Node *)dev);
+                /* Remove device from device list */
+                Remove((struct Node *)dev);
 
-		/* Free memory used for device struct */
-		FreePooled(PSD(cl)->MemPool, dev, sizeof(struct PciDevice));
-	    }
-	    
-	    /* Dispose driver */
-	    OOP_DisposeObject(rem->driverObject);
+                /* Free memory used for device struct */
+                FreePooled(PSD(cl)->MemPool, dev, sizeof(struct PciDevice));
+            }
+            
+            /* Dispose driver */
+            OOP_DisposeObject(rem->driverObject);
 
-	    /* And free memory for DriverNode */
-	    FreePooled(PSD(cl)->MemPool, rem, sizeof(struct DriverNode));
+            /* And free memory for DriverNode */
+            FreePooled(PSD(cl)->MemPool, rem, sizeof(struct DriverNode));
 
-	    /* Driver removed and everything freed */
-	    freed = TRUE;
-	}
+            /* Driver removed and everything freed */
+            freed = TRUE;
+        }
     }
     Permit();
     
@@ -410,7 +410,7 @@ static int PCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 
     return TRUE;
 }
-	
+        
 static int PCI_InitClass(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[PCI] base class initialization\n"));
@@ -422,8 +422,8 @@ static int PCI_InitClass(LIBBASETYPEPTR LIBBASE)
 
     if (LIBBASE->psd.hiddPCIAB && LIBBASE->psd.hiddPCIDeviceAB && LIBBASE->psd.hiddPCIDriverAB && LIBBASE->psd.hiddAB)
     {
-	D(bug("[PCI] Everything OK\n"));
-	return TRUE;
+        D(bug("[PCI] Everything OK\n"));
+        return TRUE;
     }
 
     return FALSE;
