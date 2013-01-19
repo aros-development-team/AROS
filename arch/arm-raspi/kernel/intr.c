@@ -117,7 +117,7 @@ asm (
 
     "           str     ip, [sp, #12*4]        \n" // store ip
     
-    "           ldr     ip, [sp, #17*4]        \n" // store pc from lr_irq
+    "           ldr     ip, [sp, #18*4]        \n" // store pc from lr_irq
     "           str     ip, [sp, #15*4]        \n"
     
     "           add     ip, sp, #19*4          \n" // store original sp ..
@@ -126,9 +126,9 @@ asm (
     "           str     lr, [sp, #14*4]        \n" // store lr
 
     "           mrs     r1, cpsr               \n" // store tasks cpsr with interrupts enabled ..
-    "           bic     r1, r1, #0x80          \n"
+//    "           bic     r1, r1, #0x80          \n"
     "           str     r1, [sp, #16*4]        \n"
-    "           msr     cpsr, r1               \n"
+    "           msr     cpsr_c, r1             \n"
 
     "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
     "           ldr     r2, [sp, #2*4]         \n" // .. and r2 ..
@@ -231,9 +231,6 @@ void handle_irq(void *regs)
         irq++;
     }
     if (processed) *((volatile unsigned int *)(ARMIRQ_PEND)) |= ~processed;
-
-    while (1)
-        asm volatile("mov r0, r0\n");
 
     return;
 }
