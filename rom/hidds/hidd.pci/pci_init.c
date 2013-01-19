@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -42,31 +42,31 @@ static int PCI_Init(LIBBASETYPEPTR LIBBASE)
 
 static int PCI_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-#if 0	// Removing of drivers already done by driver classes	
-	/*
-	    Ok. Class is not used ATM and therefore it is safe (well 
-	    Disable/Enable protected) to iterate through driver lists and free
-	    everything that can be freed
-	*/
+#if 0   // Removing of drivers already done by driver classes   
+        /*
+            Ok. Class is not used ATM and therefore it is safe (well 
+            Disable/Enable protected) to iterate through driver lists and free
+            everything that can be freed
+        */
     D(bug("[PCI] Expunging drivers and devices\n"));
     ForeachNodeSafe(&LIBBASE->psd.drivers, (struct Node *)dn, (struct Node *)next)
     {
-	struct PciDevice *dev, *next;
-	    
-	Remove((struct Node *)dn);
+        struct PciDevice *dev, *next;
+            
+        Remove((struct Node *)dn);
 
-	/* For every device */
-	ForeachNodeSafe(&dn->devices, (struct Node *)dev, (struct Node *)next)
-	{
-	    /* Dispose PCIDevice object instance */
-	    OOP_DisposeObject(dev->device);
+        /* For every device */
+        ForeachNodeSafe(&dn->devices, (struct Node *)dev, (struct Node *)next)
+        {
+            /* Dispose PCIDevice object instance */
+            OOP_DisposeObject(dev->device);
 
-	    /* Remove device from device list */
-	    Remove((struct Node *)dev);
-	}
-	
-	/* Dispose driver */
-	OOP_DisposeObject(dn->driverObject);
+            /* Remove device from device list */
+            Remove((struct Node *)dev);
+        }
+        
+        /* Dispose driver */
+        OOP_DisposeObject(dn->driverObject);
     }
 
     /* All objects deleted by now. Free classes */
