@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -657,14 +657,14 @@ SIPTR DoSeek(struct emulbase *emulbase, struct filehandle *fh, SIPTR offset, ULO
     res = LSeek((IPTR)fh->fd, 0, SEEK_CUR);
     AROS_HOST_BARRIER
 
-    DSEEK(bug("[emul] Original position: %llu\n", (unsigned long long)res));
+    DSEEK(bug("[emul] Original position: %lu\n", (unsigned long)res));
     if (res != -1)
     {
         oldpos = res;
         res = LSeek((IPTR)fh->fd, offset, mode);
         AROS_HOST_BARRIER
 
-	DSEEK(bug("[emul] New position: %llu\n", (unsigned long long)res));
+	DSEEK(bug("[emul] New position: %lu\n", (unsigned long)res));
     }
 
     if (res == -1)
