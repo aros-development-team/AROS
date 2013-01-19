@@ -2,7 +2,7 @@
 #define _PCI_H
 
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,11 +26,11 @@
 /* Private data and structures unavailable outside the pci base classes */
 
 struct DriverNode {
-    struct Node		node;
-    OOP_Class		*driverClass;	/* Driver class */
-    OOP_Object		*driverObject;	/* Driver object */
-    ULONG		highBus;
-    struct List		devices;	/* List of defices behind this node */
+    struct Node         node;
+    OOP_Class           *driverClass;   /* Driver class */
+    OOP_Object          *driverObject;  /* Driver object */
+    ULONG               highBus;
+    struct List         devices;        /* List of defices behind this node */
 };
 
 struct DrvInstData {
@@ -39,69 +39,69 @@ struct DrvInstData {
 };
 
 struct PciDevice {
-    struct MinNode	node;
-    OOP_Object		*device;
+    struct MinNode      node;
+    OOP_Object          *device;
 };
 
 typedef struct DeviceData {
-    OOP_Object		*driver;
-    UBYTE		bus,dev,sub;
-    UBYTE		isBridge;
-    UBYTE		subbus;
-    UWORD		VendorID;
-    UWORD		ProductID;
-    UBYTE		RevisionID;
-    UBYTE		Interface;
-    UBYTE		SubClass;
-    UBYTE		Class;
-    UWORD		SubsysVID;
-    UWORD		SubsystemID;
-    UBYTE		INTLine;
-    UBYTE		IRQLine;
-    UBYTE		HeaderType;
+    OOP_Object          *driver;
+    UBYTE               bus,dev,sub;
+    UBYTE               isBridge;
+    UBYTE               subbus;
+    UWORD               VendorID;
+    UWORD               ProductID;
+    UBYTE               RevisionID;
+    UBYTE               Interface;
+    UBYTE               SubClass;
+    UBYTE               Class;
+    UWORD               SubsysVID;
+    UWORD               SubsystemID;
+    UBYTE               INTLine;
+    UBYTE               IRQLine;
+    UBYTE               HeaderType;
     struct {
-	IPTR		addr;
-	IPTR		size;
+        IPTR            addr;
+        IPTR            size;
     } BaseReg[6];
-    ULONG		RomBase;
-    ULONG		RomSize;
+    ULONG               RomBase;
+    ULONG               RomSize;
 
-    STRPTR		strClass;
-    STRPTR		strSubClass;
-    STRPTR		strInterface;
+    STRPTR              strClass;
+    STRPTR              strSubClass;
+    STRPTR              strInterface;
 } tDeviceData;
 
 struct pci_staticdata {
     struct SignalSemaphore driver_lock;
-    struct List		drivers;
+    struct List         drivers;
 
-    APTR		MemPool;
+    APTR                MemPool;
     
-    OOP_AttrBase	hiddAB;
-    OOP_AttrBase	hiddPCIAB;
-    OOP_AttrBase	hiddPCIDriverAB;
-    OOP_AttrBase	hiddPCIBusAB;
-    OOP_AttrBase	hiddPCIDeviceAB;
+    OOP_AttrBase        hiddAB;
+    OOP_AttrBase        hiddPCIAB;
+    OOP_AttrBase        hiddPCIDriverAB;
+    OOP_AttrBase        hiddPCIBusAB;
+    OOP_AttrBase        hiddPCIDeviceAB;
 
-    OOP_Class		*pciClass;
-    OOP_Class		*pciDeviceClass;
-    OOP_Class		*pciDriverClass;
+    OOP_Class           *pciClass;
+    OOP_Class           *pciDeviceClass;
+    OOP_Class           *pciDriverClass;
 
-    ULONG		users;
+    ULONG               users;
 
     /* Most commonly used methods have already the mID's stored here */
-    OOP_MethodID	mid_RB;
-    OOP_MethodID	mid_RW;
-    OOP_MethodID	mid_RL;
-    OOP_MethodID	mid_WB;
-    OOP_MethodID	mid_WW;
-    OOP_MethodID	mid_WL;
+    OOP_MethodID        mid_RB;
+    OOP_MethodID        mid_RW;
+    OOP_MethodID        mid_RL;
+    OOP_MethodID        mid_WB;
+    OOP_MethodID        mid_WW;
+    OOP_MethodID        mid_WL;
 };
 
 struct pcibase {
-    struct Library 		LibNode;
-    APTR			MemPool;
-    struct pci_staticdata	psd;
+    struct Library              LibNode;
+    APTR                        MemPool;
+    struct pci_staticdata       psd;
 };
 
 OOP_Class *init_pcideviceclass(struct pci_staticdata *);
@@ -200,20 +200,20 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #define PCIST_DEVSEL_SLOW   0x400
 
 /* PCI BIST register */
-#define PCIBSB_START		6
-#define PCIBSB_CAPABLE		7
+#define PCIBSB_START            6
+#define PCIBSB_CAPABLE          7
 
-#define PCIBSF_START		(1 << PCIBSB_START)
-#define PCIBSF_CAPABLE		(1 << PCIBSB_CAPABLE)
+#define PCIBSF_START            (1 << PCIBSB_START)
+#define PCIBSF_CAPABLE          (1 << PCIBSB_CAPABLE)
 
-#define PCIBS_CODEMASK		0x0f
+#define PCIBS_CODEMASK          0x0f
 
 /* PCI BaseAddressRegister defines */
-#define PCIBAR_MASK_TYPE	0x01
-#define PCIBAR_TYPE_MMAP	0x00
-#define PCIBAR_TYPE_IO		0x01
-#define PCIBAR_MASK_MEM		0xfffffff0
-#define PCIBAR_MASK_IO		0xfffffffc
+#define PCIBAR_MASK_TYPE        0x01
+#define PCIBAR_TYPE_MMAP        0x00
+#define PCIBAR_TYPE_IO          0x01
+#define PCIBAR_MASK_MEM         0xfffffff0
+#define PCIBAR_MASK_IO          0xfffffffc
 
 #define PCIBAR_MEMTYPE_MASK     0x06
 #define PCIBAR_MEMTYPE_32BIT    0x00
@@ -265,8 +265,8 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #define PCICTRLB_ISAENABLE      2
 #define PCICTRLB_VGAENABLE      3
 
-#define PCICTRLF_ISAENABLE	    (1 << PCICTRLB_ISAENABLE)
-#define PCICTRLF_VGAENABLE	    (1 << PCICTRLB_VGAENABLE)
+#define PCICTRLF_ISAENABLE          (1 << PCICTRLB_ISAENABLE)
+#define PCICTRLF_VGAENABLE          (1 << PCICTRLB_VGAENABLE)
 
 /* PCI capabilities */
 #define PCICAP_POWER_MANAGEMENT     0x01
@@ -305,34 +305,34 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #define PCIECS_INT_PIN      PCICS_INT_PIN
 
 /* PCI Express capability structure */
-#define	PCIECS_CAPID        0x00
-#define	PCIECS_NEXTCAP      0x01
-#define	PCIECS_PCIECAP      0x02
-#define	PCIECS_DEVCAP       0x04
-#define	PCIECS_DEVCTL       0x08
-#define	PCIECS_DEVSTS       0x0A
-#define	PCIECS_LINKCAP      0x0C
-#define	PCIECS_LINKCTL      0x10
-#define	PCIECS_LINKSTS      0x12
-#define	PCIECS_SLOTCAP      0x14
-#define	PCIECS_SLOTCTL      0x18
-#define	PCIECS_SLOTSTS      0x1A
-#define	PCIECS_ROOTCTL      0x1C
-#define	PCIECS_ROOTSTS      0x20
-#define	PCIECS_DEVCAP2      0x24
-#define	PCIECS_DEVCTL2      0x28
-#define	PCIECS_DEVSTS2      0x2A
-#define	PCIECS_LINKCAP2     0x2C
-#define	PCIECS_LINKCTL2     0x30
-#define	PCIECS_LINKSTS2     0x32
-#define	PCIECS_SLOTCAP2     0x34
-#define	PCIECS_SLOTCTL2     0x38
-#define	PCIECS_SLOTSTS2     0x3A
+#define PCIECS_CAPID        0x00
+#define PCIECS_NEXTCAP      0x01
+#define PCIECS_PCIECAP      0x02
+#define PCIECS_DEVCAP       0x04
+#define PCIECS_DEVCTL       0x08
+#define PCIECS_DEVSTS       0x0A
+#define PCIECS_LINKCAP      0x0C
+#define PCIECS_LINKCTL      0x10
+#define PCIECS_LINKSTS      0x12
+#define PCIECS_SLOTCAP      0x14
+#define PCIECS_SLOTCTL      0x18
+#define PCIECS_SLOTSTS      0x1A
+#define PCIECS_ROOTCTL      0x1C
+#define PCIECS_ROOTSTS      0x20
+#define PCIECS_DEVCAP2      0x24
+#define PCIECS_DEVCTL2      0x28
+#define PCIECS_DEVSTS2      0x2A
+#define PCIECS_LINKCAP2     0x2C
+#define PCIECS_LINKCTL2     0x30
+#define PCIECS_LINKSTS2     0x32
+#define PCIECS_SLOTCAP2     0x34
+#define PCIECS_SLOTCTL2     0x38
+#define PCIECS_SLOTSTS2     0x3A
 
 /* PCI Express capabilities */
-#define	PCIECAP_VER_MASK    0xF
-#define	PCIECAP_VER_10      0x1 /* PCIe spec 1.0 */
-#define	PCIECAP_VER_20      0x2 /* PCIe spec 2.0 */
+#define PCIECAP_VER_MASK    0xF
+#define PCIECAP_VER_10      0x1 /* PCIe spec 1.0 */
+#define PCIECAP_VER_20      0x2 /* PCIe spec 2.0 */
 
 #endif /* _PCI_H */
 
