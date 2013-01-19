@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Base PCI driver class
@@ -23,7 +23,7 @@
 #include "pci.h"
 
 #undef HiddPCIDriverAttrBase
-#define	HiddPCIDriverAttrBase	(PSD(cl)->hiddPCIDriverAB)
+#define HiddPCIDriverAttrBase   (PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase (PSD(cl)->hiddAB)
 
 OOP_Object *PCIDrv__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -85,8 +85,8 @@ UBYTE PCIDrv__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_ReadConfigLong mymsg;
 
     /*
-	First, read whole ConfigWord from PCI config space, using defined 
-	method
+        First, read whole ConfigWord from PCI config space, using defined 
+        method
     */
     mymsg.mID = PSD(cl)->mid_RL;
     mymsg.bus = msg->bus;
@@ -193,7 +193,7 @@ APTR PCIDrv__Hidd_PCIDriver__CPUtoPCI(OOP_Class *cl, OOP_Object *o,
 
     if (instance->DirectBus)
     {
-	return (APTR)msg->address;
+        return (APTR)msg->address;
     } else return (APTR)0xffffffff;
 }
 
@@ -207,7 +207,7 @@ APTR PCIDrv__Hidd_PCIDriver__PCItoCPU(OOP_Class *cl, OOP_Object *o,
 
     if (instance->DirectBus)
     {
-	return (APTR)msg->address;
+        return (APTR)msg->address;
     } else return (APTR)0xffffffff;
 }
 
@@ -223,11 +223,11 @@ APTR PCIDrv__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
 
     if (instance->DirectBus)
     {
-	struct pHidd_PCIDriver_PCItoCPU mmsg, *pmmsg=&mmsg;
-	mmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_PCItoCPU);
-	mmsg.address = msg->PCIAddress;
-	
-	return ((APTR)OOP_DoMethod(o, (OOP_Msg)pmmsg));
+        struct pHidd_PCIDriver_PCItoCPU mmsg, *pmmsg=&mmsg;
+        mmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_PCItoCPU);
+        mmsg.address = msg->PCIAddress;
+        
+        return ((APTR)OOP_DoMethod(o, (OOP_Msg)pmmsg));
     } else return (APTR)0xffffffff;
 }
 
@@ -276,24 +276,24 @@ VOID PCIDrv__Root__Get(OOP_Class *cl, OOP_Object *o,
 
     if (IS_PCIDRV_ATTR(msg->attrID, idx))
     {
-	switch(idx)
-	{
-	    case aoHidd_PCIDriver_DirectBus:
-		*msg->storage = (IPTR)instance->DirectBus;
-		break;
+        switch(idx)
+        {
+            case aoHidd_PCIDriver_DirectBus:
+                *msg->storage = (IPTR)instance->DirectBus;
+                break;
 
             case aoHidd_PCIDriver_IOBase:
-		*msg->storage = (IPTR)instance->IOBase;
-		break;
-	    
-	    default:
-		OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
-		break;
-	}
+                *msg->storage = (IPTR)instance->IOBase;
+                break;
+            
+            default:
+                OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
+                break;
+        }
     }
     else
     {
-	OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
+        OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     }
 }
 
@@ -306,7 +306,7 @@ static int PCIDrv_InitMIDs(LIBBASETYPEPTR LIBBASE)
      * We do have driver class. Now we can get some MethodID's,
      * so that whole PCI subsystem works slightly faster ;)
      */
-		
+                
     LIBBASE->psd.mid_RB = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigByte);
     LIBBASE->psd.mid_RW = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigWord);
     LIBBASE->psd.mid_RL = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigLong);
