@@ -245,9 +245,6 @@ void handle_irq(void *regs)
         pending = pending >> 1;
     }
     if (processed) *((volatile unsigned int *)(GPUIRQ_PEND1)) = pending;
-
-    while (1)
-        asm volatile("mov r0, r0 \n");
     
     return;
 }
