@@ -15,9 +15,11 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
+#include "kernel_cpu.h"
 #include "kernel_intern.h"
 #include "kernel_debug.h"
 #include "kernel_interrupts.h"
+#include "kernel_intr.h"
 
 extern void core_Cause(unsigned char, unsigned int);
 
@@ -126,9 +128,9 @@ asm (
     "           str     lr, [sp, #14*4]        \n" // store lr
 
     "           mrs     r1, cpsr               \n" // store tasks cpsr with interrupts enabled ..
-//    "           bic     r1, r1, #0x80          \n"
-    "           str     r1, [sp, #16*4]        \n"
     "           msr     cpsr_c, r1             \n"
+    "           bic     r1, r1, #0x80          \n"
+    "           str     r1, [sp, #16*4]        \n"
 
     "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
     "           ldr     r2, [sp, #2*4]         \n" // .. and r2 ..
@@ -242,7 +244,7 @@ void handle_irq(void *regs)
         }
     }
     if (processed) *((volatile unsigned int *)(GPUIRQ_PEND1)) = (pending & ~processed);
-    
+
     return;
 }
 

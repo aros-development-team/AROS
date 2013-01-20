@@ -3,13 +3,10 @@
     $Id$
 */
 
-#define DEBUG 0
-
-#include <aros/debug.h>
 #include <aros/kernel.h>
-#include <aros/libcall.h>
 
 #include <kernel_base.h>
+#include <kernel_syscall.h>
 
 /*****************************************************************************
 
@@ -50,9 +47,7 @@ AROS_LH0I(void, KrnSti,
 {
     AROS_LIBFUNC_INIT
 
-    D(bug("[KRN] KrnSti()\n"));
-
-    asm volatile("cpsie i\n");
+    krnSysCall(SC_STI);
 
     AROS_LIBFUNC_EXIT
 }
