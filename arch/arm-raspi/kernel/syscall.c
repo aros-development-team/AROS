@@ -17,7 +17,7 @@
 #include "kernel_cpu.h"
 #include "kernel_intern.h"
 #include "kernel_scheduler.h"
-
+#include "kernel_intr.h"
 #include "kernel_syscall.h"
 
 extern char * __text_start;
@@ -73,20 +73,6 @@ asm (
     "           add     sp, sp, #5*4           \n" // correct the stack pointer .. 
     "           movs    pc, lr                 \n" // ..and return
 );
-
-void core_Cause(unsigned char n, unsigned int mask)
-{
-    D(bug("[KRN] core_Cause(%d, %08x)", n, mask));
-
-    if (SysBase)
-    {
-        struct IntVector *iv = &SysBase->IntVects[n];
-
-        /* If the SoftInt vector in SysBase is set, call it. It will do the rest for us */
-        if (iv->iv_Code)
-            AROS_INTC3(iv->iv_Code, iv->iv_Data, mask, _CUSTOM);
-    }
-}
 
 void handle_syscall(void *regs)
 {
@@ -148,12 +134,16 @@ void handle_syscall(void *regs)
             case SC_CLI:
             {
                 D(bug("[KRN] ## CLI...\n"));
+                if (ctx) ctx->cpsr |= 0x80;
+                ((uint32_t *)regs)[16] |= 0x80;
                 break;
             }
 
             case SC_STI:
             {
                 D(bug("[KRN] ## STI...\n"));
+                if (ctx) ctx->cpsr &= ~0x80;
+                ((uint32_t *)regs)[16] &= ~0x80;
                 break;
             }
 
@@ -166,34 +156,6 @@ void handle_syscall(void *regs)
             case SC_ISSUPERSTATE:
             {
                 D(bug("[KRN] ## ISSUPERSTATE...\n"));
-                break;
-            }
-
-            case SC_CAUSE:
-            {
-                D(bug("[KRN] ## CAUSE...\n"));
-                //core_Cause(SysBase);
-                break;
-            }
-
-            case SC_DISPATCH:
-            {
-                D(bug("[KRN] ## DISPATCH...\n"));
-                core_Dispatch();
-                break;
-            }
-
-            case SC_SWITCH:
-            {
-                D(bug("[KRN] ## SWITCH...\n"));
-                core_Switch();
-                break;
-            }
-
-            case SC_SCHEDULE:
-            {
-                D(bug("[KRN] ## SCHEDULE...\n"));
-                core_Schedule();
                 break;
             }
 
@@ -213,6 +175,9 @@ void handle_syscall(void *regs)
                 asm volatile ("mov pc, #0\n"); // Jump to the reset vector..
                 break;
             }
+            default:
+                core_SysCall(swi_no, regs);
+                break;
         }
     }
     else

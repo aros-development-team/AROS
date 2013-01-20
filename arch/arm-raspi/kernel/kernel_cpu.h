@@ -31,15 +31,13 @@ static inline void goUser()
     asm volatile ("cps #0x1f\n");	/* switch to system (user) mode */
 }
 
-static inline void krnSysCall(uint8_t n)
-{
-    asm volatile (
-    "push {ip, lr}\n\t"         // store the current ip and lr on the stack ..
-    "add ip, sp, #8\n\t"        // put the "callers" sp in ip
-    "swi %[n]\n\t"
-    "sub sp, r0, #8\n\t"        // get the tasks sp and adjust for returned ip/lr
-    "pop {ip, lr}\n"            // .. and restore them
-    : : [n] "I" (n));
-}
+#define krnSysCall(n)           \
+    asm volatile (              \
+    "push {ip, lr}\n\t"         \
+    "add ip, sp, #8\n\t"        \
+    "swi %[swi_no]\n\t"              \
+    "sub sp, r0, #8\n\t"        \
+    "pop {ip, lr}\n"            \
+    : : [swi_no] "I" (n));           \
 
 #endif /* CPU_ARM_H_ */
