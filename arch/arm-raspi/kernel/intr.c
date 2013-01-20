@@ -147,6 +147,9 @@ asm (
     "           rfefd   sp!                    \n" // ..and return
 );
 
+#define IRQ_BANK1	0x00000100
+#define IRQ_BANK2	0x00000200
+
 void handle_irq(void *regs)
 {
     struct ExceptionContext *ctx;
@@ -184,26 +187,54 @@ void handle_irq(void *regs)
         D(bug("\n"));
     }
 
-    pending = *((volatile unsigned int *)(GPUIRQ_PEND0));
-    irq = (0 << 5);
-    processed = 0;
-    while (pending != NULL)
+    pending = *((volatile unsigned int *)(ARMIRQ_PEND));
+    D(bug("[KRN] PendingARM %08x\n", pending));
+    if (!(pending & IRQ_BANK1))
     {
-        if (pending & 1)
+        processed = 0;
+        for (irq = (2 << 5); irq < ((2 << 5) + 32); irq++)
         {
-            D(bug("[KRN] Handling IRQ %d ..\n", irq));
-            krnRunIRQHandlers(KernelBase, irq);
-            processed |= (1 << irq);
+            if (pending & 1)
+            {
+                D(bug("[KRN] Handling IRQ %d ..\n", irq));
+                krnRunIRQHandlers(KernelBase, irq);
+                processed |= (1 << irq);
+            }
+            pending = pending >> 1;
         }
-        pending = pending >> 1;
-        irq++;
     }
-    if (processed) *((volatile unsigned int *)(GPUIRQ_PEND0)) |= ~processed;
+    else
+    {
+        processed = IRQ_BANK1;
+    }
+    if (processed) *((volatile unsigned int *)(ARMIRQ_PEND)) = pending;
+
+    pending = *((volatile unsigned int *)(GPUIRQ_PEND0));
+    D(bug("[KRN] Pending0 %08x\n", pending));
+    if (!(pending & IRQ_BANK2))
+    {
+        processed = 0;
+        for (irq = (0 << 5); irq < ((0 << 5) + 32); irq++)
+        {
+            if (pending & 1)
+            {
+                D(bug("[KRN] Handling IRQ %d ..\n", irq));
+                krnRunIRQHandlers(KernelBase, irq);
+                processed |= (1 << irq);
+            }
+            pending = pending >> 1;
+        }
+    }
+    else
+    {
+        processed = IRQ_BANK2;
+    }
+    if (processed) *((volatile unsigned int *)(GPUIRQ_PEND0)) = pending;
 
     pending = *((volatile unsigned int *)(GPUIRQ_PEND1));
-    irq = (1 << 5);
+    D(bug("[KRN] Pending1 %08x\n", pending));
     processed = 0;
-    while (pending != NULL)
+    for (irq = (1 << 5); irq < ((1 << 5) + 32); irq++)
     {
         if (pending & 1)
         {
@@ -212,26 +243,12 @@ void handle_irq(void *regs)
             processed |= (1 << irq);
         }
         pending = pending >> 1;
-        irq++;
     }
-    if (processed) *((volatile unsigned int *)(GPUIRQ_PEND1)) |= ~processed;
+    if (processed) *((volatile unsigned int *)(GPUIRQ_PEND1)) = pending;
 
-    pending = *((volatile unsigned int *)(ARMIRQ_PEND));
-    irq = (2 << 5);
-    processed = 0;
-    while (pending != NULL)
-    {
-        if (pending & 1)
-        {
-            D(bug("[KRN] Handling IRQ %d ..\n", irq));
-            krnRunIRQHandlers(KernelBase, irq);
-            processed |= (1 << irq);
-        }
-        pending = pending >> 1;
-        irq++;
-    }
-    if (processed) *((volatile unsigned int *)(ARMIRQ_PEND)) |= ~processed;
-
+    while (1)
+        asm volatile("mov r0, r0 \n");
+    
     return;
 }
 
