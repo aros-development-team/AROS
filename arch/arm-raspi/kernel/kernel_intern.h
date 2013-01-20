@@ -33,10 +33,6 @@
 #define gpioGPSET0 ((volatile unsigned int *)(GPSET0))
 #define gpioGPCLR0 ((volatile unsigned int *)(GPCLR0))
 
-struct KernelBase {
-    struct Node         kb_Node;
-};
-
 void core_SetupMMU(void);
 void core_SetupIntr(void);
 
