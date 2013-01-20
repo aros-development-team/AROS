@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI utility functions
@@ -18,8 +18,8 @@
 #include "pci.h"
 #include "pciutil.h"
 
-#undef	SDEBUG
-#undef	DEBUG
+#undef  SDEBUG
+#undef  DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -69,9 +69,9 @@ ULONG sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, UBYTE bus, 
     struct pHidd_PCIDriver_WriteConfigLong msgw;
     
     if (!psd->mid_RL) psd->mid_RL 
-	    = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigLong);
+            = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigLong);
     if (!psd->mid_WL) psd->mid_WL 
-	    = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigLong);
+            = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigLong);
 
     msgr.mID = psd->mid_RL;
     msgr.bus = bus;
@@ -94,19 +94,19 @@ ULONG sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, UBYTE bus, 
 
     if ((sz & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_IO)
     {
-	/* This is an IO range */
-	sz &= PCIBAR_MASK_IO;
-	sz = ~sz;
-	sz++;
-	/* Upper 16 bits of result is ignored if BAR is for I/O *AND* bits 16-31 returned zero upon read */
-	if(!(bak>>16)) sz &= 0xffff;
+        /* This is an IO range */
+        sz &= PCIBAR_MASK_IO;
+        sz = ~sz;
+        sz++;
+        /* Upper 16 bits of result is ignored if BAR is for I/O *AND* bits 16-31 returned zero upon read */
+        if(!(bak>>16)) sz &= 0xffff;
     }
     else
     {
-	/* This is memory mapped */
-	sz &= PCIBAR_MASK_MEM;
-	sz = ~sz;
-	sz++;
+        /* This is memory mapped */
+        sz &= PCIBAR_MASK_MEM;
+        sz = ~sz;
+        sz++;
     }
     return (sz);
 }
