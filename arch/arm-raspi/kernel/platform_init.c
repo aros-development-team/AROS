@@ -26,9 +26,6 @@
 extern void GPUSysTimerHandler(unsigned int, void *);
 extern void *KrnAddSysTimerHandler(uint8_t, irqhandler_t *, void *, void *);
 
-/* Use system timer 3 for our scheduling heartbeat */
-#define VBLANK_TIMER 3
-
 static int PlatformInit(struct KernelBase *KernelBase)
 {
     unsigned int stc;

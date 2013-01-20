@@ -24,6 +24,9 @@
 #define RASPI_VIRTMEMSUPPORT
 */
 
+/* Use system timer 3 for our scheduling heartbeat */
+#define VBLANK_TIMER 3
+
 #define KERNEL_PHYS_BASE        0x07800000
 #define KERNEL_VIRT_BASE        0xff800000
 
