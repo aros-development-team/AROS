@@ -6,10 +6,10 @@
     Lang: english
 */
 
-#include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/atomic.h>
+#include <hardware/intbits.h>
 #include <proto/kernel.h>
 
 #include "chipset.h"
