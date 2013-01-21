@@ -3,8 +3,6 @@
     $Id$
 */
 
-#define DEBUG 0
-
 #include <inttypes.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
@@ -26,6 +24,7 @@ extern void core_Cause(unsigned char, unsigned int);
 #define IRQBANK_POINTER(bank) ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
 
 #define DREGS(x)
+#define D(x)
 
 void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
 {
