@@ -3,8 +3,6 @@
     $Id$
 */
 
-#define DEBUG 1
-
 #include <inttypes.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
@@ -28,15 +26,15 @@ extern char * __text_end;
 #endif
 
 #define DREGS(x)
-
-/* r0 = passed to function, r1/r2 = temp */
+#define D(x)
 
 /*
+    __vectorhand_swi:
 
-__vectorhand_swi:
+    warning : this code will be changes to stoe spsr_svc, and lr_svc onto the system mode stack
+    and then switch into that mode - and at the end jump back into svc mode, before returning from the exception
 
-warning : this code will be changes to stoe spsr_svc, and lr_svc onto the system mode stack
-and then switch into that mode - and at the end jump back into svc mode, before returning from the exception
+    r0 = passed to c handler, r1/r2 = temp
 */
 asm (
     ".set	MODE_SUPERVISOR, 0x13          \n"
