@@ -16,17 +16,16 @@
 /* We use own implementation of bug(), so we don't need aros/debug.h */
 #define D(x) x
 
-#include <proto/kernel.h>
-
 void *KrnAddSysTimerHandler(uint8_t irq, irqhandler_t * handler, void * handlerData, void * handlerData2)
 {
     struct IntrNode *GPUSysTimerHandle;
+    struct KernelBase *KernelBase = (struct KernelBase *)handlerData2;
 
     D(bug("[KRN] KrnAddSysTimerHandler(%02x, %012p, %012p, %012p)\n", irq, handler, handlerData, handlerData2));
 
     if ((GPUSysTimerHandle = AllocMem(sizeof(struct IntrNode), MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
     {
-        D(bug("[KRN] KrnAddSysTimerHandler IntrNode @ 0x%p:\n", GPUSysTimerHandle));
+        D(bug("[KRN] KrnAddSysTimerHandler: IntrNode @ 0x%p:\n", GPUSysTimerHandle));
 
         GPUSysTimerHandle->in_Handler = handler;
         GPUSysTimerHandle->in_HandlerData = handlerData;
