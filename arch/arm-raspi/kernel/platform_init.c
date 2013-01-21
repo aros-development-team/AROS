@@ -31,10 +31,8 @@ static int PlatformInit(struct KernelBase *KernelBase)
     unsigned int stc;
     D(bug("[Kernel] PlatformInit()\n"));
 
-    // Let the fun begin ;)
-    // clock operates at 1000000hz
     stc = *((volatile unsigned int *)(SYSTIMER_CLO));
-    stc += 20000; // (1000000 / 50)
+    stc += VBLANK_INTERVAL;
     *((volatile unsigned int *)(SYSTIMER_CS)) = (1 << 3);
     *((volatile unsigned int *)(SYSTIMER_C0 + (VBLANK_TIMER * 4))) = stc;
 
