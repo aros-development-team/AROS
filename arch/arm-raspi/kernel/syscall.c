@@ -43,7 +43,7 @@ asm (
     ".globl __vectorhand_swi                   \n"
     ".type __vectorhand_swi,%function          \n"
     "__vectorhand_swi:                         \n"
-    "           sub     sp, sp, #4*4           \n" // make space to store callers cpsr, pc, lr, sp, and ip
+    "           sub     sp, sp, #4*4           \n" // make space to store callers cpsr, pc, lr, and sp
     "           stmfd   sp!, {r0-r12}          \n" // store untouched registers to pass to c handler ..
     "           mov     r0, sp                 \n" // r0 = registers r0-r12 on the stack
     "           mrs     r1, spsr               \n" // store spsr in ctx_cpsr
