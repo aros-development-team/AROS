@@ -2,7 +2,7 @@
 Name=Archive
 Version=$VER: Archive 1.0 (01.02.2007)
 BaseName=archive
-Pattern=#?.(lha|zip|tar.gz|tgz)
+Pattern=#?.(tar.gz|tgz)
 GroupID=syst
 ID=arch
 Flags=DTF_BINARY
