@@ -28,7 +28,7 @@
         ((uint32_t *)regs)[i] = ctx->r[i];                                      \
     }                                                                           \
     ((uint32_t *)regs)[12] = ctx->ip;                                           \
-    ((uint32_t *)regs)[13] = ctx->sp;                                           \
+    ((uint32_t *)regs)[13] = ctx->sp = task->tc_SPReg;                          \
     ((uint32_t *)regs)[14] = ctx->lr;                                           \
     ((uint32_t *)regs)[15] = ctx->pc;                                           \
     ((uint32_t *)regs)[16] = ctx->cpsr;
@@ -39,6 +39,7 @@ void cpu_Switch(regs_t *regs)
     int i;
 
     /* Disable interrupts until the task switch */
+    asm volatile("cpsid i\n");
 
     task = SysBase->ThisTask;
         
@@ -54,12 +55,20 @@ void cpu_Dispatch(regs_t *regs)
     struct Task *task;
     int i;
 
+    asm volatile("cpsid i\n");
+
     /* Break Disable() if needed */
     if (SysBase->IDNestCnt >= 0) {
         SysBase->IDNestCnt = -1;
+        asm volatile("cpsie i\n");
     }
 
     while (!(task = core_Dispatch())) {
+        asm volatile ("mcr p15, #0, %[r], c7, c14, #0" : : [r] "r" (0) );
+        asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
+
+        asm volatile("cpsid i\n");
+
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(INTB_SOFTINT, 1l << INTB_SOFTINT);
     }

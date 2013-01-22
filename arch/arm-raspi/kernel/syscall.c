@@ -43,32 +43,30 @@ asm (
     ".globl __vectorhand_swi                   \n"
     ".type __vectorhand_swi,%function          \n"
     "__vectorhand_swi:                         \n"
-    "           sub     sp, sp, #5*4           \n" // make space to store callers cpsr, pc, lr, sp, and ip
-    "           stmfd   sp!, {r0-r11}          \n" // store untouched registers to pass to c handler ..
+    "           sub     sp, sp, #4*4           \n" // make space to store callers cpsr, pc, lr, sp, and ip
+    "           stmfd   sp!, {r0-r12}          \n" // store untouched registers to pass to c handler ..
     "           mov     r0, sp                 \n" // r0 = registers r0-r12 on the stack
-    "           mrs     r2, spsr               \n" // store spsr above registers
-    "           str     r2, [sp, #16*4]        \n"
-    "           str     lr, [sp, #15*4]        \n" // store the lr as the callers pc
-    "           str     ip, [sp, #13*4]        \n" // store callers stack pointer ..
-    "           ldr     r1, [ip, #-8]          \n" // store lr passed in via the callers stack
-    "           str     r1, [sp, #14*4]        \n"
-    "           ldr     ip, [ip, #-4]          \n" // store callers ip
-    "           str     ip, [sp, #12*4]        \n"
+    "           mrs     r1, spsr               \n" // store spsr in ctx_cpsr
+    "           str     r1, [sp, #16*4]        \n"
+    "           str     lr, [sp, #15*4]        \n" // store lr_svc in ctx_pc
+    "           add     r1, sp, #13*4          \n" // store sp^ in ctx_sp
+    "           stm     r1, {sp}^              \n" 
+    "           add     r1, sp, #14*4          \n" // store lr^ in ctx_lr
+    "           stm     r1, {lr}^              \n"
     "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
-    "           ldr     r2, [sp, #2*4]         \n" // .. and r2 ..
     "           mov     fp, #0                 \n" // clear fp(??)
+
     "           bl      handle_syscall         \n"
-    "           ldr     r0, [sp, #13*4]        \n" // get task_sp
-    "           ldr     r1, [sp, #12*4]        \n" // get task_ip
-    "           str     r1, [r0, #-4]          \n" // push task_lp into task_sp
-    "           ldr     r1, [sp, #14*4]        \n" // get task_lr
-    "           str     r1, [r0, #-8]          \n" // push task_lr into task_sp
-    "           ldr     lr, [sp, #15*4]        \n" // put task_pc into lr
-    "           ldr     r2, [sp, #16*4]        \n" // restore task_cpsr
-    "           msr     spsr_c, r2             \n"
-    "           add     sp, sp, #1*4           \n" // skip r0 (contains our return value = task_sp)
-    "           ldmfd   sp!, {r1-r11}          \n" // restore remaining task_registers
-    "           add     sp, sp, #5*4           \n" // correct the stack pointer .. 
+
+    "           add     r1, sp, #13*4          \n" // store ctx_sp in sp^
+    "           ldm     r1, {sp}^              \n" 
+    "           add     r1, sp, #14*4          \n" // store ctx_lr in lr^
+    "           ldm     r1, {lr}^              \n"
+    "           ldr     lr, [sp, #15*4]        \n" // put ctx_pc into lr_svc
+    "           ldr     r2, [sp, #16*4]        \n" // put ctx_cpsr into spsr
+    "           msr     spsr, r2               \n"
+    "           ldmfd   sp!, {r0-r12}          \n" // restore remaining task_registers
+    "           add     sp, sp, #4*4           \n" // correct the stack pointer .. 
     "           movs    pc, lr                 \n" // ..and return
 );
 
@@ -79,8 +77,8 @@ void handle_syscall(void *regs)
     struct ExceptionContext *ctx;
     struct Task *thisTask;
 
-    /* We determine the SWI number by reading in the return address
-       from the link register, subtract the instruction from it and
+    /* We determine the SWI number by reading in "tasks"
+       program counter, subtract the instruction from it and
        obtain the value from there.  we also use this to check if
        we have been called from outwith the kernel's code (illegal!)
      */

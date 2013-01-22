@@ -13,6 +13,9 @@
 #define ARM_FPU_TYPE	        FPU_VFP
 #define ARM_FPU_SIZE	        32*64
 
+/* our "user" mode is SYSTEM_MODE */
+#define CTX_MODE 0x1f
+
 /* We use native context format, no conversion needed */
 #define regs_t struct ExceptionContext
 /* There are no private add-ons */
@@ -29,13 +32,6 @@ static inline void goUser()
     asm volatile ("cps #0x1f\n");	/* switch to system (user) mode */
 }
 
-#define krnSysCall(n)           \
-    asm volatile (              \
-    "push {ip, lr}\n\t"         \
-    "add ip, sp, #8\n\t"        \
-    "swi %[swi_no]\n\t"              \
-    "sub sp, r0, #8\n\t"        \
-    "pop {ip, lr}\n"            \
-    : : [swi_no] "I" (n));           \
+#define krnSysCall(n) asm volatile ("swi %[swi_no]\n\t" : : [swi_no] "I" (n));
 
 #endif /* CPU_ARM_H_ */
