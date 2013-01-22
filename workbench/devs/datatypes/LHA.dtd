@@ -1,0 +1,10 @@
+# DataType Description for LHA archives
+Name=LHA
+Version=$VER: LHA 1.0 (30.07.2012)
+BaseName=lha
+Pattern=#?
+Mask= ANY ANY 0x2d 0x6c 0x68 ANY 0x2d
+GroupID=syst
+ID=arch
+Flags=DTF_BINARY
+Priority=1
