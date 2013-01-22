@@ -1,8 +1,0 @@
-#$Id$
-include $(TOP)/config/make.cfg
-
-FILES := raspi-memorybus
-
-%build_linklib mmake=linklibs-raspi-memorybus libname=raspi-memorybus files="$(FILES)" libdir=$(GENDIR)/lib
-
-%common
