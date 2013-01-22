@@ -9,6 +9,3 @@ INCLUDE_FILES := $(call WILDCARD, asm/*.h)
 
 INCLUDE_FILES := $(call WILDCARD, hardware/*.h)
 %copy_includes mmake=compiler-includes path=hardware dir=hardware
-
-INCLUDE_FILES := $(call WILDCARD, raspi_transitional/*.h)
-%copy_includes mmake=compiler-includes path=raspi_transitional dir=raspi_transitional

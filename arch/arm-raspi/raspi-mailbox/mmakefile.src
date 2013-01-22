@@ -1,6 +1,0 @@
-# $Id$
-include $(TOP)/config/make.cfg
-
-%build_module mmake=raspi-mailbox 	\
-  modname=mailbox modtype=library		\
-  files="mailbox_init mailboxread mailboxwrite mailboxstatus obtainmailbox releasemailbox"
