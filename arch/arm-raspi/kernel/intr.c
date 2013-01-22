@@ -107,57 +107,38 @@ asm (
     ".globl __vectorhand_irq                   \n"
     ".type __vectorhand_irq,%function          \n"
     "__vectorhand_irq:                         \n"
-    "           sub     lr, lr, #4             \n" // save lr_irq and spsr_irq into irq stack, and system mode stack
-    "           srsdb   #MODE_IRQ!             \n"
-    "           srsdb   #MODE_SYSTEM!          \n"
+    "           sub     lr, lr, #4             \n" // adjust lr_irq, and save it with spsr_irq ..
+    "           srsdb   #MODE_IRQ!             \n" // .. into irq stack ..
+    "           srsdb   #MODE_SYSTEM!          \n" // .. and into into system stack
     "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
 
-    "           sub     sp, sp, #5*4           \n" // make space to store cpsr, pc, lr, sp, and ip
-    "           stmfd   sp!, {r0-r11}          \n" // store untouched registers
+    "           sub     sp, sp, #4*4           \n" // make space to store cpsr, pc, lr, and sp
+    "           stmfd   sp!, {r0-r12}          \n" // store untouched registers
     "           mov     r0, sp                 \n" // r0 = registers on the stack to pass to c handler ..
 
-    "           str     ip, [sp, #12*4]        \n" // store ip
-    
-    "           ldr     ip, [sp, #18*4]        \n" // store lr from lr_irq
+    "           ldr     ip, [sp, #18*4]        \n" // store lr_irq as ctx_pc
     "           str     ip, [sp, #15*4]        \n"
     
-    "           add     ip, sp, #19*4          \n" // store original sp ..
+    "           add     ip, sp, #19*4          \n" // store original sp as ctx_sp
     "           str     ip, [sp, #13*4]        \n"
 
-    "           str     lr, [sp, #14*4]        \n" // store lr
+    "           str     lr, [sp, #14*4]        \n" // store lr in ctx_lr
 
-    "           mrs     r1, cpsr               \n" 
-    "           bic     r1, r1, #0x80          \n"
-//    "           msr     cpsr_c, r1             \n" // enable irqs
-    "           str     r1, [sp, #16*4]        \n" // store tasks cpsr with irqs enabled ..
+    "           ldr     r1, [sp, #17*4]        \n" // get spsr_irq
+    "           bic     r1, r1, #0x80          \n" // enable irqs
+//    "           msr     cpsr_c, r1             \n" 
+    "           str     r1, [sp, #16*4]        \n" // and store in ctx_cpsr
 
     "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
-    "           ldr     r2, [sp, #2*4]         \n" // .. and r2 ..
     "           mov     fp, #0                 \n" // clear fp(??)
 
     "           bl      handle_irq             \n"
 
-    "           ldr     ip, [sp, #13*4]        \n" // .. load task stack in ip
-    "           ldr     r0, [sp, #16*4]        \n" // store task_cpsr in tasks stack ..
-    "           str     r0, [ip, #-1*4]        \n"
-    "           ldr     r0, [sp, #16*4]        \n" // store task_pc in tasks stack ..
-    "           str     r0, [ip, #-2*4]        \n"
-    "           ldr     r0, [sp, #12*4]        \n" // store task_ip in tasks stack ..
-    "           str     r0, [ip, #-3*4]        \n"
-    "           ldr     r0, [sp, #0*4]         \n" // store r0 in tasks stack ..
-    "           str     r0, [ip, #-4*4]        \n"
-    "           ldr     lr, [sp, #14*4]        \n" // get task_lr
-    "           add     sp, sp, #1*4           \n" // skip r0
-    "           ldmfd   sp!, {r1-r11}          \n" // restore remaining task_registers
-    "           ldr     sp, [sp, #1*4]         \n" // load the tasks stack pointer .. 
+    "           ldr     lr, [sp, #14*4]        \n" // get ctx_lr
+    "           ldmfd   sp!, {r0-r12}          \n" // restore remaining ctx registers
+    "           ldr     sp, [sp, #0*4]         \n" // correct the stack pointer .. 
 
-    "           msr     cpsr, #MODE_IRQ|0x80   \n" // switch back into IRQ mode, IRQs disabled,
-    "           ldr     r0, [ip, #-1*4]        \n" // store task_cpsr in IRQ stack ..
-    "           str     r0, [sp, #1*4]         \n"
-    "           ldr     r0, [ip, #-2*4]        \n" // store task_pc in IRQ stack ..
-    "           str     r0, [sp, #2*4]         \n"
-    "           ldr     r0, [ip, #-4*4]        \n" // restore r0
-    "           ldr     ip, [ip, #-3*4]        \n" // and task_ip
+    "           cpsid   i, #MODE_IRQ           \n" // switch to IRQ mode, with interrupts disabled..
     "           rfefd   sp!                    \n" // ..and return
 );
 
@@ -172,7 +153,7 @@ void handle_irq(void *regs)
 
     D(bug("[KRN] ## IRQ ##\n"));
 
-    if ((thisTask = SysBase->ThisTask) != NULL)
+/*    if ((thisTask = SysBase->ThisTask) != NULL)
     {
         D(bug("[KRN] IRQ invoked in '%s'", thisTask->tc_Node.ln_Name));
         if ((ctx = thisTask->tc_UnionETask.tc_ETask->et_RegFrame) != NULL)
@@ -199,7 +180,7 @@ void handle_irq(void *regs)
             thisTask->tc_SPReg = ctx->sp;
         }
         D(bug("\n"));
-    }
+    }*/
 
     pending = *((volatile unsigned int *)(ARMIRQ_PEND));
     D(bug("[KRN] PendingARM %08x\n", pending));
