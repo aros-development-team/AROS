@@ -1,0 +1,10 @@
+# DataType Description for ZIP archives
+Name=ZIP
+Version=$VER: ZIP 1.0 (30.07.2012)
+BaseName=zip
+Pattern=#?
+Mask=0x50 0x4b 0x03 0x04
+GroupID=syst
+ID=_zip
+Flags=DTF_BINARY,DTF_CASE
+Priority=1
