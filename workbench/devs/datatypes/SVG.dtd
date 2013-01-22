@@ -1,4 +1,4 @@
-# DataType Description for HTML
+# DataType Description for SVG
 Name=SVG
 Version=$VER: SVG 41.0 (8.31.2012)
 BaseName=svg
