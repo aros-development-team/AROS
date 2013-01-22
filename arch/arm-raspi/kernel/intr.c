@@ -109,7 +109,7 @@ asm (
     "__vectorhand_irq:                         \n"
     "           sub     lr, lr, #4             \n" // save lr_irq and spsr_irq into irq stack, and system mode stack
     "           srsdb   #MODE_IRQ!             \n"
-    "           srsdb   #MODE_SYSTEM!          \n" 
+    "           srsdb   #MODE_SYSTEM!          \n"
     "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
 
     "           sub     sp, sp, #5*4           \n" // make space to store cpsr, pc, lr, sp, and ip
@@ -118,7 +118,7 @@ asm (
 
     "           str     ip, [sp, #12*4]        \n" // store ip
     
-    "           ldr     ip, [sp, #18*4]        \n" // store pc from lr_irq
+    "           ldr     ip, [sp, #18*4]        \n" // store lr from lr_irq
     "           str     ip, [sp, #15*4]        \n"
     
     "           add     ip, sp, #19*4          \n" // store original sp ..
@@ -126,10 +126,10 @@ asm (
 
     "           str     lr, [sp, #14*4]        \n" // store lr
 
-    "           mrs     r1, cpsr               \n" // store tasks cpsr with interrupts enabled ..
-    "           msr     cpsr_c, r1             \n"
+    "           mrs     r1, cpsr               \n" 
     "           bic     r1, r1, #0x80          \n"
-    "           str     r1, [sp, #16*4]        \n"
+//    "           msr     cpsr_c, r1             \n" // enable irqs
+    "           str     r1, [sp, #16*4]        \n" // store tasks cpsr with irqs enabled ..
 
     "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
     "           ldr     r2, [sp, #2*4]         \n" // .. and r2 ..
@@ -137,14 +137,27 @@ asm (
 
     "           bl      handle_irq             \n"
 
-    "           ldr     ip, [sp, #12*4]        \n" // get task_ip
+    "           ldr     ip, [sp, #13*4]        \n" // .. load task stack in ip
+    "           ldr     r0, [sp, #16*4]        \n" // store task_cpsr in tasks stack ..
+    "           str     r0, [ip, #-1*4]        \n"
+    "           ldr     r0, [sp, #16*4]        \n" // store task_pc in tasks stack ..
+    "           str     r0, [ip, #-2*4]        \n"
+    "           ldr     r0, [sp, #12*4]        \n" // store task_ip in tasks stack ..
+    "           str     r0, [ip, #-3*4]        \n"
+    "           ldr     r0, [sp, #0*4]         \n" // store r0 in tasks stack ..
+    "           str     r0, [ip, #-4*4]        \n"
     "           ldr     lr, [sp, #14*4]        \n" // get task_lr
-    "           ldr     r2, [sp, #16*4]        \n" // restore task_cpsr
-    "           msr     cpsr, r2               \n"
-    "           ldmfd   sp!, {r0-r11}          \n" // restore remaining task_registers
-    "           add     sp, sp, #7*4           \n" // correct the stack pointer .. 
+    "           add     sp, sp, #1*4           \n" // skip r0
+    "           ldmfd   sp!, {r1-r11}          \n" // restore remaining task_registers
+    "           ldr     sp, [sp, #1*4]         \n" // load the tasks stack pointer .. 
 
     "           msr     cpsr, #MODE_IRQ|0x80   \n" // switch back into IRQ mode, IRQs disabled,
+    "           ldr     r0, [ip, #-1*4]        \n" // store task_cpsr in IRQ stack ..
+    "           str     r0, [sp, #1*4]         \n"
+    "           ldr     r0, [ip, #-2*4]        \n" // store task_pc in IRQ stack ..
+    "           str     r0, [sp, #2*4]         \n"
+    "           ldr     r0, [ip, #-4*4]        \n" // restore r0
+    "           ldr     ip, [ip, #-3*4]        \n" // and task_ip
     "           rfefd   sp!                    \n" // ..and return
 );
 
