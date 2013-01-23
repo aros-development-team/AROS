@@ -15,9 +15,6 @@
 #include <dos/bptr.h>
 
 #include <utility/utility.h>
-
-#define DEBUG 1
-
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <aros/debug.h>
@@ -29,52 +26,27 @@
 static int PCI_Init(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[PCI] Initializing PCI system\n"));
-    LIBBASE->MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
-    D(bug("[PCI] Created pool 0x%p\n", LIBBASE->MemPool));
+    
+    LIBBASE->psd.kernelBase = OpenResource("kernel.resource");
+    if (!LIBBASE->psd.kernelBase)
+        return FALSE;
 
-    LIBBASE->psd.MemPool = LIBBASE->MemPool;
-
+    LIBBASE->psd.MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
+    D(bug("[PCI] Created pool 0x%p\n", LIBBASE->psd.MemPool));
+    if (!LIBBASE->psd.MemPool)
+        return FALSE;
+        
     InitSemaphore(&LIBBASE->psd.driver_lock);
     NEWLIST(&LIBBASE->psd.drivers);
 
-    return LIBBASE->psd.MemPool != NULL;
+    return TRUE;
 }
 
 static int PCI_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-#if 0   // Removing of drivers already done by driver classes   
-        /*
-            Ok. Class is not used ATM and therefore it is safe (well 
-            Disable/Enable protected) to iterate through driver lists and free
-            everything that can be freed
-        */
-    D(bug("[PCI] Expunging drivers and devices\n"));
-    ForeachNodeSafe(&LIBBASE->psd.drivers, (struct Node *)dn, (struct Node *)next)
-    {
-        struct PciDevice *dev, *next;
-            
-        Remove((struct Node *)dn);
-
-        /* For every device */
-        ForeachNodeSafe(&dn->devices, (struct Node *)dev, (struct Node *)next)
-        {
-            /* Dispose PCIDevice object instance */
-            OOP_DisposeObject(dev->device);
-
-            /* Remove device from device list */
-            Remove((struct Node *)dev);
-        }
-        
-        /* Dispose driver */
-        OOP_DisposeObject(dn->driverObject);
-    }
-
-    /* All objects deleted by now. Free classes */
-#endif
-
     D(bug("[PCI] Destroying MemoryPool\n"));
-    DeletePool(LIBBASE->MemPool);
-    
+    DeletePool(LIBBASE->psd.MemPool);
+
     D(bug("[PCI] Goodbye\n"));
 
     return TRUE;

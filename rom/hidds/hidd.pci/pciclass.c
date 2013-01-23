@@ -19,20 +19,8 @@
 
 #include "pci.h"
 
-#define DEBUG 1
 #include <aros/debug.h>
 #include <aros/atomic.h>
-
-/*
-    There are no static AttrBases in this class. Therefore it might be placed
-    directly in ROM without any harm
-*/
-#undef HiddPCIAttrBase
-#undef HiddPCIDeviceAttrBase
-
-#define HiddPCIAttrBase         (PSD(cl)->hiddPCIAB)
-#define HiddPCIDeviceAttrBase   (PSD(cl)->hiddPCIDeviceAB)
-#define HiddAttrBase            (PSD(cl)->hiddAB)
 
 /* 
     Returns 0 for no device, 1 for non-multi device and 2 for
@@ -46,18 +34,7 @@ static int isPCIDeviceAvailable(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE d
     UWORD Vend;
     UBYTE Type;
 
-    struct pHidd_PCIDriver_ReadConfigWord rw;
-    struct pHidd_PCIDriver_ReadConfigByte rb;
-
-    rw.mID = PSD(cl)->mid_RW;
-    rb.mID = PSD(cl)->mid_RB;
-    
-    rw.bus = bus;
-    rw.dev = dev;
-    rw.sub = sub;
-    rw.reg = PCICS_VENDOR;
-
-    Vend = OOP_DoMethod(o, (OOP_Msg)&rw);
+    Vend = HIDD_PCIDriver_ReadConfigWord(o, bus, dev, sub, PCICS_VENDOR);
 
     if ((Vend == 0xffff) || (Vend == 0x0000))
     {
@@ -70,12 +47,7 @@ static int isPCIDeviceAvailable(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE d
         return 0;
     }
 
-    rb.bus = bus;
-    rb.dev = dev;
-    rb.sub = sub;
-    rb.reg = PCICS_HEADERTYPE;
-
-    Type = OOP_DoMethod(o, (OOP_Msg)&rb);
+    Type = HIDD_PCIDriver_ReadConfigByte(o, bus, dev, sub, PCICS_HEADERTYPE);
 
     if ((Type & PCIHT_MULTIFUNC) == PCIHT_MULTIFUNC)
         return 2;
@@ -385,6 +357,25 @@ BOOL PCI__Hidd_PCI__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd
     return freed;
 }
 
+/*
+ * FIXME
+ * Actually our base PCI class can (and should) be a singletone. However
+ * needs needs full reconsideration of usage accounting. Anyway, currently
+ * it is bad. Because:
+ * 1. There is no guarantee that the user will not keep device object pointer
+ *    after disposing of main class (which is usually done when device discovery
+ *    is complete).
+ * 2. Actually, he WILL keep it if he wants to be able to remove interrupt handler
+ *    once upon a time.
+ * 3. Unloading the driver will destroy all its device objects. Which will break up
+ *    because of (1) and (2).
+ * 4. Wrapper libraries (like prometheus.library) also won't like (3).
+ * In fact, we should first count usage of objects. With new methods, object can be
+ * considered used if it has either interrupt handler installed, or ownership set.
+ * Also we cannot remove drivers while enumerating devices on the bus.
+ * Well, after all, removing the driver is dangerous.
+ */
+
 OOP_Object *PCI__Root__New(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     AROS_ATOMIC_INC(PSD(cl)->users);
@@ -419,6 +410,7 @@ static int PCI_InitClass(LIBBASETYPEPTR LIBBASE)
     LIBBASE->psd.hiddPCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
     LIBBASE->psd.hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
     LIBBASE->psd.hiddAB = OOP_ObtainAttrBase(IID_Hidd);
+    LIBBASE->psd.hiddPCIDriverMB = OOP_GetMethodID(IID_Hidd_PCIDriver, 0);
 
     if (LIBBASE->psd.hiddPCIAB && LIBBASE->psd.hiddPCIDeviceAB && LIBBASE->psd.hiddPCIDriverAB && LIBBASE->psd.hiddAB)
     {

@@ -23,6 +23,9 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#undef HiddPCIDriverBase
+#define HiddPCIDriverBase (psd->hiddPCIDriverMB)
+
 /*
   Fetch text descriptions of the different PCI device classes
 */
@@ -65,32 +68,11 @@ void getPCIClassDesc( UBYTE class, UBYTE sub, UBYTE prgif, STRPTR *cdesc, STRPTR
 ULONG sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE func, UBYTE basenum )
 {
     ULONG bak,sz;
-    struct pHidd_PCIDriver_ReadConfigLong msgr;
-    struct pHidd_PCIDriver_WriteConfigLong msgw;
-    
-    if (!psd->mid_RL) psd->mid_RL 
-            = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigLong);
-    if (!psd->mid_WL) psd->mid_WL 
-            = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigLong);
 
-    msgr.mID = psd->mid_RL;
-    msgr.bus = bus;
-    msgr.dev = dev;
-    msgr.sub = func;
-    msgr.reg = PCICS_BAR0 + (basenum << 2);
-
-    msgw.mID = psd->mid_WL;
-    msgw.bus = bus;
-    msgw.dev = dev;
-    msgw.sub = func;
-    msgw.reg = PCICS_BAR0 + (basenum << 2);
-
-    bak = OOP_DoMethod(driver, (OOP_Msg)&msgr);
-    msgw.val = ~0;
-    OOP_DoMethod(driver, (OOP_Msg)&msgw);
-    sz = OOP_DoMethod(driver, (OOP_Msg)&msgr);
-    msgw.val = bak;
-    OOP_DoMethod(driver, (OOP_Msg)&msgw);
+    bak = HIDD_PCIDriver_ReadConfigLong(driver, bus, dev, func, PCICS_BAR0 + (basenum << 2));
+    HIDD_PCIDriver_WriteConfigLong(driver, bus, dev, func, PCICS_BAR0 + (basenum << 2), ~0);
+    sz = HIDD_PCIDriver_ReadConfigLong(driver, bus, dev, func, PCICS_BAR0 + (basenum << 2));
+    HIDD_PCIDriver_WriteConfigLong(driver, bus, dev, func, PCICS_BAR0 + (basenum << 2), bak);
 
     if ((sz & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_IO)
     {
