@@ -1,11 +1,12 @@
 /*
-    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI direct driver for x86 linux.
     Lang: English
 */
-#include <exec/types.h>
+
+#include <exec/interrupts.h>
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
@@ -30,8 +31,8 @@
 #undef HiddPCIDriverAttrBase
 #endif // HiddPCIDriverAttrBase
 
-#define	HiddPCIDriverAttrBase	(PSD(cl)->hiddPCIDriverAB)
-#define HiddAttrBase		(PSD(cl)->hiddAB)
+#define HiddPCIDriverAttrBase   (PSD(cl)->hiddPCIDriverAB)
+#define HiddAttrBase            (PSD(cl)->hiddAB)
 
 #define CFGADD(bus,dev,func,reg)    \
     ( 0x80000000 | ((bus)<<16) |    \
@@ -53,10 +54,10 @@ OOP_Object *PCILx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     struct pRoot_New mymsg;
     
     struct TagItem mytags[] = {
-	{ aHidd_Name, (IPTR)"PCILinux" },
-	{ aHidd_HardwareName, (IPTR)"Linux direct access PCI driver" },
-	{ aHidd_PCIDriver_DirectBus, FALSE },
-	{ TAG_DONE, 0 }
+        { aHidd_Name, (IPTR)"PCILinux" },
+        { aHidd_HardwareName, (IPTR)"Linux direct access PCI driver" },
+        { aHidd_PCIDriver_DirectBus, FALSE },
+        { TAG_DONE, 0 }
     };
 
     mymsg.mID = msg->mID;
@@ -132,14 +133,14 @@ IPTR PCILx__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
 #ifdef __x86_64__
     asm volatile(
        "push %%rbp; mov %%rax,%%rbp; mov %1,%%rax; int $0x80; pop %%rbp"
-	:"=a"(ret)
-	:"i"(192), "b"(0), "c"(size), "d"(0x03), "S"(0x01), "D"(PSD(cl)->fd), "0"(offs)
+        :"=a"(ret)
+        :"i"(192), "b"(0), "c"(size), "d"(0x03), "S"(0x01), "D"(PSD(cl)->fd), "0"(offs)
     );
 #else
     asm volatile(
-	"push %%ebp; movl %%eax,%%ebp; movl %1,%%eax; int $0x80; pop %%ebp"
-	:"=a"(ret)
-	:"i"(192), "b"(0), "c"(size), "d"(0x03), "S"(0x01), "D"(PSD(cl)->fd), "0"(offs)
+        "push %%ebp; movl %%eax,%%ebp; movl %1,%%eax; int $0x80; pop %%ebp"
+        :"=a"(ret)
+        :"i"(192), "b"(0), "c"(size), "d"(0x03), "S"(0x01), "D"(PSD(cl)->fd), "0"(offs)
     );
 #endif
 
@@ -157,6 +158,19 @@ VOID PCILx__Hidd_PCIDriver__UnmapPCI(OOP_Class *cl, OOP_Object *o,
     syscall2(91, offs, size);
 }
 
+BOOL PCILx__Hidd_PCIDriver__AddInterrupt(OOP_Class *cl, OOP_Object *o,
+     OOP_Object *device, struct Interrupt *interrupt)
+{
+    /* We cannot support interrupts, sorry */
+    return FALSE;
+}
+
+VOID PCIDrv__Hidd_PCIDriver__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
+     OOP_Object *device, struct Interrupt *interrupt)
+{
+
+}
+
 /* Class initialization and destruction */
 
 #define psd (&LIBBASE->psd)
@@ -170,7 +184,7 @@ static int PCILx_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 
     return TRUE;
 }
-	
+        
 static int PCILx_InitClass(LIBBASETYPEPTR LIBBASE)
 {
     OOP_Object *pci = NULL;
@@ -182,25 +196,25 @@ static int PCILx_InitClass(LIBBASETYPEPTR LIBBASE)
 
     if (psd->hiddPCIDriverAB)
     {
-	/*
-	 * The class may be added to the system. Add the driver
-	 * to PCI subsystem as well
-	 */
-	struct pHidd_PCI_AddHardwareDriver msg;
-		
-	/*
-	 * PCI is suppose to destroy the class on its Dispose
-	 */
-	msg.driverClass = psd->driverClass;
-	msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
+        /*
+         * The class may be added to the system. Add the driver
+         * to PCI subsystem as well
+         */
+        struct pHidd_PCI_AddHardwareDriver msg;
+                
+        /*
+         * PCI is suppose to destroy the class on its Dispose
+         */
+        msg.driverClass = psd->driverClass;
+        msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);
 
-	// Add it for God's sake! ;)
-	pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-	OOP_DoMethod(pci, (OOP_Msg)&msg);
-	OOP_DisposeObject(pci);
+        // Add it for God's sake! ;)
+        pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+        OOP_DoMethod(pci, (OOP_Msg)&msg);
+        OOP_DisposeObject(pci);
     }
     else
-	return FALSE;
+        return FALSE;
 
     D(bug("LinuxPCI: Driver ClassPtr = %x\n", psd->driverClass));
 
