@@ -69,6 +69,8 @@ typedef struct DeviceData {
     STRPTR              strClass;
     STRPTR              strSubClass;
     STRPTR              strInterface;
+
+    struct SignalSemaphore ownerLock;
 } tDeviceData;
 
 struct pci_staticdata {
@@ -76,31 +78,24 @@ struct pci_staticdata {
     struct List         drivers;
 
     APTR                MemPool;
+    APTR                kernelBase;
     
     OOP_AttrBase        hiddAB;
     OOP_AttrBase        hiddPCIAB;
     OOP_AttrBase        hiddPCIDriverAB;
     OOP_AttrBase        hiddPCIBusAB;
     OOP_AttrBase        hiddPCIDeviceAB;
+    OOP_MethodID        hiddPCIDriverMB;
 
     OOP_Class           *pciClass;
     OOP_Class           *pciDeviceClass;
     OOP_Class           *pciDriverClass;
 
     ULONG               users;
-
-    /* Most commonly used methods have already the mID's stored here */
-    OOP_MethodID        mid_RB;
-    OOP_MethodID        mid_RW;
-    OOP_MethodID        mid_RL;
-    OOP_MethodID        mid_WB;
-    OOP_MethodID        mid_WW;
-    OOP_MethodID        mid_WL;
 };
 
 struct pcibase {
     struct Library              LibNode;
-    APTR                        MemPool;
     struct pci_staticdata       psd;
 };
 
@@ -110,6 +105,21 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #define BASE(lib) ((struct pcibase*)(lib))
 
 #define PSD(cl) (&BASE(cl->UserData)->psd)
+
+/*
+    There are no static AttrBases in this class. Therefore it might be placed
+    directly in ROM without any harm
+*/
+#undef HiddPCIAttrBase
+#undef HiddPCIDeviceAttrBase
+#undef HiddPCIDriverAttrBase
+#undef HiddPCIDriverBase
+
+#define HiddPCIAttrBase       (PSD(cl)->hiddPCIAB)
+#define HiddPCIDeviceAttrBase (PSD(cl)->hiddPCIDeviceAB)
+#define HiddPCIDriverAttrBase (PSD(cl)->hiddPCIDriverAB)
+#define HiddAttrBase          (PSD(cl)->hiddAB)
+#define HiddPCIDriverBase     (PSD(cl)->hiddPCIDriverMB)
 
 /* PCI Configspace offsets */
 #define PCICS_VENDOR        0x00

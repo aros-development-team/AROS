@@ -16,15 +16,14 @@
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <aros/symbolsets.h>
 
 #include "pci.h"
 
-#undef HiddPCIDriverAttrBase
-#define HiddPCIDriverAttrBase   (PSD(cl)->hiddPCIDriverAB)
-#define HiddAttrBase (PSD(cl)->hiddAB)
+#define KernelBase (PSD(cl)->kernelBase)
 
 OOP_Object *PCIDrv__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -81,20 +80,11 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 UBYTE PCIDrv__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o, 
     struct pHidd_PCIDriver_ReadConfigByte *msg)
 {
-    ULONG temp;
-    struct pHidd_PCIDriver_ReadConfigLong mymsg;
-
     /*
-        First, read whole ConfigWord from PCI config space, using defined 
-        method
-    */
-    mymsg.mID = PSD(cl)->mid_RL;
-    mymsg.bus = msg->bus;
-    mymsg.dev = msg->dev;
-    mymsg.sub = msg->sub;
-    mymsg.reg = msg->reg & ~3;
-
-    temp = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
+     * First, read whole ConfigWord from PCI config space, using defined 
+     * method
+     */
+    ULONG temp = HIDD_PCIDriver_ReadConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
 
     // Then, return only this part of the Long which is requested
     return (temp >> ((msg->reg & 3) * 8)) & 0xff;
@@ -103,16 +93,7 @@ UBYTE PCIDrv__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
 UWORD PCIDrv__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o, 
     struct pHidd_PCIDriver_ReadConfigWord *msg)
 {
-    ULONG temp;
-    struct pHidd_PCIDriver_ReadConfigLong mymsg;
-
-    mymsg.mID = PSD(cl)->mid_RL;
-    mymsg.bus = msg->bus;
-    mymsg.dev = msg->dev;
-    mymsg.sub = msg->sub;
-    mymsg.reg = msg->reg & ~3;
-
-    temp = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
+    ULONG temp = HIDD_PCIDriver_ReadConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
 
     return (temp >> ((msg->reg & 2) * 8)) & 0xffff;
 }
@@ -121,63 +102,32 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigByte(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_WriteConfigByte *msg)
 {
     ULONG temp;
-    struct pHidd_PCIDriver_ReadConfigLong mymsg;
-    struct pHidd_PCIDriver_WriteConfigLong mymsg2;
     const int shift = (msg->reg & 3) * 8;
 
     // Read whole Long from PCI config space.
-    mymsg.mID = PSD(cl)->mid_RL;
-    mymsg.bus = msg->bus;
-    mymsg.dev = msg->dev;
-    mymsg.sub = msg->sub;
-    mymsg.reg = msg->reg & ~3;
-
-    temp = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
+    temp = HIDD_PCIDriver_ReadConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
 
     // Modify proper part of it according to request.
     temp = (temp & ~(0xff << shift)) | ((ULONG)msg->val << shift);
 
     // And put whole Long again into PCI config space.
-    mymsg2.mID = PSD(cl)->mid_WL;
-    mymsg2.bus = msg->bus;
-    mymsg2.dev = msg->dev;
-    mymsg2.sub = msg->sub;
-    mymsg2.reg = msg->reg & ~3;
-    mymsg2.val = temp;
-
-    OOP_DoMethod(o, (OOP_Msg)&mymsg2);
+    HIDD_PCIDriver_WriteConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3, temp);
 }
 
 void PCIDrv__Hidd_PCIDriver__WriteConfigWord(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_WriteConfigWord *msg)
 {
     ULONG temp;
-    struct pHidd_PCIDriver_ReadConfigLong mymsg;
-    struct pHidd_PCIDriver_WriteConfigLong mymsg2;
     const int shift = (msg->reg & 2) * 8;
 
     // Read whole Long from PCI config space.
-    mymsg.mID = PSD(cl)->mid_RL;
-    mymsg.bus = msg->bus;
-    mymsg.dev = msg->dev;
-    mymsg.sub = msg->sub;
-    mymsg.reg = msg->reg & ~3;
-
-    temp = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
+    temp = HIDD_PCIDriver_ReadConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3);
 
     // Modify proper part of it according to request.
     temp = (temp & ~(0xffff << shift)) | ((ULONG)msg->val << shift);
 
     // And put whole Long again into PCI config space.
-    mymsg2.mID = PSD(cl)->mid_WL;
-    mymsg2.bus = msg->bus;
-    mymsg2.dev = msg->dev;
-    mymsg2.sub = msg->sub;
-    mymsg2.reg = msg->reg & ~3;
-    mymsg2.val = temp;
-
-    OOP_DoMethod(o, (OOP_Msg)&mymsg2);
-
+    HIDD_PCIDriver_WriteConfigLong(o, msg->bus, msg->dev, msg->sub, msg->reg & ~3, temp);
 }
 
 /*
@@ -192,9 +142,9 @@ APTR PCIDrv__Hidd_PCIDriver__CPUtoPCI(OOP_Class *cl, OOP_Object *o,
     struct DrvInstData *instance = (struct DrvInstData *)OOP_INST_DATA(cl, o);
 
     if (instance->DirectBus)
-    {
         return (APTR)msg->address;
-    } else return (APTR)0xffffffff;
+    else
+        return (APTR)-1;
 }
 
 /*
@@ -206,9 +156,9 @@ APTR PCIDrv__Hidd_PCIDriver__PCItoCPU(OOP_Class *cl, OOP_Object *o,
     struct DrvInstData *instance = (struct DrvInstData *)OOP_INST_DATA(cl, o);
 
     if (instance->DirectBus)
-    {
         return (APTR)msg->address;
-    } else return (APTR)0xffffffff;
+    else
+        return (APTR)-1;
 }
 
 /*
@@ -218,17 +168,18 @@ APTR PCIDrv__Hidd_PCIDriver__PCItoCPU(OOP_Class *cl, OOP_Object *o,
 APTR PCIDrv__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_MapPCI *msg)
 {
-    /* Generic driver in case of DirecAccess PCI bus */
+    /*
+     * Generic driver in case of DirecAccess PCI bus.
+     * Our memory space is already mapped, but we may still need
+     * to perform physical to virtual translation (in case if our
+     * system uses virtual addressing).
+     */
     struct DrvInstData *instance = (struct DrvInstData *)OOP_INST_DATA(cl, o);
 
     if (instance->DirectBus)
-    {
-        struct pHidd_PCIDriver_PCItoCPU mmsg, *pmmsg=&mmsg;
-        mmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_PCItoCPU);
-        mmsg.address = msg->PCIAddress;
-        
-        return ((APTR)OOP_DoMethod(o, (OOP_Msg)pmmsg));
-    } else return (APTR)0xffffffff;
+        return HIDD_PCIDriver_PCItoCPU(o, msg->PCIAddress);
+    else
+        return (APTR)-1;
 }
 
 /*
@@ -268,6 +219,121 @@ VOID PCIDrv__Hidd_PCIDriver__FreePCIMem(OOP_Class *cl, OOP_Object *o,
     FreeVec(memory);
 }
 
+static void krnIRQwrapper(void *data1, void *data2)
+{
+    struct Interrupt *irq = (struct Interrupt *)data1;
+
+    AROS_INTC1(irq->is_Code, irq->is_Data);
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDriver_AddInterrupt
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCI_AddInterrupt *Msg);
+
+        OOP_Object *HIDD_PCIDriver_AddInterrupt(OOP_Object *obj, OOP_Object *device,
+                                                struct Interrupt *interrupt);
+
+    LOCATION
+        CLID_Hidd_PCIDriver
+
+    FUNCTION
+        Add interrupt handler for the specified device.
+
+        This method is present in order to provide abstraction for
+        different PCI implementations. Default implementation of
+        this method assumes 1:1 mapping between system interrupts
+        and PCI interrupts. However, on some machines this is not
+        true (an example is Amiga(tm) bridgeboards). In this case
+        you will have to provide alternate implementation of this
+        method.
+
+    INPUTS
+        obj       - Pointer to your driver object.
+        device    - A pointer to the device object.
+        interrupt - Interrupt structure to add.
+
+    RESULT
+        TRUE it succesful or FALSE on failure.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDriver_RemoveInterrupt
+
+    INTERNALS
+
+*****************************************************************************************/
+
+BOOL PCIDrv__Hidd_PCIDriver__AddInterrupt(OOP_Class *cl, OOP_Object *o,
+     OOP_Object *device, struct Interrupt *interrupt)
+{
+    IPTR irq;
+
+    OOP_GetAttr(device, aHidd_PCIDevice_INTLine, &irq);
+    interrupt->is_Node.ln_Succ = KrnAddIRQHandler(irq, krnIRQwrapper, interrupt, NULL);
+    return interrupt->is_Node.ln_Succ ? TRUE : FALSE;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDriver_RemoveInterrupt
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCI_RemoveInterrupt *Msg);
+
+        OOP_Object *HIDD_PCIDriver_RemoveInterrupt(OOP_Object *obj, OOP_Object *device,
+                                                   struct Interrupt *interrupt);
+
+    LOCATION
+        CLID_Hidd_PCIDriver
+
+    FUNCTION
+        Remove interrupt handler from the specified device.
+
+        This method is present in order to provide abstraction for
+        different PCI implementations. Default implementation of
+        this method assumes 1:1 mapping between system interrupts
+        and PCI interrupts. However, on some machines this is not
+        true (an example is Amiga(tm) bridgeboards). In this case
+        you will have to provide alternate implementation of this
+        method.
+
+    INPUTS
+        obj       - Pointer to your driver object.
+        device    - A pointer to the device object.
+        interrupt - Interrupt structure to remove.
+
+    RESULT
+        None.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDriver_AddInterrupt
+
+    INTERNALS
+
+*****************************************************************************************/
+
+VOID PCIDrv__Hidd_PCIDriver__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
+     OOP_Object *device, struct Interrupt *interrupt)
+{
+    KrnRemIRQHandler(interrupt->is_Node.ln_Succ);
+}
+
 VOID PCIDrv__Root__Get(OOP_Class *cl, OOP_Object *o,
     struct pRoot_Get *msg)
 {
@@ -296,26 +362,3 @@ VOID PCIDrv__Root__Get(OOP_Class *cl, OOP_Object *o,
         OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     }
 }
-
-/* Class initialization and destruction */
-
-static int PCIDrv_InitMIDs(LIBBASETYPEPTR LIBBASE)
-{
-    D(bug("[PCIDriver] Dummy Driver initialization\n"));
-    /*
-     * We do have driver class. Now we can get some MethodID's,
-     * so that whole PCI subsystem works slightly faster ;)
-     */
-                
-    LIBBASE->psd.mid_RB = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigByte);
-    LIBBASE->psd.mid_RW = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigWord);
-    LIBBASE->psd.mid_RL = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigLong);
-    
-    LIBBASE->psd.mid_WB = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigByte);
-    LIBBASE->psd.mid_WW = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigWord);
-    LIBBASE->psd.mid_WL = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_WriteConfigLong);
-
-    return TRUE;
-}
-
-ADD2INITLIB(PCIDrv_InitMIDs, 0)

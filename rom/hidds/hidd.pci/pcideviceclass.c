@@ -19,108 +19,77 @@
 
 #include <aros/debug.h>
 
-#undef HiddPCIDeviceAttrBase
-#define HiddPCIDeviceAttrBase   (PSD(cl)->hiddPCIDeviceAB)
-#undef HiddPCIDriverAttrBase
-#define HiddPCIDriverAttrBase   (PSD(cl)->hiddPCIDriverAB)
+/*****************************************************************************************
+
+    NAME
+	aoHidd_PCIDevice_Owner
+
+    SYNOPSIS
+	[..G], APTR
+
+    LOCATION
+	CLID_Hidd_PCIDevice
+
+    FUNCTION
+        Returns name of current device's owner or NULL if the device is
+        not owned by anyone.
+
+    NOTES
+        This attribute is provided for diagnostics utilities like PCITool.
+        There is no need to check current owner before attempting to own
+        the device. moHidd_PCIDevice_Obtain method performs this check
+        and owns the device atomically.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 static void setLong(OOP_Class *cl, OOP_Object *o, ULONG reg, ULONG value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
-    OOP_Object *driver = dev->driver;
-
-    struct pHidd_PCIDriver_WriteConfigLong msg;
     
-    msg.mID = PSD(cl)->mid_WL;
-    msg.bus = dev->bus;
-    msg.dev = dev->dev;
-    msg.sub = dev->sub;
-    msg.reg = reg;
-    msg.val = value;
-
-    OOP_DoMethod(driver, (OOP_Msg)&msg);
+    HIDD_PCIDriver_WriteConfigLong(dev->driver, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static void setWord(OOP_Class *cl, OOP_Object *o, ULONG reg, UWORD value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
-    OOP_Object *driver = dev->driver;
 
-    struct pHidd_PCIDriver_WriteConfigWord msg;
-    
-    msg.mID = PSD(cl)->mid_WW;
-    msg.bus = dev->bus;
-    msg.dev = dev->dev;
-    msg.sub = dev->sub;
-    msg.reg = reg;
-    msg.val = value;
-
-    OOP_DoMethod(driver, (OOP_Msg)&msg);
+    HIDD_PCIDriver_WriteConfigWord(dev->driver, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static void setByte(OOP_Class *cl, OOP_Object *o, ULONG reg, UBYTE value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
-    OOP_Object *driver = dev->driver;
 
-    struct pHidd_PCIDriver_WriteConfigByte msg;
-    
-    msg.mID = PSD(cl)->mid_WB;
-    msg.bus = dev->bus;
-    msg.dev = dev->dev;
-    msg.sub = dev->sub;
-    msg.reg = reg;
-    msg.val = value;
-
-    OOP_DoMethod(driver, (OOP_Msg)&msg);
+    HIDD_PCIDriver_WriteConfigByte(dev->driver, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static ULONG getLong(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
-    OOP_Object *driver = dev->driver;
 
-    struct pHidd_PCIDriver_ReadConfigLong msg;
-    
-    msg.mID = PSD(cl)->mid_RL;
-    msg.bus = dev->bus;
-    msg.dev = dev->dev;
-    msg.sub = dev->sub;
-    msg.reg = reg;
-
-    return OOP_DoMethod(driver, (OOP_Msg)&msg);  
+    return HIDD_PCIDriver_ReadConfigLong(dev->driver, dev->bus, dev->dev, dev->sub, reg);
 }
 
 static UWORD getWord(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
-    OOP_Object *driver = dev->driver;
 
-    struct pHidd_PCIDriver_ReadConfigWord msg;
-    
-    msg.mID = PSD(cl)->mid_RW;
-    msg.bus = dev->bus;
-    msg.dev = dev->dev;
-    msg.sub = dev->sub;
-    msg.reg = reg;
-
-    return OOP_DoMethod(driver, (OOP_Msg)&msg);  
+    return HIDD_PCIDriver_ReadConfigWord(dev->driver, dev->bus, dev->dev, dev->sub, reg);
 }
 
 static UBYTE getByte(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
-    OOP_Object *driver = dev->driver;
 
-    struct pHidd_PCIDriver_ReadConfigByte msg;
-    
-    msg.mID = PSD(cl)->mid_RB;
-    msg.bus = dev->bus;
-    msg.dev = dev->dev;
-    msg.sub = dev->sub;
-    msg.reg = reg;
-
-    return OOP_DoMethod(driver, (OOP_Msg)&msg);  
+    return HIDD_PCIDriver_ReadConfigByte(dev->driver, dev->bus, dev->dev, dev->sub, reg);
 }
 
 /* Returns offset of capability area in config area or 0 of capability is not present */
@@ -185,6 +154,200 @@ VOID PCIDev__Hidd_PCIDevice__WriteConfigLong(OOP_Class *cl, OOP_Object *o, struc
     setLong(cl, o, msg->reg, msg->val);
 }
 
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDriver_AddInterrupt
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_AddInterrupt *Msg);
+
+        OOP_Object *HIDD_PCIDriver_AddInterrupt(OOP_Object *obj, OOP_Object *device,
+                                                struct Interrupt *interrupt);
+
+    LOCATION
+        CLID_Hidd_PCIDevice
+
+    FUNCTION
+        Add interrupt handler for the device.
+
+    INPUTS
+        obj       - Pointer to device object.
+        interrupt - Interrupt structure to add.
+
+    RESULT
+        TRUE it succesful or FALSE on failure.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDevice_RemoveInterrupt
+
+    INTERNALS
+
+*****************************************************************************************/
+
+BOOL PCIDev__Hidd_PCIDevice__AddInterrupt(OOP_Class *cl, OOP_Object *o,
+     struct Interrupt *interrupt)
+{
+    tDeviceData *dev = OOP_INST_DATA(cl, o);
+
+    return HIDD_PCIDriver_AddInterrupt(dev->driver, o, interrupt);
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDevice_RemoveInterrupt
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_RemoveInterrupt *Msg);
+
+        OOP_Object *HIDD_PCIDevice_RemoveInterrupt(OOP_Object *obj, OOP_Object *device,
+                                                   struct Interrupt *interrupt);
+
+    LOCATION
+        CLID_Hidd_PCIDevice
+
+    FUNCTION
+        Remove interrupt handler from the device.
+
+    INPUTS
+        obj       - Pointer to the device object.
+        interrupt - Interrupt structure to remove.
+
+    RESULT
+        None.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDevice_AddInterrupt
+
+    INTERNALS
+
+*****************************************************************************************/
+
+VOID PCIDev__Hidd_PCIDevice__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
+     OOP_Object *device, struct Interrupt *interrupt)
+{
+    tDeviceData *dev = OOP_INST_DATA(cl, o);
+
+    return HIDD_PCIDriver_RemoveInterrupt(dev->driver, o, interrupt);
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDevice_Obtain
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_Obtain *Msg);
+
+        OOP_Object *HIDD_PCIDevice_Obtain(OOP_Object *obj, CONST_STRPTR owner);
+
+    LOCATION
+        CLID_Hidd_PCIDevice
+
+    FUNCTION
+        Lock the device for exclusive use.
+
+    INPUTS
+        obj   - Pointer to the device object.
+        owner - A string identifying the owner.
+
+    RESULT
+        NULL on success or string identifying current owner.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDevice_Release
+
+    INTERNALS
+
+*****************************************************************************************/
+
+CONST_STRPTR PCIDev__Hidd_PCIDevice__Obtain(OOP_Class *cl, OOP_Object *o,
+     CONST_STRPTR owner, BOOL wait)
+{
+    tDeviceData *dev = OOP_INST_DATA(cl, o);
+    CONST_STRPTR current = NULL;
+
+    /*
+     * FIXME: Actually this is just atomic compare and swap.
+     * I believe it should be impemented in assembler.
+     * Ouch, on Amiga such operations are unsafe, at least
+     * in CHIP memory. Too bad...
+     */
+    ObtainSemaphore(&dev->ownerLock);
+
+    /* While we are using semaphore, owner name is embedded in its node */
+    if (dev->ownerLock.ss_Link.ln_Name)
+        current = dev->ownerLock.ss_Link.ln_Name;
+    else
+        dev->ownerLock.ss_Link.ln_Name = (STRPTR)owner;
+
+    ReleaseSemaphore(&dev->ownerLock);
+
+    return current;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDevice_Release
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_Release *Msg);
+
+        OOP_Object *HIDD_PCIDevice_Release(OOP_Object *obj);
+
+    LOCATION
+        CLID_Hidd_PCIDevice
+
+    FUNCTION
+        Release ownership of the device.
+
+    INPUTS
+        obj - Pointer to the device object.
+
+    RESULT
+        None.
+
+    NOTES
+        You should call this function only on devices owned by you. Doing
+        this on someone else's devices will not do any good things.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDevice_Obtain
+
+    INTERNALS
+
+*****************************************************************************************/
+
+VOID PCIDev__Hidd_PCIDevice__Release(OOP_Class *cl, OOP_Object *o)
+{
+    tDeviceData *dev = OOP_INST_DATA(cl, o);
+
+    dev->ownerLock.ss_Link.ln_Name = NULL;
+}
 
 /*
     PCIDevice::New method is invoked by base pci class. It passes to the device
@@ -201,6 +364,8 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         struct TagItem *tag, *tags;
         tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl, o);
         OOP_Object *driver = NULL;
+
+        InitSemaphore(&dev->ownerLock);
         
         tags=(struct TagItem *)msg->attrList;
 
@@ -723,6 +888,10 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                         PCISTF_CAPABILITIES)
                     == PCISTF_CAPABILITIES);
                 break;
+
+        case aoHidd_PCIDevice_Owner:
+            *msg->storage = (IPTR)dev->ownerLock.ss_Link.ln_Name;
+            break;
 
             default:
                 OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
