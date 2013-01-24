@@ -284,26 +284,6 @@ __attribute__ ((interrupt ("ABORT"))) void __vectorhand_prefetchabort(void)
 #warning "TODO: Implement support for retrieving pages from medium, and reattempting access"
 #endif
 
-void GPUSysTimerHandler(unsigned int timerno, void *unused1)
-{
-    unsigned int stc, cs;
-
-    D(bug("[KRN] GPUSysTimerHandler()\n"));
-
-    /* Aknowledge and update our timer interrupt */
-    cs = *((volatile unsigned int *)(SYSTIMER_CS));
-    cs &= ~ (1 << timerno);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = cs;
-    stc = *((volatile unsigned int *)(SYSTIMER_CLO));
-    stc += VBLANK_INTERVAL;
-    *((volatile unsigned int *)(SYSTIMER_CS)) = cs | (1 << timerno);
-    *((volatile unsigned int *)(SYSTIMER_C0 + (VBLANK_TIMER * 4))) = stc;
-
-    /* Signal the Exec VBlankServer */
-    if (SysBase && (SysBase->IDNestCnt < 0)) {
-        core_Cause(INTB_VERTB, 1L << INTB_VERTB);
-    }
-}
 
 /* linker exports */
 extern void *__intvecs_start, *__intvecs_end;

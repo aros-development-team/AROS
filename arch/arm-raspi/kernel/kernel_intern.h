@@ -37,6 +37,8 @@
 void core_SetupMMU(void);
 void core_SetupIntr(void);
 
+void *KrnAddSysTimerHandler(struct KernelBase *);
+
 intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
