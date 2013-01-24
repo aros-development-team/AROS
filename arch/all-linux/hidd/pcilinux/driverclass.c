@@ -165,7 +165,7 @@ BOOL PCILx__Hidd_PCIDriver__AddInterrupt(OOP_Class *cl, OOP_Object *o,
     return FALSE;
 }
 
-VOID PCIDrv__Hidd_PCIDriver__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
+VOID PCILx__Hidd_PCIDriver__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
      OOP_Object *device, struct Interrupt *interrupt)
 {
 
