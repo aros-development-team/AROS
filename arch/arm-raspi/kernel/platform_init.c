@@ -23,22 +23,13 @@
 #include "kernel_arch.h"
 #include "kernel_romtags.h"
 
-extern void GPUSysTimerHandler(unsigned int, void *);
-extern void *KrnAddSysTimerHandler(uint8_t, irqhandler_t *, void *, void *);
-
 static int PlatformInit(struct KernelBase *KernelBase)
 {
-    unsigned int stc;
     D(bug("[Kernel] PlatformInit()\n"));
 
-    stc = *((volatile unsigned int *)(SYSTIMER_CLO));
-    stc += VBLANK_INTERVAL;
-    *((volatile unsigned int *)(SYSTIMER_CS)) = (1 << 3);
-    *((volatile unsigned int *)(SYSTIMER_C0 + (VBLANK_TIMER * 4))) = stc;
+    KrnAddSysTimerHandler(KernelBase);
 
-    KrnAddSysTimerHandler(IRQ_TIMER0 + VBLANK_TIMER, GPUSysTimerHandler, VBLANK_TIMER, KernelBase);
-
-    D(bug("[Kernel] SysTimer %d used for VBlank\n", VBLANK_TIMER));
+    D(bug("[Kernel] PlatformInit: DOne..\n"));
 
     return TRUE;
 }

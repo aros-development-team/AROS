@@ -48,9 +48,9 @@ AROS_LH0I(int, KrnIsSuper,
     AROS_LIBFUNC_INIT
 
     register unsigned int reg;
-    asm volatile("mov %[reg], r15" : [reg] "=r" (reg) );
-    
-    return !((reg & 0x3) == 0);
+    asm volatile("mrs %[reg], cpsr" : [reg] "=r" (reg) );
+
+    return !(((reg & 0xF) == 0x0) || ((reg & 0xF) == 0xF));
 
     AROS_LIBFUNC_EXIT
 }
