@@ -44,7 +44,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    asm("cps #0x1f\n");	/* switch to system mode */
+    asm volatile ("mov sp, %[sysStack]\n" : : [sysStack] "X" (sysStack)); 
+    asm volatile ("cps #0x1f\n");	/* switch to system mode */
 
     sysStack = 0;   /* Get rid of the compiler warning */
 

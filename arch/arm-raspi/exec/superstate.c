@@ -48,13 +48,14 @@
 {
     AROS_LIBFUNC_INIT
 
-    asm("cps #0x13\n");	/* switch to SVC (supervisor) mode */
+    APTR sysStack, userStack;
 
-    /* We have to return something. NULL is an invalid address for a
-       stack, so it could be used to say that this function does
-       nothing.
-    */
-    return NULL;
+    asm volatile ("mov %[userStack], sp\n" : [userStack] "=X" (userStack));
+    asm volatile ("cps #0x13\n");	/* switch to SVC (supervisor) mode */
+    asm volatile ("mov %[sysStack], sp\n" : [sysStack] "=X" (sysStack));
+    asm volatile ("mov sp, %[userStack]\n" : : [userStack] "X" (userStack));
+
+    return sysStack;
 
     AROS_LIBFUNC_EXIT
 } /* SuperState() */
