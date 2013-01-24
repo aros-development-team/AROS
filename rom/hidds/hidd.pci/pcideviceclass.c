@@ -281,7 +281,7 @@ VOID PCIDev__Hidd_PCIDevice__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
 *****************************************************************************************/
 
 CONST_STRPTR PCIDev__Hidd_PCIDevice__Obtain(OOP_Class *cl, OOP_Object *o,
-     CONST_STRPTR owner, BOOL wait)
+     CONST_STRPTR owner)
 {
     tDeviceData *dev = OOP_INST_DATA(cl, o);
     CONST_STRPTR current = NULL;
