@@ -26,6 +26,7 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM		kernel-partition \
 #MM		kernel-layers \
 #MM		kernel-timer \
+#MM		kernel-vcmbox \
 #MM		hidd-i2c \
 #MM		hidd-i2c-bcm2835 \
 #MM	kernel-lddemon \
@@ -49,12 +50,12 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
 #MM     kernel-usb \
-#MM     kernel-usb-usbromstartup \
+#MM     kernel-usb-romstrap-raspi \
 #MM     kernel-shell \
 #MM     kernel-shellcommands
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap dos debug poseidon
-PKG_RSRC     :=  misc dosboot lddemon usbromstartup FileSystem shell shellcommands
+PKG_RSRC     :=  misc dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox
 PKG_DEVS     :=  input gameport keyboard console timer
 PKG_HANDLERS := con amberram cdrom sfs fat afs
 PKG_HIDDS    := graphics mouse keyboard hiddclass i2c i2c-bcm2835 usb ohci
