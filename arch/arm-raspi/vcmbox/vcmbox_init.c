@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
@@ -23,6 +23,10 @@ static int vcmbox_init(struct VCMBoxBase *VCMBoxBase)
     int retval = TRUE;
 
     D(bug("[VCMBox] vcmbox_init()\n"));
+
+    InitSemaphore(&VCMBoxBase->vcmb_Sem);
+
+    D(bug("[VCMBox] vcmbox_init: Initialised Semaphore @ 0x%p\n", &VCMBoxBase->vcmb_Sem));
 
     return retval;
 }
@@ -56,6 +60,7 @@ AROS_LH2(volatile unsigned int *, VCMBoxRead,
     {
         while(1)
         {
+            ObtainSemaphore(&VCMBoxBase->vcmb_Sem);
             while ((VCMBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
             {
                 asm volatile ("mcr p15, #0, %[r], c7, c14, #0" : : [r] "r" (0) );
@@ -70,6 +75,7 @@ AROS_LH2(volatile unsigned int *, VCMBoxRead,
             msg = *((volatile unsigned int *)(mb + VCMB_READ));
             
             asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
+            ReleaseSemaphore(&VCMBoxBase->vcmb_Sem);
 
             if ((msg & VCMB_CHANMASK) == chan)
                 return (volatile unsigned int *)(msg & ~VCMB_CHANMASK);
@@ -92,7 +98,7 @@ AROS_LH3(void, VCMBoxWrite,
 
     if ((((unsigned int)msg & VCMB_CHANMASK) == 0) && (chan <= VCMB_CHANS))
     { 
-        //ObtainSemaphore();
+        ObtainSemaphore(&VCMBoxBase->vcmb_Sem);
         while ((VCMBoxStatus(mb) & VCMB_STATUS_WRITEREADY) != 0)
         {
             asm volatile ("mcr p15, #0, %[r], c7, c14, #0" : : [r] "r" (0) );
@@ -101,7 +107,7 @@ AROS_LH3(void, VCMBoxWrite,
         asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
 
         *((volatile unsigned int *)(mb + VCMB_WRITE)) = ((unsigned int)msg | chan);
-        //ReleaseSemaphore();
+        ReleaseSemaphore(&VCMBoxBase->vcmb_Sem);
     }
 
     AROS_LIBFUNC_EXIT
