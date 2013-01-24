@@ -1,0 +1,12 @@
+#   $Id: mmakefile.src 44918 2012-06-01 03:30:04Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+
+#MM- kernel-usb-romstrap-raspi : kernel-usb-poseidon
+
+%build_module_simple mmake=kernel-usb-romstrap-raspi \
+  modname=usbromstartup modtype=resource \
+  files="usbromstartup"
+
+%common
