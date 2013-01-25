@@ -226,12 +226,18 @@ AROS_UFH3(void, Enumerator,
 
     if (sd->forced || IsCompatible(ProductID))
     {
-        UWORD MGCC = HIDD_PCIDevice_ReadConfigWord(pciDevice, G45_MGCC);
+        UWORD MGCC;
 
-        D(ULONG BSM = HIDD_PCIDevice_ReadConfigLong(pciDevice, G45_BSM));
-        D(UBYTE MSAC = HIDD_PCIDevice_ReadConfigByte(pciDevice, G45_MSAC));
+        if (HIDD_PCIDevice_Obtain(pciDevice, "IntelGMA"))
+        {
+            D(bug("[GMA] Failed to obtain device, already owned\n"));
+            return;
+        }
 
-        D(bug("[GMA] MGCC=%04x, BSM=%08x, MSAC=%08x\n", MGCC, BSM, MSAC));
+        MGCC = HIDD_PCIDevice_ReadConfigWord(pciDevice, G45_MGCC);
+        D(bug("[GMA] MGCC=%04x, BSM=%08x, MSAC=%08x\n", MGCC, 
+              HIDD_PCIDevice_ReadConfigLong(pciDevice, G45_BSM),
+              HIDD_PCIDevice_ReadConfigByte(pciDevice, G45_MSAC)));
 
         /*-------- DO NOT CHANGE/REMOVE -------------*/
         bug("\003\n"); /* Tell vga text mode debug output to die */
