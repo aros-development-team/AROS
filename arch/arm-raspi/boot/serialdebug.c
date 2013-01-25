@@ -6,15 +6,19 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <asm/bcm2835.h>
+#include <hardware/pl011uart.h>
 
 #include "serialdebug.h"
 #include "bootconsole.h"
+
+#define ICR_FLAGS (ICR_RXIC|ICR_TXIC|ICR_RTIC|ICR_FEIC|ICR_PEIC|ICR_BEIC|ICR_OEIC)
+
 
 inline void waitSerIN(volatile uint32_t *uart)
 {
     while(1)
     {
-       if ((uart[UART_FR] & 0x10) == 0) break;
+       if ((uart[UART_FR] & FR_RXFE) == 0) break;
     }
 }
 
@@ -22,7 +26,7 @@ inline void waitSerOUT(volatile uint32_t *uart)
 {
     while(1)
     {
-       if ((uart[UART_FR] & 0x20) == 0) break;
+       if ((uart[UART_FR] & FR_TXFF) == 0) break;
     }
 }
 
@@ -68,10 +72,10 @@ void serInit(void)
     uart[UART_CR] = 0;
 
     ra = *(volatile uint32_t *)GPFSEL1;
-    ra &= ~(7<<12); // TX on GPIO14
-    ra |= 4<<12;    // alt0
-    ra &= ~(7<<15); // RX on GPIO15
-    ra |= 4<<15;    // alt0
+    ra &= ~(7<<12);                     // TX on GPIO14
+    ra |= 4<<12;                        // alt0
+    ra &= ~(7<<15);                     // RX on GPIO15
+    ra |= 4<<15;                        // alt0
     *(volatile uint32_t *)GPFSEL1 = ra;
 
     *(volatile uint32_t *)GPPUD = 0;
@@ -84,9 +88,10 @@ void serInit(void)
 
     *(volatile uint32_t *)GPPUDCLK0 = 0;
 
-    uart[UART_ICR] = 0x7FF;
-    uart[UART_IBRD] = 1;
-    uart[UART_FBRD] = 40;
-    uart[UART_LCRH] = 0x70;
-    uart[UART_CR] = 0x301;
+    uart[UART_ICR] = ICR_FLAGS;
+                                        // default clock speed for uart0 = 3Mhz
+    uart[UART_IBRD] = 0x1;              // divisor = 1.628 ( ~115172baud)
+    uart[UART_FBRD] = 0x274;
+    uart[UART_LCRH] = LCRH_WLEN8;       // 8N1 (Fifo disabled)
+    uart[UART_CR] = CR_UARTEN|CR_TXE;   // enable the uart + tx
 }
