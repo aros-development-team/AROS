@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2005 Neil Cafferkey
+    Copyright (C) 2013 The AROS Development Team
     $Id$
 */
 
@@ -47,14 +48,14 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH2(PCIBoard *, Prm_FindBoardTagList,
+        AROS_LH2(PCIBoard *, Prm_FindBoardTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(PCIBoard *, previous, A0),
-	AROS_LHA(struct TagItem *, tag_list, A1),
+        AROS_LHA(PCIBoard *, previous, A0),
+        AROS_LHA(struct TagItem *, tag_list, A1),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 5, Prometheus)
+        struct Library *, PrometheusBase, 5, Prometheus)
 
 /*  FUNCTION
 
@@ -119,14 +120,14 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH2(ULONG, Prm_GetBoardAttrsTagList,
+        AROS_LH2(ULONG, Prm_GetBoardAttrsTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(PCIBoard *, board, A0),
-	AROS_LHA(struct TagItem *, tag_list, A1),
+        AROS_LHA(PCIBoard *, board, A0),
+        AROS_LHA(struct TagItem *, tag_list, A1),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 6, Prometheus)
+        struct Library *, PrometheusBase, 6, Prometheus)
 
 /*  FUNCTION
 
@@ -175,14 +176,14 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH2(ULONG, Prm_SetBoardAttrsTagList,
+        AROS_LH2(ULONG, Prm_SetBoardAttrsTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(PCIBoard *, board, A0),
-	AROS_LHA(struct TagItem *, tag_list, A1),
+        AROS_LHA(PCIBoard *, board, A0),
+        AROS_LHA(struct TagItem *, tag_list, A1),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 13, Prometheus)
+        struct Library *, PrometheusBase, 13, Prometheus)
 
 /*  FUNCTION
 
@@ -220,14 +221,14 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH2(UBYTE, Prm_ReadConfigByte,
+        AROS_LH2(UBYTE, Prm_ReadConfigByte,
 
 /*  SYNOPSIS */
-	AROS_LHA(PCIBoard *, board, A0),
-	AROS_LHA(UBYTE, offset, D0),
+        AROS_LHA(PCIBoard *, board, A0),
+        AROS_LHA(UBYTE, offset, D0),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 9, Prometheus)
+        struct Library *, PrometheusBase, 9, Prometheus)
 
 /*  FUNCTION
 
@@ -255,15 +256,15 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH3(VOID, Prm_WriteConfigByte,
+        AROS_LH3(VOID, Prm_WriteConfigByte,
 
 /*  SYNOPSIS */
-	AROS_LHA(PCIBoard *, board, A0),
-	AROS_LHA(UBYTE, data, D0),
-	AROS_LHA(UBYTE, offset, D1),
+        AROS_LHA(PCIBoard *, board, A0),
+        AROS_LHA(UBYTE, data, D0),
+        AROS_LHA(UBYTE, offset, D1),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 12, Prometheus)
+        struct Library *, PrometheusBase, 12, Prometheus)
 
 /*  FUNCTION
 
@@ -292,14 +293,14 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH2(UWORD, Prm_ReadConfigWord,
+        AROS_LH2(UWORD, Prm_ReadConfigWord,
 
 /*  SYNOPSIS */
-	AROS_LHA(PCIBoard *, board, A0),
-	AROS_LHA(UBYTE, offset, D0),
+        AROS_LHA(PCIBoard *, board, A0),
+        AROS_LHA(UBYTE, offset, D0),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 8, Prometheus)
+        struct Library *, PrometheusBase, 8, Prometheus)
 
 /*  FUNCTION
 
@@ -327,15 +328,15 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH3(VOID, Prm_WriteConfigWord,
+        AROS_LH3(VOID, Prm_WriteConfigWord,
 
 /*  SYNOPSIS */
-	AROS_LHA(PCIBoard *, board, A0),
-	AROS_LHA(UWORD, data, D0),
-	AROS_LHA(UBYTE, offset, D1),
+        AROS_LHA(PCIBoard *, board, A0),
+        AROS_LHA(UWORD, data, D0),
+        AROS_LHA(UBYTE, offset, D1),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 11, Prometheus)
+        struct Library *, PrometheusBase, 11, Prometheus)
 
 /*  FUNCTION
 
@@ -364,14 +365,14 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH2(ULONG, Prm_ReadConfigLong,
+        AROS_LH2(ULONG, Prm_ReadConfigLong,
 
 /*  SYNOPSIS */
-	AROS_LHA(PCIBoard *, board, A0),
-	AROS_LHA(UBYTE, offset, D0),
+        AROS_LHA(PCIBoard *, board, A0),
+        AROS_LHA(UBYTE, offset, D0),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 7, Prometheus)
+        struct Library *, PrometheusBase, 7, Prometheus)
 
 /*  FUNCTION
 
@@ -399,15 +400,15 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH3(VOID, Prm_WriteConfigLong,
+        AROS_LH3(VOID, Prm_WriteConfigLong,
 
 /*  SYNOPSIS */
-	AROS_LHA(PCIBoard *, board, A0),
-	AROS_LHA(ULONG, data, D0),
-	AROS_LHA(UBYTE, offset, D1),
+        AROS_LHA(PCIBoard *, board, A0),
+        AROS_LHA(ULONG, data, D0),
+        AROS_LHA(UBYTE, offset, D1),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 10, Prometheus)
+        struct Library *, PrometheusBase, 10, Prometheus)
 
 /*  FUNCTION
 
@@ -436,14 +437,14 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH2(BOOL, Prm_AddIntServer,
+        AROS_LH2(BOOL, Prm_AddIntServer,
 
 /*  SYNOPSIS */
-	AROS_LHA(PCIBoard *, board, A0),
-	AROS_LHA(struct Interrupt *, interrupt, A1),
+        AROS_LHA(PCIBoard *, board, A0),
+        AROS_LHA(struct Interrupt *, interrupt, A1),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 14, Prometheus)
+        struct Library *, PrometheusBase, 14, Prometheus)
 
 /*  FUNCTION
 
@@ -479,14 +480,14 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH2(VOID, Prm_RemIntServer,
+        AROS_LH2(VOID, Prm_RemIntServer,
 
 /*  SYNOPSIS */
-	AROS_LHA(PCIBoard *, board, A0),
-	AROS_LHA(struct Interrupt *, interrupt, A1),
+        AROS_LHA(PCIBoard *, board, A0),
+        AROS_LHA(struct Interrupt *, interrupt, A1),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 15, Prometheus)
+        struct Library *, PrometheusBase, 15, Prometheus)
 
 /*  FUNCTION
 
@@ -519,13 +520,13 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH1(APTR, Prm_AllocDMABuffer,
+        AROS_LH1(APTR, Prm_AllocDMABuffer,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, size, D0),
+        AROS_LHA(ULONG, size, D0),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 16, Prometheus)
+        struct Library *, PrometheusBase, 16, Prometheus)
 
 /*  FUNCTION
 
@@ -554,14 +555,14 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH2(VOID, Prm_FreeDMABuffer,
+        AROS_LH2(VOID, Prm_FreeDMABuffer,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, buffer, A0),
-	AROS_LHA(ULONG, size, D0),
+        AROS_LHA(APTR, buffer, A0),
+        AROS_LHA(ULONG, size, D0),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 17, Prometheus)
+        struct Library *, PrometheusBase, 17, Prometheus)
 
 /*  FUNCTION
 
@@ -586,13 +587,13 @@ static const struct TagItem map_tag_list[] =
 /***************************************************************************
 
     NAME */
-	AROS_LH1(APTR, Prm_GetPhysicalAddr,
+        AROS_LH1(APTR, Prm_GetPhysicalAddr,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, address, D0),
+        AROS_LHA(APTR, address, D0),
 
 /*  LOCATION */
-	struct Library *, PrometheusBase, 18, Prometheus)
+        struct Library *, PrometheusBase, 18, Prometheus)
 
 /*  FUNCTION
 
