@@ -192,11 +192,11 @@ VOID PCIDev__Hidd_PCIDevice__WriteConfigLong(OOP_Class *cl, OOP_Object *o, struc
 *****************************************************************************************/
 
 BOOL PCIDev__Hidd_PCIDevice__AddInterrupt(OOP_Class *cl, OOP_Object *o,
-     struct Interrupt *interrupt)
+     struct pHidd_PCIDevice_AddInterrupt *msg)
 {
     tDeviceData *dev = OOP_INST_DATA(cl, o);
 
-    return HIDD_PCIDriver_AddInterrupt(dev->driver, o, interrupt);
+    return HIDD_PCIDriver_AddInterrupt(dev->driver, o, msg->interrupt);
 }
 
 /*****************************************************************************************
@@ -237,11 +237,11 @@ BOOL PCIDev__Hidd_PCIDevice__AddInterrupt(OOP_Class *cl, OOP_Object *o,
 *****************************************************************************************/
 
 VOID PCIDev__Hidd_PCIDevice__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
-     OOP_Object *device, struct Interrupt *interrupt)
+     struct pHidd_PCIDevice_RemoveInterrupt *msg)
 {
     tDeviceData *dev = OOP_INST_DATA(cl, o);
 
-    return HIDD_PCIDriver_RemoveInterrupt(dev->driver, o, interrupt);
+    return HIDD_PCIDriver_RemoveInterrupt(dev->driver, o, msg->interrupt);
 }
 
 /*****************************************************************************************
@@ -281,7 +281,7 @@ VOID PCIDev__Hidd_PCIDevice__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
 *****************************************************************************************/
 
 CONST_STRPTR PCIDev__Hidd_PCIDevice__Obtain(OOP_Class *cl, OOP_Object *o,
-     CONST_STRPTR owner)
+     struct pHidd_PCIDevice_Obtain *msg)
 {
     tDeviceData *dev = OOP_INST_DATA(cl, o);
     CONST_STRPTR current = NULL;
@@ -298,7 +298,7 @@ CONST_STRPTR PCIDev__Hidd_PCIDevice__Obtain(OOP_Class *cl, OOP_Object *o,
     if (dev->ownerLock.ss_Link.ln_Name)
         current = dev->ownerLock.ss_Link.ln_Name;
     else
-        dev->ownerLock.ss_Link.ln_Name = (STRPTR)owner;
+        dev->ownerLock.ss_Link.ln_Name = (STRPTR)msg->owner;
 
     ReleaseSemaphore(&dev->ownerLock);
 
@@ -342,7 +342,8 @@ CONST_STRPTR PCIDev__Hidd_PCIDevice__Obtain(OOP_Class *cl, OOP_Object *o,
 
 *****************************************************************************************/
 
-VOID PCIDev__Hidd_PCIDevice__Release(OOP_Class *cl, OOP_Object *o)
+VOID PCIDev__Hidd_PCIDevice__Release(OOP_Class *cl, OOP_Object *o,
+     struct pHidd_PCIDevice_Release *msg)
 {
     tDeviceData *dev = OOP_INST_DATA(cl, o);
 

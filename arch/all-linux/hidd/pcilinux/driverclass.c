@@ -159,14 +159,14 @@ VOID PCILx__Hidd_PCIDriver__UnmapPCI(OOP_Class *cl, OOP_Object *o,
 }
 
 BOOL PCILx__Hidd_PCIDriver__AddInterrupt(OOP_Class *cl, OOP_Object *o,
-     OOP_Object *device, struct Interrupt *interrupt)
+     struct pHidd_PCIDriver_AddInterrupt *msg)
 {
     /* We cannot support interrupts, sorry */
     return FALSE;
 }
 
 VOID PCILx__Hidd_PCIDriver__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
-     OOP_Object *device, struct Interrupt *interrupt)
+     struct pHidd_PCIDriver_RemoveInterrupt *msg)
 {
 
 }
