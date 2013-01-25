@@ -122,3 +122,9 @@ Save complete PCI Information to RAM Disk
 MSG_UNUSED (//)
 --unused--
 ;
+MSG_IO_BASE (//)
+I/O base:
+;
+MSG_OWNER (//)
+Used by:
+;
