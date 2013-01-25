@@ -232,7 +232,7 @@ static void krnIRQwrapper(void *data1, void *data2)
         moHidd_PCIDriver_AddInterrupt
 
     SYNOPSIS
-        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCI_AddInterrupt *Msg);
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDriver_AddInterrupt *Msg);
 
         OOP_Object *HIDD_PCIDriver_AddInterrupt(OOP_Object *obj, OOP_Object *device,
                                                 struct Interrupt *interrupt);
@@ -273,13 +273,14 @@ static void krnIRQwrapper(void *data1, void *data2)
 *****************************************************************************************/
 
 BOOL PCIDrv__Hidd_PCIDriver__AddInterrupt(OOP_Class *cl, OOP_Object *o,
-     OOP_Object *device, struct Interrupt *interrupt)
+     struct pHidd_PCIDriver_AddInterrupt *msg)
 {
     IPTR irq;
 
-    OOP_GetAttr(device, aHidd_PCIDevice_INTLine, &irq);
-    interrupt->is_Node.ln_Succ = KrnAddIRQHandler(irq, krnIRQwrapper, interrupt, NULL);
-    return interrupt->is_Node.ln_Succ ? TRUE : FALSE;
+    OOP_GetAttr(msg->device, aHidd_PCIDevice_INTLine, &irq);
+    msg->interrupt->is_Node.ln_Succ =
+        KrnAddIRQHandler(irq, krnIRQwrapper, msg->interrupt, NULL);
+    return msg->interrupt->is_Node.ln_Succ ? TRUE : FALSE;
 }
 
 /*****************************************************************************************
@@ -288,7 +289,7 @@ BOOL PCIDrv__Hidd_PCIDriver__AddInterrupt(OOP_Class *cl, OOP_Object *o,
         moHidd_PCIDriver_RemoveInterrupt
 
     SYNOPSIS
-        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCI_RemoveInterrupt *Msg);
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDriver_RemoveInterrupt *Msg);
 
         OOP_Object *HIDD_PCIDriver_RemoveInterrupt(OOP_Object *obj, OOP_Object *device,
                                                    struct Interrupt *interrupt);
@@ -329,9 +330,9 @@ BOOL PCIDrv__Hidd_PCIDriver__AddInterrupt(OOP_Class *cl, OOP_Object *o,
 *****************************************************************************************/
 
 VOID PCIDrv__Hidd_PCIDriver__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
-     OOP_Object *device, struct Interrupt *interrupt)
+     struct pHidd_PCIDriver_RemoveInterrupt *msg)
 {
-    KrnRemIRQHandler(interrupt->is_Node.ln_Succ);
+    KrnRemIRQHandler(msg->interrupt->is_Node.ln_Succ);
 }
 
 VOID PCIDrv__Root__Get(OOP_Class *cl, OOP_Object *o,
