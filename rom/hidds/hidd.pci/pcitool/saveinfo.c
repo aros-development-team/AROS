@@ -22,6 +22,10 @@ void SaveToDisk(struct PCIInfo *DeviceInfo)
         FPuts( DeviceInfoFile, DeviceInfo->Direct_bus );
         FPuts( DeviceInfoFile, "\n" );
 
+        FPuts( DeviceInfoFile, "IÒ base: ");
+        FPuts( DeviceInfoFile, DeviceInfo->IOBase );
+        FPuts( DeviceInfoFile, "\n" );
+        
         FPuts( DeviceInfoFile, "Hardware info: ");
         FPuts( DeviceInfoFile, DeviceInfo->Hardware_info );
         FPuts( DeviceInfoFile, "\n" );
@@ -42,6 +46,10 @@ void SaveToDisk(struct PCIInfo *DeviceInfo)
         FPuts( DeviceInfoFile, DeviceInfo->Subsystem );
         FPuts( DeviceInfoFile, "\n" );
 
+        FPuts( DeviceInfoFile, "Used by: ");
+        FPuts( DeviceInfoFile, DeviceInfo->Owner );
+        FPuts( DeviceInfoFile, "\n" );
+        
         FPuts( DeviceInfoFile, "VendorID: ");
         FPuts( DeviceInfoFile, DeviceInfo->VendorID );
         FPuts( DeviceInfoFile, "\n" );

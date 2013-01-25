@@ -17,10 +17,12 @@ struct PCIInfo
     char Driver_name[200];
     char Direct_bus[200];
     char Hardware_info[200];
+    char IOBase[11];
     char Description[200];
     char Vendor_name[200];
     char Product_name[200];
     char Subsystem[200];
+    char Owner[200];
     char VendorID[10];
     char ProductID[10];
     char RevisionID[10];

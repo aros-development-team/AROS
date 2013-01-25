@@ -119,10 +119,10 @@ LONG xget(Object * obj, ULONG attr)
 Object *app;
 Object *MainWindow;
 Object *DriverList;
-Object *StrDriverName, *StrDriverHWName, *StrDriverDirect;
+Object *StrDriverName, *StrDriverHWName, *StrDriverDirect, *StrIOBase;
 
 Object *StrDescription, *VendorID, *ProductID, *RevisionID;
-Object *VendorName, *ProductName, *SubsystemName;
+Object *VendorName, *ProductName, *SubsystemName, *OwnerName;
 Object *_Class, *SubClass, *Interface, *IRQLine;
 Object *ROMBase, *ROMSize;
 Object *RangeList;
@@ -243,7 +243,7 @@ AROS_UFH3(void, select_function,
     
     ULONG active;
     OOP_Object *obj, *drv;
-    STRPTR class, subclass, interface, str;
+    STRPTR class, subclass, interface, str, owner;
     UWORD vendor, product, subvendor, subdevice;
 
     active = xget(object, MUIA_List_Active);
@@ -262,6 +262,9 @@ AROS_UFH3(void, select_function,
         OOP_GetAttr(drv, aHidd_HardwareName, (APTR)&str);
         set(StrDriverHWName, MUIA_Text_Contents, str);
         strcpy(SaveDeviceInfo.Hardware_info, str); //Save Debug Info
+        OOP_GetAttr(drv, aHidd_PCIDriver_IOBase, &val);
+        snprintf(SaveDeviceInfo.IOBase, 10, "0x%08lx", val);
+        set(StrIOBase, MUIA_Text_Contents, SaveDeviceInfo.IOBase);
         OOP_GetAttr(drv, aHidd_PCIDriver_DirectBus, (APTR)&val);
         set(StrDriverDirect, MUIA_Text_Contents, (IPTR)((val)?_(MSG_YES):_(MSG_NO)));
         strcpy(SaveDeviceInfo.Direct_bus, (val)?_(MSG_YES):_(MSG_NO)); //Save Debug Info
@@ -294,6 +297,18 @@ AROS_UFH3(void, select_function,
             pciids_GetSubDeviceName(vendor, product, subvendor, subdevice, buf, 79));
         strcpy(SaveDeviceInfo.Subsystem, pciids_GetSubDeviceName(vendor, product, subvendor, subdevice, buf, 79));
  
+        OOP_GetAttr(obj, aHidd_PCIDevice_Owner, (IPTR *)&owner);
+        if (owner)
+        {
+            set(OwnerName, MUIA_Text_Contents, owner);
+            strcpy(SaveDeviceInfo.Owner, owner);
+        }
+        else
+        {
+            set(OwnerName, MUIA_Text_Contents, "");
+            SaveDeviceInfo.Owner[0] = 0;
+        }
+
         OOP_GetAttr(obj, aHidd_PCIDevice_RevisionID, (APTR)&val);
         snprintf(buf, 79, "0x%02lx", val);
         set(RevisionID, MUIA_Text_Contents, buf);
@@ -519,6 +534,16 @@ BOOL GUIinit()
                                         MUIA_Text_Contents, "",
                                     End,
                                 End,
+                                Child, Label(_(MSG_IO_BASE)),
+                                Child, HGroup,
+                                    Child, StrIOBase = TextObject,
+                                        TextFrame,
+                                        MUIA_Background, MUII_TextBack,
+                                        MUIA_Text_SetMax, FALSE,
+                                        MUIA_Text_Contents, "0x00000000",
+                                    End,
+                                    Child, HSpace(0),
+                                End,
                                 Child, Label(_(MSG_HARDWARE_INFO)),
                                 Child, StrDriverHWName = TextObject,
                                     TextFrame,
@@ -558,6 +583,13 @@ BOOL GUIinit()
                                     MUIA_Text_SetMax, FALSE,
                                     MUIA_Text_Contents, "",
                                 End,
+                                Child, Label(_(MSG_OWNER)),
+                                Child, OwnerName = TextObject,
+                                    TextFrame,
+                                    MUIA_Background, MUII_TextBack,
+                                    MUIA_Text_SetMax, FALSE,
+                                    MUIA_Text_Contents, "",
+                                End,                                    
                             End,
                             Child, ColGroup(6),
                                 Child, Label(_(MSG_VENDORID)),
