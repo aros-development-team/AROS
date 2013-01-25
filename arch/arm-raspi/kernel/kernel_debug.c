@@ -6,12 +6,11 @@
 #include <aros/kernel.h>
 #include <inttypes.h>
 
+#include <asm/bcm2835.h>
+#include <hardware/pl011uart.h>
+
 #include <kernel_base.h>
 #include <kernel_debug.h>
-
-#define UART0_BASE   0x20201000
-#define UART_DR     (0x00)
-#define UART_FR     (0x18)
 
 void (*_KrnPutC)(char *) = NULL;
 
@@ -19,7 +18,7 @@ inline void waitSerOUT(volatile uint32_t *uart)
 {
     while(1)
     {
-       if ((uart[UART_FR] & 0x20) == 0) break;
+       if ((uart[UART_FR] & FR_TXFF) == 0) break;
     }
 }
 
