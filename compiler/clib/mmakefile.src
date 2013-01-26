@@ -87,10 +87,10 @@ COMMON_ARCH := \
 #   - Shared are in either the shared linklib, or the arosc module
 SHARED	:= \
         __arosc_gmtoffset \
+        __arosc_environ \
         __arosc_init \
 	__arosc_ioerr2errno \
         __arosc_nixmain \
-        __arosc_set_environptr \
         __arosc_startup \
 	__arosc_userdata \
 	__assert \
