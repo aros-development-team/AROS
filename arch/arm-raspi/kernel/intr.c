@@ -19,8 +19,6 @@
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
 
-extern void core_Cause(unsigned char, unsigned int);
-
 #define IRQBANK_POINTER(bank) ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
 
 #define DREGS(x)
@@ -113,7 +111,7 @@ void handle_irq(regs_t *regs)
 
     D(bug("[KRN] ## IRQ ##\n"));
 
-/*    if ((thisTask = SysBase->ThisTask) != NULL)
+    if ((thisTask = SysBase->ThisTask) != NULL)
     {
         D(bug("[KRN] IRQ invoked in '%s'", thisTask->tc_Node.ln_Name));
         if ((ctx = thisTask->tc_UnionETask.tc_ETask->et_RegFrame) != NULL)
@@ -140,7 +138,7 @@ void handle_irq(regs_t *regs)
             thisTask->tc_SPReg = ctx->sp;
         }
         D(bug("\n"));
-    }*/
+    }
 
     pending = *((volatile unsigned int *)(ARMIRQ_PEND));
     D(bug("[KRN] PendingARM %08x\n", pending));
