@@ -457,5 +457,6 @@ __END_DECLS
    when a user program references the 'extern char **environ' variable.
 */
 void __arosc_set_environptr(char ***environ_ptr);
+char ***__arosc_get_environptr(void);
 
 #endif /* _UNISTD_H_ */
