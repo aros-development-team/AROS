@@ -70,4 +70,25 @@ static inline void bug(const char *format, ...)
     va_end(args);
 }
 
+#define VECTCOMMON_START \
+    "           sub     sp, sp, #4*4           \n" \
+    "           stmfd   sp!, {r0-r12}          \n" \
+    "           mov     r0, sp                 \n" \
+    "           mrs     r1, spsr               \n" \
+    "           str     r1, [r0, #16*4]        \n" \
+    "           str     lr, [r0, #15*4]        \n"
+
+
+#define VECTCOMMON_END \
+    "           add     r1, sp, #13*4          \n" \
+    "           ldm     r1, {sp}^              \n" \
+    "           add     r1, sp, #14*4          \n" \
+    "           ldm     r1, {lr}^              \n" \
+    "           ldr     lr, [sp, #15*4]        \n" \
+    "           ldr     r1, [sp, #16*4]        \n" \
+    "           msr     spsr, r1               \n" \
+    "           ldmfd   sp!, {r0-r12}          \n" \
+    "           add     sp, sp, #4*4           \n" \
+    "           movs    pc, lr                 \n"
+
 #endif /*KERNEL_INTERN_H_*/
