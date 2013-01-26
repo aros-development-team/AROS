@@ -4,39 +4,29 @@
  * architecture-specific code for the scheduler to work!
  */
 
-#include <aros/debug.h>
-
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 
+#include <proto/kernel.h>
+
 #include "etask.h"
 
 #include "kernel_intern.h"
+#include "kernel_debug.h"
 #include "kernel_cpu.h"
 #include "kernel_syscall.h"
 #include "kernel_scheduler.h"
 #include "kernel_intr.h"
 
-#include <kernel_debug.h>
-
-#define RESTORE_TASKSTATE(task, regs)                                           \
-    struct ExceptionContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;   \
-    for (i = 0; i < 12; i++)                                                    \
-    {                                                                           \
-        ((uint32_t *)regs)[i] = ctx->r[i];                                      \
-    }                                                                           \
-    ((uint32_t *)regs)[12] = ctx->ip;                                           \
-    ((uint32_t *)regs)[13] = ctx->sp = task->tc_SPReg;                          \
-    ((uint32_t *)regs)[14] = ctx->lr;                                           \
-    ((uint32_t *)regs)[15] = ctx->pc;                                           \
-    ((uint32_t *)regs)[16] = ctx->cpsr;
+#define D(x)
 
 void cpu_Switch(regs_t *regs)
 {
     struct Task *task;
-    int i;
+
+    D(bug("[Kernel] cpu_Switch()\n"));
 
     /* Disable interrupts until the task switch */
     asm volatile("cpsid i\n");
@@ -45,7 +35,7 @@ void cpu_Switch(regs_t *regs)
         
     /* Copy current task's context into the ETask structure */
     /* Restore the task's state */
-    RESTORE_TASKSTATE(task, regs)
+    STORE_TASKSTATE(task, regs)
 
     core_Switch();
 }
@@ -53,7 +43,8 @@ void cpu_Switch(regs_t *regs)
 void cpu_Dispatch(regs_t *regs)
 {
     struct Task *task;
-    int i;
+
+    D(bug("[Kernel] cpu_Dispatch()\n"));
 
     asm volatile("cpsid i\n");
 
@@ -85,4 +76,20 @@ void cpu_Dispatch(regs_t *regs)
         AROS_UFC1(void, task->tc_Launch,
                   AROS_UFCA(struct ExecBase *, SysBase, A6));       
     }
+}
+
+void cpu_DumpRegs(regs_t *regs)
+{
+    int i;
+    
+    bug("[KRN] Register Dump:\n");
+    for (i = 0; i < 12; i++)
+    {
+        bug("[KRN]      r%02d: 0x%08x\n", i, ((uint32_t *)regs)[i]);
+    }
+    bug("[KRN] (ip) r12: 0x%08x\n", ((uint32_t *)regs)[12]);
+    bug("[KRN] (sp) r13: 0x%08x\n", ((uint32_t *)regs)[13]);
+    bug("[KRN] (lr) r14: 0x%08x\n", ((uint32_t *)regs)[14]);
+    bug("[KRN] (pc) r15: 0x%08x\n", ((uint32_t *)regs)[15]);
+    bug("[KRN]     cpsr: 0x%08x\n", ((uint32_t *)regs)[16]);
 }

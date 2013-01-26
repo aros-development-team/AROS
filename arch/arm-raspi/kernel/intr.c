@@ -105,40 +105,11 @@ asm (
 
 void handle_irq(regs_t *regs)
 {
-    struct ExceptionContext *ctx;
-    struct Task *thisTask;
     unsigned int pending, processed, irq;
 
     D(bug("[KRN] ## IRQ ##\n"));
 
-    if ((thisTask = SysBase->ThisTask) != NULL)
-    {
-        D(bug("[KRN] IRQ invoked in '%s'", thisTask->tc_Node.ln_Name));
-        if ((ctx = thisTask->tc_UnionETask.tc_ETask->et_RegFrame) != NULL)
-        {
-            int i;
-            
-            D(bug(", ExceptionContext @ 0x%p", ctx));
-            DREGS(bug("\n"));
-            for (i = 0; i < 12; i++)
-            {
-                ctx->r[i] = ((uint32_t *)regs)[i];
-                DREGS(bug("[KRN]      r%02d: 0x%08x\n", i, ctx->r[i]));
-            }
-            ctx->ip = ((uint32_t *)regs)[12];
-            DREGS(bug("[KRN] (ip) r12: 0x%08x\n", ctx->ip));
-            ctx->sp = ((uint32_t *)regs)[13];
-            DREGS(bug("[KRN] (sp) r13: 0x%08x\n", ctx->sp));
-            ctx->lr = ((uint32_t *)regs)[14];
-            DREGS(bug("[KRN] (lr) r14: 0x%08x\n", ctx->lr));
-            ctx->pc = ((uint32_t *)regs)[15];
-            DREGS(bug("[KRN] (pc) r15: 0x%08x\n", ctx->pc));
-            ctx->cpsr = ((uint32_t *)regs)[16];
-            DREGS(bug("[KRN]     cpsr: 0x%08x", ctx->cpsr));
-            thisTask->tc_SPReg = ctx->sp;
-        }
-        D(bug("\n"));
-    }
+    DREGS(cpu_DumpRegs(regs));
 
     pending = *((volatile unsigned int *)(ARMIRQ_PEND));
     D(bug("[KRN] PendingARM %08x\n", pending));

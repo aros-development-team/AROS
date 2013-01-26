@@ -61,8 +61,6 @@ void handle_syscall(void *regs)
 {
     register unsigned int addr;
     register unsigned int swi_no;
-    struct ExceptionContext *ctx;
-    struct Task *thisTask;
 
     /* We determine the SWI number by reading in "tasks"
        program counter, subtract the instruction from it and
@@ -83,41 +81,13 @@ void handle_syscall(void *regs)
     }
     if (swi_no <= 0x0a || swi_no == 0x100)
     {
-        if ((thisTask = SysBase->ThisTask) != NULL)
-        {
-            D(bug("[KRN] SWI invoked in '%s'", thisTask->tc_Node.ln_Name));
-            if ((ctx = thisTask->tc_UnionETask.tc_ETask->et_RegFrame) != NULL)
-            {
-                int i;
-                
-                D(bug(", ExceptionContext @ 0x%p", ctx));
-                DREGS(bug("\n"));
-                for (i = 0; i < 12; i++)
-                {
-                    ctx->r[i] = ((uint32_t *)regs)[i];
-                    DREGS(bug("[KRN]      r%02d: 0x%08x\n", i, ctx->r[i]));
-                }
-                ctx->ip = ((uint32_t *)regs)[12];
-                DREGS(bug("[KRN] (ip) r12: 0x%08x\n", ctx->ip));
-                ctx->sp = ((uint32_t *)regs)[13];
-                DREGS(bug("[KRN] (sp) r13: 0x%08x\n", ctx->sp));
-                ctx->lr = ((uint32_t *)regs)[14];
-                DREGS(bug("[KRN] (lr) r14: 0x%08x\n", ctx->lr));
-                ctx->pc = ((uint32_t *)regs)[15];
-                DREGS(bug("[KRN] (pc) r15: 0x%08x\n", ctx->pc));
-                ctx->cpsr = ((uint32_t *)regs)[16];
-                DREGS(bug("[KRN]     cpsr: 0x%08x", ctx->cpsr));
-                thisTask->tc_SPReg = ctx->sp;
-            }
-            D(bug("\n"));
-        }
+        DREGS(cpu_DumpRegs(regs));
     
         switch (swi_no)
         {
             case SC_CLI:
             {
                 D(bug("[KRN] ## CLI...\n"));
-                if (ctx) ctx->cpsr |= 0x80;
                 ((uint32_t *)regs)[16] |= 0x80;
                 break;
             }
@@ -125,7 +95,6 @@ void handle_syscall(void *regs)
             case SC_STI:
             {
                 D(bug("[KRN] ## STI...\n"));
-                if (ctx) ctx->cpsr &= ~0x80;
                 ((uint32_t *)regs)[16] &= ~0x80;
                 break;
             }
@@ -139,16 +108,6 @@ void handle_syscall(void *regs)
             case SC_ISSUPERSTATE:
             {
                 D(bug("[KRN] ## ISSUPERSTATE...\n"));
-                break;
-            }
-
-            case SC_RTAS:
-            {
-                break;
-            }
-
-            case SC_INVALIDATED:
-            {
                 break;
             }
 

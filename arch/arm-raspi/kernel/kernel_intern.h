@@ -78,7 +78,6 @@ static inline void bug(const char *format, ...)
     "           str     r1, [r0, #16*4]        \n" \
     "           str     lr, [r0, #15*4]        \n"
 
-
 #define VECTCOMMON_END \
     "           add     r1, sp, #13*4          \n" \
     "           ldm     r1, {sp}^              \n" \
@@ -90,5 +89,31 @@ static inline void bug(const char *format, ...)
     "           ldmfd   sp!, {r0-r12}          \n" \
     "           add     sp, sp, #4*4           \n" \
     "           movs    pc, lr                 \n"
+
+#define STORE_TASKSTATE(task, regs)                                             \
+    struct ExceptionContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;   \
+    int __task_reg_no;                                                          \
+    for (__task_reg_no = 0; __task_reg_no < 12; __task_reg_no++)                \
+    {                                                                           \
+        ctx->r[__task_reg_no] = ((uint32_t *)regs)[__task_reg_no];              \
+    }                                                                           \
+    ctx->ip = ((uint32_t *)regs)[12];                                           \
+    ctx->sp = task->tc_SPReg = ((uint32_t *)regs)[13];                          \
+    ctx->lr = ((uint32_t *)regs)[14];                                           \
+    ctx->pc = ((uint32_t *)regs)[15];                                           \
+    ctx->cpsr = ((uint32_t *)regs)[16];
+
+#define RESTORE_TASKSTATE(task, regs)                                           \
+    struct ExceptionContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;   \
+    int __task_reg_no;                                                          \
+    for (__task_reg_no = 0; __task_reg_no < 12; __task_reg_no++)                \
+    {                                                                           \
+        ((uint32_t *)regs)[__task_reg_no] = ctx->r[__task_reg_no];              \
+    }                                                                           \
+    ((uint32_t *)regs)[12] = ctx->ip;                                           \
+    ((uint32_t *)regs)[13] = ctx->sp = task->tc_SPReg;                          \
+    ((uint32_t *)regs)[14] = ctx->lr;                                           \
+    ((uint32_t *)regs)[15] = ctx->pc;                                           \
+    ((uint32_t *)regs)[16] = ctx->cpsr;
 
 #endif /*KERNEL_INTERN_H_*/
