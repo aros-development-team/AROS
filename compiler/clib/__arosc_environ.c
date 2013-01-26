@@ -50,7 +50,7 @@
         This is still TODO.
 
     SEE ALSO
-        getenv(), setenv()
+        __arosc_get_environptr(), getenv(), setenv()
 
     INTERNALS
 
@@ -70,4 +70,43 @@
         fputs("Internal error with environ initialization\n", stderr);
         abort();
     }
+}
+
+/*****************************************************************************
+
+    NAME */
+#include <stdlib.h>
+
+	char ***__arosc_get_environptr (
+
+/*  SYNOPSIS */
+	void)
+
+/*  FUNCTION
+	This function the get pointer to the child environ global variable
+        currently used by arosc.library.
+
+    INPUTS
+        -
+
+    RESULT 
+        environptr - ptr to the child environ variable (== &environ).
+                     NULL is return if envirion emulation is disabled.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        __arosc_set_environptr()
+
+    INTERNALS
+
+******************************************************************************/
+{
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+
+    return aroscbase->acb_environptr;
 }

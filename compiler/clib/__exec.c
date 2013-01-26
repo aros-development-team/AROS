@@ -44,7 +44,8 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     char *filename2 = NULL;
     int argssize = 512;
     struct Process *me;
-    char **environ = NULL;
+    char ***environptr = __arosc_get_environptr();
+    char **environ = (environptr != NULL) ? *environptr : NULL;
 
     D(bug("Entering __exec_prepare(\"%s\", %d, %x, %x)\n",
           filename, searchpath, argv, envp
@@ -55,9 +56,6 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         errno = EINVAL;
         goto error;
     }
-
-    if (aroscbase->acb_environptr)
-        environ = *aroscbase->acb_environptr;
 
     /* Use own memory to allocate so that no arosstdc.library functions need to be called
        exec_pool can also be allocated in __exec_valist2array
