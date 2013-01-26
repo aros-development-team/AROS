@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     List the contents of a directory.
@@ -15,7 +15,7 @@
         List [(dir | pattern | filename)] [ PAT (pattern)] [KEYS] [DATES]
              [NODATES] [TO (name)] [SUB (string)] [SINCE (date)] [UPTO (date)]
              [QUICK] [BLOCK] [NOHEAD] [FILES] [DIRS] [LFORMAT (string)] [ALL]
-                
+
     TEMPLATE
 
         DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S
@@ -23,7 +23,7 @@
     LOCATION
 
         C:
-           
+
     FUNCTION
 
         Lists detailed information about the files and directories in the 
@@ -31,19 +31,20 @@
 
         The information for each file or directory is presented on a separate 
         line, containing the following information:
-         
+
         name
         size (in bytes)
         protection bits
         date and time
-        
+
     INPUTS
 
         DIR           --  The directory to list. If left out, the current
                           directory will be listed.
         PAT           --  Display only files matching 'string'
         KEYS          --  Display the block number of each file or directory
-        DATES         --  Display the creation date of files and directories
+        DATES         --  Always display the full modification date of files
+                          and directories instead of a day name.
         NODATES       --  Don't display dates
         TO (name)     --  Write the listing to a file instead of stdout
         SUB (string)  --  Display only files, a substring of which matches
@@ -63,7 +64,7 @@
         %A  --  file attributes
         %B  --  size of file in blocks rather than bytes
         %C  --  file comment
-        %D  --  creation date
+        %D  --  modification date
         %E  --  file extension
         %F  --  volume name
         %K  --  file key block number
@@ -72,8 +73,8 @@
         %N  --  file name
         %P  --  file path
         %S  --  superceded by %N and %P; obsolete
-        %T  --  creation time
-        
+        %T  --  modification time
+
     RESULT
 
         Standard DOS return codes.
@@ -92,7 +93,7 @@
         Installer                109956 ----rwed 02-Sep-99 11:51:31
         Which                      1068 --p-rwed 02-Sep-99 11:51:31
         9 files - 274 blocks used        
-        
+
     BUGS
 
     SEE ALSO
@@ -201,7 +202,7 @@ int printDirHeader(STRPTR dirname, BOOL noHead)
         %N  --  file name
         %P  --  file path
         %S  --  file name or file path
-        %T  --  creation date
+        %T  --  file time
 */
 
 struct lfstruct
@@ -259,12 +260,12 @@ int printLformat(STRPTR format, struct lfstruct *lf)
                 Printf(lf->comment);
                 break;
                 
-                /* Creation date */
+                /* Modification date */
             case 'D':
                 Printf(lf->date);
                 break;
                 
-                /* Creation time */
+                /* Modification time */
             case 'T':
                 Printf(lf->time);
                 break;
@@ -521,11 +522,14 @@ int printFileData(struct AnchorPath *ap,
 
     CopyMem(ds, &dt.dat_Stamp, sizeof(struct DateStamp));
     dt.dat_Format  = FORMAT_DOS;
-    dt.dat_Flags   = DTF_SUBST;
+    if (dates)
+        dt.dat_Flags = 0;
+    else
+        dt.dat_Flags = DTF_SUBST;
     dt.dat_StrDay  = NULL;
     dt.dat_StrDate = date;
     dt.dat_StrTime = time;
-    DateToStr(&dt); /* returns 0 if invalid */
+    DateToStr(&dt);
 
     /* Convert the protection bits to a string */
     flags[0] = protection & FIBF_SCRIPT  ? 's' : '-';
