@@ -42,6 +42,7 @@ void GPUSysTimerHandler(unsigned int timerno, void *unused1)
     stc += VBLANK_INTERVAL;
     *((volatile unsigned int *)(SYSTIMER_CS)) = cs | (1 << timerno);
     *((volatile unsigned int *)(SYSTIMER_C0 + (timerno * 4))) = stc;
+
     DIRQ(bug("[KRN] GPUSysTimerHandler: Done..\n"));
 }
 

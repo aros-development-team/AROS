@@ -78,74 +78,34 @@ void __vectorhand_reset(void)
 
 /** SWI handled in syscall.c */
 
-/*
-    18 - lr_irq
-    17 - SPSR_irq
-    16 - cpsr
-    15 - pc
-    14 - lr
-    13 - sp
-    12 - ip
-    11 - r11
-    10 - r10
-     9 - r9
-     8 - r8
-     7 - r7
-     6 - r6
-     5 - r5
-     4 - r4
-     3 - r3
-     2 - r2
-     1 - r1
-     0 - r0
-*/
-
 asm (
     ".set	MODE_IRQ, 0x12                 \n"
+    ".set	MODE_SUPERVISOR, 0x13          \n"
     ".set	MODE_SYSTEM, 0x1f              \n"
 
     ".globl __vectorhand_irq                   \n"
     ".type __vectorhand_irq,%function          \n"
     "__vectorhand_irq:                         \n"
-    "           sub     lr, lr, #4             \n" // adjust lr_irq, and save it with spsr_irq ..
-    "           srsdb   #MODE_IRQ!             \n" // .. into irq stack ..
-    "           srsdb   #MODE_SYSTEM!          \n" // .. and into into system stack
+    "           sub     lr, lr, #4             \n" // adjust lr_irq
+    VECTCOMMON_START
     "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
-
-    "           sub     sp, sp, #4*4           \n" // make space to store cpsr, pc, lr, and sp
-    "           stmfd   sp!, {r0-r12}          \n" // store untouched registers
-    "           mov     r0, sp                 \n" // r0 = registers on the stack to pass to c handler ..
-
-    "           ldr     ip, [sp, #18*4]        \n" // store lr_irq as ctx_pc
-    "           str     ip, [sp, #15*4]        \n"
-    
-    "           add     ip, sp, #19*4          \n" // store original sp as ctx_sp
-    "           str     ip, [sp, #13*4]        \n"
-
-    "           str     lr, [sp, #14*4]        \n" // store lr in ctx_lr
-
-    "           ldr     r1, [sp, #17*4]        \n" // get spsr_irq
-    "           bic     r1, r1, #0x80          \n" // enable irqs
-//    "           msr     cpsr_c, r1             \n" 
-    "           str     r1, [sp, #16*4]        \n" // and store in ctx_cpsr
-
-    "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
-    "           mov     fp, #0                 \n" // clear fp(??)
+    "           str     sp, [r0, #13*4]        \n"
+    "           str     lr, [r0, #14*4]        \n" // store lr in ctx_lr
+    "           mov     fp, #0                 \n" // clear fp
 
     "           bl      handle_irq             \n"
 
-    "           ldr     lr, [sp, #14*4]        \n" // get ctx_lr
-    "           ldmfd   sp!, {r0-r12}          \n" // restore remaining ctx registers
-    "           ldr     sp, [sp, #0*4]         \n" // correct the stack pointer .. 
-
     "           cpsid   i, #MODE_IRQ           \n" // switch to IRQ mode, with interrupts disabled..
-    "           rfefd   sp!                    \n" // ..and return
+    "           mov     r0, sp                 \n"
+    "           mov     fp, #0                 \n" // clear fp
+    "           bl      core_ExitInterrupt     \n"
+    VECTCOMMON_END
 );
 
 #define IRQ_BANK1	0x00000100
 #define IRQ_BANK2	0x00000200
 
-void handle_irq(void *regs)
+void handle_irq(regs_t *regs)
 {
     struct ExceptionContext *ctx;
     struct Task *thisTask;
@@ -237,6 +197,8 @@ void handle_irq(void *regs)
         }
     }
     if (processed) *((volatile unsigned int *)(GPUIRQ_PEND1)) = (pending & ~processed);
+
+    D(bug("[KRN] IRQ processing finished\n"));
 
     return;
 }

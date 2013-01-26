@@ -34,6 +34,8 @@ extern char * __text_end;
     warning : this code will be changes to stoe spsr_svc, and lr_svc onto the system mode stack
     and then switch into that mode - and at the end jump back into svc mode, before returning from the exception
 
+    this code also assumes the caller is in user mode (and will break from any other mode)
+
     r0 = passed to c handler, r1/r2 = temp
 */
 asm (
@@ -43,31 +45,16 @@ asm (
     ".globl __vectorhand_swi                   \n"
     ".type __vectorhand_swi,%function          \n"
     "__vectorhand_swi:                         \n"
-    "           sub     sp, sp, #4*4           \n" // make space to store callers cpsr, pc, lr, and sp
-    "           stmfd   sp!, {r0-r12}          \n" // store untouched registers to pass to c handler ..
-    "           mov     r0, sp                 \n" // r0 = registers r0-r12 on the stack
-    "           mrs     r1, spsr               \n" // store spsr in ctx_cpsr
-    "           str     r1, [sp, #16*4]        \n"
-    "           str     lr, [sp, #15*4]        \n" // store lr_svc in ctx_pc
-    "           add     r1, sp, #13*4          \n" // store sp^ in ctx_sp
+    VECTCOMMON_START
+    "           add     r1, r0, #13*4          \n" // store sp^ in ctx_sp
     "           stm     r1, {sp}^              \n" 
-    "           add     r1, sp, #14*4          \n" // store lr^ in ctx_lr
+    "           add     r1, r0, #14*4          \n" // store lr^ in ctx_lr
     "           stm     r1, {lr}^              \n"
-    "           ldr     r1, [sp, #1*4]         \n" // restore r1 ..
     "           mov     fp, #0                 \n" // clear fp(??)
 
     "           bl      handle_syscall         \n"
 
-    "           add     r1, sp, #13*4          \n" // store ctx_sp in sp^
-    "           ldm     r1, {sp}^              \n" 
-    "           add     r1, sp, #14*4          \n" // store ctx_lr in lr^
-    "           ldm     r1, {lr}^              \n"
-    "           ldr     lr, [sp, #15*4]        \n" // put ctx_pc into lr_svc
-    "           ldr     r2, [sp, #16*4]        \n" // put ctx_cpsr into spsr
-    "           msr     spsr, r2               \n"
-    "           ldmfd   sp!, {r0-r12}          \n" // restore remaining task_registers
-    "           add     sp, sp, #4*4           \n" // correct the stack pointer .. 
-    "           movs    pc, lr                 \n" // ..and return
+    VECTCOMMON_END
 );
 
 void handle_syscall(void *regs)

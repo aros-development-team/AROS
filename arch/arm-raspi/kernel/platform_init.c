@@ -16,7 +16,6 @@
 #include <proto/exec.h>
 #include <strings.h>
 
-#include "exec_intern.h"
 #include "etask.h"
 
 #include "kernel_intern.h"
