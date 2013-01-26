@@ -41,7 +41,6 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM     kernel-filesystem \
 #MM     kernel-fs-con \
 #MM     kernel-fs-afs \
-#MM     hidd-usb \
 #MM     kernel-fs-cdvdfs \
 #MM     kernel-fs-fat \
 #MM     kernel-fs-sfs \
@@ -58,9 +57,8 @@ PKG_LIBS     := aros partition expansion utility oop graphics layers intuition k
 PKG_RSRC     :=  misc dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox
 PKG_DEVS     :=  input gameport keyboard console timer
 PKG_HANDLERS := con amberram cdrom sfs fat afs
-PKG_HIDDS    := graphics mouse keyboard hiddclass i2c i2c-bcm2835 usb ohci
-PKG_USB      := hid
-PKG_USB_PSD  := hid hub bootmouse bootkeyboard massstorage
+PKG_HIDDS    := graphics mouse keyboard hiddclass i2c i2c-bcm2835
+PKG_USB  := hid hub bootmouse bootkeyboard massstorage
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
@@ -69,8 +67,7 @@ MODULES := \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .hook, $(PKG_HOOKS))) \
 	$(addprefix $(BINDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
-	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
-	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD)))
+	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB)))
 
 kernel-package-raspi-arm:
 	$(RM) -rf $(OSGENDIR)/boot/modules
