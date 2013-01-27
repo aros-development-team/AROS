@@ -1028,29 +1028,26 @@ struct RTL8169Unit *CreateUnit(struct RTL8169Base *RTL8169DeviceBase, OOP_Object
         
     if ((unit = AllocMem(sizeof(struct RTL8169Unit), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
     {
-                IPTR mmiobase, mmiolen, type;
-                // IPTR DeviceID;
-                OOP_Object *driver;
-                BOOL mmioerror = FALSE;
+        IPTR mmiobase, mmiolen, type;
+        OOP_Object *driver;
+        BOOL mmioerror = FALSE;
 
-                RTLD(bug("[rtl8169] CreateUnit()\n"))
+        RTLD(bug("[rtl8169] CreateUnit()\n"))
 
-                if (doDebug)
-                {
-                    unit->rtl8169u_flags |= IFF_DEBUG;
-                }
+        if (doDebug)
+            unit->rtl8169u_flags |= IFF_DEBUG;
                 
-                unit->rtl8169u_UnitNum = RTL8169DeviceBase->rtl8169b_UnitCount++;
+        unit->rtl8169u_UnitNum = RTL8169DeviceBase->rtl8169b_UnitCount++;
 
-                unit->rtl8169u_Sana2Info.HardwareType = S2WireType_Ethernet;
-                unit->rtl8169u_Sana2Info.MTU = ETH_MTU;
-                unit->rtl8169u_Sana2Info.AddrFieldSize = 8 * ETH_ADDRESSSIZE;
+        unit->rtl8169u_Sana2Info.HardwareType = S2WireType_Ethernet;
+        unit->rtl8169u_Sana2Info.MTU = ETH_MTU;
+        unit->rtl8169u_Sana2Info.AddrFieldSize = 8 * ETH_ADDRESSSIZE;
 
-            // Determine which configuration to use for this card
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorId);
-            OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductId);
+        // Determine which configuration to use for this card
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorId);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductId);
 
-            unit->rtl8169u_config = UNKNOWN_CFG;
+        unit->rtl8169u_config = UNKNOWN_CFG;
 
         for(i = 0; i < NBR_CARDS; i++)
         {
@@ -1081,211 +1078,202 @@ struct RTL8169Unit *CreateUnit(struct RTL8169Base *RTL8169DeviceBase, OOP_Object
                                                                 TxErr | TxOK | RxOK | RxErr;
                             unit->rtl8169u_napi_event = RxFIFOOver | TxErr | TxOK | RxOK | RxOverflow;
                     break;
-            }
+        }
 
-                if ((unit->rtl8169u_name = AllocVec(8 + (unit->rtl8169u_UnitNum / 10) + 2,
-                                                                                        MEMF_CLEAR | MEMF_PUBLIC)) == NULL)
-                {
-                FreeMem(unit, sizeof(struct RTL8169Unit));
-                return NULL;
-                }
-            sprintf((char *) unit->rtl8169u_name, "rtl8169.%d", unit->rtl8169u_UnitNum);
-        
+        if ((unit->rtl8169u_name = AllocVec(8 + (unit->rtl8169u_UnitNum / 10) + 2,
+                                            MEMF_CLEAR | MEMF_PUBLIC)) == NULL)
+        {
+            FreeMem(unit, sizeof(struct RTL8169Unit));
+            return NULL;
+        }
+        sprintf((char *) unit->rtl8169u_name, "rtl8169.%d", unit->rtl8169u_UnitNum);
+
         RTLD(bug("[rtl8169] CreateUnit: Unit allocated @ 0x%p\n", unit))
 
-                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR) &driver);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR) &driver);
 
-                unit->rtl8169u_device     = RTL8169DeviceBase;
-                unit->rtl8169u_PCIDevice  = pciDevice;
-                unit->rtl8169u_PCIDriver  = driver;
+        unit->rtl8169u_device     = RTL8169DeviceBase;
+        unit->rtl8169u_PCIDevice  = pciDevice;
+        unit->rtl8169u_PCIDriver  = driver;
 
-                unit->rtl8169u_mtu        = unit->rtl8169u_Sana2Info.MTU;
+        unit->rtl8169u_mtu        = unit->rtl8169u_Sana2Info.MTU;
 
-                InitSemaphore(&unit->rtl8169u_unit_lock);
-                NEWLIST(&unit->rtl8169u_Openers);
-                NEWLIST(&unit->rtl8169u_multicast_ranges);
-                NEWLIST(&unit->rtl8169u_type_trackers);
+        InitSemaphore(&unit->rtl8169u_unit_lock);
+        NEWLIST(&unit->rtl8169u_Openers);
+        NEWLIST(&unit->rtl8169u_multicast_ranges);
+        NEWLIST(&unit->rtl8169u_type_trackers);
 
-                OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &unit->rtl8169u_IRQ);
-                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, (IPTR *)&unit->rtl8169u_BaseIO);
-                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base1, &mmiobase);
-                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size1, &mmiolen);
-                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type1, &type);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &unit->rtl8169u_IRQ);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, (IPTR *)&unit->rtl8169u_BaseIO);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base1, &mmiobase);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size1, &mmiolen);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type1, &type);
+        if(mmiolen == 0)
+        {
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &mmiobase);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &mmiolen);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type2, &type);
+            if(mmiolen == 0)
+            {
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base3, &mmiobase);
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size3, &mmiolen);
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type3, &type);
                 if(mmiolen == 0)
                 {
-                        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, &mmiobase);
-                        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, &mmiolen);
-                        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type2, &type);
-                        if(mmiolen == 0)
-                        {
-                                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base3, &mmiobase);
-                                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size3, &mmiolen);
-                                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type3, &type);
-                                if(mmiolen == 0)
-                                {
-                                        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base4, &mmiobase);
-                                        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size4, &mmiolen);
-                                        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type4, &type);
-                                        if(mmiolen == 0)
-                                        {
-                                                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base5, &mmiobase);
-                                                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &mmiolen);
-                                                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type5, &type);
-                                        }
-                                }
-                        }
+                    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base4, &mmiobase);
+                    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size4, &mmiolen);
+                    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type4, &type);
+                    if(mmiolen == 0)
+                    {
+                        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base5, &mmiobase);
+                        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size5, &mmiolen);
+                        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type5, &type);
+                    }
                 }
+            }
+        }
 
         RTLD(bug("[%s] CreateUnit:   INT:%d, base0:0x%p, base2:0x%p, size2:%d\n", unit->rtl8169u_name,
-                                 unit->rtl8169u_IRQ, unit->rtl8169u_BaseIO,
-                                 mmiobase, mmiolen))
+                 unit->rtl8169u_IRQ, unit->rtl8169u_BaseIO, mmiobase, mmiolen))
 
-                if (type & ADDRF_IO)
-                {
+        if (type & ADDRF_IO)
+        {
             RTLD(bug("[%s] CreateUnit: MMIO Region of wrong type!\n", unit->rtl8169u_name))
-                mmioerror = TRUE;
-                }
+            mmioerror = TRUE;
+        }
 
-                if (mmiolen < R8169_REGS_SIZE)
-                {
+        if (mmiolen < R8169_REGS_SIZE)
+        {
             RTLD(bug("[%s] CreateUnit: Invalid MMIO Reg size (%d, expected %d)\n", unit->rtl8169u_name,
-                                         mmiolen,
-                                         R8169_REGS_SIZE))
-                    mmioerror = TRUE;
-                }
+                     mmiolen, R8169_REGS_SIZE))
+            mmioerror = TRUE;
+        }
 
-                if (mmioerror)
-                {
-                    FreeMem(unit->rtl8169u_name, 8 + (unit->rtl8169u_UnitNum/10) + 2);
-                FreeMem(unit, sizeof(struct RTL8169Unit));
-                return NULL;
-                }
+        if (mmioerror)
+        {
+            FreeMem(unit->rtl8169u_name, 8 + (unit->rtl8169u_UnitNum/10) + 2);
+            FreeMem(unit, sizeof(struct RTL8169Unit));
+            return NULL;
+        }            
+        
+        unit->rtl8169u_SizeMem = R8169_REGS_SIZE;
+        unit->rtl8169u_BaseMem = HIDD_PCIDriver_MapPCI(driver, (APTR)mmiobase, unit->rtl8169u_SizeMem);
 
-        /* TODO: how do we set memory write invalidate for PCI devices on AROS ? */
-
-            unit->rtl8169u_SizeMem = R8169_REGS_SIZE;
-            unit->rtl8169u_BaseMem = HIDD_PCIDriver_MapPCI(driver, (APTR)mmiobase, unit->rtl8169u_SizeMem);
-
-                if (unit->rtl8169u_BaseMem != NULL)
-                {
-                struct TagItem attrs[] =
-                {
-                            { aHidd_PCIDevice_isIO,     TRUE },
-                            { aHidd_PCIDevice_isMEM,    TRUE },
-                            { aHidd_PCIDevice_isMaster, TRUE },
-                            { TAG_DONE,                 0    },
-                };
-                OOP_SetAttrs(pciDevice, (struct TagItem *)&attrs);
+        if (unit->rtl8169u_BaseMem != NULL)
+        {
+            struct TagItem attrs[] =
+            {
+                { aHidd_PCIDevice_isIO,     TRUE },
+                { aHidd_PCIDevice_isMEM,    TRUE },
+                { aHidd_PCIDevice_isMaster, TRUE },
+                { TAG_DONE,                 0    },
+            };
+            OOP_SetAttrs(pciDevice, (struct TagItem *)&attrs);
 
             RTLD(bug("[%s] CreateUnit:   PCI_BaseMem @ 0x%p\n", unit->rtl8169u_name, unit->rtl8169u_BaseMem))
 
-                unit->rtl8169u_DelayPort.mp_SigBit = SIGB_SINGLE;
-                unit->rtl8169u_DelayPort.mp_Flags = PA_SIGNAL;
-                unit->rtl8169u_DelayPort.mp_SigTask = FindTask(NULL);
-                unit->rtl8169u_DelayPort.mp_Node.ln_Type = NT_MSGPORT;
-                NEWLIST(&unit->rtl8169u_DelayPort.mp_MsgList);
+            unit->rtl8169u_DelayPort.mp_SigBit = SIGB_SINGLE;
+            unit->rtl8169u_DelayPort.mp_Flags = PA_SIGNAL;
+            unit->rtl8169u_DelayPort.mp_SigTask = FindTask(NULL);
+            unit->rtl8169u_DelayPort.mp_Node.ln_Type = NT_MSGPORT;
+            NEWLIST(&unit->rtl8169u_DelayPort.mp_MsgList);
 
-                unit->rtl8169u_DelayReq.tr_node.io_Message.mn_ReplyPort = &unit->rtl8169u_DelayPort;
-                unit->rtl8169u_DelayReq.tr_node.io_Message.mn_Length = sizeof(struct timerequest);
+            unit->rtl8169u_DelayReq.tr_node.io_Message.mn_ReplyPort = &unit->rtl8169u_DelayPort;
+            unit->rtl8169u_DelayReq.tr_node.io_Message.mn_Length = sizeof(struct timerequest);
 
-                OpenDevice((STRPTR) "timer.device", UNIT_MICROHZ, (struct IORequest *) &unit->rtl8169u_DelayReq, 0);
+            OpenDevice((STRPTR) "timer.device", UNIT_MICROHZ, (struct IORequest *) &unit->rtl8169u_DelayReq, 0);
 
-                    if ((unit->rtl8169u_priv = AllocMem(sizeof(struct rtl8169_priv), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
+            if ((unit->rtl8169u_priv = AllocMem(sizeof(struct rtl8169_priv), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
+            {
+                struct Message *msg;
+
+                unit->rtl8169u_priv->pci_dev = unit;
+                InitSemaphore(&unit->rtl8169u_priv->lock);
+
+                unit->rtl8169u_irqhandler.is_Node.ln_Type = NT_INTERRUPT;
+                unit->rtl8169u_irqhandler.is_Node.ln_Pri = 100;
+                unit->rtl8169u_irqhandler.is_Node.ln_Name = LIBBASE->rtl8169b_Device.dd_Library.lib_Node.ln_Name;
+                unit->rtl8169u_irqhandler.is_Code = (VOID_FUNC)RTL8169_IntHandlerF;
+                unit->rtl8169u_irqhandler.is_Data = unit;
+
+                unit->rtl8169u_touthandler.is_Node.ln_Type = NT_INTERRUPT;
+                unit->rtl8169u_touthandler.is_Node.ln_Pri = 100;
+                unit->rtl8169u_touthandler.is_Node.ln_Name = LIBBASE->rtl8169b_Device.dd_Library.lib_Node.ln_Name;
+                unit->rtl8169u_touthandler.is_Code = (VOID_FUNC)RTL8169_TimeoutHandlerF;
+                unit->rtl8169u_touthandler.is_Data = unit;
+
+                unit->rtl8169u_tx_int.is_Node.ln_Name = unit->rtl8169u_name;
+                unit->rtl8169u_tx_int.is_Code = (VOID_FUNC)RTL8169_TX_IntF;
+                unit->rtl8169u_tx_int.is_Data = unit;
+
+                for (i = 0; i < REQUEST_QUEUE_COUNT; i++)
+                {
+                    struct MsgPort *port = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR);
+ 
+                    unit->rtl8169u_request_ports[i] = port;
+
+                    if (port == NULL) success = FALSE;
+
+                    if (success)
                     {
-                                unit->rtl8169u_priv->pci_dev = unit;
-                                InitSemaphore(&unit->rtl8169u_priv->lock);
-
-                                {
-                                    struct Message *msg;
-
-                                    unit->rtl8169u_irqhandler.is_Node.ln_Type = NT_INTERRUPT;
-                                    unit->rtl8169u_irqhandler.is_Node.ln_Pri = 100;
-                                    unit->rtl8169u_irqhandler.is_Node.ln_Name = LIBBASE->rtl8169b_Device.dd_Library.lib_Node.ln_Name;
-                                    unit->rtl8169u_irqhandler.is_Code = (VOID_FUNC)RTL8169_IntHandlerF;
-                                    unit->rtl8169u_irqhandler.is_Data = unit;
-
-                                    unit->rtl8169u_touthandler.is_Node.ln_Type = NT_INTERRUPT;
-                                    unit->rtl8169u_touthandler.is_Node.ln_Pri = 100;
-                                    unit->rtl8169u_touthandler.is_Node.ln_Name = LIBBASE->rtl8169b_Device.dd_Library.lib_Node.ln_Name;
-                                    unit->rtl8169u_touthandler.is_Code = (VOID_FUNC)RTL8169_TimeoutHandlerF;
-                                    unit->rtl8169u_touthandler.is_Data = unit;
-
-                                    unit->rtl8169u_tx_int.is_Node.ln_Name = unit->rtl8169u_name;
-                                    unit->rtl8169u_tx_int.is_Code = (VOID_FUNC)RTL8169_TX_IntF;
-                                    unit->rtl8169u_tx_int.is_Data = unit;
-
-                                    for (i = 0; i < REQUEST_QUEUE_COUNT; i++)
-                                    {
-                                                struct MsgPort *port = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR);
-                                                unit->rtl8169u_request_ports[i] = port;
-
-                                                if (port == NULL) success = FALSE;
-
-                                                if (success)
-                                                {
-                                                NEWLIST(&port->mp_MsgList);
-                                                port->mp_Flags = PA_IGNORE;
-                                                port->mp_SigTask = &unit->rtl8169u_tx_int;
-                                                }
-                                    }
-
-                                        // (All others are PA_IGNORE)
-                                    unit->rtl8169u_request_ports[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;
-
-                                    if (success)
-                                    {
-                                                struct RTL8169Startup *sm_UD;
-                                                UBYTE tmpbuff[100];
-
-                                                if ((sm_UD = AllocMem(sizeof(struct RTL8169Startup), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
-                                                {
-                                                sprintf((char *) tmpbuff, RTL8169_TASK_NAME, unit->rtl8169u_name);
-
-                                                sm_UD->rtl8169sm_SyncPort = CreateMsgPort();
-                                                sm_UD->rtl8169sm_Unit = unit;
-
-                                                rtl8169_get_functions(unit);
-
-                                                unit->rtl8169u_Process = CreateNewProcTags(
-                                                                                                        NP_Entry, (IPTR)RTL8169_Schedular,
-                                                                                                        NP_Name, tmpbuff,
-                                                                                                        NP_Synchronous , FALSE,
-                                                                                                        NP_Priority, 0,
-                                                                                                        NP_UserData, (IPTR)sm_UD,
-                                                                                                        NP_StackSize, 140960,
-                                                                                                        TAG_DONE);
-
-                                                WaitPort(sm_UD->rtl8169sm_SyncPort);
-                                                msg = GetMsg(sm_UD->rtl8169sm_SyncPort);
-                                                ReplyMsg(msg);
-                                                DeleteMsgPort(sm_UD->rtl8169sm_SyncPort);
-                                                FreeMem(sm_UD, sizeof(struct RTL8169Startup));
-
-                                                        RTLD(bug("[%s]  CreateUnit: Device Initialised. Unit %d @ %p\n",
-                                                                 unit->rtl8169u_name,
-                                                                 unit->rtl8169u_UnitNum,
-                                                                 unit))
-                                                        return unit;
-                                                }
-                                }
-                                else
-                                {
-                                                RTLD(bug("[%s] ERRORS occured during Device setup - ABORTING\n", unit->rtl8169u_name))
-                                }
-                                }
+                        NEWLIST(&port->mp_MsgList);
+                        port->mp_Flags = PA_IGNORE;
+                        port->mp_SigTask = &unit->rtl8169u_tx_int;
                     }
                 }
-                else
+
+                // (All others are PA_IGNORE)
+                unit->rtl8169u_request_ports[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;
+
+                if (success)
                 {
-                        RTLD(bug("[rtl8169] PANIC! Couldn't get MMIO area. Aborting\n"))
+                    struct RTL8169Startup *sm_UD;
+                    UBYTE tmpbuff[100];
+
+                    if ((sm_UD = AllocMem(sizeof(struct RTL8169Startup), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
+                    {
+                        sprintf((char *) tmpbuff, RTL8169_TASK_NAME, unit->rtl8169u_name);
+
+                        sm_UD->rtl8169sm_SyncPort = CreateMsgPort();
+                        sm_UD->rtl8169sm_Unit = unit;
+
+                        rtl8169_get_functions(unit);
+
+                        unit->rtl8169u_Process = CreateNewProcTags(
+                                                                        NP_Entry, (IPTR)RTL8169_Schedular,
+                                                                        NP_Name, tmpbuff,
+                                                                        NP_Synchronous , FALSE,
+                                                                        NP_Priority, 0,
+                                                                        NP_UserData, (IPTR)sm_UD,
+                                                                        NP_StackSize, 140960,
+                                                                        TAG_DONE);
+
+                        WaitPort(sm_UD->rtl8169sm_SyncPort);
+                        msg = GetMsg(sm_UD->rtl8169sm_SyncPort);
+                        ReplyMsg(msg);
+                        DeleteMsgPort(sm_UD->rtl8169sm_SyncPort);
+                        FreeMem(sm_UD, sizeof(struct RTL8169Startup));
+
+                        RTLD(bug("[%s]  CreateUnit: Device Initialised. Unit %d @ %p\n",
+                                 unit->rtl8169u_name,
+                                 unit->rtl8169u_UnitNum,
+                                 unit))
+                        return unit;
+                    }
                 }
+            }
+            RTLD(bug("[%s] ERRORS occured during Device setup - ABORTING\n", unit->rtl8169u_name))
+        }
+        else
+        {
+            RTLD(bug("[rtl8169] PANIC! Couldn't get MMIO area. Aborting\n"))
+        }
+        DeleteUnit(RTL8169DeviceBase, unit);
     }
     else if (doDebug)
     {
-                bug("[rtl8169] CreateUnit: Failed to Allocate Unit storage!\n");
-                return NULL;
+        bug("[rtl8169] CreateUnit: Failed to Allocate Unit storage!\n");
     }
-    DeleteUnit(RTL8169DeviceBase, unit);        
     return NULL;
 }
 
@@ -1299,32 +1287,32 @@ void DeleteUnit(struct RTL8169Base *RTL8169DeviceBase, struct RTL8169Unit *Unit)
     int i;
     if (Unit)
     {
-                if (Unit->rtl8169u_Process)
-                {
-                    Signal(&Unit->rtl8169u_Process->pr_Task, Unit->rtl8169u_signal_0);
-                }
+        if (Unit->rtl8169u_Process)
+        {
+            Signal(&Unit->rtl8169u_Process->pr_Task, Unit->rtl8169u_signal_0);
+        }
 
-                for (i=0; i < REQUEST_QUEUE_COUNT; i++)
-                {
-                    if (Unit->rtl8169u_request_ports[i] != NULL)
-                        FreeMem(Unit->rtl8169u_request_ports[i], sizeof(struct MsgPort));
+        for (i=0; i < REQUEST_QUEUE_COUNT; i++)
+        {
+            if (Unit->rtl8169u_request_ports[i] != NULL)
+                FreeMem(Unit->rtl8169u_request_ports[i], sizeof(struct MsgPort));
 
-                    Unit->rtl8169u_request_ports[i] = NULL;
-                }
+            Unit->rtl8169u_request_ports[i] = NULL;
+        }
 
-                if (Unit->rtl8169u_priv)
-                {
-                    FreeMem(Unit->rtl8169u_priv, sizeof(struct rtl8169_priv));
-                    Unit->rtl8169u_priv = NULL;
-                }
+        if (Unit->rtl8169u_priv)
+        {
+            FreeMem(Unit->rtl8169u_priv, sizeof(struct rtl8169_priv));
+            Unit->rtl8169u_priv = NULL;
+        }
 
-                if (Unit->rtl8169u_BaseMem)
-                {
-                    HIDD_PCIDriver_UnmapPCI(Unit->rtl8169u_PCIDriver, 
-                                                                        (APTR)Unit->rtl8169u_BaseMem,
-                                                                        Unit->rtl8169u_SizeMem);
-                }
+        if (Unit->rtl8169u_BaseMem)
+        {
+            HIDD_PCIDriver_UnmapPCI(Unit->rtl8169u_PCIDriver, 
+                                                                (APTR)Unit->rtl8169u_BaseMem,
+                                                                Unit->rtl8169u_SizeMem);
+        }
 
-                FreeMem(Unit, sizeof(struct RTL8169Unit));
+        FreeMem(Unit, sizeof(struct RTL8169Unit));
     }
 }
