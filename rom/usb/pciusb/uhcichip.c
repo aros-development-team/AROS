@@ -1235,7 +1235,7 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         hc->hc_PCIIntHandler.is_Node.ln_Type = NT_INTERRUPT;
         hc->hc_PCIIntHandler.is_Code = (VOID_FUNC)uhciIntCode;
         hc->hc_PCIIntHandler.is_Data = hc;
-        AddIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
+        PCIXAddInterrupt(hc, &hc->hc_PCIIntHandler);
 
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, UHIF_TIMEOUTCRC|UHIF_INTONCOMPLETE|UHIF_SHORTPACKET);
 

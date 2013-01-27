@@ -382,7 +382,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                 hc->hc_PCIIntHandler.is_Node.ln_Type = NT_INTERRUPT;
                 hc->hc_PCIIntHandler.is_Code = (VOID_FUNC)xhciIntCode;
                 hc->hc_PCIIntHandler.is_Data = hc;
-                AddIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
+                PCIXAddInterrupt(hc, &hc->hc_PCIIntHandler);
 
                 /* Clears (RW1C) Host System Error(HSE), Event Interrupt(EINT), Port Change Detect(PCD) and Save/Restore Error(SRE) */
                 temp = opreg_readl(XHCI_USBSTS);

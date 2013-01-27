@@ -32,16 +32,12 @@
 #define NewList NEWLIST
 
 #undef HiddPCIDeviceAttrBase
-//#undef HiddUSBDeviceAttrBase
-//#undef HiddUSBHubAttrBase
-//#undef HiddUSBDrvAttrBase
 #undef HiddAttrBase
+#undef HiddPCIDeviceBase
 
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
-//#define HiddUSBDeviceAttrBase (hd->hd_HiddUSBDeviceAB)
-//#define HiddUSBHubAttrBase (hd->hd_HiddUSBHubAB)
-//#define HiddUSBDrvAttrBase (hd->hd_HiddUSBDrvAB)
 #define HiddAttrBase (hd->hd_HiddAB)
+#define HiddPCIDeviceBase (hd->hd_HiddPCIDeviceMB)
 
 AROS_UFH3(void, pciEnumerator,
           AROS_UFHA(struct Hook *, hook, A0),
@@ -128,11 +124,6 @@ BOOL pciInit(struct PCIDevice *hd)
     ULONG unitno = 0;
 
     KPRINTF(10, ("*** pciInit(%p) ***\n", hd));
-/*  if(sizeof(IPTR) > 4)
-    {
-        KPRINTF(200, ("I said the pciusb.device is not 64bit compatible right now. Go away!\n"));
-        return FALSE;
-    }*/
 
     NewList(&hd->hd_TempHCIList);
 
@@ -159,6 +150,7 @@ BOOL pciInit(struct PCIDevice *hd)
         };
 
         OOP_ObtainAttrBases(attrbases);
+        hd->hd_HiddPCIDeviceMB = OOP_GetMethodID(IID_Hidd_PCIDevice, 0);
 
         KPRINTF(20, ("Searching for devices...\n"));
 
@@ -205,77 +197,63 @@ BOOL pciInit(struct PCIDevice *hd)
 /* /// "PCIXReadConfigByte()" */
 UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset)
 {
-    struct pHidd_PCIDevice_ReadConfigByte msg;
+    struct PCIDevice *hd = hc->hc_Device;
 
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
-    msg.reg = offset;
-
-    return OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
+    return HIDD_PCIDevice_ReadConfigByte(hc->hc_PCIDeviceObject, offset);
 }
 /* \\\ */
 
 /* /// "PCIXReadConfigWord()" */
 UWORD PCIXReadConfigWord(struct PCIController *hc, UBYTE offset)
 {
-    struct pHidd_PCIDevice_ReadConfigWord msg;
+    struct PCIDevice *hd = hc->hc_Device;
 
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
-    msg.reg = offset;
-
-    return OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
+    return HIDD_PCIDevice_ReadConfigWord(hc->hc_PCIDeviceObject, offset);
 }
 /* \\\ */
 
 /* /// "PCIXReadConfigLong()" */
 ULONG PCIXReadConfigLong(struct PCIController *hc, UBYTE offset)
 {
-    struct pHidd_PCIDevice_ReadConfigLong msg;
+    struct PCIDevice *hd = hc->hc_Device;
 
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong);
-    msg.reg = offset;
-
-    return OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
+    return HIDD_PCIDevice_ReadConfigLong(hc->hc_PCIDeviceObject, offset);
 }
 /* \\\ */
 
 /* /// "PCIXWriteConfigByte()" */
 void PCIXWriteConfigByte(struct PCIController *hc, ULONG offset, UBYTE value)
 {
-    struct pHidd_PCIDevice_WriteConfigByte msg;
+    struct PCIDevice *hd = hc->hc_Device;
 
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
-    msg.reg = offset;
-    msg.val = value;
-
-    OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
+    HIDD_PCIDevice_WriteConfigByte(hc->hc_PCIDeviceObject, offset, value);
 }
 /* \\\ */
 
 /* /// "PCIXWriteConfigWord()" */
 void PCIXWriteConfigWord(struct PCIController *hc, ULONG offset, UWORD value)
 {
-    struct pHidd_PCIDevice_WriteConfigWord msg;
+    struct PCIDevice *hd = hc->hc_Device;
 
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
-    msg.reg = offset;
-    msg.val = value;
-
-    OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
+    HIDD_PCIDevice_WriteConfigWord(hc->hc_PCIDeviceObject, offset, value);
 }
 /* \\\ */
 
 /* /// "PCIXWriteConfigLong()" */
 void PCIXWriteConfigLong(struct PCIController *hc, ULONG offset, ULONG value)
 {
-    struct pHidd_PCIDevice_WriteConfigLong msg;
+    struct PCIDevice *hd = hc->hc_Device;
 
-    msg.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigLong);
-    msg.reg = offset;
-    msg.val = value;
-
-    OOP_DoMethod(hc->hc_PCIDeviceObject, (OOP_Msg) &msg);
+    HIDD_PCIDevice_WriteConfigLong(hc->hc_PCIDeviceObject, offset, value);
 }
 /* \\\ */
+
+BOOL PCIXAddInterrupt(struct PCIController *hc, struct Interrupt *interrupt)
+{
+    struct PCIDevice *hd = hc->hc_Device;
+
+    return HIDD_PCIDevice_AddInterrupt(hc->hc_PCIDeviceObject, interrupt);
+}
 
 /* /// "pciStrcat()" */
 void pciStrcat(STRPTR d, STRPTR s)
@@ -288,9 +266,7 @@ void pciStrcat(STRPTR d, STRPTR s)
 /* /// "pciAllocUnit()" */
 BOOL pciAllocUnit(struct PCIUnit *hu)
 {
-#if 0
     struct PCIDevice *hd = hu->hu_Device;
-#endif
     struct PCIController *hc;
 
     BOOL allocgood = TRUE;
@@ -312,26 +288,25 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
     KPRINTF(10, ("*** pciAllocUnit(%p) ***\n", hu));
 
-#if 0 // FIXME this needs to be replaced by something AROS supports
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
-        PCIXObtainBoard(hc->hc_BoardObject);
-        if (PCIXSetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER, (ULONG) hd->hd_Library.lib_Node.ln_Name))
-            hc->hc_Flags |= HCF_BOARD_ALLOCATED;
+        CONST_STRPTR owner;
+        
+        owner = HIDD_PCIDevice_Obtain(hc->hc_PCIDeviceObject, hd->hd_Library.lib_Node.ln_Name);
+        if (!owner)
+            hc->hc_Flags |= HCF_ALLOCATED;
         else
         {
-            KPRINTF(20, ("Couldn't allocate board, already allocated by %s\n", PCIXGetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER)));
+            KPRINTF(20, ("Couldn't allocate board, already allocated by %s\n", owner));
             allocgood = FALSE;
         }
-        PCIXReleaseBoard(hc->hc_BoardObject);
 
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
     if(allocgood)
     {
-#endif
         // allocate necessary memory
         hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
         while(hc->hc_Node.ln_Succ)
@@ -391,7 +366,6 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             }
             hc = (struct PCIController *) hc->hc_Node.ln_Succ;
         }
-#if 0 // FIXME this needs to be replaced by something AROS supports
     }
 
     if(!allocgood)
@@ -400,20 +374,14 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
         while(hc->hc_Node.ln_Succ)
         {
-            PCIXObtainBoard(hc->hc_BoardObject);
             if (hc->hc_Flags & HCF_ALLOCATED)
             {
                 hc->hc_Flags &= ~HCF_ALLOCATED;
-                PCIXSetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER, 0);
+                HIDD_PCIDevice_Release(hc->hc_PCIDeviceObject);
             }
-            PCIXReleaseBoard(hc->hc_BoardObject);
 
             hc = (struct PCIController *) hc->hc_Node.ln_Succ;
         }
-#else
-    if(!allocgood)
-    {
-#endif
         return FALSE;
     }
 
@@ -586,16 +554,12 @@ void pciFreeUnit(struct PCIUnit *hu)
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivate); // deactivate busmaster and IO/Mem
         if(hc->hc_PCIIntHandler.is_Node.ln_Name)
         {
-            RemIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
+            HIDD_PCIDevice_RemoveInterrupt(hc->hc_PCIDeviceObject, &hc->hc_PCIIntHandler);
             hc->hc_PCIIntHandler.is_Node.ln_Name = NULL;
         }
-#if 0
 
-        PCIXObtainBoard(hc->hc_BoardObject);
         hc->hc_Flags &= ~HCF_ALLOCATED;
-        PCIXSetBoardAttr(hc->hc_BoardObject, PCIXTAG_OWNER, 0);
-        PCIXReleaseBoard(hc->hc_BoardObject);
-#endif
+        HIDD_PCIDevice_Release(hc->hc_PCIDeviceObject);
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 }
