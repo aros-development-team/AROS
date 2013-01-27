@@ -1542,7 +1542,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         hc->hc_PCIIntHandler.is_Node.ln_Type = NT_INTERRUPT;
         hc->hc_PCIIntHandler.is_Code = (VOID_FUNC)ehciIntCode;
         hc->hc_PCIIntHandler.is_Data = hc;
-        AddIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
+        PCIXAddInterrupt(hc, &hc->hc_PCIIntHandler);
 
         hc->hc_PCIIntEnMask = EHSF_ALL_INTS;
         WRITEREG32_LE(hc->hc_RegBase, EHCI_USBINTEN, hc->hc_PCIIntEnMask);

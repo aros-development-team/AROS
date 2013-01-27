@@ -117,6 +117,7 @@ ULONG PCIXReadConfigLong(struct PCIController *hc, UBYTE offset);
 void PCIXWriteConfigByte(struct PCIController *hc, ULONG offset, UBYTE value);
 void PCIXWriteConfigWord(struct PCIController *hc, ULONG offset, UWORD value);
 void PCIXWriteConfigLong(struct PCIController *hc, ULONG offset, ULONG value);
+BOOL PCIXAddInterrupt(struct PCIController *hc, struct Interrupt *interrupt);
 
 struct my_NSDeviceQueryResult
 {

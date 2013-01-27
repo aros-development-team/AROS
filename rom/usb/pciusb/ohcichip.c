@@ -1609,7 +1609,7 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
         hc->hc_PCIIntHandler.is_Node.ln_Type = NT_INTERRUPT;
         hc->hc_PCIIntHandler.is_Code = (VOID_FUNC)ohciIntCode;
         hc->hc_PCIIntHandler.is_Data = hc;
-        AddIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
+        PCIXAddInterrupt(hc, &hc->hc_PCIIntHandler);
 
         hc->hc_PCIIntEnMask = OISF_DONEHEAD|OISF_RESUMEDTX|OISF_HOSTERROR|OISF_FRAMECOUNTOVER|OISF_HUBCHANGE;
 

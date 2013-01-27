@@ -225,6 +225,7 @@ struct PCIDevice
     OOP_Object	       *hd_PCIHidd;
     OOP_AttrBase	hd_HiddAB;
     OOP_AttrBase	hd_HiddPCIDeviceAB;
+    OOP_MethodID        hd_HiddPCIDeviceMB;
 
     BOOL		hd_ScanDone;	  /* PCI scan done? */
     APTR		hd_MemPool;	  /* Memory Pool */
