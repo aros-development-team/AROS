@@ -6,20 +6,20 @@
  */
 
 /*
-	This program is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+        This program is free software; you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation; either version 2 of the License, or
+        (at your option) any later version.
 
-	This program is distributed in the hope that it will be useful, but
-	WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-	General Public License for more details.
+        This program is distributed in the hope that it will be useful, but
+        WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+        General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with this program; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-	MA 02111-1307, USA.
+        You should have received a copy of the GNU General Public License
+        along with this program; if not, write to the Free Software
+        Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+        MA 02111-1307, USA.
 */
 #ifndef DEBUG
 #define DEBUG 0
@@ -32,17 +32,17 @@
 #endif
 
 #define RTLD(d) \
-	if (unit->rtl8169u_flags & IFF_DEBUG) \
-	{ \
-		d; \
-	}
+        if (unit->rtl8169u_flags & IFF_DEBUG) \
+        { \
+                d; \
+        }
 
 #if defined(RTL_DEBUG_PACKET)
 #define RTLDP(d) \
-	if (unit->rtl8169u_flags & IFF_DEBUG) \
-	{ \
-		d; \
-	}
+        if (unit->rtl8169u_flags & IFF_DEBUG) \
+        { \
+                d; \
+        }
 #else
 #define RTLDP(d)
 #endif
@@ -70,11 +70,11 @@
 
 #define net_device RTL8169Unit
 
-#define RTL8169_TASK_NAME	"%s.task"
-#define RTL8169_PORT_NAME	"%s.port"
+#define RTL8169_TASK_NAME       "%s.task"
+#define RTL8169_PORT_NAME       "%s.port"
 
 #define PCI_VENDOR_ID_REALTEK 0x10ec
-#define	PCI_VENDOR_ID_DLINK 0x1186
+#define PCI_VENDOR_ID_DLINK 0x1186
 #define PCI_VENDOR_ID_AT 0x1259
 #define PCI_VENDOR_ID_USROBOTICS 0x16ec
 #define PCI_VENDOR_ID_LINKSYS 0x11ad
@@ -116,17 +116,17 @@ struct RTL8169Base {
     
     /* TODO: move into a config block */
     /* Maximum events (Rx packets, etc.) to handle at each interrupt. */
-    int 		rtl8169b_MaxIntWork;
+    int                 rtl8169b_MaxIntWork;
     
     /* Maximum number of multicast addresses to filter (vs. Rx-all-multicast).
     The RTL chips use a 64 element hash table based on the Ethernet CRC. */
-    int 		rtl8169b_MulticastFilterLimit;
+    int                 rtl8169b_MulticastFilterLimit;
 
     /* media options */
     #define MAX_UNITS 8
-    int			speed[MAX_UNITS];
-    int			duplex[MAX_UNITS];
-    int			autoneg[MAX_UNITS];
+    int                 speed[MAX_UNITS];
+    int                 duplex[MAX_UNITS];
+    int                 autoneg[MAX_UNITS];
 };
 
 #undef HiddPCIDeviceAttrBase
@@ -140,30 +140,30 @@ struct RTL8169Startup
 
 enum cfg_version
 {
-	RTL_CFG_0 = 0x00,
-	RTL_CFG_1,
-	RTL_CFG_2,
-	UNKNOWN_CFG
+        RTL_CFG_0 = 0x00,
+        RTL_CFG_1,
+        RTL_CFG_2,
+        UNKNOWN_CFG
 };
 
 enum mac_version
 {
-	RTL_GIGA_MAC_VER_01 = 0x01, // 8169
-	RTL_GIGA_MAC_VER_02 = 0x02, // 8169S
-	RTL_GIGA_MAC_VER_03 = 0x03, // 8110S
-	RTL_GIGA_MAC_VER_04 = 0x04, // 8169SB
-	RTL_GIGA_MAC_VER_05 = 0x05, // 8110SCd
-	RTL_GIGA_MAC_VER_06 = 0x06, // 8110SCe
-	RTL_GIGA_MAC_VER_11 = 0x0b, // 8168Bb
-	RTL_GIGA_MAC_VER_12 = 0x0c, // 8168Be
-	RTL_GIGA_MAC_VER_13 = 0x0d, // 8101Eb
-	RTL_GIGA_MAC_VER_14 = 0x0e, // 8101 ?
-	RTL_GIGA_MAC_VER_15 = 0x0f, // 8101 ?
-	RTL_GIGA_MAC_VER_16 = 0x11, // 8101Ec
-	RTL_GIGA_MAC_VER_17 = 0x10, // 8168Bf
-	RTL_GIGA_MAC_VER_18 = 0x12, // 8168CP
-	RTL_GIGA_MAC_VER_19 = 0x13, // 8168C
-	RTL_GIGA_MAC_VER_20 = 0x14  // 8168C
+        RTL_GIGA_MAC_VER_01 = 0x01, // 8169
+        RTL_GIGA_MAC_VER_02 = 0x02, // 8169S
+        RTL_GIGA_MAC_VER_03 = 0x03, // 8110S
+        RTL_GIGA_MAC_VER_04 = 0x04, // 8169SB
+        RTL_GIGA_MAC_VER_05 = 0x05, // 8110SCd
+        RTL_GIGA_MAC_VER_06 = 0x06, // 8110SCe
+        RTL_GIGA_MAC_VER_11 = 0x0b, // 8168Bb
+        RTL_GIGA_MAC_VER_12 = 0x0c, // 8168Be
+        RTL_GIGA_MAC_VER_13 = 0x0d, // 8101Eb
+        RTL_GIGA_MAC_VER_14 = 0x0e, // 8101 ?
+        RTL_GIGA_MAC_VER_15 = 0x0f, // 8101 ?
+        RTL_GIGA_MAC_VER_16 = 0x11, // 8101Ec
+        RTL_GIGA_MAC_VER_17 = 0x10, // 8168Bf
+        RTL_GIGA_MAC_VER_18 = 0x12, // 8168CP
+        RTL_GIGA_MAC_VER_19 = 0x13, // 8168C
+        RTL_GIGA_MAC_VER_20 = 0x14  // 8168C
 };
 
 enum
@@ -278,37 +278,37 @@ struct RTL8169Unit {
 //    ULONG                   (*descr_getlength)(struct ring_desc *prd, ULONG v);
     void                    (*set_multicast)(struct RTL8169Unit *);
 
-    struct Process		*rtl8169u_Process;
+    struct Process              *rtl8169u_Process;
 
     struct Interrupt            rtl8169u_irqhandler;
     struct Interrupt            rtl8169u_touthandler;
-    IPTR			rtl8169u_DeviceID;
-    APTR			rtl8169u_BaseMem;
-    IPTR			rtl8169u_SizeMem;
-    APTR			rtl8169u_BaseIO;
+    IPTR                        rtl8169u_DeviceID;
+    APTR                        rtl8169u_BaseMem;
+    IPTR                        rtl8169u_SizeMem;
+    APTR                        rtl8169u_BaseIO;
 
     BYTE                    rtl8169u_signal_0;
     BYTE                    rtl8169u_signal_1;
     BYTE                    rtl8169u_signal_2;
     BYTE                    rtl8169u_signal_3;
 
-    struct MsgPort		*rtl8169u_input_port;
+    struct MsgPort              *rtl8169u_input_port;
 
-    struct MsgPort		*rtl8169u_request_ports[REQUEST_QUEUE_COUNT];
+    struct MsgPort              *rtl8169u_request_ports[REQUEST_QUEUE_COUNT];
 
-    struct Interrupt	rtl8169u_rx_int;
-    struct Interrupt	rtl8169u_tx_int;
+    struct Interrupt    rtl8169u_rx_int;
+    struct Interrupt    rtl8169u_tx_int;
 
-    ULONG			rtl8169u_state;
-    APTR			rtl8169u_mc_list;
-    int			rtl8169u_mc_count;
+    ULONG                       rtl8169u_state;
+    APTR                        rtl8169u_mc_list;
+    int                 rtl8169u_mc_count;
 
-    UBYTE			rtl8169u_dev_addr[6];
-    UBYTE			rtl8169u_org_addr[6];
-    struct rtl8169_priv	*rtl8169u_priv;
+    UBYTE                       rtl8169u_dev_addr[6];
+    UBYTE                       rtl8169u_org_addr[6];
+    struct rtl8169_priv *rtl8169u_priv;
     
-    UWORD			rtl8169u_intr_event;
-    UWORD			rtl8169u_napi_event;
+    UWORD                       rtl8169u_intr_event;
+    UWORD                       rtl8169u_napi_event;
 };
 
 void handle_request(LIBBASETYPEPTR, struct IOSana2Req *);
@@ -397,7 +397,7 @@ static inline int test_and_clear_bit(int nr, volatile ULONG *addr)
 static inline void netif_schedule(struct RTL8169Unit *unit)
 {
     if (!test_bit(__LINK_STATE_XOFF, &unit->rtl8169u_state)) {
-	    Cause(&unit->rtl8169u_tx_int);
+            Cause(&unit->rtl8169u_tx_int);
     }
 }
 
@@ -409,7 +409,7 @@ static inline void netif_start_queue(struct RTL8169Unit *unit)
 static inline void netif_wake_queue(struct RTL8169Unit *unit)
 {
     if (test_and_clear_bit(__LINK_STATE_XOFF, &unit->rtl8169u_state)) {
-	Cause(&unit->rtl8169u_tx_int);
+        Cause(&unit->rtl8169u_tx_int);
     }
 }
 
@@ -438,18 +438,18 @@ extern VOID ReportEvents(struct RTL8169Base *, struct RTL8169Unit *, ULONG);
 static inline void netif_carrier_on(struct RTL8169Unit *unit)
 {
     if (test_and_clear_bit(__LINK_STATE_NOCARRIER, &unit->rtl8169u_state)) {
-	unit->rtl8169u_flags |= IFF_UP;
+        unit->rtl8169u_flags |= IFF_UP;
 RTLD(bug("[%s] %s: Device set as ONLINE\n",unit->rtl8169u_name, __PRETTY_FUNCTION__))
-	ReportEvents(unit->rtl8169u_device, unit, S2EVENT_ONLINE);
+        ReportEvents(unit->rtl8169u_device, unit, S2EVENT_ONLINE);
     }
 }
 
 static inline void netif_carrier_off(struct RTL8169Unit *unit)
 {
     if (!test_and_set_bit(__LINK_STATE_NOCARRIER, &unit->rtl8169u_state)) {
-	unit->rtl8169u_flags &= ~IFF_UP;
+        unit->rtl8169u_flags &= ~IFF_UP;
 RTLD(bug("[%s] %s: Device set as OFFLINE\n",unit->rtl8169u_name, __PRETTY_FUNCTION__))
-	ReportEvents(unit->rtl8169u_device, unit, S2EVENT_OFFLINE);
+        ReportEvents(unit->rtl8169u_device, unit, S2EVENT_OFFLINE);
     }
 }
 
@@ -469,66 +469,66 @@ struct dev_mc_list
 };
 
 struct pci_resource {
-    UBYTE			cmd;
-    UBYTE			cls;
-    UWORD			io_base_h;
-    UWORD			io_base_l;
-    UWORD			mem_base_h;
-    UWORD			mem_base_l;
-    UBYTE			ilr;
-    UWORD			resv_0x20_h;
-    UWORD			resv_0x20_l;
-    UWORD			resv_0x24_h;
-    UWORD			resv_0x24_l;
+    UBYTE                       cmd;
+    UBYTE                       cls;
+    UWORD                       io_base_h;
+    UWORD                       io_base_l;
+    UWORD                       mem_base_h;
+    UWORD                       mem_base_l;
+    UBYTE                       ilr;
+    UWORD                       resv_0x20_h;
+    UWORD                       resv_0x20_l;
+    UWORD                       resv_0x24_h;
+    UWORD                       resv_0x24_l;
 };
 
 struct rtl8169_priv {
-    struct RTL8169Unit		*pci_dev;
+    struct RTL8169Unit          *pci_dev;
 
-    int				chipset;
-    int				mcfg;
-    UWORD			cp_cmd;
-    unsigned 		    	features;
+    int                         chipset;
+    int                         mcfg;
+    UWORD                       cp_cmd;
+    unsigned                    features;
 
-    UWORD			intr_mask;
-    UWORD			intr_event;
-    UWORD			napi_event;
+    UWORD                       intr_mask;
+    UWORD                       intr_event;
+    UWORD                       napi_event;
 
-    int				phy_auto_nego_reg;
-    int				phy_1000_ctrl_reg;
+    int                         phy_auto_nego_reg;
+    int                         phy_1000_ctrl_reg;
 
-    UBYTE			autoneg;
-    UWORD			speed;
-    UBYTE			duplex;
+    UBYTE                       autoneg;
+    UWORD                       speed;
+    UBYTE                       duplex;
 
-    struct TxDesc 		*TxDescArray;	/* 256-aligned Tx descriptor ring */
-    struct RxDesc 		*RxDescArray;	/* 256-aligned Rx descriptor ring */
-    APTR 			TxPhyAddr;
-    APTR 			RxPhyAddr;
+    struct TxDesc               *TxDescArray;   /* 256-aligned Tx descriptor ring */
+    struct RxDesc               *RxDescArray;   /* 256-aligned Rx descriptor ring */
+    APTR                        TxPhyAddr;
+    APTR                        RxPhyAddr;
 
-    unsigned int		rtl8169_rx_config;
+    unsigned int                rtl8169_rx_config;
 
-    unsigned 			rx_buf_sz;
-	unsigned			tx_buf_sz;
+    unsigned                    rx_buf_sz;
+        unsigned                        tx_buf_sz;
 
-    int				rx_fifo_overflow;
+    int                         rx_fifo_overflow;
 
-    ULONG			tx_tcp_csum_cmd;
-    ULONG			tx_udp_csum_cmd;
-    ULONG			tx_ip_csum_cmd;
+    ULONG                       tx_tcp_csum_cmd;
+    ULONG                       tx_udp_csum_cmd;
+    ULONG                       tx_ip_csum_cmd;
 
-    struct pci_resource		pci_cfg_space;
+    struct pci_resource         pci_cfg_space;
 
-    unsigned int		pci_cfg_is_read;
+    unsigned int                pci_cfg_is_read;
 
-    ULONG			cur_rx; /* Index into the Rx descriptor buffer of next Rx pkt. */
-    ULONG			cur_tx; /* Index into the Tx descriptor buffer of next Rx pkt. */
-    ULONG			dirty_rx;
-    ULONG			dirty_tx;
+    ULONG                       cur_rx; /* Index into the Rx descriptor buffer of next Rx pkt. */
+    ULONG                       cur_tx; /* Index into the Tx descriptor buffer of next Rx pkt. */
+    ULONG                       dirty_rx;
+    ULONG                       dirty_tx;
 
-    struct SignalSemaphore 	lock;
+    struct SignalSemaphore      lock;
 
-    UBYTE			orig_mac[6];
+    UBYTE                       orig_mac[6];
 };
 
 #define pci_name(unit)  (unit->rtl8169u_name)
@@ -572,64 +572,64 @@ struct eth_frame {
 /* ***************************** */
 
 #ifndef DMA_64BIT_MASK
-#define DMA_64BIT_MASK		0xffffffffffffffffULL
+#define DMA_64BIT_MASK          0xffffffffffffffffULL
 #endif
 #ifndef DMA_32BIT_MASK
-#define DMA_32BIT_MASK		0x00000000ffffffffULL
+#define DMA_32BIT_MASK          0x00000000ffffffffULL
 #endif
 
 #ifndef PCI_COMMAND
-#define PCI_COMMAND		0x04
+#define PCI_COMMAND             0x04
 #endif
 #ifndef PCI_CACHE_LINE_SIZE
-#define PCI_CACHE_LINE_SIZE	0x0c
+#define PCI_CACHE_LINE_SIZE     0x0c
 #endif
 #ifndef PCI_LATENCY_TIMER
-#define PCI_LATENCY_TIMER	0x0d
+#define PCI_LATENCY_TIMER       0x0d
 #endif
 #ifndef PCI_BASE_ADDRESS_0
-#define PCI_BASE_ADDRESS_0	0x10
+#define PCI_BASE_ADDRESS_0      0x10
 #endif
 #ifndef PCI_BASE_ADDRESS_2
-#define PCI_BASE_ADDRESS_2	0x18
+#define PCI_BASE_ADDRESS_2      0x18
 #endif
 #ifndef PCI_BASE_ADDRESS_4
-#define PCI_BASE_ADDRESS_4	0x20
+#define PCI_BASE_ADDRESS_4      0x20
 #endif
 #ifndef PCI_BASE_ADDRESS_5
-#define PCI_BASE_ADDRESS_5	0x24
+#define PCI_BASE_ADDRESS_5      0x24
 #endif
 #ifndef PCI_INTERRUPT_LINE
-#define PCI_INTERRUPT_LINE	0x32
+#define PCI_INTERRUPT_LINE      0x32
 #endif
 
 #ifndef ETH_ALEN
-#define ETH_ALEN		ETH_ADDRESSSIZE
+#define ETH_ALEN                ETH_ADDRESSSIZE
 #endif
 #ifndef ETH_HLEN
-#define ETH_HLEN		ETH_HEADERSIZE
+#define ETH_HLEN                ETH_HEADERSIZE
 #endif
 
-#ifndef	ADVERTISED_Pause
-#define ADVERTISED_Pause	(1 << 13)
+#ifndef ADVERTISED_Pause
+#define ADVERTISED_Pause        (1 << 13)
 #endif
-#ifndef	ADVERTISED_Asym_Pause
-#define ADVERTISED_Asym_Pause	(1 << 14)
+#ifndef ADVERTISED_Asym_Pause
+#define ADVERTISED_Asym_Pause   (1 << 14)
 #endif
-#ifndef	ADVERTISE_PAUSE_CAP
-#define ADVERTISE_PAUSE_CAP	0x400
+#ifndef ADVERTISE_PAUSE_CAP
+#define ADVERTISE_PAUSE_CAP     0x400
 #endif
-#ifndef	ADVERTISE_PAUSE_ASYM
-#define ADVERTISE_PAUSE_ASYM	0x800
+#ifndef ADVERTISE_PAUSE_ASYM
+#define ADVERTISE_PAUSE_ASYM    0x800
 #endif
-#ifndef	MII_CTRL1000
-#define MII_CTRL1000		0x09
+#ifndef MII_CTRL1000
+#define MII_CTRL1000            0x09
 #endif
-#ifndef	ADVERTISE_1000FULL
-#define ADVERTISE_1000FULL	0x200
+#ifndef ADVERTISE_1000FULL
+#define ADVERTISE_1000FULL      0x200
 #endif
-#ifndef	ADVERTISE_1000HALF
-#define ADVERTISE_1000HALF	0x100
+#ifndef ADVERTISE_1000HALF
+#define ADVERTISE_1000HALF      0x100
 #endif
 #define ADVERTISE_SLCT 0x001f  /* Selector bits               */
 #define ADVERTISE_CSMA 0x0001  /* Only selector supported     */
@@ -647,111 +647,111 @@ struct eth_frame {
 
 #ifndef MII_BMCR
 // Basic Mode Control Register
-#define MII_BMCR		0x00
+#define MII_BMCR                0x00
 #endif
 #ifndef MII_ADVERTISE
 // Advertisement Control Register
-#define MII_ADVERTISE		0x04
+#define MII_ADVERTISE           0x04
 #endif
 
 /** Basic Mode Control Register - TODO: should be in MII header file **/
 
 #ifndef BMCR_FULLDPLX
 // Full Duplex
-#define BMCR_FULLDPLX		0x0100
+#define BMCR_FULLDPLX           0x0100
 #endif
 #ifndef BMCR_ANRESTART
 // AutoNeg Restart
-#define BMCR_ANRESTART		0x0200
+#define BMCR_ANRESTART          0x0200
 #endif
 #ifndef BMCR_ANENABLE
 // AutoNeg Enable
-#define BMCR_ANENABLE		0x1000
+#define BMCR_ANENABLE           0x1000
 #endif
 #ifndef BMCR_RESET
-#define BMCR_RESET		0x8000
+#define BMCR_RESET              0x8000
 #endif
 
 /** Advertisement Control Register - TODO: should be in MII header file **/
 
 #ifndef ADVERTISE_10HALF
-#define ADVERTISE_10HALF	0x0020
+#define ADVERTISE_10HALF        0x0020
 #endif
 #ifndef ADVERTISE_10FULL
-#define ADVERTISE_10FULL	0x0040
+#define ADVERTISE_10FULL        0x0040
 #endif
 #ifndef ADVERTISE_100HALF
-#define ADVERTISE_100HALF	0x0080
+#define ADVERTISE_100HALF       0x0080
 #endif
 #ifndef ADVERTISE_100FULL
-#define ADVERTISE_100FULL	0x0100
+#define ADVERTISE_100FULL       0x0100
 #endif
 
 /* These should also have an own header */
 
 #ifndef AUTONEG_DISABLE
-#define AUTONEG_DISABLE		0x00
+#define AUTONEG_DISABLE         0x00
 #endif
 #ifndef AUTONEG_ENABLE
-#define AUTONEG_ENABLE		0x01
+#define AUTONEG_ENABLE          0x01
 #endif
 #ifndef SPEED_10
-#define SPEED_10		10
+#define SPEED_10                10
 #endif
 #ifndef SPEED_100
-#define SPEED_100		100
+#define SPEED_100               100
 #endif
 #ifndef SPEED_1000
-#define SPEED_1000		1000
+#define SPEED_1000              1000
 #endif
 #ifndef DUPLEX_HALF
-#define DUPLEX_HALF		0x00
+#define DUPLEX_HALF             0x00
 #endif
 #ifndef DUPLEX_FULL
-#define DUPLEX_FULL		0x01
+#define DUPLEX_FULL             0x01
 #endif
 
 /* write/read MMIO register */
-#define RTL_R8(addr)		(*((volatile UBYTE *)(addr)))
-#define RTL_R16(addr)		(*((volatile UWORD *)(addr)))
-#define RTL_R32(addr)		(*((volatile ULONG *)(addr)))
-#define RTL_W8(addr, val8)	MMIO_W8(addr, val8)
-#define RTL_W16(addr, val16)	MMIO_W16(addr, val16)
-#define RTL_W32(addr, val32)	MMIO_W32(addr, val32)
+#define RTL_R8(addr)            (*((volatile UBYTE *)(addr)))
+#define RTL_R16(addr)           (*((volatile UWORD *)(addr)))
+#define RTL_R32(addr)           (*((volatile ULONG *)(addr)))
+#define RTL_W8(addr, val8)      MMIO_W8(addr, val8)
+#define RTL_W16(addr, val16)    MMIO_W16(addr, val16)
+#define RTL_W32(addr, val32)    MMIO_W32(addr, val32)
 
-#define R8169_REGS_SIZE		256
+#define R8169_REGS_SIZE         256
 
-#define MAC_ADDR_LEN 		6
+#define MAC_ADDR_LEN            6
 
-#define Reserved2_data	7
-#define RX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
-#define TX_DMA_BURST_unlimited	7
-#define TX_DMA_BURST_1024	6
-#define TX_DMA_BURST_512	5
-#define TX_DMA_BURST_256	4
-#define TX_DMA_BURST_128	3
-#define TX_DMA_BURST_64		2
-#define TX_DMA_BURST_32		1
-#define TX_DMA_BURST_16		0
-#define EarlyTxThld	0x3F	/* 0x3F means NO early transmit */
-#define RxPacketMaxSize	0x3FE8	/* 16K - 1 - ETH_HLEN - VLAN - CRC... */
-#define Jumbo_Frame_2k	(2 * 1024)
-#define Jumbo_Frame_3k	(3 * 1024)
-#define Jumbo_Frame_4k	(4 * 1024)
-#define Jumbo_Frame_5k	(5 * 1024)
-#define Jumbo_Frame_6k	(6 * 1024)
-#define Jumbo_Frame_7k	(7 * 1024)
-#define Jumbo_Frame_8k	(8 * 1024)
-#define Jumbo_Frame_9k	(9 * 1024)
-#define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
+#define Reserved2_data  7
+#define RX_DMA_BURST    6       /* Maximum PCI burst, '6' is 1024 */
+#define TX_DMA_BURST_unlimited  7
+#define TX_DMA_BURST_1024       6
+#define TX_DMA_BURST_512        5
+#define TX_DMA_BURST_256        4
+#define TX_DMA_BURST_128        3
+#define TX_DMA_BURST_64         2
+#define TX_DMA_BURST_32         1
+#define TX_DMA_BURST_16         0
+#define EarlyTxThld     0x3F    /* 0x3F means NO early transmit */
+#define RxPacketMaxSize 0x3FE8  /* 16K - 1 - ETH_HLEN - VLAN - CRC... */
+#define Jumbo_Frame_2k  (2 * 1024)
+#define Jumbo_Frame_3k  (3 * 1024)
+#define Jumbo_Frame_4k  (4 * 1024)
+#define Jumbo_Frame_5k  (5 * 1024)
+#define Jumbo_Frame_6k  (6 * 1024)
+#define Jumbo_Frame_7k  (7 * 1024)
+#define Jumbo_Frame_8k  (8 * 1024)
+#define Jumbo_Frame_9k  (9 * 1024)
+#define InterFrameGap   0x03    /* 3 means InterFrameGap = the shortest one */
 
-#define NUM_TX_DESC 64		/* Number of Tx descriptor registers */
-#define NUM_RX_DESC	256		/* Number of Rx descriptor registers */
+#define NUM_TX_DESC 64          /* Number of Tx descriptor registers */
+#define NUM_RX_DESC     256             /* Number of Rx descriptor registers */
 
 #define R8169_NAPI_WEIGHT 64
-#define RX_BUF_SIZE	1536	/* 0x05F3 = 1523 Rx Buffer size */
-#define R8169_TX_RING_BYTES	(NUM_TX_DESC * sizeof(struct TxDesc))
-#define R8169_RX_RING_BYTES	(NUM_RX_DESC * sizeof(struct RxDesc))
+#define RX_BUF_SIZE     1536    /* 0x05F3 = 1523 Rx Buffer size */
+#define R8169_TX_RING_BYTES     (NUM_TX_DESC * sizeof(struct TxDesc))
+#define R8169_RX_RING_BYTES     (NUM_RX_DESC * sizeof(struct RxDesc))
 
 enum RTL8169_DSM_STATE
 {
@@ -764,9 +764,9 @@ enum RTL8169_DSM_STATE
 
 enum RTL8169_registers
 {
-    MAC0 = 0,		/* Ethernet hardware address. */
+    MAC0 = 0,           /* Ethernet hardware address. */
     MAC4 = 0x04,
-    MAR0 = 8,		/* Multicast filter. */
+    MAR0 = 8,           /* Multicast filter. */
     CounterAddrLow = 0x10,
     CounterAddrHigh = 0x14,
     TxDescStartAddrLow = 0x20,
@@ -783,7 +783,7 @@ enum RTL8169_registers
     TxConfig = 0x40,
     RxConfig = 0x44,
     TCTR = 0x48,
-	RxMissed = 0x4C,
+        RxMissed = 0x4C,
     Cfg9346 = 0x50,
     Config0 = 0x51,
     Config1 = 0x52,
@@ -792,11 +792,11 @@ enum RTL8169_registers
     Config4 = 0x55,
     Config5 = 0x56,
     TimeIntr = 0x58,
-	MultiIntr = 0x5c,
+        MultiIntr = 0x5c,
     PHYAR = 0x60,
     TBICSR = 0x64,
     TBI_ANAR = 0x68,
-	TBI_LPAR = 0x6a,
+        TBI_LPAR = 0x6a,
     PHYstatus = 0x6C,
     MACDBG = 0x6D,
     GPIO = 0x6E,
@@ -811,7 +811,7 @@ enum RTL8169_registers
     IntrMitigate = 0xE2,
     RxDescAddrLow = 0xE4,
     RxDescAddrHigh = 0xE8,
-	EarlyTxThres = 0xEC,
+        EarlyTxThres = 0xEC,
     FuncEvent = 0xF0,
     FuncEventMask = 0xF4,
     FuncPresetState = 0xF8,
@@ -820,11 +820,11 @@ enum RTL8169_registers
 
 enum RTL8169_CSCRbits
 {
-	CSCR_LinkOKBit = 0x400,
-	CSCR_LinkDownOffCmd = 0x3c0,
-	CSCR_LinkChangeBit = 0x800,
-	CSCR_LinkStatusBits = 0xf000,
-	CSCR_LinkDownCmd = 0xf3c0
+        CSCR_LinkOKBit = 0x400,
+        CSCR_LinkDownOffCmd = 0x3c0,
+        CSCR_LinkChangeBit = 0x800,
+        CSCR_LinkStatusBits = 0xf000,
+        CSCR_LinkDownCmd = 0xf3c0
 };
 
 enum RTL8169_register_content
@@ -833,29 +833,29 @@ enum RTL8169_register_content
     TxOutOfWindow = 0x20000000,
     TxAborted     = 0x40000000,
     TxCarrierLost = 0x80000000,
-    SYSErr		= 0x8000,
-    PCIErr		= 0x8000,
+    SYSErr              = 0x8000,
+    PCIErr              = 0x8000,
     TxStatOK    = 0x8000,
-    PCSTimeout	= 0x4000,
+    PCSTimeout  = 0x4000,
     TxUnderrun  = 0x4000,
     TxHostOwns  = 0x2000,
-    SWInt		= 0x0100,
+    SWInt               = 0x0100,
     TxDescUnavail = 0x0080,
-    RxFIFOOver	= 0x0040,
-    LinkChg		= 0x0020,
+    RxFIFOOver  = 0x0040,
+    LinkChg             = 0x0020,
     RxUnderrun  = 0x0020,
-    RxOverflow	= 0x0010,
-    TxErr		= 0x0008,
+    RxOverflow  = 0x0010,
+    TxErr               = 0x0008,
     RxTooLong   = 0x0008,
-    TxOK		= 0x0004,
+    TxOK                = 0x0004,
     RxCRCErr    = 0x0004,
-    RxErr		= 0x0002,
+    RxErr               = 0x0002,
     RxBadAlign  = 0x0002,
-    RxOK		= 0x0001,
+    RxOK                = 0x0001,
     RxStatusOK  = 0x0001,
 
     /* RxStatusDesc */
-	RxFOVF = (1 << 23),
+        RxFOVF = (1 << 23),
     RxRWT = (1 << 22),
     RxRES = (1 << 21),
     RxRUNT = (1 << 20),
@@ -880,9 +880,9 @@ enum RTL8169_register_content
     AcceptMyPhys = 0x02,
     AcceptAllPhys = 0x01,
 
-	/* Config2 register p. 25 */
-	PCI_Clock_66MHz = 0x01,
-	PCI_Clock_33MHz = 0x00,
+        /* Config2 register p. 25 */
+        PCI_Clock_66MHz = 0x01,
+        PCI_Clock_33MHz = 0x00,
 
     /* Transmit Priority Polling*/
     HPQ = 0x80,
@@ -890,7 +890,7 @@ enum RTL8169_register_content
     FSWInt = 0x01,
 
     /* RxConfigBits */
-	RxCfgFIFOShift	= 13,
+        RxCfgFIFOShift  = 13,
     RxCfgDMAShift = 8,
     RxCfg_128_int_en = (1 << 15),
     RxCfg_fet_multi_en = (1 << 14),
@@ -898,68 +898,68 @@ enum RTL8169_register_content
 
     /* TxConfigBits */
     TxInterFrameGapShift = 24,
-    TxDMAShift = 8,	/* DMA burst value (0-7) is shift this many bits */
-    TxMACLoopBack = (1 << 17),	/* MAC loopback */
+    TxDMAShift = 8,     /* DMA burst value (0-7) is shift this many bits */
+    TxMACLoopBack = (1 << 17),  /* MAC loopback */
 
     /* Config1 register p.24 */
-    LEDS1		= (1 << 7),
-    LEDS0		= (1 << 6),
-    Speed_down	= (1 << 4),
-    MEMMAP		= (1 << 3),
-    IOMAP		= (1 << 2),
-    VPD		= (1 << 1),
-	MSIEnable	= (1 << 5),	/* Enable Message Signaled Interrupt */
-    PMEnable	= (1 << 0),	/* Power Management Enable */
+    LEDS1               = (1 << 7),
+    LEDS0               = (1 << 6),
+    Speed_down  = (1 << 4),
+    MEMMAP              = (1 << 3),
+    IOMAP               = (1 << 2),
+    VPD         = (1 << 1),
+        MSIEnable       = (1 << 5),     /* Enable Message Signaled Interrupt */
+    PMEnable    = (1 << 0),     /* Power Management Enable */
 
     /* Config3 register */
-    MagicPacket	= (1 << 5),	/* Wake up when receives a Magic Packet */
-    LinkUp		= (1 << 4),	/* This bit is reserved in RTL8168B.*/
-				    /* Wake up when the cable connection is re-established */
-    ECRCEN		= (1 << 3),	/* This bit is reserved in RTL8168B*/
-    Jumbo_En0	= (1 << 2),	/* This bit is reserved in RTL8168B*/
-    RDY_TO_L23	= (1 << 1),	/* This bit is reserved in RTL8168B*/
-    Beacon_en	= (1 << 0),	/* This bit is reserved in RTL8168B*/
+    MagicPacket = (1 << 5),     /* Wake up when receives a Magic Packet */
+    LinkUp              = (1 << 4),     /* This bit is reserved in RTL8168B.*/
+                                    /* Wake up when the cable connection is re-established */
+    ECRCEN              = (1 << 3),     /* This bit is reserved in RTL8168B*/
+    Jumbo_En0   = (1 << 2),     /* This bit is reserved in RTL8168B*/
+    RDY_TO_L23  = (1 << 1),     /* This bit is reserved in RTL8168B*/
+    Beacon_en   = (1 << 0),     /* This bit is reserved in RTL8168B*/
 
     /* Config4 register */
-    Jumbo_En1	= (1 << 1),	/* This bit is reserved in RTL8168B*/
+    Jumbo_En1   = (1 << 1),     /* This bit is reserved in RTL8168B*/
 
     /* Config5 register */
-    BWF		= (1 << 6),	/* Accept Broadcast wakeup frame */
-    MWF		= (1 << 5),	/* Accept Multicast wakeup frame */
-    UWF		= (1 << 4),	/* Accept Unicast wakeup frame */
-    LanWake		= (1 << 1),	/* LanWake enable/disable */
-    PMEStatus	= (1 << 0),	/* PME status can be reset by PCI RST# */
+    BWF         = (1 << 6),     /* Accept Broadcast wakeup frame */
+    MWF         = (1 << 5),     /* Accept Multicast wakeup frame */
+    UWF         = (1 << 4),     /* Accept Unicast wakeup frame */
+    LanWake             = (1 << 1),     /* LanWake enable/disable */
+    PMEStatus   = (1 << 0),     /* PME status can be reset by PCI RST# */
 
-	/* TBICSR p.28 */
-	TBIReset = 0x80000000,
-	TBILoopback	= 0x40000000,
-	TBINwEnable	= 0x20000000,
-	TBINwRestart = 0x10000000,
-	TBILinkOk = 0x02000000,
-	TBINwComplete = 0x01000000,
+        /* TBICSR p.28 */
+        TBIReset = 0x80000000,
+        TBILoopback     = 0x40000000,
+        TBINwEnable     = 0x20000000,
+        TBINwRestart = 0x10000000,
+        TBILinkOk = 0x02000000,
+        TBINwComplete = 0x01000000,
 
     /* CPlusCmd */
-    EnableBist	= (1 << 15),
-    Macdbgo_oe	= (1 << 14),
-    Normal_mode	= (1 << 13),
-    Force_halfdup	= (1 << 12),
-    Force_rxflow_en	= (1 << 11),
-    Force_txflow_en	= (1 << 10),
-    Cxpl_dbg_sel	= (1 << 9),//This bit is reserved in RTL8168B
-    ASF		= (1 << 8),//This bit is reserved in RTL8168C
-    PktCntrDisable	= (1 << 7),
-    RxVlan		= (1 << 6),
-    RxChkSum	= (1 << 5),
-	PCIDAC		= (1 << 4),
-	PCIMulRW	= (1 << 3),
-    Macdbgo_sel	= 0x001C,
-    INTT_0		= 0x0000,
-    INTT_1		= 0x0001,
-    INTT_2		= 0x0002,
-    INTT_3		= 0x0003,
+    EnableBist  = (1 << 15),
+    Macdbgo_oe  = (1 << 14),
+    Normal_mode = (1 << 13),
+    Force_halfdup       = (1 << 12),
+    Force_rxflow_en     = (1 << 11),
+    Force_txflow_en     = (1 << 10),
+    Cxpl_dbg_sel        = (1 << 9),//This bit is reserved in RTL8168B
+    ASF         = (1 << 8),//This bit is reserved in RTL8168C
+    PktCntrDisable      = (1 << 7),
+    RxVlan              = (1 << 6),
+    RxChkSum    = (1 << 5),
+        PCIDAC          = (1 << 4),
+        PCIMulRW        = (1 << 3),
+    Macdbgo_sel = 0x001C,
+    INTT_0              = 0x0000,
+    INTT_1              = 0x0001,
+    INTT_2              = 0x0002,
+    INTT_3              = 0x0003,
     
     /* rtl8169_PHYstatus */
-	TBI_Enable	= 0x80,
+        TBI_Enable      = 0x80,
     TxFlowCtrl = 0x40,
     RxFlowCtrl = 0x20,
     _1000bpsF = 0x10,
@@ -992,7 +992,7 @@ enum RTL8169_register_content
     EPHYAR_Reg_shift = 16,
     EPHYAR_Data_Mask = 0xffff,
 
-    /* CSI access */	
+    /* CSI access */    
     CSIAR_Flag = 0x80000000,
     CSIAR_Write = 0x80000000,
     CSIAR_Read = 0x00000000,
@@ -1001,66 +1001,66 @@ enum RTL8169_register_content
     CSIAR_Addr_Mask = 0x0fff,
 
     /* GPIO */
-    GPIO_en = (1 << 0),	
+    GPIO_en = (1 << 0), 
 };
 
 enum _DescStatusBit
 {
-    DescOwn		= (1 << 31), /* Descriptor is owned by NIC */
-    RingEnd		= (1 << 30), /* End of descriptor ring */
-    FirstFrag	= (1 << 29), /* First segment of a packet */
-    LastFrag	= (1 << 28), /* Final segment of a packet */
+    DescOwn             = (1 << 31), /* Descriptor is owned by NIC */
+    RingEnd             = (1 << 30), /* End of descriptor ring */
+    FirstFrag   = (1 << 29), /* First segment of a packet */
+    LastFrag    = (1 << 28), /* Final segment of a packet */
 
     /* Tx private */
     /*------ offset 0 of tx descriptor ------*/
-    LargeSend	= (1 << 27), /* TCP Large Send Offload (TSO) */
-    MSSShift	= 16,        /* MSS value position */
-    MSSMask		= 0xfff,     /* MSS value + LargeSend bit: 12 bits */
-    TxIPCS		= (1 << 18), /* Calculate IP checksum */
-    TxUDPCS		= (1 << 17), /* Calculate UDP/IP checksum */
-    TxTCPCS		= (1 << 16), /* Calculate TCP/IP checksum */
-    TxVlanTag	= (1 << 17), /* Add VLAN tag */
+    LargeSend   = (1 << 27), /* TCP Large Send Offload (TSO) */
+    MSSShift    = 16,        /* MSS value position */
+    MSSMask             = 0xfff,     /* MSS value + LargeSend bit: 12 bits */
+    TxIPCS              = (1 << 18), /* Calculate IP checksum */
+    TxUDPCS             = (1 << 17), /* Calculate UDP/IP checksum */
+    TxTCPCS             = (1 << 16), /* Calculate TCP/IP checksum */
+    TxVlanTag   = (1 << 17), /* Add VLAN tag */
 
-    /*@@@@@@ offset 4 of tx descriptor => bits for RTL8168C/CP only		begin @@@@@@*/
-    TxUDPCS_C	= (1 << 31), /* Calculate UDP/IP checksum */
-    TxTCPCS_C	= (1 << 30), /* Calculate TCP/IP checksum */
-    TxIPCS_C	= (1 << 29), /* Calculate IP checksum */
-    /*@@@@@@ offset 4 of tx descriptor => bits for RTL8168C/CP only		end @@@@@@*/
+    /*@@@@@@ offset 4 of tx descriptor => bits for RTL8168C/CP only             begin @@@@@@*/
+    TxUDPCS_C   = (1 << 31), /* Calculate UDP/IP checksum */
+    TxTCPCS_C   = (1 << 30), /* Calculate TCP/IP checksum */
+    TxIPCS_C    = (1 << 29), /* Calculate IP checksum */
+    /*@@@@@@ offset 4 of tx descriptor => bits for RTL8168C/CP only             end @@@@@@*/
 
 
     /* Rx private */
     /*------ offset 0 of rx descriptor ------*/
-    PID1		= (1 << 18), /* Protocol ID bit 1/2 */
-    PID0		= (1 << 17), /* Protocol ID bit 2/2 */
+    PID1                = (1 << 18), /* Protocol ID bit 1/2 */
+    PID0                = (1 << 17), /* Protocol ID bit 2/2 */
 
-#define RxProtoUDP	(PID1)
-#define RxProtoTCP	(PID0)
-#define RxProtoIP	(PID1 | PID0)
-#define RxProtoMask	RxProtoIP
+#define RxProtoUDP      (PID1)
+#define RxProtoTCP      (PID0)
+#define RxProtoIP       (PID1 | PID0)
+#define RxProtoMask     RxProtoIP
 
-    RxIPF		= (1 << 16), /* IP checksum failed */
-    RxUDPF		= (1 << 15), /* UDP/IP checksum failed */
-    RxTCPF		= (1 << 14), /* TCP/IP checksum failed */
-    RxVlanTag	= (1 << 16), /* VLAN tag available */
+    RxIPF               = (1 << 16), /* IP checksum failed */
+    RxUDPF              = (1 << 15), /* UDP/IP checksum failed */
+    RxTCPF              = (1 << 14), /* TCP/IP checksum failed */
+    RxVlanTag   = (1 << 16), /* VLAN tag available */
 
-    /*@@@@@@ offset 0 of rx descriptor => bits for RTL8168C/CP only		begin @@@@@@*/
-    RxUDPT		= (1 << 18),
-    RxTCPT		= (1 << 17),
-    /*@@@@@@ offset 0 of rx descriptor => bits for RTL8168C/CP only		end @@@@@@*/
+    /*@@@@@@ offset 0 of rx descriptor => bits for RTL8168C/CP only             begin @@@@@@*/
+    RxUDPT              = (1 << 18),
+    RxTCPT              = (1 << 17),
+    /*@@@@@@ offset 0 of rx descriptor => bits for RTL8168C/CP only             end @@@@@@*/
 
-    /*@@@@@@ offset 4 of rx descriptor => bits for RTL8168C/CP only		begin @@@@@@*/
-    RxV6F		= (1 << 31),
-    RxV4F		= (1 << 30),
-    /*@@@@@@ offset 4 of rx descriptor => bits for RTL8168C/CP only		end @@@@@@*/
+    /*@@@@@@ offset 4 of rx descriptor => bits for RTL8168C/CP only             begin @@@@@@*/
+    RxV6F               = (1 << 31),
+    RxV4F               = (1 << 30),
+    /*@@@@@@ offset 4 of rx descriptor => bits for RTL8168C/CP only             end @@@@@@*/
 };
 
 enum features
 {
-    RTL_FEATURE_WOL	= (1 << 0),
-    RTL_FEATURE_MSI	= (1 << 1),
+    RTL_FEATURE_WOL     = (1 << 0),
+    RTL_FEATURE_MSI     = (1 << 1),
 };
 
-#define RsvdMask	0x3fffc000
+#define RsvdMask        0x3fffc000
 
 struct TxDesc
 {
@@ -1078,8 +1078,8 @@ struct RxDesc
 
 struct phy_reg
 {
-	UWORD reg;
-	UWORD val;
+        UWORD reg;
+        UWORD val;
 };
 
 struct card_def

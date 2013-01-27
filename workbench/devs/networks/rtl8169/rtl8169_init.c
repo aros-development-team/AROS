@@ -3,20 +3,20 @@
  */
 
 /*
-	This program is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+        This program is free software; you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation; either version 2 of the License, or
+        (at your option) any later version.
 
-	This program is distributed in the hope that it will be useful, but
-	WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-	General Public License for more details.
+        This program is distributed in the hope that it will be useful, but
+        WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+        General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with this program; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-	MA 02111-1307, USA.
+        You should have received a copy of the GNU General Public License
+        along with this program; if not, write to the Free Software
+        Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+        MA 02111-1307, USA.
 */
 
 #include "rtl8169.h"
@@ -51,9 +51,9 @@
 #include LC_LIBDEFS_FILE
 
 AROS_UFH3(void, PCI_Enumerator,
-	AROS_UFHA(struct Hook *,    hook,       A0),
-	AROS_UFHA(OOP_Object *,     pciDevice,  A2),
-	AROS_UFHA(APTR,             message,    A1))
+        AROS_UFHA(struct Hook *,    hook,       A0),
+        AROS_UFHA(OOP_Object *,     pciDevice,  A2),
+        AROS_UFHA(APTR,             message,    A1))
 {
     AROS_USERFUNC_INIT
 
@@ -70,17 +70,17 @@ AROS_UFH3(void, PCI_Enumerator,
 
     if ((LIBBASE->rtl8169b_UnitCount < MAX_UNITS) && ((unit = CreateUnit(LIBBASE, pciDevice, RevisionID)) != NULL))
     {
-	    AddTail(&LIBBASE->rtl8169b_Units, (struct Node *)&unit->rtl8169u_Node);
+            AddTail(&LIBBASE->rtl8169b_Units, (struct Node *)&unit->rtl8169u_Node);
     }
     else if (LIBBASE->rtl8169b_UnitCount < MAX_UNITS)
     {
         D(bug("[rtl8169] PCI_Enumerator: Failed to create unit!\n"));
-	    return;
+            return;
     }
     else
     {
         D(bug("[rtl8169] PCI_Enumerator: Max supported units already reached\n"));
-	    return;
+            return;
     }
     RTLD(bug("[%s] PCI_Enumerator: %s MMIO @ %p\n", unit->rtl8169u_name, unit->rtl8169u_rtl_chipname, unit->rtl8169u_BaseMem))
 
@@ -98,8 +98,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
     if (FindTask(tmpbuff) != NULL)
     {
-	    D(bug("[rtl8169] Init: Found Task '%s'! - Device already up and running.\n", tmpbuff));
-	    return FALSE;
+            D(bug("[rtl8169] Init: Found Task '%s'! - Device already up and running.\n", tmpbuff));
+            return FALSE;
     }
 
     /* Load config options */
@@ -108,9 +108,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
     for (i = 0; i < MAX_UNITS; i++)
     {
-	    LIBBASE->speed[i] = -1;
-	    LIBBASE->duplex[i] = -1;
-	    LIBBASE->autoneg[i] = -1;
+            LIBBASE->speed[i] = -1;
+            LIBBASE->duplex[i] = -1;
+            LIBBASE->autoneg[i] = -1;
     }
 
     NEWLIST(&LIBBASE->rtl8169b_Units);
@@ -127,14 +127,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
         {
             D(bug("[rtl8169] Init: PCI Subsystem HIDD object @ %p\n", LIBBASE->rtl8169b_PCI));
 
-    	    struct TagItem Requirements[] =
-    	    {
-        		{ tHidd_PCI_VendorID,	       0 },
-        		{ tHidd_PCI_ProductID,         0 },
-        		{ tHidd_PCI_SubsystemVendorID, 0 },
-        		{ tHidd_PCI_SubsystemID,       0 },
-        		{ TAG_DONE,                    0 }
-    	    };
+            struct TagItem Requirements[] =
+            {
+                        { tHidd_PCI_VendorID,          0 },
+                        { tHidd_PCI_ProductID,         0 },
+                        { tHidd_PCI_SubsystemVendorID, 0 },
+                        { tHidd_PCI_SubsystemID,       0 },
+                        { TAG_DONE,                    0 }
+            };
     
             struct Hook FindHook =
             {
@@ -142,12 +142,12 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
                 h_Data:     LIBBASE,
             };
     
-    	    struct pHidd_PCI_EnumDevices enummsg =
-    	    {
-    		    mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-    		    callback:       &FindHook,
-    		    requirements:   (struct TagItem *) &Requirements,
-    	    }, *msg = &enummsg;
+            struct pHidd_PCI_EnumDevices enummsg =
+            {
+                    mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+                    callback:       &FindHook,
+                    requirements:   (struct TagItem *) &Requirements,
+            }, *msg = &enummsg;
     
             i = 0;
             // Browse all known cards
@@ -157,15 +157,15 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
                 Requirements[1].ti_Data = cards[i].productID;
                 Requirements[2].ti_Data = cards[i].sub_vendorID;
                 Requirements[3].ti_Data = cards[i].sub_productID;
-    	        OOP_DoMethod(LIBBASE->rtl8169b_PCI, (OOP_Msg) msg);
-    	        i++;
+                OOP_DoMethod(LIBBASE->rtl8169b_PCI, (OOP_Msg) msg);
+                i++;
             }
     
             if (!(IsListEmpty(&LIBBASE->rtl8169b_Units)))
             {
                 return TRUE;
             }
-    	}
+        }
     }
     return FALSE;
 }
@@ -202,7 +202,7 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 static const ULONG rx_tags[] = {
     S2_CopyToBuff,
     S2_CopyToBuff16,
-	S2_CopyToBuff32
+        S2_CopyToBuff32
 };
 
 static const ULONG tx_tags[] =
@@ -243,84 +243,84 @@ static int GM_UNIQUENAME(Open)
     {
         RTLD(bug("[%s] OpenDevice: Unit %d @ %p\n", unit->rtl8169u_name, unitnum, unit))
 
-    	req->ios2_Req.io_Unit = NULL;
-    	tags = req->ios2_BufferManagement;
+        req->ios2_Req.io_Unit = NULL;
+        tags = req->ios2_BufferManagement;
     
-    	req->ios2_BufferManagement = NULL;
+        req->ios2_BufferManagement = NULL;
     
-    	/* Check request size */
-    	if (req->ios2_Req.io_Message.mn_Length < sizeof(struct IOSana2Req))
+        /* Check request size */
+        if (req->ios2_Req.io_Message.mn_Length < sizeof(struct IOSana2Req))
         {
-    	    error = IOERR_OPENFAIL;
+            error = IOERR_OPENFAIL;
         }
     
-    	/* Get the requested unit */
-    	if (error == 0)
+        /* Get the requested unit */
+        if (error == 0)
         {
-    	    req->ios2_Req.io_Unit = (APTR)unit;
+            req->ios2_Req.io_Unit = (APTR)unit;
         }
     
-    	/* Handle device sharing */
-    	if (error == 0)
-    	{
-    	    if ((unit->rtl8169u_open_count != 0) && 
-    	       ((unit->rtl8169u_flags & IFF_SHARED) == 0 ||
-    	       (flags & SANA2OPF_MINE) != 0))
+        /* Handle device sharing */
+        if (error == 0)
+        {
+            if ((unit->rtl8169u_open_count != 0) && 
+               ((unit->rtl8169u_flags & IFF_SHARED) == 0 ||
+               (flags & SANA2OPF_MINE) != 0))
             {
-    		    error = IOERR_UNITBUSY;
+                    error = IOERR_UNITBUSY;
             }
-    	    else
-    	    {
-    		    unit->rtl8169u_open_count++;
+            else
+            {
+                    unit->rtl8169u_open_count++;
             }
-    	}
-    
-    	if (error == 0)
-    	{
-    	    if ((flags & SANA2OPF_MINE) == 0)
-	    		unit->rtl8169u_flags |= IFF_SHARED;
-    	    else if ((flags & SANA2OPF_PROM) != 0)
-    			unit->rtl8169u_flags |= IFF_PROMISC;
-    
-    	    /* Set up buffer-management structure and get hooks */
-    	    opener = AllocVec(sizeof(struct Opener), MEMF_PUBLIC | MEMF_CLEAR);
-    	    req->ios2_BufferManagement = (APTR)opener;
-    
-    	    if(opener == NULL)
-    		error = IOERR_OPENFAIL;
-    	}
-    
-    	if (error == 0)
-    	{
-    	    NEWLIST(&opener->read_port.mp_MsgList);
-    	    opener->read_port.mp_Flags = PA_IGNORE;
-    	    NEWLIST((APTR)&opener->initial_stats);
-    
-    	    for (i = 0; i < 2; i++)
-    	    {
-    			opener->rx_function = (APTR) GetTagData(rx_tags[i],
-    			                                        (IPTR) opener->rx_function, tags);
-			}
-    	    for (i = 0; i < 3; i++)
-    	    {
-    			opener->tx_function = (APTR) GetTagData(tx_tags[i],
-    			                                        (IPTR) opener->tx_function, tags);
-			}
-    
-    	    opener->filter_hook = (APTR) GetTagData(S2_PacketFilter, 0, tags);
-    
-    	    Disable();
-    	    AddTail((APTR) &unit->rtl8169u_Openers, (APTR) opener);
-    	    Enable();
-    	}
-    
-    	if (error != 0)
-    	{
-    	    CloseDevice((struct IORequest *)req);
         }
-    	else
-    	{
-    	    unit->start(unit);
+    
+        if (error == 0)
+        {
+            if ((flags & SANA2OPF_MINE) == 0)
+                        unit->rtl8169u_flags |= IFF_SHARED;
+            else if ((flags & SANA2OPF_PROM) != 0)
+                        unit->rtl8169u_flags |= IFF_PROMISC;
+    
+            /* Set up buffer-management structure and get hooks */
+            opener = AllocVec(sizeof(struct Opener), MEMF_PUBLIC | MEMF_CLEAR);
+            req->ios2_BufferManagement = (APTR)opener;
+    
+            if(opener == NULL)
+                error = IOERR_OPENFAIL;
+        }
+    
+        if (error == 0)
+        {
+            NEWLIST(&opener->read_port.mp_MsgList);
+            opener->read_port.mp_Flags = PA_IGNORE;
+            NEWLIST((APTR)&opener->initial_stats);
+    
+            for (i = 0; i < 2; i++)
+            {
+                        opener->rx_function = (APTR) GetTagData(rx_tags[i],
+                                                                (IPTR) opener->rx_function, tags);
+                        }
+            for (i = 0; i < 3; i++)
+            {
+                        opener->tx_function = (APTR) GetTagData(tx_tags[i],
+                                                                (IPTR) opener->tx_function, tags);
+                        }
+    
+            opener->filter_hook = (APTR) GetTagData(S2_PacketFilter, 0, tags);
+    
+            Disable();
+            AddTail((APTR) &unit->rtl8169u_Openers, (APTR) opener);
+            Enable();
+        }
+    
+        if (error != 0)
+        {
+            CloseDevice((struct IORequest *)req);
+        }
+        else
+        {
+            unit->start(unit);
         }
     }
     else
