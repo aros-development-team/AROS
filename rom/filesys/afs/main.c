@@ -399,7 +399,7 @@ LONG AFS_work(struct ExecBase *SysBase)
 		    	        break;
 		    	    }
 		    	}
-		    	fh->fh_Arg1 = (LONG)(IPTR)ah;
+		    	fh->fh_Arg1 = (SIPTR)ah;
 		    }
 		    break;
 		}
@@ -435,7 +435,7 @@ LONG AFS_work(struct ExecBase *SysBase)
 		    fl = AllocMem(sizeof(*fl), MEMF_CLEAR);
 		    if (fl != NULL) {
 			fl->fl_Link = BNULL;
-			fl->fl_Key = (LONG)(IPTR)ah;
+			fl->fl_Key = (SIPTR)ah;
 			fl->fl_Access = dp->dp_Arg3;
 			fl->fl_Task = mp;
 			fl->fl_Volume = MKBADDR(&volume->devicelist);
@@ -473,7 +473,7 @@ LONG AFS_work(struct ExecBase *SysBase)
 		    fl = AllocMem(sizeof(*fl), MEMF_CLEAR);
 		    if (fl != NULL) {
 		        fl->fl_Link = BNULL;
-		        fl->fl_Key = (LONG)(IPTR)ah;
+		        fl->fl_Key = (SIPTR)ah;
 		        fl->fl_Access = ACCESS_READ;
 		        fl->fl_Task = mp;
 		        fl->fl_Volume = MKBADDR(&volume->devicelist);
@@ -529,7 +529,7 @@ LONG AFS_work(struct ExecBase *SysBase)
 		{
 		    struct FileHandle    *fh = BADDR(dp->dp_Arg1);
 		    struct FileLock      *fl = BADDR(dp->dp_Arg2);
-		    fh->fh_Arg1 = (LONG)(IPTR)fl->fl_Key;
+		    fh->fh_Arg1 = (SIPTR)fl->fl_Key;
 		    FreeMem(fl, sizeof(*fl));
 		    break;
 		}
@@ -647,7 +647,7 @@ LONG AFS_work(struct ExecBase *SysBase)
 		    fl = AllocMem(sizeof(*fl), MEMF_CLEAR);
 		    if (fl != NULL) {
 		        fl->fl_Link = BNULL;
-		        fl->fl_Key = (LONG)(IPTR)ah;
+		        fl->fl_Key = (SIPTR)ah;
 		        fl->fl_Access = ACCESS_READ;
 		        fl->fl_Task = mp;
 		        fl->fl_Volume = MKBADDR(&volume->devicelist);
@@ -717,7 +717,7 @@ LONG AFS_work(struct ExecBase *SysBase)
 		    	ok = res2 ? DOSFALSE : DOSTRUE;
 		    	if (ok) {
 		            flnew->fl_Link = BNULL;
-		            flnew->fl_Key = (LONG)(IPTR)ah;
+		            flnew->fl_Key = (SIPTR)ah;
 		            flnew->fl_Access = ACCESS_READ;
 		            flnew->fl_Task = mp;
 		            flnew->fl_Volume = MKBADDR(&volume->devicelist);
