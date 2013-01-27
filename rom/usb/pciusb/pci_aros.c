@@ -77,37 +77,37 @@ AROS_UFH3(void, pciEnumerator,
     }
     else
     {
-    	switch (hcitype)
-    	{
-    	case HCITYPE_OHCI:
-    	case HCITYPE_EHCI:
-    	case HCITYPE_UHCI:
+        switch (hcitype)
+        {
+        case HCITYPE_OHCI:
+        case HCITYPE_EHCI:
+        case HCITYPE_UHCI:
 #ifdef AROS_USB30_CODE
-    	case HCITYPE_XHCI:
+        case HCITYPE_XHCI:
 #endif
-	    KPRINTF(10, ("Setting up device...\n"));
+            KPRINTF(10, ("Setting up device...\n"));
 
             hc = AllocPooled(hd->hd_MemPool, sizeof(struct PCIController));
             if (hc)
             {
-            	hc->hc_Device = hd;
-            	hc->hc_DevID = devid;
-            	hc->hc_FunctionNum = sub;
-            	hc->hc_HCIType = hcitype;
-            	hc->hc_PCIDeviceObject = pciDevice;
-            	hc->hc_PCIIntLine = intline;
+                hc->hc_Device = hd;
+                hc->hc_DevID = devid;
+                hc->hc_FunctionNum = sub;
+                hc->hc_HCIType = hcitype;
+                hc->hc_PCIDeviceObject = pciDevice;
+                hc->hc_PCIIntLine = intline;
 
-            	OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *) &hc->hc_PCIDriverObject);
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *) &hc->hc_PCIDriverObject);
 
-            	NewList(&hc->hc_CtrlXFerQueue);
-            	NewList(&hc->hc_IntXFerQueue);
-            	NewList(&hc->hc_IsoXFerQueue);
-            	NewList(&hc->hc_BulkXFerQueue);
-            	NewList(&hc->hc_TDQueue);
-            	NewList(&hc->hc_AbortQueue);
-            	NewList(&hc->hc_PeriodicTDQueue);
-            	NewList(&hc->hc_OhciRetireQueue);
-            	AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
+                NewList(&hc->hc_CtrlXFerQueue);
+                NewList(&hc->hc_IntXFerQueue);
+                NewList(&hc->hc_IsoXFerQueue);
+                NewList(&hc->hc_BulkXFerQueue);
+                NewList(&hc->hc_TDQueue);
+                NewList(&hc->hc_AbortQueue);
+                NewList(&hc->hc_PeriodicTDQueue);
+                NewList(&hc->hc_OhciRetireQueue);
+                AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
             }
             break;
 
@@ -480,7 +480,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ)
     {
-    	hc->hc_Flags |= HCF_ONLINE;
+        hc->hc_Flags |= HCF_ONLINE;
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
@@ -526,8 +526,8 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     {
         pciStrcat(prodname, ohcicnt ? "NEC)" : "VIA, Intel, ALI, etc.)");
     } else {
-		pciStrcat(prodname, "Emulated?)");
-	}
+                pciStrcat(prodname, "Emulated?)");
+        }
 #else
     pciStrcat(prodname, " Host Controller");
 #endif
@@ -661,21 +661,21 @@ static int getArguments(struct PCIDevice *base)
     ACPIBase = OpenResource("acpi.resource");
     if (ACPIBase)
     {
-    	/*
-    	 * Use ACPI IDs to identify known machines which need HDF_FORCEPOWER to work.
-    	 * Currently we know only MacMini.
-    	 */
-    	struct ACPI_TABLE_DEF_HEADER *dsdt = ACPI_FindSDT(ACPI_MAKE_ID('D','S','D','T'));
+        /*
+         * Use ACPI IDs to identify known machines which need HDF_FORCEPOWER to work.
+         * Currently we know only MacMini.
+         */
+        struct ACPI_TABLE_DEF_HEADER *dsdt = ACPI_FindSDT(ACPI_MAKE_ID('D','S','D','T'));
 
-    	if (dsdt)
-    	{
-	    /* Yes, the last byte in ID is zero */
-    	    if (strcmp(dsdt->oem_table_id, "Macmini") == 0)
-    	    {
-    	    	base->hd_Flags = HDF_FORCEPOWER;
-    	    	return TRUE;
-    	    }
-    	}
+        if (dsdt)
+        {
+            /* Yes, the last byte in ID is zero */
+            if (strcmp(dsdt->oem_table_id, "Macmini") == 0)
+            {
+                base->hd_Flags = HDF_FORCEPOWER;
+                return TRUE;
+            }
+        }
     }
 #endif
 
@@ -684,7 +684,7 @@ static int getArguments(struct PCIDevice *base)
     {
         struct List *args = GetBootInfo(BL_Args);
 
-	if (args)
+        if (args)
         {
             struct Node *node;
 
