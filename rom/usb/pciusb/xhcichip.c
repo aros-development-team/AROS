@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved
     $Id$
 */
 
@@ -22,7 +22,7 @@ static AROS_INTH1(xhciResetHandler, struct PCIController *, hc)
 {
     AROS_INTFUNC_INIT
 
-	/* Halt controller */
+        /* Halt controller */
     #ifdef DEBUG
     if(!xhciHaltHC(hc))
         KPRINTF(1000, ("Halting HC failed, reset may result in undefined behavior!\n"));
@@ -30,7 +30,7 @@ static AROS_INTH1(xhciResetHandler, struct PCIController *, hc)
     xhciHaltHC(hc);
     #endif
 
-	/* Reset controller */
+        /* Reset controller */
     xhciResetHC(hc);
 
     return 0;
