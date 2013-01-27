@@ -1149,6 +1149,14 @@ struct RTL8169Unit *CreateUnit(struct RTL8169Base *RTL8169DeviceBase, OOP_Object
             mmioerror = TRUE;
         }
 
+        if ((!mmioerror) &&
+            HIDD_PCIDevice_Obtain(pciDevice,
+                                  RTL8169DeviceBase->rtl8169b_Device.dd_Library.lib_Node.ln_Name))
+        {
+            RTLD(bug("[%s] CreateUnit: Device is already owned\n", unit->rtl8169u_name))
+            mmioerror = TRUE;
+        }
+        
         if (mmioerror)
         {
             FreeMem(unit->rtl8169u_name, 8 + (unit->rtl8169u_UnitNum/10) + 2);
@@ -1313,6 +1321,7 @@ void DeleteUnit(struct RTL8169Base *RTL8169DeviceBase, struct RTL8169Unit *Unit)
                                                                 Unit->rtl8169u_SizeMem);
         }
 
+        HIDD_PCIDevice_Release(Unit->rtl8169u_PCIDevice);
         FreeMem(Unit, sizeof(struct RTL8169Unit));
     }
 }
