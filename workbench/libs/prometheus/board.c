@@ -10,11 +10,13 @@
 #include <libraries/prometheus.h>
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 
 #include "prometheus_intern.h"
 
+#define KernelBase (base->kernelBase)
 
 /* Private prototypes */
 
@@ -44,6 +46,31 @@ static const struct TagItem map_tag_list[] =
    {TAG_END, 0}
 };
 
+static const struct Node foreign_owner =
+{
+    .ln_Name = "AROS"
+};
+
+static UPINT GetOwner(struct LibBase *base, PCIBoard *board)
+{
+    const struct Node *owner = board->owner;
+
+    if (!owner)
+    {
+        /*
+         * The board is not owned via prometheus.library API.
+         * But it could be owned via some other API. In this case
+         * we supply own struct Node.
+         */
+        IPTR aros_owner;
+
+        OOP_GetAttr(board->aros_board, aHidd_PCIDevice_Owner, &aros_owner);
+        if (aros_owner)
+            owner = &foreign_owner;
+    }
+
+    return (UPINT)owner;
+}
 
 /***************************************************************************
 
@@ -58,10 +85,29 @@ static const struct TagItem map_tag_list[] =
         struct Library *, PrometheusBase, 5, Prometheus)
 
 /*  FUNCTION
+        Find the board whose properties match the given set
+        of attributes.
 
     INPUTS
+        previous - an opaque pointer to previously found board,
+                   or NULL to start the search from the beginning
+        tag_list - a pointer to a taglist specifying attributes to
+                   match against. If NULL, then all boards will be
+                   considered matching.
 
     RESULT
+        A pointer to next matching board object or NULL if the search
+        has ended and there is no more match.
+    
+    NOTES
+        You can search for boards with some specific owner using
+        PRM_BoardOwner tag. However note that in AROS prometheus.library
+        is a wrapper on top of native object-oriented framework. This
+        framework uses different concept of device ownership, and
+        prometheus.library cannot determine correct owner value for devices
+        locked using those APIs. Those devices are treated as having the
+        same owner named "AROS", however in reality their owners will be
+        different.
 
 ***************************************************************************/
 {
@@ -90,14 +136,22 @@ static const struct TagItem map_tag_list[] =
       while((tag_item = NextTagItem(&temp_tag_list)) != NULL)
       {
          tag = tag_item->ti_Tag;
-         aros_tag = GetTagData(tag, TAG_DONE, (const struct TagItem *)map_tag_list);
-         if(aros_tag != TAG_DONE)
+         
+         switch (tag)
          {
-            OOP_GetAttr(board->aros_board,
-               base->pcidevice_attr_base + aros_tag, (IPTR *)&board_data);
+         case PRM_BoardOwner:
+            board_data = GetOwner(base, board);
+            break;
+            
+         default:
+            aros_tag = GetTagData(tag, TAG_DONE, (const struct TagItem *)map_tag_list);
+            if (aros_tag != TAG_DONE)
+               OOP_GetAttr(board->aros_board, base->pcidevice_attr_base + aros_tag,
+                           &board_data);
+            else
+               success = FALSE;
+            break;
          }
-         else if(tag == PRM_BoardOwner)
-            board_data = (UPINT)board->owner;
 
          if(board_data != tag_item->ti_Data)
             success = FALSE;
@@ -115,8 +169,6 @@ static const struct TagItem map_tag_list[] =
    AROS_LIBFUNC_EXIT
 }
 
-
-
 /***************************************************************************
 
     NAME */
@@ -130,10 +182,29 @@ static const struct TagItem map_tag_list[] =
         struct Library *, PrometheusBase, 6, Prometheus)
 
 /*  FUNCTION
+        Returns information about the board according to the
+        specified taglist.
 
     INPUTS
+        board    - an opaque pointer to board object to query
+        tag_list - a list of attributes to query. ti_Data for
+                   every tag should be a pointer to IPTR storage
+                   where the data will be written. For unrecognized
+                   tags a value of 0 will be returned. Tags with
+                   ti_Data set to NULL will be skipped.
 
     RESULT
+        Number of succesfully processed tags.
+
+    NOTES
+        AROS implementation of prometheus.library is a wrapper on top of
+        object-oriented driver stack. Software can use either
+        prometheus.library, or some other wrapper API (like openpci.library)
+        or HIDD object-oriented API directly. Concept of device ownership
+        is different across different APIs, so this method returns correct
+        device owner only if the device was locked using prometheus.library's
+        Prm_SetBoardAttrsTagList() function. If device's owner uses another
+        API, prometheus.library will specify "AROS" default name.
 
 ***************************************************************************/
 {
@@ -147,10 +218,13 @@ static const struct TagItem map_tag_list[] =
 
    while((tag_item = NextTagItem(&tag_list)) != NULL)
    {
+      if (!tag_item->ti_Data)
+         continue;
+
       if(tag_item->ti_Tag == PRM_BoardOwner)
       {
          tag_data_ptr = (UPINT *)tag_item->ti_Data;
-         *tag_data_ptr = (UPINT)board->owner;
+         *tag_data_ptr = GetOwner(base, board);
          count++;
       }
       else
@@ -195,18 +269,36 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
+   struct LibBase *base = (struct LibBase *)PrometheusBase;
    ULONG count = 0;
-   APTR new_owner;
+   struct Node *new_owner;
    struct TagItem *tag_item;
 
    tag_item = FindTagItem(PRM_BoardOwner, tag_list);
    if(tag_item != NULL)
    {
       new_owner = (APTR)tag_item->ti_Data;
-      if((new_owner != NULL && board->owner == NULL) ||
-         (new_owner == NULL && board->owner != NULL))
+
+      if (new_owner)
       {
-         board->owner = new_owner;
+         CONST_STRPTR new_str = new_owner->ln_Name;
+         CONST_STRPTR old_str;
+
+         /* Just in case. We cannot specify NULL owner to PCIDevice::Obtain() */
+         if (!new_str)
+            new_str = base->lib_header.lib_Node.ln_Name;
+         
+         old_str = HIDD_PCIDevice_Obtain(board->aros_board, new_str);
+         if (!old_str)
+         {
+            board->owner = new_owner;
+            count++;
+         }
+      }
+      else if (board->owner)
+      {
+         HIDD_PCIDevice_Release(board->aros_board);
+         board->owner = NULL;
          count++;
       }
    }
@@ -240,13 +332,9 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct pHidd_PCIDevice_ReadConfigByte message;
+   struct LibBase *base = (struct LibBase *)PrometheusBase;
 
-   message.mID =
-      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
-   message.reg = offset;
-
-   return (UBYTE)OOP_DoMethod(board->aros_board, (OOP_Msg)&message);
+   return HIDD_PCIDevice_ReadConfigByte(board->aros_board, offset);
 
    AROS_LIBFUNC_EXIT
 }
@@ -276,14 +364,9 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct pHidd_PCIDevice_WriteConfigByte message;
+   struct LibBase *base = (struct LibBase *)PrometheusBase;
 
-   message.mID =
-      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
-   message.reg = offset;
-   message.val = data;
-
-   OOP_DoMethod(board->aros_board, (OOP_Msg)&message);
+   HIDD_PCIDevice_WriteConfigByte(board->aros_board, offset, data);
 
    AROS_LIBFUNC_EXIT
 }
@@ -312,13 +395,9 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct pHidd_PCIDevice_ReadConfigWord message;
+   struct LibBase *base = (struct LibBase *)PrometheusBase;
 
-   message.mID =
-      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
-   message.reg = offset & ~0x1;
-
-   return (UWORD)OOP_DoMethod(board->aros_board, (OOP_Msg)&message);
+   return HIDD_PCIDevice_ReadConfigWord(board->aros_board, offset & ~0x1);
 
    AROS_LIBFUNC_EXIT
 }
@@ -348,14 +427,9 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct pHidd_PCIDevice_WriteConfigWord message;
+   struct LibBase *base = (struct LibBase *)PrometheusBase;
 
-   message.mID =
-      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
-   message.reg = offset & ~0x1;
-   message.val = data;
-
-   OOP_DoMethod(board->aros_board, (OOP_Msg)&message);
+   HIDD_PCIDevice_WriteConfigWord(board->aros_board, offset & ~0x1, data);
 
    AROS_LIBFUNC_EXIT
 }
@@ -384,13 +458,9 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct pHidd_PCIDevice_ReadConfigLong message;
+   struct LibBase *base = (struct LibBase *)PrometheusBase;
 
-   message.mID =
-      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong);
-   message.reg = offset & ~0x3;
-
-   return (ULONG)OOP_DoMethod(board->aros_board, (OOP_Msg)&message);
+   return HIDD_PCIDevice_ReadConfigLong(board->aros_board, offset & ~0x3);
 
    AROS_LIBFUNC_EXIT
 }
@@ -420,14 +490,9 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   struct pHidd_PCIDevice_WriteConfigLong message;
+   struct LibBase *base = (struct LibBase *)PrometheusBase;
 
-   message.mID =
-      OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigLong);
-   message.reg = offset & ~0x3;
-   message.val = data;
-
-   OOP_DoMethod(board->aros_board, (OOP_Msg)&message);
+   HIDD_PCIDevice_WriteConfigLong(board->aros_board, offset & ~0x3, data);
 
    AROS_LIBFUNC_EXIT
 }
@@ -458,17 +523,10 @@ static const struct TagItem map_tag_list[] =
 
    struct LibBase *base = (APTR)PrometheusBase;
    BOOL success = FALSE;
-   UPINT int_no;
 
    /* Add AROS int to system */
-   if(board && board->aros_irq == NULL) {
-      OOP_GetAttr(board->aros_board,
-         base->pcidevice_attr_base + aoHidd_PCIDevice_INTLine, (IPTR *)&int_no);
-      board->aros_irq = interrupt;
-
-      AddIntServer(INTB_KERNEL + int_no, interrupt);
-      success = TRUE;
-   }
+   if (board)
+      success = HIDD_PCIDevice_AddInterrupt(board->aros_board, interrupt);
 
    return success;
 
@@ -500,17 +558,9 @@ static const struct TagItem map_tag_list[] =
    AROS_LIBFUNC_INIT
 
    struct LibBase *base = (APTR)PrometheusBase;
-   IPTR int_no;
 
    if(board != NULL)
-   {
-      OOP_GetAttr(board->aros_board,
-         base->pcidevice_attr_base + aoHidd_PCIDevice_INTLine, (IPTR *)&int_no);
-      RemIntServer(INTB_KERNEL + int_no, board->aros_irq);
-      board->aros_irq = NULL;
-   }
-
-   return;
+      HIDD_PCIDevice_RemoveInterrupt(board->aros_board, interrupt);
 
    AROS_LIBFUNC_EXIT
 }
@@ -529,23 +579,26 @@ static const struct TagItem map_tag_list[] =
         struct Library *, PrometheusBase, 16, Prometheus)
 
 /*  FUNCTION
+        Allocate memory region accessible by PCI DMA.
 
     INPUTS
+        size - Size of the region to allocate. NULL is safe
+               input, in this case the function fails.
 
     RESULT
+        A pointer to allocated region or NULL upon failure.
+        The region will always be LONG-aligned.
 
 ***************************************************************************/
 {
    AROS_LIBFUNC_INIT
 
-   APTR buffer;
-
-   if(size != 0)
-      buffer = AllocMem(size, MEMF_PUBLIC);
-   else
-      buffer = NULL;
-
-   return buffer;
+   /*
+    * This should be OK for any "direct" PCI bus.
+    * Note that this also relies on AllocMem()'s ability to return
+    * NULL when zero size is given.
+    */
+   return AllocMem(size, MEMF_31BIT);
 
    AROS_LIBFUNC_EXIT
 }
@@ -565,19 +618,26 @@ static const struct TagItem map_tag_list[] =
         struct Library *, PrometheusBase, 17, Prometheus)
 
 /*  FUNCTION
+        Free memory buffer allocated by Prm_AllocDMABuffer().
 
     INPUTS
+        buffer - a pointer to a buffer to free. NULL is a safe value,
+                 in this case the function does nothing.
+        size   - size of the buffer. Zero is a safe value, in this case
+                 the function does nothing.
 
     RESULT
+        None.
 
 ***************************************************************************/
 {
    AROS_LIBFUNC_INIT
 
-   if(buffer != NULL && size != 0)
-      FreeMem(buffer, size);
-
-   return;
+   /*
+    * Note that this relies on FreeMem()'s ability to ignore
+    * zero buffer or size.
+    */
+   FreeMem(buffer, size);
 
    AROS_LIBFUNC_EXIT
 }
@@ -605,7 +665,10 @@ static const struct TagItem map_tag_list[] =
 {
    AROS_LIBFUNC_INIT
 
-   return address;
+   struct LibBase *base = (struct LibBase *)PrometheusBase;
+
+   /* This should be OK for any "direct" PCI bus */
+   return KrnVirtualToPhysical(address);
 
    AROS_LIBFUNC_EXIT
 }
