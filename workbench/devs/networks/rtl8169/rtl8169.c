@@ -941,8 +941,8 @@ static int request_irq(struct net_device *unit)
 
     if (!unit->rtl8169u_IntsAdded)
     {
-        AddIntServer(INTB_KERNEL + unit->rtl8169u_IRQ,
-            &unit->rtl8169u_irqhandler);
+        if (!HIDD_PCIDevice_AddInterrupt(unit->rtl8169u_PCIDevice, &unit->rtl8169u_irqhandler))
+            return 1;
         AddIntServer(INTB_VERTB, &unit->rtl8169u_touthandler);
         unit->rtl8169u_IntsAdded = TRUE;
     }
@@ -954,8 +954,7 @@ static void free_irq(struct net_device *unit)
 {
     if (unit->rtl8169u_IntsAdded)
     {
-        RemIntServer(INTB_KERNEL + unit->rtl8169u_IRQ,
-            &unit->rtl8169u_irqhandler);
+        HIDD_PCIDevice_RemoveInterrupt(unit->rtl8169u_PCIDevice, &unit->rtl8169u_irqhandler);
         RemIntServer(INTB_VERTB, &unit->rtl8169u_touthandler);
         unit->rtl8169u_IntsAdded = FALSE;
     }
