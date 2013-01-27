@@ -41,7 +41,6 @@ title AROS on Sam4x0
     module boot/modules/massstorage.class
     module boot/modules/misc.resource
     module boot/modules/mouse.hidd
-    module boot/modules/ohci.hidd
     module boot/modules/oop.library
     module boot/modules/partition.library
     module boot/modules/pci-amcc440.hidd
@@ -97,7 +96,6 @@ title AROS on Sam4x0 Debug
     module boot/modules/massstorage.class
     module boot/modules/misc.resource
     module boot/modules/mouse.hidd
-    module boot/modules/ohci.hidd
     module boot/modules/oop.library
     module boot/modules/partition.library
     module boot/modules/pci-amcc440.hidd
