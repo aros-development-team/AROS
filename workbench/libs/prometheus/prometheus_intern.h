@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2005 Neil Cafferkey
-    Copyright (C) 2011 The AROS Development Team.
+    Copyright (C) 2011 - 2013 The AROS Development Team.
     $Id$
 */
 
@@ -33,16 +33,22 @@ struct LibBase
    struct Library lib_header;
    OOP_Object *pci_hidd;
    OOP_AttrBase pcidevice_attr_base;
+   OOP_AttrBase pcidriver_attr_base;
+   OOP_MethodID pcidevice_method_base;
+   APTR kernelBase;
    struct MinList boards;
 };
 
+#undef HiddPCIDeviceAttrBase
+#define HiddPCIDeviceAttrBase (base->pcidevice_attr_base)
+#undef HiddPCIDeviceBase
+#define HiddPCIDeviceBase (base->pcidevice_method_base)
 
 struct PCIBoard
 {
    struct MinNode node;
-   const VOID *owner;
+   struct Node *owner;
    OOP_Object *aros_board;
-   struct Interrupt *aros_irq;
 };
 
 
