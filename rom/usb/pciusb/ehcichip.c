@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved
     $Id$
 */
 
@@ -50,9 +50,9 @@ static void ehciFinishRequest(struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
 
     /* Release bounce buffers */
     if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
-    	dir = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT;
+        dir = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT;
     else
-    	dir = ioreq->iouh_Dir;
+        dir = ioreq->iouh_Dir;
 
     usbReleaseBuffer(eqh->eqh_Buffer, ioreq->iouh_Data, ioreq->iouh_Actual, dir);
     usbReleaseBuffer(eqh->eqh_SetupBuf, &ioreq->iouh_SetupData, 8, UHDIR_IN);
@@ -299,7 +299,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                         WRITEMEM32_LE(&etd->etd_BufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
                         WRITEMEM32_LE(&etd->etd_BufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
 
-			// FIXME Make use of these on 64-bit-capable hardware
+                        // FIXME Make use of these on 64-bit-capable hardware
                         etd->etd_ExtBufferPtr[0] = 0;
                         etd->etd_ExtBufferPtr[1] = 0;
                         etd->etd_ExtBufferPtr[2] = 0;
@@ -563,10 +563,10 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
         WRITEMEM32_LE(&setupetd->etd_BufferPtr[1], (phyaddr + 8) & EHCI_PAGE_MASK); // theoretically, setup data may cross one page
         setupetd->etd_BufferPtr[2] = 0; // clear for overlay bits
 
-	// FIXME Make use of these on 64-bit-capable hardware
-	setupetd->etd_ExtBufferPtr[0] = 0;
-	setupetd->etd_ExtBufferPtr[1] = 0;
-	setupetd->etd_ExtBufferPtr[2] = 0;
+        // FIXME Make use of these on 64-bit-capable hardware
+        setupetd->etd_ExtBufferPtr[0] = 0;
+        setupetd->etd_ExtBufferPtr[1] = 0;
+        setupetd->etd_ExtBufferPtr[2] = 0;
 
         ctrlstatus = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_IN) : (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_OUT);
         predetd = setupetd;
@@ -600,12 +600,12 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
                 WRITEMEM32_LE(&dataetd->etd_BufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
                 WRITEMEM32_LE(&dataetd->etd_BufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
 
-		// FIXME Make use of these on 64-bit-capable hardware
-		dataetd->etd_ExtBufferPtr[0] = 0;
-		dataetd->etd_ExtBufferPtr[1] = 0;
-		dataetd->etd_ExtBufferPtr[2] = 0;
-		dataetd->etd_ExtBufferPtr[3] = 0;
-		dataetd->etd_ExtBufferPtr[4] = 0;
+                // FIXME Make use of these on 64-bit-capable hardware
+                dataetd->etd_ExtBufferPtr[0] = 0;
+                dataetd->etd_ExtBufferPtr[1] = 0;
+                dataetd->etd_ExtBufferPtr[2] = 0;
+                dataetd->etd_ExtBufferPtr[3] = 0;
+                dataetd->etd_ExtBufferPtr[4] = 0;
 
                 phyaddr += len;
                 eqh->eqh_Actual += len;
@@ -647,9 +647,9 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
         eqh->eqh_BufferPtr[0] = setupetd->etd_BufferPtr[0];
         eqh->eqh_BufferPtr[1] = setupetd->etd_BufferPtr[1];
         eqh->eqh_BufferPtr[2] = 0;
-	eqh->eqh_ExtBufferPtr[0] = setupetd->etd_ExtBufferPtr[0];
-	eqh->eqh_ExtBufferPtr[1] = setupetd->etd_ExtBufferPtr[1];
-	eqh->eqh_ExtBufferPtr[2] = 0;
+        eqh->eqh_ExtBufferPtr[0] = setupetd->etd_ExtBufferPtr[0];
+        eqh->eqh_ExtBufferPtr[1] = setupetd->etd_ExtBufferPtr[1];
+        eqh->eqh_ExtBufferPtr[2] = 0;
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_DriverPrivate1 = eqh;
@@ -826,12 +826,12 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
             WRITEMEM32_LE(&etd->etd_BufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
             WRITEMEM32_LE(&etd->etd_BufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
 
-	    // FIXME Use these on 64-bit-capable hardware
-	    etd->etd_ExtBufferPtr[0] = 0;
-	    etd->etd_ExtBufferPtr[1] = 0;
-	    etd->etd_ExtBufferPtr[2] = 0;
-	    etd->etd_ExtBufferPtr[3] = 0;
-	    etd->etd_ExtBufferPtr[4] = 0;
+            // FIXME Use these on 64-bit-capable hardware
+            etd->etd_ExtBufferPtr[0] = 0;
+            etd->etd_ExtBufferPtr[1] = 0;
+            etd->etd_ExtBufferPtr[2] = 0;
+            etd->etd_ExtBufferPtr[3] = 0;
+            etd->etd_ExtBufferPtr[4] = 0;
 
             phyaddr += len;
             eqh->eqh_Actual += len;
@@ -863,11 +863,11 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
         eqh->eqh_BufferPtr[2] = etd->etd_BufferPtr[2];
         eqh->eqh_BufferPtr[3] = etd->etd_BufferPtr[3];
         eqh->eqh_BufferPtr[4] = etd->etd_BufferPtr[4];
-	eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
-	eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
-	eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
-	eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
-	eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
+        eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
+        eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
+        eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
+        eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
+        eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_DriverPrivate1 = eqh;
@@ -1011,12 +1011,12 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
             WRITEMEM32_LE(&etd->etd_BufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
             WRITEMEM32_LE(&etd->etd_BufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
 
-	    // FIXME Use these on 64-bit-capable hardware
-	    etd->etd_ExtBufferPtr[0] = 0;
-	    etd->etd_ExtBufferPtr[1] = 0;
-	    etd->etd_ExtBufferPtr[2] = 0;
-	    etd->etd_ExtBufferPtr[3] = 0;
-	    etd->etd_ExtBufferPtr[4] = 0;
+            // FIXME Use these on 64-bit-capable hardware
+            etd->etd_ExtBufferPtr[0] = 0;
+            etd->etd_ExtBufferPtr[1] = 0;
+            etd->etd_ExtBufferPtr[2] = 0;
+            etd->etd_ExtBufferPtr[3] = 0;
+            etd->etd_ExtBufferPtr[4] = 0;
 
             phyaddr += len;
             eqh->eqh_Actual += len;
@@ -1049,11 +1049,11 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
         eqh->eqh_BufferPtr[2] = etd->etd_BufferPtr[2];
         eqh->eqh_BufferPtr[3] = etd->etd_BufferPtr[3];
         eqh->eqh_BufferPtr[4] = etd->etd_BufferPtr[4];
-	eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
-	eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
-	eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
-	eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
-	eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
+        eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
+        eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
+        eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
+        eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
+        eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_DriverPrivate1 = eqh;
@@ -1515,7 +1515,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
                     (hccparams & EHCF_ASYNCSCHEDPARK) ? "Yes" : "No"));
                     hc->hc_EhciUsbCmd = (1UL<<EHUS_INTTHRESHOLD);
 
-	/* FIXME HERE: Process EHCF_64BITS flag and implement 64-bit addressing */
+        /* FIXME HERE: Process EHCF_64BITS flag and implement 64-bit addressing */
 
         if(hccparams & EHCF_ASYNCSCHEDPARK)
         {

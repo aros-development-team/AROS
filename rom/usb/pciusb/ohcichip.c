@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved
     $Id$
 */
 
@@ -30,10 +30,10 @@ static void PrintTD(const char *txt, ULONG ptd, struct PCIController *hc)
 
     while (ptd)
     {
-    	struct OhciTD *otd = (struct OhciTD *)((IPTR)ptd - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
+        struct OhciTD *otd = (struct OhciTD *)((IPTR)ptd - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
 
-    	KPrintF(" 0x%p", otd);
-    	ptd = READMEM32_LE(&otd->otd_NextTD);
+        KPrintF(" 0x%p", otd);
+        ptd = READMEM32_LE(&otd->otd_NextTD);
     }
     RawPutChar('\n');
 }
@@ -56,7 +56,7 @@ static void PrintED(const char *txt, struct OhciED *oed, struct PCIController *h
 
     KPrintF("...TD list:", hc, txt, oed);
     for (otd = oed->oed_FirstTD; otd; otd = otd->otd_Succ)
-    	KPrintF(" 0x%p", otd);
+        KPrintF(" 0x%p", otd);
     RawPutChar('\n');
 }
 
@@ -99,9 +99,9 @@ static void ohciFreeEDContext(struct PCIController *hc, struct IOUsbHWReq *ioreq
     KPRINTF(5, ("Freeing EDContext 0x%p IOReq 0x%p\n", oed, ioreq));
 
     if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
-    	dir = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT;
+        dir = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT;
     else
-    	dir = ioreq->iouh_Dir;
+        dir = ioreq->iouh_Dir;
 
     usbReleaseBuffer(oed->oed_Buffer, ioreq->iouh_Data, ioreq->iouh_Actual, dir);
     usbReleaseBuffer(oed->oed_SetupData, &ioreq->iouh_SetupData, 8, UHDIR_IN);
@@ -188,7 +188,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
         CacheClearE(&oed->oed_EPCaps, 16, CACRF_InvalidateD);
         ctrlstatus = READMEM32_LE(&otd->otd_Ctrl);
         KPRINTF(1, ("TD: %08lx - %08lx\n", READMEM32_LE(&otd->otd_BufferPtr),
-        		READMEM32_LE(&otd->otd_BufferEnd)));
+                        READMEM32_LE(&otd->otd_BufferEnd)));
         if(otd->otd_BufferPtr)
         {
             // FIXME this will blow up if physical memory is ever going to be discontinuous
@@ -226,21 +226,21 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
 /*
  * CHECKME: This condition may get triggered on control transfers even if terminating TD is not processed yet.
  *          (got triggered by MacMini's keyboard, when someone sends control ED with no data payload,
- *	    and some other ED is being done meanwhile (its final packet generated an interrupt).
- *	    In this case the given control ED can be partially done (setup TD is done, term TD is not).
- *	    iouh_Length is 0, and the whole ED is retired, while still being processed by the HC. Next time
- *	    its terminator TD arrives into done queue.
- *	    This can cause weird things like looping TD list on itself. My modification of ohciFreeTD()
- *	    explicitly clears NextTD to avoid keeping dangling value there, however the problem still can
- *	    appear if this TD is quickly reused by another request.
- *	    Final TDs have OTCM_DELAYINT fields set to zero. HC processes TDs in order, so if we receive
- *	    the final TD, we assume the whole ED's list has been processed.
- *	    This means it should be safe to simply disable this check.
- *	    If this doesn't work for some reason, we need a more complex check which makes sure that all TDs
- *	    are really done (or ED is halted). This can be done by checking OTCM_COMPLETIONCODE field against
- *	    OTCF_CC_INVALID value.
- *						Pavel Fedin <pavel.fedin@mail.ru>
-	retire = (ioreq->iouh_Actual == ioreq->iouh_Length);
+ *          and some other ED is being done meanwhile (its final packet generated an interrupt).
+ *          In this case the given control ED can be partially done (setup TD is done, term TD is not).
+ *          iouh_Length is 0, and the whole ED is retired, while still being processed by the HC. Next time
+ *          its terminator TD arrives into done queue.
+ *          This can cause weird things like looping TD list on itself. My modification of ohciFreeTD()
+ *          explicitly clears NextTD to avoid keeping dangling value there, however the problem still can
+ *          appear if this TD is quickly reused by another request.
+ *          Final TDs have OTCM_DELAYINT fields set to zero. HC processes TDs in order, so if we receive
+ *          the final TD, we assume the whole ED's list has been processed.
+ *          This means it should be safe to simply disable this check.
+ *          If this doesn't work for some reason, we need a more complex check which makes sure that all TDs
+ *          are really done (or ED is halted). This can be done by checking OTCM_COMPLETIONCODE field against
+ *          OTCF_CC_INVALID value.
+ *                                              Pavel Fedin <pavel.fedin@mail.ru>
+        retire = (ioreq->iouh_Actual == ioreq->iouh_Length);
         if (retire)
         {
             KPRINTF(10, ("TD 0x%p Data transfer done (%lu bytes)\n", otd, ioreq->iouh_Length));
@@ -261,10 +261,10 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                 ioreq->iouh_Req.io_Error = UHIOERR_CRCERROR;
                 /*
                  * CHECKME: Do we really need to set retire flag here?
-                 *	    Critical errors are always accompanied by OEHF_HALTED bit.
-                 *	    But what if HC thinks it's recoverable error and continues
-                 *	    working on this ED? In this case early retirement happens,
-                 *	    causing bad things. See long explanation above.
+                 *          Critical errors are always accompanied by OEHF_HALTED bit.
+                 *          But what if HC thinks it's recoverable error and continues
+                 *          working on this ED? In this case early retirement happens,
+                 *          causing bad things. See long explanation above.
                  */
                 retire = TRUE;
                 break;
@@ -347,7 +347,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
             AddHead(&hc->hc_OhciRetireQueue, &ioreq->iouh_Req.io_Message.mn_Node);
         }
 
-	nexttd = READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK;
+        nexttd = READMEM32_LE(&otd->otd_NextTD) & OHCI_PTRMASK;
         KPRINTF(1, ("NextTD=0x%08lx\n", nexttd));
         if(!nexttd)
         {
@@ -428,7 +428,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                 WRITEMEM32_LE(&oed->oed_HeadPtr, ctrlstatus);
                 CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
 
-		PrintED("Continued bulk", oed, hc);
+                PrintED("Continued bulk", oed, hc);
 
                 oldenables = READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
                 oldenables |= OCSF_BULKENABLE;
@@ -438,7 +438,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
             } else {
                 // disable ED
                 ohciDisableED(oed);
-		PrintED("Completed", oed, hc);
+                PrintED("Completed", oed, hc);
 
                 ohciFreeEDContext(hc, ioreq);
                 if(ioreq->iouh_Req.io_Command == UHCMD_INTXFER)
@@ -480,25 +480,25 @@ static ULONG ohciHandleAbortedEDs(struct PCIController *hc)
      */
     while ((ioreq = (struct IOUsbHWReq *)RemHead(&hc->hc_AbortQueue)))
     {
-    	KPRINTF(70, ("HC 0x%p Aborted IOReq 0x%p\n", hc, ioreq));
-	PrintED("Aborted", ioreq->iouh_DriverPrivate1, hc);
+        KPRINTF(70, ("HC 0x%p Aborted IOReq 0x%p\n", hc, ioreq));
+        PrintED("Aborted", ioreq->iouh_DriverPrivate1, hc);
 
-	ohciFreeEDContext(hc, ioreq);
-	ReplyMsg(&ioreq->iouh_Req.io_Message);
+        ohciFreeEDContext(hc, ioreq);
+        ReplyMsg(&ioreq->iouh_Req.io_Message);
     }
 
     /* Restart stopped queues */
     if (hc->hc_Flags & HCF_STOP_CTRL)
     {
-    	KPRINTF(50, ("Restarting control transfers\n"));
-    	CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CTRL_ED, 0);
-    	restartmask |= OCSF_CTRLENABLE;
+        KPRINTF(50, ("Restarting control transfers\n"));
+        CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CTRL_ED, 0);
+        restartmask |= OCSF_CTRLENABLE;
     }
 
     if (hc->hc_Flags & HCF_STOP_BULK)
     {
-	KPRINTF(50, ("Restarting bulk transfers\n"));
-	CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_BULK_ED, 0);
+        KPRINTF(50, ("Restarting bulk transfers\n"));
+        CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_BULK_ED, 0);
         restartmask |= OCSF_BULKENABLE;
     }
 
@@ -591,7 +591,7 @@ static ULONG ohciScheduleCtrlTDs(struct PCIController *hc)
         WRITEMEM32_LE(&setupotd->otd_BufferEnd, (IPTR) pciGetPhysical(hc, ((UBYTE *)oed->oed_SetupData) + 7));
 
         KPRINTF(1, ("TD send: %08lx - %08lx\n", READMEM32_LE(&setupotd->otd_BufferPtr),
-        		READMEM32_LE(&setupotd->otd_BufferEnd)));
+                        READMEM32_LE(&setupotd->otd_BufferEnd)));
 
         ctrl = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? (OTCF_PIDCODE_IN|OTCF_CC_INVALID|OTCF_NOINT) : (OTCF_PIDCODE_OUT|OTCF_CC_INVALID|OTCF_NOINT);
 
@@ -630,7 +630,7 @@ static ULONG ohciScheduleCtrlTDs(struct PCIController *hc)
                 WRITEMEM32_LE(&dataotd->otd_BufferEnd, phyaddr);
 
                 KPRINTF(1, ("TD send: %08lx - %08lx\n", READMEM32_LE(&dataotd->otd_BufferPtr),
-                		READMEM32_LE(&dataotd->otd_BufferEnd)));
+                                READMEM32_LE(&dataotd->otd_BufferEnd)));
 
                 CacheClearE(&dataotd->otd_Ctrl, 16, CACRF_ClearD);
                 phyaddr++;
@@ -693,10 +693,10 @@ static ULONG ohciScheduleCtrlTDs(struct PCIController *hc)
         CacheClearE(&oed->oed_Pred->oed_EPCaps, 16, CACRF_ClearD);
         SYNC;
 
-	PrintED("Control", oed, hc);
+        PrintED("Control", oed, hc);
 
-	/* Control request is queued, we will start the queue */
-	startmask =  OCSF_CTRLENABLE;
+        /* Control request is queued, we will start the queue */
+        startmask =  OCSF_CTRLENABLE;
         Enable();
 
         ioreq = (struct IOUsbHWReq *) hc->hc_CtrlXFerQueue.lh_Head;
@@ -704,11 +704,11 @@ static ULONG ohciScheduleCtrlTDs(struct PCIController *hc)
 
     if (startmask)
     {
-    	/*
-    	 * If we are going to start the queue but it's not running yet,
-    	 * reset current ED pointer to zero. This will cause the HC to
-    	 * start over from the head.
-    	 */
+        /*
+         * If we are going to start the queue but it's not running yet,
+         * reset current ED pointer to zero. This will cause the HC to
+         * start over from the head.
+         */
         oldenables = READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
         if(!(oldenables & OCSF_BULKENABLE))
         {
@@ -776,7 +776,7 @@ static void ohciScheduleIntTDs(struct PCIController *hc)
         {
             otd = ohciAllocTD(hc);
             if (predotd)
-            	predotd->otd_Succ = otd;
+                predotd->otd_Succ = otd;
             if (!otd)
             {
                 break;
@@ -1011,7 +1011,7 @@ static ULONG ohciScheduleBulkTDs(struct PCIController *hc)
         KPRINTF(10, ("Activating BULK at %ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
         PrintED("Bulk", oed, hc);
 
-	/* Similar to ohciScheduleCtrlTDs(), but use bulk queue */
+        /* Similar to ohciScheduleCtrlTDs(), but use bulk queue */
         startmask = OCSF_BULKENABLE;
         Enable();
         ioreq = (struct IOUsbHWReq *) hc->hc_BulkXFerQueue.lh_Head;
@@ -1052,7 +1052,7 @@ static AROS_INTH1(ohciCompleteInt, struct PCIController *,hc)
         ohciHandleFinishedTDs(hc);
 
     if (hc->hc_Flags & HCF_ABORT)
-    	restartmask = ohciHandleAbortedEDs(hc);
+        restartmask = ohciHandleAbortedEDs(hc);
 
     if ((!(hc->hc_Flags & HCF_STOP_CTRL)) && hc->hc_CtrlXFerQueue.lh_Head->ln_Succ)
         restartmask |= ohciScheduleCtrlTDs(hc);
@@ -1081,9 +1081,9 @@ static AROS_INTH1(ohciCompleteInt, struct PCIController *,hc)
      */
     if (restartmask)
     {
-    	restartmask |= READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
-	WRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, restartmask);
-	SYNC;
+        restartmask |= READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
+        WRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, restartmask);
+        SYNC;
     }
 
     KPRINTF(1, ("CompleteDone\n"));
@@ -1108,29 +1108,29 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
 
     if(donehead)
     {
-    	if (donehead & ~1)
-    		intr = OISF_DONEHEAD;
-    	if(donehead & 1)
-    	{
-    		intr |= READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS);
-    	}
-    	donehead &= OHCI_PTRMASK;
+        if (donehead & ~1)
+                intr = OISF_DONEHEAD;
+        if(donehead & 1)
+        {
+                intr |= READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS);
+        }
+        donehead &= OHCI_PTRMASK;
 
-    	CONSTWRITEMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead, 0);
+        CONSTWRITEMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead, 0);
 
-    	KPRINTF(5, ("New Donehead %08lx for old %08lx\n", donehead, hc->hc_OhciDoneQueue));
+        KPRINTF(5, ("New Donehead %08lx for old %08lx\n", donehead, hc->hc_OhciDoneQueue));
     } else {
-    	intr = READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS);
+        intr = READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS);
 
-    	if (intr & OISF_DONEHEAD)
-    	{
-    		KPRINTF(1, ("!!!!!!!!!!!!!!!!!!!!!!!DoneHead was empty!!!!!!!!!!!!!!!!!!!\n"));
-    		CacheClearE(hc->hc_OhciHCCA, sizeof(struct OhciHCCA), CACRF_InvalidateD);
-    		donehead = READMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead) & OHCI_PTRMASK;
-    		CONSTWRITEMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead, 0);
+        if (intr & OISF_DONEHEAD)
+        {
+                KPRINTF(1, ("!!!!!!!!!!!!!!!!!!!!!!!DoneHead was empty!!!!!!!!!!!!!!!!!!!\n"));
+                CacheClearE(hc->hc_OhciHCCA, sizeof(struct OhciHCCA), CACRF_InvalidateD);
+                donehead = READMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead) & OHCI_PTRMASK;
+                CONSTWRITEMEM32_LE(&hc->hc_OhciHCCA->oha_DoneHead, 0);
 
-    		KPRINTF(5, ("New Donehead %08lx for old %08lx\n", donehead, hc->hc_OhciDoneQueue));
-    	}
+                KPRINTF(5, ("New Donehead %08lx for old %08lx\n", donehead, hc->hc_OhciDoneQueue));
+        }
     }
     CacheClearE(hc->hc_OhciHCCA, sizeof(struct OhciHCCA), CACRF_ClearD);
 
@@ -1140,7 +1140,7 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
     {
         KPRINTF(1, ("ohciIntCode(0x%p) interrupts 0x%08lx, mask 0x%08lx\n", hc, intr, hc->hc_PCIIntEnMask));
 
-	// Acknowledge all interrupts, but process only those we want
+        // Acknowledge all interrupts, but process only those we want
         WRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, intr);
         //KPRINTF(1, ("INT=%02lx\n", intr));
         intr &= hc->hc_PCIIntEnMask;
@@ -1232,24 +1232,24 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
         }
         if(intr & OISF_DONEHEAD)
         {
-        	KPRINTF(10, ("DoneHead Frame=%ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
+                KPRINTF(10, ("DoneHead Frame=%ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT)));
 
-        	if(hc->hc_OhciDoneQueue)
-        	{
-        		struct OhciTD *donetd = (struct OhciTD *) ((IPTR)donehead - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
+                if(hc->hc_OhciDoneQueue)
+                {
+                        struct OhciTD *donetd = (struct OhciTD *) ((IPTR)donehead - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
 
-        		CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
-        		while(donetd->otd_NextTD)
-        		{
-        			donetd = (struct OhciTD *) ((IPTR)donetd->otd_NextTD - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
-        			CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
-        		}
-        		WRITEMEM32_LE(&donetd->otd_NextTD, hc->hc_OhciDoneQueue);
-        		CacheClearE(&donetd->otd_Ctrl, 16, CACRF_ClearD);
+                        CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
+                        while(donetd->otd_NextTD)
+                        {
+                                donetd = (struct OhciTD *) ((IPTR)donetd->otd_NextTD - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
+                                CacheClearE(&donetd->otd_Ctrl, 16, CACRF_InvalidateD);
+                        }
+                        WRITEMEM32_LE(&donetd->otd_NextTD, hc->hc_OhciDoneQueue);
+                        CacheClearE(&donetd->otd_Ctrl, 16, CACRF_ClearD);
         
-        		KPRINTF(10, ("Attached old DoneHead 0x%08lx to TD 0x%08lx\n", hc->hc_OhciDoneQueue, donetd->otd_Self));
-        	}
-        	hc->hc_OhciDoneQueue = donehead;
+                        KPRINTF(10, ("Attached old DoneHead 0x%08lx to TD 0x%08lx\n", hc->hc_OhciDoneQueue, donetd->otd_Self));
+                }
+                hc->hc_OhciDoneQueue = donehead;
         }
         if (intr & OISF_SOF)
         {
@@ -1263,8 +1263,8 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
              * These two are leveraged down to SoftInt.
              * This is done in order to keep queues rotation synchronized.
              */
-       	    SureCause(base, &hc->hc_CompleteInt);
-       	 }
+            SureCause(base, &hc->hc_CompleteInt);
+         }
 
         KPRINTF(1, ("Exiting ohciIntCode(0x%p)\n", unit));
     }
@@ -1304,25 +1304,25 @@ void ohciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq)
     switch (ioreq->iouh_Req.io_Command)
     {
     case UHCMD_CONTROLXFER:
-    	KPRINTF(50, ("Stopping control queue\n"));
-    	hc->hc_Flags |= HCF_STOP_CTRL;
-    	disablemask = OCSF_CTRLENABLE;
-    	break;
+        KPRINTF(50, ("Stopping control queue\n"));
+        hc->hc_Flags |= HCF_STOP_CTRL;
+        disablemask = OCSF_CTRLENABLE;
+        break;
  
     case UHCMD_BULKXFER:
-	KPRINTF(50, ("Stopping bulk queue\n"));
-    	hc->hc_Flags |= HCF_STOP_BULK;
+        KPRINTF(50, ("Stopping bulk queue\n"));
+        hc->hc_Flags |= HCF_STOP_BULK;
         disablemask = OCSF_BULKENABLE;
-    	break;
+        break;
     }
 
     /* Stop selected queue(s) */
     if (disablemask)
     {
-    	ctrlstatus = READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
-    	ctrlstatus &= ~disablemask;
-    	WRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, ctrlstatus);
-    	SYNC;
+        ctrlstatus = READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS);
+        ctrlstatus &= ~disablemask;
+        WRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, ctrlstatus);
+        SYNC;
     }
 
     // disable ED
@@ -1340,7 +1340,7 @@ void ohciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq)
     AddTail(&hc->hc_AbortQueue, &ioreq->iouh_Req.io_Message.mn_Node);
 
     if (ioreq->iouh_Req.io_Command == UHCMD_INTXFER)
-       	ohciUpdateIntTree(hc);
+        ohciUpdateIntTree(hc);
 
     unit->hu_DevDataToggle[devadrep] = (READMEM32_LE(&oed->oed_HeadPtr) & OEHF_DATA1) ? TRUE : FALSE;
 
@@ -1624,7 +1624,7 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
         // make sure the ports are on with chipset quirk workaround
         hubdesca = READREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA);        
         if (hd->hd_Flags & HDF_FORCEPOWER)
-            hubdesca |= OHAF_NOPOWERSWITCH;	/* Required for some IntelMacs */
+            hubdesca |= OHAF_NOPOWERSWITCH;     /* Required for some IntelMacs */
         else
             hubdesca |= OHAF_NOOVERCURRENT;
         WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA, hubdesca);
