@@ -22,6 +22,10 @@
  * need to retrieve in a cleaner fashion .. */
 extern IPTR stack[];
 
+extern void IdleTask(struct ExecBase *);
+
+struct Task *sysIdelTask = NULL;
+
 static int PlatformInit(struct ExecBase *SysBase)
 {
     D(bug("[Exec] PlatformInit()\n"));
@@ -32,6 +36,16 @@ static int PlatformInit(struct ExecBase *SysBase)
     /* for our sanity we will tell exec about the correct stack for the boot task */
     BootTask->tc_SPLower = stack;
     BootTask->tc_SPUpper = stack + STACK_SIZE;
+
+    sysIdelTask = NewCreateTask(TASKTAG_NAME       , "System Idle",
+                      TASKTAG_PRI        , -127,
+                      TASKTAG_PC         , IdleTask,
+                      TASKTAG_ARG1       , SysBase,
+                      TAG_DONE);
+
+    sysIdelTask->tc_State      = TS_WAIT;
+
+    D(bug("[Exec] PlatformInit: Idle Task @ %p", sysIdelTask));
 
     return TRUE;
 }
