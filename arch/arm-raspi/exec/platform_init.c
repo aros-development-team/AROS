@@ -24,7 +24,7 @@ extern IPTR stack[];
 
 extern void IdleTask(struct ExecBase *);
 
-struct Task *sysIdelTask = NULL;
+struct Task *sysIdleTask = NULL;
 
 static int PlatformInit(struct ExecBase *SysBase)
 {
@@ -37,15 +37,15 @@ static int PlatformInit(struct ExecBase *SysBase)
     BootTask->tc_SPLower = stack;
     BootTask->tc_SPUpper = stack + STACK_SIZE;
 
-    sysIdelTask = NewCreateTask(TASKTAG_NAME       , "System Idle",
+    sysIdleTask = NewCreateTask(TASKTAG_NAME       , "System Idle",
                       TASKTAG_PRI        , -127,
                       TASKTAG_PC         , IdleTask,
                       TASKTAG_ARG1       , SysBase,
                       TAG_DONE);
 
-    sysIdelTask->tc_State      = TS_WAIT;
+    sysIdleTask->tc_State      = TS_WAIT;
 
-    D(bug("[Exec] PlatformInit: Idle Task @ %p", sysIdelTask));
+    D(bug("[Exec] PlatformInit: Idle Task @ %p", sysIdleTask));
 
     return TRUE;
 }
