@@ -21,15 +21,13 @@
 #include "kernel_intr.h"
 
 #define D(x)
+#define DREGS(x)
 
 void cpu_Switch(regs_t *regs)
 {
     struct Task *task;
 
     D(bug("[Kernel] cpu_Switch()\n"));
-
-    /* Disable interrupts until the task switch */
-    asm volatile("cpsid i\n");
 
     task = SysBase->ThisTask;
         
@@ -46,8 +44,6 @@ void cpu_Dispatch(regs_t *regs)
 
     D(bug("[Kernel] cpu_Dispatch()\n"));
 
-    asm volatile("cpsid i\n");
-
     /* Break Disable() if needed */
     if (SysBase->IDNestCnt >= 0) {
         SysBase->IDNestCnt = -1;
@@ -58,14 +54,16 @@ void cpu_Dispatch(regs_t *regs)
         asm volatile ("mcr p15, #0, %[r], c7, c14, #0" : : [r] "r" (0) );
         asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
 
-        asm volatile("cpsid i\n");
-
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(INTB_SOFTINT, 1l << INTB_SOFTINT);
     }
 
+    D(bug("[Kernel] cpu_Dispatch: Letting '%s' run for a bit..\n", task->tc_Node.ln_Name));
+
     /* Restore the task's state */
     RESTORE_TASKSTATE(task, regs)
+
+    DREGS(cpu_DumpRegs(regs));
 
     /* Handle tasks's flags */
     if (task->tc_Flags & TF_EXCEPT)
