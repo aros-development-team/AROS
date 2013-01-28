@@ -23,7 +23,7 @@
 #define D(x)
 #define DREGS(x)
 
-extern struct Task *sysIdelTask;
+extern struct Task *sysIdleTask;
 
 void cpu_Switch(regs_t *regs)
 {
@@ -56,7 +56,7 @@ void cpu_Dispatch(regs_t *regs)
     }
 
     if (!(task = core_Dispatch()))
-        task = sysIdelTask;
+        task = sysIdleTask;
 
     bug("[Kernel] cpu_Dispatch: Letting '%s' run for a bit..\n", task->tc_Node.ln_Name);
 
