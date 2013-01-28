@@ -16,6 +16,7 @@
 #define SYSTIMER_BASE       (VIRTIO_BASE + 0x003000)
 #define ARMTIMER_BASE       (VIRTIO_BASE + 0x00b000)
 #define IRQ_BASE            (VIRTIO_BASE + 0x00b200)
+#define VCMB_BASE           (VIRTIO_BASE + 0x00B880)
 #define GPIO_PADS           (VIRTIO_BASE + 0x100000)
 #define CLOCK_BASE          (VIRTIO_BASE + 0x101000)
 #define GPIO_BASE           (VIRTIO_BASE + 0x200000)

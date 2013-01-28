@@ -6,12 +6,12 @@
     Lang: english
 */
 
-#include <hardware/vcmbox.h>
+#include <asm/bcm2835.h>
+#include <hardware/videocore.h>
 
 #include "bootconsole.h"
 #include "vc_mb.h"
 #include "vc_fb.h"
-#include "vc_tags.h"
 
 int vcfb_init(void)
 {
