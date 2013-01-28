@@ -24,77 +24,86 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
+#include <asm/bcm2835.h>
+
 #include "timer_intern.h"
 #include "timer_macros.h"
-#include "timervblank.h"
 
 #include <stdlib.h>
 #include <string.h>
-
-#undef KernelBase
-#define KernelBase TimerBase->tb_KernelBase
 
 /* Timer 1 (EClock) interrupt handler */
 static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
     unsigned int last_CLO, last_CHI;
 
-    D(bug("[TIMER] Timer1Tick()\n"));
+    D(bug("[Timer] Timer1Tick()\n"));
 
-    last_CHI = TimerBase->tb_Platform.tb_CHI;
-    last_CLO = TimerBase->tb_Platform.tb_CLO;
+    if (!(TimerBase) || !(SysBase))
+    {
+        bug("[Timer] Timer1Tick: Bad Params!\n");
+        return;
+    }
+
+    last_CHI = TimerBase->tb_Platform.tbp_CHI;
+    last_CLO = TimerBase->tb_Platform.tbp_CLO;
     
     /* Aknowledge and update our timer interrupt */
-    TimerBase->tb_Platform.tb_cs = *((volatile unsigned int *)(SYSTIMER_CS));
-    TimerBase->tb_Platform.tb_cs &= ~ (1 << TICK_TIMER);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tb_cs;
-    TimerBase->tb_Platform.tb_CHI = *((volatile unsigned int *)(SYSTIMER_CHI));
-    TimerBase->tb_Platform.tb_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
+    TimerBase->tb_Platform.tbp_cs = *((volatile unsigned int *)(SYSTIMER_CS));
+    TimerBase->tb_Platform.tbp_cs &= ~(1 << TICK_TIMER);
+    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tbp_cs;
+    TimerBase->tb_Platform.tbp_CHI = *((volatile unsigned int *)(SYSTIMER_CHI));
+    TimerBase->tb_Platform.tbp_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
 
-    D(bug("[TIMER] Timer1Tick: Updating EClock ..\n"));
-    D(bug("[TIMER] Timer1Tick: diff_CHI = %d\n", (TimerBase->tb_Platform.tb_CHI - last_CHI)));
-    D(bug("[TIMER] Timer1Tick: diff_CLO = %d\n", (TimerBase->tb_Platform.tb_CLO - last_CLO)));
+    D(bug("[Timer] Timer1Tick: Updating EClock..\n"));
+    D(bug("[Timer] Timer1Tick:   diff_CHI = %d\n", (TimerBase->tb_Platform.tbp_CHI - last_CHI)));
+    D(bug("[Timer] Timer1Tick:   diff_CLO = %d\n", (TimerBase->tb_Platform.tbp_CLO - last_CLO)));
 
-    if ((TimerBase->tb_Platform.tb_CLO - last_CLO) > 0)
-        TimerBase->tb_Platform.tb_TickRate.tv_micro = (TimerBase->tb_Platform.tb_CLO - last_CLO) / TimerBase->tb_eclock_rate;
+    TimerBase->tb_Platform.tbp_TickRate.tv_secs  = 0;
+    if ((TimerBase->tb_Platform.tbp_CLO - last_CLO) > 0)
+        TimerBase->tb_Platform.tbp_TickRate.tv_micro = (TimerBase->tb_Platform.tbp_CLO - last_CLO) / TimerBase->tb_eclock_rate;
     else
-        TimerBase->tb_Platform.tb_TickRate.tv_micro = ((1000000 - last_CLO) + TimerBase->tb_Platform.tb_CLO) / TimerBase->tb_eclock_rate;
+        TimerBase->tb_Platform.tbp_TickRate.tv_micro = ((1000000 - last_CLO) + TimerBase->tb_Platform.tbp_CLO) / TimerBase->tb_eclock_rate;
 
     /* Increment EClock value and process microhz requests */
-    ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_Platform.tb_TickRate);
-    ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_Platform.tb_TickRate);
+    ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_Platform.tbp_TickRate);
+    ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_Platform.tbp_TickRate);
     TimerBase->tb_ticks_total++;
 
-    D(bug("[TIMER] Timer1Tick: Processing MicroHz .. \n"));
+    D(bug("[Timer] Timer1Tick: Processing events.. \n"));
 
     handleMicroHZ(TimerBase, SysBase);
+//    handleEClock(TimerBase, SysBase);
 
-    D(bug("[TIMER] Timer1Tick: Reconfiguring interrupt..\n"));
+    D(bug("[Timer] Timer1Tick: Reconfiguring interrupt..\n"));
 
-    TimerBase->tb_Platform.tb_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
-    TimerBase->tb_Platform.tb_cs |= (1 << TICK_TIMER);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tb_cs;
-    *((volatile unsigned int *)(SYSTIMER_C0 + (TICK_TIMER * 4))) = (TimerBase->tb_Platform.tb_CLO + TimerBase->tb_Platform.tb_TickRate.tv_micro);
+#if (0)
+    if (TimerBase->tb_ticks_total > 10)
+    {
+        while (1)
+            asm volatile ("mov r0,r0\n");
+    }
+#endif
+    TimerBase->tb_Platform.tbp_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
+    TimerBase->tb_Platform.tbp_cs |= (1 << TICK_TIMER);
+    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tbp_cs;
+    *((volatile unsigned int *)(SYSTIMER_C0 + (TICK_TIMER * 4))) = (TimerBase->tb_Platform.tbp_CLO + (1000000 / TimerBase->tb_eclock_rate));
 
-    D(bug("[TIMER] Timer1Tick: Done..\n"));
+    D(bug("[Timer] Timer1Tick: Done..\n"));
 }
 
 /****************************************************************************************/
 
 static int Timer_Init(struct TimerBase *TimerBase)
 {
-    APTR BootLoaderBase;
-
-    KernelBase = OpenResource("kernel.resource");
-
-    D(bug("[TIMER] Timer_Init: kernel.resource @ 0x%p\n", KernelBase));
+    D(bug("[Timer] Timer_Init: kernel.resource @ 0x%p\n", KernelBase));
 
     /* Install timer IRQ handler */
     TimerBase->tb_TimerIRQHandle = KrnAddIRQHandler(IRQ_TIMER0 + TICK_TIMER, Timer1Tick, TimerBase, SysBase);
     if (!TimerBase->tb_TimerIRQHandle)
     	return FALSE;
 
-    D(bug("[TIMER] Timer_Init: TimerIRQHandle @ 0x%p\n", TimerBase->tb_TimerIRQHandle));
+    D(bug("[Timer] Timer_Init: TimerIRQHandle @ 0x%p\n", TimerBase->tb_TimerIRQHandle));
 
     /* By default we want 100 Hz EClock */
     TimerBase->tb_eclock_rate = 100;
@@ -125,37 +134,37 @@ static int Timer_Init(struct TimerBase *TimerBase)
 
     /* Set ExecBase public field. */
     SysBase->ex_EClockFrequency = TimerBase->tb_eclock_rate;
-    D(bug("[TIMER] Timer frequency is %d\n", TimerBase->tb_eclock_rate));
+    D(bug("[Timer] Timer frequency is %d\n", TimerBase->tb_eclock_rate));
 
     /* Calculate timer period in us */
-    TimerBase->tb_Platform.tb_TickRate.tv_secs  = 0;
-    TimerBase->tb_Platform.tb_TickRate.tv_micro = 1000000 / TimerBase->tb_eclock_rate;
+    TimerBase->tb_Platform.tbp_TickRate.tv_secs  = 0;
+    TimerBase->tb_Platform.tbp_TickRate.tv_micro = 1000000 / TimerBase->tb_eclock_rate;
 
     /* Start up timer 1 */
     Forbid();
-    TimerBase->tb_Platform.tb_cs = *((volatile unsigned int *)(SYSTIMER_CS));
-    TimerBase->tb_Platform.tb_cs &= ~ (1 << TICK_TIMER);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tb_cs;
-    TimerBase->tb_Platform.tb_CHI = *((volatile unsigned int *)(SYSTIMER_CHI));
-    TimerBase->tb_Platform.tb_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
-    TimerBase->tb_Platform.tb_cs |= (1 << TICK_TIMER);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tb_cs;
-    *((volatile unsigned int *)(SYSTIMER_C0 + (TICK_TIMER * 4))) = (TimerBase->tb_Platform.tb_CLO + TimerBase->tb_Platform.tb_TickRate.tv_micro);
+    TimerBase->tb_Platform.tbp_cs = *((volatile unsigned int *)(SYSTIMER_CS));
+    TimerBase->tb_Platform.tbp_cs &= ~(1 << TICK_TIMER);
+    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tbp_cs;
+    TimerBase->tb_Platform.tbp_CHI = *((volatile unsigned int *)(SYSTIMER_CHI));
+    TimerBase->tb_Platform.tbp_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
+    TimerBase->tb_Platform.tbp_cs |= (1 << TICK_TIMER);
+    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tbp_cs;
+    *((volatile unsigned int *)(SYSTIMER_C0 + (TICK_TIMER * 4))) = (TimerBase->tb_Platform.tbp_CLO + TimerBase->tb_Platform.tbp_TickRate.tv_micro);
     Permit();
 
-    D(bug("[TIMER] Timer_Init: configured GPU timer %d\n", TICK_TIMER));
+    D(bug("[Timer] Timer_Init: configured GPU timer %d\n", TICK_TIMER));
 
     return TRUE;
 }
 
 static int Timer_Expunge(struct TimerBase *TimerBase)
 {
-    D(bug("[TIMER] Timer_Expunge()\n"));
+    D(bug("[Timer] Timer_Expunge()\n"));
 
     Forbid();
-    TimerBase->tb_Platform.tb_cs = *((volatile unsigned int *)(SYSTIMER_CS));
-    TimerBase->tb_Platform.tb_cs &= ~ (1 << TICK_TIMER);
-    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tb_cs;
+    TimerBase->tb_Platform.tbp_cs = *((volatile unsigned int *)(SYSTIMER_CS));
+    TimerBase->tb_Platform.tbp_cs &= ~ (1 << TICK_TIMER);
+    *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tbp_cs;
     Permit();
 
     if (TimerBase->tb_TimerIRQHandle)

@@ -10,8 +10,15 @@
 
 struct PlatformTimer
 {
-    struct timeval tb_TickRate;	/* Our periodic timer interval   */
-    unsigned int tb_cs;
-    unsigned int tb_CLO;
-    unsigned int tb_CHI;
+    APTR tbp_BootLoaderBase;
+    struct timeval tbp_TickRate;	/* Our periodic timer interval   */
+    unsigned int tbp_cs;
+    unsigned int tbp_CLO;
+    unsigned int tbp_CHI;
 };
+
+#undef KernelBase
+#define KernelBase TimerBase->tb_KernelBase
+
+#undef BootLoaderBase
+#define BootLoaderBase TimerBase->tb_Platform.tbp_BootLoaderBase
