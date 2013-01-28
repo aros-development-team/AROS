@@ -23,6 +23,8 @@
 #define D(x)
 #define DREGS(x)
 
+extern struct Task *sysIdelTask;
+
 void cpu_Switch(regs_t *regs)
 {
     struct Task *task;
@@ -34,6 +36,9 @@ void cpu_Switch(regs_t *regs)
     /* Copy current task's context into the ETask structure */
     /* Restore the task's state */
     STORE_TASKSTATE(task, regs)
+
+    /* Update the taks CPU time .. */
+    GetIntETask(task)->iet_CpuTime += *((volatile unsigned int *)(SYSTIMER_CLO)) - GetIntETask(task)->iet_private1;
 
     core_Switch();
 }
@@ -47,18 +52,13 @@ void cpu_Dispatch(regs_t *regs)
     /* Break Disable() if needed */
     if (SysBase->IDNestCnt >= 0) {
         SysBase->IDNestCnt = -1;
-        asm volatile("cpsie i\n");
+        ((uint32_t *)regs)[13] &= ~0x80;
     }
 
-    while (!(task = core_Dispatch())) {
-        asm volatile ("mcr p15, #0, %[r], c7, c14, #0" : : [r] "r" (0) );
-        asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
+    if (!(task = core_Dispatch()))
+        task = sysIdelTask;
 
-        if (SysBase->SysFlags & SFF_SoftInt)
-            core_Cause(INTB_SOFTINT, 1l << INTB_SOFTINT);
-    }
-
-    D(bug("[Kernel] cpu_Dispatch: Letting '%s' run for a bit..\n", task->tc_Node.ln_Name));
+    bug("[Kernel] cpu_Dispatch: Letting '%s' run for a bit..\n", task->tc_Node.ln_Name);
 
     /* Restore the task's state */
     RESTORE_TASKSTATE(task, regs)
@@ -68,6 +68,9 @@ void cpu_Dispatch(regs_t *regs)
     /* Handle tasks's flags */
     if (task->tc_Flags & TF_EXCEPT)
         Exception();
+
+    /* Store the launch time */
+    GetIntETask(task)->iet_private1 = *((volatile unsigned int *)(SYSTIMER_CLO));
 
     if (task->tc_Flags & TF_LAUNCH)
     {
