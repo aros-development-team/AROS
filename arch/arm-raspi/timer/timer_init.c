@@ -61,9 +61,9 @@ static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 
     TimerBase->tb_Platform.tbp_TickRate.tv_secs  = 0;
     if ((TimerBase->tb_Platform.tbp_CLO - last_CLO) > 0)
-        TimerBase->tb_Platform.tbp_TickRate.tv_micro = (TimerBase->tb_Platform.tbp_CLO - last_CLO) / TimerBase->tb_eclock_rate;
+        TimerBase->tb_Platform.tbp_TickRate.tv_micro = TimerBase->tb_Platform.tbp_CLO - last_CLO;
     else
-        TimerBase->tb_Platform.tbp_TickRate.tv_micro = ((1000000 - last_CLO) + TimerBase->tb_Platform.tbp_CLO) / TimerBase->tb_eclock_rate;
+        TimerBase->tb_Platform.tbp_TickRate.tv_micro = ((1000000 - last_CLO) + TimerBase->tb_Platform.tbp_CLO);
 
     /* Increment EClock value and process microhz requests */
     ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_Platform.tbp_TickRate);
@@ -77,13 +77,6 @@ static void Timer1Tick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 
     D(bug("[Timer] Timer1Tick: Reconfiguring interrupt..\n"));
 
-#if (0)
-    if (TimerBase->tb_ticks_total > 10)
-    {
-        while (1)
-            asm volatile ("mov r0,r0\n");
-    }
-#endif
     TimerBase->tb_Platform.tbp_CLO = *((volatile unsigned int *)(SYSTIMER_CLO));
     TimerBase->tb_Platform.tbp_cs |= (1 << TICK_TIMER);
     *((volatile unsigned int *)(SYSTIMER_CS)) = TimerBase->tb_Platform.tbp_cs;
