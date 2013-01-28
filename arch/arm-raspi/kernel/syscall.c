@@ -31,10 +31,7 @@ extern char * __text_end;
 /*
     __vectorhand_swi:
 
-    warning : this code will be changes to stoe spsr_svc, and lr_svc onto the system mode stack
-    and then switch into that mode - and at the end jump back into svc mode, before returning from the exception
-
-    this code also assumes the caller is in user mode (and will break from any other mode)
+    this code currently assumes the caller is in user mode (and will break from any other mode)
 
     r0 = passed to c handler, r1/r2 = temp
 */
@@ -53,7 +50,6 @@ asm (
     "           mov     fp, #0                 \n" // clear fp(??)
 
     "           bl      handle_syscall         \n"
-
     VECTCOMMON_END
 );
 
