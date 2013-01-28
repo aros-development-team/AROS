@@ -13,7 +13,8 @@
 #include <proto/exec.h>
 #include <proto/vcmbox.h>
 
-#include <hardware/vcmbox.h>
+#include <asm/bcm2835.h>
+#include <hardware/videocore.h>
 
 #include "vcmbox_private.h"
 
@@ -56,7 +57,7 @@ AROS_LH2(volatile unsigned int *, VCMBoxRead,
 
     D(bug("[VCMBox] VCMBoxRead(chan %d @ 0x%p)\n", chan, mb));
 
-    if (chan <= VCMB_CHANS)
+    if (chan <= VCMB_CHAN_MAX)
     {
         while(1)
         {
@@ -77,8 +78,8 @@ AROS_LH2(volatile unsigned int *, VCMBoxRead,
             asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
             ReleaseSemaphore(&VCMBoxBase->vcmb_Sem);
 
-            if ((msg & VCMB_CHANMASK) == chan)
-                return (volatile unsigned int *)(msg & ~VCMB_CHANMASK);
+            if ((msg & VCMB_CHAN_MASK) == chan)
+                return (volatile unsigned int *)(msg & ~VCMB_CHAN_MASK);
         }
     }
     return (volatile unsigned int *)-1;
@@ -96,7 +97,7 @@ AROS_LH3(void, VCMBoxWrite,
 
     D(bug("[VCMB] VCMBWrite(chan %d @ 0x%p, msg @ 0x%p)\n", chan, mb, msg));
 
-    if ((((unsigned int)msg & VCMB_CHANMASK) == 0) && (chan <= VCMB_CHANS))
+    if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
     { 
         ObtainSemaphore(&VCMBoxBase->vcmb_Sem);
         while ((VCMBoxStatus(mb) & VCMB_STATUS_WRITEREADY) != 0)

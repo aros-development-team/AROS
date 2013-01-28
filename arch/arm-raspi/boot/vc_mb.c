@@ -6,14 +6,15 @@
     Lang: english
 */
 
-#include <hardware/vcmbox.h>
+#include <asm/bcm2835.h>
+#include <hardware/videocore.h>
 
 volatile unsigned int *vcmb_read(void *mb, unsigned int chan)
 {
     unsigned int try = 0x2000000;
     unsigned int msg;
 
-    if (chan <= VCMB_CHANS)
+    if (chan <= VCMB_CHAN_MAX)
     {
         while(1)
         {
@@ -32,8 +33,8 @@ volatile unsigned int *vcmb_read(void *mb, unsigned int chan)
             
             asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
 
-            if ((msg & VCMB_CHANMASK) == chan)
-                return (volatile unsigned int *)(msg & ~VCMB_CHANMASK);
+            if ((msg & VCMB_CHAN_MASK) == chan)
+                return (volatile unsigned int *)(msg & ~VCMB_CHAN_MASK);
         }
     }
     return (volatile unsigned int *)-1;
@@ -41,7 +42,7 @@ volatile unsigned int *vcmb_read(void *mb, unsigned int chan)
 
 void vcmb_write(void *mb, unsigned int chan, void *msg)
 {
-    if ((((unsigned int)msg & VCMB_CHANMASK) == 0) && (chan <= VCMB_CHANS))
+    if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
     { 
         while ((*((volatile unsigned int *)(mb + VCMB_STATUS)) & VCMB_STATUS_WRITEREADY) != 0)
         {
