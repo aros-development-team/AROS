@@ -1,0 +1,15 @@
+# $Id: mmakefile.src 44918 2012-06-01 03:30:04Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+FILES	:=	\
+	videocore_init \
+	videocore_class \
+        videocore_memory \
+	videocore_hardware \
+	videocore_offbitmap \
+	videocore_onbitmap
+
+%build_module mmake=hidd-videocore \
+  modname=videocore modtype=hidd \
+  files=$(FILES) \
+  uselibs="hiddstubs oop"
