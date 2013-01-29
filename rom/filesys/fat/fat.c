@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2012 The AROS Development Team
+ * Copyright © 2007-2013 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -132,7 +132,7 @@ static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
     BOOL boundary = FALSE;
     UWORD *fat = NULL, newval, i;
 
-    for (i = 0; i < sb->fat_count; i++);
+    for (i = 0; i < sb->fat_count; i++)
     {
         if ((offset & (sb->sectorsize-1)) == sb->sectorsize-1) {
             boundary = TRUE;
@@ -177,7 +177,7 @@ static void SetFat16Entry(struct FSSuper *sb, ULONG n, ULONG val) {
     APTR b;
     UWORD i;
 
-    for (i = 0; i < sb->fat_count; i++);
+    for (i = 0; i < sb->fat_count; i++)
     {
         *((UWORD *) GetFatEntryPtr(sb, n << 1, &b, i)) =
             AROS_WORD2LE((UWORD) val);
