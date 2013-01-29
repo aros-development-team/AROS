@@ -20,12 +20,11 @@
     Main HIDD Class Interface
    --------------------------------------------------------------------- */
 
-/* The name of the topmost HIDD class */
-#define CLID_Hidd "hiddclass"
-#define IID_Hidd "I_Hidd"
+#define CLID_Hidd    "hiddclass" /* Topmost HIDD class                    */
+#define CLID_HW      "hwclass"   /* Topmost hardware class                */
+#define CLID_HW_Root "hw.root"   /* Root of subsystem of hardware classes */
 
 /* Meta class for the HIDDs */
-
 /* Just set it to the mimetaclass for now */
 #define CLID_HiddMeta   "simetaclass"
 
@@ -34,37 +33,8 @@
     typedef APTR HIDD;
 #endif
 
-/*
-    Attributes for the root HIDD class "hiddclass".
-    See the HIDD documentation for information on their use.
- */
-enum {
-    aoHidd_Type = 0,            /* [..G] (UWORD) Major type of HIDD          */
-    aoHidd_SubType,             /* [..G] (UWORD) Sub-type of HIDD            */
-    aoHidd_Producer,            /* [I.G] (ULONG) Hardware manufacturer ID    */
-    aoHidd_Name,                /* [I.G] (STRPTR) Name of HIDD               */
-    aoHidd_HardwareName,        /* [I.G] (STRPTR) Hardware description       */
-    aoHidd_Active,              /* [ISG] (BOOL) Current active status        */
-    aoHidd_Status,              /* [..G] (ULONG) Status change               */
-    aoHidd_ErrorCode,           /* [..G] (ULONG) Error code                  */
-    aoHidd_Locking,             /* [..G] (UBYTE) Type of locking supported   */
-    aoHidd_Product,             /* [I.G] (ULONG) Hardware product ID         */
-    aoHidd_ProducerName,        /* [I.G] (STRPTR) Hardware manufacturer name */
-
-    num_Hidd_Attrs
-};
-
-#define aHidd_Type              (HiddAttrBase + aoHidd_Type     )
-#define aHidd_SubType           (HiddAttrBase + aoHidd_SubType  )
-#define aHidd_Producer          (HiddAttrBase + aoHidd_Producer )
-#define aHidd_Name              (HiddAttrBase + aoHidd_Name     )
-#define aHidd_HardwareName      (HiddAttrBase + aoHidd_HardwareName)
-#define aHidd_Active            (HiddAttrBase + aoHidd_Active   )
-#define aHidd_Status            (HiddAttrBase + aoHidd_Status   )
-#define aHidd_ErrorCode         (HiddAttrBase + aoHidd_ErrorCode)
-#define aHidd_Locking           (HiddAttrBase + aoHidd_Locking  )
-#define aHidd_Product           (HiddAttrBase + aoHidd_Product  )
-#define aHidd_ProducerName      (HiddAttrBase + aoHidd_ProducerName)
+#include <interface/Hidd.h>
+#include <interface/HW.h>
 
 /* Values for the HIDD_Type Tag */
 #define vHidd_Type_Any          -1      /* match any type */
