@@ -100,4 +100,15 @@
 
 #define VCTAG_GETDMACHAN        0x00060001
 
+/* GPU Memory allocation flags */
+#define VCMEM_DISCARDABLE       (1 << 0)        // can be released at any time
+#define VCMEM_NORMAL            (0 << 2)        // normal allocating alias. Don't use from ARM
+#define VCMEM_DIRECT            (1 << 2)        // 0xC alias. Uncached
+#define VCMEM_COHERENT          (2 << 2)        // 0x8 alias. Non-allocating in L2 but coherent
+#define VCMEM_NONALLOCATING     (VCMEM_DIRECT | VCMEM_COHERENT) // Allocating in L2
+#define VCMEM_ZERO              (1 << 4)        // zero buffer
+#define VCMEM_NOINIT            (1 << 5)        // don't initialise (default initialises to all ones)
+#define VCMEM_LAZYLOCK          (1 << 6)        // can be locked for extended periods
+
+
 #endif	/* VCMBOX_H */
