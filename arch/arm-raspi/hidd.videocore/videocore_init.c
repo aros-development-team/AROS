@@ -12,6 +12,7 @@
 #define __OOP_NOATTRBASES__
 
 #include <proto/exec.h>
+#include <proto/graphics.h>
 #include <proto/oop.h>
 #include <proto/vcmbox.h>
 #include <proto/kernel.h>
@@ -19,8 +20,9 @@
 
 #include <exec/types.h>
 #include <exec/lists.h>
+#include <graphics/driver.h>
+#include <graphics/gfxbase.h>
 #include <hidd/graphics.h>
-#include <hidd/pci.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
@@ -43,7 +45,8 @@ static struct OOP_ABDescr abd[] =
 static int VideoCore_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct VideoCore_staticdata *xsd = &LIBBASE->vsd;
-
+    int retval = FALSE;
+    
     if (!OOP_ObtainAttrBases(abd))
         goto failure;
 
@@ -75,18 +78,33 @@ static int VideoCore_Init(LIBBASETYPEPTR LIBBASE)
         {
             D(bug("[VideoCore] Init: VideoCore GPU Found\n"));
 
-            return TRUE;
+            initVideoCoreGfxHW((APTR)xsd);
+
+            if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41)) != NULL)
+            {
+                if (AddDisplayDriver(LIBBASE->vsd.vcsd_VideoCoreGfxClass, NULL, DDRV_BootMode, TRUE, TAG_DONE) == DD_OK)
+                {
+                    D(bug("[VideoCore] Init: Display Driver registered\n"));
+
+                    /* We use ourselves, and no one else does */
+                    LIBBASE->library.lib_OpenCnt = 1;
+                    retval = TRUE;
+                }
+                CloseLibrary(&GfxBase->LibNode);
+            }
         }
     }
 
 failure:
-    D(bug("[VideoCore] Init: No VideoCore GPU Found\n"));
+    if (!(retval))
+    {
+        D(bug("[VideoCore] Init: No VideoCore GPU Found\n"));
 
-    FreeVec(VCMsg);
+        FreeVec(VCMsg);
 
-    OOP_ReleaseAttrBases(abd);
-
-    return FALSE;
+        OOP_ReleaseAttrBases(abd);
+    }
+    return retval;
 }
 
 ADD2INITLIB(VideoCore_Init, 0)

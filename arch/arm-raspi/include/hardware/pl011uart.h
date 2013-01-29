@@ -6,8 +6,8 @@
 #ifndef PL011UART_H
 #define PL011UART_H
 
-#define UART0_BASE              (VIRTIO_BASE + 0x201000)
-#define UART1_BASE              (VIRTIO_BASE + 0x215000)
+#define UART0_BASE              (BCM_PHYSBASE + 0x201000)
+#define UART1_BASE              (BCM_PHYSBASE + 0x215000)
 
 #define UART_DR                 (0x00)
 #define UART_RSRECR             (0x04)

@@ -106,7 +106,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 Because of not defined BitMap_Show method show 
                 bitmap immediately
             */
-            setModeVideoCore(&XSD(cl)->data, width, height);
+//            setModeVideoCore(&XSD(cl)->data, width, height);
             XSD(cl)->visible = data;	/* Set created object as visible */
             ReturnPtr("VideoCore.BitMap::New()", OOP_Object *, o);
         }

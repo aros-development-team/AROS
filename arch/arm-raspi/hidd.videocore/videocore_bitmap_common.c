@@ -106,7 +106,7 @@ STATIC VOID putpixel(struct BitmapData *data, LONG x, LONG y, HIDDT_Pixel pixel)
             (y>=data->mouse->y) && (y<(data->mouse->y+data->mouse->height))
         )
     {
-        displayCursorVideoCore(data->data, 0);
+//        displayCursorVideoCore(data->data, 0);
         data->mouse->visible = 0;
     }
 #else
@@ -121,7 +121,7 @@ STATIC VOID putpixel(struct BitmapData *data, LONG x, LONG y, HIDDT_Pixel pixel)
 #ifdef OnBitmap
     if (data->mouse->visible == 0)
     {
-        displayCursorVideoCore(data->data, 1);
+//        displayCursorVideoCore(data->data, 1);
         data->mouse->visible = 1;
     }
 #endif
@@ -138,7 +138,7 @@ VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPix
 #ifdef OnBitmap
     box.x1 = box.x2 = msg->x;
     box.y1 = box.y2 = msg->y;
-    refreshAreaVideoCore(data->data, &box);
+//    refreshAreaVideoCore(data->data, &box);
 #endif
     return;
 }
@@ -233,7 +233,7 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
         box.y1 = msg->y;
         box.x2 = box.x1+msg->width-1;
         box.y2 = box.y1+msg->height-1;
-        refreshAreaVideoCore(data->data, &box);
+//        refreshAreaVideoCore(data->data, &box);
 #endif
     }
     else
@@ -354,7 +354,7 @@ VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
     box.y1 = msg->y;
     box.x2 = box.x1+msg->width-1;
     box.y2 = box.y1+msg->height-1;
-    refreshAreaVideoCore(data->data, &box);
+//    refreshAreaVideoCore(data->data, &box);
 #endif
 }
 
@@ -430,7 +430,7 @@ VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     box.y1 = msg->destY;
     box.x2 = msg->destX+msg->width-1;
     box.y2 = msg->destY+msg->height-1;
-    refreshAreaVideoCore(data->data, &box);
+//    refreshAreaVideoCore(data->data, &box);
 #endif
 }
 

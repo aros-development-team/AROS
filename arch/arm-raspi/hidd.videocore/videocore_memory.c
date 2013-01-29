@@ -29,10 +29,17 @@
 
 void *mh_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 {
+    D(bug("[VideoCore] mh_Alloc(%d bytes, 0x%08x)\n", size, flags));
+
+    return NULL;
+}
+
+void *videocore_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
+{
     struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
     ULONG gpumemflags = VCMEM_NONALLOCATING;
 
-    D(bug("[VideoCore] mh_Alloc(%d bytes, 0x%08x)\n", size, flags));
+    D(bug("[VideoCore] videocore_Alloc(%d bytes, 0x%08x)\n", size, flags));
 
     if (*flags & MEMF_CLEAR)
         gpumemflags |= VCMEM_ZERO;
@@ -54,19 +61,23 @@ void *mh_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     {
         D(bug("[VideoCore] mh_Alloc: Allocated %d bytes @ 0x%p\n", VCMsg[4], VCMsg[7]));
         
-        xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Free -= size;
+        mhe->mhe_MemHeader.mh_Free -= size;
         
         return VCMsg[7];
     }
-
     return NULL;
 }
 
 void mh_Free(struct MemHeaderExt *mhe, APTR  mem,  IPTR size)
 {
+    D(bug("[VideoCore] mh_Free(0x%p)\n", mem));
+}
+
+void videocore_Free(struct MemHeaderExt *mhe, APTR  mem,  IPTR size)
+{
     struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
 
-    D(bug("[VideoCore] mh_Free(0x%p)\n", mem));
+    D(bug("[VideoCore] videocore_Free(0x%p)\n", mem));
 
     VCMsg[0] = 7 * 4;
     VCMsg[1] = VCTAG_REQ;
@@ -81,7 +92,7 @@ void mh_Free(struct MemHeaderExt *mhe, APTR  mem,  IPTR size)
     VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, VCMsg);
     if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == VCMsg)
     {
-        xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Free += size;
+        mhe->mhe_MemHeader.mh_Free += size;
 
         D(bug("[VideoCore] mh_Free: Memory freed [status %08x]\n", VCMsg[5]));
     }
@@ -108,7 +119,7 @@ ULONG mh_Avail(struct MemHeaderExt *mhe, ULONG flags)
 
     D(bug("[VideoCore] mh_Avail(0x%08x)\n", flags));
 
-    return xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Free;
+    return mhe->mhe_MemHeader.mh_Free;
 }
 
 int videocore_InitMem(void *memstart, int memlength, struct VideoCoreBase *VideoCoreBase)
