@@ -29,6 +29,7 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM		kernel-vcmbox \
 #MM		hidd-i2c \
 #MM		hidd-i2c-bcm2835 \
+#MM		hidd-videocore \
 #MM	kernel-lddemon \
 #MM     kernel-hidd \
 #MM     kernel-aros \
@@ -57,8 +58,8 @@ PKG_LIBS     := aros partition expansion utility oop graphics layers intuition k
 PKG_RSRC     :=  misc dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox
 PKG_DEVS     :=  input gameport keyboard console timer
 PKG_HANDLERS := con amberram cdrom sfs fat afs
-PKG_HIDDS    := graphics mouse keyboard hiddclass i2c i2c-bcm2835
-PKG_USB  := hid hub bootmouse bootkeyboard massstorage
+PKG_HIDDS    := graphics mouse keyboard hiddclass i2c i2c-bcm2835 videocore
+PKG_USB      := hid hub bootmouse bootkeyboard massstorage
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
