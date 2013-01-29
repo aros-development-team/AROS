@@ -7,54 +7,60 @@
 #ifndef BCM2835_H
 #define BCM2835_H
 
-#define CLID_I2C_BCM2835    "hidd.i2c.bcm2835"
+#define CLID_I2C_BCM2835        "hidd.i2c.bcm2835"
 
-#define STACK_SIZE          4096
+#define STACK_SIZE              4096
 
-#define PL110_BASE          0x10120000
-#define VIRTIO_BASE         0x20000000                  // Peripheral base address
-#define SYSTIMER_BASE       (VIRTIO_BASE + 0x003000)
-#define ARMTIMER_BASE       (VIRTIO_BASE + 0x00b000)
-#define IRQ_BASE            (VIRTIO_BASE + 0x00b200)
-#define VCMB_BASE           (VIRTIO_BASE + 0x00B880)
-#define GPIO_PADS           (VIRTIO_BASE + 0x100000)
-#define CLOCK_BASE          (VIRTIO_BASE + 0x101000)
-#define GPIO_BASE           (VIRTIO_BASE + 0x200000)
+#define BCM2835_PHYS            0x20000000                      // Peripheral physical base address
+#define BCM2835_VIRT            0xF0000000
 
-#define SPI0_BASE           (VIRTIO_BASE + 0x204000)
-#define BSC0_BASE           (VIRTIO_BASE + 0x205000)
-#define GPIO_PWM            (VIRTIO_BASE + 0x20C000)
+#define BCM_PHYSBASE            BCM2835_PHYS
+#define BCM_VIRTBASE            BCM2835_VIRT
 
-#define SYSTIMER_CS         (SYSTIMER_BASE + 0x00)
-#define SYSTIMER_CLO        (SYSTIMER_BASE + 0x04)
-#define SYSTIMER_CHI        (SYSTIMER_BASE + 0x08)
-#define SYSTIMER_C0         (SYSTIMER_BASE + 0x0c)
-#define SYSTIMER_C1         (SYSTIMER_BASE + 0x10)
-#define SYSTIMER_C2         (SYSTIMER_BASE + 0x14)
-#define SYSTIMER_C3         (SYSTIMER_BASE + 0x18)
+#define PL110_BASE              0x10120000
 
-#define SYSTIMER_M0         0x01
-#define SYSTIMER_M1         0x02
-#define SYSTIMER_M2         0x04
-#define SYSTIMER_M3         0x08
+#define SYSTIMER_BASE           (BCM_PHYSBASE + 0x003000)
+#define ARMTIMER_BASE           (BCM_PHYSBASE + 0x00b000)
+#define IRQ_BASE                (BCM_PHYSBASE + 0x00b200)
+#define VCMB_BASE               (BCM_PHYSBASE + 0x00B880)
+#define GPIO_PADS               (BCM_PHYSBASE + 0x100000)
+#define CLOCK_BASE              (BCM_PHYSBASE + 0x101000)
+#define GPIO_BASE               (BCM_PHYSBASE + 0x200000)
 
-#define ARMTIMER_LOAD       (ARMTIMER_BASE + 0x400)
-#define ARMTIMER_VALUE      (ARMTIMER_BASE + 0x404)
-#define ARMTIMER_CONTROL    (ARMTIMER_BASE + 0x408)
-#define ARMTIMER_IRQ_ACK    (ARMTIMER_BASE + 0x40c)
-#define ARMTIMER_IRQ_RAW    (ARMTIMER_BASE + 0x410)
-#define ARMTIMER_IRQ_MSK    (ARMTIMER_BASE + 0x414)
-#define ARMTIMER_RELOAD     (ARMTIMER_BASE + 0x418)
-#define ARMTIMER_PREDIV     (ARMTIMER_BASE + 0x41c)
-#define ARMTIMER_FRC        (ARMTIMER_BASE + 0x420)
+#define SPI0_BASE               (BCM_PHYSBASE + 0x204000)
+#define BSC0_BASE               (BCM_PHYSBASE + 0x205000)
+#define GPIO_PWM                (BCM_PHYSBASE + 0x20C000)
+
+#define SYSTIMER_CS             (SYSTIMER_BASE + 0x00)
+#define SYSTIMER_CLO            (SYSTIMER_BASE + 0x04)
+#define SYSTIMER_CHI            (SYSTIMER_BASE + 0x08)
+#define SYSTIMER_C0             (SYSTIMER_BASE + 0x0c)
+#define SYSTIMER_C1             (SYSTIMER_BASE + 0x10)
+#define SYSTIMER_C2             (SYSTIMER_BASE + 0x14)
+#define SYSTIMER_C3             (SYSTIMER_BASE + 0x18)
+
+#define SYSTIMER_M0             (1 << 0)
+#define SYSTIMER_M1             (1 << 1)
+#define SYSTIMER_M2             (1 << 2)
+#define SYSTIMER_M3             (1 << 3)
+
+#define ARMTIMER_LOAD           (ARMTIMER_BASE + 0x400)
+#define ARMTIMER_VALUE          (ARMTIMER_BASE + 0x404)
+#define ARMTIMER_CONTROL        (ARMTIMER_BASE + 0x408)
+#define ARMTIMER_IRQ_ACK        (ARMTIMER_BASE + 0x40c)
+#define ARMTIMER_IRQ_RAW        (ARMTIMER_BASE + 0x410)
+#define ARMTIMER_IRQ_MSK        (ARMTIMER_BASE + 0x414)
+#define ARMTIMER_RELOAD         (ARMTIMER_BASE + 0x418)
+#define ARMTIMER_PREDIV         (ARMTIMER_BASE + 0x41c)
+#define ARMTIMER_FRC            (ARMTIMER_BASE + 0x420)
 
 #define ARMIRQ_PEND             (IRQ_BASE + 0x00)
-#define GPUIRQ_PEND0            (IRQ_BASE + 0x04) /* Pending IRQs */
+#define GPUIRQ_PEND0            (IRQ_BASE + 0x04)               // Pending IRQs
 #define GPUIRQ_PEND1            (IRQ_BASE + 0x08)
-#define GPUIRQ_ENBL0            (IRQ_BASE + 0x10) /* IRQ enable bits */
+#define GPUIRQ_ENBL0            (IRQ_BASE + 0x10)               // IRQ enable bits
 #define GPUIRQ_ENBL1            (IRQ_BASE + 0x14)
 #define ARMIRQ_ENBL             (IRQ_BASE + 0x18)
-#define GPUIRQ_DIBL0            (IRQ_BASE + 0x1C) /* IRQ disable bits */
+#define GPUIRQ_DIBL0            (IRQ_BASE + 0x1C)               // IRQ disable bits
 #define GPUIRQ_DIBL1            (IRQ_BASE + 0x20)
 #define ARMIRQ_DIBL             (IRQ_BASE + 0x24)
 
@@ -156,35 +162,35 @@
 #define GPIO_PADS_28_45         0x0030
 #define GPIO_PADS_46_53         0x0034 
 
-#define GPFSEL0             (GPIO_BASE + 0x0)           // GPIO Function Select 0
-#define GPFSEL1             (GPIO_BASE + 0x4)           // GPIO Function Select 1
-#define GPFSEL2             (GPIO_BASE + 0x8)           // GPIO Function Select 2
-#define GPFSEL3             (GPIO_BASE + 0xC)           // GPIO Function Select 3
-#define GPFSEL4             (GPIO_BASE + 0x10)          // GPIO Function Select 4
-#define GPFSEL5             (GPIO_BASE + 0x14)          // GPIO Function Select 5
-#define GPSET0              (GPIO_BASE + 0x1C)          // GPIO Pin Output Set 0
-#define GPSET1              (GPIO_BASE + 0x20)          // GPIO Pin Output Set 1
-#define GPCLR0              (GPIO_BASE + 0x28)          // GPIO Pin Output Clear 0
-#define GPCLR1              (GPIO_BASE + 0x2C)          // GPIO Pin Output Clear 1
-#define GPLEV0              (GPIO_BASE + 0x34)          // GPIO Pin Level 0
-#define GPLEV1              (GPIO_BASE + 0x38)          // GPIO Pin Level 1
-#define GPEDS0              (GPIO_BASE + 0x40)          // GPIO Pin Event Detect Status 0
-#define GPEDS1              (GPIO_BASE + 0x44)          // GPIO Pin Event Detect Status 1
-#define GPREN0              (GPIO_BASE + 0x4C)          // GPIO Pin Rising Edge Detect Enable 0
-#define GPREN1              (GPIO_BASE + 0x50)          // GPIO Pin Rising Edge Detect Enable 1
-#define GPFEN0              (GPIO_BASE + 0x58)          // GPIO Pin Falling Edge Detect Enable 0
-#define GPFEN1              (GPIO_BASE + 0x5C)          // GPIO Pin Falling Edge Detect Enable 1
-#define GPHEN0              (GPIO_BASE + 0x64)
-#define GPHEN1              (GPIO_BASE + 0x68)
-#define GPLEN0              (GPIO_BASE + 0x70)
-#define GPLEN1              (GPIO_BASE + 0x74)
-#define GPAREN0             (GPIO_BASE + 0x7c)
-#define GPAREN1             (GPIO_BASE + 0x80)
-#define GPAFEN0             (GPIO_BASE + 0x88)
-#define GPAFEN1             (GPIO_BASE + 0x8c)
-#define GPPUD               (GPIO_BASE + 0x94)
-#define GPPUDCLK0           (GPIO_BASE + 0x98)
-#define GPPUDCLK1           (GPIO_BASE + 0x9c)
+#define GPFSEL0                 (GPIO_BASE + 0x0)               // GPIO Function Selectors..
+#define GPFSEL1                 (GPIO_BASE + 0x4)
+#define GPFSEL2                 (GPIO_BASE + 0x8)
+#define GPFSEL3                 (GPIO_BASE + 0xC)
+#define GPFSEL4                 (GPIO_BASE + 0x10
+#define GPFSEL5                 (GPIO_BASE + 0x14)
+#define GPSET0                  (GPIO_BASE + 0x1C)              // GPIO Pin Output control..
+#define GPSET1                  (GPIO_BASE + 0x20)
+#define GPCLR0                  (GPIO_BASE + 0x28)
+#define GPCLR1                  (GPIO_BASE + 0x2C)
+#define GPLEV0                  (GPIO_BASE + 0x34)              // GPIO Pin Levels..
+#define GPLEV1                  (GPIO_BASE + 0x38)
+#define GPEDS0                  (GPIO_BASE + 0x40)              // GPIO Pin Event Detect Status ..
+#define GPEDS1                  (GPIO_BASE + 0x44)
+#define GPREN0                  (GPIO_BASE + 0x4C)              // GPIO Pin Rising Edge Detect Enables..
+#define GPREN1                  (GPIO_BASE + 0x50)
+#define GPFEN0                  (GPIO_BASE + 0x58)              // GPIO Pin Falling Edge Detect Enables..
+#define GPFEN1                  (GPIO_BASE + 0x5C)
+#define GPHEN0                  (GPIO_BASE + 0x64)
+#define GPHEN1                  (GPIO_BASE + 0x68)
+#define GPLEN0                  (GPIO_BASE + 0x70)
+#define GPLEN1                  (GPIO_BASE + 0x74)
+#define GPAREN0                 (GPIO_BASE + 0x7c)
+#define GPAREN1                 (GPIO_BASE + 0x80)
+#define GPAFEN0                 (GPIO_BASE + 0x88)
+#define GPAFEN1                 (GPIO_BASE + 0x8c)
+#define GPPUD                   (GPIO_BASE + 0x94)
+#define GPPUDCLK0               (GPIO_BASE + 0x98)
+#define GPPUDCLK1               (GPIO_BASE + 0x9c)
 
 #define SPI0_CS                 (0x00)
 #define SPI0_FIFO               (0x04)
@@ -221,28 +227,28 @@
 #define BSC_WRITE               BSC_CONTROL_I2CEN|BSC_CONTROL_ST
 #define BSC_CLEAR               BSC_STATUS_CLKT|BSC_STATUS_ERR|BSC_STATUS_DONE
 
-#define AUX_IRQ             0x20215000  // Auxiliary Interrupt status
-#define AUX_ENABLES         0x20215004  // Auxiliary enables
-#define AUX_MU_IO_REG       0x20215040  // AUX_MU_IO_REG Mini Uart I/O Data
-#define AUX_MU_IER_REG      0x20215044  // Mini Uart Interrupt Enable
-#define AUX_MU_IIR_REG      0x20215048  // Mini Uart Interrupt Identify
-#define AUX_MU_LCR_REG      0x2021504C  // Mini Uart Line Control
-#define AUX_MU_MCR_REG      0x20215050  // Mini Uart Modem Control
-#define AUX_MU_LSR_REG      0x20215054  // Mini Uart Line Status
-#define AUX_MU_MSR_REG      0x20215058  // Mini Uart Modem Status
-#define AUX_MU_SCRATCH      0x2021505C  // Mini Uart Scratch
-#define AUX_MU_CNTL_REG     0x20215060  // Mini Uart Extra Control
-#define AUX_MU_STAT_REG     0x20215064  // Mini Uart Extra Status
-#define AUX_MU_BAUD_REG     0x20215068  // Mini Uart Baudrate
-#define AUX_SPI0_CNTL0_REG  0x20215080  // SPI 1 Control register 0
-#define AUX_SPI0_CNTL1_REG  0x20215084  // SPI 1 Control register 1
-#define AUX_SPI0_STAT_REG   0x20215088  // SPI 1 Status
-#define AUX_SPI0_IO_REG     0x20215090  // SPI 1 Data
-#define AUX_SPI0_PEEK_REG   0x20215094  // SPI 1 Peek
-#define AUX_SPI1_CNTL0_REG  0x202150C0  // SPI 2 Control register 0
-#define AUX_SPI1_CNTL1_REG  0x202150C4  // SPI 2 Control register 1
-#define AUX_SPI1_STAT_REG   0x202150C8  // SPI 2 Status
-#define AUX_SPI1_IO_REG     0x202150D0  // SPI 2 Data
-#define AUX_SPI1_PEEK_REG   0x202150D4  // SPI 2 Peek
+#define AUX_IRQ                 (BCM_PHYSBASE + 0x215000)       // Auxiliary Interrupt status
+#define AUX_ENABLES             (BCM_PHYSBASE + 0x215004)       // Auxiliary enables
+#define AUX_MU_IO_REG           (BCM_PHYSBASE + 0x215040)       // AUX_MU_IO_REG Mini Uart I/O Data
+#define AUX_MU_IER_REG          (BCM_PHYSBASE + 0x215044)       // Mini Uart Interrupt Enable
+#define AUX_MU_IIR_REG          (BCM_PHYSBASE + 0x215048)       // Mini Uart Interrupt Identify
+#define AUX_MU_LCR_REG          (BCM_PHYSBASE + 0x21504C)       // Mini Uart Line Control
+#define AUX_MU_MCR_REG          (BCM_PHYSBASE + 0x215050)       // Mini Uart Modem Control
+#define AUX_MU_LSR_REG          (BCM_PHYSBASE + 0x215054)       // Mini Uart Line Status
+#define AUX_MU_MSR_REG          (BCM_PHYSBASE + 0x215058)       // Mini Uart Modem Status
+#define AUX_MU_SCRATCH          (BCM_PHYSBASE + 0x21505C)       // Mini Uart Scratch
+#define AUX_MU_CNTL_REG         (BCM_PHYSBASE + 0x215060)       // Mini Uart Extra Control
+#define AUX_MU_STAT_REG         (BCM_PHYSBASE + 0x215064)       // Mini Uart Extra Status
+#define AUX_MU_BAUD_REG         (BCM_PHYSBASE + 0x215068)       // Mini Uart Baudrate
+#define AUX_SPI0_CNTL0_REG      (BCM_PHYSBASE + 0x215080)       // SPI 1 Control register 0
+#define AUX_SPI0_CNTL1_REG      (BCM_PHYSBASE + 0x215084)       // SPI 1 Control register 1
+#define AUX_SPI0_STAT_REG       (BCM_PHYSBASE + 0x215088)       // SPI 1 Status
+#define AUX_SPI0_IO_REG         (BCM_PHYSBASE + 0x215090)       // SPI 1 Data
+#define AUX_SPI0_PEEK_REG       (BCM_PHYSBASE + 0x215094)       // SPI 1 Peek
+#define AUX_SPI1_CNTL0_REG      (BCM_PHYSBASE + 0x2150C0)       // SPI 2 Control register 0
+#define AUX_SPI1_CNTL1_REG      (BCM_PHYSBASE + 0x2150C4)       // SPI 2 Control register 1
+#define AUX_SPI1_STAT_REG       (BCM_PHYSBASE + 0x2150C8)       // SPI 2 Status
+#define AUX_SPI1_IO_REG         (BCM_PHYSBASE + 0x2150D0)       // SPI 2 Data
+#define AUX_SPI1_PEEK_REG       (BCM_PHYSBASE + 0x2150D4)       // SPI 2 Peek
 
 #endif /* BCM2835_H */

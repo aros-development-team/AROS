@@ -10,7 +10,6 @@
 #include <exec/memheaderext.h>
 #include <exec/nodes.h>
 #include <exec/types.h>
-#include "videocore_hardware.h"
 #include "videocore_bitmap.h"
 
 #define IID_Hidd_VideoCore  "hidd.gfx.videocore"
@@ -25,8 +24,8 @@ struct VideoCore_staticdata {
         struct SignalSemaphore  vcsd_GPUMemLock;
         struct MemHeaderExt     vcsd_GPUMemManage;
 
+        OOP_Class               *vcsd_VideoCoreGfxClass;
 	struct MemHeader mh;
-	OOP_Class *videocoreclass;
 	OOP_Class *videocoreonbmclass;
 	OOP_Class *videocoreoffbmclass;
 	OOP_Object *videocorehidd;
@@ -36,7 +35,7 @@ struct VideoCore_staticdata {
 	VOID	(*activecallback)(APTR, OOP_Object *, BOOL);
 	APTR	callbackdata;
 	struct MouseData mouse;
-	struct HWData data;
+	APTR                    data;
 };
 
 struct VideoCoreBase

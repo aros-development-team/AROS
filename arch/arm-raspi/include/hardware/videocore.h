@@ -6,7 +6,7 @@
 #ifndef VCMBOX_H
 #define VCMBOX_H
 
-#define VCMB_BASE               (VIRTIO_BASE + 0x00B880)
+#define VCMB_BASE               (BCM_PHYSBASE + 0x00B880)
 
 #define VCMB_CHAN_MAX           8
 #define VCMB_CHAN_MASK          0xF
@@ -38,8 +38,8 @@
 
 #define VCTAG_GETPOWER          0x00020001
 #define VCTAG_GETTIMING         0x00020002
-
 #define VCTAG_SETPOWER	        0x00028001
+
 #define VCTAG_GETCLKSTATE       0x00030001
 #define VCTAG_GETCLKRATE        0x00030002
 #define VCTAG_GETVOLTAGE        0x00030003
