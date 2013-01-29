@@ -35,16 +35,31 @@ struct HIDDData
     ULONG       hd_ErrorCode;
 };
 
+struct DriverNode
+{
+    struct MinNode node;
+    OOP_Object     *driverObject;  /* Driver object */
+};
+
+struct HWData
+{
+    const char            *name;
+    struct MinList         drivers;
+    struct SignalSemaphore driver_lock;
+};
 
 /* Static Data for the hiddclass. */
 struct class_static_data
 {
     OOP_AttrBase                hiddAttrBase;  // keep lower case so it does not clash with define.
+    OOP_AttrBase                hwAttrBase;
 
     OOP_Class                   *hiddclass;
+    OOP_Class                   *hwclass;
+    OOP_Class                   *rootclass;
 
-    struct MinList               hiddList;
-    struct SignalSemaphore       listLock;
+    OOP_Object                  *hwroot;
+    APTR                        MemPool;
 
     struct Library              *cs_OOPBase;
     struct Library              *cs_UtilityBase;
@@ -62,9 +77,10 @@ struct IntHIDDClassBase
 
 
 #define CSD(cl) (&((struct IntHIDDClassBase *)cl->UserData)->hd_csd)
-#define csd CSD(cl)
 
 #undef HiddAttrBase
-#define HiddAttrBase	(csd->hiddAttrBase)
+#undef HWAttrBase
+#define HiddAttrBase (CSD(cl)->hiddAttrBase)
+#define HWAttrBase   (CSD(cl)->hwAttrBase)
 
 #endif /* HIDD_CLASS_INTERN_H */

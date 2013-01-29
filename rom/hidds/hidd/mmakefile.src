@@ -1,13 +1,15 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
+CLASSES := hiddclass hwclass hwroot
+
 USER_CFLAGS := -DAROS_USE_OOP \
                -D__OOP_NOLIBBASE__ \
                -D__UTILITY_NOLIBBASE__
 
 %build_module mmake=kernel-hidd \
   modname=hiddclass modtype=hidd \
-  files=hiddclass uselibs="oop"
+  files="initcode $(CLASSES)" uselibs="oop"
 
 INCLUDE_FILES   :=  $(call WILDCARD, include/*.h)
 %copy_includes path=hidd dir=include

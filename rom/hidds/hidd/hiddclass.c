@@ -28,8 +28,6 @@
 
 #include "hiddclass_intern.h"
 
-#include LC_LIBDEFS_FILE
-
 #undef  SDEBUG
 #undef  DEBUG
 #define DEBUG 0
@@ -536,64 +534,3 @@ VOID HIDDCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 }
 */
 #endif
-
-
-/*************************** Classes *****************************/
-
-#undef csd
-
-static int init_hiddclass(LIBBASETYPEPTR lh)
-{
-    struct Library *OOPBase = GM_OOPBASE_FIELD(lh);
-    struct  class_static_data *csd;
-    ULONG   ok    = 0;
-
-    EnterFunc(bug("HIDD::Init()\n"));
-
-    /* If you are not running from ROM, don't use Alert() */
-
-    csd = &lh->hd_csd;
-    csd->cs_UtilityBase = OpenLibrary("utility.library", 36);
-    if (!csd->cs_UtilityBase)
-        return FALSE;
-
-    NEWLIST(&csd->hiddList);
-    InitSemaphore(&csd->listLock);
-        
-    HiddAttrBase = OOP_ObtainAttrBase(IID_Hidd);
-    if(HiddAttrBase)
-    {
-        D(bug("Got HiddAttrBase\n"));
-        ok = 1;
-    } /* if(HiddAttrBase) */
-    else
-    {
-        /* If you are not running from ROM, don't use Alert() */
-
-        Alert(AT_DeadEnd | AN_Unknown | AO_Unknown);
-    }
-
-    ReturnInt("HIDD::Init", ULONG, ok);
-}
-
-
-static int free_hiddclass(LIBBASETYPEPTR lh)
-{
-    struct Library *OOPBase = GM_OOPBASE_FIELD(lh);
-    struct class_static_data *csd = &lh->hd_csd;
-
-    EnterFunc(bug("HIDD::Free()\n"));
-
-    if(csd->hiddAttrBase)
-    {
-        OOP_ReleaseAttrBase(IID_Hidd);
-        csd->hiddAttrBase = 0;
-    }
-
-    CloseLibrary(csd->cs_UtilityBase);
-
-    ReturnInt("HIDD::Free", ULONG, TRUE);
-}
-
-ADD2INITLIB(init_hiddclass, 0)
-ADD2EXPUNGELIB(free_hiddclass, 0)
