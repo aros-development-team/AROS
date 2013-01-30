@@ -5,6 +5,8 @@ FILES	:=	\
 	videocore_init \
 	videocore_class \
         videocore_memory \
+        videocore_sdtv \
+        videocore_hdmi \
 	videocore_hardware \
 	videocore_offbitmap \
 	videocore_onbitmap

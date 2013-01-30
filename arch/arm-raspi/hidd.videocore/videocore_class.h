@@ -45,8 +45,25 @@ struct VideoCoreBase
     struct VideoCore_staticdata vsd;    
 };
 
+struct DisplayMode
+{
+    struct Node dm_Node;
+    ULONG       dm_clock;
+    ULONG       dm_hdisp;
+    ULONG       dm_hstart;
+    ULONG       dm_hend;
+    ULONG       dm_htotal;
+    ULONG       dm_vdisp;
+    ULONG       dm_vstart;
+    ULONG       dm_vend;
+    ULONG       dm_vtotal;
+    ULONG       dm_descr;
+};
+
 #define XSD(cl) (&((struct VideoCoreBase *)cl->UserData)->vsd)
 
 int videocore_InitMem(void *, int, struct VideoCoreBase *);
+int VideoCore_SDTV_SyncGen(struct List *);
+int VideoCore_HDMI_SyncGen(struct List *);
 
 #endif /* _VIDEOCORE_CLASS_H */

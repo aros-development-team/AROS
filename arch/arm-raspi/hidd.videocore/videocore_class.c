@@ -18,6 +18,8 @@
 #include <devices/inputevent.h>
 #include <exec/alerts.h>
 #include <exec/memory.h>
+#include <graphics/displayinfo.h>
+#include <graphics/view.h>
 #include <hardware/custom.h>
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
@@ -64,57 +66,179 @@ STATIC ULONG mask_to_shift(ULONG mask)
     return i;
 }
 
+#define SYNCTAGS_SIZE (11 * sizeof(struct TagItem))
+
+APTR VideoCore_GenModeArray(struct List *modelist, struct TagItem *fmts)
+{
+    APTR                modearray = NULL;
+    struct TagItem      *modesync = NULL, *synctags = NULL;
+    int                 i, fmtcount = 0, modecount = 0;
+    struct DisplayMode  *modecurrent;
+
+    /* quickly count fmts and modes */
+    while (fmts[fmtcount].ti_Tag == aHidd_Gfx_PixFmtTags)
+        fmtcount++;
+
+    ForeachNode(modelist, modecurrent)
+    {
+        modecount++;
+    }
+
+    /* build our table .. */
+    if (fmtcount && modecount)
+    {
+        if ((modearray = AllocVec((fmtcount * sizeof(struct TagItem)) + (modecount + 1 * sizeof(struct TagItem)) + (modecount * SYNCTAGS_SIZE), MEMF_PUBLIC)) != NULL)
+        {
+            struct TagItem *ma_fmts = (struct TagItem  *)modearray;
+            i = fmtcount;
+            for (i = 0; i < fmtcount; i ++)
+            {
+                ma_fmts[i].ti_Tag = aHidd_Gfx_PixFmtTags;
+                ma_fmts[i].ti_Data = fmts[i].ti_Data;
+            }
+            modesync = (struct TagItem  *)(modearray + (fmtcount * sizeof(struct TagItem)));
+            synctags = (struct TagItem  *)(modesync + ((modecount + 1) * sizeof(struct TagItem)));
+            i = 0;
+            ForeachNode(modelist, modecurrent)
+            {
+                modesync[i].ti_Tag = aHidd_Gfx_SyncTags;
+                modesync[i].ti_Data = synctags;
+
+                synctags[0].ti_Tag = aHidd_Sync_PixelClock;
+                synctags[0].ti_Data = modecurrent->dm_clock;
+                synctags[1].ti_Tag = aHidd_Sync_HDisp;
+                synctags[1].ti_Data = modecurrent->dm_hdisp;
+                synctags[2].ti_Tag = aHidd_Sync_HSyncStart;
+                synctags[2].ti_Data = modecurrent->dm_hstart;
+                synctags[3].ti_Tag = aHidd_Sync_HSyncEnd;
+                synctags[3].ti_Data = modecurrent->dm_hend;
+                synctags[4].ti_Tag = aHidd_Sync_HTotal;
+                synctags[4].ti_Data = modecurrent->dm_htotal;
+                synctags[5].ti_Tag = aHidd_Sync_VDisp;
+                synctags[5].ti_Data = modecurrent->dm_vdisp;
+                synctags[6].ti_Tag = aHidd_Sync_VSyncStart;
+                synctags[6].ti_Data = modecurrent->dm_vstart;
+                synctags[7].ti_Tag = aHidd_Sync_VSyncEnd;
+                synctags[7].ti_Data = modecurrent->dm_vend;
+                synctags[8].ti_Tag = aHidd_Sync_VTotal;
+                synctags[8].ti_Data = modecurrent->dm_vtotal;
+                synctags[9].ti_Tag = aHidd_Sync_Description;
+                synctags[9].ti_Data = modecurrent->dm_descr;
+                synctags[10].ti_Tag = TAG_DONE;
+                i++;
+                synctags = &synctags[11];
+            }
+            modesync[i].ti_Tag = TAG_DONE;
+        }
+    }
+
+    return (APTR)modearray;
+}
+
 OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct VideoCore_staticdata *xsd = XSD(cl);
+    struct List                 vc_modelist;
+    APTR                        vc_modearray;
 
-    struct TagItem pftags[] =
-    {
-        {aHidd_PixFmt_RedShift,         0       }, /*  0 */
-        {aHidd_PixFmt_GreenShift,       0       }, /*  1 */
-        {aHidd_PixFmt_BlueShift,        0       }, /*  2 */
-        {aHidd_PixFmt_AlphaShift,       0       }, /*  3 */
-        {aHidd_PixFmt_RedMask,          0       }, /*  4 */
-        {aHidd_PixFmt_GreenMask,        0       }, /*  5 */
-        {aHidd_PixFmt_BlueMask,         0       }, /*  6 */
-        {aHidd_PixFmt_AlphaMask,        0       }, /*  7 */
-        {aHidd_PixFmt_ColorModel,       0       }, /*  8 */
-        {aHidd_PixFmt_Depth,            0       }, /*  9 */
-        {aHidd_PixFmt_BytesPerPixel,    0       }, /* 10 */
-        {aHidd_PixFmt_BitsPerPixel,     0       }, /* 11 */
-        {aHidd_PixFmt_StdPixFmt,        0       }, /* 12 */
-        {aHidd_PixFmt_CLUTShift,        0       }, /* 13 */
-        {aHidd_PixFmt_CLUTMask,         0x0f    }, /* 14 */
-        {aHidd_PixFmt_BitMapType,       0       }, /* 15 */
-        {TAG_DONE,                      0UL     }
+    struct TagItem pftags_24bpp[] = {
+        { aHidd_PixFmt_RedShift,    8   },
+        { aHidd_PixFmt_GreenShift,  16  },
+        { aHidd_PixFmt_BlueShift,   24  },
+        { aHidd_PixFmt_AlphaShift,  0   },
+        { aHidd_PixFmt_RedMask,     0x00ff0000 },
+        { aHidd_PixFmt_GreenMask,   0x0000ff00 },
+        { aHidd_PixFmt_BlueMask,    0x000000ff },
+        { aHidd_PixFmt_AlphaMask,   0x00000000 },
+        { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor },
+        { aHidd_PixFmt_Depth,       24  },
+        { aHidd_PixFmt_BytesPerPixel,   4   },
+        { aHidd_PixFmt_BitsPerPixel,    24  },
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native },
+        { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky },
+        { TAG_DONE, 0UL }
     };
-    struct TagItem vcmodes[] =
-    {
-        {aHidd_Gfx_ModeTags,    NULL            },
-        {TAG_MORE,              msg->attrList   }
+
+    struct TagItem pftags_16bpp[] = {
+        { aHidd_PixFmt_RedShift,    16  },
+        { aHidd_PixFmt_GreenShift,  21  },
+        { aHidd_PixFmt_BlueShift,   27  },
+        { aHidd_PixFmt_AlphaShift,  0   },
+        { aHidd_PixFmt_RedMask,     0x0000f800 },
+        { aHidd_PixFmt_GreenMask,   0x000007e0 },
+        { aHidd_PixFmt_BlueMask,    0x0000001f },
+        { aHidd_PixFmt_AlphaMask,   0x00000000 },
+        { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor },
+        { aHidd_PixFmt_Depth,       16  },
+        { aHidd_PixFmt_BytesPerPixel,   2   },
+        { aHidd_PixFmt_BitsPerPixel,    16  },
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native },
+        { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky },
+        { TAG_DONE, 0UL }
     };
-    struct pRoot_New vcmsgnew;
 
-    D(bug("[VideoCore] VideoCore__Root__New()\n"));
+    struct TagItem pftags_15bpp[] = {
+        { aHidd_PixFmt_RedShift,    17  },
+        { aHidd_PixFmt_GreenShift,  22  },
+        { aHidd_PixFmt_BlueShift,   27  },
+        { aHidd_PixFmt_AlphaShift,  0   },
+        { aHidd_PixFmt_RedMask,     0x00007c00 },
+        { aHidd_PixFmt_GreenMask,   0x000003e0 },
+        { aHidd_PixFmt_BlueMask,    0x0000001f },
+        { aHidd_PixFmt_AlphaMask,   0x00000000 },
+        { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor },
+        { aHidd_PixFmt_Depth,       15  },
+        { aHidd_PixFmt_BytesPerPixel,   2   },
+        { aHidd_PixFmt_BitsPerPixel,    15  },
+        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native },
+        { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky },
+        { TAG_DONE, 0UL }
+    };
 
-    vcmsgnew.mID = msg->mID;
-    vcmsgnew.attrList = vcmodes;
-    msg = &vcmsgnew;
+    struct TagItem fmttags[] = {
+        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_24bpp  },
+        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_16bpp  },
+        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_15bpp  },
+        { TAG_DONE, 0UL }
+    };
 
     EnterFunc(bug("VideoCore::New()\n"));
 
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (o)
+    NEWLIST(&vc_modelist);
+    
+    VideoCore_SDTV_SyncGen(&vc_modelist);
+    VideoCore_HDMI_SyncGen(&vc_modelist);
+
+    if ((vc_modearray = VideoCore_GenModeArray(&vc_modelist, fmttags)) != NULL)
     {
-        D(bug("[VideoCore] Got object from super\n"));
-        XSD(cl)->videocorehidd = o;
-        ReturnPtr("VideoCore::New", OOP_Object *, o);
+        struct TagItem vcmodes[] =
+        {
+            {aHidd_Gfx_ModeTags,    vc_modearray    },
+            {TAG_MORE,              msg->attrList   }
+        };
+        struct pRoot_New vcmsgnew;
+
+        D(bug("[VideoCore] Generated Mode Array @ 0x%p\n", vc_modearray));
+
+        vcmsgnew.mID = msg->mID;
+        vcmsgnew.attrList = vcmodes;
+        msg = &vcmsgnew;
+
+        o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        if (o)
+        {
+            D(bug("[VideoCore] Storing reference to self in staticdata\n"));
+            XSD(cl)->videocorehidd = o;
+            ReturnPtr("VideoCore::New", OOP_Object *, o);
+        }
     }
     ReturnPtr("VideoCore::New", OOP_Object *, NULL);
 }
 
 VOID VideoCore__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    D(bug("[VideoCore] VideoCore__Root__Dispose()\n"));
+
     if (XSD(cl)->mouse.shape != NULL)
         FreeVec(XSD(cl)->mouse.shape);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -124,6 +248,8 @@ VOID VideoCore__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     BOOL found = FALSE;
+
+    D(bug("[VideoCore] VideoCore__Root__Get()\n"));
 
     if (IS_GFX_ATTR(msg->attrID, idx))
     {
