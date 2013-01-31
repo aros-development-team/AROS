@@ -71,7 +71,7 @@ STATIC ULONG mask_to_shift(ULONG mask)
 APTR VideoCore_GenModeArray(struct List *modelist, struct TagItem *fmts)
 {
     APTR                modearray = NULL;
-    struct TagItem      *modesync = NULL, *synctags = NULL;
+    struct TagItem      *ma_syncs = NULL, *ma_synctags = NULL;
     int                 i, fmtcount = 0, modecount = 0;
     struct DisplayMode  *modecurrent;
 
@@ -84,51 +84,59 @@ APTR VideoCore_GenModeArray(struct List *modelist, struct TagItem *fmts)
         modecount++;
     }
 
+    D(bug("[VideoCore] VideoCore_GenModeArray: %d PixFmts, %d SyncModes\n", fmtcount, modecount));
+
     /* build our table .. */
     if (fmtcount && modecount)
     {
         if ((modearray = AllocVec((fmtcount * sizeof(struct TagItem)) + (modecount + 1 * sizeof(struct TagItem)) + (modecount * SYNCTAGS_SIZE), MEMF_PUBLIC)) != NULL)
         {
+            D(bug("[VideoCore] VideoCore_GenModeArray: PixFmt's @ 0x%p\n", modearray));
+
             struct TagItem *ma_fmts = (struct TagItem  *)modearray;
-            i = fmtcount;
+
             for (i = 0; i < fmtcount; i ++)
             {
                 ma_fmts[i].ti_Tag = aHidd_Gfx_PixFmtTags;
                 ma_fmts[i].ti_Data = fmts[i].ti_Data;
             }
-            modesync = (struct TagItem  *)(modearray + (fmtcount * sizeof(struct TagItem)));
-            synctags = (struct TagItem  *)(modesync + ((modecount + 1) * sizeof(struct TagItem)));
+            ma_syncs = (struct TagItem *)&ma_fmts[fmtcount];
+            D(bug("[VideoCore] VideoCore_GenModeArray: ModeSync's @ 0x%p\n", ma_syncs));
+            ma_synctags = (struct TagItem  *)&ma_syncs[modecount + 1];
             i = 0;
             ForeachNode(modelist, modecurrent)
             {
-                modesync[i].ti_Tag = aHidd_Gfx_SyncTags;
-                modesync[i].ti_Data = synctags;
+                D(bug("[VideoCore] VideoCore_GenModeArray: SyncTag #%d @ 0x%p\n", i, ma_synctags));
 
-                synctags[0].ti_Tag = aHidd_Sync_PixelClock;
-                synctags[0].ti_Data = modecurrent->dm_clock;
-                synctags[1].ti_Tag = aHidd_Sync_HDisp;
-                synctags[1].ti_Data = modecurrent->dm_hdisp;
-                synctags[2].ti_Tag = aHidd_Sync_HSyncStart;
-                synctags[2].ti_Data = modecurrent->dm_hstart;
-                synctags[3].ti_Tag = aHidd_Sync_HSyncEnd;
-                synctags[3].ti_Data = modecurrent->dm_hend;
-                synctags[4].ti_Tag = aHidd_Sync_HTotal;
-                synctags[4].ti_Data = modecurrent->dm_htotal;
-                synctags[5].ti_Tag = aHidd_Sync_VDisp;
-                synctags[5].ti_Data = modecurrent->dm_vdisp;
-                synctags[6].ti_Tag = aHidd_Sync_VSyncStart;
-                synctags[6].ti_Data = modecurrent->dm_vstart;
-                synctags[7].ti_Tag = aHidd_Sync_VSyncEnd;
-                synctags[7].ti_Data = modecurrent->dm_vend;
-                synctags[8].ti_Tag = aHidd_Sync_VTotal;
-                synctags[8].ti_Data = modecurrent->dm_vtotal;
-                synctags[9].ti_Tag = aHidd_Sync_Description;
-                synctags[9].ti_Data = modecurrent->dm_descr;
-                synctags[10].ti_Tag = TAG_DONE;
+                ma_syncs[i].ti_Tag = aHidd_Gfx_SyncTags;
+                ma_syncs[i].ti_Data = ma_synctags;
+
+                ma_synctags[0].ti_Tag = aHidd_Sync_PixelClock;
+                ma_synctags[0].ti_Data = modecurrent->dm_clock * 1000;
+                ma_synctags[1].ti_Tag = aHidd_Sync_HDisp;
+                ma_synctags[1].ti_Data = modecurrent->dm_hdisp;
+                ma_synctags[2].ti_Tag = aHidd_Sync_HSyncStart;
+                ma_synctags[2].ti_Data = modecurrent->dm_hstart;
+                ma_synctags[3].ti_Tag = aHidd_Sync_HSyncEnd;
+                ma_synctags[3].ti_Data = modecurrent->dm_hend;
+                ma_synctags[4].ti_Tag = aHidd_Sync_HTotal;
+                ma_synctags[4].ti_Data = modecurrent->dm_htotal;
+                ma_synctags[5].ti_Tag = aHidd_Sync_VDisp;
+                ma_synctags[5].ti_Data = modecurrent->dm_vdisp;
+                ma_synctags[6].ti_Tag = aHidd_Sync_VSyncStart;
+                ma_synctags[6].ti_Data = modecurrent->dm_vstart;
+                ma_synctags[7].ti_Tag = aHidd_Sync_VSyncEnd;
+                ma_synctags[7].ti_Data = modecurrent->dm_vend;
+                ma_synctags[8].ti_Tag = aHidd_Sync_VTotal;
+                ma_synctags[8].ti_Data = modecurrent->dm_vtotal;
+                ma_synctags[9].ti_Tag = aHidd_Sync_Description;
+                ma_synctags[9].ti_Data = modecurrent->dm_descr;
+                ma_synctags[10].ti_Tag = TAG_DONE;
+
+                ma_synctags = (struct TagItem  *)&ma_synctags[11];
                 i++;
-                synctags = &synctags[11];
             }
-            modesync[i].ti_Tag = TAG_DONE;
+            ma_syncs[i].ti_Tag = TAG_DONE;
         }
     }
 
@@ -140,58 +148,79 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     struct VideoCore_staticdata *xsd = XSD(cl);
     struct List                 vc_modelist;
     APTR                        vc_modearray;
+    OOP_Object                  *self = NULL;
 
     struct TagItem pftags_24bpp[] = {
-        { aHidd_PixFmt_RedShift,    8   },
-        { aHidd_PixFmt_GreenShift,  16  },
-        { aHidd_PixFmt_BlueShift,   24  },
-        { aHidd_PixFmt_AlphaShift,  0   },
-        { aHidd_PixFmt_RedMask,     0x00ff0000 },
-        { aHidd_PixFmt_GreenMask,   0x0000ff00 },
-        { aHidd_PixFmt_BlueMask,    0x000000ff },
-        { aHidd_PixFmt_AlphaMask,   0x00000000 },
-        { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor },
-        { aHidd_PixFmt_Depth,       24  },
-        { aHidd_PixFmt_BytesPerPixel,   4   },
-        { aHidd_PixFmt_BitsPerPixel,    24  },
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native },
-        { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky },
+        { aHidd_PixFmt_RedShift,      8   },
+        { aHidd_PixFmt_GreenShift,    16  },
+        { aHidd_PixFmt_BlueShift,     24  },
+        { aHidd_PixFmt_AlphaShift,    0   },
+        { aHidd_PixFmt_RedMask,       0x00ff0000 },
+        { aHidd_PixFmt_GreenMask,     0x0000ff00 },
+        { aHidd_PixFmt_BlueMask,      0x000000ff },
+        { aHidd_PixFmt_AlphaMask,     0x00000000 },
+        { aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor },
+        { aHidd_PixFmt_Depth,         24  },
+        { aHidd_PixFmt_BytesPerPixel, 4   },
+        { aHidd_PixFmt_BitsPerPixel,  24  },
+        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_Native },
+        { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
         { TAG_DONE, 0UL }
     };
 
     struct TagItem pftags_16bpp[] = {
-        { aHidd_PixFmt_RedShift,    16  },
-        { aHidd_PixFmt_GreenShift,  21  },
-        { aHidd_PixFmt_BlueShift,   27  },
-        { aHidd_PixFmt_AlphaShift,  0   },
-        { aHidd_PixFmt_RedMask,     0x0000f800 },
-        { aHidd_PixFmt_GreenMask,   0x000007e0 },
-        { aHidd_PixFmt_BlueMask,    0x0000001f },
-        { aHidd_PixFmt_AlphaMask,   0x00000000 },
-        { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor },
-        { aHidd_PixFmt_Depth,       16  },
-        { aHidd_PixFmt_BytesPerPixel,   2   },
-        { aHidd_PixFmt_BitsPerPixel,    16  },
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native },
-        { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky },
+        { aHidd_PixFmt_RedShift,      16  },
+        { aHidd_PixFmt_GreenShift,    21  },
+        { aHidd_PixFmt_BlueShift,     27  },
+        { aHidd_PixFmt_AlphaShift,    0   },
+        { aHidd_PixFmt_RedMask,       0x0000f800 },
+        { aHidd_PixFmt_GreenMask,     0x000007e0 },
+        { aHidd_PixFmt_BlueMask,      0x0000001f },
+        { aHidd_PixFmt_AlphaMask,     0x00000000 },
+        { aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor },
+        { aHidd_PixFmt_Depth,         16  },
+        { aHidd_PixFmt_BytesPerPixel, 2   },
+        { aHidd_PixFmt_BitsPerPixel,  16  },
+        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_Native },
+        { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
         { TAG_DONE, 0UL }
     };
 
     struct TagItem pftags_15bpp[] = {
-        { aHidd_PixFmt_RedShift,    17  },
-        { aHidd_PixFmt_GreenShift,  22  },
-        { aHidd_PixFmt_BlueShift,   27  },
-        { aHidd_PixFmt_AlphaShift,  0   },
-        { aHidd_PixFmt_RedMask,     0x00007c00 },
-        { aHidd_PixFmt_GreenMask,   0x000003e0 },
-        { aHidd_PixFmt_BlueMask,    0x0000001f },
-        { aHidd_PixFmt_AlphaMask,   0x00000000 },
-        { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor },
-        { aHidd_PixFmt_Depth,       15  },
-        { aHidd_PixFmt_BytesPerPixel,   2   },
-        { aHidd_PixFmt_BitsPerPixel,    15  },
-        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native },
-        { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky },
+        { aHidd_PixFmt_RedShift,      17  },
+        { aHidd_PixFmt_GreenShift,    22  },
+        { aHidd_PixFmt_BlueShift,     27  },
+        { aHidd_PixFmt_AlphaShift,    0   },
+        { aHidd_PixFmt_RedMask,       0x00007c00 },
+        { aHidd_PixFmt_GreenMask,     0x000003e0 },
+        { aHidd_PixFmt_BlueMask,      0x0000001f },
+        { aHidd_PixFmt_AlphaMask,     0x00000000 },
+        { aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor },
+        { aHidd_PixFmt_Depth,         15  },
+        { aHidd_PixFmt_BytesPerPixel, 2   },
+        { aHidd_PixFmt_BitsPerPixel,  15  },
+        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_Native },
+        { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
+        { TAG_DONE, 0UL }
+    };
+
+    struct TagItem pftags_8bpp[] = {
+        { aHidd_PixFmt_RedShift,      8  },
+        { aHidd_PixFmt_GreenShift,    16  },
+        { aHidd_PixFmt_BlueShift,     24  },
+        { aHidd_PixFmt_AlphaShift,    0   },
+        { aHidd_PixFmt_RedMask,       0x00FF0000 },
+        { aHidd_PixFmt_GreenMask,     0x0000FF00 },
+        { aHidd_PixFmt_BlueMask,      0x000000FF },
+        { aHidd_PixFmt_AlphaMask,     0x00000000 },
+        { aHidd_PixFmt_CLUTMask,      0x000000FF },
+	{ aHidd_PixFmt_CLUTShift,     0 },
+	{ aHidd_PixFmt_ColorModel,    vHidd_ColorModel_Palette },
+        { aHidd_PixFmt_Depth,         8  },
+        { aHidd_PixFmt_BytesPerPixel, 1   },
+        { aHidd_PixFmt_BitsPerPixel,  8  },
+        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_Native },
+        { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
         { TAG_DONE, 0UL }
     };
 
@@ -199,6 +228,7 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_24bpp  },
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_16bpp  },
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_15bpp  },
+        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_8bpp   },
         { TAG_DONE, 0UL }
     };
 
@@ -224,15 +254,14 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         vcmsgnew.attrList = vcmodes;
         msg = &vcmsgnew;
 
-        o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-        if (o)
+        if ((self = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) != NULL)
         {
             D(bug("[VideoCore] Storing reference to self in staticdata\n"));
-            XSD(cl)->videocorehidd = o;
-            ReturnPtr("VideoCore::New", OOP_Object *, o);
+            XSD(cl)->videocorehidd = self;
         }
     }
-    ReturnPtr("VideoCore::New", OOP_Object *, NULL);
+
+    ReturnPtr("VideoCore::New", OOP_Object *, self);
 }
 
 VOID VideoCore__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
