@@ -34,6 +34,10 @@ void *mh_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     return NULL;
 }
 
+/*
+    returns a handle on a block of gpu memory. you cannot directly access this
+    memory unless it is locked, since it may be moved around by the gpu.
+*/
 void *videocore_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 {
     struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
@@ -59,11 +63,64 @@ void *videocore_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, VCMsg);
     if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == VCMsg)
     {
-        D(bug("[VideoCore] mh_Alloc: Allocated %d bytes @ 0x%p\n", VCMsg[4], VCMsg[7]));
+        D(bug("[VideoCore] mh_Alloc: Allocated %d bytes, memhandle @ 0x%p\n", VCMsg[4], VCMsg[7]));
         
         mhe->mhe_MemHeader.mh_Free -= size;
         
         return VCMsg[7];
+    }
+    return NULL;
+}
+
+/*
+    Lock the gpu memory represented by the memhandle,
+    and return a physical pointer to it..
+*/
+void *videocore_LockMem(void *memhandle)
+{
+    D(bug("[VideoCore] videocore_LockMem(memhandle @ 0x%p)\n", memhandle));
+    
+    VCMsg[0] = 7 * 4;
+    VCMsg[1] = VCTAG_REQ;
+    VCMsg[2] = VCTAG_LOCKMEM;
+    VCMsg[3] = 4;
+    VCMsg[4] = memhandle;
+
+    VCMsg[5] = 0;
+
+    VCMsg[6] = 0; // terminate tag
+
+    VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, VCMsg);
+    if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == VCMsg)
+    {
+        D(bug("[VideoCore] videocore_LockMem: Memory locked @ 0x%p\n", VCMsg[5]));
+        return VCMsg[5];
+    }
+    return NULL;
+}
+
+/*
+    Unlock the gpu memory represented by the memhandle.
+*/
+void *videocore_UnLockMem(void *memhandle)
+{
+    D(bug("[VideoCore] videocore_UnLockMem(memhandle @ 0x%p)\n", memhandle));
+    
+    VCMsg[0] = 7 * 4;
+    VCMsg[1] = VCTAG_REQ;
+    VCMsg[2] = VCTAG_UNLOCKMEM;
+    VCMsg[3] = 4;
+    VCMsg[4] = memhandle;
+
+    VCMsg[5] = 0;
+
+    VCMsg[6] = 0; // terminate tag
+
+    VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, VCMsg);
+    if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == VCMsg)
+    {
+        D(bug("[VideoCore] videocore_LockMem: Memory unlocked [status %08x]\n", VCMsg[5]));
+        return VCMsg[5];
     }
     return NULL;
 }
@@ -73,17 +130,20 @@ void mh_Free(struct MemHeaderExt *mhe, APTR  mem,  IPTR size)
     D(bug("[VideoCore] mh_Free(0x%p)\n", mem));
 }
 
-void videocore_Free(struct MemHeaderExt *mhe, APTR  mem,  IPTR size)
+/*
+    Frees the gpu memory associated with the handle.
+*/
+void videocore_Free(struct MemHeaderExt *mhe, APTR  memhandle, IPTR size)
 {
     struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
 
-    D(bug("[VideoCore] videocore_Free(0x%p)\n", mem));
+    D(bug("[VideoCore] videocore_Free(memhandle @ 0x%p)\n", memhandle));
 
     VCMsg[0] = 7 * 4;
     VCMsg[1] = VCTAG_REQ;
     VCMsg[2] = VCTAG_FREEMEM;
     VCMsg[3] = 4;
-    VCMsg[4] = mem;
+    VCMsg[4] = memhandle;
 
     VCMsg[5] = 0;
 
