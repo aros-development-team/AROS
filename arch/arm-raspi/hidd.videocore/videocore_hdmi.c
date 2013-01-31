@@ -15,5 +15,7 @@ int VideoCore_HDMI_SyncGen(struct List *modelist)
 
     D(bug("[VideoCore] VideoCore_HDMI_SyncGen()\n"));
 
+#warning "TODO: check if anything is attached to HDMI/DVI"
+
     return modecount;
 }
