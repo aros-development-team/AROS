@@ -66,9 +66,9 @@
 OOP_Object *HW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
-    OOP_Object *ret = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
-    
-    if (ret)
+
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);    
+    if (o)
     {
         struct HWData *data = OOP_INST_DATA(cl, o);
 
@@ -79,7 +79,7 @@ OOP_Object *HW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                                               (IPTR)"Unknown hardware",
                                               msg->attrList);
     }
-    return ret;
+    return o;
 }
 
 void HW__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
