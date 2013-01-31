@@ -258,7 +258,7 @@ BOOL HW__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o,
     SYNOPSIS
 	void OOP_DoMethod(OOP_Object *obj, struct pHW_EnumDrivers *Msg);
 
-	void HW_EnumDrivers(OOP_Object *obj, struct Hook *callback);
+	void HW_EnumDrivers(OOP_Object *obj, struct Hook *callback, APTR hookMsg);
 
     LOCATION
 	CLID_HW
@@ -268,14 +268,16 @@ BOOL HW__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o,
 
     INPUTS
 	obj      - A subsystem object to query.
-	callback - A user-supplied hook which will be called with the
-                   following parameters:
+	callback - A user-supplied hook which will be called for every driver.
+        hookMsg  - A user-defined data to be passed to the hook.
+
+        The hool will be called with the following parameters:
             AROS_UFHA(struct Hook *, hook        , A0)
                 - A pointer to hook structure itself
             AROS_UFHA(OOP_Object * , driverObject, A2)
                 - A device driver object
             AROS_UFHA(APTR         , message     , A1)
-                - Not used, ignore it
+                - User-defined data
 
     RESULT
 	None.
@@ -303,7 +305,7 @@ void HW__HW__EnumDrivers(OOP_Class *cl, OOP_Object *o, struct pHW_EnumDrivers *m
     /* For every driver in the system... */
     ForeachNode(&data->drivers, dn)
     {
-        CALLHOOKPKT(msg->callback, dn->driverObject, NULL);
+        CALLHOOKPKT(msg->callback, dn->driverObject, msg->hookMsg);
     }
 
     ReleaseSemaphore(&data->driver_lock);
