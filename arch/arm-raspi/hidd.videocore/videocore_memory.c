@@ -63,7 +63,7 @@ void *videocore_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, VCMsg);
     if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == VCMsg)
     {
-        D(bug("[VideoCore] mh_Alloc: Allocated %d bytes, memhandle @ 0x%p\n", VCMsg[4], VCMsg[7]));
+        D(bug("[VideoCore] videocore_Alloc: Allocated %d bytes, memhandle @ 0x%p\n", VCMsg[4], VCMsg[7]));
         
         mhe->mhe_MemHeader.mh_Free -= size;
         
@@ -119,7 +119,7 @@ void *videocore_UnLockMem(void *memhandle)
     VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, VCMsg);
     if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == VCMsg)
     {
-        D(bug("[VideoCore] videocore_LockMem: Memory unlocked [status %08x]\n", VCMsg[5]));
+        D(bug("[VideoCore] videocore_UnLockMem: Memory unlocked [status %08x]\n", VCMsg[5]));
         return VCMsg[5];
     }
     return NULL;
@@ -154,7 +154,7 @@ void videocore_Free(struct MemHeaderExt *mhe, APTR  memhandle, IPTR size)
     {
         mhe->mhe_MemHeader.mh_Free += size;
 
-        D(bug("[VideoCore] mh_Free: Memory freed [status %08x]\n", VCMsg[5]));
+        D(bug("[VideoCore] videocore_Free: Memory freed [status %08x]\n", VCMsg[5]));
     }
 }
 
