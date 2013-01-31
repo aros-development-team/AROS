@@ -38,6 +38,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-bootloader-includes \
 #MM	kernel-debug-includes \
 #MM	kernel-efi-includes \
+#MM     kernel-hidd-includes \
 #MM	kernel-hostlib-includes \
 #MM     kernel-graphics-includes \
 #MM     kernel-utility-includes \
