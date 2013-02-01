@@ -28,8 +28,8 @@
 #include <clib/alib_protos.h>
 #include <string.h>
 
-#include "videocore_class.h"
-#include "videocore_hardware.h"
+#include "videocoregfx_class.h"
+#include "videocoregfx_hardware.h"
 
 #include LC_LIBDEFS_FILE
 

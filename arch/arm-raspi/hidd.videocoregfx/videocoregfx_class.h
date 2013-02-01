@@ -1,5 +1,5 @@
-#ifndef _VIDEOCORE_CLASS_H
-#define _VIDEOCORE_CLASS_H
+#ifndef _VIDEOCOREGFX_CLASS_H
+#define _VIDEOCOREGFX_CLASS_H
 /*
     Copyright © 2013, The AROS Development Team. All rights reserved.
     $Id$
@@ -11,7 +11,7 @@
 #include <exec/nodes.h>
 #include <exec/types.h>
 
-#include "videocore_bitmap.h"
+#include "videocoregfx_bitmap.h"
 
 #define IID_Hidd_VideoCoreGfx  "hidd.gfx.videocore"
 #define CLID_Hidd_VideoCoreGfx "hidd.gfx.videocore"
@@ -76,7 +76,7 @@ struct DisplayMode
 #undef HiddGfxAttrBase
 #undef HiddAttrBase
 
-/* These must stay in the same order as interfaces[] array in videocore_init.c */
+/* These must stay in the same order as interfaces[] array in videocoregfx_init.c */
 #define HiddVideoCoreGfxAttrBase         XSD(cl)->vcsd_attrBases[0]
 #define HiddVideoCoreGfxBitMapAttrBase   XSD(cl)->vcsd_attrBases[1]
 #define HiddBitMapAttrBase               XSD(cl)->vcsd_attrBases[2]
@@ -91,4 +91,4 @@ int FNAME_SUPPORT(InitMem)(void *, int, struct VideoCoreGfxBase *);
 int FNAME_SUPPORT(SDTV_SyncGen)(struct List *);
 int FNAME_SUPPORT(HDMI_SyncGen)(struct List *);
 
-#endif /* _VIDEOCORE_CLASS_H */
+#endif /* _VIDEOCOREGFX_CLASS_H */

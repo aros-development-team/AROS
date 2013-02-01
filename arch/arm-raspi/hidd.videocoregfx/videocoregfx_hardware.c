@@ -11,8 +11,8 @@
 
 #include <asm/io.h>
 
-#include "videocore_class.h"
-#include "videocore_hardware.h"
+#include "videocoregfx_class.h"
+#include "videocoregfx_hardware.h"
 
 BOOL initVideoCoreGfxHW(APTR param0)
 {

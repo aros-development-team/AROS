@@ -3,11 +3,11 @@
     $Id$
 */
 
-#ifndef _VIDEOCORE_BITMAP_H
-#define _VIDEOCORE_BITMAP_H
+#ifndef _VIDEOCOREGFX_BITMAP_H
+#define _VIDEOCOREGFX_BITMAP_H
 
 #include <hidd/graphics.h>
-#include "videocore_mouse.h"
+#include "videocoregfx_mouse.h"
 
 /* This attribute interface is common for both onscreen and offscreen bitmap
    classes, although they don't share a common superclass */
@@ -40,9 +40,9 @@ struct HWRegs {
     UBYTE clt[768];
 };
 
-/* Only include videocore_hardware.h now so that struct Box is known */
+/* Only include videocoregfx_hardware.h now so that struct Box is known */
 
-#include "videocore_hardware.h"
+#include "videocoregfx_hardware.h"
 
 struct BitmapData {
 	struct HWRegs       regs;
@@ -57,4 +57,4 @@ struct BitmapData {
 	struct MouseData    *mouse;
 };
 
-#endif /* _VIDEOCORE_BITMAP_H */
+#endif /* _VIDEOCOREGFX_BITMAP_H */

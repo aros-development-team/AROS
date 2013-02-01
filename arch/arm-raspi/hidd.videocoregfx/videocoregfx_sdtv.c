@@ -6,7 +6,7 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-#include "videocore_class.h"
+#include "videocoregfx_class.h"
 
 int FNAME_SUPPORT(SDTV_SyncGen)(struct List *modelist)
 {

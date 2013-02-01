@@ -1,5 +1,5 @@
-#ifndef _VIDEOCORE_HARDWARE_H
-#define _VIDEOCORE_HARDWARE_H
+#ifndef _VIDEOCOREGFX_HARDWARE_H
+#define _VIDEOCOREGFX_HARDWARE_H
 
 #include <exec/libraries.h>
 #include <hidd/pci.h>
@@ -8,9 +8,9 @@
 #include <asm/bcm2835.h>
 #include <hardware/videocore.h>
 
-#include "videocore_class.h"
-#include "videocore_bitmap.h"
-#include "videocore_mouse.h"
+#include "videocoregfx_class.h"
+#include "videocoregfx_bitmap.h"
+#include "videocoregfx_mouse.h"
 
 #define VCMB_FBCHAN     8
 
@@ -43,4 +43,4 @@ struct HWData  {
 
 BOOL initVideoCoreGfxHW(APTR);
 
-#endif /* _VIDEOCORE_HARDWARE_H */
+#endif /* _VIDEOCOREGFX_HARDWARE_H */
