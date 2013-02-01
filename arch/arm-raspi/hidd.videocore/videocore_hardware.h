@@ -12,12 +12,6 @@
 #include "videocore_bitmap.h"
 #include "videocore_mouse.h"
 
-#ifdef VCMBoxBase
-#undef VCMBoxBase
-#endif
-
-#define VCMBoxBase      xsd->vcsd_VCMBoxBase
-#define VCMsg           xsd->vcsd_VCMBoxMessage
 #define VCMB_FBCHAN     8
 
 struct HWData  {

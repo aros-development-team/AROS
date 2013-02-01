@@ -12,6 +12,7 @@
 #define __OOP_NOATTRBASES__
 
 #include <proto/oop.h>
+#include <proto/vcmbox.h>
 #include <proto/utility.h>
 #include <assert.h>
 #include <exec/memory.h>
@@ -27,26 +28,11 @@
 
 #include LC_LIBDEFS_FILE
 
-/* Don't initialize static variables with "=0", otherwise they go into DATA segment */
+#ifdef VCMBoxBase
+#undef VCMBoxBase
+#endif
 
-static OOP_AttrBase HiddBitMapAttrBase;
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddVideoCoreAttrBase;
-static OOP_AttrBase HiddVideoCoreBitMapAttrBase;
-
-static struct OOP_ABDescr attrbases[] = 
-{
-    { IID_Hidd_BitMap,              &HiddBitMapAttrBase             },
-    { IID_Hidd_PixFmt,              &HiddPixFmtAttrBase             },
-    { IID_Hidd_Gfx,                 &HiddGfxAttrBase                },
-    { IID_Hidd_Sync,                &HiddSyncAttrBase               },
-    /* Private bases */
-    { IID_Hidd_VideoCore,          &HiddVideoCoreAttrBase         },
-    { IID_Hidd_VideoCoreBitMap,    &HiddVideoCoreBitMapAttrBase   },
-    { NULL,                         NULL                            }
-};
+#define VCMBoxBase      (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxBase
 
 #define MNAME_ROOT(x) VideoCoreOnBM__Root__ ## x
 #define MNAME_BM(x) VideoCoreOnBM__Hidd_BitMap__ ## x
@@ -63,7 +49,6 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     if (o)
     {
         struct BitmapData *data;
-        LONG multi=1;
         OOP_Object *pf;
         IPTR width, height, depth;
         HIDDT_ModeID modeid;
@@ -89,27 +74,68 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         data->height = height;
         data->bpp = depth;
         data->disp = -1;
+
+        data->bytesperpix = 1;
         if (depth>16)
-            multi = 4;
+            data->bytesperpix = 4;
         else if (depth>8)
-            multi = 2;
-        data->bytesperpix = multi;
+            data->bytesperpix = 2;
+
         data->data = &XSD(cl)->data;
         data->mouse = &XSD(cl)->mouse;
-#warning "TODO: Allocate using GPU memory.. "
-        data->VideoData = data->data->vrambase;
-        /* We should be able to get modeID from the bitmap */
-        OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
-        if (modeid != vHidd_ModeID_Invalid)
+
+        RawPutChar(0x03);
+
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
+
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[2] = VCTAG_SETRES;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[3] = 8;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[4] = 8;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[5] = data->width;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[6] = data->height;
+
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[7] = VCTAG_SETVRES;          // duplicate physical size...
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[8] = 8;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[9] = 8;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[10] = data->width;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[11] = data->height;
+
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[12] = VCTAG_SETDEPTH;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[13] = 4;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[14] = 4;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[15] = data->bpp;
+
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[16] = VCTAG_FBALLOC;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[17] = 8;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[18] = 4;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[19] = 16;
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[20] = 0;
+
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[21] = 0;                      // terminate tags
+
+        (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[0] = (22 << 2);                 // fill in request size
+
+        VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, (unsigned int)(&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage);
+        if ((VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage)
+            && ((&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] == VCTAG_RESP)
+            && ((&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[18] == (VCTAG_RESP + 8)))
         {
-            /*
-                Because of not defined BitMap_Show method show 
-                bitmap immediately
-            */
-//            setModeVideoCore(&XSD(cl)->data, width, height);
-            XSD(cl)->visible = data;	/* Set created object as visible */
-            ReturnPtr("VideoCore.BitMap::New()", OOP_Object *, o);
+            data->VideoData = (&((struct VideoCoreBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[19];
+       
+            /* We should be able to get modeID from the bitmap */
+            OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
+            if (modeid != vHidd_ModeID_Invalid)
+            {
+                /*
+                    Because of not defined BitMap_Show method show 
+                    bitmap immediately
+                */
+    //            setModeVideoCore(&XSD(cl)->data, width, height);
+                XSD(cl)->visible = data;	/* Set created object as visible */
+                ReturnPtr("VideoCore.BitMap::New()", OOP_Object *, o);
+            }
         }
+
         {
             OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
             OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
@@ -127,26 +153,3 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     OOP_DoSuperMethod(cl, o, msg);
     ReturnVoid("VideoCore.BitMap::Dispose");
 }
-
-/*** init_onbmclass *********************************************************/
-
-static int VideoCoreOnBM_Init(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("VideoCoreOnBM_Init\n"));
-
-    ReturnInt("VideoCoreOnBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
-}
-
-/*** free_bitmapclass *********************************************************/
-
-static int VideoCoreOnBM_Expunge(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("VideoCoreOnBM_Expunge\n"));
-
-    OOP_ReleaseAttrBases(attrbases);
-
-    ReturnInt("VideoCoreOnBM_Expunge", int, TRUE);
-}
-
-ADD2INITLIB(VideoCoreOnBM_Init, 0)
-ADD2EXPUNGELIB(VideoCoreOnBM_Expunge, 0)
