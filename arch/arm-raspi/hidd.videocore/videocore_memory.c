@@ -16,6 +16,7 @@
 
 #include <exec/types.h>
 #include <exec/lists.h>
+#include <exec/memory.h> 
 #include <hidd/graphics.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
@@ -41,21 +42,23 @@ void *mh_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 void *videocore_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 {
     struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
-    ULONG gpumemflags = VCMEM_NORMAL;
+    ULONG gpumemflags = VCMEM_NORMAL, gpumemalign = 0;
 
     D(bug("[VideoCore] videocore_Alloc(%d bytes, 0x%08x)\n", size, flags));
 
-    if (*flags & MEMF_PRIVATE)
-        gpumemflags = VCMEM_L1NONALLOCATING | VCMEM_NOINIT | VCMEM_LAZYLOCK
+    if (!(*flags & MEMF_PUBLIC))
+        gpumemflags = VCMEM_L1NONALLOCATING | VCMEM_NOINIT | VCMEM_LAZYLOCK;
     if (*flags & MEMF_CLEAR)
         gpumemflags |= VCMEM_ZERO;
+    if (*flags & MEMF_HWALIGNED)
+        gpumemalign = 4096;
 
     VCMsg[0] = 9 * 4;
     VCMsg[1] = VCTAG_REQ;
     VCMsg[2] = VCTAG_ALLOCMEM;
     VCMsg[3] = 4 * 3;
     VCMsg[4] = size;
-    VCMsg[5] = 0;
+    VCMsg[5] = gpumemalign;
     VCMsg[6] = gpumemflags;
 
     VCMsg[7] = 0;
