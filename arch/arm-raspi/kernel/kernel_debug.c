@@ -35,6 +35,9 @@ inline void putByte(uint8_t chr)
 
 int krnPutC(int chr, struct KernelBase *KernelBase)
 {
+    if (chr == 0x03)
+        _KrnPutC = NULL;
+
     if (_KrnPutC)
         _KrnPutC(chr);
 
