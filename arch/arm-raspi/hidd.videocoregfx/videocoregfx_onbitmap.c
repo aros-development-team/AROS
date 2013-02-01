@@ -160,7 +160,7 @@ VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Upda
     D(bug("[VideoCoreGfx] VideoCoreGfx.OnBitMap::UpdateRect(%d, %d, %d, %d), bitmap 0x%p\n", msg->x, msg->y, msg->width, msg->height, o));
     if (data->disp) {
 //	LOCK_FRAMEBUFFER(XSD(cl));
-//        vesaDoRefreshArea(&XSD(cl)->data, data, msg->x, msg->y, msg->x + msg->width, msg->y + msg->height);
+//        FNAME_HW(RefreshArea)(&XSD(cl)->data, data, msg->x, msg->y, msg->x + msg->width, msg->y + msg->height);
 //	UNLOCK_FRAMEBUFFER(XSD(cl));
     }
 }

@@ -36,17 +36,8 @@ struct Box
     int x2, y2;
 };
 
-struct HWRegs {
-    UBYTE clt[768];
-};
-
-/* Only include videocoregfx_hardware.h now so that struct Box is known */
-
-#include "videocoregfx_hardware.h"
-
 struct BitmapData {
-	struct HWRegs       regs;
-	struct HWData       *data;
+	APTR                data;
 	UBYTE               *VideoData;             /* Pointing to video data */
 	ULONG               width;                  /* Width of bitmap */
 	ULONG               height;                 /* Height of bitmap */

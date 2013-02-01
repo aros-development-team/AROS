@@ -94,8 +94,7 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 }
 
 /*********  BitMap::PutPixel()  ***************************/
-
-STATIC VOID putpixel(struct BitmapData *data, LONG x, LONG y, HIDDT_Pixel pixel)
+/*tpixel(struct BitmapData *data, LONG x, LONG y, HIDDT_Pixel pixel)
 {
     ULONG offset;
 
@@ -141,9 +140,10 @@ VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPix
 //    refreshAreaVideoCore(data->data, &box);
 #endif
     return;
-}
+}*/
 
 /*********  BitMap::GetPixel()  *********************************/
+/*
 HIDDT_Pixel MNAME_BM(GetPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     HIDDT_Pixel pixel = 0;
@@ -163,7 +163,7 @@ HIDDT_Pixel MNAME_BM(GetPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
         pixel = *((ULONG*)(data->VideoData + offset));
     return pixel;
 }
-
+*/
 #if 0
 
 /*********  BitMap::DrawPixel()  ***************************/
@@ -176,7 +176,7 @@ VOID MNAME_BM(DrawPixel)(OOP_Class *cl,OOP_ Object *o, struct pHidd_BitMap_DrawP
 #endif
 
 /*********  BitMap::PutImage()  ***************************/
-
+/*
 VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
@@ -241,9 +241,9 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 }
-
+*/
 /*********  BitMap::GetImage()  ***************************/
-
+/*
 VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
@@ -297,10 +297,10 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
-}
+}*/
 
 /*********  BitMap::PutImageLUT()  ***************************/
-
+/*
 VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
@@ -357,17 +357,17 @@ VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
 //    refreshAreaVideoCore(data->data, &box);
 #endif
 }
-
+*/
 /*********  BitMap::GetImageLUT()  ***************************/
-
+/*
 VOID MNAME_BM(GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
     D(bug("[VideoCoreGfx] VideoCoreGfx.BitMap::GetImageLUT()\n"));
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
-
+*/
 /*********  BitMap::FillRect()  ***************************/
-
+/*
 VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
 #ifdef OnBitmap
@@ -385,8 +385,9 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 #endif
 }
-
+*/
 /*** BitMap::BlitColorExpansion() **********************************************/
+/*
 VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
@@ -433,7 +434,7 @@ VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 //    refreshAreaVideoCore(data->data, &box);
 #endif
 }
-
+*/
 /*** BitMap::Get() *******************************************/
 
 VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
