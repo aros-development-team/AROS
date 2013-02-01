@@ -2,16 +2,16 @@
 include $(TOP)/config/make.cfg
 
 FILES	:=	\
-	videocore_init \
-	videocore_class \
-        videocore_memory \
-        videocore_sdtv \
-        videocore_hdmi \
-	videocore_hardware \
-	videocore_offbitmap \
-	videocore_onbitmap
+	videocoregfx_init \
+	videocoregfx_class \
+        videocoregfx_memory \
+        videocoregfx_sdtv \
+        videocoregfx_hdmi \
+	videocoregfx_hardware \
+	videocoregfx_offbitmap \
+	videocoregfx_onbitmap
 
-%build_module mmake=hidd-videocore \
-  modname=videocore modtype=hidd \
+%build_module mmake=hidd-videocoregfx \
+  modname=videocoregfx modtype=hidd \
   files=$(FILES) \
   uselibs="hiddstubs oop"
