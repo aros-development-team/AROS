@@ -9,7 +9,7 @@
 #include <exec/alerts.h>
 #include <string.h>    // memset() prototype
 
-#include "videocore_hardware.h"
+#include "videocoregfx_hardware.h"
 
 #ifdef OnBitmap
 /*********  BitMap::Clear()  *************************************/

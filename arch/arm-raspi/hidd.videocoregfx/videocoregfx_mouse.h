@@ -1,5 +1,5 @@
-#ifndef _VideoCore_MOUSE_H
-#define _VideoCore_MOUSE_H
+#ifndef _VIDEOCOREGFX_MOUSE_H
+#define _VIDEOCOREGFX_MOUSE_H
 
 #include <hidd/graphics.h>
 
@@ -13,4 +13,4 @@ struct MouseData {
 	LONG visible;
 };
 
-#endif /* _VideoCore_MOUSE_H */
+#endif /* _VIDEOCOREGFX_MOUSE_H */
