@@ -36,7 +36,7 @@
 
 void *mh_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 {
-    D(bug("[VideoCore] mh_Alloc(%d bytes, 0x%08x)\n", size, flags));
+    D(bug("[VideoCoreGfx] %s(%d bytes, 0x%08x)\n", __PRETTY_FUNCTION__, size, flags));
 
     return NULL;
 }
@@ -45,12 +45,12 @@ void *mh_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     returns a handle on a block of gpu memory. you cannot directly access this
     memory unless it is locked, since it may be moved around by the gpu.
 */
-void *videocore_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
+void *FNAME_SUPPORT(Alloc)(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 {
-    struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
+    struct VideoCoreGfx_staticdata *xsd = (APTR)mhe->mhe_UserData;
     ULONG gpumemflags = VCMEM_NORMAL, gpumemalign = 0;
 
-    D(bug("[VideoCore] videocore_Alloc(%d bytes, 0x%08x)\n", size, flags));
+    D(bug("[VideoCoreGfx] %s(%d bytes, 0x%08x)\n", __PRETTY_FUNCTION__, size, flags));
 
     if (!(*flags & MEMF_PUBLIC))
         gpumemflags = VCMEM_L1NONALLOCATING | VCMEM_NOINIT | VCMEM_LAZYLOCK;
@@ -74,7 +74,7 @@ void *videocore_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, xsd->vcsd_VCMBoxMessage);
     if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == xsd->vcsd_VCMBoxMessage)
     {
-        D(bug("[VideoCore] videocore_Alloc: Allocated %d bytes, memhandle @ 0x%p\n", xsd->vcsd_VCMBoxMessage[4], xsd->vcsd_VCMBoxMessage[7]));
+        D(bug("[VideoCoreGfx] %s: Allocated %d bytes, memhandle @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_VCMBoxMessage[4], xsd->vcsd_VCMBoxMessage[7]));
         
         mhe->mhe_MemHeader.mh_Free -= size;
         
@@ -87,11 +87,11 @@ void *videocore_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     Lock the gpu memory represented by the memhandle,
     and return a physical pointer to it..
 */
-void *videocore_LockMem(struct MemHeaderExt *mhe, void *memhandle)
+void *FNAME_SUPPORT(LockMem)(struct MemHeaderExt *mhe, void *memhandle)
 {
-    struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
+    struct VideoCoreGfx_staticdata *xsd = (APTR)mhe->mhe_UserData;
 
-    D(bug("[VideoCore] videocore_LockMem(memhandle @ 0x%p)\n", memhandle));
+    D(bug("[VideoCoreGfx] %s(memhandle @ 0x%p)\n", __PRETTY_FUNCTION__, memhandle));
     
     xsd->vcsd_VCMBoxMessage[0] = 7 * 4;
     xsd->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
@@ -106,7 +106,7 @@ void *videocore_LockMem(struct MemHeaderExt *mhe, void *memhandle)
     VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, xsd->vcsd_VCMBoxMessage);
     if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == xsd->vcsd_VCMBoxMessage)
     {
-        D(bug("[VideoCore] videocore_LockMem: Memory locked @ 0x%p\n", xsd->vcsd_VCMBoxMessage[5]));
+        D(bug("[VideoCoreGfx] %s: Memory locked @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_VCMBoxMessage[5]));
         return xsd->vcsd_VCMBoxMessage[5];
     }
     return NULL;
@@ -115,11 +115,11 @@ void *videocore_LockMem(struct MemHeaderExt *mhe, void *memhandle)
 /*
     Unlock the gpu memory represented by the memhandle.
 */
-void *videocore_UnLockMem(struct MemHeaderExt *mhe, void *memhandle)
+void *FNAME_SUPPORT(UnLockMem)(struct MemHeaderExt *mhe, void *memhandle)
 {
-    struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
+    struct VideoCoreGfx_staticdata *xsd = (APTR)mhe->mhe_UserData;
 
-    D(bug("[VideoCore] videocore_UnLockMem(memhandle @ 0x%p)\n", memhandle));
+    D(bug("[VideoCoreGfx] %s(memhandle @ 0x%p)\n", __PRETTY_FUNCTION__, memhandle));
     
     xsd->vcsd_VCMBoxMessage[0] = 7 * 4;
     xsd->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
@@ -134,7 +134,7 @@ void *videocore_UnLockMem(struct MemHeaderExt *mhe, void *memhandle)
     VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, xsd->vcsd_VCMBoxMessage);
     if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == xsd->vcsd_VCMBoxMessage)
     {
-        D(bug("[VideoCore] videocore_UnLockMem: Memory unlocked [status %08x]\n", xsd->vcsd_VCMBoxMessage[5]));
+        D(bug("[VideoCoreGfx] %s: Memory unlocked [status %08x]\n", __PRETTY_FUNCTION__, xsd->vcsd_VCMBoxMessage[5]));
         return xsd->vcsd_VCMBoxMessage[5];
     }
     return NULL;
@@ -142,17 +142,17 @@ void *videocore_UnLockMem(struct MemHeaderExt *mhe, void *memhandle)
 
 void mh_Free(struct MemHeaderExt *mhe, APTR  mem,  IPTR size)
 {
-    D(bug("[VideoCore] mh_Free(0x%p)\n", mem));
+    D(bug("[VideoCoreGfx] %s(0x%p)\n", __PRETTY_FUNCTION__, mem));
 }
 
 /*
     Frees the gpu memory associated with the handle.
 */
-void videocore_Free(struct MemHeaderExt *mhe, APTR  memhandle, IPTR size)
+void FNAME_SUPPORT(Free)(struct MemHeaderExt *mhe, APTR  memhandle, IPTR size)
 {
-    struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
+    struct VideoCoreGfx_staticdata *xsd = (APTR)mhe->mhe_UserData;
 
-    D(bug("[VideoCore] videocore_Free(memhandle @ 0x%p)\n", memhandle));
+    D(bug("[VideoCoreGfx] %s(memhandle @ 0x%p)\n", __PRETTY_FUNCTION__, memhandle));
 
     xsd->vcsd_VCMBoxMessage[0] = 7 * 4;
     xsd->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
@@ -169,41 +169,41 @@ void videocore_Free(struct MemHeaderExt *mhe, APTR  memhandle, IPTR size)
     {
         mhe->mhe_MemHeader.mh_Free += size;
 
-        D(bug("[VideoCore] videocore_Free: Memory freed [status %08x]\n", xsd->vcsd_VCMBoxMessage[5]));
+        D(bug("[VideoCoreGfx] %s: Memory freed [status %08x]\n", __PRETTY_FUNCTION__, xsd->vcsd_VCMBoxMessage[5]));
     }
 }
 
 void *mh_AllocAbs(struct MemHeaderExt *mhe, IPTR size, APTR  mem)
 {
-    D(bug("[VideoCore] mh_AllocAbs(0x%p, %d bytes)\n", mem, size));
+    D(bug("[VideoCoreGfx] %s(0x%p, %d bytes)\n", __PRETTY_FUNCTION__, mem, size));
 
     return NULL;
 }
 
 void *mh_ReAlloc(struct MemHeaderExt *mhe, APTR  old,  IPTR size)
 {
-    D(bug("[VideoCore] mh_ReAlloc(0x%p, %d bytes)\n", old, size));
+    D(bug("[VideoCoreGfx] %s(0x%p, %d bytes)\n", __PRETTY_FUNCTION__, old, size));
 
     return NULL;
 }
 
 ULONG mh_Avail(struct MemHeaderExt *mhe, ULONG flags)
 {
-    struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
+    struct VideoCoreGfx_staticdata *xsd = (APTR)mhe->mhe_UserData;
 
-    D(bug("[VideoCore] mh_Avail(0x%08x)\n", flags));
+    D(bug("[VideoCoreGfx] %s(0x%08x)\n", __PRETTY_FUNCTION__, flags));
 
     return mhe->mhe_MemHeader.mh_Free;
 }
 
-int videocore_InitMem(void *memstart, int memlength, struct VideoCoreBase *VideoCoreBase)
+int FNAME_SUPPORT(InitMem)(void *memstart, int memlength, struct VideoCoreGfxBase *VideoCoreGfxBase)
 {
-    struct VideoCore_staticdata *xsd = &LIBBASE->vsd;
+    struct VideoCoreGfx_staticdata *xsd = &LIBBASE->vsd;
     struct MemChunk *mc = memstart;
 
     InitSemaphore(&xsd->vcsd_GPUMemLock);
 
-    D(bug("[VideoCore] videocore_MemoryInit: VideoCore GPU Memory @ 0x%p [%dKB]\n", memstart, memlength >> 10));
+    bug("[VideoCoreGfx] VideoCore GPU Memory @ 0x%p [%dKB]\n", memstart, memlength >> 10);
 
     xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Node.ln_Type = NT_MEMORY;
     xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Node.ln_Name = "VideoCore GPU Memory";
@@ -229,7 +229,7 @@ int videocore_InitMem(void *memstart, int memlength, struct VideoCoreBase *Video
     AddTail(&SysBase->MemList, (struct Node *)&xsd->vcsd_GPUMemManage);
     Enable();
 
-    D(bug("[VideoCore] videocore_MemoryInit: Memory Manager Initialised\n"));
+    bug("[VideoCoreGfx] Memory Manager Initialised\n");
 
     return TRUE;
 }

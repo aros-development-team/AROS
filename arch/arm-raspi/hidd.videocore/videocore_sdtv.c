@@ -8,12 +8,12 @@
 
 #include "videocore_class.h"
 
-int VideoCore_SDTV_SyncGen(struct List *modelist)
+int FNAME_SUPPORT(SDTV_SyncGen)(struct List *modelist)
 {
     struct DisplayMode *sdtv_mode;
     int sdtv_modecount = 0;
 
-    D(bug("[VideoCore] VideoCore_SDTV_SyncGen()\n"));
+    D(bug("[VideoCoreGfx] %s()\n", __PRETTY_FUNCTION__));
 
 #warning "TODO: check if an SDTV is attached"
     

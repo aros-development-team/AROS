@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define __OOP_NOATTRBASES__
@@ -38,10 +38,7 @@
 
 #define VCMBoxBase      xsd->vcsd_VCMBoxBase
 
-/*
- * The following two functions are candidates for inclusion into oop.library.
- */
-static void FreeAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
+static void FNAME_SUPPORT(FreeAttrBases)(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
 {
     ULONG i;
     
@@ -55,7 +52,7 @@ static void FreeAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
     }
 }
 
-static BOOL GetAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
+static BOOL FNAME_SUPPORT(GetAttrBases)(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
 {
     ULONG i;
 
@@ -64,7 +61,7 @@ static BOOL GetAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
 	bases[i] = OOP_ObtainAttrBase(iftable[i]);
 	if (!bases[i])
 	{
-	    FreeAttrBases(iftable, bases, i);
+	    FNAME_SUPPORT(FreeAttrBases)(iftable, bases, i);
 	    return FALSE;
 	}
     }
@@ -74,21 +71,21 @@ static BOOL GetAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
 
 static const STRPTR interfaces[] =
 {
+    IID_Hidd_VideoCoreGfx,
+    IID_Hidd_VideoCoreGfxBitMap,
     IID_Hidd_BitMap,
-    IID_Hidd_VideoCoreBitMap,
-    IID_Hidd_VideoCore,
     IID_Hidd_PixFmt,
     IID_Hidd_Sync,
     IID_Hidd_Gfx,
     IID_Hidd
 };
 
-static int VideoCore_Init(LIBBASETYPEPTR LIBBASE)
+static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    struct VideoCore_staticdata *xsd = &LIBBASE->vsd;
+    struct VideoCoreGfx_staticdata *xsd = &LIBBASE->vsd;
     int retval = FALSE;
     
-    if (!GetAttrBases(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM))
+    if (!FNAME_SUPPORT(GetAttrBases)(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM))
         goto failure;
 
     if (!(VCMBoxBase = OpenResource("vcmbox.resource")))
@@ -97,8 +94,8 @@ static int VideoCore_Init(LIBBASETYPEPTR LIBBASE)
     if (!(xsd->vcsd_VCMBoxMessage = AllocVec(sizeof(IPTR) * 2 * MAX_TAGS, MEMF_CLEAR)))
         goto failure;
 
-    D(bug("[VideoCore] Init: VideoCore Mailbox resource @ 0x%p\n", VCMBoxBase));
-    D(bug("[VideoCore] Init: VideoCore message buffer @ 0x%p\n", xsd->vcsd_VCMBoxMessage));
+    D(bug("[VideoCoreGfx] %s: VideoCore Mailbox resource @ 0x%p\n", __PRETTY_FUNCTION__, VCMBoxBase));
+    D(bug("[VideoCoreGfx] %s: VideoCore message buffer @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_VCMBoxMessage));
 
     
     xsd->vcsd_VCMBoxMessage[0] = 8 * 4;
@@ -115,9 +112,9 @@ static int VideoCore_Init(LIBBASETYPEPTR LIBBASE)
     VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, xsd->vcsd_VCMBoxMessage);
     if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == xsd->vcsd_VCMBoxMessage)
     {
-        if (videocore_InitMem(xsd->vcsd_VCMBoxMessage[5], xsd->vcsd_VCMBoxMessage[6], LIBBASE))
+        if (FNAME_SUPPORT(InitMem)(xsd->vcsd_VCMBoxMessage[5], xsd->vcsd_VCMBoxMessage[6], LIBBASE))
         {
-            D(bug("[VideoCore] Init: VideoCore GPU Found\n"));
+            bug("[VideoCoreGfx] VideoCore GPU Found\n");
 
             initVideoCoreGfxHW((APTR)xsd);
 
@@ -125,7 +122,7 @@ static int VideoCore_Init(LIBBASETYPEPTR LIBBASE)
             {
                 if (AddDisplayDriver(LIBBASE->vsd.vcsd_VideoCoreGfxClass, NULL, DDRV_BootMode, TRUE, TAG_DONE) == DD_OK)
                 {
-                    D(bug("[VideoCore] Init: Display Driver registered\n"));
+                    bug("[VideoCoreGfx] BootMode Display Driver Registered\n");
 
                     /* We use ourselves, and no one else does */
                     LIBBASE->library.lib_OpenCnt = 1;
@@ -139,14 +136,14 @@ static int VideoCore_Init(LIBBASETYPEPTR LIBBASE)
 failure:
     if (!(retval))
     {
-        D(bug("[VideoCore] Init: No VideoCore GPU Found\n"));
+        bug("[VideoCoreGfx] No VideoCore GPU Found\n");
 
         FreeVec(xsd->vcsd_VCMBoxMessage);
 
-        FreeAttrBases(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM);
+        FNAME_SUPPORT(FreeAttrBases)(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM);
     }
 
     return retval;
 }
 
-ADD2INITLIB(VideoCore_Init, 0)
+ADD2INITLIB(FNAME_SUPPORT(Init), 0)

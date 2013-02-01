@@ -2,7 +2,7 @@
     Copyright © 2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Offscreen bitmap class for VideoCore hidd.
+    Desc: VideoCore Gfx Offscreen Bitmap Class.
     Lang: English.
 */
 
@@ -28,8 +28,8 @@
 
 #include LC_LIBDEFS_FILE
 
-#define MNAME_ROOT(x) VideoCoreOffBM__Root__ ## x
-#define MNAME_BM(x) VideoCoreOffBM__Hidd_BitMap__ ## x
+#define MNAME_ROOT(x) VideoCoreGfxOffBM__Root__ ## x
+#define MNAME_BM(x) VideoCoreGfxOffBM__Hidd_BitMap__ ## x
 
 #include "videocore_bitmap_common.c"
 
@@ -37,7 +37,7 @@
 
 OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    EnterFunc(bug("VideoCore.BitMap::New()\n"));
+    EnterFunc(bug("VideoCoreGfx.OffBitMap::New()\n"));
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
@@ -85,7 +85,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             data->data = &XSD(cl)->data;
             if (XSD(cl)->activecallback)
                 XSD(cl)->activecallback(XSD(cl)->callbackdata, o, TRUE);
-            ReturnPtr("VideoCore.BitMap::New()", OOP_Object *, o);
+            ReturnPtr("VideoCoreGfx.OffBitMap::New", OOP_Object *, o);
         } /* data->VideoData */
         {
             OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
@@ -93,7 +93,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         }
         o = NULL;
     } /* o */
-    ReturnPtr("VideoCore.BitMap::New()", OOP_Object *, o);
+    ReturnPtr("VideoCoreGfx.OffBitMap::New", OOP_Object *, o);
 }
 
 /**********  Bitmap::Dispose()  ***********************************/
@@ -102,9 +102,9 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
-    EnterFunc(bug("VideoCore.BitMap::Dispose()\n"));
+    EnterFunc(bug("VideoCoreGfx.OffBitMap::Dispose()\n"));
     if (data->VideoData)
         FreeVec(data->VideoData);
     OOP_DoSuperMethod(cl, o, msg);
-    ReturnVoid("VideoCore.BitMap::Dispose");
+    ReturnVoid("VideoCoreGfx.OffBitMap::Dispose");
 }

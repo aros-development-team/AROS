@@ -9,23 +9,23 @@
 #include <hidd/graphics.h>
 #include "videocore_mouse.h"
 
-/* This attribute interface is common for both vga onscreen and offscreen bitmap
-   classes, although they don't have a common superclass */
+/* This attribute interface is common for both onscreen and offscreen bitmap
+   classes, although they don't share a common superclass */
 
-#define IID_Hidd_VideoCoreBitMap "hidd.bitmap.videocore"
+#define IID_Hidd_VideoCoreGfxBitMap             "hidd.bitmap.videocore"
 
 
 enum {
-	aoHidd_VideoCoreBitMap_Drawable,
-	num_Hidd_VideoCoreBitMap_Attrs
+    aoHidd_VideoCoreGfxBitMap_Drawable,
+    num_Hidd_VideoCoreGfxBitMap_Attrs
 };
 
-#define aHidd_VideoCoreBitMap_Drawable	(HiddVideoCoreBitMapAttrBase + aoHidd_VideoCoreBitMap_Drawable)
+#define aHidd_VideoCoreGfxBitMap_Drawable	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Drawable)
 
-/* This structure is used for both onscreen and offscreen VGA bitmaps !! */
+/* This structure is used for both onscreen and offscreen bitmaps !! */
 
-#define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
-#define IS_VideoCoreBM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddVideoCoreBitMapAttrBase) < num_Hidd_VideoCoreBitMap_Attrs)
+#define IS_BM_ATTR(attr, idx)                   ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
+#define IS_VideoCoreGfxBM_ATTR(attr, idx)       ( ( (idx) = (attr) - HiddVideoCoreGfxBitMapAttrBase) < num_Hidd_VideoCoreGfxBitMap_Attrs)
 
 /* This structure is used as instance data for both the
    onbitmap and offbitmap classes. */
@@ -37,7 +37,7 @@ struct Box
 };
 
 struct HWRegs {
-	UBYTE clt[768];
+    UBYTE clt[768];
 };
 
 /* Only include videocore_hardware.h now so that struct Box is known */
