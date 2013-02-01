@@ -242,11 +242,7 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         msg = &gfxmsg_New;
 
         D(bug("[VideoCore] Creating object (cl:0x%p, o:0x%p, msg:0x%p\n", cl, o, msg));
-        D(bug("[VideoCore]    msg->attrList : 0x%p\n", gfxmsg_New.attrList));
-        D(bug("[VideoCore]    attrList[0].tag : 0x%p\n", gfxmsg_tags[0].ti_Tag));
-        D(bug("[VideoCore]    attrList[0].dat : 0x%p\n", gfxmsg_tags[0].ti_Data));
-        D(bug("[VideoCore]    attrList[1].tag : 0x%p\n", gfxmsg_tags[1].ti_Tag));
-        D(bug("[VideoCore]    attrList[1].dat : 0x%p\n", gfxmsg_tags[1].ti_Data));
+
         if ((self = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) != NULL)
         {
             D(bug("[VideoCore] Storing reference to self in staticdata\n"));

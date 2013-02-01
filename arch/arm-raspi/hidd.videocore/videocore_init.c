@@ -145,10 +145,7 @@ failure:
 
         FreeAttrBases(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM);
     }
-    
-    while (1)
-        asm volatile("mov r0, r0\n");
-    
+
     return retval;
 }
 
