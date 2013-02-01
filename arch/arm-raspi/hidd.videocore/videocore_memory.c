@@ -41,17 +41,19 @@ void *mh_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 void *videocore_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 {
     struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
-    ULONG gpumemflags = VCMEM_NONALLOCATING;
+    ULONG gpumemflags = VCMEM_NORMAL;
 
     D(bug("[VideoCore] videocore_Alloc(%d bytes, 0x%08x)\n", size, flags));
 
+    if (*flags & MEMF_PRIVATE)
+        gpumemflags = VCMEM_L1NONALLOCATING | VCMEM_NOINIT | VCMEM_LAZYLOCK
     if (*flags & MEMF_CLEAR)
         gpumemflags |= VCMEM_ZERO;
 
     VCMsg[0] = 9 * 4;
     VCMsg[1] = VCTAG_REQ;
     VCMsg[2] = VCTAG_ALLOCMEM;
-    VCMsg[3] = 4;
+    VCMsg[3] = 4 * 3;
     VCMsg[4] = size;
     VCMsg[5] = 0;
     VCMsg[6] = gpumemflags;
@@ -76,8 +78,10 @@ void *videocore_Alloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     Lock the gpu memory represented by the memhandle,
     and return a physical pointer to it..
 */
-void *videocore_LockMem(void *memhandle)
+void *videocore_LockMem(struct MemHeaderExt *mhe, void *memhandle)
 {
+    struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
+
     D(bug("[VideoCore] videocore_LockMem(memhandle @ 0x%p)\n", memhandle));
     
     VCMsg[0] = 7 * 4;
@@ -102,8 +106,10 @@ void *videocore_LockMem(void *memhandle)
 /*
     Unlock the gpu memory represented by the memhandle.
 */
-void *videocore_UnLockMem(void *memhandle)
+void *videocore_UnLockMem(struct MemHeaderExt *mhe, void *memhandle)
 {
+    struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
+
     D(bug("[VideoCore] videocore_UnLockMem(memhandle @ 0x%p)\n", memhandle));
     
     VCMsg[0] = 7 * 4;
@@ -175,7 +181,6 @@ void *mh_ReAlloc(struct MemHeaderExt *mhe, APTR  old,  IPTR size)
 ULONG mh_Avail(struct MemHeaderExt *mhe, ULONG flags)
 {
     struct VideoCore_staticdata *xsd = (APTR)mhe->mhe_UserData;
-    ULONG size = 0;
 
     D(bug("[VideoCore] mh_Avail(0x%08x)\n", flags));
 
