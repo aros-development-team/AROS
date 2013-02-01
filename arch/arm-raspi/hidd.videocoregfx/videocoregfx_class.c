@@ -30,6 +30,7 @@
 
 #include "videocoregfx_class.h"
 #include "videocoregfx_hardware.h"
+#include "videocoregfx_bitmap.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -467,30 +468,30 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
         ULONG xcnt;
         LONG offset;
         /* get src/dest video data start addresses and skip sizes */
-        if (srcbd->VideoData == srcbd->data->vrambase)
+        if (srcbd->VideoData == VCDATA(srcbd)->vrambase)
         {
-            offset = (msg->srcX*srcbd->bytesperpix)+(msg->srcY*srcbd->data->bytesperline);
-            srestadd = (srcbd->data->bytesperline - (msg->width*srcbd->bytesperpix));
+            offset = (msg->srcX * srcbd->bytesperpix) + (msg->srcY * VCDATA(srcbd)->bytesperline);
+            srestadd = (VCDATA(srcbd)->bytesperline - (msg->width * srcbd->bytesperpix));
 //            displayCursorVideoCore(&XSD(cl)->data, 0);
             XSD(cl)->mouse.visible = 0;
         }
         else
         {
-            offset = (msg->srcX+(msg->srcY*srcbd->width))*srcbd->bytesperpix;
-            srestadd = (srcbd->width - msg->width)*srcbd->bytesperpix;
+            offset = (msg->srcX + (msg->srcY * srcbd->width)) * srcbd->bytesperpix;
+            srestadd = (srcbd->width - msg->width) * srcbd->bytesperpix;
         }
         sbuffer = srcbd->VideoData+offset;
-        if (dstbd->VideoData == dstbd->data->vrambase)
+        if (dstbd->VideoData == VCDATA(dstbd)->vrambase)
         {
-            offset = (msg->destX*dstbd->bytesperpix)+(msg->destY*dstbd->data->bytesperline);
-            drestadd = (dstbd->data->bytesperline - (msg->width*dstbd->bytesperpix));
+            offset = (msg->destX * dstbd->bytesperpix) + (msg->destY * VCDATA(dstbd)->bytesperline);
+            drestadd = (VCDATA(dstbd)->bytesperline - (msg->width*dstbd->bytesperpix));
 //            displayCursorVideoCore(&XSD(cl)->data, 0);
             XSD(cl)->mouse.visible = 0;
         }
         else
         {
-            offset = (msg->destX+(msg->destY*dstbd->width))*dstbd->bytesperpix;
-            drestadd = (dstbd->width - msg->width)*dstbd->bytesperpix;
+            offset = (msg->destX + (msg->destY * dstbd->width)) * dstbd->bytesperpix;
+            drestadd = (dstbd->width - msg->width) * dstbd->bytesperpix;
         }
         dbuffer = dstbd->VideoData+offset;
         switch (mode)
@@ -546,13 +547,13 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
                 sbuffer += srestadd;
                 dbuffer += drestadd;
             }
-            if (dstbd->VideoData == dstbd->data->vrambase)
+            if (dstbd->VideoData == VCDATA(dstbd)->vrambase)
             {
                 box.x1 = msg->destX;
                 box.y1 = msg->destY;
-                box.x2 = box.x1+msg->width-1;
-                box.y2 = box.y1+msg->height-1;
-//                refreshAreaVideoCore(dstbd->data, &box);
+                box.x2 = box.x1+msg->width - 1;
+                box.y2 = box.y1+msg->height - 1;
+//                refreshAreaVideoCore(VCDATA(dstbd), &box);
             }
             break;
         default:
@@ -566,121 +567,4 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
         }
     }
     ReturnVoid("VideoCore.BitMap::CopyBox");
-}
-
-BOOL MNAME_GFX(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
-{
-    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
-
-    if (msg->shape == NULL)
-    {
-//        displayCursorVideoCore(&XSD(cl)->data, 0);
-        xsd->mouse.oopshape = NULL;
-        if (xsd->mouse.shape != NULL)
-            FreeVec(xsd->mouse.shape);
-        xsd->mouse.shape = NULL;
-        return TRUE;
-    }
-    else
-    {
-        OOP_Object *pfmt;
-        OOP_Object *colmap;
-        HIDDT_StdPixFmt pixfmt;
-        HIDDT_Color color;
-        IPTR tmp;
-        OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &tmp);
-        xsd->mouse.width = tmp;
-        OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &tmp);
-        xsd->mouse.height = tmp;
-        OOP_GetAttr(msg->shape, aHidd_BitMap_PixFmt, (IPTR *)&pfmt);
-        OOP_GetAttr(pfmt, aHidd_PixFmt_StdPixFmt, (IPTR *)&pixfmt);
-        OOP_GetAttr(msg->shape, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
-        xsd->mouse.oopshape = msg->shape;
-#if 0
-        xsd->mouse.shape = cursor_shape;
-        xsd->mouse.width = 11;
-        xsd->mouse.height = 11;
-//        defineCursorVideoCore(&XSD(cl)->data, &xsd->mouse);
-        return TRUE;
-#else
-        /* convert shape to videocore needs */
-        if (xsd->mouse.shape != NULL)
-            FreeVec(xsd->mouse.shape);
-//        xsd->mouse.shape = AllocVec(SVGA_PIXMAP_SIZE(xsd->mouse.width, xsd->mouse.height, VCDATA(xsd)->bitsperpixel)*4, MEMF_PUBLIC);
-        if (xsd->mouse.shape != NULL)
-        {
-            LONG xcnt;
-            LONG ycnt;
-            LONG linebytes;
-            LONG bytecnt;
-            LONG pixelbytes;
-            UBYTE *shape;
-//            linebytes = SVGA_PIXMAP_SCANLINE_SIZE(xsd->mouse.width, VCDATA(xsd)->bitsperpixel)*4;
-            pixelbytes = (VCDATA(xsd)->bitsperpixel+3)/8;
-            shape = xsd->mouse.shape;
-            for (ycnt=0;ycnt<xsd->mouse.height;ycnt++)
-            {
-                for (xcnt=0;xcnt<xsd->mouse.width;xcnt++)
-                {
-                    HIDDT_Pixel pixel;
-                    pixel = HIDD_BM_GetPixel(msg->shape, xcnt, ycnt);
-                    if (pixfmt == vHidd_StdPixFmt_LUT8)
-                    {
-                        if (HIDD_CM_GetColor(colmap, pixel, &color))
-                        {
-                            pixel =
-                                (
-                                    (((color.red  <<16)>>mask_to_shift(VCDATA(xsd)->redmask))   & VCDATA(xsd)->redmask  )+
-                                    (((color.green<<16)>>mask_to_shift(VCDATA(xsd)->greenmask)) & VCDATA(xsd)->greenmask)+
-                                    (((color.blue <<16)>>mask_to_shift(VCDATA(xsd)->bluemask))  & VCDATA(xsd)->bluemask )
-                                );
-                        }
-                    }
-                    if (pixelbytes == 1)
-                    {
-                        *((UBYTE *)shape) = (UBYTE)pixel;
-                        shape++;
-                    }
-                    else if (pixelbytes == 2)
-                    {
-                        *((UWORD *)shape) = (UWORD)pixel;
-                        shape += 2;
-                    }
-                    else if (pixelbytes == 4)
-                    {
-                        *((ULONG *)shape) = (ULONG)pixel;
-                        shape += 4;
-                    }
-                }
-                for (bytecnt=linebytes-(xsd->mouse.width*pixelbytes);bytecnt;bytecnt--)
-                {
-                    *((UBYTE *)shape) = 0; /* fill up to long boundary */
-                    shape++;
-                }
-            }
-//            defineCursorVideoCore(&XSD(cl)->data, &xsd->mouse);
-            return TRUE;
-        }
-#endif
-    }
-    return FALSE;
-}
-
-BOOL MNAME_GFX(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
-{
-    XSD(cl)->mouse.x = msg->x;
-    XSD(cl)->mouse.y = msg->y;
-    if (XSD(cl)->mouse.x<0)
-        XSD(cl)->mouse.x=0;
-    if (XSD(cl)->mouse.y<0)
-        XSD(cl)->mouse.y=0;
-    /* TODO: check visible width/height */
-//    moveCursorVideoCore(&XSD(cl)->data, msg->x, msg->y);
-    return TRUE;
-}
-
-VOID MNAME_GFX(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
-{
-    XSD(cl)->mouse.visible = msg->visible;
-//    displayCursorVideoCore(&XSD(cl)->data, msg->visible ? 1 : 0);
 }

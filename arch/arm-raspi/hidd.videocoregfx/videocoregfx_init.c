@@ -116,7 +116,7 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
         {
             bug("[VideoCoreGfx] VideoCore GPU Found\n");
 
-            initVideoCoreGfxHW((APTR)xsd);
+            FNAME_HW(InitGfxHW)((APTR)xsd);
 
             if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41)) != NULL)
             {

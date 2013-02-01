@@ -11,7 +11,7 @@
 #include <exec/nodes.h>
 #include <exec/types.h>
 
-#include "videocoregfx_bitmap.h"
+#include "videocoregfx_hardware.h"
 
 #define IID_Hidd_VideoCoreGfx  "hidd.gfx.videocore"
 #define CLID_Hidd_VideoCoreGfx "hidd.gfx.videocore"
