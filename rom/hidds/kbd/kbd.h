@@ -10,10 +10,10 @@ struct kbd_data
 
 struct kbd_staticdata
 {
-    OOP_AttrBase	hiddKbdAB;
-    OOP_Class		*kbdClass;
+    OOP_AttrBase        hiddKbdAB;
+    OOP_Class           *kbdClass;
 
-    struct MinList	callbacks;
+    struct MinList      callbacks;
 
     BPTR                cs_SegList;
     struct Library     *cs_OOPBase;
@@ -21,8 +21,8 @@ struct kbd_staticdata
 
 struct kbdbase
 {
-    struct Library 		LibNode;
-    struct kbd_staticdata	csd;
+    struct Library              LibNode;
+    struct kbd_staticdata       csd;
 };
 
 #define CSD(cl) (&((struct kbdbase *)cl->UserData)->csd)
