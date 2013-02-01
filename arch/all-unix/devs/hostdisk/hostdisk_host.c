@@ -101,7 +101,7 @@ ULONG Host_Open(struct unit *Unit)
     AROS_HOST_BARRIER
     err = *hdskBase->errnoPtr;
 
-    if (err == EBUSY)
+    if (err == EBUSY || err == EROFS)
     {
         /* This allows to work on Darwin, at least in read-only mode */
         D(bug("hostdisk: EBUSY, retrying with read-only access\n", Unit->filename, Unit->file, err));
