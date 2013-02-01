@@ -13,13 +13,13 @@
 
 #include "videocore_bitmap.h"
 
-#define IID_Hidd_VideoCore  "hidd.gfx.videocore"
-#define CLID_Hidd_VideoCore "hidd.gfx.videocore"
+#define IID_Hidd_VideoCoreGfx  "hidd.gfx.videocore"
+#define CLID_Hidd_VideoCoreGfx "hidd.gfx.videocore"
 
 #define MAX_TAGS        64
 #define ATTRBASES_NUM   7
 
-struct VideoCore_staticdata {
+struct VideoCoreGfx_staticdata {
         APTR                    vcsd_VCMBoxBase;
         unsigned int            *vcsd_VCMBoxMessage;
 
@@ -27,12 +27,14 @@ struct VideoCore_staticdata {
         struct MemHeaderExt     vcsd_GPUMemManage;
 
         OOP_Class               *vcsd_VideoCoreGfxClass;
+	OOP_Object              *vcsd_VideoCoreGfxInstance;
+	OOP_Class               *vcsd_VideoCoreGfxOnBMClass;
+	OOP_Class               *vcsd_VideoCoreGfxOffBMClass;
+
         OOP_AttrBase	        vcsd_attrBases[ATTRBASES_NUM];
 
 	struct MemHeader mh;
-	OOP_Class *videocoreonbmclass;
-	OOP_Class *videocoreoffbmclass;
-	OOP_Object *videocorehidd;
+
 	OOP_Object *card;
 
 	struct BitmapData *visible;
@@ -42,11 +44,11 @@ struct VideoCore_staticdata {
 	APTR                    data;
 };
 
-struct VideoCoreBase
+struct VideoCoreGfxBase
 {
     struct Library library;
     
-    struct VideoCore_staticdata vsd;    
+    struct VideoCoreGfx_staticdata vsd;    
 };
 
 struct DisplayMode
@@ -64,27 +66,29 @@ struct DisplayMode
     ULONG       dm_descr;
 };
 
-#define XSD(cl) (&((struct VideoCoreBase *)cl->UserData)->vsd)
+#define XSD(cl) (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)
 
+#undef HiddVideoCoreGfxAttrBase
+#undef HiddVideoCoreGfxBitMapAttrBase
 #undef HiddBitMapAttrBase
-#undef HiddVideoCoreBitMapAttrBase
-#undef HiddVideoCoreAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddGfxAttrBase
 #undef HiddAttrBase
 
 /* These must stay in the same order as interfaces[] array in videocore_init.c */
-#define HiddBitMapAttrBase               XSD(cl)->vcsd_attrBases[0]
-#define HiddVideoCoreBitMapAttrBase      XSD(cl)->vcsd_attrBases[1]
-#define HiddVideoCoreAttrBase            XSD(cl)->vcsd_attrBases[2]
+#define HiddVideoCoreGfxAttrBase         XSD(cl)->vcsd_attrBases[0]
+#define HiddVideoCoreGfxBitMapAttrBase   XSD(cl)->vcsd_attrBases[1]
+#define HiddBitMapAttrBase               XSD(cl)->vcsd_attrBases[2]
 #define HiddPixFmtAttrBase               XSD(cl)->vcsd_attrBases[3]
 #define HiddSyncAttrBase                 XSD(cl)->vcsd_attrBases[4]
 #define HiddGfxAttrBase                  XSD(cl)->vcsd_attrBases[5]
 #define HiddAttrBase                     XSD(cl)->vcsd_attrBases[6]
 
-int videocore_InitMem(void *, int, struct VideoCoreBase *);
-int VideoCore_SDTV_SyncGen(struct List *);
-int VideoCore_HDMI_SyncGen(struct List *);
+#define FNAME_SUPPORT(x) VideoCoreGfx__Support__ ## x
+
+int FNAME_SUPPORT(InitMem)(void *, int, struct VideoCoreGfxBase *);
+int FNAME_SUPPORT(SDTV_SyncGen)(struct List *);
+int FNAME_SUPPORT(HDMI_SyncGen)(struct List *);
 
 #endif /* _VIDEOCORE_CLASS_H */

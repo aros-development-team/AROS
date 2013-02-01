@@ -18,7 +18,7 @@ BOOL initVideoCoreGfxHW(APTR param0)
 {
     struct VideoCore_staticdata *xsd = param0;
 
-    D(bug("[VideoCore] initVideoCoreGfxHW()\n"));
+    D(bug("[VideoCoreGfx] initVideoCoreGfxHW()\n"));
 
     return TRUE;
 }

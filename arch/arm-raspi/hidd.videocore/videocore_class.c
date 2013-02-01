@@ -2,7 +2,7 @@
     Copyright © 2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Class for VideoCore.
+    Desc: VideoCore Gfx Hidd Class.
     Lang: English.
 */
 
@@ -33,6 +33,9 @@
 
 #include LC_LIBDEFS_FILE
 
+#define MNAME_ROOT(x) VideoCoreGfx__Root__ ## x
+#define MNAME_GFX(x) VideoCoreGfx__Hidd_Gfx__ ## x
+
 STATIC ULONG mask_to_shift(ULONG mask)
 {
     ULONG i;
@@ -50,7 +53,7 @@ STATIC ULONG mask_to_shift(ULONG mask)
 
 #define SYNCTAGS_SIZE (11 * sizeof(struct TagItem))
 
-APTR VideoCore_GenModeArray(OOP_Class *cl, OOP_Object *o, struct List *modelist, struct TagItem *fmts)
+APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *modelist, struct TagItem *fmts)
 {
     APTR                modearray = NULL;
     struct TagItem      *ma_syncs = NULL, *ma_synctags = NULL;
@@ -66,14 +69,14 @@ APTR VideoCore_GenModeArray(OOP_Class *cl, OOP_Object *o, struct List *modelist,
         modecount++;
     }
 
-    D(bug("[VideoCore] VideoCore_GenModeArray: %d PixFmts, %d SyncModes\n", fmtcount, modecount));
+    D(bug("[VideoCoreGfx] %s: %d PixFmts, %d SyncModes\n", __PRETTY_FUNCTION__, fmtcount, modecount));
 
     /* build our table .. */
     if (fmtcount && modecount)
     {
         if ((modearray = AllocVec((fmtcount * sizeof(struct TagItem)) + (modecount + 1 * sizeof(struct TagItem)) + (modecount * SYNCTAGS_SIZE), MEMF_PUBLIC)) != NULL)
         {
-            D(bug("[VideoCore] VideoCore_GenModeArray: PixFmt's @ 0x%p\n", modearray));
+            D(bug("[VideoCoreGfx] %s: PixFmt's @ 0x%p\n", __PRETTY_FUNCTION__, modearray));
 
             struct TagItem *ma_fmts = (struct TagItem  *)modearray;
 
@@ -83,12 +86,12 @@ APTR VideoCore_GenModeArray(OOP_Class *cl, OOP_Object *o, struct List *modelist,
                 ma_fmts[i].ti_Data = fmts[i].ti_Data;
             }
             ma_syncs = (struct TagItem *)&ma_fmts[fmtcount];
-            D(bug("[VideoCore] VideoCore_GenModeArray: SyncMode's @ 0x%p\n", ma_syncs));
+            D(bug("[VideoCoreGfx] %s: SyncMode's @ 0x%p\n", __PRETTY_FUNCTION__, ma_syncs));
             ma_synctags = (struct TagItem  *)&ma_syncs[modecount + 1];
             i = 0;
             ForeachNode(modelist, modecurrent)
             {
-                D(bug("[VideoCore] VideoCore_GenModeArray: SyncMode #%d Tags @ 0x%p\n", i, ma_synctags));
+                D(bug("[VideoCoreGfx] %s: SyncMode #%d Tags @ 0x%p\n", __PRETTY_FUNCTION__, i, ma_synctags));
 
                 ma_syncs[i].ti_Tag = aHidd_Gfx_SyncTags;
                 ma_syncs[i].ti_Data = ma_synctags;
@@ -125,14 +128,14 @@ APTR VideoCore_GenModeArray(OOP_Class *cl, OOP_Object *o, struct List *modelist,
     return (APTR)modearray;
 }
 
-void VideoCore_DestroyModeArray(struct List *modelist, APTR modearray)
+void FNAME_SUPPORT(DestroyModeArray)(struct List *modelist, APTR modearray)
 {
-    D(bug("[VideoCore] VideoCore_DestroyModeArray()\n"));
+    D(bug("[VideoCoreGfx] %s()\n", __PRETTY_FUNCTION__));
 }
 
-OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct VideoCore_staticdata *xsd = XSD(cl);
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     struct List                 vc_modelist;
     APTR                        vc_modearray;
     OOP_Object                  *self = NULL;
@@ -222,16 +225,16 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         { TAG_DONE, 0UL }
     };
 
-    EnterFunc(bug("VideoCore::New()\n"));
+    EnterFunc(bug("VideoCoreGfx::New()\n"));
 
     NewList(&vc_modelist);
     
-    VideoCore_SDTV_SyncGen(&vc_modelist);
-    VideoCore_HDMI_SyncGen(&vc_modelist);
+    FNAME_SUPPORT(SDTV_SyncGen)(&vc_modelist);
+    FNAME_SUPPORT(HDMI_SyncGen)(&vc_modelist);
 
-    if ((vc_modearray = VideoCore_GenModeArray(cl, o, &vc_modelist, fmttags)) != NULL)
+    if ((vc_modearray = FNAME_SUPPORT(GenModeArray)(cl, o, &vc_modelist, fmttags)) != NULL)
     {
-        D(bug("[VideoCore] Generated Mode Array @ 0x%p\n", vc_modearray));
+        D(bug("[VideoCoreGfx] VideoCoreGfx::New: Generated Mode Array @ 0x%p\n", vc_modearray));
 
         gfxmsg_tags[0].ti_Tag = aHidd_Gfx_ModeTags;
         gfxmsg_tags[0].ti_Data = (IPTR)vc_modearray;
@@ -241,34 +244,34 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         gfxmsg_New.attrList = gfxmsg_tags;
         msg = &gfxmsg_New;
 
-        D(bug("[VideoCore] Creating object (cl:0x%p, o:0x%p, msg:0x%p\n", cl, o, msg));
+        D(bug("[VideoCoreGfx] VideoCoreGfx::New: Creating object (cl:0x%p, o:0x%p, msg:0x%p\n", cl, o, msg));
 
         if ((self = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) != NULL)
         {
-            D(bug("[VideoCore] Storing reference to self in staticdata\n"));
-            XSD(cl)->videocorehidd = self;
+            D(bug("[VideoCoreGfx] VideoCoreGfx::New: Storing reference to self in staticdata\n"));
+            XSD(cl)->vcsd_VideoCoreGfxInstance = self;
         }
-        VideoCore_DestroyModeArray(&vc_modelist, vc_modearray);
+        FNAME_SUPPORT(DestroyModeArray)(&vc_modelist, vc_modearray);
     }
 
-    ReturnPtr("VideoCore::New", OOP_Object *, self);
+    ReturnPtr("VideoCoreGfx::New", OOP_Object *, self);
 }
 
-VOID VideoCore__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    D(bug("[VideoCore] VideoCore__Root__Dispose()\n"));
+    D(bug("[VideoCoreGfx] VideoCoreGfx::Dispose()\n"));
 
     if (XSD(cl)->mouse.shape != NULL)
         FreeVec(XSD(cl)->mouse.shape);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-VOID VideoCore__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
     BOOL found = FALSE;
 
-    D(bug("[VideoCore] VideoCore__Root__Get()\n"));
+    D(bug("[VideoCoreGfx] VideoCoreGfx::Get()\n"));
 
     if (IS_GFX_ATTR(msg->attrID, idx))
     {
@@ -284,7 +287,47 @@ VOID VideoCore__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-OOP_Object *VideoCore__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
+OOP_Object *MNAME_GFX(Show)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+{
+    struct VideoCoreGfx_staticdata *data = XSD(cl);
+    struct TagItem tags[] = {
+	{aHidd_BitMap_Visible, FALSE},
+	{TAG_DONE	     , 0    }
+    };
+
+    D(bug("[VideoCoreGfx] VideoCoreGfx::Show:Show(0x%p), old visible 0x%p\n", msg->bitMap, data->visible));
+
+//    LOCK_FRAMEBUFFER(data);
+
+    /* Remove old bitmap from the screen */
+    if (data->visible)
+    {
+	D(bug("[VideoCoreGfx] VideoCoreGfx::Show: Hiding old bitmap\n"));
+	OOP_SetAttrs(data->visible, tags);
+    }
+
+    if (msg->bitMap)
+    {
+	/* If we have a bitmap to show, set it as visible */
+	D(bug("[VideoCoreGfx] VideoCoreGfx::Show: Showing new bitmap\n"));
+	tags[0].ti_Data = TRUE;
+	OOP_SetAttrs(msg->bitMap, tags);
+    }
+    else
+    {
+	D(bug("[VideoCoreGfx] VideoCoreGfx::Show: Blanking screen\n"));
+	/* Otherwise simply clear the framebuffer */
+//	ClearBuffer(&data->data);
+    }
+
+    data->visible = msg->bitMap;
+//    UNLOCK_FRAMEBUFFER(data);
+
+    D(bug("[VideoCoreGfx] VideoCoreGfx::Show: done\n"));
+    return msg->bitMap;
+}
+
+OOP_Object *MNAME_GFX(NewBitMap)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
     BOOL displayable;
     BOOL framebuffer;
@@ -292,19 +335,19 @@ OOP_Object *VideoCore__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct 
     struct TagItem tags[2];
     struct pHidd_Gfx_NewBitMap vcmsgnew;
 
-    EnterFunc(bug("VideoCore::NewBitMap()\n"));
+    EnterFunc(bug("VideoCoreGfx::NewBitMap()\n"));
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
     if (framebuffer)
-        classptr = XSD(cl)->videocoreonbmclass;
+        classptr = XSD(cl)->vcsd_VideoCoreGfxOnBMClass;
     else if (displayable)
-        classptr = XSD(cl)->videocoreoffbmclass;
+        classptr = XSD(cl)->vcsd_VideoCoreGfxOffBMClass;
     else
     {
         HIDDT_ModeID modeid;
         modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
         if (modeid != vHidd_ModeID_Invalid)
-            classptr = XSD(cl)->videocoreoffbmclass;
+            classptr = XSD(cl)->vcsd_VideoCoreGfxOffBMClass;
         else
         {
             HIDDT_StdPixFmt stdpf;
@@ -317,9 +360,9 @@ OOP_Object *VideoCore__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct 
                 {
                     OOP_Class *friend_class = NULL;
                     OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (IPTR *)&friend_class);
-                    if (friend_class == XSD(cl)->videocoreonbmclass)
+                    if (friend_class == XSD(cl)->vcsd_VideoCoreGfxOnBMClass)
                     {
-                        classptr = XSD(cl)->videocoreoffbmclass;
+                        classptr = XSD(cl)->vcsd_VideoCoreGfxOffBMClass;
                     }
                 }
             }
@@ -335,20 +378,20 @@ OOP_Object *VideoCore__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct 
         vcmsgnew.attrList = tags;
         msg = &vcmsgnew;
     }
-    ReturnPtr("VideoCore::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
+    ReturnPtr("VideoCoreGfx::NewBitMap", OOP_Object *, (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg));
 }
 
-VOID VideoCore__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
+VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     UBYTE *src = NULL;
     UBYTE *dst = NULL;
     HIDDT_DrawMode mode;
     struct Box box;
 
-    EnterFunc(bug("VideoCore.BitMap::CopyBox\n"));
+    EnterFunc(bug("VideoCoreGfx::CopyBox\n"));
     mode = GC_DRMD(msg->gc);
-    OOP_GetAttr(msg->src, aHidd_VideoCoreBitMap_Drawable, (IPTR *)&src);
-    OOP_GetAttr(msg->dest, aHidd_VideoCoreBitMap_Drawable, (IPTR *)&dst);
+    OOP_GetAttr(msg->src, aHidd_VideoCoreGfxBitMap_Drawable, (IPTR *)&src);
+    OOP_GetAttr(msg->dest, aHidd_VideoCoreGfxBitMap_Drawable, (IPTR *)&dst);
     if (((dst == NULL) || (src == NULL))) /* no videocoregfx bitmap */
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -475,7 +518,7 @@ VOID VideoCore__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
                         sbuffer += 4;
                         break;
                         default:
-                        D(bug("[VideoCore] Copy: Unknown number of bytes per pixel (%d) in source!\n",srcbd->bytesperpix));
+                        D(bug("[VideoCoreGfx] VideoCoreGfx::CopyBox: Unknown number of bytes per pixel (%d) in source!\n",srcbd->bytesperpix));
                         pixel = 0;
                         break;
                     }
@@ -495,7 +538,7 @@ VOID VideoCore__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
                         dbuffer += 4;
                         break;
                         default:
-                        D(bug("[VideoCore] Copy: Unknown number of bytes per pixel (%d) in destination!\n",dstbd->bytesperpix));
+                        D(bug("[VideoCoreGfx] VideoCoreGfx::CopyBox: Unknown number of bytes per pixel (%d) in destination!\n",dstbd->bytesperpix));
                         break;
                     }
                     xcnt--;
@@ -513,7 +556,7 @@ VOID VideoCore__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
             }
             break;
         default:
-            kprintf("[VideoCore] mode = %ld src=%lx dst=%lx\n", mode, src, dst);
+            kprintf("[VideoCoreGfx] mode = %ld src=%lx dst=%lx\n", mode, src, dst);
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
         if (XSD(cl)->mouse.visible == 0)
@@ -525,9 +568,9 @@ VOID VideoCore__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     ReturnVoid("VideoCore.BitMap::CopyBox");
 }
 
-BOOL VideoCore__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+BOOL MNAME_GFX(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
-    struct VideoCore_staticdata *xsd = XSD(cl);
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
 
     if (msg->shape == NULL)
     {
@@ -623,7 +666,7 @@ BOOL VideoCore__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pH
     return FALSE;
 }
 
-BOOL VideoCore__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
+BOOL MNAME_GFX(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
     XSD(cl)->mouse.x = msg->x;
     XSD(cl)->mouse.y = msg->y;
@@ -636,7 +679,7 @@ BOOL VideoCore__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHid
     return TRUE;
 }
 
-VOID VideoCore__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
+VOID MNAME_GFX(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
     XSD(cl)->mouse.visible = msg->visible;
 //    displayCursorVideoCore(&XSD(cl)->data, msg->visible ? 1 : 0);

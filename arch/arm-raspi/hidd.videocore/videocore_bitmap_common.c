@@ -8,7 +8,7 @@
 
 #include <exec/alerts.h>
 #include <string.h>    // memset() prototype
-//#include "svga_reg.h"
+
 #include "videocore_hardware.h"
 
 #ifdef OnBitmap
@@ -18,7 +18,7 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     IPTR    	    	width, height;
 
-    D(bug("[VideoCore] Clear()\n"));
+    D(bug("[VideoCoreGfx] VideoCoreGfx.BitMap::Clear()\n"));
 
     /* Get width & height from bitmap */
 
@@ -42,7 +42,7 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
 
 HIDDT_Pixel MNAME_BM(MapColor)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_MapColor *msg)
 {
-    D(bug("[VideoCore] MapColor()\n"));
+    D(bug("[VideoCoreGfx] VideoCoreGfx.BitMap::MapColor()\n"));
     return i;
 }
 
@@ -50,7 +50,7 @@ HIDDT_Pixel MNAME_BM(MapColor)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 
 VOID MNAME_BM(UnMapPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnmapPixel *msg)
 {
-    D(bug("[VideoCore] UnMapPixel()\n"));
+    D(bug("[VideoCoreGfx] VideoCoreGfx.BitMap::UnMapPixel()\n"));
 }
 
 #endif
@@ -362,7 +362,7 @@ VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
 
 VOID MNAME_BM(GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
-    D(bug("[VideoCore] GetImageLUT()\n"));
+    D(bug("[VideoCoreGfx] VideoCoreGfx.BitMap::GetImageLUT()\n"));
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -441,11 +441,11 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    if (IS_VideoCoreBM_ATTR(msg->attrID, idx))
+    if (IS_VideoCoreGfxBM_ATTR(msg->attrID, idx))
     {
         switch (idx)
         {
-        case aoHidd_VideoCoreBitMap_Drawable:
+        case aoHidd_VideoCoreGfxBitMap_Drawable:
             *msg->storage = (IPTR)data->VideoData;
             break;
         default:
