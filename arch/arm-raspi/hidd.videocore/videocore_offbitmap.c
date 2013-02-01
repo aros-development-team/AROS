@@ -28,25 +28,6 @@
 
 #include LC_LIBDEFS_FILE
 
-/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
-
-static OOP_AttrBase HiddBitMapAttrBase;
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddVideoCoreAttrBase;
-static OOP_AttrBase HiddVideoCoreBitMapAttrBase;
-
-static struct OOP_ABDescr attrbases[] = 
-{
-    {IID_Hidd_BitMap,           &HiddBitMapAttrBase             },
-    {IID_Hidd_PixFmt,           &HiddPixFmtAttrBase             },
-    {IID_Hidd_Gfx,              &HiddGfxAttrBase                },
-    /* Private bases */
-    {IID_Hidd_VideoCore,       &HiddVideoCoreAttrBase         },
-    {IID_Hidd_VideoCoreBitMap, &HiddVideoCoreBitMapAttrBase   },
-    {NULL,                      NULL                            }
-};
-
 #define MNAME_ROOT(x) VideoCoreOffBM__Root__ ## x
 #define MNAME_BM(x) VideoCoreOffBM__Hidd_BitMap__ ## x
 
@@ -127,26 +108,3 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     OOP_DoSuperMethod(cl, o, msg);
     ReturnVoid("VideoCore.BitMap::Dispose");
 }
-
-/*** init_bmclass *********************************************************/
-
-static int VideoCoreOffBM_Init(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("VideoCoreOffBM_Init\n"));
-
-    ReturnInt("VideoCoreOffBM_Init", ULONG, OOP_ObtainAttrBases(attrbases));
-}
-
-/*** free_offbitmapclass *********************************************************/
-
-static int VideoCoreOffBM_Expunge(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("VideoCoreOffBM_Expunge\n"));
-
-    OOP_ReleaseAttrBases(attrbases);
-
-    ReturnInt("VideoCoreOffBM_Expunge", int, TRUE);
-}
-
-ADD2INITLIB(VideoCoreOffBM_Init, 0)
-ADD2EXPUNGELIB(VideoCoreOffBM_Expunge, 0)

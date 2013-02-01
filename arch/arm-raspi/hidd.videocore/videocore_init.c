@@ -32,49 +32,90 @@
 
 #include LC_LIBDEFS_FILE
 
-#define HALTCODE
+#ifdef VCMBoxBase
+#undef VCMBoxBase
+#endif
 
-static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
-static OOP_AttrBase HiddPCIDeviceAttrBase;
+#define VCMBoxBase      xsd->vcsd_VCMBoxBase
 
-static struct OOP_ABDescr abd[] =
+/*
+ * The following two functions are candidates for inclusion into oop.library.
+ */
+static void FreeAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
 {
-    { IID_Hidd_PixFmt,  &HiddPixFmtAttrBase },
-    { NULL,             NULL                }
+    ULONG i;
+    
+    for (i = 0; i < num; i++)
+    {
+	if (bases[i])
+        {
+	    OOP_ReleaseAttrBase(iftable[i]);
+            bases[i] = NULL;
+        }
+    }
+}
+
+static BOOL GetAttrBases(const STRPTR *iftable, OOP_AttrBase *bases, ULONG num)
+{
+    ULONG i;
+
+    for (i = 0; i < num; i++)
+    {
+	bases[i] = OOP_ObtainAttrBase(iftable[i]);
+	if (!bases[i])
+	{
+	    FreeAttrBases(iftable, bases, i);
+	    return FALSE;
+	}
+    }
+
+    return TRUE;
+}
+
+static const STRPTR interfaces[] =
+{
+    IID_Hidd_BitMap,
+    IID_Hidd_VideoCoreBitMap,
+    IID_Hidd_VideoCore,
+    IID_Hidd_PixFmt,
+    IID_Hidd_Sync,
+    IID_Hidd_Gfx,
+    IID_Hidd
 };
+
 static int VideoCore_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct VideoCore_staticdata *xsd = &LIBBASE->vsd;
     int retval = FALSE;
     
-    if (!OOP_ObtainAttrBases(abd))
+    if (!GetAttrBases(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM))
         goto failure;
 
     if (!(VCMBoxBase = OpenResource("vcmbox.resource")))
         goto failure;
 
-    if (!(VCMsg = AllocVec(sizeof(IPTR) * 2 * MAX_TAGS, MEMF_CLEAR)))
+    if (!(xsd->vcsd_VCMBoxMessage = AllocVec(sizeof(IPTR) * 2 * MAX_TAGS, MEMF_CLEAR)))
         goto failure;
 
     D(bug("[VideoCore] Init: VideoCore Mailbox resource @ 0x%p\n", VCMBoxBase));
-    D(bug("[VideoCore] Init: VideoCore message buffer @ 0x%p\n", VCMsg));
+    D(bug("[VideoCore] Init: VideoCore message buffer @ 0x%p\n", xsd->vcsd_VCMBoxMessage));
 
     
-    VCMsg[0] = 8 * 4;
-    VCMsg[1] = VCTAG_REQ;
-    VCMsg[2] = VCTAG_GETVCRAM;
-    VCMsg[3] = 8;
-    VCMsg[4] = 0;
+    xsd->vcsd_VCMBoxMessage[0] = 8 * 4;
+    xsd->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
+    xsd->vcsd_VCMBoxMessage[2] = VCTAG_GETVCRAM;
+    xsd->vcsd_VCMBoxMessage[3] = 8;
+    xsd->vcsd_VCMBoxMessage[4] = 0;
 
-    VCMsg[5] = 0;
-    VCMsg[6] = 0;
+    xsd->vcsd_VCMBoxMessage[5] = 0;
+    xsd->vcsd_VCMBoxMessage[6] = 0;
 
-    VCMsg[7] = 0; // terminate tag
+    xsd->vcsd_VCMBoxMessage[7] = 0; // terminate tag
 
-    VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, VCMsg);
-    if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == VCMsg)
+    VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, xsd->vcsd_VCMBoxMessage);
+    if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == xsd->vcsd_VCMBoxMessage)
     {
-        if (videocore_InitMem(VCMsg[5], VCMsg[6], LIBBASE))
+        if (videocore_InitMem(xsd->vcsd_VCMBoxMessage[5], xsd->vcsd_VCMBoxMessage[6], LIBBASE))
         {
             D(bug("[VideoCore] Init: VideoCore GPU Found\n"));
 
@@ -100,10 +141,14 @@ failure:
     {
         D(bug("[VideoCore] Init: No VideoCore GPU Found\n"));
 
-        FreeVec(VCMsg);
+        FreeVec(xsd->vcsd_VCMBoxMessage);
 
-        OOP_ReleaseAttrBases(abd);
+        FreeAttrBases(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM);
     }
+    
+    while (1)
+        asm volatile("mov r0, r0\n");
+    
     return retval;
 }
 

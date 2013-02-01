@@ -14,8 +14,6 @@
 
 #define IID_Hidd_VideoCoreBitMap "hidd.bitmap.videocore"
 
-#define HiddVideoCoreBitMapAttrBase __abHidd_VideoCoreGfxBitMap
-/* extern OOP_AttrBase HiddVideoCoreBitMapAttrBase; */
 
 enum {
 	aoHidd_VideoCoreBitMap_Drawable,

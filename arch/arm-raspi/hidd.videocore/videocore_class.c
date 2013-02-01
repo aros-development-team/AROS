@@ -11,6 +11,7 @@
 
 #define __OOP_NOATTRBASES__
 
+#include <aros/asmcall.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -26,30 +27,11 @@
 #include <oop/oop.h>
 #include <clib/alib_protos.h>
 #include <string.h>
-#include <stdio.h>
 
 #include "videocore_class.h"
 #include "videocore_hardware.h"
 
 #include LC_LIBDEFS_FILE
-
-static OOP_AttrBase HiddBitMapAttrBase;  
-static OOP_AttrBase HiddPixFmtAttrBase;
-static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddSyncAttrBase;
-static OOP_AttrBase HiddVideoCoreAttrBase;
-static OOP_AttrBase HiddVideoCoreBitMapAttrBase;
-
-static struct OOP_ABDescr attrbases[] =
-{
-    {IID_Hidd_BitMap,           &HiddBitMapAttrBase             },
-    {IID_Hidd_VideoCoreBitMap,  &HiddVideoCoreBitMapAttrBase    },
-    {IID_Hidd_VideoCore,        &HiddVideoCoreAttrBase          },
-    {IID_Hidd_PixFmt,           &HiddPixFmtAttrBase             },
-    {IID_Hidd_Sync,             &HiddSyncAttrBase               },
-    {IID_Hidd_Gfx,              &HiddGfxAttrBase                },
-    {NULL,                      NULL                            }
-};
 
 STATIC ULONG mask_to_shift(ULONG mask)
 {
@@ -68,7 +50,7 @@ STATIC ULONG mask_to_shift(ULONG mask)
 
 #define SYNCTAGS_SIZE (11 * sizeof(struct TagItem))
 
-APTR VideoCore_GenModeArray(struct List *modelist, struct TagItem *fmts)
+APTR VideoCore_GenModeArray(OOP_Class *cl, OOP_Object *o, struct List *modelist, struct TagItem *fmts)
 {
     APTR                modearray = NULL;
     struct TagItem      *ma_syncs = NULL, *ma_synctags = NULL;
@@ -101,12 +83,12 @@ APTR VideoCore_GenModeArray(struct List *modelist, struct TagItem *fmts)
                 ma_fmts[i].ti_Data = fmts[i].ti_Data;
             }
             ma_syncs = (struct TagItem *)&ma_fmts[fmtcount];
-            D(bug("[VideoCore] VideoCore_GenModeArray: ModeSync's @ 0x%p\n", ma_syncs));
+            D(bug("[VideoCore] VideoCore_GenModeArray: SyncMode's @ 0x%p\n", ma_syncs));
             ma_synctags = (struct TagItem  *)&ma_syncs[modecount + 1];
             i = 0;
             ForeachNode(modelist, modecurrent)
             {
-                D(bug("[VideoCore] VideoCore_GenModeArray: SyncTag #%d @ 0x%p\n", i, ma_synctags));
+                D(bug("[VideoCore] VideoCore_GenModeArray: SyncMode #%d Tags @ 0x%p\n", i, ma_synctags));
 
                 ma_syncs[i].ti_Tag = aHidd_Gfx_SyncTags;
                 ma_syncs[i].ti_Data = ma_synctags;
@@ -143,6 +125,11 @@ APTR VideoCore_GenModeArray(struct List *modelist, struct TagItem *fmts)
     return (APTR)modearray;
 }
 
+void VideoCore_DestroyModeArray(struct List *modelist, APTR modearray)
+{
+    D(bug("[VideoCore] VideoCore_DestroyModeArray()\n"));
+}
+
 OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct VideoCore_staticdata *xsd = XSD(cl);
@@ -150,7 +137,10 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     APTR                        vc_modearray;
     OOP_Object                  *self = NULL;
 
-    struct TagItem pftags_24bpp[] = {
+    struct TagItem              gfxmsg_tags[2];
+    struct pRoot_New            gfxmsg_New;
+
+    struct TagItem              pftags_24bpp[] = {
         { aHidd_PixFmt_RedShift,      8   },
         { aHidd_PixFmt_GreenShift,    16  },
         { aHidd_PixFmt_BlueShift,     24  },
@@ -168,7 +158,7 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         { TAG_DONE, 0UL }
     };
 
-    struct TagItem pftags_16bpp[] = {
+    struct TagItem              pftags_16bpp[] = {
         { aHidd_PixFmt_RedShift,      16  },
         { aHidd_PixFmt_GreenShift,    21  },
         { aHidd_PixFmt_BlueShift,     27  },
@@ -186,7 +176,7 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         { TAG_DONE, 0UL }
     };
 
-    struct TagItem pftags_15bpp[] = {
+    struct TagItem              pftags_15bpp[] = {
         { aHidd_PixFmt_RedShift,      17  },
         { aHidd_PixFmt_GreenShift,    22  },
         { aHidd_PixFmt_BlueShift,     27  },
@@ -204,7 +194,7 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         { TAG_DONE, 0UL }
     };
 
-    struct TagItem pftags_8bpp[] = {
+    struct TagItem              pftags_8bpp[] = {
         { aHidd_PixFmt_RedShift,      8  },
         { aHidd_PixFmt_GreenShift,    16  },
         { aHidd_PixFmt_BlueShift,     24  },
@@ -224,7 +214,7 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         { TAG_DONE, 0UL }
     };
 
-    struct TagItem fmttags[] = {
+    struct TagItem              fmttags[] = {
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_24bpp  },
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_16bpp  },
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_15bpp  },
@@ -234,31 +224,35 @@ OOP_Object *VideoCore__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
     EnterFunc(bug("VideoCore::New()\n"));
 
-    NEWLIST(&vc_modelist);
+    NewList(&vc_modelist);
     
     VideoCore_SDTV_SyncGen(&vc_modelist);
     VideoCore_HDMI_SyncGen(&vc_modelist);
 
-    if ((vc_modearray = VideoCore_GenModeArray(&vc_modelist, fmttags)) != NULL)
+    if ((vc_modearray = VideoCore_GenModeArray(cl, o, &vc_modelist, fmttags)) != NULL)
     {
-        struct TagItem vcmodes[] =
-        {
-            {aHidd_Gfx_ModeTags,    vc_modearray    },
-            {TAG_MORE,              msg->attrList   }
-        };
-        struct pRoot_New vcmsgnew;
-
         D(bug("[VideoCore] Generated Mode Array @ 0x%p\n", vc_modearray));
 
-        vcmsgnew.mID = msg->mID;
-        vcmsgnew.attrList = vcmodes;
-        msg = &vcmsgnew;
+        gfxmsg_tags[0].ti_Tag = aHidd_Gfx_ModeTags;
+        gfxmsg_tags[0].ti_Data = (IPTR)vc_modearray;
+        gfxmsg_tags[1].ti_Tag = TAG_MORE;
+        gfxmsg_tags[1].ti_Data = (IPTR)msg->attrList;
+        gfxmsg_New.mID = msg->mID;
+        gfxmsg_New.attrList = gfxmsg_tags;
+        msg = &gfxmsg_New;
 
+        D(bug("[VideoCore] Creating object (cl:0x%p, o:0x%p, msg:0x%p\n", cl, o, msg));
+        D(bug("[VideoCore]    msg->attrList : 0x%p\n", gfxmsg_New.attrList));
+        D(bug("[VideoCore]    attrList[0].tag : 0x%p\n", gfxmsg_tags[0].ti_Tag));
+        D(bug("[VideoCore]    attrList[0].dat : 0x%p\n", gfxmsg_tags[0].ti_Data));
+        D(bug("[VideoCore]    attrList[1].tag : 0x%p\n", gfxmsg_tags[1].ti_Tag));
+        D(bug("[VideoCore]    attrList[1].dat : 0x%p\n", gfxmsg_tags[1].ti_Data));
         if ((self = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) != NULL)
         {
             D(bug("[VideoCore] Storing reference to self in staticdata\n"));
             XSD(cl)->videocorehidd = self;
         }
+        VideoCore_DestroyModeArray(&vc_modelist, vc_modearray);
     }
 
     ReturnPtr("VideoCore::New", OOP_Object *, self);
@@ -651,34 +645,3 @@ VOID VideoCore__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct 
     XSD(cl)->mouse.visible = msg->visible;
 //    displayCursorVideoCore(&XSD(cl)->data, msg->visible ? 1 : 0);
 }
-
-
-static int VideoCore_InitStatic(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("[VideoCore] VideoCore_InitStatic()\n"));
-
-    LIBBASE->vsd.mouse.x=0;
-    LIBBASE->vsd.mouse.y=0;
-    LIBBASE->vsd.mouse.shape = NULL;
-
-    if (!OOP_ObtainAttrBases(attrbases))
-    {
-        D(bug("[VideoCore] VideoCore_InitStatic: attrbases init failed\n"));
-        return FALSE;
-    }
-    
-    D(bug("[VideoCore] VideoCore_InitStatic: ok\n"));
-
-    ReturnInt("VideoCore_InitStatic", int, TRUE);
-}
-
-static int VideoCore_ExpungeStatic(LIBBASETYPEPTR LIBBASE)
-{
-    EnterFunc(bug("[VideoCore] VideoCore_ExpungeStatic()\n"));
-
-    OOP_ReleaseAttrBases(attrbases);
-    ReturnInt("VideoCore_ExpungeStatic", int, TRUE);
-}
-
-ADD2INITLIB(VideoCore_InitStatic, 0)
-ADD2EXPUNGELIB(VideoCore_ExpungeStatic, 0)
