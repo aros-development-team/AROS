@@ -24,26 +24,21 @@
     NOTES
         This class represents a keyboard input subsystem in AROS. Additionally
         it serves as a "hub" for collecting input from various keyboard devices
-        in the system and sending them to clients.
+        in the system. Events from all keyboard devices are merged into a single
+        stream and propagated to all clients.
 
         In order to get an access to keyboard input subsystem you need to
         create an object of CLID_HW_Kbd class. The actual returned object is a
         singletone, you do not have to dispose it, and every call will return
-        the same object pointer.
+        the same object pointer. After getting this object, you can, for example,
+        register your driver using moHW_AddDriver method, or enumerate drivers
+        using moHW_EnumDrivers.
 
-        If you wish to run in client mode (receive keyboard events), you
-        have to supply a callback using aoHidd_Kbd_IrqHandler attribute.
-        After this your callback will be called every time the event arrives
-        until you dispose your object.
-
-        Events from all keyboard devices are merged into a single stream
-        and propagated to all clients.
-
-        In driver mode you don't need to supply a callback (however it's not
-        forbidden). Instead you use the master object for registering your
-        hardware driver using HIDD_Kbd_AddHardwareDriver(). It is safe to
-        dispose the master object after adding a driver, the driver will
-        be internally kept in place.
+        If you wish to receive keyboard events, use objects of CLID_Hidd_Kbd
+        class. This class implements the same interface as driver class, but
+        represents receiver's side and is responsible for registering user's
+        interrupt handler in the listeners chain. These objects are not real
+        drivers and do not need to me registered within the subsystem.
 
 *****************************************************************************************/
 
