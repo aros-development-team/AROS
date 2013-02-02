@@ -69,7 +69,7 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
 #ifdef OnBitmap
         
         (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[6 + col_i] = (red << 24) | (green << 16) | (blue << 8);
-
+        D(bug("[VideoCoreGfx] VideoCoreGfx.BitMap::SetColors: color #%d = %08x\n", xc_i, (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[6 + col_i]));
 #endif
         msg->colors[col_i].pixval = xc_i;
     }
