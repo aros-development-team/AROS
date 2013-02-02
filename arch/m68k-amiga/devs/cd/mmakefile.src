@@ -1,0 +1,18 @@
+# 
+#  Copyright (C) 2013, The AROS Development Team
+#  All right reserved.
+#  Author: Jason S. McMullan <jason.mcmullan@gmail.com>
+# 
+#  Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
+# 
+include $(TOP)/config/make.cfg
+
+FILES := cd cd32
+
+#USER_CFLAGS += -DDEBUG=1
+
+%build_module mmake=kernel-amiga-m68k-cd \
+       modname=cd modtype=device \
+       files="$(FILES)"
+
+%common
