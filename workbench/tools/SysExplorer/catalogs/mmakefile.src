@@ -1,0 +1,7 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 41348 2011-09-14 20:21:00Z sonic $
+
+include $(TOP)/config/make.cfg
+
+%build_catalogs mmake=workbench-tools-sysexplorer-catalogs \
+                name=SysExplorer subdir=System/Tools/
