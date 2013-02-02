@@ -2,7 +2,7 @@
 #define HIDD_MOUSE_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse hidd.
@@ -40,11 +40,11 @@ enum {
 };
 
 
-#define aHidd_Mouse_IrqHandler		(aoHidd_Mouse_IrqHandler     + HiddMouseAB)
-#define aHidd_Mouse_IrqHandlerData	(aoHidd_Mouse_IrqHandlerData + HiddMouseAB)
-#define aHidd_Mouse_State		(aoHidd_Mouse_State          + HiddMouseAB)  
-#define aHidd_Mouse_RelativeCoords  	(aoHidd_Mouse_RelativeCoords + HiddMouseAB)
-#define aHidd_Mouse_Extended		(aoHidd_Mouse_Extended	     + HiddMouseAB)
+#define aHidd_Mouse_IrqHandler          (aoHidd_Mouse_IrqHandler     + HiddMouseAB)
+#define aHidd_Mouse_IrqHandlerData      (aoHidd_Mouse_IrqHandlerData + HiddMouseAB)
+#define aHidd_Mouse_State               (aoHidd_Mouse_State          + HiddMouseAB)  
+#define aHidd_Mouse_RelativeCoords      (aoHidd_Mouse_RelativeCoords + HiddMouseAB)
+#define aHidd_Mouse_Extended            (aoHidd_Mouse_Extended       + HiddMouseAB)
 
 #define IS_HIDDMOUSE_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HiddMouseAB, num_Hidd_Mouse_Attrs)
 
@@ -97,14 +97,14 @@ enum
 struct pHidd_Mouse_AddHardwareDriver
 {
     OOP_MethodID    mID;
-    OOP_Class	    *driverClass;
+    OOP_Class       *driverClass;
     struct TagItem  *tags;
 };
 
 struct pHidd_Mouse_RemHardwareDriver
 {
     OOP_MethodID    mID;
-    OOP_Object	    *driverObject;
+    OOP_Object      *driverObject;
 };
 
 #if !defined(HiddMouseBase) && !defined(__OOP_NOMETHODBASES__)
