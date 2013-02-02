@@ -1,0 +1,19 @@
+
+Principle of operation:
+
+Public Semaphore 'CDFS':
+    * Alias of (struct CDFS *)
+    * Present while at least one CDFS device is running, or at least one
+      volume is still in the DOS Volume list.
+
+On inital call to the CDFS handler, CDFS will search for a 
+semaphore named 'CDFS'. If not present, it will create one.
+
+A new CDFSDevice is then created, and an IORequest opened.
+
+A mount is attempted, and the detected volume is checked against
+any volume in CDFSBase->cb_Volumes. If found, it is patched to
+use the new task, otherwise if the mount succeeds a new CDFSVolume
+is created and attached to the CDFSDevice.
+
+
