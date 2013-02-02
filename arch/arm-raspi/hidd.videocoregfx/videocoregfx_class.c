@@ -37,21 +37,6 @@
 #define MNAME_ROOT(x) VideoCoreGfx__Root__ ## x
 #define MNAME_GFX(x) VideoCoreGfx__Hidd_Gfx__ ## x
 
-STATIC ULONG mask_to_shift(ULONG mask)
-{
-    ULONG i;
-
-    for (i = 32; mask; i --) {
-        mask >>= 1;
-    }
-
-    if (mask == 32) {
-        i = 0;
-    }
-
-    return i;
-}
-
 #define SYNCTAGS_SIZE (11 * sizeof(struct TagItem))
 
 APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *modelist, struct TagItem *fmts)
