@@ -21,11 +21,11 @@ struct driverNode
 
 struct mouse_staticdata
 {
-    OOP_AttrBase	   hiddMouseAB;
-    OOP_Class		  *mouseClass;
+    OOP_AttrBase           hiddMouseAB;
+    OOP_Class             *mouseClass;
 
-    struct MinList	   callbacks;
-    struct MinList	   drivers;
+    struct MinList         callbacks;
+    struct MinList         drivers;
     struct SignalSemaphore drivers_sem;
 
     struct Library *cs_SysBase;
@@ -35,7 +35,7 @@ struct mouse_staticdata
 
 struct mousebase
 {
-    struct Library 	    LibNode;
+    struct Library          LibNode;
     struct mouse_staticdata csd;
 };
 
