@@ -1,0 +1,16 @@
+# $Id: mmakefile.src 41358 2011-09-15 06:05:09Z sonic $
+
+include $(TOP)/config/make.cfg
+
+FILES       := main locale
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+EXEDIR      := $(AROSDIR)/Tools
+
+#MM workbench-tools-sysexplorer : workbench-tools-sysexplorer-catalogs
+#MM workbench-tools-sysexplorer-quick : workbench-tools-sysexplorer-catalogs
+
+%build_prog mmake=workbench-tools-sysexplorer \
+    progname=SysExplorer targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="oop mui"
+
+%common
