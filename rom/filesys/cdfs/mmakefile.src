@@ -1,0 +1,13 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := cdfs bcache iso9660
+
+USER_CFLAGS += -D__NOLIBBASE__ -DADATE="\"$(shell date '+%d.%m.%Y')\""
+#USER_CFLAGS += -DDEBUG=1
+
+%build_module mmake=kernel-fs-cdfs \
+    modname=cdfs modtype=handler \
+    files="$(FILES)"
+
+%common
