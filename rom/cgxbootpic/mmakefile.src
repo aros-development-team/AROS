@@ -1,0 +1,13 @@
+#   $Id$
+#
+#   Generate cgxbootpic.library
+#
+include $(TOP)/config/make.cfg
+
+#MM- kernel-cgxbootpic : linklibs
+#MM- kernel-cgxbootpic-kobj : linklibs
+
+%build_module mmake=kernel-cgxbootpic \
+  modname=cgxbootpic modtype=library \
+  files="cgxbootpic_init renderbootpic"
+
