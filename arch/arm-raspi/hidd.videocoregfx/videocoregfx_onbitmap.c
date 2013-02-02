@@ -126,7 +126,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             && ((&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] == VCTAG_RESP)
             && ((&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[18] == (VCTAG_RESP + 8)))
         {
-             struct TagItem buffertags[] = {
+            struct TagItem buffertags[] = {
                 { aHidd_ChunkyBM_Buffer, (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[19]},
                 { TAG_DONE	     , 0    }
             };
@@ -154,3 +154,4 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     OOP_DoSuperMethod(cl, o, msg);
     ReturnVoid("VideoCoreGfx.OnBitMap::Dispose");
 }
+
