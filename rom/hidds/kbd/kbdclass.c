@@ -7,6 +7,7 @@
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
+#include <hidd/hidd.h>
 #include <hidd/keyboard.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
@@ -15,12 +16,7 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 
-#include LC_LIBDEFS_FILE
-
-#undef HiddKbdAB
-#define HiddKbdAB               (CSD(cl)->hiddKbdAB)
-
-#include <hidd/keyboard.h>
+#include "kbd.h"
 
 /*****************************************************************************************
 
@@ -31,61 +27,16 @@
         CLID_Hidd_Kbd
 
     NOTES
-        This class represents a "hub" for collecting input from various
-        keyboard devices in the system and sending them to clients.
-
-        In order to get an access to keyboard input subsystem you need to
-        create an object of CLID_Hidd_Kbd class. There can be two use
-        scenarios: driver mode and client mode.
-
-        If you wish to run in client mode (receive keyboard events), you
-        have to supply a callback using aoHidd_Kbd_IrqHandler attribute.
-        After this your callback will be called every time the event arrives
-        until you dispose your object.
+        Instances of this class represent clients of the keyboard input
+        subsystem. In order to receive keyboard events, you have to create
+        an object of this class and supply a callback using aoHidd_Kbd_IrqHandler
+        attribute. After this your callback will be called every time the
+        event arrives until you dispose your object.
 
         Events from all keyboard devices are merged into a single stream
         and propagated to all clients.
 
-        In driver mode you don't need to supply a callback (however it's not
-        forbidden). Instead you use the master object for registering your
-        hardware driver using HIDD_Kbd_AddHardwareDriver(). It is safe to
-        dispose the master object after adding a driver, the driver will
-        be internally kept in place.
-
 *****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
-        --hardware_drivers--
-
-    LOCATION
-        CLID_Hidd_Kbd
-
-    NOTES
-        A hardware driver should implement the same interface according to the following
-        rules:
-
-        1. A single object of driver class represents a single hardware unit.
-        2. A single driver object maintains a single callback address (passed to it
-           using aoHidd_Kbd_IrqHandler). Under normal conditions this callback is supplied
-           by CLID_Hidd_Kbd class.
-        3. HIDD_Kbd_AddHardwareDriver() and HIDD_Kbd_RemHardwareDriver() on a driver object
-           itself do not make sense, so there's no need to implement them.
-
-        A hardware driver class should be a subclass of CLID_Hidd in order to ensure
-        compatibility in future.
-
-*****************************************************************************************/
-
-static void GlobalCallback(struct kbd_staticdata *csd, UWORD code)
-{
-    struct kbd_data *data;
-    
-    for (data = (struct kbd_data *)csd->callbacks.mlh_Head; data->node.mln_Succ;
-         data = (struct kbd_data *)data->node.mln_Succ)
-        data->callback(data->callbackdata, code);
-}
 
 /*****************************************************************************************
 
@@ -162,16 +113,11 @@ OOP_Object *KBD__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct kbd_data *data;
     struct TagItem *tag, *tstate;
-    struct Library *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
-
-    if (!UtilityBase)
-        return NULL;
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (!o) {
-        CloseLibrary(UtilityBase);
+    if (!o)
         return NULL;
-    }
 
     data = OOP_INST_DATA(cl, o);
     data->callback = NULL;
@@ -204,14 +150,18 @@ OOP_Object *KBD__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         }
     } /* while (tags to process) */
 
-    /* Add to interrupts list if we have a callback */
-    if (data->callback) {
+    /*
+     * Add to interrupts list if we have a callback.
+     * Creating an object without callback is a legacy way of
+     * installing hardware drivers. It should be removed.
+     */
+    if (data->callback)
+    {
         Disable();
-        AddTail((struct List *)&CSD(cl)->callbacks, (struct Node *)data);
+        ADDTAIL(&CSD(cl)->callbacks, data);
         Enable();
     }
 
-    CloseLibrary(UtilityBase);
     return o;
 }
 
@@ -219,19 +169,19 @@ VOID KBD__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct kbd_data *data = OOP_INST_DATA(cl, o);
 
-    if (data->callback) {
+    /* This condition is a legacy and should be removed */
+    if (data->callback)
+    {
         Disable();
-        Remove((struct Node *)data);
+        REMOVE(data);
         Enable();
     }
     OOP_DoSuperMethod(cl, o, msg);
 }
 
 /*
- * The following two methods are small stubs providing means for future expansion.
- * In future we could support enumeration of devices and specifying
- * which device we wish to read events from (in case if we want to implement
- * amigainput.library or something like it)
+ * The following two methods are legacy and strongly deprecated.
+ * They are present only for backward compatibility with the old code.
  */
 
 /*****************************************************************************************
@@ -253,6 +203,9 @@ VOID KBD__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
         It does not matter on which instance of CLID_Hidd_Kbd class this method is
         used. Hardware driver objects are shared between all of them.
+
+        Since V2 this interface is obsolete and deprecated. Use moHW_AddDriver
+        method on CLID_HW_Kbd class in order to install the driver.
 
     INPUTS
         obj         - Any object of CLID_Hidd_Kbd class.
@@ -281,14 +234,7 @@ VOID KBD__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 OOP_Object *KBD__Hidd_Kbd__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_AddHardwareDriver *Msg)
 {
-    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
-    struct TagItem tags[] = {
-        { aHidd_Kbd_IrqHandler    , (IPTR)GlobalCallback        },
-        { aHidd_Kbd_IrqHandlerData, (IPTR)CSD(cl)               },
-        { TAG_MORE                , (IPTR)Msg->tags             }
-    };
-
-    return OOP_NewObject(Msg->driverClass, NULL, tags);
+    return HW_AddDriver(CSD(cl)->hwObj, Msg->driverClass, Msg->tags);
 }
 
 /*****************************************************************************************
@@ -309,6 +255,9 @@ OOP_Object *KBD__Hidd_Kbd__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struc
 
         It does not matter on which instance of CLID_Hidd_Kbd class this method is
         used. Hardware driver objects are shared between all of them.
+
+        Since V2 this interface is obsolete and deprecated. Use moHW_RemoveDriver
+        method on CLID_HW_Kbd class in order to remove the driver.
 
     INPUTS
         obj    - Any object of CLID_Hidd_Kbd class.
@@ -332,41 +281,5 @@ OOP_Object *KBD__Hidd_Kbd__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struc
 
 void KBD__Hidd_Kbd__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_RemHardwareDriver *Msg)
 {
-    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
-
-    OOP_DisposeObject(Msg->driverObject);
+    HW_RemoveDriver(CSD(cl)->hwObj, Msg->driverObject);
 }
-
-/* Class initialization and destruction */
-
-static int KBD_ExpungeClass(LIBBASETYPEPTR LIBBASE)
-{
-    struct Library *OOPBase = LIBBASE->csd.cs_OOPBase;
-
-    D(bug("[KBD] Base Class destruction\n"));
-
-    OOP_ReleaseAttrBase(IID_Hidd_Kbd);
-
-    return TRUE;
-}
-
-static int KBD_InitClass(LIBBASETYPEPTR LIBBASE)
-{
-    struct Library *OOPBase = LIBBASE->csd.cs_OOPBase;
-
-    D(bug("[KBD] base class initialization\n"));
-
-    LIBBASE->csd.hiddKbdAB = OOP_ObtainAttrBase(IID_Hidd_Kbd);
-
-    if (LIBBASE->csd.hiddKbdAB)
-    {
-        NewList((struct List *)&LIBBASE->csd.callbacks);
-        D(bug("[KBD] Everything OK\n"));
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-ADD2INITLIB(KBD_InitClass, 0)
-ADD2EXPUNGELIB(KBD_ExpungeClass, 0)
