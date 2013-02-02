@@ -33,14 +33,6 @@ struct VideoCoreGfx_staticdata {
 
         OOP_AttrBase	        vcsd_attrBases[ATTRBASES_NUM];
 
-	struct MemHeader mh;
-
-	OOP_Object *card;
-
-	struct BitmapData *visible;
-	VOID	(*activecallback)(APTR, OOP_Object *, BOOL);
-	APTR	callbackdata;
-	struct MouseData mouse;
 	APTR                    data;
 };
 
