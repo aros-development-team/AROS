@@ -16,7 +16,7 @@
 #define IID_Hidd_VideoCoreGfx  "hidd.gfx.videocore"
 #define CLID_Hidd_VideoCoreGfx "hidd.gfx.videocore"
 
-#define MAX_TAGS        64
+#define MAX_TAGS        256
 #define ATTRBASES_NUM   8
 
 struct VideoCoreGfx_staticdata {
