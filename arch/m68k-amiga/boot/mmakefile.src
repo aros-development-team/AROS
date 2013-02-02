@@ -15,6 +15,7 @@ Q ?= @
 #MM     kernel-amiga-m68k-amigavideo-kobj \
 #MM     kernel-amiga-m68k-audio-kobj \
 #MM     kernel-amiga-m68k-devs \
+#MM     kernel-amiga-m68k-cd-kobj \
 #MM     kernel-amiga-m68k-kbd-kobj \
 #MM     kernel-amiga-m68k-mouse-kobj \
 #MM     kernel-amiga-m68k-uaegfx-kobj \
@@ -28,6 +29,7 @@ Q ?= @
 #MM     kernel-filesystem-kobj \
 #MM     kernel-fs-afs-kobj \
 #MM     kernel-fs-cdvdfs-kobj \
+#MM     kernel-fs-cdfs-kobj \
 #MM     kernel-fs-con-kobj \
 #MM     kernel-m680x0-kobj \
 #MM     kernel-misc-kobj \
@@ -101,8 +103,8 @@ AFILES  := ext_entry
 
 KLIBS   :=  keymap graphics layers intuition gadtools icon workbench \
             mathffp mathieeesingbas
-KDEVS   := 
-KHNDLRS := cdrom
+KDEVS   := cd
+KHNDLRS := cdrom cdfs
 KHIDDS  :=
 KRSRCS  := shellcommands workbook wbtag
 KHOOKS  := alert
