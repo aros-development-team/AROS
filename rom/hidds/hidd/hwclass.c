@@ -156,7 +156,7 @@ OOP_Object *HW__HW__AddDriver(OOP_Class *cl, OOP_Object *o,
         dn = AllocPooled(CSD(cl)->MemPool, sizeof(struct DriverNode));
         if (dn)
         {
-            drv = OOP_NewObject(msg->driverClass, NULL, NULL);
+            drv = OOP_NewObject(msg->driverClass, NULL, msg->tags);
 
             if (!drv)
             {
