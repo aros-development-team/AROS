@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GDI hidd handling keypresses.
@@ -83,25 +83,20 @@ static VOID KbdIntHandler(struct gdikbd_data *data, volatile struct GDI_Control 
 
 OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    BOOL            has_kbd_hidd = FALSE;
     struct TagItem *tag, *tstate;
     APTR            callback = NULL;
     APTR            callbackdata = NULL;
     
     EnterFunc(bug("GDIKbd::New()\n"));
- 
-    ObtainSemaphoreShared( &XSD(cl)->sema);
- 
-    if (XSD(cl)->kbdhidd)
-        has_kbd_hidd = TRUE;
 
-    ReleaseSemaphore( &XSD(cl)->sema);
- 
-    if (has_kbd_hidd) /* Cannot open twice */
-        ReturnPtr("GDIKbd::New", OOP_Object *, NULL); /* Should have some error code here */
+    if (XSD(cl)->kbdhidd)
+    {
+        /* It is illegal to create more than one object */
+        ReturnPtr("GDIKbd::New", OOP_Object *, NULL);
+    }
 
     tstate = msg->attrList;
-    D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));     
+    D(bug("attrList: 0x%p\n", tstate));     
     
     while ((tag = NextTagItem(&tstate)))
     {
@@ -143,9 +138,7 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
             data->callbackdata = callbackdata;
 
-            ObtainSemaphore( &XSD(cl)->sema);
             XSD(cl)->kbdhidd = o;
-            ReleaseSemaphore( &XSD(cl)->sema);
 
             ReturnPtr("GDIKbd::New", OOP_Object *, o);
         }
