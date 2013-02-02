@@ -6,6 +6,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <proto/vcmbox.h>
+
 #include <exec/alerts.h>
 #include <string.h>    // memset() prototype
 
@@ -47,8 +49,17 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
         return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg))
         return FALSE;
-    if ((msg->firstColor + msg->numColors) > (1<<data->bpp))
+    if ((msg->firstColor + msg->numColors) > (1 << data->bpp))
         return FALSE;
+    
+#ifdef OnBitmap
+    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[0] = 5 + (msg->numColors - msg->firstColor) * 4;
+    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
+    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[2] = VCTAG_SETPALETTE;
+    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[3] = (msg->numColors - msg->firstColor) * 4;
+    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[4] = msg->firstColor;
+    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[5] = msg->numColors;
+#endif
     for (xc_i = msg->firstColor, col_i = 0; col_i < msg->numColors; xc_i++, col_i++)
     {
         red = msg->colors[col_i].red >> 8;
@@ -56,10 +67,22 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
         blue = msg->colors[col_i].blue >> 8;
         data->cmap[xc_i] = 0x01000000 | red | (green << 8) | (blue << 16);
 #ifdef OnBitmap
-#warning "TODO: Load the LUT colors"
+        
+        (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[6 + col_i] = (red << 24) | (green << 16) | (blue << 8);
+
 #endif
         msg->colors[col_i].pixval = xc_i;
     }
+#ifdef OnBitmap
+    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[7 + col_i ] = 0;
+    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[7 + col_i + 1] = 0; // terminate tag
+
+    VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage);
+    if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage)
+    {
+        D(bug("[VideoCoreGfx] %s: Palette set [status %08x]\n", __PRETTY_FUNCTION__, (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[7 + col_i]));
+    }
+#endif
     return TRUE;
 }
 
