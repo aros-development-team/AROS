@@ -74,26 +74,24 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             Currently we only support the default depth
         */
 
-        width=(width+15) & ~15;
+        width = (width + 15) & ~15;
         data->width = width;
         data->height = height;
         data->bpp = depth;
         data->disp = -1;
 
         data->bytesperpix = 1;
-        if (depth>16)
+        if (depth > 24)
             data->bytesperpix = 4;
-        else if (depth>8)
+        else if (depth > 16)
+            data->bytesperpix = 3;
+        else if (depth > 8)
             data->bytesperpix = 2;
 
         data->data = &XSD(cl)->data;
         data->mouse = &XSD(cl)->mouse;
 
-        /* We should be able to get modeID from the bitmap */
-
-        if (modeid != vHidd_ModeID_Invalid)
-        {
-            RawPutChar(0x03);
+/*            RawPutChar(0x03);
 
             (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
 
@@ -128,12 +126,51 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             if ((VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage)
                 && ((&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] == VCTAG_RESP)
                 && ((&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[18] == (VCTAG_RESP + 8)))
-            {
-                data->VideoData = (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[19];
-                XSD(cl)->visible = data;	/* Set created object as visible */
-                ReturnPtr("VideoCoreGfx.OnBitMap::New", OOP_Object *, o);
-            }
-        }
+            {*/
+                IPTR hardbuffer;
+ //               hardbuffer = (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[19];
+                hardbuffer = AllocVec( data->width * data->height * data->bytesperpix, MEMF_PUBLIC);
+                struct TagItem buffertags[] = {
+                    { aHidd_ChunkyBM_Buffer, hardbuffer},
+                    { TAG_DONE	     , 0    }
+                };
+                data->VideoData = buffertags[0].ti_Data;
+                OOP_SetAttrs(o, buffertags);
+                D(bug("[VideoCoreGfx] VideoCoreGfx.OnBitMap::New: FrameBuffer @ 0x%p\n", data->VideoData));
+
+                int x,y;
+                for (y = (data->height/2) - 10; y <(data->height/2) + 10; y++)
+                {
+                    for (x = (data->width/2) - 10; x <(data->width/2) + 10; x++)
+                    {
+                        void *p = data->VideoData + (y * (data->width * data->bytesperpix) + (x * data->bytesperpix));
+
+                        switch (data->bytesperpix)
+                        {
+                        case 4:
+                            *((int *)p) = 0x00FF0000;
+                            break;
+
+                        case 3:
+                            /* qemu's truecolor modes are known to be 3 bytes per pixel */
+                            *((short *)p) = 0x0000;
+                            *((char *)p + 2) = 0xFF;
+                            break;
+
+                        case 2:
+                            *((short *)p) = 0xF800;
+                            break;
+
+                        case 1:
+                            *((char *)p) = 0xF0;
+                            break;
+                        }
+                    }
+                }
+
+                ReturnPtr("VideoCoreGfx.OnBitMap::New: Obj", OOP_Object *, o);
+/*
+            }*/
 
         {
             OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
@@ -141,7 +178,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         }
         o = NULL;
     } /* if created object */
-    ReturnPtr("VideoCoreGfx.OnBitMap::New", OOP_Object *, o);
+    ReturnPtr("VideoCoreGfx.OnBitMap::New: Obj", OOP_Object *, o);
 }
 
 /**********  Bitmap::Dispose()  ***********************************/
@@ -157,7 +194,7 @@ VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Upda
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[VideoCoreGfx] VideoCoreGfx.OnBitMap::UpdateRect(%d, %d, %d, %d), bitmap 0x%p\n", msg->x, msg->y, msg->width, msg->height, o));
+    D(bug("[VideoCoreGfx] VideoCoreGfx.OnBitMap::UpdateRect(%d, %d, %dx%d), bitmap 0x%p\n", msg->x, msg->y, msg->width, msg->height, o));
     if (data->disp) {
 //	LOCK_FRAMEBUFFER(XSD(cl));
 //        FNAME_HW(RefreshArea)(&XSD(cl)->data, data, msg->x, msg->y, msg->x + msg->width, msg->y + msg->height);

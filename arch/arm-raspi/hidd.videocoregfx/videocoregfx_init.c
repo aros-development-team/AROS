@@ -73,6 +73,7 @@ static const STRPTR interfaces[] =
 {
     IID_Hidd_VideoCoreGfx,
     IID_Hidd_VideoCoreGfxBitMap,
+    IID_Hidd_ChunkyBM,
     IID_Hidd_BitMap,
     IID_Hidd_PixFmt,
     IID_Hidd_Sync,
@@ -124,8 +125,7 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
                 {
                     bug("[VideoCoreGfx] BootMode Display Driver Registered\n");
 
-                    /* We use ourselves, and no one else does */
-                    LIBBASE->library.lib_OpenCnt = 1;
+                    LIBBASE->library.lib_OpenCnt++;
                     retval = TRUE;
                 }
                 CloseLibrary(&GfxBase->LibNode);
