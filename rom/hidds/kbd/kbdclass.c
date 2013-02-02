@@ -27,14 +27,14 @@
         CLID_Hidd_Kbd
 
     NOTES
-        Instances of this class represent clients of the keyboard input
-        subsystem. In order to receive keyboard events, you have to create
-        an object of this class and supply a callback using aoHidd_Kbd_IrqHandler
-        attribute. After this your callback will be called every time the
-        event arrives until you dispose your object.
+        Instances of this class are virtual devices being clients of the
+        keyboard input subsystem. In order to receive keyboard events, you
+        have to create an object of this class and supply a callback using
+        aoHidd_Kbd_IrqHandler attribute. After this your callback will be
+        called every time the event arrives until you dispose your object.
 
-        Events from all keyboard devices are merged into a single stream
-        and propagated to all clients.
+        Every client receives events from all keyboard devices merged into
+        a single stream.
 
 *****************************************************************************************/
 
