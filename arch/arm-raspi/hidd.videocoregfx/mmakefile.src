@@ -8,7 +8,6 @@ FILES	:=	\
         videocoregfx_sdtv \
         videocoregfx_hdmi \
 	videocoregfx_hardware \
-	videocoregfx_offbitmap \
 	videocoregfx_onbitmap
 
 %build_module mmake=hidd-videocoregfx \

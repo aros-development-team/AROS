@@ -7,7 +7,6 @@
 #define _VIDEOCOREGFX_BITMAP_H
 
 #include <hidd/graphics.h>
-#include "videocoregfx_mouse.h"
 
 /* This attribute interface is common for both onscreen and offscreen bitmap
    classes, although they don't share a common superclass */
