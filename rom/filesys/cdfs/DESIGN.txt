@@ -9,11 +9,7 @@ Public Semaphore 'CDFS':
 On inital call to the CDFS handler, CDFS will search for a 
 semaphore named 'CDFS'. If not present, it will create one.
 
-A new CDFSDevice is then created, and an IORequest opened.
+A new CDFSDevice is then created, and a BCache on that device is opened.
 
-A mount is attempted, and the detected volume is checked against
-any volume in CDFSBase->cb_Volumes. If found, it is patched to
-use the new task, otherwise if the mount succeeds a new CDFSVolume
-is created and attached to the CDFSDevice.
-
-
+When the handler exits, if there are no volumes with outstanding locks,
+the CDFS semaphore is disposed of.
