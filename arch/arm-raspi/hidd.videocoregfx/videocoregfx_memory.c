@@ -199,7 +199,7 @@ ULONG mh_Avail(struct MemHeaderExt *mhe, ULONG flags)
 int FNAME_SUPPORT(InitMem)(void *memstart, int memlength, struct VideoCoreGfxBase *VideoCoreGfxBase)
 {
     struct VideoCoreGfx_staticdata *xsd = &LIBBASE->vsd;
-    struct MemChunk *mc = memstart;
+//    struct MemChunk *mc = memstart;
 
     InitSemaphore(&xsd->vcsd_GPUMemLock);
 
@@ -209,10 +209,11 @@ int FNAME_SUPPORT(InitMem)(void *memstart, int memlength, struct VideoCoreGfxBas
     xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Node.ln_Name = "VideoCore GPU Memory";
     xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Node.ln_Pri = -128;
     xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Attributes = MEMF_CHIP | MEMF_MANAGED | MEMF_PUBLIC;
-    xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_First = mc;
-    xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Lower = (APTR)mc;
+//    xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_First = mc;
+    xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_First = NULL;
+    xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Lower = (APTR)memstart;
     xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Free = memlength;
-    xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Upper = (APTR)(xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Free + (IPTR)mc);
+    xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Upper = (APTR)(xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Free + (IPTR)memstart);
 
     xsd->vcsd_GPUMemManage.mhe_UserData = xsd;
 
@@ -222,8 +223,8 @@ int FNAME_SUPPORT(InitMem)(void *memstart, int memlength, struct VideoCoreGfxBas
     xsd->vcsd_GPUMemManage.mhe_ReAlloc = mh_ReAlloc;
     xsd->vcsd_GPUMemManage.mhe_Avail = mh_Avail;
 
-    mc->mc_Next = NULL;
-    mc->mc_Bytes = xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Free;
+//    mc->mc_Next = NULL;
+//    mc->mc_Bytes = xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Free;
 
     Disable();
     AddTail(&SysBase->MemList, (struct Node *)&xsd->vcsd_GPUMemManage);

@@ -17,7 +17,7 @@
 #define CLID_Hidd_VideoCoreGfx "hidd.gfx.videocore"
 
 #define MAX_TAGS        64
-#define ATTRBASES_NUM   7
+#define ATTRBASES_NUM   8
 
 struct VideoCoreGfx_staticdata {
         APTR                    vcsd_VCMBoxBase;
@@ -70,6 +70,7 @@ struct DisplayMode
 
 #undef HiddVideoCoreGfxAttrBase
 #undef HiddVideoCoreGfxBitMapAttrBase
+#undef HiddChunkyBMAttrBase
 #undef HiddBitMapAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
@@ -79,16 +80,17 @@ struct DisplayMode
 /* These must stay in the same order as interfaces[] array in videocoregfx_init.c */
 #define HiddVideoCoreGfxAttrBase         XSD(cl)->vcsd_attrBases[0]
 #define HiddVideoCoreGfxBitMapAttrBase   XSD(cl)->vcsd_attrBases[1]
-#define HiddBitMapAttrBase               XSD(cl)->vcsd_attrBases[2]
-#define HiddPixFmtAttrBase               XSD(cl)->vcsd_attrBases[3]
-#define HiddSyncAttrBase                 XSD(cl)->vcsd_attrBases[4]
-#define HiddGfxAttrBase                  XSD(cl)->vcsd_attrBases[5]
-#define HiddAttrBase                     XSD(cl)->vcsd_attrBases[6]
+#define HiddChunkyBMAttrBase             XSD(cl)->vcsd_attrBases[2]
+#define HiddBitMapAttrBase               XSD(cl)->vcsd_attrBases[3]
+#define HiddPixFmtAttrBase               XSD(cl)->vcsd_attrBases[4]
+#define HiddSyncAttrBase                 XSD(cl)->vcsd_attrBases[5]
+#define HiddGfxAttrBase                  XSD(cl)->vcsd_attrBases[6]
+#define HiddAttrBase                     XSD(cl)->vcsd_attrBases[7]
 
 #define FNAME_SUPPORT(x) VideoCoreGfx__Support__ ## x
 
 int FNAME_SUPPORT(InitMem)(void *, int, struct VideoCoreGfxBase *);
-int FNAME_SUPPORT(SDTV_SyncGen)(struct List *);
-int FNAME_SUPPORT(HDMI_SyncGen)(struct List *);
+int FNAME_SUPPORT(SDTV_SyncGen)(struct List *, OOP_Class *);
+int FNAME_SUPPORT(HDMI_SyncGen)(struct List *, OOP_Class *);
 
 #endif /* _VIDEOCOREGFX_CLASS_H */

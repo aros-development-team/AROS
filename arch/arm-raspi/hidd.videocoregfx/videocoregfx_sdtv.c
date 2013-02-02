@@ -8,7 +8,7 @@
 
 #include "videocoregfx_class.h"
 
-int FNAME_SUPPORT(SDTV_SyncGen)(struct List *modelist)
+int FNAME_SUPPORT(SDTV_SyncGen)(struct List *modelist, OOP_Class *cl)
 {
     struct DisplayMode *sdtv_mode;
     int sdtv_modecount = 0;
@@ -48,5 +48,6 @@ int FNAME_SUPPORT(SDTV_SyncGen)(struct List *modelist)
         AddTail(modelist, &sdtv_mode->dm_Node);
         sdtv_modecount++;
     }    
+
     return sdtv_modecount;
 }
