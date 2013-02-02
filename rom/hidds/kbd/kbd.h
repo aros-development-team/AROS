@@ -11,12 +11,16 @@ struct kbd_data
 struct kbd_staticdata
 {
     OOP_AttrBase        hiddKbdAB;
+    OOP_AttrBase        hwAB;
+    OOP_MethodID        hwMB;
     OOP_Class           *kbdClass;
+    OOP_Class           *hwClass;
+    OOP_Object          *hwObj;
 
     struct MinList      callbacks;
 
-    BPTR                cs_SegList;
     struct Library     *cs_OOPBase;
+    struct Library     *cs_UtilityBase;
 };
 
 struct kbdbase
@@ -26,3 +30,10 @@ struct kbdbase
 };
 
 #define CSD(cl) (&((struct kbdbase *)cl->UserData)->csd)
+
+#undef HiddKbdAB
+#undef HWAttrBase
+#undef HWBase
+#define HiddKbdAB  (CSD(cl)->hiddKbdAB)
+#define HWAttrBase (CSD(cl)->hwAB)
+#define HWBase     (CSD(cl)->hwMB)

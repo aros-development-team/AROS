@@ -9,7 +9,7 @@ INCLUDE_FILES := $(call WILDCARD, include/*.h)
 clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
-FILES	:= kbdclass
+FILES	:= kbd_init kbdclass kbdsubsystem
 
 USER_CFLAGS += -D__OOP_NOLIBBASE__ -D__UTILITY_NOLIBBASE__
 

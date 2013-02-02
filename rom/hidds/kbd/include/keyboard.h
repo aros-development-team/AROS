@@ -14,6 +14,7 @@
 #include <utility/tagitem.h>
 
 #define CLID_Hidd_Kbd "hidd.kbd"
+#define CLID_HW_Kbd "hw.kbd"
 #define IID_Hidd_Kbd "hidd.kbd"
 
 #define HiddKbdAB __abHidd_Kbd
@@ -34,6 +35,11 @@ enum {
 
 #define IS_HIDDKBD_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HiddKbdAB, num_Hidd_Kbd_Attrs)
 
+/*
+ * The following methods are legacy and deprecated. Do not use them.
+ * Use HW_AddDriver() and HW_RemoveDriver() methods on CLID_HW_Kbd
+ * object instead.
+ */
 enum
 {
     moHidd_Kbd_AddHardwareDriver = 0,
