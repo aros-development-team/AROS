@@ -6,7 +6,8 @@
 #define __OOP_NOATTRBASES__
 
 #include <aros/debug.h>
-#include <aros/symbolsets.h>
+#include <hidd/hidd.h>
+#include <hidd/mouse.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 #include <proto/alib.h>
@@ -14,12 +15,10 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 
-#include LC_LIBDEFS_FILE
+#include "mouse.h"
 
-#undef HiddMouseAB
-#define HiddMouseAB             (CSD(cl)->hiddMouseAB)
-
-#include <hidd/mouse.h>
+#define SysBase     (CSD(cl)->cs_SysBase)
+#define UtilityBase (CSD(cl)->cs_UtilityBase)
 
 /*****************************************************************************************
 
@@ -30,75 +29,16 @@
         CLID_Hidd_Mouse
 
     NOTES
-        This class represents a "hub" for collecting input from various
-        pointing devices (mice, tablets, touchscreens, etc) in the
-        system and sending them to clients.
+        Instances of this class are virtual devices being clients of the
+        pointing input subsystem. In order to receive input events, you
+        have to create an object of this class and supply a callback using
+        aoHidd_Mouse_IrqHandler attribute. After this your callback will be
+        called every time the event arrives until you dispose your object.
 
-        In order to get an access to pointing input subsystem you need to
-        create an object of CLID_Hidd_Mouse class. There can be two use
-        scenarios: driver mode and client mode.
-
-        If you wish to run in client mode (receive pointing events), you
-        have to supply a callback using aoHidd_Mouse_IrqHandler attribute.
-        After this your callback will be called every time the event arrives
-        until you dispose your object.
-
-        Events from all pointing devices are merged into a single stream
-        and propagated to all clients.
-
-        In driver mode you don't need to supply a callback (however it's not
-        forbidden). Instead you use the master object for registering your
-        hardware driver using HIDD_Mouse_AddHardwareDriver(). It is safe to
-        dispose the master object after adding a driver, the driver will
-        be internally kept in place.
-*****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
-        --hardware_drivers--
-
-    LOCATION
-        CLID_Hidd_Mouse
-
-    NOTES
-        A hardware driver should implement the same interface according to the following
-        rules:
-
-        1. A single object of driver class represents a single hardware unit.
-        2. A single driver object maintains a single callback address (passed to it
-           using aoHidd_Mouse_IrqHandler). Under normal conditions this callback is supplied
-           by CLID_Hidd_Mouse class.
-        3. HIDD_Mouse_AddHardwareDriver() and HIDD_Mouse_RemHardwareDriver() on a driver object
-           itself do not make sense, so there's no need to implement them.
-
-        A hardware driver class should be a subclass of CLID_Hidd in order to ensure
-        compatibility in future.
+        Every client receives events from all pointing devices merged into
+        a single stream.
 
 *****************************************************************************************/
-
-
-static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *ev)
-{
-    struct pHidd_Mouse_ExtEvent xev;
-    struct mouse_data *data;
-
-/* The event passed in may be pHidd_Mouse_Event instead of pHidd_Mouse_ExtEvent,
-   according to flags. In this case we add own flags */
-    if (drv->flags != vHidd_Mouse_Extended) {
-        xev.button = ev->button;
-        xev.x      = ev->x;
-        xev.y      = ev->y;
-        xev.type   = ev->type;
-        xev.flags  = drv->flags;
-        
-        ev = &xev;
-    }
-
-    for (data = (struct mouse_data *)drv->callbacks->mlh_Head; data->node.mln_Succ;
-         data = (struct mouse_data *)data->node.mln_Succ)
-        data->callback(data->callbackdata, ev);
-}
 
 /*****************************************************************************************
 
@@ -144,8 +84,6 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
     EXAMPLE
 
     BUGS
-        CLID_Hidd_Mouse and some hardware driver classes allow to get value of this attribute,
-        however there is currently no use for it. The attribute is considered non-getable.
 
     SEE ALSO
         aoHidd_Mouse_IrqHandlerData, aoHidd_Mouse_Extended
@@ -177,8 +115,6 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
     EXAMPLE
 
     BUGS
-        CLID_Hidd_Mouse and some hardware driver classes allow to get value of this attribute,
-        however there is currently no use for it. The attribute is considered non-getable.
 
     SEE ALSO
         aoHidd_Mouse_IrqHandler
@@ -271,6 +207,8 @@ static void GlobalCallback(struct driverNode *drv, struct pHidd_Mouse_ExtEvent *
         If value of this attribute is FALSE, the flags member is actually missing from
         the structure, not just zeroed out! So do not use it at all in this case.
 
+        CLID_Hidd_Mouse class always return TRUE for this attribute.
+
     NOTES
 
     EXAMPLE
@@ -288,16 +226,10 @@ OOP_Object *Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 {
     struct mouse_data *data;
     struct TagItem *tag, *tstate;
-    struct Library *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
-
-    if (!UtilityBase)
-        return NULL;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (!o) {
-        CloseLibrary(UtilityBase);
+    if (!o)
         return NULL;
-    }
 
     data = OOP_INST_DATA(cl, o);
     data->callback = NULL;
@@ -331,13 +263,12 @@ OOP_Object *Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     } /* while (tags to process) */
 
     /* Add to interrupts list if we have a callback */
-    if (data->callback) {
+    if (data->callback)
+    {
         Disable();
-        AddTail((struct List *)&CSD(cl)->callbacks, (struct Node *)data);
+        ADDTAIL(&CSD(cl)->callbacks, data);
         Enable();
     }
-
-    CloseLibrary(UtilityBase);
 
     return o;
 }
@@ -346,9 +277,10 @@ VOID Mouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
 
-    if (data->callback) {
+    if (data->callback)
+    {
         Disable();
-        Remove((struct Node *)data);
+        REMOVE((struct Node *)data);
         Enable();
     }
     OOP_DoSuperMethod(cl, o, msg);
@@ -356,21 +288,12 @@ VOID Mouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 VOID Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct mouse_data *data = OOP_INST_DATA(cl, o);
-    ULONG              idx;
+    ULONG idx;
 
     if (IS_HIDDMOUSE_ATTR(msg->attrID, idx))
     {
         switch (idx)
         {
-            case aoHidd_Mouse_IrqHandler:
-                *msg->storage = (IPTR)data->callback;
-                return;
-
-            case aoHidd_Mouse_IrqHandlerData:
-                *msg->storage = (IPTR)data->callbackdata;
-                return;
-
 /*          case aoHidd_Mouse_State:
 
                 TODO: Implement this, by ORing buttons from all registered mice (?)
@@ -411,6 +334,9 @@ VOID Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         It does not matter on which instance of CLID_Hidd_Mouse class this method is
         used. Hardware driver objects are shared between all of them.
 
+        Since V2 this interface is obsolete and deprecated. Use moHW_AddDriver
+        method on CLID_HW_Mouse class in order to install the driver.
+
     INPUTS
         obj         - Any object of CLID_Hidd_Mouse class.
         driverClass - A pointer to OOP class of the driver. In order to create an object
@@ -438,49 +364,7 @@ VOID Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_AddHardwareDriver *Msg)
 {
-    struct TagItem tags[] = {
-        { aHidd_Mouse_IrqHandler    , (IPTR)GlobalCallback},
-        { aHidd_Mouse_IrqHandlerData, 0                   },
-        { TAG_MORE                  , (IPTR)Msg->tags     }
-    };
-    struct driverNode *drvnode;
-
-    D(bug("[Mouse] AddHardwareDriver(0x%p)\n", Msg->driverClass));
-
-    drvnode = AllocMem(sizeof(struct driverNode), MEMF_PUBLIC);  
-    if (!drvnode)
-        return NULL;
-
-    tags[1].ti_Data = (IPTR)drvnode;
-    drvnode->drv = OOP_NewObject(Msg->driverClass, NULL, tags);
-    D(bug("[Mouse] Driver node 0x%p, driver 0x%p\n", drvnode, drvnode->drv));
-
-    if (drvnode->drv) {
-        struct mouse_staticdata *csd = CSD(cl);
-        IPTR val = FALSE;
-
-        drvnode->callbacks = &csd->callbacks;
-
-        OOP_GetAttr(drvnode->drv, aHidd_Mouse_Extended, &val);
-        D(bug("[Mouse] Extended event: %d\n", val));
-        if (val)
-            drvnode->flags = vHidd_Mouse_Extended;
-        else
-        {
-            OOP_GetAttr(drvnode->drv, aHidd_Mouse_RelativeCoords, &val);
-            D(bug("[Mouse] Relative coordinates: %d\n", val));
-            drvnode->flags = val ? vHidd_Mouse_Relative : 0;
-        }
-
-        ObtainSemaphore(&csd->drivers_sem);
-        AddTail((struct List *)&csd->drivers, (struct Node *)drvnode);
-        ReleaseSemaphore(&csd->drivers_sem);
-
-        return drvnode->drv;
-    }
-
-    FreeMem(drvnode, sizeof(struct driverNode));
-    return NULL;
+    return HW_AddDriver(CSD(cl)->hwObject, Msg->driverClass, Msg->tags);
 }
 
 /*****************************************************************************************
@@ -501,6 +385,9 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
 
         It does not matter on which instance of CLID_Hidd_Mouse class this method is
         used. Hardware driver objects are shared between all of them.
+
+        Since V2 this interface is obsolete and deprecated. Use moHW_RemoveDriver
+        method on CLID_HW_Kbd class in order to remove the driver.
 
     INPUTS
         obj    - Any object of CLID_Hidd_Mouse class.
@@ -524,59 +411,5 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
 
 void Mouse__Hidd_Mouse__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_RemHardwareDriver *Msg)
 {
-    struct mouse_staticdata *csd = CSD(cl);
-    struct driverNode *node;
-
-    ObtainSemaphore(&csd->drivers_sem);
-
-    for (node = (struct driverNode *)csd->drivers.mlh_Head; node->node.mln_Succ;
-         node = (struct driverNode *)node->node.mln_Succ) {
-        if (node->drv == Msg->driverObject) {
-            Remove((struct Node *)node);
-            break;
-        }
-    }
-
-    ReleaseSemaphore(&csd->drivers_sem);
-
-    OOP_DisposeObject(Msg->driverObject);
-
-    if (node->drv == Msg->driverObject)
-        FreeMem(node, sizeof(struct driverNode));
+    HW_RemoveDriver(CSD(cl)->hwObject, Msg->driverObject);
 }
-
-/* Class initialization and destruction */
-#undef  SysBase
-#define SysBase LIBBASE->csd.cs_SysBase
-#undef  OOPBase
-#define OOPBase LIBBASE->csd.cs_OOPBase
-
-static int Mouse_ExpungeClass(LIBBASETYPEPTR LIBBASE)
-{
-    D(bug("[Mouse] Base Class destruction\n"));
-
-    OOP_ReleaseAttrBase(IID_Hidd_Mouse);
-
-    return TRUE;
-}
-
-static int Mouse_InitClass(LIBBASETYPEPTR LIBBASE)
-{
-    D(bug("[Mouse] base class initialization\n"));
-
-    LIBBASE->csd.hiddMouseAB = OOP_ObtainAttrBase(IID_Hidd_Mouse);
-
-    if (LIBBASE->csd.hiddMouseAB)
-    {
-        NewList((struct List *)&LIBBASE->csd.callbacks);
-        NewList((struct List *)&LIBBASE->csd.drivers);
-        InitSemaphore(&LIBBASE->csd.drivers_sem);
-        D(bug("[Mouse] Everything OK\n"));
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-ADD2INITLIB(Mouse_InitClass, 0)
-ADD2EXPUNGELIB(Mouse_ExpungeClass, 0)

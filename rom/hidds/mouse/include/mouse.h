@@ -18,6 +18,8 @@
 #endif
 
 #define CLID_Hidd_Mouse "hidd.mouse"
+#define CLID_HW_Mouse   "hw.mouse"
+
 #define IID_Hidd_Mouse "hidd.mouse"
 
 #define HiddMouseAB __abHidd_Mouse
