@@ -50,7 +50,6 @@ AROS_UFH3(static IPTR, usbromstartup_init,
 
     struct Library *ps;
     struct PsdHardware *phw;
-    ULONG cnt = 0;
 
     D(bug("[USBROMStartup] Loading poseidon...\n"));
 
@@ -72,41 +71,13 @@ AROS_UFH3(static IPTR, usbromstartup_init,
 
         D(bug("[USBROMStartup] Added chipset drivers...\n"));
 
-        /* now this finds all usb hardware pci cards */
-//        while((phw = psdAddHardware("pciusb.device", cnt)))
-//        {
-//            D(bug("[USBROMStartup] Added pciusb.device unit %u\n", cnt));
-//
-//            psdEnumerateHardware(phw);
-//            cnt++;
-//        }
+        /* load the raspi usb hardware driver */
+        while((phw = psdAddHardware("usb2otg.device", 0)))
+        {
+            D(bug("[USBROMStartup] Added usb2otg.device unit %u\n", 0));
 
-//        if (cnt == 0) {
-            /* now this finds all other usb hardware pci cards */
-//            while((phw = psdAddHardware("ehci.device", cnt)))
-//            {
-//                D(bug("[USBROMStartup] Added ehci.device unit %u\n", cnt));
-
-//                psdEnumerateHardware(phw);
-//                cnt++;
-//            }
-//            cnt = 0;
-//            while((phw = psdAddHardware("ohci.device", cnt)))
-//            {
-//                D(bug("[USBROMStartup] Added ohci.device unit %u\n", cnt));
-
-//                psdEnumerateHardware(phw);
-//                cnt++;
-//            }
-//            cnt = 0;
-//            while((phw = psdAddHardware("uhci.device", cnt)))
-//            {
-//                D(bug("[USBROMStartup] Added uhci.device unit %u\n", cnt));
-
-//                psdEnumerateHardware(phw);
-//                cnt++;
-//            }
-//        }
+            psdEnumerateHardware(phw);
+        }
 
 	D(bug("[USBROMStartup] Scanning classes...\n"));
         psdClassScan();
@@ -116,7 +87,7 @@ AROS_UFH3(static IPTR, usbromstartup_init,
         {
             D(bug("[USBROMStartup] waiting for hubs..\n"));
             psdDelayMS(1000); // wait for hubs to settle
-            D(bug("[USBROMStartup] checking for masstorage devices..\n"));
+            D(bug("[USBROMStartup] checking for massstorage devices..\n"));
             psdGetAttrs(PGA_USBCLASS, msdclass, UCA_UseCount, &usecount, TAG_END);
             D(bug("[USBROMStartup] %d masstorage devices found\n", usecount));
             if(usecount > 0)
