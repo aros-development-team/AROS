@@ -20,11 +20,15 @@ struct NVDBase
     struct Library    nvd_Lib;
     
     BPTR              nvd_location;
+    BPTR              nvd_SegList;
+    struct Library   *nvd_DOSBase;
 };
 
 /* Locate library bases */
 
 #define GPB(x) ((struct NVDBase *)x)
+
+#define DOSBase (((struct NVDBase *)nvdBase)->nvd_DOSBase)
 
 #endif  /* NVDISK_INTERN_H */
 
