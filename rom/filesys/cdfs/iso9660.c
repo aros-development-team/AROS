@@ -105,6 +105,7 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     struct FileLock *fl = &il->il_Public.cl_FileLock;
     struct ISOVolume *iv = vol->cv_Private;
     int i, len;
+    BOOL has_Amiga_Protections = FALSE;
 
     D(bug("%s: \"%s\" Extent @0x%08x, Parent 0x%08x, Flags 0x%02x\n", __func__,
           dir->FileIdentifier,
@@ -157,6 +158,105 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     fib->fib_OwnerGID = 0;
 
     il->il_ParentExtent = iparent;
+
+    /* Parse RockRidge extensions */
+    i = ((UBYTE *)&dir->FileIdentifier[dir->FileIdentifierLength] -
+         (UBYTE *)dir);
+    if (i & 1)
+        i++;
+    while (i < dir->DirectoryLength) {
+        struct rrSystemUse *rr = (APTR)(((UBYTE *)dir) + i);
+        D(bug("%s: RR @%d [%c%c] (%d)\n", __func__, i, (AROS_BE2LONG(rr->Signature) >> 8) & 0xff, AROS_BE2LONG(rr->Signature) & 0xff, rr->Length));
+        if (rr->Length == 0) {
+            D(bug("%s: Corrupted RR section detected\n", __func__));
+            break;
+        }
+        switch (AROS_BE2LONG(rr->Signature)) {
+        case RR_SystemUse_AS:
+            if (rr->Version == RR_SystemUse_AS_VERSION) {
+                UBYTE *data = &rr->AS.Data[0];
+
+                /* Amiga System Use area */
+                if (rr->AS.Flags & RR_AS_PROTECTION) {
+                    struct SystemUseASProtection *ap = (APTR)data;
+                    fib->fib_Protection = (ap->User       << 24) |
+                                          (ap->Zero       << 16) |
+                                          (ap->MultiUser  << 8) |
+                                          (ap->Protection << 0);
+                    data = (UBYTE *)&ap[1];
+                    has_Amiga_Protections = TRUE;
+                }
+                if (rr->AS.Flags & RR_AS_COMMENT) {
+                    struct SystemUseASComment *ac = (APTR)data;
+                    int len = ac->Length;
+                    if (len > (MAXCOMMENTLENGTH - fib->fib_Comment[0])-1) {
+                        len = (MAXCOMMENTLENGTH - fib->fib_Comment[0])-1;
+                        CopyMem(&ac->Comment[0], &fib->fib_Comment[fib->fib_Comment[0]+1], len);
+                        fib->fib_Comment[0] += len;
+                    }
+                }
+            }
+            break;
+        case RR_SystemUse_PX:
+            /* Don't overwrite the Amiga RR protections */
+            if (has_Amiga_Protections)
+                break;
+            if (rr->Version == RR_SystemUse_PX_VERSION) {
+                ULONG prot = 0;
+                ULONG mode = isoRead32LM(&rr->PX.st_mode);
+                prot |= (mode & S_IXOTH) ? FIBF_OTR_EXECUTE : 0;
+                prot |= (mode & S_IWOTH) ? (FIBF_OTR_WRITE | FIBF_OTR_DELETE): 0;
+                prot |= (mode & S_IROTH) ? FIBF_OTR_READ : 0;
+                prot |= (mode & S_IXGRP) ? FIBF_GRP_EXECUTE : 0;
+                prot |= (mode & S_IWGRP) ? (FIBF_GRP_WRITE | FIBF_GRP_DELETE) : 0;
+                prot |= (mode & S_IRGRP) ? FIBF_GRP_READ : 0;
+                prot |= (mode & S_IXUSR) ? 0 : FIBF_EXECUTE;
+                prot |= (mode & S_IWUSR) ? 0 : (FIBF_WRITE | FIBF_DELETE);
+                prot |= (mode & S_IRUSR) ? 0 : FIBF_READ;
+
+                fib->fib_Protection = prot;
+                fib->fib_OwnerUID = isoRead32LM(&rr->PX.st_uid);
+                fib->fib_OwnerGID = isoRead32LM(&rr->PX.st_gid);
+            }
+            break;
+        case RR_SystemUse_NM:
+            if (rr->Version == RR_SystemUse_NM_VERSION) {
+                int len = rr->Length - ((UBYTE *)&rr->NM.Content[0] - (UBYTE *)rr);
+                if (len > (MAXCOMMENTLENGTH - fib->fib_FileName[0])-1) {
+                    len = (MAXCOMMENTLENGTH - fib->fib_FileName[0])-1;
+                    CopyMem(&rr->NM.Content[0], &fib->fib_FileName[fib->fib_FileName[0]+1], len);
+                    fib->fib_FileName[0] += len;
+                }
+            }
+            break;
+        case RR_SystemUse_CL:
+            if (rr->Version == RR_SystemUse_CL_VERSION) {
+                il->il_Extent = isoRead32LM(&rr->CL.ChildDirectory);
+            }
+            break;
+        case RR_SystemUse_PL:
+            if (rr->Version == RR_SystemUse_PL_VERSION) {
+                il->il_ParentExtent = isoRead32LM(&rr->PL.ParentDirectory);
+            }
+            break;
+        case RR_SystemUse_RE:
+            if (rr->Version == RR_SystemUse_RE_VERSION) {
+                /* We must ignore this entry */
+                return FALSE;
+            }
+            break;
+        case RR_SystemUse_TF:
+            /* TF fields have no use under AROS */
+            break;
+        case RR_SystemUse_SF:
+            D(bug("%s: Sparse files are not (yet) supported\n"));
+            fib->fib_Size = 0;
+            break;
+        default:
+            break;
+        }
+        i += rr->Length;
+    }
 
     D(fib->fib_FileName[fib->fib_FileName[0]+1]=0);
 
