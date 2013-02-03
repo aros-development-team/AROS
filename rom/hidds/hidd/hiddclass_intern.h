@@ -53,6 +53,7 @@ struct class_static_data
 {
     OOP_AttrBase                hiddAttrBase;  // keep lower case so it does not clash with define.
     OOP_AttrBase                hwAttrBase;
+    OOP_MethodID                hwMethodBase;
 
     OOP_Class                   *hiddclass;
     OOP_Class                   *hwclass;
@@ -80,7 +81,9 @@ struct IntHIDDClassBase
 
 #undef HiddAttrBase
 #undef HWAttrBase
+#undef HWBase
 #define HiddAttrBase (CSD(cl)->hiddAttrBase)
 #define HWAttrBase   (CSD(cl)->hwAttrBase)
+#define HWBase       (CSD(cl)->hwMethodBase)
 
 #endif /* HIDD_CLASS_INTERN_H */
