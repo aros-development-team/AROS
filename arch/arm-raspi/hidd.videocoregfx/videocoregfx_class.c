@@ -129,6 +129,24 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     struct TagItem              gfxmsg_tags[2];
     struct pRoot_New            gfxmsg_New;
 
+    struct TagItem              pftags_32bpp[] = {
+        { aHidd_PixFmt_RedShift,      16  },
+        { aHidd_PixFmt_GreenShift,    8   },
+        { aHidd_PixFmt_BlueShift,     0   },
+        { aHidd_PixFmt_AlphaShift,    24  },
+        { aHidd_PixFmt_RedMask,       0x0000FF00 },
+        { aHidd_PixFmt_GreenMask,     0x00FF0000 },
+        { aHidd_PixFmt_BlueMask,      0xFF000000 },
+        { aHidd_PixFmt_AlphaMask,     0x000000FF },
+        { aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor },
+        { aHidd_PixFmt_Depth,         32  },
+        { aHidd_PixFmt_BytesPerPixel, 4   },
+        { aHidd_PixFmt_BitsPerPixel,  32  },
+        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_ARGB32 },
+        { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
+        { TAG_DONE, 0UL }
+    };
+
     struct TagItem              pftags_24bpp[] = {
         { aHidd_PixFmt_RedShift,      24  },
         { aHidd_PixFmt_GreenShift,    16  },
@@ -204,9 +222,10 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     };
 
     struct TagItem              fmttags[] = {
+//        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_32bpp  },
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_24bpp  },
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_16bpp  },
-        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_15bpp  },
+//        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_15bpp  },
 //        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_8bpp   },
         { TAG_DONE, 0UL }
     };
