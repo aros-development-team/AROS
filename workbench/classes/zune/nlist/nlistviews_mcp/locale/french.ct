@@ -1,0 +1,726 @@
+## version $VER: Nlistviews_mcp.ct 2.94 (13.04.08) by mrodfr@gmail.com
+## language français
+## codeset 0
+;
+;
+; NListviews_mcp.cd - NList MUI custom prefs catalog description file
+; $Id$
+;
+;#version 2
+;#language français
+;
+;
+MSG_FONTS
+Polices
+; Fonts
+;
+MSG_NORMAL_FONT
+Police normale:
+; Normal Font:
+;
+MSG_NORMAL_FONT_HELP
+Choisissez une police normale pour Nlist.
+; Choose the normal NList font.
+;
+MSG_NORMAL_FONT_ASL
+SVP, choisissez une police normale...
+; Please select the normal font...
+;
+MSG_SMALL_FONT
+Petite police:
+; Small Font:
+;
+MSG_SMALL_FONT_HELP
+Choisissez une petite police pour Nlist.
+; Choose the small NList font.
+;
+MSG_SMALL_FONT_ASL
+SVP, choisissez une petite police...
+; Please select a small font...
+;
+MSG_FIXED_FONT
+Police fixe:
+; Fixed Font:
+;
+MSG_FIXED_FONT_HELP
+Choisissez une police fixe pour Nlist.
+; Choose the fixed NList font.
+;
+MSG_FIXED_FONT_ASL
+SVP, choisissez une police fixe...
+; Please select a fixed font...
+;
+MSG_FONT_MARGIN
+Marge
+; Font Margin
+;
+MSG_FONT_MARGIN_HELP
+Permet de choisir une marge verticale.\n\
+Celle-ci sera ajoutée à la hauteur de la\n\
+police et le résultat sera la hauteur\n\
+par défaut d'une ligne dans un objet Nlist.
+; Allows to set a vertical margin\n\
+; which will be added to the font\n\
+; height and result in the default\n\
+; line height in an NList object.
+;
+MSG_COLORS
+Couleurs
+; Colors
+;
+MSG_TEXTCOLOR
+Couleur du texte
+; Text Pen
+;
+MSG_BACKGROUNDCOLOR
+Couleur du fond
+; Background
+;
+MSG_TITLE_PEN_WIN
+Couleur du titre
+; Title Pen
+;
+MSG_TITLE_PEN_HELP
+Pour ajuster la couleur du texte\n\
+dans un titre.
+; For adjusting the pen color of\n\
+; a title.
+;
+MSG_PBG_TITLE
+\ecTitre
+; \ecTitle
+;
+MSG_TITLE_BG_WIN
+Couleur du fond
+; Title Background
+;
+MSG_TITLE_BG_HELP
+Pour ajuster la couleur du fond\n\
+dans un titre.
+; For adjusting the background color\n\
+; of a title.
+;
+MSG_LIST_PEN_WIN
+Couleur de liste
+; List Pen
+;
+MSG_LIST_PEN_HELP
+Pour ajuster la couleur du texte\n\
+dans une liste.
+; For adjusting the pen color of\n\
+; a list.
+;
+MSG_PBG_LIST
+\ecListe
+; \ecList
+;
+MSG_LIST_BG_WIN
+Couleur du fond
+; List Background
+;
+MSG_LIST_BG_HELP
+Pour ajuster la couleur du fond\n\
+dans une liste.
+; For adjusting the background color\n\
+; of a list.
+;
+MSG_SELECT_PEN_WIN
+Entrée sélectionnée
+; Selected Entry
+;
+MSG_SELECT_PEN_HELP
+Pour ajuster la couleur du texte\n\
+pour les entrées sélectionnées.
+; For adjusting the pen color of\n\
+; selected entries.
+;
+MSG_PBG_SELECT
+\ecSélectionnée
+; \ecSelected
+;
+MSG_SELECT_BG_WIN
+Entrée sélectionnée
+; Selected Entry
+;
+MSG_SELECT_BG_HELP
+Pour ajuster la couleur du fond\n\
+pour les entrées sélectionnées.
+; For adjusting the background color\n\
+; of selected entries.
+;
+MSG_CURSOR_PEN_WIN
+Curseur sélectionnée
+; Selected Cursor
+;
+MSG_CURSOR_PEN_HELP
+Pour ajuster la couleur pour\n\
+le curseur sélectionné.
+; For adjusting the pen color of\n\
+; a selected cursor.
+;
+MSG_PBG_CURSOR
+\ecCurseur
+; \ecCursor
+;
+MSG_CURSOR_BG_WIN
+Couleur de fond
+; Selected Cursor
+;
+MSG_CURSOR_BG_HELP
+Pour ajuster la couleur du fond\n\
+pour le curseur sélectionné.
+; For adjusting the background color\n\
+; of a selected cursor.
+;
+MSG_UNSEL_PEN_WIN
+Curseur non sélectionné
+; Unselected Cursor
+;
+MSG_UNSEL_PEN_HELP
+Pour ajuster la couleur du texte\n\
+pour le curseur non sélectionné.
+; For adjusting the pen color of\n\
+; an unselected cursor.
+;
+MSG_PBG_UNSEL
+\ecNon sélectionné
+; \ecUnselected
+;
+MSG_UNSEL_BG_WIN
+Couleur de fond
+; Unselected Cursor
+;
+MSG_UNSEL_BG_HELP
+Pour ajuster la couleur du fond pour\n\
+le curseur non sélectionné.
+; For adjusting the background color\n\
+; of an unselected cursor.
+;
+MSG_INACT_PEN_WIN
+Curseur inactif
+; Inactive Cursor
+;
+MSG_INACT_PEN_HELP
+Pour ajuster la couleur pour\n\
+pour le curseur inactif.
+; For adjusting the pen color of\n\
+; an inactive cursor.
+;
+MSG_PBG_INACT
+\ecInactif
+; \ecInactive
+;
+MSG_INACT_BG_WIN
+Curseur du fond
+; Inactive Cursor
+;
+MSG_INACT_BG_HELP
+Pour ajuster la couleur du fond pour\n\
+pour le curseur inactif.
+; For adjusting the background color\n\
+; of an inactive cursor.
+;
+MSG_MULTISELECT
+Sélection multiple
+; MultiSelection
+;
+MSG_MULTISELECT_QUAL
+Avec touches
+; via Qualifier
+;
+MSG_MULTISELECT_ALWAYS
+Toujours
+; Always
+;
+MSG_MULTISELECT_HELP
+Permet de spécifier le mode de\n\
+sélection multiple par défaut.
+; Allows to specify the default\n\
+; multiselection mode.
+;
+MSG_MMB_MULTISEL
+Sélection multiple avec MMB
+; MMB multiselection
+;
+MSG_MMB_MULTISEL_HELP
+Permet de choisir le bouton du milieu\n\
+(MMB) comme mode de sélection multiple.
+; Set it if you want to use the middle\n\
+; mouse button (MMB) as a multiselection\n\
+; qualifier.
+;
+MSG_DRAGDROP
+Glisser & Déposer
+; Drag&Drop
+;
+MSG_DRAGTYPE_IMMEDIATE
+Immédiat
+; Immediate
+;
+MSG_DRAGTYPE_BORDERS
+Avec bordures
+; at Borders
+;
+MSG_DRAGTYPE_QUALIFIER
+Avec touches
+; via Qualifier
+;
+MSG_DRAGTYPE_HELP
+Défini le fonctionnement du Glisser & Déposer.\n\
+'Immédiat' démarre le Glisser & Déposer avec la\n\
+saisie d'un objet.\n\
+'Avec bordures' démarre le Glisser & Déposer\n\
+lors du passage sur les bordures\n\
+'Avec touches' démarre le Glisser & Déposer\n\
+avec des touches (Voir 'Touches').\n\
+\n\
+'Immédiat' est utilisé seulement lorsqu'il n'y\n\
+à pas de mode sélection multiple actif.
+; Set the drag mode. 'Immediate' will start\n\
+; drag&drop as soon as you drag an object.\n\
+; 'at Borders' for showing a drag operation\n\
+; as soon as you passed the left/right borders\n\
+; and 'via Qualifier' for only allowing to\n\
+; drag&drop via a qualifier key (see 'Keys').\n\
+; \n\
+; 'Immediate' is used only when in no-multiselect\n\
+; mode.
+;
+MSG_DRAG_LINES
+Lignes visibles
+; Visible lines
+;
+MSG_DRAG_LINES_HELP
+Règle le nombre maxi. de lignes\n\
+qui seront montrées pendant un\n\
+Glisser & Déposer. Si plus de lignes\n\
+sont sélectionnées, vous verrez un\n\
+message: Glisse & Dépose xx lignes...'.
+; Give the max. number of lines\n\
+; which will be shown when\n\
+; doing drag&drop. If more lines\n\
+; are selected, you'll get a message\n\
+; similar to: 'Dragging xx Items...'.
+;
+MSG_PAGE_FONTS
+Polices
+; Fonts
+;
+MSG_PAGE_COLORS
+Couleurs
+; Colors
+;
+MSG_PAGE_OPTIONS
+Options
+; Options
+;
+MSG_PAGE_SCROLLING
+Défilement
+; Scrolling
+;
+MSG_PAGE_KEYBINDINGS
+Touches
+; Keybindings
+;
+MSG_SB_HORIZONTAL
+Déplacement horizontal
+; Horizontal Scrollbar
+;
+MSG_SB_HORIZONTAL_HELP
+Règle le mode par défaut pour\n\
+un déplacement horizontal.\n\
+(Peut être remplacé par\n\
+l'application en elle-même).
+; Set the default mode\n\
+; for the horizontal scrollbar.\n\
+; (may be overwritten by an\n\
+; application)
+;
+MSG_SB_VERTICAL
+Déplacement vertical
+; Vertical Scrollbar
+;
+MSG_SB_VERTICAL_HELP
+Règle le mode par défaut pour\n\
+un déplacement vertical.\n\
+(Peut être remplacé par\n\
+l'application en elle-même).
+; Set the default mode\n\
+; for the vertical scrollbar.\n\
+; (may be overwritten by an\n\
+; application)
+;
+MSG_SCROLLCONTROL
+Réglages des déplacements
+; Scolling Control
+;
+MSG_SMOOTH_SCROLLING
+Déplacement fluide
+; Smooth Scrolling
+;
+MSG_SMOOTH_SCROLLING_HELP
+Si sélectionné, un déplacement fluide\n\
+sera utilisé pour les objets Nlist.\n\
+De plus, en utilisant le gadget 'fluidité'\n\
+dans le menu MUI 'Listes -> Contrôle'\n\
+dans les configurations de MUI, la vitesse\n\
+du déplacement fluide sera contrôlable.
+; If enabled, smoothing scrolling\n\
+; will be used for NList objects.\n\
+; In addition, by using the 'smooth'\n\
+; slider in the normal MUI 'Listview'\n\
+; configuration page the speed of\n\
+; the smooth scrolling can be controled.
+;
+MSG_MMB_FASTWHEEL
+MMB molette rapide
+; MMB Fast Wheel
+;
+MSG_MMB_FASTWHEEL_HELP
+Si sélectionné, le bouton du milieu\n\
+pourra être utilisé comme action de\n\
+déplacement rapide avec une molette.\n\
+(Voir la page 'Touches' pour les autres\n\
+réglages possible avec la molette).
+; If enabled, the middle mouse button\n\
+; can be used as a qualifier to perform\n\
+; a fast scroll wheel action.\n\
+; (See 'Keybindings' page as well for\n\
+; more wheel qualifiers)
+;
+MSG_WHEEL_STEP
+Pas (dépl. molette normal)
+; Mouse Wheel Step
+;
+MSG_WHEEL_STEP_HELP
+Permet de spécifier le nombre de lignes à\n\
+déplacer en une fois pour une utilisation\n\
+normale avec la molette de la souris.
+; Allows to specify the amount of lines\n\
+; that should be scrolled when using a\n\
+; wheel mouse.
+;
+MSG_WHEEL_FAST
+Pas (dépl. molette rapide)
+; Mouse Wheel Fast Step
+;
+MSG_WHEEL_FAST_HELP
+Permet de spécifier le nombre de lignes à\n\
+déplacer en une fois pour une utilisation\n\
+rapide avec la molette de la souris.
+; Allows to specify the amount of lines\n\
+; that should be scrolled when using a\n\
+; wheel mouse and when the fast wheel\n\
+; qualifier is pressed.
+;
+MSG_LAYOUT
+Mise en page
+; Layout
+;
+MSG_PARTIAL_COL_MARK
+Marquage partiel colonne
+; Partial column mark
+;
+MSG_PARTIAL_COL_MARK_HELP
+Si sélectionné, un signe spécial sera utilisé\n\
+du coté droit de la colonne lorsque le texte\n\
+ne pourra pas être complètement utilisé.
+; If enabled, a special mark will be drawn\n\
+; at the right side of a column in case the\n\
+; text didn't completly fit into it.
+;
+MSG_PARTIAL_CHARS_DRAWN
+Caractères partiel dessiné
+; Partial chars drawn
+;
+MSG_PARTIAL_CHARS_DRAWN_HELP
+Si sélectionné, les caractères non visible\n\
+complètement à droite ou à gauche d'un objet\n\
+Nlist ne seront pas dessinés partiellement.
+; If enabled, characters that are not fully\n\
+; visible at the left and right corner of\n\
+; an NList object will not be drawn partially.
+;
+MSG_VERT_CENTERED
+Lignes verticales centrés
+; Vertical centered lines
+;
+MSG_VERT_CENTERED_HELP
+Si sélectionné, les lignes de texte seront\n\
+centrés verticalement dans les objets Nlist.
+; If activated, the text lines are centered\n\
+; vertically in a NList object.
+;
+MSG_BALANCING_COLS
+Déplacement colonnes
+; Balancing Columns
+;
+MSG_BALANCING_COLS_HELP
+Nlist permet de changer la largeur des colonnes par\n\
+déplacement du séparateur de colonne, dans la barre\n\
+de titre, avec la souris.\n\
+Ce déplacement peut être visible seulement dans le\n\
+titre, ou alors à travers toutes les lignes ou le\n\
+changement de largeur de la colonne peut aussi\n\
+simplement être visible constamment.
+; NList permits to change the column width\n\
+; via mouse dragging the column separator in\n\
+; the title bar. The moved bar can be visible\n\
+; either only in the title, throughout the\n\
+; whole lines or the column width changes can\n\
+; be made visible instantly.
+;
+MSG_COLWIDTHDRAG_TITLE
+Barre de titre
+; Title Bar
+;
+MSG_COLWIDTHDRAG_FULLBAR
+Barre complète
+; Full Bar
+;
+MSG_COLWIDTHDRAG_VISIBLE
+Visible
+; Visible
+;
+MSG_COLOR_OPTIONS
+Options
+; Options
+;
+MSG_FORCE_SELECT_PEN
+Forcer couleur sélectionnée
+; Force select pen
+;
+MSG_FORCE_SELECT_PEN_HELP
+Si sélectionné, Nlist vérifiera bien que la\n\
+couleur dans 'Sélectionné', 'Curseur' et\n\
+(Non sélectionné' sera bien forcé.
+; If enabled, NList will make sure that\n\
+; the 'Selected', 'Cursor' and 'Unselected'\n\
+; color will be forced.
+;
+MSG_MULTISEL_MOVEACTIVE
+Clavier déplace le curseur
+; Keyboard moves cursor
+;
+MSG_MULTISEL_MOVEACTIVE_HELP
+Si sélectionné, un déplacement au clavier\n\
+dans un objet Nlist déplacera le curseur\n\
+actif plutôt que le curseur non sélectionné.
+; If enabled, a keyboard use in an NList\n\
+; object will move the active cursor\n\
+; rather than the unselected one.
+;
+MSG_GROUP_MISC
+Divers
+; Miscellaneous
+;
+MSG_GROUP_EXAMPLE
+Exemple
+; Example
+;
+MSG_SERMOUSE_FIX
+Fix souris (port série)
+; Serial Mouse Fix
+;
+MSG_SERMOUSE_FIX_HELP
+Si sélectionné, Nlist tentera de fixer\n\
+les problèmes connus de Glisser&Déposer\n\
+en relation avec l'utilisation d'une\n\
+souris sur le port série.
+; If enabled, NList tries to fix common\n\
+; drag&drop issues that are related to using\n\
+; a serial mouse.
+;
+MSG_SELECT_POINTER
+Pointeur de sélection perso.
+; Custom Select Pointer
+;
+MSG_SELECT_POINTER_HELP
+Si sélectionné et si un objet Nlist est\n\
+en mode de sélection, un pointeur de\n\
+sélection personnalisé sera utilisé\n\
+plutôt que le pointeur par défaut du\n\
+workbench.
+; If enabled, and an NList object is in\n\
+; charwise selection mode a custom select\n\
+; pointer will be displayed instead of the\n\
+; default workbench mouse pointer image.
+;
+MSG_BAR_CONTEXTMENU
+Contexte Menu
+; Context Menu
+;
+MSG_DEFAULT_CONTEXT_MENU_HELP
+Nlist utilisera son contexte menu par défaut en\n\
+mode actif ou non actif ou juste dans le cas\n\
+ou la souris sera positionné sur un objet Nlist.
+; NList permits to have its default\n\
+; context menu being disabled or enabled\n\
+; or only in case the mouse is at the top\n\
+; of the NList object.
+;
+MSG_SNOOP
+Analyse
+; Snoop
+;
+MSG_SNOOP_KEY
+Démarre la capture d'un raccourci clavier
+; Start the grab of a hotkey.
+;
+MSG_BUTTON_INSERT
+Insérer
+; Insert
+;
+MSG_BUTTON_INSERT_HELP
+Permet d'insérer un nouveau raccourci clavier
+; Allows to insert a new hotkey.
+;
+MSG_BUTTON_REMOVE
+Supprimer
+; Remove
+;
+MSG_BUTTON_REMOVE_HELP
+Permet de supprimer un raccourci clavier existant
+; Allows to remove an existing hotkey.
+;
+MSG_BUTTON_UPDATEKEYS
+Mise à jour
+; Update keys
+;
+MSG_BUTTON_UPDATEKEYS_HELP
+Ajoute les raccourcis par défaut\n\
+pour les fonctions qui ne sont pas\n\
+actuellement dans la liste.
+; Add the default hotkeys for\n\
+; the functions which are not\n\
+; currently in the list.
+;
+MSG_BUTTON_DEFAULTKEYS
+Touches par défaut
+; Default keys
+;
+MSG_BUTTON_DEFAULTKEYS_HELP
+Remplace tous les raccourcis\n\
+par ceux par défaut.
+; Resets all hotkeys to default ones.
+;
+MSG_FUNC_MULTISELQUAL
+Sélection multiple/Block
+; Multiselect/Block Qualifier
+;
+MSG_FUNC_DRAGQUAL
+Glisser & Déposer
+; Drag&Drop Qualifier
+;
+MSG_FUNC_BALANCEQUAL
+Déplacement
+; Balance Qualifier
+;
+MSG_FUNC_COPYCLIP
+Copier dans presse-papiers
+; Copy to clipboard
+;
+MSG_FUNC_DEFCOLWIDTH
+Largeur de la colonne par défaut
+; Default width column
+;
+MSG_FUNC_DEFALLCOLWIDTH
+Largeur des colonnes par défaut
+; Default width all columns
+;
+MSG_FUNC_DEFORDERCOL
+Ordre de la colonne par défaut
+; Default order column
+;
+MSG_FUNC_DEFALLORDERCOL
+Ordre des colonnes par défaut
+; Fefault order all columns
+;
+MSG_FUNC_SELECTTOP
+Haut maxi
+; Select to top
+;
+MSG_FUNC_SELECTBOTTOM
+Bas maxi
+; Select to bottom
+;
+MSG_FUNC_SELECTPAGEUP
+1 page haut
+; Select to page up
+;
+MSG_FUNC_SELECTPAGEDOWN
+1 page bas
+; Select to page down
+;
+MSG_FUNC_SELECTUP
+Haut
+; Select up
+;
+MSG_FUNC_SELECTDOWN
+Bas
+; Select down
+;
+MSG_FUNC_TOGGLEACTIVE
+Actif on/off
+; Toggle active
+;
+MSG_FUNC_FASTWHEELQUAL
+Touche molette rapide
+; Fast MouseWheel Qualifier
+;
+MSG_FUNC_HORIZWHEELQUAL
+Touche molette horizontale
+; Horiz MouseWheel Qualifier
+;
+MSG_FUNC_TITLECLICKQUAL
+Touche title Click
+; Title Click Qualifier
+;
+MSG_VSB_ALWAYS
+Toujours
+; Always
+;
+MSG_VSB_AUTO
+Automatique
+; Auto
+;
+MSG_VSB_FULLAUTO
+Auto. complet
+; FullAuto
+;
+MSG_HSB_ALWAYS
+Toujours
+; Always
+;
+MSG_HSB_AUTO
+Automatique
+; Auto
+;
+MSG_HSB_FULLAUTO
+Auto. complet
+; FullAuto
+;
+MSG_HSB_NONE
+Non
+; None
+;
+MSG_CMENU_ALWAYS
+Toujours
+; Always
+;
+MSG_CMENU_TOPONLY
+Haut seul
+; TopOnly
+;
+MSG_CMENU_NEVER
+Jamais
+; Never
+;
+MSG_HOTKEYS_KEY
+Touche
+; Key
+;
+MSG_HOTKEYS_ACTION
+Action
+; Action
+;

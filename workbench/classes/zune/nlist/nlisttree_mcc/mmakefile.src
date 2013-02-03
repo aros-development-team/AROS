@@ -1,0 +1,26 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM contrib-zune-classes-nlisttree-class : includes linklibs
+
+USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include
+USER_CFLAGS := -DNO_INLINE_STDARG
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
+FILES := library \
+         ClipboardServer \
+         NListtree \
+         QuickSort \
+         Debug
+
+%build_module_simple mmake=contrib-zune-classes-nlisttree-class \
+  modname=NListtree modtype=mcc moduledir=$(CONTRIBDIR)/Zune/MCC_NList/Classes/Zune \
+  files=$(FILES) uselibs="mui"
+
+
+#MM includes-copy
+
+INCLUDE_FILES := ../include/mui/NListtree_mcc.h
+%copy_includes path=mui dir=../include/mui
+
+%common

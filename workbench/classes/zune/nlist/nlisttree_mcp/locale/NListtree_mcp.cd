@@ -1,0 +1,256 @@
+;
+; NListtree_mcp.cd - NListtree MUI custom prefs catalog description file
+; $Id$
+;
+#version 2
+#language english
+;
+;
+MSG_TAB_LAYOUT (1//)
+Layout
+;
+MSG_GROUP_IMAGES_COLORS (2//)
+Images/Colors
+;
+MSG_BUTTON_LABEL_CLOSED (3//)
+Closed
+;
+MSG_BUTTON_SHORTCUT_CLOSED (4//)
+c
+;
+MSG_HELP_CLOSED_IMAGE (5//)
+Image to use for closed nodes.
+;
+MSG_WIN_TITLE_CLOSED_IMAGE (6//)
+Adjust image for closed nodes
+;
+MSG_BUTTON_LABEL_LINES (7//)
+Lines
+;
+MSG_BUTTON_SHORTCUT_LINES (8//)
+l
+;
+MSG_HELP_LINES_COLOR (9//)
+Color to use for lines.
+;
+MSG_WIN_TITLE_LINES_COLOR (10//)
+Adjust lines color
+;
+MSG_BUTTON_LABEL_OPEN (11//)
+Open
+;
+MSG_BUTTON_SHORTCUT_OPEN (12//)
+o
+;
+MSG_HELP_OPEN_IMAGE (13//)
+Image to use for open nodes.
+;
+MSG_WIN_TITLE_OPEN_IMAGE (14//)
+Adjust image for open nodes
+;
+MSG_BUTTON_LABEL_SHADOW (15//)
+Shadow
+;
+MSG_BUTTON_SHORTCUT_SHADOW (16//)
+w
+;
+MSG_HELP_SHADOW_COLOR (17//)
+Color to use to cast\n\
+shadows after lines.
+;
+MSG_WIN_TITLE_SHADOW_COLOR (18//)
+Adjust shadow color
+;
+MSG_BUTTON_LABEL_SPECIAL (19//)
+Special
+;
+MSG_BUTTON_SHORTCUT_SPECIAL (20//)
+i
+;
+MSG_HELP_SPECIAL_IMAGE (21//)
+A special image to be\n\
+displayed after every node.
+;
+MSG_WIN_TITLE_SPECIAL_IMAGE (22//)
+Adjust special image
+;
+MSG_BUTTON_LABEL_DRAW (23//)
+Draw
+;
+MSG_BUTTON_SHORTCUT_DRAW (24//)
+d
+;
+MSG_HELP_DRAW_COLOR (25//)
+A draw color to be combined\n\
+with the lines color.
+;
+MSG_WIN_TITLE_DRAW_COLOR (26//)
+Adjust draw color
+;
+MSG_GROUP_STYLE (27//)
+Style
+;
+MSG_CYCLE_LABEL_STYLE (28//)
+Style
+;
+MSG_CYCLE_SHORTCUT_STYLE (29//)
+s
+;
+MSG_HELP_STYLE (30//)
+Select here the global style of the tree.\n\
+\n\
+Depending on your choice, some of the\n\
+options above may become (un)available.
+;
+MSG_CYCLE_ITEM_STYLE_NORMAL (31//)
+Normal
+;
+MSG_CYCLE_ITEM_STYLE_INSERTED (32//)
+Inserted
+;
+MSG_CYCLE_ITEM_STYLE_LINES (33//)
+Lines
+;
+MSG_CYCLE_ITEM_STYLE_WIN98 (34//)
+Win98
+;
+MSG_CYCLE_ITEM_STYLE_MAC (35//)
+Mac
+;
+MSG_CYCLE_ITEM_STYLE_LINES3D (36//)
+Lines 3D
+;
+MSG_CYCLE_ITEM_STYLE_WIN98PLUS (37//)
+Win98+
+;
+MSG_CYCLE_ITEM_STYLE_GLOW (38//)
+Glow
+;
+MSG_BUTTON_LABEL_SPACE (39//)
+Spacing
+;
+MSG_BUTTON_SHORTCUT_SPACE (40//)
+p
+;
+MSG_HELP_SPACE (41//)
+The more spacing, the wider\n\
+the listtree will be.
+;
+MSG_BUTTON_LABEL_REMEMBER (42//)
+Remember status?
+;
+MSG_BUTTON_SHORTCUT_REMEMBER (43//)
+r
+;
+MSG_HELP_REMEMBER (44//)
+If enabled, the open/closed status of nodes\n\
+will be 'remembered' after the listtree is closed\n\
+the next time it is opened again.\n\
+\n\
+Please note, however, that an application\n\
+can override your choice here.
+;
+MSG_BUTTON_LABEL_AUTOSCROLL (45//)
+Autoscroll?
+;
+MSG_BUTTON_SHORTCUT_AUTOSCROLL (46//)
+a
+;
+MSG_HELP_AUTOSCROLL (47//)
+If enabled, the listview will auto-scroll its\n\
+contents when opening nodes to try and fit the\n\
+visible area.
+;
+MSG_TAB_EXAMPLE (48//)
+Example
+;
+MSG_HELP_LISTVIEW_EXAMPLE (49//)
+This NListtree object reacts in real time to\n\
+the changes you apply under the 'Layout' tab.\n\
+\n\
+Give it a try! :)
+;
+MSG_BUTTON_LABEL_EXPAND (50//)
+Expand
+;
+MSG_BUTTON_SHORTCUT_EXPAND (51//)
+n
+;
+MSG_BUTTON_LABEL_COLLAPSE (52//)
+Collapse
+;
+MSG_BUTTON_SHORTCUT_COLLAPSE (53//)
+e
+;
+MSG_BUTTON_LABEL_LINETYPES (54//)
+Line type
+;
+MSG_BUTTON_SHORTCUT_LINETYPES (55//)
+l
+;
+MSG_LINETYPE_DISABLED (56//)
+Disabled
+;
+MSG_LINETYPE_NORMAL (57//)
+Normal
+;
+MSG_LINETYPE_DOTTED (58//)
+Dotted
+;
+MSG_LINETYPE_SHADOW (59//)
+Shadow
+;
+MSG_LINETYPE_GLOW (60//)
+Glow
+;
+MSG_HELP_LINETYPES (61//)
+Select the line type used for drawing\n\
+the individual levels in the listtree.
+;
+MSG_BUTTON_LABEL_FOLDER (62//)
+Folder image
+;
+MSG_BUTTON_SHORTCUT_FOLDER (63//)
+f
+;
+MSG_WIN_TITLE_FOLDER_IMAGE (64//)
+Adjust folder image
+;
+MSG_HELP_FOLDER_IMAGE (65//)
+An image displayed in front of every\n\
+node containing subnodes.
+;
+MSG_BUTTON_LABEL_FOLDERIMAGE (66//)
+Use folder image
+;
+MSG_BUTTON_SHORTCUT_FOLDERIMAGE (67//)
+i
+;
+MSG_HELP_FOLDERIMAGE (68//)
+Select if you want a folder image to\n\
+appear in front of every node containing\n\
+subnodes.
+;
+MSG_BUTTON_LABEL_INDENTWIDTH (69//)
+Additional indent width
+;
+MSG_BUTTON_SHORTCUT_INDENTWIDTH (70//)
+w
+;
+MSG_HELP_INDENTWIDTH (71//)
+Specify an additional indent\n\
+width applied to each subnode.
+;
+MSG_BUTTON_LABEL_GLOW (72//)
+Glow color
+;
+MSG_BUTTON_SHORTCUT_GLOW (73//)
+g
+;
+MSG_WIN_TITLE_GLOW_COLOR (74//)
+Set glow line color
+;
+MSG_HELP_GLOW_COLOR (75//)
+Allows to set the color for the glow\n\
+line type
+;

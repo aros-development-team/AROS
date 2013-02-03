@@ -1,0 +1,43 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := NList-Demo \
+         NList-Demo2 \
+         NList-Demo3
+
+EXEDIR := $(CONTRIBDIR)/Zune/MCC_NList/Demos
+
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include
+USER_CFLAGS := -DNO_INLINE_STDARG
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
+#MM contrib-zune-classes-nlist-demo : includes linklibs \
+#MM 	    	    	    	      contrib-zune-classes-nlist \
+#MM 	    	    	    	      contrib-zune-classes-nlistview \
+#MM 	    	    	    	      contrib-zune-classes-nfloattext
+
+#MM contrib-zune-classes-nlisttree-demo : includes linklibs \
+#MM 	    	    	    	      contrib-zune-classes-nlist \
+#MM 	    	    	    	      contrib-zune-classes-nlistview \
+#MM 	    	    	    	      contrib-zune-classes-nfloattext \
+#MM 	    	    	    	      contrib-zune-classes-nlisttree
+
+#MM contrib-zune-classes-nbitmap-demo : includes linklibs contrib-zune-classes-nbitmap-demo-cpy
+
+%build_prog mmake=contrib-zune-classes-nlist-demo \
+    progname=NList-Demo targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc"
+
+%build_prog mmake=contrib-zune-classes-nlisttree-demo \
+    progname=NListtree-Demo targetdir=$(EXEDIR) \
+    files=NListtree-Demo uselibs="mui arossupport amiga arosc"
+
+%build_prog mmake=contrib-zune-classes-nbitmap-demo \
+    progname=NBitmap-Demo targetdir=$(EXEDIR) \
+    files=NBitmap-Demo uselibs="mui arossupport amiga arosc"
+
+%copy_files_q mmake=contrib-zune-classes-nbitmap-demo-cpy \
+    files=icon.png src=../nbitmap_mcc dst=$(EXEDIR)
+
+%common

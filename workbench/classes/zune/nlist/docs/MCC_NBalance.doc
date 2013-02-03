@@ -1,0 +1,43 @@
+TABLE OF CONTENTS
+
+NBalance.mcc/NBalance.mcc
+NBalance.mcc/MUIA_NBalance_Pointer
+NBalance.mcc/NBalance.mcc
+
+    *******************************************************************
+    Copyright (C) 2001-2010 by NList Open Source Team
+    $Id: MCC_NBalance.doc 401 2010-04-30 17:37:20Z damato $
+
+    This MCC public custom class is derived from the MUI standard
+    balance class which handles the dragging/resizing of vertical and
+    horizontal groups.
+
+    In contrast to the standard MUI balance class, however, it adds
+    some features such as displaying a mouse pointer as soon as the
+    mouse is above a dragable NBalance object.
+
+    It is released and distributed under the terms of the GNU Lesser
+    General Public License (LGPL) and available free of charge.
+
+    Please visit http://www.sf.net/projects/nlist-classes/ for
+    the very latest version and information regarding NBalance
+    *******************************************************************
+
+NBalance.mcc/MUIA_NBalance_Pointer
+
+    NAME
+        MUIA_NBalance_Pointer -- [ISG.], LONG
+
+    INPUTS
+        MUIV_NBalance_Pointer_Off
+        MUIV_NBalance_Pointer_Standard (default)
+
+    FUNCTION
+        Allows to set the mouse pointer that should be displayed when
+        the mouse is found to be above a NBalance object. Per default
+        a standard horizontal or vertical size pointer is displayed as
+        soon as the mouse is above a dragable NBalance object.
+
+    SEE ALSO
+
+

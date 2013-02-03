@@ -1,0 +1,242 @@
+## version $VER: NListtree_mcp.catalog 2.1 (18.09.2010)
+## language svenska
+## codeset 0
+;
+## chunk AUTH Pär Boberg
+;
+; NListtree_mcp.ct - NListtree MUI custom prefs catalog translation file
+; $Id$
+;
+;#version 2
+;#language english
+;
+;
+MSG_TAB_LAYOUT
+Layout
+; Layout
+;
+MSG_GROUP_IMAGES_COLORS
+Bilder/färger
+; Images/Colors
+;
+MSG_BUTTON_LABEL_CLOSED
+Stängd
+; Closed
+;
+MSG_BUTTON_SHORTCUT_CLOSED
+c
+; c
+;
+MSG_HELP_CLOSED_IMAGE
+Bild att använda för stängda noder.
+; Image to use for closed nodes.
+;
+MSG_WIN_TITLE_CLOSED_IMAGE
+Justera bild för stängda noder
+; Adjust image for closed nodes
+;
+MSG_BUTTON_LABEL_LINES
+Linjer
+; Lines
+;
+MSG_BUTTON_SHORTCUT_LINES
+l
+; l
+;
+MSG_HELP_LINES_COLOR
+Färg att använda för linjer.
+; Color to use for lines.
+;
+MSG_WIN_TITLE_LINES_COLOR
+Justera linje färg
+; Adjust lines color
+;
+MSG_BUTTON_LABEL_OPEN
+Öppen
+; Open
+;
+MSG_BUTTON_SHORTCUT_OPEN
+o
+; o
+;
+MSG_HELP_OPEN_IMAGE
+Bild att använda för öppna noder.
+; Image to use for open nodes.
+;
+MSG_WIN_TITLE_OPEN_IMAGE
+Justera bild för öppna noder
+; Adjust image for open nodes
+;
+MSG_BUTTON_LABEL_SHADOW
+Skugga
+; Shadow
+;
+MSG_BUTTON_SHORTCUT_SHADOW
+w
+; w
+;
+MSG_HELP_SHADOW_COLOR
+Färg att använda för\natt kasta skugga efter linjer.
+; Color to use to cast\n\
+; shadows after lines.
+;
+MSG_WIN_TITLE_SHADOW_COLOR
+Justera skugg färg
+; Adjust shadow color
+;
+MSG_BUTTON_LABEL_SPECIAL
+Special
+; Special
+;
+MSG_BUTTON_SHORTCUT_SPECIAL
+i
+; i
+;
+MSG_HELP_SPECIAL_IMAGE
+En speciell bild att visa\nefter varje nod.
+; A special image to be\n\
+; displayed after every node.
+;
+MSG_WIN_TITLE_SPECIAL_IMAGE
+Justera special bild
+; Adjust special image
+;
+MSG_BUTTON_LABEL_DRAW
+Rita
+; Draw
+;
+MSG_BUTTON_SHORTCUT_DRAW
+d
+; d
+;
+MSG_HELP_DRAW_COLOR
+En rit färg att kombinera\nmed linje färgen.
+; A draw color to be combined\n\
+; with the lines color.
+;
+MSG_WIN_TITLE_DRAW_COLOR
+Justera rit färg
+; Adjust draw color
+;
+MSG_GROUP_STYLE
+Stil
+; Style
+;
+MSG_CYCLE_LABEL_STYLE
+Stil
+; Style
+;
+MSG_CYCLE_SHORTCUT_STYLE
+s
+; s
+;
+MSG_HELP_STYLE
+Välj här global stil för trädet.\n\nBeroende på ditt val, så kan\nvissa av alternativen ovan\nbli otillgängliga.
+; Select here the global style of the tree.\n\
+; \n\
+; Depending on your choice, some of the\n\
+; options above may become (un)available.
+;
+MSG_CYCLE_ITEM_STYLE_NORMAL
+Normal
+; Normal
+;
+MSG_CYCLE_ITEM_STYLE_INSERTED
+Inmatad
+; Inserted
+;
+MSG_CYCLE_ITEM_STYLE_LINES
+Linjer
+; Lines
+;
+MSG_CYCLE_ITEM_STYLE_WIN98
+Win98
+; Win98
+;
+MSG_CYCLE_ITEM_STYLE_MAC
+Mac
+; Mac
+;
+MSG_CYCLE_ITEM_STYLE_LINES3D
+Linjer 3D
+; Lines 3D
+;
+MSG_CYCLE_ITEM_STYLE_WIN98PLUS
+Win98+
+; Win98+
+;
+MSG_CYCLE_ITEM_STYLE_GLOW
+Glöd
+; Glow
+;
+MSG_BUTTON_LABEL_SPACE
+Mellanrum
+; Spacing
+;
+MSG_BUTTON_SHORTCUT_SPACE
+p
+; p
+;
+MSG_HELP_SPACE
+Ju mer mellanrum, desto\nvidare blir listträdet.
+; The more spacing, the wider\n\
+; the listtree will be.
+;
+MSG_BUTTON_LABEL_REMEMBER
+Kom ihåg status?
+; Remember status?
+;
+MSG_BUTTON_SHORTCUT_REMEMBER
+r
+; r
+;
+MSG_HELP_REMEMBER
+Om vald, kommer öppen/stängd statusen\nför noder att 'kommas-ihåg' efter att listträdet\nstängs nästa gång det öppnas igen.\n\nVar god notera att, en applikation kan\nåsidosätta ditt val här.
+; If enabled, the open/closed status of nodes\n\
+; will be 'remembered' after the listtree is closed\n\
+; the next time it is opened again.\n\
+; \n\
+; Please note, however, that an application\n\
+; can override your choice here.
+;
+MSG_BUTTON_LABEL_AUTOSCROLL
+Autorulla?
+; Autoscroll?
+;
+MSG_BUTTON_SHORTCUT_AUTOSCROLL
+a
+; a
+;
+MSG_HELP_AUTOSCROLL
+Om vald, kommer listvyn att autorulla\ndess innehåll vid öppning av noder\nför att försöka passa i det synliga området.
+; If enabled, the listview will auto-scroll its\n\
+; contents when opening nodes to try and fit the\n\
+; visible area.
+;
+MSG_TAB_EXAMPLE
+Exempel
+; Example
+;
+MSG_HELP_LISTVIEW_EXAMPLE
+Detta NListtree objekt, reagerar i realtid\ntill ändringarna som du gör under 'Layout' fliken.\n\nPröva så får du se! :)
+; This NListtree object reacts in real time to\n\
+; the changes you apply under the 'Layout' tab.\n\
+; \n\
+; Give it a try! :)
+;
+MSG_BUTTON_LABEL_EXPAND
+Expandera
+; Expand
+;
+MSG_BUTTON_SHORTCUT_EXPAND
+n
+; n
+;
+MSG_BUTTON_LABEL_COLLAPSE
+Kollapsa
+; Collapse
+;
+MSG_BUTTON_SHORTCUT_COLLAPSE
+e
+; e
+;

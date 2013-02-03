@@ -1,0 +1,93 @@
+Short:        NList custom classes for MUI, V0.111
+Author:       NList Open Source Team
+Uploader:     Jens Langner <Jens.Langner@light-speed.de>
+Type:         dev/mui
+Version:      0.111
+Replaces:     dev/mui/MCC_NList-0.110.lha
+Requires:     AmigaOS V37+, MorphOS or AROS, MUI 3.8+, HotkeyString.mcc
+Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2; i386-aros; ppc-aros; x86_64-aros
+
+ABOUT NList
+***********
+
+This is a MUI custom class package containing replacements for the
+List/Listtree/Listviews/Floattext/Bitmap/Balance MUI built-in classes.
+
+Horizontal scrolling is fully supported, as well as smooth scrolling,
+word wrap, clipboard support, the classic char selection possibility,
+drag & drop and many other features. The user can change the column
+width with the mouse, and column titles can act as buttons.
+
+A NListviews.mcp prefs class is included, allowing the user to change
+backgrounds, pens, fonts, scrollbars mode, drag & drop mode, multiselect
+mode, keys, qualifiers and more.
+
+Also included is a Floattext.mui replacement that uses NFloattext.mcc,
+enabling copy to clipboard and key moving.
+
+This package includes:
+
+NList.mcc         20.130    17.12.2011
+NListview.mcc     19.85     17.12.2011
+NFloattext.mcc    19.66     17.12.2011
+NListviews.mcp    19.81     17.12.2011
+NListtree.mcc     18.37     17.12.2011
+NListtree.mcp     18.25     17.12.2011
+NBitmap.mcc       15.15     17.12.2011
+NBalance.mcc      15.11     17.12.2011
+
+
+INSTALLATION
+************
+
+1. Extract the archive to a temporary directory:
+
+   > cd RAM:
+   > lha x MCC_NList.lha
+
+2. Go to the "MCC_NList/Libs/MUI/<OS>" directory where <OS> is the directory
+   matching the operating system you want to install the NList classes for,
+   e.g.:
+
+   > cd MCC_NList/Libs/MUI/AmigaOS4
+
+3. Copy all the #?.mcc and #?.mcp files found in that directory to the
+   global "MUI:libs/mui/" directory on your system partition.
+
+   > copy #?.mcc MUI:Libs/mui/
+   > copy #?.mcp MUI:Libs/mui/
+
+4. Reboot and enjoy the new version ;)
+
+
+LEGALESE
+********
+
+The NList/NListview/NFloattext classes were originally written in 1996
+and are Copyright (C) 1996-1997 by Gilles Masson, whereas the NListtree
+classes were originally written in 1999 and are Copyright (C) 1999-2001
+by Carsten Scholling. Since 2001, both class families are maintained and
+Copyright (C) 2001-2010 by the NList Open Source Team.
+
+The complete NList package is distributed under the GNU Lesser General
+Public License (LGPL) and the development is hosted at SourceForge.net:
+
+         http://www.sourceforge.net/projects/nlist-classes/
+
+Please consult the included "COPYING" file for more detailed information
+about the licensing of the classes and their source code.
+
+
+CHANGES SINCE THE LAST RELEASE
+******************************
+
+Please refer to the included ChangeLog in the archive for more detailed
+information on the changes since the last public release.
+
+         __
+        / /
+   __  / /   Only Amiga makes it possible...
+   \ \/ /
+    \__/
+
+Amiga is a trademark of Amiga, Inc.

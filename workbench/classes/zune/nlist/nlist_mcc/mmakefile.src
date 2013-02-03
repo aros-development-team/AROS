@@ -1,0 +1,51 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM contrib-zune-classes-nlist-class  : includes linklibs
+
+#MM contrib-zune-classes-nlist-test  : includes linklibs
+
+FILES := \
+        NList_mcc    \
+        NList_mcc0   \
+        NList_mcc1   \
+        NList_mcc2   \
+        NList_mcc3   \
+        NList_mcc4   \
+        NList_mcc5   \
+        NList_mcc6   \
+        move         \
+        NList_func   \
+        NList_func2  \
+        NList_func3  \
+        NList_func4  \
+        NList_grp    \
+        NList_img    \
+        NList_img2   \
+        ClipboardServer \
+        Pointer      \
+        Debug
+
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../nlistviews_mcp \
+    -idirafter $(SRCDIR)/$(CURDIR)/../include/mui
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
+%build_module_simple mmake=contrib-zune-classes-nlist-class \
+  modname=NList modtype=mcc moduledir=$(CONTRIBDIR)/Zune/MCC_NList/Classes/Zune \
+  files="library $(FILES)" uselibs="mui"
+
+
+
+%build_prog mmake=contrib-zune-classes-nlist-test progname=NList-Test \
+    files="NList-Test $(FILES)" targetdir=$(AROS_TESTS)/NList \
+    uselibs="mui"
+
+
+#MM includes-copy
+
+INCLUDE_FILES := ../include/mui/NList_mcc.h
+%copy_includes path=mui dir=../include/mui
+
+%common

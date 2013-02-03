@@ -1,0 +1,70 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM contrib-zune-classes-nlistviews-mcp : includes linklibs contrib-zune-classes-nlistviews-mcp-catalogs
+#MM contrib-zune-classes-nlistviews-mcp-test : includes linklibs
+
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../nlistview_mcc
+USER_CFLAGS := -DNO_INLINE_STDARG
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
+FILES := locale NListviews icon Debug
+
+%build_module_simple mmake=contrib-zune-classes-nlistviews-mcp \
+  modname=NListviews modtype=mcp moduledir=$(CONTRIBDIR)/Zune/MCC_NList/Classes/Zune \
+  files="library $(FILES)" uselibs="mui"
+
+
+%build_prog mmake=contrib-zune-classes-nlistviews-mcp-test progname=NListviews-Prefs \
+    files="NListviews-Prefs $(FILES)" targetdir=$(AROS_TESTS)/NList \
+    uselibs="mui"
+
+
+#MM includes-copy
+
+INCLUDE_FILES := NListviews_mcp.h
+%copy_includes path=mui
+
+
+TARGETDIR := $(AROS_CONTRIB)/Zune/MCC_NList/Locale/Catalogs
+
+#MM
+contrib-zune-classes-nlistviews-mcp-catalogs : locale.h locale.c \
+    $(TARGETDIR)/czech/NListviews_mcp.catalog \
+    $(TARGETDIR)/svenska/NListviews_mcp.catalog \
+    $(TARGETDIR)/français/NListviews_mcp.catalog \
+    $(TARGETDIR)/deutsch/NListviews_mcp.catalog \
+    $(TARGETDIR)/polish/NListviews_mcp.catalog \
+    $(TARGETDIR)/türkçe/NListviews_mcp.catalog
+
+locale.h : locale/NListviews_mcp.cd $(SRCDIR)/$(CURDIR)/C_h.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd
+
+locale.c : locale/NListviews_mcp.cd $(SRCDIR)/$(CURDIR)/C_h.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
+
+$(TARGETDIR)/czech/NListviews_mcp.catalog: locale/czech.ct
+	@$(MKDIR) $(TARGETDIR)/czech
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/français/NListviews_mcp.catalog: locale/french.ct
+	@$(MKDIR) $(TARGETDIR)/français
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/svenska/NListviews_mcp.catalog: locale/swedish.ct
+	@$(MKDIR) $(TARGETDIR)/svenska
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/deutsch/NListviews_mcp.catalog: locale/german.ct
+	@$(MKDIR) $(TARGETDIR)/deutsch
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/polish/NListviews_mcp.catalog: locale/polish.ct
+	@$(MKDIR) $(TARGETDIR)/polish
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/türkçe/NListviews_mcp.catalog: locale/turkish.ct
+	@$(MKDIR) $(TARGETDIR)/türkçe
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
+
+%common
