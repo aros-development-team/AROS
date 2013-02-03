@@ -1,8 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM contrib-zune-classes-nlistviews-mcp : includes linklibs contrib-zune-classes-nlistviews-mcp-catalogs
-#MM contrib-zune-classes-nlistviews-mcp-test : includes linklibs
+#MM classes-zune-nlistviews-mcp : includes linklibs classes-zune-nlistviews-mcp-catalogs
+#MM classes-zune-nlistviews-mcp-test : includes linklibs
 
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../nlistview_mcc
 USER_CFLAGS := -DNO_INLINE_STDARG
@@ -10,12 +10,12 @@ USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 FILES := locale NListviews icon Debug
 
-%build_module_simple mmake=contrib-zune-classes-nlistviews-mcp \
-  modname=NListviews modtype=mcp moduledir=$(CONTRIBDIR)/Zune/MCC_NList/Classes/Zune \
+%build_module_simple mmake=classes-zune-nlistviews-mcp \
+  modname=NListviews modtype=mcp \
   files="library $(FILES)" uselibs="mui"
 
 
-%build_prog mmake=contrib-zune-classes-nlistviews-mcp-test progname=NListviews-Prefs \
+%build_prog mmake=classes-zune-nlistviews-mcp-test progname=NListviews-Prefs \
     files="NListviews-Prefs $(FILES)" targetdir=$(AROS_TESTS)/NList \
     uselibs="mui"
 
@@ -29,7 +29,7 @@ INCLUDE_FILES := NListviews_mcp.h
 TARGETDIR := $(AROS_CONTRIB)/Zune/MCC_NList/Locale/Catalogs
 
 #MM
-contrib-zune-classes-nlistviews-mcp-catalogs : locale.h locale.c \
+classes-zune-nlistviews-mcp-catalogs : locale.h locale.c \
     $(TARGETDIR)/czech/NListviews_mcp.catalog \
     $(TARGETDIR)/svenska/NListviews_mcp.catalog \
     $(TARGETDIR)/français/NListviews_mcp.catalog \

@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM contrib-zune-classes-nlistview-class : includes linklibs
+#MM classes-zune-nlistview-class : includes linklibs
 
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -idirafter $(SRCDIR)/$(CURDIR)/../include/mui -I$(SRCDIR)/$(CURDIR)/../nlistviews_mcp
 USER_CFLAGS := $(PARANOIA_CFLAGS)
@@ -11,8 +11,8 @@ FILES := library \
          NListview \
          Debug
 
-%build_module_simple mmake=contrib-zune-classes-nlistview-class \
-  modname=NListview modtype=mcc moduledir=$(CONTRIBDIR)/Zune/MCC_NList/Classes/Zune \
+%build_module_simple mmake=classes-zune-nlistview-class \
+  modname=NListview modtype=mcc \
   files=$(FILES) uselibs="mui"
 
 

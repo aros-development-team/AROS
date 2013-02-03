@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM contrib-zune-classes-nlisttree-class : includes linklibs
+#MM classes-zune-nlisttree-class : includes linklibs
 
 USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include
 USER_CFLAGS := -DNO_INLINE_STDARG
@@ -13,8 +13,8 @@ FILES := library \
          QuickSort \
          Debug
 
-%build_module_simple mmake=contrib-zune-classes-nlisttree-class \
-  modname=NListtree modtype=mcc moduledir=$(CONTRIBDIR)/Zune/MCC_NList/Classes/Zune \
+%build_module_simple mmake=classes-zune-nlisttree-class \
+  modname=NListtree modtype=mcc \
   files=$(FILES) uselibs="mui"
 
 

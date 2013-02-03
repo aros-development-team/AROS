@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM contrib-zune-classes-nlisttree-mcp : includes linklibs contrib-zune-classes-nlisttree-mcp-catalogs
+#MM classes-zune-nlisttree-mcp : includes linklibs classes-zune-nlisttree-mcp-catalogs
 
 USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include
 USER_CFLAGS := -DNO_INLINE_STDARG
@@ -9,8 +9,8 @@ USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 FILES := library NListtree icon locale
 
-%build_module_simple mmake=contrib-zune-classes-nlisttree-mcp \
-  modname=NListtree modtype=mcp moduledir=$(CONTRIBDIR)/Zune/MCC_NList/Classes/Zune \
+%build_module_simple mmake=classes-zune-nlisttree-mcp \
+  modname=NListtree modtype=mcp \
   files=$(FILES) uselibs="mui"
 
 TARGETDIR := $(AROS_CONTRIB)/Zune/MCC_NList/Locale/Catalogs
@@ -20,7 +20,7 @@ TARGETDIR := $(AROS_CONTRIB)/Zune/MCC_NList/Locale/Catalogs
 
 
 #MM
-contrib-zune-classes-nlisttree-mcp-catalogs : locale.c locale.h \
+classes-zune-nlisttree-mcp-catalogs : locale.c locale.h \
     $(TARGETDIR)/english-british/NListtree_mcp.catalog \
     $(TARGETDIR)/czech/NListtree_mcp.catalog \
     $(TARGETDIR)/svenska/NListtree_mcp.catalog \
