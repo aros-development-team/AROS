@@ -5,14 +5,16 @@
 
 #include <string.h>
 #include <dos/dosextens.h>
+#include <proto/exec.h>
+#include <proto/nvdisk.h>
+
+#include LC_LIBDEFS_FILE
 
 /*****************************************************************************
 
     NAME */
 
 #include <libraries/nonvolatile.h>
-#include <proto/exec.h>
-#include <proto/nvdisk.h>
 
 AROS_LH3(APTR, GetCopyNV,
 

@@ -4,18 +4,19 @@
 */
 
 #include <dos/dosextens.h>
-
-/*****************************************************************************
-
-    NAME */
-
 #include <exec/lists.h>
-#include <libraries/nonvolatile.h>
 #include <proto/exec.h>
 #include <proto/nvdisk.h>
 
 #include <string.h>
 
+#include LC_LIBDEFS_FILE
+
+/*****************************************************************************
+
+    NAME */
+
+#include <libraries/nonvolatile.h>
 
 AROS_LH2(struct MinList *, GetNVList,
 
