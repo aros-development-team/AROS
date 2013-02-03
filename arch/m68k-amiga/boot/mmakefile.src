@@ -27,6 +27,7 @@ Q ?= @
 #MM     kernel-debug-kobj \
 #MM     kernel-disk-kobj \
 #MM     kernel-filesystem-kobj \
+#MM     kernel-freeanim-kobj \
 #MM     kernel-fs-afs-kobj \
 #MM     kernel-fs-cdvdfs-kobj \
 #MM     kernel-fs-cdfs-kobj \
@@ -43,8 +44,11 @@ Q ?= @
 #MM     kernel-workbook-kobj \
 #MM     workbench-libs-gadtools-kobj \
 #MM     workbench-libs-icon-kobj \
+#MM     workbench-libs-lowlevel-kobj \
 #MM     workbench-libs-mathffp-kobj \
 #MM     workbench-libs-mathieeesingbas-kobj \
+#MM     workbench-libs-nonvolatile-kobj \
+#MM     workbench-libs-nvdisk-kobj \
 #MM     workbench-libs-workbench-kobj \
 #MM     linklibs-loadseg
 
@@ -102,7 +106,7 @@ FILES   :=
 AFILES  := ext_entry
 
 KLIBS   :=  keymap graphics layers intuition gadtools icon workbench \
-            mathffp mathieeesingbas
+            mathffp mathieeesingbas freeanim lowlevel nonvolatile nvdisk
 KDEVS   := cd
 KHNDLRS := cdrom cdfs
 KHIDDS  :=
