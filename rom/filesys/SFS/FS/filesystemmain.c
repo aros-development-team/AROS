@@ -72,9 +72,6 @@ LONG step(void);
 
 #define BLCKFACCURACY   (5)                          /* 2^5 = 32 */
 
-#define TIMEOUT         (1)   /* Timeout in seconds */
-#define FLUSHTIMEOUT    (20)  /* Flush timeout in seconds */
-
 #define ID_BUSY         AROS_LONG2BE(MAKE_ID('B','U','S','Y'))
 
 /* Our own usage of NotifyRequest private data */
@@ -106,50 +103,6 @@ struct DefragmentStep {
 #ifndef __AROS__
 struct SFSBase *globals=NULL;
 #endif
-
-void initGlobals()
-{
-    globals->is_LittleEndian = FALSE;
-    globals->inhibitnestcounter = 0;
-    globals->block_defragptr = 2;
-    globals->is_casesensitive = FALSE;
-    globals->has_recycled = TRUE;
-    globals->locklist = NULL;
-    globals->notifyrequests = NULL;
-    globals->activitytimeractive = FALSE;
-    globals->pendingchanges = FALSE;
-    globals->timerreset = FALSE;
-    globals->max_name_length = MAX_NAME_LENGTH;
-    globals->activity_timeout = FLUSHTIMEOUT;
-    globals->inactivity_timeout = TIMEOUT;
-    globals->retries = MAX_RETRIES;
-    globals->scsidirect = FALSE;
-    globals->does64bit = FALSE;
-    globals->newstyledevice = FALSE;
-    globals->deviceopened = FALSE;
-    globals->msgport = NULL;
-    globals->ioreq = NULL;
-    globals->ioreq2 = NULL;
-    globals->ioreqchangeint = NULL;
-    globals->cmdread = CMD_READ;
-    globals->cmdwrite = CMD_WRITE;
-    globals->blocks_maxtransfer = 1048576;
-    globals->mask_mask = -1;
-    globals->bufmemtype = MEMF_PUBLIC;
-    globals->transactionpool = 0;
-    globals->compressbuffer = 0;
-    globals->transactionnestcount = 0;
-    globals->iocache_lruhead = NULL;
-    globals->iocache_lines = 8;
-    globals->iocache_copyback = TRUE;
-    globals->iocache_readonwrite = FALSE;
-    globals->templockedobjectnode = 0;
-    globals->internalrename = FALSE;
-    globals->defrag_maxfilestoscan = 512;
-    globals->debugreqs=TRUE;
-
-    globals->mask_debug = 0xffff;
-}
 
 /* Prototypes */
 
@@ -3138,134 +3091,6 @@ void invalidatecaches() {
   invalidatecachebuffers();
   invalidateiocaches();
 }
-
-
-void dreqArgs(UBYTE *fmt, APTR params)
-{
-  APTR args[4];
-  UBYTE *fmt2;
-
-  if(globals->debugreqs!=FALSE) {
-    args[0]=AROS_BSTR_ADDR(globals->devnode->dn_Name);
-    args[1]=AROS_BSTR_ADDR(globals->startupmsg->fssm_Device);
-    args[2]=(APTR)globals->startupmsg->fssm_Unit;
-    args[3]=fmt;
-
-    if((fmt2=AllocVec(strlen(fmt)+100,0))!=0) {
-      _DEBUG(("\nREQUESTER\n\n"));
-      RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s",args,putChFunc,fmt2);
-
-      if (requestArgs(PROGRAMNAME, fmt2, "Continue|No more requesters", params) == 0)
-        globals->debugreqs=FALSE;
-
-      FreeVec(fmt2);
-    }
-  }
-}
-
-LONG reqArgs(UBYTE *fmt, UBYTE *gads, APTR params)
-{
-  APTR args[5];
-  APTR *arg=args;
-  UBYTE *fmt2;
-  LONG gadget=0;
-
-  /* Simple requester function.  It will put up a requester
-     in the form of:
-
-     "Volume 'BOOT' (DH0: scsi.device, unit 0)"
-
-     or:
-
-     "Device DH0: (scsi.device, unit 0)"
-
-     This depends on whether or not there is a valid
-     VolumeNode. */
-
-  if(globals->volumenode!=0) {
-    *arg++=AROS_BSTR_ADDR(globals->volumenode->dl_Name);
-  }
-
-  *arg++=AROS_BSTR_ADDR(globals->devnode->dn_Name);
-  *arg++=AROS_BSTR_ADDR(globals->startupmsg->fssm_Device);
-  *arg++=(APTR)globals->startupmsg->fssm_Unit;
-  *arg=fmt;
-
-  if((fmt2=AllocVec(strlen(fmt)+100,0))!=0) {
-
-    if(globals->volumenode!=0) {
-      RawDoFmt("Volume '%s' (%s: %s, unit %ld)\n\n%s",args,putChFunc,fmt2);
-    }
-    else {
-      RawDoFmt("Device %s: (%s, unit %ld)\n\n%s",args,putChFunc,fmt2);
-    }
-
-    gadget = requestArgs(PROGRAMNAME " request", fmt2, gads, params);
-    FreeVec(fmt2);
-  }
-
-  return(gadget);
-}
-
-LONG req_unusualArgs(UBYTE *fmt, APTR params)
-{
-  APTR args[5];
-  UBYTE *fmt2;
-  LONG gadget=0;
-
-  /* Simple requester function. */
-  args[0]=AROS_BSTR_ADDR(globals->devnode->dn_Name);
-  args[1]=AROS_BSTR_ADDR(globals->startupmsg->fssm_Device);
-  args[2]=(APTR)globals->startupmsg->fssm_Unit;
-  args[3]=fmt;
-  args[4]="This is a safety check requester, which should\n"\
-                 "never appear under normal conditions.  Please\n"\
-                 "notify the author about the error above and if\n"\
-                 "possible under what circumstances it appeared.\n\n"\
-                 "BEWARE: SFS might crash if you click Continue.\n"\
-                 "        Please save your work first!";
-
-  if((fmt2=AllocVec(strlen(fmt)+400,0))!=0) {
-
-    RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s\n\n%s",args,putChFunc,fmt2);
-    gadget = requestArgs(PROGRAMNAME " request", fmt2, "Continue", params);
-    FreeVec(fmt2);
-  }
-
-  return(gadget);
-}
-
-void request2(UBYTE *text) {
-  request(PROGRAMNAME, text, "Ok", 0);
-}
-
-LONG requestArgs(UBYTE *title, UBYTE *fmt, UBYTE *gads, APTR params)
-{
-  struct EasyStruct es;
-
-  es.es_StructSize=sizeof(struct EasyStruct);
-  es.es_Flags=0;
-  es.es_Title=title;
-  es.es_TextFormat=fmt;
-  es.es_GadgetFormat=gads;
-
-  return EasyRequestArgs(0, &es, 0, params);
-}
-
-void outputcachebuffer(struct CacheBuffer *cb) {
-  ULONG *a;
-  UWORD n;
-
-  _DEBUG(("CacheBuffer at address 0x%08lx of block %ld (Locked = %ld, Bits = 0x%02lx)\n",cb,cb->blckno,(LONG)cb->locked,(LONG)cb->bits));
-
-  a=cb->data;
-
-  for(n=0; n<(globals->bytes_block>>5); n++) {
-    _DEBUG(("%08lx %08lx %08lx %08lx %08lx %08lx %08lx %08lx\n",a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7]));
-    a+=8;
-  }
-}
-
 
 
 

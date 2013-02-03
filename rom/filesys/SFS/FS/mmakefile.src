@@ -15,7 +15,9 @@ FILES := adminspaces \
 	 locks \
 	 deviceio \
 	 cachedio \
-	 filesystemmain
+	 filesystemmain \
+	 globals \
+	 req
 
 USER_CFLAGS := -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
