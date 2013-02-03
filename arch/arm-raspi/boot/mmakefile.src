@@ -49,7 +49,7 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM     kernel-hidd-graphics \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
-#MM     kernel-usb \
+#MM     kernel-usb-nopci \
 #MM     kernel-usb-usb2otg \
 #MM     kernel-usb-romstrap-raspi \
 #MM     kernel-shell \
