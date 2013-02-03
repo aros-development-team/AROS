@@ -1,0 +1,245 @@
+## version $VER: NListtree_mcp.catalog 2.2 (2.1.2008)
+## language czech
+## codeset 5
+;
+;
+; NListtree_mcp.cd - NListtree MUI custom prefs catalog description file
+; $Id$
+;
+;#version 2
+;#language english
+;
+;
+MSG_TAB_LAYOUT
+Rozvr¾ení
+; Layout
+;
+MSG_GROUP_IMAGES_COLORS
+Obrázky a barvy
+; Images/Colors
+;
+MSG_BUTTON_LABEL_CLOSED
+Sbalená vìtev
+; Closed
+;
+MSG_BUTTON_SHORTCUT_CLOSED
+b
+; c
+;
+MSG_HELP_CLOSED_IMAGE
+Obrázek pro sbalenou èást seznamu.
+; Image to use for closed nodes.
+;
+MSG_WIN_TITLE_CLOSED_IMAGE
+Vyberte obrázek pro sbalenou vìtev
+; Adjust image for closed nodes
+;
+MSG_BUTTON_LABEL_LINES
+Barva linek
+; Lines
+;
+MSG_BUTTON_SHORTCUT_LINES
+l
+; l
+;
+MSG_HELP_LINES_COLOR
+Definuje barvu jednotlivých linek.
+; Color to use for lines.
+;
+MSG_WIN_TITLE_LINES_COLOR
+Vyberte barvu linek
+; Adjust lines color
+;
+MSG_BUTTON_LABEL_OPEN
+Rozbalená vìtev
+; Open
+;
+MSG_BUTTON_SHORTCUT_OPEN
+o
+; o
+;
+MSG_HELP_OPEN_IMAGE
+Obrázek pro rozbalenou èást seznamu.
+; Image to use for open nodes.
+;
+MSG_WIN_TITLE_OPEN_IMAGE
+Vyberte obrázek pro rozbalenou vìtev
+; Adjust image for open nodes
+;
+MSG_BUTTON_LABEL_SHADOW
+Barva stínu
+; Shadow
+;
+MSG_BUTTON_SHORTCUT_SHADOW
+s
+; w
+;
+MSG_HELP_SHADOW_COLOR
+Definuje barvu stínu linek.
+; Color to use to cast\n\
+; shadows after lines.
+;
+MSG_WIN_TITLE_SHADOW_COLOR
+Vyberte barvu stínu linek
+; Adjust shadow color
+;
+MSG_BUTTON_LABEL_SPECIAL
+Speciální obrázek
+; Special
+;
+MSG_BUTTON_SHORTCUT_SPECIAL
+p
+; i
+;
+MSG_HELP_SPECIAL_IMAGE
+Symbol pro koncovou èást ka¾dé vìtve.
+; A special image to be\n\
+; displayed after every node.
+;
+MSG_WIN_TITLE_SPECIAL_IMAGE
+Vyberte speciální obrázek
+; Adjust special image
+;
+MSG_BUTTON_LABEL_DRAW
+Doplòková barva
+; Draw
+;
+MSG_BUTTON_SHORTCUT_DRAW
+d
+; d
+;
+MSG_HELP_DRAW_COLOR
+Definuje doplòkovou barvu.
+; A draw color to be combined\n\
+; with the lines color.
+;
+MSG_WIN_TITLE_DRAW_COLOR
+Vyberte doplòkovou barvu
+; Adjust draw color
+;
+MSG_GROUP_STYLE
+Styl
+; Style
+;
+MSG_CYCLE_LABEL_STYLE
+Styl
+; Style
+;
+MSG_CYCLE_SHORTCUT_STYLE
+y
+; s
+;
+MSG_HELP_STYLE
+Globálnì definuje styl celého stromu.
+; Select here the global style of the tree.\n\
+; \n\
+; Depending on your choice, some of the\n\
+; options above may become (un)available.
+;
+MSG_CYCLE_ITEM_STYLE_NORMAL
+Základní
+; Normal
+;
+MSG_CYCLE_ITEM_STYLE_INSERTED
+Odsazené polo¾ky
+; Inserted
+;
+MSG_CYCLE_ITEM_STYLE_LINES
+Linky
+; Lines
+;
+MSG_CYCLE_ITEM_STYLE_WIN98
+Windows 98
+; Win98
+;
+MSG_CYCLE_ITEM_STYLE_MAC
+Mac Classic
+; Mac
+;
+MSG_CYCLE_ITEM_STYLE_LINES3D
+Linky plastické
+; Lines 3D
+;
+MSG_CYCLE_ITEM_STYLE_WIN98PLUS
+Windows 98+
+; Win98+
+;
+MSG_CYCLE_ITEM_STYLE_GLOW
+Glow
+; Glow
+;
+MSG_BUTTON_LABEL_SPACE
+Rozestup
+; Spacing
+;
+MSG_BUTTON_SHORTCUT_SPACE
+o
+; p
+;
+MSG_HELP_SPACE
+Poèet bodù mezi polo¾kami (vodorovnì).
+; The more spacing, the wider\n\
+; the listtree will be.
+;
+MSG_BUTTON_LABEL_REMEMBER
+Pamatovat stav
+; Remember status?
+;
+MSG_BUTTON_SHORTCUT_REMEMBER
+m
+; r
+;
+MSG_HELP_REMEMBER
+Ulo¾í naposledy platný stav.
+; If enabled, the open/closed status of nodes\n\
+; will be 'remembered' after the listtree is closed\n\
+; the next time it is opened again.\n\
+; \n\
+; Please note, however, that an application\n\
+; can override your choice here.
+;
+MSG_BUTTON_LABEL_AUTOSCROLL
+Vyplnit prostor
+; Autoscroll?
+;
+MSG_BUTTON_SHORTCUT_AUTOSCROLL
+s
+; a
+;
+MSG_HELP_AUTOSCROLL
+Automaticky posune a optimálnì vyplní prostor\n\
+pøi otevøení vìtve stromu.
+; If enabled, the listview will auto-scroll its\n\
+; contents when opening nodes to try and fit the\n\
+; visible area.
+;
+MSG_TAB_EXAMPLE
+Ukázka vzhledu
+; Example
+;
+MSG_HELP_LISTVIEW_EXAMPLE
+Tento prvek reaguje okam¾itì na zmìny provedené\n\
+na panelu 'Rozvr¾ení'.\n\
+\n\
+Vyzkou¹ejte! :)
+; This NListtree object reacts in real time to\n\
+; the changes you apply under the 'Layout' tab.\n\
+; \n\
+; Give it a try! :)
+;
+MSG_BUTTON_LABEL_EXPAND
+Rozbalit
+; Expand
+;
+MSG_BUTTON_SHORTCUT_EXPAND
+r
+; n
+;
+MSG_BUTTON_LABEL_COLLAPSE
+Sbalit
+; Collapse
+;
+MSG_BUTTON_SHORTCUT_COLLAPSE
+s
+; e
+;

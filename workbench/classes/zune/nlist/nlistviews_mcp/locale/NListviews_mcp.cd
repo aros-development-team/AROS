@@ -1,0 +1,556 @@
+;
+; NListviews_mcp.cd - NList MUI custom prefs catalog description file
+; $Id$
+;
+#version 2
+#language english
+;
+;
+MSG_FONTS (0//)
+Fonts
+;
+MSG_NORMAL_FONT (1//)
+Normal Font:
+;
+MSG_NORMAL_FONT_HELP (2//)
+Choose the normal NList font.
+;
+MSG_NORMAL_FONT_ASL (3//)
+Please select the normal font...
+;
+MSG_SMALL_FONT (4//)
+Small Font:
+;
+MSG_SMALL_FONT_HELP (5//)
+Choose the small NList font.
+;
+MSG_SMALL_FONT_ASL (6//)
+Please select a small font...
+;
+MSG_FIXED_FONT (7//)
+Fixed Font:
+;
+MSG_FIXED_FONT_HELP (8//)
+Choose the fixed NList font.
+;
+MSG_FIXED_FONT_ASL (9//)
+Please select a fixed font...
+;
+MSG_FONT_MARGIN (10//)
+Font Margin:
+;
+MSG_FONT_MARGIN_HELP (11//)
+Allows to set a vertical margin\n\
+which will be added to the font\n\
+height and result in the default\n\
+line height in an NList object.
+;
+MSG_COLORS (12//)
+Colors
+;
+MSG_TEXTCOLOR (13//)
+Text Pen
+;
+MSG_BACKGROUNDCOLOR (14//)
+Background
+;
+MSG_TITLE_PEN_WIN (15//)
+Title Pen
+;
+MSG_TITLE_PEN_HELP (16//)
+For adjusting the pen color of\n\
+a title.
+;
+MSG_PBG_TITLE (17//)
+\ecTitle
+;
+MSG_TITLE_BG_WIN (18//)
+Title Background
+;
+MSG_TITLE_BG_HELP (19//)
+For adjusting the background color\n\
+of a title.
+;
+MSG_LIST_PEN_WIN (20//)
+List Pen
+;
+MSG_LIST_PEN_HELP (21//)
+For adjusting the pen color of\n\
+a list.
+;
+MSG_PBG_LIST (22//)
+\ecList
+;
+MSG_LIST_BG_WIN (23//)
+List Background
+;
+MSG_LIST_BG_HELP (24//)
+For adjusting the background color\n\
+of a list.
+;
+MSG_SELECT_PEN_WIN (25//)
+Selected Entry
+;
+MSG_SELECT_PEN_HELP (26//)
+For adjusting the pen color of\n\
+selected entries.
+;
+MSG_PBG_SELECT (27//)
+\ecSelected
+;
+MSG_SELECT_BG_WIN (28//)
+Selected Entry
+;
+MSG_SELECT_BG_HELP (29//)
+For adjusting the background color\n\
+of selected entries.
+;
+MSG_CURSOR_PEN_WIN (30//)
+Selected Cursor
+;
+MSG_CURSOR_PEN_HELP (31//)
+For adjusting the pen color of\n\
+a selected cursor.
+;
+MSG_PBG_CURSOR (32//)
+\ecCursor
+;
+MSG_CURSOR_BG_WIN (33//)
+Selected Cursor
+;
+MSG_CURSOR_BG_HELP (34//)
+For adjusting the background color\n\
+of a selected cursor.
+;
+MSG_UNSEL_PEN_WIN (35//)
+Unselected Cursor
+;
+MSG_UNSEL_PEN_HELP (36//)
+For adjusting the pen color of\n\
+an unselected cursor.
+;
+MSG_PBG_UNSEL (37//)
+\ecUnselected
+;
+MSG_UNSEL_BG_WIN (38//)
+Unselected Cursor
+;
+MSG_UNSEL_BG_HELP (39//)
+For adjusting the background color\n\
+of an unselected cursor.
+;
+MSG_INACT_PEN_WIN (40//)
+Inactive Cursor
+;
+MSG_INACT_PEN_HELP (41//)
+For adjusting the pen color of\n\
+an inactive cursor.
+;
+MSG_PBG_INACT (42//)
+\ecInactive
+;
+MSG_INACT_BG_WIN (43//)
+Inactive Cursor
+;
+MSG_INACT_BG_HELP (44//)
+For adjusting the background color\n\
+of an inactive cursor.
+;
+MSG_MULTISELECT (45//)
+MultiSelection
+;
+MSG_MULTISELECT_QUAL (46//)
+via Qualifier
+;
+MSG_MULTISELECT_ALWAYS (47//)
+Always
+;
+MSG_MULTISELECT_HELP (48//)
+Allows to specify the default\n\
+multiselection mode.
+;
+MSG_MMB_MULTISEL (49//)
+MMB multiselection
+;
+MSG_MMB_MULTISEL_HELP (50//)
+Set it if you want to use the middle\n\
+mouse button (MMB) as a multiselection\n\
+qualifier.
+;
+MSG_DRAGDROP (51//)
+Drag&Drop
+;
+MSG_DRAGTYPE_IMMEDIATE (52//)
+Immediate
+;
+MSG_DRAGTYPE_BORDERS (53//)
+at Borders
+;
+MSG_DRAGTYPE_QUALIFIER (54//)
+via Qualifier
+;
+MSG_DRAGTYPE_HELP (55//)
+Set the drag mode. 'Immediate' will start\n\
+drag&drop as soon as you drag an object.\n\
+'at Borders' for showing a drag operation\n\
+as soon as you passed the left/right borders\n\
+and 'via Qualifier' for only allowing to\n\
+drag&drop via a qualifier key (see 'Keys').\n\
+\n\
+'Immediate' is used only when in no-multiselect\n\
+mode.
+;
+MSG_DRAG_LINES (56//)
+Visible lines
+;
+MSG_DRAG_LINES_HELP (57//)
+Give the max. number of lines\n\
+which will be shown when\n\
+doing drag&drop. If more lines\n\
+are selected, you'll get a message\n\
+similar to: 'Dragging xx Items...'.
+;
+MSG_PAGE_FONTS (58//)
+Fonts
+;
+MSG_PAGE_COLORS (59//)
+Colors
+;
+MSG_PAGE_OPTIONS (60//)
+Options
+;
+MSG_PAGE_SCROLLING (61//)
+Scrolling
+;
+MSG_PAGE_KEYBINDINGS (62//)
+Keybindings
+;
+MSG_SB_HORIZONTAL (63//)
+Horizontal Scrollbar
+;
+MSG_SB_HORIZONTAL_HELP (64//)
+Set the default mode\n\
+for the horizontal scrollbar.\n\
+(may be overwritten by an\n\
+application)
+;
+MSG_SB_VERTICAL (65//)
+Vertical Scrollbar
+;
+MSG_SB_VERTICAL_HELP (66//)
+Set the default mode\n\
+for the vertical scrollbar.\n\
+(may be overwritten by an\n\
+application)
+;
+MSG_SCROLLCONTROL (67//)
+Scolling Control
+;
+MSG_SMOOTH_SCROLLING (68//)
+Smooth Scrolling
+;
+MSG_SMOOTH_SCROLLING_HELP (69//)
+If enabled, smoothing scrolling\n\
+will be used for NList objects.\n\
+In addition, by using the 'smooth'\n\
+slider in the normal MUI 'Listview'\n\
+configuration page the speed of\n\
+the smooth scrolling can be controled.
+;
+MSG_MMB_FASTWHEEL (70//)
+MMB Fast Wheel
+;
+MSG_MMB_FASTWHEEL_HELP (71//)
+If enabled, the middle mouse button\n\
+can be used as a qualifier to perform\n\
+a fast scroll wheel action.\n\
+(See 'Keybindings' page as well for\n\
+more wheel qualifiers)
+;
+MSG_WHEEL_STEP (72//)
+Mouse Wheel Step
+;
+MSG_WHEEL_STEP_HELP (73//)
+Allows to specify the amount of lines\n\
+that should be scrolled when using a\n\
+wheel mouse.
+;
+MSG_WHEEL_FAST (74//)
+Mouse Wheel Fast Step
+;
+MSG_WHEEL_FAST_HELP (75//)
+Allows to specify the amount of lines\n\
+that should be scrolled when using a\n\
+wheel mouse and when the fast wheel\n\
+qualifier is pressed.
+;
+MSG_LAYOUT (76//)
+Layout
+;
+MSG_PARTIAL_COL_MARK (77//)
+Partial column mark
+;
+MSG_PARTIAL_COL_MARK_HELP (78//)
+If enabled, a special mark will be drawn\n\
+at the right side of a column in case the\n\
+text didn't completly fit into it.
+;
+MSG_PARTIAL_CHARS_DRAWN (79//)
+Partial chars drawn
+;
+MSG_PARTIAL_CHARS_DRAWN_HELP (80//)
+If enabled, characters that are not fully\n\
+visible at the left and right corner of\n\
+an NList object will not be drawn partially.
+;
+MSG_VERT_CENTERED (81//)
+Vertical centered lines
+;
+MSG_VERT_CENTERED_HELP (82//)
+If activated, the text lines are centered\n\
+vertically in a NList object.
+;
+MSG_BALANCING_COLS (83//)
+Balancing Columns
+;
+MSG_BALANCING_COLS_HELP (84//)
+NList permits to change the column width\n\
+via mouse dragging the column separator in\n\
+the title bar. The moved bar can be visible\n\
+either only in the title, throughout the\n\
+whole lines or the column width changes can\n\
+be made visible instantly.
+;
+MSG_COLWIDTHDRAG_TITLE (85//)
+Title Bar
+;
+MSG_COLWIDTHDRAG_FULLBAR (86//)
+Full Bar
+;
+MSG_COLWIDTHDRAG_VISIBLE (87//)
+Visible
+;
+MSG_COLOR_OPTIONS (88//)
+Options
+;
+MSG_FORCE_SELECT_PEN (89//)
+Force select pen
+;
+MSG_FORCE_SELECT_PEN_HELP (90//)
+If enabled, NList will make sure that\n\
+the 'Selected', 'Cursor' and 'Unselected'\n\
+color will be forced.
+;
+MSG_MULTISEL_MOVEACTIVE (91//)
+Keyboard moves cursor
+;
+MSG_MULTISEL_MOVEACTIVE_HELP (92//)
+If enabled, a keyboard use in an NList\n\
+object will move the active cursor\n\
+rather than the unselected one.
+;
+MSG_GROUP_MISC (93//)
+Miscellaneous
+;
+MSG_GROUP_EXAMPLE (94//)
+Example
+;
+MSG_SERMOUSE_FIX (95//)
+Serial Mouse Fix
+;
+MSG_SERMOUSE_FIX_HELP (96//)
+If enabled, NList tries to fix common\n\
+drag&drop issues that are related to using\n\
+a serial mouse.
+;
+MSG_SELECT_POINTER (97//)
+Custom Select Pointer
+;
+MSG_SELECT_POINTER_HELP (98//)
+If enabled, and an NList object is in\n\
+charwise selection mode a custom select\n\
+pointer will be displayed instead of the\n\
+default workbench mouse pointer image.
+;
+MSG_BAR_CONTEXTMENU (99//)
+Context Menu
+;
+MSG_DEFAULT_CONTEXT_MENU_HELP (100//)
+NList permits to have its default\n\
+context menu being disabled or enabled\n\
+or only in case the mouse is at the top\n\
+of the NList object.
+;
+MSG_SNOOP (101//)
+Snoop
+;
+MSG_SNOOP_KEY (102//)
+Start the grab of a hotkey.
+;
+MSG_BUTTON_INSERT (103//)
+Insert
+;
+MSG_BUTTON_INSERT_HELP (104//)
+Allows to insert a new hotkey.
+;
+MSG_BUTTON_REMOVE (105//)
+Remove
+;
+MSG_BUTTON_REMOVE_HELP (106//)
+Allows to remove an existing hotkey.
+;
+MSG_BUTTON_UPDATEKEYS (107//)
+Update keys
+;
+MSG_BUTTON_UPDATEKEYS_HELP (108//)
+Add the default hotkeys for\n\
+the functions which are not\n\
+currently in the list.
+;
+MSG_BUTTON_DEFAULTKEYS (109//)
+Default keys
+;
+MSG_BUTTON_DEFAULTKEYS_HELP (110//)
+Resets all hotkeys to default ones.
+;
+MSG_FUNC_MULTISELQUAL (111//)
+Multiselect/Block Qualifier
+;
+MSG_FUNC_DRAGQUAL (112//)
+Drag&Drop Qualifier
+;
+MSG_FUNC_BALANCEQUAL (113//)
+Balance Qualifier
+;
+MSG_FUNC_COPYCLIP (114//)
+Copy to clipboard
+;
+MSG_FUNC_DEFCOLWIDTH (115//)
+Default width column
+;
+MSG_FUNC_DEFALLCOLWIDTH (116//)
+Default width all columns
+;
+MSG_FUNC_DEFORDERCOL (117//)
+Default order column
+;
+MSG_FUNC_DEFALLORDERCOL (118//)
+Default order all columns
+;
+MSG_FUNC_SELECTTOP (119//)
+Select to top
+;
+MSG_FUNC_SELECTBOTTOM (120//)
+Select to bottom
+;
+MSG_FUNC_SELECTPAGEUP (121//)
+Select to page up
+;
+MSG_FUNC_SELECTPAGEDOWN (122//)
+Select to page down
+;
+MSG_FUNC_SELECTUP (123//)
+Select up
+;
+MSG_FUNC_SELECTDOWN (124//)
+Select down
+;
+MSG_FUNC_TOGGLEACTIVE (125//)
+Toggle active
+;
+MSG_FUNC_FASTWHEELQUAL (126//)
+Fast MouseWheel Qualifier
+;
+MSG_FUNC_HORIZWHEELQUAL (127//)
+Horiz MouseWheel Qualifier
+;
+MSG_FUNC_TITLECLICKQUAL (128//)
+Title Click Qualifier
+;
+MSG_VSB_ALWAYS (129//)
+Always
+;
+MSG_VSB_AUTO (130//)
+Auto
+;
+MSG_VSB_FULLAUTO (131//)
+FullAuto
+;
+MSG_HSB_ALWAYS (132//)
+Always
+;
+MSG_HSB_AUTO (133//)
+Auto
+;
+MSG_HSB_FULLAUTO (134//)
+FullAuto
+;
+MSG_HSB_NONE (135//)
+None
+;
+MSG_CMENU_ALWAYS (136//)
+Always
+;
+MSG_CMENU_TOPONLY (137//)
+TopOnly
+;
+MSG_CMENU_NEVER (138//)
+Never
+;
+MSG_HOTKEYS_KEY (139//)
+Key
+;
+MSG_HOTKEYS_ACTION (140//)
+Action
+;
+MSG_EXAMPLE_TEXT (141//)
+If you have problems, try to increase the stack value,\n\
+in the icon infos if you launch the program from icon,\n\
+stack of CLI if you start it from CLI/Shell,\n\
+and if you launch it from some utility read its docs\n\
+to see how to increase it.\n\
+A stack of 12Kb, 16Kb or 20Kb is most of time a good idea.\n\
+\n\
+If you still have problems, try to see if they happen with the Demo prog, then tell me.\n\
+\033C\n\
+Latest public release can be found on aminet (dev/mui).\n\
+All releases are available on\n\
+http://www.sourceforge.net/projects/nlist-classes/\n\
+\033C\n\
+\033r\0333(C) 2001-2010 by NList Open Source Team\n\
+\033r\0333(C) 1996-1998 by Gilles Masson\n\
+\033r\0333http://www.sourceforge.net/projects/nlist-classes/\n\
+\033C\n\
+\033cThis new list/listview custom class\n\
+\033chandles its own configurable backgrounds,\n\
+\033cpens, fonts, scrollbars, keys and qualifiers\n\
+\033C\n\
+\033cThe way used to handle cursor with multiselection\n\
+\033cis not exactly as the listview one !\n\
+\033cDrag&Drop is supported, both scrollbars\n\
+\033ccan be configured to disappear automatically\n\
+\033cwhen not needed because all is visible.\n\
+\033cJust try it...\n\
+\033C\n\
+\033cYou can horizontaly scroll with cursor keys,\n\
+\033cor going on the right and left of the list\n\
+\033cwhile selecting with the mouse.\n\
+\033cTry just clicking on the left/right borders !\n\
+\033C\n\
+\033cYou can change columns widths just dragging\n\
+\033cthe vertical separator between columns titles\n\
+\033c(try it using the balancing qualifier too).\n\
+\033C\n\
+\033cYou can change columns order just dragging\n\
+\033cthe column titles.\n\
+\033C\n\
+\033cThere is builtin copy to clipboard stuff\n\
+\033cand classic char selection capability.\n\
+\033C\n\
+\033cTry the Demo program to test all that...\n\
+\n\
+\n\
+\033r\033bGive some feedback about it ! :-)\n\
+\033C\n\
+**************************************************************************************************\n
+;

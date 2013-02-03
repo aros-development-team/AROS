@@ -1,0 +1,828 @@
+## version $VER: nlistviews_mcp.catalog 2.0 (20.05.2010)
+## language polski
+## codeset 5
+## chunk AUTH Mariusz Danilewicz <mandi@interia.pl>
+;
+; NListviews_mcp.ct - NList MUI custom prefs catalog Polish translation file
+; $Id$
+;
+;
+MSG_FONTS
+Czcionki
+; Fonts
+;
+MSG_NORMAL_FONT
+Normalna:
+; Normal Font:
+;
+MSG_NORMAL_FONT_HELP
+Wybiera normaln± czcionkê dla elementów NList.
+; Choose the normal NList font.
+;
+MSG_NORMAL_FONT_ASL
+Proszê wybraæ normaln± czcionkê...
+; Please select the normal font...
+;
+MSG_SMALL_FONT
+Ma³a:
+; Small Font:
+;
+MSG_SMALL_FONT_HELP
+Wybiera ma³± czcionkê dla elementów NList.
+; Choose the small NList font.
+;
+MSG_SMALL_FONT_ASL
+Proszê wybraæ ma³± czcionkê...
+; Please select a small font...
+;
+MSG_FIXED_FONT
+Nieproporcjonalna:
+; Fixed Font:
+;
+MSG_FIXED_FONT_HELP
+Wybiera nieproporcjonaln± czcionkê dla elementów NList.
+; Choose the fixed NList font.
+;
+MSG_FIXED_FONT_ASL
+Proszê wybraæ nieproporcjonaln± czcionkê...
+; Please select a fixed font...
+;
+MSG_FONT_MARGIN
+Odstêpy:
+; Font Margin:
+;
+MSG_FONT_MARGIN_HELP
+Pozwala okre¶liæ pionowe odstêpy,\n\
+które zostan± dodane do wysoko¶ci\n\
+czcionki i w wyniku dadz± wysoko¶æ\n\
+linii tekstu obiektó NList.
+; Allows to set a vertical margin\n\
+; which will be added to the font\n\
+; height and result in the default\n\
+; line height in an NList object.
+;
+MSG_COLORS
+Kolory
+; Colors
+;
+MSG_TEXTCOLOR
+Pisak tekstu
+; Text Pen
+;
+MSG_BACKGROUNDCOLOR
+T³o
+; Background
+;
+MSG_TITLE_PEN_WIN
+Pisak tytu³ów
+; Title Pen
+;
+MSG_TITLE_PEN_HELP
+Ustawia kolor pisaka\n\
+tytu³ów.
+; For adjusting the pen color of\n\
+; a title.
+;
+MSG_PBG_TITLE
+\ecTytu³
+; \ecTitle
+;
+MSG_TITLE_BG_WIN
+T³o tytu³u
+; Title Background
+;
+MSG_TITLE_BG_HELP
+Ustawia kolor t³a\n\
+tytu³ów.
+; For adjusting the background color\n\
+; of a title.
+;
+MSG_LIST_PEN_WIN
+Pisak listy
+; List Pen
+;
+MSG_LIST_PEN_HELP
+Ustawia kolor pisaka\n\
+listy.
+; For adjusting the pen color of\n\
+; a list.
+;
+MSG_PBG_LIST
+\ecLista
+; \ecList
+;
+MSG_LIST_BG_WIN
+T³o listy
+; List Background
+;
+MSG_LIST_BG_HELP
+Ustawia kolor t³a\n\
+listy.
+; For adjusting the background color\n\
+; of a list.
+;
+MSG_SELECT_PEN_WIN
+Zaznaczony element
+; Selected Entry
+;
+MSG_SELECT_PEN_HELP
+Ustawia kolor pisaka\n\
+zaznaczonych elementów.
+; For adjusting the pen color of\n\
+; selected entries.
+;
+MSG_PBG_SELECT
+\ecZaznaczony
+; \ecSelected
+;
+MSG_SELECT_BG_WIN
+Zaznaczony element
+; Selected Entry
+;
+MSG_SELECT_BG_HELP
+Ustawia kolor t³a\n\
+zaznaczonych elementów.
+; For adjusting the background color\n\
+; of selected entries.
+;
+MSG_CURSOR_PEN_WIN
+Zaznaczony kursor
+; Selected Cursor
+;
+MSG_CURSOR_PEN_HELP
+Ustawia kolor pisaka\n\
+zaznaczonego kursora.
+; For adjusting the pen color of\n\
+; a selected cursor.
+;
+MSG_PBG_CURSOR
+\ecKursor
+; \ecCursor
+;
+MSG_CURSOR_BG_WIN
+Zaznaczony kursor
+; Selected Cursor
+;
+MSG_CURSOR_BG_HELP
+Ustawia kolor t³a\n\
+zaznaczonego kursora.
+; For adjusting the background color\n\
+; of a selected cursor.
+;
+MSG_UNSEL_PEN_WIN
+Odznaczony kursor
+; Unselected Cursor
+;
+MSG_UNSEL_PEN_HELP
+Ustawia kolor pisaka\n\
+odznaczonego kursora.
+; For adjusting the pen color of\n\
+; an unselected cursor.
+;
+MSG_PBG_UNSEL
+\ecOdznaczony
+; \ecUnselected
+;
+MSG_UNSEL_BG_WIN
+Odznaczony kursor
+; Unselected Cursor
+;
+MSG_UNSEL_BG_HELP
+Ustawia kolor t³a\n\
+odznaczonego kursora.
+; For adjusting the background color\n\
+; of an unselected cursor.
+;
+MSG_INACT_PEN_WIN
+Nieaktywny kursor
+; Inactive Cursor
+;
+MSG_INACT_PEN_HELP
+Ustawia kolor pisaka\n\
+nieaktywnego kursora.
+; For adjusting the pen color of\n\
+; an inactive cursor.
+;
+MSG_PBG_INACT
+\ecNieaktywny
+; \ecInactive
+;
+MSG_INACT_BG_WIN
+Nieaktywny kursor
+; Inactive Cursor
+;
+MSG_INACT_BG_HELP
+Ustawia kolor t³a\n\
+nieaktywnego kursora.
+; For adjusting the background color\n\
+; of an inactive cursor.
+;
+MSG_MULTISELECT
+Wybór wielu elementów
+; MultiSelection
+;
+MSG_MULTISELECT_QUAL
+z klawiszem wywo³uj±cym
+; via Qualifier
+;
+MSG_MULTISELECT_ALWAYS
+zawsze
+; Always
+;
+MSG_MULTISELECT_HELP
+Pozwala na okre¶lenie domy¶lnego\n\
+trybu zaznaczania wielu elementów.
+; Allows to specify the default\n\
+; multiselection mode.
+;
+MSG_MMB_MULTISEL
+Zaznaczanie ¦PM
+; MMB multiselection
+;
+MSG_MMB_MULTISEL_HELP
+W³±cz tê opcjê je¶li chcesz u¿ywaæ\n\
+¶rodkowego przycisku myszki (¦PM) jako\n\
+klawisz wywo³uj±cy zaznaczania wielu\n\
+elementów.
+; Set it if you want to use the middle\n\
+; mouse button (MMB) as a multiselection\n\
+; qualifier.
+;
+MSG_DRAGDROP
+Przeci±gnij i upu¶æ
+; Drag&Drop
+;
+MSG_DRAGTYPE_IMMEDIATE
+natychmiast
+; Immediate
+;
+MSG_DRAGTYPE_BORDERS
+przy krawêdziach
+; at Borders
+;
+MSG_DRAGTYPE_QUALIFIER
+z klawiszem wywo³uj±cym
+; via Qualifier
+;
+MSG_DRAGTYPE_HELP
+Ustawia tryb przeci±gania. "\Natychmiast\"\n\
+powoduje rozpocz±ecie przeci±gania w momencie\n\
+poci±gniêcia obiektu. \"Przy krawêdziach\"\n\
+pokazuje operacjê przeci±gania w chwili\n\
+przekroczenia lewej/prawej krawêdzi,\n\
+a \"z klawiszem wywo³uj±cym\" pozwala\n\
+na przeci±ganie jedynie po u¿yciu klawisza\n\
+wywo³uj±cego (zobacz zak³adkê \"klawisze\").\n\
+\n\
+\"Natychmiast\" jest u¿ywane tylko w trybie\n\
+pojedynczego zaznaczenia.
+; Set the drag mode. 'Immediate' will start\n\
+; drag&drop as soon as you drag an object.\n\
+; 'at Borders' for showing a drag operation\n\
+; as soon as you passed the left/right borders\n\
+; and 'via Qualifier' for only allowing to\n\
+; drag&drop via a qualifier key (see 'Keys').\n\
+; \n\
+; 'Immediate' is used only when in no-multiselect\n\
+; mode.
+;
+MSG_DRAG_LINES
+Widoczne linie
+; Visible lines
+;
+MSG_DRAG_LINES_HELP
+Okre¶l maksymaln± liczbê linii,\n\
+które bêd± wy¶wietlane podczas\n\
+operacji przeci±gania. Je¶li zostanie\n\
+zaznaczona wiêksza liczba linii\n\
+ujrzysz komunikat podobny do:\n\
+\"Przeci±ganie xx elementów...\".
+; Give the max. number of lines\n\
+; which will be shown when\n\
+; doing drag&drop. If more lines\n\
+; are selected, you'll get a message\n\
+; similar to: 'Dragging xx Items...'.
+;
+MSG_PAGE_FONTS
+Czcionki
+; Fonts
+;
+MSG_PAGE_COLORS
+Kolory
+; Colors
+;
+MSG_PAGE_OPTIONS
+Opcje
+; Options
+;
+MSG_PAGE_SCROLLING
+Przewijanie
+; Scrolling
+;
+MSG_PAGE_KEYBINDINGS
+Przypisanie klawiszy
+; Keybindings
+;
+MSG_SB_HORIZONTAL
+Suwak poziomy
+; Horizontal Scrollbar
+;
+MSG_SB_HORIZONTAL_HELP
+Ustawia domy¶ly tryb pracy\n\
+suwaka poziomego.\n\
+(ustawienie to mo¿e byæ\n\
+zmienione przez aplikacje)
+; Set the default mode\n\
+; for the horizontal scrollbar.\n\
+; (may be overwritten by an\n\
+; application)
+;
+MSG_SB_VERTICAL
+Suwak pionowy
+; Vertical Scrollbar
+;
+MSG_SB_VERTICAL_HELP
+Ustawia domy¶ly tryb pracy\n\
+suwaka pionowego.\n\
+(ustawienie to mo¿e byæ\n\
+zmienione przez aplikacje)
+; Set the default mode\n\
+; for the vertical scrollbar.\n\
+; (may be overwritten by an\n\
+; application)
+;
+MSG_SCROLLCONTROL
+Kontrola przewijania
+; Scolling Control
+;
+MSG_SMOOTH_SCROLLING
+P³ynne przewijanie
+; Smooth Scrolling
+;
+MSG_SMOOTH_SCROLLING_HELP
+Je¶li ta opcja jest w³±czona, u¿ywane\n\
+bêdzie p³ynne przewijanie obiektów klasy NList.\n\
+Dodatkowo, u¿ywaj±c suwaka \"p³ynno¶æ\"\n\
+na stronie ustawieñ \"Listy wy¶wietlania\" MUI\n\
+mo¿na kontrolowaæ szybko¶æ p³ynnego przewijania.
+; If enabled, smoothing scrolling\n\
+; will be used for NList objects.\n\
+; In addition, by using the 'smooth'\n\
+; slider in the normal MUI 'Listview'\n\
+; configuration page the speed of\n\
+; the smooth scrolling can be controled.
+;
+MSG_MMB_FASTWHEEL
+Szybkie przewijanie z ¦PM
+; MMB Fast Wheel
+;
+MSG_MMB_FASTWHEEL_HELP
+Je¶li ta opcja jest w³±czona, ¶rodkowy\n\
+przycisk myszki mo¿e byæ u¿ywany jako\n\
+klawisz wywo³uj±cy szybkie przewijanie\n\
+zawarto¶ci kó³kiem myszki.\n\
+(Zobacz zak³adkê \"Przypisanie klawiszy\"\n\
+by zobaczyæ pozosta³e klawisze wywo³uj±ce)
+; If enabled, the middle mouse button\n\
+; can be used as a qualifier to perform\n\
+; a fast scroll wheel action.\n\
+; (See 'Keybindings' page as well for\n\
+; more wheel qualifiers)
+;
+MSG_WHEEL_STEP
+Krok przewijania kó³kiem
+; Mouse Wheel Step
+;
+MSG_WHEEL_STEP_HELP
+Pozwala na okre¶lenie liczby linii\n\
+przewijanych przy u¿yciu przewijania\n\
+kó³kiem myszki.
+; Allows to specify the amount of lines\n\
+; that should be scrolled when using a\n\
+; wheel mouse.
+;
+MSG_WHEEL_FAST
+Szybki krok przewijania kó³kiem
+; Mouse Wheel Fast Step
+;
+MSG_WHEEL_FAST_HELP
+Pozwala na okre¶lenie liczby linii\n\
+przewijanych przy u¿yciu przewijania\n\
+kó³kiem myszki z wci¶niêtym klawiszem\n\
+wywo³uj±cym szybkiego przewijania.
+; Allows to specify the amount of lines\n\
+; that should be scrolled when using a\n\
+; wheel mouse and when the fast wheel\n\
+; qualifier is pressed.
+;
+MSG_LAYOUT
+Uk³ad
+; Layout
+;
+MSG_PARTIAL_COL_MARK
+Znacznik czê¶ciowych kolumn
+; Partial column mark
+;
+MSG_PARTIAL_COL_MARK_HELP
+Je¶li ta opcja jest w³±czona, zpecjalny znacznik\n\
+bêdzie rysowany po prawej stronie kolumny w przypadku,\n\
+gdy tekst nie zmie¶ci siê w calo¶ci w kolumnie.
+; If enabled, a special mark will be drawn\n\
+; at the right side of a column in case the\n\
+; text didn't completly fit into it.
+;
+MSG_PARTIAL_CHARS_DRAWN
+Wy¶wietlaj czê¶ciowo znaki
+; Partial chars drawn
+;
+MSG_PARTIAL_CHARS_DRAWN_HELP
+Je¶li ta opcja jest w³±czona, znaki, które\n\
+nie s± w pe³ni widoczne przy lewej i prawej\n\
+krawêdzi obiektu NList, bêd± wy¶wietlane\n\
+czê¶ciowo.
+; If enabled, characters that are not fully\n\
+; visible at the left and right corner of\n\
+; an NList object will not be drawn partially.
+;
+MSG_VERT_CENTERED
+Linie wycentrowane w pionie
+; Vertical centered lines
+;
+MSG_VERT_CENTERED_HELP
+Je¶li ta opcja jest w³±czona, linie tekstowe\n\
+bêd± centrowane w pionie w obiektach klasy NList.
+; If activated, the text lines are centered\n\
+; vertically in a NList object.
+;
+MSG_BALANCING_COLS
+Balans kolumn
+; Balancing Columns
+;
+MSG_BALANCING_COLS_HELP
+Klasa NList pozwala na zmianê szeroko¶ci kolumn\n\
+przez przeci±ganie myszk± separatora kolum\n\
+na belce tytu³owej. Przeci±gana belka mo¿e byæ\n\
+widoczna w belce tytu³owej, jako linia widoczna\n\
+na ca³ej wysoko¶ci kolumny, lub te¿ zmiany mog±\n\
+byæ widoczne od razu.
+; NList permits to change the column width\n\
+; via mouse dragging the column separator in\n\
+; the title bar. The moved bar can be visible\n\
+; either only in the title, throughout the\n\
+; whole lines or the column width changes can\n\
+; be made visible instantly.
+;
+MSG_COLWIDTHDRAG_TITLE
+belka tytu³owa
+; Title Bar
+;
+MSG_COLWIDTHDRAG_FULLBAR
+kolumna
+; Full Bar
+;
+MSG_COLWIDTHDRAG_VISIBLE
+widoczny
+; Visible
+;
+MSG_COLOR_OPTIONS
+Opcje
+; Options
+;
+MSG_FORCE_SELECT_PEN
+Wymu¶ wybrane pisaki
+; Force select pen
+;
+MSG_FORCE_SELECT_PEN_HELP
+Je¶li ta opcja jest w³±czona, klasa NList\n\
+wymusi u¿ywania kolorów wybranych dla elementów:\n\
+\"zaznaczone\", \"kursor\" i \"odznaczone\".
+; If enabled, NList will make sure that\n\
+; the 'Selected', 'Cursor' and 'Unselected'\n\
+; color will be forced.
+;
+MSG_MULTISEL_MOVEACTIVE
+Klawisze przesuwaj± kursor
+; Keyboard moves cursor
+;
+MSG_MULTISEL_MOVEACTIVE_HELP
+Je¶li ta opcja jest w³±czona, klawisze u¿ywane\n\
+w obiekcie klasy NList bêd± przesuwa³y aktywny\n\
+kursor zamiast odznaczonego.
+; If enabled, a keyboard use in an NList\n\
+; object will move the active cursor\n\
+; rather than the unselected one.
+;
+MSG_GROUP_MISC
+Ró¿ne
+; Miscellaneous
+;
+MSG_GROUP_EXAMPLE
+Przyk³ad
+; Example
+;
+MSG_SERMOUSE_FIX
+Poprawka na myszkê szeregow±
+; Serial Mouse Fix
+;
+MSG_SERMOUSE_FIX_HELP
+Je¶li ta opcja jest w³±czona, klasa NList\n\
+spróbuje obej¶æ najczêstsze problemy wystêpuj±ce\n\
+podczas przeci±gania elementów zwi±zane z u¿ywaniem\n\
+myszki szeregowej.
+; If enabled, NList tries to fix common\n\
+; drag&drop issues that are related to using\n\
+; a serial mouse.
+;
+MSG_SELECT_POINTER
+W³asny kursor zaznaczania
+; Custom Select Pointer
+;
+MSG_SELECT_POINTER_HELP
+Je¶li ta opcja jest w³±czona i obiekt klasy NList\n\
+jest w trybie zaznaczania znaków, bêdzie u¿ywany\n\
+w³asny kursor zaznaczania zamiast domy¶lnego,\n\
+systemowego wska¼nika myszki.
+; If enabled, and an NList object is in\n\
+; charwise selection mode a custom select\n\
+; pointer will be displayed instead of the\n\
+; default workbench mouse pointer image.
+;
+MSG_BAR_CONTEXTMENU
+Menu kontekstowe
+; Context Menu
+;
+MSG_DEFAULT_CONTEXT_MENU_HELP
+Klasa NList pozwala na w³±czenie lub wy³±czenie\n\
+jej domy¶lnego menu podrêcznego, lub w³±czenie\n\
+go tylko w przypadku, gdy wska¼nik myszki znajduje\n\
+siê na górze obiektu NList.
+; NList permits to have its default\n\
+; context menu being disabled or enabled\n\
+; or only in case the mouse is at the top\n\
+; of the NList object.
+;
+MSG_SNOOP
+Przechwyæ
+; Snoop
+;
+MSG_SNOOP_KEY
+Rozpoczyna przechwytywanie klawisza wywo³uj±cego.
+; Start the grab of a hotkey.
+;
+MSG_BUTTON_INSERT
+Wstaw
+; Insert
+;
+MSG_BUTTON_INSERT_HELP
+Pozwala na dodanie nowego klawisza wywo³uj±cego.
+; Allows to insert a new hotkey.
+;
+MSG_BUTTON_REMOVE
+Usuñ
+; Remove
+;
+MSG_BUTTON_REMOVE_HELP
+Pozwala na usuniêcie istniej±cego klawisza wywo³uj±cego.
+; Allows to remove an existing hotkey.
+;
+MSG_BUTTON_UPDATEKEYS
+Aktualizuj klawisze
+; Update keys
+;
+MSG_BUTTON_UPDATEKEYS_HELP
+Dodaje domy¶lne klawisze wywo³uj±ce\n\
+do funkcji, które obecnie nie znajduj±\n\
+siê na li¶cie.
+; Add the default hotkeys for\n\
+; the functions which are not\n\
+; currently in the list.
+;
+MSG_BUTTON_DEFAULTKEYS
+Klawisze domy¶lne
+; Default keys
+;
+MSG_BUTTON_DEFAULTKEYS_HELP
+Przywraca ustawienia wszystich klawiszy wywo³uj±cych do warto¶ci domy¶lnych.
+; Resets all hotkeys to default ones.
+;
+MSG_FUNC_MULTISELQUAL
+Klawisz wywo³uj±cy zaznaczanie wielu/bloku
+; Multiselect/Block Qualifier
+;
+MSG_FUNC_DRAGQUAL
+Klawisz wywo³uj±cy przeci±ganie
+; Drag&Drop Qualifier
+;
+MSG_FUNC_BALANCEQUAL
+Klawisz wywo³uj±cy balans obiektów
+; Balance Qualifier
+;
+MSG_FUNC_COPYCLIP
+Skopiuj do schowka
+; Copy to clipboard
+;
+MSG_FUNC_DEFCOLWIDTH
+Domy¶lna szeroko¶æ kolumny
+; Default width column
+;
+MSG_FUNC_DEFALLCOLWIDTH
+Domy¶lna szeroko¶æ wszystkich kolumn
+; Default width all columns
+;
+MSG_FUNC_DEFORDERCOL
+Domy¶lna kolejno¶æ kolumny
+; Default order column
+;
+MSG_FUNC_DEFALLORDERCOL
+Domy¶lna kolejno¶æ wszystkich kolumn
+; Default order all columns
+;
+MSG_FUNC_SELECTTOP
+Zaznacz do pocz±tku
+; Select to top
+;
+MSG_FUNC_SELECTBOTTOM
+Zaznacz do koñca
+; Select to bottom
+;
+MSG_FUNC_SELECTPAGEUP
+Zaznacz stronê w górê
+; Select to page up
+;
+MSG_FUNC_SELECTPAGEDOWN
+Zaznacz stronê w dó³
+; Select to page down
+;
+MSG_FUNC_SELECTUP
+Zaznacz w górê
+; Select up
+;
+MSG_FUNC_SELECTDOWN
+Zaznacz w dó³
+; Select down
+;
+MSG_FUNC_TOGGLEACTIVE
+Prze³±cz aktywny element
+; Toggle active
+;
+MSG_FUNC_FASTWHEELQUAL
+Klawisz wywo³uj±cy szybkie przewijanie kó³kiem
+; Fast MouseWheel Qualifier
+;
+MSG_FUNC_HORIZWHEELQUAL
+Klawisz wywo³uj±cy przewijanie kó³kiem w poziomie
+; Horiz MouseWheel Qualifier
+;
+MSG_FUNC_TITLECLICKQUAL
+Klawisz wywo³uj±cy wci¶niêcie tytu³u
+; Title Click Qualifier
+;
+MSG_VSB_ALWAYS
+zawsze
+; Always
+;
+MSG_VSB_AUTO
+automatycznie
+; Auto
+;
+MSG_VSB_FULLAUTO
+w pe³ni automatycznie
+; FullAuto
+;
+MSG_HSB_ALWAYS
+zawsze
+; Always
+;
+MSG_HSB_AUTO
+autmatycznie
+; Auto
+;
+MSG_HSB_FULLAUTO
+w pe³ni automatycznie
+; FullAuto
+;
+MSG_HSB_NONE
+brak
+; None
+;
+MSG_CMENU_ALWAYS
+zawsze
+; Always
+;
+MSG_CMENU_TOPONLY
+tylko górne
+; TopOnly
+;
+MSG_CMENU_NEVER
+nigdy
+; Never
+;
+MSG_HOTKEYS_KEY
+Klawisz
+; Key
+;
+MSG_HOTKEYS_ACTION
+Dzia³anie
+; Action
+;
+MSG_EXAMPLE_TEXT
+Je¶li masz jakie¶ problemy z dzia³aniem klasy, spróbuj\n\
+zwiêkszyæ wielko¶æ stosu w ikonce programu (w przypadku\n\
+uruchamiania programu z ikonki) lub wielko¶æ stosu w linii\n\
+poleceñ (w przypadku uruchamiania programu z CLI/shella),\n\
+je¶li za¶ uruchamiasz obiekty klasy NList z poziomu innego\n\
+programu, przeczytaj jego dokumentacjê by dowiedzieæ siê jak\n\
+zwiêkszyæ dla niegowielko¶æ stosu.\n\
+Stos o wielko¶ci 12kb, 16kb lub 20kb w wiêkszo¶ci przypadków\n\
+jest wystarczaj±cy.\n\
+\n\
+Je¶li nadal masz jakie¶ problemy, spróbuj sprawdziæ, czy wystêpuj± one z programami demonstracyjnymi, je¶li tak, zg³o¶ je do mnie.\n\
+\033C\n\
+Najnowsz± publicznie dostêpn± wersjê mo¿na znale¼æ na Aminecie (dev/mui).\n\
+Wszystkie udostêpnione wersje dostêpne s± pod adresem:\n\
+http://www.sourceforge.net/projects/nlist-classes/\n\
+\033C\n\
+\033r\0333(C) 2001-2010 by NList Open Source Team\n\
+\033r\0333(C) 1996-1998 by Gilles Masson\n\
+\033r\0333http://www.sourceforge.net/projects/nlist-classes/\n\
+\033C\n\
+\033cTa nowa klasa w³asna MUI list/list wy¶wietlania\n\
+\033cobs³uguje w³asne konfigurowalne t³a, pisaki,\n\
+\033cczcionki, suwaki, klawisze i klawisze wywo³uj±ce\n\
+\033C\n\
+\033cSposób obs³ugi kursora w trybie zaznaczania wielu\n\
+\033celementów nie jest dok³adnie taki sam jak w li¶cie wy¶wietlania!\n\
+\033cObs³ugiwane jest przeci±ganie i upuszczanie elementów, oba suwaki\n\
+\033cmog± zostaæ skonfigurowane do automatycznego znikania\n\
+\033cgdy nie s± potrzebne, gdy¿ ca³y wy¶wietlany tekst jest widoczy.\n\
+\033cPo prostu wypróbuj nowe funkcje...\n\
+\033C\n\
+\033cMo¿esz przewijaæ tekst w poziomie przy u¿yciu klawiszy kursora,\n\
+\033club przesuwaj±c myszkê w lewo i prawo w trakcie zaznaczania myszk±.\n\
+\033cSpróbuj po prostu klikn±æ na lewej/prawej krawêdzi!\n\
+\033C\n\
+\033cMo¿esz zmieniaæ szeroko¶æ kolumn po prostu przeci±gaj±c\n\
+\033cpionowy separator pomiêdzy tytu³ami kolum\n\
+\033c(spróbuj te¿ u¿yæ klawiszy wywo³uj±cych balans obiektów).\n\
+\033C\n\
+\033cMo¿esz zmieniaæ kolejno¶æ kolumn przeci±gaj±c nazwy kolumn.\n\
+\033C\n\
+\033cWbudowana jest tak¿e obs³uga kopiowania tekstu do schowka\n\
+\033coraz mo¿liwo¶æ klasycznego zaznaczania znaków.\n\
+\033C\n\
+\033cWypróbuj programy demonstracyjne, by poznaæ wszystkie mo¿liwo¶ci...\n\
+\n\
+\n\
+\033r\033bDaj nam znaæ je¶li co¶ jest nie tak! :-)\n\
+\033C\n\
+**************************************************************************************************\n
+; If you have problems, try to increase the stack value,\n\
+; in the icon infos if you launch the program from icon,\n\
+; stack of CLI if you start it from CLI/Shell,\n\
+; and if you launch it from some utility read its docs\n\
+; to see how to increase it.\n\
+; A stack of 12Kb, 16Kb or 20Kb is most of time a good idea.\n\
+; \n\
+; If you still have problems, try to see if they happen with the Demo prog, then tell me.\n\
+; \033C\n\
+; Latest public release can be found on aminet (dev/mui).\n\
+; All releases are available on\n\
+; http://www.sourceforge.net/projects/nlist-classes/\n\
+; \033C\n\
+; \033r\0333(C) 2001-2010 by NList Open Source Team\n\
+; \033r\0333(C) 1996-1998 by Gilles Masson\n\
+; \033r\0333http://www.sourceforge.net/projects/nlist-classes/\n\
+; \033C\n\
+; \033cThis new list/listview custom class\n\
+; \033chandles its own configurable backgrounds,\n\
+; \033cpens, fonts, scrollbars, keys and qualifiers\n\
+; \033C\n\
+; \033cThe way used to handle cursor with multiselection\n\
+; \033cis not exactly as the listview one !\n\
+; \033cDrag&Drop is supported, both scrollbars\n\
+; \033ccan be configured to disappear automatically\n\
+; \033cwhen not needed because all is visible.\n\
+; \033cJust try it...\n\
+; \033C\n\
+; \033cYou can horizontaly scroll with cursor keys,\n\
+; \033cor going on the right and left of the list\n\
+; \033cwhile selecting with the mouse.\n\
+; \033cTry just clicking on the left/right borders !\n\
+; \033C\n\
+; \033cYou can change columns widths just dragging\n\
+; \033cthe vertical separator between columns titles\n\
+; \033c(try it using the balancing qualifier too).\n\
+; \033C\n\
+; \033cYou can change columns order just dragging\n\
+; \033cthe column titles.\n\
+; \033C\n\
+; \033cThere is builtin copy to clipboard stuff\n\
+; \033cand classic char selection capability.\n\
+; \033C\n\
+; \033cTry the Demo program to test all that...\n\
+; \n\
+; \n\
+; \033r\033bGive some feedback about it ! :-)\n\
+; \033C\n\
+; **************************************************************************************************\n
+;

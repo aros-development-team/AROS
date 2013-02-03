@@ -1,0 +1,161 @@
+TABLE OF CONTENTS
+
+NFloattext.mcc/NFloattext.mcc
+NFloattext.mcc/MUIA_NFloattext_Align
+NFloattext.mcc/MUIA_NFloattext_Justify
+NFloattext.mcc/MUIA_NFloattext_SkipChars
+NFloattext.mcc/MUIA_NFloattext_TabSize
+NFloattext.mcc/MUIA_NFloattext_Text
+NFloattext.mcc/MUIM_NFloattext_GetEntry
+NFloattext.mcc/NFloattext.mcc
+
+        NFloattext class is a subclass of NList class that takes
+        a big text string as input and splits it up into several
+        lines to be dislayed. Formatting capabilities include
+        paragraphs an justified text with word wrap. That MCC
+        public custom class  work near the same way as Floattext.
+
+        All you can do with NFloattext can be done directly using
+        NList and its word wrap capabilities. NFloattext is here
+        to give easy use and transition from Floattext.
+
+        Now NList package provide a Floattext.mui replacement
+        which use directly this class. Unfortunately the
+        repacement Floattext.mui have to have the same major release
+        number than original Floattext.mui to be accepted by MUI,
+        so it will have to be update with each new MUI remease.  :(
+
+        By default, MUIA_NList_Input is FALSE and MUIA_NList_TypeSelect
+        is MUIV_NList_TypeSelect_Char, alowing char selection and copy
+        to clipboard. If you set MUIA_NList_Input to TRUE, then
+        MUIA_NList_TypeSelect default to MUIV_NList_TypeSelect_Line as
+        usual.
+
+        NFloattext don't copy the string text, so it needs to copy
+        the string line to a buffer when you do a MUIM_NFloattext_GetEntry
+        or MUIM_List_GetEntry, so the return pointer will be invalid
+        after next GetEntry call (the new one will be valid of course).
+
+        Using the old MUIA_Floattext_Text from standard Floadtext class
+        instead of MUIA_NFloattext_Text will make NFloattext copy
+        the text like in Floattext class.
+
+        Note that MUIM_NList_GetEntry work as describe in NList, so
+        as NFloattext use word wrap entries, you should use better
+        MUIM_NFloattext_GetEntry or MUIM_List_GetEntry. Or use
+        MUIM_NList_GetEntryInfo and MUIM_NList_GetEntry.
+
+NFloattext.mcc/MUIA_NFloattext_Align
+
+    NAME
+        MUIA_NFloattext_Align -- [ISG], LONG
+
+    SPECIAL INPUTS
+        ALIGN_LEFT
+        ALIGN_CENTER
+        ALIGN_RIGHT
+        ALIGN_JUSTIFY
+
+    FUNCTION
+        Indicate what alignment you want.
+        It can be done with an escape alignment sequence
+        in the Format preparse string or in the text string
+        (for each linefeed separated lines) itself.
+
+        setting it will set MUIA_NFloattext_Justify to
+        TRUE if ALIGN_JUSTIFY, else to FALSE.
+
+    SEE ALSO
+        MUIA_NFloattext_Justify, MUIA_NList_Format
+NFloattext.mcc/MUIA_NFloattext_Justify
+
+    NAME
+        MUIA_NFloattext_Justify -- [ISG], BOOL
+
+    FUNCTION
+        Same as Floattext.mui/MUIA_Floattext_Justify.
+
+        if TRUE, MUIA_NFloattext_Align will be set to
+        ALIGN_JUSTIFY, else to ALIGN_LEFT.
+
+    SEE ALSO
+        MUIA_NFloattext_Align, MUIA_NList_Format
+NFloattext.mcc/MUIA_NFloattext_SkipChars
+
+    NAME
+        MUIA_NFloattext_SkipChars -- [ISG], char *
+
+    FUNCTION
+        Same as NList.mcc/MUIA_NList_SkipChars
+        and Floattext.mui/MUIA_Floattext_SkipChars.
+
+    SEE ALSO
+        MUIA_NList_SkipChars, MUIA_Floattext_SkipChars
+NFloattext.mcc/MUIA_NFloattext_TabSize
+
+    NAME
+        MUIA_NFloattext_TabSize -- [ISG], LONG
+
+    FUNCTION
+        Same as NList.mcc/MUIA_NList_TabSize
+        and Floattext.mui/MUIA_Floattext_TabSize.
+
+        Tab size defaults to 8.
+
+    SEE ALSO
+        MUIA_NList_TabSize, MUIA_Floattext_TabSize
+NFloattext.mcc/MUIA_NFloattext_Text
+
+    NAME
+        MUIA_NFloattext_Text -- [ISG], STRPTR
+
+    FUNCTION
+        Same as Floattext.mui/MUIA_Floattext_Text.
+
+        String of characters to be displayed as floattext.
+        This string may contain linefeeds or carriage retruns to mark
+        the end of paragraphs or tab characters for indention.
+
+        NFloattext will automatically format the text according
+        to the width of the NFloattext object. If a word
+        won't fit into the current line, it will be wrapped.
+
+        NFloattext don't copies the string into a private buffer
+        as Floattext do it, so you need to keep your text in
+        memory, but it uses less memory.
+
+        If you want NFloattext to copy the text, just use
+        MUIA_Floattext_Text which will do it for compatibility.
+
+        Setting MUIA_NFloattext_Text to NULL means to clear
+        the current text.
+
+        Please note that justification and word wrap is a
+        complicated operation and may take a considerable
+        amount of time, especially with long texts on slow
+        machines.
+
+NFloattext.mcc/MUIM_NFloattext_GetEntry
+
+    NAME
+        MUIM_NFloattext_GetEntry --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NFloattext_GetEntry,LONG pos, APTR *entry);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_GetEntry.
+
+        You'll get pointer to a null terminated string buffer which
+        is a copy of the asked visible entry.
+
+        Unlike with Floattext, the returned string will be valid only
+        until next MUIM_NFloattext_GetEntry/MUIM_List_GetEntry call
+        if the entry was word wrapped.
+        I'll try to make it stay valid when using MUIM_List_GetEntry
+        only if someone report me some compatibility problem because
+        doing that will use more memory.
+
+    SEE ALSO
+        MUIM_NList_GetEntry, MUIM_NList_GetEntryInfo, MUIM_List_GetEntry
+

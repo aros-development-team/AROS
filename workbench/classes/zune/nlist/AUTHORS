@@ -1,0 +1,49 @@
+/***************************************************************************
+
+ NList MUI custom classes
+
+ Copyright (C) 1996-2001 by Gilles Masson (NList.mcc)
+ Copyright (C) 1999-2001 by Carsten Scholling (NListtree.mcc)
+ Copyright (C) 2006      by Daniel Allsopp (NBitmap.mcc)
+ Copyright (C) 2001-2010 by NList Open Source Team
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+ NList classes Support Site:  http://www.sf.net/projects/nlist-classes
+
+ $Id: AUTHORS 509 2010-09-08 06:45:38Z mandi78 $
+
+***************************************************************************/
+
+The NList classes are an Open Source development effort with the code base
+and design provided by the following people (alphabetical order):
+
+Carsten Scholling     <cs@aphaso.de>
+Daniel Allsopp        <daniel@the-snakepit.co.uk>
+Gilles Masson
+Gunther Nikl          <gnikl@users.sourceforge.net>
+Jens Langner          <damato@users.sourceforge.net>
+Przemyslaw Grunchala  <sensei@box43.gnet.pl>
+Richard Poser         <whomiga@missingpiece.com>
+Sebastian Bauer       <sba@users.sourceforge.net>
+Thore Boeckelmann     <tboeckel@gmx.de>
+Matthias Rustler      <mrustler@gmx.de>
+
+Translations provided and maintained by following people:
+
+Czech:     Vit Sindlar <sindlarv at centrum dot cz>
+French:
+German:    Thore Böckelmann <tboeckel@gmx.de>
+Polish:    Mariusz Danilewicz <mandi@interia.pl>
+Swedish:   Pär Boberg <pbobbenb@spray.se>
+
+The development of the NList classes are hosted by
+SourceForge http://www.sf.net/

@@ -1,0 +1,21 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM- contrib-zune-classes : contrib-zune-classes-nlist
+
+#MM- contrib-zune-classes-nlist-demos : 	\
+#MM	contrib-zune-classes-nlist-demo 	\
+#MM	contrib-zune-classes-nlisttree-demo \
+#MM	contrib-zune-classes-nbitmap-demo
+
+#MM- contrib-zune-classes-nlist : 		\
+#MM	contrib-zune-classes-nlist-class  	\
+#MM	contrib-zune-classes-nlistview-class 	\
+#MM	contrib-zune-classes-nfloattext-class 	\
+#MM	contrib-zune-classes-nlisttree-class 	\
+#MM	contrib-zune-classes-nbitmap-class 	\
+#MM	contrib-zune-classes-nbalance-class 	\
+#MM	contrib-zune-classes-nlistviews-mcp 	\
+#MM	contrib-zune-classes-nlisttree-mcp 	\
+#MM	contrib-zune-classes-nlist-demos
+

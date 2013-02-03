@@ -1,0 +1,260 @@
+## version $VER: Nlisttree.ct 2.64 (13.04.08) by mrodfr@gmail.com
+## language français
+## codeset 0
+;
+;
+; NListtree_mcp.cd - NListtree MUI custom prefs catalog description file
+; $Id$
+;
+;#version 2
+;#language français
+;
+;
+MSG_TAB_LAYOUT
+Mise en page
+; Layout
+;
+MSG_GROUP_IMAGES_COLORS
+Images/Couleurs
+; Images/Colors
+;
+MSG_BUTTON_LABEL_CLOSED
+Fermé
+; Closed
+;
+MSG_BUTTON_SHORTCUT_CLOSED
+f
+; c
+;
+MSG_HELP_CLOSED_IMAGE
+Image a utiliser pour nodes fermés.
+; Image to use for closed nodes.
+;
+MSG_WIN_TITLE_CLOSED_IMAGE
+Ajuster image pour nodes fermés
+; Adjust image for closed nodes
+;
+MSG_BUTTON_LABEL_LINES
+Lignes
+; Lines
+;
+MSG_BUTTON_SHORTCUT_LINES
+l
+; l
+;
+MSG_HELP_LINES_COLOR
+Couleurs a utiliser pour les lignes
+; Color to use for lines.
+;
+MSG_WIN_TITLE_LINES_COLOR
+Ajuster la couleur des lignes
+; Adjust lines color
+;
+MSG_BUTTON_LABEL_OPEN
+Ouvert
+; Open
+;
+MSG_BUTTON_SHORTCUT_OPEN
+o
+; o
+;
+MSG_HELP_OPEN_IMAGE
+Image a utiliser pour nodes ouverts.
+; Image to use for open nodes.
+;
+MSG_WIN_TITLE_OPEN_IMAGE
+Ajuster images pour nodes ouverts
+; Adjust image for open nodes
+;
+MSG_BUTTON_LABEL_SHADOW
+Ombre
+; Shadow
+;
+MSG_BUTTON_SHORTCUT_SHADOW
+m
+; w
+;
+MSG_HELP_SHADOW_COLOR
+Couleur a utiliser pour\n\
+l'ombre des lignes.
+; Color to use to cast\n\
+; shadows after lines.
+;
+MSG_WIN_TITLE_SHADOW_COLOR
+Ajuster couleur de l'ombre
+; Adjust shadow color
+;
+MSG_BUTTON_LABEL_SPECIAL
+Spécial
+; Special
+;
+MSG_BUTTON_SHORTCUT_SPECIAL
+i
+; i
+;
+MSG_HELP_SPECIAL_IMAGE
+Une image spéciale qui sera\n\
+montrée après chaque node.
+; A special image to be\n\
+; displayed after every node.
+;
+MSG_WIN_TITLE_SPECIAL_IMAGE
+Ajuster l'image spéciale
+; Adjust special image
+;
+MSG_BUTTON_LABEL_DRAW
+Dessin
+; Draw
+;
+MSG_BUTTON_SHORTCUT_DRAW
+d
+; d
+;
+MSG_HELP_DRAW_COLOR
+Une couleur supplémentaire qui sera\n\
+combinée avec les 2 couleurs de la ligne.
+; A draw color to be combined\n\
+; with the lines color.
+;
+MSG_WIN_TITLE_DRAW_COLOR
+Ajuster la couleur de dessin
+; Adjust draw color
+;
+MSG_GROUP_STYLE
+Style
+; Style
+;
+MSG_CYCLE_LABEL_STYLE
+Style
+; Style
+;
+MSG_CYCLE_SHORTCUT_STYLE
+s
+; s
+;
+MSG_HELP_STYLE
+Sélectionner ici le style global de\n\
+l'arborescence.\n\
+\n\
+Selon votre choix, certaines options\n\
+pourront ne pas être disponible.
+; Select here the global style of the tree.\n\
+; \n\
+; Depending on your choice, some of the\n\
+; options above may become (un)available.
+;
+MSG_CYCLE_ITEM_STYLE_NORMAL
+Normal
+; Normal
+;
+MSG_CYCLE_ITEM_STYLE_INSERTED
+Inséré
+; Inserted
+;
+MSG_CYCLE_ITEM_STYLE_LINES
+Lignes
+; Lines
+;
+MSG_CYCLE_ITEM_STYLE_WIN98
+Win98
+; Win98
+;
+MSG_CYCLE_ITEM_STYLE_MAC
+Mac
+; Mac
+;
+MSG_CYCLE_ITEM_STYLE_LINES3D
+Lignes 3D
+; Lines 3D
+;
+MSG_CYCLE_ITEM_STYLE_WIN98PLUS
+Win 98+
+; Win98+
+;
+MSG_CYCLE_ITEM_STYLE_GLOW
+Glow
+; Glow
+;
+MSG_BUTTON_LABEL_SPACE
+Espaces
+; Spacing
+;
+MSG_BUTTON_SHORTCUT_SPACE
+p
+; p
+;
+MSG_HELP_SPACE
+Avec plus d'espaces, la\n\
+listtree sera plus grande.
+; The more spacing, the wider\n\
+; the listtree will be.
+;
+MSG_BUTTON_LABEL_REMEMBER
+Rappel des statuts?
+; Remember status?
+;
+MSG_BUTTON_SHORTCUT_REMEMBER
+r
+; r
+;
+MSG_HELP_REMEMBER
+Si sélectionné, le statut ouvert/fermé des nodes\n\
+sera 'retenu' après la fermeture du listtree\n\
+et ceci pour toutes les prochaines ouvertures.\n\
+\n\
+Noter toutefois qu'une application pourra\n\
+remplacer elle-même ce choix .
+; If enabled, the open/closed status of nodes\n\
+; will be 'remembered' after the listtree is closed\n\
+; the next time it is opened again.\n\
+; \n\
+; Please note, however, that an application\n\
+; can override your choice here.
+;
+MSG_BUTTON_LABEL_AUTOSCROLL
+Déplacement auto.?
+; Autoscroll?
+;
+MSG_BUTTON_SHORTCUT_AUTOSCROLL
+a
+; a
+;
+MSG_HELP_AUTOSCROLL
+Si sélectionné, le listview déplacera automatiquement\n\
+son contenu lors de l'ouverture des nodes et essayera\n\
+de montrer un maximum de contenu dans la zone visible.
+; If enabled, the listview will auto-scroll its\n\
+; contents when opening nodes to try and fit the\n\
+; visible area.
+;
+MSG_TAB_EXAMPLE
+Exemple
+; Example
+;
+MSG_HELP_LISTVIEW_EXAMPLE
+Les objets Nlisttree réagiront en temps\n\
+réel aux changements que vous aller\n\
+faire dans la zone 'Mise en page'.\n\
+\n\
+Essayez-donc:! :-)
+; This NListtree object reacts in real time to\n\
+; the changes you apply under the 'Layout' tab.\n\
+; \n\
+; Give it a try! :)
+;
+MSG_BUTTON_LABEL_EXPAND
+Étendre
+; Expand
+;
+MSG_BUTTON_SHORTCUT_EXPAND
+n
+; n
+;
+MSG_BUTTON_LABEL_COLLAPSE
+Réduire
+; Collapse
+;
+MSG_BUTTON_SHORTCUT_COLLAPSE
+e
+; e
+;

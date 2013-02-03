@@ -1,0 +1,139 @@
+TABLE OF CONTENTS
+
+NListview.mcc/NListview.mcc
+NListview.mcc/MUIA_NListview_Horiz_ScrollBar
+NListview.mcc/MUIA_NListview_HSB_Height
+NListview.mcc/MUIA_NListview_NList
+NListview.mcc/MUIA_NListview_Vert_ScrollBar
+NListview.mcc/MUIA_NListview_VSB_Width
+NListview.mcc/NListview.mcc
+
+        That MCC public custom class give scrollers for a
+        NList public custom class to make NList/NListview
+        work near the same way as List/Listview.
+
+        Most things that were handled by Listview are now
+        handled by NList, so NListview is quite simple,
+        anyway it's very easier to use NList with NListview
+        than without.
+
+        Anyway, use NList without NListview if you don't
+        want to get attached scrollers (or want to attach
+        your own scrollers to NList - see Demo).
+
+        Note: NListview class can't use List as child but
+              only NList, NFloattext, or a NList subclass,
+              and NList class will not work with Listview
+              without some conflict.
+
+NListview.mcc/MUIA_NListview_Horiz_ScrollBar
+
+    NAME
+        MUIA_NListview_Horiz_ScrollBar -- [ISG], Object *
+
+    SPECIAL INPUTS
+        MUIV_NListview_HSB_Always      1
+        MUIV_NListview_HSB_Auto        2
+        MUIV_NListview_HSB_FullAuto    3
+        MUIV_NListview_HSB_None        4
+        MUIV_NListview_HSB_Default     5
+
+    SPECIAL SPECIAL INPUTS
+        MUIV_NListview_HSB_On          0x0300
+        MUIV_NListview_HSB_Off         0x0100
+
+    FUNCTION
+        With it you can tell if you want the scrollbar to be here
+        always, never, automatic (not at start and appear forever if
+        needed) or full automatic (appear and disappear when needed).
+
+        Never is interesting if you want only one scrollbar of both
+        or if you want to attach your own one only for one scrollbar.
+
+        With Auto and FullAuto modes, scrollbars will not appear at
+        first draw of the window. If you want it to appear when the
+        window will be opened, you can set after creation time (not
+        at init) MUIA_NListview_Horiz_ScrollBar
+        to (MUIV_NListview_HSB_XXX|MUIV_NListview_HSB_On) where XXX
+        is Default, FullAuto ...
+
+        MUIV_NListview_HSB_On, MUIV_NListview_HSB_Off are used by the
+        NList object to make scrollbars appear/disappear.
+
+        The default is set by prefs. When prefs have not been set
+        it is MUIV_NListview_HSB_Auto.
+
+    SEE ALSO
+        MUIA_NListview_Vert_ScrollBar
+NListview.mcc/MUIA_NListview_HSB_Height
+
+    NAME
+        MUIA_NListview_HSB_Height -- [..G], LONG
+
+    FUNCTION
+        Return the height of the horizontal scrollbar.
+
+        Return 0 when no horizontal scrollbar is visible.
+
+    SEE ALSO
+        MUIA_NListview_VSB_Width
+NListview.mcc/MUIA_NListview_NList
+
+    NAME
+        MUIA_NListview_NList -- [I.G], Object *
+
+    FUNCTION
+        Same function as Listview.mui/MUIA_Listview_List.
+
+        Every NListview needs a NList (or subclass) object as child.
+        You should specify it here.
+
+        If you don't specify one, NListview will create a NList object
+        as child, giving it the same taglist as itself.
+        It's the only case where NList tags given to NListview will be
+        taken into account.
+
+        As every other child, it will get disposes when
+        its parent object is disposed.
+
+    SEE ALSO
+        NList.mcc
+NListview.mcc/MUIA_NListview_Vert_ScrollBar
+
+    NAME
+        MUIA_NListview_Vert_ScrollBar -- [ISG], Object *
+
+    SPECIAL INPUTS
+        MUIV_NListview_VSB_Always      1
+        MUIV_NListview_VSB_Auto        2
+        MUIV_NListview_VSB_FullAuto    3
+        MUIV_NListview_VSB_None        4
+        MUIV_NListview_VSB_Default     5
+        MUIV_NListview_VSB_Left        6
+
+    SPECIAL SPECIAL INPUTS
+        MUIV_NListview_VSB_On          0x0030
+        MUIV_NListview_VSB_Off         0x0010
+
+    FUNCTION
+        Same as MUIA_NListview_Horiz_ScrollBar but for vertical
+        scrollbar.
+
+        The default is set by prefs. When prefs have not been set
+        it is MUIV_NListview_VSB_Always.
+
+    SEE ALSO
+        MUIA_NListview_Horiz_ScrollBar
+NListview.mcc/MUIA_NListview_VSB_Width
+
+    NAME
+        MUIA_NListview_VSB_Width -- [..G], LONG
+
+    FUNCTION
+        Return the width of the vertical scrollbar.
+
+        Return 0 when no vertical scrollbar is visible.
+
+    SEE ALSO
+        MUIA_NListview_HSB_Height
+

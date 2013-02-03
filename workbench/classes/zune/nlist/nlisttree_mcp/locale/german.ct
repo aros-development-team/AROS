@@ -1,0 +1,347 @@
+## chunk AUTH Thore Böckelmann, Jens Langner
+## version $VER: NListtree_mcp.catalog 2.4 (11.7.2011)
+## language deutsch
+## codeset 0
+;
+; $Id$
+;
+MSG_TAB_LAYOUT
+Layout
+; Layout
+;
+MSG_GROUP_IMAGES_COLORS
+Bilder/Farben
+; Images/Colors
+;
+MSG_BUTTON_LABEL_CLOSED
+Geschlossen
+; Closed
+;
+MSG_BUTTON_SHORTCUT_CLOSED
+g
+; c
+;
+MSG_HELP_CLOSED_IMAGE
+Bild für geschlossene Knoten
+; Image to use for closed nodes.
+;
+MSG_WIN_TITLE_CLOSED_IMAGE
+Bild für geschlossene Knoten ändern
+; Adjust image for closed nodes
+;
+MSG_BUTTON_LABEL_LINES
+Linien
+; Lines
+;
+MSG_BUTTON_SHORTCUT_LINES
+l
+; l
+;
+MSG_HELP_LINES_COLOR
+Farbe für Linien
+; Color to use for lines.
+;
+MSG_WIN_TITLE_LINES_COLOR
+Farbe für Linien ändern
+; Adjust lines color
+;
+MSG_BUTTON_LABEL_OPEN
+Geöffnet
+; Open
+;
+MSG_BUTTON_SHORTCUT_OPEN
+ö
+; o
+;
+MSG_HELP_OPEN_IMAGE
+Bild für geöffnete Knoten
+; Image to use for open nodes.
+;
+MSG_WIN_TITLE_OPEN_IMAGE
+Bild für geöffnete Knoten ändern
+; Adjust image for open nodes
+;
+MSG_BUTTON_LABEL_SHADOW
+Schatten
+; Shadow
+;
+MSG_BUTTON_SHORTCUT_SHADOW
+s
+; w
+;
+MSG_HELP_SHADOW_COLOR
+Farbe um Schatten unter Linien zu malen
+; Color to use to cast\n\
+; shadows after lines.
+;
+MSG_WIN_TITLE_SHADOW_COLOR
+Schattenfarbe ändern
+; Adjust shadow color
+;
+MSG_BUTTON_LABEL_SPECIAL
+Speziell
+; Special
+;
+MSG_BUTTON_SHORTCUT_SPECIAL
+p
+; i
+;
+MSG_HELP_SPECIAL_IMAGE
+Spezielles Bild, das hinter jedem Knoten angezeigt wird
+; A special image to be\n\
+; displayed after every node.
+;
+MSG_WIN_TITLE_SPECIAL_IMAGE
+Spezielles Bild ändern
+; Adjust special image
+;
+MSG_BUTTON_LABEL_DRAW
+Zeichnen
+; Draw
+;
+MSG_BUTTON_SHORTCUT_DRAW
+z
+; d
+;
+MSG_HELP_DRAW_COLOR
+Zeichenfarbe, die mit der Linienfarbe kombiniert wird
+; A draw color to be combined\n\
+; with the lines color.
+;
+MSG_WIN_TITLE_DRAW_COLOR
+Zeichenfarbe ändern
+; Adjust draw color
+;
+MSG_GROUP_STYLE
+Stil
+; Style
+;
+MSG_CYCLE_LABEL_STYLE
+Stil
+; Style
+;
+MSG_CYCLE_SHORTCUT_STYLE
+i
+; s
+;
+MSG_HELP_STYLE
+Wählen Sie hier den globalen Stil des Baums.\n\
+\n\
+Abhängig von Ihrer Wahl können einige Optionen von oben (in)aktiv werden.
+; Select here the global style of the tree.\n\
+; \n\
+; Depending on your choice, some of the\n\
+; options above may become (un)available.
+;
+MSG_CYCLE_ITEM_STYLE_NORMAL
+Normal
+; Normal
+;
+MSG_CYCLE_ITEM_STYLE_INSERTED
+Eingerückt
+; Inserted
+;
+MSG_CYCLE_ITEM_STYLE_LINES
+Linien
+; Lines
+;
+MSG_CYCLE_ITEM_STYLE_WIN98
+Win98
+; Win98
+;
+MSG_CYCLE_ITEM_STYLE_MAC
+Mac
+; Mac
+;
+MSG_CYCLE_ITEM_STYLE_LINES3D
+3D-Linien
+; Lines 3D
+;
+MSG_CYCLE_ITEM_STYLE_WIN98PLUS
+Win98+
+; Win98+
+;
+MSG_CYCLE_ITEM_STYLE_GLOW
+Glow
+; Glow
+;
+MSG_BUTTON_LABEL_SPACE
+Abstand
+; Spacing
+;
+MSG_BUTTON_SHORTCUT_SPACE
+a
+; p
+;
+MSG_HELP_SPACE
+Je mehr Abstand um so breiter wird der Baum werden.
+; The more spacing, the wider\n\
+; the listtree will be.
+;
+MSG_BUTTON_LABEL_REMEMBER
+Zustand merken?
+; Remember status?
+;
+MSG_BUTTON_SHORTCUT_REMEMBER
+m
+; r
+;
+MSG_HELP_REMEMBER
+Fall aktiv merkt sich der Baum den geöffnet/geschlossen\n\
+Zustand der Knoten und stellt diesen beim nächsten Darstellen\n\
+wieder her.\n\
+\n\
+Hinweis: ein Programm kann diese Option ignorieren.
+; If enabled, the open/closed status of nodes\n\
+; will be 'remembered' after the listtree is closed\n\
+; the next time it is opened again.\n\
+; \n\
+; Please note, however, that an application\n\
+; can override your choice here.
+;
+MSG_BUTTON_LABEL_AUTOSCROLL
+Automatisch scrollen?
+; Autoscroll?
+;
+MSG_BUTTON_SHORTCUT_AUTOSCROLL
+c
+; a
+;
+MSG_HELP_AUTOSCROLL
+Fall aktiv wird der Baum seinen Inhalt entsprechend\n\
+anpassen, um geöffnete Knoten möglichst komplett\n\
+darzustellen.
+; If enabled, the listview will auto-scroll its\n\
+; contents when opening nodes to try and fit the\n\
+; visible area.
+;
+MSG_TAB_EXAMPLE
+Beispiel
+; Example
+;
+MSG_HELP_LISTVIEW_EXAMPLE
+Der Baum reagiert in Echtzeit auf Änderungen auf\n\
+der Layout-Seite.\n\
+\n\
+Probieren Sie es aus! :)
+; This NListtree object reacts in real time to\n\
+; the changes you apply under the 'Layout' tab.\n\
+; \n\
+; Give it a try! :)
+;
+MSG_BUTTON_LABEL_EXPAND
+Alle öffnen
+; Expand
+;
+MSG_BUTTON_SHORTCUT_EXPAND
+f
+; n
+;
+MSG_BUTTON_LABEL_COLLAPSE
+Alle schließen
+; Collapse
+;
+MSG_BUTTON_SHORTCUT_COLLAPSE
+e
+; e
+;
+MSG_BUTTON_LABEL_LINETYPES
+Linienstil
+; Line type
+;
+MSG_BUTTON_SHORTCUT_LINETYPES
+n
+; l
+;
+MSG_LINETYPE_DISABLED
+keine
+; Disabled
+;
+MSG_LINETYPE_NORMAL
+normal
+; Normal
+;
+MSG_LINETYPE_DOTTED
+gepunktet
+; Dotted
+;
+MSG_LINETYPE_SHADOW
+schattiert
+; Shadow
+;
+MSG_LINETYPE_GLOW
+glühend
+; Glow
+;
+MSG_HELP_LINETYPES
+Wählen Sie hier den Stil zum Zeichen der Linien\n\
+für die unterschiedlichen Ebenen des Baumes.
+; Select the line type used for drawing\n\
+; the individual levels in the listtree.
+;
+MSG_BUTTON_LABEL_FOLDER
+Verzeichnisbild
+; Folder image
+;
+MSG_BUTTON_SHORTCUT_FOLDER
+V
+; f
+;
+MSG_WIN_TITLE_FOLDER_IMAGE
+Verzeichnisbild ändern
+; Adjust folder image
+;
+MSG_HELP_FOLDER_IMAGE
+Vor jedem Eintrag mit weiteren Untereinträgen\n\
+wird dieses Bild angezeigt.
+; An image displayed in front of every\n\
+; node containing subnodes.
+;
+MSG_BUTTON_LABEL_FOLDERIMAGE
+Verzeichnisbild benutzen
+; Use folder image
+;
+MSG_BUTTON_SHORTCUT_FOLDERIMAGE
+b
+; i
+;
+MSG_HELP_FOLDERIMAGE
+Wählen Sie hier, ob vor jedem Eintrag mit\n\
+weiteren Untereinträgen ein Verzeichnisbild\n\
+angezeigt werden soll.
+; Select if you want a folder image to\n\
+; appear in front of every node containing\n\
+; subnodes.
+;
+MSG_BUTTON_LABEL_INDENTWIDTH
+Zusätzl. Einzugsbreite
+; Indent width
+;
+MSG_BUTTON_SHORTCUT_INDENTWIDTH
+E
+; w
+;
+MSG_HELP_INDENTWIDTH
+Legt eine zusätzliche Einzugsbreite\n\
+für jeden Untereintrag fest.
+; Specify the width of indentation for\n\
+; every subnode
+;
+MSG_BUTTON_LABEL_GLOW
+Glühfarbe
+; Glow color
+;
+MSG_BUTTON_SHORTCUT_GLOW
+G
+; g
+;
+MSG_WIN_TITLE_GLOW_COLOR
+Legt die Linienfarbe für das Glühen fest
+; Set glow line color
+;
+MSG_HELP_GLOW_COLOR
+Wählen Sie hier die Farbe für den Glüheffekt\n\
+der Linien.
+; Allows to set the color for the glow\n\
+; line type
+;

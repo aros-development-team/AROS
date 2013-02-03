@@ -1,0 +1,1033 @@
+
+NList.mcc/NListview.mcc/NFloattext.mcc/NListviews.mcp - Documentation
+
+*********************************************************************
+
+
+
+
+Copyright
+*********
+
+   NList.mcc (C) 1996-2001 Gilles Masson
+   NList.mcc 2001 NList Open Source Team
+
+   This data is freely distributable, but copyrighted by me. This means
+you may freely copy them as long as you do not charge more than a
+nominal fee for copying. This data may be put on PD disks, especially
+on Fred Fish's AmigaLibDisks and Fred's or Aminet CDROMs. If you want to
+distribute the data you MUST keep this document with it. All documents,
+programms and files must be distributed in their original unmodified
+form.
+
+   The authors can not be made responsible for any damage which is
+caused by using these programs.
+
+This class is FreeWare.
+
+-------------------------------------------------------------------------
+ The AUTHOR of a program can include the NList.mcc, NListview.mcc,
+ NFloattext.mcc, NListviews.mcp and Install files in its program archive
+ as soon as the above is respected. You can install them from you're own
+ script or use the provided one as you want.
+-------------------------------------------------------------------------
+
+
+   I'm interesting in who is using my classes in his own (free) programs,
+so don't hesitate to contact me. (just a mail telling what you're doing
+with NList would be nice :)
+
+
+
+   Send comments, suggestions or bug reports to:
+
+     NList Open Source Team <nlistdev@meanmachine.ch>
+
+
+
+What are NList.mcc/NListview.mcc/NFloattext.mcc/NListviews.mcp ?
+****************************************************************
+
+   NList is a Custom Class for the Magic User Interface (c) by Stefan
+Stuntz. It's a subclass of area-class which make the same stuffs
+than the MUI List/Listview class, and more.
+
+   NList implement horizontal scrolling, built-in copy to clipboard,
+classic char precision selection of area, drag and drop and some others.
+
+   NListview give NList scrollbars, vertical as Listview, but horizontal
+too.
+
+   NFloattext is like Floattext and do automatic word wrap. The interest
+to do it with NList is the builtin copy to clipboard.
+
+   There is a mui pref class NListviews.mcp with it, which permit the
+user to choose all default backgrounds, pens and fonts.
+
+
+   There is a Floattext.mui replacement which should work with all
+programs. It's simply a stub to NFloattext.mcc.
+To work that class must have the same major version number than original
+have (ie 19.x for MUI 3.8), so it will surely have to be upgraded for next
+MUI release and it should currently work only with MUI 3.8.
+
+
+
+
+What you need !
+***************
+
+   - MUI 3.6+
+   - AmigaOS V37+ (2.x)
+
+
+
+
+How to install!
+***************
+
+for all (this is done by the install script) :
+
+  copy MCC_NList/Libs/MUI/NFloattext.mcc  MUI:Libs/MUI/
+  copy MCC_NList/Libs/MUI/NList.mcc       MUI:Libs/MUI/
+  copy MCC_NList/Libs/MUI/NListview.mcc   MUI:Libs/MUI/
+  copy MCC_NList/Libs/MUI/NListviews.mcp  MUI:Libs/MUI/
+
+  start the NList-Demo program  ;-)
+
+and if you want to use the Floattext.mui replacement :
+          (keep a copy of original before !)
+  copy MCC_NList/Libs/MUI/Floattext.mui   MUI:Libs/MUI/
+
+
+
+for developpers :
+
+  copy MCC_NList/Developer/AutoDocs/MCC_NFloattext.doc   AutoDoc:
+  copy MCC_NList/Developer/AutoDocs/MCC_NList.doc        AutoDoc:
+  copy MCC_NList/Developer/AutoDocs/MCC_NListview.doc    AutoDoc:
+  copy MCC_NList/Developer/Include/MUI/NFloattext_mcc.h  Include:MUI/
+  copy MCC_NList/Developer/Include/MUI/NList_mcc.h       Include:MUI/
+  copy MCC_NList/Developer/Include/MUI/NListview_mcc.h   Include:MUI/
+
+
+
+NOTE :
+  The Floattext.mui replacement is just a subclass to NFloattext.mcc and
+  perhaps it will have compatibility problems with original one.
+  If you have problem, try again with original, and tell me if it's really
+  a problem made by the replacement class. Think to try just increasing
+  the stack of the program which make problems using it !!!
+
+NOTE2 :
+  Actually you can try to patch current Listtree.mcc, Dirlist.mui and Volumelist.mui
+  editing those files and replacing "List.mui\0\0" by "NList.mcc\0".
+  Of course doing that is at your own risks, but it seems to work in nearly
+  all cases. Keep a copy of original files before trying that...  ;)
+  I use that for long time now, and the same work with many applications
+  which use MUI and List.mui/Listview.mui (AmFTP, YAM1.3.4 for example).
+
+
+
+
+
+
+Known bugs
+**********
+
+- By default the first column is not sortable. It's a feature, not a bug. Any
+  program can change that just setting the MUIA_NList_MinColSortable tag.
+
+- Using *simple refresh mode* for the window can make redraw problems when using
+  context menu. It is a MUI bug !
+
+- When the size of a NListview object can be changed because of a balance object,
+  there can be strange things when moving that balance object with keys shortcuts
+  because in that case the window layout don't work correctly when some object
+  do ADDMEMBER or ADDMEMBER because of those size changes.
+  This is a Balance object bug ! Which make problems with other objects too,
+  not only with NListview ones...
+
+- Miscalaneous problems can come if stack is too low.
+  Think that when you call the mui prefs from some program the pref window and
+  all its objects will work in the program context, with the same stack, so
+  it can happens to have a stack to small only when the mui pref is opened...
+  It is a bug of you (set the stack bigger, i suggest > 12K) or from the program
+  (if it extends the stack to a too small value for a NList use).
+
+- Some users have reported crash when going in NListviews prefs because
+  of old version of HotkeyString.mcc from Allan Odgaard.
+
+
+
+
+What is to do in future ?
+*************************
+
+- Make a nice user configuration for title marks.
+
+- Make NList subclasses. I think about Volumelist, Dirlist.
+  Tell me if you want to do one of them.
+- Pref for the copy to clipboard key. (is there anyone which have a source
+  to test a rawkey event against a string pref (like 'alt c') ?).
+- Pref for the mark/block qualifier key (both for mouse and key handling)
+- Fix bugs you will find and inform me.
+
+
+
+
+
+Notes
+*****
+
+Think about a  >12Kb (more?) stack to run it.
+(i always use 16K stack with MUI programs when NList is used, and so always
+because most MUI programs use Floattext.mui...)
+
+
+If the .MCP custom MUI prefs freeze mui prefs with another program,
+control its stack value, it could be too small !
+
+
+Use SegTracker with Enforcer. You will have more information and know
+in which .mcc/.mcc/.mui/program the hit happened !
+
+If with some program you get enforcer or mungwall hit, tell me, but give
+all usefull informations - your config, your commodities/patches/hacks.
+
+
+
+Think to update the keybindings when you install a new MCC_NList release.
+
+
+
+You can look on ftp://iutsoph.unice.fr/pub/amiga/mui/
+or http://iutsoph.unice.fr/amiga/mui/ for new releases.
+
+
+Email me if you want (beta) releases infos by email, or if you want to
+receive (beta) releases by email (uuencoded).
+
+
+
+Give me some feedback if you like it, don't like it, need some changes
+or adds, please.
+
+
+
+
+Thanks
+******
+
+Thanks to Stefan Stuntz   for MUI.
+
+Thanks to Klaus Melchior,
+          Piotr Pawlow,
+          Troels Walsted Hansed,
+          Troy Davis,
+          Stephane Barbaray,
+          Allan Odgaard,
+          Marcin Orlowski,
+          Stefane Barbaray,
+
+          and all others beta testers for ideas, reports and help to find bugs.
+
+
+
+
+(C) 1996-2001  Gilles Masson                       masson@iutsoph.unice.fr
+
+    2001       NList Open Source Team              nlistdev@meanmachine.ch
+
+
+
+
+
+
+
+
+History of NList.mcc
+********************
+
+* NList.mcc         20.103    23.11.01 Sensei <sensei@box43.gnet.pl>
+  - added MUIM_NList_Construct, MUIM_NList_Destruct, MUIM_NList_Compare and
+	 MUIM_NList_Display methods. Three first one was added in September, but
+	 I don't remember when exactly.
+  - bumped version to V20.
+
+* NList.mcc         19.101    24.06.01
+  - Enforcer hit on dispose removed.
+  - Again some speedups.
+
+* NList.mcc         19.100    20.06.01
+  - Changed memory management, made some other speedups
+    (internal version only).
+
+* NList.mcc         19.98     18.02.01
+  - added MUIM_NList_SelectChange method
+
+* NList.mcc         19.97     30.11.98
+  - fixed MUIA_NList_SortType default is now MUIV_NList_SortType_None.
+
+* NList.mcc         19.96     29.11.98
+  - added Support of a secondary title mark with MUIA_NList_TitleMark2.
+  - added Support of qualified titleclick (the qualifier have to be set in the prefs)
+          with MUIA_NList_TitleClick2.
+  - added Support of a secondary sort type value with MUIA_NList_SortType2.
+          Test and look the demo to have an example.
+  - added MUIM_NList_Sort3 method permit to set/change MUIA_NList_SortType,
+          MUIA_NList_SortType2 or both before doing the sort.
+  - fixed Returning NULL in the construct hook just skip the insert of the entry.
+  - added MUIM_NList_GetPos give the entry number where is the (next) given entry ptr.
+
+* NList.mcc         19.95     02.11.98
+  - fixed There were a redraw out of the bounds of the list in some refresh cases.
+  - added Maximum visible drag items before 'Dragging xx Items...' pref support.
+  - fixed A LockLayer/UnLockLayer where forgotten in the refresh process.
+  - fixed The move/resize pointers could be shown when another window was in front
+          of the list (with the list's window active).
+  - fixed The esc-E sequence now make like esc-C when there is no text.
+  - fixed Setting WEIGHT=-1 in the Fromat string did not worked as not setting it
+          at all. The autodoc about default W=-1 didn't reflect exactly the way it
+          worked, it has been corrected and reflect how it works now.
+  - fixed After a Clear in Quiet mode the titles width were forgotten.
+  - fixed The Import and Export methods have been rewritten. Previous ones made a
+          system crash for some users (not for me and some others, i don't know why).
+
+* NList.mcc         19.94     20.10.98
+  - fixed In MUIM_Export a pooled alloc were not freed.
+  - fixed There were many problems with the qualifiers of keybindings.
+  - fixed The multiselect qualifier started the drag in some case.
+  - fixed A little problem in MinLineHeight.
+  - added Better pointer colors possibilities, setting the wanted color number
+          for the black in prefs.
+  - added Support for the new MouseWheel prefs.
+
+
+* NList.mcc         19.93     24.07.98
+  - fixed In some cases the last visible column was not resizable.
+  - fixed Going back to default width of a column didn't worked always.
+  - added The title marker can now loaded/saved like widths etc.
+  - added Shortcuts for the default width and order (see in pref to know what they are).
+          Double clicking on a separator do not default the width anymore, and RMB while
+          resizing cancel the resize.
+  - added Full configurable shortcuts and qualifiers.
+
+* NList.mcc         19.92     15.07.98
+  - added Custom pointer colors changed (it appear that i don't use standard pointer
+          colors on my system). You can ask for previous ones in prefs.
+  - fixed In some cases column width was not saved for all columns.
+  - fixed The horiz scrollbar considered the length of the non-visible end of the
+          last column when the user have reduced its size.
+  - fixed This time serial mouse and tablet support should be ok, a special pref
+          has been added to permit D&D support with them (but list scrolling
+          while dragging can't work correctly) because of a MUI "bug".
+  - added Support mouse wheel using Alessandro Zummo OptMouse (beta) version.
+
+* NList.mcc         19.91     21.06.98
+  - fixed Again some refresh problems in simple refresh more, should be ok now.
+
+* NList.mcc         19.90     27.05.98
+  - fixed A stupid bug made Auto/FullAuto scrollers "freeze" the object when they
+          appear the first time the object is drawn.
+
+* NList.mcc         19.89     25.05.98
+  - fixed Now the MUI window refresh is forced before trying to redraw anything else
+          in the list (this case happen only in simple refresh mode). It was not done,
+          so in some cases the drawing was clipped by the intuition refresh clipping !
+  - fixed There were some other refresh problems with the Redraw method when using
+          simple refresh mode.
+  - fixed There were a little drawing bug while (simple) refresh at bottom of list.
+  - fixed Notifies were always done asynchronously (!), not done any more.
+  - fixed XEN buttons (and perhaps other ones ?) in NList objects had a little redraw
+          position problem.
+  - fixed Having the last column less large than the remaining right space with a
+          separator bar is now possible (it can avoid the need of an extra empty column).
+  - fixed Use of graphic tablet instead of mouse should work again (i hope).
+  - fixed The copy to clipboard shortkeys unselect the area.
+  - added Read only list in char selection make auto copy to clipboard.
+
+* NList.mcc         19.88     04.05.98
+  - fixed There still were a problem with MUIA_NList_AdjustHeight, should be ok now.
+  - fixed Now the changed mouse pointer are hires on V39+, no need any more to use a
+          hires pointer patch for NList when using AGA or CGFX...  :)
+  - fixed Sorted Inserts are now faster. Anyway if you have 1000 sorted entries to
+          insert it is faster to insert them normally and do a sort after.
+  - fixed An enforcer hit happened when clicking on NFloattext object border.
+  - added MUIA_NList_MultiClickAlone which is notified only for the final multiclick
+          number, so if there are 3 clicks there will be only one multiclickalone
+          notified, a little (max time between 2 clicks) after the 3rd one.
+  - fixed There were some strange input problem since last release because of
+          changed made for tablet, but the fix made an other bug, so actually i
+          came back to the old code. I will re-make a big part of the eventhandler
+          later to fix both.
+
+* NList.mcc         19.87     29.04.98
+  - fixed In some cases the image objects shown in NList entries appeared disabled !
+  - fixed Selecting entries before the window containing the nlist object is open
+          didn't worked.
+  - fixed MUIA_NList_AdjustWidth and MUIA_NList_AdjustHeight didn't worked as expected.
+  - added MUIA_NList_Columns now work.
+
+* NList.mcc         19.86     13.04.98
+  - fixed MUIA_NList_AdjustWidth didn't worked any more, i don't know in which
+          release this happened...
+  - fixed most MUIV_NList_Jump_xxx were not implemented at all !  :(
+  - fixed MUIV_NList_Move_Next didn't work as it should.
+  - fixed the rastport softstyle was not always reset to initial state.
+  - fixed in the builtin comparehook: stricmp() replaced by Stricmp() which (i hope)
+          make a localized compare.
+  - fixed setting MUIA_NList_MinLineHeight didn't update and redraw the list in some cases.
+  - fixed MUIA_Disabled now disable all user input and redraw.
+  - added all MUIA_NList_Imports and MUIA_NList_Exports values are now usable, so the
+          NList object can now save/load columns width and order for example.
+  - added MUIM_NList_SetColumnCol permit to set which displayhook col is at some
+          visible column.
+  - fixed The sort algorithm speed has been higly increased using the qsort().
+          It was very slow before, 50,000 entries were sorted in more than 8 hours,
+          but now it take less than 30 seconds !   :)
+
+
+* NList.mcc         19.84     15.12.97
+  - fixed the Pointer changes now work ok when using the MCP Hires Pointer patch.
+  - fixed the background is not drawn any more twice (one by group subclass) when
+          a complete redraw is made (this was visible with complex background while
+          a resize of the list).
+  - fixed most of time, clicking on an image didn't activate the entry (this bug
+          was introduced in 19.81 by the "relverify button" code)
+  - added Notify can now be made on MUIA_NList_DragSortInsert to know when
+          DragSort have been done.
+  - fixed Notify can now be made on MUIA_NList_InsertPosition.
+  - added You can now mark one title column with MUIA_NList_TitleMark.
+          This can be usefull to show on which column a list is sorted for example.
+
+* NList.mcc         19.83     08.12.97
+  - fixed MUI_NLPR_ONTOP flag was never set by TestPos method !
+  - added now the pointer is changed at mouse positions where column width is resizable.
+  - added double click on title column separator bar make the column width go to default.
+  - fixed RMB while changing a column width make all column width go to default.
+  - fixed An (not bitmap/bodychunk) image object in the text of a MailText.mcc made
+          the whole system freeze when set at init.
+  - added Now the columns can be sorted by the user using his mouse, the tag
+          MUIA_NList_MinColSortable is here to set the first sortable column (default=1).
+  - added NList can now save the active entry as List.mui does. Will be able to save more
+          really soon.
+
+* NList.mcc         19.82     28.10.97
+  - fixed The list should not show empty lines because the window size changed any more.
+  - fixed MUIA_Font is now settable, the change will take effect after next MUIM_Setup,
+          so you can set it until the DoSuperMethod call of the MUIM_Setup of a NList
+          subclass.
+  - fixed HandleEvent didn't returned MUI_EventHandlerRC_Eat when Amiga-C/Amiga-X where
+          used to copy to clipboard.
+  - fixed When MUIA_NList_DefaultObjectOnClick is used and the user click outside the
+          list then the list is not the default object any more (until next click in
+          the list of course).
+  - fixed No notify is made any more on Active, First, Select,... for changes which
+          happend while in Quiet mode (unless using MUIV_NList_Quiet_Visual instead
+          of the classic/default MUIV_NList_Quiet_Full).
+  - added ESC t[N], ESC t[N<n>], ESC t[NM<n>], ESC t[NI<n>] sequences.
+          (see MUIA_NList_DisplayHook)
+  - added SIMPLEBAR=SBAR option in Format string to draw BAR as a simple black line.
+
+* NList.mcc         19.81     15.07.97
+  - added some new hooks MUIA_NList_XxxxHook2 which are same as MUIA_NList_XxxxHook ones
+          but use a more standard way to be called, ie with the object in A2 and a
+          message in A1 which is a struct.
+          This give a correct access to the object, and permit the MUIA_NList_CompareHook2
+          hook to use the MUIA_NList_SortType value (see below).
+  - added MUIA_NList_SortType tag which can be set and get, is passed to the
+          MUIA_NList_CompareHook2 hook and can be directly setted in MUIM_NList_Sort2.
+  - added MUIM_NList_Sort2 method which set MUIA_NList_SortType value the do same as
+          MUIM_NList_Sort (its goal is to permit very easy sort using a single notify
+          on MUIA_NList_TitleClick.
+  - fixed MUIA_Listview_MultiSelect and MUIA_Listview_Input set on a Listview should
+          now work for a NList child.
+  - added MUIA_NList_ButtonClick and ESC O[...@<n>] or ESC o[...@<n>] sequences
+          to make relverify like buttons and get notifies when they are clicked.
+  - added MUIM_NList_CreateImage and MUIM_NList_UseImage now use the flags argument :
+          when ~0L NList don't make set(MUIA_FillArea,FALSE) on the object any more.
+
+* NList.mcc         19.80     15.07.97
+  - fixed use HandleInput for MuiKeys as it seems they are not received by HandleEvent
+          in some cases. Intuition events are still handled in HandleEvent.
+  - fixed setting MUIA_NList_Active could make some delayed MUIA_NList_Active notify.
+  - fixed some horizontal scrollbar in fullauto mode problems should be fixed.
+  - added new escape sequence ESC t[..] which make ESC C and ESC E horiz bar
+          being thick (and filled with wanted color).
+  - fixed setting default to never have the NList context menu show it at the 1st RMB click.
+
+* NList.mcc         19.79     09.07.97
+  - fixed NList didn't cleared entries when disposed, so destruct hook where never called
+          in that case !
+  - fixed handleInput has been replaced by HandleEvent.
+  - added NList entries strings could be ended by \0 and \n only.
+          Now NList reconize \r and \r\n too as end of strings.
+  - fixed no MUIA_NList_Active (MUIA_List_Active) notify were sent when the list is cleared.
+  - fixed Drag in immediate mode don't start any more immediately but at first mouse move.
+  - fixed Insertion of entries containing ESC I[] while in quiet mode should be a little faster.
+  - fixed there were in some cases a problem with MUIA_NList_Active/MUIA_List_Active notify,
+          and that notify was never done when the list became cleared.
+          (works better when used in a standard Listview now)
+  - fixed Notifies on MUIA_Listview_SelectChange and MUIA_Listview_DoubleClick
+          (when using standard Listview) should now work.
+  - added MUIM_NList_ContextMenuBuild autodoc.
+
+* NList.mcc         19.78     30.06.97
+  - fixed some improves in NList refreshes when in a virtual group.
+  - fixed now changes which happen while the list is in quiet mode will have the
+          notification delayed until the end of quiet mode.
+  - fixed the stack check will appear only one time now.
+  - fixed if silly stack values are found while the stack check is made then the
+          check will be automatically disabled.
+
+* NList.mcc         19.75     24.06.97
+  - fixed with 19.74 custom ContextMenu didn't work for list with only one column.
+  - fixed In MUIA_NList_Format you can't any more use the same COL number for 2
+          visible columns.
+  - fixed MUIA_NList_DragColumnOnly has been renamed MUIA_NList_DragColOnly and use
+          displayhook col number.
+  - fixed MUIM_NList_ColWidth now use (displayhook) col number and not (visible) column number.
+  - fixed MUIA_NList_TitleClick now give (displayhook) col number and not (visible) column number.
+  - fixed All wrapcol method parameters are now displayhook col and not visible column
+          (in MUIP_NList_InsertSingleWrap,MUIP_NList_InsertWrap,MUIP_NList_ReplaceSingle
+          and struct MUI_NList_GetEntryInfo).
+          In struct MUI_NList_GetSelectInfo, start_col and end_col are renamed
+          start_column and end_column.
+          In struct  MUIP_NList_ContextMenuBuild, col is renamed column.
+  - added MUIM_NList_ColToColumn and MUIM_NList_ColumnToCol methods, which permit
+          to converts visible column number to display hook col number, and converts
+          display hook col number to visible column number.
+
+* NList.mcc         19.74     23.06.97
+  - fixed Major version number is now 19.
+  - fixed now MUIA_Draggable,TRUE do a MUIA_NList_DragType,MUIV_NList_DragType_Default
+          and MUIA_Draggable,FALSE do a MUIA_NList_DragType,MUIV_NList_DragType_None.
+  - fixed now NList handle MUIA_Dropable and MUIA_NList_DragSortable separately,
+          so each can be set/unset without breaking the effect of the other.
+          MUIA_Dropable defaults to TRUE (so is really handled by Drag_Query method).
+  - added MUIM_NList_DropEntryDrawErase method for more dropmark customisation
+          possibilities (see autodocs).
+  - added now all column default to TBAR (see MUIA_NList_Format) and
+          MUIA_NList_TitleSeparator defaults to TRUE. (add NOBAR to prevent it)
+  - fixed all NList shortkeys don't work any more when the mouse is onto the object
+          but when the object is active or the default one (like standard MUI keys)
+  - fixed Insert and Replace methods really inserted NULL entry(ies) (directly given
+          and/or return by the construct hook) !  not done any more.
+  - added MUIA_NList_StackCheck tag permit application to disable NList stack checking.
+  - fixed In the Format string, now WIDTH defaults to -1, as in standard List class.
+  - fixed no more (not visible) active entry when in char select mode.
+  - fixed Sizes and placement of images drawn with ESC O[] and ESC o[] didn't have
+          good defaults/values. Should be better now.
+          See the end of MUIA_NList_DisplayHook autodoc for more infos.
+  - fixed NList multiselect using keys now defaults to List like mode.
+
+* NList.mcc         13.73     10.06.97
+  - fixed CreateImage and UseImage will not add non bitmap/bodychunk object
+          with any flag value. For bitmap/bodychunk object, NList will add
+          the it if flag is ~0, and make a private bitmap for other values.
+          When adding object, NList do a MUIA_FillArea,FALSE on it
+          (while the UseImage/CreateImage, you can do a MUIA_FillArea,TRUE
+          after if you want).
+
+* NList.mcc         13.72     02.06.97
+  - fixed there where an enforcer hit (read one) when calling the Remove method
+          on an empty list.
+  - fixed now the context menu is visible even when no column width has been
+          changed by the user (when 2 or more columns).
+  - fixed now the column separator bar is drawn on empty/non existing lines.
+  - fixed there were an error in some cases when recomputing columns width
+          after reseting them to default.
+  - fixed shift+space unselected the active entry in non-multiselect mode !
+  - fixed setting active entry didn't work as need in multiselect mode
+          when List like mode is set in prefs.
+  - added column balancing with shift key will try to change both column width
+          keeping other column as there were before (like shifted objects balancing).
+  - added NList now is able to draw partially visible chars on left and right
+          edges. This is settable in prefs.
+  - fixed MUIA_NList_VertDeltaFactor replaced by MUIA_NList_Prop_DeltaFactor and
+          MUIA_NList_HorizDeltaFactor replaced by MUIA_NList_Horiz_DeltaFactor
+          (for source compatibility old names are still usable).
+
+* NList.mcc         13.71     30.05.97
+  - fixed notify on doubleclick made problems with some applications which
+          used TRUE as TrigValue instead of MUIV_EveryTime, so now NList
+          force MUIV_EveryTime for it.
+  - fixed some little redraw improvment.
+          the two-stages redraw (odd/even lines) should now be used only when
+          moving the scrollbar fast.
+
+* NList.mcc         13.70     26.05.97
+  - fixed there were a major slowdown when using wrapping stuff (and so the
+          Mailtext class by Olaf Peters) since NList0.67.
+  - added MUIA_NList_First and MUIA_NList_Entries can now be used for notifications.
+  - fixed the dropmark was not cleared in some cases since 13.67.
+  - fixed NList didn't worked with original Listview class for some time, it
+          works again and is handled a little better.
+  - fixed MUIA_NList_AdjustHeight stuff improved (see autodoc).
+
+* NList.mcc         13.69     21.05.97
+  - added direct visible column width dragging possibility.
+  - added list like key multiselection possibility with user pref.
+  - fixed redraw problems when inserting entries containing new images while
+          the nlist is visible.
+  - fixed redraw/re-wrap problems when inserting/moving/removing wrap entries.
+  - fixed MUIA_NList_AdjustHeight and MUIA_NList_AdjustWidth problems.
+
+* NList.mcc         13.67     14.05.97
+  - fixed All ESC I[], ESC O[] and ESC o[] (except bitmap created object) where
+          not drawn when the NList object was in a virtual group.
+  - fixed There where in some cases refresh problems while nlist scrolling when
+          the NList object was in a virtual group which was in a virtual group...
+  - added MUIM_NList_RedrawEntry method which redraw the line(s) which show the
+          given entry pointer.
+  - added MUIM_NList_DoMethod which do the specified method for/on all/active/
+          selected entries (thanks to Steve Koren for the idea and partial source).
+  - added MUIM_NList_ColWidth which permit to restore default column width
+          (or set it as if changed by user or read the current user width) for all
+          or a specified column.
+  - added a default context menu which permit to restore default column width for
+          one or all columns (appear only if some column width is not default).
+  - fixed dragging column width separator now scroll the list when going on left
+          and right of the list.
+  - fixed MUIA_NList_DoubleClick now give the entry number where the clicks
+          happened, -1 when on title, -2 when on "nothing" (no notification
+          is made in that case).
+  - fixed Autodocs didn't said that double/multi-clicking on title made the
+          MUIA_NList_DoubleClick and MUIA_NList_MultiClick notifications too...
+  - added MUIA_NList_EntryClick, which permit notification for a click on an entry.
+  - added NOTITLEBUTTON=NOTB option in the MUIA_NList_Format string.
+
+* NList.mcc         13.66     30.04.97
+  - fixed there were a general layout problem when using ESC I[] in some cases
+          when the topaz/8 font is patched.
+  - fixed dragging column width separator is no longer canceled going out of the
+          list on left or right.
+  - added the column width drag bar now defaults to the full list height. You can
+          change prefs to get it work as before.
+
+* NList.mcc         13.64     22.04.97
+  - fixed Drag problems should be all removed now. MUIM_NList_QueryBeginning is
+          now obsolete.
+
+* NList.mcc         13.63     21.04.97
+  - fixed The horizontal scrollbar bar width wasn't correctly updated in some cases.
+  - added The columns width can now be changed by user with the mouse, dragging the bar
+          (vertical column separator) in the title (or the upper middle of first
+          visible line when there is no title). This work also when the bar is not
+          visible (just more difficult to know where to click to drag it) !
+          If while dragging a bar you press and release the RMB, the column
+          width will come back to its default.
+  - added The column titles now work like buttons (with simple frame as there are not
+          real buttons but directly handled by the list) if MUIA_NList_TitleClick has
+          been set or if a notify has been asked on it.
+  - added TBAR parameter in the Format, drawing the vertical separator bar only in
+          the title.
+  - added Two new tags are sent to nlist custom image object before it will be drawn,
+          MUIA_NLIMG_EntryCurrent and MUIA_NLIMG_EntryHeight (see MUIM_NList_CreateImage,
+          MUIM_NList_UseImage and demo example).
+  - added setting MUIA_NList_DragColumnOnly to a column number permit to get the
+          text of the column/entry in the drag window instead of the full visible
+          part of the entry.
+
+* NList.mcc         13.62     16.04.97
+  - fixed new images in ESC sequences could be mis-drawn in inserted lines
+          when the list was already visible, same when (re)setting title.
+  - fixed a remaining problem in column width update (then refresh) when
+          removing/replacing entries.
+  - added now NList will set the h_Data of struct Hook to the NList obj ptr
+          just before calling hooks if it found it NULL. In that case h_Data
+          will be reset to NULL when the hook return. Done for ALL hooks.
+  - fixed the columns width weren't recomputed when the used font is changed
+          in prefs.
+
+* NList.mcc         13.61     15.04.97
+  - fixed Should finally works with V37+. It seems there is a problem with
+          LibCreatePool/LibDeletePool/LibAllocPooled/LibFreePooled which come
+          with ADE and libnix. NList now use those from amiga.lib.
+  - fixed There still where problems for refreshes when a NList object was in a
+          virtual group (now only the visible part is scrolled).
+          Should work now in all cases, in smart AND simple refresh modes. :)
+
+* NList.mcc         13.60     11.04.97
+  - fixed 13.59 add a dead-end bug which came after 2-3 iconify/desiconify (or 2-3
+          open/close mui prefs).
+  - fixed Scroll handling in simple refresh mode has been highly improved.
+  - fixed Now user inputs (mouse clicks) are disabled while the smooth scrolling is
+          finishing (more exactly when first entry is partially visible).
+
+* NList.mcc         13.59     08.04.97
+  - fixed The horiz scrollbar didn't go to left pos when the list was cleared.
+  - added A new tag MUIA_NList_TitleClick usable to give notify when a click is done on
+          the NList title (see autodoc).
+  - fixed MUIM_NList_TestPos now set the MUI_NLPR_TITLE flag if the specified position is
+          on the title. (see autodoc and NList_mcc.h)
+
+* NList.mcc         13.58     01.04.97
+  - fixed minor change in library startup.
+  - added Two new methods MUIM_NList_DropType, MUIM_NList_DropDraw and a related tag
+          MUIA_NList_DropType to improve DropMark customisation.
+  - fixed User inputs (keys and mouse) are now off while the list is in Quiet mode.
+  - fixed New try to fix problems with V37.
+
+* NList.mcc         13.57     28.03.97
+  - fixed The font of the dragging message "Dragging xxx Items..." was not the same of
+          the list.
+  - fixed The dragging message "Dragging xxx Items..." will now appear when using V37 too.
+  - fixed MUIA_Window_MouseObject didn't give the NList object pointer.
+
+* NList.mcc         13.56     27.03.97
+  - fixed NList had a AllocPool error which freeze the system on V37 with LibFreePooled
+          but not with V39 FreePooled ???  Perhaps will it fix some erratic problems on
+          V39 too...
+  - fixed Using BitmapImages with NList now works for V37. The result pens are the closest
+          from the asked one without modifying any screen color.
+
+* NList.mcc         13.55     25.03.97
+  - fixed The whole system could freeze when the window needed to be resized because to
+          it was too small for the minimum width and height of NList.
+  - fixed Sometimes scrollbars flickered more than needed.
+
+* NList.mcc         13.54     24.03.97
+  - fixed A enforcer hit appeared since 0.52 when using escape sequence to change pen color.
+  - fixed V37 compatibility (i hope, still can't test it myself), now i have find that
+          SetABPenDrMd() is V39+, which is not mentioned in autodocs !  :(
+
+* NList.mcc         13.53     21.03.97
+  - fixed There were bugs in columns width handling and refresh when inserting/removing entries.
+          All should be ok now. Some new improvments come with that fix...
+  - fixed a little redraw problem when scrolling to top/bottom while the list is a dropzone.
+  - xxxxx Still not work with V37, i still can't test it !    :(
+  - fixed Programs made with E don't have a standard stack. Stack check is (i hope)
+          automatically disable for them now.
+  - fixed E files are up to date (i finally include them in an archive before there are
+          obsolete...). Thanks Piotr.
+
+* NList.mcc         13.52     18.03.97
+  - fixed There were a problem in word wrap (so NFloattext) computing.
+  - fixed Handling of FullAuto scrollbars has been improved.
+          Some others related things have been improved too and are now faster  :)
+  - fixed First try for V37 compatibility. Should work, but i couldn't test it :(
+
+* NList.mcc         13.51     17.03.97
+  - fixed Smooth scrolling has been highly improved and now react near like
+          original listview one.
+  - fixed NList objects with balance objects in show objects mode (ie not show frame)
+          didn't work (i never used that mode before so didn't see the problem !).
+  - fixed Auto and FullAuto scrollbars should now appear/disappear before the
+          NList contents is drawn.
+  - fixed The way column width are computed has been improved, making insert,
+          full redraw (after resizing etc.) and others faster.
+  - fixed The NList title is now always at top of the list area.
+  - added New keys working in multiselect mode (ctrl+space, ctrl+up/down,
+          ctrl+shift+up/down and ctrl+alt+up/down) which : toggle state of active
+          entry, copy state of current to prec/next entry and make it active,
+          same for page up/page down, and same for top/bottom.
+
+* NList.mcc         13.50     05.03.97
+  - fixed Smooth scrolling has been improved.
+  - fixed Minimum width returned by the class is now smaller (near list one).
+  - added A system requester is now opened is there is less than 8K stack at init,
+          or if the free stack size is less than setted in prefs (none,1K,2K).
+  - added MUIM_NList_GetSelectInfo method, giving number of selected entries,
+          num of first and last selected, column and char pos in these ones
+          when in charselect mode.
+  - added MUIM_NList_CopyTo method, which permit to copy the contents of
+          NList entries (like MUIM_NList_CopyToClip) to a string or a file
+          (and so printer, using 'PRT:' as file name)
+  - added MUIA_NList_ForcePen which permit to set the same than the corresponding
+          user pref in the .mcp
+  - added Now NList object check the stack size at startup and succeed only
+          if it's 8Kb or more. NList do checks in some points of the code too,
+          looking for too small remaining free stack.
+          In both cases a warning (EasyRequest) will show up.
+          As NList is a subclass, many supermethod calls will of course cause
+          a biggest use of stack than NList will see. That's why the minimum
+          free check settable in prefs is 1Kb. Anyway i think that 2K or 3K
+          is better to prevent problems...
+          Set 3K if you use NList in a programm you are developping, to be
+          (nearly) sure users will never see it with the default 2K.
+
+* NList.mcc         13.49     17.02.97
+  - fixed MUIM_NList_QueryBegining replaced by MUIM_NList_QueryBeginning.  ;-)
+                              ^                                    ^^
+  - fixed Force Pen defaults now to FALSE.
+
+* NList.mcc         13.48     09.02.97
+  - added ESC-E sequence, like ESC-C but the line is drawn only on the left and right
+          of the column contents
+  - fixed [...] after ESC-P, ESC-I, ESC-O and ESC-o sequences are not copied to
+          clipboard any more by the default hook.
+  - added Now you can ask NList to force the pen color of cursor/selected area
+          to be always the ones of prefs.
+  - added MUIM_NList_QueryBegining method, which must be used in any DragQuery
+          method in sub classes of NList (Read autodocs).
+
+* NList.mcc         13.47     18.12.96
+  - fixed mow images are drawn when not full visible too.
+  - fixed some little bug in new stuffs of 13.46, read again MUIA_NList_DisplayHook
+          and MUIM_NList_CreateImage autodocs...
+
+* NList.mcc         13.46     18.12.96
+  - fixed a little problem when setting Drag&Drog related tags at init.
+  - added the flags argument of MUIM_NList_CreateImage has now a meaning when its
+          value is ~0L. It's in test, read the autodoc and use with cautions.
+  - added MUIM_NList_UseImage has a new argument flags (update your code if you
+          use that method) with same meaning than flags of MUIM_NList_CreateImage.
+  - fixed some pooled allocs were not freed.
+  - added with ESC I[], ESC O[] and ESC o[], you can add a new parameter [...,<width>]
+          which will be the min width of image (see MUIA_NList_DisplayHook autodoc)
+
+* NList.mcc         13.45     01.12.96
+  - fixed Drag of multiple (non consecutive or not all visible) entries has been
+          improved, showing the number of entries in the drag.
+  - fixed MUIV_NList_DragType_xxx value have changed to get default to value 1,
+          which is better because MUIV_Listview_DragType_Immediate was the only
+          one other than None and was 1, so it must be the default.
+  - added using MUIA_List_Format instead of MUIA_NList_Format, you'll get -1 as
+          WEIGHT default, like in List objects. Avoid it when you create a
+          program from scratch using NList, please.
+
+* NList.mcc         13.44     27.11.96
+  - fixed a bug in a line length (then also in horiz scrollbar) sometimes when
+          playing with mouse in CharSel mode.
+  - fixed there were something wrong when moving selected with wrapped lines.
+  - added MUIA_NList_Select in CharSel mode now clear the selected zone when
+          set to MUIV_NList_Select_Off (with any entry number !).
+  - added MUIA_NList_Select in CharSel mode when set to MUIV_NList_Select_On
+          select just the given entry (or active or all).
+  - added MUIM_NList_NextSelected now works in CharSel mode.
+
+* NList.mcc         13.43     26.11.96
+  - fixed There is no need to give the size of the ImageSpec to draw in the
+          ESC I[<s>] sequence any more  :)
+  - fixed MUIA_List_TestPos was redirected directly to MUIA_NList_TestPos,
+          which was bad with some programs because both struct used to store
+          datas hadn't the same size, making some enforcer hits in special cases.
+          So think that both don't give the same result now...
+  - added Amiga-X key make the same as Amiga-C now (copy to clipboard)
+          There should be a pref for it later. For now you'll be able to use
+          it when there is a shortcut on Amiga-C...
+  - fixed some bad cycling with FullAuto scrollbars in a special case.
+  - added MUIA_NList_TitleSeparator, inserting an horiz bar *between* title and list.
+
+
+* NList.mcc         13.42     22.11.96
+  - fixed there were an enforcer hit when (re)drawing the list title
+          when the list is/become empty.
+  - fixed better way to make the notifies (tracking which one are asked),
+          so MUIA_NList_ListCompatibility and setting MUIA_NList_DoubleClick
+          are now obsolete.
+  - added smooth scrolling for vertical scrollers.
+
+* NList.mcc         13.41     18.11.96
+  - added word wrap capability (which can use justification).
+  - added a new preparse string possibility settable in the displayhook.
+
+* NList.mcc         13.39     08.10.96
+  - fixed Auto/FullAuto scrollers didn't react when there were
+          insert/remove/clear and window isn't selected (because the
+          object don't receive intuiticks in that case).
+  - fixed Clicking on title don't do anything anymore.
+  - fixed (i hope) There was a bad selection made with multiselect
+          when going *very* fast across top or bottom of list.
+
+* NList.mcc         13.38     06.10.96
+  - added MMB as shift multiselect is set in prefs.
+  - added Now use the drag qualifier which is set in prefs.
+
+* NList.mcc         13.37     02.10.96
+  - fixed NList superclass was MUIC_Group instead of MUIC_Area because of a
+          mistache, making a empty group :(
+  - fixed the column width use for COLWIDTH and others in Format is no more
+          tf_XSize but the wider of bold italic 'w', 'W', 'm' and 'M'.
+
+* NList.mcc         13.35     26.09.96
+  - added needed stuff to handle new NListview FullAuto/Auto stuffs.
+  - fixed InsertPosition which was wrong after a sort or insert sorted.
+  - fixed when last entries are removed you won't get blank lines.
+
+* NList.mcc         13.34     22.09.96
+  - added MUIM_NList_UseImage method.
+  - fixed some bugs. WIDTH=-1 for last column seems to work without making
+          mungwall hits, anyway the column width layout need some improvments.
+
+* NList.mcc         13.33     18.09.96
+  - improved drag stuff, now MUIV_NList_DragType_Borders exists.
+  - fixed LMB release isn't received when some string gadget is activated
+          when a Active or SelectChange notify is made.
+
+* NList.mcc         13.32     17.09.96
+  - fixed setting MUIA_NList_Active before object is shown changed
+          the first visible entry to the set value + 1.
+  - added MUIA_NList_AutoVisible stuff
+
+* NList.mcc         13.31     16.09.96
+  - added MUIA_NList_Active notify.
+  - added MUIV_NList_Remove_Selected stuff.
+  - fixed a minor bug with MUIV_NList_Active_Off when non-multiselect mode.
+
+
+
+History of NListview.mcc
+************************
+
+* NListview.mcc     19.62     02.11.98
+  - added MUIV_NListview_VSB_Left (and MUIV_Listview_ScrollerPos_Left) support.
+
+* NListview.mcc     19.61     20.10.98
+
+* NListview.mcc     19.60     13.04.98
+
+* NListview.mcc     19.58     15.07.97
+  - added 2 tags used by NList.mcc.
+
+* NListview.mcc     13.50     22.04.97
+  - fixed MUIM_NListview_QueryBeginning is now obsolete and does nothing.
+
+* NListview.mcc     13.48     08.04.97
+  - added little add needed by a NList change.
+
+* NListview.mcc     13.47     01.04.97
+  - fixed minor change in library startup.
+
+* NListview.mcc     13.44     17.02.97
+  - fixed MUIM_NListview_QueryBegining replaced by MUIM_NListview_QueryBeginning.  ;-)
+                                  ^                                        ^^
+
+* NListview.mcc     13.43     09.02.97
+  - fixed When the vert scrollbar appeared at start of the object, it
+          seems that 2 muigprop object where made (and only one were released
+          at the end).
+  - added MUIM_NListview_QueryBegining method, which must be used in any DragQuery
+          method in sub classes of NListview (Read autodocs).
+
+* NListview.mcc     13.42     18.12.96
+  - fixed a little problem when setting Drag&Drog related tags at init
+          in the listview object.
+
+* NListview.mcc     13.34     26.09.96
+  - added scrollbars Auto and FullAuto modes.
+
+* NListview.mcc     13.31     16.09.96
+  - added little change to give NList a better handling of DragSortable stuff.
+
+
+
+History of NFloattext.mcc
+*************************
+
+* NFloattext.mcc    19.45     09.07.97
+  - fixed Now using MUIA_Floattext_Text really copy the supplied buffer like Floattext
+          and not use ConstructHook_String/DestructHook_String any more.
+
+* NFloattext.mcc    19.44     23.06.97
+  - fixed Major version number is now 19.
+  - fixed using MUIA_Floattext_Text  instead of MUIA_NFloattext_Text will
+          make NFloattext set MUIA_NList_ConstructHook to MUIV_NList_ConstructHook_String
+          and MUIA_NList_DestructHook to MUIV_NList_DestructHook_String, so the text
+          will be copied automatically like in Floattext class.
+          Should give Floattext compability in all cases.
+
+* NFloattext.mcc    13.42     01.04.97
+  - fixed minor change in library startup.
+
+* NFloattext.mcc    13.38     18.11.96
+  - first release.
+
+
+
+History of NListviews.mcp
+*************************
+
+* NListviews.mcp    19.61     29.11.98
+  - fixed Some users had a crash bug when going in NListviews prefs.
+  - added A qualifier key for secondary title mark.
+  - added Update keys  button now permit to add the hotkey of functions
+          which are not in the keybinding list, so you can add new functions
+          hotkey without loosing previous changes.
+  - fixed miscs panels layout updated.
+  - fixed The Max Visible Drag Items value is now set to the good value.
+
+* NListviews.mcp    19.60     02.11.98
+  - added Maximum visible drag items before 'Dragging xx Items...' pref.
+  - fixed miscs panels layout remade.
+
+* NListviews.mcp    19.59     20.10.98
+  - added Pref for pointers colors now set the black color number.
+  - added Prefs (scroll speed and key qualifiers) for Mouse Wheel
+          (try using NewMouse from aminet)
+
+* NListviews.mcp    19.58     24.07.98
+  - added keybindings panel.
+  - fixed panels layout remade.
+
+* NListviews.mcp    19.57     15.07.98
+  - fixed the layout as been remade a little differently
+          (not finished at all in this intermediate release).
+  - added Pref for cursor colors.
+
+* NListviews.mcp    19.56     27.05.98
+  - fixed There were "Allways" instead of "Always" !
+  - added Start of locale support, but actually no catalog...
+
+* NListviews.mcp    19.55     25.05.98
+  - fixed added some info for the smooth scrolling.
+
+* NListviews.mcp    19.54     13.04.98
+
+* NListviews.mcp    19.53     23.06.97
+  - fixed Major version number is now 19.
+
+* NListviews.mcp    13.52     02.06.97
+  - added Partial chars draw on left/right edges pref.
+
+* NListviews.mcp    13.50     21.05.97
+  - added pref for visual column width.
+  - added pref for list like key multiselection.
+
+* NListviews.mcp    13.49     14.05.97
+  - added some prefs.
+
+* NListviews.mcp    13.48     30.04.97
+  - added pref for column width dragbar height.
+
+* NListviews.mcp    13.46     01.04.97
+  - fixed minor change in library startup.
+
+* NListviews.mcp    13.45     17.03.97
+  - fixed The smooth scrolling speed slider has been replaced by a single
+          checkmark because now the scroll speed is the same as standard
+          listviews one (so use listviews pref to change the scroll speed).
+
+* NListviews.mcp    13.44     05.03.97
+  - fixed Smooth pref range is no 0 to 9, 0=no smooth, 1 is fastest and 9 slowest.
+  - added a user pref for the NList stack warning.
+
+* NListviews.mcp    13.43     17.02.97
+  - fixed Force Pen defaults now to FALSE.
+  - fixed Little changes in the NList text.
+
+* NListviews.mcp    13.42     09.02.97
+  - added Force user pref pen color for cursor/select or not from prefs.
+
+* NListviews.mcp    13.41     18.12.96
+  - fixed my email in the list text (this one is valid while holidays) ;)
+
+* NListviews.mcp    13.40     26.11.96
+  - added now use MUIA_NList_TitleSeparator :)
+  - fixed my email in the list text  ;)
+
+* NListviews.mcp    13.39     22.11.96
+  - added smooth scrolling pref
+
+* NListviews.mcp    13.36     06.10.96
+  - added MMB as shift multiselect pref.
+  - added Drag qualifier prefs (see help bubble for correct entries).
+
+* NListviews.mcp    13.33     26.09.96
+  - added scrollbars prefs.
+
+* NListviews.mcp    13.31     18.09.96
+  - added new entry in Drag radio gadget for MUIV_NList_DragType_Borders.
+

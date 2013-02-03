@@ -1,0 +1,22 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM contrib-zune-classes-nfloattext-class : setup includes linklibs contrib-zune-classes-nlist
+
+USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include
+USER_CFLAGS := -DNO_INLINE_STDARG
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
+FILES := NFloattext Debug
+
+%build_module_simple mmake=contrib-zune-classes-nfloattext-class \
+  modname=NFloattext modtype=mcc moduledir=$(CONTRIBDIR)/Zune/MCC_NList/Classes/Zune \
+  files="library $(FILES)" uselibs="mui"
+
+
+#MM includes-copy
+
+INCLUDE_FILES := ../include/mui/NFloattext_mcc.h
+%copy_includes path=mui dir=../include/mui
+
+%common

@@ -1,0 +1,72 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM contrib-zune-classes-nlisttree-mcp : includes linklibs contrib-zune-classes-nlisttree-mcp-catalogs
+
+USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include
+USER_CFLAGS := -DNO_INLINE_STDARG
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+
+FILES := library NListtree icon locale
+
+%build_module_simple mmake=contrib-zune-classes-nlisttree-mcp \
+  modname=NListtree modtype=mcp moduledir=$(CONTRIBDIR)/Zune/MCC_NList/Classes/Zune \
+  files=$(FILES) uselibs="mui"
+
+TARGETDIR := $(AROS_CONTRIB)/Zune/MCC_NList/Locale/Catalogs
+
+# CTs which aren't uptodate:
+# $(TARGETDIR)/russian/NListtree_mcp.catalog \
+
+
+#MM
+contrib-zune-classes-nlisttree-mcp-catalogs : locale.c locale.h \
+    $(TARGETDIR)/english-british/NListtree_mcp.catalog \
+    $(TARGETDIR)/czech/NListtree_mcp.catalog \
+    $(TARGETDIR)/svenska/NListtree_mcp.catalog \
+    $(TARGETDIR)/français/NListtree_mcp.catalog \
+    $(TARGETDIR)/deutsch/NListtree_mcp.catalog \
+    $(TARGETDIR)/polish/NListtree_mcp.catalog \
+    $(TARGETDIR)/türkçe/NListtree_mcp.catalog
+
+
+locale.h: locale/NListtree_mcp.cd C_h.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd
+
+locale.c: locale/NListtree_mcp.cd C_c.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
+
+
+$(TARGETDIR)/deutsch/NListtree_mcp.catalog: locale/german.ct
+	@$(MKDIR) $(TARGETDIR)/deutsch
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/czech/NListtree_mcp.catalog: locale/czech.ct
+	@$(MKDIR) $(TARGETDIR)/czech
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/français/NListtree_mcp.catalog: locale/french.ct
+	@$(MKDIR) $(TARGETDIR)/français
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/svenska/NListtree_mcp.catalog: locale/swedish.ct
+	@$(MKDIR) $(TARGETDIR)/svenska
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/english-british/NListtree_mcp.catalog: locale/english-british.ct
+	@$(MKDIR) $(TARGETDIR)/english-british
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/russian/NListtree_mcp.catalog: locale/russian.ct
+	@$(MKDIR) $(TARGETDIR)/russian
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/polish/NListtree_mcp.catalog: locale/polish.ct
+	@$(MKDIR) $(TARGETDIR)/polish
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/türkçe/NListtree_mcp.catalog: locale/turkish.ct
+	@$(MKDIR) $(TARGETDIR)/türkçe
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
+
+%common

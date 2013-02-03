@@ -1,0 +1,3521 @@
+TABLE OF CONTENTS
+
+NList.mcc/NList.mcc
+NList.mcc/MUIA_NList_Active
+NList.mcc/MUIA_NList_ActiveObjectOnClick
+NList.mcc/MUIA_NList_AdjustHeight
+NList.mcc/MUIA_NList_AdjustWidth
+NList.mcc/MUIA_NList_AutoCopyToClip
+NList.mcc/MUIA_NList_AutoVisible
+NList.mcc/MUIA_NList_ButtonClick
+NList.mcc/MUIA_NList_ClickColumn
+NList.mcc/MUIA_NList_Columns
+NList.mcc/MUIA_NList_CompareHook
+NList.mcc/MUIA_NList_CompareHook2
+NList.mcc/MUIA_NList_ConstructHook
+NList.mcc/MUIA_NList_ConstructHook2
+NList.mcc/MUIA_NList_CopyColumnToClipHook
+NList.mcc/MUIA_NList_CopyColumnToClipHook2
+NList.mcc/MUIA_NList_CopyEntryToClipHook
+NList.mcc/MUIA_NList_CopyEntryToClipHook2
+NList.mcc/MUIA_NList_DefaultObjectOnClick
+NList.mcc/MUIA_NList_DefClickColumn
+NList.mcc/MUIA_NList_DestructHook
+NList.mcc/MUIA_NList_DestructHook2
+NList.mcc/MUIA_NList_DisplayHook
+NList.mcc/MUIA_NList_DisplayHook2
+NList.mcc/MUIA_NList_DisplayRecall
+NList.mcc/MUIA_NList_DoubleClick
+NList.mcc/MUIA_NList_DragColOnly
+NList.mcc/MUIA_NList_DragSortable
+NList.mcc/MUIA_NList_DragSortInsert
+NList.mcc/MUIA_NList_DragType
+NList.mcc/MUIA_NList_DropMark
+NList.mcc/MUIA_NList_DropType
+NList.mcc/MUIA_NList_Entries
+NList.mcc/MUIA_NList_EntryClick
+NList.mcc/MUIA_NList_EntryValueDependent
+NList.mcc/MUIA_NList_Exports
+NList.mcc/MUIA_NList_First
+NList.mcc/MUIA_NList_ForcePen
+NList.mcc/MUIA_NList_Format
+NList.mcc/MUIA_NList_Horiz_DeltaFactor
+NList.mcc/MUIA_NList_Horiz_Entries
+NList.mcc/MUIA_NList_Horiz_First
+NList.mcc/MUIA_NList_Horiz_Visible
+NList.mcc/MUIA_NList_IgnoreSpecialChars
+NList.mcc/MUIA_NList_Imports
+NList.mcc/MUIA_NList_Input
+NList.mcc/MUIA_NList_InsertPosition
+NList.mcc/MUIA_NList_KeepActive
+NList.mcc/MUIA_NList_KeyUpFocus
+NList.mcc/MUIA_NList_KeyDownFocus
+NList.mcc/MUIA_NList_KeyLeftFocus
+NList.mcc/MUIA_NList_KeyRightFocus
+NList.mcc/MUIA_NList_LineHeight
+NList.mcc/MUIA_NList_MakeActive
+NList.mcc/MUIA_NList_MinColSortable
+NList.mcc/MUIA_NList_MinLineHeight
+NList.mcc/MUIA_NList_MultiClick
+NList.mcc/MUIA_NList_MultiClickAlone
+NList.mcc/MUIA_NList_MultiSelect
+NList.mcc/MUIA_NList_MultiTestHook
+NList.mcc/MUIA_NList_Pool
+NList.mcc/MUIA_NList_PoolPuddleSize
+NList.mcc/MUIA_NList_PoolThreshSize
+NList.mcc/MUIA_NList_PrivateData
+NList.mcc/MUIA_NList_Prop_DeltaFactor
+NList.mcc/MUIA_NList_Prop_Entries
+NList.mcc/MUIA_NList_Prop_First
+NList.mcc/MUIA_NList_Prop_Visible
+NList.mcc/MUIA_NList_Quiet
+NList.mcc/MUIA_NList_SelectChange
+NList.mcc/MUIA_NList_ShowDropMarks
+NList.mcc/MUIA_NList_SkipChars
+NList.mcc/MUIA_NList_SortType
+NList.mcc/MUIA_NList_SortType2
+NList.mcc/MUIA_NList_SourceArray
+NList.mcc/MUIA_NList_SourceInsert
+NList.mcc/MUIA_NList_SourceString
+NList.mcc/MUIA_NList_TabSize
+NList.mcc/MUIA_NList_Title
+NList.mcc/MUIA_NList_TitleClick
+NList.mcc/MUIA_NList_TitleClick2
+NList.mcc/MUIA_NList_TitleMark
+NList.mcc/MUIA_NList_TitleMark2
+NList.mcc/MUIA_NList_TitleSeparator
+NList.mcc/MUIA_NList_TypeSelect
+NList.mcc/MUIA_NList_Visible
+NList.mcc/MUIA_NList_XXXBackground
+NList.mcc/MUIA_NList_XXXPen
+NList.mcc/MUIM_NList_Clear
+NList.mcc/MUIM_NList_ColWidth
+NList.mcc/MUIM_NList_ColToColumn
+NList.mcc/MUIM_NList_ColumnToCol
+NList.mcc/MUIM_NList_Compare
+NList.mcc/MUIM_NList_Construct
+NList.mcc/MUIM_NList_ContextMenuBuild
+NList.mcc/MUIM_NList_CopyTo
+NList.mcc/MUIM_NList_CopyToClip
+NList.mcc/MUIM_NList_CreateImage
+NList.mcc/MUIM_NList_DeleteImage
+NList.mcc/MUIM_NList_Destruct
+NList.mcc/MUIM_NList_Display
+NList.mcc/MUIM_NList_DoMethod
+NList.mcc/MUIM_NList_DropDraw
+NList.mcc/MUIM_NList_DropEntryDrawErase
+NList.mcc/MUIM_NList_DropType
+NList.mcc/MUIM_NList_Exchange
+NList.mcc/MUIM_NList_GetEntry
+NList.mcc/MUIM_NList_GetEntryInfo
+NList.mcc/MUIM_NList_GetPos
+NList.mcc/MUIM_NList_GetSelectInfo
+NList.mcc/MUIM_NList_Insert
+NList.mcc/MUIM_NList_InsertSingle
+NList.mcc/MUIM_NList_InsertSingleWrap
+NList.mcc/MUIM_NList_InsertWrap
+NList.mcc/MUIM_NList_Jump
+NList.mcc/MUIM_NList_Move
+NList.mcc/MUIM_NList_NextSelected
+NList.mcc/MUIM_NList_PrevSelected
+NList.mcc/MUIM_NList_Redraw
+NList.mcc/MUIM_NList_RedrawEntry
+NList.mcc/MUIM_NList_Remove
+NList.mcc/MUIM_NList_ReplaceSingle
+NList.mcc/MUIM_NList_Select
+NList.mcc/MUIM_NList_SelectChange
+NList.mcc/MUIM_NList_SetActive
+NList.mcc/MUIM_NList_SetColumnCol
+NList.mcc/MUIM_NList_Sort
+NList.mcc/MUIM_NList_Sort2
+NList.mcc/MUIM_NList_Sort3
+NList.mcc/MUIM_NList_TestPos
+NList.mcc/MUIM_NList_UseImage
+NList.mcc/NList.mcc
+
+    *******************************************************************
+    Copyright (C) 2001-2010 by NList Open Source Team
+    $Id$
+
+    This MCC public custom class is very similar to the MUI's list
+    class.
+
+    It handles directly most attributes which are handled by Listview
+    in the original couple List/Listview.
+
+    The NListview exist anyway to provide a complete object with
+    scrollbars, so you should use it as child of NListview. Anyway,
+    you can use NList without NListview if you don't want any builtin
+    scrollbar.
+
+    NOTE: NList class will not work with Listview without some
+          conflicts, and NListview class can't use List as child but
+          only NList or a NList subclass.
+
+          MUIM_NList_TestPos and MUIM_List_TestPos are similar
+          but use a different struct to store data.
+          MUIM_List_TestPos works like with a List object.
+
+    NOTE: Avoid as possible to do many things in MUIM_Show and
+          MUIM_Hide methods because when an object is in
+          a virtual group, your object will receive them
+          for each one of its moves !!!
+
+
+    Standard tags with NList special values :
+
+        MUIA_Background   has the same meaning than
+                          MUIA_NList_ListBackground
+                          but only at init.
+
+        MUIA_Font         is settable only at init.
+                          MUIV_NList_Font, MUIV_NList_Font_Little
+                          and MUIV_NList_Font_Fixed are special
+                          values usable for it (settable in prefs)
+                          but standard values are usable too.
+
+        MUIA_Frame        you can override the defaults frames
+                          of the classe by setting it, but it will
+                          be overrided again by defaults if a
+                          set(obj,MUIA_NList_Input,bool) is made after.
+                          if MUIA_NList_Input is TRUE then the
+                          default is MUIV_Frame_InputList, if FALSE
+                          it's MUIV_Frame_ReadList.
+
+        MUIA_ContextMenu
+        MUIM_ContextMenuBuild
+        MUIM_ContextMenuChoice
+                          read MUIM_NList_ContextMenuBuild.
+
+
+    The gadget was originally written in 1996 by Gilles Masson. In 2001
+    it was released under the LGPL license and is now maintained by a
+    free Open Source Team.
+
+    It is released and distributed under the terms of the GNU Lesser
+    General Public License (LGPL) and available free of charge.
+
+    Please visit http://www.sf.net/projects/nlist-classes/ for
+    the very latest version and information regarding NList
+    *******************************************************************
+
+NList.mcc/MUIA_NList_Active
+
+    NAME
+        MUIA_NList_Active -- [ISGN], LONG
+
+    SPECIAL INPUTS
+        MUIV_NList_Active_Off
+        MUIV_NList_Active_Top
+        MUIV_NList_Active_Bottom
+        MUIV_NList_Active_Up
+        MUIV_NList_Active_Down
+        MUIV_NList_Active_PageUp
+        MUIV_NList_Active_PageDown
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_Active.
+
+    SEE ALSO
+        MUIA_NList_Entries, MUIA_NList_First, MUIA_NList_Visible
+NList.mcc/MUIA_NList_ActiveObjectOnClick
+
+    NAME
+        MUIA_NList_ActiveObjectOnClick -- [ISG], BOOL
+
+    FUNCTION
+        If set to TRUE, the NList object will become the
+        MUIA_Window_ActiveObject of its window when you
+        click on it. In addition, the active selected entries
+        will switch an inactive color (e.g. grey) in case the
+        NList object isn't currently active. As soon as the
+        object is active it will then also receive all user
+        keys pressed.
+
+    DEFAULT
+        FALSE
+
+    SEE ALSO
+        MUIA_NList_DefaultObjectOnClick
+        MUIA_NList_KeepActive
+        MUIA_NList_MakeActive
+NList.mcc/MUIA_NList_AdjustHeight
+
+    NAME
+        MUIA_NList_AdjustHeight -- [I..], BOOL
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_AdjustHeight.
+
+        Will adjust the nlist height if the nlist object is in a virtual
+        group or if MUIA_NList_SourceInsert, MUIA_NList_SourceString,
+        MUIA_NList_SourceArray or MUIA_List_SourceArray was used.
+
+        When the object is in a virtual group, a re-layout of this one
+        will be forced when the entries number of the NList object change,
+        so all entries should always be visible.
+
+    DEFAULT
+        FALSE
+
+    SEE ALSO
+        MUIA_List_AdjustHeight, MUIA_NList_AdjustWidth
+NList.mcc/MUIA_NList_AdjustWidth
+
+    NAME
+        MUIA_NList_AdjustWidth -- [I..], BOOL
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_AdjustWidth.
+
+        Will adjust the nlist width if the nlist object is in a virtual
+        group or if MUIA_NList_SourceInsert, MUIA_NList_SourceString,
+        MUIA_NList_SourceArray or MUIA_List_SourceArray was used.
+
+    DEFAULT
+        FALSE
+
+    SEE ALSO
+        MUIA_List_AdjustWidth, MUIA_NList_AdjustHeight
+
+NList.mcc/MUIA_NList_AutoClip
+
+    NAME
+        MUIA_NList_AutoClip -- [ISG], BOOL
+
+    FUNCTION
+        If set to TRUE and the NList object is in read-only (NoInput) mode and
+        is set to select char-wide rather than by line, the selected content is
+        immediately copied to the clipboard as soon as it is selected via the
+        mouse.
+
+    DEFAULT
+        TRUE
+
+    WARNING
+        Please note that due to historical reasons this feature is turned
+        on per default. However, due to violating the Amiga style guides, new
+        or revised applications are adviced to disable auto clipping as
+        manually performing the copy operation should be the preferred method.
+
+    SEE ALSO
+        MUIA_NList_Input
+        MUIA_NList_TypeSelect
+        MUIA_NList_AutoCopyToClip
+        MUIA_NList_CopyColumnToClipHook
+        MUIA_NList_CopyEntryToClipHook
+        MUIM_NList_CopyToClip
+NList.mcc/MUIA_NList_AutoCopyToClip
+
+    NAME
+        MUIA_NList_AutoCopyToClip -- [IS.], BOOL
+
+    FUNCTION
+        If set to TRUE you can copy the selected area to the
+        clipboard 0 with Amiga-C and Amiga-X (Amiga-X because
+        i have seen that sometimes Amiga-C is a shortcut !).
+        (works with both Right-Amiga and Left-Amiga keys)
+
+        MUIA_NList_AutoCopyToClip == TRUE also requires that the NList object
+        is either the window's active object (see MUIA_Window_ActiveObject) or
+        the attached list object is window's default object (see
+        MUIA_Window_DefaultObject). Otherwise nothing will ever be copied!
+
+    DEFAULT
+        TRUE
+
+    SEE ALSO
+        MUIA_NList_AutoClip
+        MUIA_NList_CopyColumnToClipHook
+        MUIA_NList_CopyEntryToClipHook
+        MUIM_NList_CopyToClip
+NList.mcc/MUIA_NList_AutoVisible
+
+    NAME
+        MUIA_NList_AutoVisible -- [ISG], BOOL
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_AutoVisible.
+
+        Seting this to TRUE, the NList object will automatically and
+        always jump to show the active entry.
+
+    DEFAULT
+        FALSE
+
+   SEE ALSO
+        MUIA_List_AutoVisible, MUIA_NList_Active
+NList.mcc/MUIA_NList_ButtonClick
+
+    NAME
+        MUIA_NList_ButtonClick -- [..GN], LONG
+
+    FUNCTION
+        You'll get a notify on it each time the user
+        clicks one of the buttons made by ESC O[...@<n>] or ESC o[...@<n>].
+
+        The returned value is the <n> of the clicked image/object.
+        (see MUIA_NList_DisplayHook for more).
+
+        If you get that value later, it will still be <n> of the latest
+        image/object clicked that you'll get.
+
+    SEE ALSO
+        MUIA_NList_DisplayHook, MUIA_NList_DoubleClick, MUIA_NList_MultiClick,
+        MUIA_NList_EntryClick, MUIA_NList_TitleClick
+NList.mcc/MUIA_NList_ClickColumn
+
+    NAME
+        MUIA_NList_ClickColumn -- [..G], LONG
+
+    FUNCTION
+        Same function as Listview.mui/MUIA_Listview_ClickColumn.
+
+    SEE ALSO
+        MUIA_Listview_ClickColumn, MUIA_NList_DefClickColumn
+NList.mcc/MUIA_NList_Columns
+
+    NAME
+        MUIA_NList_Columns -- [ISGN], BYTE *
+
+    FUNCTION
+        With this tag you can set/get the visible order of columns (as if changed
+        by the user). It work for all columns in one time (use MUIM_NList_SetColumnCol
+        if you want to exchange 2 columns).
+
+        The value is a pointer on an BYTE array, each byte is for a column
+        (in the visible order) and have the value of the display hook col
+        which have to be displayed in it.
+
+        The array must be ended with a -1 value.
+
+    NOTE
+        The returned array is always the same :  it's its contents which change.
+
+        You can set your own array or modify the returned one and set it, both
+        is ok.
+
+        In future it will be possible to have <-1 values for hidden columns
+        (it's not yet implemented but you should skip those values).
+
+    SEE ALSO
+        MUIM_NList_SetColumnCol, MUIM_NList_ColToColumn, MUIM_NList_ColumnToCol
+NList.mcc/MUIA_NList_CompareHook
+
+    NAME
+        MUIA_NList_CompareHook -- [IS.], struct Hook *
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_CompareHook.
+
+    SEE ALSO
+        MUIA_NList_ConstructHook, MUIA_NList_DestructHook
+NList.mcc/MUIA_NList_CompareHook2
+
+    NAME
+        MUIA_NList_CompareHook2 -- [IS.], struct Hook *
+
+    FUNCTION
+        Same function as MUIA_NList_CompareHook but A2 will be the object
+        and A1 a NList_CompareMessage struct pointer.
+
+    EXAMPLES
+        See NList-Demo program.
+
+    SEE ALSO
+        MUIA_NList_CompareHook
+NList.mcc/MUIA_NList_ConstructHook
+
+    NAME
+        MUIA_NList_ConstructHook -- [IS.], struct Hook *
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_ConstructHook.
+
+        Think to finish lines entries on a \0 , \n and \r.
+        The list will not display anything which come after
+        a \n , \r or \0, so finish lines entries on a \0, \r
+        and \n if you dont want to waste memory.
+
+    SPECIAL INPUTS
+        MUIV_NList_ConstructHook_String
+
+        It's a builtin hook that copy a string entry.
+        (so original string can be trash after)
+        you must set MUIV_NList_DestructHook_String
+        too if you use it.
+
+    SEE ALSO
+        MUIA_NList_DestructHook, MUIA_NList_DisplayHook
+NList.mcc/MUIA_NList_ConstructHook2
+
+    NAME
+        MUIA_NList_ConstructHook2 -- [IS.], struct Hook *
+
+    FUNCTION
+        Same function as MUIA_NList_ConstructHook but A2 will be the object
+        and A1 a NList_ConstructMessage struct pointer.
+
+    SEE ALSO
+        MUIA_NList_ConstructHook
+NList.mcc/MUIA_NList_CopyColumnToClipHook
+
+    NAME
+        MUIA_NList_CopyColumnToClipHook -- [IS.], struct Hook *
+
+    FUNCTION
+        This hook will be called while a MUIM_NList_CopyToClip
+        for each column string. You'll certainly get in entry
+        a string given by your own MUIA_NList_DisplayHook/2, so
+        you must not use the same buffer for both !
+
+        You'll get the entry num in -1 element of the given array,
+        elements 1 and 2 are the positions of the first selected
+        char and the last+1.
+
+        You must return the pointer of the string to copy to
+        clipboard in element 0, a the string length in element 1.
+
+        The builtin hook skip all ESC chars plus their next char
+        (and [...] for ESC-P, ESC-I, ESC-O and ESC-o), and add a
+        tab char between columns.
+
+    SEE ALSO
+        MUIM_NList_CopyToClip, MUIA_NList_CopyEntryToClipHook,
+        MUIA_NList_DisplayHook
+NList.mcc/MUIA_NList_CopyColumnToClipHook2
+
+    NAME
+        MUIA_NList_CopyColumnToClipHook2 -- [IS.], struct Hook *
+
+    FUNCTION
+        Same function as MUIA_NList_CopyColumnToClipHook but A2 will be the object
+        and A1 a NList_CopyColumnToClipMessage struct pointer.
+
+    SEE ALSO
+        MUIA_NList_CopyColumnToClipHook
+NList.mcc/MUIA_NList_CopyEntryToClipHook
+
+    NAME
+        MUIA_NList_CopyEntryToClipHook -- [IS.], struct Hook *
+
+    FUNCTION
+        This work near like MUIA_NList_DisplayHook, execpt
+        that it is not called when the NList object want to
+        display its lines but when it want to copy them
+        to clipboard (or other). See MUIM_NList_CopyToClip.
+
+        You can return only one string pointer (only one
+        column for copy), as element 0 of the array.
+
+        The -1 element is the entry number only when
+        you don't give a entry pointer to NList_CopyToClip method,
+        else it's -1.
+
+        Elements 1,2,3 and 4 of the given array are first column/pos
+        and last column/pos which are selected.
+        Elements 5 and 6 are 2, 1 or 0 when the 1th and 3rd pos are
+        in the format preparse string, the special entry preparse string
+        or in the normal string for that entry/columns.
+
+        For column, -1 is the first and -2 the last, else it's its number.
+        This is the number of displayed columns and not the corresponding
+        entry in the array return by DisplayHook. Anyway, positions are
+        calculated from strings returned by DisplayHook.
+
+        For pos, -1 is left of column and -2 its end. The last pos should
+        not be included.
+
+        You should use MUIA_NList_CopyColumnToClipHook unless you don't
+        want to be copied what is seen in the list.
+
+    SEE ALSO
+        MUIM_NList_CopyToClip, MUIA_NList_CopyColumnToClipHook,
+        MUIA_NList_DisplayHook
+NList.mcc/MUIA_NList_CopyEntryToClipHook2
+
+    NAME
+        MUIA_NList_CopyEntryToClipHook2 -- [IS.], struct Hook *
+
+    FUNCTION
+        Same function as MUIA_NList_CopyEntryToClipHook but A2 will be the object
+        and A1 a NList_CopyEntryToClipMessage struct pointer.
+
+    SEE ALSO
+        MUIA_NList_CopyEntryToClipHook
+NList.mcc/MUIA_NList_DefaultObjectOnClick
+
+    NAME
+        MUIA_NList_DefaultObjectOnClick -- [ISG], BOOL
+
+    FUNCTION
+        If set to TRUE, the NList object will become the
+        MUIA_Window_DefaultObject of its window when you
+        click on it, so the user will be able to control
+        the list with keys. The MUIA_Window_ActiveObject
+        will be set to None, unless the current active
+        object is the NList one itself or if it's the
+        MUIA_NList_KeepActive one.
+
+        There is a special meaning if you use both
+        DefaultObjectOnClick and MUIA_NList_MakeActive.
+        (see MUIA_NList_MakeActive)
+
+    DEFAULT
+        TRUE
+
+    SEE ALSO
+        MUIA_NList_KeepActive,MUIA_NList_MakeActive
+NList.mcc/MUIA_NList_DefClickColumn
+
+    NAME
+        MUIA_NList_DefClickColumn -- [ISG], LONG
+
+    FUNCTION
+        Same function as Listview.mui/MUIA_Listview_DefClickColumn.
+
+    SEE ALSO
+        MUIA_Listview_DefClickColumn, MUIA_NList_ClickColumn
+NList.mcc/MUIA_NList_DestructHook
+
+    NAME
+        MUIA_NList_DestructHook -- [IS.], struct Hook *
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_DestructHook.
+
+    SPECIAL INPUTS
+        MUIV_NList_DestructHook_String
+
+        It's a builtin hook that free the string entry
+        previously allocated and copied by
+        the MUIV_NList_ConstructHook_String builtin hook.
+
+    SEE ALSO
+        MUIA_NList_ConstructHook, MUIA_NList_DisplayHook
+NList.mcc/MUIA_NList_DestructHook2
+
+    NAME
+        MUIA_NList_DestructHook2 -- [IS.], struct Hook *
+
+    FUNCTION
+        Same function as MUIA_NList_DestructHook but A2 will be the object
+        and A1 a NList_DestructMessage struct pointer.
+
+    SEE ALSO
+        MUIA_NList_DestructHook
+NList.mcc/MUIA_NList_DisplayHook
+
+    NAME
+        MUIA_NList_DisplayHook -- [IS.], struct Hook *
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_DisplayHook.
+
+        Do not modify the buffers you return in the hook anywhere
+        else than in the hook when called by NList.
+        (if you do so you MUST set MUIA_NList_DisplayRecall)
+
+
+        You should return the same thing if its called another
+        time with the same inputs !
+        The hook will be called with a pointer to the
+        entry to be displayed in A1 and a pointer to
+        a string array containing as many entries as
+        your list may have cols in A2.
+        You must fill this array with the strings that
+        you want to display.
+        The array is DISPLAY_ARRAY_MAX*2 large.
+        In the DISPLAY_ARRAY_MAX+col element you can set a
+        preparse string for the corresponding col element.
+        Using it you'll be able to avoid copying the string in
+        a buffer to add something in the beginning of the col
+        string.
+
+        The display hook also gets the position of the current entry
+        as additional parameter. It is stored in the longword
+        preceding the col array (don't forget it's a LONG).
+        (setting that LONG value to -2 is another way to tell the object
+        to not consider the return string pointeur as valid next time
+        he will want to use it, and he will recall the hook).
+
+        When the hook function will be called to get the title strings,
+        you'll get NULL in A1, and -1 as position of current entry.
+
+
+        The hook function will be called each time a line (or a part of
+        it) need to be drawn (and when NList need to compute lenght of
+        columns contents).
+
+
+        Here are the escape sequence known by the parsing of NList :
+              (If you use C, ESC b can be written "\033b")
+
+        \t          Tabulation. Go to the next tab boundary of the col.
+                    tab positions are separated by 8 spaces by default.
+        ESC -       Disable text engine, following chars will be printed
+                    without further parsing.
+        ESC u       Set the soft style to underline.
+        ESC b       Set the soft style to bold.
+        ESC i       Set the soft style to italic.
+        ESC n       Set the soft style back to normal.
+        ESC <n>     Use pen number n (2..9) as front pen. n must be a valid
+                    DrawInfo pen as specified in "intuition/screens.h".
+        ESC c       Center current line. only valid at the beginning.
+        ESC r       Right justify current line. only valid at the beginning.
+        ESC l       Left justify current line. only valid at the beginning.
+
+        These ones are new or modified :
+
+        ESC j       Justify left and right current line. only at beginning.
+        ESC I[<s>]  Draw MUI image with specification <s>.
+                    See Image.mui/MUIA_Image_Spec for image spec definition.
+        ESC O[<p>]                     (ESC O[<s>|<width>|<height>,<minwidth>])
+                    Draw the MUIM_NList_CreateImage at adress <p>.
+                    (<p> should be an 8 hex digits number).
+        ESC o[<n>]                     (ESC o[<s>|<width>|<height>,<minwidth>])
+                    Draw the MUIM_NList_UseImage number <n>. If the <n> UseImage
+                    don't exist or has been set to NULL, no image is drawn.
+        ESC P[]     Use default front pen.
+        ESC P[<n>]  Use pen number <n>. (it's a direct pen number, so you must
+                    make MUI_ObtainPen and MUI_ReleasePen for it yourself,
+                    best to do it is in Setup() and Cleanup() of a subclass).
+        ESC T       Draw horizontal line on top of the entry for the col.
+        ESC C       Draw horizontal line centered in the entry for the col.
+        ESC B       Draw horizontal line on bottom of the entry for the col.
+        ESC E       Draw horizontal line centered in the entry for the col,
+                    but only on the left and right of the line contents.
+        ESC t , ESC t[<n>] , ESC t[M<n>] , ESC t[I<n>]
+                    Make the ESC C and ESC E horizontal line become thick and filled
+                    with some color :
+                    default is MPEN_FILL.
+                    [<n>]  means than <n> is a direct pen color, like for ESC P[<n>]
+                    [M<n>] means that <n> is MUI pen color number (MPEN_xxx ie 0..8)
+                    [I<n>] means that <n> is Intuition dri pen number 0..11 (see
+                            "intuition/screens.h")
+        ESC t[N], ESC t[N<n>], ESC t[NM<n>], ESC t[NI<n>]
+                    Make the ESC T, ESC C,ESC B, ESC E become a single black line,
+                    or not black when using a <n>, M<n> or I<n> pen color.
+                    ('N' is for Not thick ;)
+
+        with ESC O[] and ESC o[], you can add [...@<n>] which will make the image/object
+        act as a relverify button. When this "button" is released NList will notify
+        MUIA_NList_ButtonClick with the value <n>.
+
+        with ESC I[], ESC O[] and ESC o[], you can add [...|<width>] or
+        [...|<width>|<height>] or [...|<width>|<height>,<minwidth>] or
+        [...,<minwidth>] where :
+          <width> will be the width in pixels of the image/object.
+                  -1  means default image width unless <minwidth> is set.
+                   0  means default image width.
+          <height> will be the height in pixels of the image/object.
+                  -1  means default image height (entry height is max).
+                   0  means entry height.
+          <minwidth> will be the min width in pixels before the next char/string/image.
+                  when present, default height become entry height and
+                  width become minwidth (if minwdith is bigger than image default
+                  width), unless you set <width> and/or <height>.
+          <minwidth> <width> and <height> must be a decimal number (%ld).
+
+    SEE ALSO
+        MUIA_NList_Format, MUIA_Text_Contents, MUIA_List_DisplayHook,
+        MUIA_NList_DisplayRecall
+NList.mcc/MUIA_NList_DisplayHook2
+
+    NAME
+        MUIA_NList_DisplayHook2 -- [IS.], struct Hook *
+
+    FUNCTION
+        Same function as MUIA_NList_DisplayHook but A2 will be the object
+        and A1 a NList_DisplayMessage struct pointer.
+
+    SEE ALSO
+        MUIA_NList_DisplayHook
+NList.mcc/MUIA_NList_DisplayRecall
+
+    NAME
+        MUIA_NList_DisplayRecall -- [.S.], BOOL
+
+    FUNCTION
+        If for some unusual reason you modify one of the buffer that
+        your DisplayHook function usually return anywhere else than
+        in the DisplayHook function when called by the NList object,
+        you must set it to TRUE, so the object will know it.
+
+    SEE ALSO
+        MUIA_NList_DisplayHook
+NList.mcc/MUIA_NList_DoubleClick
+
+    NAME
+        MUIA_NList_DoubleClick -- [..GN], LONG
+
+    FUNCTION
+        You'll get a notify on it each time the user double
+        clicks on an entry in the list, or on the title.
+
+        The value is the entry number, which will be -1 when
+        it's the title.
+
+        You'll get a notify on it too when you press the 'return' key
+        and the NList object is active or default.
+
+        If you get() it, you'll get the last click position, which
+        can be -2 if it was on nothing (ie not entry or title).
+
+        For triple clicks and more, use MUIA_NList_MultiClick.
+
+    NOTE
+        Disabled for the title when MUIA_NList_TitleClick is used.
+
+    SEE ALSO
+        MUIA_NList_MultiClick, MUIA_NList_TitleClick,
+        MUIA_NList_EntryClick, MUIM_NList_TestPos.
+NList.mcc/MUIA_NList_DragColOnly
+
+    NAME
+        MUIA_NList_DragColOnly -- [ISG], LONG
+
+    FUNCTION
+        When set to a col number (displayhook col number, not the visible
+        one), only the text of that col for the selected entry will
+        be dragged instead of the visible part of the entry.
+
+        Set it to -1 to come back to standard/default mode when you have
+        changed it !
+NList.mcc/MUIA_NList_DragSortable
+
+    NAME
+        MUIA_NList_DragSortable -- [ISG], BOOL
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_DragSortable.
+
+        DragType will be MUIV_NList_DragType_Default unless you set it.
+
+        No need for you to set MUIA_Dropable or MUIA_Draggable.
+
+    DEFAULT
+        FALSE
+NList.mcc/MUIA_NList_DragSortInsert
+
+    NAME
+        MUIA_NList_DragSortInsert -- [..GN], BOOL
+
+    FUNCTION
+        Same as MUIA_NList_InsertPosition but the notify is made only after
+        a MUIA_NList_DragSortable move.
+NList.mcc/MUIA_NList_DragType
+
+    NAME
+        MUIA_NList_DragType -- [ISG], LONG
+
+    SPECIAL INPUTS
+        MUIV_NList_DragType_None        no drag
+        MUIV_NList_DragType_Default     as set in prefs.
+        MUIV_NList_DragType_Immediate   drag on borders and with qualifier, and
+                                        immediate drag if non-multiselect mode.
+        MUIV_NList_DragType_Borders     drag on borders and with qualifier.
+        MUIV_NList_DragType_Qualifier   drag only using qualifier.
+
+    FUNCTION
+        Same function as Listview.mui/MUIA_Listview_DragType.
+
+        If you want the user to be able to drag items out of
+        your list, you must set this.
+        Don't use MUIA_Draggable with NList or NListview.
+NList.mcc/MUIA_NList_DropMark
+
+    NAME
+        MUIA_NList_DropMark -- [..G], LONG
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_DropMark.
+
+        After a successfull drop operation, this attribute holds
+        the position where we should insert the new entry(ies).
+
+    SEE ALSO
+        MUIA_NList_DropType, MUIM_NList_DropType, MUIM_NList_DropDraw
+NList.mcc/MUIA_NList_DropType
+
+    NAME
+        MUIA_NList_DropType -- [..G], LONG
+
+    FUNCTION
+        Same function as MUIA_NList_DropMark but will return the
+        current DropMark type instead of the DropMark entry number.
+
+        After a successfull drop operation, this attribute holds
+        the type of dropmark which where drawn.
+
+    SEE ALSO
+        MUIA_NList_DropMark, MUIM_NList_DropType, MUIM_NList_DropDraw
+NList.mcc/MUIA_NList_Entries
+
+    NAME
+        MUIA_NList_Entries -- [..GN], LONG
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_Entries.
+
+    SEE ALSO
+        MUIA_NList_First, MUIA_NList_Visible, MUIA_NList_Active
+NList.mcc/MUIA_NList_EntryClick
+
+    NAME
+        MUIA_NList_EntryClick -- [..GN], LONG
+
+    FUNCTION
+        You'll get a notify on it each time the user click
+        on an entry in the list (on the title, use
+        MUIA_NList_TitleClick for that).
+
+        The value is the entry number.
+
+        You'll get a notify on it too when you press the 'return' key
+        and the NList object is active or default, but only if there
+        is no notify asked on MUIA_NList_DoubleClick.
+
+        If you get() it, you'll get the last click position, which
+        can be -1 when on title and -2 if it was on nothing.
+
+    SEE ALSO
+        MUIA_NList_MultiClick, MUIA_NList_TitleClick,
+        MUIA_NList_DoubleClick, MUIM_NList_TestPos.
+NList.mcc/MUIA_NList_EntryValueDependent
+
+    NAME
+        MUIA_NList_EntryValueDependent -- [ISG], BOOL
+
+    FUNCTION
+        If your display hook return different strings when the
+        entry num value change for a identical entry pointer
+        then you should set it.
+
+    DEFAULT
+        FALSE
+
+    SEE ALSO
+        MUIA_NList_DisplayHook
+NList.mcc/MUIA_NList_Exports
+
+    NAME
+        MUIA_NList_Exports -- [ISG], LONG
+
+    FUNCTION
+        Tell the NList object what parts of it's state will have to
+        be saved in MUIM_Export method (which is called by the
+        MUIM_Application_Save method if the object has a ObjectID).
+
+    SPECIAL INPUTS
+        MUIV_NList_Exports_Active       save active entry number.
+        MUIV_NList_Exports_Selected     save selected entries numbers.
+        MUIV_NList_Exports_First        save first visible entry number.
+        MUIV_NList_Exports_ColWidth     save widths of columns.
+        MUIV_NList_Exports_ColOrder     save order of columns.
+        MUIV_NList_Exports_Cols         save all about columns (width and order actually).
+        MUIV_NList_Exports_All
+
+    NOTE
+        MUIV_NList_Exports_Selected can make a very long export (so a big program
+        .cfg file) if the list has many selected entries. It take one long int
+        (ie 4 bytes) for each selected entry...
+
+        Active and First are always exported by the MUIM_Export method,
+        having MUIV_NList_Exports_Active and MUIV_NList_Exports_First set or not.
+
+    DEFAULT
+        (MUIV_NList_Exports_Active | MUIV_NList_Exports_First | MUIV_NList_Exports_Cols)
+
+    SEE ALSO
+        MUIA_NList_Imports
+NList.mcc/MUIA_NList_First
+
+    NAME
+        MUIA_NList_First -- [ISGN], LONG
+
+    SPECIAL INPUTS
+        MUIV_NList_First_Top
+        MUIV_NList_First_Bottom
+        MUIV_NList_First_Up
+        MUIV_NList_First_Down
+        MUIV_NList_First_PageUp
+        MUIV_NList_First_PageDown
+
+    FUNCTION
+        Get the number of the first visible entry.
+        You can set it to change the first entry you want to be visible.
+
+    SEE ALSO
+        MUIA_NList_Visible, MUIA_NList_Entries, MUIA_NList_Active
+NList.mcc/MUIA_NList_ForcePen
+
+    NAME
+        MUIA_NList_ForcePen -- [ISG], LONG
+
+    SPECIAL INPUTS
+        MUIV_NList_ForcePen_On
+        MUIV_NList_ForcePen_Off
+        MUIV_NList_ForcePen_Default
+
+    FUNCTION
+        Set the ForcePen mode, when on it force the 'selected pen' color
+        in all the selected area. Else the color is forced only at the
+        beginning of the area and can be changed by text escape sequences.
+
+        The default is set by the user in the pref .mcp class.
+
+        Getting in will give its current value.
+NList.mcc/MUIA_NList_Format
+
+    NAME
+        MUIA_NList_Format -- [ISG], STRPTR
+
+    FUNCTION
+        NList is able to handle multi column lists. To define
+        how many columns should be displayed and how they
+        should be formatted, you specify a format string.
+
+        This format string must contain one entry for each column
+        you want to see. Entries are seperated by commas, one
+        entry is parsed via dos.library/ReadArgs().
+
+        The template for a single entry looks like this:
+
+        DELTA=D/N,PREPARSE=P/K,COL=C/N,BAR/S,TBAR/S,NOBAR=NB/S,
+        SIMPLEBAR=SBAR/S,NOTITLEBUTTON=NOTB/S,
+        WEIGHT=W/N,MINWIDTH=MIW/N,MAXWIDTH=MAW/N,
+        COLWIDTH=CW/N,MINCOLWIDTH=MICW/N,MAXCOLWIDTH=MACW/N,
+        PIXWIDTH=PW/N,MINPIXWIDTH=MIPW/N,MAXPIXWIDTH=MAPW/N,
+        PARTCOLSUBST=PCS/K
+
+    First ones are like (or nearly) MUIA_List_Format ones :
+
+        DELTA
+           Space in pixel between this column and the next.
+           the last displayed column ignores this setting.
+           Defaults to 4.
+
+        PREPARSE
+           A preparse string for this column.
+
+        COL
+           This value adjusts the col number of the current column.
+           Defaults to current column number (0,1,...)
+           You can't use identical COL values for 2 or more columns.
+
+        BAR
+           Will draw a vertical bar between this and the next column.
+
+        WEIGHT
+           The weight of the column. As for MUI's group.
+
+        MINWIDTH
+           Minimum percentage of the list width for the current column.
+
+        MAXWIDTH
+           Maximum percentage of the list width for the current column.
+
+        TBAR
+           Will draw a vertical bar between this and the next column
+           but only in the title (ignored if BAR is set).
+           THIS IS A DEFAULT !
+
+        NOBAR
+           Don't draw a vertical bar between this and the next column at all.
+
+        SIMPLEBAR
+           Make te vertical bar a simple black one.
+
+        NOTITLEBUTTON
+           Will prevent the title of the column to act as a relverify
+           button when you set MUIA_NList_TitleClick (or make a notify
+           on it).
+
+        COLWIDTH
+           Wanted number of chars for the current column.
+           You will get as PIXWIDTH with number*font_with.
+           Possibly more than number chars will fit in the
+           column if you use proportional font, anyway you
+           are sure than number non italic chars will fit.
+
+        MINCOLWIDTH
+           Minimum number of chars for the current column.
+
+        MAXCOLWIDTH
+           Maximum number of chars for the current column.
+
+        PIXWIDTH
+           Wanted number of chars for the current column.
+
+        MINPIXWIDTH
+           Minimum number of chars for the current column.
+
+        MAXPIXWIDTH
+           Maximum number of chars for the current column.
+
+        PARTCOLSUBST
+           If the partial column feature is turned on by the
+           user (in his configuration) and the application
+           developer has specified this option for a particular
+           column, then a "..." text is displayed at the
+           defined position if not all text fits into the
+           column rather than showing a dotted vertical line
+           at the end of the column. Possible values for
+           this option are:
+
+              DISABLED
+                explicitly disables this feature for this
+                column
+
+              LEFT
+                put "..." on the left side and strip text
+                left aligned.
+
+              CENTER
+                put "..." at the center of the column and
+                strip text on both sides around it.
+
+              RIGHT
+                put "..." on the right side and strip text
+                right aligned.
+
+
+        Note: You will have as many columns in your list as
+              entries in the format string (i.e. number of
+              commas + 1). Empty entries, e.g. with a format
+              string of ",,,," are perfectly ok.
+
+        MINPIXWIDTH, MAXPIXWIDTH, MINCOLWIDTH, MAXCOLWIDTH,
+        MINWIDTH and MAXWIDTH will not be used if PIXWIDTH,
+        or COLWIDTH is used.
+
+        Only one of PIXWIDTH, COLWIDTH and WEIGHT will be
+        used, the first find in this order.
+        Biggest of MINPIXWIDTH, MINCOLWIDTH and MINWIDTH.
+        Smallest of MAXPIXWIDTH, MAXCOLWIDTH and MAXWIDTH.
+        If the min is bigger than the max the min will be used.
+
+        You should used PIX ones only for columns with images,
+        and COL ones when you want to be sure to get as many
+        chars you want.
+
+        All chars/images will be drawn for the last column
+        always, you should specify some width for it anyway
+        as it will be used for centered and right aligned texts !
+
+        Default values : WEIGHT=-1, MINWIDTH=5, MAXWIDTH=10000.
+
+        Use MINWIDTH=0 if you don't use PIXWIDTH or COLWIDTH and
+        don't want any min value.
+
+        If you want to use WEIGHT values as percentage of the list
+        width, just choose them to have their total being 100.
+
+        WEIGHT = -1 mean that you want the column to have
+        the width of the largest entry's column contents.
+        MINWIDTH = -1 have the same meaning as for WEIGHT but for
+        the min value.
+        Default will be 100 for the last column, set it to -1 or
+        -2 if you want to force it when more than one column, and
+        to -2 to force it when only one column.
+
+        Be aware that it can take long time to do that when there
+        are many entries since this need a call to the dislpayhook,
+        parse and find real length of all entries.
+        Anyway using such stuff for one or more column has the
+        same overhead.
+
+        The default list format is an empty string (""), this
+        means a one column list without special formatting.
+
+    NOTE
+        Actually MUIA_NList_Format will not try to see if the new
+        format is similar to previous one. It means that all
+        column width will be re-computed (and all entries parsed
+        if WEIGHT or MINWIDTH is -1), same for wrapping
+        which will be recomputed for all entries.
+        So, it's better to do it before inserting entries
+        if you want to do both.
+        If you want to clear, insert, and set the format, the
+        best is to set the format after the clear (fastest, no
+        entry to parse) and before the insert.
+
+    BUGS (FEATURE)
+        Currently there is a maximum of 64 columns for a list.
+
+    SEE ALSO
+        MUIA_NList_DisplayHook, MUIA_NList_TitleSeparator.
+NList.mcc/MUIA_NList_Horiz_DeltaFactor
+
+    NAME
+        MUIA_NList_Horiz_DeltaFactor -- [..GN], LONG
+
+    FUNCTION
+        Used for NListview. You can make a notification on it
+        if you want to attach your own horizontal scrollbar
+        and set the increment value of scrollbar's arrows :
+
+        DoMethod(NLobj, MUIM_Notify, MUIA_NList_Horiz_DeltaFactor,MUIV_EveryTime,
+          SBobj, 3, MUIM_Set,MUIA_Prop_DeltaFactor,MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_NList_Horiz_Entries, MUIA_NList_Horiz_First, MUIA_NList_Horiz_Visible
+NList.mcc/MUIA_NList_Horiz_Entries
+
+    NAME
+        MUIA_NList_Horiz_Entries -- [..GN], LONG
+
+    FUNCTION
+        Used for NListview. You can make a notification on it
+        if you want to attach your own horizontal scrollbar :
+
+        DoMethod(NLobj, MUIM_Notify, MUIA_NList_Horiz_Entries,MUIV_EveryTime,
+          SBobj, 3, MUIM_Set,MUIA_Prop_Entries,MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_NList_Horiz_DeltaFactor, MUIA_NList_Horiz_First, MUIA_NList_Horiz_Visible
+NList.mcc/MUIA_NList_Horiz_First
+
+    NAME
+        MUIA_NList_Horiz_First -- [.SGN], LONG
+
+    FUNCTION
+        Used for NListview. You can make a notification on it
+        if you want to attach your own horizontal scrollbar :
+
+        DoMethod(NLobj, MUIM_Notify, MUIA_NList_Horiz_First,MUIV_EveryTime,
+          SBobj, 3, MUIM_NoNotifySet,MUIA_Prop_First,MUIV_TriggerValue);
+        DoMethod(SBobj, MUIM_Notify, MUIA_Prop_First,MUIV_EveryTime,
+          NLobj, 3, MUIM_NoNotifySet,MUIA_NList_Horiz_First,MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_NList_Horiz_DeltaFactor, MUIA_NList_Horiz_Entries, MUIA_NList_Horiz_Visible
+NList.mcc/MUIA_NList_Horiz_Visible
+
+    NAME
+        MUIA_NList_Horiz_Visible -- [..GN], LONG
+
+    FUNCTION
+        Used for NListview. You can make a notification on it
+        if you want to attach your own horizontal scrollbar :
+
+        DoMethod(NLobj, MUIM_Notify, MUIA_NList_Horiz_Visible,MUIV_EveryTime,
+          SBobj, 3, MUIM_NoNotifySet,MUIA_Prop_Visible,MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_NList_Horiz_DeltaFactor, MUIA_NList_Horiz_Entries, MUIA_NList_Horiz_First
+NList.mcc/MUIA_NList_IgnoreSpecialChars
+
+    NAME
+        MUIA_NList_IgnoreSpecialChars -- [ISG], const char *
+
+    FUNCTION
+        Used to let NList ignore a list of user definable characters during
+        string parsing. Some greek fonts need the 0xA0 character to display
+        an Alpha characters. In this case the string "\xa0" should be supplied
+        to make NList ignore this character and not treat 0xA0 as a "non
+        breaking space".
+        This string will *NOT* be copied by NList and must remain valid as long
+        as the object exists!
+
+    DEFAULT
+        NULL
+NList.mcc/MUIA_NList_Imports
+
+    NAME
+        MUIA_NList_Imports -- [ISG], LONG
+
+    FUNCTION
+        Tell the NList object what parts of it's state must be loaded
+        (and used) in MUIM_Import method (which is called by the
+        MUIM_Application_Load method if the object has a ObjectID).
+
+    SPECIAL INPUTS
+        MUIV_NList_Imports_Active     load previous active entry number (and make it active).
+        MUIV_NList_Imports_Selected   load previous selected entries numbers (and make them selected).
+        MUIV_NList_Imports_First      load previous first visible entry number (and make it the first visible).
+        MUIV_NList_Imports_ColWidth   load previous widths of columns (and set them).
+        MUIV_NList_Imports_ColOrder   load previous order of columns (and set it).
+        MUIV_NList_Imports_Cols       load all about columns (width and order actually).
+        MUIV_NList_Imports_All
+
+    DEFAULT
+        (MUIV_NList_Imports_Active | MUIV_NList_Imports_First | MUIV_NList_Imports_Cols)
+
+    SEE ALSO
+        MUIA_NList_Exports
+NList.mcc/MUIA_NList_Input
+
+    NAME
+        MUIA_NList_Input -- [ISG], BOOL
+
+    FUNCTION
+        Same function as NListview.mcc/MUIA_Listview_Input.
+
+    DEFAULT
+        TRUE
+
+    SEE ALSO
+        MUIA_NList_MultiSelect
+NList.mcc/MUIA_NList_InsertPosition
+
+    NAME
+        MUIA_NList_InsertPosition -- [..GN], LONG
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_InsertPosition.
+
+NList.mcc/MUIA_NList_KeepActive
+
+    NAME
+        MUIA_NList_KeepActive -- [.S.], Obj *
+
+    FUNCTION
+        Usefull when MUIA_NList_DefaultObjectOnClick if you
+        don't want the specified object to be desactivated.
+        A NListview object set it to it's NList child at
+        creation time, so you should not have to use that tag.
+
+    SEE ALSO
+        MUIA_NList_DefaultObjectOnClick,MUIA_NList_MakeActive
+NList.mcc/MUIA_NList_KeyUpFocus
+
+    NAME
+        MUIA_NList_KeyUpFocus -- [ISG], Object *
+
+    FUNCTION
+        Allows to specify a specific object that will be set as the new
+        window's active object in case the user pressed the UP cursor key
+        and the NList object itself doesn't have anything further to
+        scroll up.
+
+    SEE ALSO
+        MUIA_NList_KeyDownFocus
+        MUIA_NList_KeyLeftFocus
+        MUIA_NList_KeyRightFocus
+
+NList.mcc/MUIA_NList_KeyDownFocus
+
+    NAME
+        MUIA_NList_KeyDownFocus -- [ISG], Object *
+
+    FUNCTION
+        Allows to specify a specific object that will be set as the new
+        window's active object in case the user pressed the DOWN cursor key
+        and the NList object itself doesn't have anything further to
+        scroll down.
+
+    SEE ALSO
+        MUIA_NList_KeyUpFocus
+        MUIA_NList_KeyLeftFocus
+        MUIA_NList_KeyRightFocus
+
+NList.mcc/MUIA_NList_KeyLeftFocus
+
+    NAME
+        MUIA_NList_KeyLeftFocus -- [ISG], Object *
+
+    FUNCTION
+        Allows to specify a specific object that will be set as the new
+        window's active object in case the user pressed the LEFT cursor key
+        and the NList object itself doesn't have anything further to
+        scroll to the left.
+
+    SEE ALSO
+        MUIA_NList_KeyUpFocus
+        MUIA_NList_KeyDownFocus
+        MUIA_NList_KeyRightFocus
+
+NList.mcc/MUIA_NList_KeyRightFocus
+
+    NAME
+        MUIA_NList_KeyRightFocus -- [ISG], Object *
+
+    FUNCTION
+        Allows to specify a specific object that will be set as the new
+        window's active object in case the user pressed the RIGHT cursor key
+        and the NList object itself doesn't have anything further to
+        scroll to the right.
+
+    SEE ALSO
+        MUIA_NList_KeyUpFocus
+        MUIA_NList_KeyDownFocus
+        MUIA_NList_KeyLeftFocus
+
+NList.mcc/MUIA_NList_LineHeight
+
+    NAME
+        MUIA_NList_LineHeight -- [..GN], LONG
+
+    FUNCTION
+        Get the current line height.
+NList.mcc/MUIA_NList_MakeActive
+
+    NAME
+        MUIA_NList_MakeActive -- [.S.], Obj *
+
+    FUNCTION
+        Use it if you want an object to be activated when you click
+        in the list object.
+        If you want to be able to control the list with key, you
+        should use MUIA_NList_DefaultObjectOnClick instead.
+
+        If you use both MUIA_NList_MakeActive and
+        MUIA_NList_DefaultObjectOnClick then the specified object
+        will be activated only if there is already an active one.
+
+        The only object which should be set should be the NListview
+        parent object of the current NList one.
+
+    SEE ALSO
+        MUIA_NList_DefaultObjectOnClick,MUIA_NList_KeepActive
+NList.mcc/MUIA_NList_MinColSortable
+
+    NAME
+        MUIA_NList_MinColSortable -- [ISG], LONG
+
+    FUNCTION
+        Sets the number of the first visible column which
+        can be sorted, ie exchanged with some other one.
+
+        Default is 1, making the leftmost (0) column not sortable.
+
+        Just set it to a big number (100 for example) to forbid
+        the columns sorting.
+NList.mcc/MUIA_NList_MinLineHeight
+
+    NAME
+        MUIA_NList_MinLineHeight -- [IS.], LONG
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_MinLineHeight.
+
+        Sets the minimum line height for lists in pixels.
+
+        If <= 0 then it's absolute value will replace the
+        'Leading' value of prefs which is added to the
+        font height.
+
+        It seems that original MUIA_List_MinLineHeight use
+        its positive value as a 'leading' one, which is not
+        logical when i read its doc (!), so i do the
+        change internally to get it works like with list...
+NList.mcc/MUIA_NList_MultiClick
+
+    NAME
+        MUIA_NList_MultiClick -- [..GN], LONG
+
+    FUNCTION
+        You'll get a notify on it each time the user
+        multiclicks more than 2 times on an entry in the
+        list, or on the title. You'll get the number of
+        the click (3, 4, 5...) for each. Note that you'll
+        not get MUIA_NList_MultiClick for a double click;
+        you must use MUIA_NList_DoubleClick for that.
+        The time between each click must be less or equal
+        to the double click time set in Amiga Input prefs.
+
+        You can know on which entry the multiclick was made
+        getting MUIA_NList_DoubleClick value.
+
+        So you can make a notification on it.
+
+    NOTE
+        Disabled for the title when MUIA_NList_TitleClick is used.
+
+    SEE ALSO
+        MUIA_NList_MultiClickAlone, MUIA_NList_DoubleClick, MUIA_NList_TitleClick,
+        MUIA_NList_EntryClick, MUIM_NList_TestPos.
+NList.mcc/MUIA_NList_MultiClickAlone
+
+    NAME
+        MUIA_NList_MultiClickAlone -- [..GN], LONG
+
+    FUNCTION
+        You'll get a notify only for the final multiclick number,
+        so if there are 3 clicks there will be only one multiclickalone
+        notified, a little (max time between 2 clicks) after the 3rd one.
+        It is the major change with classic MUIA_NList_DoubleClick and
+        MUIA_NList_MultiClick which do the notify for all clicks.
+
+        The drawback is the unavoidable delay between the last click
+        and the notify.
+
+        You can know on which entry the multiclickalone was made
+        getting MUIA_NList_DoubleClick value.
+
+        You can make a notification on it.
+
+    SEE ALSO
+        MUIA_NList_MultiClick, MUIA_NList_DoubleClick, MUIA_NList_TitleClick,
+        MUIA_NList_EntryClick, MUIM_NList_TestPos.
+NList.mcc/MUIA_NList_MultiSelect
+
+    NAME
+        MUIA_NList_MultiSelect -- (V7 ) [I..], LONG
+
+    SPECIAL INPUTS
+        MUIV_NList_MultiSelect_None
+        MUIV_NList_MultiSelect_Default
+        MUIV_NList_MultiSelect_Shifted
+        MUIV_NList_MultiSelect_Always
+
+    FUNCTION
+        Same function as Listview.mui/MUIA_Listview_MultiSelect.
+
+        < At the moment MultiSelect_Default is the same
+        as MultiSelect_Shifted >
+
+    SEE ALSO
+        MUIA_NList_MultiTestHook
+NList.mcc/MUIA_NList_MultiTestHook
+
+    NAME
+        MUIA_NList_MultiTestHook -- [IS.], struct Hook *
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_MultiTestHook.
+
+    SEE ALSO
+        MUIA_NList_ConstructHook, MUIA_NList_DestructHook
+NList.mcc/MUIA_NList_Pool
+
+    NAME
+        MUIA_NList_Pool -- [I..], APTR
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_Pool.
+
+    SEE ALSO
+        MUIA_NList_PoolPuddleSize, MUIA_NList_PoolThreshSize
+NList.mcc/MUIA_NList_PoolPuddleSize
+
+    NAME
+        MUIA_NList_PoolPuddleSize -- [I..], ULONG
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_PoolPuddleSize.
+
+    SEE ALSO
+        MUIA_NList_PoolThreshSize, MUIA_NList_Pool
+NList.mcc/MUIA_NList_PoolThreshSize
+
+    NAME
+        MUIA_NList_PoolThreshSize -- [I..], ULONG
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_PoolThreshSize.
+
+    SEE ALSO
+        MUIA_NList_PoolPuddleSize, MUIA_NList_Pool
+NList.mcc/MUIA_NList_PrivateData
+
+    NAME
+        MUIA_NList_PrivateData -- [ISG], APTR
+
+    FUNCTION
+        It's a private data of the object that is unused by NList.
+        You can use it as you want, as for MUIA_UserData.
+
+    SEE ALSO
+        MUIA_NList_DisplayHook, MUIA_NList_CopyEntryToClipHook,
+        MUIA_NList_CopyColumnToClipHook
+NList.mcc/MUIA_NList_Prop_DeltaFactor
+
+    NAME
+        MUIA_NList_Prop_DeltaFactor -- [..GN], LONG
+
+    FUNCTION
+        Used for NListview. You can make a notification on it
+        if you want to attach your own vertical scrollbar
+        and set the increment value of scrollbar's arrows :
+
+        DoMethod(NLobj, MUIM_Notify, MUIA_NList_Prop_DeltaFactor,MUIV_EveryTime,
+          SBobj, 3, MUIM_Set,MUIA_Prop_DeltaFactor,MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_NList_Prop_Entries, MUIA_NList_Prop_First, MUIA_NList_Prop_Visible
+NList.mcc/MUIA_NList_Prop_Entries
+
+    NAME
+        MUIA_NList_Prop_Entries -- [..GN], LONG
+
+    FUNCTION
+        Used for NListview. You can make a notification on it
+        if you want to attach your own vertical scrollbar :
+
+        DoMethod(NLobj, MUIM_Notify, MUIA_NList_Prop_Entries,MUIV_EveryTime,
+          SBobj, 3, MUIM_NoNotifySet,MUIA_Prop_Entries,MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_NList_Prop_DeltaFactor, MUIA_NList_Prop_First, MUIA_NList_Prop_Visible
+NList.mcc/MUIA_NList_Prop_First
+
+    NAME
+        MUIA_NList_Prop_First -- [.SGN], LONG
+
+    FUNCTION
+        Used for NListview. You can make a notification on it
+        if you want to attach your own vertical scrollbar :
+
+        DoMethod(NLobj, MUIM_Notify, MUIA_Prop_First,MUIV_EveryTime,
+          SBobj, 3, MUIM_Set,MUIA_Prop_First,MUIV_TriggerValue);
+        DoMethod(SBobj, MUIM_Notify, MUIA_Prop_First,MUIV_EveryTime,
+          NLobj, 3, MUIM_Set,MUIA_Prop_First,MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_NList_Prop_DeltaFactor, MUIA_NList_Prop_Entries, MUIA_NList_Prop_Visible
+NList.mcc/MUIA_NList_Prop_Visible
+
+    NAME
+        MUIA_NList_Prop_Visible -- [..GN], LONG
+
+    FUNCTION
+        Used for NListview. You can make a notification on it
+        if you want to attach your own vertical scrollbar :
+
+        DoMethod(NLobj, MUIM_Notify, MUIA_NList_Prop_Visible,MUIV_EveryTime,
+          SBobj, 3, MUIM_NoNotifySet,MUIA_Prop_Visible,MUIV_TriggerValue);
+
+    SEE ALSO
+        MUIA_NList_Prop_DeltaFactor, MUIA_NList_Prop_Entries, MUIA_NList_Prop_First
+NList.mcc/MUIA_NList_Quiet
+
+    NAME
+        MUIA_NList_Quiet -- [.S.], BOOL
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_Quiet.
+
+        Think about using it when you insert/remove several entries
+        one by one, it will go much faster.
+        In all cases all changes which can be done later are delayed.
+        Quiet_Full mean that no notify caused by changes in the list will
+        be made, while Quiet_Visual will done them (but delayed to after
+        the Quiet_None).
+
+    SPECIAL INPUTS
+        MUIV_NList_Quiet_None       same as FALSE.
+        MUIV_NList_Quiet_Full       all values but FALSE and MUIV_NList_Quiet_Visual (-2).
+        MUIV_NList_Quiet_Visual
+
+    SEE ALSO
+        MUIM_NList_Insert, MUIM_NList_Remove
+NList.mcc/MUIA_NList_SelectChange
+
+    NAME
+        MUIA_NList_SelectChange -- [...N], BOOL
+
+    FUNCTION
+        Same function as Listview.mui/MUIA_Listview_SelectChange.
+
+        A set(NLobj,MUIA_NList_SelectChange,TRUE) is made by NList
+        whenever the selection state of one or more items in the
+        list is changing.
+
+    DEFAULT
+        FALSE
+
+    SEE ALSO
+        MUIA_NList_MultiSelect
+NList.mcc/MUIA_NList_ShowDropMarks
+
+    NAME
+        MUIA_NList_ShowDropMarks -- [ISG], BOOL
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_ShowDropMarks.
+
+    DEFAULT
+        FALSE
+
+    SEE ALSO
+        MUIA_NList_DropMark
+NList.mcc/MUIA_NList_SkipChars
+
+    NAME
+        MUIA_NList_SkipChars -- [ISG], char *
+
+    FUNCTION
+        Same function as Floattext.mui/MUIA_Floattext_SkipChars.
+NList.mcc/MUIA_NList_SortType
+
+    NAME
+        MUIA_NList_SortType -- [ISGN], LONG
+
+    FUNCTION
+        This value will be set in the NList_CompareMessage struct
+        of MUIA_NList_CompareHook2 hook function.
+
+        It is set by MUIM_NList_Sort2 and MUIM_NList_Sort3 methods too.
+
+    EXAMPLES
+        See NList-Demo program.
+
+    SEE ALSO
+        MUIA_NList_CompareHook2, MUIM_NList_Sort2, MUIM_NList_Sort3, MUIA_NList_SortType2
+NList.mcc/MUIA_NList_SortType2
+
+    NAME
+        MUIA_NList_SortType2 -- [ISGN], LONG
+
+    FUNCTION
+        This value will be set in the NList_CompareMessage struct
+        of MUIA_NList_CompareHook2 hook function.
+
+        It is set by MUIM_NList_Sort3 method too.
+
+    EXAMPLES
+        See NList-Demo program.
+
+    SEE ALSO
+        MUIA_NList_CompareHook2, MUIM_NList_Sort2, MUIM_NList_Sort3, MUIA_NList_SortType
+NList.mcc/MUIA_NList_SourceArray
+
+    NAME
+        MUIA_NList_SourceArray -- [I..], APTR
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_SourceArray.
+NList.mcc/MUIA_NList_SourceInsert
+
+    NAME
+        MUIA_NList_SourceInsert -- [I..], struct MUIP_NList_InsertWrap *
+
+    FUNCTION
+        Same as DoMethod(obj,MUIM_NList_InsertWrap,...)
+        with ... same as the contents of the passed struct,
+        but at init.
+
+    SEE ALSO
+        MUIM_NList_InsertWrap
+NList.mcc/MUIA_NList_SourceString
+
+    NAME
+        MUIA_NList_SourceString -- [I..], char *
+
+    FUNCTION
+        Same as
+        DoMethod(obj,MUIM_List_Insert,string,-2,MUIV_NList_Insert_Bottom)
+        but at init.
+
+    SEE ALSO
+        MUIM_List_Insert
+NList.mcc/MUIA_NList_TabSize
+
+    NAME
+        MUIA_NList_TabSize -- [ISG], ULONG
+
+    FUNCTION
+        Same function as Floattext.mui/MUIA_Floattext_TabSize.
+
+        Set how many spaces is the tabulation.
+
+        Default is 8.
+NList.mcc/MUIA_NList_Title
+
+    NAME
+        MUIA_NList_Title -- [ISG], char *
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_Title.
+
+        The title will be redraw each time you set it.
+
+        When you use a display hook, its value is used as a BOOL/LONG
+        which can have any value (just not NULL if you want to see it).
+
+        The value returned by get() will be the same than the last one
+        given in the set() or at init.
+
+    SEE ALSO
+        MUIA_NList_DisplayHook, MUIA_NList_TitleSeparator
+NList.mcc/MUIA_NList_TitleClick
+
+    NAME
+        MUIA_NList_TitleClick -- [ISGN], LONG
+
+    FUNCTION
+        You'll get a notify on it each time the user
+        clicks one the title (only if on a column, so not on the
+        vertical bar column separator which is used to modify the
+        column width with mouse).
+
+        The returned value is the col number (display hook col number).
+
+        If you get that value later, it will still be the latest
+        *title* click col that you'll get.
+
+        If you ask for a notify on that tag, or if you set it (with any
+        value) the title will act as if each of its column titles were
+        separated buttons, notifying that tag when there are released.
+
+        The (released) look for those title "buttons" will be better
+        if you use MUIA_NList_TitleSeparator and BAR or TBAR for each
+        column in the MUIA_NList_Format string.
+
+        There is no shortkeys for these custom buttons and never be,
+        so think to give another way to access the related stuffs.
+
+        Don't ask for customized frames for them :  there are not real
+        MUI and separated buttons but directly handled by NList, and i
+        found it nice as is.
+
+    NOTE
+        When you use MUIA_NList_TitleClick, you'll not receive
+        MUIA_NList_DoubleClick and MUIA_NList_MultiClick when clicking
+        on the title any more.
+
+    EXAMPLES
+        See NList-Demo program.
+
+    SEE ALSO
+        MUIA_NList_TitleMark, MUIA_NList_TitleMark2, MUIA_NList_SortType,
+        MUIA_NList_SortType2, MUIM_NList_Sort3, MUIA_NList_TitleClick,
+        MUIA_NList_TitleClick2.
+NList.mcc/MUIA_NList_TitleClick2
+
+    NAME
+        MUIA_NList_TitleClick2 -- [ISGN], LONG
+
+    FUNCTION
+        Works like MUIA_NList_TitleClick but when the qualifier is press while clicking
+
+    EXAMPLES
+        See NList-Demo program.
+
+    SEE ALSO
+        MUIA_NList_TitleClick, MUIA_NList_TitleMark, MUIA_NList_TitleMark2
+NList.mcc/MUIA_NList_TitleMark
+
+    NAME
+        MUIA_NList_TitleMark -- [ISG], LONG
+
+    FUNCTION
+        Draw a mark on the corresponding display hook column.
+
+        The value give 2 informations :  the column and the type of mark.
+
+        Usually set to the MUIA_NList_SortType value (which is set by
+        MUIM_NList_Sort3, this one called from a MUIA_NList_TitleClick notify).
+
+    SPECIAL INPUTS
+        MUIV_NList_TitleMark_None
+        MUIV_NList_TitleMark_Down   | col
+        MUIV_NList_TitleMark_Up     | col
+        MUIV_NList_TitleMark_Box    | col
+        MUIV_NList_TitleMark_Circle | col
+
+    EXAMPLES
+        See NList-Demo program.
+
+    SEE ALSO
+        MUIA_NList_TitleMark2, MUIA_NList_SortType, MUIA_NList_SortType2, MUIM_NList_Sort3,
+        MUIA_NList_TitleClick, MUIA_NList_TitleClick2
+NList.mcc/MUIA_NList_TitleMark2
+
+    NAME
+        MUIA_NList_TitleMark2 -- [ISG], LONG
+
+    FUNCTION
+        Draw a secondary mark on the corresponding display hook column.
+
+        The value give 2 informations :  the column and the type of mark.
+
+        Usually set to the MUIA_NList_SortType2 value (which is set by
+        MUIM_NList_Sort3, this one called from a MUIA_NList_TitleClick/2 notify).
+
+    SPECIAL INPUTS
+        MUIV_NList_TitleMark2_None
+        MUIV_NList_TitleMark2_Down   | col
+        MUIV_NList_TitleMark2_Up     | col
+        MUIV_NList_TitleMark2_Box    | col
+        MUIV_NList_TitleMark2_Circle | col
+
+    EXAMPLES
+        See NList-Demo program.
+
+    SEE ALSO
+        MUIA_NList_TitleMark, MUIA_NList_SortType, MUIA_NList_SortType2, MUIM_NList_Sort3,
+        MUIA_NList_TitleClick, MUIA_NList_TitleClick2
+NList.mcc/MUIA_NList_TitleSeparator
+
+    NAME
+        MUIA_NList_TitleSeparator -- [ISG], BOOL
+
+    FUNCTION
+        If you set it, you get an horizontal bar between the
+        title and the first visible entry (only when some title
+        is visible).
+
+    DEFAULT
+        TRUE
+
+    SEE ALSO
+        MUIA_NList_Title
+NList.mcc/MUIA_NList_TypeSelect
+
+    NAME
+        MUIA_NList_TypeSelect -- [IS.], LONG
+
+    SPECIAL INPUTS
+        MUIV_NList_TypeSelect_Line
+        MUIV_NList_TypeSelect_Char
+
+    FUNCTION
+        Setting this tag you can choose between the classic
+        list selection by line, or using a char precision
+        selection.
+
+        This should be used only for textviewer like stuff,
+        and never for standard lists.
+        Anyway its the only way to make direct copytoclip
+        of a part of a line...
+
+        Default is MUIV_NList_TypeSelect_Line of course.
+
+    SEE ALSO
+        MUIM_NList_Select, MUIM_List_Select
+NList.mcc/MUIA_NList_Visible
+
+    NAME
+        MUIA_NList_Visible -- [..G], LONG
+
+    FUNCTION
+        Same function as List.mui/MUIA_List_Visible.
+
+    SEE ALSO
+        MUIA_NList_First, MUIA_NList_Entries, MUIA_NList_Active
+NList.mcc/MUIA_NList_XXXBackground
+
+    NAME
+        MUIA_NList_TitleBackground -- [ISG], LONG
+        MUIA_NList_ListBackground -- [ISG], LONG
+        MUIA_NList_SelectBackground -- [ISG], LONG
+        MUIA_NList_CursorBackground -- [ISG], LONG
+        MUIA_NList_UnselCurBackground -- [ISG], LONG
+
+    FUNCTION
+        You can set all backgroungs of NList with these attributes,
+        look at Area.mui/MUIA_Background and Image.mui/MUIA_Image_Spec
+        to see what kind of value can be used.
+        Anyway, you can set the defaults with prefs and so should
+        not set it yourself.
+NList.mcc/MUIA_NList_XXXPen
+
+    NAME
+        MUIA_NList_TitlePen -- [ISG], LONG
+        MUIA_NList_ListPen -- [ISG], LONG
+        MUIA_NList_SelectPen -- [ISG], LONG
+        MUIA_NList_CursorPen -- [ISG], LONG
+        MUIA_NList_UnselCurPen -- [ISG], LONG
+
+    FUNCTION
+        You can set all pens of NList with these attributes, their
+        value must be of the type Pendisplay.mui/MUIA_Pendisplay_Spec.
+        Look at Pendisplay.mui, Area.mui/MUIA_Background and
+        Image.mui/MUIA_Image_Spec.
+
+        Anyway, you can set the defaults with prefs and so should
+        not set it yourself.
+NList.mcc/MUIM_NList_Clear
+
+    NAME
+        MUIM_NList_Clear --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_Clear,);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_Clear.
+
+    SEE ALSO
+        MUIM_NList_Insert, MUIA_NList_DestructHook
+NList.mcc/MUIM_NList_ColWidth
+
+    NAME
+        MUIM_NList_ColWidth --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_ColWidth,LONG col,LONG width);
+
+    FUNCTION
+        Set a width for a col as if changed by the user with mouse, or
+        reset it to its default size.
+        Permit to get the user width of a col too.
+
+    INPUTS
+        col     number of the col (numbered as in display hook).
+
+                special value :
+              MUIV_NList_ColWidth_All     will set it for all columns.
+
+        width   width to set (4 is the minimum width accepted).
+
+                special values :
+              MUIV_NList_ColWidth_Default reset to default.
+              MUIV_NList_ColWidth_Get     set nothing, only return current.
+
+    RESULT
+        When a col is specified (ie not MUIV_NList_ColWidth_All), the current
+        *user* width of the col will be returned :
+        o -1 mean that the col has its default width, ie not set by the user
+          or with this method.
+        o 0  mean that the specified col is not valid.
+          When MUIV_NList_ColWidth_All you'll get always 0.
+NList.mcc/MUIM_NList_ColToColumn
+
+    NAME
+        MUIM_NList_ColToColumn --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_ColToColumn,LONG col);
+
+    FUNCTION
+        converts display hook col number to visible column number.
+
+    INPUTS
+        col     number of the col (numbered as in display hook).
+
+    RESULT
+        column number, -1 if no column use that col number.
+
+    SEE ALSO
+        MUIM_NList_ColumnToCol, MUIM_NList_SetColumnCol, MUIA_NList_Columns
+NList.mcc/MUIM_NList_ColumnToCol
+
+    NAME
+        MUIM_NList_ColumnToCol --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_ColumnToCol,LONG column);
+
+    FUNCTION
+        converts visible column number to display hook col number.
+
+    INPUTS
+        column   number of the column (visible).
+
+    RESULT
+        col number, -1 if the column is not valid.
+
+    SEE ALSO
+        MUIM_NList_ColToColumn, MUIM_NList_SetColumnCol, MUIA_NList_Columns
+NList.mcc/MUIM_NList_Compare
+
+	NAME
+		MUIM_NList_Compare --
+
+	SYNOPSIS
+		DoMethod(obj,MUIM_NList_Compare,APTR entry1,APTR entry2,
+        ULONG sort_type1,ULONG sort_type2);
+
+	FUNCTION
+		This method is called ONLY by NList.mcc when application needs to
+        compare    two    list   entries   f.e.   when   MUIM_NList_Sort,
+        MUIM_NList_Sort2, MUIM_NList_Sort3 are called. So, this method is
+        only  useful  within  NList.mcc  subclass, function method should
+        looks      like      normal       MUIA_NList_CompareHook       or
+		MUIA_NList_CompareHook2  hook function. If your subclass will not
+        override this method NList.mcc implementation will be  used,  and
+        it'll call MUIA_NList_CompareHook or MUIA_NList_CompareHook2 hook
+        in that case.
+
+        When you are overriding this method you probably  would  like  to
+        override     MUIM_NList_Construct,     MUIM_NList_Destruct    and
+        MUIM_NList_Display method as well.
+
+	INPUTS
+		entry1     - First entry to compare.
+
+		entry2     - Second entry to compare.
+
+		sort_type1 - Sort type 1.
+
+		sort_type2 - Sort type 2.
+
+	RESULTS
+        If entry1 > entry2 1, if entry1 ==  entry2  0  and  if  entry1  <
+        entry2    -1.    i.e.    the    same    as    MUIA_NList_Compare,
+        MUIA_NList_CompareHook2 or strcmp() alike functions.
+
+	NOTE
+        Do not even think about calling it by yourself! Method parameters
+        structure might grow in the future! Be warned.
+
+        Internal implementation of this method can use internal or passed
+        arguments,  so  please  do  not  cheating  and  if  you  are  not
+		overriding it, pass the original arguments to super class.
+
+	SEE ALSO
+		MUIA_NList_CompareHook, MUIA_NList_CompareHook2,
+		MUIM_NList_Construct, MUIM_NList_Destruct, MUIM_NList_Display
+
+NList.mcc/MUIM_NList_Construct
+
+	NAME
+		MUIM_NList_Construct --
+
+	SYNOPSIS
+        DoMethod(obj,MUIM_NList_Construct,APTR entry,APTR pool);
+
+    FUNCTION
+        This method is called  ONLY  by  NList.mcc  when  application  is
+        creating     new     entry     f.e.    when    MUIM_NList_Insert,
+        MUIM_NList_InsertSingle or MUIM_NList_Replace is called. So, this
+        method  is only useful within NList.mcc subclass, function method
+        should   looks   like    normal    MUIA_NList_ConstructHook    or
+        MUIA_NList_ConstructHook2  hook  function.  If your subclass will
+        not override this method NList.mcc implementation will  be  used,
+        and       it'll       call       MUIA_NList_ContructHook       or
+		MUIA_NList_ConstructHook2 hook in that case.
+
+        When you are overriding this method you probably  would  like  to
+        override      MUIM_NList_Destruct,     MUIM_NList_Compare     and
+        MUIM_NList_Display method as well.
+
+	INPUTS
+        entry - original entry pointer passed to  f.e.  MUIM_NList_Insert
+				method. Equivalent of A1 register of
+                MUIA_NList_ConstructHook.
+
+		pool  - pool  header  pointer.  Equivalent  of  A2  register  of
+                MUIA_NList_ConstructHook.
+
+    RESULT
+		New entry, similar as returned by one of construct hooks.
+
+	NOTE
+        Do not even think about calling it by yourself! Method parameters
+        structure might grow in the future! Be warned.
+
+        Internal implementation of this method can use internal or passed
+        arguments,  so  please  do  not  cheating  and  if  you  are  not
+		overriding it, pass the original arguments to super class.
+
+	SEE ALSO
+		MUIA_NList_ConstructHook, MUIA_NList_ConstructHook2,
+		MUIM_NList_Insert, MUIM_NList_InsertSingle, MUIM_NList_Replace,
+		MUIM_NList_Destruct, MUIM_NList_Compare, MUIM_NList_Display
+
+NList.mcc/MUIM_NList_ContextMenuBuild
+
+    NAME
+        MUIM_NList_ContextMenuBuild --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_ContextMenuBuild, LONG mx, LONG my, LONG pos,
+                                                LONG column, LONG flags,LONG ontop);
+
+    FUNCTION
+        Give possibilities to use MUIM_ContextMenuBuild builtin in NList
+        and a custom context menu for a NList subclass.
+
+        Here is how NList MUIM_ContextMenuBuild work :
+
+        If MUIA_ContextMenu is NULL, NULL is returned (no menu).
+
+        If MUIA_ContextMenu is none of special values, the supermethod is called.
+
+        If MUIA_ContextMenu is MUIV_NList_ContextMenu_Never, MUIA_ContextMenu is
+        set to NULL and NULL is returned.
+
+        Else (it's a special value) MUIM_NList_ContextMenuBuild is called :
+
+          If MUIM_NList_ContextMenuBuild return -1, NULL will be returned (no menu).
+
+          If MUIM_NList_ContextMenuBuild return NULL, NList will return its own
+          context menu, depending on prefs (it's the default case).
+
+          If MUIM_NList_ContextMenuBuild return an menu object, NList will
+          enable/disable its own menu entries in the menu if it found some,
+          then return thqt object.
+
+          2 special menuitems are reconized by NList, and are found by :
+            DoMethod(MenuObj,MUIM_FindUData,MUIV_NList_Menu_Default_This)
+          and
+            DoMethod(MenuObj,MUIM_FindUData,MUIV_NList_Menu_Default_All)
+
+
+
+        MUIA_ContextMenu special values are actuallly used :
+
+          MUIV_NList_ContextMenu_Default   replaced by one of followings.
+          MUIV_NList_ContextMenu_TopOnly   only on title/top of list.
+          MUIV_NList_ContextMenu_Always    always.
+          MUIV_NList_ContextMenu_Never     never, repaced by NULL after.
+
+          when using MUIV_NList_ContextMenu_TopOnly NList will set MUIA_ContextMenu
+          NULL/non-NULL when the mouse move, which should permit to have
+          the window menu avaible when the contents menu is not visible.
+
+          Anyway actually (MUI 3.8) MUI has a bug/feature which make the
+          MUIA_ContextMenu being looked at only when the mouse *enter*
+          within the object bounds. MUIV_NList_ContextMenu_TopOnly stuff
+          will be nicer when that MUI problem is fixed...
+
+        Of course if you want NList to do what has to be done when a menu item
+        has been selected, your MUIM_ContextMenuChoice should call the supermethod.
+
+    INPUTS (for MUIM_NList_ContextMenuBuild)
+
+        mx      current mouse x.
+        my      current mouse y.
+        pos     entry number returned by NList_TestPos.
+        column  column returned by NList_TestPos.
+        flags   flags returned by NList_TestPos.
+        ontop   TRUE if mouse is on title/top of the list.
+
+    RESULT
+        NULL, -1 or a menustrip object.
+
+    EXEMPLES
+        To make a ContextMenu but have the NList one appear when the
+        mouse in on title/top, just set MUIA_ContextMenu,MUIV_NList_ContextMenu_Always
+        and make MUIM_NList_ContextMenuBuild return NULL when ontop in TRUE (else
+        return your menustrip object). Call MUIM_ContextMenuChoice supermethod too.
+
+        To make your own context menu which have the same menuitems as ones
+        in NList context menu, set MUIA_ContextMenu,MUIV_NList_ContextMenu_Always
+        and make MUIM_NList_ContextMenuBuild return always your menustrip object.
+        Make 4 menuitems in your menustrip object which will be like these :
+        { NM_ITEM ,  "Default Width: this" , 0 ,0 ,0 ,(APTR) MUIV_NList_Menu_DefWidth_This },
+        { NM_ITEM ,  "Default Width: all"  , 0 ,0 ,0 ,(APTR) MUIV_NList_Menu_DefWidth_All },
+        { NM_ITEM ,  "Default Order: this" , 0 ,0 ,0 ,(APTR) MUIV_NList_Menu_DefOrder_This },
+        { NM_ITEM ,  "Default Order: all"  , 0 ,0 ,0 ,(APTR) MUIV_NList_Menu_DefOrder_All },
+        They will be automatically enabled/disabled as needed by NList  :)
+        Call MUIM_ContextMenuChoice supermethod too.
+NList.mcc/MUIM_NList_CopyTo
+
+    NAME
+        MUIM_NList_CopyTo --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_CopyTo, LONG pos, char *filename,
+                                        APTR *result, APTR *entries);
+
+    FUNCTION
+        Do a copy to clipboard from some list entries or strings.
+
+    INPUTS
+        pos      entry number to be copied.
+                 if MUIA_NList_CopyToClipHook is specified, it's what
+                 it will return which will be copied instead of just
+                 using the entry pointer as a string pointer.
+
+                 special values :
+
+            MUIV_NList_CopyTo_Active    copy list active entry
+            MUIV_NList_CopyTo_Selected  copy list selected entries
+            MUIV_NList_CopyTo_All       copy all list entries
+            MUIV_NList_CopyTo_Entries   copy specified entries
+            MUIV_NList_CopyTo_Entry     copy specified entry
+
+            a "\n" will be insert after each entry contents.
+
+        filename name of the file to copy to. If NULL then the copy will be
+                 done to a string (strptr).
+        result   LONG pointer which fill be filled with MUIV_NLCT_Success if
+                 no error occured while opening and writing in the file, else
+                 it will be filled with MUIV_NLCT_OpenErr, MUIV_NLCT_WriteErr
+                 or MUIV_NLCT_Failed (failed somewhere when making copy data).
+
+                 if filename is NULL, result will be filled with a string pointer
+                 to a string allocated by AllocVec(). Datas will have been copied
+                 in that string. YOU'LL HAVE TO FREE TAHT string pointer YOURSELF,
+                 with a FreeVec(). If the returned string pointer is NULL then
+                 the copy failed.
+        entries  pointer to some entry, string, entries array or string array.
+                 Its use depend on the pos value :
+                 if MUIV_NList_CopyTo_Entry   then it's an entry pointer.
+                 if MUIV_NList_CopyTo_Entries then it's an entry pointer
+                                              array NULL terminated.
+                 else :  not used, set to NULL.
+
+    EXEMPLES
+        LONG result = 0;
+        DoMethod(obj,MUIM_NList_CopyTo, 5, "RAM:test.txt", &result, NULL, NULL);
+
+          will copy the 5th entry to file RAM:test.txt, using
+          MUIA_NList_CopyToClipHook if set.
+
+
+        LONG result = 0;
+        DoMethod(obj,MUIM_NList_CopyTo, MUIV_NList_CopyToClip_Selected,
+                                            "PRT:", &result, NULL, NULL);
+          will copy all selected entries to printer, using
+          MUIA_NList_CopyToClipHook for each if set.
+
+
+        char *strptr = NULL;
+        DoMethod(obj,MUIM_NList_CopyTo, MUIV_NList_CopyTo_All,
+                                            NULL, &strptr, NULL, NULL);
+          will copy all list entries to the string returned in strptr.
+          you must make a FreeVec(strptr) by yourself after.
+
+    SEE ALSO
+        MUIM_NList_CopyToClip, MUIA_NList_CopyToClipHook
+NList.mcc/MUIM_NList_CopyToClip
+
+    NAME
+        MUIM_NList_CopyToClip --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_CopyToClip, LONG pos, ULONG clipnum,
+                                            APTR *entries, struct Hook *hook);
+
+    FUNCTION
+        Do a copy to clipboard from some list entries or strings.
+
+    INPUTS
+        pos      entry number to be copied.
+                 if MUIA_NList_CopyToClipHook is specified, it's what
+                 it will return which will be copied instead of just
+                 using the entry pointer as a string pointer.
+
+                 special values :
+
+            MUIV_NList_CopyToClip_Active    copy list active entry
+            MUIV_NList_CopyToClip_Selected  copy list selected entries
+            MUIV_NList_CopyToClip_All       copy all list entries
+            MUIV_NList_CopyToClip_Entries   copy specified entries
+            MUIV_NList_CopyToClip_Entry     copy specified entry
+            MUIV_NList_CopyToClip_Strings   copy specified strings using hook
+            MUIV_NList_CopyToClip_String    copy specified string using hook
+
+            a "\n" will be insert after each entry contents, for all but
+            MUIV_NList_CopyToClip_Strings and MUIV_NList_CopyToClip_String.
+
+        clipnum  clipboard number to copy to.
+        entries  pointer to some entry, string, entries array or string array.
+                 Its use depend on the pos value :
+                 if MUIV_NList_CopyToClip_Entry   then it's an entry pointer.
+                 if MUIV_NList_CopyToClip_Entries then it's an entry pointer
+                                                  array NULL terminated.
+                 if MUIV_NList_CopyToClip_String  then it's a string pointer.
+                 if MUIV_NList_CopyToClip_Strings then it's an string pointer
+                                                  array NULL terminated.
+                 else :  not used, set to NULL.
+        hook     hook function which will be used (if not NULL) for
+                 MUIV_NList_CopyToClip_Strings and
+                 MUIV_NList_CopyToClip_String
+                 instead of MUIA_NList_CopyToClipHook
+                 Should be NULL most of time.
+
+    EXEMPLES
+        DoMethod(obj,MUIM_NList_CopyToClip, 5, 0, NULL, NULL);
+          will copy the 5th entry to clipboard 0, using
+          MUIA_NList_CopyToClipHook if set.
+
+        DoMethod(obj,MUIM_NList_CopyToClip, MUIV_NList_CopyToClip_Selected,
+                                            0, NULL, NULL);
+          will copy all selected entries to clipboard 0, using
+          MUIA_NList_CopyToClipHook for each if set.
+
+        DoMethod(obj,MUIM_NList_CopyToClip, MUIV_NList_CopyToClip_String,
+                                            0, "my string", NULL);
+          will copy "my string" to clipboard 0.
+
+    NOTE
+        MUIV_NList_CopyToClip_Strings and MUIV_NList_CopyToClip_String
+        are here to permit simple text copy to clipboard for non nlist
+        object related stuff (anyway a NList object must be here to use
+        them...). They can use their own hook instead of nlist one if
+        non NULL, anyway look at MUIA_NList_CopyToClipHook to see how
+        this hook will be used.
+
+    SEE ALSO
+        MUIA_NList_CopyToClipHook, MUIA_NList_CopyToClip_Key, MUIM_NList_CopyTo
+NList.mcc/MUIM_NList_CreateImage
+
+    NAME
+        MUIM_NList_CreateImage --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_CreateImage,Object *imgobj, ULONG flags);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_CreateImage.
+
+        Any transparent color in the source Bitmap/Bodychunk
+        object will work (except if flags is ~0L).
+
+        You must use MUIM_NList_CreateImage in Setup() or after
+        and MUIM_NList_DeleteImage in Cleanup() or before,
+        because the mri of the NList object must be valid.
+        Setup() and Cleanup() are the best because MUI_ObtainPen()
+        and MUI_ReleasePen() are used, and then pens will be
+        released while iconification and will be re-obtained
+        if the screen change.
+
+        Take a look at MUIM_NList_UseImage which is far easier to
+        use.
+
+        Standard flags value is 0.
+
+        If flags is ~0L then FillArea will not be set to FALSE on the object
+        (for any other value, FillArea is set to FALSE)
+
+        If flags is ~0L for a Bitmap/Bodychunk then it will be really the
+        given object which will be drawn, as for non Bitmap/Bodychunk objects.
+
+
+        The imgobj can (nearly) be any object, but take care of that :
+
+        - the object should not test and use user inputs, the object
+          should just be able to draw itself within the _left(obj),
+          _top(obj), _width(obj) and height(obj) it will have when its
+          Draw method is called.
+        - the object class MUST NOT be Group or subclass of it.
+        - the given imgobj must not be attached to any group object
+          anywhere else, because a ADDMEMBER will be done with it.
+        - Each imgobj can be used with one and only one NList object.
+        - you can use the return pointer with ESC O[<ptr>] and ESC o[<num>].
+        - the object will receive two tags just before its Draw method will
+          be called : set(imgobj,MUIA_NLIMG_EntryCurrent,current_entry_number) and
+          set(imgobj,MUIA_NLIMG_EntryHeight,height_of_each_entry_of_the_list)
+          which are usefull in some case to draw things (see demo example).
+        - a new stuff is to use it with ESC O[<ptr>;<tag>;<value>], in that case
+          a set(imgobj,tag,value) will be done just before drawing it, so
+          you can make an object which will draw different things when that tag
+          value is changed. Setting this tag MUST NOT make the object being
+          redrawn !!!
+          <tag> and <value> must both be in hexadecimal (%lx).
+        - if you use ;<tag>;<value> in one ESC sequence for an imgobj, you should
+          use it everywhere you use that imgobj because there is no default for it.
+        - The imgobj height will always be set to the entries height.
+        - The mindefheight of imgobj will become the min height for entries.
+        - Think it's still a new testing stuff...
+
+        Note:
+          Previously the object was disposed by NList at its end, actually a call
+          to MUIM_NList_DeleteImage will REMMEMBER it, and so you have to dispose
+          it yourself after !
+
+        Look the demo program to see a way to use it...
+
+
+    RESULT
+        The result you get is a struct BitMapImage pointer which
+        will exist between the MUIM_NList_CreateImage and
+        MUIM_NList_DeleteImage, with a valid bitmap, width and
+        height for the current screen.
+
+        If you use it for a non Bitmap/Bodychunk object (or with flags
+        set to ~0L) then the mask and imgbmp fields of the returned
+        struct BitMapImage are not valid, and obtainpens is a pointer to
+        the object.
+
+        The only thing you should do with it is to include it in
+        \33O[%08lx]. The result may be NULL in which case NList
+        was unable to create the image, but the \33O[] combination
+        simply draws nothing when receiving a NULL.
+
+        ATTENTION:
+        The returned pointer doesn't give the same structure than
+        MUIM_List_CreateImage (in standard List class) would do :
+        both are not compatible at all !
+
+    SEE ALSO
+        MUIM_NList_DeleteImage, MUIM_NList_UseImage
+NList.mcc/MUIM_NList_DeleteImage
+
+    NAME
+        MUIM_NList_DeleteImage --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_DeleteImage,APTR listimg);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_DeleteImage.
+
+        Delete the image pointer returned from MUIM_NList_CreateImage.
+        Read explains in MUIM_NList_CreateImage.
+
+    SEE ALSO
+        MUIM_NList_CreateImage, MUIM_NList_UseImage
+NList.mcc/MUIM_NList_Destruct
+
+	NAME
+		MUIM_NList_Destruct --
+
+	SYNOPSIS
+		DoMethod(obj,MUIM_NList_Destruct,APTR entry,APTR pool);
+
+    FUNCTION
+        This method is called  ONLY  by  NList.mcc  when  application  is
+        deleting  entry f.e. when MUIM_NList_Remove or MUIM_NList_Replace
+        are called. So, this  method  is  only  useful  within  NList.mcc
+        subclass,    function    method    should   looks   like   normal
+        MUIA_NList_DestructHook    or    MUIA_NList_DestructHook2    hook
+        function.   If  your  subclass  will  not  override  this  method
+        NList.mcc  implementation  will   be   used,   and   it'll   call
+        MUIA_NList_DestructHook  or MUIA_NList_DestructHook2 hook in that
+        case.
+
+        When  you  are  overriding  this   method   you   must   override
+        MUIM_NList_Construct    and   probably   MUIM_NList_Compare   and
+        MUIM_NList_Display method as well.
+
+    INPUTS
+		entry - entry pointer returned by MUIM_NList_Construct method.
+
+		pool  - pool header pointer.
+
+    RESULT
+        Currently undefined. If you are overriding it completely,  please
+        return 0, if not use the value returned by super class!
+
+	NOTE
+        Do not even think about calling it by yourself! Method parameters
+        structure might grow in the future! Be warned.
+
+        Internal implementation of this method can use internal or passed
+        arguments,  so  please  do  not  cheating  and  if  you  are  not
+		overriding it, pass the original arguments to super class.
+
+	SEE ALSO
+		MUIA_NList_ConstructHook, MUIA_NList_ConstructHook2,
+		MUIM_NList_Insert, MUIM_NList_InsertSingle, MUIM_NList_Replace,
+		MUIM_NList_Destruct, MUIM_NList_Compare, MUIM_NList_Display
+
+NList.mcc/MUIM_NList_Display
+
+	NAME
+		MUIM_NList_Display --
+
+	SYNOPSIS
+		DoMethod(obj,MUIM_NList_Display,APTR entry,ULONG entry_pos,
+		    STRPTR *strings,STRPTR *preparses);
+
+    FUNCTION
+        This method is called  ONLY  by  NList.mcc  when  application  is
+        displaying  entry  f.e.  when  MUI_Redraw(), MUIM_NList_Redraw or
+        MUIM_NList_RedrawEntry are called. So, this method is only useful
+        within  NList.mcc  subclass,  function  method  should looks like
+        normal  MUIA_NList_DisplayHook  or  MUIA_NList_DisplayHook2  hook
+        function.   If  your  subclass  will  not  override  this  method
+        NList.mcc  implementation  will   be   used,   and   it'll   call
+        MUIA_NList_DisplayHook  or  MUIA_NList_DisplayHook2  hook in that
+        case.
+
+    INPUTS
+		entry - Entry  pointer  returned  by  f.e.  MUIM_NList_Construct,
+				MUIA_NList_ConstructHook or MUIA_NList_ConstructHook2
+				hooks.
+
+		entry_pos - Entry position.
+
+		strings   - Pointer to strings table.
+
+		preparses - Pointer to preparse strings table.
+
+    RESULT
+        Currently undefined. If you are overriding it completely,  please
+        return 0, if not use the value returned by super class!
+
+	NOTE
+        Do not even think about calling it by yourself! Method parameters
+        structure might grow in the future! Be warned.
+
+        Internal implementation of this method can use internal or passed
+        arguments,  so  please  do  not  cheating  and  if  you  are  not
+		overriding it, pass the original arguments to super class.
+
+	SEE ALSO
+		MUIA_NList_ConstructHook, MUIA_NList_ConstructHook2,
+		MUIA_NList_DisplayHook, MUIA_NList_DisplayHook2,
+		MUIM_NList_Insert, MUIM_NList_InsertSingle, MUIM_NList_Replace,
+		MUIM_NList_Construct, MUIM_NList_Destruct, MUIM_NList_Compare
+
+NList.mcc/MUIM_NList_DoMethod
+
+    NAME
+        MUIM_NList_DoMethod --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_DoMethod,LONG pos,
+                      APTR DestObj,ULONG FollowParams,ULONG method,...);
+
+    FUNCTION
+        The given method will be executed for each selected entry, the
+        active entry, all entries, or one specified entry of the NList
+        object.
+
+        Each DoMethod() can be done on the NList object, its _app object,
+        a specified object, or the entry pointer if (and only if) it's
+        an object.
+
+        Following arguments can be automatically adjusted for each call
+        using special values, like in the MUIM_Notify method (you must
+        specified the numer of following argument too, as there will be
+        copied in a temporary buffer - alloced in the stack).
+
+    INPUTS
+        pos -           the entry number for which you want to do the method.
+
+          special values :
+          MUIV_NList_DoMethod_Active    do it for the active entry.
+          MUIV_NList_DoMethod_Selected  do it for all selected entries.
+          MUIV_NList_DoMethod_All       do it
+
+        DestObj -       the object on which the method will be done.
+
+          special values :
+          MUIV_NList_DoMethod_Entry     use entry pointer as target object for method.
+          MUIV_NList_DoMethod_Self      use the NList object as target for method.
+          MUIV_NList_DoMethod_App       use the _app(NList object) as target for method.
+
+        FollowParams -  the number of following parameters (including "method").
+                        (maximum 40 to prevent errors and stack overflow)
+
+        method -        the method which will be done.
+
+        ... -           the method parameters.
+
+          special values :
+          MUIV_NList_EntryValue         replaced by the "current" entry pointer.
+          MUIV_NList_EntryPosValue      replaced by the "current" entry number.
+          MUIV_NList_SelfValue          replaced by the NList object.
+          MUIV_NList_AppValue           replaced by _app(NList object)
+
+    NOTES
+        Don't use this to do things on the NList object when a specific way
+        to do it exists (don't use it to remove entries in the nlist object
+        itself for example).
+
+        When using it in a notification, MUIV_TriggerValue and MUIV_TriggerValue
+        special values will be replaced by the notify superclass as usual.
+
+    EXAMPLES
+        Insert all entries from nlist L1 to nlist L2 :
+
+        DoMethod(L1, MUIM_NList_DoMethod, MUIV_NList_DoMethod_All,
+          L2, 3,
+          MUIM_NList_InsertSingle, MUIV_NList_EntryValue, MUIV_NList_Insert_Bottom);
+
+        (it would be better to make set(L2,MUIA_NList_Quiet,TRUE) before and
+         set(L2,MUIA_NList_Quiet,FALSE) after when there are many entries...)
+
+
+        If the entries of nlist L1 are objects (and only in that case), you can do
+        that to call a method (MUIM_Foo,x) for each selected of them :
+
+        DoMethod(L1, MUIM_NList_DoMethod, MUIV_NList_DoMethod_Selected,
+          MUIV_NList_DoMethod_Entry, 2,
+          MUIM_Foo,x);
+NList.mcc/MUIM_NList_DropDraw
+
+    NAME
+        MUIM_NList_DropDraw --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_DropDraw, LONG pos, LONG type,
+                                          LONG minx,LONG maxx,LONG miny,LONG maxy);
+
+    FUNCTION
+        This method MUST NOT be called directly !
+
+        It will be called by NList, and will draw the drop mark previously fixed
+        (pos and type) by MUIM_NList_DropType within the minx, maxx, miny, maxy
+        in the _rp(obj) rasport. You must not draw outside of the given box,
+        because only the corresponding NList entry will be refreshed to erase what
+        is drawn in that method.
+
+        Calling the supermethod (so the builtin MUIM_NList_DropDraw method) will draw
+        the standard dropmark specified by (type & MUIV_NList_DropType_Mask), so
+        MUIV_NList_DropType_None,MUIV_NList_DropType_Above,MUIV_NList_DropType_Below
+        or MUIV_NList_DropType_Onto.
+
+        You can draw directly in the rastport (or a clone of it) in that method,
+        because it will be called from the Draw method within the DragReport in
+        Refresh mode.
+
+    SEE ALSO
+        MUIM_NList_DropType, MUIA_NList_DropType, MUIA_NList_DropMark,
+        MUIM_NList_DropEntryDrawErase
+NList.mcc/MUIM_NList_DropEntryDrawErase
+
+    NAME
+        MUIM_NList_DropEntryDrawErase --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_DropEntryDrawErase,LONG type,LONG drawpos,LONG erasepos);
+
+    FUNCTION
+        This method MUST NOT be called directly !
+
+        It will be called by NList while the DragReport just before the redraw
+        which will draw a new mark or erase the old one.
+
+        This method can be used to change something so your displayhook will return
+        something different for the marked entry, like changing its color or making
+        it bold or italic.
+
+        Don't call the superclass unless you know that the superclass use it.
+
+        You should return 0.
+
+    INPUTS
+        type has the same meaning as *type in MUIM_NList_DropType, it will be useless
+        in most cases (and has no meanning at all for erasepos).
+
+        drawpos is the entry number which will be draw with a dropmark, -1 mean none.
+
+        erasepos is the entry number which is not any more the dropmark one, -1 mean none.
+
+    SEE ALSO
+        MUIM_NList_DropDraw, MUIA_NList_DropType, MUIA_NList_DropMark
+NList.mcc/MUIM_NList_DropType
+
+    NAME
+        MUIM_NList_DropType --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_DropType, LONG *pos,LONG *type,
+                                          LONG minx,LONG maxx,LONG miny,LONG maxy,
+                                          LONG mousex,LONG mousey);
+
+    FUNCTION
+        This method MUST NOT be called directly !
+
+        It will be called by NList while the DragReport, with default *pos and *type
+        values depending on the drag pointer position that you can modify as you want.
+
+        Default *type can be MUIV_NList_DropType_Above or MUIV_NList_DropType_Below.
+        You can change it to any of MUIV_NList_DropType_None,MUIV_NList_DropType_Above,
+        MUIV_NList_DropType_Below and MUIV_NList_DropType_Onto if you want, using
+        the mouse position and the entry box.
+
+        You can make you own *type value as soon as you don't set it in
+        MUIV_NList_DropType_Mask, and so draw what you want depending on that value
+        in the MUIM_NList_DropDraw method.
+
+        Note that any MUIV_NList_DropType_Below *type will be changed to
+        MUIV_NList_DropType_Above with a *pos incremented by 1 just after the
+        return of that method.
+
+        If you change the *pos, the list will be scrolled to see it (if the value is
+        correct).
+
+        getting MUIA_NList_DropType or MUIA_NList_DropMark will return the same values
+        as *pos and *type.
+
+        If your subclass is a direct NList subclass, then there is no need to call
+        the supermethod which done nothing at all !
+
+    SEE ALSO
+        MUIM_NList_DropDraw, MUIA_NList_DropType, MUIA_NList_DropMark,
+        MUIM_NList_DropEntryDrawErase
+NList.mcc/MUIM_NList_Exchange
+
+    NAME
+        MUIM_NList_Exchange --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_Exchange,LONG pos1, LONG pos2);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_Exchange.
+
+        Exchange two entries in a NList object.
+
+    INPUTS
+        pos1 - number of the first entry.
+        pos2 - number of the second entry.
+
+        MUIV_NList_Exchange_Top
+        MUIV_NList_Exchange_Active
+        MUIV_NList_Exchange_Bottom
+        MUIV_NList_Exchange_Next      only valid for second parameter
+        MUIV_NList_Exchange_Previous  only valid for second parameter
+
+    SEE ALSO
+        MUIM_NList_Insert, MUIM_NList_Remove, MUIM_NList_Move
+NList.mcc/MUIM_NList_GetEntry
+
+    NAME
+        MUIM_NList_GetEntry --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_GetEntry,LONG pos, APTR *entry);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_GetEntry.
+
+    SPECIAL INPUTS
+        MUIV_NList_GetEntry_Active    give active entry (or NULL if none)
+
+    SEE ALSO
+        MUIM_NList_Insert, MUIM_NList_Remove, MUIM_NList_GetEntryInfo
+NList.mcc/MUIM_NList_GetEntryInfo
+
+    NAME
+        MUIM_NList_GetEntryInfo --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_GetEntryInfo,struct MUI_NList_GetEntryInfo *res);
+
+    FUNCTION
+        You get usefull informations about some entry from its number,
+        or from the real line number which can be different when there
+        is word wrap in the list.
+
+    INPUTS
+        res - pointer to a MUI_NList_GetEntryInfo struct :
+              LONG pos;       number of entry you want info about */
+              LONG line;      real line number */
+              LONG entry_pos; entry number of returned entry ptr */
+              APTR entry;     entry pointer */
+              LONG wrapcol;   NOWRAP, WRAPCOLx, or WRAPPED|WRAPCOLx */
+              LONG charpos;   start char number in string (unused if NOWRAP) */
+              LONG charlen;   string lenght (unused if NOWRAP) */
+
+              if pos is MUIV_NList_GetEntryInfo_Line then the method will
+              use the line number to search infos, else line will be set
+              to its correct number for the value of pos.
+              entry is the entry ptr, think that if it's a word wrapped
+              entry then it come from the returned entry_pos entry.
+              Think too that if wrapcol tell you that it's a WRAPPED entry,
+              only the WRAPCOLx col is drawn, from the charpos position
+              in the string returned by DisplayHook for the column and for
+              entry_pos/entry.
+
+    SEE ALSO
+        MUIM_NList_GetEntry
+NList.mcc/MUIM_NList_GetPos
+
+    NAME
+        MUIM_NList_GetPos --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_GetPos,APTR entry,LONG *pos);
+
+    FUNCTION
+        Give the (next) entry number which have the given entry number.
+        It's the entry ptr which is stored in the list, ie the one returned
+        by the ConstructHook if any.
+
+    INPUTS
+        entry - Entry ptr of the entry you want to get the pos.
+
+        pos - a pointer to longword that will hold the next entry number
+              of the given entry ptr. Must be set to MUIV_NList_GetPos_Start
+              if you want to search from the beginning of the list.
+              Is set to MUIV_NList_GetPos_End no more is found.
+
+
+NList.mcc/MUIM_NList_GetSelectInfo
+
+    NAME
+        MUIM_NList_GetSelectInfo --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_GetSelectInfo,struct MUI_NList_GetSelectInfo *res);
+
+    FUNCTION
+        You get usefull informations about selected entries state.
+
+    INPUTS
+        res - pointer to a MUI_NList_GetSelectInfo struct :
+            LONG start        num of first selected *REAL* entry/line (first of wrapped from which start is issued)
+            LONG end          num of last selected *REAL* entry/line (first of wrapped from which start is issued)
+            LONG num          not used
+            LONG start_column column of start of selection in 'start' entry
+            LONG end_column   column of end of selection in 'end' entry
+            LONG start_pos    char pos of start of selection in 'start_column' entry
+            LONG end_pos      char pos of end of selection in 'end_column' entry
+            LONG vstart       num of first visually selected entry (ie can be the 2nd or 3rd line of a word wrap entry)
+            LONG vend         num of last visually selected entry (ie can be the 2nd or 3rd line of a word wrap entry)
+            LONG vnum         number of visually selected entries
+
+    NOTE
+        If no entry is selected, then start, end, vstart, vend are -1, vnum is 0.
+
+        When start_column, end_column, start_pos, end_pos are -1 then the whole line/entry/column
+        is selected.
+
+        start_column, end_columb, start_pos and end_pos have the same meaning than
+        parameters passed to the MUIA_NList_CopyEntryToClipHook.
+
+        remember than in case of automatically added word wrapped entries, only
+        the concerned column have any contents. You get that case for 'vstart'
+        when 'start' is different, and for 'end' when 'vend' is different.
+NList.mcc/MUIM_NList_Insert
+
+    NAME
+        MUIM_NList_Insert --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_Insert,APTR *entries, LONG count, LONG pos, LONG flags);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_Insert.
+
+        Entry (display) contents will be display until \0 , \n or \r.
+
+        You can insert a multiline string with count==-2.
+
+    INPUTS
+        entries - pointer to an array of pointers to be inserted.
+                  Warning: This is a pointer to a pointer.
+
+                  It's a pointer to string if count==-2.
+
+        count   - Number of elements to be inserted. If count==-1,
+                  entries will be inserted until NULL pointer in
+                  the entries array is found.
+
+                  If count==-2 then entries must be a string pointer
+                  which can be multiline with \n , \r or \r\n separators.
+                  You'll get as many entries inserted as lines in the string.
+                  The end char is \0.
+
+        pos     - New entries will be added in front of this entry.
+                MUIV_NList_Insert_Top     insert as first entry.
+                MUIV_NList_Insert_Active  insert in front of the active entry.
+                MUIV_NList_Insert_Sorted  insert sorted (all entries will be
+                                          sorted if necessary).
+                MUIV_NList_Insert_Bottom  insert as last entry.
+
+        flags   - Special flags for the insert operation or 0.
+                MUIV_NList_Insert_Flag_Raw insert the entries without the automatic
+                                           reordering of the columns. This could
+                                           speed up the insert of entries very
+                                           significant but will not automatically
+                                           change the width of a column.
+
+    SEE ALSO
+        MUIM_NList_Remove, MUIA_NList_ConstructHook, MUIM_NList_InsertSingle
+        MUIM_NList_InsertSingleWrap, MUIM_NList_InsertWrap
+NList.mcc/MUIM_NList_InsertSingle
+
+    NAME
+        MUIM_NList_InsertSingle --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_InsertSingle,APTR entry, LONG pos);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_InsertSingle.
+
+    INPUTS
+        entry   - item to insert.
+
+        pos     - New entry will be added in front of this entry.
+                MUIV_NList_Insert_Top     insert as first entry.
+                MUIV_NList_Insert_Active  insert in front of the active entry.
+                MUIV_NList_Insert_Sorted  insert sorted (all entries will be
+                                          sorted if necessary).
+                MUIV_NList_Insert_Bottom  insert as last entry.
+
+    SEE ALSO
+        MUIM_NList_Remove, MUIA_NList_ConstructHook, MUIM_NList_Insert,
+        MUIM_NList_InsertSingleWrap, MUIM_NList_InsertWrap
+NList.mcc/MUIM_NList_InsertSingleWrap
+
+    NAME
+        MUIM_NList_InsertSingleWrap --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_InsertSingleWrap,
+                      APTR entry, LONG pos, LONG wrapcol, LONG align);
+
+    FUNCTION
+        Same function as MUIM_NList_InsertSingle but permit word wrap
+        and alignement for the entry.
+
+    INPUTS
+        entry   - item to insert.
+
+        pos     - New entry will be added in front of this entry.
+                MUIV_NList_Insert_Top     insert as first entry.
+                MUIV_NList_Insert_Active  insert in front of the active entry.
+                MUIV_NList_Insert_Sorted  insert sorted (all entries will be
+                                          sorted if necessary).
+                MUIV_NList_Insert_Bottom  insert as last entry.
+
+        wrapcol - WRAPCOL0 to WRAPCOL6. You can't ask word wrap for an
+                other col. NOWRAP if you don't want word wrap.
+                So only one of (display hook) col 0 to 6 can be wrapped.
+
+        align   - ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT or ALIGN_JUSTIFY.
+                be aware that align will be used if there is no escape
+                align sequence in the preparses or column entry string.
+
+    SEE ALSO
+        MUIM_NList_Remove, MUIA_NList_ConstructHook, MUIM_NList_Insert,
+        MUIM_NList_InsertSingle, MUIM_NList_InsertWrap
+NList.mcc/MUIM_NList_InsertWrap
+
+    NAME
+        MUIM_NList_InsertWrap --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_InsertWrap, APTR *entries,
+                      LONG count, LONG pos, LONG wrapcol, LONG align);
+
+    FUNCTION
+        Same function as MUIM_NList_Insert but permit word wrap and
+        alignement for the entry.
+
+    INPUTS
+        entries - pointer to an array of pointers to be inserted.
+                  Warning: This is a pointer to a pointer.
+
+                  It's a pointer to string if count==-2.
+
+        count   - Number of elements to be inserted. If count==-1,
+                  entries will be inserted until NULL pointer in
+                  the entries array is found.
+
+                  If count==-2 then entries must be a string pointer
+                  which can be multiline with \n , \r or \r\n separators.
+                  You'll get as many entries inserted as lines in the string.
+                  The end char is \0.
+
+        pos     - New entry will be added in front of this entry.
+                MUIV_NList_Insert_Top     insert as first entry.
+                MUIV_NList_Insert_Active  insert in front of the active entry.
+                MUIV_NList_Insert_Sorted  insert sorted (all entries will be
+                                          sorted if necessary).
+                MUIV_NList_Insert_Bottom  insert as last entry.
+
+        wrapcol - WRAPCOL0 to WRAPCOL6. You can't ask word wrap for an
+                other col. NOWRAP if you don't want word wrap.
+                So only one of (display hook) col 0 to 6 can be wrapped.
+
+        align   - ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT or ALIGN_JUSTIFY.
+                be aware that align will be used if there is no escape
+                align sequence in the preparses or column entry string.
+
+    SEE ALSO
+        MUIM_NList_Remove, MUIA_NList_ConstructHook, MUIM_NList_Insert,
+        MUIM_NList_InsertSingle, MUIM_NList_InsertSingleWrap
+NList.mcc/MUIM_NList_Jump
+
+    NAME
+        MUIM_NList_Jump --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_Jump,LONG pos);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_Jump.
+
+    INPUTS
+        pos - Number of the entry that should be made visible.
+              Use MUIV_NList_Jump_Active to jump to the active
+              entry. And use MUIV_NList_Jump_Active_Center to
+              make the active entry visible centered in the
+              listview.
+
+    SEE ALSO
+        MUIA_NList_Active, MUIA_NList_First
+NList.mcc/MUIM_NList_Move
+
+    NAME
+        MUIM_NList_Move --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_Move,LONG from, LONG to);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_Move.
+
+    INPUTS
+        pos1 - number of the first entry.
+        pos2 - number of the second entry.
+
+        Possible special values :
+
+        MUIV_NList_Move_Top
+        MUIV_NList_Move_Active
+        MUIV_NList_Move_Bottom
+        MUIV_NList_Move_Next        only valid for second parameter
+                                    if first one is not Move_Selected
+        MUIV_NList_Move_Previous    only valid for second parameter
+                                    if first one is not Move_Selected
+        MUIV_NList_Move_Selected    only valid for first parameter
+
+    SEE ALSO
+        MUIM_NList_Insert, MUIM_NList_Remove, MUIM_NList_Exchange
+NList.mcc/MUIM_NList_NextSelected
+
+    NAME
+        MUIM_NList_NextSelected --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_NextSelected,LONG *pos);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_NextSelected.
+
+        In TypeSelect_Char mode you'll get all entries of the selected
+        area, even the first and last which can be very partially selected.
+
+    INPUTS
+        pos - a pointer to longword that will hold the number
+              of the returned entry. Must be set to
+              MUIV_NList_NextSelected_Start at start of iteration.
+              Is set to MUIV_NList_NextSelected_End when iteration
+              is finished.
+
+    SEE ALSO
+        MUIM_NList_Select, MUIM_NList_PrevSelected
+NList.mcc/MUIM_NList_PrevSelected
+
+    NAME
+        MUIM_NList_PrevSelected --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_PrevSelected,LONG *pos);
+
+    FUNCTION
+        Work like MUIM_NList_NextSelected but give previous selected entry.
+
+        In TypeSelect_Char mode you'll get all entries of the selected
+        area, even the first and last which can be very partially selected.
+
+    INPUTS
+        pos - a pointer to longword that will hold the number
+              of the returned entry. Must be set to
+              MUIV_NList_PrevSelected_Start at start of iteration.
+              Is set to MUIV_NList_PrevSelected_End when iteration
+              is finished.
+
+    SEE ALSO
+        MUIM_NList_Select, MUIM_NList_NextSelected
+NList.mcc/MUIM_NList_Redraw
+
+    NAME
+        MUIM_NList_Redraw --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_Redraw,LONG pos);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_Redraw.
+        Redraw some entry or all.
+
+    INPUTS
+        pos - Number of the line to redraw. When the line is not
+              currently visible, nothing will happen. Specials:
+              MUIV_NList_Redraw_Active   redraw the active line (if any),
+              MUIV_NList_Redraw_All      redraw all lines.
+              MUIV_NList_Redraw_Title    redraw the title.
+
+    SEE ALSO
+        MUIM_NList_RedrawEntry
+NList.mcc/MUIM_NList_RedrawEntry
+
+    NAME
+        MUIM_NList_RedrawEntry --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_RedrawEntry,APTR entry);
+
+    FUNCTION
+        Redraw some entry, like MUIM_NList_Redraw, but using the entry
+        pointer instead of the entry number.
+
+    INPUTS
+        entry - Entry ptr of the entry (entries) you want to be redraw.
+
+    SEE ALSO
+        MUIM_NList_Redraw
+NList.mcc/MUIM_NList_Remove
+
+    NAME
+        MUIM_NList_Remove --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_Remove,LONG pos);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_Remove.
+
+    INPUTS
+        pos - number of the entry to be removed or one of
+              MUIV_NList_Remove_First
+              MUIV_NList_Remove_Active
+              MUIV_NList_Remove_Selected
+              MUIV_NList_Remove_Last
+              When the active or a selected entry is removed,
+              the following entry will become active.
+              When the active is the removed and is the last,
+              the new last become active.
+
+    SEE ALSO
+        MUIM_NList_Insert, MUIA_NList_DestructHook
+NList.mcc/MUIM_NList_ReplaceSingle
+
+    NAME
+        MUIM_NList_ReplaceSingle --
+
+    FUNCTION
+        DoMethod(obj,MUIM_NList_ReplaceSingle,
+                      APTR entry, LONG pos, LONG wrapcol, LONG align);
+
+    FUNCTION
+        Same function as MUIM_NList_InsertSingleWrap but replace an existing
+        entry rather than inserting.
+        It's better to do a direct replace than remove then insert it !
+
+    INPUTS
+        entry   - item to insert.
+
+        pos     - position of the entry to be replaced
+                MUIV_NList_Insert_Top     replace the first entry.
+                MUIV_NList_Insert_Active  replace the active entry.
+                MUIV_NList_Insert_Bottom  replace the last entry.
+                Invalid positions will cause the replacement to fail!
+
+        wrapcol - WRAPCOL0 to WRAPCOL6. You can't ask word wrap for an
+                other col. NOWRAP if you don't want word wrap.
+                So only one of (display hook) col 0 to 6 can be wrapped.
+
+        align   - ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT or ALIGN_JUSTIFY.
+                be aware that align will be used if there is no escape
+                align sequence in the preparses or column entry string.
+
+    SEE ALSO
+        MUIM_NList_Remove, MUIM_NList_InsertSingleWrap
+NList.mcc/MUIM_NList_Select
+
+    NAME
+        MUIM_NList_Select --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_Select,LONG pos, LONG seltype, LONG *state);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_Select when in TypeSelect_Line mode.
+
+        In TypeSelect_Char mode, MUIV_NList_Select_Off will clear the selected
+        area (don't look what is pos). MUIV_NList_Select_On will select the
+        pos entry only (can be MUIV_NList_Select_Active or MUIV_NList_Select_All).
+        MUIV_NList_Select_Ask will give the number off entry in the selected area.
+
+    INPUTS
+
+        pos     - Number of the entry or
+                  MUIV_NList_Select_Active  for the active entry.
+                  MUIV_NList_Select_All     for all entries.
+
+        seltype - MUIV_NList_Select_Off     unselect entry.
+                  MUIV_NList_Select_On      select entry.
+                  MUIV_NList_Select_Toggle  toggle entry.
+                  MUIV_NList_Select_Ask     just ask about the state.
+
+        state   - Pointer to a longword. If not NULL, this will
+                  be filled with the current selection state.
+
+    SEE ALSO
+        MUIA_NList_TypeSelect, MUIA_NList_MultiTestHook
+NList.mcc/MUIM_NList_SelectChange
+
+    NAME
+        MUIM_NList_SelectChange -- Called on every selection change (V19.98)
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_SelectChange,LONG pos, LONG state, ULONG flags);
+
+    FUNCTION
+        This method cannot/should not be called. It's purpose is only to indicate
+        selection state changes of entries in a more powerfull form than
+        MUIA_NList_SelectChange does.
+        It is only called when you are in line mode ie. MUIA_NList_TypeSelect is
+        set to MUIV_NList_TypeSelect_Line, which is the default.
+
+        pos     - The position of the (un)selected entry. Can be
+                  MUIV_NList_Active_Off or something.
+        state   - The resulting state of the entry which can be MUIV_NList_Select_On,
+                  MUIV_NList_Select_Off or MUIV_NList_Select_Active.
+        flags   - Can be MUIV_NList_SelectChange_Flag_Multi for now which means
+                  that the entry was selected while holding down the mouse button.
+
+    INPUTS
+
+    SEE ALSO
+        MUIA_NList_SelectChange, MUIA_NList_TypeSelect, MUIM_NList_Select
+NList.mcc/MUIM_NList_SetActive
+
+    NAME
+        MUIM_NList_SetActive -- make a specific entry the active one (v20.125)
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_NList_SetActive, LONG pos, ULONG flags);
+
+    FUNCTION
+        This method is a replacement function for the old-style way of making an
+        entry active via a simple set(obj, MUIA_NList_Active, pos) call. While the
+        old method still works, this new function has the advantage that it allows
+        to set an entry active together with making it immediately visible in the
+        listview.
+        Previously, a developer had to do a combination of a set() call to set
+        MUIA_NList_Active and then immediately perform a MUIM_NList_Jump function
+        call so that the entry becomes visible at the specific position. With this
+        new function both operations are combined, potentially allowing future
+        enhancements to be added via the additional 'flags' variable.
+
+    INPUTS
+        The parameter description is as followed:
+
+        pos     - The position (int) of the entry which should be made the new
+                  active entry. This can also be MUIV_NList_Active_XXXX values as
+                  explained in the MUIA_NList_Active documentation. Furthermore,
+                  pos might also be perfectly a pointer to the entry directly in
+                  case you have specified the correct flag.
+
+        flags   - Can be a combination of the following flags:
+
+                  MUIV_NList_SetActive_Entry:
+
+                    the parameter 'pos' will be a pointer to the entry rather
+                    than the position (int) of the entry to be made active. If
+                    this flag is set NList will perform an internal GetPos()
+                    operation to first obtain the position and then set
+                    this entry active.
+
+                  MUIV_NList_SetActive_Jump_Center:
+
+                    Together with making the specified entry the new active one
+                    the listview will also be scrolled so that the new entry
+                    will be shown centered instead of having it simply visible.
+
+    SEE ALSO
+        MUIA_NList_Active, MUIM_NList_Jump
+NList.mcc/MUIM_NList_SetColumnCol
+
+    NAME
+        MUIM_NList_SetColumnCol --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_SetColumnCol,LONG column,LONG col);
+
+    FUNCTION
+        set which displayhook col is at the visible column.
+
+    INPUTS
+        column  number of the column (visible).
+                if MUIV_NList_SetColumnCol_Default then the given (diplayhook) col
+                will come back to its default/original (from List_Format) position.
+
+        col     col number (displayhook one).
+                if MUIV_NList_SetColumnCol_Default then the given visible column
+                will come back to its default/original (from List_Format) position.
+
+
+                both set to MUIV_NList_SetColumnCol_Default make all columns
+                come back to their default/original (from List_Format) position.
+
+    RESULT
+        None.
+
+    NOTE
+        MUIM_NList_SetColumnCol always exchange the moved column with the column
+        which was were it move.
+
+    SEE ALSO
+        MUIM_NList_ColToColumn, MUIM_NList_ColumnToCol, MUIA_NList_Columns
+NList.mcc/MUIM_NList_Sort
+
+    NAME
+        MUIM_NList_Sort --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_Sort);
+
+    FUNCTION
+        Same function as List.mui/MUIM_List_Sort.
+
+    SEE ALSO
+        MUIA_NList_CompareHook, MUIA_NList_CompareHook2, MUIM_NList_Sort, MUIM_NList_Sort3,
+        MUIA_NList_SortType, MUIA_NList_SortType2
+NList.mcc/MUIM_NList_Sort2
+
+    NAME
+        MUIM_NList_Sort2 --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_Sort2,LONG sort_type, LONG sort_type_add);
+
+    FUNCTION
+        Same function as MUIM_NList_Sort but will set MUIA_NList_SortType
+        before starting the sort.
+
+        It is really usefull only if you use MUIA_NList_CompareHook2 instead
+        of classic MUIA_NList_CompareHook so your hook will be able to do
+        different type of sort when NList_SortType change.
+
+    INPUTS
+        sort_type     - The new MUIA_NList_SortType value (see below).
+
+        sort_type_add - If 0 then sort_type will be the new MUIA_NList_SortType,
+                        else if current MUIA_NList_SortType & MUIV_NList_SortTypeValue_Mask
+                        is same as sort_type then sort_type_add will be added to the
+                        MUIA_NList_SortType value,
+                        else sort_type will be the new MUIA_NList_SortType.
+
+                        See examples for special values.
+
+    EXAMPLES
+        Many times this method will be used to sort multicolumn list in different
+        ways when the user click on title buttons :
+
+        DoMethod(list,MUIM_Notify,MUIA_NList_TitleClick, MUIV_EveryTime,
+          list, 3, MUIM_NList_Sort2, MUIV_TriggerValue, MUIV_NList_SortTypeAdd_xxx);
+
+        if MUIV_NList_SortTypeAdd_None    then the hook sort_type value will be the column
+                                          number.
+        if MUIV_NList_SortTypeAdd_2Values then the hook sort_type value will be a cycle of
+                                          values which change on each click :
+                                          o Column number  (first time)
+                                          o Column number + MUIV_NList_SortTypeAdd_2Values
+                                          o back to column number ...
+
+        if MUIV_NList_SortTypeAdd_4Values then the hook sort_type value will be a cycle of
+                                          values which change on each click :
+                                          o Column number  (first time)
+                                          o Column number + MUIV_NList_SortTypeAdd_4Values
+                                          o Column number + MUIV_NList_SortTypeAdd_4Values*2
+                                          o Column number + MUIV_NList_SortTypeAdd_4Values*3
+                                          o back to column number ...
+        See NList-Demo program.
+
+    SEE ALSO
+        MUIA_NList_CompareHook2, MUIM_NList_Sort, MUIM_NList_Sort3, MUIA_NList_SortType,
+        MUIA_NList_SortType2
+NList.mcc/MUIM_NList_Sort3
+
+    NAME
+        MUIM_NList_Sort3 --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_Sort3,LONG sort_type, LONG sort_type_add, LONG which);
+
+    FUNCTION
+        Same function as MUIM_NList_Sort2 but will set MUIA_NList_SortType,
+        MUIA_NList_SortType2 or both before starting the sort.
+
+        When using MUIV_NList_Sort3_SortType_Both the method will change
+        MUIA_NList_SortType exactly the same way as MUIM_NList_Sort2 would do
+        it, then copy that value to MUIA_NList_SortType2.
+
+        It is really usefull only if you use MUIA_NList_CompareHook2 instead
+        of classic MUIA_NList_CompareHook so your hook will be able to do
+        different type of sort when NList_SortType change.
+
+    INPUTS
+        sort_type     - The new MUIA_NList_SortType/2 value.
+
+        sort_type_add - If 0 then sort_type will be the new MUIA_NList_SortType/2,
+                        else if current MUIA_NList_SortType/2 & MUIV_NList_SortTypeValue_Mask
+                        is same as sort_type then sort_type_add will be added to the
+                        MUIA_NList_SortType/2 value,
+                        else sort_type will be the new MUIA_NList_SortType/2.
+
+        which         - MUIV_NList_Sort3_SortType_1      set MUIA_NList_SortType value.
+                        MUIV_NList_Sort3_SortType_2      set MUIA_NList_SortType2 value.
+                        MUIV_NList_Sort3_SortType_Both   set MUIA_NList_SortType value
+                                                         then copy it to MUIA_NList_SortType2.
+
+    EXAMPLES
+        See NList-Demo program.
+
+    SEE ALSO
+        MUIA_NList_CompareHook2, MUIM_NList_Sort, MUIM_NList_Sort2, MUIA_NList_SortType,
+        MUIA_NList_SortType2
+NList.mcc/MUIM_NList_TestPos
+
+    NAME
+        MUIM_NList_TestPos --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_TestPos,LONG x, LONG y, struct MUI_NList_TestPos_Result *res);
+
+    FUNCTION
+        Find out which informations of a list which is currently
+        displayed at a certain position.
+
+        You must give a pointer to a valid MUI_NList_TestPos_Result struct.
+
+        Set x AND y to MUI_MAXMAX to get infos about the last click position !
+
+        See NList_mcc.h to know what values will be set in the struct.
+
+        Preset char_number to -2 in the struct to not get char_number and char_xoffset
+        informations. It's usefull if you don't need them because it will be
+        faster for the method without finding them. the -2 value will stay valid
+        for next call.
+
+        You'll get char number from what you return from the DisplayHook if there is
+        one, else from the beginning of the string/entry ptr.
+
+        Be aware: if you use MUIM_List_TestPos you have to give a pointer to a
+        struct MUI_List_TestPos_Result, and you'll get same infos as using a List object.
+        It wasn't done as is before, makeing enforcer hits when trying to use NList
+        or NFloattext with a Listview instead of a NListview (avoid it please, it's not
+        done for it as Listview try to make many things itself, with possible conficts),
+        because struct MUI_NList_TestPos_Result is bigger !!!
+
+    NOTE
+        column in the struct MUI_NList_TestPos_Result is the visible column number !
+NList.mcc/MUIM_NList_UseImage
+
+    NAME
+        MUIM_NList_UseImage --
+
+    SYNOPSIS
+        DoMethod(obj,MUIM_NList_UseImage,Object *obj, ULONG imgnum, ULONG flags);
+
+    FUNCTION
+        If you want to use MUIM_NList_CreateImage/MUIM_NList_DeleteImage
+        as you should, you must make a NList subclass which call them
+        from Setup() and Cleanup(), and it's sometime complicated.
+
+        To avoid that, you can use MUIM_NList_UseImage. NList will
+        store the Bitmap/Bodychunk object you give and will make
+        CreateImage and DeleteImage itself !
+
+        MUIM_NList_UseImage can use same object as MUIM_NList_CreateImage !
+
+        NULL is a valid obj. It will erase any previously UseImage
+        with the same imgnum.
+
+        The imgnum you give is the number that you will use in
+        \33o[<n>] sequence as the <n> number.
+        MUIM_NList_UseImage will accept 0 <= imgnum < 8192, anyway
+        use small value if you can because an array will be allocated
+        with the biggest imgnum value as size to store the
+        Bitmap/Bodychunk objects.
+
+        DoMethod(obj,MUIM_NList_UseImage, NULL, MUIV_NList_UseImage_All, 0)
+        will set NULL to all stored objects, so you'll be able to dispose your
+        Bitmap/Bodychunk objects if you want, without waiting the NList
+        objet dispose.
+
+        flags is the same than for MUIM_NList_CreateImage (0 unless special case).
+
+    RESULT
+        TRUE if succeeded to store the obj (and allocate the array
+        if needed), else FALSE.
+
+        There is no way to know if the MUIM_NList_CreateImage
+        needed to draw will succeed/has succeeded.
+
+        ATTENTION:
+        The given Bitmap/Bodychunk object MUST be valid until the
+        NList object is disposed or you set another object (or NULL)
+        at the same imgnum !
+        The Bitmap/Bodychunk object can be shared with other NList
+        object because NList just use it to get informations, anyway
+        you mustn't change informations of that object. If you to do
+        so, do a UseImage,NULL,x , change it then do UseImage,imgobj,x
+        again.
+
+    SEE ALSO
+        MUIM_NList_CreateImage, MUIM_NList_DeleteImage
+

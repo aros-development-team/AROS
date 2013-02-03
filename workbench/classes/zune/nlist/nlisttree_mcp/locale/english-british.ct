@@ -1,0 +1,51 @@
+## chunk AUTH Thore Böckelmann, Jens Langner
+## version $VER: NListtree_mcp.catalog 2.2 (11.7.2011)
+## language english-british
+## codeset 4
+;
+MSG_GROUP_IMAGES_COLORS
+Images/Colours
+; Images/Colors
+;
+MSG_HELP_LINES_COLOR
+Colour to use for lines.
+; Color to use for lines.
+;
+MSG_WIN_TITLE_LINES_COLOR
+Adjust lines colour
+; Adjust lines color
+;
+MSG_HELP_SHADOW_COLOR
+Colour to use to cast\n\
+shadows after lines.
+; Color to use to cast\n\
+; shadows after lines.
+;
+MSG_WIN_TITLE_SHADOW_COLOR
+Adjust shadow colour
+; Adjust shadow color
+;
+MSG_HELP_DRAW_COLOR
+A draw colour to be combined\n\
+with the lines colour.
+; A draw color to be combined\n\
+; with the lines color.
+;
+MSG_WIN_TITLE_DRAW_COLOR
+Adjust draw colour
+; Adjust draw color
+;
+MSG_BUTTON_LABEL_GLOW
+Glow colour
+; Glow color
+;
+MSG_WIN_TITLE_GLOW_COLOR
+Set glow line colour
+; Set glow line color
+;
+MSG_HELP_GLOW_COLOR
+Allows to set the colour for the glow\n\
+line type
+; Allows to set the color for the glow\n\
+; line type
+;
