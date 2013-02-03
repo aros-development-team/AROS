@@ -19,6 +19,7 @@ struct kbd_staticdata
 
     struct MinList      callbacks;
 
+    BPTR                cs_SegList;
     struct Library     *cs_OOPBase;
     struct Library     *cs_UtilityBase;
 };
