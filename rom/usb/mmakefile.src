@@ -12,6 +12,13 @@ include $(TOP)/config/make.cfg
 #MM      kernel-usb-trident \
 #MM      kernel-usb-pciusb
 
+#MM- kernel-usb-nopci : \
+#MM      kernel-usb-poseidon \
+#MM      kernel-usb-shelltools \
+#MM      kernel-usb-classes \
+#MM      kernel-usb-shellapps \
+#MM      kernel-usb-trident
+
 # Clean up
 #MM- kernel-usb-clean : \
 #MM      kernel-usb-poseidon-clean \
@@ -22,6 +29,13 @@ include $(TOP)/config/make.cfg
 #MM      kernel-usb-pciusb-clean \
 #MM      kernel-usb-usbclass-clean \
 #MM      kernel-usb-usbromstartup-clean 
+
+#MM- kernel-usb-nopci-clean : \
+#MM      kernel-usb-poseidon-clean \
+#MM      kernel-usb-shelltools-clean \
+#MM      kernel-usb-classes-clean \
+#MM      kernel-usb-shellapps-clean \
+#MM      kernel-usb-trident-clean
 
 # Build SDK
 #MM- kernel-usb-includes : \
