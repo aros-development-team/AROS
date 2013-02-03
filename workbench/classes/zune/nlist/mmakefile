@@ -1,0 +1,20 @@
+#   $Id$
+
+#MM- workbench-classes-zune : classes-zune-nlist
+
+#MM- workbench-demos-zune :              	\
+#MM	classes-zune-nlist-demo 	\
+#MM	classes-zune-nlisttree-demo     \
+#MM	classes-zune-nbitmap-demo
+
+#MM- classes-zune-nlist : 		\
+#MM	classes-zune-nlist-class  	\
+#MM	classes-zune-nlistview-class 	\
+#MM	classes-zune-nfloattext-class 	\
+#MM	classes-zune-nlisttree-class 	\
+#MM	classes-zune-nbitmap-class 	\
+#MM	classes-zune-nbalance-class 	\
+#MM	classes-zune-nlistviews-mcp 	\
+#MM	classes-zune-nlisttree-mcp 	\
+#MM	classes-zune-nlist-demos
+

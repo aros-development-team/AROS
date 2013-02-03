@@ -1,8 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM contrib-zune-classes-nbalance-class : includes linklibs
-#MM contrib-zune-classes-nbalance-test : includes linklibs
+#MM classes-zune-nbalance-class : includes linklibs
+#MM classes-zune-nbalance-test : includes linklibs
 
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include
 USER_CFLAGS := -DNO_INLINE_STDARG
@@ -14,12 +14,12 @@ FILES := Dispatcher \
          Debug
 
 
-%build_module_simple mmake=contrib-zune-classes-nbalance-class \
-  modname=NBalance modtype=mcc moduledir=$(CONTRIBDIR)/Zune/MCC_NList/Classes/Zune \
+%build_module_simple mmake=classes-zune-nbalance-class \
+  modname=NBalance modtype=mcc \
   files="library $(FILES)" uselibs="mui"
 
 
-%build_prog mmake=contrib-zune-classes-nbalance-test progname=NBalance-Test \
+%build_prog mmake=classes-zune-nbalance-test progname=NBalance-Test \
     files="NBalance-Test $(FILES)" targetdir=$(AROS_TESTS)/NList \
     uselibs="mui"
 
