@@ -33,7 +33,7 @@ _AHIsub_SetVol( UWORD                   channel,
 		ULONG                   flags,
 		struct DriverBase*      AHIsubBase )
 {
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
   return AHIS_UNKNOWN;
 }
@@ -50,7 +50,7 @@ _AHIsub_SetFreq( UWORD                   channel,
 		 ULONG                   flags,
 		 struct DriverBase*      AHIsubBase )
 {
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
   return AHIS_UNKNOWN;
 }
@@ -69,7 +69,7 @@ _AHIsub_SetSound( UWORD                   channel,
 		  ULONG                   flags,
 		  struct DriverBase*      AHIsubBase )
 {
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
   return AHIS_UNKNOWN;
 }
@@ -84,7 +84,7 @@ _AHIsub_SetEffect( APTR                    effect,
 		   struct AHIAudioCtrlDrv* AudioCtrl,
 		   struct DriverBase*      AHIsubBase )
 {
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
   return AHIS_UNKNOWN;
 }
@@ -101,7 +101,7 @@ _AHIsub_LoadSound( UWORD                   sound,
 		   struct AHIAudioCtrlDrv* AudioCtrl,
 		   struct DriverBase*      AHIsubBase )
 { 
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
   return AHIS_UNKNOWN;
 }
@@ -116,7 +116,7 @@ _AHIsub_UnloadSound( UWORD                   sound,
 		     struct AHIAudioCtrlDrv* AudioCtrl,
 		     struct DriverBase*      AHIsubBase )
 {
-    bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__);
+    D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
   return AHIS_UNKNOWN;
 }
