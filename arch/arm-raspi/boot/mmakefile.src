@@ -50,13 +50,14 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
 #MM     kernel-usb \
+#MM     kernel-usb-usb2otg \
 #MM     kernel-usb-romstrap-raspi \
 #MM     kernel-shell \
 #MM     kernel-shellcommands
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap dos debug poseidon
 PKG_RSRC     :=  misc dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox
-PKG_DEVS     :=  input gameport keyboard console timer
+PKG_DEVS     :=  input gameport keyboard console timer USBHardware/usb2otg
 PKG_HANDLERS := con amberram cdrom sfs fat afs
 PKG_HIDDS    := graphics mouse keyboard hiddclass i2c i2c-bcm2835 videocoregfx
 PKG_USB      := hid hub bootmouse bootkeyboard massstorage
