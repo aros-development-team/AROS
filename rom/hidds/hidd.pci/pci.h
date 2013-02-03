@@ -114,6 +114,7 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #undef HiddPCIDeviceAttrBase
 #undef HiddPCIDriverAttrBase
 #undef HiddPCIDriverBase
+#undef HiddAttrBase
 
 #define HiddPCIAttrBase       (PSD(cl)->hiddPCIAB)
 #define HiddPCIDeviceAttrBase (PSD(cl)->hiddPCIDeviceAB)

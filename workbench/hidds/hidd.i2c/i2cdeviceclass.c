@@ -23,6 +23,7 @@
 
 #undef HiddI2CAttrBase
 #undef HiddI2CDeviceAttrBase
+#undef HiddAttrBase
 
 #define HiddI2CAttrBase         (SD(cl)->hiddI2CAB)
 #define HiddI2CDeviceAttrBase   (SD(cl)->hiddI2CDeviceAB)
