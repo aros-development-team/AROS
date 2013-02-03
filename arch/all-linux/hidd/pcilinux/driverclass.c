@@ -30,6 +30,7 @@
 #ifdef HiddPCIDriverAttrBase
 #undef HiddPCIDriverAttrBase
 #endif // HiddPCIDriverAttrBase
+#undef  HiddAttrBase
 
 #define HiddPCIDriverAttrBase   (PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase            (PSD(cl)->hiddAB)
