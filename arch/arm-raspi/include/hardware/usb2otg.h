@@ -6,7 +6,7 @@
 #ifndef USB2OTG_H
 #define USB2OTG_H
 
-#define USB2OTG_BASE                                    0 // ahem..
+#define USB2OTG_BASE                                    (BCM_PHYSBASE + 0x980000)
 
 #define USB2OTG_OTGCTRL                                 (USB2OTG_BASE + 0x000)
 #define USB2OTG_OTGINTR                                 (USB2OTG_BASE + 0x004)
