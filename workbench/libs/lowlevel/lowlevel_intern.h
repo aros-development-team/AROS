@@ -30,6 +30,7 @@ struct LowLevelBase
 
     struct SignalSemaphore ll_Lock;
     struct Interrupt       ll_VBlank;
+    BPTR                   ll_SegList;
 };
 
 /*
