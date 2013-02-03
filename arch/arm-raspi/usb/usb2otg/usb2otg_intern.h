@@ -1,5 +1,5 @@
-#ifndef USB2OTGDEVICE_H
-#define USB2OTGDEVICE_H
+#ifndef USB2OTG_INTERN_H
+#define USB2OTG_INTERN_H
 /*
     Copyright © 2013, The AROS Development Team. All rights reserved.
     $Id$
@@ -63,4 +63,4 @@ struct USB2OTGDevice
     struct List	        hd_Units;	        /* List of units */
 };
 
-#endif /* USB2OTGDEVICE_H */
+#endif /* USB2OTG_INTERN_H */
