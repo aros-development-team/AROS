@@ -18,6 +18,6 @@ FUNCS := deletenv \
 
 %build_module mmake=workbench-libs-nonvolatile \
     modname=nonvolatile modtype=library \
-    files="$(FUNCS)" \
+    files="nonvolatile_init $(FUNCS)" \
     uselibs="nvdisk"
 
