@@ -3,22 +3,24 @@
     $Id$
 */
 
-/*****************************************************************************
-
-    NAME */
-
 #ifndef  DEBUG
 #define  DEBUG  1
 #endif
 
 #include <aros/debug.h>
 
-#include <libraries/nonvolatile.h>
 #include <dos/dosextens.h>
 #include <proto/nvdisk.h>
 
 #include <string.h>
 
+#include LC_LIBDEFS_FILE
+
+/*****************************************************************************
+
+    NAME */
+
+#include <libraries/nonvolatile.h>
 
 AROS_LH3(BOOL, DeleteNV,
 

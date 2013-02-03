@@ -2,19 +2,21 @@
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
-#include <string.h>
+
+#include <aros/debug.h>
 #include <dos/dosextens.h>
+#include <proto/exec.h>
+#include <proto/nvdisk.h>
+
+#include <string.h>
+
+#include LC_LIBDEFS_FILE
 
 /*****************************************************************************
 
     NAME */
 
-// #  define  DEBUG  1
-// #include <aros/debug.h>
-
 #include <libraries/nonvolatile.h>
-#include <proto/exec.h>
-#include <proto/nvdisk.h>
 
 AROS_LH5(LONG, StoreNV,
 

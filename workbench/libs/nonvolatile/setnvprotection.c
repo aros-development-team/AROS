@@ -7,16 +7,18 @@
 */
 
 #include <dos/dosextens.h>
+#include <proto/exec.h>
+#include <proto/nvdisk.h>
+
+#include <string.h>
+
+#include LC_LIBDEFS_FILE
 
 /*****************************************************************************
 
     NAME */
 
 #include <libraries/nonvolatile.h>
-#include <proto/exec.h>
-#include <proto/nvdisk.h>
-
-#include <string.h>
 
 AROS_LH4(BOOL, SetNVProtection,
 

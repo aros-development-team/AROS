@@ -3,16 +3,17 @@
     $Id$
 */
 #include <dos/dosextens.h>
+#include <exec/memory.h>
+#include <proto/exec.h>
+#include <proto/nvdisk.h>
+
+#include LC_LIBDEFS_FILE
 
 /*****************************************************************************
 
     NAME */
 
 #include <libraries/nonvolatile.h>
-#include <exec/memory.h>
-#include <proto/exec.h>
-#include <proto/nvdisk.h>
-
 
 AROS_LH1(struct NVInfo *, GetNVInfo,
 
@@ -57,13 +58,14 @@ AROS_LH1(struct NVInfo *, GetNVInfo,
 
     struct Process *me = (struct Process *)FindTask(NULL);
     APTR oldReq = me->pr_WindowPtr;
-    struct NVInfo *info = AllocVec(sizeof(struct NVInfo), MEMF_ANY);
-
+    struct NVInfo *info;
+   
+    info = AllocVec(sizeof(struct NVInfo), MEMF_ANY);
     if(info == NULL)
-	return NULL;
+        return NULL;
 
     if(killRequesters)
-	me->pr_WindowPtr = (APTR)-1;
+        me->pr_WindowPtr = (APTR)-1;
 
     /* Try to get the information from the HIDD */
     if(MemInfoNVD(info))

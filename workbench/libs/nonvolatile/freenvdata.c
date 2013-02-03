@@ -3,12 +3,15 @@
     $Id$
 */
 
+#include <proto/exec.h>
+
+#include LC_LIBDEFS_FILE
+
 /*****************************************************************************
 
     NAME */
 
 #include <libraries/nonvolatile.h>
-#include <proto/exec.h>
 
 AROS_LH1(VOID, FreeNVData,
 
