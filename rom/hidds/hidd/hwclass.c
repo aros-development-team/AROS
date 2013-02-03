@@ -165,14 +165,21 @@ OOP_Object *HW__HW__AddDriver(OOP_Class *cl, OOP_Object *o,
                 return NULL;
             }
 
-            /* Add the driver to the end of drivers list */
-            dn->driverObject = drv;
-            ObtainSemaphore(&data->driver_lock);
-            ADDTAIL(&data->drivers, dn);
-            ReleaseSemaphore(&data->driver_lock);
+            if (HW_SetupDriver(o, drv))
+            {
+                /* Add the driver to the end of drivers list */
+                dn->driverObject = drv;
+                ObtainSemaphore(&data->driver_lock);
+                ADDTAIL(&data->drivers, dn);
+                ReleaseSemaphore(&data->driver_lock);
+                
+                return drv;
+            }
+
+            OOP_DisposeObject(drv);
         }
     }
-    return drv;
+    return NULL;
 }
 
 /*****************************************************************************************
@@ -238,7 +245,9 @@ BOOL HW__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o,
 
     /* If driver removed, rem contains pointer to removed DriverNode */
     if (rem)
-    {            
+    {
+        HW_CleanupDriver(o, rem->driverObject);
+
         /* Dispose driver */
         OOP_DisposeObject(rem->driverObject);
         /* And free memory for DriverNode */
@@ -309,4 +318,93 @@ void HW__HW__EnumDrivers(OOP_Class *cl, OOP_Object *o, struct pHW_EnumDrivers *m
     }
 
     ReleaseSemaphore(&data->driver_lock);
+}
+
+/*****************************************************************************************
+
+    NAME
+	moHW_SetupDriver
+
+    SYNOPSIS
+	void OOP_DoMethod(OOP_Object *obj, struct pHW_SetupDriver *Msg);
+
+	void HW_SetupDriver(OOP_Object *obj, OOP_Object *driverObject);
+
+    LOCATION
+	CLID_HW
+
+    FUNCTION
+	Performs subsystem-specific setup after driver object creation.
+        This method is intended to be used only by subclasses of CLID_HW.
+
+    INPUTS
+	obj          - A subsystem object.
+        driverObject - Device driver object.
+
+    RESULT
+	TRUE if setup completed succesfully and FALSE in case of error.
+        If this method returns error, the driver object will be disposed
+        and moHW_AddDriver method will fail.
+
+    NOTES
+        In base class this method does nothing and always returns TRUE.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHW_CleanupDriver
+
+    INTERNALS
+
+*****************************************************************************************/
+
+BOOL HW__HW__SetupDriver(OOP_Class *cl, OOP_Object *o, struct pHW_SetupDriver *msg)
+{
+    /* By default we have nothing to do here */
+    return TRUE;
+}
+
+/*****************************************************************************************
+
+    NAME
+	moHW_CleanupDriver
+
+    SYNOPSIS
+	void OOP_DoMethod(OOP_Object *obj, struct pHW_CleanupDriver *Msg);
+
+	void HW_CleanupDriver(OOP_Object *obj, OOP_Object *driverObject);
+
+    LOCATION
+	CLID_HW
+
+    FUNCTION
+	Performs subsystem-specific cleanup before driver object disposal.
+        This method is intended to be used only by subclasses of CLID_HW.
+
+    INPUTS
+	obj          - A subsystem object.
+        driverObject - Device driver object.
+
+    RESULT
+	None.
+
+    NOTES
+        In base class this method does nothing.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHW_SetupDriver
+
+    INTERNALS
+
+*****************************************************************************************/
+
+void HW__HW__CleanupDriver(OOP_Class *cl, OOP_Object *o, struct pHW_CleanupDriver *msg)
+{
+    /* By default we have nothing to do here */
 }

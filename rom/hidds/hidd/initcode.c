@@ -30,6 +30,8 @@ static int init_hiddclass(LIBBASETYPEPTR lh)
     if (!csd->hwAttrBase)
         return FALSE;
 
+    csd->hwMethodBase = OOP_GetMethodID(IID_HW, 0);
+
     if (!OOP_NewObject(csd->rootclass, NULL, NULL))
         return FALSE;
 
