@@ -130,13 +130,13 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     struct pRoot_New            gfxmsg_New;
 
     struct TagItem              pftags_24bpp[] = {
-        { aHidd_PixFmt_RedShift,      8  },
+        { aHidd_PixFmt_RedShift,      24  },
         { aHidd_PixFmt_GreenShift,    16  },
-        { aHidd_PixFmt_BlueShift,     24   },
+        { aHidd_PixFmt_BlueShift,     8   },
         { aHidd_PixFmt_AlphaShift,    0   },
-        { aHidd_PixFmt_RedMask,       0x00FF0000 },
+        { aHidd_PixFmt_RedMask,       0x000000FF },
         { aHidd_PixFmt_GreenMask,     0x0000FF00 },
-        { aHidd_PixFmt_BlueMask,      0x000000FF },
+        { aHidd_PixFmt_BlueMask,      0x00FF0000 },
         { aHidd_PixFmt_AlphaMask,     0x00000000 },
         { aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor },
         { aHidd_PixFmt_Depth,         24  },
@@ -152,15 +152,15 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         { aHidd_PixFmt_GreenShift,    21  },
         { aHidd_PixFmt_BlueShift,     27  },
         { aHidd_PixFmt_AlphaShift,    0   },
-        { aHidd_PixFmt_RedMask,       0x0000f800 },
-        { aHidd_PixFmt_GreenMask,     0x000007e0 },
-        { aHidd_PixFmt_BlueMask,      0x0000001f },
+        { aHidd_PixFmt_RedMask,       0x0000F800 },
+        { aHidd_PixFmt_GreenMask,     0x000007E0 },
+        { aHidd_PixFmt_BlueMask,      0x0000001F },
         { aHidd_PixFmt_AlphaMask,     0x00000000 },
         { aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor },
         { aHidd_PixFmt_Depth,         16  },
         { aHidd_PixFmt_BytesPerPixel, 2   },
         { aHidd_PixFmt_BitsPerPixel,  16  },
-        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_RGB16_LE },
+        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_RGB16 },
         { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
         { TAG_DONE, 0UL }
     };
@@ -170,15 +170,15 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         { aHidd_PixFmt_GreenShift,    22  },
         { aHidd_PixFmt_BlueShift,     27  },
         { aHidd_PixFmt_AlphaShift,    0   },
-        { aHidd_PixFmt_RedMask,       0x00007c00 },
-        { aHidd_PixFmt_GreenMask,     0x000003e0 },
-        { aHidd_PixFmt_BlueMask,      0x0000001f },
+        { aHidd_PixFmt_RedMask,       0x00007C00 },
+        { aHidd_PixFmt_GreenMask,     0x000003E0 },
+        { aHidd_PixFmt_BlueMask,      0x0000001F },
         { aHidd_PixFmt_AlphaMask,     0x00000000 },
         { aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor },
         { aHidd_PixFmt_Depth,         15  },
         { aHidd_PixFmt_BytesPerPixel, 2   },
         { aHidd_PixFmt_BitsPerPixel,  15  },
-        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_RGB15_LE },
+        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_RGB15 },
         { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
         { TAG_DONE, 0UL }
     };
@@ -299,7 +299,7 @@ OOP_Object *MNAME_GFX(NewBitMap)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 
     	if (displayable || (friend && (OOP_OCLASS(friend) == XSD(cl)->vcsd_VideoCoreGfxOnBMClass)))
     	{
-            D(bug("[VideoCoreGfx] VideoCoreGfx::NewBitMap: Using OffScteenBM (ChunkyBM)\n"));
+            D(bug("[VideoCoreGfx] VideoCoreGfx::NewBitMap: Using OffScreenBM (ChunkyBM)\n"));
     	    newbm_tags[0].ti_Tag  = aHidd_BitMap_ClassID;
     	    newbm_tags[0].ti_Data = (IPTR)CLID_Hidd_ChunkyBM;
     	}
