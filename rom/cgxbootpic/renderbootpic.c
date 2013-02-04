@@ -9,8 +9,9 @@
 #include <proto/utility.h>
 
 #include "cgxbootpic_intern.h"
+#include <bootpic_image.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #undef kprintf
 
@@ -57,6 +58,8 @@
 
     D(bug("[CgxBootPic] %s()\n", __PRETTY_FUNCTION__));
 
+    D(bug("[CgxBootPic] %s: BootPic Info: %dx%dx%d\n", __PRETTY_FUNCTION__, BOOTPIC_WIDTH, BOOTPIC_HEIGHT, BOOTPIC_COLORS));
+    D(bug("[CgxBootPic] %s: Rendering to %dx%dx%d framebuffer @ 0x%p\n", __PRETTY_FUNCTION__, width, height, depth, framebuffer));
     return;
 
     AROS_LIBFUNC_EXIT
