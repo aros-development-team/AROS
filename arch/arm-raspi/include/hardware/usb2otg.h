@@ -6,6 +6,12 @@
 #ifndef USB2OTG_H
 #define USB2OTG_H
 
+/** Maximum number of Periodic FIFOs */ 
+
+#define PERIFIFO_MAX                                    15                      // Max no. of Periodic FIFO's
+#define TXFIFO_MAX                                      15                      // Max no. of Tx FIFO's
+#define EPSCHANS_MAX                                    16                      // Max no. of Endpoints/Host Chan's
+
 #define USB2OTG_BASE                                    (BCM_PHYSBASE + 0x980000)
 
 #define USB2OTG_OTGCTRL                                 (USB2OTG_BASE + 0x000)
