@@ -1,0 +1,42 @@
+This file contains additional license permissions, as granted
+by individual authors for their AROS changesets.
+
+PLEASE NOTE: These licenses DO NOT REPLACE the license of the
+portions of AROS that they have contributed to. They merely
+allow the use of their changesets in other projects, under the
+specified license(s).
+
+Be aware that this file only covers changesets!
+
+If more that one Author has changes present in a file that
+you plan to use in another project, only the lines that are
+from changesets that are permitted to be relicensed may be
+relicensed for use in another project.
+
+--
+
+If you wish to add yourself to this list, please make sure to
+fill in all of these fields:
+
+Author: Your M. Name
+Email: your@email.address
+SVN: yoursvnname
+Changesets: 'ALL', specific SVN revisions and/or subcomponent paths
+Licenses: Additional licenses, as specified in your Statement
+Statement: I, <your name here>, permit <description of changes> to be used
+           in any other project, under any one of the following licenses:
+           <list of the FULL NAME of the additional licenses>
+
+
+-------- AROS Author Additional License Permissions --------
+
+Author: Jason McMullan
+Email: jason.mcmullan@gmail.com
+SVN: jmcmullan
+Changesets: ALL
+Licenses: LGPLv2 GPLv2 FreeBSD
+Statement: I, Jason S. McMullan, permit all of of my changesets to AROS
+           to be used in any other project, under any one of the following
+           licenses: Lesser GNU Public License v2 (or later), GNU Public
+           License v2 (or later), or the BSD 2 clause (aka FreeBSD) license.
+
