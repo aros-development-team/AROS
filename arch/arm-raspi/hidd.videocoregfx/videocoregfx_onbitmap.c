@@ -92,6 +92,16 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
         RawPutChar(0x03);
 
+        {
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[0] = 6 * 4;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[2] = VCTAG_FBFREE;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[3] = 0;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[4] = 0;
+            (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[5] = 0;          // terminate tags
+            VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, (unsigned int)(&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage);
+            VCMBoxRead(VCMB_BASE, VCMB_FBCHAN);
+        }
         (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[1] = VCTAG_REQ;
 
         (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[2] = VCTAG_SETRES;
