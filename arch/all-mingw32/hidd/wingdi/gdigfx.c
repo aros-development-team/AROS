@@ -66,7 +66,7 @@ static OOP_AttrBase HiddGDIBitMapAB;
 static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
-static OOP_AttrBase HiddAttrBase;
+OOP_AttrBase HiddAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {
@@ -84,7 +84,8 @@ static void GfxIntHandler(struct gdi_staticdata *xsd, void *unused)
     struct gfx_data *active;
 
     /* Process ShowDone IRQ */
-    if (xsd->ctl->ShowDone) {
+    if (xsd->ctl->ShowDone)
+    {
 	xsd->ctl->ShowDone = FALSE;
 	if (xsd->showtask)
 	    Signal(xsd->showtask, SIGF_BLIT);
@@ -92,7 +93,8 @@ static void GfxIntHandler(struct gdi_staticdata *xsd, void *unused)
 
     /* Process display window activation */
     active = xsd->ctl->Active;
-    if (active) {
+    if (active)
+    {
 	xsd->ctl->Active = NULL;
 	D(bug("Activated display data 0x%p\n", active));
 	if (active->cb)

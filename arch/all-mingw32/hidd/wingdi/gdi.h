@@ -116,6 +116,8 @@ struct gdiclbase
 #undef XSD
 #define XSD(cl)         (&((struct gdiclbase *)cl->UserData)->xsd)
 
+extern OOP_AttrBase HiddAttrBase;
+
 #else
 
 #include <windows.h>
