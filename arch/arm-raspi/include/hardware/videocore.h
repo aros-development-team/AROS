@@ -110,5 +110,11 @@
 #define VCMEM_NOINIT            (1 << 5)        // don't initialise (default initialises to all ones)
 #define VCMEM_LAZYLOCK          (1 << 6)        // can be locked for extended periods
 
+#define VCPXFMT_BGR             0x0
+#define VCPXFMT_RGB             0x1
+
+#define VCALPHA_ON              0x0
+#define VCALPHA_REVERSE         0x1
+#define VCALPHA_IGNORE          0x2
 
 #endif	/* VCMBOX_H */
