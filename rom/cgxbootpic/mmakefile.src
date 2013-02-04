@@ -4,10 +4,21 @@
 #
 include $(TOP)/config/make.cfg
 
-#MM- kernel-cgxbootpic : linklibs
+BOOTPIC_IMAGE := bootpic
+
+#MM kernel-cgxbootpic : linklibs
 #MM- kernel-cgxbootpic-kobj : linklibs
+
+USER_INCLUDES := -I$(GENDIR)/$(CURDIR)
+
+kernel-cgxbootpic-includes: $(GENDIR)/$(CURDIR)/bootpic_image.h
 
 %build_module mmake=kernel-cgxbootpic \
   modname=cgxbootpic modtype=library \
   files="cgxbootpic_init renderbootpic"
 
+$(GENDIR)/$(CURDIR)/bootpic_image.h : $(BOOTPIC_IMAGE).ilbm
+	@$(ECHO) Creating bootpic_image.h...
+	@$(ILBMTOC) $< >$@
+
+%common
