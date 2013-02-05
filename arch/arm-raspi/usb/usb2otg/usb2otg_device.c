@@ -71,7 +71,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                             __PRETTY_FUNCTION__, USB2OTGBase->hd_MemPool));
 
                 for (chan = 0; chan < EPSCHANS_MAX; chan++) {
-                    D(bug("[USB2OTG] %s: Host Chan #%d FIFO @ 0x%p, characterisitics: %08x\n",
+                    D(bug("[USB2OTG] %s: Host Chan #%d FIFO @ 0x%p, Characteristics: %08x\n",
                                 __PRETTY_FUNCTION__,
                                 chan, USB2OTG_FIFOBASE + (chan * USB2OTG_FIFOSIZE),
                                 *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE))));
