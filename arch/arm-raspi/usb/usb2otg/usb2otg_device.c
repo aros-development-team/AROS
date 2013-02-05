@@ -139,9 +139,6 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
     D(bug("[USB2OTG] %s: OpenCnt = %ld\n",
                 __PRETTY_FUNCTION__, USB2OTGBase->hd_Library.lib_OpenCnt));
 
-    while (1)
-        asm volatile("mov r0, r0\n");
-
     return USB2OTGBase ? TRUE : FALSE;
 }
 
