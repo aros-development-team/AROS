@@ -78,7 +78,20 @@ struct USB2OTGDevice
 
 #define KernelBase      USB2OTGBase->hd_KernelBase
 
-struct Unit *FNAME_DEV(OpenUnit)(struct IOUsbHWReq *, LONG, struct USB2OTGDevice *);
-void FNAME_DEV(CloseUnit)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+struct Unit             *FNAME_DEV(OpenUnit)(struct IOUsbHWReq *, LONG, struct USB2OTGDevice *);
+void                    FNAME_DEV(CloseUnit)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+
+WORD                    FNAME_DEV(cmdReset)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdFlush)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdQueryDevice)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdUsbReset)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdUsbResume)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdUsbSuspend)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdUsbOper)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdControlXFer)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdBulkXFer)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdIntXFer)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdIsoXFer)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdNSDeviceQuery)(struct IOStdReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 
 #endif /* USB2OTG_INTERN_H */
