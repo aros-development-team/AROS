@@ -167,7 +167,7 @@ LONG main() {
                   if((bitmap=AllocVec(((globals->blocks_total+31)>>5)<<3,MEMF_CLEAR))!=0) {
                     UBYTE *str;
 
-                    bitmap[globals->blocks_total>>5]=0xFFFFFFFF>>(globals->blocks_total & 0x0000001F);
+                    bitmap[globals->blocks_total>>5]=L2BE(0xFFFFFFFF>>(globals->blocks_total & 0x0000001F));
                     if((str=mark(0,blocks_reserved_start))!=0) {
                       printf("Error while marking reserved blocks at start:\n%s",str);
                       freestring(str);
@@ -198,6 +198,7 @@ LONG main() {
               }
             }
             else {
+              errorcode = IoErr();
               PrintFault(errorcode, "error while locking the drive");
             }
           }
