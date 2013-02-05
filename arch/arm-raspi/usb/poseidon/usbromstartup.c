@@ -109,9 +109,9 @@ AROS_UFH3(static IPTR, usbromstartup_init,
         D(bug("[USBROMStartup] cleaning up .. \n"));
         CloseLibrary(ps);
     }
-    return 0;
-
     D(bug("[USBROMStartup] Finished...\n"));
+
+    return 0;
 
     AROS_USERFUNC_EXIT
 }

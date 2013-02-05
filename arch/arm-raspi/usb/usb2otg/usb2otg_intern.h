@@ -34,8 +34,6 @@
 
 #include <oop/oop.h>
 
-#include "usb2otg_debug.h"
-
 /* Reply the iorequest with success */
 #define RC_OK	      0
 
@@ -48,6 +46,7 @@
 struct USB2OTGUnit
 {
     struct Unit         hu_Unit;
+    APTR                hu_GlobalIRQHandle;
 };
 
 /* PRIVATE device node */
@@ -56,11 +55,18 @@ struct USB2OTGDevice
     struct Library	hd_Library;	        /* standard */
     UWORD		hd_Flags;	        /* various flags */
 
+    APTR		hd_KernelBase;		/* kernel.resource base */
     APTR                hd_UtilityBase;	        /* for tags etc */
 
     APTR		hd_MemPool;	        /* Memory Pool */
 
-    struct List	        hd_Units;	        /* List of units */
+    struct USB2OTGUnit  *hd_Unit;	        /* We only have a single unit.. */
 };
+
+#ifdef KernelBase
+#undef KernelBase
+#endif
+
+#define KernelBase      USB2OTGBase->hd_KernelBase
 
 #endif /* USB2OTG_INTERN_H */

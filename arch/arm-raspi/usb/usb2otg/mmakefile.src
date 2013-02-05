@@ -2,8 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FILES := \
-    usb2otg_device \
-    usb2otg_debug
+    usb2otg_device
 
 WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
 
