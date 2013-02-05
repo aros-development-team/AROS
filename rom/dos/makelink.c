@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a hard or soft link.
@@ -19,7 +19,7 @@
 
 /*  SYNOPSIS */
         AROS_LHA(CONST_STRPTR, name, D1),
-        AROS_LHA(APTR,   dest, D2),
+        AROS_LHA(SIPTR,   dest, D2),
         AROS_LHA(LONG  , soft, D3),
 
 /*  LOCATION */
@@ -52,15 +52,11 @@
     EXAMPLE
 
     BUGS
-        Soft links were not working in the ROM filesystem before version
-        37.
 
     SEE ALSO
         ReadLink()
- 
+
     INTERNALS
-        This function calls either FSA_CREATE_HARDLINK or FSA_CREATE_SOFTLINK
-        on the filesystem of `name`.
 
 *****************************************************************************/
 {
@@ -70,11 +66,13 @@
     LONG status;
 
     status = DOSFALSE;
-    if (getpacketinfo(DOSBase, name, &phs)) {
-        status = dopacket4(DOSBase, NULL, phs.port, ACTION_MAKE_LINK, phs.lock, phs.name, (SIPTR)name, (IPTR)soft);
+    if (getpacketinfo(DOSBase, name, &phs))
+    {
+        status = dopacket4(DOSBase, NULL, phs.port, ACTION_MAKE_LINK,
+            phs.lock, phs.name, (SIPTR)dest, soft ? LINK_SOFT: LINK_HARD);
         freepacketinfo(DOSBase, &phs);
     }
-    
+
     return status;
 
     AROS_LIBFUNC_EXIT
