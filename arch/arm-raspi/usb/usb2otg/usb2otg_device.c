@@ -17,11 +17,6 @@
 
 #define DEVNAME         "usb2otg.device"
 
-#define NewList         NEWLIST
-
-#define FNAME_DEV(x)    USB2OTG__Dev__ ## x
-#define	UtilityBase     USB2OTGBase->hd_UtilityBase
-
 const char devname[]    = MOD_NAME_STRING;
 
 static void GlobalIRQHandler(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase)
@@ -46,8 +41,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 
     if ((usbregval & 0xFFFFF000) != 0x4F542000)
     {
-        D(bug("[USB2OTG] %s: No Supported HS OTG USB Core Found\n",
-                __PRETTY_FUNCTION__));
+        bug("[USB2OTG] No Supported HS OTG USB Core Found\n");
 
         USB2OTGBase = NULL;
     }
@@ -57,8 +51,8 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
         D(bug("[USB2OTG] %s: kernel.resource opened @ 0x%p\n",
                 __PRETTY_FUNCTION__, USB2OTGBase->hd_KernelBase));
 
-        D(bug("[USB2OTG] %s: HS OTG Core Release: %x.%x%x%x\n",
-                    __PRETTY_FUNCTION__, ((usbregval >> 12) & 0xF), ((usbregval >> 8) & 0xF), ((usbregval >> 4) & 0xF), (usbregval & 0xF)));
+        bug("[USB2OTG] HS OTG Core Release: %x.%x%x%x\n",
+                    ((usbregval >> 12) & 0xF), ((usbregval >> 8) & 0xF), ((usbregval >> 4) & 0xF), (usbregval & 0xF));
 
         if ((USB2OTGBase->hd_UtilityBase = (APTR)OpenLibrary("utility.library", 39)) != NULL)
         {
@@ -114,8 +108,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                 D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p]\n",
                             __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_GlobalIRQHandle));
 
-                D(bug("[USB2OTG] %s: HS OTG Driver Initialised\n",
-                            __PRETTY_FUNCTION__));
+                bug("[USB2OTG] HS OTG USB Driver Initialised\n");
 
             }
             else
@@ -169,7 +162,7 @@ static int FNAME_DEV(Open)(LIBBASETYPEPTR USB2OTGBase, struct IOUsbHWReq *ioreq,
     {
         ioreq->iouh_Req.io_Error = IOERR_OPENFAIL;
 
-//        ioreq->iouh_Req.io_Unit = Open_Unit(ioreq, unit, USB2OTGBase);
+        ioreq->iouh_Req.io_Unit = FNAME_DEV(OpenUnit)(ioreq, unit, USB2OTGBase);
         if (!(ioreq->iouh_Req.io_Unit))
         {
             D(bug("[USB2OTG] %s: could not open unit!\n",
@@ -203,7 +196,7 @@ static int FNAME_DEV(Close)(LIBBASETYPEPTR USB2OTGBase, struct IOUsbHWReq *ioreq
     D(bug("[USB2OTG] %s: IOReq @ 0x%p, USB2OTGBase @ 0x%p\n",
                 __PRETTY_FUNCTION__, ioreq, USB2OTGBase));
 
-//    Close_Unit(USB2OTGBase, (struct USB2OTGUnit *) ioreq->iouh_Req.io_Unit, ioreq);
+    FNAME_DEV(CloseUnit)(ioreq, (struct USB2OTGUnit *) ioreq->iouh_Req.io_Unit, USB2OTGBase);
 
     ioreq->iouh_Req.io_Unit   = (APTR) -1;
     ioreq->iouh_Req.io_Device = (APTR) -1;
