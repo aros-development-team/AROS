@@ -22,7 +22,6 @@
 #define SYSTIMER_BASE           (BCM_PHYSBASE + 0x003000)
 #define ARMTIMER_BASE           (BCM_PHYSBASE + 0x00b000)
 #define IRQ_BASE                (BCM_PHYSBASE + 0x00b200)
-#define VCMB_BASE               (BCM_PHYSBASE + 0x00B880)
 #define GPIO_PADS               (BCM_PHYSBASE + 0x100000)
 #define CLOCK_BASE              (BCM_PHYSBASE + 0x101000)
 #define GPIO_BASE               (BCM_PHYSBASE + 0x200000)
