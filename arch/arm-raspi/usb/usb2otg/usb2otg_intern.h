@@ -47,6 +47,7 @@ struct USB2OTGUnit
 {
     struct Unit         hu_Unit;
     APTR                hu_GlobalIRQHandle;
+    BOOL		hu_UnitAllocated;       /* unit opened */
 };
 
 /* PRIVATE device node */
@@ -58,15 +59,26 @@ struct USB2OTGDevice
     APTR		hd_KernelBase;		/* kernel.resource base */
     APTR                hd_UtilityBase;	        /* for tags etc */
 
-    APTR		hd_MemPool;	        /* Memory Pool */
+    APTR		hd_MemPool;	        /* memory pool */
 
-    struct USB2OTGUnit  *hd_Unit;	        /* We only have a single unit.. */
+    struct USB2OTGUnit  *hd_Unit;	        /* we only currently support a single unit.. */
 };
+
+#define FNAME_DEV(x)    USB2OTG__Dev__ ## x
+
+#ifdef UtilityBase
+#undef UtilityBase
+#endif
 
 #ifdef KernelBase
 #undef KernelBase
 #endif
 
+#define	UtilityBase     USB2OTGBase->hd_UtilityBase
+
 #define KernelBase      USB2OTGBase->hd_KernelBase
+
+struct Unit *FNAME_DEV(OpenUnit)(struct IOUsbHWReq *, LONG, struct USB2OTGDevice *);
+void FNAME_DEV(CloseUnit)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 
 #endif /* USB2OTG_INTERN_H */
