@@ -171,7 +171,6 @@ static int FNAME_DEV(Open)(LIBBASETYPEPTR USB2OTGBase, struct IOUsbHWReq *ioreq,
         }
         else
         {
-            /* Opended ok! */
             ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
             ioreq->iouh_Req.io_Error                   = 0;
     
@@ -316,11 +315,9 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
 
         if (ret != RC_OK)
         {
-            /* Set error codes */
             ioreq->iouh_Req.io_Error = ret & 0xff;
         }
-        /* Terminate the iorequest */
-//        TermIO(ioreq, USB2OTGBase);
+        FNAME_DEV(TermIO)(ioreq, USB2OTGBase);
     }
 
     AROS_LIBFUNC_EXIT
