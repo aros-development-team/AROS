@@ -247,47 +247,47 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
         switch (ioreq->iouh_Req.io_Command)
         {
             case CMD_RESET:
-//                ret = cmdReset(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdReset)(ioreq, unit, USB2OTGBase);
                 break;
 
             case CMD_FLUSH:
-//                ret = cmdFlush(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdFlush)(ioreq, unit, USB2OTGBase);
                 break;
 
             case UHCMD_QUERYDEVICE:
-//                ret = cmdQueryDevice(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdQueryDevice)(ioreq, unit, USB2OTGBase);
                 break;
 
             case UHCMD_USBRESET:
-//                ret = cmdUsbReset(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdUsbReset)(ioreq, unit, USB2OTGBase);
                 break;
 
             case UHCMD_USBRESUME:
-//                ret = cmdUsbResume(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdUsbResume)(ioreq, unit, USB2OTGBase);
                 break;
 
             case UHCMD_USBSUSPEND:
-//                ret = cmdUsbSuspend(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdUsbSuspend)(ioreq, unit, USB2OTGBase);
                 break;
 
             case UHCMD_USBOPER:
-//                ret = cmdUsbOper(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdUsbOper)(ioreq, unit, USB2OTGBase);
                 break;
 
             case UHCMD_CONTROLXFER:
-//                ret = cmdControlXFer(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdControlXFer)(ioreq, unit, USB2OTGBase);
                 break;
 
             case UHCMD_BULKXFER:
-//                ret = cmdBulkXFer(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdBulkXFer)(ioreq, unit, USB2OTGBase);
                 break;
 
             case UHCMD_INTXFER:
-//                ret = cmdIntXFer(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdIntXFer)(ioreq, unit, USB2OTGBase);
                 break;
 
             case UHCMD_ISOXFER:
-//                ret = cmdIsoXFer(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdIsoXFer)(ioreq, unit, USB2OTGBase);
                 break;
 
             default:
@@ -300,7 +300,7 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
         switch(ioreq->iouh_Req.io_Command)
         {
             case NSCMD_DEVICEQUERY:
-//                ret = cmdNSDeviceQuery((struct IOStdReq *) ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdNSDeviceQuery)((struct IOStdReq *) ioreq, unit, USB2OTGBase);
                 break;
 
             default:
