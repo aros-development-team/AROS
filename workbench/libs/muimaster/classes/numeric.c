@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -485,7 +485,7 @@ IPTR Numeric__MUIM_ValueToScale(struct IClass *cl, Object *obj,
         val = min;
     }
 
-    val = CLAMP(val, min, max);
+    val = CLAMP(val, msg->scalemin, msg->scalemax);
 
     return val;
 }
@@ -516,13 +516,13 @@ IPTR Numeric__MUIM_ValueToScaleExt(struct IClass *cl, Object *obj,
         scale = min;
     }
 
-    scale = CLAMP(scale, min, max);
+    scale = CLAMP(scale, msg->scalemin, msg->scalemax);
 
     return scale;
 }
 
 /**************************************************************************
- MUIM_Export - to export an objects "contents" to a dataspace object.
+ MUIM_Export - to export an object's "contents" to a dataspace object.
 **************************************************************************/
 IPTR Numeric__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
