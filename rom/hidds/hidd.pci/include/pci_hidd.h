@@ -2,7 +2,7 @@
 #define HIDD_PCI_H
 
 /*
-    Copyright � 2003-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -28,14 +28,14 @@
 
 /* Base PCI class */
 
-#define CLID_Hidd_PCI	"hidd.pci"
+#define CLID_Hidd_PCI   "hidd.pci"
 
 #include <interface/Hidd_PCI.h>
 
 /* Tags for EnumDevices method */
 enum
 {
-    tHidd_PCI_VendorID		= TAG_USER,
+    tHidd_PCI_VendorID          = TAG_USER,
     tHidd_PCI_ProductID,
     tHidd_PCI_RevisionID,
     tHidd_PCI_Interface,
@@ -47,7 +47,7 @@ enum
 
 /* PCI device class */
 
-#define CLID_Hidd_PCIDevice	"hidd.pci.device"
+#define CLID_Hidd_PCIDevice     "hidd.pci.device"
 
 #include <interface/Hidd_PCIDevice.h>
 
@@ -58,15 +58,15 @@ enum
     (((idx) = (attr) - HiddPCIDeviceAttrBase) < num_Hidd_PCIDevice_Attrs)
 
 /* Types of BaseAddresses */
-#define ADDRB_IO	0
-#define ADDRB_PREFETCH	3
+#define ADDRB_IO        0
+#define ADDRB_PREFETCH  3
 
-#define ADDRF_IO	(1 << ADDRB_IO)
-#define ADDRF_PREFETCH	(1 << ADDRB_PREFETCH)
+#define ADDRF_IO        (1 << ADDRB_IO)
+#define ADDRF_PREFETCH  (1 << ADDRB_PREFETCH)
 
 /* PCI driver class */
 
-#define CLID_Hidd_PCIDriver	"hidd.pci.driver"
+#define CLID_Hidd_PCIDriver     "hidd.pci.driver"
 
 #include <interface/Hidd_PCIDriver.h>
 
