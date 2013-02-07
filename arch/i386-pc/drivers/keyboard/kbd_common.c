@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PS/2 keyboard driver.
@@ -44,17 +44,17 @@ unsigned char handle_kbd_event(void)
 {
     unsigned char status = kbd_read_status();
     unsigned int work = 10000;
-		
+                
     while (status & KBD_STATUS_OBF)
     {
         kbd_read_input();
 
         status = kbd_read_status();
-	if(!work--)
+        if(!work--)
         {
-	    //printf(KERN_ERR "pc_keyb: controller jammed (0x%02X).\n",status);
+            //printf(KERN_ERR "pc_keyb: controller jammed (0x%02X).\n",status);
             break;
-	}
+        }
     }
     return status;
 }
@@ -69,12 +69,12 @@ void kb_wait(void)
     
     do
     {
-	unsigned char status = handle_kbd_event();
-	if (! (status & KBD_STATUS_IBF))
-	    return;
-	
-	kbd_usleep(1000);
-	timeout--;
+        unsigned char status = handle_kbd_event();
+        if (! (status & KBD_STATUS_IBF))
+            return;
+        
+        kbd_usleep(1000);
+        timeout--;
     } while (timeout);
 }
 
@@ -98,19 +98,19 @@ void kbd_write_command_w(int data)
     kbd_write_command(data);
 }
 
-#define KBD_NO_DATA	(-1)
-#define KBD_BAD_DATA	(-2)
+#define KBD_NO_DATA     (-1)
+#define KBD_BAD_DATA    (-2)
 
 int kbd_read_data(void)
 {
-    LONG	retval = KBD_NO_DATA;
-    UBYTE	status;
+    LONG        retval = KBD_NO_DATA;
+    UBYTE       status;
     
     status = kbd_read_status();
     if (status & KBD_STATUS_OBF)
     {
-        UBYTE	data = kbd_read_input();
-	
+        UBYTE   data = kbd_read_input();
+        
         retval = data;
         if (status & (KBD_STATUS_GTO | KBD_STATUS_PERR))
             retval = KBD_BAD_DATA;
