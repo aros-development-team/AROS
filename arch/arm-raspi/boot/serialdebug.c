@@ -5,14 +5,28 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+
 #include <asm/bcm2835.h>
+#include <hardware/videocore.h>
 #include <hardware/pl011uart.h>
 
 #include "serialdebug.h"
 #include "bootconsole.h"
+#include "vc_mb.h"
+#include "vc_fb.h"
 
-#define ICR_FLAGS (ICR_RXIC|ICR_TXIC|ICR_RTIC|ICR_FEIC|ICR_PEIC|ICR_BEIC|ICR_OEIC)
+#define ICR_FLAGS (ICR_RXIC|ICR_TXIC|ICR_RTIC|ICR_FEIC|ICR_PEIC|ICR_BEIC|ICR_OEIC|ICR_RIMIC|ICR_CTSMIC|ICR_DSRMIC|ICR_DCDMIC)
 
+#define DEF_BAUD 115200
+
+#define PL011_DIVCLOCK(baud, clock)     ((clock * 4) / baud) 
+#define PL011_BAUDINT(baud, clock)      ((PL011_DIVCLOCK(baud, clock) & 0xFFFFFFC0) >> 6) 
+#define PL011_BAUDFRAC(baud, clock)     ((PL011_DIVCLOCK(baud, clock) & 0x0000003F) >> 0) 
+
+unsigned int uartclock;
+unsigned int uartdivint;
+unsigned int uartdivfrac;
+unsigned int uartbaud;
 
 inline void waitSerIN(volatile uint32_t *uart)
 {
@@ -66,32 +80,51 @@ void kprintf(const char *format, ...)
 
 void serInit(void)
 {
-    volatile uint32_t *uart = (uint32_t *)UART0_BASE;
-    unsigned int ra;
+    volatile uint32_t   *uart = (uint32_t *)UART0_BASE;
+    unsigned int        uartvar;
 
+    volatile unsigned int *uart_msg = (unsigned int *) MESSAGE_BUFFER;
+
+    uartbaud = DEF_BAUD;
+
+    uart_msg[0] = 8 * 4;
+    uart_msg[1] = VCTAG_REQ;
+    uart_msg[2] = VCTAG_GETCLKRATE;
+    uart_msg[3] = 8;
+    uart_msg[4] = 4;
+    uart_msg[5] = 0x000000002;                  // UART clock
+    uart_msg[6] = 0;
+    uart_msg[7] = 0;		                // terminate tag
+
+    vcmb_write(VCMB_BASE, VCMB_FBCHAN, uart_msg);
+    uart_msg = vcmb_read(VCMB_BASE, VCMB_FBCHAN);
+    
+    uartclock = uart_msg[6];
+    
     uart[UART_CR] = 0;
 
-    ra = *(volatile uint32_t *)GPFSEL1;
-    ra &= ~(7<<12);                     // TX on GPIO14
-    ra |= 4<<12;                        // alt0
-    ra &= ~(7<<15);                     // RX on GPIO15
-    ra |= 4<<15;                        // alt0
-    *(volatile uint32_t *)GPFSEL1 = ra;
+    uartvar = *(volatile uint32_t *)GPFSEL1;
+    uartvar &= ~(7<<12);                        // TX on GPIO14
+    uartvar |= 4<<12;                           // alt0
+    uartvar &= ~(7<<15);                        // RX on GPIO15
+    uartvar |= 4<<15;                           // alt0
+    *(volatile uint32_t *)GPFSEL1 = uartvar;
 
     *(volatile uint32_t *)GPPUD = 0;
 
-    for(ra = 0; ra < 150; ra++) ;
+    for(uartvar = 0; uartvar < 150; uartvar++);
 
-    *(volatile uint32_t *)GPPUDCLK0 = (1<<14)|(1<<15);
+    *(volatile uint32_t *)GPPUDCLK0 = (1 << 14)|(1 << 15);
 
-    for(ra = 0; ra < 150; ra++) ;
+    for(uartvar = 0; uartvar < 150; uartvar++);
 
     *(volatile uint32_t *)GPPUDCLK0 = 0;
 
     uart[UART_ICR] = ICR_FLAGS;
-                                        // default clock speed for uart0 = 3Mhz
-    uart[UART_IBRD] = 0x1;              // divisor = 1.628 ( ~115172baud)
-    uart[UART_FBRD] = 0x274;
-    uart[UART_LCRH] = LCRH_WLEN8;       // 8N1 (Fifo disabled)
-    uart[UART_CR] = CR_UARTEN|CR_TXE;   // enable the uart + tx
+    uartdivint = PL011_BAUDINT(uartbaud, uartclock);
+    uart[UART_IBRD] = uartdivint;
+    uartdivfrac = PL011_BAUDFRAC(uartbaud, uartclock);
+    uart[UART_FBRD] = uartdivfrac;
+    uart[UART_LCRH] = LCRH_WLEN8|LCRH_FEN;               // 8N1, Fifo enabled
+    uart[UART_CR] = CR_UARTEN|CR_TXE|CR_RXE;    // enable the uart + tx
 }

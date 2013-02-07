@@ -24,6 +24,10 @@
 #define DBOOT(x)
 
 extern void mem_init(void);
+extern unsigned int uartclock;
+extern unsigned int uartdivint;
+extern unsigned int uartdivfrac;
+extern unsigned int uartbaud;
 
 static unsigned char __stack[BOOT_STACK_SIZE] __attribute__((used,aligned(16)));
 
@@ -189,6 +193,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 
     kprintf("[BOOT] AROS %s\n", bootstrapName);
 
+    kprintf("[BOOT] UART clock speed: %d\n", uartclock);
+    kprintf("[BOOT] using %d.%d divisor for %d baud\n", uartdivint, uartdivfrac, uartbaud);
+    
     DBOOT(asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
     kprintf("[BOOT] control register init:%08x, now:%08x\n", initcr, tmp);)
 
