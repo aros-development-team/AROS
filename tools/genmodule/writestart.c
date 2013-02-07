@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
     
     Print the library magic and init code in the file modname_start.c.
@@ -200,12 +200,9 @@ static void writedecl(FILE *out, struct config *cfg)
         );
     fprintf(out,
 	    "\n"
-	    "#ifdef SysBase\n"
 	    "#undef SysBase\n"
-	    "#endif\n"
-	    "#ifdef OOPBase\n"
 	    "#undef OOPBase\n"
-	    "#endif\n"
+	    "#undef UtilityBase\n"
 	    "\n"
 	    "#include <proto/exec.h>\n"
             "#include <proto/alib.h>\n"
