@@ -14,32 +14,41 @@
 
 void (*_KrnPutC)(char *) = NULL;
 
-inline void waitSerOUT(volatile uint32_t *uart)
+inline void krnWaitSerIn()
 {
     while(1)
     {
-       if ((uart[UART_FR] & FR_TXFF) == 0) break;
+       if ((*(volatile uint32_t *)(UART0_BASE + UART_FR) & FR_RXFE) == 0) break;
     }
 }
 
-inline void putByte(uint8_t chr)
+inline void krnWaitSerOut()
 {
-    volatile uint32_t *uart = (uint32_t *)UART0_BASE;
+    while(1)
+    {
+       if ((*(volatile uint32_t *)(UART0_BASE + UART_FR) & FR_TXFF) == 0) break;
+    }
+}
 
-    waitSerOUT(uart);
 
-    uart[UART_DR] = chr;
+inline void krnSerPutC(uint8_t chr)
+{
+    krnWaitSerOut();
+
     if (chr == '\n')
-        uart[UART_DR] = '\r';
+        *(volatile uint32_t *)(UART0_BASE + UART_DR) = '\r';
+    *(volatile uint32_t *)(UART0_BASE + UART_DR) = chr;
 }
 
 int krnPutC(int chr, struct KernelBase *KernelBase)
 {
     if (chr == 0x03)
         _KrnPutC = NULL;
+    else
+    {
+        if (_KrnPutC)
+            _KrnPutC(chr);
 
-    if (_KrnPutC)
-        _KrnPutC(chr);
-
-    putByte(chr);
+        krnSerPutC(chr);
+    }
 }
