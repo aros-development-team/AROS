@@ -23,8 +23,6 @@
 
 #include "pci.h"
 
-#define KernelBase (PSD(cl)->kernelBase)
-
 OOP_Object *PCIDrv__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

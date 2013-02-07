@@ -42,13 +42,11 @@ enum
     tHidd_PCI_Class,
     tHidd_PCI_SubClass,
     tHidd_PCI_SubsystemVendorID,
-    tHidd_PCI_SubsystemID
+    tHidd_PCI_SubsystemID,
+    tHidd_PCI_Driver
 };
 
 /* PCI device class */
-
-#define CLID_Hidd_PCIDevice     "hidd.pci.device"
-
 #include <interface/Hidd_PCIDevice.h>
 
 /* ABIv0 compatability */
