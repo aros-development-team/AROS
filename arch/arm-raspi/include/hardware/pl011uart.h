@@ -54,7 +54,13 @@
 #define CR_LBE                  (1 << 7)
 #define CR_TXE                  (1 << 8)
 #define CR_RXE                  (1 << 9)
-
+#define CR_RTSEN                (1 << 14)
+#define CR_CTSEN                (1 << 15)
+ 
+#define ICR_RIMIC               (1 << 0)
+#define ICR_CTSMIC              (1 << 1)
+#define ICR_DSRMIC              (1 << 2)
+#define ICR_DCDMIC              (1 << 3)
 #define ICR_RXIC                (1 << 4)
 #define ICR_TXIC                (1 << 5)
 #define ICR_RTIC                (1 << 6)
