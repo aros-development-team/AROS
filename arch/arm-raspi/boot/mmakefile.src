@@ -52,10 +52,11 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM     kernel-usb-nopci \
 #MM     kernel-usb-usb2otg \
 #MM     kernel-usb-romstrap-raspi \
+#MM     kernel-cgxbootpic \
 #MM     kernel-shell \
 #MM     kernel-shellcommands
 
-PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap dos debug poseidon
+PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
 PKG_RSRC     :=  misc dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox
 PKG_DEVS     :=  input gameport keyboard console timer USBHardware/usb2otg
 PKG_HANDLERS := con amberram cdrom sfs fat afs
