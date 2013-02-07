@@ -105,31 +105,21 @@ static inline void outb(unsigned char value, unsigned short port)
 
 /***** Kbd HIDD *******************/
 
-/* IDs */
-#define IID_Hidd_HwKbd          "hidd.kbd.hw"
-#define CLID_Hidd_HwKbd         "hidd.kbd.hw"
-
-/* misc */
-
-struct abdescr
-{
-    STRPTR                      interfaceid;
-    OOP_AttrBase                *attrbase;
-};
-
 struct kbd_staticdata
 {
-    struct SignalSemaphore      sema; /* Protexting this whole struct */
 
-    OOP_Class                   *kbdclass;
+    OOP_Class          *kbdclass;
+    OOP_Object         *kbdhidd;
 
-    OOP_Object                  *kbdhidd;
-    
+    OOP_AttrBase        hiddAttrBase;
     OOP_AttrBase        hiddKbdAB;
-    struct Interrupt    irq;
+    OOP_MethodID        hwMethodBase;
+    APTR                irq;
 
     BPTR                cs_SegList;
+    APTR                cs_KernelBase;
     struct Library     *cs_OOPBase;
+    struct Library     *cs_UtilityBase;
 };
 
 struct kbdbase
@@ -151,12 +141,18 @@ struct kbd_data
 
 /****************************************************************************************/
 
-BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase);
-VOID releaseattrbases(struct abdescr *abd, struct Library *OOPBase);
-
-/****************************************************************************************/
-
 #define XSD(cl)         (&((struct kbdbase *)cl->UserData)->ksd)
+
+#undef HiddAttrBase
+#undef HiddKbdAB
+#undef HWBase
+#define HiddAttrBase (XSD(cl)->hiddAttrBase)
+#define HiddKbdAB    (XSD(cl)->hiddKbdAB)
+#define HWBase       (XSD(cl)->hwMethodBase)
+
+#define KernelBase  (XSD(cl)->cs_KernelBase)
+#define OOPBase     (XSD(cl)->cs_OOPBase)
+#define UtilityBase (XSD(cl)->cs_UtilityBase)
 
 /****************************************************************************************/
 
