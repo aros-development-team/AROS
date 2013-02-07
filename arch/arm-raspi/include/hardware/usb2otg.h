@@ -217,7 +217,9 @@
 #define USB2OTG_MISCCTRL_VBUSIRQ                        (1 << 9)
 #define USB2OTG_MISCCTRL_AXIPRIORITYLEVEL               (1 << 16)
 
-/* Core Interrupt bits */
+#define USB2OTG_USBHOSTMODE                             (1 << 0)
+
+/* Bits in USB2OTG_INTR */
 #define USB2OTG_INTRCORE_CURRENTMODE                    (1 << 0)
 #define USB2OTG_INTRCORE_MODEMISMATCH                   (1 << 1)
 #define USB2OTG_INTRCORE_OTG                            (1 << 2)
