@@ -3,11 +3,10 @@
     $Id$
 */
 
-#include <exec/types.h>
+#include <aros/debug.h>
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
-
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 
@@ -15,12 +14,7 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 
-#include <aros/symbolsets.h>
-
 #include "pci.h"
-
-#include <aros/debug.h>
-#include <aros/atomic.h>
 
 /* 
     Returns 0 for no device, 1 for non-multi device and 2 for
@@ -55,371 +49,450 @@ static int isPCIDeviceAvailable(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE d
     return 1;
 }
 
-/*
-    PCI::AddHardwareDriver(OOP_Class *driverClass)
-
-    Adds new PCI hardware driver to the PCI subsystem. A PCI hardware driver
-    is a class which delivers Read/Write to the PCI config space.
-
-    The PCI bus handled through driver added is scanned, and all available
-    PCI devices are added to the device chain.
-*/
-void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
-    struct pHidd_PCI_AddHardwareDriver *msg)
+static OOP_Object *InsertDevice(OOP_Class *cl, ULONG *highBus, struct TagItem *devtags)
 {
-    struct DriverNode *dn = NULL;
+    OOP_Object *pcidev;
+    IPTR bridge, subbus;
 
-    D(bug("[PCI] Adding Driver class 0x%08x\n", msg->driverClass));
-    
-    if (msg->driverClass != NULL)
+    pcidev = OOP_NewObject(PSD(cl)->pciDeviceClass, NULL, devtags);
+    if (pcidev)
     {
-        // Get some extra memory for driver node
-        dn = AllocPooled(PSD(cl)->MemPool, sizeof(struct DriverNode));
-        if (dn)
+        OOP_GetAttr(pcidev, aHidd_PCIDevice_isBridge, &bridge);
+        if (bridge)
         {
-            int bus;
-            int dev;
-            int sub;
-            int type;
-            IPTR subbus, bridge;
-
-            OOP_Object *drv;
-            struct TagItem devtags[] = {
-                { aHidd_PCIDevice_Bus, 0 },
-                { aHidd_PCIDevice_Dev, 0 },
-                { aHidd_PCIDevice_Sub, 0 },
-                { aHidd_PCIDevice_Driver, 0 },
-                { TAG_DONE, 0UL }
-            };
-            struct PciDevice *pcidev;
-            STRPTR string, string2;
-        
-            dn->driverClass = msg->driverClass;
-            drv = dn->driverObject = OOP_NewObject(dn->driverClass, NULL, NULL);
-            dn->highBus = 0;
-
-            if (!drv) {
-                FreePooled(PSD(cl)->MemPool, dn, sizeof(*dn));
-                D(bug("[PCI] Driver did not initialize\n"));
-                return;
-            }
-
-            OOP_GetAttr(drv, aHidd_Name, (APTR)&string);
-            OOP_GetAttr(drv, aHidd_HardwareName, (APTR)&string2);
-            D(bug("[PCI] Adding driver %s (%s) to the system\n", string, string2));
-
-            NEWLIST(&dn->devices);
-    
-            devtags[3].ti_Data = (IPTR)drv;
-        
-            // Scan whole PCI bus looking for devices available
-            // There is no need for semaphore protected list operations at this
-            // point, because driver is still not public.
-            bus = 0;
-            do
-            {
-                D(bug("[PCI] Scanning bus %d\n",bus));
-
-                devtags[0].ti_Data = bus;
-            
-                for (dev=0; dev < 32; dev++)
-                {
-                    devtags[1].ti_Data = dev;
-                    devtags[2].ti_Data = 0;
-
-                    /* Knock knock! Is any device here? */
-                    type = isPCIDeviceAvailable(cl, drv, bus,dev,0);
-                    switch(type)
-                    {
-                        /* Regular device */
-                        case 1:
-                            pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
-                                sizeof(struct PciDevice));
-                            pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
-                                                (struct TagItem *)&devtags);
-
-                            OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
-                            if (bridge)
-                            {
-                                OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
-                                if (subbus > dn->highBus)
-                                    dn->highBus = subbus;
-                            }
-                            AddTail(&dn->devices, (struct Node *)pcidev);
-                            break;
-                        /* Cool! Multifunction device, search subfunctions then */
-                        case 2:
-                            pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
-                                sizeof(struct PciDevice));
-                            pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
-                                                (struct TagItem *)&devtags);
-        
-                            OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
-                            if (bridge)
-                            {
-                                OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
-                                if (subbus > dn->highBus)
-                                    dn->highBus = subbus;
-                            }
-                            AddTail(&dn->devices, (struct Node *)pcidev);
-                            
-                            for (sub=1; sub < 8; sub++)
-                            {
-                                devtags[2].ti_Data = sub;
-                                if (isPCIDeviceAvailable(cl, drv, bus, dev, sub))
-                                {
-                                    pcidev = (struct PciDevice *)AllocPooled(PSD(cl)->MemPool,
-                                        sizeof(struct PciDevice));
-                                    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
-                                                        (struct TagItem *)&devtags);
-                                    OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
-                                    if (bridge)
-                                    {
-                                        OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
-                                        if (subbus > dn->highBus)
-                                            dn->highBus = subbus;
-                                    }
-                                    AddTail(&dn->devices, (struct Node *)pcidev);
-                                }
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                bus++;
-            } while (bus <= dn->highBus);
-
-            // Add the driver to the end of drivers list
-
-            ObtainSemaphore(&PSD(cl)->driver_lock);
-            AddTail(&PSD(cl)->drivers, (struct Node*)dn);
-            ReleaseSemaphore(&PSD(cl)->driver_lock);
+            OOP_GetAttr(pcidev, aHidd_PCIDevice_SubBus, &subbus);
+            if (subbus > *highBus)
+                *highBus = subbus;
         }
+        
+        /*
+         * Device class is our private and derived from rootclass.
+         * This makes casting to struct Node * safe.
+         */
+        ObtainSemaphore(&PSD(cl)->dev_lock);
+        ADDTAIL(&PSD(cl)->devices, pcidev);
+        ReleaseSemaphore(&PSD(cl)->dev_lock);
     }
+    return pcidev;
 }
 
 /*
-    PCI::EnumDevices(struct Hook *Callback, struct TagItem **requirements)
+ * PCI::SetupDriver(OOP_Object *driverObject)
+ *
+ * A new PCI hardware driver is being added to the PCI subsystem.
+ * The PCI bus handled through driver added is scanned, and all available
+ * PCI devices are added to the device chain.
+ */
+BOOL PCI__HW__SetupDriver(OOP_Class *cl, OOP_Object *o,
+    struct pHW_SetupDriver *msg)
+{
+    OOP_Object *drv = msg->driverObject;
+    ULONG highBus = 0;
+    ULONG bus, dev, sub, type;
 
-    This method calls the callback hook for every PCI device in the system
-    that meets requirements specified (or every device if tags=NULL). It
-    iterates not only through one PCI bus, but instead through all buses
-    managed by all drivers present in the system.
-*/
+    struct TagItem devtags[] =
+    {
+        { aHidd_PCIDevice_Bus   , 0         },
+        { aHidd_PCIDevice_Dev   , 0         },
+        { aHidd_PCIDevice_Sub   , 0         },
+        { aHidd_PCIDevice_Driver, (IPTR)drv },
+        { TAG_DONE              , 0         }
+    };
+
+    D(bug("[PCI] Adding Driver 0x%p class 0x%p\n", drv, OOP_OCLASS(drv)));
+
+    /*
+     * Scan the whole PCI bus looking for devices available
+     * There is no need for semaphore protected list operations at this
+     * point, because the driver is still not public.
+     */
+    for (bus = 0; bus <= highBus; bus++)
+    {
+        D(bug("[PCI] Scanning bus %d\n",bus));
+
+        devtags[0].ti_Data = bus;
+
+        for (dev=0; dev < 32; dev++)
+        {
+            devtags[1].ti_Data = dev;
+            devtags[2].ti_Data = 0;
+
+            /* Knock knock! Is any device here? */
+            type = isPCIDeviceAvailable(cl, drv, bus,dev,0);
+
+            switch(type)
+            {
+            /* Regular device */
+            case 1:
+                InsertDevice(cl, &highBus, devtags);
+                break;
+
+            /* Cool! Multifunction device, search subfunctions then */
+            case 2:
+                InsertDevice(cl, &highBus, devtags);
+                    
+                for (sub=1; sub < 8; sub++)
+                {
+                    devtags[2].ti_Data = sub;
+
+                    if (isPCIDeviceAvailable(cl, drv, bus, dev, sub))
+                        InsertDevice(cl, &highBus, devtags);
+                }
+                break;
+            }
+        }
+    }
+
+    /* Succesful, add the driver to the end of drivers list */
+    return TRUE;
+}
+
+static const UBYTE attrTable[] =
+{
+    aoHidd_PCIDevice_VendorID,
+    aoHidd_PCIDevice_ProductID,
+    aoHidd_PCIDevice_RevisionID,
+    aoHidd_PCIDevice_Interface,
+    aoHidd_PCIDevice_Class,
+    aoHidd_PCIDevice_SubClass,
+    aoHidd_PCIDevice_SubsystemVendorID,
+    aoHidd_PCIDevice_SubsystemID,
+    aoHidd_PCIDevice_Driver
+};
+
+/*****************************************************************************************
+
+    NAME
+	moHidd_PCI_EnumDevices
+
+    SYNOPSIS
+	void OOP_DoMethod(OOP_Object *obj, struct pHidd_PCI_EnumDrivers *Msg);
+
+	void HIDD_PCI_EnumDevices(OOP_Object *obj, struct Hook *callback,
+                                  const struct TagItem *requirements);
+
+    LOCATION
+	CLID_Hidd_PCI
+
+    FUNCTION
+        This method calls the callback hook for every PCI device in the system
+        that meets requirements specified (or every device if tags=NULL). It
+        iterates not only through one PCI bus, but instead through all buses
+        managed by all drivers present in the system.
+
+    INPUTS
+	obj          - A PCI subsystem object.
+	callback     - A user-supplied hook which will be called for every device.
+        requirements - A TagList specifying search parameters.
+
+        The hook will be called with the following parameters:
+            AROS_UFHA(struct Hook *, hook        , A0)
+                - A pointer to hook structure itself
+            AROS_UFHA(OOP_Object * , deviceObject, A2)
+                - A PCI device object
+            AROS_UFHA(APTR         , unused     , A1)
+                - Not used
+        
+        The following tags are accepted as search parameters:
+            tHidd_PCI_VendorID          - vendor ID
+            tHidd_PCI_ProductID         - product ID
+            tHidd_PCI_RevisionID        - revision ID
+            tHidd_PCI_Interface         - PCI interface ID
+            tHidd_PCI_Class             - PCI class ID
+            tHidd_PCI_SubClass          - PCI subclass ID
+            tHidd_PCI_SubsystemVendorID - subsystem vendor ID
+            tHidd_PCI_SubsystemID       - subsystem ID
+            tHidd_PCI_Driver            - a pointer to bus driver object [V4]
+
+    RESULT
+	None.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
 void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_EnumDevices *msg)
 {
-    ULONG   VendorID, ProductID, RevisionID, Interface, _Class, SubClass, 
-            SubsystemVendorID, SubsystemID;
-    
-    IPTR   value;
-    struct  DriverNode  *dn;
-    struct  PciDevice   *dev;
-    BOOL    ok;
-    
+    struct TagItem *tstate = (struct TagItem *)msg->requirements;
+    struct TagItem *tag;
+    IPTR matchVal[sizeof(attrTable)];
+    ULONG i;
+    OOP_Object *dev;
+    BOOL ok;
+
+    for (i = 0; i < sizeof(attrTable); i++)
+    {
+        matchVal[i] = ~0;
+    }
+
     /* Get requirements */
-    VendorID    = GetTagData(tHidd_PCI_VendorID,    0xffffffff, msg->requirements);
-    ProductID   = GetTagData(tHidd_PCI_ProductID,   0xffffffff, msg->requirements);
-    RevisionID  = GetTagData(tHidd_PCI_RevisionID,  0xffffffff, msg->requirements);
-    Interface   = GetTagData(tHidd_PCI_Interface,   0xffffffff, msg->requirements);
-    _Class      = GetTagData(tHidd_PCI_Class,       0xffffffff, msg->requirements);
-    SubClass    = GetTagData(tHidd_PCI_SubClass,    0xffffffff, msg->requirements);
-    SubsystemID = GetTagData(tHidd_PCI_SubsystemID, 0xffffffff, msg->requirements);
-    SubsystemVendorID = GetTagData(tHidd_PCI_SubsystemVendorID, 0xffffffff, msg->requirements);
-
-    /* Lock driver list for exclusive use */
-    ObtainSemaphore(&PSD(cl)->driver_lock);
-
-    /* For every driver in the system... */
-    ForeachNode(&PSD(cl)->drivers, dn)
+    while ((tag = NextTagItem(&tstate)))
     {
-        /* ...and for every device handled by this driver */
-        ForeachNode(&dn->devices, dev)
+        ULONG idx = tag->ti_Tag - TAG_USER;
+
+        if (idx < sizeof(attrTable))
+            matchVal[idx] = tag->ti_Data;
+    }
+
+    /* Lock devices list for shared use */
+    ObtainSemaphoreShared(&PSD(cl)->dev_lock);
+
+    /* For every device in the system... */
+    ForeachNode(&PSD(cl)->devices, dev)
+    {
+        /* check the requirements with its properties */
+        ok = TRUE;
+
+        for (i = 0; i < sizeof(attrTable); i++)
         {
-            /* check the requirements with its properties */
-            ok = TRUE;
-            if (VendorID != 0xffffffff)
+            if (matchVal[i] != ~0)
             {
-                OOP_GetAttr(dev->device, aHidd_PCIDevice_VendorID, &value);
-                ok &= (value == VendorID);
-            }
+                IPTR value;
 
-            if (ProductID != 0xffffffff)
-            {
-                OOP_GetAttr(dev->device, aHidd_PCIDevice_ProductID, &value);
-                ok &= (value == ProductID);
+                OOP_GetAttr(dev, PSD(cl)->hiddPCIDeviceAB + attrTable[i], &value);
+                ok &= (value == matchVal[i]);
             }
+        }
 
-            if (RevisionID != 0xffffffff)
-            {
-                OOP_GetAttr(dev->device, aHidd_PCIDevice_RevisionID, &value);
-                ok &= (value == RevisionID);
-            }
-            
-            if (Interface != 0xffffffff)
-            {
-                OOP_GetAttr(dev->device, aHidd_PCIDevice_Interface, &value);
-                ok &= (value == Interface);
-            }
-
-            if (_Class != 0xffffffff)
-            {
-                OOP_GetAttr(dev->device, aHidd_PCIDevice_Class, &value);
-                ok &= (value == _Class);
-            }
-
-            if (SubClass != 0xffffffff)
-            {
-                OOP_GetAttr(dev->device, aHidd_PCIDevice_SubClass, &value);
-                ok &= (value == SubClass);
-            }
-
-            if (SubsystemVendorID != 0xffffffff)
-            {
-                OOP_GetAttr(dev->device, aHidd_PCIDevice_SubsystemVendorID, &value);
-                ok &= (value == SubsystemVendorID);
-            }
-
-            if (SubsystemID != 0xffffffff)
-            {
-                OOP_GetAttr(dev->device, aHidd_PCIDevice_SubsystemID, &value);
-                ok &= (value == SubsystemID);
-            }
-
-            /* If requirements met, call Hook */
-            if (ok)
-            {
-                CALLHOOKPKT(msg->callback, dev->device, NULL);
-            }
+        /* If requirements met, call Hook */
+        if (ok)
+        {
+            CALLHOOKPKT(msg->callback, dev, NULL);
         }
     }
 
-    ReleaseSemaphore(&PSD(cl)->driver_lock);
+    ReleaseSemaphore(&PSD(cl)->dev_lock);
 }
 
-BOOL PCI__Hidd_PCI__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_RemHardwareDriver *msg)
+BOOL PCI__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver *msg)
 {
-    struct DriverNode *dn = NULL, *next = NULL, *rem = NULL;
-    BOOL freed = FALSE;
+    OOP_Object *dev, *next, *drv;
+    IPTR disallow = 0;
 
-    D(bug("[PCI] Removing hardware driver %x\n",msg->driverClass));
+    D(bug("[PCI] Removing hardware driver 0x%p\n", msg->driverObject));
+
     /*
-        Removing HW driver allowed only if classes unused. That means the users
-        count should be == 1 (only driver itself uses pci to remove its class)
-    */
-    Forbid();
-    if (PSD(cl)->users == 1)
+     * Get exclusive lock on devices list.
+     * If we cannot do this, then either enumeration is running or
+     * another driver is being added. We simply cannot remove the driver
+     * in this case.
+     * Well, in the latter case we actually could remove our driver, but
+     * i believe this is extremely rare situation.
+     */
+    if (!AttemptSemaphore(&PSD(cl)->dev_lock))
+        return FALSE;
+
+    /*
+     * Now we can check if we can remove our devices.
+     * We think we can remove them if nobody has owned any of them.
+     * Drivers which behave badly will not own devices, or they will
+     * defer owning after enumeration loop has ended. So, removing a
+     * driver is still very dangerous.
+     * This can be improved if we implement map/unmnap and
+     * AddInterrupt/RemoveInterrupt accounting in our drivers. The
+     * driver would allow to expunge itself only if its internal counter
+     * of used resources is zero.
+     * PCI API wrappers (like prometheus.library) also build their
+     * own reflection of devices list, so we will have to implement either
+     * some ways to disable expunging, or (better) to get notifications
+     * about devices list being updated. With this notification we can
+     * have full hotplug support.
+     */
+    ForeachNode(&PSD(cl)->devices, dev)
     {
-        /* Get exclusive lock on driver list */
-        ObtainSemaphore(&PSD(cl)->driver_lock);
-        ForeachNodeSafe(&PSD(cl)->drivers, dn, next)
+        OOP_GetAttr(dev, aHidd_PCIDevice_Driver, (IPTR *)&drv);
+        if (drv == msg->driverObject)
         {
-            if (dn->driverClass == msg->driverClass)
-            {
-                Remove((struct Node *)dn);
-                rem = dn;
-            }
-        }
-        ReleaseSemaphore(&PSD(cl)->driver_lock);
+            IPTR owner;
 
-        /* If driver removed, rem contains pointer to removed DriverNode */
-        if (rem)
-        {
-            struct PciDevice *dev, *next;
-
-            /* For every device */
-            ForeachNodeSafe(&rem->devices, dev, next)
-            {
-                /* Dispose PCIDevice object instance */
-                OOP_DisposeObject(dev->device);
-
-                /* Remove device from device list */
-                Remove((struct Node *)dev);
-
-                /* Free memory used for device struct */
-                FreePooled(PSD(cl)->MemPool, dev, sizeof(struct PciDevice));
-            }
-            
-            /* Dispose driver */
-            OOP_DisposeObject(rem->driverObject);
-
-            /* And free memory for DriverNode */
-            FreePooled(PSD(cl)->MemPool, rem, sizeof(struct DriverNode));
-
-            /* Driver removed and everything freed */
-            freed = TRUE;
+            OOP_GetAttr(dev, aHidd_PCIDevice_Owner, &owner);
+            disallow |= owner;
         }
     }
-    Permit();
-    
-    D(bug("[PCI] PCI::RemHardwareDriver() %s\n", freed?"succeeded":"failed"));
- 
-    return freed;
+
+    if (disallow)
+    {
+        ReleaseSemaphore(&PSD(cl)->dev_lock);
+        D(bug("[PCI] PCI::RemoveDriver() failed, driver in use\n"));
+        return FALSE;
+    }
+
+    ForeachNodeSafe(&PSD(cl)->devices, dev, next)
+    {
+        REMOVE(dev);
+        OOP_DisposeObject(dev);
+    }
+
+    ReleaseSemaphore(&PSD(cl)->dev_lock);
+    D(bug("[PCI] PCI::RemHardwareDriver() succeeded\n"));
+    return OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
-/*
- * FIXME
- * Actually our base PCI class can (and should) be a singletone. However
- * needs needs full reconsideration of usage accounting. Anyway, currently
- * it is bad. Because:
- * 1. There is no guarantee that the user will not keep device object pointer
- *    after disposing of main class (which is usually done when device discovery
- *    is complete).
- * 2. Actually, he WILL keep it if he wants to be able to remove interrupt handler
- *    once upon a time.
- * 3. Unloading the driver will destroy all its device objects. Which will break up
- *    because of (1) and (2).
- * 4. Wrapper libraries (like prometheus.library) also won't like (3).
- * In fact, we should first count usage of objects. With new methods, object can be
- * considered used if it has either interrupt handler installed, or ownership set.
- * Also we cannot remove drivers while enumerating devices on the bus.
- * Well, after all, removing the driver is dangerous.
- */
+/*****************************************************************************************
 
-OOP_Object *PCI__Root__New(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+    NAME
+        moHidd_PCI_AddHardwareDriver
+
+    SYNOPSIS
+        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCI_AddHardwareDriver *Msg);
+
+        OOP_Object *HIDD_PCI_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass);
+
+    LOCATION
+        CLID_Hidd_PCI
+
+    FUNCTION
+        Creates a bus driver object and registers it in the system.
+
+        Since V4 this interface is obsolete and deprecated. Use moHW_AddDriver
+        method in order to install the driver.
+
+    INPUTS
+        obj         - A PCI subsystem object.
+        driverClass - A pointer to OOP class of the driver. In order to create an object
+                      of some previously registered public class, use
+                      oop.library/OOP_FindClass().
+
+    RESULT
+        None.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCI_RemHardwareDriver
+
+    INTERNALS
+
+*****************************************************************************************/
+
+void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
+                                      struct pHidd_PCI_AddHardwareDriver *msg)
 {
-    AROS_ATOMIC_INC(PSD(cl)->users);
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, msg);
+    HW_AddDriver(o, msg->driverClass, NULL);
+}
+
+AROS_UFH3(static void, searchFunc,
+    AROS_UFHA(struct Hook *, h,  A0),
+    AROS_UFHA(OOP_Object *, driverObject, A2),
+    AROS_UFHA(OOP_Class *, driverClass, A1))
+{
+    AROS_USERFUNC_INIT
+
+    if (OOP_OCLASS(driverObject) == driverClass)
+        h->h_Data = driverObject;
+
+    AROS_USERFUNC_EXIT
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCI_RemHardwareDriver
+
+    SYNOPSIS
+        void OOP_DoMethod(OOP_Object *obj, struct pHidd_PCI_RemHardwareDriver *Msg);
+
+        void HIDD_PCI_RemHardwareDriver(OOP_Object *obj, OOP_Class *driverClass);
+
+    LOCATION
+        CLID_Hidd_PCI
+
+    FUNCTION
+        Unregisters and disposes bus driver objects of the given class.
+
+        Since V4 this interface is obsolete and deprecated. Use moHW_RemoveDriver
+        method in order to remove drivers.
+
+    INPUTS
+        obj         - A PCI subsystem object.
+        driverClass - A pointer to a driver class.
+
+    RESULT
+        None
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCI_AddHardwareDriver
+
+    INTERNALS
+
+*****************************************************************************************/
+
+BOOL PCI__Hidd_PCI__RemHardwareDriver(OOP_Class *cl, OOP_Object *o,
+                                      struct pHidd_PCI_RemHardwareDriver *msg)
+{
+    BOOL ok = FALSE;
+    struct Hook searchHook =
+    {
+        .h_Entry = (HOOKFUNC)searchFunc
+    };
+
+    /*
+     * A very stupid and slow algorithm.
+     * Find a driver using Enum method, remember it, then remove.
+     * Repeat until search succeeds.
+     * We cannot remove drivers inside enumeration hook because EnumDrivers
+     * locks internal objects list in shared mode. RemoveDriver locks the
+     * same list in exclusive mode, and it's impossible to change semaphore's
+     * mode on the fly.
+     */
+    do
+    {
+        searchHook.h_Data  = NULL;
+
+        HW_EnumDrivers(o, &searchHook, msg->driverClass);
+
+        if (searchHook.h_Data)
+        {
+            ok = HW_RemoveDriver(o, searchHook.h_Data);
+            if (!ok)
+                break;
+        }
+    } while (searchHook.h_Data);
+
+    return ok;
+}
+
+OOP_Object *PCI__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+{
+    struct pci_staticdata *psd = PSD(cl);
+    
+    if (!psd->pciObject)
+    {
+        struct TagItem new_tags[] =
+        {
+            {aHW_ClassName, (IPTR)"PCI"},
+            {TAG_DONE     , 0                }
+        };
+        struct pRoot_New new_msg =
+        {
+            .mID      = msg->mID,
+            .attrList = new_tags
+        };
+
+        psd->pciObject = (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
+    }
+    return psd->pciObject;
 }
 
 VOID PCI__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    AROS_ATOMIC_DEC(PSD(cl)->users);
-    OOP_DoSuperMethod(cl, o, msg);
+
 }
-
-/* Class initialization and destruction */
-
-static int PCI_ExpungeClass(LIBBASETYPEPTR LIBBASE)
-{
-    D(bug("[PCI] Base Class destruction\n"));
-    
-    OOP_ReleaseAttrBase(IID_Hidd_PCI);
-    OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
-    OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
-    OOP_ReleaseAttrBase(IID_Hidd);
-
-    return TRUE;
-}
-        
-static int PCI_InitClass(LIBBASETYPEPTR LIBBASE)
-{
-    D(bug("[PCI] base class initialization\n"));
-
-    LIBBASE->psd.hiddPCIAB = OOP_ObtainAttrBase(IID_Hidd_PCI);
-    LIBBASE->psd.hiddPCIDeviceAB = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-    LIBBASE->psd.hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
-    LIBBASE->psd.hiddAB = OOP_ObtainAttrBase(IID_Hidd);
-    LIBBASE->psd.hiddPCIDriverMB = OOP_GetMethodID(IID_Hidd_PCIDriver, 0);
-
-    if (LIBBASE->psd.hiddPCIAB && LIBBASE->psd.hiddPCIDeviceAB && LIBBASE->psd.hiddPCIDriverAB && LIBBASE->psd.hiddAB)
-    {
-        D(bug("[PCI] Everything OK\n"));
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-ADD2INITLIB(PCI_InitClass, 0)
-ADD2EXPUNGELIB(PCI_ExpungeClass, 0)

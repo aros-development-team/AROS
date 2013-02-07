@@ -25,25 +25,13 @@
 
 /* Private data and structures unavailable outside the pci base classes */
 
-struct DriverNode {
-    struct Node         node;
-    OOP_Class           *driverClass;   /* Driver class */
-    OOP_Object          *driverObject;  /* Driver object */
-    ULONG               highBus;
-    struct List         devices;        /* List of defices behind this node */
-};
-
 struct DrvInstData {
     BOOL DirectBus;
     IPTR IOBase;
 };
 
-struct PciDevice {
-    struct MinNode      node;
-    OOP_Object          *device;
-};
-
 typedef struct DeviceData {
+    struct MinNode      node;           /* Accessed directly by PCI subsystem class */
     OOP_Object          *driver;
     UBYTE               bus,dev,sub;
     UBYTE               isBridge;
@@ -74,24 +62,27 @@ typedef struct DeviceData {
 } tDeviceData;
 
 struct pci_staticdata {
-    struct SignalSemaphore driver_lock;
-    struct List         drivers;
+    struct SignalSemaphore dev_lock;
+    struct MinList      devices;        /* List of devices */
 
-    APTR                MemPool;
     APTR                kernelBase;
-    
-    OOP_AttrBase        hiddAB;
+    struct Library      *utilityBase;
+    struct Library      *oopBase;
+
+    OOP_AttrBase        hwAttrBase;
     OOP_AttrBase        hiddPCIAB;
     OOP_AttrBase        hiddPCIDriverAB;
     OOP_AttrBase        hiddPCIBusAB;
     OOP_AttrBase        hiddPCIDeviceAB;
     OOP_MethodID        hiddPCIDriverMB;
+    OOP_MethodID        hwMethodBase;
 
     OOP_Class           *pciClass;
     OOP_Class           *pciDeviceClass;
     OOP_Class           *pciDriverClass;
+    OOP_Object          *pciObject;
 
-    ULONG               users;
+    BPTR                segList;
 };
 
 struct pcibase {
@@ -113,14 +104,20 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #undef HiddPCIAttrBase
 #undef HiddPCIDeviceAttrBase
 #undef HiddPCIDriverAttrBase
+#undef HWAttrBase
 #undef HiddPCIDriverBase
-#undef HiddAttrBase
+#undef HWBase
 
 #define HiddPCIAttrBase       (PSD(cl)->hiddPCIAB)
 #define HiddPCIDeviceAttrBase (PSD(cl)->hiddPCIDeviceAB)
 #define HiddPCIDriverAttrBase (PSD(cl)->hiddPCIDriverAB)
-#define HiddAttrBase          (PSD(cl)->hiddAB)
+#define HWAttrBase            (PSD(cl)->hwAttrBase)
 #define HiddPCIDriverBase     (PSD(cl)->hiddPCIDriverMB)
+#define HWBase                (PSD(cl)->hwMethodBase)
+
+#define KernelBase (PSD(cl)->kernelBase)
+#define UtilityBase PSD(cl)->utilityBase
+#define OOPBase     PSD(cl)->oopBase
 
 /* PCI Configspace offsets */
 #define PCICS_VENDOR        0x00
