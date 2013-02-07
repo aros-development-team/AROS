@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 CFILES  := vbeampos
 AFILES  := attemptlocklayerrom locklayerrom unlocklayerrom waitblit
 
-#MM kernel-graphics-amiga-m68k : kernel-graphics-includes includes-asm_h-m68k kernel-hidd-graphics-includes
+#MM kernel-graphics-amiga-m68k : kernel-hidd-includes kernel-graphics-includes includes-asm_h-m68k kernel-hidd-graphics-includes
 
 USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/graphics \
                -I$(SRCDIR)/rom/graphics \
