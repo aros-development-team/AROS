@@ -62,6 +62,32 @@
     INTERNALS
 
 *****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        aoHW_InUse
+
+    SYNOPSIS
+        [..G], BOOL
+
+    LOCATION
+        CLID_HW
+
+    FUNCTION
+        Return TRUE if the subsystem is currently in use by some driver(s)
+        and FALSE otherwise.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 OOP_Object *HW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -93,6 +119,10 @@ void HW__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         {
         case aoHW_ClassName:
             *msg->storage = (IPTR)data->name;
+            return;
+
+        case aoHW_InUse:
+            *msg->storage = IsListEmpty(&data->drivers) ? FALSE : TRUE;
             return;
         }
     }
