@@ -45,7 +45,7 @@ static int PlatformInit(struct ExecBase *SysBase)
 
     sysIdleTask->tc_State      = TS_WAIT;
 
-    D(bug("[Exec] PlatformInit: Idle Task @ %p", sysIdleTask));
+    D(bug("[Exec] PlatformInit: Idle Task @ 0x%p\n", sysIdleTask));
 
     return TRUE;
 }
