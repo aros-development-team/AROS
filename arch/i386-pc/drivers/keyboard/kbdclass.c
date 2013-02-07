@@ -9,22 +9,19 @@
 /****************************************************************************************/
 
 #define AROS_ALMOST_COMPATIBLE
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
-#include <oop/oop.h>
-
-#include <exec/alerts.h>
-#include <exec/memory.h>
-
-#include <hidd/hidd.h>
-#include <hidd/keyboard.h>
-
+#include <proto/kernel.h>
 #include <aros/system.h>
 #include <aros/symbolsets.h>
-
+#include <oop/oop.h>
+#include <exec/alerts.h>
+#include <exec/memory.h>
+#include <hidd/hidd.h>
+#include <hidd/keyboard.h>
 #include <hardware/custom.h>
-
 #include <devices/inputevent.h>
 #include <devices/rawkeycodes.h>
 
@@ -57,11 +54,6 @@ int  kbd_wait_for_input(void);
 
 /****************************************************************************************/
 
-#undef HiddKbdAB
-#define HiddKbdAB   (XSD(cl)->hiddKbdAB)
-
-/****************************************************************************************/
-
 #define NOKEY -1
 
 /****************************************************************************************/
@@ -73,10 +65,8 @@ int  kbd_wait_for_input(void);
 #include "e0keytable.h"
 
 /****************************************************************************************/
-AROS_INTH1(kbd_keyint, struct kbd_data *, data)
+static void kbd_keyint(struct kbd_data *data, void *unused)
 {
-    AROS_INTFUNC_INIT
-
     UBYTE           keycode;        /* Recent Keycode get */
     UBYTE           info = 0;       /* Data from info reg */
     WORD            work = 10000;
@@ -105,18 +95,8 @@ AROS_INTH1(kbd_keyint, struct kbd_data *, data)
         kbd_process_key(data, keycode, SysBase);
     } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
 
-    if (!work)
-    {
-        D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
-    }
-    
-    //return 0; /* Enable processing other intServers */
-
+    D(if (!work) bug("kbd.hidd: controller jammed (0x%02X).\n", info);)
     D(bug("ki: }\n"));
-
-    return FALSE;
-
-    AROS_INTFUNC_EXIT
 }
 
 
@@ -125,7 +105,7 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     struct TagItem *tag, *tstate;
     APTR            callback = NULL;
     APTR            callbackdata = NULL;
-    BOOL            has_kbd_hidd = FALSE, reset_success;
+    BOOL            reset_success;
     int last_code;
     
     EnterFunc(bug("Kbd::New()\n"));
@@ -133,20 +113,12 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 #if __WORDSIZE == 32 /* FIXME: REMOVEME: just a debugging thing for the weird s-key problem */
     SysBase->ex_Reserved2[1] = (ULONG)std_keytable;
 #endif
-     
-    ObtainSemaphoreShared( &XSD(cl)->sema);
-
-    if (XSD(cl)->kbdhidd)
-        has_kbd_hidd = TRUE;
-
-    ReleaseSemaphore( &XSD(cl)->sema);
- 
-    if (has_kbd_hidd) /* Cannot open twice */
+    if (XSD(cl)->kbdhidd) /* Cannot open twice */
         ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     tstate = msg->attrList;
     D(bug("Kbd: tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
-    
+
     while ((tag = NextTagItem(&tstate)))
     {
         ULONG idx;
@@ -181,30 +153,23 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     kbd_write_command_w(KBD_CTRLCMD_SELF_TEST);
     reset_success = kbd_wait_for_input() == 0x55;
     Enable();
-    if (reset_success)
-        o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    else
-        o = NULL;
 
+    if (!reset_success)
+    {
+        D(bug("Keyboard controller not detected\n"));
+        return NULL;
+    }
+
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
         struct kbd_data *data = OOP_INST_DATA(cl, o);
-        struct Interrupt *irq;
         
         data->kbd_callback   = (VOID (*)(APTR, UWORD))callback;
         data->callbackdata   = callbackdata;
         data->prev_amigacode = -2;
         data->prev_keycode   = 0;
         
-        /* Install keyboard interrupt */
-
-        irq = &XSD(cl)->irq;
-            
-        irq->is_Node.ln_Type = NT_INTERRUPT;
-        irq->is_Node.ln_Pri  = 127;             /* Set the highest pri */
-        irq->is_Node.ln_Name = "Keyboard class irq";
-        irq->is_Code         = (VOID_FUNC)kbd_keyint;
-        irq->is_Data         = (APTR)data;
         Disable();
         kbd_reset();            /* Reset the keyboard */
         kbd_updateleds(0);
@@ -215,59 +180,20 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         if (last_code > 0)
             kbd_process_key(data, (UBYTE)last_code, SysBase);
 
-        AddIntServer(INTB_KERNEL + 1, irq);
-        ObtainSemaphore(&XSD(cl)->sema);
-        XSD(cl)->kbdhidd = o;
-        ReleaseSemaphore(&XSD(cl)->sema);
-        
+        /* Install keyboard interrupt */
+        XSD(cl)->irq = KrnAddIRQHandler(1, kbd_keyint, data, NULL);
     } /* if (o) */
-    
+
     ReturnPtr("Kbd::New", OOP_Object *, o);
 }
 
 VOID PCKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    ObtainSemaphore(&XSD(cl)->sema);
+    KrnRemIRQHandler(XSD(cl)->irq);
+
     XSD(cl)->kbdhidd = NULL;
-    ReleaseSemaphore(&XSD(cl)->sema);
-    RemIntServer(INTB_KERNEL + 1, &XSD(cl)->irq);
     OOP_DoSuperMethod(cl, o, msg);
 }
-
-/****************************************************************************************/
-
-static int PCKbd_InitAttrs(LIBBASETYPEPTR LIBBASE)
-{
-    struct OOP_ABDescr attrbases[] =
-    {
-        {IID_Hidd_Kbd   , &LIBBASE->ksd.hiddKbdAB   },
-        {NULL           , NULL              }
-    };
-    
-    ReturnInt("PCKbd_InitAttrs", ULONG, OOP_ObtainAttrBases(attrbases));
-}
-
-/****************************************************************************************/
-
-static int PCKbd_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
-{
-    struct OOP_ABDescr attrbases[] =
-    {
-        {IID_Hidd_Kbd   , &LIBBASE->ksd.hiddKbdAB   },
-        {NULL           , NULL              }
-    };
-    
-    EnterFunc(bug("PCKbd_ExpungeAttrs\n"));
-
-    OOP_ReleaseAttrBases(attrbases);
-    
-    ReturnInt("PCKbd_ExpungeAttrs", int, TRUE);
-}
-
-/****************************************************************************************/
-
-ADD2INITLIB(PCKbd_InitAttrs, 0)
-ADD2EXPUNGELIB(PCKbd_ExpungeAttrs, 0)
 
 /****************************************************************************************/
 
@@ -531,8 +457,6 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode,
 }
 
 /****************************************************************************************/
-
-#define SysBase (*(struct ExecBase **)4UL)
 
 /* FIXME: This should go somewhere higher but D(bug()) is not possible there */
 #undef D
