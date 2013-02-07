@@ -28,31 +28,21 @@ unsigned int uartdivint;
 unsigned int uartdivfrac;
 unsigned int uartbaud;
 
-inline void waitSerIN(volatile uint32_t *uart)
+inline void waitSerOUT()
 {
     while(1)
     {
-       if ((uart[UART_FR] & FR_RXFE) == 0) break;
-    }
-}
-
-inline void waitSerOUT(volatile uint32_t *uart)
-{
-    while(1)
-    {
-       if ((uart[UART_FR] & FR_TXFF) == 0) break;
+       if ((*(volatile uint32_t *)(UART0_BASE + UART_FR) & FR_TXFF) == 0) break;
     }
 }
 
 inline void putByte(uint8_t chr)
 {
-    volatile uint32_t *uart = (uint32_t *)UART0_BASE;
+    waitSerOUT();
 
-    waitSerOUT(uart);
-
-    uart[UART_DR] = chr;
     if (chr == '\n')
-        uart[UART_DR] = '\r';
+        *(volatile uint32_t *)(UART0_BASE + UART_DR) = '\r';
+    *(volatile uint32_t *)(UART0_BASE + UART_DR) = chr;
 }
 
 void putBytes(const char *str)
@@ -80,7 +70,6 @@ void kprintf(const char *format, ...)
 
 void serInit(void)
 {
-    volatile uint32_t   *uart = (uint32_t *)UART0_BASE;
     unsigned int        uartvar;
 
     volatile unsigned int *uart_msg = (unsigned int *) MESSAGE_BUFFER;
@@ -101,7 +90,7 @@ void serInit(void)
     
     uartclock = uart_msg[6];
     
-    uart[UART_CR] = 0;
+    *(volatile uint32_t *)(UART0_BASE + UART_CR) = 0;
 
     uartvar = *(volatile uint32_t *)GPFSEL1;
     uartvar &= ~(7<<12);                        // TX on GPIO14
@@ -112,19 +101,19 @@ void serInit(void)
 
     *(volatile uint32_t *)GPPUD = 0;
 
-    for(uartvar = 0; uartvar < 150; uartvar++);
+    for (uartvar = 0; uartvar < 150; uartvar++);
 
     *(volatile uint32_t *)GPPUDCLK0 = (1 << 14)|(1 << 15);
 
-    for(uartvar = 0; uartvar < 150; uartvar++);
+    for (uartvar = 0; uartvar < 150; uartvar++);
 
     *(volatile uint32_t *)GPPUDCLK0 = 0;
 
-    uart[UART_ICR] = ICR_FLAGS;
+    *(volatile uint32_t *)(UART0_BASE + UART_ICR) = ICR_FLAGS;
     uartdivint = PL011_BAUDINT(uartbaud, uartclock);
-    uart[UART_IBRD] = uartdivint;
+    *(volatile uint32_t *)(UART0_BASE + UART_IBRD) = uartdivint;
     uartdivfrac = PL011_BAUDFRAC(uartbaud, uartclock);
-    uart[UART_FBRD] = uartdivfrac;
-    uart[UART_LCRH] = LCRH_WLEN8|LCRH_FEN;               // 8N1, Fifo enabled
-    uart[UART_CR] = CR_UARTEN|CR_TXE|CR_RXE;    // enable the uart + tx
+    *(volatile uint32_t *)(UART0_BASE + UART_FBRD) = uartdivfrac;
+    *(volatile uint32_t *)(UART0_BASE + UART_LCRH) = LCRH_WLEN8;                       // 8N1, Fifo enabled
+    *(volatile uint32_t *)(UART0_BASE + UART_CR) = CR_UARTEN|CR_TXE|CR_RTSEN|CR_CTSEN;   // enable the uart + tx
 }
