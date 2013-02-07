@@ -114,6 +114,6 @@ void serInit(void)
     *(volatile uint32_t *)(UART0_BASE + UART_IBRD) = uartdivint;
     uartdivfrac = PL011_BAUDFRAC(uartbaud, uartclock);
     *(volatile uint32_t *)(UART0_BASE + UART_FBRD) = uartdivfrac;
-    *(volatile uint32_t *)(UART0_BASE + UART_LCRH) = LCRH_WLEN8;                       // 8N1, Fifo enabled
-    *(volatile uint32_t *)(UART0_BASE + UART_CR) = CR_UARTEN|CR_TXE|CR_RTSEN|CR_CTSEN;   // enable the uart + tx
+    *(volatile uint32_t *)(UART0_BASE + UART_LCRH) = LCRH_WLEN8|LCRH_FEN;                       // 8N1, Fifo enabled
+    *(volatile uint32_t *)(UART0_BASE + UART_CR) = CR_UARTEN|CR_TXE|CR_RXE|CR_RTSEN|CR_CTSEN;   // enable the uart + tx
 }
