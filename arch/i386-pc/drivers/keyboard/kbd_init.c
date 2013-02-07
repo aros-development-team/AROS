@@ -23,9 +23,9 @@
 static int PCKbd_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct kbd_staticdata *xsd = &LIBBASE->ksd;
-	
+        
     InitSemaphore( &xsd->sema );
-	
+        
     return TRUE;
 }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main keyboard class.
@@ -77,30 +77,30 @@ AROS_INTH1(kbd_keyint, struct kbd_data *, data)
 {
     AROS_INTFUNC_INIT
 
-    UBYTE   	    keycode;        /* Recent Keycode get */
-    UBYTE   	    info = 0;       /* Data from info reg */
-    WORD    	    work = 10000;
+    UBYTE           keycode;        /* Recent Keycode get */
+    UBYTE           info = 0;       /* Data from info reg */
+    WORD            work = 10000;
 
     D(bug("ki: {\n")); 
     for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--)
     {
-    	/* data from information port */
-    	if (info & KBD_STATUS_MOUSE_OBF)
-	{
-	    /*
-	    ** Data from PS/2 mouse. Hopefully this gets through to mouse interrupt
-	    ** if we break out of loop here :-\
-	    */
-	    break;
-	}
+        /* data from information port */
+        if (info & KBD_STATUS_MOUSE_OBF)
+        {
+            /*
+            ** Data from PS/2 mouse. Hopefully this gets through to mouse interrupt
+            ** if we break out of loop here :-\
+            */
+            break;
+        }
         keycode = kbd_read_input();
 
-    	D(bug("ki: keycode %d (%x)\n", keycode, keycode));
-	if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR))
-	{
+        D(bug("ki: keycode %d (%x)\n", keycode, keycode));
+        if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR))
+        {
             /* Ignore errors and messages for mouse -> eat status/error byte */
-	    continue;
-	}
+            continue;
+        }
 
         kbd_process_key(data, keycode, SysBase);
     } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
@@ -110,7 +110,7 @@ AROS_INTH1(kbd_keyint, struct kbd_data *, data)
         D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
     }
     
-    //return 0;	/* Enable processing other intServers */
+    //return 0; /* Enable processing other intServers */
 
     D(bug("ki: }\n"));
 
@@ -123,9 +123,9 @@ AROS_INTH1(kbd_keyint, struct kbd_data *, data)
 OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem *tag, *tstate;
-    APTR    	    callback = NULL;
-    APTR    	    callbackdata = NULL;
-    BOOL    	    has_kbd_hidd = FALSE, reset_success;
+    APTR            callback = NULL;
+    APTR            callbackdata = NULL;
+    BOOL            has_kbd_hidd = FALSE, reset_success;
     int last_code;
     
     EnterFunc(bug("Kbd::New()\n"));
@@ -137,12 +137,12 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     ObtainSemaphoreShared( &XSD(cl)->sema);
 
     if (XSD(cl)->kbdhidd)
-    	has_kbd_hidd = TRUE;
+        has_kbd_hidd = TRUE;
 
     ReleaseSemaphore( &XSD(cl)->sema);
  
     if (has_kbd_hidd) /* Cannot open twice */
-    	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
+        ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     tstate = msg->attrList;
     D(bug("Kbd: tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
@@ -150,9 +150,9 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     while ((tag = NextTagItem(&tstate)))
     {
         ULONG idx;
-	
+        
         D(bug("Kbd: Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
-	    
+            
         if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
         {
             D(bug("Kbd hidd tag\n"));
@@ -162,18 +162,18 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                     callback = (APTR)tag->ti_Data;
                     D(bug("Got callback %p\n", (APTR)tag->ti_Data));
                     break;
-			
+                        
                 case aoHidd_Kbd_IrqHandlerData:
                     callbackdata = (APTR)tag->ti_Data;
                     D(bug("Got data %p\n", (APTR)tag->ti_Data));
                     break;
             }
         }
-	    
+            
     } /* while (tags to process) */
     
     if (NULL == callback)
-    	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
+        ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     /* Only continue if there appears to be a keyboard controller */
     Disable();
@@ -193,20 +193,20 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         
         data->kbd_callback   = (VOID (*)(APTR, UWORD))callback;
         data->callbackdata   = callbackdata;
-    	data->prev_amigacode = -2;
-	data->prev_keycode   = 0;
-	
+        data->prev_amigacode = -2;
+        data->prev_keycode   = 0;
+        
         /* Install keyboard interrupt */
 
         irq = &XSD(cl)->irq;
             
         irq->is_Node.ln_Type = NT_INTERRUPT;
-        irq->is_Node.ln_Pri  = 127;		/* Set the highest pri */
+        irq->is_Node.ln_Pri  = 127;             /* Set the highest pri */
         irq->is_Node.ln_Name = "Keyboard class irq";
         irq->is_Code         = (VOID_FUNC)kbd_keyint;
         irq->is_Data         = (APTR)data;
         Disable();
-        kbd_reset();		/* Reset the keyboard */
+        kbd_reset();            /* Reset the keyboard */
         kbd_updateleds(0);
         Enable();
 
@@ -219,7 +219,7 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         ObtainSemaphore(&XSD(cl)->sema);
         XSD(cl)->kbdhidd = o;
         ReleaseSemaphore(&XSD(cl)->sema);
-	
+        
     } /* if (o) */
     
     ReturnPtr("Kbd::New", OOP_Object *, o);
@@ -240,8 +240,8 @@ static int PCKbd_InitAttrs(LIBBASETYPEPTR LIBBASE)
 {
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd_Kbd	, &LIBBASE->ksd.hiddKbdAB   },
-        {NULL	    	, NULL      	    }
+        {IID_Hidd_Kbd   , &LIBBASE->ksd.hiddKbdAB   },
+        {NULL           , NULL              }
     };
     
     ReturnInt("PCKbd_InitAttrs", ULONG, OOP_ObtainAttrBases(attrbases));
@@ -253,8 +253,8 @@ static int PCKbd_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
 {
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd_Kbd	, &LIBBASE->ksd.hiddKbdAB   },
-        {NULL	    	, NULL      	    }
+        {IID_Hidd_Kbd   , &LIBBASE->ksd.hiddKbdAB   },
+        {NULL           , NULL              }
     };
     
     EnterFunc(bug("PCKbd_ExpungeAttrs\n"));
@@ -271,28 +271,28 @@ ADD2EXPUNGELIB(PCKbd_ExpungeAttrs, 0)
 
 /****************************************************************************************/
 
-#define WaitForInput        		\
-    ({ int timeout=1000;	\
-       do                   		\
-       {                    		\
-        info = kbd_read_status();     	\
-        if (!--timeout)			\
-          break;			\
+#define WaitForInput                    \
+    ({ int timeout=1000;        \
+       do                               \
+       {                                \
+        info = kbd_read_status();       \
+        if (!--timeout)                 \
+          break;                        \
        } while((info & KBD_STATUS_OBF));\
        inb(0x80);  /* Read from port 0x80, the debug port, to add some delay */ \
      })
 
 /****************************************************************************************/
 
-#define FLAG_LCTRL	0x00000008
-#define FLAG_RCTRL	0x00000010
-#define FLAG_LALT	0x00000020
-#define FLAG_RALT	0x00000040
-#define	FLAG_LSHIFT	0x00000080
-#define FLAG_RSHIFT	0x00000100
-#define	FLAG_LMETA	0x00000200
-#define FLAG_RMETA	0x00000400
-#define FLAG_DEL    	0x00000800
+#define FLAG_LCTRL      0x00000008
+#define FLAG_RCTRL      0x00000010
+#define FLAG_LALT       0x00000020
+#define FLAG_RALT       0x00000040
+#define FLAG_LSHIFT     0x00000080
+#define FLAG_RSHIFT     0x00000100
+#define FLAG_LMETA      0x00000200
+#define FLAG_RMETA      0x00000400
+#define FLAG_DEL        0x00000800
 
 /****************************************************************************************/
 
@@ -312,11 +312,11 @@ void kbd_updateleds(ULONG kbd_keystate)
 void kbd_process_key(struct kbd_data *data, UBYTE keycode,
     struct ExecBase *SysBase)
 {
-    ULONG   	    kbd_keystate = data->kbd_keystate;
-    UBYTE   	    downkeycode;
-    UBYTE   	    releaseflag;
-    UWORD   	    event;
-    WORD    	    amigacode;
+    ULONG           kbd_keystate = data->kbd_keystate;
+    UBYTE           downkeycode;
+    UBYTE           releaseflag;
+    UWORD           event;
+    WORD            amigacode;
 
     if ((keycode == KBD_REPLY_ACK) || (keycode == KBD_REPLY_RESEND))
     {
@@ -348,7 +348,7 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode,
         if (data->prev_keycode == 0xE0)
         {
             data->prev_keycode = 0;
-            event = 0x4000 | keycode;	    
+            event = 0x4000 | keycode;       
 
             if (downkeycode < NUM_E0KEYS)
             {
@@ -389,7 +389,7 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode,
         {
             amigacode = std_keytable[downkeycode];
             if (amigacode != NOKEY) amigacode |= releaseflag;
-        }	    
+        }           
     }
 
     switch(event)
@@ -516,7 +516,7 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode,
         /*
         ** Must be a repeated key. Ignore it, because we have our
         ** own kbd repeating in input.device
-        */	    
+        */          
         return;
     }
 
@@ -577,10 +577,10 @@ int kbd_reset(void)
     {
         kbd_write_output_w(KBD_OUTCMD_RESET);
         status = kbd_wait_for_input();
-	
+        
         if (status == KBD_REPLY_ACK)
             break;
-	    
+            
         if (status != KBD_REPLY_RESEND)
         {
             D(bug("Kbd: Keyboard reset failed! (1)\n"));
@@ -598,10 +598,10 @@ int kbd_reset(void)
     {
         kbd_write_output_w(KBD_OUTCMD_DISABLE);
         status = kbd_wait_for_input();
-	
+        
         if (status == KBD_REPLY_ACK)
             break;
-	    
+            
         if (status != KBD_REPLY_RESEND)
         {
             D(bug("Kbd: Keyboard disable failed!\n"));
@@ -612,10 +612,10 @@ int kbd_reset(void)
     kbd_write_command_w(KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
 
 #if 0
-    kbd_write_output_w( KBD_MODE_KCC 	| // set parameters: scan code to pc conversion, 
-    		            KBD_MODE_KBD_INT 	| //                enable mouse and keyboard,
-		     KBD_MODE_DISABLE_MOUSE | //                enable IRQ 1 & 12.
-		     KBD_MODE_SYS);
+    kbd_write_output_w( KBD_MODE_KCC    | // set parameters: scan code to pc conversion, 
+                            KBD_MODE_KBD_INT    | //                enable mouse and keyboard,
+                     KBD_MODE_DISABLE_MOUSE | //                enable IRQ 1 & 12.
+                     KBD_MODE_SYS);
 #else
     kbd_write_output_w( KBD_MODE_KCC | KBD_MODE_KBD_INT);
 #endif
