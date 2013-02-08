@@ -15,8 +15,6 @@ All Rights Reserved.
 
 */
 
-//#include <config.h>
-
 #if !defined(__AROS__)
 #undef __USE_INLINE__
 #include <proto/expansion.h>
@@ -35,9 +33,7 @@ extern struct MMUIFace*            IMMU;
 #include <proto/utility.h>
 
 #ifdef __AROS__
-#define DEBUG 1
 #include <aros/debug.h>
-#define DebugPrintF bug
 #endif
 #include <string.h>
 
@@ -45,7 +41,6 @@ extern struct MMUIFace*            IMMU;
 #include "regs.h"
 #include "misc.h"
 #include "pci_wrapper.h"
-//#include "DriverData.h"
 
 extern void rate_set_dac2(struct SB128_DATA *card, unsigned long rate);
 extern void rate_set_adc(struct SB128_DATA *card, unsigned long rate);
@@ -123,7 +118,6 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
   if( card_num >= SB128Base->cards_found ||
       SB128Base->driverdatas[ card_num ] == NULL )
   {
-    DebugPrintF("no data for card = %ld\n", card_num);
     Req( "No Card Data for card %ld.", card_num );
     return AHISF_ERROR;
   }

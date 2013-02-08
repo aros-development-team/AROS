@@ -15,8 +15,6 @@ All Rights Reserved.
 
 */
 
-//#include <config.h>
-
 #if !defined(__AROS__)
 #undef __USE_INLINE__
 #include <proto/expansion.h>
@@ -29,9 +27,7 @@ All Rights Reserved.
 #include "interrupt.h"
 #include "pci_wrapper.h"
 #ifdef __AROS__
-#define DEBUG 1
 #include <aros/debug.h>
-#define DebugPrintF bug
 #endif
 
 #define min(a,b) ((a)<(b)?(a):(b))
@@ -52,7 +48,7 @@ CardInterrupt( struct SB128_DATA* card )
   ULONG intreq;
   LONG  handled = 0;
     
-    bug("[CMI8738]: %s(card @ 0x%p)\n", __PRETTY_FUNCTION__, card);
+  D(bug("[CMI8738]: %s(card @ 0x%p)\n", __PRETTY_FUNCTION__, card));
 
   while (((intreq = (pci_inl(SB128_STATUS, card))) & SB128_INT_PENDING) != 0)
   {
