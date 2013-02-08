@@ -14,14 +14,6 @@
 
 void (*_KrnPutC)(char *) = NULL;
 
-inline void krnWaitSerIn()
-{
-    while(1)
-    {
-       if ((*(volatile uint32_t *)(UART0_BASE + UART_FR) & FR_RXFE) == 0) break;
-    }
-}
-
 inline void krnWaitSerOut()
 {
     while(1)
