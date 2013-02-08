@@ -36,19 +36,60 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                         LONG unitnr,
                         LIBBASETYPEPTR USB2OTGBase)
 {
-    struct USB2OTGUnit *unit = NULL;
+    struct USB2OTGUnit *otg_Unit = NULL;
+    unsigned int        otg_RegVal;
 
     D(bug("[USB2OTG] %s(unit:0x%p, ioreq:0x%p)\n",
-                __PRETTY_FUNCTION__, unit, ioreq));
+                __PRETTY_FUNCTION__, otg_Unit, ioreq));
 
-    // We only support the single unit presently
+    // We only support a single unit presently
     if ((unitnr == 0) && (USB2OTGBase->hd_Unit))
     {
-        unit = USB2OTGBase->hd_Unit;
-        if (!(unit->hu_UnitAllocated))
+        otg_Unit = USB2OTGBase->hd_Unit;
+        if (!(otg_Unit->hu_UnitAllocated))
         {
-            unit->hu_UnitAllocated = TRUE;
-            return (&unit->hu_Unit);
+            otg_Unit->hu_UnitAllocated = TRUE;
+
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_INTR);
+
+            otg_Unit->hu_OperatingMode = (BOOL)(otg_RegVal & USB2OTG_INTRCORE_CURRENTMODE);
+
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_LPMCONFIG);            
+
+            if (otg_Unit->hu_OperatingMode == USB2OTG_USBHOSTMODE)
+            {
+                D(bug("[USB2OTG] %s: Core running in HOST mode\n",
+                            __PRETTY_FUNCTION__));
+                D(bug("[USB2OTG] %s: Host Channels: %d\n",
+                            __PRETTY_FUNCTION__, ((otg_RegVal & (0xF << 14)) >> 14)));
+            }
+            else
+            {
+                D(bug("[USB2OTG] %s: Core running in DEVICE mode\n",
+                            __PRETTY_FUNCTION__));
+                D(bug("[USB2OTG] %s: Device Endpoints: %d\n",
+                            __PRETTY_FUNCTION__, ((otg_RegVal & (0xF << 10)) >> 10)));
+            }
+
+            otg_RegVal = *((volatile unsigned int *)(USB2OTG_HARDWARE + 4));
+            D(bug("[USB2OTG] %s: Operating Mode: %0x\n",
+                        __PRETTY_FUNCTION__, (otg_RegVal & 0x7)));
+            D(bug("[USB2OTG] %s: Queue Depths:\n",
+                        __PRETTY_FUNCTION__));
+            D(bug("[USB2OTG] %s:      Periodic Transmit: 0x%0x\n",
+                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x3 << 24)) >> 24)));
+            D(bug("[USB2OTG] %s:      Non-Periodic Transmit: 0x%0x\n",
+                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x3 << 22)) >> 22)));
+            D(bug("[USB2OTG] %s:      Device Tokens: 0x%0x\n",
+                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x1F << 26)) >> 26)));
+            otg_RegVal = *((volatile unsigned int *)(USB2OTG_HARDWARE + 8));
+            D(bug("[USB2OTG] %s:      FIFO: %d\n",
+                        __PRETTY_FUNCTION__, ((otg_RegVal & (0xFFFF << 16)) >> 16)));
+
+            D(bug("[USB2OTG] %s: Xfer Size: %0x\n",
+                        __PRETTY_FUNCTION__, (otg_RegVal & 0xF)));
+
+            return (&otg_Unit->hu_Unit);
         }
         else
         {
@@ -61,12 +102,12 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
     return(NULL);
 }
 
-void FNAME_DEV(CloseUnit)(struct IOUsbHWReq *ioreq, struct USB2OTGUnit *unit, LIBBASETYPEPTR USB2OTGBase)
+void FNAME_DEV(CloseUnit)(struct IOUsbHWReq *ioreq, struct USB2OTGUnit *otg_Unit, LIBBASETYPEPTR USB2OTGBase)
 {
     D(bug("[USB2OTG] %s(unit:0x%p, ioreq:0x%p)\n",
-                __PRETTY_FUNCTION__, unit, ioreq));
+                __PRETTY_FUNCTION__, otg_Unit, ioreq));
 
-    unit->hu_UnitAllocated = FALSE;
+    otg_Unit->hu_UnitAllocated = FALSE;
 }
 
 void FNAME_DEV(TermIO)(struct IOUsbHWReq *ioreq,
@@ -81,13 +122,13 @@ void FNAME_DEV(TermIO)(struct IOUsbHWReq *ioreq,
 }
 
 WORD FNAME_DEV(cmdNSDeviceQuery)(struct IOStdReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     struct USBNSDeviceQueryResult *query = (struct USBNSDeviceQueryResult *)ioreq->io_Data;
 
     D(bug("[USB2OTG] NSCMD_DEVICEQUERY(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     if ((!query) ||
        (ioreq->io_Length < sizeof(struct USBNSDeviceQueryResult)) ||
@@ -106,11 +147,11 @@ WORD FNAME_DEV(cmdNSDeviceQuery)(struct IOStdReq *ioreq,
     query->DeviceSubType     = 0;
     query->SupportedCommands = __suported_cmds;
 
-    return RC_OK;;
+    return RC_OK;
 }
 
 WORD FNAME_DEV(cmdQueryDevice)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     struct TagItem *taglist = (struct TagItem *) ioreq->iouh_Data;
@@ -118,7 +159,7 @@ WORD FNAME_DEV(cmdQueryDevice)(struct IOUsbHWReq *ioreq,
     ULONG count = 0;
 
     D(bug("[USB2OTG] UHCMD_QUERYDEVICE(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     if (((tag = FindTagItem(UHA_State, taglist)) != NULL) && (tag->ti_Data))
     {
@@ -178,101 +219,101 @@ WORD FNAME_DEV(cmdQueryDevice)(struct IOUsbHWReq *ioreq,
 }
 
 WORD FNAME_DEV(cmdReset)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     D(bug("[USB2OTG] CMD_RESET(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     return (WORD)UHIOERR_USBOFFLINE;
 }
 
 WORD FNAME_DEV(cmdFlush)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     D(bug("[USB2OTG] CMD_FLUSH(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     return RC_OK;
 }
 
 WORD FNAME_DEV(cmdUsbReset)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     D(bug("[USB2OTG] UHCMD_USBRESET(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     return (WORD)UHIOERR_USBOFFLINE;
 }
 
 WORD FNAME_DEV(cmdUsbResume)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     D(bug("[USB2OTG] UHCMD_USBRESUME(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     return (WORD)UHIOERR_USBOFFLINE;
 }
 
 WORD FNAME_DEV(cmdUsbSuspend)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     D(bug("[USB2OTG] UHCMD_USBSUSPEND(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     return (WORD)UHIOERR_USBOFFLINE;
 }
 
 WORD FNAME_DEV(cmdUsbOper)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     D(bug("[USB2OTG] UHCMD_USBOPER(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     return (WORD)UHIOERR_USBOFFLINE;
 }
 
 WORD FNAME_DEV(cmdControlXFer)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     D(bug("[USB2OTG] UHCMD_CONTROLXFER(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     return (WORD)UHIOERR_USBOFFLINE;
 }
 
 WORD FNAME_DEV(cmdBulkXFer)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     D(bug("[USB2OTG] UHCMD_BULKXFER(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     return (WORD)UHIOERR_USBOFFLINE;
 }
 
 WORD FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     D(bug("[USB2OTG] UHCMD_INTXFER(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     return (WORD)UHIOERR_USBOFFLINE;
 }
 
 WORD FNAME_DEV(cmdIsoXFer)(struct IOUsbHWReq *ioreq,
-                       struct USB2OTGUnit *unit,
+                       struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
     D(bug("[USB2OTG] UHCMD_ISOXFER(unit:0x%p, ioreq:0x%p)\n",
-                unit, ioreq));
+                otg_Unit, ioreq));
 
     return (WORD)UHIOERR_USBOFFLINE;
 }

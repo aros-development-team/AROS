@@ -32,14 +32,14 @@ static void GlobalIRQHandler(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBa
  */
 static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 {
-    unsigned int usbregval;
+    unsigned int otg_RegVal;
 
     D(bug("[USB2OTG] %s: USB2OTGBase @ 0x%p, SysBase @ 0x%p\n",
                  __PRETTY_FUNCTION__, USB2OTGBase, SysBase));
 
-    usbregval = *((volatile unsigned int *)USB2OTG_VENDORID);
+    otg_RegVal = *((volatile unsigned int *)USB2OTG_VENDORID);
 
-    if ((usbregval & 0xFFFFF000) != 0x4F542000)
+    if ((otg_RegVal & 0xFFFFF000) != 0x4F542000)
     {
         bug("[USB2OTG] No Supported HS OTG USB Core Found\n");
 
@@ -52,7 +52,10 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                 __PRETTY_FUNCTION__, USB2OTGBase->hd_KernelBase));
 
         bug("[USB2OTG] HS OTG Core Release: %x.%x%x%x\n",
-                    ((usbregval >> 12) & 0xF), ((usbregval >> 8) & 0xF), ((usbregval >> 4) & 0xF), (usbregval & 0xF));
+                    ((otg_RegVal >> 12) & 0xF), ((otg_RegVal >> 8) & 0xF), ((otg_RegVal >> 4) & 0xF), (otg_RegVal & 0xF));
+
+        otg_RegVal = *((volatile unsigned int *)USB2OTG_LPMCONFIG);
+        bug("[USB2OTG] Architecture: %0x\n", ((otg_RegVal & (3 << 3)) >> 3));
 
         if ((USB2OTGBase->hd_UtilityBase = (APTR)OpenLibrary("utility.library", 39)) != NULL)
         {
@@ -64,52 +67,89 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                 D(bug("[USB2OTG] %s: Allocated MemPool @ 0x%p\n",
                             __PRETTY_FUNCTION__, USB2OTGBase->hd_MemPool));
 
-                for (chan = 0; chan < EPSCHANS_MAX; chan++) {
-                    D(bug("[USB2OTG] %s: Host Chan #%d FIFO @ 0x%p, Characteristics: %08x\n",
-                                __PRETTY_FUNCTION__,
-                                chan, USB2OTG_FIFOBASE + (chan * USB2OTG_FIFOSIZE),
-                                *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE))));
-                }
+                otg_RegVal = *((volatile unsigned int *)USB2OTG_INTR);
+                if ((otg_RegVal & USB2OTG_INTRCORE_CURRENTMODE) != USB2OTG_USBHOSTMODE)
+                {
+#if defined(OTG_FORCEHOSTMODE)
+                    bug("[USB2OTG] Switching from DEVICE Mode to HOST Mode\n");
 
-                for (chan = 0; chan < EPSCHANS_MAX; chan++) {
-                    D(bug("[USB2OTG] %s: Device Endpoint #%d IN_CTL: %08x, OUT_CTL: %08x\n",
-                                __PRETTY_FUNCTION__, chan,
-                                *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)),
-                                *((volatile unsigned int *)(USB2OTG_DEV_OUTEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_OUTEP_DOEPCTL))));
-                }
+                    *((volatile unsigned int *)USB2OTG_POWER) = 0;
 
-                D(bug("[USB2OTG] %s: HWConfig1: %08x\n",
-                            __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_HARDWARE)));
-                D(bug("[USB2OTG] %s: HWConfig2: %08x\n",
-                            __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_LPMCONFIG)));
-                D(bug("[USB2OTG] %s: HWConfig3: %08x\n",
-                            __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_LPMCONFIG + 4)));
-                D(bug("[USB2OTG] %s: HWConfig4: %08x\n",
-                            __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_LPMCONFIG + 8)));
-
-                D(bug("[USB2OTG] %s: Host Mode Config: %08x\n",
-                            __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_HOSTCFG)));
+                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTCFG);
+                    otg_RegVal &= ~0x3;
+                    otg_RegVal |= (1 << 3); // FULLSPEED
+                    *((volatile unsigned int *)USB2OTG_HOSTCFG) = otg_RegVal;
+                    
+                    otg_RegVal = *((volatile unsigned int *)USB2OTG_OTGCTRL);
+                    otg_RegVal &= ~USB2OTG_OTGCTRL_HOSTSETHNPENABLE;
+                    *((volatile unsigned int *)USB2OTG_OTGCTRL) = otg_RegVal;
+                    
+                    *((volatile unsigned int *)USB2OTG_INTRMASK) = 0;
+                    *((volatile unsigned int *)USB2OTG_INTR) = 0xFFFFFFFF;
+                    *((volatile unsigned int *)USB2OTG_INTRMASK) = (1 << 3) | (3 << 24);
+#else
                 D(bug("[USB2OTG] %s: Device Mode Config: %08x\n",
                             __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_DEVCFG)));
 
-                D(bug("[USB2OTG] %s: Disabling USB Interrupts (Globaly)..\n", __PRETTY_FUNCTION__));
-                usbregval = *((volatile unsigned int *)USB2OTG_AHB);
-                usbregval &= ~USB2OTG_AHB_INTENABLE;
-                *((volatile unsigned int *)USB2OTG_AHB) = usbregval;
-                D(bug("[USB2OTG] %s: AHB : %08x\n", __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_AHB)));
+                    for (chan = 0; chan < EPSCHANS_MAX; chan++) {
+                        D(bug("[USB2OTG] %s: Device Endpoint #%d IN_CTL: %08x, OUT_CTL: %08x\n",
+                                    __PRETTY_FUNCTION__, chan,
+                                    *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)),
+                                    *((volatile unsigned int *)(USB2OTG_DEV_OUTEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_OUTEP_DOEPCTL))));
+                    }
+#endif
+                }
 
-                USB2OTGBase->hd_Unit = AllocPooled(USB2OTGBase->hd_MemPool, sizeof(struct USB2OTGUnit));
+                otg_RegVal = *((volatile unsigned int *)USB2OTG_INTR);
+                if ((otg_RegVal & USB2OTG_INTRCORE_CURRENTMODE) == USB2OTG_USBHOSTMODE)
+                {
+                    D(bug("[USB2OTG] %s: Host Mode Config: %08x\n",
+                                __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_HOSTCFG)));
 
-                D(bug("[USB2OTG] %s: Unit Allocated at 0x%p\n",
-                            __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit));
+                    for (chan = 0; chan < EPSCHANS_MAX; chan++) {
+                        D(bug("[USB2OTG] %s: Host Chan #%d FIFO @ 0x%p, Characteristics: %08x\n",
+                                    __PRETTY_FUNCTION__,
+                                    chan, USB2OTG_FIFOBASE + (chan * USB2OTG_FIFOSIZE),
+                                    *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE))));
+                    }
+                }
+#if defined(OTG_FORCEHOSTMODE)
+                else
+                {
+                    bug("[USB2OTG] Failed to change mode - exiting\n");
+                    USB2OTGBase = NULL;
+                }
+#endif
 
-                USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, GlobalIRQHandler, USB2OTGBase->hd_Unit, SysBase);
+                if (USB2OTGBase)
+                {
+                    D(bug("[USB2OTG] %s: HWConfig1: %08x\n",
+                                __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_HARDWARE)));
+                    D(bug("[USB2OTG] %s: HWConfig2: %08x\n",
+                                __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_HARDWARE + 4)));
+                    D(bug("[USB2OTG] %s: HWConfig3: %08x\n",
+                                __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_HARDWARE + 8)));
+                    D(bug("[USB2OTG] %s: HWConfig4: %08x\n",
+                                __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_HARDWARE + 12)));
 
-                D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p]\n",
-                            __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_GlobalIRQHandle));
+                    D(bug("[USB2OTG] %s: Disabling USB Interrupts (Globaly)..\n", __PRETTY_FUNCTION__));
+                    otg_RegVal = *((volatile unsigned int *)USB2OTG_AHB);
+                    otg_RegVal &= ~USB2OTG_AHB_INTENABLE;
+                    *((volatile unsigned int *)USB2OTG_AHB) = otg_RegVal;
+                    D(bug("[USB2OTG] %s: AHB : %08x\n", __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_AHB)));
 
-                bug("[USB2OTG] HS OTG USB Driver Initialised\n");
+                    USB2OTGBase->hd_Unit = AllocPooled(USB2OTGBase->hd_MemPool, sizeof(struct USB2OTGUnit));
 
+                    D(bug("[USB2OTG] %s: Unit Allocated at 0x%p\n",
+                                __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit));
+
+                    USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, GlobalIRQHandler, USB2OTGBase->hd_Unit, SysBase);
+
+                    D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p]\n",
+                                __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_GlobalIRQHandle));
+
+                    bug("[USB2OTG] HS OTG USB Driver Initialised\n");
+                }
             }
             else
             {
@@ -130,7 +170,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
     }
 
     D(bug("[USB2OTG] %s: OpenCnt = %ld\n",
-                __PRETTY_FUNCTION__, USB2OTGBase->hd_Library.lib_OpenCnt));
+                __PRETTY_FUNCTION__, USB2OTGBase ? USB2OTGBase->hd_Library.lib_OpenCnt : 0 ));
 
     return USB2OTGBase ? TRUE : FALSE;
 }
@@ -143,10 +183,10 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
  * This is the the DEV_OPEN function.
  *
  */
-static int FNAME_DEV(Open)(LIBBASETYPEPTR USB2OTGBase, struct IOUsbHWReq *ioreq, ULONG unit, ULONG flags)
+static int FNAME_DEV(Open)(LIBBASETYPEPTR USB2OTGBase, struct IOUsbHWReq *ioreq, ULONG otg_Unit, ULONG flags)
 {
     D(bug("[USB2OTG] %s: IOReq @ 0x%p, unit #%ld, flags = 0x%08lx, USB2OTGBase @ 0x%p\n",
-                __PRETTY_FUNCTION__, ioreq, unit, flags, USB2OTGBase));
+                __PRETTY_FUNCTION__, ioreq, otg_Unit, flags, USB2OTGBase));
 
     D(bug("[USB2OTG] %s: openCnt = %ld\n",
                 __PRETTY_FUNCTION__, USB2OTGBase->hd_Library.lib_OpenCnt));
@@ -162,7 +202,7 @@ static int FNAME_DEV(Open)(LIBBASETYPEPTR USB2OTGBase, struct IOUsbHWReq *ioreq,
     {
         ioreq->iouh_Req.io_Error = IOERR_OPENFAIL;
 
-        ioreq->iouh_Req.io_Unit = FNAME_DEV(OpenUnit)(ioreq, unit, USB2OTGBase);
+        ioreq->iouh_Req.io_Unit = FNAME_DEV(OpenUnit)(ioreq, otg_Unit, USB2OTGBase);
         if (!(ioreq->iouh_Req.io_Unit))
         {
             D(bug("[USB2OTG] %s: could not open unit!\n",
@@ -232,7 +272,7 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
 {
     AROS_LIBFUNC_INIT
 
-    struct USB2OTGUnit *unit = (struct USB2OTGUnit *) ioreq->iouh_Req.io_Unit;
+    struct USB2OTGUnit *otg_Unit = (struct USB2OTGUnit *) ioreq->iouh_Req.io_Unit;
     WORD ret;
 
     D(bug("[USB2OTG] %s: IOReq @ 0x%08lx, USB2OTGBase @ 0x%08lx, cmd: %lu\n",
@@ -246,47 +286,47 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
         switch (ioreq->iouh_Req.io_Command)
         {
             case CMD_RESET:
-                ret = FNAME_DEV(cmdReset)(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdReset)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             case CMD_FLUSH:
-                ret = FNAME_DEV(cmdFlush)(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdFlush)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             case UHCMD_QUERYDEVICE:
-                ret = FNAME_DEV(cmdQueryDevice)(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdQueryDevice)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             case UHCMD_USBRESET:
-                ret = FNAME_DEV(cmdUsbReset)(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdUsbReset)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             case UHCMD_USBRESUME:
-                ret = FNAME_DEV(cmdUsbResume)(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdUsbResume)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             case UHCMD_USBSUSPEND:
-                ret = FNAME_DEV(cmdUsbSuspend)(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdUsbSuspend)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             case UHCMD_USBOPER:
-                ret = FNAME_DEV(cmdUsbOper)(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdUsbOper)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             case UHCMD_CONTROLXFER:
-                ret = FNAME_DEV(cmdControlXFer)(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdControlXFer)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             case UHCMD_BULKXFER:
-                ret = FNAME_DEV(cmdBulkXFer)(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdBulkXFer)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             case UHCMD_INTXFER:
-                ret = FNAME_DEV(cmdIntXFer)(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdIntXFer)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             case UHCMD_ISOXFER:
-                ret = FNAME_DEV(cmdIsoXFer)(ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdIsoXFer)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             default:
@@ -299,7 +339,7 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
         switch(ioreq->iouh_Req.io_Command)
         {
             case NSCMD_DEVICEQUERY:
-                ret = FNAME_DEV(cmdNSDeviceQuery)((struct IOStdReq *) ioreq, unit, USB2OTGBase);
+                ret = FNAME_DEV(cmdNSDeviceQuery)((struct IOStdReq *) ioreq, otg_Unit, USB2OTGBase);
                 break;
 
             default:
@@ -344,7 +384,7 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
     /* Is it pending? */
     if (ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE)
     {
-//        if (cmdAbortIO(ioreq, USB2OTGBase))
+//        if (FNAME_DEV(cmdAbortIO)(ioreq, USB2OTGBase))
 //        {
 //            return(0);
 //        }
