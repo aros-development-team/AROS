@@ -62,7 +62,7 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
     int card_no;
     int i;
 
-    D(bug("[HDAudio] %s()\n"), __PRETTY_FUNCTION__);
+    D(bug("[HDAudio] %s()\n", __PRETTY_FUNCTION__));
     AHIsubBase = ahisubbase;
 
     DOSBase = (struct DosLibrary *) OpenLibrary(DOSNAME, 37);
