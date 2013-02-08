@@ -18,7 +18,6 @@ All Rights Reserved.
 #include <exec/memory.h>
 
 #ifdef __AROS__
-#define DEBUG 1
 #include <aros/debug.h>
 #endif
 

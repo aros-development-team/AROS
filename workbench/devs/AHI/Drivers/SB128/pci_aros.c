@@ -1,4 +1,23 @@
+/*
+
+The contents of this file are subject to the AROS Public License Version 1.1 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+http://www.aros.org/license.html
+
+Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF
+ANY KIND, either express or implied. See the License for the specific language governing rights and
+limitations under the License.
+
+The Original Code is (C) Copyright 2004-2011 Ross Vumbaca.
+
+The Initial Developer of the Original Code is Ross Vumbaca.
+
+All Rights Reserved.
+
+*/
+
 #define __OOP_NOATTRBASES__
+
+#include <aros/debug.h>
 
 #include <utility/hooks.h>
 #include <exec/interrupts.h>
@@ -12,9 +31,6 @@
 
 #include "DriverData.h"
 #include "pci_wrapper.h"
-
-#include <aros/debug.h>
-#define KPrintF kprintf
 
 struct Library *OOPBase;
 
@@ -126,7 +142,7 @@ APTR ahi_pci_find_device(ULONG vendorid, ULONG deviceid, APTR dev)
 
     OOP_DoMethod(pciobj, (OOP_Msg)msg);
 
-    //KPrintF("ahi_pci_find_device: found_dev = %lx\n", ed.found_dev);
+    D(bug("[SB128] ahi_pci_find_device: found_dev = %lx\n", ed.found_dev));
 
     return (APTR)ed.found_dev;
 }
@@ -313,7 +329,7 @@ void ahi_pci_rem_intserver(struct Interrupt *i, APTR dev)
         inthandler_added = FALSE;
     }   
 
-    KPrintF("ahi_pci_rem_intserver\n");
+    //KPrintF("ahi_pci_rem_intserver\n");
 }
 
 
