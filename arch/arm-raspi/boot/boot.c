@@ -249,7 +249,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     			uint8_t *file = base+4;
     			uint32_t total_length = AROS_BE2LONG(*(uint32_t*)file); /* Total length of the module */
     			const uint8_t *file_end = base+total_length;
-    			uint32_t len;
+    			uint32_t len, cnt = 0;
 
     			kprintf("[BOOT] Package size: %dKB", total_length >> 10);
 
@@ -280,6 +280,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 
     				/* go to the next file */
     				file += len;
+                                cnt++;
     			}
                         kprintf("\n");
     		}
