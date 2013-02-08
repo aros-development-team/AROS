@@ -215,7 +215,7 @@ AROS_INTH1(mouse_ps2int,struct mouse_data *, data)
 {
     AROS_INTFUNC_INIT
 
-    struct pHidd_Mouse_Event    *e = &data->u.ps2.event;
+    struct pHidd_Mouse_Event    *e = &data->event;
     UWORD                       buttonstate;
     WORD                        work = 10000;
     UBYTE                       info, mousecode, *mouse_data;
@@ -243,22 +243,22 @@ AROS_INTH1(mouse_ps2int,struct mouse_data *, data)
 
         /* Mouse Packet Byte */
 
-        mouse_data = data->u.ps2.mouse_data;
+        mouse_data = data->mouse_data;
 
-        data->u.ps2.expected_mouse_acks = 0;
-        mouse_data[data->u.ps2.mouse_collected_bytes] = mousecode;
+        data->expected_mouse_acks = 0;
+        mouse_data[data->mouse_collected_bytes] = mousecode;
 
         /* Packet validity check. Bit 3 of first mouse packet byte must be set */
 
         if ((mouse_data[0] & 8) == 0)
         {
-            data->u.ps2.mouse_collected_bytes = 0;
+            data->mouse_collected_bytes = 0;
             continue;
         }
 
-        data->u.ps2.mouse_collected_bytes++;
+        data->mouse_collected_bytes++;
 
-        if (data->u.ps2.mouse_collected_bytes != data->u.ps2.mouse_packetsize)
+        if (data->mouse_collected_bytes != data->mouse_packetsize)
         {
             /* Mouse Packet not yet complete */
             continue;
@@ -266,7 +266,7 @@ AROS_INTH1(mouse_ps2int,struct mouse_data *, data)
 
         /* We have a complete mouse packet :-) */
 
-        data->u.ps2.mouse_collected_bytes = 0;
+        data->mouse_collected_bytes = 0;
 
         /*
          * Let's see whether these data can be right...
@@ -374,7 +374,7 @@ int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
         return 0;
     CloseLibrary(kbd_hidd);
 
-    irq = &data->u.ps2.irq;
+    irq = &data->irq;
 
     irq->is_Node.ln_Type = NT_INTERRUPT;
     irq->is_Node.ln_Pri  = 127;
@@ -404,7 +404,7 @@ int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
 void dispose_mouse_ps2(OOP_Class *cl, OOP_Object *o) {
 struct mouse_data *data = OOP_INST_DATA(cl, o);
 
-   RemIntServer(INTB_KERNEL + 12, &data->u.ps2.irq);
+   RemIntServer(INTB_KERNEL + 12, &data->irq);
 }
 
 /****************************************************************************************/
@@ -420,9 +420,9 @@ UBYTE ack;
         /* switch to remote mode */
         mouse_write(KBD_OUTCMD_SET_REMOTE_MODE);
         /* we want data */
-        ack = data->u.ps2.expected_mouse_acks+1;
+        ack = data->expected_mouse_acks+1;
         mouse_write(KBD_OUTCMD_READ_DATA);
-        while (data->u.ps2.expected_mouse_acks>=ack)
+        while (data->expected_mouse_acks>=ack)
                 mouse_usleep(1000);
         /* switch back to stream mode */
         mouse_write(KBD_OUTCMD_SET_STREAM_MODE);
@@ -558,14 +558,14 @@ int mouse_ps2reset(struct mouse_data *data)
     mouse_wait_for_input();    /* Test result (0xAA) */
     mouse_wait_for_input();    /* Mouse type */
 
-    data->u.ps2.mouse_protocol = PS2_PROTOCOL_STANDARD;
-    data->u.ps2.mouse_packetsize = 3;
+    data->mouse_protocol = PS2_PROTOCOL_STANDARD;
+    data->mouse_packetsize = 3;
 
 #if INTELLIMOUSE_SUPPORT
     if (detect_intellimouse())
     {
-        data->u.ps2.mouse_protocol = PS2_PROTOCOL_INTELLIMOUSE;
-        data->u.ps2.mouse_packetsize = 4;
+        data->mouse_protocol = PS2_PROTOCOL_INTELLIMOUSE;
+        data->mouse_packetsize = 4;
     }
 #endif
 

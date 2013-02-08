@@ -2,7 +2,7 @@
 #define _MOUSE_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse native HIDD.
@@ -36,34 +36,12 @@
 
 /***** Mouse HIDD *******************/
 
-/* IDs */
-#define IID_Hidd_PCmouse        "hidd.bus.mouse"
-#define CLID_Hidd_PCmouse       "hidd.bus.mouse"
-
-/* Methods */
-enum
-{
-    moHidd_Mouse_HandleEvent
-};
-    
-struct pHidd_Mouse_HandleEvent
-{
-    OOP_MethodID mID;
-    ULONG event;
-};
-            
-VOID Hidd_Mouse_HandleEvent(OOP_Object *o, ULONG event);
-            
-/* misc */
-
 struct mouse_staticdata
 {
-    struct SignalSemaphore      sema; /* Protexting this whole struct */
-    
+    OOP_AttrBase        hiddAttrBase;
     OOP_AttrBase        hiddMouseAB;
 
     OOP_Class           *mouseclass;
-
     OOP_Object          *mousehidd;
 };
 
@@ -72,16 +50,6 @@ struct mousebase
     struct Library library;
     
     struct mouse_staticdata msd;
-};
-
-/* 488 byte long ring buffer used to read data with timeout defined */
-
-#define RingSize 488
-
-struct Ring
-{
-    char ring[RingSize];
-    int top, ptr;
 };
 
 /* Object data */
@@ -93,70 +61,16 @@ struct mouse_data
 
     UWORD buttonstate;
 
-    char *mouse_name;
-    char type; /* type of mouse (usb, ps2, serial) */
-/* Driver specific data */
-
-    union
-    {
-        struct
-        {
-            OOP_Object *usbhidd;
-        } usb;
-        struct
-        {
-            struct Interrupt            irq;
-            UBYTE                       mouse_data[5];
-            UBYTE                       mouse_collected_bytes;
-            UBYTE                       mouse_protocol;
-            UBYTE                       mouse_packetsize;
-            UBYTE                       expected_mouse_acks;
-            UBYTE                       packetsize;
+    struct Interrupt            irq;
+    UBYTE                       mouse_data[5];
+    UBYTE                       mouse_collected_bytes;
+    UBYTE                       mouse_protocol;
+    UBYTE                       mouse_packetsize;
+    UBYTE                       expected_mouse_acks;
+    UBYTE                       packetsize;
             
-            struct pHidd_Mouse_Event    event;
-        } ps2;
-        struct
-        {
-            OOP_Object                  *serial;
-            OOP_Object                  *unit;
-            struct Library              *shidd;
-            UBYTE                       mouse_data[5];
-            UBYTE                       mouse_collected_bytes;
-            UBYTE                       mouse_protocol;
-            UBYTE                       mouse_inth_state;
-
-            struct pHidd_Mouse_Event    event;
-            struct Ring                 *rx;    /* Ring structure for mouse init */
-        } ser;
-    } u;
+    struct pHidd_Mouse_Event    event;
 };
-
-#define MDT_UNKNOWN 0
-#define MDT_USB     1
-#define MDT_SERIAL  2
-#define MDT_PS2     3
-
-/* Mouse types */
-#define P_MS            0               /* Microsoft */
-#define P_MSC           1               /* Mouse Systems Corp */
-#define P_MM            2               /* MMseries */
-#define P_LOGI          3               /* Logitech */
-#define P_BM            4               /* BusMouse ??? */
-#define P_LOGIMAN       5               /* MouseMan / TrackMan */
-#define P_PS2           6               /* PS/2 mouse */
-#define P_MMHIT         7               /* MM_HitTab */
-#define P_GLIDEPOINT    8               /* ALPS serial GlidePoint */
-#define P_IMSERIAL      9               /* Microsoft serial IntelliMouse */
-#define P_THINKING      10              /* Kensington serial ThinkingMouse */
-#define P_IMPS2         11              /* Microsoft PS/2 IntelliMouse */
-#define P_THINKINGPS2   12              /* Kensington PS/2 ThinkingMouse */
-#define P_MMANPLUSPS2   13              /* Logitech PS/2 MouseMan+ */
-#define P_GLIDEPOINTPS2 14              /* ALPS PS/2 GlidePoint */
-#define P_NETPS2        15              /* Genius PS/2 NetMouse */
-#define P_NETSCROLLPS2  16              /* Genius PS/2 NetScroll */
-#define P_SYSMOUSE      17              /* SysMouse */
-#define P_AUTO          18              /* automatic */
-#define P_ACECAD        19              /* ACECAD protocol */
 
 /****************************************************************************************/
 
