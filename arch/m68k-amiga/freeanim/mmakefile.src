@@ -1,0 +1,19 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+# Stub library for CD32 support.
+#
+# The original 'freeanim' library did started a spinning logo
+# to hide the Workbench until the CD was mounted.
+#
+# The CD32 game would have a 'freeanim' program that expunged
+# freeanim.library, which would remove the animation.
+#
+# For now, we just have an empty library that does nothing -
+# this is enough to prevent 'freeanim' from crashing when
+# it tries to expunge the library.
+
+%build_module mmake=kernel-freeanim \
+    modname=freeanim modtype=library
+
+%common
