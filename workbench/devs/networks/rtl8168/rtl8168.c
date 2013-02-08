@@ -1161,7 +1161,7 @@ RTLD(bug("[%s] rtl8168nic_Init: MAC Address %02x:%02x:%02x:%02x:%02x:%02x\n", un
 
 RTLD(bug("[%s] rtl8168nic_Init: PHY Configured\n", unit->rtl8168u_name))
 
-    pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+    pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
     pcibyte.reg = PCI_LATENCY_TIMER;
     pcibyte.val = 0x40;
     OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1415,7 +1415,7 @@ static void rtl8168nic_HWStart(struct net_device *unit)
         RTL_W8(base + (Config3), RTL_R8(base + (Config3)) & ~Beacon_en);
 
         //disable clock request.
-        pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+        pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
         pcibyte.reg = 0x81;
         pcibyte.val = 0x00;
         OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1431,12 +1431,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 
             //Set PCI configuration space offset 0x79 to 0x20
             /*Increase the Tx performance*/
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x20;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1454,12 +1454,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 
             //Set PCI configuration space offset 0x79 to 0x50
             /*Increase the Tx performance*/
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x50;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1494,7 +1494,7 @@ static void rtl8168nic_HWStart(struct net_device *unit)
         RTL_W8(base + (Config3), RTL_R8(base + (Config3)) & ~Beacon_en);
 
         //disable clock request.
-        pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+        pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
         pcibyte.reg = 0x81;
         pcibyte.val = 0x00;
         OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1510,12 +1510,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 
             //Set PCI configuration space offset 0x79 to 0x20
             /*Increase the Tx performance*/
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x20;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1533,12 +1533,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 
             //Set PCI configuration space offset 0x79 to 0x50
             /*Increase the Tx performance*/
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x50;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1569,12 +1569,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 
             //Set PCI configuration space offset 0x79 to 0x20
             /*Increase the Tx performance*/
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x20;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1592,12 +1592,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 
             //Set PCI configuration space offset 0x79 to 0x50
             /*Increase the Tx performance*/
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x50;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1628,12 +1628,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 
             //Set PCI configuration space offset 0x79 to 0x20
             /*Increase the Tx performance*/
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x20;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1651,12 +1651,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 
             //Set PCI configuration space offset 0x79 to 0x50
             /*Increase the Tx performance*/
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x50;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1689,12 +1689,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 
             //Set PCI configuration space offset 0x79 to 0x20
             /*Increase the Tx performance*/
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x20;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1712,12 +1712,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
 
             //Set PCI configuration space offset 0x79 to 0x50
             /*Increase the Tx performance*/
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x50;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1737,7 +1737,7 @@ static void rtl8168nic_HWStart(struct net_device *unit)
         rtl8168nic_CSIWrite(unit, 0x70c, csi_tmp | 0x27000000);
 
         //disable clock request.
-        pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+        pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
         pcibyte.reg = 0x81;
         pcibyte.val = 0x00;
         OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1752,12 +1752,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
             RTL_W8(base + (Config4), RTL_R8(base + (Config4)) | Jumbo_En1);
 
             //Set PCI configuration space offset 0x79 to 0x20
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x20;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1774,12 +1774,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
             RTL_W8(base + (Config4), RTL_R8(base + (Config4)) & ~Jumbo_En1);
 
             //Set PCI configuration space offset 0x79 to 0x50
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x50;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1811,12 +1811,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
             RTL_W8(base + (Config4), RTL_R8(base + (Config4)) | Jumbo_En1);
 
             //Set PCI configuration space offset 0x79 to 0x20
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x20;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1833,12 +1833,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
             RTL_W8(base + (Config4), RTL_R8(base + (Config4)) & ~Jumbo_En1);
 
             //Set PCI configuration space offset 0x79 to 0x50
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x50;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1863,7 +1863,7 @@ static void rtl8168nic_HWStart(struct net_device *unit)
         /******set EPHY registers       end******/
 
         //disable clock request.
-        pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+        pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
         pcibyte.reg = 0x81;
         pcibyte.val = 0x00;
         OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1880,12 +1880,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
             RTL_W8(base + (Config4), RTL_R8(base + (Config4)) | Jumbo_En1);
 
             //Set PCI configuration space offset 0x79 to 0x20
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x20;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1902,12 +1902,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
             RTL_W8(base + (Config4), RTL_R8(base + (Config4)) & ~Jumbo_En1);
 
             //Set PCI configuration space offset 0x79 to 0x50
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x79;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x50;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x79;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1932,7 +1932,7 @@ static void rtl8168nic_HWStart(struct net_device *unit)
         /******set EPHY registers       end******/
 
         //disable clock request.
-        pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+        pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
         pcibyte.reg = 0x81;
         pcibyte.val = 0x00;
         OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1947,22 +1947,22 @@ static void rtl8168nic_HWStart(struct net_device *unit)
               Cxpl_dbg_sel | ASF | PktCntrDisable | Macdbgo_sel));
 
         if (unit->rtl8168u_mtu > ETH_DATA_LEN) {
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x69;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x28;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x69;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
         } else {
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x69;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x58;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x69;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1975,12 +1975,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
               Cxpl_dbg_sel | ASF | PktCntrDisable | Macdbgo_sel));
 
         if (unit->rtl8168u_mtu > ETH_DATA_LEN) {
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x69;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x28;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x69;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -1988,12 +1988,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
             RTL_W8(base + (Reserved1), Reserved1_data);
             RTL_W8(base + (Config4), RTL_R8(base + (Config4)) | (1 << 0));
         } else {
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x69;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x58;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x69;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -2009,12 +2009,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
               Cxpl_dbg_sel | ASF | PktCntrDisable | Macdbgo_sel));
 
         if (unit->rtl8168u_mtu > ETH_DATA_LEN) {
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x69;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x28;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x69;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -2022,12 +2022,12 @@ static void rtl8168nic_HWStart(struct net_device *unit)
             RTL_W8(base + (Reserved1), Reserved1_data);
             RTL_W8(base + (Config4), RTL_R8(base + (Config4)) | (1 << 0));
         } else {
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
             pcibyte.reg = 0x69;
             device_control = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
             device_control &= ~0x70;
             device_control |= 0x58;
-            pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
+            pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
             pcibyte.reg = 0x69;
             pcibyte.val = device_control;
             OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
@@ -2056,14 +2056,14 @@ static void rtl8168nic_HWStart(struct net_device *unit)
     if (!np->pci_cfg_is_read) {
         struct pHidd_PCIDevice_ReadConfigWord readpciword;
 
-        pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
+        pcibyte.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
         pcibyte.reg = PCI_COMMAND;
         np->pci_cfg_space.cmd = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
 
         pcibyte.reg = PCI_CACHE_LINE_SIZE;
         np->pci_cfg_space.cls = (UBYTE)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&pcibyte);
 
-        readpciword.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
+        readpciword.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
         readpciword.reg = PCI_BASE_ADDRESS_0;
         np->pci_cfg_space.io_base_l = (UWORD)OOP_DoMethod(unit->rtl8168u_PCIDevice, (OOP_Msg)&readpciword);
         readpciword.reg = PCI_BASE_ADDRESS_0 + 2;
