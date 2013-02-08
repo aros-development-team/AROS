@@ -251,7 +251,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     			const uint8_t *file_end = base+total_length;
     			uint32_t len;
 
-    			kprintf("[BOOT] Package size: %dKB\n", total_length >> 10);
+    			kprintf("[BOOT] Package size: %dKB", total_length >> 10);
 
     			file = base + 8;
 
@@ -262,7 +262,10 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     				/* get text length */
     				len = AROS_BE2LONG(*(uint32_t*)file);
     				/* display the file name */
-    				kprintf("[BOOT]    %s\n", filename);
+                                if (cnt % 4 == 0)
+                                    kprintf("\n[BOOT]    %s", filename);
+                                else
+                                    kprintf(", %s", filename);
 
     				file += len + 5;
 
@@ -278,6 +281,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     				/* go to the next file */
     				file += len;
     			}
+                        kprintf("\n");
     		}
     	}
 
