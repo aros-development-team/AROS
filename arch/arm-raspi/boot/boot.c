@@ -162,20 +162,18 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
         *gpioGPFSEL1 = tmp;
 
         *gpioGPPUD = 2; // enable pull-up control
-        delay = 150; // wait at least 150 cycles
-	while(delay--)
-            asm ("mov r0, r0");
+
+        for (delay = 0; delay < 150; delay++) asm volatile ("mov r0, r0\n");
 
         *gpioPUDCLK0 = 1<<14; // set Pull Up/Down CLocK0 for pin 14
         *gpioPUDCLK1 = 0;
-        delay = 150; // wait at least 150 cycles
-	while(delay--)
-            asm ("mov r0, r0");
+
+        for (delay = 0; delay < 150; delay++) asm volatile ("mov r0, r0\n");
 
         *gpioGPPUD = 0; // disable pull-up control
         *gpioPUDCLK0 = 0; // reset the clock registers
         *gpioPUDCLK1 = 0;
-        
+
         *gpioGPSET0 = 1<<16; // turn it off.. kernel.resource will turn it back on.
     }
     serInit();

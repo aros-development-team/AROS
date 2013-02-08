@@ -101,11 +101,11 @@ void serInit(void)
 
     *(volatile uint32_t *)GPPUD = 0;
 
-    for (uartvar = 0; uartvar < 150; uartvar++);
+    for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("mov r0, r0\n");
 
     *(volatile uint32_t *)GPPUDCLK0 = (1 << 14)|(1 << 15);
 
-    for (uartvar = 0; uartvar < 150; uartvar++);
+    for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("mov r0, r0\n");
 
     *(volatile uint32_t *)GPPUDCLK0 = 0;
 
@@ -117,5 +117,5 @@ void serInit(void)
     *(volatile uint32_t *)(UART0_BASE + UART_LCRH) = LCRH_WLEN8|LCRH_FEN;                       // 8N1, Fifo enabled
     *(volatile uint32_t *)(UART0_BASE + UART_CR) = CR_UARTEN|CR_TXE|CR_RXE|CR_RTSEN|CR_CTSEN;   // enable the uart, tx/rx, and hardware flow control
 
-    for (uartvar = 0; uartvar < 150; uartvar++);
+    for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("mov r0, r0\n");
 }
