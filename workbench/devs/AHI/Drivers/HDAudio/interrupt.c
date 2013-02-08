@@ -1,3 +1,19 @@
+/*
+The contents of this file are subject to the AROS Public License Version 1.1 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+http://www.aros.org/license.html
+
+Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF
+ANY KIND, either express or implied. See the License for the specific language governing rights and
+limitations under the License.
+
+(C) Copyright xxxx-2009 Davy Wentzler.
+(C) Copyright 2009-2010 Stephen Jones.
+
+The Initial Developer of the Original Code is Davy Wentzler.
+
+All Rights Reserved.
+*/
+
 #include <config.h>
 
 #include <proto/expansion.h>
@@ -94,7 +110,7 @@ CardInterrupt( struct HDAudioChip* card )
                 {
                    if (card->flip == 0)
                    {
-                      bug("Lost IRQ!\n");
+                      D(bug("[HDAudio] Lost IRQ!\n"));
                    }
                    card->flip = 0;
                    card->current_buffer = card->playback_buffer1;
@@ -103,7 +119,7 @@ CardInterrupt( struct HDAudioChip* card )
                 {
                    if (card->flip == 1)
                    {
-                      bug("Lost IRQ!\n");
+                      D(bug("[HDAudio] Lost IRQ!\n"));
                    }
                    
                    card->flip = 1;
@@ -121,7 +137,7 @@ CardInterrupt( struct HDAudioChip* card )
                 {
                    if (card->recflip == 0)
                    {
-                      bug("Lost rec IRQ!\n");
+                      D(bug("[HDAudio] Lost rec IRQ!\n"));
                    }
                    card->recflip = 0;
                    card->current_record_buffer = card->record_buffer1;
@@ -130,7 +146,7 @@ CardInterrupt( struct HDAudioChip* card )
                 {
                    if (card->recflip == 1)
                    {
-                      bug("Lost rec IRQ!\n");
+                      D(bug("[HDAudio] Lost rec IRQ!\n"));
                    }
                    
                    card->recflip = 1;
@@ -143,11 +159,11 @@ CardInterrupt( struct HDAudioChip* card )
         
         if (intreq & HD_INTCTL_CIE)
         {
-            //bug("CIE\n");
+            //D(bug("[HDAudio] CIE\n"));
             pci_outb(0x4, HD_INTSTS + 3, card); // only byte access allowed
            
   //          if (card->is_playing)
-    //            bug("CIE irq! rirb is %x, STATESTS = %x\n", pci_inb(HD_RIRBSTS, card), pci_inw(HD_STATESTS, card));
+    //            D(bug("[HDAudio] CIE irq! rirb is %x, STATESTS = %x\n", pci_inb(HD_RIRBSTS, card), pci_inw(HD_STATESTS, card)));
         
             // check for RIRB status
             rirb_status = pci_inb(HD_RIRBSTS, card);
@@ -155,7 +171,7 @@ CardInterrupt( struct HDAudioChip* card )
             {
                 if (rirb_status & 0x4) // RIRBOIS
                 {
-//                    bug("RIRB overrun!\n");
+//                    D(bug("[HDAudio] RIRB overrun!\n"));
                 }
            
                 if (rirb_status & 0x1) // RINTFL
@@ -164,9 +180,9 @@ CardInterrupt( struct HDAudioChip* card )
                     
                     /*if (card->rirb_irq > 1)
                     {
-                       bug("IRQ: rirb_irq = %d\n", card->rirb_irq);
+                       D(bug("[HDAudio] IRQ: rirb_irq = %d\n", card->rirb_irq));
                     }*/
-                    //bug("RIRB IRQ!\n");
+                    //D(bug("[HDAudio] RIRB IRQ!\n"));
                 }
            
                 pci_outb(0x5, HD_RIRBSTS, card);
