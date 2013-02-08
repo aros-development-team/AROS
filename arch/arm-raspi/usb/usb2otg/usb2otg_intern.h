@@ -34,6 +34,12 @@
 
 #include <oop/oop.h>
 
+/*
+    Force the USB chipset to run in Host mode
+    AFAIK Poseidon doesnt support device mode? - TODO
+*/
+#define OTG_FORCEHOSTMODE
+
 /* Reply the iorequest with success */
 #define RC_OK	      0
 
@@ -56,6 +62,7 @@ struct USB2OTGUnit
     struct Unit         hu_Unit;
     APTR                hu_GlobalIRQHandle;
     BOOL		hu_UnitAllocated;       /* unit opened */
+    BOOL		hu_OperatingMode;       /* HOST/DEVICE mode */
 };
 
 /* PRIVATE device node */
