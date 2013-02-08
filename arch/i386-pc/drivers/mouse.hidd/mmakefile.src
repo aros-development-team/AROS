@@ -2,11 +2,9 @@
 
 include $(TOP)/config/make.cfg
 
-FILES	:= startup mouse_init mouseclass drv_usb drv_ps2 drv_serial
+FILES	:= startup mouseclass drv_ps2
 
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../../include
 %build_module mmake=kernel-pc-i386-mouse \
   modname=ps2mouse modtype=hidd \
   files=$(FILES) \
-  uselibs="hiddstubs oop"
-
+  uselibs="oop"

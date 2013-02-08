@@ -1,21 +1,27 @@
 #include <aros/symbolsets.h>
+#include <hidd/hidd.h>
 #include <hidd/mouse.h>
 #include <proto/oop.h>
 
-#include LC_LIBDEFS_FILE
+#include "mouse.h"
 
-static int init_mouse(LIBBASETYPEPTR LIBBASE)
+#undef HiddAttrBase
+#define HiddAttrBase (LIBBASE->msd.hiddAttrBase)
+
+static int init_mouse(struct mousebase *LIBBASE)
 {
-    OOP_Object *ms;
-    OOP_Object *drv = NULL;
-    
-    ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
-    if (ms) {
-        drv = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->msd.mouseclass, NULL);
-        OOP_DisposeObject(ms);
-    }
+    struct TagItem tags[] =
+    {
+        {aHidd_Name        , (IPTR)"PSMouse"        },
+        {aHidd_HardwareName, (IPTR)"PS/2 mouse port"},
+        {TAG_DONE          , 0                      }
+    };
+    OOP_Object *ms = OOP_NewObject(NULL, CLID_HW_Mouse, NULL);
 
-    if (!drv)
+    if (!ms)
+        return FALSE;
+
+    if (!HW_AddDriver(ms, LIBBASE->msd.mouseclass, tags))
         return FALSE;
 
     LIBBASE->library.lib_OpenCnt = 1;
