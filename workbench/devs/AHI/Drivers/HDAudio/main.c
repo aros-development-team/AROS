@@ -1,3 +1,19 @@
+/*
+The contents of this file are subject to the AROS Public License Version 1.1 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+http://www.aros.org/license.html
+
+Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF
+ANY KIND, either express or implied. See the License for the specific language governing rights and
+limitations under the License.
+
+(C) Copyright xxxx-2009 Davy Wentzler.
+(C) Copyright 2009-2010 Stephen Jones.
+
+The Initial Developer of the Original Code is Davy Wentzler.
+
+All Rights Reserved.
+*/
+
 #include <config.h>
 
 #include <devices/ahi.h>
@@ -11,7 +27,6 @@
 #include <proto/utility.h>
 #ifdef __AROS__
 #include <aros/debug.h>
-#define DebugPrintF bug
 #endif
 #include <string.h>
 
@@ -77,7 +92,7 @@ ULONG _AHIsub_AllocAudio(struct TagItem* taglist,
     if (card_num >= card_base->cards_found ||
         card_base->driverdatas[card_num] == NULL)
     {
-        DebugPrintF("no data for card = %ld\n", card_num);
+        D(bug("[HDAudio] no data for card = %ld\n", card_num));
         Req("No HDAudioChip for card %ld.", card_num);
         return AHISF_ERROR;
     }
@@ -236,7 +251,7 @@ ULONG _AHIsub_Start(ULONG flags,
 
         if (card->mix_buffer == NULL)
         {
-            bug("Unable to allocate %ld bytes for mixing buffer.", AudioCtrl->ahiac_BuffSize);
+            D(bug("[HDAudio] Unable to allocate %ld bytes for mixing buffer.", AudioCtrl->ahiac_BuffSize));
             return AHIE_NOMEM;
         }
 
@@ -342,7 +357,7 @@ ULONG _AHIsub_Start(ULONG flags,
         // set stream ID and channel for ADC
         send_command_12(card->codecnr, card->adc_nid, VERB_SET_CONVERTER_STREAM_CHANNEL, (input_stream->tag << 4), card);
 
-        bug("RECORD\n");
+        D(bug("[HDAudio] RECORD\n"));
         codec_discovery(card); // tbd < --------------------
             
         card->current_record_bytesize = dma_buffer_size;
@@ -433,9 +448,7 @@ void _AHIsub_Stop(ULONG flags,
 
         free_buffer_descriptor_list(card, 2, output_stream);
 
-//#ifdef TIME_LIMITED
-        bug("HDAUDIO: IRQ's received was %d\n", z);
-//#endif
+        D(bug("[HDAudio] IRQ's received was %d\n", z));
     }
 
     if ((flags & AHISF_RECORD) && card->is_recording)
@@ -729,7 +742,7 @@ static BOOL stream_reset(struct Stream *stream, struct HDAudioChip *card)
     
     if (i == 1000)
     {
-        bug("Stream reset not ok\n");
+        D(bug("[HDAudio] Stream reset not ok\n"));
         return FALSE;
     }
     
@@ -747,7 +760,7 @@ static BOOL stream_reset(struct Stream *stream, struct HDAudioChip *card)
     
     if (i == 1000)
     {
-       bug("Stream reset 2 not ok\n");
+       D(bug("[HDAudio] Stream reset 2 not ok\n"));
        return FALSE;
     }
 

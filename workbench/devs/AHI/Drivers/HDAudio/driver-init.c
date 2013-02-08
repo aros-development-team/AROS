@@ -1,3 +1,18 @@
+/*
+The contents of this file are subject to the AROS Public License Version 1.1 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+http://www.aros.org/license.html
+
+Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF
+ANY KIND, either express or implied. See the License for the specific language governing rights and
+limitations under the License.
+
+(C) Copyright xxxx-2009 Davy Wentzler.
+(C) Copyright 2009-2010 Stephen Jones.
+
+The Initial Developer of the Original Code is Davy Wentzler.
+
+All Rights Reserved.
+*/
 
 #include <exec/memory.h>
 
@@ -47,7 +62,7 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
     int card_no;
     int i;
 
-    bug("ENTERING HDAUDIO!\n");
+    D(bug("[HDAudio] %s()\n"), __PRETTY_FUNCTION__);
     AHIsubBase = ahisubbase;
 
     DOSBase = (struct DosLibrary *) OpenLibrary(DOSNAME, 37);
@@ -77,7 +92,7 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
     // Then parse the hdaudio.config file, if available in ENV:
     parse_config_file();
     
-    bug("vendor_device_list_size = %ld\n", vendor_device_list_size);
+    D(bug("[HDAudio] vendor_device_list_size = %ld\n", vendor_device_list_size));
     
     card_base->cards_found = 0;
     dev = NULL;
@@ -88,7 +103,7 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
         
         if (dev != NULL)
         {
-            bug("Found device with vendor ID = %x, device ID = %x!(i = %d)\n", vendor_device_list[i].vendor, vendor_device_list[i].device, i);
+            D(bug("[HDAudio] Found device with vendor ID = %x, device ID = %x!(i = %d)\n", vendor_device_list[i].vendor, vendor_device_list[i].device, i));
             ++card_base->cards_found;
             break; // stop at first found controller
         }
@@ -102,7 +117,7 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
 
     if (card_base->cards_found == 0)
     {
-        bug("No HDaudio controller found! :-(\n");
+        D(bug("[HDAudio] No HDaudio controller found! :-(\n"));
         return FALSE;
     }
 
@@ -113,7 +128,7 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
 
     if (card_base->driverdatas == NULL)
     {
-        bug("Out of memory.\n");
+        D(bug("[HDAudio] Out of memory.\n"));
         return FALSE;
     }
 
@@ -131,7 +146,7 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
         ++card_no;
     }
 
-    bug("exit init\n");
+    D(bug("[HDAudio] exit init\n"));
     return TRUE;
 }
 

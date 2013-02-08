@@ -1,3 +1,19 @@
+/*
+The contents of this file are subject to the AROS Public License Version 1.1 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+http://www.aros.org/license.html
+
+Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF
+ANY KIND, either express or implied. See the License for the specific language governing rights and
+limitations under the License.
+
+(C) Copyright xxxx-2009 Davy Wentzler.
+(C) Copyright 2009-2010 Stephen Jones.
+
+The Initial Developer of the Original Code is Davy Wentzler.
+
+All Rights Reserved.
+*/
+
 #define __OOP_NOATTRBASES__
 
 #include <config.h>
@@ -322,7 +338,7 @@ void ahi_pci_rem_intserver(struct Interrupt *i, APTR dev)
         inthandler_added = FALSE;
     }   
 
-    KPrintF("ahi_pci_rem_intserver\n");
+    D(bug("[HDAudio] ahi_pci_rem_intserver\n"));
 }
 
 
@@ -363,7 +379,7 @@ APTR ahi_pci_get_base_address(WORD which, APTR dev)
 
     OOP_GetAttr((OOP_Object *)dev, attr, &val);
 
-    //KPrintF("ahi_pci_get_base_address. Result %lx\n", val);
+    D(bug("[HDAudio] ahi_pci_get_base_address. Result %lx\n", val));
 
     return (APTR)val;
 }
@@ -405,7 +421,7 @@ ULONG ahi_pci_get_base_size(WORD which, APTR dev)
 
     OOP_GetAttr((OOP_Object *)dev, attr, &val);
 
-    //KPrintF("ahi_pci_get_base_size. Result %lx\n", val);
+    D(bug("[HDAudio] ahi_pci_get_base_size. Result %lx\n", val));
 
     return (ULONG)val;
 
@@ -450,7 +466,7 @@ ULONG ahi_pci_get_type(WORD which, APTR dev)
     
   OOP_GetAttr((OOP_Object *)dev, attr, &val);
 
-  //KPrintF("ahi_pci_get_type. Result %lx\n", val);
+  D(bug("[HDAudio] ahi_pci_get_type. Result %lx\n", val));
     
   return (ULONG) val;
 }
