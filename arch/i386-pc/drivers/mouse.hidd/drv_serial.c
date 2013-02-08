@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: COM mouse driver.
@@ -29,13 +29,13 @@
 #include <aros/debug.h>
 
 #undef HiddMouseAB
-#define HiddMouseAB	(MSD(cl)->hiddMouseAB)
+#define HiddMouseAB     (MSD(cl)->hiddMouseAB)
 
 /* defines for buttonstate */
 
-#define LEFT_BUTTON 	1
-#define RIGHT_BUTTON 	2
-#define MIDDLE_BUTTON	4
+#define LEFT_BUTTON     1
+#define RIGHT_BUTTON    2
+#define MIDDLE_BUTTON   4
 
 /* Prototypes */
 
@@ -167,10 +167,10 @@ int test_mouse_serial(OOP_Class *cl, OOP_Object *o)
 void dispose_mouse_serial(OOP_Class *cl, OOP_Object *o) {
 struct mouse_data *data = OOP_INST_DATA(cl, o);
 
-	HIDD_Serial_DisposeUnit(data->u.ser.serial, data->u.ser.unit);
-	FreeMem(data->u.ser.rx, sizeof(struct Ring));
-	OOP_DisposeObject(data->u.ser.serial);
-	CloseLibrary(data->u.ser.shidd);
+        HIDD_Serial_DisposeUnit(data->u.ser.serial, data->u.ser.unit);
+        FreeMem(data->u.ser.rx, sizeof(struct Ring));
+        OOP_DisposeObject(data->u.ser.serial);
+        CloseLibrary(data->u.ser.shidd);
 }
 
 /******************************************************************/
@@ -531,11 +531,11 @@ int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
         if(buf[0] == 79)
             return 1;
 
-	/* stegerg: checkme! Added this return -1, because if this is
-	   not there, then below the "return (t->val)" is used to leave
-	   the function, with t pointing to random address */
+        /* stegerg: checkme! Added this return -1, because if this is
+           not there, then below the "return (t->val)" is used to leave
+           the function, with t pointing to random address */
 
-	return -1;
+        return -1;
     }
     else if(len > 1)
     {

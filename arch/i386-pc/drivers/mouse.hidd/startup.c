@@ -12,11 +12,11 @@ static int init_mouse(LIBBASETYPEPTR LIBBASE)
     ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
     if (ms) {
         drv = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->msd.mouseclass, NULL);
-	OOP_DisposeObject(ms);
+        OOP_DisposeObject(ms);
     }
 
     if (!drv)
-	return FALSE;
+        return FALSE;
 
     LIBBASE->library.lib_OpenCnt = 1;
     return TRUE;
