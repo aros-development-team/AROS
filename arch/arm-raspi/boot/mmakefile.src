@@ -3,33 +3,31 @@ include $(TOP)/config/make.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
 FILES           := boot serialdebug elf support bc/font8x14 bc/vars vc_mb vc_fb bc/screen_fb
-CONFIG_FILE := config.txt
+CONFIG_FILE     := config.txt
 USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
-KERNEL_LDFLAGS =
-USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
+KERNEL_LDFLAGS  =
+USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 
 #MM arosboot-raspi: \
-#MM	  kernel-raspi-arm \
-#MM	  kernel-raspi-config-copy \
-#MM    kernel-package-raspi-arm
+#MM	kernel-raspi-arm \
+#MM	kernel-raspi-config-copy \
+#MM     kernel-package-raspi-arm
 
 #MM kernel-package-raspi-arm: \
 #MM     linklibs-clib \
-#MM		kernel-dos \
-#MM		kernel-dosboot \
-#MM		kernel-oop \
-#MM		kernel-utility \
-#MM		kernel-debug \
-#MM		kernel-expansion \
-#MM		kernel-graphics \
-#MM		kernel-intuition \
-#MM		kernel-partition \
-#MM		kernel-layers \
-#MM		kernel-timer \
-#MM		kernel-vcmbox \
-#MM		hidd-i2c \
-#MM		hidd-i2c-bcm2835 \
-#MM		hidd-videocoregfx \
+#MM	kernel-dos \
+#MM     kernel-bootloader \
+#MM	kernel-dosboot \
+#MM	kernel-oop \
+#MM	kernel-utility \
+#MM	kernel-debug \
+#MM	kernel-expansion \
+#MM	kernel-graphics \
+#MM     kernel-cgxbootpic \
+#MM	kernel-intuition \
+#MM	kernel-partition \
+#MM	kernel-layers \
+#MM	kernel-timer \
 #MM	kernel-lddemon \
 #MM     kernel-hidd \
 #MM     kernel-aros \
@@ -39,6 +37,9 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM     kernel-gameport \
 #MM     kernel-keyboard \
 #MM     kernel-console \
+#MM     kernel-econsole \
+#MM     kernel-shell \
+#MM     kernel-shellcommands \
 #MM     kernel-filesystem \
 #MM     kernel-fs-con \
 #MM     kernel-fs-afs \
@@ -46,23 +47,29 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM     kernel-fs-fat \
 #MM     kernel-fs-sfs \
 #MM     kernel-fs-amberram \
+#MM	kernel-vcmbox \
+#MM	hidd-i2c \
+#MM	hidd-i2c-bcm2835 \
+#MM	hidd-videocoregfx \
 #MM     kernel-hidd-graphics \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
 #MM     kernel-usb-nopci \
 #MM     kernel-usb-usb2otg \
-#MM     kernel-usb-romstrap-raspi \
-#MM     kernel-cgxbootpic \
-#MM     kernel-shell \
-#MM     kernel-shellcommands
+#MM     kernel-usb-romstrap-raspi
+
+#MM kernel-package-raspi-arm-missing: \
+#MM     kernel-battclock \
+#MM     kernel-processor
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
-PKG_RSRC     :=  misc dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox
+PKG_RSRC     :=  misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox
 PKG_DEVS     :=  input gameport keyboard console timer USBHardware/usb2otg
 PKG_HANDLERS := con amberram cdrom sfs fat afs
 PKG_HIDDS    := graphics mouse keyboard hiddclass i2c i2c-bcm2835 videocoregfx
 PKG_USB      := hid hub bootmouse bootkeyboard massstorage
-
+PKG_HOOKS    := econsole
+ 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
@@ -83,27 +90,27 @@ kernel-package-raspi-arm:
 arosboot-raspi: $(AROSDIR)/arosraspi.img
 
 $(AROSDIR)/arosraspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-		$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/core.bin.o -L$(LIBDIR) -lm -larosc.static -lm -laeabi -o $(OSGENDIR)/boot/arosraspi.img.elf
-		$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/arosraspi.img.elf $@
+	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/core.bin.o -L$(LIBDIR) -lm -larosc.static -lm -laeabi -o $(OSGENDIR)/boot/arosraspi.img.elf
+	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/arosraspi.img.elf $@
 
 $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
-		cp $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
-		cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm core.bin -o $@
+	cp $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
+	cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm core.bin -o $@
 
 #MM
 clean ::
-		-$(RM) $(TESTS)
+	-$(RM) $(TESTS)
 
 $(TARGETDIR)/%.o : %.c
-		%compile_q 
+	%compile_q 
 
 $(TARGETDIR)/%.o : %.S
-		%compile_q 
+	%compile_q 
 
 $(TARGETDIR)/%.d : %.c
-		%mkdepend_q
+	%mkdepend_q
 
-DEPS            := $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+DEPS	:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 
 -include $(DEPS)
 
