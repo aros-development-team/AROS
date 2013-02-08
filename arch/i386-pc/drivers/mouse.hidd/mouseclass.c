@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main mouse class.
@@ -45,7 +45,7 @@
 #ifdef HiddMouseAB
 #undef HiddMouseAB
 #endif
-#define HiddMouseAB	(MSD(cl)->hiddMouseAB)
+#define HiddMouseAB     (MSD(cl)->hiddMouseAB)
 
 /* Prototypes */
 
@@ -59,9 +59,9 @@ void getps2State(OOP_Class *, OOP_Object *, struct pHidd_Mouse_Event *);
 
 /* defines for buttonstate */
 
-#define LEFT_BUTTON 	1
-#define RIGHT_BUTTON 	2
-#define MIDDLE_BUTTON	4
+#define LEFT_BUTTON     1
+#define RIGHT_BUTTON    2
+#define MIDDLE_BUTTON   4
 
 /***** Mouse::New()  ***************************************/
 OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -114,18 +114,18 @@ OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         first, if not found search for PS/2 mouse. If failure then check every
         COM port in the system - the last chance to see... */
 
-	data->type = MDT_USB;
+        data->type = MDT_USB;
         if (!test_mouse_usb(cl, o))
         {
-	    memset(&data->u.ser, 0, sizeof(data->u.ser));
-	    data->type = MDT_SERIAL;
+            memset(&data->u.ser, 0, sizeof(data->u.ser));
+            data->type = MDT_SERIAL;
 
-	    if (!test_mouse_serial(cl, o))
-	    {
-	    	memset(&data->u.ps2, 0, sizeof(data->u.ps2));
-		data->type = MDT_PS2;
+            if (!test_mouse_serial(cl, o))
+            {
+                memset(&data->u.ps2, 0, sizeof(data->u.ps2));
+                data->type = MDT_PS2;
 
-        	if (!test_mouse_ps2(cl, o))
+                if (!test_mouse_ps2(cl, o))
                 {
                     /* No mouse found. What we can do now is just Dispose() :( */
                     OOP_MethodID disp_mid;
@@ -156,17 +156,17 @@ VOID PCMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     switch (data->type)
     {
-	case MDT_USB:
-	   dispose_mouse_usb(cl, o);
-	   break;
+        case MDT_USB:
+           dispose_mouse_usb(cl, o);
+           break;
 
-	case MDT_SERIAL:
-	   dispose_mouse_serial(cl, o);
-	   break;
+        case MDT_SERIAL:
+           dispose_mouse_serial(cl, o);
+           break;
 
-	case MDT_PS2:
-	   dispose_mouse_ps2(cl, o);
-	   break;
+        case MDT_PS2:
+           dispose_mouse_ps2(cl, o);
+           break;
     }
 
     OOP_DoSuperMethod(cl, o, msg);
@@ -176,29 +176,29 @@ VOID PCMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 VOID PCMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
-    ULONG   	       idx;
+    ULONG              idx;
 
     if (IS_HIDDMOUSE_ATTR(msg->attrID, idx))
     {
-	switch (idx)
-	{
-	    case aoHidd_Mouse_IrqHandler:
-		*msg->storage = (IPTR)data->mouse_callback;
-		return;
+        switch (idx)
+        {
+            case aoHidd_Mouse_IrqHandler:
+                *msg->storage = (IPTR)data->mouse_callback;
+                return;
 
-	    case aoHidd_Mouse_IrqHandlerData:
-		*msg->storage = (IPTR)data->callbackdata;
-		return;
+            case aoHidd_Mouse_IrqHandlerData:
+                *msg->storage = (IPTR)data->callbackdata;
+                return;
 
-	    case aoHidd_Mouse_State:
-		if (data->type == MDT_PS2)
-		    getps2State(cl, o, (struct pHidd_Mouse_Event *)msg->storage);
-		return;
+            case aoHidd_Mouse_State:
+                if (data->type == MDT_PS2)
+                    getps2State(cl, o, (struct pHidd_Mouse_Event *)msg->storage);
+                return;
 
-    	    case aoHidd_Mouse_RelativeCoords:
-	    	*msg->storage = TRUE;
-	    	return;
-	}
+            case aoHidd_Mouse_RelativeCoords:
+                *msg->storage = TRUE;
+                return;
+        }
 
     }
 
@@ -223,7 +223,7 @@ static int PCMouse_InitAttrs(LIBBASETYPEPTR LIBBASE)
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },
-        { NULL	    	, NULL      	    }
+        { NULL          , NULL              }
     };
 
     EnterFunc(bug("PCMouse_InitAttrs\n"));
@@ -237,7 +237,7 @@ static int PCMouse_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },
-        { NULL	    	, NULL      	    }
+        { NULL          , NULL              }
     };
 
     EnterFunc(bug("PCMouse_InitClass\n"));
