@@ -2,11 +2,13 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: PS/2 keyboard driver.
+    Desc: Low-level routines for i8042 controller.
     Lang: English.
 */
 
 #include "kbd.h"
+#include "kbd_common.h"
+
 #define TIMER_RPROK 3599597124UL
 
 int kbd_wait_for_input(void);
@@ -19,7 +21,7 @@ static ULONG usec2tick(ULONG usec)
     return ret;
 }
 
-static void kbd_usleep(LONG usec)
+void kbd_usleep(LONG usec)
 {
     int oldtick, tick;
     usec = usec2tick(usec);
@@ -63,10 +65,8 @@ unsigned char handle_kbd_event(void)
  * Wait until we can write to a peripheral again. Any input that comes in
  * while we're waiting is discarded.
  */
-void kb_wait(void)
+void kb_wait(ULONG timeout)
 {
-    ULONG timeout = 1000; /* 1 sec should be enough */
-    
     do
     {
         unsigned char status = handle_kbd_event();
@@ -80,26 +80,44 @@ void kb_wait(void)
 
 void kbd_write_cmd(int cmd)
 {
-    kb_wait();
+    kb_wait(100);
     kbd_write_command(KBD_CTRLCMD_WRITE_MODE);
-    kb_wait();
+    kb_wait(100);
     kbd_write_output(cmd);
+}
+
+/*
+ * Aux (mouse) port uses longer delays, this is necessary
+ * in order to detect IntelliMouse properly
+ */
+void aux_write_ack(int val)
+{
+    kb_wait(1000);
+    kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE);
+    kb_wait(1000);
+    kbd_write_output(val);
+    kbd_wait_for_input();
+}
+
+void aux_write_noack(int val)
+{
+    kb_wait(1000);
+    kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE);
+    kb_wait(1000);
+    kbd_write_output(val);
 }
 
 void kbd_write_output_w(int data)
 {
-    kb_wait();
+    kb_wait(100);
     kbd_write_output(data);
 }
 
 void kbd_write_command_w(int data)
 {
-    kb_wait();
+    kb_wait(100);
     kbd_write_command(data);
 }
-
-#define KBD_NO_DATA     (-1)
-#define KBD_BAD_DATA    (-2)
 
 int kbd_read_data(void)
 {

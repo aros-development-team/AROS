@@ -26,9 +26,8 @@
 #include <devices/rawkeycodes.h>
 
 #include "kbd.h"
+#include "kbd_common.h"
 #include "keys.h"
-
-#include LC_LIBDEFS_FILE
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -42,15 +41,6 @@ void kbd_process_key(struct kbd_data *, UBYTE,
 
 void kbd_updateleds();
 int  kbd_reset(void);
-
-void kb_wait(void);
-void kbd_write_cmd(int cmd);
-void aux_write_ack(int val);
-void kbd_write_output_w(int data);
-void kbd_write_command_w(int data);
-void mouse_usleep(ULONG);
-int kbd_clear_input(void);
-int  kbd_wait_for_input(void);
 
 /****************************************************************************************/
 
@@ -103,9 +93,9 @@ static void kbd_keyint(struct kbd_data *data, void *unused)
 OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct TagItem *tag, *tstate;
-    APTR            callback = NULL;
-    APTR            callbackdata = NULL;
-    BOOL            reset_success;
+    APTR callback = NULL;
+    APTR callbackdata = NULL;
+    int reset_success;
     int last_code;
     
     EnterFunc(bug("Kbd::New()\n"));
@@ -151,40 +141,55 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     Disable();
     last_code = kbd_clear_input();
     kbd_write_command_w(KBD_CTRLCMD_SELF_TEST);
-    reset_success = kbd_wait_for_input() == 0x55;
+    reset_success = kbd_wait_for_input();
     Enable();
 
-    if (!reset_success)
+    if (reset_success == 0x55)
     {
-        D(bug("Keyboard controller not detected\n"));
-        return NULL;
+        /* Add some descriptional tags to our attributes */
+        struct TagItem kbd_tags[] =
+        {
+            {aHidd_Name        , (IPTR)"ATKbd"                     },
+            {aHidd_HardwareName, (IPTR)"IBM AT-compatible keyboard"},
+            {TAG_MORE          , (IPTR)msg->attrList               }
+        };
+        struct pRoot_New new_msg =
+        {
+            .mID = msg->mID,
+            .attrList = kbd_tags
+        };
+
+        o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
+        if (o)
+        {
+            struct kbd_data *data = OOP_INST_DATA(cl, o);
+
+            data->kbd_callback   = (VOID (*)(APTR, UWORD))callback;
+            data->callbackdata   = callbackdata;
+            data->prev_amigacode = -2;
+            data->prev_keycode   = 0;
+
+            Disable();
+            kbd_reset();            /* Reset the keyboard */
+            kbd_updateleds(0);
+            Enable();
+
+            /*
+             * Report last key received before keyboard was reset, so that
+             * keyboard.device knows about any key currently held down
+             */
+            if (last_code > 0)
+                kbd_process_key(data, (UBYTE)last_code, SysBase);
+
+            /* Install keyboard interrupt */
+             XSD(cl)->irq = KrnAddIRQHandler(1, kbd_keyint, data, NULL);
+             
+             ReturnPtr("Kbd::New", OOP_Object *, o);
+        } /* if (o) */
     }
+    D(else bug("Keyboard controller not detected\n");)
 
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (o)
-    {
-        struct kbd_data *data = OOP_INST_DATA(cl, o);
-        
-        data->kbd_callback   = (VOID (*)(APTR, UWORD))callback;
-        data->callbackdata   = callbackdata;
-        data->prev_amigacode = -2;
-        data->prev_keycode   = 0;
-        
-        Disable();
-        kbd_reset();            /* Reset the keyboard */
-        kbd_updateleds(0);
-        Enable();
-
-        /* Report last key received before keyboard was reset, so that
-         * keyboard.device knows about any key currently held down */
-        if (last_code > 0)
-            kbd_process_key(data, (UBYTE)last_code, SysBase);
-
-        /* Install keyboard interrupt */
-        XSD(cl)->irq = KrnAddIRQHandler(1, kbd_keyint, data, NULL);
-    } /* if (o) */
-
-    ReturnPtr("Kbd::New", OOP_Object *, o);
+    return NULL;
 }
 
 VOID PCKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
