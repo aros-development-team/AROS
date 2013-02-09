@@ -69,6 +69,14 @@ include $(TOP)/config/make.cfg
 #MM	kernel-expansion-kobj		\
 #MM	kernel-exec-kobj
 
+#MM- kernel-bsp-pkg:			\
+#MM	kernel-kernel-pkg		\
+#MM	kernel-battclock-pkg		\
+#MM	kernel-processor-pkg		\
+#MM	kernel-timer-pkg		\
+#MM	kernel-expansion-pkg		\
+#MM	kernel-exec-pkg
+
 # This is what kickstart base package consists of.
 # These modules are architecture-independent and can work on both hosted and native systems.
 
