@@ -4,7 +4,9 @@ include $(TOP)/config/make.cfg
 # What our port consists of
 
 #MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-pc-gz
-#MM- kernel-link-pc-x86_64 : kernel-bsp-x86_64-pc-gz kernel-package-base-gz kernel-package-usb-gz kernel-package-fs-gz
+#MM- kernel-link-pc-x86_64 : kernel-bsp-x86_64-pc-gz kernel-legacy-x86_64-pc-gz \
+#MM                          kernel-package-base-gz  kernel-package-usb-gz      \
+#MM                          kernel-package-fs-gz
 #MM- workbench-pc-x86_64   : workbench-drivers kernel-pc-i386-trackdisk
 
 # -------- x86_64-pc board support package --------
@@ -41,5 +43,17 @@ USER_LDFLAGS := -L$(GENDIR)/lib
 	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
 	uselibs="bootconsole autoinit libinit amiga arossupport arosc.static arosm hiddstubs" \
 	map=$(GENDIR)/boot/kernel-bsp-x86_64-pc.map
+
+# -------- x86_64-pc legacy drivers package --------
+
+#MM- kernel-legacy-pc-i386 :	        \
+#MM     kernel-hidd-serialmouse-pkg     \
+#MM     kernel-hidd-trackdisk-pkg
+
+LEGACY_DEVS  := trackdisk
+LEGACY_HIDDS := serialmouse
+
+%make_package mmake=kernel-legacy-pc-x86_64 file=$(BINDIR)/boot/aros-legacy-pc-x86_64.pkg \
+	devs=$(LEGACY_DEVS) hidds=$(LEGACY_HIDDS)
 
 %common
