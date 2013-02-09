@@ -5,20 +5,11 @@ void rtl_hw_start_8101(struct net_device *unit)
     struct rtl8169_priv *np = get_pcnpriv(unit);
     APTR base = get_hwbase(unit);
 
-	struct pHidd_PCIDevice_WriteConfigWord pciword;
-
 	if ((np->mcfg == RTL_GIGA_MAC_VER_13) ||
 	    (np->mcfg == RTL_GIGA_MAC_VER_16))
 	{
-	    pciword.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
-	    pciword.reg = 0x68;
-	    pciword.val = 0x00;
-	    OOP_DoMethod(unit->rtl8169u_PCIDevice, (OOP_Msg) &pciword);
-
-	    pciword.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
-	    pciword.reg = 0x69;
-	    pciword.val = 0x09;
-	    OOP_DoMethod(unit->rtl8169u_PCIDevice, (OOP_Msg) &pciword);
+	    HIDD_PCIDevice_WriteConfigWord(unit->rtl8169u_PCIDevice, 0x68, 0x00);
+	    HIDD_PCIDevice_WriteConfigWord(unit->rtl8169u_PCIDevice, 0x69, 0x09);
 	}
 
 	RTL_W8(base + Cfg9346, Cfg9346_Unlock);
