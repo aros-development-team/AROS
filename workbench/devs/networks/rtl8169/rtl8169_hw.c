@@ -147,8 +147,6 @@ void rtl_hw_start_8169(struct net_device *unit)
     struct rtl8169_priv *np = get_pcnpriv(unit);
     APTR base = get_hwbase(unit);
 
-    struct pHidd_PCIDevice_WriteConfigByte pcibyte;
-
     // UBYTE device_control;
     // UWORD ephy_data;
     // ULONG csi_tmp;
@@ -157,10 +155,7 @@ void rtl_hw_start_8169(struct net_device *unit)
 	if (np->mcfg == RTL_GIGA_MAC_VER_05)
 	{
 		RTL_W16(base + CPlusCmd, RTL_R16(base + CPlusCmd) | PCIMulRW);
-        pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
-        pcibyte.reg = PCI_CACHE_LINE_SIZE;
-        pcibyte.val = 0x08;
-        OOP_DoMethod(unit->rtl8169u_PCIDevice, (OOP_Msg) &pcibyte);
+		HIDD_PCIDevice_WriteConfigByte(unit->rtl8169u_PCIDevice, PCI_CACHE_LINE_SIZE, 0x08);
 	}
 
     RTL_W8(base + (Cfg9346), Cfg9346_Unlock);

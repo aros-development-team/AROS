@@ -60,8 +60,6 @@ void rtl_hw_start_8168(struct net_device *unit)
     APTR base = get_hwbase(unit);
 	UBYTE ctl;
 
-    struct pHidd_PCIDevice_WriteConfigByte pcibyte;
-
 	RTL_W8(base + Cfg9346, Cfg9346_Unlock);
 
 	RTL_W8(base + EarlyTxThres, EarlyTxThld);
@@ -75,15 +73,9 @@ void rtl_hw_start_8168(struct net_device *unit)
 	RTL_W16(base + CPlusCmd, np->cp_cmd);
 
 	/* Tx performance tweak. */
-
-    pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
-    pcibyte.reg = 0x69;
-    ctl = (UBYTE) OOP_DoMethod(unit->rtl8169u_PCIDevice, (OOP_Msg) &pcibyte);
+    ctl = HIDD_PCIDevice_ReadConfigByte(unit->rtl8169u_PCIDevice, 0x69);
 	ctl = (ctl & ~0x70) | 0x50;
-	pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
-	pcibyte.reg = 0x69;
-	pcibyte.val = ctl;
-	OOP_DoMethod(unit->rtl8169u_PCIDevice, (OOP_Msg) &pcibyte);
+    HIDD_PCIDevice_WriteConfigByte(unit->rtl8169u_PCIDevice, 0x69, ctl);
 
 	RTL_W16(base + IntrMitigate, 0x5151);
 

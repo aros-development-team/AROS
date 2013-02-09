@@ -777,8 +777,6 @@ static void rtl8169_phy_reset(struct net_device *unit)
 
 static void rtl8169_Init(struct net_device *unit)
 {
-    struct pHidd_PCIDevice_WriteConfigByte pcibyte;
-
     struct rtl8169_priv *np = get_pcnpriv(unit);
     APTR base = get_hwbase(unit);
     UBYTE autoneg, duplex;
@@ -875,17 +873,11 @@ static void rtl8169_Init(struct net_device *unit)
 
     RTLD(bug("[%s] rtl8169_Init: PHY Configured\n", unit->rtl8169u_name))
 
-    pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
-    pcibyte.reg = PCI_LATENCY_TIMER;
-    pcibyte.val = 0x40;
-    OOP_DoMethod(unit->rtl8169u_PCIDevice, (OOP_Msg) &pcibyte);
+    HIDD_PCIDevice_WriteConfigByte(unit->rtl8169u_PCIDevice, PCI_LATENCY_TIMER, 0x40);
 
-        if (np->mcfg <= RTL_GIGA_MAC_VER_06)
-        {
-        pcibyte.mID = OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte);
-        pcibyte.reg = PCI_CACHE_LINE_SIZE;
-        pcibyte.val = 0x08;
-        OOP_DoMethod(unit->rtl8169u_PCIDevice, (OOP_Msg) &pcibyte);
+    if (np->mcfg <= RTL_GIGA_MAC_VER_06)
+    {
+        HIDD_PCIDevice_WriteConfigByte(unit->rtl8169u_PCIDevice, PCI_CACHE_LINE_SIZE, 0x08);
     }
 
         if (np->mcfg == RTL_GIGA_MAC_VER_02)
