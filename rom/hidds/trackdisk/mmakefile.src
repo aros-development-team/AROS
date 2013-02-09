@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(TOP)/rom/devs
 
-%build_module mmake=kernel-pc-i386-trackdisk \
+%build_module mmake=kernel-hidd-trackdisk \
   modname=trackdisk modtype=device \
   files="trackdisk_device trackdisk_hw" \
   uselibs="hiddstubs oop"

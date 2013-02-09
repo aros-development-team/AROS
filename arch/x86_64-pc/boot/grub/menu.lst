@@ -92,6 +92,14 @@ title AROS64 with VESA Gfx @ 1280x1024-32bpp
     module /boot/aros-base.pkg.gz
     module /boot/poseidon.pkg.gz
 
+title AROS64 with VESA Gfx @ 32bpp and legacy drivers)
+    kernel /boot/bootstrap-pc.gz vesa=32bit ATA=32bit nomonitors
+    module /boot/aros-bsp-pc-x86_64.gz
+    module /boot/aros-legacy-pc-x86_64.pkg.gz
+    module /boot/aros-base.pkg.gz
+    module /boot/aros-fs.pkg.gz
+    module /boot/poseidon.pkg.gz
+
 title AROS64 with VGA @ 640x480-4bpp
     kernel /boot/bootstrap-pc.gz ATA=32bit nomonitors
     module /boot/aros-bsp-pc-x86_64.gz

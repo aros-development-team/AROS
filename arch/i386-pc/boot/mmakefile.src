@@ -9,6 +9,7 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-link-pc-i386 :	\
 #MM	kernel-bsp-pc-i386-gz	\
+#MM     kernel-legacy-pc-i386-gz \
 #MM	kernel-package-base-gz	\
 #MM	kernel-package-usb-gz	\
 #MM	kernel-package-fs-gz
@@ -26,7 +27,6 @@ include $(TOP)/config/make.cfg
 #MM	kernel-ahci-kobj 		\
 #MM	kernel-oop-kobj 		\
 #MM	kernel-utility-kobj 		\
-#MM	kernel-isapnp-kobj 		\
 #MM	kernel-debug-kobj 		\
 #MM	kernel-pc-i386-drivers 		\
 #MM     kernel-hidd-i8042-kobj          \
@@ -39,14 +39,31 @@ EXEDIR  := $(BINDIR)/boot
 USELIBS	:= hiddstubs amiga arossupport debug arosc.static arosm autoinit libinit
 
 KRSRCS  := acpi battclock efi hpet processor
-KLIBS   := exec expansion oop utility debug
-KDEVS   := timer ahci ata trackdisk
-KHIDDS  := i8042 vesagfx vgah pci pcipc
-##Disabled RSRC cpu isapnp
+KLIBS   := exec expansion
+KDEVS   := timer ahci ata
+KHIDDS  := i8042 vesagfx vgah pci pcipc serial parallel
 
 %link_kickstart mmake=kernel-bsp-pc-i386 file=$(EXEDIR)/aros-bsp-pc-i386 \
 	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) \
 	startup=$(KOBJSDIR)/kernel_resource.o \
 	uselibs=$(USELIBS) map=$(GENDIR)/boot/kernel-i386-pc.map
+
+#
+# Legacy drivers package
+#
+
+#MM- kernel-legacy-pc-i386 :	        \
+#MM     kernel-hidd-serialmouse-pkg     \
+#MM     kernel-hidd-trackdisk-pkg
+# isapnp.resource fails to build as complete module. Needs analysis.
+##MM	kernel-isapnp-pkg
+
+# ISAPnP disabled because totally untested
+#LEGACY_RSRCS := isapnp
+LEGACY_DEVS  := trackdisk
+LEGACY_HIDDS := serialmouse
+
+%make_package mmake=kernel-legacy-pc-i386 file=$(BINDIR)/boot/aros-legacy-pc-i386.pkg \
+	devs=$(LEGACY_DEVS) hidds=$(LEGACY_HIDDS) res=$(LEGACY_RSRCS)
 
 %common
