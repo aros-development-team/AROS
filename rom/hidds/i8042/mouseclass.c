@@ -2,13 +2,11 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: The PS/2 mouse class.
+    Desc: The PS/2 mouse driver class.
     Lang: English.
 */
 
 /*
-    This is the native PS2 mouse driver.
-
     Please keep code clean from all .bss and .data sections. .rodata may exist
     as it will be connected together with .text section during linking. In near
     future this driver will be compiled as elf executable (instead of object)
@@ -19,21 +17,12 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
-
-#include <exec/alerts.h>
-#include <exec/memory.h>
-
 #include <hidd/hidd.h>
 #include <hidd/mouse.h>
-
 #include <devices/inputevent.h>
 #include <string.h>
 
-#include <aros/symbolsets.h>
-
 #include "mouse.h"
-
-#include LC_LIBDEFS_FILE
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -50,6 +39,7 @@ void getps2State(OOP_Class *, OOP_Object *, struct pHidd_Mouse_Event *);
 OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("_Mouse::New()\n"));
+
     if (XSD(cl)->mousehidd) /* Cannot open twice */
         ReturnPtr("_Mouse::New", OOP_Object *, NULL); /* Should have some error code here */
 
@@ -86,7 +76,11 @@ OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         /* Search for PS/2 mouse */
         if (!test_mouse_ps2(cl, o))
         {
-            /* No mouse found. What we can do now is just Dispose() :( */
+            /*
+             * No mouse found. What we can do now is just Dispose() :(
+             * Note that we use OOP_DoSuperMethod() in order not to call
+             * our own dispose_mouse_ps2().
+             */
             OOP_MethodID disp_mid = msg->mID - moRoot_New + moRoot_Dispose;
 
             OOP_DoSuperMethod(cl, o, &disp_mid);

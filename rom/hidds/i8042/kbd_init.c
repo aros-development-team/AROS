@@ -44,6 +44,8 @@ static int PCKbd_InitAttrs(struct kbdbase *LIBBASE)
         return FALSE;
 
     LIBBASE->ksd.hwMethodBase = OOP_GetMethodID(IID_HW, 0);
+    D(bug("[i8042] Initialization done\n"));
+    
     return TRUE;
 }
 
