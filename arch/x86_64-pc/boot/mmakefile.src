@@ -20,8 +20,7 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-expansion-kobj	 \
 #MM			   kernel-pc-acpi-kobj		 \
 #MM			   kernel-pc-hpet-kobj		 \
-#MM			   kernel-pc-i386-kbd-kobj	 \
-#MM			   kernel-pc-i386-mouse-kobj	 \
+#MM			   kernel-hidd-i8042-kobj	 \
 #MM			   kernel-pc-i386-serial-kobj	 \
 #MM			   kernel-pc-i386-parallel-kobj	 \
 #MM			   kernel-hidd-vga-kobj		 \
@@ -34,7 +33,7 @@ include $(TOP)/config/make.cfg
 KRSRCS  := acpi battclock efi hpet processor
 KLIBS   := exec expansion
 KDEVS   := ata ahci timer
-KHIDDS  := parallel pci pcipc serial vesagfx vgah kbd ps2mouse
+KHIDDS  := parallel pci pcipc serial vesagfx vgah i8042
 
 USER_LDFLAGS := -L$(GENDIR)/lib
 

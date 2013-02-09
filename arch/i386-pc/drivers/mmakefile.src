@@ -7,16 +7,11 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-pc-i386-drivers : \
 #MM    kernel-pc-i386-trackdisk-kobj \
-#MM    kernel-pc-i386-kbd-kobj \
-#MM    kernel-pc-i386-mouse-kobj \
 #MM    kernel-pc-i386-serial-kobj \
 #MM    kernel-pc-i386-parallel-kobj \
 #MM    kernel-pci-kobj \
 #MM    kernel-pci-pcipc-kobj \
 #MM    kernel-ata-kobj
-
-# Disabled kernel-pc-i386-driver
-##MM    kernel-pc-i386-usb-kobj
 
 #
 # Rules to create Support drivers for pc-i386
