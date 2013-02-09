@@ -1,0 +1,8 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := startup kbd_init kbdclass mouseclass kbd_common drv_ps2
+
+%build_module mmake=kernel-hidd-i8042 \
+    modname=i8042 modtype=hidd \
+    files="$(FILES)" uselibs="oop hiddstubs"
