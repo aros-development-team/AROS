@@ -182,8 +182,8 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                 kbd_process_key(data, (UBYTE)last_code, SysBase);
 
             /* Install keyboard interrupt */
-             XSD(cl)->irq = KrnAddIRQHandler(1, kbd_keyint, data, NULL);
-             
+             data->irq = KrnAddIRQHandler(1, kbd_keyint, data, NULL);
+
              ReturnPtr("Kbd::New", OOP_Object *, o);
         } /* if (o) */
     }
@@ -194,9 +194,11 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
 VOID PCKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    KrnRemIRQHandler(XSD(cl)->irq);
+    struct kbd_data *data = OOP_INST_DATA(cl, o);
 
+    KrnRemIRQHandler(data->irq);
     XSD(cl)->kbdhidd = NULL;
+
     OOP_DoSuperMethod(cl, o, msg);
 }
 

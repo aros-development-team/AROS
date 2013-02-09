@@ -9,14 +9,13 @@
 /****************************************************************************************/
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
 #include <hidd/hidd.h>
 #include <hidd/mouse.h>
 #include <devices/inputevent.h>
-
-#include <SDI/SDI_interrupt.h>
 
 #include "mouse.h"
 #include "kbd_common.h"
@@ -38,10 +37,8 @@ int mouse_ps2reset(struct mouse_data *);
 
 /****************************************************************************************/
 
-AROS_INTH1(mouse_ps2int,struct mouse_data *, data)
+static void mouse_ps2int(struct mouse_data *data, void *unused)
 {
-    AROS_INTFUNC_INIT
-
     struct pHidd_Mouse_Event    *e = &data->event;
     UWORD                       buttonstate;
     WORD                        work = 10000;
@@ -177,14 +174,7 @@ AROS_INTH1(mouse_ps2int,struct mouse_data *, data)
 
     } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
 
-    if (!work)
-    {
-        D(bug("mouse.hidd: controller jammed (0x%02X).\n", info));
-    }
-
-    return FALSE;
-
-    AROS_INTFUNC_EXIT
+    D(if (!work) bug("mouse.hidd: controller jammed (0x%02X).\n", info);)
 }
 
 /****************************************************************************************/
@@ -192,18 +182,9 @@ AROS_INTH1(mouse_ps2int,struct mouse_data *, data)
 int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
-    struct Interrupt    *irq;
     int result;
 
-    irq = &data->irq;
-
-    irq->is_Node.ln_Type = NT_INTERRUPT;
-    irq->is_Node.ln_Pri  = 127;
-    irq->is_Node.ln_Name = "PS/2 mouse class irq";
-    irq->is_Code         = (VOID_FUNC)mouse_ps2int;
-    irq->is_Data         = (APTR)data;
-
-    AddIntServer(INTB_KERNEL + 12, irq);
+    data->irq = KrnAddIRQHandler(12, mouse_ps2int, data, NULL);
 
     Disable();
     result = mouse_ps2reset(data);
@@ -216,16 +197,10 @@ int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
     }
     /* Either no PS/2 mouse or problems with it */
     /* Remove mouse interrupt */
-    RemIntServer(INTB_KERNEL + 12, irq);
+    KrnRemIRQHandler(data->irq);
 
     /* Report no PS/2 mouse */
     return 0;
-}
-
-void dispose_mouse_ps2(OOP_Class *cl, OOP_Object *o) {
-struct mouse_data *data = OOP_INST_DATA(cl, o);
-
-   RemIntServer(INTB_KERNEL + 12, &data->irq);
 }
 
 /****************************************************************************************/

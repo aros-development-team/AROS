@@ -16,12 +16,6 @@
 
 static int init_kbd(struct kbdbase *LIBBASE)
 {
-    struct TagItem mouse_tags[] =
-    {
-        {aHidd_Name        , (IPTR)"PSMouse"        },
-        {aHidd_HardwareName, (IPTR)"PS/2 mouse port"},
-        {TAG_DONE          , 0                      }
-    };
     OOP_Object *kbd = OOP_NewObject(NULL, CLID_HW_Kbd, NULL);
     OOP_Object *ms = OOP_NewObject(NULL, CLID_HW_Mouse, NULL);
 
@@ -40,7 +34,7 @@ static int init_kbd(struct kbdbase *LIBBASE)
     LIBBASE->library.lib_OpenCnt = 1;
 
     /* Mouse can be missing, it's not a failure */
-    if (HW_AddDriver(ms, LIBBASE->ksd.mouseclass, mouse_tags))
+    if (HW_AddDriver(ms, LIBBASE->ksd.mouseclass, NULL))
     {
         D(bug("{i8042] Mouse driver installed\n"));    
         LIBBASE->library.lib_OpenCnt++;
