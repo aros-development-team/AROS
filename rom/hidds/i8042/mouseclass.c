@@ -14,6 +14,7 @@
 */
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
@@ -94,15 +95,24 @@ OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
 VOID PCMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    XSD(cl)->mousehidd = NULL;
+    struct mouse_data *data = OOP_INST_DATA(cl, o);
 
-    dispose_mouse_ps2(cl, o);
+    XSD(cl)->mousehidd = NULL;
+    KrnRemIRQHandler(data->irq);
     OOP_DoSuperMethod(cl, o, msg);
 }
 
 /***** Mouse::Get()  ***************************************/
+
+static const char *mice_str[] =
+{
+    "Generic PS/2 mouse",
+    "IntelliMouse(tm)-compatible PS/2 mouse"
+};
+
 VOID PCMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
+    struct mouse_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
     if (IS_HIDDMOUSE_ATTR(msg->attrID, idx))
@@ -118,6 +128,28 @@ VOID PCMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             return;
         }
     }
+    else if (IS_IF_ATTR(msg->attrID, idx, HiddAttrBase, num_Hidd_Attrs))
+    {
+        /*
+         * Since we have some knowledge of mouse type, we can
+         * reflect this in hardware description.
+         * A well-designed driver would first probe for hardware,
+         * then create its objects. This code is very old, and it has
+         * long story. Refactoring inner working of PS/2 driver can break
+         * something and reveal some controller quirks, so we leave
+         * everything as it is. First installing interrupt handler, then
+         * mouse detection. It may be important.
+         * Of course i could modify hiddclass to have setable attributes,
+         * but this is not good and can be easily abused by bad code. So here
+         * we do another thing, and just overload the respective attribute.
+         */
+        switch (idx)
+        {
+        case aoHidd_HardwareName:
+            *msg->storage = (IPTR)mice_str[data->mouse_protocol];
+            return;
+        }
+    }    
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }

@@ -19,7 +19,6 @@ struct kbd_staticdata
     OOP_AttrBase        hiddKbdAB;
     OOP_AttrBase        hiddMouseAB;
     OOP_MethodID        hwMethodBase;
-    APTR                irq;
 
     BPTR                cs_SegList;
     APTR                cs_KernelBase;

@@ -33,6 +33,7 @@ struct kbd_data
 {
     VOID    (*kbd_callback)(APTR, UWORD);
     APTR    callbackdata;
+    APTR    irq;
 
     ULONG   kbd_keystate;
     WORD    prev_amigacode;

@@ -37,16 +37,15 @@ struct mouse_data
     APTR callbackdata;
 
     UWORD buttonstate;
+    APTR  irq;
+    UBYTE mouse_data[5];
+    UBYTE mouse_collected_bytes;
+    UBYTE mouse_protocol;
+    UBYTE mouse_packetsize;
+    UBYTE expected_mouse_acks;
+    UBYTE packetsize;
 
-    struct Interrupt            irq;
-    UBYTE                       mouse_data[5];
-    UBYTE                       mouse_collected_bytes;
-    UBYTE                       mouse_protocol;
-    UBYTE                       mouse_packetsize;
-    UBYTE                       expected_mouse_acks;
-    UBYTE                       packetsize;
-            
-    struct pHidd_Mouse_Event    event;
+    struct pHidd_Mouse_Event event;
 };
 
 /****************************************************************************************/
