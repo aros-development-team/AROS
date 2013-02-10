@@ -20,6 +20,7 @@
 static void krnIRQwrapper(void *data1, void *data2)
 {
     struct Interrupt *irq = (struct Interrupt *)data1;
+    struct ExecBase *SysBase = (struct ExecBase *)data2;
 
     AROS_INTC1(irq->is_Code, irq->is_Data);
 }
@@ -60,7 +61,7 @@ static void krnIRQwrapper(void *data1, void *data2)
     AROS_LIBFUNC_INIT
 
     if (intNumber >= INTB_KERNEL) {
-        interrupt->is_Node.ln_Succ = KrnAddIRQHandler(intNumber - INTB_KERNEL, krnIRQwrapper, interrupt, NULL);
+        interrupt->is_Node.ln_Succ = KrnAddIRQHandler(intNumber - INTB_KERNEL, krnIRQwrapper, interrupt, SysBase);
         return;
     }
 
