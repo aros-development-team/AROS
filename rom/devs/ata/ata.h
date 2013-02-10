@@ -24,7 +24,7 @@
 #include <devices/timer.h>
 #include <devices/cd.h>
 
-#include "include/scsicmds.h"
+#include "include/devices/scsicmds.h"
 #include "ata_bus.h"
 
 #define MAX_DEVICEBUSES		2
