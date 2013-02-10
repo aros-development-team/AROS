@@ -48,7 +48,7 @@ USER_LDFLAGS := -L$(GENDIR)/lib
 
 #MM- kernel-legacy-pc-i386 :	        \
 #MM     kernel-hidd-serialmouse-pkg     \
-#MM     kernel-hidd-trackdisk-pkg
+#MM     kernel-devs-trackdisk-pkg
 
 LEGACY_DEVS  := trackdisk
 LEGACY_HIDDS := serialmouse

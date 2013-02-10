@@ -54,7 +54,7 @@ KHIDDS  := i8042 vesagfx vgah pci pcipc serial parallel
 
 #MM- kernel-legacy-pc-i386 :	        \
 #MM     kernel-hidd-serialmouse-pkg     \
-#MM     kernel-hidd-trackdisk-pkg
+#MM     kernel-devs-trackdisk-pkg
 # isapnp.resource fails to build as complete module. Needs analysis.
 ##MM	kernel-isapnp-pkg
 
