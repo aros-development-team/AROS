@@ -137,6 +137,32 @@ struct rrSystemUse {
     int8    Length;
     int8    Version;
     union {
+#define RR_SystemUse_SP            0x5350  /* System Use Sharing Protocol */
+#define RR_SystemUse_SP_VERSION    1
+        struct {
+            UBYTE   CheckBytes[2];         /* 0xBE 0xEF */
+            int8    BytesSkipped;
+        } __packed SP;
+#define RR_SystemUse_ST            0x5354  /* System Use Sharing Termination */
+#define RR_SystemUse_ST_VERSION    1
+        struct {
+        } __packed ST;
+#define RR_SystemUse_CE            0x4345  /* Continuation Entry */
+#define RR_SystemUse_CE_VERSION    1
+        struct {
+            int32LM     Location;
+            int32LM     Offset;
+            int32LM     Length;
+        } __packed CE;
+#define RR_SystemUse_ER            0x4552  /* Extension Reference */
+#define RR_SystemUse_ER_VERSION    1
+        struct {
+            int8        IdentifierLength;   /* LEN_ID */
+            int8        DescriptorLength;   /* LEN_DES */
+            int8        SourceLength;       /* LEN_SRC */
+            int8        ExtensionVersion;   /* EXT_VER */
+            UBYTE       Data[0];            /* LEN_ID + LEN_DES + LEN_SRC */
+        } ER;
 #define RR_SystemUse_AS            0x4153  /* Amiga */
 #define RR_SystemUse_AS_VERSION    1
         struct {
@@ -146,6 +172,19 @@ struct rrSystemUse {
 #define RR_AS_COMMENT_CONTINUE    (1 << 2)    /* Comment continues in next SUA */
             UBYTE   Data[];
         } __packed AS;
+#define RR_SystemUse_RR            0x5252  /* RockRidge capabilities */
+#define RR_SystemUse_RR_VERSION    1
+        struct {
+            int8    Flags;
+#define RR_RR_FLAGS_PX             (1 << 0)   /* PX Flag is valid */
+#define RR_RR_FLAGS_PN             (1 << 0)   /* PX Flag is valid */
+#define RR_RR_FLAGS_SL             (1 << 0)   /* PX Flag is valid */
+#define RR_RR_FLAGS_NM             (1 << 0)   /* PX Flag is valid */
+#define RR_RR_FLAGS_CL             (1 << 0)   /* PX Flag is valid */
+#define RR_RR_FLAGS_PL             (1 << 0)   /* PX Flag is valid */
+#define RR_RR_FLAGS_RE             (1 << 0)   /* PX Flag is valid */
+#define RR_RR_FLAGS_TF             (1 << 0)   /* PX Flag is valid */
+        } RR;
 #define RR_SystemUse_PX            0x5058  /* POSIX */
 #define RR_SystemUse_PX_VERSION    1
         struct {
