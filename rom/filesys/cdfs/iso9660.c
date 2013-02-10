@@ -24,12 +24,20 @@ struct ISOLock {
     ULONG           il_Extent;
     UQUAD           il_Offset;    /* For read/write offset */
     ULONG           il_ParentExtent;       /* Extent of the parent directory */
+    struct isoPathTable *il_PathTable;
 };
 
 struct ISOVolume {
     struct isoVolume iv_Volume;
     struct ISOLock   iv_RootLock;
-    TEXT iv_Name[1 + 32 + 1];
+    TEXT             iv_Name[1 + 32 + 1];
+    struct {
+        ULONG   Size;   /* In bytes */
+        ULONG   Extent;
+        ULONG   Entries;
+        struct isoPathTable **Entry;
+        APTR    Data;
+    } iv_PathTable;
 };
 
 static ULONG ascdec(STRPTR val, int len)
@@ -102,17 +110,26 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     struct FileLock *fl = &il->il_Public.cl_FileLock;
     struct ISOVolume *iv = vol->cv_Private;
     int i, len;
+    const strD *cp;
     BOOL has_Amiga_Protections = FALSE;
+    BOOL has_RockRidge = FALSE;
+
+    if (dir) {
+        il->il_Extent = isoRead32LM(&dir->ExtentLocation);
+        il->il_PathTable = NULL;
+    } else {
+        il->il_Extent = il->il_PathTable->ExtentLocation;
+        iparent = iv->iv_PathTable.Entry[il->il_PathTable->ParentDirectory-1]->ExtentLocation;
+    }
 
     D(bug("%s: \"%s\" Extent @0x%08x, Parent 0x%08x, Flags 0x%02x\n", __func__,
-          dir->FileIdentifier,
-          isoRead32LM(&dir->ExtentLocation), iparent, dir->Flags));
+          dir ? dir->FileIdentifier : il->il_PathTable->DirectoryIdentifier,
+          il->il_Extent, iparent, dir ? dir->Flags : 0));
 
-    if (dir->Flags & (ISO_Directory_ASSOC | ISO_Directory_HIDDEN))
+    if (dir && dir->Flags & (ISO_Directory_ASSOC | ISO_Directory_HIDDEN))
         return FALSE;
 
-    il->il_Extent = isoRead32LM(&dir->ExtentLocation);
-
+    /* No need to re-parse the root lock */
     if (iv && il->il_Extent == iv->iv_RootLock.il_Extent) {
         CopyMem(&iv->iv_RootLock, il, sizeof(*il));
         return TRUE;
@@ -121,18 +138,29 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     /* The starting location of the file is its unique 'key' */
     fl->fl_Key = il->il_Extent;
 
-    fib->fib_DirEntryType = (dir->Flags & ISO_Directory_ISDIR) ? ST_USERDIR : ST_FILE;
+    if (dir) {
+        fib->fib_Size = isoRead32LM(&dir->DataLength);
+        bindate2stamp(&dir->RecordingDate, &fib->fib_Date);
+        fib->fib_DirEntryType = (dir->Flags & ISO_Directory_ISDIR) ? ST_USERDIR : ST_FILE;
+        len = dir->FileIdentifierLength;
+        cp = &dir->FileIdentifier[0];
+    } else {
+        fib->fib_Size = 0;
+        memset(&fib->fib_Date, 0, sizeof(fib->fib_Date));
+        fib->fib_DirEntryType = ST_USERDIR;
+        len = il->il_PathTable->DirectoryIdentifierLength;
+        cp = &il->il_PathTable->DirectoryIdentifier[0];
+    }
 
-    len = dir->FileIdentifierLength;
     if (len > MAXFILENAMELENGTH-2)
         len = MAXFILENAMELENGTH-2;
     for (i = 0; i < len; i++) {
         /* Goddam VMS guys screwing up a perfectly good specification... */
-        if (dir->FileIdentifier[i] == ';') {
+        if (cp[i] == ';') {
             len = i;
             break;
         }
-        fib->fib_FileName[i + 1] = dir->FileIdentifier[i];
+        fib->fib_FileName[i + 1] = cp[i];
     }
     fib->fib_FileName[0] = len;
     fib->fib_FileName[len+1] = 0;
@@ -147,14 +175,15 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
                           FIBF_OTR_WRITE |
                           FIBF_ARCHIVE;
     fib->fib_EntryType = fib->fib_DirEntryType;
-    fib->fib_Size = isoRead32LM(&dir->DataLength);
     fib->fib_NumBlocks = (fib->fib_Size + 2047) / 2048;
-    bindate2stamp(&dir->RecordingDate, &fib->fib_Date);
     fib->fib_Comment[0] = 0;
     fib->fib_OwnerUID = 0;
     fib->fib_OwnerGID = 0;
 
     il->il_ParentExtent = iparent;
+
+    if (!dir)
+        goto end;
 
     /* Parse RockRidge extensions */
     i = ((UBYTE *)&dir->FileIdentifier[dir->FileIdentifierLength] -
@@ -195,6 +224,9 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
             }
             break;
         case RR_SystemUse_PX:
+            /* This field is mandatory for Rock Ridge */
+            has_RockRidge = TRUE;
+
             /* Don't overwrite the Amiga RR protections */
             if (has_Amiga_Protections)
                 break;
@@ -255,6 +287,18 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
         i += rr->Length;
     }
 
+    /* If RockRidge is detected, the PathTable is
+     * useless to us, due to re-arranged directories.
+     */
+    if (has_RockRidge && iv && iv->iv_PathTable.Size) {
+        FreeVec(iv->iv_PathTable.Entry);
+        FreeVec(iv->iv_PathTable.Data);
+        iv->iv_PathTable.Size = 0;
+        iv->iv_PathTable.Entries = 0;
+    }
+
+end:
+
     D(fib->fib_FileName[fib->fib_FileName[0]+1]=0);
 
     D(bug("%s: %c Lock %p, 0x%08x: \"%s\", dir size %d\n", __func__,
@@ -262,7 +306,7 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
                 il,
                 il->il_ParentExtent,
                 &il->il_Public.cl_FileInfoBlock.fib_FileName[1],
-                dir->DirectoryLength));
+                dir ? dir->DirectoryLength : il->il_PathTable->DirectoryIdentifierLength));
     D(bug("%s:  @0x%08x, %d bytes\n", __func__, il->il_Extent, il->il_Public.cl_FileInfoBlock.fib_Size));
 
     return TRUE;
@@ -288,10 +332,10 @@ static LONG isoReadDir(struct CDFSVolume *vol, struct ISOLock *ilock, ULONG exte
             } else {
                 if (size)
                     *size = dir->DirectoryLength;
-                if (ilock->il_ParentExtent == 0 &&
-                    offset == 0 &&
-                    dir->DirectoryLength) {
+                D(bug("%s: pe %d of %d dl %d\n", __func__, ilock->il_ParentExtent, offset, dir->DirectoryLength));
+                if (offset == 0 && dir->DirectoryLength) {
                     offset = dir->DirectoryLength;
+                    D(bug("%s: Reading parent dir info at %d\n", __func__, offset));
                     dir = (struct isoDirectory *)&buff[offset];
                     ilock->il_ParentExtent = isoRead32LM(&dir->ExtentLocation);
                     if (size)
@@ -306,10 +350,31 @@ static LONG isoReadDir(struct CDFSVolume *vol, struct ISOLock *ilock, ULONG exte
 
 static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG extent, BOOL (*cmp)(struct ISOLock *il, APTR data), APTR data)
 {
+    struct ISOVolume *iv = vol->cv_Private;
     ULONG size;
     ULONG offset;
     LONG err;
     struct ISOLock tmp;
+    int i;
+
+    /* Scan the path table first, if present */
+    for (i = 0; i < iv->iv_PathTable.Entries; i++) {
+        struct isoPathTable *pt = iv->iv_PathTable.Entry[i];
+        if (pt->ExtentLocation == extent) {
+            int j, parent = i;
+            /* Is the thing we're looking for a subdirectory?  */
+            for (j = 0; j < iv->iv_PathTable.Entries; j++) {
+                pt = iv->iv_PathTable.Entry[j];
+                if (j == parent)
+                    continue;
+                ifile->il_PathTable = pt;
+                isoParseDir(vol, ifile, NULL, 0);
+                if (cmp(ifile, data))
+                    return RETURN_OK;
+            }
+            break;
+        }
+    }
 
     /* Read the self/parent at the begining of the directory */
     err = isoReadDir(vol, &tmp, extent, 0, 0, &size);
@@ -375,6 +440,91 @@ static LONG isoFindExtent(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG e
     return isoFindCmp(vol, ifile, parent, cmp, (APTR)(IPTR)extent);
 }
 
+static VOID isoReadPathTables(struct CDFSVolume *vol)
+{
+    struct CDFS *cdfs = vol->cv_CDFSBase;
+    struct BCache *bcache = vol->cv_Device->cd_BCache;
+    struct ISOVolume *iv = vol->cv_Private;
+    ULONG sector;
+    UBYTE *data, *dp;
+    LONG size, err;
+    int i;
+
+    if (iv->iv_PathTable.Size == 0)
+        return;
+
+    sector = iv->iv_PathTable.Extent;
+    size   = iv->iv_PathTable.Size;
+
+    D(bug("%s: Reading path table @0x%08x, %d bytes\n", __func__, sector * 2048, size));
+    data = AllocVec(size, MEMF_PUBLIC);
+    if (!data)
+        return;
+
+    /* Read in the path table */
+    dp = data;
+    while (size > 0) {
+        ULONG tocopy = size;
+        UBYTE *cp;
+
+        if (tocopy > bcache->bc_BlockSize)
+            tocopy = bcache->bc_BlockSize;
+
+        err = BCache_Read(bcache, sector, &cp);
+        if (err != RETURN_OK) {
+            FreeVec(data);
+            return;
+        }
+
+        CopyMem(cp, dp, tocopy);
+        sector++;
+        dp += tocopy;
+        size -= tocopy;
+    }
+
+    /* Count the number of entries in the PathTable */
+    size = iv->iv_PathTable.Size;
+    iv->iv_PathTable.Entries = 0;
+    dp = data;
+    while (size > 0) {
+        UWORD len = (dp[0] + 8);
+        if (len & 1)
+            len++;
+        dp += len;
+        size -= len;
+        iv->iv_PathTable.Entries++;
+    }
+
+    D(bug("%s: %d entries\n", __func__, iv->iv_PathTable.Entries));
+
+    if (iv->iv_PathTable.Entries == 0) {
+        FreeVec(data);
+        iv->iv_PathTable.Size = 0;
+        return;
+    }
+
+    iv->iv_PathTable.Entry = AllocVec(sizeof(struct isoPathTable *)*iv->iv_PathTable.Entries, MEMF_PUBLIC);
+    if (iv->iv_PathTable.Entry == NULL) {
+        FreeVec(data);
+        iv->iv_PathTable.Size = 0;
+        return;
+    }
+
+    iv->iv_PathTable.Data = data;
+
+    /* Compute the pathtable offsets */
+    dp = iv->iv_PathTable.Data;
+    for (i = 0; i < iv->iv_PathTable.Entries; i++) {
+        UWORD len = (dp[0] + 8);
+        if (len & 1)
+            len++;
+        iv->iv_PathTable.Entry[i] = (struct isoPathTable *)dp;
+        dp += len;
+    }
+
+    return;
+}
+
 LONG ISO9660_Mount(struct CDFSVolume *vol)
 {
     struct CDFS *cdfs = vol->cv_CDFSBase;
@@ -409,6 +559,12 @@ LONG ISO9660_Mount(struct CDFSVolume *vol)
             struct ISOLock *il = &iv->iv_RootLock;
             struct isoDirectory *dir = (APTR)&iso->Primary.RootDirectoryEntry[0];
 
+            iv->iv_PathTable.Size = isoRead32LM(&iso->Primary.PathTableSize);
+#if _BYTE_ORDER == _BIG_ENDIAN
+            iv->iv_PathTable.Extent = iso->Primary.TypeMPathTable;
+#elif _BYTE_ORDER == _LITTLE_ENDIAN
+            iv->iv_PathTable.Extent = iso->Primary.TypeLPathTable;
+#endif
             CopyMem(iso, &iv->iv_Volume, sizeof(*iso));
             for (i = 0; i < 32; i++) {
                 iv->iv_Name[i+1] = iso->Primary.VolumeIdentifier[i];
@@ -469,6 +625,9 @@ LONG ISO9660_Mount(struct CDFSVolume *vol)
                     AROS_BSTR_strlen(vol->cv_DosVolume.dl_Name));
             fib->fib_FileName[0] = AROS_BSTR_strlen(vol->cv_DosVolume.dl_Name);
 
+            /* Cache the path tables */
+            isoReadPathTables(vol);
+
             return RETURN_OK;
         }
     }
@@ -490,6 +649,7 @@ LONG ISO9660_Unmount(struct CDFSVolume *vol)
 LONG ISO9660_Locate(struct CDFSVolume *vol, struct CDFSLock *idir, CONST_STRPTR file, ULONG mode, struct CDFSLock **ifile)
 {
     struct CDFS *cdfs = vol->cv_CDFSBase;
+    struct ISOVolume *iv = vol->cv_Private;
     struct ISOLock *fl, *il, tl;
     CONST_STRPTR path, rest;
     LONG err;
@@ -539,12 +699,21 @@ LONG ISO9660_Locate(struct CDFSVolume *vol, struct CDFSLock *idir, CONST_STRPTR 
                 ASSERT(il->il_Public.cl_FileInfoBlock.fib_DirEntryType == ST_USERDIR);
 
                 /* Otherwise, move to parent */
-                err = isoReadDir(vol, &tl, il->il_ParentExtent, 0, 0, NULL);
-                if (err == RETURN_OK) {
-                    /* .. and find its name in its parent */
-                    isoFindExtent(vol, &tl, tl.il_Extent, tl.il_ParentExtent);
+                if (il->il_PathTable) {
+                    /* Non-RockRidge */
+                    tl.il_PathTable = iv->iv_PathTable.Entry[il->il_PathTable->ParentDirectory-1];
+                    isoParseDir(vol, &tl, NULL, 0);
                     il = &tl;
                     continue;
+                } else {
+                    err = isoReadDir(vol, &tl, il->il_ParentExtent, 0, 0, NULL);
+                    if (err == RETURN_OK) {
+                        /* .. and find its name in its parent */
+                        if (tl.il_Public.cl_FileInfoBlock.fib_DirEntryType != ST_ROOT)
+                            isoFindExtent(vol, &tl, tl.il_Extent, tl.il_ParentExtent);
+                        il = &tl;
+                        continue;
+                    }
                 }
                 FreeVec(fl);
                 return err;
@@ -615,7 +784,7 @@ LONG ISO9660_ExamineNext(struct CDFSVolume *vol, struct CDFSLock *dl, struct Fil
 {
     struct CDFS *cdfs = vol->cv_CDFSBase;
     ULONG offset;
-    struct ISOLock tl, *il = (struct ISOLock *)dl;
+    struct ISOLock tl = {}, *il = (struct ISOLock *)dl;
     LONG err;
     ULONG size;
 
@@ -623,12 +792,22 @@ LONG ISO9660_ExamineNext(struct CDFSVolume *vol, struct CDFSLock *dl, struct Fil
                 &((struct ISOVolume *)vol->cv_Private)->iv_RootLock, dl,
                 fib->fib_DiskKey, dl->cl_FileInfoBlock.fib_Size));
 
-    /* Skip the first two entries, which simply point to the parent
-     * The funky math is for the single-character 'filename' given
-     * to those directories, and the round-up-to int16 padding
-     */
-    if (fib->fib_DiskKey == 0)
-        fib->fib_DiskKey = (((sizeof(struct isoDirectory)+1)+1)&~1)*2;
+    /* Do we have a valid size for this directory? */
+    if (dl->cl_FileInfoBlock.fib_Size == 0) {
+        struct isoDirectory *dir;
+        err = BCache_Read(vol->cv_Device->cd_BCache, il->il_Extent, (UBYTE **)&dir);
+        if (err != RETURN_OK)
+            return err;
+        dl->cl_FileInfoBlock.fib_Size = isoRead32LM(&dir->DataLength);
+    }
+            
+    if (fib->fib_DiskKey == 0) {
+        /* Skip the first two entries */
+        err = isoReadDir(vol, &tl, il->il_Extent, 0, 0, &size);
+        if (err != RETURN_OK)
+            return err;
+        fib->fib_DiskKey = size;
+    }
 
     if (fib->fib_DiskKey >= dl->cl_FileInfoBlock.fib_Size) {
         D(bug("%s: No more entries (%d >= %d)\n", __func__, fib->fib_DiskKey, dl->cl_FileInfoBlock.fib_Size));
