@@ -21,6 +21,16 @@ static ULONG usec2tick(ULONG usec)
     return ret;
 }
 
+/*
+ * !!! FIXME PLEASE !!!
+ * These delays cannot be just converted to timer.device, because they are
+ * used also by kbd_updateleds() function, which is called from within interrupt.
+ * Delays inside interrupts are evil, and this needs one more serious refactoring
+ * iteration. I think LED control can be delegated to separate task, which is
+ * signalled by interrupt code when update is needed.
+ * After this delays can be converted to timer.device. Mouse driver does not use
+ * them inside interrupt.
+ */
 void kbd_usleep(LONG usec)
 {
     int oldtick, tick;
