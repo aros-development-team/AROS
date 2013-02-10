@@ -268,13 +268,16 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
     return TRUE;
 }
 
-static LONG isoReadDir(struct CDFSVolume *vol, struct ISOLock *ilock, ULONG block, ULONG offset, ULONG iparent, ULONG *size)
+static LONG isoReadDir(struct CDFSVolume *vol, struct ISOLock *ilock, ULONG extent, ULONG offset, ULONG iparent, ULONG *size)
 {
+    D(struct CDFS *cdfs = vol->cv_CDFSBase);
     struct BCache *bcache = vol->cv_Device->cd_BCache;
     UBYTE *buff;
     LONG err;
 
-    err = BCache_Read(bcache, block, &buff);
+    D(bug("%s: Extent @0x%08x, offset 0x%03x, parent 0x%08x\n", __func__, extent, offset, iparent));
+
+    err = BCache_Read(bcache, extent + (offset / 2048), &buff);
     if (err == RETURN_OK) {
         struct isoDirectory *dir = (APTR)&buff[offset];
         if (!isoParseDir(vol, ilock, dir, iparent))
@@ -304,7 +307,7 @@ static LONG isoReadDir(struct CDFSVolume *vol, struct ISOLock *ilock, ULONG bloc
 static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG extent, BOOL (*cmp)(struct ISOLock *il, APTR data), APTR data)
 {
     ULONG size;
-    ULONG block, offset;
+    ULONG offset;
     LONG err;
     struct ISOLock tmp;
 
@@ -313,11 +316,10 @@ static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG exte
     if (err != RETURN_OK)
         return err;
 
-    block = 0;
     offset = size;
 
-    while ((block * 2048 + offset) < tmp.il_Public.cl_FileInfoBlock.fib_Size) {
-        err = isoReadDir(vol, ifile, extent + block, offset, extent, &size);
+    while (offset < tmp.il_Public.cl_FileInfoBlock.fib_Size) {
+        err = isoReadDir(vol, ifile, extent, offset, extent, &size);
 
         if (err != ERROR_OBJECT_WRONG_TYPE) {
             if (err != RETURN_OK)
@@ -328,9 +330,11 @@ static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG exte
         }
 
         offset += size;
-        if ((2048 - offset) < sizeof(struct isoDirectory) || size == 0) {
-            block++;
-            offset = 0;
+
+        /* Move to next block */
+        if (err == ERROR_OBJECT_WRONG_TYPE || size == 0 ||
+            (2048 - (offset % 2048)) < sizeof(struct isoDirectory) + 2) {
+            offset = (offset + 2048 - 1) & ~(2048 - 1);
         }
     }
 
@@ -610,7 +614,7 @@ VOID ISO9660_Close(struct CDFSVolume *vol, struct CDFSLock *fl)
 LONG ISO9660_ExamineNext(struct CDFSVolume *vol, struct CDFSLock *dl, struct FileInfoBlock *fib)
 {
     struct CDFS *cdfs = vol->cv_CDFSBase;
-    ULONG offset, block, diskkey;
+    ULONG offset;
     struct ISOLock tl, *il = (struct ISOLock *)dl;
     LONG err;
     ULONG size;
@@ -631,24 +635,22 @@ LONG ISO9660_ExamineNext(struct CDFSVolume *vol, struct CDFSLock *dl, struct Fil
         return ERROR_NO_MORE_ENTRIES;
     }
 
-    diskkey = fib->fib_DiskKey;
-    block = diskkey / 2048;
-    offset = diskkey % 2048;
+    offset = fib->fib_DiskKey;
 
-    while (diskkey < dl->cl_FileInfoBlock.fib_Size) {
-        err = isoReadDir(vol, &tl, il->il_Extent + block, offset, il->il_Extent, &size);
+    while (offset < dl->cl_FileInfoBlock.fib_Size) {
+        err = isoReadDir(vol, &tl, il->il_Extent, offset, il->il_Extent, &size);
 
         if (err != RETURN_OK && err != ERROR_OBJECT_WRONG_TYPE)
             break;
 
         D(bug("%s: err=%d, size=%d\n", __func__, err, size));
         offset += size;
-        if ((2048 - offset) < sizeof(struct isoDirectory) || size == 0) {
-            offset = 0;
-            block++;
-        }
 
-        diskkey = block * 2048 + offset;
+        /* Move to next block */
+        if (err == ERROR_OBJECT_WRONG_TYPE || size == 0 ||
+            (2048 - (offset % 2048)) < sizeof(struct isoDirectory) + 2) {
+            offset = (offset + 2048 - 1) & ~(2048 - 1);
+        }
 
         if (err == RETURN_OK) {
             struct FileInfoBlock *tfib = &tl.il_Public.cl_FileInfoBlock;
@@ -659,7 +661,7 @@ LONG ISO9660_ExamineNext(struct CDFSVolume *vol, struct CDFSLock *dl, struct Fil
         err = ERROR_NO_MORE_ENTRIES;
     } 
 
-    fib->fib_DiskKey = diskkey;
+    fib->fib_DiskKey = offset;
 
     D(bug("%s: Error %d\n", __func__, err));
 
