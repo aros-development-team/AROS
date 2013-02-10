@@ -26,7 +26,7 @@ typedef struct { UWORD LSB; UWORD MSB;} int16LM;
 typedef ULONG   int32L;
 typedef ULONG   int32M;
 typedef ULONG   int32;
-typedef ULONG   int16;
+typedef UWORD   int16;
 typedef struct {
     strD Year[4];
     strD Month[2];
@@ -106,7 +106,7 @@ struct isoPathTable {
     int8    ExtendedAttributeLength;
     int32   ExtentLocation;         /* LBA */
     int16   ParentDirectory;
-    strD    DirectoryIdentifier[];  /* Padded to an even number */
+    strD    DirectoryIdentifier[0];  /* Padded to an even number */
 } __packed;
 
 struct isoDirectory {
