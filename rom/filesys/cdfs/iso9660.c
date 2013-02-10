@@ -86,9 +86,6 @@ static void bindate2stamp(binDate *bin, struct DateStamp *date)
 
 static inline ULONG isoRead32LM(int32LM *lm)
 {
-    /* What fun! Some ISO creators (ISOCD v1.04, I'm looking at you!)
-     * only filled in one side of this field.
-     */
 #if _BYTE_ORDER == _BIG_ENDIAN
     return lm->MSB ? lm->MSB : (ULONG)AROS_LE2LONG(lm->LSB);
 #elif _BYTE_ORDER == _LITTLE_ENDIAN
@@ -164,14 +161,14 @@ static BOOL isoParseDir(struct CDFSVolume *vol, struct ISOLock *il, struct isoDi
          (UBYTE *)dir);
     if (i & 1)
         i++;
-    while (i < dir->DirectoryLength) {
+    while (i < (dir->DirectoryLength - 3)) {
         struct rrSystemUse *rr = (APTR)(((UBYTE *)dir) + i);
-        D(bug("%s: RR @%d [%c%c] (%d)\n", __func__, i, (AROS_BE2LONG(rr->Signature) >> 8) & 0xff, AROS_BE2LONG(rr->Signature) & 0xff, rr->Length));
+        D(bug("%s: RR @%d [%c%c] (%d)\n", __func__, i, (AROS_BE2WORD(rr->Signature) >> 8) & 0xff, AROS_BE2WORD(rr->Signature) & 0xff, rr->Length));
         if (rr->Length == 0) {
-            D(bug("%s: Corrupted RR section detected\n", __func__));
+            D(bug("%s: Corrupted RR section detected (%d left)\n", __func__, dir->DirectoryLength - i));
             break;
         }
-        switch (AROS_BE2LONG(rr->Signature)) {
+        switch (AROS_BE2WORD(rr->Signature)) {
         case RR_SystemUse_AS:
             if (rr->Version == RR_SystemUse_AS_VERSION) {
                 UBYTE *data = &rr->AS.Data[0];
@@ -414,8 +411,10 @@ LONG ISO9660_Mount(struct CDFSVolume *vol)
                 if (iv->iv_Name[i+1] == 0)
                     break;
             }
-            iv->iv_Name[33] = 0;
+            /* Remove trailing spaces from the volume name */
+            while (i > 0 && iv->iv_Name[i] == ' ') i--;
             iv->iv_Name[0] = i;
+            iv->iv_Name[i+1] = 0;
             gotname = TRUE;
 
             /* Convert from ISO date to DOS Datestamp */
@@ -498,6 +497,12 @@ LONG ISO9660_Locate(struct CDFSVolume *vol, struct CDFSLock *idir, CONST_STRPTR 
 
     D(bug("%s: 0x%08x: \"%s\"\n", __func__, il->il_ParentExtent, file));
 
+    if (idir->cl_FileInfoBlock.fib_DirEntryType != ST_ROOT &&
+        idir->cl_FileInfoBlock.fib_DirEntryType != ST_USERDIR) {
+        D(bug("%s:  \"%s\" is not a directory\n", __func__, &idir->cl_FileInfoBlock.fib_FileName[1]));
+        return ERROR_OBJECT_WRONG_TYPE;
+    }
+
     fl = AllocVec(sizeof(*fl), MEMF_PUBLIC | MEMF_CLEAR);
     if (fl) {
         // Get the actual filename
@@ -526,6 +531,8 @@ LONG ISO9660_Locate(struct CDFSVolume *vol, struct CDFSLock *idir, CONST_STRPTR 
                 /* Already at root? */
                 if (il->il_Public.cl_FileInfoBlock.fib_DirEntryType == ST_ROOT)
                     continue;
+
+                ASSERT(il->il_Public.cl_FileInfoBlock.fib_DirEntryType == ST_USERDIR);
 
                 /* Otherwise, move to parent */
                 err = isoReadDir(vol, &tl, il->il_ParentExtent, 0, 0, NULL);
@@ -619,8 +626,10 @@ LONG ISO9660_ExamineNext(struct CDFSVolume *vol, struct CDFSLock *dl, struct Fil
     if (fib->fib_DiskKey == 0)
         fib->fib_DiskKey = (((sizeof(struct isoDirectory)+1)+1)&~1)*2;
 
-    if (fib->fib_DiskKey >= dl->cl_FileInfoBlock.fib_Size)
+    if (fib->fib_DiskKey >= dl->cl_FileInfoBlock.fib_Size) {
+        D(bug("%s: No more entries (%d >= %d)\n", __func__, fib->fib_DiskKey, dl->cl_FileInfoBlock.fib_Size));
         return ERROR_NO_MORE_ENTRIES;
+    }
 
     diskkey = fib->fib_DiskKey;
     block = diskkey / 2048;
