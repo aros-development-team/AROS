@@ -59,11 +59,6 @@
 		
     if (obj == NULL) return;
 
-
-
-    MD(OOP_OCLASS(obj))->objectcount --;
-		
-
     OOP_DoMethod(obj, (OOP_Msg)&mid);
 
         
