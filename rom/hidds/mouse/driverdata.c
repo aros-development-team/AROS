@@ -53,7 +53,7 @@ OOP_Object *DriverData__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     OOP_Class *driverClass;
 
-    driverClass = (OOP_Class *)GetTagData(aHidd_Mouse_ClassPtr, 0, msg->attrList);
+    driverClass = (OOP_Class *)GetTagData(aHidd_DriverData_ClassPtr, 0, msg->attrList);
     D(bug("[Mouse] AddHardwareDriver(0x%p)\n", driverClass));
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);

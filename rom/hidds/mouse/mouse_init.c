@@ -22,11 +22,13 @@ static int Mouse_InitClass(struct mousebase *LIBBASE)
     if (!LIBBASE->csd.cs_UtilityBase)
         return FALSE;
 
-    LIBBASE->csd.hwAttrBase  = OOP_ObtainAttrBase(IID_HW);
-    LIBBASE->csd.hiddMouseAB = OOP_ObtainAttrBase(IID_Hidd_Mouse);
+    LIBBASE->csd.hwAttrBase   = OOP_ObtainAttrBase(IID_HW);
+    LIBBASE->csd.hiddMouseAB  = OOP_ObtainAttrBase(IID_Hidd_Mouse);
+    LIBBASE->csd.driverdataAB = OOP_ObtainAttrBase(IID_DriverData);
     LIBBASE->csd.hwMethodBase = OOP_GetMethodID(IID_HW, 0);
 
-    if (LIBBASE->csd.hwAttrBase && LIBBASE->csd.hiddMouseAB)
+    if (LIBBASE->csd.hwAttrBase && LIBBASE->csd.hiddMouseAB &&
+        LIBBASE->csd.driverdataAB)
     {
         OOP_Object *root = OOP_NewObject(NULL, CLID_HW_Root, NULL);
 
@@ -46,6 +48,8 @@ static int Mouse_ExpungeClass(struct mousebase *LIBBASE)
 {
     D(bug("[Mouse] Base Class destruction\n"));
 
+    if (LIBBASE->csd.driverdataAB)
+        OOP_ReleaseAttrBase(IID_DriverData);
     if (LIBBASE->csd.hiddMouseAB)
         OOP_ReleaseAttrBase(IID_Hidd_Mouse);
     if (LIBBASE->csd.hwAttrBase)
