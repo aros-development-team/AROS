@@ -99,8 +99,8 @@ OOP_Object *MouseHW__HW__AddDriver(OOP_Class *cl, OOP_Object *o, struct pHW_AddD
      */
     struct TagItem tags[] =
     {
-        {aHidd_Mouse_ClassPtr, (IPTR)Msg->driverClass},
-        {TAG_MORE            , (IPTR)Msg->tags       }
+        {aHidd_DriverData_ClassPtr, (IPTR)Msg->driverClass},
+        {TAG_MORE                 , (IPTR)Msg->tags       }
     };
     struct pHW_AddDriver add_msg =
     {
