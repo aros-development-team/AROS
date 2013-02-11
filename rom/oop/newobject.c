@@ -84,7 +84,13 @@
     if (!classPtr)
 	ReturnPtr ("OOP_NewObject[No classPtr]", OOP_Object *, NULL);
 
-    AROS_ATOMIC_INC(MD(classPtr)->objectcount); /* We don't want the class to be freed while we work on it */
+    /*
+     * We don't want the class to be freed while we work on it,
+     * so we temporarily increment reference count.
+     * Note that real instance counting happens inside rootclass,
+     * where it allocates and frees the memory.     
+     */
+    AROS_ATOMIC_INC(MD(classPtr)->objectcount);
 
     /* Create a new instance */
     
@@ -101,10 +107,10 @@
     
     D(bug("OOP_Coercemethod: %p\n", classPtr->CoerceMethod));
     o = (OOP_Object *)OOP_CoerceMethod(classPtr, (OOP_Object *)classPtr, (OOP_Msg)&p);
-    if (!o)
-    {
-	AROS_ATOMIC_DEC(MD(classPtr)->objectcount); /* Object creation failed, release lock */
-    }
+
+    /* Release our temporary lock */
+    AROS_ATOMIC_DEC(MD(classPtr)->objectcount);
+
 /*    print_table(GetOBase(OOPBase)->ob_IIDTable, GetOBase(OOPBase));
 */    
     ReturnPtr ("OOP_NewObject", OOP_Object *, o);

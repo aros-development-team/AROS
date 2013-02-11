@@ -9,6 +9,7 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+#include <aros/atomic.h>
 #include <exec/memory.h>
 #include <oop/oop.h>
 #include <string.h>
@@ -121,7 +122,7 @@ OOP_Object *root_new(OOP_Class *root_cl, OOP_Class *cl, struct pRoot_New *param)
     	o->o_Class = (OOP_Class *)cl;
     	
 	/* Class has one more object */
-    	MD(cl)->objectcount ++;
+    	AROS_ATOMIC_INC(MD(cl)->objectcount);
     	
     	ReturnPtr ("Root::New", OOP_Object *, OOP_BASEOBJECT(o) );
     }
@@ -136,7 +137,7 @@ static VOID root_dispose(OOP_Class *root_cl, OOP_Object *o, OOP_Msg msg)
 {
     EnterFunc(bug("Root::Dispose(o=%p, oclass=%s)\n", o, _OOP_OBJECT(o)->o_Class->ClassNode.ln_Name));
 
-    MD(OOP_OCLASS(o))->objectcount --;
+    AROS_ATOMIC_DEC(MD(OOP_OCLASS(o))->objectcount);
     D(bug("Object mem: %p, size: %ld\n", _OOP_OBJECT(o), ((ULONG *)_OOP_OBJECT(o))[-1] ));
     
     /* Free object's memory */
