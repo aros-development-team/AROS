@@ -73,7 +73,7 @@ APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *mode
             }
             ma_syncs = (struct TagItem *)&ma_fmts[fmtcount];
             D(bug("[VideoCoreGfx] %s: SyncMode's @ 0x%p\n", __PRETTY_FUNCTION__, ma_syncs));
-            ma_synctags = (struct TagItem  *)&ma_syncs[modecount + 2];
+            ma_synctags = (struct TagItem  *)&ma_syncs[modecount + 1];
             i = 0;
             ForeachNode(modelist, modecurrent)
             {
@@ -110,7 +110,18 @@ APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *mode
             ma_syncs[i].ti_Tag = TAG_DONE;
         }
     }
-
+#if defined(DUMP_MODEARRAY)
+    if (modearray)
+    {
+        ma_syncs = (struct TagItem *)modearray;
+        while (ma_syncs->ti_Tag != TAG_DONE)
+        {
+            D(bug("[VideoCoreGfx] %s: 0x%p: %08x, %08x\n", __PRETTY_FUNCTION__, ma_syncs, ma_syncs->ti_Tag, ma_syncs->ti_Data));
+            ma_syncs++;
+        }
+        D(bug("[VideoCoreGfx] %s: 0x%p: %08x, %08x\n", __PRETTY_FUNCTION__, ma_syncs, ma_syncs->ti_Tag, ma_syncs->ti_Data));
+    }
+#endif
     return (APTR)modearray;
 }
 
