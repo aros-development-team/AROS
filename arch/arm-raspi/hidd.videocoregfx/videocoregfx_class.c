@@ -110,7 +110,7 @@ APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *mode
             ma_syncs[i].ti_Tag = TAG_DONE;
         }
     }
-#if defined(DUMP_MODEARRAY)
+#if defined(DEBUGMODEARRAY)
     if (modearray)
     {
         ma_syncs = (struct TagItem *)modearray;
@@ -133,113 +133,13 @@ void FNAME_SUPPORT(DestroyModeArray)(struct List *modelist, APTR modearray)
 OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
-    struct List                 vc_modelist;
-    APTR                        vc_modearray;
     OOP_Object                  *self = NULL;
 
     struct TagItem              gfxmsg_tags[2];
     struct pRoot_New            gfxmsg_New;
 
-    struct TagItem              pftags_32bpp[] = {
-        { aHidd_PixFmt_RedShift,      8   },
-        { aHidd_PixFmt_GreenShift,    16  },
-        { aHidd_PixFmt_BlueShift,     24  },
-        { aHidd_PixFmt_AlphaShift,    0   },
-        { aHidd_PixFmt_RedMask,       0x00FF0000 },
-        { aHidd_PixFmt_GreenMask,     0x0000FF00 },
-        { aHidd_PixFmt_BlueMask,      0x000000FF },
-        { aHidd_PixFmt_AlphaMask,     0x00000000 },
-        { aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor },
-        { aHidd_PixFmt_Depth,         32  },
-        { aHidd_PixFmt_BytesPerPixel, 4   },
-        { aHidd_PixFmt_BitsPerPixel,  32  },
-        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_BGR032 },
-        { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
-        { TAG_DONE, 0UL }
-    };
-
-    struct TagItem              pftags_24bpp[] = {
-        { aHidd_PixFmt_RedShift,      24  },
-        { aHidd_PixFmt_GreenShift,    16  },
-        { aHidd_PixFmt_BlueShift,     8   },
-        { aHidd_PixFmt_AlphaShift,    0   },
-        { aHidd_PixFmt_RedMask,       0x000000FF },
-        { aHidd_PixFmt_GreenMask,     0x0000FF00 },
-        { aHidd_PixFmt_BlueMask,      0x00FF0000 },
-        { aHidd_PixFmt_AlphaMask,     0x00000000 },
-        { aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor },
-        { aHidd_PixFmt_Depth,         24  },
-        { aHidd_PixFmt_BytesPerPixel, 3   },
-        { aHidd_PixFmt_BitsPerPixel,  24  },
-        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_RGB24 },
-        { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
-        { TAG_DONE, 0UL }
-    };
-
-    struct TagItem              pftags_16bpp[] = {
-        { aHidd_PixFmt_RedShift,      16  },
-        { aHidd_PixFmt_GreenShift,    21  },
-        { aHidd_PixFmt_BlueShift,     27  },
-        { aHidd_PixFmt_AlphaShift,    0   },
-        { aHidd_PixFmt_RedMask,       0x0000F800 },
-        { aHidd_PixFmt_GreenMask,     0x000007E0 },
-        { aHidd_PixFmt_BlueMask,      0x0000001F },
-        { aHidd_PixFmt_AlphaMask,     0x00000000 },
-        { aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor },
-        { aHidd_PixFmt_Depth,         16  },
-        { aHidd_PixFmt_BytesPerPixel, 2   },
-        { aHidd_PixFmt_BitsPerPixel,  16  },
-        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_RGB16_LE },
-        { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
-        { TAG_DONE, 0UL }
-    };
-
-    struct TagItem              pftags_15bpp[] = {
-        { aHidd_PixFmt_RedShift,      17  },
-        { aHidd_PixFmt_GreenShift,    22  },
-        { aHidd_PixFmt_BlueShift,     27  },
-        { aHidd_PixFmt_AlphaShift,    0   },
-        { aHidd_PixFmt_RedMask,       0x00007C00 },
-        { aHidd_PixFmt_GreenMask,     0x000003E0 },
-        { aHidd_PixFmt_BlueMask,      0x0000001F },
-        { aHidd_PixFmt_AlphaMask,     0x00000000 },
-        { aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor },
-        { aHidd_PixFmt_Depth,         15  },
-        { aHidd_PixFmt_BytesPerPixel, 2   },
-        { aHidd_PixFmt_BitsPerPixel,  15  },
-        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_RGB15_LE },
-        { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
-        { TAG_DONE, 0UL }
-    };
-
-    struct TagItem              pftags_8bpp[] = {
-        { aHidd_PixFmt_RedShift,      0   },
-        { aHidd_PixFmt_GreenShift,    0   },
-        { aHidd_PixFmt_BlueShift,     0   },
-        { aHidd_PixFmt_AlphaShift,    0   },
-        { aHidd_PixFmt_RedMask,       0x00FF0000 },
-        { aHidd_PixFmt_GreenMask,     0x0000FF00 },
-        { aHidd_PixFmt_BlueMask,      0x000000FF },
-        { aHidd_PixFmt_AlphaMask,     0x00000000 },
-        { aHidd_PixFmt_CLUTMask,      0x000000FF },
-	{ aHidd_PixFmt_CLUTShift,     0   },
-	{ aHidd_PixFmt_ColorModel,    vHidd_ColorModel_Palette },
-        { aHidd_PixFmt_Depth,         8   },
-        { aHidd_PixFmt_BytesPerPixel, 1   },
-        { aHidd_PixFmt_BitsPerPixel,  8   },
-        { aHidd_PixFmt_StdPixFmt,     vHidd_StdPixFmt_LUT8 },
-        { aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky },
-        { TAG_DONE, 0UL }
-    };
-
-    struct TagItem              fmttags[] = {
-//        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_32bpp  },
-        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_24bpp  },
-        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_16bpp  },
-//        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_15bpp  },
-//        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_8bpp   },
-        { TAG_DONE, 0UL }
-    };
+    struct List                 vc_modelist;
+    APTR                        vc_modearray, vc_pixfmts;
 
     EnterFunc(bug("VideoCoreGfx::New()\n"));
 
@@ -247,8 +147,9 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     
     FNAME_SUPPORT(SDTV_SyncGen)(&vc_modelist, cl);
     FNAME_SUPPORT(HDMI_SyncGen)(&vc_modelist, cl);
+    vc_pixfmts = FNAME_SUPPORT(GenPixFmts)(cl);
 
-    if ((vc_modearray = FNAME_SUPPORT(GenModeArray)(cl, o, &vc_modelist, fmttags)) != NULL)
+    if ((vc_modearray = FNAME_SUPPORT(GenModeArray)(cl, o, &vc_modelist, (struct TagItem *)vc_pixfmts)) != NULL)
     {
         D(bug("[VideoCoreGfx] VideoCoreGfx::New: Generated Mode Array @ 0x%p\n", vc_modearray));
 
