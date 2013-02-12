@@ -50,17 +50,19 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     BOOL res = TRUE;
 
-    ObtainSemaphore(&monitor_spec->DisplayInfoDataBaseSemaphore);
+    if (monitor_spec != NULL) {
+        ObtainSemaphore(&monitor_spec->DisplayInfoDataBaseSemaphore);
 
-    if (monitor_spec->ms_OpenCount) {
-        monitor_spec->ms_OpenCount--;
-        res = FALSE;
+        if (monitor_spec->ms_OpenCount) {
+            monitor_spec->ms_OpenCount--;
+            res = FALSE;
+        }
+
+        ReleaseSemaphore(&monitor_spec->DisplayInfoDataBaseSemaphore);
     }
-
-    ReleaseSemaphore(&monitor_spec->DisplayInfoDataBaseSemaphore);
 
     return res;
 
