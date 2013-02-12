@@ -13,6 +13,16 @@
 
 #include "videocoregfx_hardware.h"
 
+#define DEBUGMODEARRAY
+//#define DEBUGPIXFMT
+//#define DEBUGDISPLAY
+
+//#define VC_FMT_32
+#define VC_FMT_24
+#define VC_FMT_16
+//#define VC_FMT_15
+//#define VC_FMT_8
+
 #define IID_Hidd_VideoCoreGfx  "hidd.gfx.videocore"
 #define CLID_Hidd_VideoCoreGfx "hidd.gfx.videocore"
 
@@ -81,8 +91,9 @@ struct DisplayMode
 
 #define FNAME_SUPPORT(x) VideoCoreGfx__Support__ ## x
 
-int FNAME_SUPPORT(InitMem)(void *, int, struct VideoCoreGfxBase *);
-int FNAME_SUPPORT(SDTV_SyncGen)(struct List *, OOP_Class *);
-int FNAME_SUPPORT(HDMI_SyncGen)(struct List *, OOP_Class *);
+int     FNAME_SUPPORT(InitMem)(void *, int, struct VideoCoreGfxBase *);
+int     FNAME_SUPPORT(SDTV_SyncGen)(struct List *, OOP_Class *);
+int     FNAME_SUPPORT(HDMI_SyncGen)(struct List *, OOP_Class *);
+APTR    FNAME_SUPPORT(GenPixFmts)(OOP_Class *);
 
 #endif /* _VIDEOCOREGFX_CLASS_H */
