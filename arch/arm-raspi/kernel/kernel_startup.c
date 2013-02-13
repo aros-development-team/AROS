@@ -112,20 +112,30 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     long unsigned int memlower = 0, memupper = 0, protlower = 0, protupper = 0;
     unsigned int delay;
     BootMsg = msg;
+    register unsigned int fpuflags;
 
     /* NB: the bootstrap has conveniently setup the framebuffer
             and initialised the serial port and led for us */
 
+    *gpioGPCLR0 = 1<<16; // LED ON
+
     core_SetupMMU();
 
-    *gpioGPCLR0 = 1<<16; // LED ON
-    delay = 10000;
-    while(delay--)
-        asm ("mov r0, r0");
+    for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
+
     *gpioGPSET0 = 1<<16; // LED OFF
-    delay = 10000;
-    while(delay--)
-        asm ("mov r0, r0");
+
+    /* Enable Vector Floating Point Calculations */
+    asm volatile("mrc p15,0,%[fpuflags],c1,c0,2\n" : [fpuflags] "=r" (fpuflags));   // Read Access Control Register 
+    fpuflags |= (VFPSingle | VFPDouble);                                            // Enable Single & Double Precision 
+    asm volatile("mcr p15,0,%[fpuflags],c1,c0,2\n" : : [fpuflags] "r" (fpuflags)); // Set Access Control Register
+    asm volatile(
+        "       mov %[fpuflags],%[vfpenable]    \n"                                 // Enable VFP 
+        "       fmxr fpexc,%[fpuflags]          \n"
+         : [fpuflags] "=r" (fpuflags) : [vfpenable] "I" (VFPEnable));
+
+    for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
+
     *gpioGPCLR0 = 1<<16; // LED ON
 
     while(msg->ti_Tag != TAG_DONE)
