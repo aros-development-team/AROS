@@ -102,7 +102,6 @@ SHARED	:= \
         __fdesc \
 	__rand48 \
         __signal \
-	__spawnv \
 	__stat \
 	__stdio \
 	__upath \
@@ -290,8 +289,6 @@ SHARED	:= \
 	sigsuspend \
 	sleep \
 	snprintf \
-	spawnv \
-	spawnvp \
 	sprintf \
 	srand48 \
 	sscanf \

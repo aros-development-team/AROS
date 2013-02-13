@@ -28,8 +28,6 @@ FILES := \
         random \
         setjmp \
         snprintf \
-        spawnv \
-        spawnvp \
         sscanf \
         statfs \
         stpblk \
