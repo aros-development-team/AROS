@@ -210,7 +210,6 @@ SHARED	:= \
 	gmtime \
     gmtime_r \
 	isatty \
-	ioctl \
 	jrand48 \
         kill \
 	labs \
