@@ -173,9 +173,21 @@ FILE *popen(const char *, const char *);
 char *tempnam(const char *dir, const char *pfx);
 /* NOTIMPL int      vdprintf(int, const char *restrict, va_list); */
 
-/* Deprecated functions, not present in POSIX.1-2008 */
-int getw(FILE *stream);
-int putw(int word, FILE *stream);
+/* Implement deprecated POSIX.1-2001 functions as static inline functions. */
+static __inline__ int getw(FILE *stream)
+{
+    int word;
+    
+    if (fread(&word, sizeof(word), 1, stream) > 0) return word;
+    else                                           return EOF;
+}
+
+static __inline__ int putw(int word, FILE *stream)
+{
+    if (fwrite(&word, sizeof(word), 1, stream) > 0) return 0;
+    else                                            return EOF;
+}
+
 
 __END_DECLS
 
