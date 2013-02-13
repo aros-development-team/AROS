@@ -1108,8 +1108,8 @@ BD_ARCHOBJS   := $(wildcard $(BD_OBJDIR)/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
-BD_OBJS := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES)) $(BD_CXXFILES) $(BD_ASMFILES)))
-BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES)) $(BD_CXXFILES)))
+BD_OBJS := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES) $(BD_CXXFILES) $(BD_ASMFILES))))
+BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES) $(BD_CXXFILES))))
 
 BD_CFLAGS    := %(cflags)
 BD_AFLAGS    := %(aflags)
