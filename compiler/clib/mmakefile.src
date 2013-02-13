@@ -207,7 +207,6 @@ SHARED	:= \
         getpwnam \
         getpwuid \
         gets \
-	getw \
 	getloadavg \
 	gmtime \
     gmtime_r \
@@ -246,7 +245,6 @@ SHARED	:= \
 	putenv \
         putc \
 	puts \
-	putw \
 	qsort \
 	raise \
 	rand \
