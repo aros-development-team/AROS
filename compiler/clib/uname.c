@@ -56,7 +56,7 @@
     char *architecture;
     char *cpu;
 
-    bzero(name, sizeof(struct utsname));
+    memset(name, 0, sizeof(struct utsname));
 
     ArosInquire(AI_ArosBuildDate, &str_builddate,
                 AI_ArosVersion, &version,
