@@ -9,58 +9,58 @@ KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 
 #MM arosboot-raspi: \
-#MM	kernel-raspi-arm \
-#MM	kernel-raspi-config-copy \
-#MM     kernel-package-raspi-arm
+#MM kernel-raspi-arm \
+#MM kernel-raspi-config-copy \
+#MM kernel-package-raspi-arm
 
 #MM kernel-package-raspi-arm: \
-#MM     linklibs-clib \
-#MM	kernel-dos \
-#MM     kernel-bootloader \
-#MM	kernel-dosboot \
-#MM	kernel-oop \
-#MM	kernel-utility \
-#MM	kernel-debug \
-#MM	kernel-expansion \
-#MM	kernel-graphics \
-#MM     kernel-cgxbootpic \
-#MM	kernel-intuition \
-#MM	kernel-partition \
-#MM	kernel-layers \
-#MM	kernel-timer \
-#MM	kernel-lddemon \
-#MM     kernel-hidd \
-#MM     kernel-aros \
-#MM     kernel-misc \
-#MM     kernel-keymap \
-#MM     kernel-input \
-#MM     kernel-gameport \
-#MM     kernel-keyboard \
-#MM     kernel-console \
-#MM     kernel-econsole \
-#MM     kernel-shell \
-#MM     kernel-shellcommands \
-#MM     kernel-filesystem \
-#MM     kernel-fs-con \
-#MM     kernel-fs-afs \
-#MM     kernel-fs-cdvdfs \
-#MM     kernel-fs-fat \
-#MM     kernel-fs-sfs \
-#MM     kernel-fs-amberram \
-#MM	kernel-vcmbox \
-#MM	hidd-i2c \
-#MM	hidd-i2c-bcm2835 \
-#MM	hidd-videocoregfx \
-#MM     kernel-hidd-graphics \
-#MM     kernel-hidd-kbd \
-#MM     kernel-hidd-mouse \
-#MM     kernel-usb-nopci \
-#MM     kernel-usb-usb2otg \
-#MM     kernel-usb-romstrap-raspi
+#MM linklibs-clib \
+#MM kernel-dos \
+#MM kernel-bootloader \
+#MM kernel-dosboot \
+#MM kernel-oop \
+#MM kernel-utility \
+#MM kernel-debug \
+#MM kernel-expansion \
+#MM kernel-graphics \
+#MM kernel-cgxbootpic \
+#MM kernel-intuition \
+#MM kernel-partition \
+#MM kernel-layers \
+#MM kernel-timer \
+#MM kernel-lddemon \
+#MM kernel-hidd \
+#MM kernel-aros \
+#MM kernel-misc \
+#MM kernel-keymap \
+#MM kernel-input \
+#MM kernel-gameport \
+#MM kernel-keyboard \
+#MM kernel-console \
+#MM kernel-econsole \
+#MM kernel-shell \
+#MM kernel-shellcommands \
+#MM kernel-filesystem \
+#MM kernel-fs-con \
+#MM kernel-fs-afs \
+#MM kernel-fs-cdvdfs \
+#MM kernel-fs-fat \
+#MM kernel-fs-sfs \
+#MM kernel-fs-amberram \
+#MM kernel-vcmbox \
+#MM hidd-i2c \
+#MM hidd-i2c-bcm2835 \
+#MM hidd-videocoregfx \
+#MM kernel-hidd-graphics \
+#MM kernel-hidd-kbd \
+#MM kernel-hidd-mouse \
+#MM kernel-usb-nopci \
+#MM kernel-usb-usb2otg \
+#MM kernel-usb-romstrap-raspi
 
 #MM kernel-package-raspi-arm-missing: \
-#MM     kernel-battclock \
-#MM     kernel-processor
+#MM kernel-battclock \
+#MM kernel-processor
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
 PKG_RSRC     :=  misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox
