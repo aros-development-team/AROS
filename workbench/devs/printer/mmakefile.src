@@ -13,4 +13,8 @@ FILES := printer driver prefs gfx text
   modname=printer modtype=device \
   files=$(FILES)
 
+INCLUDE_FILES = include/turboprint.h
+
+%copy_includes path= dir=include
+
 %common
