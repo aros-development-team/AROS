@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -315,8 +315,8 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	    alignbytes = alignwidth;
 	    break;
 	case 24:
-	    alignbytes = (biWidth + 3) & ~3UL;
-	    alignwidth = alignbytes * 3;
+	    alignbytes = ((biBitCount * biWidth + 31) / 32) * 4;
+	    alignwidth = alignbytes / 3;
 	    pixelfmt = PBPAFMT_RGB;
 	    break;
 	default:
@@ -347,7 +347,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	{
 	    BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
 	    return FALSE;
-    }
+	}
     }
     /* skip offset */
     bfOffBits = bfOffBits - 14 - 40 - biClrUsed*4;
@@ -370,7 +370,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 			      TAG_DONE);
 
     /* Now decode the picture data into a chunky buffer; and pass it to Bitmap line-by-line */
-    bmphandle->linebufsize = bmphandle->linebufbytes = alignwidth;
+    bmphandle->linebufsize = bmphandle->linebufbytes = alignbytes;
     if (! (bmphandle->linebuf = bmphandle->linebufpos = AllocMem(bmphandle->linebufsize, MEMF_ANY)) )
     {
 	BMP_Exit(bmphandle, ERROR_NO_FREE_STORE);
@@ -382,22 +382,23 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
     for (y=biHeight-1; y>=0 && cont; y--)
     {
 	int r, g, b;
+        UBYTE *p;
 	
 	bmphandle->linebufpos = bmphandle->linebuf;
 	if (biBitCount == 24)
 	{
-	    if ( (bmphandle->filebufbytes -= alignwidth) < 0 && !LoadBMP_FillBuf(bmphandle, alignwidth) )
+	    if ( (bmphandle->filebufbytes -= alignbytes) < 0 && !LoadBMP_FillBuf(bmphandle, alignbytes) )
 	    {
 		D(bug("bmp.datatype/LoadBMP() --- early end of bitmap data, x %ld y %ld\n", x, y));
 		//BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
 		//return FALSE;
 		cont = 0;
 	    }
-	    for (x=0; x<alignbytes; x++)
+	    for (x=0, p = bmphandle->filebufpos; x<alignwidth; x++)
 	    {
-		b = *(bmphandle->filebufpos)++;
-		g = *(bmphandle->filebufpos)++;
-		r = *(bmphandle->filebufpos)++;
+		b = *p++;
+		g = *p++;
+		r = *p++;
 		*(bmphandle->linebufpos)++ = r;
 		*(bmphandle->linebufpos)++ = g;
 		*(bmphandle->linebufpos)++ = b;
@@ -405,7 +406,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	}
 	else
 	{
-	    for (x=0; x<alignbytes; x++)
+	    for (x=0, p = bmphandle->filebufpos; x<alignbytes; x++)
 	    {
 		if ( (bmphandle->filebufbytes -= 1) < 0 && !LoadBMP_FillBuf(bmphandle, 1) )
 		{
@@ -415,7 +416,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 		    cont = 0;
 		    break;              
 		}
-		byte = *(bmphandle->filebufpos)++;
+		byte = *p++;
 		switch (biBitCount)
 		{
 		    case 1:
@@ -444,7 +445,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 			   PDTM_WRITEPIXELARRAY,	/* Method_ID */
 			   (IPTR)bmphandle->linebuf,	/* PixelData */
 			   pixelfmt,			/* PixelFormat */
-			   alignwidth,			/* PixelArrayMod (number of bytes per row) */
+			   alignbytes,			/* PixelArrayMod (number of bytes per row) */
 			   0,				/* Left edge */
 			   y,				/* Top edge */
 			   biWidth,			/* Width */
@@ -456,6 +457,7 @@ static BOOL LoadBMP(struct IClass *cl, Object *o)
 	    BMP_Exit(bmphandle, ERROR_OBJECT_WRONG_TYPE);
 	    return FALSE;
 	}
+        bmphandle->filebufpos += alignbytes;
     }
     //D(bug("bmp.datatype/LoadBMP() --- bytes of %ld (%ld) bytes\n", (long)bmphandle->filebufbytes, (long)(bmphandle->filebufsize-(bmphandle->filebufpos-bmphandle->filebuf)) ));
 
