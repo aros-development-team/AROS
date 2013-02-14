@@ -115,7 +115,7 @@ void serInit(void)
     uartdivfrac = PL011_BAUDFRAC(uartbaud, uartclock);
     *(volatile uint32_t *)(UART0_BASE + UART_FBRD) = uartdivfrac;
     *(volatile uint32_t *)(UART0_BASE + UART_LCRH) = LCRH_WLEN8|LCRH_FEN;                       // 8N1, Fifo enabled
-    *(volatile uint32_t *)(UART0_BASE + UART_CR) = CR_UARTEN|CR_TXE|CR_RXE|CR_RTSEN|CR_CTSEN;   // enable the uart, tx/rx, and hardware flow control
+    *(volatile uint32_t *)(UART0_BASE + UART_CR) = CR_UARTEN|CR_TXE|CR_RXE;   // enable the uart, tx and rx
 
     for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("mov r0, r0\n");
 }
