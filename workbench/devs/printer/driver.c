@@ -21,6 +21,8 @@
 #include <devices/printer.h>
 #include <datatypes/datatypesclass.h>
 
+#define TPMATCHWORD          0xf10a57ef /* From turboprint's SDK */
+
 #define CMD_OPENDEVICE       (0x100)
 #define CMD_CLOSEDEVICE      (0x101)
 
@@ -537,6 +539,17 @@ static LONG pd_DriverTask(VOID)
     D(bug("%s: Initializing driver, Unit Port %p\n", __func__, &pd->pd_Unit));
     ret = pd_Init(pd);
 
+    /* We want to look like a TURBOPRINT driver
+     * TPMATCHWORD is in the 3rd ULONG in pd_OldStk
+     * TURBOPRINT was documented as using:
+     *
+     * (BOOL)TP_Installed = ( ((ULONG *)(PD->pd_OldStk))[2] == TPMATCHWORD)
+     *
+     * So the assumption is that this ULONG is in native endian format.
+     */
+    ((ULONG *)(pd->pd_OldStk))[2] = TPMATCHWORD;
+
+
     D(bug("%s: Replying with %d\n", __func__, ret));
     msg->mm_Version = ret;
     ReplyMsg(&msg->mm_Message);
@@ -618,6 +631,7 @@ static LONG pd_DriverTask(VOID)
                 err = Printer_Gfx_DumpRPort((struct IODRPReq *)pio, ((struct IODRPTagsReq *)pio)->io_TagList);
             break;
         case PRD_DUMPRPORT:
+        case PRD_TPEXTDUMPRPORT:
             if (stopped)
                 err = PDERR_CANCEL;
             else

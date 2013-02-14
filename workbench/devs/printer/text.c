@@ -154,10 +154,12 @@ LONG Printer_Text_Command(struct PrinterData *pd, UWORD command, UBYTE p0, UBYTE
     CONST_STRPTR *Commands = pd->pd_Device.dd_CmdVectors;
     LONG CommandMax = pd->pd_Device.dd_NumCommands;
     /* Use pd_Stack as the command buffer */
-    UBYTE *buff[2] = { (UBYTE *)&pd->pd_Stk[0], (UBYTE *)&pd->pd_OldStk };
+    /* pd_OldStk[8..11] is used for the 'TPMATCHWORD' magic
+     */
+    UBYTE *buff[2] = { (UBYTE *)&pd->pd_Stk[0], (UBYTE *)&pd->pd_OldStk[12] };
     int buffsel = 0;
     UBYTE *buffer = buff[buffsel];
-    LONG buffmax = ((P_STKSIZE > P_OLDSTKSIZE) ? P_OLDSTKSIZE : P_STKSIZE)/2;
+    LONG buffmax = ((P_STKSIZE > (P_OLDSTKSIZE-12)) ? (P_OLDSTKSIZE-12) : P_STKSIZE)/2;
     CONST_STRPTR cmd;
     LONG blen = 0;
     UBYTE parm[4] = { p0, p1, p2, p3 };

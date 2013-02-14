@@ -109,6 +109,127 @@ static void pg_FloydDithering(struct driverInfo *di, UBYTE *pdata, LONG width)
      */
 }
 
+ULONG zrgbof(struct ColorMap *cm, ULONG index)
+{
+    UWORD hibits;
+  
+    /* For invalid entries, print white, not black
+     */
+    if (index >= cm->Count)
+        return 0x00ffffff;
+
+    hibits = cm->ColorTable[index];
+
+    ULONG red8   = (hibits & 0x0f00) >> 4;
+    ULONG green8 = (hibits & 0x00f0);
+    ULONG blue8  = (hibits & 0x000f) << 4;
+
+    if (cm->Type > COLORMAP_TYPE_V1_2) {
+        UWORD lobits = cm->LowColorBits[index]; 
+
+        red8   |= (lobits & 0x0f00) >> 8;
+        green8 |= (lobits & 0x00f0) >> 4;
+        blue8  |= (lobits & 0x000f);
+    }
+
+    return (red8 << 16) | (green8 << 8) | blue8;
+}
+
+/* TurboPrint emulation helper hooks - convert from
+ * native formats to 0RGB32 longwords
+ */
+DISPATCHER(TPSlice)
+{
+    struct DRPSourceMsg *drp = (struct DRPSourceMsg *)msg;
+    struct IODRPReq *io = (struct IODRPReq *)obj;
+    struct BitMap *tpbm = io->io_RastPort->BitMap;
+    UBYTE *src = tpbm->Planes[0];
+    ULONG *buf = drp->buf;
+    UWORD bpr = tpbm->BytesPerRow;
+    struct ColorMap *cm = io->io_ColorMap;
+    struct TPExtIODRP *tp = (struct TPExtIODRP *)io->io_Modes;
+    int w, h;
+    int bpp;
+
+    switch (tp->Mode) {
+    case TPFMT_Chunky8:
+        if (cm == NULL)
+            return 0;
+        bpp = 1;
+        break;
+    case TPFMT_RGB15:
+    case TPFMT_BGR15:
+    case TPFMT_RGB16:
+    case TPFMT_BGR16:
+        bpp = 2;
+        break;
+    case TPFMT_RGB24:
+    case TPFMT_BGR24:
+        bpp = 3;
+        break;
+    default:
+        return 0;
+    }
+
+    src += (bpr * drp->y);
+    for (h = 0; h < drp->height; h++, src += bpr) {
+        UBYTE *sref = src + drp->x * bpp;
+        for (w = 0; w < drp->width; w++ ) {
+            ULONG zrgb;
+            UWORD rgb15, rgb16;
+
+            switch (tp->Mode) {
+            case TPFMT_Chunky8:
+                zrgb = zrgbof(cm, *(sref++));
+                break;
+            case TPFMT_RGB15:
+                rgb15  = (*(sref++)) << 8;
+                rgb15 |= *(sref++);
+                goto rgb15;
+            case TPFMT_BGR15:
+                rgb15 = *(sref++);
+                rgb15 |= (*(sref++)) << 8;
+rgb15:
+                zrgb = ((((rgb15 >> 10) & 0x1f)<<3) << 16) |
+                       ((((rgb15 >>  5) & 0x1f)<<3) <<  8) |
+                       ((((rgb15 >>  0) & 0x1f)<<3) <<  0);
+                break;
+            case TPFMT_RGB16:
+                rgb16  = (*(sref++)) << 8;
+                rgb16 |= *(sref++);
+                goto rgb16;
+            case TPFMT_BGR16:
+                rgb16 = *(sref++);
+                rgb16 |= (*(sref++)) << 8;
+rgb16:
+                zrgb = ((((rgb16 >> 11) & 0x1f)<<3) << 16) |
+                       ((((rgb16 >>  5) & 0x3f)<<2) <<  8) |
+                       ((((rgb16 >>  0) & 0x1f)<<3) <<  0);
+                break;
+            case TPFMT_RGB24:
+                zrgb  = (*(sref++) << 16);
+                zrgb |= (*(sref++) <<  8);
+                zrgb |= (*(sref++) <<  0);
+                break;
+            case TPFMT_BGR24:
+                zrgb  = (*(sref++) <<  0);
+                zrgb |= (*(sref++) <<  8);
+                zrgb |= (*(sref++) << 16);
+                break;
+            default:
+                zrgb = 0x00ffffff;
+                break;
+            }
+
+            *(buf++) = zrgb;
+        }
+    }
+
+    return (buf - drp->buf);
+}
+
+MakeStaticHook(TPHook, TPSlice);
+
 LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
 {
     struct PrinterData *pd = (struct PrinterData *)io->io_Device;
@@ -153,7 +274,33 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
         return err;
 
     /* Get the source's aspect ratio */
-    if (io->io_Modes != INVALID_ID) {
+    if (io->io_Command == PRD_TPEXTDUMPRPORT) {
+        struct TPExtIODRP *tp = (APTR)io->io_Modes;
+        if (tp == NULL)
+            return PDERR_NOTGRAPHICS;
+        aspectXsrc = tp->PixAspX;
+        aspectYsrc = tp->PixAspY;
+bug("tp->Mode = 0x%04x\n", tp->Mode);
+        switch (tp->Mode) {
+        case TPFMT_Chunky8:
+        case TPFMT_BGR15:
+        case TPFMT_BGR16:
+        case TPFMT_BGR24:
+        case TPFMT_RGB15:
+        case TPFMT_RGB16:
+        case TPFMT_RGB24:
+            srcHook = &TPHook;
+            break;
+        case TPFMT_CyberGraphX:
+        case TPFMT_BitPlanes:
+        case TPFMT_HAM:
+        case TPFMT_EHB:
+            srcHook = NULL; /* AROS BitMap object - we can handle this */
+            break;
+        default:
+            return PDERR_NOTGRAPHICS;
+        }
+    } else if (io->io_Modes != INVALID_ID) {
         struct DisplayInfo dpyinfo;
 
         if (GetDisplayInfoData(NULL, (APTR)&dpyinfo, sizeof(dpyinfo), DTAG_DISP, io->io_Modes)) {
@@ -451,10 +598,10 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
                 pi->pi_ColorInt = pdata;
                 pi->pi_ColorIntSize = prnW * di.di_ColorSize;
 
-                if ((bm = AllocBitMap(prnW, prnH, -1, 0, io->io_RastPort->BitMap))) {
+                if ((bm = AllocBitMap(prnW, prnH, src_bm->Depth, 0, src_bm))) {
                     /* Render it ourselves */
                     struct BitScaleArgs bsa = {
-                        .bsa_SrcBitMap = io->io_RastPort->BitMap,
+                        .bsa_SrcBitMap = src_bm,
                         .bsa_SrcX = io->io_SrcX,
                         .bsa_SrcY = io->io_SrcY,
                         .bsa_SrcWidth = io->io_SrcWidth,
@@ -518,7 +665,7 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
             D(bug("\tCan't find nor synthesize a source bitmap\n"));
         }
 
-        RENDER(err, io->io_Special, 0, PRS_CLOSE);
+        RENDER((SIPTR)err, io->io_Special, 0, PRS_CLOSE);
     }
 
     return err;

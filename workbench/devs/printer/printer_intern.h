@@ -17,6 +17,8 @@
 #include <prefs/printergfx.h>
 #include <dos/dos.h>
 
+#include <turboprint.h>
+
 /*********************************************************************************************/
 
 struct PrinterBase;
