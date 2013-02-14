@@ -58,7 +58,7 @@ void cpu_Dispatch(regs_t *regs)
     if (!(task = core_Dispatch()))
         task = sysIdleTask;
 
-    bug("[Kernel] cpu_Dispatch: Letting '%s' run for a bit..\n", task->tc_Node.ln_Name);
+    D(bug("[Kernel] cpu_Dispatch: Letting '%s' run for a bit..\n", task->tc_Node.ln_Name));
 
     /* Restore the task's state */
     RESTORE_TASKSTATE(task, regs)
