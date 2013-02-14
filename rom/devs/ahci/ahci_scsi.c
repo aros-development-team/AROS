@@ -696,7 +696,7 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
         offset = (cdbd->rw_6.addr[0] << 16) |
                  (cdbd->rw_6.addr[1] << 8) |
                  (cdbd->rw_6.addr[2]);
-        len    = cdbd->rw_6.length;
+        len    = cdbd->rw_6.length ? cdbd->rw_6.length : 0x100;
         /*
          * Convert *_6 to *_10 commands.  Most ATAPI devices
          * cannot handle the SCSI READ_6 and WRITE_6 commands.
