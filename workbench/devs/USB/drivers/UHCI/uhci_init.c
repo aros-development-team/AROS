@@ -128,12 +128,8 @@ AROS_UFH3(void, Enumerator,
 
     D(bug("[UHCI]   Device %d @ %08x with IO @ %08x\n", counter, pciDevice, LIBBASE->sd.iobase[counter]));
 
-    struct pHidd_PCIDevice_WriteConfigWord wcw = {
-            OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord), PCI_LEGSUP, 0x8f00
-    };
-    
     D(bug("[UHCI]   Performing full reset. Hopefull legacy USB will do it'S handoff at this time.\n"));
-    OOP_DoMethod(pciDevice, &wcw.mID);
+    HIDD_PCIDevice_WriteConfigWord(pciDevice, PCI_LEGSUP, 0x8f00);
     
     outw(UHCI_CMD_HCRESET, LIBBASE->sd.iobase[counter] + UHCI_CMD);
     struct timerequest *tr = USBCreateTimer();
@@ -146,13 +142,7 @@ AROS_UFH3(void, Enumerator,
     outw(0, LIBBASE->sd.iobase[counter] + UHCI_CMD);
     
     
-    D({
-        struct pHidd_PCIDevice_ReadConfigWord __msg = {
-                OOP_GetMethodID(CLID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord), 0xc0
-        }, *msg = &__msg;
-
-        bug("[UHCI]    0xc0: %04x\n", OOP_DoMethod(pciDevice, msg));
-    });
+    D(bug("[UHCI]    0xc0: %04x\n", HIDD_PCIDevice_ReadConfigWord(pciDevice, 0xc0)));
 
     LIBBASE->sd.num_devices = ++counter;
 
@@ -171,7 +161,7 @@ static int UHCI_Init(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
-    if ((LIBBASE->sd.pci=OOP_NewObject(NULL, (STRPTR)CLID_Hidd_PCI, NULL)))
+    if ((LIBBASE->sd.pci=OOP_NewObject(NULL, (STRPTR)IID_Hidd_PCI, NULL)))
     {
         struct TagItem tags[] = {
                 { tHidd_PCI_Class,      PCI_BASE_CLASS_SERIAL },
