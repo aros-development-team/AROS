@@ -63,7 +63,7 @@ BOOL   toClip(STRPTR text, UBYTE clipUnit, struct Library *IFFParseBase);
 STRPTR fromClip(UBYTE clipUnit, struct Library *IFFParseBase);
 
 AROS_SH6H(Clip,50.1, "read from or write to clipboard\n",
-AROS_SHAH(IPTR *,U=   ,UNIT,/N/K,NULL ,  "Clipboard unit to be used by GET or SET (default = 0)\n"
+AROS_SHAH(LONG *,U=   ,UNIT,/N/K,NULL ,  "Clipboard unit to be used by GET or SET (default = 0)\n"
                                      "\t\tUNIT must be between 0 and 255"),
 AROS_SHAH(BOOL  ,W=   ,WAIT  ,/S,FALSE,  "Make GET wait for the UNIT to be filled with text data"),
 AROS_SHAH(BOOL  ,G=   ,GET   ,/S,FALSE,"\tRetrieve text data from the UNIT"),
