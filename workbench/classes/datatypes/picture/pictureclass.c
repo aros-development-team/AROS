@@ -1518,6 +1518,7 @@ STATIC IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
 
     if (rp) {
         /* Print from supplied (non colormap) rastport */
+        D(bug("%s: Print from RastPort %p\n", __func__, rp));
         pio->io_RastPort = rp;
         pio->io_ColorMap = NULL;
         pio->io_Modes = INVALID_ID;
@@ -1526,19 +1527,26 @@ STATIC IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
         /* Print as Gadget */
         struct Screen *s;
         
+        D(bug("%s: Print from Gadget %p on Screen %p\n", __func__, gi, gi->gi_Screen));
         if ((s = gi->gi_Screen)) {
             if ((pio->io_Modes = GetVPModeID(&s->ViewPort)) != INVALID_ID) {
                 pio->io_ColorMap = s->ViewPort.ColorMap;
                 if ((pio->io_RastPort = ObtainGIRPort(gi))) {
                     RetVal = DoIO((struct IORequest *)pio);
                     ReleaseGIRPort(pio->io_RastPort);
+                } else {
+                    D(bug("%s:   Can't obtain GI RastPort\n", __func__));
                 }
+            } else {
+                D(bug("%s:   No valid Screen mode\n", __func__));
             }
         }
     } else {
         /* Print as a 24-bit color image */
         struct RastPort baseRP;
         struct BitMap *bm;
+
+        D(bug("%s: Printing as image\n", __func__));
 
         rp = &baseRP;
 
@@ -1559,6 +1567,7 @@ STATIC IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
             (bm = AllocBitMap(w, h,  1, 0, NULL))) {
             struct Layer_Info *li;
             rp->BitMap = bm;
+            D(bug("%s:   Printing with Depth %d bitmap\n", __func__, GetBitMapAttr(bm, BMA_DEPTH)));
             if ((li = NewLayerInfo())) {
                 struct Layer *layer;
                 if ((layer = CreateUpfrontLayer(li, bm, 0, 0, w, h, 0, NULL))) {
@@ -1567,14 +1576,24 @@ STATIC IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
                     if ((drawInfo = ObtainDTDrawInfo(o, tags))) {
                         if (DrawDTObject(rp, o, 0, 0, w, h, th, tw, tags)) {
                             RetVal = DoIO((struct IORequest *)pio);
+                        } else {
+                            D(bug("%s:   Can't draw object to printer RastPort\n", __func__));
                         }
                         ReleaseDTDrawInfo(o, drawInfo);
+                    } else {
+                        D(bug("%s:   Can't obtain DTDrawInfo\n", __func__));
                     }
                     DeleteLayer(0, layer);
+                } else {
+                    D(bug("%s:   Can't allocate %dx%d layer\n", __func__, w, h));
                 }
                 DisposeLayerInfo(li);
+            } else {
+                D(bug("%s:   Can't allocate LayerInfo\n", __func__));
             }
             FreeBitMap(bm);
+        } else {
+            D(bug("%s:   Can't allocate a bitmap\n", __func__));
         }
     }
 
