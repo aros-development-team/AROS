@@ -19,22 +19,22 @@
 #include <graphics/gfx.h>
 #include <proto/graphics.h>
 
-	AROS_LH1(void, FreeBitMap,
+        AROS_LH1(void, FreeBitMap,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct BitMap *, bm, A0),
+        AROS_LHA(struct BitMap *, bm, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 154, Graphics)
+        struct GfxBase *, GfxBase, 154, Graphics)
 
 /*  FUNCTION
-	Returns the memory occupied by the BitMap to the system.
+        Returns the memory occupied by the BitMap to the system.
 
     INPUTS
-	bm - The result of AllocBitMap(). Must be non-NULL.
+        bm - The result of AllocBitMap(). Must be non-NULL.
 
     RESULT
-	None.
+        None.
 
     NOTES
 
@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-	AllocBitMap(), AllocRaster(), FreeRaster()
+        AllocBitMap(), AllocRaster(), FreeRaster()
 
     INTERNALS
 
@@ -60,46 +60,46 @@
     if (bm->pad != 0 || (bm->Flags & BMF_SPECIALFMT))
     {
         OOP_Object *bmobj = HIDD_BM_OBJ(bm);
-	
-    	if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SHARED_PIXTAB)
-	{
-	    /* NULL colormap otherwise bitmap killing also kills
-	       the colormap object of the bitmap object
-	       from which we shared it = to which it belongs */
-	    if (bmobj)
-		HIDD_BM_SetColorMap(bmobj, NULL);
-	}
-	else if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SCREEN_BITMAP) // (bm->Flags & BMF_DISPLAYABLE)
-	{
-    	    FreeVec(HIDD_BM_PIXTAB(bm));
-	}
+        
+        if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SHARED_PIXTAB)
+        {
+            /* NULL colormap otherwise bitmap killing also kills
+               the colormap object of the bitmap object
+               from which we shared it = to which it belongs */
+            if (bmobj)
+                HIDD_BM_SetColorMap(bmobj, NULL);
+        }
+        else if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SCREEN_BITMAP) // (bm->Flags & BMF_DISPLAYABLE)
+        {
+            FreeVec(HIDD_BM_PIXTAB(bm));
+        }
 
-	if (bmobj)
-	    HIDD_Gfx_DisposeBitMap(HIDD_BM_DRVDATA(bm)->gfxhidd, bmobj);
+        if (bmobj)
+            HIDD_Gfx_DisposeBitMap(HIDD_BM_DRVDATA(bm)->gfxhidd, bmobj);
 
-	FreeMem(bm, sizeof (struct BitMap));
+        FreeMem(bm, sizeof (struct BitMap));
     }
     else
     {
-	ULONG plane;
-	ULONG width;
+        ULONG plane;
+        ULONG width;
 
-	width = bm->BytesPerRow * 8;
+        width = bm->BytesPerRow * 8;
 
-	for (plane=0; plane < bm->Depth; plane ++)
-	{
-	    /* Take care of two special cases: plane pointers containing NULL or -1
-	     * are supported by BltBitMap() as all 0's and all 1's planes
-	     */
-	    if (bm->Planes[plane] && bm->Planes[plane] != (PLANEPTR)-1)
-	    {
-		ASSERT_VALID_PTR(bm->Planes[plane]);
-		FreeRaster (bm->Planes[plane], width, bm->Rows);
-	    }
-	}
+        for (plane=0; plane < bm->Depth; plane ++)
+        {
+            /* Take care of two special cases: plane pointers containing NULL or -1
+             * are supported by BltBitMap() as all 0's and all 1's planes
+             */
+            if (bm->Planes[plane] && bm->Planes[plane] != (PLANEPTR)-1)
+            {
+                ASSERT_VALID_PTR(bm->Planes[plane]);
+                FreeRaster (bm->Planes[plane], width, bm->Rows);
+            }
+        }
 
-	FreeMem (bm, sizeof(struct BitMap) +
-	    	     ((bm->Depth > 8) ? (bm->Depth - 8) * sizeof(PLANEPTR) : 0));
+        FreeMem (bm, sizeof(struct BitMap) +
+                     ((bm->Depth > 8) ? (bm->Depth - 8) * sizeof(PLANEPTR) : 0));
     }
 
     AROS_LIBFUNC_EXIT
