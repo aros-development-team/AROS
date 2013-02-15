@@ -221,6 +221,45 @@ static const char unknown[]  = "--unknown device--";
 
 *****************************************************************************************/
 
+/*****************************************************************************************
+
+    NAME
+        aoHidd_DriverData
+
+    SYNOPSIS
+        [I..], APTR
+
+    LOCATION
+        hiddclass
+
+    FUNCTION
+        Provide private data for driver creation.
+
+        This attribute is actually reserved for private use by device drivers.
+        Many driver classes will scan the system and instantiate one or more
+        objects of own class to control the discovered hardware. This attribute
+        is intended to specify details of the actual device. For example for
+        PCI device drivers this can be a pointer to PCI device objects.
+
+    NOTES
+        Be careful and do not use this attribute if you implement a public reusable
+        class which is meant to be subclassed. In this case this attribute can be
+        used by subclasses, and your own use will make a conflict.
+
+        This attribute actually exists only in order to free the developer from need
+        to create own private interface just for one attribute.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        aoHidd_Producer
+
+    INTERNALS
+
+*****************************************************************************************/
+
 /* Implementation of root HIDD class methods. */
 VOID HIDDCl__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg);
 
