@@ -314,10 +314,10 @@ end:
 
 static LONG isoReadDir(struct CDFSVolume *vol, struct ISOLock *ilock, ULONG extent, ULONG offset, ULONG iparent, ULONG *size)
 {
-    D(struct CDFS *cdfs = vol->cv_CDFSBase);
     struct BCache *bcache = vol->cv_Device->cd_BCache;
     UBYTE *buff;
     LONG err;
+    D(struct CDFS *cdfs = vol->cv_CDFSBase;(void)cdfs;);
 
     D(bug("%s: Extent @0x%08x, offset 0x%03x, parent 0x%08x\n", __func__, extent, offset, iparent));
 
@@ -615,7 +615,7 @@ LONG ISO9660_Mount(struct CDFSVolume *vol)
             }
 
             /* We use the Volume as our root lock alias */
-            vol->cv_DosVolume.dl_Type = AROS_MAKE_ID('I','S','O',0);
+            vol->cv_DosVolume.dl_DiskType = AROS_MAKE_ID('I','S','O',0);
             vol->cv_DosVolume.dl_Lock = MKB_LOCK(&iv->iv_RootLock.il_Public);
             vol->cv_Private = iv;
 
