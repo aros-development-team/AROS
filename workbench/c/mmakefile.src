@@ -71,6 +71,7 @@ SH_FILES := \
     GfxControl \
     LoadWB \
     Play \
+    Print \
     SetKeyboard \
     WaitX
 
