@@ -54,8 +54,8 @@ int main(void)
 
     bm = scr->RastPort.BitMap;
 
-    if (bm->Flags & BMF_SPECIALFMT) {
-        OOP_Object *bmobj = (OOP_Object *)bm->Planes[0];
+    if (IS_HIDD_BM(bm)) { 
+        OOP_Object *bmobj = HIDD_BM_OBJ(bm);
 	OOP_Object *gfxhidd = NULL;
 
 	OOP_GetAttr(bmobj, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);

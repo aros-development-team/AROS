@@ -126,7 +126,7 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 		   In addition it gets an alpha channel.
 		   Note that this relies on the fact that AllocSpriteDataA() always generates HIDD bitmap
 		   in sprite->es_BitMap. */
-		if (!sprite->es_BitMap->Planes[2]) {
+		if (!HIDD_BM_COLMAP(sprite->es_BitMap)) {
 		    ULONG i;
 		    HIDDT_Color col[DEF_POINTER_DEPTH] = {{0}};
 		    struct Color32 *q = GetPrivIBase(IntuitionBase)->Colors;
@@ -137,7 +137,7 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 			col[i].blue  = q[i + 7].blue >> 16;
 			col[i].alpha = GetPrivIBase(IntuitionBase)->PointerAlpha;
 		    }
-		    HIDD_BM_SetColors((OOP_Object *)sprite->es_BitMap->Planes[0], col, 0, DEF_POINTER_DEPTH);
+		    HIDD_BM_SetColors(HIDD_BM_OBJ(sprite->es_BitMap), col, 0, DEF_POINTER_DEPTH);
 		}
 	    
 		shared = CreateSharedPointer(sprite,

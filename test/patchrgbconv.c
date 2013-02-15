@@ -223,7 +223,7 @@ static void installfunc(ULONG srcfmt, ULONG dstfmt, ULONG srcbits, ULONG dstbits
 
 #define PATCHFUNC(a,b) \
     (*func)(FMT_ ## a, FMT_ ## b, a ## _ ## BITS, b ## _ ## BITS, convert_ ## a ## _ ## b, \
-    	    	verify, bench, testpixels_ ## a, NUMTESTPIXELS_ ## a, # a, # b, (OOP_Object *)bitmap->Planes[0]);
+    	    	verify, bench, testpixels_ ## a, NUMTESTPIXELS_ ## a, # a, # b, HIDD_BM_OBJ(bitmap));
 
 int main(int argc, char **argv)
 {

@@ -29,7 +29,7 @@ if (bitmap->Flags & BMF_SPECIALFMT) {					\
     OOP_Object *pf;							\
     IPTR stdpf;								\
 									\
-    OOP_GetAttr((OOP_Object *)bitmap->Planes[0], aHidd_BitMap_PixFmt, (IPTR *)&pf);	\
+    OOP_GetAttr(HIDD_BM_OBJ(bitmap), aHidd_BitMap_PixFmt, (IPTR *)&pf);	\
     OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);			\
 									\
     bug("[AllocSpriteData] Bitmap pixelformat: %lu\n", stdpf);		\

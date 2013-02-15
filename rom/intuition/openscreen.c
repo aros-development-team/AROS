@@ -29,6 +29,7 @@
 #include <string.h>
 #include <proto/cybergraphics.h>
 #include <cybergraphx/cybergraphics.h>
+#include <hidd/graphics.h>
 #include "intuition_intern.h"
 #include "intuition_customize.h"
 #include "intuition_extend.h"
@@ -748,8 +749,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
                 }
             }
 #else
-	    if (!(custombm->Flags & BMF_SPECIALFMT) || (modeid != (ULONG)(IPTR)custombm->Planes[7]))
-		custombm = NULL;
+            if (!IS_HIDD_BM(custombm) || (modeid != HIDD_BM_HIDDMODE(custombm)))
+                custombm = NULL;
 #endif
 
             if(custombm != NULL)

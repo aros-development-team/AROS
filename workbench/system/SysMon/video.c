@@ -14,7 +14,6 @@
 #include <proto/oop.h>
 #include <hidd/graphics.h>
 struct BitMap * bm = NULL;
-#define HIDD_BM_OBJ(bitmap)             (*(OOP_Object **)&((bitmap)->Planes[0]))
 #undef HiddGfxNouveauAttrBase
 #undef HiddBitMapAttrBase
 OOP_AttrBase HiddGfxNouveauAttrBase;
