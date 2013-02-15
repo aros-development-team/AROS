@@ -99,18 +99,21 @@
 AROS_SH3(NewShell, 41.2,
 AROS_SHA(STRPTR, ,WINDOW, ,"CON:10/50/640/480/AROS-Shell/CLOSE"),
 AROS_SHA(STRPTR, ,FROM,   ,"S:Shell-Startup"),
-AROS_SHA(ULONG,  ,STACK,  ,AROS_STACKSIZE))
+AROS_SHA(LONG *, ,STACK,/N,NULL))
 {
     AROS_SHCOMMAND_INIT
 
     BPTR from = Open(SHArg(FROM),   MODE_OLDFILE);
     BPTR win  = Open(SHArg(WINDOW), MODE_OLDFILE);
-    ULONG stack = SHArg(STACK);
+    LONG *stackp = SHArg(STACK);
+    ULONG stack;
 
     LONG rc = RETURN_FAIL;
 
-    if (stack < AROS_STACKSIZE)
+    if (stackp == NULL || *stackp < AROS_STACKSIZE)
         stack = AROS_STACKSIZE;
+    else
+        stack = *stackp;
 
     if (win)
     {
