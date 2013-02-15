@@ -2230,7 +2230,7 @@ LONG LinkFile(BPTR from, STRPTR to, ULONG soft, struct CopyData *cd)
         {
             if (NameFromLock(from, name, FILEPATH_SIZE))
             {
-                ret = MakeLink(to, name, LINK_SOFT);
+                ret = MakeLink(to, (SIPTR)name, LINK_SOFT);
             }
 
             FreeMem(name, FILEPATH_SIZE);
@@ -2240,7 +2240,7 @@ LONG LinkFile(BPTR from, STRPTR to, ULONG soft, struct CopyData *cd)
     }
     else
     {
-        return MakeLink(to, (void *)from, LINK_HARD);
+        return MakeLink(to, (SIPTR)from, LINK_HARD);
     }
 }
 
