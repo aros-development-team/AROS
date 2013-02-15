@@ -1488,8 +1488,8 @@ STATIC IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
     IPTR w = 0, h = 0, th = 0, tw = 0;
     struct GadgetInfo *gi = msg->dtp_GInfo;
 
-    GetDTAttrs(o, DTA_NominalHoriz, &w, DTA_NominalVert, &h);
-    GetDTAttrs(o, DTA_TopHoriz, &tw, DTA_TopVert, &th);
+    GetDTAttrs(o, DTA_NominalHoriz, &w, DTA_NominalVert, &h, TAG_DONE);
+    GetDTAttrs(o, DTA_TopHoriz, &tw, DTA_TopVert, &th, TAG_DONE);
 
     if (w == 0 || h == 0)
         return 0;
