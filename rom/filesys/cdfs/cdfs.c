@@ -63,6 +63,9 @@ static LONG CDFS_DeviceMount(struct CDFS *cdfs, struct CDFSDevice *dev)
                     /* Mark volume as online */
                     vol->cv_DosVolume.dl_Task = &(((struct Process *)FindTask(NULL))->pr_MsgPort);
                     vol->cv_DosVolume.dl_LockList = BNULL;
+                } else {
+                    /* Insert the new volume */
+                    AddDosEntry((struct DosList *)&vol->cv_DosVolume);
                 }
                 UnLockDosList(LDF_VOLUMES | LDF_READ);
                 CloseLibrary(DOSBase);
