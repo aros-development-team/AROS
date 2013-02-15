@@ -13,8 +13,6 @@
 
 #include "gallium_intern.h"
 
-#define HIDD_BM_OBJ(bitmap)     (*(OOP_Object **)&((bitmap)->Planes[0]))
-
 /*****************************************************************************
 
     NAME */

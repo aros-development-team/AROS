@@ -1534,7 +1534,7 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
     if (!(bm->Flags & BMF_SPECIALFMT))
         return FALSE;
 
-    res = HIDD_Gfx_SetCursorShape(data->handle->gfxhidd, (OOP_Object *)bm->Planes[0], msg->pointer->xoffset, msg->pointer->yoffset);
+    res = HIDD_Gfx_SetCursorShape(data->handle->gfxhidd, HIDD_BM_OBJ(bm), msg->pointer->xoffset, msg->pointer->yoffset);
     D(bug("[monitorclass] SetCursorShape() returned %d\n", res));
     if (res) {
 	data->pointer = msg->pointer;

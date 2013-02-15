@@ -79,8 +79,8 @@ int main(void)
 	return RETURN_FAIL;
     }
 
-    ConvertPixels(argb, 0, SRC_PIXFMT, rgb15, 0, DST_PIXFMT, 8, 1, (OOP_Object *)bitmap->Planes[0]);
-    ConvertPixels(rgb15, 0, DST_PIXFMT, argb_inv, 0, SRC_PIXFMT, 8, 1, (OOP_Object *)bitmap->Planes[0]);
+    ConvertPixels(argb, 0, SRC_PIXFMT, rgb15, 0, DST_PIXFMT, 8, 1, HIDD_BM_OBJ(bitmap));
+    ConvertPixels(rgb15, 0, DST_PIXFMT, argb_inv, 0, SRC_PIXFMT, 8, 1, HIDD_BM_OBJ(bitmap));
     
     {
     	int i;

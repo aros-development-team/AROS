@@ -11,8 +11,6 @@
 #include <gallium/pipe/p_state.h>
 #include <aros/debug.h>
 
-#define HIDD_BM_OBJ(bitmap)     (*(OOP_Object **)&((bitmap)->Planes[0]))
-
 /*****************************************************************************
 
     NAME */

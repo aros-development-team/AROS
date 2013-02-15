@@ -18,8 +18,6 @@
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase   (SD(cl)->galliumAttrBase)
 
-#define HIDD_BM_OBJ(bitmap)     (*(OOP_Object **)&((bitmap)->Planes[0]))
-
 struct HiddNouveauWinSys 
 {
     struct HIDDT_WinSys base;

@@ -33,15 +33,6 @@
    if it is a HIDD bitmap
 */
 
-#define HIDD_BM_OBJ(bitmap)       (*(OOP_Object **)&((bitmap)->Planes[0]))
-#define HIDD_BM_DRVDATA(bitmap)   (*(struct monitor_driverdata **)&((bitmap)->Planes[1]))
-#define HIDD_BM_COLMAP(bitmap)	  (*(OOP_Object **)&((bitmap)->Planes[2]))
-#define HIDD_BM_COLMOD(bitmap)    (*(HIDDT_ColorModel *)&((bitmap)->Planes[3]))
-#define HIDD_BM_PIXTAB(bitmap)	  (*(HIDDT_Pixel **)&((bitmap)->Planes[4]))
-#define HIDD_BM_REALDEPTH(bitmap) (*(LONG *)&((bitmap)->Planes[5]))
-#define HIDD_BM_FLAGS(bitmap)	  (*(ULONG *)&((bitmap)->Planes[6]))
-#define HIDD_BM_HIDDMODE(bitmap)  (*(HIDDT_ModeID *)&((bitmap)->Planes[7]))
-
 #define OBTAIN_HIDD_BM(bitmap)	\
 	( ( IS_HIDD_BM(bitmap))	\
 		? HIDD_BM_OBJ(bitmap)	\
@@ -73,8 +64,6 @@ do                                                                             \
 	((vp->ColorMap && vp->ColorMap->NormalDisplayInfo) \
 		? DIH(vp->ColorMap->NormalDisplayInfo)->drv \
 		: GET_BM_DRIVERDATA(vp->RasInfo->BitMap))
-
-#define IS_HIDD_BM(bitmap) ((bitmap)->Flags & BMF_SPECIALFMT)
 
 #if 0
 #define BM_PIXEL(bitmap, pen) ((!IS_HIDD_BM(bitmap) || !HIDD_BM_PIXTAB(bitmap)) ? (pen) :  \
