@@ -100,7 +100,7 @@ int main(void)
                         else
                         {
                             /* Check loops? */
-                            if(MakeLink((STRPTR)args[ARG_FROM], (APTR)lock, FALSE))
+                            if(MakeLink((STRPTR)args[ARG_FROM], (SIPTR)lock, FALSE))
                                 retval = RETURN_OK;
                             else
                                 PrintFault(IoErr(), "MakeLink");
@@ -120,7 +120,7 @@ int main(void)
         }
         else
         {
-            if(MakeLink((STRPTR)args[ARG_FROM], (STRPTR)args[ARG_TO], TRUE))
+            if(MakeLink((STRPTR)args[ARG_FROM], (SIPTR)args[ARG_TO], TRUE))
                 retval = RETURN_OK;
         }
     }
