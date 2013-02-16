@@ -50,6 +50,23 @@
 #define USB2OTG_HOSTFRAMELST                            (USB2OTG_BASE + 0x041c)
 #define USB2OTG_HOSTPORT                                (USB2OTG_BASE + 0x0440)
 
+#define USB2OTG_HOSTPORT_PRTCONNSTS                     (1 << 0)
+#define USB2OTG_HOSTPORT_PRTCONNDET                     (1 << 1)
+#define USB2OTG_HOSTPORT_PRTENA                         (1 << 2)
+#define USB2OTG_HOSTPORT_PRTENCHNG                      (1 << 3)
+#define USB2OTG_HOSTPORT_PRTOVRCURRACT                  (1 << 4)
+#define USB2OTG_HOSTPORT_PRTOVRCURRCHNG                 (1 << 5)
+#define USB2OTG_HOSTPORT_PRTRES                         (1 << 6)
+#define USB2OTG_HOSTPORT_PRTSUSP                        (1 << 7)
+#define USB2OTG_HOSTPORT_PRTRST                         (1 << 8)
+#define USB2OTG_HOSTPORT_RESERVED9                      (1 << 9)
+#define USB2OTG_HOSTPORT_PRTLNSTS                       (1 << 10)
+#define USB2OTG_HOSTPORT_PRTPWR                         (1 << 12)
+#define USB2OTG_HOSTPORT_PRTTSTCTL                      (1 << 13)
+#define USB2OTG_HOSTPORT_PRTSPD_HIGH                    (0 << 17)
+#define USB2OTG_HOSTPORT_PRTSPD_FULL                    (1 << 17)
+#define USB2OTG_HOSTPORT_PRTSPD_LOW                     (2 << 17)
+
 #define USB2OTG_HOST_CHANBASE                           (USB2OTG_BASE + 0x0500)
 #define USB2OTG_HOSTCHAN_CHARBASE                       (0x00)
 #define USB2OTG_HOSTCHAN_SPLITCTRL                      (0x04)
@@ -217,6 +234,7 @@
 #define USB2OTG_MISCCTRL_VBUSIRQ                        (1 << 9)
 #define USB2OTG_MISCCTRL_AXIPRIORITYLEVEL               (1 << 16)
 
+#define USB2OTG_USBDEVICEMODE                           (0 << 0)
 #define USB2OTG_USBHOSTMODE                             (1 << 0)
 
 /* Bits in USB2OTG_INTR */
