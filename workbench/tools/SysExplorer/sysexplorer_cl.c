@@ -29,10 +29,6 @@
 #include "locale.h"
 #include "sysexplorer_cl.h"
 
-#define DEBUG 1
-#include <aros/debug.h>
-
-
 /*** Instance Data **********************************************************/
 struct SysExplorer_DATA
 {
@@ -141,7 +137,7 @@ static Object *SysExplorer__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         MUIA_Group_Horiz, TRUE,
         Child, (IPTR)(HGroup,
             GroupFrame,
-            MUIA_FrameTitle, (IPTR)"HIDD Tree",
+            MUIA_FrameTitle, __(MSG_HIDD_TREE),
             Child, (IPTR)(NListviewObject,
                 MUIA_NListview_NList, (IPTR)(tree = NListtreeObject,
                     ReadListFrame,
@@ -151,19 +147,19 @@ static Object *SysExplorer__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         End),
         Child, (IPTR)(VGroup,
             Child, (IPTR)(ColGroup(2),
-                MUIA_FrameTitle, (IPTR)"Properties",
+                MUIA_FrameTitle, __(MSG_PROPERTIES),
                 GroupFrame,
-                Child, (IPTR)Label("Driver instance name"),
+                Child, (IPTR)Label(_(MSG_LABEL_DRIVER)),
                 Child, (IPTR)(instance_name_txt = TextObject,
                     MUIA_Text_Contents, (IPTR)"          ",
                     TextFrame,
                 End),
-                Child, (IPTR)Label("Hardware description"),
+                Child, (IPTR)Label(_(MSG_LABEL_HW_DESCRIPTION)),
                 Child, (IPTR)(hardware_description_txt = TextObject,
                     MUIA_Text_Contents, (IPTR)"          ",
                     TextFrame,
                 End),
-                Child, (IPTR)Label("Vendor information"),
+                Child, (IPTR)Label(_(MSG_LABEL_VENDOR)),
                 Child, (IPTR)(vendor_info_txt = TextObject,
                     MUIA_Text_Contents, (IPTR)"          ",
                     TextFrame,
