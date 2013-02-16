@@ -72,6 +72,10 @@ static BOOL GUIinit()
                  app, 2, 
                  MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
+        DoMethod(menu_quit, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+                 app, 2,
+                 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
         retval = TRUE;
     }
 
