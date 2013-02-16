@@ -61,6 +61,8 @@
     {
         OOP_Object *bmobj = HIDD_BM_OBJ(bm);
         
+        D(bug("%s: Free HIDD bitmap %p (obj %p)\n", __func__, bm, bmobj));
+
         if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SHARED_PIXTAB)
         {
             /* NULL colormap otherwise bitmap killing also kills
@@ -83,6 +85,8 @@
     {
         ULONG plane;
         ULONG width;
+
+        D(bug("%s: Free plain bitmap %p\n", __func__, bm));
 
         width = bm->BytesPerRow * 8;
 
