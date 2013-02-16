@@ -50,22 +50,18 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
         {
             otg_Unit->hu_UnitAllocated = TRUE;
 
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_INTR);
-
-            otg_Unit->hu_OperatingMode = (BOOL)(otg_RegVal & USB2OTG_INTRCORE_CURRENTMODE);
-
             otg_RegVal = *((volatile unsigned int *)USB2OTG_LPMCONFIG);            
 
-            if (otg_Unit->hu_OperatingMode == USB2OTG_USBHOSTMODE)
+            if (otg_Unit->hu_HostMode)
             {
-                D(bug("[USB2OTG] %s: Core running in HOST mode\n",
+                D(bug("[USB2OTG] %s: Configuring USB Core for HOST mode\n",
                             __PRETTY_FUNCTION__));
                 D(bug("[USB2OTG] %s: Host Channels: %d\n",
                             __PRETTY_FUNCTION__, ((otg_RegVal & (0xF << 14)) >> 14)));
             }
             else
             {
-                D(bug("[USB2OTG] %s: Core running in DEVICE mode\n",
+                D(bug("[USB2OTG] %s: Configuring USB Core for DEVICE mode\n",
                             __PRETTY_FUNCTION__));
                 D(bug("[USB2OTG] %s: Device Endpoints: %d\n",
                             __PRETTY_FUNCTION__, ((otg_RegVal & (0xF << 10)) >> 10)));

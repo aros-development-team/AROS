@@ -62,7 +62,7 @@ struct USB2OTGUnit
     struct Unit         hu_Unit;
     APTR                hu_GlobalIRQHandle;
     BOOL		hu_UnitAllocated;       /* unit opened */
-    BOOL		hu_OperatingMode;       /* HOST/DEVICE mode */
+    BOOL		hu_HostMode;            /* HOST/DEVICE mode */
 };
 
 /* PRIVATE device node */
