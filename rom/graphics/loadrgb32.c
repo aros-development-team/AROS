@@ -5,15 +5,14 @@
     Desc:
     Lang: english
 */
-#define DEBUG 0
 
 #include <aros/debug.h>
 #include "graphics_intern.h"
-#include <proto/graphics.h>
 
 /*****************************************************************************
 
     NAME */
+#include <proto/graphics.h>
 
 	AROS_LH2(void, LoadRGB32,
 

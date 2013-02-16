@@ -5,17 +5,11 @@
     Desc:
     Lang: english
 */
+#include <aros/debug.h>
+
 #include <proto/graphics.h>
 #include <string.h>
 #include "graphics_intern.h"
-
-#undef SDEBUG
-#undef DEBUG
-
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
-
 
 #define USE_WRITEPIXEL
 
@@ -41,7 +35,7 @@ static BOOL filline(struct fillinfo *fi, LONG start_x, LONG start_y);
 static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y);
 static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y);
 
-#if DEBUG
+#if DEBUG_FLOOD
 static int fail_count;
 static int pix_written;
 #endif
@@ -103,7 +97,7 @@ static int pix_written;
     EnterFunc(bug("Flood(rp=%p, mode=%d, x=%d, y=%d)\n"
     		, rp, mode, x, y));
 
-#if DEBUG
+#if DEBUG_FLOOD
     fail_count = 0;
     pix_written = 0;
 #endif
@@ -171,8 +165,10 @@ static int pix_written;
     
     D(bug("Calling filline\n"));
     success = filline(&fi, x, y);
-    
+   
+#if DEBUG_FLOOD
     D(bug("fails: %d, pix written: %d\n", fail_count, pix_written));
+#endif
     
     SetAPen(rp, fi.orig_apen);
     
@@ -228,7 +224,7 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y)
     {
 /*    	D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
 	fill = FALSE;
-#if DEBUG
+#if DEBUG_FLOOD
 	fail_count ++;
 #endif
     }
@@ -253,7 +249,7 @@ static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y)
     {
 /*    	D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
 	fill = FALSE;
-#if DEBUG
+#if DEBUG_FLOOD
 	fail_count ++;
 #endif
     }
@@ -305,7 +301,7 @@ static VOID putfillpixel(struct fillinfo *fi, LONG x, LONG y)
 
     settmpraspixel(fi->rasptr, x, y, fi->bpr, 1);
 
-#if DEBUG
+#if DEBUG_FLOOD
     pix_written ++;
 #endif
     return;
