@@ -12,7 +12,6 @@
 #include <mui/NListview_mcc.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
-#include <zune/customclasses.h>
 
 #include <proto/alib.h>
 #include <proto/dos.h>
@@ -28,6 +27,12 @@
 
 #include "locale.h"
 #include "sysexplorer_cl.h"
+#include "computer_page_cl.h"
+
+#define DEBUG 1
+#include <aros/debug.h>
+
+#include <zune/customclasses.h>
 
 /*** Instance Data **********************************************************/
 struct SysExplorer_DATA
@@ -36,6 +41,10 @@ struct SysExplorer_DATA
     Object      *instance_name_txt;
     Object      *hardware_description_txt;
     Object      *vendor_info_txt;
+    Object      *page_group;
+    Object      *empty_page;
+    Object      *hidd_page;
+    Object      *computer_page;
     struct Hook enum_hook;
     struct Hook selected_hook;
 };
@@ -102,9 +111,15 @@ AROS_UFH3S(void, selectedFunc,
     if ((*tn)->tn_Flags & TNF_LIST)
     {
         // node
-        SET(data->instance_name_txt, MUIA_Text_Contents, "");
-        SET(data->hardware_description_txt, MUIA_Text_Contents, "");
-        SET(data->vendor_info_txt, MUIA_Text_Contents, "");
+        if (strcmp("Computer", (*tn)->tn_Name) == 0)
+        {
+            DoMethod(data->computer_page, MUIM_ComputerPage_Update);
+            SET(data->page_group, MUIA_Group_ActivePage, 1); // computer page
+        }
+        else
+        {
+            SET(data->page_group, MUIA_Group_ActivePage, 0); // empty page
+        }
     }
     else
     {
@@ -112,6 +127,7 @@ AROS_UFH3S(void, selectedFunc,
         SET(data->instance_name_txt, MUIA_Text_Contents, (*tn)->tn_Name);
         SET(data->hardware_description_txt, MUIA_Text_Contents, "FOO");
         SET(data->vendor_info_txt, MUIA_Text_Contents, "BAR");
+        SET(data->page_group, MUIA_Group_ActivePage, 2); // HIDD page
     }
 
     AROS_USERFUNC_EXIT
@@ -123,6 +139,11 @@ static Object *SysExplorer__OM_NEW(Class *cl, Object *self, struct opSet *msg)
     Object *instance_name_txt;
     Object *hardware_description_txt;
     Object *vendor_info_txt;
+
+    Object *page_group;
+    Object *hidd_page;
+    Object *computer_page;
+    Object *empty_page;
 
     if (!OOP_ObtainAttrBases(abd))
     {
@@ -145,28 +166,31 @@ static Object *SysExplorer__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                 End),
             End),
         End),
-        Child, (IPTR)(VGroup,
-            Child, (IPTR)(ColGroup(2),
-                MUIA_FrameTitle, __(MSG_PROPERTIES),
-                GroupFrame,
-                Child, (IPTR)Label(_(MSG_LABEL_DRIVER)),
-                Child, (IPTR)(instance_name_txt = TextObject,
-                    MUIA_Text_Contents, (IPTR)"          ",
-                    TextFrame,
-                End),
-                Child, (IPTR)Label(_(MSG_LABEL_HW_DESCRIPTION)),
-                Child, (IPTR)(hardware_description_txt = TextObject,
-                    MUIA_Text_Contents, (IPTR)"          ",
-                    TextFrame,
-                End),
-                Child, (IPTR)Label(_(MSG_LABEL_VENDOR)),
-                Child, (IPTR)(vendor_info_txt = TextObject,
-                    MUIA_Text_Contents, (IPTR)"          ",
-                    TextFrame,
+        Child, page_group = HGroup,
+            MUIA_Group_PageMode, TRUE,
+            Child, (IPTR)(empty_page = VGroup,
+            End),
+            Child, (IPTR)(computer_page = ComputerPageObject,
+            End),
+            Child, (IPTR)(hidd_page = HGroup,
+                Child, (IPTR)(ColGroup(2),
+                    MUIA_FrameTitle, (IPTR)"HIDD",
+                    GroupFrame,
+                    Child, (IPTR)Label("Driver instance name"),
+                    Child, (IPTR)(instance_name_txt = TextObject,
+                        TextFrame,
+                    End),
+                    Child, (IPTR)Label("Hardware description"),
+                    Child, (IPTR)(hardware_description_txt = TextObject,
+                        TextFrame,
+                    End),
+                    Child, (IPTR)Label("Vendor information"),
+                    Child, (IPTR)(vendor_info_txt = TextObject,
+                        TextFrame,
+                    End),
                 End),
             End),
-            Child, (IPTR)HVSpace,
-        End),
+        End,
         TAG_MORE, (IPTR)msg->ops_AttrList
     );
 
@@ -175,6 +199,12 @@ static Object *SysExplorer__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         struct SysExplorer_DATA *data = INST_DATA(cl, self);
 
         data->tree = tree;
+
+        data->page_group = page_group;
+        data->empty_page = empty_page;
+        data->hidd_page = hidd_page;
+        data->computer_page = computer_page;
+
         data->instance_name_txt = instance_name_txt;
         data->hardware_description_txt = hardware_description_txt;
         data->vendor_info_txt = vendor_info_txt;
