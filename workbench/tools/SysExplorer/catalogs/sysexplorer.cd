@@ -13,3 +13,19 @@ Project
 ;
 MSG_MENU_QUIT (//)
 Quit
+;
+MSG_HIDD_TREE (//)
+HIDD Tree
+;
+MSG_PROPERTIES (//)
+Properties
+;
+MSG_LABEL_DRIVER (//)
+Driver instance name
+;
+MSG_LABEL_HW_DESCRIPTION (//)
+Hardware description
+;
+MSG_LABEL_VENDOR (//)
+Vendor information
+;

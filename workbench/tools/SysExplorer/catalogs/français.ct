@@ -1,0 +1,43 @@
+## version $VER: SysExplorer.catalog 1.0 (16.02.2013)
+## language français
+## codeset 0
+;
+;
+MSG_TITLE
+System Explorer
+;
+MSG_WINTITLE
+System Explorer
+;
+MSG_DESCRIPTION
+Outil d'information matériel et système
+;System and hardware information tool
+;
+MSG_MENU_PROJECT
+Projet
+;Project
+;
+MSG_MENU_QUIT
+Quitter
+;Quit
+;
+MSG_HIDD_TREE
+Arborescence des pilotes
+;HIDD Tree
+;
+MSG_PROPERTIES
+Propriétés
+;Properties
+;
+MSG_LABEL_DRIVER
+Nom du pilote
+;Driver instance name
+;
+MSG_LABEL_HW_DESCRIPTION
+Description du matériel
+;Hardware description
+;
+MSG_LABEL_VENDOR
+Information vendeur
+;Vendor information
+;
