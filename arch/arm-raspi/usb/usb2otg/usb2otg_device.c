@@ -33,6 +33,7 @@ static void GlobalIRQHandler(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBa
 static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 {
     unsigned int otg_RegVal;
+    BOOL otg_OperatingMode;
 
     D(bug("[USB2OTG] %s: USB2OTGBase @ 0x%p, SysBase @ 0x%p\n",
                  __PRETTY_FUNCTION__, USB2OTGBase, SysBase));
@@ -68,27 +69,11 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                             __PRETTY_FUNCTION__, USB2OTGBase->hd_MemPool));
 
                 otg_RegVal = *((volatile unsigned int *)USB2OTG_INTR);
+#if !defined(OTG_FORCEHOSTMODE)
                 if ((otg_RegVal & USB2OTG_INTRCORE_CURRENTMODE) != USB2OTG_USBHOSTMODE)
                 {
-#if defined(OTG_FORCEHOSTMODE)
-                    bug("[USB2OTG] Switching from DEVICE Mode to HOST Mode\n");
-
-                    *((volatile unsigned int *)USB2OTG_POWER) = 0;
-
-                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTCFG);
-                    otg_RegVal &= ~0x3;
-                    otg_RegVal |= (1 << 3); // FULLSPEED
-                    *((volatile unsigned int *)USB2OTG_HOSTCFG) = otg_RegVal;
-                    
-                    otg_RegVal = *((volatile unsigned int *)USB2OTG_OTGCTRL);
-                    otg_RegVal &= ~USB2OTG_OTGCTRL_HOSTSETHNPENABLE;
-                    *((volatile unsigned int *)USB2OTG_OTGCTRL) = otg_RegVal;
-                    
-                    *((volatile unsigned int *)USB2OTG_INTRMASK) = 0;
-                    *((volatile unsigned int *)USB2OTG_INTR) = 0xFFFFFFFF;
-                    *((volatile unsigned int *)USB2OTG_INTRMASK) = (1 << 3) | (3 << 24);
-#else
-                D(bug("[USB2OTG] %s: Device Mode Config: %08x\n",
+                    otg_OperatingMode = USB2OTG_USBDEVICEMODE;
+                    D(bug("[USB2OTG] %s: Device Mode Config: %08x\n",
                             __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_DEVCFG)));
 
                     for (chan = 0; chan < EPSCHANS_MAX; chan++) {
@@ -97,12 +82,11 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)),
                                     *((volatile unsigned int *)(USB2OTG_DEV_OUTEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_OUTEP_DOEPCTL))));
                     }
-#endif
                 }
-
-                otg_RegVal = *((volatile unsigned int *)USB2OTG_INTR);
-                if ((otg_RegVal & USB2OTG_INTRCORE_CURRENTMODE) == USB2OTG_USBHOSTMODE)
+                else
                 {
+#endif
+                    otg_OperatingMode = USB2OTG_USBHOSTMODE;
                     D(bug("[USB2OTG] %s: Host Mode Config: %08x\n",
                                 __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_HOSTCFG)));
 
@@ -112,15 +96,9 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     chan, USB2OTG_FIFOBASE + (chan * USB2OTG_FIFOSIZE),
                                     *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE))));
                     }
-                }
-#if defined(OTG_FORCEHOSTMODE)
-                else
-                {
-                    bug("[USB2OTG] Failed to change mode - exiting\n");
-                    USB2OTGBase = NULL;
+#if !defined(OTG_FORCEHOSTMODE)
                 }
 #endif
-
                 if (USB2OTGBase)
                 {
                     D(bug("[USB2OTG] %s: HWConfig1: %08x\n",
@@ -138,17 +116,23 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                     *((volatile unsigned int *)USB2OTG_AHB) = otg_RegVal;
                     D(bug("[USB2OTG] %s: AHB : %08x\n", __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_AHB)));
 
-                    USB2OTGBase->hd_Unit = AllocPooled(USB2OTGBase->hd_MemPool, sizeof(struct USB2OTGUnit));
+                    if ((USB2OTGBase->hd_Unit = AllocPooled(USB2OTGBase->hd_MemPool, sizeof(struct USB2OTGUnit))) != NULL)
+                    {
+                        D(bug("[USB2OTG] %s: Unit Allocated at 0x%p\n",
+                                    __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit));
 
-                    D(bug("[USB2OTG] %s: Unit Allocated at 0x%p\n",
-                                __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit));
+                        if (otg_OperatingMode == USB2OTG_USBHOSTMODE)
+                            USB2OTGBase->hd_Unit->hu_HostMode = TRUE;
+                        else
+                            USB2OTGBase->hd_Unit->hu_HostMode = FALSE;
 
-                    USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, GlobalIRQHandler, USB2OTGBase->hd_Unit, SysBase);
+                        USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, GlobalIRQHandler, USB2OTGBase->hd_Unit, SysBase);
 
-                    D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p]\n",
-                                __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_GlobalIRQHandle));
+                        D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p]\n",
+                                    __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_GlobalIRQHandle));
 
-                    bug("[USB2OTG] HS OTG USB Driver Initialised\n");
+                        bug("[USB2OTG] HS OTG USB Driver Initialised\n");
+                    }
                 }
             }
             else
