@@ -34,12 +34,12 @@ void dumplist(struct GfxBase *GfxBase)
 
         kprintf("Pool N.%d - %ld Chunk Free\n", n++, Pool->NumChunkFree);
 
-        ChunkE = GetHead(&Pool->ChunkList);
+        ChunkE = (struct ChunkExt *)GetHead(&Pool->ChunkList);
 
         while (ChunkE)
         {
             kprintf("    Chunk N.%d\n", m++);
-            ChunkE = GetSucc(ChunkE);
+            ChunkE = (struct ChunkExt *)GetSucc(ChunkE);
         }
 
         Pool = (struct ChunkPool *)GetSucc(Pool);
