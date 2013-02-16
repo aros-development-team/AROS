@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ata.device main private include file
@@ -27,11 +27,11 @@
 #include "include/devices/scsicmds.h"
 #include "ata_bus.h"
 
-#define MAX_DEVICEBUSES		2
-#define MAX_BUSUNITS		2
-#define STACK_SIZE		16384
-#define TASK_PRI		10
-#define TIMEOUT			30
+#define MAX_DEVICEBUSES         2
+#define MAX_BUSUNITS            2
+#define STACK_SIZE              16384
+#define TASK_PRI                10
+#define TIMEOUT                 30
 
 /*
    Don't blame me for information redundance here!
@@ -76,7 +76,7 @@ struct ataBase
     * list of all buses - we may have more than just 4
     */
    struct MinList          ata_Buses;
-   int		 	   ata__buscount;
+   int                     ata__buscount;
 
    /*
     * Arguments and flags
@@ -85,7 +85,7 @@ struct ataBase
    UBYTE                   ata_NoMulti;
    UBYTE                   ata_NoDMA;
    UBYTE                   ata_Poll;
-   STRPTR		   ata_CmdLine;
+   STRPTR                  ata_CmdLine;
 
    /*
     * memory pool
@@ -122,7 +122,7 @@ struct ata_Bus
    struct Task             *ab_Task;       /* Bus task handling all not-immediate transactions */
    struct MsgPort          *ab_MsgPort;    /* Task's message port */
    struct PRDEntry         *ab_PRD;
-   struct IORequest	   *ab_Timer;	   /* timer stuff */
+   struct IORequest        *ab_Timer;      /* timer stuff */
 
    struct Interrupt        ab_ResetInt;
 
@@ -131,7 +131,7 @@ struct ata_Bus
    
    /* Bus driver stuff */
    const struct ata_BusDriver *ab_Driver;
-   APTR			       ab_DriverData;
+   APTR                        ab_DriverData;
 };
 
 /* Device types */
@@ -487,7 +487,7 @@ BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u);
 BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
 
 void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG Flags,
-		     const struct ata_BusDriver *driver, APTR driverData, struct ataBase *ATABase);
+                     const struct ata_BusDriver *driver, APTR driverData, struct ataBase *ATABase);
 
 void BusTaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphore *ssem);
 void DaemonCode(struct ataBase *LIBBASE);
