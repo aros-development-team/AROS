@@ -16,7 +16,6 @@
 #include "graphics_intern.h"
 #include "fakegfxhidd.h"
 
-#define DEBUG 0
 #define DCLIP(x)
 #define DCURS(x)
 #define DPOS(x)

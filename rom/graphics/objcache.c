@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -17,9 +19,6 @@
 
 #include "graphics_intern.h"
 #include "objcache.h"
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 #define CACHE_INCREMENT 4
 

@@ -6,8 +6,6 @@
     Lang: english
 */
 
-#define DEBUG 0
-
 #include <aros/debug.h>
 
 #include <exec/resident.h>

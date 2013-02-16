@@ -4,6 +4,7 @@
 */
 
 /****************************************************************************************/
+#include <aros/debug.h>
 
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/rpattr.h>
@@ -18,9 +19,6 @@
 #include "intregions.h"
 #include "gfxfuncsupport.h"
 #include "graphics_driver.h"
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 #define DEBUG_PLANARBM(x)
 

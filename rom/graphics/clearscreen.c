@@ -5,23 +5,15 @@
     Desc: Graphics function ClearScreen()
     Lang: English
 */
+#include <aros/debug.h>
+#include <graphics/rastport.h>
+#include "graphics_intern.h"
+
 
 /*****************************************************************************
 
     NAME */
-#include <graphics/rastport.h>
 #include <proto/graphics.h>
-
-#include "graphics_intern.h"
-
-
-#ifdef DEBUG
-#undef DEBUG
-#endif
-
-#define DEBUG 0
-#include <aros/debug.h>
-
 
 	AROS_LH1(void, ClearScreen,
 

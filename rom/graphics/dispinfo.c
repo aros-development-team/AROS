@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
@@ -29,9 +31,6 @@
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include "dispinfo.h"
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 HIDDT_ModeID get_best_resolution_and_depth(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {

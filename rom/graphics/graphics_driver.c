@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
@@ -47,10 +49,6 @@
 #include "dispinfo.h"
 #include "gfxfuncsupport.h"
 #include "fontsupport.h"
-
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
 
 #define DEBUG_INIT(x)
 #define DEBUG_LOADVIEW(x)

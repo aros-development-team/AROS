@@ -5,18 +5,15 @@
     Desc: Release a pen previously allocated.
     Lang: english
 */
+#include <aros/debug.h>
+
 #include "graphics_intern.h"
 #include <graphics/view.h>
-#ifdef DEBUG
-#undef DEBUG
-#endif
-#define DEBUG 0
-#include <aros/debug.h>
 
 /*****************************************************************************
 
     NAME */
-	#include <clib/graphics_protos.h>
+	#include <proto/graphics.h>
 
 	AROS_LH2(void, ReleasePen,
 
