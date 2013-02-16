@@ -6,8 +6,6 @@
     Lang: english
 */
 
-#define DEBUG 1
-#define SDEBUG 1
 #include <aros/debug.h>
 #include <string.h>
 #include <exec/memory.h>
