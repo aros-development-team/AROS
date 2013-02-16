@@ -9,7 +9,7 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#define CATALOG_NAME     "System/Tools/ACPITool.catalog"
+#define CATALOG_NAME     "System/Tools/SysExplorer.catalog"
 #define CATALOG_VERSION  0
 
 /*** Variables **************************************************************/
