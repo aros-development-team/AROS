@@ -2,6 +2,7 @@
 #include <proto/processor.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "cpuspecific.h"
 
