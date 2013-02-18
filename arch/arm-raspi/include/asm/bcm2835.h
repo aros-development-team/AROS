@@ -8,29 +8,34 @@
 
 #define CLID_I2C_BCM2835        "hidd.i2c.bcm2835"
 
-#define STACK_SIZE              4096
-
 #define BCM2835_PERIPHYSBASE    0x20000000                      // Peripheral physical base address
+#define BCM2835_PERIPHYSSIZE    0x400000
 #define BCM2835_PERIBUSBASE     0x7E000000
 
-#define BCM_PHYSBASE            BCM2835_PERIPHYSBASE
-#define BCM_PHYSSIZE            0x400000
+#define ARM_PERIIOBASE          BCM2835_PERIPHYSBASE
 #define BCM_BUSBASE             BCM2835_PERIBUSBASE
-#define BCM_VIRTBASE            0xF0000000
+#define ARM_PERIIOSIZE          BCM2835_PERIPHYSSIZE
 
-#define BCM_PERIPHSIZE          0x1000
-#define BCM_PRIMECELLID         0xB105F00D
+#if (1)
+// TODO: Move to a more generic ARM header..
+#define ARM_STACK_DEF           4096
+#define ARM_VIRTBASE            0xF0000000
+#define ARM_PRIMECELLID         0xB105F00D
+#define ARM_PRIMECELLPERISIZE   0x1000
 
-#define SYSTIMER_BASE           (BCM_PHYSBASE + 0x003000)
-#define ARMTIMER_BASE           (BCM_PHYSBASE + 0x00b000)
-#define IRQ_BASE                (BCM_PHYSBASE + 0x00b200)
-#define GPIO_PADS               (BCM_PHYSBASE + 0x100000)
-#define CLOCK_BASE              (BCM_PHYSBASE + 0x101000)
-#define GPIO_BASE               (BCM_PHYSBASE + 0x200000)
+#define STACK_SIZE              ARM_STACK_DEF
 
-#define SPI0_BASE               (BCM_PHYSBASE + 0x204000)
-#define BSC0_BASE               (BCM_PHYSBASE + 0x205000)
-#define GPIO_PWM                (BCM_PHYSBASE + 0x20C000)
+// TODO: Everything after this point needs to be moved to ARM/Peripheral specific headers ..
+#define SYSTIMER_BASE           (ARM_PERIIOBASE + 0x003000)
+#define ARMTIMER_BASE           (ARM_PERIIOBASE + 0x00b000)
+#define IRQ_BASE                (ARM_PERIIOBASE + 0x00b200)
+#define GPIO_PADS               (ARM_PERIIOBASE + 0x100000)
+#define CLOCK_BASE              (ARM_PERIIOBASE + 0x101000)
+#define GPIO_BASE               (ARM_PERIIOBASE + 0x200000)
+
+#define SPI0_BASE               (ARM_PERIIOBASE + 0x204000)
+#define BSC0_BASE               (ARM_PERIIOBASE + 0x205000)
+#define GPIO_PWM                (ARM_PERIIOBASE + 0x20C000)
 
 #define SYSTIMER_CS             (SYSTIMER_BASE + 0x00)
 #define SYSTIMER_CLO            (SYSTIMER_BASE + 0x04)
@@ -228,28 +233,28 @@
 #define BSC_WRITE               BSC_CONTROL_I2CEN|BSC_CONTROL_ST
 #define BSC_CLEAR               BSC_STATUS_CLKT|BSC_STATUS_ERR|BSC_STATUS_DONE
 
-#define AUX_IRQ                 (BCM_PHYSBASE + 0x215000)       // Auxiliary Interrupt status
-#define AUX_ENABLES             (BCM_PHYSBASE + 0x215004)       // Auxiliary enables
-#define AUX_MU_IO_REG           (BCM_PHYSBASE + 0x215040)       // AUX_MU_IO_REG Mini Uart I/O Data
-#define AUX_MU_IER_REG          (BCM_PHYSBASE + 0x215044)       // Mini Uart Interrupt Enable
-#define AUX_MU_IIR_REG          (BCM_PHYSBASE + 0x215048)       // Mini Uart Interrupt Identify
-#define AUX_MU_LCR_REG          (BCM_PHYSBASE + 0x21504C)       // Mini Uart Line Control
-#define AUX_MU_MCR_REG          (BCM_PHYSBASE + 0x215050)       // Mini Uart Modem Control
-#define AUX_MU_LSR_REG          (BCM_PHYSBASE + 0x215054)       // Mini Uart Line Status
-#define AUX_MU_MSR_REG          (BCM_PHYSBASE + 0x215058)       // Mini Uart Modem Status
-#define AUX_MU_SCRATCH          (BCM_PHYSBASE + 0x21505C)       // Mini Uart Scratch
-#define AUX_MU_CNTL_REG         (BCM_PHYSBASE + 0x215060)       // Mini Uart Extra Control
-#define AUX_MU_STAT_REG         (BCM_PHYSBASE + 0x215064)       // Mini Uart Extra Status
-#define AUX_MU_BAUD_REG         (BCM_PHYSBASE + 0x215068)       // Mini Uart Baudrate
-#define AUX_SPI0_CNTL0_REG      (BCM_PHYSBASE + 0x215080)       // SPI 1 Control register 0
-#define AUX_SPI0_CNTL1_REG      (BCM_PHYSBASE + 0x215084)       // SPI 1 Control register 1
-#define AUX_SPI0_STAT_REG       (BCM_PHYSBASE + 0x215088)       // SPI 1 Status
-#define AUX_SPI0_IO_REG         (BCM_PHYSBASE + 0x215090)       // SPI 1 Data
-#define AUX_SPI0_PEEK_REG       (BCM_PHYSBASE + 0x215094)       // SPI 1 Peek
-#define AUX_SPI1_CNTL0_REG      (BCM_PHYSBASE + 0x2150C0)       // SPI 2 Control register 0
-#define AUX_SPI1_CNTL1_REG      (BCM_PHYSBASE + 0x2150C4)       // SPI 2 Control register 1
-#define AUX_SPI1_STAT_REG       (BCM_PHYSBASE + 0x2150C8)       // SPI 2 Status
-#define AUX_SPI1_IO_REG         (BCM_PHYSBASE + 0x2150D0)       // SPI 2 Data
-#define AUX_SPI1_PEEK_REG       (BCM_PHYSBASE + 0x2150D4)       // SPI 2 Peek
-
+#define AUX_IRQ                 (ARM_PERIIOBASE + 0x215000)       // Auxiliary Interrupt status
+#define AUX_ENABLES             (ARM_PERIIOBASE + 0x215004)       // Auxiliary enables
+#define AUX_MU_IO_REG           (ARM_PERIIOBASE + 0x215040)       // AUX_MU_IO_REG Mini Uart I/O Data
+#define AUX_MU_IER_REG          (ARM_PERIIOBASE + 0x215044)       // Mini Uart Interrupt Enable
+#define AUX_MU_IIR_REG          (ARM_PERIIOBASE + 0x215048)       // Mini Uart Interrupt Identify
+#define AUX_MU_LCR_REG          (ARM_PERIIOBASE + 0x21504C)       // Mini Uart Line Control
+#define AUX_MU_MCR_REG          (ARM_PERIIOBASE + 0x215050)       // Mini Uart Modem Control
+#define AUX_MU_LSR_REG          (ARM_PERIIOBASE + 0x215054)       // Mini Uart Line Status
+#define AUX_MU_MSR_REG          (ARM_PERIIOBASE + 0x215058)       // Mini Uart Modem Status
+#define AUX_MU_SCRATCH          (ARM_PERIIOBASE + 0x21505C)       // Mini Uart Scratch
+#define AUX_MU_CNTL_REG         (ARM_PERIIOBASE + 0x215060)       // Mini Uart Extra Control
+#define AUX_MU_STAT_REG         (ARM_PERIIOBASE + 0x215064)       // Mini Uart Extra Status
+#define AUX_MU_BAUD_REG         (ARM_PERIIOBASE + 0x215068)       // Mini Uart Baudrate
+#define AUX_SPI0_CNTL0_REG      (ARM_PERIIOBASE + 0x215080)       // SPI 1 Control register 0
+#define AUX_SPI0_CNTL1_REG      (ARM_PERIIOBASE + 0x215084)       // SPI 1 Control register 1
+#define AUX_SPI0_STAT_REG       (ARM_PERIIOBASE + 0x215088)       // SPI 1 Status
+#define AUX_SPI0_IO_REG         (ARM_PERIIOBASE + 0x215090)       // SPI 1 Data
+#define AUX_SPI0_PEEK_REG       (ARM_PERIIOBASE + 0x215094)       // SPI 1 Peek
+#define AUX_SPI1_CNTL0_REG      (ARM_PERIIOBASE + 0x2150C0)       // SPI 2 Control register 0
+#define AUX_SPI1_CNTL1_REG      (ARM_PERIIOBASE + 0x2150C4)       // SPI 2 Control register 1
+#define AUX_SPI1_STAT_REG       (ARM_PERIIOBASE + 0x2150C8)       // SPI 2 Status
+#define AUX_SPI1_IO_REG         (ARM_PERIIOBASE + 0x2150D0)       // SPI 2 Data
+#define AUX_SPI1_PEEK_REG       (ARM_PERIIOBASE + 0x2150D4)       // SPI 2 Peek
+#endif
 #endif /* BCM2835_H */

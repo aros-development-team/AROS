@@ -6,7 +6,7 @@
 #ifndef VCMBOX_H
 #define VCMBOX_H
 
-#define VCMB_BASE               (BCM_PHYSBASE + 0x00B880)
+#define VCMB_BASE               (ARM_PERIIOBASE + 0x00B880)
 
 #define VCMB_CHAN_MAX           8
 #define VCMB_CHAN_MASK          0xF

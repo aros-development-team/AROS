@@ -15,7 +15,7 @@
 #include "vc_mb.h"
 #include "vc_fb.h"
 
-#define ICR_FLAGS (ICR_RXIC|ICR_TXIC|ICR_RTIC|ICR_FEIC|ICR_PEIC|ICR_BEIC|ICR_OEIC|ICR_RIMIC|ICR_CTSMIC|ICR_DSRMIC|ICR_DCDMIC)
+#define PL011_ICR_FLAGS (PL011_ICR_RXIC|PL011_ICR_TXIC|PL011_ICR_RTIC|PL011_ICR_FEIC|PL011_ICR_PEIC|PL011_ICR_BEIC|PL011_ICR_OEIC|PL011_ICR_RIMIC|PL011_ICR_CTSMIC|PL011_ICR_DSRMIC|PL011_ICR_DCDMIC)
 
 #define DEF_BAUD 115200
 
@@ -32,7 +32,7 @@ inline void waitSerOUT()
 {
     while(1)
     {
-       if ((*(volatile uint32_t *)(UART0_BASE + UART_FR) & FR_TXFF) == 0) break;
+       if ((*(volatile uint32_t *)(PL011_0_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
     }
 }
 
@@ -41,8 +41,8 @@ inline void putByte(uint8_t chr)
     waitSerOUT();
 
     if (chr == '\n')
-        *(volatile uint32_t *)(UART0_BASE + UART_DR) = '\r';
-    *(volatile uint32_t *)(UART0_BASE + UART_DR) = chr;
+        *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = '\r';
+    *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = chr;
 }
 
 void putBytes(const char *str)
@@ -90,7 +90,7 @@ void serInit(void)
     
     uartclock = uart_msg[6];
     
-    *(volatile uint32_t *)(UART0_BASE + UART_CR) = 0;
+    *(volatile uint32_t *)(PL011_0_BASE + PL011_CR) = 0;
 
     uartvar = *(volatile uint32_t *)GPFSEL1;
     uartvar &= ~(7<<12);                        // TX on GPIO14
@@ -109,13 +109,13 @@ void serInit(void)
 
     *(volatile uint32_t *)GPPUDCLK0 = 0;
 
-    *(volatile uint32_t *)(UART0_BASE + UART_ICR) = ICR_FLAGS;
+    *(volatile uint32_t *)(PL011_0_BASE + PL011_ICR) = PL011_ICR_FLAGS;
     uartdivint = PL011_BAUDINT(uartbaud, uartclock);
-    *(volatile uint32_t *)(UART0_BASE + UART_IBRD) = uartdivint;
+    *(volatile uint32_t *)(PL011_0_BASE + PL011_IBRD) = uartdivint;
     uartdivfrac = PL011_BAUDFRAC(uartbaud, uartclock);
-    *(volatile uint32_t *)(UART0_BASE + UART_FBRD) = uartdivfrac;
-    *(volatile uint32_t *)(UART0_BASE + UART_LCRH) = LCRH_WLEN8|LCRH_FEN;                       // 8N1, Fifo enabled
-    *(volatile uint32_t *)(UART0_BASE + UART_CR) = CR_UARTEN|CR_TXE|CR_RXE;   // enable the uart, tx and rx
+    *(volatile uint32_t *)(PL011_0_BASE + PL011_FBRD) = uartdivfrac;
+    *(volatile uint32_t *)(PL011_0_BASE + PL011_LCRH) = PL011_LCRH_WLEN8|PL011_LCRH_FEN;                       // 8N1, Fifo enabled
+    *(volatile uint32_t *)(PL011_0_BASE + PL011_CR) = PL011_CR_UARTEN|PL011_CR_TXE|PL011_CR_RXE;   // enable the uart, tx and rx
 
     for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("mov r0, r0\n");
 }

@@ -12,7 +12,7 @@
 #define TXFIFO_MAX                                      15                      // Max no. of Tx FIFO's
 #define EPSCHANS_MAX                                    16                      // Max no. of Endpoints/Host Chan's
 
-#define USB2OTG_BASE                                    (BCM_PHYSBASE + 0x980000)
+#define USB2OTG_BASE                                    (ARM_PERIIOBASE + 0x980000)
 
 #define USB2OTG_OTGCTRL                                 (USB2OTG_BASE + 0x0000)
 #define USB2OTG_OTGINTR                                 (USB2OTG_BASE + 0x0004)

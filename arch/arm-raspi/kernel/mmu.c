@@ -33,7 +33,9 @@ void core_SetupMMU(void)
         if (page > 64)
         {
             pageflags = (page << 20) | PAGE_FL_S_BIT | PAGE_SECTION;
-            if ((page < (BCM_PHYSBASE >> 20)) || (page > ((BCM_PHYSBASE + 0x2000000) >> 20)))
+#if defined(ARM_PERIIOBASE)
+            if ((page < (ARM_PERIIOBASE >> 20)) || (page > ((ARM_PERIIOBASE + ARM_PERIIOSIZE) >> 20)))
+#endif
                 pageflags |= PAGE_C_BIT;
         }
         pagetable[page] = pageflags;
