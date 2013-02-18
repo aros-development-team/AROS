@@ -1,6 +1,5 @@
-
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,13 +10,16 @@
 
 #define STACK_SIZE              4096
 
-#define BCM2835_PHYS            0x20000000                      // Peripheral physical base address
-#define BCM2835_VIRT            0xF0000000
+#define BCM2835_PERIPHYSBASE    0x20000000                      // Peripheral physical base address
+#define BCM2835_PERIBUSBASE     0x7E000000
 
-#define BCM_PHYSBASE            BCM2835_PHYS
-#define BCM_VIRTBASE            BCM2835_VIRT
+#define BCM_PHYSBASE            BCM2835_PERIPHYSBASE
+#define BCM_PHYSSIZE            0x400000
+#define BCM_BUSBASE             BCM2835_PERIBUSBASE
+#define BCM_VIRTBASE            0xF0000000
 
-#define PL110_BASE              0x10120000
+#define BCM_PERIPHSIZE          0x1000
+#define BCM_PRIMECELLID         0xB105F00D
 
 #define SYSTIMER_BASE           (BCM_PHYSBASE + 0x003000)
 #define ARMTIMER_BASE           (BCM_PHYSBASE + 0x00b000)
