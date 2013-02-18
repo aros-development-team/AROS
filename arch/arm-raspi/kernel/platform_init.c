@@ -61,10 +61,10 @@ static int PlatformInit(struct KernelBase *KernelBase)
     // How to identify broadcom IP's?
     // Expose this as a seprate subsystem (like PCI?)
     D(bug("[Kernel] PlatformInit: Integrated Peripherals -:\n"));
-    for (ptr = BCM_PHYSBASE; ptr < (BCM_PHYSBASE + BCM_PHYSSIZE); ptr += BCM_PERIPHSIZE)
+    for (ptr = ARM_PERIIOBASE; ptr < (ARM_PERIIOBASE + ARM_PERIIOSIZE); ptr += ARM_PRIMECELLPERISIZE)
     {
         unsigned int perihreg = (*(volatile unsigned int *)(ptr + 0xFF0) & 0xFF) | (*(volatile unsigned int *)(ptr + 0xFF4) & 0xFF) << 8 | (*(volatile unsigned int *)(ptr + 0xFF8) & 0xFF) << 16 | (*(volatile unsigned int *)(ptr + 0xFFC) & 0xFF) << 24;
-        if (perihreg == BCM_PRIMECELLID)
+        if (perihreg == ARM_PRIMECELLID)
         {
             perihreg = (*(volatile unsigned int *)(ptr + 0xFE0) & 0xFF) | (*(volatile unsigned int *)(ptr + 0xFE4) & 0xFF) << 8 | (*(volatile unsigned int *)(ptr + 0xFE8) & 0xFF) << 16 | (*(volatile unsigned int *)(ptr + 0xFEC) & 0xFF) << 24;
             unsigned int manu = (perihreg & (0x7F << 12)) >> 12;

@@ -18,7 +18,7 @@ inline void krnWaitSerOut()
 {
     while(1)
     {
-       if ((*(volatile uint32_t *)(UART0_BASE + UART_FR) & FR_TXFF) == 0) break;
+       if ((*(volatile uint32_t *)(PL011_0_BASE + PL011_FR) & PL011_FR_TXFF) == 0) break;
     }
 }
 
@@ -28,8 +28,8 @@ inline void krnSerPutC(uint8_t chr)
     krnWaitSerOut();
 
     if (chr == '\n')
-        *(volatile uint32_t *)(UART0_BASE + UART_DR) = '\r';
-    *(volatile uint32_t *)(UART0_BASE + UART_DR) = chr;
+        *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = '\r';
+    *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = chr;
 }
 
 int krnPutC(int chr, struct KernelBase *KernelBase)
