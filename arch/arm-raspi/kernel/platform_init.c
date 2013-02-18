@@ -16,6 +16,8 @@
 #include <proto/exec.h>
 #include <strings.h>
 
+#include <asm/bcm2835.h>
+
 #include "etask.h"
 
 #include "kernel_intern.h"
@@ -51,7 +53,35 @@ AROS_LH2(APTR, AllocMem,
 
 static int PlatformInit(struct KernelBase *KernelBase)
 {
+    UBYTE *ptr;
     D(bug("[Kernel] PlatformInit()\n"));
+
+#if (1)
+    // TODO:
+    // How to identify broadcom IP's?
+    // Expose this as a seprate subsystem (like PCI?)
+    D(bug("[Kernel] PlatformInit: Integrated Peripherals -:\n"));
+    for (ptr = BCM_PHYSBASE; ptr < (BCM_PHYSBASE + BCM_PHYSSIZE); ptr += BCM_PERIPHSIZE)
+    {
+        unsigned int perihreg = (*(volatile unsigned int *)(ptr + 0xFF0) & 0xFF) | (*(volatile unsigned int *)(ptr + 0xFF4) & 0xFF) << 8 | (*(volatile unsigned int *)(ptr + 0xFF8) & 0xFF) << 16 | (*(volatile unsigned int *)(ptr + 0xFFC) & 0xFF) << 24;
+        if (perihreg == BCM_PRIMECELLID)
+        {
+            perihreg = (*(volatile unsigned int *)(ptr + 0xFE0) & 0xFF) | (*(volatile unsigned int *)(ptr + 0xFE4) & 0xFF) << 8 | (*(volatile unsigned int *)(ptr + 0xFE8) & 0xFF) << 16 | (*(volatile unsigned int *)(ptr + 0xFEC) & 0xFF) << 24;
+            unsigned int manu = (perihreg & (0x7F << 12)) >> 12;
+            unsigned int prod = (perihreg & 0xFFF);
+            unsigned int rev = (perihreg & (0xF << 20)) >> 20;
+            unsigned int config = (perihreg & (0x7F << 24)) >> 24;
+            D(bug("[Kernel] PlatformInit:           0x%p: manu %x, prod %x, rev %d, config %d\n", ptr, manu, prod, rev, config));
+        }
+/*        else
+        {
+            if (perihreg)
+            {
+                D(bug("[Kernel] PlatformInit:           0x%p: PrimeCellID != %08x\n", ptr, perihreg));
+            }
+        }*/
+    }
+#endif
 
     D(bug("[Kernel] PlatformInit: Patching in our AllocMem to ignore MEMF_CHIP..\n"));
     
