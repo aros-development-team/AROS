@@ -35,7 +35,10 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 
     /* Boot CPU is number 0. Fill in its data. */
     ReadProcessorInformation(sysprocs[0]);
-    
+
+    D(bug("[processor.ARM] %s: Vendor %d '%s', Family %d\n", __PRETTY_FUNCTION__, sysprocs[0]->Vendor, sysprocs[0]->VendorID, sysprocs[0]->Family));
+    D(bug("[processor.ARM] %s: L1DataC %d, L1InstrC %d\n", __PRETTY_FUNCTION__, sysprocs[0]->L1DataCacheSize, sysprocs[0]->L1InstructionCacheSize));
+
     return TRUE;
 }
 

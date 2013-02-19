@@ -10,7 +10,6 @@ FILES := \
     processor_util \
     processor_frequency
 
-
 %build_archspecific mainmmake=kernel-processor maindir=rom/processor \
     arch=raspi-arm files=$(FILES)
 
