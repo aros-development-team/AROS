@@ -6,6 +6,9 @@
 #include <inttypes.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
+
+#include <aros/arm/cpucontext.h>
+
 #include <stddef.h>
 #include <string.h>
 
@@ -36,9 +39,6 @@ extern char * __text_end;
     r0 = passed to c handler, r1/r2 = temp
 */
 asm (
-    ".set	MODE_SUPERVISOR, 0x13          \n"
-    ".set	MODE_SYSTEM, 0x1f              \n"
-
     ".globl __vectorhand_swi                   \n"
     ".type __vectorhand_swi,%function          \n"
     "__vectorhand_swi:                         \n"
@@ -97,13 +97,18 @@ void handle_syscall(void *regs)
 
             case SC_SUPERSTATE:
             {
-                D(bug("[KRN] ## SUPERSTATE...\n"));
+                D(bug("[KRN] ## SUPERSTATE... (0x%p ->", ((uint32_t *)regs)[16]));
+                ((uint32_t *)regs)[16] &= ~CPUMODE_MASK;
+                ((uint32_t *)regs)[16] |= CPUMODE_SUPERVISOR;
+                D(bug(" 0x%p)\n", ((uint32_t *)regs)[16]));
                 break;
             }
 
             case SC_ISSUPERSTATE:
             {
-                D(bug("[KRN] ## ISSUPERSTATE...\n"));
+                D(bug("[KRN] ## ISSUPERSTATE... "));
+                ((uint32_t *)regs)[0] = !(((((uint32_t *)regs)[16] & CPUMODE_MASK) == CPUMODE_USER) || ((((uint32_t *)regs)[16] & CPUMODE_MASK) == CPUMODE_SYSTEM));
+                D(bug("%d\n", ((uint32_t *)regs)[0]));
                 break;
             }
 
