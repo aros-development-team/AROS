@@ -10,7 +10,7 @@
 
 struct ARMProcessorInformation
 {
-    TEXT    VendorID[13]; /* 12 + \0 */
+    char    *VendorID;
     ULONG   Vendor;
     TEXT    BrandStringBuffer[48];
     STRPTR  BrandString;
