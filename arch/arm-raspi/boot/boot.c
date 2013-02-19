@@ -13,6 +13,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <asm/bcm2835.h>
+
 #include "boot.h"
 #include "serialdebug.h"
 #include "bootconsole.h"
@@ -130,12 +132,6 @@ static void parse_atags(struct tag *tags)
 
 static const char bootstrapName[] = "Bootstrap/RasPI ARM";
 
-volatile unsigned int *gpioGPFSEL1 = (unsigned int *) 0x20200004;
-volatile unsigned int *gpioGPSET0 = (unsigned int *) 0x2020001c;
-volatile unsigned int *gpioGPPUD = (unsigned int *) 0x20200094;
-volatile unsigned int *gpioPUDCLK0 = (unsigned int *) 0x20200098;
-volatile unsigned int *gpioPUDCLK1 = (unsigned int *) 0x2020009c;
-
 void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 {
     uint32_t tmp, initcr;
@@ -155,26 +151,26 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     {
 	unsigned int delay;
 
-        tmp = *gpioGPFSEL1;
+        tmp = *(volatile unsigned int *)GPFSEL1;
         tmp &= ~(7<<18); // GPIO 16 = 001 - output
         tmp |= 1<<18;
         tmp &= ~(7<<12); // GPIO 14 = 000 - input
-        *gpioGPFSEL1 = tmp;
+        *(volatile unsigned int *)GPFSEL1 = tmp;
 
-        *gpioGPPUD = 2; // enable pull-up control
-
-        for (delay = 0; delay < 150; delay++) asm volatile ("mov r0, r0\n");
-
-        *gpioPUDCLK0 = 1<<14; // set Pull Up/Down CLocK0 for pin 14
-        *gpioPUDCLK1 = 0;
+        *(volatile unsigned int *)GPPUD = 2; // enable pull-up control
 
         for (delay = 0; delay < 150; delay++) asm volatile ("mov r0, r0\n");
 
-        *gpioGPPUD = 0; // disable pull-up control
-        *gpioPUDCLK0 = 0; // reset the clock registers
-        *gpioPUDCLK1 = 0;
+        *(volatile unsigned int *)GPPUDCLK0 = 1<<14; // set Pull Up/Down CLocK0 for pin 14
+        *(volatile unsigned int *)GPPUDCLK1 = 0;
 
-        *gpioGPSET0 = 1<<16; // turn it off.. kernel.resource will turn it back on.
+        for (delay = 0; delay < 150; delay++) asm volatile ("mov r0, r0\n");
+
+        *(volatile unsigned int *)GPPUD = 0; // disable pull-up control
+        *(volatile unsigned int *)GPPUDCLK0 = 0; // reset the clock registers
+        *(volatile unsigned int *)GPPUDCLK1 = 0;
+
+        *(volatile unsigned int *)GPSET0 = 1<<16; // turn it off.. kernel.resource will turn it back on.
     }
     serInit();
 
