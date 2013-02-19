@@ -45,11 +45,13 @@
     AROS_LIBFUNC_INIT
 
     asm volatile (
-        "       mov     r0, sp          \n"
-        "       mov     sp, %[superSP]  \n"
-        "       cps     %[mode_user]    \n"
-        "       mov     sp, r0          \n"
-        : : [superSP] "X" (superSP), [mode_user] "I" (CPUMODE_USER));
+        "       stmfd   sp!, {lr}               \n"
+        "       mov     r1, sp                  \n"
+        "       mov     sp, %[superSP]          \n"
+        "       cps     %[mode_user]            \n"
+        "       mov     sp, r1                  \n"
+        "       ldmfd   sp!, {lr}               \n"
+        : : [superSP] "X" (superSP), [mode_user] "I" (CPUMODE_USER) : "r1" );
 
     AROS_LIBFUNC_EXIT
 } /* UserState() */
