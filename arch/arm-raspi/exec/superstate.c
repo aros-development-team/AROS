@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: superstate.c 30802 2009-03-08 19:25:45Z neil $
+    Copyright © 2013, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: SuperState() - Switch the processor into a higher plane.
     Lang: english
@@ -48,14 +48,18 @@
 {
     AROS_LIBFUNC_INIT
 
-    APTR sysStack, userStack;
+    register unsigned int superSP;
 
-    asm volatile ("mov %[userStack], sp\n" : [userStack] "=X" (userStack));
-    asm volatile ("cps #0x13\n");	/* switch to SVC (supervisor) mode */
-    asm volatile ("mov %[sysStack], sp\n" : [sysStack] "=X" (sysStack));
-    asm volatile ("mov sp, %[userStack]\n" : : [userStack] "X" (userStack));
+    asm volatile (
+        "       mov     r0, sp                  \n"
+        "       swi     %[swi_no]               \n"
+        "       mov     %[superSP], sp          \n"
+        "       mov     sp, r0                  \n"
+        : [superSP] "=X" (superSP)
+        : [swi_no] "I" (6 /*SC_SUPERSTATE*/)
+    );
 
-    return sysStack;
+    return superSP;
 
     AROS_LIBFUNC_EXIT
 } /* SuperState() */

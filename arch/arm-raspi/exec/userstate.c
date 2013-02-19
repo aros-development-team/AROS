@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: userstate.c 30802 2009-03-08 19:25:45Z neil $
+    Copyright © 2013, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: UserState() - Return to normal mode after changing things.
     Lang: english
@@ -14,7 +14,7 @@
 	AROS_LH1(void, UserState,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, sysStack, D0),
+	AROS_LHA(APTR, superSP, D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 26, Exec)
@@ -23,7 +23,7 @@
 	Return to user mode after a call to SuperState().
 
     INPUTS
-	sysStack    -   The return value from SuperState()
+	superSP    -   The return value from SuperState()
 
     RESULT
 	The system will be back to normal.
@@ -44,10 +44,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    asm volatile ("mov sp, %[sysStack]\n" : : [sysStack] "X" (sysStack)); 
-    asm volatile ("cps #0x1f\n");	/* switch to system mode */
-
-    sysStack = 0;   /* Get rid of the compiler warning */
+    asm volatile (
+        "       mov     r0, sp          \n"
+        "       mov     sp, %[superSP]  \n"
+        "       cps     %[mode_user]    \n"
+        "       mov     sp, r0          \n"
+        : : [superSP] "X" (superSP), [mode_user] "I" (CPUMODE_USER));
 
     AROS_LIBFUNC_EXIT
 } /* UserState() */
