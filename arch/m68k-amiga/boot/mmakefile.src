@@ -29,7 +29,6 @@ Q ?= @
 #MM     kernel-filesystem-kobj \
 #MM     kernel-freeanim-kobj \
 #MM     kernel-fs-afs-kobj \
-#MM     kernel-fs-cdvdfs-kobj \
 #MM     kernel-fs-cdfs-kobj \
 #MM     kernel-fs-con-kobj \
 #MM     kernel-m680x0-kobj \
@@ -108,7 +107,7 @@ AFILES  := ext_entry
 KLIBS   :=  keymap graphics layers intuition gadtools icon workbench \
             mathffp mathieeesingbas freeanim lowlevel nonvolatile nvdisk
 KDEVS   := cd
-KHNDLRS := cdrom cdfs
+KHNDLRS := cdfs
 KHIDDS  :=
 KRSRCS  := shellcommands workbook wbtag
 KHOOKS  := alert
