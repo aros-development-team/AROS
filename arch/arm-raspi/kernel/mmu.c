@@ -16,13 +16,30 @@
 #include "mmu.h"
 
 unsigned int pagetable[4096]	__attribute__ ((aligned (16384)));
-unsigned int pagetable0[32]	__attribute__ ((aligned (16384)));
+unsigned int pagetable0[64]	__attribute__ ((aligned (16384)));
+
+void core_MMUUpdatePageTables(void)
+{
+    unsigned int pt_addr = (unsigned int) &pagetable;
+    unsigned int pt0_addr = (unsigned int) &pagetable0;
+
+    /* Invalidate caches */
+    asm volatile("mcr     p15, 0, %[r], c8, c7, 0" : : [r] "r" (0x0));   //Invalidate entire unified TLB
+    asm volatile("mcr     p15, 0, %[r], c8, c6, 0" : : [r] "r" (0x0));   //Invalidate entire data TLB
+    asm volatile("mcr     p15, 0, %[r], c8, c5, 0" : : [r] "r" (0x0));   //Invalidate entire instruction TLB
+    asm volatile("mcr     p15, 0, %[r], c7, c5, 6" : : [r] "r" (0x0));   //Invalidate entire branch prediction array
+    asm volatile("mcr     p15, 0, %[r], c7, c5, 0" : : [r] "r" (0x0));   //Invalidate icache
+
+    /* setup_ttbr0/1 */
+    asm volatile("mcr p15, 0, %[addr], c2, c0, 0" : : [addr] "r" (pt0_addr));
+    asm volatile("mcr p15, 0, %[addr], c2, c0, 1" : : [addr] "r" (pt_addr));
+    /* setup_ttbrc */
+    asm volatile("mcr p15, 0, %[n], c2, c0, 2" : : [n] "r" (7));
+}
 
 void core_SetupMMU(void)
 {
     unsigned int page;
-    unsigned int pt_addr = (unsigned int) &pagetable;
-    unsigned int pt0_addr = (unsigned int) &pagetable0;
     register unsigned int control;
 
     D(bug("[Kernel] core_SetupMMU: Creating MMU pagetable[0] entries for 4GB address space\n"));
@@ -47,18 +64,7 @@ void core_SetupMMU(void)
             pagetable0[page] = (page << 20) | PAGE_FL_S_BIT | PAGE_C_BIT | PAGE_SECTION;
     }
 
-    /* Invalidate caches */
-    asm volatile("mcr     p15, 0, %[r], c8, c7, 0" : : [r] "r" (0x0));   //Invalidate entire unified TLB
-    asm volatile("mcr     p15, 0, %[r], c8, c6, 0" : : [r] "r" (0x0));   //Invalidate entire data TLB
-    asm volatile("mcr     p15, 0, %[r], c8, c5, 0" : : [r] "r" (0x0));   //Invalidate entire instruction TLB
-    asm volatile("mcr     p15, 0, %[r], c7, c5, 6" : : [r] "r" (0x0));   //Invalidate entire branch prediction array
-    asm volatile("mcr     p15, 0, %[r], c7, c5, 0" : : [r] "r" (0x0));   //Invalidate icache
-
-    /* setup_ttbr0/1 */
-    asm volatile("mcr p15, 0, %[addr], c2, c0, 0" : : [addr] "r" (pt0_addr));
-    asm volatile("mcr p15, 0, %[addr], c2, c0, 1" : : [addr] "r" (pt_addr));
-    /* setup_ttbrc */
-    asm volatile("mcr p15, 0, %[n], c2, c0, 2" : : [n] "r" (7));
+    core_MMUUpdatePageTables();
 
     /* Set the domain access control to all-supervisor */
     asm volatile("mcr p15, 0, %[r], c3, c0, 0" : : [r] "r" (~0));
@@ -76,6 +82,8 @@ void core_SetupMMU(void)
 void core_ProtPage(intptr_t addr, char p, char rw, char us)
 {
     D(bug("[Kernel] Marking page 0x%p as read-only\n", addr));
+
+    core_MMUUpdatePageTables();
 }
 
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us)
