@@ -117,13 +117,13 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     /* NB: the bootstrap has conveniently setup the framebuffer
             and initialised the serial port and led for us */
 
-    *gpioGPCLR0 = 1<<16; // LED ON
+    *(volatile unsigned int *)GPCLR0 = 1<<16; // LED ON
 
     core_SetupMMU();
 
     for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
 
-    *gpioGPSET0 = 1<<16; // LED OFF
+    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
 
     /* Enable Vector Floating Point Calculations */
     asm volatile("mrc p15,0,%[fpuflags],c1,c0,2\n" : [fpuflags] "=r" (fpuflags));   // Read Access Control Register 
@@ -136,7 +136,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
 
-    *gpioGPCLR0 = 1<<16; // LED ON
+    *(volatile unsigned int *)GPCLR0 = 1<<16; // LED ON
 
     while(msg->ti_Tag != TAG_DONE)
     {
@@ -186,11 +186,11 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     core_SetupIntr();
 
-    *gpioGPSET0 = 1<<16; // LED OFF
+    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
     delay = 1500;
     while(delay--)
         asm ("mov r0, r0");
-    *gpioGPCLR0 = 1<<16; // LED ON
+    *(volatile unsigned int *)GPCLR0 = 1<<16; // LED ON
 
     NEWLIST(&memList);
 

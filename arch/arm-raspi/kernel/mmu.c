@@ -27,7 +27,7 @@ void core_SetupMMU(void)
 
     D(bug("[Kernel] core_SetupMMU: Creating MMU pagetable[0] entries for 4GB address space\n"));
 
-    for(page = 0; page < 4096; page ++)
+    for (page = 0; page < 4096; page ++)
     {
         unsigned int pageflags = PAGE_TRANSLATIONFAULT;
         if (page > 64)
@@ -42,7 +42,7 @@ void core_SetupMMU(void)
     }
 
     D(bug("[Kernel] core_SetupMMU: Creating MMU pagetable[1] entries for 64MB address space\n"));
-    for(page = 0; page < 64; page++)
+    for (page = 0; page < 64; page++)
     {
             pagetable0[page] = (page << 20) | PAGE_FL_S_BIT | PAGE_C_BIT | PAGE_SECTION;
     }

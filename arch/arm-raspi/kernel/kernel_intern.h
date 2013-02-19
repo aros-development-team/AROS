@@ -35,9 +35,6 @@
 #define VFPSingle       0x300000 
 #define VFPDouble       0xC00000 
 
-#define gpioGPSET0 ((volatile unsigned int *)(GPSET0))
-#define gpioGPCLR0 ((volatile unsigned int *)(GPCLR0))
-
 void core_SetupMMU(void);
 void core_SetupIntr(void);
 
