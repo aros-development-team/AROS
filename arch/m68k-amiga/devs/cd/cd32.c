@@ -84,10 +84,29 @@ struct CD32Unit {
     struct QCode cu_QCode;
     ULONG cu_TotalSectors;
     UBYTE cu_Sequence;
+    UBYTE cu_Muted;
     union CDTOC cu_CDTOC[100];
     ULONG cu_IntEnable;
     ULONG cu_ChangeNum;
 };
+
+static inline void CD32_Mute(struct CD32Unit *cu, int muted)
+{
+    UBYTE val;
+   
+    Forbid();
+    val = readb(0xbfe001);
+    if (!muted) {
+        val |= 1;
+    } else {
+        val &= ~1;
+    }
+    writeb(val, 0xbfe001);
+    Permit();
+
+    cu->cu_Muted = muted ? 1 : 0;
+}
+
 
 UBYTE dec2bcd(UBYTE dec)
 {
@@ -719,11 +738,10 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
             cmd[9] = 0x00;
             cmd[10] = 0x04;
             cmd[11] = 0x00;
+            D(bug("CD_PLAYTRACK:"));int i; for(i = 0; i < 12;i++) bug(" %02x", cmd[i]);
             err = CD32_Cmd(cu, cmd, 12, res, 2);
             D(bug("CD_PLAYTRACK: err=%d, res[1]=0x%02x\n", err, res[1]));
-            if (!err &&
-                (res[1] & 0x80) == 0 &&
-                (res[1] & 0x08)) {
+            if (!err && (res[1] & 0x80) == 0) {
                 cu->cu_CDInfo.Status &= ~(CDSTSF_PLAYING | CDSTSF_PAUSED | CDSTSF_SEARCH | CDSTSF_DIRECTION);
                 cu->cu_CDInfo.Status |= CDSTSF_PLAYING;
                 D(bug("CD_PLAYTRACK: Playing tracks %d-%d\n", io->io_Offset, last-1));
@@ -756,6 +774,12 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
     case CD_RESET:
         cmd[0] = CHCD_RESET;
         err = CD32_Cmd(cu, cmd, 1, res, 1);
+    case CD_ATTENUATE:
+        io->io_Actual = cu->cu_Muted ? 0 : 0x7fff;
+        if (io->io_Offset > 0 && io->io_Offset < 0x7fff) {
+            CD32_Mute(cu, io->io_Offset == 0);
+        }
+        err = 0;
         break;
     default:
         break;
@@ -839,6 +863,7 @@ static int CD32_InitLib(LIBBASETYPE *cb)
                 priv->cu_CDInfo.PlaySpeed = 75;
                 priv->cu_CDInfo.ReadSpeed = 150;
                 priv->cu_CDInfo.ReadXLSpeed = 150;
+                priv->cu_CDInfo.AudioPrecision = 1;
                 CD32_IsCDROM(priv);
 
                 unit = cdAddUnit(cb, &CD32Ops, priv, &CD32Envec);
@@ -846,6 +871,9 @@ static int CD32_InitLib(LIBBASETYPE *cb)
                     D(bug("%s: Akiko as CD Unit %d\n", __func__, unit));
                     return 1;
                 }
+
+                /* Unmute the CDROM */
+                CD32_Mute(priv, 0);
 
                 RemIntServer(INTB_PORTS, &priv->cu_Interrupt);
 
