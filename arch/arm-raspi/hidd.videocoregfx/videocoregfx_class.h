@@ -32,6 +32,7 @@
 struct VideoCoreGfx_staticdata {
         APTR                    vcsd_VCMBoxBase;
         unsigned int            *vcsd_VCMBoxMessage;
+        IPTR                    vcsd_VCMBoxBuff;
 
         struct SignalSemaphore  vcsd_GPUMemLock;
         struct MemHeaderExt     vcsd_GPUMemManage;

@@ -92,8 +92,10 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     if (!(VCMBoxBase = OpenResource("vcmbox.resource")))
         goto failure;
 
-    if (!(xsd->vcsd_VCMBoxMessage = AllocVec(sizeof(IPTR) * 2 * MAX_TAGS, MEMF_CLEAR)))
+    if (!(xsd->vcsd_VCMBoxBuff = AllocVec(16 + (sizeof(IPTR) * 2 * MAX_TAGS), MEMF_CLEAR)))
         goto failure;
+
+    xsd->vcsd_VCMBoxMessage = (unsigned int *)(xsd->vcsd_VCMBoxBuff & ~0x0000000F);
 
     D(bug("[VideoCoreGfx] %s: VideoCore Mailbox resource @ 0x%p\n", __PRETTY_FUNCTION__, VCMBoxBase));
     D(bug("[VideoCoreGfx] %s: VideoCore message buffer @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_VCMBoxMessage));
