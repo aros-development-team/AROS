@@ -1,0 +1,17 @@
+# $Id: mmakefile.src 40246 2011-07-20 13:58:10Z sonic $
+#
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -I$(SRCDIR)/rom/processor
+
+FILES := \
+    getcpuinfo \
+    processor_init \
+    processor_util \
+    processor_frequency
+
+
+%build_archspecific mainmmake=kernel-processor maindir=rom/processor \
+    arch=raspi-arm files=$(FILES)
+
+%common
