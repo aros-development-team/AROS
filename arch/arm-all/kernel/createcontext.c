@@ -9,6 +9,8 @@
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
+#include <aros/arm/cpucontext.h>
+
 #include <kernel_base.h>
 #include <kernel_objects.h>
 
@@ -31,7 +33,7 @@ AROS_LH0(void *, KrnCreateContext,
     if (ctx)
     {
         ctx->FPUType    = KernelBase->kb_ContextFlags;
-        ctx->cpsr       = 0x10;		/* Initial value for user mode */
+        ctx->cpsr       = CPUMODE_USER;		/* Initial value for user mode */
 	ctx->fpuContext = (APTR)((IPTR)ctx + sizeof(struct AROSCPUContext));
     }
 
