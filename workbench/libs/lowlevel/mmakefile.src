@@ -15,7 +15,8 @@ FUNCS	:= \
 	remvblankint \
 	setjoyportattrsa \
 	starttimerint \
-	stoptimerint
+	stoptimerint \
+	systemcontrola
 
 #MM workbench-libs-lowlevel-includes : \
 #MM     kernel-exec-includes \
