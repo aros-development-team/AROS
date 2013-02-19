@@ -55,7 +55,7 @@ void __vectorhand_undef(void)
 {
     register unsigned int addr;
 
-    *gpioGPSET0 = 1<<16; // LED OFF
+    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
 
     asm volatile("mov %[addr], lr" : [addr] "=r" (addr) );
 
@@ -64,7 +64,7 @@ void __vectorhand_undef(void)
 
 void __vectorhand_reset(void)
 {
-    *gpioGPSET0 = 1<<16; // LED OFF
+    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
 
     D(bug("[KRN] ## RESET ##\n"));
     while(1)
@@ -174,7 +174,7 @@ void handle_irq(regs_t *regs)
 
 __attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
 {
-    *gpioGPSET0 = 1<<16; // LED OFF
+    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
 
     D(bug("[KRN] ## FIQ ##\n"));
     while(1)
@@ -191,7 +191,7 @@ __attribute__ ((interrupt ("ABORT"))) void __vectorhand_dataabort(void)
     /* Read fault address register */
     asm volatile("mrc p15, 0, %[addr], c6, c0, 0": [addr] "=r" (far) );
 
-    *gpioGPSET0 = 1<<16; // LED OFF
+    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
 
     /* Routine terminates by returning to LR-4, which is the instruction
      * after the aborted one
@@ -207,7 +207,7 @@ __attribute__ ((interrupt ("ABORT"))) void __vectorhand_prefetchabort(void)
     register unsigned int addr;
     asm volatile("mov %[addr], lr" : [addr] "=r" (addr) );
 
-    *gpioGPSET0 = 1<<16; // LED OFF
+    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
 
     krnPanic(KernelBase, "CPU Prefetch Abort @ 0x%p", (addr - 4));
 }
@@ -245,7 +245,7 @@ void core_SetupIntr(void)
     )
 
     D(bug("[KRN] Disabling IRQs\n"));
-    *(volatile ULONG *)ARMIRQ_DIBL = ~0;
-    *(volatile ULONG *)GPUIRQ_DIBL0 = ~0; 
-    *(volatile ULONG *)GPUIRQ_DIBL1 = ~0;
+    *(volatile unsigned int *)ARMIRQ_DIBL = ~0;
+    *(volatile unsigned int *)GPUIRQ_DIBL0 = ~0; 
+    *(volatile unsigned int *)GPUIRQ_DIBL1 = ~0;
 }
