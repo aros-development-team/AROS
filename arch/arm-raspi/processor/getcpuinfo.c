@@ -71,7 +71,7 @@ static void ProcessFeaturesTag(struct ARMProcessorInformation * info, struct Tag
 
     processor = sysprocs[selectedprocessor];
 
-    /* Go over each passed tag and fill apprioprate data */
+    /* Go over each passed tag and fill appropriate data */
     while ((passedTag = NextTagItem(&tagList)) != NULL)
     {
         if ((passedTag->ti_Tag > GCIT_FeaturesBase) &&
