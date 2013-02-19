@@ -24,7 +24,9 @@
 
 #include <string.h>
 
-#include "library.h"
+#include "bus_class.h"
+#include "interface_pio.h"
+#include "interface_dma.h"
 #include "pci.h"
 #include "timer.h"
 
@@ -39,18 +41,6 @@
 #ifdef __x86_64__
 #define SUPPORT_LEGACY
 #endif
-
-struct ata_ProbedBus
-{
-    struct Node atapb_Node;
-    UWORD       atapb_Vendor;
-    UWORD       atapb_Product;
-    IPTR        atapb_IOBase;
-    IPTR        atapb_IOAlt;
-    IPTR        atapb_INTLine;
-    IPTR        atapb_DMABase;
-    BOOL        atapb_80wire;
-};
 
 #define NAME_BUFFER 128
 
@@ -320,23 +310,21 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
             (DMASize >= DMASIZE || DMABase == 0 || SubClass == PCI_SUBCLASS_IDE))
         {
             struct ata_ProbedBus *probedbus;
-            STRPTR str[2];
+            STRPTR subclass;
             int class_len, sub_len;
 
             D(bug("[PCI-ATA] ata_PCIEnumerator_h: Adding Bus %d - IRQ %d, IO: %x:%x, DMA: %x\n",
                   x, INTLine, IOBase, IOAlt, DMABase));
 
-            OOP_GetAttr(Device, aHidd_PCIDevice_ClassDesc, (IPTR *)&str[0]);
-            OOP_GetAttr(Device, aHidd_PCIDevice_SubClassDesc, (IPTR *)&str[1]);
-
-            len = 6 + strlen(str[0]) + strlen(str[1]);
+            OOP_GetAttr(Device, aHidd_PCIDevice_SubClassDesc, (IPTR *)&subclass);
+            len = 16 + strlen(subclass);
 
             probedbus = AllocVec(sizeof(struct ata_ProbedBus) + len, MEMF_ANY)
             if (probedbus)
             {
                 STRPTR name = (char *)probedbus + sizeof(struct ata_ProbedBus);
 
-                RawDoFmt("PCI %s %s", str, RAWFMTFUNC_STRING, name);
+                RawDoFmt("PCI %s controller", str, RAWFMTFUNC_STRING, name);
 
                 probedbus->atapb_Node.ln_Name = name;
                 probedbus->atapb_Node.ln_Pri  = basePri - (a->ata__buscount++);
@@ -347,7 +335,6 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                 probedbus->atapb_IOAlt        = IOAlt;
                 probedbus->atapb_INTLine      = INTLine;
                 probedbus->atapb_DMABase      = DMABase ? DMABase + (x << 3) : 0;
-                probedbus->atapb_80wire       = TRUE;
 
                 Enqueue((struct List *)&a->probedbuses, &probedbus->atapb_Node);
 
@@ -459,14 +446,13 @@ static int ata_pci_Scan(struct ataBase *base)
             {
                 probedbus->atapb_Node.ln_Name = legacyBuses[n].lb_Name;
                 probedbus->atapb_Node.ln_Pri  = ATABUSNODEPRI_LEGACY - (Args.ata__buscount++);
-                probedbus->atapb_Device       = Device;
+                probedbus->atapb_Device       = NULL;
                 probedbus->atapb_Vendor       = 0;
                 probedbus->atapb_Product      = 0;
                 probedbus->atapb_IOBase       = LegacyBuses[n].lb_IOBase;
                 probedbus->atapb_IOAlt        = LegacyBuses[n].lb_IOAlt;
                 probedbus->atapb_INTLine      = legacybus->atalb_INTLine;
                 probedbus->atapb_DMABase      = 0;
-                probedbus->atapb_80wire       = FALSE;
 
                 D(bug("[PCI-ATA] ata_Scan: Adding Legacy Bus - IO: %x:%x\n",
                       probedbus->atapb_IOBase, probedbus->atapb_IOAlt));
@@ -484,15 +470,16 @@ static int ata_pci_Scan(struct ataBase *base)
     {
         struct TagItem attrs[] =
         {
-            {aHidd_HardwareName, probedbus->atapb_Node.ln_Name},
-            {aHidd_Producer    , probedbus->atapb_Vendor      },
-            {aHidd_Product     , probedbus->atapb_Product     },
-            {aHidd_ATA_IOBase  , probedbus->atapb_IOBase      },
-            {aHidd_ATA_IOAlt   , probedbus->atapb_IOAlt       },
-            {aHidd_ATA_INTLine , probedbus->atapb_INTLine     },
-            {aHidd_ATA_DMABase , probedbus->atapb_DMABase     },
-            {aHidd_ATA_80Wire  , probedbus->atapb_80wire      },
-            {TAG_DONE          , 0                            }
+            {aHidd_HardwareName       , probedbus->atapb_Node.ln_Name},
+            {aHidd_Producer           , probedbus->atapb_Vendor      },
+            {aHidd_Product            , probedbus->atapb_Product     },
+            {aHidd_DriverData         , probedbus                    },
+            {aHidd_ATABus_PIODataSize , sizeof(struct pio_data)      },
+            {aHidd_ATABus_PIOVectors  , pio_FuncTable                },
+            {aHidd_ATABus_PIO32Vectors, pio32_FuncTable              },
+            {aHidd_ATABus_DMADataSize , sizeof(struct dma_data)      },
+            {aHidd_ATABus_DMAVectors  , dma_FuncTable                },
+            {TAG_DONE                 , 0                            }
         };
         OOP_Object *bus;
 
@@ -505,16 +492,16 @@ static int ata_pci_Scan(struct ataBase *base)
 
             if (probedbus->atapb_Device)
                 HIDD_PCIDevice_Release(probedbus->atapb_Device);
-        }
 
-        FreeVec(probedbus);
+            /*
+             * Free the structure only upon failure!
+             * In case of success it becomes owned by the driver object!
+             */
+            FreeVec(probedbus);
+        }
     }
 
     return TRUE;
 }
 
-/*
- * ata.device main code has two init routines with 0 and 127 priorities.
- * All bus scanners must run between them.
- */
 ADD2INITLIB(ata_pci_Scan, 30)

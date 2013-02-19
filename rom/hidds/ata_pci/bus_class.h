@@ -1,3 +1,22 @@
+struct ata_ProbedBus
+{
+    struct Node atapb_Node;
+    OOP_Object *atapb_Device;
+    UWORD       atapb_Vendor;
+    UWORD       atapb_Product;
+    IPTR        atapb_IOBase;
+    IPTR        atapb_IOAlt;
+    IPTR        atapb_INTLine;
+    IPTR        atapb_DMABase;
+};
+
+struct ATA_BusData
+{
+    struct ata_ProbedBus *bus;
+    OOP_Object           *pciDriver;
+    APTR                  dmaBuf;
+};
+
 struct ataBase
 {
     struct Library  lib;
