@@ -37,7 +37,6 @@ USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM kernel-gameport \
 #MM kernel-keyboard \
 #MM kernel-console \
-#MM kernel-econsole \
 #MM kernel-shell \
 #MM kernel-shellcommands \
 #MM kernel-filesystem \
@@ -47,6 +46,7 @@ USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM kernel-fs-fat \
 #MM kernel-fs-sfs \
 #MM kernel-fs-amberram \
+#MM kernel-processor \
 #MM kernel-vcmbox \
 #MM hidd-i2c \
 #MM hidd-i2c-bcm2835 \
@@ -60,15 +60,15 @@ USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 
 #MM kernel-package-raspi-arm-missing: \
 #MM kernel-battclock \
-#MM kernel-processor
+#MM kernel-econsole
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
-PKG_RSRC     :=  misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox
+PKG_RSRC     :=  misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox processor
 PKG_DEVS     :=  input gameport keyboard console timer USBHardware/usb2otg
 PKG_HANDLERS := con amberram cdrom sfs fat afs
 PKG_HIDDS    := graphics mouse keyboard hiddclass i2c i2c-bcm2835 videocoregfx
 PKG_USB      := hid hub bootmouse bootkeyboard massstorage
-PKG_HOOKS    := econsole
+PKG_HOOKS    :=
  
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
