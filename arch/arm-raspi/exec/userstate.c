@@ -44,14 +44,16 @@
 {
     AROS_LIBFUNC_INIT
 
-    asm volatile (
-        "       stmfd   sp!, {lr}               \n"
-        "       mov     r1, sp                  \n"
-        "       mov     sp, %[superSP]          \n"
-        "       cps     %[mode_user]            \n"
-        "       mov     sp, r1                  \n"
-        "       ldmfd   sp!, {lr}               \n"
-        : : [superSP] "X" (superSP), [mode_user] "I" (CPUMODE_USER) : "r1" );
-
+    if (superSP)
+    {
+        asm volatile (
+            "       stmfd   sp!, {lr}               \n"
+            "       mov     r1, sp                  \n"
+            "       mov     sp, %[superSP]          \n"
+            "       cpsie   i, %[mode_user]         \n"
+            "       mov     sp, r1                  \n"
+            "       ldmfd   sp!, {lr}               \n"
+            : : [superSP] "r" (superSP), [mode_user] "I" (CPUMODE_USER) : "r1" );
+    }
     AROS_LIBFUNC_EXIT
 } /* UserState() */
