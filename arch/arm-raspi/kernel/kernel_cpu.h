@@ -13,9 +13,6 @@
 #define ARM_FPU_TYPE	        FPU_VFP
 #define ARM_FPU_SIZE	        32*64
 
-/* our "user" mode is SYSTEM_MODE */
-#define CTX_MODE 0x1f
-
 /* We use native context format, no conversion needed */
 #define regs_t struct ExceptionContext
 /* There are no private add-ons */
