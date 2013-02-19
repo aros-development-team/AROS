@@ -7,6 +7,9 @@
 
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
+
+#include <aros/arm/cpucontext.h>
+
 #include <exec/memory.h>
 #include <exec/tasks.h>
 #include <exec/alerts.h>
@@ -33,7 +36,8 @@ static uint32_t stack_super[STACK_SIZE] __attribute__((used,aligned(16)));
 static uint32_t stack_abort[STACK_SIZE] __attribute__((used,aligned(16)));
 static uint32_t stack_irq[STACK_SIZE] __attribute__((used,aligned(16)));
 
-asm(".section .aros.init,\"ax\"\n\t"
+asm (
+    ".section .aros.init,\"ax\"\n\t"
     ".globl start\n\t"
     ".type start,%function\n"
     "start:\n"
@@ -187,9 +191,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     core_SetupIntr();
 
     *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
-    delay = 1500;
-    while(delay--)
-        asm ("mov r0, r0");
+    for (delay = 0; delay < 1500; delay++) asm volatile("mov r0, r0\n");
     *(volatile unsigned int *)GPCLR0 = 1<<16; // LED ON
 
     NEWLIST(&memList);
@@ -226,7 +228,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     InitCode(RTF_SINGLETASK, 0);
 
     D(bug("[KRN] InitCode(RTF_COLDSTART) ...\n"));
-    asm("cps #0x1f\n");	/* switch to system mode */
+    asm volatile("cps %[mode_user]\n" : : [mode_user] "I" (CPUMODE_USER)); /* switch to user mode */
     InitCode(RTF_COLDSTART, 0);
 
     /* The above should not return */

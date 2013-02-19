@@ -6,6 +6,8 @@
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
+#include <aros/arm/cpucontext.h>
+
 #include <kernel_base.h>
 
 /*****************************************************************************
@@ -50,7 +52,7 @@ AROS_LH0I(int, KrnIsSuper,
     register unsigned int reg;
     asm volatile("mrs %[reg], cpsr" : [reg] "=r" (reg) );
 
-    return !(((reg & 0xF) == 0x0) || ((reg & 0xF) == 0xF));
+    return !(((reg & CPUMODE_MASK) == CPUMODE_USER) || ((reg & CPUMODE_MASK) == CPUMODE_SYSTEM));
 
     AROS_LIBFUNC_EXIT
 }
