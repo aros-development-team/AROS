@@ -24,17 +24,17 @@ void core_MMUUpdatePageTables(void)
     unsigned int pt0_addr = (unsigned int) &pagetable0;
 
     /* Invalidate caches */
-    asm volatile("mcr     p15, 0, %[r], c8, c7, 0" : : [r] "r" (0x0));   //Invalidate entire unified TLB
-    asm volatile("mcr     p15, 0, %[r], c8, c6, 0" : : [r] "r" (0x0));   //Invalidate entire data TLB
-    asm volatile("mcr     p15, 0, %[r], c8, c5, 0" : : [r] "r" (0x0));   //Invalidate entire instruction TLB
-    asm volatile("mcr     p15, 0, %[r], c7, c5, 6" : : [r] "r" (0x0));   //Invalidate entire branch prediction array
-    asm volatile("mcr     p15, 0, %[r], c7, c5, 0" : : [r] "r" (0x0));   //Invalidate icache
+    asm volatile("mcr   p15, 0, %[r], c8, c7, 0" : : [r] "r" (0x0));   //Invalidate entire unified TLB
+    asm volatile("mcr   p15, 0, %[r], c8, c6, 0" : : [r] "r" (0x0));   //Invalidate entire data TLB
+    asm volatile("mcr   p15, 0, %[r], c8, c5, 0" : : [r] "r" (0x0));   //Invalidate entire instruction TLB
+    asm volatile("mcr   p15, 0, %[r], c7, c5, 6" : : [r] "r" (0x0));   //Invalidate entire branch prediction array
+    asm volatile("mcr   p15, 0, %[r], c7, c5, 0" : : [r] "r" (0x0));   //Invalidate icache
 
     /* setup_ttbr0/1 */
-    asm volatile("mcr p15, 0, %[addr], c2, c0, 0" : : [addr] "r" (pt0_addr));
-    asm volatile("mcr p15, 0, %[addr], c2, c0, 1" : : [addr] "r" (pt_addr));
+    asm volatile("mcr   p15, 0, %[addr], c2, c0, 0" : : [addr] "r" (pt0_addr));
+    asm volatile("mcr   p15, 0, %[addr], c2, c0, 1" : : [addr] "r" (pt_addr));
     /* setup_ttbrc */
-    asm volatile("mcr p15, 0, %[n], c2, c0, 2" : : [n] "r" (7));
+    asm volatile("mcr   p15, 0, %[n], c2, c0, 2" : : [n] "r" (7));
 }
 
 void core_SetupMMU(void)
@@ -67,14 +67,14 @@ void core_SetupMMU(void)
     core_MMUUpdatePageTables();
 
     /* Set the domain access control to all-supervisor */
-    asm volatile("mcr p15, 0, %[r], c3, c0, 0" : : [r] "r" (~0));
+    asm volatile("mcr   p15, 0, %[r], c3, c0, 0" : : [r] "r" (~0));
 
     /* Enable L1 caches (I-cache and D-cache) and MMU.*/
-    asm volatile("mrc p15, 0, %[control], c1, c0, 0" : [control] "=r" (control));
+    asm volatile("mrc   p15, 0, %[control], c1, c0, 0" : [control] "=r" (control));
     control |= ( ENABLE_I_CACHE | ENABLE_D_CACHE | ENABLE_MMU );
-    asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0)); /* dsb */
-    asm volatile ("mcr p15, 0, %0, c1, c0, 0" : : "r" (control) : "cc" );
-    asm volatile ("mcr p15, 0, %[r], c7, c5, 4" : : [r] "r" (0)); /* isb */
+    asm volatile ("mcr  p15, 0, %[r], c7, c10, 4" : : [r] "r" (0)); /* dsb */
+    asm volatile ("mcr  p15, 0, %0, c1, c0, 0" : : "r" (control) : "cc" );
+    asm volatile ("mcr  p15, 0, %[r], c7, c5, 4" : : [r] "r" (0)); /* isb */
 
     D(bug("[Kernel] core_SetupMMU: Done\n"));
 }
