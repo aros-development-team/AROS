@@ -52,13 +52,13 @@
 
     asm volatile (
         "       stmfd   sp!, {lr}               \n"
-        "       mov     r0, sp                  \n"
+        "       mov     r1, sp                  \n"
         "       swi     %[swi_no]               \n"
         "       mov     %[superSP], sp          \n"
-        "       mov     sp, r0                  \n"
+        "       mov     sp, r1                  \n"
         "       ldmfd   sp!, {lr}               \n"
-        : [superSP] "=X" (superSP)
-        : [swi_no] "I" (6 /*SC_SUPERSTATE*/) : "r0"
+        : [superSP] "=r" (superSP)
+        : [swi_no] "I" (6 /*SC_SUPERSTATE*/) : "r1"
     );
 
     return superSP;
