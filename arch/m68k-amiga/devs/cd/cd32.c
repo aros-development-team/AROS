@@ -709,12 +709,33 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
             err = 0;
         }
         break;
-    case CD_MOTOR:
-        /* FIXME: Should this be a pause/unpause command?
-         *        Or just ignored?
-         */
-        io->io_Actual = 1;
+    case CD_PAUSE:
         err = 0;
+        io->io_Actual = (cu->cu_CDInfo.Status & CDSTSF_PAUSED) ? 1 : 0;
+        if (cu->cu_CDInfo.Status & CDSTSF_TOC) {
+            UBYTE cmd[1] = { io->io_Length ? CHCD_PAUSE : CHCD_UNPAUSE };
+            UBYTE res[1];
+            err = CD32_Cmd(cu, cmd, 1, res, 1);
+            if (err == 0) {
+                if (io->io_Length)
+                    cu->cu_CDInfo.Status |= CDSTSF_PAUSED;
+                else
+                    cu->cu_CDInfo.Status &= ~CDSTSF_PAUSED;
+            }
+        }
+        break;
+    case CD_MOTOR:
+        err = 0;
+        io->io_Actual = (cu->cu_CDInfo.Status & CDSTSF_SPIN);
+        if (io->io_Length == 0) {
+            UBYTE cmd[1] = { CHCD_STOP }, res[1];
+            err = CD32_Cmd(cu, cmd, 1, res, 1);
+            if (err == 0) {
+                cu->cu_CDInfo.Status &= ~CDSTSF_SPIN;
+            }
+        } else {
+            cu->cu_CDInfo.Status |= CDSTSF_SPIN;
+        }
         break;
     case CD_PLAYTRACK:
         if (io->io_Offset <= cu->cu_CDTOC[0].Summary.LastTrack) {
@@ -738,7 +759,6 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
             cmd[9] = 0x00;
             cmd[10] = 0x04;
             cmd[11] = 0x00;
-            D(bug("CD_PLAYTRACK:"));int i; for(i = 0; i < 12;i++) bug(" %02x", cmd[i]);
             err = CD32_Cmd(cu, cmd, 12, res, 2);
             D(bug("CD_PLAYTRACK: err=%d, res[1]=0x%02x\n", err, res[1]));
             if (!err && (res[1] & 0x80) == 0) {
@@ -774,6 +794,8 @@ static LONG CD32_DoIO(struct IOStdReq *io, APTR priv)
     case CD_RESET:
         cmd[0] = CHCD_RESET;
         err = CD32_Cmd(cu, cmd, 1, res, 1);
+        CD32_Status(cu);
+        break;
     case CD_ATTENUATE:
         io->io_Actual = cu->cu_Muted ? 0 : 0x7fff;
         if (io->io_Offset > 0 && io->io_Offset < 0x7fff) {
