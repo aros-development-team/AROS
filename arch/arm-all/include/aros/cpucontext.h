@@ -23,16 +23,27 @@ struct ExceptionContext
     APTR  fpuContext;	/* Pointer to FPU context area	*/
 };
 
+/* CPU modes */
+#define CPUMODE_USER            0x10
+#define CPUMODE_FIQ             0x11
+#define CPUMODE_IRQ             0x12
+#define CPUMODE_SUPERVISOR      0x13
+#define CPUMODE_ABORT           0x17
+#define CPUMODE_UNDEF           0x1B
+#define CPUMODE_SYSTEM          0x1F
+
+#define CPUMODE_MASK            ~0x1F
+
 /* Flags */
 enum enECFlags
 {
-    ECF_FPU = 1<<0	/* FPU data is present */
+    ECF_FPU = 1<<0	        /* FPU data is present */
 };
 
 /* FPU types */
-#define FPU_NONE 0
-#define FPU_AFP  1
-#define FPU_VFP  2
+#define FPU_NONE                0
+#define FPU_AFP                 1
+#define FPU_VFP                 2
 
 /* VFP context */
 struct VFPContext
