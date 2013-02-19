@@ -99,7 +99,7 @@ void handle_syscall(void *regs)
             {
                 D(bug("[KRN] ## SUPERSTATE... (0x%p ->", ((uint32_t *)regs)[16]));
                 ((uint32_t *)regs)[16] &= ~CPUMODE_MASK;
-                ((uint32_t *)regs)[16] |= CPUMODE_SUPERVISOR;
+                ((uint32_t *)regs)[16] |= (0x80 | CPUMODE_SUPERVISOR);
                 D(bug(" 0x%p)\n", ((uint32_t *)regs)[16]));
                 break;
             }
