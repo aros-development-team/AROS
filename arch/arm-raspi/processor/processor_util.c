@@ -43,8 +43,71 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
 
     asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 1" : [scp_reg] "=r" (scp_reg) );
 
-    info->L1DataCacheSize = (scp_reg >> 18) & 0xF;
-    info->L1InstructionCacheSize = (scp_reg >> 6) & 0xF;
+    switch((scp_reg >> 18) & 0xF) {
+        case 3:
+            info->L1DataCacheSize = 4096;
+            break;
+        case 4:
+            info->L1DataCacheSize = 8192;
+            break;
+        case 5:
+            info->L1DataCacheSize = 16384;
+            break;
+        case 6:
+            info->L1DataCacheSize = 32768;
+            break;
+        case 7:
+            info->L1DataCacheSize = 65536;
+            break;
+        case 8:
+            info->L1DataCacheSize = 131072;
+            break;
+        case 9:
+            info->L1DataCacheSize = 262144;
+            break;
+        case 10:
+            info->L1DataCacheSize = 524288;
+            break;
+        case 11:
+            info->L1DataCacheSize = 1048576;
+            break;
+        default:
+            info->L1DataCacheSize = 0;
+            break;
+    }
+
+    switch((scp_reg >> 6) & 0xF) {
+        case 3:
+            info->L1InstructionCacheSize = 4096;
+            break;
+        case 4:
+            info->L1InstructionCacheSize = 8192;
+            break;
+        case 5:
+            info->L1InstructionCacheSize = 16384;
+            break;
+        case 6:
+            info->L1InstructionCacheSize = 32768;
+            break;
+        case 7:
+            info->L1InstructionCacheSize = 65536;
+            break;
+        case 8:
+            info->L1InstructionCacheSize = 131072;
+            break;
+        case 9:
+            info->L1InstructionCacheSize = 262144;
+            break;
+        case 10:
+            info->L1InstructionCacheSize = 524288;
+            break;
+        case 11:
+            info->L1InstructionCacheSize = 1048576;
+            break;
+        default:
+            info->L1InstructionCacheSize = 0;
+            break;
+    }
 
     D(bug("[processor.ARM] %s: .. Done\n", __PRETTY_FUNCTION__));
 
