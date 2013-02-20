@@ -62,20 +62,22 @@ AROS_LH2(volatile unsigned int *, VCMBoxRead,
         while(1)
         {
             ObtainSemaphore(&VCMBoxBase->vcmb_Sem);
+            APTR ssp = SuperState();
             while ((VCMBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
             {
-                asm volatile ("mcr p15, #0, %[r], c7, c14, #0" : : [r] "r" (0) );
+                asm volatile ("mcr p15, 0, %[r], c7, c14, 0" : : [r] "r" (0) );
 
                 if(try-- == 0)
                 {
                     break;
                 }
             }
-            asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
+            asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
 
             msg = *((volatile unsigned int *)(mb + VCMB_READ));
             
-            asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
+            asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
+            UserState(ssp);
             ReleaseSemaphore(&VCMBoxBase->vcmb_Sem);
 
             if ((msg & VCMB_CHAN_MASK) == chan)
@@ -100,14 +102,16 @@ AROS_LH3(void, VCMBoxWrite,
     if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
     { 
         ObtainSemaphore(&VCMBoxBase->vcmb_Sem);
+        APTR ssp = SuperState();
         while ((VCMBoxStatus(mb) & VCMB_STATUS_WRITEREADY) != 0)
         {
-            asm volatile ("mcr p15, #0, %[r], c7, c14, #0" : : [r] "r" (0) );
+            asm volatile ("mcr p15, 0, %[r], c7, c14, 0" : : [r] "r" (0) );
         }
 
-        asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
+        asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
 
         *((volatile unsigned int *)(mb + VCMB_WRITE)) = ((unsigned int)msg | chan);
+        UserState(ssp);
         ReleaseSemaphore(&VCMBoxBase->vcmb_Sem);
     }
 
