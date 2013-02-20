@@ -36,12 +36,12 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
 
     D(bug("[processor.ARM] %s: Probing CPU ..\n", __PRETTY_FUNCTION__));
 
-    asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 0" : [scp_reg] "=X" (scp_reg) );
+    asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 0" : [scp_reg] "=r" (scp_reg) );
 
     info->Vendor = (scp_reg >> 24) & 0x7F;
     info->Family = (scp_reg >> 16) & 0xF;
 
-    asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 1" : [scp_reg] "=X" (scp_reg) );
+    asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 1" : [scp_reg] "=r" (scp_reg) );
 
     info->L1DataCacheSize = (scp_reg >> 18) & 0xF;
     info->L1InstructionCacheSize = (scp_reg >> 6) & 0xF;
