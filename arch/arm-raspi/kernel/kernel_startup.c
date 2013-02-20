@@ -228,7 +228,9 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     InitCode(RTF_SINGLETASK, 0);
 
     D(bug("[KRN] InitCode(RTF_COLDSTART) ...\n"));
-    asm volatile("cps %[mode_user]\n" : : [mode_user] "I" (CPUMODE_USER)); /* switch to user mode */
+
+    asm("cps %[mode_user]\n" : : [mode_user] "I" (CPUMODE_USER)); /* switch to user mode */
+
     InitCode(RTF_COLDSTART, 0);
 
     /* The above should not return */
