@@ -9,31 +9,66 @@
     Lang: english
 */
 
-struct ata_BusDriver
-{
-    VOID  (*ata_out     )(UBYTE val, UWORD offset, struct ata_BusDriver *self);
-    UBYTE (*ata_in      )(UWORD offset, struct ata_BusDriver *self);
-    VOID  (*ata_outsw   )(APTR address, ULONG count, struct ata_BusDriver *self);
-    VOID  (*ata_insw    )(APTR address, ULONG count, struct ata_BusDriver *self);
-    /*
-     * The following two are optional.
-     * If they are NULL, our bus doesn't support 32-bit transfers.
-     */
-    VOID  (*ata_outsl   )(APTR address, ULONG count, struct ata_BusDriver *self);
-    VOID  (*ata_insl    )(APTR address, ULONG count, struct ata_BusDriver *self);
+#define CLID_HW_ATA      "hw.ata"
+#define CLID_Hidd_ATABus "hidd.ata.bus"
 
-    VOID  (*ata_out_alt )(UBYTE val, UWORD offset, struct ata_BusDriver *self);
-    UBYTE (*ata_in_alt  )(UWORD offset, struct ata_BusDriver *self);
-    /*
-     * The following four are optional.
-     * If they are NULL, our bus doesn't support DMA transfers
-     */
-    VOID  (*ata_out_dma )(UBYTE val, UWORD offset, struct ata_BusDriver *self);
-    UBYTE (*ata_in_dma  )(UWORD offset, struct ata_BusDriver *self);
-    VOID  (*ata_outl_dma)(ULONG val, UWORD offset, struct ata_BusDriver *self);
-    ULONG (*ata_inl_dma )(UWORD offset, struct ata_BusDriver *self);
+struct ATA_PIOInterface
+{
+    VOID  (*ata_out    )(void *obj, UBYTE val, UWORD offset);
+    UBYTE (*ata_in     )(void *obj, UWORD offset);
+    VOID  (*ata_out_alt)(void *obj, UBYTE val, UWORD offset);
+    UBYTE (*ata_in_alt )(void *obj, UWORD offset);
+    VOID  (*ata_outsw  )(void *obj, APTR address, ULONG count);
+    UBYTE (*ata_insw   )(void *obj, APTR address, ULONG count);
+    VOID  (*ata_ackInt )(void *obj);                            /* Optional */
 };
 
-#include <interface/Hidd_ATA.h>
+struct ATA_PIO32Interface
+{
+    VOID  (*ata_outsl)(void *obj, APTR address, ULONG count);
+    UBYTE (*ata_insl )(void *obj, APTR address, ULONG count);
+};
+
+struct ATA_DMAInterface
+{
+    BOOL  (*dma_Setup    )(void *obj, APTR buffer, IPTR size, BOOL read);
+    VOID  (*dma_Cleanup  )(void *obj, APTR buffer, IPTR size, BOOL read);
+    VOID  (*dma_Start    )(void *obj);
+    VOID  (*dma_Stop     )(void *obj);
+    BOOL  (*dma_IntStatus)(void *obj);
+    ULONG (*dma_Result   )(void *obj);
+};
+
+typedef enum
+{
+   AB_XFER_PIO0 = 0,
+   AB_XFER_PIO1,
+   AB_XFER_PIO2,
+   AB_XFER_PIO3,
+   AB_XFER_PIO4,
+
+   AB_XFER_MDMA0,
+   AB_XFER_MDMA1,
+   AB_XFER_MDMA2,
+
+   AB_XFER_UDMA0,
+   AB_XFER_UDMA1,
+   AB_XFER_UDMA2,
+   AB_XFER_UDMA3,
+   AB_XFER_UDMA4,
+   AB_XFER_UDMA5,
+   AB_XFER_UDMA6,
+
+   AB_XFER_48BIT,
+   AB_XFER_RWMULTI,
+   AB_XFER_PACKET,
+   AB_XFER_LBA,
+   AB_XFER_DMA,
+
+} ata_XferMode;
+
+
+
+#include <interface/Hidd_ATABus.h>
 
 #endif
