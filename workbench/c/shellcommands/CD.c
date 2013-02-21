@@ -121,7 +121,6 @@ AROS_SH1(CD, 41.2,
 
     if (error != 0)
     {
-        PrintFault(error, "CD");
         return_code = RETURN_ERROR;
     }
 
