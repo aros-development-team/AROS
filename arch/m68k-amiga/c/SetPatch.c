@@ -9,22 +9,15 @@
 #include <exec/execbase.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/setpatch.h>
 #include <proto/kernel.h>
 
-#define TEMPLATE "QUIET/S,NOCACHE/S,NOCOPYMEM/S,NOVBRMOVE/S"
-#define ARG_QUIET   0
-#define ARG_NOCACHE 1
-#define ARG_NOCOPYMEM 2
-#define ARG_NOVBRMOVE 3
-#define ARG_NUM 4
+#define SH_GLOBAL_DOSBASE 1
+#define SH_GLOBAL_SYSBASE 1
 
-/* "SetPatch AROS-m68k" is magic string that is checked in LoadSeg() compatibility hack.
- * We can't allow original AOS C:SetPatch to run because it pokes undocumented structures.
- * Check arch/m68k-all/dos/bcpl_patches.c
- */
-const TEXT version[] = "$VER: SetPatch AROS-m68k 41.2 (" ADATE ")\n";
+#include <aros/shcommands.h>
 
-int __nocommandline;
+const TEXT version[] = "$VER: SetPatch AROS-m68k 41.3 (" ADATE ")\n";
 
 void Enable68060SuperScalar(void);
 asm (
@@ -176,13 +169,20 @@ static void mmusetup(BOOL quiet)
 
 extern void patches(BOOL, ULONG);
 
-int main(void)
+AROS_SH4H(SetPatch, 41.3, "AROS SetPatch (m68k)",
+    AROS_SHAH(BOOL, Q,        QUIET, /S, FALSE, "Be quiet"),
+    AROS_SHAH(BOOL, NOCA,   NOCACHE, /S, FALSE, "Don't install cache patches"),
+    AROS_SHAH(BOOL, NOCO, NOCOPYMEM, /S, FALSE, "Don't install CopyMem patches"),
+    AROS_SHAH(BOOL, NOV,  NOVBRMOVE, /S, FALSE, "Don't move the VBR to MEMF_FAST"))
 {
-    struct RDArgs *rda;
-    IPTR args[ARG_NUM] = { FALSE, FALSE, FALSE, FALSE };
+    AROS_SHCOMMAND_INIT
 
-    rda = ReadArgs(TEMPLATE, args, NULL);
-    if (rda) {
+    struct Library *SetPatchBase;
+
+    /* NOTE: This is currently a 'am I running on AROS' test, but
+     *       we should use SetPatch/AddPatch() one day
+     */
+    if ((SetPatchBase = OpenLibrary("setpatch.library", 41))) {
         BOOL justinstalled680x0 = FALSE;
         BOOL installed680x0 = FALSE;
         BOOL x68040 = FALSE, x68060 = FALSE;
@@ -210,21 +210,21 @@ int main(void)
                 installed680x0 = TRUE;
         }
 
-        if (!args[ARG_NOVBRMOVE])
-            fastvbr(args[ARG_QUIET]);
+        if (!SHArg(NOVBRMOVE))
+            fastvbr(SHArg(QUIET));
 
         if (justinstalled680x0)
-            patches(args[ARG_QUIET], args[ARG_NOCOPYMEM] ? 0 : 1);
+            patches(SHArg(QUIET), SHArg(NOCOPYMEM) ? 0 : 1);
  
-        if (args[ARG_NOCACHE] == FALSE) {
+        if (SHArg(NOCACHE) == FALSE) {
             if (justinstalled680x0)
-                p5stuff(args[ARG_QUIET]);
-            mmusetup(args[ARG_QUIET]);
+                p5stuff(SHArg(QUIET));
+            mmusetup(SHArg(QUIET));
         } else {
             CacheControl(0, CACRF_EnableD | CACRF_CopyBack | CACRF_DBE);
         }
 
-        if (args[ARG_QUIET] == FALSE) {
+        if (SHArg(QUIET) == FALSE) {
             ULONG flags;
             if (installed680x0) {
                 Printf("%ld Support Code Loaded\n", x68060 ? 68060 : 68040);
@@ -238,7 +238,9 @@ int main(void)
                 Printf("CopyBack Enabled\n");
         }
 
-        FreeArgs(rda);
+        CloseLibrary(SetPatchBase);
     }
-    return 0;
+    return (SetPatchBase != NULL) ? RETURN_OK : RETURN_FAIL;
+
+    AROS_SHCOMMAND_EXIT
 }

@@ -76,6 +76,7 @@ AFILES		:= copymem_040 copymem_060
 USER_INCLUDES := -isystem
 
 %build_prog mmake=workbench-c-m68k-setpatch progname=SetPatch \
-    files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_C)
+    files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_C) \
+    uselibs=setpatch usestartup=no
 
 %common
