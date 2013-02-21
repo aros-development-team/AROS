@@ -36,6 +36,7 @@ Q ?= @
 #MM     kernel-partition-kobj \
 #MM     kernel-potgo-kobj \
 #MM     kernel-cardres-kobj \
+#MM     kernel-setpatch-kobj \
 #MM     kernel-shell-kobj \
 #MM     kernel-shellcommands-kobj \
 #MM     kernel-usb-amiga-m68k \
@@ -105,7 +106,8 @@ FILES   :=
 AFILES  := ext_entry
 
 KLIBS   :=  keymap graphics layers intuition gadtools icon workbench \
-            mathffp mathieeesingbas freeanim lowlevel nonvolatile nvdisk
+            mathffp mathieeesingbas freeanim lowlevel nonvolatile nvdisk \
+            setpatch
 KDEVS   := cd
 KHNDLRS := cdfs
 KHIDDS  :=

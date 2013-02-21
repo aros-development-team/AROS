@@ -1,0 +1,10 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := setpatch_init addpatch rempatch findpatch
+
+%build_module mmake=kernel-setpatch \
+    modname=setpatch modtype=library \
+    files="$(FILES)"
+
+%common
