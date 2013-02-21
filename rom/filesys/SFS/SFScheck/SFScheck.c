@@ -407,7 +407,7 @@ struct fsObject *nextobject(struct fsObject *o) {
   }
 
   /* ensure WORD boundary */
-  if((((ULONG)p) & 0x01)!=0) {
+  if((((IPTR)p) & 0x01)!=0) {
     p++;
   }
 
