@@ -265,8 +265,8 @@ AFILES  :=
 
 KLIBS   := aros utility dos oop mathffp mathieeesingbas partition \
            keymap graphics layers intuition gadtools icon workbench
-KDEVS   := timer input keyboard console trackdisk gameport audio ata
-KHNDLRS := cdrom con afs amberram
+KDEVS   := timer input keyboard console trackdisk gameport audio ata cd
+KHNDLRS := cdfs con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
 KRSRCS  := battclock processor lddemon dosboot cia potgo disk \
            misc shell shellcommands workbook wbtag cardres FileSystem
