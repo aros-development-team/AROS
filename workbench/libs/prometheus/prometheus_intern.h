@@ -1,6 +1,5 @@
 /*
-    Copyright (C) 2005 Neil Cafferkey
-    Copyright (C) 2011 - 2013 The AROS Development Team.
+    Copyright © 2005-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
