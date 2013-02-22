@@ -20,7 +20,6 @@ struct ATA_PIOInterface
     UBYTE (*ata_in_alt )(void *obj, UWORD offset);
     VOID  (*ata_outsw  )(void *obj, APTR address, ULONG count);
     UBYTE (*ata_insw   )(void *obj, APTR address, ULONG count);
-    VOID  (*ata_ackInt )(void *obj);                            /* Optional */
 };
 
 struct ATA_PIO32Interface
@@ -31,12 +30,11 @@ struct ATA_PIO32Interface
 
 struct ATA_DMAInterface
 {
-    BOOL  (*dma_Setup    )(void *obj, APTR buffer, IPTR size, BOOL read);
-    VOID  (*dma_Cleanup  )(void *obj, APTR buffer, IPTR size, BOOL read);
-    VOID  (*dma_Start    )(void *obj);
-    VOID  (*dma_Stop     )(void *obj);
-    BOOL  (*dma_IntStatus)(void *obj);
-    ULONG (*dma_Result   )(void *obj);
+    BOOL  (*dma_Prepare)(void *obj, APTR buffer, IPTR size, BOOL read);
+    VOID  (*dma_Start  )(void *obj);
+    VOID  (*dma_End    )(void *obj, APTR buffer, IPTR size, BOOL read);
+    VOID  (*dma_Reset  )(void *obj);
+    ULONG (*dma_Result )(void *obj);
 };
 
 typedef enum
@@ -59,15 +57,8 @@ typedef enum
    AB_XFER_UDMA5,
    AB_XFER_UDMA6,
 
-   AB_XFER_48BIT,
-   AB_XFER_RWMULTI,
-   AB_XFER_PACKET,
-   AB_XFER_LBA,
-   AB_XFER_DMA,
-
+   AB_XFER_NUM
 } ata_XferMode;
-
-
 
 #include <interface/Hidd_ATABus.h>
 

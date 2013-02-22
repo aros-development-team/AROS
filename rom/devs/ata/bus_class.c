@@ -7,9 +7,8 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
+#include "ata.h"
 #include "bus_class.h"
-#include "interface_pio.h"
-#include "interface_dma.h"
 
 /*****************************************************************************************
 
@@ -47,7 +46,8 @@
         bus, as well as performing PIO-mode 16- and 32-bit data transfers.
         This interface is mandatory and must be implemented by the driver.
 
-        Function table for the interface consists of the following functions:
+        Function table for the interface consists of the following functions
+        (listed in their order in the array):
 
         VOID ata_out(void *obj, UBYTE val, UWORD offset)
         - Write byte into primary register bank with the given offset.
@@ -69,12 +69,10 @@
         - Perform 16-bit PIO data read operation into the given memory
           region of the given size.
 
-        VOID ata_ackInt(void *obj)
-        - Acknowledge PIO interrupt. This routine is optional.
-
         The interface implementation in the driver may include also second
-        function table for 32-bit PIO implementation:
-        
+        function table for 32-bit PIO implementation, currently consisting of
+        two functions:
+
         VOID ata_outsl(void *obj, APTR address, ULONG count)
         - Perform 32-bit PIO data write operation from the given memory
           region of the given size.
@@ -103,17 +101,11 @@
           TRUE for read operation and FALSE for write. The function should
           return TRUE for success or FALSE for failure.
 
-        VOID dma_Cleanup(void *obj, APTR buffer, IPTR size, BOOL read)
-        - Perform post-transfer cleanup of the given region.
-
         VOID dma_Start(void *obj)
         - Start DMA transfer.
 
-        VOID dma_Stop(void *obj)
-        - Stop DMA transfer.
-
-        BOOL dma_IntStatus(void *obj)
-        - To be documented, the design may change.
+        VOID dma_End(void *obj, APTR buffer, IPTR size, BOOL read)
+        - End DMA transfer and perform post-transfer cleanup of the given region.
 
         ULONG dma_Result(void *obj)
         - Get resulting status of the operation. The function should return 0
@@ -350,12 +342,21 @@
         The function shoule be called using "C" calling convention and has the
         following prototype:
         
-            void ata_HandleIRQ(APTR IRQData);
+            void ata_HandleIRQ(UBYTE status, APTR userdata);
         
-        Your driver should pass value of aoHidd_ATABus_IRQData argument to this
-        function.
+        Your driver should pass the following arguments to this function:
+            status   - value read from ATA main status register.
+            userdata - value of aoHidd_ATABus_IRQData attribute.
 
     NOTES
+        Reading drive status register is a part of interrupt acknowledge
+        process, thus it has to be done by the driver.
+
+        It is driver's job to check whether the interrupt really belongs to
+        the IDE bus. A generic way to do this is to test ATAF_BUSY bit of
+        the status register for being zero. However, this may not work
+        reliably with IRQ sharing, so advanced IDE controllers may offer
+        different, better way to do this.
 
     EXAMPLE
 
@@ -396,31 +397,46 @@
 
 OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    o = OOP_DoSuperMethod(cl, o, &msg->mID);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
     if (o)
     {
+        struct ataBase *ATABase = cl->UserData;
         struct ATA_BusData *data = OOP_INST_DATA(cl, o);
         struct TagItem *tstate = msg->attrList;
         struct TagItem *tag;
  
         while ((tag = NextTagItem(&tstate)))
         {
-            if (tag->ti_Tag == aHidd_ATABus_PIODataSize)
+            ULONG idx;
+
+            Hidd_ATABus_Switch(tag->ti_Tag, idx)
+            {
+            case aoHidd_ATABus_PIODataSize:
                 data->pioDataSize = tag->ti_Data;
-            else if (tag->ti_Tag == aHidd_ATABus_DMADataSize)
+                break;
+
+            case aoHidd_ATABus_DMADataSize:
                 data->dmaDataSize = tag->ti_Data;
-            else if (tag->ti_Tag == aHidd_ATABus_PIOVectors)
-                data->pioVectors = tag->ti_Data;
-            else if (tag->ti_Tag == aHidd_ATABus_PIO32Vectors)
-                data->pio32Vectors = tag->ti_Data;
-            else if (tag->ti_Tag == aHidd_ATABus_DMAVectors)
-                data->dmaVectors = tag->ti_Data;
+                break;
+                
+            case aoHidd_ATABus_PIOVectors:
+                data->pioVectors = (struct ATA_PIOInterface *)tag->ti_Data;
+                break;
+            
+            case aoHidd_ATABus_PIO32Vectors:
+                data->pio32Vectors = (struct ATA_PIO32Interface *)tag->ti_Data;
+                break;
+
+            case aoHidd_ATABus_DMAVectors:
+                data->dmaVectors = (APTR *)tag->ti_Data;
+                break;
+            }
         }
     }
     return o;
 }
 
-OOP_Object *ATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+void ATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
 
@@ -434,34 +450,32 @@ OOP_Object *ATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct ataBase *base = cl->cl_UserData;
+    struct ataBase *ATABase = cl->UserData;
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    if (IS_HIDD_ATABUS_ATTR(msg->attrID, idx))
+    Hidd_ATABus_Switch (msg->attrID, idx)
     {
-        switch (idx)
-        {
-        case aoHidd_ATABus_Use80Wire:
-            /* CHECKME: Is there any generic way to check this */
-            *msg->storage = FALSE;
-            return;
+    case aoHidd_ATABus_Use80Wire:
+        /* CHECKME: Is there any generic way to check this ? */
+        *msg->storage = FALSE;
+        return;
 
-        case aoHidd_ATABus_Use32Bit:
-            *msg->storage = data->pio32Vectors ? TRUE : FALSE;
-            return;
+    case aoHidd_ATABus_Use32Bit:
+        *msg->storage = data->pio32Vectors ? TRUE : FALSE;
+        return;
 
-        case aoHidd_ATABus_UseDMA:
-            *msg->storage = data->dmaVectors ? TRUE : FALSE;
-            return;
-        }
+    case aoHidd_ATABus_UseDMA:
+        *msg->storage = data->dmaVectors ? TRUE : FALSE;
+        return;
     }
 
-    OOP_DoSuperMethod(&msg->mID);
+    OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
 void ATABus__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
+    struct ataBase *ATABase = cl->UserData;
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
     struct TagItem *tstate = msg->attrList;
     struct TagItem *tag;
@@ -473,24 +487,21 @@ void ATABus__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             if (data->pio32Vectors)
             {
                 /* Changing mode is done by patching PIO interface's vector table */
+                struct ATA_PIOInterface *vec = data->pioInterface - sizeof(struct ATA_PIOInterface);
+
                 if (tag->ti_Data)
                 {
-                    data->pioInterface->ata_outsw = data->pio32Vectors->ata_outsl;
-                    data->pioInterface->ata_insw  = data->pio32Vectors->ata_insl;
+                    vec->ata_outsw = data->pio32Vectors->ata_outsl;
+                    vec->ata_insw  = data->pio32Vectors->ata_insl;
                 }
                 else
                 {
-                    data->pioInterface->ata_outsw = data->pioVectors->ata_outsw;
-                    data->pioInterface->ata_insw  = data->pioVectors->ata_insw;
+                    vec->ata_outsw = data->pioVectors->ata_outsw;
+                    vec->ata_insw  = data->pioVectors->ata_insw;
                 }
             }
         }
     }
-}
-
-static void default_AckInt(void *obj)
-{
-    /* Nothing to do here in most cases */
 }
 
 static void CopyVectors(APTR *dest, APTR *src, int num)
@@ -547,16 +558,15 @@ static void CopyVectors(APTR *dest, APTR *src, int num)
 
 *****************************************************************************************/
 
-APTR ATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
+APTR ATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
     struct ATA_PIOInterface *vec;
     
-    vec = AllocMem(sizeof(struct ATA_PIOInterface) + data->pioDataSize);
+    vec = AllocMem(sizeof(struct ATA_PIOInterface) + data->pioDataSize, MEMF_PUBLIC);
     if (vec)
     {
-        vec->ata_AckInt = default_AckInt;
-        CopyVectors((APTR *)vec, data->pioVectors,
+        CopyVectors((APTR *)vec, (APTR *)data->pioVectors,
                     sizeof(struct ATA_PIOInterface) / sizeof(APTR));
 
         data->pioInterface = vec;
@@ -609,19 +619,19 @@ APTR ATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *obj, OOP_Ms
 
 *****************************************************************************************/
 
-APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
+APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
     struct ATA_DMAInterface *vec;
 
-    if (!data-dmaVectors)
+    if (!data->dmaVectors)
         return NULL;
-    
-    vec = AllocMem(sizeof(struct ATA_DMAInterface) + data->dmaDataSize);
+
+    vec = AllocMem(sizeof(struct ATA_DMAInterface) + data->dmaDataSize, MEMF_PUBLIC);
     if (vec)
     {
-        CopyVectors((APTR *)vec, data->pioVectors,
-                    sizeof(struct ATA_PIOInterface) / sizeof(APTR));
+        CopyVectors((APTR *)vec, data->dmaVectors,
+                    sizeof(struct ATA_DMAInterface) / sizeof(APTR));
 
         data->dmaInterface = vec;
         return &vec[1];
@@ -638,19 +648,20 @@ APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *obj, OOP_Ms
     SYNOPSIS
 	APTR OOP_DoMethod(OOP_Object *obj, struct pHidd_ATABus_SetXferMode *Msg);
 
-	APTR HIDD_ATABus_SetXferMode(ata_XferMode mode);
+	APTR HIDD_ATABus_SetXferMode(UBYTE unit, ata_XferMode mode);
 
     LOCATION
 	CLID_Hidd_ATABus
 
     FUNCTION
-        Sets the desired transfer mode on the bus controller.
+        Sets the desired transfer mode for the given drive on the bus controller.
 
     INPUTS
-	Mode number (see hidd/ata.h)
+        unit - drive number (0 for master and 1 for slave)
+	mode - Mode number (see hidd/ata.h)
 
     RESULT
-	TRUE if succesful or FALSE if the desired mode is nut supported
+	TRUE if succesful or FALSE if the desired mode is not supported
         by the hardware.
 
     NOTES
@@ -668,10 +679,8 @@ APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *obj, OOP_Ms
 
 *****************************************************************************************/
 
-BOOL ATABus__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
+BOOL ATABus__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *o, struct pHidd_ATABus_SetXferMode *msg)
 {
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
-
     if ((msg->mode >= AB_XFER_MDMA0) && (msg->mode <= AB_XFER_UDMA6))
     {
         /* DMA is not supported, we cannot set DMA modes */
