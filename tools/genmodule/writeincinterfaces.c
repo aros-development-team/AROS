@@ -138,6 +138,17 @@ static void writeincinterface(struct config *cfg, struct interfaceinfo *in)
         );
     }
 
+    fprintf(out,
+            "\n"
+            "#define %s_Switch(attr, idx) \\\n"
+            "if (((idx) = (attr) - %s) < num_%s_Attrs) \\\n"
+            "switch (idx)\n"
+            "\n"
+            , in->interfacename
+            , in->attributebase
+            , in->interfacename
+    );
+    
     if (!in->methodlist)
         goto done;
 
