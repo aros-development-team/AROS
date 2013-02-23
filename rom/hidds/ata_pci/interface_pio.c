@@ -127,11 +127,6 @@ const APTR pio_FuncTable[] =
     ata_in_alt,
     ata_outsw,
     ata_insw,
-    (APTR)-1
-};
-
-const APTR pio32_FuncTable[] =
-{
     ata_outsl,
     ata_insl,
     (APTR *)-1

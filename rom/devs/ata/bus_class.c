@@ -56,7 +56,9 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
     NOTES
         PIO interface is responsible for accessing I/O registers on the IDE
         bus, as well as performing PIO-mode 16- and 32-bit data transfers.
-        This interface is mandatory and must be implemented by the driver.
+        This interface is mandatory and must be implemented by the driver,
+        however some functions are optional. They can be either omitted
+        entirely from the function table, or set to NULL pointers.
 
         Function table for the interface consists of the following functions
         (listed in their order in the array):
@@ -77,21 +79,17 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
         - Perform 16-bit PIO data write operation from the given memory
           region of the given size.
 
-        UBYTE ata_insw(void *obj, APTR address, ULONG count)
+        VOID ata_insw(void *obj, APTR address, ULONG count)
         - Perform 16-bit PIO data read operation into the given memory
           region of the given size.
 
-        The interface implementation in the driver may include also second
-        function table for 32-bit PIO implementation, currently consisting of
-        two functions:
-
         VOID ata_outsl(void *obj, APTR address, ULONG count)
         - Perform 32-bit PIO data write operation from the given memory
-          region of the given size.
+          region of the given size. This function is optional.
 
         UBYTE ata_insl(void *obj, APTR address, ULONG count)
         - Perform 32-bit PIO data read operation into the given memory
-          region of the given size.
+          region of the given size. This function is optional.
 
 *****************************************************************************************/
 /*****************************************************************************************
@@ -278,35 +276,6 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
     BUGS
 
     SEE ALSO
-        aoHidd_ATABus_PIO32Vectors
-
-    INTERNALS
-
-*****************************************************************************************/
-/*****************************************************************************************
-
-    NAME
-        aoHidd_ATABus_PIO32Vectors
-
-    SYNOPSIS
-        [I..], APTR *
-
-    LOCATION
-        CLID_Hidd_ATABus
-
-    FUNCTION
-        Specifies function table for 32-bit PIO transfers. These functions
-        are also part of PIO interface object, however this table is optional.
-        If it is not supplied, the bus is considered 16-bit only.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        aoHidd_ATABus_PIOVectors
 
     INTERNALS
 
@@ -434,10 +403,6 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             case aoHidd_ATABus_PIOVectors:
                 data->pioVectors = (struct ATA_PIOInterface *)tag->ti_Data;
                 break;
-            
-            case aoHidd_ATABus_PIO32Vectors:
-                data->pio32Vectors = (struct ATA_PIO32Interface *)tag->ti_Data;
-                break;
 
             case aoHidd_ATABus_DMAVectors:
                 data->dmaVectors = (APTR *)tag->ti_Data;
@@ -493,7 +458,8 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         return;
 
     case aoHidd_ATABus_Use32Bit:
-        *msg->storage = data->pio32Vectors ? TRUE : FALSE;
+        *msg->storage = (data->pioVectors->ata_outsl &&
+                         data->pioVectors->ata_insl) ? TRUE : FALSE;
         return;
 
     case aoHidd_ATABus_UseDMA:
@@ -502,37 +468,6 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 
     OOP_DoSuperMethod(cl, o, &msg->mID);
-}
-
-void ATABus__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
-{
-    struct ataBase *ATABase = cl->UserData;
-    struct ata_Bus *data = OOP_INST_DATA(cl, o);
-    struct TagItem *tstate = msg->attrList;
-    struct TagItem *tag;
-    
-    while ((tag = NextTagItem(&tstate)))
-    {
-        if (tag->ti_Tag == aHidd_ATABus_Use32Bit)
-        {
-            if (data->pio32Vectors)
-            {
-                /* Changing mode is done by patching PIO interface's vector table */
-                struct ATA_PIOInterface *vec = data->pioInterface - sizeof(struct ATA_PIOInterface);
-
-                if (tag->ti_Data)
-                {
-                    vec->ata_outsw = data->pio32Vectors->ata_outsl;
-                    vec->ata_insw  = data->pio32Vectors->ata_insl;
-                }
-                else
-                {
-                    vec->ata_outsw = data->pioVectors->ata_outsw;
-                    vec->ata_insw  = data->pioVectors->ata_insw;
-                }
-            }
-        }
-    }
 }
 
 static void CopyVectors(APTR *dest, APTR *src, int num)
@@ -594,7 +529,8 @@ APTR ATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
     struct ata_Bus *data = OOP_INST_DATA(cl, o);
     struct ATA_PIOInterface *vec;
     
-    vec = AllocMem(sizeof(struct ATA_PIOInterface) + data->pioDataSize, MEMF_PUBLIC);
+    vec = AllocMem(sizeof(struct ATA_PIOInterface) + data->pioDataSize,
+                   MEMF_PUBLIC|MEMF_CLEAR);
     if (vec)
     {
         CopyVectors((APTR *)vec, (APTR *)data->pioVectors,
@@ -658,7 +594,8 @@ APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
     if (!data->dmaVectors)
         return NULL;
 
-    vec = AllocMem(sizeof(struct ATA_DMAInterface) + data->dmaDataSize, MEMF_PUBLIC);
+    vec = AllocMem(sizeof(struct ATA_DMAInterface) + data->dmaDataSize,
+                   MEMF_PUBLIC|MEMF_CLEAR);
     if (vec)
     {
         CopyVectors((APTR *)vec, data->dmaVectors,
