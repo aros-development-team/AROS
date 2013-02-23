@@ -310,13 +310,16 @@ BOOL HW__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o,
 	callback - A user-supplied hook which will be called for every driver.
         hookMsg  - A user-defined data to be passed to the hook.
 
-        The hool will be called with the following parameters:
+        The hook will be called with the following parameters:
             AROS_UFHA(struct Hook *, hook        , A0)
                 - A pointer to hook structure itself
             AROS_UFHA(OOP_Object * , driverObject, A2)
                 - A device driver object
             AROS_UFHA(APTR         , message     , A1)
                 - User-defined data
+
+        The hook should return FALSE in order to continue enumeration
+        or TRUE in order to stop it.
 
     RESULT
 	None.
@@ -330,6 +333,8 @@ BOOL HW__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o,
     SEE ALSO
 
     INTERNALS
+        The function uses internal semaphore locking. Because of this,
+        it is illegal to attempt to add or remove drivers within the hook.
 
 *****************************************************************************************/
 
@@ -344,7 +349,15 @@ void HW__HW__EnumDrivers(OOP_Class *cl, OOP_Object *o, struct pHW_EnumDrivers *m
     /* For every driver in the system... */
     ForeachNode(&data->drivers, dn)
     {
-        CALLHOOKPKT(msg->callback, dn->driverObject, msg->hookMsg);
+        /*
+         * Explicit cast to BOOL makes it possible to declare the hook as
+         * returning BOOL, not IPTR. BOOL is 16-bit wide, so higher bits
+         * of result may carry random trash.
+         */
+        BOOL stop = CALLHOOKPKT(msg->callback, dn->driverObject, msg->hookMsg);
+
+        if (stop)
+            break;
     }
 
     ReleaseSemaphore(&data->driver_lock);
