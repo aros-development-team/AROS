@@ -36,7 +36,11 @@ AROS_INTH1(ata_PCI_Interrupt, struct ATA_BusData *, data)
 
         /*
          * Acknowledge interrupt (note that the DMA interrupt bit should be
-         * cleared for all interrupt types)
+         * cleared for all interrupt types).
+         * Clear DMA interrupt bit before clearing interrupt by reading status
+         * register. Otherwise, it seems that the DMA bit could get set again
+         * for a new interrupt before we clear it, resulting in a missed interrupt.
+         *              Neil
          */
         outb(dmastatus | DMAF_Error | DMAF_Interrupt, dmaStatusPort);
         status = inb(data->bus->atapb_IOBase + ata_Status);
