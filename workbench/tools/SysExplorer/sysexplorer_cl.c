@@ -28,11 +28,20 @@
 #include "locale.h"
 #include "sysexplorer_cl.h"
 #include "computer_page_cl.h"
+#include "device_page_cl.h"
 
 #define DEBUG 1
 #include <aros/debug.h>
 
 #include <zune/customclasses.h>
+
+// must be same order as groups in the page group
+enum
+{
+    EMPTY_PAGE,
+    COMPUTER_PAGE,
+    DEVICE_PAGE
+};
 
 /*** Instance Data **********************************************************/
 struct SysExplorer_DATA
@@ -43,7 +52,7 @@ struct SysExplorer_DATA
     Object      *vendor_info_txt;
     Object      *page_group;
     Object      *empty_page;
-    Object      *hidd_page;
+    Object      *device_page;
     Object      *computer_page;
     struct Hook enum_hook;
     struct Hook selected_hook;
@@ -89,6 +98,7 @@ AROS_UFH3S(void, enumFunc,
     else
     {
         // leave
+        // we're storing the device handle as userdata in the tree node
         OOP_GetAttr(obj, aHidd_HardwareName, (IPTR *)&name);
         DoMethod(data->tree, MUIM_NListtree_Insert, name, obj,
                  parent, MUIV_NListtree_Insert_PrevNode_Tail, 0);
@@ -114,20 +124,18 @@ AROS_UFH3S(void, selectedFunc,
         if (strcmp("Computer", (*tn)->tn_Name) == 0)
         {
             DoMethod(data->computer_page, MUIM_ComputerPage_Update);
-            SET(data->page_group, MUIA_Group_ActivePage, 1); // computer page
+            SET(data->page_group, MUIA_Group_ActivePage, COMPUTER_PAGE);
         }
         else
         {
-            SET(data->page_group, MUIA_Group_ActivePage, 0); // empty page
+            SET(data->page_group, MUIA_Group_ActivePage, EMPTY_PAGE);
         }
     }
     else
     {
         // leave
-        SET(data->instance_name_txt, MUIA_Text_Contents, (*tn)->tn_Name);
-        SET(data->hardware_description_txt, MUIA_Text_Contents, "FOO");
-        SET(data->vendor_info_txt, MUIA_Text_Contents, "BAR");
-        SET(data->page_group, MUIA_Group_ActivePage, 2); // HIDD page
+        DoMethod(data->device_page, MUIM_DevicePage_Update, (*tn)->tn_User);
+        SET(data->page_group, MUIA_Group_ActivePage, DEVICE_PAGE);
     }
 
     AROS_USERFUNC_EXIT
@@ -136,12 +144,9 @@ AROS_UFH3S(void, selectedFunc,
 static Object *SysExplorer__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
     Object *tree;
-    Object *instance_name_txt;
-    Object *hardware_description_txt;
-    Object *vendor_info_txt;
 
     Object *page_group;
-    Object *hidd_page;
+    Object *device_page;
     Object *computer_page;
     Object *empty_page;
 
@@ -172,23 +177,7 @@ static Object *SysExplorer__OM_NEW(Class *cl, Object *self, struct opSet *msg)
             End),
             Child, (IPTR)(computer_page = ComputerPageObject,
             End),
-            Child, (IPTR)(hidd_page = HGroup,
-                Child, (IPTR)(ColGroup(2),
-                    MUIA_FrameTitle, (IPTR)"HIDD",
-                    GroupFrame,
-                    Child, (IPTR)Label("Driver instance name"),
-                    Child, (IPTR)(instance_name_txt = TextObject,
-                        TextFrame,
-                    End),
-                    Child, (IPTR)Label("Hardware description"),
-                    Child, (IPTR)(hardware_description_txt = TextObject,
-                        TextFrame,
-                    End),
-                    Child, (IPTR)Label("Vendor information"),
-                    Child, (IPTR)(vendor_info_txt = TextObject,
-                        TextFrame,
-                    End),
-                End),
+            Child, (IPTR)(device_page = DevicePageObject,
             End),
         End,
         TAG_MORE, (IPTR)msg->ops_AttrList
@@ -202,12 +191,8 @@ static Object *SysExplorer__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 
         data->page_group = page_group;
         data->empty_page = empty_page;
-        data->hidd_page = hidd_page;
+        data->device_page = device_page;
         data->computer_page = computer_page;
-
-        data->instance_name_txt = instance_name_txt;
-        data->hardware_description_txt = hardware_description_txt;
-        data->vendor_info_txt = vendor_info_txt;
 
         data->enum_hook.h_Entry = enumFunc;
         data->enum_hook.h_Data = data;
