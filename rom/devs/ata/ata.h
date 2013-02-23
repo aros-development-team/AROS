@@ -122,6 +122,15 @@ struct ata_Bus
 {
    struct MinNode          ab_Node;    /* exec node */
    struct ataBase          *ab_Base;   /* device self */
+   /* Bus object data */
+   struct ATA_PIOInterface *pioVectors;     /* General PIO vector table */
+   struct ATA_PIO32Interface *pio32Vectors; /* 32-bit PIO vector table  */
+   APTR                    *dmaVectors;     /* DMA vector table         */
+   ULONG                   pioDataSize;     /* PIO interface data size  */
+   ULONG                   dmaDataSize;     /* DMA interface data size  */
+   void                    *pioInterface;   /* PIO interface object     */
+   void                    *dmaInterface;   /* DMA interface object     */
+
    ULONG                   ab_Port;    /* IO port used */
    ULONG                   ab_Alt;     /* alternate io port */
    UBYTE                   ab_IRQ;     /* IRQ number used */

@@ -8,7 +8,6 @@
 #include <proto/utility.h>
 
 #include "ata.h"
-#include "bus_class.h"
 
 /*****************************************************************************************
 
@@ -401,10 +400,10 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     if (o)
     {
         struct ataBase *ATABase = cl->UserData;
-        struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+        struct ata_Bus *data = OOP_INST_DATA(cl, o);
         struct TagItem *tstate = msg->attrList;
         struct TagItem *tag;
- 
+
         while ((tag = NextTagItem(&tstate)))
         {
             ULONG idx;
@@ -432,13 +431,20 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                 break;
             }
         }
+
+        /*
+         * This pointer is used in thousands of places in ata.device code.
+         * It is a pain to remove it, so i keep it as is.
+         *              Pavel Fedin <p.fedin@mail.ru>
+         */
+        data->ab_Base = ATABase;
     }
     return o;
 }
 
 void ATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct ata_Bus *data = OOP_INST_DATA(cl, o);
 
     if (data->dmaInterface)
     {
@@ -459,7 +465,7 @@ void ATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct ataBase *ATABase = cl->UserData;
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct ata_Bus *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
     Hidd_ATABus_Switch (msg->attrID, idx)
@@ -484,7 +490,7 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 void ATABus__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct ataBase *ATABase = cl->UserData;
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct ata_Bus *data = OOP_INST_DATA(cl, o);
     struct TagItem *tstate = msg->attrList;
     struct TagItem *tag;
     
@@ -568,7 +574,7 @@ static void CopyVectors(APTR *dest, APTR *src, int num)
 
 APTR ATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct ata_Bus *data = OOP_INST_DATA(cl, o);
     struct ATA_PIOInterface *vec;
     
     vec = AllocMem(sizeof(struct ATA_PIOInterface) + data->pioDataSize, MEMF_PUBLIC);
@@ -629,7 +635,7 @@ APTR ATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
 
 APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct ata_Bus *data = OOP_INST_DATA(cl, o);
     struct ATA_DMAInterface *vec;
 
     if (!data->dmaVectors)
@@ -736,7 +742,7 @@ BOOL ATABus__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 void ATABus__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg *msg)
 {
-    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct ata_Bus *data = OOP_INST_DATA(cl, o);
 
     if (data->pioInterface)
     {
