@@ -166,7 +166,7 @@ void PCIATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     OOP_DoSuperMethod(cl, o, msg);
 }
 
-void PCIATA__ATABus__Root_Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+void PCIATA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct ataBase *base = cl->UserData;
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
@@ -190,7 +190,7 @@ void PCIATA__ATABus__Root_Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *ms
     OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
-APTR PCIATA__ATA__ATA_GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+APTR PCIATA__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
     struct pio_data *pio = (struct pio_data *)OOP_DoSuperMethod(cl, o, msg);
@@ -204,7 +204,7 @@ APTR PCIATA__ATA__ATA_GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     return pio;
 }
 
-APTR PCIATA__ATA__ATA_GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+APTR PCIATA__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
     struct dma_data *dma;
@@ -227,7 +227,7 @@ APTR PCIATA__ATA__ATA_GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     return dma;
 }
 
-BOOL PCIATA__ATA__ATA_SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
+BOOL PCIATA__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
 {
 #if 0
     /*
@@ -275,4 +275,18 @@ BOOL PCIATA__ATA__ATA_SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg)
 #endif
 
     return TRUE;
+}
+
+void PCIATA__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    port_t dmaBase = data->bus->atapb_DMABase;
+
+    if (dmaBase)
+    {
+        outb(inb(dma_Command + dmaBase) & ~DMA_START, dma_Command + dmaBase);
+        outl(0, dma_PRD + dmaBase);
+    }
+
+    OOP_DoSuperMethod(cl, o, msg);
 }
