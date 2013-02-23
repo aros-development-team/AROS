@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PCI bus driver for ata.device
@@ -302,6 +302,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
      * enumerator params
      */
     EnumeratorArgs *a = hook->h_Data;
+    struct ataBase *ATABase = a->ATABase;
 
     /*
      * the PCI Attr Base
@@ -426,7 +427,7 @@ static const struct TagItem Requirements[] =
     {TAG_DONE,        0x00		   }
 };
 
-static int ata_pci_Scan(struct ataBase *base)
+static int ata_pci_Scan(struct ataBase *ATABase)
 {
     OOP_Object *pci;
     struct ata_LegacyBus *_legacybus;
@@ -459,14 +460,14 @@ static int ata_pci_Scan(struct ataBase *base)
     }
 
     /* Obtain additional parameters */
-    if (base->ata_CmdLine)
+    if (ATABase->ata_CmdLine)
     {
-        if (strstr(base->ata_CmdLine, "nopci"))
+        if (strstr(ATABase->ata_CmdLine, "nopci"))
         {
             D(bug("[PCI-ATA] ata_init: Disabling PCI device scan\n"));
             scanpci = FALSE;
         }
-        if (strstr(base->ata_CmdLine, "nolegacy"))
+        if (strstr(ATABase->ata_CmdLine, "nolegacy"))
         {
             D(bug("[PCI-ATA] ata_init: Disabling Legacy ports\n"));
             scanlegacy = FALSE;
@@ -479,7 +480,7 @@ static int ata_pci_Scan(struct ataBase *base)
     {
 	D(bug("[PCI-ATA] ata_Scan: Checking for supported PCI devices ..\n"));
 
-    	Args.ATABase                 = base;
+    	Args.ATABase                 = ATABase;
     	Args.HiddPCIDriverMethodBase = 0;
 	Args.HiddPCIDeviceAttrBase   = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
 
@@ -540,7 +541,7 @@ static int ata_pci_Scan(struct ataBase *base)
     while ((probedbus = (struct ata_ProbedBus *)RemHead(&Args.probedbuses)) != NULL)
     {
 	/*
-	 * 0xe8000000 here is a temporary kludge for SAM440 port. It's base address
+	 * 0xe8000000 here is a temporary kludge for SAM440 port. It's ATABase address
 	 * of memory-mapped ISA I/O space.
 	 * In fact our PCI subsystem needs an attribute to be able to query this value.
 	 * We don't use definition from asm/amcc440.h because this file is available
@@ -549,7 +550,7 @@ static int ata_pci_Scan(struct ataBase *base)
 	 */
 	ata_RegisterBus(probedbus->atapb_IOBase, probedbus->atapb_IOAlt, probedbus->atapb_INTLine,
 			probedbus->atapb_DMABase, probedbus->atapb_80wire ? ARBF_80Wire : 0,
-			&pci_driver, (APTR)0xe8000000, base);
+			&pci_driver, (APTR)0xe8000000, ATABase);
 
 	FreeMem(probedbus, sizeof(struct ata_ProbedBus));
     }
