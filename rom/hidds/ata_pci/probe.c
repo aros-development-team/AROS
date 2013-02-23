@@ -8,12 +8,15 @@
 
 #define DSATA(x)
 
+#define __OOP_NOMETHODBASES__
+
 #include <aros/asmcall.h>
 #include <aros/bootloader.h>
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <asm/io.h>
 #include <exec/lists.h>
+#include <exec/rawfmt.h>
 #include <hardware/ahci.h>
 #include <hidd/ata.h>
 #include <hidd/pci.h>
@@ -93,7 +96,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     IPTR ProductID, VendorID, DMABase, DMASize, INTLine;
     IPTR IOBase, IOAlt, IOSize, AltSize, SubClass, Interface;
     int x;
-    STRPTR owner;
+    CONST_STRPTR owner;
 
     /*
      * obtain more or less useful data
@@ -142,14 +145,6 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
         OOP_GetAttr(Device, aHidd_PCIDevice_Size5, &hba_size);
 
         DSATA(bug("[PCI-ATA] Device %04x:%04x is a SATA device, HBA 0x%p, size 0x%p\n", VendorID, ProductID, hba_phys, hba_size));
-
-        /*
-         * Obtain PCIDriver method base (lazy).
-         * Methods are numbered subsequently, the same as attributes. This means
-         * we can use the same mechanism for them (get base value and add offsets).
-         */
-        if (!base->PCIDriverMethodBase)
-            base->PCIDriverMethodBase = OOP_GetMethodID(IID_Hidd_PCIDriver, 0);
 
         hwhba = HIDD_PCIDriver_MapPCI(Driver, hba_phys, hba_size);
         DSATA(bug("[PCI-ATA] Mapped at 0x%p\n", hwhba));
@@ -251,7 +246,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
             mmio_outl_le(0, &hwhba->ghc);
         }
 
-        HIDD_PCIDriver_UnmapPCI(Driver, hwhba, hba_size);
+        HIDD_PCIDriver_UnmapPCI(Driver, (APTR)hwhba, hba_size);
     }
     
     /*
@@ -291,9 +286,9 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
             OOP_GetAttr(Driver, aHidd_PCIDriver_IOBase, &isa_io_base);
             D(bug("[PCI-ATA] Device using Legacy-Bus IOPorts @ 0x%p\n", isa_io_base));
 
-            IOBase   = LegacyBuses[base->legacycount].lb_IOBase + isa_io_base;
-            IOAlt    = LegacyBuses[base->legacycount].lb_IOAlt  + isa_io_base;
-            INTLine  = LegacyBuses[base->legacycount].lb_INTLine;
+            IOBase   = LegacyBuses[base->legacycount].lb_Port + isa_io_base;
+            IOAlt    = LegacyBuses[base->legacycount].lb_Alt  + isa_io_base;
+            INTLine  = LegacyBuses[base->legacycount].lb_IRQ;
             basePri  = ATABUSNODEPRI_PROBEDLEGACY;
             IOSize   = RANGESIZE0;
             AltSize  = RANGESIZE1;
@@ -311,7 +306,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
         {
             struct ata_ProbedBus *probedbus;
             STRPTR subclass;
-            int class_len, sub_len;
+            int len;
 
             D(bug("[PCI-ATA] ata_PCIEnumerator_h: Adding Bus %d - IRQ %d, IO: %x:%x, DMA: %x\n",
                   x, INTLine, IOBase, IOAlt, DMABase));
@@ -319,15 +314,15 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
             OOP_GetAttr(Device, aHidd_PCIDevice_SubClassDesc, (IPTR *)&subclass);
             len = 16 + strlen(subclass);
 
-            probedbus = AllocVec(sizeof(struct ata_ProbedBus) + len, MEMF_ANY)
+            probedbus = AllocVec(sizeof(struct ata_ProbedBus) + len, MEMF_ANY);
             if (probedbus)
             {
                 STRPTR name = (char *)probedbus + sizeof(struct ata_ProbedBus);
 
-                RawDoFmt("PCI %s controller", str, RAWFMTFUNC_STRING, name);
+                RawDoFmt("PCI %s controller", &subclass, RAWFMTFUNC_STRING, name);
 
                 probedbus->atapb_Node.ln_Name = name;
-                probedbus->atapb_Node.ln_Pri  = basePri - (a->ata__buscount++);
+                probedbus->atapb_Node.ln_Pri  = basePri - (base->ata__buscount++);
                 probedbus->atapb_Device       = Device;
                 probedbus->atapb_Vendor       = VendorID;
                 probedbus->atapb_Product      = ProductID;
@@ -336,7 +331,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                 probedbus->atapb_INTLine      = INTLine;
                 probedbus->atapb_DMABase      = DMABase ? DMABase + (x << 3) : 0;
 
-                Enqueue((struct List *)&a->probedbuses, &probedbus->atapb_Node);
+                Enqueue((struct List *)&base->probedbuses, &probedbus->atapb_Node);
 
                 OOP_SetAttrsTags(Device, aHidd_PCIDevice_isIO, TRUE,
                                          aHidd_PCIDevice_isMaster, DMABase != 0,
@@ -352,28 +347,48 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     AROS_USERFUNC_EXIT
 }
 
+static CONST_STRPTR pciInterfaceIDs[] =
+{
+    IID_Hidd_PCI,
+    IID_Hidd_PCIDevice,
+    IID_Hidd_PCIDriver,
+    NULL
+};
+
+/* We need no attributes for IID_Hidd_PCI, only methods */
+#define ATTR_OFFSET 1
+
 static const struct TagItem Requirements[] =
 {
     {tHidd_PCI_Class, PCI_CLASS_MASSSTORAGE},
     {TAG_DONE,        0x00                 }
 };
 
+/*
+ * The manner in which this code is written can look a little bit overcomplicated.
+ * However it's just experimental attempt to write hardware scan routine which
+ * can be ran more than once, and is hotplug-aware.
+ * In future this may assist implementation of "Rescan devices" functionality
+ * in SysExplorer (for example). This will provide a possibility to load and unload
+ * device drivers on the fly.
+ * For now it's just experiment... Don't pay much attention please. :)
+ */
 static int ata_pci_Scan(struct ataBase *base)
 {
-    OOP_Object *ata = OOP_NewObject(NULL, CLID_HW_Ata, NULL);
+    OOP_Object *ata = OOP_NewObject(NULL, CLID_HW_ATA, NULL);
     APTR BootLoaderBase;
     struct ata_ProbedBus *probedbus;
     BOOL scanpci    = TRUE;
 #ifdef SUPPORT_LEGACY
     BOOL scanlegacy = TRUE;
 #endif
-    int i;
 
+    /* First make sure that ATA subsystem is in place */
     if (!ata)
         return FALSE;
-    
+
     /* Prepare lists for probed/found ide buses */
-    NEWLIST(&base.probedbuses);
+    NEWLIST(&base->probedbuses);
     base->ata__buscount = 0;
     base->legacycount   = 0;
 
@@ -394,13 +409,13 @@ static int ata_pci_Scan(struct ataBase *base)
                 {
                     const char *cmdline = &node->ln_Name[4];
 
-                    if (strstr(base->ata_CmdLine, "nopci"))
+                    if (strstr(cmdline, "nopci"))
                     {
                         D(bug("[PCI-ATA] Disabling PCI device scan\n"));
                         scanpci = FALSE;
                     }
 #ifdef SUPPORT_LEGACY
-                    if (strstr(base->ata_CmdLine, "nolegacy"))
+                    if (strstr(cmdline, "nolegacy"))
                     {
                         D(bug("[PCI-ATA] Disabling Legacy ports\n"));
                         scanlegacy = FALSE;
@@ -413,20 +428,34 @@ static int ata_pci_Scan(struct ataBase *base)
 
     D(bug("[PCI-ATA] ata_Scan: Enumerating devices\n"));
 
-    if (scanpci && base->PCIDeviceAttrBase && base->PCIDriverAttrBase)
+    if (scanpci)
     {
+        /*
+         * Attempt to get PCI subsytem object.
+         * If this fails, PCI isn't there. But it's not fatal for us.
+         */
         OOP_Object *pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-        OOP_MethodID PCIBase = OOP_GetMethodID(IID_Hidd_PCI, 0);
 
         if (pci)
         {
             struct Hook FindHook =
             {
-                .h_Entry: (IPTR (*)())ata_PCIEnumerator_h,
-                .h_Data : base
+                .h_Entry = (IPTR (*)())ata_PCIEnumerator_h,
+                .h_Data  = base
             };
 
             D(bug("[PCI-ATA] ata_Scan: Checking for supported PCI devices ..\n"));
+
+            /*
+             * Obtain PCI attribute and method bases only once.
+             * We perform no result checks, because since PCI subsystem is in place,
+             * its attribute and method bases are also 100% in place.
+             */
+            if (!base->PCIDeviceAttrBase)
+            {
+                OOP_ObtainAttrBasesArray(&base->PCIDeviceAttrBase, &pciInterfaceIDs[ATTR_OFFSET]);
+                OOP_ObtainMethodBasesArray(&base->PCIMethodBase, pciInterfaceIDs);
+            }
 
             HIDD_PCI_EnumDevices(pci, &FindHook, Requirements);
         }
@@ -444,20 +473,20 @@ static int ata_pci_Scan(struct ataBase *base)
             probedbus = AllocVec(sizeof(struct ata_ProbedBus), MEMF_ANY);
             if (probedbus)
             {
-                probedbus->atapb_Node.ln_Name = legacyBuses[n].lb_Name;
-                probedbus->atapb_Node.ln_Pri  = ATABUSNODEPRI_LEGACY - (Args.ata__buscount++);
+                probedbus->atapb_Node.ln_Name = (STRPTR)LegacyBuses[n].lb_Name;
+                probedbus->atapb_Node.ln_Pri  = ATABUSNODEPRI_LEGACY - (base->ata__buscount++);
                 probedbus->atapb_Device       = NULL;
                 probedbus->atapb_Vendor       = 0;
                 probedbus->atapb_Product      = 0;
-                probedbus->atapb_IOBase       = LegacyBuses[n].lb_IOBase;
-                probedbus->atapb_IOAlt        = LegacyBuses[n].lb_IOAlt;
-                probedbus->atapb_INTLine      = legacybus->atalb_INTLine;
+                probedbus->atapb_IOBase       = LegacyBuses[n].lb_Port;
+                probedbus->atapb_IOAlt        = LegacyBuses[n].lb_Alt;
+                probedbus->atapb_INTLine      = LegacyBuses[n].lb_IRQ;
                 probedbus->atapb_DMABase      = 0;
 
                 D(bug("[PCI-ATA] ata_Scan: Adding Legacy Bus - IO: %x:%x\n",
                       probedbus->atapb_IOBase, probedbus->atapb_IOAlt));
 
-                Enqueue(&Args.probedbuses, &probedbus->atapb_Node);
+                Enqueue((struct List *)&base->probedbuses, &probedbus->atapb_Node);
             }
             n++;
         }
@@ -466,24 +495,25 @@ static int ata_pci_Scan(struct ataBase *base)
 
     D(bug("[PCI-ATA] ata_Scan: Registering Probed Buses..\n"));
 
-    while ((probedbus = (struct ata_ProbedBus *)RemHead(&Args.probedbuses)) != NULL)
+    HWBase = OOP_GetMethodID(IID_HW, 0);
+    while ((probedbus = (struct ata_ProbedBus *)RemHead((struct List *)&base->probedbuses)) != NULL)
     {
         struct TagItem attrs[] =
         {
-            {aHidd_HardwareName       , probedbus->atapb_Node.ln_Name},
-            {aHidd_Producer           , probedbus->atapb_Vendor      },
-            {aHidd_Product            , probedbus->atapb_Product     },
-            {aHidd_DriverData         , probedbus                    },
-            {aHidd_ATABus_PIODataSize , sizeof(struct pio_data)      },
-            {aHidd_ATABus_PIOVectors  , pio_FuncTable                },
-            {aHidd_ATABus_PIO32Vectors, pio32_FuncTable              },
-            {aHidd_ATABus_DMADataSize , sizeof(struct dma_data)      },
-            {aHidd_ATABus_DMAVectors  , dma_FuncTable                },
-            {TAG_DONE                 , 0                            }
+            {aHidd_HardwareName       , (IPTR)probedbus->atapb_Node.ln_Name},
+            {aHidd_Producer           , probedbus->atapb_Vendor            },
+            {aHidd_Product            , probedbus->atapb_Product           },
+            {aHidd_DriverData         , (IPTR)probedbus                    },
+            {aHidd_ATABus_PIODataSize , sizeof(struct pio_data)            },
+            {aHidd_ATABus_PIOVectors  , (IPTR)pio_FuncTable                },
+            {aHidd_ATABus_PIO32Vectors, (IPTR)pio32_FuncTable              },
+            {aHidd_ATABus_DMADataSize , sizeof(struct dma_data)            },
+            {aHidd_ATABus_DMAVectors  , (IPTR)dma_FuncTable                },
+            {TAG_DONE                 , 0                                  }
         };
         OOP_Object *bus;
 
-        bus = HW_AddDriver(NULL, base->busClass, attrs);
+        bus = HW_AddDriver(ata, base->busClass, attrs);
         if (!bus)
         {
             D(bug("[PCI-ATA] Failed to create object for device %04X:%04X - IRQ %d, IO: %x:%x, DMA: %x\n",

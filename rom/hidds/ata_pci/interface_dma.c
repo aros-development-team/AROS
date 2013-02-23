@@ -7,7 +7,6 @@
 */
 
 #include <aros/debug.h>
-#include <aros/libcall.h>
 #include <devices/scsidisk.h>
 #include <exec/exec.h>
 #include <proto/exec.h>
@@ -100,14 +99,8 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
     return items;
 }
 
-AROS_LH3(BOOL, dma_SetupPRDSize,
-         AROS_LHA(APTR, buffer, A0),
-         AROS_LHA(IPTR, size, D0),
-         AROS_LHA(BOOL, read, D1),
-         struct dma_data *, unit, 1, ADMA)
+BOOL dma_SetupPRDSize(struct dma_data *unit, APTR buffer, IPTR size, BOOL read)
 {
-    AROS_LIBFUNC_INIT
-
     LONG items = 0;
     IPTR prd_phys;
     ULONG length;
@@ -119,27 +112,23 @@ AROS_LH3(BOOL, dma_SetupPRDSize,
 
     length = items * sizeof(struct PRDEntry);
 
-    prd_phys = (IPTR)CachePreDMA(data->ab_PRD, &length, DMA_ReadFromRAM);
+    prd_phys = (IPTR)CachePreDMA(unit->ab_PRD, &length, DMA_ReadFromRAM);
 
     outl(prd_phys, dma_PRD + unit->au_DMAPort);
     outb(read ? DMA_WRITE : DMA_READ, dma_Command + unit->au_DMAPort); /* inverse logic */
 
     return TRUE;
-
-    AROS_LIBFUNC_EXIT
 }
 
-AROS_LH3(BOOL, dma_Cleanup,
-         AROS_LHA(APTR, addr, A0),
-         AROS_LHA(IPTR, len, D0),
-         AROS_LHA(BOOL, read, D1),
-         struct dma_data *, unit, 2, ADMA)
+void dma_Cleanup(struct dma_data *unit, APTR addr, IPTR len, BOOL read)
 {
-    AROS_LIBFUNC_INIT
+    ULONG tmp, flg;
+    port_t port = dma_Command + unit->au_DMAPort;
 
-    ULONG tmp = 0;
-    ULONG flg = read ? DMA_ReadFromRAM : 0;
+    /* Stop DMA engine */
+    outb(inb(port) & ~DMA_START, port);
 
+    flg = read ? DMA_ReadFromRAM : 0;
     while (len > 0)
     {
         tmp = len;
@@ -148,72 +137,27 @@ AROS_LH3(BOOL, dma_Cleanup,
         len -= tmp;
         flg |= DMA_Continue;
     }
-
-    AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(VOID, dma_StartDMA,
-         struct dma_data *, unit, 3, ADMA)
+VOID dma_StartDMA(struct dma_data *unit)
 {
-    AROS_LIBFUNC_INIT
-
     port_t port = dma_Command + unit->au_DMAPort;
 
     outb(inb(port) | DMA_START, port);
-
-    AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(VOID, dma_StopDMA,
-         struct dma_data *, unit, 4, ADMA)
+ULONG dma_CheckErr(struct dma_data *unit)
 {
-    AROS_LIBFUNC_INIT
-
-    /* Nothing to do here for ADMA */
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0(BOOL, dma_CheckInt,
-         struct dma_data *, unit, 5, ADMA)
-{
-    AROS_LIBFUNC_INIT
-
-    UBYTE status = inb(dma_Status + unit->au_DMAPort);
-    
-    if (status & DMAF_Interrupt)
-    {
-        /* Interrupt received, acknowledge it */
-        outb(status | DMAF_Error | DMAF_Interrupt, dma_Status + unit->au_DMAPort);
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0(ULONG, dma_CheckErr,
-         struct dma_data *, unit, 5, ADMA)
-{
-    AROS_LIBFUNC_INIT
-
     UBYTE stat = inb(dma_Status + unit->au_DMAPort);
 
     return (stat & DMAF_Error) ? HFERR_DMA : 0;
-
-    AROS_LIBFUNC_EXIT
 }
 
 const APTR dma_FuncTable[]=
 {
-    AROS_SLIB_ENTRY(dma_Setup   , ADMA, 1),
-    AROS_SLIB_ENTRY(dma_Cleanup , ADMA, 2),
-    AROS_SLIB_ENTRY(dma_StartDMA, ADMA, 3),
-    AROS_SLIB_ENTRY(dma_StopDMA , ADMA, 4),
-    AROS_SLIB_ENTRY(dma_CheckInt, ADMA, 5),
-    AROS_SLIB_ENTRY(dma_CheckErr, ADMA, 6),
+    dma_Setup,
+    dma_StartDMA,
+    dma_Cleanup,
+    dma_CheckErr,
     (APTR)-1
 };

@@ -1,3 +1,5 @@
+#define MAX_DEVICEBUSES 2
+
 struct ata_ProbedBus
 {
     struct Node atapb_Node;
@@ -15,6 +17,9 @@ struct ATA_BusData
     struct ata_ProbedBus *bus;
     OOP_Object           *pciDriver;
     APTR                  dmaBuf;
+    void                (*ata_HandleIRQ)(UBYTE, APTR);
+    APTR                  irqData;
+    APTR                  irqHandle;
 };
 
 struct ataBase
@@ -29,7 +34,12 @@ struct ataBase
 
     OOP_AttrBase    PCIDeviceAttrBase;
     OOP_AttrBase    PCIDriverAttrBase;
+    OOP_AttrBase    hiddAttrBase;
+    OOP_AttrBase    ATABusAttrBase;
+    OOP_MethodID    PCIMethodBase;
+    OOP_MethodID    PCIDeviceMethodBase;
     OOP_MethodID    PCIDriverMethodBase;
+    OOP_MethodID    HWMethodBase;
 
     APTR            cs_KernelBase;
     struct Library *cs_OOPBase;
@@ -38,10 +48,20 @@ struct ataBase
 
 #undef HiddPCIDeviceAttrBase
 #undef HiddPCIDriverAttrBase
-#undef PCIDriverBase
+#undef HiddAttrBase
+#undef HiddATABusAB
+#undef HiddPCIBase
+#undef HiddPCIDeviceBase
+#undef HiddPCIDriverBase
+#undef HWBase
 #define HiddPCIDeviceAttrBase (base->PCIDeviceAttrBase)
 #define HiddPCIDriverAttrBase (base->PCIDriverAttrBase)
-#define PCIDriverBase         (base->PCIDriverMethodBase)
+#define HiddAttrBase          (base->hiddAttrBase)
+#define HiddATABusAB          (base->ATABusAttrBase)
+#define HiddPCIBase           (base->PCIMethodBase)
+#define HiddPCIDeviceBase     (base->PCIDeviceMethodBase)
+#define HiddPCIDriverBase     (base->PCIDriverMethodBase)
+#define HWBase                (base->HWMethodBase)
 #define KernelBase            (base->cs_KernelBase)
 #define OOPBase               (base->cs_OOPBase)
 #define UtilityBase           (base->cs_UtilityBase)
