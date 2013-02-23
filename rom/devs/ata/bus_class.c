@@ -9,6 +9,19 @@
 
 #include "ata.h"
 
+static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
+{
+    AROS_INTFUNC_INIT
+
+    struct ataBase *ATABase = bus->ab_Base;
+    OOP_Object *obj = (void *)bus - ATABase->ataClass->InstOffset;
+
+    HIDD_ATABus_Shutdown(obj);
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
 /*****************************************************************************************
 
     NAME
@@ -432,12 +445,14 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             }
         }
 
-        /*
-         * This pointer is used in thousands of places in ata.device code.
-         * It is a pain to remove it, so i keep it as is.
-         *              Pavel Fedin <p.fedin@mail.ru>
-         */
+        /* Cache device base pointer. Useful. */
         data->ab_Base = ATABase;
+
+        /* Install reset callback */
+        data->ab_ResetInt.is_Node.ln_Name = ATABase->ata_Device.dd_Library.lib_Node.ln_Name;
+        data->ab_ResetInt.is_Code         = (VOID_FUNC)ataBus_Reset;
+        data->ab_ResetInt.is_Data         = data;
+        AddResetCallback(&data->ab_ResetInt);
     }
     return o;
 }
@@ -445,6 +460,8 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 void ATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct ata_Bus *data = OOP_INST_DATA(cl, o);
+
+    RemResetCallback(&data->ab_ResetInt);
 
     if (data->dmaInterface)
     {

@@ -337,6 +337,9 @@ static int ata_init(struct ataBase *ATABase)
     if (OOP_ObtainAttrBasesArray(&ATABase->hwAttrBase, attrBaseIDs))
         return FALSE;
 
+    /* This is our own method base, so no check needed */
+    ATABase->ataMethodBase = OOP_GetMethodID(IID_Hidd_ATABus, 0);
+
     hwRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
     if (!hwRoot)
         return FALSE;
