@@ -1,10 +1,12 @@
 /*
-    Copyright © 2004-2012, The AROS Development Team. All rights reserved
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
     Lang: English
 */
+
+#define __OOP_NOMETHODBASES__
 
 #include <aros/bootloader.h>
 #include <aros/debug.h>
@@ -14,6 +16,7 @@
 #include <exec/tasks.h>
 #include <exec/memory.h>
 #include <exec/nodes.h>
+#include <hidd/hidd.h>
 #include <utility/utility.h>
 #include <libraries/expansion.h>
 #include <libraries/configvars.h>
@@ -25,6 +28,7 @@
 #include <proto/timer.h>
 #include <proto/bootloader.h>
 #include <proto/expansion.h>
+#include <proto/oop.h>
 
 #include <string.h>
 
@@ -300,12 +304,22 @@ static int ata_Scan(struct ataBase *base)
     return TRUE;
 }
 
+/* Keep order the same as order of IDs in struct ataBase! */
+static CONST_STRPTR attrBaseIDs[] =
+{
+    IID_HW,
+    IID_Hidd_ATABus,
+    NULL
+};
+
 /*
     Here shall we start. Make function static as it shouldn't be visible from
     outside.
 */
-static int ata_init(LIBBASETYPEPTR LIBBASE)
+static int ata_init(struct ataBase *ATABase)
 {
+    OOP_Object *hwRoot;
+    OOP_MethodID HWBase;
     struct BootLoaderBase	*BootLoaderBase;
 
     D(bug("[ATA--] ata_init: ata.device Initialization\n"));
@@ -314,18 +328,29 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
      * I've decided to use memory pools again. Alloc everything needed from 
      * a pool, so that we avoid memory fragmentation.
      */
-    LIBBASE->ata_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
-    if (LIBBASE->ata_MemPool == NULL)
+    ATABase->ata_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
+    if (ATABase->ata_MemPool == NULL)
         return FALSE;
 
-    D(bug("[ATA--] ata_init: MemPool @ %p\n", LIBBASE->ata_MemPool));
+    D(bug("[ATA--] ata_init: MemPool @ %p\n", ATABase->ata_MemPool));
+
+    if (OOP_ObtainAttrBasesArray(&ATABase->hwAttrBase, attrBaseIDs))
+        return FALSE;
+
+    hwRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+    if (!hwRoot)
+        return FALSE;
+
+    HWBase = OOP_GetMethodID(IID_HW, 0);
+    if (!HW_AddDriver(hwRoot, ATABase->ataClass, NULL))
+        return FALSE;
 
     /* Set default ata.device config options */
-    LIBBASE->ata_32bit   = FALSE;
-    LIBBASE->ata_NoMulti = FALSE;
-    LIBBASE->ata_NoDMA   = FALSE;
-    LIBBASE->ata_Poll    = FALSE;
-    LIBBASE->ata_CmdLine = NULL;
+    ATABase->ata_32bit   = FALSE;
+    ATABase->ata_NoMulti = FALSE;
+    ATABase->ata_NoDMA   = FALSE;
+    ATABase->ata_Poll    = FALSE;
+    ATABase->ata_CmdLine = NULL;
 
     /*
      * start initialization: 
@@ -349,27 +374,27 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
                      * Remember the entire command line.
                      * Bus drivers (for example PCI one) may want it.
                      */
-                    LIBBASE->ata_CmdLine = &node->ln_Name[4];
+                    ATABase->ata_CmdLine = &node->ln_Name[4];
 
-                    if (strstr(LIBBASE->ata_CmdLine, "32bit"))
+                    if (strstr(ATABase->ata_CmdLine, "32bit"))
                     {
                         D(bug("[ATA  ] ata_init: Using 32-bit IO transfers\n"));
-                        LIBBASE->ata_32bit = TRUE;
+                        ATABase->ata_32bit = TRUE;
                     }
-		    if (strstr(LIBBASE->ata_CmdLine, "nomulti"))
+		    if (strstr(ATABase->ata_CmdLine, "nomulti"))
 		    {
 			D(bug("[ATA  ] ata_init: Disabled multisector transfers\n"));
-			LIBBASE->ata_NoMulti = TRUE;
+			ATABase->ata_NoMulti = TRUE;
 		    }
-                    if (strstr(LIBBASE->ata_CmdLine, "nodma"))
+                    if (strstr(ATABase->ata_CmdLine, "nodma"))
                     {
                         D(bug("[ATA  ] ata_init: Disabled DMA transfers\n"));
-                        LIBBASE->ata_NoDMA = TRUE;
+                        ATABase->ata_NoDMA = TRUE;
                     }
-                    if (strstr(LIBBASE->ata_CmdLine, "poll"))
+                    if (strstr(ATABase->ata_CmdLine, "poll"))
                     {
                         D(bug("[ATA  ] ata_init: Using polling to detect end of busy state\n"));
-                        LIBBASE->ata_Poll = TRUE;
+                        ATABase->ata_Poll = TRUE;
                     }
                 }
             }
@@ -377,7 +402,28 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     }
 
     /* Initialize BUS list */
-    NEWLIST(&LIBBASE->ata_Buses);
+    NEWLIST(&ATABase->ata_Buses);
+
+    return TRUE;
+}
+
+static int ata_expunge(struct ataBase *ATABase)
+{
+    if (ATABase->ataObj)
+    {
+        /*
+         * CLID_HW is a singletone, you can get it as many times as you want.
+         * Here we save up some space in struct ataBase by obtaining hwclass
+         * object and its MethodBase only when we need it. This happens rarely,
+         * so small performance loss is OK here.
+         */
+        OOP_Object *hwRoot = OOP_NewObject(NULL, CLID_HW, NULL);
+        OOP_MethodID HWBase = OOP_GetMethodID(IID_HW, 0);
+
+        HW_RemoveDriver(hwRoot, ATABase->ataObj);
+    }
+
+    OOP_ReleaseAttrBasesArray(&ATABase->hwAttrBase, attrBaseIDs);
 
     return TRUE;
 }
@@ -461,6 +507,7 @@ static int close
 }
 
 ADD2INITLIB(ata_init, 0)
+ADD2EXPUNGELIB(ata_expunge, 0)
 ADD2INITLIB(ata_Scan, 127)
 ADD2OPENDEV(open, 0)
 ADD2CLOSEDEV(close, 0)

@@ -1,8 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# allow override of ata.h in arch-specific directory
-USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/devs/ata -I$(SRCDIR)/rom/devs/ata
+INCLUDE_FILES := $(call WILDCARD, include/hardware/*.h)
+%copy_includes path=hardware dir=include/hardware
+
+INCLUDE_FILES := $(call WILDCARD, include/hidd/*.h)
+%copy_includes path=hidd dir=include/hidd
 
 BUS_DRIVERS := bus_pci
 
@@ -14,7 +17,9 @@ endif
 
 USER_CFLAGS += -D__TIMER_NOLIBBASE__
 
+CLASSES := ata_class bus_class
+
 %build_module mmake=kernel-ata \
   modname=ata modtype=device version=$(AROS_TARGET_PLATFORM) \
-  files="ata_init lowlevel ata dma_generic timer scsiemu $(BUS_DRIVERS)" \
+  files="ata_init lowlevel ata dma_generic timer scsiemu $(CLASSES) $(BUS_DRIVERS)" \
   uselibs="oop"

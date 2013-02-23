@@ -9,12 +9,14 @@
     Lang: English
 */
 
-#include <exec/types.h>
+#define __OOP_NOMETHODBASES__
+
 #include <exec/devices.h>
 #include <exec/semaphores.h>
 #include <exec/execbase.h>
 #include <exec/libraries.h>
 #include <exec/ports.h>
+#include <oop/oop.h>
 #include <utility/utility.h>
 #include <exec/io.h>
 #include <exec/errors.h>
@@ -23,6 +25,8 @@
 #include <devices/newstyle.h>
 #include <devices/timer.h>
 #include <devices/cd.h>
+#include <hardware/ata.h>
+#include <hidd/ata.h>
 
 #include "include/devices/scsicmds.h"
 #include "ata_bus.h"
@@ -94,7 +98,22 @@ struct ataBase
 
    struct Device          *ata_TimerBase;
    ULONG                   ata_ItersPer100ns;
+
+   struct Library         *ata_OOPBase;
+
+   /* Bus HIDD classes */
+   OOP_AttrBase            hwAttrBase;
+   OOP_AttrBase            ataAttrBase;
+   OOP_Class              *ataClass;
+   OOP_Class              *busClass;
+   OOP_Object             *ataObj;
 };
+
+#undef HWAttrBase
+#undef HiddATABusAB
+#define HWAttrBase   (ATABase->hwAttrBase)
+#define HiddATABusAB (ATABase->ataAttrBase)
+#define OOPBase      (ATABase->ata_OOPBase)
 
 /*
    The single IDE bus (channel)
@@ -301,33 +320,14 @@ struct ata_Unit
    ULONG               au_cmd_error;
 };
 
-typedef enum
+enum
 {
-   AB_XFER_PIO0 = 0,
-   AB_XFER_PIO1,
-   AB_XFER_PIO2,
-   AB_XFER_PIO3,
-   AB_XFER_PIO4,
-
-   AB_XFER_MDMA0,
-   AB_XFER_MDMA1,
-   AB_XFER_MDMA2,
-
-   AB_XFER_UDMA0,
-   AB_XFER_UDMA1,
-   AB_XFER_UDMA2,
-   AB_XFER_UDMA3,
-   AB_XFER_UDMA4,
-   AB_XFER_UDMA5,
-   AB_XFER_UDMA6,
-
-   AB_XFER_48BIT,
+   AB_XFER_48BIT = AB_XFER_NUM,
    AB_XFER_RWMULTI,
    AB_XFER_PACKET,
    AB_XFER_LBA,
    AB_XFER_DMA,
-
-} ata_XferMode;
+};
 
 #define AF_XFER_PIO(x)  (1<<(AB_XFER_PIO0+(x)))
 #define AF_XFER_MDMA(x) (1<<(AB_XFER_MDMA0+(x)))
@@ -358,22 +358,6 @@ typedef enum
 #define ARBF_80Wire              (1 << ARBB_80Wire)
 #define ARBF_EarlyInterrupt      (1 << ARBB_EarlyInterrupt)
 
-/* ATA/ATAPI registers */
-#define ata_Error           1
-#define ata_Feature         1
-#define ata_Count           2
-#define ata_LBALow          3
-#define ata_Sector          3
-#define ata_LBAMid          4
-#define ata_CylinderLow     4
-#define ata_LBAHigh         5
-#define ata_CylinderHigh    5
-#define ata_DevHead         6
-#define ata_Status          7
-#define ata_Command         7
-#define ata_AltStatus       0x2
-#define ata_AltControl      0x2
-
 #define ATA_OUT(val, offset, port)  unit->au_Bus->ab_Driver->ata_out((val), (offset), (port), unit->au_Bus->ab_DriverData)
 #define ATA_IN(offset, port)        unit->au_Bus->ab_Driver->ata_in((offset), (port), unit->au_Bus->ab_DriverData)
 #define ATA_OUTL(val, offset, port) unit->au_Bus->ab_Driver->ata_outl((val), (offset), (port), unit->au_Bus->ab_DriverData)
@@ -381,61 +365,6 @@ typedef enum
 #define BUS_OUT(val, offset, port)  bus->ab_Driver->ata_out((val), (offset), (port), bus->ab_DriverData)
 #define BUS_IN(offset, port)        bus->ab_Driver->ata_in((offset), (port), bus->ab_DriverData)
 #define BUS_OUTL(val, offset, port) bus->ab_Driver->ata_outl((val), (offset), (port), bus->ab_DriverData)
-
-#define atapi_Error         1
-#define atapi_Features      1
-#define atapi_Reason        2
-#define atapi_ByteCntL      4
-#define atapi_ByteCntH      5
-#define atapi_DevSel        6
-#define atapi_Status        7
-#define atapi_Command       7
-
-/* Atapi status bits */
-#define ATAB_SLAVE          4
-#define ATAB_LBA            6
-#define ATAB_ATAPI          7
-#define ATAB_DATAREQ        3
-#define ATAB_ERROR          0
-#define ATAB_BUSY           7
-
-#define ATAF_SLAVE          0x10
-#define ATAF_LBA            0x40
-#define ATAF_ATAPI          0x80
-#define ATAF_DATAREQ        0x08
-#define ATAF_ERROR          0x01
-#define ATAF_BUSY           0x80
-#define ATAF_DRDY           0x40
-
-#define ATAPIF_CHECK        0x01
-
-/* ATA/ATAPI commands */
-#define ATA_SET_FEATURES    0xef
-#define ATA_SET_MULTIPLE    0xc6
-#define ATA_DEVICE_RESET    0x08
-#define ATA_IDENTIFY_DEVICE 0xec
-#define ATA_IDENTIFY_ATAPI  0xa1
-#define ATA_NOP             0x00
-#define ATA_EXECUTE_DIAG    0x90
-#define ATA_PACKET          0xa0
-#define ATA_READ_DMA        0xc8
-#define ATA_READ_DMA64      0x25
-#define ATA_READ            0x20
-#define ATA_READ64          0x24
-#define ATA_READ_MULTIPLE   0xc4
-#define ATA_READ_MULTIPLE64 0x29
-#define ATA_WRITE_DMA       0xca
-#define ATA_WRITE_DMA64     0x35
-#define ATA_WRITE           0x30
-#define ATA_WRITE64         0x34
-#define ATA_WRITE_MULTIPLE  0xc5
-#define ATA_WRITE_MULTIPLE64 0x39
-#define ATA_MEDIA_EJECT     0xed
-
-#define ATAPIF_MASK         0x03
-#define ATAPIF_COMMAND      0x01
-#define ATAPIF_READ         0x02
-#define ATAPIF_WRITE        0x00
 
 /* SFF-8038i DMA registers */
 #define dma_Command         0x00
