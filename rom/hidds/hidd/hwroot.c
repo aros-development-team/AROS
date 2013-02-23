@@ -22,14 +22,16 @@
         This class represents a root of HIDD subsystem tree. In other words, it
         represents your computer. Calling HW_EnumDrivers() on it will enumerate
         installed subsystem classes.
-        
+
         By design this class is a singletone. In order to get access to it, just
         call OOP_NewObject() on it. Every call will return the same pointer to
         the same object. You do not need to call OOP_Dispose object on it. Such
         calls will simply do nothing.
-        
+
         Subsystem classes need to register themselves in the tree by calling
-        HW_AddDriver() on this class.
+        HW_AddDriver() on this class. The class keeps an eye on the subsystem
+        usage and will allow to remove it using HW_RemoveDriver() only if the
+        subsystem being removed is not in use by any other components.
 
 *****************************************************************************************/
 
@@ -63,6 +65,19 @@ OOP_Object *HWRoot__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 void HWRoot__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     /* Do nothing here */
+}
+
+BOOL HWRoot__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o,
+                         struct pHW_RemoveDriver *msg)
+{
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+    IPTR used = TRUE;
+
+    OOP_GetAttr(msg->driverObject, aHW_InUse, &used);
+    if (used)
+        return FALSE;
+    
+    return OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
 /*
