@@ -46,3 +46,5 @@ struct dma_data
 #define DMAF_Error          (1 << DMAB_Error)
 #define DMAF_Interrupt      (1 << DMAB_Interrupt)
 #define DMAF_Simplex        (1 << DMAB_Simplex)
+
+extern const APTR dma_FuncTable[];

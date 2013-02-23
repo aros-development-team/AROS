@@ -13,7 +13,6 @@
 #include <proto/timer.h>
 
 #include "timer.h"
-#include "ata.h"
 
 struct IORequest *ata_OpenTimer(void)
 {
