@@ -441,10 +441,18 @@ void ATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct ATA_BusData *data = OOP_INST_DATA(cl, o);
 
     if (data->dmaInterface)
-        FreeMem(data->dmaInterface, sizeof(struct ATA_DMAInterface) + data->pioDataSize);
+    {
+        void *ptr = data->dmaInterface - sizeof(struct ATA_DMAInterface);
+
+        FreeMem(ptr, sizeof(struct ATA_DMAInterface) + data->pioDataSize);
+    }
     if (data->pioInterface)
-        FreeMem(data->pioInterface, sizeof(struct ATA_PIOInterface) + data->dmaDataSize);
-    
+    {
+        void *ptr = data->pioInterface - sizeof(struct ATA_PIOInterface);
+
+        FreeMem(ptr, sizeof(struct ATA_PIOInterface) + data->pioDataSize);
+    }
+
     OOP_DoSuperMethod(cl, o, msg);
 }
 
@@ -569,8 +577,8 @@ APTR ATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
         CopyVectors((APTR *)vec, (APTR *)data->pioVectors,
                     sizeof(struct ATA_PIOInterface) / sizeof(APTR));
 
-        data->pioInterface = vec;
-        return &vec[1];
+        data->pioInterface = &vec[1];
+        return data->pioInterface;
     }
 
     return NULL;
@@ -633,8 +641,8 @@ APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
         CopyVectors((APTR *)vec, data->dmaVectors,
                     sizeof(struct ATA_DMAInterface) / sizeof(APTR));
 
-        data->dmaInterface = vec;
-        return &vec[1];
+        data->dmaInterface = &vec[1];
+        return data->dmaInterface;
     }
 
     return NULL;
@@ -688,4 +696,52 @@ BOOL ATABus__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *o, struct pHidd
     }
 
     return TRUE;
+}
+
+/*****************************************************************************************
+
+    NAME
+	moHidd_ATABus_Shutdown
+
+    SYNOPSIS
+	APTR OOP_DoMethod(OOP_Object *obj, struct pHidd_ATABus_Shutdown *Msg);
+
+	APTR HIDD_ATABus_Shutdown(void);
+
+    LOCATION
+	CLID_Hidd_ATABus
+
+    FUNCTION
+        Instantly shutdown all activity on the bus.
+
+    INPUTS
+        None
+
+    RESULT
+        None
+
+    NOTES
+        This method is called by ata.device during system reset handler execution.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+        Default implementation disables interrupt using AltControl register.
+
+*****************************************************************************************/
+
+void ATABus__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg *msg)
+{
+    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+
+    if (data->pioInterface)
+    {
+        struct ATA_PIOInterface *vec = data->pioInterface - sizeof(struct ATA_PIOInterface);
+
+        vec->ata_out_alt(data->pioInterface, ATACTLF_INT_DISABLE, ata_AltControl);
+    }
 }

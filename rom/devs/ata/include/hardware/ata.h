@@ -81,4 +81,8 @@
 #define ATAPIF_READ         0x02
 #define ATAPIF_WRITE        0x00
 
+/* AltControl bits */
+#define ATACTLF_INT_DISABLE 0x02
+#define ATACTLF_RESET       0x04
+
 #endif
