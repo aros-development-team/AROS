@@ -16,9 +16,12 @@ FUNCS :=    addclass		\
 	    newobject		\
 	    obtainattrbase	\
 	    obtainattrbases	\
+            obtainattrbasesarray   \
+            obtainmethodbasesarray \
 	    parseattrs		\
 	    releaseattrbase	\
 	    releaseattrbases	\
+            releaseattrbasesarray  \
 	    removeclass		\
 	    setattrs
 
