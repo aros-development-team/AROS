@@ -81,7 +81,7 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         while ((tag = NextTagItem(&tstate)))
         {
             ULONG idx;
-            
+
             Hidd_Switch(tag->ti_Tag, idx)
             {
             case aoHidd_DriverData:
@@ -284,6 +284,7 @@ void PCIATA__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     if (dmaBase)
     {
+        /* Shut down DMA */
         outb(inb(dma_Command + dmaBase) & ~DMA_START, dma_Command + dmaBase);
         outl(0, dma_PRD + dmaBase);
     }
