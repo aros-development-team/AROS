@@ -120,7 +120,7 @@ OOP_Object *MouseHW__HW__AddDriver(OOP_Class *cl, OOP_Object *o, struct pHW_AddD
  * b) It does not have any base classes, and is derived directly from rootclass.
  * In C++ terminology it's our friend class.
  */
-AROS_UFH3(static void, searchFunc,
+AROS_UFH3(static BOOL, searchFunc,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(struct driverNode *, dn, A2),
     AROS_UFHA(OOP_Object *, wanted, A1))
@@ -128,7 +128,12 @@ AROS_UFH3(static void, searchFunc,
     AROS_USERFUNC_INIT
 
     if (dn->drv == wanted)
+    {
         h->h_Data = dn;
+        return TRUE;
+    }
+
+    return FALSE;
     
     AROS_USERFUNC_EXIT
 }

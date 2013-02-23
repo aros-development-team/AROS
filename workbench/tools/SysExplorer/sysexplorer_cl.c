@@ -69,7 +69,7 @@ const struct OOP_ABDescr abd[] =
 };
 
 
-AROS_UFH3S(void, enumFunc,
+AROS_UFH3S(BOOL, enumFunc,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(OOP_Object*, obj, A2),
     AROS_UFHA(void *, parent, A1))
@@ -97,12 +97,14 @@ AROS_UFH3S(void, enumFunc,
     }
     else
     {
-        // leave
+        // leaf
         // we're storing the device handle as userdata in the tree node
         OOP_GetAttr(obj, aHidd_HardwareName, (IPTR *)&name);
         DoMethod(data->tree, MUIM_NListtree_Insert, name, obj,
                  parent, MUIV_NListtree_Insert_PrevNode_Tail, 0);
     }
+
+    return FALSE; /* Continue enumeration */
 
     AROS_USERFUNC_EXIT
 }

@@ -383,7 +383,7 @@ void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
     HW_AddDriver(o, msg->driverClass, NULL);
 }
 
-AROS_UFH3(static void, searchFunc,
+AROS_UFH3(static BOOL, searchFunc,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(OOP_Object *, driverObject, A2),
     AROS_UFHA(OOP_Class *, driverClass, A1))
@@ -391,7 +391,12 @@ AROS_UFH3(static void, searchFunc,
     AROS_USERFUNC_INIT
 
     if (OOP_OCLASS(driverObject) == driverClass)
+    {
         h->h_Data = driverObject;
+        return TRUE;
+    }
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
