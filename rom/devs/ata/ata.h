@@ -104,6 +104,7 @@ struct ataBase
    /* Bus HIDD classes */
    OOP_AttrBase            hwAttrBase;
    OOP_AttrBase            ataAttrBase;
+   OOP_MethodID            hwMethodBase;
    OOP_MethodID            ataMethodBase;
    OOP_Class              *ataClass;
    OOP_Class              *busClass;
@@ -112,9 +113,11 @@ struct ataBase
 
 #undef HWAttrBase
 #undef HiddATABusAB
+#undef HWBase
 #undef HiddATABusBase
 #define HWAttrBase     (ATABase->hwAttrBase)
 #define HiddATABusAB   (ATABase->ataAttrBase)
+#define HWBase         (ATABase->hwMethodBase)
 #define HiddATABusBase (ATABase->ataMethodBase)
 #define OOPBase        (ATABase->ata_OOPBase)
 

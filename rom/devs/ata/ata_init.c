@@ -319,7 +319,6 @@ static CONST_STRPTR attrBaseIDs[] =
 static int ata_init(struct ataBase *ATABase)
 {
     OOP_Object *hwRoot;
-    OOP_MethodID HWBase;
     struct BootLoaderBase	*BootLoaderBase;
 
     D(bug("[ATA--] ata_init: ata.device Initialization\n"));
@@ -338,13 +337,13 @@ static int ata_init(struct ataBase *ATABase)
         return FALSE;
 
     /* This is our own method base, so no check needed */
-    ATABase->ataMethodBase = OOP_GetMethodID(IID_Hidd_ATABus, 0);
+    if (OOP_ObtainMethodBasesArray(&ATABase->hwMethodBase, attrBaseIDs))
+        return FALSE;
 
     hwRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
     if (!hwRoot)
         return FALSE;
 
-    HWBase = OOP_GetMethodID(IID_HW, 0);
     if (!HW_AddDriver(hwRoot, ATABase->ataClass, NULL))
         return FALSE;
 
@@ -417,11 +416,10 @@ static int ata_expunge(struct ataBase *ATABase)
         /*
          * CLID_HW is a singletone, you can get it as many times as you want.
          * Here we save up some space in struct ataBase by obtaining hwclass
-         * object and its MethodBase only when we need it. This happens rarely,
-         * so small performance loss is OK here.
+         * object only when we need it. This happens rarely, so small
+         * performance loss is OK here.
          */
         OOP_Object *hwRoot = OOP_NewObject(NULL, CLID_HW, NULL);
-        OOP_MethodID HWBase = OOP_GetMethodID(IID_HW, 0);
 
         HW_RemoveDriver(hwRoot, ATABase->ataObj);
     }
@@ -431,13 +429,8 @@ static int ata_expunge(struct ataBase *ATABase)
     return TRUE;
 }
 
-static int open
-(
-    LIBBASETYPEPTR LIBBASE,
-    struct IORequest *iorq,
-    ULONG unitnum,
-    ULONG flags
-)
+static int open(struct ataBase *ATABase, struct IORequest *iorq,
+                ULONG unitnum, ULONG flags)
 {
     /*
      * device location
@@ -452,7 +445,7 @@ static int open
     /*
      * actual bus
      */
-    struct ata_Bus *b = (struct ata_Bus*)LIBBASE->ata_Buses.mlh_Head;
+    struct ata_Bus *b = (struct ata_Bus*)ATABase->ata_Buses.mlh_Head;
 
     /* 
      * Extract bus and device numbers
@@ -482,7 +475,7 @@ static int open
     /*
      * set up iorequest
      */
-    iorq->io_Device     = &LIBBASE->ata_Device;
+    iorq->io_Device     = &ATABase->ata_Device;
     iorq->io_Unit       = &b->ab_Units[dev]->au_Unit;
     iorq->io_Error      = 0;
 
