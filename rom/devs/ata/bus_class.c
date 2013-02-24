@@ -506,13 +506,13 @@ void ATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     {
         void *ptr = data->dmaInterface - sizeof(struct ATA_DMAInterface);
 
-        FreeMem(ptr, sizeof(struct ATA_DMAInterface) + data->pioDataSize);
+        FreeMem(ptr, sizeof(struct ATA_DMAInterface) + data->dmaDataSize);
     }
     if (data->pioInterface)
     {
-        void *ptr = data->pioInterface - sizeof(struct ATA_PIOInterface);
+        void *ptr = data->pioInterface - sizeof(struct ATA_BusInterface);
 
-        FreeMem(ptr, sizeof(struct ATA_PIOInterface) + data->pioDataSize);
+        FreeMem(ptr, sizeof(struct ATA_BusInterface) + data->pioDataSize);
     }
 
     OOP_DoSuperMethod(cl, o, msg);
