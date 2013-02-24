@@ -101,6 +101,7 @@ struct ataBase
    ULONG                   ata_ItersPer100ns;
 
    struct Library         *ata_OOPBase;
+   struct Library         *ata_UtilityBase;
 
    /* Bus HIDD classes */
    OOP_AttrBase            hwAttrBase;
@@ -121,6 +122,7 @@ struct ataBase
 #define HWBase         (ATABase->hwMethodBase)
 #define HiddATABusBase (ATABase->ataMethodBase)
 #define OOPBase        (ATABase->ata_OOPBase)
+#define UtilityBase    (ATABase->ata_UtilityBase)
 
 /*
    The single IDE bus (channel)
