@@ -31,7 +31,6 @@
 #include "interface_pio.h"
 #include "interface_dma.h"
 #include "pci.h"
-#include "timer.h"
 
 /*
  * Currently we support legacy ISA ports only on x86.
@@ -72,8 +71,57 @@ static const struct ata__legacybus LegacyBuses[] =
     {0x170, 0x374, 15, 0, 1, "ISA IDE0 secondary channel"},
     {0x168, 0x36c, 10, 1, 0, "ISA IDE1 primary channel"  },
     {0x1e8, 0x3ec, 11, 1, 1, "ISA IDE1 secondary channel"},
-    {    0,     0,  0, 0, 0, NULL                           }
+    {    0,     0,  0, 0, 0, NULL                        }
 };
+
+#ifdef DO_SATA_HANDOFF
+
+/* SATA handoff code needs timer */
+
+static struct IORequest *OpenTimer(void)
+{
+    struct MsgPort *p = CreateMsgPort();
+
+    if (NULL != p)
+    {
+        struct IORequest *io = CreateIORequest(p, sizeof(struct timerequest));
+
+        if (NULL != io)
+        {
+            if (0 == OpenDevice("timer.device", UNIT_MICROHZ, io, 0))   
+            {
+                return io;
+            }
+            DeleteIORequest(io);
+        }
+        DeleteMsgPort(p);
+    }
+
+    return NULL;
+}
+
+static void CloseTimer(struct IORequest *tmr)
+{
+    if (NULL != tmr)
+    {
+        struct MsgPort *p = tmr->io_Message.mn_ReplyPort;
+
+        CloseDevice(tmr);
+        DeleteIORequest(tmr);
+        DeleteMsgPort(p);
+    }
+}
+
+static void WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro)
+{
+    tmr->io_Command = TR_ADDREQUEST;
+    ((struct timerequest*)tmr)->tr_time.tv_secs = secs;
+    ((struct timerequest*)tmr)->tr_time.tv_micro = micro;
+
+    DoIO(tmr);
+}
+
+#endif
 
 /*
  * PCI BUS ENUMERATOR
@@ -214,7 +262,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                      * TODO: in ata_InitBus() it will be opened and closed again.
                      * This is not optimal, it could be opened and closed just once.
                      */
-                   timereq = ata_OpenTimer(a->ATABase);
+                   timereq = OpenTimer(a->ATABase);
                    if (!timereq)
                    {
                         DSATA(bug("[PCI-ATA] Failed to open timer, can't perform handoff. Device will be ignored\n"));
@@ -228,7 +276,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                     /* Spin on BOHC_BOS bit FIXME: Possible dead lock. No maximum time given on AHCI1.3 specs... */
                     while (mmio_inl_le(&hwhba->bohc) & BOHC_BOS);
 
-                    ata_WaitTO(timereq, 0, 25000);
+                    WaitTO(timereq, 0, 25000);
                     /* If after 25ms BOHC_BB bit is still set give bios a minimum of 2 seconds more time to run */
 
                     if (mmio_inl_le(&hwhba->bohc) & BOHC_BB)
@@ -238,7 +286,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                     }
 
                     DSATA(bug("[PCI-ATA] Handoff done\n"));
-                    ata_CloseTimer(timereq);
+                    CloseTimer(timereq);
                 }
             }
 #endif
