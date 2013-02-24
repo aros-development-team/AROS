@@ -58,6 +58,9 @@
             OOP_ReleaseAttrBase(*ids);
             *bases = 0;
         }
+
+        bases++;
+        ids++;
     }
 
     AROS_LIBFUNC_EXIT
