@@ -323,6 +323,10 @@ static int ata_init(struct ataBase *ATABase)
 
     D(bug("[ATA--] ata_init: ata.device Initialization\n"));
 
+    ATABase->ata_UtilityBase = OpenLibrary("utility.library", 36);
+    if (!ATABase->ata_UtilityBase)
+        return FALSE;
+    
     /*
      * I've decided to use memory pools again. Alloc everything needed from 
      * a pool, so that we avoid memory fragmentation.
@@ -425,6 +429,9 @@ static int ata_expunge(struct ataBase *ATABase)
     }
 
     OOP_ReleaseAttrBasesArray(&ATABase->hwAttrBase, attrBaseIDs);
+
+    if (ATABase->ata_UtilityBase)
+        CloseLibrary(ATABase->ata_UtilityBase);
 
     return TRUE;
 }
