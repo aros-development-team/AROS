@@ -19,9 +19,9 @@ struct ATA_PIOInterface
     VOID  (*ata_out_alt)(void *obj, UBYTE val, UWORD offset);
     UBYTE (*ata_in_alt )(void *obj, UWORD offset);
     VOID  (*ata_outsw  )(void *obj, APTR address, ULONG count);
-    UBYTE (*ata_insw   )(void *obj, APTR address, ULONG count);
+    VOID  (*ata_insw   )(void *obj, APTR address, ULONG count);
     VOID  (*ata_outsl  )(void *obj, APTR address, ULONG count);
-    UBYTE (*ata_insl   )(void *obj, APTR address, ULONG count);
+    VOID  (*ata_insl   )(void *obj, APTR address, ULONG count);
 };
 
 struct ATA_DMAInterface
