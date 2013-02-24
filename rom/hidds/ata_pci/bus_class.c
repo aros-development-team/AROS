@@ -74,31 +74,10 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     {
         struct ataBase *base = cl->UserData;
         struct ATA_BusData *data = OOP_INST_DATA(cl, o);
-        struct TagItem *tstate = msg->attrList;
-        struct TagItem *tag;
         OOP_MethodID mDispose;
 
-        while ((tag = NextTagItem(&tstate)))
-        {
-            ULONG idx;
-
-            Hidd_Switch(tag->ti_Tag, idx)
-            {
-            case aoHidd_DriverData:
-                data->bus = (struct ata_ProbedBus *)tag->ti_Data;
-                break;
-            }
-            Hidd_ATABus_Switch(tag->ti_Tag, idx)
-            {
-            case aoHidd_ATABus_IRQHandler:
-                data->ata_HandleIRQ = (APTR)tag->ti_Data;
-                break;
-
-            case aoHidd_ATABus_IRQData:
-                data->irqData = (APTR)tag->ti_Data;
-                break;
-            }
-        }
+        /* No check because we always supply this */
+        data->bus = (struct ata_ProbedBus *)GetTagData(aHidd_DriverData, 0, msg->attrList);
 
         if (data->bus->atapb_DMABase)
         {
@@ -188,6 +167,30 @@ void PCIATA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 
     OOP_DoSuperMethod(cl, o, &msg->mID);
+}
+
+void PCIATA__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct ataBase *base = cl->UserData;
+    struct ATA_BusData *data = OOP_INST_DATA(cl, o);
+    struct TagItem *tstate = msg->attrList;
+    struct TagItem *tag;
+
+    while ((tag = NextTagItem(&tstate)))
+    {
+        ULONG idx;
+
+        Hidd_ATABus_Switch(tag->ti_Tag, idx)
+        {
+        case aoHidd_ATABus_IRQHandler:
+            data->ata_HandleIRQ = (APTR)tag->ti_Data;
+            break;
+
+        case aoHidd_ATABus_IRQData:
+            data->irqData = (APTR)tag->ti_Data;
+            break;
+        }
+    }
 }
 
 APTR PCIATA__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)

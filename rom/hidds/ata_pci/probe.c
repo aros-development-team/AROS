@@ -505,6 +505,7 @@ static int ata_pci_Scan(struct ataBase *base)
             {aHidd_Product            , probedbus->atapb_Product           },
             {aHidd_DriverData         , (IPTR)probedbus                    },
             {aHidd_ATABus_PIODataSize , sizeof(struct pio_data)            },
+            {aHidd_ATABus_BusVectors  , (IPTR)bus_FuncTable                },
             {aHidd_ATABus_PIOVectors  , (IPTR)pio_FuncTable                },
             {aHidd_ATABus_DMADataSize , sizeof(struct dma_data)            },
             {aHidd_ATABus_DMAVectors  , (IPTR)dma_FuncTable                },
