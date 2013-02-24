@@ -29,7 +29,6 @@ struct ATA_DMAInterface
     BOOL  (*dma_Prepare)(void *obj, APTR buffer, IPTR size, BOOL read);
     VOID  (*dma_Start  )(void *obj);
     VOID  (*dma_End    )(void *obj, APTR buffer, IPTR size, BOOL read);
-    VOID  (*dma_Reset  )(void *obj);
     ULONG (*dma_Result )(void *obj);
 };
 
