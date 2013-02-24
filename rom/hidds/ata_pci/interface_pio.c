@@ -119,12 +119,17 @@ void ata_insl(struct pio_data *data, APTR address, ULONG count)
 
 #endif
 
-const APTR pio_FuncTable[] =
+const APTR bus_FuncTable[] =
 {
     ata_out,
     ata_in,
     ata_out_alt,
     ata_in_alt,
+    (APTR *)-1
+};
+
+const APTR pio_FuncTable[] =
+{
     ata_outsw,
     ata_insw,
     ata_outsl,

@@ -7,5 +7,5 @@ struct pio_data
     port_t ioAlt;
 };
 
+extern const APTR bus_FuncTable[];
 extern const APTR pio_FuncTable[];
-extern const APTR pio32_FuncTable[];

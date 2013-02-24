@@ -4,6 +4,7 @@
 */
 
 #include <aros/debug.h>
+#include <hidd/ata.h>
 #include <hidd/hidd.h>
 #include <hidd/keyboard.h>
 #include <oop/oop.h>
@@ -19,8 +20,8 @@ OOP_Object *ATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     {
         struct TagItem new_tags[] =
         {
-            {aHW_ClassName, (IPTR)"ATA"},
-            {TAG_DONE     , 0                }
+            {aHW_ClassName, (IPTR)"IDE"},
+            {TAG_DONE     , 0          }
         };
         struct pRoot_New new_msg =
         {
@@ -35,21 +36,34 @@ OOP_Object *ATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 VOID ATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-
+    /* We are singletone. Cannot dispose. */
 }
 
-OOP_Object *ATA__HW__AddDriver(OOP_Class *cl, OOP_Object *o, struct pHW_AddDriver *Msg)
+BOOL ATA__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver *Msg)
 {
-    struct TagItem tags[] =
-    {
-        {TAG_MORE, (IPTR)Msg->tags}
-    };
-    struct pHW_AddDriver add_msg =
-    {
-        .mID         = Msg->mID,
-        .driverClass = Msg->driverClass,
-        .tags        = tags
-    };
+    /*
+     * Currently we don't support unloading bus drivers.
+     * This is a very-very big TODO.
+     */
+    return FALSE;
+}
 
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, &add_msg.mID);
+BOOL ATA__HW__SetupDriver(OOP_Class *cl, OOP_Object *o, struct pHW_SetupDriver *Msg)
+{
+    struct ataBase *ATABase = cl->UserData;
+
+    /*
+     * Instantiate interfaces. PIO is mandatory, DMA is not.
+     * We don't keep interface pointers here because our bus class
+     * stores them itself.
+     * We do this in SetupDriver because the object must be fully
+     * created in order for this stuff to work.
+     */
+    if (!HIDD_ATABus_GetPIOInterface(Msg->driverObject))
+        return FALSE;
+
+    HIDD_ATABus_GetDMAInterface(Msg->driverObject);
+
+    /* Add the bus to the device and start service */
+    return Hidd_ATABus_Start(Msg->driverObject, ATABase);
 }

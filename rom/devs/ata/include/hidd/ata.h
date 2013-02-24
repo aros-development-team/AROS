@@ -12,12 +12,16 @@
 #define CLID_HW_ATA      "hw.ata"
 #define CLID_Hidd_ATABus "hidd.ata.bus"
 
-struct ATA_PIOInterface
+struct ATA_BusInterface
 {
     VOID  (*ata_out    )(void *obj, UBYTE val, UWORD offset);
     UBYTE (*ata_in     )(void *obj, UWORD offset);
     VOID  (*ata_out_alt)(void *obj, UBYTE val, UWORD offset);
     UBYTE (*ata_in_alt )(void *obj, UWORD offset);
+};
+
+struct ATA_PIOInterface
+{
     VOID  (*ata_outsw  )(void *obj, APTR address, ULONG count);
     VOID  (*ata_insw   )(void *obj, APTR address, ULONG count);
     VOID  (*ata_outsl  )(void *obj, APTR address, ULONG count);

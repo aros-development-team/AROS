@@ -9,6 +9,42 @@
 
 #include "ata.h"
 
+#define DIRQ(x)
+
+static void Hidd_ATABus_HandleIRQ(UBYTE status, struct ata_Bus *bus)
+{
+    struct ata_Unit *unit = bus->ab_SelectedUnit;
+
+    /*
+     * don't waste your time on checking other devices.
+     * pass irq ONLY if task is expecting one;
+     */
+    if (unit && bus->ab_HandleIRQ)
+    {
+        /* ok, we have a routine to handle any form of transmission etc. */
+        DIRQ(bug("[ATA%02d] IRQ: Calling dedicated handler 0x%p... \n",
+                 unit->au_UnitNum, bus->ab_HandleIRQ));
+        bus->ab_HandleIRQ(unit, status);
+
+        return;
+    }
+
+    DIRQ({
+        /*
+         * if we got *here* then device is most likely not expected to have an irq.
+         */
+        bug("[ATA%02d] Spurious IRQ\n", unit ? unit->au_UnitNum : -1);
+
+        if (0 == (ATAF_BUSY & status))
+        {
+            bug("[ATA  ] STATUS: %02lx\n"     , status);
+            bug("[ATA  ] ALT STATUS: %02lx\n" , PIO_InAlt(bus, ata_AltStatus));
+            bug("[ATA  ] ERROR: %02lx\n"      , PIO_In(bus, ata_Error));
+            bug("[ATA  ] IRQ: REASON: %02lx\n", PIO_In(bus, atapi_Reason));
+        }
+    });
+}
+
 static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
 {
     AROS_INTFUNC_INIT
@@ -60,8 +96,8 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
         however some functions are optional. They can be either omitted
         entirely from the function table, or set to NULL pointers.
 
-        Function table for the interface consists of the following functions
-        (listed in their order in the array):
+        Control functions table for the interface consists of the following
+        functions (listed in their order in the array):
 
         VOID ata_out(void *obj, UBYTE val, UWORD offset)
         - Write byte into primary register bank with the given offset.
@@ -71,9 +107,14 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
 
         VOID ata_out_alt(void *obj, UBYTE val, UWORD offset)
         - Write byte into alternate register bank with the given offset.
+          This function is optional.
 
         UBYTE ata_in_alt(void *obj, UWORD offset)
         - Read byte from alternate register bank with the given offset.
+          This function is optional.
+
+        Transfer functions table for the interface consists of the following
+        functions (listed in their order in the array):
 
         VOID ata_outsw(void *obj, APTR address, ULONG count)
         - Perform 16-bit PIO data write operation from the given memory
@@ -254,6 +295,35 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
 /*****************************************************************************************
 
     NAME
+        aoHidd_ATABus_BusVectors
+
+    SYNOPSIS
+        [I..], APTR *
+
+    LOCATION
+        CLID_Hidd_ATABus
+
+    FUNCTION
+        Specifies control functions table for building PIO interface object.
+        The function table is an array of function pointers terminated
+        by -1 value. The terminator must be present for purpose of
+        binary compatibility with future extensions.
+
+    NOTES
+        This function table is mandatory to be implemented by the driver.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
         aoHidd_ATABus_PIOVectors
 
     SYNOPSIS
@@ -263,7 +333,7 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
         CLID_Hidd_ATABus
 
     FUNCTION
-        Specifies function table for building PIO interface object.
+        Specifies transfers function table for building PIO interface object.
         The function table is an array of function pointers terminated
         by -1 value. The terminator must be present for purpose of
         binary compatibility with future extensions.
@@ -313,7 +383,7 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
         aoHidd_ATABus_IRQHandler
 
     SYNOPSIS
-        [I..], APTR
+        [.S.], APTR
 
     LOCATION
         CLID_Hidd_ATABus
@@ -355,7 +425,7 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
         aoHidd_ATABus_IRQData
 
     SYNOPSIS
-        [I..], APTR
+        [.S.], APTR
 
     LOCATION
         CLID_Hidd_ATABus
@@ -399,7 +469,11 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             case aoHidd_ATABus_DMADataSize:
                 data->dmaDataSize = tag->ti_Data;
                 break;
-                
+
+            case aoHidd_ATABus_BusVectors:
+                data->busVectors = (APTR *)tag->ti_Data;
+                break;
+
             case aoHidd_ATABus_PIOVectors:
                 data->pioVectors = (struct ATA_PIOInterface *)tag->ti_Data;
                 break;
@@ -470,40 +544,55 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
-static void CopyVectors(APTR *dest, APTR *src, int num)
+/* Default ata_out_alt does nothing */
+static void default_out_alt(void *obj, UBYTE val, UWORD offset)
 {
-    int i;
+
+}
+
+/* Default ata_in_alt wraps AltStatus to status */
+static UBYTE default_in_alt(void *obj, UWORD offset)
+{
+    struct ATA_BusInterface *vec = obj - sizeof(struct ATA_BusInterface);
+
+    return vec->ata_in(obj, ata_Status);
+}
+
+static void CopyVectors(APTR *dest, APTR *src, unsigned int num)
+{
+    unsigned int i;
     
     for (i = 0; i < num; i++)
     {
         if (src[i] == (APTR *)-1)
             return;
-        dest[i] = src[i];
+        if (src[i])
+            dest[i] = src[i];
     }
 }
 
 /*****************************************************************************************
 
     NAME
-	moHidd_ATABus_GetPIOInterface
+        moHidd_ATABus_GetPIOInterface
 
     SYNOPSIS
-	APTR OOP_DoMethod(OOP_Object *obj, struct pHidd_ATABus_GetPIOInterface *Msg);
+        APTR OOP_DoMethod(OOP_Object *obj, struct pHidd_ATABus_GetPIOInterface *Msg);
 
-	APTR HIDD_ATABus_GetPIOInterface(void);
+        APTR HIDD_ATABus_GetPIOInterface(void);
 
     LOCATION
-	CLID_Hidd_ATABus
+        CLID_Hidd_ATABus
 
     FUNCTION
         Instantiates encapsulated PIO interface object and returns its
         pointer.
 
     INPUTS
-	None
+        None
 
     RESULT
-	A pointer to opaque PIO interface object or NULL in case of failure.
+        A pointer to opaque PIO interface object or NULL in case of failure.
 
     NOTES
         This method should be overloaded by driver subclasses in order to
@@ -527,14 +616,18 @@ static void CopyVectors(APTR *dest, APTR *src, int num)
 APTR ATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct ata_Bus *data = OOP_INST_DATA(cl, o);
-    struct ATA_PIOInterface *vec;
+    struct ATA_BusInterface *vec;
     
-    vec = AllocMem(sizeof(struct ATA_PIOInterface) + data->pioDataSize,
+    vec = AllocMem(sizeof(struct ATA_BusInterface) + data->pioDataSize,
                    MEMF_PUBLIC|MEMF_CLEAR);
     if (vec)
     {
-        CopyVectors((APTR *)vec, (APTR *)data->pioVectors,
-                    sizeof(struct ATA_PIOInterface) / sizeof(APTR));
+        /* Some default vectors for simplicity */
+        vec->ata_out_alt = default_out_alt;
+        vec->ata_in_alt  = default_in_alt;
+
+        CopyVectors((APTR *)vec, data->busVectors,
+                    sizeof(struct ATA_BusInterface) / sizeof(APTR));
 
         data->pioInterface = &vec[1];
         return data->pioInterface;
@@ -546,25 +639,25 @@ APTR ATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
 /*****************************************************************************************
 
     NAME
-	moHidd_ATABus_GetDMAInterface
+        moHidd_ATABus_GetDMAInterface
 
     SYNOPSIS
-	APTR OOP_DoMethod(OOP_Object *obj, struct pHidd_ATABus_GetDMAInterface *Msg);
+        APTR OOP_DoMethod(OOP_Object *obj, struct pHidd_ATABus_GetDMAInterface *Msg);
 
-	APTR HIDD_ATABus_GetDMAInterface(void);
+        APTR HIDD_ATABus_GetDMAInterface(void);
 
     LOCATION
-	CLID_Hidd_ATABus
+        CLID_Hidd_ATABus
 
     FUNCTION
         Instantiates encapsulated DMA interface object and returns its
         pointer.
 
     INPUTS
-	None
+        None
 
     RESULT
-	A pointer to opaque DMA interface object or NULL upon failure or
+        A pointer to opaque DMA interface object or NULL upon failure or
         if DMA is not supported by this bus.
 
     NOTES
@@ -611,25 +704,25 @@ APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
 /*****************************************************************************************
 
     NAME
-	moHidd_ATABus_SetXferMode
+        moHidd_ATABus_SetXferMode
 
     SYNOPSIS
-	APTR OOP_DoMethod(OOP_Object *obj, struct pHidd_ATABus_SetXferMode *Msg);
+        APTR OOP_DoMethod(OOP_Object *obj, struct pHidd_ATABus_SetXferMode *Msg);
 
-	APTR HIDD_ATABus_SetXferMode(UBYTE unit, ata_XferMode mode);
+        APTR HIDD_ATABus_SetXferMode(UBYTE unit, ata_XferMode mode);
 
     LOCATION
-	CLID_Hidd_ATABus
+        CLID_Hidd_ATABus
 
     FUNCTION
         Sets the desired transfer mode for the given drive on the bus controller.
 
     INPUTS
         unit - drive number (0 for master and 1 for slave)
-	mode - Mode number (see hidd/ata.h)
+        mode - Mode number (see hidd/ata.h)
 
     RESULT
-	TRUE if succesful or FALSE if the desired mode is not supported
+        TRUE if succesful or FALSE if the desired mode is not supported
         by the hardware.
 
     NOTES
@@ -661,15 +754,15 @@ BOOL ATABus__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *o, struct pHidd
 /*****************************************************************************************
 
     NAME
-	moHidd_ATABus_Shutdown
+        moHidd_ATABus_Shutdown
 
     SYNOPSIS
-	APTR OOP_DoMethod(OOP_Object *obj, struct pHidd_ATABus_Shutdown *Msg);
+        APTR OOP_DoMethod(OOP_Object *obj, struct pHidd_ATABus_Shutdown *Msg);
 
-	APTR HIDD_ATABus_Shutdown(void);
+        APTR HIDD_ATABus_Shutdown(void);
 
     LOCATION
-	CLID_Hidd_ATABus
+        CLID_Hidd_ATABus
 
     FUNCTION
         Instantly shutdown all activity on the bus.
@@ -700,8 +793,103 @@ void ATABus__Hidd_ATABus__Shutdown(OOP_Class *cl, OOP_Object *o, OOP_Msg *msg)
 
     if (data->pioInterface)
     {
-        struct ATA_PIOInterface *vec = data->pioInterface - sizeof(struct ATA_PIOInterface);
+        struct ATA_BusInterface *vec = data->pioInterface - sizeof(struct ATA_BusInterface);
 
         vec->ata_out_alt(data->pioInterface, ATACTLF_INT_DISABLE, ata_AltControl);
     }
+}
+
+/***************** Private nonvirtual methods follow *****************/
+
+BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase)
+{
+    struct ata_Bus *ab = OOP_INST_DATA(ATABase->busClass, o);
+
+    /* Attach IRQ handler */
+    OOP_SetAttrsTags(o, aHidd_ATABus_IRQHandler, Hidd_ATABus_HandleIRQ,
+                        aHidd_ATABus_IRQData   , ab,
+                        TAG_DONE);
+    
+    /*
+     * Assign bus number.
+     * TODO: This does not take into account possibility to
+     * unload drivers. In this case existing units will disappear,
+     * freeing up their numbers. These numbers should be reused.
+     */
+    ab->ab_BusNum = ATABase->ata__buscount++;
+
+    /* scan bus - try to locate all devices (disables irq) */    
+    ata_InitBus(ab);
+
+    /*
+     * Start up bus task. It will perform scanning asynchronously, and
+     * then, if succesful, insert units. This allows to keep things parallel.
+     */
+    D(bug("[ATA>>] Start: Bus %u: Unit 0 - %d, Unit 1 - %d\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
+    return NewCreateTask(TASKTAG_PC         , BusTaskCode,
+                         TASKTAG_NAME       , "ATA[PI] Subsystem",
+                         TASKTAG_STACKSIZE  , STACK_SIZE,
+                         TASKTAG_PRI        , TASK_PRI,
+                         TASKTAG_TASKMSGPORT, &ab->ab_MsgPort,
+                         TASKTAG_ARG1       , ab,
+                         TASKTAG_ARG2       , ATABase,
+                         TAG_DONE) ? TRUE : FALSE;
+}
+
+AROS_UFH3(BOOL, Hidd_ATABus_Open,
+          AROS_UFHA(struct Hook *, h, A0),
+          AROS_UFHA(OOP_Object *, obj, A2),
+          AROS_UFHA(IPTR, reqUnit, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct IORequest *req = h->h_Data;
+    struct ataBase *ATABase = (struct ataBase *)req->io_Device;
+    struct ata_Bus *b = (struct ata_Bus *)OOP_INST_DATA(ATABase->busClass, obj);
+    ULONG bus = reqUnit >> 1;
+    UBYTE dev = reqUnit & 1;
+
+    D(bug("[ATA%02ld] Checking bus %u dev %u\n", reqUnit, bus, dev));
+    
+    if ((b->ab_BusNum == bus) && b->ab_Units[dev])
+    {
+        /* Got the unit */
+        req->io_Unit  = &b->ab_Units[dev]->au_Unit;
+        req->io_Error = 0;
+
+        b->ab_Units[dev]->au_Unit.unit_OpenCnt++;
+        return TRUE;
+    }
+    
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(BOOL, Hidd_ATABus_Tick,
+          AROS_UFHA(struct Hook *, h, A0),
+          AROS_UFHA(OOP_Object *, obj, A2),
+          AROS_UFHA(struct ataBase *, ATABase, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct ata_Bus *bus = (struct ata_Bus *)OOP_INST_DATA(ATABase->busClass, obj);
+    LONG timeout = 0;
+
+    /*
+     * This compare-decrement-fetch should be atomic, so we
+     * use Forbid() here.
+     * Not a good design, can anybody invent better one ?
+     */
+    Forbid();
+    if (bus->ab_Timeout >= 0)
+        timeout = --bus->ab_Timeout;
+    Permit();
+
+    if (timeout < 0)
+        Signal(bus->ab_Task, SIGBREAKF_CTRL_C);
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }

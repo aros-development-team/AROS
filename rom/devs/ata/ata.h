@@ -17,6 +17,7 @@
 #include <exec/libraries.h>
 #include <exec/ports.h>
 #include <oop/oop.h>
+#include <utility/hooks.h>
 #include <utility/utility.h>
 #include <exec/io.h>
 #include <exec/errors.h>
@@ -129,7 +130,8 @@ struct ata_Bus
    struct MinNode          ab_Node;    /* exec node */
    struct ataBase          *ab_Base;   /* device self */
    /* Bus object data */
-   struct ATA_PIOInterface *pioVectors;     /* General PIO vector table */
+   APTR                    *busVectors;     /* Control vector table     */
+   struct ATA_PIOInterface *pioVectors;     /* PIO vector table         */
    APTR                    *dmaVectors;     /* DMA vector table         */
    ULONG                   pioDataSize;     /* PIO interface data size  */
    ULONG                   dmaDataSize;     /* DMA interface data size  */
@@ -404,6 +406,16 @@ enum
 #define IOStdReq(io) ((struct IOStdReq *)io)
 
 /* Function prototypes */
+
+BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase);
+AROS_UFP3(BOOL, Hidd_ATABus_Open,
+          AROS_UFPA(struct Hook *, h, A0),
+          AROS_UFPA(OOP_Object *, obj, A2),
+          AROS_UFPA(IPTR, reqUnit, A1));
+AROS_UFP3(BOOL, Hidd_ATABus_Tick,
+          AROS_UFPA(struct Hook *, h, A0),
+          AROS_UFPA(OOP_Object *, obj, A2),
+          AROS_UFPA(struct ataBase *, ATABase, A1));
 
 void ata_ResetBus(struct ata_Bus *);
 void ata_InitBus(struct ata_Bus *);
