@@ -8,6 +8,9 @@ FILES := main locale
 #MM workbench-c-loadresource : includes linklibs \
 #MM     workbench-c-loadresource-catalogs 
 
+#MM workbench-c-loadresource-quick : \
+#MM     workbench-c-loadresource-catalogs 
+
 %build_prog mmake=workbench-c-loadresource \
     progname=LoadResource targetdir=$(AROS_C) \
     files=$(FILES) uselibs="arosc.static"

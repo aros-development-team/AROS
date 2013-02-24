@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     This file is part of the LoadResource program, which is distributed under
     the terms of version 2 of the GNU General Public License.
 
@@ -10,8 +10,12 @@
     + Implement support for loading devices, fonts and catalogs.
 */
 
+#include <exec/io.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+
+#include <string.h>
+
 #include "locale.h"
 
 enum
@@ -24,6 +28,7 @@ enum
 #define ERROR_HEADER "LoadResource"
 
 BOOL process(CONST_STRPTR name);
+BOOL dev_process(CONST_STRPTR name);
 
 int main(void)
 {
@@ -40,7 +45,15 @@ int main(void)
             
             while ((name = *names++) != NULL)
             {
-                if (!process(name))
+                BOOL res;
+                int len = strlen(name);
+                
+                if ((len > 7) && (!strcmp(&name[len-7], ".device")))
+                    res = dev_process(name);
+                else
+                    res = process(name);
+                                
+                if (!res)
                 {
                     rc = RETURN_WARN;
                 }
@@ -78,4 +91,28 @@ BOOL process(CONST_STRPTR name)
         PutStr("\n");
         return FALSE;
     }
+}
+
+BOOL dev_process(CONST_STRPTR name)
+{
+    struct IORequest req;
+
+    memset(&req, 0, sizeof(req));
+    req.io_Message.mn_Length = sizeof(req);
+    
+    if (!OpenDevice(name, 0, &req, 0))
+    {
+        CloseDevice(&req);
+        return TRUE;
+    }
+
+    /* There can different errors, but if the device was loaded, it's OK */
+    if (FindName(&SysBase->DeviceList, name))
+        return TRUE;
+
+    PutStr(ERROR_HEADER": ");
+    Printf(_(MSG_ERROR_OPEN_DEVICE), name);
+    PutStr("\n");
+
+    return FALSE;
 }

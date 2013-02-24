@@ -2,3 +2,6 @@
 MSG_ERROR_OPEN_LIBRARY (//)
 Couldn't open library %s.
 ;
+MSG_ERROR_OPEN_DEVICE (//)
+Couldn't open device %s.
+;
