@@ -68,7 +68,7 @@ static Object *DevicePage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                 Child, (IPTR)Label("Name"),
                 Child, (IPTR)(name_txt = TextObject,
                     TextFrame,
-                    MUIA_Text_Contents, "                                 ",
+                    MUIA_Text_Contents, (IPTR)"                                 ",
                 End),
                 Child, (IPTR)Label("Hardware Name"),
                 Child, (IPTR)(hardwarename_txt = TextObject,
