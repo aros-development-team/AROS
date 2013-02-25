@@ -84,7 +84,7 @@
 	    /* Get the full path of oldpath */
 	    if(NameFromLock(lock, buffer, buffersize))
 	    {
-		if(MakeLink((STRPTR)newpath, (STRPTR)buffer, TRUE))
+		if(MakeLink((STRPTR)newpath, (SIPTR)buffer, TRUE))
 		    retval = 0;
 		else
 		{
@@ -113,7 +113,7 @@
 	{
 	    /* In this case it may be difficult to get the full absolute 
 	       path, so we simply trust the caller here for now */
-	    if(MakeLink((STRPTR)newpath, (STRPTR)oldpath, TRUE))
+	    if(MakeLink((STRPTR)newpath, (SIPTR)oldpath, TRUE))
 		retval = 0;
 	    else
 		ioerr = IoErr();
