@@ -200,9 +200,10 @@ AC_OUTPUT(Makefile
           Docs/Makefile
           Drivers/Makefile
           Drivers/ac97/Makefile
+          Drivers/VIA-AC97/Makefile
           Drivers/HDAudio/Makefile
           Drivers/CMI8738/Makefile
-          Drivers/SB128/Makefile	  
+          Drivers/SB128/Makefile
           Drivers/AROS/Makefile
           Drivers/Common/Makefile.common
           Drivers/Device/Makefile
