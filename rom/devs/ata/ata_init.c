@@ -305,7 +305,7 @@ static int ata_Scan(struct ataBase *base)
 }
 
 /* Keep order the same as order of IDs in struct ataBase! */
-static CONST_STRPTR attrBaseIDs[] =
+static CONST_STRPTR const attrBaseIDs[] =
 {
     IID_HW,
     IID_Hidd_ATABus,
