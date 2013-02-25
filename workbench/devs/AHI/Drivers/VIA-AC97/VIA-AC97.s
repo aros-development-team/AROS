@@ -1,0 +1,72 @@
+/*
+    Copyright © 2005-2013, Davy Wentzler. All rights reserved.
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+	FORM_START	AHIM
+	
+	CHUNK_START	AUDN
+	.asciz		"via-ac97"
+	CHUNK_END
+	
+	CHUNK_START	AUDM
+1:	
+	LONG2		AHIDB_AudioID,	0x02000001
+	LONG2		AHIDB_Volume,	TRUE
+	LONG2		AHIDB_Panning,	FALSE
+	LONG2		AHIDB_Stereo,	FALSE
+	LONG2		AHIDB_HiFi,	TRUE
+	LONG2		AHIDB_MultTable,FALSE
+	LONG2		AHIDB_Name,	2f-1b
+	LONG		TAG_DONE
+2:
+	.asciz		"VIA-AC97:HiFi 16 bit mono"
+	CHUNK_END
+		
+	CHUNK_START	AUDM
+1:	
+	LONG2		AHIDB_AudioID,	0x02000002
+	LONG2		AHIDB_Volume,	TRUE
+	LONG2		AHIDB_Panning,	TRUE
+	LONG2		AHIDB_Stereo,	TRUE
+	LONG2		AHIDB_HiFi,	TRUE
+	LONG2		AHIDB_MultTable,FALSE
+	LONG2		AHIDB_Name,	2f-1b
+	LONG		TAG_DONE
+2:
+	.asciz		"VIA-AC97:HiFi 16 bit stereo++"
+	CHUNK_END
+		
+	CHUNK_START	AUDM
+1:	
+	LONG2		AHIDB_AudioID,	0x02000003
+	LONG2		AHIDB_Volume,	TRUE
+	LONG2		AHIDB_Panning,	FALSE
+	LONG2		AHIDB_Stereo,	FALSE
+	LONG2		AHIDB_HiFi,	FALSE
+	LONG2		AHIDB_MultTable,FALSE
+	LONG2		AHIDB_Name,	2f-1b
+	LONG		TAG_DONE
+2:
+	.asciz		"VIA-AC97:16 bit mono"
+	CHUNK_END
+		
+	CHUNK_START	AUDM
+1:	
+	LONG2		AHIDB_AudioID,	0x02000004
+	LONG2		AHIDB_Volume,	TRUE
+	LONG2		AHIDB_Panning,	TRUE
+	LONG2		AHIDB_Stereo,	TRUE
+	LONG2		AHIDB_HiFi,	FALSE
+	LONG2		AHIDB_MultTable,FALSE
+	LONG2		AHIDB_Name,	2f-1b
+	LONG		TAG_DONE
+2:
+	.asciz		"VIA-AC97:16 bit stereo++"
+	CHUNK_END
+		
+	FORM_END
+
+	.END
+	
