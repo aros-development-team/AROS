@@ -46,10 +46,6 @@
 
 #define NAME_BUFFER 128
 
-#define ATABUSNODEPRI_PROBED       50
-#define ATABUSNODEPRI_PROBEDLEGACY 100
-#define ATABUSNODEPRI_LEGACY       0
-
 #define RANGESIZE0 8
 #define RANGESIZE1 4
 #define DMASIZE    16
@@ -370,6 +366,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                 RawDoFmt("PCI %s controller", &subclass, RAWFMTFUNC_STRING, name);
 
                 probedbus->atapb_Node.ln_Name = name;
+                probedbus->atapb_Node.ln_Type = basePri;
                 probedbus->atapb_Node.ln_Pri  = basePri - (base->ata__buscount++);
                 probedbus->atapb_Device       = Device;
                 probedbus->atapb_Vendor       = VendorID;
@@ -522,6 +519,7 @@ static int ata_pci_Scan(struct ataBase *base)
             if (probedbus)
             {
                 probedbus->atapb_Node.ln_Name = (STRPTR)LegacyBuses[n].lb_Name;
+                probedbus->atapb_Node.ln_Type = ATABUSNODEPRI_LEGACY;
                 probedbus->atapb_Node.ln_Pri  = ATABUSNODEPRI_LEGACY - (base->ata__buscount++);
                 probedbus->atapb_Device       = NULL;
                 probedbus->atapb_Vendor       = 0;

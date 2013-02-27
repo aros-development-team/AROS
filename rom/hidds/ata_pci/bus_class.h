@@ -12,6 +12,11 @@ struct ata_ProbedBus
     IPTR        atapb_DMABase;
 };
 
+/* These values are used also for ln_Type */
+#define ATABUSNODEPRI_PROBED       50
+#define ATABUSNODEPRI_PROBEDLEGACY 100
+#define ATABUSNODEPRI_LEGACY       0
+
 struct ATA_BusData
 {
     struct ata_ProbedBus *bus;

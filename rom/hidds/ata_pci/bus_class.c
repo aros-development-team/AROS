@@ -87,9 +87,22 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                                                       (PRD_MAX + 1) * 2 * sizeof(struct PRDEntry));
         }
 
-        if (data->bus->atapb_Device)
+        if (data->bus->atapb_Device &&
+            (data->bus->atapb_Node.ln_Type == ATABUSNODEPRI_PROBED))
         {
-            /* We have a PCI device, install interrupt using portable PCI API */
+            /*
+             * We have a PCI device, install interrupt using portable PCI API.
+             * But do this only if the device is in native mode. In compatibility
+             * mode PCI configuration lies about interrupt number. Experienced
+             * on my Acer AspireOne.
+             * Perhaps this is portability issue but i don't know what to do with
+             * this. Amiga(tm) guys, please check/fix. One possibility is to switch
+             * to native mode here, but i believe in this case i would need to
+             * also set up all I/O regions. On AspireOne only BAR4 is set for IDE
+             * controller. So, also can be bad option. The best case would be if
+             * Amiga(tm) never uses compatibility mode.
+             *                  Pavel Fedin <pavel_fedin@mail.ru>.
+             */
             struct Interrupt *pciInt = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC);
 
             if (pciInt)
@@ -102,13 +115,13 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                 data->irqHandle = pciInt;
                 if (HIDD_PCIDevice_AddInterrupt(data->bus->atapb_Device, pciInt))
                     return o;
-                
+
                 FreeMem(pciInt, sizeof(struct Interrupt));
             }
         }
         else
         {
-            /* Legacy ISA device. Use raw system IRQ. */
+            /* Legacy device. Use raw system IRQ. */
             data->irqHandle = KrnAddIRQHandler(data->bus->atapb_INTLine, ata_Raw_Interrupt,
                                                data, NULL);
             if (data->irqHandle)
@@ -131,6 +144,11 @@ void PCIATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     if (data->bus->atapb_Device)
     {
+        /*
+         * FIXME: The same PCI device object is used by two buses.
+         * Releasing is incorrect because of this. Need to attach
+         * a structure with ownership counter to it.
+         */
         HIDD_PCIDevice_RemoveInterrupt(data->bus->atapb_Device, data->irqHandle);
         FreeMem(data->irqHandle, sizeof(struct Interrupt));
         HIDD_PCIDevice_Release(data->bus->atapb_Device);
