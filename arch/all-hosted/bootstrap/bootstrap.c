@@ -172,7 +172,7 @@ int bootstrap(int argc, char ** argv)
         if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
             printf ("Hosted AROS bootstrap\n"
                     "usage: %s [options] [kernel arguments]\n"
-                    "Availible options:\n"
+                    "Available options:\n"
                     " -h                 show this page\n"
                     " -m <size>          allocate <size> Megabytes of memory for AROS\n"
                     "                    (default is 64M)\n"
