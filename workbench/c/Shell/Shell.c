@@ -244,7 +244,6 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
     if (result)
     {
         D(bug("convertLine: error = %ld\n", result));
-	PrintFault(result, haveCommand ? ss->command + 2 : NULL);
 	cli->cli_ReturnCode = RETURN_ERROR;
 	cli->cli_Result2 = result;
     }
@@ -454,8 +453,10 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs)
     D(bug("[Shell] executeLine: %s %s\n", command, commandArgs));
 
     cmd = AllocVec(4096 * sizeof(TEXT), MEMF_ANY);
-    if (!cmd)
-    	return ERROR_NO_FREE_STORE;
+    if (!cmd) {
+        PrintFault(ERROR_NO_FREE_STORE, NULL);
+        return ERROR_NO_FREE_STORE;
+    }
 
     module = loadCommand(ss, command, &scriptLock,
 			 &homeDirChanged, &residentCommand);
@@ -545,11 +546,11 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs)
 	    Printf("Memory leak of %lu bytes\n", mem_before - mem_after);
 	}
 
-	D(bug("[Shell] returned %ld: %s\n", cli->cli_ReturnCode, command));
+	D(bug("[Shell] returned %ld (%ld): %s\n", cli->cli_ReturnCode, IoErr(), command));
+	error = (cli->cli_ReturnCode == RETURN_OK) ? 0 : IoErr();
 	pr->pr_Task.tc_Node.ln_Name = oldtaskname;
 	unloadCommand(ss, module, homeDirChanged, residentCommand);
 
-	error = (cli->cli_ReturnCode == RETURN_OK) ? 0 : IoErr();
     }
     else
     {
@@ -588,6 +589,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs)
 		UnLock(lock);
 	    }
 	}
+        PrintFault(error, command);
     }
 errexit:
     FreeVec(cmd);
