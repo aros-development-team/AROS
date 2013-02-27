@@ -61,10 +61,7 @@ AROS_INTH1(ata_PCI_Interrupt, struct ATA_BusData *, data)
 
 void ata_Raw_Interrupt(struct ATA_BusData *data, void *unused)
 {
-    UBYTE status = inb(data->bus->atapb_IOBase + ata_Status);
-
-    if (!(status & ATAF_BUSY))
-        data->ata_HandleIRQ(status, data->irqData);
+    AROS_INTC1(ata_PCI_Interrupt, data);
 }
 
 OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
