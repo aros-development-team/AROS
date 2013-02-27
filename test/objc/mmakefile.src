@@ -1,0 +1,21 @@
+# 
+#  Copyright (C) 2013, The AROS Development Team
+#  All right reserved.
+#  Author: Jason S. McMullan <jason.mcmullan@gmail.com>
+# 
+#  Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
+# 
+include $(TOP)/config/make.cfg
+
+EXEDIR := $(AROS_TESTS)/objc
+
+#MM- test : test-objc
+#MM- test-quick : test-objc-quick
+
+#MM- test-objc: test-objc-hello
+#MM- test-objc-quick: test-objc-hello-quick
+
+%build_prog mmake=test-objc-hello progname=hello \
+    files= objcfiles=hello targetdir=$(EXEDIR)
+
+%common

@@ -575,6 +575,175 @@ $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.cpp
 
 
 #------------------------------------------------------------------------------
+# Generate a rule to compile an ObjC source file to an object file and generate
+# the dependency file. Basename may contain a directory part, then the source
+# file has to be in that directory. The generated file will be put in the
+# object directory without the directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .m file
+%define rule_compile_objc basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target nix=no
+
+ifeq (%(targetdir),)
+  TMP_TARGETBASE := %(basename)
+else
+  TMP_TARGETBASE := %(targetdir)/$(notdir %(basename))
+endif
+
+# Adjust compiler flags to suit ObjC
+TMP_OBJCFLAGS := %(cflags)
+TMP_OBJCFLAGS := $(TMP_OBJCFLAGS) -isystem $(AROS_DEVELOPMENT)/include
+TMP_OBJCFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_OBJCFLAGS)))
+
+ifeq ($(findstring %(compiler),host kernel target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+$(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (%(compiler),host)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
+$(TMP_TARGETBASE).o : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(TMP_TARGETBASE).d : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+$(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (%(compiler),kernel)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+$(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+ifeq (%(nix),yes)
+  $(TMP_TARGETBASE).o : CFLAGS := -nix $(TMP_OBJCFLAGS)
+else
+  $(TMP_TARGETBASE).o : CFLAGS := $(TMP_OBJCFLAGS)
+endif
+$(TMP_TARGETBASE).o : %(basename).m
+	%compile_q cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+
+ifeq (%(dflags),)
+  ifeq (%(nix),yes)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix $(TMP_OBJCFLAGS)
+  else
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=$(TMP_OBJCFLAGS)
+  endif
+else
+  ifeq (%(nix),yes)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(dflags)
+  else
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
+  endif
+endif
+$(TMP_TARGETBASE).d : %(basename).m
+	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
+%end
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Generate a rule to compile multiple ObjC source files to an object file and
+# generate the corresponding dependency files. The generated file will be put
+# in the object directory without the directory part of the source file.
+# options
+# - basenames: the basenames of the files to compile. The names may include
+#   relative or absolute path names. No wildcard is allowed
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .m file. When targetdir is not
+#   empty, path names will be stripped from the file names so that all files
+#   are in that dir and not in subdirectories.
+# - compiler (default target): compiler to use, target, kernel or host
+%define rule_compile_objc_multi basenames=/A cflags=$(CFLAGS) dflags= \
+    targetdir= compiler=target
+
+# Adjust compiler flags to suit ObjC
+TMP_OBJCFLAGS := %(cflags)
+TMP_OBJCFLAGS := $(TMP_OBJCFLAGS) -isystem $(AROS_DEVELOPMENT)/include
+TMP_OBJCFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_OBJCFLAGS)))
+
+ifeq (%(targetdir),)
+  TMP_TARGETS := $(addsuffix .o,%(basenames))
+  TMP_DTARGETS := $(addsuffix .d,%(basenames))
+  TMP_WILDCARD := %
+else
+  TMP_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,%(basenames)))
+  TMP_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,%(basenames)))
+  TMP_WILDCARD := %(targetdir)/%
+
+  # Be sure that all .m files are generated
+  $(TMP_TARGETS) $(TMP_DTARGETS) : | $(addsuffix .m,%(basenames))
+
+  # Be sure that all .m files are found
+  TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+  TMP_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+  TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
+  ifneq ($(TMP_DIRS),)
+    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.m $(TMP_DIRS)
+  endif
+endif
+
+# Define the use of cross compiler
+ifeq ($(TARGET_OBJC),)
+  TMP_CC := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc
+else
+  TMP_CC := $(TARGET_OBJC)
+endif
+
+ifeq ($(findstring %(compiler),host kernel target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TMP_CC) $(TARGET_CFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (%(compiler),host)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_OBJC)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (%(compiler),kernel)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_OBJC) $(KERNEL_CFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(TMP_TARGETS) : CFLAGS := $(TMP_OBJCFLAGS)
+$(TMP_TARGETS) : $(TMP_WILDCARD).o : %.m
+	%compile_q cmd=$(CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+
+ifeq (%(dflags),)
+  $(TMP_DTARGETS) : DFLAGS:=$(TMP_OBJCFLAGS)
+else
+  ifeq (%(dflags),%(cflags))
+    $(TMP_DTARGETS) : DFLAGS:=$(TMP_OBJCFLAGS)
+  else
+    $(TMP_DTARGETS) : DFLAGS:=%(dflags)
+  endif
+endif
+$(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.m
+	%mkdepend_q cc=$(CMD) flags=$(DFLAGS)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Make an alias from one arch specific build to another arch.
 # arguments:
 # - mainmmake: the mmake of the module in the main tree
@@ -1083,6 +1252,7 @@ BDID := $(BDTARGETID)
 #------------------------------------------------------------------------------
 # Build a program
 %define build_prog mmake=/A progname=/A files=$(BD_PROGNAME) cxxfiles= \
+    objcfiles= \
     asmfiles= objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
@@ -1102,14 +1272,15 @@ endif
 
 BD_FILES     := %(files)
 BD_CXXFILES  := %(cxxfiles)
+BD_OBJCFILES := %(objcfiles)
 BD_ASMFILES  := %(asmfiles)
 
 BD_ARCHOBJS   := $(wildcard $(BD_OBJDIR)/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
-BD_OBJS := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES) $(BD_CXXFILES) $(BD_ASMFILES))))
-BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES) $(BD_CXXFILES))))
+BD_OBJS := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES) $(BD_CXXFILES) $(BD_ASMFILES) $(BD_OBJCFILES))))
+BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(notdir $(BD_NARCHFILES) $(BD_CXXFILES) $(BD_OBJCFILES))))
 
 BD_CFLAGS    := %(cflags)
 BD_AFLAGS    := %(aflags)
@@ -1126,6 +1297,8 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
 %rule_compile_multi basenames=$(BD_NARCHFILES) targetdir=$(BD_OBJDIR) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
 %rule_compile_cxx_multi basenames=$(BD_CXXFILES) targetdir=$(BD_OBJDIR) \
+    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
+%rule_compile_objc_multi basenames=$(BD_OBJCFILES) targetdir=$(BD_OBJDIR) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
 %rule_assemble_multi basenames=$(BD_ASMFILES) targetdir=$(BD_OBJDIR) \
     aflags=$(BD_AFLAGS) compiler=%(compiler)
