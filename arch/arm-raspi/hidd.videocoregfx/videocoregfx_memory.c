@@ -71,8 +71,8 @@ void *FNAME_SUPPORT(Alloc)(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 
     xsd->vcsd_VCMBoxMessage[8] = 0; // terminate tag
 
-    VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, xsd->vcsd_VCMBoxMessage);
-    if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == xsd->vcsd_VCMBoxMessage)
+    VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_VCMBoxMessage);
+    if (VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_VCMBoxMessage)
     {
         D(bug("[VideoCoreGfx] %s: Allocated %d bytes, memhandle @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_VCMBoxMessage[4], xsd->vcsd_VCMBoxMessage[7]));
         
@@ -103,8 +103,8 @@ void *FNAME_SUPPORT(LockMem)(struct MemHeaderExt *mhe, void *memhandle)
 
     xsd->vcsd_VCMBoxMessage[6] = 0; // terminate tag
 
-    VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, xsd->vcsd_VCMBoxMessage);
-    if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == xsd->vcsd_VCMBoxMessage)
+    VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_VCMBoxMessage);
+    if (VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_VCMBoxMessage)
     {
         D(bug("[VideoCoreGfx] %s: Memory locked @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_VCMBoxMessage[5]));
         return xsd->vcsd_VCMBoxMessage[5];
@@ -131,8 +131,8 @@ void *FNAME_SUPPORT(UnLockMem)(struct MemHeaderExt *mhe, void *memhandle)
 
     xsd->vcsd_VCMBoxMessage[6] = 0; // terminate tag
 
-    VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, xsd->vcsd_VCMBoxMessage);
-    if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == xsd->vcsd_VCMBoxMessage)
+    VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_VCMBoxMessage);
+    if (VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_VCMBoxMessage)
     {
         D(bug("[VideoCoreGfx] %s: Memory unlocked [status %08x]\n", __PRETTY_FUNCTION__, xsd->vcsd_VCMBoxMessage[5]));
         return xsd->vcsd_VCMBoxMessage[5];
@@ -164,8 +164,8 @@ void FNAME_SUPPORT(Free)(struct MemHeaderExt *mhe, APTR  memhandle, IPTR size)
 
     xsd->vcsd_VCMBoxMessage[6] = 0; // terminate tag
 
-    VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, xsd->vcsd_VCMBoxMessage);
-    if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == xsd->vcsd_VCMBoxMessage)
+    VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_VCMBoxMessage);
+    if (VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_VCMBoxMessage)
     {
         mhe->mhe_MemHeader.mh_Free += size;
 

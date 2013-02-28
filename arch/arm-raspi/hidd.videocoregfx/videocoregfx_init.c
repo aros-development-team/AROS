@@ -112,8 +112,8 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
 
     xsd->vcsd_VCMBoxMessage[7] = 0; // terminate tag
 
-    VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, xsd->vcsd_VCMBoxMessage);
-    if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == xsd->vcsd_VCMBoxMessage)
+    VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_VCMBoxMessage);
+    if (VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_VCMBoxMessage)
     {
         if (FNAME_SUPPORT(InitMem)(xsd->vcsd_VCMBoxMessage[5], xsd->vcsd_VCMBoxMessage[6], LIBBASE))
         {

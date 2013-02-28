@@ -11,7 +11,7 @@
 #include "videocoregfx_class.h"
 #include "videocoregfx_bitmap.h"
 
-#define VCMB_FBCHAN     8
+#define VCMB_PROPCHAN     8
 
 struct HWData  {
 	ULONG void0;
