@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2009, The AROS Development Team. All rights reserved
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -7,22 +7,22 @@
 */
 
 #include <aros/debug.h>
-
-#include <exec/types.h>
 #include <exec/exec.h>
 #include <exec/resident.h>
+#include <hidd/hidd.h>
 #include <utility/utility.h>
 #include <utility/tagitem.h>
 #include <oop/oop.h>
-#include "timer.h"
-
 #include <dos/bptr.h>
 
 #include <proto/exec.h>
 #include <proto/oop.h>
 
+#include "timer.h"
 #include "ata.h"
 #include LC_LIBDEFS_FILE
+
+#define DINIT(x)
 
 //---------------------------IO Commands---------------------------------------
 
@@ -745,6 +745,11 @@ AROS_LH1(ULONG, GetBlkSize,
     AROS_LIBFUNC_EXIT
 }
 
+static const struct Hook tickHook =
+{
+    .h_Entry = Hidd_ATABus_Tick,
+};
+
 /*
  * The daemon of ata.device first opens all ATAPI devices and then enters
  * endless loop. Every 2 seconds it tells ATAPI units to check the media
@@ -753,119 +758,100 @@ AROS_LH1(ULONG, GetBlkSize,
  * The check is done by sending HD_SCSICMD+1 command (internal testchanged
  * command). ATAPI units should already handle the command further.
  */
-void DaemonCode(LIBBASETYPEPTR LIBBASE)
+void DaemonCode(struct ataBase *ATABase)
 {
-    struct MsgPort *myport;     // Message port used with ata.device
     struct IORequest *timer;	// timer
-    struct IOStdReq *ios[64];   // Placeholder for unit messages
-    int count = 0,b,d;
-    struct ata_Bus *bus;
+    UBYTE b = 0;
+    ULONG sigs;
 
     D(bug("[ATA**] You woke up DAEMON\n"));
 
     /*
      * Prepare message ports and timer.device's request
      */
-    myport = CreateMsgPort();
-    timer  = ata_OpenTimer(LIBBASE);
-    bus         = (struct ata_Bus*)LIBBASE->ata_Buses.mlh_Head;
-
-    /*
-     * grab all buses, see if there is an atapi cdrom connected or anything alike
-     * TODO: good thing to consider putting extra code here for future hotplug support *if any*
-     */
-    while (bus->ab_Node.mln_Succ != NULL)
+    timer  = ata_OpenTimer(ATABase);
+    if (!timer)
     {
-       b = bus->ab_BusNum;
-       D(bug("[ATA++] Checking bus %d\n", b));
+        D(bug("[ATA++] Failed to open timer!\n"));
 
-       for (d=0; d < MAX_BUSUNITS; d++)
-       {
-          /*
-           * Is a device ATAPI?
-           */
-          D(bug("[ATA++] Unit %d is of type %x\n", (b<<1)+d, bus->ab_Dev[d]));
-
-          if (bus->ab_Dev[d] >= DEV_ATAPI)
-          {
-             /*
-              * Atapi device found. Create IOStdReq for it
-              */
-             ios[count] = (struct IOStdReq *) CreateIORequest(myport, sizeof(struct IOStdReq));
-
-             ios[count]->io_Command = HD_SCSICMD + 1;
-
-             /*
-              * And force OpenDevice call. Don't use direct call as it's unsafe
-              * and not nice at all.
-              *
-              * so THIS is an OpenDevice().....
-              */
-             D(bug("[ATA++] Opening ATAPI device, unit %d\n", (b<<1)|d));
-             AROS_LVO_CALL3NR(void,
-                   AROS_LCA(struct IORequest *, (struct IORequest *)(ios[count]), A1),
-                   AROS_LCA(ULONG, (b << 1) | d, D0),
-                   AROS_LCA(ULONG, 0, D1),
-                   LIBBASETYPEPTR, LIBBASE, 1, ata);
-
-             /*
-              * increase amount of ATAPI devices in system
-              */
-             count++;
-          }
-
-          /*
-           * INFO: we are only handling up to 64 atapi devices here
-           */
-          if (count == sizeof(ios) / sizeof(*ios))
-             break;
-       }
-       bus = (struct ata_Bus*)bus->ab_Node.mln_Succ;
+        Forbid();
+        Signal(ATABase->daemonParent, SIGF_SINGLE);
+        return;
     }
+
+    /* Calibrate 400ns delay */
+    if (!ata_Calibrate(timer, ATABase))
+    {
+        ata_CloseTimer(timer);
+        Forbid();
+        Signal(ATABase->daemonParent, SIGF_SINGLE);
+        return;
+    }
+
+    /* This also signals that we have initialized succesfully */
+    ATABase->ata_Daemon = FindTask(NULL);
+    Signal(ATABase->daemonParent, SIGF_SINGLE);
 
     D(bug("[ATA++] Starting sweep medium presence detection\n"));
 
     /*
      * Endless loop
      */
-    for (b=0;;++b)
+    do
     {
         /*
          * call separate IORequest for every ATAPI device
          * we're calling HD_SCSICMD+1 command here -- anything like test unit ready?
+         * FIXME: This is not a very nice approach in terms of performance.
+         * This inserts own command into command queue every 2 seconds, so
+         * this would give periodic performance drops under high loads.
+         * It would be much better if unit tasks ping their devices by themselves,
+         * when idle. This would also save us from lots of headaches with dealing
+         * with list of these requests. Additionally i start disliking all these
+         * semaphores.
          */
         if (0 == (b & 1))
         {
-            D(bug("[ATA++] Detecting media presence\n"));
-            for (d=0; d < count; d++)
-                DoIO((struct IORequest *)ios[d]);
+            struct IOStdReq *ios;
+
+            DB2(bug("[ATA++] Detecting media presence\n"));
+            ObtainSemaphore(&ATABase->DaemonSem);
+
+            ForeachNode(&ATABase->Daemon_ios, ios)
+            {
+                /* Using the request will clobber its Node. Save links. */
+                struct Node *s = ios->io_Message.mn_Node.ln_Succ;
+                struct Node *p = ios->io_Message.mn_Node.ln_Pred;
+
+                DoIO((struct IORequest *)ios);
+
+                ios->io_Message.mn_Node.ln_Succ = s;
+                ios->io_Message.mn_Node.ln_Pred = p;
+            }
+
+            ReleaseSemaphore(&ATABase->DaemonSem);
         }
 
-        /*
-         * check / trigger all buses waiting for an irq
-         */
+        /* check / trigger all buses waiting for an irq */
         DB2(bug("[ATA++] Checking timeouts...\n"));
-        Forbid();
-        ForeachNode(&LIBBASE->ata_Buses, bus)
-        {
-            if (bus->ab_Timeout >= 0)
-            {
-                if (0 > (--bus->ab_Timeout))
-                {
-                    Signal(bus->ab_Task, SIGBREAKF_CTRL_C);
-                }
-            }
-        }
-        Permit();
+        HW_EnumDrivers(ATABase->ataObj, (struct Hook *)&tickHook, ATABase);
 
         /*
          * And then hide and wait for 1 second
          */
         DB2(bug("[ATA++] 1 second delay, timer 0x%p...\n", timer));
-        ata_WaitTO(timer, 1, 0, 0);
+        sigs = ata_WaitTO(timer, 1, 0, SIGBREAKF_CTRL_C);
 
         DB2(bug("[ATA++] Delay completed\n"));
-    }
+        b++;
+    } while (!sigs);
+
+    D(bug("[ATA++] Daemon quits\n"));
+    
+    ata_CloseTimer(timer);
+
+    Forbid();
+    Signal(ATABase->daemonParent, SIGF_SINGLE);
 }
 
 /*
@@ -873,23 +859,16 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
     in endless loop and calls proper handling function. The IO is Semaphore-
     protected within a bus.
 */
-void BusTaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphore *ssem)
+void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
 {
     ULONG sig;
     int iter;
     struct IORequest *msg;
     struct ata_Unit *unit;
 
-    D(bug("[ATA**] Task started (IO: 0x%x)\n", bus->ab_Port));
+    DINIT(bug("[ATA**] Task started (bus: %u)\n", bus->ab_BusNum));
 
-    /*
-     * don't hold parent while we analyze devices.
-     * keep things as parallel as they can be
-     */
-    ObtainSemaphoreShared(ssem);
-    Signal(parent, SIGBREAKF_CTRL_C);
-
-    bus->ab_Timer = ata_OpenTimer(bus->ab_Base);
+    bus->ab_Timer = ata_OpenTimer(ATABase);
 
     /* Get the signal used for sleeping */
     bus->ab_Task = FindTask(0);
@@ -898,40 +877,65 @@ void BusTaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphor
     if (bus->ab_SleepySignal < 0)
         bus->ab_SleepySignal = SIGBREAKB_CTRL_E;
 
-    /*
-     * set up irq handler now. all irqs are disabled, so prepare them one by one
-     */
-    if (!bus->ab_Driver->CreateInterrupt(bus))
-    {
-        D(bug("[ATA  ] Something wrong with creating interrupt?\n"));
-    }
-
     sig = 1L << bus->ab_MsgPort->mp_SigBit;
 
-    for (iter=0; iter<MAX_BUSUNITS; ++iter)
+    for (iter = 0; iter < MAX_BUSUNITS; ++iter)
     {
-       unit = bus->ab_Units[iter];
-       if (ata_setup_unit(bus, iter))
-       {
-          if (unit->au_XferModes & AF_XFER_PACKET)
-             ata_RegisterVolume(0, 0, unit);
-          else
-             ata_RegisterVolume(0, unit->au_Cylinders - 1, unit);
-       }
-       else
-       {
-           /* Destroy unit that couldn't be initialised */
-           FreeVecPooled(bus->ab_Base->ata_MemPool, unit);
-           bus->ab_Units[iter] = NULL;
-           bus->ab_Dev[iter] = DEV_NONE;
-       }
+        DINIT(bug("[ATA**] Device %u type %d\n", iter, bus->ab_Dev[iter]));
+
+        if (bus->ab_Dev[iter] > DEV_UNKNOWN)
+        {
+            unit = AllocVecPooled(ATABase->ata_MemPool, sizeof(struct ata_Unit));
+            if (unit)
+            {
+                ata_init_unit(bus, unit, iter);
+                if (ata_setup_unit(bus, unit))
+                {
+                    /*
+                     * Add unit to the bus.
+                     * At this point it becomes visible to OpenDevice().
+                     */
+                    bus->ab_Units[iter] = unit;
+
+                    if (unit->au_XferModes & AF_XFER_PACKET)
+                    {
+                        ata_RegisterVolume(0, 0, unit);
+
+                        /* For ATAPI device we also submit media presence detection request */
+                        unit->DaemonReq = (struct IOStdReq *)CreateIORequest(ATABase->DaemonPort, sizeof(struct IOStdReq));
+                        if (unit->DaemonReq)
+                        {
+                            /*
+                             * We don't want to keep stalled open count of 1, so we
+                             * don't call OpenDevice() here. Instead we fill in the needed
+                             * fields manually.
+                             */
+                            unit->DaemonReq->io_Device = &ATABase->ata_Device;
+                            unit->DaemonReq->io_Unit   = &unit->au_Unit;
+
+                            ObtainSemaphore(&ATABase->DaemonSem);
+                            AddTail((struct List *)&ATABase->Daemon_ios,
+                                    &unit->DaemonReq->io_Message.mn_Node);
+                            ReleaseSemaphore(&ATABase->DaemonSem);
+                        }
+                    }
+                    else
+                    {
+                        ata_RegisterVolume(0, unit->au_Cylinders - 1, unit);
+                    }
+                }
+                else
+                {
+                    /* Destroy unit that couldn't be initialised */
+                    FreeVecPooled(ATABase->ata_MemPool, unit);
+                    bus->ab_Dev[iter] = DEV_NONE;
+                }
+            }
+        }
     }
 
-    /*
-     * ok, we're done with init here.
-     * tell the parent task we're ready
-     */
-    ReleaseSemaphore(ssem);
+    D(bug("[ATA--] Bus %u scan finished\n", bus->ab_BusNum));
+    ReleaseSemaphore(&ATABase->DetectionSem);
 
     /* Wait forever and process messages */
     for (;;)
@@ -947,7 +951,7 @@ void BusTaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphor
             while ((msg = (struct IORequest *)GetMsg(bus->ab_MsgPort)))
             {
                 /* And do IO's */
-                HandleIO(msg, bus->ab_Base);
+                HandleIO(msg, ATABase);
                 /* TD_ADDCHANGEINT doesn't require reply */
                 if (msg->io_Command != TD_ADDCHANGEINT)
                 {

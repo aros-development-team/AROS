@@ -30,7 +30,6 @@
 #include <hidd/ata.h>
 
 #include "include/devices/scsicmds.h"
-#include "ata_bus.h"
 
 #define MAX_DEVICEBUSES         2
 #define MAX_BUSUNITS            2
@@ -53,51 +52,29 @@
 struct ata_Unit;
 struct ata_Bus;
 
-/*
- * this **might** cause problems with PPC64, which **might** expect both to be 64bit.
- */
-struct PRDEntry {
-   ULONG   prde_Address;
-   ULONG   prde_Length;
-};
-
-#define PRDE_EOT    0x80000000
-#define PRD_MAX     514
-
 /* ata.device base */
 struct ataBase
 {
-   /*
-    * Device structure - used to manage devices by exec guts^h^h^hoods
-    */
-   struct Device           ata_Device;
+   struct Device           ata_Device;    /* Exec device structure                */
+   struct Task            *ata_Daemon;    /* master task pointer                  */
+   struct MsgPort         *DaemonPort;    /* Daemon's message port                */
+   struct MinList          Daemon_ios;    /* Daemon's IORequests                  */
+   struct SignalSemaphore  DaemonSem;
+   struct Task            *daemonParent;  /* Who sends control requests to daemon */
+   int                     ata__buscount; /* Number of all buses                  */
+   struct SignalSemaphore  DetectionSem;  /* Device detection semaphore           */
 
-   /*
-    * master task pointer
-    */
-   struct Task            *ata_Daemon;
-
-   /*
-    * list of all buses - we may have more than just 4
-    */
-   struct MinList          ata_Buses;
-   int                     ata__buscount;
-
-   /*
-    * Arguments and flags
-    */
+   /* Arguments and flags */
    UBYTE                   ata_32bit;
    UBYTE                   ata_NoMulti;
    UBYTE                   ata_NoDMA;
    UBYTE                   ata_Poll;
-   STRPTR                  ata_CmdLine;
 
    /*
     * memory pool
     */
    APTR                    ata_MemPool;
 
-   struct Device          *ata_TimerBase;
    ULONG                   ata_ItersPer100ns;
 
    struct Library         *ata_OOPBase;
@@ -140,9 +117,6 @@ struct ata_Bus
    void                    *pioInterface;   /* PIO interface object     */
    void                    *dmaInterface;   /* DMA interface object     */
 
-   ULONG                   ab_Port;    /* IO port used */
-   ULONG                   ab_Alt;     /* alternate io port */
-   UBYTE                   ab_IRQ;     /* IRQ number used */
    UBYTE                   ab_Dev[2];  /* Master/Slave type, see below */
    UBYTE                   ab_Flags;   /* Bus flags similar to unit flags */
    BYTE                    ab_SleepySignal; /* Signal used to wake the task up, when it's waiting */
@@ -153,22 +127,16 @@ struct ata_Bus
    struct ata_Unit         *ab_Units[MAX_BUSUNITS];    /* Units on the bus */
    struct ata_Unit         *ab_SelectedUnit;    /* Currently selected unit */
 
-   struct Interrupt        ab_IntHandler;
    ULONG                   ab_IntCnt;
 
    struct Task             *ab_Task;       /* Bus task handling all not-immediate transactions */
    struct MsgPort          *ab_MsgPort;    /* Task's message port */
-   struct PRDEntry         *ab_PRD;
    struct IORequest        *ab_Timer;      /* timer stuff */
 
    struct Interrupt        ab_ResetInt;
 
    /* functions go here */
    void                   (*ab_HandleIRQ)(struct ata_Unit* unit, UBYTE status);
-   
-   /* Bus driver stuff */
-   const struct ata_BusDriver *ab_Driver;
-   APTR                        ab_DriverData;
 };
 
 /* Device types */
@@ -279,17 +247,23 @@ typedef struct
    } type;
 } ata_CommandBlock;
 
+struct DaemonIO
+{
+    struct MinNode link;
+    struct IOStdReq req;
+};
+
 /*
    Unit structure describing given device on the bus. It contains all the
    necessary information unit/device may need.
    */
 struct ata_Unit
 {
-   struct Unit         au_Unit;   /* exec's unit */
-   struct DriveIdent  *au_Drive;  /* Drive Ident after IDENTIFY command */
-   struct ata_Bus     *au_Bus;    /* Bus on which this unit is */
+   struct Unit         au_Unit;        /* exec's unit */
+   struct DriveIdent  *au_Drive;       /* Drive Ident after IDENTIFY command */
+   struct ata_Bus     *au_Bus;         /* Bus on which this unit is */
+   struct IOStdReq    *DaemonReq;      /* Disk change monitoring request */
 
-   ULONG               au_DMAPort;
    ULONG               au_XferModes;   /* available transfer modes */
 
    ULONG               au_Capacity;    /* Highest sector accessible through LBA28 */
@@ -308,27 +282,27 @@ struct ata_Unit
       in PIO mode reading single sectors, using multisector PIO, or
       multiword DMA.
       */
-   BYTE        (*au_Read32)(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-   BYTE        (*au_Write32)(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-   BYTE        (*au_Read64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-   BYTE        (*au_Write64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-   BYTE        (*au_Eject)(struct ata_Unit *);
-   BYTE        (*au_DirectSCSI)(struct ata_Unit *, struct SCSICmd*);
-   BYTE        (*au_Identify)(struct ata_Unit *);
-
-   VOID                (*au_ins)(APTR, UWORD, ULONG, APTR);
-   VOID                (*au_outs)(APTR, UWORD, ULONG, APTR);
+   BYTE                (*au_Read32    )(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+   BYTE                (*au_Write32   )(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+   BYTE                (*au_Read64    )(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+   BYTE                (*au_Write64   )(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+   BYTE                (*au_Eject     )(struct ata_Unit *);
+   BYTE                (*au_DirectSCSI)(struct ata_Unit *, struct SCSICmd*);
+   BYTE                (*au_Identify  )(struct ata_Unit *);
+   VOID                (*au_ins       )(APTR, APTR, ULONG);
+   VOID                (*au_outs      )(APTR, APTR, ULONG);
+   void                *pioInterface;  /* PIO interface object, cached for performance */
 
    ULONG               au_UnitNum;     /* Unit number as coded by device */
    ULONG               au_Flags;       /* Unit flags, see below */
    ULONG               au_ChangeNum;   /* Number of disc changes */
 
-   struct Interrupt   *au_RemoveInt;  /* Raise this interrupt on a disc change */
+   struct Interrupt   *au_RemoveInt;   /* Raise this interrupt on a disc change */
    struct List         au_SoftList;    /* Raise even more interrupts from this list on disc change */
 
-   UBYTE               au_SectorShift;         /* Sector shift. 9 here is 512 bytes sector */
-   UBYTE               au_DevMask;             /* device mask used to simplify device number coding */
-   UBYTE               au_SenseKey;            /* Sense key from ATAPI devices */
+   UBYTE               au_SectorShift; /* Sector shift. 9 here is 512 bytes sector */
+   UBYTE               au_DevMask;     /* device mask used to simplify device number coding */
+   UBYTE               au_SenseKey;    /* Sense key from ATAPI devices */
    UBYTE               au_DevType;
 
    /******* PIO IO ********/
@@ -360,49 +334,12 @@ enum
 #define AB_DiscPresent          30     /* disc now in drive */
 #define AB_DiscChanged          29     /* disc changed */
 #define AB_Removable            28     /* media removable */
-#define AB_80Wire               27     /* has an 80-wire cable */
 #define AB_CHSOnly              26     /* only supports CHS commands */
 
 #define AF_DiscPresent          (1 << AB_DiscPresent)
 #define AF_DiscChanged          (1 << AB_DiscChanged)
 #define AF_Removable            (1 << AB_Removable)
-#define AF_80Wire               (1 << AB_80Wire)
 #define AF_CHSOnly              (1 << AB_CHSOnly)
-
-/* RegisterBus flags */
-#define ARBB_80Wire              0
-#define ARBB_EarlyInterrupt      1
-
-#define ARBF_80Wire              (1 << ARBB_80Wire)
-#define ARBF_EarlyInterrupt      (1 << ARBB_EarlyInterrupt)
-
-#define ATA_OUT(val, offset, port)  unit->au_Bus->ab_Driver->ata_out((val), (offset), (port), unit->au_Bus->ab_DriverData)
-#define ATA_IN(offset, port)        unit->au_Bus->ab_Driver->ata_in((offset), (port), unit->au_Bus->ab_DriverData)
-#define ATA_OUTL(val, offset, port) unit->au_Bus->ab_Driver->ata_outl((val), (offset), (port), unit->au_Bus->ab_DriverData)
-
-#define BUS_OUT(val, offset, port)  bus->ab_Driver->ata_out((val), (offset), (port), bus->ab_DriverData)
-#define BUS_IN(offset, port)        bus->ab_Driver->ata_in((offset), (port), bus->ab_DriverData)
-#define BUS_OUTL(val, offset, port) bus->ab_Driver->ata_outl((val), (offset), (port), bus->ab_DriverData)
-
-/* SFF-8038i DMA registers */
-#define dma_Command         0x00
-#define dma_Status          0x02
-#define dma_PRD             0x04
-
-/* DMA command register */
-#define DMA_READ            0x00    /* PCI *READS* from memory to drive */
-#define DMA_WRITE           0x08    /* PCI *WRITES* to memory from drive */
-#define DMA_START           0x01    /* DMA Start/Stop */
-
-#define DMAB_Active         0
-#define DMAB_Error          1
-#define DMAB_Interrupt      2
-#define DMAB_Simplex        7
-
-#define DMAF_Active         (1 << DMAB_Active)
-#define DMAF_Error          (1 << DMAB_Error)
-#define DMAF_Interrupt      (1 << DMAB_Interrupt)
-#define DMAF_Simplex        (1 << DMAB_Simplex)
 
 #define Unit(io) ((struct ata_Unit *)(io)->io_Unit)
 #define IOStdReq(io) ((struct IOStdReq *)io)
@@ -431,22 +368,11 @@ BYTE ata_Identify(struct ata_Unit*);
 BYTE atapi_DirectSCSI(struct ata_Unit*, struct SCSICmd *);
 ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
 
-BOOL ata_HandleIRQ(struct ata_Bus *bus);
-
-BOOL dma_SetupPRD(struct ata_Unit *, APTR, ULONG, BOOL);
-BOOL dma_SetupPRDSize(struct ata_Unit *, APTR, ULONG, BOOL);
-VOID dma_StartDMA(struct ata_Unit *);
-VOID dma_StopDMA(struct ata_Unit *);
-VOID dma_Cleanup(APTR adr, ULONG len, BOOL read);
-
-BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u);
-BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u);
+BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit);
+BOOL ata_init_unit(struct ata_Bus *bus, struct ata_Unit *unit, UBYTE u);
 BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
 
-void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG Flags,
-                     const struct ata_BusDriver *driver, APTR driverData, struct ataBase *ATABase);
-
-void BusTaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphore *ssem);
+void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase);
 void DaemonCode(struct ataBase *LIBBASE);
 
 #define ATAPI_SS_EJECT  0x02

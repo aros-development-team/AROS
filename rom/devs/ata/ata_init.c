@@ -109,201 +109,6 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     return FALSE;
 }
 
-static AROS_INTH1(ATAResetHandler,struct ata_Bus *, bus)
-{
-    AROS_INTFUNC_INIT
-
-    struct ata_Unit *unit;
-    UWORD i;
-
-    /* Stop DMA */
-    for (i = 0; i < MAX_BUSUNITS; i++)
-    {
-        unit = bus->ab_Units[i];
-        if (unit != NULL)
-        {
-            if(unit->au_DMAPort != 0)
-            {
-                dma_StopDMA(unit);
-                BUS_OUTL(0, dma_PRD, unit->au_DMAPort);
-            }
-        }
-    }
-
-    /* Disable interrupts */
-    BUS_OUT(0x2, ata_AltControl, bus->ab_Alt);
-
-    return FALSE;
-
-    AROS_INTFUNC_EXIT
-}
-
-/*
- * This routine needs to be called by bus probe code in order to register a device.
- * IOBase     - base address of primary I/O registers on your bus.
- * IOAlt      - base address of secondary I/O register bank. Zero if no secondary bank
- *              is present. (IDE splitter on Amiga(tm), for example).
- * DMABase    - base address of DMA controller on your bus. Zero if DMA is not supported.
- * Flags      - Misc flags
- * driver     - structure holding pointers to I/O functions (for speedup)
- * driverData - driver-specific data, whatever it needs.
- *
- * Flags:     - ARBF_80Wire
- *              Set if your drive is connected using 80-wire cable. Enables high-speed
- *              UDMA modes (where appropriate).
- *            - ARBF_EarlyInterrupt
- *              Setup interrupt handler before IDE bus probe to catch possible spurious
- *              interrupts (IDE splitter disables access to ata_devcon register)
- *
- * When a HIDD subsystem is implemented, these parameters will become HIDD attributes.
- */
-void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG Flags,
-		     const struct ata_BusDriver *driver, APTR driverData, struct ataBase *ATABase)
-{
-    /*
-     * ata bus - this is going to be created and linked to the master list here
-     */
-    struct ata_Bus *ab;
-
-    UWORD i;
-
-    /*
-     * initialize structure
-     */
-    ab = (struct ata_Bus*) AllocVecPooled(ATABase->ata_MemPool, sizeof(struct ata_Bus));
-    if (ab == NULL)
-        return;
-
-    ab->ab_Base         = ATABase;
-    ab->ab_Port         = IOBase;
-    ab->ab_Alt          = IOAlt;
-    ab->ab_IRQ          = INTLine;
-    ab->ab_Dev[0]       = DEV_NONE;
-    ab->ab_Dev[1]       = DEV_NONE;
-    ab->ab_Flags        = 0;
-    ab->ab_SleepySignal = 0;
-    ab->ab_BusNum       = ATABase->ata__buscount++;
-    ab->ab_Timeout      = 0;
-    ab->ab_Units[0]     = NULL;
-    ab->ab_Units[1]     = NULL;
-    ab->ab_Task         = NULL;
-    ab->ab_HandleIRQ    = NULL;
-    ab->ab_Driver       = driver;
-    ab->ab_DriverData	= driverData;
-
-    D(bug("[ATA>>] ata_RegisterBus: Analysing bus %d, units %d and %d\n", ab->ab_BusNum, ab->ab_BusNum<<1, (ab->ab_BusNum<<1)+1));
-    D(bug("[ATA>>] ata_RegisterBus: IRQ %d, IO: %x:%x, DMA: %x\n", INTLine, IOBase, IOAlt, DMABase));
-
-    /*
-     * DMABase is also used for reporting interrupt status, so NoDMA == TRUE
-     * is not equal to DMABase == 0.
-     */
-    if (DMABase && (!ATABase->ata_NoDMA))
-    {
-    	/* Allocate DMA PRD. Due to the nature of PCI bus it must be in 32-bit memory. */
-    	ab->ab_PRD = AllocMem((PRD_MAX + 1) * 2 * sizeof(struct PRDEntry), MEMF_PUBLIC|MEMF_CLEAR|MEMF_31BIT);
-
-    	if (ab->ab_PRD)
-    	{
-    	    if ((0x10000 - ((IPTR)ab->ab_PRD & 0xffff)) < PRD_MAX * sizeof(struct PRDEntry))
-       	    	ab->ab_PRD = (void*)((((IPTR)ab->ab_PRD)+0xffff) &~ 0xffff);
-       	}
-       	else
-       	{
-       	    D(bug("[ATA>>] Failed to allocate DMA PRD! Disabling DMA for the bus.\n"));
-       	    DMABase = 0;
-       	}
-    }
-
-    /*
-     * add reset handler for this bus
-     */
-    ab->ab_ResetInt.is_Code = (VOID_FUNC)ATAResetHandler;
-    ab->ab_ResetInt.is_Data = ab;
-    AddResetCallback(&ab->ab_ResetInt);
-
-    /* catch possible spurious interrupts */
-    if (Flags & ARBF_EarlyInterrupt)
-        ab->ab_Driver->CreateInterrupt(ab);
-
-    /*
-     * scan bus - try to locate all devices (disables irq)
-     */
-    ata_InitBus(ab);
-    for (i = 0; i < MAX_BUSUNITS; i++)
-    {
-        if (ab->ab_Dev[i] > DEV_UNKNOWN)
-        {
-            ab->ab_Units[i] = AllocVecPooled(ATABase->ata_MemPool,
-                sizeof(struct ata_Unit));
-            ab->ab_Units[i]->au_DMAPort = DMABase;
-            ab->ab_Units[i]->au_Flags = (Flags & ARBF_80Wire) ? AF_80Wire : 0;
-            ata_init_unit(ab, i);
-        }
-    }
-
-    D(bug("[ATA>>] ata_RegisterBus: Bus %ld: Unit 0 - %x, Unit 1 - %x\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
-
-    /*
-     * start things up :)
-     * note: this happens no matter there are devices or not 
-     * sort of almost-ready-for-hotplug ;)
-     */
-    AddTail((struct List*)&ATABase->ata_Buses, (struct Node*)ab);
-}
-
-/*
- * This init routine has +127 priority, so it runs after all
- * bus scanners have done their job.
- * It initializes all discovered units.
- */
-static int ata_Scan(struct ataBase *base)
-{
-    struct SignalSemaphore ssem;
-    struct ata_Bus* node;
-    struct Task *parent = FindTask(NULL);
-
-    D(bug("[ATA--] ata_Scan: Initialising Bus Tasks..\n"));
-    InitSemaphore(&ssem);
-    ForeachNode(&base->ata_Buses, node)
-    {
-    	NewCreateTask(TASKTAG_PC	 , BusTaskCode,
-    		      TASKTAG_NAME	 , "ATA[PI] Subsystem",
-    		      TASKTAG_STACKSIZE  , STACK_SIZE,
-    		      TASKTAG_PRI	 , TASK_PRI,
-    		      TASKTAG_TASKMSGPORT, &node->ab_MsgPort,
-    		      TASKTAG_ARG1 	 , node,
-        	      TASKTAG_ARG2	 , parent,
-        	      TASKTAG_ARG3	 , &ssem,
-        	      TAG_DONE);
-
-	/* Initial handshake */
-        Wait(SIGBREAKF_CTRL_C);
-    }
-
-    /*
-     * wait for all buses to complete their init
-     */
-    D(bug("[ATA--] ata_Scan: Waiting for Buses to finish Initialising\n"));
-    ObtainSemaphore(&ssem);
-
-    /*
-     * and leave.
-     */
-    ReleaseSemaphore(&ssem);
-    D(bug("[ATA--] ata_Scan: Finished\n"));
-
-    /* Try to setup daemon task looking for diskchanges */
-    NewCreateTask(TASKTAG_PC       , DaemonCode,
-                  TASKTAG_NAME     , "ATA.daemon",
-                  TASKTAG_STACKSIZE, STACK_SIZE,
-                  TASKTAG_PRI      , TASK_PRI - 1,	/* The daemon should have a little bit lower Pri as handler tasks */
-                  TASKTAG_ARG1     , base,
-                  TAG_DONE);
-
-    return TRUE;
-}
-
 /* Keep order the same as order of IDs in struct ataBase! */
 static CONST_STRPTR const attrBaseIDs[] =
 {
@@ -326,7 +131,7 @@ static int ata_init(struct ataBase *ATABase)
     ATABase->ata_UtilityBase = OpenLibrary("utility.library", 36);
     if (!ATABase->ata_UtilityBase)
         return FALSE;
-    
+
     /*
      * I've decided to use memory pools again. Alloc everything needed from 
      * a pool, so that we avoid memory fragmentation.
@@ -356,7 +161,6 @@ static int ata_init(struct ataBase *ATABase)
     ATABase->ata_NoMulti = FALSE;
     ATABase->ata_NoDMA   = FALSE;
     ATABase->ata_Poll    = FALSE;
-    ATABase->ata_CmdLine = NULL;
 
     /*
      * start initialization: 
@@ -376,28 +180,24 @@ static int ata_init(struct ataBase *ATABase)
             {
                 if (strncmp(node->ln_Name, "ATA=", 4) == 0)
                 {
-                    /*
-                     * Remember the entire command line.
-                     * Bus drivers (for example PCI one) may want it.
-                     */
-                    ATABase->ata_CmdLine = &node->ln_Name[4];
+                    const char *CmdLine = &node->ln_Name[4];
 
-                    if (strstr(ATABase->ata_CmdLine, "32bit"))
+                    if (strstr(CmdLine, "32bit"))
                     {
                         D(bug("[ATA  ] ata_init: Using 32-bit IO transfers\n"));
                         ATABase->ata_32bit = TRUE;
                     }
-		    if (strstr(ATABase->ata_CmdLine, "nomulti"))
+		    if (strstr(CmdLine, "nomulti"))
 		    {
 			D(bug("[ATA  ] ata_init: Disabled multisector transfers\n"));
 			ATABase->ata_NoMulti = TRUE;
 		    }
-                    if (strstr(ATABase->ata_CmdLine, "nodma"))
+                    if (strstr(CmdLine, "nodma"))
                     {
                         D(bug("[ATA  ] ata_init: Disabled DMA transfers\n"));
                         ATABase->ata_NoDMA = TRUE;
                     }
-                    if (strstr(ATABase->ata_CmdLine, "poll"))
+                    if (strstr(CmdLine, "poll"))
                     {
                         D(bug("[ATA  ] ata_init: Using polling to detect end of busy state\n"));
                         ATABase->ata_Poll = TRUE;
@@ -407,10 +207,30 @@ static int ata_init(struct ataBase *ATABase)
         }
     }
 
-    /* Initialize BUS list */
-    NEWLIST(&ATABase->ata_Buses);
+    /* Try to setup daemon task looking for diskchanges */
+    NEWLIST(&ATABase->Daemon_ios);
+    InitSemaphore(&ATABase->DaemonSem);
+    InitSemaphore(&ATABase->DetectionSem);
+    ATABase->daemonParent = FindTask(NULL);
+    SetSignal(0, SIGF_SINGLE);
 
-    return TRUE;
+    if (!NewCreateTask(TASKTAG_PC, DaemonCode,
+                       TASKTAG_NAME       , "ATA.daemon",
+                       TASKTAG_STACKSIZE  , STACK_SIZE,
+                       TASKTAG_TASKMSGPORT, &ATABase->DaemonPort,
+                       TASKTAG_PRI        , TASK_PRI - 1,	/* The daemon should have a little bit lower Pri as handler tasks */
+                       TASKTAG_ARG1       , ATABase,
+                       TAG_DONE))
+    {
+        D(bug("[ATA  ] Failed to start up daemon!\n"));
+        return FALSE;
+    }
+
+    /* Wait for handshake */
+    Wait(SIGF_SINGLE);
+    D(bug("[ATA  ] Daemon task set to 0x%p\n", ATABase->ata_Daemon));
+
+    return ATABase->ata_Daemon ? TRUE : FALSE;
 }
 
 static int ata_expunge(struct ataBase *ATABase)
@@ -418,77 +238,66 @@ static int ata_expunge(struct ataBase *ATABase)
     if (ATABase->ataObj)
     {
         /*
-         * CLID_HW is a singletone, you can get it as many times as you want.
-         * Here we save up some space in struct ataBase by obtaining hwclass
-         * object only when we need it. This happens rarely, so small
-         * performance loss is OK here.
+         * CLID_HWRoot is a singletone, you can get it as many times as
+         * you want. Here we save up some space in struct ataBase by
+         * obtaining hwRoot object only when we need it. This happens
+         * rarely, so small performance loss is OK here.
          */
-        OOP_Object *hwRoot = OOP_NewObject(NULL, CLID_HW, NULL);
+        OOP_Object *hwRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
 
-        HW_RemoveDriver(hwRoot, ATABase->ataObj);
+        if (HW_RemoveDriver(hwRoot, ATABase->ataObj))
+        {
+            /* Destroy our singletone */
+            OOP_MethodID disp_msg = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+
+            D(bug("[ATA  ] ata_expunge: Stopping Daemon...\n"));
+            ATABase->daemonParent = FindTask(NULL);
+            SetSignal(0, SIGF_SINGLE);
+            Signal(ATABase->ata_Daemon, SIGBREAKF_CTRL_C);
+            Wait(SIGF_SINGLE);
+
+            D(bug("[ATA  ] ata_expunge: Done, destroying subystem object\n"));
+            OOP_DoSuperMethod(ATABase->ataClass, ATABase->ataObj, &disp_msg);
+        }
+        else
+        {
+            /* Our subsystem is in use, we have some bus driver(s) around. */
+            D(bug("[ATA  ] ata_expunge: ATA subsystem is in use\n"));
+            return FALSE;
+        }
     }
 
+    D(bug("[ATA  ] ata_expunge: Releasing attribute bases\n"));
     OOP_ReleaseAttrBasesArray(&ATABase->hwAttrBase, attrBaseIDs);
 
     if (ATABase->ata_UtilityBase)
         CloseLibrary(ATABase->ata_UtilityBase);
 
+    D(bug("[ATA  ] ata_expunge: Exiting\n"));
     return TRUE;
 }
 
 static int open(struct ataBase *ATABase, struct IORequest *iorq,
                 ULONG unitnum, ULONG flags)
 {
-    /*
-     * device location
-     */
-    ULONG bus, dev;
-    
-    /* 
-     * Assume it failed 
-     */
-    iorq->io_Error = IOERR_OPENFAIL;
-
-    /*
-     * actual bus
-     */
-    struct ata_Bus *b = (struct ata_Bus*)ATABase->ata_Buses.mlh_Head;
-
-    /* 
-     * Extract bus and device numbers
-     */
-    bus = unitnum >> 1;                 // 0xff00 >> 8
-    dev = (unitnum & 0x1);              // 0x00ff
-
-    /*
-     * locate bus
-     */
-    while (bus--)
+    struct Hook searchHook =
     {
-        b = (struct ata_Bus*)b->ab_Node.mln_Succ;
-        if (b == NULL)
-            return FALSE;
-    }
+        .h_Entry = Hidd_ATABus_Open,
+        .h_Data  = iorq
+    };
 
-    if (b->ab_Node.mln_Succ == NULL)
-        return FALSE;
+    /* Assume it failed */
+    iorq->io_Error  = IOERR_OPENFAIL;
+    iorq->io_Device = &ATABase->ata_Device;
+    iorq->io_Unit   = (APTR)-1;
 
-    /*
-     * locate unit
-     */
-    if (b->ab_Units[dev] == NULL)
-        return FALSE;
+    /* Try to find the unit */
+    HW_EnumDrivers(ATABase->ataObj, &searchHook, (APTR)unitnum);
 
-    /*
-     * set up iorequest
-     */
-    iorq->io_Device     = &ATABase->ata_Device;
-    iorq->io_Unit       = &b->ab_Units[dev]->au_Unit;
-    iorq->io_Error      = 0;
+    D(bug("[ATA%02d] Open result: %d\n", unitnum, iorq->io_Error));
 
-    b->ab_Units[dev]->au_Unit.unit_OpenCnt++;
-
-    return TRUE;
+    /* If found, io_Error will be reset to zero */
+    return iorq->io_Error ? FALSE : TRUE;
 }
 
 /* Close given device */
@@ -511,7 +320,6 @@ static int close
 
 ADD2INITLIB(ata_init, 0)
 ADD2EXPUNGELIB(ata_expunge, 0)
-ADD2INITLIB(ata_Scan, 127)
 ADD2OPENDEV(open, 0)
 ADD2CLOSEDEV(close, 0)
 /* vim: set ts=8 sts=4 et : */

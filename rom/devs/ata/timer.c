@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2012, The AROS Development Team. All rights reserved
+    Copyright © 2009-2013, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -16,13 +16,13 @@
 #include "timer.h"
 #include "ata.h"
 
-static BOOL ata_Calibrate(struct IORequest* tmr, struct ataBase *base)
+BOOL ata_Calibrate(struct IORequest* tmr, struct ataBase *base)
 {
     register ULONG x;
     register ULONG scale = 0x8000;	// min iterations...
     volatile register ULONG t = 1;
     struct timeval t1, t2;
-    struct Device *TimerBase = base->ata_TimerBase;
+    struct Device *TimerBase = tmr->io_Device;
     
     D(bug("[ATA  ] Calibration started\n"));
 
@@ -82,11 +82,6 @@ struct IORequest *ata_OpenTimer(struct ataBase *base)
 	     */
 	    if (0 == OpenDevice("timer.device", UNIT_MICROHZ, io, 0))	
 	    {
-		if (NULL == base->ata_TimerBase)
-		{
-		    base->ata_TimerBase = io->io_Device;
-		    ata_Calibrate(io, base);
-		}
 		return io;
 	    }
 	    else

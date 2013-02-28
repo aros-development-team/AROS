@@ -7,19 +7,10 @@ INCLUDE_FILES := $(call WILDCARD, include/hardware/*.h)
 INCLUDE_FILES := $(call WILDCARD, include/hidd/*.h)
 %copy_includes path=hidd dir=include/hidd
 
-BUS_DRIVERS := bus_pci
-
-# Allow to add architecture-specific options
--include $(SRCDIR)/arch/$(CPU)-$(ARCH)/ata/make.opts
-ifeq ($(AROS_TARGET_VARIANT),)
--include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/ata/make.opts
-endif
-
 USER_CFLAGS += -D__TIMER_NOLIBBASE__
 
 CLASSES := ata_class bus_class
 
 %build_module mmake=kernel-ata \
   modname=ata modtype=device version=$(AROS_TARGET_PLATFORM) \
-  files="ata_init lowlevel ata dma_generic timer scsiemu $(CLASSES) $(BUS_DRIVERS)" \
-  uselibs="oop"
+  files="ata_init lowlevel ata timer scsiemu bootwait $(CLASSES)"

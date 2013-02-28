@@ -1,6 +1,5 @@
 #include <aros/debug.h>
 #include <hidd/ata.h>
-#include <hidd/pci.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
@@ -8,6 +7,7 @@
 #include <proto/utility.h>
 
 #include "ata.h"
+#include "ata_bus.h"
 
 #define DIRQ(x)
 
@@ -518,6 +518,12 @@ void ATABus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     OOP_DoSuperMethod(cl, o, msg);
 }
 
+/*
+ * Here we take into account that the table can be either
+ * terminated early, or have NULL entries.
+ */
+#define HAVE_VECTOR(x) (x && (x != (APTR)-1))
+
 void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct ataBase *ATABase = cl->UserData;
@@ -532,8 +538,9 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         return;
 
     case aoHidd_ATABus_Use32Bit:
-        *msg->storage = (data->pioVectors->ata_outsl &&
-                         data->pioVectors->ata_insl) ? TRUE : FALSE;
+        *msg->storage = (HAVE_VECTOR(data->pioVectors->ata_outsl) &&
+                         HAVE_VECTOR(data->pioVectors->ata_insl)) ?
+                         TRUE : FALSE;
         return;
 
     case aoHidd_ATABus_UseDMA:
@@ -821,6 +828,16 @@ BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase)
     /* scan bus - try to locate all devices (disables irq) */    
     ata_InitBus(ab);
 
+    /*
+     * This small trick is based on the fact that shared semaphores
+     * have no specific owned. You can obtain and release them from
+     * within any task. It will block only on attempt to re-lock it
+     * in exclusive mode.
+     * So instead of complex handshake we obtain the semaphore before
+     * starting bus task. It will release the semaphore when done.
+     */
+    ObtainSemaphoreShared(&ATABase->DetectionSem);
+    
     /*
      * Start up bus task. It will perform scanning asynchronously, and
      * then, if succesful, insert units. This allows to keep things parallel.
