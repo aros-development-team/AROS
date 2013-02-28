@@ -349,21 +349,22 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
             (DMASize >= DMASIZE || DMABase == 0 || SubClass == PCI_SUBCLASS_IDE))
         {
             struct ata_ProbedBus *probedbus;
-            STRPTR subclass;
+            STRPTR str[2];
             int len;
 
             D(bug("[PCI-ATA] ata_PCIEnumerator_h: Adding Bus %d - IRQ %d, IO: %x:%x, DMA: %x\n",
                   x, INTLine, IOBase, IOAlt, DMABase));
 
-            OOP_GetAttr(Device, aHidd_PCIDevice_SubClassDesc, (IPTR *)&subclass);
-            len = 16 + strlen(subclass);
+            OOP_GetAttr(Device, aHidd_PCIDevice_SubClassDesc, (IPTR *)&str[0]);
+            str[1] = x ? "Secondary" : "Primary";
+            len = 6 + strlen(str[0]) + strlen(str[1]);
 
             probedbus = AllocVec(sizeof(struct ata_ProbedBus) + len, MEMF_ANY);
             if (probedbus)
             {
                 STRPTR name = (char *)probedbus + sizeof(struct ata_ProbedBus);
 
-                RawDoFmt("PCI %s controller", &subclass, RAWFMTFUNC_STRING, name);
+                RawDoFmt("PCI %s %s", str, RAWFMTFUNC_STRING, name);
 
                 probedbus->atapb_Node.ln_Name = name;
                 probedbus->atapb_Node.ln_Type = basePri;

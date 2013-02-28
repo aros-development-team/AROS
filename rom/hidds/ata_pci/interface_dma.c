@@ -155,7 +155,7 @@ ULONG dma_CheckErr(struct dma_data *unit)
 
 const APTR dma_FuncTable[]=
 {
-    dma_Setup,
+    dma_SetupPRDSize,
     dma_StartDMA,
     dma_Cleanup,
     dma_CheckErr,
