@@ -40,6 +40,8 @@ asm("	.section .aros.startup		     \n"
 "               cps     #0x13                \n" /* Should be in SVC (supervisor) mode already, but just incase.. */
 "               ldr     sp, tmp_stack_ptr    \n"
 "		b       boot		     \n"
+
+    ".string \"$VER: arosraspi.img v40.42 (" __DATE__ ")\"" "\n\t\n\t"
 );
 
 static __used void * tmp_stack_ptr __attribute__((used, section(".aros.startup"))) = &__stack[BOOT_STACK_SIZE-16];
