@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2013, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
 
+#define __OOP_NOMETHODBASES__
+ 
 #include "ahci_aros.h"
 
 #define BUS_DMA_MAX_SEGMENTS    64
@@ -275,6 +277,8 @@ AROS_INTH1(bus_intr_wrap, void **, fa)
 
 int bus_setup_intr(device_t dev, struct resource *r, int flags, driver_intr_t func, void *arg, void **cookiep, void *serializer)
 {
+    struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
+    OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
     struct Interrupt *handler = AllocVec(sizeof(struct Interrupt)+sizeof(void *)*2, MEMF_PUBLIC | MEMF_CLEAR);
     void **fa;
     
@@ -289,7 +293,12 @@ int bus_setup_intr(device_t dev, struct resource *r, int flags, driver_intr_t fu
     fa[1] = arg;
     handler->is_Data = fa;
 
-    AddIntServer(INTB_KERNEL + r->res_tag, handler);
+    if (!HIDD_PCIDevice_AddInterrupt(dev->dev_Object, handler))
+    {
+        FreeVec(handler);
+        return ENOMEM;
+    }
+
     *cookiep = handler;
     
     return 0;
@@ -297,7 +306,10 @@ int bus_setup_intr(device_t dev, struct resource *r, int flags, driver_intr_t fu
 
 int bus_teardown_intr(device_t dev, struct resource *r, void *cookie)
 {
-    RemIntServer(INTB_KERNEL + r->res_tag, (struct Interrupt *)cookie);
+    struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
+    OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
+
+    HIDD_PCIDevice_RemoveInterrupt(dev->dev_Object, cookie);
     FreeVec(cookie);
 
     return 0;
