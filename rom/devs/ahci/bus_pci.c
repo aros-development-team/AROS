@@ -1,10 +1,12 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
-    $Id: lowlevel.c 34191 2010-08-17 16:19:51Z neil $
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+    $Id$
 
-    Desc: PCI bus driver for ata.device
+    Desc: PCI bus driver for ahci.device
     Lang: English
 */
+
+#define __OOP_NOMETHODBASES__
 
 #include <aros/asmcall.h>
 #include <aros/debug.h>
@@ -42,6 +44,15 @@ int ahci_attach(device_t dev)
     return sc->sc_ad->ad_attach(dev);
 }
 
+void ahci_release(device_t dev)
+{
+    struct AHCIBase *AHCIBase = dev->dev_AHCIBase;
+    OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
+
+    HIDD_PCIDevice_Release(dev->dev_Object);
+    FreePooled(AHCIBase->ahci_MemPool, dev, sizeof(*dev) + sizeof(*(dev->dev_softc)));
+}    
+
 /*
  * PCI BUS ENUMERATOR
  *   collect all SATA devices and spawn concurrent tasks.
@@ -64,6 +75,8 @@ AROS_UFH3(void, ahci_PCIEnumerator_h,
     const struct ahci_device *ad;
     EnumeratorArgs *a = hook->h_Data;
     struct AHCIBase *AHCIBase = a->AHCIBase;
+    OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
+    CONST_STRPTR owner;
 
     dev = AllocPooled(AHCIBase->ahci_MemPool, sizeof(*dev) + sizeof(*(dev->dev_softc)));
     if (dev == NULL)
@@ -82,7 +95,15 @@ AROS_UFH3(void, ahci_PCIEnumerator_h,
         return;
     }
 
-    bug("[AHCI] Found PCI device %04x:%04x\n", pci_get_vendor(dev), pci_get_device(dev));
+    D(bug("[AHCI] Found PCI device %04x:%04x\n", pci_get_vendor(dev), pci_get_device(dev)));
+
+    owner = HIDD_PCIDevice_Obtain(Device, AHCIBase->ahci_Device.dd_Library.lib_Node.ln_Name);
+    if (owner)
+    {
+        D(bug("[AHCI] Device is already in use by %s\n", owner));
+        FreePooled(AHCIBase->ahci_MemPool, dev, sizeof(*dev) + sizeof(*(dev->dev_softc)));
+        return;
+    }        
 
     AHCIBase->ahci_HostCount++;
     AddTail(&a->devices, (struct Node *)dev);
@@ -135,7 +156,7 @@ static int ahci_pci_scan(struct AHCIBase *AHCIBase)
 
     while ((dev = (device_t)RemHead(&Args.devices)) != NULL) {
         if (ahci_attach(dev) != 0) {
-            FreePooled(AHCIBase->ahci_MemPool, dev, sizeof(*dev) + sizeof(*(dev->dev_softc)));
+            ahci_release(dev);
         }
     }
 
