@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(OOP_AttrBase *, bases, A0),
-        AROS_LHA(CONST_STRPTR *, ids, A1),
+        AROS_LHA(CONST_STRPTR const *, ids, A1),
 
 /*  LOCATION */
 	struct Library *, OOPBase, 24, OOP)
