@@ -19,14 +19,6 @@ The Original Code is written by Davy Wentzler.
 #define DRIVER "cmi8738.audio"
 #define DRIVER_NEEDS_GLOBAL_EXECBASE
 
-#ifdef __AROS__
-#define DRIVER_NEED_GLOBAL_EXECBASE
-#endif
-
-#ifdef __amigaos4__
-#define DRIVER_NEED_GLOBAL_EXECBASE
-#endif
-
 #include "DriverBase.h"
 
 struct CMI8738_DATA;
