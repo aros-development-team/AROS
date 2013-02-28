@@ -179,6 +179,9 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
         Tells whether the bus currently uses 80-conductor cable.
 
     NOTES
+        This attribute actually makes difference only for DMA modes. If
+        your bus driver returns FALSE, ata.device will not use modes
+        higher than UDMA2 on the bus.
 
     EXAMPLE
 
@@ -445,6 +448,35 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
     INTERNALS
 
 *****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        aoHidd_ATABus_UseIOAlt
+
+    SYNOPSIS
+        [..G], BOOL
+
+    LOCATION
+        CLID_Hidd_ATABus
+
+    FUNCTION
+        Tells whether the bus supports alternate registers bank
+        (ata_AltControl and ata_AltStatus).
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+        Default implementation in base class returns value depending on whether
+        the subclass provided respective I/O functions in bus interface vector
+        table during object creation.
+
+*****************************************************************************************/
 
 OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -471,7 +503,7 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                 break;
 
             case aoHidd_ATABus_BusVectors:
-                data->busVectors = (APTR *)tag->ti_Data;
+                data->busVectors = (struct ATA_BusInterface *)tag->ti_Data;
                 break;
 
             case aoHidd_ATABus_PIOVectors:
@@ -533,7 +565,6 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     Hidd_ATABus_Switch (msg->attrID, idx)
     {
     case aoHidd_ATABus_Use80Wire:
-        /* CHECKME: Is there any generic way to check this ? */
         *msg->storage = FALSE;
         return;
 
@@ -545,6 +576,12 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     case aoHidd_ATABus_UseDMA:
         *msg->storage = data->dmaVectors ? TRUE : FALSE;
+        return;
+        
+    case aoHidd_ATABus_UseIOAlt:
+        *msg->storage = (HAVE_VECTOR(data->busVectors->ata_out_alt) &&
+                         HAVE_VECTOR(data->busVectors->ata_in_alt)) ?
+                         TRUE : FALSE;
         return;
     }
 
@@ -633,7 +670,7 @@ APTR ATABus__Hidd_ATABus__GetPIOInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
         vec->ata_out_alt = default_out_alt;
         vec->ata_in_alt  = default_in_alt;
 
-        CopyVectors((APTR *)vec, data->busVectors,
+        CopyVectors((APTR *)vec, (APTR *)data->busVectors,
                     sizeof(struct ATA_BusInterface) / sizeof(APTR));
 
         data->pioInterface = &vec[1];

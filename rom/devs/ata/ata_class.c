@@ -62,7 +62,8 @@ BOOL ATA__HW__SetupDriver(OOP_Class *cl, OOP_Object *o, struct pHW_SetupDriver *
     if (!HIDD_ATABus_GetPIOInterface(Msg->driverObject))
         return FALSE;
 
-    HIDD_ATABus_GetDMAInterface(Msg->driverObject);
+    if (!ATABase->ata_NoDMA)
+        HIDD_ATABus_GetDMAInterface(Msg->driverObject);
 
     /* Add the bus to the device and start service */
     return Hidd_ATABus_Start(Msg->driverObject, ATABase);
