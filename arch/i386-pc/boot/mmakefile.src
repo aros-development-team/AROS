@@ -24,6 +24,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-pc-acpi-kobj		\
 #MM	kernel-pc-hpet-kobj		\
 #MM	kernel-ata-kobj 		\
+#MM     kernel-hidd-pciata-kobj         \
 #MM	kernel-ahci-kobj 		\
 #MM	kernel-oop-kobj 		\
 #MM	kernel-utility-kobj 		\
@@ -41,7 +42,7 @@ USELIBS	:= hiddstubs amiga arossupport debug arosc.static arosm autoinit libinit
 KRSRCS  := acpi battclock efi hpet processor
 KLIBS   := exec expansion
 KDEVS   := timer ahci ata
-KHIDDS  := i8042 vesagfx vgah pci pcipc serial parallel
+KHIDDS  := ata_pci i8042 vesagfx vgah pci pcipc serial parallel
 
 %link_kickstart mmake=kernel-bsp-pc-i386 file=$(EXEDIR)/aros-bsp-pc-i386 \
 	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) \

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2012, The AROS Development Team. All rights reserved
+    Copyright © 2009-2013, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -40,6 +40,8 @@ void ata_CloseTimer(struct IORequest *tmr);
  *   ULONG signals - if caught before timeout
  */
 ULONG ata_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs);
+
+BOOL ata_Calibrate(struct IORequest* tmr, struct ataBase *base);
 
 /*
  * ata_WaitNano

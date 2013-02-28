@@ -43,6 +43,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-dosboot \
 #MM     kernel-debug \
 #MM     kernel-ata \
+#MM     kernel-hidd-pciata \
 #MM     hidd-i2c \
 #MM     hidd-i2c-amcc440 \
 #MM     hidd-radeon \
@@ -83,7 +84,7 @@ PKG_LIBS     := aros partition expansion utility oop graphics layers intuition k
 PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor FileSystem shell shellcommands
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
 PKG_HANDLERS := con amberram cdrom sfs fat afs
-PKG_HIDDS    := graphics mouse keyboard hiddclass pci pci-amcc440 pci-amcc460 i2c i2c-amcc440 usb ohci sm502
+PKG_HIDDS    := graphics mouse keyboard hiddclass ata_pci pci pci-amcc440 pci-amcc460 i2c i2c-amcc440 usb ohci sm502
 PKG_USB      := hid
 PKG_USB_PSD  := hid hub bootmouse bootkeyboard massstorage
 PKG_HOOKS    := econsole

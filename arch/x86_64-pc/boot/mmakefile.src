@@ -15,6 +15,7 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-kernel-kobj		 \
 #MM			   kernel-exec-kobj		 \
 #MM			   kernel-ata-kobj		 \
+#MM                        kernel-hidd-pciata-kobj       \
 #MM			   kernel-ahci-kobj		 \
 #MM			   kernel-battclock-kobj	 \
 #MM			   kernel-efi-kobj		 \
@@ -35,7 +36,7 @@ include $(TOP)/config/make.cfg
 KRSRCS  := acpi battclock efi hpet processor
 KLIBS   := exec expansion
 KDEVS   := ata ahci timer
-KHIDDS  := parallel pci pcipc serial vesagfx vgah i8042
+KHIDDS  := parallel pci pcipc serial vesagfx vgah ata_pci i8042
 
 USER_LDFLAGS := -L$(GENDIR)/lib
 
