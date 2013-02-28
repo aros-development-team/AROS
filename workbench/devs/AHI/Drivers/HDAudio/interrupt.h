@@ -1,5 +1,5 @@
-#ifndef AHI_Drivers_interrupt_h
-#define AHI_Drivers_interrupt_h
+#ifndef AHI_Drivers_HDAudio_interrupt_h
+#define AHI_Drivers_HDAudio_interrupt_h
 
 #include <config.h>
 
@@ -21,4 +21,4 @@ void RecordInterrupt(struct HDAudioChip* dd);
 
 #endif
 
-#endif /* AHI_Drivers_EMU10kx_emu10kx_interrupt_h */
+#endif /* AHI_Drivers_HDAudio_interrupt_h */
