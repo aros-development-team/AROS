@@ -13,14 +13,6 @@
 #define DRIVER_NEEDS_GLOBAL_EXECBASE
 #define INPUTS 5
 
-#ifdef __AROS__
-#define DRIVER_NEED_GLOBAL_EXECBASE
-#endif
-
-#ifdef __amigaos4__
-#define DRIVER_NEED_GLOBAL_EXECBASE
-#endif
-
 #include "DriverBase.h"
 
 struct HDAudioChip;
