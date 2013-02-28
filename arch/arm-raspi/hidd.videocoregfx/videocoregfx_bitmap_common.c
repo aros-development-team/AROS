@@ -77,8 +77,8 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
     (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[7 + col_i ] = 0;
     (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[7 + col_i + 1] = 0; // terminate tag
 
-    VCMBoxWrite(VCMB_BASE, VCMB_FBCHAN, (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage);
-    if (VCMBoxRead(VCMB_BASE, VCMB_FBCHAN) == (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage)
+    VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage);
+    if (VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) == (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage)
     {
         D(bug("[VideoCoreGfx] %s: Palette set [status %08x]\n", __PRETTY_FUNCTION__, (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_VCMBoxMessage[7 + col_i]));
     }
