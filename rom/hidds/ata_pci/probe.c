@@ -356,15 +356,15 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                   x, INTLine, IOBase, IOAlt, DMABase));
 
             OOP_GetAttr(Device, aHidd_PCIDevice_SubClassDesc, (IPTR *)&str[0]);
-            str[1] = x ? "Secondary" : "Primary";
-            len = 6 + strlen(str[0]) + strlen(str[1]);
+            str[1] = x ? "secondary" : "primary";
+            len = 14 + strlen(str[0]) + strlen(str[1]);
 
             probedbus = AllocVec(sizeof(struct ata_ProbedBus) + len, MEMF_ANY);
             if (probedbus)
             {
                 STRPTR name = (char *)probedbus + sizeof(struct ata_ProbedBus);
 
-                RawDoFmt("PCI %s %s", str, RAWFMTFUNC_STRING, name);
+                RawDoFmt("PCI %s %s channel", str, RAWFMTFUNC_STRING, name);
 
                 probedbus->atapb_Node.ln_Name = name;
                 probedbus->atapb_Node.ln_Type = basePri;
