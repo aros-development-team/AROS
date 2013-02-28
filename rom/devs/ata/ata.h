@@ -106,10 +106,9 @@ struct ataBase
    */
 struct ata_Bus
 {
-   struct MinNode          ab_Node;    /* exec node */
    struct ataBase          *ab_Base;   /* device self */
    /* Bus object data */
-   APTR                    *busVectors;     /* Control vector table     */
+   struct ATA_BusInterface *busVectors;     /* Control vector table     */
    struct ATA_PIOInterface *pioVectors;     /* PIO vector table         */
    APTR                    *dmaVectors;     /* DMA vector table         */
    ULONG                   pioDataSize;     /* PIO interface data size  */

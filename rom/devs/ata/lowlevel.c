@@ -1195,7 +1195,7 @@ static void common_SetBestXferMode(struct ata_Unit* unit)
     int iter;
     int max = AB_XFER_UDMA6;
 
-    if (unit->au_Bus->ab_Base->ata_NoDMA || (!bus->dmaInterface)
+    if ((!bus->dmaInterface)
         || (   !(unit->au_Drive->id_MWDMASupport & 0x0700)
             && !(unit->au_Drive->id_UDMASupport  & 0x7f00)))
     {
@@ -2198,8 +2198,11 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit, BOOL *DiagExecuted)
 
 void ata_ResetBus(struct ata_Bus *bus)
 {
+    struct ataBase *ATABase = bus->ab_Base;
+    OOP_Object *obj = OOP_OBJECT(ATABase->busClass, bus);
     ULONG TimeOut;
     BOOL  DiagExecuted = FALSE;
+    IPTR haveAltIO;
 
     /*
      * Set and then reset the soft reset bit in the Device Control
@@ -2208,18 +2211,21 @@ void ata_ResetBus(struct ata_Bus *bus)
     DINIT(bug("[ATA  ] ata_ResetBus(%d)\n", bus->ab_BusNum));
 
     PIO_Out(bus, DEVHEAD_VAL, ata_DevHead); /* Select it never the less */
-    ata_WaitNano(400, bus->ab_Base);
+    ata_WaitNano(400, ATABase);
     //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
-    /*
-     * TODO: In some cases (Amiga IDE doubler) AltControl is not accessible.
-     * In this case we can execute DIAG here. It is possible to emulate this
-     * in the bus driver, however it's much cleaner to do this here.
-     */
-    PIO_OutAlt(bus, ATACTLF_RESET | ATACTLF_INT_DISABLE, ata_AltControl);
-    ata_WaitTO(bus->ab_Timer, 0, 10, 0);    /* sleep 10us; min: 5us */
+    OOP_GetAttr(obj, aHidd_ATABus_UseIOAlt, &haveAltIO);
+    if (haveAltIO)
+    {
+        PIO_OutAlt(bus, ATACTLF_RESET | ATACTLF_INT_DISABLE, ata_AltControl);
+        ata_WaitTO(bus->ab_Timer, 0, 10, 0);    /* sleep 10us; min: 5us */
 
-    PIO_OutAlt(bus, ATACTLF_INT_DISABLE, ata_AltControl);
+        PIO_OutAlt(bus, ATACTLF_INT_DISABLE, ata_AltControl);
+    }
+    else
+    {
+        PIO_Out(bus, ATA_EXECUTE_DIAG, ata_Command);
+    }
     ata_WaitTO(bus->ab_Timer, 0, 20000, 0); /* sleep 20ms; min: 2ms */
 
     /* If there is a device 0, wait for device 0 to clear BSY */
