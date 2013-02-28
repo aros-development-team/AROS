@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2013, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -26,7 +26,7 @@ BOOL ReadArguments(int argc, char **argv)
 
 VOID FreeArguments(VOID)
 {
-    FreeArgs(rdargs); // save to use with NULL.
+    FreeArgs(rdargs); // safe to use with NULL.
 }
 
 IPTR GetArgument(enum Argument id)

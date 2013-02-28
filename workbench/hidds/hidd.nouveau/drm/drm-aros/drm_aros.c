@@ -1,5 +1,5 @@
 /*
-    Copyright 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -137,7 +137,7 @@ LONG drm_aros_pci_find_supported_video_card(struct drm_driver *drv)
     
     drm_aros_pci_find_card(drv);
 
-    /* If objects are set, detection was succesful */
+    /* If objects are set, detection was successful */
     if (pciBus && drv->pciDevice && pciDriver)
     {
         DRM_INFO("Detected card: 0x%x/0x%x - %s%s%s\n", 

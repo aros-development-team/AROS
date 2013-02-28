@@ -445,7 +445,7 @@ static VOID HIDDCompositingToggleCompositing(struct HIDDCompositingData * compda
     }
 
     
-    /* This condition is enought as compositing allows only dragging screen down
+    /* This condition is enough as compositing allows only dragging screen down
        and not up/left/right */
     if ((LONG)topedge > (LONG)0) /* Explicitly cast to get signed comparison */
     {

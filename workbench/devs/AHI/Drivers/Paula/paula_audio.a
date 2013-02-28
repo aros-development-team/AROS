@@ -332,7 +332,7 @@ AHIDB_PaulaDMA		EQU	AHIDB_UserBase+2	* Boolean
 	APTR	p_ParBitsUser			;Parallel port locking
 	APTR	p_ParPortUser			;Parallel port locking
 	APTR	p_SerBitsUser			;Serial port locking
-	APTR	p_CardHandle			;Aura PCMCIA card hanle
+	APTR	p_CardHandle			;Aura PCMCIA card handle
 
 	STRUCT	p_PlayInt,IS_SIZE		;Player hardware interrupt
 	STRUCT	p_PlaySoftInt,IS_SIZE		;Player software interrupt (mixing only)
