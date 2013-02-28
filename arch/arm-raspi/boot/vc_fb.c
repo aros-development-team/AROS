@@ -32,8 +32,8 @@ int vcfb_init(void)
         vcmb_msg[6] = 0;
         vcmb_msg[7] = 0;		        // terminate tag
 
-        vcmb_write(VCMB_BASE, VCMB_FBCHAN, vcmb_msg);
-        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_FBCHAN);
+        vcmb_write(VCMB_BASE, VCMB_PROPCHAN, vcmb_msg);
+        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
 
         if (!vcmb_msg || (vcmb_msg[1] != VCTAG_RESP))
             return 0;
@@ -77,8 +77,8 @@ int vcfb_init(void)
 
         vcmb_msg[0] = (c << 2);                 // fill in request size
 
-        vcmb_write(VCMB_BASE, VCMB_FBCHAN, (unsigned int)vcmb_msg);
-        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_FBCHAN);
+        vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (unsigned int)vcmb_msg);
+        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
 
         if (!vcmb_msg || (vcmb_msg[1] != VCTAG_RESP))
             return 0;
@@ -112,8 +112,8 @@ int vcfb_init(void)
         vcmb_msg[5] = 0;
         vcmb_msg[6] = 0;		        // terminate tag
 
-        vcmb_write(VCMB_BASE, VCMB_FBCHAN, (unsigned int)vcmb_msg);
-        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_FBCHAN);
+        vcmb_write(VCMB_BASE, VCMB_PROPCHAN, (unsigned int)vcmb_msg);
+        vcmb_msg = vcmb_read(VCMB_BASE, VCMB_PROPCHAN);
 
         if (!vcmb_msg || (vcmb_msg[4] != (VCTAG_RESP + 4)))
             return 0;
