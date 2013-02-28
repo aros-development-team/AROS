@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: coldreboot.c 34578 2010-10-04 07:19:30Z sonic $
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    $Id$
 
-    Desc: ColdReboot() - Reboot the computer, Windows-hosted implementation.
+    Desc: ColdReboot() - Reboot the computer, Unix-hosted implementation.
     Lang: english
 */
 

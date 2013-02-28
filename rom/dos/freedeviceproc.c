@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: FreeDeviceProc() - Clean up after calls to GetDeviceProc()
@@ -26,10 +26,10 @@
         FreeDeviceProc() will clean up after a call to GetDeviceProc().
 
     INPUTS
-        dp              - DevProc structure as returned by GetDeviceProc().
+        dp - DevProc structure as returned by GetDeviceProc(), or NULL.
 
     RESULT
-        Some memory and other resources returned to the system.
+        None.
 
     NOTES
 

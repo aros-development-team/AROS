@@ -226,7 +226,7 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
             BPTR olddir = BNULL;
 
             /*
-             * ResolveSoftLink() gives us path relative to either 'cur' lock
+             * ResolveSoftlink() gives us path relative to either 'cur' lock
              * (if on current volume), or 'dvp' volume root (if on different volume).
              * In the latter case we need to change current directory to volume's root
              * in order to follow the link correctly.
