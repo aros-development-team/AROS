@@ -137,8 +137,8 @@ void HW__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     SYNOPSIS
         OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHW_AddHardwareDriver *Msg);
 
-        OOP_Object *HIDD_Kbd_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass,
-                                               struct TagItem *tags);
+        OOP_Object *HW_AddDriver(OOP_Object *obj, OOP_Class *driverClass,
+                                 struct TagItem *tags);
 
     LOCATION
         CLID_HW

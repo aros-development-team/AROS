@@ -477,6 +477,35 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
         table during object creation.
 
 *****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        aoHidd_ATABus_KeepEmpty
+
+    SYNOPSIS
+        [I..], BOOL
+
+    LOCATION
+        CLID_Hidd_ATABus
+
+    FUNCTION
+        If this attribute set to FALSE during object creation, the object
+        will be destroyed if no devices are detected on the bus.
+
+        This can be useful for optional buses like legacy ISA controllers,
+        which have no other way to detect their presence.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -487,6 +516,9 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         struct ata_Bus *data = OOP_INST_DATA(cl, o);
         struct TagItem *tstate = msg->attrList;
         struct TagItem *tag;
+
+        /* Defaults */
+        data->keepEmpty = TRUE;
 
         while ((tag = NextTagItem(&tstate)))
         {
@@ -512,6 +544,10 @@ OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
             case aoHidd_ATABus_DMAVectors:
                 data->dmaVectors = (APTR *)tag->ti_Data;
+                break;
+
+            case aoHidd_ATABus_KeepEmpty:
+                data->keepEmpty = tag->ti_Data;
                 break;
             }
         }
@@ -854,20 +890,40 @@ BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase)
                         aHidd_ATABus_IRQData   , ab,
                         TAG_DONE);
     
-    /*
-     * Assign bus number.
-     * TODO: This does not take into account possibility to
-     * unload drivers. In this case existing units will disappear,
-     * freeing up their numbers. These numbers should be reused.
-     */
-    ab->ab_BusNum = ATABase->ata__buscount++;
-
     /* scan bus - try to locate all devices (disables irq) */    
     ata_InitBus(ab);
 
+    if ((ab->ab_Dev[0] == DEV_NONE) && (ab->ab_Dev[1] == DEV_NONE) &&
+        (!ab->keepEmpty))
+    {
+        /*
+         * If there are no devices, and KeepEmpty is not set
+         * the bus will be thrown away.
+         */
+        return FALSE;
+    }
+
+    /*
+     * Assign bus number.
+     * TODO:
+     * 1. This does not take into account possibility to
+     * unload drivers. In this case existing units will disappear,
+     * freeing up their numbers. These numbers should be reused.
+     * 2. We REALLY need modify-and-fetch atomics.
+     */
+    Forbid();
+    ab->ab_BusNum = ATABase->ata__buscount++;
+    Permit();
+
+    if ((ab->ab_Dev[0] < DEV_ATA) && (ab->ab_Dev[1] < DEV_ATA))
+    {
+        /* Do not start up task if there are no usable devices. */
+        return TRUE;
+    }
+
     /*
      * This small trick is based on the fact that shared semaphores
-     * have no specific owned. You can obtain and release them from
+     * have no specific owner. You can obtain and release them from
      * within any task. It will block only on attempt to re-lock it
      * in exclusive mode.
      * So instead of complex handshake we obtain the semaphore before

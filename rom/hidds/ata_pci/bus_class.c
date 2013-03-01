@@ -79,13 +79,13 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         if (data->bus->atapb_DMABase)
         {
             /* We have a DMA controller and will need a buffer */
-            OOP_GetAttr(data->bus->atapb_Device, aHidd_PCIDevice_Driver, (IPTR *)&data->pciDriver);
+            OOP_GetAttr(data->bus->atapb_Device->ref_Device,
+                        aHidd_PCIDevice_Driver, (IPTR *)&data->pciDriver);
             data->dmaBuf = HIDD_PCIDriver_AllocPCIMem(data->pciDriver,
                                                       (PRD_MAX + 1) * 2 * sizeof(struct PRDEntry));
         }
 
-        if (data->bus->atapb_Device &&
-            (data->bus->atapb_Node.ln_Type == ATABUSNODEPRI_PROBED))
+        if (data->bus->atapb_Node.ln_Type == ATABUSNODEPRI_PROBED)
         {
             /*
              * We have a PCI device, install interrupt using portable PCI API.
@@ -110,8 +110,12 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                 pciInt->is_Code         = (APTR)ata_PCI_Interrupt;
 
                 data->irqHandle = pciInt;
-                if (HIDD_PCIDevice_AddInterrupt(data->bus->atapb_Device, pciInt))
+                if (HIDD_PCIDevice_AddInterrupt(data->bus->atapb_Device->ref_Device, pciInt))
+                {
+                    /* Signal structure ownership */
+                    data->bus->atapb_Node.ln_Succ = data;
                     return o;
+                }
 
                 FreeMem(pciInt, sizeof(struct Interrupt));
             }
@@ -122,13 +126,38 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             data->irqHandle = KrnAddIRQHandler(data->bus->atapb_INTLine, ata_Raw_Interrupt,
                                                data, NULL);
             if (data->irqHandle)
+            {
+                data->bus->atapb_Node.ln_Succ = data;
                 return o;
+            }
         }
 
         mDispose = msg->mID - moRoot_New + moRoot_Dispose;
         OOP_DoSuperMethod(cl, o, &mDispose);
     }
     return NULL;
+}
+
+void DeviceUnref(struct PCIDeviceRef *ref, struct ataBase *base)
+{
+    ULONG count;
+
+    if (!ref)
+        return;
+
+    /*
+     * Forbid() because dercement and fetch should be atomic.
+     * FIXME: We really need new atomics.
+     */
+    Forbid();
+    count = --ref->ref_Count;
+    Permit();
+
+    if (!count)
+    {
+        HIDD_PCIDevice_Release(ref->ref_Device);
+        FreeMem(ref, sizeof(struct PCIDeviceRef));
+    }
 }
 
 void PCIATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -139,22 +168,17 @@ void PCIATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     if (data->dmaBuf)
         HIDD_PCIDriver_FreePCIMem(data->pciDriver, data->dmaBuf);
 
-    if (data->bus->atapb_Device)
+    if (data->bus->atapb_Node.ln_Type == ATABUSNODEPRI_PROBED)
     {
-        /*
-         * FIXME: The same PCI device object is used by two buses.
-         * Releasing is incorrect because of this. Need to attach
-         * a structure with ownership counter to it.
-         */
-        HIDD_PCIDevice_RemoveInterrupt(data->bus->atapb_Device, data->irqHandle);
+        HIDD_PCIDevice_RemoveInterrupt(data->bus->atapb_Device->ref_Device, data->irqHandle);
         FreeMem(data->irqHandle, sizeof(struct Interrupt));
-        HIDD_PCIDevice_Release(data->bus->atapb_Device);
     }
     else
     {
         KrnRemIRQHandler(data->irqHandle);
     }
 
+    DeviceUnref(data->bus->atapb_Device, base);
     FreeVec(data->bus);
 
     OOP_DoSuperMethod(cl, o, msg);

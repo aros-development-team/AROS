@@ -115,6 +115,7 @@ struct ata_Bus
    ULONG                   dmaDataSize;     /* DMA interface data size  */
    void                    *pioInterface;   /* PIO interface object     */
    void                    *dmaInterface;   /* DMA interface object     */
+   BOOL                    keepEmpty;       /* Whether we should keep empty bus object */
 
    UBYTE                   ab_Dev[2];  /* Master/Slave type, see below */
    UBYTE                   ab_Flags;   /* Bus flags similar to unit flags */
