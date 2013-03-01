@@ -6,6 +6,7 @@
 
 void resetmode(struct amigavideo_staticdata *data);
 BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data*);
+BOOL setbitmap(struct amigavideo_staticdata *data, struct amigabm_data*);
 void initcustom(struct amigavideo_staticdata *data);
 
 void setspritepos(struct amigavideo_staticdata *data, WORD x, WORD y);

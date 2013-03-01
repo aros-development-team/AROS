@@ -167,7 +167,7 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 	            data->disp = tag->ti_Data;
 	            if (data->disp) {
 	            	setrtg(csd, FALSE);
-	            	setmode(csd, data);
+	            	setbitmap(csd, data);
 	            } else {
 	            	resetmode(csd);
 	            	setrtg(csd, TRUE);
