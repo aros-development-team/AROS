@@ -240,7 +240,6 @@ static Object *ComputerPage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
             Child, (IPTR)Label("Version"),
             Child, (IPTR)(version_txt = TextObject,
                 TextFrame,
-                MUIA_Text_Contents, (IPTR)"                                 ",
             End),
             Child, (IPTR)Label("Processors"),
             Child, (IPTR)(NListviewObject,
