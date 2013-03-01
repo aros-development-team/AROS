@@ -117,20 +117,20 @@ static IPTR DevicePage__MUIM_DevicePage_Update(Class *cl, Object *obj, struct MU
     IPTR number;
     TEXT buffer[20];
 
-    OOP_GetAttr(device_obj, aoHidd_Name, (IPTR *)&string);
+    OOP_GetAttr(device_obj, aHidd_Name, (IPTR *)&string);
     SET(data->name_txt, MUIA_Text_Contents, string);
 
-    OOP_GetAttr(device_obj, aoHidd_HardwareName, (IPTR *)&string);
+    OOP_GetAttr(device_obj, aHidd_HardwareName, (IPTR *)&string);
     SET(data->hardwarename_txt, MUIA_Text_Contents, string);
 
-    OOP_GetAttr(device_obj, aoHidd_Product, &number);
+    OOP_GetAttr(device_obj, aHidd_Product, &number);
     sprintf(buffer, "%ld", number);
     SET(data->product_txt, MUIA_Text_Contents, buffer);
 
-    OOP_GetAttr(device_obj, aoHidd_ProducerName, (IPTR *)&string);
+    OOP_GetAttr(device_obj, aHidd_ProducerName, (IPTR *)&string);
     SET(data->producername_txt, MUIA_Text_Contents, string);
 
-    OOP_GetAttr(device_obj, aoHidd_Producer, &number);
+    OOP_GetAttr(device_obj, aHidd_Producer, &number);
     sprintf(buffer, "%ld", number);
     SET(data->producer_txt, MUIA_Text_Contents, buffer);
 

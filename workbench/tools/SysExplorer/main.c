@@ -37,16 +37,7 @@
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
-// must be same order as groups in the page group
-enum
-{
-    EMPTY_PAGE,
-    COMPUTER_PAGE,
-    DEVICE_PAGE
-};
-
 static Object *app, *main_window, *property_window, *hidd_tree;
-static Object *page_group, *empty_page, *device_page, *computer_page;
 static Object *property_menu, *expand_menu, *collapse_menu, *quit_menu;
 
 OOP_AttrBase HiddAttrBase;
@@ -61,7 +52,6 @@ const struct OOP_ABDescr abd[] =
 
 
 static struct Hook enum_hook;
-static struct Hook selected_hook;
 static struct Hook property_hook;
 
 
@@ -103,51 +93,48 @@ AROS_UFH3S(BOOL, enumFunc,
     AROS_USERFUNC_EXIT
 }
 
-
-AROS_UFH3S(void, selectedFunc,
+AROS_UFH3S(void, closeFunc,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(Object*, obj, A2),
-    AROS_UFHA(struct MUI_NListtree_TreeNode **, tn, A1))
+    AROS_UFHA(APTR, msg, A1))
 {
     AROS_USERFUNC_INIT
 
-    D(bug("selectedFunc called tn: %p\n", *tn));
+    SET(obj, MUIA_Window_Open, FALSE);
+    DoMethod(app, OM_REMMEMBER, obj);
+    DisposeObject(obj);
+    
+    AROS_USERFUNC_EXIT
+};
 
-    /* info will only be updated when window is open */
-    if (XGET(property_window, MUIA_Window_Open))
+static const struct Hook close_hook =
+{
+    .h_Entry = closeFunc
+};
+
+static Object *OpenSubWin(struct MUI_CustomClass *class, ULONG id)
+{
+    Object *group;
+    Object *property_window = WindowObject,
+            MUIA_Window_Title,	(IPTR)"Properties",
+            MUIA_Window_ID, id,
+            WindowContents, (IPTR)(group = BOOPSIOBJMACRO_START(class->mcc_Class),
+            End),
+        End;
+
+    if (property_window)
     {
-        if (*tn) 
-        {
-            if ((*tn)->tn_Flags & TNF_LIST)
-            {
-                // node
-                if ((*tn)->tn_Name && (strcmp("Computer", (*tn)->tn_Name) == 0))
-                {
-                    DoMethod(computer_page, MUIM_ComputerPage_Update);
-                    SET(page_group, MUIA_Group_ActivePage, COMPUTER_PAGE);
-                }
-                else
-                {
-                    SET(page_group, MUIA_Group_ActivePage, EMPTY_PAGE);
-                }
-            }
-            else
-            {
-                // leaf
-                DoMethod(device_page, MUIM_DevicePage_Update, (*tn)->tn_User);
-                SET(page_group, MUIA_Group_ActivePage, DEVICE_PAGE);
-            }
-        }
-        else
-        {
-            /* no active node? -> show empty page */
-            SET(page_group, MUIA_Group_ActivePage, EMPTY_PAGE);
-        }
+        DoMethod(app, OM_ADDMEMBER, property_window);
+        DoMethod(property_window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+                 property_window, 3, 
+                 MUIM_CallHook, &close_hook, 0);
+        SET(property_window, MUIA_Window_Open, TRUE);
+        
+        return group;
     }
 
-    AROS_USERFUNC_EXIT
+    return NULL;
 }
-
 
 AROS_UFH3S(void, propertyFunc,
     AROS_UFHA(struct Hook *, h,  A0),
@@ -166,12 +153,31 @@ AROS_UFH3S(void, propertyFunc,
         node = (struct MUI_NListtree_TreeNode *)XGET(hidd_tree, MUIA_NListtree_Active);
     }
 
-    SET(property_window, MUIA_Window_Open, TRUE);
-    SET(hidd_tree, MUIA_NListtree_Active, node);
+    if (node == NULL)
+        return;
+
+    /*
+     * TODO: Do not allow to open properties window for the same object
+     * multiple times.
+     */
+    if (node->tn_Flags & TNF_LIST)
+    {   
+        if (strcmp("Computer", node->tn_Name) == 0)
+        {
+            Object *page = OpenSubWin(ComputerPage_CLASS, MAKE_ID('S', 'Y', 'P', 'R'));
+
+            DoMethod(page, MUIM_ComputerPage_Update);
+        }
+    }
+    else
+    {
+        Object *page = OpenSubWin(DevicePage_CLASS, MAKE_ID('D', 'V', 'P', 'R'));
+
+        DoMethod(page, MUIM_DevicePage_Update, node->tn_User);
+    }
 
     AROS_USERFUNC_EXIT
 }
-
 
 static BOOL GUIinit()
 {
@@ -218,26 +224,11 @@ static BOOL GUIinit()
                 End),
             End),
         End),
-        SubWindow, (IPTR)(property_window = WindowObject,
-            MUIA_Window_Title,	(IPTR)"Properties",
-            MUIA_Window_ID, MAKE_ID('S', 'Y', 'P', 'R'),
-            WindowContents, (IPTR)(page_group = HGroup,
-                MUIA_Group_PageMode, TRUE,
-                Child, (IPTR)(empty_page = VGroup,
-                    Child, (IPTR)HVSpace,
-                End),
-                Child, (IPTR)(computer_page = ComputerPageObject,
-                End),
-                Child, (IPTR)(device_page = DevicePageObject,
-                End),
-            End),
-        End),
     End;
 
     if (app)
     {
         enum_hook.h_Entry = enumFunc;
-        selected_hook.h_Entry = selectedFunc;
         property_hook.h_Entry = propertyFunc;
 
         OOP_Object *hwRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
@@ -273,11 +264,6 @@ static BOOL GUIinit()
         DoMethod(quit_menu, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
                  app, 2,
                  MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-
-
-        DoMethod(hidd_tree, MUIM_Notify, MUIA_NListtree_Active, MUIV_EveryTime,
-                 app, 3,
-                 MUIM_CallHook, &selected_hook, MUIV_TriggerValue);
 
         DoMethod(hidd_tree, MUIM_Notify, MUIA_NListtree_DoubleClick, MUIV_EveryTime,
                  app, 3,
