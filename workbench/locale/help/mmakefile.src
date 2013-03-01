@@ -1,9 +1,10 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2013, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-locale : workbench-locale-help workbench-locale-help-cpy1 workbench-locale-help-cpy2
+#MM- workbench-locale : workbench-locale-help workbench-locale-help-cpy1 workbench-locale-help-cpy2 \
+#MM	workbench-locale-help-gendoc
 
 %copy_files_q mmake=workbench-locale-help-cpy1 files=LICENSE src=$(SRCDIR) dst=$(AROS_HELP)
 
@@ -12,3 +13,9 @@ include $(TOP)/config/make.cfg
 
 
 %copy_dir_recursive mmake=workbench-locale-help src=$(SRCDIR)/workbench/locale/help dst=$(AROS_HELP)
+
+#MM
+workbench-locale-help-gendoc :
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/gendoc.py $(SRCDIR)/workbench/c $(AROS_HELP)/English/Commands
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/gendoc.py $(SRCDIR)/workbench/tools $(AROS_HELP)/English/System
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/gendoc.py $(SRCDIR)/workbench/utilities $(AROS_HELP)/English/System
