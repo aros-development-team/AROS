@@ -1,9 +1,24 @@
 #define MAX_DEVICEBUSES 2
 
+/*
+ * A single PCI device is shared between two buses.
+ * The driver is designed as unloadable, so our bus objects can be
+ * destroyed. We need to release the device only when both objects
+ * are disposed, so we maintain this structure with reference
+ * counter.
+ * It raises a question if our PCI subsystem needs to support this.
+ * However, we'll wait until more use cases pop up.
+ */
+struct PCIDeviceRef
+{
+    OOP_Object *ref_Device;
+    ULONG       ref_Count;
+};
+
 struct ata_ProbedBus
 {
     struct Node atapb_Node;
-    OOP_Object *atapb_Device;
+    struct PCIDeviceRef *atapb_Device;
     UWORD       atapb_Vendor;
     UWORD       atapb_Product;
     IPTR        atapb_IOBase;
@@ -70,3 +85,5 @@ struct ataBase
 #define KernelBase            (base->cs_KernelBase)
 #define OOPBase               (base->cs_OOPBase)
 #define UtilityBase           (base->cs_UtilityBase)
+
+void DeviceUnref(struct PCIDeviceRef *ref, struct ataBase *base);

@@ -137,6 +137,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 
     struct ataBase *base = hook->h_Data;
     OOP_Object *Driver;
+    struct PCIDeviceRef *devRef;
     IPTR ProductID, VendorID, DMABase, DMASize, INTLine;
     IPTR IOBase, IOAlt, IOSize, AltSize, SubClass, Interface;
     int x;
@@ -169,6 +170,16 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
         return;
     }
 
+    devRef = AllocMem(sizeof(struct PCIDeviceRef), MEMF_ANY);
+    if (!devRef)
+    {
+        D(bug("{PCI-ATA] Failed to allocate reference structure\n"));
+        return;
+    }    
+
+    devRef->ref_Device = Device;
+    devRef->ref_Count  = 0;
+    
     /*
      * SATA controllers may need a special treatment before becoming usable.
      * The machine's firmware (EFI on Mac) may operate them in native AHCI mode
@@ -369,7 +380,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                 probedbus->atapb_Node.ln_Name = name;
                 probedbus->atapb_Node.ln_Type = basePri;
                 probedbus->atapb_Node.ln_Pri  = basePri - (base->ata__buscount++);
-                probedbus->atapb_Device       = Device;
+                probedbus->atapb_Device       = devRef;
                 probedbus->atapb_Vendor       = VendorID;
                 probedbus->atapb_Product      = ProductID;
                 probedbus->atapb_IOBase       = IOBase;
@@ -377,6 +388,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                 probedbus->atapb_INTLine      = INTLine;
                 probedbus->atapb_DMABase      = DMABase ? DMABase + (x << 3) : 0;
 
+                devRef->ref_Count++;
                 Enqueue((struct List *)&base->probedbuses, &probedbus->atapb_Node);
 
                 OOP_SetAttrsTags(Device, aHidd_PCIDevice_isIO, TRUE,
@@ -556,9 +568,25 @@ static int ata_pci_Scan(struct ataBase *base)
             {aHidd_ATABus_PIOVectors  , (IPTR)pio_FuncTable                },
             {aHidd_ATABus_DMADataSize , sizeof(struct dma_data)            },
             {aHidd_ATABus_DMAVectors  , (IPTR)dma_FuncTable                },
+            /*
+             * Legacy ISA controllers have no other way to detect their
+             * presence. Do not confuse the user with phantom devices.
+             */
+            {aHidd_ATABus_KeepEmpty   , probedbus->atapb_Node.ln_Type == ATABUSNODEPRI_LEGACY
+                                        ? FALSE : TRUE                     },
             {TAG_DONE                 , 0                                  }
         };
         OOP_Object *bus;
+
+        /*
+         * We use this field as ownership indicator.
+         * The trick is that HW_AddDriver() fails if either object creation fails
+         * or subsystem-side setup fails. In the latter case our object will be
+         * disposed.
+         * We need to know whether OOP_DisposeObject() or we should deallocate
+         * this structure on failure.
+         */
+        probedbus->atapb_Node.ln_Succ = NULL;
 
         bus = HW_AddDriver(ata, base->busClass, attrs);
         if (!bus)
@@ -567,14 +595,15 @@ static int ata_pci_Scan(struct ataBase *base)
                   probedbus->atapb_Vendor, probedbus->atapb_Product, probedbus->atapb_INTLine,
                   probedbus->atapb_IOBase, probedbus->atapb_IOAlt, probedbus->atapb_DMABase));
 
-            if (probedbus->atapb_Device)
-                HIDD_PCIDevice_Release(probedbus->atapb_Device);
-
             /*
-             * Free the structure only upon failure!
+             * Free the structure only upon object creation failure!
              * In case of success it becomes owned by the driver object!
              */
-            FreeVec(probedbus);
+            if (!probedbus->atapb_Node.ln_Succ)
+            {
+                DeviceUnref(probedbus->atapb_Device, base);
+                FreeVec(probedbus);
+            }
         }
     }
 
