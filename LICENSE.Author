@@ -60,3 +60,14 @@ Licenses: Any OSI approved license
 Statement: I, Matthias Rustler, permit all of of my changesets to AROS
            to be used in any other project, under any one of the following
            licenses: any OSI approved license: http://opensource.org/licenses/alphabetical
+
+Author: Toni Wilen
+Email: twilen@winuae.net
+SVN: twilen
+Changesets: ALL
+Licenses: LGPLv2 GPLv2
+Statement: I, Toni Wilen, permit all of of my changesets to AROS
+           to be used in any other project, under any one of the following
+           licenses: Lesser GNU Public License v2 (or later), GNU Public
+           License v2 (or later). I have not yet decided if I'll permit
+           other licenses.
