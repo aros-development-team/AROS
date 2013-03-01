@@ -743,18 +743,20 @@ ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct
     D(bug("AmigaShowViewPorts %p %p\n", vpd, bm));
 
     if (bm) {
-    	IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
-    	IPTR modeid = vHidd_ModeID_Invalid;
+        struct amigabm_data *data = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+        IPTR tags[] = {aHidd_BitMap_Visible, TRUE, TAG_DONE};
+        IPTR modeid = vHidd_ModeID_Invalid;
 
-	OOP_GetAttr(bm, aHidd_BitMap_ModeID , &modeid);
-	csd->modeid = modeid;
-	OOP_SetAttrs(bm, (struct TagItem *)tags);
+        OOP_GetAttr(bm, aHidd_BitMap_ModeID , &modeid);
+        csd->modeid = modeid;
+        setmode(csd, data);
+        OOP_SetAttrs(bm, (struct TagItem *)tags);
 
-	if (csd->acb)
-	    csd->acb(csd->acbdata, NULL);
+        if (csd->acb)
+             csd->acb(csd->acbdata, NULL);
 
     } else {
-    	resetmode(csd);
+        resetmode(csd);
     }
 
     return TRUE;

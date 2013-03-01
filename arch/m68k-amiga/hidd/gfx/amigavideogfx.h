@@ -83,7 +83,7 @@ struct amigavideo_staticdata
 	UWORD bplcon0_null, bplcon3;
 	UBYTE fmode_bpl, fmode_spr;
 	UWORD ddfstrt, ddfstop;
-	WORD modulo;
+	WORD modulopre, modulo;
 	struct copper2data copper2;
 	struct copper2data copper2i;
 

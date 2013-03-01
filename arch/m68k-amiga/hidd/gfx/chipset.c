@@ -448,6 +448,21 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
 
 }
 
+BOOL setbitmap(struct amigavideo_staticdata *data, struct amigabm_data *bm)
+{
+    data->width = bm->width;
+    data->height = data->interlace ? (bm->height + 1) / 2 : bm->height;
+    data->modulo = bm->bytesperrow - data->modulopre / (4 >> data->res);
+    data->modulo &= ~((2 << data->fmode_bpl) - 1);
+    data->updatescroll = bm;
+    data->depth = bm->depth;
+    setcopperscroll(data, bm);
+
+    D(bug("setbitmap bm=%x mode=%08x w=%d h=%d d=%d bpr=%d\n",
+    	bm, data->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow));
+	return TRUE;
+}
+
 BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -456,7 +471,10 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     UBYTE fetchunit, maxplanes;
     UWORD bplwidth, viewwidth;
     UBYTE i;
-    
+
+    if (data->disp == bm)
+        return TRUE;
+
     resetmode(data);
 
     data->res = 0;
@@ -466,13 +484,11 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     	data->res = 1;
     data->interlace = (data->modeid & LORESLACE_KEY) ? 1 : 0;
     data->fmode_bpl = data->aga ? 2 : 0;
-    data->width = bm->width;
-    data->height = data->interlace ? (bm->height + 1) / 2 : bm->height;
 
     fetchunit = fetchunits[data->fmode_bpl * 4 + data->res];
     maxplanes = fm_maxplanes[data->fmode_bpl * 4 + data->res];
 
-    viewwidth = data->width;
+    viewwidth = bm->width;
     // use nominal width for now
     if ((viewwidth << data->res) > 320)
     	viewwidth = 320 << data->res;
@@ -483,11 +499,8 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     bplwidth = viewwidth >> (data->res + 1);
     ddfstrt = (data->startx / 2) & ~((1 << fetchunit) - 1);
     ddfstop = ddfstrt + ((bplwidth + ((1 << fetchunit) - 1) - 2 * (1 << fetchunit)) & ~((1 << fetchunit) - 1));
-    data->modulo = ddfstop + 2 * (1 << fetchunit) - ddfstrt;
-    data->modulo = bm->bytesperrow - data->modulo / (4 >> data->res);
-    data->modulo &= ~((2 << data->fmode_bpl) - 1);
+    data->modulopre = ddfstop + 2 * (1 << fetchunit) - ddfstrt;
     ddfstrt -= 1 << maxplanes;
-
     data->ddfstrt = ddfstrt;
     data->ddfstop = ddfstop;
 
@@ -509,13 +522,13 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     }
  
     setfmode(data);
-    data->updatescroll = bm;
-    data->depth = bm->depth;
     setpalntsc(data, data->modeid);
     custom->bplcon0 = data->bplcon0_null;
 
     bm->displaywidth = viewwidth;
     bm->displayheight = limitheight(data, bm->height, data->interlace, FALSE);
+
+    setbitmap(data, bm);
 
 	GfxBase->LOFlist = data->copper2.copper2;
 	GfxBase->SHFlist = data->interlace ? data->copper2i.copper2 : data->copper2.copper2;
