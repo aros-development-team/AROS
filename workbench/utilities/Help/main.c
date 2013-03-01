@@ -95,6 +95,7 @@ static LONG show_file(STRPTR buffer, ULONG buflen, CONST_STRPTR path)
     strlcpy(buffer, "SYS:Utilities/Multiview ", buflen);
     strlcat(buffer, path, buflen);
     D(bug("[Help/show_file] SystemTags path %s\n", buffer));
+    // FIXME: running asynchron?
     LONG error = SystemTags
     (
         buffer,
@@ -110,14 +111,30 @@ static STRPTR find_file
     CONST_STRPTR name, CONST_STRPTR section
 )
 {
-    struct AnchorPath ap;
-    memset(&ap, 0, sizeof ap);
-    snprintf(buffer, buflen, "HELP:English/%s/%s.guide", section, name);
-    LONG error = MatchFirst(buffer, &ap);
-    MatchEnd(&ap);
-    D(bug("[Help/find_file] path %s error %d\n", buffer, error));
-    if (error) return NULL;
-    return buffer;
+    // TODO: support different suffixes
+
+    STRPTR retval = NULL;
+    struct FileInfoBlock *fib = AllocDosObjectTagList(DOS_FIB, NULL);
+    if (fib)
+    {
+        snprintf(buffer, buflen, "HELP:English/%s/%s.guide", section, name);
+        D(bug("[Help/find_file] search for %s\n", buffer));
+        BPTR lock = Lock(buffer, ACCESS_READ);
+        if (lock)
+        {
+            BOOL success = Examine(lock, fib);
+            if (success)
+            {
+                if (fib->fib_DirEntryType < 0) // is file?
+                {
+                    retval = buffer;
+                }
+            }
+            UnLock(lock);
+        }
+        FreeDosObject(DOS_FIB, fib);
+    }
+    return retval;
 }
 
 
@@ -137,11 +154,19 @@ int main(int argc, char **argv)
         if (args[ARG_NAME])
         {
             name = (STRPTR)args[ARG_NAME];
+            if (strpbrk(name, ":/()#?~"))
+            {
+                clean_exit("Illegal characters in argument 'name'.\n");
+            }
         }
 
         if (args[ARG_SECTION])
         {
             section = (STRPTR)args[ARG_SECTION];
+            if (strpbrk(section, ":/()#?~"))
+            {
+                clean_exit("Illegal characters in argument 'section'.\n");
+            }
         }
 
         D(bug("[Help] name %s section %s\n", name, section));
@@ -160,7 +185,7 @@ int main(int argc, char **argv)
             }
             if (found == FALSE)
             {
-                PutStr("Can't find help document\n");
+                clean_exit("Can't find help document.\n");
             }
         }
         else
@@ -171,7 +196,7 @@ int main(int argc, char **argv)
             }
             else
             {
-                PutStr("Can't find help document\n");
+                clean_exit("Can't find help document.\n");
             }
         }
     }
