@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "computer_page_cl.h"
+#include "classes.h"
 #include "cpuspecific.h"
 #include "locale.h"
 
@@ -42,14 +42,9 @@ APTR ProcessorBase = NULL;
 
 
 /*** Instance Data **********************************************************/
-struct ComputerPage_DATA
+struct ComputerWindow_DATA
 {
-    Object      *version_txt;
-    Object      *processors_flt;
-    Object      *ram_flt;
-    Object      *bootldr_flt;
-    Object      *args_flt;
-    Object      *hpet_flt;
+    /* Nothing to add */
 };
 
 
@@ -221,7 +216,7 @@ static VOID PrintProcessorInformation(char *buffer, LONG bufsize)
 }
 
 
-static Object *ComputerPage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
+static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
     Object *version_txt;
     Object *processors_flt;
@@ -233,8 +228,9 @@ static Object *ComputerPage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
     self = (Object *) DoSuperNewTags
     (
         cl, self, NULL,
-
-        Child, (IPTR)(VGroup,
+        MUIA_Window_Title, (IPTR)"System properties",
+        MUIA_Window_ID, MAKE_ID('S', 'Y', 'P', 'R'),
+        WindowContents, (IPTR)(VGroup,
             MUIA_FrameTitle, (IPTR)"Computer",
             GroupFrame,
             Child, (IPTR)Label("Version"),
@@ -267,149 +263,130 @@ static Object *ComputerPage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                 End),
             End),
         End),
-        TAG_MORE, (IPTR)msg->ops_AttrList
+        TAG_DONE
     );
 
     if (self)
     {
-        struct ComputerPage_DATA *data = INST_DATA(cl, self);
+        struct MemHeader *mh;
+        APTR KernelBase;
+        APTR HPETBase;
+        char buffer[2000];
+        char *bufptr;
+        LONG slen;
+        LONG bufsize;
 
-        data->version_txt = version_txt;
-        data->processors_flt = processors_flt;
-        data->ram_flt = ram_flt;
-        data->hpet_flt = hpet_flt;
-        data->bootldr_flt = bootldr_flt;
-        data->args_flt = args_flt;
+        // version
+        snprintf(buffer, sizeof(buffer), "AROS %d.%d, Exec %d.%d", ArosBase->lib_Version, ArosBase->lib_Revision,
+             SysBase->LibNode.lib_Version, SysBase->LibNode.lib_Revision);
+        SET(version_txt, MUIA_Text_Contents, buffer);
+
+        // processors
+        *buffer = '\0';
+        ProcessorBase = OpenResource(PROCESSORNAME);
+        if (ProcessorBase)
+            PrintProcessorInformation(buffer, sizeof(buffer));
+        // we intentionally use MUIA_Floattext_Text because it copies the text
+        SET(processors_flt, MUIA_Floattext_Text, buffer);
+
+        // hpet
+        *buffer = '\0';
+        bufptr = buffer;
+        bufsize = sizeof(buffer);
+
+        HPETBase = OpenResource("hpet.resource");
+        if (HPETBase)
+        {
+            const char *owner;
+            ULONG i = 0;
+
+            while (bufsize > 5 && GetUnitAttrs(i, HPET_UNIT_OWNER, &owner, TAG_DONE))
+            {
+                if (!owner)
+                    owner = "Available for use";
+
+                snprintf(bufptr, bufsize, "HPET %u:\t\t%s\n", (unsigned)(++i), owner);
+
+                slen = strlen(bufptr);
+                bufptr += slen;
+                bufsize -= slen;
+            }
+        }
+        // we intentionally use MUIA_Floattext_Text because it copies the text
+        SET(hpet_flt, MUIA_Floattext_Text, buffer);
+
+        // RAM
+        *buffer = '\0';
+        bufptr = buffer;
+        bufsize = sizeof(buffer);
+
+        for
+        (
+            mh = (struct MemHeader *)SysBase->MemList.lh_Head;
+            bufsize > 5 && mh->mh_Node.ln_Succ;
+            mh = (struct MemHeader *)mh->mh_Node.ln_Succ
+        )
+        {
+            char *memtype = "ROM";
+
+            if (mh->mh_Attributes & MEMF_CHIP)
+                memtype = "CHIP";
+            if (mh->mh_Attributes & MEMF_FAST)
+                memtype = "FAST";
+
+            snprintf(bufptr, bufsize, "Node Type 0x%X, Attributes 0x%X (%s), at $%p-$%p (",
+                     mh->mh_Node.ln_Type, mh->mh_Attributes, memtype, mh->mh_Lower, mh->mh_Upper - 1);
+
+            slen = strlen(bufptr);
+            bufptr += slen;
+            bufsize -= slen;
+
+            if (bufsize < 30)
+                break;
+
+            PrintNum(bufptr, bufsize, ComputeKBytes(mh->mh_Lower, mh->mh_Upper));
+            slen = strlen(bufptr);
+            bufptr += slen;
+            bufsize -= slen;
+
+            snprintf(bufptr, bufsize, ")\n");
+            slen = strlen(bufptr);
+            bufptr += slen;
+            bufsize -= slen;
+        }
+        // we intentionally use MUIA_Floattext_Text because it copies the text
+        SET(ram_flt, MUIA_Floattext_Text, buffer);
+
+        KernelBase = OpenResource("kernel.resource");
+        if (KernelBase)
+        {
+            struct TagItem *bootinfo = KrnGetBootInfo();
+            struct TagItem *tag;
+
+            // bootldr
+            tag = FindTagItem(KRN_BootLoader, bootinfo);
+            if (tag)
+            {
+                // we intentionally use MUIA_Floattext_Text because it copies the text
+                SET(bootldr_flt, MUIA_Floattext_Text, (char *)tag->ti_Data);
+            }
+
+            // args
+            tag = FindTagItem(KRN_CmdLine, bootinfo);
+            if (tag)
+            {
+                // we intentionally use MUIA_Floattext_Text because it copies the text
+                SET(args_flt, MUIA_Floattext_Text, (char *)tag->ti_Data);
+            }
+        }
     }
 
     return self;
 }
 
-
-static IPTR ComputerPage__MUIM_ComputerPage_Update(Class *cl, Object *obj, Msg msg)
-{
-    struct MemHeader *mh;
-    APTR KernelBase;
-    APTR HPETBase;
-    char buffer[2000];
-    char *bufptr;
-    LONG slen;
-    LONG bufsize;
-
-    struct ComputerPage_DATA *data = INST_DATA(cl, obj);
-
-    // version
-    snprintf(buffer, sizeof(buffer), "AROS %d.%d, Exec %d.%d", ArosBase->lib_Version, ArosBase->lib_Revision,
-             SysBase->LibNode.lib_Version, SysBase->LibNode.lib_Revision);
-    SET(data->version_txt, MUIA_Text_Contents, buffer);
-
-    // processors
-    *buffer = '\0';
-    ProcessorBase = OpenResource(PROCESSORNAME);
-    if (ProcessorBase)
-        PrintProcessorInformation(buffer, sizeof(buffer));
-    // we intentionally use MUIA_Floattext_Text because it copies the text
-    SET(data->processors_flt, MUIA_Floattext_Text, buffer);
-
-    // hpet
-    *buffer = '\0';
-    bufptr = buffer;
-    bufsize = sizeof(buffer);
-
-    HPETBase = OpenResource("hpet.resource");
-    if (HPETBase)
-    {
-        const char *owner;
-        ULONG i = 0;
-
-        while (bufsize > 5 && GetUnitAttrs(i, HPET_UNIT_OWNER, &owner, TAG_DONE))
-        {
-            if (!owner)
-                owner = "Available for use";
-
-            snprintf(bufptr, bufsize, "HPET %u:\t\t%s\n", (unsigned)(++i), owner);
-
-            slen = strlen(bufptr);
-            bufptr += slen;
-            bufsize -= slen;
-        }
-    }
-    // we intentionally use MUIA_Floattext_Text because it copies the text
-    SET(data->hpet_flt, MUIA_Floattext_Text, buffer);
-
-    // RAM
-    *buffer = '\0';
-    bufptr = buffer;
-    bufsize = sizeof(buffer);
-
-    for
-    (
-        mh = (struct MemHeader *)SysBase->MemList.lh_Head;
-        bufsize > 5 && mh->mh_Node.ln_Succ;
-        mh = (struct MemHeader *)mh->mh_Node.ln_Succ
-    )
-    {
-        char *memtype = "ROM";
-
-        if (mh->mh_Attributes & MEMF_CHIP)
-            memtype = "CHIP";
-        if (mh->mh_Attributes & MEMF_FAST)
-            memtype = "FAST";
-
-        snprintf(bufptr, bufsize, "Node Type 0x%X, Attributes 0x%X (%s), at $%p-$%p (",
-            mh->mh_Node.ln_Type, mh->mh_Attributes, memtype, mh->mh_Lower, mh->mh_Upper - 1);
-
-        slen = strlen(bufptr);
-        bufptr += slen;
-        bufsize -= slen;
-        
-        if (bufsize < 30)
-            break;
-
-        PrintNum(bufptr, bufsize, ComputeKBytes(mh->mh_Lower, mh->mh_Upper));
-        slen = strlen(bufptr);
-        bufptr += slen;
-        bufsize -= slen;
-
-        snprintf(bufptr, bufsize, ")\n");
-        slen = strlen(bufptr);
-        bufptr += slen;
-        bufsize -= slen;
-    }
-    // we intentionally use MUIA_Floattext_Text because it copies the text
-    SET(data->ram_flt, MUIA_Floattext_Text, buffer);
-
-    KernelBase = OpenResource("kernel.resource");
-    if (KernelBase)
-    {
-        struct TagItem *bootinfo = KrnGetBootInfo();
-        struct TagItem *tag;
-
-        // bootldr
-        tag = FindTagItem(KRN_BootLoader, bootinfo);
-        if (tag)
-        {
-            // we intentionally use MUIA_Floattext_Text because it copies the text
-            SET(data->bootldr_flt, MUIA_Floattext_Text, (char *)tag->ti_Data);
-        }
-
-        // args
-        tag = FindTagItem(KRN_CmdLine, bootinfo);
-        if (tag)
-        {
-            // we intentionally use MUIA_Floattext_Text because it copies the text
-            SET(data->args_flt, MUIA_Floattext_Text, (char *)tag->ti_Data);
-        }
-    }
-
-    return 0;
-}
-
-
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_2
+ZUNE_CUSTOMCLASS_1
 (
-    ComputerPage, NULL, MUIC_Group, NULL,
-    OM_NEW,                     struct opSet *,
-    MUIM_ComputerPage_Update,   Msg
+    ComputerWindow, NULL, MUIC_Window, NULL,
+    OM_NEW, struct opSet *
 );

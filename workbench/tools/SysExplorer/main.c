@@ -26,14 +26,19 @@
 #include <stdlib.h>
 
 #include "locale.h"
-#include "computer_page_cl.h"
-#include "device_page_cl.h"
+#include "classes.h"
 
 #define DEBUG 1
 #include <aros/debug.h>
 
 #define APPNAME "SysExplorer"
 #define VERSION "SysExplorer 0.2"
+
+struct ClassDisplay
+{
+    CONST_STRPTR classID;
+    struct MUI_CustomClass **muiClass;
+};
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
@@ -50,6 +55,12 @@ const struct OOP_ABDescr abd[] =
     {NULL    , NULL         }
 };
 
+static const struct ClassDisplay classWindows[] =
+{
+    {CLID_HW_Root, &ComputerWindow_CLASS},
+    {CLID_Hidd   , &GenericWindow_CLASS },
+    {NULL        , NULL                }
+};
 
 static struct Hook enum_hook;
 static struct Hook property_hook;
@@ -112,30 +123,6 @@ static const struct Hook close_hook =
     .h_Entry = closeFunc
 };
 
-static Object *OpenSubWin(struct MUI_CustomClass *class, ULONG id)
-{
-    Object *group;
-    Object *property_window = WindowObject,
-            MUIA_Window_Title,	(IPTR)"Properties",
-            MUIA_Window_ID, id,
-            WindowContents, (IPTR)(group = BOOPSIOBJMACRO_START(class->mcc_Class),
-            End),
-        End;
-
-    if (property_window)
-    {
-        DoMethod(app, OM_ADDMEMBER, property_window);
-        DoMethod(property_window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-                 property_window, 3, 
-                 MUIM_CallHook, &close_hook, 0);
-        SET(property_window, MUIA_Window_Open, TRUE);
-        
-        return group;
-    }
-
-    return NULL;
-}
-
 AROS_UFH3S(void, propertyFunc,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(Object*, obj, A2),
@@ -146,6 +133,8 @@ AROS_UFH3S(void, propertyFunc,
     D(bug("propertyFunc called tn: %p\n", *tn));
 
     struct MUI_NListtree_TreeNode *node = *tn;
+    OOP_Object *obj;
+    unsigned int i;
 
     if (node == NULL)
     {
@@ -160,20 +149,30 @@ AROS_UFH3S(void, propertyFunc,
      * TODO: Do not allow to open properties window for the same object
      * multiple times.
      */
-    if (node->tn_Flags & TNF_LIST)
-    {   
-        if (strcmp("Computer", node->tn_Name) == 0)
-        {
-            Object *page = OpenSubWin(ComputerPage_CLASS, MAKE_ID('S', 'Y', 'P', 'R'));
-
-            DoMethod(page, MUIM_ComputerPage_Update);
-        }
-    }
-    else
+    obj = node->tn_User;
+    for (i = 0; classWindows[i].classID; i++)
     {
-        Object *page = OpenSubWin(DevicePage_CLASS, MAKE_ID('D', 'V', 'P', 'R'));
+        OOP_Class *cl;
 
-        DoMethod(page, MUIM_DevicePage_Update, node->tn_User);
+        for (cl = OOP_OCLASS(obj); cl ; cl = cl->superclass)
+        {
+            if (!strcmp(cl->ClassNode.ln_Name, classWindows[i].classID))
+            {
+                Object *window = NewObject((*classWindows[i].muiClass)->mcc_Class, NULL,
+                                     MUIA_PropertyWin_Object, (IPTR)node->tn_User,
+                                 TAG_DONE);
+
+                if (window)
+                {
+                    DoMethod(app, OM_ADDMEMBER, window);
+                    DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+                             window, 3, 
+                             MUIM_CallHook, &close_hook, 0);
+                    SET(window, MUIA_Window_Open, TRUE);
+                }                
+                return;
+            }
+        }   
     }
 
     AROS_USERFUNC_EXIT
