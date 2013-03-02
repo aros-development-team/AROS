@@ -12,6 +12,7 @@
 #include "bus_class.h"
 #include "interface_pio.h"
 #include "interface_dma.h"
+#include "pci.h"
 
 AROS_INTH1(ata_PCI_Interrupt, struct ATA_BusData *, data)
 {
@@ -113,7 +114,7 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                 if (HIDD_PCIDevice_AddInterrupt(data->bus->atapb_Device->ref_Device, pciInt))
                 {
                     /* Signal structure ownership */
-                    data->bus->atapb_Node.ln_Succ = data;
+                    data->bus->atapb_Node.ln_Succ = (struct Node *)-1;
                     return o;
                 }
 
@@ -127,7 +128,7 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                                                data, NULL);
             if (data->irqHandle)
             {
-                data->bus->atapb_Node.ln_Succ = data;
+                data->bus->atapb_Node.ln_Succ = (struct Node *)-1;
                 return o;
             }
         }
@@ -193,13 +194,31 @@ void PCIATA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     Hidd_ATABus_Switch(msg->attrID, idx)
     {
     case aoHidd_ATABus_Use80Wire:
-        /*
-         * FIXME: Currently we assume that if the user has DMA controller,
-         * he has a modern machine and 80-conductor cable. But what if it
-         * is wrong ? What if his cable is broken and he temporarily
-         * installed old 40-conductor one ? In this case he will get data
-         * corruption.
-         */
+        if (data->bus->atapb_Device)
+        {
+            /*
+             * The specification allows to specify per-device flag.
+             * However, both devices sit on the same cable, so we return
+             * TRUE if any of devices support it. We consider only a single
+             * bit because BIOSes may leave zero bits for missing drives.
+             */
+            UWORD crmask = (IOCFG_PCR0|IOCFG_PCR1) << (data->bus->atapb_BusNo << 1);
+            UWORD cfgreg = HIDD_PCIDevice_ReadConfigWord(data->bus->atapb_Device->ref_Device, IDE_IO_CFG);
+
+            D(bug("[PCI-ATA] Cable report bits 0x%04X\n", cfgreg & crmask));
+            *msg->storage = (cfgreg & crmask) ? TRUE : FALSE;
+        }
+        else
+        {
+            /*
+             * This is ISA controller.
+             * Of course we can use 80-conductor cable on it. But there will
+             * be neither any way to detect it, nor any improvement. So FALSE.
+             */
+            *msg->storage = FALSE;
+        }
+        return;
+
     case aoHidd_ATABus_UseDMA:
         *msg->storage = data->bus->atapb_DMABase ? TRUE : FALSE;
         return;
