@@ -86,6 +86,7 @@ def parsedoc(filename, targetdir):
                 filehandle.write(blocks[title_key])
                 filehandle.write("\n")
 
+        filehandle.write('@TOC "HELP:English/Index.guide"\n')
         filehandle.write("@ENDNODE\n")
 
         filehandle.close()
