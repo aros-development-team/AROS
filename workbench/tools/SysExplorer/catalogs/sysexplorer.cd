@@ -29,3 +29,48 @@ Hardware description
 MSG_LABEL_VENDOR (//)
 Vendor information
 ;
+MSG_SYSTEM_PROPERTIES (//)
+System properties
+;
+MSG_VERSION (//)
+Version
+;
+MSG_PROCESSORS (//)
+Processors
+;
+MSG_HPET (//)
+HPET
+;
+MSG_RAM (//)
+Memory
+;
+MSG_BOOTLOADER (//)
+Boot loader
+;
+MSG_ARGUMENTS (//)
+Arguments
+;
+MSG_AVAILABLE (//)
+Available for use
+;
+MSG_GENERAL (//)
+General
+;
+MSG_NAME (//)
+Name
+;
+MSG_HARDWARE_NAME (//)
+Hardware Name
+;
+MSG_PRODUCT_ID (//)
+Product ID
+;
+MSG_PRODUCER_NAME (//)
+Vendor Name
+;
+MSG_PRODUCER_ID (//)
+Vendor ID
+;
+MSG_DEVICE_PROPERTIES (//)
+Device properties
+;

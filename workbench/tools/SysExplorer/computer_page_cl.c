@@ -228,36 +228,34 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
     self = (Object *) DoSuperNewTags
     (
         cl, self, NULL,
-        MUIA_Window_Title, (IPTR)"System properties",
+        MUIA_Window_Title, __(MSG_SYSTEM_PROPERTIES),
         MUIA_Window_ID, MAKE_ID('S', 'Y', 'P', 'R'),
         WindowContents, (IPTR)(VGroup,
-            MUIA_FrameTitle, (IPTR)"Computer",
-            GroupFrame,
-            Child, (IPTR)Label("Version"),
+            Child, (IPTR)Label(_(MSG_VERSION)),
             Child, (IPTR)(version_txt = TextObject,
                 TextFrame,
             End),
-            Child, (IPTR)Label("Processors"),
+            Child, (IPTR)Label(_(MSG_PROCESSORS)),
             Child, (IPTR)(NListviewObject,
                 MUIA_NListview_NList, (IPTR)(processors_flt = NFloattextObject,
                 End),
             End),
-            Child, (IPTR)Label("HPET"),
+            Child, (IPTR)Label(_(MSG_HPET)),
             Child, (IPTR)(NListviewObject,
                 MUIA_NListview_NList, (IPTR)(hpet_flt = NFloattextObject,
                 End),
             End),
-            Child, (IPTR)Label("RAM"),
+            Child, (IPTR)Label(_(MSG_RAM)),
             Child, (IPTR)(NListviewObject,
                 MUIA_NListview_NList, (IPTR)(ram_flt = NFloattextObject,
                 End),
             End),
-            Child, (IPTR)Label("Boot loader"),
+            Child, (IPTR)Label(_(MSG_BOOTLOADER)),
             Child, (IPTR)(NListviewObject,
                 MUIA_NListview_NList, (IPTR)(bootldr_flt = NFloattextObject,
                 End),
             End),
-            Child, (IPTR)Label("Arguments"),
+            Child, (IPTR)Label(_(MSG_ARGUMENTS)),
             Child, (IPTR)(NListviewObject,
                 MUIA_NListview_NList, (IPTR)(args_flt = NFloattextObject,
                 End),
@@ -303,7 +301,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
             while (bufsize > 5 && GetUnitAttrs(i, HPET_UNIT_OWNER, &owner, TAG_DONE))
             {
                 if (!owner)
-                    owner = "Available for use";
+                    owner = _(MSG_AVAILABLE);
 
                 snprintf(bufptr, bufsize, "HPET %u:\t\t%s\n", (unsigned)(++i), owner);
 
