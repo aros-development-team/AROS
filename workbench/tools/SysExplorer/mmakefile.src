@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 #MM- workbench-tools : workbench-tools-sysexplorer
 
 FILES       := main locale computer_page_cl cpu_arm cpu_i386 device_page_cl \
-               generic_window_cl
+               generic_window_cl ata_window_cl
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 EXEDIR      := $(AROSDIR)/Tools
 

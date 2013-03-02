@@ -74,3 +74,18 @@ Vendor ID
 MSG_DEVICE_PROPERTIES (//)
 Device properties
 ;
+MSG_ATA_PROPERTIES (//)
+IDE bus properties
+;
+MSG_ATA (//)
+IDE
+;
+MSG_USE_IOALT (//)
+Supports alternate registers
+;
+MSG_USE_32BIT (//)
+Supports 32-bit PIO
+;
+MSG_USE_DMA (//)
+Supports DMA
+;

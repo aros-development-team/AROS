@@ -234,6 +234,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
             Child, (IPTR)Label(_(MSG_VERSION)),
             Child, (IPTR)(version_txt = TextObject,
                 TextFrame,
+                MUIA_Background, MUII_TextBack,
             End),
             Child, (IPTR)Label(_(MSG_PROCESSORS)),
             Child, (IPTR)(NListviewObject,
