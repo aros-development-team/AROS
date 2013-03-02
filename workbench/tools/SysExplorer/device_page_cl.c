@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "device_page_cl.h"
+#include "classes.h"
 #include "locale.h"
 
 #define DEBUG 1
@@ -41,11 +41,7 @@
 /*** Instance Data **********************************************************/
 struct DevicePage_DATA
 {
-    Object      *name_txt;
-    Object      *hardwarename_txt;
-    Object      *product_txt; // numeric
-    Object      *producername_txt;
-    Object      *producer_txt; // numeric
+    /* Nothing to add here */
 };
 
 
@@ -62,13 +58,12 @@ static Object *DevicePage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         cl, self, NULL,
 
         Child, (IPTR)(VGroup,
-            MUIA_FrameTitle, (IPTR)"Device",
+            MUIA_FrameTitle, (IPTR)"General",
             GroupFrame,
             Child, (IPTR)(ColGroup(2),
                 Child, (IPTR)Label("Name"),
                 Child, (IPTR)(name_txt = TextObject,
                     TextFrame,
-                    MUIA_Text_Contents, (IPTR)"                                 ",
                 End),
                 Child, (IPTR)Label("Hardware Name"),
                 Child, (IPTR)(hardwarename_txt = TextObject,
@@ -88,60 +83,41 @@ static Object *DevicePage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                 End),
             End),
         End),
-        TAG_MORE, (IPTR)msg->ops_AttrList
+        TAG_DONE
     );
 
     if (self)
     {
-        struct DevicePage_DATA *data = INST_DATA(cl, self);
+        OOP_Object *device_obj = (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
+        STRPTR string;
+        IPTR number;
+        TEXT buffer[20];
 
-        data->name_txt = name_txt;
-        data->hardwarename_txt = hardwarename_txt;
-        data->product_txt = product_txt;
-        data->producername_txt = producername_txt;
-        data->producer_txt = producer_txt;
+        OOP_GetAttr(device_obj, aHidd_Name, (IPTR *)&string);
+        SET(name_txt, MUIA_Text_Contents, string);
+
+        OOP_GetAttr(device_obj, aHidd_HardwareName, (IPTR *)&string);
+        SET(hardwarename_txt, MUIA_Text_Contents, string);
+
+        OOP_GetAttr(device_obj, aHidd_Product, &number);
+        sprintf(buffer, "%ld", number);
+        SET(product_txt, MUIA_Text_Contents, buffer);
+
+        OOP_GetAttr(device_obj, aHidd_ProducerName, (IPTR *)&string);
+        SET(producername_txt, MUIA_Text_Contents, string);
+
+        OOP_GetAttr(device_obj, aHidd_Producer, &number);
+        sprintf(buffer, "%ld", number);
+        SET(producer_txt, MUIA_Text_Contents, buffer);
     }
 
     return self;
 }
 
 
-static IPTR DevicePage__MUIM_DevicePage_Update(Class *cl, Object *obj, struct MUIP_DevicePage_Update *msg)
-{
-    D(bug("MUIM_DevicePage_Update: device object %p\n", msg->device_obj));
-
-    struct DevicePage_DATA *data = INST_DATA(cl, obj);
-
-    OOP_Object *device_obj = msg->device_obj;
-    STRPTR string;
-    IPTR number;
-    TEXT buffer[20];
-
-    OOP_GetAttr(device_obj, aHidd_Name, (IPTR *)&string);
-    SET(data->name_txt, MUIA_Text_Contents, string);
-
-    OOP_GetAttr(device_obj, aHidd_HardwareName, (IPTR *)&string);
-    SET(data->hardwarename_txt, MUIA_Text_Contents, string);
-
-    OOP_GetAttr(device_obj, aHidd_Product, &number);
-    sprintf(buffer, "%ld", number);
-    SET(data->product_txt, MUIA_Text_Contents, buffer);
-
-    OOP_GetAttr(device_obj, aHidd_ProducerName, (IPTR *)&string);
-    SET(data->producername_txt, MUIA_Text_Contents, string);
-
-    OOP_GetAttr(device_obj, aHidd_Producer, &number);
-    sprintf(buffer, "%ld", number);
-    SET(data->producer_txt, MUIA_Text_Contents, buffer);
-
-    return 0;
-}
-
-
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_2
+ZUNE_CUSTOMCLASS_1
 (
     DevicePage, NULL, MUIC_Group, NULL,
-    OM_NEW,                     struct opSet *,
-    MUIM_DevicePage_Update,     struct MUIP_DevicePage_Update *
+    OM_NEW, struct opSet *
 );
