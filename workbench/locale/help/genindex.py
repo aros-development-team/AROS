@@ -24,7 +24,7 @@ def write_section(helpdir, filehandle, section):
     for file in files:
         if file[-6:] == ".guide":
             name = file[:-6]
-            filehandle.write('    @{"%s" LINK "HELP:English/%s/%s"}\n' % (name, section, file))
+            filehandle.write('    @{"%s" LINK "HELP:English/%s/%s/MAIN"}\n' % (name, section, file))
     filehandle.write('@ENDNODE\n\n')
 
 ###############################################################################
