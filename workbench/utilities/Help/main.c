@@ -11,7 +11,7 @@
 
     SYNOPSIS
 
-        NAME/A, SECTION
+        NAME, SECTION
 
     LOCATION
 
@@ -23,6 +23,7 @@
         are stored in HELP:English with a sub-directory for each section. More
         sections might be available in the future (similar than "man1", "man2" etc.
         on Linux systems). The utility "Multiview" is used to show the guide files.
+        If neither NAME nor SECTION are given an index page will be shown.
 
     INPUTS
 
@@ -62,9 +63,9 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-#define ARG_TEMPLATE "NAME/A,SECTION"
+#define ARG_TEMPLATE "NAME,SECTION"
 
-const char *ver = "$VER: Help 1.0 (01.03.2013)";
+const char *ver = "$VER: Help 1.1 (02.03.2013)";
 
 enum
 {
@@ -171,7 +172,12 @@ int main(int argc, char **argv)
 
         D(bug("[Help] name %s section %s\n", name, section));
 
-        if (section == NULL || *section == '\0')
+        if (name == NULL && section == NULL)
+        {
+            strcpy(docpath, "HELP:English/Index.guide");
+            show_file(viewpath, sizeof(viewpath), docpath);
+        }
+        else if (section == NULL || *section == '\0')
         {
             CONST_STRPTR *sect;
             BOOL found = FALSE;
@@ -202,7 +208,8 @@ int main(int argc, char **argv)
     }
     else // started from Wanderer
     {
-        // FIXME: open Multiview?
+        strcpy(docpath, "HELP:English/Index.guide");
+        show_file(viewpath, sizeof(viewpath), docpath);
     }
 
     clean_exit(NULL);
