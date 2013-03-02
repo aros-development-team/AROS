@@ -18,8 +18,8 @@
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *ComputerWindow_CLASS;
 extern struct MUI_CustomClass *GenericWindow_CLASS;
+extern struct MUI_CustomClass *ATAWindow_CLASS;
 extern struct MUI_CustomClass *DevicePage_CLASS;
-extern struct MUI_CustomClass *ATAPage_CLASS;
 
 /*** Macros *****************************************************************/
 #define DevicePageObject BOOPSIOBJMACRO_START(DevicePage_CLASS->mcc_Class)

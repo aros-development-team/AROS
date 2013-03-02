@@ -6,6 +6,7 @@
 #define MUIMASTER_YES_INLINE_STDARG
 
 #include <exec/memory.h>
+#include <hidd/ata.h>
 #include <hidd/hidd.h>
 #include <libraries/asl.h>
 #include <mui/NListtree_mcc.h>
@@ -47,19 +48,26 @@ static Object *property_menu, *expand_menu, *collapse_menu, *quit_menu;
 
 OOP_AttrBase HiddAttrBase;
 OOP_AttrBase HWAttrBase;
+OOP_AttrBase HiddATABusAB;
 
 const struct OOP_ABDescr abd[] =
 {
-    {IID_Hidd, &HiddAttrBase},
-    {IID_HW  , &HWAttrBase  },
-    {NULL    , NULL         }
+    {IID_Hidd       , &HiddAttrBase},
+    {IID_HW         , &HWAttrBase  },
+    {IID_Hidd_ATABus, &HiddATABusAB},
+    {NULL           , NULL         }
 };
 
+/*
+ * For proper operation CLIDs in this table should
+ * be sorted from subclasses to superclasses.
+ */
 static const struct ClassDisplay classWindows[] =
 {
-    {CLID_HW_Root, &ComputerWindow_CLASS},
-    {CLID_Hidd   , &GenericWindow_CLASS },
-    {NULL        , NULL                }
+    {CLID_HW_Root    , &ComputerWindow_CLASS},
+    {CLID_Hidd_ATABus, &ATAWindow_CLASS     },
+    {CLID_Hidd       , &GenericWindow_CLASS },
+    {NULL            , NULL                 }
 };
 
 static struct Hook enum_hook;
@@ -213,8 +221,6 @@ static BOOL GUIinit()
             MUIA_Window_ID, MAKE_ID('S', 'Y', 'E', 'X'),
             WindowContents, (IPTR)(HGroup,
                 Child, (IPTR)(NListviewObject,
-                    GroupFrame,
-                    MUIA_FrameTitle, __(MSG_HIDD_TREE),
                     MUIA_NListview_NList, (IPTR)(hidd_tree = NListtreeObject,
                         ReadListFrame,
                         MUIA_CycleChain, TRUE,
