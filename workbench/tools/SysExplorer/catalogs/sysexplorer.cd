@@ -89,3 +89,6 @@ Supports 32-bit PIO
 MSG_USE_DMA (//)
 Supports DMA
 ;
+MSG_USE_80WIRE (//)
+80-wire cable
+;

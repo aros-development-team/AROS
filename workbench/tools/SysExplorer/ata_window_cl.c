@@ -54,9 +54,12 @@ static inline void SetCheckState(Object *img, OOP_Object *dev, ULONG attr)
 static Object *ATAWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
     OOP_Object *dev = (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
-    Object *ioalt_img, *pio32_img, *dma_img;
+    LONG ioalt     = OOP_GET(dev, aHidd_ATABus_UseIOAlt)  ? IDS_SELECTED : IDS_NORMAL;
+    LONG pio32     = OOP_GET(dev, aHidd_ATABus_Use32Bit)  ? IDS_SELECTED : IDS_NORMAL;
+    LONG use80wire = OOP_GET(dev, aHidd_ATABus_Use80Wire) ? IDS_SELECTED : IDS_NORMAL;
+    LONG dma       = OOP_GET(dev, aHidd_ATABus_UseDMA)    ? IDS_SELECTED : IDS_NORMAL;
 
-    self = (Object *) DoSuperNewTags
+    return (Object *) DoSuperNewTags
     (
         cl, self, NULL,
         MUIA_Window_Title, __(MSG_ATA_PROPERTIES),
@@ -70,22 +73,33 @@ static Object *ATAWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                 GroupFrame,
                 MUIA_Background, MUII_GroupBack,
                 Child, (IPTR)Label(_(MSG_USE_IOALT)),
-                Child, (IPTR)(ioalt_img = ImageObject,
+                Child, (IPTR)(ImageObject,
                     MUIA_Image_Spec, MUII_CheckMark,
+                    MUIA_Image_State, ioalt,
                     TextFrame,
                     MUIA_Background, MUII_TextBack,
                 End),
                 Child, (IPTR)HSpace(0),
                 Child, (IPTR)Label(_(MSG_USE_32BIT)),
-                Child, (IPTR)(pio32_img = ImageObject,
+                Child, (IPTR)(ImageObject,
                     MUIA_Image_Spec, MUII_CheckMark,
+                    MUIA_Image_State, pio32,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                End),
+                Child, (IPTR)HSpace(0),
+                Child, (IPTR)Label(_(MSG_USE_80WIRE)),
+                Child, (IPTR)(ImageObject,
+                    MUIA_Image_Spec, MUII_CheckMark,
+                    MUIA_Image_State, use80wire,
                     TextFrame,
                     MUIA_Background, MUII_TextBack,
                 End),
                 Child, (IPTR)HSpace(0),
                 Child, (IPTR)Label(_(MSG_USE_DMA)),
-                Child, (IPTR)(dma_img = ImageObject,
+                Child, (IPTR)(ImageObject,
                     MUIA_Image_Spec, MUII_CheckMark,
+                    MUIA_Image_State, dma,
                     TextFrame,
                     MUIA_Background, MUII_TextBack,
                 End),
@@ -94,15 +108,6 @@ static Object *ATAWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         End),
         TAG_DONE
     );
-
-    if (self)
-    {
-        SetCheckState(ioalt_img, dev, aHidd_ATABus_UseIOAlt);
-        SetCheckState(pio32_img, dev, aHidd_ATABus_Use32Bit);
-        SetCheckState(dma_img, dev, aHidd_ATABus_UseDMA);
-    }
-
-    return self;
 }
 
 /*** Setup ******************************************************************/
