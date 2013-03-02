@@ -973,13 +973,6 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
     DINIT(bug("[ATA  ] ata_setup_unit(%d)\n", unit->au_UnitNum));
     ata_SelectUnit(unit);
 
-/* TODO: Implement Simplex attribute for bus driver
-    if (unit->au_DMAPort != 0
-        && (PIO_In(bus, dma_Status, unit->au_DMAPort) & 0x80) != 0)
-        bug("[ATA%02ld] ata_setup_unit: WARNING: Controller only supports "
-            "DMA on one bus at a time. DMAStatus=%lx\n", unit->au_UnitNum,
-            ATA_IN(dma_Status, unit->au_DMAPort)); */
-
     if (FALSE == ata_WaitBusyTO(unit, 1, FALSE, NULL))
     {
         DINIT(bug("[ATA%02ld] ata_setup_unit: ERROR: Drive not ready for use. Keeping functions stubbed\n", unit->au_UnitNum));

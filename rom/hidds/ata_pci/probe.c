@@ -373,9 +373,27 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
             probedbus = AllocVec(sizeof(struct ata_ProbedBus) + len, MEMF_ANY);
             if (probedbus)
             {
+                IPTR dmaBase = DMABase ? DMABase + (x << 3) : 0;
                 STRPTR name = (char *)probedbus + sizeof(struct ata_ProbedBus);
 
                 RawDoFmt("PCI %s %s channel", str, RAWFMTFUNC_STRING, name);
+
+                if ((x > 0) && dmaBase)
+                {
+                    /*
+                     * FIXME: Currently ata.device does not support shared DMA.
+                     * In order to make it working, we disable DMA for secondary channel.
+                     */
+                    UBYTE dmaStatus = inb(dmaBase + dma_Status);
+
+                    if (dmaStatus & DMAF_Simplex)
+                    {
+                        bug("[PCI-ATA] WARNING: Controller only supports "
+                            "DMA on one bus at a time. DMAStatus=0x%02X\n", dmaStatus);
+                        bug("[PCI-ATA] DMA for secondary bus disabled\n");
+                        dmaBase = 0;
+                    }
+                }
 
                 probedbus->atapb_Node.ln_Name = name;
                 probedbus->atapb_Node.ln_Type = basePri;
@@ -386,7 +404,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                 probedbus->atapb_IOBase       = IOBase;
                 probedbus->atapb_IOAlt        = IOAlt;
                 probedbus->atapb_INTLine      = INTLine;
-                probedbus->atapb_DMABase      = DMABase ? DMABase + (x << 3) : 0;
+                probedbus->atapb_DMABase      = dmaBase;
 
                 devRef->ref_Count++;
                 Enqueue((struct List *)&base->probedbuses, &probedbus->atapb_Node);
