@@ -47,13 +47,20 @@ struct DevicePage_DATA
 
 static Object *DevicePage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
-    Object *name_txt;
-    Object *hardwarename_txt;
-    Object *product_txt; // numeric
-    Object *producername_txt;
-    Object *producer_txt; // numeric
+    OOP_Object *device_obj = (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
+    IPTR idName, hwName, vendorStr;
+    IPTR number;
+    TEXT productId[20], vendorId[20];
 
-    self = (Object *) DoSuperNewTags
+    OOP_GetAttr(device_obj, aHidd_Name, &idName);
+    OOP_GetAttr(device_obj, aHidd_HardwareName, &hwName);
+    OOP_GetAttr(device_obj, aHidd_ProducerName, &vendorStr);
+    OOP_GetAttr(device_obj, aHidd_Product, &number);
+    sprintf(productId, "0x%04lX", number);
+    OOP_GetAttr(device_obj, aHidd_Producer, &number);
+    sprintf(vendorId, "0x%04lX", number);
+
+    return (Object *) DoSuperNewTags
     (
         cl, self, NULL,
 
@@ -62,60 +69,38 @@ static Object *DevicePage__OM_NEW(Class *cl, Object *self, struct opSet *msg)
             GroupFrame,
             MUIA_Background, MUII_GroupBack,
             Child, (IPTR)Label(_(MSG_NAME)),
-            Child, (IPTR)(name_txt = TextObject,
+            Child, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
+                MUIA_Text_Contents, idName,
             End),
             Child, (IPTR)Label(_(MSG_HARDWARE_NAME)),
-            Child, (IPTR)(hardwarename_txt = TextObject,
+            Child, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
+                MUIA_Text_Contents, hwName,
             End),
             Child, (IPTR)Label(_(MSG_PRODUCT_ID)),
-            Child, (IPTR)(product_txt = TextObject,
+            Child, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
+                MUIA_Text_Contents, (IPTR)productId,
             End),
             Child, (IPTR)Label(_(MSG_PRODUCER_NAME)),
-            Child, (IPTR)(producername_txt = TextObject,
+            Child, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
+                MUIA_Text_Contents, vendorStr,
             End),
             Child, (IPTR)Label(_(MSG_PRODUCER_ID)),
-            Child, (IPTR)(producer_txt = TextObject,
+            Child, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
+                MUIA_Text_Contents, (IPTR)vendorId,
             End),
         End),
         TAG_DONE
     );
-
-    if (self)
-    {
-        OOP_Object *device_obj = (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
-        STRPTR string;
-        IPTR number;
-        TEXT buffer[20];
-
-        OOP_GetAttr(device_obj, aHidd_Name, (IPTR *)&string);
-        SET(name_txt, MUIA_Text_Contents, string);
-
-        OOP_GetAttr(device_obj, aHidd_HardwareName, (IPTR *)&string);
-        SET(hardwarename_txt, MUIA_Text_Contents, string);
-
-        OOP_GetAttr(device_obj, aHidd_Product, &number);
-        sprintf(buffer, "%ld", number);
-        SET(product_txt, MUIA_Text_Contents, buffer);
-
-        OOP_GetAttr(device_obj, aHidd_ProducerName, (IPTR *)&string);
-        SET(producername_txt, MUIA_Text_Contents, string);
-
-        OOP_GetAttr(device_obj, aHidd_Producer, &number);
-        sprintf(buffer, "%ld", number);
-        SET(producer_txt, MUIA_Text_Contents, buffer);
-    }
-
-    return self;
 }
 
 
