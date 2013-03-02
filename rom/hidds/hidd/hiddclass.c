@@ -18,6 +18,7 @@
 #include <oop/oop.h>
 #include <hidd/hidd.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -273,54 +274,74 @@ OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if(o)
     {
-        struct HIDDData *hd;
+        struct HIDDData *hd = OOP_INST_DATA(cl, o);
         struct TagItem *list = msg->attrList;
-        struct pRoot_Set set_msg;
-        STRPTR name, name2;
+        struct TagItem *tag;
 
-        name = (STRPTR)GetTagData(aHidd_Name, 0,  list);
-        if (name) {
-            ULONG l = strlen(name)+1;
+        /* Set defaults */
+        hd->hd_Name    = (STRPTR)unknown;
+        hd->hd_HWName  = (STRPTR)unknown;
+        hd->hd_Status  = vHidd_StatusUnknown;
+        hd->hd_Locking = vHidd_LockShared;
+        hd->hd_Active  = TRUE;
+        /*
+         * Initialise the HIDD class. These fields are publicly described
+         * as not being settable at Init time, however it is the only way to
+         * get proper abstraction if you ask me. Plus it does reuse code
+         * in a nice way.
+         */
+        while ((tag = NextTagItem(&list)))
+        {
+            ULONG idx;
 
-            name2 = AllocVec(l, MEMF_ANY);
-            if (!name2)
-                return NULL;
-            CopyMem(name, name2, l);
-        } else
-            name2 = (STRPTR)unknown;
+            Hidd_Switch(tag->ti_Tag, idx)
+            {
+            case aoHidd_Name:
+                if (tag->ti_Data)
+                    hd->hd_Name = StrDup((STRPTR)tag->ti_Data);
+                break;
 
-        hd = OOP_INST_DATA(cl, o);
+            case aoHidd_Type:
+                hd->hd_Type = tag->ti_Data;
+                break;
+                
+            case aoHidd_SubType:
+                hd->hd_SubType = tag->ti_Data;
+                break;
 
-        /*  Initialise the HIDD class. These fields are publicly described
-            as not being settable at Init time, however it is the only way to
-            get proper abstraction if you ask me. Plus it does reuse code
-            in a nice way.
+            case aoHidd_Producer:
+                hd->hd_Producer = tag->ti_Data;
+                break;
 
-            To pass these into the init code I would recommend that your
-            pass in a TagList of your tags, which is linked to the user's
-            tags by a TAG_MORE. This way you will prevent them from setting
-            these values.
-        */
+            case aoHidd_Product:
+                hd->hd_Product = tag->ti_Data;
+                break;
 
-        hd->hd_Type     = GetTagData(aHidd_Type,        0, list);
-        hd->hd_SubType  = GetTagData(aHidd_SubType,     0, list);
-        hd->hd_Producer = GetTagData(aHidd_Producer,    0, list);
+            case aoHidd_HardwareName:
+                hd->hd_HWName = (STRPTR)tag->ti_Data;
+                break;
 
-        hd->hd_Name     = name2;
-        hd->hd_HWName   = (STRPTR)GetTagData(aHidd_HardwareName,(IPTR)unknown,  list);
-        hd->hd_ProducerName = (STRPTR)GetTagData(aHidd_ProducerName, 0, list);
+            case aoHidd_ProducerName:
+                hd->hd_ProducerName = (STRPTR)tag->ti_Data;
+                break;
 
-        hd->hd_Status   = GetTagData(aHidd_Status,      vHidd_StatusUnknown,    list);
-        hd->hd_Locking  = GetTagData(aHidd_Locking,     vHidd_LockShared,       list);
-        hd->hd_ErrorCode= GetTagData(aHidd_ErrorCode,   0, list);
+            case aoHidd_Status:
+                hd->hd_Status = tag->ti_Data;
+                break;
 
-        hd->hd_Active   = TRUE; /* Set default, GetTagData() comes later */
-        
-        /* Use OM_SET to set the rest */
+            case aoHidd_Locking:
+                hd->hd_Locking = tag->ti_Data;
+                break;
+                
+            case aoHidd_ErrorCode:
+                hd->hd_ErrorCode = tag->ti_Data;
+                break;
 
-
-        set_msg.attrList = msg->attrList;
-        HIDDCl__Root__Set(cl, o, &set_msg);
+            case aoHidd_Active:
+                hd->hd_Active = tag->ti_Data;
+                break;
+            }
+        }
     }
     
     ReturnPtr("HIDD::New", OOP_Object *, o);
