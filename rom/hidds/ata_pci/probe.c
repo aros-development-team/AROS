@@ -401,6 +401,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                 probedbus->atapb_Device       = devRef;
                 probedbus->atapb_Vendor       = VendorID;
                 probedbus->atapb_Product      = ProductID;
+                probedbus->atapb_BusNo        = x;
                 probedbus->atapb_IOBase       = IOBase;
                 probedbus->atapb_IOAlt        = IOAlt;
                 probedbus->atapb_INTLine      = INTLine;
@@ -555,6 +556,7 @@ static int ata_pci_Scan(struct ataBase *base)
                 probedbus->atapb_Device       = NULL;
                 probedbus->atapb_Vendor       = 0;
                 probedbus->atapb_Product      = 0;
+                probedbus->atapb_BusNo        = LegacyBuses[n].lb_Bus;
                 probedbus->atapb_IOBase       = LegacyBuses[n].lb_Port;
                 probedbus->atapb_IOAlt        = LegacyBuses[n].lb_Alt;
                 probedbus->atapb_INTLine      = LegacyBuses[n].lb_IRQ;

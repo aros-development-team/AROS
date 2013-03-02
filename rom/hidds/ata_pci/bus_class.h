@@ -21,6 +21,7 @@ struct ata_ProbedBus
     struct PCIDeviceRef *atapb_Device;
     UWORD       atapb_Vendor;
     UWORD       atapb_Product;
+    UBYTE       atapb_BusNo;
     IPTR        atapb_IOBase;
     IPTR        atapb_IOAlt;
     IPTR        atapb_INTLine;
