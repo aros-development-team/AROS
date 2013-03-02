@@ -38,6 +38,91 @@ Description du matériel
 ;Hardware description
 ;
 MSG_LABEL_VENDOR
-Information vendeur
+Information Distributeur
 ;Vendor information
 ;
+MSG_SYSTEM_PROPERTIES
+Propriétés Système
+;System properties
+;
+MSG_VERSION
+Version
+;Version
+;
+MSG_PROCESSORS
+Processeurs
+;Processors
+;
+MSG_HPET
+HPET
+;HPET
+;
+MSG_RAM
+Mémoire
+;Memory
+;
+MSG_BOOTLOADER
+Chargeur de boot
+;Boot loader
+;
+MSG_ARGUMENTS
+Arguments
+;Arguments
+;
+MSG_AVAILABLE
+Disponible
+;Available for use
+;
+MSG_GENERAL
+Général
+;General
+;
+MSG_NAME
+Nom
+;Name
+;
+MSG_HARDWARE_NAME
+Nom matériel
+;Hardware Name
+;
+MSG_PRODUCT_ID
+Produit
+;Product ID
+;
+MSG_PRODUCER_NAME
+Constructeur
+;Vendor Name
+;
+MSG_PRODUCER_ID
+Distributeur
+;Vendor ID
+;
+MSG_DEVICE_PROPERTIES
+Propriétés du périphérique
+;Device properties
+;
+MSG_ATA_PROPERTIES
+Propriétés du bus IDE
+;IDE bus properties
+;
+MSG_ATA
+IDE
+;IDE
+;
+MSG_USE_IOALT
+Supporte les registres étendus
+;Supports alternate registers
+;
+MSG_USE_32BIT
+Supporte le mode PIO 32 bits
+;Supports 32-bit PIO
+;
+MSG_USE_DMA
+Supporte le DMA
+;Supports DMA
+;
+MSG_USE_80WIRE
+Câble 80 fils
+;80-wire cable
+;
+
