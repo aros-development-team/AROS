@@ -49,10 +49,15 @@ static Object *GenericWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
     self = (Object *) DoSuperNewTags
     (
         cl, self, NULL,
-        MUIA_Window_Title, __(MSG_DEVICE_PROPERTIES),
-        MUIA_Window_ID, MAKE_ID('D', 'E', 'V', 'P'),
-        WindowContents, (IPTR)(DevicePageObject,
-            TAG_MORE, (IPTR)msg->ops_AttrList,
+        MUIA_Window_Title, (IPTR)"Device properties",
+        MUIA_Window_ID, MAKE_ID('A', 'T', 'A', 'P'),
+        WindowContents, (IPTR)(VGroup,
+            Child, (IPTR)(DevicePageObject,
+                TAG_MORE, (IPTR)msg->ops_AttrList,
+            End),
+            Child, (IPTR)(TableGroup(2),
+                Child, 
+            End),
         End),
         TAG_DONE
     );
@@ -63,6 +68,6 @@ static Object *GenericWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 /*** Setup ******************************************************************/
 ZUNE_CUSTOMCLASS_1
 (
-    GenericWindow, NULL, MUIC_Window, NULL,
+    ATAWindow, NULL, MUIC_Window, NULL,
     OM_NEW, struct opSet *
 );
