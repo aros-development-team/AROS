@@ -12,7 +12,8 @@ include $(TOP)/config/make.cfg
     src=$(SRCDIR)/workbench/locale/help dst=$(AROS_HELP)
 
 
-%copy_dir_recursive mmake=workbench-locale-help src=$(SRCDIR)/workbench/locale/help dst=$(AROS_HELP)
+%copy_dir_recursive mmake=workbench-locale-help src=$(SRCDIR)/workbench/locale/help dst=$(AROS_HELP) \
+    excludefiles=$(call WILDCARD, *.py)
 
 #MM
 workbench-locale-help-gendoc :
