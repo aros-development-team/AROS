@@ -24,7 +24,7 @@ def write_section(helpdir, filehandle, section):
     for file in files:
         if file[-6:] == ".guide":
             name = file[:-6]
-            filehandle.write('    @{"%s" LINK "HELP:English/%s/%s/MAIN"}\n' % (name, section, file))
+            filehandle.write('    @{" %s " LINK "HELP:English/%s/%s/MAIN"}\n' % (name, section, file))
     filehandle.write('@ENDNODE\n\n')
 
 ###############################################################################
@@ -43,7 +43,7 @@ filehandle.write("@(C) Copyright (C) %d, The AROS Development Team. All rights r
 filehandle.write('@NODE MAIN "Help sections\n')
 filehandle.write('\n\n@{B}Sections@{UB}\n\n')
 for section in sections:
-    filehandle.write('    @{"%s" LINK "%s"}\n' % (section, section))
+    filehandle.write('    @{" %s " LINK "%s"}\n' % (section, section))
 filehandle.write('@ENDNODE\n\n')
 
 for section in sections:
