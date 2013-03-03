@@ -1020,8 +1020,8 @@ TMP_TARGET := %(modname)_libdefs.h
 TMP_DEPS := $(GENMODULE)
 TMP_OPTS := 
 ifneq (%(conffile),)
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+    TMP_OPTS += -c %(conffile)
+    TMP_DEPS += %(conffile)
 else
     TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
     TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
@@ -1054,8 +1054,8 @@ TMP_TARGET := %(modname)_lib.fd
 TMP_DEPS := $(GENMODULE)
 TMP_OPTS := 
 ifneq (%(conffile),)
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+    TMP_OPTS += -c %(conffile)
+    TMP_DEPS += %(conffile)
 else
     TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
     TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
@@ -1087,8 +1087,8 @@ TMP_TARGET := Makefile.%(modname)%(modtype)
 TMP_DEPS := $(GENMODULE)
 TMP_OPTS := 
 ifneq (%(conffile),)
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+    TMP_OPTS += -c %(conffile)
+    TMP_DEPS += %(conffile)
 else
     TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
     TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
@@ -1126,8 +1126,8 @@ TMP_DEPS := $(GENMODULE)
 TMP_OPTS :=
 
 ifneq (%(conffile),)
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+    TMP_OPTS += -c %(conffile)
+    TMP_DEPS += %(conffile)
 else
     TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
     TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
@@ -1172,8 +1172,8 @@ TMP_DEPS := $(GENMODULE)
 TMP_OPTS :=
 
 ifneq (%(conffile),)
-    TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
-    TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+    TMP_OPTS += -c %(conffile)
+    TMP_DEPS += %(conffile)
 else
     TMP_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
     TMP_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
