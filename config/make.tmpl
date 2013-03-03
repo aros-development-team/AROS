@@ -1078,12 +1078,12 @@ $(TMP_TARGET) : $(TMP_DEPS)
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
-# Generate a Makefile.%(modname) with the genmodule program and include this
+# Generate a Makefile.%(modname)%(modtype) with the genmodule program and include this
 # generated file in this Makefile
 %define rule_genmodule_makefile modname=/A modtype=/A modsuffix= conffile= \
     targetdir=
 
-TMP_TARGET := Makefile.%(modname)
+TMP_TARGET := Makefile.%(modname)%(modtype)
 TMP_DEPS := $(GENMODULE)
 TMP_OPTS := 
 ifneq (%(conffile),)
@@ -1607,21 +1607,21 @@ OBJDIR ?= $(GENDIR)/$(CURDIR)
 
 ## Create genmodule include Makefile for the module
 ##
-%(mmake)-makefile : %(objdir)/Makefile.%(modname)
+%(mmake)-makefile : %(objdir)/Makefile.%(modname)%(modtype)
 
 %rule_genmodule_makefile \
     modname=%(modname) modtype=%(modtype) \
     modsuffix=%(modsuffix) targetdir=%(objdir) \
     conffile=%(conffile)
 
-%(objdir)/Makefile.%(modname) : | %(objdir)
+%(objdir)/Makefile.%(modname)%(modtype) : | %(objdir)
 
 GLOB_MKDIRS += %(objdir)
 
 # Do not parse these statements if metatarget is not appropriate
 ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
 
-include %(objdir)/Makefile.%(modname)
+include %(objdir)/Makefile.%(modname)%(modtype)
 
 BD_DEFMODDIR := $(%(modname)_MODDIR)
 
@@ -1877,7 +1877,7 @@ endif
 
 BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) \
     $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
-    %(objdir)/Makefile.%(modname) \
+    %(objdir)/Makefile.%(modname)%(modtype) \
     $(addprefix %(objdir)/include/,$(%(modname)_INCLUDES)) \
     $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
     $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
@@ -1939,21 +1939,21 @@ OBJDIR ?= $(GENDIR)/$(CURDIR)
 
 ## Create genmodule include Makefile for the module
 ##
-%(mmake)-makefile : %(objdir)/Makefile.%(modname)
+%(mmake)-makefile : %(objdir)/Makefile.%(modname)%(modtype)
 
 %rule_genmodule_makefile \
     modname=%(modname) modtype=%(modtype) \
     modsuffix=%(modsuffix) targetdir=%(objdir) \
     conffile=%(conffile)
 
-%(objdir)/Makefile.%(modname) : | %(objdir)
+%(objdir)/Makefile.%(modname)%(modtype) : | %(objdir)
 
 GLOB_MKDIRS += %(objdir)
 
 # Do not parse these statements if metatarget is not appropriate
 ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
 
-include %(objdir)/Makefile.%(modname)
+include %(objdir)/Makefile.%(modname)%(modtype)
 
 BD_DEFMODDIR := $(%(modname)_MODDIR)
 
@@ -2012,7 +2012,7 @@ GLOB_MKDIRS += %(objdir)/include
 
 BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) \
     $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
-    %(objdir)/Makefile.%(modname) \
+    %(objdir)/Makefile.%(modname)%(modtype) \
     $(addprefix %(objdir)/include/,$(%(modname)_INCLUDES)) \
     $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
     $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
