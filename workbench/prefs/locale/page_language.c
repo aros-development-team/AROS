@@ -268,6 +268,7 @@ AROS_UFH2(
     struct Language_DATA *data = hook->h_Data;
 
     func_clear(data);
+    SET(data->prefs, MUIA_PrefsEditor_Changed, TRUE);
 
     AROS_USERFUNC_EXIT
 }
