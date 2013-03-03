@@ -1171,7 +1171,7 @@ void UpdateNavigator(Class *cl, Object *obj, struct GadgetInfo *ginfo)
       if(lock != BNULL)
       {
          UnLock(lock);
-         help = "sys/amigaguide.guide";
+         help = "sys/amigaguide.guide/MAIN";
          SetAttrs(data->ag_Actual,
                   AGNA_Help, (IPTR) help,
                   TAG_DONE);
