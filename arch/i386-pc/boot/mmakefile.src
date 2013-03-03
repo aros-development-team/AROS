@@ -55,9 +55,8 @@ KHIDDS  := ata_pci i8042 vesagfx vgah pci pcipc serial parallel
 
 #MM- kernel-legacy-pc-i386 :	        \
 #MM     kernel-hidd-serialmouse-pkg     \
-#MM     kernel-devs-trackdisk-pkg
-# isapnp.resource fails to build as complete module. Needs analysis.
-##MM	kernel-isapnp-pkg
+#MM     kernel-devs-trackdisk-pkg       \
+#MM	kernel-isapnp-pkg
 
 # ISAPnP disabled because totally untested
 #LEGACY_RSRCS := isapnp
