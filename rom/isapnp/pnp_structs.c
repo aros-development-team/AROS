@@ -3,6 +3,7 @@
 /*
      ISA-PnP -- A Plug And Play ISA software layer for AmigaOS.
      Copyright (C) 2001 Martin Blom <martin@blom.org>
+     Copyright (C) 2009-2013 The AROS Development Team
      
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
@@ -39,9 +40,11 @@
 
 // You should set isapnpc_Node.ln_Name. Allocate the string with AllocVec()!
 
-struct ISAPNP_Card* ASMCALL
-ISAPNP_AllocCard( REG( a6, struct ISAPNPBase* res ) )
+AROS_LH0(struct ISAPNP_Card *, ISAPNP_AllocCard,
+         struct ISAPNPBase *, res, 18, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_Card* card;
 
   card = AllocVec( sizeof( *card ), MEMF_PUBLIC | MEMF_CLEAR );
@@ -55,16 +58,20 @@ ISAPNP_AllocCard( REG( a6, struct ISAPNPBase* res ) )
   }
 
   return card;
+
+  AROS_LIBFUNC_EXIT
 }
 
 /******************************************************************************
 ** Deallocate a card structure ************************************************
 ******************************************************************************/
 
-void ASMCALL
-ISAPNP_FreeCard( REG( a0, struct ISAPNP_Card* card ),
-                 REG( a6, struct ISAPNPBase*  res ) )
+AROS_LH1(void, ISAPNP_FreeCard,
+         AROS_LHA(struct ISAPNP_Card *, card, A0),
+         struct ISAPNPBase *, res, 19, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_Device* dev;
 
   if( card == NULL )
@@ -87,6 +94,8 @@ ISAPNP_FreeCard( REG( a0, struct ISAPNP_Card* card ),
   }
 
   FreeVec( card );
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -96,9 +105,11 @@ ISAPNP_FreeCard( REG( a0, struct ISAPNP_Card* card ),
 
 // You should set isapnpiod_Node.ln_Name. Allocate the string with AllocVec()!
 
-struct ISAPNP_Device* ASMCALL
-ISAPNP_AllocDevice( REG( a6, struct ISAPNPBase* res ) )
+AROS_LH0(struct ISAPNP_Device *, ISAPNP_AllocDevice,
+         struct ISAPNPBase *, res, 20, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_Device* dev;
 
   dev = AllocVec( sizeof( *dev ), MEMF_PUBLIC | MEMF_CLEAR );
@@ -122,6 +133,8 @@ ISAPNP_AllocDevice( REG( a6, struct ISAPNPBase* res ) )
   }
 
   return dev;
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -129,10 +142,12 @@ ISAPNP_AllocDevice( REG( a6, struct ISAPNPBase* res ) )
 ** Deallocate a device structure **********************************************
 ******************************************************************************/
 
-void ASMCALL
-ISAPNP_FreeDevice( REG( a0, struct ISAPNP_Device* dev ),
-                   REG( a6, struct ISAPNPBase*    res ) )
+AROS_LH1(void, ISAPNP_FreeDevice,
+         AROS_LHA(struct ISAPNP_Device *, dev, A0),
+         struct ISAPNPBase *, res, 21, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_Identifier* id;
   struct ISAPNP_Resource*   r;
 
@@ -169,6 +184,8 @@ ISAPNP_FreeDevice( REG( a0, struct ISAPNP_Device* dev ),
   }
 
   FreeVec( dev );
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -176,10 +193,12 @@ ISAPNP_FreeDevice( REG( a0, struct ISAPNP_Device* dev ),
 ** Allocate a resource group **************************************************
 ******************************************************************************/
 
-struct ISAPNP_ResourceGroup* ASMCALL
-ISAPNP_AllocResourceGroup( REG( d0, UBYTE              pri ),
-                           REG( a6, struct ISAPNPBase* res ) )
+AROS_LH1(struct ISAPNP_ResourceGroup *, ISAPNP_AllocResourceGroup,
+         AROS_LHA(UBYTE, pri, D0),
+         struct ISAPNPBase *, res, 22, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_ResourceGroup* rg;
 
   rg = AllocVec( sizeof( *rg ), MEMF_PUBLIC | MEMF_CLEAR );
@@ -194,6 +213,8 @@ ISAPNP_AllocResourceGroup( REG( d0, UBYTE              pri ),
   }
 
   return rg;
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -201,10 +222,12 @@ ISAPNP_AllocResourceGroup( REG( d0, UBYTE              pri ),
 ** Deallocate a resource group ************************************************
 ******************************************************************************/
 
-void ASMCALL
-ISAPNP_FreeResourceGroup( REG( a0, struct ISAPNP_ResourceGroup* rg ),
-                          REG( a6, struct ISAPNPBase*           res ) )
+AROS_LH1(void, ISAPNP_FreeResourceGroup,
+         AROS_LHA(struct ISAPNP_ResourceGroup *, rg, A0),
+         struct ISAPNPBase *, res, 23, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_ResourceGroup* child_rg;
   struct ISAPNP_Resource*      r;
 
@@ -228,6 +251,8 @@ ISAPNP_FreeResourceGroup( REG( a0, struct ISAPNP_ResourceGroup* rg ),
   }
 
   FreeVec( rg );
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -235,10 +260,12 @@ ISAPNP_FreeResourceGroup( REG( a0, struct ISAPNP_ResourceGroup* rg ),
 ** Allocate a resource ********************************************************
 ******************************************************************************/
 
-struct ISAPNP_Resource* ASMCALL
-ISAPNP_AllocResource( REG( d0, UBYTE              type ),
-                      REG( a6, struct ISAPNPBase* res ) )
+AROS_LH1(struct ISAPNP_Resource *, ISAPNP_AllocResource,
+         AROS_LHA(UBYTE, type, D0),
+         struct ISAPNPBase *, res, 24, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_Resource* r;
   ULONG                   size;
 
@@ -269,6 +296,8 @@ ISAPNP_AllocResource( REG( d0, UBYTE              type ),
   }
 
   return r;
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -276,10 +305,12 @@ ISAPNP_AllocResource( REG( d0, UBYTE              type ),
 ** Deallocate a resource ******************************************************
 ******************************************************************************/
 
-void ASMCALL
-ISAPNP_FreeResource( REG( a0, struct ISAPNP_Resource* r ),
-                     REG( a6, struct ISAPNPBase*      res ) )
+AROS_LH1(void, ISAPNP_FreeResource,
+         AROS_LHA(struct ISAPNP_Resource *, r, A0),
+         struct ISAPNPBase *, res, 25, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   if( r == NULL )
   {
     return;
@@ -288,4 +319,6 @@ ISAPNP_FreeResource( REG( a0, struct ISAPNP_Resource* r ),
 //  KPrintF( "Nuking resource %ld.\n", r->isapnpr_Type );
 
   FreeVec( r );
+
+  AROS_LIBFUNC_EXIT
 }

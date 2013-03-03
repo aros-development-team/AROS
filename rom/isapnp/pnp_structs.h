@@ -3,7 +3,8 @@
 /*
      ISA-PnP -- A Plug And Play ISA software layer for AmigaOS.
      Copyright (C) 2001 Martin Blom <martin@blom.org>
-     
+     Copyright (C) 2009-2013 The AROS Development Team
+
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
      License as published by the Free Software Foundation; either
@@ -34,38 +35,93 @@ struct ISAPNP_Device;
 struct ISAPNP_ResourceGroup;
 struct ISAPNP_Resource;
 
-struct ISAPNP_Card* ASMCALL
-ISAPNP_AllocCard( REG( a6, struct ISAPNPBase* res ) );
+AROS_LD0(struct ISAPNP_Card *, ISAPNP_AllocCard,
+         struct ISAPNPBase *, res, 18, ISAPNP);
 
-void ASMCALL
-ISAPNP_FreeCard( REG( a0, struct ISAPNP_Card* card ),
-                 REG( a6, struct ISAPNPBase*  res ) );
+AROS_LD1(void, ISAPNP_FreeCard,
+         AROS_LHA(struct ISAPNP_Card *, card, A0),
+         struct ISAPNPBase *, res, 19, ISAPNP);
 
+AROS_LD0(struct ISAPNP_Device *, ISAPNP_AllocDevice,
+         struct ISAPNPBase *, res, 20, ISAPNP);
 
-struct ISAPNP_Device* ASMCALL
-ISAPNP_AllocDevice( REG( a6, struct ISAPNPBase* res ) );
+AROS_LD1(void, ISAPNP_FreeDevice,
+         AROS_LHA(struct ISAPNP_Device *, dev, A0),
+         struct ISAPNPBase *, res, 21, ISAPNP);
 
-void ASMCALL
-ISAPNP_FreeDevice( REG( a0, struct ISAPNP_Device* dev ),
-                   REG( a6, struct ISAPNPBase*    res ) );
+AROS_LD1(struct ISAPNP_ResourceGroup *, ISAPNP_AllocResourceGroup,
+         AROS_LHA(UBYTE, pri, D0),
+         struct ISAPNPBase *, res, 22, ISAPNP);
 
+AROS_LD1(void, ISAPNP_FreeResourceGroup,
+         AROS_LHA(struct ISAPNP_ResourceGroup *, rg, A0),
+         struct ISAPNPBase *, res, 23, ISAPNP);
 
-struct ISAPNP_ResourceGroup* ASMCALL
-ISAPNP_AllocResourceGroup( REG( d0, UBYTE              pri ),
-                           REG( a6, struct ISAPNPBase* res ) );
+AROS_LD1(struct ISAPNP_Resource *, ISAPNP_AllocResource,
+         AROS_LHA(UBYTE, type, D0),
+         struct ISAPNPBase *, res, 24, ISAPNP);
 
-void ASMCALL
-ISAPNP_FreeResourceGroup( REG( a0, struct ISAPNP_ResourceGroup* rg ),
-                          REG( a6, struct ISAPNPBase*           res ) );
+AROS_LD1(void, ISAPNP_FreeResource,
+         AROS_LHA(struct ISAPNP_Resource *, r, A0),
+         struct ISAPNPBase *, res, 25, ISAPNP);
 
+static inline struct ISAPNP_Card *ISAPNP_AllocCard(struct ISAPNPBase *res)
+{
+        return AROS_LC0(struct ISAPNP_Card *, ISAPNP_AllocCard,
+                        struct ISAPNPBase *, res, 18, ISAPNP);
+}
 
-struct ISAPNP_Resource* ASMCALL
-ISAPNP_AllocResource( REG( d0, UBYTE              type ),
-                      REG( a6, struct ISAPNPBase* res ) );
+static inline void ISAPNP_FreeCard(struct ISAPNP_Card *card, struct ISAPNPBase *res)
+{
+        AROS_LC1(void, ISAPNP_FreeCard,
+                 AROS_LHA(struct ISAPNP_Card *, card, A0),
+                 struct ISAPNPBase *, res, 19, ISAPNP);
+}
 
-void ASMCALL
-ISAPNP_FreeResource( REG( a0, struct ISAPNP_Resource* r ),
-                     REG( a6, struct ISAPNPBase*      res ) );
+static inline struct ISAPNP_Device *ISAPNP_AllocDevice(struct ISAPNPBase *res)
+{
+        return AROS_LC0(struct ISAPNP_Device *, ISAPNP_AllocDevice,
+                        struct ISAPNPBase *, res, 20, ISAPNP);
+}
 
+static inline void ISAPNP_FreeDevice(struct ISAPNP_Device *dev,
+                                     struct ISAPNPBase *res)
+{
+        return AROS_LC1(void, ISAPNP_FreeDevice,
+                        AROS_LHA(struct ISAPNP_Device *, dev, A0),
+                        struct ISAPNPBase *, res, 21, ISAPNP);
+}
+
+static inline struct ISAPNP_ResourceGroup *ISAPNP_AllocResourceGroup(UBYTE pri,
+                                                                     struct ISAPNPBase *res)
+{
+        return AROS_LC1(struct ISAPNP_ResourceGroup *, ISAPNP_AllocResourceGroup,
+                        AROS_LHA(UBYTE, pri, D0),
+                        struct ISAPNPBase *, res, 22, ISAPNP);
+}
+
+static inline void ISAPNP_FreeResourceGroup(struct ISAPNP_ResourceGroup *rg,
+                                            struct ISAPNPBase *res)
+{
+        AROS_LC1(void, ISAPNP_FreeResourceGroup,
+                 AROS_LHA(struct ISAPNP_ResourceGroup *, rg, A0),
+                 struct ISAPNPBase *, res, 23, ISAPNP);
+}
+
+static inline struct ISAPNP_Resource *ISAPNP_AllocResource(UBYTE type,
+                                                           struct ISAPNPBase *res)
+{
+        return AROS_LC1(struct ISAPNP_Resource *, ISAPNP_AllocResource,
+                        AROS_LHA(UBYTE, type, D0),
+                        struct ISAPNPBase *, res, 24, ISAPNP);
+}
+
+static inline void ISAPNP_FreeResource(struct ISAPNP_Resource *r,
+                                       struct ISAPNPBase *res)
+{
+        AROS_LC1(void, ISAPNP_FreeResource,
+                 AROS_LHA(struct ISAPNP_Resource *, r, A0),
+                 struct ISAPNPBase *, res, 25, ISAPNP);
+}
 
 #endif /* ISA_PNP_pnp_structs_h */

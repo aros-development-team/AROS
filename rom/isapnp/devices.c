@@ -3,7 +3,8 @@
 /*
      ISA-PnP -- A Plug And Play ISA software layer for AmigaOS.
      Copyright (C) 2001 Martin Blom <martin@blom.org>
-     
+     Copyright (C) 2009-2013 The AROS Development Team
+
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
      License as published by the Free Software Foundation; either
@@ -36,14 +37,16 @@
 ** Find a PNP ISA card  *******************************************************
 ******************************************************************************/
 
-struct ISAPNP_Card* ASMCALL
-ISAPNP_FindCard( REG( a0, struct ISAPNP_Card* last_card ), 
-                 REG( d0, LONG                manufacturer ),
-                 REG( d1, WORD                product ),
-                 REG( d2, BYTE                revision ),
-                 REG( d3, LONG                serial ),
-                 REG( a6, struct ISAPNPBase*  res ) )
+AROS_LH5(struct ISAPNP_Card *, ISAPNP_FindCard,
+         AROS_LHA(struct ISAPNP_Card *, last_card, A0), 
+         AROS_LHA(LONG, manufacturer, D0),
+         AROS_LHA(WORD, product, D1),
+         AROS_LHA(BYTE, revision, D2),
+         AROS_LHA(LONG, serial, D3),
+         struct ISAPNPBase *, res, 28, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_Card* card;
 
   if( last_card == NULL )
@@ -78,6 +81,8 @@ ISAPNP_FindCard( REG( a0, struct ISAPNP_Card* last_card ),
   }
 
   return NULL;
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -85,13 +90,15 @@ ISAPNP_FindCard( REG( a0, struct ISAPNP_Card* last_card ),
 ** Find a PNP ISA device  *****************************************************
 ******************************************************************************/
 
-struct ISAPNP_Device* ASMCALL
-ISAPNP_FindDevice( REG( a0, struct ISAPNP_Device* last_device ), 
-                   REG( d0, LONG                  manufacturer ),
-                   REG( d1, WORD                  product ),
-                   REG( d2, BYTE                  revision ),
-                   REG( a6, struct ISAPNPBase*    res ) )
+AROS_LH4(struct ISAPNP_Device *, ISAPNP_FindDevice,
+         AROS_LHA(struct ISAPNP_Device *, last_device, A0), 
+         AROS_LHA(LONG, manufacturer, D0),
+         AROS_LHA(WORD, product, D1),
+         AROS_LHA(BYTE, revision, D2),
+         struct ISAPNPBase *, res, 29, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_Card*   card;
   struct ISAPNP_Device* dev;
 
@@ -139,6 +146,8 @@ ISAPNP_FindDevice( REG( a0, struct ISAPNP_Device* last_device ),
   }
 
   return NULL;
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -159,7 +168,7 @@ ComparePtr( const void* a,
 
 
 static void**
-MakeSortedArray( void** ptrs )
+MakeSortedArray( void** ptrs, struct ISAPNPBase *res)
 {
   int    size;
   void** ptrs_ptr;
@@ -202,15 +211,17 @@ MakeSortedArray( void** ptrs )
 ** Lock one or more PNP ISA cards  ********************************************
 ******************************************************************************/
 
-APTR ASMCALL
-ISAPNP_LockCardsA( REG( d0, ULONG                flags ),
-                   REG( a0, struct ISAPNP_Card** cards ),
-                   REG( a6, struct ISAPNPBase*   res ) )
+AROS_LH2(APTR, ISAPNP_LockCardsA,
+         AROS_LHA(ULONG, flags, D0),
+         AROS_LHA(struct ISAPNP_Card **, cards, A0),
+         struct ISAPNPBase *, res, 30, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_Card** cards_ptr;
   struct ISAPNP_Card** result;
 
-  result = (struct ISAPNP_Card**) MakeSortedArray( (void**) cards );
+  result = (struct ISAPNP_Card**) MakeSortedArray( (void**) cards, res );
   
   if( result != NULL )
   {
@@ -248,6 +259,8 @@ ISAPNP_LockCardsA( REG( d0, ULONG                flags ),
   }
   
   return (APTR) result;
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -255,10 +268,12 @@ ISAPNP_LockCardsA( REG( d0, ULONG                flags ),
 ** Unlock one or more PNP ISA cards  ******************************************
 ******************************************************************************/
 
-void ASMCALL
-ISAPNP_UnlockCards( REG( a0, APTR               card_lock_handle ),
-                    REG( a6, struct ISAPNPBase* res ) )
+AROS_LH1(void, ISAPNP_UnlockCards,
+         AROS_LHA(APTR, card_lock_handle, A0),
+         struct ISAPNPBase *, res, 31, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_Card** cards_ptr;
 
   if( card_lock_handle == NULL )
@@ -274,6 +289,8 @@ ISAPNP_UnlockCards( REG( a0, APTR               card_lock_handle ),
   }
 
   FreeVec( card_lock_handle );
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -281,15 +298,17 @@ ISAPNP_UnlockCards( REG( a0, APTR               card_lock_handle ),
 ** Lock one or more PNP ISA devices *******************************************
 ******************************************************************************/
 
-APTR ASMCALL
-ISAPNP_LockDevicesA( REG( d0, ULONG                  flags ),
-                     REG( a0, struct ISAPNP_Device** devices ),
-                     REG( a6, struct ISAPNPBase*     res ) )
+AROS_LH2(APTR, ISAPNP_LockDevicesA,
+         AROS_LHA(ULONG, flags, D0),
+         AROS_LHA(struct ISAPNP_Device **, devices, A0),
+         struct ISAPNPBase *, res, 32, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_Device** devices_ptr;
   struct ISAPNP_Device** result;
 
-  result = (struct ISAPNP_Device**) MakeSortedArray( (void**) devices );
+  result = (struct ISAPNP_Device**) MakeSortedArray( (void**) devices, res );
   
   if( result != NULL )
   {
@@ -327,6 +346,8 @@ ISAPNP_LockDevicesA( REG( d0, ULONG                  flags ),
   }
   
   return (APTR) result;
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -334,10 +355,12 @@ ISAPNP_LockDevicesA( REG( d0, ULONG                  flags ),
 ** Unlock one or more PNP ISA devices  ****************************************
 ******************************************************************************/
 
-void ASMCALL
-ISAPNP_UnlockDevices( REG( a0, APTR               device_lock_handle ),
-                      REG( a6, struct ISAPNPBase* res ) )
+AROS_LH1(void, ISAPNP_UnlockDevices,
+         AROS_LHA(APTR, device_lock_handle, A0),
+         struct ISAPNPBase *, res , 33, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   struct ISAPNP_Device** devices_ptr;
 
   if( device_lock_handle == NULL )
@@ -353,4 +376,6 @@ ISAPNP_UnlockDevices( REG( a0, APTR               device_lock_handle ),
   }
   
   FreeVec( device_lock_handle );
+
+  AROS_LIBFUNC_EXIT
 }

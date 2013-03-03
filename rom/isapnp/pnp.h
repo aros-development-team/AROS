@@ -3,6 +3,7 @@
 /*
      ISA-PnP -- A Plug And Play ISA software layer for AmigaOS.
      Copyright (C) 2001 Martin Blom <martin@blom.org>
+     Copyright (C) 2009-2013 The AROS Development Team
      
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
@@ -29,10 +30,22 @@
 
 struct ISAPNPBase;
 
-BOOL ASMCALL
-ISAPNP_ScanCards( REG( a6, struct ISAPNPBase* res ) );
+AROS_LD0(BOOL, ISAPNP_ScanCards,
+         struct ISAPNPBase *, res, 26, ISAPNP);
 
-BOOL ASMCALL
-ISAPNP_ConfigureCards( REG( a6, struct ISAPNPBase* res ) );
+AROS_LD0(BOOL, ISAPNP_ConfigureCards,
+         struct ISAPNPBase *, res, 27, ISAPNP);
+
+static inline BOOL ISAPNP_ScanCards(struct ISAPNPBase *res)
+{
+        return AROS_LC0(BOOL, ISAPNP_ScanCards,
+                        struct ISAPNPBase *, res, 26, ISAPNP);
+}
+
+static inline BOOL ISAPNP_ConfigureCards(struct ISAPNPBase *res)
+{
+        return AROS_LC0(BOOL, ISAPNP_ConfigureCards,
+                        struct ISAPNPBase *, res, 27, ISAPNP);
+}
 
 #endif /* ISA_PNP_pnp_h */

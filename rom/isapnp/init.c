@@ -3,7 +3,7 @@
 /*
      ISA-PnP -- A Plug And Play ISA software layer for AmigaOS.
      Copyright (C) 2001 Martin Blom <martin@blom.org>
-     Copyright (C) 2009 The AROS Development Team
+     Copyright (C) 2009-2013 The AROS Development Team
      
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
@@ -25,6 +25,7 @@
 
 #include "CompilerSpecific.h"
 
+#include <aros/libcall.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
 #include <devices/timer.h>
@@ -116,7 +117,7 @@ initRoutine( REG( d0, struct ISAPNPBase* res ),
              REG( a6, struct ExecBase*        sysbase ) )
 {
     D(bug("[ISAPNP] Init\n"));
-/*  SysBase = sysbase;*/
+    SysBase = sysbase;
 
     if(OpenLibs() )
     {
@@ -238,43 +239,43 @@ FreeISAPNPBase( struct ISAPNPBase* res )
 
 static const APTR funcTable[] =
 {
-  ISAC_SetMasterInt,
-  ISAC_GetMasterInt,
-  ISAC_SetWaitState,
-  ISAC_GetWaitState,
-  ISAC_GetInterruptStatus,
-  ISAC_GetRegByte,
-  ISAC_SetRegByte,
-  ISAC_GetRegWord,
-  ISAC_SetRegWord,
-  ISAC_GetRegLong,
-  ISAC_SetRegLong,
-  ISAC_ReadByte,
-  ISAC_WriteByte,
-  ISAC_ReadWord,
-  ISAC_WriteWord,
-  ISAC_ReadLong,
-  ISAC_WriteLong,
+  AROS_SLIB_ENTRY(ISAC_SetMasterInt, ISAPNP, 1),
+  AROS_SLIB_ENTRY(ISAC_GetMasterInt, ISAPNP, 2),
+  AROS_SLIB_ENTRY(ISAC_SetWaitState, ISAPNP, 3),
+  AROS_SLIB_ENTRY(ISAC_GetWaitState, ISAPNP, 4),
+  AROS_SLIB_ENTRY(ISAC_GetInterruptStatus, ISAPNP, 5),
+  AROS_SLIB_ENTRY(ISAC_GetRegByte, ISAPNP, 6),
+  AROS_SLIB_ENTRY(ISAC_SetRegByte, ISAPNP, 7),
+  AROS_SLIB_ENTRY(ISAC_GetRegWord, ISAPNP, 8),
+  AROS_SLIB_ENTRY(ISAC_SetRegWord, ISAPNP, 9),
+  AROS_SLIB_ENTRY(ISAC_GetRegLong, ISAPNP, 10),
+  AROS_SLIB_ENTRY(ISAC_SetRegLong, ISAPNP, 11),
+  AROS_SLIB_ENTRY(ISAC_ReadByte, ISAPNP, 12),
+  AROS_SLIB_ENTRY(ISAC_WriteByte, ISAPNP, 13),
+  AROS_SLIB_ENTRY(ISAC_ReadWord, ISAPNP, 14),
+  AROS_SLIB_ENTRY(ISAC_WriteWord, ISAPNP, 15),
+  AROS_SLIB_ENTRY(ISAC_ReadLong, ISAPNP, 16),
+  AROS_SLIB_ENTRY(ISAC_WriteLong, ISAPNP, 17),
 
-  ISAPNP_AllocCard,
-  ISAPNP_FreeCard,
-  ISAPNP_AllocDevice,
-  ISAPNP_FreeDevice,
-  ISAPNP_AllocResourceGroup,
-  ISAPNP_FreeResourceGroup,
-  ISAPNP_AllocResource,
-  ISAPNP_FreeResource,
+  AROS_SLIB_ENTRY(ISAPNP_AllocCard, ISAPNP, 18),
+  AROS_SLIB_ENTRY(ISAPNP_FreeCard, ISAPNP, 19),
+  AROS_SLIB_ENTRY(ISAPNP_AllocDevice, ISAPNP, 20),
+  AROS_SLIB_ENTRY(ISAPNP_FreeDevice, ISAPNP, 21),
+  AROS_SLIB_ENTRY(ISAPNP_AllocResourceGroup, ISAPNP, 22),
+  AROS_SLIB_ENTRY(ISAPNP_FreeResourceGroup, ISAPNP, 23),
+  AROS_SLIB_ENTRY(ISAPNP_AllocResource, ISAPNP, 24),
+  AROS_SLIB_ENTRY(ISAPNP_FreeResource, ISAPNP, 25),
 
-  ISAPNP_ScanCards,
-  ISAPNP_ConfigureCards,
+  AROS_SLIB_ENTRY(ISAPNP_ScanCards, ISAPNP, 26),
+  AROS_SLIB_ENTRY(ISAPNP_ConfigureCards, ISAPNP, 27),
 
-  ISAPNP_FindCard,
-  ISAPNP_FindDevice,
+  AROS_SLIB_ENTRY(ISAPNP_FindCard, ISAPNP, 28),
+  AROS_SLIB_ENTRY(ISAPNP_FindDevice, ISAPNP, 29),
 
-  ISAPNP_LockCardsA,
-  ISAPNP_UnlockCards,
-  ISAPNP_LockDevicesA,
-  ISAPNP_UnlockDevices,
+  AROS_SLIB_ENTRY(ISAPNP_LockCardsA, ISAPNP, 30),
+  AROS_SLIB_ENTRY(ISAPNP_UnlockCards, ISAPNP, 31),
+  AROS_SLIB_ENTRY(ISAPNP_LockDevicesA, ISAPNP, 32),
+  AROS_SLIB_ENTRY(ISAPNP_UnlockDevices, ISAPNP, 33),
 
   (APTR) -1
 };

@@ -2,6 +2,7 @@
 
 #ifdef __AROS__
 #include <aros/debug.h>
+#include <aros/libcall.h>
 #else
 #define bug KPrintF
 #endif
@@ -12,6 +13,7 @@
 **	$VER: CompilerSpecific.h 2.3 lcs (9.1.99)
 **
 **	Copyright (C) 1997 Bernardo Innocenti. All rights reserved.
+**      Copyright (C) 2009-2013 The AROS Development Team
 **
 **	Compiler specific definitions is here. You can add support
 **	for other compilers in this header. Please return any changes
