@@ -125,8 +125,9 @@ struct config
     /* The name and type of the module */
     char *modulename, *modulenameupper;
     enum modtype modtype;
+    char *modtypestr;
     char *suffix;
-
+    
     /* Extra string to include in version */
     char *versionextra;
     

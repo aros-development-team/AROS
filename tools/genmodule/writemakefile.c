@@ -30,7 +30,7 @@ void writemakefile(struct config *cfg)
     char name[512];
     struct stringlist *s;
     
-    snprintf(name, sizeof(name), "%s/Makefile.%s", cfg->gendir, cfg->modulename);
+    snprintf(name, sizeof(name), "%s/Makefile.%s%s", cfg->gendir, cfg->modulename, cfg->modtypestr);
     
     out = fopen(name, "w");
     

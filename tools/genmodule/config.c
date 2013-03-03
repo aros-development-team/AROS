@@ -230,11 +230,11 @@ struct config *initconfig(int argc, char **argv)
     {
 	cfg->modtype = USBCLASS;
 	cfg->moddir = "Classes/USB";
-    if(!hassuffix)
-    {
-        cfg->suffix = "class";
-        hassuffix = 1;
-    }
+        if(!hassuffix)
+        {
+            cfg->suffix = "class";
+            hassuffix = 1;
+        }
     }
     else if (strcmp(argv[optind+2], "hidd")==0)
     {
@@ -256,6 +256,7 @@ struct config *initconfig(int argc, char **argv)
 	fprintf(stderr, "Unknown modtype \"%s\" specified for second argument\n", argv[optind+2]);
 	exit(20);
     }
+    cfg->modtypestr = argv[optind+2];
 
     if (!hassuffix)
 	cfg->suffix = argv[optind+2];
