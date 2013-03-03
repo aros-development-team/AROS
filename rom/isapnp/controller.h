@@ -29,90 +29,91 @@
 
 struct ISAPNPBase;
 
-void ASMCALL
-ISAC_SetMasterInt( REG( d0, BOOL               on ),
-                   REG( a6, struct ISAPNPBase* res ) );
+AROS_LD1(void, ISAC_SetMasterInt,
+         AROS_LHA(BOOL, on, D0),
+         struct ISAPNPBase *, res, 1, ISAPNP);
 
-BOOL ASMCALL
-ISAC_GetMasterInt( REG( a6, struct ISAPNPBase* res ) );
+AROS_LD0(BOOL, ISAC_GetMasterInt,
+         struct ISAPNPBase *, res, 2, ISAPNP);
 
+AROS_LD1(void, ISAC_SetWaitState,
+         AROS_LHA(BOOL, on, D0),
+         struct ISAPNPBase *, res, 3, ISAPNP);
 
-void ASMCALL
-ISAC_SetWaitState( REG( d0, BOOL               on ),
-                   REG( a6, struct ISAPNPBase* res ) );
+AROS_LD0(BOOL, ISAC_GetWaitState,
+         struct ISAPNPBase *, res, 4, ISAPNP);
 
+AROS_LD1(BOOL, ISAC_GetInterruptStatus,
+         AROS_LHA(UBYTE, interrupt, D0),
+         struct ISAPNPBase *, res, 5, ISAPNP);
 
-BOOL ASMCALL
-ISAC_GetWaitState( REG( a6, struct ISAPNPBase* res ) );
+AROS_LD1(UBYTE, ISAC_GetRegByte,
+         AROS_LHA(UWORD, reg, D0),
+         struct ISAPNPBase *, res, 6, ISAPNP);
 
+AROS_LD2(void, ISAC_SetRegByte,
+         AROS_LHA(UWORD, reg, D0),
+         AROS_LHA(UBYTE, value, D1),
+         struct ISAPNPBase *, res, 7, ISAPNP);
 
-BOOL ASMCALL
-ISAC_GetInterruptStatus( REG( d0, UBYTE              interrupt ),
-                         REG( a6, struct ISAPNPBase* res ) );
+AROS_LD1(UWORD, ISAC_GetRegWord,
+         AROS_LHA(UWORD, reg, D0),
+         struct ISAPNPBase *, res, 8, ISAPNP);
 
-UBYTE ASMCALL
-ISAC_GetRegByte( REG( d0, UWORD              reg ),
-                 REG( a6, struct ISAPNPBase* res ) );
+AROS_LD2(void, ISAC_SetRegWord,
+         AROS_LHA(UWORD, reg, D0),
+         AROS_LHA(UWORD, value, D1),
+         struct ISAPNPBase *, res, 9, ISAPNP);
 
+AROS_LD1(ULONG, ISAC_GetRegLong,
+         AROS_LHA(UWORD, reg, D0),
+         struct ISAPNPBase *, res, 10, ISAPNP);
 
-void ASMCALL
-ISAC_SetRegByte( REG( d0, UWORD              reg ),
-                 REG( d1, UBYTE              value ),
-                 REG( a6, struct ISAPNPBase* res ) );
+AROS_LD2(void, ISAC_SetRegLong,
+         AROS_LHA(UWORD, reg, D0),
+         AROS_LHA(ULONG, value, D1),
+         struct ISAPNPBase *, res, 11, ISAPNP);
 
+AROS_LD1(UBYTE, ISAC_ReadByte,
+         AROS_LHA(ULONG, address, D0),
+         struct ISAPNPBase *, res, 12, ISAPNP);
 
-UWORD ASMCALL
-ISAC_GetRegWord( REG( d0, UWORD              reg ),
-                 REG( a6, struct ISAPNPBase* res ) );
+AROS_LD2(void, ISAC_WriteByte,
+         AROS_LHA(ULONG, address, D0),
+         AROS_LHA(UBYTE, value, D1 ),
+         struct ISAPNPBase *, res, 13, ISAPNP);
 
+AROS_LD1(UWORD, ISAC_ReadWord,
+         AROS_LHA(ULONG, address, D0),
+         struct ISAPNPBase *, res, 14, ISAPNP);
 
-void ASMCALL
-ISAC_SetRegWord( REG( d0, UWORD              reg ),
-                 REG( d1, UWORD              value ),
-                 REG( a6, struct ISAPNPBase* res ) );
+AROS_LD2(void, ISAC_WriteWord,
+         AROS_LHA(ULONG, address, D0),
+         AROS_LHA(UWORD, value, D1),
+         struct ISAPNPBase *, res, 15, ISAPNP);
 
-ULONG ASMCALL
-ISAC_GetRegLong( REG( d0, UWORD              reg ),
-                 REG( a6, struct ISAPNPBase* res ) );
+AROS_LD1(UWORD, ISAC_ReadLong,
+         AROS_LHA(ULONG, address, D0),
+         struct ISAPNPBase *, res, 16, ISAPNP);
 
+AROS_LD2(void, ISAC_WriteLong,
+         AROS_LHA(ULONG, address, D0),
+         AROS_LHA(ULONG, value, D1 ),
+         struct ISAPNPBase *, res, 17, ISAPNP);
 
-void ASMCALL
-ISAC_SetRegLong( REG( d0, UWORD              reg ),
-                 REG( d1, ULONG              value ),
-                 REG( a6, struct ISAPNPBase* res ) );
+static inline UBYTE ISAC_GetRegByte(UWORD reg, struct ISAPNPBase *res)
+{
+        return AROS_LC1(UBYTE, ISAC_GetRegByte,
+                        AROS_LHA(UWORD, reg, D0),
+                        struct ISAPNPBase *, res, 6, ISAPNP);
+}
 
-
-UBYTE ASMCALL
-ISAC_ReadByte( REG( d0, ULONG              address ),
-               REG( a6, struct ISAPNPBase* res ) );
-
-
-void ASMCALL
-ISAC_WriteByte( REG( d0, ULONG              address ),
-                REG( d1, UBYTE              value ),
-                REG( a6, struct ISAPNPBase* res ) );
-
-
-UWORD ASMCALL
-ISAC_ReadWord( REG( d0, ULONG              address ),
-               REG( a6, struct ISAPNPBase* res ) );
-
-
-void ASMCALL
-ISAC_WriteWord( REG( d0, ULONG              address ),
-                REG( d1, UWORD              value ),
-                REG( a6, struct ISAPNPBase* res ) );
-
-
-ULONG ASMCALL
-ISAC_ReadLong( REG( d0, ULONG              address ),
-               REG( a6, struct ISAPNPBase* res ) );
-
-
-void ASMCALL
-ISAC_WriteLong( REG( d0, ULONG              address ),
-                REG( d1, ULONG              value ),
-                REG( a6, struct ISAPNPBase* res ) );
-
+static inline void ISAC_SetRegByte(UWORD reg, UBYTE value, struct ISAPNPBase *res)
+{
+        return AROS_LC2(void, ISAC_SetRegByte,
+                        AROS_LHA(UWORD, reg, D0),
+                        AROS_LHA(UBYTE, value, D1),
+                        struct ISAPNPBase *, res, 7, ISAPNP);
+}
 
 #endif /* ISA_PNP_controller_h */

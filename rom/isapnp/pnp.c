@@ -3,7 +3,7 @@
 /*
      ISA-PnP -- A Plug And Play ISA software layer for AmigaOS.
      Copyright (C) 2001 Martin Blom <martin@blom.org>
-     Copyright (C) 2009 The AROS Development Team
+     Copyright (C) 2009-2013 The AROS Development Team
      
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
@@ -703,9 +703,11 @@ AddCards( UBYTE              rd_data_port_value,
 ** Scan for all PNP ISA cards *************************************************
 ******************************************************************************/
 
-BOOL ASMCALL
-ISAPNP_ScanCards( REG( a6, struct ISAPNPBase* res ) )
+AROS_LH0(BOOL, ISAPNP_ScanCards,
+         struct ISAPNPBase *, res, 26, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   int read_port_value;
   int cards = 0;
  
@@ -738,6 +740,8 @@ ISAPNP_ScanCards( REG( a6, struct ISAPNPBase* res ) )
              res );
 */
   return cards != 0;
+
+  AROS_LIBFUNC_EXIT
 }
 
 
@@ -1042,9 +1046,11 @@ ProgramConfiguration( struct ISAPNPBase* res )
 }
 
 
-BOOL ASMCALL
-ISAPNP_ConfigureCards( REG( a6, struct ISAPNPBase* res ) )
+AROS_LH0(BOOL, ISAPNP_ConfigureCards,
+         struct ISAPNPBase *, res, 27, ISAPNP)
 {
+  AROS_LIBFUNC_INIT
+
   BOOL rc = FALSE;
 
   struct ISAPNP_Device* dev;
@@ -1080,4 +1086,6 @@ ISAPNP_ConfigureCards( REG( a6, struct ISAPNPBase* res ) )
   }
 
   return rc;
+
+  AROS_LIBFUNC_EXIT
 }

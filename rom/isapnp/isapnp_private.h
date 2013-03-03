@@ -3,6 +3,7 @@
 /*
      ISA-PnP -- A Plug And Play ISA software layer for AmigaOS.
      Copyright (C) 2001 Martin Blom <martin@blom.org>
+     Copyright (C) 2009-2013 The AROS Development Team
      
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
@@ -41,7 +42,9 @@ struct ISAPNPBase
   UWORD                 m_Pad3;
 
   struct ConfigDev*     m_ConfigDev;
-  
+  struct ExecBase*      m_SysBase;
 };
+
+#define SysBase (res->m_SysBase)
 
 #endif /* ISA_PNP_isapnp_private_h */

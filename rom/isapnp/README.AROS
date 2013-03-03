@@ -13,4 +13,8 @@ for the case if someone needs it and picks it up.
 some information about devices installed in the system. It also compiles and
 does not crash my machine, but i can't test it further.
 
+ If someone picks up this work, it should be considered that current API is very
+hardware-specific. For proper abstraction, interrupt add/remove functions should
+be implemented similar to PCI subsystem.
+
 Pavel Fedin <sonic.amiga@gmail.com>
