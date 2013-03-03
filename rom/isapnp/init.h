@@ -38,4 +38,10 @@ OpenLibs( void );
 void
 CloseLibs( void );
 
+void Req( const char* text, struct ISAPNPBase *res);
+
+BOOL
+HandleStartArgs( struct ISAPNP_Card* card,
+                 struct ISAPNPBase*  res );
+
 #endif /* ISA_PNP_init_h */
