@@ -69,7 +69,7 @@ USER_CFLAGS :=  -DFEATURE_GL=1 \
                 -D_EGL_MAIN=_eglBuiltInDriverGALLIUM \
 
 %build_module mmake=workbench-libs-egl \
-    modname=egl modtype=library linklibname=EGL conffile=egl.conf \
+    modname=egl modtype=library linklibname=EGL \
     files="$(LIBRARY_SOURCES)" \
     uselibs="galliumauxiliary gallium"
 
