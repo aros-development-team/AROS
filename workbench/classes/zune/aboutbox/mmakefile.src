@@ -15,7 +15,6 @@ INCLUDE_FILES := Aboutbox_mcc.h
 %build_module \
     mmake=workbench-classes-zune-aboutbox \
     modname=Aboutbox modtype=mcc \
-    conffile=Aboutbox.conf \
     uselibs="mui"
 
 %copy_includes path=mui
