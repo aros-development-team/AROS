@@ -9,7 +9,7 @@ INCLUDE_FILES := aboutwindow.h
 %build_module \
     mmake=workbench-classes-zune-aboutwindow \
     modname=AboutWindow modtype=mcc \
-    conffile=aboutwindow.conf
+    conffile=$(SRCDIR)/$(CURDIR)/aboutwindow.conf
     
 %copy_includes path=zune
     
