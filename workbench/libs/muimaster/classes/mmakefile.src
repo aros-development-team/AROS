@@ -85,7 +85,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-aboutmui \
     modname=Aboutmui modtype=mui files=aboutmui \
-    conffile=aboutmui.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/aboutmui.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_ABOUTMUI=0" \
     uselibs="mui"
 
@@ -93,7 +93,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-boopsi \
     modname=Boopsi modtype=mui files=boopsi \
-    conffile=boopsi.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/boopsi.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_BOOPSI=0" \
     uselibs="mui"
 
@@ -101,7 +101,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-balance \
     modname=Balance modtype=mui files=balance \
-    conffile=balance.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/balance.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_BALANCE=0" \
     uselibs="mui"
 
@@ -109,7 +109,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-coloradjust \
     modname=Coloradjust modtype=mui files=coloradjust \
-    conffile=coloradjust.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/coloradjust.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_COLORADJUST=0" \
     uselibs="mui"
 
@@ -117,7 +117,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-colorfield \
     modname=Colorfield modtype=mui files=colorfield \
-    conffile=colorfield.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/colorfield.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_COLORFIELD=0" \
     uselibs="mui"
 
@@ -125,7 +125,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-frameadjust \
     modname=Frameadjust modtype=mui files=frameadjust \
-    conffile=frameadjust.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/frameadjust.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_FRAMEADJUST=0" \
     uselibs="mui"
 
@@ -133,7 +133,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-framedisplay \
     modname=Framedisplay modtype=mui files=framedisplay \
-    conffile=framedisplay.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/framedisplay.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_FRAMEDISPLAY=0" \
     uselibs="mui"
 
@@ -141,7 +141,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-gauge \
     modname=Gauge modtype=mui files=gauge \
-    conffile=gauge.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/gauge.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_GAUGE=0" \
     uselibs="mui"
     
@@ -149,7 +149,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-imageadjust \
     modname=Imageadjust modtype=mui files=imageadjust \
-    conffile=imageadjust.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/imageadjust.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_IMAGEADJUST=0" \
     uselibs="mui"
     
@@ -157,7 +157,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-imagedisplay \
     modname=Imagedisplay modtype=mui files=imagedisplay \
-    conffile=imagedisplay.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/imagedisplay.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_IMAGEDISPLAY=0" \
     uselibs="mui"
     
@@ -165,7 +165,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-penadjust \
     modname=Penadjust modtype=mui files=penadjust \
-    conffile=penadjust.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/penadjust.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PENADJUST=0" \
     uselibs="mui"
     
@@ -173,7 +173,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-pendisplay \
     modname=Pendisplay modtype=mui files=pendisplay \
-    conffile=pendisplay.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/pendisplay.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PENDISPLAY=0" \
     uselibs="mui"
     
@@ -181,7 +181,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-popasl \
     modname=Popasl modtype=mui files=popasl \
-    conffile=popasl.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/popasl.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPASL=0" \
     uselibs="mui"
     
@@ -189,7 +189,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-popframe \
     modname=Popframe modtype=mui files=popframe \
-    conffile=popframe.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/popframe.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPFRAME=0" \
     uselibs="mui"
     
@@ -197,7 +197,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-popimage \
     modname=Popimage modtype=mui files=popimage \
-    conffile=popimage.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/popimage.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPIMAGE=0" \
     uselibs="mui"
     
@@ -205,7 +205,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-poppen \
     modname=Poppen modtype=mui files=poppen \
-    conffile=poppen.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/poppen.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPPEN=0" \
     uselibs="mui"
 
@@ -213,7 +213,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-radio \
     modname=Radio modtype=mui files=radio \
-    conffile=radio.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/radio.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_RADIO=0" \
     uselibs="mui"
     
@@ -221,7 +221,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-scale \
     modname=Scale modtype=mui files=scale \
-    conffile=scale.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/scale.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_SCALE=0" \
     uselibs="mui"
     
@@ -229,7 +229,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-scrollgroup \
     modname=Scrollgroup modtype=mui files=scrollgroup \
-    conffile=scrollgroup.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/scrollgroup.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_SCROLLGROUP=0" \
     uselibs="mui"
     
@@ -237,7 +237,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-settingsgroup \
     modname=Settingsgroup modtype=mui files=settingsgroup \
-    conffile=settingsgroup.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/settingsgroup.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_SETTINGSGROUP=0" \
     uselibs="mui"
     
@@ -245,7 +245,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-virtgroup \
     modname=Virtgroup modtype=mui files=virtgroup \
-    conffile=virtgroup.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/virtgroup.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_VIRTGROUP=0" \
     uselibs="mui"
 
@@ -253,7 +253,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-floattext \
     modname=Floattext modtype=mui files=floattext \
-    conffile=floattext.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/floattext.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_FLOATTEXT=0" \
     uselibs="mui"
 
@@ -261,7 +261,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-volumelist \
     modname=Volumelist modtype=mui files=volumelist \
-    conffile=volumelist.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/volumelist.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_VOLUMELIST=0" \
     uselibs="mui"
 
@@ -269,7 +269,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-dirlist \
     modname=Dirlist modtype=mui files=dirlist \
-    conffile=dirlist.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/dirlist.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_DIRLIST=0" \
     uselibs="mui"
 
@@ -277,7 +277,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-numericbutton \
     modname=Numericbutton modtype=mui files=numericbutton \
-    conffile=numericbutton.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/numericbutton.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_NUMERICBUTTON=0" \
     uselibs="mui"
 
@@ -285,7 +285,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-poplist \
     modname=Poplist modtype=mui files=poplist \
-    conffile=poplist.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/poplist.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPLIST=0" \
     uselibs="mui"
 
@@ -293,7 +293,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-popscreen \
     modname=Popscreen modtype=mui files=popscreen \
-    conffile=popscreen.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/popscreen.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPSCREEN=0" \
     uselibs="mui"
 
@@ -302,7 +302,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-crawling \
     modname=Crawling modtype=mui modsuffix=mcc files=crawling \
-    conffile=crawling.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/crawling.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_CRAWLING=0" \
     uselibs="mui"
 
@@ -310,7 +310,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-levelmeter \
     modname=Levelmeter modtype=mui files=levelmeter \
-    conffile=levelmeter.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/levelmeter.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_LEVELMETER=0" \
     uselibs="mui"
 
@@ -318,7 +318,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-knob \
     modname=Knob modtype=mui files=knob \
-    conffile=knob.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/knob.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_KNOB=0" \
     uselibs="mui"
 
@@ -326,7 +326,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-dtpic \
     modname=Dtpic modtype=mui files=dtpic \
-    conffile=dtpic.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/dtpic.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_DTPIC=0" \
     uselibs="mui"
 
@@ -334,7 +334,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-palette \
     modname=Palette modtype=mui files=palette \
-    conffile=palette.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/palette.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PALETTE=0" \
     uselibs="mui"
 
@@ -342,7 +342,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-title \
     modname=Title modtype=mui files=title \
-    conffile=title.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/title.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_TITLE=0" \
     uselibs="mui"
 
@@ -350,7 +350,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-process \
     modname=Process modtype=mui files=process \
-    conffile=process.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/process.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PROCESS=0" \
     uselibs="mui"
 
@@ -358,7 +358,7 @@ USER_LIBS   := mui
 %build_module \
     mmake=workbench-classes-zune-pixmap \
     modname=Pixmap modtype=mui files=pixmap \
-    conffile=pixmap.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/pixmap.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PIXMAP=0" \
     uselibs="mui bz2_nostdio"
 
