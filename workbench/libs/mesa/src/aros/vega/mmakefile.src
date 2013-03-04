@@ -80,7 +80,7 @@ $(GENDIR)/$(CURDIR)/vgapi_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/../../mapi/mapi/mapi_abi.py $< --printer vgapi --mode lib > $@
 
 %build_module mmake=workbench-libs-vega \
-    modname=vega modtype=library linklibname=OpenVG conffile=vega.conf \
+    modname=vega modtype=library linklibname=OpenVG \
     files="$(LIBRARY_SOURCES)" \
     uselibs="galliumauxiliary"
 
