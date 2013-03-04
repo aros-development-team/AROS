@@ -21,35 +21,35 @@ USER_LIBS   := amiga arosc m mui
 %build_module \
     mmake=wanderer-classes-icon \
     modname=Icon modtype=mui files=icon \
-    conffile=icon.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/icon.conf \
     cflags="$(CFLAGS)" \
     uselibs="mui"
 
 %build_module \
     mmake=wanderer-classes-iconlist \
     modname=IconList modtype=mui files=iconlist \
-    conffile=iconlist.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/iconlist.conf \
     cflags="$(CFLAGS)" \
     uselibs="mui"
 
 %build_module \
     mmake=wanderer-classes-icondrawerlist \
     modname=IconDrawerList modtype=mui files=icondrawerlist \
-    conffile=icondrawerlist.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/icondrawerlist.conf \
     cflags="$(CFLAGS)" \
     uselibs="mui"
 
 %build_module \
     mmake=wanderer-classes-iconvolumelist \
     modname=IconVolumeList modtype=mui files=iconvolumelist \
-    conffile=iconvolumelist.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/iconvolumelist.conf \
     cflags="$(CFLAGS)" \
     uselibs="mui"
 
 %build_module \
     mmake=wanderer-classes-iconlistview \
     modname=IconListview modtype=mui files=iconlistview \
-    conffile=iconlistview.conf \
+    conffile=$(SRCDIR)/$(CURDIR)/iconlistview.conf \
     cflags="$(CFLAGS)" \
     uselibs="mui"
 
