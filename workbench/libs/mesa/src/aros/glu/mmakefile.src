@@ -176,7 +176,7 @@ LDFLAGS += $(CXX_OBJECTS)
 #MM- workbench-libs-glu-module: workbench-libs-glu-module-cpp
 
 %build_module mmake=workbench-libs-glu-module \
-    modname=glu modtype=library linklibname=GLU conffile=glu.conf \
+    modname=glu modtype=library linklibname=GLU \
     files="$(LIBRARY_SOURCES)" \
     uselibs="GL"
 
