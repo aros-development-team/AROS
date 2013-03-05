@@ -26,7 +26,7 @@
 #define SDHCI_CMD_RESP_NONE             (0)
 #define SDHCI_CMD_RESP_LONG             (1 << 0)
 #define SDHCI_CMD_RESP_SHORT            (1 << 1)
-#define SDHCI_CMD_RESP_SHORT_BUSY       (SDHCI_CMD_RESP_LONG | SDHCI_CMD_RESP_SHORT)
+#define SDHCI_CMD_RESP_SHORT_BUSY       (SDHCI_CMD_RESP_LONG|SDHCI_CMD_RESP_SHORT)
 #define SDHCI_CMD_RESP_MASK             (SDHCI_CMD_RESP_SHORT_BUSY)
 #define SDHCI_CMD_CRC   	        (1 << 3)
 #define SDHCI_CMD_INDEX	                (1 << 4)
@@ -53,7 +53,7 @@
 #define SDHCI_HCTRL_SDMA                (0)
 #define SDHCI_HCTRL_ADMA1               (1 << 3)
 #define SDHCI_HCTRL_ADMA32	        (1 << 4)
-#define SDHCI_HCTRL_ADMA64	        (SDHCI_HCTRL_ADMA1 | SDHCI_HCTRL_ADMA32)
+#define SDHCI_HCTRL_ADMA64	        (SDHCI_HCTRL_ADMA1|SDHCI_HCTRL_ADMA32)
 #define SDHCI_HCTRL_8BITBUS	        (1 << 5)
 #define SDHCI_HCTRL_CD_TEST_INS	        (1 << 6)
 #define SDHCI_HCTRL_CD_TEST	        (1 << 7)
@@ -61,7 +61,7 @@
 #define SDHCI_POWER_ON                  (1 << 0)
 #define SDHCI_POWER_180                 (1 << 3) | (1 << 1)
 #define SDHCI_POWER_300                 (1 << 3) | (1 << 2)
-#define SDHCI_POWER_330                 (! << 3) | (1 << 2) | (1 << 1)
+#define SDHCI_POWER_330                 (1 << 3) | (1 << 2) | (1 << 1)
 #define SDHCI_BLOCK_GAP_CONTROL         0x2A
 #define SDHCI_WAKE_UP_CONTROL           0x2B
 #define SDHCI_WAKE_ONINT	        (1 << 0)
