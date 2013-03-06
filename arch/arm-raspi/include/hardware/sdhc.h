@@ -16,7 +16,7 @@
 #define SDHCI_BLOCK_SIZE                0x04
 #define SDHCI_BLOCK_COUNT               0x06
 #define SDHCI_ARGUMENT                  0x08
-#define SDHCI_TRANSFERMOD_MODE          0x0C
+#define SDHCI_TRANSFER_MODE             0x0C
 #define SDHCI_TRANSMOD_DMA              (1 << 0)
 #define SDHCI_TRANSMOD_BLK_CNT_EN       (1 << 1)
 #define SDHCI_TRANSMOD_ACMD12           (1 << 2)
