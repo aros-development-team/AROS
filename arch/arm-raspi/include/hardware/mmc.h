@@ -24,6 +24,12 @@
 #define MMC_RSP_R6	                (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
 #define MMC_RSP_R7	                (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
 
+/* MMC Data Command Attributes */
+
+#define MMC_DATA_WRITE                  (1 << 8)
+#define MMC_DATA_READ                   (1 << 9)
+#define MMC_DATA_STREAM                 (1 << 10)
+
 /* MMC Commands */
 
 #define MMC_CMD_GO_IDLE_STATE           0
