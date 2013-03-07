@@ -148,6 +148,9 @@
 #define OCR_HCS                         (1 << 30)
 #define OCR_BUSY                        (1 << 31)
 
+#define SD_SCR_HIGHSPEED                (1 << 17)
+#define SD_SCR_DATA4BIT                 (1 << 18)
+
 /* SDCard Commands */
 #define SD_CMD_SEND_RELATIVE_ADDR       3
 #define SD_CMD_SWITCH_FUNC              6
