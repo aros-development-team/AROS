@@ -61,7 +61,7 @@ ULONG FNAME_SDCBUS(MMIOReadLong)(ULONG reg, struct sdcard_Bus *bus)
 void FNAME_SDCBUS(ArasanWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
 {
     /* Bug: two SDC clock cycle delay required between successive chipset writes */
-    while (*((volatile ULONG *)(SYSTIMER_CLO)) < (bus->sdcb_LastWrite + 100))
+    while (*((volatile ULONG *)(SYSTIMER_CLO)) < (bus->sdcb_LastWrite + 6))
         asm volatile("mov r0, r0\n");
 
     *(volatile ULONG *)(bus->sdcb_IOBase + reg) = val;
