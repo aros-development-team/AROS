@@ -48,7 +48,7 @@ BOOL ATA__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver
     return FALSE;
 }
 
-BOOL ATA__HW__SetupDriver(OOP_Class *cl, OOP_Object *o, struct pHW_SetupDriver *Msg)
+BOOL ATA__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o, struct pHW_SetUpDriver *Msg)
 {
     struct ataBase *ATABase = cl->UserData;
 
@@ -56,7 +56,7 @@ BOOL ATA__HW__SetupDriver(OOP_Class *cl, OOP_Object *o, struct pHW_SetupDriver *
      * Instantiate interfaces. PIO is mandatory, DMA is not.
      * We don't keep interface pointers here because our bus class
      * stores them itself.
-     * We do this in SetupDriver because the object must be fully
+     * We do this in SetUpDriver because the object must be fully
      * created in order for this stuff to work.
      */
     if (!HIDD_ATABus_GetPIOInterface(Msg->driverObject))
