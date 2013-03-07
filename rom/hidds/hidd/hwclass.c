@@ -195,7 +195,7 @@ OOP_Object *HW__HW__AddDriver(OOP_Class *cl, OOP_Object *o,
                 return NULL;
             }
 
-            if (HW_SetupDriver(o, drv))
+            if (HW_SetUpDriver(o, drv))
             {
                 /* Add the driver to the end of drivers list */
                 dn->driverObject = drv;
@@ -276,7 +276,7 @@ BOOL HW__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o,
     /* If driver removed, rem contains pointer to removed DriverNode */
     if (rem)
     {
-        HW_CleanupDriver(o, rem->driverObject);
+        HW_CleanUpDriver(o, rem->driverObject);
 
         /* Dispose driver */
         OOP_DisposeObject(rem->driverObject);
@@ -366,12 +366,12 @@ void HW__HW__EnumDrivers(OOP_Class *cl, OOP_Object *o, struct pHW_EnumDrivers *m
 /*****************************************************************************************
 
     NAME
-	moHW_SetupDriver
+	moHW_SetUpDriver
 
     SYNOPSIS
-	void OOP_DoMethod(OOP_Object *obj, struct pHW_SetupDriver *Msg);
+	void OOP_DoMethod(OOP_Object *obj, struct pHW_SetUpDriver *Msg);
 
-	void HW_SetupDriver(OOP_Object *obj, OOP_Object *driverObject);
+	void HW_SetUpDriver(OOP_Object *obj, OOP_Object *driverObject);
 
     LOCATION
 	CLID_HW
@@ -397,13 +397,13 @@ void HW__HW__EnumDrivers(OOP_Class *cl, OOP_Object *o, struct pHW_EnumDrivers *m
     BUGS
 
     SEE ALSO
-        moHW_CleanupDriver
+        moHW_CleanUpDriver
 
     INTERNALS
 
 *****************************************************************************************/
 
-BOOL HW__HW__SetupDriver(OOP_Class *cl, OOP_Object *o, struct pHW_SetupDriver *msg)
+BOOL HW__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o, struct pHW_SetUpDriver *msg)
 {
     /* By default we have nothing to do here */
     return TRUE;
@@ -412,12 +412,12 @@ BOOL HW__HW__SetupDriver(OOP_Class *cl, OOP_Object *o, struct pHW_SetupDriver *m
 /*****************************************************************************************
 
     NAME
-	moHW_CleanupDriver
+	moHW_CleanUpDriver
 
     SYNOPSIS
-	void OOP_DoMethod(OOP_Object *obj, struct pHW_CleanupDriver *Msg);
+	void OOP_DoMethod(OOP_Object *obj, struct pHW_CleanUpDriver *Msg);
 
-	void HW_CleanupDriver(OOP_Object *obj, OOP_Object *driverObject);
+	void HW_CleanUpDriver(OOP_Object *obj, OOP_Object *driverObject);
 
     LOCATION
 	CLID_HW
@@ -441,13 +441,13 @@ BOOL HW__HW__SetupDriver(OOP_Class *cl, OOP_Object *o, struct pHW_SetupDriver *m
     BUGS
 
     SEE ALSO
-        moHW_SetupDriver
+        moHW_SetUpDriver
 
     INTERNALS
 
 *****************************************************************************************/
 
-void HW__HW__CleanupDriver(OOP_Class *cl, OOP_Object *o, struct pHW_CleanupDriver *msg)
+void HW__HW__CleanUpDriver(OOP_Class *cl, OOP_Object *o, struct pHW_CleanUpDriver *msg)
 {
     /* By default we have nothing to do here */
 }

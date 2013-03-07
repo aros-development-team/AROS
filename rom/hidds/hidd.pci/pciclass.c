@@ -77,14 +77,14 @@ static OOP_Object *InsertDevice(OOP_Class *cl, ULONG *highBus, struct TagItem *d
 }
 
 /*
- * PCI::SetupDriver(OOP_Object *driverObject)
+ * PCI::SetUpDriver(OOP_Object *driverObject)
  *
  * A new PCI hardware driver is being added to the PCI subsystem.
  * The PCI bus handled through driver added is scanned, and all available
  * PCI devices are added to the device chain.
  */
-BOOL PCI__HW__SetupDriver(OOP_Class *cl, OOP_Object *o,
-    struct pHW_SetupDriver *msg)
+BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
+    struct pHW_SetUpDriver *msg)
 {
     OOP_Object *drv = msg->driverObject;
     ULONG highBus = 0;
