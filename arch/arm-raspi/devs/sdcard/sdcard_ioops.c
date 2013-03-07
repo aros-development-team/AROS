@@ -1,0 +1,324 @@
+/*
+    Copyright © 2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+#define DEBUG 1
+
+// use #define xxx(a) D(a) to enable particular sections.
+#if DEBUG
+#define DIRQ(a) D(a)
+#define DIRQ_MORE(a)
+#define DUMP(a) D(a)
+#define DUMP_MORE(a)
+#define DINIT(a) (a)
+#else
+#define DIRQ(a)      do { } while (0)
+#define DIRQ_MORE(a) do { } while (0)
+#define DUMP(a)      do { } while (0)
+#define DUMP_MORE(a) do { } while (0)
+#define DINIT(a)     do { } while (0)
+#endif
+/* Errors that shouldn't happen */
+#define DERROR(a) a
+
+#include <aros/debug.h>
+#include <exec/types.h>
+#include <exec/exec.h>
+#include <exec/resident.h>
+#include <utility/utility.h>
+#include <oop/oop.h>
+
+#include <proto/exec.h>
+#include <devices/timer.h>
+
+#include <hardware/mmc.h>
+
+#include "sdcard_intern.h"
+#include "timer.h"
+
+static BOOL sdcard_WaitBusyTO(struct sdcard_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout);
+
+#define DEVHEAD_VAL 0x40
+
+#if DEBUG
+static void dump(APTR mem, ULONG len)
+{
+    register int i, j = 0;
+
+    DUMP_MORE(for (j=0; j<(len+15)>>4; ++j))
+    {
+        bug("[SDC  ] %06lx: ", j<<4);
+
+        for (i=0; i<len-(j<<4); i++)
+        {
+            bug("%02lx ", ((unsigned char*)mem)[(j<<4)|i]);
+            if (i == 15)
+                break;
+        }
+
+        for (i=0; i<len-(j<<4); i++)
+        {
+            unsigned char c = ((unsigned char*)mem)[(j<<4)|i];
+
+            bug("%c", c >= 0x20 ? c<=0x7f ? c : '.' : '.');
+            if (i == 15)
+                break;
+        }
+        bug("\n");
+    }
+}
+#endif
+
+static void sdcard_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
+{
+    register int i = size;
+
+    while (size--)
+        str2[size ^ 1] = str1[size];
+
+    while (i > 0 && str2[--i] <= ' ')
+        str2[i] = '\0';
+}
+
+/*
+ * a STUB function for commands not supported by this particular device
+ */
+static BYTE sdcard_STUB(struct sdcard_Unit *unit)
+{
+    DERROR(bug("[SDCard%02ld] CALLED STUB FUNCTION (GENERIC). OPERATION IS NOT SUPPORTED BY DEVICE\n", unit->sdcu_UnitNum));
+    return CDERR_NOCMD;
+}
+
+static BYTE sdcard_STUB_IO32(struct sdcard_Unit *unit, ULONG blk, ULONG len,
+    APTR buf, ULONG* act)
+{
+    DERROR(bug("[SDCard%02ld] CALLED STUB FUNCTION (IO32). OPERATION IS NOT SUPPORTED BY DEVICE\n", unit->sdcu_UnitNum));
+    DERROR(bug("[SDCard%02ld] -- IO ACCESS TO BLOCK %08lx, LENGTH %08lx\n", unit->sdcu_UnitNum, blk, len));
+    return CDERR_NOCMD;
+}
+
+static BYTE sdcard_STUB_IO64(struct sdcard_Unit *unit, UQUAD blk, ULONG len,
+    APTR buf, ULONG* act)
+{
+    DERROR(bug("[SDCard%02ld] CALLED STUB FUNCTION (IO64). OPERATION IS NOT SUPPORTED BY DEVICE\n", unit->sdcu_UnitNum));
+    DERROR(bug("[SDCard%02ld] -- IO ACCESS TO BLOCK %08lx:%08lx, LENGTH %08lx\n", unit->sdcu_UnitNum, (blk >> 32), (blk & 0xffffffff), len));
+    return CDERR_NOCMD;
+}
+
+static BYTE sdcard_STUB_SCSI(struct sdcard_Unit *unit, struct SCSICmd* cmd)
+{
+    DERROR(bug("[SDCard%02ld] CALLED STUB FUNCTION (IOSCSI). OPERATION IS NOT SUPPORTED BY DEVICE\n", unit->sdcu_UnitNum));
+    return CDERR_NOCMD;
+}
+
+static inline BOOL sdcard_SelectUnit(struct sdcard_Unit* unit)
+{
+    return TRUE;
+}
+
+void sdcard_IRQSetHandler(struct sdcard_Unit *unit, void (*handler)(struct sdcard_Unit*, UBYTE), APTR piomem, ULONG blklen, ULONG piolen)
+{
+
+}
+
+void sdcard_IRQNoData(struct sdcard_Unit *unit, UBYTE status)
+{
+
+}
+
+void sdcard_IRQPIORead(struct sdcard_Unit *unit, UBYTE status)
+{
+
+}
+
+void sdcard_PIOWriteBlk(struct sdcard_Unit *unit)
+{
+
+}
+
+void sdcard_IRQPIOWrite(struct sdcard_Unit *unit, UBYTE status)
+{
+
+}
+
+void sdcard_IRQDMAReadWrite(struct sdcard_Unit *unit, UBYTE status)
+{
+
+}
+
+/*
+ * wait for timeout or drive ready
+ */
+BOOL sdcard_WaitBusyTO(struct sdcard_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
+{
+    BYTE err = 0;
+    return err;
+}
+
+/*
+ * 32bit Read operations
+ */
+BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+    struct TagItem sdcReadTags[] =
+    {
+        {SDCARD_TAG_CMD,         MMC_CMD_READ_SINGLE_BLOCK},
+        {SDCARD_TAG_ARG,         block},
+        {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
+        {SDCARD_TAG_RSP,         0},
+        {SDCARD_TAG_DATA,        buffer},
+        {SDCARD_TAG_DATALEN,     count * (1 << unit->sdcu_Bus->sdcb_SectorShift)},
+        {SDCARD_TAG_DATAFLAGS,   MMC_DATA_READ},
+        {TAG_DONE,            0}
+    };
+
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    *act = 0;
+
+    if (count > 1)
+        sdcReadTags[0].ti_Data = MMC_CMD_READ_MULTIPLE_BLOCK;
+
+    if (!(unit->sdcu_Flags & AF_HighCapacity))
+        sdcReadTags[1].ti_Data <<= unit->sdcu_Bus->sdcb_SectorShift;
+
+    D(bug("[SDCard%02ld] %s: Sending CMD %d, block 0x%p, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
+        sdcReadTags[0].ti_Data, sdcReadTags[1].ti_Data, sdcReadTags[5].ti_Data, sdcReadTags[4].ti_Data));
+
+    if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) != -1)
+    {
+        D(bug("[SDCard%02ld] %s: checking response ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    }
+    else
+    {
+        D(bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        count = 0;
+    }
+
+    if (count > 1)
+    {
+        sdcReadTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
+        sdcReadTags[1].ti_Data = 0;
+        sdcReadTags[1].ti_Data = MMC_RSP_R1b;
+        if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) == -1)
+        {
+            D(bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        }
+    }        
+
+    *act = count << unit->sdcu_Bus->sdcb_SectorShift;
+
+    D(bug("[SDCard%02ld] %s: %d bytes Read\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, *act));
+
+    return 0;
+}
+
+BYTE FNAME_SDCIO(ReadMultiple32)(struct sdcard_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}
+
+BYTE FNAME_SDCIO(ReadDMA32)(struct sdcard_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}
+
+/*
+ * 64bit Read operations
+ */
+BYTE FNAME_SDCIO(ReadSector64)(struct sdcard_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}
+
+BYTE FNAME_SDCIO(ReadMultiple64)(struct sdcard_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}
+
+BYTE FNAME_SDCIO(ReadDMA64)(struct sdcard_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}
+
+/*
+ * 32bit Write operations
+ */
+BYTE FNAME_SDCIO(WriteSector32)(struct sdcard_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}
+
+BYTE FNAME_SDCIO(WriteMultiple32)(struct sdcard_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}
+
+BYTE FNAME_SDCIO(WriteDMA32)(struct sdcard_Unit *unit, ULONG block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}
+
+/*
+ * 64bit Write operations
+ */
+BYTE FNAME_SDCIO(WriteSector64)(struct sdcard_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}
+
+BYTE FNAME_SDCIO(WriteMultiple64)(struct sdcard_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}
+
+BYTE FNAME_SDCIO(WriteDMA64)(struct sdcard_Unit *unit, UQUAD block,
+    ULONG count, APTR buffer, ULONG *act)
+{
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}
+
+/*
+ * miscellaneous
+ */
+BYTE FNAME_SDCIO(Eject)(struct sdcard_Unit *unit)
+{
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    return 0;
+}

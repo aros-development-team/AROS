@@ -1,0 +1,9 @@
+# $Id: mmakefile.src 44918 2012-06-01 03:30:04Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS += -I $(SRCDIR)/$(CURDIR) -D__TIMER_NOLIBBASE__
+
+%build_module mmake=kernel-sdcard \
+  modname=sdcard modtype=device version=$(AROS_TARGET_PLATFORM) \
+  files="sdcard_init sdcard_bus sdcard_device sdcard_ioops timer" \
+  uselibs="oop"
