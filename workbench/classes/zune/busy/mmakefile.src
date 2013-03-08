@@ -10,7 +10,7 @@ INCLUDE_FILES := Busy_mcc.h
 %build_module \
     mmake=workbench-classes-zune-busy \
     modname=Busy modtype=mcc \
-    conffile=$(SRCDIR)/$(CURDIR)/busy.conf
+    conffile=busy.conf
     
 %copy_includes path=mui
     

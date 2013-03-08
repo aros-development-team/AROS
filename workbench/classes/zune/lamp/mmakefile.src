@@ -15,7 +15,7 @@ INCLUDE_FILES := Lamp_mcc.h
 %build_module \
     mmake=workbench-classes-zune-lamp \
     modname=Lamp modtype=mcc \
-    conffile=$(SRCDIR)/$(CURDIR)/lamp.conf
+    conffile=lamp.conf
 
 %copy_includes path=mui
 

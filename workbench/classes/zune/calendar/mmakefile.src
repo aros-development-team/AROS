@@ -11,7 +11,7 @@ INCLUDE_FILES := calendar.h
 %build_module \
     mmake=workbench-classes-zune-calendar \
     modname=Calendar modtype=mcc \
-    conffile=$(SRCDIR)/$(CURDIR)/calendar.conf
+    conffile=calendar.conf
     
 %copy_includes path=zune
     

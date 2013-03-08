@@ -19,5 +19,5 @@ CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
 
 %build_module mmake=workbench-devs-networks-rtl8168-debug \
     modname=rtl8168_debug modtype=device \
-    files="rtl8168_init $(FILES)" conffile=$(SRCDIR)/$(CURDIR)/rtl8168.conf cflags=$(CFLAGSDEBUG) \
+    files="rtl8168_init $(FILES)" conffile=rtl8168.conf cflags=$(CFLAGSDEBUG) \
     objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="oop hiddstubs"
