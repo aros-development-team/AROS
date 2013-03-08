@@ -285,14 +285,9 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 
     if (timeout != 0) {
         if ((sdStatus & (sdCommandMask|SDHCI_INT_ERROR)) == sdCommandMask) {
-            if (sdStatus & SDHCI_INT_ERROR)
-            {
-                D(bug("[SDCard--] %s: Error?", __PRETTY_FUNCTION__));
-            }
-
             if (Response)
             {
-                D(bug("[SDCard--] %s: Reading Response ", __PRETTY_FUNCTION__));
+                D(bug("[SDCard--] %s: Reading CMD %02d Response ", __PRETTY_FUNCTION__, sdCommand));
                 if (sdResponseType & MMC_RSP_136)
                 {
                     D(bug("[136bit]\n"));
@@ -318,10 +313,10 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         }
         else
         {
-            D(bug("[SDCard--] %s: Failed? [   status = %08x]\n", __PRETTY_FUNCTION__, sdStatus));
+            D(bug("[SDCard--] %s: CMD %02d Failed? [   status = %08x]\n", __PRETTY_FUNCTION__, sdCommand, sdStatus));
             if (sdStatus & SDHCI_INT_ACMD12ERR)
             {
-                D(bug("[SDCard--] %s:         [acmd12err = %04x    ]\n", __PRETTY_FUNCTION__, FNAME_SDCBUS(MMIOReadWord)(SDHCI_ACMD12_ERR, bus)));
+                D(bug("[SDCard--] %s:               [acmd12err = %04x    ]\n", __PRETTY_FUNCTION__, FNAME_SDCBUS(MMIOReadWord)(SDHCI_ACMD12_ERR, bus)));
             }
             ret = -1;
         }
@@ -356,7 +351,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
     }
     else
     {
-        D(bug("[SDCard--] %s: Error - command timed out [status = %08x]\n", __PRETTY_FUNCTION__, sdStatus));
+        D(bug("[SDCard--] %s: Error - CMD %02d timed out [status = %08x]\n", __PRETTY_FUNCTION__, sdCommand, sdStatus));
         ret = -1;
     }
     timeout = 1000;
