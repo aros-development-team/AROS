@@ -305,6 +305,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
                             if (i != 3)
                                 ((ULONG *)Response->ti_Data)[i] |= FNAME_SDCBUS(MMIOReadByte)(SDHCI_RESPONSE + (3 - i) * 4 - 1, bus);
                         }
+                        D(bug("[SDCard--] %s:   %08x%08x%08x%08x\n", __PRETTY_FUNCTION__, ((ULONG *)Response->ti_Data)[0], ((ULONG *)Response->ti_Data)[1], ((ULONG *)Response->ti_Data)[2], ((ULONG *)Response->ti_Data)[3]));
                     }
                 }
                 else
@@ -378,6 +379,47 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         return -1;
     else
         return -1;
+}
+
+ULONG FNAME_SDCBUS(WaitUnitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
+{
+    struct TagItem sdcStatusTags[] =
+    {
+        {SDCARD_TAG_CMD,         MMC_CMD_SEND_STATUS},
+        {SDCARD_TAG_ARG,         sdcUnit->sdcu_CardRCA << 16},
+        {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
+        {SDCARD_TAG_RSP,         0},
+        {TAG_DONE,               0}
+    };
+
+    UBYTE retryreq = 5;
+    ULONG timeout_udelay;
+
+    timeout *= 1000;
+    do {
+        if (FNAME_SDCBUS(SendCmd)(sdcStatusTags, sdcUnit->sdcu_Bus) != -1)
+        {
+            if ((sdcStatusTags[3].ti_Data & MMC_STATUS_RDY_FOR_DATA) &&
+                (sdcStatusTags[3].ti_Data & MMC_STATUS_STATE_MASK) != MMC_STATE_PRG)
+                break;
+            else if (sdcStatusTags[3].ti_Data & MMC_STATUS_MASK) {
+                D(bug("[SDCard%02ld] %s: Status Error 0x%08x\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcStatusTags[3].ti_Data));
+                return -1;
+            }
+        } else if (--retryreq < 0)
+                return -1;
+
+        timeout_udelay = timeout - 1000;
+        for (; timeout > timeout_udelay; timeout --) asm volatile("mov r0, r0\n");
+
+    } while (timeout > 0);
+
+    if (timeout <= 0) {
+        D(bug("[SDCard%02ld] %s: Timeout\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        return -1;
+    }
+
+    return 0;
 }
 
 ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *buf, ULONG offset, const ULONG len)
