@@ -115,11 +115,10 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
 
     sdcClkCtrlCur = FNAME_SDCBUS(MMIOReadWord)(SDHCI_CLOCK_CONTROL, bus);
 
-    for (sdcClkDiv = 2; sdcClkDiv < V300_MAXCLKDIV; sdcClkDiv += 2) {
-        if ((bus->sdcb_ClockMax / sdcClkDiv) <= speed)
+    for (sdcClkDiv = 0; sdcClkDiv < V300_MAXCLKDIV; sdcClkDiv++) {
+        if ((bus->sdcb_ClockMax / (sdcClkDiv + 1)) <= speed)
                 break;
     }
-    sdcClkDiv >>= 1;
 
     sdcClkCtrl = (sdcClkDiv & SDHCI_DIV_MASK) << SDHCI_DIVIDER_SHIFT;
     sdcClkCtrl |= ((sdcClkDiv & SDHCI_DIV_HI_MASK) >> SDHCI_DIV_MASK_LEN) << SDHCI_DIVIDER_HI_SHIFT;
@@ -251,7 +250,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 
         FNAME_SDCBUS(MMIOWriteByte)(SDHCI_TIMEOUT_CONTROL, SDHCI_TIMEOUT_MAX, bus);
 
-        FNAME_SDCBUS(MMIOWriteWord)(SDHCI_BLOCK_SIZE, SDHCI_MAKE_BLCKSIZE(7, ((sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen)), bus);
+        FNAME_SDCBUS(MMIOWriteWord)(SDHCI_BLOCK_SIZE, ((1 << 16) | ((sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen)), bus);
         if ((sdDataLen >> bus->sdcb_SectorShift) > 1)
         {
             sdcTransMode |= SDHCI_TRANSMOD_MULTI;
@@ -447,8 +446,8 @@ int FNAME_SDCBUS(SDSCSwitch)(BOOL test, int group, UBYTE value, APTR buf, struct
 
     D(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    sdcSwitchTags[1].ti_Data = ((test) ? 0 : (1 << 31)) | 0xffffff;
-    sdcSwitchTags[1].ti_Data &= ~(0xf << (group * 4));
+    sdcSwitchTags[1].ti_Data = ((test) ? 0 : (1 << 31)) | 0xFFFFFF;
+    sdcSwitchTags[1].ti_Data &= ~(0xF << (group * 4));
     sdcSwitchTags[1].ti_Data |= value << (group * 4);
 
     return FNAME_SDCBUS(SendCmd)(sdcSwitchTags, sdcUnit->sdcu_Bus);

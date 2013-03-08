@@ -262,8 +262,6 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
                                         D(bug("[SDCard%02ld] %s:        BlockSize:%d, SectorsPerBlock:%d ..\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__,
                                               pp[DE_SIZEBLOCK + 4], sdcUnit->sdcu_Sectors));
 
-                                        FNAME_SDCBUS(SetClock)(25000000, sdcUnit->sdcu_Bus);
-
                                         AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
                                         D(bug("[SDCard%02ld] %s: done\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
@@ -338,9 +336,9 @@ static int FNAME_SDC(Scan)(struct SDCardBase *SDCardBase)
 
     FNAME_SDCBUS(SetPowerLevel)(SDCardBase->sdcard_Bus->sdcb_Power, SDCardBase->sdcard_Bus);
 
-    D(bug("[SDCard--] %s: Setting Min Buswidth...\n", __PRETTY_FUNCTION__));
     sdcReg = FNAME_SDCBUS(MMIOReadByte)(SDHCI_HOST_CONTROL, SDCardBase->sdcard_Bus);
-    sdcReg &= ~(SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD);
+    D(bug("[SDCard--] %s: Setting Min Buswidth...[%x -> %x]\n", __PRETTY_FUNCTION__, sdcReg, sdcReg & ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD)));
+    sdcReg &= ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD);
     FNAME_SDCBUS(MMIOWriteByte)(SDHCI_HOST_CONTROL, sdcReg, SDCardBase->sdcard_Bus);
 
     D(bug("[SDCard--] %s: Masking chipset Interrupts...\n", __PRETTY_FUNCTION__));
@@ -443,7 +441,7 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
         LIBBASE->sdcard_Bus->sdcb_IOBase = (APTR)ARASAN_BASE;
         LIBBASE->sdcard_Bus->sdcb_SectorShift = 9;
 
-        LIBBASE->sdcard_Bus->sdcb_ClockMax = VCMBoxMessage[6];
+        LIBBASE->sdcard_Bus->sdcb_ClockMax = VCMBoxMessage[6] >> 1;
 
         D(bug("[SDCard--] %s: Reseting SDHCI...\n", __PRETTY_FUNCTION__));
 
@@ -496,13 +494,15 @@ static int FNAME_SDC(Open)
             D(bug("[SDCard%02ld] %s: Selected card with RCA %d\n", unitnum, __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_Units[unitnum]->sdcu_CardRCA));
             D(bug("[SDCard%02ld] %s: Card is now operating in Transfer Mode\n", unitnum, __PRETTY_FUNCTION__));
 
+            FNAME_SDCBUS(SetClock)(25000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
+
             if (!(((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_HighCapacity))
             {
                 sdcOpenTags[0].ti_Data = MMC_CMD_SET_BLOCKLEN;
                 sdcOpenTags[1].ti_Data = 1 << ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus->sdcb_SectorShift;
                 sdcOpenTags[2].ti_Data = MMC_RSP_R1;
                 sdcOpenTags[3].ti_Data = 0;
-                if (FNAME_SDCBUS(SendCmd)(sdcOpenTags, LIBBASE->sdcard_Bus) != -1)
+                if (FNAME_SDCBUS(SendCmd)(sdcOpenTags, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus) != -1)
                 {
                     D(bug("[SDCard%02ld] %s: Blocklen set to %d\n", unitnum, __PRETTY_FUNCTION__, sdcOpenTags[1].ti_Data));
                 }
