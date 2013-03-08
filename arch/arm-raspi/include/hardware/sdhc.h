@@ -6,7 +6,7 @@
 #ifndef _SDHC_H
 #define _SDHC_H
 
-#define SDHCI_MAKE_ADDR(addr, size)     (((addr & 0x7) << 12) | (size & 0xFFF))
+#define SDHCI_MAKE_BLCKSIZE(bnd, size)  (((bnd & 0x7) << 12) | (size & 0xFFF))
 #define SDHCI_MAKE_CMD(cmd, flags)      (((cmd) << 8) | (flags & 0xFF))
 #define SDHCI_GET_CMD(x)                ((x >> 8) & 0x3F)
 
