@@ -79,6 +79,7 @@ struct ataBase
 
    struct Library         *ata_OOPBase;
    struct Library         *ata_UtilityBase;
+   BPTR                    ata_SegList;
 
    /* Bus HIDD classes */
    OOP_AttrBase            hwAttrBase;
