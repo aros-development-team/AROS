@@ -108,6 +108,71 @@ void FNAME_SDCBUS(SoftReset)(UBYTE mask, struct sdcard_Bus *bus)
     }
 }
 
+void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
+{
+    unsigned int        sdcReg, sdcClkDiv, timeout, timeout_udelay;
+
+    FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, 0, bus);
+
+    D(bug("[SDCard--] %s: Setting Clock... ", __PRETTY_FUNCTION__));
+    for (sdcClkDiv = 2; sdcClkDiv < V300_MAXCLKDIV; sdcClkDiv += 2) {
+        if ((bus->sdcb_ClockMax / sdcClkDiv) <= speed)
+                break;
+    }
+    sdcClkDiv >>= 1;
+    D(bug("div = %d\n", sdcClkDiv));
+
+    sdcReg = (sdcClkDiv & SDHCI_DIV_MASK) << SDHCI_DIVIDER_SHIFT;
+    sdcReg |= ((sdcClkDiv & SDHCI_DIV_HI_MASK) >> SDHCI_DIV_MASK_LEN) << SDHCI_DIVIDER_HI_SHIFT;
+    FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, (sdcReg | SDHCI_CLOCK_INT_EN), bus);
+
+    timeout = 20000;
+    while (!((sdcReg = FNAME_SDCBUS(MMIOReadWord)(SDHCI_CLOCK_CONTROL, bus)) & SDHCI_CLOCK_INT_STABLE)) {
+        if (timeout == 0) {
+            D(bug("[SDCard--] %s: SDHCI Clock failed to stabilise\n", __PRETTY_FUNCTION__));
+            break;
+        }
+        timeout_udelay = timeout - 1000;
+        for (; timeout > timeout_udelay; timeout --) asm volatile("mov r0, r0\n");
+    }
+    D(bug("[SDCard--] %s: Enabling clock...\n", __PRETTY_FUNCTION__));
+    sdcReg |= SDHCI_CLOCK_CARD_EN;
+    FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, sdcReg, bus);
+}
+
+void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, struct sdcard_Bus *bus)
+{
+    ULONG sdcReg;
+    UBYTE lvlCur;
+
+    if (supportedlvls & (MMC_VDD_320_330|MMC_VDD_330_340))
+        sdcReg = SDHCI_POWER_330;
+    else if (supportedlvls & (MMC_VDD_290_300|MMC_VDD_300_310))
+        sdcReg = SDHCI_POWER_300;
+    else if (supportedlvls & MMC_VDD_165_195)
+        sdcReg = SDHCI_POWER_180;
+    else
+        sdcReg = 0;
+
+    lvlCur = FNAME_SDCBUS(MMIOReadByte)(SDHCI_POWER_CONTROL, bus);
+    if ((lvlCur & ~SDHCI_POWER_ON) != sdcReg)
+    {
+        D(bug("[SDCard--] %s: Changing Power Lvl (0x%x)\n", __PRETTY_FUNCTION__, sdcReg));
+        FNAME_SDCBUS(MMIOWriteByte)(SDHCI_POWER_CONTROL, sdcReg, bus);
+        sdcReg |= SDHCI_POWER_ON;
+        FNAME_SDCBUS(MMIOWriteByte)(SDHCI_POWER_CONTROL, sdcReg, bus);
+    }
+    else
+    {
+        if (lvlCur && (!(lvlCur & SDHCI_POWER_ON)))
+        {
+            D(bug("[SDCard--] %s: Enabling Power Lvl (0x%x)\n", __PRETTY_FUNCTION__, lvlCur));
+            lvlCur |= SDHCI_POWER_ON;
+            FNAME_SDCBUS(MMIOWriteByte)(SDHCI_POWER_CONTROL, lvlCur, bus);
+        }
+    }
+}
+
 ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 {
     struct TagItem *Response = NULL;
@@ -175,7 +240,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 
         FNAME_SDCBUS(MMIOWriteByte)(SDHCI_TIMEOUT_CONTROL, SDHCI_TIMEOUT_MAX, bus);
 
-        FNAME_SDCBUS(MMIOWriteWord)(SDHCI_BLOCK_SIZE, 1 << bus->sdcb_SectorShift, bus);
+        FNAME_SDCBUS(MMIOWriteWord)(SDHCI_BLOCK_SIZE, SDHCI_MAKE_BLCKSIZE(7, (1 << bus->sdcb_SectorShift)), bus);
         if ((sdDataLen >> bus->sdcb_SectorShift) > 1)
         {
             sdcTransMode |= SDHCI_TRANSMOD_MULTI;
@@ -279,7 +344,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
     }
     else
     {
-        D(bug("[SDCard--] %s: Error - command timed out\n", __PRETTY_FUNCTION__));
+        D(bug("[SDCard--] %s: Error - command timed out [status = %08x]\n", __PRETTY_FUNCTION__, sdStatus));
         ret = -1;
     }
     timeout = 1000;
