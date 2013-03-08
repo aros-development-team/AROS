@@ -262,31 +262,8 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
                                         D(bug("[SDCard%02ld] %s:        BlockSize:%d, SectorsPerBlock:%d ..\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__,
                                               pp[DE_SIZEBLOCK + 4], sdcUnit->sdcu_Sectors));
 
-                                        FNAME_SDCBUS(SetClock)(20000000, sdcUnit->sdcu_Bus);
+                                        FNAME_SDCBUS(SetClock)(25000000, sdcUnit->sdcu_Bus);
 
-                                        if (sdcUnit->sdcu_Flags & AF_MMC)
-                                        {
-                                        }
-                                        else
-                                        {
-                                            FNAME_SDCBUS(SDUnitChangeFrequency)(sdcUnit);
-                                        }
-
-                                        if (!(sdcUnit->sdcu_Flags & AF_HighCapacity))
-                                        {
-                                            sdcRegTags[0].ti_Data = MMC_CMD_SET_BLOCKLEN;
-                                            sdcRegTags[1].ti_Data = 1 << sdcUnit->sdcu_Bus->sdcb_SectorShift;
-                                            sdcRegTags[2].ti_Data = MMC_RSP_R1;
-                                            sdcRegTags[3].ti_Data = 0;
-                                            if (FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)
-                                            {
-                                                D(bug("[SDCard%02ld] %s: Blocklen set to %d\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcRegTags[1].ti_Data));
-                                            }
-                                            else
-                                            {
-                                                D(bug("[SDCard%02ld] %s: Failed to change Blocklen\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-                                            }
-                                        }
                                         AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
                                         D(bug("[SDCard%02ld] %s: done\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
@@ -511,7 +488,7 @@ static int FNAME_SDC(Open)
             {SDCARD_TAG_ARG,         LIBBASE->sdcard_Bus->sdcb_Units[unitnum]->sdcu_CardRCA << 16},
             {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
             {SDCARD_TAG_RSP,         0},
-            {TAG_DONE,            0}
+            {TAG_DONE,               0}
         };
         if (FNAME_SDCBUS(SendCmd)(sdcOpenTags, LIBBASE->sdcard_Bus) != -1)
         {
@@ -521,6 +498,29 @@ static int FNAME_SDC(Open)
             D(bug("[SDCard%02ld] %s: Selected card with RCA %d\n", unitnum, __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_Units[unitnum]->sdcu_CardRCA));
             D(bug("[SDCard%02ld] %s: Card is now operating in Transfer Mode\n", unitnum, __PRETTY_FUNCTION__));
 
+            if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_MMC)
+            {
+            }
+            else
+            {
+                FNAME_SDCBUS(SDUnitChangeFrequency)((struct sdcard_Unit *)iorq->io_Unit);
+            }
+
+            if (!(((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_HighCapacity))
+            {
+                sdcOpenTags[0].ti_Data = MMC_CMD_SET_BLOCKLEN;
+                sdcOpenTags[1].ti_Data = 1 << ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus->sdcb_SectorShift;
+                sdcOpenTags[2].ti_Data = MMC_RSP_R1;
+                sdcOpenTags[3].ti_Data = 0;
+                if (FNAME_SDCBUS(SendCmd)(sdcOpenTags, LIBBASE->sdcard_Bus) != -1)
+                {
+                    D(bug("[SDCard%02ld] %s: Blocklen set to %d\n", unitnum, __PRETTY_FUNCTION__, sdcOpenTags[1].ti_Data));
+                }
+                else
+                {
+                    D(bug("[SDCard%02ld] %s: Failed to change Blocklen\n", unitnum, __PRETTY_FUNCTION__));
+                }
+            }
             iorq->io_Error = 0;
         }
     }
