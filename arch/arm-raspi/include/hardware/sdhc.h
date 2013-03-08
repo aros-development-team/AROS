@@ -10,6 +10,8 @@
 #define SDHCI_MAKE_CMD(cmd, flags)      (((cmd) << 8) | (flags & 0xFF))
 #define SDHCI_GET_CMD(x)                ((x >> 8) & 0x3F)
 
+#define SDHCI_TIMEOUT_MAX               0xE
+
 /* SDHC Registers and Attributes */
 
 #define SDHCI_DMA_ADDRESS               0x00
