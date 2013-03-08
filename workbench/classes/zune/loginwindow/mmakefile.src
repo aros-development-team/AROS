@@ -10,7 +10,7 @@ INCLUDE_FILES := loginwindow.h
 %build_module \
     mmake=workbench-classes-zune-loginwindow \
     modname=LoginWindow modtype=mcc \
-    conffile=$(SRCDIR)/$(CURDIR)/loginwindow.conf
+    conffile=loginwindow.conf
     
 %copy_includes path=zune
     

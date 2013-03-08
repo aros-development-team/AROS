@@ -11,7 +11,7 @@ INCLUDE_FILES := prefseditor.h
 %build_module \
     mmake=workbench-classes-zune-prefseditor \
     modname=PrefsEditor modtype=mcc \
-    conffile=$(SRCDIR)/$(CURDIR)/prefseditor.conf
+    conffile=prefseditor.conf
     
 %copy_includes path=zune
     

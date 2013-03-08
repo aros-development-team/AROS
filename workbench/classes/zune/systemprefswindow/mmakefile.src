@@ -11,7 +11,7 @@ INCLUDE_FILES := systemprefswindow.h
 %build_module \
     mmake=workbench-classes-zune-systemprefswindow \
     modname=SystemPrefsWindow modtype=mcc \
-    conffile=$(SRCDIR)/$(CURDIR)/systemprefswindow.conf
+    conffile=systemprefswindow.conf
     
 %copy_includes path=zune
     
