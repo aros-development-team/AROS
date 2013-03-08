@@ -498,14 +498,6 @@ static int FNAME_SDC(Open)
             D(bug("[SDCard%02ld] %s: Selected card with RCA %d\n", unitnum, __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_Units[unitnum]->sdcu_CardRCA));
             D(bug("[SDCard%02ld] %s: Card is now operating in Transfer Mode\n", unitnum, __PRETTY_FUNCTION__));
 
-            if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_MMC)
-            {
-            }
-            else
-            {
-                FNAME_SDCBUS(SDUnitChangeFrequency)((struct sdcard_Unit *)iorq->io_Unit);
-            }
-
             if (!(((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_HighCapacity))
             {
                 sdcOpenTags[0].ti_Data = MMC_CMD_SET_BLOCKLEN;
@@ -521,6 +513,15 @@ static int FNAME_SDC(Open)
                     D(bug("[SDCard%02ld] %s: Failed to change Blocklen\n", unitnum, __PRETTY_FUNCTION__));
                 }
             }
+
+            if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_MMC)
+            {
+            }
+            else
+            {
+                FNAME_SDCBUS(SDSCChangeFrequency)((struct sdcard_Unit *)iorq->io_Unit);
+            }
+
             iorq->io_Error = 0;
         }
     }

@@ -394,7 +394,7 @@ ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *buf, ULONG offset, const ULONG len)
 }
 
 
-int FNAME_SDCBUS(SDUnitSwitch)(BOOL test, int group, UBYTE value, APTR buf, struct sdcard_Unit *sdcUnit)
+int FNAME_SDCBUS(SDSCSwitch)(BOOL test, int group, UBYTE value, APTR buf, struct sdcard_Unit *sdcUnit)
 {
     struct TagItem sdcSwitchTags[] =
     {
@@ -418,7 +418,7 @@ int FNAME_SDCBUS(SDUnitSwitch)(BOOL test, int group, UBYTE value, APTR buf, stru
 }
 
 
-int FNAME_SDCBUS(SDUnitChangeFrequency)(struct sdcard_Unit *sdcUnit)
+int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
 {
     unsigned int        timeout;
     struct TagItem sdcChFreqTags[] =
@@ -473,7 +473,7 @@ int FNAME_SDCBUS(SDUnitChangeFrequency)(struct sdcard_Unit *sdcUnit)
 
             timeout = 4;
             while (timeout-- > 0) {
-                if (FNAME_SDCBUS(SDUnitSwitch)(TRUE, 0, 1, sdcardRespBuf, sdcUnit) != -1)
+                if (FNAME_SDCBUS(SDSCSwitch)(TRUE, 0, 1, sdcardRespBuf, sdcUnit) != -1)
                 {
                     /* The high-speed function is busy.  Try again */
                     if (!(AROS_BE2LONG(sdcardRespBuf[7]) & SD_SCR_HIGHSPEED))
@@ -495,7 +495,7 @@ int FNAME_SDCBUS(SDUnitChangeFrequency)(struct sdcard_Unit *sdcUnit)
                     return 0;
                 }
 
-                if (FNAME_SDCBUS(SDUnitSwitch)(FALSE, 0, 1, sdcardRespBuf, sdcUnit) != -1)
+                if (FNAME_SDCBUS(SDSCSwitch)(FALSE, 0, 1, sdcardRespBuf, sdcUnit) != -1)
                 {
                     if ((AROS_BE2LONG(sdcardRespBuf[4]) & 0x0F000000) == 0x01000000)
                        sdcUnit->sdcu_Flags |= AF_HighSpeed;

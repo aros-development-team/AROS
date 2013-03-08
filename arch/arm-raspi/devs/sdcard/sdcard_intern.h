@@ -81,7 +81,7 @@ struct sdcard_Bus
     ULONG                               sdcb_Capabilities;
     ULONG                               sdcb_Version;
     ULONG                               sdcb_ClockMax;
-    ULONG                               sdcb_Power;
+    ULONG                               sdcb_Power;          /* Supported Voltages */
 
     ULONG                               sdcb_IntrMask;
 
@@ -155,6 +155,7 @@ struct sdcard_Unit
 #define AB_HighCapacity                 27
 #define AB_MMC                          26
 #define AB_4bitData                     25
+#define AB_SPI                          24
 
 #define AF_MediaPresent                 (1 << AB_MediaPresent)
 #define AF_MediaChanged                 (1 << AB_MediaChanged)
@@ -162,6 +163,7 @@ struct sdcard_Unit
 #define AF_HighCapacity                 (1 << AB_HighCapacity)
 #define AF_MMC                          (1 << AB_MMC)
 #define AF_4bitData                     (1 << AB_4bitData)
+#define AF_SPI                          (1 << AB_SPI)
 
 #define Unit(io)                        ((struct sdcard_Unit *)(io)->io_Unit)
 #define IOStdReq(io)                    ((struct IOStdReq *)io)
@@ -184,7 +186,8 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *);
 
 BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *);
 
-int FNAME_SDCBUS(SDUnitChangeFrequency)(struct sdcard_Unit *);
+int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *);
+//int FNAME_SDCBUS(MMCChangeFrequency)(struct sdcard_Unit *);
 
 BOOL FNAME_SDC(HandleIO)(struct IORequest *io);
 
