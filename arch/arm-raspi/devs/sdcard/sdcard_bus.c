@@ -173,7 +173,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 
         *(volatile ULONG *)GPCLR0 = 1<<16; // Turn Activity LED ON
 
-        FNAME_SDCBUS(MMIOWriteByte)(SDHCI_TIMEOUT_CONTROL, 0xe, bus);
+        FNAME_SDCBUS(MMIOWriteByte)(SDHCI_TIMEOUT_CONTROL, SDHCI_TIMEOUT_MAX, bus);
 
         FNAME_SDCBUS(MMIOWriteWord)(SDHCI_BLOCK_SIZE, 1 << bus->sdcb_SectorShift, bus);
         if ((sdDataLen >> bus->sdcb_SectorShift) > 1)
@@ -241,7 +241,11 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         }
         else
         {
-            D(bug("[SDCard--] %s: Failed? [status = %08x]\n", __PRETTY_FUNCTION__, sdStatus));
+            D(bug("[SDCard--] %s: Failed? [   status = %08x]\n", __PRETTY_FUNCTION__, sdStatus));
+            if (sdStatus & SDHCI_INT_ACMD12ERR)
+            {
+                D(bug("[SDCard--] %s:         [acmd12err = %04x    ]\n", __PRETTY_FUNCTION__, FNAME_SDCBUS(MMIOReadWord)(SDHCI_ACMD12_ERR, bus)));
+            }
             ret = -1;
         }
 
