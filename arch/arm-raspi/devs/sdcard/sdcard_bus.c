@@ -120,7 +120,6 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
                 break;
     }
     sdcClkDiv >>= 1;
-    D(bug("div = %d\n", sdcClkDiv));
 
     sdcClkCtrl = (sdcClkDiv & SDHCI_DIV_MASK) << SDHCI_DIVIDER_SHIFT;
     sdcClkCtrl |= ((sdcClkDiv & SDHCI_DIV_HI_MASK) >> SDHCI_DIV_MASK_LEN) << SDHCI_DIVIDER_HI_SHIFT;
@@ -155,8 +154,7 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
 
 void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, struct sdcard_Bus *bus)
 {
-    ULONG sdcReg;
-    UBYTE lvlCur;
+    UBYTE sdcReg, lvlCur;
 
     if (supportedlvls & (MMC_VDD_320_330|MMC_VDD_330_340))
         sdcReg = SDHCI_POWER_330;
