@@ -110,11 +110,11 @@ void FNAME_SDCBUS(SoftReset)(UBYTE mask, struct sdcard_Bus *bus)
 
 void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
 {
-    unsigned int        sdcReg, sdcClkDiv, timeout, timeout_udelay;
+    ULONG       sdcClkDiv, timeout, timeout_udelay;
+    UWORD       sdcClkCtrlCur, sdcClkCtrl;
 
-    FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, 0, bus);
+    sdcClkCtrlCur = FNAME_SDCBUS(MMIOReadWord)(SDHCI_CLOCK_CONTROL, bus);
 
-    D(bug("[SDCard--] %s: Setting Clock... ", __PRETTY_FUNCTION__));
     for (sdcClkDiv = 2; sdcClkDiv < V300_MAXCLKDIV; sdcClkDiv += 2) {
         if ((bus->sdcb_ClockMax / sdcClkDiv) <= speed)
                 break;
@@ -122,22 +122,35 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
     sdcClkDiv >>= 1;
     D(bug("div = %d\n", sdcClkDiv));
 
-    sdcReg = (sdcClkDiv & SDHCI_DIV_MASK) << SDHCI_DIVIDER_SHIFT;
-    sdcReg |= ((sdcClkDiv & SDHCI_DIV_HI_MASK) >> SDHCI_DIV_MASK_LEN) << SDHCI_DIVIDER_HI_SHIFT;
-    FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, (sdcReg | SDHCI_CLOCK_INT_EN), bus);
+    sdcClkCtrl = (sdcClkDiv & SDHCI_DIV_MASK) << SDHCI_DIVIDER_SHIFT;
+    sdcClkCtrl |= ((sdcClkDiv & SDHCI_DIV_HI_MASK) >> SDHCI_DIV_MASK_LEN) << SDHCI_DIVIDER_HI_SHIFT;
 
-    timeout = 20000;
-    while (!((sdcReg = FNAME_SDCBUS(MMIOReadWord)(SDHCI_CLOCK_CONTROL, bus)) & SDHCI_CLOCK_INT_STABLE)) {
-        if (timeout == 0) {
-            D(bug("[SDCard--] %s: SDHCI Clock failed to stabilise\n", __PRETTY_FUNCTION__));
-            break;
+    if (sdcClkCtrl != (sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_CARD_EN)))
+    {
+        FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, 0, bus);
+
+        D(bug("[SDCard--] %s: CLOCK_CONTROL (current) = 0x%04x\n", __PRETTY_FUNCTION__, sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_CARD_EN)));
+        D(bug("[SDCard--] %s: CLOCK_CONTROL (new)     = 0x%04x (div %d)\n", __PRETTY_FUNCTION__, sdcClkCtrl, sdcClkDiv));
+
+        FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, (sdcClkCtrl | SDHCI_CLOCK_INT_EN), bus);
+
+        timeout = 20000;
+        while (!((sdcClkCtrl = FNAME_SDCBUS(MMIOReadWord)(SDHCI_CLOCK_CONTROL, bus)) & SDHCI_CLOCK_INT_STABLE)) {
+            if (timeout == 0) {
+                D(bug("[SDCard--] %s: SDHCI Clock failed to stabilise\n", __PRETTY_FUNCTION__));
+                break;
+            }
+            timeout_udelay = timeout - 1000;
+            for (; timeout > timeout_udelay; timeout --) asm volatile("mov r0, r0\n");
         }
-        timeout_udelay = timeout - 1000;
-        for (; timeout > timeout_udelay; timeout --) asm volatile("mov r0, r0\n");
     }
+    else
+        if (sdcClkCtrlCur & SDHCI_CLOCK_CARD_EN)
+            return;
+
     D(bug("[SDCard--] %s: Enabling clock...\n", __PRETTY_FUNCTION__));
-    sdcReg |= SDHCI_CLOCK_CARD_EN;
-    FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, sdcReg, bus);
+    sdcClkCtrl |= SDHCI_CLOCK_CARD_EN;
+    FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, sdcClkCtrl, bus);
 }
 
 void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, struct sdcard_Bus *bus)
@@ -240,7 +253,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 
         FNAME_SDCBUS(MMIOWriteByte)(SDHCI_TIMEOUT_CONTROL, SDHCI_TIMEOUT_MAX, bus);
 
-        FNAME_SDCBUS(MMIOWriteWord)(SDHCI_BLOCK_SIZE, SDHCI_MAKE_BLCKSIZE(7, (1 << bus->sdcb_SectorShift)), bus);
+        FNAME_SDCBUS(MMIOWriteWord)(SDHCI_BLOCK_SIZE, SDHCI_MAKE_BLCKSIZE(7, ((sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen)), bus);
         if ((sdDataLen >> bus->sdcb_SectorShift) > 1)
         {
             sdcTransMode |= SDHCI_TRANSMOD_MULTI;
