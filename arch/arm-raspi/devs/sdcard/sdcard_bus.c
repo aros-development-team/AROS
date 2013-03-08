@@ -267,7 +267,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         if (sdDataFlags == MMC_DATA_READ)
             sdcTransMode |= SDHCI_TRANSMOD_READ;
 
-        D(bug("[SDCard--] %s: Mode %08x, BlockSize %d, Count %d\n", __PRETTY_FUNCTION__, sdcTransMode, 1 << bus->sdcb_SectorShift, sdDataLen >> bus->sdcb_SectorShift));
+        D(bug("[SDCard--] %s: Mode %08x, BlockSize %d, Count %d\n", __PRETTY_FUNCTION__, sdcTransMode, ((sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen), (((sdDataLen >> bus->sdcb_SectorShift) > 0) ? (sdDataLen >> bus->sdcb_SectorShift) : 1)));
     }
 
     FNAME_SDCBUS(MMIOWriteLong)(SDHCI_ARGUMENT, sdArg, bus);
