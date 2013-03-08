@@ -48,7 +48,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
 {
     struct SDCardBase     *SDCardBase = bus->sdcb_DeviceBase;
     struct sdcard_Unit    *sdcUnit = NULL;
-    unsigned int        timeout = 1000000, timeout_udelay = 2000;
+    unsigned int        sdcCardPower, sdcReg, timeout = 1000000, timeout_udelay = 2000;
     struct DeviceNode   *devnode;
     BOOL sdcHighCap = FALSE;
     struct TagItem sdcRegTags[] =
@@ -126,8 +126,27 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
             {
                 D(bug("[SDCard>>] %s: Card OCR = %08x\n", __PRETTY_FUNCTION__, (sdcRegTags[3].ti_Data & 0xFFFF00)));
 
+                sdcCardPower = LIBBASE->sdcard_Bus->sdcb_Power & (sdcRegTags[3].ti_Data & 0xFFFF00);
+
                 if (sdcRegTags[3].ti_Data & OCR_HCS)
                     sdcHighCap = TRUE;
+               
+                if (sdcCardPower & (MMC_VDD_320_330|MMC_VDD_330_340))
+                    sdcReg = SDHCI_POWER_330;
+                else if (sdcCardPower & (MMC_VDD_290_300|MMC_VDD_300_310))
+                    sdcReg = SDHCI_POWER_300;
+                else if (sdcCardPower & MMC_VDD_165_195)
+                    sdcReg = SDHCI_POWER_180;
+                else
+                    sdcReg = 0;
+
+                if (sdcReg != (FNAME_SDCBUS(MMIOReadByte)(SDHCI_POWER_CONTROL, SDCardBase->sdcard_Bus) & ~SDHCI_POWER_ON))
+                {
+                    D(bug("[SDCard>>] %s: Changing Power Lvl to %x...", __PRETTY_FUNCTION__, sdcReg));
+                    FNAME_SDCBUS(MMIOWriteByte)(SDHCI_POWER_CONTROL, sdcReg, SDCardBase->sdcard_Bus);
+                    sdcReg |= SDHCI_POWER_ON;
+                    FNAME_SDCBUS(MMIOWriteByte)(SDHCI_POWER_CONTROL, sdcReg, SDCardBase->sdcard_Bus);
+                }
 
                 D(bug("[SDCard>>] %s: Card is now operating in Identification Mode\n", __PRETTY_FUNCTION__));
 
@@ -166,6 +185,8 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
                             sdcUnit->sdcu_UnitNum = bus->sdcb_UnitCnt++;
                             bus->sdcb_Units[sdcUnit->sdcu_UnitNum] = sdcUnit;
                             sdcUnit->sdcu_CardRCA = (sdcRegTags[3].ti_Data >> 16) & 0xFFFF;
+                            sdcUnit->sdcu_CardPower = sdcCardPower;
+
                             D(bug("[RCA %d]\n", sdcUnit->sdcu_CardRCA));
 
                             sdcRegTags[0].ti_Data = MMC_CMD_SEND_CSD;
@@ -347,8 +368,7 @@ static int FNAME_SDC(Scan)(struct SDCardBase *SDCardBase)
 	    SDHCI_INT_END_BIT | SDHCI_INT_CRC | SDHCI_INT_TIMEOUT |
 	    SDHCI_INT_CARD_REMOVE | SDHCI_INT_CARD_INSERT |
 	    SDHCI_INT_DATA_AVAIL | SDHCI_INT_SPACE_AVAIL |
-	    SDHCI_INT_DMA_END | SDHCI_INT_DATA_END | SDHCI_INT_RESPONSE |
-	    SDHCI_INT_ACMD12ERR;
+	    SDHCI_INT_DATA_END | SDHCI_INT_RESPONSE;
 
     FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, 0, SDCardBase->sdcard_Bus);
 
@@ -379,12 +399,12 @@ static int FNAME_SDC(Scan)(struct SDCardBase *SDCardBase)
 
     D(bug("[SDCard--] %s: Setting Power Lvl... ", __PRETTY_FUNCTION__));
 
-    if (SDCardBase->sdcard_Bus->sdcb_Power & MMC_VDD_165_195)
-        sdcReg = SDHCI_POWER_180;
+    if (SDCardBase->sdcard_Bus->sdcb_Power & (MMC_VDD_320_330|MMC_VDD_330_340))
+        sdcReg = SDHCI_POWER_330;
     else if (SDCardBase->sdcard_Bus->sdcb_Power & (MMC_VDD_290_300|MMC_VDD_300_310))
         sdcReg = SDHCI_POWER_300;
-    else if (SDCardBase->sdcard_Bus->sdcb_Power & (MMC_VDD_320_330|MMC_VDD_330_340))
-        sdcReg = SDHCI_POWER_330;
+    else if (SDCardBase->sdcard_Bus->sdcb_Power & MMC_VDD_165_195)
+        sdcReg = SDHCI_POWER_180;
     else
         sdcReg = 0;
 
@@ -396,7 +416,6 @@ static int FNAME_SDC(Scan)(struct SDCardBase *SDCardBase)
     D(bug("[SDCard--] %s: Setting Min Buswidth...\n", __PRETTY_FUNCTION__));
     sdcReg = FNAME_SDCBUS(MMIOReadByte)(SDHCI_HOST_CONTROL, SDCardBase->sdcard_Bus);
     sdcReg &= ~(SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD);
-    sdcReg |= SDHCI_HCTRL_4BITBUS;
     FNAME_SDCBUS(MMIOWriteByte)(SDHCI_HOST_CONTROL, sdcReg, SDCardBase->sdcard_Bus);
 
     D(bug("[SDCard--] %s: Masking chipset Interrupts...\n", __PRETTY_FUNCTION__));
@@ -435,6 +454,7 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
 
     D(bug("[SDCard--] %s: MemPool @ %p\n", __PRETTY_FUNCTION__, LIBBASE->sdcard_MemPool));
 
+#if (0)
     VCMBoxMessage[0] = 8 * 4;
     VCMBoxMessage[1] = VCTAG_REQ;
     VCMBoxMessage[2] = VCTAG_GETPOWER;
@@ -473,6 +493,7 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
             return FALSE;
         }
     }
+#endif
 
     VCMBoxMessage[0] = 8 * 4;
     VCMBoxMessage[1] = VCTAG_REQ;

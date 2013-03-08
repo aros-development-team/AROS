@@ -103,6 +103,8 @@ struct sdcard_Unit
     ULONG                               sdcu_UnitNum;          /* Unit number as coded by device */
     ULONG                               sdcu_CardRCA;
 
+    ULONG                               sdcu_CardPower;        /* voltages supported by card/controller */
+
     UQUAD                               sdcu_Capacity;         /* Real capacity of device */
 
 /* OLD DEFINES */
