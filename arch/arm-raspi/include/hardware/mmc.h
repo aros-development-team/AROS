@@ -6,6 +6,13 @@
 #ifndef _MMC_H
 #define _MMC_H
 
+#define MMC_STATUS_MASK                 ~(0x0206BF7F)
+#define MMC_STATUS_RDY_FOR_DATA         (1 << 8)
+#define MMC_STATUS_ERROR                (1 << 19)
+
+#define MMC_STATUS_STATE_MASK           (0xF << 9)
+#define MMC_STATE_PRG                   (7 << 9)
+
 /* MMC Command Responses */
 
 #define MMC_RSP_PRESENT                 (1 << 0)
