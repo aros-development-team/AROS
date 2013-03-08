@@ -43,7 +43,7 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)IOStdReq(io)->io_Unit;
 
-    if (!(unit->sdcu_Flags & AF_MediaPresent))
+    if (!(unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent))
     {
         D(bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         io->io_Error = TDERR_DiskChanged;
@@ -95,7 +95,7 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)IOStdReq(io)->io_Unit;
 
-    if (!(unit->sdcu_Flags & AF_MediaPresent))
+    if (!(unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent))
     {
         D(bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         io->io_Error = TDERR_DiskChanged;
@@ -142,7 +142,7 @@ static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)IOStdReq(io)->io_Unit;
 
-    if (!(unit->sdcu_Flags & AF_MediaPresent))
+    if (!(unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent))
     {
         D(bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         io->io_Error = TDERR_DiskChanged;
@@ -195,7 +195,7 @@ static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)IOStdReq(io)->io_Unit;
 
-    if (!(unit->sdcu_Flags & AF_MediaPresent))
+    if (!(unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent))
     {
         D(bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         io->io_Error = TDERR_DiskChanged;
@@ -252,11 +252,11 @@ static void cmd_Flush(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
     Forbid();
 
-//    while((msg = (struct IORequest *)GetMsg((struct MsgPort *)bus->sdb_MsgPort)))
-//    {
-//        msg->io_Error = IOERR_ABORTED;
-//        ReplyMsg((struct Message *)msg);
-//    }
+    while((msg = (struct IORequest *)GetMsg((struct MsgPort *)((struct sdcard_Unit *)io->io_Unit)->sdcu_Bus->sdcb_MsgPort)))
+    {
+        msg->io_Error = IOERR_ABORTED;
+        ReplyMsg((struct Message *)msg);
+    }
 
     Permit();
 }
@@ -272,7 +272,7 @@ static void cmd_TestChanged(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
     D(bug("[SDCard%02ld] cmd_TestChanged()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum));
 
-    if (unit->sdcu_Flags & AF_MediaChanged)
+    if (unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaChanged)
     {
         unit->sdcu_ChangeNum++;
 
@@ -288,7 +288,7 @@ static void cmd_TestChanged(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
             Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
         }
 
-        unit->sdcu_Flags &= ~AF_MediaChanged;
+        unit->sdcu_Bus->sdcb_BusFlags &= ~AF_Bus_MediaChanged;
 
         Permit();
     }
@@ -325,7 +325,7 @@ static void cmd_ChangeState(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
     D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    if (unit->sdcu_Flags & AF_MediaPresent)
+    if (unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent)
         IOStdReq(io)->io_Actual = 0;
     else
         IOStdReq(io)->io_Actual = 1;
@@ -419,8 +419,6 @@ static void cmd_GetGeometry(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 static void cmd_DirectSCSI(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
-    struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
-
     D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     IOStdReq(io)->io_Actual = sizeof(struct SCSICmd);

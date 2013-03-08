@@ -168,7 +168,7 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
         {SDCARD_TAG_ARG,         block},
         {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
         {SDCARD_TAG_RSP,         0},
-        {SDCARD_TAG_DATA,        buffer},
+        {SDCARD_TAG_DATA,        (IPTR)buffer},
         {SDCARD_TAG_DATALEN,     count * (1 << unit->sdcu_Bus->sdcb_SectorShift)},
         {SDCARD_TAG_DATAFLAGS,   MMC_DATA_READ},
         {TAG_DONE,            0}
@@ -181,7 +181,7 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
     if (count > 1)
         sdcReadTags[0].ti_Data = MMC_CMD_READ_MULTIPLE_BLOCK;
 
-    if (!(unit->sdcu_Flags & AF_HighCapacity))
+    if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
         sdcReadTags[1].ti_Data <<= unit->sdcu_Bus->sdcb_SectorShift;
 
     D(bug("[SDCard%02ld] %s: Sending CMD %d, block 0x%p, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,

@@ -48,7 +48,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
 {
     struct SDCardBase     *SDCardBase = bus->sdcb_DeviceBase;
     struct sdcard_Unit    *sdcUnit = NULL;
-    unsigned int        sdcCardPower, sdcReg, timeout = 1000000, timeout_udelay = 2000;
+    unsigned int        sdcCardPower, timeout = 1000000, timeout_udelay = 2000;
     struct DeviceNode   *devnode;
     BOOL sdcHighCap = FALSE;
     struct TagItem sdcRegTags[] =
@@ -62,7 +62,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
 
     D(bug("[SDCard>>] %s()\n", __PRETTY_FUNCTION__));
 
-    if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 40L)) != NULL)
+    if ((ExpansionBase = OpenLibrary("expansion.library", 40L)) != NULL)
     {
         IPTR pp[24];
         ULONG response136[4] = {0, 0, 0, 0};
@@ -140,7 +140,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
                 sdcRegTags[0].ti_Data = MMC_CMD_ALL_SEND_CID;
                 sdcRegTags[1].ti_Data = 0;
                 sdcRegTags[2].ti_Data = MMC_RSP_R2;
-                sdcRegTags[3].ti_Data = response136;
+                sdcRegTags[3].ti_Data = (IPTR)response136;
                 if (FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)
                 {
                     if (sdcRegTags[3].ti_Data)
@@ -161,7 +161,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
                     sdcRegTags[0].ti_Data = SD_CMD_SEND_RELATIVE_ADDR;
                     sdcRegTags[1].ti_Data = 0;
                     sdcRegTags[2].ti_Data = MMC_RSP_R6;
-                    sdcRegTags[3].ti_Data = NULL;
+                    sdcRegTags[3].ti_Data = 0;
                     if (FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)
                     {
                         if ((sdcUnit = AllocVecPooled(SDCardBase->sdcard_MemPool, sizeof(struct sdcard_Unit))) != NULL)
@@ -177,7 +177,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
                             sdcRegTags[0].ti_Data = MMC_CMD_SEND_CSD;
                             sdcRegTags[1].ti_Data = sdcUnit->sdcu_CardRCA << 16;
                             sdcRegTags[2].ti_Data = MMC_RSP_R2;
-                            sdcRegTags[3].ti_Data = response136;
+                            sdcRegTags[3].ti_Data = (IPTR)response136;
                             D(bug("[SDCard%02ld] %s: Querying Card Specific Data [%08x] ...\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcRegTags[1].ti_Data));
                             if (FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)
                             {
@@ -189,11 +189,11 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
                                     D(bug("[SDCard%02ld] %s:   =================================\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
                                     D(bug("[SDCard%02ld] %s:           CSD_STRUCTURE : %x ", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, __csdstruct));
 
-                                    sdcUnit->sdcu_Read32        = FNAME_SDCIO(ReadSector32);
-                                    sdcUnit->sdcu_Write32       = FNAME_SDCIO(WriteSector32);
-                                    sdcUnit->sdcu_Flags         = AF_MediaPresent;
+                                    sdcUnit->sdcu_Read32                = FNAME_SDCIO(ReadSector32);
+                                    sdcUnit->sdcu_Write32               = FNAME_SDCIO(WriteSector32);
+                                    sdcUnit->sdcu_Bus->sdcb_BusFlags    = AF_Bus_MediaPresent;
                                     if (sdcHighCap)
-                                        sdcUnit->sdcu_Flags     |= AF_HighCapacity;
+                                        sdcUnit->sdcu_Flags     |= AF_Card_HighCapacity;
 
                                     switch (__csdstruct)
                                     {
@@ -213,7 +213,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
                                             pp[DE_SIZEBLOCK + 4] = 2 << (10 - 1);
                                             pp[DE_HIGHCYL + 4] = ((1 + FNAME_SDCBUS(Rsp136Unpack)(response136, 48, 22)) * (2 << (9 - 1)));
 
-                                            sdcUnit->sdcu_Flags         |= AF_MMC;
+                                            sdcUnit->sdcu_Flags         |= AF_Card_MMC;
 
                                             sdcUnit->sdcu_Read64        = FNAME_SDCIO(ReadSector64);
                                             sdcUnit->sdcu_Write64       = FNAME_SDCIO(WriteSector64);
@@ -390,8 +390,8 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
 
     VCMBoxMessage[7] = 0; // terminate tag
 
-    VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, VCMBoxMessage);
-    if (VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage)
+    VCMBoxWrite((APTR)VCMB_BASE, VCMB_PROPCHAN, VCMBoxMessage);
+    if (VCMBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage)
     {
         D(bug("[SDCard--] %s: Failed to read controller's Power state\n", __PRETTY_FUNCTION__));
         return FALSE;
@@ -411,8 +411,8 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
 
         VCMBoxMessage[7] = 0; // terminate tag
 
-        VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, VCMBoxMessage);
-        if ((VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage) || (!(VCMBoxMessage[6] & VCPOWER_STATE_ON)))
+        VCMBoxWrite((APTR)VCMB_BASE, VCMB_PROPCHAN, VCMBoxMessage);
+        if ((VCMBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage) || (!(VCMBoxMessage[6] & VCPOWER_STATE_ON)))
         {
             D(bug("[SDCard--] %s: Failed to power on controller\n", __PRETTY_FUNCTION__));
             return FALSE;
@@ -430,8 +430,8 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
 
     VCMBoxMessage[7] = 0; // terminate tag
 
-    VCMBoxWrite(VCMB_BASE, VCMB_PROPCHAN, VCMBoxMessage);
-    if (VCMBoxRead(VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage)
+    VCMBoxWrite((APTR)VCMB_BASE, VCMB_PROPCHAN, VCMBoxMessage);
+    if (VCMBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage)
     {
         D(bug("[SDCard--] %s: Failed to determine Max SDHC Clock\n", __PRETTY_FUNCTION__));
         return FALSE;
@@ -440,7 +440,7 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
     if ((LIBBASE->sdcard_Bus = AllocPooled(LIBBASE->sdcard_MemPool, sizeof(struct sdcard_Bus))) != NULL)
     {
         LIBBASE->sdcard_Bus->sdcb_DeviceBase = LIBBASE;
-        LIBBASE->sdcard_Bus->sdcb_IOBase = ARASAN_BASE;
+        LIBBASE->sdcard_Bus->sdcb_IOBase = (APTR)ARASAN_BASE;
         LIBBASE->sdcard_Bus->sdcb_SectorShift = 9;
 
         LIBBASE->sdcard_Bus->sdcb_ClockMax = VCMBoxMessage[6];
@@ -473,8 +473,6 @@ static int FNAME_SDC(Open)
     ULONG flags
 )
 {
-    unsigned int        sdcReg = 0, sdcClkDiv, timeout = 10000, timeout_udelay;
-
     D(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
 
     /* Assume it failed */
@@ -498,7 +496,7 @@ static int FNAME_SDC(Open)
             D(bug("[SDCard%02ld] %s: Selected card with RCA %d\n", unitnum, __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_Units[unitnum]->sdcu_CardRCA));
             D(bug("[SDCard%02ld] %s: Card is now operating in Transfer Mode\n", unitnum, __PRETTY_FUNCTION__));
 
-            if (!(((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_HighCapacity))
+            if (!(((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_HighCapacity))
             {
                 sdcOpenTags[0].ti_Data = MMC_CMD_SET_BLOCKLEN;
                 sdcOpenTags[1].ti_Data = 1 << ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus->sdcb_SectorShift;
@@ -514,7 +512,7 @@ static int FNAME_SDC(Open)
                 }
             }
 
-            if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_MMC)
+            if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_MMC)
             {
             }
             else

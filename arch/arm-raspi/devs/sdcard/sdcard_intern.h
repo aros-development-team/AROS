@@ -69,7 +69,7 @@ struct sdcard_Bus
     APTR                                sdcb_IOBase;
     ULONG                               sdcb_BusNum;
 
-    UBYTE                               sdcb_BusFlags;       /* Bus flags similar to unit flags */
+    ULONG                               sdcb_BusFlags;       /* Bus flags similar to unit flags */
     UBYTE                               sdcb_TaskSig;        /* Signal used to wake task */
     UBYTE                               sdcb_SectorShift;    /* Sector shift. 9 here is 512 bytes sector */
 
@@ -148,22 +148,24 @@ struct sdcard_Unit
    ULONG               sdcu_cmd_error;
 };
 
-/* Unit internal flags */
-#define AB_MediaPresent                 30     /* media available */
-#define AB_MediaChanged                 29     /* media changed */
-#define AB_HighSpeed                    28
-#define AB_HighCapacity                 27
-#define AB_MMC                          26
-#define AB_4bitData                     25
-#define AB_SPI                          24
+/* Internal flags */
+#define AB_Bus_MediaPresent             30     /* media available */
+#define AB_Bus_MediaChanged             29     /* media changed */
+#define AB_Bus_SPI                      28
 
-#define AF_MediaPresent                 (1 << AB_MediaPresent)
-#define AF_MediaChanged                 (1 << AB_MediaChanged)
-#define AF_HighSpeed                    (1 << AB_HighSpeed)
-#define AF_HighCapacity                 (1 << AB_HighCapacity)
-#define AF_MMC                          (1 << AB_MMC)
-#define AF_4bitData                     (1 << AB_4bitData)
-#define AF_SPI                          (1 << AB_SPI)
+#define AB_Card_HighSpeed               30
+#define AB_Card_HighCapacity            29
+#define AB_Card_MMC                     28
+#define AB_Card_4bitData                27
+
+#define AF_Bus_MediaPresent             (1 << AB_Bus_MediaPresent)
+#define AF_Bus_MediaChanged             (1 << AB_Bus_MediaChanged)
+#define AF_Bus_SPI                      (1 << AB_Bus_SPI)
+
+#define AF_Card_HighSpeed               (1 << AB_Card_HighSpeed)
+#define AF_Card_HighCapacity            (1 << AB_Card_HighCapacity)
+#define AF_Card_4bitData                (1 << AB_Card_4bitData)
+#define AF_Card_MMC                     (1 << AB_Card_MMC)
 
 #define Unit(io)                        ((struct sdcard_Unit *)(io)->io_Unit)
 #define IOStdReq(io)                    ((struct IOStdReq *)io)
