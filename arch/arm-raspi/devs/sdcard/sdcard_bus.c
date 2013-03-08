@@ -125,11 +125,11 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
     sdcClkCtrl = (sdcClkDiv & SDHCI_DIV_MASK) << SDHCI_DIVIDER_SHIFT;
     sdcClkCtrl |= ((sdcClkDiv & SDHCI_DIV_HI_MASK) >> SDHCI_DIV_MASK_LEN) << SDHCI_DIVIDER_HI_SHIFT;
 
-    if (sdcClkCtrl != (sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_CARD_EN)))
+    if (sdcClkCtrl != (sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_INT_STABLE|SDHCI_CLOCK_CARD_EN)))
     {
         FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, 0, bus);
 
-        D(bug("[SDCard--] %s: CLOCK_CONTROL (current) = 0x%04x\n", __PRETTY_FUNCTION__, sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_CARD_EN)));
+        D(bug("[SDCard--] %s: CLOCK_CONTROL (current) = 0x%04x\n", __PRETTY_FUNCTION__, sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_INT_STABLE|SDHCI_CLOCK_CARD_EN)));
         D(bug("[SDCard--] %s: CLOCK_CONTROL (new)     = 0x%04x (div %d)\n", __PRETTY_FUNCTION__, sdcClkCtrl, sdcClkDiv));
 
         FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, (sdcClkCtrl | SDHCI_CLOCK_INT_EN), bus);
