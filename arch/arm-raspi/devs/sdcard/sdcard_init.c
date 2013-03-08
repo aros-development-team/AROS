@@ -496,7 +496,29 @@ static int FNAME_SDC(Open)
             D(bug("[SDCard%02ld] %s: Selected card with RCA %d\n", unitnum, __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_Units[unitnum]->sdcu_CardRCA));
             D(bug("[SDCard%02ld] %s: Card is now operating in Transfer Mode\n", unitnum, __PRETTY_FUNCTION__));
 
-            FNAME_SDCBUS(SetClock)(25000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
+            if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_MMC)
+            {
+                if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_HighSpeed)
+                {
+                    if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AB_Card_HighSpeed52)
+                        FNAME_SDCBUS(SetClock)(52000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
+                    else
+                        FNAME_SDCBUS(SetClock)(26000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
+                }
+                else
+                    FNAME_SDCBUS(SetClock)(20000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
+
+                FNAME_SDCBUS(MMCChangeFrequency)((struct sdcard_Unit *)iorq->io_Unit);
+            }
+            else
+            {
+                if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_HighSpeed)
+                    FNAME_SDCBUS(SetClock)(50000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
+                else
+                    FNAME_SDCBUS(SetClock)(25000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
+
+                FNAME_SDCBUS(SDSCChangeFrequency)((struct sdcard_Unit *)iorq->io_Unit);
+            }
 
             if (!(((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_HighCapacity))
             {
@@ -512,14 +534,6 @@ static int FNAME_SDC(Open)
                 {
                     D(bug("[SDCard%02ld] %s: Failed to change Blocklen\n", unitnum, __PRETTY_FUNCTION__));
                 }
-            }
-
-            if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_MMC)
-            {
-            }
-            else
-            {
-                FNAME_SDCBUS(SDSCChangeFrequency)((struct sdcard_Unit *)iorq->io_Unit);
             }
 
             iorq->io_Error = 0;

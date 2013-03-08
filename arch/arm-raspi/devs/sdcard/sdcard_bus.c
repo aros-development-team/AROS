@@ -453,7 +453,6 @@ int FNAME_SDCBUS(SDSCSwitch)(BOOL test, int group, UBYTE value, APTR buf, struct
     return FNAME_SDCBUS(SendCmd)(sdcSwitchTags, sdcUnit->sdcu_Bus);
 }
 
-
 int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
 {
     unsigned int        timeout;
@@ -549,6 +548,11 @@ int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         D(bug("[SDCard%02ld] %s: App Command Failed\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         return -1;
     }
+    return 0;
+}
+
+int FNAME_SDCBUS(MMCChangeFrequency)(struct sdcard_Unit *sdcUnit)
+{
     return 0;
 }
 

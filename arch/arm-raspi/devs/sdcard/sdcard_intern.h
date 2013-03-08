@@ -153,15 +153,17 @@ struct sdcard_Unit
 #define AB_Bus_MediaChanged             29     /* media changed */
 #define AB_Bus_SPI                      28
 
-#define AB_Card_HighSpeed               30
-#define AB_Card_HighCapacity            29
-#define AB_Card_MMC                     28
-#define AB_Card_4bitData                27
+#define AB_Card_HighSpeed52             30
+#define AB_Card_HighSpeed               29
+#define AB_Card_HighCapacity            28
+#define AB_Card_MMC                     27
+#define AB_Card_4bitData                26
 
 #define AF_Bus_MediaPresent             (1 << AB_Bus_MediaPresent)
 #define AF_Bus_MediaChanged             (1 << AB_Bus_MediaChanged)
 #define AF_Bus_SPI                      (1 << AB_Bus_SPI)
 
+#define AF_Card_HighSpeed52             (1 << AB_Card_HighSpeed52)
 #define AF_Card_HighSpeed               (1 << AB_Card_HighSpeed)
 #define AF_Card_HighCapacity            (1 << AB_Card_HighCapacity)
 #define AF_Card_4bitData                (1 << AB_Card_4bitData)
@@ -190,7 +192,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *);
 
 ULONG FNAME_SDCBUS(WaitUnitStatus)(ULONG, struct sdcard_Unit *);
 int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *);
-//int FNAME_SDCBUS(MMCChangeFrequency)(struct sdcard_Unit *);
+int FNAME_SDCBUS(MMCChangeFrequency)(struct sdcard_Unit *);
 
 BOOL FNAME_SDC(HandleIO)(struct IORequest *io);
 
