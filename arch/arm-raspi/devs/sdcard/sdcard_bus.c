@@ -402,7 +402,7 @@ int FNAME_SDCBUS(SDSCSwitch)(BOOL test, int group, UBYTE value, APTR buf, struct
         {SDCARD_TAG_ARG,        0},
         {SDCARD_TAG_RSPTYPE,    MMC_RSP_R1},
         {SDCARD_TAG_RSP,        0},
-        {SDCARD_TAG_DATA,       buf},
+        {SDCARD_TAG_DATA,       (IPTR)buf},
         {SDCARD_TAG_DATALEN,    64},
         {SDCARD_TAG_DATAFLAGS,  MMC_DATA_READ},
         {TAG_DONE,              0}
@@ -441,7 +441,7 @@ int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
     sdcChFreqTags[2].ti_Data = MMC_RSP_R1;
     if (FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1)
     {
-        ULONG   sdcardRespBuf[2] = {0, 0};
+        ULONG   sdcardRespBuf[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
         sdcChFreqTags[0].ti_Data = SD_CMD_APP_SEND_SCR;
         sdcChFreqTags[1].ti_Data = 0;
@@ -452,7 +452,7 @@ int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         do
         {
             sdcChFreqTags[4].ti_Tag = SDCARD_TAG_DATA;
-            sdcChFreqTags[4].ti_Data = sdcardRespBuf;
+            sdcChFreqTags[4].ti_Data = (IPTR)sdcardRespBuf;
             sdcChFreqTags[5].ti_Data = 8;
 
             if (FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1)
@@ -462,7 +462,7 @@ int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         if (timeout > 0)
         {
             if (AROS_BE2LONG(sdcardRespBuf[0]) & SD_SCR_DATA4BIT)
-                sdcUnit->sdcu_Flags |= AF_4bitData;
+                sdcUnit->sdcu_Flags |= AF_Card_4bitData;
 
             /* v1.0 SDCards don't support switching */
             if (((AROS_BE2LONG(sdcardRespBuf[0]) >> 24) & 0xf) < 1)
@@ -498,25 +498,27 @@ int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
                 if (FNAME_SDCBUS(SDSCSwitch)(FALSE, 0, 1, sdcardRespBuf, sdcUnit) != -1)
                 {
                     if ((AROS_BE2LONG(sdcardRespBuf[4]) & 0x0F000000) == 0x01000000)
-                       sdcUnit->sdcu_Flags |= AF_HighSpeed;
+                       sdcUnit->sdcu_Flags |= AF_Card_HighSpeed;
                 }
             }
         }
         else
         {
             D(bug("[SDCard%02ld] %s: Query Failed\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+            return -1;
         }
     }
     else
     {
         D(bug("[SDCard%02ld] %s: App Command Failed\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        return -1;
     }
+    return 0;
 }
 
 void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
 {
     struct SDCardBase *SDCardBase = bus->sdcb_DeviceBase;
-    struct sdcard_Unit *unit;
     struct IORequest *msg;
     ULONG sdcReg;
     ULONG sig;
