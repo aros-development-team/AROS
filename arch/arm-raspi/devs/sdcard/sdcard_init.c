@@ -57,7 +57,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
         {SDCARD_TAG_ARG,         0},
         {SDCARD_TAG_RSPTYPE,     0},
         {SDCARD_TAG_RSP,         0},
-        {TAG_DONE,              0}
+        {TAG_DONE,               0}
     };
 
     D(bug("[SDCard>>] %s()\n", __PRETTY_FUNCTION__));
@@ -145,7 +145,6 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
                 {
                     if (sdcRegTags[3].ti_Data)
                     {
-                        D(bug("[SDCard>>] %s: %08x%08x%08x%08x\n", __PRETTY_FUNCTION__, response136[0], response136[1], response136[2], response136[3]));
                         D(bug("[SDCard>>] %s:   Card Identification Data (CID) Register\n", __PRETTY_FUNCTION__));
                         D(bug("[SDCard>>] %s:   ======================================\n", __PRETTY_FUNCTION__));
                         D(bug("[SDCard>>] %s:           Manuafacturer ID (MID) : %06x\n", __PRETTY_FUNCTION__, FNAME_SDCBUS(Rsp136Unpack)(response136, 120, 8)));
@@ -181,10 +180,11 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
                             D(bug("[SDCard%02ld] %s: Querying Card Specific Data [%08x] ...\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcRegTags[1].ti_Data));
                             if (FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)
                             {
+                                FNAME_SDCBUS(WaitUnitStatus)(1000, sdcUnit);
+
                                 if (sdcRegTags[3].ti_Data)
                                 {
                                     int __csdstruct = FNAME_SDCBUS(Rsp136Unpack)(response136, 126, 2);
-                                    D(bug("[SDCard%02ld] %s: %08x%08x%08x%08x\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, response136[0], response136[1], response136[2], response136[3]));
                                     D(bug("[SDCard%02ld] %s:   Card Specific Data (CSD) Register\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
                                     D(bug("[SDCard%02ld] %s:   =================================\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
                                     D(bug("[SDCard%02ld] %s:           CSD_STRUCTURE : %x ", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, __csdstruct));
