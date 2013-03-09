@@ -47,6 +47,16 @@ struct ELF_ModuleInfo
     struct sheader	  *sh;	 /* ELF section header		   */
 };
 
+/* Structure received as message of EnumerateSymbols hook */
+struct SymbolInfo
+{
+    LONG            si_Size;        /* Size of the structure */
+    CONST_STRPTR    si_ModuleName;
+    CONST_STRPTR    si_SymbolName;
+    APTR            si_SymbolStart;
+    APTR            si_SymbolEnd;
+};
+
 /* Parthenope module debug information (pointed to by KRN_DebugInfo ti_Data)
  *
  * (This structure has the same layout as Parthenope's "module_t")
