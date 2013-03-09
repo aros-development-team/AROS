@@ -151,18 +151,28 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
     FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, sdcClkCtrl, bus);
 }
 
-void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, struct sdcard_Bus *bus)
+void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, BOOL lowest, struct sdcard_Bus *bus)
 {
-    UBYTE sdcReg, lvlCur;
+    UBYTE sdcReg = 0, lvlCur;
 
-    if (supportedlvls & (MMC_VDD_320_330|MMC_VDD_330_340))
-        sdcReg = SDHCI_POWER_330;
-    else if (supportedlvls & (MMC_VDD_290_300|MMC_VDD_300_310))
-        sdcReg = SDHCI_POWER_300;
-    else if (supportedlvls & MMC_VDD_165_195)
-        sdcReg = SDHCI_POWER_180;
+    if (lowest)
+    {
+        if (supportedlvls & MMC_VDD_165_195)
+            sdcReg = SDHCI_POWER_180;
+        else if (supportedlvls & (MMC_VDD_290_300|MMC_VDD_300_310))
+            sdcReg = SDHCI_POWER_300;
+        else if (supportedlvls & (MMC_VDD_320_330|MMC_VDD_330_340))
+            sdcReg = SDHCI_POWER_330;
+    }
     else
-        sdcReg = 0;
+    {
+        if (supportedlvls & (MMC_VDD_320_330|MMC_VDD_330_340))
+            sdcReg = SDHCI_POWER_330;
+        else if (supportedlvls & (MMC_VDD_290_300|MMC_VDD_300_310))
+            sdcReg = SDHCI_POWER_300;
+        else if (supportedlvls & MMC_VDD_165_195)
+            sdcReg = SDHCI_POWER_180;
+    }
 
     lvlCur = FNAME_SDCBUS(MMIOReadByte)(SDHCI_POWER_CONTROL, bus);
     if ((lvlCur & ~SDHCI_POWER_ON) != sdcReg)
@@ -174,7 +184,7 @@ void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, struct sdcard_Bus *bus)
     }
     else
     {
-        if (lvlCur && (!(lvlCur & SDHCI_POWER_ON)))
+        if (!(lvlCur & SDHCI_POWER_ON))
         {
             D(bug("[SDCard--] %s: Enabling Power Lvl (0x%x)\n", __PRETTY_FUNCTION__, lvlCur));
             lvlCur |= SDHCI_POWER_ON;

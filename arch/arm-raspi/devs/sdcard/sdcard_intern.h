@@ -182,7 +182,7 @@ void FNAME_SDCBUS(MMIOWriteLong)(ULONG, ULONG, struct sdcard_Bus *);
 
 void FNAME_SDCBUS(SoftReset)(UBYTE, struct sdcard_Bus *);
 void FNAME_SDCBUS(SetClock)(ULONG, struct sdcard_Bus *);
-void FNAME_SDCBUS(SetPowerLevel)(ULONG, struct sdcard_Bus *);
+void FNAME_SDCBUS(SetPowerLevel)(ULONG, BOOL, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *, ULONG, const ULONG);
 
