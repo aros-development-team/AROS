@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FUNCS       := registermodule unregistermodule decodelocation
+FUNCS       := registermodule unregistermodule decodelocation enumeratesymbolsa
 FILES       := debug_init
 STATICFUNCS := kdofmt kgetchar kmaygetchar kputstr _kprintf kvprintf
 
