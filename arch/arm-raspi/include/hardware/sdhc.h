@@ -52,7 +52,7 @@
 #define SDHCI_HCTRL_4BITBUS             (1 << 1)
 #define SDHCI_HCTRL_HISPD               (1 << 2)
 #define SDHCI_HCTRL_DMA_MASK	        (3 << 3)
-#define SDHCI_HCTRL_SDMA                (0)
+#define SDHCI_HCTRL_SDMA                (0 << 3)
 #define SDHCI_HCTRL_ADMA1               (1 << 3)
 #define SDHCI_HCTRL_ADMA32	        (1 << 4)
 #define SDHCI_HCTRL_ADMA64	        (SDHCI_HCTRL_ADMA1|SDHCI_HCTRL_ADMA32)
@@ -146,8 +146,10 @@
 #define SDHCI_HVERS_SPEC300             (1 << 2)
 
 /* SDCard OCR Values */
+#define OCR_S18R                        (1 << 24) // 1.8v switching
+#define OCR_XPC                         (1 << 28) // SDXC power control
 #define OCR_FASTBOOT                    (1 << 29)
-#define OCR_HCS                         (1 << 30)
+#define OCR_HCS                         (1 << 30) // High-Capacity support
 #define OCR_BUSY                        (1 << 31)
 
 #define SD_SCR_HIGHSPEED                (1 << 17)
