@@ -47,13 +47,19 @@ def loadsymbolinformation():
     return modules
 
 def addmodulespec(line, module, output):
-    if (line[0] != 'c'):
-        if (module.id == -1):
-            module.id = addmodulespec.nextmoduleid
-            addmodulespec.nextmoduleid += 1
-            output.write("ob=(" + str(module.id) + ") " + module.name + os.linesep)
-        else:
-            output.write("ob=(" + str(module.id) + ")" + os.linesep)
+    if (line[0] == 'c'):
+        prefix="c"
+    else:
+        prefix=""
+
+    if (module.id == -1):
+        module.id = addmodulespec.nextmoduleid
+        addmodulespec.nextmoduleid += 1
+        modulename = " " + module.name
+    else:
+        modulename = ""
+
+    output.write(prefix + "ob=(" + str(module.id) + ")" + modulename + os.linesep)
 
 def main():
 
