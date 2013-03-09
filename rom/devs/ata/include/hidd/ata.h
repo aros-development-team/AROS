@@ -56,9 +56,23 @@ typedef enum
    AB_XFER_UDMA5,
    AB_XFER_UDMA6,
 
-   AB_XFER_NUM
+   AB_XFER_48BIT = 27, /* LBA48         */
+   AB_XFER_RWMULTI,    /* Multisector   */
+   AB_XFER_PACKET,     /* ATAPI         */
+   AB_XFER_LBA,        /* LBA28         */
+   AB_XFER_DMA,        /* DMA is in use */
 } ata_XferMode;
 
+#define AF_XFER_PIO(x)  (1<<(AB_XFER_PIO0+(x)))
+#define AF_XFER_MDMA(x) (1<<(AB_XFER_MDMA0+(x)))
+#define AF_XFER_UDMA(x) (1<<(AB_XFER_UDMA0+(x)))
+#define AF_XFER_48BIT   (1<<(AB_XFER_48BIT))
+#define AF_XFER_RWMULTI (1<<(AB_XFER_RWMULTI))
+#define AF_XFER_PACKET  (1<<(AB_XFER_PACKET))
+#define AF_XFER_LBA     (1<<(AB_XFER_LBA))
+#define AF_XFER_DMA     (1<<(AB_XFER_DMA))
+
 #include <interface/Hidd_ATABus.h>
+#include <interface/Hidd_ATAUnit.h>
 
 #endif

@@ -112,10 +112,13 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 /* Keep order the same as order of IDs in struct ataBase! */
 static CONST_STRPTR const attrBaseIDs[] =
 {
+    IID_Hidd_ATAUnit,
     IID_HW,
     IID_Hidd_ATABus,
     NULL
 };
+
+#define ATA_METHOD_ID_START 1
 
 /*
     Here shall we start. Make function static as it shouldn't be visible from
@@ -142,11 +145,11 @@ static int ata_init(struct ataBase *ATABase)
 
     D(bug("[ATA--] ata_init: MemPool @ %p\n", ATABase->ata_MemPool));
 
-    if (OOP_ObtainAttrBasesArray(&ATABase->hwAttrBase, attrBaseIDs))
+    if (OOP_ObtainAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs))
         return FALSE;
 
     /* This is our own method base, so no check needed */
-    if (OOP_ObtainMethodBasesArray(&ATABase->hwMethodBase, attrBaseIDs))
+    if (OOP_ObtainMethodBasesArray(&ATABase->hwMethodBase, &attrBaseIDs[ATA_METHOD_ID_START]))
         return FALSE;
 
     hwRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);

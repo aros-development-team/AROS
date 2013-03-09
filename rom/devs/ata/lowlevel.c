@@ -117,37 +117,6 @@ static void ata_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
         str2[i] = '\0';
 }
 
-/*
- * a STUB function for commands not supported by this particular device
- */
-static BYTE ata_STUB(struct ata_Unit *au)
-{
-    DERROR(bug("[ATA%02ld] CALLED STUB FUNCTION (GENERIC). THIS OPERATION IS NOT "
-        "SUPPORTED BY DEVICE\n", au->au_UnitNum));
-    return CDERR_NOCMD;
-}
-
-static BYTE ata_STUB_IO32(struct ata_Unit *au, ULONG blk, ULONG len,
-    APTR buf, ULONG* act)
-{
-    DERROR(bug("[ATA%02ld] CALLED STUB FUNCTION (IO32). THIS OPERATION IS NOT "
-        "SUPPORTED BY DEVICE\n", au->au_UnitNum));
-    return CDERR_NOCMD;
-}
-
-static BYTE ata_STUB_IO64(struct ata_Unit *au, UQUAD blk, ULONG len,
-    APTR buf, ULONG* act)
-{
-    DERROR(bug("[ATA%02ld] CALLED STUB FUNCTION -- IO ACCESS TO BLOCK %08lx:%08lx, LENGTH %08lx. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum, (blk >> 32), (blk & 0xffffffff), len));
-    return CDERR_NOCMD;
-}
-
-static BYTE ata_STUB_SCSI(struct ata_Unit *au, struct SCSICmd* cmd)
-{
-    DERROR(bug("[ATA%02ld] CALLED STUB FUNCTION. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum));
-    return CDERR_NOCMD;
-}
-
 static inline struct ata_Unit* ata_GetSelectedUnit(struct ata_Bus* bus)
 {
     return bus->ab_SelectedUnit;
@@ -922,7 +891,7 @@ static BYTE ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
 /*
  * Initial device configuration that suits *all* cases
  */
-BOOL ata_init_unit(struct ata_Bus *bus, struct ata_Unit *unit, UBYTE u)
+void ata_init_unit(struct ata_Bus *bus, struct ata_Unit *unit, UBYTE u)
 {
     struct ataBase *ATABase = bus->ab_Base;
     OOP_Object *obj = OOP_OBJECT(ATABase->busClass, bus);
@@ -934,32 +903,11 @@ BOOL ata_init_unit(struct ata_Bus *bus, struct ata_Unit *unit, UBYTE u)
 
     DINIT(bug("[ATA%02u] ata_init_unit: bus %u unit %d\n", unit->au_UnitNum, bus->ab_BusNum, u));
 
-    unit->au_Drive = AllocPooled(bus->ab_Base->ata_MemPool, sizeof(struct DriveIdent));
-    if (!unit->au_Drive)
-        return FALSE;
-
     /* Set PIO transfer functions, either 16 or 32 bits */
     if (ATABase->ata_32bit && OOP_GET(obj, aHidd_ATABus_Use32Bit))
         Unit_Enable32Bit(unit);
     else
         Unit_Disable32Bit(unit);
-
-    unit->au_SectorShift= 9;    /* this really has to be set here. */
-
-    NEWLIST(&unit->au_SoftList);
-
-    /*
-     * since the stack is always handled by caller
-     * it's safe to stub all calls with one function
-     */
-    unit->au_Read32                 = ata_STUB_IO32;
-    unit->au_Read64                 = ata_STUB_IO64;
-    unit->au_Write32                = ata_STUB_IO32;
-    unit->au_Write64                = ata_STUB_IO64;
-    unit->au_Eject                  = ata_STUB;
-    unit->au_DirectSCSI             = ata_STUB_SCSI;
-    unit->au_Identify               = ata_STUB;
-    return TRUE;
 }
 
 BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
@@ -976,8 +924,6 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
     if (FALSE == ata_WaitBusyTO(unit, 1, FALSE, NULL))
     {
         DINIT(bug("[ATA%02ld] ata_setup_unit: ERROR: Drive not ready for use. Keeping functions stubbed\n", unit->au_UnitNum));
-        FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
-        unit->au_Drive = 0;
         return FALSE;
     }
 
@@ -996,8 +942,6 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
 
         default:
             DINIT(bug("[ATA%02ld] ata_setup_unit: Unsupported device %lx. All functions will remain stubbed.\n", unit->au_UnitNum, bus->ab_Dev[u]));
-            FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
-            unit->au_Drive = 0;
             return FALSE;
     }
 
@@ -1009,8 +953,6 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
      */
     if (unit->au_Identify(unit) != 0)
     {
-        FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
-        unit->au_Drive = NULL;
         return FALSE;
     }
 

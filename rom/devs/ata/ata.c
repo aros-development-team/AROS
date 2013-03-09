@@ -885,7 +885,7 @@ void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
 
         if (bus->ab_Dev[iter] > DEV_UNKNOWN)
         {
-            unit = AllocVecPooled(ATABase->ata_MemPool, sizeof(struct ata_Unit));
+            unit = OOP_NewObject(ATABase->unitClass, NULL, NULL);
             if (unit)
             {
                 ata_init_unit(bus, unit, iter);
@@ -927,7 +927,7 @@ void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
                 else
                 {
                     /* Destroy unit that couldn't be initialised */
-                    FreeVecPooled(ATABase->ata_MemPool, unit);
+                    OOP_DisposeObject((OOP_Object *)unit);
                     bus->ab_Dev[iter] = DEV_NONE;
                 }
             }
