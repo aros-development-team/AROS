@@ -82,21 +82,25 @@ struct ataBase
    BPTR                    ata_SegList;
 
    /* Bus HIDD classes */
+   OOP_AttrBase            unitAttrBase;
    OOP_AttrBase            hwAttrBase;
    OOP_AttrBase            ataAttrBase;
    OOP_MethodID            hwMethodBase;
    OOP_MethodID            ataMethodBase;
    OOP_Class              *ataClass;
    OOP_Class              *busClass;
+   OOP_Class              *unitClass;
    OOP_Object             *ataObj;
 };
 
 #undef HWAttrBase
 #undef HiddATABusAB
+#undef HiddATAUnitAB
 #undef HWBase
 #undef HiddATABusBase
 #define HWAttrBase     (ATABase->hwAttrBase)
 #define HiddATABusAB   (ATABase->ataAttrBase)
+#define HiddATAUnitAB  (ATABase->unitAttrBase)
 #define HWBase         (ATABase->hwMethodBase)
 #define HiddATABusBase (ATABase->ataMethodBase)
 #define OOPBase        (ATABase->ata_OOPBase)
@@ -313,24 +317,6 @@ struct ata_Unit
    ULONG               au_cmd_error;
 };
 
-enum
-{
-   AB_XFER_48BIT = AB_XFER_NUM,
-   AB_XFER_RWMULTI,
-   AB_XFER_PACKET,
-   AB_XFER_LBA,
-   AB_XFER_DMA,
-};
-
-#define AF_XFER_PIO(x)  (1<<(AB_XFER_PIO0+(x)))
-#define AF_XFER_MDMA(x) (1<<(AB_XFER_MDMA0+(x)))
-#define AF_XFER_UDMA(x) (1<<(AB_XFER_UDMA0+(x)))
-#define AF_XFER_48BIT   (1<<(AB_XFER_48BIT))
-#define AF_XFER_RWMULTI (1<<(AB_XFER_RWMULTI))
-#define AF_XFER_PACKET  (1<<(AB_XFER_PACKET))
-#define AF_XFER_LBA     (1<<(AB_XFER_LBA))
-#define AF_XFER_DMA     (1<<(AB_XFER_DMA))
-
 /* Unit internal flags */
 #define AB_DiscPresent          30     /* disc now in drive */
 #define AB_DiscChanged          29     /* disc changed */
@@ -370,7 +356,7 @@ BYTE atapi_DirectSCSI(struct ata_Unit*, struct SCSICmd *);
 ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
 
 BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit);
-BOOL ata_init_unit(struct ata_Bus *bus, struct ata_Unit *unit, UBYTE u);
+void ata_init_unit(struct ata_Bus *bus, struct ata_Unit *unit, UBYTE u);
 BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
 
 void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase);

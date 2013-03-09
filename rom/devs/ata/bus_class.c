@@ -506,6 +506,60 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
     INTERNALS
 
 *****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        aoHidd_ATABus_Master
+
+    SYNOPSIS
+        [..G], OOP_Object *
+
+    LOCATION
+        CLID_Hidd_ATABus
+
+    FUNCTION
+        Returns a pointer to OOP object of private unit class, representing
+        a master drive on the bus, or NULL if there's no master device.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        aoHidd_ATABus_Slave
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        aoHidd_ATABus_Slave
+
+    SYNOPSIS
+        [..G], OOP_Object *
+
+    LOCATION
+        CLID_Hidd_ATABus
+
+    FUNCTION
+        Returns a pointer to OOP object of private unit class, representing
+        a slave drive on the bus, or NULL if there's no master device.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        aoHidd_ATABus_Master
+
+    INTERNALS
+
+*****************************************************************************************/
 
 OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -618,6 +672,14 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         *msg->storage = (HAVE_VECTOR(data->busVectors->ata_out_alt) &&
                          HAVE_VECTOR(data->busVectors->ata_in_alt)) ?
                          TRUE : FALSE;
+        return;
+
+    case aoHidd_ATABus_Master:
+        *msg->storage = (IPTR)data->ab_Units[0];
+        return;
+
+    case aoHidd_ATABus_Slave:
+        *msg->storage = (IPTR)data->ab_Units[1];
         return;
     }
 
