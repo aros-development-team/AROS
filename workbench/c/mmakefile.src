@@ -49,6 +49,7 @@ FILES := \
     Shutdown \
     Sort \
     StackSnoop \
+    SymbolDump \
     TaskList \
     Touch \
     Type \
