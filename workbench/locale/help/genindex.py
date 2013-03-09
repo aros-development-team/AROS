@@ -32,7 +32,11 @@ def write_section(helpdir, filehandle, section):
 helpdir = sys.argv[1]
 print "genindex helpdir " + helpdir
 
-sections = ("Commands", "System")
+sections = (
+    ("Commands", "C:"),
+    ("System",   "SYS:System, SYS:Tools and SYS:Utilites"),
+)
+
 today = datetime.date.today()
 
 filehandle = open(os.path.join(helpdir, "Index.guide"), "w")
@@ -40,13 +44,13 @@ filehandle.write("@DATABASE Index.guide\n\n")
 filehandle.write("@$VER: Index.guide 1.0 (%d.%d.%d)\n" % (today.day, today.month, today.year))
 filehandle.write("@(C) Copyright (C) %d, The AROS Development Team. All rights reserved.\n\n" % (today.year))
 
-filehandle.write('@NODE MAIN "Help sections\n')
-filehandle.write('\n\n@{B}Sections@{UB}\n\n')
+filehandle.write('@NODE MAIN "Help sections"')
+filehandle.write('\n\n    @{B}Section@{TAB}Location of Programs@{UB}\n\n')
 for section in sections:
-    filehandle.write('    @{" %s " LINK "%s"}\n' % (section, section))
+    filehandle.write('    @{" %s " LINK "%s"}@{TAB}%s\n' % (section[0], section[0], section[1]))
 filehandle.write('@ENDNODE\n\n')
 
 for section in sections:
-    write_section(helpdir, filehandle, section)
+    write_section(helpdir, filehandle, section[0])
 
 filehandle.close()
