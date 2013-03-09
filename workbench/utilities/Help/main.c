@@ -19,20 +19,20 @@
 
     FUNCTION
 
-        Shows help information for commands and system applications. The help files
-        are stored in HELP:English with a sub-directory for each section. More
-        sections might be available in the future (similar than "man1", "man2" etc.
-        on Linux systems). The utility "Multiview" is used to show the guide files.
-        If neither NAME nor SECTION are given an index page will be shown.
+        Shows help information for commands and system applications.
+        The help files are stored in HELP:English with a sub-directory
+        for each section. The utility "Multiview" is used to show the
+        guide files. If neither NAME nor SECTION are given an index page
+        will be shown.
 
     INPUTS
 
-        NAME    --  the name of the command or application whose help you want
-                    to view. The name is case-insensitive.
-	SECTION --  the section where the help document will be searched. Currently
-                    available are "commands" and "system". If you don't specify
-                    the section all available sections will be searched. The
-                    section is case-insensitive.
+        NAME    --  the name of the command or application whose help
+                    you want to view. The name is case-insensitive.
+	SECTION --  the section where the help document will be searched.
+                    Currently available are "commands" and "system". If you
+                    don't specify the section all available sections will
+                    be searched. The section is case-insensitive.
 
     RESULT
 
@@ -50,8 +50,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 
 #include <proto/dos.h>
@@ -60,12 +58,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #define ARG_TEMPLATE "NAME,SECTION"
 
-const char *ver = "$VER: Help 1.1 (02.03.2013)";
+const char *ver = "$VER: Help 1.1 (09.03.2013)";
 
 enum
 {
