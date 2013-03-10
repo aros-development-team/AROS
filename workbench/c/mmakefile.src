@@ -57,8 +57,7 @@ FILES := \
     Version \
     Wait \
     WaitForPort \
-    Which \
-    Delay
+    Which
 
 # Files that use AROS_SHx() instead of main()
 SH_FILES := \
