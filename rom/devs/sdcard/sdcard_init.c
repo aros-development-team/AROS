@@ -349,7 +349,7 @@ static int FNAME_SDC(Scan)(struct SDCardBase *SDCardBase)
     FNAME_SDCBUS(MMIOWriteByte)(SDHCI_HOST_CONTROL, sdcReg, SDCardBase->sdcard_Bus);
 
     /* Install IRQ handler */
-    if ((SDCardBase->sdcard_Bus->sdcb_IRQHandle = KrnAddIRQHandler(IRQ_ARASANSDIO, FNAME_SDCBUS(BusIRQ), SDCardBase->sdcard_Bus, NULL)) != NULL)
+    if ((SDCardBase->sdcard_Bus->sdcb_IRQHandle = KrnAddIRQHandler(IRQ_SDIO, FNAME_SDCBUS(BusIRQ), SDCardBase->sdcard_Bus, NULL)) != NULL)
     {
         D(bug("[SDCard--] %s: IRQHandle @ 0x%p\n", __PRETTY_FUNCTION__, SDCardBase->sdcard_Bus->sdcb_IRQHandle));
 
