@@ -365,18 +365,14 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 
     sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
     FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, SDHCI_INT_ALL_MASK, bus);
-    if (!ret) {
-        return 0;
+    if (ret)
+    {
+        D(bug("[SDCard--] %s: Reseting SDHCI CMD/DATA\n", __PRETTY_FUNCTION__));
+
+        FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
+        FNAME_SDCBUS(SoftReset)(SDHCI_RESET_DATA, bus);
     }
-
-    D(bug("[SDCard--] %s: Reseting SDHCI CMD/DATA\n", __PRETTY_FUNCTION__));
-
-    FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
-    FNAME_SDCBUS(SoftReset)(SDHCI_RESET_DATA, bus);
-    if (sdStatus & SDHCI_INT_TIMEOUT)
-        return -1;
-    else
-        return -1;
+    return ret;
 }
 
 ULONG FNAME_SDCBUS(WaitUnitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
