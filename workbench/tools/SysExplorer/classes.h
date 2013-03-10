@@ -19,6 +19,7 @@
 extern struct MUI_CustomClass *ComputerWindow_CLASS;
 extern struct MUI_CustomClass *GenericWindow_CLASS;
 extern struct MUI_CustomClass *ATAWindow_CLASS;
+extern struct MUI_CustomClass *ATAUnitWindow_CLASS;
 extern struct MUI_CustomClass *DevicePage_CLASS;
 
 /*** Macros *****************************************************************/

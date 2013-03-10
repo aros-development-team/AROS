@@ -88,7 +88,7 @@ static void addATAUnit(OOP_Object *dev, ULONG attrID, struct MUI_NListtree_TreeN
         struct InsertObjectMsg msg =
         {
             .obj      = unit,
-            .winClass = NULL
+            .winClass = ATAUnitWindow_CLASS
         };
         CONST_STRPTR name;
 
