@@ -215,15 +215,32 @@ static VOID PrintProcessorInformation(char *buffer, LONG bufsize)
     }
 }
 
+static inline void VersionStr(char *ptr, int len, struct Library *base)
+{
+    snprintf(ptr, len, "%d.%d", base->lib_Version, base->lib_Revision);
+}    
 
 static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
-    Object *version_txt;
     Object *processors_flt;
     Object *hpet_flt;
     Object *ram_flt;
-    Object *bootldr_flt;
-    Object *args_flt;
+    char aros_ver[8], exec_ver[8];
+    IPTR bootldr = 0;
+    IPTR args = 0;
+    APTR KernelBase;
+
+    VersionStr(aros_ver, sizeof(aros_ver), ArosBase);
+    VersionStr(exec_ver, sizeof(exec_ver), &SysBase->LibNode);
+
+    KernelBase = OpenResource("kernel.resource");
+    if (KernelBase)
+    {
+        struct TagItem *bootinfo = KrnGetBootInfo();
+
+        bootldr = GetTagData(KRN_BootLoader, 0, bootinfo);
+        args    = GetTagData(KRN_CmdLine   , 0, bootinfo);
+    }
 
     self = (Object *) DoSuperNewTags
     (
@@ -231,10 +248,42 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
         MUIA_Window_Title, __(MSG_SYSTEM_PROPERTIES),
         MUIA_Window_ID, MAKE_ID('S', 'Y', 'P', 'R'),
         WindowContents, (IPTR)(VGroup,
-            Child, (IPTR)Label(_(MSG_VERSION)),
-            Child, (IPTR)(version_txt = TextObject,
-                TextFrame,
-                MUIA_Background, MUII_TextBack,
+            Child, (IPTR)(HGroup,
+                MUIA_FrameTitle, __(MSG_VERSION),
+                GroupFrame,
+                MUIA_Background, MUII_GroupBack,
+                Child, (IPTR)Label("AROS"),
+                Child, (IPTR)(TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_Text_Contents, (IPTR)aros_ver,
+                End),
+                Child, (IPTR)Label("Exec"),
+                Child, (IPTR)(TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_Text_Contents, (IPTR)exec_ver,
+                End),
+            End),
+            Child, (IPTR)(HGroup,
+                GroupFrame,
+                MUIA_FrameTitle, __(MSG_BOOTLOADER),
+                MUIA_Background, MUII_GroupBack,
+                Child, (IPTR)(TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_Text_Contents, bootldr,
+                End),
+            End),
+            Child, (IPTR)(HGroup,
+                GroupFrame,
+                MUIA_FrameTitle, __(MSG_ARGUMENTS),
+                MUIA_Background, MUII_GroupBack,
+                Child, (IPTR)(TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_Text_Contents, args,
+                End),
             End),
             Child, (IPTR)Label(_(MSG_PROCESSORS)),
             Child, (IPTR)(NListviewObject,
@@ -251,16 +300,6 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
                 MUIA_NListview_NList, (IPTR)(ram_flt = NFloattextObject,
                 End),
             End),
-            Child, (IPTR)Label(_(MSG_BOOTLOADER)),
-            Child, (IPTR)(NListviewObject,
-                MUIA_NListview_NList, (IPTR)(bootldr_flt = NFloattextObject,
-                End),
-            End),
-            Child, (IPTR)Label(_(MSG_ARGUMENTS)),
-            Child, (IPTR)(NListviewObject,
-                MUIA_NListview_NList, (IPTR)(args_flt = NFloattextObject,
-                End),
-            End),
         End),
         TAG_DONE
     );
@@ -268,17 +307,11 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
     if (self)
     {
         struct MemHeader *mh;
-        APTR KernelBase;
         APTR HPETBase;
         char buffer[2000];
         char *bufptr;
         LONG slen;
         LONG bufsize;
-
-        // version
-        snprintf(buffer, sizeof(buffer), "AROS %d.%d, Exec %d.%d", ArosBase->lib_Version, ArosBase->lib_Revision,
-             SysBase->LibNode.lib_Version, SysBase->LibNode.lib_Revision);
-        SET(version_txt, MUIA_Text_Contents, buffer);
 
         // processors
         *buffer = '\0';
@@ -355,29 +388,6 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
         }
         // we intentionally use MUIA_Floattext_Text because it copies the text
         SET(ram_flt, MUIA_Floattext_Text, buffer);
-
-        KernelBase = OpenResource("kernel.resource");
-        if (KernelBase)
-        {
-            struct TagItem *bootinfo = KrnGetBootInfo();
-            struct TagItem *tag;
-
-            // bootldr
-            tag = FindTagItem(KRN_BootLoader, bootinfo);
-            if (tag)
-            {
-                // we intentionally use MUIA_Floattext_Text because it copies the text
-                SET(bootldr_flt, MUIA_Floattext_Text, (char *)tag->ti_Data);
-            }
-
-            // args
-            tag = FindTagItem(KRN_CmdLine, bootinfo);
-            if (tag)
-            {
-                // we intentionally use MUIA_Floattext_Text because it copies the text
-                SET(args_flt, MUIA_Floattext_Text, (char *)tag->ti_Data);
-            }
-        }
     }
 
     return self;
