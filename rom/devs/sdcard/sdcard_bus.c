@@ -200,7 +200,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
     ULONG sdData, sdDataLen = 0, sdDataFlags;
 
     UWORD sdcTransMode = 0, sdCommandFlags;
-    ULONG sdStatus = 0, sdCommandMask = SDHCI_PS_CMD_INHIBIT;
+    ULONG sdStatus = 0, sdcReg, sdCommandMask = SDHCI_PS_CMD_INHIBIT;
     ULONG timeout = 10;
     ULONG ret = 0;
 
@@ -270,16 +270,22 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         if (sdDataFlags == MMC_DATA_READ)
             sdcTransMode |= SDHCI_TRANSMOD_READ;
 
+#if (1)
+        FNAME_SDCBUS(MMIOWriteWord)(SDHCI_TRANSFER_MODE, sdcTransMode, bus);
+#endif
+
         D(bug("[SDCard--] %s: Mode %08x [%d x %dBytes]\n", __PRETTY_FUNCTION__, sdcTransMode, (((sdDataLen >> bus->sdcb_SectorShift) > 0) ? (sdDataLen >> bus->sdcb_SectorShift) : 1), ((sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen)));
     }
 
     FNAME_SDCBUS(MMIOWriteLong)(SDHCI_ARGUMENT, sdArg, bus);
+#if (0)
     if (sdcTransMode)
         FNAME_SDCBUS(MMIOWriteLong)(SDHCI_TRANSFER_MODE, (sdcTransMode << 16) | SDHCI_MAKE_CMD(sdCommand, sdCommandFlags), bus);
     else
+#endif
         FNAME_SDCBUS(MMIOWriteWord)(SDHCI_COMMAND, SDHCI_MAKE_CMD(sdCommand, sdCommandFlags), bus);
 
-    timeout = 10;
+    timeout = 1000;
     do {
         sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
         if ((sdStatus & SDHCI_INT_ERROR) || ((sdStatus & sdCommandMask) == sdCommandMask))
@@ -328,7 +334,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         if (!ret && sdData)
         {
             D(bug("[SDCard--] %s: Transfering Data..\n", __PRETTY_FUNCTION__));
-            timeout = 1000000;
+            timeout = 1000;
             sdCommand = SDHCI_INT_SPACE_AVAIL | SDHCI_INT_DATA_AVAIL;
             sdCommandMask = SDHCI_PS_DATA_AVAILABLE | SDHCI_PS_SPACE_AVAILABLE;
             do {
@@ -338,17 +344,60 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
                     ret = -1;
                     break;
                 }
-                if (sdStatus & sdCommand) {
-                    if (!(FNAME_SDCBUS(MMIOReadLong)(SDHCI_PRESENT_STATE, bus) & sdCommandMask))
-                        continue;
+                if ((sdStatus & sdCommand) && (FNAME_SDCBUS(MMIOReadLong)(SDHCI_PRESENT_STATE, bus) & sdCommandMask)) {
+                    ULONG currbyte, tranlen = (sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen;
+
                     FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdCommand, bus);
-#warning "TODO: Transfer bytes ;)"
-                }
-                if (timeout-- <= 0)
-                {
-                    D(bug("[SDCard--] %s:    Timeout!\n", __PRETTY_FUNCTION__));
-                    ret = -1;
+
+                    do
+                    {
+                        D(bug("[SDCard--] %s: Attempting to read %dbytes\n", __PRETTY_FUNCTION__, tranlen));
+                        for (currbyte = 0; currbyte < tranlen; currbyte++)
+                        {
+                            DUMP(
+                                if ((currbyte % 16) == 0)
+                                {
+                                    bug("[SDCard--] %s:    ", __PRETTY_FUNCTION__);
+                                }
+                            )
+                            if ((currbyte % 4) == 0)
+                            {
+                                sdcReg = FNAME_SDCBUS(MMIOReadLong)(SDHCI_BUFFER, bus);
+                            }
+                            *(UBYTE *)sdData = sdcReg & 0xFF;
+                            sdData++;
+                            sdDataLen--;
+                            sdcReg >>= 8;
+                            DUMP(
+                                if ((currbyte % 4) == 3)
+                                {
+                                    bug(" %08x", *(ULONG *)(sdData - 4));
+                                }
+                                if ((currbyte % 16) == 15)
+                                {
+                                    bug("\n");
+                                }
+                            )
+                        }
+                        DUMP(
+                            if ((currbyte % 16) != 15)
+                            {
+                                bug("\n");
+                            }
+                        )
+                    } while (sdDataLen > 0);
                     break;
+                }
+                else if (!(sdStatus & SDHCI_INT_DATA_END))
+                {
+                    sdcard_Udelay(1000);
+
+                    if (timeout-- <= 0)
+                    {
+                        D(bug("[SDCard--] %s:    Timeout!\n", __PRETTY_FUNCTION__));
+                        ret = -1;
+                        break;
+                    }
                 }
             } while (!(sdStatus & SDHCI_INT_DATA_END));
         }
