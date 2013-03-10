@@ -87,4 +87,5 @@ struct ataBase
 #define OOPBase               (base->cs_OOPBase)
 #define UtilityBase           (base->cs_UtilityBase)
 
+void DeviceFree(struct PCIDeviceRef *ref, struct ataBase *base);
 void DeviceUnref(struct PCIDeviceRef *ref, struct ataBase *base);

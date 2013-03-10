@@ -79,13 +79,31 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
         if (data->bus->atapb_DMABase)
         {
+            /*
+             * FIXME: Currently ata.device does not support shared DMA.
+             * In order to make it working, we disable DMA for secondary channel.
+             */
+            if (data->bus->atapb_BusNo > 0)
+            {
+                UBYTE dmaStatus = inb(data->bus->atapb_DMABase + dma_Status);
+
+                if (dmaStatus & DMAF_Simplex)
+                {
+                    bug("[PCI-ATA] WARNING: Controller only supports "
+                        "DMA on one bus at a time. DMAStatus=0x%02X\n", dmaStatus);
+                    bug("[PCI-ATA] DMA for secondary bus disabled\n");
+
+                    goto nodma;
+                }
+            }
+
             /* We have a DMA controller and will need a buffer */
             OOP_GetAttr(data->bus->atapb_Device->ref_Device,
                         aHidd_PCIDevice_Driver, (IPTR *)&data->pciDriver);
             data->dmaBuf = HIDD_PCIDriver_AllocPCIMem(data->pciDriver,
                                                       (PRD_MAX + 1) * 2 * sizeof(struct PRDEntry));
         }
-
+nodma:
         if (data->bus->atapb_Node.ln_Type == ATABUSNODEPRI_PROBED)
         {
             /*
@@ -139,6 +157,12 @@ OOP_Object *PCIATA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     return NULL;
 }
 
+void DeviceFree(struct PCIDeviceRef *ref, struct ataBase *base)
+{
+    HIDD_PCIDevice_Release(ref->ref_Device);
+    FreeMem(ref, sizeof(struct PCIDeviceRef));
+}
+
 void DeviceUnref(struct PCIDeviceRef *ref, struct ataBase *base)
 {
     ULONG count;
@@ -155,10 +179,7 @@ void DeviceUnref(struct PCIDeviceRef *ref, struct ataBase *base)
     Permit();
 
     if (!count)
-    {
-        HIDD_PCIDevice_Release(ref->ref_Device);
-        FreeMem(ref, sizeof(struct PCIDeviceRef));
-    }
+        DeviceFree(ref, base);
 }
 
 void PCIATA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
