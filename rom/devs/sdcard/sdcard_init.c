@@ -525,6 +525,7 @@ static int FNAME_SDC(Open)
                 }
             }
 
+/*
             if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_MMC)
             {
                 if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_HighSpeed)
@@ -548,7 +549,7 @@ static int FNAME_SDC(Open)
 
                 FNAME_SDCBUS(SDSCChangeFrequency)((struct sdcard_Unit *)iorq->io_Unit);
             }
-
+*/
             iorq->io_Error = 0;
         }
     }

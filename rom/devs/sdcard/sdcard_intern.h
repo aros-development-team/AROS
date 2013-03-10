@@ -24,6 +24,23 @@
 #define FNAME_SDCIO(x)                  SDCARD__SDIO__ ## x
 #define FNAME_SDCBUS(x)                 SDCARD__SDBus__ ## x
 
+// #define xxx(a) (a) to enable particular sections.
+#if defined(DEBUG) && (DEBUG > 0)
+#define DIRQ(a)         a
+#define DIRQ_MORE(a)
+#define DUMP(a)         a
+#define DUMP_MORE(a)
+#define DINIT(a)        a
+#else
+#define DIRQ(a)
+#define DIRQ_MORE(a)
+#define DUMP(a)
+#define DUMP_MORE(a)
+#define DINIT(a)
+#endif
+/* Errors that shouldn't happen */
+#define DERROR(a) a
+
 #define TASK_PRI		        10
 #define TIMEOUT			        30
 
