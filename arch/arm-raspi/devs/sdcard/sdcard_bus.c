@@ -41,14 +41,14 @@ UBYTE FNAME_SDCBUS(MMIOReadByte)(ULONG reg, struct sdcard_Bus *bus)
 {
     ULONG val = *(volatile ULONG *)(((ULONG)bus->sdcb_IOBase + reg) & ~3);
 
-    return (val >> ((reg & 3) << 3)) & 0xff;
+    return (val >> ((reg & 3) << 3)) & 0xFF;
 }
 
 UWORD FNAME_SDCBUS(MMIOReadWord)(ULONG reg, struct sdcard_Bus *bus)
 {
     ULONG val = *(volatile ULONG *)(((ULONG)bus->sdcb_IOBase + reg) & ~3);
 
-    return (val >> (((reg >> 1) & 1) << 4)) & 0xffff;
+    return (val >> (((reg >> 1) & 1) << 4)) & 0xFFFF;
 }
 
 ULONG FNAME_SDCBUS(MMIOReadLong)(ULONG reg, struct sdcard_Bus *bus)
@@ -69,8 +69,8 @@ void FNAME_SDCBUS(ArasanWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
 void FNAME_SDCBUS(MMIOWriteByte)(ULONG reg, UBYTE val, struct sdcard_Bus *bus)
 {
     ULONG currval = *(volatile ULONG *)(((ULONG)bus->sdcb_IOBase + reg) & ~3);
-    ULONG shift = (reg & 3) * 8;
-    ULONG mask = 0xff << shift;
+    ULONG shift = (reg & 3) << 3;
+    ULONG mask = 0xFF << shift;
     ULONG newval = (currval & ~mask) | (val << shift);
 
     FNAME_SDCBUS(ArasanWriteLong)(reg & ~3, newval, bus);
@@ -79,8 +79,8 @@ void FNAME_SDCBUS(MMIOWriteByte)(ULONG reg, UBYTE val, struct sdcard_Bus *bus)
 void FNAME_SDCBUS(MMIOWriteWord)(ULONG reg, UWORD val, struct sdcard_Bus *bus)
 {
     ULONG currval = *(volatile ULONG *)(((ULONG)bus->sdcb_IOBase + reg) & ~3);
-    ULONG shift = ((reg >> 1) & 1) * 16;
-    ULONG mask = 0xffff << shift;
+    ULONG shift = ((reg >> 1) & 1) << 4;
+    ULONG mask = 0xFFFF << shift;
     ULONG newval = (currval & ~mask) | (val << shift);
 
     FNAME_SDCBUS(ArasanWriteLong)(reg & ~3, newval, bus);
@@ -125,8 +125,7 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
     {
         FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, 0, bus);
 
-        D(bug("[SDCard--] %s: CLOCK_CONTROL (current) = 0x%04x\n", __PRETTY_FUNCTION__, sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_INT_STABLE|SDHCI_CLOCK_CARD_EN)));
-        D(bug("[SDCard--] %s: CLOCK_CONTROL (new)     = 0x%04x (div %d)\n", __PRETTY_FUNCTION__, sdcClkCtrl, sdcClkDiv));
+        D(bug("[SDCard--] %s: Changing CLOCK_CONTROL [0x%04x -> 0x%04x] (div %d)\n", __PRETTY_FUNCTION__, sdcClkCtrlCur & ~(SDHCI_CLOCK_INT_EN|SDHCI_CLOCK_INT_STABLE|SDHCI_CLOCK_CARD_EN), sdcClkCtrl, sdcClkDiv));
 
         FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, (sdcClkCtrl | SDHCI_CLOCK_INT_EN), bus);
 
@@ -175,7 +174,7 @@ void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, BOOL lowest, struct sdcard
     lvlCur = FNAME_SDCBUS(MMIOReadByte)(SDHCI_POWER_CONTROL, bus);
     if ((lvlCur & ~SDHCI_POWER_ON) != sdcReg)
     {
-        D(bug("[SDCard--] %s: Changing Power Lvl (0x%x)\n", __PRETTY_FUNCTION__, sdcReg));
+        D(bug("[SDCard--] %s: Changing Power Lvl [0x%x -> 0x%x]\n", __PRETTY_FUNCTION__, lvlCur & ~SDHCI_POWER_ON, sdcReg));
         FNAME_SDCBUS(MMIOWriteByte)(SDHCI_POWER_CONTROL, sdcReg, bus);
         sdcReg |= SDHCI_POWER_ON;
         FNAME_SDCBUS(MMIOWriteByte)(SDHCI_POWER_CONTROL, sdcReg, bus);
@@ -184,7 +183,7 @@ void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, BOOL lowest, struct sdcard
     {
         if (!(lvlCur & SDHCI_POWER_ON))
         {
-            D(bug("[SDCard--] %s: Enabling Power Lvl (0x%x)\n", __PRETTY_FUNCTION__, lvlCur));
+            D(bug("[SDCard--] %s: Enabling Power Lvl [0x%x]\n", __PRETTY_FUNCTION__, lvlCur));
             lvlCur |= SDHCI_POWER_ON;
             FNAME_SDCBUS(MMIOWriteByte)(SDHCI_POWER_CONTROL, lvlCur, bus);
         }
@@ -253,7 +252,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         sdcTransMode = SDHCI_TRANSMOD_BLK_CNT_EN;
         D(bug("[SDCard--] %s: Configuring Data Transfer\n", __PRETTY_FUNCTION__));
 
-        *(volatile ULONG *)GPCLR0 = 1<<16; // Turn Activity LED ON
+        *(volatile ULONG *)GPCLR0 = (1 << 16); // Turn Activity LED ON
 
         FNAME_SDCBUS(MMIOWriteByte)(SDHCI_TIMEOUT_CONTROL, SDHCI_TIMEOUT_MAX, bus);
 
@@ -271,7 +270,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         if (sdDataFlags == MMC_DATA_READ)
             sdcTransMode |= SDHCI_TRANSMOD_READ;
 
-        D(bug("[SDCard--] %s: Mode %08x, BlockSize %d, Count %d\n", __PRETTY_FUNCTION__, sdcTransMode, ((sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen), (((sdDataLen >> bus->sdcb_SectorShift) > 0) ? (sdDataLen >> bus->sdcb_SectorShift) : 1)));
+        D(bug("[SDCard--] %s: Mode %08x [%d x %dBytes]\n", __PRETTY_FUNCTION__, sdcTransMode, (((sdDataLen >> bus->sdcb_SectorShift) > 0) ? (sdDataLen >> bus->sdcb_SectorShift) : 1), ((sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen)));
     }
 
     FNAME_SDCBUS(MMIOWriteLong)(SDHCI_ARGUMENT, sdArg, bus);
@@ -310,8 +309,8 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
                 }
                 else
                 {
-                    D(bug("\n"));
                     Response->ti_Data = FNAME_SDCBUS(MMIOReadLong)(SDHCI_RESPONSE, bus);
+                    D(bug("[= %08x]\n", Response->ti_Data));
                 }
             }
             FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdCommandMask, bus);
@@ -397,10 +396,10 @@ ULONG FNAME_SDCBUS(WaitUnitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
         if (FNAME_SDCBUS(SendCmd)(sdcStatusTags, sdcUnit->sdcu_Bus) != -1)
         {
             if ((sdcStatusTags[3].ti_Data & MMC_STATUS_RDY_FOR_DATA) &&
-                (sdcStatusTags[3].ti_Data & MMC_STATUS_STATE_MASK) != MMC_STATE_PRG)
+                (sdcStatusTags[3].ti_Data & MMC_STATUS_STATE_MASK) != MMC_STATUS_STATE_PRG)
                 break;
             else if (sdcStatusTags[3].ti_Data & MMC_STATUS_MASK) {
-                D(bug("[SDCard%02ld] %s: Status Error 0x%08x\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcStatusTags[3].ti_Data));
+                D(bug("[SDCard%02ld] %s: Status Error = %08x\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcStatusTags[3].ti_Data));
                 return -1;
             }
         } else if (--retryreq < 0)
@@ -413,6 +412,8 @@ ULONG FNAME_SDCBUS(WaitUnitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
         D(bug("[SDCard%02ld] %s: Timeout\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         return -1;
     }
+
+    bug("[SDCard%02ld] %s: State = %08x\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcStatusTags[3].ti_Data & MMC_STATUS_STATE_MASK);
 
     return 0;
 }
@@ -457,98 +458,97 @@ int FNAME_SDCBUS(SDSCSwitch)(BOOL test, int group, UBYTE value, APTR buf, struct
 int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
 {
     unsigned int        timeout;
-    struct TagItem sdcChFreqTags[] =
+    ULONG               sdcRespBuf[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    struct TagItem      sdcChFreqTags[] =
     {
         {SDCARD_TAG_CMD,        0},
         {SDCARD_TAG_ARG,        0},
         {SDCARD_TAG_RSPTYPE,    0},
         {SDCARD_TAG_RSP,        0},
-        {TAG_DONE,              0}, /* SDCARD_TAG_DATA */
-        {SDCARD_TAG_DATALEN,    0},
+        {0,                     (IPTR)sdcRespBuf}, /* SDCARD_TAG_DATA */
+        {SDCARD_TAG_DATALEN,    8},
         {SDCARD_TAG_DATAFLAGS,  MMC_DATA_READ},
         {TAG_DONE,              0}
     };
 
     /* Read the SCR to find out if higher speeds are supported ..*/
+    timeout = 3;
+    do {
+        D(bug("[SDCard%02ld] %s: Preparing for Card App Command ... \n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        sdcChFreqTags[0].ti_Data = MMC_CMD_APP_CMD;
+        sdcChFreqTags[1].ti_Data = sdcUnit->sdcu_CardRCA << 16;
+        sdcChFreqTags[2].ti_Data = MMC_RSP_R1;
+        sdcChFreqTags[4].ti_Tag = TAG_DONE;
 
-    D(bug("[SDCard%02ld] %s: Preparing for Card App Command ... \n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-    sdcChFreqTags[0].ti_Data = MMC_CMD_APP_CMD;
-    sdcChFreqTags[1].ti_Data = sdcUnit->sdcu_CardRCA << 16;
-    sdcChFreqTags[2].ti_Data = MMC_RSP_R1;
-    if (FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1)
-    {
-        ULONG   sdcardRespBuf[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        if (FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) == -1)
+        {
+            D(bug("[SDCard%02ld] %s: App Command Failed\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+            return FALSE;
+        }
+        D(bug("[SDCard%02ld] %s: App Command Response = %08x\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcChFreqTags[3].ti_Data));
 
         sdcChFreqTags[0].ti_Data = SD_CMD_APP_SEND_SCR;
         sdcChFreqTags[1].ti_Data = 0;
         sdcChFreqTags[2].ti_Data = MMC_RSP_R1;
+        sdcChFreqTags[4].ti_Tag = SDCARD_TAG_DATA;
 
-        timeout = 3;
         D(bug("[SDCard%02ld] %s: Querying SCR Register ... \n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-        do
+        if (FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1)
         {
-            sdcChFreqTags[4].ti_Tag = SDCARD_TAG_DATA;
-            sdcChFreqTags[4].ti_Data = (IPTR)sdcardRespBuf;
-            sdcChFreqTags[5].ti_Data = 8;
+            D(bug("[SDCard%02ld] %s: Query Response = %08x\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcChFreqTags[3].ti_Data));
+            break;
+        }
+    } while (timeout-- > 0);
 
-            if (FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1)
-                break;
-        } while (timeout-- > 0);
+    if (timeout > 0)
+    {
+        if (AROS_BE2LONG(sdcRespBuf[0]) & SD_SCR_DATA4BIT)
+            sdcUnit->sdcu_Flags |= AF_Card_4bitData;
+
+        /* v1.0 SDCards don't support switching */
+        if (((AROS_BE2LONG(sdcRespBuf[0]) >> 24) & 0xf) < 1)
+        {
+            D(bug("[SDCard%02ld] %s: Card doesnt support Switching\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+            return 0;
+        }
+
+        timeout = 4;
+        while (timeout-- > 0) {
+            if (FNAME_SDCBUS(SDSCSwitch)(TRUE, 0, 1, sdcRespBuf, sdcUnit) != -1)
+            {
+                /* The high-speed function is busy.  Try again */
+                if (!(AROS_BE2LONG(sdcRespBuf[7]) & SD_SCR_HIGHSPEED))
+                    break;
+            }
+            else
+            {
+                D(bug("[SDCard%02ld] %s: Switch failed\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                return -1;
+            }
+        }
 
         if (timeout > 0)
         {
-            if (AROS_BE2LONG(sdcardRespBuf[0]) & SD_SCR_DATA4BIT)
-                sdcUnit->sdcu_Flags |= AF_Card_4bitData;
-
-            /* v1.0 SDCards don't support switching */
-            if (((AROS_BE2LONG(sdcardRespBuf[0]) >> 24) & 0xf) < 1)
+            /* Is high-speed supported? */
+            if (!(AROS_BE2LONG(sdcRespBuf[3]) & SD_SCR_HIGHSPEED))
             {
-                D(bug("[SDCard%02ld] %s: Card doesnt support Switching\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                D(bug("[SDCard%02ld] %s: Card doesnt support Highspeed mode\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
                 return 0;
             }
 
-            timeout = 4;
-            while (timeout-- > 0) {
-                if (FNAME_SDCBUS(SDSCSwitch)(TRUE, 0, 1, sdcardRespBuf, sdcUnit) != -1)
-                {
-                    /* The high-speed function is busy.  Try again */
-                    if (!(AROS_BE2LONG(sdcardRespBuf[7]) & SD_SCR_HIGHSPEED))
-                        break;
-                }
-                else
-                {
-                    D(bug("[SDCard%02ld] %s: Switch failed\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-                    return -1;
-                }
-            }
-
-            if (timeout > 0)
+            if (FNAME_SDCBUS(SDSCSwitch)(FALSE, 0, 1, sdcRespBuf, sdcUnit) != -1)
             {
-                /* Is high-speed supported? */
-                if (!(AROS_BE2LONG(sdcardRespBuf[3]) & SD_SCR_HIGHSPEED))
-                {
-                    D(bug("[SDCard%02ld] %s: Card doesnt support Highspeed mode\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-                    return 0;
-                }
-
-                if (FNAME_SDCBUS(SDSCSwitch)(FALSE, 0, 1, sdcardRespBuf, sdcUnit) != -1)
-                {
-                    if ((AROS_BE2LONG(sdcardRespBuf[4]) & 0x0F000000) == 0x01000000)
-                       sdcUnit->sdcu_Flags |= AF_Card_HighSpeed;
-                }
+                if ((AROS_BE2LONG(sdcRespBuf[4]) & 0x0F000000) == 0x01000000)
+                   sdcUnit->sdcu_Flags |= AF_Card_HighSpeed;
             }
-        }
-        else
-        {
-            D(bug("[SDCard%02ld] %s: Query Failed\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-            return -1;
         }
     }
     else
     {
-        D(bug("[SDCard%02ld] %s: App Command Failed\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        D(bug("[SDCard%02ld] %s: Timeout Querying SCR\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         return -1;
     }
+
     return 0;
 }
 
