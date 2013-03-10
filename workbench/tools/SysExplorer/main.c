@@ -35,11 +35,27 @@
 #define APPNAME "SysExplorer"
 #define VERSION "SysExplorer 0.2"
 
-struct ClassDisplay
+struct ObjectUserData
+{
+    OOP_Object *obj;
+    struct MUI_CustomClass *winClass;
+    Object *win;
+};
+
+struct InsertObjectMsg
+{
+    OOP_Object *obj;
+    struct MUI_CustomClass *winClass;
+};
+
+struct ClassHandlers
 {
     CONST_STRPTR classID;
     struct MUI_CustomClass **muiClass;
+    void (*enumFunc)(OOP_Object *obj, struct MUI_NListtree_TreeNode *parent);
 };
+
+static const struct ClassHandlers *FindClassHandler(OOP_Object *obj);
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
@@ -49,30 +65,44 @@ static Object *property_menu, *expand_menu, *collapse_menu, *quit_menu;
 OOP_AttrBase HiddAttrBase;
 OOP_AttrBase HWAttrBase;
 OOP_AttrBase HiddATABusAB;
+OOP_AttrBase HiddATAUnitAB;
 
 const struct OOP_ABDescr abd[] =
 {
-    {IID_Hidd       , &HiddAttrBase},
-    {IID_HW         , &HWAttrBase  },
-    {IID_Hidd_ATABus, &HiddATABusAB},
-    {NULL           , NULL         }
+    {IID_Hidd        , &HiddAttrBase },
+    {IID_HW          , &HWAttrBase   },
+    {IID_Hidd_ATABus , &HiddATABusAB },
+    {IID_Hidd_ATAUnit, &HiddATAUnitAB},
+    {NULL            , NULL          }
 };
 
-/*
- * For proper operation CLIDs in this table should
- * be sorted from subclasses to superclasses.
- */
-static const struct ClassDisplay classWindows[] =
+/* Here we have enumerators for different device and subsystem classes */
+
+static void addATAUnit(OOP_Object *dev, ULONG attrID, struct MUI_NListtree_TreeNode *parent)
 {
-    {CLID_HW_Root    , &ComputerWindow_CLASS},
-    {CLID_Hidd_ATABus, &ATAWindow_CLASS     },
-    {CLID_Hidd       , &GenericWindow_CLASS },
-    {NULL            , NULL                 }
-};
+    OOP_Object *unit = NULL;
 
-static struct Hook enum_hook;
-static struct Hook property_hook;
+    OOP_GetAttr(dev, attrID, (IPTR *)&unit);
+    if (unit)
+    {
+        struct InsertObjectMsg msg =
+        {
+            .obj      = unit,
+            .winClass = NULL
+        };
+        CONST_STRPTR name;
 
+        OOP_GetAttr(unit, aHidd_ATAUnit_Model, (IPTR *)&name);
+        DoMethod(hidd_tree, MUIM_NListtree_Insert, name, &msg,
+                 parent, MUIV_NListtree_Insert_PrevNode_Tail, 0);
+    }
+}
+
+static void ataUnitsEnum(OOP_Object *dev, struct MUI_NListtree_TreeNode *parent)
+{
+    addATAUnit(dev, aHidd_ATABus_Master, parent);
+    addATAUnit(dev, aHidd_ATABus_Slave , parent);
+}
 
 AROS_UFH3S(BOOL, enumFunc,
     AROS_UFHA(struct Hook *, h,  A0),
@@ -82,40 +112,88 @@ AROS_UFH3S(BOOL, enumFunc,
     AROS_USERFUNC_INIT
 
     CONST_STRPTR name = NULL;
-    
+    struct MUI_NListtree_TreeNode *tn;
+    ULONG flags = 0;
+    struct InsertObjectMsg msg =
+    {
+        .obj = obj,
+        .winClass = NULL
+    };
+    const struct ClassHandlers *clHandlers = FindClassHandler(obj);
+
+    /* This is either HW or HIDD subclass */
     OOP_GetAttr(obj, aHW_ClassName, (IPTR *)&name);
-
-    if (name)
-    {
-        // node
-        struct MUI_NListtree_TreeNode *tn;
-
-        tn = (APTR)DoMethod(hidd_tree, MUIM_NListtree_Insert, name, obj,
-                            parent, MUIV_NListtree_Insert_PrevNode_Tail,
-                            TNF_LIST|TNF_OPEN);
-        if (tn)
-        {
-            HW_EnumDrivers(obj, &enum_hook, tn);
-        }
-    }
-    else
-    {
-        // leaf
-        // we're storing the device handle as userdata in the tree node
+    if (!name)
         OOP_GetAttr(obj, aHidd_HardwareName, (IPTR *)&name);
-        DoMethod(hidd_tree, MUIM_NListtree_Insert, name, obj,
-                 parent, MUIV_NListtree_Insert_PrevNode_Tail, 0);
+
+    if (clHandlers)
+    {
+        if (clHandlers->muiClass)
+            msg.winClass = *(clHandlers->muiClass);
+        if (clHandlers->enumFunc)
+            flags = TNF_LIST|TNF_OPEN;
     }
+
+    tn = (APTR)DoMethod(hidd_tree, MUIM_NListtree_Insert, name, &msg,
+                        parent, MUIV_NListtree_Insert_PrevNode_Tail, flags);
+
+    /* If we have enumerator for this class, call it now */
+    if (clHandlers && clHandlers->enumFunc)
+        clHandlers->enumFunc(obj, tn);
 
     return FALSE; /* Continue enumeration */
 
     AROS_USERFUNC_EXIT
 }
 
+static const struct Hook enum_hook =
+{
+    .h_Entry = enumFunc
+};
+
+static void hwEnum(OOP_Object *obj, struct MUI_NListtree_TreeNode *tn)
+{
+    HW_EnumDrivers(obj, (struct Hook *)&enum_hook, tn);
+}
+
+/*
+ * This table lists handlers for known public classes.
+ * It specifies information window class, as well as function
+ * to enumerate children objects for the class.
+ *
+ * For proper operation CLIDs in this table should
+ * be sorted from subclasses to superclasses.
+ */
+static const struct ClassHandlers classHandlers[] =
+{
+    {CLID_HW_Root    , &ComputerWindow_CLASS, hwEnum      },
+    {CLID_HW         , NULL                 , hwEnum      },
+    {CLID_Hidd_ATABus, &ATAWindow_CLASS     , ataUnitsEnum},
+    {CLID_Hidd       , &GenericWindow_CLASS , NULL        },
+    {NULL            , NULL                 , NULL        }
+};
+
+static const struct ClassHandlers *FindClassHandler(OOP_Object *obj)
+{
+    unsigned int i;
+ 
+    for (i = 0; classHandlers[i].classID; i++)
+    {
+        OOP_Class *cl;
+
+        for (cl = OOP_OCLASS(obj); cl ; cl = cl->superclass)
+        {
+            if (!strcmp(cl->ClassNode.ln_Name, classHandlers[i].classID))
+                return &classHandlers[i];
+        }
+    }
+    return NULL;
+}
+
 AROS_UFH3S(void, closeFunc,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(Object*, obj, A2),
-    AROS_UFHA(APTR, msg, A1))
+    AROS_UFHA(struct ObjectUserData **, msg, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -123,12 +201,57 @@ AROS_UFH3S(void, closeFunc,
     DoMethod(app, OM_REMMEMBER, obj);
     DisposeObject(obj);
     
+    (*msg)->win = NULL;
+
     AROS_USERFUNC_EXIT
 };
 
 static const struct Hook close_hook =
 {
     .h_Entry = closeFunc
+};
+
+AROS_UFH3S(APTR, constructFunc,
+    AROS_UFHA(struct Hook *, h,  A0),
+    AROS_UFHA(Object*, obj, A2),
+    AROS_UFHA(struct MUIP_NListtree_ConstructMessage *, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct InsertObjectMsg *insertMsg = msg->UserData;
+    struct ObjectUserData *data = AllocPooled(msg->MemPool, sizeof(struct ObjectUserData));
+
+    if (data)
+    {
+        data->obj      = insertMsg->obj;
+        data->winClass = insertMsg->winClass;
+        data->win      = NULL;
+    }
+    return data;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, destructFunc,
+    AROS_UFHA(struct Hook *, h,  A0),
+    AROS_UFHA(Object*, obj, A2),
+    AROS_UFHA(struct MUIP_NListtree_DestructMessage *, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    FreePooled(msg->MemPool, msg->UserData, sizeof(struct ObjectUserData));
+
+    AROS_USERFUNC_EXIT
+}
+
+static const struct Hook constructHook =
+{
+    .h_Entry = constructFunc
+};
+
+static const struct Hook destructHook =
+{
+    .h_Entry = destructFunc
 };
 
 AROS_UFH3S(void, propertyFunc,
@@ -141,8 +264,7 @@ AROS_UFH3S(void, propertyFunc,
     D(bug("propertyFunc called tn: %p\n", *tn));
 
     struct MUI_NListtree_TreeNode *node = *tn;
-    OOP_Object *obj;
-    unsigned int i;
+    struct ObjectUserData *data;
 
     if (node == NULL)
     {
@@ -151,40 +273,44 @@ AROS_UFH3S(void, propertyFunc,
     }
 
     if (node == NULL)
-        return;
-
-    /*
-     * TODO: Do not allow to open properties window for the same object
-     * multiple times.
-     */
-    obj = node->tn_User;
-    for (i = 0; classWindows[i].classID; i++)
     {
-        OOP_Class *cl;
+        /* Do nothing if still no current entry */
+        return;
+    }
 
-        for (cl = OOP_OCLASS(obj); cl ; cl = cl->superclass)
+    data = node->tn_User;
+    if (data->win)
+    {
+        /* The window is already open, show it to the user */
+        DoMethod(data->win, MUIM_Window_ToFront);
+        SET(data->win, MUIA_Window_Activate, TRUE);
+        return;
+    }
+
+    if (data->winClass)
+    {
+        /* We have information window class. Open the window. */
+        data->win = NewObject(data->winClass->mcc_Class, NULL,
+                              MUIA_PropertyWin_Object, (IPTR)data->obj,
+                              TAG_DONE);
+
+        if (data->win)
         {
-            if (!strcmp(cl->ClassNode.ln_Name, classWindows[i].classID))
-            {
-                Object *window = NewObject((*classWindows[i].muiClass)->mcc_Class, NULL,
-                                     MUIA_PropertyWin_Object, (IPTR)node->tn_User,
-                                 TAG_DONE);
-
-                if (window)
-                {
-                    DoMethod(app, OM_ADDMEMBER, window);
-                    DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-                             window, 3, 
-                             MUIM_CallHook, &close_hook, 0);
-                    SET(window, MUIA_Window_Open, TRUE);
-                }                
-                return;
-            }
-        }   
+            DoMethod(app, OM_ADDMEMBER, data->win);
+            DoMethod(data->win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+                     data->win, 3,
+                     MUIM_CallHook, &close_hook, data);
+            SET(data->win, MUIA_Window_Open, TRUE);
+        }
     }
 
     AROS_USERFUNC_EXIT
 }
+
+static const struct Hook property_hook =
+{
+    .h_Entry = propertyFunc
+};
 
 static BOOL GUIinit()
 {
@@ -224,6 +350,8 @@ static BOOL GUIinit()
                     MUIA_NListview_NList, (IPTR)(hidd_tree = NListtreeObject,
                         ReadListFrame,
                         MUIA_CycleChain, TRUE,
+                        MUIA_NListtree_ConstructHook, (IPTR)&constructHook,
+                        MUIA_NListtree_DestructHook, (IPTR)&destructHook,
                         MUIA_NListtree_DragDropSort, FALSE, /* forbid sorting by drag'n'drop */
                     End),
                 End),
@@ -233,15 +361,12 @@ static BOOL GUIinit()
 
     if (app)
     {
-        enum_hook.h_Entry = enumFunc;
-        property_hook.h_Entry = propertyFunc;
-
         OOP_Object *hwRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
 
         if (hwRoot)
         {
             /* This will kick our recursive enumeration into action */
-            CALLHOOKPKT(&enum_hook, hwRoot, MUIV_NListtree_Insert_ListNode_Root);
+            CALLHOOKPKT((struct Hook *)&enum_hook, hwRoot, MUIV_NListtree_Insert_ListNode_Root);
         }
 
         /* Quit application if the main window's closegadget or the esc key is pressed. */
