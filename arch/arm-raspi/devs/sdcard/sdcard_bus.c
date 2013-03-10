@@ -93,12 +93,12 @@ void FNAME_SDCBUS(MMIOWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
 
 void FNAME_SDCBUS(SoftReset)(UBYTE mask, struct sdcard_Bus *bus)
 {
-    ULONG timeout = 10;
+    ULONG timeout = 100;
 
     FNAME_SDCBUS(MMIOWriteByte)(SDHCI_RESET, mask, bus);
     while (FNAME_SDCBUS(MMIOReadByte)(SDHCI_RESET, bus) & mask) {
         if (timeout == 0) {
-            D(bug("[SDCard--] %s: Timeout\n", __PRETTY_FUNCTION__));
+            bug("[SDCard--] %s: Timeout\n", __PRETTY_FUNCTION__);
             break;
         }
         sdcard_Udelay(1000);
