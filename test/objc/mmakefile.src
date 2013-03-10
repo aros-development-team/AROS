@@ -11,10 +11,11 @@ EXEDIR := $(AROS_TESTS)/objc
 
 # gcc 4.6.2 can't build arm Objective C support without
 # a compiler error.
-ifneq (,$(findstring $(AROS_TARGET_CPU),arm))
-#MM- test : test-objc
+#MM- test : test-objc-$(CPU)
+#MM- test-objc-i386 : test-objc
+#MM- test-objc-x86_64 : test-objc
+#MM- test-objc-ppc : test-objc
 #MM- test-quick : test-objc-quick
-endif
 
 #MM- test-objc: test-objc-hello
 #MM- test-objc-quick: test-objc-hello-quick
