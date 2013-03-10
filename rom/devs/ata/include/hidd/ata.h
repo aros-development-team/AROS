@@ -60,7 +60,7 @@ typedef enum
    AB_XFER_RWMULTI,    /* Multisector   */
    AB_XFER_PACKET,     /* ATAPI         */
    AB_XFER_LBA,        /* LBA28         */
-   AB_XFER_DMA,        /* DMA is in use */
+   AB_XFER_PIO32       /* 32-bit PIO    */
 } ata_XferMode;
 
 #define AF_XFER_PIO(x)  (1<<(AB_XFER_PIO0+(x)))
@@ -70,7 +70,7 @@ typedef enum
 #define AF_XFER_RWMULTI (1<<(AB_XFER_RWMULTI))
 #define AF_XFER_PACKET  (1<<(AB_XFER_PACKET))
 #define AF_XFER_LBA     (1<<(AB_XFER_LBA))
-#define AF_XFER_DMA     (1<<(AB_XFER_DMA))
+#define AF_XFER_PIO32   (1<<(AB_XFER_PIO32))
 
 #include <interface/Hidd_ATABus.h>
 #include <interface/Hidd_ATAUnit.h>

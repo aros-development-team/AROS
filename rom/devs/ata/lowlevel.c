@@ -27,7 +27,7 @@
 #define DUMP_MORE(a) do { } while (0)
 #define DATA(a)      do { } while (0)
 #define DATAPI(a)    do { } while (0)
-#define DINIT(a)     do { } while (0)
+#define DINIT(a)
 #endif
 /* Errors that shouldn't happen */
 #define DERROR(a) a
@@ -688,7 +688,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
 BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen, BOOL *dma, BOOL write)
 {
     struct ata_Bus *bus = unit->au_Bus;
-    *dma = *dma && (unit->au_XferModes & AF_XFER_DMA) ? TRUE : FALSE;
+    *dma = *dma && (unit->au_Flags & AF_DMA) ? TRUE : FALSE;
     LONG err = 0;
 
     UBYTE cmd[12] = {
@@ -832,7 +832,7 @@ BYTE atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
      * setup DMA & push command
      * it does not really mean we will use dma here btw
      */
-    if ((unit->au_XferModes & AF_XFER_DMA) && (length !=0) && (buffer != 0))
+    if ((unit->au_Flags & AF_DMA) && (length !=0) && (buffer != 0))
     {
         dma = DMA_Setup(unit->au_Bus, buffer, length,
                         cmd->scsi_Flags & SCSIF_READ);
@@ -966,7 +966,19 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
 {
     struct ata_Bus *bus = unit->au_Bus;
     BOOL dma = FALSE;
-#if 0 // We can't set drive modes unless we also set the controller's timing registers
+/*
+ * We can't set drive modes unless we also set the controller's timing registers
+ * FIXME:   Implement aoHodd_ATABus_CanSetXferMode and moHidd_ATABus_SetXferMode
+            support.
+ * CHECKME: Current code lives with what machine's firmware has set for us. Looks
+ *          like all firmwares set up the best DMA mode. But what if the firmware
+ *          didn't set it up for some reason (the add-on controller which has been
+ *          ignored by it
+ *          for example) ? Shouldn't we check unit->au_UseModes here ? 
+ */
+#if 0
+    struct ataBase *ATABase = bus->ab_Base;
+    OOP_Object *obj = OOP_OBJECT(ATABase->busClass, bus);
     UBYTE type=0;
     ata_CommandBlock acb =
     {
@@ -985,6 +997,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
 #endif
     DINIT(bug("[ATA%02ld] common_SetXferMode: Trying to set mode %d\n", unit->au_UnitNum, mode));
 
+    /* CHECKME: This condition should be not needed. */
     if ((!bus->dmaVectors) && (mode >= AB_XFER_MDMA0))
     {
         DINIT(bug("[ATA%02ld] common_SetXferMode: This controller does not own DMA port! Will set best PIO\n", unit->au_UnitNum));
@@ -997,67 +1010,50 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
      */
     if (0 == (unit->au_XferModes & AF_XFER_PACKET))
     {
-        if ((mode >= AB_XFER_PIO0) && (mode <= AB_XFER_PIO4))
+        if ((mode >= AB_XFER_MDMA0) && (mode <= AB_XFER_UDMA6))
         {
-            if ((!unit->au_Bus->ab_Base->ata_NoMulti) && (unit->au_XferModes & AF_XFER_RWMULTI))
+            /* DMA, both multiword and Ultra */
+            unit->au_Read32  = ata_ReadDMA32;
+            unit->au_Write32 = ata_WriteDMA32;
+            if (unit->au_XferModes & AF_XFER_48BIT)
             {
-                ata_IRQSetHandler(unit, ata_IRQNoData, NULL, 0, 0);
-                PIO_Out(bus, unit->au_Drive->id_RWMultipleSize & 0xFF, ata_Count);
-                PIO_Out(bus, ATA_SET_MULTIPLE, ata_Command);
-                ata_WaitBusyTO(unit, -1, TRUE, NULL);
+                unit->au_UseModes |= AF_XFER_48BIT;
+                unit->au_Read64    = ata_ReadDMA64;
+                unit->au_Write64   = ata_WriteDMA64;
+            }
+        }
+        else if ((!unit->au_Bus->ab_Base->ata_NoMulti) && (unit->au_XferModes & AF_XFER_RWMULTI))
+        {
+            /* Multisector PIO */
+            ata_IRQSetHandler(unit, ata_IRQNoData, NULL, 0, 0);
+            PIO_Out(bus, unit->au_Drive->id_RWMultipleSize & 0xFF, ata_Count);
+            PIO_Out(bus, ATA_SET_MULTIPLE, ata_Command);
+            ata_WaitBusyTO(unit, -1, TRUE, NULL);
 
-                unit->au_Read32         = ata_ReadMultiple32;
-                unit->au_Write32        = ata_WriteMultiple32;
-                if (unit->au_XferModes & AF_XFER_48BIT)
-                {
-                    unit->au_Read64         = ata_ReadMultiple64;
-                    unit->au_Write64        = ata_WriteMultiple64;
-                }
-            }
-            else
-            {
-                unit->au_Read32         = ata_ReadSector32;
-                unit->au_Write32        = ata_WriteSector32;
-                if (unit->au_XferModes & AF_XFER_48BIT)
-                {
-                    unit->au_Read64         = ata_ReadSector64;
-                    unit->au_Write64        = ata_WriteSector64;
-                }
-            }
-        }
-        else if ((mode >= AB_XFER_MDMA0) && (mode <= AB_XFER_MDMA2))
-        {
-            unit->au_Read32         = ata_ReadDMA32;
-            unit->au_Write32        = ata_WriteDMA32;
+            unit->au_UseModes |= AF_XFER_RWMULTI;
+            unit->au_Read32    = ata_ReadMultiple32;
+            unit->au_Write32   = ata_WriteMultiple32;
             if (unit->au_XferModes & AF_XFER_48BIT)
             {
-                unit->au_Read64         = ata_ReadDMA64;
-                unit->au_Write64        = ata_WriteDMA64;
-            }
-        }
-        else if ((mode >= AB_XFER_UDMA0) && (mode <= AB_XFER_UDMA6))
-        {
-            unit->au_Read32         = ata_ReadDMA32;
-            unit->au_Write32        = ata_WriteDMA32;
-            if (unit->au_XferModes & AF_XFER_48BIT)
-            {
-                unit->au_Read64         = ata_ReadDMA64;
-                unit->au_Write64        = ata_WriteDMA64;
+                unit->au_UseModes |= AF_XFER_48BIT;
+                unit->au_Read64    = ata_ReadMultiple64;
+                unit->au_Write64   = ata_WriteMultiple64;
             }
         }
         else
         {
-            unit->au_Read32         = ata_ReadSector32;
-            unit->au_Write32        = ata_WriteSector32;
+            /* 1-sector PIO */
+            unit->au_Read32  = ata_ReadSector32;
+            unit->au_Write32 = ata_WriteSector32;
             if (unit->au_XferModes & AF_XFER_48BIT)
             {
-                unit->au_Read64         = ata_ReadSector64;
-                unit->au_Write64        = ata_WriteSector64;
+                unit->au_UseModes |= AF_XFER_48BIT;
+                unit->au_Read64    = ata_ReadSector64;
+                unit->au_Write64   = ata_WriteSector64;
             }
         }
     }
 
-/* TODO: Write call to HIDD's SetXferMode here */
 #if 0 // We can't set drive modes unless we also set the controller's timing registers
     if ((mode >= AB_XFER_PIO0) && (mode <= AB_XFER_PIO4))
     {
@@ -1084,32 +1080,13 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
         DINIT(bug("[ATA%02ld] common_SetXferMode: ERROR: Failed to apply new xfer mode.\n", unit->au_UnitNum));
     }
 
-    if (unit->au_DMAPort)
+    if (!HIDD_ATABus_SetXferMode(obj, mode))
     {
-        type = ATA_IN(dma_Status, unit->au_DMAPort);
-        type &= 0x60;
-        if (dma)
-        {
-            type |= 1 << (5 + (unit->au_UnitNum & 1));
-        }
-        else
-        {
-            type &= ~(1 << (5 + (unit->au_UnitNum & 1)));
-        }
-
-        DINIT(bug("[DSCSI] common_SetXferMode: Trying to apply new DMA (%lx) status: %02lx (unit %ld)\n", unit->au_DMAPort, type, unit->au_UnitNum & 1));
-
-        ata_SelectUnit(unit);
-        ATA_OUT(type, dma_Status, unit->au_DMAPort);
-        if (type == (ATA_IN(dma_Status, unit->au_DMAPort) & 0x60))
-        {
-            DINIT(bug("[DSCSI] common_SetXferMode: New DMA Status: %02lx\n", type));
-        }
-        else
-        {
-            DINIT(bug("[DSCSI] common_SetXferMode: Failed to modify DMA state for this device\n"));
-            dma = FALSE;
-        }
+        /*
+         * DMA mode setup failed.
+         * FIXME: Should completely revert back to PIO protocol, or try lower mode.
+         */
+        dma = FALSE;
     }
 #else
     if (mode >= AB_XFER_MDMA0)
@@ -1117,9 +1094,14 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
 #endif
 
     if (dma)
-        unit->au_XferModes |= AF_XFER_DMA;
+    {
+        unit->au_Flags |= AF_DMA; /* This flag is used by ATAPI protocol */
+    }
     else
-        unit->au_XferModes &= ~AF_XFER_DMA;
+    {
+        unit->au_UseModes &= ~AF_XFER_DMA_MASK;
+        unit->au_Flags    &= ~AF_DMA;
+    }
 }
 
 static void common_SetBestXferMode(struct ata_Unit* unit)
@@ -1185,6 +1167,7 @@ void common_DetectXferModes(struct ata_Unit* unit)
     {
         DINIT(bug("[ATA%02ld] common_DetectXferModes: - LBA Addressing\n", unit->au_UnitNum));
         unit->au_XferModes     |= AF_XFER_LBA;
+        unit->au_UseModes      |= AF_XFER_LBA;
     }
     else
     {
@@ -1228,12 +1211,10 @@ void common_DetectXferModes(struct ata_Unit* unit)
                     unit->au_XferModes |= AF_XFER_MDMA(iter);
                     if (unit->au_Drive->id_MWDMASupport & (256 << iter))
                     {
+                        unit->au_UseModes |= AF_XFER_MDMA(iter);
                         DINIT(bug("[MDMA%ld] ", iter));
                     }
-                    else
-                    {
-                        DINIT(bug("MDMA%ld ", iter));
-                    }
+                        DINIT(else bug("MDMA%ld ", iter);)
                 }
             }
             DINIT(bug("\n"));
@@ -1249,12 +1230,10 @@ void common_DetectXferModes(struct ata_Unit* unit)
                     unit->au_XferModes |= AF_XFER_UDMA(iter);
                     if (unit->au_Drive->id_UDMASupport & (256 << iter))
                     {
+                        unit->au_UseModes |= AF_XFER_UDMA(iter);
                         DINIT(bug("[UDMA%ld] ", iter));
                     }
-                    else
-                    {
-                        DINIT(bug("UDMA%ld ", iter));
-                    }
+                        DINIT(else bug("UDMA%ld ", iter);)
                 }
             }
             DINIT(bug("\n"));
@@ -1390,9 +1369,10 @@ BYTE ata_Identify(struct ata_Unit* unit)
         unit->au_Write32        = atapi_Write;
         unit->au_DirectSCSI     = atapi_DirectSCSI;
         unit->au_Eject          = atapi_Eject;
-        unit->au_Flags          |= AF_DiscChanged;
+        unit->au_Flags         |= AF_DiscChanged;
         unit->au_DevType        = (unit->au_Drive->id_General >>8) & 0x1f;
         unit->au_XferModes      = AF_XFER_PACKET;
+        unit->au_UseModes      |= AF_XFER_PACKET; /* OR because this field may already contain AF_XFER_PIO32 */
     }
     else
     {

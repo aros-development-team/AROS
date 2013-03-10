@@ -211,8 +211,17 @@ void ATAUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         IID_Hidd_ATAUnit
 
     FUNCTION
-        Returns flags telling which transfer modes are supported
-        by this device.
+        Tells which transfer modes are supported by this device. The returned value
+        is a bitwise combination of the following flags (see include/hidd/ata.h):
+
+        AF_XFER_PIO(x)  - PIO mode number x (0 - 4)
+        AF_XFER_MDMA(x) - multiword DMA mode number x (0 - 2)
+        AF_XFER_UDMA(x) - Ultra DMA mode number x (0 - 6)
+        AF_XFER_48BIT   - LBA48 block addressing
+        AF_XFER_RWMILTI - Multisector PIO
+        AF_XFER_PACKET  - ATAPI
+        AF_XFER_LBA     - LBA28 block addressing
+        AF_XFER_PIO32   - 32-bit PIO
 
     NOTES
 
@@ -221,6 +230,7 @@ void ATAUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     BUGS
 
     SEE ALSO
+        aoHidd_ATAUnit_ConfiguredModes
 
     INTERNALS
 
@@ -262,7 +272,7 @@ void ATAUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         IID_Hidd_ATAUnit
 
     FUNCTION
-        Tells maximum allowed sectors number for multisector transfer.
+        Tells maximum allowed number of sectors for multisector transfer.
 
     NOTES
 
@@ -278,24 +288,30 @@ void ATAUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /*****************************************************************************************
 
     NAME
-        aoHidd_ATAUnit_32Bit
+        aoHidd_ATAUnit_ConfiguredModes
 
     SYNOPSIS
-        [..G], UBYTE
+        [..G], ULONG
 
     LOCATION
         IID_Hidd_ATAUnit
 
     FUNCTION
-        Tells if 32-bit PIO is supported by the drive.
+        Tells which transfer modes are currently configured for use with the drive.
+        The returned value is a bitmask of the same flags as for
+        aoHidd_ATAUnit_XferModes attribute.
 
     NOTES
 
     EXAMPLE
 
     BUGS
+        Currently ata.device does not distinguish between PIO modes and does not
+        set any bit for them. Absence of DMA mode flags automatically means that
+        PIO mode is used.
 
     SEE ALSO
+        aoHidd_ATAUnit_XferModes
 
     INTERNALS
 
@@ -337,12 +353,8 @@ void ATAUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         *msg->storage = unit->au_Drive->id_RWMultipleSize & 0xFF;
         return;
 
-    case aoHidd_ATAUnit_32Bit:
-        *msg->storage = (unit->au_outs == unit->au_Bus->pioVectors->ata_outsl) ? TRUE : FALSE;
-        return;
-
-    case aoHidd_ATAUnit_DMAMode:
-        /* TODO */
+    case aoHidd_ATAUnit_ConfiguredModes:
+        *msg->storage = unit->au_UseModes;
         return;
     }
 

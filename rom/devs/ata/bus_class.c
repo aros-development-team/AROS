@@ -560,6 +560,34 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
     INTERNALS
 
 *****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        aoHidd_ATABus_CanSetXferMode
+
+    SYNOPSIS
+        [..G], BOOL
+
+    LOCATION
+        CLID_Hidd_ATABus
+
+    FUNCTION
+        Tells whether the bus driver implements moHidd_ATABus_SetXferMode method.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+        Current version of ata.device does not use this attribute, and it is
+        considered reserved.
+
+    SEE ALSO
+        moHidd_ATABus_SetXferMode
+
+    INTERNALS
+
+*****************************************************************************************/
 
 OOP_Object *ATABus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -680,6 +708,10 @@ void ATABus__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     case aoHidd_ATABus_Slave:
         *msg->storage = (IPTR)data->ab_Units[1];
+        return;
+
+    case aoHidd_ATABus_CanSetXferMode:
+        *msg->storage = FALSE;
         return;
     }
 
@@ -875,8 +907,11 @@ APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
     EXAMPLE
 
     BUGS
+        Current version of ata.device does not use this method, and it is
+        considered reserved.
 
     SEE ALSO
+        aoHidd_ATABus_CanSetXferMode
 
     INTERNALS
 
