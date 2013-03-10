@@ -221,9 +221,10 @@ void FNAME_SDCBUS(SetClock)(ULONG, struct sdcard_Bus *);
 void FNAME_SDCBUS(SetPowerLevel)(ULONG, BOOL, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(FinishCmd)(struct TagItem *, struct sdcard_Bus *);
+ULONG FNAME_SDCBUS(FinishData)(struct TagItem *, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *, ULONG, const ULONG);
 
-void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *);
+void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *, struct TagItem *);
 void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *);
 
 BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *);
