@@ -33,7 +33,6 @@
 #include "cpuspecific.h"
 #include "locale.h"
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <zune/customclasses.h>

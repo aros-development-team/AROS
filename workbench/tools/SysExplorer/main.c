@@ -29,7 +29,6 @@
 #include "locale.h"
 #include "classes.h"
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #define APPNAME "SysExplorer"
