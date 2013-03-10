@@ -228,6 +228,10 @@ void ATAUnit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     EXAMPLE
 
     BUGS
+        32-bit PIO is actually controller's property and not drive's property.
+        Because of this AF_XFER_PIO32 flag can never be returned by this attribute.
+        Nevertheless, it can be returned by aoHidd_ATAUnit_ConfiguredModes
+        attribute.
 
     SEE ALSO
         aoHidd_ATAUnit_ConfiguredModes
