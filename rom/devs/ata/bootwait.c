@@ -1,5 +1,3 @@
-#define DEBUG 1
-
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <exec/resident.h>
