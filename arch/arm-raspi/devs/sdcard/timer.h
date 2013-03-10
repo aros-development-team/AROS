@@ -5,6 +5,9 @@
 
 struct SDCardBase;
 
+ULONG sdcard_CurrentTime();
+void sdcard_Udelay(ULONG);
+
 /*
  * sdcard_OpenTimer
  *   create timerequest to manage timed operations
