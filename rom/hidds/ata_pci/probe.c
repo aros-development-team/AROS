@@ -207,8 +207,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
         if (!hwhba)
         {
             DSATA(bug("[PCI-ATA] Mapping failed, device will be ignored\n"));
-
-            HIDD_PCIDevice_Release(Device);
+            DeviceFree(devRef, base);
             return;
         }
 
@@ -230,7 +229,7 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
             DSATA(bug("[PCI-ATA] Legacy mode is not supported, device will be ignored\n"));
 
             HIDD_PCIDriver_UnmapPCI(Driver, hba_phys, hba_size);
-            HIDD_PCIDevice_Release(Device);
+            DeviceFree(devRef, base);
             return;
         }
 
@@ -269,13 +268,13 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                      * TODO: in ata_InitBus() it will be opened and closed again.
                      * This is not optimal, it could be opened and closed just once.
                      */
-                   timereq = OpenTimer(a->ATABase);
+                   timereq = OpenTimer(base);
                    if (!timereq)
                    {
                         DSATA(bug("[PCI-ATA] Failed to open timer, can't perform handoff. Device will be ignored\n"));
 
                         HIDD_PCIDriver_UnmapPCI(Driver, hba_phys, hba_size);
-                        HIDD_PCIDevice_Release(Device);
+                        DeviceFree(devRef, base);
                         return;
                    }
 
@@ -378,23 +377,6 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 
                 RawDoFmt("PCI %s %s channel", str, RAWFMTFUNC_STRING, name);
 
-                if ((x > 0) && dmaBase)
-                {
-                    /*
-                     * FIXME: Currently ata.device does not support shared DMA.
-                     * In order to make it working, we disable DMA for secondary channel.
-                     */
-                    UBYTE dmaStatus = inb(dmaBase + dma_Status);
-
-                    if (dmaStatus & DMAF_Simplex)
-                    {
-                        bug("[PCI-ATA] WARNING: Controller only supports "
-                            "DMA on one bus at a time. DMAStatus=0x%02X\n", dmaStatus);
-                        bug("[PCI-ATA] DMA for secondary bus disabled\n");
-                        dmaBase = 0;
-                    }
-                }
-
                 probedbus->atapb_Node.ln_Name = name;
                 probedbus->atapb_Node.ln_Type = basePri;
                 probedbus->atapb_Node.ln_Pri  = basePri - (base->ata__buscount++);
@@ -415,10 +397,9 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
                                          TAG_DONE);
             }
         }
-        else
-        {
-            HIDD_PCIDevice_Release(Device);
-        }
+
+        if (!devRef->ref_Count)
+            DeviceFree(devRef, base);
     }
 
     AROS_USERFUNC_EXIT
