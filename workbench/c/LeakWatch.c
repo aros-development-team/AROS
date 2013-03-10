@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: show deltas of resources usage
@@ -39,21 +39,13 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-const TEXT version[] = "$VER: LeakWatch 0.1 (25.12.2002)\n";
+const TEXT version[] = "$VER: LeakWatch 0.2 (10.03.2013)\n";
 
 static struct Library *GadToolsBase;
 
 struct GadToolsBase_intern
 {
-    struct Library    		library;
-    struct ExecBase 		* sysbase;
-    BPTR	      		seglist;
-
-    struct IntuitionBase 	* intuibase;
-    struct Library	 	* dosbase;
-    struct GfxBase	 	* gfxbase;
-    struct Library		* layersbase;
-    struct Library	 	* utilitybase;
+    struct Library                lib;
 
     Class 			* buttonclass;
     Class 			* textclass;
@@ -71,7 +63,18 @@ struct GadToolsBase_intern
     struct SignalSemaphore   	bevelsema;
     /* Actually an Object *. The image used for bevel boxes. */
     struct Image           	* bevel;
-    struct SignalSemaphore   	classsema;
+    
+    /* RenderHook for GTListView class */
+    struct Hook                 lv_RenderHook;
+
+    /* Seglist pointer */
+    BPTR			gt_SegList;
+
+    /* Required libraies */
+    APTR			gt_IntuitionBase;
+    APTR			gt_UtilityBase;
+    APTR			gt_GfxBase;
+    APTR			gt_LayersBase;
 };
 
 
