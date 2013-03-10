@@ -13,8 +13,24 @@
 #include <aros/debug.h>
 #include <proto/timer.h>
 
+#include <asm/bcm2835.h>
+
 #include "timer.h"
 #include "sdcard_intern.h"
+
+ULONG sdcard_CurrentTime()
+{
+    return *((volatile ULONG *)(SYSTIMER_CLO));
+}
+
+void sdcard_Udelay(ULONG usec)
+{
+    ULONG now = sdcard_CurrentTime();
+    do
+    {
+        asm volatile("mov r0, r0\n");
+    } while (sdcard_CurrentTime() < (now + usec));
+}
 
 struct IORequest *sdcard_OpenTimer(struct SDCardBase *SDCardBase)
 {

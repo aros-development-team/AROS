@@ -25,10 +25,8 @@
 #include <proto/bootloader.h>
 #include <proto/expansion.h>
 #include <proto/utility.h>
-#include <proto/vcmbox.h>
 
 #include <asm/bcm2835.h>
-#include <hardware/videocore.h>
 #include <hardware/mmc.h>
 #include <hardware/sdhc.h>
 
@@ -61,11 +59,11 @@ ULONG FNAME_SDCBUS(MMIOReadLong)(ULONG reg, struct sdcard_Bus *bus)
 void FNAME_SDCBUS(ArasanWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
 {
     /* Bug: two SDC clock cycle delay required between successive chipset writes */
-    while (*((volatile ULONG *)(SYSTIMER_CLO)) < (bus->sdcb_LastWrite + 6))
-        asm volatile("mov r0, r0\n");
+    while (sdcard_CurrentTime() < (bus->sdcb_LastWrite + 6))
+        sdcard_Udelay(1);
 
     *(volatile ULONG *)(bus->sdcb_IOBase + reg) = val;
-    bus->sdcb_LastWrite = *((volatile ULONG *)(SYSTIMER_CLO));
+    bus->sdcb_LastWrite = sdcard_CurrentTime();
 }
 
 void FNAME_SDCBUS(MMIOWriteByte)(ULONG reg, UBYTE val, struct sdcard_Bus *bus)
@@ -95,7 +93,7 @@ void FNAME_SDCBUS(MMIOWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
 
 void FNAME_SDCBUS(SoftReset)(UBYTE mask, struct sdcard_Bus *bus)
 {
-    ULONG timeout = 10000, timeout_udelay;
+    ULONG timeout = 10;
 
     FNAME_SDCBUS(MMIOWriteByte)(SDHCI_RESET, mask, bus);
     while (FNAME_SDCBUS(MMIOReadByte)(SDHCI_RESET, bus) & mask) {
@@ -103,14 +101,14 @@ void FNAME_SDCBUS(SoftReset)(UBYTE mask, struct sdcard_Bus *bus)
             D(bug("[SDCard--] %s: Timeout\n", __PRETTY_FUNCTION__));
             break;
         }
-        timeout_udelay = timeout - 1000;
-        for (; timeout > timeout_udelay; timeout --) asm volatile("mov r0, r0\n");
+        sdcard_Udelay(1000);
+        timeout--;
     }
 }
 
 void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
 {
-    ULONG       sdcClkDiv, timeout, timeout_udelay;
+    ULONG       sdcClkDiv, timeout;
     UWORD       sdcClkCtrlCur, sdcClkCtrl;
 
     sdcClkCtrlCur = FNAME_SDCBUS(MMIOReadWord)(SDHCI_CLOCK_CONTROL, bus);
@@ -132,14 +130,14 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
 
         FNAME_SDCBUS(MMIOWriteWord)(SDHCI_CLOCK_CONTROL, (sdcClkCtrl | SDHCI_CLOCK_INT_EN), bus);
 
-        timeout = 20000;
+        timeout = 20;
         while (!((sdcClkCtrl = FNAME_SDCBUS(MMIOReadWord)(SDHCI_CLOCK_CONTROL, bus)) & SDHCI_CLOCK_INT_STABLE)) {
             if (timeout == 0) {
                 D(bug("[SDCard--] %s: SDHCI Clock failed to stabilise\n", __PRETTY_FUNCTION__));
                 break;
             }
-            timeout_udelay = timeout - 1000;
-            for (; timeout > timeout_udelay; timeout --) asm volatile("mov r0, r0\n");
+            sdcard_Udelay(1000);
+            timeout --;
         }
     }
     else
@@ -204,7 +202,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 
     UWORD sdcTransMode = 0, sdCommandFlags;
     ULONG sdStatus = 0, sdCommandMask = SDHCI_PS_CMD_INHIBIT;
-    ULONG timeout = 10000, timeout_udelay;
+    ULONG timeout = 10;
     ULONG ret = 0;
 
     if (sdResponseType != MMC_RSP_NONE)
@@ -229,9 +227,8 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
             D(bug("[SDCard--] %s: Controller failed to release inhibited bit(s).\n", __PRETTY_FUNCTION__));
             return -1;
         }
-        timeout_udelay = timeout - 1000;
-        for (; timeout > timeout_udelay; timeout--)
-            asm volatile("mov r0, r0\n");
+        sdcard_Udelay(1000);
+        timeout--;
     }
 
     sdCommandMask = SDHCI_INT_RESPONSE;
@@ -283,16 +280,15 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
     else
         FNAME_SDCBUS(MMIOWriteWord)(SDHCI_COMMAND, SDHCI_MAKE_CMD(sdCommand, sdCommandFlags), bus);
 
-    timeout = 10000;
+    timeout = 10;
     do {
         sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
-        if (sdStatus & SDHCI_INT_ERROR)
+        if ((sdStatus & SDHCI_INT_ERROR) || ((sdStatus & sdCommandMask) == sdCommandMask))
             break;
-        if (--timeout == 0)
-            break;
-    } while ((sdStatus & sdCommandMask) != sdCommandMask);
+        sdcard_Udelay(1000);
+    } while (--timeout > 0);
 
-    if (timeout != 0) {
+    if (timeout > 0) {
         if ((sdStatus & (sdCommandMask|SDHCI_INT_ERROR)) == sdCommandMask) {
             if (Response)
             {
@@ -322,7 +318,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         }
         else
         {
-            D(bug("[SDCard--] %s: CMD %02d Failed? [   status = %08x]\n", __PRETTY_FUNCTION__, sdCommand, sdStatus));
+            D(bug("[SDCard--] %s: CMD %02d Failed [   status = %08x]\n", __PRETTY_FUNCTION__, sdCommand, sdStatus));
             if (sdStatus & SDHCI_INT_ACMD12ERR)
             {
                 D(bug("[SDCard--] %s:               [acmd12err = %04x    ]\n", __PRETTY_FUNCTION__, FNAME_SDCBUS(MMIOReadWord)(SDHCI_ACMD12_ERR, bus)));
@@ -363,9 +359,8 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         D(bug("[SDCard--] %s: Error - CMD %02d timed out [status = %08x]\n", __PRETTY_FUNCTION__, sdCommand, sdStatus));
         ret = -1;
     }
-    timeout = 1000;
-    timeout_udelay = 0;
-    for (; timeout > timeout_udelay; timeout --) asm volatile("mov r0, r0\n");
+
+    sdcard_Udelay(1000);
 
     *(volatile ULONG *)GPSET0 = (1 << 16); // Turn Activity LED OFF
 
@@ -397,9 +392,7 @@ ULONG FNAME_SDCBUS(WaitUnitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
     };
 
     UBYTE retryreq = 5;
-    ULONG timeout_udelay;
 
-    timeout *= 1000;
     do {
         if (FNAME_SDCBUS(SendCmd)(sdcStatusTags, sdcUnit->sdcu_Bus) != -1)
         {
@@ -413,10 +406,8 @@ ULONG FNAME_SDCBUS(WaitUnitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
         } else if (--retryreq < 0)
                 return -1;
 
-        timeout_udelay = timeout - 1000;
-        for (; timeout > timeout_udelay; timeout --) asm volatile("mov r0, r0\n");
-
-    } while (timeout > 0);
+        sdcard_Udelay(1000);
+    } while (timeout-- > 0);
 
     if (timeout <= 0) {
         D(bug("[SDCard%02ld] %s: Timeout\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
@@ -480,7 +471,7 @@ int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
 
     /* Read the SCR to find out if higher speeds are supported ..*/
 
-    D(bug("[SDCard%02ld] %s: Attempt to send App Command ... \n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    D(bug("[SDCard%02ld] %s: Preparing for Card App Command ... \n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
     sdcChFreqTags[0].ti_Data = MMC_CMD_APP_CMD;
     sdcChFreqTags[1].ti_Data = sdcUnit->sdcu_CardRCA << 16;
     sdcChFreqTags[2].ti_Data = MMC_RSP_R1;
@@ -493,7 +484,7 @@ int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         sdcChFreqTags[2].ti_Data = MMC_RSP_R1;
 
         timeout = 3;
-        D(bug("[SDCard%02ld] %s: Attempt to Query SCR Register ... \n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        D(bug("[SDCard%02ld] %s: Querying SCR Register ... \n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         do
         {
             sdcChFreqTags[4].ti_Tag = SDCARD_TAG_DATA;
