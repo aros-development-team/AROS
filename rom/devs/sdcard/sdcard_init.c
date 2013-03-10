@@ -25,6 +25,7 @@
 #include <proto/bootloader.h>
 #include <proto/expansion.h>
 #include <proto/vcmbox.h>
+#include <proto/kernel.h>
 
 #include <asm/bcm2835.h>
 #include <hardware/arasan.h>
@@ -325,6 +326,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
 static int FNAME_SDC(Scan)(struct SDCardBase *SDCardBase)
 {
     unsigned int        sdcReg;
+    int                 retVal = FALSE;
 
     D(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
 
@@ -346,21 +348,29 @@ static int FNAME_SDC(Scan)(struct SDCardBase *SDCardBase)
     sdcReg &= ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD);
     FNAME_SDCBUS(MMIOWriteByte)(SDHCI_HOST_CONTROL, sdcReg, SDCardBase->sdcard_Bus);
 
-    D(bug("[SDCard--] %s: Masking chipset Interrupts...\n", __PRETTY_FUNCTION__));
+    /* Install IRQ handler */
+    if ((SDCardBase->sdcard_Bus->sdcb_IRQHandle = KrnAddIRQHandler(IRQ_ARASANSDIO, FNAME_SDCBUS(BusIRQ), SDCardBase->sdcard_Bus, NULL)) != NULL)
+    {
+        D(bug("[SDCard--] %s: IRQHandle @ 0x%p\n", __PRETTY_FUNCTION__, SDCardBase->sdcard_Bus->sdcb_IRQHandle));
 
-    FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_ENABLE, SDCardBase->sdcard_Bus->sdcb_IntrMask, SDCardBase->sdcard_Bus);
-    FNAME_SDCBUS(MMIOWriteLong)(SDHCI_SIGNAL_ENABLE, SDCardBase->sdcard_Bus->sdcb_IntrMask, SDCardBase->sdcard_Bus);
+        D(bug("[SDCard--] %s: Masking chipset Interrupts...\n", __PRETTY_FUNCTION__));
 
-    D(bug("[SDCard--] %s: Launching Bus Task...\n", __PRETTY_FUNCTION__));
+        FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_ENABLE, SDCardBase->sdcard_Bus->sdcb_IntrMask, SDCardBase->sdcard_Bus);
+        FNAME_SDCBUS(MMIOWriteLong)(SDHCI_SIGNAL_ENABLE, SDCardBase->sdcard_Bus->sdcb_IntrMask, SDCardBase->sdcard_Bus);
 
-    return NewCreateTask(
-        TASKTAG_PC         , FNAME_SDCBUS(BusTask),
-        TASKTAG_NAME       , "SDCard Subsystem",
-        TASKTAG_STACKSIZE  , STACK_SIZE,
-        TASKTAG_PRI        , TASK_PRI,
-        TASKTAG_TASKMSGPORT, &SDCardBase->sdcard_Bus->sdcb_MsgPort,
-        TASKTAG_ARG1       , SDCardBase->sdcard_Bus,
-        TAG_DONE) ? TRUE : FALSE;
+        D(bug("[SDCard--] %s: Launching Bus Task...\n", __PRETTY_FUNCTION__));
+
+        return NewCreateTask(
+            TASKTAG_PC         , FNAME_SDCBUS(BusTask),
+            TASKTAG_NAME       , "SDCard Subsystem",
+            TASKTAG_STACKSIZE  , STACK_SIZE,
+            TASKTAG_PRI        , TASK_PRI,
+            TASKTAG_TASKMSGPORT, &SDCardBase->sdcard_Bus->sdcb_MsgPort,
+            TASKTAG_ARG1       , SDCardBase->sdcard_Bus,
+            TAG_DONE) ? TRUE : FALSE;
+    }
+
+    return retVal;
 }
 
 static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
@@ -370,19 +380,25 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
     if ((ExpansionBase = OpenLibrary("expansion.library", 40L)) == NULL)
     {
         D(bug("[SDCard--] %s: Failed to open expansion.library\n", __PRETTY_FUNCTION__));
-        return FALSE;
+        goto libinit_fail;
     }
 
+    if ((KernelBase = OpenResource("kernel.resource")) == NULL)
+    {
+        D(bug("[SDCard--] %s: Failed to open kernel.resource\n", __PRETTY_FUNCTION__));
+        goto libinit_fail;
+    }
+    
     if ((VCMBoxBase = OpenResource("vcmbox.resource")) == NULL)
     {
         D(bug("[SDCard--] %s: Failed to open vcmbox.resource\n", __PRETTY_FUNCTION__));
-        return FALSE;
+        goto libinit_fail;
     }
 
     if ((LIBBASE->sdcard_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096)) == NULL)
     {
         D(bug("[SDCard--] %s: Failed to Allocate MemPool\n", __PRETTY_FUNCTION__));
-        return FALSE;
+        goto libinit_fail;
     }
 
     D(bug("[SDCard--] %s: MemPool @ %p\n", __PRETTY_FUNCTION__, LIBBASE->sdcard_MemPool));
@@ -402,7 +418,7 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
     if (VCMBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage)
     {
         D(bug("[SDCard--] %s: Failed to read controller's Power state\n", __PRETTY_FUNCTION__));
-        return FALSE;
+        goto libinit_fail;
     }
     
     if (!(VCMBoxMessage[6] & VCPOWER_STATE_ON))
@@ -423,7 +439,7 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
         if ((VCMBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage) || (!(VCMBoxMessage[6] & VCPOWER_STATE_ON)))
         {
             D(bug("[SDCard--] %s: Failed to power on controller\n", __PRETTY_FUNCTION__));
-            return FALSE;
+            goto libinit_fail;
         }
     }
 #endif
@@ -442,7 +458,7 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
     if (VCMBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage)
     {
         D(bug("[SDCard--] %s: Failed to determine Max SDHC Clock\n", __PRETTY_FUNCTION__));
-        return FALSE;
+        goto libinit_fail;
     }
 
     if ((LIBBASE->sdcard_Bus = AllocPooled(LIBBASE->sdcard_MemPool, sizeof(struct sdcard_Bus))) != NULL)
@@ -471,6 +487,11 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
         LIBBASE->sdcard_Bus->sdcb_LastWrite = *((volatile unsigned int *)(SYSTIMER_CLO));
     }
     return TRUE;
+    
+libinit_fail:
+    if (ExpansionBase) CloseLibrary(ExpansionBase);
+    
+    return FALSE;
 }
 
 static int FNAME_SDC(Open)

@@ -20,6 +20,8 @@
 #include <devices/timer.h>
 #include <devices/cd.h>
 
+#include <asm/bcm2835.h>
+
 #define FNAME_SDC(x)                    SDCARD__Device__ ## x
 #define FNAME_SDCIO(x)                  SDCARD__SDIO__ ## x
 #define FNAME_SDCBUS(x)                 SDCARD__SDBus__ ## x
@@ -58,6 +60,17 @@
 #define SDCARD_TAG_DATALEN              (SDCARD_TAGBASE + 6)
 #define SDCARD_TAG_DATAFLAGS            (SDCARD_TAGBASE + 7)
 
+#define LED_OFF                         0
+#define LED_ON                          100
+
+static inline void sdcard_SetLED(int lvl)
+{
+    if (lvl > 0)
+        *(volatile ULONG *)GPCLR0 = (1 << 16); // Turn Activity LED ON
+    else
+        *(volatile ULONG *)GPSET0 = (1 << 16); // Turn Activity LED OFF
+}
+
 /* structure forward declarations */
 struct sdcard_Unit;
 struct sdcard_Bus;
@@ -69,6 +82,7 @@ struct SDCardBase
     struct Device                       sdcard_Device;
 
     /* Imports */
+    APTR		                sdcard_KernelBase;
     struct Device                       *sdcard_TimerBase;
     APTR                                sdcard_VCMBoxBase;
 
@@ -78,6 +92,9 @@ struct SDCardBase
    /* Memory Management */
    APTR                                 sdcard_MemPool;
 };
+
+#undef KernelBase
+#define KernelBase SDCardBase->sdcard_KernelBase
 
 struct sdcard_Bus
 {
@@ -93,6 +110,8 @@ struct sdcard_Bus
     struct Task                         *sdcb_Task;
     struct MsgPort                      *sdcb_MsgPort;
     struct IORequest                    *sdcb_Timer;         /* timer stuff */
+
+    APTR                                sdcb_IRQHandle;
 
     /* Chipset .. */
     ULONG                               sdcb_Capabilities;
@@ -201,8 +220,10 @@ void FNAME_SDCBUS(SoftReset)(UBYTE, struct sdcard_Bus *);
 void FNAME_SDCBUS(SetClock)(ULONG, struct sdcard_Bus *);
 void FNAME_SDCBUS(SetPowerLevel)(ULONG, BOOL, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *, struct sdcard_Bus *);
+ULONG FNAME_SDCBUS(FinishCmd)(struct TagItem *, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *, ULONG, const ULONG);
 
+void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *);
 void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *);
 
 BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *);
