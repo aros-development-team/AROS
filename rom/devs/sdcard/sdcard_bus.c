@@ -278,51 +278,17 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
     return 0;
 }
 
-/*
-    sdCommandMask = SDHCI_INT_RESPONSE;
-
-    timeout = 1000;
-    do {
-        sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
-        if ((sdStatus & SDHCI_INT_ERROR) || ((sdStatus & sdCommandMask) == sdCommandMask))
-            break;
-        sdcard_Udelay(1000);
-    } while (--timeout > 0);
-
-    if (timeout > 0) {
-*/
-
 ULONG FNAME_SDCBUS(FinishCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 {
     struct TagItem *Response = NULL;
 
-    ULONG sdStatus, sdcReg, sdcStateMask, sdCommandMask = SDHCI_INT_RESPONSE;
     D(UWORD sdCommand      = (UWORD)GetTagData(SDCARD_TAG_CMD, 0, CmdTags));
     ULONG sdResponseType = GetTagData(SDCARD_TAG_RSPTYPE, MMC_RSP_NONE, CmdTags);
-    ULONG sdData, sdDataLen = 0, sdDataFlags;
-    ULONG timeout = 10;
     ULONG ret = 0;
-
-    sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
-
-    if (sdResponseType & MMC_RSP_BUSY)
-        sdCommandMask |= SDHCI_INT_DATA_END;
 
     if (sdResponseType != MMC_RSP_NONE)
     {
-        Response = FindTagItem(SDCARD_TAG_RSP, CmdTags);
-    }
-
-    if ((sdData = GetTagData(SDCARD_TAG_DATA, 0, CmdTags)) != 0)
-    {
-        sdDataLen = GetTagData(SDCARD_TAG_DATALEN, 0, CmdTags);
-        sdDataFlags = GetTagData(SDCARD_TAG_DATAFLAGS, 0, CmdTags);
-        if (!(sdDataLen))
-            sdData = 0;
-    };
-
-    if ((sdStatus & (sdCommandMask|SDHCI_INT_ERROR)) == sdCommandMask) {
-        if (Response)
+        if ((Response = FindTagItem(SDCARD_TAG_RSP, CmdTags)) != NULL)
         {
             D(bug("[SDCard--] %s: Reading CMD %02d Response ", __PRETTY_FUNCTION__, sdCommand));
             if (sdResponseType & MMC_RSP_136)
@@ -346,24 +312,34 @@ ULONG FNAME_SDCBUS(FinishCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
                 D(bug("[= %08x]\n", Response->ti_Data));
             }
         }
-        FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdCommandMask, bus);
     }
     else
     {
-        D(bug("[SDCard--] %s: CMD %02d Failed [   status = %08x]\n", __PRETTY_FUNCTION__, sdCommand, sdStatus));
-        if (sdStatus & SDHCI_INT_ACMD12ERR)
-        {
-            D(bug("[SDCard--] %s:               [acmd12err = %04x    ]\n", __PRETTY_FUNCTION__, FNAME_SDCBUS(MMIOReadWord)(SDHCI_ACMD12_ERR, bus)));
-        }
-        ret = -1;
+        D(bug("[SDCard--] %s: CMD %02d Response received when none expected!", __PRETTY_FUNCTION__, sdCommand));
     }
+    return ret;
+}
 
-    if (!ret && sdData)
+ULONG FNAME_SDCBUS(FinishData)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
+{
+    D(UWORD     sdCommand = (UWORD)GetTagData(SDCARD_TAG_CMD, 0, CmdTags));
+    ULONG       sdcStateMask = SDHCI_PS_DATA_AVAILABLE | SDHCI_PS_SPACE_AVAILABLE,
+                sdCommandMask = SDHCI_INT_SPACE_AVAIL | SDHCI_INT_DATA_AVAIL,
+                sdData, sdDataLen = 0, sdDataFlags, sdStatus, sdcReg;
+    ULONG       timeout = 1000;
+    ULONG ret = 0;
+
+    if ((sdData = GetTagData(SDCARD_TAG_DATA, 0, CmdTags)) != 0)
     {
-        D(bug("[SDCard--] %s: Transfering Data..\n", __PRETTY_FUNCTION__));
-        timeout = 1000;
-        sdCommandMask = SDHCI_INT_SPACE_AVAIL | SDHCI_INT_DATA_AVAIL;
-        sdcStateMask = SDHCI_PS_DATA_AVAILABLE | SDHCI_PS_SPACE_AVAILABLE;
+        sdDataLen = GetTagData(SDCARD_TAG_DATALEN, 0, CmdTags);
+        sdDataFlags = GetTagData(SDCARD_TAG_DATAFLAGS, 0, CmdTags);
+        if (!(sdDataLen))
+            sdData = 0;
+    };
+
+    if (sdData)
+    {
+        D(bug("[SDCard--] %s: Transfering CMD %02d Data..\n", __PRETTY_FUNCTION__, sdCommand));
         do {
             sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
             if (sdStatus & SDHCI_INT_ERROR) {
@@ -427,27 +403,10 @@ ULONG FNAME_SDCBUS(FinishCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
                 }
             }
         } while (!(sdStatus & SDHCI_INT_DATA_END));
+
+        sdcard_SetLED(LED_OFF);
     }
 
-    sdcard_Udelay(1000);
-
-    sdcard_SetLED(LED_OFF);
-
-    sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
-    if (sdStatus & bus->sdcb_IntrMask)
-    {
-        D(bug("[SDCard--] %s: Clearing Unhandled Interrupts [%08x -> %08x]\n", __PRETTY_FUNCTION__, sdStatus, (sdStatus & ~bus->sdcb_IntrMask)));
-        sdStatus &= ~bus->sdcb_IntrMask;
-        FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus, bus);
-    }
-
-    if (ret)
-    {
-        D(bug("[SDCard--] %s: Reseting SDHCI CMD/DATA\n", __PRETTY_FUNCTION__));
-
-        FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
-        FNAME_SDCBUS(SoftReset)(SDHCI_RESET_DATA, bus);
-    }
     return ret;
 }
 
@@ -631,18 +590,97 @@ int FNAME_SDCBUS(MMCChangeFrequency)(struct sdcard_Unit *sdcUnit)
 
 /********** BUS IRQ HANDLER **************/
 
-void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus)
+/*
+    sdCommandMask = SDHCI_INT_RESPONSE;
+
+    timeout = 1000;
+    do {
+        sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
+        if ((sdStatus & SDHCI_INT_ERROR) || ((sdStatus & sdCommandMask) == sdCommandMask))
+            break;
+        sdcard_Udelay(1000);
+    } while (--timeout > 0);
+
+    if (timeout > 0) {
+*/
+
+void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, struct TagItem *IRQCommandTags)
 {
-    unsigned int last_CLO, last_CHI;
+    BOOL error = FALSE;
+    ULONG sdStatus;
 
     D(bug("[SDCard**] %s(bus: %u @ 0x%p)\n", __PRETTY_FUNCTION__, bus->sdcb_BusNum, bus));
 
-    if (!(bus) || !(SysBase))
+    if (!(bus))
     {
         D(bug("[SDCard**] %s: Bad Params!\n", __PRETTY_FUNCTION__));
         return;
     }
 
+    sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
+
+    if (!(sdStatus & SDHCI_INT_ERROR))
+    {
+        if (sdStatus & SDHCI_INT_CMD_MASK)
+        {
+            if (IRQCommandTags)
+            {
+                if (sdStatus & SDHCI_INT_RESPONSE)
+                {
+                    FNAME_SDCBUS(FinishCmd)(IRQCommandTags, bus);
+                }
+            }
+            else
+            {
+                D(bug("[SDCard**] %s: Response IRQ received - but no command in progress!\n", __PRETTY_FUNCTION__));
+            }
+
+            sdStatus &= ~SDHCI_INT_CMD_MASK;
+            FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus, bus);
+        }
+
+        if (sdStatus & SDHCI_INT_DATA_MASK)
+        {
+            if (IRQCommandTags)
+            {
+                if (sdStatus & SDHCI_INT_DATA_END|SDHCI_INT_DMA_END|SDHCI_INT_DATA_AVAIL|SDHCI_INT_DATA_END_BIT)
+                {
+                    FNAME_SDCBUS(FinishData)(IRQCommandTags, bus);
+                }
+            }
+            else
+            {
+                D(bug("[SDCard**] %s: Data IRQ received - but no command in progress!\n", __PRETTY_FUNCTION__));
+            }
+
+            sdStatus &= ~SDHCI_INT_DATA_MASK;
+            FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus, bus);
+        }
+    }
+    else
+    {
+        D(bug("[SDCard--] %s: ERROR [   status = %08x]\n", __PRETTY_FUNCTION__, sdStatus));
+        if (sdStatus & SDHCI_INT_ACMD12ERR)
+        {
+            D(bug("[SDCard--] %s:       [acmd12err = %04x    ]\n", __PRETTY_FUNCTION__, FNAME_SDCBUS(MMIOReadWord)(SDHCI_ACMD12_ERR, bus)));
+        }
+        error = TRUE;
+    }
+
+    if (sdStatus & bus->sdcb_IntrMask)
+    {
+        D(bug("[SDCard--] %s: Clearing Unhandled Interrupts [%08x -> %08x]\n", __PRETTY_FUNCTION__, sdStatus, (sdStatus & ~bus->sdcb_IntrMask)));
+        sdStatus &= ~bus->sdcb_IntrMask;
+        FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus, bus);
+    }
+
+    if (error)
+    {
+        D(bug("[SDCard--] %s: Reseting SDHCI CMD/DATA\n", __PRETTY_FUNCTION__));
+
+        FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
+        FNAME_SDCBUS(SoftReset)(SDHCI_RESET_DATA, bus);
+    }
     D(bug("[SDCard**] %s: Done.\n", __PRETTY_FUNCTION__));
 }
 
