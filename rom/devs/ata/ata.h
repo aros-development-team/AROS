@@ -270,6 +270,7 @@ struct ata_Unit
    struct IOStdReq    *DaemonReq;      /* Disk change monitoring request */
 
    ULONG               au_XferModes;   /* available transfer modes */
+   ULONG               au_UseModes;    /* Used transfer modes */
 
    ULONG               au_Capacity;    /* Highest sector accessible through LBA28 */
    UQUAD               au_Capacity48;  /* Highest sector accessible through LBA48 */
@@ -317,15 +318,21 @@ struct ata_Unit
    ULONG               au_cmd_error;
 };
 
+#define AF_XFER_DMA_MASK (AF_XFER_MDMA(0)|AF_XFER_MDMA(1)|AF_XFER_MDMA(2)|                 \
+                          AF_XFER_UDMA(0)|AF_XFER_UDMA(1)|AF_XFER_UDMA(2)|AF_XFER_UDMA(3)| \
+                          AF_XFER_UDMA(4)|AF_XFER_UDMA(5)|AF_XFER_UDMA(6))
+
 /* Unit internal flags */
 #define AB_DiscPresent          30     /* disc now in drive */
 #define AB_DiscChanged          29     /* disc changed */
 #define AB_Removable            28     /* media removable */
+#define AB_DMA                  27     /* DMA is in use */
 #define AB_CHSOnly              26     /* only supports CHS commands */
 
 #define AF_DiscPresent          (1 << AB_DiscPresent)
 #define AF_DiscChanged          (1 << AB_DiscChanged)
 #define AF_Removable            (1 << AB_Removable)
+#define AF_DMA                  (1 << AB_DMA)
 #define AF_CHSOnly              (1 << AB_CHSOnly)
 
 #define Unit(io) ((struct ata_Unit *)(io)->io_Unit)

@@ -77,16 +77,18 @@ static inline void Unit_Enable32Bit(struct ata_Unit *unit)
 {
     struct ata_Bus *bus = unit->au_Bus;
 
-    unit->au_ins  = bus->pioVectors->ata_insl;
-    unit->au_outs = bus->pioVectors->ata_outsl;
+    unit->au_UseModes |= AF_XFER_PIO32;
+    unit->au_ins       = bus->pioVectors->ata_insl;
+    unit->au_outs      = bus->pioVectors->ata_outsl;
 }
 
 static inline void Unit_Disable32Bit(struct ata_Unit *unit)
 {
     struct ata_Bus *bus = unit->au_Bus;
 
-    unit->au_ins  = bus->pioVectors->ata_insw;
-    unit->au_outs = bus->pioVectors->ata_outsw;
+    unit->au_UseModes &= ~AF_XFER_PIO32;
+    unit->au_ins       = bus->pioVectors->ata_insw;
+    unit->au_outs      = bus->pioVectors->ata_outsw;
 }
 
 static inline void Unit_OutS(struct ata_Unit *unit, APTR data, ULONG length)
