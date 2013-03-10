@@ -92,3 +92,30 @@ Supports DMA
 MSG_USE_80WIRE (//)
 80-wire cable
 ;
+MSG_ATA_UNIT_PROPERTIES (//)
+IDE device properties
+;
+MSG_UNIT_NUMBER (//)
+Unit number
+;
+MSG_MODEL (//)
+Model
+;
+MSG_REVISION (//)
+Revision
+;
+MSG_SERIAL (//)
+Serial
+;
+MSG_TRANSFER_MODES (//)
+Supported modes
+;
+MSG_MULTISECTOR (//)
+Multisector limit
+;
+MSG_REMOVABLE (//)
+Removable
+;
+MSG_CONFIG_MODES (//)
+Configured modes
+;
