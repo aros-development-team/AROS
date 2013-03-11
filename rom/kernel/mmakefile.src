@@ -21,12 +21,12 @@ ifneq ($(AROS_TARGET_VARIANT),)
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/kernel/make.opts
 endif
 
-FUNCS :=     addexceptionhandler addirqhandler bug cause cli createcontext deletecontext    \
-             displayalert dispatch getbootinfo getscheduler issuper mapglobal		    \
-	     remexceptionhandler remirqhandler schedule setprotection setscheduler sti      \
-	     switch unmapglobal virtualtophysical obtaininput releaseinput 		    \
-	     putchar maygetchar allocpages freepages getsystemattr formatstr		    \
-	     initmemory statmemory _bug _displayalert getcpucount getcpunumber		    \
+FUNCS :=     addexceptionhandler addirqhandler bug cause cli createcontext deletecontext        \
+             displayalert dispatch getbootinfo getscheduler issuper mapglobal modifyirqhandler  \
+	     remexceptionhandler remirqhandler schedule setprotection setscheduler sti          \
+	     switch unmapglobal virtualtophysical obtaininput releaseinput 		        \
+	     putchar maygetchar allocpages freepages getsystemattr formatstr		        \
+	     initmemory statmemory _bug _displayalert getcpucount getcpunumber		        \
 	     allockernelbase prepareexecbase
 FILES     := kernel_init cpu_init kernel_cpu kernel_debug kernel_panic kernel_intr \
 	     kernel_memory kernel_romtags kernel_scheduler kernel_globals
