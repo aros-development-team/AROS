@@ -82,7 +82,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
     sdcRegTags[2].ti_Data = MMC_RSP_R7;
     D(bug("[SDCard>>] %s: Querying Interface conditions [%08x] ...\n", __PRETTY_FUNCTION__, sdcRegTags[1].ti_Data));
 
-    if (FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)
+    if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)  && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, bus) != -1))
     {
         D(bug("[SDCard>>] %s: Query Response = %08x\n", __PRETTY_FUNCTION__, sdcRegTags[3].ti_Data));
         D(bug("[SDCard>>] %s: SD2.0 Compliant Card .. publishing high-capacity support\n", __PRETTY_FUNCTION__));
@@ -99,7 +99,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
         sdcRegTags[1].ti_Data = 0;
         sdcRegTags[2].ti_Data = MMC_RSP_R1;
 
-        if (FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) == -1)
+        if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) == -1) || (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, bus) == -1))
         {
             D(bug("[SDCard>>] %s: App Command Failed\n", __PRETTY_FUNCTION__));
             return FALSE;
@@ -112,7 +112,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
         sdcRegTags[2].ti_Data = MMC_RSP_R3;
 
         D(bug("[SDCard>>] %s: Querying Operating conditions [%08x] ...\n", __PRETTY_FUNCTION__, sdcRegTags[1].ti_Data));
-        if (FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)
+        if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, bus) != -1))
         {
             D(bug("[SDCard>>] %s: Query Response = %08x\n", __PRETTY_FUNCTION__, sdcRegTags[3].ti_Data));
             sdcard_Udelay(1000);
@@ -153,7 +153,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
         sdcRegTags[1].ti_Data = 0;
         sdcRegTags[2].ti_Data = MMC_RSP_R2;
         sdcRegTags[3].ti_Data = (IPTR)sdcRsp136;
-        if (FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)
+        if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, bus) != -1))
         {
             if (sdcRegTags[3].ti_Data)
             {
@@ -173,7 +173,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
             sdcRegTags[1].ti_Data = 0;
             sdcRegTags[2].ti_Data = MMC_RSP_R6;
             sdcRegTags[3].ti_Data = 0;
-            if (FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)
+            if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, bus) != -1))
             {
                 if ((sdcUnit = AllocVecPooled(SDCardBase->sdcard_MemPool, sizeof(struct sdcard_Unit))) != NULL)
                 {
@@ -190,7 +190,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
                     sdcRegTags[2].ti_Data = MMC_RSP_R2;
                     sdcRegTags[3].ti_Data = (IPTR)sdcRsp136;
                     D(bug("[SDCard%02ld] %s: Querying Card Specific Data [%08x] ...\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcRegTags[1].ti_Data));
-                    if (FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)
+                    if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, bus) != -1))
                     {
                         if (FNAME_SDCBUS(WaitUnitStatus)(1000, sdcUnit) == -1)
                         {
@@ -517,7 +517,7 @@ static int FNAME_SDC(Open)
             {SDCARD_TAG_RSP,         0},
             {TAG_DONE,               0}
         };
-        if (FNAME_SDCBUS(SendCmd)(sdcOpenTags, LIBBASE->sdcard_Bus) != -1)
+        if ((FNAME_SDCBUS(SendCmd)(sdcOpenTags, LIBBASE->sdcard_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, LIBBASE->sdcard_Bus) != -1))
         {
             iorq->io_Unit = &LIBBASE->sdcard_Bus->sdcb_Units[unitnum]->sdcu_Unit;
             ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Unit.unit_OpenCnt++;
@@ -536,7 +536,7 @@ static int FNAME_SDC(Open)
                 sdcOpenTags[1].ti_Data = 1 << ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus->sdcb_SectorShift;
                 sdcOpenTags[2].ti_Data = MMC_RSP_R1;
                 sdcOpenTags[3].ti_Data = 0;
-                if (FNAME_SDCBUS(SendCmd)(sdcOpenTags, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus) != -1)
+                if ((FNAME_SDCBUS(SendCmd)(sdcOpenTags, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, LIBBASE->sdcard_Bus) != -1))
                 {
                     D(bug("[SDCard%02ld] %s: Blocklen set to %d\n", unitnum, __PRETTY_FUNCTION__, sdcOpenTags[1].ti_Data));
                 }
