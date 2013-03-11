@@ -619,8 +619,15 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, struct TagItem *IRQCommandTags
 
     sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
 
+    D(bug("[SDCard**] %s: Status = %08x\n", __PRETTY_FUNCTION__, sdStatus));
+
     if (!(sdStatus & SDHCI_INT_ERROR))
     {
+        if (sdStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE))
+        {
+            FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE), bus);
+            sdStatus &= ~(SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE);
+        }
         if (sdStatus & SDHCI_INT_CMD_MASK)
         {
             if (IRQCommandTags)
@@ -635,8 +642,8 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, struct TagItem *IRQCommandTags
                 D(bug("[SDCard**] %s: Response IRQ received - but no command in progress!\n", __PRETTY_FUNCTION__));
             }
 
+            FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus & SDHCI_INT_CMD_MASK, bus);
             sdStatus &= ~SDHCI_INT_CMD_MASK;
-            FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus, bus);
         }
 
         if (sdStatus & SDHCI_INT_DATA_MASK)
@@ -653,30 +660,30 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, struct TagItem *IRQCommandTags
                 D(bug("[SDCard**] %s: Data IRQ received - but no command in progress!\n", __PRETTY_FUNCTION__));
             }
 
+            FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus & SDHCI_INT_DATA_MASK, bus);
             sdStatus &= ~SDHCI_INT_DATA_MASK;
-            FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus, bus);
         }
     }
     else
     {
-        D(bug("[SDCard--] %s: ERROR [   status = %08x]\n", __PRETTY_FUNCTION__, sdStatus));
+        D(bug("[SDCard**] %s: ERROR\n", __PRETTY_FUNCTION__));
         if (sdStatus & SDHCI_INT_ACMD12ERR)
         {
-            D(bug("[SDCard--] %s:       [acmd12err = %04x    ]\n", __PRETTY_FUNCTION__, FNAME_SDCBUS(MMIOReadWord)(SDHCI_ACMD12_ERR, bus)));
+            D(bug("[SDCard**] %s:       [acmd12err = %04x    ]\n", __PRETTY_FUNCTION__, FNAME_SDCBUS(MMIOReadWord)(SDHCI_ACMD12_ERR, bus)));
         }
         error = TRUE;
     }
 
     if (sdStatus & bus->sdcb_IntrMask)
     {
-        D(bug("[SDCard--] %s: Clearing Unhandled Interrupts [%08x -> %08x]\n", __PRETTY_FUNCTION__, sdStatus, (sdStatus & ~bus->sdcb_IntrMask)));
+        D(bug("[SDCard**] %s: Clearing Unhandled Interrupts [%08x -> %08x]\n", __PRETTY_FUNCTION__, sdStatus, (sdStatus & ~bus->sdcb_IntrMask)));
         sdStatus &= ~bus->sdcb_IntrMask;
         FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus, bus);
     }
 
     if (error)
     {
-        D(bug("[SDCard--] %s: Reseting SDHCI CMD/DATA\n", __PRETTY_FUNCTION__));
+        D(bug("[SDCard**] %s: Reseting SDHCI CMD/DATA\n", __PRETTY_FUNCTION__));
 
         FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
         FNAME_SDCBUS(SoftReset)(SDHCI_RESET_DATA, bus);
