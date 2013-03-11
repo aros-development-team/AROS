@@ -25,6 +25,7 @@
 #include <proto/bootloader.h>
 #include <proto/expansion.h>
 #include <proto/utility.h>
+#include <proto/kernel.h>
 
 #include <asm/bcm2835.h>
 #include <hardware/mmc.h>
@@ -264,6 +265,12 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 
         D(bug("[SDCard--] %s: Mode %08x [%d x %dBytes]\n", __PRETTY_FUNCTION__, sdcTransMode, (((sdDataLen >> bus->sdcb_SectorShift) > 0) ? (sdDataLen >> bus->sdcb_SectorShift) : 1), ((sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen)));
     }
+
+#ifdef KernelBase
+#undef KernelBase
+#define KernelBase bus->sdcb_DeviceBase->sdcard_KernelBase
+#endif
+    KrnModifyIRQHandler(bus->sdcb_IRQHandle, bus, CmdTags);
 
     FNAME_SDCBUS(MMIOWriteLong)(SDHCI_ARGUMENT, sdArg, bus);
 #if (0)
