@@ -417,6 +417,25 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
     return ret;
 }
 
+ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
+{
+    ULONG sdStatus;
+
+    do {
+        sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
+        if ((sdStatus & SDHCI_INT_ERROR) || ((sdStatus & mask) == mask))
+            break;
+        sdcard_Udelay(1000);
+    } while (--timeout > 0);
+
+    if ((timeout <= 0) || (sdStatus & SDHCI_INT_ERROR))
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 ULONG FNAME_SDCBUS(WaitUnitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
 {
     struct TagItem sdcStatusTags[] =
@@ -596,20 +615,6 @@ int FNAME_SDCBUS(MMCChangeFrequency)(struct sdcard_Unit *sdcUnit)
 }
 
 /********** BUS IRQ HANDLER **************/
-
-/*
-    sdCommandMask = SDHCI_INT_RESPONSE;
-
-    timeout = 1000;
-    do {
-        sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
-        if ((sdStatus & SDHCI_INT_ERROR) || ((sdStatus & sdCommandMask) == sdCommandMask))
-            break;
-        sdcard_Udelay(1000);
-    } while (--timeout > 0);
-
-    if (timeout > 0) {
-*/
 
 void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, struct TagItem *IRQCommandTags)
 {
