@@ -5,23 +5,6 @@
 
 #define DEBUG 1
 
-// use #define xxx(a) D(a) to enable particular sections.
-#if DEBUG
-#define DIRQ(a) D(a)
-#define DIRQ_MORE(a)
-#define DUMP(a) D(a)
-#define DUMP_MORE(a)
-#define DINIT(a) (a)
-#else
-#define DIRQ(a)      do { } while (0)
-#define DIRQ_MORE(a) do { } while (0)
-#define DUMP(a)      do { } while (0)
-#define DUMP_MORE(a) do { } while (0)
-#define DINIT(a)     do { } while (0)
-#endif
-/* Errors that shouldn't happen */
-#define DERROR(a) a
-
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/exec.h>
@@ -33,6 +16,7 @@
 #include <devices/timer.h>
 
 #include <hardware/mmc.h>
+#include <hardware/sdhc.h>
 
 #include "sdcard_intern.h"
 #include "timer.h"
@@ -189,14 +173,22 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
 
     if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) != -1)
     {
-        D(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-        sdcReadTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
-        sdcReadTags[1].ti_Data = 0;
-        sdcReadTags[2].ti_Data = MMC_RSP_R1b;
-        sdcReadTags[4].ti_Tag = TAG_DONE;
-        if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) == -1)
+        if (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_DATA_END, 1000, unit->sdcu_Bus) != -1)
         {
-            D(bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+            D(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+            sdcReadTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
+            sdcReadTags[1].ti_Data = 0;
+            sdcReadTags[2].ti_Data = MMC_RSP_R1b;
+            sdcReadTags[4].ti_Tag = TAG_DONE;
+            if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) == -1)
+            {
+                D(bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+            }
+        }
+        else
+        {
+            D(bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+            count = 0;
         }
     }
     else
