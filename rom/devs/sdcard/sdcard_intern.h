@@ -231,8 +231,8 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *);
 BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *);
 
 ULONG FNAME_SDCBUS(WaitUnitStatus)(ULONG, struct sdcard_Unit *);
-int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *);
-int FNAME_SDCBUS(MMCChangeFrequency)(struct sdcard_Unit *);
+ULONG FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *);
+ULONG FNAME_SDCBUS(MMCChangeFrequency)(struct sdcard_Unit *);
 
 BOOL FNAME_SDC(HandleIO)(struct IORequest *io);
 

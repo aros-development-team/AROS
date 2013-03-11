@@ -357,8 +357,6 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
             if ((sdStatus & sdCommandMask) && (FNAME_SDCBUS(MMIOReadLong)(SDHCI_PRESENT_STATE, bus) & sdcStateMask)) {
                 ULONG currbyte, tranlen = (sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen;
 
-                FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdCommandMask, bus);
-
                 do
                 {
                     D(bug("[SDCard--] %s: Attempting to read %dbytes\n", __PRETTY_FUNCTION__, tranlen));
@@ -396,6 +394,7 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
                         }
                     )
                 } while (sdDataLen > 0);
+
                 break;
             }
             else if (!(sdStatus & SDHCI_INT_DATA_END))
@@ -423,10 +422,10 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
 
     do {
         sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
-        if ((sdStatus & SDHCI_INT_ERROR) || ((sdStatus & mask) == mask))
+        if (sdStatus & SDHCI_INT_ERROR)
             break;
         sdcard_Udelay(1000);
-    } while (--timeout > 0);
+    } while (((sdStatus & mask) == mask) && (--timeout > 0));
 
     if ((timeout <= 0) || (sdStatus & SDHCI_INT_ERROR))
     {
@@ -450,7 +449,7 @@ ULONG FNAME_SDCBUS(WaitUnitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
     UBYTE retryreq = 5;
 
     do {
-        if (FNAME_SDCBUS(SendCmd)(sdcStatusTags, sdcUnit->sdcu_Bus) != -1)
+        if ((FNAME_SDCBUS(SendCmd)(sdcStatusTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, sdcUnit->sdcu_Bus) != -1))
         {
             if ((sdcStatusTags[3].ti_Data & MMC_STATUS_RDY_FOR_DATA) &&
                 (sdcStatusTags[3].ti_Data & MMC_STATUS_STATE_MASK) != MMC_STATUS_STATE_PRG)
@@ -489,7 +488,7 @@ ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *buf, ULONG offset, const ULONG len)
 }
 
 
-int FNAME_SDCBUS(SDSCSwitch)(BOOL test, int group, UBYTE value, APTR buf, struct sdcard_Unit *sdcUnit)
+ULONG FNAME_SDCBUS(SDSCSwitch)(BOOL test, int group, UBYTE value, APTR buf, struct sdcard_Unit *sdcUnit)
 {
     struct TagItem sdcSwitchTags[] =
     {
@@ -502,17 +501,22 @@ int FNAME_SDCBUS(SDSCSwitch)(BOOL test, int group, UBYTE value, APTR buf, struct
         {SDCARD_TAG_DATAFLAGS,  MMC_DATA_READ},
         {TAG_DONE,              0}
     };
-
+    ULONG retVal;
+    
     D(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     sdcSwitchTags[1].ti_Data = ((test) ? 0 : (1 << 31)) | 0xFFFFFF;
     sdcSwitchTags[1].ti_Data &= ~(0xF << (group * 4));
     sdcSwitchTags[1].ti_Data |= value << (group * 4);
 
-    return FNAME_SDCBUS(SendCmd)(sdcSwitchTags, sdcUnit->sdcu_Bus);
+    if ((retVal =  FNAME_SDCBUS(SendCmd)(sdcSwitchTags, sdcUnit->sdcu_Bus)) != -1)
+    {
+        retVal =  FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, sdcUnit->sdcu_Bus);
+    }
+    return retVal;
 }
 
-int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
+ULONG FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
 {
     unsigned int        timeout;
     ULONG               sdcRespBuf[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -537,7 +541,7 @@ int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         sdcChFreqTags[2].ti_Data = MMC_RSP_R1;
         sdcChFreqTags[4].ti_Tag = TAG_DONE;
 
-        if (FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) == -1)
+        if ((FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) == -1) || (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, sdcUnit->sdcu_Bus) == -1))
         {
             D(bug("[SDCard%02ld] %s: App Command Failed\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
             return FALSE;
@@ -550,7 +554,7 @@ int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         sdcChFreqTags[4].ti_Tag = SDCARD_TAG_DATA;
 
         D(bug("[SDCard%02ld] %s: Querying SCR Register ... \n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-        if (FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1)
+        if ((FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, sdcUnit->sdcu_Bus) != -1))
         {
             D(bug("[SDCard%02ld] %s: Query Response = %08x\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcChFreqTags[3].ti_Data));
             break;
@@ -609,7 +613,7 @@ int FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
     return 0;
 }
 
-int FNAME_SDCBUS(MMCChangeFrequency)(struct sdcard_Unit *sdcUnit)
+ULONG FNAME_SDCBUS(MMCChangeFrequency)(struct sdcard_Unit *sdcUnit)
 {
     return 0;
 }
@@ -637,8 +641,14 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, struct TagItem *IRQCommandTags
     {
         if (sdStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE))
         {
+            bus->sdcb_BusFlags &= ~AF_Bus_MediaPresent;
+            bus->sdcb_BusFlags |= AF_Bus_MediaChanged;
+
+            if (sdStatus & SDHCI_INT_CARD_INSERT)
+                bus->sdcb_BusFlags |= AF_Bus_MediaPresent;
+
             FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE), bus);
-            sdStatus &= ~(SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE);
+            sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
         }
         if (sdStatus & SDHCI_INT_CMD_MASK)
         {
@@ -655,7 +665,7 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, struct TagItem *IRQCommandTags
             }
 
             FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus & SDHCI_INT_CMD_MASK, bus);
-            sdStatus &= ~SDHCI_INT_CMD_MASK;
+            sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
         }
 
         if (sdStatus & SDHCI_INT_DATA_MASK)
@@ -673,7 +683,7 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, struct TagItem *IRQCommandTags
             }
 
             FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus & SDHCI_INT_DATA_MASK, bus);
-            sdStatus &= ~SDHCI_INT_DATA_MASK;
+            sdStatus = FNAME_SDCBUS(MMIOReadLong)(SDHCI_INT_STATUS, bus);
         }
     }
     else
@@ -686,15 +696,13 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, struct TagItem *IRQCommandTags
         error = TRUE;
     }
 
-    if (sdStatus & bus->sdcb_IntrMask)
-    {
-        D(bug("[SDCard**] %s: Clearing Unhandled Interrupts [%08x -> %08x]\n", __PRETTY_FUNCTION__, sdStatus, (sdStatus & ~bus->sdcb_IntrMask)));
-        sdStatus &= ~bus->sdcb_IntrMask;
-        FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus, bus);
-    }
-
     if (error)
     {
+        if (sdStatus & bus->sdcb_IntrMask)
+        {
+            D(bug("[SDCard**] %s: Clearing Unhandled Interrupts [%08x]\n", __PRETTY_FUNCTION__, sdStatus & bus->sdcb_IntrMask));
+            FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_STATUS, sdStatus & bus->sdcb_IntrMask, bus);
+        }
         D(bug("[SDCard**] %s: Reseting SDHCI CMD/DATA\n", __PRETTY_FUNCTION__));
 
         FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
