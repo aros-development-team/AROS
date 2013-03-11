@@ -175,14 +175,17 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
     {
         if (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_DATA_END, 1000, unit->sdcu_Bus) != -1)
         {
-            D(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-            sdcReadTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
-            sdcReadTags[1].ti_Data = 0;
-            sdcReadTags[2].ti_Data = MMC_RSP_R1b;
-            sdcReadTags[4].ti_Tag = TAG_DONE;
-            if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) == -1)
+            if (count > 1)
             {
-                D(bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                D(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                sdcReadTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
+                sdcReadTags[1].ti_Data = 0;
+                sdcReadTags[2].ti_Data = MMC_RSP_R1b;
+                sdcReadTags[4].ti_Tag = TAG_DONE;
+                if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) == -1)
+                {
+                    D(bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                }
             }
         }
         else
