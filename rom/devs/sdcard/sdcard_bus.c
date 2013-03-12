@@ -459,7 +459,7 @@ ULONG FNAME_SDCBUS(WaitUnitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
                 return -1;
 
         sdcard_Udelay(1000);
-    } while (timeout-- > 0);
+    } while (--timeout > 0);
 
     if (timeout <= 0) {
         D(bug("[SDCard%02ld] %s: Timeout\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
@@ -556,7 +556,7 @@ ULONG FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
             D(bug("[SDCard%02ld] %s: Query Response = %08x\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcChFreqTags[3].ti_Data));
             break;
         }
-    } while (timeout-- > 0);
+    } while (--timeout > 0);
 
     if (timeout > 0)
     {
@@ -571,7 +571,7 @@ ULONG FNAME_SDCBUS(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         }
 
         timeout = 4;
-        while (timeout-- > 0) {
+        while (--timeout > 0) {
             if (FNAME_SDCBUS(SDSCSwitch)(TRUE, 0, 1, sdcRespBuf, sdcUnit) != -1)
             {
                 /* The high-speed function is busy.  Try again */

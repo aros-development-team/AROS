@@ -55,6 +55,31 @@ BOOL FNAME_SDC(StartUnit)(struct sdcard_Unit *sdcUnit)
         {SDCARD_TAG_RSP,         0},
         {TAG_DONE,               0}
     };
+
+    if (sdcUnit->sdcu_Flags & AF_Card_MMC)
+    {
+/*        if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
+        {
+            if (sdcUnit->sdcu_Flags & AB_Card_HighSpeed52)
+                FNAME_SDCBUS(SetClock)(52000000, sdcUnit->sdcu_Bus);
+            else
+                FNAME_SDCBUS(SetClock)(26000000, sdcUnit->sdcu_Bus);
+        }
+        else
+            FNAME_SDCBUS(SetClock)(20000000, sdcUnit->sdcu_Bus);*/
+
+        FNAME_SDCBUS(MMCChangeFrequency)(sdcUnit);
+    }
+    else
+    {
+/*        if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
+            FNAME_SDCBUS(SetClock)(50000000, sdcUnit->sdcu_Bus);
+        else
+            FNAME_SDCBUS(SetClock)(25000000, sdcUnit->sdcu_Bus);*/
+
+        FNAME_SDCBUS(SDSCChangeFrequency)(sdcUnit);
+    }
+
     if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, sdcUnit->sdcu_Bus) != -1))
     {
         if (FNAME_SDCBUS(WaitUnitStatus)(1000, sdcUnit) == -1)
@@ -81,31 +106,7 @@ BOOL FNAME_SDC(StartUnit)(struct sdcard_Unit *sdcUnit)
             }
         }
 
-/*
-        if (sdcUnit->sdcu_Flags & AF_Card_MMC)
-        {
-            if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
-            {
-                if (sdcUnit->sdcu_Flags & AB_Card_HighSpeed52)
-                    FNAME_SDCBUS(SetClock)(52000000, sdcUnit->sdcu_Bus);
-                else
-                    FNAME_SDCBUS(SetClock)(26000000, sdcUnit->sdcu_Bus);
-            }
-            else
-                FNAME_SDCBUS(SetClock)(20000000, sdcUnit->sdcu_Bus);
 
-            FNAME_SDCBUS(MMCChangeFrequency)sdcUnit;
-        }
-        else
-        {
-            if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
-                FNAME_SDCBUS(SetClock)(50000000, sdcUnit->sdcu_Bus);
-            else
-                FNAME_SDCBUS(SetClock)(25000000, sdcUnit->sdcu_Bus);
-
-            FNAME_SDCBUS(SDSCChangeFrequency)sdcUnit;
-        }
-*/
     }
     return TRUE;
 }
@@ -187,7 +188,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
             D(bug("error (-1)\n"));
             return FALSE;
         }
-    } while ((!(sdcRegTags[3].ti_Data & OCR_BUSY)) && (timeout-- > 0));
+    } while ((!(sdcRegTags[3].ti_Data & OCR_BUSY)) && (--timeout > 0));
 
     sdcHighCap = FALSE;
 
