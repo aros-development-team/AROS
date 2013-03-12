@@ -82,9 +82,13 @@
 #define GCIT_SupportsMSR            (GCIT_FeaturesBase +  30)
 #define GCIT_SupportsVFP            (GCIT_FeaturesBase +  31)
 #define GCIT_SupportsVFPv3          (GCIT_FeaturesBase +  32)
-#define GCIT_SupportsNeon           (GCIT_FeaturesBase +  33)
-#define GCIT_SupportsThumb          (GCIT_FeaturesBase +  34)
-#define GCIT_SupportsThumbEE        (GCIT_FeaturesBase +  35)
+#define GCIT_SupportsVFPv3D16       (GCIT_FeaturesBase +  33)
+#define GCIT_SupportsNeon           (GCIT_FeaturesBase +  34)
+#define GCIT_SupportsVFPv4          (GCIT_FeaturesBase +  35)
+#define GCIT_SupportsThumb          (GCIT_FeaturesBase +  36)
+#define GCIT_SupportsThumbEE        (GCIT_FeaturesBase +  37)
+#define GCIT_SupportsBrnachPred     (GCIT_FeaturesBase +  38)
+#define GCIT_SupportsSecurityExt    (GCIT_FeaturesBase +  39)
 #define GCIT_FeaturesLast           (TAG_USER + 499)
 
 /* Processor family defines */
