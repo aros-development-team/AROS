@@ -35,9 +35,14 @@ VOID ReadMaxFrequencyInformation(struct ARMProcessorInformation * info);
 UQUAD GetCurrentProcessorFrequency(struct ARMProcessorInformation * info);
 
 /* Flags */
-#define FEATB_FPU   0
 
-#define FEATF_FPU   (1 << FEATB_FPU)
-
+#define FEATB_FPU       0
+#define FEATF_FPU       (1 << FEATB_FPU)
+#define FEATB_FPU_VFP   FEATB_FPU
+#define FEATF_FPU_VFP   (1 << FEATB_FPU_VFP)
+#define FEATB_FPU_VFP3  1
+#define FEATF_FPU_VFP3  (1 << FEATB_FPU_VFP3)
+#define FEATB_NEON      2
+#define FEATF_NEON      (1 << FEATB_NEON)
 
 #endif /* PROCESSOR_ARCH_INTERN_H */
