@@ -208,6 +208,7 @@ AC_OUTPUT(Makefile
           Drivers/Common/Makefile.common
           Drivers/Device/Makefile
           Drivers/EMU10kx/Makefile
+          Drivers/Envy24HT/Makefile
           Drivers/Filesave/Makefile
           Drivers/Void/Makefile
 	  Examples/Makefile
