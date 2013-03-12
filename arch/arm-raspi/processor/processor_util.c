@@ -36,13 +36,45 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
 
     D(bug("[processor.ARM] %s: Probing CPU ..\n", __PRETTY_FUNCTION__));
 
+    /* Read Processor MainID Register */
     asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 0" : [scp_reg] "=r" (scp_reg) );
 
     info->Vendor = (scp_reg >> 24) & 0x7F;
-    info->Family = (scp_reg >> 16) & 0xF;
 
+    if ((scp_reg & 0x8F000) == 0)
+        info->Family = CPUFAMILY_UNKNOWN;
+    else if ((scp_reg & 0x8F000) == 0x7000)
+        info->Family = (scp_reg & (1 << 23)) ? CPUFAMILY_ARM_4T : CPUFAMILY_ARM_3;
+    else if ((scp_reg & 0x80000) == 0)
+    {
+        info->Family = CPUFAMILY_ARM_3;
+        if ((scp_reg >> 16) & 7)
+            info->Family += ((scp_reg >> 16) & 7);
+    }
+    else if ((scp_reg & 0xF0000) == 0xF0000)
+    {
+        /* /* Read Processor Memory Model Feature Register */
+        asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 4" : [scp_reg] "=r" (scp_reg) );
+        if ((scp_reg & 0xF) >= 3 || ((scp_reg >> 8) & 0xF) >= 3)
+            info->Family = CPUFAMILY_ARM_7;
+        else if ((scp_reg & 0xF) == 2 || ((scp_reg >> 8) & 0xF) == 2)
+            info->Family = CPUFAMILY_ARM_6;
+        else
+            info->Family = CPUFAMILY_UNKNOWN;
+    } else
+        info->Family = CPUFAMILY_UNKNOWN;
+
+#if (0)
+    /* Read Processor Feature Register 1 */
+    asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 1" : [scp_reg] "=r" (scp_reg) );
+
+    /* Read Processor Feature Register 0 */
+    asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 1" : [scp_reg] "=r" (scp_reg) );
+#endif
+
+    /* Read Processor Cache Type Register */
     asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 1" : [scp_reg] "=r" (scp_reg) );
-
+    
     switch((scp_reg >> 18) & 0xF) {
         case 3:
             info->L1DataCacheSize = 4096;
