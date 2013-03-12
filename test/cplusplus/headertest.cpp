@@ -230,7 +230,6 @@
 #include <dos/datetime.h>
 #include <dos/dos.h>
 #include <dos/dosasl.h>
-#include <dos/dosextaros.h>
 #include <dos/dosextens.h>
 #include <dos/doshunks.h>
 #include <dos/dostags.h>
