@@ -31,9 +31,9 @@
 #define KERNEL_PHYS_BASE        0x07800000
 #define KERNEL_VIRT_BASE        0xff800000
 
-#define VFPEnable       0x40000000 
-#define VFPSingle       0x300000 
-#define VFPDouble       0xC00000 
+#define VFPEnable               (1 << 30) 
+#define VFPSingle               (3 << 20) 
+#define VFPDouble               (3 << 22)
 
 void core_SetupMMU(void);
 void core_SetupIntr(void);
