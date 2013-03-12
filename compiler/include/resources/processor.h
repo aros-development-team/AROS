@@ -87,7 +87,7 @@
 #define GCIT_SupportsVFPv4          (GCIT_FeaturesBase +  35)
 #define GCIT_SupportsThumb          (GCIT_FeaturesBase +  36)
 #define GCIT_SupportsThumbEE        (GCIT_FeaturesBase +  37)
-#define GCIT_SupportsBrnachPred     (GCIT_FeaturesBase +  38)
+#define GCIT_SupportsBranchPred     (GCIT_FeaturesBase +  38)
 #define GCIT_SupportsSecurityExt    (GCIT_FeaturesBase +  39)
 #define GCIT_FeaturesLast           (TAG_USER + 499)
 
