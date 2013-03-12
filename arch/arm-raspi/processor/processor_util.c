@@ -14,7 +14,7 @@
 static const char *vendors[] =
 {
     "Unknown",
-    "ARM",
+    "ARM Ltd.",
     "DEC",
     "Motorola",
     "Texas Instruments",
@@ -27,16 +27,16 @@ static const char *vendors[] =
 
 VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
 {
-    register unsigned int scp_reg;
+    register unsigned int scp_reg, cache_reg;
     APTR ssp;
 
     D(bug("[processor.ARM] %s()\n", __PRETTY_FUNCTION__));
 
-    ssp = SuperState();
-
     D(bug("[processor.ARM] %s: Probing CPU ..\n", __PRETTY_FUNCTION__));
 
-    /* Read Processor MainID Register */
+    ssp = SuperState();
+
+    D(bug("[processor.ARM] %s: Checking Main ID Register..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 0" : [scp_reg] "=r" (scp_reg) );
 
     info->Vendor = (scp_reg >> 24) & 0x7F;
@@ -53,94 +53,120 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
     }
     else if ((scp_reg & 0xF0000) == 0xF0000)
     {
-        /* /* Read Processor Memory Model Feature Register */
+        info->Family = CPUFAMILY_UNKNOWN;
+
+        D(bug("[processor.ARM] %s: Checking Memory Model Feature Register..\n", __PRETTY_FUNCTION__));
         asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 4" : [scp_reg] "=r" (scp_reg) );
-        if ((scp_reg & 0xF) >= 3 || ((scp_reg >> 8) & 0xF) >= 3)
+
+        if ((scp_reg & 0xF) >= 3 || ((scp_reg >> 4) & 0xF) >= 3)
             info->Family = CPUFAMILY_ARM_7;
-        else if ((scp_reg & 0xF) == 2 || ((scp_reg >> 8) & 0xF) == 2)
+        else if ((scp_reg & 0xF) == 2 || ((scp_reg >> 4) & 0xF) == 2)
             info->Family = CPUFAMILY_ARM_6;
-        else
-            info->Family = CPUFAMILY_UNKNOWN;
-    } else
+    } 
+    else
         info->Family = CPUFAMILY_UNKNOWN;
 
 #if (0)
-    /* Read Processor Feature Register 1 */
+    D(bug("[processor.ARM] %s: Checking Feature Register #1 ..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 1" : [scp_reg] "=r" (scp_reg) );
 
-    /* Read Processor Feature Register 0 */
+    if (scp_reg & (0xF << 4))
+        info->Features1 |= FEATF_SECURE;
+
+    D(bug("[processor.ARM] %s: Checking Feature Register #0 ..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 1" : [scp_reg] "=r" (scp_reg) );
 #endif
 
-    /* Read Processor Cache Type Register */
-    asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 1" : [scp_reg] "=r" (scp_reg) );
-    
-    switch((scp_reg >> 18) & 0xF) {
-        case 3:
-            info->L1DataCacheSize = 4096;
-            break;
-        case 4:
-            info->L1DataCacheSize = 8192;
-            break;
-        case 5:
-            info->L1DataCacheSize = 16384;
-            break;
-        case 6:
-            info->L1DataCacheSize = 32768;
-            break;
-        case 7:
-            info->L1DataCacheSize = 65536;
-            break;
-        case 8:
-            info->L1DataCacheSize = 131072;
-            break;
-        case 9:
-            info->L1DataCacheSize = 262144;
-            break;
-        case 10:
-            info->L1DataCacheSize = 524288;
-            break;
-        case 11:
-            info->L1DataCacheSize = 1048576;
-            break;
-        default:
-            info->L1DataCacheSize = 0;
-            break;
-    }
+    D(bug("[processor.ARM] %s: Checking Coprocessor Access Control Register..\n", __PRETTY_FUNCTION__));
+    asm volatile("mrc p15,0,%[scp_reg], c1, c0, 2\n" : [scp_reg] "=r" (scp_reg));
+    if (scp_reg & ((3 << 20)|(3 << 22)))
+        info->Features1 |= FEATF_FPU_VFP;
 
-    switch((scp_reg >> 6) & 0xF) {
-        case 3:
-            info->L1InstructionCacheSize = 4096;
-            break;
-        case 4:
-            info->L1InstructionCacheSize = 8192;
-            break;
-        case 5:
-            info->L1InstructionCacheSize = 16384;
-            break;
-        case 6:
-            info->L1InstructionCacheSize = 32768;
-            break;
-        case 7:
-            info->L1InstructionCacheSize = 65536;
-            break;
-        case 8:
-            info->L1InstructionCacheSize = 131072;
-            break;
-        case 9:
-            info->L1InstructionCacheSize = 262144;
-            break;
-        case 10:
-            info->L1InstructionCacheSize = 524288;
-            break;
-        case 11:
-            info->L1InstructionCacheSize = 1048576;
-            break;
-        default:
-            info->L1InstructionCacheSize = 0;
-            break;
-    }
+    D(bug("[processor.ARM] %s: Checking System Control Register..\n", __PRETTY_FUNCTION__));
+    asm volatile("mrc p15, 0, %[scp_reg], c1, c0, 0" : [scp_reg] "=r" (scp_reg) );
 
+    if (scp_reg & (1 << 11))
+        info->Features1 |= FEATF_BRANCHP;
+
+    if (scp_reg & (1 << 30))
+        info->Features1 |= FEATF_THUMBEX;
+
+    if (scp_reg & (1 << 31))
+        info->Features1 |= FEATF_BIGEND;
+
+    D(bug("[processor.ARM] %s: Checking Cache Type Register..\n", __PRETTY_FUNCTION__));
+    asm volatile("mrc p15, 0, %[cache_reg], c0, c0, 1" : [cache_reg] "=r" (cache_reg) );
+
+    if (scp_reg & (1 << 2))
+    {    
+        switch((cache_reg >> 18) & 0xF) {
+            case 3:
+                info->L1DataCacheSize = 4;
+                break;
+            case 4:
+                info->L1DataCacheSize = 8;
+                break;
+            case 5:
+                info->L1DataCacheSize = 16;
+                break;
+            case 6:
+                info->L1DataCacheSize = 32;
+                break;
+            case 7:
+                info->L1DataCacheSize = 64;
+                break;
+            case 8:
+                info->L1DataCacheSize = 128;
+                break;
+            case 9:
+                info->L1DataCacheSize = 256;
+                break;
+            case 10:
+                info->L1DataCacheSize = 512;
+                break;
+            case 11:
+                info->L1DataCacheSize = 1024;
+                break;
+            default:
+                info->L1DataCacheSize = 0;
+                break;
+        }
+    }
+    if (scp_reg & (1 << 12))
+    {    
+        switch((cache_reg >> 6) & 0xF) {
+            case 3:
+                info->L1InstructionCacheSize = 4;
+                break;
+            case 4:
+                info->L1InstructionCacheSize = 8;
+                break;
+            case 5:
+                info->L1InstructionCacheSize = 16;
+                break;
+            case 6:
+                info->L1InstructionCacheSize = 32;
+                break;
+            case 7:
+                info->L1InstructionCacheSize = 64;
+                break;
+            case 8:
+                info->L1InstructionCacheSize = 128;
+                break;
+            case 9:
+                info->L1InstructionCacheSize = 256;
+                break;
+            case 10:
+                info->L1InstructionCacheSize = 512;
+                break;
+            case 11:
+                info->L1InstructionCacheSize = 1024;
+                break;
+            default:
+                info->L1InstructionCacheSize = 0;
+                break;
+        }
+    }
     D(bug("[processor.ARM] %s: .. Done\n", __PRETTY_FUNCTION__));
 
     UserState(ssp);
@@ -169,7 +195,11 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
             break;
         default:
             info->VendorID = vendors[0];
+            info->Vendor = 0;
             break;
     }
+    
+    info->Features1 |= FEATF_FPU;
+    
     D(bug("[processor.ARM] %s: CPU Details Read\n", __PRETTY_FUNCTION__));
 }

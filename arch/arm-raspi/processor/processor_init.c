@@ -10,6 +10,8 @@
 #include <proto/kernel.h>
 #include <aros/symbolsets.h>
 
+#include <resources/processor.h>
+
 #include "processor_intern.h"
 #include "processor_arch_intern.h"
 
@@ -36,8 +38,28 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     /* Boot CPU is number 0. Fill in its data. */
     ReadProcessorInformation(sysprocs[0]);
 
-    D(bug("[processor.ARM] %s: Vendor %d '%s', Family %d\n", __PRETTY_FUNCTION__, sysprocs[0]->Vendor, sysprocs[0]->VendorID, sysprocs[0]->Family));
-    D(bug("[processor.ARM] %s: L1DataC %d, L1InstrC %d\n", __PRETTY_FUNCTION__, sysprocs[0]->L1DataCacheSize, sysprocs[0]->L1InstructionCacheSize));
+    if (sysprocs[0]->Family >= CPUFAMILY_ARM_3)
+    {
+        int armvers = 3;
+
+        if ((sysprocs[0]->Family & 0xF) == 0)
+            armvers = 7;
+        else if ((sysprocs[0]->Family & 0x7) == 0x7)
+            armvers = 6;
+        else if ((sysprocs[0]->Family & 0x7) > 2)
+            armvers = 5;
+        else if ((sysprocs[0]->Family & 0x7) > 1)
+            armvers = 4;
+
+        bug("[processor.ARM] %s ARMv%d Processor Core\n", sysprocs[0]->VendorID, armvers);
+    }
+    else
+    {
+        bug("[processor.ARM] %s ARM Processor core\n", sysprocs[0]->VendorID);
+    }
+    bug("[processor.ARM] Cache Info:\n");
+    bug("[processor.ARM]   L1 Data   : %dKb\n", sysprocs[0]->L1DataCacheSize);
+    bug("[processor.ARM]   L1 Instr. : %dKb\n", sysprocs[0]->L1InstructionCacheSize);
 
     return TRUE;
 }

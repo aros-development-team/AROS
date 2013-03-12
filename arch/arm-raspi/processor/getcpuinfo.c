@@ -115,7 +115,10 @@ static void ProcessFeaturesTag(struct ARMProcessorInformation * info, struct Tag
             *((ULONG *)passedTag->ti_Data) = PROCESSORARCH_ARM;
             break;
         case(GCIT_Endianness):
-            *((ULONG *)passedTag->ti_Data) = ENDIANNESS_LE;
+            if (processor->Features1 & FEATF_BIGEND)
+                *((ULONG *)passedTag->ti_Data) = ENDIANNESS_BE;
+            else
+                *((ULONG *)passedTag->ti_Data) = ENDIANNESS_LE;
             break;
         case(GCIT_ProcessorSpeed):
             *((UQUAD *)passedTag->ti_Data) = GetCurrentProcessorFrequency(processor);
@@ -139,8 +142,23 @@ D(bug("[processor.ARM] :%s()\n", __PRETTY_FUNCTION__));
 
     switch(tag->ti_Tag)
     {
+    case(GCIT_SupportsVFP):
     case(GCIT_SupportsFPU):
         *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_FPU) >> FEATB_FPU); break;
+    case(GCIT_SupportsVFPv3):
+        *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_FPU_VFP3) >> FEATB_FPU_VFP3); break;
+    case(GCIT_SupportsVFPv3D16):
+        *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_FPU_VFP3_16) >> FEATB_FPU_VFP3_16); break;
+    case(GCIT_SupportsNeon):
+        *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_NEON) >> FEATB_NEON); break;
+    case(GCIT_SupportsVFPv4):
+        *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_FPU_VFP4) >> FEATB_FPU_VFP4); break;
+    case(GCIT_SupportsSecurityExt):
+        *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_SECURE) >> FEATB_SECURE); break;
+    case(GCIT_SupportsBranchPred):
+        *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_BRANCHP) >> FEATB_BRANCHP); break;
+    case(GCIT_SupportsThumbEE):
+        *((BOOL *)tag->ti_Data) = (BOOL)((info->Features1 & FEATF_THUMBEX) >> FEATB_THUMBEX); break;
     default: 
         *((BOOL *)tag->ti_Data) = FALSE; break;
     }
