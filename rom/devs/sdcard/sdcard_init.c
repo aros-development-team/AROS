@@ -45,6 +45,71 @@
 
 unsigned int        VCMBoxMessage[8] __attribute__((used,aligned(16)));
 
+BOOL FNAME_SDC(StartUnit)(struct sdcard_Unit *sdcUnit)
+{
+    struct TagItem sdcStartTags[] =
+    {
+        {SDCARD_TAG_CMD,         MMC_CMD_SELECT_CARD},
+        {SDCARD_TAG_ARG,         sdcUnit->sdcu_CardRCA << 16},
+        {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
+        {SDCARD_TAG_RSP,         0},
+        {TAG_DONE,               0}
+    };
+    if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, sdcUnit->sdcu_Bus) != -1))
+    {
+        if (FNAME_SDCBUS(WaitUnitStatus)(1000, sdcUnit) == -1)
+        {
+            D(bug("[SDCard%02ld] %s: Failed to Wait for Cards status\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        }
+
+        D(bug("[SDCard%02ld] %s: Selected card with RCA %d [select response %08x]\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcUnit->sdcu_CardRCA, sdcStartTags[3].ti_Data));
+        D(bug("[SDCard%02ld] %s: Card is now operating in Transfer Mode\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+        if (!(sdcUnit->sdcu_Flags & AF_Card_HighCapacity))
+        {
+            sdcStartTags[0].ti_Data = MMC_CMD_SET_BLOCKLEN;
+            sdcStartTags[1].ti_Data = 1 << sdcUnit->sdcu_Bus->sdcb_SectorShift;
+            sdcStartTags[2].ti_Data = MMC_RSP_R1;
+            sdcStartTags[3].ti_Data = 0;
+            if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, sdcUnit) != -1))
+            {
+                D(bug("[SDCard%02ld] %s: Blocklen set to %d\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcStartTags[1].ti_Data));
+            }
+            else
+            {
+                D(bug("[SDCard%02ld] %s: Failed to change Blocklen\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+            }
+        }
+
+/*
+        if (sdcUnit->sdcu_Flags & AF_Card_MMC)
+        {
+            if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
+            {
+                if (sdcUnit->sdcu_Flags & AB_Card_HighSpeed52)
+                    FNAME_SDCBUS(SetClock)(52000000, sdcUnit->sdcu_Bus);
+                else
+                    FNAME_SDCBUS(SetClock)(26000000, sdcUnit->sdcu_Bus);
+            }
+            else
+                FNAME_SDCBUS(SetClock)(20000000, sdcUnit->sdcu_Bus);
+
+            FNAME_SDCBUS(MMCChangeFrequency)sdcUnit;
+        }
+        else
+        {
+            if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
+                FNAME_SDCBUS(SetClock)(50000000, sdcUnit->sdcu_Bus);
+            else
+                FNAME_SDCBUS(SetClock)(25000000, sdcUnit->sdcu_Bus);
+
+            FNAME_SDCBUS(SDSCChangeFrequency)sdcUnit;
+        }
+*/
+    }
+    return TRUE;
+}
+
 BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
 {
     unsigned int        sdcCardPower, timeout = 1000;
@@ -272,7 +337,7 @@ BOOL FNAME_SDC(RegisterVolume)(struct sdcard_Bus *bus)
 
                             if (devnode)
                             {
-                                D(bug("[SDCard%02ld] %s: %b: [%dMB Capacity]\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, devnode->dn_Name, sdcUnit->sdcu_Capacity >> 11));
+                                bug("[SDCard%02ld] %b: [%dMB Capacity]\n", sdcUnit->sdcu_UnitNum, devnode->dn_Name, sdcUnit->sdcu_Capacity >> 11);
                                 D(bug("[SDCard%02ld] %s:        StartCyl:%d, EndCyl:%d ..\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__,
                                       pp[DE_LOWCYL + 4], pp[DE_HIGHCYL + 4]));
                                 D(bug("[SDCard%02ld] %s:        BlockSize:%d, SectorsPerBlock:%d ..\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__,
@@ -509,69 +574,22 @@ static int FNAME_SDC(Open)
 
     if ((unitnum < LIBBASE->sdcard_Bus->sdcb_UnitCnt) && (LIBBASE->sdcard_Bus->sdcb_Units[unitnum]))
     {
-        struct TagItem sdcOpenTags[] =
+        iorq->io_Unit = &LIBBASE->sdcard_Bus->sdcb_Units[unitnum]->sdcu_Unit;
+        ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Unit.unit_OpenCnt++;
+
+        iorq->io_Error = 0;
+
+        if (!(((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_Active))
         {
-            {SDCARD_TAG_CMD,         MMC_CMD_SELECT_CARD},
-            {SDCARD_TAG_ARG,         LIBBASE->sdcard_Bus->sdcb_Units[unitnum]->sdcu_CardRCA << 16},
-            {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
-            {SDCARD_TAG_RSP,         0},
-            {TAG_DONE,               0}
-        };
-        if ((FNAME_SDCBUS(SendCmd)(sdcOpenTags, LIBBASE->sdcard_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, LIBBASE->sdcard_Bus) != -1))
-        {
-            iorq->io_Unit = &LIBBASE->sdcard_Bus->sdcb_Units[unitnum]->sdcu_Unit;
-            ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Unit.unit_OpenCnt++;
-
-            if (FNAME_SDCBUS(WaitUnitStatus)(1000, (struct sdcard_Unit *)iorq->io_Unit) == -1)
+            if (FNAME_SDC(StartUnit)((struct sdcard_Unit *)iorq->io_Unit))
             {
-                D(bug("[SDCard%02ld] %s: Failed to Wait for Cards status\n", unitnum, __PRETTY_FUNCTION__));
-            }
-
-            D(bug("[SDCard%02ld] %s: Selected card with RCA %d [select response %08x]\n", unitnum, __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_Units[unitnum]->sdcu_CardRCA, sdcOpenTags[3].ti_Data));
-            D(bug("[SDCard%02ld] %s: Card is now operating in Transfer Mode\n", unitnum, __PRETTY_FUNCTION__));
-
-            if (!(((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_HighCapacity))
-            {
-                sdcOpenTags[0].ti_Data = MMC_CMD_SET_BLOCKLEN;
-                sdcOpenTags[1].ti_Data = 1 << ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus->sdcb_SectorShift;
-                sdcOpenTags[2].ti_Data = MMC_RSP_R1;
-                sdcOpenTags[3].ti_Data = 0;
-                if ((FNAME_SDCBUS(SendCmd)(sdcOpenTags, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_RESPONSE, 10, LIBBASE->sdcard_Bus) != -1))
-                {
-                    D(bug("[SDCard%02ld] %s: Blocklen set to %d\n", unitnum, __PRETTY_FUNCTION__, sdcOpenTags[1].ti_Data));
-                }
-                else
-                {
-                    D(bug("[SDCard%02ld] %s: Failed to change Blocklen\n", unitnum, __PRETTY_FUNCTION__));
-                }
-            }
-
-/*
-            if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_MMC)
-            {
-                if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_HighSpeed)
-                {
-                    if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AB_Card_HighSpeed52)
-                        FNAME_SDCBUS(SetClock)(52000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
-                    else
-                        FNAME_SDCBUS(SetClock)(26000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
-                }
-                else
-                    FNAME_SDCBUS(SetClock)(20000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
-
-                FNAME_SDCBUS(MMCChangeFrequency)((struct sdcard_Unit *)iorq->io_Unit);
+                D(bug("[SDCard%02ld] %s: Unit configured for operation\n", ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags |= AF_Card_Active;
             }
             else
             {
-                if (((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags & AF_Card_HighSpeed)
-                    FNAME_SDCBUS(SetClock)(50000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
-                else
-                    FNAME_SDCBUS(SetClock)(25000000, ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Bus);
-
-                FNAME_SDCBUS(SDSCChangeFrequency)((struct sdcard_Unit *)iorq->io_Unit);
+                D(bug("[SDCard%02ld] %s: Failed to configure unit\n", ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
             }
-*/
-            iorq->io_Error = 0;
         }
     }
     return iorq->io_Error ? FALSE : TRUE;
