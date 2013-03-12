@@ -108,7 +108,7 @@ SDL_HIDD_TARGET       := @sdl_hidd_target@
 PCI_HIDD_TARGET       := @pci_hidd_target@
 OSS_LIBRARY_TARGET    := @oss_library_target@
 CROSSTOOLS_TARGET     := @crosstools_target@
-CROSSTOOLS_CXX_TARGET := @crosstools_cxx_target@
+OBJC_TARGET           := @objc_target@
 
 # Defined as 'yes' if we can build our own toolchain.
 # This is a prerequisite for ObjectiveC and C++ support,

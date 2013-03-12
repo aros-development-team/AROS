@@ -1512,6 +1512,14 @@ else
 fi
 AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
 
+AC_MSG_CHECKING([whether to include Objective-C suppport])
+AC_ARG_ENABLE(objc,AC_HELP_STRING([--disable-objc],[Build without Objectve-C support]),objc="$enableval",objc="yes")
+AC_MSG_RESULT($objc)
+if test "x$objc" = "xyes"; then
+    objc_target="objc"
+else
+    objc_target="no-objc"
+fi
 
 # Now process extra architecture-specific options.
 # Currently this is implemented only for ARM. We can specify which minimum CPU and FPU to use,\
@@ -1770,7 +1778,6 @@ else
     # Determine whether AROS or ELF tools should be used
     if test "$aros_tool_prefix" = "none"; then
         aros_tool_prefix="${elf_tool_prefix}"
-        crosstools_cxx_target=tools-crosstools
     fi
 
     AC_MSG_RESULT([$aros_tool_prefix])
@@ -1779,10 +1786,8 @@ else
     AROS_REQUIRED(cpp,$orig_target_cpp)
     AROS_TOOL_TARGET(orig_target_cc,gcc,${aros_tool_prefix}gcc)
     AROS_REQUIRED(cc,$orig_target_cc)
-    if test "x${crosstools_cxx_target}" = "x" ; then
-        AROS_TOOL_TARGET(orig_target_cxx,g++,${aros_tool_prefix}g++)
-        AROS_REQUIRED(cxx,$orig_target_cxx)
-    fi
+    AROS_TOOL_TARGET(orig_target_cxx,g++,${aros_tool_prefix}g++)
+    AROS_REQUIRED(cxx,$orig_target_cxx)
     AROS_TOOL_TARGET(orig_target_ld,gcc,${aros_tool_prefix}ld)
     AROS_REQUIRED(ld,$orig_target_ld)
     AROS_TOOL_TARGET(orig_target_as,as,${aros_tool_prefix}as)
@@ -2678,6 +2683,9 @@ AC_SUBST(ignore_undefined_symbols)
 
 # C compiler related
 AC_SUBST(gcc_target_cpu)
+
+#ObjC compiler related
+AC_SUBST(objc_target)
 
 # USB3.0 code
 AC_SUBST(aros_usb30_code)
