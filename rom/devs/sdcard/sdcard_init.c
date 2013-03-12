@@ -58,25 +58,10 @@ BOOL FNAME_SDC(StartUnit)(struct sdcard_Unit *sdcUnit)
 
     if (sdcUnit->sdcu_Flags & AF_Card_MMC)
     {
-/*        if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
-        {
-            if (sdcUnit->sdcu_Flags & AB_Card_HighSpeed52)
-                FNAME_SDCBUS(SetClock)(52000000, sdcUnit->sdcu_Bus);
-            else
-                FNAME_SDCBUS(SetClock)(26000000, sdcUnit->sdcu_Bus);
-        }
-        else
-            FNAME_SDCBUS(SetClock)(20000000, sdcUnit->sdcu_Bus);*/
-
         FNAME_SDCBUS(MMCChangeFrequency)(sdcUnit);
     }
     else
     {
-/*        if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
-            FNAME_SDCBUS(SetClock)(50000000, sdcUnit->sdcu_Bus);
-        else
-            FNAME_SDCBUS(SetClock)(25000000, sdcUnit->sdcu_Bus);*/
-
         FNAME_SDCBUS(SDSCChangeFrequency)(sdcUnit);
     }
 
@@ -106,7 +91,25 @@ BOOL FNAME_SDC(StartUnit)(struct sdcard_Unit *sdcUnit)
             }
         }
 
-
+        if (sdcUnit->sdcu_Flags & AF_Card_MMC)
+        {
+            if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
+            {
+                if (sdcUnit->sdcu_Flags & AB_Card_HighSpeed52)
+                    FNAME_SDCBUS(SetClock)(52000000, sdcUnit->sdcu_Bus);
+                else
+                    FNAME_SDCBUS(SetClock)(26000000, sdcUnit->sdcu_Bus);
+            }
+            else
+                FNAME_SDCBUS(SetClock)(20000000, sdcUnit->sdcu_Bus);
+        }
+        else
+        {
+            if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
+                FNAME_SDCBUS(SetClock)(50000000, sdcUnit->sdcu_Bus);
+            else
+                FNAME_SDCBUS(SetClock)(25000000, sdcUnit->sdcu_Bus);
+        }
     }
     return TRUE;
 }
@@ -533,7 +536,7 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
         LIBBASE->sdcard_Bus->sdcb_IOBase = (APTR)ARASAN_BASE;
         LIBBASE->sdcard_Bus->sdcb_SectorShift = 9;
 
-        LIBBASE->sdcard_Bus->sdcb_ClockMax = VCMBoxMessage[6] >> 1;
+        LIBBASE->sdcard_Bus->sdcb_ClockMax = VCMBoxMessage[6];
 
         D(bug("[SDCard--] %s: Reseting SDHCI...\n", __PRETTY_FUNCTION__));
 
