@@ -165,8 +165,6 @@ $(CXX_SOURCES) : workbench-libs-mesa-module-cpp-gendir
 workbench-libs-mesa-module-cpp-gendir : 
 	@$(MKDIR) $(OBJDIR)/cpp
 
-#MM- workbench-libs-mesa-module-cpp : $(CROSSTOOLS_CXX_TARGET)
-
 #MM
 workbench-libs-mesa-module-cpp : $(CXX_SOURCES)
 
