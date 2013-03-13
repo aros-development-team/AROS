@@ -43,7 +43,7 @@ static int Init_Hidd(LIBBASETYPEPTR LIBBASE)
 
     InitSemaphore(&LIBBASE->lsd.sema);
 
-    return OOP_ObtainAttrBasesArray(&LIBBASE->lsd.gfxAttrBase, abd);
+    return !OOP_ObtainAttrBasesArray(&LIBBASE->lsd.gfxAttrBase, abd);
 }
 
 static int Expunge_Hidd(LIBBASETYPEPTR LIBBASE)
