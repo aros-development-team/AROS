@@ -133,7 +133,7 @@ static int Timer_Init(struct TimerBase *TimerBase)
     TimerBase->tb_Platform.tbp_TickRate.tv_secs  = 0;
     TimerBase->tb_Platform.tbp_TickRate.tv_micro = 1000000 / TimerBase->tb_eclock_rate;
 
-    /* Start up timer 1 */
+    /* Start up GPU timer #TICK_TIMER */
     Forbid();
     TimerBase->tb_Platform.tbp_cs = *((volatile unsigned int *)(SYSTIMER_CS));
     TimerBase->tb_Platform.tbp_cs &= ~(1 << TICK_TIMER);
