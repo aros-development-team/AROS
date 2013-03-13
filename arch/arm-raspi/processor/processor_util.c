@@ -60,8 +60,11 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
 
         if ((scp_reg & 0xF) >= 3 || ((scp_reg >> 4) & 0xF) >= 3)
             info->Family = CPUFAMILY_ARM_7;
-        else if ((scp_reg & 0xF) == 2 || ((scp_reg >> 4) & 0xF) == 2)
+
+        if ((scp_reg & 0xF) == 2 || ((scp_reg >> 4) & 0xF) == 2)
             info->Family = CPUFAMILY_ARM_6;
+
+        D(bug("[processor.ARM] %s:    %02d, %02d\n", __PRETTY_FUNCTION__, scp_reg & 0xF, (scp_reg >> 4) & 0xF));
     } 
     else
         info->Family = CPUFAMILY_UNKNOWN;
@@ -82,14 +85,16 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
     if (scp_reg & ((3 << 20)|(3 << 22)))
         info->Features1 |= FEATF_FPU_VFP;
 
+    D(bug("[processor.ARM] %s: Checking Instruction Set Attributes Register #3..\n", __PRETTY_FUNCTION__));
+    asm volatile("mrc p15,0,%[scp_reg], c0, c2, 3\n" : [scp_reg] "=r" (scp_reg));
+    if (((scp_reg >> 28) & 0xF) > 0)
+        info->Features1 |= FEATF_THUMBEX;
+
     D(bug("[processor.ARM] %s: Checking System Control Register..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[scp_reg], c1, c0, 0" : [scp_reg] "=r" (scp_reg) );
 
     if (scp_reg & (1 << 11))
         info->Features1 |= FEATF_BRANCHP;
-
-    if (scp_reg & (1 << 30))
-        info->Features1 |= FEATF_THUMBEX;
 
     if (scp_reg & (1 << 31))
         info->Features1 |= FEATF_BIGEND;
