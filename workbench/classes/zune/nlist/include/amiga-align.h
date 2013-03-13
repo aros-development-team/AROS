@@ -32,7 +32,7 @@
 ** This is needed by AmigaOS4 or MorphOS or every PPC
 ** because alignment on PPC is different.
 */
-#if defined(__PPC__)
+#if !defined(__AROS__) && defined(__PPC__)
   #if defined(__GNUC__)
     #pragma pack(2)
   #elif defined(__VBCC__)
