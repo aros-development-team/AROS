@@ -135,6 +135,7 @@ AROS_UFH3S(BOOL, enumFunc,
 
     tn = (APTR)DoMethod(hidd_tree, MUIM_NListtree_Insert, name, &msg,
                         parent, MUIV_NListtree_Insert_PrevNode_Tail, flags);
+    D(bug("Inserted TreeNode 0x%p <%s> UserData 0x%p\n", tn, tn->tn_Name, tn->tn_User));
 
     /* If we have enumerator for this class, call it now */
     if (clHandlers && clHandlers->enumFunc)
@@ -196,10 +197,13 @@ AROS_UFH3S(void, closeFunc,
 {
     AROS_USERFUNC_INIT
 
+    D(bug("closeFunc address 0x%p\n", closeFunc));
+    D(bug("Close window 0x%p, ObjectUserData 0x%p\n", obj, *msg));
+
     SET(obj, MUIA_Window_Open, FALSE);
     DoMethod(app, OM_REMMEMBER, obj);
-    DisposeObject(obj);
-    
+    DoMethod(app, MUIM_Application_PushMethod, obj, 1, OM_DISPOSE);
+
     (*msg)->win = NULL;
 
     AROS_USERFUNC_EXIT
@@ -220,6 +224,7 @@ AROS_UFH3S(APTR, constructFunc,
     struct InsertObjectMsg *insertMsg = msg->UserData;
     struct ObjectUserData *data = AllocPooled(msg->MemPool, sizeof(struct ObjectUserData));
 
+    D(bug("%s: insertMsg 0x%p ObjectUserData 0x%p\n", msg->Name, insertMsg, data));
     if (data)
     {
         data->obj      = insertMsg->obj;
@@ -260,8 +265,6 @@ AROS_UFH3S(void, propertyFunc,
 {
     AROS_USERFUNC_INIT
 
-    D(bug("propertyFunc called tn: %p\n", *tn));
-
     struct MUI_NListtree_TreeNode *node = *tn;
     struct ObjectUserData *data;
 
@@ -278,6 +281,9 @@ AROS_UFH3S(void, propertyFunc,
     }
 
     data = node->tn_User;
+    D(bug("propertyFunc called: TreeNode 0x%p <%s> UserData 0x%p\n", node, node->tn_Name, data));
+    D(bug("Window 0x%p\n", data->win));
+
     if (data->win)
     {
         /* The window is already open, show it to the user */
@@ -292,6 +298,7 @@ AROS_UFH3S(void, propertyFunc,
         data->win = NewObject(data->winClass->mcc_Class, NULL,
                               MUIA_PropertyWin_Object, (IPTR)data->obj,
                               TAG_DONE);
+        D(bug("Created window 0x%p\n", data->win));
 
         if (data->win)
         {
