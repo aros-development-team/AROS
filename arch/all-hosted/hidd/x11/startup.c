@@ -17,6 +17,7 @@
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
+#include <hidd/hidd.h>
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <graphics/gfxbase.h>
@@ -28,11 +29,26 @@
 
 static int X11_Startup(LIBBASETYPEPTR LIBBASE) 
 {
+    struct TagItem kbd_tags[] =
+    {
+        {aHidd_Name        , (IPTR)"X11Kbd"                 },
+        {aHidd_HardwareName, (IPTR)"X Window keyboard input"},
+        {aHidd_ProducerName, (IPTR)"X.Org Foundation"       },
+        {TAG_DONE          , 0                              }
+    };
+    struct TagItem mouse_tags[] =
+    {
+        {aHidd_Name        , (IPTR)"X11Mouse"              },
+        {aHidd_HardwareName, (IPTR)"X Window pointer input"},
+        {aHidd_ProducerName, (IPTR)"X.Org Foundation"      },
+        {TAG_DONE          , 0                             }
+    };
     struct GfxBase *GfxBase;
     OOP_Object *kbd, *ms;
     OOP_Object *kbdriver = NULL;
     OOP_Object *msdriver = NULL;
     int res = FALSE;
+    ULONG err;
 
     D(bug("[X11] X11_Startup()\n"));
 
@@ -45,44 +61,38 @@ static int X11_Startup(LIBBASETYPEPTR LIBBASE)
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
     ms  = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
 
-    if (kbd && ms)
+    if ((!kbd) || !(ms))
     {
-        kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, LIBBASE->xsd.kbdclass, NULL);
-	if (kbdriver)
-	    msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, NULL);
-    }
+        CloseLibrary(&GfxBase->LibNode);
+        return FALSE;
+    }	
+
+    kbdriver = HW_AddDriver(kbd, LIBBASE->xsd.kbdclass, kbd_tags);
+    if (kbdriver)
+        msdriver = HW_AddDriver(ms, LIBBASE->xsd.mouseclass, mouse_tags);
 
     /* If we got no input, we can't work, fail */
     if (!msdriver)
     {
-	CloseLibrary(&GfxBase->LibNode);
+        CloseLibrary(&GfxBase->LibNode);
         return FALSE;
     }
 
-    if (msdriver)
+    err = AddDisplayDriverA(LIBBASE->xsd.gfxclass, NULL, NULL);
+
+    D(bug("[X11_Startup] AddDisplayDriver() result: %u\n", err));
+    if (!err)
     {
-        ULONG err = AddDisplayDriverA(LIBBASE->xsd.gfxclass, NULL, NULL);
-
-	D(bug("[X11_Startup] AddDisplayDriver() result: %u\n", err));
-	if (!err)
-	{
-	    LIBBASE->library.lib_OpenCnt = 1;
-	    res = TRUE;
-	}
+        LIBBASE->library.lib_OpenCnt = 1;
+        res = TRUE;
     }
-
-    if (!res)
+    else
     {
 	if (kbdriver)
-	    HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
+	    HW_RemoveDriver(kbd, kbdriver);
 	if (msdriver)
-	    HIDD_Mouse_RemHardwareDriver(ms, msdriver);
+	    HW_RemoveDriver(ms, msdriver);
     }
-
-    if (ms)
-	OOP_DisposeObject(ms);
-    if (kbd)
-	OOP_DisposeObject(kbd);
 
     CloseLibrary(&GfxBase->LibNode);
 
