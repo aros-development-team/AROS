@@ -86,32 +86,33 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
     {
         DPROBE(bug("[processor.ARM] %s: Checking Floating Point System ID Register..\n", __PRETTY_FUNCTION__));
         asm volatile("fmrx %[scp_reg], FPSID\n" : [scp_reg] "=r" (scp_reg));
-        switch ((scp_reg >> 16) & 0xF)
+        if (((scp_reg >> 16) & 0xF) >= 2)
         {
-            case 4:
-                bug("[processor.ARM] VFPv4 Capable Co-Processor\n");
-                info->Features1  |= FEATF_FPU_VFP4;
-                break;
-            case 3:
                 bug("[processor.ARM] VFPv3 Capable Co-Processor\n");
                 info->Features1  |= FEATF_FPU_VFP3;
                 break;
-            case 2:
-                bug("[processor.ARM] VFPv2 Capable Co-Processor\n");
-                info->Features1  |= FEATF_FPU_VFP2;
-                break;
-            default:
-                bug("[processor.ARM] VFPv1 Capable Co-Processor\n");
-                break;
-            
+        }
+        else
+        {
+/*
+            bug("[processor.ARM] VFPv2 Capable Co-Processor\n");
+            info->Features1  |= FEATF_FPU_VFP2;
+*/
+
+            bug("[processor.ARM] VFPv1 Capable Co-Processor\n");
         }
 
         DPROBE(bug("[processor.ARM] %s: Checking Media and VFP Feature Register #1..\n", __PRETTY_FUNCTION__));
         asm volatile("fmrx %[scp_reg], MVFR1\n" : [scp_reg] "=r" (scp_reg));
-        if ((scp_reg & 0x000fff00) == 0x00011100)
+        if ((scp_reg & 0x000FFF00) == 0x00011100)
         {
             bug("[processor.ARM] NEON SIMD Extensions\n");
             info->Features1 |= FEATF_NEON;
+        }
+        if ((scp_reg & 0xF0000000) == 0x10000000)
+        {
+            bug("[processor.ARM] VFPv4 Capable Co-Processor\n");
+            info->Features1 |= FEATF_FPU_VFP4;
         }
     }
 

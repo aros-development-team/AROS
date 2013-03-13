@@ -42,13 +42,13 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     {
         int armvers = 3;
 
-        if ((sysprocs[0]->Family & 0xF) == 0)
+        if ((sysprocs[0]->Family & 0x8) != 0)
             armvers = 7;
         else if ((sysprocs[0]->Family & 0x7) == 0x7)
             armvers = 6;
         else if ((sysprocs[0]->Family & 0x7) > 2)
             armvers = 5;
-        else if ((sysprocs[0]->Family & 0x7) > 1)
+        else if ((sysprocs[0]->Family & 0x7) > 0)
             armvers = 4;
 
         bug("[processor.ARM] %s ARMv%d Processor Core\n", sysprocs[0]->VendorID, armvers);
