@@ -26,6 +26,7 @@ $(BINDIR)/boot:
 #MM- kernel-unix: kernel-link-base
 
 #MM- kernel-link-unix : \
+#MM     kernel-link-$(ARCH)                     \
 #MM	kernel-kernel-kobj			\
 #MM     kernel-hostlib-kobj			\
 #MM	kernel-battclock-kobj			\
@@ -46,9 +47,9 @@ KHNDLRS := emul
 KHIDDS  := unixio
 KRSRCS  := battclock hostlib processor
 # Disabled until ported - sonic
-# ifeq ("$(AROS_HOST_ARCH)","linux")
-# KHIDDS  += linux
-# endif
+ifeq ("$(AROS_HOST_ARCH)","linux")
+KHIDDS  += linuxfb linuxinput
+endif
 ifeq ("$(X11_HIDD_TARGET)", "kernel-x11gfx-kobj")
     KHIDDS += x11gfx
 endif
