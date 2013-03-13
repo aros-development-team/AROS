@@ -102,6 +102,14 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
             bug("[processor.ARM] VFPv1 Capable Co-Processor\n");
         }
 
+        DPROBE(bug("[processor.ARM] %s: Checking Media and VFP Feature Register #0..\n", __PRETTY_FUNCTION__));
+        asm volatile("fmrx %[scp_reg], MVFR0\n" : [scp_reg] "=r" (scp_reg));
+        if ((scp_reg & 0xF) == 1)
+        {
+            bug("[processor.ARM] VFPv3 D16 Capable Co-Processor\n");
+            info->Features1 |= FEATF_FPU_VFP3_16;
+        }
+
         DPROBE(bug("[processor.ARM] %s: Checking Media and VFP Feature Register #1..\n", __PRETTY_FUNCTION__));
         asm volatile("fmrx %[scp_reg], MVFR1\n" : [scp_reg] "=r" (scp_reg));
         if ((scp_reg & 0x000FFF00) == 0x00011100)
