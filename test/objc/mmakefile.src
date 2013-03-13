@@ -11,7 +11,7 @@ EXEDIR := $(AROS_TESTS)/objc
 
 # gcc 4.6.2 can't build arm Objective C support without
 # a compiler error.
-#MM- test : test-objc-$(CPU)
+#MM- test : test-$(OBJC_TARGET)-$(CPU)
 #MM- test-objc-i386 : test-objc
 #MM- test-objc-x86_64 : test-objc
 #MM- test-objc-ppc : test-objc
