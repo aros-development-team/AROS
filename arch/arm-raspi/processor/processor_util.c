@@ -88,9 +88,8 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
         asm volatile("fmrx %[scp_reg], FPSID\n" : [scp_reg] "=r" (scp_reg));
         if (((scp_reg >> 16) & 0xF) >= 2)
         {
-                bug("[processor.ARM] VFPv3 Capable Co-Processor\n");
-                info->Features1  |= FEATF_FPU_VFP3;
-                break;
+            bug("[processor.ARM] VFPv3 Capable Co-Processor\n");
+            info->Features1  |= FEATF_FPU_VFP3;
         }
         else
         {
