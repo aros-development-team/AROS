@@ -11,6 +11,8 @@
 
 #include "processor_arch_intern.h"
 
+#define DPROBE(a)       a
+
 static const char *vendors[] =
 {
     "Unknown",
@@ -36,7 +38,7 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
 
     ssp = SuperState();
 
-    D(bug("[processor.ARM] %s: Checking Main ID Register..\n", __PRETTY_FUNCTION__));
+    DPROBE(bug("[processor.ARM] %s: Checking Main ID Register..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 0" : [scp_reg] "=r" (scp_reg) );
 
     info->Vendor = (scp_reg >> 24) & 0x7F;
@@ -53,44 +55,72 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
     }
     else if ((scp_reg & 0xF0000) == 0xF0000)
     {
-        info->Family = CPUFAMILY_UNKNOWN;
+        info->Family = CPUFAMILY_ARM_6;
 
-        D(bug("[processor.ARM] %s: Checking Memory Model Feature Register..\n", __PRETTY_FUNCTION__));
+        DPROBE(bug("[processor.ARM] %s: Checking Memory Model Feature Register..\n", __PRETTY_FUNCTION__));
         asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 4" : [scp_reg] "=r" (scp_reg) );
 
-        if ((scp_reg & 0xF) >= 3 || ((scp_reg >> 4) & 0xF) >= 3)
+        if (((scp_reg & 0xF) >= 3) || (((scp_reg & 0xF) > 0) && ((scp_reg >> 4) & 0xF) >= 3))
             info->Family = CPUFAMILY_ARM_7;
 
-        if ((scp_reg & 0xF) == 2 || ((scp_reg >> 4) & 0xF) == 2)
-            info->Family = CPUFAMILY_ARM_6;
-
-        D(bug("[processor.ARM] %s:    %02d, %02d\n", __PRETTY_FUNCTION__, scp_reg & 0xF, (scp_reg >> 4) & 0xF));
+        DPROBE(bug("[processor.ARM] %s:    %02d, %02d\n", __PRETTY_FUNCTION__, scp_reg & 0xF, (scp_reg >> 4) & 0xF));
     } 
     else
         info->Family = CPUFAMILY_UNKNOWN;
 
-#if (0)
-    D(bug("[processor.ARM] %s: Checking Feature Register #1 ..\n", __PRETTY_FUNCTION__));
+    DPROBE(bug("[processor.ARM] %s: Checking Feature Register #1 ..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 1" : [scp_reg] "=r" (scp_reg) );
 
     if (scp_reg & (0xF << 4))
         info->Features1 |= FEATF_SECURE;
 
-    D(bug("[processor.ARM] %s: Checking Feature Register #0 ..\n", __PRETTY_FUNCTION__));
+    DPROBE(bug("[processor.ARM] %s: Checking Feature Register #0 ..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 1" : [scp_reg] "=r" (scp_reg) );
-#endif
 
-    D(bug("[processor.ARM] %s: Checking Coprocessor Access Control Register..\n", __PRETTY_FUNCTION__));
+    DPROBE(bug("[processor.ARM] %s: Checking Co-Processor Access Control Register..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15,0,%[scp_reg], c1, c0, 2\n" : [scp_reg] "=r" (scp_reg));
     if (scp_reg & ((3 << 20)|(3 << 22)))
         info->Features1 |= FEATF_FPU_VFP;
 
-    D(bug("[processor.ARM] %s: Checking Instruction Set Attributes Register #3..\n", __PRETTY_FUNCTION__));
+    if (info->Features1 & FEATF_FPU_VFP)
+    {
+        DPROBE(bug("[processor.ARM] %s: Checking Floating Point System ID Register..\n", __PRETTY_FUNCTION__));
+        asm volatile("fmrx %[scp_reg], FPSID\n" : [scp_reg] "=r" (scp_reg));
+        switch ((scp_reg >> 16) & 0xF)
+        {
+            case 4:
+                bug("[processor.ARM] VFPv4 Capable Co-Processor\n");
+                info->Features1  |= FEATF_FPU_VFP4;
+                break;
+            case 3:
+                bug("[processor.ARM] VFPv3 Capable Co-Processor\n");
+                info->Features1  |= FEATF_FPU_VFP3;
+                break;
+            case 2:
+                bug("[processor.ARM] VFPv2 Capable Co-Processor\n");
+                info->Features1  |= FEATF_FPU_VFP2;
+                break;
+            default:
+                bug("[processor.ARM] VFPv1 Capable Co-Processor\n");
+                break;
+            
+        }
+
+        DPROBE(bug("[processor.ARM] %s: Checking Media and VFP Feature Register #1..\n", __PRETTY_FUNCTION__));
+        asm volatile("fmrx %[scp_reg], MVFR1\n" : [scp_reg] "=r" (scp_reg));
+        if ((scp_reg & 0x000fff00) == 0x00011100)
+        {
+            bug("[processor.ARM] NEON SIMD Extensions\n");
+            info->Features1 |= FEATF_NEON;
+        }
+    }
+
+    DPROBE(bug("[processor.ARM] %s: Checking Instruction Set Attributes Register #3..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15,0,%[scp_reg], c0, c2, 3\n" : [scp_reg] "=r" (scp_reg));
     if (((scp_reg >> 28) & 0xF) > 0)
         info->Features1 |= FEATF_THUMBEX;
 
-    D(bug("[processor.ARM] %s: Checking System Control Register..\n", __PRETTY_FUNCTION__));
+    DPROBE(bug("[processor.ARM] %s: Checking System Control Register..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[scp_reg], c1, c0, 0" : [scp_reg] "=r" (scp_reg) );
 
     if (scp_reg & (1 << 11))
@@ -99,7 +129,7 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
     if (scp_reg & (1 << 31))
         info->Features1 |= FEATF_BIGEND;
 
-    D(bug("[processor.ARM] %s: Checking Cache Type Register..\n", __PRETTY_FUNCTION__));
+    DPROBE(bug("[processor.ARM] %s: Checking Cache Type Register..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[cache_reg], c0, c0, 1" : [cache_reg] "=r" (cache_reg) );
 
     if (scp_reg & (1 << 2))
@@ -203,8 +233,6 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
             info->Vendor = 0;
             break;
     }
-    
-    info->Features1 |= FEATF_FPU;
     
     D(bug("[processor.ARM] %s: CPU Details Read\n", __PRETTY_FUNCTION__));
 }
