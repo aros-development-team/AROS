@@ -13,7 +13,7 @@
 
 #define DPROBE(a)       a
 
-static const char *vendors[] =
+static const char *ARMCPUVendors[] =
 {
     "Unknown",
     "ARM Ltd.",
@@ -26,6 +26,19 @@ static const char *vendors[] =
     NULL
 };
 
+static const char *ARMCPUFamilies[] =
+{
+    "v3",
+    "v4",
+    "v4T",
+    "v5",
+    "v5T",
+    "v5TE",
+    "v5TEJ",
+    "v6",
+    "v7",
+    NULL
+};
 
 VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
 {
@@ -60,10 +73,10 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
         DPROBE(bug("[processor.ARM] %s: Checking Memory Model Feature Register..\n", __PRETTY_FUNCTION__));
         asm volatile("mrc p15, 0, %[scp_reg], c0, c1, 4" : [scp_reg] "=r" (scp_reg) );
 
-        if (((scp_reg & 0xF) >= 3) || (((scp_reg & 0xF) > 0) && ((scp_reg >> 4) & 0xF) >= 3))
+        if (((((scp_reg >> 4) & 0xF) >= 1) && ((scp_reg & 0xF) >= 3)) || (((scp_reg >> 4) & 0xF) >= 3))
             info->Family = CPUFAMILY_ARM_7;
 
-        DPROBE(bug("[processor.ARM] %s:    %02d, %02d\n", __PRETTY_FUNCTION__, scp_reg & 0xF, (scp_reg >> 4) & 0xF));
+        DPROBE(bug("[processor.ARM] %s:  - %02d:%02d\n", __PRETTY_FUNCTION__, (scp_reg >> 4) & 0xF, scp_reg & 0xF));
     } 
     else
         info->Family = CPUFAMILY_UNKNOWN;
@@ -88,24 +101,19 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
         asm volatile("fmrx %[scp_reg], FPSID\n" : [scp_reg] "=r" (scp_reg));
         if (((scp_reg >> 16) & 0xF) >= 2)
         {
-            bug("[processor.ARM] VFPv3 Capable Co-Processor\n");
             info->Features1  |= FEATF_FPU_VFP3;
         }
         else
         {
 /*
-            bug("[processor.ARM] VFPv2 Capable Co-Processor\n");
             info->Features1  |= FEATF_FPU_VFP2;
 */
-
-            bug("[processor.ARM] VFPv1 Capable Co-Processor\n");
         }
 
         DPROBE(bug("[processor.ARM] %s: Checking Media and VFP Feature Register #0..\n", __PRETTY_FUNCTION__));
         asm volatile("fmrx %[scp_reg], MVFR0\n" : [scp_reg] "=r" (scp_reg));
         if ((scp_reg & 0xF) == 1)
         {
-            bug("[processor.ARM] VFPv3 D16 Capable Co-Processor\n");
             info->Features1 |= FEATF_FPU_VFP3_16;
         }
 
@@ -113,12 +121,10 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
         asm volatile("fmrx %[scp_reg], MVFR1\n" : [scp_reg] "=r" (scp_reg));
         if ((scp_reg & 0x000FFF00) == 0x00011100)
         {
-            bug("[processor.ARM] NEON SIMD Extensions\n");
             info->Features1 |= FEATF_NEON;
         }
         if ((scp_reg & 0xF0000000) == 0x10000000)
         {
-            bug("[processor.ARM] VFPv4 Capable Co-Processor\n");
             info->Features1 |= FEATF_FPU_VFP4;
         }
     }
@@ -216,31 +222,34 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
 
     switch (info->Vendor) {
         case 'A':
-            info->VendorID = vendors[1];
+            info->VendorID = ARMCPUVendors[1];
             break;
         case 'D':
-            info->VendorID = vendors[2];
+            info->VendorID = ARMCPUVendors[2];
             break;
         case 'M':
-            info->VendorID = vendors[3];
+            info->VendorID = ARMCPUVendors[3];
             break;
         case 'T':
-            info->VendorID = vendors[4];
+            info->VendorID = ARMCPUVendors[4];
             break;
         case 'Q':
-            info->VendorID = vendors[5];
+            info->VendorID = ARMCPUVendors[5];
             break;
         case 'V':
-            info->VendorID = vendors[6];
+            info->VendorID = ARMCPUVendors[6];
             break;
         case 'i':
-            info->VendorID = vendors[7];
+            info->VendorID = ARMCPUVendors[7];
             break;
         default:
-            info->VendorID = vendors[0];
+            info->VendorID = ARMCPUVendors[0];
             info->Vendor = 0;
             break;
     }
-    
+
+    if (info->Family >= CPUFAMILY_ARM_3)
+        info->FamilyString = ARMCPUFamilies[info->Family - CPUFAMILY_ARM_3];
+
     D(bug("[processor.ARM] %s: CPU Details Read\n", __PRETTY_FUNCTION__));
 }
