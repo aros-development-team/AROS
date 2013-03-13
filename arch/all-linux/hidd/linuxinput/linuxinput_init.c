@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LinuxInput hidd initialization code.
@@ -126,6 +126,14 @@ static int Init_Hidd(LIBBASETYPEPTR LIBBASE)
 
     InitSemaphore(&LIBBASE->lsd.sema);
     NEWLIST(&LIBBASE->lsd.eventhandlers);
+
+    /*
+     * We cannot cooperate with any other driver at the moment.
+     * Attempting to do so results in duplicating events (one from
+     * X11 and another from us).
+     */
+    if (OOP_FindClass("hidd.gfx.x11"))
+        return FALSE;
 
     D(bug("[LinuxInput] Opening UnixIO... "));
     LIBBASE->lsd.unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, NULL);
