@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LinuxFB hidd initialization code.
@@ -23,28 +23,16 @@
 
 #include "linuxfb_intern.h"
 
-/* 
- * Some attrbases needed as global vars.
- * These are write-once read-many.
- */
-OOP_AttrBase HiddChunkyBMAttrBase;
-OOP_AttrBase HiddBitMapAttrBase;  
-OOP_AttrBase HiddSyncAttrBase;
-OOP_AttrBase HiddGfxAttrBase;
-OOP_AttrBase HiddPixFmtAttrBase;
-OOP_AttrBase HiddLinuxFBAttrBase;
-OOP_AttrBase HiddLinuxFBBitmapAttrBase;
-
-static const struct OOP_ABDescr abd[] =
+static CONST_STRPTR const abd[] =
 {
-    { IID_Hidd_ChunkyBM         , &HiddChunkyBMAttrBase         },
-    { IID_Hidd_BitMap           , &HiddBitMapAttrBase           },
-    { IID_Hidd_Sync             , &HiddSyncAttrBase             },
-    { IID_Hidd_Gfx              , &HiddGfxAttrBase              },
-    { IID_Hidd_PixFmt           , &HiddPixFmtAttrBase           },
-    { IID_Hidd_LinuxFB          , &HiddLinuxFBAttrBase          },
-    { IID_Hidd_LinuxFBBitmap    , &HiddLinuxFBBitmapAttrBase    },
-    { NULL                      , NULL                          }
+    IID_Hidd_Gfx,
+    IID_Hidd_BitMap,
+    IID_Hidd_Sync,
+    IID_Hidd_PixFmt,
+    IID_Hidd_ChunkyBM,
+    IID_Hidd_LinuxFB,
+    IID_Hidd_LinuxFBBitmap,
+    NULL
 };
 
 static int Init_Hidd(LIBBASETYPEPTR LIBBASE)
@@ -55,12 +43,12 @@ static int Init_Hidd(LIBBASETYPEPTR LIBBASE)
 
     InitSemaphore(&LIBBASE->lsd.sema);
 
-    return OOP_ObtainAttrBases(abd);
+    return OOP_ObtainAttrBasesArray(&LIBBASE->lsd.gfxAttrBase, abd);
 }
 
 static int Expunge_Hidd(LIBBASETYPEPTR LIBBASE)
 {
-    OOP_ReleaseAttrBases(abd);
+    OOP_ReleaseAttrBasesArray(&LIBBASE->lsd.gfxAttrBase, abd);
 
     if (LIBBASE->lsd.unixio)
         OOP_DisposeObject(LIBBASE->lsd.unixio);
