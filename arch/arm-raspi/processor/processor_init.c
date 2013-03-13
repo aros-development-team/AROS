@@ -15,6 +15,8 @@
 #include "processor_intern.h"
 #include "processor_arch_intern.h"
 
+#define DUMPINFO(a) a
+
 LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 {
     struct ARMProcessorInformation **sysprocs;
@@ -38,28 +40,46 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     /* Boot CPU is number 0. Fill in its data. */
     ReadProcessorInformation(sysprocs[0]);
 
-    if (sysprocs[0]->Family >= CPUFAMILY_ARM_3)
-    {
-        int armvers = 3;
+    DUMPINFO(
+        if (sysprocs[0]->FamilyString)
+        {
+            bug("[processor.ARM] %s ARM%s Processor Core\n", sysprocs[0]->VendorID, sysprocs[0]->FamilyString);
+        }
+        else
+        {
+            bug("[processor.ARM] %s ARM Processor Core (unknown family)\n", sysprocs[0]->VendorID);
+        }
 
-        if ((sysprocs[0]->Family & 0x8) != 0)
-            armvers = 7;
-        else if ((sysprocs[0]->Family & 0x7) == 0x7)
-            armvers = 6;
-        else if ((sysprocs[0]->Family & 0x7) > 2)
-            armvers = 5;
-        else if ((sysprocs[0]->Family & 0x7) > 0)
-            armvers = 4;
+        if (sysprocs[0]->Features1 & FEATF_FPU_VFP4)
+        {
+            bug("[processor.ARM] VFPv4 Co-Processor\n");
+        }
+        else if (sysprocs[0]->Features1 & FEATF_FPU_VFP3_16)
+        {
+            bug("[processor.ARM] VFPv3 [16Double] Co-Processor\n");
+        }
+        else if (sysprocs[0]->Features1 & FEATF_FPU_VFP3)
+        {
+            bug("[processor.ARM] VFPv3 Co-Processor\n");
+        }
+        else if (sysprocs[0]->Features1 & FEATF_FPU_VFP2)
+        {
+            bug("[processor.ARM] VFPv2 Co-Processor\n");
+        }
+        else
+        {
+            bug("[processor.ARM] VFPv1 Co-Processor\n");            
+        }
 
-        bug("[processor.ARM] %s ARMv%d Processor Core\n", sysprocs[0]->VendorID, armvers);
-    }
-    else
-    {
-        bug("[processor.ARM] %s ARM Processor core\n", sysprocs[0]->VendorID);
-    }
-    bug("[processor.ARM] Cache Info:\n");
-    bug("[processor.ARM]   L1 Data   : %dKb\n", sysprocs[0]->L1DataCacheSize);
-    bug("[processor.ARM]   L1 Instr. : %dKb\n", sysprocs[0]->L1InstructionCacheSize);
+        if (sysprocs[0]->Features1 & FEATF_NEON)
+        {
+            bug("[processor.ARM]   NEON SIMD Extensions\n");
+        }
+
+        bug("[processor.ARM] Cache Info:\n");
+        bug("[processor.ARM]   L1 Data   : %dKb\n", sysprocs[0]->L1DataCacheSize);
+        bug("[processor.ARM]   L1 Instr. : %dKb\n", sysprocs[0]->L1InstructionCacheSize);
+    )
 
     return TRUE;
 }

@@ -15,6 +15,7 @@ struct ARMProcessorInformation
     TEXT    BrandStringBuffer[48];
     STRPTR  BrandString;
     ULONG   Family;
+    ULONG   FamilyString;
     ULONG   Model;
     ULONG   VectorUnit;
     ULONG   Features1;
