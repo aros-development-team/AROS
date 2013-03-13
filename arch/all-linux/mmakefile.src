@@ -1,9 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# Disabled until ported - sonic
-##MM- kernel-linux-$(CPU) : \
-##MM    kernel-hidd-linux-kobj
+#MM- kernel-link-linux :          \
+#MM    kernel-hidd-linuxfb-kobj   \
+#MM    kernel-hidd-linuxinput-kobj
 
 #MM- workbench-linux-$(CPU) : \
 #MM      workbench-unix \
