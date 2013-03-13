@@ -2,7 +2,7 @@
 #define LINUX_INTERN_H
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux framebuffer hidd for AROS
@@ -141,6 +141,14 @@ struct LinuxFB_staticdata
     OOP_Class *gfxclass;
     OOP_Class *bmclass;
     OOP_Object *unixio;
+
+    OOP_AttrBase gfxAttrBase;
+    OOP_AttrBase bmAttrBase;
+    OOP_AttrBase syncAttrBase;
+    OOP_AttrBase pfAttrBase;
+    OOP_AttrBase chunkyAttrBase;
+    OOP_AttrBase linuxFBAttrBase;
+    OOP_AttrBase linuxBMAttrBase;
 };
 
 struct LinuxFB_base
@@ -156,6 +164,20 @@ struct BitmapData;
 
 #define LSD(cl) (&((struct LinuxFB_base *)cl->UserData)->lsd)
 
+#undef HiddGfxAttrBase
+#undef HiddBitMapAttrBase
+#undef HiddSyncAttrBase
+#undef HiddPixFmtAttrBase
+#undef HiddChunkyBMAttrBase
+#undef HiddLinuxFBAttrBase
+#undef HiddLinuxFBBitmapAttrBase
+#define HiddGfxAttrBase           LSD(cl)->gfxAttrBase
+#define HiddBitMapAttrBase        LSD(cl)->bmAttrBase
+#define HiddSyncAttrBase          LSD(cl)->syncAttrBase
+#define HiddPixFmtAttrBase        LSD(cl)->pfAttrBase
+#define HiddChunkyBMAttrBase      LSD(cl)->chunkyAttrBase
+#define HiddLinuxFBAttrBase       LSD(cl)->linuxFBAttrBase
+#define HiddLinuxFBBitmapAttrBase LSD(cl)->linuxBMAttrBase
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
 

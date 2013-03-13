@@ -31,6 +31,9 @@
 
 #include LC_LIBDEFS_FILE
 
+#undef LSD
+#define LSD(cl) (&LIBBASE->lsd)
+
 static int LinuxFB_Startup(LIBBASETYPEPTR LIBBASE) 
 {
     int res = FALSE;
