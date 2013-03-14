@@ -54,7 +54,7 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
     DPROBE(bug("[processor.ARM] %s: Checking Main ID Register..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[scp_reg], c0, c0, 0" : [scp_reg] "=r" (scp_reg) );
 
-    info->Vendor = (scp_reg >> 24) & 0x7F;
+    info->VendorID = (scp_reg >> 24) & 0x7F;
 
     if ((scp_reg & 0x8F000) == 0)
         info->Family = CPUFAMILY_UNKNOWN;
@@ -220,30 +220,30 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
 
     UserState(ssp);
 
-    switch (info->Vendor) {
+    switch (info->VendorID) {
         case 'A':
-            info->VendorID = ARMCPUVendors[1];
+            info->Vendor = ARMCPUVendors[1];
             break;
         case 'D':
-            info->VendorID = ARMCPUVendors[2];
+            info->Vendor = ARMCPUVendors[2];
             break;
         case 'M':
-            info->VendorID = ARMCPUVendors[3];
+            info->Vendor = ARMCPUVendors[3];
             break;
         case 'T':
-            info->VendorID = ARMCPUVendors[4];
+            info->Vendor = ARMCPUVendors[4];
             break;
         case 'Q':
-            info->VendorID = ARMCPUVendors[5];
+            info->Vendor = ARMCPUVendors[5];
             break;
         case 'V':
-            info->VendorID = ARMCPUVendors[6];
+            info->Vendor = ARMCPUVendors[6];
             break;
         case 'i':
-            info->VendorID = ARMCPUVendors[7];
+            info->Vendor = ARMCPUVendors[7];
             break;
         default:
-            info->VendorID = ARMCPUVendors[0];
+            info->Vendor = ARMCPUVendors[0];
             info->Vendor = 0;
             break;
     }

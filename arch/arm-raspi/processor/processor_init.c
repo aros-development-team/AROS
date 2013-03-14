@@ -43,11 +43,11 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     DUMPINFO(
         if (sysprocs[0]->FamilyString)
         {
-            bug("[processor.ARM] %s ARM%s Processor Core\n", sysprocs[0]->VendorID, sysprocs[0]->FamilyString);
+            bug("[processor.ARM] %s ARM%s Processor Core\n", sysprocs[0]->Vendor, sysprocs[0]->FamilyString);
         }
         else
         {
-            bug("[processor.ARM] %s ARM Processor Core (unknown family)\n", sysprocs[0]->VendorID);
+            bug("[processor.ARM] %s ARM Processor Core (unknown family)\n", sysprocs[0]->Vendor);
         }
 
         if (sysprocs[0]->Features1 & FEATF_FPU_VFP4)
