@@ -30,7 +30,7 @@
 #if defined(DEBUG) && (DEBUG > 0)
 #define DIRQ(a)         a
 #define DIRQ_MORE(a)
-#define DUMP(a)         a
+#define DUMP(a)         
 #define DUMP_MORE(a)
 #define DINIT(a)        a
 #else
