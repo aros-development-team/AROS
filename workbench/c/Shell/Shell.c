@@ -600,15 +600,16 @@ void setPath(ShellState *ss, BPTR lock)
 {
     BPTR dir;
     STRPTR buf;
-    ULONG i;
+    ULONG i = 0;
 
     if (lock)
 	dir = lock;
     else
 	dir = CurrentDir(BNULL);
 
-    for (i = 256; ; i += 256)
+    do
     {
+        i += 256;
 	buf = AllocVec(i, MEMF_ANY);
 
 	if (buf == NULL)
@@ -622,7 +623,7 @@ void setPath(ShellState *ss, BPTR lock)
 	}
 
 	FreeVec(buf);
-    }
+    }  while (IoErr() == ERROR_LINE_TOO_LONG)
 
     if (lock == BNULL)
 	CurrentDir(dir);
