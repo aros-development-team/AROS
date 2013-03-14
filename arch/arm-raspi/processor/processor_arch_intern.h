@@ -10,12 +10,12 @@
 
 struct ARMProcessorInformation
 {
-    char    *VendorID;
-    ULONG   Vendor;
+    ULONG   VendorID;
+    STRPTR  Vendor;
     TEXT    BrandStringBuffer[48];
     STRPTR  BrandString;
     ULONG   Family;
-    ULONG   FamilyString;
+    STRPTR  FamilyString;
     ULONG   Model;
     ULONG   VectorUnit;
     ULONG   Features1;
