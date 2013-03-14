@@ -623,7 +623,7 @@ void setPath(ShellState *ss, BPTR lock)
 	}
 
 	FreeVec(buf);
-    }  while (IoErr() == ERROR_LINE_TOO_LONG)
+    }  while (IoErr() == ERROR_LINE_TOO_LONG);
 
     if (lock == BNULL)
 	CurrentDir(dir);
