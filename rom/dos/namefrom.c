@@ -23,7 +23,7 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     BOOL  first = TRUE;
 
     D(origbuffer = buffer);
-    D(bug("NameFromX(%x,%x,%d,%d)\n", BADDR(lock), buffer, length));
+    D(bug("[DOS] namefrom_internal(0x%p, 0x%p, %d)\n", BADDR(lock), buffer, length));
         
     if (length < 1)
     {
@@ -64,8 +64,9 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
         }
         if (lock != origlock && lock)
                 UnLock(lock);
+
         lock = parentlock;
-        
+
         /* Move name to the top of the buffer. */
         if(!error)
         {
@@ -124,7 +125,7 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     while(!error && parentlock);
 
     /* Move the name from the top to the bottom of the buffer. */
-    if (!error)
+    if ((!error) && (name != buffer))
     {
         UBYTE c, old_c = '\0';
         
