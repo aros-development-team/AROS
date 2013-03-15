@@ -26,7 +26,7 @@ $(BINDIR)/boot:
 #MM- kernel-unix: kernel-link-base
 
 #MM- kernel-link-unix : \
-#MM     kernel-link-$(ARCH)                     \
+#MM     kernel-$(ARCH)-$(AROS_TARGET_VARIANT)   \
 #MM	kernel-kernel-kobj			\
 #MM     kernel-hostlib-kobj			\
 #MM	kernel-battclock-kobj			\
@@ -46,9 +46,9 @@ KLIBS   := exec expansion
 KHNDLRS := emul
 KHIDDS  := unixio
 KRSRCS  := battclock hostlib processor
-# Disabled until ported - sonic
-ifeq ("$(AROS_HOST_ARCH)","linux")
-KHIDDS  += linuxfb linuxinput
+ifeq ("$(ARCH)-$(AROS_TARGET_VARIANT)","linux-")
+    # Note ending dash - we add these only for variant-less (desktop) Linux
+    KHIDDS  += linuxfb linuxinput
 endif
 ifeq ("$(X11_HIDD_TARGET)", "kernel-x11gfx-kobj")
     KHIDDS += x11gfx
