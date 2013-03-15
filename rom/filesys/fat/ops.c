@@ -134,7 +134,8 @@ LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent) {
     }
 
     /* and its cluster */
-    parent_cluster = FIRST_FILE_CLUSTER(&de);
+    if ((parent_cluster = FIRST_FILE_CLUSTER(&de)) == 0)
+        parent_cluster = glob->sb->rootdir_cluster;
 
     /* then we go through the parent dir, looking for a link back to us. we do
      * this so that we have an entry with the proper name for copying by
