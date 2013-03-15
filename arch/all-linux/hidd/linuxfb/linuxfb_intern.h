@@ -33,7 +33,6 @@
 
 #include <linux/fb.h>
 #include <linux/kd.h>
-#include <sys/stat.h>
 
 #define BUFFERED_VRAM 1
 
