@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <aros/kernel.h>
@@ -38,10 +38,10 @@ static int PlatformInit(struct ExecBase *SysBase)
     BootTask->tc_SPUpper = stack + STACK_SIZE;
 
     sysIdleTask = NewCreateTask(TASKTAG_NAME       , "System Idle",
-                      TASKTAG_PRI        , -127,
-                      TASKTAG_PC         , IdleTask,
-                      TASKTAG_ARG1       , SysBase,
-                      TAG_DONE);
+                                TASKTAG_PRI        , -127,
+                                TASKTAG_PC         , IdleTask,
+                                TASKTAG_ARG1       , SysBase,
+                                TAG_DONE);
 
     sysIdleTask->tc_State      = TS_WAIT;
 
