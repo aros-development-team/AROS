@@ -32,7 +32,9 @@ struct ExceptionContext
 #define CPUMODE_UNDEF           0x1B
 #define CPUMODE_SYSTEM          0x1F
 
-#define CPUMODE_MASK            ~0x1F
+#define CPUMODE_MASK            0x1F
+
+#define CPUMODE_IRQENABLED      (1 << 7)
 
 /* Flags */
 enum enECFlags
