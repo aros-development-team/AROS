@@ -114,7 +114,7 @@ void serInit(void)
     *(volatile uint32_t *)(PL011_0_BASE + PL011_IBRD) = uartdivint;
     uartdivfrac = PL011_BAUDFRAC(uartbaud, uartclock);
     *(volatile uint32_t *)(PL011_0_BASE + PL011_FBRD) = uartdivfrac;
-    *(volatile uint32_t *)(PL011_0_BASE + PL011_LCRH) = PL011_LCRH_WLEN8|PL011_LCRH_FEN;                       // 8N1, Fifo enabled
+    *(volatile uint32_t *)(PL011_0_BASE + PL011_LCRH) = PL011_LCRH_WLEN8|PL011_LCRH_FEN;           // 8N1, Fifo enabled
     *(volatile uint32_t *)(PL011_0_BASE + PL011_CR) = PL011_CR_UARTEN|PL011_CR_TXE|PL011_CR_RXE;   // enable the uart, tx and rx
 
     for (uartvar = 0; uartvar < 150; uartvar++) asm volatile ("mov r0, r0\n");
