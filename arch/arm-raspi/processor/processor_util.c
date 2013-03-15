@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <resources/processor.h>
@@ -11,7 +11,7 @@
 
 #include "processor_arch_intern.h"
 
-#define DPROBE(a)       a
+#define DPROBE(a)
 
 static const char *ARMCPUVendors[] =
 {
