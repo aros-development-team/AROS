@@ -28,20 +28,22 @@
 
 // #define xxx(a) (a) to enable particular sections.
 #if defined(DEBUG) && (DEBUG > 0)
-#define DIRQ(a)         a
+#define DIRQ(a)
 #define DIRQ_MORE(a)
 #define DUMP(a)         
 #define DUMP_MORE(a)
 #define DINIT(a)        a
+#define DDEV(a)
 #else
 #define DIRQ(a)
 #define DIRQ_MORE(a)
 #define DUMP(a)
 #define DUMP_MORE(a)
 #define DINIT(a)
+#define DDEV(a)
 #endif
 /* Errors that shouldn't happen */
-#define DERROR(a) a
+#define DERROR(a)       a
 
 #define TASK_PRI		        10
 #define TIMEOUT			        30

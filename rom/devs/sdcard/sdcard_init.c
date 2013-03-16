@@ -397,7 +397,7 @@ static int FNAME_SDC(Scan)(struct SDCardBase *SDCardBase)
     unsigned int        sdcReg;
     int                 retVal = FALSE;
 
-    D(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
+    DINIT(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
 
     *(volatile unsigned int *)GPSET0 = (1 << 16); // Turn Activity LED OFF
 
@@ -413,21 +413,21 @@ static int FNAME_SDC(Scan)(struct SDCardBase *SDCardBase)
     FNAME_SDCBUS(SetPowerLevel)(SDCardBase->sdcard_Bus->sdcb_Power, FALSE, SDCardBase->sdcard_Bus);
 
     sdcReg = FNAME_SDCBUS(MMIOReadByte)(SDHCI_HOST_CONTROL, SDCardBase->sdcard_Bus);
-    D(bug("[SDCard--] %s: Setting Min Buswidth... [%x -> %x]\n", __PRETTY_FUNCTION__, sdcReg, sdcReg & ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD)));
+    DINIT(bug("[SDCard--] %s: Setting Min Buswidth... [%x -> %x]\n", __PRETTY_FUNCTION__, sdcReg, sdcReg & ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD)));
     sdcReg &= ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD);
     FNAME_SDCBUS(MMIOWriteByte)(SDHCI_HOST_CONTROL, sdcReg, SDCardBase->sdcard_Bus);
 
     /* Install IRQ handler */
     if ((SDCardBase->sdcard_Bus->sdcb_IRQHandle = KrnAddIRQHandler(IRQ_VC_ARASANSDIO, FNAME_SDCBUS(BusIRQ), SDCardBase->sdcard_Bus, NULL)) != NULL)
     {
-        D(bug("[SDCard--] %s: IRQHandle @ 0x%p\n", __PRETTY_FUNCTION__, SDCardBase->sdcard_Bus->sdcb_IRQHandle));
+        DINIT(bug("[SDCard--] %s: IRQHandle @ 0x%p\n", __PRETTY_FUNCTION__, SDCardBase->sdcard_Bus->sdcb_IRQHandle));
 
-        D(bug("[SDCard--] %s: Masking chipset Interrupts...\n", __PRETTY_FUNCTION__));
+        DINIT(bug("[SDCard--] %s: Masking chipset Interrupts...\n", __PRETTY_FUNCTION__));
 
         FNAME_SDCBUS(MMIOWriteLong)(SDHCI_INT_ENABLE, SDCardBase->sdcard_Bus->sdcb_IntrMask, SDCardBase->sdcard_Bus);
         FNAME_SDCBUS(MMIOWriteLong)(SDHCI_SIGNAL_ENABLE, SDCardBase->sdcard_Bus->sdcb_IntrMask, SDCardBase->sdcard_Bus);
 
-        D(bug("[SDCard--] %s: Launching Bus Task...\n", __PRETTY_FUNCTION__));
+        DINIT(bug("[SDCard--] %s: Launching Bus Task...\n", __PRETTY_FUNCTION__));
 
         return NewCreateTask(
             TASKTAG_PC         , FNAME_SDCBUS(BusTask),
@@ -444,33 +444,33 @@ static int FNAME_SDC(Scan)(struct SDCardBase *SDCardBase)
 
 static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
 {
-    D(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
+    DINIT(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
 
     if ((ExpansionBase = OpenLibrary("expansion.library", 40L)) == NULL)
     {
-        D(bug("[SDCard--] %s: Failed to open expansion.library\n", __PRETTY_FUNCTION__));
+        bug("[SDCard--] %s: Failed to open expansion.library\n", __PRETTY_FUNCTION__);
         goto libinit_fail;
     }
 
     if ((KernelBase = OpenResource("kernel.resource")) == NULL)
     {
-        D(bug("[SDCard--] %s: Failed to open kernel.resource\n", __PRETTY_FUNCTION__));
+        bug("[SDCard--] %s: Failed to open kernel.resource\n", __PRETTY_FUNCTION__);
         goto libinit_fail;
     }
     
     if ((VCMBoxBase = OpenResource("vcmbox.resource")) == NULL)
     {
-        D(bug("[SDCard--] %s: Failed to open vcmbox.resource\n", __PRETTY_FUNCTION__));
+        bug("[SDCard--] %s: Failed to open vcmbox.resource\n", __PRETTY_FUNCTION__);
         goto libinit_fail;
     }
 
     if ((LIBBASE->sdcard_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096)) == NULL)
     {
-        D(bug("[SDCard--] %s: Failed to Allocate MemPool\n", __PRETTY_FUNCTION__));
+        bug("[SDCard--] %s: Failed to Allocate MemPool\n", __PRETTY_FUNCTION__);
         goto libinit_fail;
     }
 
-    D(bug("[SDCard--] %s: MemPool @ %p\n", __PRETTY_FUNCTION__, LIBBASE->sdcard_MemPool));
+    DINIT(bug("[SDCard--] %s: MemPool @ %p\n", __PRETTY_FUNCTION__, LIBBASE->sdcard_MemPool));
 
 #if (0)
     VCMBoxMessage[0] = 8 * 4;
@@ -486,13 +486,13 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
     VCMBoxWrite((APTR)VCMB_BASE, VCMB_PROPCHAN, VCMBoxMessage);
     if (VCMBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage)
     {
-        D(bug("[SDCard--] %s: Failed to read controller's Power state\n", __PRETTY_FUNCTION__));
+        DINIT(bug("[SDCard--] %s: Failed to read controller's Power state\n", __PRETTY_FUNCTION__));
         goto libinit_fail;
     }
     
     if (!(VCMBoxMessage[6] & VCPOWER_STATE_ON))
     {
-        D(bug("[SDCard--] %s: Powering on Arasan SDHCI controller...\n", __PRETTY_FUNCTION__));
+        DINIT(bug("[SDCard--] %s: Powering on Arasan SDHCI controller...\n", __PRETTY_FUNCTION__));
 
         VCMBoxMessage[0] = 8 * 4;
         VCMBoxMessage[1] = VCTAG_REQ;
@@ -507,7 +507,7 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
         VCMBoxWrite((APTR)VCMB_BASE, VCMB_PROPCHAN, VCMBoxMessage);
         if ((VCMBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage) || (!(VCMBoxMessage[6] & VCPOWER_STATE_ON)))
         {
-            D(bug("[SDCard--] %s: Failed to power on controller\n", __PRETTY_FUNCTION__));
+            DINIT(bug("[SDCard--] %s: Failed to power on controller\n", __PRETTY_FUNCTION__));
             goto libinit_fail;
         }
     }
@@ -526,7 +526,7 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
     VCMBoxWrite((APTR)VCMB_BASE, VCMB_PROPCHAN, VCMBoxMessage);
     if (VCMBoxRead((APTR)VCMB_BASE, VCMB_PROPCHAN) != VCMBoxMessage)
     {
-        D(bug("[SDCard--] %s: Failed to determine Max SDHC Clock\n", __PRETTY_FUNCTION__));
+        DINIT(bug("[SDCard--] %s: Failed to determine Max SDHC Clock\n", __PRETTY_FUNCTION__));
         goto libinit_fail;
     }
 
@@ -538,20 +538,20 @@ static int FNAME_SDC(Init)(struct SDCardBase *SDCardBase)
 
         LIBBASE->sdcard_Bus->sdcb_ClockMax = VCMBoxMessage[6];
 
-        D(bug("[SDCard--] %s: Reseting SDHCI...\n", __PRETTY_FUNCTION__));
+        DINIT(bug("[SDCard--] %s: Reseting SDHCI...\n", __PRETTY_FUNCTION__));
 
         FNAME_SDCBUS(SoftReset)(SDHCI_RESET_ALL, LIBBASE->sdcard_Bus);
 
-        D(bug("[SDCard--] %s: SDHC Max Clock Rate : %dMHz\n", __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_ClockMax / 1000000));
-        D(bug("[SDCard--] %s: SDHC Min Clock Rate : %dHz (hardcoded)\n", __PRETTY_FUNCTION__, HOSTCLOCK_MIN));
+        DINIT(bug("[SDCard--] %s: SDHC Max Clock Rate : %dMHz\n", __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_ClockMax / 1000000));
+        DINIT(bug("[SDCard--] %s: SDHC Min Clock Rate : %dHz (hardcoded)\n", __PRETTY_FUNCTION__, HOSTCLOCK_MIN));
 
         LIBBASE->sdcard_Bus->sdcb_Version = FNAME_SDCBUS(MMIOReadWord)(SDHCI_HOST_VERSION, LIBBASE->sdcard_Bus);
         LIBBASE->sdcard_Bus->sdcb_Capabilities = FNAME_SDCBUS(MMIOReadLong)(SDHCI_CAPABILITIES, LIBBASE->sdcard_Bus);
         LIBBASE->sdcard_Bus->sdcb_Power = MMC_VDD_165_195 | MMC_VDD_320_330 | MMC_VDD_330_340;
 
-        D(bug("[SDCard--] %s: SDHCI Host Vers      : %d [SD Host Spec %d]\n", __PRETTY_FUNCTION__, ((LIBBASE->sdcard_Bus->sdcb_Version & 0xFF00) >> 8), (LIBBASE->sdcard_Bus->sdcb_Version & 0xFF) + 1));
-        D(bug("[SDCard--] %s: SDHCI Capabilities   : 0x%08x\n", __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_Capabilities));
-        D(bug("[SDCard--] %s: SDHCI Voltages       : 0x%08x (hardcoded)\n", __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_Power));
+        DINIT(bug("[SDCard--] %s: SDHCI Host Vers      : %d [SD Host Spec %d]\n", __PRETTY_FUNCTION__, ((LIBBASE->sdcard_Bus->sdcb_Version & 0xFF00) >> 8), (LIBBASE->sdcard_Bus->sdcb_Version & 0xFF) + 1));
+        DINIT(bug("[SDCard--] %s: SDHCI Capabilities   : 0x%08x\n", __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_Capabilities));
+        DINIT(bug("[SDCard--] %s: SDHCI Voltages       : 0x%08x (hardcoded)\n", __PRETTY_FUNCTION__, LIBBASE->sdcard_Bus->sdcb_Power));
 
         LIBBASE->sdcard_Bus->sdcb_LastWrite = *((volatile unsigned int *)(SYSTIMER_CLO));
     }
@@ -571,7 +571,7 @@ static int FNAME_SDC(Open)
     ULONG flags
 )
 {
-    D(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
+    DDEV(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
 
     /* Assume it failed */
     iorq->io_Error = IOERR_OPENFAIL;
@@ -587,12 +587,12 @@ static int FNAME_SDC(Open)
         {
             if (FNAME_SDC(StartUnit)((struct sdcard_Unit *)iorq->io_Unit))
             {
-                D(bug("[SDCard%02ld] %s: Unit configured for operation\n", ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                DDEV(bug("[SDCard%02ld] %s: Unit configured for operation\n", ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
                 ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_Flags |= AF_Card_Active;
             }
             else
             {
-                D(bug("[SDCard%02ld] %s: Failed to configure unit\n", ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                DDEV(bug("[SDCard%02ld] %s: Failed to configure unit\n", ((struct sdcard_Unit *)iorq->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
             }
         }
     }
@@ -608,7 +608,7 @@ static int FNAME_SDC(Close)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)iorq->io_Unit;
 
-    D(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
+    DDEV(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
 
     /* First of all make the important fields of struct IORequest invalid! */
     iorq->io_Unit = (struct Unit *)~0;
