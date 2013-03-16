@@ -1,0 +1,14 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES  := rgbconv_arch
+AFILES := 
+
+USER_CFLAGS := -I$(SRCDIR)/rom/hidds/graphics
+
+%build_archspecific \
+  mainmmake=kernel-hidd-graphics maindir=rom/hidds/graphics \
+  asmfiles=$(AFILES) files=$(FILES) \
+  arch=i386
+
+%common
