@@ -1,9 +1,13 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
+COLORCONVFILES := \
+                colorconv/rgbconv \
+                colorconv/rgbconv_arch
+
 FILES       := graphics_init GraphicsClass BM_Class CM_Class GC_Class  \
                planarbm chunkybm convertpixels memblit	\
-	       pixfmt sync rgbconv
+               pixfmt sync rgbconv colorconv_init
 
 USER_CFLAGS      := -DAROS_USE_OOP
 USER_CFLAGS      += -Wno-parentheses
@@ -13,7 +17,7 @@ USER_CFLAGS      += -D__GRAPHICS_NOLIBBASE__ \
 
 %build_module mmake=kernel-hidd-graphics \
   modname=graphics modtype=hidd \
-  files=$(FILES) \
+  files="$(FILES) $(COLORCONVFILES)" \
   uselibs="oop"
 
 LIBNAME     := graphics
