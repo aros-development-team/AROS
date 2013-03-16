@@ -58,6 +58,7 @@ extern char *_mktemp(char *);
 /*****************************************************************************
 
     NAME */
+#include <stdio.h>
 
 	char * tempnam(
 
