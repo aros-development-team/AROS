@@ -189,7 +189,7 @@
 #define CONVERTFUNC(a,b) static ULONG convert_ ## a ## _ ## b \
     (APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt, \
     APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt, \
-    ULONG width, ULONG height) \
+    UWORD width, UWORD height) \
 {
         
 #define CONVERTFUNC_INIT
