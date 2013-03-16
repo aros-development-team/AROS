@@ -1,3 +1,10 @@
+/*
+    Copyright © 2006-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    C99 function localeconv().
+*/
+
 #include <locale.h>
 #include <limits.h>
 
@@ -29,7 +36,42 @@ static const struct lconv _lconv =
     CHAR_MAX /* int_n_sign_posn */
 };
 
-struct lconv *localeconv(void)
+/*****************************************************************************
+
+    NAME */
+#include <string.h>
+
+	struct lconv *localeconv (
+
+/*  SYNOPSIS */
+        void)
+
+/*  FUNCTION
+        The localeconv function sets the components of an object with type
+        struct lconv with values appropriate for the formatting of numeric
+        quantities (monetary and otherwise) according to the rules of the
+        current locale.
+
+    INPUTS
+        -
+
+    RESULT
+        The lconv struct
+
+    NOTES
+        arosstdc.library only support "C" locale so always the same data
+        is returned.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        locale.h
+
+    INTERNALS
+
+******************************************************************************/
 {
     return (struct lconv *)&_lconv;
 }
