@@ -1,4 +1,8 @@
-#include <sys/cdefs.h>
+/* FIXME: Add autodoc */
 
-#define	MEMCOPY
-#include "bcopy.c"
+#include <string.h> // Avoid it is being parsed inside memmove.c
+
+#define memmove memcpy
+#define restrict
+#include "memmove.c"
+
