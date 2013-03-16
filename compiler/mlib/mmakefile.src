@@ -111,6 +111,7 @@ FILES := \
     s_ilogbf \
     s_ilogbl \
     s_isfinite \
+    s_isinf s_isinff \
     s_isnan \
     s_isnormal \
     s_llrint \
