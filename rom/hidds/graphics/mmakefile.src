@@ -7,7 +7,7 @@ COLORCONVFILES := \
 
 FILES       := graphics_init GraphicsClass BM_Class CM_Class GC_Class  \
                planarbm chunkybm convertpixels memblit	\
-               pixfmt sync rgbconv colorconv_init
+               pixfmt sync colorconv_init
 
 USER_CFLAGS      := -DAROS_USE_OOP
 USER_CFLAGS      += -Wno-parentheses
