@@ -339,9 +339,6 @@ SHARED_ARCH := \
 
 SHARED_LINKLIB := \
         arosc_environ \
-	bcmp \
-	bcopy \
-	bzero \
 	ftime \
 	usleep \
         __ctype_linklib
