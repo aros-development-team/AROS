@@ -178,7 +178,6 @@ SHARED	:= \
 	fstat \
 	ftell \
 	ftello \
-	ftime \
 	ftruncate \
 	fwrite \
 	gcvt \
@@ -344,6 +343,7 @@ SHARED_LINKLIB := \
 	bcmp \
 	bcopy \
 	bzero \
+	ftime \
         __ctype_linklib
 
 # Note: These files are compiled differently
