@@ -376,6 +376,8 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         me->pr_CES = err->fcb->fh;
     }
 
+    D(bug("__exec_prepare: Done, returning %p\n", aroscbase));
+
     /* Everything OK */
     return (APTR)aroscbase;
 
@@ -411,15 +413,17 @@ void __exec_do(APTR id)
 
         __close_on_exec_fdescs();
 
-	D(bug("Notify child to call __exec_do\n"));
+	D(bug("[__exec_do] Notify child to call __exec_do\n"));
 
         /* Signal child that __exec_do is called */
         Signal(udata->child, 1 << udata->child_signal);
 
         /* Clean up in parent */
+	D(bug("[__exec_do] Cleaning up parent\n"));
         __exec_cleanup(aroscbase);
         
         /* Continue as parent process */
+	D(bug("[__exec_do] Stop running as PRETEND_CHILD\n"));
         _exit(0);
         
         assert(0); /* Should not be reached */

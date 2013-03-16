@@ -41,7 +41,7 @@ static void parent_leavepretendchild(struct vfork_data *udata);
 
 LONG launcher()
 {
-    D(bug("launcher: Entered child launcher\n"));
+    D(bug("launcher: Entered child launcher, ThisTask=%p\n", SysBase->ThisTask));
 
     struct Task *this = FindTask(NULL);
     struct vfork_data *udata = this->tc_UserData;
@@ -106,8 +106,8 @@ LONG launcher()
                 udata->exec_envp
             );
 
-	    /* Reset handling of upath */
-	    aroscbase->acb_doupath = 0;
+            /* Reset handling of upath */
+            aroscbase->acb_doupath = 0;
             udata->child_errno = errno;
             
             D(bug("launcher: informing parent that we have run __exec_prepare\n"));
@@ -135,8 +135,10 @@ LONG launcher()
                 _exit(0);
             }
         }
-        else
+        else /* !udata->child_executed */
         {
+            D(bug("launcher: child not executed\n"));
+
             D(bug("launcher: informing parent that we won't use udata anymore\n"));
             /* Inform parent that we won't use udata anymore */
             Signal(udata->parent, 1 << udata->parent_signal);
@@ -150,6 +152,8 @@ LONG launcher()
 
     CloseLibrary((struct Library *)aroscbase);
     
+    D(bug("Child Done\n"));
+
     return 0;
 }
 
