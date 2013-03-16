@@ -320,7 +320,6 @@ SHARED	:= \
 	unlink \
 	unsetenv \
 	updatestdio \
-	usleep \
 	utime \
 	utimes \
 	vfprintf \
@@ -344,6 +343,7 @@ SHARED_LINKLIB := \
 	bcopy \
 	bzero \
 	ftime \
+	usleep \
         __ctype_linklib
 
 # Note: These files are compiled differently
