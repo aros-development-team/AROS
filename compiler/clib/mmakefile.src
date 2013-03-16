@@ -180,7 +180,6 @@ SHARED	:= \
 	ftello \
 	ftruncate \
 	fwrite \
-	gcvt \
         getc \
         getchar \
 	getcwd \
@@ -340,6 +339,7 @@ SHARED_ARCH := \
 SHARED_LINKLIB := \
         arosc_environ \
 	ftime \
+	gcvt \
 	usleep \
         __ctype_linklib
 
