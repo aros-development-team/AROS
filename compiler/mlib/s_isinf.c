@@ -17,7 +17,7 @@ __RCSID("$NetBSD: s_isinf.c,v 1.6 2003/07/26 19:25:05 salo Exp $");
 #include "math_private.h"
 
 int
-isinf(double x)
+__isinf(double x)
 {
 	int32_t hx,lx;
 	EXTRACT_WORDS(hx,lx,x);
@@ -26,3 +26,7 @@ isinf(double x)
 	hx |= lx;
 	return (hx == 0);
 }
+
+/* isinf is now a macro in math.h, but we need to keep a proper symbol around
+ * for anyone linking to us without recompiling with new headers */
+AROS_MAKE_ALIAS(__isinf, isinf);
