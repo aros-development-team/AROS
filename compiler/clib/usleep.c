@@ -2,16 +2,13 @@
     Copyright © 2008, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function usleep().
+    POSIX.1-2001 function usleep()
+    Function is removed from POSIX.1-2008
 */
 
 #include <aros/debug.h>
 
-#include <exec/exec.h>
-#include <proto/exec.h>
-#include <devices/timer.h>
-
-#include <errno.h>
+#include <time.h>
 
 /*****************************************************************************
 
@@ -33,42 +30,26 @@
         0 on success, -1 on error
 
     NOTES
+        This function is not part of POSIX.1-2008 anymore. Don't use this
+        function. As an alternative nanosleep() can be used.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	
+        nanosleep()
+
     INTERNALS
+        This function is part of libarosc.a and may be removed in the future.
 
 ******************************************************************************/
 {
-    struct MsgPort      *timerMsgPort;
-    struct timerequest  *timerIO;
-    int retval = -1;
-    
-    /* FIXME: share TimerBase with gettimeofday and don't open/close it for each usleep call */
-    if((timerMsgPort = CreateMsgPort()))
-    {
-	timerIO = (struct timerequest *) CreateIORequest(timerMsgPort, sizeof (struct timerequest));
-	if(timerIO)
-	{
-	    if(OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) timerIO, 0) == 0)
-	    {
-		timerIO->tr_node.io_Command = TR_ADDREQUEST;
-		timerIO->tr_time.tv_secs    = 0;
-		timerIO->tr_time.tv_micro   = usec;
-  
-		DoIO((struct IORequest *) timerIO);
-		retval = 0;
+    struct timespec req;
 
-		CloseDevice((struct IORequest *) timerIO);
-	    }
-	    DeleteIORequest((struct IORequest *) timerIO);
-	}
-	DeleteMsgPort(timerMsgPort);
-    }
-    return retval;
+    req.tv_sec = usec/1000000;
+    req.tv_nsec = (usec % 1000000)*1000;
+
+    return nanosleep(&req, NULL);
 } /* usleep() */
 

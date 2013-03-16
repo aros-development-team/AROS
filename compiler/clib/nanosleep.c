@@ -4,6 +4,9 @@
 
     POSIX.1-2008 function nanosleep().
 */
+#include <exec/exec.h>
+#include <proto/exec.h>
+#include <devices/timer.h>
 
 #include <unistd.h>
 
@@ -28,6 +31,7 @@
         0 on success, -1 on error
 
     NOTES
+        Currently at most a resolution of milliseconds is supported.
 
     EXAMPLE
 
@@ -36,11 +40,40 @@
     SEE ALSO
 	
     INTERNALS
-	sorry, this function just calls usleep()
 
 ******************************************************************************/
 {
-    useconds_t usec = req->tv_sec * 10000000 + req->tv_nsec / 1000;
-    return usleep(usec);
+    struct MsgPort      *timerMsgPort;
+    struct timerequest  *timerIO;
+    int retval = -1;
+    
+    /* FIXME: share TimerBase with gettimeofday and don't open/close it for each usleep call */
+    if((timerMsgPort = CreateMsgPort()))
+    {
+	timerIO = (struct timerequest *) CreateIORequest(timerMsgPort, sizeof (struct timerequest));
+	if(timerIO)
+	{
+	    if(OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) timerIO, 0) == 0)
+	    {
+		timerIO->tr_node.io_Command = TR_ADDREQUEST;
+		timerIO->tr_time.tv_secs    = req->tv_sec;
+		timerIO->tr_time.tv_micro   = (req->tv_nsec+500)/1000;
+  
+		DoIO((struct IORequest *) timerIO);
+		retval = 0;
+
+                if (rem)
+                {
+                    rem->tv_sec = 0;
+                    rem->tv_nsec = 0;
+                }
+
+		CloseDevice((struct IORequest *) timerIO);
+	    }
+	    DeleteIORequest((struct IORequest *) timerIO);
+	}
+	DeleteMsgPort(timerMsgPort);
+    }
+    return retval;
 } /* nanosleep() */
 
