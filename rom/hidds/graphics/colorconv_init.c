@@ -10,11 +10,13 @@
 #include <aros/symbolsets.h>
 
 #include "graphics_intern.h"
-#include "colorconv/rgbconv_set.h"
 
 #include LC_LIBDEFS_FILE
 
 #undef csd
+
+void SetRGBConversionFunctions(HIDDT_RGBConversionFunction rgbconvertfuncs[NUM_RGB_STDPIXFMT][NUM_RGB_STDPIXFMT]);
+void SetArchRGBConversionFunctions(HIDDT_RGBConversionFunction rgbconvertfuncs[NUM_RGB_STDPIXFMT][NUM_RGB_STDPIXFMT]);
 
 static int ColorConv_Init(LIBBASETYPEPTR LIBBASE)
 {
@@ -25,7 +27,6 @@ static int ColorConv_Init(LIBBASETYPEPTR LIBBASE)
     ObtainSemaphore(&csd->rgbconvertfuncs_sem);
 
     SetRGBConversionFunctions(csd->rgbconvertfuncs);
-
     SetArchRGBConversionFunctions(csd->rgbconvertfuncs);
 
     ReleaseSemaphore(&csd->rgbconvertfuncs_sem);
