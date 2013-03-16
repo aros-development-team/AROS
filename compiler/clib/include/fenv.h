@@ -1,5 +1,5 @@
 /*
-    Copyright � 2007-2011, The AROS Development Team. All rights reserved.
+    Copyright � 2007-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 floating-point environment
@@ -22,10 +22,7 @@
 #define _FENV_H_
 
 #include <aros/system.h>
-#include <aros/types/int_t.h>
-
-typedef	uint32_t	fenv_t;
-typedef	uint32_t	fexcept_t;
+#include <aros/types/fenv_t.h>
 
 #define FE_ALL_EXCEPT   0
 
