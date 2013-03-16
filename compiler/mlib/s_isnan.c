@@ -45,7 +45,7 @@ __isnan(double d)
 AROS_MAKE_ALIAS(__isnan, isnan);
 
 int
-isnanf(float f)
+__isnanf(float f)
 {
 	union IEEEf2bits u;
 

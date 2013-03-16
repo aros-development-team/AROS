@@ -96,17 +96,16 @@ extern const union __nan_un {
     NOT IMPL     : (sizeof (x) == sizeof (double)) ? __fpclassifyd(x) \
     NOT IMPL     : __fpclassifyl(x))
 #endif
-
 #define	isfinite(x)					\
     ((sizeof (x) == sizeof (float)) ? __isfinitef(x)	\
     : (sizeof (x) == sizeof (double)) ? __isfinite(x)	\
     : __isfinitel(x))
 #define	isinf(x)					\
     ((sizeof (x) == sizeof (float)) ? __isinff(x)	\
-    : (sizeof (x) == sizeof (double)) ? isinf(x)	\
+    : (sizeof (x) == sizeof (double)) ? __isinf(x)	\
     : __isinfl(x))
 #define	isnan(x)					\
-    ((sizeof (x) == sizeof (float)) ? isnanf(x)		\
+    ((sizeof (x) == sizeof (float)) ? __isnanf(x)       \
     : (sizeof (x) == sizeof (double)) ? __isnan(x)	\
     : __isnanl(x))
 #define	isnormal(x)					\
@@ -184,6 +183,7 @@ __BEGIN_DECLS
 int	__isfinitef(float) __pure2;
 int	__isfinite(double) __pure2;
 int	__isfinitel(long double) __pure2;
+int	__isinf(double) __pure2;
 int	__isinff(float) __pure2;
 int	__isinfl(long double) __pure2;
 int     __isnan(double) __pure2;
@@ -277,7 +277,7 @@ double	trunc(double);
  */
 double	drem(double, double);
 int	finite(double) __pure2;
-int	isnanf(float) __pure2;
+int	__isnanf(float) __pure2;
 
 /*
  * Reentrant version of gamma & lgamma; passes signgam back by reference

@@ -17,7 +17,7 @@ __RCSID("$NetBSD: s_isinff.c,v 1.6 2003/07/26 19:25:06 salo Exp $");
 #include "math_private.h"
 
 int
-isinff(float x)
+__isinff(float x)
 {
 	int32_t ix;
 	GET_FLOAT_WORD(ix,x);
