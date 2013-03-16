@@ -107,5 +107,5 @@ static int GFX_Init(LIBBASETYPEPTR LIBBASE)
     ReturnInt("GfxHIDD_Init", ULONG, TRUE);
 }
 
-ADD2INITLIB(GFX_Init, -1)
+ADD2INITLIB(GFX_Init, -2)
 
