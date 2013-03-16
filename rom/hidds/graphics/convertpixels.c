@@ -581,7 +581,12 @@ VOID BM__Hidd_BitMap__ConvertPixels(OOP_Class *cl, OOP_Object *o,
             {
                 HIDDT_RGBConversionFunction f;
 
-                ObtainSemaphoreShared(&CSD(cl)->rgbconvertfuncs_sem);
+                /* No semaphore protection here because:
+                 * a) rgbconvertfuncs is never reallocated
+                 * b) accesing a pointer is atomic
+                 * c) semaphore does not protect from someone unloading the code
+                 * without unregistering
+                 */
 
                 f = CSD(cl)->rgbconvertfuncs[srcfmt->stdpixfmt - FIRST_RGB_STDPIXFMT]
                                              [dstfmt->stdpixfmt - FIRST_RGB_STDPIXFMT];
@@ -590,18 +595,15 @@ VOID BM__Hidd_BitMap__ConvertPixels(OOP_Class *cl, OOP_Object *o,
                 {
                     if ((*f)(*msg->srcPixels, msg->srcMod, srcfmt->stdpixfmt,
                              *msg->dstBuf, msg->dstMod, dstfmt->stdpixfmt,
-                         msg->width, msg->height))
+                             msg->width, msg->height))
                     {
                         *msg->srcPixels += (msg->srcMod * msg->height);
                         *msg->dstBuf += (msg->dstMod * msg->height);
 
-                        ReleaseSemaphore(&CSD(cl)->rgbconvertfuncs_sem);
                         break;
                     }
 
                 }
-
-                ReleaseSemaphore(&CSD(cl)->rgbconvertfuncs_sem);
             }
 
             true_to_true(cl, o, msg);
