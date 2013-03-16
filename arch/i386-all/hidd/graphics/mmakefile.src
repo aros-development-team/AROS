@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM kernel-hidd-graphics-i386 : kernel-hidd-includes
+
 FILES  := rgbconv_arch
 AFILES := 
 
