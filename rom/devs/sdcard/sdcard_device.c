@@ -103,7 +103,15 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     ULONG count = IOStdReq(io)->io_Length;
     ULONG mask;
 
-    D(bug("[SDCard%02ld] %s(%08x-%08x, %08x)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Offset, count));
+    D(bug("[SDCard%02ld] %s(%08x%08x, %08x)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Offset, count));
+
+    if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
+    {
+        /* 64bit commands are only used with high capacity devices .. */
+        D(bug("[SDCard%02ld] %s: 64bit IO called on 32bit unit\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        cmd_Read32(io, LIBBASE);
+        return;
+    }
 
     if (!(unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent))
     {
@@ -206,6 +214,14 @@ static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     ULONG mask;
 
     D(bug("[SDCard%02ld] %s(%08x-%08x, %08x)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Offset, count));
+
+    if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
+    {
+        /* 64bit commands are only used with high capacity devices .. */
+        D(bug("[SDCard%02ld] %s: 64bit IO called on 32bit unit\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        cmd_Write32(io, LIBBASE);
+        return;
+    }
 
     if (!(unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent))
     {
@@ -507,13 +523,13 @@ static UWORD const NSDSupported[] = {
     TD_REMCHANGEINT,
     TD_GETGEOMETRY,
     TD_EJECT,
-    TD_READ64,
-    TD_WRITE64,
-    TD_SEEK64,
-    TD_FORMAT64,
     HD_SCSICMD,
     TD_GETDRIVETYPE,
     NSCMD_DEVICEQUERY,
+    TD_READ64, // 23
+    TD_WRITE64,
+    TD_SEEK64,
+    TD_FORMAT64,
     NSCMD_TD_READ64,
     NSCMD_TD_WRITE64,
     NSCMD_TD_SEEK64,

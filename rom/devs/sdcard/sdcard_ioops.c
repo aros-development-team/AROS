@@ -4,8 +4,8 @@
 */
 
 #define DEBUG 0
-
 #include <aros/debug.h>
+
 #include <exec/types.h>
 #include <exec/exec.h>
 #include <exec/resident.h>
@@ -129,6 +129,7 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
         {SDCARD_TAG_DATAFLAGS,   MMC_DATA_READ},
         {TAG_DONE,            0}
     };
+    BYTE retVal = 0;
 
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
@@ -140,7 +141,7 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
     if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
         sdcReadTags[1].ti_Data <<= unit->sdcu_Bus->sdcb_SectorShift;
 
-    D(bug("[SDCard%02ld] %s: Sending CMD %d, block 0x%p, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
+    D(bug("[SDCard%02ld] %s: Sending CMD %d, block %08x, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
         sdcReadTags[0].ti_Data, sdcReadTags[1].ti_Data, sdcReadTags[5].ti_Data, sdcReadTags[4].ti_Data));
 
     if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) != -1)
@@ -157,6 +158,8 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
                 if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) == -1)
                 {
                     bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    count = 0;
+                    retVal = IOERR_ABORTED;
                 }
             }
         }
@@ -164,19 +167,21 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
         {
             D(bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
             count = 0;
+            retVal = IOERR_ABORTED;
         }
     }
     else
     {
         bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
         count = 0;
+        retVal = IOERR_ABORTED;
     }
 
     *act = count << unit->sdcu_Bus->sdcb_SectorShift;
 
     DTRANS(bug("[SDCard%02ld] %s: %d bytes Read\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, *act));
 
-    return 0;
+    return retVal;
 }
 
 BYTE FNAME_SDCIO(ReadMultiple32)(struct sdcard_Unit *unit, ULONG block,
@@ -185,7 +190,7 @@ BYTE FNAME_SDCIO(ReadMultiple32)(struct sdcard_Unit *unit, ULONG block,
 
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
 
 BYTE FNAME_SDCIO(ReadDMA32)(struct sdcard_Unit *unit, ULONG block,
@@ -193,7 +198,7 @@ BYTE FNAME_SDCIO(ReadDMA32)(struct sdcard_Unit *unit, ULONG block,
 {
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
 
 /*
@@ -204,7 +209,7 @@ BYTE FNAME_SDCIO(ReadSector64)(struct sdcard_Unit *unit, UQUAD block,
 {
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
 
 BYTE FNAME_SDCIO(ReadMultiple64)(struct sdcard_Unit *unit, UQUAD block,
@@ -212,7 +217,7 @@ BYTE FNAME_SDCIO(ReadMultiple64)(struct sdcard_Unit *unit, UQUAD block,
 {
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
 
 BYTE FNAME_SDCIO(ReadDMA64)(struct sdcard_Unit *unit, UQUAD block,
@@ -220,7 +225,7 @@ BYTE FNAME_SDCIO(ReadDMA64)(struct sdcard_Unit *unit, UQUAD block,
 {
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
 
 /*
@@ -231,7 +236,7 @@ BYTE FNAME_SDCIO(WriteSector32)(struct sdcard_Unit *unit, ULONG block,
 {
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
 
 BYTE FNAME_SDCIO(WriteMultiple32)(struct sdcard_Unit *unit, ULONG block,
@@ -239,7 +244,7 @@ BYTE FNAME_SDCIO(WriteMultiple32)(struct sdcard_Unit *unit, ULONG block,
 {
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
 
 BYTE FNAME_SDCIO(WriteDMA32)(struct sdcard_Unit *unit, ULONG block,
@@ -247,7 +252,7 @@ BYTE FNAME_SDCIO(WriteDMA32)(struct sdcard_Unit *unit, ULONG block,
 {
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
 
 /*
@@ -258,7 +263,7 @@ BYTE FNAME_SDCIO(WriteSector64)(struct sdcard_Unit *unit, UQUAD block,
 {
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
 
 BYTE FNAME_SDCIO(WriteMultiple64)(struct sdcard_Unit *unit, UQUAD block,
@@ -266,7 +271,7 @@ BYTE FNAME_SDCIO(WriteMultiple64)(struct sdcard_Unit *unit, UQUAD block,
 {
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
 
 BYTE FNAME_SDCIO(WriteDMA64)(struct sdcard_Unit *unit, UQUAD block,
@@ -274,7 +279,7 @@ BYTE FNAME_SDCIO(WriteDMA64)(struct sdcard_Unit *unit, UQUAD block,
 {
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
 
 /*

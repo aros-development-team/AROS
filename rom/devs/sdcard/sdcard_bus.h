@@ -34,7 +34,7 @@ struct sdcard_Bus
     ULONG                               sdcb_BusNum;
 
     ULONG                               sdcb_BusFlags;       /* Bus flags similar to unit flags */
-    volatile ULONG                      sdcb_BusStatus;      /* copy of the status register */
+    ULONG                               sdcb_BusStatus;      /* copy of the status register */
     UBYTE                               sdcb_TaskSig;        /* Signal used to wake task */
     UBYTE                               sdcb_SectorShift;    /* Sector shift. 9 here is 512 bytes sector */
 
