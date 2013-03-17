@@ -13,46 +13,18 @@
 #include <oop/oop.h>
 
 #include <proto/exec.h>
+#include <devices/cd.h>
 #include <devices/timer.h>
 
 #include <hardware/mmc.h>
 #include <hardware/sdhc.h>
 
-#include "sdcard_intern.h"
-#include "timer.h"
+#include "sdcard_base.h"
+#include "sdcard_unit.h"
 
 static BOOL sdcard_WaitBusyTO(struct sdcard_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout);
 
 #define DEVHEAD_VAL 0x40
-
-#if DEBUG
-static void dump(APTR mem, ULONG len)
-{
-    register int i, j = 0;
-
-    DUMP_MORE(for (j=0; j<(len+15)>>4; ++j))
-    {
-        bug("[SDC  ] %06lx: ", j<<4);
-
-        for (i=0; i<len-(j<<4); i++)
-        {
-            bug("%02lx ", ((unsigned char*)mem)[(j<<4)|i]);
-            if (i == 15)
-                break;
-        }
-
-        for (i=0; i<len-(j<<4); i++)
-        {
-            unsigned char c = ((unsigned char*)mem)[(j<<4)|i];
-
-            bug("%c", c >= 0x20 ? c<=0x7f ? c : '.' : '.');
-            if (i == 15)
-                break;
-        }
-        bug("\n");
-    }
-}
-#endif
 
 static void sdcard_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
 {
@@ -173,18 +145,18 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
 
     if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) != -1)
     {
-        if (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_DATA_END, 1000, unit->sdcu_Bus) != -1)
+        if (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_DATA_AVAIL|SDHCI_INT_DATA_END, 1000, unit->sdcu_Bus) != -1)
         {
             if (count > 1)
             {
-                D(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                DTRANS(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
                 sdcReadTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
                 sdcReadTags[1].ti_Data = 0;
                 sdcReadTags[2].ti_Data = MMC_RSP_R1b;
                 sdcReadTags[4].ti_Tag = TAG_DONE;
                 if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) == -1)
                 {
-                    D(bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                    bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
                 }
             }
         }
@@ -196,13 +168,13 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
     }
     else
     {
-        D(bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
         count = 0;
     }
 
     *act = count << unit->sdcu_Bus->sdcb_SectorShift;
 
-    D(bug("[SDCard%02ld] %s: %d bytes Read\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, *act));
+    DTRANS(bug("[SDCard%02ld] %s: %d bytes Read\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, *act));
 
     return 0;
 }

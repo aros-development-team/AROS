@@ -6,20 +6,25 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include <exec/types.h>
-#include <exec/exec.h>
-#include <exec/resident.h>
-#include <utility/utility.h>
-#include <utility/tagitem.h>
-#include <oop/oop.h>
-#include "timer.h"
-
-#include <dos/bptr.h>
-
 #include <proto/exec.h>
 #include <proto/oop.h>
 
-#include "sdcard_intern.h"
+#include <exec/types.h>
+#include <exec/exec.h>
+#include <exec/resident.h>
+#include <exec/io.h>
+#include <dos/bptr.h>
+#include <devices/trackdisk.h>
+#include <devices/scsidisk.h>
+#include <devices/newstyle.h>
+#include <utility/utility.h>
+#include <utility/tagitem.h>
+#include <oop/oop.h>
+
+#include "sdcard_base.h"
+#include "sdcard_unit.h"
+#include "timer.h"
+
 #include LC_LIBDEFS_FILE
 
 //---------------------------IO Commands---------------------------------------
@@ -42,20 +47,20 @@ static void cmd_Reset(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)IOStdReq(io)->io_Unit;
+    ULONG block = IOStdReq(io)->io_Offset;
+    ULONG count = IOStdReq(io)->io_Length;
+    ULONG mask;
+
+    D(bug("[SDCard%02ld] %s(%08x, %08x)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, block, count));
 
     if (!(unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent))
     {
-        D(bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
         io->io_Error = TDERR_DiskChanged;
         return;
     }
 
-    ULONG block = IOStdReq(io)->io_Offset;
-    ULONG count = IOStdReq(io)->io_Length;
-
-    D(bug("[SDCard%02ld] cmd_Read32(%08x, %08x)\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, block, count));
-
-    ULONG mask = (1 << unit->sdcu_Bus->sdcb_SectorShift) - 1;
+    mask = (1 << unit->sdcu_Bus->sdcb_SectorShift) - 1;
 
     /*
         During this IO call it should be sure that both offset and
@@ -63,7 +68,7 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     */
     if ((block & mask) | (count & mask))
     {
-        D(bug("[SDCard%02ld] cmd_Read32: offset or length not sector-aligned.\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum));
+        bug("[SDCard%02ld] %s: offset or length not sector-aligned.\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
         cmd_Invalid(io, LIBBASE);
     }
     else
@@ -74,7 +79,7 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
         if (((block + count) > unit->sdcu_Capacity))
         {
-            bug("[SDCard%02ld] cmd_Read32: Requested block (%lx;%ld) outside disk range (%lx)\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, block, count, unit->sdcu_Capacity);
+            bug("[SDCard%02ld] %s: Requested block (%lx;%ld) outside disk range (%lx)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, block, count, unit->sdcu_Capacity);
             io->io_Error = IOERR_BADADDRESS;
             return;
         }
@@ -94,24 +99,24 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)IOStdReq(io)->io_Unit;
+    UQUAD block = IOStdReq(io)->io_Offset | (UQUAD)(IOStdReq(io)->io_Actual) << 32;
+    ULONG count = IOStdReq(io)->io_Length;
+    ULONG mask;
+
+    D(bug("[SDCard%02ld] %s(%08x-%08x, %08x)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Offset, count));
 
     if (!(unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent))
     {
-        D(bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
         io->io_Error = TDERR_DiskChanged;
         return;
     }
 
-    UQUAD block = IOStdReq(io)->io_Offset | (UQUAD)(IOStdReq(io)->io_Actual) << 32;
-    ULONG count = IOStdReq(io)->io_Length;
-
-    D(bug("[SDCard%02ld] cmd_Read64(%08x-%08x, %08x)\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Offset, count));
-
-    ULONG mask = (1 << unit->sdcu_Bus->sdcb_SectorShift) - 1;
+    mask = (1 << unit->sdcu_Bus->sdcb_SectorShift) - 1;
 
     if ((block & (UQUAD)mask) | (count & mask) | (count == 0))
     {
-        D(bug("[SDCard%02ld] cmd_Read64: offset or length not sector-aligned.\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum));
+        D(bug("[SDCard%02ld] %s: offset or length not sector-aligned.\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         cmd_Invalid(io, LIBBASE);
     }
     else
@@ -120,18 +125,13 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         count >>= unit->sdcu_Bus->sdcb_SectorShift;
         ULONG cnt = 0;
 
-        /*
-            If the sum of sector offset and the sector count doesn't overflow
-            the 28-bit LBA address, use 32-bit access for speed and simplicity.
-            Otherwise do the 48-bit LBA addressing.
-        */
         if (((block + count) > unit->sdcu_Capacity))
         {
-            bug("[SDCard%02ld] cmd_Read64: Requested block (%lx;%ld) outside disk range (%lx)\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, block, count, unit->sdcu_Capacity);
+            bug("[SDCard%02ld] %s: Requested block (%lx;%ld) outside disk range (%lx)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, block, count, unit->sdcu_Capacity);
             io->io_Error = IOERR_BADADDRESS;
             return;
         }
-        io->io_Error = unit->sdcu_Read32(unit, (ULONG)(block & 0x0fffffff), count, IOStdReq(io)->io_Data, &cnt);
+        io->io_Error = unit->sdcu_Read64(unit, block, count, IOStdReq(io)->io_Data, &cnt);
 
         IOStdReq(io)->io_Actual = cnt;
     }
@@ -141,20 +141,27 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)IOStdReq(io)->io_Unit;
+    ULONG block = IOStdReq(io)->io_Offset;
+    ULONG count = IOStdReq(io)->io_Length;
+    ULONG mask;
+
+    D(bug("[SDCard%02ld] %s(%08x, %08x)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, block, count));
 
     if (!(unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent))
     {
-        D(bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
         io->io_Error = TDERR_DiskChanged;
         return;
     }
 
-    ULONG block = IOStdReq(io)->io_Offset;
-    ULONG count = IOStdReq(io)->io_Length;
+    if (unit->sdcu_Flags & (AF_Card_WriteProtect|AF_Card_Locked))
+    {
+        bug("[SDCard%02ld] %s: Error: Card is Locked/Write Protected\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+        io->io_Error = IOERR_ABORTED;
+        return;
+    }
 
-    D(bug("[SDCard%02ld] cmd_Write32(%08x, %08x)\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, block, count));
-
-    ULONG mask = (1 << unit->sdcu_Bus->sdcb_SectorShift) - 1;
+    mask = (1 << unit->sdcu_Bus->sdcb_SectorShift) - 1;
 
     /*
         During this IO call it should be sure that both offset and
@@ -162,7 +169,7 @@ static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     */
     if ((block & mask) | (count & mask))
     {
-        D(bug("[SDCard%02ld] cmd_Write32: offset or length not sector-aligned.\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum));
+        D(bug("[SDCard%02ld] %s: offset or length not sector-aligned.\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         cmd_Invalid(io, LIBBASE);
     }
     else
@@ -173,7 +180,7 @@ static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
         if (((block + count) > unit->sdcu_Capacity))
         {
-            bug("[SDCard%02ld] cmd_Write32: Requested block (%lx;%ld) outside disk range (%lx)\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum,
+            bug("[SDCard%02ld] %s: Requested block (%lx;%ld) outside disk range (%lx)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
                 block, count, unit->sdcu_Capacity);
             io->io_Error = IOERR_BADADDRESS;
             return;
@@ -194,24 +201,31 @@ static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)IOStdReq(io)->io_Unit;
+    UQUAD block = IOStdReq(io)->io_Offset | (UQUAD)(IOStdReq(io)->io_Actual) << 32;
+    ULONG count = IOStdReq(io)->io_Length;
+    ULONG mask;
+
+    D(bug("[SDCard%02ld] %s(%08x-%08x, %08x)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Offset, count));
 
     if (!(unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent))
     {
-        D(bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+        bug("[SDCard%02ld] %s: Error: No Media present\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
         io->io_Error = TDERR_DiskChanged;
         return;
     }
 
-    UQUAD block = IOStdReq(io)->io_Offset | (UQUAD)(IOStdReq(io)->io_Actual) << 32;
-    ULONG count = IOStdReq(io)->io_Length;
+    if (unit->sdcu_Flags & (AF_Card_WriteProtect|AF_Card_Locked))
+    {
+        bug("[SDCard%02ld] %s: Error: Card is Locked/Write Protected\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+        io->io_Error = IOERR_ABORTED;
+        return;
+    }
 
-    D(bug("[SDCard%02ld] cmd_Write64(%08x-%08x, %08x)\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Offset, count));
-
-    ULONG mask = (1 << unit->sdcu_Bus->sdcb_SectorShift) - 1;
+    mask = (1 << unit->sdcu_Bus->sdcb_SectorShift) - 1;
 
     if ((block & mask) | (count & mask) | (count==0))
     {
-        D(bug("[SDCard%02ld] cmd_Write64: offset or length not sector-aligned.\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum));
+        D(bug("[SDCard%02ld] %s: offset or length not sector-aligned.\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         cmd_Invalid(io, LIBBASE);
     }
     else
@@ -220,15 +234,10 @@ static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         count >>= unit->sdcu_Bus->sdcb_SectorShift;
         ULONG cnt = 0;
 
-        /*
-            If the sum of sector offset and the sector count doesn't overflow
-            the 28-bit LBA address, use 32-bit access for speed and simplicity.
-            Otherwise do the 48-bit LBA addressing.
-        */
         if (((block + count) > unit->sdcu_Capacity))
         {
-            bug("[SDCard%02ld] cmd_Write64: Requested block (%lx:%08lx;%ld) outside disk "
-                "range (%lx:%08lx)\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum,
+            bug("[SDCard%02ld] %s: Requested block (%lx:%08lx;%ld) outside disk "
+                "range (%lx:%08lx)\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__,
                  block>>32, block&0xfffffffful,
                  count, unit->sdcu_Capacity>>32,
                  unit->sdcu_Capacity & 0xfffffffful);
@@ -248,7 +257,7 @@ static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static void cmd_Flush(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct IORequest *msg;
-    D(bug("[SDCard%02ld] cmd_Flush()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum));
+    D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     Forbid();
 
@@ -270,7 +279,7 @@ static void cmd_TestChanged(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
     struct IORequest *msg;
 
-    D(bug("[SDCard%02ld] cmd_TestChanged()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum));
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     if (unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaChanged)
     {
@@ -296,15 +305,16 @@ static void cmd_TestChanged(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 static void cmd_Update(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
-    /* Do nothing now. In near future there should be drive cache flush though */
     D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+    /* Do nothing now. In near future there should be drive cache flush though */
 }
 
 static void cmd_Remove(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
 
-    D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     if (unit->sdcu_RemoveInt)
         io->io_Error = TDERR_DriveInUse;
@@ -323,27 +333,26 @@ static void cmd_ChangeState(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
 
-    D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     if (unit->sdcu_Bus->sdcb_BusFlags & AF_Bus_MediaPresent)
         IOStdReq(io)->io_Actual = 0;
     else
         IOStdReq(io)->io_Actual = 1;
 
-    D(bug("[SDCard%02ld] cmd_ChangeState: Media %s\n", unit->sdcu_UnitNum, IOStdReq(io)->io_Actual ? "ABSENT" : "PRESENT"));
+    D(bug("[SDCard%02ld] %s: Media %s\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, IOStdReq(io)->io_Actual ? "ABSENT" : "PRESENT"));
 }
 
 static void cmd_ProtStatus(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
 
-    D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    if (unit->sdcu_DevType)
+    if ((unit->sdcu_Flags & (AF_Card_WriteProtect|AF_Card_Locked)) != 0)
         IOStdReq(io)->io_Actual = -1;
     else
         IOStdReq(io)->io_Actual = 0;
-
 }
 
 static void cmd_GetNumTracks(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
@@ -357,7 +366,7 @@ static void cmd_AddChangeInt(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
 
-    D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     Forbid();
     AddHead(&unit->sdcu_SoftList, (struct Node *)io);
@@ -380,7 +389,7 @@ static void cmd_Eject(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
 
-    D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     IOStdReq(io)->io_Error = unit->sdcu_Eject(unit);
     cmd_TestChanged(io, LIBBASE);
@@ -390,7 +399,7 @@ static void cmd_GetGeometry(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Unit *unit = (struct sdcard_Unit *)io->io_Unit;
 
-    D(bug("[SDCard%02ld] %s()\n", ((struct sdcard_Unit*)io->io_Unit)->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     if (IOStdReq(io)->io_Length == sizeof(struct DriveGeometry))
     {

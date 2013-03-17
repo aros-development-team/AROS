@@ -1,0 +1,16 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/devs/sdcard
+
+BCM2835FILES = \
+    sdcard_bcm2835init \
+    sdcard_bcm2835bus \
+    sdcard_bcm2835time
+
+%build_archspecific \
+  mainmmake=kernel-sdcard maindir=rom/devs/sdcard \
+  arch=raspi-arm modulename=sdcard \
+  files="$(BCM2835FILES)"
+
+%common
