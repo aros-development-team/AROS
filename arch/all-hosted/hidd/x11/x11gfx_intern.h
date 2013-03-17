@@ -38,9 +38,9 @@ VOID free_ximage(XImage *image);
 #define USE_FRAMEBUFFER     1	/* Only for debug. Do not attempt to set to 0 in production! Managing several screens will break. */
 #define X11SOFTMOUSE	    1	/* Use software mouse sprite */
 #define ADJUST_XWIN_SIZE    1	/* Resize the xwindow to the size of the actual visible screen */
-#ifdef HOST_OS_darwin
+#if defined(HOST_OS_darwin) || defined(__arm__) 
 /*
- * XQuartz does not like operations on unmapped window, strange effects occur (bootmenu breaks, for example).
+ * Neither ARM targets nor XQuartz like operations on unmapped window, strange effects occur (bootmenu breaks, for example).
  * X11 driver needs serious rewrite. For now i hope this will do.
  */
 #define DELAY_XWIN_MAPPING  0
