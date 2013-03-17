@@ -1,8 +1,8 @@
 /*
-    Copyright © 2007-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Run rexx scripts
+    Run REXX scripts
 */
 
 #include <dos/dos.h>
@@ -35,10 +35,8 @@ static BOOL init(void)
 #ifdef __AROS__
     out = ErrorOutput();
     if (out == BNULL)
-        out = Output();
-#else
-    out = Output();
 #endif
+        out = Output();
     
     rexxport = FindPort("REXX");
     if (rexxport == NULL)
@@ -143,12 +141,15 @@ int main(int argc, char **argv)
 		cleanup();
 		return RC_ERROR;
 	    }
+	    /* Lazy string termination like ARexx */
+#if 0
 	    if (s[length] == '\0')
 	    {
 		FPuts(out, "Unterminated string\n");
 		cleanup();
 		return RC_ERROR;
 	    }
+#endif
 	    
 	    msg->rm_Args[0] = (IPTR)CreateArgstring(s, length);
 	    /* It is a literal command with 1 argument */
@@ -185,7 +186,12 @@ int main(int argc, char **argv)
 
     ret = msg->rm_Result1;
     if (msg->rm_Result1 == RC_OK)
+	/* Less verbosity like ARexx, use "get Result2" */
+#if 0
         FPrintf(out, "Script executed and returned: %ld\n", msg->rm_Result2);
+#else
+        ;
+#endif
     else
         FPrintf(out, "Error executing script %ld/%ld\n",
                 msg->rm_Result1, msg->rm_Result2
