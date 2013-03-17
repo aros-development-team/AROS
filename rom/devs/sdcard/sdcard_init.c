@@ -42,7 +42,10 @@ BOOL FNAME_SDC(RegisterBus)(struct sdcard_Bus *bus, LIBBASETYPEPTR LIBBASE)
 {
     DINIT(bug("[SDCard--] %s(0x%p)\n", __PRETTY_FUNCTION__, bus));
 
+    ObtainSemaphore(&LIBBASE->sdcard_BusSem);
     AddTail(&LIBBASE->sdcard_Buses, (struct Node *)bus);
+    ReleaseSemaphore(&LIBBASE->sdcard_BusSem);
+
     return TRUE;
 }
 
