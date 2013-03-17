@@ -3,7 +3,7 @@
     $Id$
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <aros/bootloader.h>
@@ -819,7 +819,6 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, struct TagItem *IRQCommandTags
             sdcBusAckMask |= (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK);
             bus->sdcb_BusStatus &= ~SDHCI_INT_CMD_MASK; 
         }
-
         if (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK)
         {
             if (IRQCommandTags)
@@ -834,7 +833,7 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, struct TagItem *IRQCommandTags
         }
         if (sdcBusAckMask)
         {
-            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, bus->sdcb_BusStatus & sdcBusAckMask, bus);
+            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, sdcBusAckMask, bus);
         }
     }
     else

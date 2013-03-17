@@ -3,6 +3,7 @@
     $Id$
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <hardware/mmc.h>
@@ -55,6 +56,8 @@ ULONG FNAME_SDCUNIT(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         {SDCARD_TAG_DATAFLAGS,  MMC_DATA_READ},
         {TAG_DONE,              0}
     };
+
+    D(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     /* Read the SCR to find out if higher speeds are supported ..*/
     timeout = 3;
