@@ -3,7 +3,16 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS += -I $(SRCDIR)/$(CURDIR) -D__TIMER_NOLIBBASE__
 
+SDCARDFILES = \
+    sdcard_init \
+    sdcard_device \
+    sdcard_bus \
+    sdcard_mmcunit \
+    sdcard_sdscunit \
+    sdcard_ioops \
+    timer
+
 %build_module mmake=kernel-sdcard \
   modname=sdcard modtype=device version=$(AROS_TARGET_PLATFORM) \
-  files="sdcard_init sdcard_bus sdcard_device sdcard_ioops timer" \
+  files="$(SDCARDFILES)" \
   uselibs="oop"

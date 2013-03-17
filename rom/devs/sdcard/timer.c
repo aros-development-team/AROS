@@ -13,26 +13,12 @@
 #include <aros/debug.h>
 #include <proto/timer.h>
 
-#include <asm/bcm2835.h>
-
 #include "timer.h"
-#include "sdcard_intern.h"
+#include "sdcard_base.h"
 
-ULONG sdcard_CurrentTime()
-{
-    return *((volatile ULONG *)(SYSTIMER_CLO));
-}
+#include LC_LIBDEFS_FILE
 
-void sdcard_Udelay(ULONG usec)
-{
-    ULONG now = sdcard_CurrentTime();
-    do
-    {
-        asm volatile("mov r0, r0\n");
-    } while (sdcard_CurrentTime() < (now + usec));
-}
-
-struct IORequest *sdcard_OpenTimer(struct SDCardBase *SDCardBase)
+struct IORequest *sdcard_OpenTimer(LIBBASETYPEPTR LIBBASE)
 {
     struct MsgPort *p = CreateMsgPort();
     if (NULL != p)
@@ -48,9 +34,9 @@ struct IORequest *sdcard_OpenTimer(struct SDCardBase *SDCardBase)
 	     */
 	    if (0 == OpenDevice("timer.device", UNIT_MICROHZ, io, 0))	
 	    {
-		if (NULL == SDCardBase->sdcard_TimerBase)
+		if (NULL == LIBBASE->sdcard_TimerBase)
 		{
-		    SDCardBase->sdcard_TimerBase = io->io_Device;
+		    LIBBASE->sdcard_TimerBase = io->io_Device;
 		}
 		return io;
 	    }
@@ -85,21 +71,9 @@ void sdcard_CloseTimer(struct IORequest *tmr)
     }
 }
 
-void sdcard_WaitNano(register ULONG ns, struct SDCardBase *SDCardBase)
-{
-    volatile register ULONG t = 1;
-    while (ns > 0)
-    {
-	asm volatile("mov r0, r0\n");
-	--ns;
-    }
-}
-
 ULONG sdcard_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
 {
     ULONG sig = 1 << tmr->io_Message.mn_ReplyPort->mp_SigBit;
-
-    //D(bug("[SDCard--] Timed wait %lds %ldu\n", secs, micro));
 
     tmr->io_Command = TR_ADDREQUEST;
     ((struct timerequest*)tmr)->tr_time.tv_secs = secs;
