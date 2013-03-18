@@ -20,6 +20,8 @@ FILES := library \
   files=$(FILES) uselibs="mui"
 
 
+%localisestr string=français var=DIRFRENCH
+
 #MM includes-copy
 
 INCLUDE_FILES := ../include/mui/BetterString_mcc.h
@@ -37,7 +39,7 @@ workbench-classes-zune-betterstring-mcp-locale : $(LOCALE_C) $(LOCALE_H) \
     $(TARGETDIR)/czech/BetterString_mcp.catalog \
     $(TARGETDIR)/svenska/BetterString_mcp.catalog \
     $(TARGETDIR)/italiano/BetterString_mcp.catalog \
-    $(TARGETDIR)/français/BetterString_mcp.catalog \
+    $(TARGETDIR)/$(DIRFRENCH)/BetterString_mcp.catalog \
     $(TARGETDIR)/dansk/BetterString_mcp.catalog \
     $(TARGETDIR)/russian/BetterString_mcp.catalog \
     $(TARGETDIR)/polski/BetterString_mcp.catalog
@@ -56,8 +58,8 @@ $(TARGETDIR)/czech/BetterString_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/czech.ct
 	@$(MKDIR) $(TARGETDIR)/czech
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/BetterString_mcp.cd $< CATALOG $@
 
-$(TARGETDIR)/français/BetterString_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/french.ct
-	@$(MKDIR) $(TARGETDIR)/français
+$(TARGETDIR)/$(DIRFRENCH)/BetterString_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/french.ct
+	@$(MKDIR) $(TARGETDIR)/$(DIRFRENCH)
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/BetterString_mcp.cd $< CATALOG $@
 
 $(TARGETDIR)/svenska/BetterString_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/swedish.ct
