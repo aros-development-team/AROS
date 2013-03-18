@@ -28,6 +28,8 @@ FILES := library \
   modname=TextEditor modtype=mcp \
   files=$(FILES) uselibs="mui arosc.static"
 
+%localisestr string=français var=DIRFRENCH
+
 #MM includes-copy
 
 INCLUDE_FILES := TextEditor_mcp.h
@@ -43,7 +45,7 @@ workbench-classes-zune-texteditor-mcp-locale : $(LOCALE_C) $(LOCALE_H) \
     $(TARGETDIR)/deutsch/TextEditor_mcp.catalog \
     $(TARGETDIR)/czech/TextEditor_mcp.catalog \
     $(TARGETDIR)/svenska/TextEditor_mcp.catalog \
-    $(TARGETDIR)/français/TextEditor_mcp.catalog \
+    $(TARGETDIR)/$(DIRFRENCH)/TextEditor_mcp.catalog \
     $(TARGETDIR)/dansk/TextEditor_mcp.catalog \
     $(TARGETDIR)/russian/TextEditor_mcp.catalog \
     $(TARGETDIR)/polski/TextEditor_mcp.catalog
@@ -62,8 +64,8 @@ $(TARGETDIR)/czech/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/czech.ct
 	@$(MKDIR) $(TARGETDIR)/czech
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
 
-$(TARGETDIR)/français/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/french.ct
-	@$(MKDIR) $(TARGETDIR)/français
+$(TARGETDIR)/$(DIRFRENCH)/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/french.ct
+	@$(MKDIR) $(TARGETDIR)/$(DIRFRENCH)
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
 
 $(TARGETDIR)/svenska/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/swedish.ct
