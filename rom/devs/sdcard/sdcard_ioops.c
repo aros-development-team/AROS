@@ -289,5 +289,5 @@ BYTE FNAME_SDCIO(Eject)(struct sdcard_Unit *unit)
 {
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return 0;
+    return IOERR_NOCMD;
 }
