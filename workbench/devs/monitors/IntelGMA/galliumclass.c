@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,13 +23,13 @@
 #include "gallium_intern.h"
 #include "intelG45_regs.h"
 
-#include "i915/i915_public.h"
-#include "i915/i915_resource.h"
+#include "gallium/i915_public.h"
+#include "gallium/i915_resource.h"
 #include "util/u_memory.h"
 #include "util/u_atomic.h"
 #include "util/u_inlines.h"
-#include "i915/i915_winsys.h"
-#include "i915/i915_debug.h"
+#include "gallium/i915_winsys.h"
+#include "gallium/i915_debug.h"
 
 const struct OOP_InterfaceDescr Gallium_ifdescr[];
 extern OOP_AttrBase MetaAttrBase;
