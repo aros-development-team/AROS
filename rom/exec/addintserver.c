@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add interrupt client to chain of interrupt servers
@@ -61,6 +61,7 @@ static void krnIRQwrapper(void *data1, void *data2)
     AROS_LIBFUNC_INIT
 
     if (intNumber >= INTB_KERNEL) {
+        /* N.B. ln_Succ is being re-purposed/abused here */
         interrupt->is_Node.ln_Succ = KrnAddIRQHandler(intNumber - INTB_KERNEL, krnIRQwrapper, interrupt, SysBase);
         return;
     }
