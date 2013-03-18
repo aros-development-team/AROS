@@ -9,6 +9,10 @@
 #############################################################################
 #############################################################################
 
+%define localisestr string= var=
+%(var) := $(shell echo %(string) | iconv -f iso-8859-1 )
+%end
+
 #------------------------------------------------------------------------------
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
