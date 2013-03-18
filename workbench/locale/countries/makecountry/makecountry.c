@@ -229,7 +229,7 @@ int main(int argc, char **argv)
     D(printf("System locale: %s\n", name));
 
     /* Use strstr() because for example on Linux this will be "en_US.UTF-8" while on MacOS it's just "UTF-8" */
-    if (strstr(name, "UTF-8"))
+    if ((strstr(name, "UTF-8")) || (strstr(name, "utf8")))
     {
 	cd = iconv_open("UTF-8", "ISO-8859-1");
 	if (cd == (iconv_t)(-1))
