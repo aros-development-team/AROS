@@ -4,10 +4,12 @@
 
 include $(TOP)/config/make.cfg
 
+%localisestr string=français var=DIRFRENCH
+
 #MM
 workbench-libs-openurl-catalogs : \
     $(AROS_CATALOGS)/deutsch/OpenURL.catalog \
-    $(AROS_CATALOGS)/français/OpenURL.catalog \
+    $(AROS_CATALOGS)/$(DIRFRENCH)/OpenURL.catalog \
     $(AROS_CATALOGS)/polski/OpenURL.catalog
 
 # Catalogs which aren't uptodate:
@@ -26,8 +28,8 @@ $(AROS_CATALOGS)/svenska/OpenURL.catalog  : swedish.ct
 	@$(MKDIR) $(AROS_CATALOGS)/svenska
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
-$(AROS_CATALOGS)/français/OpenURL.catalog  : french.ct
-	@$(MKDIR) $(AROS_CATALOGS)/français
+$(AROS_CATALOGS)/$(DIRFRENCH)/OpenURL.catalog  : french.ct
+	@$(MKDIR) $(AROS_CATALOGS)/$(DIRFRENCH)
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
 $(AROS_CATALOGS)/polski/OpenURL.catalog  : polish.ct
