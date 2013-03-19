@@ -3,6 +3,7 @@
     $Id$
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -125,7 +126,7 @@ static int FNAME_SDC(BCM2835Init)(struct SDCardBase *SDCardBase)
 
             DINIT(bug("[SDCard--] %s: Bus Unit Range %02ld -> %02ld\n", __PRETTY_FUNCTION__,
                             __BCM2835Bus->sdcb_BusUnits->sdcbu_UnitBase,
-                            __BCM2835Bus->sdcb_BusUnits->sdcbu_UnitBase + __BCM2835Bus->sdcb_BusUnits->sdcbu_UnitMax));
+                            __BCM2835Bus->sdcb_BusUnits->sdcbu_UnitBase + __BCM2835Bus->sdcb_BusUnits->sdcbu_UnitMax - 1));
 
             __BCM2835Bus->sdcb_SectorShift = 9;
 
