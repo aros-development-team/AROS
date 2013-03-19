@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2013, The AROS Development Team. All rights reserved.
+    Copyright Â© 2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,7 +12,7 @@
 #include <exec/lists.h>
 #include <exec/nodes.h>
 
-#include "gallium/i915_batchbuffer.h"
+#include "i915/i915_batchbuffer.h"
 #include "hidd/gallium.h"
 
 #define MAGIC 0x12345678
