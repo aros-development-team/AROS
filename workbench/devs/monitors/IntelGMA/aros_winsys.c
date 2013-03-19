@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2013, The AROS Development Team. All rights reserved.
+    Copyright Â© 2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,10 +12,10 @@
 #include "aros_winsys.h"
 
 #include "util/u_memory.h"
-#include "gallium/i915_winsys.h"
-#include "gallium/i915_debug.h"
+#include "i915/i915_winsys.h"
+#include "i915/i915_debug.h"
 
-#include "gallium/i915_reg.h"
+#include "i915/i915_reg.h"
 
 
 #ifdef GALLIUM_SIMULATION

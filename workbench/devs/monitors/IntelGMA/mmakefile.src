@@ -2,42 +2,45 @@
 include $(TOP)/config/make.cfg
 
 GALLIUM_I915_SOURCES = \
-    gallium/i915_blit \
-    gallium/i915_clear \
-    gallium/i915_context \
-    gallium/i915_debug \
-    gallium/i915_debug_fp \
-    gallium/i915_flush \
-    gallium/i915_fpc_emit \
-    gallium/i915_fpc_translate \
-    gallium/i915_prim_emit \
-    gallium/i915_prim_vbuf \
-    gallium/i915_query \
-    gallium/i915_resource_buffer \
-    gallium/i915_resource \
-    gallium/i915_resource_texture \
-    gallium/i915_screen \
-    gallium/i915_state \
-    gallium/i915_state_derived \
-    gallium/i915_state_dynamic \
-    gallium/i915_state_emit \
-    gallium/i915_state_fpc \
-    gallium/i915_state_immediate \
-    gallium/i915_state_sampler \
-    gallium/i915_state_static \
-    gallium/i915_surface
+    drivers/i915/i915_blit \
+    drivers/i915/i915_clear \
+    drivers/i915/i915_context \
+    drivers/i915/i915_debug \
+    drivers/i915/i915_debug_fp \
+    drivers/i915/i915_flush \
+    drivers/i915/i915_fpc_emit \
+    drivers/i915/i915_fpc_translate \
+    drivers/i915/i915_prim_emit \
+    drivers/i915/i915_prim_vbuf \
+    drivers/i915/i915_query \
+    drivers/i915/i915_resource_buffer \
+    drivers/i915/i915_resource \
+    drivers/i915/i915_resource_texture \
+    drivers/i915/i915_screen \
+    drivers/i915/i915_state \
+    drivers/i915/i915_state_derived \
+    drivers/i915/i915_state_dynamic \
+    drivers/i915/i915_state_emit \
+    drivers/i915/i915_state_fpc \
+    drivers/i915/i915_state_immediate \
+    drivers/i915/i915_state_sampler \
+    drivers/i915/i915_state_static \
+    drivers/i915/i915_surface
+
+GALLIUM_PATH = $(SRCDIR)/workbench/libs/mesa/src/gallium/
 
 USER_INCLUDES := \
                 -I$(GALLIUM_PATH)/drivers                   \
                 -I$(AROS_DEVELOPMENT)/include/gallium       \
                 -I$(GALLIUM_PATH)/include
 
-USER_CFLAGS := -std=gnu99
-USER_LDFLAGS:= -noarosc
+    USER_CFLAGS := -std=gnu99
+    USER_LDFLAGS:= -noarosc
 
 FILES := intelG45_init intelG45_class intelG45_i2c intelG45_bitmap \
     intelG45_lowlevel intelG45_memory compositingclass startup \
-    galliumclass aros_winsys 3D_blitter arosc_emul $(GALLIUM_I915_SOURCES)
+    galliumclass aros_winsys 3D_blitter arosc_emul \
+    $(addprefix $(GALLIUM_PATH), $(GALLIUM_I915_SOURCES))
 
 EXEDIR := $(AROSDIR)/Devs/Monitors
 
