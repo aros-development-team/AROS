@@ -74,31 +74,31 @@ Aspetto e comportamento delle icone
 MSG_ICONLISTMODE
 Modalità di elencazione
 ;
-MSG_ICONLISTMODE_PLAIN (//)
+MSG_ICONLISTMODE_PLAIN
 Elenco icone normale
 ;
-MSG_ICONLISTMODE_GRID (//)
+MSG_ICONLISTMODE_GRID
 Elenco icone a griglia
 ;
-MSG_ICONTEXTMODE (//)
+MSG_ICONTEXTMODE
 Modalità testo
 ;
-MSG_ICONTEXTMODE_OUTLINE (//)
+MSG_ICONTEXTMODE_OUTLINE
 Bordo esterno
 ;
-MSG_ICONTEXTMODE_PLAIN (//)
+MSG_ICONTEXTMODE_PLAIN
 Normale
 ;
-MSG_ICONTEXTLENGTH (//)
+MSG_ICONTEXTLENGTH
 Lunghezza massima del testo
 ;
-MSG_DOUBLEBUFFERED (//)
+MSG_DOUBLEBUFFERED
 doppio buffering
 ;
-MSG_MISC (//)
+MSG_MISC
 miscellanea
 ;
-MSG_BUBBLESCREENTITLE (//) 
+MSG_BUBBLESCREENTITLE 
 %pc = Chip Ram\n
 %pf = Fast Ram\n
 %os = Versione di AROS\n
