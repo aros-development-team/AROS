@@ -12,7 +12,7 @@
 #------------------------------------------------------------------------------
 # Convert the ISO-8859-1 string in %(string) to the hosts locale (if necessary)
 %define localisestr string= var=
-ifeq (,$(findstring "ISO-8859-1",$*))
+ifeq (,$(findstring "ISO-8859-1",$(LOCALE)))
 %(var) := $(shell echo %(string) | iconv -f iso-8859-1 )
 else
 %(var) := %(string)
