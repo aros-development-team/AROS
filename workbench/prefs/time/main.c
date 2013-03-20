@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,6 +7,8 @@
 
 #include "global.h"
 #include "version.h"
+
+#include <stdlib.h>
 
 #include <libraries/coolimages.h>
 #include <aros/debug.h>
@@ -103,7 +105,7 @@ void Cleanup(STRPTR msg)
     CloseTimerDev();
     CleanupLocale();
     
-    Exit(prog_exitcode);
+    exit(prog_exitcode);
 }
 
 /*********************************************************************************************/
