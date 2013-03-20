@@ -79,11 +79,12 @@ ULONG FNAME_SDCUNIT(MMCChangeFrequency)(struct sdcard_Unit *sdcUnit)
     {
         if (sdcRespBuf[0xB9])
         {
-            /* Does the card support 52MHz or 26MHz high-speed mode? */
+            /* MMC supports 26MHz High-Speed mode .. */
+            sdcUnit->sdcu_Flags |= AF_Card_HighSpeed;
+
+            /* is 52MHz mode also supported? */
             if (sdcCardType & MMC_HS_52MHZ)
-                sdcUnit->sdcu_Flags |= (AF_Card_HighSpeed|AF_Card_HighSpeed52);
-            else
-                sdcUnit->sdcu_Flags |= AF_Card_HighSpeed;
+                sdcUnit->sdcu_Flags |= AF_Card_HighSpeed52;
         }
     }
     return 0;
