@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Cumulative graphics benchmarks
@@ -517,8 +517,8 @@ static void pixelarraybenchmark(LONG optpixfmt, LONG optfunction)
     
     switch(optfunction)
     {
-    case(FUNCTION_WRITE): functionstr = "WritePixelAlpha"; break;
-    case(FUNCTION_READ): functionstr = "ReadPixelAlpha"; break;
+    case(FUNCTION_WRITE): functionstr = "WritePixelArray"; break;
+    case(FUNCTION_READ): functionstr = "ReadPixelArray"; break;
     case(FUNCTION_WRITE_ALPHA): functionstr = "WritePixelArrayAlpha"; break;
     }
     
