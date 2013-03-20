@@ -109,4 +109,11 @@
 #define MMC_VDD_340_350                 0x00400000
 #define MMC_VDD_350_360                 0x00800000
 
+/* Ext_CSD */
+#define EXT_CSD_HS_TIMING               185
+#define EXT_CSD_CMD_SET_NORMAL          (1<<0)
+
+#define MMC_HS_TIMING                   0x00000100
+#define MMC_HS_52MHZ                    0x2
+
 #endif /* _MMC_H */
