@@ -38,6 +38,9 @@ struct sdcard_Bus
     UBYTE                               sdcb_TaskSig;        /* Signal used to wake task */
     UBYTE                               sdcb_SectorShift;    /* Sector shift. 9 here is 512 bytes sector */
 
+    struct TagItem                      *sdcb_RespListener;  /* Current TagList waiting for Response */
+    struct TagItem                      *sdcb_DataListener;  /* Current TagList waiting for Data */
+    
     struct Task                         *sdcb_Task;
     struct MsgPort                      *sdcb_MsgPort;
     struct IORequest                    *sdcb_Timer;         /* timer stuff */
@@ -92,7 +95,7 @@ ULONG FNAME_SDCBUS(FinishCmd)(struct TagItem *, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(FinishData)(struct TagItem *, struct sdcard_Bus *);
 ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *, ULONG, const ULONG);
 
-void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *, struct TagItem *);
+void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *, void *);
 void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *);
 
 #endif /* _SDCARD_BUS_H */
