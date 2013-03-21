@@ -782,9 +782,11 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
 {
     do {
         sdcard_Udelay(1000);
-        if (bus->sdcb_BusStatus & SDHCI_INT_ERROR)
+
+        if ((bus->sdcb_BusStatus & SDHCI_INT_ERROR) == SDHCI_INT_ERROR)
             break;
-    } while (((bus->sdcb_BusStatus & mask) == mask) && (--timeout > 0));
+
+    } while (((bus->sdcb_BusStatus & mask) != 0) && (--timeout > 0));
 
     if ((timeout <= 0) || (bus->sdcb_BusStatus & SDHCI_INT_ERROR))
     {
