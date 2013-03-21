@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <exec/resident.h>
@@ -24,7 +29,7 @@ const struct Resident db_Cleanup =
     RTF_AFTERDOS,
     VERSION_NUMBER,
     NT_PROCESS,
-    -120,
+    -121,
     "DOSBoot cleanup",
     &Dosboot_LibID[6],
     &dosboot_Cleanup,
