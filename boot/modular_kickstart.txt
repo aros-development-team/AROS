@@ -26,7 +26,7 @@ functional difference between ELF and PKG forms.
  input.device
  gameport.device
  keyboard.device
- amberram-handler
+ ram-handler
  con-handler
  hiddclass.hidd
  graphics.hidd

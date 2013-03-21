@@ -1,4 +1,0 @@
-         Handler     = amber-ram-handler
-         Priority    = -5
-         Stacksize   = 4096
-         GlobVec     = -1

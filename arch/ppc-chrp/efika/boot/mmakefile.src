@@ -46,7 +46,7 @@ include $(TOP)/config/make.cfg
 #MM     hidd-i2c \
 #MM     hidd-radeon \
 #MM     hidd-usb \
-#MM     kernel-fs-amberram \
+#MM     kernel-fs-ram \
 #MM     kernel-hidd-graphics \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
@@ -56,7 +56,7 @@ include $(TOP)/config/make.cfg
 PKG_GEN_LIBS 	:= aros expansion utility oop graphics layers intuition keymap workbench dos
 PKG_GEN_RSRC 	:= dosboot bestcomm lddemon
 PKG_GEN_DEVS 	:= input gameport keyboard console
-PKG_GEN_HANDLERS:= con amberram
+PKG_GEN_HANDLERS:= con ram
 PKG_GEN_HIDDS	:= graphics keyboard mouse hiddclass i2c pci
 
 PKG_EFI_LIBS 	:= 

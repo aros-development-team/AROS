@@ -6,9 +6,9 @@
 # For hosted ports disk-based versions are built.
 
 #MM- kernel-fs-kobj :		\
-#MM    kernel-fs-amberram-kobj	\
+#MM    kernel-fs-ram-kobj	\
 #MM    kernel-fs-con-kobj
 
 #MM- kernel-fs-pkg :		\
-#MM	kernel-fs-amberram-pkg	\
+#MM	kernel-fs-ram-pkg	\
 #MM	kernel-fs-con-pkg

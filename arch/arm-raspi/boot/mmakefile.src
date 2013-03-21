@@ -45,7 +45,7 @@ USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM kernel-fs-cdvdfs \
 #MM kernel-fs-fat \
 #MM kernel-fs-sfs \
-#MM kernel-fs-amberram \
+#MM kernel-fs-ram \
 #MM kernel-processor \
 #MM kernel-vcmbox \
 #MM kernel-sdcard \
@@ -66,7 +66,7 @@ USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
 PKG_RSRC     :=  misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox processor
 PKG_DEVS     :=  input gameport keyboard console timer sdcard USBHardware/usb2otg
-PKG_HANDLERS := con amberram cdrom sfs fat afs
+PKG_HANDLERS := con ram cdrom sfs fat afs
 PKG_HIDDS    := graphics mouse keyboard hiddclass i2c i2c-bcm2835 videocoregfx
 PKG_USB      := hid hub bootmouse bootkeyboard massstorage
 PKG_HOOKS    := 

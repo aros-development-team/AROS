@@ -49,9 +49,9 @@ static TEXT *BStr(struct Handler *h, UBYTE *b_str);
 static TEXT *BStr2(struct Handler *h, UBYTE *b_str);
 
 #ifdef __AROS__
-LONG AmberMain(struct ExecBase *SysBase)
+LONG RAMMain(struct ExecBase *SysBase)
 #else
-LONG AmberMain(void)
+LONG RAMMain(void)
 #endif
 {
    struct Handler *handler;

@@ -84,7 +84,7 @@ AFILES=rom_entry rom_init cpu_detect superstack_swap
 
 KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
-KHNDLRS := con afs amberram
+KHNDLRS := con afs ram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
 KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell cardres bootloader
 KHOOKS  := diag romboot
@@ -266,7 +266,7 @@ AFILES  :=
 KLIBS   := aros utility dos oop mathffp mathieeesingbas partition \
            keymap graphics layers intuition gadtools icon workbench
 KDEVS   := timer input keyboard console trackdisk gameport audio ata cd
-KHNDLRS := cdfs con afs amberram
+KHNDLRS := cdfs con afs ram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
 KRSRCS  := battclock processor lddemon dosboot cia potgo disk \
            misc shell shellcommands workbook wbtag cardres FileSystem
