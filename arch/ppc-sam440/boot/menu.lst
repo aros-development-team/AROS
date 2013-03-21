@@ -6,7 +6,7 @@ default 0
 title AROS on Sam4x0
     kernel boot/aros-amcc440
     module boot/modules/afs-handler
-    module boot/modules/amberram-handler
+    module boot/modules/ram-handler
     module boot/modules/aros.library
     module boot/modules/ata.device
     module boot/modules/battclock.resource
@@ -61,7 +61,7 @@ title AROS on Sam4x0
 title AROS on Sam4x0 Debug
     kernel boot/aros-amcc440 sysdebug=all econsole
     module boot/modules/afs-handler
-    module boot/modules/amberram-handler
+    module boot/modules/ram-handler
     module boot/modules/aros.library
     module boot/modules/ata.device
     module boot/modules/battclock.resource
@@ -116,7 +116,7 @@ title AROS on Sam4x0 Debug
 title AROS on Sam4x0 Test Alternative Usb
     kernel boot/aros-amcc440
     module boot/modules/afs-handler
-    module boot/modules/amberram-handler
+    module boot/modules/ram-handler
     module boot/modules/aros.library
     module boot/modules/ata.device
     module boot/modules/battclock.resource

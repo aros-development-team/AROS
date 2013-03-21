@@ -22,8 +22,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-oop \
 #MM     kernel-pci \
 #MM     kernel-layers \
-#MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
-#MM	workbench-devs-amberram
+#MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 # This metatarget represents all includes for SDK.
 # Note that it includes also some machine-specific modules (hostlib.resource,
@@ -82,7 +81,7 @@ include $(TOP)/config/make.cfg
 # These modules are architecture-independent and can work on both hosted and native systems.
 
 BASE_DEVICES  := console input gameport keyboard
-BASE_HANDLERS := amberram con
+BASE_HANDLERS := ram con
 BASE_HIDD     := hiddclass graphics keyboard mouse
 BASE_LIBS     := aros debug dos graphics intuition keymap layers oop utility
 BASE_RSRCS    := bootloader dosboot FileSystem lddemon

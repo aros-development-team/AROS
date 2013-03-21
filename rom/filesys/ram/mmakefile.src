@@ -4,8 +4,8 @@ FILES := handler commands filesystem notification support
 
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-%build_module mmake=kernel-fs-amberram \
-    modname=amberram modtype=handler \
+%build_module mmake=kernel-fs-ram \
+    modname=ram modtype=handler \
     files="$(FILES)"
 
 

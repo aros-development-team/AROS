@@ -19,7 +19,7 @@ GNU Lesser General Public License, as specified in the file "LICENSE.LGPL":
   [workbench/classes/zune/betterstring]
 + Classes/Zune/TextEditor.mc* [workbench/classes/zune/texteditor]
 + Libs/codesets.library [workbench/libs/codesetslib]
-+ [rom/devs/filesys/AmberRAM]
++ [rom/devs/filesys/ram]
 + [rom/devs/filesys/SFS]
 
 
