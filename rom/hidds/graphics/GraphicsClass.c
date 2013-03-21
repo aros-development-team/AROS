@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics hidd class implementation.
@@ -2992,8 +2992,20 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     	/* Two unlike bitmaps */
 	if (IS_TRUECOLOR(srcpf))
 	{
-    	    /* FIXME: Implement this */
-	     DCOPYBOX(bug("!! DEFAULT COPYING FROM TRUECOLOR TO PALETTIZED NOT IMPLEMENTED IN BitMap::CopyBox\n"));
+           for(y = startY; y != endY; y += deltaY)
+           {
+               for(x = startX; x != endX; x += deltaX)
+               {
+                   HIDDT_Pixel pix;
+                   HIDDT_Color col;
+
+                   pix = HIDD_BM_GetPixel(src, srcX + x, srcY + y);
+                   HIDD_BM_UnmapPixel(src, pix, &col);
+
+                   HIDD_BM_PutPixel(dest, destX + x, destY + y,
+                       HIDD_BM_MapColor(dest, &col));
+               }
+           }
 	}
 	else if (IS_TRUECOLOR(dstpf))
 	{
