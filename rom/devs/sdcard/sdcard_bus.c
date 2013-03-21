@@ -386,7 +386,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
 
                             if (devnode)
                             {
-                                bug("[SDCard%02ld] %b: [%ldMB Capacity]\n", sdcUnit->sdcu_UnitNum, devnode->dn_Name, sdcUnit->sdcu_Capacity >> 11);
+                                bug("[SDCard%02ld] %b: [%ldMB Capacity]\n", sdcUnit->sdcu_UnitNum, devnode->dn_Name, (ULONG)((sdcUnit->sdcu_Capacity >> 11) & 0xFFFFFFFFul));
                                 D(bug("[SDCard%02ld] %s:        StartCyl:%d, EndCyl:%d ..\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__,
                                       pp[DE_LOWCYL + 4], pp[DE_HIGHCYL + 4]));
                                 D(bug("[SDCard%02ld] %s:        BlockSize:%d, SectorsPerBlock:%d ..\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__,
