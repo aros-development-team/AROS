@@ -802,7 +802,7 @@ int main( int argc,char *argv[] )
 	if( !OpenLibraries() ) {
 		ShowFault(0, "Libraries cant be opened!");
 		CloseLibraries();
-		Exit(5);
+		exit(5);
 	}
 
 	version=IntuitionBase->LibNode.lib_Version;
