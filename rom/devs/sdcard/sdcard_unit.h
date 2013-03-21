@@ -19,7 +19,7 @@ struct sdcard_Bus;
 struct sdcard_Unit
 {
     struct Unit                         sdcu_Unit;             /* exec's unit */
-    struct sdcard_Bus                   *sdcu_Bus;             /* Bus on which this unit is */
+    struct sdcard_Bus                   *sdcu_Bus;             /* Bus to which this unit is attached */
     ULONG                               sdcu_Flags;            /* Unit flags, see below */
     ULONG                               sdcu_UnitNum;          /* Unit number as coded by device */
     ULONG                               sdcu_CardRCA;
