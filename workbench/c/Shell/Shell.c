@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     The shell program.
@@ -144,7 +144,7 @@ LONG interact(ShellState *ss)
 
 	    if (!cli->cli_Interactive)
 	    {
-		if (error || (cli->cli_ReturnCode >= cli->cli_FailLevel))
+		if (cli->cli_ReturnCode >= cli->cli_FailLevel)
 		    moreLeft = FALSE;
 
 		if (CheckSignal(SIGBREAKF_CTRL_D))
