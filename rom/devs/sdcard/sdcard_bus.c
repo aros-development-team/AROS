@@ -814,7 +814,6 @@ ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *buf, ULONG offset, const ULONG len)
 
 void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 {
-    ULONG       sdcBusAckMask = 0;
     BOOL        error = FALSE;
 
     DIRQ(bug("[SDCard**] %s(bus: %u @ 0x%p)\n", __PRETTY_FUNCTION__, bus->sdcb_BusNum, bus));
@@ -826,8 +825,7 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
     }
 
     bus->sdcb_BusStatus = bus->sdcb_IOReadLong(SDHCI_INT_STATUS, bus);
-
-    DIRQ(bug("[SDCard**] %s: Status = %08x\n", __PRETTY_FUNCTION__, bus->sdcb_BusStatus));
+    bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE|SDHCI_INT_CMD_MASK|SDHCI_INT_DATA_MASK), bus);
 
     if (!(bus->sdcb_BusStatus & SDHCI_INT_ERROR))
     {
@@ -839,7 +837,6 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
             if (bus->sdcb_BusStatus & SDHCI_INT_CARD_INSERT)
                 bus->sdcb_BusFlags |= AF_Bus_MediaPresent;
 
-            sdcBusAckMask |= (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE));
             bus->sdcb_BusStatus &= ~(SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE);
         }
         if (!error && bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK)
@@ -850,7 +847,6 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
                     error = TRUE;
                 bus->sdcb_RespListener = NULL;
             }
-            sdcBusAckMask |= (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK);
             bus->sdcb_BusStatus &= ~SDHCI_INT_CMD_MASK; 
         }
         if (!error && bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK)
@@ -862,17 +858,12 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
                     error = TRUE;
                 bus->sdcb_DataListener = NULL;
             }
-            sdcBusAckMask |= (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK);
             bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
-        }
-        if (sdcBusAckMask)
-        {
-            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, sdcBusAckMask, bus);
         }
     }
     else
     {
-        bug("[SDCard**] %s: ERROR\n", __PRETTY_FUNCTION__);
+        bug("[SDCard**] %s: ERROR [Status = %08x]\n", __PRETTY_FUNCTION__, bus->sdcb_BusStatus);
         if (bus->sdcb_BusStatus & SDHCI_INT_ACMD12ERR)
         {
             bug("[SDCard**] %s:       [acmd12err = %04x    ]\n", __PRETTY_FUNCTION__, bus->sdcb_IOReadWord(SDHCI_ACMD12_ERR, bus));
