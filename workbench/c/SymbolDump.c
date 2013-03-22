@@ -52,7 +52,7 @@ int main(void)
     {
         struct Hook handler;
         handler.h_Entry = (HOOKFUNC)symbolhandler;
-        handler.h_Data = output;
+        handler.h_Data = (APTR)output;
 
         EnumerateSymbolsA(&handler, NULL);
 
