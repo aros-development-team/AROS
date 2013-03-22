@@ -2,7 +2,7 @@
 #define HIDD_GRAPHICS_H
 
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for the Graphics HIDD system.
@@ -104,6 +104,14 @@ enum
     tHidd_Cursor_XPos,          /* ULONG, cursor x position     */
     tHidd_Cursor_YPos,          /* ULONG, cursor Y position */
     tHidd_Cursor_On             /* BOOL, cursor on, TRUE, FALSE. */
+};
+
+/* Framebuffer types */
+enum
+{
+    vHidd_FrameBuffer_None,
+    vHidd_FrameBuffer_Direct,
+    vHidd_FrameBuffer_Mirrored
 };
 
 /**** BitMap definitions ******************************************************/

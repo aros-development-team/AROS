@@ -141,9 +141,6 @@ OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
-    struct HIDDGraphicsData *data;
-    BOOL ok = FALSE;
-    struct TagItem *modetags;
     struct TagItem gctags[] =
     {
         {aHidd_GC_Foreground, 0},
@@ -151,58 +148,58 @@ OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     };
 
     D(bug("Entering gfx.hidd::New\n"));
-    
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (NULL == o)
-    	return NULL;
-    
     D(bug("Got object o=%x\n", o));
 
-    data = OOP_INST_DATA(cl, o);
-    
-    InitSemaphore(&data->mdb.sema);
-/*  data->curmode = vHidd_ModeID_Invalid; */
+    if (o)
+    {
+        struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
+        struct TagItem *tstate = msg->attrList;
+        struct TagItem *tag;
+	BOOL ok = TRUE;
 
-    /* Get the mode tags */
-    modetags = (struct TagItem *)GetTagData(aHidd_Gfx_ModeTags, 0, msg->attrList);
-    if (NULL != modetags)
-    {
-	/* Parse it and register the gfxmodes */
-	if (register_modes(cl, o, modetags))
-	{
-	    ok = TRUE;
-	}
-	else
-	    D(bug("Could not register modes\n"));
-    }
-    else {
-	D(bug("Could not get ModeTags\n"));
-	ok = TRUE;
+        InitSemaphore(&data->mdb.sema);
+        data->fbmode = -1;
+
+        while ((tag = NextTagItem(&tstate)))
+        {
+            ULONG idx;
+
+            Hidd_Gfx_Switch(tag->ti_Tag, idx)
+            {
+            case aoHidd_Gfx_ModeTags:
+                ok = register_modes(cl, o, (struct TagItem *)tag->ti_Data);
+                break;
+
+            case aoHidd_Gfx_FrameBufferType:
+                data->fbmode = tag->ti_Data;
+                break;
+            }
+        }
+
+        /* Create a gc that we can use for some rendering */
+        if (ok)
+        {
+            data->gc = OOP_NewObject(CSD(cl)->gcclass, NULL, gctags);
+            if (NULL == data->gc)
+            {
+                D(bug("Could not get gc\n"));
+                ok = FALSE;
+            }
+        }
+    
+        if (!ok)
+        {
+            OOP_MethodID dispose_mid = msg->mID - moRoot_New + moRoot_Dispose;
+
+	    D(bug("Not OK\n"));
+            OOP_CoerceMethod(cl, o, &dispose_mid);
+            return NULL;
+        }
     }
 
-    /* Create a gc that we can use for some rendering */
-    if (ok)
-    {
-	data->gc = OOP_NewObject(CSD(cl)->gcclass, NULL, gctags);
-	if (NULL == data->gc)
-	{
-	    D(bug("Could not get gc\n"));
-	    ok = FALSE;
-	}
-    }
-    
-    if (!ok)
-    {
-	D(bug("Not OK\n"));
-	OOP_MethodID dispose_mid;
-	
-	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
-	o = NULL;
-    }
-    
     D(bug("Leaving gfx.hidd::New o=%x\n", o));
-
     return o;
 }
 
@@ -519,16 +516,8 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     FUNCTION
 	Tells whether the driver does not need a framebuffer.
 
-	A framebuffer is a special bitmap in a fixed area of video RAM. If the framebuffer
-	is used, the driver is expected to copy a new bitmap into it in HIDD_Gfx_Show()
-	and optionally copy old bitmap back.
-
-	A framebuffer is needed if the hardware does not have enough VRAM to store many
-	bitmaps or does not have capabilities to switch the display between various VRAM
-	regions.
-
-	An example of driver using a framebuffer is hosted SDL driver. By design SDL works
-	only with single display window, which is considered a framebuffer.
+        Since v1.2 this attribute is obsolete. Please use aoHidd_Gfx_FrameBufferType
+        in new code.
 
     NOTES
 	Provides FALSE if not implemented in the driver.
@@ -538,11 +527,9 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     BUGS
 
     SEE ALSO
-	moHidd_Gfx_Show
+	aoHidd_Gfx_FrameBufferType, moHidd_Gfx_Show
 
     INTERNALS
-	VGA and VESA do not use framebuffer, they use mirroring technique instead in order
-	to prevents VRAM reading which is slow.
 
 *****************************************************************************************/
 
@@ -804,43 +791,104 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 *****************************************************************************************/
 
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Gfx_FrameBufferType
+
+    SYNOPSIS
+	[I.G], UBYTE
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+        Specifies fixed framebuffer type used by the driver. The value can be one of the following:
+
+          vHidd_FrameBuffer_None     - the driver does not use framebuffer.
+          vHidd_FrameBuffer_Direct   - the driver uses framefuffer which can be accessed
+                                       directly for both reads and writes.
+          vHidd_FrameBuffer_Mirrored - the driver uses write-only framebuffer.
+
+        This attribute has to be specified during driver object creation. If this is not done,
+        the OS will use value of old aoHidd_Gfx_NoFrameBuffer attribute in order to distinguish
+        between vHidd_FrameBuffer_Direct (for FALSE) and vHidd_FrameBuffer_None (for TRUE).
+
+    NOTES
+        A fixed framebuffer is a special bitmap in a fixed area of video RAM. If the
+        framebuffer is used, the driver is expected to copy a new bitmap into it in
+        HIDD_Gfx_Show() and optionally copy old bitmap back.
+
+        A framebuffer is needed if the hardware does not have enough VRAM to store many
+        bitmaps or does not have capabilities to switch the display between various VRAM
+        regions.
+
+        Some hardware suffers from slow VRAM reading. In this case you should use mirrored
+        mode. If you use it, the system will hold a bitmap in the memory buffer, and
+        update VRAM on demand (hence the name).
+
+        An example of driver using a framebuffer is hosted SDL driver. By design SDL works
+        only with single display window, which is considered a framebuffer.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Gfx_NoFrameBuffer
+
+    INTERNALS
+
+*****************************************************************************************/
+
+
 VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    if (IS_GFX_ATTR(msg->attrID, idx))
+    Hidd_Gfx_Switch (msg->attrID, idx)
     {
-	switch (idx)
-	{
-	    case aoHidd_Gfx_NumSyncs:
-		*msg->storage = data->mdb.num_syncs;
-		return;
+    case aoHidd_Gfx_NumSyncs:
+	*msg->storage = data->mdb.num_syncs;
+	return;
 
-	    case aoHidd_Gfx_IsWindowed:
-	    case aoHidd_Gfx_SupportsHWCursor:
-	    	*msg->storage = 0;
-		return;
+    case aoHidd_Gfx_IsWindowed:
+    case aoHidd_Gfx_SupportsHWCursor:
+        *msg->storage = 0;
+        return;
 
-	    case aoHidd_Gfx_HWSpriteTypes:
-	        /* Fall back to obsolete SupportsHWCursor */
-		*msg->storage = OOP_GET(o, aHidd_Gfx_SupportsHWCursor) ? (vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor) : 0;
-		return;
+    case aoHidd_Gfx_HWSpriteTypes:
+        /* Fall back to obsolete SupportsHWCursor */
+        *msg->storage = OOP_GET(o, aHidd_Gfx_SupportsHWCursor) ? (vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor) : 0;
+        return;
 
-	    case aoHidd_Gfx_DriverName:
-		*msg->storage = (IPTR)OOP_OCLASS(o)->ClassNode.ln_Name;
-		return;
+    case aoHidd_Gfx_DriverName:
+        *msg->storage = (IPTR)OOP_OCLASS(o)->ClassNode.ln_Name;
+        return;
 
-            case aoHidd_Gfx_DefaultGC:
-                *msg->storage = (IPTR)data->gc;
-                return;
-	}
+    case aoHidd_Gfx_DefaultGC:
+        *msg->storage = (IPTR)data->gc;
+        return;
+
+    case aoHidd_Gfx_FrameBufferType:
+        if (data->fbmode == -1)
+        {
+            /*
+             * This attribute has never been set.
+             * Fall back to obsolete NoFrameBuffer.
+             */
+            *msg->storage = OOP_GET(o, aHidd_Gfx_NoFrameBuffer) ? vHidd_FrameBuffer_None : vHidd_FrameBuffer_Direct;
+        }
+        else
+        {
+            *msg->storage = data->fbmode;
+        }
+        return;
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-
-    return;
 }
 
 /*****************************************************************************************
@@ -2418,7 +2466,7 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 	return NULL;
     }
 
-    if (data->shownbm)
+    if ((data->fbmode != vHidd_FrameBuffer_Mirrored) && data->shownbm)
     {
     	/* Get size of old bitmap */
 	OOP_GetAttr(data->shownbm, aHidd_BitMap_Width, &oldwidth);
@@ -2475,7 +2523,7 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     data->shownbm = bm;
 
     /* Return the actual bitmap to perform further operations on */
-    return data->framebuffer;
+    return (data->fbmode == vHidd_FrameBuffer_Mirrored) ? bm : data->framebuffer;
 }
 
 /*****************************************************************************************
@@ -4131,6 +4179,22 @@ void GFX__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 ULONG GFX__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {
     return MCOP_OK;
+}
+
+/****************************************************************************************/
+
+/* This is a private nonvirtual method */
+void GFX__Hidd_Gfx__UpdateBitMap(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struct pHidd_BitMap_UpdateRect *msg)
+{
+    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
+
+    if ((data->fbmode == vHidd_FrameBuffer_Mirrored) && (bm == data->shownbm))
+    {
+        HIDD_Gfx_CopyBox(o,
+                         bm, msg->x, msg->y,
+                         data->framebuffer, msg->x, msg->y,
+                         msg->width, msg->height, data->gc);
+    }
 }
 
 #undef csd
