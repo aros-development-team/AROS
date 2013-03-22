@@ -9,24 +9,11 @@
     Lang: English.
 */
 
-#ifndef EXEC_TYPES_H
-#   include <exec/types.h>
-#endif
-#ifndef EXEC_LIBRARIES_H
-#   include <exec/libraries.h>
-#endif
-#ifndef EXEC_SEMAPHORES_H
-#   include <exec/semaphores.h>
-#endif
-#ifndef DOS_BPTR_H
-#   include <dos/bptr.h>
-#endif
-#ifndef OOP_OOP_H
-#   include <oop/oop.h>
-#endif
-#ifndef HIDD_GRAPHICS_H
-#   include <hidd/graphics.h>
-#endif
+#include <exec/interrupts.h>
+#include <exec/libraries.h>
+#include <exec/semaphores.h>
+#include <oop/oop.h>
+#include <hidd/graphics.h>
 
 /* hack: prevent linux include header <bits/time.h> to re-define timeval struct */
 #  define _STRUCT_TIMEVAL 1
@@ -80,9 +67,13 @@ struct LinuxFB_data
 
     struct SignalSemaphore framebufferlock;
     OOP_Object *visible;
+    OOP_Object *unixio;
+    int confd;
+    long kbmode;
 
     /* FBDev info */
     struct FBDevInfo fbdevinfo;
+    struct Interrupt resetHandler;
 };
 
 /*** Shared data ***/

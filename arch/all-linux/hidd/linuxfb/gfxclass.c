@@ -44,6 +44,22 @@ static BOOL setup_linuxfb(struct LinuxFB_staticdata *fsd, int fbdev,
 static VOID cleanup_linuxfb(struct LinuxFB_data *data, struct LinuxFB_staticdata *fsd);
 static BOOL get_pixfmt(struct TagItem *pftags, struct fb_fix_screeninfo *fsi, struct fb_var_screeninfo *vsi);
 
+static AROS_INTH1(ResetHandler, struct LinuxFB_data *, data)
+{
+    AROS_INTFUNC_INIT
+
+    if (data->confd != -1)
+    {
+        /* Enable console and restore keyboard mode */
+        Hidd_UnixIO_IOControlFile(data->unixio, data->confd, KDSETMODE, (void *)KD_TEXT, NULL);
+        Hidd_UnixIO_IOControlFile(data->unixio, data->confd, KDSKBMODE, (void *)data->kbmode, NULL);
+    }
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
 /***************** FBGfx::New() ***********************/
 
 OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -156,6 +172,13 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
                     InitSemaphore(&data->framebufferlock);
 
+                    data->confd = -1;
+                    data->unixio = fsd->unixio;
+
+                    data->resetHandler.is_Code = (VOID_FUNC)ResetHandler;
+                    data->resetHandler.is_Data = data;
+                    AddResetCallback(&data->resetHandler);
+
                     return o;
                 }
             }
@@ -172,7 +195,10 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 /********** FBGfx::Dispose()  ******************************/
 VOID LinuxFB__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    cleanup_linuxfb(OOP_INST_DATA(cl, o), LSD(cl));
+    struct LinuxFB_data *data = OOP_INST_DATA(cl, o);
+
+    RemResetCallback(&data->resetHandler);
+    cleanup_linuxfb(data, LSD(cl));
 
     OOP_DoSuperMethod(cl, o, msg);
 }
@@ -247,6 +273,21 @@ OOP_Object *LinuxFB__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_G
 
     if (msg->bitMap)
     {
+        if (data->confd == -1)
+        {
+            /*
+             * Switch console into gfx mode, no more console output
+             * FIXME: How to determine which console is connected to this framebuffer ?
+             */
+            data->confd = Hidd_UnixIO_OpenFile(data->unixio, "/dev/tty0", O_RDWR, 0, NULL);
+            if (data->confd != -1)
+            {
+                Hidd_UnixIO_IOControlFile(data->unixio, data->confd, KDGKBMODE, &data->kbmode, NULL);
+                Hidd_UnixIO_IOControlFile(data->unixio, data->confd, KDSETMODE, (void *)KD_GRAPHICS, NULL);
+                Hidd_UnixIO_IOControlFile(data->unixio, data->confd, KDSKBMODE, K_RAW, NULL);
+            }
+        }
+
 	tags[0].ti_Data = TRUE;
 	OOP_SetAttrs(msg->bitMap, tags);
 
@@ -257,7 +298,6 @@ OOP_Object *LinuxFB__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_G
             OOP_GetAttr(msg->bitMap, aHidd_BitMap_ColorMap, (IPTR *)&cm);
             if (cm)
             {
-                struct LinuxFB_staticdata *fsd = LSD(cl);
                 IPTR n = 0;
                 unsigned int i;
                 HIDDT_Color col;
@@ -276,7 +316,7 @@ OOP_Object *LinuxFB__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_G
                 {
                     fbcol.start = i;
                     HIDD_CM_GetColor(cm, i, &col);
-                    Hidd_UnixIO_IOControlFile(fsd->unixio, data->fbdevinfo.fbdev, FBIOPUTCMAP, &fbcol, NULL);
+                    Hidd_UnixIO_IOControlFile(data->unixio, data->fbdevinfo.fbdev, FBIOPUTCMAP, &fbcol, NULL);
                 }
             }
         }
@@ -296,16 +336,6 @@ OOP_Object *LinuxFB__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_G
 static BOOL setup_linuxfb(struct LinuxFB_staticdata *fsd, int fbdev, struct fb_fix_screeninfo *fsi, struct fb_var_screeninfo *vsi)
 {
     int r1, r2;
-    int fd;
-
-    fd = Hidd_UnixIO_OpenFile(fsd->unixio, "/dev/tty0", O_RDWR, 0, NULL);
-    if (fd != -1)
-    {
-        /* Switch console into gfx mode, no more console output */
-        Hidd_UnixIO_IOControlFile(fsd->unixio, fd, KDSETMODE, (void *)KD_GRAPHICS, NULL);
-        Hidd_UnixIO_IOControlFile(fsd->unixio, fd, KDSKBMODE, K_RAW, NULL);
-        Hidd_UnixIO_CloseFile(fsd->unixio, fd, NULL);
-    }
 
     r1 = Hidd_UnixIO_IOControlFile(fsd->unixio, fbdev, FBIOGET_FSCREENINFO, fsi, NULL);
     r2 = Hidd_UnixIO_IOControlFile(fsd->unixio, fbdev, FBIOGET_VSCREENINFO, vsi, NULL);
