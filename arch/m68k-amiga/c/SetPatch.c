@@ -170,10 +170,10 @@ static void mmusetup(BOOL quiet)
 extern void patches(BOOL, ULONG);
 
 AROS_SH4H(SetPatch, 41.3, "AROS SetPatch (m68k)",
-    AROS_SHAH(BOOL, Q,        QUIET, /S, FALSE, "Be quiet"),
-    AROS_SHAH(BOOL, NOCA,   NOCACHE, /S, FALSE, "Don't install cache patches"),
-    AROS_SHAH(BOOL, NOCO, NOCOPYMEM, /S, FALSE, "Don't install CopyMem patches"),
-    AROS_SHAH(BOOL, NOV,  NOVBRMOVE, /S, FALSE, "Don't move the VBR to MEMF_FAST"))
+    AROS_SHAH(BOOL, Q=,       QUIET, /S, FALSE, "Be quiet"),
+    AROS_SHAH(BOOL, NOCA=,  NOCACHE, /S, FALSE, "Don't install cache patches"),
+    AROS_SHAH(BOOL, NOCO=,NOCOPYMEM, /S, FALSE, "Don't install CopyMem patches"),
+    AROS_SHAH(BOOL, NOV=, NOVBRMOVE, /S, FALSE, "Don't move the VBR to MEMF_FAST"))
 {
     AROS_SHCOMMAND_INIT
 
