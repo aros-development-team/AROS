@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ShutdownA() - Shut down the operating system.
@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#include "exec_util.h"
 
 /*****************************************************************************
 
@@ -66,6 +67,8 @@
     default:
     	return 0; /* Unknown action code */
     }
+
+    Exec_DoResetCallbacks((struct IntExecBase *)SysBase, action);
 
     PD(SysBase).SysIFace->exit(exitcode);
     AROS_HOST_BARRIER
