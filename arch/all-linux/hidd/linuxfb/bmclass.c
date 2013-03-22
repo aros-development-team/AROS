@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Onscreen bitmap class for linux fb device
@@ -11,6 +11,7 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <hidd/graphics.h>
+#include <hidd/unixio_inline.h>
 #include <oop/oop.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -84,6 +85,7 @@ OOP_Object *LinuxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             {
                 data->RealVideoData = fbdevinfo->baseaddr;
                 data->realbytesperline = fbdevinfo->pitch;
+                data->fbdev            = fbdevinfo->fbdev;
             }
 
             D(if (data->RealVideoData) bug("[LinuxBM] RealVideoData: 0x%p\n",data->RealVideoData));
@@ -93,6 +95,43 @@ OOP_Object *LinuxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     return o;
 }
 
+BOOL LinuxBM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+    ULONG xc_i, col_i;
+
+    if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg))
+    {
+	return FALSE;
+    }
+
+    if ((msg->firstColor + msg->numColors) > (1 << (data->bytesperpix * 8)))
+	return FALSE;
+
+    if (data->visible && data->bytesperpix == 1)
+    {
+        struct LinuxFB_staticdata *fsd = LSD(cl);
+
+	for ( xc_i = msg->firstColor, col_i = 0;
+    	      col_i < msg->numColors; 
+	      xc_i ++, col_i ++)
+        {
+            struct fb_cmap col =
+            {
+                xc_i, 1,
+                &msg->colors[col_i].red,
+                &msg->colors[col_i].green,
+                &msg->colors[col_i].blue,
+                &msg->colors[col_i].alpha
+            };
+
+            Hidd_UnixIO_IOControlFile(fsd->unixio, data->fbdev, FBIOPUTCMAP, &col, NULL);
+	}
+    }
+    return TRUE;
+}
+
+
 /**********  Bitmap::UpdateRect()  ***********************************/
 VOID LinuxBM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
@@ -100,13 +139,12 @@ VOID LinuxBM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd
 
     /* NOTE: There is a strong assumption here that bitmap dimensions equal framebuffer dimensions */
 
-    if (data->RealVideoData)
+    if (data->visible)
     {
         ULONG x = msg->x * data->bytesperpix;
         APTR src = data->VideoData     + msg->y * data->bytesperline     + x;
         APTR dst = data->RealVideoData + msg->y * data->realbytesperline + x;
         LONG y;
-        OOP_Object * gfx = NULL;
 
         D(bug("[LinuxBM] 0x%p -> UpdateRect(%d, %d, %d, %d)\n", o, msg->x, msg->y, msg->width, msg->height));
 
@@ -117,26 +155,27 @@ VOID LinuxBM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd
             src += data->bytesperline;
             dst += data->realbytesperline;
         }
+    }
+}
 
-        /* Notify the gfx hidd */
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfx);
+VOID LinuxBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+    struct TagItem *tstate = msg->attrList;
+    struct TagItem *tag;
+    ULONG idx;
 
-        if (gfx)
+    while ((tag = NextTagItem(&tstate)))
+    {
+        Hidd_BitMap_Switch(tag->ti_Tag, idx)
         {
-            struct pHidd_LinuxFB_FBChanged fbcmsg =
-            {
-               mID      : OOP_GetMethodID(IID_Hidd_LinuxFB, moHidd_LinuxFB_FBChanged),
-               x        : msg->x,
-               y        : msg->y,
-               width    : msg->width,
-               height   : msg->height,
-               src      : data->VideoData,
-               srcpitch : data->bytesperline
-            };
-
-            OOP_DoMethod(gfx, (OOP_Msg)&fbcmsg);
+        case aoHidd_BitMap_Visible:
+            data->visible = tag->ti_Data;
+            break;
         }
     }
+
+    OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
 /* TODO: The following needs to be moved to ChunkyBM class */

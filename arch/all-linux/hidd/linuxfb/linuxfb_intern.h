@@ -34,8 +34,6 @@
 #include <linux/fb.h>
 #include <linux/kd.h>
 
-#define BUFFERED_VRAM 1
-
 /* Private Attrs and methods for the LinuxFB Hidd */
 
 #define CLID_Hidd_LinuxFB "hidd.gfx.linuxfb"
@@ -52,23 +50,6 @@ enum
 
 #define aHidd_LinuxFB_File HiddLinuxFBAttrBase + aoHidd_LinuxFB_File
 
-enum
-{
-    moHidd_LinuxFB_FBChanged
-};
-
-struct pHidd_LinuxFB_FBChanged
-{
-    OOP_MethodID mID;
-    WORD x;
-    WORD y;
-    WORD width;
-    WORD height;
-    APTR src;
-    LONG srcpitch;
-};
-
-#define CLID_Hidd_LinuxFBBitmap "hidd.bitmap.linuxfb"
 #define IID_Hidd_LinuxFBBitmap  "hidd.bitmap.linuxfb"
 
 #define HiddLinuxFBBitmapAttrBase  __abHidd_LinuxFBBitmap
@@ -82,23 +63,10 @@ enum
 
 #define aHidd_LinuxFBBitmap_FBDevInfo   HiddLinuxFBBitmapAttrBase + aoHidd_LinuxFBBitmap_FBDevInfo
 
-struct FBImage
-{
-    APTR buffer;
-    LONG width;
-    LONG height;
-    LONG bpp;
-};
-struct CursorInfo
-{
-    struct FBImage img;
-    BOOL            visible;
-    LONG            currentx;
-    LONG            currenty;
-};
-
 struct FBDevInfo
 {
+    int fbdev;
+    UBYTE fbtype;
     BYTE *baseaddr;
     LONG pitch;
     LONG bpp;
@@ -106,30 +74,15 @@ struct FBDevInfo
     LONG yres;
 };
 
-struct SavedFB
-{
-    struct FBImage img;
-    LONG            x;
-    LONG            y;
-    LONG            width;
-    LONG            height;
-    BOOL            active;
-};
-
 struct LinuxFB_data
 {
-    /* The device file */
-    int fbdev;
     unsigned long mem_len;
 
     struct SignalSemaphore framebufferlock;
+    OOP_Object *visible;
 
     /* FBDev info */
     struct FBDevInfo fbdevinfo;
-
-    /* Cursor handling */
-    struct CursorInfo   cinfo;
-    struct SavedFB      sfb;
 };
 
 /*** Shared data ***/
@@ -145,6 +98,7 @@ struct LinuxFB_staticdata
     OOP_AttrBase bmAttrBase;
     OOP_AttrBase syncAttrBase;
     OOP_AttrBase pfAttrBase;
+    OOP_AttrBase cmAttrBase;
     OOP_AttrBase chunkyAttrBase;
     OOP_AttrBase linuxFBAttrBase;
     OOP_AttrBase linuxBMAttrBase;
@@ -158,15 +112,13 @@ struct LinuxFB_base
 
 struct BitmapData;
 
-#define LOCK_FRAMEBUFFER(data)    ObtainSemaphore(&data->framebufferlock)
-#define UNLOCK_FRAMEBUFFER(data) ReleaseSemaphore(&data->framebufferlock)
-
 #define LSD(cl) (&((struct LinuxFB_base *)cl->UserData)->lsd)
 
 #undef HiddGfxAttrBase
 #undef HiddBitMapAttrBase
 #undef HiddSyncAttrBase
 #undef HiddPixFmtAttrBase
+#undef HiddColorMapAttrBase
 #undef HiddChunkyBMAttrBase
 #undef HiddLinuxFBAttrBase
 #undef HiddLinuxFBBitmapAttrBase
@@ -174,6 +126,7 @@ struct BitmapData;
 #define HiddBitMapAttrBase        LSD(cl)->bmAttrBase
 #define HiddSyncAttrBase          LSD(cl)->syncAttrBase
 #define HiddPixFmtAttrBase        LSD(cl)->pfAttrBase
+#define HiddColorMapAttrBase      LSD(cl)->cmAttrBase
 #define HiddChunkyBMAttrBase      LSD(cl)->chunkyAttrBase
 #define HiddLinuxFBAttrBase       LSD(cl)->linuxFBAttrBase
 #define HiddLinuxFBBitmapAttrBase LSD(cl)->linuxBMAttrBase

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux fbdev gfx HIDD for AROS.
@@ -145,16 +145,17 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
                 {
                     struct LinuxFB_data *data = OOP_INST_DATA(cl, o);
 
-                    data->fbdev = fbdev;
+                    data->fbdevinfo.fbdev    = fbdev;
+                    data->fbdevinfo.fbtype   = pftags[8].ti_Data;
                     data->fbdevinfo.baseaddr = baseaddr;
-                    data->fbdevinfo.pitch = fsi.line_length;
-                    data->mem_len  = fsi.smem_len;
-                    data->fbdevinfo.bpp = ((vsi.bits_per_pixel - 1) / 8) + 1;
-                    data->fbdevinfo.xres = vsi.xres;
-                    data->fbdevinfo.yres = vsi.yres;
-#if BUFFERED_VRAM
+                    data->fbdevinfo.pitch    = fsi.line_length;
+                    data->mem_len            = fsi.smem_len;
+                    data->fbdevinfo.bpp      = ((vsi.bits_per_pixel - 1) / 8) + 1;
+                    data->fbdevinfo.xres     = vsi.xres;
+                    data->fbdevinfo.yres     = vsi.yres;
+
                     InitSemaphore(&data->framebufferlock);
-#endif
+
                     return o;
                 }
             }
@@ -211,6 +212,8 @@ OOP_Object *LinuxFB__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pH
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
+
+
 /******* FBGfx::Set()  ********************************************/
 VOID LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
@@ -223,16 +226,72 @@ VOID LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         case aoHidd_Gfx_NoFrameBuffer:
             *msg->storage = TRUE;
             return;
-        case aoHidd_Gfx_SupportsHWCursor:
-            *msg->storage = (IPTR)TRUE;
-            return;
-        case aoHidd_Gfx_HWSpriteTypes:
-            *msg->storage = vHidd_SpriteType_DirectColor;
-            return;
         }
     }
     OOP_DoSuperMethod(cl, o, &msg->mID);
 }
+
+OOP_Object *LinuxFB__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+{
+    struct LinuxFB_data *data = OOP_INST_DATA(cl, o);
+    struct TagItem tags[] =
+    {
+	{aHidd_BitMap_Visible, FALSE},
+	{TAG_DONE	     , 0    }
+    };
+
+    ObtainSemaphore(&data->framebufferlock);
+
+    if (data->visible)
+	OOP_SetAttrs(data->visible, tags);
+
+    if (msg->bitMap)
+    {
+	tags[0].ti_Data = TRUE;
+	OOP_SetAttrs(msg->bitMap, tags);
+
+        if (data->fbdevinfo.fbtype == vHidd_ColorModel_Palette)
+        {
+            OOP_Object *cm = NULL;
+
+            OOP_GetAttr(msg->bitMap, aHidd_BitMap_ColorMap, (IPTR *)&cm);
+            if (cm)
+            {
+                struct LinuxFB_staticdata *fsd = LSD(cl);
+                IPTR n = 0;
+                unsigned int i;
+                HIDDT_Color col;
+                struct fb_cmap fbcol =
+                {
+                    0, 1,
+                    &col.red,
+                    &col.green,
+                    &col.blue,
+                    &col.alpha
+                };
+
+                OOP_GetAttr(cm, aHidd_ColorMap_NumEntries, &n);
+
+                for (i = 0; i < n; i++)
+                {
+                    fbcol.start = i;
+                    HIDD_CM_GetColor(cm, i, &col);
+                    Hidd_UnixIO_IOControlFile(fsd->unixio, data->fbdevinfo.fbdev, FBIOPUTCMAP, &fbcol, NULL);
+                }
+            }
+        }
+    }
+    else
+    {
+        memset(data->fbdevinfo.baseaddr, 0, data->fbdevinfo.pitch * data->fbdevinfo.yres);
+    }
+
+    data->visible = msg->bitMap;
+    ReleaseSemaphore(&data->framebufferlock);
+
+    return msg->bitMap;
+}
+
 
 static BOOL setup_linuxfb(struct LinuxFB_staticdata *fsd, int fbdev, struct fb_fix_screeninfo *fsi, struct fb_var_screeninfo *vsi)
 {
@@ -272,7 +331,7 @@ static BOOL setup_linuxfb(struct LinuxFB_staticdata *fsd, int fbdev, struct fb_f
 static VOID cleanup_linuxfb(struct LinuxFB_data *data, struct LinuxFB_staticdata *fsd)
 {
     Hidd_UnixIO_MemoryUnMap(fsd->unixio, data->fbdevinfo.baseaddr, data->mem_len, NULL);
-    Hidd_UnixIO_CloseFile(fsd->unixio, data->fbdev, NULL);
+    Hidd_UnixIO_CloseFile(fsd->unixio, data->fbdevinfo.fbdev, NULL);
 }
 
 static HIDDT_Pixel bitfield2mask(struct fb_bitfield *bf)
@@ -341,12 +400,6 @@ static BOOL get_pixfmt(struct TagItem *pftags, struct fb_fix_screeninfo *fsi, st
         break;
     
     case FB_VISUAL_PSEUDOCOLOR:
-#warning "also pseudocolor pixelformats need red/green/blue masks now. Is the calc. correct here!?"
-        /* stegerg: apps when using GetDisplayInfoData(DTA_DISP) even on 8 bit palettized
-                    screens expect DisplayInfo->redbits/greenbits/bluebits to have
-            correct values (they are calculated based on the red/green/blue masks)
-            which reflect the "size" of the palette (16M, 4096, 262144) */
-        
         pftags[4 ].ti_Data = bitfield2mask(&vsi->red);    /* Masks: R, G, B, A */
         pftags[5 ].ti_Data = bitfield2mask(&vsi->green);
         pftags[6 ].ti_Data = bitfield2mask(&vsi->blue);
@@ -356,13 +409,7 @@ static BOOL get_pixfmt(struct TagItem *pftags, struct fb_fix_screeninfo *fsi, st
         pftags[14].ti_Data = 0xFF;                /* LUT mask  */
         break;
     
-     case FB_VISUAL_STATIC_PSEUDOCOLOR:
-#warning "also pseudocolor pixelformats need red/green/blue masks now. Is the calc. correct here!?"
-        /* stegerg: apps when using GetDisplayInfoData(DTA_DISP) even on 8 bit palettized
-                    screens expect DisplayInfo->redbits/greenbits/bluebits to have
-            correct values (they are calculated based on the red/green/blue masks)
-            which reflect the "size" of the palette (16M, 4096, 262144) */
-        
+     case FB_VISUAL_STATIC_PSEUDOCOLOR:        
         pftags[4 ].ti_Data = bitfield2mask(&vsi->red);    /* Masks: R, G, B, A */
         pftags[5 ].ti_Data = bitfield2mask(&vsi->green);
         pftags[6 ].ti_Data = bitfield2mask(&vsi->blue);
@@ -403,315 +450,4 @@ static BOOL get_pixfmt(struct TagItem *pftags, struct fb_fix_screeninfo *fsi, st
     }
 
     return success;    
-}
-
-#define writel(val, addr)           (*(volatile ULONG*)(addr) = (val))
-#define writeb(val, addr)           (*(volatile UBYTE*)(addr) = (val))
-#define readl(addr)                 (*(volatile ULONG*)(addr))
-#define readb(addr)                 (*(volatile UBYTE*)(addr))
-
-static inline int do_alpha(int a, int v)
-{
-    int tmp = a*v;
-    return ((tmp << 8) + tmp + 32768) >> 16;
-}
-
-static VOID HIDDLInuxFBPutAlphaImage32ToFBDev(APTR srcbuff, ULONG srcpitch, struct FBDevInfo * fbdevinfo,
-        LONG destX, LONG destY, LONG width, LONG height)
-{
-    /* TODO: what about 16bpp modes ? */
-
-    LONG x,y;
-    APTR dstbuff    = fbdevinfo->baseaddr;
-    ULONG dstpitch  = fbdevinfo->pitch;
-    UBYTE dstbpp    = fbdevinfo->bpp;
-
-    for(y = 0; y < height; y++)
-    {
-        /* Calculate line start addresses */
-        IPTR srcaddr = (srcpitch * y) + (IPTR)srcbuff;
-        IPTR destaddr = (destX * dstbpp) + (dstpitch * (destY + y)) + (IPTR)dstbuff;
-
-        for (x = 0; x < width; x++)
-        {
-            ULONG       srcpix;
-            LONG        src_red, src_green, src_blue, src_alpha;
-            LONG        dst_red, dst_green, dst_blue;
-
-            /* Read RGBA pixel from input array */
-            srcpix = *(ULONG *)srcaddr;
-#if AROS_BIG_ENDIAN
-            src_red   = (srcpix & 0x00FF0000) >> 16;
-            src_green = (srcpix & 0x0000FF00) >> 8;
-            src_blue  = (srcpix & 0x000000FF);
-            src_alpha = (srcpix & 0xFF000000) >> 24;
-#else
-            src_red   = (srcpix & 0x0000FF00) >> 8;
-            src_green = (srcpix & 0x00FF0000) >> 16;
-            src_blue  = (srcpix & 0xFF000000) >> 24;
-            src_alpha = (srcpix & 0x000000FF);
-#endif
-
-            /*
-            * If alpha=0, do not change the destination pixel at all.
-            * This saves us unnecessary reads and writes to VRAM.
-            */
-            if (src_alpha != 0)
-            {
-                /*
-                * Full opacity. Do not read the destination pixel, as
-                * it's value does not matter anyway.
-                */
-                if (src_alpha == 0xff)
-                {
-                    dst_red = src_red;
-                    dst_green = src_green;
-                    dst_blue = src_blue;
-                }
-                else
-                {
-                    /*
-                    * Alpha blending with source and destination pixels.
-                    * Get destination.
-                    */
-
-                    if (dstbpp == 3)
-                    {
-                        dst_blue  = readb(destaddr);
-                        dst_green = readb(destaddr + 1);
-                        dst_red   = readb(destaddr + 2);
-                    }
-
-
-                    if (dstbpp == 4)
-                    {
-                        ULONG destpix = readl(destaddr);
-                        dst_red   = (destpix & 0x00FF0000) >> 16;
-                        dst_green = (destpix & 0x0000FF00) >> 8;
-                        dst_blue  = (destpix & 0x000000FF);
-                    }
-
-                    dst_red   += do_alpha(src_alpha, src_red - dst_red);
-                    dst_green += do_alpha(src_alpha, src_green - dst_green);
-                    dst_blue  += do_alpha(src_alpha, src_blue - dst_blue);
-                }
-
-                /* Store the new pixel */
-
-                if (dstbpp == 3)
-                {
-                    writeb(dst_blue , destaddr);
-                    writeb(dst_green, destaddr + 1);
-                    writeb(dst_red  , destaddr + 2);
-                }
-
-                if (dstbpp == 4)
-                {
-                    ULONG destpix = (dst_red << 16) + (dst_green << 8) + (dst_blue);
-                    writel(destpix, destaddr);
-                }
-            }
-
-
-
-            /* Advance pointers */
-            srcaddr += CURSOR_IMAGE_BPP;
-            destaddr += dstbpp;
-        }
-    }
-}
-
-#define X_RES (data->fbdevinfo.xres)
-#define Y_RES (data->fbdevinfo.yres)
-
-static VOID FBImage_FillFromMemory(struct FBImage * fbimage, APTR src, LONG srcpitch, LONG x, LONG y,
-        LONG width, LONG height)
-{
-    LONG yi;
-    src = src + y * srcpitch + x * fbimage->bpp;
-    APTR dst = fbimage->buffer;
-
-    for (yi = 0; yi < height; yi++)
-    {
-        CopyMem(src, dst, width * fbimage->bpp);
-
-        src += srcpitch;
-        dst += fbimage->width * fbimage->bpp;
-    }
-
-}
-
-static VOID FBImage_FillFromFBDev(struct FBImage * fbimage, struct FBDevInfo * fbdevinfo, LONG x, LONG y,
-        LONG width, LONG height)
-{
-    FBImage_FillFromMemory(fbimage, fbdevinfo->baseaddr, fbdevinfo->pitch, x, y, width, height);
-}
-
-static VOID FBImage_CopyToFBDev(struct FBImage * fbimage, struct FBDevInfo * fbdevinfo, LONG x, LONG y,
-        LONG width, LONG height)
-{
-    LONG yi;
-    APTR src = fbimage->buffer;
-    APTR dst = fbdevinfo->baseaddr + y * fbdevinfo->pitch + x * fbimage->bpp;
-
-    for (yi = 0; yi < height; yi++)
-    {
-        CopyMem(src, dst, width * fbimage->bpp);
-
-        src += fbimage->width * fbimage->bpp;
-        dst += fbdevinfo->pitch;
-    }
-}
-
-static VOID FBImage_FreeData(struct FBImage * fbimage)
-{
-    FreeVec(fbimage->buffer);
-    fbimage->width  = -1;
-    fbimage->height = -1;
-}
-
-static VOID FBImage_Recreate(struct FBImage * fbimage, LONG width, LONG height, BYTE bpp)
-{
-    if ((!fbimage->buffer) || (fbimage->width != width) || (fbimage->height != height) || (fbimage->bpp != bpp))
-    {
-        FreeVec(fbimage->buffer);
-        fbimage->buffer = AllocVec(width * height * CURSOR_IMAGE_BPP, MEMF_PUBLIC);
-        fbimage->width  = width;
-        fbimage->height = height;
-        fbimage->bpp    = bpp;
-    }
-}
-
-static void HIDDLinuxFBRedrawCursorAt(OOP_Object * gfx, LONG x, LONG y)
-{
-    OOP_Class * cl = OOP_OCLASS(gfx);
-    struct LinuxFB_data * data = OOP_INST_DATA(cl, gfx);
-
-    LONG width = data->cinfo.img.width;
-    LONG height = data->cinfo.img.height;
-
-    /* Clip drawing to screen size */
-    if (x >= X_RES) return;
-    if (y >= Y_RES) return;
-    if (x + width >= X_RES) width = X_RES - x;
-    if (y + height >= Y_RES) height = Y_RES - y;
-
-    /* FIXME: the redraw code will crash for nagative values */
-    if (x < 0) x = 0;
-    if (y < 0) y = 0;
-
-    /* Restore any saved fb part */
-    if (data->sfb.active)
-    {
-        FBImage_CopyToFBDev(&data->sfb.img, &data->fbdevinfo, data->sfb.x, data->sfb.y, data->sfb.width,
-                data->sfb.height);
-        data->sfb.active = FALSE;
-    }
-
-    /* If cursor is visible and there is cursor image, store fb part and draw cursor */
-    if (data->cinfo.visible && data->cinfo.img.buffer)
-    {
-        /* Store fb part */
-        FBImage_Recreate(&data->sfb.img, data->cinfo.img.width, data->cinfo.img.height, data->fbdevinfo.bpp);
-        FBImage_FillFromFBDev(&data->sfb.img, &data->fbdevinfo, x, y, width, height);
-        data->sfb.x         = x;
-        data->sfb.y         = y;
-        data->sfb.width     = width;
-        data->sfb.height    = height;
-        data->sfb.active    = TRUE;
-
-        /* Draw cursor */
-        HIDDLInuxFBPutAlphaImage32ToFBDev(data->cinfo.img.buffer, data->cinfo.img.width * CURSOR_IMAGE_BPP,
-                &data->fbdevinfo, x, y, width, height);
-    }
-}
-
-static void HIDDLinuxFBShowCursor(OOP_Object * gfx, BOOL visible)
-{
-    OOP_Class * cl = OOP_OCLASS(gfx);
-    struct LinuxFB_data * gfxdata = OOP_INST_DATA(cl, gfx);
-
-    gfxdata->cinfo.visible = visible;
-
-    HIDDLinuxFBRedrawCursorAt(gfx, gfxdata->cinfo.currentx, gfxdata->cinfo.currenty);
-}
-
-
-#if AROS_BIG_ENDIAN
-#define Machine_BGRA32 vHidd_StdPixFmt_BGRA32
-#else
-#define Machine_BGRA32 vHidd_StdPixFmt_ARGB32
-#endif
-
-BOOL METHOD(LinuxFB, Hidd_Gfx, SetCursorShape)
-{
-    struct LinuxFB_data * gfxdata = OOP_INST_DATA(cl, o);
-
-    if (msg->shape == NULL)
-    {
-        /* Hide cursor */
-        HIDDLinuxFBShowCursor(o, FALSE);
-        FBImage_FreeData(&gfxdata->cinfo.img);
-    }
-    else
-    {
-        IPTR width, height;
-
-        OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
-        OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
-
-        if (width > 64) width = 64;
-        if (height > 64) height = 64;
-
-        FBImage_Recreate(&gfxdata->cinfo.img, width, height, CURSOR_IMAGE_BPP);
-
-        /* Get data from the bitmap */
-        HIDD_BM_GetImage(msg->shape, (UBYTE *)gfxdata->cinfo.img.buffer, width * CURSOR_IMAGE_BPP, 0, 0,
-            width, height, Machine_BGRA32);
-
-        /* Show updated cursor */
-        HIDDLinuxFBShowCursor(o, TRUE);
-    }
-
-    return TRUE;
-}
-
-BOOL METHOD(LinuxFB, Hidd_Gfx, SetCursorPos)
-{
-    struct LinuxFB_data * gfxdata = OOP_INST_DATA(cl, o);
-
-    HIDDLinuxFBRedrawCursorAt(o, msg->x, msg->y);
-
-    gfxdata->cinfo.currentx = msg->x;
-    gfxdata->cinfo.currenty = msg->y;
-
-    return TRUE;
-}
-
-VOID METHOD(LinuxFB, Hidd_Gfx, SetCursorVisible)
-{
-    HIDDLinuxFBShowCursor(o, msg->visible);
-}
-
-/* This method is a hack to allow refreshing "saved" area when it changed, coordinates are in screen, not bitmap space */
-VOID METHOD(LinuxFB, Hidd_LinuxFB, FBChanged)
-{
-    struct LinuxFB_data * gfxdata = OOP_INST_DATA(cl, o);
-
-    struct SavedFB * sfb = &gfxdata->sfb;
-
-    /* Check if change overlapped with saved fb part, if yes re-read it from source (not FB) and redraw cursor */
-    if (sfb->x + sfb->width < msg->x)
-        return;
-    if (sfb->x > msg->x + msg->width)
-        return;
-    if (sfb->y + sfb->height < msg->y)
-        return;
-    if (sfb->y > msg->y + msg->height)
-        return;
-
-    if (sfb->active)
-        FBImage_FillFromMemory(&sfb->img, msg->src, msg->srcpitch, sfb->x, sfb->y, sfb->width, sfb->height);
-
-    HIDDLinuxFBRedrawCursorAt(o, gfxdata->cinfo.currentx, gfxdata->cinfo.currenty);
 }
