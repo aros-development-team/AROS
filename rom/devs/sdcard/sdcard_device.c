@@ -77,9 +77,9 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         count >>= unit->sdcu_Bus->sdcb_SectorShift;
         ULONG cnt = 0;
 
-        if (((block + count) > unit->sdcu_Capacity))
+        if ((block + count) > (ULONG)(unit->sdcu_Capacity & 0xFFFFFFFFul))
         {
-            bug("[SDCard%02ld] %s: Requested block (%lx;%ld) outside disk range (%lx)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, block, count, unit->sdcu_Capacity);
+            bug("[SDCard%02ld] %s: Requested block (%lx;%ld) outside disk range (%lx)\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, block, count, (ULONG)(unit->sdcu_Capacity & 0xFFFFFFFFul));
             io->io_Error = IOERR_BADADDRESS;
             return;
         }
@@ -109,7 +109,7 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     {
         /* 64bit commands are only used with high capacity devices .. */
         D(bug("[SDCard%02ld] %s: 64bit IO called on 32bit unit\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-        cmd_Read32(io, LIBBASE);
+        io->io_Error = IOERR_NOCMD;
         return;
     }
 
@@ -219,7 +219,7 @@ static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     {
         /* 64bit commands are only used with high capacity devices .. */
         D(bug("[SDCard%02ld] %s: 64bit IO called on 32bit unit\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-        cmd_Write32(io, LIBBASE);
+        io->io_Error = IOERR_NOCMD;
         return;
     }
 
@@ -503,6 +503,14 @@ static mapfunc const map32[] = {
 };
 
 static UWORD const NSDSupported[] = {
+    TD_READ64,
+    TD_WRITE64,
+    TD_SEEK64,
+    TD_FORMAT64,
+    NSCMD_TD_READ64,
+    NSCMD_TD_WRITE64,
+    NSCMD_TD_SEEK64,
+    NSCMD_TD_FORMAT64,
     CMD_RESET,
     CMD_READ,
     CMD_WRITE,
@@ -526,14 +534,6 @@ static UWORD const NSDSupported[] = {
     HD_SCSICMD,
     TD_GETDRIVETYPE,
     NSCMD_DEVICEQUERY,
-    TD_READ64, // 23
-    TD_WRITE64,
-    TD_SEEK64,
-    TD_FORMAT64,
-    NSCMD_TD_READ64,
-    NSCMD_TD_WRITE64,
-    NSCMD_TD_SEEK64,
-    NSCMD_TD_FORMAT64,
     0
 };
 
@@ -564,7 +564,7 @@ BOOL FNAME_SDC(HandleIO)(struct IORequest *io)
                 nsdq->SizeAvailable     = sizeof(struct NSDeviceQueryResult);
                 nsdq->DeviceType        = NSDEVTYPE_TRACKDISK;
                 nsdq->DeviceSubType     = 0;
-                nsdq->SupportedCommands = (UWORD *)NSDSupported;
+                nsdq->SupportedCommands = (((struct sdcard_Unit*)io->io_Unit)->sdcu_Flags & AF_Card_HighCapacity) ? (UWORD *)NSDSupported : (UWORD *)&NSDSupported[8];
             }
             IOStdReq(io)->io_Actual = sizeof(struct NSDeviceQueryResult);
             break;

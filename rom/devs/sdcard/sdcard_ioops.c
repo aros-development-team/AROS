@@ -146,7 +146,7 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
 
     if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) != -1)
     {
-        if (FNAME_SDCBUS(WaitCmd)(SDHCI_INT_DATA_AVAIL|SDHCI_INT_DATA_END, 1000, unit->sdcu_Bus) != -1)
+        if (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, unit->sdcu_Bus) != -1)
         {
             if (count > 1)
             {
@@ -158,14 +158,13 @@ BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
                 if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) == -1)
                 {
                     bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
-                    retVal = IOERR_ABORTED;
                 }
             }
             *act = sdcReadTags[5].ti_Data;
         }
         else
         {
-            D(bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+            bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
             retVal = IOERR_ABORTED;
         }
     }
