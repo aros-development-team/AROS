@@ -29,6 +29,7 @@ static CONST_STRPTR const abd[] =
     IID_Hidd_BitMap,
     IID_Hidd_Sync,
     IID_Hidd_PixFmt,
+    IID_Hidd_ColorMap,
     IID_Hidd_ChunkyBM,
     IID_Hidd_LinuxFB,
     IID_Hidd_LinuxFBBitmap,

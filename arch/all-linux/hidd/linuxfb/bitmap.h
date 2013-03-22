@@ -13,6 +13,8 @@ struct BitmapData
     ULONG               height;
     ULONG               display_width;
     ULONG               display_height;
+    int                 fbdev;
+    BOOL                visible;
 };
 
 #endif
