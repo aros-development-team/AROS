@@ -124,9 +124,9 @@ static int FNAME_SDC(BCM2835Init)(struct SDCardBase *SDCardBase)
             SDCardBase->sdcard_TotalBusUnits += __BCM2835Bus->sdcb_BusUnits->sdcbu_UnitMax;
             ReleaseSemaphore(&SDCardBase->sdcard_BusSem);
 
-            DINIT(bug("[SDCard--] %s: Bus Unit Range %02ld -> %02ld\n", __PRETTY_FUNCTION__,
-                            __BCM2835Bus->sdcb_BusUnits->sdcbu_UnitBase,
-                            __BCM2835Bus->sdcb_BusUnits->sdcbu_UnitBase + __BCM2835Bus->sdcb_BusUnits->sdcbu_UnitMax - 1));
+            DINIT(bug("[SDCard--] %s: %d Bus Unit(s) starting from %02ld\n", __PRETTY_FUNCTION__,
+                            __BCM2835Bus->sdcb_BusUnits->sdcbu_UnitMax,
+                            __BCM2835Bus->sdcb_BusUnits->sdcbu_UnitBase));
 
             __BCM2835Bus->sdcb_SectorShift = 9;
 
@@ -139,7 +139,7 @@ static int FNAME_SDC(BCM2835Init)(struct SDCardBase *SDCardBase)
 
             __BCM2835Bus->sdcb_Version = FNAME_SDCBUS(BCMMMIOReadWord)(SDHCI_HOST_VERSION, __BCM2835Bus);
             __BCM2835Bus->sdcb_Capabilities = FNAME_SDCBUS(BCMMMIOReadLong)(SDHCI_CAPABILITIES, __BCM2835Bus);
-            __BCM2835Bus->sdcb_Quirks = AB_Quirk_MissingCapabilities;
+            __BCM2835Bus->sdcb_Quirks = AB_Quirk_MissingCapabilities|AF_Quirk_AtomicTMAndCMD;
             __BCM2835Bus->sdcb_Power = MMC_VDD_165_195 | MMC_VDD_320_330 | MMC_VDD_330_340;
 
             DINIT(bug("[SDCard--] %s: SDHCI Host Vers      : %d [SD Host Spec %d]\n", __PRETTY_FUNCTION__, ((__BCM2835Bus->sdcb_Version & 0xFF00) >> 8), (__BCM2835Bus->sdcb_Version & 0xFF) + 1));
