@@ -808,7 +808,7 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
 
 ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
 {
-    DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
+    bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__);
 
     while (bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus) & mask) {
         sdcard_Udelay(1000);
@@ -899,7 +899,7 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
                     error = TRUE;
                 bus->sdcb_DataListener = NULL;
                 bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)), bus);
-                bus->sdcb_BusStatus &= ~(SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL);
+                bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
             }
             else
             {
@@ -982,8 +982,8 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
 
         if ((tasksig & (1L << bus->sdcb_MediaSig)) && (bus->sdcb_BusFlags & AF_Bus_MediaChanged))
         {
-            bug("[SDBus%02u] %s: detected unit change\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__);
-            bug("[SDBus%02u] %s: Card %s Detected!\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, (bus->sdcb_BusFlags & AF_Bus_MediaPresent) ? "Insert" : "Eject" );
+            D(bug("[SDBus%02u] %s: detected unit change\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
+            D(bug("[SDBus%02u] %s: Card %s Detected!\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, (bus->sdcb_BusFlags & AF_Bus_MediaPresent) ? "Insert" : "Eject" ));
             if (bus->sdcb_BusFlags & AF_Bus_MediaPresent)
             {
                 FNAME_SDCBUS(RegisterUnit)(bus);
