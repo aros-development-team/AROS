@@ -15,12 +15,12 @@
 #if defined(DEBUG) && (DEBUG > 0)
 #define DIRQ(a)
 #define DIRQ_MORE(a)
-#define DUMP(a)         
+#define DUMP(a)
 #define DUMP_MORE(a)
 #define DINIT(a)        a
 #define DTRANS(a)
 #define DDEV(a)
-#define DFUNCS(a)       a
+#define DFUNCS(a)
 #else
 #define DIRQ(a)
 #define DIRQ_MORE(a)
