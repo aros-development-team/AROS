@@ -134,7 +134,7 @@ static int FNAME_BCMSDC(BCM2835Init)(struct SDCardBase *SDCardBase)
 
             __BCM2835Bus->sdcb_Version = FNAME_BCMSDCBUS(BCMMMIOReadWord)(SDHCI_HOST_VERSION, __BCM2835Bus);
             __BCM2835Bus->sdcb_Capabilities = FNAME_BCMSDCBUS(BCMMMIOReadLong)(SDHCI_CAPABILITIES, __BCM2835Bus);
-            __BCM2835Bus->sdcb_Quirks = AB_Quirk_MissingCapabilities;
+            __BCM2835Bus->sdcb_Quirks = AB_Quirk_MissingCapabilities|AF_Quirk_AtomicTMAndCMD;
             __BCM2835Bus->sdcb_Power = MMC_VDD_165_195 | MMC_VDD_320_330 | MMC_VDD_330_340;
 
             DINIT(bug("[SDCard--] %s: SDHCI Host Vers      : %d [SD Host Spec %d]\n", __PRETTY_FUNCTION__, ((__BCM2835Bus->sdcb_Version & 0xFF00) >> 8), (__BCM2835Bus->sdcb_Version & 0xFF) + 1));
