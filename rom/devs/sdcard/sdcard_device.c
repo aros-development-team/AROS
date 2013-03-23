@@ -423,10 +423,10 @@ static void cmd_GetGeometry(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
         dg->dg_SectorSize       = 1 << unit->sdcu_Bus->sdcb_SectorShift;
 
-        if ((unit->sdcu_Capacity >> 32) != 0)
-            dg->dg_TotalSectors     = 0xffffffff;
+        if ((ULONG)((unit->sdcu_Capacity >> 32) & 0xFFFFFFFFul) != 0)
+            dg->dg_TotalSectors     = 0xFFFFFFFF;
         else
-            dg->dg_TotalSectors     = unit->sdcu_Capacity;
+            dg->dg_TotalSectors     = (ULONG)(unit->sdcu_Capacity & 0xFFFFFFFFul);
 
         dg->dg_Cylinders                = unit->sdcu_Cylinders;
         dg->dg_CylSectors               = unit->sdcu_Sectors * unit->sdcu_Heads;

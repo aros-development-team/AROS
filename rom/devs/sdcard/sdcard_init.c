@@ -83,27 +83,16 @@ static int FNAME_SDC(Scan)(LIBBASETYPEPTR LIBBASE)
         sdcReg &= ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD);
         busCurrent->sdcb_IOWriteByte(SDHCI_HOST_CONTROL, sdcReg, busCurrent);
 
-        /* Install IRQ handler */
-        if ((busCurrent->sdcb_IRQHandle = KrnAddIRQHandler(busCurrent->sdcb_BusIRQ, FNAME_SDCBUS(BusIRQ), busCurrent, NULL)) != NULL)
-        {
-            DINIT(bug("[SDCard--] %s: IRQHandle @ 0x%p for IRQ#%ld\n", __PRETTY_FUNCTION__, busCurrent->sdcb_IRQHandle, busCurrent->sdcb_BusIRQ));
+        DINIT(bug("[SDCard--] %s: Launching Bus Task...\n", __PRETTY_FUNCTION__));
 
-            DINIT(bug("[SDCard--] %s: Masking chipset Interrupts...\n", __PRETTY_FUNCTION__));
-
-            busCurrent->sdcb_IOWriteLong(SDHCI_INT_ENABLE, busCurrent->sdcb_IntrMask, busCurrent);
-            busCurrent->sdcb_IOWriteLong(SDHCI_SIGNAL_ENABLE, busCurrent->sdcb_IntrMask, busCurrent);
-
-            DINIT(bug("[SDCard--] %s: Launching Bus Task...\n", __PRETTY_FUNCTION__));
-
-            NewCreateTask(
-                TASKTAG_PC         , FNAME_SDCBUS(BusTask),
-                TASKTAG_NAME       , "SDCard Subsystem",
-                TASKTAG_STACKSIZE  , SDCARD_BUSTASKSTACK,
-                TASKTAG_PRI        , SDCARD_BUSTASKPRI,
-                TASKTAG_TASKMSGPORT, &busCurrent->sdcb_MsgPort,
-                TASKTAG_ARG1       , busCurrent,
-                TAG_DONE);
-        }
+        NewCreateTask(
+            TASKTAG_PC         , FNAME_SDCBUS(BusTask),
+            TASKTAG_NAME       , "SDCard Subsystem",
+            TASKTAG_STACKSIZE  , SDCARD_BUSTASKSTACK,
+            TASKTAG_PRI        , SDCARD_BUSTASKPRI,
+            TASKTAG_TASKMSGPORT, &busCurrent->sdcb_MsgPort,
+            TASKTAG_ARG1       , busCurrent,
+            TAG_DONE);
     }
 
     return TRUE;
