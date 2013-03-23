@@ -2,7 +2,7 @@
 #define _EXEC_UTIL_H
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Utility functions for exec.
@@ -12,7 +12,6 @@
 #include <aros/asmcall.h>
 #include <exec/types.h>
 #include <utility/tagitem.h>
-#include <proto/alib.h>
 #include <proto/arossupport.h>
 
 #include <stdarg.h>
