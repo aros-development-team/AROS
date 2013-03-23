@@ -55,7 +55,6 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
     
     DFUNCS(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
     
-/*
     if (sdcUnit->sdcu_Flags & AF_Card_MMC)
     {
         FNAME_SDCUNIT(MMCChangeFrequency)(sdcUnit);
@@ -64,7 +63,7 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
     {
         FNAME_SDCUNIT(SDSCChangeFrequency)(sdcUnit);
     }
-*/
+
     sdcard_Udelay(1000);
 
     if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
@@ -638,7 +637,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
     bus->sdcb_IOWriteLong(SDHCI_ARGUMENT, sdArg, bus);
     if ((bus->sdcb_Quirks & AF_Quirk_AtomicTMAndCMD) && (sdcTransMode))
     {
-        bus->sdcb_IOWriteLong(SDHCI_TRANSFER_MODE, (sdcTransMode << 16) | SDHCI_MAKE_CMD(sdCommand, sdCommandFlags), bus);
+        bus->sdcb_IOWriteLong(SDHCI_TRANSFER_MODE, (SDHCI_MAKE_CMD(sdCommand, sdCommandFlags) << 16) | sdcTransMode, bus);
     }
     else
     {
@@ -732,6 +731,7 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
                 retVal = -1;
                 break;
             }
+
             if ((bus->sdcb_BusStatus & sdCommandMask) && (bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus) & sdcStateMask)) {
                 ULONG currbyte, tranlen = (sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen;
 
@@ -864,20 +864,23 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 
         if (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE))
         {
+            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE)), bus);
+
             bus->sdcb_BusFlags &= ~AF_Bus_MediaPresent;
             bus->sdcb_BusFlags |= AF_Bus_MediaChanged;
 
             if (bus->sdcb_BusStatus & SDHCI_INT_CARD_INSERT)
                 bus->sdcb_BusFlags |= AF_Bus_MediaPresent;
 
-            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE)), bus);
             bus->sdcb_BusStatus &= ~(SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE);
 
             if (bus->sdcb_Task)
                 Signal(bus->sdcb_Task, (1L << bus->sdcb_MediaSig));
         }
-        if ((!(error)) && (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK))
+        if (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK)
         {
+            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK), bus);
+
             if ((bus->sdcb_BusStatus & SDHCI_INT_RESPONSE) &&
                 (bus->sdcb_RespListener))
             {
@@ -885,10 +888,9 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
                     error = TRUE;
                 bus->sdcb_RespListener = NULL;
             }
-            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK), bus);
             bus->sdcb_BusStatus &= ~SDHCI_INT_CMD_MASK; 
         }
-        if ((!(error)) && (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK))
+        if (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK)
         {
             if ((bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)) &&
                 (bus->sdcb_DataListener))
@@ -896,9 +898,14 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
                 if (FNAME_SDCBUS(FinishData)(bus->sdcb_DataListener, bus) == -1)
                     error = TRUE;
                 bus->sdcb_DataListener = NULL;
+                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)), bus);
+                bus->sdcb_BusStatus &= ~(SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL);
             }
-            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK), bus);
-            bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
+            else
+            {
+                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK), bus);
+                bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
+            }
         }
     }
     else
