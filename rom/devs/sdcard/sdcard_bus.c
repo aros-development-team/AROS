@@ -62,6 +62,8 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
         FNAME_SDCUNIT(SDSCChangeFrequency)(sdcUnit);
     }
 
+    sdcard_Udelay(1000);
+
     if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
     {
         if (FNAME_SDCUNIT(WaitStatus)(1000, sdcUnit) == -1)
@@ -125,7 +127,7 @@ ULONG FNAME_SDCUNIT(WaitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
     UBYTE retryreq = 5;
 
     do {
-        if ((FNAME_SDCBUS(SendCmd)(sdcStatusTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
+        if (FNAME_SDCBUS(SendCmd)(sdcStatusTags, sdcUnit->sdcu_Bus) != -1)
         {
             if ((sdcStatusTags[3].ti_Data & MMC_STATUS_RDY_FOR_DATA) &&
                 (sdcStatusTags[3].ti_Data & MMC_STATUS_STATE_MASK) != MMC_STATUS_STATE_PRG)
@@ -253,6 +255,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
         }
 
         FNAME_SDCBUS(SetPowerLevel)(sdcCardPower, TRUE, bus);
+        sdcard_Udelay(2000);
 
         /* Put the "card" into identify mode*/ 
         D(bug("[SDCard>>] %s: Querying Card Identification Data ...\n", __PRETTY_FUNCTION__));
@@ -425,6 +428,11 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
     }
 
     return FALSE;
+}
+
+void FNAME_SDCBUS(ReleaseUnit)(struct sdcard_Bus *bus)
+{
+    D(bug("[SDCard>>] %s()\n", __PRETTY_FUNCTION__));
 }
 
 void FNAME_SDCBUS(SoftReset)(UBYTE mask, struct sdcard_Bus *bus)
@@ -830,6 +838,8 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 
     if (!(bus->sdcb_BusStatus & SDHCI_INT_ERROR))
     {
+        bug("[SDCard**] %s: Status = %08x\n", __PRETTY_FUNCTION__, bus->sdcb_BusStatus);
+
         if (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE))
         {
             bus->sdcb_BusFlags &= ~AF_Bus_MediaPresent;
@@ -837,9 +847,12 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 
             if (bus->sdcb_BusStatus & SDHCI_INT_CARD_INSERT)
                 bus->sdcb_BusFlags |= AF_Bus_MediaPresent;
- 
+
             bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE)), bus);
             bus->sdcb_BusStatus &= ~(SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE);
+
+            if (bus->sdcb_Task)
+                Signal(bus->sdcb_Task, (1L << bus->sdcb_MediaSig));
         }
         if ((!(error)) && (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK))
         {
@@ -899,7 +912,7 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
     LIBBASETYPEPTR LIBBASE = bus->sdcb_DeviceBase;
     struct IORequest *msg;
     ULONG sdcReg;
-    ULONG sig;
+    ULONG sig, tasksig;
 
     D(bug("[SDCard**] Task started (bus: %u)\n", bus->sdcb_BusNum));
 
@@ -908,39 +921,71 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
     /* Get the signal used for sleeping */
     bus->sdcb_Task = FindTask(0);
     bus->sdcb_TaskSig = AllocSignal(-1);
+    if ((bus->sdcb_MediaSig = AllocSignal(-1)) == -1)
+    {
+        D(bug("[SDCard**] bus#%u: failed to allocate Media Change sigbit\n", bus->sdcb_BusNum));
+    }
+
     /* Failed to get it? Use SIGBREAKB_CTRL_E instead */
     if (bus->sdcb_TaskSig < 0)
         bus->sdcb_TaskSig = SIGBREAKB_CTRL_E;
 
-    sig = 1L << bus->sdcb_MsgPort->mp_SigBit;
+    sig = ((1L << bus->sdcb_MsgPort->mp_SigBit)|(1L << bus->sdcb_TaskSig)|(1L << bus->sdcb_MediaSig));
 
-    sdcReg = bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus);
+    DINIT(bug("[SDCard**] %s: TaskSig: %d, MediaSig: %d\n", __PRETTY_FUNCTION__, bus->sdcb_TaskSig, bus->sdcb_MediaSig));
+    
+    /* Install IRQ handler */
+    if ((bus->sdcb_IRQHandle = KrnAddIRQHandler(bus->sdcb_BusIRQ, FNAME_SDCBUS(BusIRQ), bus, NULL)) != NULL)
+    {
+        DINIT(bug("[SDCard**] %s: IRQHandle @ 0x%p for IRQ#%ld\n", __PRETTY_FUNCTION__, bus->sdcb_IRQHandle, bus->sdcb_BusIRQ));
+
+        DINIT(bug("[SDCard**] %s: Masking chipset Interrupts...\n", __PRETTY_FUNCTION__));
+
+        bus->sdcb_IOWriteLong(SDHCI_INT_ENABLE, bus->sdcb_IntrMask, bus);
+        bus->sdcb_IOWriteLong(SDHCI_SIGNAL_ENABLE, bus->sdcb_IntrMask, bus);
+    }
+/*    sdcReg = bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus);
     if (sdcReg & SDHCI_PS_CARD_PRESENT)
     {
         FNAME_SDCBUS(RegisterUnit)(bus);
-    }
+    }*/
 
     /* Wait forever and process messages */
     for (;;)
     {
-        Wait(sig);
+        tasksig = Wait(sig);
+
+        if ((tasksig & (1L << bus->sdcb_MediaSig)) && (bus->sdcb_BusFlags & AF_Bus_MediaChanged))
+        {
+            bug("[SDCard**] bus#%u detected unit change\n", bus->sdcb_BusNum);
+            bug("[SDCard**] Card %s Detected!\n", (bus->sdcb_BusFlags & AF_Bus_MediaPresent) ? "Insert" : "Eject" );
+            if (bus->sdcb_BusFlags & AF_Bus_MediaPresent)
+            {
+                FNAME_SDCBUS(RegisterUnit)(bus);
+            }
+            else
+            {
+                FNAME_SDCBUS(ReleaseUnit)(bus);
+            }
+        }
 
         /* Even if you get new signal, do not process it until Unit is not active */
-        if (!(bus->sdcb_BusFlags & UNITF_ACTIVE))
+        if (tasksig & (1L << bus->sdcb_MsgPort->mp_SigBit))
         {
-            bus->sdcb_BusFlags |= UNITF_ACTIVE;
-
             /* Empty the request queue */
             while ((msg = (struct IORequest *)GetMsg(bus->sdcb_MsgPort)))
             {
-                /* And do IO's */
-                if (FNAME_SDC(HandleIO)(msg))
+                if (!(msg->io_Unit->unit_flags & UNITF_ACTIVE))
                 {
-                    ReplyMsg((struct Message *)msg);
+                    msg->io_Unit->unit_flags |= UNITF_ACTIVE;
+                    /* And do IO's */
+                    if (FNAME_SDC(HandleIO)(msg))
+                    {
+                        ReplyMsg((struct Message *)msg);
+                    }
+                    msg->io_Unit->unit_flags &= ~(UNITF_INTASK | UNITF_ACTIVE);
                 }
             }
-
-            bus->sdcb_BusFlags &= ~(UNITF_INTASK | UNITF_ACTIVE);
         }
     }
 }

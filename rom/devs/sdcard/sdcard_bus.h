@@ -36,7 +36,8 @@ struct sdcard_Bus
     ULONG                               sdcb_BusFlags;       /* Bus flags similar to unit flags */
     volatile ULONG                      sdcb_BusStatus;      /* copy of the status register */
     UBYTE                               sdcb_TaskSig;        /* Signal used to wake task */
-    UBYTE                               sdcb_SectorShift;    /* Sector shift. 9 here is 512 bytes sector */
+    UBYTE                               sdcb_MediaSig;       /* Insert/Eject notification */
+    UBYTE                               sdcb_SectorShift;    /* (1 << sdcb_SectorShift) == sector size in bytes */
 
     struct TagItem                      *sdcb_RespListener;  /* Current TagList waiting for Response */
     struct TagItem                      *sdcb_DataListener;  /* Current TagList waiting for Data */
