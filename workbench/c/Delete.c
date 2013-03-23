@@ -230,7 +230,8 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 		MatchEnd(ap);
 		UnLockDosList(LDF_ALL | LDF_READ);
 		
-		Printf("%s is a device and cannot be deleted\n", files[i]);
+		if (!(quiet))
+                    Printf("%s is a device and cannot be deleted\n", files[i]);
 		
 		return RETURN_FAIL;
 	    }
@@ -252,19 +253,25 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 
             if (deleteit)
             {
+                deletedfile = FALSE;
                 /* Try to delete the file or directory */
                 if (!DeleteFile(name))
                 {
-                    LONG ioerr = IoErr();
-                    Printf("%s  Not Deleted", (IPTR)name);
-                    PrintFault(ioerr, "");
+                    if (!quiet)
+                    {
+                        LONG ioerr = IoErr();
+                        Printf("%s  Not Deleted", (IPTR)name);
+                        PrintFault(ioerr, "");
+                    }
                 }
-                else if (!quiet)
+                else
                 {
-                    Printf("%s  Deleted\n", (IPTR)name);
+                    deletedfile = TRUE;
+                    if (!quiet)
+                    {
+                        Printf("%s  Deleted\n", (IPTR)name);
+                    }
                 }
-
-                deletedfile = TRUE;
                 deleteit = FALSE;
             }
 
@@ -316,8 +323,11 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                     SetProtection(ap->ap_Buf, 0);
                 else
                 {
-                    Printf("%s  Not Deleted", (IPTR)ap->ap_Buf);
-                    PrintFault(ERROR_DELETE_PROTECTED, "");
+                    if (!(quiet))
+                    {
+                        Printf("%s  Not Deleted", (IPTR)ap->ap_Buf);
+                        PrintFault(ERROR_DELETE_PROTECTED, "");
+                    }
                     deleteit = FALSE;
                 }
             }
@@ -326,19 +336,26 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
         MatchEnd(ap);
         if (deleteit)
         {
+            deletedfile = FALSE;
             /* Try to delete the file or directory */
             if (!DeleteFile(name))
             {
-                LONG ioerr = IoErr();
-                Printf("%s  Not Deleted", (IPTR)name);
-                PrintFault(ioerr, "");
+                if (!(quiet)
+                {
+                    LONG ioerr = IoErr();
+                    Printf("%s  Not Deleted", (IPTR)name);
+                    PrintFault(ioerr, "");
+                }
             }
-            else if (!quiet)
+            else
             {
-                Printf("%s  Deleted\n", (IPTR)name);
+                deletedfile = TRUE;
+                if (!quiet)
+                {
+                    
+                    Printf("%s  Deleted\n", (IPTR)name);
+                }
             }
-
-            deletedfile = TRUE;
             deleteit = FALSE;
         }
     }
@@ -353,7 +370,10 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 
     if (!deletedfile)
     {
-        PutStr("No file to delete\n");
+        if (!(quiet))
+        {
+            PutStr("No file to delete\n");
+        }
         return RETURN_WARN;
     }
     return RETURN_OK;
