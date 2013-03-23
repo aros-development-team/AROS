@@ -67,6 +67,7 @@ struct SDCardBase
     /* Bus's (to be replaced with hidds...) */
     struct SignalSemaphore              sdcard_BusSem;
     struct List                         sdcard_Buses;
+    ULONG                               sdcard_BusCnt;
     ULONG                               sdcard_TotalBusUnits;
 //    struct sdcard_Bus                   *sdcard_Bus;
 
