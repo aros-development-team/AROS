@@ -95,7 +95,8 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     if (!(xsd->vcsd_VCMBoxBuff = AllocVec(16 + (sizeof(IPTR) * 2 * MAX_TAGS), MEMF_CLEAR)))
         goto failure;
 
-    xsd->vcsd_VCMBoxMessage = (unsigned int *)(xsd->vcsd_VCMBoxBuff & ~0x0000000F);
+    xsd->vcsd_VCMBoxMessage =
+        (unsigned int *)((xsd->vcsd_VCMBoxBuff + 0xF) & ~0x0000000F);
 
     D(bug("[VideoCoreGfx] %s: VideoCore Mailbox resource @ 0x%p\n", __PRETTY_FUNCTION__, VCMBoxBase));
     D(bug("[VideoCoreGfx] %s: VideoCore message buffer @ 0x%p\n", __PRETTY_FUNCTION__, xsd->vcsd_VCMBoxMessage));
@@ -140,7 +141,7 @@ failure:
     {
         bug("[VideoCoreGfx] No VideoCore GPU Found\n");
 
-        FreeVec(xsd->vcsd_VCMBoxMessage);
+        FreeVec((APTR)xsd->vcsd_VCMBoxBuff);
 
         FNAME_SUPPORT(FreeAttrBases)(interfaces, xsd->vcsd_attrBases, ATTRBASES_NUM);
     }
