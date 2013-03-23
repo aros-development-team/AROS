@@ -160,6 +160,7 @@ OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	BOOL ok = TRUE;
 
         InitSemaphore(&data->mdb.sema);
+        InitSemaphore(&data->fbsem);
         data->fbmode = -1;
 
         while ((tag = NextTagItem(&tstate)))
@@ -2466,6 +2467,8 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 	return NULL;
     }
 
+    ObtainSemaphore(&data->fbsem);
+
     if ((data->fbmode != vHidd_FrameBuffer_Mirrored) && data->shownbm)
     {
     	/* Get size of old bitmap */
@@ -2483,6 +2486,8 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     {
 	/* If showing the framebuffer itself, just detach from old bitmap and that's all. */
     	data->shownbm = NULL;
+        ReleaseSemaphore(&data->fbsem);
+
     	return data->framebuffer;
     }
 
@@ -2521,6 +2526,8 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 
     /* Remember new displayed bitmap */
     data->shownbm = bm;
+
+    ReleaseSemaphore(&data->fbsem);
 
     /* Return the actual bitmap to perform further operations on */
     return (data->fbmode == vHidd_FrameBuffer_Mirrored) ? bm : data->framebuffer;
@@ -4188,12 +4195,25 @@ void GFX__Hidd_Gfx__UpdateBitMap(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, s
 {
     struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
 
+    /*
+     * We check data->shownbm twice in order to avoid unnecessary locking.
+     * However the second check is still needed in order to make sure that
+     * this bitmap is still on display. We do it in order not to interfere
+     * with possible Show() call.
+     */
     if ((data->fbmode == vHidd_FrameBuffer_Mirrored) && (bm == data->shownbm))
     {
-        HIDD_Gfx_CopyBox(o,
-                         bm, msg->x, msg->y,
-                         data->framebuffer, msg->x, msg->y,
-                         msg->width, msg->height, data->gc);
+        ObtainSemaphoreShared(&data->fbsem);
+
+        if (bm == data->shownbm)
+        {
+            HIDD_Gfx_CopyBox(o,
+                             bm, msg->x, msg->y,
+                             data->framebuffer, msg->x, msg->y,
+                             msg->width, msg->height, data->gc);
+        }
+
+        ReleaseSemaphore(&data->fbsem);
     }
 }
 

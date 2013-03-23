@@ -141,6 +141,7 @@ struct HIDDGraphicsData
 	OOP_Object *framebuffer;
 	OOP_Object *shownbm;
         BYTE        fbmode;
+        struct SignalSemaphore fbsem;
 
 	/* gc used for stuff like rendering cursor */
 	OOP_Object *gc;
