@@ -1281,6 +1281,47 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 
 }
 
+/*******************************************************************************
+
+    NAME
+        moHidd_BitMap_PutPixel
+
+    SYNOPSIS
+        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_PutPixel *msg);
+
+        ULONG HIDD_BM_PutPixel(OOP_Object *obj, WORD x, WORD y,
+            HIDDT_Pixel pixel);
+
+    LOCATION
+        hidd.graphics.bitmap
+
+    FUNCTION
+        Sets a new color value for the pixel at (x,y). The actual color stored
+        may be an approximation, due to the limited color depth or palette size
+        of the bitmap. This function does not check the coordinates.
+
+    INPUTS
+        obj  -  bitmap to write to.
+        x, y - coordinates of the pixel to write.
+        pixel - the pixel's new color value.
+
+    RESULT
+        Unknown.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*******************************************************************************/
+
+/* PutPixel must be implemented in a subclass */
+
 /*****************************************************************************************
 
     NAME
