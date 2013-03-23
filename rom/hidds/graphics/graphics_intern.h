@@ -140,7 +140,7 @@ struct HIDDGraphicsData
 	/* Framebuffer control stuff */
 	OOP_Object *framebuffer;
 	OOP_Object *shownbm;
-        UBYTE       fbmode;
+        BYTE        fbmode;
 
 	/* gc used for stuff like rendering cursor */
 	OOP_Object *gc;
