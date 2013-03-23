@@ -19,17 +19,10 @@
 #include "sdcard_intern.h"
 #include "timer.h"
 
-#define SDHCI_READONLY
-
-#define VCPOWER_SDHCI		0
-#define VCPOWER_STATE_ON	(1 << 0)
-#define VCPOWER_STATE_WAIT	(1 << 1)
-#define VCCLOCK_SDHCI           1
-
 APTR                VCMBoxBase;
 unsigned int        VCMBoxMessage[8] __attribute__((used, aligned(16)));
 
-static int FNAME_SDC(BCM2835Init)(struct SDCardBase *SDCardBase)
+static int FNAME_BCMSDC(BCM2835Init)(struct SDCardBase *SDCardBase)
 {
     struct sdcard_Bus   *__BCM2835Bus;
     int                 retVal = FALSE;
@@ -107,14 +100,14 @@ static int FNAME_SDC(BCM2835Init)(struct SDCardBase *SDCardBase)
         __BCM2835Bus->sdcb_ClockMax = VCMBoxMessage[6];
         __BCM2835Bus->sdcb_ClockMin = BCM2835SDCLOCK_MIN;        
 
-        __BCM2835Bus->sdcb_LEDCtrl = FNAME_SDCBUS(BCMLEDCtrl);
-        __BCM2835Bus->sdcb_IOReadByte = FNAME_SDCBUS(BCMMMIOReadByte);
-        __BCM2835Bus->sdcb_IOReadWord = FNAME_SDCBUS(BCMMMIOReadWord);
-        __BCM2835Bus->sdcb_IOReadLong = FNAME_SDCBUS(BCMMMIOReadLong);
+        __BCM2835Bus->sdcb_LEDCtrl = FNAME_BCMSDCBUS(BCMLEDCtrl);
+        __BCM2835Bus->sdcb_IOReadByte = FNAME_BCMSDCBUS(BCMMMIOReadByte);
+        __BCM2835Bus->sdcb_IOReadWord = FNAME_BCMSDCBUS(BCMMMIOReadWord);
+        __BCM2835Bus->sdcb_IOReadLong = FNAME_BCMSDCBUS(BCMMMIOReadLong);
 
-        __BCM2835Bus->sdcb_IOWriteByte = FNAME_SDCBUS(BCMMMIOWriteByte);
-        __BCM2835Bus->sdcb_IOWriteWord = FNAME_SDCBUS(BCMMMIOWriteWord);
-        __BCM2835Bus->sdcb_IOWriteLong = FNAME_SDCBUS(BCMMMIOWriteLong);
+        __BCM2835Bus->sdcb_IOWriteByte = FNAME_BCMSDCBUS(BCMMMIOWriteByte);
+        __BCM2835Bus->sdcb_IOWriteWord = FNAME_BCMSDCBUS(BCMMMIOWriteWord);
+        __BCM2835Bus->sdcb_IOWriteLong = FNAME_BCMSDCBUS(BCMMMIOWriteLong);
 
         if ((__BCM2835Bus->sdcb_BusUnits = AllocPooled(SDCardBase->sdcard_MemPool, sizeof(struct sdcard_BusUnits))) != NULL)
         {
@@ -137,8 +130,8 @@ static int FNAME_SDC(BCM2835Init)(struct SDCardBase *SDCardBase)
             DINIT(bug("[SDCard--] %s: SDHC Max Clock Rate : %dMHz\n", __PRETTY_FUNCTION__, __BCM2835Bus->sdcb_ClockMax / 1000000));
             DINIT(bug("[SDCard--] %s: SDHC Min Clock Rate : %dHz (hardcoded)\n", __PRETTY_FUNCTION__, __BCM2835Bus->sdcb_ClockMin));
 
-            __BCM2835Bus->sdcb_Version = FNAME_SDCBUS(BCMMMIOReadWord)(SDHCI_HOST_VERSION, __BCM2835Bus);
-            __BCM2835Bus->sdcb_Capabilities = FNAME_SDCBUS(BCMMMIOReadLong)(SDHCI_CAPABILITIES, __BCM2835Bus);
+            __BCM2835Bus->sdcb_Version = FNAME_BCMSDCBUS(BCMMMIOReadWord)(SDHCI_HOST_VERSION, __BCM2835Bus);
+            __BCM2835Bus->sdcb_Capabilities = FNAME_BCMSDCBUS(BCMMMIOReadLong)(SDHCI_CAPABILITIES, __BCM2835Bus);
             __BCM2835Bus->sdcb_Quirks = AB_Quirk_MissingCapabilities|AF_Quirk_AtomicTMAndCMD;
             __BCM2835Bus->sdcb_Power = MMC_VDD_165_195 | MMC_VDD_320_330 | MMC_VDD_330_340;
 
@@ -162,4 +155,4 @@ bcminit_fail:
     return retVal;
 }
 
-ADD2INITLIB(FNAME_SDC(BCM2835Init), SDCARD_BUSINITPRIO)
+ADD2INITLIB(FNAME_BCMSDC(BCM2835Init), SDCARD_BUSINITPRIO)

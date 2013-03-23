@@ -18,6 +18,9 @@
 
 #include "sdcard_base.h"
 
+#define FNAME_BCMSDC(x)                 BCM2835SD__Device__ ## x
+#define FNAME_BCMSDCBUS(x)              BCM2835SD__SDBus__ ## x
+
 #define TIMEOUT			        30
 
 #define BCM2835SDUNIT_MAX               1
@@ -25,14 +28,19 @@
 
 #define VCMB_PROPCHAN                   8
 
-void FNAME_SDCBUS(BCMLEDCtrl)(int lvl);
+#define VCPOWER_SDHCI		        0
+#define VCPOWER_STATE_ON	        (1 << 0)
+#define VCPOWER_STATE_WAIT	        (1 << 1)
+#define VCCLOCK_SDHCI                   1
 
-UBYTE FNAME_SDCBUS(BCMMMIOReadByte)(ULONG, struct sdcard_Bus *);
-UWORD FNAME_SDCBUS(BCMMMIOReadWord)(ULONG, struct sdcard_Bus *);
-ULONG FNAME_SDCBUS(BCMMMIOReadLong)(ULONG, struct sdcard_Bus *);
+void FNAME_BCMSDCBUS(BCMLEDCtrl)(int lvl);
 
-void FNAME_SDCBUS(BCMMMIOWriteByte)(ULONG, UBYTE, struct sdcard_Bus *);
-void FNAME_SDCBUS(BCMMMIOWriteWord)(ULONG, UWORD, struct sdcard_Bus *);
-void FNAME_SDCBUS(BCMMMIOWriteLong)(ULONG, ULONG, struct sdcard_Bus *);
+UBYTE FNAME_BCMSDCBUS(BCMMMIOReadByte)(ULONG, struct sdcard_Bus *);
+UWORD FNAME_BCMSDCBUS(BCMMMIOReadWord)(ULONG, struct sdcard_Bus *);
+ULONG FNAME_BCMSDCBUS(BCMMMIOReadLong)(ULONG, struct sdcard_Bus *);
+
+void FNAME_BCMSDCBUS(BCMMMIOWriteByte)(ULONG, UBYTE, struct sdcard_Bus *);
+void FNAME_BCMSDCBUS(BCMMMIOWriteWord)(ULONG, UWORD, struct sdcard_Bus *);
+void FNAME_BCMSDCBUS(BCMMMIOWriteLong)(ULONG, ULONG, struct sdcard_Bus *);
 
 #endif // _SDCARDBCM2835_INTERN_H
