@@ -30,6 +30,7 @@
 #include <hardware/sdhc.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "sdcard_base.h"
 #include "sdcard_bus.h"
@@ -64,35 +65,41 @@ static int FNAME_SDC(Scan)(LIBBASETYPEPTR LIBBASE)
 
     ForeachNode(&LIBBASE->sdcard_Buses, busCurrent)
     {
-        if (busCurrent->sdcb_LEDCtrl)
-            busCurrent->sdcb_LEDCtrl(LED_OFF);
+        char *sdcBusTaskName;
+        if ((sdcBusTaskName = AllocVec(24, MEMF_PUBLIC)) != NULL)
+        {
+            if (busCurrent->sdcb_LEDCtrl)
+                busCurrent->sdcb_LEDCtrl(LED_OFF);
 
-        busCurrent->sdcb_IntrMask = SDHCI_INT_BUS_POWER | SDHCI_INT_DATA_END_BIT |
-                SDHCI_INT_DATA_CRC | SDHCI_INT_DATA_TIMEOUT | SDHCI_INT_INDEX |
-                SDHCI_INT_END_BIT | SDHCI_INT_CRC | SDHCI_INT_TIMEOUT |
-                SDHCI_INT_CARD_REMOVE | SDHCI_INT_CARD_INSERT |
-                SDHCI_INT_DATA_AVAIL | SDHCI_INT_SPACE_AVAIL |
-                SDHCI_INT_DATA_END | SDHCI_INT_RESPONSE;
+            busCurrent->sdcb_IntrMask = SDHCI_INT_BUS_POWER | SDHCI_INT_DATA_END_BIT |
+                    SDHCI_INT_DATA_CRC | SDHCI_INT_DATA_TIMEOUT | SDHCI_INT_INDEX |
+                    SDHCI_INT_END_BIT | SDHCI_INT_CRC | SDHCI_INT_TIMEOUT |
+                    SDHCI_INT_CARD_REMOVE | SDHCI_INT_CARD_INSERT |
+                    SDHCI_INT_DATA_AVAIL | SDHCI_INT_SPACE_AVAIL |
+                    SDHCI_INT_DATA_END | SDHCI_INT_RESPONSE;
 
-        FNAME_SDCBUS(SetClock)(busCurrent->sdcb_ClockMin, busCurrent);
+            FNAME_SDCBUS(SetClock)(busCurrent->sdcb_ClockMin, busCurrent);
 
-        FNAME_SDCBUS(SetPowerLevel)(busCurrent->sdcb_Power, FALSE, busCurrent);
+            FNAME_SDCBUS(SetPowerLevel)(busCurrent->sdcb_Power, FALSE, busCurrent);
 
-        sdcReg = busCurrent->sdcb_IOReadByte(SDHCI_HOST_CONTROL, busCurrent);
-        DINIT(bug("[SDCard--] %s: Setting Min Buswidth... [%x -> %x]\n", __PRETTY_FUNCTION__, sdcReg, sdcReg & ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD)));
-        sdcReg &= ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD);
-        busCurrent->sdcb_IOWriteByte(SDHCI_HOST_CONTROL, sdcReg, busCurrent);
+            sdcReg = busCurrent->sdcb_IOReadByte(SDHCI_HOST_CONTROL, busCurrent);
+            DINIT(bug("[SDCard--] %s: Setting Min Buswidth... [%x -> %x]\n", __PRETTY_FUNCTION__, sdcReg, sdcReg & ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD)));
+            sdcReg &= ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD);
+            busCurrent->sdcb_IOWriteByte(SDHCI_HOST_CONTROL, sdcReg, busCurrent);
 
-        DINIT(bug("[SDCard--] %s: Launching Bus Task...\n", __PRETTY_FUNCTION__));
+            DINIT(bug("[SDCard--] %s: Launching Bus Task...\n", __PRETTY_FUNCTION__));
 
-        NewCreateTask(
-            TASKTAG_PC         , FNAME_SDCBUS(BusTask),
-            TASKTAG_NAME       , "SDCard Subsystem",
-            TASKTAG_STACKSIZE  , SDCARD_BUSTASKSTACK,
-            TASKTAG_PRI        , SDCARD_BUSTASKPRI,
-            TASKTAG_TASKMSGPORT, &busCurrent->sdcb_MsgPort,
-            TASKTAG_ARG1       , busCurrent,
-            TAG_DONE);
+            sprintf(sdcBusTaskName, "SDCard bus:%02u Subsystem", busCurrent->sdcb_BusNum);
+
+            NewCreateTask(
+                TASKTAG_PC         , FNAME_SDCBUS(BusTask),
+                TASKTAG_NAME       , sdcBusTaskName,
+                TASKTAG_STACKSIZE  , SDCARD_BUSTASKSTACK,
+                TASKTAG_PRI        , SDCARD_BUSTASKPRI,
+                TASKTAG_TASKMSGPORT, &busCurrent->sdcb_MsgPort,
+                TASKTAG_ARG1       , busCurrent,
+                TAG_DONE);
+        }
     }
 
     return TRUE;

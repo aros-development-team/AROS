@@ -78,10 +78,12 @@ struct sdcard_Bus
 #define AB_Bus_MediaPresent             30     /* media available */
 #define AB_Bus_MediaChanged             29     /* media changed */
 #define AB_Bus_SPI                      28
+#define AB_Bus_Active                   1
 
 #define AF_Bus_MediaPresent             (1 << AB_Bus_MediaPresent)
 #define AF_Bus_MediaChanged             (1 << AB_Bus_MediaChanged)
 #define AF_Bus_SPI                      (1 << AB_Bus_SPI)
+#define AF_Bus_Active                   (1 << AB_Bus_Active)
 
 BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *);
 BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *);
