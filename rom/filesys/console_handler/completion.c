@@ -55,13 +55,14 @@ struct completioninfo
     UBYTE   	    	dirpart[256];
     UBYTE   	    	pattern[256*2+3];
     UBYTE   	    	match[256];
+    BOOL                withinfo;
 };
 
 /****************************************************************************************/
 
 /* Delay opening of the gadtools.library to the first time InitCompletion is called */
 
-static struct completioninfo *InitCompletion(struct filehandle *fh)
+static struct completioninfo *InitCompletion(struct filehandle *fh, BOOL withinfo)
 {
     struct completioninfo *ci = NULL;
     APTR    	    	   pool;
@@ -83,6 +84,7 @@ static struct completioninfo *InitCompletion(struct filehandle *fh)
 	    {
 		ci->pool = pool;
 		ci->fh = fh;
+                ci->withinfo = withinfo;
 		NewList(&ci->matchlist);
 		
 		ok = TRUE;
@@ -207,9 +209,11 @@ static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
 	    {
 		{ASLFR_Window        , (IPTR)ci->fh->window },
 		{ASLFR_DoPatterns    , (IPTR)TRUE           },
-		{ASLFR_InitialPattern, (IPTR)"~(#?.info)"   },
+		{ASLFR_InitialPattern, 0                    },
 		{TAG_DONE	    	    	    	    }
 	    };
+
+            tags[2].ti_Data = ci->withinfo ? "#?" : "~(#?.info)";
 
 	    if ((fr = AllocAslRequest(ASL_FileRequest, tags)))
 	    {
@@ -257,7 +261,14 @@ static BOOL PreparePattern(struct filehandle *fh, struct completioninfo *ci)
     {
     	if (parsecode == 0)
 	{
-	    strncat(ci->filepart, "~(#?.info)", sizeof(ci->filepart));
+            if (ci->withinfo)
+            {
+                strncat(ci->filepart, "#?", sizeof(ci->filepart));
+            }
+            else
+            {
+                strncat(ci->filepart, "~(#?.info)", sizeof(ci->filepart));
+            }
 	    parsecode = ParsePatternNoCase(ci->filepart, ci->pattern, sizeof(ci->pattern));	    
 	}
     }
@@ -721,11 +732,11 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
 
 /****************************************************************************************/
 
-void Completion(struct filehandle *fh)
+void Completion(struct filehandle *fh, BOOL withinfo)
 {
     struct completioninfo *ci;
 
-    if ((ci = InitCompletion(fh)))
+    if ((ci = InitCompletion(fh, withinfo)))
     {
     	PrepareCompletion(fh, ci);
     	

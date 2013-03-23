@@ -1043,7 +1043,11 @@ BOOL process_input(struct filehandle *fh)
 	  break;
 	  
 	case INP_TAB:
-	  Completion(fh);
+	  Completion(fh, FALSE);
+	  break;
+
+	case INP_SHIFT_TAB:
+	  Completion(fh, TRUE);
 	  break;
 
 	case INP_PASTE:
