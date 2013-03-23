@@ -20,6 +20,7 @@
 #define DINIT(a)        a
 #define DTRANS(a)
 #define DDEV(a)
+#define DFUNCS(a)       a
 #else
 #define DIRQ(a)
 #define DIRQ_MORE(a)
@@ -28,6 +29,7 @@
 #define DINIT(a)
 #define DTRANS(a)
 #define DDEV(a)
+#define DFUNCS(a)
 #endif
 /* Errors that shouldn't happen */
 #define DERROR(a)       a

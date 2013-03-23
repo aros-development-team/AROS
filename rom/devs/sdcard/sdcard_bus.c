@@ -53,7 +53,7 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
         {TAG_DONE,               0}
     };
     
-    D(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+    DFUNCS(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
     
 /*
     if (sdcUnit->sdcu_Flags & AF_Card_MMC)
@@ -132,6 +132,8 @@ ULONG FNAME_SDCUNIT(WaitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
 
     UBYTE retryreq = 5;
 
+    DFUNCS(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
     do {
         if (FNAME_SDCBUS(SendCmd)(sdcStatusTags, sdcUnit->sdcu_Bus) != -1)
         {
@@ -178,7 +180,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
     BOOL                sdcHighCap = FALSE;
     IPTR                pp[24];
 
-    D(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
+    DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
     D(bug("[SDBus%02u] %s: Putting card into Idle state ...\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
     sdcRegTags[0].ti_Data = MMC_CMD_GO_IDLE_STATE;
@@ -342,7 +344,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
                                 case 0:
                                 {
                                     D(bug("[SDSC Card]\n"));
-                                    pp[DE_SIZEBLOCK + 4] = 2 << (FNAME_SDCBUS(Rsp136Unpack)(sdcRsp136, 80, 4) - 1);
+                                    pp[DE_SIZEBLOCK + 4] = 1 << FNAME_SDCBUS(Rsp136Unpack)(sdcRsp136, 80, 4);
                                     pp[DE_SECSPERBLOCK + 4] = pp[DE_SIZEBLOCK + 4] >> 9;
                                     pp[DE_HIGHCYL + 4] = ((1 + FNAME_SDCBUS(Rsp136Unpack)(sdcRsp136, 62, 12)) << (FNAME_SDCBUS(Rsp136Unpack)(sdcRsp136, 47, 3) + 2));
                                     break;
@@ -438,12 +440,14 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
 
 void FNAME_SDCBUS(ReleaseUnit)(struct sdcard_Bus *bus)
 {
-    D(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
+    DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 }
 
 void FNAME_SDCBUS(SoftReset)(UBYTE mask, struct sdcard_Bus *bus)
 {
     ULONG timeout = 100;
+
+    DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
     bus->sdcb_IOWriteByte(SDHCI_RESET, mask, bus);
     while (bus->sdcb_IOReadByte(SDHCI_RESET, bus) & mask) {
@@ -460,6 +464,8 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
 {
     ULONG       sdcClkDiv, timeout;
     UWORD       sdcClkCtrlCur, sdcClkCtrl;
+
+    DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
     sdcClkCtrlCur = bus->sdcb_IOReadWord(SDHCI_CLOCK_CONTROL, bus);
 
@@ -498,6 +504,8 @@ void FNAME_SDCBUS(SetClock)(ULONG speed, struct sdcard_Bus *bus)
 void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, BOOL lowest, struct sdcard_Bus *bus)
 {
     UBYTE sdcReg = 0, lvlCur;
+
+    DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
     if (lowest)
     {
@@ -548,6 +556,8 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
     ULONG sdcInhibitMask = SDHCI_PS_CMD_INHIBIT;
     ULONG timeout = 10;
     ULONG retVal = 0;
+
+    DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
     if ((sdDataLen = GetTagData(SDCARD_TAG_DATALEN, 0, CmdTags)) > 0)
     {
@@ -648,6 +658,8 @@ ULONG FNAME_SDCBUS(FinishCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
     ULONG       sdResponseType  = GetTagData(SDCARD_TAG_RSPTYPE, MMC_RSP_NONE, CmdTags);
     ULONG       retVal          = 0;
 
+    DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
+
     if (sdResponseType != MMC_RSP_NONE)
     {
         if ((Response = FindTagItem(SDCARD_TAG_RSP, CmdTags)) != NULL)
@@ -687,6 +699,8 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
     struct TagItem      *sdDataLenTag = NULL;
     ULONG               timeout = 1000;
     ULONG               retVal = 0;
+
+    DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
     if ((sdData = GetTagData(SDCARD_TAG_DATA, 0, DataTags)) != 0)
     {
@@ -794,6 +808,8 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
 
 ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
 {
+    DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
+
     while (bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus) & mask) {
         sdcard_Udelay(1000);
 
@@ -919,12 +935,14 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
     struct IORequest *msg;
     ULONG sig, tasksig;
 
+    DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
+
     bus->sdcb_Timer = sdcard_OpenTimer(LIBBASE);
 
     /* Get the signal used for sleeping */
     bus->sdcb_Task = FindTask(0);
 
-    D(bug("[SDBus%02u] %s(Task @ 0x%p)\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_Task));
+    D(bug("[SDBus%02u] %s: Task @ 0x%p\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_Task));
 
     bus->sdcb_TaskSig = AllocSignal(-1);
     if ((bus->sdcb_MediaSig = AllocSignal(-1)) == -1)
