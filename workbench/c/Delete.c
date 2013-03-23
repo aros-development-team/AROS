@@ -323,7 +323,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
                     SetProtection(ap->ap_Buf, 0);
                 else
                 {
-                    if (!(quiet))
+                    if (!quiet)
                     {
                         Printf("%s  Not Deleted", (IPTR)ap->ap_Buf);
                         PrintFault(ERROR_DELETE_PROTECTED, "");
@@ -340,7 +340,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
             /* Try to delete the file or directory */
             if (!DeleteFile(name))
             {
-                if (!(quiet)
+                if (!quiet)
                 {
                     LONG ioerr = IoErr();
                     Printf("%s  Not Deleted", (IPTR)name);
@@ -370,7 +370,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 
     if (!deletedfile)
     {
-        if (!(quiet))
+        if (!quiet)
         {
             PutStr("No file to delete\n");
         }
