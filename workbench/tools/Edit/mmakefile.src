@@ -15,7 +15,7 @@ EXEDIR := $(AROS_TOOLS)
 
 %build_prog mmake=workbench-tools-editor \
     progname=Editor targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport"
+    files=$(FILES)
 
 %common
 

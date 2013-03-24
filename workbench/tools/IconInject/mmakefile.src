@@ -10,7 +10,7 @@ EXEDIR  := $(AROS_TOOLS)
 
 %build_prog mmake=workbench-tools-injecticon \
     progname=InjectIcon targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport"
+    files=$(FILES) uselibs="mui"
 
 %common
 

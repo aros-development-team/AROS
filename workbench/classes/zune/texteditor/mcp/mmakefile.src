@@ -14,6 +14,8 @@ include $(TOP)/config/make.cfg
 # *don't* pick up the project's local MUI headers.
 USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(TOP)/$(CURDIR)/ -I$(SRCDIR)/$(CURDIR)/../mcc
 
+USER_LDFLAGS := -noarosc
+
 FILES := library \
      locale \
 	 CreatePrefsGroup \
@@ -26,7 +28,7 @@ FILES := library \
 	 
 %build_module_simple mmake=workbench-classes-zune-texteditor-mcp \
   modname=TextEditor modtype=mcp \
-  files=$(FILES) uselibs="mui arosc.static"
+  files=$(FILES) uselibs="mui"
 
 %localisestr string=français var=DIRFRENCH
 

@@ -16,9 +16,10 @@ EXEDIR  := $(AROS_C)
 
 #MM workbench-c-cpuinfo : includes linklibs kernel-cpu-pc-i386
 
+USER_LDFLAGS := -noarosc
+
 %build_prog mmake=workbench-c-cpuinfo \
     progname=CPUInfo targetdir=$(EXEDIR) \
-    files="$(FILES) $(x86FILES)" \
-    uselibs="arossupport arosc.static"
+    files="$(FILES) $(x86FILES)"
 
 %common

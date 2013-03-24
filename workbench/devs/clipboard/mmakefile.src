@@ -6,4 +6,4 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=workbench-devs-clipboard \
     modname=clipboard modtype=device \
-    files=clipboard uselibs=amiga
+    files=clipboard

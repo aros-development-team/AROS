@@ -12,7 +12,6 @@ FILES	:= \
 #MM workbench-system : includes linklibs
 
 %build_progs mmake=workbench-system \
-    files=$(FILES) targetdir=$(AROSDIR)/System \
-    uselibs="amiga"
+    files=$(FILES) targetdir=$(AROSDIR)/System
 
 %common

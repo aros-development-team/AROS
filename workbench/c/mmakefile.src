@@ -87,7 +87,7 @@ USER_LDFLAGS := -noarosc
 
 %build_progs mmake=workbench-c \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="uuid debug arossupport"
+    uselibs="uuid debug"
 
 %build_progs mmake=workbench-c-sh \
     files=$(SH_FILES) targetdir=$(AROS_C) \

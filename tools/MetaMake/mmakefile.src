@@ -4,6 +4,6 @@ include $(TOP)/config/make.cfg
 
 %build_prog mmake=build-tools-mmake \
     progname=mmake targetdir=$(AROSDIR)/Build/Tools \
-    files=mmake uselibs=arosc
+    files=mmake
 
 %common

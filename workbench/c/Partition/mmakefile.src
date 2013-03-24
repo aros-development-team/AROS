@@ -8,8 +8,10 @@ FILES := main args
 #MM- workbench-c : workbench-c-partition
 #MM workbench-c-partition : includes linklibs 
 
+USER_LDFLAGS := -noarosc
+
 %build_prog mmake=workbench-c-partition \
     progname=Partition targetdir=$(AROS_C) \
-    files=$(FILES) uselibs="arosc.static"
+    files=$(FILES)
 
 %common

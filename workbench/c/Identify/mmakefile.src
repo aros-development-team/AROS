@@ -7,9 +7,11 @@ FILES	:= main
 #MM- workbench-c : workbench-c-identify
 #MM workbench-c-identify : includes linklibs
 
+USER_LDFLAGS := -noarosc
+
 %build_prog mmake=workbench-c-identify \
     progname=Identify targetdir=$(AROS_C) \
-    files=$(FILES) uselibs="amiga arosc.static" 
+    files=$(FILES)
 
 %common
 

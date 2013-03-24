@@ -23,7 +23,7 @@ $(GENDIR)/$(CURDIR)/aboutaros.o: $(GENERATED)
 
 %build_prog mmake=workbench-system-aboutaros \
     progname=About targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport"
+    files=$(FILES)
 
 $(TOP)/$(CURDIR)/authors.h : $(SRCDIR)/$(CURDIR)/db/credits $(SRCDIR)/$(CURDIR)/scripts/authors2header.py
 	@$(ECHO) Generating $@

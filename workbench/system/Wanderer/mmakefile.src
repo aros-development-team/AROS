@@ -35,6 +35,6 @@ FILES := main \
 
 %build_prog mmake=workbench-system-wanderer-app \
     progname=Wanderer targetdir=$(AROS_WANDERER) files=$(FILES) \
-    uselibs="mui arossupport" detach=yes
+    uselibs="mui" detach=yes
 
 %common

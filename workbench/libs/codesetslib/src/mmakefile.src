@@ -17,11 +17,12 @@ FILES := \
 # We need to use -idirafter, so that we
 # *don't* pick up the project's local MUI headers.
 USER_CFLAGS = -I. -idirafter $(SRCDIR)/$(CURDIR)/../include
+USER_LDFLAGS = -noarosc
 
 #MM workbench-libs-codesets : workbench-libs-codesets-includes
 
 %build_module_simple mmake=workbench-libs-codesets \
     modname=codesets modtype=library \
-    files=$(FILES) uselibs="arosc.static"
+    files=$(FILES)
 
 %common
