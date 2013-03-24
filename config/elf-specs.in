@@ -14,7 +14,7 @@
 -m @aros_object_format@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib
 
 *lib:
--lamiga -larosc%{noarosc:.static} -larossupport -lm -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility %{!nosysbase:-lexec} -llibinit -lautoinit
+-larossupport -lamiga -larosc%{noarosc:.static} -lm -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility %{!nosysbase:-lexec} -llibinit -lautoinit
 
 *libgcc:
 @aros_arch_libs@ -lgcc
