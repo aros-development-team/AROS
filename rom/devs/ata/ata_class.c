@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2013, The AROS Development Team. All rights reserved.
-    $Id: kbdsubsystem.c 46449 2013-02-02 15:08:09Z sonic $
+    $Id$
 */
 
 #include <aros/debug.h>
