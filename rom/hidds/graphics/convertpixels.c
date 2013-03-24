@@ -531,7 +531,7 @@ static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
 
 /* Should we pass HIDDT_PixelFormat * or HIDDT_StdPixFmt ?
   The first is more flexible for the user, as he will not only be restricted
-  to standard pixek formats. However the user will have to convert
+  to standard pixel formats. However the user will have to convert
   from HIDDT_StdPixFmt to HIDDT_PixelFormat manually.
   
   In the latter case this conversion will be done inside the method below.
