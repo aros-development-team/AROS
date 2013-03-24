@@ -17,6 +17,6 @@ EXEDIR := $(AROS_C)
 
 %build_prog mmake=workbench-c \
     progname=HDTool targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport arosc.static"
+    files=$(FILES)
 
 %common

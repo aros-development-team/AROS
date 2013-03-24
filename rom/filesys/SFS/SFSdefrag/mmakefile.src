@@ -14,6 +14,6 @@ USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/../FS
 
 %build_prog mmake=workbench-devs-sfs-c-sfsdefrag \
     progname=SFSdefrag targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arosc"
+    files=$(FILES)
 
 %common

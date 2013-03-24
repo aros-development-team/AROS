@@ -3,7 +3,6 @@ include $(TOP)/config/make.cfg
 #MM- build-tools : build-tools-genmf
 
 %build_prog mmake=build-tools-genmf \
-    progname=genmf targetdir=$(AROSDIR)/Build/Tools \
-    uselibs=arosc
+    progname=genmf targetdir=$(AROSDIR)/Build/Tools
 
 %common

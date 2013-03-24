@@ -10,6 +10,8 @@ FUNCS := \
     loctolower loctoupper locdatetostr locstrtodate \
     locdosgetlocalizedstring
 
+USER_LDFLAGS := -noarosc
+
 #MM workbench-libs-locale-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-dos-includes \
@@ -21,7 +23,6 @@ FUNCS := \
 
 %build_module mmake=workbench-libs-locale \
     modname=locale modtype=library \
-    files="locale_init $(FUNCS) $(FILES)" \
-    uselibs="arosc.static"
+    files="locale_init $(FUNCS) $(FILES)"
 
 %common

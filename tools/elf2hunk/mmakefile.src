@@ -5,7 +5,6 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := -DDEBUG=0
 
 %build_prog mmake=build-tools-elf2hunk \
-    progname=elf2hunk targetdir=$(AROSDIR)/Build/Tools \
-    uselibs=arosc
+    progname=elf2hunk targetdir=$(AROSDIR)/Build/Tools
 
 %common

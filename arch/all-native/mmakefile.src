@@ -26,7 +26,7 @@ FS_HANDLERS := afs cdrom sfs fat
 	      
 %link_kickstart mmake=kernel-link-fs file=$(BINDIR)/boot/aros-fs \
 	handlers=$(FS_HANDLERS) libs=$(FS_LIBS) \
-	uselibs="amiga arossupport arosc.static debug autoinit libinit" \
+	uselibs="debug" \
 	map=$(GENDIR)/boot/kernel-fs.map deps=kernel-fs-objs
 
 %common

@@ -13,12 +13,13 @@ FILES:= libinit \
         debug
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
+USER_LDFLAGS := -noarosc
 
 #MM- workbench-libs-openurl-lib : linklibs workbench-libs-openurl-includes
 
 %build_module_simple mmake=workbench-libs-openurl-lib \
     modname=openurl modtype=library \
-    files=$(FILES) uselibs="arosc.static"
+    files=$(FILES)
 
 #MM workbench-libs-openurl-clean : workbench-libs-openurl-lib-clean
 

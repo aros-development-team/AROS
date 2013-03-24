@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 
 %build_progs mmake=build-tools-dtdesc \
     files="createdtdesc examinedtdesc" \
-    targetdir=$(AROSDIR)/Build/Tools uselibs="c_iff arosc"
+    targetdir=$(AROSDIR)/Build/Tools uselibs="c_iff"
 
 %common
 

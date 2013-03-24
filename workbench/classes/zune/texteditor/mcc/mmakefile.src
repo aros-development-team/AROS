@@ -8,6 +8,8 @@ include $(TOP)/config/make.cfg
 # *don't* pick up the project's local MUI headers.
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcp
 
+USER_LDFLAGS := -noarosc
+
 FILES := library \
         AllocBitMap \
         AllocFunctions \
@@ -42,7 +44,7 @@ FILES := library \
 
 %build_module_simple mmake=workbench-classes-zune-texteditor-class \
   modname=TextEditor modtype=mcc \
-  files=$(FILES) uselibs="rexxsyslib arosc.static mui"
+  files=$(FILES) uselibs="rexxsyslib mui"
 
 
 #MM includes-copy

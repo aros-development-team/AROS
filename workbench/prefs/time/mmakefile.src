@@ -12,6 +12,6 @@ EXEDIR      := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-time \
     progname=Time targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport"
+    files=$(FILES) uselibs="mui"
 
 %common

@@ -28,8 +28,7 @@ USER_CFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 
 
 %build_progs mmake=kernel-usb-shelltools \
-    files=$(SHELLFILES) targetdir=$(AROS_C) \
-    uselibs="arossupport"
+    files=$(SHELLFILES) targetdir=$(AROS_C)
 
 
 %build_module_simple mmake=kernel-usb-usbromstartup \

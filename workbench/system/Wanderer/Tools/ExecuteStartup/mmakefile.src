@@ -14,4 +14,4 @@ EXEDIR      := $(AROS_WANDERER)/Tools
 
 %build_prog mmake=workbench-system-wanderer-tools-executestartup \
     progname=ExecuteStartup targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport"
+    files=$(FILES)

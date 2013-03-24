@@ -6,7 +6,6 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/../FS -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_prog mmake=workbench-devs-sfs-c-sfsdefragmentgui \
-    files=SFSdefragmentGUI progname=SFSdefragmentGUI targetdir=$(AROS_C) \
-    uselibs="arosc"
+    files=SFSdefragmentGUI progname=SFSdefragmentGUI targetdir=$(AROS_C)
 
 %common

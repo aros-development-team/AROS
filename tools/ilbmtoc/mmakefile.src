@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 
 %build_prog mmake=build-tools-ilbmtoc \
     progname=ilbmtoc targetdir=$(AROSDIR)/Build/Tools \
-    files=ilbmtoc uselibs=arosc
+    files=ilbmtoc
 
 %common
 

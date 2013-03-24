@@ -4,6 +4,6 @@ include $(TOP)/config/make.cfg
 
 %build_prog mmake=build-tools-archtool \
     progname=archtool targetdir=$(AROSDIR)/Build/Tools \
-    files=archtool uselibs=arosc
+    files=archtool
 
 %common

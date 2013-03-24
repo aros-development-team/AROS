@@ -3,8 +3,6 @@
 
 include $(TOP)/config/make.cfg
 
-USER_LIBS   := amiga arosc m mui
-
 #MM-  workbench-system-wanderer-classes : \
 ##MM  wanderer-classes-icon \
 #MM  wanderer-classes-iconlist \

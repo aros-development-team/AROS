@@ -20,6 +20,6 @@ EXEDIR := $(AROS_C)
 
 %build_prog mmake=workbench-c-decoration \
     progname=Decoration targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport" \
-    detach=yes
+    files=$(FILES) detach=yes
+
 %common

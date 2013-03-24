@@ -12,6 +12,6 @@ EXEDIR       := $(AROS_PREFS)
 
 %build_prog mmake=workbench-prefs-trackdisk \
     progname=Trackdisk targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport"
+    files=$(FILES) uselibs="mui"
 
 %common

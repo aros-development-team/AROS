@@ -3,11 +3,6 @@ include $(TOP)/config/make.cfg
 
 FILES := nforce handler unit
 
-# Linking with arosc FORCED (modules should not link with arosc)
-# Needed for:
-#   random
-#   srandom
-
 %build_module mmake=workbench-devs-networks-nforce-i386 \
     modname=nforce modtype=device \
     files="nforce_init $(FILES)" \

@@ -14,6 +14,6 @@ EXEDIR := $(AROSDIR)/Utilities
 
 %build_prog mmake=workbench-utilities-clock \
     progname=Clock targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport"
+    files=$(FILES)
 
 %common
