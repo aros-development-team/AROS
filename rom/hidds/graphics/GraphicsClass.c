@@ -792,6 +792,24 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 *****************************************************************************************/
 
+static UBYTE get_fbmode(OOP_Class *cl, OOP_Object *o)
+{
+    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
+
+    if (data->fbmode == -1)
+    {
+        struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+
+        /*
+         * This attribute has never been set.
+         * Fall back to obsolete NoFrameBuffer.
+         */
+        data->fbmode = OOP_GET(o, aHidd_Gfx_NoFrameBuffer) ? vHidd_FrameBuffer_None : vHidd_FrameBuffer_Direct;
+    }
+
+    return data->fbmode;
+}
+
 /*****************************************************************************************
 
     NAME
@@ -874,18 +892,7 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         return;
 
     case aoHidd_Gfx_FrameBufferType:
-        if (data->fbmode == -1)
-        {
-            /*
-             * This attribute has never been set.
-             * Fall back to obsolete NoFrameBuffer.
-             */
-            *msg->storage = OOP_GET(o, aHidd_Gfx_NoFrameBuffer) ? vHidd_FrameBuffer_None : vHidd_FrameBuffer_Direct;
-        }
-        else
-        {
-            *msg->storage = data->fbmode;
-        }
+        *msg->storage = get_fbmode(cl, o);
         return;
     }
 
@@ -1233,16 +1240,31 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 	}
     }
 
-    /* FrameBuffer implies Displayable */
     if (framebuffer)
     {
+        /* FrameBuffer implies Displayable */
 	SET_BM_TAG(bmtags, 5, Displayable, TRUE);
     	displayable = TRUE;
+    }
+    else if (displayable)
+    {
+        /*
+         * Displayable, but not framebuffer (user's screen).
+         * If we are working in framebuffer mode, we treat all such
+         * bitmaps as framebuffer's friends and can inherit its class.
+         */
+        if ((!gotclass) && data->framebuffer && (get_fbmode(cl, o) != vHidd_FrameBuffer_None))
+        {
+            classptr = OOP_OCLASS(data->framebuffer);
+            gotclass = TRUE;
+
+            D(bug("[GFX] Using class 0x%p (%s) for displayable bitmap\n", classptr, classptr->ClassNode.ln_Name));
+        }
     }
 
     if (displayable)
     {
-	/* Displayable bitmap. Our subclass has to supply a ModeID and class. */
+	/* Displayable bitmap. Here we must have ModeID and class. */
 	if (!sync)
 	{
 	    D(bug("!!! Gfx::NewBitMap: USER HAS NOT PASSED MODEID FOR DISPLAYABLE BITMAP !!!\n"));
