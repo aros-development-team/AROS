@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Driver for using gfxhidd for gfx output
@@ -193,7 +193,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 {
     ULONG cnt = 0;
     IPTR hwcursor = 0;
-    IPTR noframebuffer = 0;
+    IPTR fbtype = vHidd_FrameBuffer_Direct; /* We default to direct for historical reasons */
     UWORD compose = 0;
     BOOL can_compose = FALSE;
     BOOL ok = TRUE;
@@ -267,7 +267,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 #ifndef FORCE_SOFTWARE_SPRITE
     OOP_GetAttr(gfxhidd, aHidd_Gfx_HWSpriteTypes, &hwcursor);
 #endif
-    OOP_GetAttr(gfxhidd, aHidd_Gfx_NoFrameBuffer, &noframebuffer);
+    OOP_GetAttr(gfxhidd, aHidd_Gfx_FrameBufferType, &fbtype);
 
     if (hwcursor)
     {
@@ -286,20 +286,24 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 
     if (ok)
     {
-	D(bug("[driver_Setup] Ok\n"));
+	D(bug("[driver_Setup] Ok, framebuffer type %ld\n", fbtype));
 
-	if (!noframebuffer)
-	{
-	    /*
-	     * Instantiate framebuffer if needed.
-	     * Note that we perform this operation on fakegfx.hidd if it was plugged in.
-	     * This enables software mouse sprite on a framebuffer.
-	     */
+        /*
+         * Instantiate framebuffer if needed.
+         * Note that we perform this operation on fakegfx.hidd if it was plugged in.
+         * This enables software mouse sprite on a framebuffer.
+         */
+        switch (fbtype)
+        {
+        case vHidd_FrameBuffer_Direct:
+            mdd->flags |= DF_DirectFB;
+
+        case vHidd_FrameBuffer_Mirrored:
 	    mdd->framebuffer = create_framebuffer(mdd, GfxBase);
-	    mdd->flags |= DF_DirectFB;
+            break;
 	}
 
-	if (noframebuffer || mdd->framebuffer)
+	if ((fbtype == vHidd_FrameBuffer_None) || mdd->framebuffer)
 	{
 	    D(bug("[driver_Setup] FRAMEBUFFER OK: %p\n", mdd->framebuffer));
 

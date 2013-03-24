@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -288,8 +288,7 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     OOP_Object      *realgfxhidd;
     struct gfx_data *data;
     BOOL    	     ok = FALSE;
-    IPTR	     noframebuffer = FALSE;
-    
+
     realgfxhidd = (OOP_Object *)GetTagData(aHidd_FakeGfxHidd_RealGfxHidd, (IPTR)NULL, msg->attrList);
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (NULL == o)
@@ -298,10 +297,18 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof (*data));
     InitSemaphore(&data->fbsema);
-    
-    OOP_GetAttr(realgfxhidd, aHidd_Gfx_NoFrameBuffer, &noframebuffer);
-    data->fakefb_attr = noframebuffer ? aHidd_BitMap_Displayable : aHidd_BitMap_FrameBuffer;
-    
+
+    /*
+     * If this is direct framebuffer driver, we draw our
+     * cursor on framebuffer bitmap.
+     * Otherwise we draw cursor on displayable bitmaps.
+     * TODO: Implement separate handling for mirrored framebuffers.
+     *       In this case we actually don't need to backup pixels
+     *       behind the sprite, because we can use mirror for this.
+     */
+    data->fakefb_attr = (OOP_GET(realgfxhidd, aHidd_Gfx_FrameBufferType) == vHidd_FrameBuffer_Direct) ?
+                        aHidd_BitMap_FrameBuffer : aHidd_BitMap_Displayable;
+
     data->gfxhidd = realgfxhidd;
 
     if (NULL != data->gfxhidd)
