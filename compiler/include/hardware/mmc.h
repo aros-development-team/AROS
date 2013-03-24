@@ -116,4 +116,10 @@
 #define MMC_HS_TIMING                   0x00000100
 #define MMC_HS_52MHZ                    0x2
 
+/* Switch command operations */
+#define MMC_SWITCH_CHNG_CMDSET          0x00
+#define MMC_SWITCH_SET_MASKBITS         0x01
+#define MMC_SWITCH_CLEAR_MASKBITS       0x02
+#define MMC_SWITCH_WRITE_BYTE           0x03
+
 #endif /* _MMC_H */
