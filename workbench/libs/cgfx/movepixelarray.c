@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+
 #include "cybergraphics_intern.h"
 
 /*****************************************************************************
@@ -27,10 +28,17 @@
 	struct Library *, CyberGfxBase, 22, Cybergraphics)
 
 /*  FUNCTION
+        Copies the pixels in a rectangular portion of a RastPort to another
+        rectangle with the same dimensions in the same RastPort.
 
     INPUTS
+        SrcX, SrcY - top-lefthand corner of source rectangle.
+        RastPort - the RastPort to modify.
+        DstX, DstY - top-lefthand corner of destination rectangle.
+        SizeX, SizeY - size of the rectangles (in pixels).
 
     RESULT
+        count - the number of pixels moved.
 
     NOTES
 
@@ -41,10 +49,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {

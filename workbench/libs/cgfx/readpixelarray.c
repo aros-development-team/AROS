@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -30,50 +30,50 @@
 	struct Library *, CyberGfxBase, 20, Cybergraphics)
 
 /*  FUNCTION
+        Copies a rectangular portion of a RastPort to a block of raw pixel
+        values.
 
     INPUTS
-
-        dstformat - A RECTFMT_xxx value describing requested format in which
-                    data in dst will be available. Currently supported original
-                    values are:
-                    
-                    RECTFMT_RGB
-                    RECTFMT_RGBA
-                    RECTFMT_ARGB
-                    RECTFMT_RAW
-                    
-                    Currently supported AROS extensions are:
-
-                    RECTFMT_RGB15
-                    RECTFMT_BGR15
-                    RECTFMT_RGB15PC
-                    RECTFMT_BGR15PC
-                    RECTFMT_RGB16
-                    RECTFMT_BGR16
-                    RECTFMT_RGB16PC
-                    RECTFMT_BGR16PC
-                    RECTFMT_RGB24
-                    RECTFMT_BGR24
-                    RECTFMT_0RGB32
-                    RECTFMT_BGR032
-                    RECTFMT_RGB032
-                    RECTFMT_0BGR32
-                    RECTFMT_ARGB32
-                    RECTFMT_BGRA32
-                    RECTFMT_RGBA32
-                    RECTFMT_ABGR32
-                    
-                    Following values are not supported and will cause function
-                    to return 0:
-                    
-                    RECTFMT_LUT8
-                    RECTFMT_GREY8
+        dst - pointer to the pixel values.
+        destx, desty - top-lefthand corner of portion of destination rectangle
+            to write to (in pixels).
+        dstmod - the number of bytes in each row of the destination rectangle.
+        rp - the RastPort to read.
+        srcx, srcy - top-lefthand corner of portion of source RastPort to
+            read (in pixels).
+        width, height - size of the area to copy (in pixels).
+        dstformat - the format of the destination pixels. The following format
+            types are supported:
+                RECTFMT_RGB
+                RECTFMT_RGBA
+                RECTFMT_ARGB
+                RECTFMT_RAW
+                RECTFMT_RGB15
+                RECTFMT_BGR15
+                RECTFMT_RGB15PC
+                RECTFMT_BGR15PC
+                RECTFMT_RGB16
+                RECTFMT_BGR16
+                RECTFMT_RGB16PC
+                RECTFMT_BGR16PC
+                RECTFMT_RGB24
+                RECTFMT_BGR24
+                RECTFMT_0RGB32
+                RECTFMT_BGR032
+                RECTFMT_RGB032
+                RECTFMT_0BGR32
+                RECTFMT_ARGB32
+                RECTFMT_BGRA32
+                RECTFMT_RGBA32
+                RECTFMT_ABGR32
 
     RESULT
-
-        Number of pixels read.
+        count - number of pixels read.
 
     NOTES
+        See WritePixelArray() for descriptions of pixel formats. Where a
+        RastPort does not support an alpha channel, destination alpha values
+        will be set to zero.
 
     EXAMPLE
 
@@ -82,10 +82,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {

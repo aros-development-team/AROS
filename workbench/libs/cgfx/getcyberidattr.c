@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -30,12 +30,23 @@
 	struct Library *, CyberGfxBase, 17, Cybergraphics)
 
 /*  FUNCTION
+        Provides information about a specific RTG screenmode.
 
     INPUTS
+        attribute - one of the following display attributes:
+            CYBERIDATTR_PIXFMT - the display's pixel format. See
+                LockBitMapTagList() for possible values.
+            CYBERIDATTR_WIDTH - the display's width (in pixels).
+            CYBERIDATTR_HEIGHT - the display's height (in pixels).
+            CYBERIDATTR_DEPTH - the number of bits per pixel.
+            CYBERIDATTR_BPPIX - the number of bytes per pixel.
+        DisplayModeID - an RTG screenmode ID.
 
     RESULT
+        value - the value associated with the requested attribute.
 
     NOTES
+        If an unknown attribute is requested, -1 is returned.
 
     EXAMPLE
 
@@ -44,12 +55,8 @@
     SEE ALSO
 
     INTERNALS
-	The function relies on pixelformat object being passed in DimensionInfo.reserved[1]
-	by graphics.library/GetDisplayInfoData()
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
+        The function relies on pixelformat object being passed in
+        DimensionInfo.reserved[1] by graphics.library/GetDisplayInfoData().
 
 *****************************************************************************/
 {
@@ -91,7 +98,8 @@
 	    break;
 
 	default:
-	    D(bug("!!! UNKONOW ATTRIBUTE IN GetCyberIDAttr(): %x !!!\n", attribute));
+	    D(bug("!!! UNKNOWN ATTRIBUTE IN GetCyberIDAttr(): %x !!!\n",
+                attribute));
 	    break;
 	}
     }

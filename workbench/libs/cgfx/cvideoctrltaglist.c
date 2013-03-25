@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -32,10 +32,20 @@
 	struct Library *, CyberGfxBase, 27, Cybergraphics)
 
 /*  FUNCTION
+        Controls video output. It currently only allows adjustment of
+        power-saving modes, using the following tag:
+            SETVC_DPMSLevel (IPTR) - one of the following DPMS levels:
+                DPMS_ON - normal operation.
+                DPMS_STANDBY - less than 80% power usage.
+                DPMS_SUSPEND - less than 30W power usage.
+                DPMS_OFF - less than 8W power usage.
 
     INPUTS
+        vp - a ViewPort belonging to the video output device to be controlled.
+        tags - a taglist containing video control options.
 
     RESULT
+        None.
 
     NOTES
 
@@ -46,10 +56,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {

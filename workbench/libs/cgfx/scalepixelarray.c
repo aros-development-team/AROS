@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -30,24 +30,36 @@
 	struct Library *, CyberGfxBase, 15, Cybergraphics)
 
 /*  FUNCTION
+        Fills all or part of a RastPort with a rectangular block of raw pixel
+        values. The source pixels are scaled to fit the destination area, i.e.
+        some pixels may be duplicated or dropped according to the need to
+        stretch or compress the source block.
 
     INPUTS
+        srcRect - pointer to the pixel values.
+        SrcW, SrcH - width and height of the source rectangle (in pixels).
+        SrcMod - the number of bytes in each row of the source rectangle.
+        RastPort - the RastPort to write to.
+        DestX, DestY - top-lefthand corner of portion of destination RastPort
+            to write to (in pixels).
+        DestW, DestH - size of the destination rectangle (in pixels).
+        SrcFormat - the format of the source pixels. See WritePixelArray for
+            possible values.
 
     RESULT
+        count - the number of pixels written to.
 
     NOTES
 
     EXAMPLE
 
     BUGS
+        This function is unimplemented.
 
     SEE ALSO
+        WritePixelArray()
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {

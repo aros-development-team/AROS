@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -33,10 +33,30 @@
 	struct Library *, CyberGfxBase, 12, Cybergraphics)
 
 /*  FUNCTION
+        Retrieves a list of RTG screenmodes that match the criteria specified
+        in a taglist. The supported tags are as follows:
+            CYBRMREQ_MinWidth (ULONG) - the minimum acceptable display width
+                (defaults to 320).
+            CYBRMREQ_MaxWidth (ULONG) - the maximum acceptable display width.
+                (defaults to 1600).
+            CYBRMREQ_MinHeight (ULONG) - the minimum acceptable display
+                height (defaults to 240).
+            CYBRMREQ_MaxHeight (ULONG) - the maximum acceptable display
+                height (defaults to 1200).
+            CYBRMREQ_MinDepth (UWORD) - the minimum acceptable display depth
+                (defaults to 8).
+            CYBRMREQ_MaxDepth (UWORD) - the minimum acceptable display depth
+                (defaults to 32).
+            CYBRMREQ_CModelArray (UWORD *) - array of permitted pixel formats.
+                Any of the PIXFMT_#? constants may be specified (see
+                LockBitMapTagList()), and the array must be terminated by ~0.
+                By default, all pixel formats are acceptable.
 
     INPUTS
+        tags - mode selection criteria (may be NULL).
 
     RESULT
+        result - a list of matching screenmodes, or NULL if there are none.
 
     NOTES
 
@@ -45,14 +65,11 @@
     BUGS
 
     SEE ALSO
+        FreeCModeList()
 
     INTERNALS
-	The function relies on pixelformat object being passed in DimensionInfo.reserved[1]
-	by graphics.library/GetDisplayInfoData()
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
+        The function relies on pixelformat object being passed in
+        DimensionInfo.reserved[1] by graphics.library/GetDisplayInfoData().
 
 *****************************************************************************/
 {

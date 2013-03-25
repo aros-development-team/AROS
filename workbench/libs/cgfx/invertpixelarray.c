@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -25,10 +25,16 @@
 	struct Library *, CyberGfxBase, 24, Cybergraphics)
 
 /*  FUNCTION
+        Inverts each pixel in rectangular portion of a RastPort, i.e. applies
+        a NOT operation to each bit of pixel data.
 
     INPUTS
+        rp - the RastPort to write to.
+        destx, desty - top-lefthand corner of portion of RastPort to invert.
+        width, height - size of the area to invert.
 
     RESULT
+        count - the number of pixels inverted.
 
     NOTES
 
@@ -39,10 +45,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {
