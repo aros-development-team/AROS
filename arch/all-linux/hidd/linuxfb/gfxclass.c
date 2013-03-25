@@ -112,14 +112,6 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     { aHidd_Gfx_SyncTags    , (IPTR)synctags },
     { TAG_DONE              , 0              }
     };
-    
-    struct TagItem mytags[] =
-    {
-    { aHidd_Gfx_ModeTags, (IPTR)modetags },
-    { TAG_MORE          , 0              }
-    };
-
-    struct pRoot_New mymsg;
 
     if (fbdev == -1)
     {
@@ -139,6 +131,18 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             if (baseaddr != MAP_FAILED)
             {
                 /* Register gfxmodes */
+                struct TagItem mytags[] =
+                {
+                    { aHidd_Gfx_ModeTags       , (IPTR)modetags             },
+                    { aHidd_Gfx_FrameBufferType, vHidd_FrameBuffer_Mirrored },
+                    { TAG_MORE                 , (IPTR)msg->attrList        }
+                };
+
+                struct pRoot_New mymsg =
+                {
+                    msg->mID,
+                    mytags
+                };
 
                 /* Set the gfxmode info */
                 synctags[0].ti_Data = vsi.pixclock;
@@ -151,10 +155,6 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
                 synctags[7].ti_Data = vsi.lower_margin;
                 synctags[8].ti_Data = vsi.vsync_len;
                 synctags[9].ti_Data = (IPTR)"FBDev:%hx%v";
-
-                mytags[1].ti_Data = (IPTR)msg->attrList;
-                mymsg.mID      = msg->mID;
-                mymsg.attrList = mytags;
     
                 o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
                 if (NULL != o)
@@ -206,73 +206,38 @@ VOID LinuxFB__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /********** FBGfx::NewBitMap()  ****************************/
 OOP_Object *LinuxFB__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
-    struct TagItem tags[3];
-    struct pHidd_Gfx_NewBitMap p;
-    HIDDT_ModeID modeid;
-
-    modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-
-    if (modeid != vHidd_ModeID_Invalid)
-    {
-        tags[0].ti_Tag  = aHidd_BitMap_ClassPtr;
-        tags[0].ti_Data = (IPTR)LSD(cl)->bmclass;
-        tags[1].ti_Tag  = TAG_IGNORE;
-        tags[1].ti_Data = TAG_IGNORE;
-        tags[2].ti_Tag  = TAG_MORE;
-        tags[2].ti_Data = (IPTR)msg->attrList;
-
-        if (GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList))
-        {
-            struct LinuxFB_data *data = OOP_INST_DATA(cl, o);
-
-            tags[1].ti_Tag  = aHidd_LinuxFBBitmap_FBDevInfo;
-            tags[1].ti_Data = (IPTR)&data->fbdevinfo;
-        }
-
-        p.mID = msg->mID;
-        p.attrList = tags;
-
-        msg = &p;
-    }
-
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-
-
-
-/******* FBGfx::Set()  ********************************************/
-VOID LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
-{
-    ULONG idx;
-    
-    if (IS_GFX_ATTR(msg->attrID, idx))
-    {
-        switch (idx)
-        {
-        case aoHidd_Gfx_NoFrameBuffer:
-            *msg->storage = TRUE;
-            return;
-        }
-    }
-    OOP_DoSuperMethod(cl, o, &msg->mID);
-}
-
-OOP_Object *LinuxFB__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
-{
     struct LinuxFB_data *data = OOP_INST_DATA(cl, o);
-    struct TagItem tags[] =
+    BOOL fb = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+
+    D(bug("[LinuxFB] NewBitMap, framebuffer=%d\n", fb));
+    /*
+     * Our framebuffer is a chunky bitmap at predetermined address.
+     * We don't care about friends etc here, because even if our
+     * class is selected for friend bitmap, it's completely safe
+     * because it will not get FBDevInfo. Storage overhead per
+     * bitmap is extremely small here (just 8 bytes).
+     */
+    if (fb)
     {
-	{aHidd_BitMap_Visible, FALSE},
-	{TAG_DONE	     , 0    }
-    };
+        struct TagItem tags[] =
+        {
+            {aHidd_BitMap_ClassPtr        , (IPTR)LSD(cl)->bmclass        },
+            {aHidd_BitMap_BytesPerRow     , data->fbdevinfo.pitch         },
+            {aHidd_ChunkyBM_Buffer        , (IPTR)data->fbdevinfo.baseaddr},
+            {aHidd_LinuxFBBitmap_FBDevInfo, -1                            },
+            {TAG_MORE                     , (IPTR)msg->attrList           }
+        };
+        struct pHidd_Gfx_NewBitMap p =
+        {
+            msg->mID,
+            tags
+        };
 
-    ObtainSemaphore(&data->framebufferlock);
+        if (data->fbdevinfo.fbtype == vHidd_ColorModel_Palette)
+        {
+            tags[3].ti_Data = data->fbdevinfo.fbdev;
+        }
 
-    if (data->visible)
-	OOP_SetAttrs(data->visible, tags);
-
-    if (msg->bitMap)
-    {
         if (data->confd == -1)
         {
             /*
@@ -288,50 +253,11 @@ OOP_Object *LinuxFB__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_G
             }
         }
 
-	tags[0].ti_Data = TRUE;
-	OOP_SetAttrs(msg->bitMap, tags);
-
-        if (data->fbdevinfo.fbtype == vHidd_ColorModel_Palette)
-        {
-            OOP_Object *cm = NULL;
-
-            OOP_GetAttr(msg->bitMap, aHidd_BitMap_ColorMap, (IPTR *)&cm);
-            if (cm)
-            {
-                IPTR n = 0;
-                unsigned int i;
-                HIDDT_Color col;
-                struct fb_cmap fbcol =
-                {
-                    0, 1,
-                    &col.red,
-                    &col.green,
-                    &col.blue,
-                    &col.alpha
-                };
-
-                OOP_GetAttr(cm, aHidd_ColorMap_NumEntries, &n);
-
-                for (i = 0; i < n; i++)
-                {
-                    fbcol.start = i;
-                    HIDD_CM_GetColor(cm, i, &col);
-                    Hidd_UnixIO_IOControlFile(data->unixio, data->fbdevinfo.fbdev, FBIOPUTCMAP, &fbcol, NULL);
-                }
-            }
-        }
-    }
-    else
-    {
-        memset(data->fbdevinfo.baseaddr, 0, data->fbdevinfo.pitch * data->fbdevinfo.yres);
+        return (OOP_Object *)OOP_DoSuperMethod(cl, o, &p.mID);
     }
 
-    data->visible = msg->bitMap;
-    ReleaseSemaphore(&data->framebufferlock);
-
-    return msg->bitMap;
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
 }
-
 
 static BOOL setup_linuxfb(struct LinuxFB_staticdata *fsd, int fbdev, struct fb_fix_screeninfo *fsi, struct fb_var_screeninfo *vsi)
 {
