@@ -6,7 +6,7 @@
     Lang: English.
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #define DEBUG_PF
 
 #include <stddef.h>
