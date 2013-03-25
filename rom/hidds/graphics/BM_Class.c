@@ -1275,10 +1275,15 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
     }
 
     /* Use the colormap class to set the colors */
-    return HIDD_CM_SetColors(data->colmap, msg->colors,
-                             msg->firstColor, msg->numColors,
-                             data->prot.pixfmt);
+    if (!HIDD_CM_SetColors(data->colmap, msg->colors,
+                           msg->firstColor, msg->numColors,
+                           data->prot.pixfmt))
+    {
+        return FALSE;
+    }
 
+    /* We may need to duplicate changes on framebuffer if running in mirrored mode */
+    return GFX__Hidd_Gfx__SetFBColors(CSD(cl)->gfxhiddclass, data->gfxhidd, o, msg);
 }
 
 /*******************************************************************************

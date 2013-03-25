@@ -154,6 +154,7 @@ struct HIDDGraphicsData
 OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtTags);
 VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *pf);
 void GFX__Hidd_Gfx__UpdateBitMap(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struct pHidd_BitMap_UpdateRect *msg);
+BOOL GFX__Hidd_Gfx__SetFBColors(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struct pHidd_BitMap_SetColors *msg);
 
 /* Private bitmap methods */
 void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem *bitMapTags);
