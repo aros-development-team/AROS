@@ -1082,7 +1082,7 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 			      this behavior.
 
 	If your driver wants to specify own class for the bitmap being created,
-	it should prepend an aHIDD_BitMap_ClassPtr attribute to the supplied taglist
+	it should prepend an aoHidd_BitMap_ClassPtr attribute to the supplied taglist
 	and pass it to base class. It's not allowed to create bitmap objects directly
 	since they need some more extra information which is added by the base class!
 
@@ -1099,6 +1099,10 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 	bm - pointer to the newly created bitmap.
     
     NOTES
+        Drivers which do not use framebuffer must always specify own class using either
+        moHidd_BitMap_ClassPtr or moHidd_BitMap_ClassID attribute. Drivers making use of
+        framebuffer may omit this, in this case framebuffer's class will be used for
+        displayable bitmaps.
 
     EXAMPLE
 
@@ -4218,10 +4222,13 @@ void GFX__Hidd_Gfx__UpdateBitMap(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, s
     struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
 
     /*
-     * We check data->shownbm twice in order to avoid unnecessary locking.
+     * We check data->shownbm twice in order to avoid unnecessary locking
+     * when our bitmap is not on display (it may be not displayable at all).
      * However the second check is still needed in order to make sure that
-     * this bitmap is still on display. We do it in order not to interfere
-     * with possible Show() call.
+     * this bitmap is still on display, because we could be preempted between
+     * the test and ObtainSemaphore() by concurrently running Show() call.
+     * We use shared lock because it's safe to have two concurrently running
+     * updates even on the same region.
      */
     if ((data->fbmode == vHidd_FrameBuffer_Mirrored) && (bm == data->shownbm))
     {
@@ -4237,6 +4244,26 @@ void GFX__Hidd_Gfx__UpdateBitMap(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, s
 
         ReleaseSemaphore(&data->fbsem);
     }
+}
+
+BOOL GFX__Hidd_Gfx__SetFBColors(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struct pHidd_BitMap_SetColors *msg)
+{
+    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
+    BOOL ret = TRUE;
+
+    if ((data->fbmode == vHidd_FrameBuffer_Mirrored) && (bm == data->shownbm))
+    {
+        ObtainSemaphoreShared(&data->fbsem);
+
+        if (bm == data->shownbm)
+        {
+            ret = OOP_DoMethod(data->framebuffer, msg);
+        }
+
+        ReleaseSemaphore(&data->fbsem);
+    }
+
+    return ret;
 }
 
 #undef csd
