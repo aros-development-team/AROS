@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -29,10 +29,19 @@
 	struct Library *, CyberGfxBase, 30, Cybergraphics)
 
 /*  FUNCTION
+        Releases exclusive access to a bitmap. Options for the unlocking
+        process are given in a taglist. The possible tags are as follows:
+            UBMI_UPDATERECTS (struct RectList *) - pointer to a series of
+                rectangle lists that need to be refreshed.
+            UBMI_REALLYUNLOCK (BOOL) - if FALSE, the bitmap will not be
+                unlocked; only rectangle updates will be done.
 
     INPUTS
+        Handle - handle to the bitmap to unlock.
+        Tags - a taglist as described above.
 
     RESULT
+        None.
 
     NOTES
 
@@ -41,12 +50,9 @@
     BUGS
 
     SEE ALSO
+        UnLockBitMap(), LockBitMapTagList()
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {

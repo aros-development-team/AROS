@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -51,7 +51,7 @@ static ULONG extcol_render(struct extcol_render_data *ecrd, LONG x_src, LONG y_s
 
 	if (NUMPIX < xsize)
 	{
-	   /* buffer cant hold a single horizontal line, and must 
+	   /* buffer can't hold a single horizontal line, and must 
 	      divide each line into copies */
 	    tocopy_w = xsize - current_x;
 	    if (tocopy_w > NUMPIX)
@@ -141,12 +141,30 @@ static ULONG extcol_render(struct extcol_render_data *ecrd, LONG x_src, LONG y_s
 	struct Library *, CyberGfxBase, 31, Cybergraphics)
 
 /*  FUNCTION
+        Create a single-plane bitmap that describes the coordinates where a
+        particular colour is present in a portion of a RastPort (i.e. a mask).
+        A one is stored in the bitmap where the requested colour is present,
+        and a zero where it is absent.
+
+        For true-colour RastPorts, the colour is specified in 32-bit ARGB
+        format: 1 byte per component, in the order alpha, red, green, blue
+        (the alpha byte is ignored for RastPorts without an alpha channel).
+        For paletted RastPorts, a pen number is given instead.
 
     INPUTS
+        RastPort - the RastPort to analyse.
+        SingleMap - a planar bitmap to fill (its pixel dimensions must be at
+            least as big as the rectangle being analysed).
+        Colour - the colour to extract.
+        sX, sY - top-lefthand corner of portion of RastPort to analyse
+            (in pixels).
+        Width, Height - size of the area to analyse (in pixels).
 
     RESULT
+        result - Boolean success indicator.
 
     NOTES
+        It is safe for the bitmap being filled to have more than one bitplane.
 
     EXAMPLE
 
@@ -157,8 +175,6 @@ static ULONG extcol_render(struct extcol_render_data *ecrd, LONG x_src, LONG y_s
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {

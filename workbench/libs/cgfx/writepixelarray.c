@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -58,10 +58,78 @@ static ULONG wpa_render(struct wpa_render_data *wpard, LONG srcx, LONG srcy,
 	struct Library *, CyberGfxBase, 21, Cybergraphics)
 
 /*  FUNCTION
+        Copies all or part of a rectangular block of raw pixel values to a
+        RastPort.
 
     INPUTS
+        srcRect - pointer to the pixel values.
+        srcx, srcy - top-lefthand corner of portion of source rectangle to
+            copy (in pixels).
+        srcmod - the number of bytes in each row of the source rectangle.
+        rp - the RastPort to write to.
+        destx, desty - top-lefthand corner of portion of destination RastPort
+            to write to (in pixels).
+        width, height - size of the area to copy (in pixels).
+        srcformat - the format of the source pixels. The following format
+            types are supported:
+                RECTFMT_RGB - 3 bytes per pixel: 1 byte per component, in
+                    the order red, green, blue.
+                RECTFMT_RGBA - 4 bytes per pixel: 1 byte per component, in
+                    the order red, green, blue, alpha.
+                RECTFMT_ARGB - 4 bytes per pixel: 1 byte per component, in
+                    the order alpha, red, green, blue.
+                RECTFMT_LUT8 - 1 byte per pixel: each byte is a pen number
+                    rather than a direct colour value.
+                RECTFMT_GREY8 - 1 byte per pixel: each byte is a greyscale
+                    value.
+                RECTFMT_RAW - the same pixel format as the destination
+                    RastPort.
+                RECTFMT_RGB15 - 2 bytes per pixel: one unused bit, then 5 bits
+                    per component, in the order red, green, blue (AROS
+                    extension).
+                RECTFMT_BGR15 - 2 bytes per pixel: 1 unused bit, then 5 bits
+                    per component, in the order blue, green, red (AROS
+                    extension).
+                RECTFMT_RGB15PC - 2 bytes per pixel, accessed as a little
+                    endian value: 1 unused bit, then 5 bits per component, in
+                    the order red, green, blue (AROS extension).
+                RECTFMT_BGR15PC - 2 bytes per pixel, accessed as a little
+                    endian value: 1 unused bit, then 5 bits per component, in
+                    the order blue, green, red (AROS extension).
+                RECTFMT_RGB16 - 2 bytes per pixel: 5 bits for red, then 6 bits
+                    for green, then 5 bits for blue (AROS extension).
+                RECTFMT_BGR16 - 2 bytes per pixel: 5 bits for blue, then 6 bits
+                    for green, then 5 bits for red (AROS extension).
+                RECTFMT_RGB16PC - 2 bytes per pixel, accessed as a little
+                    endian value: 5 bits for red, then 6 bits for green, then
+                    5 bits for blue (AROS extension).
+                RECTFMT_BGR16PC - 2 bytes per pixel, accessed as a little
+                    endian value: 5 bits for blue, then 6 bits for green, then
+                    5 bits for red (AROS extension).
+                RECTFMT_RGB24 - the same as RECTFMT_RGB (AROS extension).
+                RECTFMT_BGR24 - 3 bytes per pixel: 1 byte per component, in
+                    the order blue, green, red (AROS extension).
+                RECTFMT_ARGB32 - the same as RECTFMT_ARGB (AROS extension).
+                RECTFMT_BGRA32 - 4 bytes per pixel: 1 byte per component, in
+                    the order blue, green, red, alpha (AROS extension).
+                RECTFMT_RGBA32 - the same as RECTFMT_RGBA (AROS extension).
+                RECTFMT_ABGR32 - 4 bytes per pixel: 1 byte per component, in
+                    the order alpha, blue, green, red (AROS extension).
+                RECTFMT_0RGB32 - 4 bytes per pixel: 1 unused byte, then 1 byte
+                    per component, in the order red, green, blue (AROS
+                    extension).
+                RECTFMT_BGR032 - 4 bytes per pixel: 1 byte per component, in
+                    the order blue, green, red, followed by 1 unused byte
+                    (AROS extension).
+                RECTFMT_RGB032 - 4 bytes per pixel: 1 byte per component, in
+                    the order red, green, blue, followed by 1 unused byte
+                    (AROS extension).
+                RECTFMT_0BGR32 - 4 bytes per pixel: 1 unused byte, then 1 byte
+                    per component, in the order blue, green, red (AROS
+                    extension).
 
     RESULT
+        count - the number of pixels written to.
 
     NOTES
 
@@ -70,12 +138,9 @@ static ULONG wpa_render(struct wpa_render_data *wpard, LONG srcx, LONG srcy,
     BUGS
 
     SEE ALSO
+        WritePixelArrayAlpha()
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {

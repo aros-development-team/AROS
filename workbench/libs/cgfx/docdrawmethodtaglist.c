@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -23,10 +23,19 @@
 	struct Library *, CyberGfxBase, 26, Cybergraphics)
 
 /*  FUNCTION
+        Calls a callback hook that directly accesses a RastPort's bitmap.
 
     INPUTS
+        hook - a callback hook. The standard hook inputs will be set as
+            follows:
+                object (struct RastPort *) - this function's 'rp' input.
+                message (struct CDrawMsg *) - details of the area on which to
+                    operate.
+        rp - the RastPort to perform operations on.
+        tags - not used. Must be NULL.
 
     RESULT
+        None.
 
     NOTES
 
@@ -37,10 +46,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {

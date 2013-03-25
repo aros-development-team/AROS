@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -52,7 +52,7 @@ static STRPTR ids[] = {
 	by the taglist.
 
     INPUTS
-	tags - An optional pointer to a TagList containint requirements
+	tags - An optional pointer to a TagList containing requirements
 	       for the display mode. Valid tags are:
 
 	  CYBRBIDTG_Depth (ULONG) - depth the returned ModeID must support.
@@ -84,7 +84,7 @@ static STRPTR ids[] = {
 				       CyberVision64/3D display mode ID
 
     RESULT
-	Best matchind display mode ID or INVALID_ID if there is no match
+        ID - Best matching display mode ID or INVALID_ID if there is no match.
 
     NOTES
 
@@ -97,11 +97,7 @@ static STRPTR ids[] = {
 
     INTERNALS
 	This functions relies on processing CYBRIDTG_BoardName tag by
-	graphics.library/BestModeIDA()
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
+	graphics.library/BestModeIDA().
 
 *****************************************************************************/
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -26,8 +26,10 @@
 	struct Library *, CyberGfxBase, 13, Cybergraphics)
 
 /*  FUNCTION
+        Frees a list of RTG modes returned by AllocCModeListTagList().
 
     INPUTS
+        modeList - a list of RTG modes returned by AllocCModeListTagList().
 
     RESULT
 
@@ -38,12 +40,9 @@
     BUGS
 
     SEE ALSO
+        AllocCModeListTagList()
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {

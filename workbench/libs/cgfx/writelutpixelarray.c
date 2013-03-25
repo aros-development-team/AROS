@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -37,10 +37,28 @@
 	struct Library *, CyberGfxBase, 33, Cybergraphics)
 
 /*  FUNCTION
+        Copies all or part of a rectangular block of raw pen values to a
+        RastPort. The pen values are converted to the RastPort's native pixel
+        values.
 
     INPUTS
+        srcRect - pointer to the pixel values.
+        SrcX, SrcY - top-lefthand corner of portion of source rectangle to
+            copy (in pixels).
+        SrcMod - the number of bytes in each row of the source rectangle.
+        rp - the RastPort to write to.
+        CTable - the color table that maps the source pen values.
+        DestX, DestY - top-lefthand corner of portion of destination RastPort
+            to write to (in pixels).
+        SizeX, SizeY - size of the area to copy (in pixels).
+        CTabFormat - format of the color table. Only one format type is
+            currently supported:
+                CTABFMT_XRGB8 - the colour table is an array of 256 ULONGs.
+                    Each entry begins with an unused byte, followed by 1 byte
+                    for each component, in the order red, green, blue.
 
     RESULT
+        count - the number of pixels written to.
 
     NOTES
 
@@ -51,10 +69,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {
@@ -107,7 +121,7 @@
 	pixtab[i] = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
     }
 
-    /* Now blit the colors onto the screen */
+    /* Now blit the colors on to the screen */
     return WritePixels8(rp, srcRect + CHUNKY8_COORD_TO_BYTEIDX(SrcX, SrcY, SrcMod), SrcMod,
 			DestX, DestY, DestX + SizeX - 1, DestY + SizeY - 1, &pixlut, TRUE);
 

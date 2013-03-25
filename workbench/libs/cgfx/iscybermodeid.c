@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,13 +27,13 @@
 	struct Library *, CyberGfxBase, 9, Cybergraphics)
 
 /*  FUNCTION
-	Check if the given display mode ID belongs to an RTG driver
+	Checks if the given display mode ID belongs to an RTG driver.
 
     INPUTS
-	modeID - a display mode ID to check
+	modeID - a display mode ID to check.
 
     RESULT
-        TRUE if the mode belongs to an RTG driver, FALSE otherwise
+        result - TRUE if the mode belongs to an RTG driver, FALSE otherwise.
 
     NOTES
 
@@ -44,12 +44,8 @@
     SEE ALSO
 
     INTERNALS
-    	The function relies on pixelformat object being passed in DimensionInfo.reserved[1]
-	by graphics.library/GetDisplayInfoData()
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
+    	The function relies on the pixelformat object being passed in
+        DimensionInfo.reserved[1] by graphics.library/GetDisplayInfoData().
 
 *****************************************************************************/
 {

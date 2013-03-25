@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -23,10 +23,15 @@
 	struct Library *, CyberGfxBase, 18, Cybergraphics)
 
 /*  FUNCTION
+        Reads a particular pixel's color value from a RastPort.
 
     INPUTS
+        rp - the RastPort to read from.
+        x, y - the coordinates of the pixel to read.
 
     RESULT
+        color - the pixel's color value in 32-bit ARGB format: 1 byte
+            per component, in the order alpha, red, green, blue.
 
     NOTES
 
@@ -37,10 +42,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {

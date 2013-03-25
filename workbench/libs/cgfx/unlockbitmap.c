@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -24,10 +24,13 @@
 	struct Library *, CyberGfxBase, 29, Cybergraphics)
 
 /*  FUNCTION
+        Releases exclusive access to a bitmap.
 
     INPUTS
+        Handle - handle to the bitmap to unlock.
 
     RESULT
+        None.
 
     NOTES
 
@@ -36,12 +39,8 @@
     BUGS
 
     SEE ALSO
-
+        UnLockBitMapTagList(), LockBitMapTagList()
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    cybergraphics_lib.fd and clib/cybergraphics_protos.h
 
 *****************************************************************************/
 {
