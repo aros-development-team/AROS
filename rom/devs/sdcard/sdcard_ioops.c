@@ -202,9 +202,65 @@ BYTE FNAME_SDCIO(ReadDMA32)(struct sdcard_Unit *unit, ULONG block,
 BYTE FNAME_SDCIO(ReadSector64)(struct sdcard_Unit *unit, UQUAD block,
     ULONG count, APTR buffer, ULONG *act)
 {
+    struct TagItem sdcReadTags[] =
+    {
+        {SDCARD_TAG_CMD,         MMC_CMD_READ_SINGLE_BLOCK},
+        {SDCARD_TAG_ARG,         block},
+        {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
+        {SDCARD_TAG_RSP,         0},
+        {SDCARD_TAG_DATA,        (IPTR)buffer},
+        {SDCARD_TAG_DATALEN,     count * (1 << unit->sdcu_Bus->sdcb_SectorShift)},
+        {SDCARD_TAG_DATAFLAGS,   MMC_DATA_READ},
+        {TAG_DONE,            0}
+    };
+    BYTE retVal = 0;
+
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    return IOERR_NOCMD;
+    *act = 0;
+
+    if (count > 1)
+        sdcReadTags[0].ti_Data = MMC_CMD_READ_MULTIPLE_BLOCK;
+
+    if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
+        return IOERR_NOCMD;
+
+    D(bug("[SDCard%02ld] %s: Sending CMD %d, block %08x, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
+        sdcReadTags[0].ti_Data, sdcReadTags[1].ti_Data, sdcReadTags[5].ti_Data, sdcReadTags[4].ti_Data));
+
+    if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) != -1)
+    {
+        if (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, unit->sdcu_Bus) != -1)
+        {
+            if (count > 1)
+            {
+                DTRANS(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                sdcReadTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
+                sdcReadTags[1].ti_Data = 0;
+                sdcReadTags[2].ti_Data = MMC_RSP_R1b;
+                sdcReadTags[4].ti_Tag = TAG_DONE;
+                if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) == -1)
+                {
+                    bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                }
+            }
+            *act = sdcReadTags[5].ti_Data;
+        }
+        else
+        {
+            bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+            retVal = IOERR_ABORTED;
+        }
+    }
+    else
+    {
+        bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+        retVal = IOERR_ABORTED;
+    }
+
+    DTRANS(bug("[SDCard%02ld] %s: %d bytes Read\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, *act));
+
+    return retVal;
 }
 
 BYTE FNAME_SDCIO(ReadMultiple64)(struct sdcard_Unit *unit, UQUAD block,
