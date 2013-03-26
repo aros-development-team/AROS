@@ -213,7 +213,7 @@ static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
 		{TAG_DONE	    	    	    	    }
 	    };
 
-            tags[2].ti_Data = ci->withinfo ? "#?" : "~(#?.info)";
+            tags[2].ti_Data = (IPTR)(ci->withinfo ? "#?" : "~(#?.info)");
 
 	    if ((fr = AllocAslRequest(ASL_FileRequest, tags)))
 	    {
