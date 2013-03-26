@@ -1,5 +1,53 @@
+/*
+    Copyright (C) 2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/******************************************************************************
+
+    NAME
+
+        runtests
+
+    SYNOPSIS
+
+        scriptname
+
+    LOCATION
+
+        SYS:Tests
+
+    FUNCTION
+
+        Executes all commands given by an input script. Reports memory loss
+        and summarizes the return codes. The commands shouldn't do any
+        output on success to avoid increasing of the shell's buffer.
+        The result is printed to the debugging console.
+        
+    INPUTS
+
+        scriptname -- script with the programs to be executed. Defaults to
+        "testscript".
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <aros/debug.h>
 #include <proto/dos.h>
+#include <proto/exec.h>
 
 BPTR scripthandle;
 CONST_STRPTR scriptname;
@@ -12,8 +60,16 @@ LONG okcnt;
 LONG noshellcnt;
 LONG rubbishcnt;
 
+static ULONG checkmem(void)
+{
+    FreeVec(AllocVec((ULONG)(~0ul/2), MEMF_ANY)); // trigger expunges
+    return AvailMem(MEMF_ANY);
+}
+
 int main(int argc, char **argv)
 {
+    ULONG mem_old, mem;
+
     if (argc == 1)
     {
         scriptname = "testscript";
@@ -38,6 +94,8 @@ int main(int argc, char **argv)
     PutStr(scriptname);
     PutStr("\nOutput will be sent to the debugging console\n\n");
 
+    mem_old = checkmem();
+
     while (FGets(scripthandle, command, sizeof command))
     {
         if (command[0] != '#' && command[0] != '\n')
@@ -46,6 +104,13 @@ int main(int argc, char **argv)
             bug("Running command: %s", command);
             error = SystemTagList(command, NULL);
             bug("returns: %d\n", error);
+
+            mem = checkmem();
+            if (mem != mem_old)
+            {
+                bug("Memory loss %ul Bytes\n", mem_old - mem);
+                mem_old = mem;
+            }
 
             if (error == -1)
                 noshellcnt++;
