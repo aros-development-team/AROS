@@ -320,6 +320,8 @@ static AROS_UFH3 (APTR, Init,
 	/* CIA */
 	mmuio(KernelBase, 0x00bfd000, 0x00001000);
 	mmuio(KernelBase, 0x00bfe000, 0x00001000);
+	/* CD32 Akiko */
+	mmuio(KernelBase, 0x00b80000, 0x00001000);
 
 	//debug_mmu(KernelBase);
 
