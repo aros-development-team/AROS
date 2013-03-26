@@ -4257,7 +4257,7 @@ BOOL GFX__Hidd_Gfx__SetFBColors(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, st
 
         if (bm == data->shownbm)
         {
-            ret = OOP_DoMethod(data->framebuffer, msg);
+            ret = OOP_DoMethod(data->framebuffer, (OOP_Msg)msg);
         }
 
         ReleaseSemaphore(&data->fbsem);
