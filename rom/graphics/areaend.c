@@ -190,7 +190,7 @@
 			    if  (rp->Flags & AREAOUTLINE)
 			    {
 				SetAPen(rp, GetOutlinePen(rp));
-				PolyDraw(rp, last_idx - first_idx + 1, &areainfo->VctrTbl[first_idx]);
+				PolyDraw(rp, last_idx - first_idx + 1, &areainfo->VctrTbl[first_idx * 2]);
 				SetAPen(rp, Rem_APen);		    
 			    }
 
