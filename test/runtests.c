@@ -94,22 +94,22 @@ int main(int argc, char **argv)
     PutStr(scriptname);
     PutStr("\nOutput will be sent to the debugging console\n\n");
 
-    mem_old = checkmem();
-
     while (FGets(scripthandle, command, sizeof command))
     {
         if (command[0] != '#' && command[0] != '\n')
         {
             bug("====================================\n");
             bug("Running command: %s", command);
+
+            mem_old = checkmem();
             error = SystemTagList(command, NULL);
+            mem = checkmem();
+
             bug("returns: %d\n", error);
 
-            mem = checkmem();
             if (mem != mem_old)
             {
                 bug("Memory loss %ul Bytes\n", mem_old - mem);
-                mem_old = mem;
             }
 
             if (error == -1)
