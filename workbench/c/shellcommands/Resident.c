@@ -6,6 +6,64 @@
     Lang: English
 */
 
+/******************************************************************************
+
+
+    NAME
+
+        Resident
+
+    SYNOPSIS
+
+        NAME,FILE,REMOVE/S,ADD/S,REPLACE/S,PURE=FORCE/S,SYSTEM/S
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Handles list of resident commands. Those commands will be
+        loaded once and then executed from memory.
+
+        Only pure commands can be made resident, i.e. they must
+        be re-entrant and re-executable. Such commands have the "P"
+        protection flag set.
+
+        If called without arguments it lists the resident commands.
+
+    INPUTS
+
+        NAME    -- The reference name of the resident command. If no
+                   name is given the filepart of the file argument
+                   is used.
+        FILE    -- The file name of the command. It must be an
+                   absolute path.
+        REMOVE  -- Deactivates a resident command.
+        ADD     -- Adds multiple versions of the same command.
+        REPLACE -- If a resident command already exists, it will be
+                   replaced. That's the default option.
+        FORCE   -- Add commands which don't have the "P" bit set.
+        SYSTEM  -- Adds a command to the system resident list. Those
+                   commands can't be removed.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+        RESIDENT C:COPY
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
 
 #include <proto/dos.h>
 #include <dos/dosextens.h>

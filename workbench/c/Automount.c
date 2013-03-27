@@ -3,6 +3,43 @@
     $Id: $
 */
 
+/******************************************************************************
+
+
+    NAME
+
+        AutoMount
+
+    SYNOPSIS
+
+        (N/A)
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+        Command is called in Startup-Sequence.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <aros/debug.h>
 #include <dos/dos.h>
 #include <dos/rdargs.h>

@@ -6,18 +6,50 @@
     Lang: english
 */
 
-/* It's like doing avail flush before and after executing a program to detect
- * memleaks, excepted that this program tries to detect much more leaks.
- * It has to not leak itself, and not even allocate memory between checks.
- * That's why lists and nodes are statically allocated (in a system that could
- * be improved to allow reuse of nodes :) (like using an Allocate-based own
- * memory allocator using a huge static array as heap)
- *
- * Use : launch in a new shell, and use ctrl-f whenever you want to check
- * for leak.
- * See the Aminet "Scout" program to see other things to track in system lists.
- */
+/******************************************************************************
 
+
+    NAME
+
+        LeakWatch
+
+    SYNOPSIS
+
+        (N/A)
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        It's like doing avail flush before and after executing a program to detect
+        memleaks, excepted that this program tries to detect much more leaks.
+
+        Press CRTL-f whenever you want to check for leak.
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+        It has to not leak itself, and not even allocate memory between checks.
+        That's why lists and nodes are statically allocated (in a system that could
+        be improved to allow reuse of nodes. (like using an Allocate-based own
+        memory allocator using a huge static array as heap)
+
+    HISTORY
+
+******************************************************************************/
 
 #include <exec/memory.h>
 #include <exec/tasks.h>

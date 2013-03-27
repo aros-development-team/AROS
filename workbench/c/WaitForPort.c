@@ -6,6 +6,46 @@
     Lang: English
 */
 
+/******************************************************************************
+
+
+    NAME
+
+        WaitForPort
+
+    SYNOPSIS
+
+        P=PORT/A
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Waits up to 10 seconds for a user specified port
+        to become available.
+
+    INPUTS
+
+        PORT -- Name of the port to be waited.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <dos/rdargs.h>
 #include <proto/exec.h>
 #include <proto/dos.h>

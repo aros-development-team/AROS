@@ -6,6 +6,44 @@
     Lang: English              
  */
 
+/******************************************************************************
+
+
+    NAME
+
+        SymbolDump
+
+    SYNOPSIS
+
+        (N/A)
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+         Dumps debug symbols to the file "System:symbols.out" to be used with
+         Callgrind. See "Debugging manual" at www.aros.org.
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <utility/hooks.h>
 #include <libraries/debug.h>
 #include <proto/exec.h>

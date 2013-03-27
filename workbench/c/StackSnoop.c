@@ -6,6 +6,43 @@
     Lang: English              
  */
 
+/******************************************************************************
+
+
+    NAME
+
+        StackSnoop
+
+    SYNOPSIS
+
+        (N/A)
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Prints a list of tasks with their stack usage.
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <exec/exec.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>

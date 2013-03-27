@@ -21,6 +21,8 @@
 
     FUNCTION
 
+       Deletes local variable.
+
     INPUTS
 
         NAME    - The name of the local variable to unset.

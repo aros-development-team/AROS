@@ -6,6 +6,49 @@
     Lang: english
 */
 
+/******************************************************************************
+
+
+    NAME
+
+        AROSMonDrvs
+
+    SYNOPSIS
+
+        NOCOMPOSITION/S,ONLYCOMPOSITION/S
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        This command does almost the same thing as C:LoadMonDrvs does on
+        other systems. However, additionally we support priority-based
+        sorting for display drivers. This is needed in order to make monitor
+        ID assignment more predictable.
+
+    INPUTS
+
+        NOCOMPOSITION   -- Only load Monitors
+        ONLYCOMPOSITION -- Only load Compositor
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #define DEBUG 0
 
 #include <aros/debug.h>
@@ -25,10 +68,6 @@
 #define COMPOSITING_NAME "Compositor"
 
 /************************************************************************/
-
-/* This code does almost the same thing as C:LoadMonDrvs does on other systems.
-   However, additionally we support priority-based sorting for display drivers.
-   This is needed in order to make monitor ID assignment more predictable */
 
 struct MonitorNode
 {
