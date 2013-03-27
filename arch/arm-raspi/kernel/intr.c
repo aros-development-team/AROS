@@ -52,6 +52,8 @@ void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
     *((volatile unsigned int *)reg) = val;
 } 
 
+/* ** UNDEF INSTRUCTION EXCEPTION ** */
+
 asm (
     ".set	MODE_SYSTEM, 0x1f              \n"
 
@@ -88,6 +90,8 @@ void handle_undef(regs_t *regs)
         asm volatile ("mov r0, r0\n");
 }
 
+/* ** RESET HANDLER ** */
+
 void __vectorhand_reset(void)
 {
     *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
@@ -100,7 +104,11 @@ void __vectorhand_reset(void)
     return;
 }
 
+/* ** SWI HANDLER ** */
+
 /** SWI handled in syscall.c */
+
+/* ** IRQ HANDLER ** */
 
 asm (
     ".set	MODE_IRQ, 0x12                 \n"
@@ -198,6 +206,8 @@ void handle_irq(regs_t *regs)
     return;
 }
 
+/* ** FIQ HANDLER ** */
+
 __attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
 {
     *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
@@ -209,24 +219,8 @@ __attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
     }
 }
 
-#ifndef RASPI_VIRTMEMSUPPORT
 
-/*
-__attribute__ ((interrupt ("ABORT"))) void __vectorhand_dataabort(void)
-{
-    register unsigned int addr, far;
-    asm volatile("mov %[addr], lr" : [addr] "=r" (addr) );
-    // Read fault address register
-    asm volatile("mrc p15, 0, %[addr], c6, c0, 0": [addr] "=r" (far) );
-
-    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
-
-    // Routine terminates by returning to LR-4, which is the instruction
-    // after the aborted one
-    // GCC doesn't properly deal with data aborts in its interrupt
-    // handling - no option to return to the failed instruction
-    krnPanic(KernelBase, "CPU Data Abort @ 0x%p, fault address: 0x%p", (addr - 4), far);
-}*/
+/* ** DATA ABORT EXCEPTION ** */
 
 asm (
     ".set	MODE_SYSTEM, 0x1f              \n"
@@ -247,7 +241,13 @@ asm (
 
 void handle_dataabort(regs_t *regs)
 {
+    register unsigned int far;
+
+    // Read fault address register
+    asm volatile("mrc p15, 0, %[far], c6, c0, 0": [far] "=r" (far) );
+
     bug("[Kernel] Trap ARM Data Abort Exception -> Exception #2 (Bus Error)\n");
+    bug("[Kernel] attempt to access 0x%p\n", far);
 
     if (krnRunExceptionHandlers(KernelBase, 2, regs))
 	return;
@@ -263,6 +263,8 @@ void handle_dataabort(regs_t *regs)
     while (1)
         asm volatile ("mov r0, r0\n");
 }
+
+/* ** PREFETCH ABORT EXCEPTION ** */
 
 asm (
     ".set	MODE_SYSTEM, 0x1f              \n"
@@ -300,10 +302,8 @@ void handle_prefetchabort(regs_t *regs)
         asm volatile ("mov r0, r0\n");
 }
 
-#else
-#warning "TODO: Implement support for retrieving pages from medium, and reattempting access"
-#endif
 
+/* ** SETUP ** */
 
 /* linker exports */
 extern void *__intvecs_start, *__intvecs_end;
