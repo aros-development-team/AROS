@@ -87,10 +87,10 @@ typedef unsigned long IPTR;
 #include <stdio.h>
 #include <stdlib.h>
 
-#define	DEBUG_PATCHDOSNODE(x)
-#define DEBUG_MOUNT(x)
-#define	DEBUG_MAKEDOSNODE(x)
-#define	DEBUG_CHECK(x)
+#define	DEBUG_PATCHDOSNODE(x) x
+#define DEBUG_MOUNT(x) x
+#define	DEBUG_MAKEDOSNODE(x) x
+#define	DEBUG_CHECK(x) x
 
 #define	MOUNTLIST      "DEVS:MountList"
 #define	DOSDRIVERS     "DEVS:DOSDrivers/"

@@ -6,6 +6,43 @@
     Lang: english
 */
 
+/******************************************************************************
+
+
+    NAME
+
+        LibList
+
+    SYNOPSIS
+
+        (N/A)
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Print list of all libraries.
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <exec/memory.h>
 #include <exec/tasks.h>
 #include <exec/execbase.h>

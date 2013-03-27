@@ -20,6 +20,8 @@
 
     FUNCTION
 
+        Ends a skip block in a script.
+
     INPUTS
 
     RESULT
@@ -31,6 +33,8 @@
     BUGS
 
     SEE ALSO
+
+        Skip, Label
 
     INTERNALS
 

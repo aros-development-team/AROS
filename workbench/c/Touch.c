@@ -6,6 +6,46 @@
     Lang: english
 */
 
+/******************************************************************************
+
+
+    NAME
+
+        Touch
+
+    SYNOPSIS
+
+        NAME/A
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Sets the time stamp of the file to the current time. If the file doesn't
+        exist it will be created.
+
+    INPUTS
+
+        NAME -- The name of the file to be touched.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <dos/dos.h>
 #include <proto/dos.h>
 

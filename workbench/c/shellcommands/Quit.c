@@ -22,9 +22,12 @@
 
     FUNCTION
 
+        Exits a script with the given return code. It's recommended that you
+        use the standard return codes 5, 10 and 20.
+
     INPUTS
 
-        RC   --  the return code
+        RC   --  the return code. Defaults to 0.
 
     RESULT
 

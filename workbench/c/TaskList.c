@@ -6,6 +6,43 @@
     Lang: english
 */
 
+/******************************************************************************
+
+
+    NAME
+
+        TaskList
+
+    SYNOPSIS
+
+        (N/A)
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Prints a list of all tasks.
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <exec/memory.h>
 #include <exec/tasks.h>
 #include <exec/execbase.h>
