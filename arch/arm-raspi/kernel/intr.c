@@ -28,10 +28,11 @@ void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
 {
     int bank = IRQ_BANK(irq);
     unsigned int val, reg;
-    
+
     reg = IRQBANK_POINTER(bank);
 
     D(bug("[KRN] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
+
     val = *((volatile unsigned int *)reg);
     val |= IRQ_MASK(irq);
     *((volatile unsigned int *)reg) = val;
@@ -51,15 +52,40 @@ void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
     *((volatile unsigned int *)reg) = val;
 } 
 
-void __vectorhand_undef(void)
+asm (
+    ".set	MODE_SYSTEM, 0x1f              \n"
+
+    ".globl __vectorhand_undef                 \n"
+    ".type __vectorhand_undef,%function        \n"
+    "__vectorhand_undef:                       \n"
+    VECTCOMMON_START
+    "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
+    "           str     sp, [r0, #13*4]        \n"
+    "           str     lr, [r0, #14*4]        \n" // store lr in ctx_lr
+    "           mov     fp, #0                 \n" // clear fp
+
+    "           bl      handle_undef           \n"
+
+    VECTCOMMON_END
+);
+
+void handle_undef(regs_t *regs)
 {
-    register unsigned int addr;
+    bug("[Kernel] Trap ARM Undef Exception -> Exception #4 (Illegal instruction)\n");
 
-    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
+    if (krnRunExceptionHandlers(KernelBase, 4, regs))
+	return;
 
-    asm volatile("mov %[addr], lr" : [addr] "=r" (addr) );
+    if (core_Trap(4, regs))
+    {
+        bug("[Kernel] Trap handler returned\n");
+        return;
+    }
 
-    krnPanic(KernelBase, "CPU Unknown Instruction @ 0x%p", (addr - 4));
+    bug("[Kernel] UNHANDLED EXCEPTION #4\n");
+
+    while (1)
+        asm volatile ("mov r0, r0\n");
 }
 
 void __vectorhand_reset(void)
@@ -184,33 +210,96 @@ __attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
 }
 
 #ifndef RASPI_VIRTMEMSUPPORT
+
+/*
 __attribute__ ((interrupt ("ABORT"))) void __vectorhand_dataabort(void)
 {
     register unsigned int addr, far;
     asm volatile("mov %[addr], lr" : [addr] "=r" (addr) );
-    /* Read fault address register */
+    // Read fault address register
     asm volatile("mrc p15, 0, %[addr], c6, c0, 0": [addr] "=r" (far) );
 
     *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
 
-    /* Routine terminates by returning to LR-4, which is the instruction
-     * after the aborted one
-     * GCC doesn't properly deal with data aborts in its interrupt
-     * handling - no option to return to the failed instruction
-     */
+    // Routine terminates by returning to LR-4, which is the instruction
+    // after the aborted one
+    // GCC doesn't properly deal with data aborts in its interrupt
+    // handling - no option to return to the failed instruction
     krnPanic(KernelBase, "CPU Data Abort @ 0x%p, fault address: 0x%p", (addr - 4), far);
-}
+}*/
 
-/* Return to this function after a prefetch abort */
-__attribute__ ((interrupt ("ABORT"))) void __vectorhand_prefetchabort(void)
+asm (
+    ".set	MODE_SYSTEM, 0x1f              \n"
+
+    ".globl __vectorhand_dataabort             \n"
+    ".type __vectorhand_dataabort,%function    \n"
+    "__vectorhand_dataabort:                   \n"
+    VECTCOMMON_START
+    "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
+    "           str     sp, [r0, #13*4]        \n"
+    "           str     lr, [r0, #14*4]        \n" // store lr in ctx_lr
+    "           mov     fp, #0                 \n" // clear fp
+
+    "           bl      handle_dataabort       \n"
+
+    VECTCOMMON_END
+);
+
+void handle_dataabort(regs_t *regs)
 {
-    register unsigned int addr;
-    asm volatile("mov %[addr], lr" : [addr] "=r" (addr) );
+    bug("[Kernel] Trap ARM Data Abort Exception -> Exception #2 (Bus Error)\n");
 
-    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
+    if (krnRunExceptionHandlers(KernelBase, 2, regs))
+	return;
 
-    krnPanic(KernelBase, "CPU Prefetch Abort @ 0x%p", (addr - 4));
+    if (core_Trap(2, regs))
+    {
+        bug("[Kernel] Trap handler returned\n");
+        return;
+    }
+
+    bug("[Kernel] UNHANDLED EXCEPTION #2\n");
+
+    while (1)
+        asm volatile ("mov r0, r0\n");
 }
+
+asm (
+    ".set	MODE_SYSTEM, 0x1f              \n"
+
+    ".globl __vectorhand_prefetchabort         \n"
+    ".type __vectorhand_prefetchabort,%function \n"
+    "__vectorhand_prefetchabort:               \n"
+    VECTCOMMON_START
+    "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
+    "           str     sp, [r0, #13*4]        \n"
+    "           str     lr, [r0, #14*4]        \n" // store lr in ctx_lr
+    "           mov     fp, #0                 \n" // clear fp
+
+    "           bl      handle_prefetchabort   \n"
+
+    VECTCOMMON_END
+);
+
+void handle_prefetchabort(regs_t *regs)
+{
+    bug("[Kernel] Trap ARM Prefetch Abort Exception -> Exception #3 (Address Error)\n");
+
+    if (krnRunExceptionHandlers(KernelBase, 3, regs))
+	return;
+
+    if (core_Trap(3, regs))
+    {
+        bug("[Kernel] Trap handler returned\n");
+        return;
+    }
+
+    bug("[Kernel] UNHANDLED EXCEPTION #3\n");
+
+    while (1)
+        asm volatile ("mov r0, r0\n");
+}
+
 #else
 #warning "TODO: Implement support for retrieving pages from medium, and reattempting access"
 #endif
