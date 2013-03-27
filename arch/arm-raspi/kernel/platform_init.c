@@ -24,8 +24,6 @@
 #include "kernel_arch.h"
 #include "kernel_romtags.h"
 
-#define DALLOCMEM(x)
-
 void *(*__AllocMem)();
 
 #define ExecAllocMem(bytesize, requirements)        \

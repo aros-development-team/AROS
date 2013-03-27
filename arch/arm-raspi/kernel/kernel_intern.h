@@ -52,7 +52,13 @@ struct KernelBase *getKernelBase();
 #ifdef D
 #undef D
 #endif
+#if DEBUG
 #define D(x) x
+#define DALLOCMEM(x)
+#else
+#define D(x)
+#define DALLOCMEM(x)
+#endif
 
 #define __STR(x) #x
 #define STR(x) __STR(x)
