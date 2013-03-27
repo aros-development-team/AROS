@@ -62,7 +62,7 @@ ACrypt(UBYTE * buffer, const UBYTE * password, const UBYTE * user)
 	LONG i,d,k;
 
 	//ENTER();
-        ALIVE
+	//ALIVE
 
 	//assert( buffer != NULL && password != NULL && user != NULL );
 
