@@ -19,11 +19,6 @@
 
 #undef KernelBase
 
-/*
-// Enable support for paging memory to media..
-#define RASPI_VIRTMEMSUPPORT
-*/
-
 /* Use system timer 3 for our scheduling heartbeat */
 #define VBLANK_TIMER            3
 #define VBLANK_INTERVAL         (1000000 / 50)
