@@ -60,13 +60,13 @@ static const struct nameexp layout_expansion_table[] =
     {"usa2" , "Dvorak"              , NULL              },
     {"dvl"  , "Dvorak Left-handed"  , NULL              },
     {"dvr"  , "Dvorak Right-handed" , NULL              },
-    {"gr"   , "Ellinikí"            , "Hellas"          }, // Greak
     {"irl"  , "English Ireland"     , "Ireland"         },
     {"e"    , "Español"             , "España"          },
     {"sp"   , "Español no deadkeys" , "España"          },
     {"est"  , "Estonian"            , "Eesti"           },
     {"fin"  , "Finnish"             , "Suomi"           },
     {"f"    , "Français"            , "France"          },
+    {"gr"   , "Hellenic"            , "Hellas"          }, // Greak
     {"hr"   , "Hrvatski"            , "Hrvatska"        }, // Croatia
     {"is"   , "Íslenska"            , "Ísland"          },
     {"i"    , "Italiana"            , "Italia"          },
