@@ -77,13 +77,13 @@ STATIC CONST UBYTE lokeymaptypes[] =
     S|A, 	/* 0F */
     V,	 	/* 10 q */
     V,	 	/* 11 w */
-    D|V,	 	/* 12 e */
+    D|V,	/* 12 e */
     V,	 	/* 13 r */
     V,	 	/* 14 t */
-    D|V,	 	/* 15 y */
+    D|V,	/* 15 y */
     V,	 	/* 16 u */
-    D|V,	 	/* 17 i */
-    D|V,	 	/* 18 o */
+    D|V,	/* 17 i */
+    D|V,	/* 18 o */
     V,	 	/* 19 p */
     S|A,	/* 1A */
     S|A, 	/* 1B */
@@ -91,12 +91,12 @@ STATIC CONST UBYTE lokeymaptypes[] =
     S|A, 	/* 1D */
     S|A, 	/* 1E */
     S|A, 	/* 1F */
-    D|V, 		/* 20 a */
+    D|V, 	/* 20 a */
     V, 		/* 21 s */
     V, 		/* 22 d */
     V, 		/* 23 f */
     V, 		/* 24 g */
-    D|V, 		/* 25 h */
+    D|V, 	/* 25 h */
     V, 		/* 26 j */
     V, 		/* 27 k */
     V,	 	/* 28 l */
@@ -111,7 +111,7 @@ STATIC CONST UBYTE lokeymaptypes[] =
     V,	 	/* 31 z */
     V,	 	/* 32 x */
     V,	 	/* 33 c */
-    D|V,	 	/* 34 v */
+    D|V,	/* 34 v */
     V,	 	/* 35 b */
     V,	 	/* 36 n */
     V,	 	/* 37 m */
@@ -214,16 +214,16 @@ STATIC CONST UBYTE hikeymaptypes[] =
 	
 STATIC CONST UBYTE a_descr[] =
 {
-    DPF_MOD, 0x10,		/* key pressed without qualifier */
-    DPF_MOD, 0x17,		/* key pressed with SHIFT */
-    0, 'á', /* 0xE6 */	/* key pressed with ALT */
-    0, 'Á', /* 0xC6 */	/* key pressed with SHIFT + ALT */
-    0, 0x01,			/* key pressed with CONTROL */
-    0, 0x01,			/* key pressed with CONTROL + SHIFT */
-    0, 0x81,			/* key pressed with CONTROL + ALT */
-    0, 0x81,			/* key pressed with CONTROL + ALT + SHIFT */
+    DPF_MOD, 0xE1,		/* key pressed without qualifier */
+    DPF_MOD, 0xC1,		/* key pressed with SHIFT */
+    0, 0x81,				/* key pressed with ALT */
+    0, 0x81,			 	/* key pressed with SHIFT + ALT */
+    0, 0x01,				/* key pressed with CONTROL */
+    0, 0x01,				/* key pressed with CONTROL + SHIFT */
+    0, 0x81,				/* key pressed with CONTROL + ALT */
+    0, 0x81,				/* key pressed with CONTROL + ALT + SHIFT */
     
-    'a', 'Ü' /*0xE1*/, 0 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
+    'Ü' /*0xAC*/, 'a', 0 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
     'A', '¶' /*0xC1*/, 0 /*0xC0*/, 0 /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
 };	
 
@@ -238,7 +238,7 @@ STATIC CONST UBYTE e_descr[] =
     0, 0x81,			/* key pressed with CONTROL + ALT */
     0, 0x81,			/* key pressed with CONTROL + ALT + SHIFT */
     
-    'e', 'Ý' /*0xE1*/, 0 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
+    'Ý' /*0xE1*/, 'e', 0xA4 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
     'E', '¸' /*0xC1*/, 0 /*0xC0*/, 0 /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
 };	
 
@@ -341,10 +341,10 @@ STATIC CONST UBYTE key0b_descr[] =
     1,21,
     1,22,
     1,23,
-    '0',	/* NO QUAL */
-    ')',	/* SHIFT */
-    '°',	/* ALT */
-    0,		/* ALT + SHIFT */
+    '0',			/* NO QUAL */
+    ')',			/* SHIFT */
+    '°',			/* ALT */
+    0,			/* ALT + SHIFT */
     28,		/* CTRL */
     28,		/* CTRL + SHIFT */
     28,		/* CTRL + ALT */
@@ -353,6 +353,7 @@ STATIC CONST UBYTE key0b_descr[] =
 
 STATIC CONST IPTR lokeymap[] =
 {
+    /*---- 1st QWERTY row - 0x00 to 0x0F */
     BYTES('°', '^', '~', '`'), 		/* 00 Left of 1 Key */
     BYTES('!', 0, '!', '1'), 		/* 01 1 */
     BYTES('"', '²', '@', '2'), 		/* 02 2 */
@@ -364,60 +365,59 @@ STATIC CONST IPTR lokeymap[] =
     BYTES('*', '[', '*', '8'), 		/* 08 8 */
     BYTES('(', ']', '(', '9'),		/* 09 9 */
     BYTES(')', '}', ')', '0'),		/* 0A 0 */
-    BYTES(0, 0, '_', '-'),    	/* 0B Right of 0 */
+    BYTES(0, 0, '_', '-'),    		/* 0B Right of 0 */
     BYTES('+', '=', '=', '+'),		/* 0C 2nd right of 0 */
-    BYTES(0, 0, 0, 0),				/* 0D 3rd right of 0 */
-    BYTES(0, 0, 0, 0),				/* 0E undefined */
+    BYTES(0, 0, 0, 0),			/* 0D 3rd right of 0 */
+    BYTES(0, 0, 0, 0),			/* 0E undefined */
     BYTES('0', '0', '0', '0'), 		/* 0F NUM 0 */
-    BYTES(':', ';', 'Q', 'q'), 		/* 10 */
-    BYTES('Ó', 'ò', 'W', 'w'),		/* 11 */
-    DEAD(e_descr), 		/* 12 */
-    BYTES('Ñ', 'ñ', 'R', 'r'), 		/* 13 */
-    BYTES('Ô', 'ô', 'T', 't'),		/* 14 */
-    DEAD(y_descr),		/* 15 */
-    BYTES('È', 'è', 'U', 'u'), 		/* 16 */
-    DEAD(i_descr), 		/* 17 */
-    DEAD(o_descr), 		/* 18 */
-    BYTES('Ð', 'ð', 'P', 'p'), 		/* 19 */
-    
+    /*---- 2nd QWERTY row - 0x10 to 0x1F */
+    BYTES('Q', 'q', ':', ';'), 		/* 10 */
+    BYTES( 'W', 'w', 'Ó', 'ò'),		/* 11 */
+    DEAD(e_descr), 			/* 12 */
+    BYTES('R', 'r', 'Ñ', 'ñ'), 		/* 13 */
+    BYTES('T', 't', 'Ô', 'ô'),		/* 14 */
+    DEAD(y_descr),			/* 15 */
+    BYTES('U', 'u', 'È', 'è'), 		/* 16 */
+    DEAD(i_descr), 			/* 17 */
+    DEAD(o_descr), 			/* 18 */
+    BYTES('P', 'p', 'Ð', 'ð'), 		/* 19 */    
     BYTES('{', '[', '{', '['),		/* 1A */
     BYTES('}', ']', '}', ']'),		/* 1B */
-    BYTES(0, 0, 0, 0),				/* 1C undefined */
+    BYTES(0, 0, 0, 0),			/* 1C undefined */
     BYTES('1', '1', '1', '1'),		/* 1D NUM 1*/
     BYTES('2', '2', '2', '2'),		/* 1E NUM 2*/
     BYTES('3', '3', '3', '3'),		/* 1F NUM 3*/
-    
-    DEAD(a_descr),		/* 20 */
-    BYTES('Ó', 'ó', 'S', 's'),		/* 21 */
-    BYTES('Ä', 'ä', 'D', 'd'),		/* 22 */
-    BYTES('Ö', 'ö', 'F', 'f'), 		/* 23 */
-    BYTES('Ã', 'ã', 'G', 'g'), 		/* 24 */
-    DEAD(h_descr), 		/* 25 */
-    BYTES('Î', 'î', 'J', 'j'), 		/* 26 */
-    BYTES('Ê', 'ê', 'K', 'k'), 		/* 27 */
-    BYTES('Ë', 'ë', 'L', 'l'), 		/* 28 */
-    
+    /*---- 3rd QWERTY row - 0x20 to 0x2F */    
+    DEAD(a_descr),			/* 20 */
+    BYTES('S', 's', 'Ó', 'ó'),		/* 21 */
+    BYTES('D', 'd', 'Ä', 'ä'),		/* 22 */
+    BYTES('F', 'f', 'Ö', 'ö'), 		/* 23 */
+    BYTES('G', 'g', 'Ã', 'ã'), 		/* 24 */
+    DEAD(h_descr), 			/* 25 */
+    BYTES('J', 'j', 'Î', 'î'), 		/* 26 */
+    BYTES('K', 'k', 'Ê', 'ê'), 		/* 27 */
+    BYTES('L', 'l', 'Ë', 'ë'), 		/* 28 */    
     DEAD(key29_descr), 		/* 29 */
     BYTES(0, 0, '"', '\''),		/* 2A */
-    BYTES(0, 0, 0, 0),	        /* 2B */
-    BYTES(0, 0, 0, 0),				/* 2C undefined */
+    BYTES(0, 0, 0, 0),	        		/* 2B */
+    BYTES(0, 0, 0, 0),			/* 2C undefined */
     BYTES('4', '4', '4', '4'),		/* 2D NUM 4 */
     BYTES('5', '5', '5', '5'), 		/* 2E NUM 5 */
     BYTES('6', '6', '6', '6'), 		/* 2F NUM 6 */
+    /*---- 4th QWERTY row - 0x30 to 0x3F */
     BYTES(0  , '|', '>', '<'),		/* 30 */
-    BYTES('Æ', 'æ', 'Z', 'z'),		/* 31 */
-    BYTES('×', '÷', 'X', 'x'),		/* 32 */
-    BYTES('Ø', 'ø', 'C', 'c'),		/* 33 */
-    DEAD(v_descr),		/* 34 */
-    BYTES('Â', 'â', 'B', 'b'),		/* 35 */
-    BYTES('Í', 'í', 'N', 'n'),		/* 36 */
-    BYTES('Ì', 'ì', 'M', 'm'),		/* 37 */
-    
-    BYTES(0, 0, '<', ','),		/* 38 */
-    BYTES(0, 0, '>', '.'),		/* 39 */
-    BYTES(0, 0, '?', '/'),		/* 3A */
-    BYTES(0, 0, 0, 0),	/* 3B */
-    BYTES(',', ',', ',', ','),		/* 3C NUM . */
+    BYTES('Z', 'z', 'Æ', 'æ'),		/* 31 */
+    BYTES('X', 'x', '×', '÷'),		/* 32 */
+    BYTES('C', 'c', 'Ø', 'ø'),		/* 33 */
+    DEAD(v_descr),			/* 34 */
+    BYTES('B', 'b', 'Â', 'â'),		/* 35 */
+    BYTES('N', 'n', 'Í', 'í'),		/* 36 */
+    BYTES('M', 'm', 0xCC, 0xEC),		/* 37 */
+    BYTES(0, 0, '<', ','),			/* 38 */
+    BYTES(0, 0, '>', '.'),			/* 39 */
+    BYTES(0, 0, '?', '/'),			/* 3A */
+    BYTES(0, 0, 0, 0),			/* 3B */
+    BYTES(',', ',', ',', ','),			/* 3C NUM . */
     BYTES('7', '7', '7', '7'),		/* 3D NUM 7 */
     BYTES('8', '8', '8', '8'),		/* 3E NUM 8 */
     BYTES('9', '9', '9', '9'),		/* 3F NUM 9 */
@@ -427,22 +427,22 @@ STATIC CONST IPTR lokeymap[] =
 
 STATIC CONST IPTR hikeymap[] =
 {
-    BYTES(' ', ' ', ' ', ' '),		/* 40 */
+    BYTES(' ', ' ', ' ', ' '),				/* 40 */
     BYTES(8, 8, 8, 8),				/* 41 BACKSPACE*/
-    STRING(tab_descr),				/* 42 TAB */
+    STRING(tab_descr),			/* 42 TAB */
     BYTES(13, 13, 13, 13),			/* 43 ENTER */
     BYTES(0, 0, 10, 13),			/* 44 RETURN */
     BYTES(0, 0, 0x9B, 27),			/* 45 ESCAPE */
     BYTES(127, 127, 127, 127),		/* 46 DEL */
     STRING(insert_descr),			/* 47 INSERT ?? */
     STRING(pageup_descr),			/* 48 PAGEUP ?? */
-    STRING(pagedown_descr),			/* 49 PAGEDOWN ?? */
-    BYTES('-', '-', '-', '-'),		/* 4A NUMPAD - */
-    STRING(f11_descr), 				/* 4B F11 ?? */
-    STRING(up_descr),				/* 4C CURSOR UP*/
-    STRING(down_descr),				/* 4D CURSOR DOWN*/
+    STRING(pagedown_descr),		/* 49 PAGEDOWN ?? */
+    BYTES('-', '-', '-', '-'),			/* 4A NUMPAD - */
+    STRING(f11_descr), 			/* 4B F11 ?? */
+    STRING(up_descr),			/* 4C CURSOR UP*/
+    STRING(down_descr),			/* 4D CURSOR DOWN*/
     STRING(right_descr),			/* 4E CURSOR RIGHT */
-    STRING(left_descr),				/* 4F CURSOR LEFT */
+    STRING(left_descr),			/* 4F CURSOR LEFT */
     STRING(f1_descr),				/* 50 F1 */
     STRING(f2_descr),				/* 51 */
     STRING(f3_descr),				/* 52 */
@@ -452,13 +452,13 @@ STATIC CONST IPTR hikeymap[] =
     STRING(f7_descr),				/* 56 */
     STRING(f8_descr),				/* 57 */
     STRING(f9_descr),				/* 58 */
-    STRING(f10_descr),				/* 59 */
+    STRING(f10_descr),			/* 59 */
     BYTES(0, 0, 0, 0),				/* 5A */
-    BYTES('/', '/', '/', '/'),		/* 5B */
-    BYTES('*', '*', '*', '*'),		/* 5C */
-    BYTES('-', '-', '-', '-'),		/* 5D */
-    BYTES('+', '+', '+', '+'),		/* 5E */
-    STRING(help_descr),				/* 5F HELP */
+    BYTES('/', '/', '/', '/'),			/* 5B */
+    BYTES('*', '*', '*', '*'),			/* 5C */
+    BYTES('-', '-', '-', '-'),			/* 5D */
+    BYTES('+', '+', '+', '+'),			/* 5E */
+    STRING(help_descr),			/* 5F HELP */
     BYTES(0, 0, 0, 0),				/* 60 */
     BYTES(0, 0, 0, 0),				/* 61 */
     BYTES(0, 0, 0, 0),				/* 62 */
@@ -474,9 +474,9 @@ STATIC CONST IPTR hikeymap[] =
     BYTES(0, 0, 0, 0),				/* 6C */
     BYTES(0, 0, 0, 0),				/* 6D */
     STRING(pausebreak_descr),		/* 6E PAUSE/BREAK ?? */
-    STRING(f12_descr),				/* 6F F12 ?? */
-    STRING(home_descr),				/* 70 HOME ?? */
-    STRING(end_descr),				/* 71 END ?? */
+    STRING(f12_descr),			/* 6F F12 ?? */
+    STRING(home_descr),			/* 70 HOME ?? */
+    STRING(end_descr),			/* 71 END ?? */
     BYTES(0, 0, 0, 0),				/* 72 */
     BYTES(0, 0, 0, 0),				/* 73 */
     BYTES(0, 0, 0, 0),				/* 74 */
@@ -510,7 +510,7 @@ STATIC CONST UBYTE locapsable[] =
     SETBITS(1, 1, 0, 0, 0, 0, 0, 0),	/* 28 - 2F */
     
     SETBITS(0, 1, 1, 1, 1, 1, 1, 1),	/* 30 - 37 */
-    SETBITS(0, 0, 0, 0, 0, 0, 0, 0)		/* 38 - 3F */
+    SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 38 - 3F */
 };
 
 STATIC CONST UBYTE hicapsable[] =
@@ -525,7 +525,7 @@ STATIC CONST UBYTE hicapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 68 - 6F */
     
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 70 - 77 */
-    SETBITS(0, 0, 0, 0, 0, 0, 0, 0)		/* 78 - 7F */
+    SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 78 - 7F */
 };
 
 STATIC CONST UBYTE lorepeatable[] =
@@ -540,7 +540,7 @@ STATIC CONST UBYTE lorepeatable[] =
     SETBITS(1, 1, 1, 1, 0, 1, 1, 1),	/* 28 - 2F */
     
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 30 - 37 */
-    SETBITS(1, 1, 1, 0, 1, 1, 1, 1)		/* 38 - 3F */
+    SETBITS(1, 1, 1, 0, 1, 1, 1, 1)	/* 38 - 3F */
 };
 
 STATIC CONST UBYTE hirepeatable[] =
@@ -555,5 +555,5 @@ STATIC CONST UBYTE hirepeatable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 68 - 6F */
     
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 70 - 77 */
-    SETBITS(0, 0, 0, 0, 0, 0, 0, 0)		/* 78 - 7F */
+    SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 78 - 7F */
 };
