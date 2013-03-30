@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -45,6 +45,7 @@ static BOOL identify(struct IOStdReq *ioreq, STRPTR name)
     scsicmd.scsi_Length = 36;
     scsicmd.scsi_Command = cmd;
     scsicmd.scsi_CmdLength = sizeof cmd;
+    scsicmd.scsi_Flags = SCSIF_READ;
     ioreq->io_Command = HD_SCSICMD;
     ioreq->io_Data = &scsicmd;
     ioreq->io_Length = sizeof(struct SCSICmd);
