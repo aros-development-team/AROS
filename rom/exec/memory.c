@@ -85,11 +85,27 @@ char *FormatMMContext(char *buffer, struct MMContext *ctx, struct ExecBase *SysB
 }
 
 /* Allocator optimization support */
+
+/*
+ * The array contains pointers to chunk previous to first chunk of at least size N
+ *
+ * N = 1 << (FIRSTPOTBIT + i), where i is index in array
+ * first is defined as MemChunk with lowest address
+ *
+ * Each chunk in array locates the place where search should start, not necesarly
+ * where allocation should happen
+ */
+
+#define FIRSTPOTBIT             (5)
+#define FIRSTPOT                (1 << FIRSTPOTBIT)
+#define POTSTEP                 (2)     /* Distance between each level */
+#define ALLOCATORCTXINDEXSIZE   (8)     /* Number of levels in index */
+
 struct MemHeaderAllocatorCtx
 {
     struct MemHeader    *mhac_MemHeader;
 
-    struct MemChunk     *mhac_256Prev;
+    struct MemChunk     *mhac_PrevChunks[ALLOCATORCTXINDEXSIZE];
 };
 
 struct MemHeaderAllocatorCtx test[25];
@@ -118,32 +134,75 @@ struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh)
 
 void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * mhac)
 {
+    LONG i;
+
     if (!mhac)
         return;
 
-    if (mhac->mhac_256Prev == mc || (mhac->mhac_256Prev != NULL && mhac->mhac_256Prev->mc_Next == mc))
-        mhac->mhac_256Prev = NULL;
+    for (i = 0; i < ALLOCATORCTXINDEXSIZE; i++)
+    {
+        if (mhac->mhac_PrevChunks[i] != NULL &&
+                (mhac->mhac_PrevChunks[i] == mc || mhac->mhac_PrevChunks[i]->mc_Next == mc))
+        {
+            mhac->mhac_PrevChunks[i] = NULL;
+        }
+    }
 }
 
 void mhac_MemChunkCreated(struct MemChunk *mc, struct MemChunk *mcprev, struct MemHeaderAllocatorCtx * mhac)
 {
+    LONG i, v = FIRSTPOT;
+
+    if (mc->mc_Bytes < FIRSTPOT) /* Allocation too small for index */
+        return;
+
     if (!mhac)
         return;
 
-    if (mc->mc_Bytes >= 32)
+    for (i = 0; i < ALLOCATORCTXINDEXSIZE; i++, v = v << POTSTEP)
     {
-        if (mhac->mhac_256Prev == NULL || (mhac->mhac_256Prev != NULL && mhac->mhac_256Prev->mc_Next > mc))
-            mhac->mhac_256Prev = mcprev;
+        if (mc->mc_Bytes < v)
+            break; /* Chunk smaller than index at i. Stop */
+
+        /* If no chunk in index or given passed chunk has lower address than chunk in index */
+        if (mhac->mhac_PrevChunks[i] == NULL ||
+                (mhac->mhac_PrevChunks[i] != NULL && mhac->mhac_PrevChunks[i]->mc_Next > mc))
+        {
+            mhac->mhac_PrevChunks[i] = mcprev;
+        }
     }
+
 }
 
+/* General idea:
+ *      Function returned pointer to chunk that is prev to chunk that will allow
+ *      to locate faster chunk big enough for allocation. Function never returns NULL.
+ * Current implementation:
+ *      Function returns pointer to chunk that is prev to first biggest chunk,
+ *      not bigger than requested size
+ */
 struct MemChunk * mhac_GetBetterPrevMemChunk(struct MemChunk * prev, IPTR size, struct MemHeaderAllocatorCtx * mhac)
 {
-    if (mhac)
-        if (size >= 32 && mhac->mhac_256Prev != NULL)
-            return mhac->mhac_256Prev;
+    struct MemChunk * _return = prev;
 
-    return prev;
+    if (size < FIRSTPOT)
+        return _return; /* Allocation too small for index */
+
+    if (mhac)
+    {
+        LONG i, v = FIRSTPOT;
+
+        for (i = 0; i < ALLOCATORCTXINDEXSIZE; i++, v = v << POTSTEP)
+        {
+            if (size < v)
+                return _return; /* This index is bigger than requester size */
+
+            if (mhac->mhac_PrevChunks[i] != NULL)
+                _return = mhac->mhac_PrevChunks[i];
+        }
+    }
+
+    return _return;
 }
 
 
