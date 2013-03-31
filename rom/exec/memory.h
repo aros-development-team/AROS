@@ -60,7 +60,7 @@ struct TraceLocation;
 
 struct MemHeaderAllocatorCtx;
 
-struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh);
+struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh, struct ExecBase * SysBase);
 void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool);
 
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase);
