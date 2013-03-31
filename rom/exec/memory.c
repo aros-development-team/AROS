@@ -101,6 +101,7 @@ void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
 #define mhac_MemChunkClaimed(a, b)
 #define mhac_MemChunkCreated(a, b, c)       { (void)b; }
 #define mhac_GetBetterPrevMemChunk(a, b, c) (a)
+#define mhac_GetCloserPrevMemChunk(a, b, c) (a)
 #define mhac_PoolMemHeaderGetCtx(a)         (NULL)
 #define mhac_PoolMemHeaderGetPool(a)        (a->mh_Node.ln_Name)
 
@@ -239,6 +240,28 @@ struct MemChunk * mhac_GetBetterPrevMemChunk(struct MemChunk * prev, IPTR size, 
 
             if (mhac->mhac_PrevChunks[i] != NULL)
                 _return = mhac->mhac_PrevChunks[i];
+        }
+    }
+
+    return _return;
+}
+
+struct MemChunk * mhac_GetCloserPrevMemChunk(struct MemChunk * prev, APTR addr, struct MemHeaderAllocatorCtx * mhac)
+{
+    struct MemChunk * _return = prev;
+
+    if (mhac)
+    {
+        LONG i;
+
+        for (i = 0; i < mhac->mhac_IndexSize; i++)
+        {
+            if (mhac->mhac_PrevChunks[i] != NULL &&
+                    (APTR)mhac->mhac_PrevChunks[i]->mc_Next < addr &&
+                    mhac->mhac_PrevChunks[i]->mc_Next > _return->mc_Next)
+            {
+                _return = mhac->mhac_PrevChunks[i];
+            }
         }
     }
 
@@ -508,6 +531,10 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
         freeList->mh_Free += byteSize;
         return;
     }
+
+    /* Find closer chunk */
+    p1=mhac_GetCloserPrevMemChunk(p1, addr, mhac);
+    p2=p1->mc_Next;
 
     /* Follow the list to find a place where to insert our memory. */
     do
