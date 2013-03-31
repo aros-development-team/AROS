@@ -133,7 +133,7 @@ void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * m
 #define FIRSTPOTBIT             (5)
 #define FIRSTPOT                (1 << FIRSTPOTBIT)
 #define POTSTEP                 (1)     /* Distance between each level */
-#define ALLOCATORCTXINDEXSIZE   (16)    /* Number of levels in index */
+#define ALLOCATORCTXINDEXSIZE   (10)    /* Number of levels in index */
 
 struct MemHeaderAllocatorCtx
 {
@@ -171,7 +171,8 @@ static void mhac_ClearIndex(struct MemHeaderAllocatorCtx * mhac)
         mhac->mhac_PrevChunks[i] = NULL;
 }
 
-static void mhac_SetupMemHeaderAllocatorCtx(struct MemHeader * mh, struct MemHeaderAllocatorCtx * mhac)
+static void mhac_SetupMemHeaderAllocatorCtx(struct MemHeader * mh, ULONG maxindexsize,
+        struct MemHeaderAllocatorCtx * mhac)
 {
     /* Adjust index size to space in MemHeader */
     IPTR size = (IPTR)mh->mh_Upper - (IPTR)mh->mh_Lower;
@@ -183,6 +184,7 @@ static void mhac_SetupMemHeaderAllocatorCtx(struct MemHeader * mh, struct MemHea
     for (; size > 0; size = size >> POTSTEP) indexsize++;
 
     if (indexsize < 0) indexsize = 0;
+    if (indexsize > maxindexsize) indexsize = maxindexsize;
     if (indexsize > ALLOCATORCTXINDEXSIZE) indexsize = ALLOCATORCTXINDEXSIZE;
 
     mhac->mhac_MemHeader = mh;
@@ -202,7 +204,7 @@ struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh, struct Exec
 
     /* New context is needed */
     mhac = Allocate(mh, sizeof(struct MemHeaderAllocatorCtx));
-    mhac_SetupMemHeaderAllocatorCtx(mh, mhac);
+    mhac_SetupMemHeaderAllocatorCtx(mh, ALLOCATORCTXINDEXSIZE, mhac);
     AddTail(&PrivExecBase(SysBase)->AllocatorCtxList, (struct Node *)mhac);
 
     return mhac;
@@ -237,7 +239,7 @@ static LONG mhac_CalcIndex(LONG size, ULONG indexsize)
     return r;
 }
 
-void mhac_MemChunkCreated(struct MemChunk * mc, struct MemChunk *mcprev, struct MemHeaderAllocatorCtx * mhac)
+static void mhac_MemChunkCreated(struct MemChunk * mc, struct MemChunk *mcprev, struct MemHeaderAllocatorCtx * mhac)
 {
     LONG i, v = FIRSTPOT;
 
@@ -268,7 +270,7 @@ void mhac_MemChunkCreated(struct MemChunk * mc, struct MemChunk *mcprev, struct 
  *      Function returns pointer to chunk that is prev to first biggest chunk,
  *      not bigger than requested size
  */
-struct MemChunk * mhac_GetBetterPrevMemChunk(struct MemChunk * prev, IPTR size, struct MemHeaderAllocatorCtx * mhac)
+static struct MemChunk * mhac_GetBetterPrevMemChunk(struct MemChunk * prev, IPTR size, struct MemHeaderAllocatorCtx * mhac)
 {
     struct MemChunk * _return = prev;
 
@@ -298,7 +300,7 @@ struct MemChunk * mhac_GetBetterPrevMemChunk(struct MemChunk * prev, IPTR size, 
     return _return;
 }
 
-struct MemChunk * mhac_GetCloserPrevMemChunk(struct MemChunk * prev, APTR addr, struct MemHeaderAllocatorCtx * mhac)
+static struct MemChunk * mhac_GetCloserPrevMemChunk(struct MemChunk * prev, APTR addr, struct MemHeaderAllocatorCtx * mhac)
 {
     struct MemChunk * _return = prev;
 
@@ -327,7 +329,7 @@ void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
 {
     struct MemHeaderAllocatorCtx * mhac = Allocate(mh, sizeof(struct MemHeaderAllocatorCtx));
 
-    mhac_SetupMemHeaderAllocatorCtx(mh, mhac);
+    mhac_SetupMemHeaderAllocatorCtx(mh, 5, mhac);
 
     mhac->mhac_Data1 = pool;
     mh->mh_Node.ln_Name = (STRPTR)mhac;
