@@ -163,7 +163,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     negsize = AROS_ALIGN(negsize);
 
     /* Allocate memory for library base */
-    mem = stdAlloc(mh, negsize + sizeof(struct IntExecBase), MEMF_CLEAR, NULL, NULL);
+    mem = stdAlloc(mh, NULL, negsize + sizeof(struct IntExecBase), MEMF_CLEAR, NULL, NULL);
     if (!mem)
     	return NULL;
 

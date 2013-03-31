@@ -77,7 +77,7 @@
     }
 #endif
 
-    stdDealloc(freeList, memoryBlock, byteSize, &tp, SysBase);
+    stdDealloc(freeList, NULL, memoryBlock, byteSize, &tp, SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* Deallocate */
