@@ -71,6 +71,7 @@ keytable[] =
     {XK_space,		0x40 },
     {XK_Shift_L,	0x60 },
     {XK_Shift_R,	0x61 },
+    {XK_Caps_Lock,	0x62 },
     {XK_Alt_L,		0x64 },
     {XK_Alt_R,		0x65 },
     {XK_Escape,		0x45 },
