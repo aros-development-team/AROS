@@ -432,6 +432,11 @@ APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR siz
     if (!validateHeader(mh, MM_ALLOC, NULL, size, tp, SysBase))
         return NULL;
 
+    /* Validate if there is even enough total free memory */
+    if (mh->mh_Free < byteSize)
+        return NULL;
+
+
     /*
      * The free memory list is only single linked, i.e. to remove
      * elements from the list I need the node's predecessor. For the
@@ -852,6 +857,14 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
         }
         else
         {
+            /* Ignore existing MemHeaders with free memory smaller than allocation */
+            if (mh->mh_Free < memSize)
+            {
+                mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
+                continue;
+            }
+
+
             /* Ignore existing MemHeaders with memory type that differ from the requested ones */
             if (physFlags & ~mh->mh_Attributes)
             {
