@@ -127,6 +127,7 @@ struct MemHeaderAllocatorCtx
     struct MemHeader        *mhac_MemHeader;
     APTR                    mhac_Data1;
 
+    ULONG                   mhac_IndexSize;
     struct MemChunk         *mhac_PrevChunks[ALLOCATORCTXINDEXSIZE];
 };
 
@@ -134,11 +135,13 @@ struct MemHeaderAllocatorCtx
 
 struct MemHeaderAllocatorCtx test[25];
 
-static void mhac_SetupMemHeaderAllocatorCtx(struct MemHeader * mh, struct MemHeaderAllocatorCtx * mhac)
+static void mhac_SetupMemHeaderAllocatorCtx(struct MemHeader * mh, struct MemHeaderAllocatorCtx * mhac,
+        ULONG indexsize)
 {
     LONG i;
     mhac->mhac_MemHeader = mh;
-    for (i = 0; i < ALLOCATORCTXINDEXSIZE; i++)
+    mhac->mhac_IndexSize = indexsize;
+    for (i = 0; i < mhac->mhac_IndexSize; i++)
         mhac->mhac_PrevChunks[i] = NULL;
 }
 
@@ -160,6 +163,7 @@ struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh)
     }
 
     mhi->mhac_MemHeader = mh;
+    mhi->mhac_IndexSize = 8;
 
     return mhi;
 }
@@ -171,7 +175,7 @@ void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * m
     if (!mhac)
         return;
 
-    for (i = 0; i < ALLOCATORCTXINDEXSIZE; i++)
+    for (i = 0; i < mhac->mhac_IndexSize; i++)
     {
         if (mhac->mhac_PrevChunks[i] != NULL &&
                 (mhac->mhac_PrevChunks[i] == mc || mhac->mhac_PrevChunks[i]->mc_Next == mc))
@@ -191,7 +195,7 @@ void mhac_MemChunkCreated(struct MemChunk * mc, struct MemChunk *mcprev, struct 
     if (!mhac)
         return;
 
-    for (i = 0; i < ALLOCATORCTXINDEXSIZE; i++, v = v << POTSTEP)
+    for (i = 0; i < mhac->mhac_IndexSize; i++, v = v << POTSTEP)
     {
         if (mc->mc_Bytes < v)
             break; /* Chunk smaller than index at i. Stop */
@@ -224,7 +228,7 @@ struct MemChunk * mhac_GetBetterPrevMemChunk(struct MemChunk * prev, IPTR size, 
     {
         LONG i, v = FIRSTPOT;
 
-        for (i = 0; i < ALLOCATORCTXINDEXSIZE; i++, v = v << POTSTEP)
+        for (i = 0; i < mhac->mhac_IndexSize; i++, v = v << POTSTEP)
         {
             if (size < v)
                 return _return; /* This index is bigger than requester size */
@@ -244,7 +248,19 @@ void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
 {
     struct MemHeaderAllocatorCtx * mhac = Allocate(mh, sizeof(struct MemHeaderAllocatorCtx));
 
-    mhac_SetupMemHeaderAllocatorCtx(mh, mhac);
+    /* Adjust index size to space in MemHeader */
+    IPTR size = (IPTR)mh->mh_Upper - (IPTR)mh->mh_Lower;
+    LONG indexsize = 0;
+
+    size = size >> FIRSTPOTBIT;
+    size = size >> POTSTEP;
+
+    for (; size > 0; size = size >> POTSTEP) indexsize++;
+
+    if (indexsize < 0) indexsize = 0;
+    if (indexsize > ALLOCATORCTXINDEXSIZE) indexsize = ALLOCATORCTXINDEXSIZE;
+
+    mhac_SetupMemHeaderAllocatorCtx(mh, mhac, indexsize);
 
     mhac->mhac_Data1 = pool;
     mh->mh_Node.ln_Name = (STRPTR)mhac;
