@@ -84,6 +84,18 @@ char *FormatMMContext(char *buffer, struct MMContext *ctx, struct ExecBase *SysB
     return buffer;
 }
 
+#ifdef NO_ALLOCATOR_CONTEXT
+
+struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh)
+{
+    return NULL;
+}
+
+#define mhac_MemChunkClaimed(a, b)
+#define mhac_MemChunkCreated(a, b, c) { (void)b; }
+#define mhac_GetBetterPrevMemChunk(a, b, c) (a)
+
+#else
 /* Allocator optimization support */
 
 /*
@@ -204,6 +216,7 @@ struct MemChunk * mhac_GetBetterPrevMemChunk(struct MemChunk * prev, IPTR size, 
 
     return _return;
 }
+#endif
 
 
 #ifdef NO_CONSISTENCY_CHECKS
