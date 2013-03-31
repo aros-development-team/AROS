@@ -2,8 +2,8 @@
     Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Elliniki (Greek) PC105 Keymap
-    Lang: Elliniki
+    Desc: Hellenic (Greek) PC105 Keymap
+    Lang: Hellenic
 */
 
 #include <devices/keymap.h>
@@ -214,70 +214,70 @@ STATIC CONST UBYTE hikeymaptypes[] =
 	
 STATIC CONST UBYTE a_descr[] =
 {
-    DPF_MOD, 0xE1,		/* key pressed without qualifier */
-    DPF_MOD, 0xC1,		/* key pressed with SHIFT */
-    0, 0x81,				/* key pressed with ALT */
-    0, 0x81,			 	/* key pressed with SHIFT + ALT */
+    DPF_MOD, 0x10,		/* key pressed without qualifier */
+    DPF_MOD, 0x17,		/* key pressed with SHIFT */
+    0, 'a',				/* key pressed with ALT */
+    0, 'A',			 	/* key pressed with SHIFT + ALT */
     0, 0x01,				/* key pressed with CONTROL */
     0, 0x01,				/* key pressed with CONTROL + SHIFT */
     0, 0x81,				/* key pressed with CONTROL + ALT */
     0, 0x81,				/* key pressed with CONTROL + ALT + SHIFT */
     
-    'Ü' /*0xAC*/, 'a', 0 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
-    'A', '¶' /*0xC1*/, 0 /*0xC0*/, 0 /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
+    'á' /*0xAC*/, 'Ü', 0 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
+    'Á', '¶' /*0xC1*/, 0 /*0xC0*/, 0 /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
 };	
 
 STATIC CONST UBYTE e_descr[] =
 {
     DPF_MOD, 0x10,		/* key pressed without qualifier */
     DPF_MOD, 0x17,		/* key pressed with SHIFT */
-    0, 'å', /* 0xE6 */	/* key pressed with ALT */
-    0, 'Å', /* 0xC6 */	/* key pressed with SHIFT + ALT */
-    0, 0x01,			/* key pressed with CONTROL */
-    0, 0x01,			/* key pressed with CONTROL + SHIFT */
-    0, 0x81,			/* key pressed with CONTROL + ALT */
-    0, 0x81,			/* key pressed with CONTROL + ALT + SHIFT */
+    0, 'e', /* 0xE6 */		/* key pressed with ALT */
+    0, 'E', /* 0xC6 */	/* key pressed with SHIFT + ALT */
+    0, '¤',				/* key pressed with CONTROL */
+    0, 0x01,				/* key pressed with CONTROL + SHIFT */
+    0, 0x81,				/* key pressed with CONTROL + ALT */
+    0, 0x81,				/* key pressed with CONTROL + ALT + SHIFT */
     
-    'Ý' /*0xE1*/, 'e', 0xA4 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
-    'E', '¸' /*0xC1*/, 0 /*0xC0*/, 0 /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
+    'å' /*0xE1*/, 'Ý', 0 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
+    'Å', '¸' /*0xC1*/, 0 /*0xC0*/, 0 /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
 };	
 
 STATIC CONST UBYTE h_descr[] =
 {
     DPF_MOD, 0x10,		/* key pressed without qualifier */
     DPF_MOD, 0x17,		/* key pressed with SHIFT */
-    0, 'ç', /* 0xE6 */	/* key pressed with ALT */
-    0, 'Ç', /* 0xC6 */	/* key pressed with SHIFT + ALT */
-    0, 0x01,			/* key pressed with CONTROL */
-    0, 0x01,			/* key pressed with CONTROL + SHIFT */
-    0, 0x81,			/* key pressed with CONTROL + ALT */
-    0, 0x81,			/* key pressed with CONTROL + ALT + SHIFT */
+    0, 'h', /* 0xE6 */		/* key pressed with ALT */
+    0, 'H', /* 0xC6 */		/* key pressed with SHIFT + ALT */
+    0, 0x01,				/* key pressed with CONTROL */
+    0, 0x01,				/* key pressed with CONTROL + SHIFT */
+    0, 0x81,				/* key pressed with CONTROL + ALT */
+    0, 0x81,				/* key pressed with CONTROL + ALT + SHIFT */
     
-    'h', 'Þ' /*0xE1*/, 0 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
-    'H', '¹' /*0xC1*/, 0 /*0xC0*/, 0 /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
+    'ç', 'Þ' /*0xE1*/, 0 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
+    'Ç', '¹' /*0xC1*/, 0 /*0xC0*/, 0 /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
 };	
 	
 STATIC CONST UBYTE i_descr[] =
 {
     DPF_MOD, 0x10,		/* key pressed without qualifier */
     DPF_MOD, 0x17,		/* key pressed with SHIFT */
-    0, 'é', /* 0xE6 */	/* key pressed with ALT */
-    0, 'É', /* 0xC6 */	/* key pressed with SHIFT + ALT */
+    0, 'i', /* 0xE6 */	/* key pressed with ALT */
+    0, 'I', /* 0xC6 */	/* key pressed with SHIFT + ALT */
     0, 0x01,			/* key pressed with CONTROL */
     0, 0x01,			/* key pressed with CONTROL + SHIFT */
     0, 0x81,			/* key pressed with CONTROL + ALT */
     0, 0x81,			/* key pressed with CONTROL + ALT + SHIFT */
     
-    'i', 'ß' /*0xE1*/, 'ú' /*0xE0*/, 'À' /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
-    'I', 'º' /*0xC1*/, 'Ú' /*0xC0*/, 'º' /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
+    'é', 'ß' /*0xE1*/, 'ú' /*0xE0*/, 'À' /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
+    'É', 'º' /*0xC1*/, 'Ú' /*0xC0*/, 'º' /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
 };	
 
 STATIC CONST UBYTE o_descr[] =
 {
     DPF_MOD, 0x10,		/* key pressed without qualifier */
     DPF_MOD, 0x17,		/* key pressed with SHIFT */
-    0, 'ï', /* 0xE6 */	/* key pressed with ALT */
-    0, 'Ï', /* 0xC6 */	/* key pressed with SHIFT + ALT */
+    0, 'o', /* 0xE6 */	/* key pressed with ALT */
+    0, 'O', /* 0xC6 */	/* key pressed with SHIFT + ALT */
     0, 0x01,			/* key pressed with CONTROL */
     0, 0x01,			/* key pressed with CONTROL + SHIFT */
     0, 0x81,			/* key pressed with CONTROL + ALT */
@@ -291,30 +291,30 @@ STATIC CONST UBYTE y_descr[] =
 {
     DPF_MOD, 0x10,		/* key pressed without qualifier */
     DPF_MOD, 0x17,		/* key pressed with SHIFT */
-    0, 'õ', /* 0xE6 */	/* key pressed with ALT */
-    0, 'Õ', /* 0xC6 */	/* key pressed with SHIFT + ALT */
+    0, 'y', /* 0xE6 */	/* key pressed with ALT */
+    0, 'Y', /* 0xC6 */	/* key pressed with SHIFT + ALT */
     0, 0x01,			/* key pressed with CONTROL */
     0, 0x01,			/* key pressed with CONTROL + SHIFT */
     0, 0x81,			/* key pressed with CONTROL + ALT */
     0, 0x81,			/* key pressed with CONTROL + ALT + SHIFT */
     
-    'y', 'ý' /*0xE1*/, 'û' /*0xE0*/, 'à' /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
-    'Y', '¾' /*0xC1*/, 'Û' /*0xC0*/, '¾' /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
+    'õ', 'ý' /*0xE1*/, 'û' /*0xE0*/, 'à' /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
+    'Õ', '¾' /*0xC1*/, 'Û' /*0xC0*/, '¾' /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
 };			
 
 STATIC CONST UBYTE v_descr[] =
 {
     DPF_MOD, 0x10,		/* key pressed without qualifier */
     DPF_MOD, 0x17,		/* key pressed with SHIFT */
-    0, 'ù', /* 0xE6 */	/* key pressed with ALT */
-    0, 'Ù', /* 0xC6 */	/* key pressed with SHIFT + ALT */
+    0, 'v', /* 0xE6 */		/* key pressed with ALT */
+    0, 'V', /* 0xC6 */		/* key pressed with SHIFT + ALT */
     0, 0x01,			/* key pressed with CONTROL */
     0, 0x01,			/* key pressed with CONTROL + SHIFT */
     0, 0x81,			/* key pressed with CONTROL + ALT */
     0, 0x81,			/* key pressed with CONTROL + ALT + SHIFT */
     
-    'v', 'þ' /*0xE1*/, 0 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
-    'V', '¿' /*0xC1*/, 0 /*0xC0*/, 0 /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
+    'ù', 'þ' /*0xE1*/, 0 /*0xE0*/, 0 /*0xE2*/, 0 /*0xE3*/, 0 /*0xE4*/, 0 /*0xE5*/,   
+    'Ù', '¿' /*0xC1*/, 0 /*0xC0*/, 0 /*0xC2*/, 0 /*0xC3*/, 0 /*0xC4*/, 0 /*0xC5*/
 };
 	
 	
@@ -322,34 +322,11 @@ STATIC CONST UBYTE v_descr[] =
 	
 STATIC CONST UBYTE key29_descr[] =
 {
-    0, ';',
-    0, ':',
     DPF_DEAD, 1,
     DPF_DEAD, 2,
     DPF_DEAD, 3,
     DPF_DEAD, 4
 };	
-	
-	
-STATIC CONST UBYTE key0b_descr[] =
-{
-    1,16,
-    1,17,
-    1,18,
-    1,19,
-    1,20,
-    1,21,
-    1,22,
-    1,23,
-    '0',			/* NO QUAL */
-    ')',			/* SHIFT */
-    '°',			/* ALT */
-    0,			/* ALT + SHIFT */
-    28,		/* CTRL */
-    28,		/* CTRL + SHIFT */
-    28,		/* CTRL + ALT */
-    28,		/* CTRL + ALT + SHIFT */
-};
 
 STATIC CONST IPTR lokeymap[] =
 {
@@ -367,7 +344,7 @@ STATIC CONST IPTR lokeymap[] =
     BYTES(')', '}', ')', '0'),		/* 0A 0 */
     BYTES(0, 0, '_', '-'),    		/* 0B Right of 0 */
     BYTES('+', '=', '=', '+'),		/* 0C 2nd right of 0 */
-    BYTES(0, 0, 0, 0),			/* 0D 3rd right of 0 */
+    BYTES(0, 0, '|', '\\'),		/* 0D 3rd right of 0 */
     BYTES(0, 0, 0, 0),			/* 0E undefined */
     BYTES('0', '0', '0', '0'), 		/* 0F NUM 0 */
     /*---- 2nd QWERTY row - 0x10 to 0x1F */
@@ -383,7 +360,7 @@ STATIC CONST IPTR lokeymap[] =
     BYTES('P', 'p', 'Ð', 'ð'), 		/* 19 */    
     BYTES('{', '[', '{', '['),		/* 1A */
     BYTES('}', ']', '}', ']'),		/* 1B */
-    BYTES(0, 0, 0, 0),			/* 1C undefined */
+    BYTES(0, 0, '|', '\\'),		/* 1C undefined */
     BYTES('1', '1', '1', '1'),		/* 1D NUM 1*/
     BYTES('2', '2', '2', '2'),		/* 1E NUM 2*/
     BYTES('3', '3', '3', '3'),		/* 1F NUM 3*/
@@ -503,11 +480,11 @@ STATIC CONST UBYTE locapsable[] =
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 00 - 07 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0),	/* 08 - 0F */
     
-    SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 10 - 17 */
+    SETBITS(0, 1, 1, 1, 1, 1, 1, 1),	/* 10 - 17 */
     SETBITS(1, 1, 0, 0, 0, 0, 0, 0),	/* 18 - 1F */
     
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 20 - 27 */
-    SETBITS(1, 1, 0, 0, 0, 0, 0, 0),	/* 28 - 2F */
+    SETBITS(1, 0, 0, 0, 0, 0, 0, 0),	/* 28 - 2F */
     
     SETBITS(0, 1, 1, 1, 1, 1, 1, 1),	/* 30 - 37 */
     SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 38 - 3F */
@@ -537,7 +514,7 @@ STATIC CONST UBYTE lorepeatable[] =
     SETBITS(1, 1, 1, 1, 0, 1, 1, 1),	/* 18 - 1F */
     
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 20 - 27 */
-    SETBITS(1, 1, 1, 1, 0, 1, 1, 1),	/* 28 - 2F */
+    SETBITS(1, 0, 1, 1, 0, 1, 1, 1),	/* 28 - 2F */
     
     SETBITS(1, 1, 1, 1, 1, 1, 1, 1),	/* 30 - 37 */
     SETBITS(1, 1, 1, 0, 1, 1, 1, 1)	/* 38 - 3F */
