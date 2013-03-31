@@ -58,9 +58,13 @@ struct checkMemHandlersState
 
 struct TraceLocation;
 
+struct MemHeaderAllocatorCtx;
+
+struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh);
+
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase);
-APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct TraceLocation *loc, struct ExecBase *SysBase);
-void stdDealloc(struct MemHeader *freeList, APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, struct ExecBase *SysBase);
+APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR byteSize, ULONG requirements, struct TraceLocation *loc, struct ExecBase *SysBase);
+void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, struct ExecBase *SysBase);
 
 APTR InternalAllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase);
 void InternalFreeMem(APTR location, IPTR byteSize, struct TraceLocation *loc, struct ExecBase *SysBase);
