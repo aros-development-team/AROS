@@ -8,6 +8,7 @@
 #include <exec/memory.h>
 #include <hidd/ata.h>
 #include <libraries/mui.h>
+#include <mui/NFloattext_mcc.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 
@@ -47,9 +48,9 @@ static const char *const xferModeNames[] =
 
 static void DecodeBits(char *str, ULONG flags, const char *const *names)
 {
-    unsigned char i;
+    unsigned char i, done;
 
-    for (i = 0; *names; names++)
+    for (i = 0, done = 0; *names; names++)
     {
         if ((IPTR)*names < 32)
         {
@@ -60,7 +61,11 @@ static void DecodeBits(char *str, ULONG flags, const char *const *names)
         {
             strcpy(str, *names);
             str += strlen(*names);
-            *str++ = ' ';
+            if ((done % 5) == 4)
+                *str++ = '\n';
+            else
+                *str++ = ' ';
+            done++;
         }
         i++;
     }
@@ -107,42 +112,49 @@ static Object *ATAUnitWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
             Child, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
+                MUIA_CycleChain, 1,
                 MUIA_Text_Contents, (IPTR)unit_str,
             End),
             Child, (IPTR)Label(_(MSG_MODEL)),
             Child, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
+                MUIA_CycleChain, 1,
                 MUIA_Text_Contents, model,
             End),
             Child, (IPTR)Label(_(MSG_REVISION)),
             Child, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
+                MUIA_CycleChain, 1,
                 MUIA_Text_Contents, revision,
             End),
             Child, (IPTR)Label(_(MSG_SERIAL)),
             Child, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
+                MUIA_CycleChain, 1,
                 MUIA_Text_Contents, serial,
             End),
             Child, (IPTR)Label(_(MSG_TRANSFER_MODES)),
-            Child, (IPTR)(TextObject,
+            Child, (IPTR)(NFloattextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
-                MUIA_Text_Contents, (IPTR)xfermodes_str,
+                MUIA_CycleChain, 1,
+                MUIA_Floattext_Text, (IPTR)xfermodes_str,
             End),
             Child, (IPTR)Label(_(MSG_CONFIG_MODES)),
-            Child, (IPTR)(TextObject,
+            Child, (IPTR)(NFloattextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
-                MUIA_Text_Contents, (IPTR)usemodes_str,
+                MUIA_CycleChain, 1,
+                MUIA_Floattext_Text, (IPTR)usemodes_str,
             End),
             Child, (IPTR)Label(_(MSG_MULTISECTOR)),
             Child, (IPTR)(TextObject,
                 TextFrame,
                 MUIA_Background, MUII_TextBack,
+                MUIA_CycleChain, 1,
                 MUIA_Text_Contents, (IPTR)multisector_str,
             End),
             Child, (IPTR)Label(_(MSG_REMOVABLE)),
@@ -151,6 +163,7 @@ static Object *ATAUnitWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                     MUIA_Image_Spec, MUII_CheckMark,
                     MUIA_Image_State, removable,
                     TextFrame,
+                    MUIA_CycleChain, 1,
                     MUIA_Background, MUII_TextBack,
                 End),
                 Child, (IPTR)HSpace(0),
