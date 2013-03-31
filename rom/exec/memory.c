@@ -100,9 +100,12 @@ void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
     mh->mh_Node.ln_Name = (STRPTR)pool;
 }
 
+void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * mhac)
+{
+}
+
 #define mhac_IsIndexEmpty(a)                (TRUE)
 #define mhac_ClearIndex(a)
-#define mhac_MemChunkClaimed(a, b)
 #define mhac_MemChunkCreated(a, b, c)       { (void)b; }
 #define mhac_GetBetterPrevMemChunk(a, b, c) (a)
 #define mhac_GetCloserPrevMemChunk(a, b, c) (a)
