@@ -62,6 +62,7 @@ struct MemHeaderAllocatorCtx;
 
 struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh, struct ExecBase * SysBase);
 void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool);
+void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * mhac);
 
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase);
 APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR byteSize, ULONG requirements, struct TraceLocation *loc, struct ExecBase *SysBase);
