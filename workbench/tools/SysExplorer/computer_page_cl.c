@@ -264,6 +264,7 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
         MUIA_Window_ID, MAKE_ID('S', 'Y', 'P', 'R'),
         WindowContents, (IPTR)(RegisterObject,
             MUIA_Register_Titles, (IPTR) pagetitles,
+            MUIA_CycleChain, 1,
             Child, (IPTR)(VGroup,
                 Child, (IPTR)(HGroup,
                     MUIA_FrameTitle, __(MSG_VERSION),
