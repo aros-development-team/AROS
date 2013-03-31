@@ -33,16 +33,16 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
 
     while (mh->mh_Node.ln_Succ != NULL)
     {
-	/* Check if this MemHeader fits */
-	if (address >= mh->mh_Lower && address < mh->mh_Upper)
-	{
-	    /* Yes. Return it. */
-	    if (usermode) MEM_UNLOCK;
-	    return mh;
-	}
+        /* Check if this MemHeader fits */
+        if (address >= mh->mh_Lower && address < mh->mh_Upper)
+        {
+            /* Yes. Return it. */
+            if (usermode) MEM_UNLOCK;
+            return mh;
+        }
 
-	/* Go to next MemHeader */
-	mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
+        /* Go to next MemHeader */
+        mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
     }
 
     if (usermode) MEM_UNLOCK;
@@ -52,33 +52,33 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
 char *FormatMMContext(char *buffer, struct MMContext *ctx, struct ExecBase *SysBase)
 {
     if (ctx->addr)
-	buffer = NewRawDoFmt("In %s, block at 0x%p, size %lu", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->func, ctx->addr, ctx->size) - 1;
+        buffer = NewRawDoFmt("In %s, block at 0x%p, size %lu", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->func, ctx->addr, ctx->size) - 1;
     else
-	buffer = NewRawDoFmt("In %s, size %lu", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->func, ctx->size) - 1;
+        buffer = NewRawDoFmt("In %s, size %lu", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->func, ctx->size) - 1;
     
     if (ctx->mc)
     {
-    	buffer = NewRawDoFmt("\nCorrupted MemChunk 0x%p (next 0x%p, size %lu)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mc, ctx->mc->mc_Next, ctx->mc->mc_Bytes) - 1;
-    	
-    	if (ctx->mcPrev)
+        buffer = NewRawDoFmt("\nCorrupted MemChunk 0x%p (next 0x%p, size %lu)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mc, ctx->mc->mc_Next, ctx->mc->mc_Bytes) - 1;
+        
+        if (ctx->mcPrev)
             buffer = NewRawDoFmt("\nPrevious MemChunk 0x%p (next 0x%p, size %lu)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mcPrev, ctx->mcPrev->mc_Next, ctx->mcPrev->mc_Bytes) - 1;
     }
 
     /* Print MemHeader details */
     buffer = NewRawDoFmt("\nMemHeader 0x%p (0x%p - 0x%p)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh, ctx->mh->mh_Lower, ctx->mh->mh_Upper) - 1;
     if ((IPTR)ctx->mh->mh_First & (MEMCHUNK_TOTAL - 1))
-    	buffer = NewRawDoFmt("\n- Unaligned first chunk address (0x%p)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh->mh_First) - 1;
+        buffer = NewRawDoFmt("\n- Unaligned first chunk address (0x%p)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh->mh_First) - 1;
 
     if (ctx->mh->mh_Free & (MEMCHUNK_TOTAL - 1))
-    	buffer = NewRawDoFmt("\n- Unaligned free space count (0x%p)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh->mh_Free) - 1;
+        buffer = NewRawDoFmt("\n- Unaligned free space count (0x%p)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh->mh_Free) - 1;
 
     if (ctx->mh->mh_First)
     {
-    	if ((APTR)ctx->mh->mh_First < ctx->mh->mh_Lower)
-    	    buffer = NewRawDoFmt("\n- First chunk (0x%p) below lower address", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh->mh_First) - 1;
+        if ((APTR)ctx->mh->mh_First < ctx->mh->mh_Lower)
+            buffer = NewRawDoFmt("\n- First chunk (0x%p) below lower address", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh->mh_First) - 1;
 
-    	if (((APTR)ctx->mh->mh_First + ctx->mh->mh_Free > ctx->mh->mh_Upper))
-    	    buffer = NewRawDoFmt("\n- Free space count too large (%lu, first chunk 0x%xp)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh->mh_Free, ctx->mh->mh_First) - 1;
+        if (((APTR)ctx->mh->mh_First + ctx->mh->mh_Free > ctx->mh->mh_Upper))
+            buffer = NewRawDoFmt("\n- Free space count too large (%lu, first chunk 0x%xp)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh->mh_Free, ctx->mh->mh_First) - 1;
     }
 
     return buffer;
@@ -93,9 +93,9 @@ char *FormatMMContext(char *buffer, struct MMContext *ctx, struct ExecBase *SysB
 
 static ULONG memAlerts[] =
 {
-    AT_DeadEnd|AN_MemoryInsane,	/* MM_ALLOC   */
-    AT_DeadEnd|AN_MemCorrupt,	/* MM_FREE    */
-    AN_FreeTwice		/* MM_OVERLAP */
+    AT_DeadEnd|AN_MemoryInsane, /* MM_ALLOC   */
+    AT_DeadEnd|AN_MemCorrupt,   /* MM_FREE    */
+    AN_FreeTwice                /* MM_OVERLAP */
 };
 
 /*
@@ -108,31 +108,31 @@ static ULONG memAlerts[] =
  */
 static BOOL validateHeader(struct MemHeader *mh, UBYTE op, APTR addr, IPTR size, struct TraceLocation *tp, struct ExecBase *SysBase)
 {
-    if (((IPTR)mh->mh_First & (MEMCHUNK_TOTAL - 1)) || (mh->mh_Free & (MEMCHUNK_TOTAL - 1)) ||		/* 1 */
-	(mh->mh_First &&
-	 (((APTR)mh->mh_First < mh->mh_Lower) || ((APTR)mh->mh_First + mh->mh_Free > mh->mh_Upper))))	/* 2 */
+    if (((IPTR)mh->mh_First & (MEMCHUNK_TOTAL - 1)) || (mh->mh_Free & (MEMCHUNK_TOTAL - 1)) ||        /* 1 */
+    (mh->mh_First &&
+     (((APTR)mh->mh_First < mh->mh_Lower) || ((APTR)mh->mh_First + mh->mh_Free > mh->mh_Upper))))    /* 2 */
     {
-    	if (tp)
-    	{
-    	    /* TraceLocation is not supplied by PrepareExecBase(). Fail silently. */
-    	    struct MMContext alertData;
+        if (tp)
+        {
+            /* TraceLocation is not supplied by PrepareExecBase(). Fail silently. */
+            struct MMContext alertData;
 
-	    alertData.mh     = mh;
-	    alertData.mc     = NULL;
-	    alertData.mcPrev = NULL;
-	    alertData.func   = tp->function;
-	    alertData.addr   = addr;
-	    alertData.size   = size;
-	    alertData.op     = op;
+            alertData.mh     = mh;
+            alertData.mc     = NULL;
+            alertData.mcPrev = NULL;
+            alertData.func   = tp->function;
+            alertData.addr   = addr;
+            alertData.size   = size;
+            alertData.op     = op;
 
-	    Exec_ExtAlert(memAlerts[op], tp->caller, tp->stack, AT_MEMORY, &alertData, SysBase);
-	}
+            Exec_ExtAlert(memAlerts[op], tp->caller, tp->stack, AT_MEMORY, &alertData, SysBase);
+        }
 
-	/*
-	 * Theoretically during very early boot we can fail to post an alert (no KernelBase yet).
-	 * In this case we return with fault indication.
-	 */
-    	return FALSE;
+        /*
+         * Theoretically during very early boot we can fail to post an alert (no KernelBase yet).
+         * In this case we return with fault indication.
+         */
+        return FALSE;
     }
     return TRUE;
 }
@@ -148,29 +148,29 @@ static BOOL validateHeader(struct MemHeader *mh, UBYTE op, APTR addr, IPTR size,
  * This function is inlined for speed improvements.
  */
 static inline BOOL validateChunk(struct MemChunk *p2, struct MemChunk *p1, struct MemHeader *mh,
-				 UBYTE op, APTR addr, IPTR size,
-				 struct TraceLocation *tp, struct ExecBase *SysBase)
+                 UBYTE op, APTR addr, IPTR size,
+                 struct TraceLocation *tp, struct ExecBase *SysBase)
 {
-    if (((IPTR)p2->mc_Next & (MEMCHUNK_TOTAL-1)) || (p2->mc_Bytes == 0) || (p2->mc_Bytes & (MEMCHUNK_TOTAL-1))	||	/* 1 */
-	((APTR)p2 + p2->mc_Bytes > mh->mh_Upper)								||	/* 2 */
-	(p2->mc_Next && (((APTR)p2->mc_Next < (APTR)p2 + p2->mc_Bytes + MEMCHUNK_TOTAL) ||				/* 3 */
-	    		 ((APTR)p2->mc_Next > mh->mh_Upper - MEMCHUNK_TOTAL))))
+    if (((IPTR)p2->mc_Next & (MEMCHUNK_TOTAL-1)) || (p2->mc_Bytes == 0) || (p2->mc_Bytes & (MEMCHUNK_TOTAL-1))    ||    /* 1 */
+    ((APTR)p2 + p2->mc_Bytes > mh->mh_Upper)                                ||    /* 2 */
+    (p2->mc_Next && (((APTR)p2->mc_Next < (APTR)p2 + p2->mc_Bytes + MEMCHUNK_TOTAL) ||                /* 3 */
+                 ((APTR)p2->mc_Next > mh->mh_Upper - MEMCHUNK_TOTAL))))
     {
-    	if (tp)
-    	{
-	    struct MMContext alertData;
+        if (tp)
+        {
+            struct MMContext alertData;
 
-	    alertData.mh     = mh;
-	    alertData.mc     = p2;
-	    alertData.mcPrev = (p1 == (struct MemChunk *)&mh->mh_First) ? NULL : p1;
-	    alertData.func   = tp->function;
-	    alertData.addr   = addr;
-	    alertData.size   = size;
-	    alertData.op     = op;
+            alertData.mh     = mh;
+            alertData.mc     = p2;
+            alertData.mcPrev = (p1 == (struct MemChunk *)&mh->mh_First) ? NULL : p1;
+            alertData.func   = tp->function;
+            alertData.addr   = addr;
+            alertData.size   = size;
+            alertData.op     = op;
 
-	    Exec_ExtAlert(memAlerts[op], tp->caller, tp->stack, AT_MEMORY, &alertData, SysBase);
-	}
-	return FALSE;
+            Exec_ExtAlert(memAlerts[op], tp->caller, tp->stack, AT_MEMORY, &alertData, SysBase);
+        }
+        return FALSE;
     }
 
     return TRUE;
@@ -190,7 +190,7 @@ APTR stdAlloc(struct MemHeader *mh, IPTR size, ULONG requirements, struct TraceL
 
     /* Validate MemHeader before doing anything. */
     if (!validateHeader(mh, MM_ALLOC, NULL, size, tp, SysBase))
-    	return NULL;
+        return NULL;
 
     /*
      * The free memory list is only single linked, i.e. to remove
@@ -207,9 +207,9 @@ APTR stdAlloc(struct MemHeader *mh, IPTR size, ULONG requirements, struct TraceL
      */
     while (p2 != NULL)
     {
-    	/* Validate the current chunk */
-    	if (!validateChunk(p2, p1, mh, MM_ALLOC, NULL, size, tp, SysBase))
-    	    return NULL;
+        /* Validate the current chunk */
+        if (!validateChunk(p2, p1, mh, MM_ALLOC, NULL, size, tp, SysBase))
+            return NULL;
 
         /* Check if the current block is large enough */
         if (p2->mc_Bytes>=byteSize)
@@ -264,9 +264,9 @@ APTR stdAlloc(struct MemHeader *mh, IPTR size, ULONG requirements, struct TraceL
 
         mh->mh_Free -= byteSize;
 
-	/* Clear the block if requested */
-	if (requirements & MEMF_CLEAR)
-	    memset(mc, 0, byteSize);
+    /* Clear the block if requested */
+    if (requirements & MEMF_CLEAR)
+        memset(mc, 0, byteSize);
     }
 
     return mc;
@@ -282,7 +282,7 @@ void stdDealloc(struct MemHeader *freeList, APTR addr, IPTR size, struct TraceLo
 
     /* Make sure the MemHeader is OK */
     if (!validateHeader(freeList, MM_FREE, addr, size, tp, SysBase))
-    	return;
+        return;
 
     /* Align size to the requirements */
     byteSize = size + ((IPTR)addr & (MEMCHUNK_TOTAL - 1));
@@ -292,10 +292,10 @@ void stdDealloc(struct MemHeader *freeList, APTR addr, IPTR size, struct TraceLo
     memoryBlock = (APTR)((IPTR)addr & ~(MEMCHUNK_TOTAL-1));
 
     /*
-	The free memory list is only single linked, i.e. to insert
-	elements into the list I need the node as well as its
-	predecessor. For the first element I can use freeList->mh_First
-	instead of a real predecessor.
+    The free memory list is only single linked, i.e. to insert
+    elements into the list I need the node as well as its
+    predecessor. For the first element I can use freeList->mh_First
+    instead of a real predecessor.
     */
     p1 = (struct MemChunk *)&freeList->mh_First;
     p2 = freeList->mh_First;
@@ -307,84 +307,84 @@ void stdDealloc(struct MemHeader *freeList, APTR addr, IPTR size, struct TraceLo
     /* No chunk in list? Just insert the current one and return. */
     if (p2 == NULL)
     {
-	p3->mc_Bytes = byteSize;
-	p3->mc_Next = NULL;
-	p1->mc_Next = p3;
-	freeList->mh_Free += byteSize;
-	return;
+        p3->mc_Bytes = byteSize;
+        p3->mc_Next = NULL;
+        p1->mc_Next = p3;
+        freeList->mh_Free += byteSize;
+        return;
     }
 
     /* Follow the list to find a place where to insert our memory. */
     do
     {
-    	if (!validateChunk(p2, p1, freeList, MM_FREE, addr, size, tp, SysBase))
-    	    return;
+        if (!validateChunk(p2, p1, freeList, MM_FREE, addr, size, tp, SysBase))
+            return;
 
-	/* Found a block with a higher address? */
-	if (p2 >= p3)
-	{
+        /* Found a block with a higher address? */
+        if (p2 >= p3)
+        {
 #if !defined(NO_CONSISTENCY_CHECKS)
-	    /*
-		If the memory to be freed overlaps with the current
-		block something must be wrong.
-	    */
-	    if (p4>(UBYTE *)p2)
-	    {
-		bug("[MM] Chunk allocator error\n");
-		bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
-		bug("[MM] Block overlaps (1) with chunk 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
+            /*
+            If the memory to be freed overlaps with the current
+            block something must be wrong.
+            */
+            if (p4>(UBYTE *)p2)
+            {
+                bug("[MM] Chunk allocator error\n");
+                bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+                bug("[MM] Block overlaps (1) with chunk 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
 
-		Alert(AN_FreeTwice);
-		return;
-	    }
+                Alert(AN_FreeTwice);
+                return;
+            }
 #endif
-	    /* End the loop with p2 non-zero */
-	    break;
-	}
-	/* goto next block */
-	p1 = p2;
-	p2 = p2->mc_Next;
+            /* End the loop with p2 non-zero */
+            break;
+        }
+        /* goto next block */
+        p1 = p2;
+        p2 = p2->mc_Next;
 
-    /* If the loop ends with p2 zero add it at the end. */
+        /* If the loop ends with p2 zero add it at the end. */
     } while (p2 != NULL);
 
     /* If there was a previous block merge with it. */
     if (p1 != (struct MemChunk *)&freeList->mh_First)
     {
 #if !defined(NO_CONSISTENCY_CHECKS)
-	/* Check if they overlap. */
-	if ((UBYTE *)p1 + p1->mc_Bytes > (UBYTE *)p3)
-	{
-	    bug("[MM] Chunk allocator error\n");
-	    bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
-	    bug("[MM] Block overlaps (2) with chunk 0x%p (%u bytes)\n", p1, p1->mc_Bytes);
+        /* Check if they overlap. */
+        if ((UBYTE *)p1 + p1->mc_Bytes > (UBYTE *)p3)
+        {
+            bug("[MM] Chunk allocator error\n");
+            bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+            bug("[MM] Block overlaps (2) with chunk 0x%p (%u bytes)\n", p1, p1->mc_Bytes);
 
-	    Alert(AN_FreeTwice);
-	    return;
-	}
+            Alert(AN_FreeTwice);
+            return;
+        }
 #endif
-	/* Merge if possible */
-	if ((UBYTE *)p1 + p1->mc_Bytes == (UBYTE *)p3)
-	    p3 = p1;
-	else
-	    /* Not possible to merge */
-	    p1->mc_Next = p3;
+    /* Merge if possible */
+    if ((UBYTE *)p1 + p1->mc_Bytes == (UBYTE *)p3)
+        p3 = p1;
+    else
+        /* Not possible to merge */
+        p1->mc_Next = p3;
     }else
-	/*
-	    There was no previous block. Just insert the memory at
-	    the start of the list.
-	*/
-	p1->mc_Next = p3;
+        /*
+            There was no previous block. Just insert the memory at
+            the start of the list.
+        */
+        p1->mc_Next = p3;
 
     /* Try to merge with next block (if there is one ;-) ). */
     if (p4 == (UBYTE *)p2 && p2 != NULL)
     {
-	/*
-	   Overlap checking already done. Doing it here after
-	   the list potentially changed would be a bad idea.
-	*/
-	p4 += p2->mc_Bytes;
-	p2 = p2->mc_Next;
+        /*
+           Overlap checking already done. Doing it here after
+           the list potentially changed would be a bad idea.
+        */
+        p4 += p2->mc_Bytes;
+        p2 = p2->mc_Next;
     }
     /* relink the list and return. */
     p3->mc_Next = p2;
@@ -429,24 +429,24 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
     {
         struct MemHeader *orig = FindMem(mh, SysBase);
 
-    	size -= MEMHEADER_TOTAL;
+        size -= MEMHEADER_TOTAL;
 
-	/*
-	 * Initialize new MemHeader.
-	 * Inherit attributes from system MemHeader from which
-	 * our chunk was allocated.
-	 */
-	mh->mh_Node.ln_Type	= NT_MEMORY;
-	mh->mh_Node.ln_Pri      = orig->mh_Node.ln_Pri;
-	mh->mh_Attributes	= orig->mh_Attributes;
-	mh->mh_Lower 	    	= (APTR)mh + MEMHEADER_TOTAL;
-	mh->mh_Upper 	    	= mh->mh_Lower + size;
-	mh->mh_First	    	= mh->mh_Lower;
-	mh->mh_Free  	    	= size;
+        /*
+         * Initialize new MemHeader.
+         * Inherit attributes from system MemHeader from which
+         * our chunk was allocated.
+         */
+        mh->mh_Node.ln_Type    = NT_MEMORY;
+        mh->mh_Node.ln_Pri      = orig->mh_Node.ln_Pri;
+        mh->mh_Attributes    = orig->mh_Attributes;
+        mh->mh_Lower             = (APTR)mh + MEMHEADER_TOTAL;
+        mh->mh_Upper             = mh->mh_Lower + size;
+        mh->mh_First            = mh->mh_Lower;
+        mh->mh_Free              = size;
 
-	/* Create the first (and the only) MemChunk */
-	mh->mh_First->mc_Next 	= NULL;
-	mh->mh_First->mc_Bytes  = size;
+        /* Create the first (and the only) MemChunk */
+        mh->mh_First->mc_Next     = NULL;
+        mh->mh_First->mc_Bytes  = size;
     }
     return mh;
 }
@@ -477,17 +477,17 @@ static void EnqueueMemHeader(struct MinList *list, struct MemHeader *mh)
     /* Look through the list */
     ForeachNode (list, next)
     {
-	/*
-	    Look for the first MemHeader with a lower or equal pri as the node
-	    we have to insert into the list.
-	*/
-	if (mh->mh_Node.ln_Pri >= next->mh_Node.ln_Pri)
-	    break;
+        /*
+            Look for the first MemHeader with a lower or equal pri as the node
+            we have to insert into the list.
+        */
+        if (mh->mh_Node.ln_Pri >= next->mh_Node.ln_Pri)
+            break;
     }
 
     /* Insert the node before next */
-    mh->mh_Node.ln_Pred		   = next->mh_Node.ln_Pred;
-    mh->mh_Node.ln_Succ		   = &next->mh_Node;
+    mh->mh_Node.ln_Pred           = next->mh_Node.ln_Pred;
+    mh->mh_Node.ln_Succ           = &next->mh_Node;
     next->mh_Node.ln_Pred->ln_Succ = &mh->mh_Node;
     next->mh_Node.ln_Pred          = &mh->mh_Node;
 }
@@ -522,112 +522,112 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
 
     if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
     {
-    	ObtainSemaphore(&pool->sem);
+        ObtainSemaphore(&pool->sem);
     }
 
     /* Follow the list of MemHeaders */
     mh = (struct MemHeader *)pool->pool.PuddleList.mlh_Head;
     for(;;)
     {
-	ULONG physFlags = flags & MEMF_PHYSICAL_MASK;
+        ULONG physFlags = flags & MEMF_PHYSICAL_MASK;
 
-	/* Are there no more MemHeaders? */
-	if (mh->mh_Node.ln_Succ == NULL)
-	{
-	    /*
-	     * Get a new one.
-	     * Usually we allocate puddles of default size, specified during
-	     * pool creation. However we can be asked to allocate block whose
-	     * size will be larger than default puddle size.
-	     * Previously this was handled by threshSize parameter. In our new
-	     * implementation we just allocate enlarged puddle. This is done
-	     * in order not to waste page tails beyond the allocated large block.
-	     * These tails will be used for our pool too. Their size is smaller
-	     * than page size but they still perfectly fit for small allocations
-	     * (the primary use for pools).
-	     * Since our large block is also a puddle, it will be reused for our
-	     * pool when the block is freed. It can also be reused for another
-	     * large allocation, if it fits in.
-	     * Our final puddle size still includes MEMHEADER_TOTAL in any case.
-	     */
-	    IPTR puddleSize = pool->pool.PuddleSize;
-
-	    if (memSize > puddleSize - MEMHEADER_TOTAL)
-	    {
-		IPTR align = PrivExecBase(SysBase)->PageSize - 1;
-
-		puddleSize = memSize + MEMHEADER_TOTAL;
-		/* Align the size up to page boundary */
-		puddleSize = (puddleSize + align) & ~align;
-	    }
-
-	    mh = AllocMemHeader(puddleSize, flags, loc, SysBase);
-	    D(bug("[InternalAllocPooled] Allocated new puddle 0x%p, size %u\n", mh, puddleSize));
-
-	    /* No memory left? */
-	    if (mh == NULL)
-		break;
-
-	    /* Add the new puddle to our pool */
-	    mh->mh_Node.ln_Name = (STRPTR)pool;
-	    Enqueue((struct List *)&pool->pool.PuddleList, &mh->mh_Node);
-
-	    /* Fall through to get the memory */
-	}
-	else
-	{
-	    /* Ignore existing MemHeaders with memory type that differ from the requested ones */
-	    if (physFlags & ~mh->mh_Attributes)
-	    {
-		D(bug("[InternalAllocPooled] Wrong flags for puddle 0x%p (wanted 0x%08X, have 0x%08X\n", flags, mh->mh_Attributes));
-
-		mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
-	    	continue;
-	    }
-	}
-
-	/* Try to get the memory */
-	ret = stdAlloc(mh, memSize, flags, loc, SysBase);
-	D(bug("[InternalAllocPooled] Allocated memory at 0x%p from puddle 0x%p\n", ret, mh));
-
-	/* Got it? */
-	if (ret != NULL)
-   	{
+        /* Are there no more MemHeaders? */
+        if (mh->mh_Node.ln_Succ == NULL)
+        {
             /*
-	     * If this is not the first MemHeader and it has some free space,
-	     * move it forward (so that the next allocation will attempt to use it first).
-	     * IMPORTANT: We use modification of Enqueue() because we still sort MemHeaders
-	     * according to their priority (which they inherit from system MemHeaders).
-	     * This allows us to have mixed pools (e.g. with both CHIP and FAST regions). This
-	     * will be needed in future for memory protection.
-	     */
+             * Get a new one.
+             * Usually we allocate puddles of default size, specified during
+             * pool creation. However we can be asked to allocate block whose
+             * size will be larger than default puddle size.
+             * Previously this was handled by threshSize parameter. In our new
+             * implementation we just allocate enlarged puddle. This is done
+             * in order not to waste page tails beyond the allocated large block.
+             * These tails will be used for our pool too. Their size is smaller
+             * than page size but they still perfectly fit for small allocations
+             * (the primary use for pools).
+             * Since our large block is also a puddle, it will be reused for our
+             * pool when the block is freed. It can also be reused for another
+             * large allocation, if it fits in.
+             * Our final puddle size still includes MEMHEADER_TOTAL in any case.
+             */
+            IPTR puddleSize = pool->pool.PuddleSize;
+
+            if (memSize > puddleSize - MEMHEADER_TOTAL)
+            {
+                IPTR align = PrivExecBase(SysBase)->PageSize - 1;
+
+                puddleSize = memSize + MEMHEADER_TOTAL;
+                /* Align the size up to page boundary */
+                puddleSize = (puddleSize + align) & ~align;
+            }
+
+            mh = AllocMemHeader(puddleSize, flags, loc, SysBase);
+            D(bug("[InternalAllocPooled] Allocated new puddle 0x%p, size %u\n", mh, puddleSize));
+
+            /* No memory left? */
+            if (mh == NULL)
+                break;
+
+            /* Add the new puddle to our pool */
+            mh->mh_Node.ln_Name = (STRPTR)pool;
+            Enqueue((struct List *)&pool->pool.PuddleList, &mh->mh_Node);
+
+            /* Fall through to get the memory */
+        }
+        else
+        {
+            /* Ignore existing MemHeaders with memory type that differ from the requested ones */
+            if (physFlags & ~mh->mh_Attributes)
+            {
+                D(bug("[InternalAllocPooled] Wrong flags for puddle 0x%p (wanted 0x%08X, have 0x%08X\n", flags, mh->mh_Attributes));
+
+                mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
+                continue;
+            }
+        }
+
+        /* Try to get the memory */
+        ret = stdAlloc(mh, memSize, flags, loc, SysBase);
+        D(bug("[InternalAllocPooled] Allocated memory at 0x%p from puddle 0x%p\n", ret, mh));
+
+        /* Got it? */
+        if (ret != NULL)
+        {
+            /*
+             * If this is not the first MemHeader and it has some free space,
+             * move it forward (so that the next allocation will attempt to use it first).
+             * IMPORTANT: We use modification of Enqueue() because we still sort MemHeaders
+             * according to their priority (which they inherit from system MemHeaders).
+             * This allows us to have mixed pools (e.g. with both CHIP and FAST regions). This
+             * will be needed in future for memory protection.
+             */
             if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)
             {
-            	D(bug("[InternalAllocPooled] Re-sorting puddle list\n"));
-            	Remove(&mh->mh_Node);
-            	EnqueueMemHeader(&pool->pool.PuddleList, mh);
+                D(bug("[InternalAllocPooled] Re-sorting puddle list\n"));
+                Remove(&mh->mh_Node);
+                EnqueueMemHeader(&pool->pool.PuddleList, mh);
             }
 
             break;
-    	}
+        }
 
-	/* No. Try next MemHeader */
-	mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
+        /* No. Try next MemHeader */
+        mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
     }
 
     if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
     {
-    	ReleaseSemaphore(&pool->sem);
+        ReleaseSemaphore(&pool->sem);
     }
 
     if (ret)
     {
-	/* Build munge walls if requested */
-	ret = MungWall_Build(ret, pool, origSize, flags, loc, SysBase);
+        /* Build munge walls if requested */
+        ret = MungWall_Build(ret, pool, origSize, flags, loc, SysBase);
 
-	/* Remember where we were allocated from */
-	*((struct MemHeader **)ret) = mh;
-	ret += sizeof(struct MemHeader *);
+        /* Remember where we were allocated from */
+        *((struct MemHeader **)ret) = mh;
+        ret += sizeof(struct MemHeader *);
     }
 
     /* Everything fine */
@@ -660,58 +660,58 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct TraceLocation *loc, st
     /* Check walls first */
     freeStart = MungWall_Check(freeStart, freeSize, loc, SysBase);
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
-	freeSize += MUNGWALL_TOTAL_SIZE;
+        freeSize += MUNGWALL_TOTAL_SIZE;
 
     /* Verify that MemHeader pointer is correct */
     if ((mh->mh_Node.ln_Type != NT_MEMORY) ||
-	(freeStart < mh->mh_Lower) || (freeStart + freeSize > mh->mh_Upper))
+    (freeStart < mh->mh_Lower) || (freeStart + freeSize > mh->mh_Upper))
     {
-    	/*
-	 * Something is wrong.
-	 * TODO: the following should actually be printed as part of the alert.
-	 * In future there should be some kind of "alert context". CPU alerts
-	 * (like illegal access) should remember CPU context there. Memory manager
-	 * alerts (like this one) should remember some own information.
-	 */
+        /*
+         * Something is wrong.
+         * TODO: the following should actually be printed as part of the alert.
+         * In future there should be some kind of "alert context". CPU alerts
+         * (like illegal access) should remember CPU context there. Memory manager
+         * alerts (like this one) should remember some own information.
+         */
         bug("[MM] Pool manager error\n");
-	bug("[MM] Attempt to free %u bytes at 0x%p\n", memSize, memory);
-	bug("[MM] The chunk does not belong to a pool\n");
+        bug("[MM] Attempt to free %u bytes at 0x%p\n", memSize, memory);
+        bug("[MM] The chunk does not belong to a pool\n");
 
-	Alert(AN_BadFreeAddr);
+        Alert(AN_BadFreeAddr);
     }
     else
     {
-	struct ProtectedPool *pool = (struct ProtectedPool *)mh->mh_Node.ln_Name;
-	IPTR size;
-	
-	if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
-	{
-	    ObtainSemaphore(&pool->sem);
-	}
+        struct ProtectedPool *pool = (struct ProtectedPool *)mh->mh_Node.ln_Name;
+        IPTR size;
 
-	size = mh->mh_Upper - mh->mh_Lower;
-	D(bug("[FreePooled] Allocated from puddle 0x%p, size %u\n", mh, size));
+        if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
+        {
+            ObtainSemaphore(&pool->sem);
+        }
 
-	/* Free the memory. */
-	stdDealloc(mh, freeStart, freeSize, loc, SysBase);
-	D(bug("[FreePooled] Deallocated chunk, %u free bytes in the puddle\n", mh->mh_Free));
+        size = mh->mh_Upper - mh->mh_Lower;
+        D(bug("[FreePooled] Allocated from puddle 0x%p, size %u\n", mh, size));
 
-	/* Is this MemHeader completely free now? */
-	if (mh->mh_Free == size)
-	{
-	    D(bug("[FreePooled] Puddle is empty, giving back to the system\n"));
+        /* Free the memory. */
+        stdDealloc(mh, freeStart, freeSize, loc, SysBase);
+        D(bug("[FreePooled] Deallocated chunk, %u free bytes in the puddle\n", mh->mh_Free));
 
-	    /* Yes. Remove it from the list. */
-	    Remove(&mh->mh_Node);
-	    /* And free it. */
-	    FreeMemHeader(mh, loc, SysBase);
-	}
-	/* All done. */
+        /* Is this MemHeader completely free now? */
+        if (mh->mh_Free == size)
+        {
+            D(bug("[FreePooled] Puddle is empty, giving back to the system\n"));
 
-	if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
-	{
-    	    ReleaseSemaphore(&pool->sem);
-	}
+            /* Yes. Remove it from the list. */
+            Remove(&mh->mh_Node);
+            /* And free it. */
+            FreeMemHeader(mh, loc, SysBase);
+        }
+        /* All done. */
+    
+        if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
+        {
+            ReleaseSemaphore(&pool->sem);
+        }
     }
 }
 
@@ -753,8 +753,10 @@ ULONG checkMemHandlers(struct checkMemHandlersState *cmhs, struct ExecBase *SysB
             return MEM_TRY_AGAIN;
         }
         else
+        {
             /* Nothing more to expect from this handler. */
             cmhs->cmhs_Data.memh_Flags &= ~MEMHF_RECYCLE;
+        }
     }
 
     ReleaseSemaphore(&PrivExecBase(SysBase)->LowMemSem);
