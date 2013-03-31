@@ -651,15 +651,6 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
     result = lookup_keytable(&ks, keytable);
     if (result == -1) result = lookup_keytable(&ks, english_keytable);
     
-    if (result != -1)
-    {
-	ReturnInt ("xk2h", long, result);
-    }
-    
-    D(bug("xk2h: Passing X keycode\n", xk->keycode & 0xffff));
-
-    result = xk->keycode & 0xffff;
-
     ReturnInt ("xk2h", long, result);
     
 } /* XKeyToAmigaCode */
