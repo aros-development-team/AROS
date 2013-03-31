@@ -97,7 +97,7 @@ AROS_LH2(APTR, Allocate,
     if(freeList->mh_Free<byteSize)
 	return NULL;
 
-    res = stdAlloc(freeList, NULL, byteSize, 0, &tp, SysBase);
+    res = stdAlloc(freeList, NULL /* by design */, byteSize, 0, &tp, SysBase);
 
     if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res) {
 	MUNGE_BLOCK(res, MEMFILL_ALLOC, byteSize);
