@@ -86,14 +86,23 @@ char *FormatMMContext(char *buffer, struct MMContext *ctx, struct ExecBase *SysB
 
 #ifdef NO_ALLOCATOR_CONTEXT
 
+#define MEMHEADERALLOCATORCTX_TOTAL (0)
+
 struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh)
 {
     return NULL;
 }
 
+void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
+{
+    mh->mh_Node.ln_Name = (STRPTR)pool;
+}
+
 #define mhac_MemChunkClaimed(a, b)
-#define mhac_MemChunkCreated(a, b, c) { (void)b; }
+#define mhac_MemChunkCreated(a, b, c)       { (void)b; }
 #define mhac_GetBetterPrevMemChunk(a, b, c) (a)
+#define mhac_PoolMemHeaderGetCtx(a)         (NULL)
+#define mhac_PoolMemHeaderGetPool(a)        (a->mh_Node.ln_Name)
 
 #else
 /* Allocator optimization support */
@@ -101,7 +110,7 @@ struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh)
 /*
  * The array contains pointers to chunk previous to first chunk of at least size N
  *
- * N = 1 << (FIRSTPOTBIT + i), where i is index in array
+ * N = 1 << (FIRSTPOTBIT + (i * POTSTEP)), where i is index in array
  * first is defined as MemChunk with lowest address
  *
  * Each chunk in array locates the place where search should start, not necesarly
@@ -115,12 +124,23 @@ struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh)
 
 struct MemHeaderAllocatorCtx
 {
-    struct MemHeader    *mhac_MemHeader;
+    struct MemHeader        *mhac_MemHeader;
+    APTR                    mhac_Data1;
 
-    struct MemChunk     *mhac_PrevChunks[ALLOCATORCTXINDEXSIZE];
+    struct MemChunk         *mhac_PrevChunks[ALLOCATORCTXINDEXSIZE];
 };
 
+#define MEMHEADERALLOCATORCTX_TOTAL (AROS_ROUNDUP2(sizeof(struct MemHeaderAllocatorCtx), MEMCHUNK_TOTAL))
+
 struct MemHeaderAllocatorCtx test[25];
+
+static void mhac_SetupMemHeaderAllocatorCtx(struct MemHeader * mh, struct MemHeaderAllocatorCtx * mhac)
+{
+    LONG i;
+    mhac->mhac_MemHeader = mh;
+    for (i = 0; i < ALLOCATORCTXINDEXSIZE; i++)
+        mhac->mhac_PrevChunks[i] = NULL;
+}
 
 struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh)
 {
@@ -161,7 +181,7 @@ void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * m
     }
 }
 
-void mhac_MemChunkCreated(struct MemChunk *mc, struct MemChunk *mcprev, struct MemHeaderAllocatorCtx * mhac)
+void mhac_MemChunkCreated(struct MemChunk * mc, struct MemChunk *mcprev, struct MemHeaderAllocatorCtx * mhac)
 {
     LONG i, v = FIRSTPOT;
 
@@ -216,6 +236,23 @@ struct MemChunk * mhac_GetBetterPrevMemChunk(struct MemChunk * prev, IPTR size, 
 
     return _return;
 }
+
+/*
+ * Enhace MemHeader that is part of pool with MemHeaderAllocatorContext
+ */
+void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
+{
+    struct MemHeaderAllocatorCtx * mhac = Allocate(mh, sizeof(struct MemHeaderAllocatorCtx));
+
+    mhac_SetupMemHeaderAllocatorCtx(mh, mhac);
+
+    mhac->mhac_Data1 = pool;
+    mh->mh_Node.ln_Name = (STRPTR)mhac;
+}
+
+#define mhac_PoolMemHeaderGetCtx(a)     ((struct MemHeaderAllocatorCtx *)(a->mh_Node.ln_Name))
+#define mhac_PoolMemHeaderGetPool(a)    (mhac_PoolMemHeaderGetCtx(a)->mhac_Data1)
+
 #endif
 
 
@@ -592,16 +629,16 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
          * Inherit attributes from system MemHeader from which
          * our chunk was allocated.
          */
-        mh->mh_Node.ln_Type    = NT_MEMORY;
+        mh->mh_Node.ln_Type     = NT_MEMORY;
         mh->mh_Node.ln_Pri      = orig->mh_Node.ln_Pri;
-        mh->mh_Attributes    = orig->mh_Attributes;
-        mh->mh_Lower             = (APTR)mh + MEMHEADER_TOTAL;
-        mh->mh_Upper             = mh->mh_Lower + size;
+        mh->mh_Attributes       = orig->mh_Attributes;
+        mh->mh_Lower            = (APTR)mh + MEMHEADER_TOTAL;
+        mh->mh_Upper            = mh->mh_Lower + size;
         mh->mh_First            = mh->mh_Lower;
-        mh->mh_Free              = size;
+        mh->mh_Free             = size;
 
         /* Create the first (and the only) MemChunk */
-        mh->mh_First->mc_Next     = NULL;
+        mh->mh_First->mc_Next   = NULL;
         mh->mh_First->mc_Bytes  = size;
     }
     return mh;
@@ -704,15 +741,16 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
              * Since our large block is also a puddle, it will be reused for our
              * pool when the block is freed. It can also be reused for another
              * large allocation, if it fits in.
-             * Our final puddle size still includes MEMHEADER_TOTAL in any case.
+             * Our final puddle size still includes MEMHEADER_TOTAL +
+             * MEMHEADERALLOCATORCTX_TOTAL in any case.
              */
             IPTR puddleSize = pool->pool.PuddleSize;
 
-            if (memSize > puddleSize - MEMHEADER_TOTAL)
+            if (memSize > puddleSize - (MEMHEADER_TOTAL + MEMHEADERALLOCATORCTX_TOTAL))
             {
                 IPTR align = PrivExecBase(SysBase)->PageSize - 1;
 
-                puddleSize = memSize + MEMHEADER_TOTAL;
+                puddleSize = memSize + MEMHEADER_TOTAL + MEMHEADERALLOCATORCTX_TOTAL;
                 /* Align the size up to page boundary */
                 puddleSize = (puddleSize + align) & ~align;
             }
@@ -725,7 +763,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
                 break;
 
             /* Add the new puddle to our pool */
-            mh->mh_Node.ln_Name = (STRPTR)pool;
+            mhac_PoolMemHeaderSetup(mh, pool);
             Enqueue((struct List *)&pool->pool.PuddleList, &mh->mh_Node);
 
             /* Fall through to get the memory */
@@ -743,7 +781,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
         }
 
         /* Try to get the memory */
-        ret = stdAlloc(mh, NULL, memSize, flags, loc, SysBase);
+        ret = stdAlloc(mh, mhac_PoolMemHeaderGetCtx(mh), memSize, flags, loc, SysBase);
         D(bug("[InternalAllocPooled] Allocated memory at 0x%p from puddle 0x%p\n", ret, mh));
 
         /* Got it? */
@@ -837,7 +875,7 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct TraceLocation *loc, st
     }
     else
     {
-        struct ProtectedPool *pool = (struct ProtectedPool *)mh->mh_Node.ln_Name;
+        struct ProtectedPool *pool = (struct ProtectedPool *)mhac_PoolMemHeaderGetPool(mh);
         IPTR size;
 
         if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
@@ -849,7 +887,7 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct TraceLocation *loc, st
         D(bug("[FreePooled] Allocated from puddle 0x%p, size %u\n", mh, size));
 
         /* Free the memory. */
-        stdDealloc(mh, NULL, freeStart, freeSize, loc, SysBase);
+        stdDealloc(mh, mhac_PoolMemHeaderGetCtx(mh), freeStart, freeSize, loc, SysBase);
         D(bug("[FreePooled] Deallocated chunk, %u free bytes in the puddle\n", mh->mh_Free));
 
         /* Is this MemHeader completely free now? */
