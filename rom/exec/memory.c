@@ -84,6 +84,8 @@ char *FormatMMContext(char *buffer, struct MMContext *ctx, struct ExecBase *SysB
     return buffer;
 }
 
+/* #define NO_ALLOCATOR_CONTEXT */
+
 #ifdef NO_ALLOCATOR_CONTEXT
 
 #define MEMHEADERALLOCATORCTX_TOTAL (0)
@@ -98,6 +100,8 @@ void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
     mh->mh_Node.ln_Name = (STRPTR)pool;
 }
 
+#define mhac_IsIndexEmpty(a)                (TRUE)
+#define mhac_ClearIndex(a)
 #define mhac_MemChunkClaimed(a, b)
 #define mhac_MemChunkCreated(a, b, c)       { (void)b; }
 #define mhac_GetBetterPrevMemChunk(a, b, c) (a)
@@ -115,13 +119,18 @@ void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
  * first is defined as MemChunk with lowest address
  *
  * Each chunk in array locates the place where search should start, not necesarly
- * where allocation should happen
+ * where allocation should happen.
+ *
+ * If chunk is taken from MemHeader and is present in the index, it must be removed
+ * from index.
+ *
+ * If chunk is returned to MemHeader it may be registered with index.
  */
 
 #define FIRSTPOTBIT             (5)
 #define FIRSTPOT                (1 << FIRSTPOTBIT)
-#define POTSTEP                 (2)     /* Distance between each level */
-#define ALLOCATORCTXINDEXSIZE   (8)     /* Number of levels in index */
+#define POTSTEP                 (1)     /* Distance between each level */
+#define ALLOCATORCTXINDEXSIZE   (16)    /* Number of levels in index */
 
 struct MemHeaderAllocatorCtx
 {
@@ -135,11 +144,35 @@ struct MemHeaderAllocatorCtx
 
 #define MEMHEADERALLOCATORCTX_TOTAL (AROS_ROUNDUP2(sizeof(struct MemHeaderAllocatorCtx), MEMCHUNK_TOTAL))
 
+static BOOL mhac_IsIndexEmpty(struct MemHeaderAllocatorCtx * mhac)
+{
+    LONG i;
+    if (!mhac)
+        return TRUE;
+
+    for (i = 0; i < mhac->mhac_IndexSize; i++)
+        if (mhac->mhac_PrevChunks[i] != NULL)
+            return FALSE;
+
+    return TRUE;
+}
+
+static void mhac_ClearIndex(struct MemHeaderAllocatorCtx * mhac)
+{
+    LONG i;
+
+    if (!mhac)
+        return;
+
+    for (i = 0; i < ALLOCATORCTXINDEXSIZE; i++)
+        mhac->mhac_PrevChunks[i] = NULL;
+}
+
 static void mhac_SetupMemHeaderAllocatorCtx(struct MemHeader * mh, struct MemHeaderAllocatorCtx * mhac)
 {
     /* Adjust index size to space in MemHeader */
     IPTR size = (IPTR)mh->mh_Upper - (IPTR)mh->mh_Lower;
-    LONG indexsize = 0, i = 0;
+    LONG indexsize = 0;
 
     size = size >> FIRSTPOTBIT;
     size = size >> POTSTEP;
@@ -151,8 +184,7 @@ static void mhac_SetupMemHeaderAllocatorCtx(struct MemHeader * mh, struct MemHea
 
     mhac->mhac_MemHeader = mh;
     mhac->mhac_IndexSize = indexsize;
-    for (i = 0; i < ALLOCATORCTXINDEXSIZE; i++)
-        mhac->mhac_PrevChunks[i] = NULL;
+    mhac_ClearIndex(mhac);
 }
 
 struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh, struct ExecBase * SysBase)
@@ -478,9 +510,21 @@ APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR siz
 
         mh->mh_Free -= byteSize;
 
-    /* Clear the block if requested */
-    if (requirements & MEMF_CLEAR)
-        memset(mc, 0, byteSize);
+        /* Clear the block if requested */
+        if (requirements & MEMF_CLEAR)
+            memset(mc, 0, byteSize);
+    }
+    else
+    {
+        if (!mhac_IsIndexEmpty(mhac))
+        {
+            /*
+             * Since chunks created during deallocation are not returned to index,
+             * retry with cleared index.
+             */
+            mhac_ClearIndex(mhac);
+            mc = stdAlloc(mh, mhac, size, requirements, tp, SysBase);
+        }
     }
 
     return mc;
@@ -585,15 +629,19 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
             return;
         }
 #endif
-    /* Merge if possible */
-    if ((UBYTE *)p1 + p1->mc_Bytes == (UBYTE *)p3)
-    {
-        mhac_MemChunkClaimed(p1, mhac);
-        p3 = p1;
-    }
-    else
-        /* Not possible to merge */
-        p1->mc_Next = p3;
+        /* Merge if possible */
+        if ((UBYTE *)p1 + p1->mc_Bytes == (UBYTE *)p3)
+        {
+            mhac_MemChunkClaimed(p1, mhac);
+            p3 = p1;
+            /*
+             * Note: this case does not lead to mhac_MemChunkCreated, because
+             * we don't have chunk prev to p1
+             */
+        }
+        else
+            /* Not possible to merge */
+            p1->mc_Next = p3;
     }else
         /*
             There was no previous block. Just insert the memory at
@@ -615,9 +663,8 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
     /* relink the list and return. */
     p3->mc_Next = p2;
     p3->mc_Bytes = p4 - (UBYTE *)p3;
-    // FIXME
-    //    memChunkCreated(p3, mhi);
     freeList->mh_Free += byteSize;
+    if (p1->mc_Next==p3) mhac_MemChunkCreated(p3, p1, mhac);
 }
 
 /* 
