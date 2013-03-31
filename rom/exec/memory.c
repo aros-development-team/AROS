@@ -222,6 +222,18 @@ void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * m
     }
 }
 
+static LONG mhac_CalcIndex(LONG size, ULONG indexsize)
+{
+    LONG r = 0;
+    size >>= FIRSTPOTBIT;
+    while (size >>= 1)
+        r++;
+
+    if (r > indexsize - 1) r = indexsize - 1;
+
+    return r;
+}
+
 void mhac_MemChunkCreated(struct MemChunk * mc, struct MemChunk *mcprev, struct MemHeaderAllocatorCtx * mhac)
 {
     LONG i, v = FIRSTPOT;
@@ -244,7 +256,6 @@ void mhac_MemChunkCreated(struct MemChunk * mc, struct MemChunk *mcprev, struct 
             mhac->mhac_PrevChunks[i] = mcprev;
         }
     }
-
 }
 
 /* General idea:
@@ -263,15 +274,21 @@ struct MemChunk * mhac_GetBetterPrevMemChunk(struct MemChunk * prev, IPTR size, 
 
     if (mhac)
     {
-        LONG i, v = FIRSTPOT;
+        LONG i;
+        LONG ii = mhac_CalcIndex(size, mhac->mhac_IndexSize);
 
-        for (i = 0; i < mhac->mhac_IndexSize; i++, v = v << POTSTEP)
+        if (mhac->mhac_PrevChunks[ii] != NULL)
+            _return = mhac->mhac_PrevChunks[ii];
+        else
         {
-            if (size < v)
-                return _return; /* This index is bigger than requester size */
-
-            if (mhac->mhac_PrevChunks[i] != NULL)
-                _return = mhac->mhac_PrevChunks[i];
+            for (i = ii - 1; i >= 0; i--)
+            {
+                if (mhac->mhac_PrevChunks[i] != NULL)
+                {
+                    _return = mhac->mhac_PrevChunks[i];
+                    break;
+                }
+            }
         }
     }
 
