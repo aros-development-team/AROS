@@ -234,6 +234,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 
     NEWLIST(&PrivExecBase(SysBase)->ResetHandlers);
     NEWLIST(&PrivExecBase(SysBase)->AllocMemList);
+    NEWLIST(&PrivExecBase(SysBase)->AllocatorCtxList);
 
     InitSemaphore(&PrivExecBase(SysBase)->MemListSem);
     InitSemaphore(&PrivExecBase(SysBase)->LowMemSem);

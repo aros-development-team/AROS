@@ -88,7 +88,7 @@ char *FormatMMContext(char *buffer, struct MMContext *ctx, struct ExecBase *SysB
 
 #define MEMHEADERALLOCATORCTX_TOTAL (0)
 
-struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh)
+struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh, struct ExecBase * SysBase)
 {
     return NULL;
 }
@@ -124,6 +124,7 @@ void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
 
 struct MemHeaderAllocatorCtx
 {
+    struct Node             mhac_Node;
     struct MemHeader        *mhac_MemHeader;
     APTR                    mhac_Data1;
 
@@ -133,39 +134,42 @@ struct MemHeaderAllocatorCtx
 
 #define MEMHEADERALLOCATORCTX_TOTAL (AROS_ROUNDUP2(sizeof(struct MemHeaderAllocatorCtx), MEMCHUNK_TOTAL))
 
-struct MemHeaderAllocatorCtx test[25];
-
-static void mhac_SetupMemHeaderAllocatorCtx(struct MemHeader * mh, struct MemHeaderAllocatorCtx * mhac,
-        ULONG indexsize)
+static void mhac_SetupMemHeaderAllocatorCtx(struct MemHeader * mh, struct MemHeaderAllocatorCtx * mhac)
 {
-    LONG i;
+    /* Adjust index size to space in MemHeader */
+    IPTR size = (IPTR)mh->mh_Upper - (IPTR)mh->mh_Lower;
+    LONG indexsize = 0, i = 0;
+
+    size = size >> FIRSTPOTBIT;
+    size = size >> POTSTEP;
+
+    for (; size > 0; size = size >> POTSTEP) indexsize++;
+
+    if (indexsize < 0) indexsize = 0;
+    if (indexsize > ALLOCATORCTXINDEXSIZE) indexsize = ALLOCATORCTXINDEXSIZE;
+
     mhac->mhac_MemHeader = mh;
     mhac->mhac_IndexSize = indexsize;
-    for (i = 0; i < mhac->mhac_IndexSize; i++)
+    for (i = 0; i < ALLOCATORCTXINDEXSIZE; i++)
         mhac->mhac_PrevChunks[i] = NULL;
 }
 
-struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh)
+struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh, struct ExecBase * SysBase)
 {
-    struct MemHeaderAllocatorCtx * mhi = NULL;
-    LONG i;
+    struct MemHeaderAllocatorCtx * mhac = NULL;
 
-    for (i = 0; i < 25; i++)
+    ForeachNode(&PrivExecBase(SysBase)->AllocatorCtxList, mhac)
     {
-        if (test[i].mhac_MemHeader == NULL && mhi == NULL)
-            mhi = &test[i]; /* Grab empty in case not yet allocated */
-
-        if (test[i].mhac_MemHeader == mh)
-        {
-            mhi = &test[i]; /* Found! */
-            break;
-        }
+        if (mhac->mhac_MemHeader == mh)
+            return mhac;
     }
 
-    mhi->mhac_MemHeader = mh;
-    mhi->mhac_IndexSize = 8;
+    /* New context is needed */
+    mhac = Allocate(mh, sizeof(struct MemHeaderAllocatorCtx));
+    mhac_SetupMemHeaderAllocatorCtx(mh, mhac);
+    AddTail(&PrivExecBase(SysBase)->AllocatorCtxList, (struct Node *)mhac);
 
-    return mhi;
+    return mhac;
 }
 
 void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * mhac)
@@ -248,19 +252,7 @@ void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
 {
     struct MemHeaderAllocatorCtx * mhac = Allocate(mh, sizeof(struct MemHeaderAllocatorCtx));
 
-    /* Adjust index size to space in MemHeader */
-    IPTR size = (IPTR)mh->mh_Upper - (IPTR)mh->mh_Lower;
-    LONG indexsize = 0;
-
-    size = size >> FIRSTPOTBIT;
-    size = size >> POTSTEP;
-
-    for (; size > 0; size = size >> POTSTEP) indexsize++;
-
-    if (indexsize < 0) indexsize = 0;
-    if (indexsize > ALLOCATORCTXINDEXSIZE) indexsize = ALLOCATORCTXINDEXSIZE;
-
-    mhac_SetupMemHeaderAllocatorCtx(mh, mhac, indexsize);
+    mhac_SetupMemHeaderAllocatorCtx(mh, mhac);
 
     mhac->mhac_Data1 = pool;
     mh->mh_Node.ln_Name = (STRPTR)mhac;

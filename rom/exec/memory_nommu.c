@@ -39,7 +39,7 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struc
                 || mh->mh_Free < byteSize)
             continue;
 
-        res = stdAlloc(mh, mhac_GetSysCtx(mh), byteSize, flags, loc, SysBase);
+        res = stdAlloc(mh, mhac_GetSysCtx(mh, SysBase), byteSize, flags, loc, SysBase);
         if (res)
             break;
     }
@@ -185,7 +185,7 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, s
         if (mh->mh_Lower > memoryBlock || mh->mh_Upper < blockEnd)
             continue;
 
-        stdDealloc(mh, mhac_GetSysCtx(mh), memoryBlock, byteSize, loc, SysBase);
+        stdDealloc(mh, mhac_GetSysCtx(mh, SysBase), memoryBlock, byteSize, loc, SysBase);
 
         MEM_UNLOCK;
         ReturnVoid ("nommu_FreeMem");

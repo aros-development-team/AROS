@@ -46,6 +46,7 @@ struct IntExecBase
     ULONG  IntFlags;                            /* Internal flags, see below                             */
     struct MsgPort *ServicePort;                /* Message port for service task                         */
     struct MinList TaskStorageSlots;            /* List of free slots, always one element with next slot */
+    struct List AllocatorCtxList;               /* List of allocator contexts for system mem headers    */
     struct Exec_PlatformData PlatformData;      /* Platform-specific stuff                               */
     struct SupervisorAlertTask SAT;
     char   AlertBuffer[ALERT_BUFFER_SIZE];      /* Buffer for alert text                                 */
