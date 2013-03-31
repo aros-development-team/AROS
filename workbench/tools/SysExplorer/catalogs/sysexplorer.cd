@@ -48,7 +48,7 @@ MSG_BOOTLOADER (//)
 Boot loader
 ;
 MSG_ARGUMENTS (//)
-Arguments
+Boot Arguments
 ;
 MSG_AVAILABLE (//)
 Available for use
