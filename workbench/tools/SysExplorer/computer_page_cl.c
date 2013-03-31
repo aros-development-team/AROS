@@ -228,6 +228,10 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
     IPTR bootldr = 0;
     IPTR args = 0;
     APTR KernelBase;
+    APTR HPETBase;
+
+    STRPTR pagetitles[5];
+    int pagecnt = 0;
 
     VersionStr(aros_ver, sizeof(aros_ver), ArosBase);
     VersionStr(exec_ver, sizeof(exec_ver), &SysBase->LibNode);
@@ -241,62 +245,84 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
         args    = GetTagData(KRN_CmdLine   , 0, bootinfo);
     }
 
+    pagetitles[pagecnt++] = (STRPTR)_(MSG_GENERAL);
+    if ((ProcessorBase = OpenResource(PROCESSORNAME)) != NULL)
+    {
+        pagetitles[pagecnt++] = (STRPTR)_(MSG_PROCESSORS);
+    }
+    pagetitles[pagecnt++] = (STRPTR)_(MSG_RAM);
+    if ((HPETBase = OpenResource("hpet.resource")) != NULL)
+    {
+        pagetitles[pagecnt++] = (STRPTR)_(MSG_HPET);
+    }
+    pagetitles[pagecnt] = NULL;
+
     self = (Object *) DoSuperNewTags
     (
         cl, self, NULL,
         MUIA_Window_Title, __(MSG_SYSTEM_PROPERTIES),
         MUIA_Window_ID, MAKE_ID('S', 'Y', 'P', 'R'),
-        WindowContents, (IPTR)(VGroup,
-            Child, (IPTR)(HGroup,
-                MUIA_FrameTitle, __(MSG_VERSION),
-                GroupFrame,
-                MUIA_Background, MUII_GroupBack,
-                Child, (IPTR)Label("AROS"),
-                Child, (IPTR)(TextObject,
-                    TextFrame,
-                    MUIA_Background, MUII_TextBack,
-                    MUIA_Text_Contents, (IPTR)aros_ver,
+        WindowContents, (IPTR)(RegisterObject,
+            MUIA_Register_Titles, (IPTR) pagetitles,
+            Child, (IPTR)(VGroup,
+                Child, (IPTR)(HGroup,
+                    MUIA_FrameTitle, __(MSG_VERSION),
+                    GroupFrame,
+                    MUIA_Background, MUII_GroupBack,
+                    Child, (IPTR)Label("AROS"),
+                    Child, (IPTR)(TextObject,
+                        TextFrame,
+                        MUIA_Background, MUII_TextBack,
+                        MUIA_CycleChain, 1,
+                        MUIA_Text_Contents, (IPTR)aros_ver,
+                    End),
+                    Child, (IPTR)Label("Exec"),
+                    Child, (IPTR)(TextObject,
+                        TextFrame,
+                        MUIA_Background, MUII_TextBack,
+                        MUIA_CycleChain, 1,
+                        MUIA_Text_Contents, (IPTR)exec_ver,
+                    End),
                 End),
-                Child, (IPTR)Label("Exec"),
-                Child, (IPTR)(TextObject,
-                    TextFrame,
-                    MUIA_Background, MUII_TextBack,
-                    MUIA_Text_Contents, (IPTR)exec_ver,
+                Child, (IPTR)(HGroup,
+                    GroupFrame,
+                    MUIA_FrameTitle, __(MSG_BOOTLOADER),
+                    MUIA_Background, MUII_GroupBack,
+                    Child, (IPTR)(TextObject,
+                        TextFrame,
+                        MUIA_Background, MUII_TextBack,
+                        MUIA_CycleChain, 1,
+                        MUIA_Text_Contents, bootldr,
+                    End),
                 End),
-            End),
-            Child, (IPTR)(HGroup,
-                GroupFrame,
-                MUIA_FrameTitle, __(MSG_BOOTLOADER),
-                MUIA_Background, MUII_GroupBack,
-                Child, (IPTR)(TextObject,
-                    TextFrame,
-                    MUIA_Background, MUII_TextBack,
-                    MUIA_Text_Contents, bootldr,
-                End),
-            End),
-            Child, (IPTR)(HGroup,
-                GroupFrame,
-                MUIA_FrameTitle, __(MSG_ARGUMENTS),
-                MUIA_Background, MUII_GroupBack,
-                Child, (IPTR)(TextObject,
-                    TextFrame,
-                    MUIA_Background, MUII_TextBack,
-                    MUIA_Text_Contents, args,
-                End),
-            End),
-            Child, (IPTR)Label(_(MSG_PROCESSORS)),
-            Child, (IPTR)(NListviewObject,
-                MUIA_NListview_NList, (IPTR)(processors_flt = NFloattextObject,
-                End),
-            End),
-            Child, (IPTR)Label(_(MSG_HPET)),
-            Child, (IPTR)(NListviewObject,
-                MUIA_NListview_NList, (IPTR)(hpet_flt = NFloattextObject,
+                Child, (IPTR)(HGroup,
+                    GroupFrame,
+                    MUIA_FrameTitle, __(MSG_ARGUMENTS),
+                    MUIA_Background, MUII_GroupBack,
+                    Child, (IPTR)(TextObject,
+                        TextFrame,
+                        MUIA_Background, MUII_TextBack,
+                        MUIA_CycleChain, 1,
+                        MUIA_Text_Contents, args,
+                    End),
                 End),
             End),
-            Child, (IPTR)Label(_(MSG_RAM)),
-            Child, (IPTR)(NListviewObject,
-                MUIA_NListview_NList, (IPTR)(ram_flt = NFloattextObject,
+            ProcessorBase ? Child : TAG_IGNORE, (IPTR)(VGroup,
+                Child, (IPTR)(NListviewObject,
+                    MUIA_NListview_NList, (IPTR)(processors_flt = NFloattextObject,
+                    End),
+                End),
+            End),
+            Child, (IPTR)(VGroup,
+                Child, (IPTR)(NListviewObject,
+                    MUIA_NListview_NList, (IPTR)(ram_flt = NFloattextObject,
+                    End),
+                End),
+            End),
+            HPETBase ? Child : TAG_IGNORE, (IPTR)(VGroup,
+                Child, (IPTR)(NListviewObject,
+                    MUIA_NListview_NList, (IPTR)(hpet_flt = NFloattextObject,
+                    End),
                 End),
             End),
         End),
@@ -306,7 +332,6 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
     if (self)
     {
         struct MemHeader *mh;
-        APTR HPETBase;
         char buffer[2000];
         char *bufptr;
         LONG slen;
@@ -314,18 +339,16 @@ static Object *ComputerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg
 
         // processors
         *buffer = '\0';
-        ProcessorBase = OpenResource(PROCESSORNAME);
         if (ProcessorBase)
             PrintProcessorInformation(buffer, sizeof(buffer));
         // we intentionally use MUIA_Floattext_Text because it copies the text
         SET(processors_flt, MUIA_Floattext_Text, buffer);
 
-        // hpet
+        // high precision timers
         *buffer = '\0';
         bufptr = buffer;
         bufsize = sizeof(buffer);
 
-        HPETBase = OpenResource("hpet.resource");
         if (HPETBase)
         {
             const char *owner;
