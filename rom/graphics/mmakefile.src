@@ -220,5 +220,4 @@ FUNCTIONS := \
 
 %build_module mmake=kernel-graphics \
   modname=graphics modtype=library \
-  files="graphics_init $(FUNCTIONS) $(FILES)" \
-  uselibs="oop"
+  files="graphics_init $(FUNCTIONS) $(FILES)"

@@ -7,4 +7,4 @@ USER_CFLAGS := -D__OOP_NOATTRBASES__ -D__GRAPHICS_NOHIDDBASE__ \
 
 %build_module mmake=kernel-amiga-m68k-uaegfx \
     modname=uaegfx modtype=hidd \
-    files="startup uaegfx uaegfxbitmap uaertg" uselibs="oop"
+    files="startup uaegfx uaegfxbitmap uaertg"

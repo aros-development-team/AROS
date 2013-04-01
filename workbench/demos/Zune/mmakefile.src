@@ -13,8 +13,7 @@ FILES := \
 #MM workbench-demos-zune : includes linklibs  
 
 %build_progs mmake=workbench-demos-zune \
-    files=$(FILES) targetdir=$(AROSDIR)/Demos/Zune \
-    uselibs="mui"
+    files=$(FILES) targetdir=$(AROSDIR)/Demos/Zune
 
 %common
 

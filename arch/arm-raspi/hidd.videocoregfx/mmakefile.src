@@ -14,4 +14,4 @@ FILES	:=	\
 %build_module mmake=hidd-videocoregfx \
   modname=videocoregfx modtype=hidd \
   files=$(FILES) \
-  uselibs="hiddstubs oop"
+  uselibs="hiddstubs"

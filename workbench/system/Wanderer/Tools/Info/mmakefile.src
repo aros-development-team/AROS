@@ -16,6 +16,6 @@ USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_prog mmake=workbench-system-wanderer-tools-info \
     progname=Info targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui"
+    files=$(FILES)
 
 %rule_makedirs dirs=$(EXEDIR)

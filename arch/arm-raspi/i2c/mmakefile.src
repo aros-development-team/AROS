@@ -5,8 +5,7 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=hidd-i2c-bcm2835 \
   modname=i2c-bcm2835 modtype=hidd \
-  files="i2c-bcm2835" \
-  uselibs="oop"
+  files="i2c-bcm2835"
 
 %common
   

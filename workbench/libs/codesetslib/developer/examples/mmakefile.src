@@ -18,7 +18,6 @@ USER_CFLAGS = -idirafter $(SRCDIR)/$(CURDIR)/../include \
 	      -idirafter $(SRCDIR)/$(CURDIR)/../../include
 
 %build_progs mmake=workbench-libs-codesets-test \
-    files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="mui"
+    files=$(FILES) targetdir=$(EXEDIR)
 
 %common

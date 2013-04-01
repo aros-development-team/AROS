@@ -21,6 +21,6 @@ FILES := init agpclass genericbridgedeviceclass agp3bridgedeviceclass \
 #MM hidd-agp : includes
 
 %build_module mmake=hidd-agp modname=agp modtype=hidd \
-    files="$(FILES)" uselibs="oop"
+    files="$(FILES)"
 
 %common

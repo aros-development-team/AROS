@@ -3,5 +3,4 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=kernel-pci-amcc460 \
   modname=pci-amcc460 modtype=hidd \
-  files="pci_amcc460_init driverclass" \
-  uselibs="oop"
+  files="pci_amcc460_init driverclass"

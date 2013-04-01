@@ -9,4 +9,4 @@ FILES	:=	\
 
 %build_module mmake=kernel-hidd-vesa \
   modname=vesagfx modtype=hidd \
-  files=$(FILES) uselibs="oop"
+  files=$(FILES)

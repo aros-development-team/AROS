@@ -23,8 +23,7 @@ FUNCS := \
 
 %build_module mmake=workbench-libs-cgxvideo \
   modname=cgxvideo modtype=library \
-  files="cgxvideo_init $(FUNCS)" \
-  uselibs="oop"
+  files="cgxvideo_init $(FUNCS)"
 
 #MM includes-copy
 

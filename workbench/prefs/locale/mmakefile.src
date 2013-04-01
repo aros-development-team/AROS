@@ -17,7 +17,7 @@ EXEDIR      := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-locale \
     progname=Locale targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui"
+    files=$(FILES)
 
 
 IMAGES      := earthmap_small timezones_small

@@ -12,12 +12,11 @@ FILES := locale NListviews icon Debug
 
 %build_module_simple mmake=classes-zune-nlistviews-mcp \
   modname=NListviews modtype=mcp \
-  files="library $(FILES)" uselibs="mui"
+  files="library $(FILES)"
 
 
 %build_prog mmake=classes-zune-nlistviews-mcp-test progname=NListviews-Prefs \
-    files="NListviews-Prefs $(FILES)" targetdir=$(AROS_TESTS)/NList \
-    uselibs="mui"
+    files="NListviews-Prefs $(FILES)" targetdir=$(AROS_TESTS)/NList
 
 
 #MM includes-copy

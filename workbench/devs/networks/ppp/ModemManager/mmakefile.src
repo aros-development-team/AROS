@@ -10,5 +10,6 @@ EXEDIR := $(AROS_C)
 
 %build_prog mmake=workbench-devs-networks-ppp-mm \
     progname=ModemManager targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui"
+    files=$(FILES)
+
 %common

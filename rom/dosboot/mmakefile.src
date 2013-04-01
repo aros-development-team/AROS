@@ -13,7 +13,7 @@ USER_INCLUDES := -I$(SRCDIR)/rom/devs -I$(GENDIR)/$(CURDIR)
 
 %build_module mmake=kernel-dosboot \
   modname=dosboot modtype=resource \
-  files="$(FILES)" uselibs="oop hiddstubs"
+  files="$(FILES)" uselibs="hiddstubs"
 
 $(GENDIR)/$(CURDIR)/bootanim.d : $(GENDIR)/$(CURDIR)/nomedia_image.h
 

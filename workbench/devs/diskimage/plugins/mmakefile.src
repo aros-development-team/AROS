@@ -74,7 +74,7 @@ CFILES := cue/cue cue/flac cue/wavpack audio/aiff audio/flac \
 	cue/fdio cue/string cue/stdio cue/select
 
 %build_prog mmake=workbench-devs-diskimage-cue progname=CUE files="stub_aros $(CFILES)" \
-    targetdir=$(TARGETDIR) uselibs="mpg123 FLAC wavpack vorbisfile vorbis ogg m diskimagesupport" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="mpg123 FLAC wavpack vorbisfile vorbis ogg diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-daa progname=DAA files="stub_aros daa" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport z" usestartup=no

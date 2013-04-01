@@ -16,12 +16,11 @@ FILES := Dispatcher \
 
 %build_module_simple mmake=classes-zune-nbalance-class \
   modname=NBalance modtype=mcc \
-  files="library $(FILES)" uselibs="mui"
+  files="library $(FILES)"
 
 
 %build_prog mmake=classes-zune-nbalance-test progname=NBalance-Test \
-    files="NBalance-Test $(FILES)" targetdir=$(AROS_TESTS)/NList \
-    uselibs="mui"
+    files="NBalance-Test $(FILES)" targetdir=$(AROS_TESTS)/NList
 
 
 #MM includes-copy

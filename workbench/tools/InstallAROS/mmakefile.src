@@ -18,7 +18,7 @@ endif
 
 %build_prog mmake=workbench-tools-installaros \
     progname=InstallAROS targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui"
+    files=$(FILES)
 
 %common
 

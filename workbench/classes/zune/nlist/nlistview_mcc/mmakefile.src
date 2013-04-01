@@ -13,7 +13,7 @@ FILES := library \
 
 %build_module_simple mmake=classes-zune-nlistview-class \
   modname=NListview modtype=mcc \
-  files=$(FILES) uselibs="mui"
+  files=$(FILES)
 
 
 #MM includes-copy

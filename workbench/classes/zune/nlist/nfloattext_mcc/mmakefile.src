@@ -11,7 +11,7 @@ FILES := NFloattext Debug
 
 %build_module_simple mmake=classes-zune-nfloattext-class \
   modname=NFloattext modtype=mcc \
-  files="library $(FILES)" uselibs="mui"
+  files="library $(FILES)"
 
 
 #MM includes-copy

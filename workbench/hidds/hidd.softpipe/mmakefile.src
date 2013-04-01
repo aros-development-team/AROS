@@ -55,6 +55,6 @@ USER_INCLUDES := \
             -I$(GALLIUM_PATH)/include \
 
 %build_module mmake=hidd-softpipe modname=softpipe modtype=hidd \
-    files="$(SOFTPIPE_HIDD_SOURCES)" uselibs="oop galliumauxiliary"
+    files="$(SOFTPIPE_HIDD_SOURCES)" uselibs="galliumauxiliary"
     
 %common

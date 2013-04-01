@@ -12,9 +12,9 @@ CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
 %build_module mmake=workbench-devs-networks-rtl8139-normal \
     modname=rtl8139 modtype=device \
     files="rtl8139_init $(FILES)" cflags=$(CFLAGSNORMAL) \
-    objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="oop hiddstubs"
+    objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="hiddstubs"
 
 %build_module mmake=workbench-devs-networks-rtl8139-debug \
     modname=rtl8139_debug modtype=device \
     files="rtl8139_init $(FILES)" conffile=rtl8139.conf cflags=$(CFLAGSDEBUG) \
-    objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="oop hiddstubs"
+    objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="hiddstubs"

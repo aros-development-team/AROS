@@ -9,6 +9,6 @@ USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\"" -isystem $(SRCDIR)/arch/a
 
 %build_progs mmake=workbench-c-install-grub2 \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport debug"
+    uselibs="debug"
 
 %common

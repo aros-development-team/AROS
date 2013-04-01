@@ -12,6 +12,6 @@ EXEDIR      := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-iconbar \
     progname=BoingIconBar targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui"
+    files=$(FILES)
 
 %common

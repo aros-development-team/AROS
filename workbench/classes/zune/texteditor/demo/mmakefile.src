@@ -14,8 +14,7 @@ USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include
 USER_CFLAGS := -DNO_INLINE_STDARG
 
 %build_prog mmake=workbench-classes-zune-texteditor-demo progname=TextEditor-Demo \
-    files=$(FILES) targetdir=$(TARGETDIR) \
-    uselibs="mui"
+    files=$(FILES) targetdir=$(TARGETDIR)
 
 #MM workbench-classes-zune-texteditor-rexx
 %copy_dir_recursive mmake=workbench-classes-zune-texteditor-rexx src=rexx \

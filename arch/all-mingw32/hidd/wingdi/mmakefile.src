@@ -8,7 +8,7 @@ FILES := startup gdi_hostlib gdigfx bitmap gdikbd gdimouse
 
 %build_module mmake=kernel-hidd-wingdi \
   modname=wingdi modtype=hidd \
-  files=$(FILES) uselibs="oop hiddstubs"
+  files=$(FILES) uselibs="hiddstubs"
 
 DISK_FILES  := disk_startup
 DISK_EXEDIR := $(AROS_DEVS)/Monitors
@@ -17,7 +17,7 @@ DISK_EXEDIR := $(AROS_DEVS)/Monitors
 
 %build_prog mmake=devs-monitors-gdi \
     progname=GDI targetdir=$(DISK_EXEDIR) \
-    files=$(DISK_FILES) uselibs="oop"
+    files=$(DISK_FILES)
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib

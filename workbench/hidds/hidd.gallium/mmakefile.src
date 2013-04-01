@@ -15,6 +15,6 @@ USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
 
 %build_module mmake=hidd-gallium modname=gallium modtype=hidd \
-    files="$(FILES)" uselibs="oop"
+    files="$(FILES)"
     
 %common

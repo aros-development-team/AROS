@@ -183,6 +183,6 @@ USER_INCLUDES := -D__DOS_NOLIBBASE__ \
 
 %build_module mmake=kernel-intuition \
   modname=intuition modtype=library \
-  files="intuition_init $(FUNCS) $(FILES)" uselibs="oop"
+  files="intuition_init $(FUNCS) $(FILES)"
 
 

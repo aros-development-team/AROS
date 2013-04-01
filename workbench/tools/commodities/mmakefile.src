@@ -22,8 +22,7 @@ USER_CFLAGS := -I$(SRCDIR)/workbench/libs/commodities
 #MM workbench-tools-commodities : includes linklibs workbench-tools-commodities-catalogs
 
 %build_progs mmake=workbench-tools-commodities \
-    files=$(FILES) targetdir=$(AROSDIR)/Tools/Commodities \
-    uselibs="mui"
+    files=$(FILES) targetdir=$(AROSDIR)/Tools/Commodities
 
 %common
 

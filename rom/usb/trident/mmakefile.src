@@ -9,7 +9,7 @@ FILES :=    Trident ActionClass CfgListClass DevWinClass IconListClass debug loc
 
 %build_prog progname="Trident" mmake=kernel-usb-trident \
     files=$(FILES) targetdir=$(AROS_PREFS) \
-    uselibs="mui debug"
+    uselibs="debug"
 
 
 %common

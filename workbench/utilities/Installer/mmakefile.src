@@ -16,7 +16,7 @@ EXEDIR := $(AROSDIR)/Utilities
 
 %build_prog mmake=workbench-utilities-installer \
     progname=Installer targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui"
+    files=$(FILES)
 
 
 SCRIPT    := test.script

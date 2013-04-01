@@ -6,5 +6,5 @@ FILES	:=	serial_init SerialClass SerialUnitClass
 %build_module mmake=kernel-pc-i386-serial \
   modname=serial modtype=hidd \
   files=$(FILES) \
-  uselibs="hiddstubs oop"
+  uselibs="hiddstubs"
   

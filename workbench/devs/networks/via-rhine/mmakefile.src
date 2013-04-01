@@ -15,9 +15,9 @@ CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
 %build_module mmake=networking-drivers-viarhine-normal \
     modname=viarhine modtype=device \
     files="via-rhine_init $(FILES)" cflags=$(CFLAGSNORMAL) \
-    objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="oop hiddstubs"
+    objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="hiddstubs"
 
 %build_module mmake=networking-drivers-viarhine-debug \
     modname=viarhine_debug modtype=device \
     files="via-rhine_init $(FILES)" conffile=viarhine.conf cflags=$(CFLAGSDEBUG) \
-    objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="oop hiddstubs"
+    objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="hiddstubs"
