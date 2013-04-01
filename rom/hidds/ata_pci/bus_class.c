@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/debug.h>
 #include <hardware/ata.h>
 #include <hidd/ata.h>
@@ -301,9 +306,13 @@ APTR PCIATA__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
         dma->au_DMAPort = data->bus->atapb_DMABase;
         dma->ab_PRD     = data->dmaBuf;
 
-        /* Align our buffer */
-        if ((0x10000 - ((IPTR)dma->ab_PRD & 0xffff)) < PRD_MAX * sizeof(struct PRDEntry))
-       	    dma->ab_PRD = (void*)((((IPTR)dma->ab_PRD)+0xffff) &~ 0xffff);
+        /* Ensure table does not cross a 4kB boundary (required by VirtualBox,
+           if not by real hardware) */
+        if(0x1000 - ((ULONG)(IPTR)dma->ab_PRD & 0xfff) <
+            PRD_MAX * sizeof(struct PRDEntry))
+        {
+            dma->ab_PRD = (APTR)((((ULONG)(IPTR)dma->ab_PRD) + 0xfff) & ~0xfff);
+        }
     }
 
     return dma;
