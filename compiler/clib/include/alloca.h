@@ -19,27 +19,9 @@ __BEGIN_DECLS
 void *alloca(size_t size);
 
 #ifdef __GNUC__
-/* Private function to get the upper or lower bound (depending on the architecture)
-   of the stack.  */
-/* FIXME: Can't it be made more general ? */
-void *__alloca_get_stack_limit(void);
-
-/* GNU C provides a builtin alloca function. */
-#    if AROS_STACK_GROWS_DOWNWARDS
-#        define alloca(size)                                                            \
-         ({                                                                             \
-             ((void *)(AROS_GET_SP - AROS_ALIGN(size)) <= __alloca_get_stack_limit()) ? \
-             NULL :                                                                     \
-             __builtin_alloca(size);                                                    \
-         })
-#    else
-#        define alloca(size)                                                            \
-         ({                                                                             \
-             ((void *)(AROS_GET_SP + AROS_ALIGN(size)) >= __alloca_get_stack_limit()) ? \
-             NULL :                                                                     \
-             __builtin_alloca(size);                                                    \
-         })
-#    endif /* AROS_STACK_GROWS_DOWNWARDS */
+#define alloca(size) __builtin_alloca(size)
+#else
+#error Unsupported compiler for alloca()
 #endif /* GCC.  */
 
 __END_DECLS
