@@ -8,7 +8,6 @@ EXEDIR := $(AROS_TESTS)/desktop
 #MM test-desktop : includes linklibs
 
 %build_progs mmake=test-desktop \
-    files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="mui"
+    files=$(FILES) targetdir=$(EXEDIR)
 
 %common

@@ -16,7 +16,6 @@ FILES  := \
 #MM workbench-libs-muimaster-examples : includes linklibs
 
 %build_progs mmake=workbench-libs-muimaster-examples \
-    files=$(FILES) targetdir=$(AROSDIR)/Demos/Zune \
-    uselibs="mui"
+    files=$(FILES) targetdir=$(AROSDIR)/Demos/Zune
 
 %common

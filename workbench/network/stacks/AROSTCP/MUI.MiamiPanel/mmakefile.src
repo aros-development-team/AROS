@@ -37,6 +37,5 @@ USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -D__BSD_VISIBLE=1
 
 %build_module mmake=arostcp-libs-muimiamipanel \
     modname=MUI modtype=library modsuffix=MiamiPanel conffile=MUI.MiamiPanel.conf \
-    files="$(MUIMIAMIPANELCORE) $(MUIMIAMIPANELCLASSES)" \
-    uselibs="mui"
+    files="$(MUIMIAMIPANELCORE) $(MUIMIAMIPANELCLASSES)"
 

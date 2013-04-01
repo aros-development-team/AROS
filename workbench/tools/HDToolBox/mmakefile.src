@@ -23,7 +23,7 @@ USER_CFLAGS := -DHAVE_COOLIMAGES
 
 %build_prog mmake=workbench-tools-hdtoolbox \
     progname=HDToolBox targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui uuid"
+    files=$(FILES) uselibs="uuid"
 
 #MM
 workbench-tools-hdtoolbox-prefs : $(PREFSDIR)/hdtoolbox.prefs

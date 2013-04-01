@@ -15,6 +15,6 @@ EXEDIR := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-psi \
     progname="PSI" targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui muiscreen"
+    files=$(FILES) uselibs="muiscreen"
 
 %common

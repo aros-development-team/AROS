@@ -14,5 +14,4 @@ SDCARDFILES = \
 
 %build_module mmake=kernel-sdcard \
   modname=sdcard modtype=device version=$(AROS_TARGET_PLATFORM) \
-  files="$(SDCARDFILES)" \
-  uselibs="oop"
+  files="$(SDCARDFILES)"

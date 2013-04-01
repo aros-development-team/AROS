@@ -96,8 +96,7 @@ USER_LDFLAGS := -noarosc
 USER_LDFLAGS := 
 
 %build_prog mmake=workbench-c-requeststring progname=RequestString \
-    files=RequestString targetdir=$(AROS_C) \
-    uselibs="mui"
+    files=RequestString targetdir=$(AROS_C)
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...

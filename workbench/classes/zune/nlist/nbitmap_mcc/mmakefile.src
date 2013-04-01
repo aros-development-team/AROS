@@ -12,12 +12,11 @@ FILES := dispatcher Chunky2Bitmap DitherImage NBitmap Debug
 
 %build_module_simple mmake=classes-zune-nbitmap-class \
   modname=NBitmap modtype=mcc \
-  files="library $(FILES)" uselibs="mui"
+  files="library $(FILES)"
 
 
 %build_prog mmake=classes-zune-nbitmap-test progname=NBitmap-Test \
-    files="NBitmap-Test $(FILES)" targetdir=$(AROS_TESTS)/NList \
-    uselibs="mui"
+    files="NBitmap-Test $(FILES)" targetdir=$(AROS_TESTS)/NList
 
 
 INCLUDE_FILES := ../include/mui/NBitmap_mcc.h

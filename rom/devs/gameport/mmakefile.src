@@ -9,7 +9,7 @@ USER_CFLAGS += -D__OOP_NOLIBBASE__
 
 %build_module mmake=kernel-gameport \
   modname=gameport modtype=device \
-  files=gameport uselibs="oop"
+  files=gameport
 
 #MM includes-copy
 

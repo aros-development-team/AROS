@@ -36,5 +36,4 @@ ifeq ($(FAMILY),unix)
 endif
 
 %build_module mmake=workbench-libs-oss-unix-module modname=oss \
-    modtype=library version=$(AROS_TARGET_PLATFORM) files="$(FILES) oss_init" linklibname=ossshared \
-    uselibs="oop"
+    modtype=library version=$(AROS_TARGET_PLATFORM) files="$(FILES) oss_init" linklibname=ossshared

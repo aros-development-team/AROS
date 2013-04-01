@@ -18,8 +18,7 @@ USER_CFLAGS      += -D__GRAPHICS_NOLIBBASE__ \
 
 %build_module mmake=kernel-hidd-graphics \
   modname=graphics modtype=hidd \
-  files="$(FILES) $(COLORCONVFILES)" \
-  uselibs="oop"
+  files="$(FILES) $(COLORCONVFILES)"
 
 LIBNAME     := graphics
 

@@ -34,13 +34,12 @@ USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_module_simple mmake=classes-zune-nlist-class \
   modname=NList modtype=mcc \
-  files="library $(FILES)" uselibs="mui"
+  files="library $(FILES)"
 
 
 
 %build_prog mmake=classes-zune-nlist-test progname=NList-Test \
-    files="NList-Test $(FILES)" targetdir=$(AROS_TESTS)/NList \
-    uselibs="mui"
+    files="NList-Test $(FILES)" targetdir=$(AROS_TESTS)/NList
 
 
 #MM includes-copy

@@ -13,6 +13,6 @@ EXEDIR  := $(AROS_SYSTEM)
 
 %build_prog mmake=workbench-system-snoopy \
     progname=Snoopy targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui"
+    files=$(FILES)
 
 %common

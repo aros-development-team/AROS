@@ -115,7 +115,7 @@ USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_progs mmake=test-common \
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR) \
-    uselibs="coolimagesstatic hiddstubs oop"
+    uselibs="coolimagesstatic hiddstubs"
 
 %build_progs mmake=test-sh \
     files=$(SHTESTFILES) targetdir=$(EXEDIR) \

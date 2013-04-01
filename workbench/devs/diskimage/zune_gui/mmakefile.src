@@ -13,7 +13,7 @@ USER_CFLAGS := -DGUI -DCATCOMP_NUMBERS
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)/../include
 
 %build_prog mmake=workbench-devs-diskimage-gui progname=DiskImageGUI files=$(CFILES) \
-    targetdir=$(AROS_SYSTEM) uselibs="mui diskimagesupport"
+    targetdir=$(AROS_SYSTEM) uselibs="diskimagesupport"
 
 %copy_dir_recursive mmake=workbench-devs-diskimage-gfx \
 	src=$(DIGFX) dst=$(AROS_IMAGES)/$(DIGFX)

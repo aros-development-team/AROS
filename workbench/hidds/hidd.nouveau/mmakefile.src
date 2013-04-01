@@ -130,5 +130,5 @@ USER_CFLAGS := -std=gnu99
 %build_module mmake=hidd-nouveau \
     modname=nouveau modtype=hidd \
     files="$(NOUVEAU_HIDD_SOURCES)" \
-    uselibs="oop hiddstubs galliumauxiliary"
+    uselibs="hiddstubs galliumauxiliary"
 

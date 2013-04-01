@@ -27,15 +27,15 @@ USER_CFLAGS += $(PARANOIA_CFLAGS)
 
 %build_prog mmake=classes-zune-nlist-demo \
     progname=NList-Demo targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui"
+    files=$(FILES)
 
 %build_prog mmake=classes-zune-nlisttree-demo \
     progname=NListtree-Demo targetdir=$(EXEDIR) \
-    files=NListtree-Demo uselibs="mui"
+    files=NListtree-Demo
 
 %build_prog mmake=classes-zune-nbitmap-demo \
     progname=NBitmap-Demo targetdir=$(EXEDIR) \
-    files=NBitmap-Demo uselibs="mui"
+    files=NBitmap-Demo
 
 %copy_files_q mmake=classes-zune-nbitmap-demo-cpy \
     files=icon.png src=../nbitmap_mcc dst=$(EXEDIR)

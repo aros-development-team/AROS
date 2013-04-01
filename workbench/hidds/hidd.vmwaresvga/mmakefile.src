@@ -11,4 +11,4 @@ FILES	:=	\
 %build_module mmake=hidd-vmwaresvga \
   modname=vmwaresvga modtype=hidd \
   files=$(FILES) \
-  uselibs="hiddstubs oop"
+  uselibs="hiddstubs"

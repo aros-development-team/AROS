@@ -14,6 +14,6 @@ USER_CFLAGS := -DMUI_OBSOLETE
 
 %build_prog mmake=workbench-prefs-printer \
     progname=Printer targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui"
+    files=$(FILES)
 
 %common

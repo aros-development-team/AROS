@@ -12,7 +12,7 @@ STORAGEDIR := $(AROSDIR)/Storage/Monitors
 
 %build_prog mmake=devs-monitors-wrapper \
     progname=Wrapper targetdir=$(STORAGEDIR) \
-    files=$(FILES) uselibs="oop"
+    files=$(FILES)
 
 #MM
 devs-monitors-wrapper-copy: $(DEVSDIR)/ATI \

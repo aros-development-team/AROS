@@ -9,4 +9,4 @@ FILES := handler unit pcnet32
 %build_module mmake=workbench-devs-networks-pcnet32-x86 \
     modname=pcnet32 modtype=device \
     files="pcnet32_init $(FILES)" \
-    moduledir=Devs/Networks uselibs="oop hiddstubs"
+    moduledir=Devs/Networks uselibs="hiddstubs"

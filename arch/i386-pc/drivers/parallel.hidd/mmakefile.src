@@ -6,4 +6,4 @@ FILES	:=	ParallelClass ParallelUnitClass
 %build_module mmake=kernel-pc-i386-parallel \
   modname=parallel modtype=hidd \
   files=$(FILES) \
-  uselibs="hiddstubs oop"
+  uselibs="hiddstubs"

@@ -12,4 +12,4 @@ FILES	:=	\
 
 %build_module mmake=hidd-sm502 \
   modname=sm502 modtype=hidd \
-  files=$(FILES) uselibs="oop"
+  files=$(FILES)

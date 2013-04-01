@@ -12,6 +12,6 @@ EXEDIR := $(AROS_TOOLS)
 
 %build_prog mmake=workbench-tools-keyshow \
     progname=KeyShow targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui"
+    files=$(FILES)
 
 %common

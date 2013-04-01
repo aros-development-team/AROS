@@ -15,6 +15,6 @@ kernel-usb-pciusb-directories ::
     modname=pciusb modtype=device \
     moduledir=Devs/USBHardware \
     files="$(FILES)" \
-    uselibs="oop hiddstubs debug"
+    uselibs="hiddstubs debug"
 
 %common

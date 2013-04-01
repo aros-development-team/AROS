@@ -36,8 +36,7 @@ USER_CFLAGS := -DNO_INLINE_STDARG
 
 %build_prog mmake=workbench-classes-zune-betterstring-test \
     progname=BetterString-Test files="BetterString-Test $(FILES)" \
-    targetdir=$(AROS_TESTS)/Zune \
-    uselibs="mui"
+    targetdir=$(AROS_TESTS)/Zune
 
 
 

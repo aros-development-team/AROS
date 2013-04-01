@@ -12,6 +12,6 @@ USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -D__BSD_VISIBLE=1
 
 %build_prog mmake=arostcp-c-netstat \
     progname=netstat targetdir=$(AROS_SYSTEM)/Networks/AROSTCP/C \
-    files=$(FILES) uselibs="mui"
+    files=$(FILES)
 
 %common

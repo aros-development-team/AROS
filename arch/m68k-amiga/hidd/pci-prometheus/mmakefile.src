@@ -11,8 +11,7 @@ FILES=pci-prometheus_init driverclass pci_resource
 %build_module mmake=hidd-pci-prometheus-hidd \
   modname=pci-prometheus modtype=hidd \
   moduledir=$(AROS_DIR_EXPANSION) \
-  files="$(FILES)" \
-  uselibs="oop"
+  files="$(FILES)"
 
 %build_icons mmake=hidd-pci-prometheus-icon \
   icons=pci-prometheus.hidd dir=$(AROS_EXPANSION)

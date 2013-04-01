@@ -7,6 +7,6 @@ FILES := pciehci_init pciehci_dev pciehci_uhw pciehci_hci
 	modname=pciehci modtype=device      \
 	moduledir=Devs/USBHardware \
 	files="$(FILES)"                    \
-	uselibs="oop hiddstubs debug"
+	uselibs="hiddstubs debug"
 
 %common

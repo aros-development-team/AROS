@@ -14,4 +14,4 @@ FILES	:= \
 USER_INCLUDES := -I$(SRCDIR)/rom/hidds/hidd.pci/
 
 %build_module mmake=hidd-pci-mock modname=pcimock modtype=hidd \
-    files=$(FILES) uselibs="oop"
+    files=$(FILES)
