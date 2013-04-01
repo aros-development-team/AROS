@@ -10,8 +10,6 @@ FUNCS := \
     loctolower loctoupper locdatetostr locstrtodate \
     locdosgetlocalizedstring
 
-USER_LDFLAGS := -noarosc
-
 #MM workbench-libs-locale-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-dos-includes \

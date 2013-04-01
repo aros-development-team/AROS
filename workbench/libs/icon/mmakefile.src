@@ -51,7 +51,6 @@ FUNCS := \
 #MM- core-linklibs: linklibs-icon
 
 USER_CFLAGS := -D__NOLIBBASE__
-USER_LDFLAGS := -noarosc
 
 %build_module mmake=workbench-libs-icon \
     modname=icon modtype=library \
