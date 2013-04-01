@@ -13,7 +13,6 @@ FILES:= libinit \
         debug
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
-USER_LDFLAGS := -noarosc
 
 #MM- workbench-libs-openurl-lib : linklibs workbench-libs-openurl-includes
 
