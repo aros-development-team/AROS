@@ -21,7 +21,7 @@
 
 struct ProcessorBase
 {
-    struct Node pb_Node;
+    struct Library pb_LibNode;
     unsigned int cpucount;
     APTR kernelBase;
     APTR Private1;              /* Pointer to arch-specific implementationd data */
