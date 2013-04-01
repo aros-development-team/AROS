@@ -81,11 +81,7 @@ static LONG errno_u2a(int err)
 	    return u2a[i][1];
     }
 
-#ifdef PassThroughErrnos
-    return err + PassThroughErrnos;
-#else
     return ERROR_UNKNOWN;
-#endif
 }
 
 static inline LONG err_u2a(struct emulbase *emulbase)

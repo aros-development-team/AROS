@@ -21,7 +21,6 @@ COMMON	:= \
 	__isinf \
 	atof \
 	div \
-	_errstrings \
 	getopt \
 	getopt_long \
 	isinf \
@@ -382,8 +381,6 @@ ROM_COMMON := \
 	strcmp \
 	strcpy \
 	strcspn \
-	_errstrings \
-	strerror_rom \
 	strlen \
 	strlcat \
 	strlcpy \
@@ -423,7 +420,6 @@ ROM_STATIC := \
 	stch_l \
 	stcl_d \
 	strchr \
-	strerror_rom \
 	strspn \
 	strtol \
 	strtoll \
