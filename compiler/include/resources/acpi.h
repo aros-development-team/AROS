@@ -8,6 +8,7 @@
 #ifndef __AROS_ACPI_H__
 #define __AROS_ACPI_H__
 
+#include <exec/libraries.h>
 #include <exec/lists.h>
 #include <exec/semaphores.h>
 #include <exec/interrupts.h>
@@ -497,7 +498,7 @@ struct ACPI_TABLE_TYPE_ECDT                                                 /* E
  */
 struct ACPIBase
 {
-    struct  Node                            ACPIB_Node;
+    struct  Library                         ACPIB_LibNode;
 
     struct Interrupt                        ACPIB_ResetHandler;
 
