@@ -27,8 +27,6 @@ COMMON	:= \
 	ldiv \
 	lldiv \
 	mblen \
-        mbtowc \
-        mbstowcs \
         memchr \
 	memcmp \
 	memcpy \
@@ -74,9 +72,7 @@ COMMON	:= \
 	strtok \
 	strupr \
 	strxfrm \
-	swab \
-        wctomb \
-        wcstombs
+	swab
 
 COMMON_ARCH := \
 	longjmp \
@@ -357,8 +353,6 @@ ROM_COMMON := \
 	ldiv \
 	lldiv \
 	mblen \
-	mbtowc \
-	mbstowcs \
 	memchr \
 	memcmp \
 	memcpy \
@@ -393,9 +387,7 @@ ROM_COMMON := \
 	strrev \
 	strspn \
 	strstr \
-	strtod \
-	wctomb \
-	wcstombs
+	strtod
 
 ROM_COMMON_ARCH := \
 	longjmp \
