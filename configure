@@ -7873,7 +7873,6 @@ case "$target_os" in
                 aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -fno-omit-frame-pointer"
                 aros_config_aflags="$aros_config_aflags -fno-strict-aliasing"
                 aros_arch_libs="-laeabi"
-                gcc_default_fpu="vfpv3-d16"
                 gcc_default_float_abi="hard"
                 android_tool_dir_prefix="arm-linux-androideabi"
                 android_tool_prefix="arm-linux-androideabi"
@@ -8258,11 +8257,9 @@ case "$target_os" in
         gcc_default_cpu_tune="arm1176jzf-s"
         case "$target_cpu" in
             *armhf*)
-                gcc_default_fpu="vfp"
                 gcc_default_float_abi="hard"
                 ;;
             *arm*)
-                gcc_default_fpu="vfp"
                 gcc_default_float_abi="softfp"
                 ;;
             *)
