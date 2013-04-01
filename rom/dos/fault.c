@@ -88,12 +88,6 @@
     }
 
     theString = DosGetString(code);
-#if PassThroughErrnos
-    if ((!theString) && (code & PassThroughErrnos))
-    {
-        theString = strerror (code ^ PassThroughErrnos);
-    }
-#endif
     if(theString)
     {
         while((index < len) && *theString)
