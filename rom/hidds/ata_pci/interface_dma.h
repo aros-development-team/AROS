@@ -18,7 +18,7 @@ struct PRDEntry
 };
 
 #define PRDE_EOT    0x80000000
-#define PRD_MAX     514
+#define PRD_MAX     256
 
 /* The single IDE bus (channel) */
 struct dma_data
