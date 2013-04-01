@@ -1,3 +1,4 @@
+#include <exec/libraries.h>
 #include <exec/semaphores.h>
 
 struct HPETUnit
@@ -9,7 +10,7 @@ struct HPETUnit
 
 struct HPETBase
 {
-    struct Node		    node;
+    struct Library          libnode;
     ULONG		    unitCnt;
     struct HPETUnit	   *units;
     struct SignalSemaphore  lock;
