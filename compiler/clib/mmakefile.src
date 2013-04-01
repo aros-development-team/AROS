@@ -17,7 +17,6 @@ TESTDIR := $(BINDIR)/Tests
 #   - Common always exist in the link library.
 
 COMMON	:= \
-	__alloca \
 	__filesystem_support \
 	__isinf \
 	atof \
