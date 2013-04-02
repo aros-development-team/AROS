@@ -10,7 +10,10 @@
 #include <exec/tasks.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
+#include <resources/acpi.h>
 #include <proto/exec.h>
+
+#include "etask.h"
 
 #include "kernel_base.h"
 #include "kernel_debug.h"
@@ -18,7 +21,16 @@
 #include "kernel_intr.h"
 #include "kernel_scheduler.h"
 
+#include "apic.h"
+
 #define D(x)
+
+inline volatile long long RDTSC() {
+   register long long TSC asm("eax");
+   asm volatile (".byte 15, 49" : : : "eax", "edx");
+   return TSC;
+} 
+
 
 void cpu_Dispatch(struct ExceptionContext *regs)
 {
@@ -63,7 +75,10 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     {
         /* No SSE, plain 8087 */
         asm volatile("frstor (%0)"::"r"(ctx->FPData));
-    }    
+    }
+
+    /* Store the launch time */
+    GetIntETask(task)->iet_private1 = RDTSC();
 }
 
 void cpu_Switch(struct ExceptionContext *regs)
@@ -92,6 +107,8 @@ void cpu_Switch(struct ExceptionContext *regs)
     ctx->Flags = ECF_SEGMENTS | KernelBase->kb_ContextFlags;
     /* Set task's tc_SPReg */
     task->tc_SPReg = (APTR)regs->esp;
+
+    GetIntETask(task)->iet_CpuTime += (RDTSC() - GetIntETask(task)->iet_private1);
 
     core_Switch();
 }

@@ -6,7 +6,8 @@ FILES   := startup kernel_debug platform_init ictl kernel_cpu traps utils smp
 AFILES  := core_interrupts reboot
 MAINDIR := rom/kernel
 
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel \
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+                 -I$(SRCDIR)/arch/all-native/kernel \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 USER_AFLAGS   := -isystem $(GENINCDIR)
 
