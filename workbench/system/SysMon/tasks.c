@@ -1,4 +1,3 @@
-#include "sysmon_intern.h"
 
 #include <exec/execbase.h>
 #include <clib/alib_protos.h>
@@ -24,7 +23,7 @@ static LONG AddTaskInfo(struct Task * task, struct TaskInfo * ti)
     ti->Name = (STRPTR)&ti->Private;
     ULONG namesize = 0;
     STRPTR src = task->tc_Node.ln_Name;
-    
+
     if (src)
     {
         while(*src != 0)
@@ -33,7 +32,7 @@ static LONG AddTaskInfo(struct Task * task, struct TaskInfo * ti)
             src++;
         }
     }
-    
+
     *(ti->Name + namesize) = 0; /* Terminate */
 
     /* Calculate next item  */
@@ -88,8 +87,12 @@ static BOOL FillTaskInfoBuffer(UBYTE * buffer)
 
 VOID UpdateTasksInformation(struct SysMonData * smdata)
 {
+    ULONG firstvis;
+
     set(smdata->tasklist, MUIA_List_Quiet, TRUE);
 
+    get(smdata->tasklist, MUIA_List_First, &firstvis);
+    
     /* Clear prior to reading information, because list contains items
     from the taskinfobuffer. Once FillTaskInfoBuffer is executed old items
     are invalid and could crash list */     
@@ -105,6 +108,13 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
         }
     }
 
+    if (firstvis < XGET(smdata->tasklist, MUIA_List_Entries))
+    {
+        if ((XGET(smdata->tasklist, MUIA_List_Entries) - firstvis) > XGET(smdata->tasklist, MUIA_List_Visible))
+            set(smdata->tasklist, MUIA_List_First, firstvis);
+        else
+            set(smdata->tasklist, MUIA_List_First, (XGET(smdata->tasklist, MUIA_List_Entries) - XGET(smdata->tasklist, MUIA_List_Visible)));
+    }
     set(smdata->tasklist, MUIA_List_Quiet, FALSE);
 }
 
