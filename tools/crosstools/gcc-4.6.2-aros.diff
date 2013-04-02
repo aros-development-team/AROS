@@ -240,7 +240,7 @@ diff -ruN gcc-4.6.2/gcc/config/aros.h gcc-4.6.2.aros/gcc/config/aros.h
 +
 +#undef	LIB_SPEC
 +#define LIB_SPEC \
-+  "-larossupport -lamiga -larosc%{noarosc:.static} -lm -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmui -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit -lautoinit"
++  "-lmui -larossupport -lamiga -larosc%{noarosc:.static} -lm -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -lautoinit -llibinit -lautoinit"
 +
 +#if !defined(USE_GNULIBC_1) && defined(HAVE_LD_EH_FRAME_HDR)
 +#define LINK_EH_SPEC "%{!static:--eh-frame-hdr} "
