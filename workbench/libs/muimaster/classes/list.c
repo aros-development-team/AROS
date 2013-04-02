@@ -971,7 +971,7 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             data->entries_first = tag->ti_Data;
 
             MUI_Redraw(obj, MADF_DRAWUPDATE);
-            if (data->vertprop_first != tag->ti_Data)
+            if ((data->vertprop_first != tag->ti_Data) && (!(data->flags & LIST_QUIET)))
             {
                 set(obj, MUIA_List_VertProp_First, tag->ti_Data);
             }
@@ -1004,6 +1004,8 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
                 if (data->entries_num != XGET(obj, MUIA_List_VertProp_Entries))
                     set(obj, MUIA_List_VertProp_Entries, data->entries_num);
+                if (data->vertprop_first != XGET(obj, MUIA_List_VertProp_First))
+                    set(obj, MUIA_List_VertProp_First, tag->ti_Data);
             }
             break;
 
