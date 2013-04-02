@@ -1322,6 +1322,9 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     int start, end;
     BOOL scroll_caused_damage = FALSE;
 
+    if (data->flags & LIST_QUIET)
+        return 0;
+
     DoSuperMethodA(cl, obj, (Msg) msg);
 
     if (msg->flags & MADF_DRAWUPDATE)
@@ -1766,6 +1769,7 @@ IPTR List__MUIM_Clear(struct IClass *cl, Object *obj,
     /* Should never fail when shrinking */
     SetListSize(data, 0);
 
+    
     if (data->confirm_entries_num != data->entries_num)
     {
         SetAttrs(obj, MUIA_List_Entries, 0, MUIA_List_First, 0,
@@ -1857,40 +1861,43 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj,
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
-    if (msg->pos == MUIV_List_Redraw_All)
+    if (!(data->flags & LIST_QUIET))
     {
-        data->update = 1;
-        CalcWidths(cl, obj);
-        MUI_Redraw(obj, MADF_DRAWUPDATE);
-    }
-    else
-    {
-        LONG pos = -1;
-        if (msg->pos == MUIV_List_Redraw_Active)
-            pos = data->entries_active;
-        else if (msg->pos == MUIV_List_Redraw_Entry)
+        if (msg->pos == MUIV_List_Redraw_All)
         {
-            LONG i;
-            for (i = 0; i < data->entries_num; i++)
-                if (data->entries[i]->data == msg->entry)
-                {
-                    pos = i;
-                    break;
-                }
+            data->update = 1;
+            CalcWidths(cl, obj);
+            MUI_Redraw(obj, MADF_DRAWUPDATE);
         }
         else
-            pos = msg->pos;
-
-        if (pos != -1)
         {
-            if (CalcDimsOfEntry(cl, obj, pos))
-                data->update = 1;
-            else
+            LONG pos = -1;
+            if (msg->pos == MUIV_List_Redraw_Active)
+                pos = data->entries_active;
+            else if (msg->pos == MUIV_List_Redraw_Entry)
             {
-                data->update = 2;
-                data->update_pos = pos;
+                LONG i;
+                for (i = 0; i < data->entries_num; i++)
+                    if (data->entries[i]->data == msg->entry)
+                    {
+                        pos = i;
+                        break;
+                    }
             }
-            MUI_Redraw(obj, MADF_DRAWUPDATE);
+            else
+                pos = msg->pos;
+
+            if (pos != -1)
+            {
+                if (CalcDimsOfEntry(cl, obj, pos))
+                    data->update = 1;
+                else
+                {
+                    data->update = 2;
+                    data->update_pos = pos;
+                }
+                MUI_Redraw(obj, MADF_DRAWUPDATE);
+            }
         }
     }
     return 0;
@@ -2180,11 +2187,8 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
     }
     else
     {
-        if (!(data->flags & LIST_QUIET))
-        {
-            data->update = 1;
-            MUI_Redraw(obj, MADF_DRAWUPDATE);
-        }
+        data->update = 1;
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
     data->insert_position = pos;
 
@@ -2461,11 +2465,8 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj,
         }
     }
 
-    if (!(data->flags & LIST_QUIET))
-    {
-        data->update = 1;
-        MUI_Redraw(obj, MADF_DRAWUPDATE);
-    }
+    data->update = 1;
+    MUI_Redraw(obj, MADF_DRAWUPDATE);
 
     return 0;
 }
