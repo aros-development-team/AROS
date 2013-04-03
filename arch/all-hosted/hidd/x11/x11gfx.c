@@ -504,7 +504,6 @@ VOID X11Cl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
-    BOOL                        framebuffer = FALSE;
     struct pHidd_Gfx_NewBitMap  p;
     OOP_Object                  *newbm;
     HIDDT_ModeID                modeid;
@@ -532,15 +531,7 @@ OOP_Object *X11Cl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     tags[6].ti_Data = (IPTR)msg->attrList;
 
     /* Displayable bitmap ? */
-#if USE_FRAMEBUFFER
-    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
-#else
-    framebuffer = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-#endif
     modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-
-    /* Apparently, framebuffer is never used. */
-    (void)framebuffer;
 
     if (modeid != vHidd_ModeID_Invalid)
     {
@@ -568,9 +559,6 @@ VOID X11Cl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
         switch (idx)
         {
-#if !USE_FRAMEBUFFER
-        case aoHidd_Gfx_NoFrameBuffer:
-#endif
         case aoHidd_Gfx_IsWindowed:
             *msg->storage = TRUE;
             return;
