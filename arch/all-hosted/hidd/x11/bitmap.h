@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 bitmap class, internal definitions
@@ -17,18 +17,18 @@
 /* This structure is used as instance data for the bitmap class. */
 struct bitmap_data
 {
-    Drawable	   drawable;		/* The X11 object behind us		*/
-    Window	   masterxwindow;
-    Cursor	   cursor;
-    unsigned long  sysplanemask;
-    Colormap	   colmap;
-    GC 		   gc;			/* !!! This is an X11 GC, NOT a HIDD gc */
-    Display	  *display;		/* Our X11 display			*/
-    int		   screen;		/* Our X11 screen			*/
-    int		   flags;		/* See below				*/
-    IPTR	   width;		/* Cached size, used by Clear method	*/
-    IPTR	   height;
-    OOP_Object    *gfxhidd;		/* Cached owner, for ModeID switch	*/
+    Drawable        drawable;       /* The X11 object behind us        */
+    Window          masterxwindow;
+    Cursor          cursor;
+    unsigned long   sysplanemask;
+    Colormap        colmap;
+    GC              gc;             /* !!! This is an X11 GC, NOT a HIDD gc */
+    Display         *display;       /* Our X11 display            */
+    int             screen;         /* Our X11 screen            */
+    int             flags;          /* See below                */
+    IPTR            width;          /* Cached size, used by Clear method    */
+    IPTR            height;
+    OOP_Object      *gfxhidd;       /* Cached owner, for ModeID switch    */
 };
 
 #define BMDF_COLORMAP_ALLOCED 1

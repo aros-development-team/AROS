@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for X11 hidd.
@@ -39,7 +39,7 @@
 /****************************************************************************************/
 
 static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth,
-                        struct x11_staticdata *xsd);
+        struct x11_staticdata *xsd);
 
 /****************************************************************************************/
 
@@ -61,19 +61,18 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
     visualclass = GetTagData(aHidd_X11BitMap_VisualClass, TrueColor, attrList);
     if (visualclass == PseudoColor)
     {
-    Colormap cm;
+        Colormap cm;
 
         HostLib_Lock();
-    cm = XCALL(XCreateColormap, GetSysDisplay(),
-                 RootWindow(GetSysDisplay(), GetSysScreen()),
-                    xsd->vi.visual, AllocAll);
+        cm = XCALL(XCreateColormap, GetSysDisplay(), RootWindow(GetSysDisplay(), GetSysScreen()),
+                xsd->vi.visual, AllocAll);
         HostLib_Unlock();
 
-    if (cm)
-    {
-        data->colmap = cm;
-        data->flags |= BMDF_COLORMAP_ALLOCED;
-    }
+        if (cm)
+        {
+            data->colmap = cm;
+            data->flags |= BMDF_COLORMAP_ALLOCED;
+        }
     }
     /* end stegerg */
 
@@ -82,7 +81,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
      * We can't support scrolling in framebuffer mode.
      */
     OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
-    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&data->gfxhidd);
+    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *) &data->gfxhidd);
     D(bug("[X11FB] ModeID 0x%08X, driver 0x%p\n", modeid, data->gfxhidd));
 
     HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pixfmt);
@@ -90,85 +89,87 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
     OOP_GetAttr(sync, aHidd_Sync_HDisp, &data->width);
     OOP_GetAttr(sync, aHidd_Sync_VDisp, &data->height);
 
-    /* Open an X window to be used for viewing */    
+    /* Open an X window to be used for viewing */
     D(bug("[X11FB] Framebuffer window size %ldx%ld\n", data->width, data->height));
 
     /* Listen for all sorts of events */
-    winattr.event_mask = ButtonPressMask|ButtonReleaseMask|PointerMotionMask|KeyPressMask|KeyReleaseMask|
-                 StructureNotifyMask|SubstructureNotifyMask|FocusChangeMask;
+    winattr.event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask
+            | KeyPressMask | KeyReleaseMask | StructureNotifyMask
+            | SubstructureNotifyMask | FocusChangeMask;
 
     /* Framebuffer needs backing store. (Uses lots of mem) */
     winattr.backing_store = Always;
-    winattr.save_under    = True;
+    winattr.save_under = True;
 
     winattr.cursor = GetSysCursor();
     winattr.background_pixel = BlackPixel(GetSysDisplay(), GetSysScreen());
 
-    rootwin = DefaultRootWindow (GetSysDisplay());
+    rootwin = DefaultRootWindow(GetSysDisplay());
     D(bug("Creating XWindow: root win=%p\n", rootwin));
     depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
 
-    valuemask = CWBackingStore|CWCursor|CWSaveUnder|CWEventMask|CWBackPixel;
+    valuemask = CWBackingStore | CWCursor | CWSaveUnder | CWEventMask
+            | CWBackPixel;
 
     if (data->flags & BMDF_COLORMAP_ALLOCED)
     {
-    winattr.colormap = data->colmap;
-    valuemask |= CWColormap;
+        winattr.colormap = data->colmap;
+        valuemask |= CWColormap;
     }
 
     HostLib_Lock();
 
 #if ADJUST_XWIN_SIZE
     {
-    XSetWindowAttributes rootattr;
-    unsigned long rootmask = 0;
+        XSetWindowAttributes rootattr;
+        unsigned long rootmask = 0;
 
         if (XSD(cl)->fullscreen)
-    {
+        {
             rootattr.override_redirect = True;
             rootmask |= CWOverrideRedirect;
-    }
+        }
 
-    if (data->flags & BMDF_COLORMAP_ALLOCED)
-    {
-        rootattr.colormap = data->colmap;
-        rootmask |= CWColormap;
-    }
+        if (data->flags & BMDF_COLORMAP_ALLOCED)
+        {
+            rootattr.colormap = data->colmap;
+            rootmask |= CWColormap;
+        }
 
-    MASTERWIN(data) = XCALL(XCreateWindow, GetSysDisplay(), rootwin,
-                         0,    /* leftedge     */
-                                 0,    /* topedge    */
-                                 data->width,
-                                 data->height,
-                                 0,    /* BorderWidth    */
-                                 depth,
-                                 InputOutput,
-                                 DefaultVisual(GetSysDisplay(), GetSysScreen()),
-                                 rootmask,
-                                 &rootattr);
+        MASTERWIN(data) = XCALL(XCreateWindow, GetSysDisplay(), rootwin,
+                0, /* leftedge     */
+                0, /* topedge    */
+                data->width,
+                data->height,
+                0, /* BorderWidth    */
+                depth,
+                InputOutput,
+                DefaultVisual(GetSysDisplay(), GetSysScreen()),
+                rootmask,
+                &rootattr);
     }
 
     if (MASTERWIN(data))
 #endif
-    DRAWABLE(data) = XCALL(XCreateWindow,  GetSysDisplay(),
-                                ROOTWIN(data),
-                    0,    /* leftedge     */
-                    0,    /* topedge    */
-                    data->width,
-                    data->height,
-                    0,    /* BorderWidth    */
-                    depth,
-                    InputOutput,
-                    DefaultVisual (GetSysDisplay(), GetSysScreen()),
-                    valuemask,
-                    &winattr);
-    HostLib_Unlock();        
+        DRAWABLE(data) = XCALL(XCreateWindow, GetSysDisplay(),
+                ROOTWIN(data),
+                0, /* leftedge     */
+                0, /* topedge    */
+                data->width,
+                data->height,
+                0, /* BorderWidth    */
+                depth,
+                InputOutput,
+                DefaultVisual (GetSysDisplay(), GetSysScreen()),
+                valuemask,
+                &winattr);
+    HostLib_Unlock();
 
     D(bug("[X11FB] Xwindow: 0x%p\n", DRAWABLE(data)));
 
     if (DRAWABLE(data))
     {
-    struct MsgPort *port;
+        struct MsgPort *port;
         Pixmap icon;
 #if !ADJUST_XWIN_SIZE
         XSizeHints sizehint;
@@ -182,104 +183,104 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
         classhint->res_class = "AROS";
         XCALL(XSetClassHint, GetSysDisplay(), MASTERWIN(data), classhint);
 
-    XCALL(XStoreName, GetSysDisplay(), MASTERWIN(data), "AROS");
-    XCALL(XSetIconName, GetSysDisplay(), MASTERWIN(data), "AROS Screen");
+        XCALL(XStoreName, GetSysDisplay(), MASTERWIN(data), "AROS");
+        XCALL(XSetIconName, GetSysDisplay(), MASTERWIN(data), "AROS Screen");
 
 #if !ADJUST_XWIN_SIZE
-    sizehint.flags      = PMinSize | PMaxSize;
-    sizehint.min_width  = data->width;
-    sizehint.min_height = data->height;
-    sizehint.max_width  = data->width;
-    sizehint.max_height = data->height;
-    
-    XCALL(XSetWMNormalHints, GetSysDisplay(), MASTERWIN(data), &sizehint);
+        sizehint.flags = PMinSize | PMaxSize;
+        sizehint.min_width = data->width;
+        sizehint.min_height = data->height;
+        sizehint.max_width = data->width;
+        sizehint.max_height = data->height;
+
+        XCALL(XSetWMNormalHints, GetSysDisplay(), MASTERWIN(data), &sizehint);
 #endif
 
-    XCALL(XSetWMProtocols, GetSysDisplay(), MASTERWIN(data), &XSD(cl)->delete_win_atom, 1);
+        XCALL(XSetWMProtocols,
+                GetSysDisplay(), MASTERWIN(data), &XSD(cl)->delete_win_atom, 1);
 
         icon = init_icon(GetSysDisplay(), MASTERWIN(data),
-             DefaultColormap(GetSysDisplay(), GetSysScreen()),
-             depth, xsd);
+                DefaultColormap(GetSysDisplay(), GetSysScreen()), depth, xsd);
 
-    if (icon)
-    {
-        XWMHints hints;
+        if (icon)
+        {
+            XWMHints hints;
 
-        hints.icon_pixmap = icon;
-        hints.flags = IconPixmapHint;
+            hints.icon_pixmap = icon;
+            hints.flags = IconPixmapHint;
 
-        XCALL(XSetWMHints, GetSysDisplay(), MASTERWIN(data), &hints);
-    }
+            XCALL(XSetWMHints, GetSysDisplay(), MASTERWIN(data), &hints);
+        }
 
-    D(bug("Calling XMapRaised\n"));
+        D(bug("Calling XMapRaised\n"));
 
-/*
- * stegerg: XMapRaised is now called inside the X11 task when getting
- *          the NOTY_MAPWINDOW message, otherwise the X11 task can
- *        get a "dead" MapNotify event:
- *  
- *       XCreateWindow is called here on the app task context.
- *       If we also call XMapRaised here then the X11 task might
- *       get the MapNotify event before he got the NOTY_WINCREATE
- *       message sent from here (see below). So the X11 task
- *       would not know about our window and therefore ignore
- *       the MapNotify event from X.
- *       
- *       This caused the freezes which sometimes happened during
- *       startup when the Workbench screen was opened.
- *       
- *    XCALL(XMapRaised, GetSysDisplay(), DRAWABLE(data));
- */
+        /*
+         * stegerg: XMapRaised is now called inside the X11 task when getting
+         *          the NOTY_MAPWINDOW message, otherwise the X11 task can
+         *        get a "dead" MapNotify event:
+         *
+         *       XCreateWindow is called here on the app task context.
+         *       If we also call XMapRaised here then the X11 task might
+         *       get the MapNotify event before he got the NOTY_WINCREATE
+         *       message sent from here (see below). So the X11 task
+         *       would not know about our window and therefore ignore
+         *       the MapNotify event from X.
+         *
+         *       This caused the freezes which sometimes happened during
+         *       startup when the Workbench screen was opened.
+         *
+         *    XCALL(XMapRaised, GetSysDisplay(), DRAWABLE(data));
+         */
 
         HostLib_Unlock();
 
-/*
- * Now we need to get some message from the X11 task about when
- * the window has been mapped (ie. MapWindow event).
- * This is because we cannot render into the window until the
- * it has been mapped.kfind &
- */
-
-    port = CreateMsgPort();
-
-    if (NULL != port)
-    {
-        /* Send a message to the x11 task that the window has been created */
-        struct notify_msg msg;
-
-        msg.notify_type   = NOTY_WINCREATE;
-        msg.xdisplay      = GetSysDisplay();
-        msg.xwindow       = DRAWABLE(data);
-        msg.masterxwindow = MASTERWIN(data);
-        msg.bmobj          = o;
-        msg.execmsg.mn_ReplyPort = port;
-
-            HostLib_Lock();
-        XCALL(XSync, GetSysDisplay(), FALSE);
-            HostLib_Unlock();
-
-        X11DoNotify(xsd, &msg);
-    
-#if !DELAY_XWIN_MAPPING        
         /*
-         * Send a message to the X11 task to ask when the window has been mapped.
-         * We change only notify_type, other fields are already set.
-         */    
-        msg.notify_type = NOTY_MAPWINDOW;
+         * Now we need to get some message from the X11 task about when
+         * the window has been mapped (ie. MapWindow event).
+         * This is because we cannot render into the window until the
+         * it has been mapped.kfind &
+         */
+
+        port = CreateMsgPort();
+
+        if (NULL != port)
+        {
+            /* Send a message to the x11 task that the window has been created */
+            struct notify_msg msg;
+
+            msg.notify_type = NOTY_WINCREATE;
+            msg.xdisplay = GetSysDisplay();
+            msg.xwindow = DRAWABLE(data);
+            msg.masterxwindow = MASTERWIN(data);
+            msg.bmobj = o;
+            msg.execmsg.mn_ReplyPort = port;
 
             HostLib_Lock();
-        XCALL(XSync, GetSysDisplay(), FALSE);
+            XCALL(XSync, GetSysDisplay(), FALSE);
             HostLib_Unlock();
 
-        X11DoNotify(xsd, &msg);
+            X11DoNotify(xsd, &msg);
+
+#if !DELAY_XWIN_MAPPING        
+            /*
+             * Send a message to the X11 task to ask when the window has been mapped.
+             * We change only notify_type, other fields are already set.
+             */
+            msg.notify_type = NOTY_MAPWINDOW;
+
+            HostLib_Lock();
+            XCALL(XSync, GetSysDisplay(), FALSE);
+            HostLib_Unlock();
+
+            X11DoNotify(xsd, &msg);
             D(kprintf("NOTY_MAPWINDOW request done\n"));
 #endif
-                
-        DeleteMsgPort(port);
 
-        return TRUE;        
-    } /* if (port) */
-    }  /* if (DRAWABLE(data) */
+            DeleteMsgPort(port);
+
+            return TRUE;
+        } /* if (port) */
+    } /* if (DRAWABLE(data) */
 
     return FALSE;
 }
@@ -292,25 +293,25 @@ VOID X11BM_DisposeFB(struct bitmap_data *data, struct x11_staticdata *xsd)
 
     if (DRAWABLE(data))
     {
-    struct MsgPort *port;
-    struct notify_msg msg;
+        struct MsgPort *port;
+        struct notify_msg msg;
 
-    port = CreateMsgPort();
+        port = CreateMsgPort();
 
-    if (NULL == port)
-    {
-        D(kprintf("COULD NOT CREATE PORT OR ALLOCATE MEM IN onbitmap_dispose()\n"));
-        return;
-    }
-    
-    msg.notify_type   = NOTY_WINDISPOSE;
-       msg.xdisplay      = GetSysDisplay();
-    msg.xwindow       = DRAWABLE(data);
-    msg.masterxwindow = MASTERWIN(data);
-    msg.execmsg.mn_ReplyPort = port;
+        if (NULL == port)
+        {
+            D(kprintf("COULD NOT CREATE PORT OR ALLOCATE MEM IN onbitmap_dispose()\n"));
+            return;
+        }
 
-    X11DoNotify(xsd, &msg);
-    DeleteMsgPort(port);
+        msg.notify_type = NOTY_WINDISPOSE;
+        msg.xdisplay = GetSysDisplay();
+        msg.xwindow = DRAWABLE(data);
+        msg.masterxwindow = MASTERWIN(data);
+        msg.execmsg.mn_ReplyPort = port;
+
+        X11DoNotify(xsd, &msg);
+        DeleteMsgPort(port);
 
     }
 
@@ -318,17 +319,17 @@ VOID X11BM_DisposeFB(struct bitmap_data *data, struct x11_staticdata *xsd)
     HostLib_Lock();
 
     if (DRAWABLE(data))
-        XCALL(XDestroyWindow,  GetSysDisplay(), DRAWABLE(data));
+        XCALL(XDestroyWindow, GetSysDisplay(), DRAWABLE(data));
 
 #if ADJUST_XWIN_SIZE
     if (MASTERWIN(data))
-        XCALL(XDestroyWindow,  GetSysDisplay(), MASTERWIN(data));
+        XCALL(XDestroyWindow, GetSysDisplay(), MASTERWIN(data));
 #endif
 
     if (data->flags & BMDF_COLORMAP_ALLOCED)
-    XCALL(XFreeColormap, GetSysDisplay(), data->colmap);
+        XCALL(XFreeColormap, GetSysDisplay(), data->colmap);
 
-    XCALL(XFlush,  GetSysDisplay());
+    XCALL(XFlush, GetSysDisplay());
 
     HostLib_Unlock();
 
@@ -339,52 +340,53 @@ VOID X11BM_DisposeFB(struct bitmap_data *data, struct x11_staticdata *xsd)
 
 #if ADJUST_XWIN_SIZE
 
-BOOL X11BM_SetMode(struct bitmap_data *data, HIDDT_ModeID modeid, struct x11_staticdata *xsd)
+BOOL X11BM_SetMode(struct bitmap_data *data, HIDDT_ModeID modeid,
+        struct x11_staticdata *xsd)
 {
     OOP_Object *sync, *pf;
 
-    if (HIDD_Gfx_GetMode(data->gfxhidd, (HIDDT_ModeID)modeid, &sync, &pf))
+    if (HIDD_Gfx_GetMode(data->gfxhidd, (HIDDT_ModeID) modeid, &sync, &pf))
     {
-    struct MsgPort *port;
+        struct MsgPort *port;
         IPTR new_width, new_height;
 
-    OOP_GetAttr(sync, aHidd_Sync_HDisp, &new_width);
-    OOP_GetAttr(sync, aHidd_Sync_VDisp, &new_height);
+        OOP_GetAttr(sync, aHidd_Sync_HDisp, &new_width);
+        OOP_GetAttr(sync, aHidd_Sync_VDisp, &new_height);
 
-    /*
-     * Don't do anything if the size actually won't change.
-     * Prevents badly looking flashing, at least on Darwin.
-     */
-    if ((new_width == data->width) && (new_height == data->height))
-        return TRUE;
+        /*
+         * Don't do anything if the size actually won't change.
+         * Prevents badly looking flashing, at least on Darwin.
+         */
+        if ((new_width == data->width) && (new_height == data->height))
+            return TRUE;
 
         port = CreateMsgPort();
-    if (port)
-    {
-        struct notify_msg nmsg;
+        if (port)
+        {
+            struct notify_msg nmsg;
 
-        /* Send resize message to the x11 task */
-        nmsg.notify_type     = NOTY_RESIZEWINDOW;
-        nmsg.xdisplay    = data->display;
-        nmsg.xwindow    = data->drawable;
-        nmsg.masterxwindow    = data->masterxwindow;
-        nmsg.width          = new_width;
-        nmsg.height        = new_height;
-        nmsg.execmsg.mn_ReplyPort = port;
+            /* Send resize message to the x11 task */
+            nmsg.notify_type = NOTY_RESIZEWINDOW;
+            nmsg.xdisplay = data->display;
+            nmsg.xwindow = data->drawable;
+            nmsg.masterxwindow = data->masterxwindow;
+            nmsg.width = new_width;
+            nmsg.height = new_height;
+            nmsg.execmsg.mn_ReplyPort = port;
 
-        X11DoNotify(xsd, &nmsg);
-        DeleteMsgPort(port);
+            X11DoNotify(xsd, &nmsg);
+            DeleteMsgPort(port);
 
-        /* Update cached size */
-        data->width  = new_width;
-        data->height = new_height;
-        
-        return TRUE;
-    }
+            /* Update cached size */
+            data->width = new_width;
+            data->height = new_height;
+
+            return TRUE;
+        }
     }
     return FALSE;
 }
-    
+
 #endif
 
 /****************************************************************************************/
@@ -395,12 +397,8 @@ VOID X11BM_ClearFB(struct bitmap_data *data, HIDDT_Pixel bg)
 
     winattr.background_pixel = bg;
 
-    XCALL(XChangeWindowAttributes, data->display, DRAWABLE(data),
-                            CWBackPixel, &winattr);
-    XCALL(XClearArea, data->display, DRAWABLE(data),
-        0, 0,
-        data->width, data->height,
-        FALSE);
+    XCALL(XChangeWindowAttributes, data->display, DRAWABLE(data), CWBackPixel, &winattr);
+    XCALL(XClearArea, data->display, DRAWABLE(data), 0, 0, data->width, data->height, FALSE);
 }
 
 /****************************************************************************************/
@@ -409,154 +407,157 @@ VOID X11BM_ClearFB(struct bitmap_data *data, HIDDT_Pixel bg)
 
 void init_empty_cursor(Window w, GC gc, struct x11_staticdata *xsd)
 {
-    Pixmap  p, mask; 
-    int     width, height;
-    
+    Pixmap p, mask;
+    int width, height;
+
     width = height = 1;
 
-    LOCK_X11    
-    p = XCALL(XCreatePixmap,  xsd->display, w, width, height, 1);
-    UNLOCK_X11    
-
+    LOCK_X11
+    p = XCALL(XCreatePixmap, xsd->display, w, width, height, 1);
+    UNLOCK_X11
 
     if (0 != p)
     {
-        LOCK_X11    
-    mask = XCALL(XCreatePixmap,  xsd->display
-        , w
-        , width
-        , height
-        , 1
+        LOCK_X11
+        mask = XCALL(XCreatePixmap, xsd->display
+                , w
+                , width
+                , height
+                , 1
         );
-    XCALL(XFlush, xsd->display);    
-        UNLOCK_X11    
-    
-    if (0 != mask)
-    {
-        /* Define cursor for window */
-        XColor fg, bg;
-        Cursor c;
-/*        int    x, y; */
+        XCALL(XFlush, xsd->display);
+        UNLOCK_X11
+
+        if (0 != mask)
+        {
+            /* Define cursor for window */
+            XColor fg, bg;
+            Cursor c;
+            /*        int    x, y; */
 
             LOCK_X11
-        XCALL(XSetForeground, xsd->display, gc, 0);
-        XCALL(XSetFunction, xsd->display, gc, GXcopy);        
-        #if 0        
-        XCALL(XFillRectangle, xsd->display, p, gc, 1, 1, 1, 1);
-        for (y = 0; y < height; y ++)
-        {
-            for (x = 0; x < width; x ++)
-        {
-            XCALL(XDrawPoint, xsd->display, mask, gc, x, y);
-        }
-        }
-        #endif        
-            UNLOCK_X11    
-            
-        fg.pixel    = BlackPixel(xsd->display, DefaultScreen(xsd->display));
-        fg.red    = 0x0000;
-        fg.green    = 0x0000;
-        fg.blue    = 0x0000;
-        fg.flags    = DoRed | DoGreen | DoBlue;
-
-        bg.pixel    = WhitePixel(xsd->display, DefaultScreen(xsd->display));
-        bg.red    = 0xFFFF;
-        bg.green    = 0xFFFF;
-        bg.blue    = 0xFFFF;
-        bg.flags    = DoRed | DoGreen | DoBlue;
-
-            LOCK_X11
-        c = XCALL(XCreatePixmapCursor, xsd->display, p, mask, &fg, &bg, 0, 0);
+            XCALL(XSetForeground, xsd->display, gc, 0);
+            XCALL(XSetFunction, xsd->display, gc, GXcopy);
+#if 0
+            XCALL(XFillRectangle, xsd->display, p, gc, 1, 1, 1, 1);
+            for (y = 0; y < height; y ++)
+            {
+                for (x = 0; x < width; x ++)
+                {
+                    XCALL(XDrawPoint, xsd->display, mask, gc, x, y);
+                }
+            }
+#endif
             UNLOCK_X11
-                
-        if (0 != c)
-        {
-                LOCK_X11        
-            XCALL(XDefineCursor, xsd->display, w, c);
-                UNLOCK_X11        
-        }
-        
-            LOCK_X11        
-        XCALL(XFreePixmap, xsd->display, mask);
-            UNLOCK_X11        
-    }
 
-        LOCK_X11    
-    XCALL(XFreePixmap, xsd->display, p);
+            fg.pixel = BlackPixel(xsd->display, DefaultScreen(xsd->display));
+            fg.red = 0x0000;
+            fg.green = 0x0000;
+            fg.blue = 0x0000;
+            fg.flags = DoRed | DoGreen | DoBlue;
+
+            bg.pixel = WhitePixel(xsd->display, DefaultScreen(xsd->display));
+            bg.red = 0xFFFF;
+            bg.green = 0xFFFF;
+            bg.blue = 0xFFFF;
+            bg.flags = DoRed | DoGreen | DoBlue;
+
+            LOCK_X11
+            c = XCALL(XCreatePixmapCursor, xsd->display, p, mask, &fg, &bg, 0, 0);
+            UNLOCK_X11
+
+            if (0 != c)
+            {
+                LOCK_X11
+                XCALL(XDefineCursor, xsd->display, w, c);
+                UNLOCK_X11
+            }
+
+            LOCK_X11
+            XCALL(XFreePixmap, xsd->display, mask);
+            UNLOCK_X11
+        }
+
+        LOCK_X11
+        XCALL(XFreePixmap, xsd->display, p);
         UNLOCK_X11
     }
-      
+
 }
 
 #endif
 
 /****************************************************************************************/
 
-static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth, struct x11_staticdata *xsd)
+static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth,
+        struct x11_staticdata *xsd)
 {
-    #include "icon.h"
+#include "icon.h"
 
-    #define SHIFT_PIX(pix, shift)    \
+#define SHIFT_PIX(pix, shift)    \
     (( (shift) < 0) ? (pix) >> (-shift) : (pix) << (shift) )
-    
-    Pixmap   icon = XCALL(XCreatePixmap, d, w, width, height, depth);
-    char    *data = header_data;
-    LONG     red_shift, green_shift, blue_shift;
-    GC       gc;
-    
-    red_shift   = 24 - xsd->red_shift;
+
+    Pixmap icon = XCALL(XCreatePixmap, d, w, width, height, depth);
+    char *data = header_data;
+    LONG red_shift, green_shift, blue_shift;
+    GC gc;
+
+    red_shift = 24 - xsd->red_shift;
     green_shift = 24 - xsd->green_shift;
-    blue_shift  = 24 - xsd->blue_shift;
-    
+    blue_shift = 24 - xsd->blue_shift;
+
     if (icon)
     {
         gc = XCALL(XCreateGC, d, icon, 0, 0);
-    
-    if (gc)
-    {
+
+        if (gc)
+        {
             WORD x, y;
 
-        for(y = 0; y < height; y++)
-        {
-            for(x = 0; x < width; x++)
-        {
-                ULONG rgb[3];
-            ULONG pixel = 0;
+            for (y = 0; y < height; y++)
+            {
+                for (x = 0; x < width; x++)
+                {
+                    ULONG rgb[3];
+                    ULONG pixel = 0;
 
-            HEADER_PIXEL(data,rgb);
+                    HEADER_PIXEL(data, rgb);
 
-            if (xsd->vi.class == TrueColor)
+                    if (xsd->vi.class == TrueColor)
                     {
-            pixel = (SHIFT_PIX(rgb[0] & 0xFF, red_shift)   & xsd->vi.red_mask)   |
-                    (SHIFT_PIX(rgb[1] & 0xFF, green_shift) & xsd->vi.green_mask) |
-                (SHIFT_PIX(rgb[2] & 0xFF, blue_shift)  & xsd->vi.blue_mask);                
-            }
-            else if (xsd->vi.class == PseudoColor)
-            {
-                XColor xcol;
-            
-            xcol.red   = (rgb[0] << 8) + rgb[0];
-            xcol.green = (rgb[1] << 8) + rgb[1];
-            xcol.blue  = (rgb[2] << 8) + rgb[2];
-            xcol.flags = DoRed | DoGreen | DoBlue;
-            
-            if (XCALL(XAllocColor, d, cm, &xcol))
-            {
-                pixel = xcol.pixel;
-            }
-            }
-            
+                        pixel = (SHIFT_PIX(rgb[0] & 0xFF, red_shift)
+                                & xsd->vi.red_mask)
+                                | (SHIFT_PIX(rgb[1] & 0xFF, green_shift)
+                                        & xsd->vi.green_mask)
+                                | (SHIFT_PIX(rgb[2] & 0xFF, blue_shift)
+                                        & xsd->vi.blue_mask);
+                    }
+                    else if (xsd->vi.class == PseudoColor)
+                    {
+                        XColor xcol;
+
+                        xcol.red = (rgb[0] << 8) + rgb[0];
+                        xcol.green = (rgb[1] << 8) + rgb[1];
+                        xcol.blue = (rgb[2] << 8) + rgb[2];
+                        xcol.flags = DoRed | DoGreen | DoBlue;
+
+                        if (XCALL(XAllocColor, d, cm, &xcol))
+                        {
+                            pixel = xcol.pixel;
+                        }
+                    }
+
                     XCALL(XSetForeground, d, gc, pixel);
-            XCALL(XDrawPoint, d, icon, gc, x, y);
-        }
-        }
-        
-        XCALL(XFreeGC, d, gc);
-        
-    } /* if (gc) */
-    
+                    XCALL(XDrawPoint, d, icon, gc, x, y);
+                }
+            }
+
+            XCALL(XFreeGC, d, gc);
+
+        } /* if (gc) */
+
     } /* if (icon) */
-    
+
     return icon;
 }
 
