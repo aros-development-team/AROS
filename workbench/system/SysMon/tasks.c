@@ -39,7 +39,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
     /* We are unlikely to dissapear and this code still run .. so dont disable yet */
     if ((entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, smdata->sm_Task, MUIV_List_Insert_Bottom)) == 0)
     {
-        return FALSE;
+        return;
     }
     if (smdata->sm_Task == selected)
     {
@@ -55,7 +55,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
         if ((entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom)) == 0)
         {
             Enable();
-            return FALSE;
+            return;
         }
         if (task == selected)
         {
@@ -72,7 +72,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
         if ((entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom)) == 0)
         {
             Enable();
-            return FALSE;
+            return;
         }
         if (task == selected)
         {
