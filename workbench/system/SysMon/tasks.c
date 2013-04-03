@@ -23,12 +23,12 @@ struct TaskInfo
 VOID UpdateTasksInformation(struct SysMonData * smdata)
 {
     struct Task * task;
-    IPTR firstvis = 0, selected = 0;
+    IPTR firstvis = 0, entryid = 0;
+    struct Task *selected = smdata->sm_TaskSelected;
 
     set(smdata->tasklist, MUIA_List_Quiet, TRUE);
 
     get(smdata->tasklist, MUIA_List_First, &firstvis);
-    get(smdata->tasklist, MUIA_List_Active, &selected);
 
     DoMethod(smdata->tasklist, MUIM_List_Clear);
 
@@ -37,9 +37,13 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
     smdata->sm_TaskTotalRuntime = 0;
 
     /* We are unlikely to dissapear and this code still run .. so dont disable yet */
-    if (!(DoMethod(smdata->tasklist, MUIM_List_InsertSingle, smdata->sm_Task, MUIV_List_Insert_Bottom)))
+    if ((entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, smdata->sm_Task, MUIV_List_Insert_Bottom)) == 0)
     {
-        return;
+        return FALSE;
+    }
+    if (smdata->sm_Task == selected)
+    {
+        set(smdata->tasklist, MUIA_List_Active, entryid);
     }
 
     /* Now disable multitasking and get the rest of the tasks .. */
@@ -48,11 +52,16 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
         task->tc_Node.ln_Succ != NULL;
         task = (struct Task *)task->tc_Node.ln_Succ)
     {
-        if (!(DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom)))
+        if ((entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom)) == 0)
         {
             Enable();
-            return;
+            return FALSE;
         }
+        if (task == selected)
+        {
+            set(smdata->tasklist, MUIA_List_Active, entryid);
+        }
+
         smdata->sm_TasksReady++;
     }
 
@@ -60,15 +69,23 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
         task->tc_Node.ln_Succ != NULL;
         task = (struct Task *)task->tc_Node.ln_Succ)
     {
-        if (!(DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom)))
+        if ((entryid = DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom)) == 0)
         {
             Enable();
-            return;
+            return FALSE;
         }
+        if (task == selected)
+        {
+            set(smdata->tasklist, MUIA_List_Active, entryid);
+        }
+
         smdata->sm_TasksWaiting++;
     }
 
     Enable();
+
+    if (XGET(smdata->tasklist, MUIA_List_Active) == 0)
+        smdata->sm_TaskSelected = NULL;
 
     if (firstvis < XGET(smdata->tasklist, MUIA_List_Entries))
     {
@@ -77,6 +94,8 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
         else
             set(smdata->tasklist, MUIA_List_First, (XGET(smdata->tasklist, MUIA_List_Entries) - XGET(smdata->tasklist, MUIA_List_Visible)));
     }
+    __sprintf(smdata->tasklistinfobuf, "%ld ready, %ld waiting", smdata->sm_TasksReady, smdata->sm_TasksWaiting);
+    set(smdata->tasklistinfo, MUIA_Text_Contents, smdata->tasklistinfobuf);
     set(smdata->tasklist, MUIA_List_Quiet, FALSE);
 }
 
@@ -126,18 +145,17 @@ AROS_UFH3(VOID, TaskSelectedFunction,
 {
     AROS_USERFUNC_INIT
 
+    struct SysMonData *smdata = h->h_Data;
     struct TaskInfo *ti = NULL;
-    IPTR activeentry = 0;
 
-    get(obj, MUIA_List_Active, &activeentry);
+    DoMethod(smdata->tasklist, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &ti);
 
-    if (activeentry == 0)
-        ((struct SysMonData *)h->h_Data)->sm_TaskSelected = NULL;
-    else
+    if (ti != NULL)
     {
-        DoMethod(((struct SysMonData *)h->h_Data)->tasklist, MUIM_List_GetEntry, activeentry, &ti);
-        ((struct SysMonData *)h->h_Data)->sm_TaskSelected = ti->Task;
+        smdata->sm_TaskSelected = ti->Task;
     }
+    else
+        smdata->sm_TaskSelected = NULL;
 
     AROS_USERFUNC_EXIT
 }
@@ -154,7 +172,8 @@ AROS_UFH3(VOID, TasksListDisplayFunction,
 
     if (ti)
     {
-        __sprintf(bufprio, "%ld", (LONG)ti->TINode.ln_Pri);
+        __sprintf(bufprio, "%d", (LONG)ti->TINode.ln_Pri);
+
         strings[0] = ti->TINode.ln_Name;
         strings[1] = bufprio;
         strings[2] = ti->TINode.ln_Type == NT_TASK ? (STRPTR)_(MSG_TASK) : (STRPTR)_(MSG_PROCESS);
@@ -174,12 +193,15 @@ static BOOL InitTasks(struct SysMonData *smdata)
     smdata->sm_Task = FindTask(NULL);
     NewList(&smdata->sm_TaskList);
 
+    smdata->tasklistinfobuf = AllocVec(30, MEMF_PUBLIC);
+
     smdata->sm_TaskSelected = NULL;
+    smdata->sm_TaskTotalRuntime = 0;
 
     return TRUE;
 }
 
-static VOID DeInitTasks()
+static VOID DeInitTasks(struct SysMonData *smdata)
 {
 }
 
