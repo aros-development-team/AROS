@@ -2,7 +2,7 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
@@ -193,6 +193,7 @@ struct x11_staticdata
     APTR	    	     callbackdata;
 
     BOOL    	    	    fullscreen;
+    BOOL                    option_backingstore;
 
     struct MsgPort  	    *hostclipboardmp;
     struct Message  	    *hostclipboardmsg;

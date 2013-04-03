@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 gfx HIDD for AROS.
@@ -440,39 +440,41 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
         XCALL(XRecolorCursor, data->display, data->cursor, &fg, &bg);
     
-        switch(DoesBackingStore(ScreenOfDisplay(data->display, data->screen)))
+        if (XSD(cl)->option_backingstore)
         {
-            case WhenMapped:
-            case Always:
+            switch(DoesBackingStore(ScreenOfDisplay(data->display, data->screen)))
+            {
+                case WhenMapped:
+                case Always:
+                    break;
+
+                case NotUseful:
+                    bug("\n"
+                "+----------------------------------------------------------+\n"
+                "| Your X Server seems to have backing store disabled!      |\n"
+                "| ===================================================      |\n"
+                "|                                                          |\n"
+                "| If possible you should try to switch it on, otherwise    |\n"
+                "| AROS will have problems with its display. When the AROS  |\n"
+                "| X window is hidden by other X windows, or is dragged     |\n"
+                "| off screen, then the graphics in those parts will get    |\n"
+                "| lost, unless backing store support is enabled.           |\n"
+                "|                                                          |\n"
+                "| In case your X11 Server is XFree 4.x then switching on   |\n"
+                "| backingstore support can be done by starting the X11     |\n"
+                "| server with something like \"startx -- +bs\". Depending    |\n"
+                "| on what X driver you use it might also be possible       |\n"
+                "| to turn it on by adding                                  |\n"
+                "|                                                          |\n"
+                "|         Option \"Backingstore\"                            |\n"
+                "|                                                          |\n"
+                "| to the Device Section of your X Window config file,      |\n"
+                "| which usually is \"/etc/X11/xorg.conf\"                    |\n"
+                "| or \"/etc/X11/XFree86Config\"                              |\n"
+                "+----------------------------------------------------------+\n"
+                "\n");
                 break;
-        
-            case NotUseful:
-                bug("\n"
-            "+----------------------------------------------------------+\n"
-            "| Your X Server seems to have backing store disabled!      |\n"
-            "| ===================================================      |\n"
-            "|                                                          |\n"
-            "| If possible you should try to switch it on, otherwise    |\n"
-            "| AROS will have problems with its display. When the AROS  |\n"
-            "| X window is hidden by other X windows, or is dragged     |\n"
-            "| off screen, then the graphics in those parts will get    |\n"
-            "| lost, unless backing store support is enabled.           |\n"
-            "|                                                          |\n"
-            "| In case your X11 Server is XFree 4.x then switching on   |\n"
-            "| backingstore support can be done by starting the X11     |\n"
-            "| server with something like \"startx -- +bs\". Depending    |\n"
-            "| on what X driver you use it might also be possible       |\n"
-            "| to turn it on by adding                                  |\n"
-            "|                                                          |\n"
-            "|         Option \"Backingstore\"                            |\n"
-            "|                                                          |\n"
-            "| to the Device Section of your X Window config file,      |\n"
-            "| which usually is \"/etc/X11/xorg.conf\"                    |\n"
-            "| or \"/etc/X11/XFree86Config\"                              |\n"
-            "+----------------------------------------------------------+\n"
-            "\n");
-            break;
-        
+            }
         }
     
         UNLOCK_X11

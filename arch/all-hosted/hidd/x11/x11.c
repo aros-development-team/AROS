@@ -48,8 +48,9 @@
 #include "fullscreen.h"
 #include "x11gfx_intern.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
+
+VOID X11BM_ExposeFB(APTR data, WORD x, WORD y, WORD width, WORD height);
 
 /****************************************************************************************/
 
@@ -414,7 +415,12 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                 switch (event.type)
                 {
                 case GraphicsExpose:
+                    break;
                 case Expose:
+                    LOCK_X11
+                    X11BM_ExposeFB(OOP_INST_DATA(OOP_OCLASS(node->bmobj), node->bmobj), event.xexpose.x,
+                            event.xexpose.y, event.xexpose.width, event.xexpose.height);
+                    UNLOCK_X11
                     break;
 
                 case ConfigureRequest:

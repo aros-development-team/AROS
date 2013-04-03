@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd initialization code.
@@ -170,6 +170,11 @@ int X11_Init(struct x11_staticdata *xsd)
                         xsd->fullscreen = x11_fullscreen_supported(xsd->display);
                         /* Force fullscreen. */
                         /* xsd->fullscreen = TRUE; */
+                    }
+
+                    if (strcmp("--backingstore", n->ln_Name) == 0)
+                    {
+                        xsd->option_backingstore = TRUE;
                     }
                 }
             }
