@@ -8,10 +8,8 @@
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#include <proto/task.h>
 
 #include <libraries/mui.h>
-#include <resources/task.h>
 
 #define MEMORY_RAM  0
 #define MEMORY_CHIP 1
