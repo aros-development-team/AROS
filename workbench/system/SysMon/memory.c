@@ -3,12 +3,12 @@
 #include <clib/alib_protos.h>
 
 /* Memory functions */
-static BOOL InitMemory()
+static BOOL InitMemory(struct SysMonData *smdata)
 {
     return TRUE;
 }
 
-static VOID DeInitMemory()
+static VOID DeInitMemory(struct SysMonData *smdata)
 {
 }
 

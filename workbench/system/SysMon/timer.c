@@ -9,7 +9,7 @@ static struct timerequest * timermsg = NULL;
 static ULONG                SIG_TIMER = 0;
 
 /* Timer functions */
-static BOOL InitTimer()
+static BOOL InitTimer(struct SysMonData *smdata)
 {
     if((timerport = CreatePort(0,0)) == NULL)
         return FALSE;
@@ -43,7 +43,7 @@ VOID SignalMeAfter(ULONG msecs)
     SendIO((struct IORequest *)timermsg);
 }
 
-static VOID DeInitTimer()
+static VOID DeInitTimer(struct SysMonData *smdata)
 {
     if (timermsg != NULL)
     {
