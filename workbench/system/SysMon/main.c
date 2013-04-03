@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -40,17 +40,23 @@ BOOL CreateApplication(struct SysMonData * smdata)
     smdata->tabs[2] = _(MSG_TAB_SYSTEM);
     smdata->tabs[3] = NULL;
 
+    smdata->tasklistconstructhook.h_Entry = (APTR)TasksListConstructFunction;
+    smdata->tasklistconstructhook.h_Data = (APTR)smdata;
+    smdata->tasklistdestructhook.h_Entry = (APTR)TasksListDestructFunction;
+    smdata->tasklistdestructhook.h_Data = (APTR)smdata;
     smdata->tasklistdisplayhook.h_Entry = (APTR)TasksListDisplayFunction;
+    smdata->taskselectedhook.h_Entry = (APTR)TaskSelectedFunction;
+    smdata->taskselectedhook.h_Data = (APTR)smdata;
     smdata->tasklistrefreshbuttonhook.h_Entry = (APTR)tasklistrefreshbuttonfunction;
     smdata->tasklistrefreshbuttonhook.h_Data = (APTR)smdata;
-    
+
     smdata->tasklistautorefresh = (IPTR)0;
 
     smdata->application = ApplicationObject,
         MUIA_Application_Title, __(MSG_APP_NAME),
         MUIA_Application_Version, (IPTR) VERSION,
         MUIA_Application_Author, (IPTR) "Krzysztof Smiechowicz",
-        MUIA_Application_Copyright, (IPTR)"©2011, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)"©2011-2013, The AROS Development Team",
         MUIA_Application_Base, (IPTR)"SYSMON",
         MUIA_Application_Description, __(MSG_APP_TITLE),
         SubWindow, 
@@ -66,6 +72,8 @@ BOOL CreateApplication(struct SysMonData * smdata)
                                 MUIA_Listview_List, smdata->tasklist = ListObject,
                                     ReadListFrame,
                                     MUIA_List_Format, "MIW=50 BAR,BAR,",
+                                    MUIA_List_ConstructHook, &smdata->tasklistconstructhook,
+                                    MUIA_List_DestructHook, &smdata->tasklistdestructhook,
                                     MUIA_List_DisplayHook, &smdata->tasklistdisplayhook,
                                     MUIA_List_Title, (IPTR)TRUE,
                                 End,
@@ -162,6 +170,9 @@ BOOL CreateApplication(struct SysMonData * smdata)
     DoMethod(smdata->mainwindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
         smdata->application, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
+    DoMethod(smdata->tasklist, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+        smdata->application, 2, MUIM_CallHook, (IPTR)&smdata->taskselectedhook);
+
     DoMethod(tasklistrefreshbutton, MUIM_Notify, MUIA_Pressed, FALSE,
         smdata->application, 2, MUIM_CallHook, (IPTR)&smdata->tasklistrefreshbuttonhook);
 
@@ -218,25 +229,25 @@ VOID DisposeApplication(struct SysMonData * smdata)
     FreeVec(smdata->cpufreqvalues);
 }
 
-VOID DeInitModules(struct SysMonModule ** modules, LONG lastinitedmodule)
+VOID DeInitModules(struct SysMonModule ** modules, struct SysMonData *smdata, LONG lastinitedmodule)
 {
     LONG i;
     
     for (i = lastinitedmodule; i >= 0; i--)
-        modules[i]->DeInit();
+        modules[i]->DeInit(smdata);
 }
 
-LONG InitModules(struct SysMonModule ** modules)
+LONG InitModules(struct SysMonModule ** modules, struct SysMonData *smdata)
 {
     LONG lastinitedmodule = -1;
 
     while(modules[lastinitedmodule + 1] != NULL)
     {
-        if (modules[lastinitedmodule + 1]->Init())
+        if (modules[lastinitedmodule + 1]->Init(smdata))
             lastinitedmodule++;
         else
         {
-            DeInitModules(modules, lastinitedmodule);
+            DeInitModules(modules, smdata, lastinitedmodule);
             return -1;
         }
         
@@ -253,7 +264,7 @@ int main()
     struct SysMonModule * modules [] = {&memorymodule, &videomodule, &processormodule, &tasksmodule, &timermodule, NULL};
     LONG lastinitedmodule = -1;
 
-    if ((lastinitedmodule = InitModules(modules)) == -1)
+    if ((lastinitedmodule = InitModules(modules, &smdata)) == -1)
         return 1;
 
     if (!CreateApplication(&smdata))
@@ -300,7 +311,7 @@ int main()
 
     DisposeApplication(&smdata);
 
-    DeInitModules(modules, lastinitedmodule);
+    DeInitModules(modules, &smdata, lastinitedmodule);
 
     return 0;
 }

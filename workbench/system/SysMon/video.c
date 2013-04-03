@@ -38,7 +38,7 @@ struct Library * OOPBase = NULL;
 #endif
 
 /* Videofunctions */
-static BOOL InitVideo()
+static BOOL InitVideo(struct SysMonData *smdata)
 {
 #if defined(VRAM_HACK)
     struct OOP_ABDescr attrbases[] = 
@@ -64,7 +64,7 @@ static BOOL InitVideo()
     return TRUE;
 }
 
-static VOID DeInitVideo()
+static VOID DeInitVideo(struct SysMonData *smdata)
 {
 #if defined(VRAM_HACK)
     FreeBitMap(bm);

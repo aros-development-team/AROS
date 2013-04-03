@@ -14,7 +14,7 @@ APTR ProcessorBase;
 #define SIMULATE_USAGE_FREQ 0
 
 /* Processor functions */
-static BOOL InitProcessor()
+static BOOL InitProcessor(struct SysMonData *smdata)
 {
 #if SIMULATE_USAGE_FREQ
     processorcount = 4;
@@ -40,7 +40,7 @@ static BOOL InitProcessor()
 #endif
 }
 
-static VOID DeInitProcessor()
+static VOID DeInitProcessor(struct SysMonData *smdata)
 {
 }
 
