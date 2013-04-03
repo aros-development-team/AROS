@@ -23,7 +23,7 @@ struct TaskInfo
 VOID UpdateTasksInformation(struct SysMonData * smdata)
 {
     struct Task * task;
-    IPTR firstvis = NULL, selected = NULL;
+    IPTR firstvis = 0, selected = 0;
 
     set(smdata->tasklist, MUIA_List_Quiet, TRUE);
 
@@ -39,7 +39,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
     /* We are unlikely to dissapear and this code still run .. so dont disable yet */
     if (!(DoMethod(smdata->tasklist, MUIM_List_InsertSingle, smdata->sm_Task, MUIV_List_Insert_Bottom)))
     {
-        return FALSE;
+        return;
     }
 
     /* Now disable multitasking and get the rest of the tasks .. */
@@ -51,7 +51,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
         if (!(DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom)))
         {
             Enable();
-            return FALSE;
+            return;
         }
         smdata->sm_TasksReady++;
     }
@@ -63,7 +63,7 @@ VOID UpdateTasksInformation(struct SysMonData * smdata)
         if (!(DoMethod(smdata->tasklist, MUIM_List_InsertSingle, task, MUIV_List_Insert_Bottom)))
         {
             Enable();
-            return FALSE;
+            return;
         }
         smdata->sm_TasksWaiting++;
     }
@@ -127,11 +127,11 @@ AROS_UFH3(VOID, TaskSelectedFunction,
     AROS_USERFUNC_INIT
 
     struct TaskInfo *ti = NULL;
-    IPTR activeentry = NULL;
+    IPTR activeentry = 0;
 
     get(obj, MUIA_List_Active, &activeentry);
 
-    if (activeentry == NULL)
+    if (activeentry == 0)
         ((struct SysMonData *)h->h_Data)->sm_TaskSelected = NULL;
     else
     {
@@ -151,7 +151,6 @@ AROS_UFH3(VOID, TasksListDisplayFunction,
     AROS_USERFUNC_INIT
 
     static TEXT bufprio[8];
-    static TEXT buftotal[20];
 
     if (ti)
     {
