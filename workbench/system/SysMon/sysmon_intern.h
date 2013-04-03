@@ -8,9 +8,7 @@
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
-
 #include <libraries/mui.h>
-
 #define MEMORY_RAM  0
 #define MEMORY_CHIP 1
 #define MEMORY_FAST 2
@@ -32,6 +30,7 @@ struct SysMonData
     struct Hook tasklistrefreshbuttonhook;
 
     Object * tasklist;
+    Object * tasklistinfo;
 
     Object ** cpuusagegauges;
     Object ** cpufreqlabels;
@@ -48,6 +47,8 @@ struct SysMonData
     ULONG sm_TasksWaiting;
     ULONG sm_TasksReady;
     ULONG sm_TaskTotalRuntime;
+    
+    STRPTR tasklistinfobuf;
 };
 
 struct SysMonModule
