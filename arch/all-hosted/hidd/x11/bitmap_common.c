@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -105,7 +105,7 @@ OOP_Object *X11BM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
                 ok = FALSE;
 #if X11SOFTMOUSE
             else if (framebuffer)
-                init_empty_cursor(DRAWABLE(data), data->gc, XSD(cl));
+                X11BM_InitEmptyCursor(data);
 #endif
         }
 
@@ -1428,6 +1428,9 @@ VOID MNAME(Hidd_BitMap__UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
     LOCK_X11
+
+    if (data->flags & BMDF_FRAMEBUFFER)
+        X11BM_ExposeFB(data, msg->x, msg->y, msg->width, msg->height);
 
     XCALL(XFlush, data->display);
 
