@@ -88,12 +88,6 @@ AROS_UFH3(struct TaskInfo *, TasksListConstructFunction,
     AROS_USERFUNC_INIT
 
     struct TaskInfo *ti = NULL;
-    struct TagItem TaskAttrs[3] =
-    {
-        {TASKATTR_ID,           curTask},
-        {TASKATTR_CPUTIME,      0},
-        {TAG_DONE,              NULL}
-    };
 
     if ((ti = AllocVecPooled(pool, sizeof(struct TaskInfo))) != NULL)
     {
