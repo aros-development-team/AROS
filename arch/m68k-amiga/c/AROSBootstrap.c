@@ -1458,3 +1458,9 @@ __startup static AROS_PROCH(startup, argstr, argsize, sysBase)
 
     AROS_PROCFUNC_EXIT
 }
+
+/* Provide dummy implementation of strerror for gzip code */
+char *strerror(int errnum)
+{
+    return "Error";
+}
