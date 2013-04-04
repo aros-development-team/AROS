@@ -195,6 +195,7 @@ struct x11_staticdata
     BOOL    	    	    fullscreen;
     BOOL                    option_backingstore;
     BOOL                    option_forcestdmodes;
+    BOOL                    option_delayxwinmapping;
 
     struct MsgPort  	    *hostclipboardmp;
     struct Message  	    *hostclipboardmsg;

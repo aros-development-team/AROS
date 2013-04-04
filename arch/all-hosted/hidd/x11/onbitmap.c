@@ -276,20 +276,21 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
             X11DoNotify(xsd, &msg);
 
-#if !DELAY_XWIN_MAPPING        
-            /*
-             * Send a message to the X11 task to ask when the window has been mapped.
-             * We change only notify_type, other fields are already set.
-             */
-            msg.notify_type = NOTY_MAPWINDOW;
+            if (!XSD(cl)->option_delayxwinmapping)
+            {
+                /*
+                 * Send a message to the X11 task to ask when the window has been mapped.
+                 * We change only notify_type, other fields are already set.
+                 */
+                msg.notify_type = NOTY_MAPWINDOW;
 
-            HostLib_Lock();
-            XCALL(XSync, GetSysDisplay(), FALSE);
-            HostLib_Unlock();
+                HostLib_Lock();
+                XCALL(XSync, GetSysDisplay(), FALSE);
+                HostLib_Unlock();
 
-            X11DoNotify(xsd, &msg);
-            D(kprintf("NOTY_MAPWINDOW request done\n"));
-#endif
+                X11DoNotify(xsd, &msg);
+                D(kprintf("NOTY_MAPWINDOW request done\n"));
+            }
 
             DeleteMsgPort(port);
 
