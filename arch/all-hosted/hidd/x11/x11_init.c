@@ -149,6 +149,17 @@ int X11_Init(struct x11_staticdata *xsd)
         XCALL(XSetErrorHandler, MyErrorHandler);
         XCALL(XSetIOErrorHandler, MySysErrorHandler);
 
+#if defined(HOST_OS_darwin) || defined(__arm__)
+        /*
+         * Neither ARM targets nor XQuartz like operations on unmapped window, strange effects occur (bootmenu breaks, for example).
+         * X11 driver needs serious rewrite. For now i hope this will do.
+         */
+        xsd->option_delayxwinmapping = FALSE;
+#else
+        /* Do not map (show) X window as long as there's no screen */
+        xsd->option_delayxwinmapping = TRUE;
+#endif
+
         BootLoaderBase = OpenResource("bootloader.resource");
 
         /*
@@ -180,6 +191,11 @@ int X11_Init(struct x11_staticdata *xsd)
                     if (strcmp("--forcestdmodes", n->ln_Name) == 0)
                     {
                         xsd->option_forcestdmodes = TRUE;
+                    }
+
+                    if (strcmp("--forcedelayxwinmapping", n->ln_Name) == 0)
+                    {
+                        xsd->option_delayxwinmapping = TRUE;
                     }
 
                 }

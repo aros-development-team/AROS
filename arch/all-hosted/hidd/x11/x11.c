@@ -194,9 +194,6 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                     XWindowChanges xwc;
                     XSizeHints sizehint;
                     BOOL replymsg = TRUE;
-#if DELAY_XWIN_MAPPING
-                    struct xwinnode *node;
-#endif
 
                     xwc.width = nmsg->width;
                     xwc.height = nmsg->height;
@@ -218,38 +215,40 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                     XCALL(XFlush, nmsg->xdisplay);
                     UNLOCK_X11
 
-#if DELAY_XWIN_MAPPING
-                    ForeachNode(&xwindowlist, node)
+                    if (xsd->option_delayxwinmapping)
                     {
-                        if (node->xwindow == nmsg->xwindow)
+                        struct xwinnode *node;
+                        ForeachNode(&xwindowlist, node)
                         {
-                            if (!node->window_mapped)
+                            if (node->xwindow == nmsg->xwindow)
                             {
-                                LOCK_X11
-                                XCALL(XMapWindow, nmsg->xdisplay, nmsg->xwindow);
-#if ADJUST_XWIN_SIZE
-                                XCALL(XMapRaised, nmsg->xdisplay, nmsg->masterxwindow);
-#endif
-                                if (xsd->fullscreen)
+                                if (!node->window_mapped)
                                 {
-                                    XCALL(XGrabKeyboard, nmsg->xdisplay, nmsg->xwindow, False, GrabModeAsync, GrabModeAsync, CurrentTime);
-                                    XCALL(XGrabPointer, nmsg->xdisplay, nmsg->xwindow, 1, PointerMotionMask | ButtonPressMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync, nmsg->xwindow, None, CurrentTime);
+                                    LOCK_X11
+                                    XCALL(XMapWindow, nmsg->xdisplay, nmsg->xwindow);
+#if ADJUST_XWIN_SIZE
+                                    XCALL(XMapRaised, nmsg->xdisplay, nmsg->masterxwindow);
+#endif
+                                    if (xsd->fullscreen)
+                                    {
+                                        XCALL(XGrabKeyboard, nmsg->xdisplay, nmsg->xwindow, False, GrabModeAsync, GrabModeAsync, CurrentTime);
+                                        XCALL(XGrabPointer, nmsg->xdisplay, nmsg->xwindow, 1, PointerMotionMask | ButtonPressMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync, nmsg->xwindow, None, CurrentTime);
+                                    }
+
+                                    XCALL(XFlush, nmsg->xdisplay);
+                                    UNLOCK_X11
+
+                                    nmsg->notify_type = NOTY_MAPWINDOW;
+                                    AddTail((struct List *) &nmsg_list, (struct Node *) nmsg);
+
+                                    /* Do not reply message yet */
+                                    replymsg = FALSE;
+
+                                    break;
                                 }
-
-                                XCALL(XFlush, nmsg->xdisplay);
-                                UNLOCK_X11
-
-                                nmsg->notify_type = NOTY_MAPWINDOW;
-                                AddTail((struct List *) &nmsg_list, (struct Node *) nmsg);
-
-                                /* Do not reply message yet */
-                                replymsg = FALSE;
-
-                                break;
                             }
                         }
                     }
-#endif
 
                     if (replymsg)
                         ReplyMsg((struct Message *) nmsg);

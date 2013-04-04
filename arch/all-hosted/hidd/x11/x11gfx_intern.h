@@ -37,15 +37,6 @@ VOID free_ximage(XImage *image);
 #define USE_X11_DRAWFUNCS   1
 #define X11SOFTMOUSE        1   /* Use software mouse sprite */
 #define ADJUST_XWIN_SIZE    1   /* Resize the xwindow to the size of the actual visible screen */
-#if defined(HOST_OS_darwin) || defined(__arm__) 
-/*
- * Neither ARM targets nor XQuartz like operations on unmapped window, strange effects occur (bootmenu breaks, for example).
- * X11 driver needs serious rewrite. For now i hope this will do.
- */
-#define DELAY_XWIN_MAPPING  0
-#else
-#define DELAY_XWIN_MAPPING  1   /* Do not map (show) X window as long as there's no screen */
-#endif
 
 /****************************************************************************************/
 
