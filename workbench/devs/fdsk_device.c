@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -165,16 +165,12 @@ static int GM_UNIQUENAME(Open)
         (void)GetMsg(&fdskbase->port);
         D(bug("[FDSK%02ld] in libopen func. Received replymsg\n", unitnum));
 
-        if(unit->file)
-        {
-            AddTail((struct List *)&fdskbase->units, &unit->msg.mn_Node);
-            iotd->iotd_Req.io_Unit = (struct Unit *)unit;
-            /* Set returncode */
-            iotd->iotd_Req.io_Error = 0;
-            ReleaseSemaphore(&fdskbase->sigsem);
-            return TRUE;
-        }else
-            iotd->iotd_Req.io_Error = TDERR_NotSpecified;
+        AddTail((struct List *)&fdskbase->units, &unit->msg.mn_Node);
+        iotd->iotd_Req.io_Unit = (struct Unit *)unit;
+        /* Set returncode */
+        iotd->iotd_Req.io_Error = 0;
+        ReleaseSemaphore(&fdskbase->sigsem);
+        return TRUE;
     }else
         iotd->iotd_Req.io_Error = TDERR_NoMem;
     FreeMem(unit, sizeof(struct unit));
@@ -227,6 +223,7 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
 
+    struct unit *unit = (struct unit *)iotd->iotd_Req.io_Unit;
     switch(iotd->iotd_Req.io_Command)
     {
 #if NEWSTYLE_DEVICE
@@ -272,16 +269,20 @@ AROS_LH1(void, beginio,
         case CMD_READ:
         case CMD_WRITE:
         case TD_FORMAT:
+        case TD_GETGEOMETRY:
+            if (unit->file == BNULL)
+            {
+                iotd->iotd_Req.io_Error = TDERR_DiskChanged;
+                break;
+            }
         case TD_CHANGENUM:
         case TD_CHANGESTATE:
         case TD_ADDCHANGEINT:
         case TD_REMCHANGEINT:
-        case TD_GETGEOMETRY:
         case TD_EJECT:
         case TD_PROTSTATUS:
             /* Forward to unit thread */
-            PutMsg(&((struct unit *)iotd->iotd_Req.io_Unit)->port,
-            &iotd->iotd_Req.io_Message);
+            PutMsg(&unit->port, &iotd->iotd_Req.io_Message);
             /* Not done quick */
             iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
             return;
@@ -472,26 +473,30 @@ void eject(struct unit *unit, BOOL eject) {
     struct IOExtTD *iotd;
     struct FileInfoBlock fib;
 
-    if (eject)
+    if((eject && unit->file != BNULL) || (!eject && unit->file == BNULL))
     {
-        Close(unit->file);
-        unit->file = (BPTR)NULL;
-    }
-    else
-    {
-        unit->file = Open(unit->filename, MODE_OLDFILE);
-        if (unit->file == BNULL)
-            return;
-        ExamineFH(unit->file, &fib);
-        unit->writable = !(fib.fib_Protection & FIBF_WRITE);
+        if (eject)
+        {
+            Close(unit->file);
+            unit->file = (BPTR)NULL;
+        }
+        else
+        {
+            unit->file = Open(unit->filename, MODE_OLDFILE);
+            if (unit->file == BNULL)
+                return;
+            ExamineFH(unit->file, &fib);
+            unit->writable = !(fib.fib_Protection & FIBF_WRITE);
+        }
+
+        unit->changecount++;
+
+        ForeachNode(&unit->changeints, iotd)
+        {
+            Cause((struct Interrupt *)iotd->iotd_Req.io_Data);
+        }
     }
 
-    unit->changecount++;
-
-    ForeachNode(&unit->changeints, iotd)
-    {
-        Cause((struct Interrupt *)iotd->iotd_Req.io_Data);
-    }
     return;
 }
 
@@ -543,20 +548,12 @@ AROS_UFH3(LONG, unitentry,
 
     unit->filename = buf;
     unit->file = Open(buf, MODE_OLDFILE);
-    if(!unit->file)
+
+    if(unit->file != BNULL)
     {
-/*
-#warning FIXME: Next line will produce a segfault -- uninitialized variable iotd
-        iotd->iotd_Req.io_Error = error(IoErr());
-*/
-        D(bug("[FDSK%02ld] open failed ioerr = %d :-( Replying startup msg!\n", unit->unitnum, IoErr()));
-
-        ReplyMsg(&unit->msg);
-        return 0;
+        ExamineFH(unit->file, &fib);
+        unit->writable = !(fib.fib_Protection & FIBF_WRITE);
     }
-
-    ExamineFH(unit->file, &fib);
-    unit->writable = !(fib.fib_Protection & FIBF_WRITE);
 
     /* enable requesters */
     me->pr_WindowPtr = win;
