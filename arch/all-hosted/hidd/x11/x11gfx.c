@@ -290,77 +290,80 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     screen = XCALL(XDefaultScreen, disp);    
 //  rootwin = XCALL(XRootWindow, disp, screen);
 
-    XVMCALL(XF86VidModeGetAllModeLines, disp, screen, &modeNum, &modes);
-    D(bug("[X11Gfx] Found %u modes, table at 0x%P\n", modeNum, modes));
-
-    if (modeNum)
+    if (!XSD(cl)->option_forcestdmodes)
     {
-        /* Got XF86VidMode data, use it */ 
-        if ((resolution = AllocMem(modeNum * sizeof(struct TagItem) * 4, MEMF_PUBLIC)) == NULL)
-        {
-            XCALL(XCloseDisplay, disp);
-            kprintf("!!! Couldn't allocate resolution memory in X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
-            cleanupx11stuff(XSD(cl));
-            ReturnPtr("X11Gfx::New", OOP_Object *, NULL);
-        }
+        XVMCALL(XF86VidModeGetAllModeLines, disp, screen, &modeNum, &modes);
+        D(bug("[X11Gfx] Found %u modes, table at 0x%P\n", modeNum, modes));
     
-        for(i = 0; i < modeNum; i++)
+        if (modeNum)
         {
-            ULONG j;
-            BOOL insert;
-            insert = TRUE;
-
-            /* avoid duplicated resolution */
-            for(j = 0; j < realmode; j++)
+            /* Got XF86VidMode data, use it */
+            if ((resolution = AllocMem(modeNum * sizeof(struct TagItem) * 4, MEMF_PUBLIC)) == NULL)
             {
-                if(resolution[j * 4].ti_Data == modes[i]->hdisplay && resolution[j * 4 + 1].ti_Data == modes[i]->vdisplay)
-                { /* Found a matching resolution. Don't insert ! */
-                    insert = FALSE;
+                XCALL(XCloseDisplay, disp);
+                kprintf("!!! Couldn't allocate resolution memory in X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
+                cleanupx11stuff(XSD(cl));
+                ReturnPtr("X11Gfx::New", OOP_Object *, NULL);
+            }
+
+            for(i = 0; i < modeNum; i++)
+            {
+                ULONG j;
+                BOOL insert;
+                insert = TRUE;
+
+                /* avoid duplicated resolution */
+                for(j = 0; j < realmode; j++)
+                {
+                    if(resolution[j * 4].ti_Data == modes[i]->hdisplay && resolution[j * 4 + 1].ti_Data == modes[i]->vdisplay)
+                    { /* Found a matching resolution. Don't insert ! */
+                        insert = FALSE;
+                    }
+                }
+
+                if(insert)
+                {
+                    resolution[realmode * 4 + 0].ti_Tag = aHidd_Sync_HDisp;
+                    resolution[realmode * 4 + 0].ti_Data = modes[i]->hdisplay;
+
+                    resolution[realmode * 4 + 1].ti_Tag = aHidd_Sync_VDisp;
+                    resolution[realmode * 4 + 1].ti_Data = modes[i]->vdisplay;
+
+                    resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
+                    resolution[realmode * 4 + 2].ti_Data = (IPTR)"X11: %hx%v";
+
+                    resolution[realmode * 4 + 3].ti_Tag = TAG_DONE;
+                    resolution[realmode * 4 + 3].ti_Data = 0UL;
+
+                    realmode++;
                 }
             }
 
-            if(insert)
+            if((mode_tags = AllocMem(sizeof(struct TagItem) * (realmode + 2), MEMF_PUBLIC)) == NULL)
             {
-                resolution[realmode * 4 + 0].ti_Tag = aHidd_Sync_HDisp;
-                resolution[realmode * 4 + 0].ti_Data = modes[i]->hdisplay;
-
-                resolution[realmode * 4 + 1].ti_Tag = aHidd_Sync_VDisp;
-                resolution[realmode * 4 + 1].ti_Data = modes[i]->vdisplay;
-
-                resolution[realmode * 4 + 2].ti_Tag = aHidd_Sync_Description;
-                resolution[realmode * 4 + 2].ti_Data = (IPTR)"X11: %hx%v";
-        
-                resolution[realmode * 4 + 3].ti_Tag = TAG_DONE;
-                resolution[realmode * 4 + 3].ti_Data = 0UL;
-
-                realmode++;
+                FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
+                XCALL(XCloseDisplay, disp);
+                kprintf("!!! Couldn't allocate mode_tags memory in X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
+                cleanupx11stuff(XSD(cl));
+                ReturnPtr("X11Gfx::New", OOP_Object *, NULL);
             }
-        }
 
-        if((mode_tags = AllocMem(sizeof(struct TagItem) * (realmode + 2), MEMF_PUBLIC)) == NULL)
-        {
-            FreeMem(resolution, modeNum * sizeof(struct TagItem) * 4);
-            XCALL(XCloseDisplay, disp);
-            kprintf("!!! Couldn't allocate mode_tags memory in X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
-            cleanupx11stuff(XSD(cl));
-            ReturnPtr("X11Gfx::New", OOP_Object *, NULL);
-        }
+            mode_tags[0].ti_Tag = aHidd_Gfx_PixFmtTags;
+            mode_tags[0].ti_Data = (IPTR)pftags;
 
-        mode_tags[0].ti_Tag = aHidd_Gfx_PixFmtTags;
-        mode_tags[0].ti_Data = (IPTR)pftags;
+            /* The different screenmode from XF86VMODE */
+            for(i=0; i < realmode; i++)
+            {
+                mode_tags[1 + i].ti_Tag = aHidd_Gfx_SyncTags;
+                mode_tags[1 + i].ti_Data = (IPTR)(resolution + i*4);
+            }
+
+            mode_tags[1 + i].ti_Tag = TAG_DONE;
+            mode_tags[1 + i].ti_Data = 0UL;
         
-        /* The different screenmode from XF86VMODE */
-        for(i=0; i < realmode; i++)
-        {
-            mode_tags[1 + i].ti_Tag = aHidd_Gfx_SyncTags;
-            mode_tags[1 + i].ti_Data = (IPTR)(resolution + i*4);
+            /* Use our new mode tags instead of default ones */
+            mytags[0].ti_Data = (IPTR)mode_tags;
         }
-
-        mode_tags[1 + i].ti_Tag = TAG_DONE;
-        mode_tags[1 + i].ti_Data = 0UL;
-    
-        /* Use our new mode tags instead of default ones */
-        mytags[0].ti_Data = (IPTR)mode_tags;
     }
 
     /* Register gfxmodes */
