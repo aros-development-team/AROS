@@ -192,10 +192,7 @@ struct x11_staticdata
     VOID	    	     (*activecallback)(APTR, OOP_Object *);
     APTR	    	     callbackdata;
 
-    BOOL    	    	    fullscreen;
-    BOOL                    option_backingstore;
-    BOOL                    option_forcestdmodes;
-    BOOL                    option_delayxwinmapping;
+    ULONG                   options;
 
     struct MsgPort  	    *hostclipboardmp;
     struct Message  	    *hostclipboardmsg;
@@ -208,6 +205,11 @@ struct x11_staticdata
     Atom    	    	     hostclipboard_writerequest_property;
     ULONG   	    	     hostclipboard_write_chunks;
 };
+
+#define OPTION_FULLSCREEN       (1 << 0)
+#define OPTION_BACKINGSTORE     (1 << 1)
+#define OPTION_FORCESTDMODES    (1 << 2)
+#define OPTION_DELAYXWINMAPPING (1 << 3)
 
 /* Send the message and wait for the reply */
 static inline void X11DoNotify(struct x11_staticdata *xsd, struct notify_msg *msg)

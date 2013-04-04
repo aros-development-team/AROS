@@ -290,7 +290,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     screen = XCALL(XDefaultScreen, disp);    
 //  rootwin = XCALL(XRootWindow, disp, screen);
 
-    if (!XSD(cl)->option_forcestdmodes)
+    if (!(XSD(cl)->options & OPTION_FORCESTDMODES))
     {
         XVMCALL(XF86VidModeGetAllModeLines, disp, screen, &modeNum, &modes);
         D(bug("[X11Gfx] Found %u modes, table at 0x%P\n", modeNum, modes));
@@ -443,7 +443,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
         XCALL(XRecolorCursor, data->display, data->cursor, &fg, &bg);
     
-        if (XSD(cl)->option_backingstore)
+        if (XSD(cl)->options & OPTION_BACKINGSTORE)
         {
             switch(DoesBackingStore(ScreenOfDisplay(data->display, data->screen)))
             {

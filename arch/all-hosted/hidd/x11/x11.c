@@ -205,7 +205,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                     sizehint.max_height = nmsg->height;
 
                     LOCK_X11
-                    if (xsd->fullscreen)
+                    if (xsd->options & OPTION_FULLSCREEN)
                     {
                         x11_fullscreen_switchmode(nmsg->xdisplay, &xwc.width, &xwc.height);
                     }
@@ -215,7 +215,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
                     XCALL(XFlush, nmsg->xdisplay);
                     UNLOCK_X11
 
-                    if (xsd->option_delayxwinmapping)
+                    if (xsd->options & OPTION_DELAYXWINMAPPING)
                     {
                         struct xwinnode *node;
                         ForeachNode(&xwindowlist, node)
@@ -229,7 +229,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 #if ADJUST_XWIN_SIZE
                                     XCALL(XMapRaised, nmsg->xdisplay, nmsg->masterxwindow);
 #endif
-                                    if (xsd->fullscreen)
+                                    if (xsd->options & OPTION_FULLSCREEN)
                                     {
                                         XCALL(XGrabKeyboard, nmsg->xdisplay, nmsg->xwindow, False, GrabModeAsync, GrabModeAsync, CurrentTime);
                                         XCALL(XGrabPointer, nmsg->xdisplay, nmsg->xwindow, 1, PointerMotionMask | ButtonPressMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync, nmsg->xwindow, None, CurrentTime);

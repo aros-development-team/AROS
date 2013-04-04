@@ -143,6 +143,8 @@ int X11_Init(struct x11_staticdata *xsd)
         struct Task *x11task;
         APTR BootLoaderBase;
 
+        xsd->options = 0L;
+
 #if DEBUG_X11_SYNCHRON
         XCALL(XSynchronize, xsd->display, True);
 #endif
@@ -154,10 +156,9 @@ int X11_Init(struct x11_staticdata *xsd)
          * Neither ARM targets nor XQuartz like operations on unmapped window, strange effects occur (bootmenu breaks, for example).
          * X11 driver needs serious rewrite. For now i hope this will do.
          */
-        xsd->option_delayxwinmapping = FALSE;
 #else
         /* Do not map (show) X window as long as there's no screen */
-        xsd->option_delayxwinmapping = TRUE;
+        xsd->options |= OPTION_DELAYXWINMAPPING;
 #endif
 
         BootLoaderBase = OpenResource("bootloader.resource");
@@ -178,24 +179,23 @@ int X11_Init(struct x11_staticdata *xsd)
                     /* do we have fullscreen flag ? */
                     if (!strcmp("--fullscreen", n->ln_Name))
                     {
-                        xsd->fullscreen = x11_fullscreen_supported(xsd->display);
-                        /* Force fullscreen. */
-                        /* xsd->fullscreen = TRUE; */
+                        if (x11_fullscreen_supported(xsd->display))
+                            xsd->options |= OPTION_FULLSCREEN;
                     }
 
                     if (strcmp("--backingstore", n->ln_Name) == 0)
                     {
-                        xsd->option_backingstore = TRUE;
+                        xsd->options |= OPTION_BACKINGSTORE;
                     }
 
                     if (strcmp("--forcestdmodes", n->ln_Name) == 0)
                     {
-                        xsd->option_forcestdmodes = TRUE;
+                        xsd->options |= OPTION_FORCESTDMODES;
                     }
 
                     if (strcmp("--forcedelayxwinmapping", n->ln_Name) == 0)
                     {
-                        xsd->option_delayxwinmapping = TRUE;
+                        xsd->options |= OPTION_DELAYXWINMAPPING;
                     }
 
                 }
