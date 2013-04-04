@@ -97,7 +97,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
             | KeyPressMask | KeyReleaseMask | StructureNotifyMask
             | SubstructureNotifyMask | FocusChangeMask | ExposureMask;
 
-    if (XSD(cl)->option_backingstore)
+    if (XSD(cl)->options & OPTION_BACKINGSTORE)
     {
         /* Framebuffer needs backing store. (Uses lots of mem) */
         winattr.backing_store = Always;
@@ -113,7 +113,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
     valuemask = CWCursor | CWEventMask | CWBackPixel;
 
-    if (XSD(cl)->option_backingstore)
+    if (XSD(cl)->options & OPTION_BACKINGSTORE)
         valuemask |= CWBackingStore | CWSaveUnder;
 
     if (data->flags & BMDF_COLORMAP_ALLOCED)
@@ -129,7 +129,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
         XSetWindowAttributes rootattr;
         unsigned long rootmask = 0;
 
-        if (XSD(cl)->fullscreen)
+        if (XSD(cl)->options & OPTION_FULLSCREEN)
         {
             rootattr.override_redirect = True;
             rootmask |= CWOverrideRedirect;
@@ -217,7 +217,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
             XCALL(XSetWMHints, GetSysDisplay(), MASTERWIN(data), &hints);
         }
 
-        if (XSD(cl)->option_backingstore)
+        if (XSD(cl)->options & OPTION_BACKINGSTORE)
         {
             DRAWABLE(data) = WINDRAWABLE(data);
             data->flags |= BMDF_BACKINGSTORE;
@@ -276,7 +276,7 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 
             X11DoNotify(xsd, &msg);
 
-            if (!XSD(cl)->option_delayxwinmapping)
+            if (!(XSD(cl)->options & OPTION_DELAYXWINMAPPING))
             {
                 /*
                  * Send a message to the X11 task to ask when the window has been mapped.
