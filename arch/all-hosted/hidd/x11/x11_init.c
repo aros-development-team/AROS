@@ -176,6 +176,12 @@ int X11_Init(struct x11_staticdata *xsd)
                     {
                         xsd->option_backingstore = TRUE;
                     }
+
+                    if (strcmp("--forcestdmodes", n->ln_Name) == 0)
+                    {
+                        xsd->option_forcestdmodes = TRUE;
+                    }
+
                 }
             }
         }
