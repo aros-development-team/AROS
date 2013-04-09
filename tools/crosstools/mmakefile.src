@@ -4,11 +4,16 @@ BINUTILS_VERSION = 2.21.1
 GMP_VERSION=5.0.5
 MPFR_VERSION=3.1.0
 MPC_VERSION=0.9
+ICU_VERSION := 4.2.1
+ICU_PKGNAME := icu4c
+ICU_PKGVERSION=$(subst .,_,$(ICU_VERSION))
+
+ICU_EXTRA_OPTS=
 
 # gcc 4.6.2 can't build arm Objective C support without
 # a compiler error.
 ifneq (,$(findstring $(AROS_TARGET_CPU),arm))
-GCC_LANGUAGES = c,c++
+GCC_LANGUAGES = c,c++,objc
 GCC_EXTRA_OPTS = \
   --with-arch=$(GCC_DEFAULT_CPU) --with-float=$(GCC_DEFAULT_FLOAT_ABI) --with-fpu=$(GCC_DEFAULT_FPU) --with-mode=arm \
   --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
@@ -32,13 +37,15 @@ GCC_ARRAY_BOUNDS            := -Wno-array-bounds
 GCC_ENUM_COMPARE            := -Wno-enum-compare
 
 GNU_REPOSITORY := gnu://
-MPC_REPOSITORY := http://www.multiprecision.org/mpc/download/
+MPC_REPOSITORY := http://www.multiprecision.org/mpc/download
+ICU_REPOSITORY := http://download.icu-project.org/files/$(ICU_PKGNAME)/$(ICU_VERSION)
 
 binutils-installflag := $(CROSSTOOLSDIR)/.installflag-binutils-$(BINUTILS_VERSION)-$(AROS_TARGET_CPU)
 gmp-installflag := $(CROSSTOOLSDIR)/.installflag-gmp-$(GMP_VERSION)
 mpfr-installflag := $(CROSSTOOLSDIR)/.installflag-mpfr-$(MPFR_VERSION)
 mpc-installflag := $(CROSSTOOLSDIR)/.installflag-mpc-$(MPC_VERSION)
 gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)-$(AROS_TARGET_CPU)
+icu-installflag := $(CROSSTOOLSDIR)/.installflag-icu-$(ICU_VERSION)
 
 #MM- tools-crosstools : tools-crosstools-$(AROS_TARGET_CPU)
 
@@ -157,3 +164,21 @@ tools-crosstools-gcc :
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" \
 	extraoptions="$(GCC_EXTRA_OPTS)"
+
+#MM
+tools-crosstools-icu :
+	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
+	    || ! $(TEST) -f $(icu-installflag) ; then \
+	       $(RM) $(HOSTGENDIR)/$(CURDIR)/icu/.files-touched \
+	    && $(MAKE) -f ./mmakefile crosstools-icu--fetch \
+	    && $(MAKE) -f ./mmakefile crosstools-icu--build_and_install-quick \
+	    && $(TOUCH) $(icu-installflag) ; \
+	fi
+
+HOST_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(HOST_CXXFLAGS)))
+
+%fetch_and_build mmake=crosstools-icu package=icu4c version=$(ICU_PKGVERSION)-src compiler=host \
+	package_repo="$(ICU_REPOSITORY)" suffixes="tgz" \
+	patch=yes srcdir=icu builddir=source \
+	prefix="$(CROSSTOOLSDIR)" \
+	extraoptions="$(ICU_EXTRA_OPTS)"
