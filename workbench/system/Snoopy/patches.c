@@ -19,7 +19,6 @@
 
 
 #define MAX_LOCK_LEN  100             /* Max. length of a lock string */
-#define MAX_STR_LEN   200             /* Max. string length for misc stuff    */
 
 #define MAX(x,y)      ((x) > (y) ? (x) : (y))
 #define MIN(x,y)      ((x) < (y) ? (x) : (y))
@@ -105,9 +104,6 @@ struct Patches
     {NULL, NULL, LIB_Icon,      0, LVO_MatchToolValue, FALSE},
 };
 
-//static char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen);
-//static void GetVolName(BPTR lock, char *buf, int maxlen);
-
 // ----------------------------------------------------------------------------------
 
 AROS_LH1(BPTR, New_CreateDir,
@@ -123,7 +119,7 @@ AROS_LH1(BPTR, New_CreateDir,
 
     if (patches[PATCH_CreateDir].enabled)
     {
-	main_output("CreateDir", name, 0, (IPTR)result, TRUE);
+	main_output("CreateDir", name, 0, (IPTR)result, TRUE, TRUE);
     }
 
     return result;
@@ -138,8 +134,8 @@ AROS_LH1(BPTR, New_CurrentDir,
     struct DosLibrary *, DOSBase, 21, Dos)
 {
     AROS_LIBFUNC_INIT
-    //char lockbuf[MAX_LOCK_LEN+1];
-    char *lockpath = "?";
+    char lockbuf[MAX_LOCK_LEN+1];
+    char *lockpath;
 
     // returns lock to old directory, 0 means boot filesystem
     BPTR result = AROS_CALL1(BPTR, patches[PATCH_CurrentDir].oldfunc,
@@ -148,23 +144,8 @@ AROS_LH1(BPTR, New_CurrentDir,
 
     if (patches[PATCH_CurrentDir].enabled)
     {
-	LONG err = IoErr();
-	struct FileInfoBlock *fib = NULL;
-	if (lock)
-	{
-	    fib = AllocDosObject(DOS_FIB, NULL);
-	    if (fib)
-	    {
-		if (Examine(lock, fib))
-		{
-		    lockpath = fib->fib_FileName;
-		}
-	    }
-	}
-	main_output("CurrentDir", lockpath, 0, TRUE, TRUE);
-
-	if (fib) FreeDosObject(DOS_FIB, fib);
-	SetIoErr(err);
+        lockpath = MyNameFromLock(lock, NULL, lockbuf, MAX_LOCK_LEN);
+	main_output("CurrentDir", lockpath, 0, TRUE, TRUE, FALSE);
     }
 
     return result;
@@ -187,7 +168,7 @@ AROS_LH1(BOOL, New_DeleteFile,
 
     if (patches[PATCH_DeleteFile].enabled)
     {
-	main_output("Delete", name, 0, result, TRUE);
+	main_output("Delete", name, 0, result, TRUE, TRUE);
     }
 
     return result;
@@ -218,7 +199,7 @@ AROS_LH2(LONG, New_DeleteVar,
         else if ((flags & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
         else                              opt = MSG(MSG_UNKNOWN);
 
-	main_output("DeleteVar", name, opt, result, TRUE);
+	main_output("DeleteVar", name, opt, result, TRUE, FALSE);
     }
 
     return result;
@@ -245,7 +226,7 @@ AROS_LH3(LONG, New_Execute,
 
     if (patches[PATCH_Execute].enabled)
     {
-	main_output("Execute", string ,0 , result, TRUE);
+	main_output("Execute", string ,0 , result, TRUE, FALSE);
     }
 
     return result;
@@ -275,7 +256,7 @@ AROS_LH2(struct LocalVar *, New_FindVar,
 	else if ((type & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
 	else                             opt = MSG(MSG_UNKNOWN);
 
-	main_output("FindVar", name, opt, (IPTR)result, TRUE);
+	main_output("FindVar", name, opt, (IPTR)result, TRUE, FALSE);
     }
 
     return result;
@@ -310,7 +291,7 @@ AROS_LH4(LONG, New_GetVar,
         else if (flags & GVF_LOCAL_ONLY)  opt = MSG(MSG_LOCAL);
         else                              opt = MSG(MSG_ANY);
 
-	main_output("GetVar", name, opt, result != -1, TRUE);
+	main_output("GetVar", name, opt, result != -1, TRUE, FALSE);
     }
 
     return result;
@@ -333,7 +314,7 @@ AROS_LH1(BPTR, New_LoadSeg,
 
     if (patches[PATCH_LoadSeg].enabled)
     {
-	main_output("LoadSeg", name, 0, (IPTR)result, TRUE);
+	main_output("LoadSeg", name, 0, (IPTR)result, TRUE, TRUE);
     }
 
     return result;
@@ -373,7 +354,7 @@ AROS_LH2(BPTR, New_Lock,
 	    curname = "\"\"";
 	}
 
-	main_output("Lock", curname, opt, (IPTR)result, TRUE);
+	main_output("Lock", curname, opt, (IPTR)result, TRUE, FALSE);
     }
 
     return result;
@@ -400,39 +381,44 @@ AROS_LH3(LONG, New_MakeLink,
 
     if (patches[PATCH_MakeLink].enabled)
     {
-        //struct Process *myproc = (struct Process *)SysBase->ThisTask;
+        struct Process *myproc = (struct Process *)SysBase->ThisTask;
 
 	CONST_STRPTR opt;
 	if (soft) opt = "Softlink";
 	else      opt = "Hardlink";
 
-	//FIXME: MyNameFromLock crashes
-#if 0
- 
 	int len = strlen(name);
 	char namestr[MAX_STR_LEN + 1];
-	if (len >= MAX_STR_LEN) {
+	if (len >= MAX_STR_LEN)
+        {
 	    strncpy(namestr, name, MAX_STR_LEN);
 	    namestr[MAX_STR_LEN] = 0;
-	} else {
-	    if (setup.showPaths) {
+	}
+        else
+        {
+	    if (setup.showPaths)
+            {
 		strcpy(namestr, MyNameFromLock(myproc->pr_CurrentDir,
 			    name, namestr, MAX_STR_LEN-2));
 		len = strlen(namestr);
-	    } else
+	    }
+            else
 		strcpy(namestr, name);
 
 	    strcat(namestr, " --> ");
-	    if (soft) {
+	    if (soft)
+            {
 		strncat(namestr, (char *)dest, MAX_STR_LEN - len - 1);
 		namestr[MAX_STR_LEN] = 0;
-	    } else {
+	    }
+            else
+            {
 		strcat(namestr, MyNameFromLock((BPTR)dest, NULL, namestr+len+1,
 			    MAX_STR_LEN-len-1));
 	    }
 	}
-#endif
-	main_output("MakeLink", name /*namestr */, opt, result, TRUE);
+
+	main_output("MakeLink", namestr, opt, result, TRUE, FALSE);
     }
 
     return result;
@@ -457,7 +443,7 @@ AROS_LH2(BPTR, New_NewLoadSeg,
 
     if (patches[PATCH_NewLoadSeg].enabled)
     {
-	main_output("NewLoadSeg", file, 0, (IPTR)result, TRUE);
+	main_output("NewLoadSeg", file, 0, (IPTR)result, TRUE, TRUE);
     }
 
     return result;
@@ -490,7 +476,7 @@ AROS_LH2(BPTR, New_Open,
 	else
             opt = MSG(MSG_UNKNOWN);
 
-	main_output("Open", name, opt ? opt : (STRPTR)optstr, (IPTR)result, TRUE);
+	main_output("Open", name, opt ? opt : (STRPTR)optstr, (IPTR)result, TRUE, TRUE);
     }
 
     return result;
@@ -515,8 +501,8 @@ AROS_LH2(LONG, New_Rename,
 
     if (patches[PATCH_Rename].enabled)
     {
-	main_output("Rename", oldName, 0, result, FALSE);
-	main_output("to -->", newName, 0, result, TRUE);
+	main_output("Rename", oldName, 0, result, FALSE, TRUE);
+	main_output("to -->", newName, 0, result, TRUE, TRUE);
     }
     
     return result;
@@ -556,7 +542,7 @@ AROS_LH4(LONG, New_RunCommand,
 	}
 
 	argstr[pos] = 0;
-	main_output("RunCommand", argstr, 0, result != -1, TRUE);
+	main_output("RunCommand", argstr, 0, result != -1, TRUE, FALSE);
     }
     
     return result;
@@ -613,7 +599,7 @@ AROS_LH4(BOOL, New_SetVar,
 	    strncat(varstr, buffer, vlen);
 	    varstr[MAX_STR_LEN] = 0;
 	}
-	main_output("SetVar", varstr, opt, result, TRUE);
+	main_output("SetVar", varstr, opt, result, TRUE, FALSE);
     }
 
     return result;
@@ -640,7 +626,7 @@ AROS_LH2(LONG, New_SystemTagList,
     {
 	char optstr[20];
 	sprintf(optstr, "%d", (int)result);
-	main_output("SystemTagList", command, optstr, result != -1, TRUE);
+	main_output("SystemTagList", command, optstr, result != -1, TRUE, FALSE);
     }
 
     return result;
@@ -663,7 +649,7 @@ AROS_LH1(struct MsgPort *, New_FindPort,
 
     if (patches[PATCH_FindPort].enabled)
     {
-	main_output("FindPort", name, 0, (IPTR)result, TRUE);
+	main_output("FindPort", name, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -686,7 +672,7 @@ AROS_LH1(struct Resident *, New_FindResident,
 
     if (patches[PATCH_FindResident].enabled)
     {
-	main_output("FindResident", name, 0, (IPTR)result, TRUE);
+	main_output("FindResident", name, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -709,7 +695,7 @@ AROS_LH1(struct SignalSemaphore *, New_FindSemaphore,
 
     if (patches[PATCH_FindSemaphore].enabled)
     {
-	main_output("FindSemaphore", name, 0, (IPTR)result, TRUE);
+	main_output("FindSemaphore", name, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -732,7 +718,7 @@ AROS_LH1(struct Task *, New_FindTask,
 
     if ((name != NULL) && patches[PATCH_FindTask].enabled)
     {
-	main_output("FindTask", name, 0, (IPTR)result, TRUE);
+	main_output("FindTask", name, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -764,7 +750,7 @@ AROS_LH4(LONG, New_OpenDevice,
 	char unitstr[20];
         // FIXME: unitNumber can be a pointer
 	sprintf(unitstr, "Unit %d", (int)unitNumber);
-	main_output("OpenDevice", devName, unitstr, !result, TRUE);
+	main_output("OpenDevice", devName, unitstr, !result, TRUE, FALSE);
     }
     
     return result;
@@ -791,7 +777,7 @@ AROS_LH2(struct Library *, New_OpenLibrary,
     {
 	char verstr[20];
 	sprintf(verstr, MSG(MSG_VERSION), version);
-	main_output("OpenLibrary", libName, verstr, (IPTR)result, TRUE);
+	main_output("OpenLibrary", libName, verstr, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -814,7 +800,7 @@ AROS_LH1(APTR, New_OpenResource,
 
     if (patches[PATCH_OpenResource].enabled)
     {
-	main_output("OpenLibrary", resName, 0, (IPTR)result, TRUE);
+	main_output("OpenLibrary", resName, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -837,7 +823,7 @@ AROS_LH1(struct Screen *, New_LockPubScreen,
 
     if (patches[PATCH_LockPubScreen].enabled)
     {
-	main_output("LockPubScreen", name, 0, (IPTR)result, TRUE);
+	main_output("LockPubScreen", name, 0, (IPTR)result, TRUE, TRUE);
     }
     
     return result;
@@ -870,7 +856,7 @@ AROS_LH1(struct TextFont *, New_OpenFont,
 	    *sizestr = '\0';
 	    name = "\"\"";
 	}
-	main_output("OpenFont", name, sizestr, (IPTR)result, TRUE);
+	main_output("OpenFont", name, sizestr, (IPTR)result, TRUE, FALSE);
     }
 
     return result;
@@ -895,7 +881,7 @@ AROS_LH2(UBYTE *, New_FindToolType,
 
     if (patches[PATCH_FindToolType].enabled)
     {
-	main_output("FindToolType", typeName, 0, (IPTR)result, TRUE);
+	main_output("FindToolType", typeName, 0, (IPTR)result, TRUE, FALSE);
     }
 
     return result;
@@ -919,7 +905,7 @@ AROS_LH2(BOOL, New_MatchToolValue,
 
     if (patches[PATCH_MatchToolValue].enabled)
     {
-	main_output("MatchToolValue", typeString, value, result, TRUE);
+	main_output("MatchToolValue", typeString, value, result, TRUE, FALSE);
     }
 
     return result;
@@ -1036,3 +1022,303 @@ void patches_reset(void)
     }
 }
 
+
+/*
+ * GetVolName(lock, buf, maxlen)
+ *
+ * Copies the volume name associated with lock into the buffer,
+ * with terminating ':'. If lock is NULL, the volume address is
+ * taken directly from volume.
+ *
+ * If UseDevNames is true, the device list is searched looking
+ * for the device node associated with the volume node (i.e. two
+ * nodes sharing the same task address).
+ *
+ * WARNING: This function must not be called from within a DOS
+ * device handler due to potential deadlock errors!
+ */
+void GetVolName(BPTR lock, char *buf, int maxlen)
+{
+    struct DeviceList *vol;
+    struct DosList *dl;
+    int gotdev = 0;
+
+    if (lock == NULL)
+    {
+        NameFromLock(lock, buf, maxlen);
+        return;
+    }
+    vol = BADDR(((struct FileLock *)BADDR(lock))->fl_Volume);
+
+    if (setup.useDevNames == 0 || vol->dl_Task == NULL)
+    {
+/*
+* Use volume name, especially if the volume isn't currently
+* mounted!
+*/
+        UBYTE *volname = AROS_BSTR_ADDR(vol->dl_Name);
+        int len = MIN(maxlen-2, AROS_BSTR_strlen(volname));
+
+        memcpy(buf, volname, len);
+        buf[len++] = ':';
+        buf[len] = '\0';
+        return;
+    }
+
+/*
+* The user wants the device name. The only way to obtain this
+* is to search the device list looking for the device node with
+* the same task address as this volume.
+*/
+    dl = LockDosList(LDF_DEVICES | LDF_READ);
+    while ((dl = NextDosEntry(dl, LDF_DEVICES)))
+    {
+        if (dl->dol_Task == vol->dl_Task)
+        {
+/*
+* Found our task, so now copy device name
+*/
+            UBYTE *devname =  AROS_BSTR_ADDR(dl->dol_Name);
+            int len = MIN(maxlen-2, AROS_BSTR_strlen(devname));
+
+            memcpy(buf, devname, len);
+            buf[len++] = ':';
+            buf[len] = '\0';
+            gotdev = 1;
+            break;
+        }
+    }
+    UnLockDosList(LDF_DEVICES | LDF_READ);
+    if (!gotdev)
+        strcpy(buf, "???:");
+}
+
+/*
+ * MyNameFromLock(lock, filename, buf, maxlen)
+ *
+ * This is a custom version of the DOS function NameFromLock()
+ * which expands a disk lock into a full path.
+ *
+ * Our version adds the following features. The device name will be
+ * given as either the physical device (like DH0:) if UseDevNames
+ * is true, or the volume name (like System3.0:) if UseDevNames is
+ * false.
+ *
+ * If filename is non-NULL, then it will be appended to the lock
+ * path. If filename contains path info, then this will be taken
+ * into account when generating the lock, so that an absolute path
+ * in filename will not have any effect, and a relative filename
+ * (like //directory) will cause the original lock to be ParentDir()'d
+ * twice before being resolved.
+ *
+ * This function can't fail. In the event of an error (string too
+ * long, or something like that), the buffer will be filled accordingly.
+ * It is assumed that the buffer will always be big enough to hold short
+ * error messages or a volume name.
+ *
+ * Returns a pointer to the path (which will not necessarily be at
+ * the start of the buffer, but is guaranteed null-terminated.)
+ * Note that it's even possible that the pointer returned will be
+ * to the original filename if no path expansion was required.
+ *
+ * New: We now preserve the IoErr() that was present on entry, since
+ * it may have been set by the calling function if OnlyShowFails is
+ * true. Otherwise, IoErr() will be screwed up by the operations we
+ * do here (e.g. SAS/C deleting a non-existent file when OnlyShowFails
+ * is true).
+ *
+ * WARNING: This function must not be called from within a DOS
+ * device handler due to potential deadlock errors!
+ */
+char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen)
+{
+    struct Process *myproc = (struct Process *)SysBase->ThisTask;
+    int pos = maxlen - 1;
+    D_S(fib, struct FileInfoBlock);
+    LONG savedioerr = IoErr();
+    BPTR curlock;
+    BPTR newlock;
+    void *savewinptr;
+    char *p;
+    int len;
+    int skipfirstslash = 0; /* If true, skip first slash when building name */
+    int err = 0;
+
+/*
+* Check for special magic filehandle
+*/
+    if (filename && *filename)
+    {
+        if (strcmp(filename, "*") == 0)
+            return (filename);
+
+/*
+* First determine if we have any work to do.
+*/
+        if (*filename == ':')
+        {
+/*
+* Got a reference relative to the root directory. Simply
+* grab the volume (or device) name from the lock and go
+* with that.
+*/
+            int len;
+
+            GetVolName(lock, buf, maxlen);
+            len = strlen(buf);
+            strncat(buf+len, filename+1, maxlen-len);
+            buf[maxlen-1] = '\0';
+            SetIoErr(savedioerr);
+            return (buf);
+        }
+        for (p = filename; *p; p++)
+        {
+            if (*p == ':') /* If absolute path name, leave it alone */
+                return (filename);
+        }
+    }
+    else
+    {
+/*
+* Filename is null, so indicate we want to skip the first
+* slash when building the directory path
+*/
+        skipfirstslash = 1;
+    }
+
+    savewinptr = myproc->pr_WindowPtr;
+    myproc->pr_WindowPtr = (APTR)-1;	/* Disable error requesters */
+
+    newlock = DupLock(lock);
+    if (lock && !newlock)
+    {
+        GetVolName(lock, buf, 20);
+        if (filename)
+        {
+            strcat(buf, ".../");
+            strcat(buf, filename);
+        }
+        myproc->pr_WindowPtr = savewinptr;	/* Re-enable error requesters */
+        SetIoErr(savedioerr);
+        return (buf);
+    }
+    buf[pos] = '\0';
+    curlock = newlock;
+    if (filename)
+    {
+        while (newlock && *filename == '/')
+        {
+/*
+* Handle leading /'s by moving back a directory level
+* but nothing else
+*/
+            newlock = ParentDir(curlock);
+            if (newlock)
+            {
+                UnLock(curlock);
+                curlock = newlock;
+                filename++;
+            }
+        }
+        len = strlen(filename);
+        if (len > (pos-2))
+        {
+            memcpy(buf+2, filename+len-pos, pos-2);
+            buf[0] = buf[1] = '.';
+            pos = 0;
+            UnLock(curlock);
+        }
+        else
+        {
+            pos -= len;
+            memcpy(buf+pos, filename, len);
+        }
+    }
+
+/*
+* At this point, we have buf containing the filename (minus any
+* leading /'s), starting at the index given by pos. If filename
+* was NULL or empty, then pos indexes to a \0 terminator.
+*
+* Next, we want to pre-pend directory names to the front of
+* the filename (assuming there _is_ a filename) until we get
+* to the device root.
+*/
+    newlock = curlock;
+    while (newlock)
+    {
+        if (!Examine(curlock, fib))
+        {
+            err++;
+            break;
+        }
+        len = strlen(fib->fib_FileName);
+        if (len > (pos-3))
+        {
+/*
+* Not enough room: prefix dots at start to indicate
+* an overrun. We use pos-3 since we need one char
+* for a possible slash and two more to accomodate a
+* leading ".."
+*/
+            memcpy(buf+2, fib->fib_FileName+len-pos+3, pos-2);
+            buf[0] = buf[1] = '.';
+            buf[pos-1] = '/';
+            pos = 0;
+            break;
+        }
+        newlock = ParentDir(curlock);
+        if (newlock)
+        {
+            UnLock(curlock);
+            curlock = newlock;
+            pos -= len + 1;
+            memcpy(buf + pos, fib->fib_FileName, len);
+            if (skipfirstslash)
+            {
+                skipfirstslash = 0;
+                buf[pos+len] = '\0';
+            }
+            else
+                buf[pos+len] = '/';
+        }
+    }
+/*
+* Now we've built the path components; add the volume node
+* to the beginning if possible.
+*/
+    if (err)
+    {
+/*
+* If an error occurred, the volume is probably not mounted,
+* so we include a ".../" component in the path to show
+* we couldn't get all the info
+*/
+        pos -= 4;
+        memcpy(buf + pos, ".../", 4);
+    }
+    if (pos > 0)
+    {
+        char volname[20];
+        int len;
+        char *p;
+
+        GetVolName(curlock, volname, 20);
+        len = strlen(volname);
+        if (len > pos)
+        {
+            p = volname + len - pos;
+            len = pos;
+        }
+        else
+            p = volname;
+        pos -= len;
+        memcpy(buf + pos, p, len);
+    }
+    if (curlock)
+        UnLock(curlock);
+
+    myproc->pr_WindowPtr = savewinptr;	/* Re-enable error requesters */
+    SetIoErr(savedioerr);
+    return (buf+pos);
+}

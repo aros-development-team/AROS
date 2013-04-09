@@ -10,6 +10,9 @@ void patches_init(void);
 void patches_set(void);
 void patches_reset(void);
 
+char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen);
+void GetVolName(BPTR lock, char *buf, int maxlen);
+
 enum {LIB_Dos, LIB_Exec, LIB_Icon, LIB_Intuition, LIB_Graphics, LIB_last};
 
 enum {
@@ -42,6 +45,14 @@ enum {
     PATCH_MatchToolValue,
     PATCH_last
 };
+
+/*
+ * Macro (courtesy of Doug Walker) used to allocate longword-aligned
+ * data on the stack. We can't use __aligned inside our patches
+ * because the caller may not have a longword-aligned stack.
+ */
+#define D_S(name, type) char c_##name[sizeof(type)+3]; \
+    type *name = (type *)((long)(c_##name+3) & ~3)
 
 #endif
 

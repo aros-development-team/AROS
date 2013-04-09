@@ -61,8 +61,11 @@ static void SNOOPY_breakpoint(void)
 }
 
 
-void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, IPTR result, BOOL canInterrupt)
+void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option,
+    IPTR result, BOOL canInterrupt, BOOL expand)
 {
+    char pathbuf[MAX_STR_LEN+1];
+
     struct Task *thistask = SysBase->ThisTask;
     STRPTR name = thistask->tc_Node.ln_Name;
 
@@ -101,7 +104,18 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, 
     }
 
     prettyprint(action, setup.actionLen);
+
+    if (setup.showPaths && target != NULL)
+    {
+        if (expand)
+        {
+            //Expand filename to full path
+            target = MyNameFromLock(((struct Process *)thistask)->pr_CurrentDir,
+                target, pathbuf, MAX_STR_LEN);
+        }
+    }
     prettyprint(target, setup.targetLen);
+
     prettyprint(option, setup.optionLen);
     prettyprint(result ? MSG(MSG_OK) : MSG(MSG_FAIL), 0);
     RawPutChar('\n');
