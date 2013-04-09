@@ -293,8 +293,8 @@ void gui_init(void)
     }
     
     // disable unavailable functions
-    set(pathCM,   MUIA_Disabled, TRUE);
-    set(devCM,    MUIA_Disabled, TRUE);
+    //set(pathCM,   MUIA_Disabled, TRUE);
+    //set(devCM,    MUIA_Disabled, TRUE);
     // breakpoint option only available on hosted
     #if !(AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
 	set(breakPointCM,    MUIA_Disabled, TRUE);
