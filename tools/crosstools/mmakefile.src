@@ -8,7 +8,9 @@ ICU_VERSION := 4.2.1
 ICU_PKGNAME := icu4c
 ICU_PKGVERSION=$(subst .,_,$(ICU_VERSION))
 
-ICU_EXTRA_OPTS=
+ICU_EXTRA_OPTS= \
+        --enable-static \
+        --disable-shared
 
 # gcc 4.6.2 can't build arm Objective C support without
 # a compiler error.
