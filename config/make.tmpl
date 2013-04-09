@@ -2894,8 +2894,9 @@ endif
 #
 #     - mmake       = mmaketarget
 #     - archive     = archive base name
-#     - srcdir      = directory the package is unpacked to, useful if archive unpacks to
-#                     a directory other than its name suggests.
+#     - srcdir      = the top level directory the package is unpacked to, useful if
+#                     an archive unpacks to a directory other than its name suggests.
+#                     this should not be deeper than a single path element.
 #     - suffixes    = a list of suffixes to append to the the package name plus the
 #                     version. Each one of them is tried until a matching archive is
 #                     found.
@@ -2960,7 +2961,8 @@ endif
 #    - suffixes         = a list of suffixes to apped to the the package name plus the
 #                         version. Each one of them is tried until a matching archive is found.
 #                         Defaults to "tar.bz2 tar.gz".
-#    - srcdir           = override the location we expect to run configure/make in.
+#    - srcdir           = the top level directory the package is unpacked to (see create_patch).
+#    - builddir         = override the location we expect to run configure/make in.
 #    - package_repo     = same meaning as the one of the %fetch macro's %(archive_origins) argument
 #    - patch            = "yes" or "no", depending on whether a patch for this package needs to be
 #                         fetched or not. Default to no.
@@ -2979,7 +2981,7 @@ endif
 #    - create_pkg       = create a distributable package of the compiled sources, defaults to no
 
 %define fetch_and_build mmake=/A package=/A subpackage= compiler=target install_target=install \
-    version=/A suffixes="tar.bz2 tar.gz" srcdir= package_repo= patch=no patch_repo= \
+    version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= package_repo= patch=no patch_repo= \
     prefix= aros_prefix= extraoptions= extracflags= preconfigure= postconfigure= postinstall= \
     install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no
 
@@ -3014,6 +3016,12 @@ else
     %(mmake)-%(subpackage)-srcdir  := $(%(mmake)-archbase)
 endif
 
+ifneq (%(builddir),)
+    %(mmake)-%(subpackage)-builddir  := $(%(mmake)-%(subpackage)-srcdir)/%(builddir)
+else
+    %(mmake)-%(subpackage)-builddir  := $(%(mmake)-%(subpackage)-srcdir)
+endif
+
 ifeq (%(patch),yes)
     %(mmake)-%(subpackage)-patches_specs := $(%(mmake)-%(subpackage)-archbase)-aros.diff:$(%(mmake)-%(subpackage)-srcdir):-f,-p1
 else
@@ -3043,7 +3051,7 @@ ifneq (%(create_pkg),no)
 endif
 
 %build_with_configure mmake=%(mmake)-%(subpackage) package=%(package) compiler=%(compiler) install_target=%(install_target) \
-     srcdir=$(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-srcdir) install_env=%(install_env) use_build_env=%(use_build_env) \
+     srcdir=$(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-builddir) install_env=%(install_env) use_build_env=%(use_build_env) \
      nix=%(nix) nix_dir_layout=%(nix_dir_layout) prefix="$(%(mmake)-prefix)" \
      aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall) \
      %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)" extracflags="%(extracflags)"
