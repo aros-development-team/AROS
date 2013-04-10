@@ -82,6 +82,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  # relative lib links from pkgdata are the same as for tmp
  TOOLDIR=$(top_builddir)/tools
 @@ -172,11 +171,11 @@
+ endif
  ifneq ($(ENABLE_STATIC),)
  ifeq ($(PKGDATA_MODE),dll)
 -	$(PKGDATA_INVOKE) $(PKGDATA) -m static -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(BUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_LIBDIR)
