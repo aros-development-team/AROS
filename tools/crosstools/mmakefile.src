@@ -9,20 +9,20 @@ ICU_PKGNAME := icu4c
 ICU_PKGVERSION=$(subst .,_,$(ICU_VERSION))
 
 ICU_EXTRA_OPTS= \
-        --bindir=$(CROSSTOOLSDIR)
-        --sbindir=$(CROSSTOOLSDIR)
-        --disable-dyload \
+        --bindir=$(CROSSTOOLSDIR) \
+        --sbindir=$(CROSSTOOLSDIR) \
         --enable-static \
-        --enable-shared=no \
-        --enable-tests=no \
-        --enable-samples=no \
-        --enable-extras=no \
+        --disable-dyload \
+        --disable-shared \
+        --disable-tests \
+        --disable-samples \
+        --disable-extras \
         --with-data-packaging=static
 
 # gcc 4.6.2 can't build arm Objective C support without
 # a compiler error.
 ifneq (,$(findstring $(AROS_TARGET_CPU),arm))
-GCC_LANGUAGES = c,c++
+GCC_LANGUAGES = c,c++,objc
 GCC_EXTRA_OPTS = \
   --with-arch=$(GCC_DEFAULT_CPU) --with-float=$(GCC_DEFAULT_FLOAT_ABI) --with-fpu=$(GCC_DEFAULT_FPU) --with-mode=arm \
   --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
