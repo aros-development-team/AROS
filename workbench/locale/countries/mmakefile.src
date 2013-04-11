@@ -8,7 +8,7 @@ MAKECOUNTRY  := $(OBJDIR)/makecountry
 OBJDIR 	     := $(GENDIR)/$(CURDIR)
 OBJS         := $(foreach f,countryprefs $(COUNTRIES),$(OBJDIR)/$(f).o)
 DEPS         := $(foreach f,countryprefs $(COUNTRIES),$(OBJDIR)/$(f).d)
-USER_CFLAGS  := -D_EURO
+HOST_CFLAGS  := -D_EURO
 
 # FIXME: Building makecountry on these systems requires to explicitly specify -liconv. Probably this should
 #        be handled by configure script
