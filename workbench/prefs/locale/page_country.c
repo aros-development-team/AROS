@@ -1,11 +1,8 @@
 /*
-   Copyright  2003-2011, The AROS Development Team. All rights reserved.
+   Copyright  2003-2013, The AROS Development Team. All rights reserved.
    $Id$
- */
+*/
 
-// #define MUIMASTER_YES_INLINE_STDARG
-
-//#define DEBUG 1
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
@@ -78,7 +75,7 @@ Object *Country__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         cl, obj, NULL,
 
         InputListFrame,
-        MUIA_List_MinLineHeight, 19,
+        MUIA_List_MinLineHeight, 20,
         MUIA_List_Format, "P=\033c,",
         MUIA_List_DisplayHook, &display_hook,
         TAG_DONE

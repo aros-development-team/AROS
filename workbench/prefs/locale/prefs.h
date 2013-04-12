@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -35,7 +35,7 @@ struct ListviewEntry
     struct Node node;
     char        name[30];
     char        realname[30];
-    char        displayflag[100];
+    char        *displayflag;
 };
 
 struct CountryEntry
