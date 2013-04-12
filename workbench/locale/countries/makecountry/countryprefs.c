@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2103, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: makecountry code that needs access to AROS structures and types
@@ -7,7 +7,7 @@
 */
 
 #include <exec/types.h>
-#include <prefs/locale.h>
+#include "country_locale.h"
 
 #define EC(x)\
 {\
@@ -20,6 +20,16 @@
 unsigned long getCountryPrefsSize()
 {
     return sizeof(struct CountryPrefs);
+}
+
+unsigned long getCountryPrefsVers(struct IntCountryPrefs *cp)
+{
+    return cp->country_Version;
+}
+
+unsigned long getCountryPrefsFlag(struct IntCountryPrefs *cp)
+{
+    return cp->country_Flag;
 }
 
 void convertEndianness(struct CountryPrefs *cp)
