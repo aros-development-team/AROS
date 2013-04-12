@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Program that makes country files
@@ -17,10 +17,10 @@
 struct CountryEntry
 {
     char *ca_Name;
-    struct CountryPrefs *ca_Data;
+    struct IntCountryPrefs *ca_Data;
 };
 
-extern struct CountryPrefs
+extern struct IntCountryPrefs
     andorraPrefs,
     angolaPrefs,
     argentinaPrefs,
@@ -158,22 +158,73 @@ struct CountryEntry CountryArray[] =
    It is a series of strings, so that the endianness is
    correct either way
 */
-char preamble[] =
+char iffheader[] =
 {
-    "FORM" "\x00\x00\x02\x12" "PREF"
+    "FORM" "\x00\x00\x00\x00" "PREF"
 
 	"PRHD" "\x00\x00\x00\x06"
 	    "\x00\x00\x00\x00\x00\x00"
-
-	"CTRY" "\x00\x00\x01\xF8"
 };
+
+char ctryheader[] =
+{
+    "CTRY" "\x00\x00\x00\x00"
+};
+
+char versheader[] =
+{
+    "FVER" "\x00\x00\x00\x00"
+};
+
+char flagheader[] =
+{
+    "FLAG" "\x00\x00\x00\x00"
+};
+
+
+char iffpad[] = "\x00";
 
 void convertEndianness(struct CountryPrefs *cp);
 unsigned long getCountryPrefsSize(void);
+unsigned long getCountryPrefsVers(struct IntCountryPrefs *cp);
+unsigned long getCountryPrefsFlag(struct IntCountryPrefs *cp);
 
-int doCountry(struct CountryPrefs *cp, char *progname, char *filename)
+int writeChunk(FILE *fp, char *header, void *buffer, int len,
+                char *progname, char *filename)
+{
+    header[4] = (len & (0xFF000000)) >> 24;
+    header[5] = (len & (0x00FF0000)) >> 16;
+    header[6] = (len & (0x0000FF00)) >> 8;
+    header[7] = (len & (0x000000FF));
+
+    /* Write out the IFF header... */
+    if(fwrite(header, 8, 1, fp) < 1)
+    {
+	printf("%s: Error writing chunk header for %s.\n", progname, filename);
+	fclose(fp);
+	return(20);
+    }
+
+    if(fwrite(buffer, len, 1, fp) < 1)
+    {
+	printf("%s: Error writing chunk data for %s.\n", progname, filename);
+	fclose(fp);
+	return(20);
+    }
+    if ((len & 1) && (fwrite(iffpad, 1, 1, fp) < 1))
+    {
+        printf("%s: Error padding chunk for %s.\n", progname, filename);
+        fclose(fp);
+        return(20);
+    }
+    return 0;
+}
+
+int doCountry(struct IntCountryPrefs *cp, char *progname, char *filename)
 {
     FILE *fp;
+    int size = 530;
+    char *cpVers, *cpFlag;
 
     fp = fopen(filename, "w");
     if(fp == NULL)
@@ -182,26 +233,58 @@ int doCountry(struct CountryPrefs *cp, char *progname, char *filename)
 	return (20);
     }
 
-    /* Write the preamble...
-	FORM 0x00000212 PREF
-	    PRHD 0x00000006
-
-	    CTRY 0x000001F8
-    */
-    if(fwrite(preamble, 34, 1, fp) < 1)
+    /* Adjust the size of the IFF file if necessary ... */
+    if ((cpVers = getCountryPrefsVers(cp)) != NULL)
     {
-	printf("%s: Write error during preable of %s.\n", progname, filename);
+        size += strlen(cpVers);
+        size += 8;
+    }
+    if ((cpFlag = getCountryPrefsFlag(cp)) != NULL)
+    {
+        size += strlen(cpFlag);
+        size += 8;
+    }
+
+    iffheader[4] = (size & (0xFF000000)) >> 24;
+    iffheader[5] = (size & (0x00FF0000)) >> 16;
+    iffheader[6] = (size & (0x0000FF00)) >> 8;
+    iffheader[7] = (size & (0x000000FF));
+
+    /* Write out the IFF header... */
+    if(fwrite(iffheader, 26, 1, fp) < 1)
+    {
+	printf("%s: Error writing IFF header for %s.\n", progname, filename);
 	fclose(fp);
 	return(20);
     }
 
-    convertEndianness(cp);
+    /* Write out the main Country Prefs Chunk ... */
+    convertEndianness((struct CountryPrefs *)cp);
 
-    if(fwrite(cp, getCountryPrefsSize(), 1, fp) < 1)
+    if(writeChunk(fp, ctryheader, cp, getCountryPrefsSize(), progname, filename))
     {
-	printf("%s: Write error during data for %s.\n", progname, filename);
-	fclose(fp);
+	printf("%s: Error writing country data chunk %s.\n", progname, filename);
 	return(20);
+    }
+
+    /* Write out the Version String Chunk if appropriate ... */
+    if (cpVers)
+    {
+        if(writeChunk(fp, versheader, cpVers, strlen(cpVers) + 1, progname, filename))
+        {
+            printf("%s: Error writing country version string chunk %s.\n", progname, filename);
+            return(20);
+        }
+    }
+
+    /* Write out the Flag Chunk if appropriate ... */
+    if (cpFlag)
+    {
+        if(writeChunk(fp, flagheader, cpFlag, strlen(cpFlag) + 1, progname, filename))
+        {
+            printf("%s: Error writing country flag string chunk %s.\n", progname, filename);
+            return(20);
+        }
     }
 
     fclose(fp);
@@ -210,8 +293,8 @@ int doCountry(struct CountryPrefs *cp, char *progname, char *filename)
 
 int main(int argc, char **argv)
 {
-    int i,j,res = 0;
-    int do_all;
+    int i, j, skipCountry = 0;
+    int do_specific;
     char buffer[64];
     char *name;
     iconv_t cd = (iconv_t)-1;
@@ -222,7 +305,7 @@ int main(int argc, char **argv)
 	return(20);
     }
 
-    do_all = strcmp("--all", argv[2]);
+    do_specific = strcmp("--all", argv[2]);
 
     /* Check host OS locale. If it's UTF-8, use UTF-8 file names. Otherwise use Latin-1 names. */
     name = setlocale(LC_CTYPE, "");
@@ -255,18 +338,18 @@ int main(int argc, char **argv)
 	    name = buffer;
 	}
 
-	res = do_all;
-	if (res)
+	if (do_specific)
 	{
+            /* locate the specified country */
 	    for(i=2; i < argc; i++)
     	    {
-		res = strcmp(name, argv[i]);
-		if (!res)
+		skipCountry = strcmp(name, argv[i]);
+		if (!skipCountry)
 		    break;
 	    }
 	}
 
-	if (res == 0)
+	if (!skipCountry)
 	{
 	    char path[1024];
 
