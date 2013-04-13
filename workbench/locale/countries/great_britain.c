@@ -9,7 +9,7 @@
 #include "country_locale.h"
 #include <libraries/locale.h>
 
-struct IntCountryPrefs greatBritainPrefs =
+struct IntCountryPrefs great_britainPrefs =
 {
     {
         /* Reserved */
@@ -68,5 +68,6 @@ struct IntCountryPrefs greatBritainPrefs =
         CT_7MON
     },
     "$VER: great_britain.country 44.0 (12.04.2013)",
+    NULL,
     "Countries/United_Kingdom"
 };

@@ -2,7 +2,7 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Country data for România.
+    Desc: Country data for România (Romania)
     Author: Stefan Haubenthal <polluks@sdf.lonestar.org>
 */
 
@@ -71,6 +71,7 @@ struct IntCountryPrefs romaniaPrefs =
         /* Calendar type */
         CT_7SUN
     },
-    "$VER: românia.country 44.0 (12.04.2013)",
-    "Countries/România"
+    "$VER: romania.country 44.0 (12.04.2013)",
+    "România",
+    "Countries/Romania"
 };

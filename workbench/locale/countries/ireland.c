@@ -71,5 +71,6 @@ struct IntCountryPrefs irelandPrefs =
         CT_7MON
     },
     "$VER: ireland.country 44.0 (12.04.2013)",
+    "Ireland/Éire",
     "Countries/Ireland"
 };

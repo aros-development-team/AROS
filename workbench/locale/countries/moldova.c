@@ -8,7 +8,6 @@
 #include "country_locale.h"
 #include <libraries/locale.h>
 
-  
 struct IntCountryPrefs moldovaPrefs =
 {
     {
@@ -68,5 +67,6 @@ struct IntCountryPrefs moldovaPrefs =
         CT_7SUN
     },
     "$VER: moldova.country 44.0 (12.04.2013)",
+    NULL,
     "Countries/Moldova"
 };

@@ -10,6 +10,7 @@
 struct IntCountryPrefs {
     struct CountryPrefs country_CP;
     char        *country_Version;
+    char        *country_NativeNames;
     char        *country_Flag;
 };
 

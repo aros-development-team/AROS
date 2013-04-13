@@ -67,5 +67,6 @@ struct IntCountryPrefs costa_ricaPrefs =
         CT_7MON
     },
     "$VER: costa_rica.country 51.0 (12.04.2013)",
+    NULL,
     "Countries/Costa_Rica"
 };

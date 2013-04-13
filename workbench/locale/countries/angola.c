@@ -75,5 +75,6 @@ struct IntCountryPrefs angolaPrefs =
         CT_7MON
     },
     "$VER: angola.country 44.0 (12.04.2013)",
+    NULL,
     "Countries/Angola"
 };

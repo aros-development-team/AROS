@@ -74,5 +74,6 @@ struct IntCountryPrefs maltaPrefs =
         CT_7SUN
     },
     "$VER: malta.country 51.1 (12.04.2013)",
+    NULL,
     "Countries/Malta"
 };

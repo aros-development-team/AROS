@@ -32,6 +32,11 @@ unsigned long getCountryPrefsFlag(struct IntCountryPrefs *cp)
     return cp->country_Flag;
 }
 
+unsigned long getCountryNames(struct IntCountryPrefs *cp)
+{
+    return cp->country_NativeNames;
+}
+
 void convertEndianness(struct CountryPrefs *cp)
 {
 #if (AROS_BIG_ENDIAN == 0)

@@ -74,6 +74,7 @@ struct IntCountryPrefs haitiPrefs =
         /* Calendar type */
         CT_7MON
     },
-    "$VER: haïti.country 44.0 (12.04.2013)",
-    "Countries/Haïti"
+    "$VER: haiti.country 44.0 (12.04.2013)",
+    "Haïti",
+    "Countries/Haiti"
 };

@@ -25,64 +25,60 @@ extern struct IntCountryPrefs
     angolaPrefs,
     argentinaPrefs,
     australiaPrefs,
-    belgiePrefs,
-    belgiquePrefs,
-    bosna_i_hercegovinaPrefs,
-    bulgarijaPrefs,
-    brasilPrefs,
-    cabo_verdePrefs,
+    austriaPrefs,
+    belgiumPrefs,
+    bosnia_herzegovinaPrefs,
+    brazilPrefs,
+    bulgariaPrefs,
     canadaPrefs,
     canada_francaisPrefs,
+    cape_verdePrefs,
+    chinaPrefs,
     costa_ricaPrefs,
+    croatiaPrefs,
     czech_republicPrefs,
-    danmarkPrefs,
-    deutschPrefs,
-    eestiPrefs,
-    eirePrefs,
-    espanaPrefs,
+    denmarkPrefs,
+    east_timorPrefs,
+    estoniaPrefs,
+    finlandPrefs,
     francePrefs,
-    greatBritainPrefs,
+    germanyPrefs,
+    great_britainPrefs,
+    greecePrefs,
     haitiPrefs,
-    hangukPrefs,
-    hellasPrefs,
-    hrvatskaPrefs,
+    hungaryPrefs,
+    icelandPrefs,
     indonesiaPrefs,
     iranPrefs,
     irelandPrefs,
-    islandPrefs,
-    italiaPrefs,
-    jugoslavijaPrefs,
-    letzebuergPrefs,
+    italyPrefs,
+    japanPrefs,
     liechtensteinPrefs,
-    lietuvaPrefs,
-    magyarorszagPrefs,
+    lithuaniaPrefs,
+    luxembourgPrefs,
     maltaPrefs,
     moldovaPrefs,
     monacoPrefs,
     new_zealandPrefs,
-    nihonPrefs,
-    nederlandPrefs,
-    norgePrefs,
-    osterreichPrefs,
-    polskaPrefs,
+    netherlandsPrefs,
+    norwayPrefs,
+    polandPrefs,
     portugalPrefs,
     romaniaPrefs,
-    rossijaPrefs,
+    russiaPrefs,
     san_marinoPrefs,
-    schweizPrefs,
-    slovenskoPrefs,
-    slovenijaPrefs,
-    suissePrefs,
-    suomiPrefs,
-    sverigePrefs,
-    svizzeraPrefs,
-    timor_lestePrefs,
-    turkiyePrefs,
-    ukrajinaPrefs,
+    slovakiaPrefs,
+    sloveniaPrefs,
+    south_koreaPrefs,
+    spainPrefs,
+    swedenPrefs,
+    switzerlandPrefs,
+    turkeyPrefs,
+    ukrainePrefs,
     united_kingdomPrefs,
     united_statesPrefs,
-    vaticanoPrefs,
-    zhonghuaPrefs;
+    vatican_cityPrefs,
+    yugoslaviaPrefs;
 
 /* Please keep this in alphabetical order, ie the order of Latin 1.
    Character set of this file is also Latin 1 */
@@ -93,64 +89,60 @@ struct CountryEntry CountryArray[] =
     { "angola"     	 , &angolaPrefs     	},
     { "argentina"     	 , &argentinaPrefs     	},
     { "australia"   	 , &australiaPrefs 	},
-    { "belgië"	    	 , &belgiePrefs    	},
-    { "belgique"    	 , &belgiquePrefs  	},
-    { "bosna_i_hercegovina", &bosna_i_hercegovinaPrefs},
-    { "brasil"	         , &brasilPrefs         },
-    { "bulgarija"	 , &bulgarijaPrefs	},
-    { "cabo_verde"	 , &cabo_verdePrefs  	},
+    { "austria"    	 , &austriaPrefs 	},
+    { "belgium"	    	 , &belgiumPrefs    	},
+    { "bosnia_herzegovina", &bosnia_herzegovinaPrefs},
+    { "brazil"	         , &brazilPrefs         },
+    { "bulgaria"	 , &bulgariaPrefs	},
     { "canada"	    	 , &canadaPrefs    	},
-    { "canada_français"	 , &canada_francaisPrefs},
+    { "canada_francais"	 , &canada_francaisPrefs},
+    { "cape_verde"	 , &cape_verdePrefs  	},
+    { "china"	         , &chinaPrefs	        },
     { "costa_rica"	 , &costa_ricaPrefs	},
+    { "croatia"    	 , &croatiaPrefs    	},
     { "czech_republic" 	 , &czech_republicPrefs },
-    { "danmark"     	 , &danmarkPrefs   	},
-    { "deutschland" 	 , &deutschPrefs   	},
-    { "eesti"		 , &eestiPrefs		},
-    { "éire"		 , &eirePrefs		},
-    { "españa"	    	 , &espanaPrefs    	},
+    { "denmark"     	 , &denmarkPrefs   	},
+    { "east_timor"    	 , &east_timorPrefs     },
+    { "estonia"		 , &estoniaPrefs	},
+    { "finland"	    	 , &finlandPrefs     	},
     { "france"	    	 , &francePrefs    	},
-    { "great_britain"	 , &greatBritainPrefs   },
-    { "haïti"		 , &haitiPrefs		},
-    { "hanguk"	         , &hangukPrefs         },
-    { "hellas"	         , &hellasPrefs         },
-    { "hrvatska"    	 , &hrvatskaPrefs    	},
+    { "germany" 	 , &germanyPrefs   	},
+    { "great_britain"	 , &great_britainPrefs   },
+    { "greece"	         , &greecePrefs         },
+    { "haiti"		 , &haitiPrefs		},
+    { "hungary" 	 , &hungaryPrefs	},
+    { "iceland"		 , &icelandPrefs	},
     { "indonesia"	 , &indonesiaPrefs	},
     { "iran"		 , &iranPrefs		},
     { "ireland"		 , &irelandPrefs	},
-    { "ísland"		 , &islandPrefs		},
-    { "italia"	    	 , &italiaPrefs    	},
-    { "jugoslavija" 	 , &jugoslavijaPrefs 	},
+    { "italy"	    	 , &italyPrefs    	},
+    { "japan"	    	 , &japanPrefs	    	},
     { "liechtenstein"	 , &liechtensteinPrefs	},
-    { "lëtzebuerg"	 , &letzebuergPrefs	},
-    { "lietuva"		 , &lietuvaPrefs	},
-    { "magyarország" 	 , &magyarorszagPrefs	},
+    { "lithuania"	 , &lithuaniaPrefs	},
+    { "luxembourg"	 , &luxembourgPrefs	},
     { "malta"		 , &maltaPrefs		},
     { "moldova"		 , &moldovaPrefs	},
     { "monaco"	    	 , &monacoPrefs	    	},
     { "new_zealand"    	 , &new_zealandPrefs	},
-    { "nihon"	    	 , &nihonPrefs	    	},
-    { "nederland"   	 , &nederlandPrefs 	},
-    { "norge"	    	 , &norgePrefs     	},
-    { "österreich"    	 , &osterreichPrefs 	},
-    { "polska"	    	 , &polskaPrefs    	},
+    { "netherlands"   	 , &netherlandsPrefs 	},
+    { "norway"	    	 , &norwayPrefs     	},
+    { "poland"	    	 , &polandPrefs    	},
     { "portugal"    	 , &portugalPrefs  	},
-    { "românia"		 , &romaniaPrefs	},
-    { "rossija"		 , &rossijaPrefs	},
+    { "romania"		 , &romaniaPrefs	},
+    { "russia"		 , &russiaPrefs	        },
     { "san_marino"  	 , &san_marinoPrefs  	},
-    { "schweiz"     	 , &schweizPrefs   	},
-    { "slovensko"	 , &slovenskoPrefs	},
-    { "slovenija"   	 , &slovenijaPrefs   	},
-    { "suisse"	    	 , &suissePrefs    	},
-    { "suomi"	    	 , &suomiPrefs     	},
-    { "sverige"     	 , &sverigePrefs   	},
-    { "svizzera"    	 , &svizzeraPrefs    	},
-    { "timor-leste"    	 , &timor_lestePrefs    },
-    { "türkiye"     	 , &turkiyePrefs     	},
-    { "ukrajina"	 , &ukrajinaPrefs	},
+    { "slovakia"	 , &slovakiaPrefs	},
+    { "slovenia"   	 , &sloveniaPrefs   	},
+    { "south_korea"      , &south_koreaPrefs    },
+    { "spain"	    	 , &spainPrefs    	},
+    { "sweden"     	 , &swedenPrefs   	},
+    { "switzerland"    	 , &switzerlandPrefs  	},
+    { "turkey"     	 , &turkeyPrefs     	},
+    { "ukraine"	         , &ukrainePrefs	},
     { "united_kingdom"	 , &united_kingdomPrefs	},
     { "united_states"	 , &united_statesPrefs	},
-    { "vaticano"	 , &vaticanoPrefs	},
-    { "zhonghua"	 , &zhonghuaPrefs	},
+    { "vatican_city"	 , &vatican_cityPrefs	},
+    { "yugoslavia" 	 , &yugoslaviaPrefs 	},
     { NULL		 , NULL			}
 };
 
@@ -176,6 +168,11 @@ char versheader[] =
     "FVER" "\x00\x00\x00\x00"
 };
 
+char nnameheader[] =
+{
+    "NNAM" "\x00\x00\x00\x00"
+};
+
 char flagheader[] =
 {
     "FLAG" "\x00\x00\x00\x00"
@@ -188,6 +185,7 @@ void convertEndianness(struct CountryPrefs *cp);
 unsigned long getCountryPrefsSize(void);
 unsigned long getCountryPrefsVers(struct IntCountryPrefs *cp);
 unsigned long getCountryPrefsFlag(struct IntCountryPrefs *cp);
+unsigned long getCountryNames(struct IntCountryPrefs *cp);
 
 int writeChunk(FILE *fp, char *header, void *buffer, int len,
                 char *progname, char *filename)
@@ -224,7 +222,7 @@ int doCountry(struct IntCountryPrefs *cp, char *progname, char *filename)
 {
     FILE *fp;
     int size = 530;
-    char *cpVers, *cpFlag;
+    char *cpVers, *cpFlag, *cpNames;
 
     fp = fopen(filename, "w");
     if(fp == NULL)
@@ -242,6 +240,11 @@ int doCountry(struct IntCountryPrefs *cp, char *progname, char *filename)
     if ((cpFlag = getCountryPrefsFlag(cp)) != NULL)
     {
         size += strlen(cpFlag);
+        size += 8;
+    }
+    if ((cpNames = getCountryNames(cp)) != NULL)
+    {
+        size += strlen(cpNames);
         size += 8;
     }
 
@@ -277,6 +280,16 @@ int doCountry(struct IntCountryPrefs *cp, char *progname, char *filename)
         }
     }
 
+    /* Write out the NativeNames Chunk if appropriate ... */
+    if (cpNames)
+    {
+        if(writeChunk(fp, nnameheader, cpNames, strlen(cpNames) + 1, progname, filename))
+        {
+            printf("%s: Error writing country native-names string chunk %s.\n", progname, filename);
+            return(20);
+        }
+    }
+    
     /* Write out the Flag Chunk if appropriate ... */
     if (cpFlag)
     {
