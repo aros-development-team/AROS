@@ -81,7 +81,7 @@ STATIC VOID SortInNode(struct List *list, struct Node *node)
 
 /*********************************************************************************************/
 
-char *GetFlag(struct AnchorPath *ap)
+char *GetAROSCountryAttribs(struct AnchorPath *ap, char **countryNamePtr)
 {
     char                *lockFlag = NULL;
     struct IFFHandle    *iff;
@@ -103,18 +103,25 @@ char *GetFlag(struct AnchorPath *ap)
                         if ((error = ParseIFF(iff, parse_mode)) == 0)
                         {
                             parse_mode = IFFPARSE_STEP; 
-                            
+
                             cn = CurrentChunk(iff);
-                            D(bug("[LocalePrefs] GetFlag: Chunk ID %08x. %d bytes\n", cn->cn_ID, cn->cn_Size));
+                            D(bug("[LocalePrefs] GetAROSCountryAttribs: Chunk ID %08x. %d bytes\n", cn->cn_ID, cn->cn_Size));
+
+                            if (cn->cn_ID == MAKE_ID('N','N','A','M'))
+                            {
+                                FreeVecPooled(mempool, *countryNamePtr);
+                                *countryNamePtr = AllocVecPooled(mempool, cn->cn_Size);
+                                ReadChunkBytes(iff, *countryNamePtr, cn->cn_Size);
+                                D(bug("[LocalePrefs] GetAROSCountryAttribs: NativeNames '%s'\n", *countryNamePtr));
+                            }
 
                             if (cn->cn_ID == MAKE_ID('F','L','A','G'))
                             {
-                                lockFlag = AllocVec(cn->cn_Size + 18 + 1, MEMF_PUBLIC|MEMF_CLEAR);
+                                lockFlag = AllocVecPooled(mempool, cn->cn_Size + 18 + 1);
                                 sprintf(lockFlag, flagpathstr);
                                 ReadChunkBytes(iff, lockFlag + 18, cn->cn_Size);
                                 lockFlag[cn->cn_Size + 17] = ']';
-                                D(bug("[LocalePrefs] GetFlag: '%s'\n", lockFlag));
-                                error = IFFERR_EOF;
+                                D(bug("[LocalePrefs] GetAROSCountryAttribs: Flag '%s'\n", lockFlag));
                             }
                         }
                     } while ((error != IFFERR_EOF) && (error != IFFERR_NOTIFF));
@@ -152,27 +159,24 @@ STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
             entry = (struct ListviewEntry *)AllocPooled(mempool, entrysize);
             if (entry)
             {
-                entry->node.ln_Name = entry->name;
-                strncpy( entry->name,
-                        (const char *) ap.ap_Info.fib_FileName,
-                        sizeof(entry->name) );
+                entry->node.ln_Name = AllocVecPooled(mempool, strlen(ap.ap_Info.fib_FileName));
+                strcpy(entry->node.ln_Name, ap.ap_Info.fib_FileName);
 
-                entry->name[0] = ToUpper(entry->name[0]);
-                if ((sp = strchr(entry->name, '.')) != NULL)
+                entry->node.ln_Name[0] = ToUpper(entry->node.ln_Name[0]);
+                if ((sp = strchr(entry->node.ln_Name, '.')) != NULL)
                     sp[0] = '\0';
 
-                strcpy(entry->realname, entry->name);
+                strcpy(entry->realname, entry->node.ln_Name);
 
                 D(bug("[LocalePrefs] ScanDir: Checking for FLAG chunk\n"));
-                entry->displayflag = GetFlag(ap.ap_Current->an_Lock);
 
-                if (!(entry->displayflag = GetFlag(&ap)))
+                if (!(entry->displayflag = GetAROSCountryAttribs(&ap, &entry->node.ln_Name)))
                 {
                     entry->displayflag = AllocVec(strlen(entry->realname) + strlen(flagpathstr) + 12, MEMF_CLEAR);
                     sprintf(entry->displayflag, "%sCountries/%s]", flagpathstr, entry->realname);
                 }
-                
-                sp = entry->name;
+
+                sp = entry->node.ln_Name;
                 while((sp = strchr(sp, '_')))
                 {
                     sp[0] = ' ';
