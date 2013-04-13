@@ -111,7 +111,7 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option,
         {
             //Expand filename to full path
             target = MyNameFromLock(((struct Process *)thistask)->pr_CurrentDir,
-                target, pathbuf, MAX_STR_LEN);
+                (char *)target, pathbuf, MAX_STR_LEN);
         }
     }
     prettyprint(target, setup.targetLen);

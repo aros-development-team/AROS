@@ -399,7 +399,7 @@ AROS_LH3(LONG, New_MakeLink,
 	    if (setup.showPaths)
             {
 		strcpy(namestr, MyNameFromLock(myproc->pr_CurrentDir,
-			    name, namestr, MAX_STR_LEN-2));
+			    (char *)name, namestr, MAX_STR_LEN-2));
 		len = strlen(namestr);
 	    }
             else
@@ -1043,7 +1043,7 @@ void GetVolName(BPTR lock, char *buf, int maxlen)
     struct DosList *dl;
     int gotdev = 0;
 
-    if (lock == NULL)
+    if (lock == BNULL)
     {
         NameFromLock(lock, buf, maxlen);
         return;
