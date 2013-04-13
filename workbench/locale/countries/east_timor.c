@@ -2,34 +2,40 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Country data for Monaco
-    Author: Stefan Haubenthal <polluks@sdf.lonestar.org>
+    Desc: Country data for Timor-Leste (East Timor)
+    Author: João Ralha
 */
 
 #include "country_locale.h"
 #include <libraries/locale.h>
 
-struct IntCountryPrefs monacoPrefs =
+struct IntCountryPrefs east_timorPrefs =
 {
     {
         /* Reserved */
         { 0, 0, 0, 0 },
 
-        /* Country code (licence plate number), telephone code, measuring system */
-        MAKE_ID('M','C',0,0), 377, MS_ISO,
+        /* The country codes in the past have been rather inconsistant,
+           sometimes they are 1 character, 2 chars or 3. It would be nice
+           to have some consistency. Maybe use the 3 character name from
+           ISO 3166?
+        */
+
+        /* Country code, telephone code, measuring system */
+        MAKE_ID('T','L',0,0), 670, MS_ISO,
 
         /* Date time format, date format, time format */
-        "%A %e %B %Y %Hh%M",
-        "%A %e %B %Y",
-        "%Hh%M",
+        "%A, %e de %B de %Y, %H:%M:%S",
+        "%A, %e de %B de %Y",
+        "%H:%M:%S",
 
         /* Short datetime, short date, short time formats */
-        "%d/%m/%Y %Hh%M",
-        "%d/%m/%Y",
-        "%Hh%M",
+        "%e %b %Y, %H:%M:%S",
+        "%e %b %Y",
+        "%H:%M",
 
         /* Decimal point, group separator, frac group separator */
-        ",", " ", " ",
+        ",", "'", "'",
 
         /* For grouping rules, see <libraries/locale.h> */
 
@@ -37,7 +43,8 @@ struct IntCountryPrefs monacoPrefs =
         { 3 }, { 3 },
 
         /* Mon dec pt, mon group sep, mon frac group sep */
-        ",", " ", " ",
+        ",", ".", ".",
+
 
         /* Mon Grouping, Mon frac grouping */
         { 3 }, { 3 },
@@ -48,30 +55,26 @@ struct IntCountryPrefs monacoPrefs =
 
            (As would many of those you don't).
         */
-        2, 4,
+        2, 3,
 
-#ifdef _EURO
         /* Currency symbol, Small currency symbol */
-        "Euro", "Cent",
+        "$", "¢",
 
         /* Int CS, this is the ISO 4217 symbol, followed by the character to
            separate that symbol from the rest of the money. (\x00 for none).
         */
-        "EUR",
-#else
-        "F", "",
-        "FRF",
-#endif
+        "USD",
+
         /* Mon +ve sign, +ve space sep, +ve sign pos, +ve cs pos */
-        "", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
+        "+", SS_SPACE, SP_PREC_ALL, CSP_PRECEDES,
 
         /* Mon -ve sign, -ve space sep, -ve sign pos, -ve cs pos */
-        "-", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
+        "-", SS_SPACE, SP_PREC_ALL, CSP_SUCCEEDS,
 
         /* Calendar type */
         CT_7MON
     },
-    "$VER: monaco.country 44.0 (12.04.2013)",
-    NULL,
-    "Countries/Monaco"
+    "$VER: east_timor.country 44.0 (12.04.2013)",
+    "Timor_Leste",
+    "Countries/East_Timor"
 };

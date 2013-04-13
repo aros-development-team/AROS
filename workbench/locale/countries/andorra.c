@@ -72,5 +72,6 @@ struct IntCountryPrefs andorraPrefs =
         CT_7MON
     },
     "$VER: andorra.country 44.0 (12.04.2013)",
+    NULL,
     "Countries/Andorra"
 };

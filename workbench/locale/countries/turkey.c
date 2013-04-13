@@ -2,34 +2,33 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Country data for Monaco
-    Author: Stefan Haubenthal <polluks@sdf.lonestar.org>
+    Desc: Country data for Türkiye (Turkey)
 */
 
 #include "country_locale.h"
 #include <libraries/locale.h>
 
-struct IntCountryPrefs monacoPrefs =
+struct IntCountryPrefs turkeyPrefs =
 {
     {
         /* Reserved */
         { 0, 0, 0, 0 },
 
         /* Country code (licence plate number), telephone code, measuring system */
-        MAKE_ID('M','C',0,0), 377, MS_ISO,
+        MAKE_ID('T','R',0,0), 90, MS_ISO,
 
         /* Date time format, date format, time format */
-        "%A %e %B %Y %Hh%M",
-        "%A %e %B %Y",
-        "%Hh%M",
+        "%e %B %Y %H:%M:%S",
+        "%e %B %Y",
+        "%H:%M:%S",
 
         /* Short datetime, short date, short time formats */
-        "%d/%m/%Y %Hh%M",
-        "%d/%m/%Y",
-        "%Hh%M",
+        "%d/%m/%y %H:%M:%S",
+        "%d/%m/%y",
+        "%H:%M",
 
         /* Decimal point, group separator, frac group separator */
-        ",", " ", " ",
+        ",", ".", ",",
 
         /* For grouping rules, see <libraries/locale.h> */
 
@@ -37,7 +36,7 @@ struct IntCountryPrefs monacoPrefs =
         { 3 }, { 3 },
 
         /* Mon dec pt, mon group sep, mon frac group sep */
-        ",", " ", " ",
+        ",", ".", ",",
 
         /* Mon Grouping, Mon frac grouping */
         { 3 }, { 3 },
@@ -48,20 +47,16 @@ struct IntCountryPrefs monacoPrefs =
 
            (As would many of those you don't).
         */
-        2, 4,
+        2, 2,
 
-#ifdef _EURO
         /* Currency symbol, Small currency symbol */
-        "Euro", "Cent",
+        "TL", "kuruþ",
 
         /* Int CS, this is the ISO 4217 symbol, followed by the character to
            separate that symbol from the rest of the money. (\x00 for none).
         */
-        "EUR",
-#else
-        "F", "",
-        "FRF",
-#endif
+        "TRL",
+
         /* Mon +ve sign, +ve space sep, +ve sign pos, +ve cs pos */
         "", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
 
@@ -69,9 +64,9 @@ struct IntCountryPrefs monacoPrefs =
         "-", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
 
         /* Calendar type */
-        CT_7MON
+        CT_7SUN
     },
-    "$VER: monaco.country 44.0 (12.04.2013)",
-    NULL,
-    "Countries/Monaco"
+    "$VER: turkey.country 44.0 (12.04.2013)",
+    "Türkiye",
+    "Countries/Turkey"
 };

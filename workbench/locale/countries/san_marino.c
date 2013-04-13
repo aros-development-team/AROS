@@ -73,5 +73,6 @@ struct IntCountryPrefs san_marinoPrefs =
         CT_7SUN
     },
     "$VER: san_marino.country 44.0 (12.04.2013)",
+    NULL,
     "Countries/San_Marino"
 };

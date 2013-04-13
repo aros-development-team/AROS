@@ -2,21 +2,21 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Country data for Monaco
+    Desc: Country data for Lëtzebuerg (Luxembourg).
     Author: Stefan Haubenthal <polluks@sdf.lonestar.org>
 */
 
 #include "country_locale.h"
 #include <libraries/locale.h>
 
-struct IntCountryPrefs monacoPrefs =
+struct IntCountryPrefs luxembourgPrefs =
 {
     {
         /* Reserved */
         { 0, 0, 0, 0 },
 
         /* Country code (licence plate number), telephone code, measuring system */
-        MAKE_ID('M','C',0,0), 377, MS_ISO,
+        MAKE_ID('L',0,0,0), 352, MS_ISO,
 
         /* Date time format, date format, time format */
         "%A %e %B %Y %Hh%M",
@@ -50,7 +50,7 @@ struct IntCountryPrefs monacoPrefs =
         */
         2, 4,
 
-#ifdef _EURO
+    #ifdef _EURO
         /* Currency symbol, Small currency symbol */
         "Euro", "Cent",
 
@@ -58,10 +58,10 @@ struct IntCountryPrefs monacoPrefs =
            separate that symbol from the rest of the money. (\x00 for none).
         */
         "EUR",
-#else
-        "F", "",
-        "FRF",
-#endif
+    #else
+        "lfr", "",
+        "LFR",
+    #endif
         /* Mon +ve sign, +ve space sep, +ve sign pos, +ve cs pos */
         "", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
 
@@ -71,7 +71,7 @@ struct IntCountryPrefs monacoPrefs =
         /* Calendar type */
         CT_7MON
     },
-    "$VER: monaco.country 44.0 (12.04.2013)",
-    NULL,
-    "Countries/Monaco"
+    "$VER: luxembourg.country 44.0 (12.04.2013)",
+    "Lëtzebuerg",
+    "Countries/Luxembourg"
 };

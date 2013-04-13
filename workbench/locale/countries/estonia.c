@@ -2,34 +2,34 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Country data for Monaco
+    Desc: Country data for Eesti (Estonia).
     Author: Stefan Haubenthal <polluks@sdf.lonestar.org>
 */
 
 #include "country_locale.h"
 #include <libraries/locale.h>
 
-struct IntCountryPrefs monacoPrefs =
+struct IntCountryPrefs estoniaPrefs =
 {
     {
         /* Reserved */
         { 0, 0, 0, 0 },
 
         /* Country code (licence plate number), telephone code, measuring system */
-        MAKE_ID('M','C',0,0), 377, MS_ISO,
+        MAKE_ID('E','S','T',0), 372, MS_ISO,
 
         /* Date time format, date format, time format */
-        "%A %e %B %Y %Hh%M",
+        "%A %e %B %Y %H:%M:%S",
         "%A %e %B %Y",
-        "%Hh%M",
+        "%H:%M:%S",
 
         /* Short datetime, short date, short time formats */
-        "%d/%m/%Y %Hh%M",
-        "%d/%m/%Y",
-        "%Hh%M",
+        "%d.%m.%y %H:%M:%S",
+        "%d.%m.%y",
+        "%H:%M",
 
         /* Decimal point, group separator, frac group separator */
-        ",", " ", " ",
+        ",", ".", "",
 
         /* For grouping rules, see <libraries/locale.h> */
 
@@ -37,20 +37,20 @@ struct IntCountryPrefs monacoPrefs =
         { 3 }, { 3 },
 
         /* Mon dec pt, mon group sep, mon frac group sep */
-        ",", " ", " ",
+        ",", ".", ".",
 
         /* Mon Grouping, Mon frac grouping */
         { 3 }, { 3 },
 
+#ifdef _EURO
         /* Mon Frac digits, Mon IntFrac digits, then number of digits in
            the fractional part of the money value. Most countries that
            use dollars and cents, would have 2 for this value
 
            (As would many of those you don't).
         */
-        2, 4,
+        2, 3,
 
-#ifdef _EURO
         /* Currency symbol, Small currency symbol */
         "Euro", "Cent",
 
@@ -59,19 +59,20 @@ struct IntCountryPrefs monacoPrefs =
         */
         "EUR",
 #else
-        "F", "",
-        "FRF",
+        0, 3,
+        "kr", "",
+        "EEK",
 #endif
         /* Mon +ve sign, +ve space sep, +ve sign pos, +ve cs pos */
-        "", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
+        "", SS_SPACE, SP_PREC_ALL, CSP_SUCCEEDS,
 
         /* Mon -ve sign, -ve space sep, -ve sign pos, -ve cs pos */
-        "-", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
+        "-", SS_SPACE, SP_PREC_ALL, CSP_PRECEDES,
 
         /* Calendar type */
         CT_7MON
     },
-    "$VER: monaco.country 44.0 (12.04.2013)",
-    NULL,
-    "Countries/Monaco"
+    "$VER: estonia.country 51.0 (12.04.2013)",
+    "Eesti",
+    "Countries/Estonia"
 };

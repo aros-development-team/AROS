@@ -74,6 +74,7 @@ struct IntCountryPrefs canada_francaisPrefs =
         /* Calendar type */
         CT_7SUN
     },
-    "$VER: canada_français.country 44.0 (12.04.2013)",
-    "Countries/Canada_Français"
+    "$VER: canada_francais.country 44.0 (12.04.2013)",
+    "Canada_Français",
+    "Countries/Canada_Francais"
 };
