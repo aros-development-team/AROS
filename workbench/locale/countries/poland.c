@@ -75,6 +75,6 @@ struct IntCountryPrefs polandPrefs =
         CT_7MON
     },
     "$VER: poland.country 44.0 (12.04.2013)",
-    "Polska"
+    "Polska",
     "Countries/Poland"
 };
