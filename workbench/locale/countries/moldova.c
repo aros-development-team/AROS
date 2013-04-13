@@ -1,15 +1,15 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for Republic of Moldova
 */
 
+#include "country_locale.h"
 #include <libraries/locale.h>
-#include <prefs/locale.h>
 
   
-struct CountryPrefs moldovaPrefs =
+struct IntCountryPrefs moldovaPrefs =
 {
     {
         /* Reserved */
