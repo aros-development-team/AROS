@@ -79,6 +79,6 @@ struct IntCountryPrefs belgiumPrefs =
         CT_7MON
     },
     "$VER: belgium.country 44.0 (12.04.2013)",
-    "België/Belgique/Belgian",
+    "België/Belgique/Belgien",
     "Countries/Belgium"
 };
