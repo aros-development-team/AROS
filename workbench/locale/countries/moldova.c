@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for Republic of Moldova
