@@ -140,7 +140,6 @@ char *GetAROSCountryAttribs(struct AnchorPath *ap, char **countryNamePtr)
 
 STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
 {
-    struct IFFHandle            *iff;
     struct AnchorPath           ap;
     struct ListviewEntry        *entry;
     BPTR                        curdir;
