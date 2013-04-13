@@ -8,7 +8,7 @@
 #include "country_locale.h"
 #include <libraries/locale.h>
 
-struct IntCountryPrefs hrvatskaPrefs =
+struct IntCountryPrefs croatiaPrefs =
 {
     {
         /* Reserved */
@@ -66,6 +66,7 @@ struct IntCountryPrefs hrvatskaPrefs =
         /* Calendar type */
         CT_7MON
     },
-    "$VER: hrvatska.country 44.0 (12.04.2013)",
-    "Countries/Hrvatska"
+    "$VER: croatia.country 44.0 (12.04.2013)",
+    "Hrvatska",
+    "Countries/Croatia"
 };
