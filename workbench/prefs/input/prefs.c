@@ -53,7 +53,7 @@ static const struct nameexp layout_expansion_table[] =
     {"gbx"  , "British Extended"    , "United_Kingdom"  },
     {"bg"   , "Bulgarian"           , "Bulgaria"        },
     {"cdn"  , "Canadien Français"   , "Quebec"          },
-    {"cz"   , "Czech"               , "Cesko"           },
+    {"cz"   , "Czech"               , "Czech_Republic"  },
     {"dk"   , "Dansk"               , "Denmark"         },
     {"nl"   , "Dutch"               , "Netherlands"     },
     {"dvx"  , "Dvorak"              , NULL              },
