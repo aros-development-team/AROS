@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -40,50 +40,50 @@ struct List         keymap_list;
 
 static const struct nameexp layout_expansion_table[] =
 {
-    {"al"   , "Albanian"            , NULL              },
+    {"al"   , "Albanian"            , "Albania"         },
     {"usa"  , "American"	    , "United_States"   },
     {"usa0" , "American"	    , "United_States"   },
     {"us"   , "American"	    , "United_States"   },
     {"usx"  , "American"	    , "United_States"   },
-    {"d"    , "Deutsch"             , "Deutschland"     },
-    {"b"    , "Belge"               , "Belgique"        },
-    {"by"   , "Belarussian"         , NULL              },
-    {"br"   , "Brasileiro"          , "Brasil"          },
+    {"d"    , "Deutsch"             , "Germany"         },
+    {"b"    , "Belge"               , "Belgium"         },
+    {"by"   , "Belarussian"         , "Belarus"         },
+    {"br"   , "Brasileiro"          , "Brazil"          },
     {"gb"   , "British"             , "United_Kingdom"  },
     {"gbx"  , "British Extended"    , "United_Kingdom"  },
-    {"bg"   , "Bulgarian"           , "Bulgarija"       },
-    {"cdn"  , "Canadien Français"   , "Canada_Français" },
+    {"bg"   , "Bulgarian"           , "Bulgaria"        },
+    {"cdn"  , "Canadien Français"   , "Quebec"          },
     {"cz"   , "Czech"               , "Cesko"           },
-    {"dk"   , "Dansk"               , "Danmark"         },
-    {"nl"   , "Dutch"               , "Nederland"       },
+    {"dk"   , "Dansk"               , "Denmark"         },
+    {"nl"   , "Dutch"               , "Netherlands"     },
     {"dvx"  , "Dvorak"              , NULL              },
     {"usa2" , "Dvorak"              , NULL              },
     {"dvl"  , "Dvorak Left-handed"  , NULL              },
     {"dvr"  , "Dvorak Right-handed" , NULL              },
     {"irl"  , "English Ireland"     , "Ireland"         },
-    {"e"    , "Español"             , "España"          },
-    {"sp"   , "Español no deadkeys" , "España"          },
-    {"est"  , "Estonian"            , "Eesti"           },
-    {"fin"  , "Finnish"             , "Suomi"           },
+    {"e"    , "Español"             , "Spain"           },
+    {"sp"   , "Español no deadkeys" , "Spain"           },
+    {"est"  , "Estonian"            , "Estonia"         },
+    {"fin"  , "Finnish"             , "Finland"         },
     {"f"    , "Français"            , "France"          },
-    {"gr"   , "Hellenic"            , "Hellas"          }, // Greak
-    {"hr"   , "Hrvatski"            , "Hrvatska"        }, // Croatia
-    {"is"   , "Íslenska"            , "Ísland"          },
-    {"i"    , "Italiana"            , "Italia"          },
+    {"gr"   , "Hellenic"            , "Greece"          },
+    {"hr"   , "Hrvatski"            , "Croatia"         },
+    {"is"   , "Íslenska"            , "Iceland"         },
+    {"i"    , "Italiana"            , "Italy"           },
     {"la"   , "Latin American"      , NULL              },
-    {"lv"   , "Latvian"             , NULL              }, // Lettland
-    {"lt"   , "Lithuanian"          , "Lietuva"         }, // Lithuania
-    {"h"    , "Magyar"              , "Magyarország"    }, // Hungary
-    {"n"    , "Norsk"               , "Norge"           },
-    {"pl"   , "Polski"              , "Polska"          },
+    {"lv"   , "Latvian"             , "Latvia"          },
+    {"lt"   , "Lithuanian"          , "Lithuania"       },
+    {"h"    , "Magyar"              , "Hungary"         },
+    {"n"    , "Norsk"               , "Norway"          },
+    {"pl"   , "Polski"              , "Poland"          },
     {"p"    , "Português"           , "Portugal"        },
-    {"rus"  , "Russian"             , "Rossija"         },
-    {"ch2"  , "Suisse"              , "Suisse"          },
+    {"rus"  , "Russian"             , "Russia"          },
+    {"ch2"  , "Suisse"              , "Switzerland"     },
     {"sk"   , "Slovak"              , "Slovakia"        },
-    {"ch1"  , "Schweizer"           , "Schweiz"         },
-    {"s"    , "Svenskt"             , "Sverige"         },
-    {"tr"   , "Türkçe"              , "Türkiye"         },
-    {"ua"   , "Ukranian"            , "Ukrajina"        },
+    {"ch1"  , "Schweizer"           , "Switzerland"     },
+    {"s"    , "Svenskt"             , "Sweden"          },
+    {"tr"   , "Türkçe"              , "Turkey"          },
+    {"ua"   , "Ukranian"            , "Ukraine"         },
     {NULL   , NULL                  , NULL              }
 };
 
