@@ -3,7 +3,6 @@
     $Id$
 
     Desc: english.language description file.
-    Lang: english
 */
 /*
     Language description file for english.language.
@@ -59,10 +58,12 @@
     these will be used in many definitions below.
 */
 
-#define LANGSTR     "english"  /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     1           /* Revision number of language */
-#define LANGTAG     "\0$VER: english.language 41.1 (20.2.1997)"
+#define LANGSTR     "english"           /* String version of above      */
+#define NLANGSTR    "English"           /* Native version of LANGSTR    */
+#define LANGVER     41                  /* Version number of language   */
+#define LANGREV     2                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -156,6 +157,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;
