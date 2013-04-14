@@ -3,11 +3,7 @@
    $Id$
  */
 
-// #define MUIMASTER_YES_INLINE_STDARG
-
-//#define DEBUG 1
-#include <zune/customclasses.h>
-#include <zune/prefseditor.h>
+#include <aros/debug.h>
 
 #include <proto/alib.h>
 #include <proto/codesets.h>
@@ -15,7 +11,8 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
-#include <aros/debug.h>
+#include <zune/customclasses.h>
+#include <zune/prefseditor.h>
 
 #include "locale.h"
 #include "prefs.h"
@@ -67,12 +64,12 @@ STATIC VOID update_language_lists(struct Language_DATA *data)
     {
         if(entry->preferred)
         {
-            data->strings_preferred[p] = entry->lve.name;
+            data->strings_preferred[p] = entry->lve.node.ln_Name;
             p++;
         }
         else
         {
-            data->strings_available[a] = entry->lve.name;
+            data->strings_available[a] = entry->lve.node.ln_Name;
             a++;
         }
     }
@@ -89,27 +86,23 @@ STATIC VOID init_language_lists(struct Language_DATA *data)
     data->nr_languages = 0;
     ForeachNode(&language_list, entry)
     {
-        D(bug("entry->lve.name: %s\n",entry->lve.name));
+        D(bug("[LocalePrefs-LanguageClass]   language %s\n",entry->lve.node.ln_Name));
         entry->preferred = FALSE;
-        i = 0;
-        D(bug("[language class]   language %s\n",entry->lve.name));
-        while (i < 10 &&           /* max 10 preferred langs, see prefs/locale.h */
-                entry->preferred == FALSE &&
-                localeprefs.lp_PreferredLanguages[i][0])
-        {
 
-            if (Stricmp(localeprefs.lp_PreferredLanguages[i], entry->lve.name) == 0)
+        /* max 10 preferred langs, see prefs/locale.h */
+        for (i = 0; i < 10 && entry->preferred == FALSE && localeprefs.lp_PreferredLanguages[i][0]; i++)
+        {
+            if (Stricmp(localeprefs.lp_PreferredLanguages[i], entry->lve.node.ln_Name) == 0)
             {
-                D(bug("[language class]            %s is preferred\n",
-                            entry->lve.name));
+                D(bug("[LocalePrefs-LanguageClass]            %s is preferred\n",
+                            entry->lve.node.ln_Name));
                 entry->preferred = TRUE;
             }
-            i++;
         }
         data->nr_languages++;
     }
 
-    D(bug("[language class]: nr of languages: %d\n",data->nr_languages));
+    D(bug("[LocalePrefs-LanguageClass]: nr of languages: %d\n",data->nr_languages));
 
     data->strings_available = AllocVec(sizeof(char *) * (data->nr_languages+1), MEMF_CLEAR);
     data->strings_preferred = AllocVec(sizeof(char *) * (data->nr_languages+1), MEMF_CLEAR);
@@ -136,15 +129,15 @@ STATIC VOID func_move_to_selected(char* selstr, struct Language_DATA *data)
     unsigned int i = 0;
     char *test;
 
-    D(bug("func_move_to_selected(%s,..)\n",selstr));
+    D(bug("[LocalePrefs-LanguageClass] func_move_to_selected(%s,..)\n", selstr));
 
     if(selstr) {
         ForeachNode(&language_list, entry)
         {
-            if (stricmp(selstr, entry->lve.name) == 0)
+            if (stricmp(selstr, entry->lve.node.ln_Name) == 0)
             {
                 DoMethod(data->preferred,
-                        MUIM_List_InsertSingle, entry->lve.name,
+                        MUIM_List_InsertSingle, entry->lve.node.ln_Name,
                         MUIV_List_Insert_Bottom);
 
                 entry->preferred = TRUE;
@@ -183,7 +176,7 @@ AROS_UFH2
         struct Language_DATA *data= hook->h_Data;
     char  *selstr;
 
-    D(bug("[register class] hook_func_available\n"));
+    D(bug("[LocalePrefs-LanguageClass] hook_func_available\n"));
 
     DoMethod(obj,MUIM_List_GetEntry,
             MUIV_List_GetEntry_Active, &selstr);
@@ -206,7 +199,7 @@ AROS_UFH2
     char  *selstr;
     struct LanguageEntry *entry;
 
-    D(bug("[register class] hook_func_preferred\n"));
+    D(bug("[LocalePrefs-LanguageClass] hook_func_preferred\n"));
 
     DoMethod(obj,MUIM_List_GetEntry,
             MUIV_List_GetEntry_Active, &selstr);
@@ -217,10 +210,10 @@ AROS_UFH2
 
         ForeachNode(&language_list, entry)
         {
-            if (strcmp(selstr, entry->lve.name) == 0)
+            if (strcmp(selstr, entry->lve.node.ln_Name) == 0)
             {
                 DoMethod(data->available,
-                        MUIM_List_InsertSingle, entry->lve.name,
+                        MUIM_List_InsertSingle, entry->lve.node.ln_Name,
                         MUIV_List_Insert_Sorted);
                 entry->preferred = FALSE;
             }
@@ -235,7 +228,7 @@ STATIC VOID func_clear(struct Language_DATA *data)
 {
     struct LanguageEntry *entry;
 
-    D(bug("[register class] func_clear\n"));
+    D(bug("[LocalePrefs-LanguageClass] func_clear\n"));
 
     /* clear it */
     DoMethod(data->preferred, MUIM_List_Clear);
@@ -248,7 +241,7 @@ STATIC VOID func_clear(struct Language_DATA *data)
         {
             entry->preferred = FALSE;
             DoMethod(data->available,
-                    MUIM_List_InsertSingle, entry->lve.name,
+                    MUIM_List_InsertSingle, entry->lve.node.ln_Name,
                     MUIV_List_Insert_Bottom);
         }
     }
@@ -380,7 +373,7 @@ static Object *handle_New_error(Object *obj, struct IClass *cl, char *error)
     struct Language_DATA *data;
 
     ShowMessage(error);
-    D(bug("[Language class] %s\n"));
+    D(bug("[LocalePrefs-LanguageClass] %s\n"));
 
     if(!obj)
         return NULL;
@@ -442,7 +435,7 @@ Object *Language__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct Language_DATA *data;
     struct TagItem *tstate, *tag;
 
-    D(bug("[language class] Language Class New\n"));
+    D(bug("[LocalePrefs-LanguageClass] Language Class New\n"));
 
     /*
      * we create self first and then create the child,
@@ -615,7 +608,7 @@ static IPTR Language__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             break;
         case MUIA_Language_Characterset:
             GetAttr(MUIA_List_Active, data->cslist, (IPTR *)&i);
-            D(bug("[Language::Get] Active character set entry is %d\n", i));
+            D(bug("[LocalePrefs-LanguageClass] Get: Active character set entry is %d\n", i));
             if ((i == 0) || (i == MUIV_List_Active_Off))
                 *msg->opg_Storage = 0;
             else
@@ -684,7 +677,7 @@ static IPTR Language__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Language_DATA *data = INST_DATA(cl, obj);
 
-    D(bug("Language_Dispose\n"));
+    D(bug("[LocalePrefs-LanguageClass] OM_DISPOSE()\n"));
 
     free_strings(data);
 

@@ -1,32 +1,28 @@
 /*
-   Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+   Copyright © 2003-2013, The AROS Development Team. All rights reserved.
    $Id$
  */
 
-// #define MUIMASTER_YES_INLINE_STDARG
-
-////#define DEBUG 1
-
-#include <devices/timer.h>
-#include <libraries/locale.h>
-#include <zune/customclasses.h>
-#include <zune/prefseditor.h>
+#include <aros/debug.h>
 
 #include <proto/alib.h>
 #include <proto/battclock.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
-#include <stdio.h>
+#include <devices/timer.h>
+#include <libraries/locale.h>
+#include <zune/customclasses.h>
+#include <zune/prefseditor.h>
 
-#include <aros/debug.h>
+#include <stdio.h>
 
 #include "locale.h"
 #include "registertab.h"
 #include "misc.h"
 #include "prefs.h"
 #include "page_language.h"
-#include "page_country.h"
+#include "page_region.h"
 #include "page_timezone.h"
 
 /*** Instance Data **********************************************************/
@@ -37,7 +33,7 @@ struct LocaleRegister_DATA
 
     Object *child;
     Object *language;
-    Object *country;
+    Object *region;
     Object *timezone;
 
     const char *LocaleRegisterLabels[3];
@@ -74,11 +70,11 @@ static Object *handle_New_error(Object *obj, struct IClass *cl, char *error)
         data->language = NULL;
     }
 
-    if(data->country)
+    if(data->region)
     {
-        D(bug("[Register class] DisposeObject(data->country);\n"));
-        DisposeObject(data->country);
-        data->country = NULL;
+        D(bug("[Register class] DisposeObject(data->region);\n"));
+        DisposeObject(data->region);
+        data->region = NULL;
     }
 
     if(data->timezone)
@@ -129,14 +125,14 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
     if(!data->language)
         return handle_New_error(self, CLASS, "ERROR: Unable to create language object!\n");
 
-    data->country = ListviewObject, MUIA_Listview_List,
-        NewObject(Country_CLASS->mcc_Class, 0,
+    data->region = ListviewObject, MUIA_Listview_List,
+        NewObject(Region_CLASS->mcc_Class, 0,
                 MUIA_UserData, self,
                 TAG_DONE),
         End;
 
-    if(!data->country)
-        return handle_New_error(self, CLASS, "ERROR: Unable to create country object!\n");
+    if(!data->region)
+        return handle_New_error(self, CLASS, "ERROR: Unable to create region object!\n");
 
     data->timezone = NewObject(Timezone_CLASS->mcc_Class, NULL,
             MUIA_UserData, self,
@@ -154,14 +150,14 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
      * but for me it's easier this way ;)
      */
     data->tab_label = AllocVec( strlen(_(MSG_GAD_TAB_LANGUAGE)) +
-            strlen(_(MSG_GAD_TAB_COUNTRY)) +
+            strlen(_(MSG_GAD_TAB_REGION)) +
             strlen(" / ") + 1,
             MEMF_ANY);
 
     if(!data->tab_label)
         return handle_New_error(self, CLASS, "ERROR: Unable to allocate tab_label!\n");
 
-    sprintf(data->tab_label, "%s / %s", _(MSG_GAD_TAB_COUNTRY),
+    sprintf(data->tab_label, "%s / %s", _(MSG_GAD_TAB_REGION),
             _(MSG_GAD_TAB_LANGUAGE));
 
     data->LocaleRegisterLabels[0] = data->tab_label;
@@ -174,8 +170,8 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
             MUIA_Group_SameSize, TRUE,
             Child, HGroup,
                 MUIA_Frame, MUIV_Frame_Group,
-                MUIA_FrameTitle, _(MSG_GAD_TAB_COUNTRY),
-                Child, data->country,
+                MUIA_FrameTitle, _(MSG_GAD_TAB_REGION),
+                Child, data->region,
             End,
             Child, HGroup,
                 MUIA_Frame, MUIV_Frame_Group,
@@ -191,7 +187,7 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
 
     DoMethod(self, OM_ADDMEMBER, data->child);
 
-    DoMethod(data->country, MUIM_Country_Fill);
+    DoMethod(data->region, MUIM_Region_Fill);
 
     LocalePrefs2Gadgets(data);
 
@@ -223,10 +219,10 @@ STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
     ULONG newflags;
     BOOL sync_clock = FALSE;
 
-    if (GetAttr(MUIA_Country_Countryname, data->country, (IPTR *)&tmp))
+    if (GetAttr(MUIA_Region_Regionname, data->region, (IPTR *)&tmp))
     {
         strncpy(localeprefs.lp_CountryName, tmp, 32);
-        Prefs_LoadCountry(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
+        Prefs_LoadRegion(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
     }
 
     if(GET(data->language, MUIA_Language_Preferred, &preferred))
@@ -320,7 +316,7 @@ STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
 STATIC VOID LocalePrefs2Gadgets(struct LocaleRegister_DATA *data)
 {
 
-    SET(data->country, MUIA_Country_Countryname, localeprefs.lp_CountryName);
+    SET(data->region, MUIA_Region_Regionname, localeprefs.lp_CountryName);
 
     SET(data->language, MUIA_Language_Preferred, TRUE);
     SET(data->language, MUIA_Language_Characterset, character_set);

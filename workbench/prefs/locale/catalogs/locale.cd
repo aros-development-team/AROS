@@ -83,8 +83,8 @@ Cancel
 MSG_GAD_TAB_LANGUAGE (//)
 Language
 ;
-MSG_GAD_TAB_COUNTRY (//)
-Country
+MSG_GAD_TAB_REGION (//)
+Region
 ;
 MSG_GAD_TAB_TIMEZONE (//)
 Time Zone
