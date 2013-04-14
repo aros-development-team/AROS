@@ -1,12 +1,9 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: deutsch.language description file.
-    Lang: english
+    Desc: portuguese.language description file.
 */
-
-/*  Language file for the German language. */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -20,10 +17,12 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "deutsch"   /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     1           /* Revision number of language */
-#define LANGTAG     "\0$VER: deutsch.language 41.1 (14.08.2010)"
+#define LANGSTR     "portuguese"        /* String version of above      */
+#define NLANGSTR    "Português"         /* Native version of LANGSTR    */
+#define LANGVER     41                  /* Version number of language   */
+#define LANGREV     1                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.1 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -34,8 +33,8 @@ AROS_LD1(STRPTR, getlangstring,
 /* Bit masks for locale .language functions. Only implement GetString() */
 #define LF_GetLangStr       (1L << 3)
 
-/* Arrays for German character type/conversion */
-extern const STRPTR __german_strings[];
+/* Arrays for Italian character type/conversion */
+extern const STRPTR __portugues_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -82,6 +81,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;
@@ -130,7 +130,6 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_USERFUNC_EXIT
 }
 
-#define SysBase language->sysbase
 
 AROS_LH1(struct Language *, open,
     AROS_LHA(ULONG, version, D0),
@@ -199,6 +198,7 @@ AROS_LH0I(int, null, struct Language *, language, 0, language)
    Language specific functions
  ------------------------------------------------------------------------ */
 
+
 /* ULONG LanguageMask():
     This function is to inform locale.library what functions it should
     use from this library. This is done by returning a bitmask containing
@@ -228,7 +228,7 @@ AROS_LH1(STRPTR, getlangstring,
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-	return __german_strings[id];
+	return __portugues_strings[id];
     else
 	return NULL;
 
@@ -265,7 +265,7 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __german_strings[] =
+const STRPTR __portugues_strings[] =
 {
     /* A blank string */
     "",
@@ -277,33 +277,33 @@ const STRPTR __german_strings[] =
 
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
 
-    "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag",
-    "Freitag", "Samstag",
+    "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira",
+    "Sexta-feira", "Sábado",
 
     /* Abbreviated days of the week */
-    "So", "Mo", "Di", "Mi", "Do", "Fr", "Sa",
+    "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab",
 
     /* Months of the year */
-    "Januar", "Februar", "März",
-    "April", "Mai", "Juni",
-    "Juli", "August", "September",
-    "Oktober", "November", "Dezember",
+    "Janeiro", "Fevereiro", "Março",
+    "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro",
+    "Outubro", "Novembro", "Dezembro",
 
     /* Abbreviated months of the year */
-    "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
-    "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+    "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+    "Jul", "Ago", "Set", "Out", "Nov", "Dez",
 
-    "Ja", /* Yes, affirmative response */
-    "Nein", /* No/negative response */
+    "Sim", /* Yes, affirmative response */
+    "Não", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "Vorm.", "Nachm.",
+    "AM", "PM",
 
     /* Soft and hard hyphens */
-    "\xAD", "-",
+    "-", "-",
 
     /* Open and close quotes */
-    "\xBB", "\xAB",
+    "\"", "\"",
 
     /* Days: But not actual day names
        Yesterday - the day before the current
@@ -311,7 +311,7 @@ const STRPTR __german_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Gestern", "Heute", "Morgen", "Zukunft"
+    "Ontem", "Hoje", "Amanhã", "Futuro"
 };
 
 /* This is the end of ROMtag marker. */

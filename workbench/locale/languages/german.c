@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-1997, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: malti.language description file.
-    Lang: english
-    Char: ISO 8859-3
+    Desc: german.language description file.
 */
 
 #include <exec/types.h>
@@ -19,15 +17,16 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "malti"     /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: "LANGSTR".language 41.0 (23.11.2010)"
+#define LANGSTR     "german"            /* String version of above      */
+#define NLANGSTR    "Deutsch"           /* Native version of LANGSTR    */
+#define LANGVER     41                  /* Version number of language   */
+#define LANGREV     2                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
-    AROS_LDA(ULONG, id, D0),
-    struct LocaleBase *, LocaleBase, 9, language
-);
+    AROS_LHA(ULONG, id, D0),
+    struct LocaleBase *, LocaleBase, 9, language);
 
 /* ----------------------------------------------------------------------- */
 
@@ -35,7 +34,7 @@ AROS_LD1(STRPTR, getlangstring,
 #define LF_GetLangStr       (1L << 3)
 
 /* Arrays for German character type/conversion */
-extern const STRPTR __malti_strings[];
+extern const STRPTR __german_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -54,9 +53,8 @@ extern const APTR inittabl[4];
 extern void *const functable[];
 extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
 AROS_LD1(struct Language *, open,
-    AROS_LDA(ULONG, version, D0),
-    struct Language *, language, 1, language
-);
+    AROS_LHA(ULONG, version, D0),
+    struct Language *, language, 1, language);
 AROS_LD0(BPTR, close, struct Language *, language, 2, language);
 AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
 AROS_LD0I(int, null, struct Language *, language, 0, language);
@@ -83,6 +81,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;
@@ -106,8 +105,8 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_USERFUNC_INIT
 
     /*
-        You could just as easily do this bit as the InitResident()
-        datatable, however this works just as well.
+	You could just as easily do this bit as the InitResident()
+	datatable, however this works just as well.
     */
     language->library.lib_Node.ln_Type = NT_LIBRARY;
     language->library.lib_Node.ln_Pri = -120;
@@ -122,8 +121,8 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     SysBase = _SysBase;
 
     /*
-        Although it is unlikely, you would return NULL if you for some
-        unknown reason couldn't open.
+	Although it is unlikely, you would return NULL if you for some
+	unknown reason couldn't open.
     */
     bug("GetLangStr: Loaded at address %p\n", &AROS_SLIB_ENTRY(getlangstring,language,9));
     return language;
@@ -131,6 +130,7 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_USERFUNC_EXIT
 }
 
+#define SysBase language->sysbase
 
 AROS_LH1(struct Language *, open,
     AROS_LHA(ULONG, version, D0),
@@ -152,12 +152,12 @@ AROS_LH0(BPTR, close, struct Language *, language, 2, language)
 
     if(! --language->library.lib_OpenCnt)
     {
-        /* Delayed expunge pending? */
-        if(language->library.lib_Flags & LIBF_DELEXP)
-        {
-            /* Yes, expunge the library */
-            return AROS_LC0(BPTR, expunge, struct Language *, language, 3, language);
-        }
+	/* Delayed expunge pending? */
+	if(language->library.lib_Flags & LIBF_DELEXP)
+	{
+	    /* Yes, expunge the library */
+	    return AROS_LC0(BPTR, expunge, struct Language *, language, 3, language);
+	}
     }
     return BNULL;
     AROS_LIBFUNC_EXIT
@@ -170,16 +170,16 @@ AROS_LH0(BPTR, expunge, struct Language *, language, 3, language)
     BPTR ret;
     if(language->library.lib_OpenCnt)
     {
-        /* Can't expunge, we are still open */
-        language->library.lib_Flags |= LIBF_DELEXP;
-        return 0;
+	/* Can't expunge, we are still open */
+	language->library.lib_Flags |= LIBF_DELEXP;
+	return 0;
     }
 
     Remove(&language->library.lib_Node);
     ret = language->seglist;
 
     FreeMem((UBYTE *)language - language->library.lib_NegSize,
-            language->library.lib_PosSize + language->library.lib_NegSize);
+	    language->library.lib_PosSize + language->library.lib_NegSize);
 
     return ret;
 
@@ -198,7 +198,6 @@ AROS_LH0I(int, null, struct Language *, language, 0, language)
 /* ------------------------------------------------------------------------
    Language specific functions
  ------------------------------------------------------------------------ */
-
 
 /* ULONG LanguageMask():
     This function is to inform locale.library what functions it should
@@ -229,9 +228,9 @@ AROS_LH1(STRPTR, getlangstring,
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-        return __malti_strings[id];
+	return __german_strings[id];
     else
-        return NULL;
+	return NULL;
 
     AROS_LIBFUNC_EXIT
 }
@@ -266,42 +265,45 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __malti_strings[] =
+const STRPTR __german_strings[] =
 {
     /* A blank string */
     "",
 
     /*  The days of the week. Starts with the first day of the week.
-        In English this would be Sunday, this depends upon the settings
-        of Locale->CalendarType.
+	In English this would be Sunday, this depends upon the settings
+	of Locale->CalendarType.
     */
-    "il-¡add", "it-Tnejn", "it-Tlieta", "l-Erbg±a", "il-¡amis",
-    "il-Õimg±a0", "is-Sibt",
+
+    // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
+
+    "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag",
+    "Freitag", "Samstag",
 
     /* Abbreviated days of the week */
-    "¡ad", "Tne", "Tli", "Erb", "¡am", "Õim", "Sib",
+    "So", "Mo", "Di", "Mi", "Do", "Fr", "Sa",
 
     /* Months of the year */
-    "Jannar",  "Frar",     "Marzu",
-    "April",   "Mejju",    "Õunju",
-    "Lulju",   "Awissu",   "Settembru",
-    "Ottubru", "Novembru", "Diåembru",
+    "Januar", "Februar", "März",
+    "April", "Mai", "Juni",
+    "Juli", "August", "September",
+    "Oktober", "November", "Dezember",
 
     /* Abbreviated months of the year */
-    "Jan", "Fra", "Mar", "Apr", "Mej", "Õun",
-    "Lul", "Awi", "Set", "Ott", "Nov", "Diå",
+    "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+    "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
 
-    "Iva", /* Yes, affirmative response */
-    "Le",  /* No/negative response */
+    "Ja", /* Yes, affirmative response */
+    "Nein", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "AM", "PM",
+    "Vorm.", "Nachm.",
 
     /* Soft and hard hyphens */
     "\xAD", "-",
 
     /* Open and close quotes */
-    "\"", "\"",
+    "\xBB", "\xAB",
 
     /* Days: But not actual day names
        Yesterday - the day before the current
@@ -309,7 +311,7 @@ const STRPTR __malti_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Ilbiera±", "Illum", "G±ada", "Fil-futur"
+    "Gestern", "Heute", "Morgen", "Zukunft"
 };
 
 /* This is the end of ROMtag marker. */

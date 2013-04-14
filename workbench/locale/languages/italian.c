@@ -1,12 +1,9 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: íslenska.language description file.
-    Lang: english
+    Desc: italian.language description file.
 */
-
-/*  Language file for the Icelandic language. */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -20,23 +17,24 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "íslenska"  /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: íslenska.language 41.0 (03.02.2001)"
+#define LANGSTR     "italian"           /* String version of above      */
+#define NLANGSTR    "Italiano"          /* Native version of LANGSTR    */
+#define LANGVER     41                  /* Version number of language   */
+#define LANGREV     1                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.1 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
-    AROS_LDA(ULONG, id, D0),
-    struct LocaleBase *, LocaleBase, 9, language
-);
+    AROS_LHA(ULONG, id, D0),
+    struct LocaleBase *, LocaleBase, 9, language);
 
 /* ----------------------------------------------------------------------- */
 
 /* Bit masks for locale .language functions. Only implement GetString() */
 #define LF_GetLangStr       (1L << 3)
 
-/* Arrays for Icelandic character type/conversion */
-extern const STRPTR __islenska_strings[];
+/* Arrays for Italian character type/conversion */
+extern const STRPTR __italian_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -55,9 +53,8 @@ extern const APTR inittabl[4];
 extern void *const functable[];
 extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
 AROS_LD1(struct Language *, open,
-    AROS_LDA(ULONG, version, D0),
-    struct Language *, language, 1, language
-);
+    AROS_LHA(ULONG, version, D0),
+    struct Language *, language, 1, language);
 AROS_LD0(BPTR, close, struct Language *, language, 2, language);
 AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
 AROS_LD0I(int, null, struct Language *, language, 0, language);
@@ -84,6 +81,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;
@@ -230,7 +228,7 @@ AROS_LH1(STRPTR, getlangstring,
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-	return __islenska_strings[id];
+	return __italian_strings[id];
     else
 	return NULL;
 
@@ -267,7 +265,7 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __islenska_strings[] =
+const STRPTR __italian_strings[] =
 {
     /* A blank string */
     "",
@@ -276,33 +274,30 @@ const STRPTR __islenska_strings[] =
 	In English this would be Sunday, this depends upon the settings
 	of Locale->CalendarType.
     */
-
-    // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
-
-    "Sunnudagur", "Mánudagur", "þriðjundagur", "Miðvikudagur", "Fimmtudagur",
-    "Föstudagur", "Laugardagur",
+    "Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì",
+    "Venerdì", "Sabato",
 
     /* Abbreviated days of the week */
-    "Sun", "Mán", "þri", "Mið", "Fim", "Fös", "Lau",
+    "Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab",
 
     /* Months of the year */
-    "Janúar", "Febrúar", "Mars",
-    "Apríl", "Maí", "Júní",
-    "Júlí", "Ágúst", "September",
-    "Október", "Nóvember", "Desember",
+    "Gennaio", "Febbraio", "Marzo",
+    "Aprile", "Maggio", "Giugno",
+    "Luglio", "Agosto", "Settembre",
+    "Ottobre", "Novembre", "Dicembre",
 
     /* Abbreviated months of the year */
-    "Jan", "Feb", "Mar", "Apr", "Maí", "Jún",
-    "Júl", "Ág", "Sep", "Okt", "Nóv", "Des",
+    "Gen", "Feb", "Mar", "Apr", "Mag", "Giu",
+    "Lug", "Ago", "Set", "Ott", "Nov", "Dic",
 
-    "Já", /* Yes, affirmative response */
-    "Nei", /* No/negative response */
+    "Si", /* Yes, affirmative response */
+    "No", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "fh.", "eh.",
+    "AM", "PM",
 
     /* Soft and hard hyphens */
-    "\xAD", "-",
+    "-", "-",
 
     /* Open and close quotes */
     "\"", "\"",
@@ -313,7 +308,7 @@ const STRPTR __islenska_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Í gær", "Í dag", "Á morgun", "Framtíð"
+    "Ieri", "Oggi", "Domani", "Futuro"
 };
 
 /* This is the end of ROMtag marker. */

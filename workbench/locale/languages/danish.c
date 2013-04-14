@@ -1,13 +1,9 @@
 /*
-    Copyright ฉ 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright ฉ 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: thai.language description file.
-    Lang: English
-    Char: ISO 8859-11
+    Desc: danish.language description file.
 */
-
-/*  Language file for the Thai language. */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -21,23 +17,24 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "thai"      /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: "LANGSTR".language 41.0 (11.02.2011)"
+#define LANGSTR     "danish"            /* String version of above      */
+#define NLANGSTR    "Dansk"             /* Native version of LANGSTR    */
+#define LANGVER     41                  /* Version number of language   */
+#define LANGREV     1                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.1 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
-    AROS_LDA(ULONG, id, D0),
-    struct LocaleBase *, LocaleBase, 9, language
-);
+    AROS_LHA(ULONG, id, D0),
+    struct LocaleBase *, LocaleBase, 9, language);
 
 /* ----------------------------------------------------------------------- */
 
 /* Bit masks for locale .language functions. Only implement GetString() */
 #define LF_GetLangStr       (1L << 3)
 
-/* Arrays for Thai character type/conversion */
-extern const STRPTR __thai_strings[];
+/* Arrays for Danish character type/conversion */
+extern const STRPTR __dansk_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -56,9 +53,8 @@ extern const APTR inittabl[4];
 extern void *const functable[];
 extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
 AROS_LD1(struct Language *, open,
-    AROS_LDA(ULONG, version, D0),
-    struct Language *, language, 1, language
-);
+    AROS_LHA(ULONG, version, D0),
+    struct Language *, language, 1, language);
 AROS_LD0(BPTR, close, struct Language *, language, 2, language);
 AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
 AROS_LD0I(int, null, struct Language *, language, 0, language);
@@ -85,6 +81,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;
@@ -133,6 +130,7 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_USERFUNC_EXIT
 }
 
+#define SysBase language->sysbase
 
 AROS_LH1(struct Language *, open,
     AROS_LHA(ULONG, version, D0),
@@ -201,7 +199,6 @@ AROS_LH0I(int, null, struct Language *, language, 0, language)
    Language specific functions
  ------------------------------------------------------------------------ */
 
-
 /* ULONG LanguageMask():
     This function is to inform locale.library what functions it should
     use from this library. This is done by returning a bitmask containing
@@ -231,7 +228,7 @@ AROS_LH1(STRPTR, getlangstring,
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-	return __thai_strings[id];
+	return __dansk_strings[id];
     else
 	return NULL;
 
@@ -258,7 +255,7 @@ void *const functable[] =
     &AROS_SLIB_ENTRY(null, language, 0),
     &AROS_SLIB_ENTRY(null, language, 0),
     &AROS_SLIB_ENTRY(null, language, 0),    
-    &AROS_SLIB_ENTRY(getlangstring, language, 9),
+    &AROS_SLIB_ENTRY(getlangstring, language,9),
     (void *)-1
 };
 
@@ -268,7 +265,7 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __thai_strings[] =
+const STRPTR __dansk_strings[] =
 {
     /* A blank string */
     "",
@@ -280,24 +277,24 @@ const STRPTR __thai_strings[] =
 
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
 
-    "วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี",
-    "วันศุกร์", "วันเสาร์",
+    "S๘ndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag",
+    "Fredag", "L๘rdag",
 
     /* Abbreviated days of the week */
-    "อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.",
+    "S๘n", "Man", "Tir", "Ons", "Tor", "Fre", "L๘r",
 
     /* Months of the year */
-    "มกราคม", "กุมภาพันธ์", "มีนาคม",
-    "เมษายน", "พฤษภาคม", "มิถุนายน",
-    "กรกฎาคม", "สิงหาคม", "กันยายน",
-    "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+    "Januar", "Februar", "Marts",
+    "April", "Maj", "Juni",
+    "Juli", "August", "September",
+    "Oktober", "November", "December",
 
     /* Abbreviated months of the year */
-    "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
-    "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+    "Jan", "Feb", "Mar", "Apr", "Maj", "Jun",
+    "Jul", "Aug", "Sep", "Okt", "Nov", "Dec",
 
-    "ใช่", /* Yes, affirmative response */
-    "ไม่", /* No/negative response */
+    "Ja", /* Yes, affirmative response */
+    "Nej", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
     "AM", "PM",
@@ -314,7 +311,7 @@ const STRPTR __thai_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "เมื่อวานนี้", "วันนี้", "วันพรุ่งนี้", "อนาคต"
+    "i gๅr", "i dag", "i morgen", "fremtid"
 };
 
 /* This is the end of ROMtag marker. */

@@ -1,12 +1,10 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: shqipja.language description file.
-    Lang: english
+    Desc: polish.language description file.
+    Char: ISO 8859-2
 */
-
-/*  Language file for the Albanian language. */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -20,23 +18,24 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "shqipja"   /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: "LANGSTR".language 41.0 (14.08.2010)"
+#define LANGSTR     "polish"            /* String version of above      */
+#define NLANGSTR    "Polski"            /* Native version of LANGSTR    */
+#define LANGVER     41                  /* Version number of language   */
+#define LANGREV     2                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
-    AROS_LDA(ULONG, id, D0),
-    struct LocaleBase *, LocaleBase, 9, language
-);
+    AROS_LHA(ULONG, id, D0),
+    struct LocaleBase *, LocaleBase, 9, language);
 
 /* ----------------------------------------------------------------------- */
 
 /* Bit masks for locale .language functions. Only implement GetString() */
 #define LF_GetLangStr       (1L << 3)
 
-/* Arrays for Italian character type/conversion */
-extern const STRPTR __shqipja_strings[];
+/* Arrays for German character type/conversion */
+extern const STRPTR __polish_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -55,9 +54,8 @@ extern const APTR inittabl[4];
 extern void *const functable[];
 extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
 AROS_LD1(struct Language *, open,
-    AROS_LDA(ULONG, version, D0),
-    struct Language *, language, 1, language
-);
+    AROS_LHA(ULONG, version, D0),
+    struct Language *, language, 1, language);
 AROS_LD0(BPTR, close, struct Language *, language, 2, language);
 AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
 AROS_LD0I(int, null, struct Language *, language, 0, language);
@@ -84,6 +82,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;
@@ -107,8 +106,8 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_USERFUNC_INIT
 
     /*
-	You could just as easily do this bit as the InitResident()
-	datatable, however this works just as well.
+        You could just as easily do this bit as the InitResident()
+        datatable, however this works just as well.
     */
     language->library.lib_Node.ln_Type = NT_LIBRARY;
     language->library.lib_Node.ln_Pri = -120;
@@ -123,8 +122,8 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     SysBase = _SysBase;
 
     /*
-	Although it is unlikely, you would return NULL if you for some
-	unknown reason couldn't open.
+        Although it is unlikely, you would return NULL if you for some
+        unknown reason couldn't open.
     */
     bug("GetLangStr: Loaded at address %p\n", &AROS_SLIB_ENTRY(getlangstring,language,9));
     return language;
@@ -153,12 +152,12 @@ AROS_LH0(BPTR, close, struct Language *, language, 2, language)
 
     if(! --language->library.lib_OpenCnt)
     {
-	/* Delayed expunge pending? */
-	if(language->library.lib_Flags & LIBF_DELEXP)
-	{
-	    /* Yes, expunge the library */
-	    return AROS_LC0(BPTR, expunge, struct Language *, language, 3, language);
-	}
+        /* Delayed expunge pending? */
+        if(language->library.lib_Flags & LIBF_DELEXP)
+        {
+            /* Yes, expunge the library */
+            return AROS_LC0(BPTR, expunge, struct Language *, language, 3, language);
+        }
     }
     return BNULL;
     AROS_LIBFUNC_EXIT
@@ -171,16 +170,16 @@ AROS_LH0(BPTR, expunge, struct Language *, language, 3, language)
     BPTR ret;
     if(language->library.lib_OpenCnt)
     {
-	/* Can't expunge, we are still open */
-	language->library.lib_Flags |= LIBF_DELEXP;
-	return 0;
+        /* Can't expunge, we are still open */
+        language->library.lib_Flags |= LIBF_DELEXP;
+        return 0;
     }
 
     Remove(&language->library.lib_Node);
     ret = language->seglist;
 
     FreeMem((UBYTE *)language - language->library.lib_NegSize,
-	    language->library.lib_PosSize + language->library.lib_NegSize);
+            language->library.lib_PosSize + language->library.lib_NegSize);
 
     return ret;
 
@@ -230,9 +229,9 @@ AROS_LH1(STRPTR, getlangstring,
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-	return __shqipja_strings[id];
+        return __polish_strings[id];
     else
-	return NULL;
+        return NULL;
 
     AROS_LIBFUNC_EXIT
 }
@@ -267,39 +266,40 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __shqipja_strings[] =
+const STRPTR __polish_strings[] =
 {
     /* A blank string */
     "",
 
     /*  The days of the week. Starts with the first day of the week.
-	In English this would be Sunday, this depends upon the settings
-	of Locale->CalendarType.
+        In English this would be Sunday, this depends upon the settings
+        of Locale->CalendarType.
     */
 
     // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
+    // NOTICE: deadwood: I agree
 
-    "e diel", "e hënë", "e martë", "e mërkurë", "e enjte",
-    "e premte", "e shtunë",
+    "Niedziala", "Poniedzia³ek", "Wtorek", "¦roda", "Czwartek",
+    "Pi±tek", "Sobota",
 
     /* Abbreviated days of the week */
-    "Die", "Hën", "Mar", "Mër", "Enj", "Pre", "Sht",
+    "Ni", "Po", "Wt", "¦r", "Cz", "Pi", "So",
 
     /* Months of the year */
-    "janar", "shkurt", "mars",
-    "prill", "maj", "qershor",
-    "korrik", "gusht", "shtator",
-    "tetor", "nëntor", "dhjetor",
+    "Styczeñ", "Luty", "Marzec",
+    "Kwiecieñ", "Maj", "Czerwiec",
+    "Lipiec", "Sierpieñ", "Wrzesieñ",
+    "Pa¼dziernik", "Listopad", "Grudzieñ",
 
     /* Abbreviated months of the year */
-    "Jan", "Shk", "Mar", "Pri", "Maj", "Qer",
-    "Kor", "Gus", "Sht", "Tet", "Nën", "Dhj",
+    "I", "II", "III", "IV", "V", "VI",
+    "VII", "VIII", "IX", "X", "XI", "XII",
 
-    "Po", /* Yes, affirmative response */
-    "Jo", /* No/negative response */
+    "Tak", /* Yes, affirmative response */
+    "Nie", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "PD", "MD",
+    "Rano", "Po po³.",
 
     /* Soft and hard hyphens */
     "\xAD", "-",
@@ -313,7 +313,7 @@ const STRPTR __shqipja_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Dje", "Sot", "Nesër", "Ardhmen"
+    "Wczoraj", "Dzi¶", "Jutro", "Przysz³o¶æ"
 };
 
 /* This is the end of ROMtag marker. */
