@@ -3,8 +3,7 @@
    $Id$
 */
 
-#include <zune/customclasses.h>
-#include <zune/prefseditor.h>
+#include <aros/debug.h>
 
 #include <proto/alib.h>
 #include <proto/exec.h>
@@ -14,19 +13,20 @@
 #include <proto/dos.h>
 #include <proto/alib.h>
 
+#include <zune/customclasses.h>
+#include <zune/prefseditor.h>
+
 #include <stdio.h>
 
-#include <aros/debug.h>
-
 #include "prefs.h"
-#include "page_country.h"
+#include "page_region.h"
 #include "registertab.h"
 
 static struct Hook display_hook;
 
 /*** Instance Data **********************************************************/
 
-struct Country_DATA
+struct Region_DATA
 {
     Object             *me;
     Object             *child;
@@ -34,14 +34,14 @@ struct Country_DATA
     ULONG               active;
 };
 
-struct MUI_CustomClass     *Country_CLASS;
+struct MUI_CustomClass     *Region_CLASS;
 
 /*** Helpers *****************************************************************/
 
 /*************************************************
  * The display function for the KeyTypes listview
  *************************************************/
-STATIC VOID country_display_func(struct Hook *h, char **array, struct ListviewEntry *entry)
+STATIC VOID region_display_func(struct Hook *h, char **array, struct ListviewEntry *entry)
 {
     *array++ = entry->displayflag;
     *array   = entry->node.ln_Name;
@@ -51,19 +51,19 @@ STATIC VOID country_display_func(struct Hook *h, char **array, struct ListviewEn
  *
  */
 
-Object *Country__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+Object *Region__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct Country_DATA *data;
+    struct Region_DATA *data;
     struct TagItem *tstate, *tag;
-    struct CountryEntry *entry;
+    struct RegionEntry *entry;
 
-    D(bug("[country class] Country Class New\n"));
+    D(bug("[LocalePrefs-RegionClass] Region Class New\n"));
 
     display_hook.h_Entry = HookEntry;
-    display_hook.h_SubEntry = (HOOKFUNC)country_display_func;
+    display_hook.h_SubEntry = (HOOKFUNC)region_display_func;
 
     /*
-     * country flags are at the moment 17 pixels high
+     * region flags are at the moment 17 pixels high
      * MUIA_List_MinLineHeight, 19 leaves at least two
      * pixel space between the images
      * If images ever get bigger, this should be
@@ -83,7 +83,7 @@ Object *Country__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (obj == NULL)
     {
-        D(bug("ERROR: [country class] DoSuperNewTags failed!\n"));
+        D(bug("[LocalePrefs-RegionClass] ERROR: DoSuperNewTags failed!\n"));
         return NULL;
     }
 
@@ -102,7 +102,7 @@ Object *Country__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->child = obj;
 
-    ForeachNode(&country_list, entry)
+    ForeachNode(&region_list, entry)
     {
         DoMethod
         (
@@ -123,10 +123,10 @@ Object *Country__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 /*** Get ******************************************************************/
-static IPTR Country__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
+static IPTR Region__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct Country_DATA *data = INST_DATA(cl, obj);
-    struct CountryEntry    *entry;
+    struct Region_DATA *data = INST_DATA(cl, obj);
+    struct RegionEntry    *entry;
     IPTR rc;
     IPTR nr = 0;
     ULONG i;
@@ -134,11 +134,11 @@ static IPTR Country__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch (msg->opg_AttrID)
     {
-        case MUIA_Country_Countryname:
+        case MUIA_Region_Regionname:
             GET(data->child, MUIA_List_Active, &nr);
             rc = -1;
             i  = 0;
-            ForeachNode(&country_list, entry)
+            ForeachNode(&region_list, entry)
             {
                 if (i == nr)
                 {
@@ -163,11 +163,11 @@ static IPTR Country__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 /*** Set ******************************************************************/
-static IPTR Country__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR Region__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct Country_DATA *data = INST_DATA(cl, obj);
+    struct Region_DATA *data = INST_DATA(cl, obj);
     struct TagItem *tstate, *tag;
-    struct CountryEntry    *entry;
+    struct RegionEntry    *entry;
     ULONG update;
     ULONG nr;
     ULONG i;
@@ -179,11 +179,11 @@ static IPTR Country__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-            case MUIA_Country_Countryname:
+            case MUIA_Region_Regionname:
 
                 nr = -1;
                 i  = 0;
-                ForeachNode(&country_list, entry)
+                ForeachNode(&region_list, entry)
                 {
                     if (!stricmp(entry->lve.realname, (STRPTR)tag->ti_Data))
                     {
@@ -194,7 +194,7 @@ static IPTR Country__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
                 if (nr < 0)
                 {
-                    D(bug("ERROR: [country class] could not find >%s< !?\n",tag->ti_Data));
+                    D(bug("[LocalePrefs-RegionClass] ERROR: could not find >%s< !?\n",tag->ti_Data));
                 }
                 else
                 {
@@ -219,7 +219,7 @@ static IPTR Country__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 /*** Setup ******************************************************************/
 ZUNE_CUSTOMCLASS_3
 (
-    Country, NULL, MUIC_List, NULL,
+    Region, NULL, MUIC_List, NULL,
     OM_NEW,         struct opSet *,
     OM_SET,         struct opSet *,
     OM_GET,         struct opGet *

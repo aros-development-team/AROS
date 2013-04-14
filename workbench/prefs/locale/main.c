@@ -1,11 +1,13 @@
 /*
-   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2013, The AROS Development Team. All rights reserved.
    $Id$
  */
 
 /*********************************************************************************************/
 
 #define MUIMASTER_YES_INLINE_STDARG
+
+#include <aros/debug.h>
 
 #include <proto/alib.h>
 #include <proto/intuition.h>
@@ -17,13 +19,10 @@
 #include "locale.h"
 #include "registertab.h"
 #include "page_language.h"
-#include "page_country.h"
+#include "page_region.h"
 #include "page_timezone.h"
 #include "args.h"
 #include "prefs.h"
-
-//#define DEBUG 1
-#include <aros/debug.h>
 
 #define VERSION "$VER: Locale 2.2 (24.05.2011) AROS Dev Team"
 

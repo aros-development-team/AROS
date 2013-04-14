@@ -5,15 +5,7 @@
 
 /*********************************************************************************************/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-#include <aros/macros.h>
-
 #include <aros/debug.h>
-
-#include <prefs/prefhdr.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -21,6 +13,14 @@
 #include <proto/utility.h>
 #include <proto/alib.h>
 #include <proto/iffparse.h>
+
+#include <aros/macros.h>
+
+#include <prefs/prefhdr.h>
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "prefs.h"
 #include "misc.h"
@@ -44,7 +44,7 @@ struct FilePrefHeader
 struct LocalePrefs  localeprefs;
 char                character_set[CHARACTER_SET_LEN];
 char                restore_charset[CHARACTER_SET_LEN];
-struct List         country_list;
+struct List         region_list;
 struct List         language_list;
 struct List         pref_language_list;
 
@@ -81,7 +81,7 @@ STATIC VOID SortInNode(struct List *list, struct Node *node)
 
 /*********************************************************************************************/
 
-char *GetAROSCountryAttribs(struct AnchorPath *ap, char **countryNamePtr)
+char *GetAROSRegionAttribs(struct AnchorPath *ap, char **regionNamePtr)
 {
     char                *lockFlag = NULL;
     struct IFFHandle    *iff;
@@ -105,14 +105,14 @@ char *GetAROSCountryAttribs(struct AnchorPath *ap, char **countryNamePtr)
                             parse_mode = IFFPARSE_STEP; 
 
                             cn = CurrentChunk(iff);
-                            D(bug("[LocalePrefs] GetAROSCountryAttribs: Chunk ID %08x. %d bytes\n", cn->cn_ID, cn->cn_Size));
+                            D(bug("[LocalePrefs] GetAROSRegionAttribs: Chunk ID %08x. %d bytes\n", cn->cn_ID, cn->cn_Size));
 
                             if (cn->cn_ID == MAKE_ID('N','N','A','M'))
                             {
-                                FreeVecPooled(mempool, *countryNamePtr);
-                                *countryNamePtr = AllocVecPooled(mempool, cn->cn_Size);
-                                ReadChunkBytes(iff, *countryNamePtr, cn->cn_Size);
-                                D(bug("[LocalePrefs] GetAROSCountryAttribs: NativeNames '%s'\n", *countryNamePtr));
+                                FreeVecPooled(mempool, *regionNamePtr);
+                                *regionNamePtr = AllocVecPooled(mempool, cn->cn_Size);
+                                ReadChunkBytes(iff, *regionNamePtr, cn->cn_Size);
+                                D(bug("[LocalePrefs] GetAROSRegionAttribs: NativeNames '%s'\n", *regionNamePtr));
                             }
 
                             if (cn->cn_ID == MAKE_ID('F','L','A','G'))
@@ -121,7 +121,7 @@ char *GetAROSCountryAttribs(struct AnchorPath *ap, char **countryNamePtr)
                                 sprintf(lockFlag, flagpathstr);
                                 ReadChunkBytes(iff, lockFlag + 18, cn->cn_Size);
                                 lockFlag[cn->cn_Size + 17] = ']';
-                                D(bug("[LocalePrefs] GetAROSCountryAttribs: Flag '%s'\n", lockFlag));
+                                D(bug("[LocalePrefs] GetAROSRegionAttribs: Flag '%s'\n", lockFlag));
                             }
                         }
                     } while ((error != IFFERR_EOF) && (error != IFFERR_NOTIFF));
@@ -142,14 +142,14 @@ STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
 {
     struct AnchorPath           ap;
     struct ListviewEntry        *entry;
-    BPTR                        curdir;
+    BPTR                        curdir = BNULL;
     char                        *sp;
     LONG                        error;
 
     memset(&ap, 0, sizeof(ap));
 
-    error = MatchFirst(pattern, &ap);
-    curdir = CurrentDir(ap.ap_Current->an_Lock);
+    if ((error = MatchFirst(pattern, &ap)) == 0)
+        curdir = CurrentDir(ap.ap_Current->an_Lock);
 
     while((error == 0))
     {
@@ -167,12 +167,18 @@ STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
 
                 strcpy(entry->realname, entry->node.ln_Name);
 
-                D(bug("[LocalePrefs] ScanDir: Checking for FLAG chunk\n"));
-
-                if (!(entry->displayflag = GetAROSCountryAttribs(&ap, &entry->node.ln_Name)))
+                if (entrysize == sizeof(struct RegionEntry))
                 {
-                    entry->displayflag = AllocVec(strlen(entry->realname) + strlen(flagpathstr) + 12, MEMF_CLEAR);
-                    sprintf(entry->displayflag, "%sCountries/%s]", flagpathstr, entry->realname);
+                    D(bug("[LocalePrefs] ScanDir: Checking for FLAG chunk\n"));
+                    if (!(entry->displayflag = GetAROSRegionAttribs(&ap, &entry->node.ln_Name)))
+                    {
+                        entry->displayflag = AllocVec(strlen(entry->realname) + strlen(flagpathstr) + 12, MEMF_CLEAR);
+                        sprintf(entry->displayflag, "%sCountries/%s]", flagpathstr, entry->realname);
+                    }
+                }
+                else if (entrysize == sizeof(struct LanguageEntry))
+                {
+                    // TODO: handle translating english language name -> native name.
                 }
 
                 sp = entry->node.ln_Name;
@@ -194,20 +200,21 @@ STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
         }
         error = MatchNext(&ap);
     }
-    CurrentDir(curdir);
+    if (curdir != BNULL)
+        CurrentDir(curdir);
     MatchEnd(&ap);
 }
 
 /*********************************************************************************************/
 
 #if !AROS_BIG_ENDIAN
-STATIC VOID FixCountryEndianess(struct CountryPrefs *country)
+STATIC VOID FixCountryEndianess(struct CountryPrefs *region)
 {
-    country->cp_Reserved[0] = AROS_BE2LONG(country->cp_Reserved[0]);
-    country->cp_Reserved[1] = AROS_BE2LONG(country->cp_Reserved[1]);
-    country->cp_Reserved[2] = AROS_BE2LONG(country->cp_Reserved[2]);
-    country->cp_Reserved[3] = AROS_BE2LONG(country->cp_Reserved[3]);
-    country->cp_CountryCode = AROS_BE2LONG(country->cp_CountryCode);
+    region->cp_Reserved[0] = AROS_BE2LONG(region->cp_Reserved[0]);
+    region->cp_Reserved[1] = AROS_BE2LONG(region->cp_Reserved[1]);
+    region->cp_Reserved[2] = AROS_BE2LONG(region->cp_Reserved[2]);
+    region->cp_Reserved[3] = AROS_BE2LONG(region->cp_Reserved[3]);
+    region->cp_CountryCode = AROS_BE2LONG(region->cp_CountryCode);
 }
 #endif
 
@@ -227,9 +234,9 @@ STATIC VOID FixLocaleEndianess(struct LocalePrefs *localeprefs)
 
 /*********************************************************************************************/
 
-BOOL Prefs_LoadCountry(STRPTR name, struct CountryPrefs *country)
+BOOL Prefs_LoadRegion(STRPTR name, struct CountryPrefs *region)
 {
-    static struct CountryPrefs  loadcountry;
+    static struct CountryPrefs  loadregion;
     struct IFFHandle            *iff;
     struct ContextNode          *cn;
     LONG                        parse_mode = IFFPARSE_SCAN, error;
@@ -240,23 +247,23 @@ BOOL Prefs_LoadCountry(STRPTR name, struct CountryPrefs *country)
     AddPart(fullname, name, 100);
     strcat(fullname, ".country");
 
-    D(bug("[LocalePrefs] LoadCountry: Trying to open \"%s\"\n", fullname));
+    D(bug("[LocalePrefs] LoadRegion: Trying to open \"%s\"\n", fullname));
 
     if ((iff = AllocIFF()))
     {
         if ((iff->iff_Stream = (IPTR)Open(fullname, MODE_OLDFILE)))
         {
-            D(bug("[LocalePrefs] LoadCountry: stream opened.\n"));
+            D(bug("[LocalePrefs] LoadRegion: stream opened.\n"));
 
             InitIFFasDOS(iff);
 
             if (!OpenIFF(iff, IFFF_READ))
             {
-                D(bug("[LocalePrefs] LoadCountry: OpenIFF okay.\n"));
+                D(bug("[LocalePrefs] LoadRegion: OpenIFF okay.\n"));
 
                 if (!StopChunk(iff, ID_PREF, ID_PRHD))
                 {
-                    D(bug("[LocalePrefs] LoadCountry: StopChunk okay.\n"));
+                    D(bug("[LocalePrefs] LoadRegion: StopChunk okay.\n"));
 
                     do
                     {
@@ -264,27 +271,27 @@ BOOL Prefs_LoadCountry(STRPTR name, struct CountryPrefs *country)
                         {
                             parse_mode = IFFPARSE_STEP; 
                             
-                            D(bug("[LocalePrefs] LoadCountry: ParseIFF okay.\n"));
+                            D(bug("[LocalePrefs] LoadRegion: ParseIFF okay.\n"));
 
                             cn = CurrentChunk(iff);
 
-                            D(bug("[LocalePrefs] LoadCountry: Chunk ID %08x.\n", cn->cn_ID));
+                            D(bug("[LocalePrefs] LoadRegion: Chunk ID %08x.\n", cn->cn_ID));
 
                             if ((cn->cn_ID == ID_CTRY) && (cn->cn_Size == sizeof(struct CountryPrefs)))
                             {
-                                D(bug("[LocalePrefs] LoadCountry: Chunk ID_CTRY (size okay).\n"));
+                                D(bug("[LocalePrefs] LoadRegion: Chunk ID_CTRY (size okay).\n"));
 
-                                if (ReadChunkBytes(iff, &loadcountry, sizeof(struct CountryPrefs)) == sizeof(struct CountryPrefs))
+                                if (ReadChunkBytes(iff, &loadregion, sizeof(struct CountryPrefs)) == sizeof(struct CountryPrefs))
                                 {
-                                    D(bug("[LocalePrefs] LoadCountry: Reading chunk successful.\n"));
+                                    D(bug("[LocalePrefs] LoadRegion: Reading chunk successful.\n"));
 
-                                    *country = loadcountry;
+                                    *region = loadregion;
 
 #if !AROS_BIG_ENDIAN
-                                    FixCountryEndianess(country);
+                                    FixCountryEndianess(region);
 #endif
 
-                                    D(bug("[LocalePrefs] LoadCountry: Everything okay :-)\n"));
+                                    D(bug("[LocalePrefs] LoadRegion: Everything okay :-)\n"));
 
                                     retval = TRUE;
                                     error = IFFERR_EOF;
@@ -539,7 +546,7 @@ BOOL Prefs_HandleArgs(STRPTR from, BOOL use, BOOL save)
 
     if (use || save)
     {
-        Prefs_LoadCountry(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
+        Prefs_LoadRegion(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
         fh = Open(PREFS_PATH_ENV, MODE_NEWFILE);
         if (fh)
         {
@@ -583,20 +590,20 @@ BOOL Prefs_Initialize(VOID)
         return FALSE;
     }
 
-    NewList(&country_list);
+    NewList(&region_list);
     NewList(&language_list);
     NewList(&pref_language_list);
 
-    ScanDirectory("LOCALE:Countries/~(#?.info)", &country_list, sizeof(struct CountryEntry));
+    ScanDirectory("LOCALE:Countries/~(#?.info)", &region_list, sizeof(struct RegionEntry));
     ScanDirectory("LOCALE:Languages/#?.language", &language_list, sizeof(struct LanguageEntry));
 
     /* English language is always available */
 
     if ((entry = AllocPooled(mempool, sizeof(struct LanguageEntry))))
     {
-        strcpy( entry->lve.name, "English");
+        entry->lve.node.ln_Name = AllocVecPooled(mempool, 8);
+        strcpy( entry->lve.node.ln_Name, "English");
         strcpy( entry->lve.realname, "English");
-        entry->lve.node.ln_Name = entry->lve.name;
 
         SortInNode(&language_list, &entry->lve.node);
     }
@@ -641,7 +648,7 @@ BOOL Prefs_Default(VOID)
     localeprefs.lp_GMTOffset = 5 * 60;
     localeprefs.lp_Flags = 0;
 
-    if (Prefs_LoadCountry((STRPTR) "united_states", &localeprefs.lp_CountryData))
+    if (Prefs_LoadRegion((STRPTR) "united_states", &localeprefs.lp_CountryData))
     {
         retval = TRUE;
     }

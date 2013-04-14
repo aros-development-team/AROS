@@ -2,7 +2,7 @@
 #define _LCOUNTRY_H_
 
 /*
-   Copyright © 2008-2010, The AROS Development Team. All rights reserved.
+   Copyright © 2008-2013, The AROS Development Team. All rights reserved.
    $Id$
  */
 
@@ -10,18 +10,18 @@
 #include <libraries/mui.h>
 
 /*** Identifier base ********************************************************/
-#define MUIB_Country                (TAG_USER | 0x40000000)
+#define MUIB_Region                (TAG_USER | 0x40000000)
 
 /*** Attributes *************************************************************/
-#define MUIA_Country_Countryname    (MUIB_Country | 0)
+#define MUIA_Region_Regionname    (MUIB_Region | 0)
 
 /*** Methods ****************************************************************/
-#define MUIM_Country_Fill           (MUIB_Country | 0)
+#define MUIM_Region_Fill           (MUIB_Region | 0)
 
 /*** Variables **************************************************************/
-extern struct MUI_CustomClass *Country_CLASS;
+extern struct MUI_CustomClass *Region_CLASS;
 
 /*** Macros *****************************************************************/
-#define CountryObject BOOPSIOBJMACRO_START(Country_CLASS->mcc_Class)
+#define RegionObject BOOPSIOBJMACRO_START(Region_CLASS->mcc_Class)
 
 #endif /* _LCOUNTRY_H_ */

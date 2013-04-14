@@ -114,9 +114,9 @@ MSG_GAD_TAB_LANGUAGE
 Jêzyk
 ; Language
 ;
-MSG_GAD_TAB_COUNTRY
+MSG_GAD_TAB_REGION
 Kraj
-; Country
+; Region
 ;
 MSG_GAD_TAB_TIMEZONE
 Strefa czasowa

@@ -115,9 +115,9 @@ MSG_GAD_TAB_LANGUAGE
 Jezik
 ; Language
 ;
-MSG_GAD_TAB_COUNTRY
+MSG_GAD_TAB_REGION
 Zemlja
-; Country
+; Region
 ;
 MSG_GAD_TAB_TIMEZONE
 Vremenska Zona

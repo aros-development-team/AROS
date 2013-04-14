@@ -115,7 +115,7 @@ MSG_GAD_TAB_LANGUAGE
 Jazyky
 ; Language
 ;
-MSG_GAD_TAB_COUNTRY
+MSG_GAD_TAB_REGION
 Zemì
 ; Country
 ;
@@ -147,4 +147,3 @@ MSG_GMT_CLOCK
 Pou¾ít univerzální èas
 ; Hardware clock stores GMT
 ;
-
