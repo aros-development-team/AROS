@@ -1,13 +1,12 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: russian.language description file.
-    Lang: russian
     Char: Amiga-1251
 */
 
-/*  Language file for the Russian language. Collation tables need to be implemented */
+/*  Collation tables need to be implemented */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -21,10 +20,12 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "russian"   /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     2           /* Revision number of language */
-#define LANGTAG     "\0$VER: "LANGSTR".language 41.2 (13.10.2010)"
+#define LANGSTR     "russian"           /* String version of above      */
+#define NLANGSTR    "Russian"           /* Native version of LANGSTR    */
+#define LANGVER     41                  /* Version number of language   */
+#define LANGREV     3                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.3 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -83,6 +84,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;

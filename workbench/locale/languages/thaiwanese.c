@@ -1,12 +1,10 @@
 /*
-    Copyright ฉ 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright ฉ 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: italiano.language description file.
-    Lang: english
+    Desc: thaiwanese.language description file.
+    Char: ISO 8859-11
 */
-
-/*  Language file for the Italian language. */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -20,22 +18,25 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "italiano"   /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: italiano.language 41.0 (03.02.2001)"
+#define LANGSTR     "thaiwanese"        /* String version of above      */
+#define NLANGSTR    "Thai"              /* Native version of LANGSTR    */
+#define LANGVER     41                  /* Version number of language   */
+#define LANGREV     1                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.1 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
-    AROS_LHA(ULONG, id, D0),
-    struct LocaleBase *, LocaleBase, 9, language);
+    AROS_LDA(ULONG, id, D0),
+    struct LocaleBase *, LocaleBase, 9, language
+);
 
 /* ----------------------------------------------------------------------- */
 
 /* Bit masks for locale .language functions. Only implement GetString() */
 #define LF_GetLangStr       (1L << 3)
 
-/* Arrays for Italian character type/conversion */
-extern const STRPTR __italian_strings[];
+/* Arrays for Thai character type/conversion */
+extern const STRPTR __thai_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -54,8 +55,9 @@ extern const APTR inittabl[4];
 extern void *const functable[];
 extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
 AROS_LD1(struct Language *, open,
-    AROS_LHA(ULONG, version, D0),
-    struct Language *, language, 1, language);
+    AROS_LDA(ULONG, version, D0),
+    struct Language *, language, 1, language
+);
 AROS_LD0(BPTR, close, struct Language *, language, 2, language);
 AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
 AROS_LD0I(int, null, struct Language *, language, 0, language);
@@ -82,6 +84,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;
@@ -228,7 +231,7 @@ AROS_LH1(STRPTR, getlangstring,
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-	return __italian_strings[id];
+	return __thai_strings[id];
     else
 	return NULL;
 
@@ -265,7 +268,7 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __italian_strings[] =
+const STRPTR __thai_strings[] =
 {
     /* A blank string */
     "",
@@ -274,24 +277,27 @@ const STRPTR __italian_strings[] =
 	In English this would be Sunday, this depends upon the settings
 	of Locale->CalendarType.
     */
-    "Domenica", "Luned์", "Marted์", "Mercoled์", "Gioved์",
-    "Venerd์", "Sabato",
+
+    // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
+
+    "วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี",
+    "วันศุกร์", "วันเสาร์",
 
     /* Abbreviated days of the week */
-    "Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab",
+    "อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.",
 
     /* Months of the year */
-    "Gennaio", "Febbraio", "Marzo",
-    "Aprile", "Maggio", "Giugno",
-    "Luglio", "Agosto", "Settembre",
-    "Ottobre", "Novembre", "Dicembre",
+    "มกราคม", "กุมภาพันธ์", "มีนาคม",
+    "เมษายน", "พฤษภาคม", "มิถุนายน",
+    "กรกฎาคม", "สิงหาคม", "กันยายน",
+    "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
 
     /* Abbreviated months of the year */
-    "Gen", "Feb", "Mar", "Apr", "Mag", "Giu",
-    "Lug", "Ago", "Set", "Ott", "Nov", "Dic",
+    "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+    "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
 
-    "Si", /* Yes, affirmative response */
-    "No", /* No/negative response */
+    "ใช่", /* Yes, affirmative response */
+    "ไม่", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
     "AM", "PM",
@@ -308,7 +314,7 @@ const STRPTR __italian_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Ieri", "Oggi", "Domani", "Futuro"
+    "เมื่อวานนี้", "วันนี้", "วันพรุ่งนี้", "อนาคต"
 };
 
 /* This is the end of ROMtag marker. */

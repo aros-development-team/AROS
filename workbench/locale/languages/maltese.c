@@ -1,13 +1,10 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: polski.language description file.
-    Lang: english
-    Char: ISO 8859-2
+    Desc: maltese.language description file.
+    Char: ISO 8859-3
 */
-
-/*  Language file for the Polish language. Collation tables need to be implemented */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -21,14 +18,17 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "polski"    /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     1           /* Revision number of language */
-#define LANGTAG     "\0$VER: "LANGSTR".language 41.1 (14.03.2010)"
+#define LANGSTR     "maltese"    /* String version of above      */
+#define NLANGSTR    "Malti"             /* Native version of LANGSTR    */
+#define LANGVER     41                  /* Version number of language   */
+#define LANGREV     1                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.1 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
-    AROS_LHA(ULONG, id, D0),
-    struct LocaleBase *, LocaleBase, 9, language);
+    AROS_LDA(ULONG, id, D0),
+    struct LocaleBase *, LocaleBase, 9, language
+);
 
 /* ----------------------------------------------------------------------- */
 
@@ -36,7 +36,7 @@ AROS_LD1(STRPTR, getlangstring,
 #define LF_GetLangStr       (1L << 3)
 
 /* Arrays for German character type/conversion */
-extern const STRPTR __polish_strings[];
+extern const STRPTR __malti_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -55,8 +55,9 @@ extern const APTR inittabl[4];
 extern void *const functable[];
 extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
 AROS_LD1(struct Language *, open,
-    AROS_LHA(ULONG, version, D0),
-    struct Language *, language, 1, language);
+    AROS_LDA(ULONG, version, D0),
+    struct Language *, language, 1, language
+);
 AROS_LD0(BPTR, close, struct Language *, language, 2, language);
 AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
 AROS_LD0I(int, null, struct Language *, language, 0, language);
@@ -83,6 +84,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;
@@ -229,7 +231,7 @@ AROS_LH1(STRPTR, getlangstring,
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-        return __polish_strings[id];
+        return __malti_strings[id];
     else
         return NULL;
 
@@ -266,7 +268,7 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __polish_strings[] =
+const STRPTR __malti_strings[] =
 {
     /* A blank string */
     "",
@@ -275,31 +277,27 @@ const STRPTR __polish_strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-
-    // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
-    // NOTICE: deadwood: I agree
-
-    "Niedziala", "Poniedzia³ek", "Wtorek", "¦roda", "Czwartek",
-    "Pi±tek", "Sobota",
+    "il-¡add", "it-Tnejn", "it-Tlieta", "l-Erbg±a", "il-¡amis",
+    "il-Õimg±a0", "is-Sibt",
 
     /* Abbreviated days of the week */
-    "Ni", "Po", "Wt", "¦r", "Cz", "Pi", "So",
+    "¡ad", "Tne", "Tli", "Erb", "¡am", "Õim", "Sib",
 
     /* Months of the year */
-    "Styczeñ", "Luty", "Marzec",
-    "Kwiecieñ", "Maj", "Czerwiec",
-    "Lipiec", "Sierpieñ", "Wrzesieñ",
-    "Pa¼dziernik", "Listopad", "Grudzieñ",
+    "Jannar",  "Frar",     "Marzu",
+    "April",   "Mejju",    "Õunju",
+    "Lulju",   "Awissu",   "Settembru",
+    "Ottubru", "Novembru", "Diåembru",
 
     /* Abbreviated months of the year */
-    "I", "II", "III", "IV", "V", "VI",
-    "VII", "VIII", "IX", "X", "XI", "XII",
+    "Jan", "Fra", "Mar", "Apr", "Mej", "Õun",
+    "Lul", "Awi", "Set", "Ott", "Nov", "Diå",
 
-    "Tak", /* Yes, affirmative response */
-    "Nie", /* No/negative response */
+    "Iva", /* Yes, affirmative response */
+    "Le",  /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "Rano", "Po po³.",
+    "AM", "PM",
 
     /* Soft and hard hyphens */
     "\xAD", "-",
@@ -313,7 +311,7 @@ const STRPTR __polish_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Wczoraj", "Dzi¶", "Jutro", "Przysz³o¶æ"
+    "Ilbiera±", "Illum", "G±ada", "Fil-futur"
 };
 
 /* This is the end of ROMtag marker. */

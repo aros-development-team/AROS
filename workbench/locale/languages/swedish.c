@@ -1,12 +1,9 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: nederlands.language description file.
-    Lang: english
+    Desc: swedish.language description file.
 */
-
-/*  Language file for the Dutch language. */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -20,10 +17,12 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "nederlands" /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: nederlands.language 41.0 (08.01.1998)"
+#define LANGSTR     "swedish"           /* String version of above      */
+#define NLANGSTR    "Svenska"           /* Native version of LANGSTR    */
+#define LANGVER     41                  /* Version number of language   */
+#define LANGREV     2                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -34,8 +33,8 @@ AROS_LD1(STRPTR, getlangstring,
 /* Bit masks for locale .language functions. Only implement GetString() */
 #define LF_GetLangStr       (1L << 3)
 
-/* Arrays for French character type/conversion */
-extern const STRPTR __dutch_strings[];
+/* Arrays for Swedish character type/conversion */
+extern const STRPTR __svenska_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -82,6 +81,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;
@@ -131,6 +131,7 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
 }
 
 
+
 AROS_LH1(struct Language *, open,
     AROS_LHA(ULONG, version, D0),
     struct Language *, language, 1, language)
@@ -144,6 +145,7 @@ AROS_LH1(struct Language *, open,
 
     AROS_LIBFUNC_EXIT
 }
+
 
 AROS_LH0(BPTR, close, struct Language *, language, 2, language)
 {
@@ -161,6 +163,7 @@ AROS_LH0(BPTR, close, struct Language *, language, 2, language)
     return BNULL;
     AROS_LIBFUNC_EXIT
 }
+
 
 AROS_LH0(BPTR, expunge, struct Language *, language, 3, language)
 {
@@ -184,6 +187,7 @@ AROS_LH0(BPTR, expunge, struct Language *, language, 3, language)
 
     AROS_LIBFUNC_EXIT
 }
+
 
 AROS_LH0I(int, null, struct Language *, language, 0, language)
 {
@@ -228,7 +232,7 @@ AROS_LH1(STRPTR, getlangstring,
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-	return __dutch_strings[id];
+	return __svenska_strings[id];
     else
 	return NULL;
 
@@ -265,7 +269,7 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __dutch_strings[] =
+const STRPTR __svenska_strings[] =
 {
     /* A blank string */
     "",
@@ -274,33 +278,36 @@ const STRPTR __dutch_strings[] =
 	In English this would be Sunday, this depends upon the settings
 	of Locale->CalendarType.
     */
-    "Zondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag",
-    "Vrijdag", "Zaterdag",
+
+    // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
+
+    "Söndag", "Måndag", "Tisdag", "Onsdag", "Torsdag",
+    "Fredag", "Lördag",
 
     /* Abbreviated days of the week */
-    "Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za",
+    "Sön", "Mån", "Tis", "Ons", "Tor", "Fre", "Lör",
 
     /* Months of the year */
-    "Januari", "Februari", "Maart",
-    "April", "Mei", "Juni",
-    "Juli", "Augustus", "September",
+    "Januari", "Februari", "Mars",
+    "April", "Maj", "Juni",
+    "Juli", "Augusti", "September",
     "Oktober", "November", "December",
 
     /* Abbreviated months of the year */
-    "Jan", "Feb", "Maa", "Apr", "Mei", "Jun",
+    "Jan", "Feb", "Mar", "Apr", "Maj", "Jun",
     "Jul", "Aug", "Sep", "Okt", "Nov", "Dec",
 
     "Ja", /* Yes, affirmative response */
-    "Nee", /* No/negative response */
+    "Nej", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
-    "VM", "NM",
+    "fm", "em",
 
     /* Soft and hard hyphens */
-    "-", "-",
+    "­", "-",
 
     /* Open and close quotes */
-    "\"", "\"",
+    "»", "»",
 
     /* Days: But not actual day names
        Yesterday - the day before the current
@@ -308,8 +315,8 @@ const STRPTR __dutch_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Gisteren", "Vandaag", "Morgen", "Toekomst"
+    "Igår", "Idag", "Imorgon", "Framtid"
 };
 
 /* This is the end of ROMtag marker. */
-const char end=0;
+const char end = 0;

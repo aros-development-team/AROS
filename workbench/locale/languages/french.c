@@ -1,12 +1,10 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: francais.language description file.
+    Desc: french.language description file.
     Lang: english
 */
-
-/*  Language file for the French language. */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -20,10 +18,12 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "français"   /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: français.language 41.0 (08.01.1998)"
+#define LANGSTR     "french"            /* String version of above      */
+#define NLANGSTR    "Français"          /* Native version of LANGSTR    */
+#define LANGVER     41          /* Version number of language   */
+#define LANGREV     1           /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.1 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -82,6 +82,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;

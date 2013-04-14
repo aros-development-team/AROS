@@ -1,12 +1,9 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: dansk.language description file.
-    Lang: english
+    Desc: catalonian.language description file.
 */
-
-/*  Language file for the dansk language. */
 
 #include <exec/types.h>
 #include <aros/system.h>
@@ -20,22 +17,25 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "dansk"   /* String version of above */
-#define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: dansk.language 41.0 (03.02.2001)"
+#define LANGSTR     "catalonian"        /* String version of above      */
+#define NLANGSTR    "Català"            /* Native version of LANGSTR    */
+#define LANGVER     41                  /* Version number of language   */
+#define LANGREV     1                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.1 (14.04.2013)"
+#define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
-    AROS_LHA(ULONG, id, D0),
-    struct LocaleBase *, LocaleBase, 9, language);
+    AROS_LDA(ULONG, id, D0),
+    struct LocaleBase *, LocaleBase, 9, language
+);
 
 /* ----------------------------------------------------------------------- */
 
 /* Bit masks for locale .language functions. Only implement GetString() */
 #define LF_GetLangStr       (1L << 3)
 
-/* Arrays for Italian character type/conversion */
-extern const STRPTR __dansk_strings[];
+/* Arrays for Catalan character type/conversion */
+extern const STRPTR __catalan_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -54,8 +54,9 @@ extern const APTR inittabl[4];
 extern void *const functable[];
 extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
 AROS_LD1(struct Language *, open,
-    AROS_LHA(ULONG, version, D0),
-    struct Language *, language, 1, language);
+    AROS_LDA(ULONG, version, D0),
+    struct Language *, language, 1, language
+);
 AROS_LD0(BPTR, close, struct Language *, language, 2, language);
 AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
 AROS_LD0I(int, null, struct Language *, language, 0, language);
@@ -82,6 +83,7 @@ const struct Resident languageTag =
 };
 
 const UBYTE name[]=LANGSTR ".language";
+const UBYTE nativelang[]=NLANGTAG;                      /* N.B - MUST come before $VER: */
 const UBYTE version[]=LANGTAG;
 
 const ULONG datatable = 0;
@@ -134,7 +136,8 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
 
 AROS_LH1(struct Language *, open,
     AROS_LHA(ULONG, version, D0),
-    struct Language *, language, 1, language)
+    struct Language *, language, 1, language
+)
 {
     AROS_LIBFUNC_INIT
     language->library.lib_OpenCnt++;
@@ -221,14 +224,15 @@ AROS_LH0(ULONG, mask, struct Language *, language, 5, language)
 */
 AROS_LH1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
-    struct LocaleBase *, LocaleBase, 9, language)
+    struct LocaleBase *, LocaleBase, 9, language
+)
 {
     AROS_LIBFUNC_INIT
 
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-	return __dansk_strings[id];
+	return __catalan_strings[id];
     else
 	return NULL;
 
@@ -255,7 +259,7 @@ void *const functable[] =
     &AROS_SLIB_ENTRY(null, language, 0),
     &AROS_SLIB_ENTRY(null, language, 0),
     &AROS_SLIB_ENTRY(null, language, 0),    
-    &AROS_SLIB_ENTRY(getlangstring, language,9),
+    &AROS_SLIB_ENTRY(getlangstring, language, 9),
     (void *)-1
 };
 
@@ -265,7 +269,7 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __dansk_strings[] =
+const STRPTR __catalan_strings[] =
 {
     /* A blank string */
     "",
@@ -275,32 +279,32 @@ const STRPTR __dansk_strings[] =
 	of Locale->CalendarType.
     */
 
-    // NOTICE: stegerg: I think this must always start with Sunday and not what comment above says
+/* FIXME: stegerg: I think this must always start with Sunday and not what comment above says */
 
-    "Søndag", "Mandag", "Tirsdag", "Onsdag", "Torsdag",
-    "Fredag", "Lørdag",
+    "Diumenge", "Dilluns", "Dimarts", "Dimecres", "Dijous",
+    "Divendres", "Dissabte",
 
     /* Abbreviated days of the week */
-    "Søn", "Man", "Tir", "Ons", "Tor", "Fre", "Lør",
+    "Dg", "Dl", "Dt", "Dc", "Dj", "Dv", "Ds",
 
     /* Months of the year */
-    "Januar", "Februar", "Marts",
-    "April", "Maj", "Juni",
-    "Juli", "August", "September",
-    "Oktober", "November", "December",
+    "Gener", "Febrer", "Març",
+    "Abril", "Maig", "Juny",
+    "Juliol", "Agost", "Setembre",
+    "Octubre", "Novembre", "Desembre",
 
     /* Abbreviated months of the year */
-    "Jan", "Feb", "Mar", "Apr", "Maj", "Jun",
-    "Jul", "Aug", "Sep", "Okt", "Nov", "Dec",
+    "Gn", "Fb", "Mç", "Ab", "Mg", "Jn",
+    "Jl", "Ag", "St", "Oc", "Nv", "Ds",
 
-    "Ja", /* Yes, affirmative response */
-    "Nej", /* No/negative response */
+    "Sí", /* Yes, affirmative response */
+    "No", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
     "AM", "PM",
 
     /* Soft and hard hyphens */
-    "-", "-",
+    "\xAD", "-",
 
     /* Open and close quotes */
     "\"", "\"",
@@ -311,7 +315,7 @@ const STRPTR __dansk_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "i går", "i dag", "i morgen", "fremtid"
+    "Ahir", "Avui", "Demà", "Futur"
 };
 
 /* This is the end of ROMtag marker. */
