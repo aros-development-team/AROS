@@ -1,14 +1,15 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FLAGS := $(notdir $(call WILDCARD, countries/*))
+REGIONFLAGS := $(notdir $(call WILDCARD, countries/*))
+MISCFLAGS := $(notdir $(call WILDCARD, misc/*))
 
 #MM- workbench-locale : workbench-locale-flags-countries workbench-locale-flags-misc
 
-%copy_files_q mmake=workbench-locale-flags-countries files=$(FLAGS) src=countries \
+%copy_files_q mmake=workbench-locale-flags-countries files=$(REGIONFLAGS) src=countries \
     dst=$(AROS_LOCALE)/Flags/Countries
 
-%copy_files_q mmake=workbench-locale-flags-misc files=$(FLAGS) src=misc \
+%copy_files_q mmake=workbench-locale-flags-misc files=$(MISCFLAGS) src=misc \
     dst=$(AROS_LOCALE)/Flags/Misc
 
 
