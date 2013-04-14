@@ -140,13 +140,15 @@ char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
 {
     BPTR fileHandle;
     char tmpbuff[32];
-    int len = 0, pos = 0, i;
+    int read, len = 0, pos, i;
     BOOL match = FALSE;
 
     if ((fileHandle = Open(ap->ap_Info.fib_FileName, MODE_OLDFILE)) != BNULL)
     {
-        while ((len = Read(fileHandle, &tmpbuff[len], sizeof(tmpbuff) - len)) > 0)
+        while ((read = Read(fileHandle, &tmpbuff[len], sizeof(tmpbuff) - len)) > 0)
         {
+            len = len + read;
+
             if (match)
             {
                 for (i = 0; i < len; i++)
@@ -156,7 +158,7 @@ char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
                         FreeVecPooled(mempool, *languageNamePtr);
                         *languageNamePtr = AllocVecPooled(mempool, i + 1);
                         CopyMem(tmpbuff, *languageNamePtr, i);
-                        D(bug("[LocalePrefs] GetAROSLanguageAttribs: NativeName '%s'\n", *languageNamePtr));
+                        D(bug("[LocalePrefs] GetAROSLanguageAttribs: NativeName (A) '%s'\n", *languageNamePtr));
                         return *languageNamePtr;
                     }
                     /* we shouldnt really ever reach here .. */
@@ -176,7 +178,7 @@ char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
                         if ((len - pos) > 0)
                         {
                             CopyMem(&tmpbuff[pos], tmpbuff, (len - pos));
-                            len = pos;
+                            len = len - pos;
                             for (i = 0; i < len; i++)
                             {
                                 if (tmpbuff[i] == '\0')
@@ -184,7 +186,7 @@ char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
                                     FreeVecPooled(mempool, *languageNamePtr);
                                     *languageNamePtr = AllocVecPooled(mempool, i + 1);
                                     CopyMem(tmpbuff, *languageNamePtr, i);
-                                    D(bug("[LocalePrefs] GetAROSLanguageAttribs: NativeName '%s'\n", *languageNamePtr));
+                                    D(bug("[LocalePrefs] GetAROSLanguageAttribs: NativeName (B) '%s'\n", *languageNamePtr));
                                     return *languageNamePtr;
                                 }
                             }
@@ -197,8 +199,8 @@ char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
                 }
                 if (!match && (pos < len))
                 {
-                    CopyMem(&tmpbuff[pos], &tmpbuff[0], len - pos);
-                    len = pos;
+                    CopyMem(&tmpbuff[pos], tmpbuff, (len - pos));
+                    len = len - pos;
                 }
             }
         }
@@ -242,7 +244,7 @@ STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
                     D(bug("[LocalePrefs] ScanDir: Checking for FLAG chunk\n"));
                     if (!(entry->displayflag = GetAROSRegionAttribs(&ap, &entry->node.ln_Name)))
                     {
-                        entry->displayflag = AllocVec(strlen(entry->realname) + strlen(flagpathstr) + 12, MEMF_CLEAR);
+                        entry->displayflag = AllocVecPooled(mempool, strlen(entry->realname) + strlen(flagpathstr) + 12);
                         sprintf(entry->displayflag, "%sCountries/%s]", flagpathstr, entry->realname);
                     }
                 }
@@ -444,12 +446,14 @@ BOOL Prefs_ImportFH(BPTR fh)
     } /* if ((iff = AllocIFF())) */
 
     D(bug("[LocalePrefs] CountryName: %s\n",localeprefs.lp_CountryName));
-    int i=0;
-    while(i<10 && localeprefs.lp_PreferredLanguages[i])
-    {
-        D(bug("[LocalePrefs] preferred %ld: %s\n",i,localeprefs.lp_PreferredLanguages[i]));
-        i++;
-    }
+
+    D(
+        int i;
+        for(i = 0; i < 10 && localeprefs.lp_PreferredLanguages[i]; i++)
+        {
+            bug("[LocalePrefs] preferred %ld: %s\n",i,localeprefs.lp_PreferredLanguages[i]);
+        }
+    )
     D(bug("[LocalePrefs] lp_GMTOffset: %ld\n",localeprefs.lp_GMTOffset));
     return retval;
 }
