@@ -136,6 +136,76 @@ char *GetAROSRegionAttribs(struct AnchorPath *ap, char **regionNamePtr)
     return lockFlag;
 }
 
+char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
+{
+    BPTR fileHandle;
+    char tmpbuff[32];
+    int len = 0, pos = 0, i;
+    BOOL match = FALSE;
+
+    if ((fileHandle = Open(ap->ap_Info.fib_FileName, MODE_OLDFILE)) != BNULL)
+    {
+        while ((len = Read(fileHandle, &tmpbuff[len], sizeof(tmpbuff) - len)) > 0)
+        {
+            if (match)
+            {
+                for (i = 0; i < len; i++)
+                {
+                    if (tmpbuff[i] == '\0')
+                    {
+                        FreeVecPooled(mempool, *languageNamePtr);
+                        *languageNamePtr = AllocVecPooled(mempool, i + 1);
+                        CopyMem(tmpbuff, *languageNamePtr, i);
+                        D(bug("[LocalePrefs] GetAROSLanguageAttribs: NativeName '%s'\n", *languageNamePtr));
+                        return *languageNamePtr;
+                    }
+                    /* we shouldnt really ever reach here .. */
+                }
+            }
+            else
+            {
+                pos = 0;
+                
+                while ((len - pos) >= 7)
+                {
+                    if (strncmp(&tmpbuff[pos], "$NLANG:", 7) == 0)
+                    {
+                        match = TRUE;
+                        pos += 7;
+
+                        if ((len - pos) > 0)
+                        {
+                            CopyMem(&tmpbuff[pos], tmpbuff, (len - pos));
+                            len = pos;
+                            for (i = 0; i < len; i++)
+                            {
+                                if (tmpbuff[i] == '\0')
+                                {
+                                    FreeVecPooled(mempool, *languageNamePtr);
+                                    *languageNamePtr = AllocVecPooled(mempool, i + 1);
+                                    CopyMem(tmpbuff, *languageNamePtr, i);
+                                    D(bug("[LocalePrefs] GetAROSLanguageAttribs: NativeName '%s'\n", *languageNamePtr));
+                                    return *languageNamePtr;
+                                }
+                            }
+                        }
+                        else
+                            len = 0;
+                    }
+                    else
+                        pos++;
+                }
+                if (!match && (pos < len))
+                {
+                    CopyMem(&tmpbuff[pos], &tmpbuff[0], len - pos);
+                    len = pos;
+                }
+            }
+        }
+        Close(fileHandle);
+    }
+}
+
 /*********************************************************************************************/
 
 STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
@@ -178,7 +248,8 @@ STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
                 }
                 else if (entrysize == sizeof(struct LanguageEntry))
                 {
-                    // TODO: handle translating english language name -> native name.
+                    D(bug("[LocalePrefs] ScanDir: Checking for native Language name\n"));
+                    GetAROSLanguageAttribs(&ap, &entry->node.ln_Name);
                 }
 
                 sp = entry->node.ln_Name;
