@@ -2,7 +2,7 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: czechaslovakian.language description file.
+    Desc: czech.language description file.
     Char: ISO 8859-2
 */
 
@@ -18,11 +18,11 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "czechaslovakian"   /* String version of above      */
-#define NLANGSTR    "Czech"             /* Native version of LANGSTR    */
+#define LANGSTR     "czech"             /* String version of above      */
+#define NLANGSTR    "èeský"             /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
-#define LANGREV     2                   /* Revision number of language  */
-#define LANGTAG     "\0$VER: " LANGSTR ".language 41.2 (14.04.2013)"
+#define LANGREV     3                   /* Revision number of language  */
+#define LANGTAG     "\0$VER: " LANGSTR ".language 41.3 (15.04.2013)"
 #define NLANGTAG    "$NLANG:" NLANGSTR
 
 AROS_LD1(STRPTR, getlangstring,
