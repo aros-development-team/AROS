@@ -206,6 +206,7 @@ char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
         }
         Close(fileHandle);
     }
+    return NULL;
 }
 
 /*********************************************************************************************/
