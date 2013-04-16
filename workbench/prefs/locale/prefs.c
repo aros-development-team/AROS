@@ -128,7 +128,7 @@ char *GetAROSRegionAttribs(struct AnchorPath *ap, char **regionNamePtr)
                 }
                 CloseIFF(iff);
             }
-            Close(iff->iff_Stream);
+            Close((BPTR)iff->iff_Stream);
         }
         FreeIFF(iff);
     }
