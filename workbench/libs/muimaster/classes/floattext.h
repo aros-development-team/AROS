@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_FLOATTEXT_H
 
 /*
-    Copyright © 2002-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,4 +24,4 @@
 
 extern const struct __MUIBuiltinClass _MUI_Floattext_desc;      /* PRIV */
 
-#endif /* _MUI_CLASSES_VOLUMELIST_H */
+#endif /* _MUI_CLASSES_FLOATTEXT_H */
