@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -70,10 +70,12 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
     WORD width;
     struct Window *window;
     UWORD i, count, pos, line_size, space_count = 0, extra_space_count,
-        space_width, space_multiple = 0, bonus_space_count,
+        space_width, space_multiple = 0, bonus_space_count, line_len,
         bonus_space_mod = 1, space_no_in = 0, space_no_out, stripped_pos,
-        stripped_count, control_count, tab_count;
-    UBYTE *text, *p, *q, *r, c, *line = NULL, *stripped_text = NULL;
+        stripped_count, stripped_size = 0, control_count, old_control_count,
+        tab_count;
+    UBYTE *text, *p, *q, *r, c, *line = NULL, *old_line,
+        *stripped_text = NULL;
     LONG len, stripped_len;
     BOOL justify, found, is_empty;
 
@@ -104,17 +106,21 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
 
             if (len > 0)
             {
-                /* Allocate line/paragraph buffers */
+                /* Allocate paragraph buffer (the buffer size assumes the
+                 * worst-case scenario: every character is a tab) */
 
-                if (line == NULL || len >= line_size)
+                if (stripped_text == NULL
+                    || len * data->tabsize >= stripped_size)
+                {
+                    FreeVec(stripped_text);
+                    stripped_size = len * data->tabsize + 1;
+                    stripped_text = AllocVec(stripped_size, MEMF_ANY);
+                }
+                if (stripped_text == NULL)
                 {
                     FreeVec(line);
-                    line = AllocVec(len + 1, MEMF_ANY);
-                    stripped_text = AllocVec(len + 1, MEMF_ANY);
-                    line_size = len + 1;
-                }
-                if (line == NULL || stripped_text == NULL)
                     return;
+                }
 
                 /* Make a copy of paragraph text without control sequences
                  * or skip-chars, and with tabs expanded to spaces */
@@ -142,9 +148,14 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
                 *q = '\0';
                 stripped_len = MyStrLen(stripped_text);
 
-                /* Divide this paragraph into lines */
+                /* Reuse old line buffer, but don't carry over control codes
+                 * into new paragraph */
 
-                line[0] = '\0';
+                if (line != NULL)
+                    line[0] = '\0';
+                old_control_count = control_count = 0;
+
+                /* Divide this paragraph into lines */
 
                 while ((stripped_count = FitParagraphLine(stripped_text,
                     stripped_len, width, stripped_pos, window)) != 0)
@@ -152,6 +163,7 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
                     /* Count number of characters for this line in original
                      * text */
 
+                    old_control_count += control_count;
                     control_count = tab_count = 0;
                     for (i = 0, p = text + pos; i < stripped_count
                         || (i == stripped_count && *p != ' ' && *p != '\t');
@@ -180,8 +192,7 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
                         else
                             i++;
                     }
-                    count =
-                        stripped_count + control_count
+                    count = stripped_count + control_count
                         - tab_count * data->tabsize;
 
                     /* Default to justified text if it's enabled and this
@@ -230,18 +241,50 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
                             && pos + count == len)
                             justify = FALSE;
                     }
+                    else
+                        extra_space_count = 0;
+
+                    /* Count number of characters in line that will be
+                     * inserted into List object */
+
+                    line_len = old_control_count + control_count
+                        + stripped_count
+                        + tab_count * (data->tabsize - 1) + extra_space_count;
+
+                    /* Allocate line buffer (we allocate more space than
+                     * necessary to reduce the need to reallocate if later
+                     * lines are longer) */
+
+                    old_line = line;
+                    if (line == NULL || line_len >= line_size)
+                    {
+                        line_size = line_len * 2 + 1;
+                        line = AllocVec(line_size, MEMF_ANY);
+                    }
+                    if (line == NULL)
+                    {
+                        FreeVec(old_line);
+                        FreeVec(stripped_text);
+                        return;
+                    }
 
                     /* Prefix new line with all control characters contained
                      * in previous line */
 
-                    for (p = q = line; *p != '\0'; p++)
+                    q = line;
+                    if (old_line != NULL)
                     {
-                        if (*p == '\33')
+                        for (p = old_line; *p != '\0'; p++)
                         {
-                            *q++ = *p++;
-                            *q++ = *p;
+                            if (*p == '\33')
+                            {
+                                *q++ = *p++;
+                                *q++ = *p;
+                            }
                         }
                     }
+                    if (old_line != line)
+                        FreeVec(old_line);
 
                     /* Generate line to insert in List object */
 
@@ -350,6 +393,8 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
             if (text[pos] == '\n')
                 pos++;
         }
+        FreeVec(line);
+        FreeVec(stripped_text);
     }
 
     data->typesetting = FALSE;
