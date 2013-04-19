@@ -8,7 +8,7 @@ FILES := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
          menus barlabelclass fillrectclass groupgclass wbtasktalk \
          rootclass icclass modelclass itexticlass misc sysiclass menutask \
 	 windecorclass scrdecorclass menudecorclass monitorclass screennotifytask \
-	 sysrequest_intern
+	 sysrequest_intern shutdownscreen
 
 FUNCS := \
 	activategadget \
@@ -164,7 +164,8 @@ USER_INCLUDES := -D__DOS_NOLIBBASE__ \
                  -D__OOP_NOMETHODBASES__ \
                  -D__OOP_NOATTRBASES__ \
                  -D__GRAPHICS_NOLIBBASE__ \
-                 -D__KEYMAP_NOLIBBASE__
+                 -D__KEYMAP_NOLIBBASE__ \
+                 -I$(GENDIR)/$(CURDIR)
 
 #MM kernel-intuition : kernel-intuition-$(ARCH)-$(CPU)
 #MM kernel-intuition-linklib : kernel-intuition-$(ARCH)-$(CPU)
@@ -185,4 +186,8 @@ USER_INCLUDES := -D__DOS_NOLIBBASE__ \
   modname=intuition modtype=library \
   files="intuition_init $(FUNCS) $(FILES)"
 
+$(GENDIR)/$(CURDIR)/shutdownscreen.d : $(GENDIR)/$(CURDIR)/shutdown_image.h
 
+$(GENDIR)/$(CURDIR)/shutdown_image.h : shutdown.ilbm
+	@$(ECHO) Creating $@...
+	@$(ILBMTOC) $< >$@
