@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private data belonging to exec.library
@@ -37,6 +37,7 @@ struct IntExecBase
     struct List ResetHandlers;                  /* Reset handlers list                                   */
     struct Interrupt ColdResetHandler;          /* Reset handler that causes cold reboot */
     struct Interrupt WarmResetHandler;          /* Reset handler that causes warm reboot */
+    struct Interrupt ShutdownHandler;           /* Reset handler that halts CPU */
     struct MinList AllocMemList;                /* Mungwall allocations list                             */
     struct SignalSemaphore MemListSem;          /* Memory list protection semaphore                      */
     struct SignalSemaphore LowMemSem;           /* Lock for single-threading low memory handlers         */
