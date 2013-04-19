@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2013, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -274,6 +274,16 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     NEWLIST(&GetPrivIBase(LIBBASE)->MonitorList);
     InitSemaphore(&GetPrivIBase(LIBBASE)->MonitorListSem);
     SetDisplayDriverCallback(DisplayDriverNotify, LIBBASE);
+
+#if defined(__AROS_ARCH_pc__)    /* for now */
+    /* Install reset handler to display manual shutdown screen */
+    GetPrivIBase(LIBBASE)->ShutdownHandler.is_Node.ln_Pri = -96;
+    GetPrivIBase(LIBBASE)->ShutdownHandler.is_Code =
+        (VOID_FUNC)ShutdownScreenHandler;
+    GetPrivIBase(LIBBASE)->ShutdownHandler.is_Data =
+        &GetPrivIBase(LIBBASE)->ShutdownHandler;
+    AddResetCallback(&GetPrivIBase(LIBBASE)->ShutdownHandler);
+#endif
 
     DEBUG_INIT(dprintf("LIB_Init: done\n"));
 

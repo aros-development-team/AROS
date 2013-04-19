@@ -2,7 +2,7 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2013, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -24,6 +24,9 @@
 #endif
 #ifndef EXEC_PORTS_H
 #   include <exec/ports.h>
+#endif
+#ifndef EXEC_INTERRUPTS_H
+#   include <exec/interrupts.h>
 #endif
 #ifndef EXEC_IO_H
 #   include <exec/io.h>
@@ -432,7 +435,7 @@ struct IntIntuitionBase
     char                    	*WorkbenchTitle; /* written by locale as it seems..what a crappy interface*/
 
     /*
-     * savety pad for intuitionbase accesses
+     * safety pad for intuitionbase accesses
      * probably needs to be smarter
      */
     UBYTE                   	 Pad[0x800];
@@ -612,6 +615,8 @@ struct IntIntuitionBase
     struct IClass		*monitorclass;
     struct MinList		 MonitorList;
     struct SignalSemaphore	 MonitorListSem;
+
+    struct Interrupt             ShutdownHandler;
 };
 
 struct SharedPointer
@@ -1053,6 +1058,7 @@ void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
 
 /* Private extra functions */
 OOP_Object *FindMonitor(ULONG modeid, struct IntuitionBase *IntuitionBase);
+AROS_INTP(ShutdownScreenHandler);
 
 #ifdef __MORPHOS__
 BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx);
