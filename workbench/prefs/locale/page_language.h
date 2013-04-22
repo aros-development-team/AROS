@@ -13,6 +13,10 @@
 #define MUIB_Language                   (TAG_USER | 0x30000000)
 
 /*** Attributes *************************************************************/
+#define MUIM_Language_GetBaseName       (MUIB_Language | 0)
+#define MUIM_Language_GetNativeName     (MUIB_Language | 1)
+
+/*** Attributes *************************************************************/
 #define MUIA_Language_Preferred         (MUIB_Language | 0)
 #define MUIA_Language_Characterset      (MUIB_Language | 1)
 

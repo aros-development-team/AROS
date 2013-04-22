@@ -446,16 +446,16 @@ BOOL Prefs_ImportFH(BPTR fh)
         FreeIFF(iff);
     } /* if ((iff = AllocIFF())) */
 
-    D(bug("[LocalePrefs] CountryName: %s\n",localeprefs.lp_CountryName));
+    D(bug("[LocalePrefs] LoadPrefsFH: CountryName = '%s'\n", localeprefs.lp_CountryName));
 
     D(
         int i;
         for(i = 0; i < 10 && localeprefs.lp_PreferredLanguages[i]; i++)
         {
-            bug("[LocalePrefs] preferred %ld: %s\n",i,localeprefs.lp_PreferredLanguages[i]);
+            bug("[LocalePrefs] LoadPrefsFH: preferred %02d = '%s'\n", i, localeprefs.lp_PreferredLanguages[i]);
         }
     )
-    D(bug("[LocalePrefs] lp_GMTOffset: %ld\n",localeprefs.lp_GMTOffset));
+    D(bug("[LocalePrefs] LoadPrefsFH: lp_GMTOffset = %ld\n", localeprefs.lp_GMTOffset));
     return retval;
 }
 
@@ -473,7 +473,7 @@ BOOL Prefs_ExportFH(BPTR fh)
 
     D(bug("[LocalePrefs] SavePrefsFH: fh: %lx\n", fh));
 
-    saveprefs = localeprefs;
+    CopyMem(&localeprefs, &saveprefs, sizeof(struct LocalePrefs));
 
 #if !AROS_BIG_ENDIAN
     FixLocaleEndianess(&saveprefs);

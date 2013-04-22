@@ -55,23 +55,15 @@ static struct Hook hook_clear;
 STATIC VOID update_language_lists(struct Language_DATA *data)
 {
     struct LanguageEntry *entry;
-    int a;
-    int p;
+    int a = 0;
+    int p = 0;
 
-    a=0;
-    p=0;
     ForeachNode(&language_list, entry)
     {
         if(entry->preferred)
-        {
-            data->strings_preferred[p] = entry->lve.node.ln_Name;
-            p++;
-        }
+            data->strings_preferred[p++] = entry->lve.node.ln_Name;
         else
-        {
-            data->strings_available[a] = entry->lve.node.ln_Name;
-            a++;
-        }
+            data->strings_available[a++] = entry->lve.node.ln_Name;
     }
     data->strings_available[a] = NULL;
     data->strings_preferred[p] = NULL;
@@ -86,16 +78,15 @@ STATIC VOID init_language_lists(struct Language_DATA *data)
     data->nr_languages = 0;
     ForeachNode(&language_list, entry)
     {
-        D(bug("[LocalePrefs-LanguageClass]   language %s\n",entry->lve.node.ln_Name));
+        D(bug("[LocalePrefs-LanguageClass]   language '%s' ('%s')\n", entry->lve.node.ln_Name, entry->lve.realname));
         entry->preferred = FALSE;
 
         /* max 10 preferred langs, see prefs/locale.h */
-        for (i = 0; i < 10 && entry->preferred == FALSE && localeprefs.lp_PreferredLanguages[i][0]; i++)
+        for (i = 0; (i < 10) && (entry->preferred == FALSE) && (localeprefs.lp_PreferredLanguages[i][0]); i++)
         {
-            if (Stricmp(localeprefs.lp_PreferredLanguages[i], entry->lve.node.ln_Name) == 0)
+            if (Stricmp(localeprefs.lp_PreferredLanguages[i], entry->lve.realname) == 0)
             {
-                D(bug("[LocalePrefs-LanguageClass]            %s is preferred\n",
-                            entry->lve.node.ln_Name));
+                D(bug("[LocalePrefs-LanguageClass]            %s is preferred\n", entry->lve.realname));
                 entry->preferred = TRUE;
             }
         }
@@ -125,22 +116,23 @@ STATIC VOID init_language_lists(struct Language_DATA *data)
 
 STATIC VOID func_move_to_selected(char* selstr, struct Language_DATA *data)
 {
-    struct LanguageEntry *entry;
+    struct LanguageEntry *entry = NULL;
     unsigned int i = 0;
     char *test;
 
-    D(bug("[LocalePrefs-LanguageClass] func_move_to_selected(%s,..)\n", selstr));
+    D(bug("[LocalePrefs-LanguageClass] func_move_to_selected('%s')\n", selstr));
 
     if(selstr) {
         ForeachNode(&language_list, entry)
         {
-            if (stricmp(selstr, entry->lve.node.ln_Name) == 0)
+            if (Stricmp(selstr, entry->lve.realname) == 0)
             {
                 DoMethod(data->preferred,
                         MUIM_List_InsertSingle, entry->lve.node.ln_Name,
                         MUIV_List_Insert_Bottom);
 
                 entry->preferred = TRUE;
+                break;
             }
         }
     }
@@ -151,15 +143,18 @@ STATIC VOID func_move_to_selected(char* selstr, struct Language_DATA *data)
      * the Set method.
      */
 
-    GET(data->available,MUIA_List_Entries,&i);
-    while(i)
+    if (entry)
     {
-        i--;
-        DoMethod(data->available, MUIM_List_GetEntry, i, &test);
-        if (stricmp(selstr, test) == 0)
+        GET(data->available, MUIA_List_Entries, &i);
+        while(i)
         {
-            DoMethod(data->available, MUIM_List_Remove, i);
-            i = 0;
+            i--;
+            DoMethod(data->available, MUIM_List_GetEntry, i, &test);
+            if (Stricmp(entry->lve.node.ln_Name, test) == 0)
+            {
+                DoMethod(data->available, MUIM_List_Remove, i);
+                i = 0;
+            }
         }
     }
 }
@@ -173,7 +168,9 @@ AROS_UFH2
 {
     AROS_USERFUNC_INIT
 
-        struct Language_DATA *data= hook->h_Data;
+    struct Language_DATA *data = hook->h_Data;
+    struct LanguageEntry *entry;
+
     char  *selstr;
 
     D(bug("[LocalePrefs-LanguageClass] hook_func_available\n"));
@@ -181,7 +178,14 @@ AROS_UFH2
     DoMethod(obj,MUIM_List_GetEntry,
             MUIV_List_GetEntry_Active, &selstr);
 
-    func_move_to_selected(selstr, data);
+    ForeachNode(&language_list, entry)
+    {
+        if (Stricmp(selstr, entry->lve.node.ln_Name) == 0)
+        {
+            func_move_to_selected(entry->lve.realname, data);
+            break;
+        }
+    }
 
     AROS_USERFUNC_EXIT
 }
@@ -210,7 +214,7 @@ AROS_UFH2
 
         ForeachNode(&language_list, entry)
         {
-            if (strcmp(selstr, entry->lve.node.ln_Name) == 0)
+            if (Stricmp(selstr, entry->lve.node.ln_Name) == 0)
             {
                 DoMethod(data->available,
                         MUIM_List_InsertSingle, entry->lve.node.ln_Name,
@@ -281,7 +285,7 @@ AROS_UFH3
 
     GetAttr(MUIA_Text_Contents, string, (IPTR *)&oldentry);
     DoMethod(list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&listentry);
-    if (strcmp(listentry, oldentry))
+    if (Stricmp(listentry, oldentry))
     {
         SetAttrs(string, MUIA_Text_Contents, listentry, TAG_DONE);
         SetAttrs(hook->h_Data, MUIA_PrefsEditor_Changed, TRUE, TAG_DONE);
@@ -315,7 +319,7 @@ AROS_UFH3
             break;
         }
 
-        if (stricmp(strtext, listentry) == 0)
+        if (Stricmp(strtext, listentry) == 0)
         {
             SET(list, MUIA_List_Active, index);
             break;
@@ -602,13 +606,26 @@ static IPTR Language__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         case MUIA_Language_Preferred: /* return array of preferred language strings */
             for (i = 0; i < 10; i++)
             {
-                DoMethod(data->preferred, MUIM_List_GetEntry, i, &data->result[i]);
+                struct LanguageEntry *entry;
+                char *langNative = NULL;
+
+                DoMethod(data->preferred, MUIM_List_GetEntry, i, &langNative);
+                D(bug("[LocalePrefs-LanguageClass] Get: MUIA_Language_Preferred %02d = '%s'\n", i, langNative));
+                ForeachNode(&language_list, entry)
+                {
+                    if(Stricmp(langNative, entry->lve.node.ln_Name) == 0)
+                    {
+                        data->result[i] = entry->lve.realname;
+                        D(bug("[LocalePrefs-LanguageClass] Get:                   BaseName = '%s'\n", i, data->result[i]));
+                        break;
+                    }
+                 }
             }
             rc = (IPTR) data->result;
             break;
         case MUIA_Language_Characterset:
             GetAttr(MUIA_List_Active, data->cslist, (IPTR *)&i);
-            D(bug("[LocalePrefs-LanguageClass] Get: Active character set entry is %d\n", i));
+            D(bug("[LocalePrefs-LanguageClass] Get: MUIA_Language_Characterset = %d\n", i));
             if ((i == 0) || (i == MUIV_List_Active_Off))
                 *msg->opg_Storage = 0;
             else
@@ -644,6 +661,7 @@ static IPTR Language__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 {
                     if(localeprefs.lp_PreferredLanguages[i][0] != '\0')
                     {
+                        D(bug("[LocalePrefs-LanguageClass] OM_SET: MUIA_Language_Preferred %d = '%s'\n", i, localeprefs.lp_PreferredLanguages[i]));
                         func_move_to_selected(localeprefs.lp_PreferredLanguages[i], data);
                     }
                 }
@@ -653,6 +671,8 @@ static IPTR Language__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             case MUIA_Language_Characterset:
                 {
                     char *charset = (char *)tag->ti_Data;
+
+                    D(bug("[LocalePrefs-LanguageClass] OM_SET: MUIA_Language_Characterset = '%s'\n", i, charset));
 
                     if (!charset || !*charset)
                         DoMethod(data->cslist, MUIM_List_GetEntry, 0, (IPTR *)&charset);
