@@ -28,8 +28,6 @@ FILES := library \
   modname=TextEditor modtype=mcp \
   files=$(FILES)
 
-%localisestr string=français var=DIRFRENCH
-
 #MM includes-copy
 
 INCLUDE_FILES := TextEditor_mcp.h
@@ -42,13 +40,13 @@ LOCALE_C := $(TOP)/$(CURDIR)/locale.c
 
 #MM
 workbench-classes-zune-texteditor-mcp-locale : $(LOCALE_C) $(LOCALE_H) \
-    $(TARGETDIR)/deutsch/TextEditor_mcp.catalog \
+    $(TARGETDIR)/german/TextEditor_mcp.catalog \
     $(TARGETDIR)/czech/TextEditor_mcp.catalog \
-    $(TARGETDIR)/svenska/TextEditor_mcp.catalog \
-    $(TARGETDIR)/$(DIRFRENCH)/TextEditor_mcp.catalog \
-    $(TARGETDIR)/dansk/TextEditor_mcp.catalog \
+    $(TARGETDIR)/swedish/TextEditor_mcp.catalog \
+    $(TARGETDIR)/french/TextEditor_mcp.catalog \
+    $(TARGETDIR)/danish/TextEditor_mcp.catalog \
     $(TARGETDIR)/russian/TextEditor_mcp.catalog \
-    $(TARGETDIR)/polski/TextEditor_mcp.catalog
+    $(TARGETDIR)/polish/TextEditor_mcp.catalog
 
 $(LOCALE_H): locale/TextEditor_mcp.cd C_h.sd
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $(LOCALE_H)=$(SRCDIR)/$(CURDIR)/C_h.sd
@@ -56,32 +54,32 @@ $(LOCALE_H): locale/TextEditor_mcp.cd C_h.sd
 $(LOCALE_C): locale/TextEditor_mcp.cd C_c.sd
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $(LOCALE_C)=$(SRCDIR)/$(CURDIR)/C_c.sd
 
-$(TARGETDIR)/deutsch/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/german.ct
-	@$(MKDIR) $(TARGETDIR)/deutsch
+$(TARGETDIR)/german/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/german.ct
+	@$(MKDIR) $(TARGETDIR)/german
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
 
 $(TARGETDIR)/czech/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/czech.ct
 	@$(MKDIR) $(TARGETDIR)/czech
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
 
-$(TARGETDIR)/$(DIRFRENCH)/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/french.ct
-	@$(MKDIR) $(TARGETDIR)/$(DIRFRENCH)
+$(TARGETDIR)/french/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/french.ct
+	@$(MKDIR) $(TARGETDIR)/french
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
 
-$(TARGETDIR)/svenska/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/swedish.ct
-	@$(MKDIR) $(TARGETDIR)/svenska
+$(TARGETDIR)/swedish/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/swedish.ct
+	@$(MKDIR) $(TARGETDIR)/swedish
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
 
-$(TARGETDIR)/dansk/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/danish.ct
-	@$(MKDIR) $(TARGETDIR)/dansk
+$(TARGETDIR)/danish/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/danish.ct
+	@$(MKDIR) $(TARGETDIR)/danish
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
 
 $(TARGETDIR)/russian/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/russian.ct
 	@$(MKDIR) $(TARGETDIR)/russian
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
 
-$(TARGETDIR)/polski/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/polish.ct
-	@$(MKDIR) $(TARGETDIR)/polski
+$(TARGETDIR)/polish/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/polish.ct
+	@$(MKDIR) $(TARGETDIR)/polish
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
 
 #MM
