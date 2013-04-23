@@ -156,8 +156,8 @@ char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
                     if (tmpbuff[i] == '\0')
                     {
                         FreeVecPooled(mempool, *languageNamePtr);
-                        *languageNamePtr = AllocVecPooled(mempool, i + 1);
-                        CopyMem(tmpbuff, *languageNamePtr, i);
+                        *languageNamePtr = AllocVecPooled(mempool, i + 2);
+                        CopyMem(tmpbuff, *languageNamePtr, i + 1);
                         D(bug("[LocalePrefs] GetAROSLanguageAttribs: NativeName (A) '%s'\n", *languageNamePtr));
                         return *languageNamePtr;
                     }
@@ -184,8 +184,8 @@ char *GetAROSLanguageAttribs(struct AnchorPath *ap, char **languageNamePtr)
                                 if (tmpbuff[i] == '\0')
                                 {
                                     FreeVecPooled(mempool, *languageNamePtr);
-                                    *languageNamePtr = AllocVecPooled(mempool, i + 1);
-                                    CopyMem(tmpbuff, *languageNamePtr, i);
+                                    *languageNamePtr = AllocVecPooled(mempool, i + 2);
+                                    CopyMem(tmpbuff, *languageNamePtr, i + 1);
                                     D(bug("[LocalePrefs] GetAROSLanguageAttribs: NativeName (B) '%s'\n", *languageNamePtr));
                                     return *languageNamePtr;
                                 }
@@ -231,7 +231,7 @@ STATIC VOID ScanDirectory(char *pattern, struct List *list, LONG entrysize)
             entry = (struct ListviewEntry *)AllocPooled(mempool, entrysize);
             if (entry)
             {
-                entry->node.ln_Name = AllocVecPooled(mempool, strlen(ap.ap_Info.fib_FileName));
+                entry->node.ln_Name = AllocVecPooled(mempool, strlen(ap.ap_Info.fib_FileName) + 1);
                 strcpy(entry->node.ln_Name, ap.ap_Info.fib_FileName);
 
                 entry->node.ln_Name[0] = ToUpper(entry->node.ln_Name[0]);
