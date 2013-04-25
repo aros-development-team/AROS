@@ -60,17 +60,14 @@ void writeautoinit(struct config *cfg, int is_rel)
              forcelistit = forcelistit->next
             )
         {
-            fprintf(out, "extern struct Library *%s;\n", forcelistit->s);
+            /* By bringing in __aros_getbase_XXXBase() we assure parent will open
+               this library */
+            fprintf(
+                out,
+                "AROS_IMPORT_ASM_SYM(void *, __dummy_%s, __aros_getbase_%s);\n",
+                forcelistit->s, forcelistit->s
+            );
         }
-        fprintf(out, "\nvoid __%s_forcelibs(void)\n{\n", cfg->modulename);
-        for (forcelistit = cfg->forcelist;
-             forcelistit!=NULL;
-             forcelistit = forcelistit->next
-            )
-        {
-            fprintf(out, "    %s = NULL;\n", forcelistit->s);
-        }
-        fprintf(out, "}\n");
     }
     fclose(out);
 }
