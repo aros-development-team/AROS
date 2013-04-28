@@ -88,8 +88,6 @@ char *FormatMMContext(char *buffer, struct MMContext *ctx, struct ExecBase *SysB
 
 #ifdef NO_ALLOCATOR_CONTEXT
 
-#define MEMHEADERALLOCATORCTX_TOTAL (0)
-
 struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh, struct ExecBase * SysBase)
 {
     return NULL;
@@ -102,6 +100,11 @@ void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
 
 void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * mhac)
 {
+}
+
+ULONG mhac_GetCtxSize()
+{
+    return 0;
 }
 
 #define mhac_IsIndexEmpty(a)                (TRUE)
@@ -145,7 +148,10 @@ struct MemHeaderAllocatorCtx
     struct MemChunk         *mhac_PrevChunks[ALLOCATORCTXINDEXSIZE];
 };
 
-#define MEMHEADERALLOCATORCTX_TOTAL (AROS_ROUNDUP2(sizeof(struct MemHeaderAllocatorCtx), MEMCHUNK_TOTAL))
+ULONG mhac_GetCtxSize()
+{
+    return (AROS_ROUNDUP2(sizeof(struct MemHeaderAllocatorCtx), MEMCHUNK_TOTAL));
+}
 
 static BOOL mhac_IsIndexEmpty(struct MemHeaderAllocatorCtx * mhac)
 {
@@ -851,15 +857,15 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
              * pool when the block is freed. It can also be reused for another
              * large allocation, if it fits in.
              * Our final puddle size still includes MEMHEADER_TOTAL +
-             * MEMHEADERALLOCATORCTX_TOTAL in any case.
+             * allocator ctx size in any case.
              */
             IPTR puddleSize = pool->pool.PuddleSize;
 
-            if (memSize > puddleSize - (MEMHEADER_TOTAL + MEMHEADERALLOCATORCTX_TOTAL))
+            if (memSize > puddleSize - (MEMHEADER_TOTAL + mhac_GetCtxSize()))
             {
                 IPTR align = PrivExecBase(SysBase)->PageSize - 1;
 
-                puddleSize = memSize + MEMHEADER_TOTAL + MEMHEADERALLOCATORCTX_TOTAL;
+                puddleSize = memSize + MEMHEADER_TOTAL + mhac_GetCtxSize();
                 /* Align the size up to page boundary */
                 puddleSize = (puddleSize + align) & ~align;
             }
