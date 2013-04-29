@@ -101,7 +101,7 @@ static LONG MakeConWindow(struct filehandle *fh)
             if a user does e.g. dir >con:0/0/0/0
         */
         fh->nw.Width = fh->nw.Width > fh->nw.MinWidth ? fh->nw.Width : -1;
-        fh->nw.Height = fh->nw.Height > fh->nw.MinHeight ? fh->nw.Height : fh->nw.MinHeight;
+        fh->nw.Height = fh->nw.Height == -1 || fh->nw.Height > fh->nw.MinHeight ? fh->nw.Height : fh->nw.MinHeight;
 
         fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
     } else {
