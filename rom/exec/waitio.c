@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Wait until IO request completes.
@@ -24,8 +24,8 @@
 
 /*  FUNCTION
 	Waits until the I/O request is completed and removes it from the
-	reply port. If the message is already done when calling this function
-	it doesn't wait but just remove the message.
+	reply port. If the message is already done when calling this function,
+	it doesn't wait but just removes the message.
 
     INPUTS
 	iORequest - Pointer to iorequest structure.

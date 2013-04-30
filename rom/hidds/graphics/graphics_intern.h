@@ -222,7 +222,7 @@ struct class_static_data
 
     /*
        Pixel format "database". This is a list
-       of all pixelformats currently used bu some bitmap.
+       of all pixelformats currently used by some bitmap.
        The point of having this as a central db in the gfx hidd is
        that if several bitmaps are of the same pixel format
        they may point to the same PixFmt object instead

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1535,7 +1535,7 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
         return FALSE;
 
     res = HIDD_Gfx_SetCursorShape(data->handle->gfxhidd, HIDD_BM_OBJ(bm), msg->pointer->xoffset, msg->pointer->yoffset);
-    D(bug("[monitorclass] SetCursorShape() returned %d\n", res));
+    D(bug("[monitorclass] SetPointerShape() returned %d\n", res));
     if (res) {
 	data->pointer = msg->pointer;
 	/* This will fix up sprite position if hotspot changed */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -50,8 +50,8 @@
         dw    - delta to add to current height
 
     RESULT
-        result - TRUE everyting went alright
-                 FALSE an error occurred (out of memory)
+        result - TRUE if everything went right
+                 FALSE if an error occurred (out of memory)
 
     NOTES
 
@@ -62,10 +62,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {
@@ -92,11 +88,11 @@
      operation. Otherwise those latter areas might end up being
      backfilled multiple times -> flickering. As fixing CopyClipRects-
      ToClipRects() seems kinda complicated, I use a little trick: Set
-     a flag which tells the layers backfillhook calling function, not do
+     a flag which tells the layer's backfillhook calling function not to do
      that. Before executing the movesizelayer operation I backup the old
      damage region, and after executing of movesizelayer operation is done
-     I can use it to find out what areas where added to the damageregion.
-     i'll clear that special layer flag, and call the backfill hook for the
+     I can use it to find out what areas were added to the damageregion.
+     I'll clear that special layer flag, and call the backfill hook for the
      new damage areas. (stegerg) */
      
   if (IS_SIMPLEREFRESH(l))

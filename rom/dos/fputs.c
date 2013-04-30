@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -18,7 +18,7 @@
 #include <proto/dos.h>
 
         AROS_LH2(LONG, FPuts,
-/*              FPuts -- Writes a string the the specified output (buffered) */
+/*              FPuts -- Writes a string to the specified output (buffered) */
 
 /*  SYNOPSIS */
         AROS_LHA(BPTR,         file,   D1),

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP function OOP_ObtainAttrBase
@@ -29,11 +29,9 @@
 
 /*  FUNCTION
 	Maps a globally unique string interface ID into
-	a numeric AttrBase ID that is unique on
-	pr. machine basis. The AttrBase can be combiner
+	a numeric AttrBase ID that is unique on a
+	per machine basis. The AttrBase can be combined
 	with attribute offsets to generate attribute IDs.
-	
-	
 
     INPUTS
     	interfaceID	- globally unique interface identifier.
@@ -44,7 +42,7 @@
 	A return value of 0 means that the call failed.
 
     NOTES
-    	Obtained attrbases should be released with ReleasAttrBase().
+    	Obtained attrbases should be released with ReleaseAttrBase().
 
     EXAMPLE
 	#define aTimer_CurrentTime    (__AB_Timer + aoTime_CurrentTime)
@@ -61,8 +59,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -77,7 +73,7 @@
     ObtainSemaphore(&GetOBase(OOPBase)->ob_IIDTableLock);
     
     
-    /* Has ID allready been mapped to a numeric ID ? */
+    /* Has ID already been mapped to a numeric ID? */
     idb = (struct iid_bucket *)iidtable->Lookup(iidtable, (IPTR)interfaceID, GetOBase(OOPBase));
     if (idb)
     {
