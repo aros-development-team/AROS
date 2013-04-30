@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic support functions for layers.library.
@@ -955,12 +955,15 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
       oldcr = oldcr->Next;
   } /* for all old cliprects */
 
-  CHECKDAMAGELIST(l);
+  if (IS_EMPTYREGION(l->DamageList))
+    l->Flags &= ~LAYERREFRESH;
+  else
+    l->Flags |=  LAYERREFRESH;
 
   /*
    * If this is a simple refresh layer and I am not in
    * backup mode and I am not adding to the damagelist
-   * the I must call the backfillhook for the
+   * then I must call the backfillhook for the
    * area of the damage list of a simple refresh layer
    */
 
