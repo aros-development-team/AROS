@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code executed by the console.device task.
@@ -203,7 +203,6 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 
 	    while ( (cdihmsg = (struct cdihMessage *)GetMsg(inputport)) )
 	    {
-
 		/* Check that the ConUnit has not been disposed,
 		   while the message was passed
 		*/
@@ -313,6 +312,16 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 	   	    case IECLASS_REFRESHWINDOW: /* Intentional fallthrough */
 		    case IECLASS_SIZEWINDOW:
 			{
+                            /* Intentionally empty (Begin|End)Refresh() pair,
+                             * as we are required to call them to keep
+                             * Intuition informed, but we don't want to be
+                             * restricted to rendering just in the damaged
+                             * area (WFLG_NOCAREREFRESH is another possibility,
+                             * but it's not our window). */
+                            BeginRefresh(WINDOW(cdihmsg->unit));
+                            EndRefresh(WINDOW(cdihmsg->unit), TRUE);
+
+                            /* Refresh window contents */
 			    Console_NewWindowSize(cdihmsg->unit);
 			} /* IECLASS_NEWSIZE */
 			break;
