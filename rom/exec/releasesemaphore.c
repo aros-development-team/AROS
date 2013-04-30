@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Release a semaphore.
@@ -35,8 +35,8 @@
 /*  FUNCTION
 	Releases a lock on a semaphore obtained with either ObtainSemaphore(),
 	ObtainSemaphoreShared(), AttemptSemaphore or AttemptSemaphoreShared().
-	Each call to one of those functions must be accompanied with one
-	call to ReleasSemaphore().
+	Each call to one of those functions must be accompanied by one call
+	to ReleaseSemaphore().
 
     INPUTS
 	sigSem - pointer to semaphore structure

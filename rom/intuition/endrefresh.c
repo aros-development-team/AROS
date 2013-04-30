@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -24,8 +24,8 @@
 
 /*  FUNCTION
 	Finishes refreshing which was initialized with BeginRefresh().
-	The argument |complete| is usually TRUE, It can be useful to
-	set it to FALSE when refreshing is split in several tasks.
+	The argument |complete| is usually TRUE. It can be useful to
+	set it to FALSE when refreshing is split into several tasks.
 
     INPUTS
 	window   - the window to be refreshed

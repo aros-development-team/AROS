@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$    $Log
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: Graphics function RectFill()
     Lang: english
@@ -69,7 +69,7 @@
     {
 	if (rp->AreaPtrn)
 	{
-    	    /* When rasport has areaptrn, let BltPattern do the job */
+    	    /* When rastport has areaptrn, let BltPattern do the job */
 	    BltPattern(rp, NULL, xMin, yMin, xMax, yMax, 0);
 	}
 	else

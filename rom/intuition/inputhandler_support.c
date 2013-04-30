@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -1215,7 +1215,7 @@ void WindowNeedsRefresh(struct Window * w,
 
     /* Refresh the window's gadgetry ...
        ... stegerg: and in the actual implementation
-       call RefershWindowFrame first, as the border gadgets dont
+       call RefreshWindowFrame first, as the border gadgets don't
        cover the whole border area.*/
 
     /*
@@ -1395,6 +1395,12 @@ void WindowNeedsRefresh(struct Window * w,
             {
                 struct InputEvent *new_ie;
 
+                D(bug("Sending a refresh message to window %s  %d %d %d %d!!\n",
+                      w->Title ? w->Title : (STRPTR)"<NONAME>",
+                      w->LeftEdge,
+                      w->TopEdge,
+                      w->Width,
+                      w->Height));
                 DEBUG_WINDOWNEEDSREFRESH(dprintf("WindowNeedsRefresh: sending inputevent\n"));
 
                 if ((new_ie = AllocInputEvent(iihdata)))

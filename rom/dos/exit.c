@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -62,7 +62,7 @@ struct StackState
         Calling this function bypasses normal termination sequence of your program.
         Automatically opened libraries will not be closed, destructors will not be
         called, etc. Do this only if you really know what are you doing. It's not
-        adviced to use this function at all.
+        advised to use this function at all.
 
     EXAMPLE
 

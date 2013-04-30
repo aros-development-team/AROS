@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -29,9 +29,8 @@
 	struct LayersBase *, LayersBase, 14, Layers)
 
 /*  FUNCTION
-        After the damaged areas are update this routine should be
+        After the damaged areas are updated, this routine should be
         called so the regular cliprects of the layer can be installed.
-        
 
     INPUTS
         l    -  pointer to layer
@@ -51,10 +50,6 @@
          BeginUpdate()
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    layers_lib.fd and clib/layers_protos.h
 
 *****************************************************************************/
 {

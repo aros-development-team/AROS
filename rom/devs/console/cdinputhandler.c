@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: console.device function CDInputHandler()
@@ -57,10 +57,6 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	29-10-95    digulla automatically created from
-			    console_lib.fd and clib/console_protos.h
 
 *****************************************************************************/
 
@@ -140,8 +136,7 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
 
     } /* for (each event in the chain) */
 
-
-    ReturnPtr("CDIndputHandler",  struct InputEvent *, events);
+    ReturnPtr("CDInputHandler",  struct InputEvent *, events);
 
     AROS_LIBFUNC_EXIT
 } /* CDInputHandler */
@@ -223,7 +218,7 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice)
     /* Needn't prevent the unit from being disposed anymore */
     ICU(o)->conFlags &= ~CF_DELAYEDDISPOSE;
 
-    /* If unit is sceduled for deletion, then delete it */
+    /* If unit is scheduled for deletion, then delete it */
     if (ICU(o)->conFlags & CF_DISPOSE)
     {
 	ULONG mID = OM_REMOVE;
@@ -241,7 +236,7 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice)
 /****************
 ** initCDIH()  **
 ****************/
-/* This function should be executed on te console.device task's context only,
+/* This function should be executed on the console.device task's context only,
    so that the inputport is set correctly
 */
 

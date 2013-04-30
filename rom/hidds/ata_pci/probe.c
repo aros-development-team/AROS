@@ -425,7 +425,7 @@ static const struct TagItem Requirements[] =
 /*
  * The manner in which this code is written can look a little bit overcomplicated.
  * However it's just experimental attempt to write hardware scan routine which
- * can be ran more than once, and is hotplug-aware.
+ * can be run more than once, and is hotplug-aware.
  * In future this may assist implementation of "Rescan devices" functionality
  * in SysExplorer (for example). This will provide a possibility to load and unload
  * device drivers on the fly.

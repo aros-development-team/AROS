@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP function OOP_ReleaseAttrBase
@@ -38,7 +38,7 @@
     	None.
 
     NOTES
-    	The call must be paired wit OOP_ObtainAttrBase().
+    	The call must be paired with OOP_ObtainAttrBase().
 
     EXAMPLE
 
