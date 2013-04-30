@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic support functions for layers.library.
@@ -163,14 +163,6 @@ void doChangeLayer(struct Layer *l, struct LayersBase *LayersBase);
 
 #define IS_ROOTLAYER(l) ((l) == (l)->LayerInfo->check_lp)
 
-#define CHECKDAMAGELIST(l)			\
-	if (IS_EMPTYREGION(l->DamageList))	\
-	{					\
-		l->Flags &= ~LAYERREFRESH;	\
-	}					\
-	else					\
-		l->Flags |=  LAYERREFRESH;
-                              
 int _BackupPartsOfLayer(struct Layer * l, 
                         struct Region * hide_region,
                         int dx,
