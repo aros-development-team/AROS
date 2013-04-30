@@ -92,7 +92,7 @@ static struct Screen *OpenFinalScreen(BYTE MinDepth, BOOL squarePixels,
         /* Hide mouse pointer */
         if (scr)
         {
-            pointer = MakePointerFromData(IntuitionBase, (APTR)empty_pointer,
+            pointer = MakePointerFromData(IntuitionBase, empty_pointer,
                 0, 0, 1, 1);
             GetAttr(POINTERA_SharedPointer, pointer,
                 (IPTR *) & shared_pointer);

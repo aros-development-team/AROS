@@ -1038,7 +1038,7 @@ extern struct RastPort *MyCloneRastPort(struct IntuitionBase *IntuitionBase, str
 extern void MyFreeRastPort(struct IntuitionBase *IntuitionBase, struct RastPort *rp);
 struct TextFont *SafeReopenFont(struct IntuitionBase *, struct TextFont **);
 extern Object *MakePointerFromPrefs(struct IntuitionBase *, struct Preferences *);
-extern Object *MakePointerFromData(struct IntuitionBase *, UWORD *, int, int, int, int);
+extern Object *MakePointerFromData(struct IntuitionBase *, const UWORD *, int, int, int, int);
 void InstallPointer(struct IntuitionBase *, UWORD, Object **, Object *);
 void SetPointerColors(struct IntuitionBase *IntuitionBase);
 struct IClass *InitITextIClass (struct IntuitionBase * IntuitionBase);
