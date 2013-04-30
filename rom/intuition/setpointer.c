@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -16,7 +16,7 @@
 
 /*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
-         AROS_LHA(UWORD         *, pointer, A1),
+         AROS_LHA(const UWORD   *, pointer, A1),
          AROS_LHA(LONG           , height, D0),
          AROS_LHA(LONG           , width, D1),
          AROS_LHA(LONG           , xOffset, D2),
@@ -73,7 +73,7 @@
                 {TAG_DONE                }
             };
 
-            window->Pointer = pointer;
+            window->Pointer = (UWORD *)pointer;
             window->PtrWidth = width;
             window->PtrHeight = height;
 

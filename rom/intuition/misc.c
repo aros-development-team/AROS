@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -236,7 +236,7 @@ struct TextFont *SafeReopenFont(struct IntuitionBase *IntuitionBase,
 }
 
 Object *MakePointerFromData(struct IntuitionBase *IntuitionBase,
-                            UWORD *source, int xOffset, int yOffset, int width, int height)
+    const UWORD *source, int xOffset, int yOffset, int width, int height)
 {
     struct TagItem pointertags[] = {
         {POINTERA_BitMap      , (IPTR)source},
