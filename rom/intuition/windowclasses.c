@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
     
@@ -62,12 +62,7 @@ on screen.
 #endif
 
 //#define DELAYEDDRAG
-/* Delayed resizing is enabled, due to a layer deadlock
- * that can occur between console.device and this
- * gadget when Commodities/ClickToFront is enabled and
- * DELAYEDSIZE is disabled.
- */
-#define DELAYEDSIZE
+//#define DELAYEDSIZE
 
 /***********************************************************************************/
 
@@ -940,7 +935,7 @@ IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactiv
     }
 #endif
 
-    /* User throught with drag operation. Unlock layesr and free
+    /* User through with drag operation. Unlock layers and free
     rastport clone
     */
 
@@ -1623,8 +1618,8 @@ IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInac
     }
     data->drag_canceled = TRUE;
     
-    /* User throught with drag operation. Unlock layesr and free
-    rastport clone
+    /* User through with drag operation. Unlock layers and free
+       rastport clone
     */
     if (data->rp)
     {
