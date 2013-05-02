@@ -153,43 +153,72 @@ struct HIDDGraphicsData
 /* Private gfxhidd methods */
 OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtTags);
 VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *pf);
-void GFX__Hidd_Gfx__UpdateBitMap(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struct pHidd_BitMap_UpdateRect *msg);
-BOOL GFX__Hidd_Gfx__SetFBColors(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struct pHidd_BitMap_SetColors *msg);
+
+static inline BOOL GFX__Hidd_Gfx__SetFBColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
+{
+    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
+
+    return OOP_DoMethod(data->framebuffer, &msg->mID);
+}    
+
+static inline UBYTE GFX__Hidd_Gfx__GetFBModeQuick(OOP_Class *cl, OOP_Object *o)
+{
+    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
+
+    return data->fbmode;
+}
+
+static inline void GFX__Hidd_Gfx__UpdateFB(OOP_Class *cl, OOP_Object *o, OOP_Object *bm,
+                                           UWORD srcX, UWORD srcY, UWORD destX, UWORD destY,
+                                           UWORD xSize, UWORD ySize)
+{
+    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
+
+    HIDD_Gfx_CopyBox(o, bm, srcX, srcY,
+                     data->framebuffer, destX, destY,
+                     xSize, ySize, data->gc);
+}
 
 /* Private bitmap methods */
 void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem *bitMapTags);
 void BM__Hidd_BitMap__SetPixFmt(OOP_Class *cl, OOP_Object *o, OOP_Object *pf);
+void BM__Hidd_BitMap__SetVisible(OOP_Class *cl, OOP_Object *o, BOOL val);
 
 struct HIDDBitMapData
 {
     struct _hidd_bitmap_protected prot;
 
-    UWORD	 width;         /* width of the bitmap in pixel  */
-    UWORD	 height;        /* height of the bitmap in pixel */
-    UWORD	 align;		/* Default alignment		 */
-    BOOL	 displayable;   /* bitmap displayable?           */
-    BOOL	 framebuffer;	/* is a framebuffer ?		 */
-    BOOL	 pf_registered;	/* Registered own pixelformat ?	 */
-    ULONG	 flags;         /* see hidd/graphic.h 'flags for */
-    ULONG	 bytesPerRow;   /* bytes per row                 */
-    OOP_Object  *friend;	/* Friend bitmap		 */
-    OOP_Object  *gfxhidd;	/* Owning driver		 */
-    OOP_Object  *colmap;	/* Colormap			 */
-    OOP_Object  *gc;            /* Shared GC for copy operations */
-    HIDDT_ModeID modeid;	/* Display mode ID		 */
+    UWORD                  width;         /* width of the bitmap in pixel                  */
+    UWORD                  height;        /* height of the bitmap in pixel                 */
+    UWORD                  align;         /* Default alignment                             */
+    IPTR                   displayWidth;  /* Display size                                  */
+    IPTR                   displayHeight;
+    struct Rectangle       display;       /* Display rectangle (in bitmap's coordinates !) */
+    struct SignalSemaphore lock;          /* Scroll/update semaphore                       */
+    BOOL                   visible;       /* bitmap visible ?                              */
+    BOOL                   displayable;   /* bitmap displayable ?                          */
+    BOOL                   framebuffer;	  /* is a framebuffer ?		                   */
+    BOOL                   pf_registered; /* Registered own pixelformat ?	           */
+    ULONG                  flags;         /* see hidd/graphic.h 'flags for                 */
+    ULONG                  bytesPerRow;   /* bytes per row                                 */
+    OOP_Object            *friend;        /* Friend bitmap		                   */
+    OOP_Object            *gfxhidd;       /* Owning driver		                   */
+    OOP_Object            *colmap;        /* Colormap                                      */
+    OOP_Object            *gc;            /* Shared GC for copy operations                 */
+    HIDDT_ModeID           modeid;        /* Display mode ID		                   */
 
     /* Optimize these method calls */
 #if USE_FAST_PUTPIXEL
-    OOP_MethodFunc putpixel;
-    OOP_Class 	  *putpixel_Class;
+    OOP_MethodFunc         putpixel;
+    OOP_Class 	          *putpixel_Class;
 #endif
 #if USE_FAST_GETPIXEL
-    OOP_MethodFunc getpixel;
-    OOP_Class	  *getpixel_Class;
+    OOP_MethodFunc         getpixel;
+    OOP_Class	          *getpixel_Class;
 #endif
 #if USE_FAST_DRAWPIXEL
-    OOP_MethodFunc drawpixel;
-    OOP_Class	  *drawpixel_Class;
+    OOP_MethodFunc         drawpixel;
+    OOP_Class             *drawpixel_Class;
 #endif
 };
 

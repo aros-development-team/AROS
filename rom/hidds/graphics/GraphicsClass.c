@@ -156,12 +156,15 @@ OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     {
         struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
         struct TagItem *tstate = msg->attrList;
+        struct TagItem *modetags = NULL;
         struct TagItem *tag;
-	BOOL ok = TRUE;
+	BOOL ok;
 
         InitSemaphore(&data->mdb.sema);
         InitSemaphore(&data->fbsem);
         data->fbmode = -1;
+
+        D(bug("[GFX] attrList 0x%p\n", msg->attrList));
 
         while ((tag = NextTagItem(&tstate)))
         {
@@ -170,7 +173,7 @@ OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             Hidd_Gfx_Switch(tag->ti_Tag, idx)
             {
             case aoHidd_Gfx_ModeTags:
-                ok = register_modes(cl, o, (struct TagItem *)tag->ti_Data);
+                modetags = (struct TagItem *)tag->ti_Data;
                 break;
 
             case aoHidd_Gfx_FrameBufferType:
@@ -178,6 +181,9 @@ OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 break;
             }
         }
+
+        /* Register modes only after other attributes are initialized */
+        ok = modetags ? register_modes(cl, o, modetags) : TRUE;
 
         /* Create a gc that we can use for some rendering */
         if (ok)
@@ -2390,14 +2396,27 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 	HIDD_BM_SetColors(dst_bm, &col, i, 1);
     }    
 
-    HIDD_Gfx_CopyBox(o
-    	, src_bm
-	, 0, 0
-    	, dst_bm
-	, 0, 0
-	, width, height
-	, data->gc
-    );
+    if (data->fbmode == vHidd_FrameBuffer_Mirrored)
+    {
+        /*
+         * Mirror mode, just turn on visibility.
+         * The data will be copied to the framebuffer later,
+         * when graphics.library calls UpdateRect() after Show().
+         */
+        BM__Hidd_BitMap__SetVisible(CSD(cl)->bitmapclass, src_bm, TRUE);
+    }
+    else
+    {
+        /*
+         * Direct framebuffer mode.
+         * graphics.library will call UpdateRect() on the framebuffer object.
+         * So we need to copy the data now.
+         * We don't support scrolling for this mode, so we simply do the
+         * bulk copy and ignore all offsets.
+         */
+        HIDD_Gfx_CopyBox(o, src_bm, 0, 0,
+                         dst_bm, 0, 0, width, height, data->gc);
+    }
 }
 
 /*****************************************************************************************
@@ -2495,17 +2514,21 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 
     ObtainSemaphore(&data->fbsem);
 
-    if ((data->fbmode != vHidd_FrameBuffer_Mirrored) && data->shownbm)
+    if (data->shownbm)
     {
-    	/* Get size of old bitmap */
-	OOP_GetAttr(data->shownbm, aHidd_BitMap_Width, &oldwidth);
+        /* Get size of old bitmap */
+        OOP_GetAttr(data->shownbm, aHidd_BitMap_Width, &oldwidth);
         OOP_GetAttr(data->shownbm, aHidd_BitMap_Height, &oldheight);
 
-	if (msg->flags & fHidd_Gfx_Show_CopyBack)
+        if (data->fbmode == vHidd_FrameBuffer_Mirrored)
+        {
+            BM__Hidd_BitMap__SetVisible(CSD(cl)->bitmapclass, data->shownbm, FALSE);
+        }
+        else if (msg->flags & fHidd_Gfx_Show_CopyBack)
 	{
 	    /* Copy the framebuffer data back into the old shown bitmap */
 	    copy_bm_and_colmap(cl, o, data->framebuffer, data->shownbm, oldwidth, oldheight);
-	}
+        }
     }
 
     if (bm == data->framebuffer)
@@ -4217,7 +4240,8 @@ ULONG GFX__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd
 /****************************************************************************************/
 
 /* This is a private nonvirtual method */
-void GFX__Hidd_Gfx__UpdateBitMap(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struct pHidd_BitMap_UpdateRect *msg)
+void GFX__Hidd_Gfx__UpdateBitMap(OOP_Class *cl, OOP_Object *o, OOP_Object *bm,
+                                 struct pHidd_BitMap_UpdateRect *msg, struct Rectangle *display)
 {
     struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
 
@@ -4236,34 +4260,35 @@ void GFX__Hidd_Gfx__UpdateBitMap(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, s
 
         if (bm == data->shownbm)
         {
-            HIDD_Gfx_CopyBox(o,
-                             bm, msg->x, msg->y,
-                             data->framebuffer, msg->x, msg->y,
-                             msg->width, msg->height, data->gc);
+            /*
+             * Complete update rectangle.
+             * Display rectangle is already in bitmap's coordinates.
+             */
+            UWORD srcX = msg->x;
+            UWORD srcY = msg->y;
+            UWORD xLimit = srcX + msg->width;
+            UWORD yLimit = srcY + msg->height;
+
+            /* Intersect rectangles */
+            if (display->MinX > srcX)
+                srcX = display->MinX;
+            if (display->MinY > srcY)
+                srcY = display->MinY;
+            if (display->MaxX < xLimit)
+                xLimit = display->MaxX;
+            if (display->MaxY < yLimit)
+                yLimit = display->MaxY;
+
+            if ((xLimit > srcX) && (yLimit > srcY))
+            {
+                HIDD_Gfx_CopyBox(o, bm, srcX, srcY,
+                                 data->framebuffer, srcX - display->MinX, srcY - display->MinY,
+                                 xLimit - srcX, yLimit - srcY, data->gc);
+            }
         }
 
         ReleaseSemaphore(&data->fbsem);
     }
-}
-
-BOOL GFX__Hidd_Gfx__SetFBColors(OOP_Class *cl, OOP_Object *o, OOP_Object *bm, struct pHidd_BitMap_SetColors *msg)
-{
-    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
-    BOOL ret = TRUE;
-
-    if ((data->fbmode == vHidd_FrameBuffer_Mirrored) && (bm == data->shownbm))
-    {
-        ObtainSemaphoreShared(&data->fbsem);
-
-        if (bm == data->shownbm)
-        {
-            ret = OOP_DoMethod(data->framebuffer, (OOP_Msg)msg);
-        }
-
-        ReleaseSemaphore(&data->fbsem);
-    }
-
-    return ret;
 }
 
 #undef csd

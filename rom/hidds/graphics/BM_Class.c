@@ -11,6 +11,7 @@
 #define SDEBUG 0
 #define DEBUG 0
 #define DPUTPATTERN(x)
+#define DUPDATE(x)
 
 #include <aros/debug.h>
 #include <proto/exec.h>
@@ -984,22 +985,19 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
                 }
                 else
                 {
-                    /* Update the missing bitmap data from the modeid */
+                    /* Get display size from the modeid */
+                    OOP_GetAttr(sync, aHidd_Sync_HDisp, &data->displayWidth);
+                    OOP_GetAttr(sync, aHidd_Sync_VDisp, &data->displayHeight);
+                    data->display.MaxX = data->displayWidth;
+                    data->display.MaxY = data->displayHeight;
+
+                    /* Update the missing bitmap data */
                     if (!data->width)
-                    {
-                        IPTR width;
-
-                        OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
-                        data->width = width;
-                    }
-
+                        data->width = data->displayWidth;
                     if (!data->height)
-                    {
-                        IPTR height;
+                        data->height = data->displayHeight;
 
-                        OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
-                        data->height = height;
-                    }
+                    D(bug("[BitMap] Bitmap %dx%d, display %dx%d\n", data->width, data->height, data->display.width, data->display.height));
 
                     if (!data->prot.pixfmt)
                     {
@@ -1033,6 +1031,8 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
         if (ok)
         {
+            InitSemaphore(&data->lock);
+
             /* Cache default GC */
             OOP_GetAttr(data->gfxhidd, aHidd_Gfx_DefaultGC, (IPTR *)&data->gc);
 
@@ -1182,10 +1182,21 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
             *msg->storage = data->bytesPerRow;
             return;
 
-        /* Generic bitmaps don't scroll. This has to be implemented in the subclass. */
+        case aoHidd_BitMap_Visible:
+            /* Framebuffer is always visible */
+            *msg->storage = data->framebuffer ? TRUE : data->visible;
+            return;
+
+        /*
+         * The following two are stored with inverted sign!
+         * Verbose explanation is in Set method.
+         */
         case aoHidd_BitMap_LeftEdge:
+            *msg->storage = -data->display.MinX;
+            return;
+
         case aoHidd_BitMap_TopEdge:
-            *msg->storage = 0;
+            *msg->storage = -data->display.MinY;
             return;
 
         D(default: bug("UNKNOWN ATTR IN BITMAP BASECLASS: %d\n", idx);)
@@ -1249,9 +1260,8 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 {
     /* Copy the colors into the internal buffer */
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
-    struct HIDDBitMapData *data;
-
-    data = OOP_INST_DATA(cl, o);
+    struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
+    BOOL ret = TRUE;
 
     /* Subclass has initialized HIDDT_Color->pixelVal field and such.
        Just copy it into the colortab.
@@ -1283,7 +1293,19 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
     }
 
     /* We may need to duplicate changes on framebuffer if running in mirrored mode */
-    return GFX__Hidd_Gfx__SetFBColors(CSD(cl)->gfxhiddclass, data->gfxhidd, o, msg);
+    if (data->visible)
+    {
+        ObtainSemaphoreShared(&data->lock);
+
+        if (data->visible)
+        {
+            ret = GFX__Hidd_Gfx__SetFBColors(CSD(cl)->gfxhiddclass, data->gfxhidd, msg);
+        }
+
+        ReleaseSemaphore(&data->lock);
+    }
+
+    return ret;
 }
 
 /*******************************************************************************
@@ -4200,7 +4222,7 @@ VOID BM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
                 msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
 
     cemd = GC_COLEXP(gc);
-    fg   = GC_FG(gc);
+    fg   = GC_FG(gc);Sticky jingles
     bg   = GC_BG(gc);
 
 /* bug("------------- Blit_ColExp: (%d, %d, %d, %d, %d, %d) cemd=%d, fg=%p, bg=%p -------------\n"
@@ -4347,6 +4369,9 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
+    struct TagItem *tag, *tstate;
+    ULONG idx;
+    WORD xoffset, yoffset, limit;
 
     if (data->framebuffer)
     {
@@ -4378,9 +4403,86 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
             /* Bad ModeID given, request rejected */
             return FALSE;
         }
+
+        /* Process the rest of tags. */
+        BM__Hidd_BitMap__SetBitMapTags(cl, obj, msg->attrList);
     }
-    /* Process the rest of tags. */
-    BM__Hidd_BitMap__SetBitMapTags(cl, obj, msg->attrList);
+    else
+    {
+        /*
+         * This is not a framebuffer.
+         * We can modify size data (CHECKME: is it really used anywhere ?)
+         * and also we can scroll (makes sense only if this is displayable
+         * bitmap in mirrored framebuffer mode.
+         */
+        BM__Hidd_BitMap__SetBitMapTags(cl, obj, msg->attrList);
+
+        /*
+         * And now we process position change.
+         * One trick: we store our 'display' rectangle in bitmap's coordinates.
+         * In other words, these are screen coordinates relative to bitmap, not
+         * bitmap's ones relative to screen. As a result, we have to invert the sign.
+         * This is done in order to simplify calculations in UpdateBitMap method of
+         * graphics base class. It needs to perform intersection of update rectangle
+         * with display rectangle, and they need to be in the same coordinate system
+         * in order to be able to do this.
+         * Update operation is performance-critical, so we perform this conversion
+         * for display rectangle here.
+         */
+        xoffset = data->display.MinX;
+        yoffset = data->display.MinY;
+        tstate = msg->attrList;
+        while ((tag = NextTagItem(&tstate)))
+        {
+            Hidd_BitMap_Switch(tag->ti_Tag, idx)
+            {
+	    case aoHidd_BitMap_LeftEdge:
+                xoffset = -tag->ti_Data;
+                /*
+                 * FIXME: 
+                 * Our bitmap can not be smaller than display size because of fakegfx.hidd
+                 * limitations (it can't place cursor beyond bitmap edges). Otherwize Intuition
+                 * will provide strange user experience (mouse cursor will disappear)
+                 */
+                limit = data->width - data->displayWidth;
+                if (xoffset < 0)
+                    xoffset = 0;
+                else if (xoffset > limit)
+                    xoffset = limit;
+                D(bug("[BitMap] xoffset requested %ld, got %d\n", -tag->ti_Data, xoffset));
+                break;
+
+            case aoHidd_BitMap_TopEdge:
+                yoffset = -tag->ti_Data;
+                limit = data->height - data->displayHeight;
+                if (yoffset < 0)
+                    yoffset = 0;
+                else if (yoffset > limit)
+                    yoffset = limit;
+                D(bug("[BitMap] yoffset requested %ld, got %d\n", -tag->ti_Data, yoffset));
+                break;
+	    }
+        }
+
+        if ((xoffset != data->display.MinX) || (yoffset != data->display.MinY))
+        {
+            ObtainSemaphore(&data->lock);
+
+            data->display.MinX = xoffset;
+            data->display.MinY = yoffset;
+            data->display.MaxX = xoffset + data->displayWidth;
+            data->display.MaxY = yoffset + data->displayHeight;
+
+            if (data->visible)
+            {
+                GFX__Hidd_Gfx__UpdateFB(CSD(cl)->gfxhiddclass, data->gfxhidd,
+                                        obj, data->display.MinX, data->display.MinY,
+                                        0, 0, data->displayWidth, data->displayHeight);
+            }
+
+            ReleaseSemaphore(&data->lock);
+        }
+    }
 
     /* There's no superclass above us */
     return TRUE;
@@ -4924,7 +5026,54 @@ VOID BM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 {
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
 
-    GFX__Hidd_Gfx__UpdateBitMap(csd->gfxhiddclass, data->gfxhidd, o, msg);
+    DUPDATE(bug("[BitMap] UpdateRect(0x%p, %d, %d, %d, %d)\n", o, msg->x, msg->y, msg->width, msg->height));
+
+    /*
+     * We check data->visible twice in order to avoid unnecessary locking
+     * when our bitmap is not on display (it may be not displayable at all).
+     * However the second check is still needed in order to make sure that
+     * this bitmap is still on display, because we could be preempted between
+     * the test and ObtainSemaphoreShared() by concurrently running Show() call.
+     * We use shared lock because it's safe to have two concurrently running
+     * updates even on the same region.
+     */
+    if (data->visible)
+    {
+        ObtainSemaphoreShared(&data->lock);
+
+        if (data->visible)
+        {
+            /*
+             * Complete update rectangle.
+             * Display rectangle is already in bitmap's coordinates.
+             */
+            UWORD srcX = msg->x;
+            UWORD srcY = msg->y;
+            UWORD xLimit = srcX + msg->width;
+            UWORD yLimit = srcY + msg->height;
+
+            /* Intersect rectangles */
+            if (data->display.MinX > srcX)
+                srcX = data->display.MinX;
+            if (data->display.MinY > srcY)
+                srcY = data->display.MinY;
+            if (data->display.MaxX < xLimit)
+                xLimit = data->display.MaxX;
+            if (data->display.MaxY < yLimit)
+                yLimit = data->display.MaxY;
+
+            /* Update the intersection region, if any */
+            if ((xLimit > srcX) && (yLimit > srcY))
+            {
+                GFX__Hidd_Gfx__UpdateFB(CSD(cl)->gfxhiddclass, data->gfxhidd,
+                                        o, srcX, srcY,
+                                        srcX - data->display.MinX, srcY - data->display.MinY,
+                                        xLimit - srcX, yLimit - srcY);
+            }
+        }
+
+        ReleaseSemaphore(&data->lock);
+    }
 }
 
 /****************************************************************************************/
@@ -4987,4 +5136,20 @@ void BM__Hidd_BitMap__SetPixFmt(OOP_Class *cl, OOP_Object *o, OOP_Object *pf)
      * not used any more.
      */
     data->pf_registered = TRUE;
+}
+
+/*
+ * Change visible state of the bitmap.
+ * Used in mirrored framebuffer mode. Actually needed because
+ * of semaphore barried, which makes sure that bitmap state does
+ * not change during scrolling or updating operation. Prevents possibilities
+ * of screen corruption during concurrently running scrolling with Show.
+ */
+void BM__Hidd_BitMap__SetVisible(OOP_Class *cl, OOP_Object *o, BOOL val)
+{
+    struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
+
+    ObtainSemaphore(&data->lock);
+    data->visible = val;
+    ReleaseSemaphore(&data->lock);
 }

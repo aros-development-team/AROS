@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sync info class
@@ -143,10 +143,46 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	if (ok)
 	{
 	    /* By default minimum/maximum bitmap size is equal to display size */
-	    data->hmin = GetTagData(aHidd_Sync_HMin, data->hdisp, msg->attrList);
-	    data->hmax = GetTagData(aHidd_Sync_HMax, data->hdisp, msg->attrList);
-	    data->vmin = GetTagData(aHidd_Sync_VMin, data->vdisp, msg->attrList);
-	    data->vmax = GetTagData(aHidd_Sync_VMax, data->vdisp, msg->attrList);
+            data->hmin = data->hdisp;
+            data->vmin = data->vdisp;
+
+            if (GFX__Hidd_Gfx__GetFBModeQuick(csd->gfxhiddclass, data->gfxhidd) == vHidd_FrameBuffer_Mirrored)
+            {
+                /* But for mirrored framebuffer mode we can have larger bitmaps */
+                data->hmax = 16384;
+                data->vmax = 16384;
+            }
+            else
+            {
+                data->hmax = data->hdisp;
+                data->vmax = data->vdisp;
+            }
+
+            /* Now try to override defaults */
+            tstate = msg->attrList;
+            while ((tag = NextTagItem(&tstate)))
+            {
+                ULONG idx;
+
+                Hidd_Sync_Switch(tag->ti_Tag, idx)
+                {
+                case aoHidd_Sync_HMin:
+                    data->hmin = tag->ti_Data;
+                    break;
+
+                case aoHidd_Sync_HMax:
+                    data->hmax = tag->ti_Data;
+                    break;
+
+                case aoHidd_Sync_VMin:
+                    data->vmin = tag->ti_Data;
+                    break;
+
+                case aoHidd_Sync_VMax:
+                    data->vmax = tag->ti_Data;
+                    break;
+                }
+            }
 
 	    /* Format description */
 	    if (s)
