@@ -2,8 +2,8 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright  1995-2013, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -1058,6 +1058,7 @@ void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
 
 /* Private extra functions */
 OOP_Object *FindMonitor(ULONG modeid, struct IntuitionBase *IntuitionBase);
+struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase);
 AROS_INTP(ShutdownScreenHandler);
 
 #ifdef __MORPHOS__

@@ -17,4 +17,12 @@ struct MonitorData
     struct SharedPointer *pointer;
     ULONG mouseX;
     ULONG mouseY;
+
+    UBYTE *gamma;
+    BOOL screenGamma;
 };
+
+/* Offsets for gamma table */
+#define GAMMA_R 0
+#define GAMMA_G 256
+#define GAMMA_B 512
