@@ -426,7 +426,7 @@ struct IntScreenNotify
 /* IntuitionBase */
 struct IntIntuitionBase
 {
-    struct IntuitionBase    	 IBase;
+    struct IntuitionBase    	 Base;
 #ifdef __MORPHOS__
     WORD                    	 _MinXMouse,_MaxXMouse;   /* Old 1.3 Base entries*/
     WORD                    	 _MinYMouse,_MaxYMouse;   /* Old 1.3 Base entries*/
