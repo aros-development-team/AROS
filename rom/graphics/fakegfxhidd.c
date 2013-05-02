@@ -1457,7 +1457,8 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
 	    	, data->gc
 	    );
 
-            if (updaterect) HIDD_BM_UpdateRect(data->framebuffer, data->curs_x, data->curs_y, width, height);
+            if (updaterect)
+                HIDD_BM_UpdateRect(data->framebuffer, x, y, width, height);
 	}
     }
     return;
