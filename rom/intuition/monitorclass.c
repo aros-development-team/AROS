@@ -146,7 +146,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     /* Tags order is important because CallBackData needs to be set before
        function pointer. Otherwise the function can be called with a wrong
        pointer. */
-    struct TagItem tags[] = {
+    struct TagItem tags[] =
+    {
 	{aHidd_Gfx_ActiveCallBackData, 0                      },
 	{aHidd_Gfx_ActiveCallBack    , (IPTR)ActivationHandler},
 	{TAG_DONE                    , 0                      }
@@ -167,7 +168,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     /* We can't list driver's pixelformats, we can list only modes. This does not harm however,
        just some pixelformats will be processed more than once */
-    while ((mode = HIDD_Gfx_NextModeID(handle->gfxhidd, mode, &sync, &pixfmt)) != vHidd_ModeID_Invalid) {
+    while ((mode = HIDD_Gfx_NextModeID(handle->gfxhidd, mode, &sync, &pixfmt)) != vHidd_ModeID_Invalid)
+    {
 	IPTR stdpf;
 	BYTE cgxpf;
 
@@ -175,10 +177,33 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	cgxpf = pixelformats[stdpf];
 	D(bug("[monitorclass] Mode 0x%08lX, StdPixFmt %lu, CGX pixfmt %d\n", mode, stdpf, cgxpf));
 
-	if (cgxpf != -1) {
+	if (cgxpf != -1)
+        {
 	    data->pfobjects[cgxpf] = pixfmt;
 	    data->pixelformats[cgxpf] = TRUE;
 	}
+    }
+
+    if (OOP_GET(data->handle->gfxhidd, aHidd_Gfx_SupportsGamma))
+    {
+        UWORD i;
+
+        D(bug("[monitorclass] Creating gamma table\n"));
+
+        data->gamma = AllocMem(256 * 3, MEMF_ANY);
+        if (!data->gamma)
+        {
+            DoSuperMethod(cl, o, OM_DISPOSE);
+            return NULL;
+        }
+
+        /* Create default gamma table */
+        for (i = 0; i < 256; i++)
+        {
+            data->gamma[i + GAMMA_R] = i;
+            data->gamma[i + GAMMA_G] = i;
+            data->gamma[i + GAMMA_B] = i;
+        }
     }
 
     tags[0].ti_Data = (IPTR)o;
@@ -793,7 +818,6 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
-    OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
     OOP_AttrBase HiddAttrBase = GetPrivIBase(IntuitionBase)->HiddAttrBase;
     OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
     struct MonitorData *data = INST_DATA(cl, o);
@@ -859,7 +883,7 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 	break;
 
     case MA_GammaControl:
-	*msg->opg_Storage = HIDD_Gfx_GetGamma(data->handle->gfxhidd, NULL, NULL, NULL);
+	*msg->opg_Storage = data->gamma ? TRUE : FALSE;
 	break;
 
     case MA_PointerType:
@@ -952,7 +976,8 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
     struct MonitorData *data = INST_DATA(cl, o);
-    struct TagItem tags[] = {
+    struct TagItem tags[] =
+    {
 	{aHidd_Gfx_ActiveCallBack, 0},
 	{TAG_DONE                , 0}
     };
@@ -976,6 +1001,9 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 	ActivateMonitor((Object *)GetHead(&GetPrivIBase(IntuitionBase)->MonitorList), -1, -1, IntuitionBase);
 
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+
+    if (data->gamma)
+        FreeMem(data->gamma, 256 * 3);
 
     return DoSuperMethodA(cl, o, msg);
 }
@@ -1149,17 +1177,19 @@ IPTR MonitorClass__MM_Query3DSupport(Class *cl, Object *obj, struct msQuery3DSup
 
 ************************************************************************************/
 
-IPTR MonitorClass__MM_GetDefaultGammaTables(Class *cl, Object *obj, struct msGetDefaultGammaTables *msg)
+void MonitorClass__MM_GetDefaultGammaTables(Class *cl, Object *obj, struct msGetDefaultGammaTables *msg)
 {
-    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
     struct MonitorData *data = INST_DATA(cl, obj);
 
-    /* Currently we don't use per-screen gamma tables, so we just forward the request
-       to the driver.
-       If we implement per-screen gamma correction, we'll need more sophisticated
-       management here */
-    return HIDD_Gfx_GetGamma(data->handle->gfxhidd, msg->Red, msg->Green, msg->Blue);
+    if (data->gamma)
+    {
+        if (msg->Red)
+            CopyMem(&data->gamma[GAMMA_R], msg->Red, 256);
+        if (msg->Green)
+            CopyMem(&data->gamma[GAMMA_G], msg->Green, 256);
+        if (msg->Blue)
+            CopyMem(&data->gamma[GAMMA_B], msg->Blue, 256);
+     }
 }
 
 /************************************************************************************
@@ -1469,14 +1499,38 @@ IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
 IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSetDefaultGammaTables *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
     struct MonitorData *data = INST_DATA(cl, obj);
 
-    /* Currently we don't use per-screen gamma tables, so we just forward the request
-       to the driver.
-       If we implement per-screen gamma correction, we'll need more sophisticated
-       management here */
-    return HIDD_Gfx_SetGamma(data->handle->gfxhidd, msg->Red, msg->Green, msg->Blue);
+    if (data->gamma)
+    {
+        if (msg->Red)
+            CopyMem(msg->Red  , &data->gamma[GAMMA_R], 256);
+        if (msg->Green)
+            CopyMem(msg->Green, &data->gamma[GAMMA_G], 256);
+        if (msg->Blue)
+            CopyMem(msg->Blue , &data->gamma[GAMMA_B], 256);
+
+        if (data->screenGamma)
+        {
+            /*
+             * This monitor currently displays screen with own gamma table.
+             * Do not disturb.
+             */
+            return TRUE;
+        }
+        else
+        {
+            /*
+             * This monitor currently uses default gamma table.
+             * Update it.
+             */
+            OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+
+            return HIDD_Gfx_SetGamma(data->handle->gfxhidd, &data->gamma[GAMMA_R], &data->gamma[GAMMA_G], &data->gamma[GAMMA_B]);
+        }
+    }
+
+    return FALSE;
 }
 
 /************************************************************************************/
@@ -1543,4 +1597,23 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
     }
 
     return res;
+}
+
+void MonitorClass__MM_SetScreenGamma(Class *cl, Object *obj, struct msSetScreenGamma *msg)
+{
+    struct MonitorData *data = INST_DATA(cl, obj);
+
+    if (data->gamma)
+    {
+        struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+        OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+
+        /*
+         * TODO: This is currently just a stub.
+         * In future it should check if there is a gamma table attached to screen,
+         * and use it in this case.
+         * For now we just supply our default gamma table.
+         */
+        HIDD_Gfx_SetGamma(data->handle->gfxhidd, &data->gamma[GAMMA_R], &data->gamma[GAMMA_G], &data->gamma[GAMMA_B]);
+    }
 }

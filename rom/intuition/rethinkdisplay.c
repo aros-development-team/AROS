@@ -1,13 +1,15 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
 #include <intuition/pointerclass.h>
 #include <proto/graphics.h>
+
 #include "intuition_intern.h"
 #include "inputhandler.h"
+#include "monitorclass_private.h"
 
 /*****************************************************************************
 
@@ -152,8 +154,28 @@
 
             if (!failure)
             {
+                struct MinNode *m;
+
                 DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: LoadView ViewLord 0x%lx\n",&IntuitionBase->ViewLord));
                 LoadView(&IntuitionBase->ViewLord);
+
+                /*
+                 * Set gamma correction for all displays.
+                 * We do it after LoadView() because some video chipsets reuse the
+                 * same registers for both LUT palette and gamma table. Consequently,
+                 * we may need to reload gamma table after the mode has been changed.
+                 */
+                ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+
+                for (m = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head;
+                     m->mln_Succ; m = m->mln_Succ)
+                {
+                    struct Screen *scr = FindFirstScreen(m, IntuitionBase);
+
+                    DoMethod((Object *)m, MM_SetScreenGamma, scr);
+	        }
+
+                ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
 
                 DEBUG_INIT(dprintf("RethinkDisplay: ActiveScreen %p Pointer %p Sprite %p\n",
                             IntuitionBase->ActiveScreen,
