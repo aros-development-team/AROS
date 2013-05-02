@@ -866,6 +866,33 @@ static UBYTE get_fbmode(OOP_Class *cl, OOP_Object *o)
 
 *****************************************************************************************/
 
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Gfx_SupportsGamma
+
+    SYNOPSIS
+	[..G], UBYTE
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+        Specifies if the driver supports gamma correction tables. Default implementation
+        in base class returns FALSE.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	moHidd_Gfx_SetGamma
+
+    INTERNALS
+
+*****************************************************************************************/
 
 VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
@@ -881,6 +908,7 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     case aoHidd_Gfx_IsWindowed:
     case aoHidd_Gfx_SupportsHWCursor:
+    case aoHidd_Gfx_SupportsGamma:
         *msg->storage = 0;
         return;
 
@@ -3802,25 +3830,14 @@ ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_G
     FUNCTION
 	Get current gamma table for the display.
 
-	A gamma table consists of three 256-byte tables: one for red component, one for
-	green and one for blue.
-
-	A user should supply three pointers to preallocated 256-byte tables which will
-	be filled in. Any ot these pointers may have NULL value, in this case the
-	respective component will be ignored.
+        This method was neither ever implemented nor used. Currently obsolete and
+        considered reserved.
 
     INPUTS
-	gfxHidd - A display driver object
-	Red     - A pointer to a 256-byte array for red component or NULL
-	Green   - A pointer to a 256-byte array for green component or NULL
-	Blue    - A pointer to a 256-byte array for blue component or NULL
 
     RESULT
-	FALSE if the driver doesn't support gamma correction, otherwise TRUE
 
     NOTES
-	This method can be used just to query if the driver supports gamma correction.
-	Just set Red, Green and Blue to NULL for this.
 
     EXAMPLE
 
@@ -3857,29 +3874,22 @@ BOOL GFX__Hidd_Gfx__GetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamm
 	A gamma table consists of three 256-byte tables: one for red component, one for
 	green and one for blue.
 
-	A user should supply three pointers to 256-byte tables from which gamma values
-	will be picked up. Any ot these pointers may have NULL value, in this case the
-	respective component will be ignored.
-
     INPUTS
 	gfxHidd - A display driver object
-	Red     - A pointer to a 256-byte array for red component or NULL
-	Green   - A pointer to a 256-byte array for green component or NULL
-	Blue    - A pointer to a 256-byte array for blue component or NULL
+	Red     - A pointer to a 256-byte array for red component
+	Green   - A pointer to a 256-byte array for green component
+	Blue    - A pointer to a 256-byte array for blue component
 
     RESULT
 	FALSE if the driver doesn't support gamma correction, otherwise TRUE
 
     NOTES
-    	This method can be used just to query if the driver supports gamma correction.
-	Just set Red, Green and Blue to NULL for this.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	moHidd_Gfx_GetGamma
 
     INTERNALS
 
