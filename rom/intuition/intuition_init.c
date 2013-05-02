@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2013, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -379,9 +379,9 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 	}
 #endif
 	D(bug("[intuition] Calling InitView()\n"));
-	InitView(&LIBBASE->IBase.ViewLord);
+	InitView(&LIBBASE->Base.ViewLord);
 #ifdef __MORPHOS__
-	GfxAssociate(&LIBBASE->IBase.ViewLord, ve);
+	GfxAssociate(&LIBBASE->Base.ViewLord, ve);
 
 	GetPrivIBase(LIBBASE)->ViewLordExtra = ve;
 	GetPrivIBase(LIBBASE)->SpriteNum = -1;
