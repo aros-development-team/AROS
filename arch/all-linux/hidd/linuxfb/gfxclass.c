@@ -170,10 +170,10 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
                     data->fbdevinfo.xres     = vsi.xres;
                     data->fbdevinfo.yres     = vsi.yres;
 
-                    InitSemaphore(&data->framebufferlock);
-
                     data->confd = -1;
                     data->unixio = fsd->unixio;
+                    data->gamma = (fsi.visual == FB_VISUAL_DIRECTCOLOR) ? TRUE : FALSE;
+                    D(bug("[LinuxFB] Gamma support: %d\n", data->gamma));
 
                     data->resetHandler.is_Code = (VOID_FUNC)ResetHandler;
                     data->resetHandler.is_Data = data;
@@ -201,6 +201,20 @@ VOID LinuxFB__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     cleanup_linuxfb(data, LSD(cl));
 
     OOP_DoSuperMethod(cl, o, msg);
+}
+
+BOOL LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    struct LinuxFB_data *data = OOP_INST_DATA(cl, o);
+    ULONG idx;
+
+    Hidd_Gfx_Switch (msg->attrID, idx)
+    {
+    case aoHidd_Gfx_SupportsGamma:
+        return data->gamma;
+    }
+
+    return OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
 /********** FBGfx::NewBitMap()  ****************************/
@@ -257,6 +271,37 @@ OOP_Object *LinuxFB__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pH
     }
 
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, &msg->mID);
+}
+
+BOOL LinuxFB__Hidd_Gfx__SetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamma *msg)
+{
+    struct LinuxFB_data *data = OOP_INST_DATA(cl, o);
+
+    if (data->gamma)
+    {
+        struct LinuxFB_staticdata *fsd = LSD(cl);
+        UWORD a = 0xFFFF;
+        UWORD r, g, b, i;
+        struct fb_cmap col =
+        {
+            0, 1, &r, &g, &b, &a
+        };
+
+        D(bug("[LinuxFB]  N  R  G  B gamma tables:\n"));
+	for (i = 0; i < 256; i++)
+        { 
+            col.start = i;
+            r = msg->Red[i] << 8;
+            g = msg->Green[i] << 8;
+            b = msg->Blue[i] << 8;
+            D(bug("[LinuxFB] %02X %02X %02X %02X\n", i, msg->Red[i], msg->Green[i], msg->Blue[i]));
+
+            Hidd_UnixIO_IOControlFile(fsd->unixio, data->fbdevinfo.fbdev, FBIOPUTCMAP, &col, NULL);
+	}
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 static BOOL setup_linuxfb(struct LinuxFB_staticdata *fsd, int fbdev, struct fb_fix_screeninfo *fsi, struct fb_var_screeninfo *vsi)

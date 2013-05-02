@@ -65,11 +65,11 @@ struct LinuxFB_data
 {
     unsigned long mem_len;
 
-    struct SignalSemaphore framebufferlock;
     OOP_Object *visible;
     OOP_Object *unixio;
     int confd;
     long kbmode;
+    BOOL gamma;
 
     /* FBDev info */
     struct FBDevInfo fbdevinfo;
