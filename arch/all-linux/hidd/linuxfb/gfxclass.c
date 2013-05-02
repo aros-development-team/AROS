@@ -211,7 +211,8 @@ BOOL LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     Hidd_Gfx_Switch (msg->attrID, idx)
     {
     case aoHidd_Gfx_SupportsGamma:
-        return data->gamma;
+        *msg->storage = data->gamma;
+        return;
     }
 
     return OOP_DoSuperMethod(cl, o, &msg->mID);
@@ -280,11 +281,10 @@ BOOL LinuxFB__Hidd_Gfx__SetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     if (data->gamma)
     {
         struct LinuxFB_staticdata *fsd = LSD(cl);
-        UWORD a = 0xFFFF;
         UWORD r, g, b, i;
         struct fb_cmap col =
         {
-            0, 1, &r, &g, &b, &a
+            0, 1, &r, &g, &b, NULL
         };
 
         D(bug("[LinuxFB]  N  R  G  B gamma tables:\n"));
