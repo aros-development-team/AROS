@@ -3493,6 +3493,35 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtT
 	return FALSE;
     }
 
+    /*
+     * Our alpha-less R8G8B8 pixelformats are defined as having depth
+     * and size = 24, not 32 bits. Nevertheless, many hardware reports
+     * 32 bits in such cases.
+     * In order to avoid confusion we attempt to detect this situation and
+     * fix up pixelformat definition. If we don't do it, we get nonstandard
+     * pixelformat with no corresponding CGX code, which can misbehave.
+     */
+    if ((cmp_pf.flags == PF_GRAPHTYPE(TrueColor, Chunky)) &&
+        (cmp_pf.bytes_per_pixel == 4) && (cmp_pf.alpha_mask == 0) &&
+        (cmp_pf.red_mask << cmp_pf.red_shift == 0xFF000000) &&
+        (cmp_pf.green_mask << cmp_pf.green_shift == 0xFF000000) &&
+        (cmp_pf.blue_mask << cmp_pf.blue_shift == 0xFF000000))
+    {
+        DPF(bug("Gfx::RegisterPixFmt(): 4-byte R8G8B8 detected\n"));
+
+        if (cmp_pf.depth > 24)
+        {
+            DPF(bug("Gfx::RegisterPixFmt(): Fixing up depth %d > 24\n", cmp_pf.depth));
+            cmp_pf.depth = 24;
+        }
+
+        if (cmp_pf.size > 24)
+        {
+            DPF(bug("Gfx::RegisterPixFmt(): Fixing up size %d > 24\n", cmp_pf.size));
+            cmp_pf.size = 24;
+        }
+    }
+
     DPF(bug("Gfx::RegisterPixFmt(): Registering pixelformat:\n"));
     DPF(bug("(%d, %d, %d, %d), (%x, %x, %x, %x), %d, %d, %d, %d\n"
 	  , PF(&cmp_pf)->red_shift
