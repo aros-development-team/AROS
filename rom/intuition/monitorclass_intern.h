@@ -1,7 +1,8 @@
-struct MonitorData
+struct IMonitorNode
 {
     struct MinNode node;
     struct MonitorHandle *handle;
+    const char *MonitorName;                        /* For MorphOS source compatibility */
     ULONG pixelformats[MONITOR_MAXPIXELFORMATS];
     OOP_Object *pfobjects[MONITOR_MAXPIXELFORMATS];
 

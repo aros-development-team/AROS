@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -681,7 +681,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 #ifdef __MORPHOS__
         GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid)
 #else
-	((screen->MonitorObject = FindMonitor(modeid, IntuitionBase)) != NULL)
+	((screen->IMonitorNode = FindMonitorNode(modeid, IntuitionBase)) != NULL)
 #endif
     )
     {
@@ -1884,7 +1884,7 @@ static VOID int_openscreen(struct OpenScreenActionMsg *msg,
 
     /* If it's the first screen being opened, activate its monitor */
     if (!oldFirstScreen)
-	ActivateMonitor(screen->MonitorObject, -1, -1, IntuitionBase);
+	ActivateMonitor(screen->IMonitorNode, -1, -1, IntuitionBase);
 
     /* set the default pub screen */
     if (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_DEFPUBSCREEN)

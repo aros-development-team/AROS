@@ -74,7 +74,7 @@ Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionB
 
 /***********************************************************************************/
 
-static void SetPointerPos(struct MonitorData *data, struct IntuitionBase *IntuitionBase)
+static void SetPointerPos(struct IMonitorNode *data, struct IntuitionBase *IntuitionBase)
 {
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
     ULONG x = data->mouseX;
@@ -136,12 +136,13 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
+    OOP_AttrBase HiddAttrBase = GetPrivIBase(IntuitionBase)->HiddAttrBase;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
     OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
     OOP_AttrBase HiddPixFmtAttrBase = GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase;
     struct MonitorHandle *handle = (struct MonitorHandle *)GetTagData(MA_MonitorHandle, 0, msg->ops_AttrList);
     HIDDT_ModeID mode = vHidd_ModeID_Invalid;
-    struct MonitorData *data;
+    struct IMonitorNode *data;
     OOP_Object *sync, *pixfmt;
     /* Tags order is important because CallBackData needs to be set before
        function pointer. Otherwise the function can be called with a wrong
@@ -205,6 +206,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
             data->gamma[i + GAMMA_B] = i;
         }
     }
+
+    OOP_GetAttr(handle->gfxhidd, aHidd_Name, (IPTR *)&data->MonitorName);
 
     tags[0].ti_Data = (IPTR)o;
     OOP_SetAttrs(handle->gfxhidd, tags);
@@ -820,14 +823,14 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_AttrBase HiddAttrBase = GetPrivIBase(IntuitionBase)->HiddAttrBase;
     OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
-    struct MonitorData *data = INST_DATA(cl, o);
+    struct IMonitorNode *data = INST_DATA(cl, o);
 
     D(kprintf("[monitorclass] OM_GET\n"));
 
     switch (msg->opg_AttrID)
     {
     case MA_MonitorName:
-	OOP_GetAttr(data->handle->gfxhidd, aHidd_Name, msg->opg_Storage);
+	*msg->opg_Storage = (IPTR)data->MonitorName;
 	break;
 
     case MA_Manufacturer:
@@ -916,7 +919,7 @@ IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
-    struct MonitorData *data = INST_DATA(cl, o);
+    struct IMonitorNode *data = INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
 
     tstate = msg->ops_AttrList;
@@ -975,7 +978,7 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
-    struct MonitorData *data = INST_DATA(cl, o);
+    struct IMonitorNode *data = INST_DATA(cl, o);
     struct TagItem tags[] =
     {
 	{aHidd_Gfx_ActiveCallBack, 0},
@@ -1112,7 +1115,7 @@ IPTR MonitorClass__MM_Query3DSupport(Class *cl, Object *obj, struct msQuery3DSup
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
     OOP_AttrBase HiddPixFmtAttrBase = GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase;
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
     OOP_Object *pf = data->pfobjects[msg->PixelFormat];
 
     if (pf) {
@@ -1179,7 +1182,7 @@ IPTR MonitorClass__MM_Query3DSupport(Class *cl, Object *obj, struct msQuery3DSup
 
 void MonitorClass__MM_GetDefaultGammaTables(Class *cl, Object *obj, struct msGetDefaultGammaTables *msg)
 {
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
 
     if (data->gamma)
     {
@@ -1234,7 +1237,7 @@ IPTR MonitorClass__MM_GetDefaultPixelFormat(Class *cl, Object *obj, struct msGet
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_AttrBase HiddPixFmtAttrBase = GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase;
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
     ULONG i;
 
     for (i = 0; i < MONITOR_MAXPIXELFORMATS; i++) {
@@ -1299,7 +1302,7 @@ IPTR MonitorClass__MM_GetPointerBounds(Class *cl, Object *obj, struct msGetPoint
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
 
     return HIDD_Gfx_GetMaxSpriteSize(data->handle->gfxhidd, msg->PointerType, msg->Width, msg->Height);
 }
@@ -1391,7 +1394,7 @@ IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
     struct TagItem tags[] =
     {
 	{aHidd_Gfx_DPMSLevel, vHidd_Gfx_DPMSLevel_Off},
@@ -1441,7 +1444,7 @@ IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
     struct TagItem tags[] =
     {
 	{aHidd_Gfx_DPMSLevel, vHidd_Gfx_DPMSLevel_On},
@@ -1499,7 +1502,7 @@ IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
 IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSetDefaultGammaTables *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
 
     if (data->gamma)
     {
@@ -1539,7 +1542,7 @@ ULONG MonitorClass__MM_GetCompositionFlags(Class *cl, Object *obj, struct msGetC
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
     struct HIDD_ModeProperties modeprops;
 
     HIDD_Gfx_ModeProperties(data->handle->gfxhidd, msg->ModeID & (!data->handle->mask),
@@ -1552,7 +1555,7 @@ ULONG MonitorClass__MM_GetCompositionFlags(Class *cl, Object *obj, struct msGetC
 void MonitorClass__MM_SetPointerPos(Class *cl, Object *obj, struct msSetPointerPos *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
 
     data->mouseX = msg->x;
     data->mouseY = msg->y;
@@ -1563,7 +1566,7 @@ void MonitorClass__MM_SetPointerPos(Class *cl, Object *obj, struct msSetPointerP
 
 IPTR MonitorClass__MM_CheckID(Class *cl, Object *obj, struct msGetCompositionFlags *msg)
 {
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
 
     return ((msg->ModeID & data->handle->mask) == data->handle->id);
 }
@@ -1574,7 +1577,7 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
     struct BitMap *bm;
     BOOL res;
 
@@ -1601,7 +1604,7 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
 
 void MonitorClass__MM_SetScreenGamma(Class *cl, Object *obj, struct msSetScreenGamma *msg)
 {
-    struct MonitorData *data = INST_DATA(cl, obj);
+    struct IMonitorNode *data = INST_DATA(cl, obj);
 
     if (data->gamma)
     {

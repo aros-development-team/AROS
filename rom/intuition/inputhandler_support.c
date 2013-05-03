@@ -75,7 +75,7 @@ void notify_mousemove_screensandwindows(struct IntuitionBase * IntuitionBase)
         struct Window *win;
 
         /* Ignore screens which are not on our current monitor */
-        if (GetPrivScreen(scr)->MonitorObject != GetPrivIBase(IntuitionBase)->ActiveMonitor)
+        if (GetPrivScreen(scr)->IMonitorNode != GetPrivIBase(IntuitionBase)->ActiveMonitor)
             continue;
 
         scr->MouseX = IntuitionBase->MouseX - scr->LeftEdge;
@@ -1431,7 +1431,7 @@ struct Screen *FindHighestScreen(struct IntuitionBase *IntuitionBase)
 
     for (scr = highest; scr; scr = scr->NextScreen) {
         /* We only check screens that are on this monitor */
-        if (GetPrivScreen(scr)->MonitorObject
+        if (GetPrivScreen(scr)->IMonitorNode
             != GetPrivIBase(IntuitionBase)->ActiveMonitor)
             continue;
 
@@ -1450,7 +1450,7 @@ struct Screen *FindActiveScreen(struct IntuitionBase *IntuitionBase)
     
     for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen) {
         /* We check only screens which are on this monitor */
-        if (GetPrivScreen(scr)->MonitorObject != GetPrivIBase(IntuitionBase)->ActiveMonitor)
+        if (GetPrivScreen(scr)->IMonitorNode != GetPrivIBase(IntuitionBase)->ActiveMonitor)
             continue;
 
         /* If the mouse is inside screen's bitmap, we found it */
