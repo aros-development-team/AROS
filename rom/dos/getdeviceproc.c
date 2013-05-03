@@ -124,6 +124,12 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     /* otherwise we need to find a place to start in the doslist based on the
      * name they passed in */
     else {
+
+        if (Strnicmp(name, "NIL:", 4) == 0) {
+            SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+            return NULL;
+        }
+
          /* allocate structure for return */
         if ((dp = AllocMem(sizeof(struct DevProc), MEMF_ANY | MEMF_CLEAR)) == NULL) {
             SetIoErr(ERROR_NO_FREE_STORE);
