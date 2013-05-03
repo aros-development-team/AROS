@@ -96,7 +96,7 @@ static struct Screen *OpenFinalScreen(BYTE MinDepth, BOOL squarePixels,
                 0, 0, 1, 1);
             GetAttr(POINTERA_SharedPointer, pointer,
                 (IPTR *) & shared_pointer);
-            DoMethod(GetPrivScreen(scr)->MonitorObject, MM_SetPointerShape,
+            DoMethod(GetPrivScreen(scr)->IMonitorNode, MM_SetPointerShape,
                 shared_pointer);
         }
     }

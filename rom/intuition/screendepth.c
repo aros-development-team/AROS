@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2013, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -217,7 +217,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
 	    if (!changed)
 		goto end;
 	    /* The screen has been made frontmost, activate its monitor */
-	    ActivateMonitor(GetPrivScreen(IntuitionBase->FirstScreen)->MonitorObject, -1, -1, IntuitionBase);
+	    ActivateMonitor(GetPrivScreen(IntuitionBase->FirstScreen)->IMonitorNode, -1, -1, IntuitionBase);
 	    IntuitionBase->ActiveScreen = IntuitionBase->FirstScreen;
         } /* if SDEPTH_TO_FRONT */
 

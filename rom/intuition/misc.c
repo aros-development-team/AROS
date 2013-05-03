@@ -112,7 +112,7 @@ struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionB
     struct Screen *scr;
 
     for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen) {
-	if (GetPrivScreen(scr)->MonitorObject == monitor)
+	if (GetPrivScreen(scr)->IMonitorNode == monitor)
 	    break;
     }
     return scr;
@@ -286,7 +286,7 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, UWORD which, Object **o
         {
             DEBUG_POINTER(dprintf("InstallPointer: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
                                   scr, pointer, newpointer->sprite));
-            if (DoMethod(scr->MonitorObject, MM_SetPointerShape, newpointer))
+            if (DoMethod(scr->IMonitorNode, MM_SetPointerShape, newpointer))
             {
                 ObtainSharedPointer(newpointer, IntuitionBase);
                 ReleaseSharedPointer(oldpointer, IntuitionBase);

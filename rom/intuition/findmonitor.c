@@ -7,7 +7,7 @@
  * Private internal function.
  * Find a monitorclass object corresponsing to a given monitor ID.
  */
-OOP_Object *FindMonitor(ULONG id, struct IntuitionBase *IntuitionBase)
+OOP_Object *FindMonitorNode(ULONG id, struct IntuitionBase *IntuitionBase)
 {
     struct MinNode *n;
     OOP_Object *ret = NULL;

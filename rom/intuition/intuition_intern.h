@@ -680,7 +680,7 @@ struct IntScreen
     ULONG                    ModeID;
     struct MonitorSpec      *Monitor;
 #endif
-    Object		    *MonitorObject;
+    Object		    *IMonitorNode;
     struct SharedPointer    *Pointer;
     struct Window           *MenuVerifyActiveWindow;
     int                      MenuVerifyTimeOut;
@@ -1057,7 +1057,7 @@ void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
 		    struct IntuitionBase *IntuitionBase);
 
 /* Private extra functions */
-OOP_Object *FindMonitor(ULONG modeid, struct IntuitionBase *IntuitionBase);
+Object *FindMonitorNode(ULONG modeid, struct IntuitionBase *IntuitionBase);
 struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase);
 AROS_INTP(ShutdownScreenHandler);
 

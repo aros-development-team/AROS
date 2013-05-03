@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2012, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -202,7 +202,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
                 DEBUG_POINTER(dprintf("ActivateWindow: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
                               scr, pointer, shared_pointer->sprite));
 
-                if (DoMethod(scr->MonitorObject, MM_SetPointerShape, shared_pointer))
+                if (DoMethod(scr->IMonitorNode, MM_SetPointerShape, shared_pointer))
                 {
                     ObtainSharedPointer(shared_pointer, IntuitionBase);
                     ReleaseSharedPointer(scr->Pointer, IntuitionBase);

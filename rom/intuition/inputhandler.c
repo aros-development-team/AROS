@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -1451,7 +1451,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
     /* Autoscroll the active screen */
     scr = IntuitionBase->ActiveScreen;
     if (scr && (scr->Flags & AUTOSCROLL) &&
-       (GetPrivScreen(scr)->MonitorObject == GetPrivIBase(IntuitionBase)->ActiveMonitor))
+       (GetPrivScreen(scr)->IMonitorNode == GetPrivIBase(IntuitionBase)->ActiveMonitor))
     {
         WORD xval = scr->LeftEdge;
         WORD yval = scr->TopEdge;
@@ -2096,7 +2096,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     ie->ie_X = pp->iepp_Position.X + pp->iepp_Screen->LeftEdge;
                     ie->ie_Y = pp->iepp_Position.Y + pp->iepp_Screen->TopEdge;
 
-                    ActivateMonitor(GetPrivScreen(pp->iepp_Screen)->MonitorObject, ie->ie_X, ie->ie_Y, IntuitionBase);
+                    ActivateMonitor(GetPrivScreen(pp->iepp_Screen)->IMonitorNode, ie->ie_X, ie->ie_Y, IntuitionBase);
                 }
                 ie->ie_Class = IECLASS_RAWMOUSE; /* otherwise a lot of code would ignore this message */
                 ie->ie_Code = IECODE_NOBUTTON;
@@ -2591,7 +2591,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                             DEBUG_POINTER(dprintf("InputHandler: sprite 0x%lx\n",
                                           shared_pointer->sprite));
 
-                            if (DoMethod(scr->MonitorObject, MM_SetPointerShape, shared_pointer))
+                            if (DoMethod(scr->IMonitorNode, MM_SetPointerShape, shared_pointer))
                             {
                                 ObtainSharedPointer(shared_pointer, IntuitionBase);
                                 ReleaseSharedPointer(scr->Pointer, IntuitionBase);
