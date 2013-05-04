@@ -42,7 +42,7 @@
 
     SEE ALSO
  	close(), opendir(),  readdir(), rewinddir(), seekdir(),
-	telldir(), scandir()
+	telldir()
 
     INTERNALS
 

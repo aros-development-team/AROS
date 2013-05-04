@@ -50,9 +50,38 @@ typedef	int word;		/* "word" used for optimal copy speed */
 /*
  * Copy a block of memory, handling overlap.
  */
-/* FIXME: Add autodoc */
 #include <string.h>
-void *memmove(void *dst0, const void *src0, size_t length)
+
+
+/*****************************************************************************
+
+    NAME */
+#include <stdlib.h>
+
+        void *memmove (
+
+/*  SYNOPSIS */
+        void *dst0,
+        const void *src0,
+        size_t length)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 	char *dst = dst0;
 	const char *src = src0;
