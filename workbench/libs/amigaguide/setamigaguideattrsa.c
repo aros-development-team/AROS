@@ -34,6 +34,7 @@
     BUGS
 
     SEE ALSO
+        This function is unimplemented.
 
     INTERNALS
 
