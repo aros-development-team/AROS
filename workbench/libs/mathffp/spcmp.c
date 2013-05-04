@@ -5,12 +5,25 @@
 
 #include "mathffp_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(LONG, SPCmp,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D1),
+        AROS_LHA(float, fnum2, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathBase, 7, Mathffp)
+
+/*  FUNCTION
         Compares two ffp numbers
 
+    INPUTS
+
     RESULT
-	<code>
        +1 : fnum1 > fnum2
         0 : fnum1 = fnum2
        -1 : fnum1 < fnum2
@@ -20,20 +33,11 @@
           zero     : fnum2 = fnum1
           negative : fnum2 < fnum1
           overflow : 0
-	</code>
-
-    NOTES
-
-    EXAMPLE
 
     BUGS
 
-    SEE ALSO
-
-
     INTERNALS
-      ALGORITHM:
-	<code>
+        ALGORITHM:
         1st case:
           fnum1 is negative and fnum2 is positive
             or
@@ -57,15 +61,8 @@
 
         final case:
           fnum1 > fnum2
-	</code>
-    HISTORY
-*/
 
-AROS_LH2(LONG, SPCmp,
-    AROS_LHA(float, fnum1, D1),
-    AROS_LHA(float, fnum2, D0),
-    struct LibHeader *, MathBase, 7, Mathffp
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

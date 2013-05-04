@@ -5,12 +5,24 @@
 
 #include "mathffp_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(LONG, SPTst,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum, D1),
+
+/*  LOCATION */
+        struct LibHeader *, MathBase, 8, Mathffp)
+
+/*  FUNCTION
         Compare a ffp-number against zero.
 
+    INPUTS
+
     RESULT
-	<code>
         +1 : fnum > 0.0
          0 : fnum = 0.0
         -1 : fnum < 0.0
@@ -19,30 +31,16 @@
           zero     : result is zero
           negative : result is negative
           overflow : 0
-	</code>
-
-    NOTES
-
-    EXAMPLE
 
     BUGS
 
-    SEE ALSO
-
-
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
         Sign is negative: return -1
         fnum == 0       : return 0
         Otherwise       : return 1
 
-    HISTORY
-*/
-
-AROS_LH1(LONG, SPTst,
-    AROS_LHA(float, fnum, D1),
-    struct LibHeader *, MathBase, 8, Mathffp
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

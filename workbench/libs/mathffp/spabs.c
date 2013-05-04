@@ -5,9 +5,22 @@
 
 #include "mathffp_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPAbs,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathBase, 9, Mathffp)
+
+/*  FUNCTION
         Calculate the absolute value of a given floating point number
+
+    INPUTS
 
     RESULT
         absolute value of fnum1
@@ -16,25 +29,12 @@
           zero     : result is zero
           negative : result is negative
           overflow : 0
-
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-       Set the sign-bit to zero
+        Set the sign-bit to zero
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPAbs,
-    AROS_LHA(float, fnum1, D0),
-    struct LibHeader *, MathBase, 9, Mathffp
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     D(kprintf("SPAbs(%08x)\n", fnum1));

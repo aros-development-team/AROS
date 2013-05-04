@@ -5,10 +5,24 @@
 
 #include "mathffp_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(float, SPSub,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D1),
+        AROS_LHA(float, fnum2, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathBase, 12, Mathffp)
+
+/*  FUNCTION
         Subtract two floating point numbers
         fnum = fnum2 - fnum1;
+
+    INPUTS
 
     RESULT
 	FFP number
@@ -18,27 +32,16 @@
           negative : result is negative
           overflow : result is out of range
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
     SEE ALSO
 	SPAdd()
 
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
         fnum = fnum2 + (-fnum1).
 
-    HISTORY
-*/
-
-AROS_LH2(float, SPSub,
-    AROS_LHA(float, fnum1, D1),
-    AROS_LHA(float, fnum2, D0),
-    struct LibHeader *, MathBase, 12, Mathffp
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

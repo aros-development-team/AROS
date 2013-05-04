@@ -5,9 +5,22 @@
 
 #include "mathffp_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(LONG, SPFix,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathBase, 5, Mathffp)
+
+/*  FUNCTION
         Convert ffp-number to integer
+
+    INPUTS
 
     RESULT
         absolute value of fnum1
@@ -17,24 +30,11 @@
           negative : result is negative
           overflow : ffp out of integer-range
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
-
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(LONG, SPFix,
-    AROS_LHA(float, fnum, D0),
-    struct LibHeader *, MathBase, 5, Mathffp
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

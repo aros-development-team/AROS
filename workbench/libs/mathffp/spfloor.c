@@ -5,10 +5,23 @@
 
 #include "mathffp_intern.h"
 
-/*
-    FUNCTION
-        Calculate the largest integer ffp-number less than or equal to
-        fnum
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPFloor,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathBase, 15, Mathffp)
+
+/*  FUNCTION
+        Calculate the largest integer ffp-number
+        less than or equal to fnum
+
+    INPUTS
 
     RESULT
 	FFP number
@@ -18,8 +31,6 @@
           negative : result is negative
           overflow : 0 (???)
 
-    NOTES
-
     EXAMPLE
        floor(10.5) = 10
        floor(0.5)  = 0
@@ -28,30 +39,21 @@
 
     BUGS
 
-    SEE ALSO
-        @Math.Floor@
-
     INTERNALS
-      ALGORITHM:
-        <p>The integer part of a ffp number are the left "exponent"-bits
+        ALGORITHM:
+        The integer part of a ffp number are the left "exponent"-bits
         of the mantisse!
         Therefore:
-        Test the exponent for <code><= 0</code>. This has to be done separately!
-        If the sign is negative then return -1 otherwise return 0.</p>
+        Test the exponent for <= 0. This has to be done separately!
+        If the sign is negative then return -1 otherwise return 0.
 
-        <p>Generate a mask of exponent(y) (where y is the given ffp-number)
+        Generate a mask of exponent(y) (where y is the given ffp-number)
         bits starting with bit 31.
-        If <code>y < 0</code> then test whether it is already an integer. If not
+        If y < 0 then test whether it is already an integer. If not
         then y = y - 1 and generate that mask again. Use the
-        mask on the mantisse.</p>
+        mask on the mantisse.
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPFloor,
-    AROS_LHA(float, y, D0),
-    struct LibHeader *, MathBase, 15, Mathffp
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
