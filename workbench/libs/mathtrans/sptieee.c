@@ -5,35 +5,36 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-       Convert FFP number to single precision ieee number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPTieee,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 17, MathTrans)
+
+/*  FUNCTION
+        Convert FFP number to single precision ieee number
+
+    INPUTS
 
     RESULT
-       IEEE Single Precision Floating Point
+        IEEE Single Precision Floating Point
 
-       flags:
-         zero     : result is zero
-         negative : result is negative
-         overflow : exponent of the ieee-number was out of range for ffp
-
-    NOTES
-
-    EXAMPLE
+        flags:
+        zero     : result is zero
+        negative : result is negative
+        overflow : exponent of the ieee-number was out of range for ffp
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPTieee,
-    AROS_LHA(float, fnum, D0),
-    struct Library *, MathTransBase, 17, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

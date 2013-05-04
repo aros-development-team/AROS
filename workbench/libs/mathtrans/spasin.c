@@ -15,35 +15,36 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate arcussin of the given number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPAsin,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 19, MathTrans)
+
+/*  FUNCTION
+        Calculate arcussin of the given number
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
+        Motorola fast floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
-        overflow : fnum &lt; -1  or  fnum &gt; 1
-
-    NOTES
-
-    EXAMPLE
+        overflow : fnum < -1  or  fnum > 1
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPAsin,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 19, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

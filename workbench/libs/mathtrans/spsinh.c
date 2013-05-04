@@ -5,39 +5,40 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the hyperbolic sine of the ffp number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPSinh,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 10, MathTrans)
+
+/*  FUNCTION
+        Calculate the hyperbolic sine of the ffp number
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
+        Motorola fast floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : result is too big for ffp format
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      sinh(x) = (1/2)*( e^x- e^(-x) )
+        sinh(x) = (1/2)*( e^x- e^(-x) )
 
-      sinh( |x| >= 44 ) = infinity;
-      sinh( |x| >=  9 ) = (1/2) * (e^x);
+        sinh( |x| >= 44 ) = infinity;
+        sinh( |x| >=  9 ) = (1/2) * (e^x);
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPSinh,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 10, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

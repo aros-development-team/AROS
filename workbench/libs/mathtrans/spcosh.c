@@ -5,41 +5,40 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the hyperbolic cosine of the ffp number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPCosh,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 11, MathTrans)
+
+/*  FUNCTION
+        Calculate the hyperbolic cosine of the ffp number
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
+        Motorola fast floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : 0 (not possible)
         overflow : result too big for ffp-number
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-     <code>
-      cosh(x) = (1/2)*( e^x + e^(-x) )
+        cosh(x) = (1/2)*( e^x + e^(-x) )
 
-      cosh( |x| >= 44 ) = infinity;
-      cosh( |x| >= 9  ) = (1/2) * (e^x);
-     </code>
+        cosh( |x| >= 44 ) = infinity;
+        cosh( |x| >= 9  ) = (1/2) * (e^x);
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPCosh,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 11, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

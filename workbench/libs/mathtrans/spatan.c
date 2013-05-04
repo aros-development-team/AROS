@@ -5,31 +5,32 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculates the angle of a given number representing the tangent
-      of that angle. The angle will be in radians.
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPAtan,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 5, MathTrans)
+
+/*  FUNCTION
+        Calculates the angle of a given number representing the tangent
+        of that angle. The angle will be in radians.
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
-
-    NOTES
-
-    EXAMPLE
+        Motorola fast floating point number
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPAtan,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 5, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

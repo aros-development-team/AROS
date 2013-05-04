@@ -5,38 +5,37 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate e^x
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPExp,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 13, MathTrans)
+
+/*  FUNCTION
+        Calculate e^x
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
+        Motorola fast floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : 0
         overflow : the result was out of range for the ffp-format
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-     <code>
-      e^(>= 44): return FFP_Pinfty;
-     </code>
+        e^(>= 44): return FFP_Pinfty;
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPExp,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 13, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
