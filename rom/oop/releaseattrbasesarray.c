@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-        OOP_ObtainAttrBasesArray
+        OOP_ObtainAttrBasesArray()
 
     INTERNALS
 

@@ -23,7 +23,7 @@
 /*****************************************************************************************
 
     NAME
-        --background--
+        --background_mouseclass--
 
     LOCATION
         CLID_Hidd_Mouse

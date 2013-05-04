@@ -47,7 +47,7 @@
     BUGS
 
     SEE ALSO
-        OOP_ReleaseAttrBasesArray
+        OOP_ReleaseAttrBasesArray()
 
     INTERNALS
 

@@ -157,7 +157,7 @@ VOID PCIDev__Hidd_PCIDevice__WriteConfigLong(OOP_Class *cl, OOP_Object *o, struc
 /*****************************************************************************************
 
     NAME
-        moHidd_PCIDriver_AddInterrupt
+        moHidd_PCIDevice_AddInterrupt
 
     SYNOPSIS
         OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_AddInterrupt *Msg);
