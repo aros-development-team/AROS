@@ -5,12 +5,24 @@
 
 #include "mathieeedoubbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPFloor,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 15, MathIeeeDoubBas)
+
+/*  FUNCTION
 	Calculates the floor-value of a IEEE double precision number
 
+    INPUTS
+
     RESULT
-       <code>
        +1 : y > z
 	0 : y = z
        -1 : y < z
@@ -19,25 +31,12 @@
 	  zero	   : y = z
 	  negative : y < z
 	  overflow : 0
-       </code>
-
-    NOTES
-
-    EXAMPLE
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPFloor,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 15, MathIeeeDoubBas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

@@ -5,35 +5,35 @@
 
 #include "mathieeedoubbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
 
+    NAME */
+
+        AROS_LH1(double, IEEEDPFlt,
+
+/*  SYNOPSIS */
+        AROS_LHA(LONG, y, D0),
+
+/*  LOCATION */
+        struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 6, MathIeeeDoubBas)
+
+/*  FUNCTION
+
+    INPUTS
 
     RESULT
-      IEEE double precision number
+        IEEE double precision number
 
 	Flags:
 	  zero	   : result is zero
 	  negative : result is negative
 	  overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(double, IEEEDPFlt,
-    AROS_LHA(LONG, y, D0),
-    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 6, MathIeeeDoubBas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

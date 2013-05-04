@@ -5,9 +5,22 @@
 
 #include "mathieeedoubbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPCeil,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 16, MathIeeeDoubBas)
+
+/*  FUNCTION
         Calculates the ceil-value of a IEEE double precision number
+
+    INPUTS
 
     RESULT
         Flags:
@@ -15,26 +28,16 @@
           negative : result is negative
           overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
     SEE ALSO
         IEEEDPFloor()
 
     INTERNALS
-      ALGORITHM:
-         Ceil(y) = - Floor(-y)
+        ALGORITHM:
+        Ceil(y) = - Floor(-y)
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPCeil,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 16, MathIeeeDoubBas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

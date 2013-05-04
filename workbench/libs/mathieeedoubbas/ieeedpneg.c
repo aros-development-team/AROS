@@ -5,10 +5,23 @@
 
 #include "mathieeedoubbas_intern.h"
 
-/*
-    FUNCTION
-	Switch the sign of the given IEEE double precision floating point
-	number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPNeg,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 10, MathIeeeDoubBas)
+
+/*  FUNCTION
+	Switch the sign of the given IEEE double precision
+        floating point number
+
+    INPUTS
 
     RESULT
 	-y
@@ -18,26 +31,13 @@
 	  negative : result is negative
 	  overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      ALGORITHM:
-
+        ALGORITHM:
 	Flip the sign-bit (even for zeroes).
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPNeg,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 10, MathIeeeDoubBas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
