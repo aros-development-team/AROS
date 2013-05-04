@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+*/
+
 #include <aros/config.h>
 #include <aros/debug.h>
 #include <aros/kernel.h>
@@ -11,7 +18,7 @@
 
 /*
  * A horrible hack. It works only under UNIX.
- * TODO: rewrite all this crap and provide C subroutines will well
+ * TODO: rewrite all this crap and provide C subroutines with well
  * defined API to call them from gdb for debug info lookup. This would
  * remove a requirement to rewrite _gdbinit every time when something
  * changes in this library.
