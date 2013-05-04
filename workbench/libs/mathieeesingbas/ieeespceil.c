@@ -32,7 +32,7 @@
     BUGS
 
     SEE ALSO
-        Floor()
+        IEEESPFloor()
 
     INTERNALS
         ALGORITHM:

@@ -32,15 +32,14 @@
           overflow : 0 (???)
 
     EXAMPLE
-       floor(10.5) = 10
-       floor(0.5)  = 0
-       floor(-0.5) = -1
-       floor(-10.5)= -11
+       IEEESPFloor(10.5) = 10
+       IEEESPFloor(0.5)  = 0
+       IEEESPFloor(-0.5) = -1
+       IEEESPFloor(-10.5)= -11
 
     BUGS
 
     SEE ALSO
-        Floor()
 
     INTERNALS
 
