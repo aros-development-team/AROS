@@ -44,6 +44,7 @@
     EXAMPLE
 
     BUGS
+        This function is unimplemented.
 
     SEE ALSO
 

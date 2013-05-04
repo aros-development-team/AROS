@@ -33,6 +33,7 @@ AROS_LH0I(void, KrnCli,
     EXAMPLE
 
     BUGS
+        This function is unimplemented.
 
     SEE ALSO
 	KrnSti()

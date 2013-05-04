@@ -32,14 +32,11 @@
     EXAMPLE
 
     BUGS
+        This function is unimplemented.
 
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
 
 *****************************************************************************/
 {
