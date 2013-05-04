@@ -5,69 +5,67 @@
 
 #include "mathffp_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(float, SPAdd,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D1),
+        AROS_LHA(float, fnum2, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathBase, 11, Mathffp)
+
+/*  FUNCTION
         Calculate the sum of two ffp numbers
+
+    INPUTS
 
     RESULT
         sum of fnum1 and fnum2.
 
         Flags:
-	<description>
-	<li><item>zero</item>result is zero</li>
-        <li><item>negative</item>result is negative</li>
-        <li><item>overflow</item>result is too large or too small for ffp format</li>
-	</description>
-
-    NOTES
-
-    EXAMPLE
+        zero : result is zero
+        negative : result is negative
+        overflow : result is too large or too small for ffp format
 
     BUGS
 
-    SEE ALSO
-
-
     INTERNALS
-        <p>Adapt the exponent of the ffp-number with the smaller
+        Adapt the exponent of the ffp-number with the smaller
         exponent to the ffp-number with the larger exponent.
         Therefore rotate the mantisse of the ffp-number with the
         smaller exponents by n bits, where n is the absolute value
-        of the difference of the exponents.</p>
+        of the difference of the exponents.
 
-        <p>The exponent of the target ffp-number is set to the larger
-        exponent plus 1.</p>
+        The exponent of the target ffp-number is set to the larger
+        exponent plus 1.
 
-        <p>Additionally rotate both numbers by one bit to the right so
-        you can catch a result &gt; 1 in the MSB.</p>
+        Additionally rotate both numbers by one bit to the right so
+        you can catch a result > 1 in the MSB.
 
-        <p>If the signs of the two numbers are equal then simply add
+        If the signs of the two numbers are equal then simply add
         the two mantisses. The result of the mantisses will be
         [0.5 .. 2[. Check the MSB. If zero, then the result is &lt; 1
         and therefore subtract 1 from the exponent. Normalize the
         mantisse of the result by rotating it one bit to the left.
-        Check the mantisse for 0.</p>
+        Check the mantisse for 0.
 
-        <p>If the signs of the two numbers are different then subtract
+        If the signs of the two numbers are different then subtract
         the ffp-number with the neagtive sign from the other one.
         The result of the mantisse will be [-1..1[. If the MSB of
         the result is set, then the result is below zero and therefore
         you have to calculate the absolute value of the mantisse.
         Check the mantisse for zero. Normalize the mantisse by
         rotating it to the left and decreasing the exponent for every
-        rotation.</p>
+        rotation.
 
-        <p>Test the exponent of the result for an overflow.
-        That`s it!</p>
+        Test the exponent of the result for an overflow.
+        That`s it!
 
-    HISTORY
-*/
-
-AROS_LH2(float, SPAdd,
-    AROS_LHA(float, fnum1, D1),
-    AROS_LHA(float, fnum2, D0),
-    struct LibHeader *, MathBase, 11, Mathffp
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

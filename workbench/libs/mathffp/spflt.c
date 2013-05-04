@@ -5,8 +5,21 @@
 
 #include "mathffp_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPFlt,
+
+/*  SYNOPSIS */
+        AROS_LHA(LONG, inum, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathBase, 6, Mathffp)
+
+/*  FUNCTION
+
+    INPUTS
 
     RESULT
 	FFP number
@@ -16,35 +29,22 @@
           negative : result is negative
           overflow : ffp is not exactly the integer
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-        Return zero for x == 0.<br/>
-        If <code>x < 0</code> set the sign-bit and calculate the absolute value
-        of x.<br/>
+        Return zero for x == 0.
+        If x < 0 set the sign-bit and calculate the absolute value
+        of x.
         Find out which bit is the highest-set bit. If the number
         of that bit <code>> 24</code> then the result has the highest bit
         of the mantisse set to one and the exponent equals the
         number of the bit + 2. This is due to the fact that we only
         have 24 bits for the mantisse.
         Otherwise rotate the given integer by
-        <code>(32 - (number of highes set bit + 1))</code> bits to the left and
+        (32 - (number of highes set bit + 1)) bits to the left and
         calculate the result from that.
 
-    HISTORY
-
-*/
-
-AROS_LH1(float, SPFlt,
-    AROS_LHA(LONG, inum, D0),
-    struct LibHeader *, MathBase, 6, Mathffp
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
   

@@ -5,9 +5,22 @@
 
 #include "mathffp_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPNeg,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathBase, 10, Mathffp)
+
+/*  FUNCTION
         Calculate fnum1*(-1)
+
+    INPUTS
 
     RESULT
         -fnum1
@@ -17,27 +30,14 @@
           negative : result is negative
           overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
-
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
         Return zero if fnum == 0.
         Otherwise flip the sign-bit.
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPNeg,
-    AROS_LHA(float, fnum1, D0),
-    struct LibHeader *, MathBase, 10, Mathffp
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

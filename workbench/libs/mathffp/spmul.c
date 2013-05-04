@@ -5,10 +5,24 @@
 
 #include "mathffp_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(float, SPMul,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D1),
+        AROS_LHA(float, fnum2, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathBase, 13, Mathffp)
+
+/*  FUNCTION
         Multiply two ffp numbers
         fnum = fnum1 * fnum2;
+
+    INPUTS
 
     RESULT
 	FFP number
@@ -18,24 +32,11 @@
           negative : result is negative
           overflow : result is out of range
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH2(float, SPMul,
-    AROS_LHA(float, fnum1, D1),
-    AROS_LHA(float, fnum2, D0),
-    struct LibHeader *, MathBase, 13, Mathffp
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

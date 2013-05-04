@@ -5,10 +5,24 @@
 
 #include "mathffp_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(float, SPDiv,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D1),
+        AROS_LHA(float, fnum2, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathBase, 14, Mathffp)
+
+/*  FUNCTION
         Divide two ffp numbers
         fnum = fnum2 / fnum1;
+
+    INPUTS
 
     RESULT
         Flags:
@@ -16,30 +30,16 @@
           negative : result is negative
           overflow : result is out of range
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
         The parameters are swapped !
 
-    SEE ALSO
-
-
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
         Check if fnum2 == 0: result = 0;
         Check if fnum1 == 0: result = overflow;
         The further algorithm comes down to a pen &amp; paper division
 
-    HISTORY
-*/
-
-AROS_LH2(float, SPDiv,
-    AROS_LHA(float, fnum1, D1),
-    AROS_LHA(float, fnum2, D0),
-    struct LibHeader *, MathBase, 14, Mathffp
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
