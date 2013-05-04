@@ -38,6 +38,7 @@
     RESULT
  
     BUGS
+        This function is unimplemented.
 
     INTERNALS
 
