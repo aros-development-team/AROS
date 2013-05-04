@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	ecvt(), fcvt(), sprintf()
+	sprintf()
 
     INTERNALS
 

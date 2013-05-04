@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-	setrlimit(), getdtablesize()
+	setrlimit()
 
     INTERNALS
 
