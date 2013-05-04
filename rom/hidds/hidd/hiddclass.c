@@ -37,7 +37,7 @@
 /*****************************************************************************************
 
     NAME
-        --background--
+        --background_hiddclass--
 
     LOCATION
         hiddclass

@@ -17,7 +17,7 @@
 /*****************************************************************************************
 
     NAME
-	--background--
+	--background_subsystem--
 
     LOCATION
 	CLID_Hidd_Mouse

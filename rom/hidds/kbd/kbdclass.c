@@ -21,7 +21,7 @@
 /*****************************************************************************************
 
     NAME
-        --background--
+        --background_kbdclass--
 
     LOCATION
         CLID_Hidd_Kbd

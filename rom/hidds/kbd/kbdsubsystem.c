@@ -16,7 +16,7 @@
 /*****************************************************************************************
 
     NAME
-        --background--
+        --background_kbdsubsystem--
 
     LOCATION
         CLID_HW_Kbd
