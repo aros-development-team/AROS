@@ -5,12 +5,25 @@
 
 #include "mathieeedoubbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD2(double, IEEEDPSub,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+        AROS_LHAQUAD(double, z, D2, D3),
+
+/*  LOCATION */
+        struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 12, MathIeeeDoubBas)
+
+/*  FUNCTION
         Subtracts two IEEE double precision numbers
 
+    INPUTS
+
     RESULT
-       <code>
        +1 : y > z
         0 : y = z
        -1 : y < z
@@ -19,26 +32,12 @@
           zero     : y = z
           negative : y < z
           overflow : 0
-       </code>
-
-    NOTES
-
-    EXAMPLE
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LHQUAD2(double, IEEEDPSub,
-    AROS_LHAQUAD(double, y, D0, D1),
-    AROS_LHAQUAD(double, z, D2, D3),
-    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 12, MathIeeeDoubBas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

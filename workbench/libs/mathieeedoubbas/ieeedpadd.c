@@ -5,9 +5,23 @@
 
 #include "mathieeedoubbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD2(double, IEEEDPAdd,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+        AROS_LHAQUAD(double, z, D2, D3),
+
+/*  LOCATION */
+        struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 11, MathIeeeDoubBas)
+
+/*  FUNCTION
         Calculate the sum of two IEEE double precision numbers
+
+    INPUTS
 
     RESULT
         sum of y and z
@@ -17,24 +31,11 @@
           negative : result is negative
           overflow : result is too large or too small for ffp format
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LHQUAD2(double, IEEEDPAdd,
-    AROS_LHAQUAD(double, y, D0, D1),
-    AROS_LHAQUAD(double, z, D2, D3),
-    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 11, MathIeeeDoubBas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

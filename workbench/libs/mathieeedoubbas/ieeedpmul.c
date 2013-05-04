@@ -20,40 +20,39 @@ static void add128(ULONG *s, ULONG *d)
     }
 }
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD2(double, IEEEDPMul,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+        AROS_LHAQUAD(double, z, D2, D3),
+
+/*  LOCATION */
+        struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 13, MathIeeeDoubBas)
+
+/*  FUNCTION
 	Multiplies two IEEE double precision numbers
 
+    INPUTS
+
     RESULT
-	<code>
-       +1 : y > z
-	0 : y = z
-       -1 : y < z
+        +1 : y > z
+	 0 : y = z
+        -1 : y < z
 
 	Flags:
 	  zero	   : y = z
 	  negative : y < z
 	  overflow : 0
-	</code>
-
-    NOTES
-
-    EXAMPLE
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LHQUAD2(double, IEEEDPMul,
-    AROS_LHAQUAD(double, y, D0, D1),
-    AROS_LHAQUAD(double, z, D2, D3),
-    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 13, MathIeeeDoubBas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

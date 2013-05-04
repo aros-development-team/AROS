@@ -5,12 +5,24 @@
 
 #include "mathieeedoubbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(LONG, IEEEDPTst,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 8, MathIeeeDoubBas)
+
+/*  FUNCTION
 	Compare a IEEE double precision floting point number against zero.
 
+    INPUTS
+
     RESULT
-       <code>
 	+1 : y > 0.0
 	 0 : y = 0.0
 	-1 : y < 0.0
@@ -19,27 +31,16 @@
 	  zero	   : result is zero
 	  negative : result is negative
 	  overflow : 0
-       </code>
-
-    NOTES
-
-    EXAMPLE
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
 	Sign is negative: return -1
 	y == 0		: return 0
 	Otherwise	: return 1
-*/
 
-AROS_LHQUAD1(LONG, IEEEDPTst,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 8, MathIeeeDoubBas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

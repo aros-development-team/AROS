@@ -5,9 +5,22 @@
 
 #include "mathieeedoubbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(LONG, IEEEDPFix,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, MathIeeeDoubBas)
+
+/*  FUNCTION
 	Convert IEEE double precision floating point number to integer
+
+    INPUTS
 
     RESULT
 	absolute value of y
@@ -17,23 +30,11 @@
 	  negative : result is negative
 	  overflow : ieeedp out of integer-range
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(LONG, IEEEDPFix,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, MathIeeeDoubBas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

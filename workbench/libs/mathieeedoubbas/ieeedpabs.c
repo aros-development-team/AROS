@@ -5,10 +5,23 @@
 
 #include "mathieeedoubbas_intern.h"
 
-/*
-    FUNCTION
-      Calculate the absolute value of the given IEEE double precision
-      floating point number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPAbs,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 9, MathIeeeDoubBas)
+
+/*  FUNCTION
+        Calculate the absolute value of the given IEEE double precision
+        floating point number
+
+    INPUTS
 
     RESULT
 	absolute value of y
@@ -18,25 +31,13 @@
 	  negative : 0
 	  overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
 	set the sign-bit to zero
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPAbs,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 9, MathIeeeDoubBas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
