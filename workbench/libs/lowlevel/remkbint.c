@@ -23,9 +23,7 @@
 /*  LOCATION */
       struct LowLevelBase *, LowLevelBase, 11, LowLevel)
 
-/*  NAME
- 
-    FUNCTION
+/*  FUNCTION
  
     INPUTS
  
@@ -33,10 +31,6 @@
  
     BUGS
         This function is unimplemented.
-
-    INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

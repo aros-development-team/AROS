@@ -23,9 +23,7 @@
 /*  LOCATION */
       struct LowLevelBase *, LowLevelBase, 8, LowLevel)
 
-/*  NAME
- 
-    FUNCTION
+/*  FUNCTION
  
     INPUTS
  
