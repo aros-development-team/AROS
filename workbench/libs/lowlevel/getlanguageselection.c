@@ -52,9 +52,7 @@ static char * langlist[] =
 /*  LOCATION */
       struct LowLevelBase *, LowLevelBase, 6, LowLevel)
 
-/*  NAME
- 
-    FUNCTION
+/*  FUNCTION
  
     INPUTS
  
@@ -63,8 +61,6 @@ static char * langlist[] =
     BUGS
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
