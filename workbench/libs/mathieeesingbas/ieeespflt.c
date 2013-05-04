@@ -5,8 +5,21 @@
 
 #include "mathieeesingbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPFlt,
+
+/*  SYNOPSIS */
+        AROS_LHA(LONG, y, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 6, Mathieeesingbas)
+
+/*  FUNCTION
+
+    INPUTS
 
     RESULT
         Flags:
@@ -14,24 +27,11 @@
           negative : result is negative
           overflow : IEEE single precision number is not exactly the integer
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
-
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPFlt,
-    AROS_LHA(LONG, y, D0),
-    struct LibHeader *, MathIeeeSingBasBase, 6, Mathieeesingbas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

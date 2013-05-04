@@ -5,36 +5,36 @@
 
 #include "mathieeesingbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(float, IEEESPMul,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+        AROS_LHA(float, z, D1),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 13, Mathieeesingbas)
+
+/*  FUNCTION
         Multiply two IEEE single precision numbers
         res = y * z;
 
-    RESULT
+    INPUTS
 
+    RESULT
         Flags:
           zero     : result is zero
           negative : result is negative
           overflow : result is out of range
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH2(float, IEEESPMul,
-    AROS_LHA(float, y, D0),
-    AROS_LHA(float, z, D1),
-    struct LibHeader *, MathIeeeSingBasBase, 13, Mathieeesingbas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

@@ -5,10 +5,23 @@
 
 #include "mathieeesingbas_intern.h"
 
-/*
-    FUNCTION
-        Calculate the largest integer ieeesp-number less than or equal to
-        fnum
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPFloor,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 15, Mathieeesingbas)
+
+/*  FUNCTION
+        Calculate the largest integer ieeesp-number
+        less than or equal to fnum
+
+    INPUTS
 
     RESULT
 	IEEE single precision floating point
@@ -17,8 +30,6 @@
           zero     : result is zero
           negative : result is negative
           overflow : 0 (???)
-
-    NOTES
 
     EXAMPLE
        floor(10.5) = 10
@@ -29,17 +40,11 @@
     BUGS
 
     SEE ALSO
-        @Math.Floor@
+        Floor()
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPFloor,
-    AROS_LHA(float, y, D0),
-    struct LibHeader *, MathIeeeSingBasBase, 15, Mathieeesingbas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

@@ -5,12 +5,24 @@
 
 #include "mathieeesingbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(LONG, IEEESPTst,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 8, Mathieeesingbas)
+
+/*  FUNCTION
         Compare a ieeesp-number against zero.
 
+    INPUTS
+
     RESULT
-	<code>
         +1 : y > 0.0
          0 : y = 0.0
         -1 : y < 0.0
@@ -19,32 +31,16 @@
           zero     : result is zero
           negative : result is negative
           overflow : 0
-	</code>
-
-    NOTES
-
-    EXAMPLE
 
     BUGS
 
-    SEE ALSO
-
-
     INTERNALS
-      ALGORITHM:
-	<code>
+        ALGORITHM:
         Sign is negative: return -1
         y == 0          : return 0
         Otherwise       : return 1
-	</code>
 
-    HISTORY
-*/
-
-AROS_LH1(LONG, IEEESPTst,
-    AROS_LHA(float, y, D0),
-    struct LibHeader *, MathIeeeSingBasBase, 8, Mathieeesingbas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

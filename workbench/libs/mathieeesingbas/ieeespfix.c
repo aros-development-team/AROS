@@ -5,9 +5,22 @@
 
 #include "mathieeesingbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(LONG, IEEESPFix,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 5, Mathieeesingbas)
+
+/*  FUNCTION
         Convert ieeesp-number to integer
+
+    INPUTS
 
     RESULT
         absolute value of y
@@ -17,24 +30,11 @@
           negative : result is negative
           overflow : ieeesp out of integer-range
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
-
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(LONG, IEEESPFix,
-    AROS_LHA(float, y, D0),
-    struct LibHeader *, MathIeeeSingBasBase, 5, Mathieeesingbas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
