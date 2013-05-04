@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+*/
+
 #include <aros/config.h>
 
 #include <kernel_base.h>

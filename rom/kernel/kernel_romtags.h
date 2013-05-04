@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+*/
+
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>

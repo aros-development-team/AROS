@@ -1,4 +1,11 @@
 /*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+*/
+
+/*
  * This file contains useful redefinition of bug() macro which uses
  * kernel.resource's own debugging facilities. Include it if you
  * need bug() in your code.

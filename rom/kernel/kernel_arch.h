@@ -1,4 +1,11 @@
 /*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+*/
+
+/*
  * Machine-specific definitions.
  *
  * This file needs to be replaced for every machine. Hosted ports

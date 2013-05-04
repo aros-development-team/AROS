@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Main kernel.resource initialization.

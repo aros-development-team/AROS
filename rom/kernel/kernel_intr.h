@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+*/
+
 #include <proto/exec.h>
 
 /* Main scheduler entry points */

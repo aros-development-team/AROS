@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+*/
+
 /* This file is a small abstraction, provided for future implementation of slab allocator */
 
 #include <proto/exec.h>

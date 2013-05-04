@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+*/
+
 #define __KERNEL_NOLIBBASE__
 
 #include <exec/execbase.h>
