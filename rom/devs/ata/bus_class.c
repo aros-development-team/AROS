@@ -50,7 +50,7 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
     AROS_INTFUNC_INIT
 
     struct ataBase *ATABase = bus->ab_Base;
-    OOP_Object *obj = (void *)bus - ATABase->ataClass->InstOffset;
+    OOP_Object *obj = (void *)bus - ATABase->busClass->InstOffset;
 
     HIDD_ATABus_Shutdown(obj);
     return FALSE;
