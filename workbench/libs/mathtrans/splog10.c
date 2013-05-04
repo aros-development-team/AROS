@@ -5,40 +5,47 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate logarithm (base 10) of the given ffp number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPLog10,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 21, MathTrans)
+
+/*  FUNCTION
+        Calculate logarithm (base 10) of the given ffp number
+
+    INPUTS
 
     RESULT
-      ffp number
+        ffp number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : argument was negative
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
 
-      If the Argument is negative set overflow-flag and return 0.
-      If the Argument is 0 return 0xde5bd8fe.
+        If the Argument is negative set overflow-flag and return 0.
+        If the Argument is 0 return 0xde5bd8fe.
 
-      All other cases:
+        All other cases:
 
-      (ld is the logarithm with base 2)
-      (log is the logarithm with base 10)
-      <code>
-      fnum1 = M * 2^E
+        (ld is the logarithm with base 2)
+        (log is the logarithm with base 10)
 
-      log fnum1 = log ( M * 2^E ) =
+        fnum1 = M * 2^E
+
+        log fnum1 = log ( M * 2^E ) =
 
                 = log M + log 2^E =
 
@@ -51,18 +58,11 @@
                   ld M + E
                 = --------
                   ld 10
-      </code>
 
-      ld 10 can be precalculated, of course.
-      For calculating ld M see file intern_spld.c
+        ld 10 can be precalculated, of course.
+        For calculating ld M see file intern_spld.c
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPLog10,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 21, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

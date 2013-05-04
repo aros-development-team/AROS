@@ -5,54 +5,53 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the cosine of a given ffp number in radians
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPCos,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 7, MathTrans)
+
+/*  FUNCTION
+        Calculate the cosine of a given ffp number in radians
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
+        Motorola fast floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      Algorithm for Calculation of cos(y):
-     <code>
-         z    = floor ( |y| / pi );
-         y_1  = |y| - z * pi;        => 0 <= y_1 < pi
+        Algorithm for Calculation of cos(y):
 
-         if (y_1 > pi/2 ) then y_1 = pi - y_1;
+        z    = floor ( |y| / pi );
+        y_1  = |y| - z * pi;        => 0 <= y_1 < pi
 
-         => 0 <= y_1 < pi/2
+        if (y_1 > pi/2 ) then y_1 = pi - y_1;
 
-         Res = 1 - y^2/2! + y^4/4! - y^6/6! + y^8/8! - y^10/10! =
-             = 1 -(y^2(-1/2!+y^2(1/4!+y^2(-1/6!+y^2(1/8!-1/10!y^2)))));
+        => 0 <= y_1 < pi/2
 
-         if (z was an odd number)
-           Res = -Res;
+        Res = 1 - y^2/2! + y^4/4! - y^6/6! + y^8/8! - y^10/10! =
+            = 1 -(y^2(-1/2!+y^2(1/4!+y^2(-1/6!+y^2(1/8!-1/10!y^2)))));
 
-         if (y_1 was greater than pi/2 in the test above)
-           Res = -Res;
-     </code>
+        if (z was an odd number)
+          Res = -Res;
 
+        if (y_1 was greater than pi/2 in the test above)
+          Res = -Res;
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPCos,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 7, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

@@ -5,36 +5,37 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate fnum2 raised to the fnum1 power (fnum2^fnum1)
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(float, SPPow,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D1),
+        AROS_LHA(float, fnum2, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 15, MathTrans)
+
+/*  FUNCTION
+        Calculate fnum2 raised to the fnum1 power (fnum2^fnum1)
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
+        Motorola fast floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : result is too big
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH2(float, SPPow,
-    AROS_LHA(float, fnum1, D1),
-    AROS_LHA(float, fnum2, D0),
-    struct Library *, MathTransBase, 15, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

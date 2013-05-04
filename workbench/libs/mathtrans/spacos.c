@@ -16,35 +16,38 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate arcuscos of the given number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPAcos,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 20, MathTrans)
+
+/*  FUNCTION
+        Calculate arcuscos of the given number
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
+        Motorola fast floating point number
 
-      flags:
-      zero     : result is zero
-      negative : 0 (not possible)
-      overflow : fnum &lt; -1  or  fnum &gt; 1
-
-    NOTES
-
-    EXAMPLE
+        flags:
+        zero     : Result is zero
+        negative : 0 (not possible)
+        overflow : fnum < -1  or  fnum > 1
 
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
     HISTORY
-*/
 
-AROS_LH1(float, SPAcos,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 20, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
   

@@ -5,35 +5,36 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the tangens of a given FFP number in radians
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPTan,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 8, MathTrans)
+
+/*  FUNCTION
+        Calculate the tangens of a given FFP number in radians
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
+        Motorola fast floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow :
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPTan,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 8, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

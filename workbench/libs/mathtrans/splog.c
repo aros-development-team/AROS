@@ -5,40 +5,47 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate logarithm (base e) of the given ffp number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPLog,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 14, MathTrans)
+
+/*  FUNCTION
+        Calculate logarithm (base e) of the given ffp number
+
+    INPUTS
 
     RESULT
-      ffp-number
+        ffp-number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : argument was negative
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
 
-      If the Argument is negative set overflow-flag and return 0.
-      If the Argument is 0 return 0xffffffff.
+        If the Argument is negative set overflow-flag and return 0.
+        If the Argument is 0 return 0xffffffff.
 
-      All other cases:
+        All other cases:
 
-      (ld is the logarithm with base 2)
-      (ln is the logarithm with base e)
-     <code>
-      fnum1 = M * 2^E
+        (ld is the logarithm with base 2)
+        (ln is the logarithm with base e)
 
-      ln fnum1 = ln ( M * 2^E ) =
+        fnum1 = M * 2^E
+
+        ln fnum1 = ln ( M * 2^E ) =
 
                = ln M + ln 2^E =
 
@@ -51,18 +58,11 @@
                  ld M + E
                = --------
                  ld e
-     </code>
 
-      ld e can be precalculated, of course.
-      For calculating ld M see file intern_spld.c
+        ld e can be precalculated, of course.
+        For calculating ld M see file intern_spld.c
 
-    HISTORY
-*/
-
-AROS_LH1(float, SPLog,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 14, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

@@ -5,51 +5,54 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate square root of ffp number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPSqrt,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 16, MathTrans)
+
+/*  FUNCTION
+        Calculate square root of ffp number
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
+        Motorola fast floating point number
 
-      flags:
-         zero     : result is zero
-         negative : 0
-         overflow : square root could not be calculated
-
-    NOTES
-
-    EXAMPLE
+        flags:
+        zero     : result is zero
+        negative : 0
+        overflow : square root could not be calculated
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-
-      ALGORITHM:
+        ALGORITHM:
         First check for a zero and a negative argument and take
         appropriate action.
         fnum1 = M * 2^E
 
         If exponent is an odd number:
-     <code>
-          fnum = ( M*2 ) * 2^ (E-1)
-          Now E' = E-1 is an even number and
-               -> sqrt(fnum) = sqrt(M)   * sqrt(2)   * sqrt (2^E')
-                             = sqrt(M)   * sqrt(2)   * 2^(E'/2)
-           (with sqrt(M*2)>1)
-                             = sqrt(M)   * sqrt(2)   * 2^(E'/2)
-                             = sqrt(M)   * 1/sqrt(2) * 2^(1+(E'/2))
-                             = sqrt(M/2)             * 2^(1+(E'/2))
-     </code>
+        
+        fnum = ( M*2 ) * 2^ (E-1)
+         Now E' = E-1 is an even number and
+              -> sqrt(fnum) = sqrt(M)   * sqrt(2)   * sqrt (2^E')
+                            = sqrt(M)   * sqrt(2)   * 2^(E'/2)
+          (with sqrt(M*2)>1)
+                            = sqrt(M)   * sqrt(2)   * 2^(E'/2)
+                            = sqrt(M)   * 1/sqrt(2) * 2^(1+(E'/2))
+                            = sqrt(M/2)             * 2^(1+(E'/2))
 
 
-       If Exponent is an even number:
-     <code>
+        If Exponent is an even number:
            -> sqrt(fnum) = sqrt(M) * sqrt (2^E) =
                          = sqrt(M) * 2^(E/2)
-     </code>
 
         Now calculate the square root of the mantisse.
         The following algorithm calculates the square of a number + delta
@@ -59,7 +62,6 @@
         Start out with number = 0;
 
 
-     <code>
         Exponent = -1;
         Root = 0;
         repeat
@@ -69,16 +71,8 @@
           Exponent --;
         }
         until you`re happy with the accuracy
-     </code>
 
-
-    HISTORY
-*/
-
-AROS_LH1(float, SPSqrt,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 16, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

@@ -5,43 +5,41 @@
 
 #include "mathtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate hyperbolic tangens of the ffp number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, SPTanh,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, fnum1, D0),
+
+/*  LOCATION */
+        struct Library *, MathTransBase, 12, MathTrans)
+
+/*  FUNCTION
+        Calculate hyperbolic tangens of the ffp number
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
+        Motorola fast floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : (not possible)
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-     <code>
+                   ( e^x - e^(-x) )
+        tanh(x) =  ----------------
+                   ( e^x + e^(-x) )
 
-                ( e^x - e^(-x) )
-     tanh(x) =  ----------------
-                ( e^x + e^(-x) )
+        tanh( |x| > 9 ) = 1
 
-     tanh( |x| > 9 ) = 1
-     </code>
-
-    HISTORY
-*/
-
-AROS_LH1(float, SPTanh,
-    AROS_LHA(float, fnum1, D0),
-    struct Library *, MathTransBase, 12, MathTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
