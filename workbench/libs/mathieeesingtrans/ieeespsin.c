@@ -5,53 +5,53 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the sine of a given IEEE single precision number in radians
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPSin,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 6, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate the sine of a given IEEE single precision number in radians
+
+    INPUTS
 
     RESULT
-      IEEE single precision floating point number
+        IEEE single precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      Algorithm for Calculation of sin(y):
-      <code>
-         z    = floor ( |y| / pi );
-         y_1  = |y| - z * pi;        => 0 <= y_1 < pi
+        Algorithm for Calculation of sin(y):
 
-         if (y_1 > pi/2 ) then y_1 = pi - y_1;
+        z    = floor ( |y| / pi );
+        y_1  = |y| - z * pi;        => 0 <= y_1 < pi
 
-         => 0 <= y_1 < pi/2
+        if (y_1 > pi/2 ) then y_1 = pi - y_1;
 
-         Res = y - y^3/3! + y^5/5! - y^7/7! + y^9/9! - y^11/11! =
-             = y(1+y^2(-1/3!+y^2(1/5!+y^2(-1/7!+y^2(1/9!-1/11!y^2)))));
+        => 0 <= y_1 < pi/2
 
-         if (y < 0)
-           Res = -Res;
+        Res = y - y^3/3! + y^5/5! - y^7/7! + y^9/9! - y^11/11! =
+            = y(1+y^2(-1/3!+y^2(1/5!+y^2(-1/7!+y^2(1/9!-1/11!y^2)))));
 
-         if (z was an odd number)
-           Res = -Res;
-      </code>
+        if (y < 0)
+          Res = -Res;
 
-    HISTORY
-*/
+        if (z was an odd number)
+          Res = -Res;
 
-AROS_LH1(float, IEEESPSin,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 6, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

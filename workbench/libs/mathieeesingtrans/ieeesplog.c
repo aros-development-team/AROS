@@ -5,40 +5,46 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate logarithm (base e) of the given IEEE single precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPLog,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 14, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate logarithm (base e) of the given IEEE single precision number
+
+    INPUTS
 
     RESULT
-      IEEE single precision number
+        IEEE single precision number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : argument was negative
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
 
-      If the Argument is negative set overflow-flag and return 0.
-      If the Argument is 0 return 0xffffffff.
+        If the Argument is negative set overflow-flag and return 0.
+        If the Argument is 0 return 0xffffffff.
 
-      All other cases:
+        All other cases:
 
-      (ld is the logarithm with base 2)
-      (ln is the logarithm with base e)
-      y = M * 2^E
+        (ld is the logarithm with base 2)
+        (ln is the logarithm with base e)
+        y = M * 2^E
 
-      <code>
-      ln y = ln ( M * 2^E ) =
+        ln y = ln ( M * 2^E ) =
 
            = ln M + ln 2^E =
 
@@ -51,18 +57,11 @@
              ld M + E
            = --------
              ld e
-      </code>
 
-      ld e can be precalculated, of course.
-      For calculating ld M see file intern_ieeespld.c
+        ld e can be precalculated, of course.
+        For calculating ld M see file intern_ieeespld.c
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPLog,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 14, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

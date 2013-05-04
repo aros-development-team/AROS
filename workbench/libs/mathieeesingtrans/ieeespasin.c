@@ -15,36 +15,36 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate arcussin of the given number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPAsin,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 19, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate arcussin of the given number
+
+    INPUTS
 
     RESULT
-      IEEE single precision floating point number
+        IEEE single precision floating point number
 
-
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
-        overflow : fnum &lt; -1  or  fnum &gt; 1
-
-    NOTES
-
-    EXAMPLE
+        overflow : fnum < -1  or  fnum > 1
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPAsin,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 19, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

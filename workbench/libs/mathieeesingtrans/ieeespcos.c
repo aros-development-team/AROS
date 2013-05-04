@@ -5,54 +5,52 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the cosine of a given IEEE single precision number in radians
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPCos,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 7, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate the cosine of a given IEEE single precision number in radians
+
+    INPUTS
 
     RESULT
-      IEEE single precision floating point number
+        IEEE single precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-	Algorithm for Calculation of cos(y):
-	<code>
-	 z    = floor ( |y| / pi );
-         y_1  = |y| - z * pi;        => 0 <= y_1 < pi
+        Algorithm for Calculation of cos(y):
+        z    = floor ( |y| / pi );
+        y_1  = |y| - z * pi;        => 0 <= y_1 < pi
 
-         if (y_1 > pi/2 ) then y_1 = pi - y_1;
+        if (y_1 > pi/2 ) then y_1 = pi - y_1;
 
-         => 0 <= y_1 < pi/2
+        => 0 <= y_1 < pi/2
 
-         Res = 1 - y^2/2! + y^4/4! - y^6/6! + y^8/8! - y^10/10! =
-             = 1 -(y^2(-1/2!+y^2(1/4!+y^2(-1/6!+y^2(1/8!-1/10!y^2)))));
+        Res = 1 - y^2/2! + y^4/4! - y^6/6! + y^8/8! - y^10/10! =
+            = 1 -(y^2(-1/2!+y^2(1/4!+y^2(-1/6!+y^2(1/8!-1/10!y^2)))));
 
-         if (z was an odd number)
-           Res = -Res;
+        if (z was an odd number)
+          Res = -Res;
 
-         if (y_1 was greater than pi/2 in the test above)
-           Res = -Res;
-      </code>
+        if (y_1 was greater than pi/2 in the test above)
+          Res = -Res;
 
-
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPCos,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 7, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

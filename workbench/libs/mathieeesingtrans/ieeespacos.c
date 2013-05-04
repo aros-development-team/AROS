@@ -15,37 +15,36 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate arcuscos of the given number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPAcos,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 20, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate arcuscos of the given number
+
+    INPUTS
 
     RESULT
+        IEEE single precision floating point number
 
-      IEEE single precision floating point number
-
-
-      flags:
-      zero     : result is zero
-      negative : 0 (not possible)
-      overflow : y &lt; -1  or  y &gt; 1
-
-    NOTES
-
-    EXAMPLE
+        flags:
+        zero     : result is zero
+        negative : 0 (not possible)
+        overflow : y < -1  or  y > 1
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPAcos,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 20, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

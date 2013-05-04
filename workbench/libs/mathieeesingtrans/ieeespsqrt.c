@@ -5,29 +5,35 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate square root of IEEE single precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPSqrt,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 16, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate square root of IEEE single precision number
+
+    INPUTS
 
     RESULT
-      IEEE single precision number
+        IEEE single precision number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : 0
         overflow : square root could not be calculated
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      ALGORITHM:
-      <code>
+        ALGORITHM:
         First check for a zero and a negative argument and take
         appropriate action.
         y = M * 2^E
@@ -39,7 +45,7 @@
                          = sqrt(M)   * sqrt(2)   * 2^(E'/2)
         (with sqrt(M*2)>1)
                          = sqrt(M)   * sqrt(2)   * 2^(E'/2)
-                                                                                     = sqrt(M)   * 1/sqrt(2) * 2^(1+(E'/2))
+                         = sqrt(M)   * 1/sqrt(2) * 2^(1+(E'/2))
                          = sqrt(M/2)             * 2^(1+(E'/2))
 
 
@@ -64,15 +70,8 @@
           Exponent --;
         }
         until you`re happy with the accuracy
-      </code>
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPSqrt,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 16, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

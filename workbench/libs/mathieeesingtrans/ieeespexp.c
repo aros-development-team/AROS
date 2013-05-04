@@ -5,40 +5,39 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate e^x
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPExp,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 13, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate e^x
+
+    INPUTS
 
     RESULT
-      IEEE single precision number
 
-      flags:
+    BUGS
+        IEEE single precision number
+
+        flags:
         zero     : result is zero
         negative : 0
         overflow : the result was out of range for the IEEE single precision
                    format
 
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
     INTERNALS
-      <code>
-      e^(>= 89): return 0x7f800000;
-      e^(2^(<=-24)): return one;
-      </code>
+        e^(>= 89): return 0x7f800000;
+        e^(2^(<=-24)): return one;
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPExp,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 13, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

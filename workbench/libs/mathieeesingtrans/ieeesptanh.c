@@ -5,43 +5,36 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate hyperbolic tangens of the IEEE single precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPTanh,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 12, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate hyperbolic tangens of the IEEE single precision number
+
+    INPUTS
 
     RESULT
-      IEEE single precision floating point number
+        IEEE single precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : (not possible)
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-      <code>
-                ( e^x - e^(-x) )
-     tanh(x) =  ----------------
-                ( e^x + e^(-x) )
-
-     tanh( |x| >= 9 ) = 1
-      </code>
-
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPTanh,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 12, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

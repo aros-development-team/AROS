@@ -5,39 +5,40 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the hyperbolic sine of the IEEE single precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPSinh,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 10, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate the hyperbolic sine of the IEEE single precision number
+
+    INPUTS
 
     RESULT
-      IEEE single precision floating point number
+        IEEE single precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : result is too big for IEEE single precsion format
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      <code>
-      sinh(x) = (1/2)*( e^x- e^(-x) )
+        sinh(x) = (1/2)*( e^x- e^(-x) )
 
-      sinh( |x| >=  9 ) = (1/2) * (e^x);
-      </code>
-    HISTORY
-*/
+        sinh( |x| >=  9 ) = (1/2) * (e^x);
 
-AROS_LH1(float, IEEESPSinh,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 10, MathIeeeSingTrans
-)
+*****************************************************************************/
+    
 {
     AROS_LIBFUNC_INIT
     
