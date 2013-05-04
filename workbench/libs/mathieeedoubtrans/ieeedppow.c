@@ -5,36 +5,37 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate y raised to the x power (y^x)
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD2(double, IEEEDPPow,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, x, D2, D3),
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 15, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate y raised to the x power (y^x)
+
+    INPUTS
 
     RESULT
-      IEEE double precision floating point number
+        IEEE double precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : result is too big
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LHQUAD2(double, IEEEDPPow,
-    AROS_LHAQUAD(double, x, D2, D3),
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 15, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

@@ -5,41 +5,41 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate hyperbolic tangens of the IEEE double precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPTanh,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 12, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate hyperbolic tangens of the IEEE double precision number
+
+    INPUTS
 
     RESULT
-      IEEE double precision floating point number
+        IEEE double precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : (not possible)
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
+                   ( e^x - e^(-x) )
+        tanh(x) =  ----------------
+                   ( e^x + e^(-x) )
 
-                ( e^x - e^(-x) )
-     tanh(x) =  ----------------
-                ( e^x + e^(-x) )
+        tanh( |x| >= 18 ) = 1
 
-     tanh( |x| >= 18 ) = 1
-
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPTanh,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 12, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

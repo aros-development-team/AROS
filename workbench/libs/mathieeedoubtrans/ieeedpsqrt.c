@@ -5,80 +5,75 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate square root of IEEE double precision floating point number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPSqrt,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 16, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate square root of IEEE double precision floating point number
+
+    INPUTS
 
     RESULT
-      Motorola fast floating point number
+        Motorola fast floating point number
 
-      flags:
-	zero	 : result is zero
-	negative : 0
-	overflow : square root could not be calculated
-
-    NOTES
-
-    EXAMPLE
+        flags:
+        zero     : result is zero
+        negative : 0
+        overflow : square root could not be calculated
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      ALGORITHM:
-	<p>First check for a zero and a negative argument and take
-	appropriate action.</p>
-	
-	<code>fnum = M * 2^E</code>
+        ALGORITHM:
+        First check for a zero and a negative argument and take
+        appropriate action.
 
-	<p>Exponent is an odd number:</p>
-	
-	<code>
-	fnum = ( M*2 ) * 2^ (E-1)
-	Now E' = E-1 is an even number and
-	   -> sqrt(fnum) = sqrt(M)   * sqrt(2)   * sqrt (2^E')
-			 = sqrt(M)   * sqrt(2)   * 2^(E'/2)
-	(with sqrt(M*2)>1)
-			 = sqrt(M)   * sqrt(2)   * 2^(E'/2)
-										     = sqrt(M)   * 1/sqrt(2) * 2^(1+(E'/2))
-			 = sqrt(M/2)             * 2^(1+(E'/2))
+        fnum = M * 2^E
 
-	</code>
-	
-	<p>Exponent is an even number:</p>
-	
-	<code>-> sqrt(fnum) = sqrt(M) * sqrt (2^E) =
-		      = sqrt(M) * 2^(E/2)
-	</code>
-	
-	<p>Now calculate the square root of the mantisse.
-	The following algorithm calculates the square of a number + delta
-	and compares it to the mantisse. If the square of that	number +
-	delta is less than the mantisse then keep that number + delta.
-	Otherwise calculate a lower offset and try again.
-	Start out with number = 0;</p>
+        Exponent is an odd number:
 
-	<code>
-	Exponent = -1;
-	Root = 0;
-	repeat
-	{
-	  if ( (Root + 2^Exponent)^2 < Mantisse)
-	  Root += 2^Exponent
-	  Exponent --;
-	}
-	</code>
+        fnum = ( M*2 ) * 2^ (E-1)
+        Now E' = E-1 is an even number and
+        -> sqrt(fnum) = sqrt(M)   * sqrt(2)   * sqrt (2^E')
+                      = sqrt(M)   * sqrt(2)   * 2^(E'/2)
+        (with sqrt(M*2)>1)
+                      = sqrt(M)   * sqrt(2)   * 2^(E'/2)
+                      = sqrt(M)   * 1/sqrt(2) * 2^(1+(E'/2))
+                      = sqrt(M/2)             * 2^(1+(E'/2))
 
-	until you`re happy with the accuracy
+        Exponent is an even number:
 
-    HISTORY
-*/
+        -> sqrt(fnum) = sqrt(M) * sqrt (2^E) =
+                      = sqrt(M) * 2^(E/2)
 
-AROS_LHQUAD1(double, IEEEDPSqrt,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 16, MathIeeeDoubTrans
-)
+        Now calculate the square root of the mantisse.
+        The following algorithm calculates the square of a number + delta
+        and compares it to the mantisse. If the square of that	number +
+        delta is less than the mantisse then keep that number + delta.
+        Otherwise calculate a lower offset and try again.
+        Start out with number = 0;</p>
+
+        Exponent = -1;
+        Root = 0;
+        repeat
+        {
+            if ( (Root + 2^Exponent)^2 < Mantisse)
+            Root += 2^Exponent
+            Exponent --;
+        }
+
+        until you`re happy with the accuracy
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

@@ -5,31 +5,32 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculates the angle of a given number representing the tangent
-      of that angle. The angle will be in radians.
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPAtan,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 5, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculates the angle of a given number representing the tangent
+        of that angle. The angle will be in radians.
+
+    INPUTS
 
     RESULT
-      IEEE double precision floating point number
-
-    NOTES
-
-    EXAMPLE
+        IEEE double precision floating point number
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPAtan,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 5, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

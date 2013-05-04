@@ -5,31 +5,32 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the tangens of the given IEEE double precision number
-      where y represents an angle in radians.
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPTan,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 8, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate the tangens of the given IEEE double precision number
+        where y represents an angle in radians.
+
+    INPUTS
 
     RESULT
-      result - IEEE double precision floating point number
-
-    NOTES
-
-    EXAMPLE
+        result - IEEE double precision floating point number
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPTan,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 8, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     QUAD sn, cs, Res;

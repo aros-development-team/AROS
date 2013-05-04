@@ -5,40 +5,39 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the hyperbolic sine of the IEEE double precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPSinh,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 10, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate the hyperbolic sine of the IEEE double precision number
+
+    INPUTS
 
     RESULT
-      IEEE double precision floating point number
+        IEEE double precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : result is too big for IEEE double precsion format
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      <code>
-      sinh(x) = (1/2)*( e^x- e^(-x) )
+        sinh(x) = (1/2)*( e^x- e^(-x) )
 
-      sinh( |x| >=  18 ) = (1/2) * (e^x);
-      </code>
+        sinh( |x| >=  18 ) = (1/2) * (e^x);
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPSinh,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 10, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

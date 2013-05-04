@@ -5,9 +5,22 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(LONG, IEEEDPTieee,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 17, MathIeeeDoubTrans)
+
+/*  FUNCTION
         Convert IEEE double to IEEE single precision number
+
+    INPUTS
 
     RESULT
         IEEE single precision number
@@ -17,23 +30,11 @@
           negative : result is negative
           overflow : value was out of range for IEEE single precision
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(LONG, IEEEDPTieee,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 17, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
