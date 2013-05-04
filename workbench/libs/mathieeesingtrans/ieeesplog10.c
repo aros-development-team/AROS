@@ -5,40 +5,46 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate logarithm (base 10) of the given IEEE single precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPLog10,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 21, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate logarithm (base 10) of the given IEEE single precision number
+
+    INPUTS
 
     RESULT
-      IEEE single precision number
+        IEEE single precision number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : argument was negative
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
 
-      If the Argument is negative set overflow-flag and return 0.
-      If the Argument is 0 return 0xffffffff.
+        If the Argument is negative set overflow-flag and return 0.
+        If the Argument is 0 return 0xffffffff.
 
-      All other cases:
+        All other cases:
 
-      (ld is the logarithm with base 2)
-      (log is the logarithm with base 10)
-      y = M * 2^E
+        (ld is the logarithm with base 2)
+        (log is the logarithm with base 10)
+        y = M * 2^E
 
-      <code>
-      log y = log ( M * 2^E ) =
+        log y = log ( M * 2^E ) =
 
             = log M + log 2^E =
 
@@ -51,18 +57,11 @@
               ld M + E
             = --------
               ld 10
-      </code>
 
-      ld 10 can be precalculated, of course.
-      For calculating ld M see file intern_ieeespld.c
+        ld 10 can be precalculated, of course.
+        For calculating ld M see file intern_ieeespld.c
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPLog10,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 21, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

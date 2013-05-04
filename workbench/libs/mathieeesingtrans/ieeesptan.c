@@ -5,35 +5,36 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the tangens of a given IEEE single precision number in radians
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPTan,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 8, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate the tangens of a given IEEE single precision number in radians
+
+    INPUTS
 
     RESULT
-      IEEE single precision floating point number
+        IEEE single precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow :
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPTan,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 8, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

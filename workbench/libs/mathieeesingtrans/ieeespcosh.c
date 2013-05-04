@@ -5,40 +5,39 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the hyperbolic cosine of the IEEE single precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPCosh,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 11, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculate the hyperbolic cosine of the IEEE single precision number
+
+    INPUTS
 
     RESULT
-      IEEE single precision floating point number
+        IEEE single precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : 0 (not possible)
         overflow : result too big for ffp-number
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      <code>
-      cosh(x) = (1/2)*( e^x + e^(-x) )
+        cosh(x) = (1/2)*( e^x + e^(-x) )
 
-      cosh( |x| >= 9  ) = (1/2) * (e^x);
-      </code>
+        cosh( |x| >= 9  ) = (1/2) * (e^x);
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPCosh,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 11, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

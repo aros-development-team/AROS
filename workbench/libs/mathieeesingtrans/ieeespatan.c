@@ -5,32 +5,32 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculates the angle of a given number representing the tangent
-      of that angle. The angle will be in radians.
+/*****************************************************************************
 
+    NAME */
+
+        AROS_LH1(float, IEEESPAtan,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 5, MathIeeeSingTrans)
+
+/*  FUNCTION
+        Calculates the angle of a given number representing the tangent
+        of that angle. The angle will be in radians.
+
+    INPUTS
 
     RESULT
-      IEEE single precision floating point number
-
-    NOTES
-
-    EXAMPLE
+        IEEE single precision floating point number
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPAtan,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 5, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

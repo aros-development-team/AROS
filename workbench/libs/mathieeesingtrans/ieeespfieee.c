@@ -5,31 +5,32 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPFieee,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 18, MathIeeeSingTrans)
+
+/*  FUNCTION
         Convert IEEE single to IEEE single
         It just returns the input parameter.
+
+    INPUTS
 
     RESULT
         IEEE single precision floting point number
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPFieee,
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 18, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

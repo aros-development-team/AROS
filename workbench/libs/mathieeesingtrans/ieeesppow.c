@@ -5,37 +5,37 @@
 
 #include "mathieeesingtrans_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(float, IEEESPPow,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, x, D1),
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct Library *, MathIeeeSingTransBase, 15, MathIeeeSingTrans)
+
+/*  FUNCTION
       Calculate y raised to the x power (y^x)
 
+    INPUTS
+
     RESULT
-      IEEE single precision floating point number
+        IEEE single precision floating point number
 
-
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : result is too big
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH2(float, IEEESPPow,
-    AROS_LHA(float, x, D1),
-    AROS_LHA(float, y, D0),
-    struct Library *, MathIeeeSingTransBase, 15, MathIeeeSingTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
