@@ -1,4 +1,11 @@
 /*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+*/
+
+/*
  * CPU-specific definitions.
  *
  * Architectures with the same CPU will likely share single kernel_cpu.h

@@ -1,4 +1,11 @@
 /*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+*/
+
+/*
  * This is dummy routine, it needs to be here until transition to
  * unified CPUContext is complete. Without it exceptions on hosted
  * will not work

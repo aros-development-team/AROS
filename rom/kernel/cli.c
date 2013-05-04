@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+*/
+
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
