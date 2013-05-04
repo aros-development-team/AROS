@@ -5,40 +5,47 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate logarithm (base e) of the given IEEE double precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPLog,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 14, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate logarithm (base e) of the given IEEE double precision number
+
+    INPUTS
 
     RESULT
-      IEEE double precision number
+        IEEE double precision number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : argument was negative
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
 
-      If the Argument is negative set overflow-flag and return NAN.
-      If the Argument is 0 return 0xFFF0000000000000.
-      If the Argument is pos. Infinity return pos. Infinity.
+        If the Argument is negative set overflow-flag and return NAN.
+        If the Argument is 0 return 0xFFF0000000000000.
+        If the Argument is pos. Infinity return pos. Infinity.
 
-      All other cases:
+        All other cases:
 
-      (ld is the logarithm with base 2)
-      (ln is the logarithm with base e)
-      y = M * 2^E
+        (ld is the logarithm with base 2)
+        (ln is the logarithm with base e)
+        y = M * 2^E
 
-      ln y = ln ( M * 2^E ) =
+        ln y = ln ( M * 2^E ) =
 
            = ln M + ln 2^E =
 
@@ -52,16 +59,10 @@
            = --------
              ld e
 
-      ld e can be precalculated, of course.
-      For calculating ld M see file intern_ieeespld.c
+        ld e can be precalculated, of course.
+        For calculating ld M see file intern_ieeespld.c
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPLog,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 14, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

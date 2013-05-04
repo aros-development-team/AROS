@@ -5,36 +5,37 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the cosine and the sine of the given IEEE double
-      precision number where y represents an angle in radians. The 
-      function returns the sine of that number as a result and puts
-      the cosine of that number into *z which must represent
-      a valid pointer to a IEEE double precision number.
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1QUAD1(double, IEEEDPSincos,
+
+/*  SYNOPSIS */
+        AROS_LHA(double *, z, A0),
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 9, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate the cosine and the sine of the given IEEE double
+        precision number where y represents an angle in radians. The 
+        function returns the sine of that number as a result and puts
+        the cosine of that number into *z which must represent
+        a valid pointer to a IEEE double precision number.
+
+    INPUTS
 
     RESULT
-      *z            - IEEE double precision floating point number
-      direct result - IEEE double precision floating point number
-
-    NOTES
-
-    EXAMPLE
+        *z            - IEEE double precision floating point number
+        direct result - IEEE double precision floating point number
 
     BUGS
 
-    SEE ALSO
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1QUAD1(double, IEEEDPSincos,
-    AROS_LHA(double *, z, A0),
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 9, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

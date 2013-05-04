@@ -5,9 +5,22 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(double, IEEEDPFieee,
+
+/*  SYNOPSIS */
+        AROS_LHA(LONG, y, D0),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 18, MathIeeeDoubTrans)
+
+/*  FUNCTION
         Convert IEEE single to IEEE double precision
+
+    INPUTS
 
     RESULT
         IEEE double precision floting point number
@@ -17,23 +30,11 @@
           negative : result is negative
           overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH1(double, IEEEDPFieee,
-    AROS_LHA(LONG, y, D0),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 18, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

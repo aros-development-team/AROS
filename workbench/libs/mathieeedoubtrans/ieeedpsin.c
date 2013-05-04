@@ -5,53 +5,52 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the sine of a given IEEE double precision number in radians
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPSin,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 6, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate the sine of a given IEEE double precision number in radians
+
+    INPUTS
 
     RESULT
-      IEEE double precision floating point number
+        IEEE double precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      Algorithm for Calculation of sin(y):
-      <code>
-         z    = floor ( |y| / pi );
-         y_1  = |y| - z * pi;        => 0 <= y_1 < pi
+        Algorithm for Calculation of sin(y):
+        z    = floor ( |y| / pi );
+        y_1  = |y| - z * pi;        => 0 <= y_1 < pi
 
-         if (y_1 > pi/2 ) then y_1 = pi - y_1;
+        if (y_1 > pi/2 ) then y_1 = pi - y_1;
 
-         => 0 <= y_1 < pi/2
+        => 0 <= y_1 < pi/2
 
-         Res = y - y^3/3! + y^5/5! - y^7/7! + y^9/9! - y^11/11! =
-             = y(1+y^2(-1/3!+y^2(1/5!+y^2(-1/7!+y^2(1/9!-1/11!y^2)))));
+        Res = y - y^3/3! + y^5/5! - y^7/7! + y^9/9! - y^11/11! =
+            = y(1+y^2(-1/3!+y^2(1/5!+y^2(-1/7!+y^2(1/9!-1/11!y^2)))));
 
-         if (y < 0)
-           Res = -Res;
+        if (y < 0)
+            Res = -Res;
 
-         if (z was an odd number)
-           Res = -Res;
-      </code>
+        if (z was an odd number)
+            Res = -Res;
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPSin,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 6, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
         

@@ -15,33 +15,36 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the arcus sine of the IEEE double precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPAsin,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, x, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 19, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate the arcus sine of the IEEE double precision number
+
+    INPUTS
 
     RESULT
-      IEEE double precision floating point number
+        IEEE double precision floating point number
 
-      flags:
+        flags:
 	zero	 : result is zero
 	negative : result is negative
 	overflow : argument is out of range
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-*/
 
-AROS_LHQUAD1(double, IEEEDPAsin,
-    AROS_LHAQUAD(double, x, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 19, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

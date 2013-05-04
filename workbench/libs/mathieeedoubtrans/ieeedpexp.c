@@ -5,40 +5,39 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate e^x
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPExp,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 13, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate e^x
+
+    INPUTS
 
     RESULT
-      IEEE double precision number
+        IEEE double precision number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : 0
         overflow : the result was out of range for the IEEE single precision
                    format
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      <code>
-      e^(>= ): return 0x7f800000;
-      e^(2^(<=-24)): return one;
-      </code>
+        e^(>= ): return 0x7f800000;
+        e^(2^(<=-24)): return one;
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPExp,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 13, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

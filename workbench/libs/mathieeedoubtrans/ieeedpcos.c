@@ -5,36 +5,37 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the cosine of a given IEEE double precision number in radians
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPCos,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 7, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate the cosine of a given IEEE double precision number in radians
+
+    INPUTS
 
     RESULT
-      IEEE double precision floating point number
+        IEEE double precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : result is negative
         overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      cos (x) = sin (x+ pi/2);
+        cos (x) = sin (x+ pi/2);
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPCos,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 7, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

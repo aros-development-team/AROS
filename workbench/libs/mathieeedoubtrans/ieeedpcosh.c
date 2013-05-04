@@ -5,38 +5,39 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the hyperbolic cosine of the IEEE single precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPCosh,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, y, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 11, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate the hyperbolic cosine of the IEEE single precision number
+
+    INPUTS
 
     RESULT
-      IEEE single precision floating point number
+        IEEE single precision floating point number
 
-      flags:
+        flags:
         zero     : result is zero
         negative : 0 (not possible)
         overflow : result too big for ffp-number
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
     INTERNALS
-      cosh(x) = (1/2)*( e^x + e^(-x) )
+        cosh(x) = (1/2)*( e^x + e^(-x) )
 
-      cosh( |x| >= 18 ) = (1/2) * (e^x);
+        cosh( |x| >= 18 ) = (1/2) * (e^x);
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPCosh,
-    AROS_LHAQUAD(double, y, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 11, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

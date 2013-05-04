@@ -15,35 +15,36 @@
 
 #include "mathieeedoubtrans_intern.h"
 
-/*
-    FUNCTION
-      Calculate the arcus cosine of the IEEE double precision number
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LHQUAD1(double, IEEEDPAcos,
+
+/*  SYNOPSIS */
+        AROS_LHAQUAD(double, x, D0, D1),
+
+/*  LOCATION */
+        struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 20, MathIeeeDoubTrans)
+
+/*  FUNCTION
+        Calculate the arcus cosine of the IEEE double precision number
+
+    INPUTS
 
     RESULT
-      IEEE double precision floating point number
+     IEEE double precision floating point number
 
       flags:
 	zero	 : result is zero
 	negative : result is negative
 	overflow : argument is out of range
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LHQUAD1(double, IEEEDPAcos,
-    AROS_LHAQUAD(double, x, D0, D1),
-    struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 20, MathIeeeDoubTrans
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
