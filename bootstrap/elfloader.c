@@ -161,13 +161,13 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
 
                 s = SysBase_ptr;
             } else {
-                DREL(kprintf("[ELF Loader] Undefined symbol '%s'\n", name));
+                kprintf("[ELF Loader] Undefined symbol '%s'\n", name);
                 return 0;
             }
             break;
 
         case SHN_COMMON:
-            DREL(kprintf("[ELF Loader] COMMON symbol '%s'\n", name));
+            kprintf("[ELF Loader] COMMON symbol '%s'\n", name);
             return 0;
 
         case SHN_ABS:
