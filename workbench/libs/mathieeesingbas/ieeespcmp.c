@@ -5,42 +5,39 @@
 
 #include "mathieeesingbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(LONG, IEEESPCmp,
+
+/*  SYNOPSIS */
+        AROS_LHA(LONG, y, D0),
+        AROS_LHA(LONG, z, D1),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 7, Mathieeesingbas)
+
+/*  FUNCTION
         Compares two ieeesp numbers
 
+    INPUTS
+
     RESULT
-       <code>
        +1 : y > z
         0 : y = z
        -1 : y < z
-
 
         Flags:
           zero     : y = z
           negative : y < z
           overflow : 0
-       </code>
-
-    NOTES
-
-    EXAMPLE
 
     BUGS
 
-    SEE ALSO
-
-
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH2(LONG, IEEESPCmp,
-    AROS_LHA(LONG, y, D0),
-    AROS_LHA(LONG, z, D1),
-    struct LibHeader *, MathIeeeSingBasBase, 7, Mathieeesingbas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

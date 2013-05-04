@@ -5,10 +5,23 @@
 
 #include "mathieeesingbas_intern.h"
 
-/*
-    FUNCTION
-        Calculate the least integer ieeesp-number greater than or equal to
-        y
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPCeil,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 16, Mathieeesingbas)
+
+/*  FUNCTION
+        Calculate the least integer ieeesp-number
+        greater than or equal to y
+
+    INPUTS
 
     RESULT
         Flags:
@@ -16,26 +29,16 @@
           negative : result is negative
           overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
     SEE ALSO
-        @Math.Floor@
+        Floor()
 
     INTERNALS
-      ALGORITHM:
-         Ceil(y) = - Floor(-y)
+        ALGORITHM:
+        Ceil(y) = - Floor(-y)
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPCeil,
-    AROS_LHA(float, y, D0),
-    struct LibHeader *, MathIeeeSingBasBase, 16, Mathieeesingbas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

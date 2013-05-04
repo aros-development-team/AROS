@@ -5,40 +5,40 @@
 
 #include "mathieeesingbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(float, IEEESPDiv,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+        AROS_LHA(float, z, D1),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 14, Mathieeesingbas)
+
+/*  FUNCTION
         Divide two IEEE single precision floating point numbers
         x = y / z;
 
-    RESULT
+    INPUTS
 
+    RESULT
         Flags:
           zero     : result is zero
           negative : result is negative
           overflow : result is out of range
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
-
     INTERNALS
-      ALGORITHM:<br/>
-        Check if fnum2 == 0: result = 0;<br/>
-        Check if fnum1 == 0: result = overflow;<br/>
-        The further algorithm comes down to a pen &amp; paper division.
-    HISTORY
-*/
+        ALGORITHM:
+        Check if fnum2 == 0: result = 0;
+        Check if fnum1 == 0: result = overflow;
+        The further algorithm comes down to a pen & paper division.
 
-AROS_LH2(float, IEEESPDiv,
-    AROS_LHA(float, y, D0),
-    AROS_LHA(float, z, D1),
-    struct LibHeader *, MathIeeeSingBasBase, 14, Mathieeesingbas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

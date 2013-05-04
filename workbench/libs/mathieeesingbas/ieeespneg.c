@@ -5,9 +5,22 @@
 
 #include "mathieeesingbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPNeg,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 10, Mathieeesingbas)
+
+/*  FUNCTION
         Switch the sign of the given ieeesp number
+
+    INPUTS
 
     RESULT
         -y
@@ -17,27 +30,14 @@
           negative : result is negative
           overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
-
     INTERNALS
-      ALGORITHM:
+        ALGORITHM:
         Return -0 if y == 0.
         Otherwise flip the sign-bit.
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPNeg,
-    AROS_LHA(float, y, D0),
-    struct LibHeader *, MathIeeeSingBasBase, 10, Mathieeesingbas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

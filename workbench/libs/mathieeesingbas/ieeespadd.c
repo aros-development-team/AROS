@@ -5,9 +5,23 @@
 
 #include "mathieeesingbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(float, IEEESPAdd,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+        AROS_LHA(float, z, D1),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 11, Mathieeesingbas)
+
+/*  FUNCTION
         Calculate the sum of two IEEE single precision numbers
+
+    INPUTS
 
     RESULT
         sum of y and z
@@ -17,25 +31,11 @@
           negative : result is negative
           overflow : result is too large or too small for IEEESP format
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
-
-    SEE ALSO
-
 
     INTERNALS
 
-    HISTORY
-*/
-
-AROS_LH2(float, IEEESPAdd,
-    AROS_LHA(float, y, D0),
-    AROS_LHA(float, z, D1),
-    struct LibHeader *, MathIeeeSingBasBase, 11, Mathieeesingbas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     

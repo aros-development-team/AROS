@@ -5,9 +5,22 @@
 
 #include "mathieeesingbas_intern.h"
 
-/*
-    FUNCTION
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH1(float, IEEESPAbs,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 9, Mathieeesingbas)
+
+/*  FUNCTION
         Calculate the absolute value of a given floating point number
+
+    INPUTS
 
     RESULT
         absolute value of y
@@ -17,26 +30,11 @@
           negative : result is negative
           overflow : 0
 
-    NOTES
-
-    EXAMPLE
-
     BUGS
 
-    SEE ALSO
-
-
     INTERNALS
-      ALGORITHM:
-        set the sign-bit to zero
 
-    HISTORY
-*/
-
-AROS_LH1(float, IEEESPAbs,
-    AROS_LHA(float, y, D0),
-    struct LibHeader *, MathIeeeSingBasBase, 9, Mathieeesingbas
-)
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
