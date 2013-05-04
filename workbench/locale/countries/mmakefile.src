@@ -30,7 +30,7 @@ workbench-locale-countries-quick: $(MAKECOUNTRY) $(COUNTRYDIR)
 
 $(MAKECOUNTRY) : $(OBJS) $(OBJDIR)/makecountry.o
 	@$(ECHO) "Making $(@F)..."
-	@$(HOST_CC) $(HOST_LDFLAGS) $(LIBICONV) $^ -o $@
+	@$(HOST_CC) $(HOST_LDFLAGS) $^ -o $@ $(LIBICONV)
 
 $(OBJDIR)/makecountry.o : | $(OBJDIR)
 %rule_compile basename="makecountry/makecountry" \
