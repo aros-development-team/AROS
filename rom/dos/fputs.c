@@ -55,8 +55,7 @@
     ASSERT_VALID_PTR(BADDR(file));
     ASSERT_VALID_PTR(string);
 
-        ULONG
-    len = strlen(string);
+    ULONG len = strlen(string);
 
     return(FWriteChars(file, string, len, DOSBase) == len
         ? 0
