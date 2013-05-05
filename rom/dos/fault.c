@@ -37,7 +37,7 @@
         By convention, error messages are ALWAYS less than 80 (plus 1 for
         NULL termination), and ideally less than 60 characters.
 
-        If the error code is not know, then the string "Unknown error"
+        If the error code is not known, then the string "Unknown error"
         followed by the error number will be added to the string.
 
     INPUTS
