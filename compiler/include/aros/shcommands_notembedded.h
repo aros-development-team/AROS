@@ -123,34 +123,11 @@ DEFINE_main(name)                                                             \
     DEFINE_DOSBase_local                                                      \
     SysBase = _SysBase; DOSBase = _DOSBase;
 
-/* If 'AROS_AUTOINIT' is defined, automatically load
- * the libraries for this shell command.
- */
-#ifdef AROS_AUTOINIT
-#include <aros/symbolsets.h>
-
-THIS_PROGRAM_HANDLES_SYMBOLSET(LIBS)
-
-#define AROS_SHCOMMAND_INIT \
-    DEFINE_main(_automain) { \
-
-#define AROS_SHCOMMAND_EXIT \
-    }                           \
-    ULONG _err = RETURN_FAIL;   \
-    if (set_open_libraries()) { \
-        _err = CALL_main(_automain); \
-        set_close_libraries(); \
-    } \
-    return _err; \
-    } \
-}
-#else
 #define AROS_SHCOMMAND_INIT
 
 #define AROS_SHCOMMAND_EXIT \
     }                       \
 }
-#endif
 
 #define __DEF(x...) {x}
 
