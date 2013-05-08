@@ -168,16 +168,17 @@ static inline UBYTE GFX__Hidd_Gfx__GetFBModeQuick(OOP_Class *cl, OOP_Object *o)
     return data->fbmode;
 }
 
-static inline void GFX__Hidd_Gfx__UpdateFB(OOP_Class *cl, OOP_Object *o, OOP_Object *bm,
-                                           UWORD srcX, UWORD srcY, UWORD destX, UWORD destY,
-                                           UWORD xSize, UWORD ySize)
-{
-    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
-
-    HIDD_Gfx_CopyBox(o, bm, srcX, srcY,
-                     data->framebuffer, destX, destY,
-                     xSize, ySize, data->gc);
-}
+/* This has to be a #define, otherwise the HIDD_Gfx_CopyBox()
+ * macro won't expand the HiddGfxBase macro to the csd
+ * structure.
+ */
+#define GFX__Hidd_Gfx__UpdateFB(cl, o, bm, srcX, srcY, destX, destY, xSize, ySize) \
+do { \
+    struct HIDDGraphicsData *__data = OOP_INST_DATA(cl, o); \
+    HIDD_Gfx_CopyBox(o, bm, srcX, srcY, \
+                     __data->framebuffer, destX, destY, \
+                     xSize, ySize, __data->gc); \
+} while (0)
 
 /* Private bitmap methods */
 void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem *bitMapTags);
