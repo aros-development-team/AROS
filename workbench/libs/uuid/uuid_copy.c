@@ -14,8 +14,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include <assert.h>
-
 #include "uuid_private.h"
 #include LC_LIBDEFS_FILE
 
@@ -55,8 +53,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    assert(dst);
-    assert(src);
+    ASSERT(dst);
+    ASSERT(src);
     
     *dst = *src;
     

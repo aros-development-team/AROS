@@ -14,8 +14,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include <assert.h>
-
 #include "uuid_private.h"
 #include LC_LIBDEFS_FILE
 
@@ -55,7 +53,7 @@
 
     int i;
     
-    assert(uuid);
+    ASSERT(uuid);
     
     uuid->time_low = uuid->time_mid = uuid->time_hi_and_version = 0;
     uuid->clock_seq_hi_and_reserved = uuid->clock_seq_low = 0;

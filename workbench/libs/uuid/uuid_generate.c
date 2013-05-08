@@ -17,8 +17,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include <assert.h>
-
 #include "uuid_private.h"
 #include LC_LIBDEFS_FILE
 
@@ -65,7 +63,7 @@ static void uuid_generate_time(uuid_t *uuid, struct uuid_base *UUIDBase);
 {
     AROS_LIBFUNC_INIT
 
-    assert(uuid);
+    ASSERT(uuid);
     
     ObtainSemaphore(&LIBBASE->uuid_GlobalLock);
     
