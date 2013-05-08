@@ -49,6 +49,8 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 
+const TEXT version[] = "$VER: Touch 41.1 (7.9.1999)";
+
 int __nocommandline;
 
 int main(void)

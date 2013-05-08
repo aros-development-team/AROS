@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,7 +27,7 @@
 
     INPUTS
 
-        FILE f      --  Filename to play
+        FILE f      --  Filename to print
         PRTUNIT n   --  Printer unit
 
     RESULT
@@ -157,4 +157,3 @@ AROS_SHAH(STRPTR *, ,FILES  ,/M,  NULL ,  "File(s) to print\n"))
 
     AROS_SHCOMMAND_EXIT
 }
- 

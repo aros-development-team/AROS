@@ -73,6 +73,8 @@
 
 #define  ARG_COUNT  4    /* Number of ReadArgs() arguments */
 
+const TEXT version[] = "$VER: Which 41.1 (7.9.1999)";
+
 /* NOTE: For now, compatibility to the Amiga Which command is kept, but
          I think that the restriction to only executable files should be
          removed, especially considering soft links and such. */

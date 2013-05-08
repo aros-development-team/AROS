@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -14,7 +14,7 @@
 
     SYNOPSIS
 
-        FILE/S
+        FILE/A
 
     LOCATION
 
@@ -119,4 +119,3 @@ AROS_SHAH(STRPTR, ,FILE   ,  ,NULL ,  "File to play\n") )
 
     AROS_SHCOMMAND_EXIT
 }
- 
