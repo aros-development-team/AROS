@@ -1,0 +1,10 @@
+#$Id: mmakefile.src $
+include $(TOP)/config/make.cfg
+
+FILES := class_init probe bus_class interface_pio 
+
+%build_module mmake=kernel-hidd-gayleata \
+    modname=ata_gayle modtype=hidd \
+    files="$(FILES)"
+
+%common
