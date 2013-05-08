@@ -21,7 +21,7 @@ USER_CFLAGS := -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
 
 #MM- linklibs: linklibs-z-static
 
-USER_CFLAGS := -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
+USER_CFLAGS := -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H -DNO_STRERROR
 
 %build_linklib mmake=linklibs-z-static libname=z.static files="$(FILES)"
 
