@@ -1,6 +1,7 @@
 /* expat_config.h.in.  Generated from configure.in by autoheader.  */
 
 #include <aros/cpu.h>
+#include <aros/debug.h>
 
 /* 1234 = LIL_ENDIAN, 4321 = BIGENDIAN */
 #if AROS_BIG_ENDIAN
