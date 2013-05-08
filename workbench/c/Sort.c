@@ -72,6 +72,8 @@
 
 #define ARG_NUM		5
 
+const TEXT version[] = "$VER: Sort 41.1 (7.9.1999)";
+
 struct sorted_data
 {
   struct sorted_data * next;
