@@ -10,8 +10,6 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
-#include <assert.h>
-
 #include "uuid_private.h"
 #include LC_LIBDEFS_FILE
 
@@ -56,7 +54,7 @@ AROS_LH2(void, UUID_GetNameSpace,
 {
     AROS_LIBFUNC_INIT
 
-    assert(uuid);
+    ASSERT(uuid);
     
     switch(NameSpace)
     {

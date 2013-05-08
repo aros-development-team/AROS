@@ -10,8 +10,6 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
-#include <assert.h>
-
 #include "uuid_private.h"
 #include LC_LIBDEFS_FILE
 
@@ -56,8 +54,8 @@
 
     int i;
 
-    assert(u1);
-    assert(u2);
+    ASSERT(u1);
+    ASSERT(u2);
     
     CHECK(u1->time_low, u2->time_low); 
     CHECK(u1->time_mid, u2->time_mid); 
