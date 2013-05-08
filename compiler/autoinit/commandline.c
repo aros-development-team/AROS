@@ -32,7 +32,7 @@ static void __initcommandline(struct ExecBase *SysBase)
 {
     char *ptr    = NULL;
 
-    if (WBenchMsg) {
+    if (WBenchMsg || __nocommandline) {
         __startup_entries_next();
         return;
     }
