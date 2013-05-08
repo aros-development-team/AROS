@@ -21,6 +21,7 @@ Q ?= @
 #MM     kernel-amiga-m68k-uaegfx-kobj \
 #MM     kernel-amiga-m68k-wbtag-kobj \
 #MM     kernel-ata-kobj \
+#MM     kernel-hidd-gayleata-kobj \
 #MM     kernel-bootloader-amiga-m68k-kobj \
 #MM     kernel-bootloader-kobj \
 #MM     kernel-cia-kobj \
@@ -85,7 +86,7 @@ AFILES=rom_entry rom_init cpu_detect superstack_swap
 KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs ram
-KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
+KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx ata_gayle
 KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell cardres bootloader
 KHOOKS  := diag romboot
 
