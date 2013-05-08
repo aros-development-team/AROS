@@ -1,8 +1,8 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: LoadWB.c $
+    $Id$
 
-    Desc:
+    Desc: Load the default Workbench
     Lang: English
 */
 
@@ -15,6 +15,8 @@
 #include <proto/workbench.h>
 
 #include <aros/shcommands.h>
+
+const TEXT version[] = "$VER: LoadWB 42.2 (7.9.1999)";
 
 /* Very minimal C:LoadWB */
 AROS_SH0H(LoadWB, 42.2, "Load the default Workbench")
