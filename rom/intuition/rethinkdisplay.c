@@ -170,7 +170,7 @@
                 for (m = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head;
                      m->mln_Succ; m = m->mln_Succ)
                 {
-                    struct Screen *scr = FindFirstScreen(m, IntuitionBase);
+                    struct Screen *scr = FindFirstScreen((Object *)m, IntuitionBase);
 
                     DoMethod((Object *)m, MM_SetScreenGamma, scr);
 	        }
