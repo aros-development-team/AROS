@@ -253,7 +253,9 @@
 /* Build a wall over the memory block <ptr> of size <size> with <fill> bricks.
  */
 #   define BUILD_WALL(ptr, fill, size) do {		\
-	memset((ptr), (fill), (size));			\
+	UBYTE *__p = (UBYTE *)(ptr);			\
+	ULONG __s = (size);				\
+	while (__s--) *__p++ = (fill);			\
 } while(0)
 
 /* Check the integrity of the wall <ptr> of size <size> bytes containing <fill>.
