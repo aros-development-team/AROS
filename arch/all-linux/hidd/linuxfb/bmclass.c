@@ -82,31 +82,3 @@ BOOL LinuxBM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_
     return TRUE;
 }
 
-/* TODO: The following needs to be moved to ChunkyBM class */
-#ifdef MOVE_THIS_TO_CHUNKYBM
-
-/*********  BitMap::ObtainDirectAccess()  *************************************/
-BOOL LinuxBM__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
-{
-    ULONG width, height;
-    
-    /* Get width & height from bitmap object */
-  
-    OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
-    OOP_GetAttr(o, aHidd_BitMap_Height, &height);
-    
-    *msg->addressReturn    = LSD(cl)->baseaddr;
-    *msg->widthReturn    = LSD(cl)->vsi.xres_virtual;
-    *msg->heightReturn    = LSD(cl)->vsi.yres_virtual;
-    *msg->bankSizeReturn = *msg->memSizeReturn = LSD(cl)->fsi.smem_len;
-    
-    return TRUE;
-}
-
-VOID LinuxBM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
-{
-     /* Do nothing */
-     return;
-}
-
-#endif
