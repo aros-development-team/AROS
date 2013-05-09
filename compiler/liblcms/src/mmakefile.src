@@ -1,0 +1,32 @@
+#   $Id$
+#
+#   Generate liblcms.a
+#
+include $(TOP)/config/make.cfg
+
+#MM- core-linklibs : linklibs-liblcms
+#MM- linklibs: linklibs-liblcms
+#MM linklibs-liblcms : includes
+
+FILES := \
+    cmscam97 \
+    cmserr \
+    cmsgmt \
+    cmsio1 \
+    cmsmatsh \
+    cmspack \
+    cmssamp \
+    cmsxform \
+    cmscnvrt \
+    cmsgamma \
+    cmsintrp \
+    cmslut \
+    cmsmtrx \
+    cmspcs \
+    cmswtpnt
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
+USER_CFLAGS := -Wno-implicit-function-declaration -Wno-switch
+
+%build_linklib mmake=linklibs-liblcms \
+    libname=lcms files="$(FILES)"

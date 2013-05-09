@@ -161,13 +161,15 @@
 #include <memory.h>
 #include <string.h>
 
-#if defined(__GNUC__) || defined(__FreeBSD__)
+#if (defined(__GNUC__) || defined(__FreeBSD__)) && !defined(__AROS__)
 #   include <sys/unistd.h>
 #endif
 
 #ifdef __AROS__
-#define BYTE UBYTE
-#define WORD UWORD
+#include <exec/types.h>
+// FIXME: that's evil!
+//#define BYTE UBYTE
+//#define WORD UWORD
 typedef BYTE  *LPBYTE;
 typedef UWORD *LPWORD;
 typedef ULONG  DWORD, *LPDWORD;
