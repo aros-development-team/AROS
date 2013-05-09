@@ -1,0 +1,17 @@
+# Copyright © 2013, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES           := gamma
+EXEDIR          := $(AROS_TESTS)/lcms
+
+#MM- test : test-lcms
+#MM- test-quick : test-lcms-quick
+
+#MM test-lcms : includes linklibs workbench-libs-lcms2
+
+%build_prog mmake=test-lcms progname=gamma \
+    files=$(FILES) targetdir=$(EXEDIR) uselibs="lcms2"
+
+%common
