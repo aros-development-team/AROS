@@ -1,0 +1,11 @@
+#   $Id$
+#
+#   Copy headers of lcms2
+#
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := lcms2.h lcms2_plugin.h
+
+%copy_includes
+
+%common
