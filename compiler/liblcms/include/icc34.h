@@ -201,7 +201,7 @@ typedef __uint32_t      icU16Fixed16Number;
 
 typedef int32_t       icSignature; 
 
-#ifdef __sun
+#if defined(__sun) || defined(__AROS__)
 
 typedef uint8_t   icUInt8Number;
 typedef uint16_t  icUInt16Number;
