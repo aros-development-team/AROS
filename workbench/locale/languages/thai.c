@@ -2,7 +2,7 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: thaiwanese.language description file.
+    Desc: thai.language description file.
     Char: ISO 8859-11
 */
 
@@ -18,7 +18,7 @@
 
 #include <aros/debug.h>
 
-#define LANGSTR     "thaiwanese"        /* String version of above      */
+#define LANGSTR     "thai"              /* String version of above      */
 #define NLANGSTR    "Thai"              /* Native version of LANGSTR    */
 #define LANGVER     41                  /* Version number of language   */
 #define LANGREV     1                   /* Revision number of language  */
