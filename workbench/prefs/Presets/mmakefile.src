@@ -1,0 +1,13 @@
+# $Id$
+#
+# Makefile to copy Prefs/Presets.
+
+include $(TOP)/config/make.cfg
+
+TARGETDIR := $(AROS_PREFS)/Presets
+
+#MM- workbench-prefs : workbench-prefs-presets
+
+%copy_dir_recursive mmake=workbench-prefs-presets dst=$(TARGETDIR)
+
+%common
