@@ -1,0 +1,2 @@
+echo 'Ok, I will type make install for you'
+make -s install
