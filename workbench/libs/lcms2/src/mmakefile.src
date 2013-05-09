@@ -1,0 +1,43 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-libs-lcms2-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     includes-copy
+
+FILES := \
+    cmscam02 \
+    cmscnvrt \
+    cmsgamma \
+    cmshalf \
+    cmsio0 \
+    cmslut \
+    cmsmtrx \
+    cmsopt \
+    cmspcs \
+    cmsps2 \
+    cmssm \
+    cmsvirt \
+    cmsxform \
+    cmscgats \
+    cmserr \
+    cmsgmt \
+    cmsintrp \
+    cmsio1 \
+    cmsmd5 \
+    cmsnamed \
+    cmspack \
+    cmsplugin \
+    cmssamp \
+    cmstypes \
+    cmswtpnt
+
+USER_CFLAGS :=
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
+
+%build_module mmake=workbench-libs-lcms2 \
+  modname=lcms2_au modtype=library \
+  files="$(FILES)" linklibname=lcms2
+
+%common
