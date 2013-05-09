@@ -929,6 +929,32 @@ VOID CBM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 
 /****************************************************************************************/
 
+BOOL CBM__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
+{
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+    struct chunkybm_data *data = OOP_INST_DATA(cl, o);
+
+    IPTR width, height;
+
+    OOP_GetAttr(o, aHidd_BitMap_Width, &width);
+    OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+
+    *msg->addressReturn = data->buffer;
+    *msg->widthReturn = width;
+    *msg->heightReturn = height;
+    *msg->bankSizeReturn = *msg->memSizeReturn = data->bytesperrow * height;
+
+    return TRUE;
+}
+
+/****************************************************************************************/
+
+VOID CBM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ReleaseDirectAccess *msg)
+{
+}
+
+/****************************************************************************************/
+
 VOID CBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct chunkybm_data *data = OOP_INST_DATA(cl, o);
