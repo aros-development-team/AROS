@@ -45,6 +45,7 @@ static const struct nameexp layout_expansion_table[] =
     {"usa0" , "American"	    , "Countries/United_States" },
     {"us"   , "American"	    , "Countries/United_States" },
     {"usx"  , "American"	    , "Countries/United_States" },
+    {"col"  , "Colemak (US)"	    , "Countries/United_States" },
     {"d"    , "Deutsch"             , "Countries/Germany"       },
     {"b"    , "Belge"               , "Countries/Belgium"       },
     {"by"   , "Belarussian"         , "Countries/Belarus"       },
