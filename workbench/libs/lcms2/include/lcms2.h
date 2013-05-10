@@ -30,8 +30,13 @@
 
 // ********** Configuration toggles ****************************************
 
+#ifdef __AROS__
+#include <aros/cpu.h>
+#if AROS_BIG_ENDIAN
 // Uncomment this one if you are using big endian machines
-// #define CMS_USE_BIG_ENDIAN   1
+#define CMS_USE_BIG_ENDIAN   1
+#endif
+#endif
 
 // Uncomment this one if your compiler/machine does NOT support the
 // "long long" type.
