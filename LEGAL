@@ -47,7 +47,8 @@ GNU General Public License, as specified in the file "LICENSE.GPL":
 
 The following components are distributed under the terms various different
 open source licenses, most of them similar to the BSD license. Please read the
-relevant "LEGAL" files that accompanies these components' sources.
+relevant "LEGAL", "COPYRIGHT", "COPYING#?" etc. files that accompanies these
+components' sources.
 
 + Development/include/boost [compiler/boost]
 + Development/Lib/lib(arosc|rom).a, Libs/arosc.library [compiler/clib]
@@ -62,3 +63,5 @@ relevant "LEGAL" files that accompanies these components' sources.
 + [workbench/hidds/hidd.nouveau]
 + [workbench/libs/mesa]
 + C/OpenURL Prefs/OpenURL Libs/OpenURL [workbench/libs/openurllib]
++ Libs/lcms2#?.library [workbench/libs/lcms2]
++ Prefs/Presets/Colortables/ICC [workbench/prefs/Presets/Colortables/ICC]

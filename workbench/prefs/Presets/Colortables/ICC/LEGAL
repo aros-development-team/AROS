@@ -1,0 +1,106 @@
+Format: http://dep.debian.net/deps/dep5
+Upstream-Name: ICC Profiles Free
+Source: http://debian.tagancha.org/icc-profiles/
+
+Files: FOGRA*ti3 TR00*ti3
+Copyright:  Kai-Uwe Behrmann <www.behrmann.name>
+License: Zlib
+
+Files: LCMS* compat* Gray* Cine* ITUL* sRGB.icc
+Copyright:  Kai-Uwe Behrmann <www.behrmann.name>
+            Marti Maria <www.littlecms.com>
+            Photogamut <www.photogamut.org>
+            Graeme Gill <www.argyllcms.com>
+            ColorSolutions <www.basICColor.com>
+License: Zlib
+
+License: Zlib
+ The zlib/libpng License
+ .
+ This software is provided 'as-is', without any express or implied
+ warranty. In no event will the authors be held liable for any damages
+ arising from the use of this software.
+ .
+ Permission is granted to anyone to use this software for any purpose,
+ including commercial applications, and to alter it and redistribute it
+ freely, subject to the following restrictions:
+ .
+    1. The origin of this software must not be misrepresented; you must not
+    claim that you wrote the original software. If you use this software
+    in a product, an acknowledgment in the product documentation would be
+    appreciated but is not required.
+ .
+    2. Altered source versions must be plainly marked as such, and must not be
+    misrepresented as being the original software.
+ .
+    3. This notice may not be removed or altered from any source
+    distribution.
+ .
+ NO WARRANTY
+ .
+   BECAUSE THE DATA IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
+ FOR THE DATA, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
+ OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
+ PROVIDE THE DATA "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED
+ OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS
+ TO THE QUALITY AND PERFORMANCE OF THE DATA IS WITH YOU.  SHOULD THE
+ DATA PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
+ REPAIR OR CORRECTION.
+ .
+  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+ WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
+ REDISTRIBUTE THE DATA AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,
+ INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
+ OUT OF THE USE OR INABILITY TO USE THE DATA (INCLUDING BUT NOT LIMITED
+ TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
+ YOU OR THIRD PARTIES OR A FAILURE OF THE DATA TO OPERATE WITH ANY OTHER
+ PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
+ POSSIBILITY OF SUCH DAMAGES.
+
+Files: LStar-*
+Copyright: 2007, basICColor GmbH
+License: ZLIB-LSTAR
+ The zlib/libpng License
+ .
+ This software is provided 'as-is', without any express or implied
+ warranty. In no event will the authors be held liable for any damages
+ arising from the use of this software.
+ .
+ Permission is granted to anyone to use this software for any purpose,
+ including commercial applications, and to alter it and redistribute it
+ freely, subject to the following restrictions:
+ .
+ 1. The origin of this software must not be misrepresented; you must not
+ claim that you wrote the original software. If you use this software
+ in a product, an acknowledgment in the product documentation would be
+ appreciated but is not required.
+ .
+ 2. Altered source versions must be plainly marked as such, and must not be
+ misrepresented as being the original software.
+ .
+ 3. This notice may not be removed or altered from any source distribution.
+
+Files: debian/*
+Copyright: 2005-2011 Oleksandr Moskalenko <malex@debian.org>
+	   2011 Till Kamppeter <till.kamppeter@gmail.com>
+       2012 Bernhard Reiter <ockham@raz.or.at>
+License: GPL-2+
+ This package was debianized by Oleksandr Moskalenko <malex@debian.org> on
+ Thu, 4 Aug 2005 17:40:43 -0600.
+ .
+ This package is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ .
+ This package is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>
+ .
+ On Debian systems, the complete text of the GNU General
+ Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
