@@ -68,6 +68,6 @@ AROS_MAKE_ASM_SYM(typeof(ldexpl), ldexpl, AROS_CSYM_FROM_ASM_NAME(ldexpl), AROS_
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(ldexpl));
 
 /* Alias scalbn -> scalbnl */
-AROS_MAKE_ASM_SYM(typeof(scalbnl), scalbnl, AROS_CSYM_FROM_ASM_NAME(scalbnl), AROS_CSYM_FROM_ASM_NAME(nextafter));
+AROS_MAKE_ASM_SYM(typeof(scalbnl), scalbnl, AROS_CSYM_FROM_ASM_NAME(scalbnl), AROS_CSYM_FROM_ASM_NAME(scalbn));
 AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(scalbnl));
 #endif
