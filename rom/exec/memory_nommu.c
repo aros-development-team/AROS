@@ -10,6 +10,7 @@
 #include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 #include <proto/exec.h>
 
 #include <string.h>
@@ -39,7 +40,17 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struc
                 || mh->mh_Free < byteSize)
             continue;
 
-        res = stdAlloc(mh, mhac_GetSysCtx(mh, SysBase), byteSize, flags, loc, SysBase);
+        if (mh->Attributes & MEMF_MANAGED)
+        {
+            struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
+
+            if (mhe->mhe_Alloc)
+                res = mhe->mhe_Alloc(mhe, byteSize, &requirements);
+        }
+        else
+        {
+            res = stdAlloc(mh, mhac_GetSysCtx(mh, SysBase), byteSize, flags, loc, SysBase);
+        }
         if (res)
             break;
     }
@@ -61,8 +72,22 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
     /* Loop over MemHeader structures */
     ForeachNode(&SysBase->MemList, mh)
     {
-        if (mh->mh_Lower <= location && mh->mh_Upper >= endlocation)
-            break;
+        if (mh->mh_Attributes & MEMF_MANAGED)
+        {
+            struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
+            if (mhe->mhe_InBounds(mhe, location, endlocation))
+            {
+                if (mhe->mhe_AllocAbs)
+                {
+                    MEM_UNLOCK;
+
+                    return mhe->mhe_AllocAbs(mhe, byteSize, location);
+                }
+            }
+        }
+        else
+            if (mh->mh_Lower <= location && mh->mh_Upper >= endlocation)
+                break;
     }
     
     /* If no header was found which matched the requirements, just give up. */
@@ -183,12 +208,29 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, s
 
     ForeachNode(&SysBase->MemList, mh)
     {
-        /* Test if the memory belongs to this MemHeader. */
-        if (mh->mh_Lower > memoryBlock || mh->mh_Upper < blockEnd)
-            continue;
+        if (mh->mh_Attributes & MEMF_MANAGED)
+        {
+            struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
-        stdDealloc(mh, mhac_GetSysCtx(mh, SysBase), memoryBlock, byteSize, loc, SysBase);
+            if (mhe->mhe_InBounds(mhe, location, blockEnd))
+            {
+                if (mhe->mhe_Free)
+                {
+                    mhe->mhe_Free(mhe, location, byteSize);
 
+                    MEM_UNLOCK;
+                    return;
+                }
+            }
+        }
+        else
+        {
+            /* Test if the memory belongs to this MemHeader. */
+            if (mh->mh_Lower > memoryBlock || mh->mh_Upper < blockEnd)
+                continue;
+
+            stdDealloc(mh, mhac_GetSysCtx(mh, SysBase), memoryBlock, byteSize, loc, SysBase);
+        }
         MEM_UNLOCK;
         ReturnVoid ("nommu_FreeMem");
     }
@@ -231,6 +273,26 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
         {
             D(bug("[MM] Skipping (mh_Attributes = 0x%08X\n", mh->mh_Attributes));
             continue;
+        }
+
+        if (mh->mh_Attributes & MEMF_MANAGED)
+        {
+            struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
+
+            if (mhe->mhe_Avail)
+            {
+                IPTR val = mhe->mhe_Avail(mhe, attributes);
+
+                if (attributes & MEMF_LARGEST)
+                {
+                    if (val > ret)
+                        ret = val;
+                }
+                else
+                    ret += val;
+
+                continue;
+            }
         }
 
         /* Find largest chunk? */
