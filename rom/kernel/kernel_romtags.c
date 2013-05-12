@@ -11,6 +11,7 @@
 #include <exec/nodes.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
+#include <exec/memheaderext.h>
 #include <proto/alib.h>
 #include <proto/exec.h>
 
