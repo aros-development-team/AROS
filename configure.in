@@ -863,7 +863,7 @@ case "$target_os" in
                 aros_kernel_cflags="$aros_kernel_cflags -m32 -march=i486"
                 aros_config_aflags="$aros_config_aflags -m32 -march=i486"
                 aros_config_ldflags="-m32 -march=i486"
-                aros_kernel_ldflags="-melf_i386"
+                aros_kernel_ldflags="-Wl,-melf_i386"
                 aros_default_wbdepth=8
                 gcc_target_cpu="i386"
                 pci_hidd_target="hidd-pci-linux"
@@ -990,7 +990,7 @@ case "$target_os" in
                 aros_kernel_cflags="$aros_kernel_cflags -m32 -march=i486"
                 aros_config_aflags="$aros_config_aflags -m32 -march=i486"
                 aros_config_ldflags="-m32 -march=i486"
-                aros_kernel_ldflags="-melf_i386"
+                aros_kernel_ldflags="-Wl,-melf_i386"
                 aros_default_wbwidth=640
                 aros_default_wbheight=480
                 gcc_target_cpu="i386"
