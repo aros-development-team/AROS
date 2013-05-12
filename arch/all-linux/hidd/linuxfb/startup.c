@@ -15,12 +15,6 @@
  * open etc.
  */
 
-#include <sys/stat.h>
-#include <fcntl.h>
-
-/* Prevent 'timeval redefinition' error */
-#define _AROS_TYPES_TIMEVAL_S_H_
-
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <graphics/gfxbase.h>
@@ -30,6 +24,14 @@
 #include <hidd/unixio_inline.h>
 
 #include LC_LIBDEFS_FILE
+
+/* Prevent redefinition of struct timeval */
+#define timeval sys_timeval
+
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#undef timeval
 
 #undef LSD
 #define LSD(cl) (&LIBBASE->lsd)
