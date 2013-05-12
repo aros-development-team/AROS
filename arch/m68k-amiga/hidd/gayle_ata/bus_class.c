@@ -21,22 +21,6 @@
 #include "bus_class.h"
 #include "interface_pio.h"
 
-static void callbusirq(struct ATA_BusData *bus)
-{
-    volatile UBYTE *port;
-    UBYTE status;
-
-    port = bus->gaylebase;
-    status = port[ata_Status * 4];
-
-    if (status & ATAF_BUSY) {
-        bug("ATA interrupt but BUSY flag set!?\n");
-        return;
-    }
-
-    bus->ata_HandleIRQ(status, bus->irqData);
-}
-
 AROS_INTH1(IDE_Handler_A1200, struct ATA_BusData *, bus)
 {
     AROS_INTFUNC_INIT
@@ -44,12 +28,21 @@ AROS_INTH1(IDE_Handler_A1200, struct ATA_BusData *, bus)
     volatile UBYTE *irqbase = bus->gayleirqbase;
     UBYTE irqmask = *irqbase;
     if (irqmask & GAYLE_IRQ_IDE) {
-        callbusirq(bus);
+        volatile UBYTE *port;
+        UBYTE status;
+
+        port = bus->gaylebase;
+        status = port[ata_Status * 4];
         /* Clear A600/A1200 IDE interrupt. (Stupid Gayle hardware)
          * Technically this should be done while interrupts are
          * disabled
          */
         *irqbase = 0x7c | (*irqbase & 3);
+        if (status & ATAF_BUSY) {
+            bug("ATA interrupt but BUSY flag set!?\n");
+            return FALSE;
+        }
+        bus->ata_HandleIRQ(status, bus->irqData);
         return TRUE;
     }
     return FALSE;
@@ -65,7 +58,16 @@ AROS_INTH1(IDE_Handler_A4000, struct ATA_BusData *, bus)
     volatile UWORD *irqbase = (UWORD*)bus->gayleirqbase;
     UWORD irqmask = *irqbase;
     if (irqmask & (GAYLE_IRQ_IDE << 8)) {
-        callbusirq(bus);
+        volatile UBYTE *port;
+        UBYTE status;
+
+        port = bus->gaylebase;
+        status = port[ata_Status * 4];
+        if (status & ATAF_BUSY) {
+            bug("ATA interrupt but BUSY flag set!?\n");
+            return FALSE;
+        }
+        bus->ata_HandleIRQ(status, bus->irqData);
         return TRUE;
     }
     return FALSE;
