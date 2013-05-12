@@ -12,6 +12,7 @@
 #include <aros/libcall.h>
 #include <aros/macros.h>
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 #include <proto/exec.h>
 
 #include "exec_intern.h"
@@ -83,27 +84,39 @@ AROS_LH2(APTR, Allocate,
 {
     AROS_LIBFUNC_INIT
 
-    struct TraceLocation tp = CURRENT_LOCATION("Allocate");
-    APTR res;
+    if (freeList->mh_Attributes & MEMF_MANAGED)
+    {
+        struct MemHeaderExt *mhe = (struct MemHeaderExt *)freeList;
 
-    D(bug("[exec] Allocate(0x%p, %u)\n", freeList, byteSize));
-    ASSERT_VALID_PTR(freeList);
-
-    /* Zero bytes requested? May return everything ;-). */
-    if(!byteSize)
-	return NULL;
-
-    /* Is there enough free memory in the list? */
-    if(freeList->mh_Free<byteSize)
-	return NULL;
-
-    res = stdAlloc(freeList, NULL /* by design */, byteSize, 0, &tp, SysBase);
-
-    if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res) {
-	MUNGE_BLOCK(res, MEMFILL_ALLOC, byteSize);
+        if (mhe->mhe_Alloc)
+            return mhe->mhe_Alloc(mhe, byteSize, NULL);
+        else
+            return NULL;
     }
+    else
+    {
+        struct TraceLocation tp = CURRENT_LOCATION("Allocate");
+        APTR res;
 
-    return res;
+        D(bug("[exec] Allocate(0x%p, %u)\n", freeList, byteSize));
+        ASSERT_VALID_PTR(freeList);
+
+        /* Zero bytes requested? May return everything ;-). */
+        if(!byteSize)
+            return NULL;
+
+        /* Is there enough free memory in the list? */
+        if(freeList->mh_Free<byteSize)
+            return NULL;
+
+        res = stdAlloc(freeList, NULL /* by design */, byteSize, 0, &tp, SysBase);
+
+        if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res) {
+            MUNGE_BLOCK(res, MEMFILL_ALLOC, byteSize);
+        }
+
+        return res;
+    }
 
     AROS_LIBFUNC_EXIT
 } /* Allocate() */
