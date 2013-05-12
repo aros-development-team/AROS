@@ -461,9 +461,9 @@ APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR siz
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
-        if (mh->mh_Alloc)
+        if (mhe->mhe_Alloc)
         {
-            return mh->mh_Alloc(mhe, size, &requirements);
+            return mhe->mhe_Alloc(mhe, size, &requirements);
         }
         else
             return NULL;
@@ -594,9 +594,9 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
     struct MemChunk *p1, *p2, *p3;
     UBYTE *p4;
 
-    if (mh->mh_Attributes & MEMF_MANAGED)
+    if (freeList->mh_Attributes & MEMF_MANAGED)
     {
-        struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
+        struct MemHeaderExt *mhe = (struct MemHeaderExt *)freeList;
         
         if (mhe->mhe_Free)
             mhe->mhe_Free(mhe, addr, size);

@@ -40,7 +40,7 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struc
                 || mh->mh_Free < byteSize)
             continue;
 
-        if (mh->Attributes & MEMF_MANAGED)
+        if (mh->mh_Attributes & MEMF_MANAGED)
         {
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
@@ -212,11 +212,11 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, s
         {
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
-            if (mhe->mhe_InBounds(mhe, location, blockEnd))
+            if (mhe->mhe_InBounds(mhe, memoryBlock, blockEnd))
             {
                 if (mhe->mhe_Free)
                 {
-                    mhe->mhe_Free(mhe, location, byteSize);
+                    mhe->mhe_Free(mhe, memoryBlock, byteSize);
 
                     MEM_UNLOCK;
                     return;
