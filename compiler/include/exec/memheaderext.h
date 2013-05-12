@@ -21,11 +21,14 @@ struct MemHeaderExt
        
     APTR  mhe_UserData;
     
-    APTR  (* mhe_Alloc)   (struct MemHeaderExt *, IPTR  size, ULONG *flags);
-    VOID  (* mhe_Free)    (struct MemHeaderExt *, APTR  mem,  IPTR   size);
-    APTR  (* mhe_AllocAbs)(struct MemHeaderExt *, IPTR  size, APTR   addr);
-    APTR  (* mhe_ReAlloc) (struct MemHeaderExt *, APTR  old,  IPTR   size);
+    APTR  (* mhe_Alloc)   (struct MemHeaderExt *, IPTR  size,  ULONG *flags);
+    VOID  (* mhe_Free)    (struct MemHeaderExt *, APTR  mem,   IPTR   size);
+    APTR  (* mhe_AllocVec)(struct MemHeaderExt *, IPTR  size,  ULONG *flags);
+    VOID  (* mhe_FreeVec) (struct MemHeaderExt *, APTR  mem);
+    APTR  (* mhe_AllocAbs)(struct MemHeaderExt *, IPTR  size,  APTR   addr);
+    APTR  (* mhe_ReAlloc) (struct MemHeaderExt *, APTR  old,   IPTR   size);
     ULONG (* mhe_Avail)   (struct MemHeaderExt *, ULONG flags);
+    BOOL  (* mhe_InBounds)(struct MemHeaderExt *, APTR  begin, APTR   end);
 };
 
 /* Indicates that the memory region is to be

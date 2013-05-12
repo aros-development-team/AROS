@@ -41,40 +41,62 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
  */
 static APTR krnGetSysMem(struct MemHeader *mh, IPTR *size)
 {
-    /* Just dequeue the first MemChunk. It's assumed that it has the required space for sure. */
-    struct MemChunk *mc = mh->mh_First;
+    if (mh->mh_Attributes & MEMF_MANAGED)
+    {
+        struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
-    mh->mh_First = mc->mc_Next;
-    mh->mh_Free -= mc->mc_Bytes;
+        if (mhe->mhe_Alloc)
+        {
+            *size = 1024*1024;
+            return mhe->mhe_Alloc(mhe, *size, NULL);
+        }
+    }
+    else
+    {
+        /* Just dequeue the first MemChunk. It's assumed that it has the required space for sure. */
+        struct MemChunk *mc = mh->mh_First;
 
-    D(bug("[RomTagScanner] Using chunk 0x%p of %lu bytes\n", mc, mc->mc_Bytes));
- 
-    *size = mc->mc_Bytes;
-    return mc;
+        mh->mh_First = mc->mc_Next;
+        mh->mh_Free -= mc->mc_Bytes;
+
+        D(bug("[RomTagScanner] Using chunk 0x%p of %lu bytes\n", mc, mc->mc_Bytes));
+
+        *size = mc->mc_Bytes;
+        return mc;
+    }
 }
 
 /* Release unused boot-time memory */
 static void krnReleaseSysMem(struct MemHeader *mh, APTR addr, IPTR chunkSize, IPTR allocSize)
 {
-    struct MemChunk *mc;
+    if (mh->mh_Attributes & MEMF_MANAGED)
+    {
+        struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
-    allocSize = AROS_ROUNDUP2(allocSize, MEMCHUNK_TOTAL);
-    chunkSize -= allocSize;
+        if (mhe->mhe_Realloc)
+            mhe->mhe_Realloc(mhe, addr, allocSize);
+    }
+    else
+    {
+        struct MemChunk *mc;
 
-    D(bug("[RomTagScanner] Chunk 0x%p, %lu of %lu bytes used\n", addr, allocSize, chunkSize));
+        allocSize = AROS_ROUNDUP2(allocSize, MEMCHUNK_TOTAL);
+        chunkSize -= allocSize;
 
-    if (chunkSize < MEMCHUNK_TOTAL)
-    	return;
+        D(bug("[RomTagScanner] Chunk 0x%p, %lu of %lu bytes used\n", addr, allocSize, chunkSize));
 
-    mc = addr + allocSize;
+        if (chunkSize < MEMCHUNK_TOTAL)
+            return;
 
-    mc->mc_Next  = mh->mh_First;
-    mc->mc_Bytes = chunkSize - allocSize;
+        mc = addr + allocSize;
 
-    mh->mh_First = mc;
-    mh->mh_Free += mc->mc_Bytes;
+        mc->mc_Next  = mh->mh_First;
+        mc->mc_Bytes = chunkSize - allocSize;
+
+        mh->mh_First = mc;
+        mh->mh_Free += mc->mc_Bytes;
+    }
 }
-
 
 /*
  * RomTag scanner.
