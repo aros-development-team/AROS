@@ -8,8 +8,12 @@
 #pragma pack(4)
 #endif
 
+#define timeval sys_timeval
+
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#undef timeval
 
 #pragma pack()
 
