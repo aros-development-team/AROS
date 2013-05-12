@@ -74,8 +74,8 @@ static void krnReleaseSysMem(struct MemHeader *mh, APTR addr, IPTR chunkSize, IP
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
-        if (mhe->mhe_Realloc)
-            mhe->mhe_Realloc(mhe, addr, allocSize);
+        if (mhe->mhe_ReAlloc)
+            mhe->mhe_ReAlloc(mhe, addr, allocSize);
     }
     else
     {
