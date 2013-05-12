@@ -111,6 +111,27 @@ void SetSysBaseChkSum(void)
      SysBase->ChkSum = GetSysBaseChkSum(SysBase) ^ 0xffff;
 }
 
+static APTR allocmem(struct MemHeader *mh, ULONG size, ULONG attributes)
+{
+    APTR ret;
+
+    if (mh->mh_Attributes & MEMF_MANAGED)
+    {
+        struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
+
+        if (mhe->mhe_Alloc)
+            ret = mhe->mhe_Alloc(mhe, size, &attributes);
+        else
+            ret = 0;
+    }
+    else
+    {
+        ret = stdAlloc(mh, NULL, size, attributes, NULL, NULL);
+    }
+
+    return ret;
+}
+
 /*
  *  PrepareExecBase() will initialize the ExecBase to default values.
  *  MemHeader and ExecBase itself will already be added to appropriate
@@ -163,7 +184,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     negsize = AROS_ALIGN(negsize);
 
     /* Allocate memory for library base */
-    mem = stdAlloc(mh, NULL, negsize + sizeof(struct IntExecBase), MEMF_CLEAR, NULL, NULL);
+    mem = allocmem(mh, negsize + sizeof(struct IntExecBase), MEMF_CLEAR);
     if (!mem)
     	return NULL;
 
