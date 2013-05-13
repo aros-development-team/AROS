@@ -51,6 +51,9 @@ static APTR krnGetSysMem(struct MemHeader *mh, IPTR *size)
             *size = 1024*1024;
             return mhe->mhe_Alloc(mhe, *size, NULL);
         }
+
+        *size = 0;
+        return NULL;
     }
     else
     {
