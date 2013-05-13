@@ -28,7 +28,6 @@
 /* Prevent redefinition of struct timeval */
 #define timeval sys_timeval
 
-#include <sys/stat.h>
 #include <fcntl.h>
 
 #undef timeval
