@@ -32,7 +32,10 @@
 #define USB2OTG_USERID                                  (USB2OTG_BASE + 0x003c)
 #define USB2OTG_VENDORID                                (USB2OTG_BASE + 0x0040)
 #define USB2OTG_HARDWARE                                (USB2OTG_BASE + 0x0044)
-#define USB2OTG_LPMCONFIG                               (USB2OTG_BASE + 0x0048)
+#define USB2OTG_HARDWARE2                               (USB2OTG_BASE + 0x0048)
+#define USB2OTG_HARDWARE3                               (USB2OTG_BASE + 0x004c)
+#define USB2OTG_HARDWARE4                               (USB2OTG_BASE + 0x0050)
+#define USB2OTG_LPMCONFIG                               (USB2OTG_BASE + 0x0054)
 #define USB2OTG_MDIOCTRL                                (USB2OTG_BASE + 0x0080)
 #define USB2OTG_MDIOGEN                                 (USB2OTG_BASE + 0x0084)
 #define USB2OTG_MDIOREAD                                USB2OTG_MDIOGEN
@@ -166,7 +169,7 @@
 #define USB2OTG_USB_DDRSEL                              (1 << 7)
 #define USB2OTG_USB_SRPCAPABLE                          (1 << 8)
 #define USB2OTG_USB_HNPCAPABLE                          (1 << 9)
-#define USB2OTG_USB_USBTRDTIM                           (1 << 10)
+#define USB2OTG_USB_USBTRDTIM(x)                        (x << 10)
 #define USB2OTG_USB_PHY_LPM_CLK_SEL                     (1 << 15)
 #define USB2OTG_USB_OTGUTMIFSSEL                        (1 << 16)
 #define USB2OTG_USB_ULPIFSLS                            (1 << 17)
@@ -234,8 +237,9 @@
 #define USB2OTG_MISCCTRL_VBUSIRQ                        (1 << 9)
 #define USB2OTG_MISCCTRL_AXIPRIORITYLEVEL               (1 << 16)
 
-#define USB2OTG_USBDEVICEMODE                           (0 << 0)
+#define USB2OTG_USBOTGMODE                              (0 << 0)
 #define USB2OTG_USBHOSTMODE                             (1 << 0)
+#define USB2OTG_USBDEVICEMODE                           (1 << 1)
 
 /* Bits in USB2OTG_INTR */
 #define USB2OTG_INTRCORE_CURRENTMODE                    (1 << 0)
