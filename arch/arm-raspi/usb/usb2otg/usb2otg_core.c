@@ -37,7 +37,7 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                         LIBBASETYPEPTR USB2OTGBase)
 {
     struct USB2OTGUnit *otg_Unit = NULL;
-    unsigned int        otg_RegVal;
+    unsigned int        otg_RegVal, chan;
 
     D(bug("[USB2OTG] %s(unit:0x%p, ioreq:0x%p)\n",
                 __PRETTY_FUNCTION__, otg_Unit, ioreq));
@@ -50,24 +50,49 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
         {
             otg_Unit->hu_UnitAllocated = TRUE;
 
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_LPMCONFIG);            
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
 
-            if (otg_Unit->hu_HostMode)
+            if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBHOSTMODE))
             {
-                D(bug("[USB2OTG] %s: Configuring USB Core for HOST mode\n",
+                if ((otg_Unit->hu_HostChans = ((otg_RegVal & (0xF << 14)) >> 14)) > EPSCHANS_MAX)
+                    otg_Unit->hu_HostChans = EPSCHANS_MAX;
+                
+                D(bug("[USB2OTG] %s: USB Core HOST mode -:\n",
                             __PRETTY_FUNCTION__));
-                D(bug("[USB2OTG] %s: Host Channels: %d\n",
-                            __PRETTY_FUNCTION__, ((otg_RegVal & (0xF << 14)) >> 14)));
-            }
-            else
-            {
-                D(bug("[USB2OTG] %s: Configuring USB Core for DEVICE mode\n",
-                            __PRETTY_FUNCTION__));
-                D(bug("[USB2OTG] %s: Device Endpoints: %d\n",
-                            __PRETTY_FUNCTION__, ((otg_RegVal & (0xF << 10)) >> 10)));
+                D(bug("[USB2OTG] %s:      Channels: %d\n",
+                            __PRETTY_FUNCTION__, otg_Unit->hu_HostChans));
+
+                for (chan = 0; chan < otg_Unit->hu_HostChans; chan++) {
+                    D(bug("[USB2OTG] %s:      Chan #%d FIFO @ 0x%p, Characteristics: %08x\n",
+                                __PRETTY_FUNCTION__,
+                                chan, USB2OTG_FIFOBASE + (chan * USB2OTG_FIFOSIZE),
+                                *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE))));
+                }
             }
 
-            otg_RegVal = *((volatile unsigned int *)(USB2OTG_HARDWARE + 4));
+            if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBDEVICEMODE))
+            {
+                if ((otg_Unit->hu_DevEPs = ((otg_RegVal & (0xF << 10)) >> 10)) > EPSCHANS_MAX)
+                    otg_Unit->hu_DevEPs = EPSCHANS_MAX;
+
+                D(bug("[USB2OTG] %s: USB Core DEVICE mode -:\n",
+                            __PRETTY_FUNCTION__));
+                D(bug("[USB2OTG] %s:      Endpoints: %d/",
+                            __PRETTY_FUNCTION__, otg_Unit->hu_DevEPs));
+                
+                otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE4);
+                D(bug("%d\n",
+                            ((otg_RegVal & (0xF << 26)) >> 26) + 1));
+
+                for (chan = 0; chan < otg_Unit->hu_DevEPs; chan++) {
+                    D(bug("[USB2OTG] %s:      Endpoint #%d IN_CTL: %08x, OUT_CTL: %08x\n",
+                                __PRETTY_FUNCTION__, chan,
+                                *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)),
+                                *((volatile unsigned int *)(USB2OTG_DEV_OUTEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_OUTEP_DOEPCTL))));
+                }
+            }
+
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE3);
             D(bug("[USB2OTG] %s: Operating Mode: %0x\n",
                         __PRETTY_FUNCTION__, (otg_RegVal & 0x7)));
             D(bug("[USB2OTG] %s: Queue Depths:\n",
@@ -78,9 +103,9 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                         __PRETTY_FUNCTION__, ((otg_RegVal & (0x3 << 22)) >> 22)));
             D(bug("[USB2OTG] %s:      Device Tokens: 0x%0x\n",
                         __PRETTY_FUNCTION__, ((otg_RegVal & (0x1F << 26)) >> 26)));
-            otg_RegVal = *((volatile unsigned int *)(USB2OTG_HARDWARE + 8));
-            D(bug("[USB2OTG] %s:      FIFO: %d\n",
-                        __PRETTY_FUNCTION__, ((otg_RegVal & (0xFFFF << 16)) >> 16)));
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE3);
+            D(bug("[USB2OTG] %s:      FIFO: %d bytes\n",
+                        __PRETTY_FUNCTION__, ((otg_RegVal & (0xFFFF << 16)) >> 16) << 2));
 
             D(bug("[USB2OTG] %s: Xfer Size: %0x\n",
                         __PRETTY_FUNCTION__, (otg_RegVal & 0xF)));
