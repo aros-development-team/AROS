@@ -29,6 +29,11 @@ FUNCS := \
 
 #MM- workbench-libs-mathieeedoubtrans : includes
 
+# gcc 4.6.2 - work around optimizer issue (out of spill registers)
+ifeq ($(AROS_TARGET_CPU),m68k)
+  USER_CFLAGS += -O1
+endif
+
 USER_LDFLAGS:=--verbose
 
 %build_module mmake=workbench-libs-mathieeedoubtrans \

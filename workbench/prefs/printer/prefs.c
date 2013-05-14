@@ -281,21 +281,6 @@ BOOL Prefs_ExportFH(BPTR fh)
                     if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head))
                     {
                         D(bug("SavePrefsFH: WriteChunkBytes(PRHD) okay.\n"));
-#if !DEBUG && defined(__mc68000__)
-                        /* jmcmullan: AGH! Terrible workaround here.
-                         * It appears that, with arch/m68k-all/include/gencall.c,
-                         * revision 45499, that gcc clobbers the return value of
-                         * WriteChunkBytes() with the call to PopChunk()
-                         * before comparing it.
-                         *
-                         * Obviously, gencall.c (or gcc) needs to be fixed,
-                         * but this evil workaround will have to suffice
-                         * for now.
-                         *
-                         * FIXME FIXME FIXME
-                         */
-                        kprintf("");
-#endif
 
                         PopChunk(iff);
 
