@@ -62,6 +62,13 @@ static void asm_regs_init(int id, int flags, const char *type, const char *jmp, 
 {
     int i;
     int has_bn = (flags & FLAG_BN);
+    const char *output = "\"=r\"(_ret0), \"=r\"(_ret1), \"=r\"(_mem0), \"=r\"(_mem1)";
+
+    printf("\tregister volatile ULONG _ret0 asm(\"%%d0\"); \\\n");
+    printf("\tregister volatile ULONG _ret1 asm(\"%%d1\"); \\\n");
+    printf("\tregister volatile ULONG _mem0 asm(\"%%a0\"); \\\n");
+    printf("\tregister volatile ULONG _mem1 asm(\"%%a1\"); \\\n");
+    printf("\t{ \\\n");
 
     /* Input values */
     for (i = 0; i < id; i++)
@@ -73,12 +80,11 @@ static void asm_regs_init(int id, int flags, const char *type, const char *jmp, 
 
     /* Define registers */
     for (i = 0; i < id; i++)
-        printf("\t   register volatile ULONG __AROS_%sTA(a%d) asm(__AROS_%sSA(a%d)); \\\n",
+        printf("\t   register volatile ULONG  __AROS_%sTA(a%d) asm(__AROS_%sSA(a%d)); \\\n",
                type, i + 1, type, i + 1
         );
     if (has_bn)
         printf("\t   register volatile ULONG _bn asm(\"%%a6\"); \\\n");
-
 
     /* Set registers (non FP) */
     for (i = 1; i <= id; i++)
@@ -94,46 +100,47 @@ static void asm_regs_init(int id, int flags, const char *type, const char *jmp, 
     /* Set FP register */
     for (i = 1; i <= id; i++)
     {
-        int j;
         printf("\t   if ( __AROS_ISREG(a%d,__AROS_FP_REG)) { \\\n"
-               "\t      asm volatile (\"move.l %%%%\" __AROS_FP_SREG \",%%%%sp@-\\nmove.l %%0,%%%%\" __AROS_FP_SREG \"\\n%s\\nmove.l %%%%sp@+,%%%%\" __AROS_FP_SREG \"\\n\" : : \"r\" (_arg%d), %s \\\n",
-               i, jmp, i, addr
+               "\t      asm volatile (\"move.l %%%%\" __AROS_FP_SREG \",%%%%sp@-\\nmove.l %%4,%%%%\" __AROS_FP_SREG \"\\n%s\\nmove.l %%%%sp@+,%%%%\" __AROS_FP_SREG \"\\n\" : %s : \"r\" (_arg%d), %s \\\n",
+               i, jmp, output, i, addr
         );
+        int j;
         for (j = 0; j < id; j++)
             printf("\t\t, \"r\" (__AROS_%sTA(a%d)) \\\n", type, j + 1);
+        printf ("\t\t: \"cc\", \"memory\" \\\n");
         printf("\t       ); }\\\n");
     }
     if (has_bn)
     {
-        int j;
         printf("\t   if ( __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)) { \\\n"
-               "\t      asm volatile (\"move.l %%%%\" __AROS_FP_SREG \",%%%%sp@-\\nmove.l %%0,%%%%\" __AROS_FP_SREG \"\\n%s\\nmove.l %%%%sp@+,%%%%\" __AROS_FP_SREG \"\\n\" : : \"r\" (_bn_arg), %s \\\n", jmp, addr
+               "\t      asm volatile (\"move.l %%%%\" __AROS_FP_SREG \",%%%%sp@-\\nmove.l %%4,%%%%\" __AROS_FP_SREG \"\\n%s\\nmove.l %%%%sp@+,%%%%\" __AROS_FP_SREG \"\\n\" : %s : \"r\" (_bn_arg), %s \\\n", jmp, output, addr
         );
+        int j;
         for (j = 0; j < id; j++)
             printf("\t\t, \"r\" (__AROS_%sTA(a%d)) \\\n", type, j + 1);
+        printf ("\t\t: \"cc\", \"memory\" \\\n");
         printf("\t       ); }\\\n");
     }
     if (has_bn || id > 0)
     {
-        int j;
         printf("\t   if (!(0");
         if (has_bn)
             printf(" || __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)");
         for (i = 0; i < id; i++)
             printf(" || __AROS_ISREG(a%d,__AROS_FP_REG)", i+1);
         printf(")) {\\\n"
-               "\t      asm volatile (\"%s\\n\" : : \"i\" (0), %s \\\n", jmp, addr
+               "\t      asm volatile (\"%s\\n\" : %s : \"i\" (0), %s \\\n", jmp, output, addr
         );
+        int j;
         for (j = 0; j < id; j++)
             printf("\t\t, \"r\" (__AROS_%sTA(a%d)) \\\n", type, j + 1);
+        printf ("\t\t: \"cc\", \"memory\" \\\n");
         printf("\t       ); }\\\n");
     }
-}
 
-static void asm_regs_exit(int id, int flags)
-{
+    printf("\t}\\\n");
+
     if (flags & FLAG_NR) {
-        printf("\t   asm volatile (\"\" : : : \"%%d0\", \"%%d1\", \"%%a0\", \"%%a1\", \"cc\", \"memory\"); \\\n");
         return;
     }
 
@@ -144,13 +151,11 @@ static void asm_regs_exit(int id, int flags)
      *
      * Struct returns are not supported.
      */
-    printf("\t   register volatile ULONG _ret0 asm(\"%%d0\"); \\\n");
-    printf("\t   register volatile ULONG _ret1 asm(\"%%d1\"); \\\n");
-    printf("\t   asm volatile (\"\" : \"=r\" (_ret0), \"=r\" (_ret1) : : \"%%a0\", \"%%a1\", \"cc\", \"memory\"); \\\n");
-    printf("\t   (sizeof(t) < sizeof(QUAD)) ? (t)(_ret0) :\\\n");
-    printf("\t      ({struct { ULONG r0,r1; } rv;\\\n");
-    printf("\t        t *t_ptr = (t *)&rv.r0;\\\n");
-    printf("\t        rv.r0 = _ret0; rv.r1 = _ret1; *t_ptr; });\\\n");
+    printf("\t(void)_mem0; (void)_mem1; \\\n");
+    printf("\t(sizeof(t) < sizeof(QUAD)) ? (t)(_ret0) :\\\n");
+    printf("\t   ({struct { ULONG r0,r1; } rv;\\\n");
+    printf("\t     t *t_ptr = (t *)&rv.r0;\\\n");
+    printf("\t     rv.r0 = _ret0; rv.r1 = _ret1; *t_ptr; });\\\n");
 }
 
 static inline const char *nr(int flags)
@@ -173,14 +178,13 @@ static void aros_ufc(int id, int flags)
     printf("\t({ APTR _n = (n);\\\n");
     snprintf(jmp, sizeof(jmp),
              "pea.l 0f\\n"
-             "move.l %%1, %%%%sp@-\\n"
+             "move.l %%5, %%%%sp@-\\n"
              "rts\\n"
              "0:\\n"
     );
     jmp[sizeof(jmp)-1]=0;
-    asm_regs_init(i, flags, "UF", jmp, "\"r\" (_n), \"i\" (__LINE__)");
 
-    asm_regs_exit(i, flags);
+    asm_regs_init(i, flags, "UF", jmp, "\"r\" (_n), \"i\" (__LINE__)");
     printf("\t  })\n\n");
     printf("#define AROS_UFC%d%s __AROS_UFC%d%s\n", id, nr(flags), id, nr(flags));
 }
@@ -196,8 +200,7 @@ void aros_lc(int id, int flags)
         printf("a%d,", i + 1);
     printf("bt,bn,o,s) \\\n");
     printf("\t({ \\\n");
-    asm_regs_init(id, flags, "L", "jsr %c1(%%a6)", "\"i\" (-1 * (o) * LIB_VECTSIZE), \"r\" (_bn)");
-    asm_regs_exit(id, flags);
+    asm_regs_init(id, flags, "L", "jsr %c5(%%a6)", "\"i\" (-1 * (o) * LIB_VECTSIZE), \"r\" (_bn)");
     printf("\t  })\n\n");
     printf("#define AROS_LC%d%s%s __AROS_LC%d%s%s\n", id, is_double ? "D" : "", nr(flags), id, is_double ? "D" : "", nr(flags));
 }
