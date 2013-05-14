@@ -123,8 +123,8 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
             D(bug("[USB2OTG] %s: Xfer Size: %0x\n",
                         __PRETTY_FUNCTION__, (otg_RegVal & 0xF)));
 
-            return (&otg_Unit->hu_Unit);
         }
+        return (&otg_Unit->hu_Unit);
     }
 
     return(NULL);
