@@ -54,6 +54,7 @@ static BOOL custom_check(APTR addr)
 
 static UBYTE *getport(struct ata_ProbedBus *ddata)
 {
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
     UBYTE id, status1, status2;
     volatile UBYTE *port, *altport;
     struct GfxBase *gfx;
@@ -67,7 +68,7 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
         ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_1200;
     } else {
         // AGA does not have custom mirror here but lets make sure..
-        if (!custom_check((APTR)0xdd4000) && (gfx->ChipRevBits0 & GFXF_AA_ALICE)) {
+        if (!custom_check((APTR)0xdd4000) && (custom->vposr & 0x7f00) >= 0x2200) {
             port = (UBYTE*)GAYLE_BASE_4000;
             ddata->a4000 = TRUE;
             ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_4000;
