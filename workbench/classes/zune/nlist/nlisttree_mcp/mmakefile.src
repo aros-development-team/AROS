@@ -23,11 +23,11 @@ TARGETDIR := $(AROS_CONTRIB)/Zune/MCC_NList/Locale/Catalogs
 classes-zune-nlisttree-mcp-catalogs : locale.c locale.h \
     $(TARGETDIR)/english-british/NListtree_mcp.catalog \
     $(TARGETDIR)/czech/NListtree_mcp.catalog \
-    $(TARGETDIR)/svenska/NListtree_mcp.catalog \
-    $(TARGETDIR)/français/NListtree_mcp.catalog \
-    $(TARGETDIR)/deutsch/NListtree_mcp.catalog \
+    $(TARGETDIR)/swedish/NListtree_mcp.catalog \
+    $(TARGETDIR)/french/NListtree_mcp.catalog \
+    $(TARGETDIR)/german/NListtree_mcp.catalog \
     $(TARGETDIR)/polish/NListtree_mcp.catalog \
-    $(TARGETDIR)/türkçe/NListtree_mcp.catalog
+    $(TARGETDIR)/turkish/NListtree_mcp.catalog
 
 
 locale.h: locale/NListtree_mcp.cd C_h.sd
@@ -37,20 +37,20 @@ locale.c: locale/NListtree_mcp.cd C_c.sd
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
 
 
-$(TARGETDIR)/deutsch/NListtree_mcp.catalog: locale/german.ct
-	@$(MKDIR) $(TARGETDIR)/deutsch
+$(TARGETDIR)/german/NListtree_mcp.catalog: locale/german.ct
+	@$(MKDIR) $(TARGETDIR)/german
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
 
 $(TARGETDIR)/czech/NListtree_mcp.catalog: locale/czech.ct
 	@$(MKDIR) $(TARGETDIR)/czech
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
 
-$(TARGETDIR)/français/NListtree_mcp.catalog: locale/french.ct
-	@$(MKDIR) $(TARGETDIR)/français
+$(TARGETDIR)/french/NListtree_mcp.catalog: locale/french.ct
+	@$(MKDIR) $(TARGETDIR)/french
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
 
-$(TARGETDIR)/svenska/NListtree_mcp.catalog: locale/swedish.ct
-	@$(MKDIR) $(TARGETDIR)/svenska
+$(TARGETDIR)/swedish/NListtree_mcp.catalog: locale/swedish.ct
+	@$(MKDIR) $(TARGETDIR)/swedish
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
 
 $(TARGETDIR)/english-british/NListtree_mcp.catalog: locale/english-british.ct
@@ -65,8 +65,8 @@ $(TARGETDIR)/polish/NListtree_mcp.catalog: locale/polish.ct
 	@$(MKDIR) $(TARGETDIR)/polish
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
 
-$(TARGETDIR)/türkçe/NListtree_mcp.catalog: locale/turkish.ct
-	@$(MKDIR) $(TARGETDIR)/türkçe
+$(TARGETDIR)/turkish/NListtree_mcp.catalog: locale/turkish.ct
+	@$(MKDIR) $(TARGETDIR)/turkish
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.cd $< CATALOG $@
 
 %common
