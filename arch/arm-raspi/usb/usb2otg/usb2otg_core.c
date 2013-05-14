@@ -54,7 +54,7 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
 
             if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBHOSTMODE))
             {
-                if ((otg_Unit->hu_HostChans = ((otg_RegVal & (0xF << 14)) >> 14)) > EPSCHANS_MAX)
+                if ((otg_Unit->hu_HostChans = ((otg_RegVal & (0xF << 14)) >> 14) + 1) > EPSCHANS_MAX)
                     otg_Unit->hu_HostChans = EPSCHANS_MAX;
                 
                 D(bug("[USB2OTG] %s: USB Core HOST mode -:\n",
@@ -63,32 +63,45 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                             __PRETTY_FUNCTION__, otg_Unit->hu_HostChans));
 
                 for (chan = 0; chan < otg_Unit->hu_HostChans; chan++) {
+                    *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_INTRMASK)) = 
+                        (USB2OTG_INTRCHAN_STALL|USB2OTG_INTRCHAN_BABBLEERROR|USB2OTG_INTRCHAN_TRANSACTIONERROR) |
+                        (USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE|USB2OTG_INTRCHAN_ACKNOWLEDGE|USB2OTG_INTRCHAN_NOTREADY) |
+                        (USB2OTG_INTRCHAN_HALT|USB2OTG_INTRCHAN_FRAMEOVERRUN|USB2OTG_INTRCHAN_DATATOGGLEERROR);
+
                     D(bug("[USB2OTG] %s:      Chan #%d FIFO @ 0x%p, Characteristics: %08x\n",
                                 __PRETTY_FUNCTION__,
                                 chan, USB2OTG_FIFOBASE + (chan * USB2OTG_FIFOSIZE),
                                 *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE))));
                 }
+
+                D(bug("[USB2OTG] %s: Enabling HOST Channel Interrupts ...\n",
+                            __PRETTY_FUNCTION__));
+                *((volatile unsigned int *)USB2OTG_HOSTINTRMASK) = (1 << otg_Unit->hu_HostChans) - 1;
             }
 
             if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBDEVICEMODE))
             {
-                if ((otg_Unit->hu_DevEPs = ((otg_RegVal & (0xF << 10)) >> 10)) > EPSCHANS_MAX)
+                if ((otg_Unit->hu_DevEPs = ((otg_RegVal & (0xF << 10)) >> 10) + 1) > EPSCHANS_MAX)
                     otg_Unit->hu_DevEPs = EPSCHANS_MAX;
+
+                otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE4);
+                otg_Unit->hu_DevInEPs = ((otg_RegVal & (0xF << 26)) >> 26) + 1;
 
                 D(bug("[USB2OTG] %s: USB Core DEVICE mode -:\n",
                             __PRETTY_FUNCTION__));
-                D(bug("[USB2OTG] %s:      Endpoints: %d/",
-                            __PRETTY_FUNCTION__, otg_Unit->hu_DevEPs));
-                
-                otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE4);
-                D(bug("%d\n",
-                            ((otg_RegVal & (0xF << 26)) >> 26) + 1));
+                D(bug("[USB2OTG] %s:      Endpoints: %d/%d\n",
+                            __PRETTY_FUNCTION__, otg_Unit->hu_DevInEPs, otg_Unit->hu_DevEPs));
 
                 for (chan = 0; chan < otg_Unit->hu_DevEPs; chan++) {
-                    D(bug("[USB2OTG] %s:      Endpoint #%d IN_CTL: %08x, OUT_CTL: %08x\n",
-                                __PRETTY_FUNCTION__, chan,
-                                *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)),
-                                *((volatile unsigned int *)(USB2OTG_DEV_OUTEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_OUTEP_DOEPCTL))));
+                    D(bug("[USB2OTG] %s:      Endpoint #%d ", __PRETTY_FUNCTION__, chan));
+                    if (chan < otg_Unit->hu_DevInEPs)
+                    {
+                        D(bug("IN_CTL: %08x\n", *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL))));
+                    }
+                    else
+                    {
+                        D(bug("OUT_CTL: %08x\n", *((volatile unsigned int *)(USB2OTG_DEV_OUTEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_OUTEP_DOEPCTL))));
+                    }
                 }
             }
 
