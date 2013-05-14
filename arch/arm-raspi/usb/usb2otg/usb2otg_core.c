@@ -116,20 +116,14 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                         __PRETTY_FUNCTION__, ((otg_RegVal & (0x3 << 22)) >> 22)));
             D(bug("[USB2OTG] %s:      Device Tokens: 0x%0x\n",
                         __PRETTY_FUNCTION__, ((otg_RegVal & (0x1F << 26)) >> 26)));
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE3);
             D(bug("[USB2OTG] %s:      FIFO: %d bytes\n",
                         __PRETTY_FUNCTION__, ((otg_RegVal & (0xFFFF << 16)) >> 16) << 2));
 
+            otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE4);
             D(bug("[USB2OTG] %s: Xfer Size: %0x\n",
                         __PRETTY_FUNCTION__, (otg_RegVal & 0xF)));
 
             return (&otg_Unit->hu_Unit);
-        }
-        else
-        {
-            ioreq->iouh_Req.io_Error = IOERR_UNITBUSY;
-            D(bug("[USB2OTG] %s: Unit %ld already in use\n",
-                        __PRETTY_FUNCTION__, unitnr));
         }
     }
 
