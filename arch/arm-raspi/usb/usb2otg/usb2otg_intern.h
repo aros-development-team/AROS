@@ -39,7 +39,7 @@
     AFAIK Poseidon doesnt support device mode? - TODO
 */
 #define OTG_FORCEHOSTMODE
-//#define OTG_FORCEDEVICEMODE
+#define OTG_FORCEDEVICEMODE
 
 /* Reply the iorequest with success */
 #define RC_OK	      0
