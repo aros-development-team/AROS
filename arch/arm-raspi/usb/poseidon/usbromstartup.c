@@ -72,7 +72,7 @@ AROS_UFH3(static IPTR, usbromstartup_init,
         D(bug("[USBROMStartup] Added chipset drivers...\n"));
 
         /* load the raspi usb hardware driver */
-        while((phw = psdAddHardware("usb2otg.device", 0)))
+        if ((phw = psdAddHardware("usb2otg.device", 0)))
         {
             D(bug("[USBROMStartup] Added usb2otg.device unit %u\n", 0));
 
