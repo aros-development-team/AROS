@@ -9,7 +9,7 @@
 
 #define D(x)
 
-#define USE_MACROS
+#undef USE_MACROS
 
 #include <stddef.h>
 /*
@@ -128,6 +128,65 @@ static inline __attribute__((always_inline)) void ClrBit(int nr, ULONG *ptr)
 {
     ptr[nr >> 5] &= ~(1 << (nr & 31));
 }
+
+static inline __attribute__((always_inline)) void MAPPING_INSERT(IPTR r, int *fl, int *sl)
+{
+    if (r < SMALL_BLOCK)
+    {
+        *fl = 0;
+        *sl = (int)(r / (SMALL_BLOCK / MAX_SLI));
+    }
+    else
+    {
+        *fl = MS(r);
+        *sl = (int)(((IPTR)r >> (*fl - MAX_LOG2_SLI)) - MAX_SLI);
+        *fl -= FLI_OFFSET;
+    }
+}
+
+static inline __attribute__((always_inline)) void MAPPING_SEARCH(IPTR *r, int *fl, int *sl)
+{
+    if (*r < SMALL_BLOCK)
+    {
+        *fl = 0;
+        *sl = (int)(*r / (SMALL_BLOCK / MAX_SLI));
+    }
+    else
+    {
+        IPTR tmp = ((IPTR)1 << (MS(*r) - MAX_LOG2_SLI)) - 1;
+        IPTR tr = *r + tmp;
+
+        *fl = MS(tr);
+        *sl = (int)(((IPTR)tr >> (*fl - MAX_LOG2_SLI)) - MAX_SLI);
+        *fl -= FLI_OFFSET;
+        //*r = tr & ~tmp;
+    }
+}
+
+static inline __attribute__((always_inline)) bhdr_t * FIND_SUITABLE_BLOCK(tlsf_t *tlsf, int *fl, int *sl)
+{
+    IPTR bitmap_tmp = tlsf->slbitmap[*fl] & (~0 << *sl);
+    bhdr_t *b = NULL;
+
+    if (bitmap_tmp)
+    {
+        *sl = LS(bitmap_tmp);
+        b = tlsf->matrix[*fl][*sl];
+    }
+    else
+    {
+        bitmap_tmp = tlsf->flbitmap & (~0 << (*fl + 1));
+        if (likely(bitmap_tmp != 0))
+        {
+            *fl = LS(bitmap_tmp);
+            *sl = LS(tlsf->slbitmap[*fl]);
+            b = tlsf->matrix[*fl][*sl];
+        }
+    }
+
+    return b;
+}
+
 
 #ifdef USE_MACROS
 
@@ -266,64 +325,6 @@ static inline __attribute__((always_inline)) void INSERT_FREE_BLOCK(tlsf_t *tlsf
 }
 
 #endif /* USE_MACROS */
-
-static inline __attribute__((always_inline)) void MAPPING_INSERT(IPTR r, int *fl, int *sl)
-{
-    if (r < SMALL_BLOCK)
-    {
-        *fl = 0;
-        *sl = (int)(r / (SMALL_BLOCK / MAX_SLI));
-    }
-    else
-    {
-        *fl = MS(r);
-        *sl = (int)(((IPTR)r >> (*fl - MAX_LOG2_SLI)) - MAX_SLI);
-        *fl -= FLI_OFFSET;
-    }
-}
-
-static inline __attribute__((always_inline)) void MAPPING_SEARCH(IPTR *r, int *fl, int *sl)
-{
-    if (*r < SMALL_BLOCK)
-    {
-        *fl = 0;
-        *sl = (int)(*r / (SMALL_BLOCK / MAX_SLI));
-    }
-    else
-    {
-        IPTR tmp = ((IPTR)1 << (MS(*r) - MAX_LOG2_SLI)) - 1;
-        IPTR tr = *r + tmp;
-
-        *fl = MS(tr);
-        *sl = (int)(((IPTR)tr >> (*fl - MAX_LOG2_SLI)) - MAX_SLI);
-        *fl -= FLI_OFFSET;
-        //*r = tr & ~tmp;
-    }
-}
-
-static inline __attribute__((always_inline)) bhdr_t * FIND_SUITABLE_BLOCK(tlsf_t *tlsf, int *fl, int *sl)
-{
-    IPTR bitmap_tmp = tlsf->slbitmap[*fl] & (~0 << *sl);
-    bhdr_t *b = NULL;
-
-    if (bitmap_tmp)
-    {
-        *sl = LS(bitmap_tmp);
-        b = tlsf->matrix[*fl][*sl];
-    }
-    else
-    {
-        bitmap_tmp = tlsf->flbitmap & (~0 << (*fl + 1));
-        if (likely(bitmap_tmp != 0))
-        {
-            *fl = LS(bitmap_tmp);
-            *sl = LS(tlsf->slbitmap[*fl]);
-            b = tlsf->matrix[*fl][*sl];
-        }
-    }
-
-    return b;
-}
 
 void * tlsf_malloc(void * tlsf_, IPTR size)
 {
