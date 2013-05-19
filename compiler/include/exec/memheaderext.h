@@ -22,8 +22,8 @@ struct MemHeaderExt
     APTR  mhe_UserData;
 
     /* Pool initialization and destruction */
-    APTR  (* mhe_InitPool)(struct MemHeaderExt *, IPTR initialSize);
-    APTR  (* mhe_DestroyPool)(struct MemHeaderExt *);
+    APTR  (* mhe_InitPool)(struct MemHeaderExt *, IPTR puddleSize, IPTR initialSize);
+    VOID  (* mhe_DestroyPool)(struct MemHeaderExt *);
 
     /* Memory allocation functions */
     APTR  (* mhe_Alloc)   (struct MemHeaderExt *, IPTR  size,  ULONG *flags);
@@ -34,7 +34,7 @@ struct MemHeaderExt
     APTR  (* mhe_ReAlloc) (struct MemHeaderExt *, APTR  old,   IPTR   size);
 
     /* Query functions */
-    ULONG (* mhe_Avail)   (struct MemHeaderExt *, ULONG flags);
+    IPTR  (* mhe_Avail)   (struct MemHeaderExt *, ULONG flags);
     BOOL  (* mhe_InBounds)(struct MemHeaderExt *, APTR  begin, APTR   end);
 };
 

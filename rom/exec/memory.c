@@ -34,14 +34,29 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
 
     while (mh->mh_Node.ln_Succ != NULL)
     {
-        /* Check if this MemHeader fits */
-        if (address >= mh->mh_Lower && address < mh->mh_Upper)
+        if (mh->mh_Attributes & MEMF_MANAGED)
         {
-            /* Yes. Return it. */
-            if (usermode) MEM_UNLOCK;
-            return mh;
-        }
+            struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
+            if (mhe->mhe_InBounds)
+            {
+                if (mhe->mhe_InBounds(mhe, address, address))
+                {
+                    if (usermode) MEM_UNLOCK;
+                    return mh;
+                }
+            }
+        }
+        else
+        {
+            /* Check if this MemHeader fits */
+            if (address >= mh->mh_Lower && address < mh->mh_Upper)
+            {
+                /* Yes. Return it. */
+                if (usermode) MEM_UNLOCK;
+                return mh;
+            }
+        }
         /* Go to next MemHeader */
         mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
     }
@@ -776,6 +791,10 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
             mh->mh_Node.ln_Type     = NT_MEMORY;
             mh->mh_Node.ln_Pri      = orig->mh_Node.ln_Pri;
             mh->mh_Attributes       = orig->mh_Attributes;
+            mh->mh_Upper            = (void *)mh + size;
+            mh->mh_Lower            = (void *)mh;
+            mh->mh_First            = NULL;
+            mh->mh_Free             = NULL;
 
             /* Copy init functions */
             mhe->mhe_InitPool       = mhe_orig->mhe_InitPool;
@@ -799,7 +818,7 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
 
             /* Initialize the pool with rest size */
             if (mhe->mhe_InitPool)
-                mhe->mhe_InitPool(mhe, size - header_size);
+                mhe->mhe_InitPool(mhe, size, size - header_size);
         }
         else
         {
@@ -829,7 +848,15 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
 /* Free a region allocated by AllocMemHeader() */
 void FreeMemHeader(APTR addr, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
-    ULONG size = ((struct MemHeader *)addr)->mh_Upper - addr;
+    struct MemHeaderExt *mhe = (struct MemHeaderEx *)addr;
+
+    IPTR size = (IPTR)mhe->mhe_MemHeader.mh_Upper - (IPTR)addr;
+
+    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED)
+    {
+        if (mhe->mhe_DestroyPool)
+            mhe->mhe_DestroyPool(mhe);
+    }
 
     DMH(bug("[FreeMemHeader] Freeing %u bytes at 0x%p\n", size, addr));
     nommu_FreeMem(addr, size, loc, SysBase);

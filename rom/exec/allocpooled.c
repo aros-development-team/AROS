@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate memory in a pool.
@@ -29,6 +29,7 @@
 
     NAME */
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 #include <proto/exec.h>
 
 	AROS_LH2(APTR, AllocPooled,
@@ -66,13 +67,27 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TraceLocation tp = CURRENT_LOCATION("AllocPooled");
-    struct Pool *pool = poolHeader + MEMHEADER_TOTAL;
+    struct MemHeaderExt *mhe = (struct MemHeaderExt *)poolHeader;
 
-    D(bug("AllocPooled 0x%P memsize %u by \"%s\"\n", poolHeader, memSize, SysBase->ThisTask->tc_Node.ln_Name));
+    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED)
+    {
+        ULONG attributes = mhe->mhe_MemHeader.mh_Attributes;
 
-    /* Allocate from the specified pool with flags stored in pool header */
-    return InternalAllocPooled(poolHeader, memSize, pool->Requirements, &tp, SysBase);
+        if (mhe->mhe_Alloc)
+            return mhe->mhe_Alloc(mhe, memSize, &attributes);
+        else
+            return NULL;
+    }
+    else
+    {
+        struct TraceLocation tp = CURRENT_LOCATION("AllocPooled");
+        struct Pool *pool = poolHeader + MEMHEADER_TOTAL;
+
+        D(bug("AllocPooled 0x%P memsize %u by \"%s\"\n", poolHeader, memSize, SysBase->ThisTask->tc_Node.ln_Name));
+
+        /* Allocate from the specified pool with flags stored in pool header */
+        return InternalAllocPooled(poolHeader, memSize, pool->Requirements, &tp, SysBase);
+    }
 
     AROS_LIBFUNC_EXIT
     
