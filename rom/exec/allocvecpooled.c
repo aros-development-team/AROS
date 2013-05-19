@@ -20,7 +20,7 @@ AROS_LH2(APTR, AllocVecPooled,
     
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED)
     {
-        ULONG attributes = mhe->mhe_MemHeader.mh_Attributes;
+        ULONG attributes = (ULONG)mhe->mhe_MemHeader.mh_First;
 
         if (mhe->mhe_Alloc)
             return mhe->mhe_AllocVec(mhe, size, &attributes);
