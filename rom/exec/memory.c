@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -766,24 +766,62 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
     {
         struct MemHeader *orig = FindMem(mh, SysBase);
 
-        size -= MEMHEADER_TOTAL;
+        if (orig->mh_Attributes & MEMF_MANAGED)
+        {
+            struct MemHeaderExt *mhe_orig = (struct MemHeaderExt *)orig;
+            struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
+            IPTR header_size = (sizeof(struct MemHeaderExt) + 15) & ~15;
 
-        /*
-         * Initialize new MemHeader.
-         * Inherit attributes from system MemHeader from which
-         * our chunk was allocated.
-         */
-        mh->mh_Node.ln_Type     = NT_MEMORY;
-        mh->mh_Node.ln_Pri      = orig->mh_Node.ln_Pri;
-        mh->mh_Attributes       = orig->mh_Attributes & ~MEMF_MANAGED;
-        mh->mh_Lower            = (APTR)mh + MEMHEADER_TOTAL;
-        mh->mh_Upper            = mh->mh_Lower + size;
-        mh->mh_First            = mh->mh_Lower;
-        mh->mh_Free             = size;
+            /* Copy the basic information */
+            mh->mh_Node.ln_Type     = NT_MEMORY;
+            mh->mh_Node.ln_Pri      = orig->mh_Node.ln_Pri;
+            mh->mh_Attributes       = orig->mh_Attributes;
 
-        /* Create the first (and the only) MemChunk */
-        mh->mh_First->mc_Next   = NULL;
-        mh->mh_First->mc_Bytes  = size;
+            /* Copy init functions */
+            mhe->mhe_InitPool       = mhe_orig->mhe_InitPool;
+            mhe->mhe_DestroyPool    = mhe_orig->mhe_DestroyPool;
+
+            /* Copy memory allocation functions */
+            mhe->mhe_Alloc          = mhe_orig->mhe_Alloc;
+            mhe->mhe_AllocAbs       = mhe_orig->mhe_AllocAbs;
+            mhe->mhe_AllocVec       = mhe_orig->mhe_AllocVec;
+            mhe->mhe_Avail          = mhe_orig->mhe_Avail;
+            mhe->mhe_Free           = mhe_orig->mhe_Free;
+            mhe->mhe_FreeVec        = mhe_orig->mhe_FreeVec;
+            mhe->mhe_InBounds       = mhe_orig->mhe_InBounds;
+            mhe->mhe_ReAlloc        = mhe_orig->mhe_ReAlloc;
+
+            /*
+             * User data will be initialized. Memory pool will get first region
+             * for free.
+             */
+            mhe->mhe_UserData       = (APTR)mh + header_size;
+
+            /* Initialize the pool with rest size */
+            if (mhe->mhe_InitPool)
+                mhe->mhe_InitPool(mhe, size - header_size);
+        }
+        else
+        {
+            size -= MEMHEADER_TOTAL;
+
+            /*
+             * Initialize new MemHeader.
+             * Inherit attributes from system MemHeader from which
+             * our chunk was allocated.
+             */
+            mh->mh_Node.ln_Type     = NT_MEMORY;
+            mh->mh_Node.ln_Pri      = orig->mh_Node.ln_Pri;
+            mh->mh_Attributes       = orig->mh_Attributes;
+            mh->mh_Lower            = (APTR)mh + MEMHEADER_TOTAL;
+            mh->mh_Upper            = mh->mh_Lower + size;
+            mh->mh_First            = mh->mh_Lower;
+            mh->mh_Free             = size;
+
+            /* Create the first (and the only) MemChunk */
+            mh->mh_First->mc_Next   = NULL;
+            mh->mh_First->mc_Bytes  = size;
+        }
     }
     return mh;
 }
