@@ -18,9 +18,6 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 
-#define USE_TLSF
-#ifdef USE_TLSF
-
 #include "tlsf.h"
 
 static void destroy_Pool(struct MemHeaderExt *mhe)
@@ -180,7 +177,6 @@ void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULON
 {
     /* The MemHeader itself does not have to be aligned */
     struct MemHeader *mh = start;
-    struct MemHeaderExt *mhe = start;
 
     /* If the end is less than (1 << 31), MEMF_31BIT is implied */
     if (((IPTR)start+size) < (1UL << 31))
@@ -188,81 +184,66 @@ void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULON
     else
         flags &= ~MEMF_31BIT;
 
-    mhe->mhe_DestroyPool   = destroy_Pool;
-    mhe->mhe_InitPool      = init_Pool;
+    if (flags & MEMF_MANAGED)
+    {
+        struct MemHeaderExt *mhe = start;
 
-    mhe->mhe_Alloc         = alloc_mem;
-    mhe->mhe_AllocVec      = alloc_mem;
-    mhe->mhe_Free          = free_mem;
-    mhe->mhe_FreeVec       = free_vec;
-    mhe->mhe_AllocAbs      = alloc_abs;
-    mhe->mhe_ReAlloc       = _realloc;
-    mhe->mhe_Avail         = avail;
-    mhe->mhe_InBounds      = inbounds;
+        mhe->mhe_DestroyPool   = destroy_Pool;
+        mhe->mhe_InitPool      = init_Pool;
 
-    mh->mh_Node.ln_Succ    = NULL;
-    mh->mh_Node.ln_Pred    = NULL;
-    mh->mh_Node.ln_Type    = NT_MEMORY;
-    mh->mh_Node.ln_Name    = (STRPTR)name;
-    mh->mh_Node.ln_Pri     = pri;
-    mh->mh_Attributes      = flags | MEMF_MANAGED;
-    /* The first MemChunk needs to be aligned. We do it by adding MEMHEADER_TOTAL. */
-    mh->mh_First           = NULL;
-    mh->mh_Lower           = start;
-    mh->mh_Upper           = start + size;
+        mhe->mhe_Alloc         = alloc_mem;
+        mhe->mhe_AllocVec      = alloc_mem;
+        mhe->mhe_Free          = free_mem;
+        mhe->mhe_FreeVec       = free_vec;
+        mhe->mhe_AllocAbs      = alloc_abs;
+        mhe->mhe_ReAlloc       = _realloc;
+        mhe->mhe_Avail         = avail;
+        mhe->mhe_InBounds      = inbounds;
 
-    mhe->mhe_UserData      = (APTR)mh + ((sizeof(struct MemHeaderExt) + 15) & ~15);
+        mh->mh_Node.ln_Succ    = NULL;
+        mh->mh_Node.ln_Pred    = NULL;
+        mh->mh_Node.ln_Type    = NT_MEMORY;
+        mh->mh_Node.ln_Name    = (STRPTR)name;
+        mh->mh_Node.ln_Pri     = pri;
+        mh->mh_Attributes      = flags;
+        /* The first MemChunk needs to be aligned. We do it by adding MEMHEADER_TOTAL. */
+        mh->mh_First           = NULL;
 
-    tlsf_init(mhe->mhe_UserData, size - ((sizeof(struct MemHeaderExt) + 15) & ~15));
+        mhe->mhe_UserData      = (APTR)mh + ((sizeof(struct MemHeaderExt) + 15) & ~15);
 
-    /*
-     * mh_Lower and mh_Upper are informational only. Since our MemHeader resides
-     * inside the region it describes, the region includes MemHeader.
-     */
-    mh->mh_Lower           = start;
-    mh->mh_Upper           = start + size;
-    mh->mh_Free            = size;
-}
+        tlsf_init(mhe->mhe_UserData, size - ((sizeof(struct MemHeaderExt) + 15) & ~15));
 
-
-#else
-
-/*
- * Create MemHeader structure for the specified RAM region.
- * The header will be placed in the beginning of the region itself.
- * The header will NOT be added to the memory list!
- */
-void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags)
-{
-    /* The MemHeader itself does not have to be aligned */
-    struct MemHeader *mh = start;
-
-    /* If the end is less than (1 << 31), MEMF_31BIT is implied */
-    if (((IPTR)start+size) < (1UL << 31))
-        flags |= MEMF_31BIT;
+        /*
+         * mh_Lower and mh_Upper are informational only. Since our MemHeader resides
+         * inside the region it describes, the region includes MemHeader.
+         */
+        mh->mh_Lower           = start;
+        mh->mh_Upper           = start + size;
+        mh->mh_Free            = size;
+    }
     else
-        flags &= ~MEMF_31BIT;
+    {
+        mh->mh_Node.ln_Succ    = NULL;
+        mh->mh_Node.ln_Pred    = NULL;
+        mh->mh_Node.ln_Type    = NT_MEMORY;
+        mh->mh_Node.ln_Name    = (STRPTR)name;
+        mh->mh_Node.ln_Pri     = pri;
+        mh->mh_Attributes      = flags;
 
-    mh->mh_Node.ln_Succ    = NULL;
-    mh->mh_Node.ln_Pred    = NULL;
-    mh->mh_Node.ln_Type    = NT_MEMORY;
-    mh->mh_Node.ln_Name    = (STRPTR)name;
-    mh->mh_Node.ln_Pri     = pri;
-    mh->mh_Attributes      = flags;
-    /* The first MemChunk needs to be aligned. We do it by adding MEMHEADER_TOTAL. */
-    mh->mh_First           = start + MEMHEADER_TOTAL;
-    mh->mh_First->mc_Next  = NULL;
-    mh->mh_First->mc_Bytes = size - MEMHEADER_TOTAL;
+        /* The first MemChunk needs to be aligned. We do it by adding MEMHEADER_TOTAL. */
+        mh->mh_First           = start + MEMHEADER_TOTAL;
+        mh->mh_First->mc_Next  = NULL;
+        mh->mh_First->mc_Bytes = size - MEMHEADER_TOTAL;
 
-    /*
-     * mh_Lower and mh_Upper are informational only. Since our MemHeader resides
-     * inside the region it describes, the region includes MemHeader.
-     */
-    mh->mh_Lower           = start;
-    mh->mh_Upper           = start + size;
-    mh->mh_Free            = mh->mh_First->mc_Bytes;
+        /*
+         * mh_Lower and mh_Upper are informational only. Since our MemHeader resides
+         * inside the region it describes, the region includes MemHeader.
+         */
+        mh->mh_Lower           = start;
+        mh->mh_Upper           = start + size;
+        mh->mh_Free            = mh->mh_First->mc_Bytes;
+    }
 }
-#endif
 
 /*
  * Create informational MemHeader for ROM region.
