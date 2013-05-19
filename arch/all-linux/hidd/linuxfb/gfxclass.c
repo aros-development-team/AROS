@@ -212,7 +212,7 @@ BOOL LinuxFB__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
     case aoHidd_Gfx_SupportsGamma:
         *msg->storage = data->gamma;
-        return;
+        return TRUE;
     }
 
     return OOP_DoSuperMethod(cl, o, &msg->mID);
