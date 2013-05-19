@@ -1,6 +1,7 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
+#include <string.h>
 
 #include "tlsf.h"
 #include "kernel_base.h"
@@ -8,8 +9,20 @@
 
 #define D(x)
 
+#define USE_MACROS
+
+#include <stddef.h>
+/*
+ * Minimal alignment as required by AROS. In contrary to the default
+ * TLSF implementation, we do not allow smaller blocks here.
+ */
 #define SIZE_ALIGN  16
 
+/*
+ * Settings for TLSF allocator:
+ * MAX_LOG2_SLI - amount of bits used for the second level list
+ * MAX_FLI      - maximal allowable allocation size - 2^32 should be enough
+ */
 #define MAX_LOG2_SLI    (5)
 #define MAX_SLI         (1 << MAX_LOG2_SLI)
 #define MAX_FLI         (32)
@@ -21,6 +34,7 @@
 #define ROUNDUP(x)      (((x) + SIZE_ALIGN - 1) & ~(SIZE_ALIGN - 1))
 #define ROUNDDOWN(x)    ((x) & ~(SIZE_ALIGN - 1))
 
+/* Fields used in the block header length field to identify busy/free blocks */
 #define THIS_FREE_MASK (IPTR)1
 #define THIS_FREE   (IPTR)1
 #define THIS_BUSY   (IPTR)0
@@ -33,18 +47,25 @@
 
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
-#define offsetof(type, field)       ((IPTR)(&((type *)0)->field))
 
+/* free node links together all free blocks if similar size */
 typedef struct free_node_s {
     struct bhdr_s *    prev;
     struct bhdr_s *    next;
 } free_node_t;
 
+/* block header in front of each block - both free and busy */
 typedef struct hdr_s {
     struct bhdr_s * prev;
     IPTR            length;
 } hdr_t;
 
+/*
+ * Each block is defined by bhdr_t structure. Free blocks contain only
+ * the header which allows us to go through all memory blocks in the system.
+ * The free blocks contain additionally the node which chains them in one
+ * of the free block lists
+ */
 typedef struct bhdr_s {
     union {
         hdr_t       header;
@@ -56,10 +77,11 @@ typedef struct bhdr_s {
     };
 } bhdr_t;
 
+/* Memory area within the TLSF pool */
 typedef struct tlsf_area_s {
-    struct tlsf_area_s *    next;
-    bhdr_t *                end;
-    LONG                   autogrown;
+    struct tlsf_area_s *    next;       // Next memory area
+    bhdr_t *                end;        // Pointer to "end-of-area" block header
+    LONG                    autogrown;  // Automatically allocated by TLSF pool
 } tlsf_area_t;
 
 typedef struct {
@@ -106,6 +128,47 @@ static inline __attribute__((always_inline)) void ClrBit(int nr, ULONG *ptr)
 {
     ptr[nr >> 5] &= ~(1 << (nr & 31));
 }
+
+#ifdef USE_MACROS
+
+#define GET_SIZE(b) ({ IPTR size = b->header.length & SIZE_MASK; size; })
+#define GET_FLAGS(b) ({ IPTR flags = b->header.length & (THIS_FREE_MASK | PREV_FREE_MASK); flags; })
+#define SET_SIZE(b, size) do{ b->header.length = GET_FLAGS(b) | (size); }while(0)
+#define SET_FLAGS(b, flags) do{ b->header.length = GET_SIZE(b) | (flags); }while(0)
+#define SET_SIZE_AND_FLAGS(b, size, flags) do{b->header.length = (size) | (flags);}while(0)
+#define FREE_BLOCK(b) ((b->header.length & THIS_FREE_MASK) == THIS_FREE)
+#define SET_FREE_BLOCK(b) do{b->header.length = (b->header.length & ~THIS_FREE_MASK) | THIS_FREE;}while(0)
+#define SET_BUSY_BLOCK(b) do{b->header.length = (b->header.length & ~THIS_FREE_MASK) | THIS_BUSY;}while(0)
+#define SET_FREE_PREV_BLOCK(b) do{b->header.length = (b->header.length & ~PREV_FREE_MASK) | PREV_FREE;}while(0)
+#define SET_BUSY_PREV_BLOCK(b) do{b->header.length = (b->header.length & ~PREV_FREE_MASK) | PREV_BUSY;}while(0)
+#define FREE_PREV_BLOCK(b) ((b->header.length & PREV_FREE_MASK) == PREV_FREE)
+#define GET_NEXT_BHDR(hdr, size) ({ bhdr_t * __b = (bhdr_t *)((UBYTE *)&hdr->mem[0] + (size)); __b; })
+#define MEM_TO_BHDR(ptr) ({ bhdr_t * b = (bhdr_t*)((void*)(ptr) - offsetof(bhdr_t, mem)); b; })
+
+#define REMOVE_HEADER(tlsf, b, fl, sl) do{ \
+        if (b->free_node.next)                                          \
+            b->free_node.next->free_node.prev = b->free_node.prev;      \
+        if (b->free_node.prev)                                          \
+            b->free_node.prev->free_node.next = b->free_node.next;      \
+        if (tlsf->matrix[fl][sl] == b) {                                \
+            tlsf->matrix[fl][sl] = b->free_node.next;                   \
+            if (!tlsf->matrix[fl][sl])                                  \
+                ClrBit(sl, &tlsf->slbitmap[fl]);                        \
+            if (!tlsf->slbitmap[fl])                                    \
+                ClrBit(fl, &tlsf->flbitmap);                            \
+        } } while(0)
+
+#define INSERT_FREE_BLOCK(tlsf, b) do {                     \
+    int fl, sl; MAPPING_INSERT(GET_SIZE(b), &fl, &sl);      \
+    b->free_node.prev = NULL;                               \
+    b->free_node.next = tlsf->matrix[fl][sl];               \
+    if (tlsf->matrix[fl][sl])                               \
+        tlsf->matrix[fl][sl]->free_node.prev = b;           \
+    tlsf->matrix[fl][sl] = b;                               \
+    SetBit(fl, &tlsf->flbitmap);                            \
+    SetBit(sl, &tlsf->slbitmap[fl]); }while(0)
+
+#else
 
 static inline __attribute__((always_inline)) IPTR GET_SIZE(bhdr_t *b)
 {
@@ -167,6 +230,43 @@ static inline __attribute__((always_inline)) bhdr_t * MEM_TO_BHDR(void *ptr)
     return (bhdr_t *)(ptr - offsetof(bhdr_t, mem));
 }
 
+static inline __attribute__((always_inline)) void REMOVE_HEADER(tlsf_t *tlsf, bhdr_t *b, int fl, int sl)
+{
+    if (b->free_node.next)
+        b->free_node.next->free_node.prev = b->free_node.prev;
+    if (b->free_node.prev)
+        b->free_node.prev->free_node.next = b->free_node.next;
+
+    if (tlsf->matrix[fl][sl] == b)
+    {
+        tlsf->matrix[fl][sl] = b->free_node.next;
+        if (!tlsf->matrix[fl][sl])
+            ClrBit(sl, &tlsf->slbitmap[fl]);
+        if (!tlsf->slbitmap[fl])
+            ClrBit(fl, &tlsf->flbitmap);
+    }
+}
+
+static inline __attribute__((always_inline)) void INSERT_FREE_BLOCK(tlsf_t *tlsf, bhdr_t *b)
+{
+    int fl, sl;
+
+    MAPPING_INSERT(GET_SIZE(b), &fl, &sl);
+
+    b->free_node.prev = NULL;
+    b->free_node.next = tlsf->matrix[fl][sl];
+
+    if (tlsf->matrix[fl][sl])
+        tlsf->matrix[fl][sl]->free_node.prev = b;
+
+    tlsf->matrix[fl][sl] = b;
+
+    SetBit(fl, &tlsf->flbitmap);
+    SetBit(sl, &tlsf->slbitmap[fl]);
+}
+
+#endif /* USE_MACROS */
+
 static inline __attribute__((always_inline)) void MAPPING_INSERT(IPTR r, int *fl, int *sl)
 {
     if (r < SMALL_BLOCK)
@@ -225,49 +325,11 @@ static inline __attribute__((always_inline)) bhdr_t * FIND_SUITABLE_BLOCK(tlsf_t
     return b;
 }
 
-static inline __attribute__((always_inline)) void REMOVE_HEADER(tlsf_t *tlsf, bhdr_t *b, int fl, int sl)
-{
-    if (b->free_node.next)
-        b->free_node.next->free_node.prev = b->free_node.prev;
-    if (b->free_node.prev)
-        b->free_node.prev->free_node.next = b->free_node.next;
-
-    if (tlsf->matrix[fl][sl] == b)
-    {
-        tlsf->matrix[fl][sl] = b->free_node.next;
-        if (!tlsf->matrix[fl][sl])
-            ClrBit(sl, &tlsf->slbitmap[fl]);
-        if (!tlsf->slbitmap[fl])
-            ClrBit(fl, &tlsf->flbitmap);
-    }
-//
-//    b->free_node.next = NULL;
-//    b->free_node.prev = NULL;
-}
-
-static inline __attribute__((always_inline)) void INSERT_FREE_BLOCK(tlsf_t *tlsf, bhdr_t *b)
-{
-    int fl, sl;
-
-    MAPPING_INSERT(GET_SIZE(b), &fl, &sl);
-
-    b->free_node.prev = NULL;
-    b->free_node.next = tlsf->matrix[fl][sl];
-
-    if (tlsf->matrix[fl][sl])
-        tlsf->matrix[fl][sl]->free_node.prev = b;
-
-    tlsf->matrix[fl][sl] = b;
-
-    SetBit(fl, &tlsf->flbitmap);
-    SetBit(sl, &tlsf->slbitmap[fl]);
-}
-
 void * tlsf_malloc(void * tlsf_, IPTR size)
 {
     tlsf_t *tlsf = (tlsf_t *)tlsf_;
     int fl, sl;
-    bhdr_t *b;
+    bhdr_t *b = NULL;
 
     size = ROUNDUP(size);
 
@@ -331,7 +393,7 @@ void * tlsf_malloc(void * tlsf_, IPTR size)
     /* Is this block larger then requested? Try to split it then */
     if (likely(GET_SIZE(b) > (size + ROUNDUP(sizeof(hdr_t)))))
     {
-        /* New splitted block */
+        /* New split block */
         bhdr_t *sb = GET_NEXT_BHDR(b, size);
         sb->header.prev = b;
 
@@ -377,7 +439,7 @@ static inline __attribute__((always_inline)) void MERGE(bhdr_t *b1, bhdr_t *b2)
     SET_SIZE(b1, GET_SIZE(b1) + GET_SIZE(b2) + ROUNDUP(sizeof(hdr_t)));
 }
 
-static bhdr_t * MERGE_PREV(tlsf_t *tlsf, bhdr_t *block)
+static inline __attribute__((always_inline)) bhdr_t * MERGE_PREV(tlsf_t *tlsf, bhdr_t *block)
 {
     /* Is previous block free? */
     if (FREE_PREV_BLOCK(block))
@@ -400,7 +462,7 @@ static bhdr_t * MERGE_PREV(tlsf_t *tlsf, bhdr_t *block)
         return block;
 }
 
-static bhdr_t * MERGE_NEXT(tlsf_t *tlsf, bhdr_t *block)
+static inline __attribute__((always_inline)) bhdr_t * MERGE_NEXT(tlsf_t *tlsf, bhdr_t *block)
 {
     bhdr_t *next = GET_NEXT_BHDR(block, GET_SIZE(block));
 
@@ -430,8 +492,6 @@ void tlsf_free(void * tlsf_, APTR ptr)
 
     /* Mark block as free */
     SET_FREE_BLOCK(fb);
-//    fb->free_node.next = NULL;
-//    fb->free_node.prev = NULL;
 
     /* adjust free size field on tlsf */
     tlsf->free_size += GET_SIZE(fb);
@@ -512,7 +572,7 @@ void * tlsf_realloc(void * tlsf_, void * ptr, IPTR new_size)
         if (FREE_BLOCK(bnext) && new_size <= GET_SIZE(b) + GET_SIZE(bnext) + ROUNDUP(sizeof(hdr_t)))
         {
             bhdr_t *b1;
-            size_t rest_size = ROUNDUP(sizeof(hdr_t)) + GET_SIZE(bnext) + GET_SIZE(b) - new_size;
+            IPTR rest_size = ROUNDUP(sizeof(hdr_t)) + GET_SIZE(bnext) + GET_SIZE(b) - new_size;
 
             MAPPING_INSERT(GET_SIZE(bnext), &fl, &sl);
 
@@ -644,9 +704,7 @@ void * tlsf_allocabs(void * tlsf_, void * ptr, IPTR size)
                          Reduce the size of b0 as well as size of breg too.
                          */
                         breg->header.prev = b0;
-                        SET_SIZE(breg, GET_SIZE(b0)-((IPTR)breg - (IPTR)b0));
-                        SET_FREE_PREV_BLOCK(breg);
-                        SET_BUSY_BLOCK(breg);
+                        SET_SIZE_AND_FLAGS(breg, GET_SIZE(b0)-((IPTR)breg - (IPTR)b0), PREV_FREE | THIS_BUSY);
 
                         /* Update the next block. Mark in size that previous (breg) is used */
                         b1->header.prev = breg;
@@ -654,7 +712,7 @@ void * tlsf_allocabs(void * tlsf_, void * ptr, IPTR size)
 
                         /* b0's prev state is keept. b0 itself is marked as free block */
                         SET_FREE_BLOCK(b0);
-                        SET_SIZE(b0, (size_t)breg - (IPTR)b0->mem);
+                        SET_SIZE(b0, (IPTR)breg - (IPTR)b0->mem);
 
                         /* Insert b0 to free list */
                         MAPPING_INSERT(GET_SIZE(b0), &fl, &sl);
@@ -671,9 +729,7 @@ void * tlsf_allocabs(void * tlsf_, void * ptr, IPTR size)
 
                         /* Adjust fields */
                         b2->header.prev = breg;
-                        SET_SIZE(b2, tmp_size);
-                        SET_BUSY_PREV_BLOCK(b2);
-                        SET_FREE_BLOCK(b2);
+                        SET_SIZE_AND_FLAGS(b2, tmp_size, PREV_BUSY | THIS_FREE);
 
                         /* requested region's size is now smaller */
                         SET_SIZE(breg, size);
@@ -699,81 +755,6 @@ void * tlsf_allocabs(void * tlsf_, void * ptr, IPTR size)
 
     return NULL;
 }
-
-void print_block(bhdr_t *b)
-{
-    if (!b)
-        return;
-
-    nbug(">> [%p] (", b);
-
-    if (GET_SIZE(b))
-        nbug("%lu bytes, ", GET_SIZE(b));
-    else
-        nbug("sentinel, ");
-
-    if (FREE_BLOCK(b))
-        nbug("free [%p, %p], ", b->free_node.prev, b->free_node.next);
-    else
-        nbug("used, ");
-
-    if (FREE_PREV_BLOCK(b))
-        nbug("prev free [%p])\n", b->header.prev);
-    else
-        nbug("prev used)\n");
-}
-
-void tlsf_print_all_blocks(void *tlsf_)
-{
-    tlsf_t *tlsf = (tlsf_t *)tlsf_;
-    tlsf_area_t *area = tlsf->memory_area;
-
-    while(area)
-    {
-        bhdr_t *b = MEM_TO_BHDR((UBYTE *)area);
-
-        while(b)
-        {
-            print_block(b);
-
-            if (GET_SIZE(b))
-                b = GET_NEXT_BHDR(b, GET_SIZE(b));
-            else
-                b = NULL;
-        }
-
-        area = area->next;
-    }
-}
-
-
-void tlsf_print(void * tlsf_)
-{
-    tlsf_t *tlsf = (tlsf_t *)tlsf_;
-    bhdr_t *next;
-    int i, j;
-
-    nbug("\nTLSF at %p\n", tlsf);
-    nbug("MemTotal: %lx\n", tlsf->total_size);
-    nbug("MemFree : %lx\n", tlsf->free_size);
-
-    nbug("FL bitmap: 0x%x\n\n", (unsigned) tlsf->flbitmap);
-
-    for (i = 0; i < REAL_FLI; i++) {
-        if (tlsf->slbitmap[i])
-            nbug("SL bitmap 0x%x\n", (unsigned) tlsf->slbitmap[i]);
-        for (j = 0; j < MAX_SLI; j++) {
-            next = tlsf->matrix[i][j];
-            if (next)
-                nbug("-> [%d][%d]\n", i, j);
-            while (next) {
-                print_block(next);
-                next = next->free_node.next;
-            }
-        }
-    }
-}
-
 
 tlsf_area_t * init_memory_area(void * memory, IPTR size)
 {
@@ -803,7 +784,7 @@ tlsf_area_t * init_memory_area(void * memory, IPTR size)
     return area;
 }
 
-void tlsf_add_memory(void *tlsf_, void *memory, size_t size)
+void tlsf_add_memory(void *tlsf_, void *memory, IPTR size)
 {
     tlsf_t *tlsf = (tlsf_t *)tlsf_;
 
@@ -833,12 +814,13 @@ void tlsf_add_memory(void *tlsf_, void *memory, size_t size)
     }
 }
 
-void tlsf_add_memory_and_merge(void *tlsf_, void *memory, size_t size)
+void tlsf_add_memory_and_merge(void *tlsf_, void *memory, IPTR size)
 {
     tlsf_add_memory(tlsf_, memory, size);
 #warning TODO: add memory and merge...
 }
 
+#if 0
 void bzero(void *ptr, IPTR len)
 {
     UBYTE *p = (UBYTE *)ptr;
@@ -846,6 +828,7 @@ void bzero(void *ptr, IPTR len)
     while(len--)
         *p++ = 0;
 }
+#endif
 
 void * tlsf_init(void * ptr, IPTR size)
 {
@@ -999,7 +982,7 @@ BOOL tlsf_in_bounds(void * tlsf_, void * begin, void * end)
          * Do checks only if questioned memory ends before the end (sentinel bhdr)
          * of area
          */
-        if (end <= area->end)
+        if ((IPTR)end <= (IPTR)area->end)
         {
             D(nbug("  end <= area->end (%p <= %p)\n", end, area->end));
 
@@ -1010,7 +993,7 @@ BOOL tlsf_in_bounds(void * tlsf_, void * begin, void * end)
             b = GET_NEXT_BHDR(b, GET_SIZE(b));
 
             /* requested memory starts at begin or after begin of the area */
-            if (begin >= b->mem)
+            if ((IPTR)begin >= (IPTR)b->mem)
             {
                 D(nbug("  begin >= b->mem (%p >= %p)\n", begin, b->mem));
                 return TRUE;
