@@ -3,6 +3,7 @@
 #include <aros/symbolsets.h>
 #include <exec/execbase.h>
 #include <exec/resident.h>
+#include <exec/memheaderext.h>
 #include <utility/tagitem.h>
 #include <proto/arossupport.h>
 #include <proto/exec.h>
@@ -52,6 +53,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     void* _stack = AROS_GET_SP;
     void *hostlib;
     char *errstr;
+    char *cmdline;
     unsigned int mm_PageSize;
     struct MemHeader *bootmh;
     struct TagItem *tag, *tstate = msg;
@@ -65,28 +67,32 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     while ((tag = LibNextTagItem(&tstate)))
     {
-	switch (tag->ti_Tag)
-	{
-	case KRN_KernelLowest:
-	    ranges[0] = (UWORD *)tag->ti_Data;
-	    break;
+        switch (tag->ti_Tag)
+        {
+            case KRN_KernelLowest:
+                ranges[0] = (UWORD *)tag->ti_Data;
+                break;
 
-	case KRN_KernelHighest:
-	    ranges[1] = (UWORD *)tag->ti_Data;
-	    break;
+            case KRN_KernelHighest:
+                ranges[1] = (UWORD *)tag->ti_Data;
+                break;
 
-	case KRN_MMAPAddress:
-	    mmap = (struct mb_mmap *)tag->ti_Data;
-	    break;
+            case KRN_MMAPAddress:
+                mmap = (struct mb_mmap *)tag->ti_Data;
+                break;
 
-	case KRN_KernelBss:
-	    __clear_bss((struct KernelBSS *)tag->ti_Data);
-	    break;
+            case KRN_KernelBss:
+                __clear_bss((struct KernelBSS *)tag->ti_Data);
+                break;
 
-	case KRN_HostInterface:
-	    hif = (struct HostInterface *)tag->ti_Data;
-	    break;
-	}
+            case KRN_HostInterface:
+                hif = (struct HostInterface *)tag->ti_Data;
+                break;
+
+            case KRN_CmdLine:
+                cmdline = (char *)tag->ti_Data;
+                break;
+        }
     }
 
     /* Set globals only AFTER __clear_bss() */
@@ -149,7 +155,10 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     /* Prepare the first mem header */
     D(nbug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len));
-    krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
+    if (strstr(cmdline, "--use-tlsf"))
+        krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT|MEMF_MANAGED);
+    else
+        krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
 
     /*
      * SysBase pre-validation after a warm restart.
