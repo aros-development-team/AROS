@@ -45,7 +45,7 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struc
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
             if (mhe->mhe_Alloc)
-                res = mhe->mhe_Alloc(mhe, byteSize, &requirements);
+                res = mhe->mhe_Alloc(mhe, byteSize, &flags);
         }
         else
         {
