@@ -25,8 +25,4 @@ APTR tlsf_allocabs(APTR tlsf, APTR ptr, IPTR size);
 IPTR tlsf_avail(APTR tlsf, ULONG requirements);
 BOOL tlsf_in_bounds(APTR tlsf, APTR begin, APTR end);
 
-/* Debug functions */
-VOID tlsf_print(APTR tlsf);
-VOID tlsf_print_all_blocks(APTR tlsf);
-
 #endif /* _TLSF_H */

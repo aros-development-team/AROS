@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define DEBUG 0
+
 #include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
@@ -16,13 +18,10 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 
-#define D(x)
+#define USE_TLSF
+#ifdef USE_TLSF
 
 #include "tlsf.h"
-
-#define USE_TLSF
-
-#ifdef USE_TLSF
 
 static void destroy_Pool(struct MemHeaderExt *mhe)
 {
@@ -41,8 +40,6 @@ static APTR fetch_more_ram(void * data, IPTR *size)
 
 static VOID release_ram(void * data, APTR ptr, IPTR size)
 {
-    struct MemHeaderExt *mhe = (struct MemHeaderExt *)data;
-
     D(nbug("[TLSF] release_ram(%p, %d)\n", ptr, size));
 
     FreeMem(ptr, size);
@@ -58,11 +55,14 @@ static APTR alloc_mem(struct MemHeaderExt *mhe, IPTR  size,  ULONG *flags)
 {
     void *ptr;
 
-    struct ExecBase *b = SysBase;
+    D({
+        struct ExecBase *b = SysBase;
 
-    D(nbug("[TLSF] alloc_mem(%p, %d, %p(%d)), tlsf=%p, Task %p (%s)\n",
+        nbug("[TLSF] alloc_mem(%p, %d, %p(%d)), tlsf=%p, Task %p (%s)\n",
             mhe, size, flags, flags? *flags : -1, mhe->mhe_UserData,
-                    b ? b->ThisTask : NULL, b ? (b->ThisTask ? b->ThisTask->tc_Node.ln_Name : "unknown") : "no_exec"));
+            b ? b->ThisTask : NULL,
+            b ? (b->ThisTask ? b->ThisTask->tc_Node.ln_Name : "unknown") : "no_exec")
+    });
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
         ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
@@ -72,13 +72,6 @@ static APTR alloc_mem(struct MemHeaderExt *mhe, IPTR  size,  ULONG *flags)
     mhe->mhe_MemHeader.mh_Free = tlsf_avail(mhe->mhe_UserData, MEMF_TOTAL);
 
     D(nbug("[TLSF] alloc returned %p\n", ptr));
-
-#if 0
-    D(nbug("[TLSF] dumping tlsf\n"));
-    D(tlsf_print(mhe->mhe_UserData));
-    D(nbug("[TLSF] dumping all blocks\n"));
-    D(tlsf_print_all_blocks(mhe->mhe_UserData));
-#endif
 
     if (flags && (*flags & MEMF_CLEAR))
     {
@@ -104,13 +97,6 @@ static void free_mem(struct MemHeaderExt *mhe, APTR ptr, IPTR size)
 
     mhe->mhe_MemHeader.mh_Free = tlsf_avail(mhe->mhe_UserData, MEMF_TOTAL);
 
-#if 0
-    D(nbug("[TLSF] dumping tlsf\n"));
-    D(tlsf_print(mhe->mhe_UserData));
-    D(nbug("[TLSF] dumping all blocks\n"));
-    D(tlsf_print_all_blocks(mhe->mhe_UserData));
-#endif
-
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 }
@@ -122,13 +108,6 @@ static void free_vec(struct MemHeaderExt *mhe, APTR ptr)
 
     D(nbug("[TLSF] free vec (%p, %p), tlsf=%p\n",
             mhe, ptr, mhe->mhe_UserData));
-
-#if 0
-    D(nbug("[TLSF] dumping tlsf\n"));
-    D(tlsf_print(mhe->mhe_UserData));
-    D(nbug("[TLSF] dumping all blocks\n"));
-    D(tlsf_print_all_blocks(mhe->mhe_UserData));
-#endif
 
     if (ptr)
         tlsf_free(mhe->mhe_UserData, ptr);
@@ -152,15 +131,7 @@ static APTR alloc_abs(struct MemHeaderExt *mhe, IPTR size, APTR location)
     if (location && size)
         ptr = tlsf_allocabs(mhe->mhe_UserData, location, size);
 
-
     mhe->mhe_MemHeader.mh_Free = tlsf_avail(mhe->mhe_UserData, MEMF_TOTAL);
-
-#if 0
-    D(nbug("[TLSF] dumping tlsf\n"));
-    D(tlsf_print(mhe->mhe_UserData));
-    D(nbug("[TLSF] dumping all blocks\n"));
-    D(tlsf_print_all_blocks(mhe->mhe_UserData));
-#endif
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
@@ -180,17 +151,9 @@ static APTR _realloc(struct MemHeaderExt *mhe, APTR location, IPTR size)
 
     ptr =  tlsf_realloc(mhe->mhe_UserData, location, size);
 
-
     mhe->mhe_MemHeader.mh_Free = tlsf_avail(mhe->mhe_UserData, MEMF_TOTAL);
 
     D(nbug("[TLSF]   realloc returned %p\n", ptr));
-
-#if 0
-    D(nbug("[TLSF] dumping tlsf\n"));
-    D(tlsf_print(mhe->mhe_UserData));
-    D(nbug("[TLSF] dumping all blocks\n"));
-    D(tlsf_print_all_blocks(mhe->mhe_UserData));
-#endif
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
