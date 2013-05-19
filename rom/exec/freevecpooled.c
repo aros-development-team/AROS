@@ -1,10 +1,11 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/libcall.h>
 #include <proto/exec.h>
+#include <exec/memheaderext.h>
 
 #include "exec_intern.h"
 
@@ -15,13 +16,22 @@ AROS_LH2(void, FreeVecPooled,
 {
     AROS_LIBFUNC_INIT
     
-    if (memory != NULL)
-    {
-        IPTR *real = (IPTR *) memory;
-        IPTR size  = *--real;
+    struct MemHeaderExt *mhe = (struct MemHeaderExt *)pool;
 
-        FreePooled(pool, real, size);
+    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED)
+    {
+        if (mhe->mhe_FreeVec)
+            mhe->mhe_FreeVec(mhe, memory);
     }
-    
+    else
+    {
+        if (memory != NULL)
+        {
+            IPTR *real = (IPTR *) memory;
+            IPTR size  = *--real;
+
+            FreePooled(pool, real, size);
+        }
+    }
     AROS_LIBFUNC_EXIT
 } /* FreeVecPooled() */

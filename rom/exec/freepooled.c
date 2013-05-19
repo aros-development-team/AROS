@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by AllocPooled().
@@ -8,6 +8,7 @@
 
 #include <aros/libcall.h>
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 #include <proto/exec.h>
 
 #include "exec_intern.h"
@@ -57,9 +58,19 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TraceLocation tp = CURRENT_LOCATION("FreePooled");
+    struct MemHeaderExt *mhe = (struct MemHeaderExt *)poolHeader;
 
-    InternalFreePooled(memory, memSize, &tp, SysBase);
+    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED)
+    {
+        if (mhe->mhe_Free)
+            mhe->mhe_Free(mhe, memory, memSize);
+    }
+    else
+    {
+        struct TraceLocation tp = CURRENT_LOCATION("FreePooled");
+
+        InternalFreePooled(memory, memSize, &tp, SysBase);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* FreePooled */

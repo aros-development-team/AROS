@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: System memory allocator for MMU-less systems.
@@ -79,9 +79,11 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
             {
                 if (mhe->mhe_AllocAbs)
                 {
+                    void * ret = mhe->mhe_AllocAbs(mhe, byteSize, location);
+
                     MEM_UNLOCK;
 
-                    return mhe->mhe_AllocAbs(mhe, byteSize, location);
+                    return ret;
                 }
             }
         }
