@@ -1,6 +1,11 @@
 #ifndef CYBERGRAPHX_CYBERGRAPHICS_H
 #define CYBERGRAPHX_CYBERGRAPHICS_H
 
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef GRAPHICS_DISPLAYINFO_H
 #   include <graphics/displayinfo.h>
 #endif
@@ -144,7 +149,7 @@ struct CDrawMsg
     ULONG   cdm_xsize;
     ULONG   cdm_ysize;
     UWORD   cdm_BytesPerRow;
-    UWORD   cdm_BytePerPix;
+    UWORD   cdm_BytesPerPix;
     UWORD   cdm_ColorModel;
 };
 
