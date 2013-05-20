@@ -5,12 +5,27 @@
     Desc:
     Lang: english
 */
+
+#include <hidd/graphics.h>
+#include <aros/debug.h>
+
 #include "cybergraphics_intern.h"
+#include "gfxfuncsupport.h"
+
+struct render_data
+{
+    UBYTE *array;
+    ULONG modulo;
+};
+
+static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
+    OOP_Object *dstbm_obj, OOP_Object *dst_gc, struct Rectangle *rect,
+    struct GfxBase *GfxBase);
 
 /*****************************************************************************
 
     NAME */
-#include <clib/cybergraphics_protos.h>
+#include <proto/cybergraphics.h>
 
 	AROS_LH10(ULONG, WritePixelArrayAlpha,
 
@@ -65,20 +80,53 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    if (width && height)
+
+    ULONG start_offset;    
+    LONG pixwritten = 0;    
+    struct render_data data;
+    struct Rectangle rr;
+
+    if (width == 0 || height == 0)
+        return 0;
+
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(rp->BitMap))
     {
-	return driver_WritePixelArrayAlpha(src
-    	    , srcx, srcy
-	    , srcmod
-	    , rp
-	    , destx, desty
-	    , width, height
-	    , globalalpha
-	    , GetCGFXBase(CyberGfxBase)
-	);
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap "
+            "in WritePixelArrayAlpha() !!!\n"));
+    	return 0;
     }
-    else return 0;
+
+    /* Compute the start of the array */
+
+    start_offset = ((ULONG)srcy) * srcmod + srcx * 4;
+
+    data.array  = ((UBYTE *)src) + start_offset;
+    data.modulo = srcmod;
+
+    rr.MinX = destx;
+    rr.MinY = desty;
+    rr.MaxX = destx + width  - 1;
+    rr.MaxY = desty + height - 1;
+
+    pixwritten = DoRenderFunc(rp, NULL, &rr, RenderHook, &data, TRUE);
+
+    return pixwritten;
 
     AROS_LIBFUNC_EXIT
 } /* WritePixelArrayAlpha */
+
+static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
+    OOP_Object *dstbm_obj, OOP_Object *dst_gc, struct Rectangle *rect,
+    struct GfxBase *GfxBase)
+{
+    ULONG  width  = rect->MaxX - rect->MinX + 1;
+    ULONG  height = rect->MaxY - rect->MinY + 1;
+    UBYTE *array = data->array + data->modulo * srcy + 4 * srcx;
+
+    HIDD_BM_PutAlphaImage(dstbm_obj, dst_gc, array, data->modulo,
+        rect->MinX, rect->MinY, width, height);
+
+    return width * height;
+}
+

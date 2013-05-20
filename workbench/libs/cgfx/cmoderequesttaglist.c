@@ -10,7 +10,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/cybergraphics_protos.h>
+#include <proto/cybergraphics.h>
 
 	AROS_LH2(ULONG, CModeRequestTagList,
 

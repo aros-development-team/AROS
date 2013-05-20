@@ -5,12 +5,28 @@
     Desc:
     Lang: english
 */
+
+#include <aros/debug.h>
+#include <hidd/graphics.h>
+#include <proto/cybergraphics.h>
+
 #include "cybergraphics_intern.h"
+
+struct render_data
+{
+    UBYTE *array;
+    ULONG modulo;
+    UBYTE invertalpha;
+};
+
+static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
+    OOP_Object *dstbm_obj, OOP_Object *dst_gc, struct Rectangle *rect,
+    struct GfxBase *GfxBase);
 
 /*****************************************************************************
 
     NAME */
-#include <clib/cybergraphics_protos.h>
+#include <proto/cybergraphics.h>
 
 	AROS_LH8(void, BltTemplateAlpha,
 
@@ -60,18 +76,46 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    if (width && height)
-    {
-	driver_BltTemplateAlpha(src
-    	    , srcx
-	    , srcmod
-	    , rp
-	    , destx, desty
-	    , width, height
-	    , GetCGFXBase(CyberGfxBase)
-	);
+
+    struct render_data data;
+    struct Rectangle rr;
+
+    if (width == 0 || height == 0)
+        return;
+
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(rp->BitMap)) {
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap "
+            "in BltTemplateAlpha() !!!\n"));
+    	return;
     }
+
+    /* Compute the start of the array */
+
+    data.array  = src + srcx;
+    data.modulo = srcmod;
+    data.invertalpha = (rp->DrawMode & INVERSVID) ? TRUE : FALSE;
+    rr.MinX = destx;
+    rr.MinY = desty;
+    rr.MaxX = destx + width  - 1;
+    rr.MaxY = desty + height - 1;
+    
+    DoRenderFunc(rp, NULL, &rr, RenderHook, &data, TRUE);
 
     AROS_LIBFUNC_EXIT
 } /* BltTemplateAlpha */
+
+static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
+    OOP_Object *dstbm_obj, OOP_Object *dst_gc, struct Rectangle *rect,
+    struct GfxBase *GfxBase)
+{
+    ULONG  width  = rect->MaxX - rect->MinX + 1;
+    ULONG  height = rect->MaxY - rect->MinY + 1;
+    UBYTE *array = data->array + data->modulo * srcy + srcx;
+
+    HIDD_BM_PutAlphaTemplate(dstbm_obj, dst_gc, array, data->modulo,
+        rect->MinX, rect->MinY, width, height, data->invertalpha);
+
+    return width * height;
+}
+

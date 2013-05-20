@@ -124,7 +124,7 @@ static ULONG extcol_render(struct extcol_render_data *ecrd, LONG x_src, LONG y_s
 /*****************************************************************************
 
     NAME */
-#include <clib/cybergraphics_protos.h>
+#include <proto/cybergraphics.h>
 
 	AROS_LH7(ULONG, ExtractColor,
 

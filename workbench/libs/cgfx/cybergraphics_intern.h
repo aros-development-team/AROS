@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef CYBERGRAPHICS_INTERN_H
 #define CYBERGRAPHICS_INTERN_H
 
@@ -82,49 +87,5 @@ struct IntCGFXBase
 				( ( ((LONG)(y)) * (bytes_per_row)) + (x) )
 
 #define XCOORD_TO_MASK(x)   	(128L >> ((x) & 0x07))
-
-extern VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct IntCGFXBase *CyberGfxBase);
-extern ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct IntCGFXBase *CyberGfxBase);
-extern LONG driver_WriteLUTPixelArray(APTR srcrect, 
-	UWORD srcx, UWORD srcy,
-	UWORD srcmod, struct RastPort *rp, APTR ctable,
-	UWORD destx, UWORD desty,
-	UWORD sizex, UWORD sizey,
-	UBYTE ctabformat,
-	struct IntCGFXBase *CyberGfxBase);
-
-extern ULONG driver_ExtractColor(struct RastPort *RastPort, struct BitMap *SingleMap, ULONG Colour, ULONG sX, ULONG sY, ULONG Width, ULONG Height, struct IntCGFXBase *CyberGfxBase);
-extern ULONG driver_MovePixelArray(UWORD SrcX, UWORD SrcY, struct RastPort *RastPort, UWORD DstX, UWORD DstY, UWORD SizeX, UWORD SizeY, struct IntCGFXBase *CyberGfxBase);
-extern LONG driver_FillPixelArray(struct RastPort *rp
-	, UWORD destx, UWORD desty, UWORD width, UWORD height
-	, ULONG pixel, struct IntCGFXBase *CyberGfxBase);
-
-extern LONG driver_InvertPixelArray(struct RastPort *rp
-	, UWORD destx, UWORD desty, UWORD width, UWORD height
-	, struct IntCGFXBase *CyberGfxBase);
-
-extern LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
-	, UWORD dstmod, struct RastPort *rp, UWORD srcx, UWORD srcy
-	, UWORD width, UWORD height, UBYTE dstformat, struct IntCGFXBase *CyberGfxBase);
-
-extern LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
-	, ULONG pixel, struct IntCGFXBase *CyberGfxBase);
-	
-extern ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
-	, struct IntCGFXBase *CyberGfxBase);
-
-extern LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
-	, UWORD srcmod, struct RastPort *rp, UWORD destx, UWORD desty
-	, UWORD width, UWORD height, UBYTE srcformat, struct IntCGFXBase *CyberGfxBase);
-
-extern LONG driver_WritePixelArrayAlpha(APTR src, UWORD srcx, UWORD srcy
-	, UWORD srcmod, struct RastPort *rp, UWORD destx, UWORD desty
-	, UWORD width, UWORD height, ULONG globalalpha, struct IntCGFXBase *CyberGfxBase);
-
-extern void driver_BltTemplateAlpha(UBYTE *src, LONG srcx, LONG srcmod
-    	, struct RastPort *rp, LONG destx, LONG desty, LONG width, LONG height
-	, struct IntCGFXBase *CyberGfxBase);
-
-extern VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct TagItem *tags, struct IntCGFXBase *CyberGfxBase);
 
 #endif /* CYBERGRAPHICS_INTERN_H */

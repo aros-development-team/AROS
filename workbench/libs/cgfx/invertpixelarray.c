@@ -5,12 +5,16 @@
     Desc:
     Lang: english
 */
+
+#include <hidd/graphics.h>
+#include <aros/debug.h>
+
 #include "cybergraphics_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <clib/cybergraphics_protos.h>
+#include <proto/cybergraphics.h>
 
 	AROS_LH5(ULONG, InvertPixelArray,
 
@@ -49,12 +53,17 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    return driver_InvertPixelArray(rp
-    	, destx, desty
-	, width, height
-	, GetCGFXBase(CyberGfxBase)
-    );
+
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(rp->BitMap))
+    {
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap "
+            "in InvertPixelArray() !!!\n"));
+    	return 0;
+    }
+
+    return (LONG)FillRectPenDrMd(rp, destx, desty, destx + width  - 1,
+        desty + height - 1, 0xFF, vHidd_GC_DrawMode_Invert, TRUE);
 
     AROS_LIBFUNC_EXIT
 } /* InvertPixelArray */

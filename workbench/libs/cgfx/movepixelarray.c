@@ -6,12 +6,15 @@
     Lang: english
 */
 
+#include <hidd/graphics.h>
+#include <aros/debug.h>
+
 #include "cybergraphics_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <clib/cybergraphics_protos.h>
+#include <proto/cybergraphics.h>
 
 	AROS_LH7(ULONG, MovePixelArray,
 
@@ -53,8 +56,11 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    return driver_MovePixelArray(SrcX, SrcY, RastPort, DstX, DstY, SizeX, SizeY, GetCGFXBase(CyberGfxBase));
+
+    ClipBlit(RastPort, SrcX, SrcY, RastPort, DstX, DstY, SizeX, SizeY,
+        0x00C0); /* Copy */
+
+    return SizeX * SizeY;
 
     AROS_LIBFUNC_EXIT
 } /* MovePixelArray */
