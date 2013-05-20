@@ -5,12 +5,29 @@
     Desc:
     Lang: english
 */
+
+#include <hidd/graphics.h>
+#include <aros/debug.h>
+
 #include "cybergraphics_intern.h"
+#include "gfxfuncsupport.h"
+
+struct render_data
+{
+    UBYTE *array;
+    HIDDT_StdPixFmt pixfmt;
+    ULONG modulo;
+    ULONG bppix;
+};
+
+static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
+    OOP_Object *dstbm_obj, OOP_Object *dst_gc, struct Rectangle *rect,
+    struct GfxBase *GfxBase);
 
 /*****************************************************************************
 
     NAME */
-#include <clib/cybergraphics_protos.h>
+#include <proto/cybergraphics.h>
 
 	AROS_LH10(ULONG, ReadPixelArray,
 
@@ -86,20 +103,70 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    if (width && height)
+
+    ULONG start_offset;
+    IPTR bppix;
+    LONG pixread = 0;
+    BYTE old_drmd;
+    struct Rectangle rr;
+    struct render_data data;
+
+    if (width == 0 || height == 0)
+        return 0;
+
+    /* Filter out unsupported modes */
+    if (dstformat == RECTFMT_LUT8 || dstformat == RECTFMT_GREY8)
     {
-	return driver_ReadPixelArray(dst
-    	    , destx, desty
-	    , dstmod
-	    , rp
-	    , srcx, srcy
-	    , width, height
-	    , dstformat
-	    , GetCGFXBase(CyberGfxBase)
-        );
+        D(bug("RECTFMT_LUT8 and RECTFMT_GREY8 are not supported "
+            "by ReadPixelArray()\n"));
+        return 0;
     }
-    else return 0;
-    
+
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(rp->BitMap))
+    {
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap "
+            "in ReadPixelArray() !!!\n"));
+    	return 0;
+    }
+
+    /* Preserve old drawmode */
+    old_drmd = rp->DrawMode;
+    SetDrMd(rp, JAM2);
+
+    bppix = GetRectFmtBytesPerPixel(dstformat, rp, CyberGfxBase);
+    start_offset = ((ULONG)desty) * dstmod + destx * bppix;
+    data.array = ((UBYTE *)dst) + start_offset;
+    data.pixfmt = GetHIDDRectFmt(dstformat, rp, CyberGfxBase);
+    data.modulo = dstmod;
+    data.bppix = bppix;
+
+    rr.MinX = srcx;
+    rr.MinY = srcy;
+    rr.MaxX = srcx + width  - 1;
+    rr.MaxY = srcy + height - 1;
+
+    pixread = DoRenderFunc(rp, NULL, &rr, RenderHook, &data, FALSE);
+
+    /* restore old drawmode */
+    SetDrMd(rp, old_drmd);
+
+    return pixread;
+
     AROS_LIBFUNC_EXIT
 } /* ReadPixelArray */
+
+static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
+			OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			struct Rectangle *rect, struct GfxBase *GfxBase)
+{
+    ULONG  width  = rect->MaxX - rect->MinX + 1;
+    ULONG  height = rect->MaxY - rect->MinY + 1;
+    UBYTE *array = data->array + data->modulo * srcy + data->bppix * srcx;
+
+    HIDD_BM_GetImage(dstbm_obj, array, data->modulo,
+    		     rect->MinX, rect->MinY, width, height, data->pixfmt);
+
+    return width * height;
+}
+

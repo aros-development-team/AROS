@@ -40,7 +40,7 @@ FUNCS := \
 
 %build_module mmake=workbench-libs-cgfx \
   modname=cybergraphics modtype=library \
-  files="$(FUNCS) graphics_driver gfxfuncsupport cybergraphics_init"
+  files="$(FUNCS) gfxfuncsupport cybergraphics_init"
 
 #MM includes-copy
 

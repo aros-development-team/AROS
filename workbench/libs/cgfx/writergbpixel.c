@@ -5,12 +5,24 @@
     Desc:
     Lang: english
 */
+
+#include <hidd/graphics.h>
+#include <aros/debug.h>
+
 #include "cybergraphics_intern.h"
+
+struct render_data
+{
+    HIDDT_Pixel pixel;
+};
+
+static LONG PixelHook(struct render_data *data, OOP_Object *bm, OOP_Object *gc,
+    LONG x, LONG y, struct GfxBase *GfxBase);
 
 /*****************************************************************************
 
     NAME */
-#include <clib/cybergraphics_protos.h>
+#include <proto/cybergraphics.h>
 
 	AROS_LH4(LONG, WriteRGBPixel,
 
@@ -49,8 +61,40 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    return driver_WriteRGBPixel(rp, x, y, pixel, GetCGFXBase(CyberGfxBase));
+
+    struct render_data data;
+    HIDDT_Color col;
+    LONG retval;
+
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(rp->BitMap))
+    {
+        D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap "
+            "in WriteRGBPixel() !!!\n"));
+        return 0;
+    }
+
+    /* HIDDT_ColComp are 16 Bit */
+
+    col.alpha = (HIDDT_ColComp)((pixel >> 16) & 0x0000FF00);
+    col.red = (HIDDT_ColComp)((pixel >> 8) & 0x0000FF00);
+    col.green = (HIDDT_ColComp)(pixel & 0x0000FF00);
+    col.blue = (HIDDT_ColComp)((pixel << 8) & 0x0000FF00);
+
+    data.pixel = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
+
+    retval = DoPixelFunc(rp, x, y, PixelHook, &data, TRUE);
+
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* WriteRGBPixel */
+
+static LONG PixelHook(struct render_data *data, OOP_Object *bm, OOP_Object *gc,
+    LONG x, LONG y, struct GfxBase *GfxBase)
+{
+    HIDD_BM_PutPixel(bm, x, y, data->pixel);
+
+    return 0;
+}
+

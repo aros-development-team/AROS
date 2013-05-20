@@ -5,12 +5,16 @@
     Desc:
     Lang: english
 */
+
+#include <hidd/graphics.h>
+#include <aros/debug.h>
+
 #include "cybergraphics_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <clib/cybergraphics_protos.h>
+#include <proto/cybergraphics.h>
 
 	AROS_LH6(ULONG, FillPixelArray,
 
@@ -53,13 +57,21 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    return driver_FillPixelArray(rp
-    	, destx, desty
-	, width, height
-	, pixel
-	, GetCGFXBase(CyberGfxBase)
-    );
+
+    HIDDT_Color col;
+    HIDDT_Pixel pix;
+
+    /* HIDDT_ColComp are 16 Bit */
+    col.alpha	= (HIDDT_ColComp)((pixel >> 16) & 0x0000FF00);
+    col.red	= (HIDDT_ColComp)((pixel >> 8) & 0x0000FF00);
+    col.green	= (HIDDT_ColComp)(pixel & 0x0000FF00);
+    col.blue	= (HIDDT_ColComp)((pixel << 8) & 0x0000FF00);
+
+    pix = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
+
+    return (LONG)FillRectPenDrMd(rp, destx, desty, destx + width  - 1,
+        desty + height - 1, pix, vHidd_GC_DrawMode_Copy, TRUE);
 
     AROS_LIBFUNC_EXIT
 } /* FillPixelArray */
+
