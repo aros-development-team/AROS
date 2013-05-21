@@ -37,7 +37,7 @@ const char *const Dos_WeekTable[]=
 
 const char *const Dos_SubstDateTable[]=
 {
-    "Tomorrow", "Today", "Yesterday"
+    "Future", "Tomorrow", "Today", "Yesterday"
 };
 #else
 #    include "date.h"
@@ -135,7 +135,7 @@ const char *const Dos_SubstDateTable[]=
 
         for (t=0; t<3; t++)
         {
-            if (!Strnicmp (Dos_SubstDateTable[t], ptr, strlen (Dos_SubstDateTable[t])))
+            if (!Strnicmp (Dos_SubstDateTable[t + 1], ptr, strlen (Dos_SubstDateTable[t + 1])))
                 break;
         }
 
