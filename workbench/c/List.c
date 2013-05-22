@@ -500,8 +500,8 @@ int printFileData(struct AnchorPath *ap,
     /* Do the file match the time interval we are looking for?
        (ARG_SINCE and ARG_UPTO) -- any combination of these may be
        specified */
-    if ((doSince && (CompareDates(sinceDate, ds) <= 0)) ||
-        (doUpto && (CompareDates(uptoDate, ds) >= 0)))
+    if ((doSince && (CompareDates(sinceDate, ds) < 0)) ||
+        (doUpto && (CompareDates(uptoDate, ds) > 0)))
     {
         return 0;
     }
