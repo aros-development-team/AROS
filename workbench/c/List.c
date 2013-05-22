@@ -969,6 +969,8 @@ int main(void)
 
                 return RETURN_FAIL;
             }
+            sinceDatetime.dat_Stamp.ds_Minute = 0;
+            sinceDatetime.dat_Stamp.ds_Tick = 0;
         }
 
         if (upto != NULL)
@@ -985,6 +987,8 @@ int main(void)
 
                 return RETURN_FAIL;
             }
+            uptoDatetime.dat_Stamp.ds_Minute = 1439;
+            uptoDatetime.dat_Stamp.ds_Tick = 49;
         }
 
         if (subStr != NULL)
