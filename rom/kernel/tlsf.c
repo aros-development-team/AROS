@@ -818,7 +818,7 @@ void tlsf_add_memory(void *tlsf_, void *memory, IPTR size)
 void tlsf_add_memory_and_merge(void *tlsf_, void *memory, IPTR size)
 {
     tlsf_add_memory(tlsf_, memory, size);
-#warning TODO: add memory and merge...
+    // TODO: add memory and merge...
 }
 
 #if 0
