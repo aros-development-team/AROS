@@ -2,7 +2,7 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Country data for Bosna I Hercegovina (Bosnia and Herzegovina)
+    Desc: Country data for Bosna i Hercegovina (Bosnia and Herzegovina)
 */
 
 #include "country_locale.h"
@@ -50,7 +50,7 @@ struct IntCountryPrefs bosnia_herzegovinaPrefs =
         2, 2,
 
         /* Currency symbol, Small currency symbol */
-        "KM", "Pf",
+        "KM", "Kf",
 
         /* Int CS, this is the ISO 4217 symbol, followed by the character to
            separate that symbol from the rest of the money. (\x00 for none).
@@ -67,6 +67,6 @@ struct IntCountryPrefs bosnia_herzegovinaPrefs =
         CT_7THU
     },
     "$VER: bosnia_herzegovina.country 44.0 (12.04.2013)",
-    "Bosna I Hercegovina",
+    "Bosna i Hercegovina",
     "Countries/Bosnia_Herzegovina"
 };
