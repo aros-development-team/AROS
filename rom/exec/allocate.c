@@ -99,7 +99,9 @@ AROS_LH2(APTR, Allocate,
         APTR res;
 
         D(bug("[exec] Allocate(0x%p, %u)\n", freeList, byteSize));
-        ASSERT_VALID_PTR(freeList);
+        ASSERT(freeList != NULL);
+        ASSERT(freeList->mh_Node.ln_Type == NT_MEMORY);
+        ASSERT(freeList->mh_Lower <= freeList->mh_Upper);
 
         /* Zero bytes requested? May return everything ;-). */
         if(!byteSize)
