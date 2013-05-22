@@ -848,7 +848,7 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
 /* Free a region allocated by AllocMemHeader() */
 void FreeMemHeader(APTR addr, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
-    struct MemHeaderExt *mhe = (struct MemHeaderEx *)addr;
+    struct MemHeaderExt *mhe = (struct MemHeaderExt *)addr;
 
     IPTR size = (IPTR)mhe->mhe_MemHeader.mh_Upper - (IPTR)addr;
 
