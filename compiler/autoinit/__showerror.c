@@ -38,7 +38,8 @@ void ___showerror(char *format, const IPTR *args, struct ExecBase *SysBase)
     (
         !__forceerrorrequester                                                 &&
         (DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0)) != NULL &&
-	Cli() != NULL
+        Cli() != NULL && 
+        Output() != BNULL
     )
     {
         if (name)
@@ -54,7 +55,6 @@ void ___showerror(char *format, const IPTR *args, struct ExecBase *SysBase)
 
         PutStr("\n");
 
-        CloseLibrary((struct Library *)DOSBase);
     }
     else
     if ((IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 0)))
@@ -82,4 +82,6 @@ void ___showerror(char *format, const IPTR *args, struct ExecBase *SysBase)
         RawDoFmt(format, (APTR)args, (VOID_FUNC)RawPutc, SysBase);
         RawPutChar('\n');
     }
+
+    CloseLibrary((struct Library *)DOSBase);
 }
