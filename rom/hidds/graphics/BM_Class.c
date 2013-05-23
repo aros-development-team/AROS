@@ -968,7 +968,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
         if (ok && data->displayable)
         {
-            /* We should allways get modeid, but we check anyway */
+            /* We should always get modeid, but we check anyway */
             if (data->modeid == vHidd_ModeID_Invalid)
             {
                 D(bug("!!! BitMap:New() DID NOT GET MODEID FOR DISPLAYABLE BITMAP !!!\n"));
@@ -1010,7 +1010,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
         if (ok)
         {
-            /* * PixFmt will be NULL in case of e. g. planarbm late initialization. */
+            /* * PixFmt will be NULL in case of e.g. planarbm late initialization. */
             if (data->prot.pixfmt)
             {
                 ULONG bytesPerRow = GetBytesPerRow(data, CSD(cl));
@@ -1314,9 +1314,9 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
         moHidd_BitMap_PutPixel
 
     SYNOPSIS
-        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_PutPixel *msg);
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_PutPixel *msg);
 
-        ULONG HIDD_BM_PutPixel(OOP_Object *obj, WORD x, WORD y,
+        VOID HIDD_BM_PutPixel(OOP_Object *obj, WORD x, WORD y,
             HIDDT_Pixel pixel);
 
     LOCATION
@@ -1333,7 +1333,7 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
         pixel - the pixel's new color value.
 
     RESULT
-        Unknown.
+        None.
 
     NOTES
 
@@ -1355,9 +1355,9 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
         moHidd_BitMap_DrawPixel
 
     SYNOPSIS
-        ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawPixel *msg);
+        VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_DrawPixel *msg);
 
-        ULONG HIDD_BM_DrawPixel(OOP_Object *obj, OOP_Object *gc, WORD x, WORD y);
+        VOID HIDD_BM_DrawPixel(OOP_Object *obj, OOP_Object *gc, WORD x, WORD y);
 
     LOCATION
         hidd.graphics.bitmap
@@ -1373,7 +1373,7 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
         x, y - Coordinates of the pixel to draw
 
     RESULT
-        Undefined. Many drivers declare this method as void.
+        None.
 
     NOTES
 
@@ -1391,7 +1391,7 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 
 *****************************************************************************************/
 
-ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
+VOID BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
                                  struct pHidd_BitMap_DrawPixel *msg)
 {
     HIDDT_Pixel                     src, dest, val;
@@ -1402,7 +1402,7 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
 /*    EnterFunc(bug("BitMap::DrawPixel() x: %i, y: %i\n", msg->x, msg->y));
 */
     /*
-        Example: Pixels which bits are set to 0 in the colMask must be
+        Example: Pixels whose bits are set to 0 in the colMask must be
                  unchanged
 
           data->colMask = 001111
@@ -1456,10 +1456,6 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
     }
 
     PUTPIXEL(cl, obj, msg->x, msg->y, val);
-
-/*    ReturnInt("BitMap::DrawPixel ", ULONG, 1); */ /* in quickmode return always 1 */
-
-    return 1;
 }
 
 /*****************************************************************************************
@@ -1919,18 +1915,18 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
     WORD        x = msg->rx, y = 0;     /* ellipse points */
 
     /* intermediate terms to speed up loop */
-    WORD        t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
-    WORD        t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
-    WORD        t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
-    WORD        d1 = t2 - t7 + (t4 >> 1);    /* error terms */
-    WORD        d2 = (t1 >> 1) - t8 + t5;
+    LONG        t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
+    LONG        t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
+    LONG        t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
+    LONG        d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+    LONG        d2 = (t1 >> 1) - t8 + t5;
 
     APTR        doclip = GC_DOCLIP(gc);
 
 
     EnterFunc(bug("BitMap::DrawEllipse()"));
 
-    while (d2 < 0)                  /* til slope = -1 */
+    while (d2 < 0)                  /* till slope = -1 */
     {
         /* draw 4 points using symmetry */
 
@@ -2081,15 +2077,15 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
     WORD        x = msg->rx, y = 0;     /* ellipse points */
 
     /* intermediate terms to speed up loop */
-    WORD        t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
-    WORD        t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
-    WORD        t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
-    WORD        d1 = t2 - t7 + (t4 >> 1);    /* error terms */
-    WORD        d2 = (t1 >> 1) - t8 + t5;
+    LONG        t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
+    LONG        t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
+    LONG        t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
+    LONG        d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+    LONG        d2 = (t1 >> 1) - t8 + t5;
 
     EnterFunc(bug("BitMap::FillEllipse()"));
 
-    while (d2 < 0)                  /* til slope = -1 */
+    while (d2 < 0)                  /* till slope = -1 */
     {
         /* draw 4 points using symmetry */
         HIDD_BM_DrawLine(obj, gc, msg->x - x, msg->y + y, msg->x + x, msg->y + y);
@@ -3297,7 +3293,7 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     INPUTS
         obj         - A bitmap to draw on
         gc          - A GC object specifying drawing parameters
-        alpha       - A pointer to a 8-bit per pixel alpha channel mask
+        alpha       - A pointer to an 8-bit per pixel alpha channel mask
         modulo      - Number of bytes per line in the mask
         x, y        - Top-left corner of the affected bitmap's region
         width       - Width of the affected bitmap's region
