@@ -265,7 +265,7 @@ FILES   :=
 AFILES  := 
 
 KLIBS   := aros utility dos oop mathffp mathieeesingbas partition \
-           keymap graphics layers intuition gadtools icon workbench
+           keymap graphics layers intuition gadtools icon workbench setpatch
 KDEVS   := timer input keyboard console trackdisk gameport audio ata cd
 KHNDLRS := cdfs con afs ram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx ata_gayle
