@@ -24,6 +24,8 @@ static const UBYTE fm_maxplanes[] = { 3,2,1,0, 3,3,2,0, 3,3,3,0 };
 void resetcustom(struct amigavideo_staticdata *data)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
+    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
+
     custom->fmode = 0x0000;
     custom->bplcon0 = 0x0200;
     custom->bplcon1 = 0x0000;
@@ -32,6 +34,9 @@ void resetcustom(struct amigavideo_staticdata *data)
     custom->bplcon4 = 0x0011;
     custom->vposw = 0x8000;
     custom->color[0] = 0x0444;
+
+    // Use AGA modes and create AGA copperlists only if AGA is "enabled"
+    data->aga_enabled = data->aga && GfxBase->ChipRevBits0 == SETCHIPREV_AA;
 }
 
 static void waitvblank(struct amigavideo_staticdata *data)
@@ -77,7 +82,7 @@ static void setcoppercolors(struct amigavideo_staticdata *data)
  
     if (!data->copper2.copper2_palette)
 	return;
-    if (data->aga) {
+    if (data->aga && data->aga_enabled) {
       	UWORD off = 1;
     	for (i = 0; i < data->use_colors; i++) {
     	    UWORD vallo, valhi;
@@ -283,11 +288,11 @@ static void setcopperscroll(struct amigavideo_staticdata *data, struct amigabm_d
     	setcopperscroll2(data, bm, &data->copper2i, TRUE);
 }
 
-static UWORD get_copper_list_length(UBYTE aga, UBYTE depth)
+static UWORD get_copper_list_length(struct amigavideo_staticdata *data, UBYTE depth)
 {
     UWORD v;
 
-    if (aga) {
+    if (data->aga && data->aga_enabled) {
     	v = 1000 + ((1 << depth) + 1 + (1 << depth) / 32 + 1) * 2;
     } else {
     	v = 1000;
@@ -371,7 +376,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     *c++ = 0x0024 | ((data->aga && !(data->modeid & EXTRAHALFBRITE_KEY)) ? 0x0200 : 0);
 
     c2d->copper2_fmode = NULL;
-    if (data->aga) {
+    if (data->aga && data->aga_enabled) {
     	*c++ = 0x010c;
     	*c++ = 0x0011;
     	*c++ = 0x01fc;
@@ -388,7 +393,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     	bplcon0 |= 0x0800;
 
     c2d->copper2_palette = c;
-    if (data->aga) {
+    if (data->aga && data->aga_enabled) {
     	// hi
    	for (i = 0; i < data->use_colors; i++) {
     	    UBYTE agac = i & 31;
@@ -483,10 +488,26 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     else if ((data->modeid & SUPER_KEY) == HIRES_KEY)
     	data->res = 1;
     data->interlace = (data->modeid & LORESLACE_KEY) ? 1 : 0;
-    data->fmode_bpl = data->aga ? 2 : 0;
+    data->fmode_bpl = data->aga && data->aga_enabled ? 2 : 0;
 
     fetchunit = fetchunits[data->fmode_bpl * 4 + data->res];
     maxplanes = fm_maxplanes[data->fmode_bpl * 4 + data->res];
+
+    if (bm->depth > maxplanes) {
+        if (data->aga && !data->aga_enabled) {
+            // Enable AGA if requesting AGA only mode.
+            // This is a compatibility hack because our display
+            // database currently contains all AGA modes even if AGA
+            // is "disabled".
+            GfxBase->ChipRevBits0 = SETCHIPREV_AA;
+            data->aga_enabled = TRUE;
+            data->fmode_bpl = data->aga && data->aga_enabled ? 2 : 0;
+            fetchunit = fetchunits[data->fmode_bpl * 4 + data->res];
+            maxplanes = fm_maxplanes[data->fmode_bpl * 4 + data->res];
+        }
+        if (bm->depth > maxplanes)
+            return FALSE;
+    }
 
     viewwidth = bm->width;
     // use nominal width for now
@@ -513,9 +534,9 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     	    data->bploffsets[i + 2] = i;
     }
 
-    data->copper2.copper2 = AllocVec(get_copper_list_length(data->aga, bm->depth), MEMF_CLEAR | MEMF_CHIP);
+    data->copper2.copper2 = AllocVec(get_copper_list_length(data, bm->depth), MEMF_CLEAR | MEMF_CHIP);
     if (data->interlace)
-    	data->copper2i.copper2 = AllocVec(get_copper_list_length(data->aga, bm->depth), MEMF_CLEAR | MEMF_CHIP);
+    	data->copper2i.copper2 = AllocVec(get_copper_list_length(data, bm->depth), MEMF_CLEAR | MEMF_CHIP);
     createcopperlist(data, bm, &data->copper2, FALSE);
     if (data->interlace) {
     	createcopperlist(data, bm, &data->copper2i, TRUE);
@@ -548,7 +569,7 @@ BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, stru
     UWORD bitmapwidth = width;
     UWORD y, *p;
     
-    if (data->aga && width > 16)
+    if (data->aga && data->aga_enabled && width > 16)
     	data->fmode_spr = 2;
     else
     	data->fmode_spr = 0;
@@ -921,16 +942,16 @@ void initcustom(struct amigavideo_staticdata *data)
     data->starty = 0x28;
 
     vposr = custom->vposr & 0x7f00;
-    data->aga = (vposr & 0x0f00) >= 0x0200;
+    data->aga = vposr >= 0x2200;
     data->ecs_agnus = vposr >= 0x2000;
     val = custom->deniseid;
-    custom->deniseid = 0x0000;
+    custom->deniseid = custom->dmaconr;;
     if (val == custom->deniseid) {
-    	custom->deniseid = 0xffff;
-    	if (val == custom->deniseid) {
+        custom->deniseid = custom->dmaconr ^ 0x8000;
+        if (val == custom->deniseid) {
             if ((val & (2 + 8)) == 8)
-    		data->ecs_denise = TRUE;
-    	}
+                data->ecs_denise = TRUE;
+        }
     }
     data->max_colors = data->aga ? 256 : 32;
     data->palette = AllocVec(data->max_colors * 3, MEMF_CLEAR);
