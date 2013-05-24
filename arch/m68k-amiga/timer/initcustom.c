@@ -48,9 +48,8 @@ static UWORD gethighestline(UWORD linecnt)
 void InitCustom(struct GfxBase *gfx)
 {
 	volatile struct Custom *custom = (struct Custom*)0xdff000;
-	UWORD vposr, deniseid;
+	UWORD vposr;
 	UWORD flags = 0;
-	UBYTE chipflags = 0;
 	UWORD pos;
 
 	Disable();
@@ -68,26 +67,15 @@ void InitCustom(struct GfxBase *gfx)
    	vposr = custom->vposr & 0x7f00;
    	if (!(vposr & 0x1000))
    		flags |= REALLY_PAL;
-   	if (vposr >= 0x2000)
-   		chipflags |= GFXF_HR_AGNUS;
-   	deniseid = custom->deniseid & 0x00ff;
    	custom->fmode = 0;
-   	if ((custom->deniseid & 0x00ff) == deniseid) {
-   		if (deniseid == 0xfc)
-   			chipflags |= GFXF_HR_DENISE;
-   		if (deniseid == 0xf8)
-   			chipflags |= GFXF_AA_LISA | GFXF_HR_DENISE;
-   	}
 
    	Enable();
 
    	if (vposr >= 0x2200) {
-   		chipflags |= GFXF_AA_ALICE;
 		gfx->MemType = BUS_32 | DBL_CAS;
 	}
 
 	gfx->DisplayFlags = flags;
-	gfx->ChipRevBits0 = chipflags;
 
 	SysBase->VBlankFrequency = (flags & PAL) ? 50 : 60;
 }
