@@ -20,12 +20,12 @@ register UWORD AROS_LIBFUNC_cc asm ("d7");
 
 #define AROS_CCWRAP(t,func, subfunc) \
     asm ( ".global " _S(func) "\n" _S(func) ":\n" \
-          "move.l %d7,%sp@-\n" \
+          "subq.l #2,%sp\n" \
+          "movem.l %d7/%a0-%a1,%sp@-\n" \
           "clr.w  %d7\n" \
           "jsr " _S(subfunc) "\n" \
-          "move.w %d7,%a1\n" \
-          "move.l %sp@+,%d7\n" \
-          "move.w %a1,%sp@-\n" \
+          "move.w %d7,%sp@(3*4)\n" \
+          "movem.l %sp@+,%d7/%a0-%a1\n" \
           "rtr\n" ); \
 
 #undef AROS_LH2
