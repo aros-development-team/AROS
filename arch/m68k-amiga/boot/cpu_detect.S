@@ -42,7 +42,7 @@ cpu_detect_asm:
 	move.l	%sp,%a1
 	moveq	#0,%d0
 	/* VBR is 68010+ */
-	movec	%vbr,%d1
+	movec	%d0,%vbr
 	move.w	#0x0001,%d0
  	/* CACR is 68020+ */
 	movec	%cacr,%d0
