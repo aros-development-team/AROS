@@ -96,6 +96,7 @@ struct amigavideo_staticdata
 	UBYTE interlace;
 	UBYTE extralines;
 	BOOL ecs_agnus, ecs_denise, aga;
+	BOOL aga_enabled;
 	BOOL cursorvisible;
 	BOOL palmode;
 
