@@ -52,6 +52,10 @@ struct SetPatchBase {
     struct SetPatch_2   sp_Patch2;
     struct SetPatch_2_Entry sp_Entry2[2];   /* Fake list */
     struct SetPatch_3   sp_Patch3;          /* Actual list */
+    APTR   sp_OldFindSemaphore;
+#if 0
+    APTR   sp_OldFindPort;
+#endif
 };
 
 #endif /* SETPATCH_INTERN_H */
