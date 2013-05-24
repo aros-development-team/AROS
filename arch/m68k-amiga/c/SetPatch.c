@@ -7,10 +7,12 @@
  
 #include <exec/types.h>
 #include <exec/execbase.h>
+#include <graphics/gfxbase.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/setpatch.h>
 #include <proto/kernel.h>
+#include <proto/graphics.h>
 
 #define SH_GLOBAL_DOSBASE 1
 #define SH_GLOBAL_SYSBASE 1
@@ -169,15 +171,17 @@ static void mmusetup(BOOL quiet)
 
 extern void patches(BOOL, ULONG);
 
-AROS_SH4H(SetPatch, 41.3, "AROS SetPatch (m68k)",
+AROS_SH5H(SetPatch, 41.3, "AROS SetPatch (m68k)",
     AROS_SHAH(BOOL, Q=,       QUIET, /S, FALSE, "Be quiet"),
     AROS_SHAH(BOOL, NOCA=,  NOCACHE, /S, FALSE, "Don't install cache patches"),
     AROS_SHAH(BOOL, NOCO=,NOCOPYMEM, /S, FALSE, "Don't install CopyMem patches"),
-    AROS_SHAH(BOOL, NOV=, NOVBRMOVE, /S, FALSE, "Don't move the VBR to MEMF_FAST"))
+    AROS_SHAH(BOOL, NOV=, NOVBRMOVE, /S, FALSE, "Don't move the VBR to MEMF_FAST"),
+    AROS_SHAH(BOOL, NOAGA=,   NOAGA, /S, FALSE, "Don't enable AGA modes"))
 {
     AROS_SHCOMMAND_INIT
 
     struct Library *SetPatchBase;
+    struct GfxBase *GfxBase;
 
     /* NOTE: This is currently a 'am I running on AROS' test, but
      *       we should use SetPatch/AddPatch() one day
@@ -187,6 +191,7 @@ AROS_SH4H(SetPatch, 41.3, "AROS SetPatch (m68k)",
         BOOL installed680x0 = FALSE;
         BOOL x68040 = FALSE, x68060 = FALSE;
 
+        GfxBase = (struct GfxBase*)OpenLibrary("graphics.library", 0);
         if (SysBase->AttnFlags & (AFF_68040 | AFF_68060)) {
             BOOL ox68040 = FALSE, ox68060 = FALSE;
 
@@ -216,13 +221,16 @@ AROS_SH4H(SetPatch, 41.3, "AROS SetPatch (m68k)",
         if (justinstalled680x0)
             patches(SHArg(QUIET), SHArg(NOCOPYMEM) ? 0 : 1);
  
-        if (SHArg(NOCACHE) == FALSE) {
+        if (!SHArg(NOCACHE)) {
             if (justinstalled680x0)
                 p5stuff(SHArg(QUIET));
             mmusetup(SHArg(QUIET));
         } else {
             CacheControl(0, CACRF_EnableD | CACRF_CopyBack | CACRF_DBE);
         }
+
+        if (!SHArg(NOAGA))
+            SetChipRev(SETCHIPREV_BEST);
 
         if (SHArg(QUIET) == FALSE) {
             ULONG flags;
@@ -236,8 +244,10 @@ AROS_SH4H(SetPatch, 41.3, "AROS SetPatch (m68k)",
                 Printf("Data Cache Enabled\n");
             if (flags & CACRF_CopyBack)
                 Printf("CopyBack Enabled\n");
+            if ((GfxBase->ChipRevBits0 & SETCHIPREV_AA) ==  SETCHIPREV_AA)
+                Printf("Enabled Advanced Graphics Modes\n");
         }
-
+        CloseLibrary(GfxBase);
         CloseLibrary(SetPatchBase);
     }
     return (SetPatchBase != NULL) ? RETURN_OK : RETURN_FAIL;
