@@ -20,6 +20,7 @@
 
 #include "dos_intern.h"
 #include "internalloadseg.h"
+#include "include/loadseg.h"
 
 #include <proto/dos.h>
 
@@ -489,6 +490,8 @@ done:
     }
 
     last_p = firsthunk;
+
+    register_hunk(fh, firsthunk, NULL, DOSBase);
 
     ilsFreeVec(hunktab);
     hunktab = NULL;
