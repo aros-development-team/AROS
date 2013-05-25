@@ -62,10 +62,8 @@ static void dumpbstr(const UBYTE *label, const UBYTE *str)
 }
 static void dumpinfo(struct ExecBase *SysBase, ULONG pc)
 {
-	struct DebugBase *DebugBase;
-	struct Task *t;
-	ULONG segNum;
-	BPTR segPtr;
+    struct DebugBase *DebugBase;
+    struct Task *t;
 
     t = SysBase->ThisTask;
     if (t) {
@@ -78,18 +76,24 @@ static void dumpinfo(struct ExecBase *SysBase, ULONG pc)
                 dumpbstr("CLI: ", BADDR(cli->cli_CommandName));
             }
         }
+        DebugPutStr("\n");
     }
     /* Better way to find DebugBase in Supervisor mode? */
     DebugBase = (struct DebugBase*)FindName(&SysBase->LibList, "debug.library");
     if (DebugBase) {
-        if (DecodeLocation(pc, DL_SegmentNumber, &segNum,  DL_SegmentPointer, &segPtr, TAG_DONE)) {
+        ULONG segNum;
+        BPTR segPtr;
+        char *modName;
+        if (DecodeLocation(pc, DL_SegmentNumber, &segNum,  DL_SegmentPointer, &segPtr, DL_ModuleName, &modName, TAG_DONE)) {
+            dumpstr("Module ", modName);
             DebugPutStr(" Hunk ");
             DebugPutHexVal(segNum);
             DebugPutStr("Offset ");
             DebugPutHexVal(pc - (ULONG)BADDR(segPtr));
+            DebugPutStr("Start ");
+            DebugPutHexVal((ULONG)BADDR(segPtr));
         }
     }
-    DebugPutStr("\n");
 }
 
 /* WARNING: Running in bus error exception.
