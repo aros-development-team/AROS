@@ -171,12 +171,13 @@ static void mmusetup(BOOL quiet)
 
 extern void patches(BOOL, ULONG);
 
-AROS_SH5H(SetPatch, 41.3, "AROS SetPatch (m68k)",
+AROS_SH6H(SetPatch, 41.4, "AROS SetPatch (m68k)",
     AROS_SHAH(BOOL, Q=,       QUIET, /S, FALSE, "Be quiet"),
     AROS_SHAH(BOOL, NOCA=,  NOCACHE, /S, FALSE, "Don't install cache patches"),
     AROS_SHAH(BOOL, NOCO=,NOCOPYMEM, /S, FALSE, "Don't install CopyMem patches"),
     AROS_SHAH(BOOL, NOV=, NOVBRMOVE, /S, FALSE, "Don't move the VBR to MEMF_FAST"),
-    AROS_SHAH(BOOL, NOAGA=,   NOAGA, /S, FALSE, "Don't enable AGA modes"))
+    AROS_SHAH(BOOL, NOAGA=,   NOAGA, /S, FALSE, "Don't enable AGA modes"),
+    AROS_SHAH(BOOL, DMMU=, DEBUGMMU, /S, FALSE, "MMU protect first page"))
 {
     AROS_SHCOMMAND_INIT
 
@@ -231,6 +232,14 @@ AROS_SH5H(SetPatch, 41.3, "AROS SetPatch (m68k)",
 
         if (!SHArg(NOAGA))
             SetChipRev(SETCHIPREV_BEST);
+
+        if (SHArg(DEBUGMMU)) {
+            /* Mark first page invalid, special handler only accepts ExecBase reads */
+            void *KernelBase = OpenResource("kernel.resource");
+            if (KernelBase) {
+                KrnSetProtection(0, PAGE_SIZE, 0);
+            }
+        }
 
         if (SHArg(QUIET) == FALSE) {
             ULONG flags;
