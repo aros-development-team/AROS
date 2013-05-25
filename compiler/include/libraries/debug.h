@@ -29,6 +29,7 @@
 #define DEBUG_NONE              0
 #define DEBUG_ELF               1
 #define DEBUG_PARTHENOPE        2
+#define DEBUG_HUNK              3
 
 /* ELF module debug information */
 struct ELF_DebugInfo
@@ -75,6 +76,12 @@ struct Parthenope_Symbol {
     CONST_STRPTR        s_name;
     ULONG               s_lowest;
     ULONG               s_highest;
+};
+
+/* HUNK module debug information */
+struct HUNK_DebugInfo
+{
+    APTR dummy;
 };
 
 #endif
