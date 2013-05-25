@@ -174,6 +174,27 @@ static LONG doInitCode(struct BootStruct *BootS)
 	    Supervisor((ULONG_FUNC)SuperstackSwap);
 	} while(0);
 
+	/* Move boot tags from temp supervisor stack. */
+	if (PrivExecBase(SysBase)->PlatformData.BootMsg) {
+		UWORD size = 0;
+		struct TagItem *bootmsg, *newbootmsg;
+
+		bootmsg = PrivExecBase(SysBase)->PlatformData.BootMsg;
+		while (bootmsg[size].ti_Tag)
+			size++;
+		newbootmsg = AllocMem(sizeof(struct TagItem) * (size + 1), MEMF_CLEAR | MEMF_PUBLIC);
+		if (newbootmsg) {
+			size = 0;
+			bootmsg = PrivExecBase(SysBase)->PlatformData.BootMsg;
+			while (bootmsg[size].ti_Tag) {
+				newbootmsg[size].ti_Tag = bootmsg[size].ti_Tag; 
+				newbootmsg[size].ti_Data = bootmsg[size].ti_Data;
+				size++;
+			}
+		}
+		PrivExecBase(SysBase)->PlatformData.BootMsg = newbootmsg;
+	}
+
 	InitCode(RTF_COLDSTART, 0);
 
 	return 0;
