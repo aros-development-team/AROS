@@ -131,56 +131,50 @@ static UBYTE *getport(struct ata_ProbedBus *ddata)
 
 static int ata_Scan(struct ataBase *base)
 {
-    OOP_Object *ata = OOP_NewObject(NULL, CLID_HW_ATA, NULL);
     struct ata_ProbedBus *probedbus;
 
-    /* First make sure that ATA subsystem is in place */
-    if (!ata)
-        return FALSE;
     probedbus = AllocVec(sizeof(struct ata_ProbedBus), MEMF_ANY | MEMF_CLEAR);
-    if (!probedbus)
-        return FALSE;
-    if (!getport(probedbus)) {
-        FreeVec(probedbus);
-        return FALSE;
-    }
-    HWBase = OOP_GetMethodID(IID_HW, 0);
-    struct TagItem attrs[] =
-    {
-        {aHidd_DriverData         , (IPTR)probedbus                    },
-        {aHidd_ATABus_PIODataSize , sizeof(struct pio_data)            },
-        {aHidd_ATABus_BusVectors  , (IPTR)bus_FuncTable                },
-        {aHidd_ATABus_PIOVectors  , (IPTR)pio_FuncTable                },
-        {aHidd_ATABus_KeepEmpty   , FALSE                              },
-        {TAG_DONE                 , 0                                  }
-    };
-    OOP_Object *bus;
+    if (probedbus && getport(probedbus)) {
+        OOP_Object *ata = OOP_NewObject(NULL, CLID_HW_ATA, NULL);
+        if (ata) {
+            HWBase = OOP_GetMethodID(IID_HW, 0);
+            struct TagItem attrs[] =
+            {
+                {aHidd_DriverData         , (IPTR)probedbus                    },
+                {aHidd_ATABus_PIODataSize , sizeof(struct pio_data)            },
+                {aHidd_ATABus_BusVectors  , (IPTR)bus_FuncTable                },
+                {aHidd_ATABus_PIOVectors  , (IPTR)pio_FuncTable                },
+                {aHidd_ATABus_KeepEmpty   , FALSE                              },
+                {TAG_DONE                 , 0                                  }
+            };
+            OOP_Object *bus;
+            
+            /*
+             * We use this field as ownership indicator.
+             * The trick is that HW_AddDriver() fails if either object creation fails
+             * or subsystem-side setup fails. In the latter case our object will be
+             * disposed.
+             * We need to know whether OOP_DisposeObject() or we should deallocate
+             * this structure on failure.
+             */
+            probedbus->atapb_Node.ln_Succ = NULL;
 
-    /*
-     * We use this field as ownership indicator.
-     * The trick is that HW_AddDriver() fails if either object creation fails
-     * or subsystem-side setup fails. In the latter case our object will be
-     * disposed.
-     * We need to know whether OOP_DisposeObject() or we should deallocate
-     * this structure on failure.
-     */
-    probedbus->atapb_Node.ln_Succ = NULL;
+            bus = HW_AddDriver(ata, base->busClass, attrs);
+            if (bus)
+                return TRUE;
+            D(bug("[GAYLE-ATA] Failed to create object for device IO: %x:%x IRQ: %x\n",
+                probedbus->port, probedbus->altport, probedbus->gayleirqbase));
 
-    bus = HW_AddDriver(ata, base->busClass, attrs);
-    if (!bus)
-    {
-        D(bug("[GAYLE-ATA] Failed to create object for device IO: %x:%x IRQ: %x\n",
-            probedbus->port, probedbus->altport, probedbus->gayleirqbase));
-
-        /*
-         * Free the structure only upon object creation failure!
-         * In case of success it becomes owned by the driver object!
-         */
-        if (!probedbus->atapb_Node.ln_Succ)
-        {
-            FreeVec(probedbus);
+            /*
+             * Free the structure only upon object creation failure!
+             * In case of success it becomes owned by the driver object!
+             */
+            if (!probedbus->atapb_Node.ln_Succ)
+                 FreeVec(probedbus);
+            return TRUE;
         }
     }
+    FreeVec(probedbus);
 
     return TRUE;
 }
