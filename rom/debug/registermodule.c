@@ -49,6 +49,36 @@ static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR val
     mod->m_symcnt++;
 }
 
+static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType, APTR DebugInfo, struct Library *DebugBase)
+{
+    module_t *mod;
+    int i = 0;
+
+    mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC|MEMF_CLEAR);
+    if (!mod)
+        return;
+    strcpy(mod->m_name, name);
+    while (segList) {
+        ULONG *segPtr = BADDR(segList);
+        struct segment *seg = AllocMem(sizeof(struct segment), MEMF_PUBLIC | MEMF_CLEAR);
+        if (seg) {
+            seg->s_lowest  = (UBYTE*)segPtr - 4;
+            seg->s_highest = (UBYTE*)segPtr + segPtr[-1];
+            seg->s_seg     = segList;
+            seg->s_num     = i;
+            seg->s_mod     = mod;
+            mod->m_segcnt++;
+            ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+            AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)seg);
+            ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+            D(bug("[Debug] Adding segment %d 0x%p (%p-%p)\n", i, segList, seg->s_lowest, seg->s_highest));
+        }
+        segList = *(BPTR *)BADDR(segList);
+        i++;
+    }
+}
+
+
 /*****************************************************************************
 
     NAME */
@@ -302,7 +332,8 @@ AROS_LH4(void, RegisterModule,
                 }
             }
         }
+    } else if (debugType == DEBUG_HUNK) {
+        RegisterModule_Hunk(name, segList, debugType, debugInfo, DebugBase);
     }
-
     AROS_LIBFUNC_EXIT
 }

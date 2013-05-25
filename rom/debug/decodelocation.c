@@ -23,8 +23,9 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
     dbg_sym_t *sym = mod->m_symbols;
     unsigned int i;
 
+    /* Caller didn't care about symbols? */
     if (!addr)
-	return FALSE;
+	return TRUE;
 
     for (i = 0; i < mod->m_symcnt; i++)
     {
