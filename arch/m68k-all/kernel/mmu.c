@@ -330,11 +330,14 @@ static BOOL map_region2(struct KernelBase *kb, void *addr, void *physaddr, ULONG
 			return FALSE;
 		descc = LEVELC(descb, addr);
 
+		if (addr == 0 && pd->zeropagedescriptor == NULL) {
+			/* special case zero page handling */
+			pd->zeropagedescriptor = (UBYTE*)(& LEVELC(descb, addr)) + 3;
+		}
+
 		if (invalid) {
 			pagedescriptor = INVALID_DESCRIPTOR;
 			if (addr == 0 && size == page_size) {
-				/* special case zero page handling */
-				pd->zeropagedescriptor = (UBYTE*)(& LEVELC(descb, addr)) + 3;
 				pagedescriptor = ((ULONG)physaddr) & ~page_mask;
 				if (mmutype == MMU030) {
 					pagedescriptor |= 4;
