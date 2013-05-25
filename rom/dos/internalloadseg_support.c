@@ -31,6 +31,33 @@ void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *s
             }
             FreeMem(buffer, 512);
         }
-// ??        CloseLibrary(DebugBase);
+    }
+}
+
+void register_hunk(BPTR file, BPTR hunks, APTR header, struct DosLibrary *DOSBase)
+{
+    if (DebugBase)
+    {
+        char *buffer = AllocMem(512, MEMF_ANY);
+
+        if (buffer) {
+            if (NameFromFH(file, buffer, 512))
+            {
+                char *nameptr = buffer;
+                struct HUNK_DebugInfo dbg = { header };
+
+
+    /* gdb support needs full paths */
+#if !AROS_MODULES_DEBUG
+                /* First, go through the name, till end of the string */
+                while(*nameptr++);
+                /* Now, go back until either ":" or "/" is found */
+                while(nameptr > buffer && nameptr[-1] != ':' && nameptr[-1] != '/')
+                    nameptr--;
+#endif
+                RegisterModule(nameptr, hunks, DEBUG_HUNK, &dbg);
+            }
+            FreeMem(buffer, 512);
+        }
     }
 }
