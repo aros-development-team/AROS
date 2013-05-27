@@ -576,6 +576,10 @@ void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *s
 {
 
 }
+void register_hunk(BPTR file, BPTR hunks, APTR header, struct DosLibrary *DOSBase)
+{
+
+}
 
 static BPTR ROMLoad(BSTR bfilename)
 {
