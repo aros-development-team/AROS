@@ -38,8 +38,8 @@
     Force the USB chipset to run in Host mode
     AFAIK Poseidon doesnt support device mode? - TODO
 */
-#define OTG_FORCEHOSTMODE
-#define OTG_FORCEDEVICEMODE
+//#define OTG_FORCEHOSTMODE
+//#define OTG_FORCEDEVICEMODE
 
 /* Reply the iorequest with success */
 #define RC_OK	      0
@@ -63,6 +63,7 @@ struct USB2OTGUnit
     struct Unit         hu_Unit;
     APTR                hu_GlobalIRQHandle;
     UBYTE		hu_OperatingMode;            /* HOST/DEVICE mode */
+    UBYTE		hu_HubAddr;
     UBYTE               hu_HostChans;
     UBYTE               hu_DevEPs;
     UBYTE               hu_DevInEPs;
@@ -84,6 +85,7 @@ struct USB2OTGDevice
 };
 
 #define FNAME_DEV(x)    USB2OTG__Dev__ ## x
+#define FNAME_HUB(x)    USB2OTG__Hub__ ## x
 
 #ifdef UtilityBase
 #undef UtilityBase
@@ -116,5 +118,7 @@ WORD                    FNAME_DEV(cmdControlXFer)(struct IOUsbHWReq *, struct US
 WORD                    FNAME_DEV(cmdBulkXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 WORD                    FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 WORD                    FNAME_DEV(cmdIsoXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+
+WORD                    FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 
 #endif /* USB2OTG_INTERN_H */
