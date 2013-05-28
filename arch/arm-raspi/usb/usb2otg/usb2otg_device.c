@@ -32,7 +32,7 @@ static void GlobalIRQHandler(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBa
  */
 static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 {
-    unsigned int otg_RegVal, otg_OperatingMode = 0;
+    volatile unsigned int otg_RegVal, otg_OperatingMode = 0;
 
     D(bug("[USB2OTG] %s: USB2OTGBase @ 0x%p, SysBase @ 0x%p\n",
                  __PRETTY_FUNCTION__, USB2OTGBase, SysBase));
@@ -73,7 +73,6 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                 D(bug("[USB2OTG] %s: Allocated MemPool @ 0x%p\n",
                             __PRETTY_FUNCTION__, USB2OTGBase->hd_MemPool));
 
-//                otg_RegVal = *((volatile unsigned int *)USB2OTG_INTR);
 #if !defined(OTG_FORCEDEVICEMODE)
                 otg_OperatingMode |= USB2OTG_USBHOSTMODE;
                 D(
@@ -107,12 +106,13 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                 __PRETTY_FUNCTION__, otg_RegVal);
                     )
 
+#if (0)
                     D(bug("[USB2OTG] %s: Disabling USB Interrupts (Globaly)..\n", __PRETTY_FUNCTION__));
                     otg_RegVal = *((volatile unsigned int *)USB2OTG_AHB);
                     otg_RegVal &= ~USB2OTG_AHB_INTENABLE;
                     *((volatile unsigned int *)USB2OTG_AHB) = otg_RegVal;
                     D(bug("[USB2OTG] %s: AHB : %08x\n", __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_AHB)));
-
+#endif
                     D(bug("[USB2OTG] %s: Performing Soft Disconnect ..\n", __PRETTY_FUNCTION__));
                     *((volatile unsigned int *)USB2OTG_DEVCTRL) = (1 << 1);
 
@@ -184,9 +184,6 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
             USB2OTGBase = NULL;
         }
     }
-
-    D(bug("[USB2OTG] %s: OpenCnt = %ld\n",
-                __PRETTY_FUNCTION__, USB2OTGBase ? USB2OTGBase->hd_Library.lib_OpenCnt : 0 ));
 
     return USB2OTGBase ? TRUE : FALSE;
 }

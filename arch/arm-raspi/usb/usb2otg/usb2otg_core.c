@@ -54,11 +54,12 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
 
             if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBHOSTMODE))
             {
+                D(bug("[USB2OTG] %s: Configuring USB Core HOST mode -:\n",
+                            __PRETTY_FUNCTION__));
+
                 if ((otg_Unit->hu_HostChans = ((otg_RegVal & (0xF << 14)) >> 14) + 1) > EPSCHANS_MAX)
                     otg_Unit->hu_HostChans = EPSCHANS_MAX;
-                
-                D(bug("[USB2OTG] %s: USB Core HOST mode -:\n",
-                            __PRETTY_FUNCTION__));
+
                 D(bug("[USB2OTG] %s:      Channels: %d\n",
                             __PRETTY_FUNCTION__, otg_Unit->hu_HostChans));
 
@@ -76,19 +77,20 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
 
                 D(bug("[USB2OTG] %s: Enabling HOST Channel Interrupts ...\n",
                             __PRETTY_FUNCTION__));
-                *((volatile unsigned int *)USB2OTG_HOSTINTRMASK) = (1 << otg_Unit->hu_HostChans) - 1;
+                *((volatile unsigned int *)USB2OTG_HOSTINTRMASK) = (1U << otg_Unit->hu_HostChans) - 1U;
             }
 
             if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBDEVICEMODE))
             {
+                D(bug("[USB2OTG] %s: Configuring USB Core DEVICE mode -:\n",
+                            __PRETTY_FUNCTION__));
+
                 if ((otg_Unit->hu_DevEPs = ((otg_RegVal & (0xF << 10)) >> 10) + 1) > EPSCHANS_MAX)
                     otg_Unit->hu_DevEPs = EPSCHANS_MAX;
 
                 otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE4);
                 otg_Unit->hu_DevInEPs = ((otg_RegVal & (0xF << 26)) >> 26) + 1;
 
-                D(bug("[USB2OTG] %s: USB Core DEVICE mode -:\n",
-                            __PRETTY_FUNCTION__));
                 D(bug("[USB2OTG] %s:      Endpoints: %d/%d\n",
                             __PRETTY_FUNCTION__, otg_Unit->hu_DevInEPs, otg_Unit->hu_DevEPs));
 
@@ -96,13 +98,21 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                     D(bug("[USB2OTG] %s:      Endpoint #%d ", __PRETTY_FUNCTION__, chan));
                     if (chan < otg_Unit->hu_DevInEPs)
                     {
-                        D(bug("IN_CTL: %08x\n", *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL))));
+                        D(bug("IN_CTL: %08x, ", *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL))));
                     }
-                    else
-                    {
-                        D(bug("OUT_CTL: %08x\n", *((volatile unsigned int *)(USB2OTG_DEV_OUTEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_OUTEP_DOEPCTL))));
-                    }
+                    D(bug("OUT_CTL: %08x\n", *((volatile unsigned int *)(USB2OTG_DEV_OUTEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_OUTEP_DOEPCTL))));
                 }
+            }
+
+            D(bug("[USB2OTG] %s: Reset Rx Fifo...\n",
+                        __PRETTY_FUNCTION__));
+            *((volatile unsigned int *)USB2OTG_RESET) = (1 << 4);
+
+            if (otg_Unit->hu_OperatingMode)
+            {
+                D(bug("[USB2OTG] %s: Reset Tx Fifo...\n",
+                            __PRETTY_FUNCTION__));
+                *((volatile unsigned int *)USB2OTG_RESET) = (1 << 5) | (0x10 << 6);
             }
 
             otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE3);
@@ -119,11 +129,59 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
             D(bug("[USB2OTG] %s:      FIFO: %d bytes\n",
                         __PRETTY_FUNCTION__, ((otg_RegVal & (0xFFFF << 16)) >> 16) << 2));
 
+#if (0)
             otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE4);
             D(bug("[USB2OTG] %s: Xfer Size: %0x\n",
                         __PRETTY_FUNCTION__, (otg_RegVal & 0xF)));
+#endif
 
+            D(bug("[USB2OTG] %s: Configuring Interrupts ...\n",
+                        __PRETTY_FUNCTION__));
+
+            *((volatile unsigned int *)USB2OTG_INTRMASK) = 
+                (USB2OTG_INTRCORE_ENUMERATIONDONE|USB2OTG_INTRCORE_USBRESET|USB2OTG_INTRCORE_USBSUSPEND) |
+                (USB2OTG_INTRCORE_INENDPOINT|USB2OTG_INTRCORE_RECEIVESTATUSLEVEL|USB2OTG_INTRCORE_SESSIONREQUEST|USB2OTG_INTRCORE_OTG|USB2OTG_INTRCORE_HOSTCHANNEL|USB2OTG_INTRCORE_PORT);
+
+            if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBDEVICEMODE))
+            {
+                otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
+                if (otg_RegVal & (1 << 20))
+                {
+                    D(bug("[USB2OTG] %s: Multi-Process Interrupts ...\n",
+                        __PRETTY_FUNCTION__));
+                    for (chan = 0; chan < otg_Unit->hu_DevInEPs; chan++) {
+//                        *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)) = (1 << 0);
+//                        *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)) = 0;
+                        *((volatile unsigned int *)USB2OTG_DEVEACHINTMSK) = 0xFFFF;
+                    }
+                }
+                else
+                {
+                    *((volatile unsigned int *)USB2OTG_DEVINEPMASK) = (1 << 0);
+                    *((volatile unsigned int *)USB2OTG_DEVOUTEPMASK) = 0;
+                    *((volatile unsigned int *)USB2OTG_DEVINTRMASK) = 0xFFFF;
+                }
+            }
+
+            if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBHOSTMODE))
+            {
+		D(bug("[USB2OTG] %s: Setup Host Clocks ...\n",
+                        __PRETTY_FUNCTION__));
+		otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTCFG);
+		otg_RegVal &= ~((1 << 2) | 0x3);
+		otg_RegVal |= (1 << 0);
+		*((volatile unsigned int *)USB2OTG_HOSTCFG) = otg_RegVal;
+            }
+
+            D(bug("[USB2OTG] %s: Enabling Global Interrupts ...\n",
+                        __PRETTY_FUNCTION__));
+            *((volatile unsigned int *)USB2OTG_AHB) = USB2OTG_AHB_INTENABLE;
         }
+        
+        otg_RegVal = *((volatile unsigned int *)USB2OTG_OTGCTRL);
+        D(bug("[USB2OTG] %s: OTG Control: %08x\n",
+                    __PRETTY_FUNCTION__, otg_RegVal));
+
         return (&otg_Unit->hu_Unit);
     }
 
@@ -312,6 +370,21 @@ WORD FNAME_DEV(cmdControlXFer)(struct IOUsbHWReq *ioreq,
 {
     D(bug("[USB2OTG] UHCMD_CONTROLXFER(unit:0x%p, ioreq:0x%p)\n",
                 otg_Unit, ioreq));
+
+#if (0)
+    if(!(ioreq->iouh_State & UHSF_OPERATIONAL))
+    {
+        return(UHIOERR_USBOFFLINE);
+    }
+#endif
+
+    if(ioreq->iouh_DevAddr == otg_Unit->hu_HubAddr)
+    {
+        return(FNAME_HUB(cmdControlXFer)(ioreq, otg_Unit, USB2OTGBase));
+    }
+
+    D(bug("[USB2OTG] UHCMD_CONTROLXFER: DevAddr #%ld\n",
+                ioreq->iouh_DevAddr));
 
     return (WORD)UHIOERR_USBOFFLINE;
 }
