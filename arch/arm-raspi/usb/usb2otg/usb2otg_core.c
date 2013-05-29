@@ -39,8 +39,8 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
     struct USB2OTGUnit *otg_Unit = NULL;
     volatile unsigned int        otg_RegVal, chan;
 
-    D(bug("[USB2OTG] %s(unit:0x%p, ioreq:0x%p)\n",
-                __PRETTY_FUNCTION__, otg_Unit, ioreq));
+    D(bug("[USB2OTG] %s(ioreq:0x%p, unit#%d)\n",
+                __PRETTY_FUNCTION__, ioreq, unitnr));
 
     // We only support a single unit presently
     if ((unitnr == 0) && (USB2OTGBase->hd_Unit))
@@ -185,7 +185,7 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
         return (&otg_Unit->hu_Unit);
     }
 
-    return(NULL);
+    return (NULL);
 }
 
 void FNAME_DEV(CloseUnit)(struct IOUsbHWReq *ioreq, struct USB2OTGUnit *otg_Unit, LIBBASETYPEPTR USB2OTGBase)
@@ -374,13 +374,13 @@ WORD FNAME_DEV(cmdControlXFer)(struct IOUsbHWReq *ioreq,
 #if (0)
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL))
     {
-        return(UHIOERR_USBOFFLINE);
+        return (UHIOERR_USBOFFLINE);
     }
 #endif
 
     if(ioreq->iouh_DevAddr == otg_Unit->hu_HubAddr)
     {
-        return(FNAME_HUB(cmdControlXFer)(ioreq, otg_Unit, USB2OTGBase));
+        return (FNAME_HUB(cmdControlXFer)(ioreq, otg_Unit, USB2OTGBase));
     }
 
     D(bug("[USB2OTG] UHCMD_CONTROLXFER: DevAddr #%ld\n",
