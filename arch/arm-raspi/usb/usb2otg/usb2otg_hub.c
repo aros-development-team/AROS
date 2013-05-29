@@ -137,6 +137,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
 
                         default:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Unsupported Descriptor %04lx\n", idx));
+                            break;
                     }
                     break;
 
@@ -227,6 +228,9 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             case UFS_C_PORT_CONNECTION:
                             case UFS_C_PORT_OVER_CURRENT:
                         */
+                        default:
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_SET_FEATURE - Unhandled feature #%d\n", val));
+                            break;
                     }
                     if (cmdgood)
                     {
@@ -254,7 +258,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     switch (val)
                     {
                         case UFS_PORT_ENABLE:
-                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Disabling Port\n"));
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port Enable\n"));
 #if (0)
                             newval &= ~UHPF_PORTENABLE;
                             // disable enumeration
@@ -264,6 +268,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             break;
 
                         case UFS_PORT_SUSPEND:
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port Suspend\n"));
 #if (0)
                             newval &= ~UHPF_PORTSUSPEND;
 #endif
@@ -271,7 +276,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             break;
 
                         case UFS_PORT_POWER:
-                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Disabling Power\n"));
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port Power\n"));
 #if (0)
                             newval &= ~UHPF_PORTENABLE;
 #endif
@@ -279,6 +284,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             break;
 
                         case UFS_C_PORT_CONNECTION:
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port Connect Change\n"));
 #if (0)
                             newval |= UHPF_CONNECTCHANGE; // clear-on-write!
                             hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_CONNECTION;
@@ -287,6 +293,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             break;
 
                         case UFS_C_PORT_ENABLE:
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port Enable Change\n"));
 #if (0)
                             newval |= UHPF_ENABLECHANGE; // clear-on-write!
                             hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_ENABLE;
@@ -295,6 +302,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             break;
 
                         case UFS_C_PORT_SUSPEND:
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port Suspend Change\n"));
 #if (0)
                             hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_SUSPEND; // manually fake suspend change clearing
 #endif
@@ -302,6 +310,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             break;
 
                         case UFS_C_PORT_OVER_CURRENT:
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port Over-Current Change\n"));
 #if (0)
                             hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_OVER_CURRENT; // manually fake over current clearing
 #endif
@@ -309,10 +318,14 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             break;
 
                         case UFS_C_PORT_RESET:
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE Port Reset Change\n"));
 #if (0)
                             hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_RESET; // manually fake reset change clearing
 #endif
                             cmdgood = TRUE;
+                            break;
+                        default:
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: USR_CLEAR_FEATURE - Unhandled feature #%d\n", val));
                             break;
                     }
                     if (cmdgood)
@@ -393,10 +406,14 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                 case USR_GET_STATUS:
                 {
                     UWORD *mptr = ioreq->iouh_Data;
+
+                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: GetDCStatus (%ld)\n", len));
+
                     if (len < sizeof(struct UsbHubStatus))
                     {
                         return(UHIOERR_STALL);
                     }
+
                     *mptr++ = 0;
                     *mptr++ = 0;
                     ioreq->iouh_Actual = 4;
@@ -441,6 +458,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
 
                         default:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Unsupported Descriptor %04lx\n", idx));
+                            break;
                     }
                     break;
             }
