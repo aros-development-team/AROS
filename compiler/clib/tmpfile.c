@@ -13,6 +13,9 @@
 #include <proto/dos.h>
 #include <unistd.h>
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -94,6 +97,7 @@
   strcpy(filename, TEMPLATE);
 
   mktemp(filename);
+  D(bug("[posixc/tmpfile()] filename: %s\n", filename));
   fp = fopen(filename, "w+");
   /* unlink(filename); -- see BUG1 in BUGS section */
   free(filename);
