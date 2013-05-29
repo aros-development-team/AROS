@@ -28,14 +28,14 @@ struct OTGHubCfg
     struct UsbStdCfgDesc HubCfgDesc;
     struct UsbStdIfDesc  HubIfDesc;
     struct UsbStdEPDesc  HubEPDesc;
-};
+} __attribute__((packed));
 
 const struct OTGHubCfg OTGRootHubCfg =
 {
     .HubCfgDesc = {
         sizeof(struct UsbStdCfgDesc),
         UDT_CONFIGURATION,
-        AROS_WORD2LE(9+9+7),
+        AROS_WORD2LE(sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc) + sizeof(struct UsbStdEPDesc)),
         1,
         1,
         3,

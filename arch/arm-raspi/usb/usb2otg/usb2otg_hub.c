@@ -201,13 +201,13 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             uhwDelayMS(15, otg_Unit);
                             oldval = READREG32_LE(hc->hc_RegBase, portreg);
 #endif
-                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: OHCI: Reset release\n"));
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Reset release\n"));
 #if (0)
                             if(oldval & OHPF_PORTRESET)
                             {
                                  uhwDelayMS(40, otg_Unit);
                                  oldval = READREG32_LE(hc->hc_RegBase, portreg);
-                                 D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: OHCI: Reset 2nd release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
+                                 D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Reset 2nd release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                                                                                   oldval & OHPF_PORTENABLE ? "enabled" : "still not enabled"));
                             }
                             // make enumeration possible
@@ -217,7 +217,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             break;
 
                         case UFS_PORT_POWER:
-                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: OHCI: Powering Port\n"));
+                            D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Powering Port\n"));
 //                            WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTPOWER);
                             cmdgood = TRUE;
                             break;
@@ -361,8 +361,8 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     if(oldval & UHPF_PORTRESET) *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
                     if(oldval & UHPF_PORTSUSPEND) *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
 
-                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: UHCI Port %ld is %s\n", idx, oldval & UHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED"));
-                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: UHCI Port %ld Status %08lx\n", idx, *mptr));
+                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port %ld is %s\n", idx, oldval & UHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED"));
+                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port %ld Status %08lx\n", idx, *mptr));
 
                     mptr++;
                     if(oldval & UHPF_ENABLECHANGE)
@@ -379,7 +379,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     }
                     *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
                     WRITEIO16_LE(hc->hc_RegBase, portreg, oldval);
-                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: UHCI Port %ld Change %08lx\n", idx, *mptr));
+                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port %ld Change %08lx\n", idx, *mptr));
 #endif
                     return (0);
                 }
