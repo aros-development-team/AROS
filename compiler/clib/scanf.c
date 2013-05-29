@@ -47,8 +47,6 @@
 
     va_end (args);
 
-    fflush (stdout);
-
     return retval;
 } /* scanf */
 
