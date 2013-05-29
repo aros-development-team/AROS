@@ -37,7 +37,7 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                         LIBBASETYPEPTR USB2OTGBase)
 {
     struct USB2OTGUnit *otg_Unit = NULL;
-    unsigned int        otg_RegVal, chan;
+    volatile unsigned int        otg_RegVal, chan;
 
     D(bug("[USB2OTG] %s(unit:0x%p, ioreq:0x%p)\n",
                 __PRETTY_FUNCTION__, otg_Unit, ioreq));

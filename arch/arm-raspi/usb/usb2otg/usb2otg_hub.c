@@ -30,92 +30,90 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
     ULONG cnt;
 
 #if defined(OTG_FORCEHOSTMODE)
-    if(ioreq->iouh_Endpoint)
+    if (ioreq->iouh_Endpoint)
     {
-        return(UHIOERR_STALL);
+        return (UHIOERR_STALL);
     }
 #endif
 
-    if(len != ioreq->iouh_Length)
+    if (len != ioreq->iouh_Length)
     {
         D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: IOReq Len mismatch! %ld != %ld\n", len, ioreq->iouh_Length));
-        return(UHIOERR_STALL);
+        return (UHIOERR_STALL);
     }
-    switch(rt)
+    switch (rt)
     {
         case (URTF_STANDARD|URTF_DEVICE):
-            switch(req)
+            switch (req)
             {
                 case USR_SET_ADDRESS:
-                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: SetAddress to #%ld\n", val));
+                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Set Device Address to #%ld\n", val));
                     otg_Unit->hu_HubAddr = val;
                     ioreq->iouh_Actual = len;
-                    return(0);
+                    return (0);
 
                 case USR_SET_CONFIGURATION:
-                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: SetConfiguration to #%ld\n", val));
+                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Set Device Configuration to #%ld\n", val));
                     ioreq->iouh_Actual = len;
-                    return(0);
+                    return (0);
             }
             break;
 
         case (URTF_IN|URTF_STANDARD|URTF_DEVICE):
-            switch(req)
+            switch (req)
             {
+                case USR_GET_STATUS:
+                    D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: GetStatus (%ld)\n", len));
+                    if (len == 2);
+                    {
+                        UWORD *mptr = ioreq->iouh_Data;
+                        *mptr++ = AROS_WORD2LE(U_GSF_SELF_POWERED);
+                        return (0);
+                    }
+                    break;
+
                 case USR_GET_DESCRIPTOR:
-                    switch(val >> 8)
+                    switch (val >> 8)
                     {
                         case UDT_DEVICE:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: GetDeviceDescriptor (%ld)\n", len));
                             ioreq->iouh_Actual = (len > sizeof(struct UsbStdDevDesc)) ? sizeof(struct UsbStdDevDesc) : len;
-                            CopyMem((APTR) &OTGRootHubDevDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
-                            return(0);
+                            CopyMem((APTR)&OTGRootHubDevDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+
+                            return (0);
 
                         case UDT_CONFIGURATION:
-                        {
-                            UBYTE tmpbuf[sizeof(struct OTGHubCfg)];
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: GetConfigDescriptor (%ld)\n", len));
-                            CopyMem((APTR) &OTGRootHubCfg, tmpbuf, sizeof(struct OTGHubCfg));
-                            struct UsbStdEPDesc *usepd = (struct UsbStdEPDesc *) &tmpbuf[9+9];
-                            usepd->bInterval = 12; // 2048 µFrames
                             ioreq->iouh_Actual = (len > sizeof(struct OTGHubCfg)) ? sizeof(struct OTGHubCfg) : len;
-                            CopyMem(tmpbuf, ioreq->iouh_Data, ioreq->iouh_Actual);
-                            return(0);
-                        }
+                            CopyMem((APTR)&OTGRootHubCfg, ioreq->iouh_Data, ioreq->iouh_Actual);
+
+                            return (0);
 
                         case UDT_STRING:
-                            if(val & 0xFF) /* get lang array */
+                            if (val & 0xFF) /* get lang array */
                             {
                                 CONST_STRPTR source = NULL;
                                 UWORD *mptr = ioreq->iouh_Data;
-                                UWORD slen = 1;
+                                UWORD slen;
                                 D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: GetString %04lx (%ld)\n", val, len));
-                                if((val & 0xFF) > 4) /* index too high? */
+                                if ((val & 0xFF) > 4) /* index too high? */
                                 {
-                                    return(UHIOERR_STALL);
+                                    return (UHIOERR_STALL);
                                 }
+
                                 source = OTGRootHubStrings[(val & 0xFF) - 1];
-                                if(len > 1)
+                                slen = strlen(source);
+
+                                if (len > 1)
                                 {
                                     ioreq->iouh_Actual = 2;
-                                    while(*source++)
+                                    *mptr++ = AROS_WORD2BE((slen << 9)|UDT_STRING);
+                                    /* "expand" string to utf16 */
+                                    while ((ioreq->iouh_Actual + 1) < len)
                                     {
-                                        slen++;
-                                    }
-                                    source = OTGRootHubStrings[(val & 0xFF) - 1];
-                                    *mptr++ = AROS_WORD2BE((slen<<9)|UDT_STRING);
-                                    while(ioreq->iouh_Actual+1 < len)
-                                    {
-                                        // special hack for unit number in root hub string
-                                        if(((val & 0xFF) == 2) && (source[1] == 0))
-                                        {
-                                            *mptr++ = AROS_WORD2LE('0');
-                                        } else {
-                                            *mptr++ = AROS_WORD2LE(*source);
-                                        }
-                                        source++;
+                                        *mptr++ = AROS_WORD2LE(*source++);
                                         ioreq->iouh_Actual += 2;
-                                        if(!(*source))
+                                        if (!(*source))
                                         {
                                             break;
                                         }
@@ -124,18 +122,18 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             } else {
                                 UWORD *mptr = ioreq->iouh_Data;
                                 D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: GetLangArray %04lx (%ld)\n", val, len));
-                                if(len > 1)
+                                if (len > 1)
                                 {
                                    ioreq->iouh_Actual = 2;
-                                   mptr[0] = AROS_WORD2BE((4<<8)|UDT_STRING);
-                                   if(len > 3)
+                                   mptr[0] = AROS_WORD2BE((4 << 8)|UDT_STRING);
+                                   if (len > 3)
                                    {
                                       ioreq->iouh_Actual += 2;
                                       mptr[1] = AROS_WORD2LE(0x0409);
                                    }
                                 }
                             }
-                            return(0);
+                            return (0);
 
                         default:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Unsupported Descriptor %04lx\n", idx));
@@ -143,25 +141,25 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     break;
 
                 case USR_GET_CONFIGURATION:
-                    if(len == 1)
+                    if (len == 1)
                     {
                         D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: GetConfiguration\n"));
                         ((UBYTE *) ioreq->iouh_Data)[0] = 1;
                         ioreq->iouh_Actual = len;
-                        return(0);
+                        return (0);
                     }
                     break;
             }
             break;
 
         case (URTF_CLASS|URTF_OTHER):
-            switch(req)
+            switch (req)
             {
                 case USR_SET_FEATURE:
                     if ((!idx) && (idx > 1))
                     {
                         D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port %ld out of range\n", idx));
-                        return(UHIOERR_STALL);
+                        return (UHIOERR_STALL);
                     }
 
 //                    hciport = idx - 1;
@@ -172,7 +170,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
 //                    UWORD portreg = OHCI_PORTSTATUS + (hciport<<2);
 //                    ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
 
-                    switch(val)
+                    switch (val)
                     {
                         case UFS_PORT_ENABLE:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Enabling Port\n"));
@@ -230,18 +228,18 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             case UFS_C_PORT_OVER_CURRENT:
                         */
                     }
-                    if(cmdgood)
+                    if (cmdgood)
                     {
-                        return(0);
+                        return (0);
                     }
 
                     break;
 
                 case USR_CLEAR_FEATURE:
-                    if((!idx) && (idx > 1))
+                    if ((!idx) && (idx > 1))
                     {
                         D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port %ld out of range\n", idx));
-                        return(UHIOERR_STALL);
+                        return (UHIOERR_STALL);
                     }
 //                    hciport = idx - 1;
 
@@ -253,7 +251,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     ULONG oldval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE); // these are clear-on-write!
                     ULONG newval = oldval;
 #endif
-                    switch(val)
+                    switch (val)
                     {
                         case UFS_PORT_ENABLE:
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Disabling Port\n"));
@@ -317,7 +315,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             cmdgood = TRUE;
                             break;
                     }
-                    if(cmdgood)
+                    if (cmdgood)
                     {
 //                        D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port %ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval));
 #if (0)
@@ -329,7 +327,7 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             otg_Unit->hu_RootPortChanges &= ~(1UL<<idx);
                         }
 #endif
-                        return(0);
+                        return (0);
                     }
                     break;
 
@@ -337,19 +335,19 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
             break;
 
         case (URTF_IN|URTF_CLASS|URTF_OTHER):
-            switch(req)
+            switch (req)
             {
                 case USR_GET_STATUS:
                 {
                     UWORD *mptr = ioreq->iouh_Data;
-                    if(len != sizeof(struct UsbPortStatus))
+                    if (len != sizeof(struct UsbPortStatus))
                     {
-                        return(UHIOERR_STALL);
+                        return (UHIOERR_STALL);
                     }
-                    if((!idx) && (idx > 1))
+                    if ((!idx) && (idx > 1))
                     {
                         D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Port %ld out of range\n", idx));
-                        return(UHIOERR_STALL);
+                        return (UHIOERR_STALL);
                     }
 //                    hciport = idx - 1;
 
@@ -383,30 +381,30 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                     WRITEIO16_LE(hc->hc_RegBase, portreg, oldval);
                     D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: UHCI Port %ld Change %08lx\n", idx, *mptr));
 #endif
-                    return(0);
+                    return (0);
                 }
 
             }
             break;
 
         case (URTF_IN|URTF_CLASS|URTF_DEVICE):
-            switch(req)
+            switch (req)
             {
                 case USR_GET_STATUS:
                 {
                     UWORD *mptr = ioreq->iouh_Data;
-                    if(len < sizeof(struct UsbHubStatus))
+                    if (len < sizeof(struct UsbHubStatus))
                     {
                         return(UHIOERR_STALL);
                     }
                     *mptr++ = 0;
                     *mptr++ = 0;
                     ioreq->iouh_Actual = 4;
-                    return(0);
+                    return (0);
                 }
 
                 case USR_GET_DESCRIPTOR:
-                    switch(val>>8)
+                    switch (val >> 8)
                     {
                         case UDT_HUB:
                         {
@@ -417,16 +415,16 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                             D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: GetHubDescriptor (%ld)\n", len));
 
                             ioreq->iouh_Actual = (len > hubdesclen) ? hubdesclen : len;
-                            CopyMem((APTR) &OTGRootHubDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+                            CopyMem((APTR)&OTGRootHubDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
-                            if(ioreq->iouh_Length)
+                            if (ioreq->iouh_Length)
                             {
                                 uhd->bLength = hubdesclen;
                             }
 
-                            if(ioreq->iouh_Length >= hubdesclen)
+                            if (ioreq->iouh_Length >= hubdesclen)
                             {
-                                if(hubdesclen == 9)
+                                if (hubdesclen == 9)
                                 {
                                     uhd->DeviceRemovable = 0;
                                     uhd->PortPwrCtrlMask = (1 << 3) - 2;
@@ -434,11 +432,11 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
                                     // each field is 16 bits wide
                                     uhd->DeviceRemovable = 0;
                                     uhd->PortPwrCtrlMask = 0;
-                                    ((UBYTE *) ioreq->iouh_Data)[9] = (1 << 3) - 2;
-                                    ((UBYTE *) ioreq->iouh_Data)[10] = ((1 << 3) - 2) >> 8;
+                                    ((UBYTE *)ioreq->iouh_Data)[9] = (1 << 3) - 2;
+                                    ((UBYTE *)ioreq->iouh_Data)[10] = ((1 << 3) - 2) >> 8;
                                 }
                             }
-                            return(0);
+                            return (0);
                         }
 
                         default:
@@ -448,6 +446,8 @@ WORD FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *ioreq,
             }
 
     }
+
     D(bug("[USB2OTG:Hub] UHCMD_CONTROLXFER: Unsupported command %02lx %02lx %04lx %04lx %04lx!\n", rt, req, idx, val, len));
-    return(UHIOERR_STALL);
+
+    return (UHIOERR_STALL);
 }
