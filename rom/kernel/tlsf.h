@@ -21,7 +21,7 @@ VOID tlsf_add_memory_and_merge(struct MemHeaderExt * mhe, APTR memory, IPTR size
 
 /* Allocation functions */
 APTR tlsf_malloc(struct MemHeaderExt * mhe, IPTR size, ULONG * flags);
-VOID tlsf_free(struct MemHeaderExt * mhe, APTR ptr, IPTR size);
+VOID tlsf_freemem(struct MemHeaderExt * mhe, APTR ptr, IPTR size);
 VOID tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr);
 APTR tlsf_realloc(struct MemHeaderExt * mhe, APTR ptr, IPTR new_size);
 APTR tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, APTR ptr);
