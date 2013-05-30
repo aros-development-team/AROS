@@ -18,6 +18,7 @@ typedef struct
 
 typedef struct
 {
+    BPTR	  m_seg;     /* First segment pointer */
     char	  *m_shstr;   /* Section headers table		*/
     char	  *m_str;     /* Symbol names table		*/
     unsigned int   m_segcnt;  /* Count of segments		*/

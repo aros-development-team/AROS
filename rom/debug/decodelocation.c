@@ -86,7 +86,8 @@ AROS_LH2(int, DecodeLocationA,
 					 in memory.
 	    DL_SegmentEnd     (void *) - End address of actual segment contents
 					 in memory.
-	
+	    DL_FirstSegment   (BPTR) - DOS pointer to the first segment.
+
 	    The following tags may return NULL values if there was no corresponding
 	    information provided for the module:
 
@@ -125,6 +126,7 @@ AROS_LH2(int, DecodeLocationA,
     void **funstart = &dummy;
     void **funend   = &dummy;
     BPTR  *secptr   = (BPTR *)&dummy;
+    BPTR  *secfirst = (BPTR *)&dummy;
     unsigned int *secnum = (unsigned int *)&dummy;
     struct TagItem *tag, *tstate = tags;
     void *symaddr = NULL;
@@ -160,6 +162,10 @@ AROS_LH2(int, DecodeLocationA,
 
 	case DL_SegmentEnd:
 	    secend = (void **)tag->ti_Data;
+	    break;
+
+	case DL_FirstSegment:
+	    secfirst = (BPTR *)tag->ti_Data;
 	    break;
 
 	case DL_SymbolName:
@@ -200,6 +206,7 @@ AROS_LH2(int, DecodeLocationA,
 	    *secnum   = seg->s_num;
 	    *secstart = seg->s_lowest;
 	    *secend   = seg->s_highest;
+	    *secfirst = seg->s_mod->m_seg;
 
 	    /* Now look up the function if requested */
 	    if (FindSymbol(seg->s_mod, function, funstart, funend, symaddr)) {
@@ -266,6 +273,7 @@ AROS_LH2(int, DecodeLocationA,
 			    *secnum   = i;
 			    *secstart = s_lowest;
 			    *secend   = s_highest;
+			    *secfirst = BNULL;
 
 			    ret = 1;
 			    break;

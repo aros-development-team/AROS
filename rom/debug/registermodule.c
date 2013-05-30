@@ -58,6 +58,7 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
     if (!mod)
         return;
     strcpy(mod->m_name, name);
+    mod->m_seg = segList;
     while (segList) {
         ULONG *segPtr = BADDR(segList);
         struct segment *seg = AllocMem(sizeof(struct segment), MEMF_PUBLIC | MEMF_CLEAR);
@@ -153,6 +154,7 @@ AROS_LH4(void, RegisterModule,
 	    shstr = SHINDEX(int_shstrndx);
 
 	    strcpy(mod->m_name, name);
+	    mod->m_seg = segList;
 	    if (sections[shstr].type == SHT_STRTAB)
 		mod->m_shstr = getstrtab(&sections[shstr]);
 
