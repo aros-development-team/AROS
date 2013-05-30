@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES=debug_gdb
+FILES=debug_gdb segtracker
 
 USER_CFLAGS += -I$(SRCDIR)/rom/debug
 
