@@ -17,7 +17,7 @@
  * Minimal alignment as required by AROS. In contrary to the default
  * TLSF implementation, we do not allow smaller blocks here.
  */
-#define SIZE_ALIGN  16
+#define SIZE_ALIGN  AROS_WORSTALIGN
 
 /*
  * Settings for TLSF allocator:
@@ -441,7 +441,7 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
 
-    if (*flags && (*flags & MEMF_CLEAR))
+    if (flags && (*flags & MEMF_CLEAR))
         bzero(&b->mem[0], size);
 
     /* And return memory */
@@ -873,16 +873,26 @@ void bzero(void *ptr, IPTR len)
 void * tlsf_init(struct MemHeaderExt * mhe)
 {
     tlsf_t *tlsf = NULL;
+    void * ptr = mhe->mhe_MemHeader.mh_Lower;
 
-    if (ptr && size >= ROUNDUP(sizeof(tlsf_t)))
+    /* if MemHeaderExt starts at the beginning of handled memory, advance the ptr */
+    if (mhe == ptr)
+        ptr += ROUNDUP(sizeof(struct MemHeaderExt));
+
+    /* Is there enough room for tlsf in the mem header itself? */
+    if (mhe->mhe_MemHeader.mh_Free >= (ROUNDUP(sizeof(tlsf_t)) + 3 * ROUNDUP(sizeof(bhdr_t))))
     {
+        /* tlsf will be stored inside handled memory */
         tlsf = (tlsf_t *)ptr;
+
+        ptr += ROUNDUP(sizeof(tlsf_t));
 
         bzero(tlsf, sizeof(tlsf_t));
         tlsf->autodestroy_self = 0;
     }
     else
     {
+        /* No place for tlsf header in MemHeaderExt? Allocate it separately */
         tlsf = AllocMem(sizeof(tlsf_t), MEMF_ANY);
 
         if (tlsf)
@@ -892,9 +902,12 @@ void * tlsf_init(struct MemHeaderExt * mhe)
         }
     }
 
-    if (tlsf && size >= ROUNDUP(sizeof(tlsf_t)) + ROUNDUP(sizeof(hdr_t)))
+    /* Store the tlsf pointer in UserData field */
+    mhe->mhe_UserData = tlsf;
+
+    if (tlsf && ptr < mhe->mhe_MemHeader.mh_Upper)
     {
-        tlsf_add_memory(mhe, ptr + ROUNDUP(sizeof(tlsf_t)), size - ROUNDUP(sizeof(tlsf_t)));
+        tlsf_add_memory(mhe, ptr, (IPTR)mhe->mhe_MemHeader.mh_Upper - (IPTR)ptr);
     }
 
     return tlsf;
@@ -902,7 +915,7 @@ void * tlsf_init(struct MemHeaderExt * mhe)
 
 void * tlsf_init_autogrow(struct MemHeaderExt * mhe, IPTR puddle_size, autogrow_get grow_function, autogrow_release release_function, APTR autogrow_data)
 {
-    tlsf_t *tlsf = tlsf_init(ptr, size);
+    tlsf_t *tlsf = tlsf_init(mhe);
 
     if (tlsf)
     {
@@ -918,9 +931,9 @@ void * tlsf_init_autogrow(struct MemHeaderExt * mhe, IPTR puddle_size, autogrow_
     return tlsf;
 }
 
-void tlsf_destroy(APTR tlsf_)
+void tlsf_destroy(struct MemHeaderExt * mhe)
 {
-    tlsf_t *tlsf = (tlsf_t *)tlsf_;
+    tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
 
     D(nbug("tlsf_destroy(%p)\n", tlsf));
 
@@ -1064,7 +1077,7 @@ BOOL tlsf_in_bounds(struct MemHeaderExt * mhe, void * begin, void * end)
 
 static void destroy_Pool(struct MemHeaderExt *mhe)
 {
-    tlsf_destroy(mhe->mhe_UserData);
+    tlsf_destroy(mhe);
 }
 
 static APTR fetch_more_ram(void * data, IPTR *size)
@@ -1086,8 +1099,7 @@ static VOID release_ram(void * data, APTR ptr, IPTR size)
 
 static void * init_Pool(struct MemHeaderExt *mhe, IPTR puddleSize, IPTR initialSize)
 {
-    return tlsf_init_autogrow(mhe->mhe_UserData, initialSize, puddleSize,
-            fetch_more_ram, release_ram, mhe);
+    return tlsf_init_autogrow(mhe, puddleSize, fetch_more_ram, release_ram, mhe);
 }
 
 void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags)
@@ -1107,7 +1119,7 @@ void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, 
 
     mhe->mhe_Alloc         = tlsf_malloc;
     mhe->mhe_AllocVec      = tlsf_malloc;
-    mhe->mhe_Free          = tlsf_free;
+    mhe->mhe_Free          = tlsf_freemem;
     mhe->mhe_FreeVec       = tlsf_freevec;
     mhe->mhe_AllocAbs      = tlsf_allocabs;
     mhe->mhe_ReAlloc       = tlsf_realloc;
