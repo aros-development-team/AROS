@@ -25,4 +25,8 @@ APTR tlsf_allocabs(APTR tlsf, APTR ptr, IPTR size);
 IPTR tlsf_avail(APTR tlsf, ULONG requirements);
 BOOL tlsf_in_bounds(APTR tlsf, APTR begin, APTR end);
 
+/* Initialization of MemHeader */
+void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
+struct MemHeader * krnConvertMemHeaderToTLSF(struct MemHeader * source);
+
 #endif /* _TLSF_H */

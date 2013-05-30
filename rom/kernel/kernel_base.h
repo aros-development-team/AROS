@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -51,3 +51,6 @@ void __clear_bss(const struct KernelBSS *bss);
 /* Memory header initialization functions */
 void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
 struct MemHeader *krnCreateROMHeader(CONST_STRPTR name, APTR start, APTR end);
+/* Memhry header - TLSF support functions */
+void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
+struct MemHeader * krnConvertMemHeaderToTLSF(struct MemHeader * source);
