@@ -28,7 +28,6 @@ static void dumpline(const UBYTE *label, ULONG *p)
 	DebugPutStr(label);
 	for (i = 0; i < 8; i++) {
 		DebugPutHexVal(p[i]);
-		DebugPutStr(" ");
 	}
 	DebugPutStr("\n");
 }
@@ -66,14 +65,13 @@ static void dumpinfo(struct ExecBase *SysBase, ULONG pc)
     struct Task *t;
 
     t = SysBase->ThisTask;
-    if (t) {
+    if (t && (t->tc_Node.ln_Type == NT_TASK || t->tc_Node.ln_Type == NT_PROCESS)) {
         dumpstr("Name: ", t->tc_Node.ln_Name);
         if (t->tc_Node.ln_Type == NT_PROCESS) {
             struct Process *p = (struct Process*)t;
             if (p->pr_CLI) {
                 struct CommandLineInterface *cli = (struct CommandLineInterface*)BADDR(p->pr_CLI);
-                DebugPutStr(" ");
-                dumpbstr("CLI: ", BADDR(cli->cli_CommandName));
+                dumpbstr(" CLI: ", BADDR(cli->cli_CommandName));
             }
         }
         DebugPutStr("\n");
@@ -109,9 +107,11 @@ void bushandler(struct busframe *bf)
 	ULONG pc;
 	UWORD size = 0;
 	UWORD fc;
+	UWORD sr;
 	BOOL write = FALSE;
 	BOOL inst = FALSE;
 	BOOL hasdata = FALSE;
+	char buf[16];
 	
 	DebugPutStr("Bus Error!\n");
 
@@ -133,6 +133,10 @@ void bushandler(struct busframe *bf)
 		size = (sw >> 5) & 3;
 		write = (sw & 0x100) == 0;
 		fc = sw & 7;
+		if (write && (mf[15] & 0x80)) {
+			data = ((ULONG*)(mf + 28))[0];
+			hasdata = TRUE;
+		}
 	} else {
 		// 68060
 		fa = ((ULONG*)(mf + 8))[0];
@@ -143,31 +147,44 @@ void bushandler(struct busframe *bf)
 	}
 	pc = ((ULONG*)(mf + 2))[0];
 	inst = (fc & 3) == 2;
+	sr = ((UWORD*)mf)[0];
 
 	DebugPutStr(sizes[size]);
 	DebugPutStr("-");
-	DebugPutStr(write ? "WRITE to   " : "READ from  ");
+	DebugPutStr(write ? "WRITE to  " : "READ from ");
 	DebugPutHexVal(fa);
 	if (inst)
 		DebugPutStr("(INST)");
 	else
 		DebugPutStr("      ");
-	DebugPutStr("     data: ");
+	DebugPutStr("   data: ");
 	if (hasdata)
 		DebugPutHexVal(data);
 	else
 		DebugPutStr("-------- ");
-	DebugPutStr(" PC: ");
+	DebugPutStr("   PC: ");
 	DebugPutHexVal(pc);
 	DebugPutStr("\n");
 
 	DebugPutStr("USP:  ");
 	DebugPutHexVal((ULONG)bf->usp);
-	DebugPutStr(" SR: ");
-	DebugPutHexVal(((UWORD*)mf)[0]);
-	DebugPutStr("       SW: ");
+	DebugPutStr("SR: ");
+	DebugPutHexVal(sr);
+	DebugPutStr("     SW: ");
 	DebugPutHexVal(sw);
-	DebugPutStr("       TCB: ");
+	buf[0] = '(';
+	buf[1] = (sr & 0x2000) ? 'S' : 'U';
+	buf[2] = ((sr >> 8) & 7) + '0';
+	buf[3] = ')';
+	buf[4] = '(';
+	buf[5] = SysBase->TDNestCnt >= 0 ? 'F' : '-';
+	buf[6] = ')';
+	buf[7] = '(';
+	buf[8] = SysBase->IDNestCnt >= 0 ? 'D' : '-';
+	buf[9] = ')';
+	buf[10] = 0;
+	DebugPutStr(buf);
+	DebugPutStr("    TCB: ");
 	DebugPutHexVal((ULONG)SysBase->ThisTask);
 	DebugPutStr("\n");
 
