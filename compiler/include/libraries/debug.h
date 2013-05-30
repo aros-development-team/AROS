@@ -24,6 +24,7 @@
 #define DL_SymbolName		(DL_Dummy + 7)
 #define DL_SymbolStart		(DL_Dummy + 8)
 #define DL_SymbolEnd		(DL_Dummy + 9)
+#define DL_FirstSegment		(DL_Dummy + 10)
 
 /* Known debug information types */
 #define DEBUG_NONE              0
