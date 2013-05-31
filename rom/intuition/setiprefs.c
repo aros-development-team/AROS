@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -156,7 +156,7 @@
 	case IPREFS_TYPE_POINTER_V37:
         DEBUG_SETIPREFS(bug("SetIPrefs: IP_POINTER_V37\n"));
         {
-	    struct Preferences *ActivePrefs = GetPrivIBase(IntuitionBase)->ActivePreferences;
+	    struct Preferences *ActivePrefs = &GetPrivIBase(IntuitionBase)->ActivePreferences;
             struct IPointerPrefsV37 *fp = data;
             UWORD size = fp->YSize * 2;
             Object *pointer;
@@ -183,7 +183,7 @@
             struct ColorSpec *pp = data;
             struct Color32 *p = GetPrivIBase(IntuitionBase)->Colors;
 	    BOOL update_pointer = FALSE;
-	    struct Preferences *ActivePrefs = GetPrivIBase(IntuitionBase)->ActivePreferences;
+	    struct Preferences *ActivePrefs = &GetPrivIBase(IntuitionBase)->ActivePreferences;
 
             DEBUG_SETIPREFS(bug("SetIPrefs: Intuition Color32 Table 0x%p\n", p));
 

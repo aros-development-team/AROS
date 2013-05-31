@@ -668,12 +668,12 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
     if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
         GetDisplayInfoData(displayinfo, (APTR)&dispinfo, sizeof(dispinfo), DTAG_DISP, modeid)) {
-        screen->DInfo.dri.dri_Resolution.X = dispinfo.Resolution.x;
-        screen->DInfo.dri.dri_Resolution.Y = dispinfo.Resolution.y;
+        screen->DInfo.dri_Resolution.X = dispinfo.Resolution.x;
+        screen->DInfo.dri_Resolution.Y = dispinfo.Resolution.y;
     } else {
         /* Fake a resolution */
-        screen->DInfo.dri.dri_Resolution.X = 22;
-        screen->DInfo.dri.dri_Resolution.Y = 22;
+        screen->DInfo.dri_Resolution.X = 22;
+        screen->DInfo.dri_Resolution.Y = 22;
     }
  
     if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
@@ -1145,13 +1145,13 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 	/* Use higher than DRI_VERSION to detect manually created
 	 * DrawInfo structures (for example WB3.1:Prefs/Palette)
 	 */
-        screen->DInfo.dri.dri_Version = DRI_VERSION_AROS;
-        screen->DInfo.dri.dri_NumPens = NUMDRIPENS;
-        screen->DInfo.dri.dri_Pens = screen->Pens;
+        screen->DInfo.dri_Version = DRI_VERSION_AROS;
+        screen->DInfo.dri_NumPens = NUMDRIPENS;
+        screen->DInfo.dri_Pens = screen->Pens;
         /* dri_Depth is 8 on hi/true color screens like in AmigaOS with picasso96/cybergraphx */
-        screen->DInfo.dri.dri_Depth = (ns.Depth <= 8) ? ns.Depth : 8;
+        screen->DInfo.dri_Depth = (ns.Depth <= 8) ? ns.Depth : 8;
 
-        if (ns.Depth > 8) screen->DInfo.dri.dri_Flags = DRIF_DIRECTCOLOR;
+        if (ns.Depth > 8) screen->DInfo.dri_Flags = DRIF_DIRECTCOLOR;
 
         screen->DInfo.dri_Screen = &screen->Screen;
 
@@ -1169,13 +1169,13 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 #if 1
             /* Use safe OpenFont here - Piru
              */
-            screen->DInfo.dri.dri_Font = SafeReopenFont(IntuitionBase, &GetPrivIBase(IntuitionBase)->ScreenFont);
+            screen->DInfo.dri_Font = SafeReopenFont(IntuitionBase, &GetPrivIBase(IntuitionBase)->ScreenFont);
 #else
 #warning: Really hacky way of re-opening ScreenFont
 
             Forbid();
-            screen->DInfo.dri.dri_Font = GetPrivIBase(IntuitionBase)->ScreenFont;
-            screen->DInfo.dri.dri_Font->tf_Accessors++;
+            screen->DInfo.dri_Font = GetPrivIBase(IntuitionBase)->ScreenFont;
+            screen->DInfo.dri_Font->tf_Accessors++;
             Permit();
 #endif
 
@@ -1186,11 +1186,11 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         }
         else if (ns.Font)
         {
-            screen->DInfo.dri.dri_Font = OpenFont(ns.Font);
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: custom font 0x%lx\n",screen->DInfo.dri.dri_Font));
+            screen->DInfo.dri_Font = OpenFont(ns.Font);
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: custom font 0x%lx\n",screen->DInfo.dri_Font));
         }
 
-        if (!screen->DInfo.dri.dri_Font)
+        if (!screen->DInfo.dri_Font)
         {
             /* GfxBase->DefaultFont is *not* always topaz 8. It
                can be set with the Font prefs program!! */
@@ -1198,19 +1198,19 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     	#if 1
             /* Use safe OpenFont.. - Piru
              */
-            screen->DInfo.dri.dri_Font = SafeReopenFont(IntuitionBase, &GfxBase->DefaultFont);
+            screen->DInfo.dri_Font = SafeReopenFont(IntuitionBase, &GfxBase->DefaultFont);
     	#else
 
     	    #warning: Really hacky way of re-opening system default font
 
             Forbid();
-            screen->DInfo.dri.dri_Font = GfxBase->DefaultFont;
-            screen->DInfo.dri.dri_Font->tf_Accessors++;
+            screen->DInfo.dri_Font = GfxBase->DefaultFont;
+            screen->DInfo.dri_Font->tf_Accessors++;
             Permit();
     	#endif
         }
 
-        if (!screen->DInfo.dri.dri_Font) ok = FALSE;
+        if (!screen->DInfo.dri_Font) ok = FALSE;
 
     } /* if (ok) */
 
@@ -1228,7 +1228,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         if (ns.Depth > 1)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Set NewLook\n"));
-            screen->DInfo.dri.dri_Flags |= DRIF_NEWLOOK;
+            screen->DInfo.dri_Flags |= DRIF_NEWLOOK;
         }
 
 
@@ -1481,21 +1481,21 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             {TAG_DONE                       	    }
         };
 
-        screen->DInfo.dri.dri_CheckMark = NewObjectA(NULL, "sysiclass", sysi_tags);
+        screen->DInfo.dri_CheckMark = NewObjectA(NULL, "sysiclass", sysi_tags);
         DEBUG_OPENSCREEN(dprintf("OpenScreen: CheckMark 0x%lx\n",
-                                 screen->DInfo.dri.dri_CheckMark));
+                                 screen->DInfo.dri_CheckMark));
 
         sysi_tags[0].ti_Data = AMIGAKEY;
 
-        screen->DInfo.dri.dri_AmigaKey  = NewObjectA(NULL, "sysiclass", sysi_tags);
+        screen->DInfo.dri_AmigaKey  = NewObjectA(NULL, "sysiclass", sysi_tags);
         DEBUG_OPENSCREEN(dprintf("OpenScreen: AmigaKey 0x%lx\n",
-                                 screen->DInfo.dri.dri_AmigaKey));
+                                 screen->DInfo.dri_AmigaKey));
 
         sysi_tags[0].ti_Data = SUBMENUIMAGE;
 
-        screen->DInfo.dri.dri_SubMenuImage  = NewObjectA(NULL, "sysiclass", sysi_tags);
+        screen->DInfo.dri_SubMenuImage  = NewObjectA(NULL, "sysiclass", sysi_tags);
         DEBUG_OPENSCREEN(dprintf("OpenScreen: SubMenuImage 0x%lx\n",
-                                 screen->DInfo.dri.dri_SubMenuImage));
+                                 screen->DInfo.dri_SubMenuImage));
 
 #ifdef SKINS
         sysi_tags[0].ti_Data = SUBMENUIMAGE;
@@ -1506,14 +1506,14 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             !screen->DInfo.dri_Customize->menutoggle) ok = FALSE;
 #endif
 
-        if (!screen->DInfo.dri.dri_CheckMark || !screen->DInfo.dri.dri_AmigaKey || !screen->DInfo.dri.dri_SubMenuImage) ok = FALSE;
+        if (!screen->DInfo.dri_CheckMark || !screen->DInfo.dri_AmigaKey || !screen->DInfo.dri_SubMenuImage) ok = FALSE;
     }
 
 
 
     if (ok)
     {
-        SetFont(&screen->Screen.RastPort, screen->DInfo.dri.dri_Font);
+        SetFont(&screen->Screen.RastPort, screen->DInfo.dri_Font);
 
         AskFont(&screen->Screen.RastPort, (struct TextAttr *) &screen->textattr);
 
@@ -1531,8 +1531,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         msg.MethodID 	           = SDM_INITSCREEN;
         msg.sdp_Screen             = &screen->Screen;
-        msg.sdp_TrueColor          = screen->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR;
-        msg.sdp_FontHeight         = screen->DInfo.dri.dri_Font->tf_YSize;
+        msg.sdp_TrueColor          = screen->DInfo.dri_Flags & DRIF_DIRECTCOLOR;
+        msg.sdp_FontHeight         = screen->DInfo.dri_Font->tf_YSize;
         msg.sdp_BarVBorder         = screen->Screen.BarVBorder;
         msg.sdp_BarHBorder         = screen->Screen.BarHBorder;
         msg.sdp_MenuVBorder        = screen->Screen.MenuVBorder;
@@ -1612,7 +1612,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
                 screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
 
 		msg.MethodID 	    	= SDM_LAYOUT_SCREENGADGETS;
-	        msg.sdp_TrueColor       = screen->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR;
+	        msg.sdp_TrueColor       = screen->DInfo.dri_Flags & DRIF_DIRECTCOLOR;
 		msg.sdp_Layer 	    	= screen->Screen.BarLayer;
 		msg.sdp_Gadgets     	= screen->Screen.FirstGadget;
 		msg.sdp_Flags   	= SDF_LSG_INITIAL | SDF_LSG_MULTIPLE;
@@ -1645,9 +1645,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         {
             int i;
 
-            for (i = 0; i <= screen->DInfo.dri.dri_NumPens; i++)
+            for (i = 0; i <= screen->DInfo.dri_NumPens; i++)
             {
-                dprintf("OpenScreen: dri_Pen[%ld] = %ld\n", i, screen->DInfo.dri.dri_Pens[i]);
+                dprintf("OpenScreen: dri_Pen[%ld] = %ld\n", i, screen->DInfo.dri_Pens[i]);
             }
         }
 #endif
@@ -1772,27 +1772,27 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         if (screen->DInfo.dri_Customize) FreeMem(screen->DInfo.dri_Customize,sizeof (struct IntuitionCustomize));
         if (screen->DInfo.dri_Colors) FreeMem(screen->DInfo.dri_Colors,4 * DRIPEN_NUMDRIPENS);
 #endif
-        if (screen->DInfo.dri.dri_AmigaKey)
+        if (screen->DInfo.dri_AmigaKey)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose AmigaKey Object\n"));
-            DisposeObject(screen->DInfo.dri.dri_AmigaKey);
+            DisposeObject(screen->DInfo.dri_AmigaKey);
         }
-        if (screen->DInfo.dri.dri_CheckMark)
+        if (screen->DInfo.dri_CheckMark)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose CheckMark Object\n"));
-            DisposeObject(screen->DInfo.dri.dri_CheckMark);
+            DisposeObject(screen->DInfo.dri_CheckMark);
         }
 
-        if (screen->DInfo.dri.dri_SubMenuImage)
+        if (screen->DInfo.dri_SubMenuImage)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose SubMenuImage Object\n"));
-            DisposeObject(screen->DInfo.dri.dri_SubMenuImage);
+            DisposeObject(screen->DInfo.dri_SubMenuImage);
         }
 
-        if (screen->DInfo.dri.dri_Font)
+        if (screen->DInfo.dri_Font)
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Close Font\n"));
-            CloseFont(screen->DInfo.dri.dri_Font);
+            CloseFont(screen->DInfo.dri_Font);
         }
 
         if (screen->AllocatedBitmap && !(ns.Type & CUSTOMBITMAP))

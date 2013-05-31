@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -682,7 +682,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     BOOL                       ok;
 
     initmsg.MethodID           = WDM_INITWINDOW;
-    initmsg.wdp_TrueColor      = (((struct IntScreen *) nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+    initmsg.wdp_TrueColor      = (((struct IntScreen *) nw.Screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
     initmsg.wdp_UserBuffer     = ((struct IntWindow *)w)->DecorUserBuffer;
     initmsg.wdp_ScreenUserBuffer   = ((struct IntScreen *) nw.Screen)->DecorUserBuffer;
     initmsg.wdp_Screen             = nw.Screen;
@@ -749,7 +749,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     #endif
         /* Georg Steger: ??? font ??? */
         if (w->WScreen->Font)
-            w->BorderTop += ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_Font->tf_YSize + 1;
+            w->BorderTop += ((struct IntScreen *)(w->WScreen))->DInfo.dri_Font->tf_YSize + 1;
         else
             w->BorderTop += GfxBase->DefaultFont->tf_YSize + 1;
     #ifndef TITLEHACK
@@ -984,11 +984,11 @@ moreFlags |= (name); else moreFlags &= ~(name)
     /* Amiga and checkmark images for menus */
 
     IW(w)->Checkmark = Checkmark ? Checkmark :
-                                           ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_CheckMark;
+                                           ((struct IntScreen *)(w->WScreen))->DInfo.dri_CheckMark;
 
     IW(w)->AmigaKey  = AmigaKey  ? AmigaKey  :
-                                           ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_AmigaKey;
-    IW(w)->SubMenuImage = ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_SubMenuImage;
+                                           ((struct IntScreen *)(w->WScreen))->DInfo.dri_AmigaKey;
+    IW(w)->SubMenuImage = ((struct IntScreen *)(w->WScreen))->DInfo.dri_SubMenuImage;
 
 #ifndef __MORPHOS__
     /* child support */
@@ -1042,7 +1042,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     }
     else
     {
-            w->IFont = SafeReopenFont(IntuitionBase, &(GetPrivScreen(w->WScreen)->DInfo.dri.dri_Font));
+            w->IFont = SafeReopenFont(IntuitionBase, &(GetPrivScreen(w->WScreen)->DInfo.dri_Font));
     }
     
     if (w->IFont == NULL) {
@@ -1144,7 +1144,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
         msg.MethodID                     = WDM_LAYOUT_BORDERGADGETS;
     msg.wdp_UserBuffer  = ((struct IntWindow *)w)->DecorUserBuffer;;
-    msg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+    msg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
         msg.wdp_Window                     = w;
         msg.wdp_Gadgets             = nw.FirstGadget;
         msg.wdp_Flags           = WDF_LBG_INITIAL | WDF_LBG_MULTIPLE;
@@ -1194,7 +1194,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
         struct wdpWindowShape       shapemsg;
 
         shapemsg.MethodID           = WDM_WINDOWSHAPE;
-        shapemsg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+        shapemsg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
         shapemsg.wdp_Width             = w->Width;
         shapemsg.wdp_Height             = w->Height;
         shapemsg.wdp_Window = w;

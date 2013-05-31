@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -70,8 +70,8 @@
 
         base = ABS((LONG)(sMicros - cMicros));
 
-        ret = (base <= GetPrivIBase(IntuitionBase)->ActivePreferences->DoubleClick.tv_micro +
-                1000000 * GetPrivIBase(IntuitionBase)->ActivePreferences->DoubleClick.tv_secs);
+        ret = (base <= GetPrivIBase(IntuitionBase)->ActivePreferences.DoubleClick.tv_micro +
+                1000000 * GetPrivIBase(IntuitionBase)->ActivePreferences.DoubleClick.tv_secs);
     }
 
     DEBUG_DOUBLECLICK(dprintf("DoubleClick: return %d\n", ret));

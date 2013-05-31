@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -255,11 +255,11 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     GetPrivIBase(LIBBASE)->DefaultPointer = MakePointerFromPrefs
     (
-        GetPubIBase(LIBBASE), GetPrivIBase(LIBBASE)->ActivePreferences
+        GetPubIBase(LIBBASE), &GetPrivIBase(LIBBASE)->ActivePreferences
     );
     GetPrivIBase(LIBBASE)->BusyPointer = MakePointerFromPrefs
     (
-        GetPubIBase(LIBBASE), GetPrivIBase(LIBBASE)->ActivePreferences
+        GetPubIBase(LIBBASE), &GetPrivIBase(LIBBASE)->ActivePreferences
     );
 
     if
@@ -422,7 +422,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 
 	GetPrivIBase(LIBBASE)->TimerBase = (struct Library *)GetPrivIBase(LIBBASE)->TimerIO->tr_node.io_Device;
 
-	SetPrefs(GetPrivIBase(LIBBASE)->DefaultPreferences, sizeof(struct Preferences), FALSE);
+	SetPrefs(&GetPrivIBase(LIBBASE)->DefaultPreferences, sizeof(struct Preferences), FALSE);
     }
 
 #if 0

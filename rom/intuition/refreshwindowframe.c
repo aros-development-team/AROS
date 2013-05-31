@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -139,7 +139,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
     		struct wdpDrawWinBorder  msg;
 
 		msg.MethodID 	    	= WDM_DRAW_WINBORDER;
-		msg.wdp_TrueColor       = (((struct IntScreen *)window->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+		msg.wdp_TrueColor       = (((struct IntScreen *)window->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
 		msg.wdp_Window 	    	= window;
 		msg.wdp_RPort     	= rp;
     	    	msg.wdp_Flags	    	= (mustbe == REFRESHGAD_TOPBORDER) ? WDF_DWB_TOP_ONLY : 0;
