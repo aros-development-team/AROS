@@ -130,7 +130,7 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
 
     semsg.MethodID             = SDM_EXITSCREEN;
     semsg.sdp_UserBuffer       = ((struct IntScreen *)screen)->DecorUserBuffer;
-    semsg.sdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+    semsg.sdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
     DoMethodA(((struct IntScreen *)screen)->ScrDecorObj, (Msg)&semsg);  
 
     /* kill screen bar */
@@ -181,11 +181,11 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
     }
 #endif
 
-    DisposeObject(((struct IntScreen *)screen)->DInfo.dri.dri_CheckMark);
-    DisposeObject(((struct IntScreen *)screen)->DInfo.dri.dri_AmigaKey);
+    DisposeObject(((struct IntScreen *)screen)->DInfo.dri_CheckMark);
+    DisposeObject(((struct IntScreen *)screen)->DInfo.dri_AmigaKey);
 
     /* Close the font */
-    CloseFont(((struct IntScreen *)screen)->DInfo.dri.dri_Font);
+    CloseFont(((struct IntScreen *)screen)->DInfo.dri_Font);
 
     /* Free the ColorMap */
     FreeColorMap(screen->ViewPort.ColorMap);

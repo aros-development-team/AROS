@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -209,6 +209,12 @@ void * memclr(APTR, ULONG);
 //enables some gadtools-weirdo-code, MUST be set in both gadtools & intui to work!!!
 #endif
 
+#ifdef __MORPHOS__ /* TODO: merge this */
+#define ILOCKCHECK(a) ((a->task) && (a->task == IBase->IBaseLockTask))
+#else
+#define ILOCKCHECK(a) 0
+#endif
+
 #ifdef SKINS
 //#define USEGETIPREFS
 #endif
@@ -219,11 +225,19 @@ void * memclr(APTR, ULONG);
 
 #define USEWINDOWLOCK
 #ifdef USEWINDOWLOCK
-#define LOCKWINDOW(base)       ObtainSemaphore(&GetPrivIBase(base)->WindowLock);
-#define UNLOCKWINDOW(base)     ReleaseSemaphore(&GetPrivIBase(base)->WindowLock);
+#   ifdef WINDOWLOCKDEBUG
+#   define LOCKWINDOW {ObtainSemaphore(&IBase->WindowLock);dprintf("%s/%ld: obtained windowlock\n",__FILE__,__LINE__);};
+#   define UNLOCKWINDOW {ReleaseSemaphore(&IBase->WindowLock);dprintf("%s/%ld: released windowlock\n",__FILE__,__LINE__);};
+#   define ATTEMPTWINDOWLOCK AttemptSemaphore(&IBase->WindowLock)
+#   else
+#   define LOCKWINDOW ObtainSemaphore(&IBase->WindowLock);
+#   define UNLOCKWINDOW ReleaseSemaphore(&IBase->WindowLock);
+#   define ATTEMPTWINDOWLOCK AttemptSemaphore(&IBase->WindowLock)
+#   endif
 #else
-#define LOCKWINDOW(base)
-#define UNLOCKWINDOW(base)
+#define LOCKWINDOW
+#define UNLOCKWINDOW
+#define ATTEMPTWINDOWLOCK
 #endif
 /* jDc: do NOT disable this! */
 
@@ -498,11 +512,12 @@ struct IntIntuitionBase
 
     struct IClass           	*dragbarclass;
     struct IClass           	*sizebuttonclass;
-
+    struct IClass               *windowsysiclass;
+#ifdef __MORPHOS__
     APTR                    	*mosmenuclass;
-
-    struct Preferences      	*DefaultPreferences;
-    struct Preferences      	*ActivePreferences;
+#endif
+    struct Preferences      	 DefaultPreferences;
+    struct Preferences      	 ActivePreferences;
 
     struct MsgPort          	*MenuHandlerPort;
     BOOL                    	 MenusActive;
@@ -634,9 +649,29 @@ void ReleaseSharedPointer(struct SharedPointer *, struct IntuitionBase *);
 void sn_DoNotify(ULONG type, APTR value, struct Library *_ScreenNotifyBase);
 #endif
 
+/*
+ * Private version of DrawInfo.
+ * We keep compatibility with original structure plus use some
+ * private extensions.
+ * The whole structure is rewritten in order to simplify MorphOS code merging.
+ */
 struct IntDrawInfo
 {
-    struct DrawInfo 	     dri;
+    UWORD                    dri_Version;
+    UWORD                    dri_NumPens;
+    UWORD                   *dri_Pens;
+    struct TextFont         *dri_Font;
+    UWORD                    dri_Depth;
+    struct
+    {
+        UWORD X;
+        UWORD Y;
+    }                        dri_Resolution;
+    ULONG                    dri_Flags;
+    struct Image            *dri_CheckMark;
+    struct Image            *dri_AmigaKey;
+    struct Image            *dri_SubMenuImage;
+    /* Private extensions begin */
     struct Screen   	    *dri_Screen;
     struct SignalSemaphore   dri_WinDecorSem;
     Object  	    	    *dri_WinDecorObj;
@@ -658,6 +693,14 @@ struct IntDrawInfo
 #define LOCKSHARED_MENUDECOR(IntuitionBase) ObtainSemaphoreShared(&((struct IntIntuitionBase *)(IntuitionBase))->MenuDecorSem);
 #define UNLOCK_MENUDECOR(IntuitionBase) 	 ReleaseSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->MenuDecorSem);
 
+struct GammaControl
+{
+    BOOL   UseGammaControl;
+    UBYTE *GammaTableR;
+    UBYTE *GammaTableG;
+    UBYTE *GammaTableB;
+};
+
 struct IntScreen
 {
     struct Screen            Screen;
@@ -665,6 +708,7 @@ struct IntScreen
     /* Private fields */
     struct HashNode          hashnode;
     struct IntDrawInfo       DInfo;
+    ULONG                    realdepth;
     struct TTextAttr         textattr;
     ULONG                    textattrtags[3];
     UWORD                    Pens[NUMDRIPENS];
@@ -676,12 +720,14 @@ struct IntScreen
     ULONG                    DisplayBeepColor0[3];
     struct Window           *DisplayBeepWindow;
 #endif
-#ifdef __MORPHOS__
     ULONG                    ModeID;
+#ifdef __MORPHOS__
     struct MonitorSpec      *Monitor;
 #endif
     Object		    *IMonitorNode;
     struct SharedPointer    *Pointer;
+    BOOL                     ShowPointer;
+    BOOL                     SysFont;
     struct Window           *MenuVerifyActiveWindow;
     int                      MenuVerifyTimeOut;
     int                      MenuVerifyMsgCount;
@@ -698,22 +744,23 @@ struct IntScreen
 #ifdef SKINS
     WORD                     LastClockPos;
     WORD                     LastClockWidth;
-#else
-    ULONG                    Reserved;
-#endif
-#ifdef SKINS
+
     struct SkinInfo          SkinInfo;
     struct RastPort         *TitlebarBufferRP;
     struct Window           *TitlebarBufferWin;
     ULONG                    TitlebarWinWidth;
     ULONG                    TitlebarWinActive;
 #endif
+    struct GammaControl      GammaControl;
+
+    BOOL                     WindowLock;
 #if USE_NEWDISPLAYBEEP
     UBYTE                    BeepingCounter;
 #endif
 };
 
 #define GetPrivScreen(s)    ((struct IntScreen *)s)
+#define IS(x)               ((struct IntScreen *)x)
 
 /* SpecialFlags */
 #define SF_IsParent 	    (0x0001)
@@ -754,6 +801,7 @@ struct IntIntuiMessage
 
 #define GetPubIBase(ib)     	((struct IntuitionBase *)ib)
 #define GetPrivIBase(ib)    	((struct IntIntuitionBase *)ib)
+#define IBase                   GetPrivIBase(IntuitionBase)
 
 /* FIXME: Remove these #define xxxBase hacks
    Do not use this in new code !
@@ -1057,7 +1105,8 @@ void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
 		    struct IntuitionBase *IntuitionBase);
 
 /* Private extra functions */
-Object *FindMonitorNode(ULONG modeid, struct IntuitionBase *IntuitionBase);
+void *FindMonitorNode(ULONG modeid, struct IntuitionBase *IntuitionBase);
+void *FindBestMonitorNode(void *class, const char *name, ULONG modeid, struct IntuitionBase *IntuitionBase);
 struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase);
 AROS_INTP(ShutdownScreenHandler);
 

@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -14,6 +14,7 @@
 
 #include <stddef.h>
 
+/* Palette update is AROS addition. Keep while backporting. */
 static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *IntuitionBase)
 {
     struct Color32 *q = GetPrivIBase(IntuitionBase)->Colors;
@@ -79,25 +80,25 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
 
         if (size > offsetof(struct Preferences, PointerMatrix))
         {
-            if (memcmp(&prefbuffer->PointerMatrix,&GetPrivIBase(IntuitionBase)->ActivePreferences->PointerMatrix,POINTERSIZE) != 0)
+            if (memcmp(&prefbuffer->PointerMatrix,&GetPrivIBase(IntuitionBase)->ActivePreferences.PointerMatrix,POINTERSIZE) != 0)
                 changepointer = TRUE;
         }
 	
         if (size > offsetof(struct Preferences, color17))
         {
-            if (memcmp(&prefbuffer->color17, &GetPrivIBase(IntuitionBase)->ActivePreferences->color17, sizeof(UWORD) * 3) != 0)
+            if (memcmp(&prefbuffer->color17, &GetPrivIBase(IntuitionBase)->ActivePreferences.color17, sizeof(UWORD) * 3) != 0)
                 changepointer = TRUE;
         }
 
         CopyMem(prefbuffer,
-                GetPrivIBase(IntuitionBase)->ActivePreferences,
+                &GetPrivIBase(IntuitionBase)->ActivePreferences,
                 size <= sizeof(struct Preferences) ? size : sizeof(struct Preferences));
 
         UnlockIBase(lock);
 
         DEBUG_SETPREFS(dprintf("SetPrefs: DoubleClick %ld.%ld\n",
-                               GetPrivIBase(IntuitionBase)->ActivePreferences->DoubleClick.tv_secs,
-                               GetPrivIBase(IntuitionBase)->ActivePreferences->DoubleClick.tv_micro));
+                               GetPrivIBase(IntuitionBase)->ActivePreferences.DoubleClick.tv_secs,
+                               GetPrivIBase(IntuitionBase)->ActivePreferences.DoubleClick.tv_micro));
 
         if (GetPrivIBase(IntuitionBase)->InputIO)
         {
@@ -122,12 +123,12 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
 
     	    #endif
                     DEBUG_SETPREFS(dprintf("SetPrefs: KeyRptDelay %ld secs micros %ld\n",
-                                           GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay.tv_secs,
-                                           GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay.tv_micro));
+                                           GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptDelay.tv_secs,
+                                           GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptDelay.tv_micro));
                     req.tr_node.io_Device = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
                     req.tr_node.io_Unit = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
                     req.tr_node.io_Command = IND_SETTHRESH;
-                    req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay;
+                    req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptDelay;
                     DoIO(&req.tr_node);
 
     	    #ifndef __MORPHOS__
@@ -141,6 +142,7 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
     	    #ifdef __MORPHOS__
                 /* No need to setup a reply port, this command is guaranteed to support
                  * quick I/O.
+                 * TODO: Implement the same for AROS, useful.
                  */
     	    #else
                 struct MsgPort *port = CreateMsgPort();
@@ -151,13 +153,13 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
     	    #endif
 
                 DEBUG_SETPREFS(dprintf("SetPrefs: KeyRptSpeed secs %ld micros %ld\n",
-                                       GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptSpeed.tv_secs,
-                                       GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptSpeed.tv_micro));
+                                       GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptSpeed.tv_secs,
+                                       GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptSpeed.tv_micro));
     
                 req.tr_node.io_Device = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
                 req.tr_node.io_Unit = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
                 req.tr_node.io_Command = IND_SETPERIOD;
-                req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptSpeed;
+                req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences.KeyRptSpeed;
                 DoIO(&req.tr_node);
     
     	    #ifndef __MORPHOS__
@@ -175,15 +177,15 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
         {
             Object *pointer;
 	    
-	    SetColors(&GetPrivIBase(IntuitionBase)->ActivePreferences->color17, 8, 3, IntuitionBase);
-	    pointer = MakePointerFromPrefs(IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences);
+	    SetColors(&GetPrivIBase(IntuitionBase)->ActivePreferences.color17, 8, 3, IntuitionBase);
+	    pointer = MakePointerFromPrefs(IntuitionBase, &GetPrivIBase(IntuitionBase)->ActivePreferences);
             if (pointer)
             {
                 InstallPointer(IntuitionBase, WBP_NORMAL, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);
             }
         }
         if (size > offsetof(struct Preferences, color3))
-	    SetColors(&GetPrivIBase(IntuitionBase)->ActivePreferences->color0, 0, 4, IntuitionBase);
+	    SetColors(&GetPrivIBase(IntuitionBase)->ActivePreferences.color0, 0, 4, IntuitionBase);
 
         /*
         ** If inform == TRUE then notify all windows that want to know about

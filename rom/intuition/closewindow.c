@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -435,7 +435,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
     wemsg.MethodID 	       = WDM_EXITWINDOW;
     wemsg.wdp_UserBuffer       = ((struct IntWindow *)window)->DecorUserBuffer;
-    wemsg.wdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+    wemsg.wdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
 
     DoMethodA(((struct IntScreen *)(screen))->WinDecorObj, (Msg)&wemsg);	
 

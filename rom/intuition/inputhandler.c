@@ -1317,7 +1317,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 #define ACCELERATOR_THRESH      2
 #define ACCELERATOR_MULTI       2
 
-        if (GetPrivIBase(IntuitionBase)->ActivePreferences->EnableCLI & MOUSE_ACCEL) {
+        if (GetPrivIBase(IntuitionBase)->ActivePreferences.EnableCLI & MOUSE_ACCEL)
+        {
         /* Acceleration */
         if (ABS(iihdata->DeltaMouseX) > ACCELERATOR_THRESH)
             iihdata->DeltaMouseX *= ACCELERATOR_MULTI;
@@ -1325,7 +1326,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             iihdata->DeltaMouseY *= ACCELERATOR_MULTI;
         }
         
-        switch(GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks) {
+        switch (GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks)
+        {
         case 0:
         iihdata->DeltaMouseX_Correction = 0;
         iihdata->DeltaMouseX_Correction = 0;
@@ -1336,11 +1338,11 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
            Will be added to prescaled deltas of next mousemove event. If this is not done, moving
            the mouse very slowly would cause it to not move at all */
            
-        iihdata->DeltaMouseX_Correction = iihdata->DeltaMouseX % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-        iihdata->DeltaMouseY_Correction = iihdata->DeltaMouseY % GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+        iihdata->DeltaMouseX_Correction = iihdata->DeltaMouseX % GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
+        iihdata->DeltaMouseY_Correction = iihdata->DeltaMouseY % GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
         
-        iihdata->DeltaMouseX /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
-        iihdata->DeltaMouseY /= GetPrivIBase(IntuitionBase)->ActivePreferences->PointerTicks;
+        iihdata->DeltaMouseX /= GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
+        iihdata->DeltaMouseY /= GetPrivIBase(IntuitionBase)->ActivePreferences.PointerTicks;
         break;
         }
 

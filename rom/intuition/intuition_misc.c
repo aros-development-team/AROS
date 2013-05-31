@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2012, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -50,10 +50,6 @@ extern IPTR HookEntry();
 
 void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 {
-#ifdef __mc68000
-    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-#endif
-    BYTE read_preferences = FALSE;
 #   ifdef SKINS
         static CONST UWORD DriPens2[NUMDRIPENS] = { 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1 , 1 , 0};
         static CONST UWORD DriPens4[NUMDRIPENS] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1 , 2 , 1};
@@ -62,24 +58,17 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
         static CONST UWORD DriPens4[NUMDRIPENS] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1};
 #   endif /* SKINS */
     
-    /*
-    ** Load the intuition preferences from a file on the disk
-    ** Allocate storage for the preferences, even if it's just a copy
-    ** of the default preferences.
-    */
-    GetPrivIBase(IntuitionBase)->DefaultPreferences =
-        AllocMem(sizeof(struct Preferences), MEMF_CLEAR);
-
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID  = INVALID_ID;
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width          = AROS_DEFAULT_WBWIDTH;
 #ifdef __mc68000
-    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height         = (GfxBase->DisplayFlags & NTSC) ? 200 : 256;
+    GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height         = GetPrivIBase(IntuitionBase)->GfxBase->DisplayFlags & NTSC) ? 200 : 256;
 #else
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height         = AROS_DEFAULT_WBHEIGHT;
 #endif
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth          = AROS_DEFAULT_WBDEPTH;
     GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Control         = 0;
 
+    /* Default IControl prefs are AROS addition. Keep while backporting. */
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_TimeOut  = 50;
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_MetaDrag = IEQUALIFIER_LCOMMAND;    
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags    = ICF_3DMENUS |
@@ -98,61 +87,14 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
     /*
      * Mouse default.
      */
-    GetPrivIBase(IntuitionBase)->DefaultPreferences->PointerTicks = 2;
+    GetPrivIBase(IntuitionBase)->DefaultPreferences.PointerTicks = 2;
 
-    /* FIXME: Try to load preferences from a file! */
-
-
-    /*******************************************************************
-        DOSBase = OpenLibrary("dos.library",0);
-        if (NULL != DOSBase)
-        {
-          if (NULL != (pref_file = Open("envarc:",MODE_OLDFILE)))
-          {
-            *
-            **  Read it and check whether the file was valid.
-            *
-     
-            if (sizeof(struct Preferences) ==
-                Read(pref_file,
-                     GetPrivIBase(IntuitionBase)->DefaultPreferences,
-                     sizeof(struct Preferences)))
-              read_preferences = TRUE;
-     
-            Close(pref_file);
-          }
-          CloseLibrary(DOSBase)
-        }
-    ****************************************************************/
-
-    if (FALSE == read_preferences)
-    {
-        /*
-        ** no (valid) preferences file is available.
-        */
-        CopyMem(&IntuitionDefaultPreferences,
-                GetPrivIBase(IntuitionBase)->DefaultPreferences,
+    CopyMem(&IntuitionDefaultPreferences,
+                &GetPrivIBase(IntuitionBase)->DefaultPreferences,
                 sizeof(struct Preferences));
-    }
-
-
-    /*
-    ** Activate the preferences...
-    */
-
-    GetPrivIBase(IntuitionBase)->ActivePreferences =
-        AllocMem(sizeof(struct Preferences),
-                 MEMF_CLEAR);
-
-#if 1
-    CopyMem(GetPrivIBase(IntuitionBase)->DefaultPreferences,
-            GetPrivIBase(IntuitionBase)->ActivePreferences,
+    CopyMem(&GetPrivIBase(IntuitionBase)->DefaultPreferences,
+            &GetPrivIBase(IntuitionBase)->ActivePreferences,
             sizeof(struct Preferences));
-#else
-SetPrefs(GetPrivIBase(IntuitionBase)->DefaultPreferences,
-    sizeof(struct Preferences),
-    FALSE/*TRUE*/);
-#endif
 
     CopyMem(DriPens2, GetPrivIBase(IntuitionBase)->DriPens2, sizeof(DriPens2));
     CopyMem(DriPens4, GetPrivIBase(IntuitionBase)->DriPens4, sizeof(DriPens4));
@@ -557,7 +499,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                     msg.wdp_UserBuffer  = ((struct IntWindow *)(w))->DecorUserBuffer;
                     msg.wdp_ExtraButtons = ((struct IntWindow *)w)->extrabuttons;
 
-                    msg.wdp_TrueColor = (((struct IntScreen *)w->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+                    msg.wdp_TrueColor = (((struct IntScreen *)w->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
                     msg.wdp_Dri = dri;
 
                     DoMethodA(((struct IntScreen *)(w->WScreen))->WinDecorObj, (Msg)&msg);        
@@ -652,8 +594,8 @@ void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
         if (scr->BarLayer)
         {
             D(bug("[intuition] CreateScreenBar: Adding BarLayer @ %p\n", scr->BarLayer));
-            D(bug("[intuition] CreateScreenBar: Rastport @ %p, Font @ %p\n", scr->BarLayer->rp, ((struct IntScreen *)scr)->DInfo.dri.dri_Font));
-            SetFont(scr->BarLayer->rp, ((struct IntScreen *)scr)->DInfo.dri.dri_Font);
+            D(bug("[intuition] CreateScreenBar: Rastport @ %p, Font @ %p\n", scr->BarLayer->rp, ((struct IntScreen *)scr)->DInfo.dri_Font));
+            SetFont(scr->BarLayer->rp, ((struct IntScreen *)scr)->DInfo.dri_Font);
             if (!(scr->Flags & SCREENQUIET)) {
                 D(bug("[intuition] CreateScreenBar: Rendering Bar  ...\n"));
                 RenderScreenBar(scr, FALSE, IntuitionBase);
@@ -698,7 +640,6 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
 
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
-    struct DrawInfo *dri = &((struct IntScreen *)scr)->DInfo.dri;
     struct RastPort *rp;
 
     D(bug("[intuition] RenderScreenBar()\n"));
@@ -739,9 +680,9 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
             msg.sdp_RPort        = rp;
                 msg.sdp_Flags        = 0;
             msg.sdp_Screen        = scr;
-            msg.sdp_Dri                = dri;
+            msg.sdp_Dri           = (struct DrawInfo *)&((struct IntScreen *)scr)->DInfo;
             msg.sdp_UserBuffer = ((struct IntScreen *)(scr))->DecorUserBuffer;
-            msg.sdp_TrueColor   = (((struct IntScreen *)(scr))->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+            msg.sdp_TrueColor   = (((struct IntScreen *)(scr))->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
 
             D(bug("[intuition] RenderScreenBar: ScrDecorObj @ %p, DecorUserBuffer @ %p\n", ((struct IntScreen *)(scr))->ScrDecorObj, ((struct IntScreen *)(scr))->DecorUserBuffer));
             DoMethodA(((struct IntScreen *)(scr))->ScrDecorObj, (Msg)&msg);
@@ -1194,7 +1135,7 @@ AROS_UFH3(BOOL, DefaultWindowShapeFunc,
     struct wdpWindowShape    shapemsg;
     
     shapemsg.MethodID            = WDM_WINDOWSHAPE;
-    shapemsg.wdp_TrueColor  = (GetPrivScreen(win->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
+    shapemsg.wdp_TrueColor  = (GetPrivScreen(win->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
     shapemsg.wdp_Width             = msg->NewBounds->MaxX - msg->NewBounds->MinX + 1;
     shapemsg.wdp_Height     = msg->NewBounds->MaxY - msg->NewBounds->MinY + 1;
     shapemsg.wdp_Window = win;
