@@ -95,7 +95,7 @@ static void krnReleaseSysMem(struct MemHeader *mh, APTR addr, IPTR chunkSize, IP
         mc = addr + allocSize;
 
         mc->mc_Next  = mh->mh_First;
-        mc->mc_Bytes = chunkSize - allocSize;
+        mc->mc_Bytes = chunkSize;
 
         mh->mh_First = mc;
         mh->mh_Free += mc->mc_Bytes;
