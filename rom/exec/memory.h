@@ -60,10 +60,12 @@ struct TraceLocation;
 
 struct MemHeaderAllocatorCtx;
 
+/* Returns existing or allocates new ctx */
 struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh, struct ExecBase * SysBase);
 void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool);
-void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * mhac);
 ULONG mhac_GetCtxSize();
+/* Clears ctx if it already exists for a given MemHeader */
+void mhac_ClearSysCtx(struct MemHeader * mh, struct ExecBase * SysBase);
 
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase);
 APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR byteSize, ULONG requirements, struct TraceLocation *loc, struct ExecBase *SysBase);
