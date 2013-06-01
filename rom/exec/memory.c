@@ -114,15 +114,16 @@ void mhac_PoolMemHeaderSetup(struct MemHeader * mh, struct ProtectedPool * pool)
     mh->mh_Node.ln_Name = (STRPTR)pool;
 }
 
-void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * mhac)
-{
-}
-
 ULONG mhac_GetCtxSize()
 {
     return 0;
 }
 
+void mhac_ClearSysCtx(struct MemHeader * mh, struct ExecBase * SysBase)
+{
+}
+
+#define mhac_MemChunkClaimed(a, b)
 #define mhac_IsIndexEmpty(a)                (TRUE)
 #define mhac_ClearIndex(a)
 #define mhac_MemChunkCreated(a, b, c)       { (void)b; }
@@ -214,6 +215,20 @@ static void mhac_SetupMemHeaderAllocatorCtx(struct MemHeader * mh, ULONG maxinde
     mhac_ClearIndex(mhac);
 }
 
+void mhac_ClearSysCtx(struct MemHeader * mh, struct ExecBase * SysBase)
+{
+    struct MemHeaderAllocatorCtx * mhac = NULL;
+
+    ForeachNode(&PrivExecBase(SysBase)->AllocatorCtxList, mhac)
+    {
+        if (mhac->mhac_MemHeader == mh)
+        {
+            mhac_ClearIndex(mhac);
+            break;
+        }
+    }
+}
+
 struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh, struct ExecBase * SysBase)
 {
     struct MemHeaderAllocatorCtx * mhac = NULL;
@@ -232,7 +247,7 @@ struct MemHeaderAllocatorCtx * mhac_GetSysCtx(struct MemHeader * mh, struct Exec
     return mhac;
 }
 
-void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * mhac)
+static void mhac_MemChunkClaimed(struct MemChunk * mc, struct MemHeaderAllocatorCtx * mhac)
 {
     LONG i;
 

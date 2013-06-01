@@ -156,7 +156,8 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
             /* Found a chunk that fits? */
             if((UBYTE *)p2+p2->mc_Bytes>=(UBYTE *)p4&&p2<=p3)
             {
-                mhac_MemChunkClaimed(p2, mhac_GetSysCtx(mh, SysBase));
+                /* Since AllocAbs allocations never allocate/update a ctx, they need to clear it if it exists */
+                mhac_ClearSysCtx(mh, SysBase);
 
                 /* Check if there's memory left at the end. */
                 if((UBYTE *)p2+p2->mc_Bytes!=(UBYTE *)p4)
