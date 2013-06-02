@@ -41,6 +41,7 @@ typedef struct {
     uint32_t        UCR2;
     uint32_t        UCR3;
     uint32_t        UCR4;
+    uint32_t        UFCR;
     uint32_t        USR1;
     uint32_t        USR2;
     uint32_t        UESC;
