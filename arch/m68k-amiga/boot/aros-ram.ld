@@ -15,7 +15,7 @@ INCLUDE ../../../bin/amiga-m68k/gen/any_objs.ld
   .rom.MEMF_LOCAL             : { _rom_start = .;
 INCLUDE ../../../bin/amiga-m68k/gen/local_objs.ld
                                    /* This is for the static libs */
-                                  *(.text .rodata .rodata.*)
+                                  *(.text .text.* .rodata .rodata.*)
                                   *(.eh_frame)
                                   _rom_end = .;   
                                   _ext_start = .;   
