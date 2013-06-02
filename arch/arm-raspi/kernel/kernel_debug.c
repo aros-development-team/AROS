@@ -12,7 +12,7 @@
 #include <kernel_base.h>
 #include <kernel_debug.h>
 
-void (*_KrnPutC)(char *) = NULL;
+void (*_KrnPutC)(char) = NULL;
 
 inline void krnWaitSerOut()
 {
