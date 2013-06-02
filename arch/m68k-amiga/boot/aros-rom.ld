@@ -12,7 +12,7 @@ INCLUDE ../../../bin/amiga-m68k/gen/ext_objs.ld
   .rom                        : { _rom_start = .;
 INCLUDE ../../../bin/amiga-m68k/gen/rom_objs.ld
                                    /* This is for the static libs */
-                                  *(.text .rodata .rodata.*)
+                                  *(.text .text.* .rodata .rodata.*)
                                   *(.eh_frame)
                                   _rom_end = .;   
                                 } >valid
