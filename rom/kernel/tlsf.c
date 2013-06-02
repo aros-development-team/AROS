@@ -1060,21 +1060,6 @@ BOOL tlsf_in_bounds(struct MemHeaderExt * mhe, void * begin, void * end)
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-#include "tlsf.h"
-
 static void destroy_Pool(struct MemHeaderExt *mhe)
 {
     tlsf_destroy(mhe);
