@@ -8221,9 +8221,21 @@ case "$target_os" in
         aros_arch_libs="-laeabi"
         gcc_default_cpu="armv7-a"
         gcc_default_fpu="vfpv3"
-        gcc_default_float_abi="softfp"
-        aros_config_cflags="$aros_config_cflags -mtune=cortex-a8 -fno-strict-aliasing"
-        aros_config_aflags="$aros_config_aflags -mtune=cortex-a8 -fno-strict-aliasing"
+        aros_config_cflags="$aros_config_cflags -mtune=cortex-a8 -fno-strict-aliasing -fno-asynchronous-unwind-tables"
+        aros_config_aflags="$aros_config_aflags -mtune=cortex-a8 -fno-strict-aliasing -fno-asynchronous-unwind-tables"
+        case "$target_cpu" in
+            *armhf*)
+                gcc_default_float_abi="hard"
+                target_cpu=arm
+                aros_target_cpu=arm
+                ;;
+            *arm*)
+                gcc_default_float_abi="softfp"
+                ;;
+            *)
+                as_fn_error $? "\"Unknown CPU for EfikaMX $target_cpu\"" "$LINENO" 5
+                ;;
+        esac
         ;;
 
     chrp)
