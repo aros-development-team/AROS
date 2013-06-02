@@ -34,12 +34,12 @@ static inline void goBack(uint32_t mode)
 
 }
 
-static inline void ictl_enable_irq(uint8_t irq)
+static inline void ictl_enable_irq(uint8_t irq, struct KernelBase * KernelBase)
 {
 
 }
 
-static inline void ictl_disable_irq(uint8_t irq)
+static inline void ictl_disable_irq(uint8_t irq, struct KernelBase * KernelBase)
 {
 
 }
