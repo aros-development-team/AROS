@@ -1,0 +1,15 @@
+# $Id: mmakefile.src $
+include $(TOP)/config/make.cfg
+
+FILES := readjoyport \
+         setjoyportattrsa \
+         lowlevel_amiga
+
+USER_INCLUDES += -I$(SRCDIR)/workbench/libs/lowlevel
+
+%build_archspecific \
+  mainmmake=workbench-libs-lowlevel maindir=workbench/libs/lowlevel \
+  arch=amiga-m68k \
+  files="$(FILES)"
+
+%common
