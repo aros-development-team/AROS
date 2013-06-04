@@ -57,10 +57,10 @@ asm (
     ".string \"Native/CORE v3 (" __DATE__ ")\"" "\n\t\n\t"
 );
 
-static const uint32_t *stack_end __attribute__((used, section(".aros.init"))) = &stack[STACK_SIZE-4];
-static const uint32_t *stack_super_end __attribute__((used, section(".aros.init"))) = &stack_super[STACK_SIZE-4];
-static const uint32_t *stack_abort_end __attribute__((used, section(".aros.init"))) = &stack_abort[STACK_SIZE-4];
-static const uint32_t *stack_irq_end __attribute__((used, section(".aros.init"))) = &stack_irq[STACK_SIZE-4];
+static uint32_t * const stack_end __attribute__((used, section(".aros.init"))) = &stack[STACK_SIZE - sizeof(IPTR)];
+static uint32_t * const stack_super_end __attribute__((used, section(".aros.init"))) = &stack_super[STACK_SIZE - sizeof(IPTR)];
+static uint32_t * const stack_abort_end __attribute__((used, section(".aros.init"))) = &stack_abort[STACK_SIZE - sizeof(IPTR)];
+static uint32_t * const stack_irq_end __attribute__((used, section(".aros.init"))) = &stack_irq[STACK_SIZE - sizeof(IPTR)];
 
 __attribute__((section(".data"))) struct ExecBase *SysBase = NULL;
 
@@ -121,13 +121,13 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     /* NB: the bootstrap has conveniently setup the framebuffer
             and initialised the serial port and led for us */
 
-    *(volatile unsigned int *)GPCLR0 = 1<<16; // LED ON
+    *(volatile unsigned int *)GPCLR0 = (1 << 16); // LED ON
 
     core_SetupMMU();
 
     for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
 
-    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
+    *(volatile unsigned int *)GPSET0 = (1 << 16); // LED OFF
 
     /* Enable Vector Floating Point Calculations */
     asm volatile("mrc p15,0,%[fpuflags],c1,c0,2\n" : [fpuflags] "=r" (fpuflags));   // Read Access Control Register 
@@ -140,7 +140,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     for (delay = 0; delay < 100000; delay++) asm volatile ("mov r0, r0\n");
 
-    *(volatile unsigned int *)GPCLR0 = 1<<16; // LED ON
+    *(volatile unsigned int *)GPCLR0 = (1 << 16); // LED ON
 
     while(msg->ti_Tag != TAG_DONE)
     {
