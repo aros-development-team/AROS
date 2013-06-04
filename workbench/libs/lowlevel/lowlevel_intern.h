@@ -31,6 +31,10 @@ struct LowLevelBase
     struct SignalSemaphore ll_Lock;
     struct Interrupt       ll_VBlank;
     BPTR                   ll_SegList;
+
+    /* Variables used by amiga-m68k */
+    ULONG ll_PortType[2];
+    struct Library *ll_PotgoBase;
 };
 
 /*
