@@ -493,7 +493,10 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     fetchunit = fetchunits[data->fmode_bpl * 4 + data->res];
     maxplanes = fm_maxplanes[data->fmode_bpl * 4 + data->res];
 
-    if (bm->depth > maxplanes) {
+    D(bug("res %d fmode %d depth %d maxplanes %d aga %d agae %d\n",
+        data->res, data->fmode_bpl, bm->depth, maxplanes, data->aga, data->aga_enabled));
+
+    if (bm->depth > (1 << maxplanes)) {
         if (data->aga && !data->aga_enabled) {
             // Enable AGA if requesting AGA only mode.
             // This is a compatibility hack because our display
@@ -505,7 +508,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
             fetchunit = fetchunits[data->fmode_bpl * 4 + data->res];
             maxplanes = fm_maxplanes[data->fmode_bpl * 4 + data->res];
         }
-        if (bm->depth > maxplanes)
+        if (bm->depth > (1 << maxplanes))
             return FALSE;
     }
 
