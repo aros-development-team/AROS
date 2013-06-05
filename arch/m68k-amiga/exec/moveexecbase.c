@@ -95,6 +95,7 @@ struct ExecBase *PrepareExecBaseMove(struct ExecBase *oldSysBase)
 	reloclist(&PrivExecBase(newsb)->ResetHandlers);
 	reloclist((struct List*)&PrivExecBase(newsb)->AllocMemList);
 	reloclist((struct List*)&PrivExecBase(newsb)->TaskStorageSlots);
+	reloclist((struct List*)&PrivExecBase(newsb)->AllocatorCtxList);
 
 	InitSemaphore(&PrivExecBase(newsb)->MemListSem);
 	InitSemaphore(&PrivExecBase(newsb)->LowMemSem);
