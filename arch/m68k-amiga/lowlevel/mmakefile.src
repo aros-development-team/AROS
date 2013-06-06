@@ -7,6 +7,8 @@ FILES := readjoyport \
 
 USER_INCLUDES += -I$(SRCDIR)/workbench/libs/lowlevel
 
+#MM- workbench-libs-lowlevel-amiga-m68k: kernel-potgo-includes
+
 %build_archspecific \
   mainmmake=workbench-libs-lowlevel maindir=workbench/libs/lowlevel \
   arch=amiga-m68k \
