@@ -1151,8 +1151,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         /* dri_Depth is 8 on hi/true color screens like in AmigaOS with picasso96/cybergraphx */
         screen->DInfo.dri_Depth = (ns.Depth <= 8) ? ns.Depth : 8;
 
-        if (ns.Depth > 8) screen->DInfo.dri_Flags = DRIF_DIRECTCOLOR;
-
         screen->DInfo.dri_Screen = &screen->Screen;
 
         /* SA_SysFont overrides SA_Font! */
@@ -1344,7 +1342,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         }
     }
 
-#ifdef SKINS
     if (ok)
     {
         ULONG realdepth;
@@ -1360,7 +1357,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         {
             screen->DInfo.dri_Flags &= ~DRIF_DIRECTCOLOR;
         }
-
+#ifdef SKINS
         if (!(screen->DInfo.dri_Colors = AllocMem(4 * DRIPEN_NUMDRIPENS,MEMF_PUBLIC)))
             ok = FALSE;
 
@@ -1369,17 +1366,21 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             CopyMem(&defaultdricolors,screen->DInfo.dri_Colors,sizeof (defaultdricolors));
             memset(((UBYTE *) screen->DInfo.dri_Colors) + sizeof(defaultdricolors), 0, 4 * DRIPEN_NUMDRIPENS - sizeof(defaultdricolors));
         }
-
+#endif
         if (ok)
         {
             if ((screen->DInfo.dri_Customize = AllocMem(sizeof (struct IntuitionCustomize),MEMF_PUBLIC|MEMF_CLEAR)))
             {
                 struct IntuitionCustomize *ic;
                 ic = screen->DInfo.dri_Customize;
+#ifdef SKINS
                 screen->DInfo.dri_Flags |= DRIF_SKINSSUPPORT;
                 /* This initializes CustomizePrefs structure */
 
                 int_SkinAction(SKA_LoadSkin,(ULONG*)&screen->DInfo,(struct Screen *)screen,IntuitionBase);
+#else
+                ok = int_LoadDecorator(NULL, screen, IntuitionBase);
+#endif
             }
             else
             {
@@ -1388,6 +1389,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         }
     }
 
+#ifdef SKINS
     if (ok)
     {
         struct windowclassprefs *wcprefs;
@@ -1406,69 +1408,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     }
 
 #endif
-
-    if (ok)
-    {
-        IPTR userbuffersize;
-        struct NewDecorator *nd;
-
-        nd = ((struct IntIntuitionBase *)(IntuitionBase))->Decorator;
-
-        ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
-
-        struct DosLibrary *DOSBase = GetPrivIBase(IntuitionBase)->DOSBase;
-
-	/* Open dos.library only once, when first needed */
-	if (!DOSBase)
-            GetPrivIBase(IntuitionBase)->DOSBase = DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
-
-        if (DOSBase)
-        {
-            struct Node *node;
-
-            if (!IsListEmpty(&GetPrivIBase(IntuitionBase)->Decorations))
-            {
-                node = GetPrivIBase(IntuitionBase)->Decorations.lh_Head;
-                for (; node->ln_Succ; node = node->ln_Succ)
-                {
-                    struct NewDecorator *d = (struct NewDecorator *) node;
-
-                    if ((d->nd_IntPattern != NULL) && (screen->Screen.Title != NULL))
-                    {	
-                    	if (MatchPattern(d->nd_IntPattern, screen->Screen.Title))
-                    	    nd = d;
-                    }
-                }
-            }
-        }
-
-        if (nd != NULL)
-        {
-            screen->ScrDecorObj = NewObjectA(nd->nd_ScreenClass, NULL, nd->nd_ScreenTags);
-            screen->MenuDecorObj = NewObjectA(nd->nd_MenuClass, NULL, nd->nd_MenuTags);
-            screen->WinDecorObj = NewObjectA(nd->nd_WindowClass, NULL, nd->nd_WindowTags);
-        }
-        else
-        {
-            screen->ScrDecorObj = NewObjectA(GetPrivIBase(IntuitionBase)->ScrDecorClass, NULL, GetPrivIBase(IntuitionBase)->ScrDecorTags);
-            screen->MenuDecorObj = NewObjectA(GetPrivIBase(IntuitionBase)->MenuDecorClass, NULL, GetPrivIBase(IntuitionBase)->MenuDecorTags);
-            screen->WinDecorObj = NewObjectA(GetPrivIBase(IntuitionBase)->WinDecorClass, NULL, GetPrivIBase(IntuitionBase)->WinDecorTags);
-        }
-        screen->Decorator = nd;
-
-        if (screen->Decorator) screen->Decorator->nd_cnt++;
-
-        ReleaseSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
-
-        GetAttr(SDA_UserBuffer, screen->ScrDecorObj, &userbuffersize);
-
-        if (userbuffersize)
-        {
-            screen->DecorUserBufferSize = userbuffersize;
-            screen->DecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-            if (!screen->DecorUserBuffer) ok = FALSE;
-        }
-    }
 
     if (ok)
     {
@@ -1492,21 +1431,15 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
                                  screen->DInfo.dri_AmigaKey));
 
         sysi_tags[0].ti_Data = SUBMENUIMAGE;
-
-        screen->DInfo.dri_SubMenuImage  = NewObjectA(NULL, "sysiclass", sysi_tags);
-        DEBUG_OPENSCREEN(dprintf("OpenScreen: SubMenuImage 0x%lx\n",
-                                 screen->DInfo.dri_SubMenuImage));
-
-#ifdef SKINS
-        sysi_tags[0].ti_Data = SUBMENUIMAGE;
         screen->DInfo.dri_Customize->submenu  = NewObjectA(NULL, "sysiclass", sysi_tags);
+        if (!screen->DInfo.dri_Customize->submenu) ok = FALSE;
+#ifdef SKINS
         sysi_tags[0].ti_Data = MENUTOGGLEIMAGE;
         screen->DInfo.dri_Customize->menutoggle  = NewObjectA(NULL, "sysiclass", sysi_tags);
-        if (!screen->DInfo.dri_Customize->submenu ||
-            !screen->DInfo.dri_Customize->menutoggle) ok = FALSE;
+        if !screen->DInfo.dri_Customize->menutoggle) ok = FALSE;
 #endif
 
-        if (!screen->DInfo.dri_CheckMark || !screen->DInfo.dri_AmigaKey || !screen->DInfo.dri_SubMenuImage) ok = FALSE;
+        if (!screen->DInfo.dri_CheckMark || !screen->DInfo.dri_AmigaKey) ok = FALSE;
     }
 
 
@@ -1527,43 +1460,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         screen->Screen.MenuVBorder = 2; /* on the Amiga it is (usually?) 2 */
         screen->Screen.MenuHBorder = 4;
 
-        struct sdpInitScreen       msg;
-
-        msg.MethodID 	           = SDM_INITSCREEN;
-        msg.sdp_Screen             = &screen->Screen;
-        msg.sdp_TrueColor          = screen->DInfo.dri_Flags & DRIF_DIRECTCOLOR;
-        msg.sdp_FontHeight         = screen->DInfo.dri_Font->tf_YSize;
-        msg.sdp_BarVBorder         = screen->Screen.BarVBorder;
-        msg.sdp_BarHBorder         = screen->Screen.BarHBorder;
-        msg.sdp_MenuVBorder        = screen->Screen.MenuVBorder;
-        msg.spd_MenuHBorder        = screen->Screen.MenuHBorder;
-        msg.sdp_WBorTop            = screen->Screen.WBorTop;
-        msg.sdp_WBorLeft           = screen->Screen.WBorLeft;
-        msg.sdp_WBorRight          = screen->Screen.WBorRight;
-        msg.sdp_WBorBottom         = screen->Screen.WBorBottom;
-
-#ifdef TITLEHACK
-        msg.sdp_TitleHack          = screen->Screen.WBorTop-2;
-#else
-	msg.sdp_TitleHack          = 0;
-#endif
-
-        msg.sdp_BarHeight      = msg.sdp_FontHeight + msg.sdp_BarVBorder * 2 + msg.sdp_TitleHack;
-        msg.sdp_UserBuffer      = ((struct IntScreen *)screen)->DecorUserBuffer;
-
-        if (!DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, (Msg)&msg)) ok = FALSE;
-        if (ok)
-        {
-            screen->Screen.BarHeight     = msg.sdp_BarHeight;
-            screen->Screen.BarVBorder    = msg.sdp_BarVBorder;
-            screen->Screen.BarHBorder    = msg.sdp_BarHBorder;
-            screen->Screen.MenuVBorder   = msg.sdp_MenuVBorder;
-            screen->Screen.MenuHBorder   = msg.spd_MenuHBorder;
-            screen->Screen.WBorTop       = msg.sdp_WBorTop;
-            screen->Screen.WBorLeft      = msg.sdp_WBorLeft;
-            screen->Screen.WBorRight     = msg.sdp_WBorRight;
-            screen->Screen.WBorBottom    = msg.sdp_WBorBottom;
-        }
+        screen->Screen.BarHeight = screen->DInfo.dri_Font->tf_YSize + screen->Screen.BarVBorder * 2;
     }
 
 
@@ -1607,18 +1504,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             screen->Screen.FirstGadget = (struct Gadget *)screen->depthgadget;
             if (screen->Screen.FirstGadget)
             {
-    		struct sdpLayoutScreenGadgets  msg;
-
                 screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
-
-		msg.MethodID 	    	= SDM_LAYOUT_SCREENGADGETS;
-	        msg.sdp_TrueColor       = screen->DInfo.dri_Flags & DRIF_DIRECTCOLOR;
-		msg.sdp_Layer 	    	= screen->Screen.BarLayer;
-		msg.sdp_Gadgets     	= screen->Screen.FirstGadget;
-		msg.sdp_Flags   	= SDF_LSG_INITIAL | SDF_LSG_MULTIPLE;
-	    	msg.sdp_UserBuffer      = ((struct IntScreen *)screen)->DecorUserBuffer;
-
-		DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, (Msg)&msg);
 
 	    #if 0
                 struct TagItem gadtags[] =
@@ -1659,8 +1545,8 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         windowlock = TRUE;
 #endif
 
-#ifdef SKINS
         int_CalcSkinInfo(&screen->Screen,IntuitionBase);
+#ifdef SKINS
         int_InitTitlebarBuffer(screen,IntuitionBase);
 #endif
 
@@ -1766,10 +1652,12 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             KillScreenBar(&screen->Screen, IntuitionBase);
         }
 
-#ifdef SKINS
         DisposeObject(screen->DInfo.dri_Customize->submenu);
+#ifdef SKINS
         DisposeObject(screen->DInfo.dri_Customize->menutoggle);
+#endif
         if (screen->DInfo.dri_Customize) FreeMem(screen->DInfo.dri_Customize,sizeof (struct IntuitionCustomize));
+#ifdef SKINS
         if (screen->DInfo.dri_Colors) FreeMem(screen->DInfo.dri_Colors,4 * DRIPEN_NUMDRIPENS);
 #endif
         if (screen->DInfo.dri_AmigaKey)
@@ -1781,12 +1669,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose CheckMark Object\n"));
             DisposeObject(screen->DInfo.dri_CheckMark);
-        }
-
-        if (screen->DInfo.dri_SubMenuImage)
-        {
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: Dispose SubMenuImage Object\n"));
-            DisposeObject(screen->DInfo.dri_SubMenuImage);
         }
 
         if (screen->DInfo.dri_Font)

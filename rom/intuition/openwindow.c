@@ -20,6 +20,7 @@
 #include <proto/layers.h>
 #include <exec/ports.h>
 #include "intuition_intern.h"
+#include "intuition_customize.h"
 #include "inputhandler.h"
 #include "inputhandler_actions.h"
 #include "boopsigadgets.h"
@@ -988,7 +989,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     IW(w)->AmigaKey  = AmigaKey  ? AmigaKey  :
                                            ((struct IntScreen *)(w->WScreen))->DInfo.dri_AmigaKey;
-    IW(w)->SubMenuImage = ((struct IntScreen *)(w->WScreen))->DInfo.dri_SubMenuImage;
+    IW(w)->SubMenuImage = ((struct IntScreen *)(w->WScreen))->DInfo.dri_Customize->submenu;
 
 #ifndef __MORPHOS__
     /* child support */

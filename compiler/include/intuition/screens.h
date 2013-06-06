@@ -141,47 +141,78 @@ struct ExtNewScreen
 #define STDSCREENWIDTH  -1
 
 /* ExtNewScreen->Extension (Tags) */
-#define SA_Dummy     (TAG_USER + 32)
-#define SA_Left      (SA_Dummy + 1)
-#define SA_Top       (SA_Dummy + 2)
-#define SA_Width     (SA_Dummy + 3)
-#define SA_Height    (SA_Dummy + 4)
-#define SA_Depth     (SA_Dummy + 5)
-#define SA_DetailPen (SA_Dummy + 6)
-#define SA_BlockPen  (SA_Dummy + 7)
-#define SA_Title     (SA_Dummy + 8)
-#define SA_Colors    (SA_Dummy + 9)
-#define SA_ErrorCode (SA_Dummy + 10)
-#define SA_Font      (SA_Dummy + 11)
-#define SA_SysFont   (SA_Dummy + 12)
-#define SA_Type      (SA_Dummy + 13)
-#define SA_BitMap    (SA_Dummy + 14)
-#define SA_PubName   (SA_Dummy + 15)
-#define SA_PubSig    (SA_Dummy + 16)
-#define SA_PubTask   (SA_Dummy + 17)
-#define SA_DisplayID (SA_Dummy + 18)
-#define SA_DClip     (SA_Dummy + 19)
-#define SA_Overscan  (SA_Dummy + 20) /* see below */
+#define SA_Dummy              (TAG_USER + 32 )
+#define SA_Left               (SA_Dummy + 1  ) /* [ISG] LONG            Left edge position */
+#define SA_Top                (SA_Dummy + 2  ) /* [ISG] LONG            Top edge position  */
+#define SA_Width              (SA_Dummy + 3  ) /* [I.G] LONG            Screen width       */
+#define SA_Height             (SA_Dummy + 4  ) /* [I.G] LONG            Screen height      */
+#define SA_Depth              (SA_Dummy + 5  ) /* [I.G] LONG            Screen depth       */
+#define SA_DetailPen          (SA_Dummy + 6  )
+#define SA_BlockPen           (SA_Dummy + 7  )
+#define SA_Title              (SA_Dummy + 8  )
+#define SA_Colors             (SA_Dummy + 9  )
+#define SA_ErrorCode          (SA_Dummy + 10 )
+#define SA_Font               (SA_Dummy + 11 )
+#define SA_SysFont            (SA_Dummy + 12 )
+#define SA_Type               (SA_Dummy + 13 )
+#define SA_BitMap             (SA_Dummy + 14 )
+#define SA_PubName            (SA_Dummy + 15 ) /* [I.G] LONG            Public screen name */
+#define SA_PubSig             (SA_Dummy + 16 )
+#define SA_PubTask            (SA_Dummy + 17 )
+#define SA_DisplayID          (SA_Dummy + 18 ) /* [I.G] ULONG           Display mode ID    */
+#define SA_DClip              (SA_Dummy + 19 )
+#define SA_Overscan           (SA_Dummy + 20 ) /* see below */
 
-#define SA_ShowTitle       (SA_Dummy + 22)
-#define SA_Behind          (SA_Dummy + 23)
-#define SA_Quiet           (SA_Dummy + 24)
-#define SA_AutoScroll      (SA_Dummy + 25)
-#define SA_Pens            (SA_Dummy + 26)
-#define SA_FullPalette     (SA_Dummy + 27)
-#define SA_ColorMapEntries (SA_Dummy + 28)
-#define SA_Parent          (SA_Dummy + 29)
-#define SA_Draggable       (SA_Dummy + 30)
-#define SA_Exclusive       (SA_Dummy + 31)
-#define SA_SharePens       (SA_Dummy + 32)
-#define SA_BackFill        (SA_Dummy + 33)
-#define SA_Interleaved     (SA_Dummy + 34)
-#define SA_Colors32        (SA_Dummy + 35)
-#define SA_VideoControl    (SA_Dummy + 36)
-#define SA_FrontChild      (SA_Dummy + 37)
-#define SA_BackChild       (SA_Dummy + 38)
-#define SA_LikeWorkbench   (SA_Dummy + 39)
-#define SA_MinimizeISG     (SA_Dummy + 41)
+#define SA_ShowTitle          (SA_Dummy + 22 )
+#define SA_Behind             (SA_Dummy + 23 ) /* [I.G] BOOL                               */
+#define SA_Quiet              (SA_Dummy + 24 )
+#define SA_AutoScroll         (SA_Dummy + 25 )
+#define SA_Pens               (SA_Dummy + 26 )
+#define SA_FullPalette        (SA_Dummy + 27 )
+#define SA_ColorMapEntries    (SA_Dummy + 28 )
+#define SA_Parent             (SA_Dummy + 29 )
+#define SA_Draggable          (SA_Dummy + 30 )
+#define SA_Exclusive          (SA_Dummy + 31 )
+#define SA_SharePens          (SA_Dummy + 32 )
+#define SA_BackFill           (SA_Dummy + 33 )
+#define SA_Interleaved        (SA_Dummy + 34 )
+#define SA_Colors32           (SA_Dummy + 35 )
+#define SA_VideoControl       (SA_Dummy + 36 )
+#define SA_FrontChild         (SA_Dummy + 37 )
+#define SA_BackChild          (SA_Dummy + 38 )
+#define SA_LikeWorkbench      (SA_Dummy + 39 )
+#define SA_MinimizeISG        (SA_Dummy + 41 )
+
+#define SA_Displayed          (SA_Dummy + 101) /* [..G] BOOL            The screen is currently on display                 */
+#define SA_MonitorName        (SA_Dummy + 102) /* [I.G] STRPTR          Monitor object name                                */
+#define SA_MonitorObject      (SA_Dummy + 103) /* [..G] Object *        Monitorclass object                                */
+#define SA_TopLeftScreen      (SA_Dummy + 112) /* [..G] struct Screen * Pointer to the screen displayed on another monitor */
+#define SA_TopMiddleScreen    (SA_Dummy + 113)
+#define SA_TopRightScreen     (SA_Dummy + 114)
+#define SA_MiddleLeftScreen   (SA_Dummy + 115)
+#define SA_MiddleRightScreen  (SA_Dummy + 117)
+#define SA_BottomLeftScreen   (SA_Dummy + 118)
+#define SA_BottomMiddleScreen (SA_Dummy + 119)
+#define SA_BottomRightScreen  (SA_Dummy + 120)
+#define SA_StopBlanker        (SA_Dummy + 121) /* [.S.] BOOL            Reserved                                            */
+#define SA_ShowPointer        (SA_Dummy + 122) /* [ISG] BOOL            Whether to show mouse pointer on custom screen      */
+#define SA_GammaControl       (SA_Dummy + 123) /* [I..] BOOL            Enable custom gamma table for the screen            */
+#define SA_GammaRed           (SA_Dummy + 124) /* [ISG] UBYTE *         Gamma table for red color                           */
+#define SA_GammaBlue          (SA_Dummy + 125) /* [ISG] UBYTE *         Gamma table for blue color                          */
+#define SA_GammaGreen         (SA_Dummy + 126) /* [ISG] UBYTE *         Gamma table for green color                         */
+#define SA_3DSupport          (SA_Dummy + 127) /* [I..] BOOL            Make sure that screen has 3D support                */
+#define SA_AdaptSize          (SA_Dummy + 128) /* [I..] BOOL            Adapt screen size to display size                   */
+#define SA_DisplayWidth       (SA_Dummy + 129) /* [I.G] ULONG           Width of the display mode to search for             */ 
+#define SA_DisplayHeight      (SA_Dummy + 130) /* [I.G] ULONG           Height of the display mode to search for            */ 
+#define SA_OpacitySupport     (SA_Dummy + 131) /* [..G]                 Reserved                                            */
+#define SA_SourceAlphaSupport (SA_Dummy + 132) /* [..G]                 Reserved                                            */
+#define SA_PixelFormat        (SA_Dummy + 133) /* [..G] ULONG           Pixel format of the screen                          */
+#define SA_ScreenbarTextYPos  (SA_Dummy + 134) /* [..G] LONG            Y position (baseline) of the screen bar text        */
+#define SA_ScreenbarTextPen   (SA_Dummy + 135) /* [..G] ULONG           Pen color for the screenbar text                    */
+#define SA_ScreenbarTextFont  (SA_Dummy + 136) /* [..G] struct TextFont * Font for the screenbar text                       */
+#define SA_ScreenbarSignal    (SA_Dummy + 137) /* [..G] ULONG           Reserved (MorphOS: signal bit for screenbar pluins) */
+#define SA_ExactMatchMonitorName (SA_Dummy + 138) /* [..G] BOOL         Strictly obey SA_MonitorName                        */
+#define SA_CompositingLayers  (SA_Dummy + 139) /* [I.G] BOOL            Reserved (MorphOS: use composition for layers)      */
 
 /* SA_Overscan */
 #define OSCAN_TEXT     1
@@ -256,7 +287,6 @@ struct DrawInfo
 
     struct Image * dri_CheckMark;
     struct Image * dri_AmigaKey;
-    struct Image * dri_SubMenuImage;
 
     ULONG dri_Reserved[5];
 };
@@ -266,7 +296,6 @@ struct DrawInfo
 
 /* dri_Flags */
 #define DRIF_NEWLOOK (1L<<0)
-#define DRIF_DIRECTCOLOR (1L << 1)
 
 /* dri_Pens */
 #define DETAILPEN        0
