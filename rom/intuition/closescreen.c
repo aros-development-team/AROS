@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -12,10 +12,7 @@
 #include <proto/layers.h>
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
-
-#ifdef SKINS
-#   include "intuition_customize.h"
-#endif
+#include "intuition_customize.h"
 
 #ifndef DEBUG_CloseScreen
 #define DEBUG_CloseScreen 0
@@ -169,17 +166,17 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
     /* Free the RastPort's contents */
     DeinitRastPort(&screen->RastPort);
 
-#ifdef SKINS
     if (((struct IntScreen *)screen)->DInfo.dri_Customize)
     {
         /* Free the skin */
         DisposeObject(((struct IntScreen *)screen)->DInfo.dri_Customize->submenu);
+#ifdef SKINS
         DisposeObject(((struct IntScreen *)screen)->DInfo.dri_Customize->menutoggle);
         int_SkinAction(SKA_FreeSkin,(ULONG*)&((struct IntScreen *)(screen))->DInfo,(struct Screen *)screen,IntuitionBase);
         int_FreeTitlebarBuffer(((struct IntScreen *)(screen)),IntuitionBase);
+#endif
         FreeMem(((struct IntScreen *)screen)->DInfo.dri_Customize,sizeof (struct IntuitionCustomize));
     }
-#endif
 
     DisposeObject(((struct IntScreen *)screen)->DInfo.dri_CheckMark);
     DisposeObject(((struct IntScreen *)screen)->DInfo.dri_AmigaKey);

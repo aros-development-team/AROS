@@ -209,11 +209,7 @@ void * memclr(APTR, ULONG);
 //enables some gadtools-weirdo-code, MUST be set in both gadtools & intui to work!!!
 #endif
 
-#ifdef __MORPHOS__ /* TODO: merge this */
-#define ILOCKCHECK(a) ((a->task) && (a->task == IBase->IBaseLockTask))
-#else
-#define ILOCKCHECK(a) 0
-#endif
+#define ILOCKCHECK(a) ((a->task) && (a->task == IBase->IBaseLock->ss_Owner))
 
 #ifdef SKINS
 //#define USEGETIPREFS
@@ -655,29 +651,32 @@ void sn_DoNotify(ULONG type, APTR value, struct Library *_ScreenNotifyBase);
  * private extensions.
  * The whole structure is rewritten in order to simplify MorphOS code merging.
  */
+struct IntuitionCustomize;
+
 struct IntDrawInfo
 {
-    UWORD                    dri_Version;
-    UWORD                    dri_NumPens;
-    UWORD                   *dri_Pens;
-    struct TextFont         *dri_Font;
-    UWORD                    dri_Depth;
+    UWORD                      dri_Version;
+    UWORD                      dri_NumPens;
+    UWORD                     *dri_Pens;
+    struct TextFont           *dri_Font;
+    UWORD                      dri_Depth;
     struct
     {
         UWORD X;
         UWORD Y;
-    }                        dri_Resolution;
-    ULONG                    dri_Flags;
-    struct Image            *dri_CheckMark;
-    struct Image            *dri_AmigaKey;
-    struct Image            *dri_SubMenuImage;
+    }                          dri_Resolution;
+    ULONG                      dri_Flags;
+    struct Image              *dri_CheckMark;
+    struct Image              *dri_AmigaKey;
+    /* The following two fields are compatible with AmigaOS v4 */
+    struct Screen   	      *dri_Screen;
+    struct IntuitionCustomize *dri_Customize;
     /* Private extensions begin */
-    struct Screen   	    *dri_Screen;
-    struct SignalSemaphore   dri_WinDecorSem;
-    Object  	    	    *dri_WinDecorObj;
-    struct SignalSemaphore   dri_ScrDecorSem;
-    Object  	    	    *dri_ScrDecorObj;    
+    APTR                       scrDecorUserBuffer;
 };
+
+/* Private dri_Flags */
+#define DRIF_DIRECTCOLOR  (1L << 16)
 
 #define DRI_VERSION_AROS (DRI_VERSION + 1)
 
@@ -767,7 +766,7 @@ struct IntScreen
 #define SF_IsChild  	    (0x0002)
 #define SF_InvisibleBar     (0x0004)
 #define SF_AppearingBar     (0x0008)
-#define SF_SysFont  	    (0x0010)
+#define SF_SysFont          (0x0010)
 #define SF_Draggable	    (0x0020) /* Screen can be dragged		     */
 #define SF_ComposeAbove	    (0x0100) /* Composition capabilities	     */
 #define SF_ComposeBelow	    (0x0200)
@@ -1106,8 +1105,10 @@ void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
 
 /* Private extra functions */
 void *FindMonitorNode(ULONG modeid, struct IntuitionBase *IntuitionBase);
-void *FindBestMonitorNode(void *class, const char *name, ULONG modeid, struct IntuitionBase *IntuitionBase);
-struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase);
+void *FindBestMonitorNode(void *family, const char *name, ULONG modeid, struct IntuitionBase *IntuitionBase);
+void *FindBest3dMonitor(void *family, struct IntuitionBase *IntuitionBase);
+ULONG FindBestModeID(const char *name, ULONG depth, ULONG width, ULONG height, struct IntuitionBase *IntuitionBase);
+
 AROS_INTP(ShutdownScreenHandler);
 
 #ifdef __MORPHOS__

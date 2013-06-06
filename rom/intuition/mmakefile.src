@@ -8,7 +8,7 @@ FILES := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
          menus barlabelclass fillrectclass groupgclass wbtasktalk \
          rootclass icclass modelclass itexticlass misc sysiclass menutask \
 	 windecorclass scrdecorclass menudecorclass monitorclass screennotifytask \
-	 sysrequest_intern shutdownscreen
+	 decoration sysrequest_intern shutdownscreen
 
 FUNCS := \
 	activategadget \

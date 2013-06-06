@@ -905,6 +905,10 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 	OOP_GetAttr(data->handle->gfxhidd, aHidd_Gfx_IsWindowed, msg->opg_Storage);
 	break;
 
+    case MA_MonitorID:
+        *msg->opg_Storage = data->handle->id;
+        break;
+
     default:
 	return DoSuperMethodA(cl, o, (Msg)msg);
     }
@@ -1619,4 +1623,86 @@ void MonitorClass__MM_SetScreenGamma(Class *cl, Object *obj, struct msSetScreenG
          */
         HIDD_Gfx_SetGamma(data->handle->gfxhidd, &data->gamma[GAMMA_R], &data->gamma[GAMMA_G], &data->gamma[GAMMA_B]);
     }
+}
+
+/*
+ * Find the best (closest to the given) depth with 3D support.
+ * This method will give the priority to hardware 3D.
+ */
+ULONG MonitorClass__MM_FindBest3dDepth(Class *cl, Object *obj, struct msFindBest3dDepth *msg)
+{
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
+    OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+    OOP_AttrBase HiddPixFmtAttrBase = GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase;
+    struct IMonitorNode *data = INST_DATA(cl, obj);
+    ULONG swdepth = -1;
+    ULONG i;
+
+    for (i = 0; i < MONITOR_MAXPIXELFORMATS; i++)
+    {
+	if (data->pfobjects[i])
+        {
+	    IPTR depth;
+
+	    OOP_GetAttr(data->pfobjects[i], aHidd_PixFmt_Depth, &depth);
+
+	    if (depth < msg->depth)
+            {
+                /* Skip all pixelformats with depth less than requested */
+                continue;
+            }
+
+            if (HIDD_Gfx_QueryHardware3D(data->handle->gfxhidd, data->pfobjects[i]))
+            {
+                /* Found hardware 3D ? Good. */
+                return depth;
+            }
+
+            if ((depth > 8) && (swdepth == -1))
+            {
+                /* This remembers the first depth suitable for software 3D */
+                swdepth = depth;
+            }
+	}
+    }
+
+    return swdepth;
+}
+
+/*
+ * Calculate 3D capability index.
+ * Used for finding the best 3D monitor.
+ */
+ULONG MonitorClass__MM_Calc3dCapability(Class *cl, Object *obj, Msg msg)
+{
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
+    OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+    OOP_AttrBase HiddPixFmtAttrBase = GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase;
+    struct IMonitorNode *data = INST_DATA(cl, obj);
+    ULONG idx = 0;
+    ULONG i;
+
+    for (i = 0; i < MONITOR_MAXPIXELFORMATS; i++)
+    {
+	if (data->pfobjects[i])
+        {
+            if (HIDD_Gfx_QueryHardware3D(data->handle->gfxhidd, data->pfobjects[i]))
+            {
+                /*
+                 * Each HW 3D mode scores 2.
+                 * As a result, monitor with one HW 3D mode will beat SW-only 3D.
+                 */
+                idx += 2;
+            }
+            else if (OOP_GET(data->pfobjects[i], aHidd_PixFmt_Depth) > 8)
+            {
+                /* Any number of SW 3D modes scores 1 */
+                idx |= 1;
+            }
+	}
+    }
+
+    return idx;
 }
