@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function BestModeIDA()
@@ -19,6 +19,129 @@
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include "dispinfo.h"
+
+/*
+ * There are lots of parameters and it's totally inoptimal to pass them
+ * as separate arguments.
+ * Instead we store our search state as a structure.
+ */
+struct MatchData
+{
+    /* Arguments */
+    ULONG  dipf_musthave;
+    ULONG  dipf_mustnothave;
+    UBYTE  redbits;
+    UBYTE  greenbits;
+    UBYTE  bluebits;
+    UBYTE  depth;
+    ULONG  monitorid;
+    STRPTR boardname;
+    UWORD  nominal_width;
+    UWORD  nominal_height;
+    UWORD  desired_width;
+    UWORD  desired_height;
+    /* Results */
+    ULONG  found_id;
+    UWORD  found_depth;
+    UWORD  found_width;
+    UWORD  found_height;
+};
+
+void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchData *args, struct GfxBase *GfxBase)
+{
+    struct DisplayInfoHandle *dinfo;
+    struct DisplayInfo disp;
+    struct DimensionInfo dims;
+
+    if (args->monitorid != INVALID_ID)
+    {
+        if (args->monitorid != mdd->id)
+            return;
+    }
+
+    if (args->boardname)
+    {
+	STRPTR name;
+
+	OOP_GetAttr(mdd->gfxhidd, aHidd_Gfx_DriverName, (IPTR *)&name);
+	if (strcmp(args->boardname, name))
+	    return;
+    }
+
+    for (dinfo = mdd->modes; dinfo->id != vHidd_ModeID_Invalid; dinfo++)
+    {
+	UWORD gm_width, gm_height;
+	ULONG modeid = mdd->id | dinfo->id;
+
+	D(bug("[BestModeID] Checking ModeID 0x%08X... ", modeid));
+
+	if (GetDisplayInfoData(dinfo, (UBYTE *)&disp, sizeof(disp), DTAG_DISP, modeid) < offsetof(struct DisplayInfo, pad2))
+	{
+	    D(bug("No DisplayInfo!\n"));
+	    continue;
+	}
+
+	/* Filter out not available modes */
+	if (disp.NotAvailable)
+	{
+	    D(bug("Not available: %u\n", disp.NotAvailable));
+	    continue;
+	}
+
+	/* Filter out modes which do not meet out special needs */
+	if (disp.PropertyFlags & args->dipf_mustnothave)
+	{
+	    D(bug("Has MustNotHave flags: 0x%08lX\n", disp.PropertyFlags));
+	    continue;
+	}
+	if ((disp.PropertyFlags & args->dipf_musthave) != args->dipf_musthave)
+	{
+	    D(bug("Does not have MustHave flags: 0x%08lX\n", disp.PropertyFlags));
+	    continue;
+	}
+
+	if (GetDisplayInfoData(dinfo, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, modeid) < offsetof(struct DimensionInfo, MaxOScan))
+	{
+	    D(bug("No DimensionInfo!\n"));
+	    continue;
+	}
+	gm_width  = dims.Nominal.MaxX - dims.Nominal.MinX + 1;
+	gm_height = dims.Nominal.MaxY - dims.Nominal.MinY + 1;
+	D(bug("%ux%ux%u", gm_width, gm_height, dims.MaxDepth));
+
+	/* FIXME: Take aspect ratio into account (nominal_width : nominal_height) */
+
+        /* Check if mode is not worse than requested */
+	if (    disp.RedBits   >= args->redbits
+	     && disp.GreenBits >= args->greenbits
+	     && disp.BlueBits  >= args->bluebits
+	     && dims.MaxDepth  >= args->depth
+	     && gm_width       >= args->desired_width
+	     && gm_height      >= args->desired_height)
+	{
+	    /* Check if this mode matches closer than the one we already found */
+	    if ((dims.MaxDepth <= args->found_depth) &&
+	        (gm_width <= args->found_width) && (gm_height <= args->found_height))
+	    {
+		/* Remember the new mode only if something changed. This prevents unwanted
+		   jumping to another display (several displays may have the same modes,
+		   in this case the last display will be picked up without this check. */
+		if ((dims.MaxDepth < args->found_depth) ||
+                    (gm_width < args->found_width) || (gm_height < args->found_height))
+		{
+		    args->found_id     = modeid;
+		    args->found_depth  = dims.MaxDepth;
+		    args->found_width  = gm_width;
+		    args->found_height = gm_height;
+
+		    D(bug(" Match!\n"));
+		}
+	    }
+	}
+	D(bug("\n"));
+	
+    } /* for (each mode) */
+}
 
 /*****************************************************************************
 
@@ -88,27 +211,25 @@
     AROS_LIBFUNC_INIT
 
     struct TagItem *tag, *tstate = TagItems;
-    UWORD desired_width, desired_height;
     struct DisplayInfoHandle *dinfo;
     struct DisplayInfo disp;
     struct DimensionInfo dims;
     struct monitor_driverdata *monitor;
-    struct ViewPort *vp    = NULL;
-    ULONG dipf_musthave    = 0;
-    ULONG dipf_mustnothave = SPECIAL_FLAGS;
-    ULONG monitorid        = INVALID_ID;
-    UBYTE redbits          = 4;
-    UBYTE greenbits        = 4;
-    UBYTE bluebits         = 4;
-    ULONG sourceid         = INVALID_ID;
-    UWORD nominal_width    = 640;
-    UWORD nominal_height   = 200;
-    UBYTE depth            = 1;
-    STRPTR boardname       = NULL;
-    ULONG found_id         = INVALID_ID;
-    UWORD found_depth      = -1;
-    UWORD found_width      = -1;
-    UWORD found_height     = -1;
+    struct ViewPort *vp = NULL;
+    ULONG  sourceid = INVALID_ID;
+    struct MatchData args =
+    {
+        0, SPECIAL_FLAGS, /* DIPF         */
+        4, 4, 4,          /* RGB bits     */
+        1,                /* Depth        */
+        INVALID_ID,       /* Monitor ID   */
+        NULL,             /* Board name   */
+        640, 480,         /* Nominal size */
+        0, 0,             /* Desired size */
+        INVALID_ID,       /* Found ID     */
+        -1,               /* Found depth  */
+        -1, -1            /* Found size   */
+    };
 
     /* Obtain default monitor driver */
     monitor = MonitorFromSpec(GfxBase->default_monitor, GfxBase);
@@ -119,38 +240,38 @@
     	switch (tag->ti_Tag)
     	{
     	case BIDTAG_DIPFMustHave:
-    	    dipf_musthave = tag->ti_Data;
+    	    args.dipf_musthave = tag->ti_Data;
     	    break;
 
     	case BIDTAG_DIPFMustNotHave:
-    	    dipf_mustnothave = tag->ti_Data;
+    	    args.dipf_mustnothave = tag->ti_Data;
     	    break;
 
 	case BIDTAG_MonitorID:
-	    monitorid = tag->ti_Data;
+	    args.monitorid = tag->ti_Data;
 	    break;
 
 	case BIDTAG_RedBits:
-	    redbits = tag->ti_Data;
+	    args.redbits = tag->ti_Data;
 	    break;
 
 	case BIDTAG_BlueBits:
-	    bluebits = tag->ti_Data;
+	    args.bluebits = tag->ti_Data;
 	    break;
 
 	case BIDTAG_ViewPort:
 	    /* If we got ViewPort, obtain some more defaults from it */
 	    vp = (struct ViewPort *)tag->ti_Data;
-	    nominal_width  = vp->DWidth;
-	    nominal_height = vp->DHeight;
-	    sourceid       = GetVPModeID(vp);
-	    depth          = GET_BM_DEPTH(vp->RasInfo->BitMap);
-	    monitor	   = GET_VP_DRIVERDATA(vp);
+	    args.nominal_width  = vp->DWidth;
+	    args.nominal_height = vp->DHeight;
+	    args.depth          = GET_BM_DEPTH(vp->RasInfo->BitMap);
+	    sourceid            = GetVPModeID(vp);
+	    monitor             = GET_VP_DRIVERDATA(vp);
 	    break;
 
 	/* Offer some help to cybergraphics.library */
 	case CYBRBIDTG_BoardName:
-	    boardname = (STRPTR)tag->ti_Data;
+	    args.boardname = (STRPTR)tag->ti_Data;
 	    break;
 	}
     }
@@ -161,7 +282,7 @@
     {
 	/* Patch musthave flags */
         if (GetDisplayInfoData(NULL, (UBYTE *)&disp, sizeof(disp), DTAG_DISP, sourceid) >= offsetof(struct DisplayInfo, Resolution))
-	    dipf_musthave |= (disp.PropertyFlags & SPECIAL_FLAGS);
+	    args.dipf_musthave |= (disp.PropertyFlags & SPECIAL_FLAGS);
 
 	if (!vp)
 	{
@@ -172,56 +293,52 @@
 
 	    if (GetDisplayInfoData(dinfo, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, sourceid) >= offsetof(struct DimensionInfo, MaxOScan))
 	    {
-	    	nominal_width  = dims.Nominal.MaxX - dims.Nominal.MinX + 1;
-	    	nominal_height = dims.Nominal.MaxY - dims.Nominal.MinY + 1;
+	    	args.nominal_width  = dims.Nominal.MaxX - dims.Nominal.MinX + 1;
+	    	args.nominal_height = dims.Nominal.MaxY - dims.Nominal.MinY + 1;
 	    }
 	}
     }
 
     /* Get high-priority parameters */
-    nominal_width  = GetTagData(BIDTAG_NominalWidth , nominal_width , TagItems);
-    nominal_height = GetTagData(BIDTAG_NominalHeight, nominal_height, TagItems);
-    desired_width  = GetTagData(BIDTAG_DesiredWidth , nominal_width , TagItems);
-    desired_height = GetTagData(BIDTAG_DesiredHeight, nominal_height, TagItems);
-    depth	   = GetTagData(BIDTAG_Depth        , depth         , TagItems);
+    args.nominal_width  = GetTagData(BIDTAG_NominalWidth , args.nominal_width , TagItems);
+    args.nominal_height = GetTagData(BIDTAG_NominalHeight, args.nominal_height, TagItems);
+    args.desired_width  = GetTagData(BIDTAG_DesiredWidth , args.nominal_width , TagItems);
+    args.desired_height = GetTagData(BIDTAG_DesiredHeight, args.nominal_height, TagItems);
+    args.depth          = GetTagData(BIDTAG_Depth        , args.depth         , TagItems);
 
     /* Exclude flags in MustHave from MustNotHave (CHECKME: if this correct?) */
-    dipf_mustnothave &= ~dipf_musthave;
+    args.dipf_mustnothave &= ~args.dipf_musthave;
     /* Mask out bit 12 in monitorid because the user may (and will) pass in IDs defined in include/graphics/modeid.h
        (like PAL_MONITOR_ID, VGA_MONITOR_ID, etc) which have bit 12 set) */
-    if (monitorid != INVALID_ID)
-        monitorid &= AROS_MONITOR_ID_MASK;
+    if (args.monitorid != INVALID_ID)
+        args.monitorid &= AROS_MONITOR_ID_MASK;
 
     D(bug("[BestModeIDA] Desired mode: %dx%dx%d, MonitorID 0x%08lX, MustHave 0x%08lX, MustNotHave 0x%08lX\n",
-	  desired_width, desired_height, depth, monitorid, dipf_musthave, dipf_mustnothave));
+	  args.desired_width, args.desired_height, args.depth, args.monitorid, args.dipf_musthave, args.dipf_mustnothave));
 
     /* OK, now we try to search for a mode that has the supplied charateristics. */
     ObtainSemaphoreShared(&CDD(GfxBase)->displaydb_sem);
 
     /* First we try to search in preferred monitor (if present) */
     if (monitor)
-    	BestModeIDForMonitor(monitor, dipf_musthave, dipf_mustnothave, redbits, greenbits, bluebits,
-    			     depth, boardname, nominal_width, nominal_height, desired_width, desired_height,
-    			     &found_id, &found_depth, &found_width, &found_height, GfxBase);
+    	BestModeIDForMonitor(monitor, &args, GfxBase);
 
     /* And if nothing was found there, check other monitors */
-    if (found_id == INVALID_ID)
+    if (args.found_id == INVALID_ID)
     {
     	struct monitor_driverdata *mdd;
 
     	for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
     	{
     	    if (mdd != monitor)
-	    	BestModeIDForMonitor(mdd, dipf_musthave, dipf_mustnothave, redbits, greenbits, bluebits,
-    				     depth, boardname, nominal_width, nominal_height, desired_width, desired_height,
-    				     &found_id, &found_depth, &found_width, &found_height, GfxBase);
+	    	BestModeIDForMonitor(mdd, &args, GfxBase);
     	}
     }
 
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
 
-    D(bug("[BestModeIDA] Returning mode ID 0x%08lX\n", found_id));
-    return found_id;
+    D(bug("[BestModeIDA] Returning mode ID 0x%08lX\n", args.found_id));
+    return args.found_id;
 
     AROS_LIBFUNC_EXIT
 } /* BestModeIDA */

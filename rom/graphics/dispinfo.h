@@ -37,10 +37,6 @@
 /****************************************************************************************/
 
 HIDDT_ModeID get_best_resolution_and_depth(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
-void BestModeIDForMonitor(struct monitor_driverdata *mdd, ULONG dipf_musthave, ULONG dipf_mustnothave,
-			  UBYTE redbits, UBYTE greenbits, UBYTE bluebits, UBYTE depth, STRPTR boardname,
-			  UWORD nominal_width, UWORD nominal_height, UWORD desired_width, UWORD desired_height,
-			  ULONG *found_id, UWORD *found_depth, UWORD *found_width, UWORD *found_height, struct GfxBase *GfxBase);
 struct monitor_driverdata *MonitorFromSpec(struct MonitorSpec *mspc, struct GfxBase *GfxBase);
 
 /****************************************************************************************/
