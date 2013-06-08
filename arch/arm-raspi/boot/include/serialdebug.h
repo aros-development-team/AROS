@@ -6,10 +6,12 @@
 #ifndef SERIALDEBUG_H_
 #define SERIALDEBUG_H_
 
-void serInit();
+#include <inttypes.h>
+
+extern void serInit();
 //void waitBusy();
-void waitSerIN();
-void waitSerOUT();
-void putByte(uint8_t chr);
+extern void waitSerIN();
+extern void waitSerOUT();
+extern void putByte(uint8_t chr);
 
 #endif /* SERIALDEBUG_H_ */
