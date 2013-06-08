@@ -29,7 +29,7 @@
 
 extern void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
 
-static void __attribute__((used)) kernel_cstart(struct TagItem *msg);
+void __attribute__((used)) kernel_cstart(struct TagItem *msg);
 
 uint32_t stack[STACK_SIZE] __attribute__((used,aligned(16)));
 static uint32_t stack_super[STACK_SIZE] __attribute__((used,aligned(16)));
@@ -107,7 +107,7 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     }
 }
 
-static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
+void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
     UWORD *ranges[3];
     struct MinList memList;
