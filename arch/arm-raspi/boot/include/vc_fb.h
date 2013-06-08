@@ -17,7 +17,4 @@ extern int vcfb_init(void);
 #define KRN_FuncPutC      (KRN_Dummy + 99) /* RAW FrameBuffer descriptor */
 #endif
 
-/* temp location to use for our vc messages */
-#define MESSAGE_BUFFER	0x1000
-
 #endif	/* VC_FB_H */
