@@ -3,8 +3,10 @@
     $Id$
 */
 
+#include <stdio.h>
+
 #include "serialdebug.h"
-#include "vc_fb.h"
+#include "bootconsole.h"
 
 void putBytes(const char *str)
 {
