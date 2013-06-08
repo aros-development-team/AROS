@@ -31,8 +31,6 @@ extern unsigned int uartdivint;
 extern unsigned int uartdivfrac;
 extern unsigned int uartbaud;
 
-static unsigned char __stack[BOOT_STACK_SIZE] __attribute__((used,aligned(16)));
-
 asm("	.section .aros.startup		     \n"
 "		.globl bootstrap	     \n"
 "		.type bootstrap,%function    \n"
@@ -44,10 +42,9 @@ asm("	.section .aros.startup		     \n"
     ".string \"$VER: arosraspi.img v40.42 (" __DATE__ ")\"" "\n\t\n\t"
 );
 
-static __used void * tmp_stack_ptr __attribute__((used, section(".aros.startup"))) = &__stack[BOOT_STACK_SIZE-16];
-
-static struct TagItem tags[128];
-static struct TagItem *tag;
+// The bootstrap tmp stack is re-used by the reset handler so we store it at this fixed location
+static __used void * tmp_stack_ptr __attribute__((used, section(".aros.startup"))) = 0x1000 - 16;
+static struct TagItem *boottag;
 static unsigned long mem_upper;
 static void *pkg_image;
 static uint32_t pkg_size;
@@ -73,15 +70,14 @@ static void parse_atags(struct tag *tags)
 
         case ATAG_MEM:
             kprintf("ATAG_MEM (%08x-%08x)\n", t->u.mem.start, t->u.mem.size + t->u.mem.start - 1);
-            tag->ti_Tag = KRN_MEMLower;
-            tag->ti_Data = t->u.mem.start;
-            if (tag->ti_Data == 0)
-                tag->ti_Data = 0x1000; // Leave space for the cpu vectors.
+            boottag->ti_Tag = KRN_MEMLower;
+            if ((boottag->ti_Data = t->u.mem.start) == 0)
+                boottag->ti_Data = 0x1000; // Skip the *reserved* space for the cpu vectors/boot tmp stack/kernel private data.
 
-            tag++;
-            tag->ti_Tag = KRN_MEMUpper;
-            tag->ti_Data = t->u.mem.start + t->u.mem.size;
-            tag++;
+            boottag++;
+            boottag->ti_Tag = KRN_MEMUpper;
+            boottag->ti_Data = t->u.mem.start + t->u.mem.size;
+            boottag++;
 
             mem_upper = t->u.mem.start + t->u.mem.size;
 
@@ -119,9 +115,9 @@ static void parse_atags(struct tag *tags)
                 strcpy(cmdline, t->u.cmdline.cmdline);
                 kprintf("ATAG_CMDLINE \"%s\"\n", cmdline);
 
-                tag->ti_Tag = KRN_CmdLine;
-                tag->ti_Data = (intptr_t)cmdline;
-                tag++;
+                boottag->ti_Tag = KRN_CmdLine;
+                boottag->ti_Data = (intptr_t)cmdline;
+                boottag++;
             }
             break;
 
@@ -137,26 +133,26 @@ static const char bootstrapName[] = "Bootstrap/RasPI ARM";
 void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 {
     uint32_t tmp, initcr;
-    void (*entry)(struct TagItem *tags);
+    void (*entry)(struct TagItem *);
 
     /* Enable unaligned memory access */
     asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
     initcr = tmp;
-    tmp |= 1 << 22;
+    tmp |= (1 << 22);
     asm volatile ("mcr p15, 0, %0, c1, c0, 0"::"r"(tmp));
 
     mem_init();
 
-    tag = &tags[0];
+    boottag = tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE;
 
     /* Init LED */
     {
 	unsigned int delay;
 
         tmp = *(volatile unsigned int *)GPFSEL1;
-        tmp &= ~(7<<18); // GPIO 16 = 001 - output
-        tmp |= 1<<18;
-        tmp &= ~(7<<12); // GPIO 14 = 000 - input
+        tmp &= ~(7 << 18); // GPIO 16 = 001 - output
+        tmp |= (1 << 18);
+        tmp &= ~(7 << 12); // GPIO 14 = 000 - input
         *(volatile unsigned int *)GPFSEL1 = tmp;
 
         *(volatile unsigned int *)GPPUD = 2; // enable pull-up control
@@ -176,15 +172,15 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     }
     serInit();
 
-    tag->ti_Tag = KRN_BootLoader;
-    tag->ti_Data = (IPTR)bootstrapName;
-    tag++;
+    boottag->ti_Tag = KRN_BootLoader;
+    boottag->ti_Data = (IPTR)bootstrapName;
+    boottag++;
 
     if (vcfb_init())
     {
-        tag->ti_Tag = KRN_FuncPutC;
-        tag->ti_Data = fb_Putc;
-        tag++;
+        boottag->ti_Tag = KRN_FuncPutC;
+        boottag->ti_Data = fb_Putc;
+        boottag++;
     }
 
     kprintf("[BOOT] AROS %s\n", bootstrapName);
@@ -199,13 +195,13 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 
     kprintf("[BOOT] Bootstrap @ %08x-%08x\n", &__bootstrap_start, &__bootstrap_end);
 
-    tag->ti_Tag = KRN_ProtAreaStart;
-    tag->ti_Data = &__bootstrap_start;
-    tag++;
+    boottag->ti_Tag = KRN_ProtAreaStart;
+    boottag->ti_Data = &__bootstrap_start;
+    boottag++;
 
-    tag->ti_Tag = KRN_ProtAreaEnd;
-    tag->ti_Data = &__bootstrap_end;
-    tag++;
+    boottag->ti_Tag = KRN_ProtAreaEnd;
+    boottag->ti_Data = &__bootstrap_end;
+    boottag++;
 
     kprintf("[BOOT] Topmost address for kernel: %p\n", mem_upper);
 
@@ -292,13 +288,13 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 
         initAllocator(kernel_phys, kernel_phys  + total_size_ro, kernel_virt - kernel_phys);
 
-    	tag->ti_Tag = KRN_KernelLowest;
-    	tag->ti_Data = kernel_phys;
-    	tag++;
+    	boottag->ti_Tag = KRN_KernelLowest;
+    	boottag->ti_Data = kernel_phys;
+    	boottag++;
 
-    	tag->ti_Tag = KRN_KernelHighest;
-    	tag->ti_Data = kernel_phys + ((total_size_ro + 4095) & ~4095) + ((total_size_rw + 4095) & ~4095);
-    	tag++;
+    	boottag->ti_Tag = KRN_KernelHighest;
+    	boottag->ti_Data = kernel_phys + ((total_size_ro + 4095) & ~4095) + ((total_size_rw + 4095) & ~4095);
+    	boottag++;
 
      	loadElf(&_binary_core_bin_start);
 
@@ -361,20 +357,20 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 
     	arm_flush_cache(kernel_phys, total_size_ro + total_size_rw);
 
-        tag->ti_Tag = KRN_KernelBss;
-        tag->ti_Data = (IPTR)tracker;
-        tag++;
+        boottag->ti_Tag = KRN_KernelBss;
+        boottag->ti_Data = (IPTR)tracker;
+        boottag++;
     }
 
-    tag->ti_Tag = TAG_DONE;
-    tag->ti_Data = 0;
+    boottag->ti_Tag = TAG_DONE;
+    boottag->ti_Data = 0;
 
-    kprintf("[BOOT] Kernel taglist contains %d entries\n", ((intptr_t)tag - (intptr_t)tags)/sizeof(struct TagItem));
+    kprintf("[BOOT] Kernel taglist contains %d entries\n", ((intptr_t)boottag - (intptr_t)(tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE))/sizeof(struct TagItem));
     kprintf("[BOOT] Bootstrap wasted %d bytes of memory for kernels use\n", mem_used()   );
 
     kprintf("[BOOT] Heading over to AROS kernel @ %08x\n", entry);
 
-    entry(tags);
+    entry((struct TagItem *)(tmp_stack_ptr - BOOT_STACK_SIZE - BOOT_TAGS_SIZE));
 
     kprintf("[BOOT] Back? Something wrong happened...\n");
 
