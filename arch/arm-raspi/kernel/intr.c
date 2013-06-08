@@ -19,7 +19,10 @@
 #include "kernel_interrupts.h"
 #include "kernel_intr.h"
 
-#define IRQBANK_POINTER(bank) ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
+#define BOOT_STACK_SIZE		(256 << 2)
+#define BOOT_TAGS_SIZE          (128 << 3)
+
+#define IRQBANK_POINTER(bank)   ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
 
 #define DREGS(x)
 #define D(x)
@@ -61,7 +64,7 @@ asm (
     ".type __vectorhand_undef,%function        \n"
     "__vectorhand_undef:                       \n"
     VECTCOMMON_START
-    "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
+    "           cpsid   i, #" STR(MODE_SYSTEM)"\n" // switch to system mode, with interrupts disabled..
     "           str     sp, [r0, #13*4]        \n"
     "           str     lr, [r0, #14*4]        \n" // store lr in ctx_lr
     "           mov     fp, #0                 \n" // clear fp
@@ -92,17 +95,22 @@ void handle_undef(regs_t *regs)
 
 /* ** RESET HANDLER ** */
 
-void __vectorhand_reset(void)
-{
-    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
+asm (
+    ".globl __vectorhand_reset                          \n"
+    ".type __vectorhand_reset,%function                 \n"
+    "__vectorhand_reset:                                \n"
+    "           mov     sp, #0x1000 - 16                \n" // re-use bootstrap tmp stack
+    "           mov     r0, sp                          \n"
+    "           sub     r0, r0, #" STR(BOOT_STACK_SIZE)"\n" // get the boottag's
+    "           sub     r0, r0, #" STR(BOOT_TAGS_SIZE) "\n"
+    "           mov     fp, #0                          \n" // clear fp
 
-    D(bug("[KRN] ## RESET ##\n"));
-    while(1)
-    {
-        asm("mov r0,r0\n\t");
-    }
-    return;
-}
+    "           ldr     pc, 2f                          \n" // jump into kernel resource
+    "1:         b       1b                              \n"
+    "2:         .word   kernel_cstart                   \n"
+
+);
+
 
 /* ** SWI HANDLER ** */
 
