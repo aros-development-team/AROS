@@ -230,10 +230,10 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     struct IIHData  *iihd;
     ULONG            lock;
 
+    window = msg->window;
+
     D(bug("CloseWindow (%p)\n", window));
 
-    window = msg->window;
-    
     RemoveResourceFromList(window, RESOURCE_WINDOW, IntuitionBase);
 
     iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
