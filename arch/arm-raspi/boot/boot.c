@@ -136,10 +136,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     void (*entry)(struct TagItem *);
 
     /* Enable unaligned memory access */
-    asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
-    initcr = tmp;
-    tmp |= (1 << 22);
-    asm volatile ("mcr p15, 0, %0, c1, c0, 0"::"r"(tmp));
+    asm volatile ("mrc p15, 0, %0, c1, c0, 0" : "=r"(initcr));
+    tmp = initcr | (1 << 22);
+    asm volatile ("mcr p15, 0, %0, c1, c0, 0" : : "r"(tmp));
 
     mem_init();
 
@@ -159,7 +158,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 
         for (delay = 0; delay < 150; delay++) asm volatile ("mov r0, r0\n");
 
-        *(volatile unsigned int *)GPPUDCLK0 = 1<<14; // set Pull Up/Down CLocK0 for pin 14
+        *(volatile unsigned int *)GPPUDCLK0 = (1 << 14); // set Pull Up/Down CLocK0 for pin 14
         *(volatile unsigned int *)GPPUDCLK1 = 0;
 
         for (delay = 0; delay < 150; delay++) asm volatile ("mov r0, r0\n");
@@ -168,7 +167,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
         *(volatile unsigned int *)GPPUDCLK0 = 0; // reset the clock registers
         *(volatile unsigned int *)GPPUDCLK1 = 0;
 
-        *(volatile unsigned int *)GPSET0 = 1<<16; // turn it off.. kernel.resource will turn it back on.
+        *(volatile unsigned int *)GPSET0 = (1 << 16); // turn it off.. kernel.resource will turn it back on.
     }
     serInit();
 
@@ -185,11 +184,13 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 
     kprintf("[BOOT] AROS %s\n", bootstrapName);
 
-    kprintf("[BOOT] UART clock speed: %d\n", uartclock);
-    kprintf("[BOOT] using %d.%d divisor for %d baud\n", uartdivint, uartdivfrac, uartbaud);
-    
-    DBOOT(asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
-    kprintf("[BOOT] control register init:%08x, now:%08x\n", initcr, tmp);)
+    DBOOT(
+        kprintf("[BOOT] UART clock speed: %d\n", uartclock);
+        kprintf("[BOOT] using %d.%d divisor for %d baud\n", uartdivint, uartdivfrac, uartbaud);
+
+        asm volatile ("mrc p15, 0, %0, c1, c0, 0" : "=r"(tmp));
+        kprintf("[BOOT] control register init:%08x, now:%08x\n", initcr, tmp);
+    )
 
     parse_atags(atags);
 
