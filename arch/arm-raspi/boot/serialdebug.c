@@ -1,7 +1,7 @@
 /*
     Copyright © 2013, The AROS Development Team. All rights reserved.
     $Id$
- */
+*/
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -13,7 +13,6 @@
 #include "serialdebug.h"
 #include "bootconsole.h"
 #include "vc_mb.h"
-#include "vc_fb.h"
 
 #define PL011_ICR_FLAGS (PL011_ICR_RXIC|PL011_ICR_TXIC|PL011_ICR_RTIC|PL011_ICR_FEIC|PL011_ICR_PEIC|PL011_ICR_BEIC|PL011_ICR_OEIC|PL011_ICR_RIMIC|PL011_ICR_CTSMIC|PL011_ICR_DSRMIC|PL011_ICR_DCDMIC)
 
@@ -45,28 +44,6 @@ inline void putByte(uint8_t chr)
     *(volatile uint32_t *)(PL011_0_BASE + PL011_DR) = chr;
 }
 
-void putBytes(const char *str)
-{
-    while(*str)
-    {
-        fb_Putc(*str);
-        putByte(*str++);
-    }
-}
-
-static char tmpbuf[512];
-
-void kprintf(const char *format, ...)
-{
-	char *out = tmpbuf;
-	va_list vp;
-
-	va_start(vp, format);
-	vsnprintf(tmpbuf, 511, format, vp);
-	va_end(vp);
-
-	putBytes(out);
-}
 
 void serInit(void)
 {
