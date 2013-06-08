@@ -6,6 +6,8 @@
 #ifndef VC_MB_H
 #define VC_MB_H
 
+#define VCMB_PROPCHAN     8
+
 extern volatile unsigned int *vcmb_read(void *mb, unsigned int chan);
 extern void vcmb_write(void *mb, unsigned int chan, void *msg);
 
