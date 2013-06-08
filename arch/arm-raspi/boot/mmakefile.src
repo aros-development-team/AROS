@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 TARGETDIR       := $(GENDIR)/$(CURDIR)
-FILES           := boot serialdebug elf support bc/font8x14 bc/vars vc_mb vc_fb bc/screen_fb
+FILES           := boot serialdebug kprintf elf support bc/font8x14 bc/vars vc_mb vc_fb bc/screen_fb
 CONFIG_FILE     := config.txt
 USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
 KERNEL_LDFLAGS  =

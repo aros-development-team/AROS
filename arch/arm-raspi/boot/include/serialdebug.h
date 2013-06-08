@@ -11,6 +11,5 @@ void serInit();
 void waitSerIN();
 void waitSerOUT();
 void putByte(uint8_t chr);
-void putBytes(const char *str);
 
 #endif /* SERIALDEBUG_H_ */
