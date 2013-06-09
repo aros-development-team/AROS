@@ -55,12 +55,13 @@ static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchDat
 
     if (args->boardname)
     {
-	STRPTR name;
+        STRPTR name;
 
-	OOP_GetAttr(mdd->gfxhidd, aHidd_Gfx_DriverName, (IPTR *)&name);
-	if (strcmp(args->boardname, name))
-	    D(bug("CYBRBIDTG_BoardName didn't match. '%s' != '%s'\n", args->boardname, name));
-	    return;
+        OOP_GetAttr(mdd->gfxhidd, aHidd_Gfx_DriverName, (IPTR *)&name);
+        if (strcmp(args->boardname, name)) {
+            D(bug("CYBRBIDTG_BoardName didn't match. '%s' != '%s'\n", args->boardname, name));
+            return;
+        }
     }
 
     for (dinfo = mdd->modes; dinfo->id != vHidd_ModeID_Invalid; dinfo++)
