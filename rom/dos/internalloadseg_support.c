@@ -38,7 +38,7 @@ void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *s
         char *nameptr = getname(file, &buffer, DOSBase);
         struct ELF_DebugInfo dbg = {eh, sh};
         RegisterModule(nameptr, hunks, DEBUG_ELF, &dbg);
-        FreeMem(*buffer, 512);
+        FreeMem(buffer, 512);
     }
 }
 
@@ -60,7 +60,7 @@ void register_hunk(BPTR file, BPTR hunks, APTR header, struct DosLibrary *DOSBas
         char *nameptr = getname(file, &buffer, DOSBase);
         struct HUNK_DebugInfo dbg = { header };
         RegisterModule(nameptr, hunks, DEBUG_HUNK, &dbg);
-        FreeMem(*buffer, 512);
+        FreeMem(buffer, 512);
     }
     if (!DOSBase)
         CloseLibrary(DebugBase);
