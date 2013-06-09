@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES=offsets getcc preparecontext \
       cachecleare cacheclearu cachepostdma cachepredma \
-      cachecontrol setfunction copymem alert_cpu
+      cachecontrol setfunction copymem alert_cpu addmemlist
 
 AFILES=newstackswap stackswap \
        exitintr schedule switch dispatch \
