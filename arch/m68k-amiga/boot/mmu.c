@@ -11,6 +11,7 @@
 #include <hardware/cpu/memory.h>
 
 #include "exec_intern.h"
+#include "early.h"
 #undef KernelBase
 
 #define FASTREMAP 1
@@ -88,9 +89,9 @@ static APTR AllocPagesAligned(ULONG pages)
 
 static void swapvbr(APTR vbr)
 {
-    asm volatile (
-    	".chip 68010\n"
- 	"move.l	%0,%%d0\n"
+	asm volatile (
+	".chip 68010\n"
+	"move.l	%0,%%d0\n"
 	"move.l 4.w,%%a6\n"
 	"lea	newvbr(%%pc),%%a5\n"
 	"jsr	-0x1e(%%a6)\n"
@@ -136,31 +137,19 @@ static void mmuprotectregion(void *KernelBase, const UBYTE *name, APTR addr, ULO
 /* MMU protect ArosBootStrap loaded ROM modules */
 static void mmuprotectextrom(void *KernelBase)
 {
-    struct MemList *mlist = (struct MemList*)PrivExecBase(SysBase)->PlatformData.ep_KickMemPtr;
     UWORD i;
-    
-    while (mlist) {
-	for (i = 0; i < mlist->ml_NumEntries; i++) {
-	    IPTR *list = SysBase->ResModules;
-	    while (list && *list)
-	    {
-    		APTR ptr;
-		struct Resident *res;
-		if (*list & RESLIST_NEXT) {
-	    	    list = (IPTR *)(*list & ~RESLIST_NEXT); 
-            	    continue;
-        	}
-        	ptr = (APTR)*list++;
-		res = (struct Resident *)ptr;
-		if (res->rt_Flags & (1 << 5)) {
-		    if (ptr >= mlist->ml_ME[i].me_Addr && ptr < mlist->ml_ME[i].me_Addr + mlist->ml_ME[i].me_Length) {
-			mmuprotectregion(KernelBase, "ROM", mlist->ml_ME[i].me_Addr, mlist->ml_ME[i].me_Length, MAP_Readable | MAP_Executable);
-			break;
-		    }
-		}
-	    }
-	}
-	mlist = (struct MemList*)mlist->ml_Node.ln_Succ;
+    struct MemList *ml;
+    struct BootStruct *bs = GetBootStruct(SysBase);
+
+    if (bs == NULL)
+        return;
+
+    ForeachNode(bs->mlist, ml) {
+        if (ml->ml_Node.ln_Type == NT_KICKMEM) {
+            for(i = 0; i < ml->ml_NumEntries; i++) {
+                mmuprotectregion(KernelBase, "ROM", ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, MAP_Readable | MAP_Executable);
+            }
+        }
     }
 }
 

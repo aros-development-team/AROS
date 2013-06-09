@@ -27,21 +27,56 @@
 #include <libraries/configvars.h>
 
 /* This much memory is wasted in single reset proof allocation */
-#define ALLOCATION_EXTRA (sizeof(struct MemChunk) + sizeof(struct MemList))
+#define ALLOCATION_EXTRA (sizeof(struct MemChunk))
 #define ALLOCPADDING (sizeof(struct MemChunk) + 2 * sizeof(BPTR))
+
+#define KERNELTAGS_TOTAL 16
+#define CMDLINE_SIZE 512
 
 #define SS_STACK_SIZE	0x2000
 #define MAGIC_FAST_SIZE 65536
-/* This must match with start.c! */
+
+/* This structure must match with start.c! */
 #define ABS_BOOT_MAGIC 0x4d363802
 struct BootStruct
 {
     ULONG magic;
+    struct ExecBase *RealBase;
+    struct List *mlist;
     struct TagItem *kerneltags;
+    struct Resident **reslist;
+    struct ExecBase *FakeBase;
+    APTR bootcode;
     APTR ss_address;
     LONG ss_size;
     APTR magicfastmem;
     LONG magicfastmemsize;
+};
+
+#define BMC_NAME_SIZE 14
+struct BootMemChunk
+{
+    /* MemList must be first */
+    struct MemList ml;
+    BOOL inuse;
+    UBYTE name[BMC_NAME_SIZE];
+};
+
+#define BMC_MAX 32
+#define RES_MAX 256
+#define BOOTCODE 512
+struct BootMemHeader
+{
+   struct BootStruct boots;
+   APTR entrypoint;
+   struct Resident *res[RES_MAX];
+   struct ExecBase FakeBase;
+   UBYTE bootcode[BOOTCODE];
+   struct List mlist;
+   struct TagItem ktags[KERNELTAGS_TOTAL];
+   UBYTE kcmd[CMDLINE_SIZE];
+   UBYTE fakename[16];
+   struct BootMemChunk bmc[BMC_MAX];
 };
 
 #include <stddef.h> /* offsetof */
@@ -87,7 +122,8 @@ static BOOL forceAROS = FALSE;
 static BOOL forceCHIP = FALSE;
 static BOOL forceFAST = FALSE;
 static BOOL debug_enabled = FALSE;
-static struct List mlist;
+
+static struct BootMemHeader *bmh;
 
 /* KS 1.3 (and earlier) don't have a dos.library with
  * niceties such as VFPrintf nor ReadArgs.
@@ -109,9 +145,9 @@ static struct List mlist;
 static void bcplWrapper(void)
 {
     asm volatile (
-    	"movem.l %d5-%d7/%a3,%sp@-\n"
-    	"jsr (%a5)\n"
-    	"movem.l %sp@+,%d5-%d7/%a3\n"
+        "movem.l %d5-%d7/%a3,%sp@-\n"
+        "jsr (%a5)\n"
+        "movem.l %sp@+,%d5-%d7/%a3\n"
     );
 }
 
@@ -123,25 +159,25 @@ static ULONG doBCPL(int index, ULONG d1, ULONG d2, ULONG d3, ULONG d4, const IPT
     ULONG ret;
     ULONG *BCPL_frame = AllocMem(1500, MEMF_ANY);
     if (BCPL_frame == NULL)
-    	return 0;
+        return 0;
 
     func = (APTR)gv[index];
 
     if (args != 0)
-    	CopyMem(arg, &BCPL_frame[3 + 4], args * sizeof(ULONG));
+        CopyMem(arg, &BCPL_frame[3 + 4], args * sizeof(ULONG));
 
     ret = AROS_UFC11(ULONG, bcplWrapper,
-    	    AROS_UFCA(ULONG, 0, D0),  /* BCPL frame usage (args-3)*/
-    	    AROS_UFCA(ULONG, d1, D1),
-    	    AROS_UFCA(ULONG, d2, D2),
-    	    AROS_UFCA(ULONG, d3, D3),
-    	    AROS_UFCA(ULONG, d4, D4),
-    	    AROS_UFCA(ULONG, 0,  A0),    /* System memory base */
-    	    AROS_UFCA(ULONG *, &BCPL_frame[3], A1),
-    	    AROS_UFCA(APTR, gv, A2),
-    	    AROS_UFCA(APTR, func, A4),
-    	    AROS_UFCA(APTR, DOSBase->dl_A5, A5),
-    	    AROS_UFCA(APTR, DOSBase->dl_A6, A6));
+            AROS_UFCA(ULONG, 0, D0),  /* BCPL frame usage (args-3)*/
+            AROS_UFCA(ULONG, d1, D1),
+            AROS_UFCA(ULONG, d2, D2),
+            AROS_UFCA(ULONG, d3, D3),
+            AROS_UFCA(ULONG, d4, D4),
+            AROS_UFCA(ULONG, 0,  A0),    /* System memory base */
+            AROS_UFCA(ULONG *, &BCPL_frame[3], A1),
+            AROS_UFCA(APTR, gv, A2),
+            AROS_UFCA(APTR, func, A4),
+            AROS_UFCA(APTR, DOSBase->dl_A5, A5),
+            AROS_UFCA(APTR, DOSBase->dl_A6, A6));
 
     FreeMem(BCPL_frame, 1500);
 
@@ -155,12 +191,12 @@ static BSTR ConvertCSTR(const UBYTE *name)
     UWORD len = strlen(name), i;
     
     if (len > 255)
-    	len = 255;
+        len = 255;
     bname[0] = len;
     strcpy(bname + 1, name);
     for (i = 0; i < len; i++) {
-    	if (bname[1 + i] == 13 || bname[1 + i] == 10)
-    	    bname[i + 1] = ' ';
+        if (bname[1 + i] == 13 || bname[1 + i] == 10)
+            bname[i + 1] = ' ';
     }
     return MKBADDR(bname);
 }
@@ -175,7 +211,7 @@ static UBYTE *ConvertBSTR(BSTR bname)
     UBYTE *name = BADDR(bname);
     UBYTE *s = AllocMem(256 + 1, MEMF_CLEAR);
     if (!s)
-    	return NULL;
+        return NULL;
     CopyMem(name + 1, s, name[0]);
     return s;
 }
@@ -239,20 +275,184 @@ static APTR AllocPageAligned(ULONG *psize, ULONG flags)
     ret = AllocMem(size + 2 * PAGE_SIZE, flags);
     D(DWriteF("AllocPageAligned: $%X8, %X4 => %X8\n", size + 2 * PAGE_SIZE, flags, ret));
     if (ret == NULL)
-    	return NULL;
+        return NULL;
     Forbid();
     FreeMem(ret, size + 2 * PAGE_SIZE);
     size = (size + PAGE_SIZE - 1) & PAGE_MASK;
     ret = AllocAbs(size, (APTR)(((((ULONG)ret) + PAGE_SIZE - 1) & PAGE_MASK)));
     Permit();
     if (ret == NULL)
-    	return NULL;
+        return NULL;
     *psize = size;
     return ret;
 }
 static void FreePageAligned(APTR addr, ULONG size)
 {
     FreeMem(addr, (size + PAGE_SIZE - 1) & PAGE_MASK);
+}
+
+static BYTE getNodePri(APTR mem, ULONG flags)
+{
+    BYTE pri = 0;
+    if (flags == 0xffffffff)
+        return 127;
+    if (flags & MEMF_CHIP)
+        pri = 10;
+    if (flags & MEMF_KICK)
+        pri++;
+    /* Check also addresses, some boards may lie */
+    /* Z2 */
+    if ((ULONG)mem >= 0x00200000 && (ULONG)mem < 0x00a00000)
+        pri = -10;
+    /* Z3 */
+    if ((ULONG)mem >= 0x10000000)
+        pri = -5;
+    return pri;
+}
+
+static BOOL addMemList(UBYTE *mem, ULONG size, ULONG flags, const char *name, BOOL resscan)
+{
+    int i;
+    struct BootMemChunk *bmc = NULL;
+    struct MemList *ml;
+
+    D(WriteF("AddMemList %X8 %N\n", mem, size));
+    for (i = 0; i < BMC_MAX; i++) {
+        bmc = &bmh->bmc[i];
+        if (!bmc->inuse)
+            break;
+    }
+    if (i == BMC_MAX) {
+        D(WriteF("All MemList slots in use!\n"));
+        return FALSE;
+    }
+    bmc->inuse = TRUE;
+    ml = &bmc->ml;
+    ml->ml_Node.ln_Type = resscan ? NT_KICKMEM : NT_MEMORY;
+    ml->ml_Node.ln_Pri = getNodePri(mem, flags);
+    if (name) {
+        ml->ml_Node.ln_Name = bmc->name;
+        if (strlen(name) >= BMC_NAME_SIZE)
+            memcpy(ml->ml_Node.ln_Name, name, BMC_NAME_SIZE - 1);
+        else
+            strcpy(ml->ml_Node.ln_Name, name);
+    }
+    ml->ml_NumEntries = 1;
+    ml->ml_ME[0].me_Addr = (APTR)mem;
+    ml->ml_ME[0].me_Length = size;
+    Enqueue(&bmh->mlist, &ml->ml_Node);
+    return TRUE;
+}
+
+static void remMemList(UBYTE *mem)
+{
+   int i;
+
+   D(DWriteF("RemMemList %X8\n", mem));
+   for (i = 0; i < BMC_MAX; i++) {
+        struct BootMemChunk *bmc = &bmh->bmc[i];
+        if (bmc->inuse && bmc->ml.ml_ME[0].me_Addr == mem) {
+            bmc->inuse = FALSE;
+            Remove(&bmc->ml.ml_Node);
+            return;
+        }
+   }
+   D(DWriteF("MemList slot not found!\n"));   
+}
+
+static struct Resident *scanResidents(UBYTE *mem, ULONG size, BOOL loadseg)
+{
+    struct Resident **resptr = NULL;
+    struct Resident *firstres = NULL;
+    UBYTE *ptr = mem;
+    UBYTE *end = mem + size;
+    ULONG rescnt = 0;
+    ULONG i;
+
+    D(WriteF("ScanResident %X8 %N\n", mem, size));
+    for (i = 0; i < RES_MAX - 1; i++) {
+        if (bmh->res[i] == NULL) {
+            resptr = &bmh->res[i];
+            break;
+        }
+    }
+    if (!resptr) {
+        D(WriteF("All Resident slots in use!\n"));
+        return NULL;
+    }
+    while (ptr <= end - 26) {
+        struct Resident *r = (struct Resident*)ptr;
+        if (r->rt_MatchWord == RTC_MATCHWORD && r->rt_MatchTag == r) {
+            resptr[rescnt++] = r;
+            if (!firstres)
+                firstres = r;
+            if (loadseg) {
+                /* Set RTF_COLDSTART if no initialization flags set */
+                if (!(r->rt_Flags & (RTF_COLDSTART | RTF_SINGLETASK | RTF_AFTERDOS)))
+                    r->rt_Flags |= RTF_COLDSTART;
+                if (r->rt_Pri < 10)
+                    r->rt_Pri = 10;
+                break;
+            }
+            if ((IPTR)r->rt_EndSkip > (IPTR)ptr)
+                ptr = (UBYTE*)r->rt_EndSkip - sizeof(UWORD);
+        }
+        ptr += sizeof(UWORD);
+    }
+    D(WriteF("%N residents found, start address %X8\n", rescnt, resptr));
+    return firstres;
+}
+
+static void scanMemLists(void)
+{
+    int i;
+    struct BootMemChunk *bmc;
+
+    D(WriteF("Scanning for residents..\n"));
+    bmc = (struct BootMemChunk*)bmh->mlist.lh_Head;
+    while (bmc->ml.ml_Node.ln_Succ) {
+        struct MemList *ml = &bmc->ml;
+        if (ml->ml_Node.ln_Type == NT_KICKMEM) {
+        	ml->ml_Node.ln_Type = NT_MEMORY;
+            for (i = 0; i < ml->ml_NumEntries; i++) {
+                if (scanResidents(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, FALSE)) {
+                    // Can be MMU write protected
+                    ml->ml_Node.ln_Type = NT_KICKMEM;
+                }
+            }
+        }
+        bmc = (struct BootMemChunk*)bmc->ml.ml_Node.ln_Succ;
+    }
+}
+
+static BOOL initDataPool(void)
+{
+    UBYTE *start;
+    ULONG size;
+    ULONG flags;
+    ULONG *p;
+    int i;
+
+    size = 2 * PAGE_SIZE + ((sizeof(struct BootMemHeader) + PAGE_SIZE - 1) & ~PAGE_SIZE);
+    /* Always in Chip RAM */
+    flags = MEMF_CHIP | (SysBase->LibNode.lib_Version >= 36 ? MEMF_REVERSE : 0) | MEMF_CLEAR;
+    start = AllocPageAligned (&size, flags);
+    if (!start)
+        return FALSE;
+    D(DWriteF("BootMemHeader allocated at %X8\n", start));
+    /* Fill with identifier strings. */
+    p = (ULONG*)start;
+    for (i = 0; i < PAGE_SIZE / 4; i++)
+        p[i] = 0x41524f53;
+    p = (ULONG*)(start + size - PAGE_SIZE);
+    for (i = 0; i < PAGE_SIZE / 4; i++)
+        p[i] = 0x534f5241;
+    bmh = (struct BootMemHeader*)(start + PAGE_SIZE);
+    /* Initialize Memory List */
+    NEWLIST(&bmh->mlist);
+    /* Add our memory to list, highest priority */
+    addMemList(start, size, 0xffffffff, "pool", FALSE);
+    return TRUE;
 }
 
 /* Define these here for zlib so that we don't
@@ -269,8 +469,8 @@ void *malloc(int size)
 
     vec = AllocMem(size, MEMF_ANY);
     if (vec == NULL) {
-    	WriteF("libz: Failed to allocate %N bytes of type %X8\n", size, MEMF_ANY);
-    	return NULL;
+        WriteF("libz: Failed to allocate %N bytes of type %X8\n", size, MEMF_ANY);
+        return NULL;
     }
 
     vec[0] = (ULONG)size;
@@ -313,16 +513,16 @@ off_t lseek(int fd, off_t offset, int whence)
 
     err = Seek((BPTR)fd, (LONG)offset, mode);
     if (err < 0)
-    	return -1;
+        return -1;
 
     return Seek((BPTR)fd, 0, OFFSET_CURRENT);       
 }
 
 static AROS_UFH4(LONG, aosRead,
-	AROS_UFHA(BPTR,  file, D1),
-	AROS_UFHA(void *, buf, D2),
-	AROS_UFHA(LONG,  size, D3),
-	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+    AROS_UFHA(BPTR,  file, D1),
+    AROS_UFHA(void *, buf, D2),
+    AROS_UFHA(LONG,  size, D3),
+    AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -331,10 +531,10 @@ static AROS_UFH4(LONG, aosRead,
     AROS_USERFUNC_EXIT
 }
 static AROS_UFH4(LONG, aosSeek,
-	AROS_UFHA(BPTR,  file, D1),
-	AROS_UFHA(LONG,   pos, D2),
-	AROS_UFHA(LONG,  mode, D3),
-	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+    AROS_UFHA(BPTR,  file, D1),
+    AROS_UFHA(LONG,   pos, D2),
+    AROS_UFHA(LONG,  mode, D3),
+    AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
     AROS_USERFUNC_INIT
     int whence;
@@ -352,67 +552,58 @@ static AROS_UFH4(LONG, aosSeek,
 
     ret = (LONG)Seek(file, (z_off_t)pos, whence);
     if (ret < 0)
-    	return -1;
+        return -1;
 
     return oldpos;
 
     AROS_USERFUNC_EXIT
 }
 
-static APTR aosAllocMem(ULONG size, ULONG flags, struct ExecBase *SysBase)
+static APTR aosAllocMem(ULONG size, ULONG flags, const char *name, BOOL resscan, struct ExecBase *SysBase)
 {
-    struct MemList *ml;
     UBYTE *mem;
 
     /* Clear bits 15-0, we're setting memory class explicitly */
     flags &= ~0x7fff;
 
     if (SysBase->LibNode.lib_Version >= 36) {
-    	flags |= MEMF_LOCAL | MEMF_REVERSE;
+        flags |= MEMF_LOCAL | MEMF_REVERSE;
     } else {
-    	flags |= MEMF_CHIP;
+        flags |= MEMF_CHIP;
     }
 
-    size += ALLOCATION_EXTRA;
+    size += 2 * ALLOCATION_EXTRA;
     mem = AllocMem(size, flags | MEMF_CLEAR);
     if (mem == NULL) {
-    	WriteF("AOS: Failed to allocate %N bytes of type %X8\n", size, flags);
-    	meminfo();
-    	return NULL;
+        WriteF("AOS: Failed to allocate %N bytes of type %X8\n", size, flags);
+        meminfo();
+        return NULL;
     }
-
-    ml = (struct MemList*)(mem + sizeof(struct MemChunk));
-    ml->ml_NumEntries = 1;
-    ml->ml_ME[0].me_Addr = (APTR)mem;
-    ml->ml_ME[0].me_Length = size;
-    AddTail(&mlist, (struct Node*)ml);
-
-    return &ml[1];
+    addMemList(mem, size, flags, name, resscan);
+    return mem + ALLOCATION_EXTRA;
 }
 
 static AROS_UFH3(APTR, aosAlloc,
-	AROS_UFHA(ULONG, size, D0),
-	AROS_UFHA(ULONG, flags, D1),
-	AROS_UFHA(struct ExecBase *, SysBase, A6))
+    AROS_UFHA(ULONG, size, D0),
+    AROS_UFHA(ULONG, flags, D1),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
     
-    return aosAllocMem(size, flags, SysBase);
+    return aosAllocMem(size, flags, NULL, FALSE, SysBase);
 
     AROS_USERFUNC_EXIT
 }
 static AROS_UFH3(void, aosFree,
-	AROS_UFHA(APTR, addr, A1),
-	AROS_UFHA(ULONG, size, D0),
-	AROS_UFHA(struct ExecBase *, SysBase, A6))
+    AROS_UFHA(APTR, addr, A1),
+    AROS_UFHA(ULONG, size, D0),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
     
-    addr -= sizeof(struct MemList);
-    Remove((struct Node*)addr);
-    addr -= sizeof(struct MemChunk);
-    size += ALLOCATION_EXTRA;
-    FreeMem(addr, size);
+    addr -= ALLOCATION_EXTRA;
+    size += 2 * ALLOCATION_EXTRA;
+    remMemList(addr);
 
     AROS_USERFUNC_EXIT
 }
@@ -421,10 +612,10 @@ static AROS_UFH3(void, aosFree,
  * using the gzip backend.
  */
 static AROS_UFH4(LONG, elfRead,
-	AROS_UFHA(BPTR,  file, D1),
-	AROS_UFHA(void *, buf, D2),
-	AROS_UFHA(LONG,  size, D3),
-	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+    AROS_UFHA(BPTR,  file, D1),
+    AROS_UFHA(void *, buf, D2),
+    AROS_UFHA(LONG,  size, D3),
+    AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -433,10 +624,10 @@ static AROS_UFH4(LONG, elfRead,
     AROS_USERFUNC_EXIT
 }
 static AROS_UFH4(LONG, elfSeek,
-	AROS_UFHA(BPTR,  file, D1),
-	AROS_UFHA(LONG,   pos, D2),
-	AROS_UFHA(LONG,  mode, D3),
-	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+    AROS_UFHA(BPTR,  file, D1),
+    AROS_UFHA(LONG,   pos, D2),
+    AROS_UFHA(LONG,  mode, D3),
+    AROS_UFHA(struct DosLibrary *, DOSBase, A6))
 {
     AROS_USERFUNC_INIT
     int whence;
@@ -454,24 +645,23 @@ static AROS_UFH4(LONG, elfSeek,
 
     ret = (LONG)gzseek((gzFile)file, (z_off_t)pos, whence);
     if (ret < 0)
-    	return -1;
+        return -1;
 
     return oldpos;
 
     AROS_USERFUNC_EXIT
 }
 
-static APTR specialAlloc(ULONG size, ULONG flags, struct ExecBase *SysBase)
+static APTR specialAlloc(ULONG size, ULONG flags, const char *name, BOOL resscan, struct ExecBase *SysBase)
 {
     APTR mem;
-    struct MemList *ml;
 
     D(DWriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
     /* Since we don't know if we need to wrap the memory
      * with the KickMem wrapper until after allocation,
      * we always adjust the size as if we have to.
      */
-    size += ALLOCATION_EXTRA;
+    size += 2 * ALLOCATION_EXTRA;
 
     if (flags & MEMF_KICK) {
         D(DWriteF("MEMF_KICK %N\n", size));
@@ -498,12 +688,12 @@ static APTR specialAlloc(ULONG size, ULONG flags, struct ExecBase *SysBase)
 
     /* MEMF_31BIT is not available on AOS */
     if ((flags & MEMF_31BIT)) {
-    	flags &= ~MEMF_31BIT;
+        flags &= ~MEMF_31BIT;
     }
 
     /* If ROM allocation, always allocate from top of memory if possible */
     if ((flags & MEMF_PUBLIC) && SysBase->LibNode.lib_Version >= 36) {
-    	flags |= MEMF_REVERSE;
+        flags |= MEMF_REVERSE;
     }
 
     D(DWriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
@@ -514,41 +704,33 @@ static APTR specialAlloc(ULONG size, ULONG flags, struct ExecBase *SysBase)
             mem = AllocPageAligned(&size, (flags & MEMF_REVERSE) | MEMF_CLEAR);
         }
         if (mem == NULL) {
-    	    D(DWriteF("ELF: Failed to allocate %N bytes of type %X8\n", size, flags));
-    	    meminfo();
-    	    return NULL;
+            D(DWriteF("ELF: Failed to allocate %N bytes of type %X8\n", size, flags));
+            meminfo();
+            return NULL;
         }
     }
     D(DWriteF("ELF: Got memory at %X8, size %N\n", (IPTR)mem, size));
 
-    ml = (struct MemList*)(mem + sizeof(struct MemChunk));
-    ml->ml_NumEntries = 1;
-    ml->ml_ME[0].me_Addr = (APTR)mem;
-    ml->ml_ME[0].me_Length = size;
-
-    /* Add to the KickMem list */
-    AddTail(&mlist, (struct Node*)ml);
-
-    return &ml[1];
-
+    addMemList(mem, size, flags, name, resscan);
+    return mem + ALLOCATION_EXTRA;
 }
 
 static AROS_UFH3(APTR, elfAlloc,
-	AROS_UFHA(ULONG, size, D0),
-	AROS_UFHA(ULONG, flags, D1),
-	AROS_UFHA(struct ExecBase *, SysBase, A6))
+    AROS_UFHA(ULONG, size, D0),
+    AROS_UFHA(ULONG, flags, D1),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
     
-    return specialAlloc(size, flags, SysBase);
+    return specialAlloc(size, flags, NULL, TRUE, SysBase);
 
     AROS_USERFUNC_EXIT
 }
 
 static AROS_UFH3(void, elfFree,
-	AROS_UFHA(APTR, addr, A1),
-	AROS_UFHA(ULONG, size, D0),
-	AROS_UFHA(struct ExecBase *, SysBase, A6))
+    AROS_UFHA(APTR, addr, A1),
+    AROS_UFHA(ULONG, size, D0),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -557,11 +739,9 @@ static AROS_UFH3(void, elfFree,
      * that it was a KickTag protected allocation
      */
     D(DWriteF("ELF: Free memory at %X8, size %N\n", (IPTR)addr, size));
-    addr -= sizeof(struct MemList);
-    Remove((struct Node*)addr);
-    addr -= sizeof(struct MemChunk);
-    size += ALLOCATION_EXTRA;
-    D(DWriteF("ELF: FREE memory at %X8, size %N\n", (IPTR)addr, size));
+    addr -= ALLOCATION_EXTRA;
+    size += 2 * ALLOCATION_EXTRA;
+    remMemList(addr);
     FreePageAligned(addr, size);
 
     AROS_USERFUNC_EXIT
@@ -587,27 +767,27 @@ static BPTR ROMLoad(BSTR bfilename)
     UBYTE *filename;
     BPTR rom = BNULL;
     SIPTR funcarray[] = {
-    	(SIPTR)elfRead,
-    	(SIPTR)elfAlloc,
-    	(SIPTR)elfFree,
-    	(SIPTR)elfSeek,
+        (SIPTR)elfRead,
+        (SIPTR)elfAlloc,
+        (SIPTR)elfFree,
+        (SIPTR)elfSeek,
     };
     filename = ConvertBSTR(bfilename);
     if (!filename)
-    	return BNULL;
+        return BNULL;
 
     WriteF("Loading '%S' into RAM...\n", bfilename);
     if ((gzf = gzopen(filename, "rb"))) {
-    	gzbuffer(gzf, 65536);
+        gzbuffer(gzf, 65536);
 
-    	rom = LoadSegment((BPTR)gzf, BNULL, funcarray, NULL);
-    	if (rom == BNULL) {
-    	    WriteF("'%S': Can't parse, error %N\n", bfilename, IoErr());
-    	}
+        rom = LoadSegment((BPTR)gzf, BNULL, funcarray, NULL);
+        if (rom == BNULL) {
+            WriteF("'%S': Can't parse, error %N\n", bfilename, IoErr());
+        }
 
-    	gzclose_r(gzf);
+        gzclose_r(gzf);
     } else {
-    	WriteF("'%S': Can't open\n", bfilename);
+        WriteF("'%S': Can't open\n", bfilename);
     }
     FreeString(filename);
     return rom;
@@ -620,144 +800,74 @@ static void RTGPatch(struct Resident *r, BPTR seg)
     WORD len = strlen(r->rt_Name);
     const UBYTE *name = r->rt_Name + len - 5;
     if (len > 5 && (!stricmp(name, ".card") || !stricmp(name, ".chip"))) {
-    	BPTR seglist = seg;
-	while (seglist) {
-	    ULONG *ptr = BADDR(seglist);
-	    LONG len = ptr[-1] - sizeof(BPTR);
-	    UBYTE *p = (UBYTE*)(ptr + 1);
-    	    while (len > 0) {
-    	    	if (len > 16 && !strnicmp(p, "libs:picasso96/", 15)) {
-    	    	    memmove(p, p + 15, strlen(p + 15) + 1);
-    	    	    patched = TRUE;
-    	    	} else if (len > 10 && !strnicmp(p, "picasso96/", 10)) {
-    	    	    memmove(p, p + 10, strlen(p + 10) + 1);
-    	    	    patched = TRUE;
-    	    	}
-    	    	len--;
-    	    	p++;
-    	    }
-	    seglist = *((BPTR*)BADDR(seglist));
-	}
+        BPTR seglist = seg;
+        while (seglist) {
+            ULONG *ptr = BADDR(seglist);
+            LONG len = ptr[-1] - sizeof(BPTR);
+            UBYTE *p = (UBYTE*)(ptr + 1);
+            while (len > 0) {
+               	if (len > 16 && !strnicmp(p, "libs:picasso96/", 15)) {
+                    memmove(p, p + 15, strlen(p + 15) + 1);
+                    patched = TRUE;
+                } else if (len > 10 && !strnicmp(p, "picasso96/", 10)) {
+                    memmove(p, p + 10, strlen(p + 10) + 1);
+                    patched = TRUE;
+                }
+                len--;
+                p++;
+            }
+            seglist = *((BPTR*)BADDR(seglist));
+        }
     }
     if (patched)
-    	WriteF("Library path patched\n");
+        WriteF("Library path patched\n");
 }
 
-static BOOL PatchResidents(BPTR seg)
-{
-    const LONG ressize = offsetof(struct Resident, rt_Init) + sizeof(APTR);
-    while(seg) {
-	ULONG *ptr = BADDR(seg);
-	UWORD *res;
-	UWORD *end = (UWORD*)((ULONG)ptr + ptr[-1] - ressize);
-    
-	res = (UWORD*)(ptr + 1);
-	while (res < end) {
-	    if (*res == RTC_MATCHWORD && ((ULONG*)(res + 1))[0] == (ULONG)res) {
-		struct Resident *r = (struct Resident*)res;
-		r->rt_Flags |= 1 << 5;
-		if (r->rt_EndSkip <= (APTR)res) {
-#if DEBUG > 1
-                    WriteF("Invalid rt_EndSkip: %X8, Resident: %X8\n", r->rt_EndSkip, r);
-#endif
-                    res += ressize / sizeof(WORD) - 1;
-		} else {
-                    res = (UWORD*)r->rt_EndSkip - 1;
-                }
-	    }
-	    res++;
-	}
-	seg = (BPTR)ptr[0];
-    }
-    return TRUE;
-}
-
-#define RESLIST_CHUNK   100
-#define LRF_NOPATCH      (1 << 0)        /* If set, don't patch the struct Resident */
-
-static struct Resident **LoadResident(BPTR seg, struct Resident **reslist, ULONG *resleft, ULONG flags)
-{
-    const LONG ressize = offsetof(struct Resident, rt_Init) + sizeof(APTR);
-    ULONG *ptr = BADDR(seg);
-    UWORD *res;
-    UWORD *end = (UWORD*)((ULONG)ptr + ptr[-1] - ressize);
-    
-    res = (UWORD*)(ptr + 1);
-    while (res < end) {
-        if (*res == RTC_MATCHWORD && ((ULONG*)(res + 1))[0] == (ULONG)res) {
-            struct Resident *r = (struct Resident*)res;
-            if (!(flags & LRF_NOPATCH)) {
-                /* Set RTF_COLDSTART if no initialization flags set */
-                if (!(r->rt_Flags & (RTF_COLDSTART | RTF_SINGLETASK | RTF_AFTERDOS)))
-                    r->rt_Flags |= RTF_COLDSTART;
-                if (r->rt_Pri < 10)
-                    r->rt_Pri = 10;
-                RTGPatch(r, seg);
-            }
-
-            if (*resleft == 0) {
-                struct Resident **resnew;
-                resnew = aosAllocMem(RESLIST_CHUNK * sizeof(struct Resident*), MEMF_CLEAR, SysBase);
-                if (!resnew)
-                    return 0;
-
-                *reslist = (APTR)((IPTR)resnew | RESLIST_NEXT);
-                reslist = resnew;
-                *resleft = RESLIST_CHUNK - 1;
-            }
-            D(DWriteF("Resident structure found @%X8\n", r));
-            *(reslist++) = r;
-            (*resleft)--;
-
-            if (r->rt_EndSkip <= (APTR)res)
-		res += ressize / sizeof(WORD) - 1;
-            else
-                res = (UWORD*)r->rt_EndSkip - 1;
-        }
-        res++;
-    }
-
-    return reslist;
-}
-
-static struct Resident **LoadResidents(BPTR *namearray, struct Resident **resnext, ULONG *resleft)
+static void LoadResidents(BPTR *namearray)
 {
     UBYTE i;
     SIPTR funcarray[] = {
-    	(SIPTR)aosRead,
-    	(SIPTR)aosAlloc,
-    	(SIPTR)aosFree,
-    	(SIPTR)aosSeek,
+        (SIPTR)aosRead,
+        (SIPTR)aosAlloc,
+        (SIPTR)aosFree,
+        (SIPTR)aosSeek,
     };
    
     for (i = 0; namearray[i]; i++) {
-	LONG stack;
-	BPTR handle;
-	BPTR seglist = BNULL;
-	BPTR bname;
-    	UBYTE *name;
+        LONG stack;
+        BPTR handle;
+        BPTR seglist = BNULL;
+        BPTR bname;
+        UBYTE *name;
     
-    	bname = namearray[i];
-    	name = ConvertBSTR(bname);
-    	if (name) {
-	    handle = Open(name, MODE_OLDFILE);
-	    if (handle) {
-		seglist = LoadSegment(handle, BNULL, funcarray, &stack);
-		Close(handle);
-	    }
-	    if (seglist) {
-	        BPTR seg;
-		WriteF("Loaded '%S'\n", bname);
-		for (seg = seglist; seg != BNULL; seg = *((BPTR*)BADDR(seg)))
-		    resnext = LoadResident(seg, resnext, resleft, 0);
-	    } else {
-		WriteF("Failed to load '%S', error %N\n", bname, IoErr());
-	    }
-	    FreeString(name);
-	}
+        bname = namearray[i];
+        name = ConvertBSTR(bname);
+        if (name) {
+            handle = Open(name, MODE_OLDFILE);
+            if (handle) {
+                seglist = LoadSegment(handle, BNULL, funcarray, &stack);
+                Close(handle);
+            }
+            if (seglist) {
+                struct Resident *res = NULL;
+                BPTR seg;
+                WriteF("Loaded '%S'\n", bname);
+                for (seg = seglist; seg != BNULL; seg = *((BPTR*)BADDR(seg))) {
+                    ULONG *ptr = BADDR(seg);
+                    ULONG len = ptr[-1];
+                    res = scanResidents((UBYTE*)ptr, len, TRUE);
+                    if (res)
+                        break;
+                    
+                }
+                if (res)
+                    RTGPatch(res, seg);
+            } else {
+                WriteF("Failed to load '%S', error %N\n", bname, IoErr());
+            }
+            FreeString(name);
+        }
     }
-
-    return resnext;
 }
 
 #if DEBUG
@@ -848,6 +958,16 @@ static void DebugPutDec(const char *what, ULONG val)
 	}
 	DebugPutChar('\n');
 }
+static void DebugPutHexVal(ULONG val)
+{
+	int i;
+	if (!debug_enabled)
+		return;
+	for (i = 0; i < 8; i ++) {
+		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
+	}
+	DebugPutChar(' ');
+}
 static void DebugPutHex(const char *what, ULONG val)
 {
 	int i;
@@ -860,35 +980,28 @@ static void DebugPutHex(const char *what, ULONG val)
 	}
 	DebugPutChar('\n');
 }
-static void DebugPutHexVal(ULONG val)
-{
-	int i;
-	if (!debug_enabled)
-		return;
-	for (i = 0; i < 8; i ++) {
-		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
-	}
-	DebugPutChar(' ');
-}
 #endif
 #endif
-
-
-#define FAKEBASE 0x200
-#define FAKEBASESIZE 558
-#define COLDCAPTURE (FAKEBASE + FAKEBASESIZE + 16)
 
 /* Theory of operation:
 
-- create fake sysbase in low chip memory (We can't use original because it is not binary compatible with AROS one)
+- create fake sysbase in chip memory (We can't use original because it is not binary compatible with AROS one)
 - set correct checksum and point ColdCapture to our routine (also in low chip)
 - reset the system (autoconfig devices disappear, including most expansion RAM and ROM overlay disables chip RAM)
-- original ROM code now disables ROM overlay and checks KS checksum and jumps to our ColdCapture routine
+- original ROM code runs, disables ROM overlay and checks KS checksum and jumps to our ColdCapture routine
 - above step is needed because in worst case ALL RAM disappear at reset and there
   are also accelerators that reset the CPU completely when reset instruction is executed.
 - now we have control again, autoconfig devices are still unconfigured but at least we have chip ram.
+- extra step if AROS build final SysBase in autoconfig RAM:
+  - AOS detects invalid SysBase (not accessible)
+  - builds temporary SysBase in Chip RAM
+  - autoconfig
+  - checks if original SysBase is now valid. If it is, checks ColdCapture and jumps to it.
+  - we have control now but autoconfig devices have been configured and we don't want it.
+  - we store original SysBase, set fake sysbase back, reset system again
+  - now we finally have control without autoconfig
 - jump to AROS ROM code entry point which detects romloader mode and automatically reserves RAM used by "ROM" code
-- AROS ROM creates new proper execbase and copies ColdCapture
+- AROS ROM creates new proper execbase and copies ColdCapture and other reset proof vectors from original SysBase
 - normal boot starts
 
 */
@@ -898,69 +1011,9 @@ static UWORD GetSysBaseChkSum(struct ExecBase *sysbase)
      UWORD sum = 0;
      UWORD *p = (UWORD*)&sysbase->SoftVer;
      while (p <= &sysbase->ChkSum)
-	sum += *p++;
+        sum += *p++;
      return sum;
 }
-
-static ULONG mySumKickData(struct ExecBase *sysbase, BOOL output)
-{
-    ULONG chksum = 0;
-    BOOL isdata = FALSE;
-
-    if (sysbase->KickTagPtr) {
-    	IPTR *list = sysbase->KickTagPtr;
- 	while(*list)
-	{
-   	    chksum += (ULONG)*list;
-#if 0
-	    if (output) {
-	    	WriteF("%X8 %X8\n", list, *list);
-	    	WriteF("CHK %X8\n", chksum);
-	    }
-#endif
-
-            /* on amiga, if bit 31 is set then this points to another list of
-             * modules rather than pointing to a single module. bit 31 is
-             * inconvenient on architectures where code may be loaded above
-             * 2GB. on these platforms we assume aligned pointers and use bit
-             * 0 instead */
-#ifdef __mc68000__
-	    if(*list & 0x80000000) { list = (IPTR *)(*list & 0x7fffffff); continue; }
-#else
-            if(*list & 0x1) { list = (IPTR *)(*list & ~(IPTR)0x1); continue; }
-#endif
-	    list++;
-	    isdata = TRUE;
-   	}
-    }
-
-    if (sysbase->KickMemPtr) {
-	struct MemList *ml = (struct MemList*)sysbase->KickMemPtr;
-	while (ml) {
-	    UBYTE i;
-	    ULONG *p = (ULONG*)ml;
-	    for (i = 0; i < sizeof(struct MemList) / sizeof(ULONG); i++)
-	    	chksum += p[i];
-
-#if 0
-	    if (output) {
-		WriteF("ML    %X8 %X8\n", ml, chksum);
-		WriteF("NODE0 %X8 %X8\n", p[0], p[1]);
-		WriteF("NODE2 %X8 %X8\n", p[2], p[3]);
-		WriteF("ADDR  %X8 %X8\n", ml->ml_ME[0].me_Un.meu_Addr, ml->ml_ME[0].me_Length);
-		WriteF("DATA0 %X8 %X8\n", p[6], p[7]);
-	    }
-#endif
-
-	    ml = (struct MemList*)ml->ml_Node.ln_Succ;
-	    isdata = TRUE;
-	}
-    }
-    if (isdata && !chksum)
-    	chksum--;
-    return chksum;
-}
-
 
 /* reset VBR and switch off MMU */
 static void setcpu(void)
@@ -1007,15 +1060,53 @@ static void setcpu(void)
 void coldcapturecode(void)
 {
     asm(
+    ".chip 68010\n"
 	".long end - start\n"
 	"start:\n"
 	"bra.s 0f\n"
 	"nop\n"               /* Align to start + 4 */
 	".long 0x46414b45\n"  /* AROS_MAKE_ID('F','A','K','E') */
+	".long 0\n" //  0 BootStruct
+	".long 0\n" //  4 FakeBase
+	".long 0\n" //  8 Stored NMI
+	".long 0\n" // 12 ROM EntryPoint
 	"0:\n"
 	"move.w	#0x440,0xdff180\n"
-	"clr.l	0.w\n"
+	"lea	vbrexp(%pc),%a0\n"
+	"move.l	%a0,0x10.w\n" // illegal opcode exception
+	"move.l	#0x400,%sp\n"
+	"moveq	#0,%d0\n"
+	"movec	%d0,%vbr\n"	// reset VBR
+	"vbrexp:\n" // we get here if 68000 (no VBR)
+	"lea	start+8(%pc),%a4\n"
+	"move.l	4.w,%d0\n"
 	"clr.l	4.w\n"
+	"btst	#0,%d0\n"
+	"bne.s	basenok\n"
+	"move.l	%d0,%a0\n"
+	// We need to check if autoconfig has already been done by
+	// AOS expansion.library. It happens if SysBase is in autoconfig RAM
+	// We need to get back to non-autoconfig state.
+	"tst.l 	10(%a0)\n" // ln_Name == NULL?
+	"bne.s	baseok\n"
+	// It was AOS temp SysBase. Switch back to FakeBase.
+	// Interestingly ChkBase contains original SysBase pointer in this situation!
+	"move.l (%a4),%a1\n"
+	"move.l 38(%a0),4(%a1)\n" // SysBase -> BootStruct->RealBase
+	"basenok:\n"
+	"bsr.s fixbase\n"
+	// and reset and try again.
+	"lea 0x01000000,%a0\n"
+	"sub.l %a0@(-0x14),%a0\n"
+	"move.l %a0@(4),%a0\n"
+	"subq.l #2,%a0\n"
+	"reset\n"
+	"jmp (%a0)\n"
+
+	"baseok:\n"
+	"not.l	%d0\n"
+	"cmp.l	38(%a0),%d0\n" // ChkBase
+	"bne.s	basenok\n"
 
 	// set early exceptions
 	"move.w	#8,%a1\n"
@@ -1025,11 +1116,27 @@ void coldcapturecode(void)
 	"move.l	%a0,(%a1)+\n"
 	"dbf	%d0,1b\n"
 
-	"lea	0x200,%a0\n"
-	"move.l	(%a0),0x7c.w\n" // restore NMI
-	"lea	12(%a0),%a0\n"
-	"move.l	%a0,4.w\n"
-	"lea	start(%pc),%a1\n"
+	"bsr.s	fixbase\n"
+
+	"move.l	12(%a4),%a0\n" // Entrypoint
+	"addq.l	#2,%a0\n"
+	"moveq	#2,%d0\n"
+	"cmp.w	#0x4ef9,(%a0)\n"
+	"beq.s	.skip\n"
+	// skip elf loader injected header
+	"moveq	#4,%d0\n"
+	"move.l	(%a0),%a0\n"
+	".skip:\n"
+	"move.l	0(%a0,%d0.w),%a0\n"
+	"jmp	4(%a0)\n"
+
+	// Setup our temporary fake SysBase
+	"fixbase:\n"
+	"move.l	8(%a4),0x7c.w\n" // restore NMI
+	"move.l	4(%a4),%a0\n" // FakeBase
+	"move.l %a0,4.w\n"
+	"move.w #50,34(%a0)\n"	// SoftVer
+	"lea start(%pc),%a1\n"
 	"move.l	%a1,42(%a0)\n"  // ColdCapture
 	"move.l	%a0,%d0\n"
 	"not.l	%d0\n"
@@ -1041,17 +1148,8 @@ void coldcapturecode(void)
 	"dbf	%d0,chk1\n"
 	"not.w	%d1\n"
 	"move.w	%d1,(%a0)\n" // ChkSum
-	"move.l	start-4(%pc),%a0\n"
-	"addq.l	#2,%a0\n"
-	"moveq	#2,%d0\n"
-	"cmp.w	#0x4ef9,(%a0)\n"
-	"beq.s	.skip\n"
-	// skip elf loader injected header
-	"moveq	#4,%d0\n"
-	"move.l	(%a0),%a0\n"
-	".skip:\n"
-	"move.l	0(%a0,%d0.w),%a0\n"
-	"jmp	4(%a0)\n"
+	"rts\n"
+
 	"exception:\n"
 	"move.w #0xff0,0xdff180\n"
 	"move.w #0x000,0xdff180\n"
@@ -1072,124 +1170,70 @@ static void doreboot(void)
 	"sub.l %a0@(-0x14),%a0\n"
 	"move.l %a0@(4),%a0\n"
 	"subq.l #2,%a0\n"
-	".balign 8\n"   /* Workaround for E-UAE emulation bug */
 	"reset\n"
 	"jmp (%a0)\n"
     );
 }
 
-APTR entry, kicktags;
-struct BootStruct *bootstruct;
+struct BootStruct *bs;
 
 static void supercode(void)
 {
-    ULONG *fakesys, *coldcapture, *coldcapturep;
-    struct ExecBase *sysbase;
     ULONG *traps = 0;
-    ULONG len;
 
 #if DEBUG
     DebugPutStr("Entered Supervisor mode.\n");
 #endif
 
     if ((SysBase->AttnFlags & 0xff) != 0)
-    	setcpu();
-
+        setcpu();
 #if DEBUG
     DebugPutStr("CPU setup done.\n");
 #endif
 
-    fakesys = (ULONG*)FAKEBASE;
-    coldcapture = (ULONG*)COLDCAPTURE;
-    coldcapture[-1] = (ULONG)entry;
-    coldcapturep = (ULONG*)coldcapturecode;
-    len = *coldcapturep++;
-    memcpy (coldcapture, coldcapturep, len);
-
-    *fakesys++ = traps[31]; // Level 7
-    *fakesys++ = 0x4ef9 | (COLDCAPTURE >> 16);
-    *fakesys++ = (COLDCAPTURE << 16) | 0x4e75;
-    sysbase = (struct ExecBase*)fakesys; 
-
-    memset(sysbase, 0, FAKEBASESIZE);
-    /* Misuse DebugData as a kernel tag pointer,
-     */
-    if (bootstruct)
-    	sysbase->DebugData = bootstruct;
-
-    /* Detached node */
-    sysbase->LibNode.lib_Node.ln_Pred = &sysbase->LibNode.lib_Node;
-    sysbase->LibNode.lib_Node.ln_Succ = &sysbase->LibNode.lib_Node;
-
-    /* Set up cold capture */
-    sysbase->ColdCapture = coldcapture;
-    sysbase->MaxLocMem = 512 * 1024;
-    sysbase->ChkBase =~(IPTR)sysbase;
-    sysbase->ChkSum = GetSysBaseChkSum(sysbase) ^ 0xffff;
-
-    /* Propogate the existing OS's Kick Data */
-    if (mlist.lh_Head->ln_Succ) {
-    	sysbase->KickMemPtr = (APTR)mlist.lh_Head;
-    	mlist.lh_TailPred->ln_Succ = SysBase->KickMemPtr;
-    } else {
-	sysbase->KickMemPtr = (APTR)SysBase->KickMemPtr;
-    }
-    if (kicktags) {
-    	sysbase->KickTagPtr = kicktags;
-    	if (SysBase->KickTagPtr) {
-	     ULONG *p = kicktags;
-	     while (*p)
-		p++;
-	     *p = 0x80000000 | (ULONG)SysBase->KickTagPtr;
-	}
-    } else {
-    	sysbase->KickTagPtr = SysBase->KickTagPtr;
-    }
-    sysbase->KickCheckSum = (APTR)mySumKickData(sysbase, FALSE);
-
-    traps[1] = (IPTR)sysbase;
-
-#if DEBUG
-    DebugPutStr("Rebooting.\n");
-#endif
+    traps[0] = 0;
+    traps[1] = (ULONG)bs->FakeBase;
 
     // TODO: add custom cacheclear, can't call CacheClearU() because it may not work
     // anymore and KS 1.x does not even have it
     doreboot();
 }
 
-void BootROM(BPTR romlist, struct Resident **reslist, struct BootStruct *BootS)
+static void BootROM(struct BootStruct *BootS)
 {
     APTR GfxBase;
-
-    entry = BADDR(romlist)+sizeof(ULONG);
-    kicktags = reslist;
-    bootstruct = BootS;
+    struct ExecBase *sysbase = BootS->FakeBase;
+    ULONG *colddata;
+    ULONG *traps = 0;
 
 #if DEBUG
-    DebugPutStr("Booting..\n");
+    WriteF("BootStruct %X8\n", BootS);
+    WriteF("FakeBase   %X8\n", sysbase);
+    WriteF("Bootcode   %X8\n", BootS->bootcode);
 #endif
 
-#if 0
-     /* Debug testing code */
-    if (mlist.lh_Head->ln_Succ) {
-    	SysBase->KickMemPtr = (APTR)mlist.lh_Head;
-    	mlist.lh_TailPred->ln_Succ = NULL;
-    }
-    if (kicktags) {
-    	SysBase->KickTagPtr = kicktags;
-    }
-    mySumKickData(SysBase, TRUE);
-    SysBase->KickTagPtr = 0;
-    SysBase->KickMemPtr = 0;
-    Delay(200);
-#endif
+    strcpy(bmh->fakename, "fakebase");
+    sysbase->LibNode.lib_Node.ln_Name = bmh->fakename;
+    sysbase->ColdCapture = BootS->bootcode;
+    sysbase->MaxLocMem = 512 * 1024;
+    sysbase->ChkBase =~(IPTR)sysbase;
+    sysbase->ChkSum = GetSysBaseChkSum(sysbase) ^ 0xffff;
+    memcpy(BootS->bootcode, coldcapturecode + 4, ((ULONG*)coldcapturecode)[0]);
+    colddata = (ULONG*)(BootS->bootcode + 8);
+    colddata[0] = (ULONG)BootS;
+    colddata[1] = (ULONG)sysbase;
+    colddata[2] = traps[31]; // NMI
+    colddata[3] = (ULONG)bmh->entrypoint;
+
+    bs = BootS;
+
+    Delay(50);
 
     if ((GfxBase = OpenLibrary("graphics.library", 0))) {
-    	LoadView(NULL);
-    	WaitTOF();
-    	WaitTOF();
-    	CloseLibrary(GfxBase);
+        LoadView(NULL);
+        WaitTOF();
+        WaitTOF();
+        CloseLibrary(GfxBase);
     }
 
     /* We're off in the weeds now. */
@@ -1202,17 +1246,17 @@ void BootROM(BPTR romlist, struct Resident **reslist, struct BootStruct *BootS)
 static void DumpKickMems(ULONG num, struct MemList *ml)
 {
     if (num == 0)
-    	DWriteF("Original KickMemList:\n");
+       DWriteF("Original KickMemList:\n");
     else
-    	DWriteF("AROS KickMemList:\n");
+       DWriteF("AROS KickMemList:\n");
     /* List is single-linked but last link gets cleared later, so test ln_Succ too */
     while (ml && ml->ml_Node.ln_Succ) {
-    	WORD i;
-    	DWriteF("%X8:%N\n", ml, ml->ml_NumEntries);
-    	for (i = 0; i < ml->ml_NumEntries; i++) {
-    	    DWriteF("  %N: %X8, %N\n", i, ml->ml_ME[i].me_Un.meu_Addr, ml->ml_ME[i].me_Length);
-    	}
-    	ml = (struct MemList*)ml->ml_Node.ln_Succ;
+        WORD i;
+        DWriteF("%X8:%N\n", ml, ml->ml_NumEntries);
+        for (i = 0; i < ml->ml_NumEntries; i++) {
+            DWriteF("  %N: %X8, %N\n", i, ml->ml_ME[i].me_Un.meu_Addr, ml->ml_ME[i].me_Length);
+        }
+        ml = (struct MemList*)ml->ml_Node.ln_Succ;
     }
     DWriteF("End of List\n");
 }
@@ -1220,20 +1264,20 @@ static void DumpKickMems(ULONG num, struct MemList *ml)
 static void DumpKickTags(ULONG num, struct Resident **list)
 {
     if (num == 0)
-    	DWriteF("Original KickTagList:\n");
+        DWriteF("Original KickTagList:\n");
     else
-    	DWriteF("AROS KickTagList:\n");
+        DWriteF("AROS KickTagList:\n");
     while (*list) {
-    	BSTR bname;
-    	if ((ULONG)list & 0x80000000) {
-    	    DWriteF("Redirected to %X8\n", (ULONG)list & ~0x80000000);
-    	    list = (struct Resident**)((ULONG)list & ~0x80000000);
-    	    continue;
-    	}
-    	bname = ConvertCSTR((*list)->rt_IdString);
-    	DWriteF("%X8: %X8 %S\n", list, *list, bname);
-    	FreeBSTR(bname);
-    	list++;
+        BSTR bname;
+        if ((ULONG)list & RESLIST_NEXT) {
+            DWriteF("Redirected to %X8\n", (ULONG)list & ~RESLIST_NEXT);
+            list = (struct Resident**)((ULONG)list & ~RESLIST_NEXT);
+            continue;
+        }
+        bname = ConvertCSTR((*list)->rt_IdString);
+        DWriteF("%X8: %X8 %S\n", list, *list, bname);
+        FreeBSTR(bname);
+        list++;
     }
     DWriteF("End of List\n");
 }
@@ -1280,41 +1324,31 @@ static void DetectHardware(void)
     CloseLibrary(ExpansionBase);
 }
 
-static struct Resident **ScanROMSegment(BPTR ROMSegList, struct Resident **resnext, ULONG *resleft)
-{
-    BPTR seg;
-    /* Only scan 2nd ROM section */
-    seg = *((BPTR*)BADDR(ROMSegList));
-    return LoadResident(seg, resnext, resleft, LRF_NOPATCH);
-}
-
-#define KERNELTAGS_SIZE 10
-#define CMDLINE_SIZE 512
-
-static struct BootStruct *AllocBootStruct(UBYTE *cmdline)
+static struct BootStruct *CreateBootStruct(BPTR ROMSeg, UBYTE *cmdline)
 {
     struct TagItem *tags;
     struct BootStruct *boots;
-    UBYTE *cmd;
     
-    boots = aosAllocMem(sizeof(struct BootStruct) + sizeof(struct TagItem) * KERNELTAGS_SIZE + CMDLINE_SIZE, MEMF_CLEAR, SysBase);
-    if (!boots)
-    	return NULL;
-    tags = (struct TagItem*)(boots + 1);
-    cmd = (UBYTE*)(tags + KERNELTAGS_SIZE);
+    boots = &bmh->boots;
+    boots->mlist = &bmh->mlist;
+    boots->reslist = bmh->res;
+    boots->FakeBase = &bmh->FakeBase;
+    boots->bootcode = &bmh->bootcode;
+    bmh->entrypoint = BADDR(ROMSeg) + sizeof(ULONG);
+    tags = bmh->ktags;
     /* cmdline is a BCPL string! */
     if (cmdline && cmdline[0])
-        CopyMem(cmdline + 1, cmd, cmdline[0]);
+        CopyMem(cmdline + 1, bmh->kcmd, cmdline[0]);
     else
-    	strcpy(cmd, DEFAULT_KERNEL_CMDLINE);
+        strcpy(bmh->kcmd, DEFAULT_KERNEL_CMDLINE);
     tags[0].ti_Tag = KRN_CmdLine;
-    tags[0].ti_Data = (IPTR)cmd;
+    tags[0].ti_Data = (IPTR)bmh->kcmd;
     tags[1].ti_Tag = TAG_DONE;
 
     boots->magic = ABS_BOOT_MAGIC;
     boots->kerneltags = tags;
     if (forceFAST) {
-        UBYTE *addr = specialAlloc(SS_STACK_SIZE + MAGIC_FAST_SIZE + 1, MEMF_FAST | MEMF_REVERSE, SysBase); /* +1 = guaranteed extra page at the end */
+        UBYTE *addr = specialAlloc(SS_STACK_SIZE + MAGIC_FAST_SIZE + 1, MEMF_FAST | MEMF_REVERSE, "magicfast", FALSE, SysBase); /* +1 = guaranteed extra page at the end */
         if (addr) {
             addr = (UBYTE*)(((ULONG)(addr + PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1));
             boots->ss_address = addr;
@@ -1340,36 +1374,35 @@ __startup static AROS_PROCH(startup, argstr, argsize, sysBase)
      */
     lowmem = AllocMem(PAGE_SIZE, MEMF_CHIP);
 
-    NEWLIST(&mlist);
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
     if (DOSBase != NULL) {
-    	BPTR ROMSegList;
-    	BSTR name = AROS_CONST_BSTR("aros.elf");
-    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCECHIP = 18, ARG_FORCEFAST = 19, ARG_DEBUG = 20, ARG_FORCEAROS = 21, ARG_MODULES = 0 };
-    	/* It would be nice to use the '/M' switch, but that
-    	 * is not supported under the AOS BCPL RdArgs routine.
-    	 *
-    	 * So only 16 modules are supported
-    	 */
-    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K,FORCECHIP/S,FORCEFAST/S,DEBUG/S,FORCEAROS/S");
-    	/* Make sure the args are in .bss, not stack */
-    	static ULONG args[16 + 6 + 256] __attribute__((aligned(4))) = { };
+        BPTR ROMSegList;
+        BSTR name = AROS_CONST_BSTR("aros.elf");
+        enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCECHIP = 18, ARG_FORCEFAST = 19, ARG_DEBUG = 20, ARG_FORCEAROS = 21, ARG_MODULES = 0 };
+         /* It would be nice to use the '/M' switch, but that
+         * is not supported under the AOS BCPL RdArgs routine.
+         *
+         * So only 16 modules are supported
+         */
+        BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K,FORCECHIP/S,FORCEFAST/S,DEBUG/S,FORCEAROS/S");
+        /* Make sure the args are in .bss, not stack */
+        static ULONG args[16 + 6 + 256] __attribute__((aligned(4))) = { };
 
         args[0] = name;
 
         RdArgs(format, MKBADDR(args), sizeof(args)/sizeof(args[0]));
 #if DEBUG > 1
-        DWriteF("ROM: %S\n", args[ARG_ROM]);
-        DWriteF("CMD: %S\n", args[ARG_CMD]);
+        DWriteF("ROM      : %S\n", args[ARG_ROM]);
+        DWriteF("CMD      : %S\n", args[ARG_CMD]);
         DWriteF("FORCECHIP: %N\n", args[ARG_FORCECHIP]);
         DWriteF("FORCEFAST: %N\n", args[ARG_FORCEFAST]);
-        DWriteF("MOD: %S\n", args[0]);
-        DWriteF("   : %S\n", args[1]);
-        DWriteF("   : %S\n", args[2]);
-        DWriteF("   : %S\n", args[3]);
-
+        DWriteF("MOD 0    : %S\n", args[0]);
+        DWriteF("    1    : %S\n", args[1]);
+        DWriteF("    2    : %S\n", args[2]);
+        DWriteF("    3    : %S\n", args[3]);
 #endif
-	forceAROS = args[ARG_FORCEAROS] ? TRUE : FALSE;
+
+        forceAROS = args[ARG_FORCEAROS] ? TRUE : FALSE;
         forceCHIP = args[ARG_FORCECHIP] ? TRUE : FALSE;
         forceFAST = args[ARG_FORCEFAST] ? TRUE : FALSE;
         debug_enabled = args[ARG_DEBUG] ? TRUE : FALSE;
@@ -1377,18 +1410,18 @@ __startup static AROS_PROCH(startup, argstr, argsize, sysBase)
         /* See if we're already running on AROS.
          */
         if (OpenResource("kernel.resource") != NULL) {
-        	if (!forceAROS) {
-        		CloseLibrary(DOSBase);
-        		FreeMem(lowmem, PAGE_SIZE);
-        		return RETURN_OK;
-		}
-	} else {
-		forceAROS = FALSE;
-	}
+            if (!forceAROS) {
+                CloseLibrary(DOSBase);
+                FreeMem(lowmem, PAGE_SIZE);
+                return RETURN_OK;
+            }
+        } else {
+            forceAROS = FALSE;
+        }
 
-    	WriteF("AROSBootstrap " ADATE "\n");
-    	if (forceAROS)
-    		WriteF("Forcing load of AROS on existing AROS\n");
+        WriteF("AROSBootstrap " ADATE "\n");
+        if (forceAROS)
+            WriteF("Forcing load of AROS on existing AROS\n");
 
         /* Blizzard A1200 accelerator boards have strange MAP ROM
          * feature, even when it is disabled, ROM is copied to
@@ -1408,6 +1441,7 @@ __startup static AROS_PROCH(startup, argstr, argsize, sysBase)
 
         meminfo();
         DetectHardware();
+        initDataPool();
 
 #if DEBUG
         DebugInit();
@@ -1420,30 +1454,24 @@ __startup static AROS_PROCH(startup, argstr, argsize, sysBase)
 
             ROMSegList = ROMLoad(args[ARG_ROM]);
             if (ROMSegList != BNULL) {
-                ULONG resleft = 0;
-                struct Resident **ResidentList;
                 struct BootStruct *BootS;
                 WriteF("Successfully loaded ROM\n");
                 ROM_Loaded = TRUE;
-                struct Resident **resnext, *reshead = NULL;
 
-		PatchResidents(ROMSegList);
-                resnext = &reshead;
-                resnext = ScanROMSegment(ROMSegList, resnext, &resleft);
-                resnext = LoadResidents(&args[ARG_MODULES], resnext, &resleft);
-                BootS = AllocBootStruct(BADDR(args[ARG_CMD]));
-                ResidentList = (APTR)((IPTR)reshead & ~RESLIST_NEXT);
+                scanMemLists();
+                LoadResidents(&args[ARG_MODULES]);
+                BootS = CreateBootStruct(ROMSegList, BADDR(args[ARG_CMD]));
 
 #if DEBUG
-		DumpKickMems(0, SysBase->KickMemPtr);
-		DumpKickMems(1, (struct MemList*)mlist.lh_Head);
-		DumpKickTags(0, SysBase->KickTagPtr);
-		DumpKickTags(1, ResidentList);
+                WriteF("Debug info:\n");
+                DumpKickTags(0, SysBase->KickTagPtr);
+                DumpKickTags(1, BootS->reslist);
+                DumpKickMems(0, SysBase->KickMemPtr);
+                DumpKickMems(1, (struct MemList*)bmh->mlist.lh_Head);
 #endif
-		WriteF("Booting...\n");
-                Delay(50);
+                WriteF("Booting...\n");
 
-                BootROM(ROMSegList, ResidentList, BootS);
+                BootROM(BootS);
 
                 UnLoadSeg(ROMSegList);
             } else {
@@ -1451,9 +1479,9 @@ __startup static AROS_PROCH(startup, argstr, argsize, sysBase)
             }
         } else {
             WriteF("Can't parse arguments, error %N\n", IoErr());
-	}
+        }
 
-    	CloseLibrary((APTR)DOSBase);
+        CloseLibrary((APTR)DOSBase);
     }
 
     FreeMem(lowmem, PAGE_SIZE);
