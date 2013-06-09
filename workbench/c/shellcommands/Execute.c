@@ -123,7 +123,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 	struct DateStamp ds;
 	BYTE tmpname[256];
 	BPTR tmpfile = BNULL;
-	int count = 0;
+	ULONG count = 0;
 	BYTE tmpdir[4];
 	BPTR tmplock;
 	struct Window *win;
@@ -144,7 +144,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 
         do {
             count++;
-            __sprintf(tmpname, "%sTmp%lu%lu%lu%lu%d", tmpdir,
+            __sprintf(tmpname, "%sTmp%lu%lu%lu%lu%lu", tmpdir,
                       ((struct Process *)FindTask(NULL))->pr_TaskNum,
                       ds.ds_Days, ds.ds_Minute, ds.ds_Tick, count);
 	    tmpfile = Open(tmpname, MODE_NEWFILE);
