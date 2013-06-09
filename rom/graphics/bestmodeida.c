@@ -47,17 +47,11 @@ struct MatchData
     UWORD  found_height;
 };
 
-void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchData *args, struct GfxBase *GfxBase)
+static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchData *args, struct GfxBase *GfxBase)
 {
     struct DisplayInfoHandle *dinfo;
     struct DisplayInfo disp;
     struct DimensionInfo dims;
-
-    if (args->monitorid != INVALID_ID)
-    {
-        if (args->monitorid != mdd->id)
-            return;
-    }
 
     if (args->boardname)
     {
@@ -65,6 +59,7 @@ void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchData *args
 
 	OOP_GetAttr(mdd->gfxhidd, aHidd_Gfx_DriverName, (IPTR *)&name);
 	if (strcmp(args->boardname, name))
+	    D(bug("CYBRBIDTG_BoardName didn't match. '%s' != '%s'\n", args->boardname, name));
 	    return;
     }
 
@@ -74,6 +69,12 @@ void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchData *args
 	ULONG modeid = mdd->id | dinfo->id;
 
 	D(bug("[BestModeID] Checking ModeID 0x%08X... ", modeid));
+
+    if (args->monitorid != INVALID_ID && args->monitorid != modeid)
+    {
+        D(bug("BIDTAG_MonitorID 0x%08X didn't match\n", args->monitorid));
+        continue;
+    }
 
 	if (GetDisplayInfoData(dinfo, (UBYTE *)&disp, sizeof(disp), DTAG_DISP, modeid) < offsetof(struct DisplayInfo, pad2))
 	{
@@ -142,6 +143,27 @@ void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchData *args
 	
     } /* for (each mode) */
 }
+
+static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct MatchData *args, struct GfxBase *GfxBase)
+{
+    /* First we try to search in preferred monitor (if present) */
+    if (monitor)
+        BestModeIDForMonitor(monitor, args, GfxBase);
+
+    /* And if nothing was found there, check other monitors */
+    if (args->found_id == INVALID_ID)
+    {
+        struct monitor_driverdata *mdd;
+
+        for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
+        {
+            if (mdd != monitor)
+                BestModeIDForMonitor(mdd, args, GfxBase);
+        }
+    }
+    return args->found_id != INVALID_ID;
+}
+
 
 /*****************************************************************************
 
@@ -308,10 +330,6 @@ void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchData *args
 
     /* Exclude flags in MustHave from MustNotHave (CHECKME: if this correct?) */
     args.dipf_mustnothave &= ~args.dipf_musthave;
-    /* Mask out bit 12 in monitorid because the user may (and will) pass in IDs defined in include/graphics/modeid.h
-       (like PAL_MONITOR_ID, VGA_MONITOR_ID, etc) which have bit 12 set) */
-    if (args.monitorid != INVALID_ID)
-        args.monitorid &= AROS_MONITOR_ID_MASK;
 
     D(bug("[BestModeIDA] Desired mode: %dx%dx%d, MonitorID 0x%08lX, MustHave 0x%08lX, MustNotHave 0x%08lX\n",
 	  args.desired_width, args.desired_height, args.depth, args.monitorid, args.dipf_musthave, args.dipf_mustnothave));
@@ -319,20 +337,14 @@ void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchData *args
     /* OK, now we try to search for a mode that has the supplied charateristics. */
     ObtainSemaphoreShared(&CDD(GfxBase)->displaydb_sem);
 
-    /* First we try to search in preferred monitor (if present) */
-    if (monitor)
-    	BestModeIDForMonitor(monitor, &args, GfxBase);
-
-    /* And if nothing was found there, check other monitors */
-    if (args.found_id == INVALID_ID)
-    {
-    	struct monitor_driverdata *mdd;
-
-    	for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
-    	{
-    	    if (mdd != monitor)
-	    	BestModeIDForMonitor(mdd, &args, GfxBase);
-    	}
+    /* First try to find exact match */
+    if (!FindBestModeIDForMonitor(monitor, &args, GfxBase)) {
+        /* Mask out bit 12 in monitorid because the user may (and will) pass in IDs defined in include/graphics/modeid.h
+           (like PAL_MONITOR_ID, VGA_MONITOR_ID, etc) which have bit 12 set) */
+        if (args.monitorid != INVALID_ID && (args.monitorid & ~AROS_MONITOR_ID_MASK)) {
+            args.monitorid &= AROS_MONITOR_ID_MASK;
+            FindBestModeIDForMonitor(monitor, &args, GfxBase);
+        }
     }
 
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
