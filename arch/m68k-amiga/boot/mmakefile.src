@@ -70,12 +70,12 @@ ext_entry.o: FORCE
 USER_AFLAGS := -m68060 -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 # Sadly, we need to consume Chip RAM for the initial SS and the ROM BSS.
-# The initial System Stack is located at 0x800-0x1000, but is only
-# used until RTF_COLDSTART.
+# The initial System Stack is located at the end of the first 256K
+# of CHIP RAM, but is only used until RTF_COLDSTART.
 #
 # Right before RTF_COLDSTART, a new SS will be allocated from the fastest
 # available RAM, and this 0x800-0x1000 area will be ignored.
-ROMLOC_ss  := 0x0000800
+ROMLOC_ss  := 0x003f800
 
 # Main ROM (0xf80000 - 0xffffff)
 ROMLOC_rom := 0x0f80000
