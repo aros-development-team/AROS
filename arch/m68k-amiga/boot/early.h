@@ -28,4 +28,22 @@ void __attribute__((interrupt)) Early_Exception(void);
 
 APTR Early_AllocAbs(struct MemHeader *mh, APTR location, IPTR byteSize);
 
+/* Must match with AROSBootstrap.c! */
+#define ABS_BOOT_MAGIC 0x4d363802
+struct BootStruct
+{
+    ULONG magic;
+    struct ExecBase *RealBase;
+    struct List *mlist;
+    struct TagItem *kerneltags;
+    struct Resident **reslist;
+    struct ExecBase *FakeBase;
+    APTR bootcode;
+    APTR ss_address;
+    LONG ss_size;
+    APTR magicfastmem;
+    LONG magicfastmemsize;
+};
+struct BootStruct *GetBootStruct(struct ExecBase *eb);
+
 #endif /* EARLY_H */
