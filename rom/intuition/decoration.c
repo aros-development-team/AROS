@@ -26,7 +26,7 @@ BOOL int_LoadDecorator(const char *name, struct IntScreen *screen, struct Intuit
 
     if (name)
     {
-        nd = FindName(&GetPrivIBase(IntuitionBase)->Decorations, name);
+        nd = (struct NewDecorator *)FindName(&GetPrivIBase(IntuitionBase)->Decorations, name);
     }
     else
     {
