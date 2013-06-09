@@ -10,7 +10,6 @@ struct Exec_PlatformData
 {
 	APTR  realRawDoFmt;     /* AOS 3.1 locale.library workaround - see
 	                           exec.library/SetFunction() */
-	APTR  ep_KickMemPtr;    /* Save original KickMemPtr for the mmu resource */
 	struct TagItem *BootMsg;
 };
 
