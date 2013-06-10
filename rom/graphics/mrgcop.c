@@ -32,21 +32,21 @@
         struct GfxBase *, GfxBase, 35, Graphics)
 
 /*  FUNCTION
-	Prepare the view for being displayed. Calculate necessary internal data.
-	For Amiga(tm) chipset this function also merges together the display, color, sprite and user
-	coprocessor instructions into a single coprocessor instruction stream.
+        Prepare the view for being displayed. Calculate necessary internal data.
+        For Amiga(tm) chipset this function also merges together the display, color, sprite and user
+        coprocessor instructions into a single coprocessor instruction stream.
 
     INPUTS
         view - a pointer to the view structure to prepare
 
     RESULT
         error - ULONG error value indicating either lack of memory to build the system data,
-		        or that MrgCop() has no work to do - ie there where no viewPorts in the list.
+                        or that MrgCop() has no work to do - ie there where no viewPorts in the list.
 
     NOTES
         Pre-v39 AmigaOS returns void.
-	
-	If the given view is already on display, changes appear immediately.
+        
+        If the given view is already on display, changes appear immediately.
 
     EXAMPLE
 
@@ -74,58 +74,58 @@
        Lists are embedded in ViewPortExtra.DriverData field. Start of
        the list is the first ViewPort for this display. */
     for (first = view->ViewPort; first; first = first->Next) {
-	/* Ignore hidden ViewPorts */
+        /* Ignore hidden ViewPorts */
         if (!(first->Modes & VP_HIDE)) {
 
-	    mdd = GET_VP_DRIVERDATA(first);
-	    /* Ignore next ViewPort if it belongs to the same display.
-	       This makes us slightly faster */
-	    if (mdd == prev_mdd)
-	        continue;
-	    prev_mdd = mdd;
+            mdd = GET_VP_DRIVERDATA(first);
+            /* Ignore next ViewPort if it belongs to the same display.
+               This makes us slightly faster */
+            if (mdd == prev_mdd)
+                continue;
+            prev_mdd = mdd;
 
-	    /* We don't check GfxLookUp() result against NULL because MakeVPort() has
-	       already took care about this. If MrgCop() was called with some mailformed
-	       ViewPorts, it's not our problem */
-	    prev_vpd = VPE_DATA((struct ViewPortExtra *)GfxLookUp(first));
-	    prev_vpd->Next = NULL;
-	    D(bug("[MrgCop] First ViewPort: 0x%p, data 0x%p\n", first, prev_vpd));
+            /* We don't check GfxLookUp() result against NULL because MakeVPort() has
+               already took care about this. If MrgCop() was called with some mailformed
+               ViewPorts, it's not our problem */
+            prev_vpd = VPE_DATA((struct ViewPortExtra *)GfxLookUp(first));
+            prev_vpd->Next = NULL;
+            D(bug("[MrgCop] First ViewPort: 0x%p, data 0x%p\n", first, prev_vpd));
 
-	    /* Now we look down the list for ViewPorts with the same display driver as
-	       current ViewPort and add them to a list */
-	    for (vp = first->Next; vp; vp = vp->Next) {
-		if (!(vp->Modes & VP_HIDE)) {
+            /* Now we look down the list for ViewPorts with the same display driver as
+               current ViewPort and add them to a list */
+            for (vp = first->Next; vp; vp = vp->Next) {
+                if (!(vp->Modes & VP_HIDE)) {
 
-		    if (GET_VP_DRIVERDATA(vp) == mdd) {
-			vpd = VPE_DATA((struct ViewPortExtra *)GfxLookUp(vp));
-			D(bug("[MrgCop] Attaching ViewPort 0x%p, data 0x%p\n", vp, vpd));
+                    if (GET_VP_DRIVERDATA(vp) == mdd) {
+                        vpd = VPE_DATA((struct ViewPortExtra *)GfxLookUp(vp));
+                        D(bug("[MrgCop] Attaching ViewPort 0x%p, data 0x%p\n", vp, vpd));
 
-			vpd->Next = NULL;
-			prev_vpd->Next = vpd;
-			prev_vpd = vpd;
-		    }
-		}
-	    }
-	}
+                        vpd->Next = NULL;
+                        prev_vpd->Next = vpd;
+                        prev_vpd = vpd;
+                    }
+                }
+            }
+        }
     }
 
     if (prev_mdd)
     {
-	ret = DoViewFunction(view, driver_PrepareViewPorts, GfxBase);
+        ret = DoViewFunction(view, driver_PrepareViewPorts, GfxBase);
 
-	if (ret == MCOP_OK)
-	{
-	    ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
+        if (ret == MCOP_OK)
+        {
+            ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
 
-	    /* If the given view is a currently displayed one, refresh immediately */
-	    if (GfxBase->ActiView == view)
-            	DoViewFunction(view, driver_LoadViewPorts, GfxBase);
+            /* If the given view is a currently displayed one, refresh immediately */
+            if (GfxBase->ActiView == view)
+                DoViewFunction(view, driver_LoadViewPorts, GfxBase);
 
-	    ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
-	}
+            ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
+        }
     }
     else
-    	ret = MCOP_NOP;
+        ret = MCOP_NOP;
 
     return ret;
 
