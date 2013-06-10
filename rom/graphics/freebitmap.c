@@ -79,7 +79,7 @@
         if (bmobj)
             HIDD_Gfx_DisposeBitMap(HIDD_BM_DRVDATA(bm)->gfxhidd, bmobj);
 
-        FreeMem(bm, sizeof (struct BitMap));
+        FreeMem(bm, sizeof (struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES);
     }
     else
     {

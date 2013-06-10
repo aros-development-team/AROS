@@ -352,7 +352,8 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 
         SET_TAG(bm_tags, 6, TAG_DONE, 0);
 
-        nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY|MEMF_CLEAR);
+        /* Allocate an extra planes for HIDD bitmap info */
+        nbm = AllocMem (sizeof (struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES, MEMF_ANY|MEMF_CLEAR);
         D(bug("[AllocBitMap] Allocated bitmap structure: 0x%p\n", nbm));
         
         if (nbm)
