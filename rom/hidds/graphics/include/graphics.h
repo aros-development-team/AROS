@@ -532,14 +532,15 @@ enum
 #define HIDD_BM_PAD_MAGIC        0x6148 /* 'Ah' - AROS HIDD */
 #define IS_HIDD_BM(bitmap) ((bitmap)->pad == HIDD_BM_PAD_MAGIC)
 
-#define HIDD_BM_OBJ(bitmap)       (*(OOP_Object **)&((bitmap)->Planes[0]))
-#define HIDD_BM_DRVDATA(bitmap)   (*(struct monitor_driverdata **)&((bitmap)->Planes[1]))
-#define HIDD_BM_COLMAP(bitmap)	  (*(OOP_Object **)&((bitmap)->Planes[2]))
-#define HIDD_BM_COLMOD(bitmap)    (*(HIDDT_ColorModel *)&((bitmap)->Planes[3]))
-#define HIDD_BM_PIXTAB(bitmap)	  (*(HIDDT_Pixel **)&((bitmap)->Planes[4]))
-#define HIDD_BM_REALDEPTH(bitmap) (*(LONG *)&((bitmap)->Planes[5]))
-#define HIDD_BM_FLAGS(bitmap)	  (*(ULONG *)&((bitmap)->Planes[6]))
-#define HIDD_BM_HIDDMODE(bitmap)  (*(HIDDT_ModeID *)&((bitmap)->Planes[7]))
+#define HIDD_BM_EXTRAPLANES       8
+#define HIDD_BM_OBJ(bitmap)       (*(OOP_Object **)&((bitmap)->Planes[8+0]))
+#define HIDD_BM_DRVDATA(bitmap)   (*(struct monitor_driverdata **)&((bitmap)->Planes[8+1]))
+#define HIDD_BM_COLMAP(bitmap)	  (*(OOP_Object **)&((bitmap)->Planes[8+2]))
+#define HIDD_BM_COLMOD(bitmap)    (*(HIDDT_ColorModel *)&((bitmap)->Planes[8+3]))
+#define HIDD_BM_PIXTAB(bitmap)	  (*(HIDDT_Pixel **)&((bitmap)->Planes[8+4]))
+#define HIDD_BM_REALDEPTH(bitmap) (*(LONG *)&((bitmap)->Planes[8+5]))
+#define HIDD_BM_FLAGS(bitmap)	  (*(ULONG *)&((bitmap)->Planes[8+6]))
+#define HIDD_BM_HIDDMODE(bitmap)  (*(HIDDT_ModeID *)&((bitmap)->Planes[8+7]))
 
 
 #endif /* HIDD_GRAPHICS_H */
