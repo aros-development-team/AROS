@@ -529,7 +529,8 @@ enum
 #define pHidd_Gfx_Gamma pHidd_Gfx_GetGamma
 
 /* How we hide HIDD bitmaps inside struct BitMap */
-#define IS_HIDD_BM(bitmap) ((bitmap)->Flags & BMF_SPECIALFMT)
+#define HIDD_BM_PAD_MAGIC        0x6148 /* 'Ah' - AROS HIDD */
+#define IS_HIDD_BM(bitmap) ((bitmap)->pad == HIDD_BM_PAD_MAGIC)
 
 #define HIDD_BM_OBJ(bitmap)       (*(OOP_Object **)&((bitmap)->Planes[0]))
 #define HIDD_BM_DRVDATA(bitmap)   (*(struct monitor_driverdata **)&((bitmap)->Planes[1]))

@@ -81,10 +81,8 @@
 {
   AROS_LIBFUNC_INIT
 
-  if (bitScaleArgs->bsa_SrcBitMap->pad  != 0  || 
-      bitScaleArgs->bsa_DestBitMap->pad != 0 || 
-      bitScaleArgs->bsa_SrcBitMap->Flags  & BMF_SPECIALFMT || 
-      bitScaleArgs->bsa_DestBitMap->Flags & BMF_SPECIALFMT)
+  if (IS_HIDD_BM(bitScaleArgs->bsa_SrcBitMap) ||
+      IS_HIDD_BM(bitScaleArgs->bsa_DestBitMap))
   {
     ULONG srcflags = 0;
     ULONG dstflags = 0;

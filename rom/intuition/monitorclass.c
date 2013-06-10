@@ -1591,8 +1591,8 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
 	return TRUE;
 
     bm = msg->pointer->sprite->es_BitMap;
-    /* Currently we don't work with planar sprites */
-    if (!(bm->Flags & BMF_SPECIALFMT))
+    /* Currently we don't work with non-hidd sprites */
+    if (!IS_HIDD_BM(bm))
         return FALSE;
 
     res = HIDD_Gfx_SetCursorShape(data->handle->gfxhidd, HIDD_BM_OBJ(bm), msg->pointer->xoffset, msg->pointer->yoffset);

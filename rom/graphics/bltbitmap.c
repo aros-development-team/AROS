@@ -122,8 +122,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     /* nlorentz: Also check for BMF_AROS_DISPLAYED flag which if set tells
        that this is a HIDD bitmap and should be handled by the driver */
 
-    if ( srcBitMap->pad != 0 || destBitMap->pad != 0 
-      || srcBitMap->Flags & BMF_SPECIALFMT || destBitMap->Flags & BMF_SPECIALFMT)
+    if (IS_HIDD_BM(srcBitMap) || IS_HIDD_BM(destBitMap))
     {
 	ULONG wSrc, wDest;
 	ULONG x;

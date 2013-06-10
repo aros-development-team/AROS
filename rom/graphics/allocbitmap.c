@@ -490,6 +490,9 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                     if (clear)
                         BltBitMap(nbm, 0, 0, nbm, 0, 0, sizex, sizey, 0x00, 0xFF, NULL);
 
+                    /* Mark this is a HIDD bitmap via the pad field */
+                    nbm->pad = HIDD_BM_PAD_MAGIC;
+
                     ReturnPtr("AllocBitMap", struct BitMap *, nbm);
                 }
 
