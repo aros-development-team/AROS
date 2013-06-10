@@ -5,6 +5,8 @@
     Desc: Internal function for improved gels handling.
     Lang: english
 */
+#include <aros/debug.h>
+
 #include <graphics/gels.h>
 #include <graphics/rastport.h>
 #include <exec/memory.h>
@@ -12,9 +14,6 @@
 #include <proto/exec.h>
 #include "gels_internal.h"
 #include "graphics_intern.h"
-
-#define DEBUG 1
-#include <aros/debug.h>
 
 struct IntVSprite * _CreateIntVSprite(struct VSprite * vs, 
                                       struct RastPort * rp,
