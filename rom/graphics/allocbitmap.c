@@ -247,7 +247,8 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
     */
     if ((depth > 8) || (hiddmode != vHidd_ModeID_Invalid) ||
         (friend_bitmap && (friend_bitmap->Flags & BMF_SPECIALFMT)) ||
-        (flags & BMF_SPECIALFMT))
+        (flags & BMF_SPECIALFMT) ||
+        (flags & BMF_DISPLAYABLE))
     {
         struct TagItem bm_tags[7];
         HIDDT_StdPixFmt stdpf = vHidd_StdPixFmt_Unknown;
@@ -347,7 +348,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
         }
 
         /* Set Displayable attribute */
-        SET_BM_TAG(bm_tags, 5, Displayable, ((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM));
+        SET_BM_TAG(bm_tags, 5, Displayable, ((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM) || ((flags & BMF_DISPLAYABLE) == BMF_DISPLAYABLE));
         D(bug("[AllocBitMap] Displayable: %d\n", bm_tags[5].ti_Data));
 
         SET_TAG(bm_tags, 6, TAG_DONE, 0);
@@ -499,6 +500,9 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                         int i;
                         for (i = 0; i < 8; i++)
                             nbm->Planes[i] = pbm->Planes[i];
+                        /* Mark this as a 'standard' bitmap */
+                        nbm->Flags &= ~BMF_SPECIALFMT;
+                        nbm->Flags |=  BMF_STANDARD | (flags & BMF_DISPLAYABLE);
                     }
 
                     /* Mark this is a HIDD bitmap via the pad field */
