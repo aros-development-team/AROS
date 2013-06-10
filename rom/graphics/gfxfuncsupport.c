@@ -20,7 +20,7 @@
 #include "gfxfuncsupport.h"
 #include "graphics_driver.h"
 
-#define DEBUG_PLANARBM(x)
+#define DEBUG_PLANARBM(x) DB2(x)
 
 #define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
 
@@ -30,13 +30,14 @@ OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase)
 {
     OOP_Object *pbm_obj;
 
-    DEBUG_PLANARBM(bug("get_planarbm_object()\n"));    
+    DEBUG_PLANARBM(bug("%s: bitmap=%p\n", __func__, bitmap));
     pbm_obj = obtain_cache_object(CDD(GfxBase)->planarbm_cache, GfxBase);
     
     if (NULL != pbm_obj)
     {
 	
-	DEBUG_PLANARBM(bug("Got cache object %p, class=%s, instoffset=%d\n"
+	DEBUG_PLANARBM(bug("%s: cache object %p, class=%s, instoffset=%d\n"
+		, __func__
 		, pbm_obj
 		, OOP_OCLASS(pbm_obj)->ClassNode.ln_Name
 		, OOP_OCLASS(pbm_obj)->InstOffset

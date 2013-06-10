@@ -117,6 +117,8 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     FIX_GFXCOORD(xDest);
     FIX_GFXCOORD(yDest);
     
+	D(bug("BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %x)\n"
+			,srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize, minterm));
     /* nlorentz: Also check for BMF_AROS_DISPLAYED flag which if set tells
        that this is a HIDD bitmap and should be handled by the driver */
 
@@ -131,11 +133,6 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 
 	EnterFunc(bug("driver_BltBitMap()\n"));
 
-	/* bug("BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %x)\n"
-			,srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize, minterm);
-
-	*/
-		
 	wSrc  = GetBitMapAttr( srcBitMap, BMA_WIDTH);
 	wDest = GetBitMapAttr(destBitMap, BMA_WIDTH);
 
