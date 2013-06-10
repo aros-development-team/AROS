@@ -100,6 +100,15 @@ AROS_LH2(APTR, Allocate,
 
         D(bug("[exec] Allocate(0x%p, %u)\n", freeList, byteSize));
         ASSERT(freeList != NULL);
+#ifdef __mc68000
+        /* There are some programs (ie users of an older libSDL.a)
+         * that use Allocate() on their own managed pool, and did
+         * NOT set freeList->mh_Node.ln_Type. We fix it up for them
+         * here...
+         */
+        if (freeList->mh_Node.ln_Type == 0)
+            freeList->mh_Node.ln_Type = NT_MEMORY;
+#endif
         ASSERT(freeList->mh_Node.ln_Type == NT_MEMORY);
         ASSERT(freeList->mh_Lower <= freeList->mh_Upper);
 
