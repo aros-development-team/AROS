@@ -66,7 +66,14 @@
     struct HIDD_ViewPortData *vpd;
     ULONG ret = MVP_OK;
     BOOL own_vpe = FALSE;
-    BOOL release_bm = FALSE;
+
+    if (!viewport || !viewport->RasInfo || !viewport->RasInfo->BitMap)
+        return MVP_NO_DISPLAY;
+
+    /* Non-HIDD bitmaps cannot be displayed */
+    if (!IS_HIDD_BM(viewport->RasInfo->BitMap)) {
+        return MVP_NO_DISPLAY;
+    }
 
     /* Attach a temporary ViewPortExtra if needed */
     vpe = (struct ViewPortExtra *)GfxLookUp(viewport);
@@ -94,27 +101,19 @@
 
 	/*
 	 * MakeVPort() can be called repeatedly on the same ViewPort.
-	 * In order to handle this correctly we obtain the bitmap only if
-	 * the pointer is not set yet.
-	 * Otherwise we will allocate a new planar bitmap object from the
-	 * cache every time if our ViewPort contains plain Amiga bitmap.
+	 * However, each time we are called, the frontmost RastInfo
+	 * BitMap may be differnt.
+	 *
+	 * Updated the cached frontmost BitMap object here.
+	 * We don't need to use OBTAIN_HIDD_BM(), since we can
+	 * only display HIDD bitmaps (and we have verified that above).
 	 */
-    	if (!vpd->Bitmap)
-    	{
-    	    vpd->Bitmap = OBTAIN_HIDD_BM(viewport->RasInfo->BitMap);
-    	    release_bm = TRUE;
-    	}
+    	vpd->Bitmap = HIDD_BM_OBJ(viewport->RasInfo->BitMap);
 
 	D(bug("[MakeVPort] Bitmap object: 0x%p\n", vpd->Bitmap));
 
 	if (IS_HIDD_BM(viewport->RasInfo->BitMap))
 	{
-	    /*
-	     * VPXF_RELEASE_BITMAP is our private flag, so we ensure that it's not
-	     * ocassionally set by caller. Just in case.
-	     */
-	    vpe->Flags &= ~VPXF_RELEASE_BITMAP;
-
 	    /*
 	     * If we have a colormap attached to a HIDD bitmap, we can verify
 	     * that bitmap and colormap modes do not differ.
@@ -146,8 +145,6 @@
 	    	}
 	    }
 	}
-	else
-	    vpe->Flags |= VPXF_RELEASE_BITMAP;
 
 	/*
 	 * Ensure that we have a bitmap object.
@@ -177,9 +174,6 @@
 	ScrollVPort(viewport);
     else
     {
-    	if (release_bm)
-    	    RELEASE_HIDD_BM(vpd->Bitmap, viewport->RasInfo->BitMap);
-
     	if (own_vpe)
 	    GfxFree(&vpe->n);
     }
