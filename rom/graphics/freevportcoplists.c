@@ -70,10 +70,6 @@
 	    /* Do driver-specific cleanup */
 	    HIDD_Gfx_CleanViewPort(VPE_DRIVER(vpe)->gfxhidd, vpd);
 
-	    /* Release temporary planar bitmap object */
-	    if (vpe->Flags & VPXF_RELEASE_BITMAP)
-		release_cache_object(CDD(GfxBase)->planarbm_cache, vpd->Bitmap, GfxBase);
-
 	    FreeMem(vpd, sizeof(struct HIDD_ViewPortData));
 
 	    vpe->DriverData[0] = NULL;
