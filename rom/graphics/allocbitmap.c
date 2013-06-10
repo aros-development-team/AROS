@@ -488,8 +488,18 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 
                 if (ok)
                 {
+                    struct BitMap *pbm = NULL;
+
                     if (clear)
                         BltBitMap(nbm, 0, 0, nbm, 0, 0, sizex, sizey, 0x00, 0xFF, NULL);
+
+                    /* Is there a planar memory map? */
+                    OOP_GetAttr(bm_obj, aHidd_PlanarBM_BitMap, (IPTR *)&pbm);
+                    if (pbm) {
+                        int i;
+                        for (i = 0; i < 8; i++)
+                            nbm->Planes[i] = pbm->Planes[i];
+                    }
 
                     /* Mark this is a HIDD bitmap via the pad field */
                     nbm->pad = HIDD_BM_PAD_MAGIC;

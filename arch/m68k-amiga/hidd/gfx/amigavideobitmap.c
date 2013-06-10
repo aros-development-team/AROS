@@ -27,8 +27,6 @@
 
 #define CMDDEBUGUNIMP(x) ;
 #define CMDDEBUGPIXEL(x) ;
-#define DEBUG 0
-#define DB2(x) ;
 #define DEBUG_TEXT(x)
 #include <aros/debug.h>
 
@@ -58,10 +56,18 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     IPTR width, height, depth, disp;
     BOOL ok = TRUE;      
     struct amigabm_data *data;
+    struct BitMap *pbm = NULL;
+    struct pRoot_New mymsg = *msg;
+    struct TagItem tags[] = {
+        { aHidd_BitMap_Align, csd->aga ? 64 : 16 },
+        { TAG_MORE, (IPTR) msg->attrList },
+        { TAG_END, 0 }
+    };
 
     DB2(bug("AmigaVideoBM__Root__New\n"));
 
-    o =(OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    mymsg.attrList = tags;
+    o =(OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     if (NULL == o)
     	return NULL;
 	
@@ -74,7 +80,8 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     OOP_GetAttr(o, aHidd_BitMap_Depth, &depth);
-    OOP_GetAttr(o, aoHidd_BitMap_Displayable, &disp);
+    OOP_GetAttr(o, aHidd_BitMap_Displayable, &disp);
+    OOP_GetAttr(o, aHidd_PlanarBM_BitMap, &pbm);
 
     DB2(bug("%dx%dx%d\n", width, height, depth));
 
@@ -85,58 +92,36 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->depth = depth;
     data->pixelcacheoffset = -1;
 
-    if (ok) {
-	/* Allocate memory for plane array */
-	data->planes = AllocVec(sizeof(UBYTE*) * depth, MEMF_PUBLIC | MEMF_CLEAR);
-	if (NULL == data->planes) {
-	    ok = FALSE;
-	} else {
-	    UBYTE i;
-	    /* Allocate all the planes */
-	    for (i = 0; i < depth && ok; i++) {
-	    	data->planes[i] = AllocMem(data->bytesperrow * data->height, MEMF_CHIP | MEMF_CLEAR);
-	    	if (NULL == data->planes[i])
-	    	    ok = FALSE;
-	    }
-	}
+    if (ok && pbm) {
+        int i;
+        for (i = 0; i < pbm->Depth; i++)
+            data->planes[i] = pbm->Planes[i];
     }
       
     if (!ok) {
- 	OOP_MethodID dispose_mid;
-	    
-	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
-		
-	o = NULL;
+        OOP_MethodID dispose_mid;
+
+        dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+        OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+
+        o = NULL;
     }
     
     DB2(bug("ret=%x bm=%x\n", o, data));
-  	
+
     return o;
 }
 
 VOID AmigaVideoBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct amigabm_data    *data;
-    UBYTE   	    	    i;
     
     data = OOP_INST_DATA(cl, o);
     
     DB2(bug("AmigaVideoBM__Root__Dispose %x bm=%x\n", o, data));
     if (data->disp)
-    	DB2(bug("removing displayed bitmap?!\n"));
+        DB2(bug("removing displayed bitmap?!\n"));
     
-    if (NULL != data->planes)
-    {
-	for (i = 0; i < data->depth; i ++)
-	{
-	    if (NULL != data->planes[i])
-	    {
-		FreeMem(data->planes[i], data->bytesperrow * data->height);
-	    }
-	}
-	FreeVec(data->planes);
-    }
     
     OOP_DoSuperMethod(cl, o, msg);
     
