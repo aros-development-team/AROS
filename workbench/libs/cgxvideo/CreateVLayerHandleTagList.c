@@ -93,7 +93,7 @@
 	return NULL;
     }
 
-    if (bm->Flags & BMF_SPECIALFMT)
+    if (IS_HIDD_BM(bm))
     {
         struct TagItem layerTags[] = {
 	    {aHidd_Overlay_SrcWidth , 0           },

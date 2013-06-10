@@ -25,7 +25,7 @@
 #if DEBUG
 
 #define PRINT_PIXFMT(bitmap)						\
-if (bitmap->Flags & BMF_SPECIALFMT) {					\
+if (IS_HIDD_BM(bitmap)) {\
     OOP_Object *pf;							\
     IPTR stdpf;								\
 									\

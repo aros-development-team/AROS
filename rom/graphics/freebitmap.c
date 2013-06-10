@@ -57,7 +57,7 @@
     
     ASSERT_VALID_PTR(bm);
 
-    if (bm->pad != 0 || (bm->Flags & BMF_SPECIALFMT))
+    if (IS_HIDD_BM(bm))
     {
         OOP_Object *bmobj = HIDD_BM_OBJ(bm);
         
