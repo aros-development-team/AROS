@@ -22,56 +22,94 @@ struct busframe
 
 static const UBYTE *sizes[] = { "LONG", "BYTE", "WORD", "?" };
 
-static void dumpline(const UBYTE *label, ULONG *p)
+extern BOOL mmu_valid_check_030(APTR);
+extern BOOL mmu_valid_check_040(APTR);
+extern BOOL mmu_valid_check_060(APTR);
+
+static BOOL mmuisvalid(UWORD mmutype, APTR p)
 {
-	int i;
-	DebugPutStr(label);
-	for (i = 0; i < 8; i++) {
-		DebugPutHexVal(p[i]);
-	}
-	DebugPutStr("\n");
+   UWORD valid = 0;
+   switch(mmutype)
+   {
+       case 0:
+       valid = mmu_valid_check_030(p);
+       break;
+       case 1:
+       valid = mmu_valid_check_040(p);
+       break;
+       case 2:
+       valid = mmu_valid_check_060(p);
+       break;
+    }
+    return valid == 0;
 }
 
-static void dumpstr(const UBYTE *label, const UBYTE *str)
+static void dumpline(UWORD mmutype, const UBYTE *label, ULONG *p)
 {
-	DebugPutStr(label);
-	if (str) {
-		DebugPutStr("\"");
-		DebugPutStr(str);
-		DebugPutStr("\"");
-	} else {
-		DebugPutStr("<NULL>");
-	}
+    WORD i;
+    DebugPutStr(label);
+    for (i = 0; i < 8; i++) {
+        if (mmuisvalid(mmutype, &p[i]) && mmuisvalid(mmutype, ((UBYTE*)(&p[i])) + 3))
+            DebugPutHexVal(p[i]);
+        else
+            DebugPutStr("???????? ");
+    }
+    DebugPutStr("\n");
 }
-static void dumpbstr(const UBYTE *label, const UBYTE *str)
+
+static void dumpstr(UWORD mmutype, const UBYTE *label, const UBYTE *str)
 {
-	DebugPutStr(label);
-	if (str) {
-		UBYTE tmp[258];
-		UBYTE i;
-		tmp[0] = '\"';
-		for (i = 0; i < str[0]; i++)
-			tmp[i + 1] = str[i + 1];
-		tmp[i + 1] = '\"';
-		tmp[i + 2] = 0;
-		DebugPutStr(tmp);
-	} else {
-		DebugPutStr("<BNULL>");
-	}
+    DebugPutStr(label);
+    if (str) {
+        if (mmuisvalid(mmutype, (APTR)str)) {
+            DebugPutStr("\"");
+            DebugPutStr(str);
+            DebugPutStr("\"");
+        } else {
+            DebugPutStr("<INVALID>");
+        }
+    } else {
+        DebugPutStr("<NULL>");
+    }
 }
-static void dumpinfo(struct ExecBase *SysBase, ULONG pc)
+static void dumpbstr(UWORD mmutype, const UBYTE *label, const UBYTE *str)
+{
+    DebugPutStr(label);
+    if (str) {
+        if (mmuisvalid(mmutype, (APTR)str)) {
+            UBYTE tmp[258];
+            UBYTE i;
+            tmp[0] = '\"';
+            for (i = 0; i < str[0]; i++) {
+                tmp[i + 1] = '?';
+                if (mmuisvalid(mmutype, (APTR)&str[i + 1]))
+                    tmp[i + 1] = str[i + 1];
+            }
+            tmp[i + 1] = '\"';
+            tmp[i + 2] = 0;
+            DebugPutStr(tmp);
+        } else {
+            DebugPutStr("<INVALID>");
+        }    
+    } else {
+        DebugPutStr("<BNULL>");
+    }
+}
+static void dumpinfo(UWORD mmutype, struct ExecBase *SysBase, ULONG pc)
 {
     struct DebugBase *DebugBase;
     struct Task *t;
 
+    if (SysBase == NULL)
+        return;
     t = SysBase->ThisTask;
-    if (t && (t->tc_Node.ln_Type == NT_TASK || t->tc_Node.ln_Type == NT_PROCESS)) {
-        dumpstr("Name: ", t->tc_Node.ln_Name);
+    if (t && mmuisvalid(mmutype, t) && (t->tc_Node.ln_Type == NT_TASK || t->tc_Node.ln_Type == NT_PROCESS)) {
+        dumpstr(mmutype, "Name: ", t->tc_Node.ln_Name);
         if (t->tc_Node.ln_Type == NT_PROCESS) {
             struct Process *p = (struct Process*)t;
-            if (p->pr_CLI) {
+            if (p->pr_CLI && mmuisvalid(mmutype, BADDR(p->pr_CLI))) {
                 struct CommandLineInterface *cli = (struct CommandLineInterface*)BADDR(p->pr_CLI);
-                dumpbstr(" CLI: ", BADDR(cli->cli_CommandName));
+                dumpbstr(mmutype, " CLI: ", BADDR(cli->cli_CommandName));
             }
         }
         DebugPutStr("\n");
@@ -83,7 +121,7 @@ static void dumpinfo(struct ExecBase *SysBase, ULONG pc)
         BPTR segPtr;
         char *modName;
         if (DecodeLocation(pc, DL_SegmentNumber, &segNum,  DL_SegmentPointer, &segPtr, DL_ModuleName, &modName, TAG_DONE)) {
-            dumpstr("Module ", modName);
+            dumpstr(mmutype, "Module ", modName);
             DebugPutStr(" Hunk ");
             DebugPutHexVal(segNum);
             DebugPutStr("Offset ");
@@ -111,11 +149,13 @@ void bushandler(struct busframe *bf)
 	BOOL write = FALSE;
 	BOOL inst = FALSE;
 	BOOL hasdata = FALSE;
+	UWORD mmutype;
 	char buf[16];
 	
 	DebugPutStr("Bus Error!\n");
 
-	if (bf->type == 0) {
+        mmutype = bf->type;
+	if (mmutype == 0) {
 		// 68030
 		fa = ((ULONG*)(mf + 16))[0];
 		sw = ((UWORD*)(mf + 10))[0];
@@ -126,7 +166,7 @@ void bushandler(struct busframe *bf)
 			data = ((ULONG*)(mf + 24))[0];
 			hasdata = TRUE;
 		}
-	} else if (bf->type == 1) {
+	} else if (mmutype == 1) {
 		// 68040
 		fa = ((ULONG*)(mf + 20))[0];
 		sw = ((UWORD*)(mf + 12))[0];
@@ -148,6 +188,11 @@ void bushandler(struct busframe *bf)
 	pc = ((ULONG*)(mf + 2))[0];
 	inst = (fc & 3) == 2;
 	sr = ((UWORD*)mf)[0];
+
+	if (!mmuisvalid(mmutype, SysBase) || !mmuisvalid(mmutype, SysBase + 1)) {
+		SysBase = NULL;
+		DebugPutStr("INVALID SYSBASE!\n");
+        }
 
 	DebugPutStr(sizes[size]);
 	DebugPutStr("-");
@@ -177,27 +222,27 @@ void bushandler(struct busframe *bf)
 	buf[2] = ((sr >> 8) & 7) + '0';
 	buf[3] = ')';
 	buf[4] = '(';
-	buf[5] = SysBase->TDNestCnt >= 0 ? 'F' : '-';
+	buf[5] = SysBase ? (SysBase->TDNestCnt >= 0 ? 'F' : '-') : '?';
 	buf[6] = ')';
 	buf[7] = '(';
-	buf[8] = SysBase->IDNestCnt >= 0 ? 'D' : '-';
+	buf[8] = SysBase ? (SysBase->IDNestCnt >= 0 ? 'D' : '-') : '?';
 	buf[9] = ')';
 	buf[10] = 0;
 	DebugPutStr(buf);
 	DebugPutStr("    TCB: ");
-	DebugPutHexVal((ULONG)SysBase->ThisTask);
+	DebugPutHexVal(SysBase ? 0xffffffff : (ULONG)SysBase->ThisTask);
 	DebugPutStr("\n");
 
-    dumpline("Data: ", &bf->regs[0]);
-    dumpline("Addr: ", &bf->regs[8]);
+    dumpline(mmutype, "Data: ", &bf->regs[0]);
+    dumpline(mmutype, "Addr: ", &bf->regs[8]);
 
-    dumpline("Stck: ", bf->usp);
-    dumpline("Stck: ", bf->usp + 8);
+    dumpline(mmutype, "Stck: ", bf->usp);
+    dumpline(mmutype, "Stck: ", bf->usp + 8);
 
-    dumpline("PC-8: ", (ULONG*)(pc - 8 * 4));
-    dumpline("PC *: ", (ULONG*)pc);
+    dumpline(mmutype, "PC-8: ", (ULONG*)(pc - 8 * 4));
+    dumpline(mmutype, "PC *: ", (ULONG*)pc);
 
-	dumpinfo(SysBase, pc);
+	dumpinfo(mmutype, SysBase, pc);
 
 	DebugPutStr("\n");
 }

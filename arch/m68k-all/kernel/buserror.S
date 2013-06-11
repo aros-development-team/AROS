@@ -159,3 +159,53 @@ buserror060:
 	move.l	3*4(%a0),STACKOFFSET-4(%sp)
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
+
+	.chip 68030
+	.globl	mmu_valid_check_030
+mmu_valid_check_030:
+	move.l	4(%sp),%a0
+	ptestr	#5,(%a0),#7 // FC=5, all levels
+	subq.l	#4,%sp
+	pmove	%psr,(%sp)
+	move.w	(%sp),%d0
+	addq.l	#4,%sp
+	and.w	#0x8400,%d0
+	rts
+
+	.chip 68040
+	.globl	mmu_valid_check_040
+mmu_valid_check_040:
+	move.l	4(%sp),%a0
+	movec	%dfc,%d1
+	moveq	#5,%d0
+	movec	%d0,%dfc
+	ptestr	(%a0)
+	movec	%mmusr,%d0
+	movec	%d1,%dfc
+	and.w	#0x0800,%d0
+	rts
+
+	.chip 68060
+	.globl	mmu_valid_check_060
+mmu_valid_check_060:
+	move.l	%d2,-(%sp)
+	movec	%dfc,%d2
+	moveq	#5,%d0
+	movec	%d0,%dfc
+	movec	%vbr,%a0
+	addq.l	#8,%a0
+	lea		mmu_invalid_060(%pc),%a1
+	move.l	(%a0),%d1
+	move.l	%a1,(%a0)
+	move.l	8(%sp),%a1
+	moveq	#0,%d0
+	plpar	(%a1)
+	move.l	%d1,(%a0)
+	movec	%d2,%dfc
+	move.l	(%sp)+,%d2
+	rts
+mmu_invalid_060:
+	moveq	#-1,%d0
+	addq.l	#2,2(%sp)
+	rte
+
