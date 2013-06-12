@@ -1,0 +1,50 @@
+#!/bin/zsh
+# Creates AROS/raspi-armhf binary packages.
+
+BUILDTARGET=raspi-armhf
+
+TARGET=$BUILDTARGET
+if [ "$VARIANT" != "" ]; then
+    BUILDTARGET=$VARIANT-$TARGET
+fi
+
+source  $SP/setup
+
+# The log-name MUST match the name of the package script
+setl   aros-$BUILDTARGET.log
+
+ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
+
+printi "Creating AROS/$BUILDTARGET binary packages..."
+
+delete  $BUILD_BASE/AROS
+copy    $SOURCE_AROS      $BUILD_BASE/AROS
+copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
+
+cd      $BUILD_BASE/AROS
+execute ./configure --target=$TARGET --enable-target-variant=$VARIANT --enable-ccache --enable-build-type=nightly
+make
+
+DISTFILE=$BASENAME-$BUILDTARGET.tar.gz
+ARCHIVE=$ARCHIVE_BASE/$DISTFILE
+
+CONTRIBPACKAGE=$BASENAME-$BUILDTARGET-contrib
+CONTRIBARCHIVE=$ARCHIVE_ROOT/$VERSION/Binaries/$CONTRIBPACKAGE.tar.bz2
+if [ -f $CONTRIBARCHIVE ]; then
+    echo "--- Binary contrib package found, unarchiving..."
+    cd      $BUILD_BASE/AROS/bin/$BUILDTARGET/AROS
+    execute tar xjf $CONTRIBARCHIVE
+    delete  Extras
+    move    $CONTRIBPACKAGE Extras
+else
+    echo "--- Binary contrib package not found, skipping..."
+fi
+
+cd      $BUILD_BASE/AROS
+make    arosboot-raspi
+copy    $BUILD_BASE/AROS/distfiles/$DISTFILE $ARCHIVE
+
+cd      $ROOT
+delete  $BUILD_BASE/AROS
+resetl
+
