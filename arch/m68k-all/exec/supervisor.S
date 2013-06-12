@@ -114,6 +114,7 @@ Exec_Supervisor_Exit:
 	 */
 	.text
 	.align 4
+	/* 68010+ version */
 	.globl Exec_Supervisor_Trap
 Exec_Supervisor_Trap:
 	cmp.l	#Exec_Supervisor_Entry, %sp@(2)
@@ -124,12 +125,14 @@ Exec_Supervisor_Trap:
 	 * now is to fix up the return address
 	 * and jump to the user's function in A5
 	 */
-	move.l	#Exec_Supervisor_Exit, %sp@(2)
+2:	move.l	#Exec_Supervisor_Exit, %sp@(2)
 	jmp	(%a5)
+	/* Jump to standard exception handler */
+1:	jmp M68KTrapHelper_10
 
-1:
-	move.l	#0x80000008,%d7	// ACPU_PrivErr
-	move.l	(0x4),%a6
-	jsr	%a6@(Alert)
-2:
-	jmp	2b
+	.globl Exec_Supervisor_Trap_00
+Exec_Supervisor_Trap_00:
+	/* 68000 version */
+	cmp.l	#Exec_Supervisor_Entry, %sp@(2)
+	beq.s	2b
+	jmp M68KFaultTable_00+8*4
