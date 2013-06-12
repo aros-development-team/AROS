@@ -118,6 +118,7 @@ static void enable_mmu030(ULONG *levela)
 	"pmove	%%a7@,%%tc\n"
 	/* Set bus error exception vector */
 	"movec	%%vbr,%%a5\n"
+	"move.l	#addrerror030,%%a5@(12)\n"
 	"move.l	#buserror030,%%a5@(8)\n"
 	/* Configure CRP. Valid 4 byte descriptor, other features disabled. */
 	"move.l	#0x80000002,%%a7@\n"
@@ -176,11 +177,14 @@ static void enable_mmu040(ULONG *levela, UBYTE cpu060, UBYTE *zeropagedescriptor
 	"movec	%%vbr,%%a5\n"
 	"move.l %%a1,253*4(%%a5)\n"
 	"lea	buserror040,%%a6\n"
+	"lea	addrerror040,%%a0\n"
 	"tst.b	%%d1\n"
 	"beq.s	.cpu040\n"
 	"lea	buserror060,%%a6\n"
+	"lea	addrerror060,%%a0\n"
 	".cpu040:\n"
 	"move.l	%%a6,%%a5@(8)\n"
+	"move.l %%a0,%%a5@(12)\n"
 	"moveq	#0,%%d1\n"
 	/* Disable MMU, setup root pointers */
 	"movec	%%d1,%%tc\n"

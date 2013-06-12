@@ -148,7 +148,7 @@ buserror060:
 #endif
 
 	/* jump to original exception vector
-	 * we assume address error uses same address
+	 * we assume illegal instruction uses same address
 	 *
 	 * TODO: Handle 68040 writebacks. Not really important at this
 	 * point because this is meant to be kernel debugger that simply
@@ -156,9 +156,33 @@ buserror060:
 	 */
 
 	movec	%vbr,%a0
-	move.l	3*4(%a0),STACKOFFSET-4(%sp)
+	move.l	4*4(%a0),STACKOFFSET-4(%sp)
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
+
+	.globl	addrerror030
+addrerror030:
+	or.w	#0x0700,%sr
+	subq.l	#4,%sp
+	move.w	#0x10,(%sp)
+.addrerror:
+	movem.l	%d0-%d1/%a0-%a1,-(%sp)
+	move.w	STACKOFFSET-4(%sp),%d0
+	bra		.doexit
+
+	.globl	addrerror040
+addrerror040:
+	or.w	#0x0700,%sr
+	subq.l	#4,%sp
+	move.w	#0x11,(%sp)
+	bra.s	.addrerror
+
+	.globl	addrerror060
+addrerror060:
+	or.w	#0x0700,%sr
+	subq.l	#4,%sp
+	move.w	#0x12,(%sp)
+	bra.s	.addrerror
 
 	.chip 68030
 	.globl	mmu_valid_check_030
