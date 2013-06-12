@@ -66,7 +66,6 @@ USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 
 RASPIFW_URI     := https://github.com/Hexxeh/rpi-firmware/blob/master
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat fixup_cd.dat start.elf start_cd.elf start_x.elf
-RASPIFW_SRCS     := $(addprefix $(RASPIFW_URI)/, $(addsuffix ?raw=true, $(RASPIFW_FILES)))
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
 PKG_RSRC     :=  misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox processor
