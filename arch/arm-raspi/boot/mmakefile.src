@@ -8,7 +8,7 @@ USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 
-#MM arosboot-raspi: \
+#MM arosboot-raspi : \
 #MM kernel-raspi-arm \
 #MM kernel-raspi-config-copy \
 #MM kernel-package-raspi-arm
@@ -80,15 +80,15 @@ MODULES := \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
 	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB)))
 
-kernel-package-raspi-arm:
+kernel-package-raspi-arm:  $(BINDIR)/arosraspi.rom
+
+ $(BINDIR)/arosraspi.rom:
 	$(RM) -rf $(OSGENDIR)/boot/modules
 	%mkdirs_q $(OSGENDIR)/boot/modules
 	@mv $(MODULES) $(OSGENDIR)/boot/modules/
 	$(SRCDIR)/tools/package/pkg c $(BINDIR)/arosraspi.rom $(OSGENDIR)/boot/modules
 
 %copy_files_q mmake=kernel-raspi-config-copy files="$(CONFIG_FILE)" dst=$(AROSDIR)
-
-arosboot-raspi: $(AROSDIR)/arosraspi.img
 
 $(AROSDIR)/arosraspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/core.bin.o -L$(LIBDIR) -lm -larosc.static -lm -laeabi -o $(OSGENDIR)/boot/arosraspi.img.elf
@@ -97,6 +97,14 @@ $(AROSDIR)/arosraspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGE
 $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 	cp $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
 	cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm core.bin -o $@
+
+arosboot-raspi: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.gz
+
+$(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.gz: $(AROSDIR)/arosraspi.img  $(BINDIR)/arosraspi.rom
+	%mkdirs_q $(AROSDIR)/S
+	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+	@$(MKDIR) -p "$(DISTDIR)"
+	cd $(AROSDIR) && tar -czf  $@ ./
 
 #MM
 clean ::
