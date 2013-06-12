@@ -132,30 +132,30 @@ static void dumpinfo(UWORD mmutype, struct ExecBase *SysBase, ULONG pc)
     }
 }
 
-/* WARNING: Running in bus error exception.
+/* WARNING: Running in bus/address error exception.
  * Can't call most system routines!
  */
 void bushandler(struct busframe *bf)
 {
 	struct ExecBase *SysBase = (struct ExecBase*)(bf->vbr[1]);
 	UBYTE *mf = bf->mmuframe;
-	ULONG fa;
-	ULONG sw;
+	ULONG fa = 0;
+	ULONG sw = 0;
 	ULONG data;
 	ULONG pc;
 	UWORD size = 0;
-	UWORD fc;
+	UWORD fc = 0;
 	UWORD sr;
 	BOOL write = FALSE;
 	BOOL inst = FALSE;
 	BOOL hasdata = FALSE;
-	UWORD mmutype;
+	UWORD mmutype = bf->type;
 	char buf[16];
+	BOOL addrerror = (bf->type & 0x10) != 0;
 	
-	DebugPutStr("Bus Error!\n");
+	DebugPutStr(addrerror ? "Address Error!\n" : "Bus Error!\n");
 
-        mmutype = bf->type;
-	if (mmutype == 0) {
+	if (mmutype == 0 || mmutype == 0x10) {
 		// 68030
 		fa = ((ULONG*)(mf + 16))[0];
 		sw = ((UWORD*)(mf + 10))[0];
@@ -177,13 +177,19 @@ void bushandler(struct busframe *bf)
 			data = ((ULONG*)(mf + 28))[0];
 			hasdata = TRUE;
 		}
-	} else {
+	} else if (mmutype == 2) {
 		// 68060
 		fa = ((ULONG*)(mf + 8))[0];
 		sw = ((ULONG*)(mf + 12))[0];
 		size = (sw >> 21) & 3;
 		write = (sw & 0x800000) != 0;
 		fc = (sw >> 16) & 7;
+	} else if (mmutype == 0x11 || mmutype == 0x12) {
+		// 68040
+		fa = ((ULONG*)(mf + 8))[0];
+		sw = 0;
+		size = 0;
+		fc = (((UWORD*)mf)[0] & 0x2000) ? 6 : 2;
 	}
 	pc = ((ULONG*)(mf + 2))[0];
 	inst = (fc & 3) == 2;
