@@ -11,7 +11,8 @@ USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 #MM arosboot-raspi : \
 #MM kernel-raspi-arm \
 #MM kernel-raspi-config-copy \
-#MM kernel-package-raspi-arm
+#MM kernel-package-raspi-arm \
+#MM arosboot-raspi-fw
 
 #MM kernel-package-raspi-arm: \
 #MM linklibs-clib \
@@ -83,6 +84,10 @@ MODULES := \
 	$(addprefix $(BINDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
 	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB)))
+
+#MM
+arosboot-raspi-fw:
+	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(addsuffix ?raw=true, $(file)))" -O "$(addprefix $(AROSDIR)/, $(file))"))
 
 kernel-package-raspi-arm:  $(BINDIR)/arosraspi.rom
 
