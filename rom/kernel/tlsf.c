@@ -1099,6 +1099,8 @@ void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, 
 
     struct MemHeaderExt *mhe = start;
 
+    mhe->mhe_Magic         = MEMHEADER_EXT_MAGIC;
+
     mhe->mhe_DestroyPool   = destroy_Pool;
     mhe->mhe_InitPool      = init_Pool;
 
