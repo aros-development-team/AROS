@@ -1,0 +1,11 @@
+setenv ramdisk uInitrd-aros;
+setenv kernel uImage-aros;
+setenv bootargs use-tlsf;
+${loadcmd} ${ramdiskaddr} ${ramdisk};
+if imi ${ramdiskaddr}; then; else
+  setenv ramdiskaddr "";
+fi;
+${loadcmd} ${kerneladdr} ${kernel}
+if imi ${kerneladdr}; then
+  bootm ${kerneladdr} ${ramdiskaddr}
+fi;
