@@ -15,30 +15,18 @@
 
 #include <hardware/mx51_uart.h>
 
-static inline void writel(uint32_t *addr, uint32_t value)
+static volatile MX51_UART * const uart = (MX51_UART *)UART1_BASE_ADDR;
+
+static inline void waitBusy()
 {
-    *(volatile uint32_t *)addr = value;
+    while((uart->USR2 & UART_USR2_TXDC) == 0);
 }
 
-static inline uint32_t readl(uint32_t *addr)
+static inline void putByte(uint8_t chr)
 {
-    return *(volatile uint32_t *)addr;
-}
-
-inline void waitBusy()
-{
-    MX51_UART *uart = (MX51_UART *)UART1_BASE_ADDR;
-
-    while((readl(&uart->USR2) & UART_USR2_TXDC) == 0);
-}
-
-inline void putByte(uint8_t chr)
-{
-    MX51_UART *uart = (MX51_UART *)UART1_BASE_ADDR;
-
     if (chr == '\n')
-		writel(&uart->UTXD, '\r');
-    writel(&uart->UTXD, chr);
+        uart->UTXD = '\r';
+    uart->UTXD = chr;
 }
 
 void (*_KrnPutC)(char) = NULL;
