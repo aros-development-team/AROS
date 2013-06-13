@@ -12,10 +12,16 @@
 #   include <exec/memory.h>
 #endif
 
+#ifndef AROS_MACROS_H
+#include <aros/macros.h>
+#endif
+
 struct MemHeaderExt
 {
     struct MemHeader mhe_MemHeader;
-            
+
+    ULONG mhe_Magic;
+
     /* Let an external 'driver' manage this memory
        region opaquely.  */
        
@@ -37,6 +43,9 @@ struct MemHeaderExt
     IPTR  (* mhe_Avail)   (struct MemHeaderExt *, ULONG flags);
     BOOL  (* mhe_InBounds)(struct MemHeaderExt *, APTR  begin, APTR   end);
 };
+
+/* Magic value indicating the MemHeaderExt */
+#define MEMHEADER_EXT_MAGIC     AROS_MAKE_ID('M','n','G','d')
 
 /* Indicates that the memory region is to be
    treated as an opaque object managed only through the
