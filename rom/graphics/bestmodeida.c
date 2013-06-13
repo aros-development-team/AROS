@@ -47,7 +47,7 @@ struct MatchData
     UWORD  found_height;
 };
 
-static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchData *args, struct GfxBase *GfxBase)
+static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchData *args, ULONG modemask, struct GfxBase *GfxBase)
 {
     struct DisplayInfoHandle *dinfo;
     struct DisplayInfo disp;
@@ -69,11 +69,11 @@ static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchDat
 	UWORD gm_width, gm_height;
 	ULONG modeid = mdd->id | dinfo->id;
 
-	D(bug("[BestModeID] Checking ModeID 0x%08X... ", modeid));
+	D(bug("[BestModeID] Checking ModeID 0x%08X (0x%08X 0x%08X)... ", modeid, modeid & modemask, modemask));
 
-    if (args->monitorid != INVALID_ID && args->monitorid != modeid)
+    if (args->monitorid != INVALID_ID && (args->monitorid & modemask) != (modeid & modemask))
     {
-        D(bug("BIDTAG_MonitorID 0x%08X didn't match\n", args->monitorid));
+        D(bug("BIDTAG_MonitorID 0x%08X didn't match\n", args->monitorid, args->monitorid & modemask, modemask));
         continue;
     }
 
@@ -145,11 +145,11 @@ static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchDat
     } /* for (each mode) */
 }
 
-static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct MatchData *args, struct GfxBase *GfxBase)
+static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct MatchData *args, ULONG modemask, struct GfxBase *GfxBase)
 {
     /* First we try to search in preferred monitor (if present) */
     if (monitor)
-        BestModeIDForMonitor(monitor, args, GfxBase);
+        BestModeIDForMonitor(monitor, args, modemask, GfxBase);
 
     /* And if nothing was found there, check other monitors */
     if (args->found_id == INVALID_ID)
@@ -159,7 +159,7 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
         for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
         {
             if (mdd != monitor)
-                BestModeIDForMonitor(mdd, args, GfxBase);
+                BestModeIDForMonitor(mdd, args, modemask, GfxBase);
         }
     }
     return args->found_id != INVALID_ID;
@@ -339,13 +339,24 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
     ObtainSemaphoreShared(&CDD(GfxBase)->displaydb_sem);
 
     /* First try to find exact match */
-    if (!FindBestModeIDForMonitor(monitor, &args, GfxBase)) {
-        /* Mask out bit 12 in monitorid because the user may (and will) pass in IDs defined in include/graphics/modeid.h
-           (like PAL_MONITOR_ID, VGA_MONITOR_ID, etc) which have bit 12 set) */
-        if (args.monitorid != INVALID_ID && (args.monitorid & ~AROS_MONITOR_ID_MASK)) {
-            args.monitorid &= AROS_MONITOR_ID_MASK;
-            FindBestModeIDForMonitor(monitor, &args, GfxBase);
-        }
+    FindBestModeIDForMonitor(monitor, &args, ~0, GfxBase);
+#ifdef __mc68000
+    /* Handle situation where program only asks for specific monitor
+     * (for example only PAL_MONITOR_ID or NTSC_MONITOR_ID bits set)
+     * but it also requests hires or larger resolution.
+     * We must always return chipset mode if PAL or NTSC bits are set.
+     * Mask out screen mode bits (MONITOR_ID_MASK)
+     */
+    if (args.found_id == INVALID_ID && args.monitorid != INVALID_ID) {
+        FindBestModeIDForMonitor(monitor, &args, MONITOR_ID_MASK, GfxBase);
+    }
+#endif
+    /* Still not found, AROS_MONITOR_ID_MASK.
+     * Mask out bit 12 in monitorid because the user may (and will) pass in IDs defined in include/graphics/modeid.h
+     * (like PAL_MONITOR_ID, VGA_MONITOR_ID, etc) which have bit 12 set)
+     */
+    if (args.found_id == INVALID_ID && args.monitorid != INVALID_ID) {
+        FindBestModeIDForMonitor(monitor, &args, AROS_MONITOR_ID_MASK, GfxBase);
     }
 
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
