@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := kernel_startup kernel_debug
+FILES := kernel_startup kernel_debug maygetchar
 
 #MM kernel-efika-arm: setup-efika-arm kernel-kernel-kobj 
 kernel-efika-arm: $(BINDIR)/boot/aros-efikamx
