@@ -22,5 +22,4 @@
         asm("mcr p10, 7, %0, " vfpreg(_vfp_) ", cr0, 0 @ fmxr   " #_vfp_ ", %0" \
            : : "r" (_var_) : "cc")
 
-
 #endif /* ASM_ARM_CPU_H */
