@@ -45,7 +45,7 @@ static void parse_atags(struct tag *tags)
 
 	for_each_tag(t, tags)
 	{
-		kprintf("[BOOT]   %08x: ", t->hdr.tag, t->hdr.size);
+		kprintf("[BOOT]   %08x (%04x): ", t->hdr.tag, t->hdr.size);
 		switch (t->hdr.tag)
 		{
 		case ATAG_MEM:

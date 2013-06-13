@@ -11,10 +11,15 @@
 #include <strings.h>
 #include <inttypes.h>
 
+#include <string.h>
+
 #include <aros/arm/cpucontext.h>
+#include <aros/arm/cpu.h>
 
 #include <kernel_base.h>
 #include <kernel_debug.h>
+
+#define D(x) x
 
 #define _STR(x) #x
 #define STR(x) _STR(x)
@@ -61,34 +66,58 @@ static uint8_t svc_stack[SYS_STACK_SIZE] __attribute__((used,aligned(16)));
 static uint8_t abt_stack[SYS_STACK_SIZE] __attribute__((used,aligned(16)));
 static uint8_t irq_stack[SYS_STACK_SIZE] __attribute__((used,aligned(16)));
 
-//static uint32_t * const sys_stack_end __attribute__((used,section(".aros.init"))) = &sys_stack[SYS_STACK_SIZE-1];
-//static uint32_t * const svc_stack_end __attribute__((used,section(".aros.init"))) = &svc_stack[SYS_STACK_SIZE-1];
-//static uint32_t * const abt_stack_end __attribute__((used,section(".aros.init"))) = &abt_stack[SYS_STACK_SIZE-1];
-//static uint32_t * const irq_stack_end __attribute__((used,section(".aros.init"))) = &irq_stack[SYS_STACK_SIZE-1];
+static char  CmdLine[200] __attribute__((used, section(".data")));
 
-//static uint32_t * const tmp_stack_end __attribute__((used,section(".aros.init"))) = &temporary.stack[128 - 1];
+__attribute__((section(".data"))) struct ExecBase *SysBase = NULL;
 
 struct TagItem *BootMsg;
 
 static void __used __attribute__((section(".aros.init"))) clear_bss(struct TagItem *msg)
 {
-	struct TagItem *tag = LibFindTagItem(KRN_KernelBss, msg);
+    struct TagItem *tag = LibFindTagItem(KRN_KernelBss, msg);
 
-	if (tag)
-	{
-		struct KernelBSS *bss = (struct KernelBSS *)tag->ti_Data;
+    if (tag)
+    {
+        struct KernelBSS *bss = (struct KernelBSS *)tag->ti_Data;
 
-		if (bss)
-		{
-			__clear_bss(bss);
-		}
-	}
+        if (bss)
+        {
+            __clear_bss(bss);
+        }
+    }
 }
 
 void startup(struct TagItem *tags)
 {
-	bug("\n[KRN] AROS for EfikaMX built on %s starting...\n", __DATE__);
-	bug("[KRN] BootMsg @ %08x\n", tags);
+    bug("\n[KRN] AROS for EfikaMX built on %s starting...\n", __DATE__);
+    bug("[KRN] BootMsg @ %08x\n", tags);
 
-	while(1);
+    /* Check if the taglist is copied into safe place */
+    if (tags != temporary.tags)
+    {
+        /* Nope, copy taglist... */
+        struct TagItem *msg = tags;
+        struct TagItem *tmp = temporary.tags;
+
+        while(msg->ti_Tag != TAG_DONE)
+        {
+            /* Copy the tag */
+            *tmp = *msg;
+
+            if (tmp->ti_Tag == KRN_CmdLine)
+            {
+                strcpy(CmdLine, (char*) msg->ti_Data);
+                tmp->ti_Data = (STACKIPTR) CmdLine;
+                D(bug("[KRN] CmdLine: %s\n", tmp->ti_Data));
+            }
+            //else if ()
+
+
+            tmp++;
+            msg++;
+        }
+    }
+
+
+    while(1);
 }
