@@ -811,6 +811,8 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
             mh->mh_First            = (APTR)flags;
             mh->mh_Free             = 0;
 
+            mhe->mhe_Magic          = mhe_orig->mhe_Magic;
+
             /* Copy init functions */
             mhe->mhe_InitPool       = mhe_orig->mhe_InitPool;
             mhe->mhe_DestroyPool    = mhe_orig->mhe_DestroyPool;
