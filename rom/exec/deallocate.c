@@ -11,6 +11,7 @@
 #include <exec/alerts.h>
 #include <aros/libcall.h>
 #include <exec/memory.h>
+#include <exec/memheaderext.h>
 #include <proto/exec.h>
 
 #include "exec_util.h"
@@ -57,27 +58,43 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TraceLocation tp = CURRENT_LOCATION("Deallocate");
+    if ((freeList->mh_Node.ln_Type == NT_MEMORY) &&
+        (freeList->mh_Attributes & MEMF_MANAGED) &&
+        (((struct MemHeaderExt *)freeList)->mhe_Magic == MEMHEADER_EXT_MAGIC)
+    )
+    {
+        struct MemHeaderExt *mhe = (struct MemHeaderExt *)freeList;
 
-    /* If there is no memory free nothing */
-    if(!byteSize || !memoryBlock)
-	return;
+        if (mhe->mhe_Alloc)
+            return mhe->mhe_Free(mhe, memoryBlock);
+        else
+            return NULL;
+    }
+    else
+    {
+        struct TraceLocation tp = CURRENT_LOCATION("Deallocate");
+
+        /* If there is no memory free nothing */
+        if(!byteSize || !memoryBlock)
+            return;
 
 #if !defined(NO_CONSISTENCY_CHECKS)
-    /* Test if our block really fits into this MemHeader. */
-    if ((memoryBlock < freeList->mh_Lower) || (memoryBlock + byteSize > freeList->mh_Upper + 1))
-    {
-	/* Something is completely wrong. */
-	bug("[MM] Memory allocator error\n");
-	bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
-	bug("[MM] Block does not fit into MemHeader (0x%p - 0x%p)\n", freeList->mh_Lower, freeList->mh_Upper);
+        /* Test if our block really fits into this MemHeader. */
+        if ((memoryBlock < freeList->mh_Lower) || (memoryBlock + byteSize > freeList->mh_Upper + 1))
+        {
+            /* Something is completely wrong. */
+            bug("[MM] Memory allocator error\n");
+            bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+            bug("[MM] Block does not fit into MemHeader (0x%p - 0x%p)\n", freeList->mh_Lower, freeList->mh_Upper);
 
-	Alert(AN_BadFreeAddr);
-	return;
-    }
+            Alert(AN_BadFreeAddr);
+            return;
+        }
 #endif
 
-    stdDealloc(freeList, NULL /* by design */, memoryBlock, byteSize, &tp, SysBase);
+        stdDealloc(freeList, NULL /* by design */, memoryBlock, byteSize, &tp, SysBase);
+
+    }
 
     AROS_LIBFUNC_EXIT
 } /* Deallocate */

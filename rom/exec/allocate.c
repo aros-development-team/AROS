@@ -84,7 +84,10 @@ AROS_LH2(APTR, Allocate,
 {
     AROS_LIBFUNC_INIT
 
-    if (freeList->mh_Attributes & MEMF_MANAGED)
+    if ((freeList->mh_Node.ln_Type == NT_MEMORY) &&
+        (freeList->mh_Attributes & MEMF_MANAGED) &&
+        (((struct MemHeaderExt *)freeList)->mhe_Magic == MEMHEADER_EXT_MAGIC)
+    )
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)freeList;
 
