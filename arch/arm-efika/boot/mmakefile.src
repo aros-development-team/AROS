@@ -7,14 +7,16 @@ USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
 
 #MM arosboot-efika: \
 #MM	   kernel-efika-arm \
+#MM    boot-script-efika-arm \
 #MM    kernel-package-efika-arm
 
 #MM kernel-package-efika-arm: \
 #MM     linklibs-clib \
-#MM		kernel-oop \
+#MM     kernel-oop \
+#MM     kernel-utility \
 #MM     hidd-i2c
 
-PKG_LIBS     := oop
+PKG_LIBS     := oop utility
 PKG_RSRC     := 
 PKG_DEVS     := 
 PKG_HANDLERS := 
@@ -31,6 +33,10 @@ MODULES := \
 	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
 	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD)))
 
+#MM-
+boot-script-efika-arm: boot.script
+	mkimage -A arm -O linux -T script -n "AROS boot script" -d $(SRCDIR)/$(CURDIR)/boot.script $(AROSDIR)/boot/boot.scr
+
 kernel-package-efika-arm:
 	$(RM) -rf $(BINDIR)/boot/modules
 	%mkdirs_q $(BINDIR)/boot/modules
@@ -41,16 +47,16 @@ kernel-package-efika-arm:
 arosboot-efika: $(AROSDIR)/boot/arosboot
 
 $(AROSDIR)/boot/arosboot: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/kernel.bin.o
-		$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/kernel.bin.o -L$(LIBDIR) -lm -lrom -lm -laeabi -o $@
-		objcopy -O binary $@ $@.bin
-		gzip $@.bin
-		mv $@.bin.gz $@.bin
-		mkimage -A arm -O linux -T kernel -C gzip -a 0x91000000 -e 0x91000000 -n "AROS Boot" -d $@.bin $(AROSDIR)/boot/uImage-aros
+	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/kernel.bin.o -L$(LIBDIR) -lm -larosc.static -lm -laeabi -o $@
+	$(OBJCOPY) -O binary $@ $@.bin
+	gzip $@.bin
+	mv $@.bin.gz $@.bin
+	mkimage -A arm -O linux -T kernel -C gzip -a 0x91000000 -e 0x91000000 -n "AROS Boot" -d $@.bin $(AROSDIR)/boot/uImage-aros
 
 $(TARGETDIR)/kernel.bin.o: $(AROSDIR)/boot/aros-efikamx
-		cp $(AROSDIR)/boot/aros-efikamx $(TARGETDIR)/kernel.bin
-		cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm kernel.bin -o $@
-		 
+	cp $(AROSDIR)/boot/aros-efikamx $(TARGETDIR)/kernel.bin
+	cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm kernel.bin -o $@
+
 
 #MM
 clean ::
