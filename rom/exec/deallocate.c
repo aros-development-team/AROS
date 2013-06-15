@@ -65,10 +65,8 @@
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)freeList;
 
-        if (mhe->mhe_Alloc)
-            return mhe->mhe_Free(mhe, memoryBlock, byteSize);
-        else
-            return NULL;
+        if (mhe->mhe_Free)
+            mhe->mhe_Free(mhe, memoryBlock, byteSize);
     }
     else
     {
