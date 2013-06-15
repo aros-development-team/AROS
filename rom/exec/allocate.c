@@ -111,6 +111,8 @@ AROS_LH2(APTR, Allocate,
          */
         if (freeList->mh_Node.ln_Type == 0)
             freeList->mh_Node.ln_Type = NT_MEMORY;
+        /* Fix also possibly uninitialized mh_Attributes */
+        freeList->mh_Attributes &= ~MEMF_MANAGED;
 #endif
         ASSERT(freeList->mh_Node.ln_Type == NT_MEMORY);
         ASSERT(freeList->mh_Lower <= freeList->mh_Upper);
