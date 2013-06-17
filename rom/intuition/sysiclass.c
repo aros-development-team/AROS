@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -198,7 +198,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 
     D(bug("dri: %p, unsupported: %d version: %d\n", data->dri, unsupported, data->dri->dri_Version));
 
-    if ((!data->dri) || (unsupported) || (data->dri->dri_Version != DRI_VERSION_AROS))
+    if ((!data->dri) || (unsupported) || (data->dri->dri_Version != DRI_VERSION))
         return FALSE;
 
     {

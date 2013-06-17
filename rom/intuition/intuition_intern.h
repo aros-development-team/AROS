@@ -672,13 +672,12 @@ struct IntDrawInfo
     struct Screen   	      *dri_Screen;
     struct IntuitionCustomize *dri_Customize;
     /* Private extensions begin */
-    APTR                       scrDecorUserBuffer;
+    ULONG                     *dri_Colors;      /* MorphOS-compatible, unused (yet) */
+    IPTR                       dri_Reserved[2]; /* Remaining reserved fields        */
 };
 
 /* Private dri_Flags */
 #define DRIF_DIRECTCOLOR  (1L << 16)
-
-#define DRI_VERSION_AROS (DRI_VERSION + 1)
 
 #define LOCK_WINDECOR(IntuitionBase)   	 ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->WinDecorSem);
 #define LOCKSHARED_WINDECOR(IntuitionBase) ObtainSemaphoreShared(&((struct IntIntuitionBase *)(IntuitionBase))->WinDecorSem);

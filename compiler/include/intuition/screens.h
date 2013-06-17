@@ -2,7 +2,7 @@
 #define INTUITION_SCREENS_H
 
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Screen handling structures
@@ -285,14 +285,22 @@ struct DrawInfo
 
     ULONG dri_Flags; /* see below */
 
+    /* The following fields are present if dri_Version >= 2 */
     struct Image * dri_CheckMark;
-    struct Image * dri_AmigaKey;
+    struct Image * dri_AmigaKey;  
 
-    ULONG dri_Reserved[5];
+    /*
+     * The following fields are compatible with AmigaOS v4.
+     * Present if dri_Version >= 3.
+     */
+    struct Screen *dri_Screen;
+    APTR           dri_Prefs;
+
+    IPTR           dri_Reserved[3];
 };
 
 /* dri_Version */
-#define DRI_VERSION 2
+#define DRI_VERSION 3
 
 /* dri_Flags */
 #define DRIF_NEWLOOK (1L<<0)
