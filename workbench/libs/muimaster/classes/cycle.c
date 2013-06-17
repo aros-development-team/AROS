@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2006, The AROS Development Team. All rights reserved.
+    Copyright  2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -51,6 +51,15 @@ struct MUI_CycleData
 #define POPITEM_EXTRAWIDTH 4
 #define POPITEM_EXTRAHEIGHT 2
 
+CONST_STRPTR default_entries[] =
+{
+    (CONST_STRPTR) "",
+    (CONST_STRPTR) NULL
+};
+
+static void UpdateEntries(Object *obj, struct MUI_CycleData *data);
+static void KillPopupWin(Object *obj, struct MUI_CycleData *data);
+
 void PressedHookFunc(struct Hook *hook, Object *obj, APTR msg)
 {
     struct MUI_CycleData *data;
@@ -74,7 +83,6 @@ IPTR Cycle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_CycleData *data;
     struct TagItem *tag, *tags;
     Object *pageobj, *imgobj;
-    int i;
 
     obj = (Object *) DoSuperNewTags
         (cl, obj, NULL,
@@ -104,6 +112,8 @@ IPTR Cycle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->pressedhook.h_SubEntry = (HOOKFUNC) PressedHookFunc;
     data->pressedhook.h_Data = cl;
 
+    data->entries = (const char **)default_entries;
+
     /* parse initial taglist */
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
@@ -120,32 +130,7 @@ IPTR Cycle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         }
     }
 
-    if (!data->entries)
-    {
-        D(bug("Cycle_New: No Entries specified!\n"));
-        CoerceMethod(cl, obj, OM_DISPOSE);
-        return (IPTR) NULL;
-    }
-
-    /* Count the number of entries */
-    for (i = 0; data->entries[i]; i++)
-    {
-        Object *page;
-
-        page = TextObject,
-            MUIA_Text_Contents, (IPTR) data->entries[i],
-            MUIA_Text_PreParse, (IPTR) "\033c", End;
-
-        if (!page)
-        {
-            D(bug("Cycle_New: Could not create page object specified!\n"));
-            CoerceMethod(cl, obj, OM_DISPOSE);
-            return (IPTR) NULL;
-        }
-
-        DoMethod(pageobj, OM_ADDMEMBER, (IPTR) page);
-    }
-    data->entries_num = i;
+    UpdateEntries(obj, data);
 
     if ((data->entries_active >= 0)
         && (data->entries_active < data->entries_num))
@@ -184,6 +169,11 @@ IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
+        case MUIA_Cycle_Entries:
+            data->entries = (const char **)tag->ti_Data;
+            UpdateEntries(obj, data);
+            break;
+
         case MUIA_Cycle_Active:
             l = (LONG) tag->ti_Data;
 
@@ -288,6 +278,43 @@ IPTR Cycle__MUIM_Cleanup(struct IClass *cl, Object *obj,
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) & data->ehn);
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
+static void UpdateEntries(Object *obj, struct MUI_CycleData *data)
+{
+    struct MinList *childlist = NULL;
+    Object *page, *cstate;
+    UWORD i;
+
+    /* Ensure list isn't displayed while we update it */
+    KillPopupWin(obj, data);
+
+    /* Destroy old entries */
+    get(data->pageobj, MUIA_Group_ChildList, &childlist);
+
+    cstate = (Object *) childlist->mlh_Head;
+    while ((page = NextObject(&cstate)))
+    {
+        DoMethod(data->pageobj, OM_REMMEMBER, (IPTR) page);
+        DoMethod(page, OM_DISPOSE);
+    }
+
+    /* Count the number of entries */
+    for (i = 0; data->entries[i]; i++)
+    {
+        page = TextObject,
+            MUIA_Text_Contents, (IPTR) data->entries[i],
+            MUIA_Text_PreParse, (IPTR) "\033c", End;
+
+        if (!page)
+        {
+            D(bug("Cycle_New: Could not create page object specified!\n"));
+            break;
+        }
+
+        DoMethod(data->pageobj, OM_ADDMEMBER, (IPTR) page);
+    }
+    data->entries_num = i;
 }
 
 static void KillPopupWin(Object *obj, struct MUI_CycleData *data)
