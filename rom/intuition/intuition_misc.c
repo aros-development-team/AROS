@@ -116,7 +116,7 @@ void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 
 /**********************************************************************************/
 
-Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr, APTR buffer,
+Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr,
                                       struct DrawInfo *dri, struct IntuitionBase *IntuitionBase)
 {
     Object *im;
@@ -127,7 +127,6 @@ Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr,
         {SYSIA_DrawInfo , (IPTR)dri                                 },
         {SYSIA_Size         , scr->Flags & SCREENHIRES ?
                           SYSISIZE_MEDRES : SYSISIZE_LOWRES },
-    {SYSIA_UserBuffer , (IPTR)buffer                    },
         {TAG_DONE                                                       }
     };
 
@@ -210,7 +209,6 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 {IA_Height          , height                                                                                         },
                 {SYSIA_Which    , SIZEIMAGE                                                                                      },
                 {SYSIA_DrawInfo , (IPTR)dri                                                                                      },
-                {SYSIA_UserBuffer, ((struct IntWindow *)(w))->DecorUserBuffer                        },
                 {SYSIA_Size         , w->WScreen->Flags & SCREENHIRES ? SYSISIZE_MEDRES : SYSISIZE_LOWRES},
                 {TAG_DONE                                                                                                            }
             };
@@ -255,7 +253,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
             };
             Object *im;
 
-            im = CreateStdSysImage(DEPTHIMAGE, TitleHeight, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
+            im = CreateStdSysImage(DEPTHIMAGE, TitleHeight, w->WScreen, dri, IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -321,7 +319,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 
             Object *im;
 
-            im = CreateStdSysImage(ZOOMIMAGE, TitleHeight, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
+            im = CreateStdSysImage(ZOOMIMAGE, TitleHeight, w->WScreen, dri, IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -421,7 +419,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
             };
             Object *im;
 
-            im = CreateStdSysImage(CLOSEIMAGE, TitleHeight, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri,IntuitionBase);
+            im = CreateStdSysImage(CLOSEIMAGE, TitleHeight, w->WScreen, dri,IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -858,7 +856,7 @@ ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relr
     if (gadgettype == LOCKGAD)
         gadget_tags[1].ti_Data = TRUE;
 
-    im = CreateStdSysImage(imagetype, TitleHeight, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri,IntuitionBase);
+    im = CreateStdSysImage(imagetype, TitleHeight, w->WScreen, dri,IntuitionBase);
     if (im)
     {
         gadget_tags[0].ti_Data = (IPTR)im;

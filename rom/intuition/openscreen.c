@@ -1410,7 +1410,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         {
             {SYSIA_Which    , MENUCHECK     	    },
             {SYSIA_DrawInfo , (IPTR)&screen->DInfo  },
-            {SYSIA_UserBuffer, screen->DecorUserBuffer },
 
             {TAG_DONE                       	    }
         };
@@ -1485,7 +1484,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
             if (!(screen->Screen.Flags & SCREENQUIET))
             {
-                im = CreateStdSysImage(SDEPTHIMAGE, SDEPTH_HEIGHT, &screen->Screen, (APTR) ((struct IntScreen *)screen)->DecorUserBuffer,
+                im = CreateStdSysImage(SDEPTHIMAGE, SDEPTH_HEIGHT, &screen->Screen,
 		    	    	       (struct DrawInfo *)&screen->DInfo, IntuitionBase);
             }
 
