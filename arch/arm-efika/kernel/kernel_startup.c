@@ -26,6 +26,8 @@
 
 #define SYS_STACK_SIZE  (16384)
 
+extern void start();
+
 asm(".section .aros.init,\"ax\"\n\t"
     ".globl start\n\t"
     ".type start,%function\n"
@@ -91,6 +93,7 @@ void startup(struct TagItem *tags)
 {
     bug("\n[KRN] AROS for EfikaMX built on %s starting...\n", __DATE__);
     bug("[KRN] BootMsg @ %08x\n", tags);
+    bug("[KRN] Kernel entry @ %08x\n", start);
 
     /* Check if the taglist is copied into safe place */
     if (tags != temporary.tags)
@@ -110,8 +113,29 @@ void startup(struct TagItem *tags)
                 tmp->ti_Data = (STACKIPTR) CmdLine;
                 D(bug("[KRN] CmdLine: %s\n", tmp->ti_Data));
             }
-            //else if ()
+            else if (tmp->ti_Tag == KRN_MEMLower)
+            {
+                D(bug("[KRN] MemLower: %08x\n", tmp->ti_Data));
+            }
+            else if (tmp->ti_Tag == KRN_MEMUpper)
+            {
+                D(bug("[KRN] MemUpper: %08x\n", tmp->ti_Data));
+            }
 
+            else if (tmp->ti_Tag == KRN_KernelLowest)
+            {
+                D(bug("[KRN] KernelLowest: %08x\n", tmp->ti_Data));
+            }
+
+            else if (tmp->ti_Tag == KRN_KernelHighest)
+            {
+                D(bug("[KRN] KernelHighest: %08x\n", tmp->ti_Data));
+            }
+
+            else if (tmp->ti_Tag == KRN_KernelBss)
+            {
+                D(bug("[KRN] kernelBSS: %08x\n", tmp->ti_Data));
+            }
 
             tmp++;
             msg++;
