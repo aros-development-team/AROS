@@ -1142,10 +1142,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         }
         D(bug("layers intited screen\n"));
 
-	/* Use higher than DRI_VERSION to detect manually created
-	 * DrawInfo structures (for example WB3.1:Prefs/Palette)
-	 */
-        screen->DInfo.dri_Version = DRI_VERSION_AROS;
+        screen->DInfo.dri_Version = DRI_VERSION;
         screen->DInfo.dri_NumPens = NUMDRIPENS;
         screen->DInfo.dri_Pens = screen->Pens;
         /* dri_Depth is 8 on hi/true color screens like in AmigaOS with picasso96/cybergraphx */
