@@ -83,8 +83,6 @@ int getElfSize(void *elf_file, uint32_t *size_rw, uint32_t *size_ro)
 	uint32_t s_ro = 0;
 	uint32_t s_rw = 0;
 
-	kprintf("[BOOT] getElfSize(%p)", eh);
-
 	if (checkHeader(eh))
 	{
 		struct sheader *sh = (struct sheader *)((intptr_t)elf_file + eh->shoff);
@@ -114,7 +112,6 @@ int getElfSize(void *elf_file, uint32_t *size_rw, uint32_t *size_ro)
 			}
 		}
 	}
-	kprintf(": ro=%p, rw=%p\n", s_ro, s_rw);
 
 	if (size_ro)
 		*size_ro = s_ro;

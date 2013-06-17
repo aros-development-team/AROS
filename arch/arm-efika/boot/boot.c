@@ -254,7 +254,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     				/* get text length */
     				len = AROS_BE2LONG(*(uint32_t*)file);
     				/* display the file name */
-    				kprintf("[BOOT]    %s ", filename);
+    				kprintf("[BOOT]    %s \n", filename);
 
     				file += len + 5;
 
