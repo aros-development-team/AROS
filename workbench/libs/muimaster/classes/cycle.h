@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_CYCLE_H
 
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,7 +14,7 @@
 
 /*** Attributes *************************************************************/
 #define MUIA_Cycle_Active  (MUIB_MUI | 0x00421788) /* MUI:V4  isg LONG      */
-#define MUIA_Cycle_Entries (MUIB_MUI | 0x00420629) /* MUI:V4  i.. STRPTR    */
+#define MUIA_Cycle_Entries (MUIB_MUI | 0x00420629) /* MUI:V4  is. STRPTR    */
 
 enum
 {
