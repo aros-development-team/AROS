@@ -187,11 +187,6 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
         	}
         	break;
 
-            case SYSIA_UserBuffer:
-                data->userbuffer = (APTR)tag->ti_Data;
-                break;
-
-
         } /* switch(tag->ti_Tag) */
 
     } /* while ((tag = NextTagItem(&taglist))) */
@@ -417,7 +412,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
     sdecormsg.sdp_State = msg->imp_State;
     sdecormsg.sdp_Flags = 0;
     sdecormsg.sdp_Dri = data->dri;
-    sdecormsg.sdp_UserBuffer = (IPTR)data->userbuffer;
+    sdecormsg.sdp_UserBuffer = GetPrivScreen(data->dri->dri_Screen)->DecorUserBuffer;
 
     mdecormsg.MethodID  = MDM_DRAW_SYSIMAGE;
     mdecormsg.mdp_TrueColor      = tc;
@@ -430,7 +425,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
     mdecormsg.mdp_State = msg->imp_State;
     mdecormsg.mdp_Flags = 0;
     mdecormsg.mdp_Dri = data->dri;
-    mdecormsg.mdp_UserBuffer = (IPTR)data->userbuffer;
+    mdecormsg.mdp_UserBuffer = GetPrivScreen(data->dri->dri_Screen)->DecorUserBuffer;
 
     SetDrMd(rport, JAM1);
 

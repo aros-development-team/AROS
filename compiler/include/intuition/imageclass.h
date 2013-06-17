@@ -2,7 +2,7 @@
 #define INTUITION_IMAGECLASS_H
 
 /*
-    Copyright  1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Headerfile for Intuitions' IMAGECLASS
@@ -57,7 +57,6 @@
 #define SYSIA_Size		(IA_Dummy + 0x0B) /* See #define's below */
 #define SYSIA_Depth		(IA_Dummy + 0x0C)
 #define SYSIA_Which		(IA_Dummy + 0x0D) /* See #define's below */
-#define SYSIA_UserBuffer (IA_Dummy + 0x20) /* Only for system Images */
 
 
 #define SYSIA_DrawInfo		(IA_Dummy + 0x18) /* Must be specified */
