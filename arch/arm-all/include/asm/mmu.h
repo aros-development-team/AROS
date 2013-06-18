@@ -77,7 +77,7 @@ typedef struct {
             unsigned ap:2;
             unsigned tex:3;
             unsigned apx:1;
-            unsigned s;
+            unsigned s:1;
             unsigned ng:1;
             unsigned base_address:20;
         } page;
