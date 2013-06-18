@@ -106,6 +106,7 @@ void setup_mmu(uintptr_t kernel_phys, uintptr_t kernel_virt, uintptr_t length)
     /* 1:1 memory mapping */
     for (i=(mem_lower >> 20); i < (mem_upper >> 20); i++)
     {
+        //page_dir[i].raw = 0;
         page_dir[i].section.type = PDE_TYPE_SECTION;
         page_dir[i].section.b = 0;
         page_dir[i].section.c = 1;      /* Cacheable */
@@ -116,6 +117,7 @@ void setup_mmu(uintptr_t kernel_phys, uintptr_t kernel_virt, uintptr_t length)
     /* 0x70000000 - 0x7fffffff */
     for (i = (0x70000000 >> 20); i < (0x80000000 >> 20); i++)
     {
+        //page_dir[i].raw = 0;
         page_dir[i].section.type = PDE_TYPE_SECTION;
         page_dir[i].section.b = 1;      /* Shared device */
         page_dir[i].section.c = 0;      /* Non-Cacheable */
@@ -363,6 +365,11 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     asm volatile ("mcr p15, 0, %0, c2, c0, 0"::"r"(page_dir));
     /* Write ttbr control N = 0 (use only ttbr0) */
     asm volatile ("mcr p15, 0, %0, c2, c0, 2"::"r"(0));
+
+    /* Set domains - Dom0 is usable, rest is disabled */
+    asm volatile ("mrc p15, 0, %0, c3, c0, 0":"=r"(tmp));
+    kprintf("[BOOT] Domain access control register: %08x\n", tmp);
+    asm volatile ("mcr p15, 0, %0, c3, c0, 0"::"r"(0x00000001));
 
     asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
     kprintf("[BOOT] control register %08x\n", tmp);
