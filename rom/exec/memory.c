@@ -487,7 +487,9 @@ APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR siz
      * The check has to be done for the second time. Exec uses stdAlloc on memheader
      * passed upon startup. This is bad, very bad. So here a temporary hack :)
      */
-    if (mh->mh_Attributes & MEMF_MANAGED)
+    if ((mh->mh_Node.ln_Type == NT_MEMORY) &&
+        (mh->mh_Attributes & MEMF_MANAGED) &&
+        (((struct MemHeaderExt *)mh)->mhe_Magic == MEMHEADER_EXT_MAGIC))
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
@@ -624,7 +626,9 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
     struct MemChunk *p1, *p2, *p3;
     UBYTE *p4;
 
-    if (freeList->mh_Attributes & MEMF_MANAGED)
+    if ((freeList->mh_Node.ln_Type == NT_MEMORY) &&
+        (freeList->mh_Attributes & MEMF_MANAGED) &&
+        (((struct MemHeaderExt *)freeList)->mhe_Magic == MEMHEADER_EXT_MAGIC))
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)freeList;
         
