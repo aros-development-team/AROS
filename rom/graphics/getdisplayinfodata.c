@@ -71,8 +71,14 @@ static UBYTE popcount(IPTR x);
  *
  *                                Jason S. McMullan <jason.mcmullan@gmail.com>
  */
-static inline SetScreenResolution(Point *res, const struct MonitorSpec *mspc)
+static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *mspc,
+                                        OOP_Object *sync, struct GfxBase *GfxBase)
 {
+    IPTR width, height;
+
+    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+    OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+
     res->x = (1280 * 11 * mspc->ratioh / width ) >> RATIO_FIXEDPART;
     res->y = (1024 * 11 * mspc->ratiov / height) >> RATIO_FIXEDPART;
 }
@@ -193,13 +199,9 @@ static inline SetScreenResolution(Point *res, const struct MonitorSpec *mspc)
 	    struct DisplayInfo *di;
 	    const struct MonitorSpec *ms;
 	    IPTR redmask, greenmask, bluemask;
-	    IPTR width, height;
 	    IPTR val = 0;
 
-	    OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&ms);
 	    HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
-	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
-	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 
 	    di = (struct DisplayInfo *)qh;
 
@@ -258,7 +260,8 @@ static inline SetScreenResolution(Point *res, const struct MonitorSpec *mspc)
 	    di->PaletteRange = (val > 65535) ? 65535 : val;
 
 	    /* Display resolution in ticks */
-            CalcScreenResolution(&di->Resolution, ms);
+            OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&ms);
+            CalcScreenResolution(&di->Resolution, ms, sync, GfxBase);
 
 	    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &val);
 	    if (val)
@@ -356,11 +359,8 @@ static inline SetScreenResolution(Point *res, const struct MonitorSpec *mspc)
 	case DTAG_MNTR:
 	{
 	    struct MonitorInfo *mi = (struct MonitorInfo *)qh;
-	    IPTR width, height;
 
 	    OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&mi->Mspc);
-	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
-	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 
 	    /*
 	    mi->ViewPosition.X = ?;
@@ -373,7 +373,7 @@ static inline SetScreenResolution(Point *res, const struct MonitorSpec *mspc)
 	    */
 
             /* Resolution in ticks */
-            CalcScreenResolution(&mi->ViewResolution, mi->Mspc);
+            CalcScreenResolution(&mi->ViewResolution, mi->Mspc, sync, GfxBase);
 
             mi->TotalRows         = mi->Mspc->total_rows;
             mi->TotalColorClocks  = mi->Mspc->total_colorclocks;
