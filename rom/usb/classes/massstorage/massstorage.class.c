@@ -868,14 +868,14 @@ BOOL GM_UNIQUENAME(nLoadClassConfig)(struct NepMSBase *nh)
     cdc->cdc_FATDosType = 0x46415400;
     cdc->cdc_StartupDelay = 0;
     cdc->cdc_MaxTransfer = 5;
-    strcpy(cdc->cdc_FATFSName, "fat.handler");
+    strcpy(cdc->cdc_FATFSName, "fat-handler");
     strcpy(cdc->cdc_FATControl, ""); // FIXME
 
     cdc->cdc_CDDosType = 0x43444653; // FIXME
-    strcpy(cdc->cdc_CDFSName, "cdrom.handler"); // FIXME
+    strcpy(cdc->cdc_CDFSName, "cdrom-handler"); // FIXME
     strcpy(cdc->cdc_CDControl, ""); // FIXME
     cdc->cdc_NTFSDosType = 0x4e544653; // FIXME
-    strcpy(cdc->cdc_NTFSName, "ntfs.handler"); // FIXME
+    strcpy(cdc->cdc_NTFSName, "ntfs-handler"); // FIXME
 
     cuc = ncm->ncm_CUC;
     cuc->cuc_ChunkID = AROS_LONG2BE(MAKE_ID('L','U','N','0'));
@@ -5807,6 +5807,19 @@ BOOL IsFATSuperBlock(struct FATSuperBlock *fsb)
 }
 /* \\\ */
 
+/* /// "GetFATDosType()" */
+ULONG GetFATDosType(struct FATSuperBlock *fsb)
+{
+    ULONG result = 0x46415400;
+    if(strncmp(fsb->fsb_FileSystem2, "FAT32", 5) == 0)
+        result |= 2;
+    else if(strncmp(fsb->fsb_FileSystem, "FAT16", 5) == 0)
+        result |= 1;
+
+    return(result);
+}
+/* \\\ */
+
 /* /// "CheckFATPartition()" */
 void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
 {
@@ -5888,8 +5901,8 @@ void CheckFATPartition(struct NepClassMS *ncm, ULONG startblock)
             envec->de_DosType = ncm->ncm_CDC->cdc_FATDosType; //0x46415401; // FAT1
             if((ncm->ncm_CDC->cdc_FATDosType & 0xffffff00) == 0x46415400)
             {
-                /* tell FAT95 to use floppy detection */
-                envec->de_DosType = 0x46415400;
+                envec->de_DosType =
+                    GetFATDosType((struct FATSuperBlock *) mbr);
             }
 
             // we have no FSHD and LSEG blocks
