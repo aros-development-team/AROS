@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetDisplayInfoData()
@@ -35,6 +35,47 @@ static UBYTE popcount(IPTR x);
 
 #define DLONGSZ     	    (sizeof (ULONG) * 2)
 #define DTAG_TO_IDX(dtag)   (((dtag) & 0x7FFFF000) >> 12)
+
+/*
+ * Resolution calculation rules.
+ *
+ * MonitorSpec:
+ *   ratioh, ratiov - ratio between size of a 1084S and the current monitor
+ *                    (larger fractions are larger monitors, smaller are smaller)
+ *
+ * Screen Resolution:
+ *   Since this is related to mouse ticks, it would make sense for this
+ *   calculation to be a inverse relationship to overall DPI, instead of
+ *   to the number of pixels in the display.
+ *
+ *   Therefore, Screen Resolution would be calculated as:
+ *
+ *  res.x = (1280 * 11 * ratioh / pixel_width)  >> RATIO_FIXEDPART
+ *  res.y = (1024 * 11 * ratiov / pixel_height) >> RATIO_FIXEDPART
+ *
+ * Screen DPI can be directly calculated from DrawInfo Resolution as:
+ *
+ * #define C_1084_WIDTH_CIN  104  // 10.4 " in centi-inches
+ * #define C_1084_HEIGHT_CIN  78  //  7.8 " in centi-inches
+ *
+ *  dpi.x = (11 * 1280 * 10) / C_1084_WIDTH_CIN  / res.x
+ *  dpi.y = (11 * 1024 * 10) / C_1084_HEIGHT_CIN / res.y
+ *
+ * Screen DPC (dots per centimeter) is calculated as:
+ *
+ * #define C_1084_WIDTH_MM   264  // 10.4 " in mm
+ * #define C_1084_HEIGHT_MM  198  //  7.8 " in mm
+ *
+ *  dpc.x = 11 * 1280 * 10 / C_1084_WIDTH_MM  / res.x
+ *  dpc.y = 11 * 1024 * 10 / C_1084_HEIGHT_MM / res.y
+ *
+ *                                Jason S. McMullan <jason.mcmullan@gmail.com>
+ */
+static inline SetScreenResolution(Point *res, const struct MonitorSpec *mspc)
+{
+    res->x = (1280 * 11 * mspc->ratioh / width ) >> RATIO_FIXEDPART;
+    res->y = (1024 * 11 * mspc->ratiov / height) >> RATIO_FIXEDPART;
+}
 
 /*****************************************************************************
 
@@ -216,15 +257,10 @@ static UBYTE popcount(IPTR x);
 	    val = di->RedBits * di->GreenBits * di->BlueBits;
 	    di->PaletteRange = (val > 65535) ? 65535 : val;
 
-	    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &val);
-	    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &val);
+	    /* Display resolution in ticks */
+            CalcScreenResolution(&di->Resolution, ms);
 
-	    /*
-	     * Display resolution in ticks
-	     */
-	    di->Resolution.x = (1280 * 11 * ms->ratioh / width) >> RATIO_FIXEDPART;
-	    di->Resolution.y = (1024 * 11 * ms->ratiov / height) >> RATIO_FIXEDPART;
-
+	    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &val);
 	    if (val)
 	        di->PixelSpeed = 1000000000 / val;
 
@@ -329,8 +365,6 @@ static UBYTE popcount(IPTR x);
 	    /*
 	    mi->ViewPosition.X = ?;
 	    mi->ViewPosition.Y = ?;
-	    mi->ViewResolution.X = ?;
-	    mi->ViewResolution.Y = ?;
 	    mi->MinRow = ?;
 	    mi->MouseTicks.X = ?;
 	    mi->MouseTicks.Y = ?;
@@ -338,17 +372,12 @@ static UBYTE popcount(IPTR x);
 	    mi->DefaultViewPosition.Y = ?;
 	    */
 
-            /* Resolution in ticks
-             */
-            mi->ViewResolution.x = (1280 * 11 * mi->Mspc->ratioh / width) >> RATIO_FIXEDPART;
-            mi->ViewResolution.y = (1024 * 11 * mi->Mspc->ratiov / height) >> RATIO_FIXEDPART;
+            /* Resolution in ticks */
+            CalcScreenResolution(&mi->ViewResolution, mi->Mspc);
 
-	    if (mi->Mspc)
-	    {
-	        mi->TotalRows         = mi->Mspc->total_rows;
-	        mi->TotalColorClocks  = mi->Mspc->total_colorclocks;
-	        mi->ViewPositionRange = mi->Mspc->ms_LegalView;
-	    }
+            mi->TotalRows         = mi->Mspc->total_rows;
+            mi->TotalColorClocks  = mi->Mspc->total_colorclocks;
+            mi->ViewPositionRange = mi->Mspc->ms_LegalView;
 
 	    /*
 	     * FIXME: For now we don't have a concept of preferred ModeID.
