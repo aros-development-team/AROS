@@ -31,7 +31,13 @@ extern void start();
 asm(".section .aros.init,\"ax\"\n\t"
     ".globl start\n\t"
     ".type start,%function\n"
-    "start: ldr sp, tmp_stack_end   \n"     // Load address of top of stack pointer
+    "start: ldr r1, early_mmu_ptr   \n"     // Get early mmu map pointer
+    "       ldr r2, [r1]            \n"     // Load pointer to MMU map
+    "       cmp r2, #0              \n"     // Is the pointer set?
+    "       mcrne p15, 0, r2, c2, c0, 0\n"  // Yes, load the mmu map
+    "       mrceq p15, 0, r2, c2, c0, 0\n"  // No, read address of currently used mmu ap
+    "       streq r2, [r1]          \n"     // and conditionally store it in early map pointer
+    "       ldr sp, tmp_stack_end   \n"     // Load address of top of stack pointer
     "       mov r4, r0              \n"
     "       bl  clear_bss           \n"     // clear bss regions
     "       mov r0, r4              \n"     // restore boot msg parameter
@@ -51,7 +57,10 @@ asm(".section .aros.init,\"ax\"\n\t"
     "svc_stack_end: .word svc_stack + " STR((SYS_STACK_SIZE - 4)) "\n"
     "irq_stack_end: .word irq_stack + " STR((SYS_STACK_SIZE - 4)) "\n"
     "abt_stack_end: .word abt_stack + " STR((SYS_STACK_SIZE - 4)) "\n"
+    "early_mmu_ptr: .word early_mmu\n"
 );
+
+static uintptr_t    early_mmu __attribute__((used, section(".data"))) = 0;
 
 /*
  * Temporary stack for very early init. It's used only during clearing of
@@ -94,6 +103,7 @@ void startup(struct TagItem *tags)
     bug("\n[KRN] AROS for EfikaMX built on %s starting...\n", __DATE__);
     bug("[KRN] BootMsg @ %08x\n", tags);
     bug("[KRN] Kernel entry @ %08x\n", start);
+    bug("[KRN] Early MMU @ %08x\n", early_mmu);
 
     /* Check if the taglist is copied into safe place */
     if (tags != temporary.tags)
