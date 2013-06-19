@@ -34,15 +34,10 @@ static __used void * tmp_stack_ptr = &__stack[BOOT_STACK_SIZE-16];
 
 static struct TagItem tags[128];
 static struct TagItem *tag = &tags[0];
-static unsigned long mem_upper;
-static unsigned long mem_lower;
+static unsigned long *mem_upper = NULL;
+static unsigned long *mem_lower = NULL;
 static void *pkg_image;
 static uint32_t pkg_size;
-
-#define MAX_PAGE_TABLES 10
-
-static pde_t page_dir[4096] __attribute__((aligned(16384)));
-static pte_t page_tables[MAX_PAGE_TABLES][256] __attribute__((aligned(1024)));
 
 static void parse_atags(struct tag *tags)
 {
@@ -59,13 +54,13 @@ static void parse_atags(struct tag *tags)
 			kprintf("Memory (%08x-%08x)\n", t->u.mem.start, t->u.mem.size + t->u.mem.start - 1);
 	        tag->ti_Tag = KRN_MEMLower;
 	        tag->ti_Data = t->u.mem.start;
-	        tag++;
-	        tag->ti_Tag = KRN_MEMUpper;
-	        tag->ti_Data = t->u.mem.start + t->u.mem.size;
+	        mem_lower = &tag->ti_Data;
 	        tag++;
 
-	        mem_upper = t->u.mem.start + t->u.mem.size;
-	        mem_lower = t->u.mem.start;
+	        tag->ti_Tag = KRN_MEMUpper;
+	        tag->ti_Data = t->u.mem.start + t->u.mem.size;
+	        mem_upper = &tag->ti_Data;
+	        tag++;
 
 			break;
 		case ATAG_CMDLINE:
@@ -99,12 +94,17 @@ void setup_mmu(uintptr_t kernel_phys, uintptr_t kernel_virt, uintptr_t length)
 
     kprintf("[BOOT] Preparing initial MMU map\n");
 
+    /* Use memory right below kernel for page dir */
+    pde_t *page_dir = (pde_t *)(((uintptr_t)kernel_phys - 16384) & ~ 16383);
+
+    kprintf("[BOOT] First level MMU page at %08x\n", page_dir);
+
     /* Clear page dir */
     for (i=0; i < 4096; i++)
         page_dir[i].raw = 0;
 
     /* 1:1 memory mapping */
-    for (i=(mem_lower >> 20); i < (mem_upper >> 20); i++)
+    for (i=(*mem_lower >> 20); i < (*mem_upper >> 20); i++)
     {
         //page_dir[i].raw = 0;
         page_dir[i].section.type = PDE_TYPE_SECTION;
@@ -130,23 +130,20 @@ void setup_mmu(uintptr_t kernel_phys, uintptr_t kernel_virt, uintptr_t length)
 
     int fp = first_1M_page >> 20;
     int lp = last_1M_page >> 20;
-    int used_pte = 0;
+
+    pte_t *current_pte = (pte_t *)page_dir;
 
     if (lp == fp) lp++;
 
     for (i = fp; i < lp; i++)
     {
-        if (used_pte >= MAX_PAGE_TABLES)
-        {
-            kprintf("[BOOT] Run out of free page tables. Kernel larger than 10MB?\n");
-            for(;;);
-        }
+        current_pte = (pte_t *)((uintptr_t)current_pte - 1024);
 
         page_dir[i].coarse.type = PDE_TYPE_COARSE;
         page_dir[i].coarse.domain = 0;
         page_dir[i].coarse.sbz = 0;
         page_dir[i].coarse.imp = 0;
-        page_dir[i].coarse.base_address = (intptr_t)&page_tables[used_pte] >> 10;
+        page_dir[i].coarse.base_address = (intptr_t)current_pte >> 10;
 
         int j;
         for (j = 0; j < 256; j++)
@@ -154,29 +151,33 @@ void setup_mmu(uintptr_t kernel_phys, uintptr_t kernel_virt, uintptr_t length)
             uintptr_t synth_addr = (i << 20) + (j << 12);
 
             if (synth_addr < kernel_virt)
-                page_tables[used_pte][j].raw = 0;
+                current_pte[j].raw = 0;
             else if (synth_addr < kernel_virt + length)
             {
-                page_tables[used_pte][j].raw = 0;
-                page_tables[used_pte][j].page.base_address = (synth_addr - kernel_virt + kernel_phys) >> 12;
-                page_tables[used_pte][j].page.b = 0;
-                page_tables[used_pte][j].page.c = 1;
-                page_tables[used_pte][j].page.ap = 3;
-                page_tables[used_pte][j].page.type = PTE_TYPE_PAGE;
+                current_pte[j].raw = 0;
+                current_pte[j].page.base_address = (synth_addr - kernel_virt + kernel_phys) >> 12;
+                current_pte[j].page.b = 0;
+                current_pte[j].page.c = 1;
+                current_pte[j].page.ap = 3;
+                current_pte[j].page.type = PTE_TYPE_PAGE;
             }
             else
-                page_tables[used_pte][j].raw = 0;
+                current_pte[j].raw = 0;
         }
-
-        used_pte++;
     }
 
+    /* Write page_dir address to ttbr0 */
+    asm volatile ("mcr p15, 0, %0, c2, c0, 0"::"r"(page_dir));
+    /* Write ttbr control N = 0 (use only ttbr0) */
+    asm volatile ("mcr p15, 0, %0, c2, c0, 2"::"r"(0));
+
+    *mem_upper = (intptr_t)current_pte;
 }
 
 void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
 {
 	uint32_t tmp;
-	void (*entry)(struct TagItem *tags);
+	void (*entry)(struct TagItem *tags) = NULL;
 
 	/* Enable NEON and VFP */
     asm volatile ("mrc p15, 0, %0, c1, c0, 2":"=r"(tmp));
@@ -204,13 +205,13 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     parse_atags(atags);
 
     kprintf("[BOOT] Bootstrap @ %08x-%08x\n", &__bootstrap_start, &__bootstrap_end);
-    kprintf("[BOOT] Topmost address for kernel: %p\n", mem_upper);
+    kprintf("[BOOT] Topmost address for kernel: %p\n", *mem_upper);
 
-    if (mem_upper)
+    if (*mem_upper)
     {
-    	mem_upper = mem_upper & ~4095;
+    	*mem_upper = *mem_upper & ~4095;
 
-    	unsigned long kernel_phys = mem_upper;
+    	unsigned long kernel_phys = *mem_upper;
     	unsigned long kernel_virt = kernel_phys;
 
     	unsigned long total_size_ro, total_size_rw;
@@ -275,13 +276,16 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     		}
     	}
 
-    	kernel_phys = mem_upper - total_size_ro - total_size_rw;
+    	kernel_phys = *mem_upper - total_size_ro - total_size_rw;
     	kernel_virt = 0xffff0000 - total_size_ro - total_size_rw;
+
+    	/* Adjust "top of memory" pointer */
+    	*mem_upper = kernel_phys;
 
     	kprintf("[BOOT] Physical address of kernel: %p\n", kernel_phys);
     	kprintf("[BOOT] Virtual address of kernel: %p\n", kernel_virt);
 
-    	entry = (void (*)(struct TagItem))kernel_virt;
+    	entry = (void (*)(struct TagItem *))kernel_virt;
 
         initAllocator(kernel_phys, kernel_phys  + total_size_ro, kernel_virt - kernel_phys);
 
@@ -348,9 +352,6 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
         tag->ti_Data = (IPTR)tracker;
         tag++;
 
-
-        kprintf("[BOOT] First level MMU page at %08x\n", page_dir);
-
         setup_mmu(kernel_phys, kernel_virt, total_size_ro + total_size_rw);
     }
 
@@ -360,30 +361,31 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags)
     kprintf("[BOOT] Kernel taglist contains %d entries\n", ((intptr_t)tag - (intptr_t)tags)/sizeof(struct TagItem));
     kprintf("[BOOT] Bootstrap wasted %d bytes of memory for kernels use\n", mem_used()   );
 
+    if (entry)
+    {
+        /* Set domains - Dom0 is usable, rest is disabled */
+        asm volatile ("mrc p15, 0, %0, c3, c0, 0":"=r"(tmp));
+        kprintf("[BOOT] Domain access control register: %08x\n", tmp);
+        asm volatile ("mcr p15, 0, %0, c3, c0, 0"::"r"(0x00000001));
 
-    /* Write page_dir address to ttbr0 */
-    asm volatile ("mcr p15, 0, %0, c2, c0, 0"::"r"(page_dir));
-    /* Write ttbr control N = 0 (use only ttbr0) */
-    asm volatile ("mcr p15, 0, %0, c2, c0, 2"::"r"(0));
+        asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
+        kprintf("[BOOT] control register %08x\n", tmp);
+        tmp |= 1;          /* Enable MMU */
+        asm volatile ("mcr p15, 0, %0, c1, c0, 0"::"r"(tmp));
 
-    /* Set domains - Dom0 is usable, rest is disabled */
-    asm volatile ("mrc p15, 0, %0, c3, c0, 0":"=r"(tmp));
-    kprintf("[BOOT] Domain access control register: %08x\n", tmp);
-    asm volatile ("mcr p15, 0, %0, c3, c0, 0"::"r"(0x00000001));
+        asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
+        kprintf("[BOOT] control register %08x\n", tmp);
 
-    asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
-    kprintf("[BOOT] control register %08x\n", tmp);
-    tmp |= 1;          /* Enable MMU */
-    asm volatile ("mcr p15, 0, %0, c1, c0, 0"::"r"(tmp));
+        kprintf("[BOOT] Heading over to AROS kernel @ %08x\n", entry);
 
-    asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
-    kprintf("[BOOT] control register %08x\n", tmp);
+        entry(tags);
 
-    kprintf("[BOOT] Heading over to AROS kernel @ %08x\n", entry);
-
-    entry(tags);
-
-    kprintf("[BOOT] Back? Something wrong happened...\n");
+        kprintf("[BOOT] Back? Something wrong happened...\n");
+    }
+    else
+    {
+        kprintf("[BOOT] kernel entry pointer not set?\n");
+    }
 
     while(1);
 }
