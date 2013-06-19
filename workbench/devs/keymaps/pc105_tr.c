@@ -6,36 +6,9 @@
     Lang: English
 */
 
-#include <devices/keymap.h>
+#include "common.h"
 
-STATIC char  keymapname[] = "pc105_tr";
-
-STATIC CONST UBYTE lokeymaptypes[];
-STATIC CONST IPTR  lokeymap[];
-STATIC CONST UBYTE locapsable[];
-STATIC CONST UBYTE lorepeatable[];
-
-STATIC CONST UBYTE hikeymaptypes[];
-STATIC CONST IPTR  hikeymap[];
-STATIC CONST UBYTE hicapsable[];
-STATIC CONST UBYTE hirepeatable[];
-
-CONST struct KeyMapNode km =
-{
-    {
-        NULL, NULL, 0, 0, keymapname
-    },
-    {
-        (UBYTE *)lokeymaptypes,
-        (IPTR  *)lokeymap,
-        (UBYTE *)locapsable,
-        (UBYTE *)lorepeatable,
-        (UBYTE *)hikeymaptypes,
-        (IPTR  *)hikeymap,
-        (UBYTE *)hicapsable,
-        (UBYTE *)hirepeatable
-    }
-};
+DEFINE_KEYMAP("pc105_tr")
 
 #undef N
 #undef S
