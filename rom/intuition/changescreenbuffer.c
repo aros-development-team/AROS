@@ -1,9 +1,11 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright Â© 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
+ 
+    Desc: Intuition function ChangeScreenBuffer()
+    Lang: english
 */
-
 #include <proto/graphics.h>
 #include "intuition_intern.h"
 #include "inputhandler.h"
@@ -63,26 +65,29 @@
     AROS_LIBFUNC_INIT
 
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct IIHData   *iihdata;
-    ULONG   	      lock;
+    //struct IIHData   *iihdata;
+    ULONG lock;
 
     if (!screen) return 0;
     if (!screenbuffer) return 0;
 
+    #if 0
     if (MENUS_ACTIVE) return 0;
     iihdata = (struct IIHData *)((struct IntIntuitionBase *)(IntuitionBase))->InputHandler->is_Data;
     if (iihdata->ActiveGadget) return 0;
-
-    ChangeVPBitMap(&screen->ViewPort,screenbuffer->sb_BitMap,screenbuffer->sb_DBufInfo);
+    #endif
 
     lock = LockIBase(0);
+
+    ChangeVPBitMap(&screen->ViewPort,screenbuffer->sb_BitMap,screenbuffer->sb_DBufInfo);
 
     screen->BitMap = *screenbuffer->sb_BitMap;
     screen->RastPort.BitMap = screenbuffer->sb_BitMap;
 
     UnlockIBase(lock);
-    
+
     return TRUE;
 
     AROS_LIBFUNC_EXIT
 } /* ChangeScreenBuffer */
+

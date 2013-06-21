@@ -14,8 +14,10 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/dos.h>
+
 #include "intuition_intern.h"
 #include "intuition_customize.h"
+#include "inputhandler_actions.h"
 
 BOOL int_LoadDecorator(const char *name, struct IntScreen *screen, struct IntuitionBase *IntuitionBase)
 {
@@ -91,7 +93,53 @@ BOOL int_LoadDecorator(const char *name, struct IntScreen *screen, struct Intuit
     return TRUE;
 }
 
-BOOL int_CalcSkinInfo(struct Screen *screen, struct IntuitionBase *IntuitionBase)
+struct RemoveDecoratorMsg
+{
+    struct IntuiActionMsg  msg;
+    struct NewDecorator   *nd;
+};
+
+/* This is called on the input.device's context */
+
+static VOID int_removedecorator(struct RemoveDecoratorMsg *m,
+                               struct IntuitionBase *IntuitionBase)
+{
+    struct DecoratorMessage msg;
+    struct MsgPort *port = CreateMsgPort();
+
+    if (port)
+    {
+        Remove((struct Node *)m->nd);
+        FreeVec(m->nd->nd_IntPattern);
+
+        msg.dm_Message.mn_ReplyPort = port;
+        msg.dm_Message.mn_Magic     = MAGIC_DECORATOR;
+        msg.dm_Message.mn_Version   = DECORATOR_VERSION;
+        msg.dm_Class                = DM_CLASS_DESTROYDECORATOR;
+        msg.dm_Code                 = 0;
+        msg.dm_Flags                = 0;
+        msg.dm_Object               = (IPTR)m->nd;
+
+        PutMsg(m->nd->nd_Port, (struct Message *)&msg);
+        WaitPort(port);
+        GetMsg(port);
+        DeleteMsgPort(port);
+    }
+}
+
+/* !!! ScrDecorSem must be obtained and released by the caller !!! */
+void int_UnloadDecorator(struct NewDecorator *tnd, struct IntuitionBase *IntuitionBase)
+{
+    if ((tnd->nd_cnt == 0) && (tnd->nd_Port != NULL))
+    {
+        struct RemoveDecoratorMsg msg;
+
+        msg.nd = tnd;
+        DoASyncAction((APTR)int_removedecorator, &msg.msg, sizeof(msg), IntuitionBase);
+    }
+}
+
+BOOL int_InitDecorator(struct Screen *screen)
 {
     BOOL ok;
     struct sdpInitScreen msg;
@@ -124,21 +172,24 @@ BOOL int_CalcSkinInfo(struct Screen *screen, struct IntuitionBase *IntuitionBase
         screen->WBorLeft      = msg.sdp_WBorLeft;
         screen->WBorRight     = msg.sdp_WBorRight;
         screen->WBorBottom    = msg.sdp_WBorBottom;
-
-        if (screen->FirstGadget)
-        {
-    	    struct sdpLayoutScreenGadgets lmsg;
-
-            lmsg.MethodID       = SDM_LAYOUT_SCREENGADGETS;
-            lmsg.sdp_TrueColor  = GetPrivScreen(screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR;
-            lmsg.sdp_Layer      = screen->BarLayer;
-            lmsg.sdp_Gadgets    = screen->FirstGadget;
-            lmsg.sdp_Flags      = SDF_LSG_INITIAL | SDF_LSG_MULTIPLE;
-            lmsg.sdp_UserBuffer = ((struct IntScreen *)screen)->DecorUserBuffer;
-
-	    DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, &lmsg.MethodID);
-        }
     }
 
     return ok;
+}
+
+void int_CalcSkinInfo(struct Screen *screen, struct IntuitionBase *IntuitionBase)
+{
+    if (screen->FirstGadget)
+    {
+        struct sdpLayoutScreenGadgets lmsg;
+
+        lmsg.MethodID       = SDM_LAYOUT_SCREENGADGETS;
+        lmsg.sdp_TrueColor  = GetPrivScreen(screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR;
+        lmsg.sdp_Layer      = screen->BarLayer;
+        lmsg.sdp_Gadgets    = screen->FirstGadget;
+        lmsg.sdp_Flags      = SDF_LSG_INITIAL | SDF_LSG_MULTIPLE;
+        lmsg.sdp_UserBuffer = ((struct IntScreen *)screen)->DecorUserBuffer;
+
+	DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, &lmsg.MethodID);
+    }
 }    

@@ -1,9 +1,11 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright Â© 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
+ 
+    Desc: Intuition function FreeScreenBuffer()
+    Lang: english
 */
-
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 #include "intuition_intern.h"
@@ -63,17 +65,58 @@
     DEBUG_FREESCREENBUFFER(dprintf("FreeScreenBuffer: Screen 0x%lx ScreenBuffer 0x%lx\n",
                                    screen, screenbuffer));
 
-    screen = screen;       /* shut up the compiler */
-
     if (screenbuffer)
     {
+        if (((struct IntScreenBuffer *)screenbuffer)->free_bitmap &&
+            (screen->RastPort.BitMap == screenbuffer->sb_BitMap))
+        {
+            DEBUG_FREESCREENBUFFER(dprintf("freescreenbuffer: Restoring original bitmap! RestoreDBInfo %0xlx\n",
+                IS(screen)->RestoreDBufInfo));
+            
+            if (IS(screen)->RestoreDBufInfo)
+            {
+                struct MsgPort safereply;
+                ULONG lock;
+
+                safereply.mp_Node.ln_Type = NT_MSGPORT;
+                safereply.mp_Flags = PA_SIGNAL;
+                safereply.mp_SigTask = FindTask(NULL);
+                safereply.mp_SigBit = SIGB_INTUITION;
+                NEWLIST(&(safereply.mp_MsgList));
+
+                IS(screen)->RestoreDBufInfo->dbi_SafeMessage.mn_ReplyPort = &safereply;
+
+                lock = LockIBase(0);
+
+                ChangeVPBitMap(&screen->ViewPort,IS(screen)->AllocatedBitmap,IS(screen)->RestoreDBufInfo);
+
+                screen->BitMap = *IS(screen)->AllocatedBitmap;
+                screen->RastPort.BitMap = IS(screen)->AllocatedBitmap;
+
+                UnlockIBase(lock);
+
+                while (!GetMsg(&safereply))
+                {
+                    Wait(1L << SIGB_INTUITION);
+                }
+            }
+            else
+            {
+                /* AllocScreenBuffer ensures this is allocated, so... */
+                dprintf("MAJOR BUG: screenbuffer allocated for a wrong screen!?\n");
+            }
+        }
+
         FreeDBufInfo(screenbuffer->sb_DBufInfo);
-	
+
         if (((struct IntScreenBuffer *)screenbuffer)->free_bitmap)
+        {
             FreeBitMap(screenbuffer->sb_BitMap);
+        }
 
         FreeMem(screenbuffer, sizeof(struct IntScreenBuffer));
     }
 
     AROS_LIBFUNC_EXIT
 } /* FreeScreenBuffer */
+

@@ -1,16 +1,19 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright Â© 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
+ 
+    Desc: Intuition function AllocScreenBuffer()
+    Lang: english
 */
-
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 #include <exec/exec.h>
 #include <cybergraphx/cybergraphics.h>
 #include "intuition_intern.h"
+
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/screens.h>
 #include <proto/intuition.h>
@@ -92,30 +95,49 @@
         if ((ScreenBuffer = AllocMem(sizeof (struct IntScreenBuffer),
                                      MEMF_CLEAR)))
         {
-            if ((ScreenBuffer->sb.sb_DBufInfo =
-                        AllocDBufInfo(&screen->ViewPort)))
+            ULONG ilock = LockIBase(0);
+            BOOL gotrestore = TRUE;
+
+            /* allocate a dbuf info to use in FreeScreenBuffer! */
+            if (!IS(screen)->RestoreDBufInfo)
+            {
+                IS(screen)->RestoreDBufInfo = AllocDBufInfo(&screen->ViewPort);
+                
+                if (IS(screen)->RestoreDBufInfo == NULL) gotrestore = FALSE;
+            }
+
+            UnlockIBase(ilock);
+
+            if (gotrestore &&
+                (ScreenBuffer->sb.sb_DBufInfo = AllocDBufInfo(&screen->ViewPort)))
             {
                 if (!bitmap)
                 {
                     /* Get a bitmap */
                     if (flags & SB_SCREEN_BITMAP)
                     {
-                        bitmap = screen->RastPort.BitMap;
+                        bitmap = IS(screen)->AllocatedBitmap;
                     }
                     else
                     {
+                        ULONG allocflags = BMF_MINPLANES|BMF_DISPLAYABLE;
                         ScreenBuffer->free_bitmap = TRUE;
+
+                        if (!(flags    & SB_COPY_BITMAP)) allocflags |= BMF_CLEAR;
+#ifdef __MORPHOS__
+                        if (IS(screen)->Support3D) allocflags |= BMF_3DTARGET;
+#endif
                         bitmap = AllocBitMap(GetBitMapAttr(screen->RastPort.BitMap,BMA_WIDTH),
                                              GetBitMapAttr(screen->RastPort.BitMap,BMA_HEIGHT),
                                              GetBitMapAttr(screen->RastPort.BitMap,BMA_DEPTH),
-                                             BMF_MINPLANES|BMF_DISPLAYABLE|BMF_CLEAR,
+                                             allocflags,
                                              screen->RastPort.BitMap);
+
                         if (NULL == bitmap)
                         {
                             FreeDBufInfo(ScreenBuffer->sb.sb_DBufInfo);
                             FreeMem(ScreenBuffer, sizeof(struct IntScreenBuffer));
                             DEBUG_ALLOCSCREENBUFFER(dprintf("AllocScreenBuffer: failed\n"));
-			    
                             return NULL;
                         }
                     }
@@ -131,9 +153,9 @@
                               bitmap,
                               0,
                               0,
-                              screen->Width,
-                              screen->Height,
-                              0x0c0, /* copy */
+                              GetBitMapAttr(screen->RastPort.BitMap,BMA_WIDTH),
+                              GetBitMapAttr(screen->RastPort.BitMap,BMA_HEIGHT),
+                              0xc0, /* vanilla copy */
                               ~0,
                               NULL);
                 }
@@ -154,3 +176,4 @@
 
     AROS_LIBFUNC_EXIT
 } /* AllocScreenBuffer */
+
