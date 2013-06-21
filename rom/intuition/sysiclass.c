@@ -257,6 +257,16 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 	
     	if (!set_width) IM(obj)->Width = width;
     	if (!set_height) IM(obj)->Height = height;	
+
+#ifdef WIN_GADGETS_KEEP_ASPECT
+        /*
+         * AROS: This little tweak replaces CreateStdSysImage() function
+         * and keeps aspect rate of the image if only height is supplied.
+         * Currently only OpenScreen() relies on this.
+         */
+        if (set_height && (!set_width))
+            IM(obj)->Width = IM(obj)->Height * width / height;
+#endif
     }
 
     return TRUE;

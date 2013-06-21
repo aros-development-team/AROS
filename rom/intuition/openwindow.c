@@ -1031,36 +1031,11 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     w->Title = nw.Title;
 
+    /* as mentioned in the OpenScreen() autodoc/SA_SysFont settings the default
+       window font will be either screenfont (sysfont=0) or defaultfont (sysfont=1) */
+    w->IFont = SafeReopenFont(IntuitionBase, (IS(w->WScreen)->SysFont) ? &GfxBase->DefaultFont : &IS(w->WScreen)->DInfo.dri_Font);
 
-#if 1
-
-    /* Use safe OpenFont.. - Piru
-     */
-     
-    if (GetPrivScreen(w->WScreen)->SpecialFlags & SF_SysFont)
-    {
-            w->IFont = SafeReopenFont(IntuitionBase, &GfxBase->DefaultFont);
-    }
-    else
-    {
-            w->IFont = SafeReopenFont(IntuitionBase, &(GetPrivScreen(w->WScreen)->DInfo.dri_Font));
-    }
-    
-    if (w->IFont == NULL) {
-        D(bug("OpenWindow: No font\n"));
-        goto failexit;
-     }
-
-#else
-
-#warning: Really hacky way of re-opening GfxBase->DefaultFont
-
-    Forbid();
-    w->IFont = GfxBase->DefaultFont;
-    w->IFont->tf_Accessors++;
-    Permit();
-
-#endif
+    if (w->IFont == NULL) goto failexit;
 
     /* jDc: intui68k waits before opening the window until
     ** Move/SizeWindow actions are over (does it mean it's executed on

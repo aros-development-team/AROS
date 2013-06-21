@@ -50,13 +50,29 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct RethinkDisplayActionMsg msg;
+
+    msg.lock = TRUE;
+    DoSyncAction((APTR)int_RethinkDisplay, &msg.msg, IntuitionBase);
+
+    return msg.failure;
+
+    AROS_LIBFUNC_EXIT
+} /* RethinkDisplay */
+
+
+void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase *IntuitionBase)
+{
     struct GfxBase   *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Screen    *screen;
     struct ViewPort  *viewport;
     struct ViewPort **viewportptr;
     UWORD   	      modes;
     LONG    	      failure = 0;
-    ULONG   	      ilock = LockIBase(0);
+    ULONG   	      ilock;
+
+    if (msg->lock)
+        ilock = LockIBase(0);
 
     DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay:\n"));
 
@@ -221,11 +237,10 @@
         ResetPointer(IntuitionBase);
     }
 
-    UnlockIBase(ilock);
+    if (msg->lock)
+        UnlockIBase(ilock);
 
     DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: failure 0x%lx\n",failure));
 
-    return failure;
-
-    AROS_LIBFUNC_EXIT
-} /* RethinkDisplay */
+    msg->failure = failure;
+}

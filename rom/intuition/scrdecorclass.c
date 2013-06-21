@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -432,33 +432,14 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
 
 IPTR ScrDecorClass__SDM_LAYOUT_SCREENGADGETS(Class *cl, Object *obj, struct sdpLayoutScreenGadgets *msg)
 {
-    struct Gadget *gadget = msg->sdp_Gadgets;
-
     D(bug("[SCRDECOR] ScrDecorClass__SDM_LAYOUT_SCREENGADGETS()\n"));
 
-    while(gadget)
-    {
-    	switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
-	{
-	    case GTYP_SDEPTH:
-	    	gadget->LeftEdge = -gadget->Height + 1;
-		gadget->Width = gadget->Height;
-		gadget->Flags &= ~GFLG_RELWIDTH;
-		gadget->Flags |= GFLG_RELRIGHT;
-		break;
-		
-	}
-	
-	if (msg->sdp_Flags & SDF_LSG_MULTIPLE)
-	{
-	    gadget = gadget->NextGadget;
-	}
-	else
-	{
-	    gadget = NULL;
-	}
-    }
-    
+    /*
+     * Nothing to do here any more.
+     * Proper default positioning is done by OpenScreen(). Use this method
+     * only if you actually want to change something.
+     */
+
     return TRUE;
 }
 

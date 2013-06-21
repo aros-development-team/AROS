@@ -87,6 +87,7 @@
 #include <oop/oop.h>
 
 #include "intuition_debug.h"
+#include "inputhandler_actions.h"
 
 #ifdef SKINS
 #include "intuition_customize.h"
@@ -201,6 +202,7 @@ void * memclr(APTR, ULONG);
 #define FRAMESIZE_THICK        2 /* 1:1 thick */
 
 #define SQUARE_WIN_GADGETS     1
+#define WIN_GADGETS_KEEP_ASPECT  /* Default non-decorated gadgets keep aspect if scaled */
 
 #ifdef __AROS__
 /* FIXME: possibly enable this, once gadtools has been updated */
@@ -509,6 +511,7 @@ struct IntIntuitionBase
     struct IClass           	*dragbarclass;
     struct IClass           	*sizebuttonclass;
     struct IClass               *windowsysiclass;
+    struct IClass               *screenclass;
 #ifdef __MORPHOS__
     APTR                    	*mosmenuclass;
 #endif
@@ -739,6 +742,7 @@ struct IntScreen
     struct NewDecorator     *Decorator;
 
     struct BitMap           *AllocatedBitmap;
+    struct DBufInfo         *RestoreDBufInfo;
 #ifdef SKINS
     WORD                     LastClockPos;
     WORD                     LastClockWidth;
@@ -765,7 +769,6 @@ struct IntScreen
 #define SF_IsChild  	    (0x0002)
 #define SF_InvisibleBar     (0x0004)
 #define SF_AppearingBar     (0x0008)
-#define SF_SysFont          (0x0010)
 #define SF_Draggable	    (0x0020) /* Screen can be dragged		     */
 #define SF_ComposeAbove	    (0x0100) /* Composition capabilities	     */
 #define SF_ComposeBelow	    (0x0200)
@@ -863,6 +866,15 @@ VOID int_RefreshWindowFrame(struct Window *window, LONG mustbe, LONG mustnotbe,
                             struct IntuitionBase *IntuitionBase);
 
 #define int_refreshwindowframe(a,b,c,d) int_RefreshWindowFrame(a,b,c,0,d);
+
+struct RethinkDisplayActionMsg
+{
+    struct IntuiActionMsg msg;
+    BOOL   lock;
+    LONG   failure;
+};
+
+void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase *IntuitionBase);
 
 /* Keep the system gadgets in the same order than the original intuition,
  * some programs make bad asumptions about that...
