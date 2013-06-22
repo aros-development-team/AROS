@@ -33,6 +33,8 @@
         TRUE if window is currently visible, FALSE otherwise.
  
     NOTES
+        This function is also present in MorphOS v50, however
+        considered private.
  
     EXAMPLE
  

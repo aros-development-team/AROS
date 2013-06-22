@@ -31,6 +31,7 @@
     none
  
     NOTES
+    This private function is also present in MorphOS v50.
  
     EXAMPLE
  

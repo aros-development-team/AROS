@@ -98,6 +98,8 @@ static struct IntuiMessage *SendIDCMPUpdate(Class *cl, Object *o, struct opUpdat
     Note: Return value not clear.
  
     NOTES
+    This function is also present in MorphOS v50, however
+    considered private.
  
     EXAMPLE
  

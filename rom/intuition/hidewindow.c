@@ -42,6 +42,8 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
  
     NOTES
 	This function is source-compatible with AmigaOS v4.
+        This function is also present in MorphOS v50, however
+        considered private.
  
     EXAMPLE
  

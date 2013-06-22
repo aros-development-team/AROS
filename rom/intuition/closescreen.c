@@ -11,9 +11,10 @@
  *
  * 1. Explicit library bases
  * 2. FireScreenNotifyMessage() calls
- * 3. Decoration calls (see intuition_customize.h)
- * 4. Other placed marked by 'AROS:' in comments.
- * 5. Check #ifdef's. Some of them were rearranged or completely deleted.
+ * 3. RemoveResourceFromList() call
+ * 4. int_ExitDecorator() call
+ * 5. Other placed marked by 'AROS:' in comments.
+ * 6. Check #ifdef's. Some of them were rearranged or completely deleted.
  *    We reuse MorphOS skin code where appropriate.
  */
 
@@ -349,6 +350,8 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
 
         IS(screen)->pubScrNode = 0;
     }
+
+    RemoveResourceFromList(screen, RESOURCE_SCREEN, IntuitionBase);
 
     DEBUG_CLOSESCREEN(dprintf("CloseScreen: LockIBase\n"));
 

@@ -45,6 +45,8 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
  
     NOTES
 	This function is soure-compatible with AmigaOS v4.
+        This function is also present in MorphOS v50, however
+        considered private.
  
     EXAMPLE
  

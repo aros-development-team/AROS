@@ -55,6 +55,7 @@
     get the IDCMP in question, that is, whether the corresponding
     flag in window->IDCMPFLags is set.
  
+    This private function is also present in MorphOS v50.
  
     EXAMPLE
  
