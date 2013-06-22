@@ -1,0 +1,14 @@
+#   $Id$
+#
+#   Makefile for AROS intuition.library tests
+
+include $(TOP)/config/make.cfg
+
+FILES := drawinfoattr pubscreen screentest scrollerwin 
+
+EXEDIR := $(AROS_TESTS)/intuition
+
+%build_progs mmake=test-intuition \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common
