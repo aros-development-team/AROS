@@ -31,6 +31,7 @@
     an allocated IntuiMessage structure. Must be freed with FreeIntuiMessage
  
     NOTES
+    This private function is also present in MorphOS v50.
  
     EXAMPLE
  

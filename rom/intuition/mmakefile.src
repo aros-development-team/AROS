@@ -63,6 +63,7 @@ FUNCS := \
 	getattr \
 	getdefaultpubscreen \
 	getdefprefs \
+        getdrawinfoattr \
 	getmonitorlist \
 	getprefs \
 	getscreendata \

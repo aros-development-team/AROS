@@ -39,14 +39,15 @@ static VOID int_changewindowshape(struct ChangeWindowShapeActionMsg *msg,
          struct IntuitionBase *, IntuitionBase, 143, Intuition)
 
 /*  FUNCTION
-        Make a window invisible.
  
     INPUTS
-    window - The window to affect.
+         window - The window to affect.
  
     RESULT
  
     NOTES
+         This function is also present in MorphOS v50, however
+         not implemented and reserved.
  
     EXAMPLE
  

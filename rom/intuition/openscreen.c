@@ -11,11 +11,12 @@
  *
  * 1. Explicit library bases
  * 2. FireScreenNotifyMessage() calls
- * 3. Decoration calls (see intuition_customize.h)
- * 4. Hardcoded initial color table is not used and removed.
+ * 3. AddResourceToList() call
+ * 4. Decoration calls (see intuition_customize.h)
+ * 5. Hardcoded initial color table is not used and removed.
  *    AmigaOS-compatible palette is used instead.
- * 5. Other placed marked by 'AROS:' in comments.
- * 6. Check #ifdef's. Some of them were rearranged or completely deleted.
+ * 6. Other placed marked by 'AROS:' in comments.
+ * 7. Check #ifdef's. Some of them were rearranged or completely deleted.
  *    We reuse MorphOS skin code where appropriate.
  */
 
@@ -1348,11 +1349,14 @@ static const char THIS_FILE[] = __FILE__;
          */
         ns.Depth = GetBitMapAttr(screen->Screen.RastPort.BitMap,BMA_DEPTH);
 
+        if (!numcolors) /* AROS: Added support for SA_ColorMapEntries */
+        {
 #ifdef USE8BITHACK
-        numcolors = 256;
+            numcolors = 256;
 #else
-        numcolors = (ns.Depth <= 8) ? (1L << ns.Depth) : 256;
+            numcolors = (ns.Depth <= 8) ? (1L << ns.Depth) : 256;
 #endif
+        }
 
         /* Get a color map structure. Sufficient colors?? */
 
@@ -1573,24 +1577,36 @@ static const char THIS_FILE[] = __FILE__;
 
         if (ns.Depth >= 3)
         {
+            /*
+             * AROS: Use screen depth instead of 'numcolors' in order to calculate 
+             * numbers of last 4 colors of the screen.
+             * This is necessary because we can have 8- or 16- color screen whose
+             * ColorMap will still have 32 colors for AmigaOS(tm) compatibility
+             * reasons.
+             */
+            ULONG lastcol = ((ns.Depth > 8) ? 256 : (1 << ns.Depth)) - 4;
+
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Set last 4 colors\n"));
 
             for (k = 0; k < 4; ++k)
             {
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SetRGB32 Viewport 0x%lx Index %ld R 0x%lx G 0x%lx B 0x%lx\n",
                              screen->Screen.ViewPort,
-                             numcolors - k - 1, p[k+4].red, p[k+4].green, p[k+4].blue));
+                             k + lastcol, p[k+4].red, p[k+4].green, p[k+4].blue));
 
-#if 1
-                ObtainPen(screen->Screen.ViewPort.ColorMap,
-                      numcolors - 4 + k,
-                      p[k+4].red,
-                      p[k+4].green,
-                      p[k+4].blue,
-                      PEN_EXCLUSIVE);
-#else
-                SetRGB32(&screen->Screen.ViewPort, numcolors - k - 1, p[k+4].red, p[k+4].green, p[k+4].blue);
-#endif
+                if (k + lastcol < numcolors)
+                {
+                    ObtainPen(screen->Screen.ViewPort.ColorMap,
+                              k + lastcol,
+                              p[k+4].red,
+                              p[k+4].green,
+                              p[k+4].blue,
+                              PEN_EXCLUSIVE);
+                }
+                else
+                {
+                    SetRGB32(&screen->Screen.ViewPort, k + lastcol, p[k+4].red, p[k+4].green, p[k+4].blue);
+                }
             }
         }
 
@@ -2428,6 +2444,7 @@ VOID int_openscreen(struct OpenScreenActionMsg *msg,
 
     D(bug("set active screen\n"));
 
+    AddResourceToList(screen, RESOURCE_SCREEN, IntuitionBase);
 }
 
 

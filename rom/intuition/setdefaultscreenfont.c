@@ -23,12 +23,14 @@
         Set the default Font.
  
     INPUTS
-    textfont - The Font to be used.
+        textfont - The Font to be used.
  
     RESULT
  
     NOTES
-        PRIVATE(!!!!) Do not use
+        This function is actually private and intended only for use
+        by IPrefs program.
+        This private function is also present in MorphOS v50.
     
     EXAMPLE
  

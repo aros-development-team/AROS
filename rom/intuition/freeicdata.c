@@ -37,6 +37,8 @@
         The data associated will have been freed (including the TagList).
     
     NOTES
+        This function is also present in MorphOS v50, however
+        considered private.
  
     EXAMPLE
  
