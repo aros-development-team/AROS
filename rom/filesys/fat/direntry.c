@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2011 The AROS Development Team
+ * Copyright © 2007-2013 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -570,6 +570,9 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
     if (gl->attr & ATTR_ARCHIVE)   fib->fib_Protection |= FIBF_ARCHIVE;
 
     fib->fib_Comment[0] = 0;
+#if DEBUG_NAMES
+    CopyMem(gl->shortname, fib->fib_Comment, gl->shortname[0] + 1);
+#endif
 
     return result;
 }
