@@ -1,4 +1,12 @@
 /*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: gfx Hidd for linux framebuffer
+    Lang: english
+*/
+
+/*
  * A newstyle startup code for resident display drivers.
  *
  * Now it's the job of the driver to add ifself to the system.
@@ -28,6 +36,9 @@
 /* Prevent redefinition of struct timeval */
 #define timeval sys_timeval
 
+/* avoid conflicts between our __unused define and the ones that might come in
+   via fcntl.h */
+#undef __unused
 #include <fcntl.h>
 
 #undef timeval
