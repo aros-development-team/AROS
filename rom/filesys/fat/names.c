@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2011 The AROS Development Team
+ * Copyright © 2007-2013 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -24,6 +24,32 @@
 
 #define DEBUG DEBUG_NAMES
 #include "debug.h"
+
+/*
+ * characters allowed in a new name:
+ * 0 = disallowed
+ * 1 = long names only
+ * 2 = allowed
+ */
+const UBYTE allowed_ascii[] =
+{
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    1, 2, 0, 2, 2, 2, 2, 2,
+    2, 2, 0, 1, 1, 2, 1, 0,
+    2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 0, 1, 0, 1, 0, 0,
+    2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 1, 0, 1, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 0, 2, 2, 0
+};
 
 LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
     int i;
@@ -191,7 +217,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
 LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     UBYTE basis[11];
     ULONG nlong;
-    ULONG src, dst, i, left;
+    LONG src, dst, i, left, root_end;
     ULONG seq = 0, cur = 0;
     UBYTE tail[8];
     struct DirHandle dh;
@@ -203,6 +229,24 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     D(bug("[fat] setting name for entry index %ld to '", short_de->index);
       RawPutChars(name, len); bug("'\n"));
 
+    /* discard leading spaces */
+    while(len > 0 && name[0] == ' ')
+        name++, len--;
+
+    /* discard trailing spaces and dots */
+    while(len > 0 && (name[len - 1] == ' ' || name[len - 1] == '.'))
+        len--;
+
+    /* check for empty name and reserved names "." and ".." */
+    if (len == 0 || (name[0] == '.'
+        && (len == 1 || (name[1] == '.' && len == 2))))
+        return ERROR_INVALID_COMPONENT_NAME;
+
+    /* check for illegal characters */
+    for (i = 0; i < len; i++)
+        if (name[i] <= 127 && allowed_ascii[name[i]] == 0)
+            return ERROR_INVALID_COMPONENT_NAME;
+
     nlong = NumLongNameEntries(name, len);
     D(bug("[fat] name requires %ld long name entries\n", nlong));
 
@@ -213,25 +257,30 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     
     dst = 0;
 
-    /* strip off leading spaces and periods */
+    /* strip off leading periods */
     for (src = 0; src < len; src++)
-        if (name[src] != ' ' && name[src] != '.')
+        if (name[src] != '.')
             break;
+    if (src != 0)
+        seq = 1;
 
     /* copy the first eight chars in, ignoring spaces and stopping at period */
     if (src != len) {
         while (src < len && dst < 8 && name[src] != '.') {
             if (name[src] != ' ') {
-                basis[dst] = toupper(name[src]);
-                if (basis[dst] != name[src])
+                if (allowed_ascii[name[src]] == 1) {
+                    basis[dst] = '_';
                     seq = 1;
+                }
+                else
+                    basis[dst] = toupper(name[src]);
                 dst++;
             }
             src++;
         }
     }
 
-    /* if there was more bytes available, then we need a tail later */
+    /* if there were more bytes available, then we need a tail later */
     if (src < len && name[src] != '.')
         seq = 1;
 
@@ -240,39 +289,42 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     left = dst;
 
     /* remember the current value of src for the multiple-dot check below */
-    i = src;
+    root_end = src;
     
     /* pad the rest of the left side with spaces */
     for (; dst < 8; dst++)
         basis[dst] = ' ';
 
     /* now go to the end and track back looking for a dot */
-    for (src = len-1; src >= 0 && name[src] != '.'; src--);
+    for (i = len - 1; i >= src && name[i] != '.'; i--);
 
     /* found it */
-    if (src != 0) {
+    if (i >= src) {
         /* if this isn't the same dot we found earlier, then we need a tail */
-        if (src != i)
+        if (i != root_end)
             seq = 1;
 
         /* first char after the dot */
-        src++;
+        src = i + 1;
 
         /* copy it in */
         while(src < len && dst < 11) {
             if (name[src] != ' ') {
-                basis[dst] = toupper(name[src]);
-                if (basis[dst] != name[src])
+                if (allowed_ascii[name[src]] == 1) {
+                    basis[dst] = '_';
                     seq = 1;
+                }
+                else
+                    basis[dst] = toupper(name[src]);
                 dst++;
             }
             src++;
         }
-    }
 
-    /* if there were more bytes available, then we'll need a tail later */
-    if (src < len)
-        seq = 1;
+        /* if there were more bytes available, then we'll need a tail later */
+        if (src < len)
+            seq = 1;
+    }
 
     /* pad the rest of the right side with spaces */
     for (; dst < 11; dst++)
@@ -446,6 +498,8 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len) {
                 break;
             if (name[i] != toupper(name[i]))
                 break;
+            if (allowed_ascii[name[i]] == 1)
+                break;
             left++;
         }
 
@@ -454,7 +508,8 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len) {
 
         if (name[i] == '.') {
             for (i = 0; i < 3 && left + 1 + i < len; i++)
-                if (name[left+1+i] != toupper(name[left+1+i]))
+                if (name[left+1+i] != toupper(name[left+1+i])
+                    || allowed_ascii[name[i]] == 1)
                     break;
 
             if (left + 1 + i == len)
