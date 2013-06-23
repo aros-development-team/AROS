@@ -27,7 +27,6 @@ COMMONTESTFILES := \
     gfx \
     gfxinfo \
     gfxtest \
-    screentest \
     hostcb \
     iffparsewrite \
     ilbmtoc \
@@ -42,7 +41,6 @@ COMMONTESTFILES := \
     cctest \
     helloworld \
     oopdemo \
-    scrollerwin \
     serialmousetest \
     serialtest \
     unixio \
@@ -88,7 +86,6 @@ COMMONTESTFILES := \
     joystick \
     getcpuinfo \
     printf_f \
-    pubscreen \
     versionlib \
     runtests \
     fsresource \
