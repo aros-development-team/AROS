@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2011 The AROS Development Team
+ * Copyright © 2007-2013 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -186,6 +186,9 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
 
         GetDirEntryShortName(&de, &(gl->name[1]), &len); gl->name[0] = (UBYTE) len;
         GetDirEntryLongName(&de, &(gl->name[1]), &len); gl->name[0] = (UBYTE) len;
+#if DEBUG_NAMES
+        GetDirEntryShortName(&de, &(gl->shortname[1]), &len); gl->shortname[0] = (UBYTE) len;
+#endif
 
         ReleaseDirHandle(&dh);
 
