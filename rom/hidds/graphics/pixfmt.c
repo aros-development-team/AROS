@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Pixelformat class
@@ -10,14 +10,45 @@
 
 #include <proto/oop.h>
 #include <proto/utility.h>
+
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 #include <hidd/graphics.h>
+#include <libraries/cybergraphics.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
 
 #include "graphics_intern.h"
+
+/*****************************************************************************************
+
+    NAME
+        aoHidd_PixFmt_CgxPixFmt
+
+    SYNOPSIS
+        [..G], ULONG
+
+    LOCATION
+        hidd.gfx.pixfmt
+
+    FUNCTION
+        Returns pixelformat number according to CyberGraphX standard or -1
+        if the pixelformat has no correct representation in CGX (for example,
+        planar pixelformats).
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_PixFmt_StdPixFmt
+
+    INTERNALS
+
+*****************************************************************************************/
 
 /****************************************************************************************/
 
@@ -64,6 +95,33 @@ OOP_Object *PF__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 }     
 
 /****************************************************************************************/
+
+static const BYTE hidd2cgx_pixfmt[] =
+{
+    -1,
+    -1,
+    -1,
+    PIXFMT_RGB24,
+    PIXFMT_BGR24,
+    PIXFMT_RGB16,
+    PIXFMT_RGB16PC,
+    PIXFMT_BGR16,
+    PIXFMT_BGR16PC,
+    PIXFMT_RGB15,
+    PIXFMT_RGB15PC,
+    PIXFMT_BGR15,
+    PIXFMT_BGR15PC,
+    PIXFMT_ARGB32,
+    PIXFMT_BGRA32,
+    PIXFMT_RGBA32,
+    -1,
+    PIXFMT_ARGB32,
+    PIXFMT_BGRA32,
+    PIXFMT_RGBA32,
+    -1,
+    PIXFMT_LUT8,
+    -1
+};
 
 VOID PF__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
@@ -145,7 +203,11 @@ VOID PF__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    case aoHidd_PixFmt_SwapPixelBytes:
 	    	*msg->storage = HIDD_PF_SWAPPIXELBYTES(pf);
 		break;
-		
+
+            case aoHidd_PixFmt_CgxPixFmt:
+                *msg->storage = hidd2cgx_pixfmt[pf->stdpixfmt];
+                break;
+
 	    default:
 	    	D(bug("TRYING TO GET UNKNOWN PIXFMT ATTR\n"));
     		OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
