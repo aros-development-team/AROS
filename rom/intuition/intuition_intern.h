@@ -621,6 +621,7 @@ struct IntIntuitionBase
 
     OOP_AttrBase		 HiddAttrBase;
     OOP_AttrBase		 HiddGfxAttrBase;
+    OOP_AttrBase		 HiddBitMapAttrBase;
     OOP_AttrBase		 HiddPixFmtAttrBase;
 
     OOP_MethodID		 ib_HiddGfxBase;

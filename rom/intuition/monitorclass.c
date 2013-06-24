@@ -105,32 +105,6 @@ static void ActivationHandler(Object *mon, OOP_Object *bitmap)
 
 /***********************************************************************************/
 
-static BYTE const pixelformats[] = {
-    -1,
-    -1,
-    -1,
-    PIXFMT_RGB24,
-    PIXFMT_BGR24,
-    PIXFMT_RGB16,
-    PIXFMT_RGB16PC,
-    PIXFMT_BGR16,
-    PIXFMT_BGR16PC,
-    PIXFMT_RGB15,
-    PIXFMT_RGB15PC,
-    PIXFMT_BGR15,
-    PIXFMT_BGR15PC,
-    PIXFMT_ARGB32,
-    PIXFMT_BGRA32,
-    PIXFMT_RGBA32,
-    -1,
-    PIXFMT_ARGB32,
-    PIXFMT_BGRA32,
-    PIXFMT_RGBA32,
-    -1,
-    PIXFMT_LUT8,
-    -1
-};
-
 Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
@@ -171,12 +145,10 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
        just some pixelformats will be processed more than once */
     while ((mode = HIDD_Gfx_NextModeID(handle->gfxhidd, mode, &sync, &pixfmt)) != vHidd_ModeID_Invalid)
     {
-	IPTR stdpf;
-	BYTE cgxpf;
+	IPTR cgxpf;
 
-	OOP_GetAttr(pixfmt, aHidd_PixFmt_StdPixFmt, &stdpf);
-	cgxpf = pixelformats[stdpf];
-	D(bug("[monitorclass] Mode 0x%08lX, StdPixFmt %lu, CGX pixfmt %d\n", mode, stdpf, cgxpf));
+	OOP_GetAttr(pixfmt, aHidd_PixFmt_CgxPixFmt, &cgxpf);
+	D(bug("[monitorclass] Mode 0x%08lX, CGX pixfmt %ld\n", mode, cgxpf));
 
 	if (cgxpf != -1)
         {
