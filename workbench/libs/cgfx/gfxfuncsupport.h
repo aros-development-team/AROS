@@ -8,8 +8,6 @@
 
 #include "cybergraphics_intern.h"
 
-extern BYTE hidd2cyber_pixfmt[];
-
 UBYTE GetRectFmtBytesPerPixel(UBYTE rectfmt, struct RastPort *rp,
     struct Library *CyberGfxBase);
 HIDDT_StdPixFmt GetHIDDRectFmt(UBYTE rectfmt, struct RastPort *rp,
