@@ -99,17 +99,19 @@
     case CYBRMATTR_PIXFMT_ALPHA:
 	if (pf)
 	{
-	    IPTR stdpf;
-
-	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
-	    retval = hidd2cyber_pixfmt[stdpf];
+	    OOP_GetAttr(pf, aHidd_PixFmt_CgxPixFmt, &retval);
 
 	    /* Backwards compatibility kludge. To be removed.
 	       Used only by Cairo, do not use CYBRMATTR_PIXFMT_ALPHA
 	       anywhere else. */
-	    if ((attribute == CYBRMATTR_PIXFMT_ALPHA) &&
-	        (stdpf >= vHidd_StdPixFmt_0RGB32) && (stdpf >= vHidd_StdPixFmt_0BGR32))
-		retval += 91;
+	    if (attribute == CYBRMATTR_PIXFMT_ALPHA)
+            {
+                IPTR stdpf;
+
+                OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+	        if ((stdpf >= vHidd_StdPixFmt_0RGB32) && (stdpf >= vHidd_StdPixFmt_0BGR32))
+		    retval += 91;
+            }
 
 	    D(bug("[GetCyberMapAttr] Pixel format is %d\n", retval));
 	}

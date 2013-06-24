@@ -89,7 +89,7 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
     OOP_GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_PixFmt,
         (IPTR *) & data.pf);
     OOP_GetAttr(data.pf, aHidd_PixFmt_StdPixFmt, &data.stdpf);
-    data.msg.cdm_ColorModel = hidd2cyber_pixfmt[data.stdpf];
+    data.msg.cdm_ColorModel = OOP_GET(data.pf, aHidd_PixFmt_CgxPixFmt);
     data.hook = hook;
     data.rp = rp;
 

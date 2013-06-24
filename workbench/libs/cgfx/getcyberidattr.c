@@ -62,23 +62,18 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG retval = (ULONG)-1;
-    IPTR tmp;
+    IPTR retval = (IPTR)-1;
     struct DimensionInfo info;
 
     if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_DIMS, DisplayModeID) == sizeof(info)) {
     	OOP_Object *pf = (OOP_Object *)info.reserved[1];
 
-	switch (attribute) {
-	case CYBRIDATTR_PIXFMT: {
-	    HIDDT_StdPixFmt stdpf;
-
-	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
-
-	    retval = hidd2cyber_pixfmt[stdpf];
+	switch (attribute)
+        {
+	case CYBRIDATTR_PIXFMT:
+	    OOP_GetAttr(pf, aHidd_PixFmt_CgxPixFmt, &retval);
 	    D(if (-1 == retval) bug("!!! NO CGFX PIXFMT IN GetCyberIDAttr() !!!\n");)
 	    break;
-	}
 
 	case CYBRIDATTR_DEPTH:
 	    retval = info.MaxDepth;
@@ -93,8 +88,7 @@
 	    break;
 
 	case CYBRIDATTR_BPPIX:
-	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &tmp);
-	    retval = tmp;
+	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
 	    break;
 
 	default:

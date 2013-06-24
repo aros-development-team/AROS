@@ -136,13 +136,14 @@
     
     NEWLIST(cybermlist);
     
-    while ((mode = NextDisplayInfo(mode)) != INVALID_ID) {	    
+    while ((mode = NextDisplayInfo(mode)) != INVALID_ID)
+    {
 	struct CyberModeNode *cmnode;
 	UWORD *cyberpixfmts;
 	ULONG width, height;
 	struct DimensionInfo info;
 	struct NameInfo name;
-	HIDDT_StdPixFmt stdpf;
+	IPTR cyberpf;
 	OOP_Object *pf;
 	
 	if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_DIMS, mode) != sizeof(info)) {
@@ -175,19 +176,15 @@
 
 	/* Get the gfxmode pixelf format */
 	pf = (OOP_Object *)info.reserved[1];
-	OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
-	/* ignore planar modes */
-	if (stdpf == vHidd_StdPixFmt_Plane)
+	OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &cyberpf);
+	/* ignore non-CGX modes */
+	if (cyberpf == -1)
 	    continue;
 
 	/* Check whether the gfxmode is the correct pixel format */
-	if (NULL != cmodelarray) {
-	    UWORD cyberpf;
+	if (NULL != cmodelarray)
+        {
 	    BOOL found = FALSE;
-
-	    cyberpf = hidd2cyber_pixfmt[stdpf];
-	    if (cyberpf == (UWORD)-1)
-		continue;	/* Unknown format */
 			
 	    for (cyberpixfmts = cmodelarray; *cyberpixfmts; cyberpixfmts ++) {
 		/* See if the stdpixfmt is present in the array */
