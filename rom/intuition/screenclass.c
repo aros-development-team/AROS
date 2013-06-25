@@ -22,6 +22,7 @@
 
 #include "intuition_intern.h"
 #include "intuition_customize.h"
+#include "monitorclass_private.h"
 
 /*****************************************************************************************
 
@@ -84,8 +85,616 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
     Object *mon;
 
     GetAttr(attrID, screen->IMonitorNode, (IPTR *)&mon);
-    return mon ? (IPTR)FindFirstScreen(mon, IntuitionBase) : 0;
+
+    if (mon)
+    {
+        ULONG lock = LockIBase(0);
+        struct Screen *ret = FindFirstScreen(mon, IntuitionBase);
+
+        if (ret && ((ret->Flags & SCREENTYPE) == CUSTOMSCREEN))
+        {
+            /* We want only public screens */
+            ret = NULL;
+        }
+
+        UnlockIBase(lock);
+
+        return (IPTR)ret;
+    }
+
+    return 0;
 }
+
+/*****************************************************************************************
+
+    NAME
+        SA_Left
+
+    SYNOPSIS
+        [ISG], LONG
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Position of left edge of the screen relative to top-left physical display corner.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_Top
+
+    SYNOPSIS
+	[ISG], LONG
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Position of top edge of the screen relative to top-left physical display corner.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_Width
+
+    SYNOPSIS
+	[I.G], LONG
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Width of the screen (not display) in pixels.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_Height
+
+    SYNOPSIS
+	[I.G], LONG
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Height of the screen (not display) in pixels.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_Depth
+
+    SYNOPSIS
+	[I.G], LONG
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Depth of the screen.
+
+    NOTES
+        This attribute returns real depth, however old structure fields, for example
+        screen->RastPort.BitMap->bm_Depth, in case of direct-color screens will
+        contain 8 for purposes of backwards compatibility. 
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_PubName
+
+    SYNOPSIS
+	[I.G], STRPTR
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Public screen name (system name, not human-readable title).
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_DisplayID
+
+    SYNOPSIS
+	[I.G], LONG
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Display mode ID of the screen.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_Behind
+
+    SYNOPSIS
+	[I.G], LONG
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Supplying this attribute during screen creation (to OpenScreen() or
+        OpenScreenTagList() functions) causes this screen to be created and
+        opened behind all other screens.
+
+        Querying this attribute returns its initial value.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_MonitorName
+
+    SYNOPSIS
+	[I.G], LONG
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Name of the monitorclass object (AKA display device name) to which this screen
+        belongs.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        SA_MonitorObject
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_MonitorObject
+
+    SYNOPSIS
+	[..G], Object *
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Returns display device (monitorclass) object to which this screen belongs
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        SA_MonitorName
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_TopLeftScreen
+
+    SYNOPSIS
+	[..G], struct Screen *
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+	Get a pointer to a public screen displayed on a monitor placed in top-left diagonal
+        direction relative to this screen's one. If the frontmost screen on the given
+        monitor is not public, NULL will be returned.
+
+    NOTES
+        AROS supports screen composition, so more than one screen is actually displayed
+        at any given time. In order to match MorphOS semantics this attribute takes into
+        account only the frontmost screen on the given monitor.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        monitorclass/MA_TopLeftMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_TopMiddleScreen
+
+    SYNOPSIS
+	[..G], struct Screen *
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+	Get a pointer to a public screen displayed on a monitor placed in top direction
+        relative to this screen's one. If the frontmost screen on the given monitor is
+        not public, NULL will be returned.
+
+    NOTES
+        AROS supports screen composition, so more than one screen is actually displayed
+        at any given time. In order to match MorphOS semantics this attribute takes into
+        account only the frontmost screen on the given monitor.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        monitorclass/MA_TopMiddleMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_TopRightScreen
+
+    SYNOPSIS
+	[..G], struct Screen *
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+	Get a pointer to a screen displayed on a monitor placed in top-right diagonal
+        direction relative to this screen's one. If the frontmost screen on the given
+        monitor is not public, NULL will be returned.
+
+    NOTES
+        AROS supports screen composition, so more than one screen is actually displayed
+        at any given time. In order to match MorphOS semantics this attribute takes into
+        account only the frontmost screen on the given monitor.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        monitorclass/MA_TopRightMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_MiddleLeftScreen
+
+    SYNOPSIS
+	[..G], struct Screen *
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+	Get a pointer to a public screen displayed on a monitor placed in left direction
+        relative to this screen's one. If the frontmost screen on the given monitor is
+        not public, NULL will be returned.
+
+    NOTES
+        AROS supports screen composition, so more than one screen is actually displayed
+        at any given time. In order to match MorphOS semantics this attribute takes into
+        account only the frontmost screen on the given monitor.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        monitorclass/MA_MiddleLeftMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_MiddleRightScreen
+
+    SYNOPSIS
+	[..G], struct Screen *
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+	Get a pointer to a public screen displayed on a monitor placed in left direction
+        relative to this screen's one. If the frontmost screen on the given monitor is
+        not public, NULL will be returned.
+
+    NOTES
+        AROS supports screen composition, so more than one screen is actually displayed
+        at any given time. In order to match MorphOS semantics this attribute takes into
+        account only the frontmost screen on the given monitor.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        monitorclass/MA_MiddleRightMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_BottomLeftScreen
+
+    SYNOPSIS
+	[..G], struct Screen *
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+	Get a pointer to a public screen displayed on a monitor placed in bottom-left
+        diagonal direction relative to this screen's one. If the frontmost screen on
+        the given monitor is not public, NULL will be returned.
+
+    NOTES
+        AROS supports screen composition, so more than one screen is actually displayed
+        at any given time. In order to match MorphOS semantics this attribute takes into
+        account only the frontmost screen on the given monitor.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        monitorclass/MA_BottomLeftMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_BottomMiddleScreen
+
+    SYNOPSIS
+	[..G], struct Screen *
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+	Get a pointer to a public screen displayed on a monitor placed in bottom direction
+        relative to this screen's one. If the frontmost screen on the given monitor is
+        not public, NULL will be returned.
+
+    NOTES
+        AROS supports screen composition, so more than one screen is actually displayed
+        at any given time. In order to match MorphOS semantics this attribute takes into
+        account only the frontmost screen on the given monitor.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        monitorclass/MA_BottomMiddleMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_BottomRightScreen
+
+    SYNOPSIS
+	[..G], struct Screen *
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+	Get a pointer to a screen displayed on a monitor placed in bottom-right diagonal
+        direction relative to this screen's one. If the frontmost screen on the given
+        monitor is not public, NULL will be returned.
+
+    NOTES
+        AROS supports screen composition, so more than one screen is actually displayed
+        at any given time. In order to match MorphOS semantics this attribute takes into
+        account only the frontmost screen on the given monitor.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        monitorclass/MA_BottomRightMonitor
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_StopBlanker
+
+    SYNOPSIS
+	[S..], BOOL
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        This attribute is currently reserved and exists only for source compatibility with
+        MorphOS.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_ShowPointer
+
+    SYNOPSIS
+	[ISG], BOOL
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Setting this attribute to FALSE makes mouse pointer invisible on your custom screen.
+        Default value is TRUE. Setting this attribute on public screens is ignore.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+/*****************************************************************************************
+
+    NAME
+        SA_GammaControl
+
+    SYNOPSIS
+	[I..], BOOL
+
+    LOCATION
+        screenclass
+
+    FUNCTION
+        Setting this attribute to TRUE enables to use SA_GammaRed, SA_GammaBlue and
+        SA_GammaGreen attributes to supply custom gamma correction table for your
+        screen.
+
+    NOTES
+        Since in AROS more than one screen can be visible simultaneously, current
+        display gamma correction table is determined by the frontmost screen on
+        that display.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
 
 IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
@@ -130,8 +739,7 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         break;
 
     case SA_Displayed:
-        *msg->opg_Storage = (FindFirstScreen(screen->IMonitorNode, IntuitionBase)
-                             == &screen->Screen) ? TRUE : FALSE;
+        *msg->opg_Storage = screen->GammaControl.Active;
         break;
 
     case SA_MonitorName:
@@ -235,4 +843,93 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
     }
 
     return TRUE;
+}
+
+IPTR ScreenClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
+{
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
+    struct IntScreen *screen = INST_DATA(cl, o);
+    struct TagItem *tstate = msg->ops_AttrList;
+    struct TagItem *tag;
+    BOOL showpointer = screen->ShowPointer;
+    BOOL movescreen = FALSE;
+    BOOL gammaset = FALSE;
+
+    while((tag = NextTagItem(&tstate)))
+    {
+        switch (tag->ti_Tag)
+        {
+        case SA_Left:
+            if (screen->SpecialFlags & SF_Draggable)
+            {
+                screen->Screen.LeftEdge = tag->ti_Data;
+                movescreen = TRUE;
+            }
+            break;
+
+        case SA_Top:
+            if (screen->SpecialFlags & SF_Draggable)
+            {
+                screen->Screen.TopEdge = tag->ti_Data;
+                movescreen = TRUE;
+            }
+            break;
+
+        case SA_ShowPointer:
+            showpointer = tag->ti_Data;
+            break;
+
+        case SA_GammaRed:
+            if (screen->GammaControl.UseGammaControl)
+            {
+                screen->GammaControl.GammaTableR = (UBYTE *)tag->ti_Data;
+                gammaset = TRUE;
+            }
+            break;
+
+        case SA_GammaBlue:
+            if (screen->GammaControl.UseGammaControl)
+            {
+                screen->GammaControl.GammaTableB = (UBYTE *)tag->ti_Data;
+                gammaset = TRUE;
+            }
+            break;
+
+        case SA_GammaGreen:
+            if (screen->GammaControl.UseGammaControl)
+            {
+                screen->GammaControl.GammaTableG = (UBYTE *)tag->ti_Data;
+                gammaset = TRUE;
+            }
+            break;
+        }
+    }
+
+    if (movescreen)
+    {
+        /*
+         * Move the screen to (0, 0) relative of current position.
+         * LeftEdge/TopEdge have been already updated.
+         */
+        ScreenPosition(&screen->Screen, SPOS_RELATIVE, 0, 0, 0, 0);
+    }
+
+    if (showpointer != screen->ShowPointer)
+    {
+        screen->ShowPointer = showpointer;
+        /* TODO: Actually implement this */
+    }
+
+    if (gammaset)
+    {
+        /*
+         * Update gamma table on the monitor.
+         * The monitorclass takes care itself about whether this screen
+         * currently controlls gamma table.
+         */
+        DoMethod((Object *)screen->IMonitorNode, MM_SetScreenGamma, &GetPrivScreen(screen)->GammaControl, FALSE);
+    }
+
+    return 0;
 }

@@ -30,7 +30,10 @@ struct IMonitorNode
     ULONG mouseY;
 
     UBYTE *gamma;
-    BOOL screenGamma;
+    UBYTE *active_r;
+    UBYTE *active_b;
+    UBYTE *active_g;
+    UBYTE  screenGamma;
 };
 
 /* Offsets for gamma table */

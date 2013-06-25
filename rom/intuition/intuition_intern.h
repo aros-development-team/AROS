@@ -473,6 +473,7 @@ struct IntIntuitionBase
     struct MsgPort          	*WorkBenchMP;
     struct Screen           	*WorkBench;
     struct SignalSemaphore  	*IBaseLock;
+    struct SignalSemaphore       ViewLordLock;
 
     /* Intuition input handlers replyport. This one is set
     int rom/inputhandler.c/InitIIH()
@@ -698,6 +699,7 @@ struct IntDrawInfo
 struct GammaControl
 {
     BOOL   UseGammaControl;
+    BOOL   Active;
     UBYTE *GammaTableR;
     UBYTE *GammaTableG;
     UBYTE *GammaTableB;
@@ -755,6 +757,7 @@ struct IntScreen
     ULONG                    TitlebarWinActive;
 #endif
     struct GammaControl      GammaControl;
+    BOOL                     frontmost;
 
     BOOL                     WindowLock;
 #if USE_NEWDISPLAYBEEP
