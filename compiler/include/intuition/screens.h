@@ -156,7 +156,7 @@ struct ExtNewScreen
 #define SA_SysFont            (SA_Dummy + 12 )
 #define SA_Type               (SA_Dummy + 13 )
 #define SA_BitMap             (SA_Dummy + 14 )
-#define SA_PubName            (SA_Dummy + 15 ) /* [I.G] LONG            Public screen name */
+#define SA_PubName            (SA_Dummy + 15 ) /* [I.G] STRPTR          Public screen name */
 #define SA_PubSig             (SA_Dummy + 16 )
 #define SA_PubTask            (SA_Dummy + 17 )
 #define SA_DisplayID          (SA_Dummy + 18 ) /* [I.G] ULONG           Display mode ID    */
