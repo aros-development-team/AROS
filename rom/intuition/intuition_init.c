@@ -381,6 +381,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 #endif
 	D(bug("[intuition] Calling InitView()\n"));
 	InitView(&LIBBASE->Base.ViewLord);
+        InitSemaphore(&LIBBASE->ViewLordLock);
 #ifdef __MORPHOS__
 	GfxAssociate(&LIBBASE->Base.ViewLord, ve);
 

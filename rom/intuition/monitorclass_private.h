@@ -40,7 +40,8 @@ struct msSetPointerShape
 struct msSetScreenGamma
 {
     STACKED ULONG MethodID;
-    STACKED struct Screen *screen;
+    STACKED struct GammaControl *gamma;
+    STACKED ULONG force;
 };
 
 struct msFindBest3dDepth

@@ -69,12 +69,10 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
     struct ViewPort **viewportptr;
     UWORD   	      modes;
     LONG    	      failure = 0;
-    ULONG   	      ilock;
+    ULONG   	      ilock = 0;
 
     if (msg->lock)
         ilock = LockIBase(0);
-
-    DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay:\n"));
 
     screen = IntuitionBase->FirstScreen;
 
@@ -92,7 +90,6 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
         DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: Find visible screens\n"));
 
         screen->ViewPort.Modes |= SPRITES;
-
         screen->ViewPort.Modes &= ~VP_HIDE;
 
 	/* Not needed. Perhaps... Pavel Fedin <pavel_fedin@mail.ru>
@@ -106,6 +103,8 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
         viewportptr = &IntuitionBase->ViewLord.ViewPort;
         for (screen = IntuitionBase->FirstScreen; screen; screen = screen->NextScreen)
         {
+            GetPrivScreen(screen)->GammaControl.Active = FALSE;
+
             if ((screen->ViewPort.Modes & VP_HIDE) == 0)
             {
 		DEBUG_RETHINKDISPLAY(bug("RethinkDisplay: Adding ViewPort 0x%p for screen 0x%p\n", &screen->ViewPort, screen));
@@ -123,23 +122,6 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
 	}
 
         /* Reinitialize the view */
-#ifdef __MORPHOS__
-	/* Under AROS this will cause unneeded screen flicker and even significant slowdown */
-        FreeSprite(GetPrivIBase(IntuitionBase)->SpriteNum);
-        GetPrivIBase(IntuitionBase)->SpriteNum = -1;
-        DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: LoadView(NULL)\n"));
-
-        LoadView(NULL);
-
-        if (IntuitionBase->ViewLord.LOFCprList)
-            FreeCprList(IntuitionBase->ViewLord.LOFCprList);
-
-        if (IntuitionBase->ViewLord.SHFCprList)
-            FreeCprList(IntuitionBase->ViewLord.SHFCprList);
-
-        IntuitionBase->ViewLord.LOFCprList = NULL;
-        IntuitionBase->ViewLord.SHFCprList = NULL;
-#endif
         IntuitionBase->ViewLord.DxOffset = 0; /***/
         IntuitionBase->ViewLord.DyOffset = 0; /***/
         IntuitionBase->ViewLord.Modes = modes;
@@ -173,6 +155,8 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
                 struct MinNode *m;
 
                 DEBUG_RETHINKDISPLAY(dprintf("RethinkDisplay: LoadView ViewLord 0x%lx\n",&IntuitionBase->ViewLord));
+
+                ObtainSemaphore(&GetPrivIBase(IntuitionBase)->ViewLordLock);
                 LoadView(&IntuitionBase->ViewLord);
 
                 /*
@@ -186,39 +170,22 @@ void int_RethinkDisplay(struct RethinkDisplayActionMsg *msg,struct IntuitionBase
                 for (m = GetPrivIBase(IntuitionBase)->MonitorList.mlh_Head;
                      m->mln_Succ; m = m->mln_Succ)
                 {
-                    struct Screen *scr = FindFirstScreen((Object *)m, IntuitionBase);
+                    screen = FindFirstScreen((Object *)m, IntuitionBase);
 
-                    DoMethod((Object *)m, MM_SetScreenGamma, scr);
+                    if (screen)
+                    {
+                        GetPrivScreen(screen)->GammaControl.Active = TRUE;
+                        DoMethod((Object *)m, MM_SetScreenGamma, &GetPrivScreen(screen)->GammaControl, TRUE);
+                    }
 	        }
 
                 ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MonitorListSem);
+                ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ViewLordLock);
 
                 DEBUG_INIT(dprintf("RethinkDisplay: ActiveScreen %p Pointer %p Sprite %p\n",
                             IntuitionBase->ActiveScreen,
                             GetPrivScreen(IntuitionBase->ActiveScreen)->Pointer,
                             GetPrivScreen(IntuitionBase->ActiveScreen)->Pointer->sprite));
-#ifdef __MORPHOS__
-                if (GetPrivIBase(IntuitionBase)->SpriteNum == -1 &&
-                        IntuitionBase->FirstScreen &&
-                        GetPrivScreen(IntuitionBase->FirstScreen)->Pointer &&
-                        GetPrivScreen(IntuitionBase->FirstScreen)->Pointer->sprite)
-                {
-                    struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-                    WORD    	    xpos,ypos;
-
-                    xpos = iihd->LastMouseX; ypos = iihd->LastMouseY;
-                    GetPrivIBase(IntuitionBase)->SpriteNum = GetExtSpriteA(GetPrivScreen(IntuitionBase->FirstScreen)->Pointer->sprite, NULL);
-
-                    DEBUG_INIT(dprintf("RethinkDisplay: Sprite num %ld\n", GetPrivIBase(IntuitionBase)->SpriteNum));
-
-                    if (xpos >= IntuitionBase->FirstScreen->Width) xpos = IntuitionBase->FirstScreen->Width - 1;
-                    if (ypos >= IntuitionBase->FirstScreen->Height) ypos = IntuitionBase->FirstScreen->Height - 1;
-
-                    MySetPointerPos(IntuitionBase, xpos, ypos);
-                    IntuitionBase->FirstScreen->MouseX = xpos;
-                    IntuitionBase->FirstScreen->MouseY = ypos;
-                }
-#endif
             }
         }
     }

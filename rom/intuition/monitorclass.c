@@ -105,6 +105,13 @@ static void ActivationHandler(Object *mon, OOP_Object *bitmap)
 
 /***********************************************************************************/
 
+static void ResetGamma(struct IMonitorNode *data)
+{
+    data->active_r = &data->gamma[GAMMA_R];
+    data->active_g = &data->gamma[GAMMA_G];
+    data->active_b = &data->gamma[GAMMA_B];
+}
+
 Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
@@ -177,6 +184,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
             data->gamma[i + GAMMA_G] = i;
             data->gamma[i + GAMMA_B] = i;
         }
+        ResetGamma(data);
     }
 
     OOP_GetAttr(handle->gfxhidd, aHidd_Name, (IPTR *)&data->MonitorName);
@@ -1482,6 +1490,8 @@ IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSet
 
     if (data->gamma)
     {
+        IPTR ret;
+
         if (msg->Red)
             CopyMem(msg->Red  , &data->gamma[GAMMA_R], 256);
         if (msg->Green)
@@ -1489,13 +1499,15 @@ IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSet
         if (msg->Blue)
             CopyMem(msg->Blue , &data->gamma[GAMMA_B], 256);
 
-        if (data->screenGamma)
+        ObtainSemaphore(&GetPrivIBase(IntuitionBase)->ViewLordLock);
+
+        if (data->screenGamma == 3)
         {
             /*
-             * This monitor currently displays screen with own gamma table.
+             * All three components are determined by screen.
              * Do not disturb.
              */
-            return TRUE;
+            ret = TRUE;
         }
         else
         {
@@ -1505,8 +1517,11 @@ IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSet
              */
             OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
 
-            return HIDD_Gfx_SetGamma(data->handle->gfxhidd, &data->gamma[GAMMA_R], &data->gamma[GAMMA_G], &data->gamma[GAMMA_B]);
+            ret = HIDD_Gfx_SetGamma(data->handle->gfxhidd, data->active_r, data->active_g, data->active_b);
         }
+
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ViewLordLock);
+        return ret;
     }
 
     return FALSE;
@@ -1586,14 +1601,48 @@ void MonitorClass__MM_SetScreenGamma(Class *cl, Object *obj, struct msSetScreenG
     {
         struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
         OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+        struct GammaControl *gamma = msg->gamma;
 
-        /*
-         * TODO: This is currently just a stub.
-         * In future it should check if there is a gamma table attached to screen,
-         * and use it in this case.
-         * For now we just supply our default gamma table.
-         */
-        HIDD_Gfx_SetGamma(data->handle->gfxhidd, &data->gamma[GAMMA_R], &data->gamma[GAMMA_G], &data->gamma[GAMMA_B]);
+        ObtainSemaphore(&GetPrivIBase(IntuitionBase)->ViewLordLock);
+
+        if (gamma->Active)
+        {
+            UBYTE screengamma = 0;
+
+            ResetGamma(data);
+            if (gamma->UseGammaControl)
+            {
+                if (gamma->GammaTableR)
+                {
+                    data->active_r = gamma->GammaTableR;
+                    screengamma++;
+                }
+                if (gamma->GammaTableB)
+                {
+                    data->active_b = gamma->GammaTableB;
+                    screengamma++;
+                }
+                if (gamma->GammaTableG);
+                {
+                    data->active_g = gamma->GammaTableG;
+                    screengamma++;
+                }
+            }
+
+            /*
+             * The condition here reflects the following variants:
+             * 1. We used default gamma and switched to custom one.
+             * 2. We used custom gamma and switched to default one.
+             * 3. We changed custom gamma.
+             */
+            if (data->screenGamma || screengamma || msg->force)
+            {
+                data->screenGamma = screengamma;
+                HIDD_Gfx_SetGamma(data->handle->gfxhidd, data->active_r, data->active_g, data->active_b);
+            }
+        }
+
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ViewLordLock);
     }
 }
 
