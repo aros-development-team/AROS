@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function AttachPalExtra()
@@ -113,7 +113,7 @@
 	    /* set all entries in the color table to be shareable
                pe_SharableColors is not the number of colors but the last color index! */
 
-	    pe->pe_SharableColors = sharablecolors;
+	    pe->pe_SharableColors = sharablecolors - 1;
 	    
 	} /* if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList) */
 	else
