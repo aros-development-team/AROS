@@ -20,6 +20,7 @@ struct busframe
 	ULONG regs[16];
 };
 
+#if AROS_SERIAL_DEBUG
 static const UBYTE *sizes[] = { "LONG", "BYTE", "WORD", "?" };
 
 extern BOOL mmu_valid_check_030(APTR);
@@ -131,12 +132,14 @@ static void dumpinfo(UWORD mmutype, struct ExecBase *SysBase, ULONG pc)
         }
     }
 }
+#endif
 
 /* WARNING: Running in bus/address error exception.
  * Can't call most system routines!
  */
 void bushandler(struct busframe *bf)
 {
+#if AROS_SERIAL_DEBUG
 	struct ExecBase *SysBase = (struct ExecBase*)(bf->vbr[1]);
 	UBYTE *mf = bf->mmuframe;
 	ULONG fa = 0;
@@ -251,4 +254,5 @@ void bushandler(struct busframe *bf)
 	dumpinfo(mmutype, SysBase, pc);
 
 	DebugPutStr("\n");
+#endif 
 }

@@ -246,6 +246,7 @@ void disable_mmu(struct KernelBase *kb)
 		disable_mmu040();
 }
 
+#if DEBUG
 static ULONG getdesc(struct KernelBase *kb, ULONG addr)
 {
 	ULONG desc;
@@ -259,9 +260,11 @@ static ULONG getdesc(struct KernelBase *kb, ULONG addr)
 	desc = LEVELC(desc, addr);
 	return desc;
 }
+#endif
 
 void debug_mmu(struct KernelBase *kb)
 {
+#if DEBUG
 	UBYTE mmutype;
 	ULONG i;
 	ULONG startaddr;
@@ -298,6 +301,7 @@ void debug_mmu(struct KernelBase *kb)
 		}
 	}
 	bug("MMU dump end\n");
+#endif
 }			
 
 static BOOL map_region2(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode)
@@ -315,7 +319,7 @@ static BOOL map_region2(struct KernelBase *kb, void *addr, void *physaddr, ULONG
 		return FALSE;
 
 	if ((size & page_mask) || (((ULONG)addr) & page_mask) || (((ULONG)physaddr) & page_mask)) {
-		bug("unaligned MMU page request! %p (%p) %08x\n", addr, physaddr, size);
+		D(bug("unaligned MMU page request! %p (%p) %08x\n", addr, physaddr, size));
 		return FALSE;
 	}
 	if (physaddr == NULL)
@@ -388,13 +392,13 @@ static BOOL map_region2(struct KernelBase *kb, void *addr, void *physaddr, ULONG
 
 BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode)
 {
-	bug("map_region(%p, %p, %08x, in=%d, wp=%d, s=%d cm=%d\n",
-		addr, physaddr, size, invalid ? 1 : 0, writeprotect ? 1 : 0, supervisor ? 1 : 0, cachemode);
+	D(bug("map_region(%p, %p, %08x, in=%d, wp=%d, s=%d cm=%d\n",
+		addr, physaddr, size, invalid ? 1 : 0, writeprotect ? 1 : 0, supervisor ? 1 : 0, cachemode));
 	return map_region2(kb, addr, physaddr, size, invalid, writeprotect, supervisor, cachemode);
 }
 
 BOOL unmap_region(struct KernelBase *kb, void *addr, ULONG size)
 {
-	bug("unmap_region(%p, %08x)\n", addr, size);
+	D(bug("unmap_region(%p, %08x)\n", addr, size));
 	return map_region2(kb, addr, NULL, size, TRUE, FALSE, FALSE, 0);
 }
