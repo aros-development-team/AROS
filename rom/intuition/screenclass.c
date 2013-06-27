@@ -824,7 +824,7 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         break;
 
     case SA_ScreenbarTextPen:
-        *msg->opg_Storage = BARDETAILPEN; /* CHECKME: Is this correct ? */
+        *msg->opg_Storage = screen->Pens[BARDETAILPEN];
         break;
 
     case SA_ScreenbarTextFont:
