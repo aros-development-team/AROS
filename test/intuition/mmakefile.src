@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := drawinfoattr pubscreen screentest scrollerwin 
+FILES := drawinfoattr gamma pubscreen screenclass screentest scrollerwin 
 
 EXEDIR := $(AROS_TESTS)/intuition
 
