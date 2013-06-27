@@ -6,7 +6,7 @@
     Lang: English.
 */
 
-#define DEBUG 0
+#define DEBUG 1
 #define DEBUG_PF
 
 #include <stddef.h>
@@ -124,6 +124,7 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     {
         if (get_pixfmt(pftags, &fsi, &vsi))
         {
+            
             /* Memorymap the framebuffer using mmap() */
             baseaddr = Hidd_UnixIO_MemoryMap(fsd->unixio, NULL, fsi.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbdev, 0, NULL);
     
@@ -174,6 +175,37 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
                     data->unixio = fsd->unixio;
                     data->gamma = (fsi.visual == FB_VISUAL_DIRECTCOLOR) ? TRUE : FALSE;
                     D(bug("[LinuxFB] Gamma support: %d\n", data->gamma));
+
+                    if (data->gamma)
+                    {
+                        /*
+                         * Some explanations of this magic.
+                         * In 16-bit modes we have different number of gradations per component.
+                         * For example, R5G6B5 layout assumes that we have 64 gradations for
+                         * G and only 32 gradations for R and B.
+                         * Consequently, gamma table for G is twice longer. But framebuffer API
+                         * allows to load only complete triplets.
+                         * Hence we have to scale down our gamma table supplied by the OS, which
+                         * always contains 256 values three times, with different scale factor for
+                         * each color.
+                         */
+                        UBYTE bits = 0;
+
+                        if (vsi.red.length   > bits) bits = vsi.red.length;
+                        if (vsi.green.length > bits) bits = vsi.green.length;
+                        if (vsi.blue.length  > bits) bits = vsi.blue.length;
+
+                        D(bug("Initializing gamma table scaler down to %d bits\n", bits));
+                        /* Determine how many triplets we will load (the longest table) */
+                        data->scale_size = 1 << bits;
+
+                        /* And then - scale factor for each component */
+                        data->r_step = 0x100 >> vsi.red.length;
+                        data->g_step = 0x100 >> vsi.green.length;
+                        data->b_step = 0x100 >> vsi.blue.length;
+
+                        D(bug("Steps R G B: %d %d %d\n", data->r_step, data->g_step, data->b_step));
+                    }
 
                     data->resetHandler.is_Code = (VOID_FUNC)ResetHandler;
                     data->resetHandler.is_Data = data;
@@ -286,15 +318,31 @@ BOOL LinuxFB__Hidd_Gfx__SetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
         {
             0, 1, &r, &g, &b, NULL
         };
+        UBYTE ri = data->r_step - 1;
+        UBYTE gi = data->g_step - 1;
+        UBYTE bi = data->b_step - 1;
 
         D(bug("[LinuxFB]  N  R  G  B gamma tables:\n"));
-	for (i = 0; i < 256; i++)
-        { 
+	for (i = 0; i < data->scale_size; i++)
+        {
             col.start = i;
-            r = msg->Red[i] << 8;
-            g = msg->Green[i] << 8;
-            b = msg->Blue[i] << 8;
-            D(bug("[LinuxFB] %02X %02X %02X %02X\n", i, msg->Red[i], msg->Green[i], msg->Blue[i]));
+
+            r = msg->Red[ri]   << 8;
+            g = msg->Green[gi] << 8;
+            b = msg->Blue[bi]  << 8;
+            D(bug("[LinuxFB] %02X %02X %02X %02X\n", i, msg->Red[ri], msg->Green[gi], msg->Blue[bi]));
+
+            /*
+             * Wraparound here is intentional. It prevents from buffer overflow.
+             * Example: RGB 565 format. In this case we load 64 triplets. But
+             * only G channel will actually use 64 values, R and B will use only
+             * 32 values. So, we scale down 256 values to 32, but the rest 32
+             * unused values also need to be picked up from somewhere.
+             * Alternatively we could add some conditions, but it would be slower.
+             */
+            ri += data->r_step;
+            gi += data->g_step;
+            bi += data->b_step;
 
             Hidd_UnixIO_IOControlFile(fsd->unixio, data->fbdevinfo.fbdev, FBIOPUTCMAP, &col, NULL);
 	}
@@ -452,3 +500,4 @@ static BOOL get_pixfmt(struct TagItem *pftags, struct fb_fix_screeninfo *fsi, st
 
     return success;    
 }
+

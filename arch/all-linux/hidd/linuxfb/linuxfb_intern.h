@@ -70,6 +70,10 @@ struct LinuxFB_data
     int confd;
     long kbmode;
     BOOL gamma;
+    UWORD scale_size;
+    UBYTE r_step;
+    UBYTE g_step;
+    UBYTE b_step;
 
     /* FBDev info */
     struct FBDevInfo fbdevinfo;
