@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright © 2004-2012, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2013, The AROS Development Team. All rights reserved.
 # $Id$
 
 
@@ -299,8 +299,10 @@ for patch in $patches; do
     fi
 done
 
-if ! unpack_cached "$destination" "$archive" "$location"; then
-    error "fetch: Error while unpacking \`$archive'."
+if test "x$suffixes" != "x"; then
+    if ! unpack_cached "$destination" "$archive" "$location"; then
+        error "fetch: Error while unpacking \`$archive'."
+    fi
 fi
     
 for patch in $patches; do
