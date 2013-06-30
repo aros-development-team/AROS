@@ -50,6 +50,9 @@
     Not fully compatible with iso fseek, especially in 'ab' and 'a+b'
     modes
 
+    Since it's not possible to use Seek() for directories, this
+    implementation fails with EISDIR for directory file descriptors.
+
     SEE ALSO
 	fopen(), fwrite()
 
@@ -68,6 +71,12 @@
     {
 	    errno = EBADF;
 	    return -1;
+    }
+
+    if (fdesc->fcb->isdir)
+    {
+        errno = EISDIR;
+        return -1;
     }
 
     fh = (BPTR)(fdesc->fcb->fh);
