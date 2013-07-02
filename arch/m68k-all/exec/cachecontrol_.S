@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: cachecontrol.s 36824 2011-01-26 18:17:40Z twilen $
+    $Id$
 
     Desc: CacheControl() - Global control of the system caches.
     Lang: english

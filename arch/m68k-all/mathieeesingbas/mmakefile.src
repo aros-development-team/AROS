@@ -1,4 +1,4 @@
-# $Id: mmakefile.src $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES := mathieeesingbas_init

@@ -1,6 +1,6 @@
 /*
     Copyright © 2010-2011, The AROS Development Team. All rights reserved.
-    $Id: filesystem.c 43148 2011-12-21 11:18:56Z sonic $
+    $Id$
 
     Desc: Filesystem control routines, Windows version
     Lang: english

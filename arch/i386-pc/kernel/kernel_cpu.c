@@ -38,7 +38,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     struct ExceptionContext *ctx;
 
     /* 
-     * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
+     * Is the list of ready tasks empty? Well, increment the idle switch count and halt CPU.
      * It should be extended by some plugin mechanism which would put CPU and whole machine
      * into some more sophisticated sleep states (ACPI?)
      */

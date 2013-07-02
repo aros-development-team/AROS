@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: card_intern.h $
+    $Id$
 
     Desc: Internal data structures for card.resource
     Lang: english

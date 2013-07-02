@@ -1,4 +1,4 @@
-#   $Id:$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
