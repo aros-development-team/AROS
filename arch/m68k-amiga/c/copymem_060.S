@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
-    $Id: $
+    $Id$
 
     Desc: 68060 optimized CopyMem/Quick by Matt Hey.
     Lang: english

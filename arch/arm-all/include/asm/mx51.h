@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: mx51.h
     Lang: english

@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 36224 2010-12-24 14:09:45Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES := ieeedpbas_fpu mathieeedoubbas_init

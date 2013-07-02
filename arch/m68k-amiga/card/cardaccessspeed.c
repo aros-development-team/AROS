@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: cardaccessspeed.c $
+    $Id$
 
     Desc: CardAccessSpeed() function.
     Lang: english

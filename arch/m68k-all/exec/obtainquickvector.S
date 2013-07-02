@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: obtainquickvector.S $
+    $Id$
 
     Desc: Obtain and install a Quick Interrupt vector
     Lang: english

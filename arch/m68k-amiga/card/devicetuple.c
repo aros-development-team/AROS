@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: devicetuple.c $
+    $Id$
 
     Desc: DeviceTuple() function.
     Lang: english

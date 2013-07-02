@@ -1,6 +1,6 @@
 /*
     Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id: kernel_mm.c 42198 2011-11-02 10:53:45Z sonic $
+    $Id$
 
     Desc: Query UNIX host OS for memory page size
     Lang: english

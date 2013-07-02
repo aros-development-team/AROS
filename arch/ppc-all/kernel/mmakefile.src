@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 33802 2010-07-13 17:44:31Z weissms $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \

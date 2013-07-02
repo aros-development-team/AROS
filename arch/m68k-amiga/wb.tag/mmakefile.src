@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 36646 2011-01-17 13:48:43Z neil $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""

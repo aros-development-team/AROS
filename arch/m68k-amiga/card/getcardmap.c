@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: getcardmap.c $
+    $Id$
 
     Desc: GetCardMap() function.
     Lang: english

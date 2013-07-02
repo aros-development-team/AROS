@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 40749 2011-08-16 14:19:31Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 ASMFILES := cli sti issuper

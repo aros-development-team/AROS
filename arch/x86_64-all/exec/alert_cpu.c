@@ -1,6 +1,6 @@
 /*
     Copyright © 2011-2012, The AROS Development Team. All rights reserved.
-    $Id: alert_cpu.c 36262 2010-12-27 12:17:48Z sonic $
+    $Id$
 
     Desc: CPU context parsing routines, x86-64 version.
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: setsr.S 36262 2010-12-27 12:17:48Z sonic $
+    $Id$
 
     Desc: Call the entry point of a BCPL style routine
     Lang: english

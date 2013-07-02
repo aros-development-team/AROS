@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: cardchangecount.c $
+    $Id$
 
     Desc: CardChangeCount() function.
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: cachecontrol.c $
+    $Id$
 
     Desc: CacheControl() - Global control of the system caches.
     Lang: english

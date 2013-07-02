@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 41982 2011-10-22 21:50:04Z jmcmullan $
+# $Id$
 include $(TOP)/config/make.cfg
 
 ifneq ($(AROS_TARGET_VARIANT),)

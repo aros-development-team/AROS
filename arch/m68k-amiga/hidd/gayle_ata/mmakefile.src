@@ -1,4 +1,4 @@
-#$Id: mmakefile.src $
+#$Id$
 include $(TOP)/config/make.cfg
 
 FILES := class_init probe bus_class interface_pio 

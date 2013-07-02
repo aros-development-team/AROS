@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id: mathieeesingbas_init.c $
+    $Id$
 
     Desc: Init of 68k/FPU mathieeesingbas.library
     Lang: english

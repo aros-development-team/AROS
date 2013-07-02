@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 40592 2011-08-08 09:20:52Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES    := kernel_startup kernel_debug kernel_bootmem

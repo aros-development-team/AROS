@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 44918 2012-06-01 03:30:04Z jmcmullan $
+# $Id$
 include $(TOP)/config/make.cfg
 
 #MM- hidd-i2c-raspi : hidd-i2c-bcm2835
