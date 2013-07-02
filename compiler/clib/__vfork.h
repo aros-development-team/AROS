@@ -33,6 +33,7 @@ struct vfork_data
     APTR parent_internalpool;
     int parent_numslots;
     fdesc **parent_fd_array;
+    int parent_flags;
 
     ULONG child_id;
     struct Task *child;
