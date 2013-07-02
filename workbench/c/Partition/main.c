@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -119,7 +119,7 @@
 #define MAX_SFS_SIZE (124L * 1024)
 #define MAX_SIZE(A) (((A) == &sfs0) ? MAX_SFS_SIZE : MAX_FFS_SIZE)
 
-const TEXT version_string[] = "$VER: Partition 41.4 (16.6.2011)";
+const TEXT version_string[] = "$VER: Partition 41.5 (2.7.2013)";
 
 static const struct PartitionType dos3 = { "DOS\3", 4 };
 #if AROS_BIG_ENDIAN
@@ -365,9 +365,9 @@ int main(void)
         }
 
         /* Convert block range to cylinders */
-        lowCyl = ((LONG)lowBlock - 1)
+        lowCyl = (lowBlock - 1)
             / (LONG)(parent->de.de_Surfaces * parent->de.de_BlocksPerTrack) + 1;
-        highCyl = ((LONG)highBlock + 1)
+        highCyl = (highBlock + 1)
             / (LONG)(parent->de.de_Surfaces * parent->de.de_BlocksPerTrack) - 1;
 
         /* Ensure neither partition is too large for its filesystem */
