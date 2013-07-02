@@ -345,6 +345,7 @@ static void parent_enterpretendchild(struct vfork_data *udata)
     udata->parent_curdir = CurrentDir(((struct Process *) udata->child)->pr_CurrentDir);
 
     /* Pretend to be running as the child created by vfork */
+    udata->parent_flags = aroscbase->acb_flags;
     aroscbase->acb_flags |= PRETEND_CHILD;
 
     D(bug("parent_enterpretendchild: leaving\n"));
@@ -386,7 +387,10 @@ static void parent_leavepretendchild(struct vfork_data *udata)
     /* Switch to previous vfork_data */
     aroscbase->acb_vfork_data = udata->prev;
     if (aroscbase->acb_vfork_data == NULL)
+    {
+        aroscbase->acb_flags = udata->parent_flags;
         aroscbase->acb_flags &= ~PRETEND_CHILD;
+    }
 
     D(bug("parent_leavepretendchild: leaving\n"));
 }
