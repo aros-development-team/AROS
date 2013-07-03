@@ -29,7 +29,7 @@
  
     RESULT
  
-    NOTE
+    NOTES
         This function isn't implemented on all platforms.
 
     BUGS
