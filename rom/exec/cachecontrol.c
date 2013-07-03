@@ -53,10 +53,11 @@
 	On CPU's without a separate instruction and data cache, these will
 	be considered as equal.
 
+        This function isn't implemented on all platforms.
+
     EXAMPLE
 
     BUGS
-        This function is unimplemented.
 
     SEE ALSO
 	CacheClearE(), CacheClearU()
