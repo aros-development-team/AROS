@@ -1,6 +1,6 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: AddICRVector() function.
     Lang: english
@@ -22,11 +22,30 @@ AROS_LH2(struct Interrupt *, AddICRVector,
     struct CIABase *CiaBase = (struct CIABase *)resource;
     struct Interrupt *old;
 
+    if (iCRBit == -1) {
+        /* Hack. Was called by timer.device, see below */
+        CiaBase->hook_func = (void(*)(APTR, APTR, WORD))interrupt->is_Code;
+        CiaBase->hook_data = interrupt->is_Data;
+        return NULL;
+    }
+
     /* 68k lowlevel library calls have garbage in upper word */
     iCRBit = (WORD)iCRBit;
     Disable();
     old = CiaBase->Vectors[iCRBit];
-    if (!old) {
+    if (old) {
+        /* timer.device move out of our way hack.
+         * Check timer.device for details
+         */
+        if (CiaBase->hook_func) {
+            void (*hook)(APTR, APTR, WORD) = CiaBase->hook_func;
+            CiaBase->hook_func = NULL;
+            hook(CiaBase, CiaBase->hook_data, iCRBit);
+            CiaBase->hook_func = hook;
+            old = CiaBase->Vectors[iCRBit];
+        }
+    }
+    if (old == NULL) {
         CiaBase->Vectors[iCRBit] = interrupt;
         AbleICR(resource, 0x80 | (1 << iCRBit));
     }

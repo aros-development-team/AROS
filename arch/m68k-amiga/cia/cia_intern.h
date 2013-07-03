@@ -10,4 +10,6 @@ struct CIABase
     UBYTE enable_mask;
     UBYTE active_mask;
     UBYTE executing_mask;
+    void (*hook_func)(APTR, APTR, WORD);
+    APTR hook_data;
 };

@@ -42,6 +42,8 @@ struct TimerBase
 
     struct MinList tb_Lists[NUM_LISTS];
 
+    struct Resource *tb_cia[2];
+
     struct Resource *tb_eclock_res;
     volatile struct CIA *tb_eclock_cia;
     volatile UBYTE *tb_eclock_cr, *tb_eclock_lo, *tb_eclock_hi;
