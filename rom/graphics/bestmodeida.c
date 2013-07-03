@@ -165,6 +165,22 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
     return args->found_id != INVALID_ID;
 }
 
+#ifdef __mc68000
+static void FillNominal(struct GfxBase *GfxBase, struct MatchData *args)
+{
+    struct monitor_driverdata *mdd;
+    /* Detect if we have RTG modes or only chipset modes.
+     * How to do this properly?
+     */
+    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
+         if (mdd->id & mdd->mask) /* Chipset = monitor ID zero */
+            return;
+    }
+    /* Chipset only: set PAL/NTSC defaults */
+    args->nominal_width = GfxBase->NormalDisplayColumns;
+    args->nominal_height = GfxBase->NormalDisplayRows;
+}
+#endif
 
 /*****************************************************************************
 
@@ -256,6 +272,9 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
 
     /* Obtain default monitor driver */
     monitor = MonitorFromSpec(GfxBase->default_monitor, GfxBase);
+#ifdef __mc68000
+    FillNominal(GfxBase, &args);
+#endif
 
     /* Get defaults which can be overriden */
     while ((tag = NextTagItem(&tstate)))
