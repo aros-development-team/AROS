@@ -29,8 +29,10 @@
  
     RESULT
  
+    NOTE
+        This function isn't implemented on all platforms.
+
     BUGS
-        This function is unimplemented.
 
     INTERNALS
 

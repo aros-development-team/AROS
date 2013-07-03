@@ -37,10 +37,11 @@ AROS_LH0I(void, KrnSti,
 	and state tracking mechanism. It operates directly on the CPU.
 	Normal applications should consider using exec.library/Enable().
 
+        This function isn't implemented on all platforms.
+
     EXAMPLE
 
     BUGS
-        This function is unimplemented.
 
     SEE ALSO
 	KrnCli()
