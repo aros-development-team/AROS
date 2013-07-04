@@ -19,12 +19,9 @@ $(AROS_INCLUDES)/hidd/pci.h: include/pci_hidd.h
 $(GENINCDIR)/hidd/pci.h: include/pci_hidd.h
 	$(CP) $< $(GENINCDIR)/hidd/pci.h
 
-#MM
-kernel-pci-ids : $(AROS_DEVS)/pci.ids
-
-$(AROS_DEVS)/pci.ids : pci.ids
-	%mkdirs_q $(AROS_DEVS)
-	@$(CP) $^ $@
+%fetch mmake=kernel-pci-ids \
+    archive_origins="http://pciids.sourceforge.net/v2.2/" \
+    archive="pci.ids" suffixes="" location=$(AROS_DEVS)
 
 %build_module mmake=kernel-pci \
     modname=pci modtype=hidd \
