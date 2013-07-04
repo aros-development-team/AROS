@@ -180,6 +180,8 @@ struct UhciQH
     ULONG           uqh_Actual;     /* Number of bytes for successful completion in this QH */
     APTR            uqh_SetupBuffer;/* Bounce buffer */
     APTR            uqh_DataBuffer; /* Bounce buffer */
+    ULONG           uqh_Unused1;    /* Make sure size of structure is aligned to 16 bytes */
+    ULONG           uqh_Unused2;    /* Make sure size of structure is aligned to 16 bytes */
 };
 
 /* pointer defines */
