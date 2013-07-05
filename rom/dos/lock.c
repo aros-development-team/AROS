@@ -209,6 +209,9 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 
         } while (error == ERROR_OBJECT_NOT_FOUND);
 
+        if (error == ERROR_NO_MORE_ENTRIES)
+            error = me->pr_Result2 = ERROR_OBJECT_NOT_FOUND;
+
 #ifndef __mc68000
         /* FIXME: On Linux hosted we sometimes get ERROR_IS_SOFTLINK with dvp == NULL,
          * which causes segfaults below if we don't change "error". Adding !dvp below
@@ -216,7 +219,7 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
          *
          * This is wrong, GetDeviceProc() can return other errors than ERROR_OBJECT_NOT_FOUND.
          */
-        if (error == ERROR_NO_MORE_ENTRIES || !dvp)
+        if (!dvp)
             error = me->pr_Result2 = ERROR_OBJECT_NOT_FOUND;
 #endif
     }
