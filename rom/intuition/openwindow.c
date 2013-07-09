@@ -683,7 +683,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     BOOL                       ok;
 
     initmsg.MethodID           = WDM_INITWINDOW;
-    initmsg.wdp_TrueColor      = (((struct IntScreen *) nw.Screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
+    initmsg.wdp_TrueColor      = (((struct IntScreen *) nw.Screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
     initmsg.wdp_UserBuffer     = ((struct IntWindow *)w)->DecorUserBuffer;
     initmsg.wdp_ScreenUserBuffer   = ((struct IntScreen *) nw.Screen)->DecorUserBuffer;
     initmsg.wdp_Screen             = nw.Screen;
@@ -1120,7 +1120,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
         msg.MethodID                     = WDM_LAYOUT_BORDERGADGETS;
     msg.wdp_UserBuffer  = ((struct IntWindow *)w)->DecorUserBuffer;;
-    msg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
+    msg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
         msg.wdp_Window                     = w;
         msg.wdp_Gadgets             = nw.FirstGadget;
         msg.wdp_Flags           = WDF_LBG_INITIAL | WDF_LBG_MULTIPLE;

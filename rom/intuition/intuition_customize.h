@@ -20,7 +20,7 @@ static inline void int_ExitDecorator(struct Screen *screen)
 
     semsg.MethodID       = SDM_EXITSCREEN;
     semsg.sdp_UserBuffer = ((struct IntScreen *)screen)->DecorUserBuffer;
-    semsg.sdp_TrueColor  = (((struct IntScreen *)screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
+    semsg.sdp_TrueColor  = (((struct IntScreen *)screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
 
     DoMethodA(((struct IntScreen *)screen)->ScrDecorObj, &semsg.MethodID);
 }
