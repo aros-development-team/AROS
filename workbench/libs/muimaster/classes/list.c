@@ -1819,8 +1819,8 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
     struct MUIP_List_Select *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    LONG pos, i, count, selcount=0, state=0;
-    BOOL multi_allowed = TRUE, new_select_state;
+    LONG pos, i, count, selcount=0, state;
+    BOOL multi_allowed = TRUE;
 
     /* Establish the range of entries affected */
     switch (msg->pos)
@@ -1860,10 +1860,15 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
                 data->entries[i]->data);
     }
 
+    state = data->entries[i]->flags & ENTRY_SELECTED;
+
     /* Change or check state of each entry in the range */
     for (i = pos; i < pos + count; i++)
     {
-        state = data->entries[i]->flags & ENTRY_SELECTED;
+        BOOL new_select_state;
+
+        new_select_state = state ? TRUE : FALSE;
+
         switch (msg->seltype)
         {
         case MUIV_List_Select_Off:
@@ -2686,6 +2691,8 @@ IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
     {
         n = MIN(data->entries_visible, data->entries_num)
             - data->entries_first;
+    } else {
+        n = data->entries_first;
     }
 
     /* Clear old drop mark */
@@ -2753,6 +2760,8 @@ IPTR List__MUIM_DragDrop(struct IClass *cl, Object *obj,
         n = MUIV_List_Move_Top;
     else if ((pos.flags & MUI_LPR_BELOW) != 0)
         n = MUIV_List_Move_Bottom;
+    else
+        n = 0;
 
     DoMethod(msg->obj, MUIM_List_Move, MUIV_List_Move_Active,
         n);
