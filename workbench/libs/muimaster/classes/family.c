@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2012, The AROS Development Team.
+    Copyright © 2002-2013, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -190,6 +190,14 @@ IPTR Family__MUIM_AddHead(struct IClass *cl, Object *obj,
     if (msg->obj)
     {
         AddHead(&(data->children), (struct Node *)_OBJECT(msg->obj));
+
+        /* if we are in an application tree, propagate pointers */
+        if (muiNotifyData(obj)->mnd_GlobalInfo)
+        {
+            muiNotifyData(msg->obj)->mnd_ParentObject = obj;
+            DoMethod(msg->obj, MUIM_ConnectParent, (IPTR)obj);
+        }
+
         return TRUE;
     }
     else
@@ -210,6 +218,14 @@ IPTR Family__MUIM_AddTail(struct IClass *cl, Object *obj,
         D(bug("Family_AddTail(%p): obj=%p node=%p\n", obj, msg->obj,
                 _OBJECT(msg->obj)));
         DoMethod(msg->obj, OM_ADDTAIL, (IPTR) & data->children);
+
+        /* if we are in an application tree, propagate pointers */
+        if (muiNotifyData(obj)->mnd_GlobalInfo)
+        {
+            muiNotifyData(msg->obj)->mnd_ParentObject = obj;
+            DoMethod(msg->obj, MUIM_ConnectParent, (IPTR)obj);
+        }
+
         return TRUE;
     }
     else
@@ -229,6 +245,14 @@ IPTR Family__MUIM_Insert(struct IClass *cl, Object *obj,
     {
         Insert(&(data->children), (struct Node *)_OBJECT(msg->obj),
             (struct Node *)_OBJECT(msg->pred));
+
+        /* if we are in an application tree, propagate pointers */
+        if (muiNotifyData(obj)->mnd_GlobalInfo)
+        {
+            muiNotifyData(msg->obj)->mnd_ParentObject = obj;
+            DoMethod(msg->obj, MUIM_ConnectParent, (IPTR)obj);
+        }
+
         return TRUE;
     }
     else
@@ -248,6 +272,8 @@ IPTR Family__MUIM_Remove(struct IClass *cl, Object *obj,
     if (msg->obj)
     {
 /*          D(bug("Family_Remove(%p): obj=%p\n", obj, msg->obj)); */
+        DoMethod(msg->obj, MUIM_DisconnectParent);
+        muiNotifyData(msg->obj)->mnd_ParentObject = NULL;
         DoMethod(msg->obj, OM_REMOVE);
         return TRUE;
     }
