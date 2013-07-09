@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2011, The AROS Development Team.
+    Copyright © 2002-2013, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -46,8 +46,8 @@ extern struct Library *MUIMasterBase;
 * HiChar is a single letter chunk with underline style.
 * Size calculation is done by calculating for each line the width and
 * height of each chunk, then line width is the sum of widths and line height
-* is the max height. Text width will be max line width, and text height
-* will be the sum of line heights. Remember group layout.
+* is the max height. *Text width will be max line width, and text height
+* will be the sum of line heights.* Remember group layout.
 * Chunk width is affected by soft style of text, and maybe other params.
 * Drawing is done line by line, chunk by chunk, incrementing each time
 * the offsets with chunk width or line height.
@@ -93,7 +93,6 @@ void zune_text_draw_single(ZText * text, Object * obj, WORD left,
 int zune_text_get_char_pos(ZText * text, Object * obj, LONG x, LONG y,
     struct ZTextLine **line_ptr, struct ZTextChunk **chunk_ptr,
     int *offset_ptr, int *len_ptr);
-int zune_text_get_line_len(ZText * text, Object * obj, LONG y);
 int zune_get_xpos_of_line(ZText * text, Object * obj, LONG y, LONG xpixel);
 int zune_text_get_lines(ZText * text);
 int zune_make_cursor_visible(ZText * text, Object * obj, LONG cursorx,
@@ -175,7 +174,7 @@ ZText *zune_text_new(CONST_STRPTR preparse, CONST_STRPTR content,
 }
 
 /**************************************************************************
-Completly frees a ZText
+Completely frees a ZText
 **************************************************************************/
 void zune_text_destroy(ZText * text)
 {
@@ -211,14 +210,14 @@ void zune_text_destroy(ZText * text)
 
 
 /**************************************************************************
-Allocated and initialize a new text chunk and add it to the list
+Allocate and initialize a new text chunk and add it to the list.
 The context contains the values for the chunk to be created.
 **************************************************************************/
 void zune_text_chunk_new(struct zune_context *zc)
 {
     ZTextChunk *ztc;
 
-    /* No char has been processed so we needn't to allocate anything */
+    /* No char has been processed so we needn't allocate anything */
     if (zc->text == zc->text_start)
         return;
 
@@ -259,7 +258,7 @@ void zune_text_chunk_new(struct zune_context *zc)
 
 
 /**************************************************************************
-Calculates the length of the string exluding line feed or 0 byte
+Calculates the length of the string excluding line feed or 0 byte
 **************************************************************************/
 static int strlenlf(const char *str)
 {
@@ -276,7 +275,7 @@ static int strlenlf(const char *str)
 }
 
 /**************************************************************************
-Note: Only aligments at the beginning of a line should affect this line
+Note: Only alignments at the beginning of a line should affect this line
 (tested in MUI)
 **************************************************************************/
 static CONST_STRPTR parse_escape_code(ZTextLine * ztl,
@@ -421,7 +420,7 @@ is terminated, and the escape parameters are stacked until
 a normal character is read. Then a new chunk begins with this char.
 
 s_ptr is a pointer to the text string. After this function has been
-executed it is changed to point to the end of the string (eighter the '\n'
+executed it is changed to point to the end of the string (either the '\n'
 or 0 byte)
 
 This is probably a function to rewrite to deal with wide chars.

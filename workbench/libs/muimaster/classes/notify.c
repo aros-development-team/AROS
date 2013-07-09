@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -883,6 +883,6 @@ const struct __MUIBuiltinClass _MUI_Notify_desc =
 {
     MUIC_Notify,                /* Class name */
     ROOTCLASS,                  /* super class name */
-    sizeof(struct MUI_NotifyData),      /* size of class own datas */
+    sizeof(struct MUI_NotifyData),      /* size of class's own data */
     (void *) Notify_Dispatcher   /* class dispatcher */
 };
