@@ -17,12 +17,12 @@ static struct DrawInfo test_di =
     2,
     6,
     test_pens,
-    0xC0DEBAD1,
+    (APTR)(IPTR)0xC0DEBAD1,
     4,
     {22, 22},
     DRIF_NEWLOOK,
-    0xC0DEBAD2,
-    0xC0DEBAD3
+    (APTR)(IPTR)0xC0DEBAD2,
+    (APTR)(IPTR)0xC0DEBAD3
 };
 
 static void TestAttr(ULONG id, struct DrawInfo *dinfo)
@@ -30,7 +30,7 @@ static void TestAttr(ULONG id, struct DrawInfo *dinfo)
     IPTR err = 0;
     IPTR val = GetDrawInfoAttr(dinfo, id, &err);
 
-    printf("AttrID 0x%08X Value %08lX\tError: %ld\n", id, val, err);
+    printf("AttrID 0x%08lX Value %08llX\tError: %lld\n", (unsigned long)id, (unsigned long long)val, (long long)err);
 }
 
 static void TestAllAttrs(struct DrawInfo *dinfo)
