@@ -71,7 +71,7 @@
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED)
     {
-        ULONG attributes = (ULONG)mhe->mhe_MemHeader.mh_First;
+        ULONG attributes = (ULONG)(IPTR)mhe->mhe_MemHeader.mh_First;
 
         if (mhe->mhe_Alloc)
             return mhe->mhe_Alloc(mhe, memSize, &attributes);

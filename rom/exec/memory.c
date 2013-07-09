@@ -812,7 +812,7 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
             mh->mh_Attributes       = orig->mh_Attributes;
             mh->mh_Upper            = (void *)mh + size;
             mh->mh_Lower            = (void *)mh;
-            mh->mh_First            = (APTR)flags;
+            mh->mh_First            = (APTR)(IPTR)flags;
             mh->mh_Free             = 0;
 
             mhe->mhe_Magic          = mhe_orig->mhe_Magic;
