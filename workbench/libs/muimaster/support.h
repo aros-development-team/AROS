@@ -1,7 +1,5 @@
 /*
-    Copyright  2002-2003, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -49,8 +47,8 @@ int isRegionWithinBounds(struct Region *r, int left, int top, int width,
 ULONG ConvertKey(struct IntuiMessage *imsg);
 
 #define _between(a,x,b) ((x)>=(a) && (x)<=(b))
-#define _isinobject(x,y) (_between(_mleft(obj),(x),_mright (obj)) \
-                          && _between(_mtop(obj) ,(y),_mbottom(obj)))
+#define _isinobject(obj, x, y) (_between(_mleft(obj), (x), _mright(obj)) \
+                          && _between(_mtop(obj), (y), _mbottom(obj)))
 
 /* add mask in flags if tag is true, else sub mask */
 #define _handle_bool_tag(flags, tag, mask) \

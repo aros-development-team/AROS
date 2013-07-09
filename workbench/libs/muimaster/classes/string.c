@@ -1,5 +1,5 @@
 /* 
-    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1670,7 +1670,7 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 //bug("String_HandleEvent: code == SELECTDOWN, x=%d y=%d\n",
                 //    x, y);
 
-                if (_isinobject(x, y))
+                if (_isinobject(obj, x, y))
                 {
                     UWORD text_left, text_right;
 

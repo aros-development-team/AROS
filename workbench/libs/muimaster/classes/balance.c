@@ -1,5 +1,5 @@
 /* 
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -723,7 +723,7 @@ IPTR Balance__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         case IDCMP_MOUSEBUTTONS:
             if (msg->imsg->Code == SELECTDOWN)
             {
-                if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
+                if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
                 {
                     get(_parent(obj), MUIA_Group_ChildList, &data->objs);
                     data->clickpos =

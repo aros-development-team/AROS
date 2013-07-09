@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2011, The AROS Development Team.
+    Copyright © 2002-2013, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -1918,12 +1918,9 @@ static IPTR event_button(Class *cl, Object *obj,
     switch (imsg->Code)
     {
     case SELECTDOWN:
-        if (data->mad_InputMode == MUIV_InputMode_None)
-            break;
-
         if (in)
         {
-//                  set(_win(obj), MUIA_Window_ActiveObject, obj);
+//            set(_win(obj), MUIA_Window_ActiveObject, obj);
             data->mad_ClickX = imsg->MouseX;
             data->mad_ClickY = imsg->MouseY;
 
@@ -2110,12 +2107,7 @@ static IPTR Area__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
-    //bug("Area_HandleEvent [%p] imsg=%p muikey=%ld\n", obj, msg->imsg,
-    //    msg->muikey);
     if (data->mad_DisableCount)
-        return 0;
-    if (data->mad_InputMode == MUIV_InputMode_None
-        && !data->mad_ContextMenu)
         return 0;
 
     if (msg->muikey != MUIKEY_NONE)
@@ -2255,7 +2247,7 @@ static IPTR Area__MUIM_Export(struct IClass *cl, Object *obj,
 
 
 /**************************************************************************
-MUIM_Import : to import an objects "contents" from a dataspace object.
+MUIM_Import : to import an object's "contents" from a dataspace object.
 **************************************************************************/
 static IPTR Area__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)
@@ -2310,9 +2302,8 @@ MUIM_CreateDragImage
 static IPTR Area__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
     struct MUIP_CreateDragImage *msg)
 {
-    struct MUI_DragImage *img =
-        (struct MUI_DragImage *)AllocVec(sizeof(struct
-            MUIP_CreateDragImage), MEMF_CLEAR);
+    struct MUI_DragImage *img = (struct MUI_DragImage *)
+        AllocVec(sizeof(struct MUI_DragImage), MEMF_CLEAR);
     if (img)
     {
         const struct ZuneFrameGfx *zframe;

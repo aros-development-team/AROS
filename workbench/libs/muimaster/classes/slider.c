@@ -1,6 +1,6 @@
 /*
-    Copyright Â© 1999, David Le Corfec.
-    Copyright Â© 2002-2011, The AROS Development Team.
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002-2013, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -33,7 +33,7 @@ struct MUI_SliderData
     ULONG flags;
     struct MUI_EventHandlerNode ehn;
     struct MUI_ImageSpec_intern *knob_bg;
-    LONG knob_offset;           /* current pixel offest for fine alignment */
+    LONG knob_offset;           /* current pixel offset for fine alignment */
     LONG knob_left;
     LONG knob_top;
     LONG knob_width;
@@ -44,7 +44,7 @@ struct MUI_SliderData
     LONG state;                 /* When using mouse */
     int keep_knob_offset;
 
-    int same_knop_value;        /* 1 if the knob value didn't change
+    int same_knob_value;        /* 1 if the knob value didn't change
                                  * since last call of MUIM_Draw */
 };
 
@@ -124,7 +124,7 @@ IPTR Slider__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 /**************************************************************************
- MUIM_Show
+ OM_SET
 **************************************************************************/
 IPTR Slider__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -388,7 +388,7 @@ IPTR Slider__MUIM_Draw(struct IClass *cl, Object *obj,
         Text(_rp(obj), buf, strlen(buf));
     }
 
-    data->same_knop_value = 0;
+    data->same_knob_value = 0;
     return TRUE;
 }
 
@@ -407,7 +407,7 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     case IDCMP_MOUSEBUTTONS:
         if (msg->imsg->Code == SELECTDOWN)
         {
-            if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
+            if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
             {
                 if (data->flags & SLIDER_HORIZ)
                 {
@@ -484,8 +484,6 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     DoSuperMethod(cl, obj, MUIM_Numeric_ValueToScaleExt,
                     newval, 0,
                     _mwidth(obj) - data->knob_width) + data->knob_click;
-                if (data->knob_offset < 0)
-                    data->knob_offset = 0;
                 data->knob_offset = msg->imsg->MouseX - pixel;
                 data->keep_knob_offset = 1;
 //                D(bug("%ld %ld %ld %ld %ld\n", data->knob_offset, pixel,
@@ -520,7 +518,7 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             }
             else if (oldko != data->knob_offset)
             {
-                data->same_knop_value = 1;
+                data->same_knob_value = 1;
                 MUI_Redraw(obj, MADF_DRAWUPDATE);
             }
             data->keep_knob_offset = 0;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,8 +8,8 @@
 
 #include <exec/memory.h>
 #include <graphics/gfx.h>
+#include <graphics/gfxmacros.h>
 #include <graphics/view.h>
-#include <devices/rawkeycodes.h>
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -91,6 +91,7 @@ struct MUI_ListData
     struct Hook *compare_hook;
     struct Hook *destruct_hook;
     struct Hook *display_hook;
+    struct Hook *multi_test_hook;
 
     struct Hook default_compare_hook;
 
@@ -135,9 +136,6 @@ struct MUI_ListData
     int title_height;           /* The complete height of the title */
     STRPTR title;       /* On single comlums this is the title, otherwise 1 */
 
-    struct MUI_EventHandlerNode ehn;
-    int mouse_click;            /* see below if mouse is hold down */
-
     /* Cursor images */
     struct MUI_ImageSpec_intern *list_cursor;
     struct MUI_ImageSpec_intern *list_select;
@@ -149,23 +147,12 @@ struct MUI_ListData
                  * update_pos) */
     int update_pos;
 
-    /* double click */
-    ULONG last_secs;
-    ULONG last_mics;
-    ULONG last_active;
-    ULONG doubleclick;
-
-    /* clicked column */
-    LONG click_column;
-
-    /* list type */
-    ULONG input;                /* FALSE - readonly, otherwise TRUE */
+    LONG drop_mark_y;
 
     /* list images */
     struct MinList images;
 
     /* user prefs */
-    ListviewMulti prefs_multi;
     ListviewRefresh prefs_refresh;
     UWORD prefs_linespacing;
     BOOL prefs_smoothed;
@@ -180,8 +167,53 @@ struct MUI_ListData
 #define LIST_QUIET         (1<<5)
 
 
-#define MOUSE_CLICK_ENTRY 1     /* on entry clicked */
-#define MOUSE_CLICK_TITLE 2     /* on title clicked */
+/****** List.mui/MUIA_List_CompareHook ***************************************
+*
+*   NAME
+*       MUIA_List_CompareHook -- (V4) [IS.], struct Hook *
+*
+*   FUNCTION
+*       The provided hook indicates the sort ordering of two list entries.
+*       The hook receives list-entry data pointers as its second and third
+*       arguments. The hook should return a negative value if the first entry
+*       should be placed before the second entry, a positive value if the
+*       first entry should be placed after the second entry, and zero if the
+*       entries are equal.
+*
+*       In addition to being used internally for sorting operations, this hook
+*       will be called when MUIM_List_Compare is externally invoked.
+*
+*       If this attribute is not specified or is set to NULL, all list entries
+*       must be strings.
+*
+******************************************************************************
+*
+*/
+
+/****** List.mui/MUIA_List_MultiTestHook *************************************
+*
+*   NAME
+*       MUIA_List_MultiTestHook -- (V4) [IS.], struct Hook *
+*
+*   FUNCTION
+*       The provided hook indicates whether a particular list entry
+*       may be multiselected. The hook receives the list-entry data pointer as
+*       its third argument, and returns a Boolean value. If this attribute is
+*       not specified or is set to NULL, all list entries are considered
+*       multi-selectable.
+*
+*       Whenever an entry is about to be selected, this hook is called if
+*       there are other entries already selected. If the hook returns TRUE,
+*       the entry may be multi-selected; if the hook returns FALSE, the entry
+*       remains unselected.
+*
+*       Additionally, if a non-multi-selectable entry has been selected (as
+*       the only selected entry in the list), any attempt to select an
+*       additional entry will fail.
+*
+******************************************************************************
+*
+*/
 
 /**************************************************************************
  Allocate a single list entry, does not initialize it (except the pointer)
@@ -206,6 +238,7 @@ static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
     /* Initialize fields */
     le->height = 0;
     le->width = 0;
+    le->flags = 0;
     for (j = 0; j < data->columns; j++)
         le->widths[j] = 0;
 
@@ -270,23 +303,6 @@ static int PrepareInsertListEntries(struct MUI_ListData *data, int pos,
         (data->entries_num - pos) * sizeof(struct ListEntry *));
     return 1;
 }
-
-/**************************************************************************
- Inserts a already initialized array of Entries at the given position.
- This function doesn't care if there is enough space in the datastructure
- Returns 1 if something failed (never in current implementation)
-**************************************************************************/
-#if 0
-static int InsertListEntries(struct MUI_ListData *data, int pos,
-    struct ListEntry **array, int count)
-{
-    memmove(&data->entries[pos + count], &data->entries[pos],
-        data->entries_num - pos);
-    memcpy(&data->entries[pos], array, count);
-    return 1;
-}
-#endif
-
 
 /**************************************************************************
  Removes count (already deinitalized) list entries starting az pos.
@@ -584,6 +600,9 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
     data->entries_visible = (_mheight(obj) - data->title_height)
         / (data->entry_maxheight /* + data->prefs_linespacing */ );
 
+    /* Distribute extra vertical space evenly between top and bottom of
+     * list */
+
     data->entries_top_pixel = _mtop(obj) + data->title_height
         + (_mheight(obj) - data->title_height
         -
@@ -632,7 +651,6 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->entries_active = MUIV_List_Active_Off;
     data->intern_puddle_size = 2008;
     data->intern_thresh_size = 1024;
-    data->input = 1;
     data->default_compare_hook.h_Entry = (HOOKFUNC) default_compare_func;
     data->default_compare_hook.h_SubEntry = 0;
     data->compare_hook = &(data->default_compare_hook);
@@ -659,8 +677,9 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
 
         case MUIA_List_CompareHook:
-            /* Not tested, if List_CompareHook really works. */
             data->compare_hook = (struct Hook *)tag->ti_Data;
+            if (data->compare_hook == NULL)
+                data->compare_hook = &data->default_compare_hook;
             break;
 
         case MUIA_List_ConstructHook:
@@ -673,6 +692,10 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
         case MUIA_List_DisplayHook:
             data->display_hook = (struct Hook *)tag->ti_Data;
+            break;
+
+        case MUIA_List_MultiTestHook:
+            data->multi_test_hook = (struct Hook *)tag->ti_Data;
             break;
 
         case MUIA_List_SourceArray:
@@ -699,6 +722,18 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             _handle_bool_tag(data->flags, tag->ti_Data, LIST_ADJUSTWIDTH);
             break;
 
+        case MUIA_List_AutoVisible:
+            _handle_bool_tag(data->flags, tag->ti_Data, LIST_AUTOVISIBLE);
+            break;
+
+        case MUIA_List_ShowDropMarks:
+            _handle_bool_tag(data->flags, tag->ti_Data, LIST_SHOWDROPMARKS);
+            break;
+
+        case MUIA_List_DragSortable:
+            _handle_bool_tag(data->flags, tag->ti_Data, LIST_DRAGSORTABLE);
+            set(obj, MUIA_Draggable, tag->ti_Data);
+            break;
         }
     }
 
@@ -775,14 +810,6 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         /* Selected entry will be moved into visible area */
     }
 
-
-    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS |
-        IDCMP_RAWKEY | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW;
-    data->ehn.ehn_Priority = 0;
-    data->ehn.ehn_Flags = 0;
-    data->ehn.ehn_Object = obj;
-    data->ehn.ehn_Class = cl;
-
     NewList((struct List *)&data->images);
 
     D(bug("List_New(%lx)\n", obj));
@@ -832,13 +859,15 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tag;
     struct TagItem *tags;
 
-    /* parse initial taglist */
+    /* parse taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
         switch (tag->ti_Tag)
         {
         case MUIA_List_CompareHook:
             data->compare_hook = (struct Hook *)tag->ti_Data;
+            if (data->compare_hook == NULL)
+                data->compare_hook = &data->default_compare_hook;
             break;
 
         case MUIA_List_ConstructHook:
@@ -851,6 +880,17 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
         case MUIA_List_DisplayHook:
             data->display_hook = (struct Hook *)tag->ti_Data;
+            break;
+
+        case MUIA_List_MultiTestHook:
+            data->multi_test_hook = (struct Hook *)tag->ti_Data;
+            if (data->multi_test_hook != NULL)
+            {
+                /* Clearing current selections is the easiest way to keep
+                 * selections consistent with the new hook */
+                DoMethod(obj, MUIM_List_Select, MUIV_List_Select_All,
+                    MUIV_List_Select_Off, NULL);
+            }
             break;
 
         case MUIA_List_VertProp_First:
@@ -926,25 +966,9 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                     LONG old = data->entries_active;
                     data->entries_active = new_entries_active;
 
-                    data->update = 2;
-                    data->update_pos = old;
-                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-                    data->update = 2;
-                    data->update_pos = data->entries_active;
-                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-
                     /* Selectchange stuff */
-                    if (old != -1)
-                    {
-                        data->entries[old]->flags &= ~ENTRY_SELECTED;
-                        DoMethod(obj, MUIM_List_SelectChange, old,
-                            MUIV_List_Select_Off, 0);
-                    }
-
                     if (new_entries_active != -1)
                     {
-                        data->entries[new_entries_active]->flags |=
-                            ENTRY_SELECTED;
                         DoMethod(obj, MUIM_List_SelectChange,
                             new_entries_active, MUIV_List_Select_On, 0);
                         DoMethod(obj, MUIM_List_SelectChange,
@@ -956,7 +980,17 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
                     set(obj, MUIA_Listview_SelectChange, TRUE);
 
-                    if (new_entries_active != -1)
+                    data->update = 2;
+                    data->update_pos = old;
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                    data->update = 2;
+                    data->update_pos = data->entries_active;
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+                    /* Make new active entry visible (if there is one and
+                       list is visible) */
+                    if (new_entries_active != -1
+                        && (_flags(obj) & MADF_SETUP))
                     {
                         DoMethod(obj, MUIM_List_Jump,
                             MUIV_List_Jump_Active);
@@ -971,13 +1005,14 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             data->entries_first = tag->ti_Data;
 
             MUI_Redraw(obj, MADF_DRAWUPDATE);
-            if ((data->vertprop_first != tag->ti_Data) && (!(data->flags & LIST_QUIET)))
+            if ((data->vertprop_first != tag->ti_Data)
+                && (!(data->flags & LIST_QUIET)))
             {
                 set(obj, MUIA_List_VertProp_First, tag->ti_Data);
             }
             break;
 
-        case MUIA_List_Visible:
+        case MUIA_List_Visible:    /* Shouldn't be settable? */
             if (data->vertprop_visible != tag->ti_Data)
                 set(obj, MUIA_List_VertProp_Visible, tag->ti_Data);
             break;
@@ -1004,13 +1039,23 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
                 if (data->entries_num != XGET(obj, MUIA_List_VertProp_Entries))
                     set(obj, MUIA_List_VertProp_Entries, data->entries_num);
-                if (data->vertprop_first != XGET(obj, MUIA_List_VertProp_First))
+                if (data->vertprop_first !=
+                    XGET(obj, MUIA_List_VertProp_First))
                     set(obj, MUIA_List_VertProp_First, data->vertprop_first);
             }
             break;
 
-        case MUIA_Listview_ClickColumn:
-            data->click_column = tag->ti_Data;
+        case MUIA_List_AutoVisible:
+            _handle_bool_tag(data->flags, tag->ti_Data, LIST_AUTOVISIBLE);
+            break;
+
+        case MUIA_List_ShowDropMarks:
+            _handle_bool_tag(data->flags, tag->ti_Data, LIST_SHOWDROPMARKS);
+            break;
+
+        case MUIA_List_DragSortable:
+            _handle_bool_tag(data->flags, tag->ti_Data, LIST_DRAGSORTABLE);
+            set(obj, MUIA_Draggable, tag->ti_Data);
             break;
         }
     }
@@ -1048,6 +1093,7 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         STORE = data->vertprop_entries;
         return 1;
     case MUIA_List_VertProp_Visible:
+    case MUIA_List_Visible:
         STORE = data->vertprop_visible;
         return 1;
     case MUIA_List_VertProp_First:
@@ -1056,16 +1102,16 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_List_Format:
         STORE = (IPTR) data->format;
         return 1;
-
-    case MUIA_Listview_DoubleClick:
-        STORE = 0;
+    case MUIA_List_AutoVisible:
+        STORE = data->flags & LIST_AUTOVISIBLE;
         return 1;
-    case MUIA_Listview_ClickColumn:
-        STORE = data->click_column;
+    case MUIA_List_ShowDropMarks:
+        STORE = data->flags & LIST_SHOWDROPMARKS;
         return 1;
-    case MUIA_Listview_List:
-        STORE = (IPTR) obj;
-        return 1;               /* Validated with 3rd party application */
+    case MUIA_List_DragSortable:
+        STORE = data->flags & LIST_DRAGSORTABLE;
+        return 1;
+        break;
     }
 
     if (DoSuperMethodA(cl, obj, (Msg) msg))
@@ -1085,7 +1131,6 @@ IPTR List__MUIM_Setup(struct IClass *cl, Object *obj,
     if (!DoSuperMethodA(cl, obj, (Msg) msg))
         return 0;
 
-    data->prefs_multi = muiGlobalInfo(obj)->mgi_Prefs->list_multi;
     data->prefs_refresh = muiGlobalInfo(obj)->mgi_Prefs->list_refresh;
     data->prefs_linespacing =
         muiGlobalInfo(obj)->mgi_Prefs->list_linespacing;
@@ -1102,8 +1147,6 @@ IPTR List__MUIM_Setup(struct IClass *cl, Object *obj,
     {
         data->title_height = 0;
     }
-
-    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) & data->ehn);
 
     data->list_cursor =
         zune_imspec_setup(MUII_ListCursor, muiRenderInfo(obj));
@@ -1134,10 +1177,6 @@ IPTR List__MUIM_Cleanup(struct IClass *cl, Object *obj,
     zune_imspec_cleanup(data->list_cursor);
     zune_imspec_cleanup(data->list_select);
     zune_imspec_cleanup(data->list_selcur);
-
-    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) & data->ehn);
-    data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
-    data->mouse_click = 0;
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
@@ -1193,9 +1232,15 @@ IPTR List__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_Layout
-**************************************************************************/
+/****i* List.mui/MUIM_Layout *************************************************
+*
+*   NAME
+*       MUIM_Layout
+*
+******************************************************************************
+*
+*/
+
 IPTR List__MUIM_Layout(struct IClass *cl, Object *obj,
     struct MUIP_Layout *msg)
 {
@@ -1206,21 +1251,21 @@ IPTR List__MUIM_Layout(struct IClass *cl, Object *obj,
     /* Calc the numbers of entries visible */
     CalcVertVisible(cl, obj);
 
-#if 0                           /* Don't do this! */
-    if (data->entries_active < new_entries_first)
-        new_entries_first = data->entries_active;
-#endif
-
+    /* Ensure active entry is visible if requested */
     if (data->entries_active + 1 >=
-        (data->entries_first + data->entries_visible))
+        (data->entries_first + data->entries_visible)
+        && (data->flags & LIST_AUTOVISIBLE) != 0)
         new_entries_first =
             data->entries_active - data->entries_visible + 1;
 
+    /* Ensure there are no unnecessary empty lines */
     if ((new_entries_first + data->entries_visible >=
             data->entries_num)
         && (data->entries_visible <= data->entries_num))
         new_entries_first = data->entries_num - data->entries_visible;
 
+    /* Always show the start of the list if it isn't long enough to fill the
+       view */
     if (data->entries_num <= data->entries_visible)
         new_entries_first = 0;
 
@@ -1230,7 +1275,7 @@ IPTR List__MUIM_Layout(struct IClass *cl, Object *obj,
     set(obj, new_entries_first != data->entries_first ?
         MUIA_List_First : TAG_IGNORE, new_entries_first);
 
-    /* So the notify takes happens */
+    /* So the notify happens */
     set(obj, MUIA_List_VertProp_Visible, data->entries_visible);
 
     return rc;
@@ -1261,18 +1306,6 @@ IPTR List__MUIM_Hide(struct IClass *cl, Object *obj,
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
-#if 0
-    if (data->ehn.ehn_Events & (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS))
-    {
-        DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-            (IPTR) & data->ehn);
-        data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
-        DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-            (IPTR) & data->ehn);
-    }
-    data->mouse_click = 0;
-#endif
-
     zune_imspec_hide(data->list_cursor);
     zune_imspec_hide(data->list_select);
     zune_imspec_hide(data->list_selcur);
@@ -1282,8 +1315,8 @@ IPTR List__MUIM_Hide(struct IClass *cl, Object *obj,
 
 
 /**************************************************************************
- Draw an entry at entry_pos at the given y location. To draw the title,
- set pos to ENTRY_TITLE
+ Draw an entry at entry_pos at the given row. To draw the title, set pos to
+ ENTRY_TITLE
 **************************************************************************/
 static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos,
     int y)
@@ -1328,6 +1361,7 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     APTR clip;
     int start, end;
     BOOL scroll_caused_damage = FALSE;
+    struct MUI_ImageSpec_intern *highlight;
 
     if (data->flags & LIST_QUIET)
         return 0;
@@ -1417,7 +1451,7 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     for (entry_pos = start;
         entry_pos < end && entry_pos < data->entries_num; entry_pos++)
     {
-        //struct ListEntry *entry = data->entries[entry_pos];
+        struct ListEntry *entry = data->entries[entry_pos];
 
         if (!(msg->flags & MADF_DRAWUPDATE) ||
             ((msg->flags & MADF_DRAWUPDATE) && data->update == 1) ||
@@ -1425,27 +1459,39 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             ((msg->flags & MADF_DRAWUPDATE) && data->update == 2
                 && data->update_pos == entry_pos))
         {
-            if (entry_pos == data->entries_active)
+            /* Choose appropriate highlight image */
+
+            if (entry_pos == data->entries_active
+                && entry->flags & ENTRY_SELECTED)
+                highlight = data->list_selcur;
+            else if (entry_pos == data->entries_active)
+                highlight = data->list_cursor;
+            else if (entry->flags & ENTRY_SELECTED)
+                highlight = data->list_select;
+            else
+                highlight = NULL;
+
+            /* Draw highlight or background */
+
+            if (highlight != NULL)
             {
-                zune_imspec_draw(data->list_cursor, muiRenderInfo(obj),
+                zune_imspec_draw(highlight, muiRenderInfo(obj),
                     _mleft(obj), y, _mwidth(obj), data->entry_maxheight,
                     0, y - data->entries_top_pixel, 0);
             }
-            else
+            else if ((msg->flags & MADF_DRAWUPDATE) && data->update == 2
+                && data->update_pos == entry_pos)
             {
-                if ((msg->flags & MADF_DRAWUPDATE) && data->update == 2
-                    && data->update_pos == entry_pos)
-                {
-                    DoMethod(obj, MUIM_DrawBackground, _mleft(obj), y,
-                        _mwidth(obj), data->entry_maxheight, 0,
-                        y - _mtop(obj) +
-                        data->entries_first * data->entry_maxheight, 0);
-                }
+                DoMethod(obj, MUIM_DrawBackground, _mleft(obj), y,
+                    _mwidth(obj), data->entry_maxheight, 0,
+                    y - _mtop(obj) +
+                    data->entries_first * data->entry_maxheight, 0);
             }
+
             List_DrawEntry(cl, obj, entry_pos, y);
         }
         y += data->entry_maxheight;
-    }                           /* for */
+    }
 
     MUI_RemoveClipping(muiRenderInfo(obj), clip);
 
@@ -1529,237 +1575,21 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     return 0;
 }
 
-/**************************************************************************
- Makes the entry at the given mouse position the active one.
- Relx and Rely are relative mouse coordinates to the upper left of
- the object
-**************************************************************************/
-static VOID List_MakeActive(struct IClass *cl, Object *obj, LONG relx,
-    LONG rely)
-{
-    struct MUI_ListData *data = INST_DATA(cl, obj);
+/****** List.mui/MUIM_List_Clear *********************************************
+*
+*   NAME
+*       MUIM_List_Clear (V4)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Clear);
+*
+*   FUNCTION
+*       Removes all entries from the list.
+*
+******************************************************************************
+*
+*/
 
-    if (data->entries_num == 0)
-        return;
-
-    LONG eclicky = rely + _top(obj) - data->entries_top_pixel;
-        /* y coordinates transformed to the entries */
-    LONG new_act = eclicky / data->entry_maxheight + data->entries_first;
-    LONG old_act = data->entries_active;
-
-    if (eclicky < 0)
-    {
-        new_act = data->entries_first - 1;
-    }
-    else if (new_act > data->entries_first + data->entries_visible)
-    {
-        new_act = data->entries_first + data->entries_visible;
-    }
-
-    if (new_act >= data->entries_num)
-        new_act = data->entries_num - 1;
-    else if (new_act < 0)
-        new_act = 0;
-
-    /* Notify only when active entry has changed */
-    if (old_act != new_act)
-        set(obj, MUIA_List_Active, new_act);
-}
-
-static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely,
-    UWORD qual)
-{
-    struct MUI_ListData *data = INST_DATA(cl, obj);
-    LONG new = data->entries_first;
-
-    if (qual & IEQUALIFIER_CONTROL)
-    {
-        if (wheely < 0)
-            new = 0;
-        if (wheely > 0)
-            new = data->entries_num;
-    }
-    else if (qual & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
-    {
-        new += (wheely * data->entries_visible);
-    }
-    else
-    {
-        new += wheely * 3;
-    }
-
-    if (new > data->entries_num - data->entries_visible)
-    {
-        new = data->entries_num - data->entries_visible;
-    }
-
-    if (new < 0)
-    {
-        new = 0;
-    }
-
-    if (new != data->entries_first)
-    {
-        set(obj, MUIA_List_First, new);
-    }
-
-}
-
-/**************************************************************************
- MUIM_HandleEvent
-**************************************************************************/
-IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
-    struct MUIP_HandleEvent *msg)
-{
-    struct MUI_ListData *data = INST_DATA(cl, obj);
-
-    if (msg->imsg)
-    {
-        LONG mx = msg->imsg->MouseX - _left(obj);
-        LONG my = msg->imsg->MouseY - _top(obj);
-        switch (msg->imsg->Class)
-        {
-        case IDCMP_MOUSEBUTTONS:
-            if (msg->imsg->Code == SELECTDOWN)
-            {
-                if (mx >= 0 && mx < _width(obj) && my >= 0
-                    && my < _height(obj))
-                {
-                    LONG eclicky = my + _top(obj) - data->entries_top_pixel;
-                        /* y coordinates transformed to the entries */
-                    data->mouse_click = MOUSE_CLICK_ENTRY;
-
-                    /* Now check if it was clicked on a title or on entries */
-                    if (eclicky >= 0
-                        && eclicky <
-                        data->entries_visible * data->entry_maxheight)
-                    {
-                        List_MakeActive(cl, obj, mx, my);
-                            /* sets data->entries_active */
-
-                        if (data->last_active == data->entries_active
-                            && DoubleClick(data->last_secs, data->last_mics,
-                                msg->imsg->Seconds, msg->imsg->Micros))
-                        {
-                            /* Handle MUIA_ListView_ClickColumn */
-                            data->click_column = 0;
-                            if (data->entries_num > 0 && data->columns > 0)
-                            {
-                                LONG width_sum = 0;
-                                LONG col;
-                                for (col = 0; col < data->columns; col++)
-                                {
-                                    width_sum +=
-                                        data->ci[col].entries_width +
-                                        data->ci[col].delta +
-                                        (data->ci[col].bar ? BAR_WIDTH : 0);
-                                    D(bug
-                                        ("[List/MUIM_HandleEvent] col %d "
-                                            "width %d width_sum %d mx %d\n",
-                                            col,
-                                            data->ci[col].entries_width,
-                                            width_sum, mx));
-                                    if (mx < width_sum)
-                                    {
-                                        D(bug
-                                            ("[List/MUIM_HandleEvent] "
-                                                "Column hit %d\n",
-                                                col));
-                                        set(obj, MUIA_Listview_ClickColumn,
-                                            col);
-                                        break;
-                                    }
-                                }
-                            }
-
-                            set(obj, MUIA_Listview_DoubleClick, TRUE);
-                            data->last_active = -1;
-                            data->last_secs = data->last_mics = 0;
-                        }
-                        else
-                        {
-                            data->last_active = data->entries_active;
-                            data->last_secs = msg->imsg->Seconds;
-                            data->last_mics = msg->imsg->Micros;
-                        }
-                    }
-
-                    DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                        (IPTR) & data->ehn);
-                    data->ehn.ehn_Events |=
-                        (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
-                    DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                        (IPTR) & data->ehn);
-
-                    return MUI_EventHandlerRC_Eat;
-                }
-            }
-            else
-            {
-                if (msg->imsg->Code == SELECTUP && data->mouse_click)
-                {
-                    DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                        (IPTR) & data->ehn);
-                    data->ehn.ehn_Events &=
-                        ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
-                    DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                        (IPTR) & data->ehn);
-                    data->mouse_click = 0;
-                    return 0;
-                }
-            }
-            break;
-
-        case IDCMP_INTUITICKS:
-        case IDCMP_MOUSEMOVE:
-            if (data->mouse_click)
-            {
-                List_MakeActive(cl, obj, mx, my);
-            }
-            break;
-
-        case IDCMP_RAWKEY:
-            switch (msg->imsg->Code)
-            {
-            case RAWKEY_NM_WHEEL_UP:
-                if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
-                {
-                    DoWheelMove(cl, obj, -1, msg->imsg->Qualifier);
-                }
-                break;
-
-            case RAWKEY_NM_WHEEL_DOWN:
-                if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
-                {
-                    DoWheelMove(cl, obj, 1, msg->imsg->Qualifier);
-                }
-                break;
-
-            }
-            break;
-
-        case IDCMP_ACTIVEWINDOW:
-        case IDCMP_INACTIVEWINDOW:
-            if (data->ehn.ehn_Events & (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS))
-            {
-                DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                    (IPTR) & data->ehn);
-                data->ehn.ehn_Events &=
-                    ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
-                DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                    (IPTR) & data->ehn);
-                data->mouse_click = 0;
-            }
-            break;
-        }
-    }
-
-    return 0;
-}
-
-/**************************************************************************
- MUIM_List_Clear
-**************************************************************************/
 IPTR List__MUIM_Clear(struct IClass *cl, Object *obj,
     struct MUIP_List_Clear *msg)
 {
@@ -1990,6 +1820,7 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     LONG pos, i, count, selcount=0, state=0;
+    BOOL multi_allowed = TRUE, new_select_state;
 
     /* Establish the range of entries affected */
     switch (msg->pos)
@@ -2015,6 +1846,20 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
         break;
     }
 
+    if (msg->seltype != MUIV_List_Select_Ask && data->multi_test_hook != NULL)
+    {
+        /* Disallow selection of an additional entry if there is a currently
+           selected entry that is not multi-selectable (in such case there
+           will only be one entry currently selected, so no need to iterate) */
+        i = MUIV_List_NextSelected_Start;
+        DoMethod(obj, MUIM_List_NextSelected, (IPTR) &i);
+        if (i != MUIV_List_NextSelected_End)
+            selcount++;
+        if (data->multi_test_hook != NULL && selcount != 0)
+            multi_allowed = CallHookPkt(data->multi_test_hook, NULL,
+                data->entries[i]->data);
+    }
+
     /* Change or check state of each entry in the range */
     for (i = pos; i < pos + count; i++)
     {
@@ -2022,21 +1867,36 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
         switch (msg->seltype)
         {
         case MUIV_List_Select_Off:
-            data->entries[i]->flags &= ~ENTRY_SELECTED;
+            new_select_state = FALSE;
             break;
 
         case MUIV_List_Select_On:
-            data->entries[i]->flags |= ENTRY_SELECTED;
+            new_select_state = TRUE;
             break;
 
         case MUIV_List_Select_Toggle:
-            data->entries[i]->flags ^= ENTRY_SELECTED;
+            new_select_state = !state;
             break;
 
         default:
             if (data->entries[i]->flags & ENTRY_SELECTED)
                 selcount++;
             break;
+        }
+
+        if (msg->seltype != MUIV_List_Select_Ask)
+        {
+            /* Disallow selection if entry is not multi-selectable and
+             * there are already selected entries */
+            if (data->multi_test_hook != NULL && new_select_state)
+                new_select_state = multi_allowed && (selcount == 0 ||
+                    CallHookPkt(data->multi_test_hook, NULL,
+                        data->entries[i]->data));
+
+            if (new_select_state)
+                data->entries[i]->flags |= ENTRY_SELECTED;
+            else
+                data->entries[i]->flags &= ~ENTRY_SELECTED;
         }
     }
 
@@ -2053,7 +1913,13 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
     /* Redraw unless it was just an enquiry */
     if (msg->seltype != MUIV_List_Select_Ask)
     {
-        data->update = 1;
+        if (count > 1)
+            data->update = 1;
+        else
+        {
+            data->update = 2;
+            data->update_pos = pos;
+        }
         MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
    
@@ -2165,8 +2031,7 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
 
         toinsert++;
         pos++;
-    }                           // while (pos < until)
-
+    }
 
     /* Recalculate the number of visible entries */
     if (_flags(obj) & MADF_SETUP)
@@ -2283,9 +2148,32 @@ IPTR List__MUIM_Destruct(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_List_Compare
-**************************************************************************/
+/****** List.mui/MUIM_List_Compare *******************************************
+*
+*   NAME
+*       MUIM_List_Compare (V20)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Compare, APTR entry1, APTR entry2,
+*           LONG sort_type1, LONG sort_type2);
+*
+*   FUNCTION
+*       Compare two list entries according to the current comparison hook
+*       (MUIA_List_CompareHook).
+*
+*   INPUTS
+*       entry1 - the first entry data.
+*       entry2 - the second entry data.
+*       sort_type1 - undocumented.
+*       sort_type2 - undocumented.
+*
+*   SEE ALSO
+*       MUIA_List_CompareHook, MUIM_List_Sort.
+*
+******************************************************************************
+*
+*/
+
 IPTR List__MUIM_Compare(struct IClass *cl, Object *obj,
     struct MUIP_List_Compare *msg)
 {
@@ -2375,9 +2263,30 @@ IPTR List__MUIM_DeleteImage(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_List_Jump
-**************************************************************************/
+/****** List.mui/MUIM_List_Jump **********************************************
+*
+*   NAME
+*       MUIM_List_Jump (V4)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Jump, LONG pos);
+*
+*   FUNCTION
+*       Scrolls the list so that a particular entry is visible.
+*
+*   INPUTS
+*       pos - index of entry that should become visible, or one of these
+*           special values:
+*               MUIV_List_Jump_Active: show the active entry.
+*               MUIV_List_Jump_Top: show the first entry.
+*               MUIV_List_Jump_Bottom: show the last entry.
+*               MUIV_List_Jump_Up: show the previous hidden entry.
+*               MUIV_List_Jump_Down: show the next hidden entry.
+*
+******************************************************************************
+*
+*/
+
 IPTR List__MUIM_Jump(struct IClass *cl, Object *obj,
     struct MUIP_List_Jump *msg)
 {
@@ -2405,7 +2314,6 @@ IPTR List__MUIM_Jump(struct IClass *cl, Object *obj,
     case MUIV_List_Jump_Up:
         pos = data->entries_first - 1;
         break;
-
     }
 
     if (pos > data->entries_num)
@@ -2430,13 +2338,28 @@ IPTR List__MUIM_Jump(struct IClass *cl, Object *obj,
         }
     }
 
-
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_List_Sort
-**************************************************************************/
+/****** List.mui/MUIM_List_Sort **********************************************
+*
+*   NAME
+*       MUIM_List_Sort (V4)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Sort);
+*
+*   FUNCTION
+*       Sort the list's entries according to the current comparison hook
+*       (MUIA_List_CompareHook).
+*
+*   SEE ALSO
+*       MUIA_List_CompareHook, MUIM_List_Compare.
+*
+******************************************************************************
+*
+*/
+
 IPTR List__MUIM_Sort(struct IClass *cl, Object *obj,
     struct MUIP_List_Sort *msg)
 {
@@ -2478,9 +2401,33 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_List_Move
-**************************************************************************/
+/****** List.mui/MUIM_List_Move **********************************************
+*
+*   NAME
+*       MUIM_List_Move (V9)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_List_Move, LONG from, LONG to);
+*
+*   FUNCTION
+*       Move a list entry to a new position.
+*
+*   INPUTS
+*       from - the current index of the entry that should be moved, or one of
+*           these special values:
+*               MUIV_List_Move_Active: the active entry.
+*               MUIV_List_Move_Top: the first entry.
+*               MUIV_List_Move_Bottom: the last entry.
+*       to - the index of the entry's new position, or one of
+*           these special values:
+*               MUIV_List_Move_Active: the active entry.
+*               MUIV_List_Move_Top: the first entry.
+*               MUIV_List_Move_Bottom: the last entry.
+*
+******************************************************************************
+*
+*/
+
 IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
     struct MUIP_List_Move *msg)
 {
@@ -2489,6 +2436,7 @@ IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
     LONG from, to;
     int i;
 
+    /* Normalise special 'from' values */
     switch (msg->from)
     {
     case MUIV_List_Move_Top:
@@ -2504,6 +2452,7 @@ IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
         from = msg->from;
     }
 
+    /* Normalise special 'to' values */
     switch (msg->to)
     {
     case MUIV_List_Move_Top:
@@ -2525,10 +2474,12 @@ IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
         to = msg->to;
     }
 
+    /* Check that values are within valid bounds */
     if (from > data->entries_num - 1 || from < 0
         || to > data->entries_num - 1 || to < 0 || from == to)
         return (IPTR) FALSE;
 
+    /* Shift all entries in the range between the 'from' and 'to' positions */
     if (from < to)
     {
         struct ListEntry *backup = data->entries[from];
@@ -2544,6 +2495,15 @@ IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
         data->entries[to] = backup;
     }
 
+    /* Update index of active entry */
+    if (from == data->entries_active)
+        data->entries_active = to;
+    else if (data->entries_active > from && data->entries_active < to)
+        data->entries_active--;
+    else if (data->entries_active < from && data->entries_active >= to)
+        data->entries_active++;
+
+    /* Reflect list changes visually */
     data->update = 1;
     MUI_Redraw(obj, MADF_DRAWUPDATE);
 
@@ -2586,6 +2546,305 @@ IPTR List__MUIM_NextSelected(struct IClass *cl, Object *obj,
 }
 
 /**************************************************************************
+ MUIM_List_TestPos
+**************************************************************************/
+IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
+    struct MUIP_List_TestPos *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    struct MUI_List_TestPos_Result *result = msg->res;
+    LONG col = -1, row = -1;
+    UWORD flags = 0;
+    LONG mx = msg->x - _left(obj);
+    LONG entries_visible;
+
+    if (data->entries_visible <= data->entries_num)
+        entries_visible = data->entries_visible;
+    else
+        entries_visible = data->entries_num;
+    LONG ey = msg->y - data->entries_top_pixel;
+        /* y coordinates transformed to the entries */
+
+    /* Now check if it was clicked on a title or on entries */
+    if (ey < 0)
+        flags |= MUI_LPR_ABOVE;
+    else if (ey >= entries_visible * data->entry_maxheight)
+        flags |= MUI_LPR_BELOW;
+    else
+    {
+        /* Identify row */
+        row = ey / data->entry_maxheight + data->entries_first;
+        result->yoffset =
+            ey % data->entry_maxheight - data->entry_maxheight / 2;
+    }
+
+    if (mx < 0)
+        flags |= MUI_LPR_LEFT;
+    if (mx >= _width(obj))
+        flags |= MUI_LPR_RIGHT;
+    else
+    {
+        /* Identify column */
+        if (data->entries_num > 0 && data->columns > 0)
+        {
+            LONG width_sum = 0;
+            for (col = 0; col < data->columns; col++)
+            {
+                result->xoffset = mx - width_sum;
+                width_sum +=
+                    data->ci[col].entries_width +
+                    data->ci[col].delta +
+                    (data->ci[col].bar ? BAR_WIDTH : 0);
+                D(bug("[List/MUIM_HandleEvent] col %d "
+                    "width %d width_sum %d mx %d\n",
+                    col, data->ci[col].entries_width, width_sum, mx));
+                if (mx < width_sum)
+                {
+                    D(bug("[List/MUIM_HandleEvent] Column hit %d\n", col));
+                    break;
+                }
+            }
+        }
+    }
+
+    result->entry = row;
+    result->column = col;
+    result->flags = flags;
+
+    return TRUE;
+}
+
+/****i* List.mui/MUIM_DragQuery **********************************************
+*
+*   NAME
+*       MUIM_DragQuery
+*
+******************************************************************************
+*
+*/
+
+IPTR List__MUIM_DragQuery(struct IClass *cl, Object *obj,
+    struct MUIP_DragQuery *msg)
+{
+    if (msg->obj == obj)
+        return MUIV_DragQuery_Accept;
+    else
+        return MUIV_DragQuery_Refuse;
+}
+
+
+/****i* List.mui/MUIM_DragFinish *********************************************
+*
+*   NAME
+*       MUIM_DragFinish
+*
+******************************************************************************
+*
+*/
+
+IPTR List__MUIM_DragFinish(struct IClass *cl, Object *obj,
+    struct MUIP_DragFinish *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    data->drop_mark_y = -1;
+
+    return 0;
+}
+
+
+/****i* List.mui/MUIM_DragReport *********************************************
+*
+*   NAME
+*       MUIM_DragReport
+*
+******************************************************************************
+*
+*/
+
+IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
+    struct MUIP_DragReport *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    struct MUI_List_TestPos_Result pos;
+    struct RastPort *rp = _rp(obj);
+    LONG n, y;
+    UWORD old_pattern;
+
+    /* Choose new drop mark position */
+
+    DoMethod(obj, MUIM_List_TestPos, msg->x, msg->y, (IPTR) &pos);
+    if (pos.entry != -1)
+    {
+        n = pos.entry;
+        if (pos.yoffset > 0)
+            n++;
+    }
+    else if ((pos.flags & MUI_LPR_ABOVE) != 0)
+        n = data->entries_first;
+    else if ((pos.flags & MUI_LPR_BELOW) != 0)
+    {
+        n = MIN(data->entries_visible, data->entries_num)
+            - data->entries_first;
+    }
+
+    /* Clear old drop mark */
+
+    y = data->entries_top_pixel + (n - data->entries_first)
+        * data->entry_maxheight;
+    if (y != data->drop_mark_y)
+    {
+        DoMethod(obj, MUIM_DrawBackground, _mleft(obj), data->drop_mark_y,
+            _mwidth(obj), 1,
+            0, 0, 0);
+
+        /* Draw new drop mark and store its position */
+
+        SetABPenDrMd(rp, _pens(obj)[MPEN_SHINE], _pens(obj)[MPEN_SHADOW],
+            JAM2);
+        old_pattern = rp->LinePtrn;
+        SetDrPt(rp, 0xF0F0);
+        Move(rp, _mleft(obj), y);
+        Draw(rp, _mright(obj), y);
+        SetDrPt(rp, old_pattern);
+        data->drop_mark_y = y;
+    }
+
+    return TRUE;
+}
+
+
+/****i* List.mui/MUIM_DragDrop ***********************************************
+*
+*   NAME
+*       MUIM_DragDrop
+*
+******************************************************************************
+*
+*/
+
+IPTR List__MUIM_DragDrop(struct IClass *cl, Object *obj,
+    struct MUIP_DragDrop *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    struct MUI_List_TestPos_Result pos;
+    LONG n;
+
+    /* Find drop position */
+
+    DoMethod(obj, MUIM_List_TestPos, msg->x, msg->y, (IPTR) &pos);
+    if (pos.entry != -1)
+    {
+        /* Change drop position when coords move past centre of entry, not
+         * entry boundary */
+
+        n = pos.entry;
+        if (pos.yoffset > 0)
+            n++;
+
+        /* Ensure that dropped entry will be positioned between the two
+         * entries that are above and below the drop mark, rather than
+         * strictly at the numeric index shown */
+
+        if (n > data->entries_active)
+            n--;
+    }
+    else if ((pos.flags & MUI_LPR_ABOVE) != 0)
+        n = MUIV_List_Move_Top;
+    else if ((pos.flags & MUI_LPR_BELOW) != 0)
+        n = MUIV_List_Move_Bottom;
+
+    DoMethod(msg->obj, MUIM_List_Move, MUIV_List_Move_Active,
+        n);
+
+    return TRUE;
+}
+
+
+/****i* List.mui/MUIM_CreateDragImage ****************************************
+*
+*   NAME
+*       MUIM_CreateDragImage
+*
+******************************************************************************
+*
+*/
+
+static IPTR List__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
+    struct MUIP_CreateDragImage *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    BOOL success = TRUE;
+    struct MUI_List_TestPos_Result pos;
+    WORD width, height, left, top;
+    struct MUI_DragImage *img = NULL;
+    const struct ZuneFrameGfx *zframe;
+    LONG depth;
+
+    /* Get info on dragged entry */
+    DoMethod(obj, MUIM_List_TestPos, _left(obj) - msg->touchx,
+        _top(obj) - msg->touchy, (IPTR) &pos);
+    if (pos.entry == -1)
+        success = FALSE;
+
+    if (success)
+    {
+        /* Get boundaries of entry */
+        width = _mwidth(obj);
+        height = data->entry_maxheight;
+        left = _mleft(obj);
+        top = _top(obj) - msg->touchy
+            - (pos.yoffset + data->entry_maxheight / 2);
+
+        /* Allocate drag image structure */
+        img = (struct MUI_DragImage *)
+            AllocVec(sizeof(struct MUI_DragImage), MEMF_CLEAR);
+        if (img == NULL)
+            success = FALSE;
+    }
+
+    if (success)
+    {
+        /* Get drag frame */
+        zframe = zune_zframe_get(obj,
+            &muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Drag]);
+
+        /* Allocate drag image buffer */
+        img->width = width + zframe->ileft + zframe->iright;
+        img->height = height + zframe->itop + zframe->ibottom;
+        depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH);
+        img->bm = AllocBitMap(img->width, img->height, depth, BMF_MINPLANES,
+            _screen(obj)->RastPort.BitMap);
+
+        if (img->bm != NULL)
+        {
+            /* Render entry */
+            struct RastPort temprp;
+            InitRastPort(&temprp);
+            temprp.BitMap = img->bm;
+            ClipBlit(_rp(obj), left, top, &temprp,
+                zframe->ileft, zframe->itop, width, height,
+                0xc0);
+
+            /* Render frame */
+            struct RastPort *rp_save = muiRenderInfo(obj)->mri_RastPort;
+            muiRenderInfo(obj)->mri_RastPort = &temprp;
+            zframe->draw(zframe->customframe, muiRenderInfo(obj), 0, 0,
+                img->width, img->height, 0, 0, img->width, img->height);
+            muiRenderInfo(obj)->mri_RastPort = rp_save;
+        }
+
+        /* Ensure drag point matches where user clicked */
+        img->touchx = msg->touchx - zframe->ileft + _addleft(obj);
+        img->touchy = -(pos.yoffset + data->entry_maxheight / 2)
+            - zframe->itop;
+        img->flags = 0;
+    }
+
+    return (IPTR) img;
+}
+
+/**************************************************************************
  Dispatcher
 **************************************************************************/
 BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
@@ -2615,9 +2874,6 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
         return List__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
     case MUIM_Layout:
         return List__MUIM_Layout(cl, obj, (struct MUIP_Layout *)msg);
-    case MUIM_HandleEvent:
-        return List__MUIM_HandleEvent(cl, obj,
-            (struct MUIP_HandleEvent *)msg);
     case MUIM_List_Clear:
         return List__MUIM_Clear(cl, obj, (struct MUIP_List_Clear *)msg);
     case MUIM_List_Sort:
@@ -2658,6 +2914,18 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
     case MUIM_List_NextSelected:
         return List__MUIM_NextSelected(cl, obj,
            (struct MUIP_List_NextSelected *)msg);
+    case MUIM_List_TestPos:
+        return List__MUIM_TestPos(cl, obj, (APTR) msg);
+    case MUIM_DragQuery:
+        return List__MUIM_DragQuery(cl, obj, (APTR) msg);
+    case MUIM_DragFinish:
+        return List__MUIM_DragFinish(cl, obj, (APTR) msg);
+    case MUIM_DragReport:
+        return List__MUIM_DragReport(cl, obj, (APTR) msg);
+    case MUIM_DragDrop:
+        return List__MUIM_DragDrop(cl, obj, (APTR) msg);
+    case MUIM_CreateDragImage:
+        return List__MUIM_CreateDragImage(cl, obj, (APTR) msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
