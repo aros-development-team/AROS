@@ -278,7 +278,7 @@ static const char THIS_FILE[] = __FILE__;
     DEBUG_OPENSCREEN(dprintf("OpenScreen: screen 0x%lx\n", screen));
 
     /* Do this really early to be able to report errors */
-    errorPtr = (ULONG *)GetTagData((Tag)SA_ErrorCode, (ULONG)NULL, (struct TagItem *)tagList);
+    errorPtr = (ULONG *)GetTagData((Tag)SA_ErrorCode, (IPTR)NULL, (struct TagItem *)tagList);
 
     DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_ErrorCode 0x%lx\n",errorPtr));
 
@@ -2385,7 +2385,7 @@ VOID int_openscreen(struct OpenScreenActionMsg *msg,
         AddTail(list, (struct Node *)IS(screen)->pubScrNode);
     }
 
-    if (!ILOCKCHECK(((struct IntuiActionMsg *)msg))) lock = LockIBase((ULONG)NULL);
+    if (!ILOCKCHECK(((struct IntuiActionMsg *)msg))) lock = LockIBase((IPTR)NULL);
 
     oldFirstScreen = IntuitionBase->FirstScreen;
     if (ns->Type & SCREENBEHIND)
