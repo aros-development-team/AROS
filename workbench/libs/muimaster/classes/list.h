@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_LIST_H
 
 /*
-    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -246,12 +246,12 @@ struct MUIP_List_SelectChange
 #define MUIA_List_HorizProp_First  /* PRIV */ \
     (MUIB_List | 0x00000002)   /* ... LONG  PRIV */
 
-/* Structure of the List Position Text (MUIM_List_TestPos) */
+/* Structure of the List Position Test (MUIM_List_TestPos) */
 struct MUI_List_TestPos_Result
 {
     LONG entry;      /* entry number, maybe -1 if testpos is not over valid
                       * entry */
-    WORD column;     /* the number of the column, maybe -1 (unvalid) */
+    WORD column;     /* the number of the column, maybe -1 (invalid) */
     UWORD flags;     /* some flags, see below */
     WORD xoffset;    /* x offset (in pixels) of testpos relative to the start
                       * of the column */

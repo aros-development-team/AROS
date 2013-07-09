@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2012, The AROS Development Team.
+    Copyright  2002-2013, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -226,8 +226,8 @@ static int Group_GetNumVisibleChildren(struct MUI_GroupData *data,
     Object *cstate;
     Object *child;
 
-    /* As there can be invisible children we have subtract those from the total
-     * number of children */
+    /* As there can be invisible children we have to subtract those from
+     * the total number of children */
     cstate = (Object *) children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {

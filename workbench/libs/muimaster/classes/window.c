@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2012, The AROS Development Team.
+    Copyright  2002-2013, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -1957,6 +1957,7 @@ static ULONG InvokeEventHandler(struct MUI_EventHandlerNode *ehn,
                 DoMethod(ehn->ehn_Object, MUIM_HandleEvent, (IPTR) event,
                 muikey);
     }
+
     return res;
 }
 
@@ -2011,7 +2012,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 
     //bug("rawkey: code=%lx, qual=%lx\n", event->Code, event->Qualifier);
 
-    /* check if imsg translate to predefined keystroke */
+    /* check if imsg translates to predefined keystroke */
     {
         struct InputEvent ievent;
         BOOL matched = FALSE;
