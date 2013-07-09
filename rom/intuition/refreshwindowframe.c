@@ -139,7 +139,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
     		struct wdpDrawWinBorder  msg;
 
 		msg.MethodID 	    	= WDM_DRAW_WINBORDER;
-		msg.wdp_TrueColor       = (((struct IntScreen *)window->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
+		msg.wdp_TrueColor       = (((struct IntScreen *)window->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
 		msg.wdp_Window 	    	= window;
 		msg.wdp_RPort     	= rp;
     	    	msg.wdp_Flags	    	= (mustbe == REFRESHGAD_TOPBORDER) ? WDF_DWB_TOP_ONLY : 0;

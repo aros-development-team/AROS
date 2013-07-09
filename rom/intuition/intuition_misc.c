@@ -497,7 +497,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                     msg.wdp_UserBuffer  = ((struct IntWindow *)(w))->DecorUserBuffer;
                     msg.wdp_ExtraButtons = ((struct IntWindow *)w)->extrabuttons;
 
-                    msg.wdp_TrueColor = (((struct IntScreen *)w->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
+                    msg.wdp_TrueColor = (((struct IntScreen *)w->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
                     msg.wdp_Dri = dri;
 
                     DoMethodA(((struct IntScreen *)(w->WScreen))->WinDecorObj, (Msg)&msg);        
@@ -680,7 +680,7 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
             msg.sdp_Screen        = scr;
             msg.sdp_Dri           = (struct DrawInfo *)&((struct IntScreen *)scr)->DInfo;
             msg.sdp_UserBuffer = ((struct IntScreen *)(scr))->DecorUserBuffer;
-            msg.sdp_TrueColor   = (((struct IntScreen *)(scr))->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
+            msg.sdp_TrueColor   = (((struct IntScreen *)(scr))->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
 
             D(bug("[intuition] RenderScreenBar: ScrDecorObj @ %p, DecorUserBuffer @ %p\n", ((struct IntScreen *)(scr))->ScrDecorObj, ((struct IntScreen *)(scr))->DecorUserBuffer));
             DoMethodA(((struct IntScreen *)(scr))->ScrDecorObj, (Msg)&msg);

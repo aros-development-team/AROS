@@ -435,7 +435,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
     wemsg.MethodID 	       = WDM_EXITWINDOW;
     wemsg.wdp_UserBuffer       = ((struct IntWindow *)window)->DecorUserBuffer;
-    wemsg.wdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR);
+    wemsg.wdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
 
     DoMethodA(((struct IntScreen *)(screen))->WinDecorObj, (Msg)&wemsg);	
 

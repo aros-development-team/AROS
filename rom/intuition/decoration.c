@@ -146,7 +146,7 @@ BOOL int_InitDecorator(struct Screen *screen)
 
     msg.MethodID 	= SDM_INITSCREEN;
     msg.sdp_Screen      = screen;
-    msg.sdp_TrueColor   = GetPrivScreen(screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR;
+    msg.sdp_TrueColor   = (GetPrivScreen(screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
     msg.sdp_FontHeight  = GetPrivScreen(screen)->DInfo.dri_Font->tf_YSize;
     msg.sdp_BarVBorder  = screen->BarVBorder;
     msg.sdp_BarHBorder  = screen->BarHBorder;
@@ -184,7 +184,7 @@ void int_CalcSkinInfo(struct Screen *screen, struct IntuitionBase *IntuitionBase
         struct sdpLayoutScreenGadgets lmsg;
 
         lmsg.MethodID       = SDM_LAYOUT_SCREENGADGETS;
-        lmsg.sdp_TrueColor  = GetPrivScreen(screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR;
+        lmsg.sdp_TrueColor  = (GetPrivScreen(screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
         lmsg.sdp_Layer      = screen->BarLayer;
         lmsg.sdp_Gadgets    = screen->FirstGadget;
         lmsg.sdp_Flags      = SDF_LSG_INITIAL | SDF_LSG_MULTIPLE;

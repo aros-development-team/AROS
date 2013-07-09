@@ -199,7 +199,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
     {
 	ULONG	width = DEFSIZE_WIDTH, height = DEFSIZE_HEIGHT;
 
-    BOOL	 tc = (data->dri->dri_Flags & DRIF_DIRECTCOLOR);
+    BOOL	 tc = (data->dri->dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
 
 	if (data->type == SDEPTHIMAGE)
 	{
@@ -394,7 +394,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
     struct sdpDrawSysImage   sdecormsg;
     struct mdpDrawSysImage   mdecormsg;
 
-    BOOL	 tc = (data->dri->dri_Flags & DRIF_DIRECTCOLOR);
+    BOOL	 tc = (data->dri->dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
 
     if (rport) if (rport->Layer) win = (struct Window *) rport->Layer->Window;
 
