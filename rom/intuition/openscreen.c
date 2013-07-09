@@ -1996,9 +1996,9 @@ static const char THIS_FILE[] = __FILE__;
 
             if ((screen->DInfo.dri_Customize = AllocMem(sizeof (struct IntuitionCustomize),MEMF_PUBLIC|MEMF_CLEAR)))
             {
+#ifdef SKINS
                 struct IntuitionCustomize *ic;
                 ic = screen->DInfo.dri_Customize;
-#ifdef SKINS
                 screen->DInfo.dri_Flags |= DRIF_SKINSSUPPORT;
 
                 /* This initializes CustomizePrefs structure */
