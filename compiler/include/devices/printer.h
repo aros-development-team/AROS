@@ -159,7 +159,7 @@ struct IODRPReq
     BYTE	     io_Error;
     struct RastPort *io_RastPort;
     struct ColorMap *io_ColorMap;
-    ULONG	     io_Modes;
+    IPTR	     io_Modes;      /* Holds a pointer for TurboPrint extensions */
     UWORD	     io_SrcX;
     UWORD	     io_SrcY;
     UWORD	     io_SrcWidth;
