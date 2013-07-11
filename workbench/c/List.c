@@ -120,7 +120,7 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 
-const TEXT version[] = "$VER: List 41.10 (22.05.2013)\n";
+const TEXT version[] = "$VER: List 41.11 (11.7.2013)\n";
 
 #define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
 
@@ -988,7 +988,7 @@ int main(void)
                 return RETURN_FAIL;
             }
             uptoDatetime.dat_Stamp.ds_Minute = 1439;
-            uptoDatetime.dat_Stamp.ds_Tick = 49;
+            uptoDatetime.dat_Stamp.ds_Tick = 2999;
         }
 
         if (subStr != NULL)
