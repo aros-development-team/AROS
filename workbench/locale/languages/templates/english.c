@@ -8,7 +8,7 @@
     Language description file for english.language.
 
     So what is this thing?
-	Well basically its a template for you to write
+	Well basically it's a template for you to write
 	description files for your own language.
 
     How is it done?
@@ -26,7 +26,7 @@
     What do I have to do?
 	You have to write functions for all the locale
 	functions which would be different for your
-	language. Typically this would be function 3,
+	language. Typically this would be just function 3,
 	GetLangString(), which returns the string
 	returned by the locale.library function
 	GetLocaleStr().
