@@ -297,8 +297,7 @@ void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
     DIRQ(bug("[ATAPI] IRQ: %lu bytes read.\n", size));
 
     /*
-     * CHECKME: In case of 32-bit PIO this loop actually consumes 4 bytes
-     * per iteration. Is it correct ?
+     * Soak up excess bytes.
      */
     for (; remainder > 0; remainder -= 2)
         Unit_InS(unit, &size, 2);
