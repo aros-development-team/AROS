@@ -545,8 +545,15 @@ STATIC VOID BltBitMapNode(struct BitMapNode *src_bmn, LONG offx, LONG offy,
         }
         else
         {
+#ifdef __mc68000
+            /* This operation is insanely expensive on slow m68k
+             * machines in planar modes.
+             */
             IPTR depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
             if (depth > 8 && src_bmn->bmn_BitMapBuffer)
+#else
+            if (src_bmn->bmn_BitMapBuffer)
+#endif
             {
                 /* This should be done using BltBitMapRastPortAlpha with
                  * direct video card alpha blit, but this function is not

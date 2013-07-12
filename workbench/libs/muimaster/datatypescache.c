@@ -796,15 +796,20 @@ void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x,
     struct pdtBlitPixelArray pa;
     ULONG *img;
     Object *o;
-    IPTR depth;
+    BOOL doAlpha = TRUE;
 
     o = node->o;
     if (NULL == o)
         return;
 
-    depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+#ifdef __mc68000
+    /* WritePixelArrayAlpha is insanely expensive on slow
+     * m68k machines in planar graphics modes
+     */
+    doAlpha = GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8;
+#endif
 
-    if (depth > 8 && node->mask == mskHasAlpha)
+    if (doAlpha && node->mask == mskHasAlpha)
     {
         img =
             (ULONG *) AllocVec(dt_width(node) * dt_height(node) * 4,
