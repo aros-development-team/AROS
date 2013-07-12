@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for MatchFirst/MatchNext/MatchEnd
@@ -59,13 +59,13 @@ static void RemoveTrailingSlash(STRPTR s)
 /**************************************************************************
 
 The job of Match_BuildAChainList is to split the pattern string passed to
-MatchFirst into path components. Most imporant rules (as found out after
+MatchFirst into path components. Most important rules (as found out after
 hours of testing on Amiga):
 
   - Each path component containing a pattern string is put into a single
     AChain
   - If there are several successive path components *without* pattern then
-    this are merged into one single AChain.
+    these are merged into one single AChain.
   - No matter what: the last path component always gets into its own single
     AChain.
 
@@ -215,7 +215,7 @@ LONG Match_BuildAChainList(CONST_STRPTR pattern, struct AnchorPath *ap,
             if (*patternend == '\0')
             {
                 i = ParsePatternNoCase(patternstart, ac->an_String, len);
-                if (i == 0) 
+                if (i == 0)
                 {
                     /* It is not a pattern, although we guessed it was one.
                        Do the strcpy, otherwise we have uppercase stuff in
@@ -228,7 +228,7 @@ LONG Match_BuildAChainList(CONST_STRPTR pattern, struct AnchorPath *ap,
                 c = patternend[1];
                 patternend[1] = '\0';
                 i = ParsePatternNoCase(patternstart, ac->an_String, len);
-                if (i == 0) 
+                if (i == 0)
                 {
                     /* It is not a pattern, although we guessed it was one.
                        Do the strcpy, otherwise we have uppercase stuff in
@@ -311,7 +311,8 @@ done:
         }
     }
 
-    return error;}
+    return error;
+}
 
 /******************************************************************************/
 

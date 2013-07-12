@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function BitMapScale()
@@ -36,7 +36,7 @@
 	Pass a BitScaleArgs structure filled with the following arguments
 	to this function:
 	  bsa_SrcX, bsa_SrcY - upper left coordinate in source bitmap
-	  bsa_SrcWidth, bsa_SrcHeight - Width and Height or source bitmap
+	  bsa_SrcWidth, bsa_SrcHeight - Width and Height of source bitmap
 	  bsa_DestX, bsa_DestY - upper left coordinate in destination
 	                         bitmap
 	  bsa_DestWidth, bsa_DestHeight - this function will set these
@@ -49,7 +49,7 @@
 	        usually not exactly the same number.
 	  bsa_SrcBitMap - pointer to source bitmap to be scaled
 	  bsa_DestBitMap - pointer to destination bitmap which will
-	                   will hold the scaled bitmap. Make sure it's
+	                   hold the scaled bitmap. Make sure it's
 	                   big enough!
 	  bsa_Flags - reserved for future use. Set it to zero!
 	  bsa_XDDA, bsa_YDDA - for future use.
@@ -125,7 +125,7 @@
     	
 
         if (    (srcflags == FLG_PALETTE || srcflags == FLG_STATICPALETTE)) {
-            /* palettized with no colmap. Neew to get a colmap from dest*/
+            /* palettized with no colmap. Need to get a colmap from dest */
             if (dstflags == FLG_TRUECOLOR) {
     	
                 D(bug("!!! NO WAY GETTING PALETTE FOR src IN BltBitMap\n"));
@@ -141,7 +141,7 @@
         }
 
         if (   (dstflags == FLG_PALETTE || dstflags == FLG_STATICPALETTE)) {
-    	    /* palettized with no pixtab. Nees to get a pixtab from dest*/
+    	    /* palettized with no pixtab. Need to get a pixtab from dest */
             if (srcflags == FLG_TRUECOLOR) {
                 D(bug("!!! NO WAY GETTING PALETTE FOR dst IN BltBitMap\n"));
                 colmaps_ok = FALSE;
