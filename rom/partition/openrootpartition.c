@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -42,9 +42,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-    21-02-02    first version
 
 *****************************************************************************/
 {
@@ -99,8 +96,7 @@
             FreeMem(ph->bd, sizeof(struct PartitionBlockDevice));
         }
         FreeMem(ph, sizeof(struct PartitionHandle));
-        ph = 0;
     }
-    return 0;
+    return NULL;
     AROS_LIBFUNC_EXIT
 }
