@@ -654,6 +654,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->default_compare_hook.h_Entry = (HOOKFUNC) default_compare_func;
     data->default_compare_hook.h_SubEntry = 0;
     data->compare_hook = &(data->default_compare_hook);
+    data->flags = LIST_SHOWDROPMARKS;
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
@@ -1819,8 +1820,8 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
     struct MUIP_List_Select *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    LONG pos, i, count, selcount=0, state;
-    BOOL multi_allowed = TRUE;
+    LONG pos, i, count, selcount=0, state=0;
+    BOOL multi_allowed = TRUE, new_select_state = FALSE;
 
     /* Establish the range of entries affected */
     switch (msg->pos)
@@ -1860,15 +1861,10 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
                 data->entries[i]->data);
     }
 
-    state = data->entries[i]->flags & ENTRY_SELECTED;
-
     /* Change or check state of each entry in the range */
     for (i = pos; i < pos + count; i++)
     {
-        BOOL new_select_state;
-
-        new_select_state = state ? TRUE : FALSE;
-
+        state = data->entries[i]->flags & ENTRY_SELECTED;
         switch (msg->seltype)
         {
         case MUIV_List_Select_Off:
@@ -2687,34 +2683,34 @@ IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
     }
     else if ((pos.flags & MUI_LPR_ABOVE) != 0)
         n = data->entries_first;
-    else if ((pos.flags & MUI_LPR_BELOW) != 0)
+    else
     {
         n = MIN(data->entries_visible, data->entries_num)
             - data->entries_first;
-    } else {
-        n = data->entries_first;
     }
 
     /* Clear old drop mark */
 
-    y = data->entries_top_pixel + (n - data->entries_first)
-        * data->entry_maxheight;
-    if (y != data->drop_mark_y)
+    if ((data->flags & LIST_SHOWDROPMARKS) != 0)
     {
-        DoMethod(obj, MUIM_DrawBackground, _mleft(obj), data->drop_mark_y,
-            _mwidth(obj), 1,
-            0, 0, 0);
+        y = data->entries_top_pixel + (n - data->entries_first)
+            * data->entry_maxheight;
+        if (y != data->drop_mark_y)
+        {
+            DoMethod(obj, MUIM_DrawBackground, _mleft(obj), data->drop_mark_y,
+                _mwidth(obj), 1, 0, 0, 0);
 
-        /* Draw new drop mark and store its position */
+            /* Draw new drop mark and store its position */
 
-        SetABPenDrMd(rp, _pens(obj)[MPEN_SHINE], _pens(obj)[MPEN_SHADOW],
-            JAM2);
-        old_pattern = rp->LinePtrn;
-        SetDrPt(rp, 0xF0F0);
-        Move(rp, _mleft(obj), y);
-        Draw(rp, _mright(obj), y);
-        SetDrPt(rp, old_pattern);
-        data->drop_mark_y = y;
+            SetABPenDrMd(rp, _pens(obj)[MPEN_SHINE], _pens(obj)[MPEN_SHADOW],
+                JAM2);
+            old_pattern = rp->LinePtrn;
+            SetDrPt(rp, 0xF0F0);
+            Move(rp, _mleft(obj), y);
+            Draw(rp, _mright(obj), y);
+            SetDrPt(rp, old_pattern);
+            data->drop_mark_y = y;
+        }
     }
 
     return TRUE;
@@ -2758,13 +2754,10 @@ IPTR List__MUIM_DragDrop(struct IClass *cl, Object *obj,
     }
     else if ((pos.flags & MUI_LPR_ABOVE) != 0)
         n = MUIV_List_Move_Top;
-    else if ((pos.flags & MUI_LPR_BELOW) != 0)
-        n = MUIV_List_Move_Bottom;
     else
-        n = 0;
+        n = MUIV_List_Move_Bottom;
 
-    DoMethod(msg->obj, MUIM_List_Move, MUIV_List_Move_Active,
-        n);
+    DoMethod(msg->obj, MUIM_List_Move, MUIV_List_Move_Active, n);
 
     return TRUE;
 }
