@@ -6,12 +6,9 @@ include $(TOP)/config/make.cfg
 
 
 COMMONTESTFILES := \
-    areatest2 \
     amiga2date \
     amigademo \
     availfonts \
-    blttemplatealpha \
-    CGXTest \
     customscreen \
     date2amiga \
     displayalert \
@@ -23,10 +20,6 @@ COMMONTESTFILES := \
     fontinfo \
     frequencies \
     fstest \
-    getcybermapattr \
-    gfx \
-    gfxinfo \
-    gfxtest \
     hostcb \
     iffparsewrite \
     ilbmtoc \
@@ -55,21 +48,13 @@ COMMONTESTFILES := \
     systemtagsslave \
     ExNext \
     randtest \
-    obtainpentest \
-    readpixelarray \
-    writepixelarray \
-    writepixelarrayalpha \
-    scalepixelarray \
     rawtest \
     camdtree \
     mktime \
     rexxsyslibtest \
-    weightamatch \
     printnativekeytable \
-    textbug \
     testide \
     simplepng \
-    truecolorpens \
     consolemodes \
     examine \
     rwverify \
