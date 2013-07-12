@@ -41,7 +41,7 @@ struct Library {
 #endif
     APTR    lib_IdString;	    /* ASCII identification */
     ULONG   lib_Sum;		    /* the checksum */
-    UWORD   lib_OpenCnt;	    /* How many people use us right now ? */
+    UWORD   lib_OpenCnt;	    /* how many people use us right now? */
 #ifdef AROS_NEED_LONG_ALIGN
     UWORD   lib_pad2;		    /* make sure it is longword aligned */
 #endif

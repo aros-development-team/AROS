@@ -53,6 +53,7 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
     OOP_Object *obj = (void *)bus - ATABase->busClass->InstOffset;
 
     HIDD_ATABus_Shutdown(obj);
+
     return FALSE;
 
     AROS_INTFUNC_EXIT
@@ -71,7 +72,7 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
         One particularity of this class is that IDE bus is very speed-critical.
         At the other hand, the driver implements very lowlevel operations which
         are called quite often. OOP_DoMethod() call is not fast enough, and in
-        order to curcumvent this limitation, additionally to normal OOP API
+        order to circumvent this limitation, additionally to normal OOP API
         IDE bus drivers offer two additional non-standard interfaces. Internally
         they are implemented as library-alike function table plus driver-specific
         data. For the purpose of some performance optimizations the function
@@ -160,7 +161,7 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
 
         ULONG dma_Result(void *obj)
         - Get resulting status of the operation. The function should return 0
-          for succesful completion or error code to be passed up to ata.device
+          for successful completion or error code to be passed up to ata.device
           caller in io_Result field of the IORequest.
 
 *****************************************************************************************/
@@ -393,7 +394,7 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
 
     FUNCTION
         Specifies IRQ handler function to be called when bus interrupt arrives.
-        The function shoule be called using "C" calling convention and has the
+        The function should be called using "C" calling convention and has the
         following prototype:
         
             void ata_HandleIRQ(UBYTE status, APTR userdata);
@@ -403,8 +404,8 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
             userdata - value of aoHidd_ATABus_IRQData attribute.
 
     NOTES
-        Reading drive status register is a part of interrupt acknowledge
-        process, thus it has to be done by the driver.
+        Reading the drive status register is part of the interrupt acknowledge
+        process, and therefore has to be done by the driver.
 
         It is driver's job to check whether the interrupt really belongs to
         the IDE bus. A generic way to do this is to test ATAF_BUSY bit of
@@ -896,7 +897,7 @@ APTR ATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
         mode - Mode number (see hidd/ata.h)
 
     RESULT
-        TRUE if succesful or FALSE if the desired mode is not supported
+        TRUE if successful or FALSE if the desired mode is not supported
         by the hardware.
 
     NOTES
@@ -1030,7 +1031,7 @@ BOOL Hidd_ATABus_Start(OOP_Object *o, struct ataBase *ATABase)
     
     /*
      * Start up bus task. It will perform scanning asynchronously, and
-     * then, if succesful, insert units. This allows to keep things parallel.
+     * then, if successful, insert units. This allows to keep things parallel.
      */
     D(bug("[ATA>>] Start: Bus %u: Unit 0 - %d, Unit 1 - %d\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
     return NewCreateTask(TASKTAG_PC         , BusTaskCode,

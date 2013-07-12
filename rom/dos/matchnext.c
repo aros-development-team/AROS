@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -292,7 +292,7 @@
         }
         
         /*
-        ** Here we can be sure that the actual AChain is setup, ie: it will
+        ** Here we can be sure that the actual AChain is set up; i.e. it will
         ** have ac->an_Lock set correctly and to indicate this
         ** DDF_ExaminedBit was set
         */
@@ -350,7 +350,7 @@
         ** the actual AChain did not exist at all [2]. Or if in a pattern
         ** AChain ExNext() told us that there are no more entries [3]. Or if
         ** we were getting to a normal (no pattern) AChain which was already
-        ** setup (DDF_ExaminedBit) [4].
+        ** set up (DDF_ExaminedBit) [4].
         */
         
         if (must_go_back)

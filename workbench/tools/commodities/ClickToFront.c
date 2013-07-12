@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     ClickToFront commodity -- puts windows to front when clicked in.
@@ -389,7 +389,7 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
             struct Screen *screen;
             struct Layer  *layer;
 
-            /* Mask relvant qualifiers (key qualifiers) */
+            /* Mask relevant qualifiers (key qualifiers) */
             if ((PeekQualifier() & 0xff) != cfInfo.ci_qualifiers)
             {
 		        D(bug("Qualifiers: %i, Wanted qualifiers: %i\n",
@@ -429,7 +429,7 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
             if (layer->front != NULL)
             {
                 /* 
-                   Counting clicks is only meaningfull if cfInfo.ci_clicksToDo
+                   Counting clicks is only meaningful if cfInfo.ci_clicksToDo
                    is no less than 2
                 */
                 if (cfInfo.ci_clicksToDo > 1)

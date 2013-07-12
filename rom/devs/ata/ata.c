@@ -788,7 +788,7 @@ void DaemonCode(struct ataBase *ATABase)
         return;
     }
 
-    /* This also signals that we have initialized succesfully */
+    /* This also signals that we have initialized successfully */
     ATABase->ata_Daemon = FindTask(NULL);
     Signal(ATABase->daemonParent, SIGF_SINGLE);
 

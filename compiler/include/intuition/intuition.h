@@ -454,7 +454,7 @@ struct Requester
                                 or the window */
 #define PREDRAWN      (1<<1) /* If set, ImageBMap points to a custom bitmap */
 #define NOISYREQ      (1<<2) /* Requester doesn't filter input */
-#define SIMPLEREQ     (1<<4) /* If set, a SIMPLEREFRESH layer is used */
+#define SIMPLEREQ     (1<<4) /* If set, a SIMPLE_REFRESH layer is used */
 #define USEREQIMAGE   (1<<5) /* ReqImage points to an image, which is used
                                 as background */
 #define NOREQBACKFILL (1<<6) /* Ignore BackFill pen */

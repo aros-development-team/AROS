@@ -1373,11 +1373,11 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 	}
 	else
 	{
-	    D(bug("!!! Gfx::NewBitMap: UNSIFFICIENT ATTRS TO CREATE OFFSCREEN BITMAP !!!\n"));
+	    D(bug("!!! Gfx::NewBitMap: INSUFFICIENT ATTRS TO CREATE OFFSCREEN BITMAP !!!\n"));
 	    return NULL;
 	}
 
-	/* Did the subclass provide an offbitmap class for us ? */
+	/* Did the subclass provide an offbitmap class for us? */
 	if (!gotclass)
 	{
 	    /* Have to find a suitable class ourselves from the pixelformat */
