@@ -2,7 +2,7 @@
 #define DOS_DOSASL_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Pattern matching
@@ -78,7 +78,7 @@ struct AnchorPath
 
 /* ap_Flags. Some of the flags are set by the matching-functions and some
    are read-only. */
-#define APB_DOWILD       0 /* Please check for wildcards in supplied string. */
+#define APB_DOWILD       0 /* Obsolete. */
 #define APB_ITSWILD      1 /* There is actually a wildcard in the supplied
                               string. READ-ONLY */
 #define APB_DODIR        2 /* Set, if a directory is to be entered.
