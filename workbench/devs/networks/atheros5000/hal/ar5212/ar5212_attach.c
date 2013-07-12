@@ -349,7 +349,6 @@ ar5212Attach(uint16_t devid, HAL_SOFTC sc,
 
 	HALDEBUG(AH_NULL, HAL_DEBUG_ATTACH, "%s: sc %p st %p sh %p\n",
 	    __func__, sc, (void*) st, (void*) sh);
-//return AH_NULL;
 
 	/* NB: memory is returned zero'd */
 	ahp = ath_hal_malloc(sizeof (struct ath_hal_5212));
