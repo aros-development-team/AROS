@@ -673,41 +673,6 @@ static struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path)
     return NULL;
 }
 
-void w2strcpy(STRPTR name, UWORD * wstr, ULONG len)
-{
-    while (len)
-    {
-        *((UWORD *) name) = AROS_BE2WORD(*wstr);
-        name += sizeof(UWORD);
-        len -= 2;
-        wstr++;
-    }
-
-    name -= 2;
-
-    while ((*name == 0) || (*name == ' '))
-        *name-- = 0;
-}
-
-void identify(struct IOStdReq *ioreq, STRPTR name)
-{
-    struct SCSICmd scsicmd;
-    UWORD data[256];
-    UBYTE cmd = 0xEC;           /* identify */
-
-    scsicmd.scsi_Data = data;
-    scsicmd.scsi_Length = 512;
-    scsicmd.scsi_Command = &cmd;
-    scsicmd.scsi_CmdLength = 1;
-    ioreq->io_Command = HD_SCSICMD;
-    ioreq->io_Data = &scsicmd;
-    ioreq->io_Length = sizeof(struct SCSICmd);
-    if (DoIO((struct IORequest *)ioreq))
-        return;
-
-    w2strcpy(name, &data[27], 40);
-}
-
 IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
 {
     struct Install_DATA *data = INST_DATA(CLASS, self);
