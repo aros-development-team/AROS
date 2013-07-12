@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -61,20 +61,25 @@ static ULONG blttemplate_render(APTR btr_data, WORD srcx, WORD srcy,
 	struct GfxBase *, GfxBase, 6, Graphics)
 	
 /*  FUNCTION
-	Draws the image in the template into the
-	RastPort in the current color and drawing mode.
+	Draws part of a single-bitplane image into the RastPort in the current
+	colors (foreground and background) and drawing mode.
 
     INPUTS
-	source - template bitplane. Should be Word aligned.
-	xSrc - x offset in source plane (0...15).
-	srcMod - BytesPerRow in template mask.
+	source - pointer to the aligned UWORD in which the top-lefthand corner
+	    of the template is located.
+	xSrc - bit offset of top-lefthand corner of template from start of
+	    UWORD pointed to by 'source' input (0 to 15).
+	srcMod - number of bytes per row in template's bitplane.
 	destRP - destination RastPort.
 	xDest,yDest - upper left corner of destination.
 	xSize,ySize - size of destination.
 
     RESULT
+	None.
 
     NOTES
+	The size and destination coordinates may be outside the RastPort
+	boundaries, in which case the affected area is safely truncated.
 
     EXAMPLE
 
@@ -83,10 +88,6 @@ static ULONG blttemplate_render(APTR btr_data, WORD srcx, WORD srcy,
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
