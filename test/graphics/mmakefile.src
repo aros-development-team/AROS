@@ -1,0 +1,33 @@
+# Copyright © 2003-2013, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := \
+    areatest2 \
+    blttemplatealpha \
+    CGXTest \
+    getcybermapattr \
+    gfx \
+    gfxinfo \
+    gfxtest \
+    obtainpentest \
+    readpixelarray \
+    scalepixelarray \
+    textbug \
+    truecolorpens \
+    weightamatch \
+    writepixelarray \
+    writepixelarrayalpha
+
+EXEDIR := $(AROS_TESTS)/graphics
+
+#MM- test : test-graphics
+#MM- test-quick : test-graphics-quick
+
+#MM test-graphics : includes linklibs
+
+%build_progs mmake=test-graphics \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common
