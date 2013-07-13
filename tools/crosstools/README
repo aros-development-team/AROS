@@ -1,2 +1,3 @@
-The patch in this directory should be the same as the patch maintained in
-contrib/gnu/gcc. If they differ something is wrong.
+The patches in this directory should be the same as the patches maintained
+in the respective contrib directories, e.g. contrib/gnu/gcc. If they differ
+something is wrong.

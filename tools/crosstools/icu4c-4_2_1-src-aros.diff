@@ -1,6 +1,6 @@
 diff -ruN icu/source/common/Makefile.in icu.aros/source/common/Makefile.in
 --- icu/source/common/Makefile.in	2009-07-01 19:50:38.000000000 +0100
-+++ icu.aros/source/common/Makefile.in	2013-04-09 20:13:39.483543012 +0100
++++ icu.aros/source/common/Makefile.in	2013-04-09 21:16:17.787473921 +0100
 @@ -31,7 +31,7 @@
  TARGET_STUBNAME=$(COMMON_STUBNAME)
  
@@ -37,12 +37,169 @@ diff -ruN icu/source/common/Makefile.in icu.aros/source/common/Makefile.in
  	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
  	$(RANLIB) $@
  endif
+diff -ruN icu/source/common/unicode/umachine.h icu.aros/source/common/unicode/umachine.h
+--- icu/source/common/unicode/umachine.h	2009-07-01 19:50:34.000000000 +0100
++++ icu.aros/source/common/unicode/umachine.h	2013-04-09 21:17:06.520139711 +0100
+@@ -273,6 +273,10 @@
+ #       endif
+ #   elif defined(U_WINDOWS)
+ #       define U_WCHAR_IS_UTF16
++#   elif defined(__AROS__)
++#       if (U_SIZEOF_WCHAR_T==4)
++#           define U_WCHAR_IS_UTF32
++#       endif
+ #   endif
+ #endif
+ 
+diff -ruN icu/source/config/mh-aros icu.aros/source/config/mh-aros
+--- icu/source/config/mh-aros	1970-01-01 01:00:00.000000000 +0100
++++ icu.aros/source/config/mh-aros	2013-04-09 21:11:20.927496769 +0100
+@@ -0,0 +1,76 @@
++## AROS-specific setup
++
++## Commands to generate dependency files
++GEN_DEPS.c=  $(CC) -E -MM $(DEFS) $(CPPFLAGS)
++GEN_DEPS.cc= $(CXX) -E -MM $(DEFS) $(CPPFLAGS)
++
++## Flags for position independent code
++SHAREDLIBCFLAGS =
++SHAREDLIBCXXFLAGS =
++SHAREDLIBCPPFLAGS =
++
++## Additional flags when building libraries and with threads
++THREADSCPPFLAGS = -D_REENTRANT
++LIBCPPFLAGS =
++
++## Compiler switch to embed a runtime search path
++LD_RPATH=	
++LD_RPATH_PRE = -Wl,-rpath,
++
++## These are the library specific LDFLAGS
++LDFLAGSICUDT=-nodefaultlibs -nostdlib
++
++## Compiler switch to embed a library name
++LD_SONAME = -Wl,-soname -Wl,$(notdir $(MIDDLE_SO_TARGET))
++
++## Shared object suffix
++SO = so
++## Non-shared intermediate object suffix
++STATIC_O = ao
++
++## Compilation rules
++%.$(STATIC_O): $(srcdir)/%.c
++	$(COMPILE.c) $(STATICCPPFLAGS) $(STATICCFLAGS) -o $@ $<
++%.o: $(srcdir)/%.c
++	$(COMPILE.c) $(DYNAMICCPPFLAGS) $(DYNAMICCFLAGS) -o $@ $<
++
++%.$(STATIC_O): $(srcdir)/%.cpp
++	$(COMPILE.cc) $(STATICCPPFLAGS) $(STATICCXXFLAGS) -o $@ $<
++%.o: $(srcdir)/%.cpp
++	$(COMPILE.cc) $(DYNAMICCPPFLAGS) $(DYNAMICCXXFLAGS) -o $@ $<
++
++
++## Dependency rules
++%.d: $(srcdir)/%.c
++	@echo "generating dependency information for $<"
++	@$(SHELL) -ec '$(GEN_DEPS.c) $< \
++		| sed '\''s%\($*\)\.o[ :]*%\1.o $@ : %g'\'' > $@; \
++		[ -s $@ ] || rm -f $@'
++
++%.d: $(srcdir)/%.cpp
++	@echo "generating dependency information for $<"
++	@$(SHELL) -ec '$(GEN_DEPS.cc) $< \
++		| sed '\''s%\($*\)\.o[ :]*%\1.o $@ : %g'\'' > $@; \
++		[ -s $@ ] || rm -f $@'
++
++## Versioned libraries rules
++
++%.$(SO).$(SO_TARGET_VERSION_MAJOR): %.$(SO).$(SO_TARGET_VERSION)
++	$(RM) $@ && ln -s ${<F} $@
++%.$(SO): %.$(SO).$(SO_TARGET_VERSION_MAJOR)
++	$(RM) $@ && ln -s ${*F}.$(SO).$(SO_TARGET_VERSION) $@
++
++##  Bind internal references
++
++# LDflags that pkgdata will use
++BIR_LDFLAGS= -Wl,-Bsymbolic
++
++# Dependencies [i.e. map files] for the final library
++BIR_DEPS=
++
++## Remove shared library 's'
++STATIC_PREFIX_WHEN_USED = 
++STATIC_PREFIX = 
++
++## End AROS-specific setup
++
+diff -ruN icu/source/configure icu.aros/source/configure
+--- icu/source/configure	2009-07-01 19:51:26.000000000 +0100
++++ icu.aros/source/configure	2013-04-09 21:17:15.022255807 +0100
+@@ -4110,19 +4110,16 @@
+             *) ;;
+         esac
+     elif test "$DEFAULT_64BIT" = "unknown"; then
+-        { { $as_echo "$as_me:$LINENO: error: Unable to determine binary format." >&5
+-$as_echo "$as_me: error: Unable to determine binary format." >&2;}
+-   { (exit 1); exit 1; }; }
+-        # cross compiling?
+-        #BITS_GOT=unknown
+-        #case "$BITS_REQ" in
+-        #    64|64else32) BITS_OK=no
+-        #    BITS_CHECK_32=yes
+-        #    BITS_CHECK_64=yes
+-        #    32) BITS_OK=no;;
+-        #    nochange) ;;
+-        #    *) ;;
+-        #esac
++        # cross compiling.
++        BITS_GOT=unknown
++        case "$BITS_REQ" in
++            64|64else32) BITS_OK=no
++            BITS_CHECK_32=yes
++            BITS_CHECK_64=yes ;;
++            32) BITS_OK=no;;
++            nochange) ;;
++            *) ;;
++        esac
+     fi
+ 
+     { $as_echo "$as_me:$LINENO: result: $DEFAULT_64BIT" >&5
+@@ -4780,6 +4777,7 @@
+ *-dec-osf*) icu_cv_host_frag=mh-alpha-osf ;;
+ *-*-nto*)	icu_cv_host_frag=mh-qnx ;;
+ *-ncr-*)	icu_cv_host_frag=mh-mpras ;;
++*-*-aros)	icu_cv_host_frag=mh-aros ;;
+ *) 		icu_cv_host_frag=mh-unknown ;;
+ esac
+ 
+@@ -10237,9 +10235,11 @@
+     fi
+     datapackaging_howfound="$datapackaging_msg_set"
+     ;;
+-#    static)
+-#	DATA_PACKAGING_MODE=static
+-#	;;
++    static)
++    DATA_PACKAGING_MODE=static
++    datapackaging_msg="ICU data will be stored in a static library."
++    datapackaging_howfound="$datapackaging_msg_set"
++    ;;
+ esac
+ 
+ 
 diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
 --- icu/source/data/Makefile.in	2009-07-01 19:51:20.000000000 +0100
-+++ icu.aros/source/data/Makefile.in	2013-04-09 20:13:45.033610543 +0100
-@@ -37,8 +37,7 @@
++++ icu.aros/source/data/Makefile.in	2013-04-09 21:17:15.023255820 +0100
+@@ -34,11 +34,14 @@
+ ifeq ($(PKGDATA_MODE),dll)
+ ICUPKGDATA_OUTDIR = $(LIBDIR)
+ else
++ifeq ($(PKGDATA_MODE),static)
++ICUPKGDATA_OUTDIR = $(LIBDIR)
++else
  ICUPKGDATA_OUTDIR = $(OUTDIR)
  endif
++endif
  
 -CURDIR:=$(CURR_FULL_DIR)
 -PKGDATA = $(TOOLBINDIR)/pkgdata $(PKGDATA_OPTS) -q -c -s $(CURDIR)/out/build/$(ICUDATA_PLATFORM_NAME) -d $(ICUPKGDATA_OUTDIR)
@@ -50,7 +207,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  ifeq ($(OS390_STUBDATA),1)
  OS390PKG=package390
-@@ -64,24 +63,24 @@
+@@ -64,24 +67,24 @@
  
  OUTTMPDIR=$(OUTDIR)/tmp
  MAINBUILDDIR=$(OUTDIR)/build
@@ -81,30 +238,21 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  # relative lib links from pkgdata are the same as for tmp
  TOOLDIR=$(top_builddir)/tools
-@@ -155,7 +154,7 @@
- endif
- endif
- ifneq ($(ICUDATA_SOURCE_IS_NATIVE_TARGET),YES)
--	$(PKGDATA_INVOKE) $(PKGDATA) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -p $(ICUDATA_NAME) -m $(PKGDATA_MODE) $(PKGDATA_VERSIONING) $(PKGDATA_LIBNAME) $(PKGDATA_LIST)
-+	$(PKGDATA_INVOKE) $(PKGDATA) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -p $(ICUDATA_NAME) -m static $(PKGDATA_VERSIONING) $(PKGDATA_LIBNAME) $(PKGDATA_LIST)
- else
- 	$(INSTALL_DATA) $(ICUDATA_SOURCE_ARCHIVE) $(OUTDIR)
- endif
-@@ -172,11 +171,11 @@
+@@ -172,11 +175,11 @@
  endif
  ifneq ($(ENABLE_STATIC),)
  ifeq ($(PKGDATA_MODE),dll)
 -	$(PKGDATA_INVOKE) $(PKGDATA) -m static -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(BUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_LIBDIR)
-+	$(PKGDATA_INVOKE) $(PKGDATA) -m $(PKGDATA_MODE) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_LIBDIR)
++	$(PKGDATA_INVOKE) $(PKGDATA) -m static -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_LIBDIR)
  endif
  endif
  ifneq ($(ICUDATA_SOURCE_IS_NATIVE_TARGET),YES)
 -	$(PKGDATA_INVOKE) $(PKGDATA) -m $(PKGDATA_MODE) $(PKGDATA_VERSIONING) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(BUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_DIR)
-+	$(PKGDATA_INVOKE) $(PKGDATA) -m static $(PKGDATA_VERSIONING) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_DIR)
++	$(PKGDATA_INVOKE) $(PKGDATA) -m $(PKGDATA_MODE) $(PKGDATA_VERSIONING) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_DIR)
  else
  	$(INSTALL_DATA) $(ICUDATA_SOURCE_ARCHIVE) $(DESTDIR)$(ICUPKGDATA_DIR)
  endif
-@@ -187,7 +186,7 @@
+@@ -187,7 +190,7 @@
  #### 390 support
  install390: package390
  	$(MKINSTALLDIRS) $(TMPDATADIR) $(DESTDIR)$(libdir)
@@ -113,7 +261,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  ifeq ($(PKGDATA_MODE),dll)
  	$(INSTALL-L) $(ICUPKGDATA_OUTDIR)/$(FINAL_IMPORT_LIB) $(DESTDIR)$(ICUPKGDATA_DIR)/$(FINAL_IMPORT_LIB)
  endif
-@@ -195,7 +194,7 @@
+@@ -195,7 +198,7 @@
  #### $(LIB_ICUDATA_NAME)$(STUB_SUFFIX) is the subset data for batch mode
  package390: $(OUTTMPDIR)/icudata390.lst $(PKGDATA_LIST) ./icupkg.inc packagedata
  	ln -s $(ICUDATA_NAME) $(OUTDIR)/build/$(ICUDATA_NAME)$(STUB_SUFFIX)
@@ -122,7 +270,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  	cp $(ICUPKGDATA_OUTDIR)/$(LIB_ICUDATA_NAME)$(STUB_SUFFIX).$(SO) $(top_builddir)/stubdata/$(LIB_ICUDATA_NAME)$(STUB_SUFFIX).$(SO)
  
  
-@@ -208,7 +207,7 @@
+@@ -208,7 +211,7 @@
  #  from data build. See Jitterbug 4497. (makedata.mak revision 1.117)
  #
  DAT_FILES_SHORT=pnames.icu unames.icu cnvalias.icu coll/ucadata.icu coll/invuca.icu 
@@ -131,7 +279,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  ## BRK files
  BREAK_TREE=brkitr
-@@ -231,7 +230,7 @@
+@@ -231,7 +234,7 @@
  ## Confusables (Spoofing) files
  ALL_CFU_SOURCE=$(UNICODEDATADIR)/confusables.txt $(UNICODEDATADIR)/confusablesWholeScript.txt
  CFU_FILES_SHORT=confusables.cfu
@@ -140,7 +288,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  ## UCM files
  -include $(UCMSRCDIR)/ucmcore.mk
-@@ -240,7 +239,7 @@
+@@ -240,7 +243,7 @@
  -include $(UCMSRCDIR)/ucmlocal.mk
  ALL_UCM_SOURCE=ibm-37_P100-1995.ucm ibm-1047_P100-1995.ucm $(UCM_SOURCE_CORE) $(UCM_SOURCE_FILES) $(UCM_SOURCE_EBCDIC) $(UCM_SOURCE_LOCAL)
  UCM_FILES = $(ALL_UCM_SOURCE:%=$(SRCDATADIR)/%)
@@ -149,7 +297,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  CNV_FILES_SHORT = $(ALL_UCM_SOURCE:%.ucm=%.cnv)
  
  ## RES files
-@@ -290,13 +289,13 @@
+@@ -290,13 +293,13 @@
  endif
  
  ALL_RES_SRC= $(RES_SRC) $(TRNS_SOURCE) $(MSC_SOURCE)
@@ -165,7 +313,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  INDEX_RES_FILE_SHORT=$(INDEX_FILE:$(OUTTMPDIR)/%.txt=%.res)
  
  COLLATION_TREE=coll
-@@ -330,7 +329,7 @@
+@@ -330,7 +333,7 @@
  -include $(SPREPSRCDIR)/sprepfiles.mk
  -include $(SPREPSRCDIR)/spreplocal.mk
  ALL_SPREP_SOURCE=$(SPREP_SOURCE) $(SPREP_SOURCE_LOCAL)
@@ -174,7 +322,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  SPREP_FILES_SHORT = $(ALL_SPREP_SOURCE:%.txt=%.spp)
  
  ## All generated files
-@@ -340,7 +339,7 @@
+@@ -340,7 +343,7 @@
  ALL_FILES_LIST = $(DAT_FILES_SHORT) $(CNV_FILES_SHORT) $(BRK_FILES_SHORT) $(CTD_FILES_SHORT) $(RES_FILES_SHORT) $(INDEX_RES_FILE_SHORT) $(COLLATION_FILES_SHORT) $(COLLATION_INDEX_RES_SHORT) $(BRK_RES_FILES_SHORT) $(BRK_RES_INDEX_RES_SHORT) $(RBNF_FILES_SHORT) $(RBNF_INDEX_RES_SHORT) $(TRANSLIT_FILES_SHORT) $(SPREP_FILES_SHORT) $(CFU_FILES_SHORT)
  
  UNI_CORE_DATA=uprops.icu ucase.icu ubidi.icu unorm.icu
@@ -183,7 +331,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  ifneq ($(INCLUDE_UNI_CORE_DATA),)
  ALL_FILES_LIST+=$(UNI_CORE_DATA)
-@@ -367,7 +366,7 @@
+@@ -367,7 +370,7 @@
  ifneq ($(ICUDATA_SOURCE_IS_NATIVE_TARGET),YES)
  	@echo "Unpacking $(ICUDATA_SOURCE_ARCHIVE) and generating $@ (list of data files)"
  	@-$(RMV) $@
@@ -192,7 +340,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  else
  	@echo "$@" > $@
  endif
-@@ -397,63 +396,63 @@
+@@ -397,63 +400,63 @@
  # DAT FILES
  
  # uprops.icu
@@ -281,7 +429,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  ####################################################    CFU
  # CFU FILES
-@@ -466,23 +465,23 @@
+@@ -466,23 +469,23 @@
  	$(INVOKE) echo ALL_CFU_SOURCE: $(ALL_CFU_SOURCE)
  	$(INVOKE) echo CFU_FILES: $(CFU_FILES)
  	$(INVOKE) echo CFU_FILES_SHORT: $(CFU_FILES_SHORT)
@@ -310,7 +458,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  $(COLLATION_INDEX_FILE): $(SRCLISTDEPS)
  	@echo "generating $@ (list of installed collation locales)"; \
-@@ -498,10 +497,10 @@
+@@ -498,10 +501,10 @@
  
  ### brk res
  $(BRKBLDDIR)/%.res: $(BRKSRCDIR)/%.txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(BRK_FILES) $(DAT_FILES)
@@ -323,7 +471,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  $(BRK_RES_INDEX_FILE): $(SRCLISTDEPS)
  	@echo "generating $@ (list of installed break locales)"; \
-@@ -517,10 +516,10 @@
+@@ -517,10 +520,10 @@
  
  ### RBNF res
  $(RBNFBLDDIR)/%.res: $(RBNFSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES)
@@ -336,7 +484,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  $(RBNF_INDEX_FILE): $(SRCLISTDEPS)
  	@echo "generating $@ (list of installed RBNF locales)"; \
-@@ -536,13 +535,13 @@
+@@ -536,13 +539,13 @@
  
  ### TRANSLIT res
  $(TRANSLITBLDDIR)/%.res: $(TRANSLITSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES)
@@ -353,7 +501,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  # if the tzcode directory contains a new tzdata*.tar.gz file, use it for zoneinfo.txt
  TZDATA = $(firstword $(wildcard $(top_builddir)/tools/tzcode/tzdata*.tar.gz) $(wildcard $(top_srcdir)/tools/tzcode/tzdata*.tar.gz))
-@@ -554,9 +553,9 @@
+@@ -554,9 +557,9 @@
  
  # Override the normal genrb for zoneinfo.txt to always pull from
  # icu/source/tools/tzcode/zoneinfo.txt
@@ -365,7 +513,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  # Create the tzcode tool and zoneinfo.txt as needed.
  $(ZONEINFO): $(TZDATA)
-@@ -567,8 +566,8 @@
+@@ -567,8 +570,8 @@
  endif
  
  # zoneinfo has some issues. Ignore some warnings with -q
@@ -376,7 +524,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  
  
-@@ -586,10 +585,10 @@
+@@ -586,10 +589,10 @@
  	echo "}" >> $@;
  
  clean-resindex:
@@ -389,7 +537,7 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  
  # Starting with ICU4C 3.4, the core Unicode properties files (uprops.icu, ucase.icu, ubidi.icu, unorm.icu)
  # are hardcoded in the common DLL and therefore not included in the data package any more.
-@@ -597,7 +596,7 @@
+@@ -597,7 +600,7 @@
  # when updating the Unicode data.
  # Changed in Makefile.in revision 1.147. See Jitterbug 4497.
  uni-core-data: build-dir $(UNI_CORE_TARGET_DATA)
@@ -398,9 +546,663 @@ diff -ruN icu/source/data/Makefile.in icu.aros/source/data/Makefile.in
  	@echo Unicode .c source files built to $(OUTTMPDIR)
  
  build-icu4j: all
+diff -ruN icu/source/data/Makefile.in.orig icu.aros/source/data/Makefile.in.orig
+--- icu/source/data/Makefile.in.orig	1970-01-01 01:00:00.000000000 +0100
++++ icu.aros/source/data/Makefile.in.orig	2013-04-09 21:16:22.756541836 +0100
+@@ -0,0 +1,638 @@
++## Makefile.in for ICU data
++## Copyright (c) 1999-2009, International Business Machines Corporation and
++## others. All Rights Reserved.
++
++## Source directory information
++srcdir = @srcdir@
++top_srcdir = @top_srcdir@
++
++# So that you have $(top_builddir)/config.status
++top_builddir = ..
++
++## All the flags and other definitions are included here.
++include $(top_builddir)/icudefs.mk
++
++
++
++## Build directory information
++# So that  $(top_builddir)/$(subdir) ~= "here"
++subdir = data
++
++#lib icu data for link
++LIB_ICUDATA_NAME=$(LIBICU)$(DATA_STUBNAME)$(ICULIBSUFFIX)
++LIB_STATIC_ICUDATA_NAME=$(LIBSICU)$(DATA_STUBNAME)$(ICULIBSUFFIX)
++
++# Allow Windows to override these options
++ifeq ($(PKGDATA_OPTS),)
++PKGDATA_OPTS = -O $(top_builddir)/data/icupkg.inc
++endif
++ifeq ($(PKGDATA_VERSIONING),)
++PKGDATA_VERSIONING = -r $(SO_TARGET_VERSION)
++endif
++
++# This allows all the data to be in one directory
++ifeq ($(PKGDATA_MODE),dll)
++ICUPKGDATA_OUTDIR = $(LIBDIR)
++else
++ICUPKGDATA_OUTDIR = $(OUTDIR)
++endif
++
++PKGDATA = $(TOOLBINDIR)/pkgdata $(PKGDATA_OPTS) -q -c -s $(CURR_FULL_DIR)/out/build/$(ICUDATA_PLATFORM_NAME) -d $(ICUPKGDATA_OUTDIR)
++
++ifeq ($(OS390_STUBDATA),1)
++OS390PKG=package390
++OS390INSTALL=install390
++
++# Additional data for 390
++OS390LIST=$(OUTTMPDIR)/icudata390.lst
++OUTTMPDIR_390STUB=$(top_builddir)/data/out/tmp_390stub
++endif
++
++# OBJDATADIR must be a short path (with ..'s) to the data.
++
++ifeq ($(top_srcdir),..)
++SRCDATADIR=.
++else
++SRCDATADIR=$(top_srcdir)/data
++endif
++ifeq ($(top_builddir),..)
++OUTDIR=./out
++else
++OUTDIR=$(top_builddir)/data/out
++endif
++
++OUTTMPDIR=$(OUTDIR)/tmp
++MAINBUILDDIR=$(OUTDIR)/build
++DATABUILDDIR=$(MAINBUILDDIR)/$(ICUDATA_PLATFORM_NAME)
++UNICODEDATADIR=$(SRCDATADIR)/unidata
++LOCSRCDIR=$(SRCDATADIR)/locales
++COLSRCDIR=$(SRCDATADIR)/coll
++COLBLDDIR=$(DATABUILDDIR)/coll
++RBNFSRCDIR=$(SRCDATADIR)/rbnf
++RBNFBLDDIR=$(DATABUILDDIR)/rbnf
++TRANSLITSRCDIR=$(SRCDATADIR)/translit
++TRANSLITBLDDIR=$(DATABUILDDIR)/translit
++MISCSRCDIR=$(SRCDATADIR)/misc
++BRKSRCDIR=$(SRCDATADIR)/brkitr
++BRKBLDDIR=$(DATABUILDDIR)/brkitr
++MISCSRCDIR=$(SRCDATADIR)/misc
++UCMSRCDIR=$(SRCDATADIR)/mappings
++SPREPSRCDIR=$(SRCDATADIR)/sprep
++COMINCDIR=$(top_srcdir)/common/unicode
++SRCLISTDEPS=Makefile $(srcdir)/Makefile.in
++BUILD_DIRS=$(OUTDIR) $(MAINBUILDDIR) $(DATABUILDDIR) $(BRKBLDDIR) $(COLBLDDIR) $(RBNFBLDDIR) $(TRANSLITBLDDIR) $(OUTTMPDIR) $(OUTTMPDIR_390STUB) $(OUTTMPDIR)/$(COLLATION_TREE) $(OUTTMPDIR)/$(RBNF_TREE) $(OUTTMPDIR)/$(TRANSLIT_TREE) $(OUTTMPDIR)/$(BREAK_TREE)
++
++# relative lib links from pkgdata are the same as for tmp
++TOOLDIR=$(top_builddir)/tools
++
++## List of phony targets
++.PHONY : all all-local all-recursive install install-local install-files	\
++install-recursive clean clean-local clean-recursive distclean		\
++distclean-local distclean-recursive dist dist-local dist-recursive	\
++check check-local check-recursive build-local clean-resindex build-dir
++
++## Clear suffix list
++.SUFFIXES :
++
++## List of standard targets
++all: all-local
++install: all-local install-local 
++clean: clean-local
++distclean : distclean-local
++dist: 
++check: all
++
++
++distclean-local: clean
++	$(RMV) Makefile
++
++all-local: build-dir icupkg.inc build-local packagedata $(POST_DATA_BUILD) $(OS390PKG)
++
++dist-local:
++
++clean-map:
++	-test -z *.map || $(RMV) *.map
++
++clean-local: cleanpackage cleanfiles clean-map
++
++cleanfiles:
++	test -z "$(CLEANFILES)" || $(RMV) $(CLEANFILES)
++
++cleanpackage:
++	$(RMV) $(OUTDIR)
++	$(RMV) $(LIBDIR)/$(LIB_ICUDATA_NAME)*.$(SO)* $(LIBDIR)/$(LIB_STATIC_ICUDATA_NAME).$(A)
++
++check-local:
++
++# Find out if we have a source archive.
++# If we have that, then use that instead of building everything from scratch.
++ICUDATA_SOURCE_ARCHIVE = $(wildcard $(srcdir)/in/$(ICUDATA_PLATFORM_NAME).dat)
++ifeq ($(ICUDATA_SOURCE_ARCHIVE),)
++ICUDATA_ARCHIVE = $(firstword $(wildcard $(srcdir)/in/$(ICUDATA_BASENAME_VERSION)*.dat))
++# We don't have the data in the current endianess or charset.
++# See if we can find data of any archive type,
++# and convert it to the current type.
++ifneq ($(ICUDATA_ARCHIVE),)
++ICUDATA_SOURCE_ARCHIVE = $(OUTDIR)/$(ICUDATA_PLATFORM_NAME).dat
++$(ICUDATA_SOURCE_ARCHIVE): $(ICUDATA_ARCHIVE) $(OUTDIR)
++	$(INVOKE) $(TOOLBINDIR)/icupkg -t$(ICUDATA_CHAR) $(ICUDATA_ARCHIVE) $(ICUDATA_SOURCE_ARCHIVE)
++endif
++else
++ifneq ($(ENABLE_STATIC),YES)
++ifeq ($(PKGDATA_MODE),common)
++# We have a source data common archive in the native endianess,
++# and it's what we want to build. Try to not run any of ICU's tools.
++ICUDATA_SOURCE_IS_NATIVE_TARGET=YES
++endif
++endif
++endif
++
++packagedata: icupkg.inc $(PKGDATA_LIST) build-local
++ifneq ($(ENABLE_STATIC),)
++ifeq ($(PKGDATA_MODE),dll)
++	$(PKGDATA_INVOKE) $(PKGDATA) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) -m static $(PKGDATA_LIST)
++endif
++endif
++ifneq ($(ICUDATA_SOURCE_IS_NATIVE_TARGET),YES)
++	$(PKGDATA_INVOKE) $(PKGDATA) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -p $(ICUDATA_NAME) -m $(PKGDATA_MODE) $(PKGDATA_VERSIONING) $(PKGDATA_LIBNAME) $(PKGDATA_LIST)
++else
++	$(INSTALL_DATA) $(ICUDATA_SOURCE_ARCHIVE) $(OUTDIR)
++endif
++
++## Install ICU data.
++install-local: $(PKGDATA_LIST) ./icupkg.inc packagedata $(OS390INSTALL)
++	$(MKINSTALLDIRS) $(TMPDATADIR) $(DESTDIR)$(ICUPKGDATA_DIR)
++ifeq ($(PKGDATA_MODE),files)
++	$(MKINSTALLDIRS) $(ICUPKGDATA_DIR)/$(ICUDATA_NAME)
++	$(MKINSTALLDIRS) $(ICUPKGDATA_DIR)/$(ICUDATA_NAME)/$(BREAK_TREE)
++	$(MKINSTALLDIRS) $(ICUPKGDATA_DIR)/$(ICUDATA_NAME)/$(COLLATION_TREE)
++	$(MKINSTALLDIRS) $(ICUPKGDATA_DIR)/$(ICUDATA_NAME)/$(RBNF_TREE)
++	$(MKINSTALLDIRS) $(ICUPKGDATA_DIR)/$(ICUDATA_NAME)/$(TRANSLIT_TREE)
++endif
++ifneq ($(ENABLE_STATIC),)
++ifeq ($(PKGDATA_MODE),dll)
++	$(PKGDATA_INVOKE) $(PKGDATA) -m static -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBSTATICNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_LIBDIR)
++endif
++endif
++ifneq ($(ICUDATA_SOURCE_IS_NATIVE_TARGET),YES)
++	$(PKGDATA_INVOKE) $(PKGDATA) -m $(PKGDATA_MODE) $(PKGDATA_VERSIONING) -e $(ICUDATA_ENTRY_POINT) -T $(OUTTMPDIR) -s $(DATABUILDDIR) -p $(ICUDATA_NAME) $(PKGDATA_LIBNAME) $(PKGDATA_LIST) -I $(ICUPKGDATA_INSTALL_DIR)
++else
++	$(INSTALL_DATA) $(ICUDATA_SOURCE_ARCHIVE) $(DESTDIR)$(ICUPKGDATA_DIR)
++endif
++
++
++####
++####
++#### 390 support
++install390: package390
++	$(MKINSTALLDIRS) $(TMPDATADIR) $(DESTDIR)$(libdir)
++	$(INVOKE) $(PKGDATA) -s $(DATABUILDDIR)$(STUB_SUFFIX) -T $(OUTTMPDIR_390STUB) -p $(ICUDATA_NAME)$(STUB_SUFFIX) $(PKGDATA_LIBNAME)$(STUB_SUFFIX) -e $(ICUDATA_ENTRY_POINT) $(OS390LIST) -m dll $(PKGDATA_VERSIONING) -I $(DESTDIR)$(ICUPKGDATA_DIR)
++ifeq ($(PKGDATA_MODE),dll)
++	$(INSTALL-L) $(ICUPKGDATA_OUTDIR)/$(FINAL_IMPORT_LIB) $(DESTDIR)$(ICUPKGDATA_DIR)/$(FINAL_IMPORT_LIB)
++endif
++
++#### $(LIB_ICUDATA_NAME)$(STUB_SUFFIX) is the subset data for batch mode
++package390: $(OUTTMPDIR)/icudata390.lst $(PKGDATA_LIST) ./icupkg.inc packagedata
++	ln -s $(ICUDATA_NAME) $(OUTDIR)/build/$(ICUDATA_NAME)$(STUB_SUFFIX)
++	$(INVOKE) $(PKGDATA) -s $(DATABUILDDIR)$(STUB_SUFFIX) -T $(OUTTMPDIR_390STUB) -p $(ICUDATA_NAME)$(STUB_SUFFIX) $(PKGDATA_LIBNAME)$(STUB_SUFFIX) -e $(ICUDATA_ENTRY_POINT) $(OS390LIST) -m dll $(PKGDATA_VERSIONING)
++	cp $(ICUPKGDATA_OUTDIR)/$(LIB_ICUDATA_NAME)$(STUB_SUFFIX).$(SO) $(top_builddir)/stubdata/$(LIB_ICUDATA_NAME)$(STUB_SUFFIX).$(SO)
++
++
++##### Define all the data files. the build rule that depends on them is below.
++# X_FILES_SHORT = just the base names (for lists)
++# X_FILES = full paths (for dependency)
++
++## DAT files - Misc. data files.
++#  2005-may-05 Removed Unicode properties files (unorm.icu, uprops.icu, ucase.icu, ubidi.icu)
++#  from data build. See Jitterbug 4497. (makedata.mak revision 1.117)
++#
++DAT_FILES_SHORT=pnames.icu unames.icu cnvalias.icu coll/ucadata.icu coll/invuca.icu 
++DAT_FILES=$(DAT_FILES_SHORT:%=$(DATABUILDDIR)/%)
++
++## BRK files
++BREAK_TREE=brkitr
++-include $(BRKSRCDIR)/brkfiles.mk
++-include $(BRKSRCDIR)/brklocal.mk
++ALL_BRK_SOURCE= $(BRK_SOURCE) $(BRK_SOURCE_LOCAL)
++BRK_FILES_SHORT=$(ALL_BRK_SOURCE:%.txt=$(BREAK_TREE)/%.brk)
++BRK_FILES=$(ALL_BRK_SOURCE:%.txt=$(BRKBLDDIR)/%.brk)
++ifdef BRK_CTD_SOURCE
++ALL_CTD_SOURCE=$(BRK_CTD_SOURCE) $(BRK_CTD_SOURCE_LOCAL)
++CTD_FILES_SHORT=$(ALL_CTD_SOURCE:%.txt=$(BREAK_TREE)/%.ctd)
++CTD_FILES=$(ALL_CTD_SOURCE:%.txt=$(BRKBLDDIR)/%.ctd)
++endif
++ifdef BRK_RES_SOURCE
++BRS_SRC= root.txt $(BRK_RES_SOURCE) $(BRK_RES_SOURCE_LOCAL)
++BRS_SRC_FILES = $(BRS_SRC:%=$(BRKSRCDIR)/%)
++INSTALLED_BRS_FILES = $(BRK_RES_SOURCE:%.txt=%)  $(BRK_RES_SOURCE_LOCAL:%.txt=%)
++endif
++
++## Confusables (Spoofing) files
++ALL_CFU_SOURCE=$(UNICODEDATADIR)/confusables.txt $(UNICODEDATADIR)/confusablesWholeScript.txt
++CFU_FILES_SHORT=confusables.cfu
++CFU_FILES=$(DATABUILDDIR)/$(CFU_FILES_SHORT)
++
++## UCM files
++-include $(UCMSRCDIR)/ucmcore.mk
++-include $(UCMSRCDIR)/ucmfiles.mk
++-include $(UCMSRCDIR)/ucmebcdic.mk
++-include $(UCMSRCDIR)/ucmlocal.mk
++ALL_UCM_SOURCE=ibm-37_P100-1995.ucm ibm-1047_P100-1995.ucm $(UCM_SOURCE_CORE) $(UCM_SOURCE_FILES) $(UCM_SOURCE_EBCDIC) $(UCM_SOURCE_LOCAL)
++UCM_FILES = $(ALL_UCM_SOURCE:%=$(SRCDATADIR)/%)
++CNV_FILES = $(ALL_UCM_SOURCE:%.ucm=$(DATABUILDDIR)/%.cnv)
++CNV_FILES_SHORT = $(ALL_UCM_SOURCE:%.ucm=%.cnv)
++
++## RES files
++-include $(LOCSRCDIR)/resfiles.mk
++-include $(COLSRCDIR)/colfiles.mk
++-include $(RBNFSRCDIR)/rbnffiles.mk
++-include $(TRANSLITSRCDIR)/trnsfiles.mk
++-include $(LOCSRCDIR)/reslocal.mk
++-include $(COLSRCDIR)/collocal.mk
++-include $(BRKSRCDIR)/brslocal.mk
++-include $(RBNFSRCDIR)/rbnflocal.mk
++-include $(TRANSLITSRCDIR)/trnslocal.mk
++ifdef GENRB_SOURCE
++RES_SRC= root.txt $(GENRB_SOURCE) $(GENRB_ALIAS_SOURCE) $(GENRB_SOURCE_LOCAL) $(GENRB_ALIAS_SOURCE_LOCAL)
++RES_SRC_FILES = $(RES_SRC:%=$(LOCSRCDIR)/%)
++INSTALLED_RB_FILES = $(GENRB_SOURCE:%.txt=%) $(GENRB_SOURCE_LOCAL:%.txt=%)
++endif
++ifdef COLLATION_SOURCE
++COL_SRC= root.txt $(COLLATION_SOURCE) $(COLLATION_ALIAS_SOURCE) $(COLLATION_SOURCE_LOCAL)
++COL_SRC_FILES = $(COL_SRC:%=$(COLSRCDIR)/%)
++INSTALLED_COL_FILES = $(COLLATION_SOURCE:%.txt=%)  $(COLLATION_SOURCE_LOCAL:%.txt=%)
++endif
++ifdef RBNF_SOURCE
++RBNF_SRC= root.txt $(RBNF_SOURCE) $(RBNF_ALIAS_SOURCE) $(RBNF_SOURCE_LOCAL)
++RBNF_SRC_FILES = $(RBNF_SRC:%=$(RBNFSRCDIR)/%)
++INSTALLED_RBNF_FILES = $(RBNF_SOURCE:%.txt=%)  $(RBNF_SOURCE_LOCAL:%.txt=%)
++endif
++ifdef TRANSLIT_SOURCE
++TRANSLIT_SRC= $(TRANSLIT_SOURCE) $(TRANSLIT_ALIAS_SOURCE) $(TRANSLIT_SOURCE_LOCAL)
++TRANSLIT_SRC_FILES = $(TRANSLIT_SRC:%=$(TRANSLITSRCDIR)/%)
++INSTALLED_TRANSLIT_FILES = $(TRANSLIT_SOURCE:%.txt=%)  $(TRANSLIT_SOURCE_LOCAL:%.txt=%)
++endif
++GENRBOPTS=-k
++
++## MISC files
++-include $(MISCSRCDIR)/miscfiles.mk
++-include $(MISCSRCDIR)/misclocal.mk
++MSC_SOURCE= $(MISC_SOURCE) $(MISC_SOURCE_LOCAL) 
++MSC_SRC_FILES=$(MSC_SOURCE:%=$(MISCSRCDIR)/%)
++
++ifeq ($(ENABLE_SO_VERSION_DATA),1)
++ifeq ($(PKGDATA_MODE),dll)
++SO_VERSION_DATA = $(OUTTMPDIR)/icudata.res
++$(SO_VERSION_DATA) : $(MISCSRCDIR)/icudata.rc
++	rc.exe /i$(srcdir)/../common /fo$@ $(CPPFLAGS) $(SOURCE_FILE)
++endif
++endif
++
++ALL_RES_SRC= $(RES_SRC) $(TRNS_SOURCE) $(MSC_SOURCE)
++RES_FILES = $(ALL_RES_SRC:%.txt=$(DATABUILDDIR)/%.res)
++RES_FILES_SHORT = $(ALL_RES_SRC:%.txt=%.res)
++PKGDATA_LIST = $(OUTTMPDIR)/icudata.lst
++
++INDEX_NAME=res_index
++INDEX_FILE=$(OUTTMPDIR)/$(INDEX_NAME).txt
++INDEX_RES_FILE=$(INDEX_FILE:$(OUTTMPDIR)/%.txt=$(DATABUILDDIR)/%.res)
++INDEX_RES_FILE_SHORT=$(INDEX_FILE:$(OUTTMPDIR)/%.txt=%.res)
++
++COLLATION_TREE=coll
++COLLATION_INDEX_FILE=$(OUTTMPDIR)/$(COLLATION_TREE)/$(INDEX_NAME).txt
++COLLATION_INDEX_RES=$(COLBLDDIR)/$(INDEX_NAME).res
++COLLATION_INDEX_RES_SHORT=$(COLLATION_TREE)/$(INDEX_NAME).res
++COLLATION_FILES = $(COL_SRC:%.txt=$(COLBLDDIR)/%.res) $(COLLATION_INDEX_RES)
++COLLATION_FILES_SHORT = $(COL_SRC:%.txt=$(COLLATION_TREE)/%.res)
++
++BRK_RES_INDEX_FILE=$(OUTTMPDIR)/$(BREAK_TREE)/$(INDEX_NAME).txt
++BRK_RES_INDEX_RES=$(BRKBLDDIR)/$(INDEX_NAME).res
++BRK_RES_INDEX_RES_SHORT=$(BREAK_TREE)/$(INDEX_NAME).res
++BRK_RES_FILES = $(BRS_SRC:%.txt=$(BRKBLDDIR)/%.res) $(BRK_RES_INDEX_RES)
++BRK_RES_FILES_SHORT = $(BRS_SRC:%.txt=$(BREAK_TREE)/%.res)
++
++RBNF_TREE=rbnf
++RBNF_INDEX_FILE=$(OUTTMPDIR)/$(RBNF_TREE)/$(INDEX_NAME).txt
++RBNF_INDEX_RES=$(RBNFBLDDIR)/$(INDEX_NAME).res
++RBNF_INDEX_RES_SHORT=$(RBNF_TREE)/$(INDEX_NAME).res
++RBNF_FILES = $(RBNF_SRC:%.txt=$(RBNFBLDDIR)/%.res) $(RBNF_INDEX_RES)
++RBNF_FILES_SHORT = $(RBNF_SRC:%.txt=$(RBNF_TREE)/%.res)
++
++TRANSLIT_TREE=translit
++#TRANSLIT_INDEX_FILE=$(OUTTMPDIR)/$(TRANSLIT_TREE)/$(INDEX_NAME).txt
++#TRANSLIT_INDEX_RES=$(TRANSLITBLDDIR)/$(INDEX_NAME).res
++#TRANSLIT_INDEX_RES_SHORT=$(TRANSLIT_TREE)/$(INDEX_NAME).res
++TRANSLIT_FILES = $(TRANSLIT_SRC:%.txt=$(TRANSLITBLDDIR)/%.res)
++TRANSLIT_FILES_SHORT = $(TRANSLIT_SRC:%.txt=$(TRANSLIT_TREE)/%.res)
++
++## SPP files
++-include $(SPREPSRCDIR)/sprepfiles.mk
++-include $(SPREPSRCDIR)/spreplocal.mk
++ALL_SPREP_SOURCE=$(SPREP_SOURCE) $(SPREP_SOURCE_LOCAL)
++SPREP_FILES = $(ALL_SPREP_SOURCE:%.txt=$(DATABUILDDIR)/%.spp)
++SPREP_FILES_SHORT = $(ALL_SPREP_SOURCE:%.txt=%.spp)
++
++## All generated files
++ALL_FILES = $(DAT_FILES) $(CNV_FILES) $(BRK_FILES) $(CTD_FILES) $(RES_FILES) $(INDEX_RES_FILE) $(COLLATION_FILES) $(BRK_RES_FILES) $(RBNF_FILES) $(TRANSLIT_FILES) $(SPREP_FILES) $(CFU_FILES)
++ALL_INDEX_SRC_FILES = $(PKGDATA_LIST) $(INDEX_FILE) $(COLLATION_INDEX_FILE) $(BRK_RES_INDEX_FILE) $(RBNF_INDEX_FILE)
++# a list to use in the .lst files (package-relative)
++ALL_FILES_LIST = $(DAT_FILES_SHORT) $(CNV_FILES_SHORT) $(BRK_FILES_SHORT) $(CTD_FILES_SHORT) $(RES_FILES_SHORT) $(INDEX_RES_FILE_SHORT) $(COLLATION_FILES_SHORT) $(COLLATION_INDEX_RES_SHORT) $(BRK_RES_FILES_SHORT) $(BRK_RES_INDEX_RES_SHORT) $(RBNF_FILES_SHORT) $(RBNF_INDEX_RES_SHORT) $(TRANSLIT_FILES_SHORT) $(SPREP_FILES_SHORT) $(CFU_FILES_SHORT)
++
++UNI_CORE_DATA=uprops.icu ucase.icu ubidi.icu unorm.icu
++UNI_CORE_TARGET_DATA=$(UNI_CORE_DATA:%=$(DATABUILDDIR)/%)
++
++ifneq ($(INCLUDE_UNI_CORE_DATA),)
++ALL_FILES_LIST+=$(UNI_CORE_DATA)
++build-local: uni-core-data
++endif
++
++#####################################################
++# General data build rules
++
++## Files to remove for 'make clean'
++CLEANFILES = *~ icupkg.inc
++
++ifeq ($(ICUDATA_SOURCE_ARCHIVE),)
++build-local: build-dir $(SO_VERSION_DATA) $(ALL_FILES) $(PKGDATA_LIST) $(OS390LIST)
++$(PKGDATA_LIST): $(SRCLISTDEPS)
++	@echo "generating $@ (list of data files)"
++	@-$(RMV) $@
++	@for file in $(ALL_FILES_LIST); do \
++	  echo $$file >> $@; \
++	done;
++else
++build-local: build-dir $(SO_VERSION_DATA) $(PKGDATA_LIST) $(OS390LIST)
++$(PKGDATA_LIST): $(SRCLISTDEPS) $(ICUDATA_SOURCE_ARCHIVE)
++ifneq ($(ICUDATA_SOURCE_IS_NATIVE_TARGET),YES)
++	@echo "Unpacking $(ICUDATA_SOURCE_ARCHIVE) and generating $@ (list of data files)"
++	@-$(RMV) $@
++	$(INVOKE) $(TOOLBINDIR)/icupkg -d $(DATABUILDDIR) --list -x \* $(ICUDATA_SOURCE_ARCHIVE) -o $@
++else
++	@echo "$@" > $@
++endif
++endif
++
++
++$(BUILD_DIRS): build-dir
++
++build-dir:
++	@list='$(BUILD_DIRS)'; \
++	for dir in $$list; do \
++	  if ! test -d $$dir; then \
++	    echo $(MKINSTALLDIRS) $(BUILD_DIRS); \
++	    $(MKINSTALLDIRS) $(BUILD_DIRS); \
++	  fi; \
++	done
++
++# The | is an order-only prerequisite. This helps when the -j option is used,
++# and we don't want the files to be built before the directories are built.
++ifneq ($(filter order-only,$(.FEATURES)),)
++$(ALL_FILES) $(ALL_INDEX_SRC_FILES): | build-dir
++endif
++
++# Now, sections for building each kind of data.
++
++####################################################    DAT
++# DAT FILES
++
++# uprops.icu
++$(DATABUILDDIR)/uprops.icu: $(UNICODEDATADIR)/UnicodeData.txt $(UNICODEDATADIR)/BidiMirroring.txt $(TOOLBINDIR)/genprops$(TOOLEXEEXT) $(DATABUILDDIR)/$(ICUDT)pnames.icu
++	$(INVOKE) $(TOOLBINDIR)/genprops -s $(UNICODEDATADIR) -i $(DATABUILDDIR) -d $(DATABUILDDIR) -u $(UNICODE_VERSION)
++	$(INVOKE) $(TOOLBINDIR)/genprops --csource -s $(UNICODEDATADIR) -i $(DATABUILDDIR) -d $(OUTTMPDIR) -u $(UNICODE_VERSION)
++
++# ubidi.icu
++$(DATABUILDDIR)/ubidi.icu: $(UNICODEDATADIR)/UnicodeData.txt $(TOOLBINDIR)/genbidi$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/genbidi -s $(UNICODEDATADIR) -i $(DATABUILDDIR) -d $(DATABUILDDIR) -u $(UNICODE_VERSION)
++	$(INVOKE) $(TOOLBINDIR)/genbidi --csource -s $(UNICODEDATADIR) -i $(DATABUILDDIR) -d $(OUTTMPDIR) -u $(UNICODE_VERSION)
++
++# ucase.icu
++$(DATABUILDDIR)/ucase.icu: $(UNICODEDATADIR)/UnicodeData.txt $(TOOLBINDIR)/gencase$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/gencase -s $(UNICODEDATADIR) -i $(DATABUILDDIR) -d $(DATABUILDDIR) -u $(UNICODE_VERSION)
++	$(INVOKE) $(TOOLBINDIR)/gencase --csource -s $(UNICODEDATADIR) -i $(DATABUILDDIR) -d $(OUTTMPDIR) -u $(UNICODE_VERSION)
++
++# pnames.icu
++$(DATABUILDDIR)/pnames.icu: $(UNICODEDATADIR)/PropertyAliases.txt $(UNICODEDATADIR)/PropertyValueAliases.txt $(UNICODEDATADIR)/Blocks.txt $(COMINCDIR)/uscript.h $(COMINCDIR)/uchar.h $(TOOLBINDIR)/genpname$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/genpname -d $(DATABUILDDIR)
++
++# unorm.icu
++$(DATABUILDDIR)/unorm.icu: $(UNICODEDATADIR)/UnicodeData.txt $(UNICODEDATADIR)/DerivedNormalizationProps.txt $(UNICODEDATADIR)/BidiMirroring.txt $(TOOLBINDIR)/gennorm$(TOOLEXEEXT) $(DATABUILDDIR)/$(ICUDT)pnames.icu $(DATABUILDDIR)/$(ICUDT)uprops.icu $(DATABUILDDIR)/$(ICUDT)ucase.icu
++	$(INVOKE) $(TOOLBINDIR)/gennorm -s $(UNICODEDATADIR) -i $(DATABUILDDIR) -d $(DATABUILDDIR) -u $(UNICODE_VERSION)
++	$(INVOKE) $(TOOLBINDIR)/gennorm --csource -s $(UNICODEDATADIR) -i $(DATABUILDDIR) -d $(OUTTMPDIR) -u $(UNICODE_VERSION)
++
++# ucadata.icu
++# used to depend on $(DATABUILDDIR)/$(ICUDT)unorm.icu $(DATABUILDDIR)/$(ICUDT)ucase.icu
++# see Jitterbug 4497
++$(COLBLDDIR)/ucadata.icu $(COLBLDDIR)/invuca.icu: $(UNICODEDATADIR)/FractionalUCA.txt $(TOOLBINDIR)/genuca$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/genuca -s $(UNICODEDATADIR) -d $(COLBLDDIR) -i $(DATABUILDDIR) 
++
++# unames.icu
++$(DATABUILDDIR)/unames.icu: $(UNICODEDATADIR)/UnicodeData.txt $(TOOLBINDIR)/gennames$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/gennames -1 -d $(DATABUILDDIR) $(UNICODEDATADIR)/UnicodeData.txt -u $(UNICODE_VERSION)
++
++# cnvalias.icu
++$(DATABUILDDIR)/cnvalias.icu: $(UCMSRCDIR)/convrtrs.txt $(TOOLBINDIR)/gencnval$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/gencnval -d $(DATABUILDDIR) $(UCMSRCDIR)/convrtrs.txt
++
++####################################################    SPP
++# SPP FILES
++
++$(DATABUILDDIR)/%.spp: $(SPREPSRCDIR)/%.txt $(TOOLBINDIR)/gensprep$(TOOLEXEEXT) $(DATABUILDDIR)/unames.icu $(DATABUILDDIR)/pnames.icu
++	$(INVOKE) $(TOOLBINDIR)/gensprep -d $(DATABUILDDIR) -i $(DATABUILDDIR) -s $(SPREPSRCDIR) -b $(@F:%.spp=%) -m $(UNICODEDATADIR) -u 3.2.0 $(<F)
++
++####################################################    BRK
++# BRK FILES
++
++#thaidict.brk: $(SRCDATADIR)/thaidict.brk
++#	$(RMV) $@ && ln -s $(DATABUILDDIR) $@
++
++$(BRKBLDDIR)/%.brk: $(BRKSRCDIR)/%.txt $(TOOLBINDIR)/genbrk$(TOOLEXEEXT) $(DAT_FILES)
++	$(INVOKE) $(TOOLBINDIR)/genbrk -c -i $(DATABUILDDIR) -r $< -o $@
++
++####################################################    CTD
++# CTD FILES
++
++$(BRKBLDDIR)/%.ctd: $(BRKSRCDIR)/%.txt $(TOOLBINDIR)/genctd$(TOOLEXEEXT) $(DAT_FILES)
++	$(INVOKE) $(TOOLBINDIR)/genctd -c -i $(DATABUILDDIR) -o $@ $<
++
++####################################################    CFU
++# CFU FILES
++#    Note: gencfu requires two input files to produce a single output file.
++#          There will be exactly one target file and two source files.
++#          The $(word n, ...) selects the nth word from the following stuff.
++#          There must be a nicer way to do this.
++
++$(CFU_FILES): $(ALL_CFU_SOURCE) $(TOOLBINDIR)/gencfu$(EXEEXT) $(DAT_FILES)
++	$(INVOKE) echo ALL_CFU_SOURCE: $(ALL_CFU_SOURCE)
++	$(INVOKE) echo CFU_FILES: $(CFU_FILES)
++	$(INVOKE) echo CFU_FILES_SHORT: $(CFU_FILES_SHORT)
++	$(INVOKE) $(TOOLBINDIR)/gencfu -c -i $(DATABUILDDIR) -r $(word 1,$(ALL_CFU_SOURCE)) -w $(word 2,$(ALL_CFU_SOURCE)) -o $@
++
++
++####################################################    CNV
++# CNV FILES
++$(DATABUILDDIR)/%.cnv: $(UCMSRCDIR)/%.ucm $(TOOLBINDIR)/makeconv$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/makeconv -c -d $(DATABUILDDIR) $(UCMSRCDIR)/$(<F)
++
++####################################################    RES
++# RES FILES
++
++### collation res
++$(COLBLDDIR)/%.res: $(COLSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(COLSRCDIR) -d $(COLBLDDIR) $(<F)
++
++$(COLBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(COLLATION_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(OUTTMPDIR)/$(COLLATION_TREE) -d $(COLBLDDIR) $(INDEX_NAME).txt
++
++$(COLLATION_INDEX_FILE): $(SRCLISTDEPS)
++	@echo "generating $@ (list of installed collation locales)"; \
++	$(RMV) $@; \
++	echo "// Warning this file is automatically generated" > $@; \
++	echo "$(INDEX_NAME):table(nofallback) {" >> $@; \
++	echo "    InstalledLocales {" >> $@; \
++	for file in $(INSTALLED_COL_FILES); do \
++	  echo "        $$file {\"\"}" >> $@; \
++	done; \
++	echo "    }" >> $@; \
++	echo "}" >> $@;
++
++### brk res
++$(BRKBLDDIR)/%.res: $(BRKSRCDIR)/%.txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(BRK_FILES) $(DAT_FILES)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(BRKSRCDIR) -d $(BRKBLDDIR) $(<F)
++
++$(BRKBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(BREAK_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(OUTTMPDIR)/$(BREAK_TREE) -d $(BRKBLDDIR) $(INDEX_NAME).txt
++
++$(BRK_RES_INDEX_FILE): $(SRCLISTDEPS)
++	@echo "generating $@ (list of installed break locales)"; \
++	$(RMV) $@; \
++	echo "// Warning this file is automatically generated" > $@; \
++	echo "$(INDEX_NAME):table(nofallback) {" >> $@; \
++	echo "    InstalledLocales {" >> $@; \
++	for file in $(INSTALLED_BRS_FILES); do \
++	  echo "        $$file {\"\"}" >> $@; \
++	done; \
++	echo "    }" >> $@; \
++	echo "}" >> $@;
++
++### RBNF res
++$(RBNFBLDDIR)/%.res: $(RBNFSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(RBNFSRCDIR) -d $(RBNFBLDDIR) $(<F)
++
++$(RBNFBLDDIR)/$(INDEX_NAME).res: $(OUTTMPDIR)/$(RBNF_TREE)/$(INDEX_NAME).txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(OUTTMPDIR)/$(RBNF_TREE) -d $(RBNFBLDDIR) $(INDEX_NAME).txt
++
++$(RBNF_INDEX_FILE): $(SRCLISTDEPS)
++	@echo "generating $@ (list of installed RBNF locales)"; \
++	$(RMV) $@; \
++	echo "// Warning this file is automatically generated" > $@; \
++	echo "$(INDEX_NAME):table(nofallback) {" >> $@; \
++	echo "    InstalledLocales {" >> $@; \
++	for file in $(INSTALLED_RBNF_FILES); do \
++	  echo "        $$file {\"\"}" >> $@; \
++	done; \
++	echo "    }" >> $@; \
++	echo "}" >> $@;
++
++### TRANSLIT res
++$(TRANSLITBLDDIR)/%.res: $(TRANSLITSRCDIR)/%.txt  $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(TRANSLITSRCDIR) -d $(TRANSLITBLDDIR) $(<F)
++
++### normal (locale) res
++all-RES:  $(RES_FILES)
++
++$(DATABUILDDIR)/%.res: $(LOCSRCDIR)/%.txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT) $(DAT_FILES)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -s $(LOCSRCDIR) -d $(DATABUILDDIR) $(<F)
++
++# if the tzcode directory contains a new tzdata*.tar.gz file, use it for zoneinfo.txt
++TZDATA = $(firstword $(wildcard $(top_builddir)/tools/tzcode/tzdata*.tar.gz) $(wildcard $(top_srcdir)/tools/tzcode/tzdata*.tar.gz))
++
++ifneq ($(TZDATA),)
++
++TZCODE_DIR=$(top_builddir)/tools/tzcode
++ZONEINFO=$(TZCODE_DIR)/zoneinfo.txt
++
++# Override the normal genrb for zoneinfo.txt to always pull from
++# icu/source/tools/tzcode/zoneinfo.txt
++$(DATABUILDDIR)/zoneinfo.res: $(ZONEINFO) $(TOOLBINDIR)/genrb$(TOOLEXEEXT)
++	@echo Note: $(MISCSRCDIR)/zoneinfo.txt is IGNORED because $(TZDATA) is present.
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -q -i $(DATABUILDDIR) -d $(DATABUILDDIR) $(ZONEINFO)
++
++# Create the tzcode tool and zoneinfo.txt as needed.
++$(ZONEINFO): $(TZDATA)
++	@echo "$(MAKE)[$(MAKELEVEL)]: Making \`$(ZONEINFO)' in \`$(TZCODE_DIR)'"; \
++	(cd $(TZCODE_DIR) && $(MAKE)) || exit; \
++
++# end of zoneinfo.txt-generation
++endif
++
++# zoneinfo has some issues. Ignore some warnings with -q
++$(DATABUILDDIR)/%.res: $(MISCSRCDIR)/%.txt $(TOOLBINDIR)/genrb$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -q -i $(DATABUILDDIR) -s $(MISCSRCDIR) -d $(DATABUILDDIR) $(<F)
++
++
++
++$(INDEX_FILE): $(SRCLISTDEPS)
++	@echo "generating $@ (list of installed locales)"; \
++	$(RMV) $@; \
++	echo "// Warning this file is automatically generated" > $@; \
++	echo "$(INDEX_NAME):table(nofallback) {" >> $@; \
++        echo "    CLDRVersion { \"$(GENRB_CLDR_VERSION)\" }" >> $@; \
++	echo "    InstalledLocales {" >> $@; \
++	for file in $(INSTALLED_RB_FILES); do \
++	  echo "        $$file {\"\"}" >> $@; \
++	done; \
++	echo "    }" >> $@; \
++	echo "}" >> $@;
++
++clean-resindex:
++	-$(RMV) $(DATABUILDDIR)/$(INDEX_NAME).txt $(PKGDATA_LIST)
++
++$(INDEX_RES_FILE): $(INDEX_FILE) $(TOOLBINDIR)/genrb$(TOOLEXEEXT)
++	$(INVOKE) $(TOOLBINDIR)/genrb $(GENRBOPTS) -i $(DATABUILDDIR) -d $(DATABUILDDIR) $(INDEX_FILE)
++
++# Starting with ICU4C 3.4, the core Unicode properties files (uprops.icu, ucase.icu, ubidi.icu, unorm.icu)
++# are hardcoded in the common DLL and therefore not included in the data package any more.
++# They are not built by default but need to be built for ICU4J data and for getting the .c source files
++# when updating the Unicode data.
++# Changed in Makefile.in revision 1.147. See Jitterbug 4497.
++uni-core-data: build-dir $(UNI_CORE_TARGET_DATA)
++	@echo Unicode .icu files built to $(DATABUILDDIR)
++	@echo Unicode .c source files built to $(OUTTMPDIR)
++
++build-icu4j: all
++	$(MAKE) -C ../tools/genrb $@
++
++###################################################################
++Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
++	cd $(top_builddir) \
++	&& CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++icupkg.inc: pkgdataMakefile
++	$(MAKE) -f pkgdataMakefile
++
++pkgdataMakefile:
++	cd $(top_builddir) \
++	&& CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
++
++###########
++########### 390 (z/OS) support
++UCMFILES390=ebcdic-xml-us.ucm ibm-37_P100-1995.ucm ibm-1047_P100-1995.ucm ibm-4909_P100-1999.ucm
++# used to depend on uprops.icu ucase.icu ubidi.icu unorm.icu
++# see Jitterbug 4497
++ALLFILES390=pnames.icu cnvalias.icu $(UCMFILES390:.ucm=.cnv)
++
++$(OUTTMPDIR)/icudata390.lst: $(SRCLISTDEPS)
++	@echo "generating $@ (list of 390 data files)"
++	@-$(RMV) $@
++	@for file in $(ALLFILES390); do \
++	  echo $$file >> $@; \
++	done;
++
++ifeq ($(POST_DATA_BUILD), os400-data-rebind)
++os400-data-rebind: $(LIBICUUC)
++
++$(LIBICUUC): $(LIBICUDT)
++	$(RMV) $(LIBICUUC)
++	(cd ../common && $(MAKE) RECURSIVE=YES) || exit;
++endif
++
+diff -ruN icu/source/extra/uconv/Makefile.in icu.aros/source/extra/uconv/Makefile.in
+--- icu/source/extra/uconv/Makefile.in	2009-07-01 19:50:32.000000000 +0100
++++ icu.aros/source/extra/uconv/Makefile.in	2013-04-09 21:17:15.023255820 +0100
+@@ -150,7 +150,7 @@
+ package-resfiles: $(RESDIR)/$(RESDIR).lst pkgdata.inc
+ 	$(INVOKE) $(PKGDATA_INVOKE_OPTS) $(TOOLBINDIR)/pkgdata -p $(MSGNAME) $(PKGDATA_OPTS) -m $(PKGMODE) -s $(RESDIR) -d $(RESDIR) -T $(RESDIR) $(RESDIR)/$(RESDIR).lst
+ 
+-$(RESDIR)/$(RESDIR).lst: Makefile $(srcdir)/resfiles.mk
++$(RESDIR)/$(RESDIR).lst: Makefile $(srcdir)/resfiles.mk $(RESFILES)
+ 	@$(MKINSTALLDIRS) $(RESDIR)
+ 	@-$(RMV) $@
+ 	@for file in $(RESFILES:$(RESDIR)/%.res=%.res); do \
 diff -ruN icu/source/i18n/Makefile.in icu.aros/source/i18n/Makefile.in
 --- icu/source/i18n/Makefile.in	2009-07-01 19:50:12.000000000 +0100
-+++ icu.aros/source/i18n/Makefile.in	2013-04-09 20:13:52.629702975 +0100
++++ icu.aros/source/i18n/Makefile.in	2013-04-09 21:16:29.017627402 +0100
 @@ -27,7 +27,7 @@
  TARGET_STUBNAME=$(I18N_STUBNAME)
  
@@ -437,9 +1239,29 @@ diff -ruN icu/source/i18n/Makefile.in icu.aros/source/i18n/Makefile.in
  	$(AR) $(ARFLAGS) $(AR_OUTOPT)$@ $^
  	$(RANLIB) $@
  endif
+diff -ruN icu/source/icudefs.mk.in icu.aros/source/icudefs.mk.in
+--- icu/source/icudefs.mk.in	2009-07-01 19:51:26.000000000 +0100
++++ icu.aros/source/icudefs.mk.in	2013-04-09 21:17:15.024255833 +0100
+@@ -64,10 +64,16 @@
+ PKGDATA_LIBNAME = -L $(ICUPREFIX)$(DATA_STUBNAME)$(ICULIBSUFFIX)
+ ICUPKGDATA_DIR = $(libdir)
+ else
++ifeq ($(PKGDATA_MODE),static)
++ICUDATA_NAME = $(ICUDATA_PLATFORM_NAME)
++PKGDATA_LIBNAME = -L $(ICUPREFIX)$(DATA_STUBNAME)$(ICULIBSUFFIX)
++ICUPKGDATA_DIR = $(libdir)
++else
+ ICUDATA_NAME = $(ICUDATA_PLATFORM_NAME)
+ ICUPKGDATA_DIR = $(ICUDATA_DIR)
+ endif
+ endif
++endif
+ # This is needed so that make -j2 doesn't complain when invoking pkgdata's make
+ PKGDATA_INVOKE_OPTS = MAKEFLAGS=
+ 
 diff -ruN icu/source/io/Makefile.in icu.aros/source/io/Makefile.in
 --- icu/source/io/Makefile.in	2009-07-01 19:50:48.000000000 +0100
-+++ icu.aros/source/io/Makefile.in	2013-04-09 20:13:53.779716970 +0100
++++ icu.aros/source/io/Makefile.in	2013-04-09 21:16:30.012640999 +0100
 @@ -27,7 +27,7 @@
  TARGET_STUBNAME=$(IO_STUBNAME)
  
@@ -478,7 +1300,7 @@ diff -ruN icu/source/io/Makefile.in icu.aros/source/io/Makefile.in
  endif
 diff -ruN icu/source/layout/Makefile.in icu.aros/source/layout/Makefile.in
 --- icu/source/layout/Makefile.in	2009-07-01 19:51:24.000000000 +0100
-+++ icu.aros/source/layout/Makefile.in	2013-04-09 20:13:54.213722251 +0100
++++ icu.aros/source/layout/Makefile.in	2013-04-09 21:16:30.373645931 +0100
 @@ -26,7 +26,7 @@
  TARGET_STUBNAME=$(LAYOUT_STUBNAME)
  
@@ -517,7 +1339,7 @@ diff -ruN icu/source/layout/Makefile.in icu.aros/source/layout/Makefile.in
  endif
 diff -ruN icu/source/layoutex/Makefile.in icu.aros/source/layoutex/Makefile.in
 --- icu/source/layoutex/Makefile.in	2009-07-01 19:51:20.000000000 +0100
-+++ icu.aros/source/layoutex/Makefile.in	2013-04-09 20:13:54.408724624 +0100
++++ icu.aros/source/layoutex/Makefile.in	2013-04-09 21:16:30.537648173 +0100
 @@ -26,7 +26,7 @@
  TARGET_STUBNAME=$(LAYOUTEX_STUBNAME)
  
@@ -556,7 +1378,7 @@ diff -ruN icu/source/layoutex/Makefile.in icu.aros/source/layoutex/Makefile.in
  endif
 diff -ruN icu/source/stubdata/Makefile.in icu.aros/source/stubdata/Makefile.in
 --- icu/source/stubdata/Makefile.in	2009-07-01 19:50:48.000000000 +0100
-+++ icu.aros/source/stubdata/Makefile.in	2013-04-09 20:13:55.035732254 +0100
++++ icu.aros/source/stubdata/Makefile.in	2013-04-09 21:16:31.453660690 +0100
 @@ -27,7 +27,7 @@
  TARGET_STUBNAME=$(DATA_STUBNAME)
  
@@ -595,7 +1417,7 @@ diff -ruN icu/source/stubdata/Makefile.in icu.aros/source/stubdata/Makefile.in
  endif
 diff -ruN icu/source/tools/ctestfw/Makefile.in icu.aros/source/tools/ctestfw/Makefile.in
 --- icu/source/tools/ctestfw/Makefile.in	2009-07-01 19:50:38.000000000 +0100
-+++ icu.aros/source/tools/ctestfw/Makefile.in	2013-04-09 20:13:58.215770952 +0100
++++ icu.aros/source/tools/ctestfw/Makefile.in	2013-04-09 21:16:36.662731868 +0100
 @@ -27,7 +27,7 @@
  TARGET_STUBNAME=$(CTESTFW_STUBNAME)
  
@@ -625,7 +1447,7 @@ diff -ruN icu/source/tools/ctestfw/Makefile.in icu.aros/source/tools/ctestfw/Mak
  endif
 diff -ruN icu/source/tools/dumpce/Makefile.in icu.aros/source/tools/dumpce/Makefile.in
 --- icu/source/tools/dumpce/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/dumpce/Makefile.in	2013-04-09 20:13:58.276771694 +0100
++++ icu.aros/source/tools/dumpce/Makefile.in	2013-04-09 21:16:36.735732864 +0100
 @@ -17,7 +17,7 @@
  CLEANFILES = *~ $(DEPS)
  
@@ -664,7 +1486,7 @@ diff -ruN icu/source/tools/dumpce/Makefile.in icu.aros/source/tools/dumpce/Makef
  
 diff -ruN icu/source/tools/genbidi/Makefile.in icu.aros/source/tools/genbidi/Makefile.in
 --- icu/source/tools/genbidi/Makefile.in	2009-07-01 19:50:40.000000000 +0100
-+++ icu.aros/source/tools/genbidi/Makefile.in	2013-04-09 20:13:58.296771937 +0100
++++ icu.aros/source/tools/genbidi/Makefile.in	2013-04-09 21:16:36.763733247 +0100
 @@ -24,7 +24,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -703,7 +1525,7 @@ diff -ruN icu/source/tools/genbidi/Makefile.in icu.aros/source/tools/genbidi/Mak
  
 diff -ruN icu/source/tools/genbrk/Makefile.in icu.aros/source/tools/genbrk/Makefile.in
 --- icu/source/tools/genbrk/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/genbrk/Makefile.in	2013-04-09 20:13:58.317772192 +0100
++++ icu.aros/source/tools/genbrk/Makefile.in	2013-04-09 21:16:36.782733507 +0100
 @@ -24,7 +24,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -747,7 +1569,7 @@ diff -ruN icu/source/tools/genbrk/Makefile.in icu.aros/source/tools/genbrk/Makef
  
 diff -ruN icu/source/tools/gencase/Makefile.in icu.aros/source/tools/gencase/Makefile.in
 --- icu/source/tools/gencase/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/gencase/Makefile.in	2013-04-09 20:13:58.333772387 +0100
++++ icu.aros/source/tools/gencase/Makefile.in	2013-04-09 21:16:36.803733793 +0100
 @@ -25,7 +25,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -786,7 +1608,7 @@ diff -ruN icu/source/tools/gencase/Makefile.in icu.aros/source/tools/gencase/Mak
  
 diff -ruN icu/source/tools/genccode/Makefile.in icu.aros/source/tools/genccode/Makefile.in
 --- icu/source/tools/genccode/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/genccode/Makefile.in	2013-04-09 20:13:58.354772642 +0100
++++ icu.aros/source/tools/genccode/Makefile.in	2013-04-09 21:16:36.811733903 +0100
 @@ -25,7 +25,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -830,7 +1652,7 @@ diff -ruN icu/source/tools/genccode/Makefile.in icu.aros/source/tools/genccode/M
  
 diff -ruN icu/source/tools/gencfu/Makefile.in icu.aros/source/tools/gencfu/Makefile.in
 --- icu/source/tools/gencfu/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/gencfu/Makefile.in	2013-04-09 20:13:58.363772752 +0100
++++ icu.aros/source/tools/gencfu/Makefile.in	2013-04-09 21:16:36.844734354 +0100
 @@ -24,7 +24,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -874,7 +1696,7 @@ diff -ruN icu/source/tools/gencfu/Makefile.in icu.aros/source/tools/gencfu/Makef
  
 diff -ruN icu/source/tools/gencmn/Makefile.in icu.aros/source/tools/gencmn/Makefile.in
 --- icu/source/tools/gencmn/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/gencmn/Makefile.in	2013-04-09 20:13:58.375772898 +0100
++++ icu.aros/source/tools/gencmn/Makefile.in	2013-04-09 21:16:36.853734477 +0100
 @@ -25,7 +25,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -918,7 +1740,7 @@ diff -ruN icu/source/tools/gencmn/Makefile.in icu.aros/source/tools/gencmn/Makef
  
 diff -ruN icu/source/tools/gencnval/Makefile.in icu.aros/source/tools/gencnval/Makefile.in
 --- icu/source/tools/gencnval/Makefile.in	2009-07-01 19:50:40.000000000 +0100
-+++ icu.aros/source/tools/gencnval/Makefile.in	2013-04-09 20:13:58.406773276 +0100
++++ icu.aros/source/tools/gencnval/Makefile.in	2013-04-09 21:16:36.894735037 +0100
 @@ -25,7 +25,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -962,7 +1784,7 @@ diff -ruN icu/source/tools/gencnval/Makefile.in icu.aros/source/tools/gencnval/M
  
 diff -ruN icu/source/tools/genctd/Makefile.in icu.aros/source/tools/genctd/Makefile.in
 --- icu/source/tools/genctd/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/genctd/Makefile.in	2013-04-09 20:13:58.419773434 +0100
++++ icu.aros/source/tools/genctd/Makefile.in	2013-04-09 21:16:36.910735254 +0100
 @@ -24,7 +24,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -1006,7 +1828,7 @@ diff -ruN icu/source/tools/genctd/Makefile.in icu.aros/source/tools/genctd/Makef
  
 diff -ruN icu/source/tools/gennames/Makefile.in icu.aros/source/tools/gennames/Makefile.in
 --- icu/source/tools/gennames/Makefile.in	2009-07-01 19:50:40.000000000 +0100
-+++ icu.aros/source/tools/gennames/Makefile.in	2013-04-09 20:13:58.437773652 +0100
++++ icu.aros/source/tools/gennames/Makefile.in	2013-04-09 21:16:36.930735529 +0100
 @@ -25,7 +25,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -1050,7 +1872,7 @@ diff -ruN icu/source/tools/gennames/Makefile.in icu.aros/source/tools/gennames/M
  
 diff -ruN icu/source/tools/gennorm/Makefile.in icu.aros/source/tools/gennorm/Makefile.in
 --- icu/source/tools/gennorm/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/gennorm/Makefile.in	2013-04-09 20:13:58.452773835 +0100
++++ icu.aros/source/tools/gennorm/Makefile.in	2013-04-09 21:16:36.936735611 +0100
 @@ -25,7 +25,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -1094,7 +1916,7 @@ diff -ruN icu/source/tools/gennorm/Makefile.in icu.aros/source/tools/gennorm/Mak
  
 diff -ruN icu/source/tools/genpname/Makefile.in icu.aros/source/tools/genpname/Makefile.in
 --- icu/source/tools/genpname/Makefile.in	2009-07-01 19:50:40.000000000 +0100
-+++ icu.aros/source/tools/genpname/Makefile.in	2013-04-09 20:13:58.505774480 +0100
++++ icu.aros/source/tools/genpname/Makefile.in	2013-04-09 21:16:36.978736185 +0100
 @@ -25,7 +25,7 @@
  CLEANFILES = *~ $(DEPS)
  
@@ -1138,7 +1960,7 @@ diff -ruN icu/source/tools/genpname/Makefile.in icu.aros/source/tools/genpname/M
  
 diff -ruN icu/source/tools/genprops/Makefile.in icu.aros/source/tools/genprops/Makefile.in
 --- icu/source/tools/genprops/Makefile.in	2009-07-01 19:50:40.000000000 +0100
-+++ icu.aros/source/tools/genprops/Makefile.in	2013-04-09 20:13:58.530774784 +0100
++++ icu.aros/source/tools/genprops/Makefile.in	2013-04-09 21:16:37.018736731 +0100
 @@ -25,7 +25,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -1182,7 +2004,7 @@ diff -ruN icu/source/tools/genprops/Makefile.in icu.aros/source/tools/genprops/M
  
 diff -ruN icu/source/tools/genrb/Makefile.in icu.aros/source/tools/genrb/Makefile.in
 --- icu/source/tools/genrb/Makefile.in	2009-07-01 19:50:40.000000000 +0100
-+++ icu.aros/source/tools/genrb/Makefile.in	2013-04-09 20:13:58.585775453 +0100
++++ icu.aros/source/tools/genrb/Makefile.in	2013-04-09 21:16:37.064737360 +0100
 @@ -34,7 +34,7 @@
  CLEANFILES = *~ $(MAN_FILES) $(DEPS) $(DERB_DEPS)
  
@@ -1226,7 +2048,7 @@ diff -ruN icu/source/tools/genrb/Makefile.in icu.aros/source/tools/genrb/Makefil
  
 diff -ruN icu/source/tools/gensprep/Makefile.in icu.aros/source/tools/gensprep/Makefile.in
 --- icu/source/tools/gensprep/Makefile.in	2009-07-01 19:50:38.000000000 +0100
-+++ icu.aros/source/tools/gensprep/Makefile.in	2013-04-09 20:13:58.683776647 +0100
++++ icu.aros/source/tools/gensprep/Makefile.in	2013-04-09 21:16:37.109737975 +0100
 @@ -25,7 +25,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -1270,7 +2092,7 @@ diff -ruN icu/source/tools/gensprep/Makefile.in icu.aros/source/tools/gensprep/M
  
 diff -ruN icu/source/tools/gentest/Makefile.in icu.aros/source/tools/gentest/Makefile.in
 --- icu/source/tools/gentest/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/gentest/Makefile.in	2013-04-09 20:13:58.700776853 +0100
++++ icu.aros/source/tools/gentest/Makefile.in	2013-04-09 21:16:37.118738098 +0100
 @@ -18,7 +18,7 @@
  CLEANFILES = *~ $(DEPS)
  
@@ -1309,7 +2131,7 @@ diff -ruN icu/source/tools/gentest/Makefile.in icu.aros/source/tools/gentest/Mak
  
 diff -ruN icu/source/tools/genuca/Makefile.in icu.aros/source/tools/genuca/Makefile.in
 --- icu/source/tools/genuca/Makefile.in	2009-07-01 19:50:40.000000000 +0100
-+++ icu.aros/source/tools/genuca/Makefile.in	2013-04-09 20:13:58.715777035 +0100
++++ icu.aros/source/tools/genuca/Makefile.in	2013-04-09 21:16:37.138738371 +0100
 @@ -24,7 +24,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -1353,7 +2175,7 @@ diff -ruN icu/source/tools/genuca/Makefile.in icu.aros/source/tools/genuca/Makef
  
 diff -ruN icu/source/tools/icupkg/Makefile.in icu.aros/source/tools/icupkg/Makefile.in
 --- icu/source/tools/icupkg/Makefile.in	2009-07-01 19:50:38.000000000 +0100
-+++ icu.aros/source/tools/icupkg/Makefile.in	2013-04-09 20:13:58.727777182 +0100
++++ icu.aros/source/tools/icupkg/Makefile.in	2013-04-09 21:16:37.146738481 +0100
 @@ -24,7 +24,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -1397,7 +2219,7 @@ diff -ruN icu/source/tools/icupkg/Makefile.in icu.aros/source/tools/icupkg/Makef
  
 diff -ruN icu/source/tools/icuswap/Makefile.in icu.aros/source/tools/icuswap/Makefile.in
 --- icu/source/tools/icuswap/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/icuswap/Makefile.in	2013-04-09 20:13:58.738777316 +0100
++++ icu.aros/source/tools/icuswap/Makefile.in	2013-04-09 21:16:37.153738576 +0100
 @@ -24,7 +24,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -1441,7 +2263,7 @@ diff -ruN icu/source/tools/icuswap/Makefile.in icu.aros/source/tools/icuswap/Mak
  	$(POST_BUILD_STEP)
 diff -ruN icu/source/tools/makeconv/Makefile.in icu.aros/source/tools/makeconv/Makefile.in
 --- icu/source/tools/makeconv/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/makeconv/Makefile.in	2013-04-09 20:13:58.776777779 +0100
++++ icu.aros/source/tools/makeconv/Makefile.in	2013-04-09 21:16:37.186739027 +0100
 @@ -24,7 +24,7 @@
  CLEANFILES = *~ $(DEPS) $(MAN_FILES)
  
@@ -1485,7 +2307,7 @@ diff -ruN icu/source/tools/makeconv/Makefile.in icu.aros/source/tools/makeconv/M
  
 diff -ruN icu/source/tools/pkgdata/Makefile.in icu.aros/source/tools/pkgdata/Makefile.in
 --- icu/source/tools/pkgdata/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/pkgdata/Makefile.in	2013-04-09 20:13:58.787777912 +0100
++++ icu.aros/source/tools/pkgdata/Makefile.in	2013-04-09 21:16:37.198739190 +0100
 @@ -28,7 +28,7 @@
  endif
  
@@ -1527,9 +2349,285 @@ diff -ruN icu/source/tools/pkgdata/Makefile.in icu.aros/source/tools/pkgdata/Mak
  	$(LINK.cc) $(OUTOPT)$@ $^ $(LIBS)
  	$(POST_BUILD_STEP)
  
+diff -ruN icu/source/tools/pkgdata/pkgdata.cpp icu.aros/source/tools/pkgdata/pkgdata.cpp
+--- icu/source/tools/pkgdata/pkgdata.cpp	2009-07-01 19:50:42.000000000 +0100
++++ icu.aros/source/tools/pkgdata/pkgdata.cpp	2013-04-09 21:17:15.024255833 +0100
+@@ -70,12 +70,12 @@
+ #define WINDOWS_WITH_MSVC
+ #endif
+ #endif
+-#if !defined(WINDOWS_WITH_MSVC) && !defined(U_LINUX)
++//#if !defined(WINDOWS_WITH_MSVC) && !defined(U_LINUX)
+ #define BUILD_DATA_WITHOUT_ASSEMBLY
+-#endif
+-#if defined(WINDOWS_WITH_MSVC) || defined(U_LINUX)
+-#define CAN_WRITE_OBJ_CODE
+-#endif
++//#endif
++//#if defined(WINDOWS_WITH_MSVC) || defined(U_LINUX)
++//#define CAN_WRITE_OBJ_CODE
++//#endif
+ 
+ /*
+  * When building the data library without assembly,
+@@ -115,9 +115,10 @@
+ static int32_t pkg_createWithAssemblyCode(const char *targetDir, const char mode, const char *gencFilePath);
+ static int32_t pkg_generateLibraryFile(const char *targetDir, const char mode, const char *objectFile, char *command = NULL);
+ static int32_t pkg_archiveLibrary(const char *targetDir, const char *version, UBool reverseExt);
+-static void createFileNames(const char *version_major, const char *version, const char *libName, const UBool reverseExt);
++static void createFileNames(const char mode, const char *version_major, const char *version, const char *libName, const UBool reverseExt);
+ 
+ static int32_t pkg_getOptionsFromICUConfig(UOption *option);
++static int runCommand(const char* command);
+ 
+ enum {
+     NAME,
+@@ -461,6 +462,17 @@
+     return result;
+ }
+ 
++static int runCommand(const char* command)
++{
++    printf("pkgdata: %s\n", command);
++    int result = system(command);
++    if (result != 0)
++    {
++	printf("-- return status = %d\n", result);
++    }
++    return result;
++}
++
+ #define LN_CMD "ln -s"
+ #define RM_CMD "rm -f"
+ 
+@@ -581,15 +593,14 @@
+             }
+ #endif
+             /* Using the base libName and version number, generate the library file names. */
+-            createFileNames(version_major, o->version, o->libName, reverseExt);
++            createFileNames(mode, version_major, o->version, o->libName, reverseExt);
+ 
+             if (o->version != 0 && o->rebuild == FALSE) {
+                 /* Check to see if a previous built data library file exists and check if it is the latest. */
+-                sprintf(checkLibFile, "%s%s", targetDir, libFileNames[LIB_FILE_VERSION_TMP]);
++                sprintf(checkLibFile, "%s%s", targetDir, libFileNames[LIB_FILE_VERSION]);
+                 if (T_FileStream_file_exists(checkLibFile)) {
+                     if (isFileModTimeLater(checkLibFile, o->srcDir, TRUE) && isFileModTimeLater(checkLibFile, o->options)) {
+                         if (o->install != NULL) {
+-                            uprv_strcpy(libFileNames[LIB_FILE_VERSION], libFileNames[LIB_FILE_VERSION_TMP]);
+                             result = pkg_installLibrary(o->install, targetDir);
+                         }
+                         return result;
+@@ -666,7 +677,7 @@
+  * Given the base libName and version numbers, generate the libary file names and store it in libFileNames.
+  * Depending on the configuration, the library name may either end with version number or shared object suffix.
+  */
+-static void createFileNames(const char *version_major, const char *version, const char *libName, UBool reverseExt) {
++static void createFileNames(const char mode, const char *version_major, const char *version, const char *libName, UBool reverseExt) {
+         sprintf(libFileNames[LIB_FILE], "%s%s",
+                 pkgDataFlags[LIBPREFIX],
+                 libName);
+@@ -704,6 +715,10 @@
+             uprv_strcpy(libFileNames[LIB_FILE_VERSION_TMP], libFileNames[LIB_FILE_VERSION_MAJOR]);
+ #endif
+         }
++        if(mode == MODE_STATIC) {
++            sprintf(libFileNames[LIB_FILE_VERSION], "%s.%s", libFileNames[LIB_FILE], pkgDataFlags[A_EXT]);
++            libFileNames[LIB_FILE_VERSION_MAJOR][0]=0;
++        }
+ }
+ 
+ /* Create the symbolic links for the final library file. */
+@@ -724,7 +739,7 @@
+             LN_CMD,
+             libFileNames[LIB_FILE_VERSION],
+             libFileNames[LIB_FILE_VERSION_MAJOR]);
+-    result = system(cmd);
++    result = runCommand(cmd);
+     if (result != 0) {
+         return result;
+     }
+@@ -737,7 +752,7 @@
+             libFileNames[LIB_FILE_VERSION],
+             libFileNames[LIB_FILE], pkgDataFlags[SO_EXT]);
+ 
+-     result = system(cmd);
++     result = runCommand(cmd);
+ 
+     return result;
+ }
+@@ -753,7 +768,7 @@
+             installDir, PKGDATA_FILE_SEP_STRING, libFileNames[LIB_FILE_VERSION]
+             );
+ 
+-    result = system(cmd);
++    result = runCommand(cmd);
+ 
+     if (result != 0) {
+         return result;
+@@ -795,7 +810,7 @@
+                         srcDir, PKGDATA_FILE_SEP_STRING, buffer,
+                         installDir, PKGDATA_FILE_SEP_STRING, buffer);
+ 
+-                result = system(cmd);
++                result = runCommand(cmd);
+                 if (result != 0) {
+                     fprintf(stderr, "Failed to install data file with command: %s\n", cmd);
+                     break;
+@@ -815,7 +830,7 @@
+     }
+ #else
+     sprintf(cmd, "%s %s %s %s", WIN_INSTALL_CMD, srcDir, installDir, WIN_INSTALL_CMD_FLAGS);
+-    result = system(cmd);
++    result = runCommand(cmd);
+     if (result != 0) {
+         fprintf(stderr, "Failed to install data file with command: %s\n", cmd);
+     }
+@@ -849,7 +864,17 @@
+                 targetDir,
+                 libFileNames[LIB_FILE_VERSION_TMP]);
+ 
+-        result = system(cmd);
++        result = runCommand(cmd);
++        if (result != 0) {
++            return result;
++        }
++
++        sprintf(cmd, "%s %s%s",
++                pkgDataFlags[RANLIB],
++                targetDir,
++                libFileNames[LIB_FILE_VERSION]);
++
++        result = runCommand(cmd);
+         if (result != 0) {
+             return result;
+         }
+@@ -860,7 +885,7 @@
+                 targetDir,
+                 libFileNames[LIB_FILE_VERSION_TMP]);
+ 
+-        result = system(cmd);
++        result = runCommand(cmd);
+         if (result != 0) {
+             return result;
+         }
+@@ -897,18 +922,30 @@
+ 
+     if (mode == MODE_STATIC) {
+ #ifdef OS400
+-        sprintf(cmd, "QSH CMD('%s %s %s%s.%s %s')",
++        sprintf(cmd, "QSH CMD('%s %s %s%s %s')",
+ #else
+-        sprintf(cmd, "%s %s %s%s.%s %s",
++        sprintf(cmd, "%s %s %s%s %s",
+ #endif
+                 pkgDataFlags[AR],
+                 pkgDataFlags[ARFLAGS],
+                 targetDir,
+-                libFileNames[LIB_FILE],
+-                pkgDataFlags[A_EXT],
++                libFileNames[LIB_FILE_VERSION],
+                 objectFile);
+ 
+-        result = system(cmd);
++        result = runCommand(cmd);
++        if (result == 0)
++        {
++#ifdef OS400
++            sprintf(cmd, "QSH CMD('%s %s%s.%s')",
++#else
++            sprintf(cmd, "%s %s%s",
++#endif
++                pkgDataFlags[RANLIB],
++                targetDir,
++                libFileNames[LIB_FILE_VERSION]);
++
++            result = runCommand(cmd);
++        }
+     } else /* if (mode == MODE_DLL) */ {
+ #ifdef U_CYGWIN
+         sprintf(cmd, "%s%s%s %s -o %s%s %s %s%s %s %s",
+@@ -935,7 +972,7 @@
+                 pkgDataFlags[BIR_FLAGS]);
+ 
+         /* Generate the library file. */
+-        result = system(cmd);
++        result = runCommand(cmd);
+     }
+ 
+     if (freeCmd) {
+@@ -961,7 +998,7 @@
+             tempObjectFile,
+             gencFilePath);
+ 
+-    result = system(cmd);
++    result = runCommand(cmd);
+     if (result != 0) {
+         return result;
+     }
+@@ -1043,7 +1080,7 @@
+                         tempObjectFile,
+                         gencmnFile);
+             
+-            result = system(cmd);
++            result = runCommand(cmd);
+             if (result != 0) {
+                 break;
+             }
+@@ -1094,7 +1131,7 @@
+             sprintf(cmd, "cat %s >> %s", gencmnFile, icudtAll);
+ #endif
+             
+-            result = system(cmd);
++            result = runCommand(cmd);
+             if (result != 0) {
+                 break;
+             }
+@@ -1110,14 +1147,13 @@
+                     pkgDataFlags[LIBFLAGS],
+                     tempObjectFile,
+                     gencmnFile);
+-        result = system(cmd);
++        result = runCommand(cmd);
+         if (result != 0) {
+             break;
+         }
+ 
+-        sprintf(buffer, "%s %s",
+-                buffer,
+-                tempObjectFile);
++        strcat(buffer, " ");
++        strcat(buffer, tempObjectFile);
+ #endif
+         
+         if (i > 0) {
+@@ -1139,11 +1175,10 @@
+         tempObjectFile,
+         icudtAll);
+     
+-    result = system(cmd);
++    result = runCommand(cmd);
+     if (result == 0) {
+-        sprintf(buffer, "%s %s",
+-            buffer,
+-            tempObjectFile);
++        strcat(buffer, " ");
++        strcat(buffer, tempObjectFile);
+     }
+ #endif
+ 
+@@ -1222,7 +1257,7 @@
+                 );
+     }
+ 
+-    return system(cmd);
++    return runCommand(cmd);
+ }
+ #endif
+ 
 diff -ruN icu/source/tools/toolutil/Makefile.in icu.aros/source/tools/toolutil/Makefile.in
 --- icu/source/tools/toolutil/Makefile.in	2009-07-01 19:50:42.000000000 +0100
-+++ icu.aros/source/tools/toolutil/Makefile.in	2013-04-09 20:13:58.821778325 +0100
++++ icu.aros/source/tools/toolutil/Makefile.in	2013-04-09 21:16:37.236739710 +0100
 @@ -27,7 +27,7 @@
  TARGET_STUBNAME=$(TOOLUTIL_STUBNAME)
  
