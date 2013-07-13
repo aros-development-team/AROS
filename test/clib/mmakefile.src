@@ -28,6 +28,7 @@ FILES := \
         random \
         setjmp \
         snprintf \
+        sprintf \
         sscanf \
         statfs \
         stpblk \

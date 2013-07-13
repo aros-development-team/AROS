@@ -280,6 +280,7 @@ static size_t format_longlong(char *buffer, char type, unsigned long long v)
       {
 #ifdef AROS_HAVE_LONG_LONG
           lltype = 1;
+          subtype = 'l';
 #endif
           ptr++;
       }
