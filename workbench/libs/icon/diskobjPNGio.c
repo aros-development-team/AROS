@@ -194,6 +194,124 @@ static void GetChunkInfo(APTR stream, APTR *chunkdata, ULONG *chunksize)
     *chunkdata = chunkp->data;
 }
 
+/****************************************************************************************/
+
+STATIC BOOL MakePlanarImage(struct NativeIcon *icon, struct Image **img, UBYTE *src, struct IconBase *IconBase)
+{
+    LONG width16 = (icon->ni_DiskObject.do_Gadget.Width + 15) & ~15;
+    LONG bpr = width16 / 8;
+    LONG planesize = bpr * icon->ni_DiskObject.do_Gadget.Height;
+    LONG x, y;
+    UWORD *p1, *p2;
+    ULONG *s = (ULONG *) src;
+
+    *img = (struct Image *) AllocMemIcon(&icon->ni_DiskObject, sizeof(struct Image) + planesize * 2,
+            MEMF_PUBLIC | MEMF_CLEAR);
+    if (*img == NULL)
+        return FALSE;
+
+    (*img)->Width = icon->ni_DiskObject.do_Gadget.Width;
+    (*img)->Height = icon->ni_DiskObject.do_Gadget.Height;
+    (*img)->Depth = 2;
+    (*img)->ImageData = (UWORD *) (*img + 1);
+    (*img)->PlanePick = 3;
+
+    p1 = (UWORD *) (*img)->ImageData;
+    p2 = p1 + planesize / 2;
+
+    for (y = 0; y < (*img)->Height; y++)
+    {
+        ULONG pixelmask = 0x8000;
+        UWORD plane1dat = 0;
+        UWORD plane2dat = 0;
+
+        for (x = 0; x < (*img)->Width; x++)
+        {
+            ULONG pixel = *s++;
+
+#if AROS_BIG_ENDIAN
+            if ((pixel & 0xFF000000) > 0x80000000)
+            {
+                pixel = (((pixel & 0x00FF0000) >> 16) +
+                        ((pixel & 0x0000FF00) >> 8) +
+                        ((pixel & 0x000000FF)) +
+                        127) / 256;
+#else
+            if ((pixel & 0x000000FF) > 0x80)
+            {
+                pixel = (((pixel & 0x0000FF00) >> 8) + ((pixel & 0x00FF0000) >> 16) + ((pixel & 0xFF000000) >> 24) + 127) / 256;
+#endif
+
+                if (pixel == 3)
+                {
+                    /* Col 2: White */
+                    plane2dat |= pixelmask;
+                }
+                else if ((pixel == 2) || (pixel == 1))
+                {
+                    /* Col 3: Amiga Blue */
+                    plane1dat |= pixelmask;
+                    plane2dat |= pixelmask;
+                }
+                else
+                {
+                    /* Col 1: Black */
+                    plane1dat |= pixelmask;
+                }
+            }
+
+            pixelmask >>= 1;
+            if (!pixelmask)
+            {
+                pixelmask = 0x8000;
+                *p1++ = AROS_WORD2BE(plane1dat);
+                *p2++ = AROS_WORD2BE(plane2dat);
+
+                plane1dat = plane2dat = 0;
+
+            }
+
+        }
+
+        if (pixelmask != 0x8000)
+        {
+            *p1++ = AROS_WORD2BE(plane1dat);
+            *p2++ = AROS_WORD2BE(plane2dat);
+
+        }
+
+    } /* for(y = 0; y < icon->ni_Height; y++) */
+
+    return TRUE;
+
+}
+
+/****************************************************************************************/
+
+STATIC BOOL MakePlanarImages(struct NativeIcon *icon, struct IconBase *IconBase)
+{
+    if (!MakePlanarImage(icon, (struct Image **) &icon->ni_DiskObject.do_Gadget.GadgetRender,
+            (UBYTE *)icon->ni_Image[0].ARGB, IconBase))
+    {
+        return FALSE;
+    }
+
+    icon->ni_DiskObject.do_Gadget.Flags |= GFLG_GADGIMAGE;
+
+    if (!icon->ni_Image[1].ARGB)
+        return TRUE;
+
+    if (MakePlanarImage(icon, (struct Image **) &icon->ni_DiskObject.do_Gadget.SelectRender,
+            (UBYTE *)icon->ni_Image[1].ARGB, IconBase))
+    {
+        icon->ni_DiskObject.do_Gadget.Flags |= GFLG_GADGHIMAGE;
+    }
+
+    return TRUE;
+}
+
+/****************************************************************************************/
+
 BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 {
     static CONST_STRPTR const chunknames[] =
@@ -570,7 +688,19 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 	    }
 	}
     }
-    
+
+    /*
+     * Support old-style AROS PNG icons. 3rd party applications
+     * will still be using them.
+     */
+
+    if (!MakePlanarImages(icon, IconBase))
+    {
+        D(bug("Planar image creation failed\n"));
+        FreeIconPNG(&icon->ni_DiskObject, IconBase);
+        return FALSE;
+    }
+
     return TRUE;
     
 }
