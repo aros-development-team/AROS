@@ -62,25 +62,25 @@ INCL_DIRS     := $(foreach dir,$(INCSUBDIRS),$(AROS_INCLUDES)/$(dir)) \
 compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 $(AROS_INCLUDES)/%.h : %.h
-	@$(ECHO) Copying C includes to $(AROS_INCLUDES)...
+	@$(ECHO) "Copying    C   includes to $(AROS_INCLUDES)..."
 	@$(CP) $< $@
 
 $(GENINCDIR)/%.h : %.h
-	@$(ECHO) Copying C includes to $(GENINCDIR)...
+	@$(ECHO) "Copying    C   includes to $(GENINCDIR)..."
 	@$(CP) $< $@
 
 $(AROS_INCLUDES)/%.hpp : %.hpp
-	@$(ECHO) Copying C++ includes to $(AROS_INCLUDES)...
+	@$(ECHO) "Copying    C++ includes to $(AROS_INCLUDES)..."
 	@$(CP) $< $@
 
 $(GENINCDIR)/%.hpp : %.hpp
-	@$(ECHO) Copying C++ includes to $(GENINCDIR)...
+	@$(ECHO) "Copying    C++ includes to $(GENINCDIR)..."
 	@$(CP) $< $@
 
 setup : $(INCL_DIRS)
 
 $(INCL_DIRS) :
-	@$(ECHO) Creating $@...
+	@$(ECHO) "Creating   $@..."
 	@$(MKDIR) $@
 
 #MM
@@ -89,7 +89,7 @@ includes-asm_h-$(CPU) : $(GENINCDIR)/aros/$(CPU)/asm.h
 .PHONY : includes-asm_h-$(CPU)
 
 $(OBJDIR)/asm.s : asm.c | $(OBJDIR)
-	@$(ECHO) Compiling $<...
+	@$(ECHO) "Compiling  $<..."
 	@$(TARGET_CC) $(CFLAGS) $(PRIV_EXEC_INCLUDES) $(PRIV_KERNEL_INCLUDES) -S $< -o $@
 
 $(GENINCDIR)/aros/$(CPU)/asm.h : $(OBJDIR)/asm.s | $(GENINCDIR)/aros/$(AROS_TARGET_CPU)
