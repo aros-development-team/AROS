@@ -906,6 +906,9 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
     buf[3] = crc;
     if (Write(file, buf, 4) != 4) return FALSE;
     
+    /* Trim any garbage at end of file */
+    if (SetFileSize(file, 0, OFFSET_CURRENT) < 0) return FALSE;
+
     /* Write chunk's size */
     if (Seek(file, sizeseek, OFFSET_BEGINNING) < 0) return FALSE;
 
