@@ -434,7 +434,7 @@ $(GENINCDIR)/libraries $(AROS_INCLUDES)/libraries :
 	%mkdir_q dir=$@
 
 $(AROS_INCLUDES)/libraries/mui.h : $(GENINCDIR)/libraries/mui.h
-	@$(ECHO) Copying $< to $@
+	@$(ECHO) "Copying    $< to $@"
 	@$(CP) $< $@
 
 $(GENINCDIR)/libraries/mui.h : $(BUILDINCTOOL) mui.h macros.h $(CLASSINCLUDES)

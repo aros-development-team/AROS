@@ -1702,7 +1702,7 @@ endif
 
 $(BD_DEFLIBDEFSINC) : FILENAME := $(BD_LIBDEFSINC)
 $(BD_DEFLIBDEFSINC) :
-	@$(ECHO) "generating $@"
+	@$(ECHO) "Generating $@"
 	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
 
 $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) : | %(objdir)/include
