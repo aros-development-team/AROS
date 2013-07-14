@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function AreaEnd()
@@ -80,6 +80,7 @@
 	BYTE  * CurFlag  = areainfo -> FlagTbl;
 	UWORD Count;
 	UWORD Rem_APen   = GetAPen(rp);
+	UWORD Rem_Flags = rp->Flags;
 	/* I don't know whether this function may corrupt the 
 	   cursor position of the rastport. So I save it for later.*/
 
@@ -138,7 +139,7 @@
         	    CurVctr = &CurVctr[2];
         	    CurFlag = &CurFlag[1];
         	    /* 
-        	       no need to set the bundaries here like in case above as
+        	       no need to set the boundaries here like in case above as
         	       this coord closes the polygon and therefore is the same
         	       one as the first coordinate of the polygon. 
         	    */
@@ -192,6 +193,7 @@
 				SetAPen(rp, GetOutlinePen(rp));
 				PolyDraw(rp, last_idx - first_idx + 1, &areainfo->VctrTbl[first_idx * 2]);
 				SetAPen(rp, Rem_APen);		    
+				rp->Flags = Rem_Flags;
 			    }
 
 			}
@@ -289,6 +291,7 @@
                         	       CurVctr[3]);
 
     	    		SetAPen(rp, Rem_APen);
+			rp->Flags = Rem_Flags;
 		    }
 
         	    CurVctr = &CurVctr[4];
@@ -303,6 +306,8 @@
 		default:
         	    /* this is an error */
         	    SetAPen(rp, Rem_APen);
+        	    rp->Flags = Rem_Flags;
+
         	    /* also restore old graphics cursor position */
         	    rp->cp_x = Rem_cp_x;
         	    rp->cp_y = Rem_cp_y;
@@ -318,9 +323,7 @@
 	areainfo->FlagPtr = areainfo->FlagTbl;
 	areainfo->Count   = 0;
 
-	/* restore old APen */
-	SetAPen(rp, Rem_APen);    
-	/* also restore old graphics cursor position */
+	/* restore old graphics cursor position */
 	rp->cp_x = Rem_cp_x;
 	rp->cp_y = Rem_cp_y;
       
