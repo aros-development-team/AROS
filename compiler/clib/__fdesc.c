@@ -153,15 +153,6 @@ LONG __oflags2amode(int flags)
     return openmode;
 }
 
-static int nolocktest(const char *pathname)
-{
-    /* Allow fopen("CON:...") */
-    if (strcasestr(pathname, "CON:") == pathname)
-        return 1;
-
-    return 0;
-}
-
 int __open(int wanted_fd, const char *pathname, int flags, int mode)
 {
     struct aroscbase *aroscbase = __aros_getbase_aroscbase();
@@ -200,7 +191,11 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     wanted_fd = __getfdslot(wanted_fd);
     if (wanted_fd == -1) { D(bug("__open: no free fd\n")); goto err; }
 
-    if(!nolocktest(pathname))
+    /*
+     * In case of file system, test existance of file. Non-file system handlers (i.e CON:)
+     * support opening a file while not supporting locking.
+     */
+    if(IsFileSystem(pathname) == DOSTRUE)
     {
         lock = Lock((char *)pathname, SHARED_LOCK);
         if (!lock)
