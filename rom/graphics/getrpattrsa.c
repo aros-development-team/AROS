@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetRPAttrsA()
@@ -50,12 +50,15 @@
 	RPTAG_WriteMask	(ULONG)	        - Bit Mask for writing
 	RPTAG_MaxPen (ULONG)            - Maximum pen to render (see SetMaxPen())
 
-	MorphOS- and AmigaOSv4- compatible extensions:
+	MorphOS-compatible extensions:
 
 	RPTAG_FgColor (ULONG)           - Primary rendering color in A8R8G8B8 format.
 		                          Only working on hicolor/truecolor bitmaps/screens.
     	RPTAG_BgColor (ULONG)           - Secondary rendering color in A8R8G8B8 format.
 		    	    	          Only working on hicolor/truecolor bitmaps/screens.
+
+	AmigaOSv4-compatible extensions:
+
     	RPTAG_RemapColorFonts (BOOL)    - Automatically remap colorfonts to their color
 					  on hicolor/truecolor screens.
 
@@ -81,8 +84,6 @@
 	SetRPAttrsA(), GetAPen(), GetBPen(), GetOutLinePen(), graphics/rpattr.h
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
@@ -144,8 +145,11 @@
 	    	break;
 
 	    case RPTAG_PenMode:
-	    	/* PenMode is applicable only if there's an RTG bitmap attached to the RastPort */
-	    	*((IPTR *)tag->ti_Data) = (rp->BitMap && IS_HIDD_BM(rp->BitMap) && (rp->Flags & RPF_NO_PENS)) ? TRUE : FALSE;
+	    	/* PenMode is applicable only if there's an RTG bitmap
+	         * attached to the RastPort */
+	    	*((IPTR *)tag->ti_Data) = rp->BitMap != NULL
+	            && IS_HIDD_BM(rp->BitMap)
+	            && (rp->Flags & RPF_NO_PENS) == 0;
 	    	break;
 
     	    case RPTAG_FgColor:
