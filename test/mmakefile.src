@@ -80,6 +80,7 @@ COMMONTESTFILES := \
 
 SHTESTFILES=\
     pcilist \
+    isfilesystem \
     true
 
 HOSTEDTESTFILES :=  \
