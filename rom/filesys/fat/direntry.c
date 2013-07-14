@@ -531,7 +531,7 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
 
     D(bug("\tFilling FIB data.\n"));
 
-    if (gl->dir_cluster == FAT_ROOTDIR_MARK) {
+    if (gl == &sb->info->root_lock) {
         D(bug("\t\ttype: root directory\n"));
         fib->fib_DirEntryType = ST_ROOT;
     }
