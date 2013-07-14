@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$	 $Log
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: Graphics function WritePixel()
     Lang: english
@@ -31,8 +31,8 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
 	struct GfxBase *, GfxBase, 54, Graphics)
 
 /*  FUNCTION
-	Change pen number of a pixel at given coordinate.
-	The pixel is drawn with the primary (A) pen.
+	Write the primary (A) pen colour to the given coordinates of a
+	RastPort.
 
     INPUTS
 	rp  - destination RastPort
@@ -54,12 +54,6 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
         This function takes layers into account. Some pixel that is
         being read is not found on the display-bitmap but in some
         clipped rectangle (cliprect) in a layer structure.
-        There is no support of anything else than bitplanes now.
-        (No chunky pixels)
-
-    HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
@@ -70,7 +64,10 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
     FIX_GFXCOORD(x);
     FIX_GFXCOORD(y);
 
-    pix = BM_PIXEL(rp->BitMap, (UBYTE)rp->FgPen);
+    if ((rp->Flags & RPF_NO_PENS) != 0)
+        pix = RP_FGCOLOR(rp);
+    else
+        pix = BM_PIXEL(rp->BitMap, (UBYTE)rp->FgPen);
 
     return do_pixel_func(rp, x, y, pix_write, (APTR)pix, TRUE, GfxBase);
 
