@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include <dos/dos.h>
 #include <intuition/intuition.h>
@@ -19,6 +23,7 @@
 #define SCREENWIDTH  300
 #define SCREENHEIGHT 200
 #define SCREENCY (SCREENHEIGHT / 2)
+#define MAX_VECTORS 2
 
 /***********************************************************************************/
 
@@ -163,7 +168,21 @@ static void action(void)
     ULONG hue = 0, rgb;
     WORD x = 20, y = 0;
     WORD dx = 2, dy = 3;
+    struct AreaInfo area_info;
+    UBYTE area_buffer[MAX_VECTORS * 5];
+    PLANEPTR raster;
+    struct TmpRas tmp_ras;
     
+    rp->AreaInfo = &area_info;
+    raster = AllocRaster(SCREENWIDTH, SCREENHEIGHT);
+    if (raster != NULL)
+    {
+        InitTmpRas(&tmp_ras, raster, RASSIZE(SCREENWIDTH, SCREENHEIGHT));
+        rp->TmpRas = &tmp_ras;
+    }
+    else
+        Keys[KC_ESC] = 1;
+
     while(!Keys[KC_ESC])
     {
     	struct ColorWheelHSB cwhsb = {hue, 0xFFFFFFFF, 0xFFFFFFFF};
@@ -179,6 +198,7 @@ static void action(void)
 	
 	SetRPAttrs(rp, RPTAG_FgColor, rgb,
 	    	       RPTAG_BgColor, 0xFFFFFF - rgb,
+	    	       RPTAG_PenMode, FALSE,
 	    	       TAG_DONE);
 		       
     	switch(mode)
@@ -222,6 +242,11 @@ static void action(void)
 		DrawEllipse(rp, x, y, 30, 30);
 		break;
 
+	    case 6:
+	    	InitArea(&area_info, area_buffer, MAX_VECTORS);
+		AreaEllipse(rp, x, y, 30, 30);
+	    	AreaEnd(rp);
+		break;
 	}
 
         getevents();
@@ -229,7 +254,7 @@ static void action(void)
 	if (Keys[KC_SPACE])
 	{
 	    Keys[KC_SPACE] = 0;
-	    mode = (mode + 1) % 6;
+	    mode = (mode + 1) % 7;
 	    hue = 0;
 	}
 	
@@ -239,6 +264,9 @@ static void action(void)
 	hue += 0x1000000;
 	
     } /* while(!Keys[KC_ESC]) */
+
+    if (raster != NULL)
+        FreeRaster(raster, SCREENWIDTH, SCREENHEIGHT);
 }
 
 /***********************************************************************************/
