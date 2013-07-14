@@ -153,6 +153,15 @@ LONG __oflags2amode(int flags)
     return openmode;
 }
 
+static int nolocktest(const char *pathname)
+{
+    /* Allow fopen("CON:...") */
+    if (strcasestr(pathname, "CON:") == pathname)
+        return 1;
+
+    return 0;
+}
+
 int __open(int wanted_fd, const char *pathname, int flags, int mode)
 {
     struct aroscbase *aroscbase = __aros_getbase_aroscbase();
@@ -191,78 +200,81 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     wanted_fd = __getfdslot(wanted_fd);
     if (wanted_fd == -1) { D(bug("__open: no free fd\n")); goto err; }
 
-    lock = Lock((char *)pathname, SHARED_LOCK);
-    if (!lock)
+    if(!nolocktest(pathname))
     {
-        if (IoErr() == ERROR_OBJECT_WRONG_TYPE)
+        lock = Lock((char *)pathname, SHARED_LOCK);
+        if (!lock)
         {
-            /*
-               Needed for sfs file system which reports this error number on a
-               Lock aaa/bbb/ccc with bbb being a file instead of a directory.
-            */
-            errno = ENOTDIR;
-            goto err;
-        }
-
-        if
-        (
-            (IoErr() != ERROR_OBJECT_NOT_FOUND) ||
-            /* If the file doesn't exist and the flag O_CREAT is not set return an error */
-            (IoErr() == ERROR_OBJECT_NOT_FOUND && !(flags & O_CREAT))
-        )
-        {
-            errno = __arosc_ioerr2errno(IoErr());
-            goto err;
-        }
-    }
-    else
-    {
-        /* If the file exists, but O_EXCL is set, then return an error */
-        if (flags & O_EXCL)
-    	{
-            errno = EEXIST;
-            goto err;
-        }
-
-        fib = AllocDosObject(DOS_FIB, NULL);
-        if (!fib)
-        {
-           errno = __arosc_ioerr2errno(IoErr());
-           goto err;
-        }
-        
-        if (!Examine(lock, fib))
-        {
-            /*
-                The filesystem in which the file resides doesn't support
-                the EXAMINE action. It might be broken or might also not
-                be a filesystem at all. So let's assume the file is not a
-                diretory.
-           */
-           fib->fib_DirEntryType = 0;
-        }
-
-	/* FIXME: implement softlink handling */
-
-        /* Check if it's a directory or a softlink.
-           Softlinks are not handled yet, though */
-        if (fib->fib_DirEntryType > 0)
-        {
-            /* A directory cannot be opened for writing */
-            if (openmode != MODE_OLDFILE)
+            if (IoErr() == ERROR_OBJECT_WRONG_TYPE)
             {
-                errno = EISDIR;
+                /*
+                   Needed for sfs file system which reports this error number on a
+                   Lock aaa/bbb/ccc with bbb being a file instead of a directory.
+                */
+                errno = ENOTDIR;
                 goto err;
             }
-            
-            fh = lock;
-            FreeDosObject(DOS_FIB, fib);
-            currdesc->fcb->isdir = 1;
-            
-            goto success;
+
+            if
+            (
+                (IoErr() != ERROR_OBJECT_NOT_FOUND) ||
+                /* If the file doesn't exist and the flag O_CREAT is not set return an error */
+                (IoErr() == ERROR_OBJECT_NOT_FOUND && !(flags & O_CREAT))
+            )
+            {
+                errno = __arosc_ioerr2errno(IoErr());
+                goto err;
+            }
         }
-        FreeDosObject(DOS_FIB, fib);
-        fib = NULL;
+        else
+        {
+            /* If the file exists, but O_EXCL is set, then return an error */
+            if (flags & O_EXCL)
+            {
+                errno = EEXIST;
+                goto err;
+            }
+
+            fib = AllocDosObject(DOS_FIB, NULL);
+            if (!fib)
+            {
+               errno = __arosc_ioerr2errno(IoErr());
+               goto err;
+            }
+
+            if (!Examine(lock, fib))
+            {
+                /*
+                    The filesystem in which the file resides doesn't support
+                    the EXAMINE action. It might be broken or might also not
+                    be a filesystem at all. So let's assume the file is not a
+                    diretory.
+               */
+               fib->fib_DirEntryType = 0;
+            }
+
+            /* FIXME: implement softlink handling */
+
+            /* Check if it's a directory or a softlink.
+               Softlinks are not handled yet, though */
+            if (fib->fib_DirEntryType > 0)
+            {
+                /* A directory cannot be opened for writing */
+                if (openmode != MODE_OLDFILE)
+                {
+                    errno = EISDIR;
+                    goto err;
+                }
+
+                fh = lock;
+                FreeDosObject(DOS_FIB, fib);
+                currdesc->fcb->isdir = 1;
+
+                goto success;
+            }
+            FreeDosObject(DOS_FIB, fib);
+            fib = NULL;
+        }
     }
 
     /* the file exists and it's not a directory or the file doesn't exist */
