@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id$    $Log
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: Graphics function SetRPAttrsA()
     Lang: english
@@ -38,33 +38,46 @@
 	tags - see below
 
     TAGS
-	RPTAG_Font (struct TextFont *)        - Font for Text()
-	RPTAG_APen (UBYTE)                    - Primary rendering pen
-	RPTAG_BPen (UBYTE)                    - Secondary rendering pen
-	RPTAG_DrMd (UBYTE)                    - Drawing mode (graphics/rastport.h)
-	RPTAG_OutlinePen (UBYTE)              - Area Outline pen
-	RPTAG_WriteMask (ULONG)               - Bit mask for writing
+	RPTAG_Font (struct TextFont *)  - Font for Text()
+	RPTAG_APen (UBYTE)              - Primary rendering pen
+	RPTAG_BPen (UBYTE)              - Secondary rendering pen
+	RPTAG_DrMd (UBYTE)              - Drawing mode (graphics/rastport.h)
+	RPTAG_OutlinePen (UBYTE)        - Area Outline pen
+	RPTAG_WriteMask (ULONG)         - Bit mask for writing
 
-	The following tags are compatible with MorphOS and AmigaOSv4 (V51) :
+	The following tags are compatible with MorphOS (V51) :
 
-	RPTAG_FgColor (ULONG)                 - Primary rendering color in A8R8G8B8 format.
-		                                Only working on hicolor/truecolor bitmaps/screens.
-	RPTAG_BgColor (ULONG)                 - Secondary rendering color in A8R8G8B8 format.
-		    	    	    	        Only working on hicolor/truecolor bitmaps/screens.
-	RPTAG_RemapColorFonts (BOOL)          - Automatically remap colorfonts to their color
-						on hicolor/truecolor screens.
+	RPTAG_FgColor (ULONG)           - Primary rendering color in A8R8G8B8
+	                                  format. Only working on
+	                                  hicolor/truecolor bitmaps/screens.
+	RPTAG_BgColor (ULONG)           - Secondary rendering color in
+	                                  A8R8G8B8 format. Only working on
+	                                  hicolor/truecolor bitmaps/screens.
+	RPTAG_PenMode (BOOL)            - TRUE if traditional pen numbers
+	                                  should be used, FALSE if direct RGB
+	                                  colors should be used. Has no effect
+	                                  on non-RTG displays.
+
+	The following tags are compatible with AmigaOSv4 (V51) :
+
+	RPTAG_RemapColorFonts (BOOL)    - Automatically remap colorfonts to
+	                                  their color on hicolor/truecolor
+	                                  screens.
 
 	AROS-specific extensions
 
 	RPTAG_ClipRectangle (struct Rectangle *) - Clipping rectangle
-	RPTAG_ClipRectangleFlags (LONG)       - RPCRF_RELRIGHT | RPCRF_RELBOTTOM (see graphics/rpattrs.h)
+	RPTAG_ClipRectangleFlags (LONG) - RPCRF_RELRIGHT | RPCRF_RELBOTTOM
+	                                  (see graphics/rpattrs.h)
 
     RESULT
+	None.
 
     NOTES
-    	Setting one of RPTAG_ClipRectangle or RPTAG_ClipRectangleFlags allocates internal extra data
-    	for the RastPort. After finishing using this RastPort, you need to manually deallocate
-    	the extra data using FreeVec(rp->RP_Extra).
+    	Setting one of RPTAG_ClipRectangle or RPTAG_ClipRectangleFlags
+	allocates internal extra data for the RastPort. After finishing using
+	this RastPort, you need to manually deallocate the extra data using
+	FreeVec(rp->RP_Extra).
 
     EXAMPLE
 
@@ -74,10 +87,6 @@
 	GetRPAttrsA(), graphics/rpattr.h
 
     INTERNALS
-
-    HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
