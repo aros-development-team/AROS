@@ -12,7 +12,6 @@
 
 #include <grp.h>
 
-/*  SYNOPSIS */
 	struct group *getgrnam(
 
 /*  SYNOPSIS */

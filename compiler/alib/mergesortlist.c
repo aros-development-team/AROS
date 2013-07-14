@@ -9,12 +9,12 @@
 #include <exec/lists.h>
 #include <stddef.h>
 
-/*****************************************************************************
-
-    NAME */
 #if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
         __attribute__((regparm(2)))
 #endif
+/*****************************************************************************
+
+    NAME */
 	static inline struct MinNode *Merge(
 
 /*  SYNOPSIS */

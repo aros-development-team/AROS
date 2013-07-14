@@ -10,7 +10,6 @@
     NAME */
 #include <pwd.h>
 
-/*  SYNOPSIS */
 	void endpwent(
 
 /*  SYNOPSIS */

@@ -17,17 +17,15 @@
 /*  LOCATION */
       struct Library *, GalliumBase, 6, Gallium)
 
-/*  NAME
- 
-    FUNCTION
-    Disposes the pipe screen
+/*  FUNCTION
+        Disposes the pipe screen
  
     INPUTS
-    handle - a pointer to pipe screen structure. A NULL pointer will be
-           ignored.
+        handle - a pointer to pipe screen structure. A NULL pointer will be
+            ignored.
  
     RESULT
-    The pipe screen is freed. Don't use it anymore.
+        The pipe screen is freed. Don't use it anymore.
  
     BUGS
 

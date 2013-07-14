@@ -19,7 +19,7 @@
 
     NAME */
 
-AROS_LH5(void, AddMemList,
+        AROS_LH5(void, AddMemList,
 
 /*  SYNOPSIS */
 	AROS_LHA(IPTR,   size,       D0),

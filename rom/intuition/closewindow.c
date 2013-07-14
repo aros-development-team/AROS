@@ -43,40 +43,40 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(void, CloseWindow,
+        AROS_LH1(void, CloseWindow,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 12, Intuition)
+        struct IntuitionBase *, IntuitionBase, 12, Intuition)
 
 /*  FUNCTION
-    Closes a window. Depending on the display, this might not happen
-    at the time when this function returns, but you must not use
-    the window pointer after this function has been called.
+        Closes a window. Depending on the display, this might not happen
+        at the time when this function returns, but you must not use
+        the window pointer after this function has been called.
 
     INPUTS
-    window - The window to close
+        window - The window to close
 
     RESULT
-    None.
+        None.
 
     NOTES
-    The window might not have been disappeared when this function returns.
+        The window might not have been disappeared when this function returns.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-    OpenWindow(), OpenWindowTagList()
+        OpenWindow(), OpenWindowTagList()
 
     INTERNALS
 
     HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
+        29-10-95    digulla automatically created from
+                    intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {

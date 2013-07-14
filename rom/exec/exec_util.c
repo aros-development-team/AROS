@@ -20,7 +20,7 @@
 #include "exec_util.h"
 #include "taskstorage.h"
 
-/*****************************************************************************
+/*i***************************************************************************
 
     NAME */
 #include "exec_util.h"
@@ -43,6 +43,8 @@
 	NULL otherwise.
 
     NOTES
+        This is an internal exec.library function not exported from the
+        library.
 
     EXAMPLE
 
