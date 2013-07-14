@@ -59,15 +59,28 @@
     LONG code = DOSFALSE;
     struct DevProc *dvp = NULL;
 
-    /* console is never a filesystem */
-    if (Stricmp(devicename, "CONSOLE:") == 0 || Stricmp(devicename, "*") == 0 ||
-        Stricmp(devicename, "CON:") == 0 || Stricmp(devicename, "RAW:") == 0) {
+    /* The Open() aliases '*' and 'CONSOLE:'
+     * are never filesystems
+     */
+    if (Stricmp(devicename, "*") == 0 ||
+        Stricmp(devicename, "CONSOLE:") == 0) {
         SetIoErr(err);
         return code;
     }
 
+    /* We can't call GetDeviceProc() on CON: nor RAW:,
+     * since that will (implicitly) cause a window to
+     * open.
+     */
+    if (Stricmp(devicename, "CON:") == 0 ||
+        Stricmp(devicename, "RAW:") == 0) {
+        SetIoErr(err);
+        return code;
+    }
+
+
     if ((dvp = GetDeviceProc(devicename, dvp))) {
-        if (dvp->dvp_Port != NULL) // NIL: isn't a filesystem
+        if (dvp->dvp_Port != NULL) // No port? Not a filesystem
             code = dopacket0(DOSBase, NULL, dvp->dvp_Port, ACTION_IS_FILESYSTEM);
         FreeDeviceProc(dvp);
     } else {
