@@ -4241,6 +4241,11 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
+    if (message->filename == NULL) {
+        D(bug("[IconList] %s: IconList - filename was NULL\n", __PRETTY_FUNCTION__));
+        return (IPTR)NULL;
+    }
+
     /*disk object (icon)*/
     if (message->entry_dob == NULL)
     {
