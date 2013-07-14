@@ -111,15 +111,15 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
     NAME */
 #include <proto/dos.h>
 
-AROS_LH3(struct RDArgs *, ReadArgs,
+        AROS_LH3(struct RDArgs *, ReadArgs,
 
 /*  SYNOPSIS */
-         AROS_LHA(CONST_STRPTR, template, D1),
-         AROS_LHA(IPTR *, array, D2),
-         AROS_LHA(struct RDArgs *, rdargs, D3),
+        AROS_LHA(CONST_STRPTR, template, D1),
+        AROS_LHA(IPTR *, array, D2),
+        AROS_LHA(struct RDArgs *, rdargs, D3),
 
 /*  LOCATION */
-         struct DosLibrary *, DOSBase, 133, Dos)
+        struct DosLibrary *, DOSBase, 133, Dos)
 
 /*  FUNCTION
         Parses the commandline, a given string or Input() and fills

@@ -9,12 +9,10 @@
 /*****************************************************************************
 
     NAME */
-
 #include "cxintern.h"
 #include <proto/commodities.h>
 
-
-AROS_LH2I(LONG, SetCxObjPri,
+        AROS_LH2I(LONG, SetCxObjPri,
 
 /*  SYNOPSIS */
 

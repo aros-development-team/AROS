@@ -30,11 +30,9 @@
 /*  LOCATION */
       struct Library *, GalliumBase, 7, Gallium)
 
-/*  NAME
- 
-    FUNCTION
-    Copies part of pipe surface onto rast port. Clips output by using layers of
-    rastport.
+/*  FUNCTION
+        Copies part of pipe surface onto rast port. Clips output by using layers of
+        rastport.
  
     INPUTS
 	srcPipeSurface - Copy from this pipe surface.

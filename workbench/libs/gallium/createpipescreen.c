@@ -22,27 +22,23 @@
 /*  LOCATION */
       struct Library *, GalliumBase, 5, Gallium)
 
-/*  NAME
- 
-    FUNCTION
-    Creates a gallium pipe screen.
+/*  FUNCTION
+        Creates a gallium pipe screen.
  
     INPUTS
-    tags - a pointer to tags to be used during creation.
+        tags - a pointer to tags to be used during creation.
  
     TAGS
-    CPS_GalliumInterfaceVersion   - Indicates a version of gallium interface
-                                    that a client is expected to receive. The
-                                    client expected version must ideally match 
-                                    with the version that the driver provides,
-                                    because gallium interface is not backwards
-                                    compatible. This tag is required. Unless
-                                    otherwise needed, the value
-                                    GALLIUM_INTERFACE_VERSION should be passed.
-                                    See also CreatePipeScreenV.
+        CPS_GalliumInterfaceVersion - Indicates a version of gallium interface
+            that a client is expected to receive. The client expected version
+            must ideally match with the version that the driver provides,
+            because gallium interface is not backwards compatible. This tag is
+            required. Unless otherwise needed, the value
+            GALLIUM_INTERFACE_VERSION should be passed.
+            See also CreatePipeScreenV.
 
     RESULT
-    A valid pipe screen instance or NULL of creation was not succesfull.
+        A valid pipe screen instance or NULL of creation was not succesfull.
  
     BUGS
 

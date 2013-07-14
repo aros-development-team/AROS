@@ -23,7 +23,7 @@
 
     NAME */
 
-AROS_LH2(APTR, Allocate,
+        AROS_LH2(APTR, Allocate,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct MemHeader *, freeList, A0),
