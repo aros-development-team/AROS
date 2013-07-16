@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free a structure returned by ReadStruct()
@@ -60,9 +60,6 @@ struct FreeLevel
 	ReadString(), ReadStruct(), WriteByte(), WriteWord(), WriteLong(),
 	WriteFloat(), WriteDouble(), WriteString(), WriteStruct()
 
-    HISTORY
-	29.11.96    ada created
-
 ******************************************************************************/
 {
     struct MinList     _list;
@@ -111,8 +108,7 @@ struct FreeLevel
 
 	    sptr = *(STRPTR *)(curr->s + IDESC);
 
-	    if (sptr)
-		FreeVec (sptr);
+	FreeVec (sptr);
 
 	    break; }
 

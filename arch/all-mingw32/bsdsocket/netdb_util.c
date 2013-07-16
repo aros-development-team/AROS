@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/debug.h>
 #include <proto/exec.h>
 
@@ -96,7 +101,6 @@ void FreeProtoEntry(struct protoent *entry, APTR pool)
     if (entry->p_aliases)
 	FreeStringArray(entry->p_aliases, pool);
 
-    if (entry->p_name)
 	FreeVecPooled(entry->p_name, pool);
 
     FreePooled(pool, entry, sizeof(struct protoent));

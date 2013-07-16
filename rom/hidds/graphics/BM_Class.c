@@ -4149,7 +4149,7 @@ VOID BM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 
     } /* for(y = 0; y < msg->height; y++) */
 
-    if (linebuf) FreeVec(linebuf);
+    FreeVec(linebuf);
 
     ReturnVoid("BitMap::GetImageLUT");
 }

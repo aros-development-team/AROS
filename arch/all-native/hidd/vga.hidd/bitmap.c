@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for VGA hidd.
@@ -167,10 +167,8 @@ VOID PCVGABM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     EnterFunc(bug("VGAGfx.BitMap::Dispose()\n"));
     
-    if (data->VideoData)
-	FreeVec(data->VideoData);
-    if (data->Regs)
-	FreeVec(data->Regs);
+    FreeVec(data->VideoData);
+    FreeVec(data->Regs);
     
     OOP_DoSuperMethod(cl, o, msg);
     

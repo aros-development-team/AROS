@@ -166,10 +166,7 @@ VOID x11clipboard_handle_commands(struct x11_staticdata *xsd)
 	    {
 	    	memcpy(newbuffer, srcbuffer, size);
 		
-		if (xsd->hostclipboard_writebuffer)
-		{
-	    	    FreeVec(xsd->hostclipboard_writebuffer);
-		}
+  	    FreeVec(xsd->hostclipboard_writebuffer);
 		
 	    	xsd->hostclipboard_writebuffer = newbuffer;
 		xsd->hostclipboard_writebuffer_size = size;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -106,7 +106,7 @@ static IPTR coolimage_dispose(Class * cl, Object * o, Msg msg)
     
     data = INST_DATA(cl, o);
     
-    if (data->pal) FreeVec(data->pal);
+    FreeVec(data->pal);
     
     return DoSuperMethodA(cl, o, msg);
 }

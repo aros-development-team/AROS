@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -63,12 +63,10 @@
 	(wdesc = __alloc_fdesc()) == NULL
     )
     {
-	if(rfcb)
-	    FreeVec(rfcb);
+    FreeVec(rfcb);
 	if(rdesc)
 	    __free_fdesc(rdesc);
-	if(wfcb)
-	    FreeVec(wfcb);
+    FreeVec(wfcb);
 	if(wdesc)
 	    __free_fdesc(wdesc);
 	errno = ENOMEM;

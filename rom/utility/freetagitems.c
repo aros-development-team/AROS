@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: FreeTagItems()
@@ -55,17 +55,11 @@
 
     INTERNALS
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    utility_lib.fd and clib/utility_protos.h
-	11-08-96    iaint   Moved into AROS source tree.
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    if( tagList )
-	FreeVec( tagList );
+    FreeVec(tagList);
 
     AROS_LIBFUNC_EXIT
 } /* FreeTagItems */

@@ -314,10 +314,8 @@ AROS_LH1(void, KrnUnregisterModule,
 
 			Remove(mod);
 
-			if (mod->m_str)
-				FreeVec(mod->m_str);
-			if (mod->m_name)
-				FreeVec(mod->m_name);
+			FreeVec(mod->m_str);
+			FreeVec(mod->m_name);
 
 			while(sym = RemHead(&mod->m_symbols))
 			{

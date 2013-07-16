@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     File descriptors handling internals.
@@ -328,7 +328,7 @@ success:
 
 err:
     if (fib) FreeDosObject(DOS_FIB, fib);
-    if (cblock) FreeVec(cblock);
+    FreeVec(cblock);
     if (currdesc) __free_fdesc(currdesc);
     if (fh && fh != lock) Close(fh);
     if (lock) UnLock(lock);
@@ -421,16 +421,13 @@ int __init_stdfiles(struct aroscbase *aroscbase)
 	!(errdesc = __alloc_fdesc())
     )
     {
-        if(infcb)
-            FreeVec(infcb);
+        FreeVec(infcb);
         if(indesc)
             __free_fdesc(indesc);
-        if(outfcb)
-            FreeVec(outfcb);
+        FreeVec(outfcb);
         if(outdesc)
             __free_fdesc(outdesc);
-        if(errfcb)
-            FreeVec(errfcb);
+        FreeVec(errfcb);
         if(errdesc)
             __free_fdesc(errdesc);
     	SetIoErr(ERROR_NO_FREE_STORE);

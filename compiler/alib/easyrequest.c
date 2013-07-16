@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -36,10 +36,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {
@@ -93,8 +89,7 @@
 
     rc = EasyRequestArgs (window, easyStruct, idcmpPtr, (APTR)argtable);
 
-    if (argtable)
-        	FreeVec(argtable);
+    FreeVec(argtable);
 
     return rc;
 } /* EasyRequest */
