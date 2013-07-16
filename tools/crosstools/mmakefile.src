@@ -46,7 +46,7 @@ GCC_ARRAY_BOUNDS            := -Wno-array-bounds
 GCC_ENUM_COMPARE            := -Wno-enum-compare
 
 GNU_REPOSITORY := gnu://
-MPC_REPOSITORY := http://www.multiprecision.org/mpc/download
+MPC_REPOSITORY := http://www.multiprecision.org/mpc/download http://ftp.osuosl.org/pub/lfs/lfs-packages/7.0
 ICU_REPOSITORY := http://download.icu-project.org/files/$(ICU_PKGNAME)/$(ICU_VERSION)
 
 binutils-installflag := $(CROSSTOOLSDIR)/.installflag-binutils-$(BINUTILS_VERSION)-$(AROS_TARGET_CPU)
