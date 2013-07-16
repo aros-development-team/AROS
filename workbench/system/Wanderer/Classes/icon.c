@@ -1,6 +1,6 @@
 /*
-Copyright  2008-2009, The AROS Development Team. All rights reserved.
-$Id$
+    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include "../portable_macros.h"
@@ -796,7 +796,8 @@ D(bug("[Icon] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_I
                 char *tmpLine = curlabel_StrPtr;
                 ULONG tmpLen = strlen(tmpLine);
 
-                if ((curlabel_StrPtr = AllocVec(tmpLen + 1)) != NULL)
+                if ((curlabel_StrPtr = AllocVecPooled(data->icld_Pool,
+                    tmpLen + 1)) != NULL)
                 {
                     memset(curlabel_StrPtr, 0, tmpLen + 1);
                     strncpy(curlabel_StrPtr, tmpLine, tmpLen - 3);
@@ -2149,11 +2150,17 @@ D(bug("[Icon]: %s()\n", __PRETTY_FUNCTION__));
         {
             Remove(&message->icon->IcD_SelectionNode);
         }
-        if (message->icon->IcD_DisplayedLabel_TXTBUFF) FreeVecPooled(data->icld_Pool, message->icon->IcD_DisplayedLabel_TXTBUFF);
-        if (message->icon->IcD_TxtBuf_PROT) FreeVec(message->icon->IcD_TxtBuf_PROT, 8);
-        if (message->icon->IcD_Size_TXTBUFF) FreePooled(message->icon->IcD_Size_TXTBUFF, 30);
-        if (message->icon->IcD_Time_TXTBUFF) FreePooled(message->icon->IcD_Time_TXTBUFF, LEN_DATSTRING);
-        if (message->icon->IcD_Date_TXTBUFF) FreePooled(message->icon->IcD_Date_TXTBUFF, LEN_DATSTRING);
+        FreeVecPooled(data->icld_Pool, message->icon->IcD_DisplayedLabel_TXTBUFF);
+        if (message->icon->IcD_TxtBuf_PROT)
+            FreePooled(data->icld_Pool, message->icon->IcD_TxtBuf_PROT, 8);
+        if (message->icon->IcD_Size_TXTBUFF)
+            FreePooled(data->icld_Pool, message->icon->IcD_Size_TXTBUFF, 30);
+        if (message->icon->IcD_Time_TXTBUFF)
+            FreePooled(data->icld_Pool, message->icon->IcD_Time_TXTBUFF,
+                LEN_DATSTRING);
+        if (message->icon->IcD_Date_TXTBUFF)
+            FreePooled(data->icld_Pool, message->icon->IcD_Date_TXTBUFF,
+                LEN_DATSTRING);
         if (message->icon->IcD_DiskObj) FreeDiskObject(message->icon->IcD_DiskObj);
         if (message->icon->IcD_Label_TXTBUFF) FreePooled(data->icld_Pool, message->icon->IcD_Label_TXTBUFF, strlen(message->icon->IcD_Label_TXTBUFF)+1);
         if (message->icon->IcD_IconEntry.filename) FreePooled(data->icld_Pool, message->icon->IcD_IconEntry.filename, strlen(message->icon->IcD_IconEntry.filename)+1);
