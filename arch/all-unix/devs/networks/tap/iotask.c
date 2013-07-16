@@ -378,6 +378,7 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
     DeleteMsgPort(unit->write_queue);
 
     msg = (struct Message *) AllocVec(sizeof(struct Message), MEMF_PUBLIC | MEMF_CLEAR);
+    // FIXME: message may be freed before receiver gets it!
     PutMsg(unit->iosyncport, msg);
     FreeVec(msg);
 }
