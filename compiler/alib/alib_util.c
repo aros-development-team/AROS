@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal utility functions.
@@ -59,9 +59,6 @@
 	saves a lot of work, since it's not neccessary to register every
 	structure.
 
-    HISTORY
-	22.11.96 digulla created
-
 ******************************************************************************/
 {
     ULONG size;
@@ -111,13 +108,9 @@
     SEE ALSO
 	GetMsgFromStack()
 
-    HISTORY
-	22.11.96 digulla created
-
 ******************************************************************************/
 {
-    if (msg)
-	FreeVec (msg);
+    FreeVec(msg);
 } /* FreeMsgFromStack */
 
 #endif /* AROS_SLOWSTACKMETHODS */
@@ -170,9 +163,6 @@
 	will break if someone makes assumptions about the way taglists
 	are built in memory, ie. if he looks for the next TAG_MORE and
 	then simply skips it instead of following it.
-
-    HISTORY
-	22.11.96 digulla created
 
 ******************************************************************************/
 {
@@ -293,13 +283,9 @@
     SEE ALSO
 	GetTagsFromStack()
 
-    HISTORY
-	22.11.96 digulla created
-
 ******************************************************************************/
 {
-    if (tags)
-	FreeVec (tags);
+    FreeVec(tags);
 } /* FreeTagsFromStack */
 
 /******************************************************************************
@@ -341,9 +327,6 @@
 	local variable. This will copy a bit too much memory but in the end,
 	it saves a lot of work, since it's not neccessary to register every
 	structure.
-
-    HISTORY
-	25.04.08 sszymczy adapted from GetMsgFromStack()
 
 ******************************************************************************/
 {
@@ -392,13 +375,9 @@
     SEE ALSO
 	GetParamsFromStack()
 
-    HISTORY
-    25.04.08 sszymczy adapted from FreeMsgFromStack()
-
 ******************************************************************************/
 {
-    if (params)
-	FreeVec (params);
+    FreeVec(params);
 } /* FreeParamsFromStack */
 
 #endif /* AROS_SLOWSTACKTAGS */

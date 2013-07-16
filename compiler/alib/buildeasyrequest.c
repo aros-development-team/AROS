@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of BuildEasyRequestArgs() (intuition.library)
@@ -40,8 +40,6 @@
 	intuition.library/BuildEasyRequestArgs()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
@@ -95,8 +93,7 @@
 
     rc = BuildEasyRequestArgs (RefWindow, easyStruct, IDCMP, (APTR)argtable);
 
-    if (argtable)
-    	FreeVec(argtable);
+    FreeVec(argtable);
 
     return rc;
 } /* BuildEasyRequest */

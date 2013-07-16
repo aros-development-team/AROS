@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -266,15 +266,12 @@ out:
     if (lock)
         UnLock(lock);
 
-    if (cwd)
-        FreeVec(cwd);
+    FreeVec(cwd);
 
     /* if we had absolute path as input, mypath is free'd here */
-    if (abspath)
-        FreeVec(abspath);
+    FreeVec(abspath);
 
-    if (filepart)
-        FreeVec(filepart);
+    FreeVec(filepart);
 
     if (fib)
         FreeDosObject(DOS_FIB, fib);

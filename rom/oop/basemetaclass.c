@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP base metaclass
@@ -507,8 +507,7 @@ static VOID basemeta_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     CONST_STRPTR interface_id = NULL;
     ULONG num_methods = 0UL;
     
-    if (data->public.ClassNode.ln_Name)
-    	FreeVec(data->public.ClassNode.ln_Name);
+    FreeVec(data->public.ClassNode.ln_Name);
 	
     /* Release interfaces from global interface table */
     while (meta_iterateifs(o, &iterval, &interface_id, &num_methods))

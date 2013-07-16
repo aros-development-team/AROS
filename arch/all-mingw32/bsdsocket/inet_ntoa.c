@@ -1,5 +1,5 @@
 /*
-    Copyright © 2000-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2000-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -60,8 +60,7 @@
 
     if (res)
     {
-	if (taskBase->inaddr)
-	    FreeVecPooled(taskBase->inaddr, taskBase->pool);
+    FreeVecPooled(taskBase->inaddr, taskBase->pool);
 	taskBase->inaddr = res;
     }
 

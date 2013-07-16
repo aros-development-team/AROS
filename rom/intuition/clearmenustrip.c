@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -21,7 +21,7 @@
 
 /*  FUNCTION
 	Detach menu stript from a window.
-	Call this function before you change memu data.
+	Call this function before you change menu data.
 	
     INPUTS
 	window - the window from which the menu bar should be detached
@@ -38,10 +38,6 @@
 	SetMenuStrip()
     
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {

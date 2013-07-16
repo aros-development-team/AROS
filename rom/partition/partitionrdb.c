@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -346,8 +346,7 @@ static void PartitionRDBFreeFileSystem(struct FileSysHandle *fsh)
 {
     struct FileSysNode *fn = (struct FileSysNode *)fsh;
 
-    if (fn->filesystem)
-        FreeVec(fn->filesystem);
+    FreeVec(fn->filesystem);
     FreeMem(fn, sizeof(struct FileSysNode));
 }
 

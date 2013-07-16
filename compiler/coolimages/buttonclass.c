@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -134,7 +134,7 @@ static IPTR coolbutton_dispose(Class * cl, Object * o, Msg msg)
     data = INST_DATA(cl, o);
     
     if (data->frame) DisposeObject(data->frame);
-    if (data->pal) FreeVec(data->pal);
+    FreeVec(data->pal);
     
     return DoSuperMethodA(cl, o, msg);
 }

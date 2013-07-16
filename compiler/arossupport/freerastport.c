@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS Graphics function FreeRastPort
@@ -41,14 +41,9 @@
 
     INTERNALS
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
-
 *****************************************************************************/
 {
-    if (rp->RP_Extra)
-    	FreeVec(rp->RP_Extra);
+    FreeVec(rp->RP_Extra);
 
     FreeMem (rp, sizeof (struct RastPort));
 
