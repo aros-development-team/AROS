@@ -106,13 +106,13 @@ $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 	cp $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
 	cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm core.bin -o $@
 
-arosboot-raspi: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.gz
+arosboot-raspi: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.bz2
 
-$(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.gz: $(AROSDIR)/arosraspi.img  $(BINDIR)/arosraspi.rom
+$(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.bz2: $(AROSDIR)/arosraspi.img  $(BINDIR)/arosraspi.rom
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(DISTDIR)"
-	cd $(AROSDIR) && tar -czf  $@ ./
+	cd $(AROSDIR) && tar -cjf  $@ ./
 
 #MM
 clean ::
