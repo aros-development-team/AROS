@@ -16,7 +16,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH1(intptr_t, KrnGetSystemAttr,
+        AROS_LH1(intptr_t, KrnGetSystemAttr,
 
 /*  SYNOPSIS */
 	AROS_LHA(uint32_t, id, D0),

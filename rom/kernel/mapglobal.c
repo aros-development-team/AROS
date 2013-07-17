@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH4I(int, KrnMapGlobal,
+        AROS_LH4I(int, KrnMapGlobal,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, virtual, A0),

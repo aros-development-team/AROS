@@ -18,7 +18,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0I(struct TagItem *, KrnGetBootInfo,
+        AROS_LH0I(struct TagItem *, KrnGetBootInfo,
 
 /*  SYNOPSIS */
 

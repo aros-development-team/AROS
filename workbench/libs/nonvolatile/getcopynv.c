@@ -13,10 +13,9 @@
 /*****************************************************************************
 
     NAME */
-
 #include <libraries/nonvolatile.h>
 
-AROS_LH3(APTR, GetCopyNV,
+        AROS_LH3(APTR, GetCopyNV,
 
 /*  SYNOPSIS */
 

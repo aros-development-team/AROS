@@ -19,7 +19,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH2(int, KrnBug,
+        AROS_LH2(int, KrnBug,
 
 /*  SYNOPSIS */
 	AROS_LHA(const char *, format, A0),

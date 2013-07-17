@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0(unsigned int, KrnGetCPUNumber,
+        AROS_LH0(unsigned int, KrnGetCPUNumber,
 
 /*  SYNOPSIS */
 

@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH1(void, KrnInitMemory,
+        AROS_LH1(void, KrnInitMemory,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct MemHeader *, mh, A0),

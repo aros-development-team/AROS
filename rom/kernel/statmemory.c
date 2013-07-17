@@ -21,7 +21,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH2(ULONG, KrnStatMemoryA,
+        AROS_LH2(ULONG, KrnStatMemoryA,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, flags, D0),

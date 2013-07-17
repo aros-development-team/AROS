@@ -10,10 +10,9 @@
 /*****************************************************************************
 
     NAME */
-
 #include <libraries/nonvolatile.h>
 
-AROS_LH1(VOID, FreeNVData,
+        AROS_LH1(VOID, FreeNVData,
 
 /*  SYNOPSIS */
 

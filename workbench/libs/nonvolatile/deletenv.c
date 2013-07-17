@@ -19,10 +19,9 @@
 /*****************************************************************************
 
     NAME */
-
 #include <libraries/nonvolatile.h>
 
-AROS_LH3(BOOL, DeleteNV,
+        AROS_LH3(BOOL, DeleteNV,
 
 /*  SYNOPSIS */
 

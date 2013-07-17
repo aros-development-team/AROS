@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0I(int, KrnIsSuper,
+        AROS_LH0I(int, KrnIsSuper,
 
 /*  SYNOPSIS */
 

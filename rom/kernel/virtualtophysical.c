@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH1I(void *, KrnVirtualToPhysical,
+        AROS_LH1I(void *, KrnVirtualToPhysical,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, virtual, A0),

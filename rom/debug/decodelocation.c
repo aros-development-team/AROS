@@ -53,7 +53,7 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
     NAME */
 #include <proto/debug.h>
 
-AROS_LH2(int, DecodeLocationA,
+        AROS_LH2(int, DecodeLocationA,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, addr, A0),

@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH2I(int, KrnUnmapGlobal,
+        AROS_LH2I(int, KrnUnmapGlobal,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, virtual, A0),

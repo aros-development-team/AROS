@@ -15,10 +15,9 @@
 /*****************************************************************************
 
     NAME */
-
 #include <libraries/nonvolatile.h>
 
-AROS_LH5(LONG, StoreNV,
+        AROS_LH5(LONG, StoreNV,
 
 /*  SYNOPSIS */
 

@@ -17,7 +17,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0(void *, KrnCreateContext,
+        AROS_LH0(void *, KrnCreateContext,
 
 /*  SYNOPSIS */
 

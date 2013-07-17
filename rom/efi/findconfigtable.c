@@ -28,10 +28,10 @@ static void PRINT_UUID(uuid_t *id)
     NAME */
 #include <proto/efi.h>
 
-AROS_LH1(void *, EFI_FindConfigTable,
+        AROS_LH1(void *, EFI_FindConfigTable,
 
 /*  SYNOPSIS */
-	 AROS_LHA(const uuid_t *, Guid, A0),
+	AROS_LHA(const uuid_t *, Guid, A0),
 
 /*  LOCATION */
 	struct EFIBase *, EFIBase, 1, Efi)

@@ -20,7 +20,7 @@
     NAME */
 #include <proto/debug.h>
 
-AROS_LH1(void, UnregisterModule,
+        AROS_LH1(void, UnregisterModule,
 
 /*  SYNOPSIS */
 	AROS_LHA(BPTR, segList, A0),

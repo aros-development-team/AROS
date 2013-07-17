@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH3I(void, KrnSetProtection,
+        AROS_LH3I(void, KrnSetProtection,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, address, A0),

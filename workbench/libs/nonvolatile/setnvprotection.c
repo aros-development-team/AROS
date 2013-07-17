@@ -17,10 +17,9 @@
 /*****************************************************************************
 
     NAME */
-
 #include <libraries/nonvolatile.h>
 
-AROS_LH4(BOOL, SetNVProtection,
+        AROS_LH4(BOOL, SetNVProtection,
 
 /*  SYNOPSIS */
 

@@ -23,7 +23,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH1(void, KrnRemExceptionHandler,
+        AROS_LH1(void, KrnRemExceptionHandler,
 
 /*  SYNOPSIS */
         AROS_LHA(void *, handle, A0),
