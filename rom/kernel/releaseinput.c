@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0I(void, KrnReleaseInput,
+        AROS_LH0I(void, KrnReleaseInput,
 
 /*  SYNOPSIS */
 

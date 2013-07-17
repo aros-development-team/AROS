@@ -15,12 +15,12 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0(void, KrnDispatch,
+        AROS_LH0(void, KrnDispatch,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-         struct KernelBase *, KernelBase, 4, Kernel)
+        struct KernelBase *, KernelBase, 4, Kernel)
 
 /*  FUNCTION
         Run the next available task

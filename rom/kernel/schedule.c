@@ -15,12 +15,12 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0(void, KrnSchedule,
+        AROS_LH0(void, KrnSchedule,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-         struct KernelBase *, KernelBase, 6, Kernel)
+        struct KernelBase *, KernelBase, 6, Kernel)
 
 /*  FUNCTION
         Run task scheduling sequence

@@ -21,7 +21,7 @@ static void EnumerateKickstartModules(struct Hook * handler, struct Library * De
     NAME */
 #include <proto/debug.h>
 
-AROS_LH2(void, EnumerateSymbolsA,
+        AROS_LH2(void, EnumerateSymbolsA,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Hook *, handler, A0),

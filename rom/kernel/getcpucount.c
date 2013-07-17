@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0(unsigned int, KrnGetCPUCount,
+        AROS_LH0(unsigned int, KrnGetCPUCount,
 
 /*  SYNOPSIS */
 

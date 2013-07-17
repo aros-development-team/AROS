@@ -16,7 +16,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH3(int, KrnFormatStr,
+        AROS_LH3(int, KrnFormatStr,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, putch, A0),

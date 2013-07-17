@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH1(void, KrnDeleteContext,
+        AROS_LH1(void, KrnDeleteContext,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, context, A0),

@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH1(void, KrnPutChar,
+        AROS_LH1(void, KrnPutChar,
 
 /*  SYNOPSIS */
 	AROS_LHA(char, c, D0),

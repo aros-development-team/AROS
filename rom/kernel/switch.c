@@ -15,12 +15,12 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0(void, KrnSwitch,
+        AROS_LH0(void, KrnSwitch,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-         struct KernelBase *, KernelBase, 5, Kernel)
+        struct KernelBase *, KernelBase, 5, Kernel)
 
 /*  FUNCTION
         Save context of caller's task and dispatch the next available task

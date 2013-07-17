@@ -23,7 +23,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH4(void *, KrnAddIRQHandler,
+        AROS_LH4(void *, KrnAddIRQHandler,
 
 /*  SYNOPSIS */
         AROS_LHA(uint8_t, irq, D0),

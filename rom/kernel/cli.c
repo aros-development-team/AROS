@@ -16,7 +16,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0I(void, KrnCli,
+        AROS_LH0I(void, KrnCli,
 
 /*  SYNOPSIS */
 

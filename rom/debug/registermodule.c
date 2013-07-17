@@ -85,7 +85,7 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
     NAME */
 #include <proto/debug.h>
 
-AROS_LH4(void, RegisterModule,
+        AROS_LH4(void, RegisterModule,
 
 /*  SYNOPSIS */
 	AROS_LHA(const char *, name, A0),

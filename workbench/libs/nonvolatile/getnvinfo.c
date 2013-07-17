@@ -12,10 +12,9 @@
 /*****************************************************************************
 
     NAME */
-
 #include <libraries/nonvolatile.h>
 
-AROS_LH1(struct NVInfo *, GetNVInfo,
+        AROS_LH1(struct NVInfo *, GetNVInfo,
 
 /*  SYNOPSIS */
 

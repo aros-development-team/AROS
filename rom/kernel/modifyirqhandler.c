@@ -23,7 +23,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH3(void, KrnModifyIRQHandler,
+        AROS_LH3(void, KrnModifyIRQHandler,
 
 /*  SYNOPSIS */
         AROS_LHA(void *, handle, A0),

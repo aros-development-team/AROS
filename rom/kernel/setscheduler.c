@@ -14,7 +14,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH1I(void, KrnSetScheduler,
+        AROS_LH1I(void, KrnSetScheduler,
 
 /*  SYNOPSIS */
 	AROS_LHA(KRN_SchedType, sched, D0),

@@ -15,10 +15,9 @@
 /*****************************************************************************
 
     NAME */
-
 #include <libraries/nonvolatile.h>
 
-AROS_LH2(struct MinList *, GetNVList,
+        AROS_LH2(struct MinList *, GetNVList,
 
 /*  SYNOPSIS */
 

@@ -24,7 +24,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH4(void *, KrnAddExceptionHandler,
+        AROS_LH4(void *, KrnAddExceptionHandler,
 
 /*  SYNOPSIS */
         AROS_LHA(uint8_t, num, D0),

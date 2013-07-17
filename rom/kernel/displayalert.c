@@ -16,7 +16,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH2(void, KrnDisplayAlert,
+        AROS_LH2(void, KrnDisplayAlert,
 
 /*  SYNOPSIS */
 	AROS_LHA(uint32_t, code, D0),

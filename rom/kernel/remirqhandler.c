@@ -18,10 +18,10 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH1(void, KrnRemIRQHandler,
+        AROS_LH1(void, KrnRemIRQHandler,
 
 /*  SYNOPSIS */
-         AROS_LHA(void *, handle, A0),
+        AROS_LHA(void *, handle, A0),
 
 /*  LOCATION */
          struct KernelBase *, KernelBase, 8, Kernel)

@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH0I(void, KrnCause,
+        AROS_LH0I(void, KrnCause,
 
 /*  SYNOPSIS */
 

@@ -15,7 +15,7 @@
     NAME */
 #include <proto/kernel.h>
 
-AROS_LH2(void, KrnFreePages,
+        AROS_LH2(void, KrnFreePages,
 
 /*  SYNOPSIS */
 	AROS_LHA(void *, addr, A0),
