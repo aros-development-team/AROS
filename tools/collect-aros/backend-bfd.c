@@ -1,3 +1,5 @@
+#define PACKAGE
+#define PACKAGE_VERSION
 #include <bfd.h>
 #include <string.h>
 #include <stdlib.h>
