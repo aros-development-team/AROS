@@ -254,7 +254,7 @@ ChangeReqAttrA (REGPARAM(a1, APTR, req),
 		    ((SC_REQ)req)->DisplayID = GetVPModeID (&scr->ViewPort);
 		    ((SC_REQ)req)->DisplayWidth = scr->Width;
 		    ((SC_REQ)req)->DisplayHeight = scr->Height;
-		    ((SC_REQ)req)->DisplayDepth = scr->BitMap.Depth;
+		    ((SC_REQ)req)->DisplayDepth = GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH);
 		    ((SC_REQ)req)->AutoScroll = (scr->Flags & AUTOSCROLL);
 		    break;
 			
