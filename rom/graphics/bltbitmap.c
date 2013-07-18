@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copy a rectangle in a bitmap to another place or another bitmap.
@@ -119,8 +119,6 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     
 	D(bug("BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %x)\n"
 			,srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize, minterm));
-    /* nlorentz: Also check for BMF_AROS_DISPLAYED flag which if set tells
-       that this is a HIDD bitmap and should be handled by the driver */
 
     if (IS_HIDD_BM(srcBitMap) || IS_HIDD_BM(destBitMap))
     {
