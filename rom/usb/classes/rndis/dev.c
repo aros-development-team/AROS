@@ -168,7 +168,7 @@ AROS_LH1(BPTR, devClose,
 
     KPRINTF(10, ("devClose ioreq: 0x%08lx base: 0x%08lx\n", ioreq, base));
 
-    ret = NULL;
+    ret = BNULL;
     /* Allow queuing */
     //ncp->ncp_DenyRequests = TRUE;
 
@@ -222,7 +222,7 @@ AROS_LH1(BPTR, devExpunge,
 
     KPRINTF(10, ("devExpunge base: 0x%08lx\n", base));
 
-    ret = NULL;
+    ret = BNULL;
 
     if(base->np_Library.lib_OpenCnt == 0)
     {
@@ -250,7 +250,7 @@ AROS_LH1(BPTR, devExpunge,
         base->np_Library.lib_Flags |= LIBF_DELEXP;
     }
 
-    return(NULL);
+    return(BNULL);
     
     AROS_LIBFUNC_EXIT
 }

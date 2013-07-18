@@ -5297,7 +5297,7 @@ BPTR LoadFileSystem(struct NepClassMS *ncm, ULONG dosType, struct FileSysEntry *
     struct NepMSBase *nh = ncm->ncm_ClsBase;
     struct RigidDisk *rdsk = &nh->nh_RDsk;
     ULONG nextFSHD;
-    BPTR fh, seg = NULL;
+    BPTR fh, seg = BNULL;
     ULONG fsLength;
     UBYTE *fsBuffer;
     UBYTE fsFile[32];
@@ -5546,7 +5546,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
     struct DeviceNode *node;
     struct FileSysEntry *fse;
     struct FileSysEntry patch;
-    BPTR segList = NULL;
+    BPTR segList = BNULL;
     BOOL fsFound = FALSE;
     BOOL result = FALSE;
     STRPTR devname = DEVNAME;
@@ -5575,7 +5575,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
                 // Stack, SegList, Pri und GlobVec eintragen
                 patch.fse_PatchFlags |= 0x0020|0x0100;
                 patch.fse_Priority = 10;
-                patch.fse_GlobalVec = (APTR) 0xffffffff;
+                patch.fse_GlobalVec = (BPTR) 0xffffffff;
             }
 
             fsFound = TRUE;
