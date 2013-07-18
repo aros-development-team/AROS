@@ -374,7 +374,7 @@ struct NewImage *GetImageFromFile(char *name, struct Screen *scr)
                 }
                 if (scr != NULL)
                 {
-                    depth = (ULONG) GetBitMapAttr(&scr->BitMap, BMA_DEPTH);
+                    depth = (ULONG) GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH);
 
                     if (depth < 15)
                         ni->o = LoadPicture(name, scr);
