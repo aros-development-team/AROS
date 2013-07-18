@@ -62,12 +62,12 @@
 	psd->DisplayID = GetVPModeID(&wbscreen->ViewPort);
 	psd->DisplayWidth = wbscreen->Width;
 	psd->DisplayHeight = wbscreen->Height;
-	psd->DisplayDepth = GetBitMapAttr(&wbscreen->BitMap, BMA_DEPTH);
+	psd->DisplayDepth = GetBitMapAttr(wbscreen->RastPort.BitMap, BMA_DEPTH);
 	psd->OverscanType = OSCAN_TEXT;
 	psd->AutoScroll = (wbscreen->Flags & AUTOSCROLL) ? TRUE : FALSE;
 	psd->NoDrag = FALSE;
 	psd->Exclusive = FALSE;
-	psd->Interleaved = (GetBitMapAttr(&wbscreen->BitMap, BMA_FLAGS) & BMF_INTERLEAVED);
+	psd->Interleaved = (GetBitMapAttr(wbscreen->RastPort.BitMap, BMA_FLAGS) & BMF_INTERLEAVED);
 	psd->SysDefault = FALSE;
 	psd->Behind = (wbscreen->Flags & SCREENBEHIND) ? TRUE : FALSE;
 	psd->AutoClose = FALSE;
