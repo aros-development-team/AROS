@@ -264,7 +264,7 @@ APTR ASM SAVEDS FileRequestA (
 	if (scrmodereq->DisplayID == INVALID_ID)
 	{
 	    glob->modeid = GetVPModeID (glob->vp);
-	    glob->depth = glob->scr->BitMap.Depth;
+	    glob->depth = GetBitMapAttr(glob->scr->RastPort.BitMap, BMA_DEPTH);
 	    glob->width = glob->scr->Width;
 	    glob->height = glob->scr->Height;
 	    glob->autoscroll = (glob->scr->Flags & AUTOSCROLL);
