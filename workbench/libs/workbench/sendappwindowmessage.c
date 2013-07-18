@@ -1,8 +1,8 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: check if the given window is an app window and send a list of files to it
+    Desc: check if the given window is an app window and send it a list of files
     Lang: English
 */
 
@@ -27,7 +27,7 @@ static char *allocPath(char *str, APTR WorkbenchBase);
 
         AROS_LH8(BOOL, SendAppWindowMessage,
 /*  SYNOPSIS */
-        AROS_LHA(struct Window *, win,       A0),
+        AROS_LHA(struct Window *, win, A0),
         AROS_LHA(ULONG, numfiles, D0),
         AROS_LHA(char **, files, A1),
         AROS_LHA(UWORD, class, D1),
@@ -40,27 +40,26 @@ static char *allocPath(char *str, APTR WorkbenchBase);
         struct WorkbenchBase *, WorkbenchBase, 26, Workbench)
 
 /*  FUNCTION
-
-    This function checks if the provided window is a registred AppWindow, if this is true the
-    list of given files will be send to the Application of the window.
+        This function sends the given list of files to a registered
+        AppWindow's application. If the window is not an AppWindow, nothing
+        is done.
 
     INPUTS
-
-    win       --  window which should be checked
-    numfiles  --  number of files in the attached array of pointers to an array of chars
-    files     --  files "list"
+        win -  window that should be checked
+        numfiles - number of files in the attached array of string pointers
+        files - files "list"
 
     RESULT
-
-    TRUE if action succeeded
+        TRUE if action succeeded
 
     NOTES
 
     EXAMPLE
 
-    char *FileList[] = {"images:image1.png", "images:image2.png", "images:image3.png", };
+        char *FileList[] =
+            {"images:image1.png", "images:image2.png", "images:image3.png"};
 
-    SendAppWindowMessage(myWindow, 3, FilesList);
+        SendAppWindowMessage(myWindow, 3, FileList);
 
     BUGS
 
