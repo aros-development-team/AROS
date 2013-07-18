@@ -171,7 +171,7 @@ void DefaultMenuHandler(struct MenuTaskParams *taskparams)
                 mhd->scrmousey          = mhd->scr->MouseY;
                 mhd->firstmenupick      = MENUNULL;
                 mhd->keepmenuup         = TRUE;
-                mhd->TrueColor          = GetBitMapAttr(&mhd->scr->BitMap, BMA_DEPTH) > 8 ? TRUE: FALSE;
+                mhd->TrueColor          = GetBitMapAttr(mhd->scr->RastPort.BitMap, BMA_DEPTH) > 8 ? TRUE: FALSE;
 
                 /* close windows in the back first because
                    this is faster */

@@ -76,7 +76,7 @@
             if (IS(screen)->RestoreDBufInfo)
             {
                 struct MsgPort safereply;
-                ULONG lock;
+                struct ScreenBuffer scb;
 
                 safereply.mp_Node.ln_Type = NT_MSGPORT;
                 safereply.mp_Flags = PA_SIGNAL;
@@ -86,14 +86,10 @@
 
                 IS(screen)->RestoreDBufInfo->dbi_SafeMessage.mn_ReplyPort = &safereply;
 
-                lock = LockIBase(0);
+                scb.sb_BitMap = IS(screen)->AllocatedBitmap;
+                scb.sb_DBufInfo = IS(screen)->RestoreDBufInfo;
 
-                ChangeVPBitMap(&screen->ViewPort,IS(screen)->AllocatedBitmap,IS(screen)->RestoreDBufInfo);
-
-                screen->BitMap = *IS(screen)->AllocatedBitmap;
-                screen->RastPort.BitMap = IS(screen)->AllocatedBitmap;
-
-                UnlockIBase(lock);
+                ChangeScreenBuffer(screen, &scb);
 
                 while (!GetMsg(&safereply))
                 {
