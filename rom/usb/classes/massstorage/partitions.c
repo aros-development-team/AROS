@@ -315,7 +315,7 @@ BOOL CheckPartitions(struct NepClassMS *ncm)
     pt = OpenRootPartition(DEVNAME, ncm->ncm_UnitNo);
     if(pt)
     {
-        fssm.fssm_Device = DEVNAME;
+        fssm.fssm_Device = AROS_CONST_BSTR(DEVNAME);
         fssm.fssm_Unit = ncm->ncm_UnitNo;
         fssm.fssm_Flags = 0;
 

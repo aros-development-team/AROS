@@ -2459,7 +2459,7 @@ AROS_LH0(BPTR, subLibClose,
 
     KPRINTF(10, ("subLibClose base: 0x%08lx\n", nas));
 
-    ret = NULL;
+    ret = BNULL;
 
     if(--nas->nas_Library.lib_OpenCnt == 0)
     {
@@ -2489,7 +2489,7 @@ AROS_LH1(BPTR, subLibExpunge,
 
     KPRINTF(10, ("subLibExpunge base: 0x%08lx\n", nas));
 
-    ret = NULL;
+    ret = BNULL;
 
     if(nas->nas_Library.lib_OpenCnt == 0)
     {
@@ -2517,7 +2517,7 @@ AROS_LH1(BPTR, subLibExpunge,
         nas->nas_Library.lib_Flags |= LIBF_DELEXP;
     }
 
-    return(NULL);
+    return(BNULL);
     
     AROS_LIBFUNC_EXIT
 }
