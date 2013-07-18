@@ -81,8 +81,8 @@
 
     ChangeVPBitMap(&screen->ViewPort,screenbuffer->sb_BitMap,screenbuffer->sb_DBufInfo);
 
-    screen->BitMap = *screenbuffer->sb_BitMap;
     screen->RastPort.BitMap = screenbuffer->sb_BitMap;
+    UpdateScreenBitMap(screen, IntuitionBase);
 
     UnlockIBase(lock);
 
@@ -91,3 +91,26 @@
     AROS_LIBFUNC_EXIT
 } /* ChangeScreenBuffer */
 
+void UpdateScreenBitMap(struct Screen *screen, struct IntuitionBase *IntuitionBase)
+{
+    int i;
+    struct BitMap *bm = screen->RastPort.BitMap;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+
+    /* Patch up the obsolete screen bitmap as best we can for old programs
+     */
+    screen->BitMap_OBSOLETE.BytesPerRow = GetBitMapAttr(bm, BMA_WIDTH) / 8;
+    screen->BitMap_OBSOLETE.Rows = GetBitMapAttr(bm, BMA_HEIGHT);
+    screen->BitMap_OBSOLETE.Flags = BMF_INVALID | (GetBitMapAttr(bm, BMA_FLAGS) & BMF_STANDARD);
+    screen->BitMap_OBSOLETE.pad = 0;
+    screen->BitMap_OBSOLETE.Depth = GetBitMapAttr(bm, BMA_DEPTH);
+    for (i = 0; i < 8; i++) {
+        /* And for *really* old programs, copy the plane pointers,
+         * if possible
+         */
+        if (screen->BitMap_OBSOLETE.Flags & BMF_STANDARD)
+            screen->BitMap_OBSOLETE.Planes[i] = bm->Planes[i];
+        else
+            screen->BitMap_OBSOLETE.Planes[i] = NULL;
+    }
+}

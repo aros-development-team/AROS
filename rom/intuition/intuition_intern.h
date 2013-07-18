@@ -765,6 +765,8 @@ struct IntScreen
 #endif
 };
 
+void UpdateScreenBitMap(struct Screen *s, struct IntuitionBase *IntuitionBase);
+
 #define GetPrivScreen(s)    ((struct IntScreen *)s)
 #define IS(x)               ((struct IntScreen *)x)
 

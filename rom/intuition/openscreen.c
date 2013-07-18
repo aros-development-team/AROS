@@ -1271,7 +1271,7 @@ static const char THIS_FILE[] = __FILE__;
 
             if (screen->Screen.RastPort.BitMap)
             {
-                memcpy(&screen->Screen.BitMap,screen->Screen.RastPort.BitMap,sizeof(struct BitMap));
+                UpdateScreenBitMap(&screen->Screen, IntuitionBase);
 #ifndef __AROS__
                 /*
                  * AROS: This seems to be not needed
@@ -1691,7 +1691,7 @@ static const char THIS_FILE[] = __FILE__;
            Copy the data from the rastport's bitmap
            to the screen's bitmap structure
         */
-        screen->Screen.BitMap = *screen->Screen.RastPort.BitMap;
+        UpdateScreenBitMap(&screen->Screen, IntuitionBase);
 
 #ifdef __MORPHOS__
         screen->Screen.WBorTop    = 2;

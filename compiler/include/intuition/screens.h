@@ -62,7 +62,7 @@ struct Screen
 
     struct ViewPort   ViewPort;
     struct RastPort   RastPort;
-    struct BitMap     BitMap;    /* OBSOLETE */
+    struct BitMap     BitMap_OBSOLETE;    /* OBSOLETE */
     struct Layer_Info LayerInfo;
 
     struct Gadget * FirstGadget;
