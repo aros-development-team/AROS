@@ -998,6 +998,13 @@ BOOL process_input(struct filehandle *fh)
             fh->flags |= FHFLG_EOF;
             if (fh->flags & FHFLG_AUTO && fh->window)
             {
+                if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
+                {
+                    /* Close the device, it will be re-opened if needed */
+                    CloseDevice((struct IORequest *) fh->conreadio);
+                    fh->flags &= ~FHFLG_CONSOLEDEVICEOPEN;
+                }
+                /* Only now close the window itself */
                 CloseWindow(fh->window);
                 fh->window = NULL;
             }

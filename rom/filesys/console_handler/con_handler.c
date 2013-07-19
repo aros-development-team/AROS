@@ -447,7 +447,9 @@ LONG CONMain(struct ExecBase *SysBase)
                     goto end;
                 }
             } /* if (fh->flags & FHFLG_RAW) else ... */
-            startread(fh);
+
+            if (fh->flags & FHFLG_CONSOLEDEVICEOPEN) /* device could have been closed */
+                startread(fh);
         }
 
         while ((mn = GetMsg(mp)))
