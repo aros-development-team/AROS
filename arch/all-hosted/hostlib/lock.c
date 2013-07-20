@@ -8,7 +8,7 @@
     NAME */
 #include <proto/hostlib.h>
 
-AROS_LH0(void, HostLib_Lock,
+	AROS_LH0(void, HostLib_Lock,
 
 /*  SYNOPSIS */
 

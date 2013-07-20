@@ -5,7 +5,7 @@
     NAME */
 #include <proto/hpet.h>
 
-AROS_LH1(void, FreeHPETUnit,
+	AROS_LH1(void, FreeHPETUnit,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, unit, D0),

@@ -8,7 +8,7 @@
     NAME */
 #include <proto/hpet.h>
 
-AROS_LH2(BOOL, GetUnitAttrsA,
+	AROS_LH2(BOOL, GetUnitAttrsA,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, unit, D0),

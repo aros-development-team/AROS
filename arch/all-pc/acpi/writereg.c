@@ -8,7 +8,7 @@
     NAME */
 #include <proto/acpi.h>
 
-AROS_LH2I(void, ACPI_WriteReg,
+	AROS_LH2I(void, ACPI_WriteReg,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct GENERIC_ACPI_ADDR *, reg, A0),

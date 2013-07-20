@@ -6,7 +6,7 @@
     NAME */
 #include <proto/acpi.h>
 
-AROS_LH1(APTR, ACPI_FindSDT,
+	AROS_LH1(APTR, ACPI_FindSDT,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, id, D0),

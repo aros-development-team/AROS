@@ -5,7 +5,7 @@
     NAME */
 #include <proto/hostlib.h>
 
-AROS_LH1I(void, HostLib_DropInterface,
+	AROS_LH1I(void, HostLib_DropInterface,
 
 /*  SYNOPSIS */
    	AROS_LHA(APTR *, interface, A0),
