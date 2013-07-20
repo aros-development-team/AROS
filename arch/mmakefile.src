@@ -1,0 +1,5 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- distfiles : distfiles-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
