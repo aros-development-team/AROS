@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Flush Caches
@@ -14,43 +14,18 @@
 	static inline _syscall4(int,cacheflush,unsigned long,addr,int,scope,int,cache,unsigned long,len)
 #endif
 
-/******************************************************************************
-
-    NAME */
 #include <proto/exec.h>
 #include <exec/execbase.h>
 
-	AROS_LH3(void, CacheClearE,
+/* See rom/exec/cacheclear*.c for documentation */
 
-/*  SYNOPSIS */
-	AROS_LHA(APTR,  address, A0),
-	AROS_LHA(ULONG, length,  D0),
-	AROS_LHA(ULONG, caches,  D1),
-
-/*  LOCATION */
-	struct ExecBase *, SysBase, 107, Exec)
-
-/*  FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-
-******************************************************************************/
+AROS_LH3(void, CacheClearE,
+    AROS_LHA(APTR,  address, A0),
+    AROS_LHA(ULONG, length,  D0),
+    AROS_LHA(ULONG, caches,  D1),
+    struct ExecBase *, SysBase, 107, Exec)
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 #if 0
     ULONG scope, cpucache = 0;
 
@@ -70,35 +45,9 @@
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
 
-/******************************************************************************
 
-    NAME */
-#include <proto/exec.h>
-
-	AROS_LH0(void, CacheClearU,
-
-/*  LOCATION */
-	struct ExecBase *, SysBase, 106, Exec)
-
-/*  FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-
-******************************************************************************/
+AROS_LH0(void, CacheClearU,
+    struct ExecBase *, SysBase, 106, Exec)
 {
     AROS_LIBFUNC_INIT
 #if 0 

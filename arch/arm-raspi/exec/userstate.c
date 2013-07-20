@@ -6,41 +6,13 @@
     Lang: english
 */
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/exec.h>
 
-	AROS_LH1(void, UserState,
+/* See rom/exec/userstate.c for documentation */
 
-/*  SYNOPSIS */
-	AROS_LHA(APTR, superSP, D0),
-
-/*  LOCATION */
-	struct ExecBase *, SysBase, 26, Exec)
-
-/*  FUNCTION
-	Return to user mode after a call to SuperState().
-
-    INPUTS
-	superSP    -   The return value from SuperState()
-
-    RESULT
-	The system will be back to normal.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	SuperState(), Supervisor()
-
-    INTERNALS
-	Undo SuperState()
-
-******************************************************************************/
+AROS_LH1(void, UserState,
+    AROS_LHA(APTR, superSP, D0),
+    struct ExecBase *, SysBase, 26, Exec)
 {
     AROS_LIBFUNC_INIT
 

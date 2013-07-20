@@ -25,6 +25,8 @@
 #include <aros/debug.h>
 #undef kprintf
 
+/* See rom/kernel/setfunction.c for documentation */
+
 /* moveb %d0, %a3@+
  * rts
  */
@@ -70,66 +72,11 @@ static AROS_UFH5(APTR, myRawDoFmt,
     AROS_USERFUNC_EXIT
 }
 
-/*****************************************************************************
-
-    NAME */
-
-	AROS_LH3(APTR, SetFunction,
-
-/*  SYNOPSIS */
-	AROS_LHA(struct Library *, library,     A1),
-	AROS_LHA(LONG,             funcOffset,  A0),
-	AROS_LHA(APTR,             newFunction, D0),
-
-/*  LOCATION */
-	struct ExecBase *, SysBase, 70, Exec)
-
-/*  FUNCTION
-	Replaces a certain jumptable entry with another one. This function only
-	Forbid()s taskswitching but doesn't Disable() interrupts. You have
-	to do your own arbitration for functions which are callable from
-	interrupts.
-
-    INPUTS
-	library     - Pointer to library structure.
-	funcOffset  - Offset of the jumpvector from the library base address in
-		      bytes. It's the negative LVO (library vector offset)
-		      multiplied with LIB_VECTSIZE.
-	newFunction - New jumptable entry (pointer to the new function).
-
-    RESULT
-	Old jumptable entry (pointer to the old function).
-
-    NOTES
-	While it's more or less safe to patch a library vector with
-	SetFunction() it's not possible to safely remove the patch later.
-	So don't use this function if it can be avoided.
-
-    EXAMPLE
-	Patch of the function Open() from dos.library:
-	You can find the LVO of 5 in clib/dos_protos.h.
-	SetFunction(DOSBase, -5 * LIB_VECTSIZE, NewOpen);
-	NewOpen must be prepared with AROS_UFH macros.
-
-    BUGS
-	This contains a hack to fix dos.library/ramlib attempts to
-	setfunction exec functions. Because of this, a funcOffset
-	of more than 32 kB be truncated. This hack will also fix
-	other programs only using the lower 16 bits of funcOffset
-	and leaving garbage in the upper 16 bits.
-
-	These programs should be fixed.
-
-	Also, this includes a hack to fix attempt to SetFunction the
-	Exec/RawDoFmt() routine, which adds a wrapper to translate
-	'magic' AROS PutChFunc vectors to real functions.
-
-    SEE ALSO
-	MakeLibrary(), MakeFunctions(), SumLibrary()
-
-    INTERNALS
-
-******************************************************************************/
+AROS_LH3(APTR, SetFunction,
+    AROS_LHA(struct Library *, library,     A1),
+    AROS_LHA(LONG,             funcOffset,  A0),
+    AROS_LHA(APTR,             newFunction, D0),
+    struct ExecBase *, SysBase, 70, Exec)
 {
     AROS_LIBFUNC_INIT
     APTR ret;

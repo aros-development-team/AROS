@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Start the internal debugger.
@@ -11,6 +11,8 @@
 #include <proto/exec.h>
 #include <exec/types.h>
 #include <asm/speaker.h>
+
+/* See rom/exec/debug.c for documentation */
 
 /****************************************************************************************/
 
@@ -36,41 +38,9 @@ int	get_irq_list(char *buf);
 
 /****************************************************************************************/
 
-
-/*****************************************************************************
-
-    NAME */
-
-	AROS_LH1(void, Debug,
-
-/*  SYNOPSIS */
-	AROS_LHA(unsigned long, flags, D0),
-
-/*  LOCATION */
-	struct ExecBase *, SysBase, 19, Exec)
-
-/*  FUNCTION
-	Runs SAD - internal debuger.
-
-    INPUTS
-	flags	not used. Should be 0 now.
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-	18-01-99    initial PC version.
-
-*****************************************************************************/
+AROS_LH1(void, Debug,
+    AROS_LHA(unsigned long, flags, D0),
+    struct ExecBase *, SysBase, 19, Exec)
 {
     AROS_LIBFUNC_INIT
 

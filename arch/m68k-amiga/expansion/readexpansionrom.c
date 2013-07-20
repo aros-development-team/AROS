@@ -14,6 +14,8 @@
 
 #include <expansion_intern.h>
 
+/* See rom/expansion/readexpansionrom.c for documentation */
+
 static void readexprom(APTR board, struct ExpansionRom *rom, struct ExpansionBase *ExpansionBase)
 {
     WORD cnt;
@@ -25,41 +27,12 @@ static void readexprom(APTR board, struct ExpansionRom *rom, struct ExpansionBas
     rom->er_Type = ~rom->er_Type;
 }
 
-/*****************************************************************************
-
-    NAME */
 #include <clib/expansion_protos.h>
 
-	AROS_LH2(BOOL, ReadExpansionRom,
-
-/*  SYNOPSIS */
-	AROS_LHA(APTR              , board, A0),
-	AROS_LHA(struct ConfigDev *, configDev, A1),
-
-/*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 17, Expansion)
-
-/*  FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
-
-*****************************************************************************/
+AROS_LH2(BOOL, ReadExpansionRom,
+    AROS_LHA(APTR              , board, A0),
+    AROS_LHA(struct ConfigDev *, configDev, A1),
+    struct ExpansionBase *, ExpansionBase, 17, Expansion)
 {
     AROS_LIBFUNC_INIT
 

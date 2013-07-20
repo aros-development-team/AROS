@@ -3,38 +3,12 @@
 
 #include <kernel_base.h>
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/kernel.h>
 
+/* See rom/kernel/releaseinput.c for documentation */
+
 AROS_LH0I(void, KrnReleaseInput,
-
-/*  SYNOPSIS */
-
-/*  LOCATION */
-	struct KernelBase *, KernelBase, 34, Kernel)
-
-/*  FUNCTION
-	Release low-level debug input hardware and hand it back to the operating system
-
-    INPUTS
-	None
-
-    RESULT
-	None
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-******************************************************************************/
+    struct KernelBase *, KernelBase, 34, Kernel)
 {
     AROS_LIBFUNC_INIT
 

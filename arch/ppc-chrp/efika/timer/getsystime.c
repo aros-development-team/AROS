@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetSysTime() - Find out what time it is.
@@ -8,46 +8,14 @@
 #include "lowlevel.h"
 #include <proto/exec.h>
 
-/*****************************************************************************
-
-    NAME */
 #include <devices/timer.h>
 #include <proto/timer.h>
 
-        AROS_LH1(void, GetSysTime,
+/* See rom/timer/getsystime.c for documentation */
 
-/*  SYNOPSIS */
-        AROS_LHA(struct timeval *, dest, A0),
-
-/*  LOCATION */
-        struct Device *, TimerBase, 11, Timer)
-
-/*  FUNCTION
-        GetSysTime() will fill in the supplied timeval with the current
-        system time.
-
-    INPUTS
-        dest    -   A pointer to the timeval you want the time stored in.
-
-    RESULT
-        The timeval "dest" will be filled with the current system time.
-
-    NOTES
-        This function is safe to call from interrupts.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        TR_GETSYSTIME, TR_SETSYSTIME
-
-    INTERNALS
-
-    HISTORY
-        18-02-1997  iaint   Implemented.
-
-*****************************************************************************/
+AROS_LH1(void, GetSysTime,
+    AROS_LHA(struct timeval *, dest, A0),
+    struct Device *, TimerBase, 11, Timer)
 {
     AROS_LIBFUNC_INIT
 

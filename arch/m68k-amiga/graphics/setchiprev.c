@@ -9,41 +9,13 @@
 #include <graphics/gfxbase.h>
 #include <hardware/custom.h>
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/graphics.h>
 
-        AROS_LH1(ULONG, SetChipRev,
+/* See rom/graphics/setchiprev.c for documentation */
 
-/*  SYNOPSIS */
-        AROS_LHA(ULONG, ChipRev, D0),
-
-/*  LOCATION */
-        struct GfxBase *, GfxBase, 148, Graphics)
-
-/*  FUNCTION
-
-    INPUTS
-        ChipRev - Chip Rev that you would like to be enabled
-
-    RESULT
-        chiprevbits - Actual bits set in GfxBase->ChipRevBits0
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-
-
-******************************************************************************/
+AROS_LH1(ULONG, SetChipRev,
+    AROS_LHA(ULONG, ChipRev, D0),
+    struct GfxBase *, GfxBase, 148, Graphics)
 {
     AROS_LIBFUNC_INIT
 

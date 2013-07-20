@@ -21,6 +21,8 @@
 
 #include "lowlevel_intern.h"
 
+/* See rom/lowlevel/readjoyport.c for documentation */
+
 #define POTGO_GAMEPAD_PORT0 \
         (1 << 11) | (1 << 10) | (1 <<  9) | (1 <<  8)
 #define POTGO_GAMEPAD_PORT1 \
@@ -198,29 +200,10 @@ static VOID llPortClose(struct LowLevelBase *LowLevelBase, int port, UWORD potbi
     }
 }
 
-/*****************************************************************************
 
-    NAME */
-
-      AROS_LH1(ULONG, ReadJoyPort,
-
-/*  SYNOPSIS */ 
-      AROS_LHA(ULONG, port, D0),
-
-/*  LOCATION */
-      struct LowLevelBase *, LowLevelBase, 5, LowLevel)
-
-/*  FUNCTION
- 
-    INPUTS
- 
-    RESULT
- 
-    BUGS
-
-    INTERNALS
-
-*****************************************************************************/
+AROS_LH1(ULONG, ReadJoyPort,
+    AROS_LHA(ULONG, port, D0),
+    struct LowLevelBase *, LowLevelBase, 5, LowLevel)
 {
   AROS_LIBFUNC_INIT
 

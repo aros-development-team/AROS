@@ -8,42 +8,12 @@
 #include <kernel_base.h>
 #include <kernel_syscall.h>
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/kernel.h>
 
+/* See rom/kernel/sti.c for documentation */
+
 AROS_LH0I(void, KrnSti,
-
-/*  SYNOPSIS */
-
-/*  LOCATION */
-	struct KernelBase *, KernelBase, 10, Kernel)
-
-/*  FUNCTION
-	Instantly enable interrupts.
-
-    INPUTS
-	None
-
-    RESULT
-	None
-
-    NOTES
-	This is low level function, it does not have nesting count
-	and state tracking mechanism. It operates directly on the CPU.
-	Normal applications should consider using exec.library/Enable().
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	KrnCli()
-
-    INTERNALS
-
-******************************************************************************/
+    struct KernelBase *, KernelBase, 10, Kernel)
 {
     AROS_LIBFUNC_INIT
 

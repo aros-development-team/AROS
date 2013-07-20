@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -10,32 +10,12 @@
 
 #include <libraries/lowlevel.h>
 
-/*****************************************************************************
+/* See rom/lowlevel/setjoyportattrsa.c for documentation */
 
-    NAME */
-
-      AROS_LH2(BOOL, SetJoyPortAttrsA,
-
-/*  SYNOPSIS */ 
-      AROS_LHA(ULONG, portNumber, D0),
-      AROS_LHA(struct TagItem *, tagList, A1),
-
-/*  LOCATION */
-      struct LowLevelBase *, LowLevelBase, 22, LowLevel)
-
-/*  FUNCTION
- 
-    INPUTS
- 
-    RESULT
- 
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************/
+AROS_LH2(BOOL, SetJoyPortAttrsA,
+    AROS_LHA(ULONG, portNumber, D0),
+    AROS_LHA(struct TagItem *, tagList, A1),
+    struct LowLevelBase *, LowLevelBase, 22, LowLevel)
 {
     AROS_LIBFUNC_INIT
     struct TagItem *ti;

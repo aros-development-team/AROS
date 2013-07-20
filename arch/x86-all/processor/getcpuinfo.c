@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetCPUInfo() - Provides information about installed CPUs
@@ -18,38 +18,13 @@
 
 static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct TagItem * tag);
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/processor.h>
 
-	AROS_LH1(void, GetCPUInfo,
+/* See rom/processor/getcpuinfo.c for documentation */
 
-/*  SYNOPSIS */
-	AROS_LHA(struct TagItem *, tagList, A0),
-
-/*  LOCATION */
-	struct ProcessorBase *, ProcessorBase, 1, Processor)
-
-/*  FUNCTION
-
-    INPUTS
-
-    TAGS
-
-    RESULT
-
-    NOTES
-    
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-******************************************************************************/
+AROS_LH1(void, GetCPUInfo,
+    AROS_LHA(struct TagItem *, tagList, A0),
+    struct ProcessorBase *, ProcessorBase, 1, Processor)
 {
     AROS_LIBFUNC_INIT
 

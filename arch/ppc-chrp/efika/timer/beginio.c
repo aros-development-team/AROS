@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: BeginIO - Start up a timer.device request.
@@ -13,6 +13,8 @@
 #include <proto/exec.h>
 #include <asm/io.h>
 #include <asm/mpc5200b.h>
+
+/* See rom/timer/beginio.c for documentation */
 
 /****************************************************************************************/
 
@@ -39,45 +41,12 @@ static const UWORD SupportedCommands[] =
 
 BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timerequest *);
 
-/*****i***********************************************************************
-
-    NAME */
 #include <devices/timer.h>
 #include <proto/timer.h>
-        AROS_LH1(void, BeginIO,
 
-/*  SYNOPSIS */
+AROS_LH1(void, BeginIO,
         AROS_LHA(struct timerequest *, timereq, A1),
-
-/*  LOCATION */
         struct TimerBase *, TimerBase, 5, Timer)
-
-/*  FUNCTION
-        BeginIO() will perform a timer.device command. It is normally
-        called from within DoIO() and SendIO().
-
-    INPUT
-        timereq         - The request to process.
-
-    RESULT
-        The requested message will be processed.
-
-    NOTES
-        This function is safe to call from interrupts.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        exec/Abort(), exec/SendIO(), exec/DoIO()
-
-    INTERNALS
-
-    HISTORY
-        23-01-1998  iaint       Implemented again.
-
-******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

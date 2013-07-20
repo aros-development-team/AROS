@@ -4,39 +4,16 @@
 #include <kernel_base.h>
 #include <kernel_intern.h>
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/kernel.h>
 
+/* See rom/kernel/mapglobal.c for documentation */
+
 AROS_LH4(int, KrnMapGlobal,
-
-/*  SYNOPSIS */
-	AROS_LHA(void *, virtual, A0),
-	AROS_LHA(void *, physical, A1),
-	AROS_LHA(uint32_t, length, D0),
-	AROS_LHA(KRN_MapAttr, flags, D1),
-
-/*  LOCATION */
-	struct KernelBase *, KernelBase, 16, Kernel)
-
-/*  FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-******************************************************************************/
+    AROS_LHA(void *, virtual, A0),
+    AROS_LHA(void *, physical, A1),
+    AROS_LHA(uint32_t, length, D0),
+    AROS_LHA(KRN_MapAttr, flags, D1),
+    struct KernelBase *, KernelBase, 16, Kernel)
 {
     AROS_LIBFUNC_INIT
 
