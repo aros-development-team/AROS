@@ -8,11 +8,14 @@ USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 
-#MM arosboot-raspi : \
+#MM- distfiles-raspi-armhf : distfiles-raspi
+#MM- distfiles-raspi-arm : distfiles-raspi
+
+#MM distfiles-raspi : \
 #MM kernel-raspi-arm \
 #MM kernel-raspi-config-copy \
 #MM kernel-package-raspi-arm \
-#MM arosboot-raspi-fw
+#MM distfiles-raspi-fw
 
 #MM kernel-package-raspi-arm: \
 #MM linklibs-clib \
@@ -85,7 +88,7 @@ MODULES := \
 	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB)))
 
 #MM
-arosboot-raspi-fw:
+distfiles-raspi-fw:
 	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(addsuffix ?raw=true, $(file)))" -O "$(addprefix $(AROSDIR)/, $(file))"))
 
 kernel-package-raspi-arm:  $(BINDIR)/arosraspi.rom
@@ -106,7 +109,7 @@ $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 	cp $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
 	cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm core.bin -o $@
 
-arosboot-raspi: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.bz2
+distfiles-raspi: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.bz2
 
 $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.bz2: $(AROSDIR)/arosraspi.img  $(BINDIR)/arosraspi.rom
 	%mkdirs_q $(AROSDIR)/S
