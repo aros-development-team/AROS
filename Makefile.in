@@ -201,7 +201,7 @@ query : tools
 # if it was not installed globally
 #
 
-distfiles:
+distfiles::
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
 # The '%-quick' and '%-clean' targets are special - we don't want to wait around
