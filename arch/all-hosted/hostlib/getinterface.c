@@ -8,7 +8,7 @@
     NAME */
 #include <proto/hostlib.h>
 
-AROS_LH3(APTR *, HostLib_GetInterface,
+	AROS_LH3(APTR *, HostLib_GetInterface,
 
 /*  SYNOPSIS */
     	AROS_LHA(void *, handle, A0),

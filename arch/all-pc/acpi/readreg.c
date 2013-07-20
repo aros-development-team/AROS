@@ -8,7 +8,7 @@
     NAME */
 #include <proto/acpi.h>
 
-AROS_LH1I(IPTR, ACPI_ReadReg,
+	AROS_LH1I(IPTR, ACPI_ReadReg,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct GENERIC_ACPI_ADDR *, reg, A0),

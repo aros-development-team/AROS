@@ -5,7 +5,7 @@
     NAME */
 #include <proto/hostlib.h>
 
-AROS_LH1(void, HostLib_FreeErrorStr,
+	AROS_LH1(void, HostLib_FreeErrorStr,
 
 /*  SYNOPSIS */
 	AROS_LHA(char *, error, A0),

@@ -7,7 +7,7 @@
     NAME */
 #include <proto/hpet.h>
 
-AROS_LH1(ULONG, AllocHPETUnit,
+	AROS_LH1(ULONG, AllocHPETUnit,
 
 /*  SYNOPSIS */
 	AROS_LHA(const char *, user, A0),

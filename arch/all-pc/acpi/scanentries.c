@@ -18,7 +18,7 @@ static const struct HeaderData headers[] =
     NAME */
 #include <proto/acpi.h>
 
-AROS_LH4(ULONG, ACPI_ScanEntries,
+	AROS_LH4(ULONG, ACPI_ScanEntries,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct ACPI_TABLE_DEF_HEADER *, table, A0),

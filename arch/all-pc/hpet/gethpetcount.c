@@ -5,7 +5,7 @@
     NAME */
 #include <proto/hpet.h>
 
-AROS_LH0(ULONG, GetHPETCount,
+	AROS_LH0(ULONG, GetHPETCount,
 
 /*  SYNOPSIS */
 

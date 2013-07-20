@@ -6,7 +6,7 @@
     NAME */
 #include <proto/acpi.h>
 
-AROS_LH3(ULONG, ACPI_ScanSDT,
+	AROS_LH3(ULONG, ACPI_ScanSDT,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, id, D0),
@@ -41,7 +41,7 @@ AROS_LH3(ULONG, ACPI_ScanSDT,
     BUGS
 
     SEE ALSO
-	ACPI_FindSDT
+	ACPI_FindSDT()
 
     INTERNALS
 
