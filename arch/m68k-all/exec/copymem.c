@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CopyMem()
@@ -14,44 +14,13 @@
 extern void AROS_SLIB_ENTRY(CopyMem_000,Exec,104)(void);
 extern void AROS_SLIB_ENTRY(CopyMem_020,Exec,104)(void);
 
-/*****************************************************************************
+/* See rom/kernel/copymem.c for documentation */
 
-    NAME */
-
-	AROS_LH3I(void, CopyMem,
-
-/*  SYNOPSIS */
-	AROS_LHA(CONST_APTR,  source, A0),
-	AROS_LHA(APTR,  dest,   A1),
-	AROS_LHA(IPTR,  size,   D0),
-
-/*  LOCATION */
-	struct ExecBase *, SysBase, 104, Exec)
-
-/*  FUNCTION
-	Copy some memory from one destination in memory to another using
-	a fast copying method.
-
-    INPUTS
-	source - Pointer to source area
-	dest   - Pointer to destination
-	size   - number of bytes to copy (may be zero)
-
-    RESULT
-
-    NOTES
-	The source and destination area are not allowed to overlap.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	CopyMemQuick()
-
-    INTERNALS
-
-******************************************************************************/
+AROS_LH3I(void, CopyMem,
+    AROS_LHA(CONST_APTR,  source, A0),
+    AROS_LHA(APTR,  dest,   A1),
+    AROS_LHA(IPTR,  size,   D0),
+    struct ExecBase *, SysBase, 104, Exec)
 {
     AROS_LIBFUNC_INIT
     void (*func)(void);

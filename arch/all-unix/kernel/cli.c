@@ -5,35 +5,12 @@
 #include "kernel_base.h"
 #include "kernel_intern.h"
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/kernel.h>
 
+/* See rom/kernel/cli.c for documentation */
+
 AROS_LH0(void, KrnCli,
-
-/*  SYNOPSIS */
-
-/*  LOCATION */
-	struct KernelBase *, KernelBase, 9, Kernel)
-
-/*  FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-******************************************************************************/
+    struct KernelBase *, KernelBase, 9, Kernel)
 {
     AROS_LIBFUNC_INIT
 

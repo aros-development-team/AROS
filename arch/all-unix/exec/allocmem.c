@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate some memory
@@ -36,46 +36,12 @@
 
 #include "exec_intern.h"
 
-/*****************************************************************************
+/* See rom/exec/allocmem.c for documentation */
 
-    NAME */
-
-	AROS_LH2(APTR, AllocMem,
-
-/*  SYNOPSIS */
-	AROS_LHA(IPTR,  byteSize,     D0),
-	AROS_LHA(ULONG, requirements, D1),
-
-/* LOCATION */
-	struct ExecBase *, SysBase, 33, Exec)
-
-/*  FUNCTION
-	Allocate some memory from the sytem memory pool with the given
-	requirements.
-
-    INPUTS
-	byteSize     - Number of bytes you want to get
-	requirements - Type of memory
-
-    RESULT
-	A pointer to the number of bytes you wanted or NULL if the memory
-	couldn't be allocated
-
-    NOTES
-	The memory is aligned to sizeof(struct MemChunk). All requests
-	are rounded up to a multiple of that size.
-
-    EXAMPLE
-	mytask=(struct Task *)AllocMem(sizeof(struct Task),MEMF_PUBLIC|MEMF_CLEAR);
-
-    BUGS
-
-    SEE ALSO
-	FreeMem()
-
-    INTERNALS
-
-******************************************************************************/
+AROS_LH2(APTR, AllocMem,
+    AROS_LHA(IPTR,  byteSize,     D0),
+    AROS_LHA(ULONG, requirements, D1),
+    struct ExecBase *, SysBase, 33, Exec)
 {
     AROS_LIBFUNC_INIT
 

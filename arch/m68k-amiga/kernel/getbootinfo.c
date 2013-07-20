@@ -9,35 +9,12 @@
 #include "exec_intern.h"
 #undef KernelBase
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/kernel.h>
 
+/* See rom/kernel/getbootinfo.c for documentation */
+
 AROS_LH0I(struct TagItem *, KrnGetBootInfo,
-
-/*  SYNOPSIS */
-
-/*  LOCATION */
-	struct KernelBase *, KernelBase, 11, Kernel)
-
-/*  FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-******************************************************************************/
+    struct KernelBase *, KernelBase, 11, Kernel)
 {
     AROS_LIBFUNC_INIT
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -7,42 +7,15 @@
 */
 #include "expansion_intern.h"
 
-/*****************************************************************************
-
-    NAME */
 #include <clib/expansion_protos.h>
 
-	AROS_LH3(void, WriteExpansionByte,
+/* See rom/expansion/writeexpansionbyte.c for documentation */
 
-/*  SYNOPSIS */
-	AROS_LHA(APTR , board, A0),
-	AROS_LHA(ULONG, offset, D0),
-	AROS_LHA(ULONG, byte, D1),
-
-/*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 19, Expansion)
-
-/*  FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
-
-*****************************************************************************/
+AROS_LH3(void, WriteExpansionByte,
+    AROS_LHA(APTR , board, A0),
+    AROS_LHA(ULONG, offset, D0),
+    AROS_LHA(ULONG, byte, D1),
+    struct ExpansionBase *, ExpansionBase, 19, Expansion)
 {
     AROS_LIBFUNC_INIT
 

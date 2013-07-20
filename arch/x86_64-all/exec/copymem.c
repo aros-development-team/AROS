@@ -12,6 +12,8 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+/* See rom/exec/copymem.c for documentation */
+
 #define SSE_REG_SIZE 16
 #define SSE_REG_MASK 0xF
 
@@ -59,48 +61,12 @@ D(bug("[Exec] __long_memcpy(%p, %p, %ld)\n", src, dst, size));
     }
 }
 
-/*****************************************************************************
 
-    NAME */
-
-	AROS_LH3I(void, CopyMem,
-
-/*  SYNOPSIS */
-	AROS_LHA(CONST_APTR, source, A0),
-	AROS_LHA(APTR, dest, A1),
-	AROS_LHA(IPTR, size, D0),
-
-/*  LOCATION */
-	struct ExecBase *, SysBase, 104, Exec)
-
-/*  FUNCTION
-	Copy some data from one location to another in memory using
-	SSE optimised copying method if enough data.
-
-    INPUTS
-	source - Pointer to source area
-	dest   - Pointer to destination
-	size   - number of bytes to copy
-
-    RESULT
-
-    NOTES
-	The source and destination area are not allowed to overlap.
-        If the src isn't on a 16-byte boundary, it is aligned
-        first (so long as there's enough data)
-        Copies using 4x16-byte registers = 64 bytes at a time.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	CopyMemQuick()
-
-    INTERNALS
-	64-bit sizes are not handled yet.
-
-******************************************************************************/
+AROS_LH3I(void, CopyMem,
+    AROS_LHA(CONST_APTR, source, A0),
+    AROS_LHA(APTR, dest, A1),
+    AROS_LHA(IPTR, size, D0),
+    struct ExecBase *, SysBase, 104, Exec)
 {
     AROS_LIBFUNC_INIT
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by AllocMem()
@@ -35,40 +35,12 @@
 
 #undef FreeMem	/* If we're debugging, AROS Clib will try to remap this */
 
-/*****************************************************************************
+/* See rom/exec/freemem.c for documentation */
 
-    NAME */
-
-	AROS_LH2(void, FreeMem,
-
-/*  SYNOPSIS */
-	AROS_LHA(APTR, memoryBlock, A1),
-	AROS_LHA(IPTR, byteSize,    D0),
-
-/*  LOCATION */
-	struct ExecBase *, SysBase, 35, Exec)
-
-/*  FUNCTION
-	Give a block of memory back to the system pool.
-
-    INPUTS
-	memoryBlock - Pointer to the memory to be freed
-	byteSize    - Size of the block
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	AllocMem()
-
-    INTERNALS
-
-******************************************************************************/
+AROS_LH2(void, FreeMem,
+    AROS_LHA(APTR, memoryBlock, A1),
+    AROS_LHA(IPTR, byteSize,    D0),
+    struct ExecBase *, SysBase, 35, Exec)
 {
     AROS_LIBFUNC_INIT
 

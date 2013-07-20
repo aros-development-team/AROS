@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AbortIO() - abort a running timer request.
@@ -9,52 +9,15 @@
 #include <exec/io.h>
 #include <exec/errors.h>
 
-/*****i***********************************************************************
-
-    NAME */
 #include <devices/timer.h>
 #include <proto/exec.h>
 #include <proto/timer.h>
 
-	AROS_LH1(LONG, AbortIO,
+/* See rom/timer/abortio.c for documentation */
 
-/*  SYNOPSIS */
-	AROS_LHA(struct timerequest *, timereq, A1),
-
-/*  LOCATION */
-	struct TimerBase *, TimerBase, 6,Timer)
-
-/*  FUNCTION
-	Abort a running timer.device request.
-
-    INPUTS
-	timereq     -   The request you wish to abort.
-
-    RESULT
-	0   if the request was aborted, io_Error will also be set
-	    to the value IOERR_ABORTED.
-
-	-1  otherwise (most likely that the request isn't working).
-
-	If the request is successfully aborted, you should WaitIO() on
-	the message before you try and reuse it.
-
-    NOTES
-	This function may be called from interrupts.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	exec/AbortIO(), exec/WaitIO()
-
-    INTERNALS
-
-    HISTORY
-	18-02-1997  iaint   Implemented.
-
-******************************************************************************/
+AROS_LH1(LONG, AbortIO,
+    AROS_LHA(struct timerequest *, timereq, A1),
+    struct TimerBase *, TimerBase, 6,Timer)
 {
     AROS_LIBFUNC_INIT
 

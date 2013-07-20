@@ -3,36 +3,13 @@
 
 #include <kernel_base.h>
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/kernel.h>
 
+/* See rom/kernel/virtualtophysical.c for documentation */
+
 AROS_LH1I(void *, KrnVirtualToPhysical,
-
-/*  SYNOPSIS */
-	AROS_LHA(void *, virtual, A0),
-
-/*  LOCATION */
-	struct KernelBase *, KernelBase, 20, Kernel)
-
-/*  FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-******************************************************************************/
+    AROS_LHA(void *, virtual, A0),
+    struct KernelBase *, KernelBase, 20, Kernel)
 {
 	AROS_LIBFUNC_INIT
 

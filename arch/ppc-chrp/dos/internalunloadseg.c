@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -12,41 +12,14 @@
 #include <exec/libraries.h>
 #include <proto/kernel.h>
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/dos.h>
 
-        AROS_LH2(BOOL, InternalUnLoadSeg,
+/* See rom/dos/internalunloadseg.c for documentation */
 
-/*  SYNOPSIS */
-        AROS_LHA(BPTR     , seglist , D1),
-        AROS_LHA(VOID_FUNC, freefunc, A1),
-
-/*  LOCATION */
-        struct DosLibrary *, DOSBase, 127, Dos)
-
-/*  FUNCTION
-	Unloads a seglist loaded with InternalLoadSeg().
-
-    INPUTS
-	seglist  - Seglist
-	freefunc - Function to be called to free memory
-
-    RESULT
-	DOSTRUE if everything wents O.K.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************/
+AROS_LH2(BOOL, InternalUnLoadSeg,
+    AROS_LHA(BPTR     , seglist , D1),
+    AROS_LHA(VOID_FUNC, freefunc, A1),
+    struct DosLibrary *, DOSBase, 127, Dos)
 {
   AROS_LIBFUNC_INIT
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read the current vertical position of the beam
@@ -8,40 +8,12 @@
 #include <aros/debug.h>
 #include "graphics_intern.h"
 
-/*****************************************************************************
+#include <clib/graphics_protos.h>
 
-    NAME */
-	#include <clib/graphics_protos.h>
+/* See rom/graphics/vbeampos.c for documentation */
 
-	AROS_LH0(LONG, VBeamPos,
-
-/*  SYNOPSIS */
-	/* void */
-
-/*  LOCATION */
-	struct GfxBase *, GfxBase, 64, Graphics)
-
-/*  FUNCTION
-
-    INPUTS
-        none
-
-    RESULT
-	None.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+AROS_LH0(LONG, VBeamPos,
+    struct GfxBase *, GfxBase, 64, Graphics)
 {
     AROS_LIBFUNC_INIT
 

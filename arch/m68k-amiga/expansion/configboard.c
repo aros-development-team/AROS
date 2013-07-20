@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -11,6 +11,8 @@
 #include "expansion_intern.h"
 #include <proto/expansion.h>
 #include <aros/asmcall.h>
+
+/* See rom/expansion/configboard.c for documentation */
 
 #define Z3SLOT 0x01000000
 
@@ -34,41 +36,13 @@ AROS_UFH5(void, writeexpansion,
     AROS_USERFUNC_EXIT
 }
 
-/*****************************************************************************
 
-    NAME */
 #include <clib/expansion_protos.h>
 
-	AROS_LH2(BOOL, ConfigBoard,
-
-/*  SYNOPSIS */
-	AROS_LHA(APTR              , board, A0),
-	AROS_LHA(struct ConfigDev *, configDev, A1),
-
-/*  LOCATION */
-	struct ExpansionBase *, ExpansionBase, 10, Expansion)
-
-/*  FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
-
-*****************************************************************************/
+AROS_LH2(BOOL, ConfigBoard,
+    AROS_LHA(APTR              , board, A0),
+    AROS_LHA(struct ConfigDev *, configDev, A1),
+    struct ExpansionBase *, ExpansionBase, 10, Expansion)
 {
     AROS_LIBFUNC_INIT
 

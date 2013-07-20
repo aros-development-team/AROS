@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Open a file with the specified mode.
@@ -22,45 +22,16 @@
 extern void BCPL_thunk(void);
 #define  __is_process(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS)
 
-/*****************************************************************************
-
-    NAME */
 #include <proto/dos.h>
 
-        AROS_UFH5(LONG, CallGlobVec,
+/* See rom/dos/callglobvec.c for documentation */
 
-/*  SYNOPSIS */
-        AROS_UFHA(LONG, function, D0),
-        AROS_UFHA(LONG, d1,       D1),
-        AROS_UFHA(LONG, d2,       D2),
-        AROS_UFHA(LONG, d3,       D3),
-        AROS_UFHA(LONG, d4,       D4)
-
-/*  LOCATION */
-        )
-
-/*  FUNCTION
-        Private function to call a BCPL routine from C
-
-    INPUTS
-        function        - BCPL Global Vector function index
-        d1..d4          - Parameter to the function
-
-    RESULT
-        return value of the BCPL routine
-
-    NOTES
-        This works only on m68k.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************/
+AROS_UFH5(LONG, CallGlobVec,
+    AROS_UFHA(LONG, function, D0),
+    AROS_UFHA(LONG, d1,       D1),
+    AROS_UFHA(LONG, d2,       D2),
+    AROS_UFHA(LONG, d3,       D3),
+    AROS_UFHA(LONG, d4,       D4))
 {
     AROS_USERFUNC_INIT
 
