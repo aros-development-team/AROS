@@ -18,3 +18,12 @@ void cleanup( void );
             printf( "Test passed in %s, line %d.\n", __FILE__, __LINE__ );  \
         }        
 
+/* Only output when not passing */
+#define TESTFALSE(x) \
+        if(!(x))                                                            \
+        {                                                                   \
+            printf( "Test FAILED in %s, line %d.\n", __FILE__, __LINE__ );  \
+            cleanup();                                                      \
+            return FAIL;                                                    \
+        }
+
