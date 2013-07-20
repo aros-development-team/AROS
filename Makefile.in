@@ -200,6 +200,10 @@ query : tools
 # Calling standard main targets, but is usable as a shortcut for MetaMake
 # if it was not installed globally
 #
+
+distfiles:
+	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
+
 # The '%-quick' and '%-clean' targets are special - we don't want to wait around
 # for building crosstools if we just want to build one subtarget
 %-quick %-clean: 
