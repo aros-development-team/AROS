@@ -10,6 +10,8 @@
 #include <proto/exec.h>
 #include <aros/libcall.h>
 
+#include "exec_debug.h"
+
 /*****************************************************************************
 
     NAME */
@@ -44,6 +46,8 @@
     AROS_LIBFUNC_INIT
     struct Interrupt *oldint;
     BOOL ishandler = intNumber <= 2 || (intNumber >= 6 && intNumber <= 12);
+
+    ExecLog(SysBase, EXECDEBUGF_EXCEPTHANDLER, "SetIntVector: Int %d, Interrupt %p\n", intNumber, interrupt);
 
     Disable ();
 

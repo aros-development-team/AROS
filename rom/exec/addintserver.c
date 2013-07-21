@@ -14,6 +14,7 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
+#include "exec_debug.h"
 #include "exec_intern.h"
 #include "chipset.h"
 
@@ -59,6 +60,8 @@ static void krnIRQwrapper(void *data1, void *data2)
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    ExecLog(SysBase, EXECDEBUGF_EXCEPTHANDLER, "AddIntServer: Int %d, Interrupt %p\n", intNumber, interrupt);
 
     if (intNumber >= INTB_KERNEL) {
         /* N.B. ln_Succ is being re-purposed/abused here */
