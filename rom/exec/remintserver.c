@@ -13,6 +13,7 @@
 #include <proto/kernel.h>
 #include <aros/libcall.h>
 
+#include "exec_debug.h"
 #include "exec_intern.h"
 #include "chipset.h"
 
@@ -48,6 +49,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    ExecLog(SysBase, EXECDEBUGF_EXCEPTHANDLER, "RemIntServer: Int %d, Interrupt %p\n", intNumber, interrupt);
 
     if (intNumber >= INTB_KERNEL) {
         KrnRemIRQHandler(interrupt->is_Node.ln_Succ);
