@@ -9,7 +9,14 @@
 
 static char *getname(BPTR file, char **bufferp, struct DosLibrary *DOSBase)
 {
-    if (DOSBase) {
+    /* Some applications pass a non-filehandle to
+     * Dos/InternalLoadSeg, so don't try to register
+     * the hunks if this is not a real FileHandle
+     *
+     * A real-life example of this is C:AddDataTypes
+     * from AmigaOS 3.9
+     */
+    if (ISFILEHANDLE(file) && DOSBase) {
         char *buffer = AllocMem(512, MEMF_ANY);
         if (buffer) {
             *bufferp = buffer;

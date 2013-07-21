@@ -89,6 +89,10 @@ struct vfp
  ((struct FileHandle *)BADDR(f))->fh_Pos<((struct FileHandle *)BADDR(f))->fh_End? \
 *((struct FileHandle *)BADDR(f))->fh_Pos++=c,0:FPutC(f,c))
 
+#define DOS_FH_MAGIC    AROS_MAKE_ID('F','h','n','d')
+#define ISFILEHANDLE(f) \
+    ((((struct FileHandle *)BADDR(f))->fh_Func2) == DOS_FH_MAGIC)
+
 /* Softlink handling */
 STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct DosLibrary *DOSBase);
 LONG RootDir(struct DevProc *dvp, struct DosLibrary *DOSBase);

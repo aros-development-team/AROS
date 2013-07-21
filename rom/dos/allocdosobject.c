@@ -66,6 +66,8 @@
 
             fh->fh_Pos = -1;
             fh->fh_End = -1;
+
+            fh->fh_Func2 = DOS_FH_MAGIC;
         }
         return mem;
 
