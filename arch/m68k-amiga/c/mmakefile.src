@@ -14,22 +14,20 @@ USER_AFLAGS := -I$(GENINCDIR) -Os
 #MM                     kernel-kernel-includes \
 #MM                     linklibs \
 #MM                     workbench-c-m68k-gdbstub \
-#MM                     workbench-c-m68k-gdbstop \
+#MM                     workbench-c-m68k-misc \
 #MM                     workbench-c-m68k-setpatcharos \
 #MM                     workbench-c-m68k-arosbootstrap \
 #MM                     workbench-c-m68k-mmudump \
 #MM                     workbench-c-m68k-setpatch
 
 #MM- workbench-c-m68k-quick: workbench-c-m68k-gdbstub-quick \
-#MM                          workbench-c-m68k-gdbstop-quick \
+#MM                          workbench-c-m68k-misc-quick \
 #MM                          workbench-c-m68k-setpatcharos-quick \
 #MM                          workbench-c-m68k-arosbootstrap-quick \
 #MM                          workbench-c-m68k-mmudump-quick \
 #MM                          workbench-c-m68k-setpatch-quick
 
 #MM workbench-c-m68k-gdbstub : linklibs-loadseg
-
-#MM workbench-c-m68k-gdbstop : linklibs-loadseg
 
 #MM workbench-c-m68k-arosbootstrap : linklibs-loadseg
 
@@ -45,10 +43,11 @@ FILES := gdbstub
     files=$(FILES) targetdir=$(AROS_C) \
     detach=yes
 
-FILES := gdbstop
+FILES := gdbstop FlushMem
 
-%build_progs mmake=workbench-c-m68k-gdbstop \
-    files=$(FILES) targetdir=$(AROS_C)
+%build_progs mmake=workbench-c-m68k-misc \
+    files=$(FILES) targetdir=$(AROS_C) \
+    usestartup=no
 
 CFILES := SetPatchAROS
 AFILES := newstackswap
