@@ -158,7 +158,7 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 	{
 	    BPTR lock = Lock(SHArg(EXISTS), SHARED_LOCK);
 
-	    if(lock != BNULL)
+	    if((lock != BNULL) || (IoErr() == ERROR_OBJECT_IN_USE))
 		result = TRUE;
 
 	    UnLock(lock);

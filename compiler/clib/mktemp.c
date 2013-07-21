@@ -11,6 +11,9 @@
 #include <exec/types.h>
 #include <assert.h>
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -78,11 +81,18 @@
         /* Loop over the first position of the tail, bumping it up as necessary */
         for(*c = 'A'; *c <= 'Z'; (*c)++)
         {
-            if (!(lock = Lock(template, ACCESS_READ)))
-        	return template;
+            if (!(lock = Lock(template, SHARED_LOCK)))
+            {
+                if (IoErr() != ERROR_OBJECT_IN_USE)
+                {
+                    D(bug("No lock (IoErr: %d); returning '%s'\n", IoErr(), template));
+                    return template;
+                }
+            }
             UnLock(lock);
         }
     }
     
+    D(bug("26 tries exhausted; Returning '%s'\n", template));
     return template; 
 } /* mktemp */
