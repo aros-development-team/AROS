@@ -52,6 +52,30 @@ diff -ruN binutils-2.23.2/bfd/config.bfd binutils-2.23.2.aros/bfd/config.bfd
    powerpc-*-*freebsd*)
      targ_defvec=bfd_elf32_powerpc_freebsd_vec
      targ_selvecs="rs6000coff_vec bfd_elf32_powerpc_vec bfd_elf32_powerpcle_vec ppcboot_vec"
+diff -ruN binutils-2.23.2/binutils/configure binutils-2.23.2.aros/binutils/configure
+--- binutils-2.23.2/binutils/configure	2012-11-05 16:27:34.000000000 +0000
++++ binutils-2.23.2.aros/binutils/configure	2013-07-17 11:44:59.680499534 +0100
+@@ -12746,7 +12746,9 @@
+ $as_echo_n "checking for mbstate_t... " >&6; }
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
++#if !defined(__AROS__)
+ #include <wchar.h>
++#endif
+ int
+ main ()
+ {
+diff -ruN binutils-2.23.2/binutils/sysdep.h binutils-2.23.2.aros/binutils/sysdep.h
+--- binutils-2.23.2/binutils/sysdep.h	2012-05-11 15:25:29.000000000 +0100
++++ binutils-2.23.2.aros/binutils/sysdep.h	2013-07-17 11:09:53.252362151 +0100
+@@ -26,6 +26,7 @@
+ #include "ansidecl.h"
+ #include <stdio.h>
+ #include <sys/types.h>
++#include <sys/stat.h>
+ 
+ #include "bfdver.h"
+ 
 diff -ruN binutils-2.23.2/config.guess binutils-2.23.2.aros/config.guess
 --- binutils-2.23.2/config.guess	2011-06-06 11:36:06.000000000 +0100
 +++ binutils-2.23.2.aros/config.guess	2012-06-28 12:50:52.000000000 +0100
