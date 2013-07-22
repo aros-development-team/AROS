@@ -43,7 +43,7 @@ FILES := gdbstub
     files=$(FILES) targetdir=$(AROS_C) \
     detach=yes
 
-FILES := gdbstop FlushMem
+FILES := gdbstop
 
 %build_progs mmake=workbench-c-m68k-misc \
     files=$(FILES) targetdir=$(AROS_C) \
