@@ -85,6 +85,20 @@ int __nocommandline = 1;
 
 BOOL aHuman;
 
+/* Allocate all memory (even for >2G systems), then free it.
+ * This will force all expungable items out of memory
+ */
+static void FlushMem(struct ExecBase *SysBase)
+{
+    APTR Mem;
+
+    Mem = AllocMem(0x7ffffff0, MEMF_PUBLIC);
+    if (Mem) {
+        FlushMem(SysBase);
+        FreeMem(Mem, 0x7ffffff0);
+    }
+}
+
 int main(void)
 {
     IPTR           args[NOOFARGS] = { (IPTR)FALSE,
@@ -133,11 +147,7 @@ int main(void)
 	{
 	    if (aFlush)
 	    {
-                    APTR Mem;
-
-                    Mem = AllocMem(0x7ffffff0, MEMF_PUBLIC);
-                    if (Mem)
-                        FreeMem(Mem, 0x7ffffff0);
+	        FlushMem(SysBase);
 	    }
 	    
 	    if(aChip)
