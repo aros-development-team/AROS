@@ -738,8 +738,6 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
 
         if (Res2 == 0)
         {
-            memset(f, 0, sizeof(*f));
-            f->fh_Type = mp;
             f->fh_Arg1 = (SIPTR)fh2;
             if (fh2 != fhv)
                 fh2->locks++;
@@ -930,8 +928,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         fl = BADDR(dp->dp_Arg2);
         DCMD(bug("[emul] %p ACTION_FH_FROM_LOCK: %p, lock %p\n", fhv, fh, fh2));
 
-	f->fh_Type = mp;
-	f->fh_Arg1 = (SIPTR)fh2;
+        f->fh_Arg1 = (SIPTR)fh2;
 
         if (fl)
             FreeMem(fl, sizeof(*fl));
