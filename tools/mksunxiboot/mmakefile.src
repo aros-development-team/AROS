@@ -1,0 +1,9 @@
+include $(TOP)/config/make.cfg
+
+#MM- build-tools : build-tools-mksunxiboot
+
+%build_prog mmake=build-tools-mksunxiboot \
+    progname=mksunxiboot targetdir=$(AROSDIR)/Build/Tools \
+    files=mksunxiboot
+
+%common

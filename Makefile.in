@@ -45,7 +45,8 @@ tools : makedirs mmake $(TOOLLIB) $(GENMF) $(ARCHTOOL) $(ELF2HUNK) \
 	$(FLEXCAT) $(CREATEDTDESC) \
 	$(ILBMTOC) $(ILBMTOICON) $(INFOINFO) \
 	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
-	$(FD2INLINE) $(FD2PRAGMA) $(SFDC) $(SETREV)
+	$(FD2INLINE) $(FD2PRAGMA) $(SFDC) $(SETREV) \
+	$(MKSUNXIBOOT)
 
 crosstools : tools
 ifneq ($(CROSSTOOLS_TARGET),)
@@ -118,6 +119,10 @@ $(SETREV) : $(SRCDIR)/tools/setrev/setrev.c
 	@$(ECHO) Building setrev...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/setrev SRCDIR=$(SRCDIR) TOP=$(TOP)
 
+$(MKSUNXIBOOT) : $(SRCDIR)/tools/mksunxiboot/mksunxiboot.c
+	@$(ECHO) Building mksunxiboot...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/mksunxiboot SRCDIR=$(SRCDIR) TOP=$(TOP)
+
 # MetaMake apparently requires a slighty different compilation. Probably
 # because it is sort-of an external package as well.
 
@@ -152,6 +157,7 @@ clean:
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2pragma clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/sfdc clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/setrev clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/mksunxiboot clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	-@$(RM) $(ARCHDIR) Makefile config.cache config.status config.log \
 		mmake.cache mmake.config rom/mmakefile config/make.cfg \
 		$(AROS_DEVELOPMENT)/include/aros/config.h \
