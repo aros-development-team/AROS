@@ -493,9 +493,19 @@ LONG CONMain(struct ExecBase *SysBase)
                 {
                     fh->usecount++;
                     fl->fl_Task = mp;
+                    fl->fl_Access = ACCESS_READ;
                     fl->fl_Key = (IPTR) fh;
                     replypkt(dp, (SIPTR) MKBADDR(fl));
                 }
+                break;
+            case ACTION_FREE_LOCK:
+                fl = BADDR(dp->dp_Arg1);
+                fh = (struct filehandle *)fl->fl_Key;
+
+                FreeMem(fl, sizeof(*fl));
+                fh->usecount--;
+
+                replypkt(dp, DOSTRUE);
                 break;
             case ACTION_END:
                 fh->usecount--;
