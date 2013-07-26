@@ -231,8 +231,7 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->selfnotify_hook.h_Data = data;
     data->noforward = FALSE;
 
-    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS |
-        IDCMP_RAWKEY | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW;
+    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
     data->ehn.ehn_Flags = 0;
     data->ehn.ehn_Object = obj;
@@ -413,7 +412,6 @@ IPTR Listview__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
 
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
-    data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
     data->mouse_click = 0;
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -440,7 +438,6 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         switch (msg->imsg->Class)
         {
         case IDCMP_MOUSEBUTTONS:
-            DoMethodA(list, (Msg) msg);
             if (msg->imsg->Code == SELECTDOWN)
             {
                 if (_isinobject(list, msg->imsg->MouseX, msg->imsg->MouseY))
@@ -477,15 +474,6 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                         data->last_secs = msg->imsg->Seconds;
                         data->last_mics = msg->imsg->Micros;
                     }
-
-                    DoMethod(_win(list), MUIM_Window_RemEventHandler,
-                        (IPTR) &data->ehn);
-                    data->ehn.ehn_Events |=
-                        (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
-                    DoMethod(_win(list), MUIM_Window_AddEventHandler,
-                        (IPTR) &data->ehn);
-
-                    result = MUI_EventHandlerRC_Eat;
                 }
             }
             else
@@ -498,20 +486,10 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 if (msg->imsg->Code == SELECTUP && data->mouse_click)
                 {
                     set(_win(obj), MUIA_Window_ActiveObject, (IPTR)obj);
-                    DoMethod(_win(list), MUIM_Window_RemEventHandler,
-                        (IPTR) &data->ehn);
-                    data->ehn.ehn_Events &=
-                        ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
-                    DoMethod(_win(list), MUIM_Window_AddEventHandler,
-                        (IPTR) &data->ehn);
                     data->mouse_click = 0;
                 }
             }
             break;
-
-        case IDCMP_INTUITICKS:
-        case IDCMP_MOUSEMOVE:
-            return DoMethodA(list, (Msg) msg);
 
         case IDCMP_RAWKEY:
             if (XGET(_win(obj), MUIA_Window_ActiveObject) == (IPTR)obj)
@@ -551,20 +529,6 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     break;
                 }
                 result = MUI_EventHandlerRC_Eat;
-                break;
-            }
-
-        case IDCMP_ACTIVEWINDOW:
-        case IDCMP_INACTIVEWINDOW:
-            if (data->ehn.ehn_Events & (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS))
-            {
-                DoMethod(_win(list), MUIM_Window_RemEventHandler,
-                    (IPTR) &data->ehn);
-                data->ehn.ehn_Events &=
-                    ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
-                DoMethod(_win(list), MUIM_Window_AddEventHandler,
-                    (IPTR) &data->ehn);
-                data->mouse_click = 0;
             }
             break;
         }
