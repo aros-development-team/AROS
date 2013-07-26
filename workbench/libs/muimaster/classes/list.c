@@ -641,6 +641,8 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *) DoSuperNewTags(cl, obj, NULL,
         MUIA_Font, MUIV_Font_List,
+        MUIA_ShowSelState, FALSE,
+        MUIA_InputMode, MUIV_InputMode_RelVerify,
         MUIA_Background, MUII_ListBack, TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj)
         return FALSE;
