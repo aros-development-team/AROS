@@ -431,7 +431,7 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         }
     }
 
-    /* In Soliton MUIA_Selected was setted to MUIV_InputMode_RelVerify (=1)
+    /* In Soliton MUIA_Selected was set to MUIV_InputMode_RelVerify (=1)
      ** for MUIA_Input_Mode MUIV_InputMode_RelVerify which is wrong of
      ** course but MUI seems to filter this out so we have to do it also
      */
@@ -885,6 +885,14 @@ static IPTR Area__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     case MUIA_Frame:
         STORE = (IPTR) data->mad_Frame;
+        return TRUE;
+
+    case MUIA_Draggable:
+        STORE = !!(data->mad_Flags & MADF_DRAGGABLE);
+        return TRUE;
+
+    case MUIA_Dropable:
+        STORE = !!(data->mad_Flags & MADF_DROPABLE);
         return TRUE;
     }
 
@@ -1918,6 +1926,9 @@ static IPTR event_button(Class *cl, Object *obj,
     switch (imsg->Code)
     {
     case SELECTDOWN:
+        if (data->mad_InputMode == MUIV_InputMode_None)
+            break;
+
         if (in)
         {
 //            set(_win(obj), MUIA_Window_ActiveObject, obj);
@@ -1932,10 +1943,10 @@ static IPTR event_button(Class *cl, Object *obj,
             {
                 if (data->mad_ehn.ehn_Events)
                     DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                        (IPTR) & data->mad_ehn);
+                        (IPTR) &data->mad_ehn);
                 data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE | IDCMP_RAWKEY;
                 DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                    (IPTR) & data->mad_ehn);
+                    (IPTR) &data->mad_ehn);
             }
             handle_press(cl, obj);
             return MUI_EventHandlerRC_Eat;
@@ -1948,13 +1959,13 @@ static IPTR event_button(Class *cl, Object *obj,
         if (data->mad_ehn.ehn_Events != IDCMP_MOUSEBUTTONS)
         {
             DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                (IPTR) & data->mad_ehn);
+                (IPTR) &data->mad_ehn);
             data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
             DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                (IPTR) & data->mad_ehn);
+                (IPTR) &data->mad_ehn);
             if (!in)
                 nnset(obj, MUIA_Pressed, FALSE);
-            handle_release(cl, obj, FALSE /*cancel */ );
+            handle_release(cl, obj, FALSE /* cancel */ );
             return MUI_EventHandlerRC_Eat;
         }
         break;
@@ -1986,10 +1997,10 @@ static IPTR event_button(Class *cl, Object *obj,
 
                 if (data->mad_ehn.ehn_Events)
                     DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                        (IPTR) & data->mad_ehn);
+                        (IPTR) &data->mad_ehn);
                 data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE;
                 DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                    (IPTR) & data->mad_ehn);
+                    (IPTR) &data->mad_ehn);
             }
             return MUI_EventHandlerRC_Eat;
         }
@@ -2001,10 +2012,10 @@ static IPTR event_button(Class *cl, Object *obj,
             struct MenuItem *item = zune_leave_menu(data->mad_ContextZMenu);
 
             DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                (IPTR) & data->mad_ehn);
+                (IPTR) &data->mad_ehn);
             data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
             DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                (IPTR) & data->mad_ehn);
+                (IPTR) &data->mad_ehn);
 
             if (item)
             {
@@ -2067,10 +2078,10 @@ static IPTR event_motion(Class *cl, Object *obj,
 
                 if (data->mad_ehn.ehn_Events)
                     DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                        (IPTR) & data->mad_ehn);
+                        (IPTR) &data->mad_ehn);
                 data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
                 DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                    (IPTR) & data->mad_ehn);
+                    (IPTR) &data->mad_ehn);
                 if (data->mad_Timer.ihn_Millis)
                 {
                     DoMethod(_app(obj), MUIM_Application_RemInputHandler,
@@ -2109,6 +2120,9 @@ static IPTR Area__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 
     if (data->mad_DisableCount)
         return 0;
+    if (data->mad_InputMode == MUIV_InputMode_None
+        && !data->mad_ContextMenu)
+        return 0;
 
     if (msg->muikey != MUIKEY_NONE)
     {
@@ -2119,10 +2133,10 @@ static IPTR Area__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 break;
             if (data->mad_ehn.ehn_Events)
                 DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                    (IPTR) & data->mad_ehn);
+                    (IPTR) &data->mad_ehn);
             data->mad_ehn.ehn_Events |= IDCMP_RAWKEY;
             DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                (IPTR) & data->mad_ehn);
+                (IPTR) &data->mad_ehn);
             handle_press(cl, obj);
             return MUI_EventHandlerRC_Eat;
 
@@ -2134,10 +2148,10 @@ static IPTR Area__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         case MUIKEY_RELEASE:
             if (data->mad_ehn.ehn_Events)
                 DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                    (IPTR) & data->mad_ehn);
+                    (IPTR) &data->mad_ehn);
             data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
             DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                (IPTR) & data->mad_ehn);
+                (IPTR) &data->mad_ehn);
             handle_release(cl, obj, FALSE /* cancel */ );
             return MUI_EventHandlerRC_Eat;
         }
@@ -2181,11 +2195,11 @@ static IPTR Area__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
                 {
                     DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                        (IPTR) & data->mad_ehn);
+                        (IPTR) &data->mad_ehn);
                     data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
                     DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-                        (IPTR) & data->mad_ehn);
-                    handle_release(cl, obj, TRUE /*cancel */ );
+                        (IPTR) &data->mad_ehn);
+                    handle_release(cl, obj, TRUE /* cancel */ );
                 }
                 return MUI_EventHandlerRC_Eat;
             }
