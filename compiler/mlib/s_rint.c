@@ -38,7 +38,7 @@ rint(double x)
 {
 	int32_t i0,j0,sx;
 	uint32_t i,i1;
-	volatile double w; /* N.b. - gcc optimises "w" away so use volatile to works around*/
+	volatile double w; /* N.b. - gcc optimises "w" away so use volatile to work around*/
         double t;
 	EXTRACT_WORDS(i0,i1,x);
 	sx = (i0>>31)&1;
