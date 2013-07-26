@@ -30,7 +30,8 @@ float
 rintf(float x)
 {
 	int32_t i0,j0,sx;
-	volatile float w,t;	/* volatile works around gcc bug */
+	volatile float w; /* N.b. - gcc optimises "w" away so use volatile to works around*/
+        float t;
 	GET_FLOAT_WORD(i0,x);
 	sx = (i0>>31)&1;
 	j0 = ((i0>>23)&0xff)-0x7f;
