@@ -728,6 +728,9 @@ AC_MSG_RESULT($kernel_tool_version)
 AC_MSG_CHECKING([what specific target gcc version to use])
 AC_ARG_WITH(gcc-version,AC_HELP_STRING([--with-gcc-version=VERSION],[Use host gcc-VERSION for building AROS]),target_tool_version="$withval",target_tool_version="default")
 AC_MSG_RESULT($target_tool_version)
+if test "$target_tool_version" = "default"; then
+    target_tool_version=""
+fi
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what optimization flags to use])
@@ -950,7 +953,10 @@ case "$target_os" in
                     aros_kernel_ldflags="-mandroid"
                     CFLAGS="-mandroid"
                 else
-                    export PATH="$aros_android_ndk/toolchains/$android_tool_dir_prefix-$target_tool_version/prebuilt/$android_build_os/bin:$PATH"
+                    dnl In Android NDK toolchains are placed in own directories,
+                    dnl but tool names are not suffixed with version 
+                    export PATH="$aros_android_ndk/toolchains/$android_tool_dir_prefix-$kernel_tool_version/prebuilt/$android_build_os/bin:$PATH"
+                    kernel_tool_version=""
                     aros_android_ndk="$aros_android_ndk/platforms/android-$aros_ndk_version/arch-$android_ndk_arch"
                     aros_kernel_cflags="--sysroot $aros_android_ndk -mandroid"
                     aros_kernel_ldflags="--sysroot $aros_android_ndk -mandroid"
@@ -1664,6 +1670,10 @@ if test "$cross_compiling" = "no" ; then
     fi
 fi
 
+if test "$target_tool_version" != ""; then
+    target_tool_version="-$target_tool_version"
+fi
+
 #######################################################################
 ## Compute what toolchains to use, and their paths                   ##
 #######################################################################
@@ -1791,11 +1801,11 @@ else
 
     AC_MSG_RESULT([$aros_tool_prefix])
     # We are *not* building AROS crosstools - use the AROS or ELF tools
-    AROS_TOOL_TARGET(orig_target_cpp,cpp,${aros_tool_prefix}cpp)
+    AROS_TOOL_TARGET(orig_target_cpp,cpp,${aros_tool_prefix}cpp${target_tool_version})
     AROS_REQUIRED(cpp,$orig_target_cpp)
-    AROS_TOOL_TARGET(orig_target_cc,gcc,${aros_tool_prefix}gcc)
+    AROS_TOOL_TARGET(orig_target_cc,gcc,${aros_tool_prefix}gcc${target_tool_version})
     AROS_REQUIRED(cc,$orig_target_cc)
-    AROS_TOOL_TARGET(orig_target_cxx,g++,${aros_tool_prefix}g++)
+    AROS_TOOL_TARGET(orig_target_cxx,g++,${aros_tool_prefix}g++${target_tool_version})
     AROS_REQUIRED(cxx,$orig_target_cxx)
     AROS_TOOL_TARGET(orig_target_ld,gcc,${aros_tool_prefix}ld)
     AROS_REQUIRED(ld,$orig_target_ld)
