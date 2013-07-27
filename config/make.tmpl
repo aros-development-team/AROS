@@ -710,7 +710,7 @@ endif
 
 # Define the use of cross compiler
 ifeq ($(TARGET_OBJC),)
-  TMP_CC := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc
+  TMP_CC := $(TARGET_CC)
 else
   TMP_CC := $(TARGET_OBJC)
 endif
