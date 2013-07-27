@@ -93,17 +93,17 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         
     struct TagItem synctags[] =
     {
-    { aHidd_Sync_PixelTime  , 0 },    /* 0 */
-    { aHidd_Sync_HDisp      , 0 },    /* 1 */
-    { aHidd_Sync_VDisp      , 0 },    /* 2 */
-    { aHidd_Sync_LeftMargin , 0 },    /* 3 */
-    { aHidd_Sync_RightMargin, 0 },    /* 4 */
-    { aHidd_Sync_HSyncLength, 0 },    /* 5 */
-    { aHidd_Sync_UpperMargin, 0 },    /* 6 */
-    { aHidd_Sync_LowerMargin, 0 },    /* 7 */
-    { aHidd_Sync_VSyncLength, 0 },    /* 8 */
-    { aHidd_Sync_Description, 0 },    /* 9 */
-    { TAG_DONE              , 0 }
+        {aHidd_Sync_Description, (IPTR)"FBDev:%hx%v"}, /* 0 */
+        {aHidd_Sync_HDisp      , 0                  }, /* 1 */
+        {aHidd_Sync_VDisp      , 0                  }, /* 2 */
+        {aHidd_Sync_LeftMargin , 0                  }, /* 3 */
+        {aHidd_Sync_RightMargin, 0                  }, /* 4 */
+        {aHidd_Sync_HSyncLength, 0                  }, /* 5 */
+        {aHidd_Sync_UpperMargin, 0                  }, /* 6 */
+        {aHidd_Sync_LowerMargin, 0                  }, /* 7 */
+        {aHidd_Sync_VSyncLength, 0                  }, /* 8 */
+        {aHidd_Sync_PixelTime  , 0                  }, /* 9 */
+        {TAG_DONE              , 0                  }
     };
     
     struct TagItem modetags[] =
@@ -145,18 +145,33 @@ OOP_Object *LinuxFB__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
                     mytags
                 };
 
-                /* Set the gfxmode info */
-                synctags[0].ti_Data = vsi.pixclock;
+                /*
+                 * Set the gfxmode info.
+                 * Some devices report all zeroes for clock information (LCD on AspireOne).
+                 * This makes sync class crash with division by zero error, additionally
+                 * this would create garbage SpecialMonitor structure.
+                 * Here we attempt to detect such devices by checking pixclock against
+                 * being zero.
+                 */
                 synctags[1].ti_Data = vsi.xres;
                 synctags[2].ti_Data = vsi.yres;
-                synctags[3].ti_Data = vsi.left_margin;
-                synctags[4].ti_Data = vsi.right_margin;
-                synctags[5].ti_Data = vsi.hsync_len;
-                synctags[6].ti_Data = vsi.upper_margin;
-                synctags[7].ti_Data = vsi.lower_margin;
-                synctags[8].ti_Data = vsi.vsync_len;
-                synctags[9].ti_Data = (IPTR)"FBDev:%hx%v";
-    
+
+                if (vsi.pixclock)
+                {
+                    synctags[3].ti_Data = vsi.left_margin;
+                    synctags[4].ti_Data = vsi.right_margin;
+                    synctags[5].ti_Data = vsi.hsync_len;
+                    synctags[6].ti_Data = vsi.upper_margin;
+                    synctags[7].ti_Data = vsi.lower_margin;
+                    synctags[8].ti_Data = vsi.vsync_len;
+                    synctags[9].ti_Data = vsi.pixclock;
+                }
+                else
+                {
+                    /* Do not supply analog signal information, we have no analog signals */
+                    synctags[3].ti_Tag = TAG_DONE;
+                }
+
                 o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &mymsg.mID);
                 if (NULL != o)
                 {
