@@ -19,6 +19,7 @@ include $(TOP)/config/make.cfg
 #
 
 #MM- kernel-bsp-pc-i386 :		\
+#MM	linklibs			\
 #MM     kernel-bsp-objs			\
 #MM	kernel-efi-kobj			\
 #MM	kernel-pc-acpi-kobj		\
