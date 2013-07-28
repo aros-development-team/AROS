@@ -43,7 +43,7 @@ AROS_UFH3S(void, save_function,
     patches_set();
     if ( ! setup_save())
     {
-	MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_OK), MSG(MSG_ERROR_SAVE), PREFFILE);
+        MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_OK), MSG(MSG_ERROR_SAVE), PREFFILE);
     }
     
     AROS_USERFUNC_EXIT
@@ -58,7 +58,7 @@ AROS_UFH3S(void, open_function,
 
     if ( ! setup_open() )
     {
-	MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_OK), MSG(MSG_ERROR_LOAD), PREFFILE);
+        MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_OK), MSG(MSG_ERROR_LOAD), PREFFILE);
     }
     gui_set();
     patches_set();
@@ -121,17 +121,17 @@ AROS_UFH3S(void, cancel_function,
     // The cancelling function of Snoopy is more for debugging.
     if (MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_RESET_PATCHES), MSG(MSG_ASK_RESET)))
     {
-	set(saveBtn, MUIA_Disabled, TRUE);
-	set(openBtn, MUIA_Disabled, TRUE);
-	set(useBtn, MUIA_Disabled, TRUE);
-	set(undoBtn, MUIA_Disabled, TRUE);
-	set(resetBtn, MUIA_Disabled, TRUE);
-	set(cancelBtn, MUIA_Disabled, TRUE);
-	patches_reset();
-	if (MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_REMOVE_SNOOP), MSG(MSG_ASK_REMOVE)))
-	{
-	    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-	}
+        set(saveBtn, MUIA_Disabled, TRUE);
+        set(openBtn, MUIA_Disabled, TRUE);
+        set(useBtn, MUIA_Disabled, TRUE);
+        set(undoBtn, MUIA_Disabled, TRUE);
+        set(resetBtn, MUIA_Disabled, TRUE);
+        set(cancelBtn, MUIA_Disabled, TRUE);
+        patches_reset();
+        if (MUI_Request ( app, window, 0, MSG(MSG_TITLE), MSG(MSG_REMOVE_SNOOP), MSG(MSG_ASK_REMOVE)))
+        {
+            DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        }
     }
     AROS_USERFUNC_EXIT
 }
@@ -146,150 +146,150 @@ void gui_init(void)
     cancel_hook.h_Entry = (APTR)cancel_function;
 
     app = (Object *)ApplicationObject,
-	MUIA_Application_Title, (IPTR) MSG(MSG_TITLE),
-	MUIA_Application_Version, (IPTR) VERSION,
-	MUIA_Application_Copyright, (IPTR) MSG(MSG_COPYRIGHT),
-	MUIA_Application_Author, (IPTR) MSG(MSG_AUTHOR),
-	MUIA_Application_Description, (IPTR) MSG(MSG_DESCRIPTION),
-	MUIA_Application_Base, (IPTR) MSG(MSG_PORTNAME),
-	MUIA_Application_SingleTask, TRUE,
+        MUIA_Application_Title, (IPTR) MSG(MSG_TITLE),
+        MUIA_Application_Version, (IPTR) VERSION,
+        MUIA_Application_Copyright, (IPTR) MSG(MSG_COPYRIGHT),
+        MUIA_Application_Author, (IPTR) MSG(MSG_AUTHOR),
+        MUIA_Application_Description, (IPTR) MSG(MSG_DESCRIPTION),
+        MUIA_Application_Base, (IPTR) MSG(MSG_PORTNAME),
+        MUIA_Application_SingleTask, TRUE,
 
-	SubWindow, (IPTR)(window = (Object *)WindowObject,
-	    MUIA_Window_Title, (IPTR)MSG(MSG_TITLE),
-	    MUIA_Window_CloseGadget, FALSE,
-	    WindowContents, (IPTR)(VGroup,
-		Child, (IPTR)(HGroup,
-		    Child, (IPTR)(VGroup,
-			Child, (IPTR)(ColGroup(2),
-			    GroupFrameT(MSG(MSG_SETTINGS)),
-			    Child, (IPTR)Label(MSG(MSG_SHOW_FAILS)),
-			    Child, (IPTR)(failCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label(MSG(MSG_CLI_NUMBER)),
-			    Child, (IPTR)(cliCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label(MSG(MSG_FULL_PATH)),
-			    Child, (IPTR)(pathCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label(MSG(MSG_DEVICE)),
-			    Child, (IPTR)(devCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label(MSG(MSG_IGNORE_WB)),
-			    Child, (IPTR)(ignoreCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label(MSG(MSG_BREAKPOINT)),
-			    Child, (IPTR)(breakPointCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)HVSpace,
-			    Child, (IPTR)HVSpace,
-			End),
-			Child, (IPTR)(ColGroup(2),
-			    Child, (IPTR)Label(MSG(MSG_MATCH)),
-			    Child, (IPTR)(patternStr = (Object *)StringObject,
-				StringFrame,
-				MUIA_String_MaxLen, PATTERNLEN,
-			    End),
-			End),
-			Child, (IPTR)(ColGroup(2),
-			    GroupFrameT(MSG(MSG_OUTPUT_FIELD)),
-			    Child, (IPTR)Label(MSG(MSG_NAME)),
-			    Child, (IPTR)(nameNum = (Object *)SliderObject,
-				MUIA_Numeric_Min, 10,
-				MUIA_Numeric_Max, 50,
-			    End),
-			    Child, (IPTR)Label(MSG(MSG_ACTION)),
-			    Child, (IPTR)(actionNum = (Object *)SliderObject,
-				MUIA_Numeric_Min, 10,
-				MUIA_Numeric_Max, 50,
-			    End),
-			    Child, (IPTR)Label(MSG(MSG_TARGET)),
-			    Child, (IPTR)(targetNum = (Object *)SliderObject,
-				MUIA_Numeric_Min, 10,
-				MUIA_Numeric_Max, 50,
-			    End),
-			    Child, (IPTR)Label(MSG(MSG_OPTION)),
-			    Child, (IPTR)(optionNum = (Object *)SliderObject,
-				MUIA_Numeric_Min, 10,
-				MUIA_Numeric_Max, 50,
-			    End),
-			End),
-		    End),
-		    Child, (IPTR)(VGroup,
-			Child, (IPTR)(ColGroup(2),
-			    GroupFrameT(MSG(MSG_SYSTEM_FUNC)),
-			    Child, (IPTR)Label("FindPort"),
-			    Child, (IPTR)(findPortCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("FindResident"),
-			    Child, (IPTR)(findResidentCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("FindSemaphore"),
-			    Child, (IPTR)(findSemaphoreCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("FindTask"),
-			    Child, (IPTR)(findTaskCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("LockScreen"),
-			    Child, (IPTR)(lockScreenCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("OpenDevice"),
-			    Child, (IPTR)(openDeviceCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("OpenFont"),
-			    Child, (IPTR)(openFontCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("OpenLibrary"),
-			    Child, (IPTR)(openLibraryCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("OpenResource"),
-			    Child, (IPTR)(openResourceCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("ReadToolTypes"),
-			    Child, (IPTR)(readToolTypesCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)HVSpace,
-			    Child, (IPTR)HVSpace,
-			End),
-		    End),
-		    Child, (IPTR)(VGroup,
-			Child, (IPTR)(ColGroup(2),
-			    GroupFrameT(MSG(MSG_DOS_FUNC)),
-			    Child, (IPTR)Label("ChangeDir"),
-			    Child, (IPTR)(changeDirCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("Delete"),
-			    Child, (IPTR)(deleteCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("Execute"),
-			    Child, (IPTR)(executeCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("GetVar"),
-			    Child, (IPTR)(getVarCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("LoadSeg"),
-			    Child, (IPTR)(loadSegCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("Lock"),
-			    Child, (IPTR)(lockCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("MakeDir"),
-			    Child, (IPTR)(makeDirCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("MakeLink"),
-			    Child, (IPTR)(makeLinkCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("Open"),
-			    Child, (IPTR)(openCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("Rename"),
-			    Child, (IPTR)(renameCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("RunCommand"),
-			    Child, (IPTR)(runCommandCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("SetVar"),
-			    Child, (IPTR)(setVarCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)Label("System"),
-			    Child, (IPTR)(systemCM = MUI_MakeObject(MUIO_Checkmark, "")),
-			    Child, (IPTR)HVSpace,
-			    Child, (IPTR)HVSpace,
-			End),
-		    End),
-		End),
-		Child, (IPTR) (RectangleObject, 
-		    MUIA_Rectangle_HBar, TRUE,
-		    MUIA_FixHeight,      2,
-		End),
-		Child, (IPTR)(HGroup,
-		    Child, (IPTR)(saveBtn = SimpleButton(MSG(MSG_SAVE))),
-		    Child, (IPTR)(openBtn = SimpleButton(MSG(MSG_OPEN))),
-		    Child, (IPTR)HVSpace,
-		    Child, (IPTR)(useBtn = SimpleButton(MSG(MSG_USE))),
-		    Child, (IPTR)(undoBtn = SimpleButton(MSG(MSG_UNDO))),
-		    Child, (IPTR)(resetBtn = SimpleButton(MSG(MSG_RESET))),
-		    Child, (IPTR)HVSpace,
-		    Child, (IPTR)(cancelBtn = SimpleButton(MSG(MSG_CANCEL))),
-		End),
-	    End), // WindowContents
-	End), // WindowObject
+        SubWindow, (IPTR)(window = (Object *)WindowObject,
+            MUIA_Window_Title, (IPTR)MSG(MSG_TITLE),
+            MUIA_Window_CloseGadget, FALSE,
+            WindowContents, (IPTR)(VGroup,
+                Child, (IPTR)(HGroup,
+                    Child, (IPTR)(VGroup,
+                        Child, (IPTR)(ColGroup(2),
+                            GroupFrameT(MSG(MSG_SETTINGS)),
+                            Child, (IPTR)Label(MSG(MSG_SHOW_FAILS)),
+                            Child, (IPTR)(failCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label(MSG(MSG_CLI_NUMBER)),
+                            Child, (IPTR)(cliCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label(MSG(MSG_FULL_PATH)),
+                            Child, (IPTR)(pathCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label(MSG(MSG_DEVICE)),
+                            Child, (IPTR)(devCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label(MSG(MSG_IGNORE_WB)),
+                            Child, (IPTR)(ignoreCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label(MSG(MSG_BREAKPOINT)),
+                            Child, (IPTR)(breakPointCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)HVSpace,
+                            Child, (IPTR)HVSpace,
+                        End),
+                        Child, (IPTR)(ColGroup(2),
+                            Child, (IPTR)Label(MSG(MSG_MATCH)),
+                            Child, (IPTR)(patternStr = (Object *)StringObject,
+                                StringFrame,
+                                MUIA_String_MaxLen, PATTERNLEN,
+                            End),
+                        End),
+                        Child, (IPTR)(ColGroup(2),
+                            GroupFrameT(MSG(MSG_OUTPUT_FIELD)),
+                            Child, (IPTR)Label(MSG(MSG_NAME)),
+                            Child, (IPTR)(nameNum = (Object *)SliderObject,
+                                MUIA_Numeric_Min, 10,
+                                MUIA_Numeric_Max, 50,
+                            End),
+                            Child, (IPTR)Label(MSG(MSG_ACTION)),
+                            Child, (IPTR)(actionNum = (Object *)SliderObject,
+                                MUIA_Numeric_Min, 10,
+                                MUIA_Numeric_Max, 50,
+                            End),
+                            Child, (IPTR)Label(MSG(MSG_TARGET)),
+                            Child, (IPTR)(targetNum = (Object *)SliderObject,
+                                MUIA_Numeric_Min, 10,
+                                MUIA_Numeric_Max, 50,
+                            End),
+                            Child, (IPTR)Label(MSG(MSG_OPTION)),
+                            Child, (IPTR)(optionNum = (Object *)SliderObject,
+                                MUIA_Numeric_Min, 10,
+                                MUIA_Numeric_Max, 50,
+                            End),
+                        End),
+                    End),
+                    Child, (IPTR)(VGroup,
+                        Child, (IPTR)(ColGroup(2),
+                            GroupFrameT(MSG(MSG_SYSTEM_FUNC)),
+                            Child, (IPTR)Label("FindPort"),
+                            Child, (IPTR)(findPortCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("FindResident"),
+                            Child, (IPTR)(findResidentCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("FindSemaphore"),
+                            Child, (IPTR)(findSemaphoreCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("FindTask"),
+                            Child, (IPTR)(findTaskCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("LockScreen"),
+                            Child, (IPTR)(lockScreenCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("OpenDevice"),
+                            Child, (IPTR)(openDeviceCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("OpenFont"),
+                            Child, (IPTR)(openFontCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("OpenLibrary"),
+                            Child, (IPTR)(openLibraryCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("OpenResource"),
+                            Child, (IPTR)(openResourceCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("ReadToolTypes"),
+                            Child, (IPTR)(readToolTypesCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)HVSpace,
+                            Child, (IPTR)HVSpace,
+                        End),
+                    End),
+                    Child, (IPTR)(VGroup,
+                        Child, (IPTR)(ColGroup(2),
+                            GroupFrameT(MSG(MSG_DOS_FUNC)),
+                            Child, (IPTR)Label("ChangeDir"),
+                            Child, (IPTR)(changeDirCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("Delete"),
+                            Child, (IPTR)(deleteCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("Execute"),
+                            Child, (IPTR)(executeCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("GetVar"),
+                            Child, (IPTR)(getVarCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("LoadSeg"),
+                            Child, (IPTR)(loadSegCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("Lock"),
+                            Child, (IPTR)(lockCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("MakeDir"),
+                            Child, (IPTR)(makeDirCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("MakeLink"),
+                            Child, (IPTR)(makeLinkCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("Open"),
+                            Child, (IPTR)(openCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("Rename"),
+                            Child, (IPTR)(renameCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("RunCommand"),
+                            Child, (IPTR)(runCommandCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("SetVar"),
+                            Child, (IPTR)(setVarCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)Label("System"),
+                            Child, (IPTR)(systemCM = MUI_MakeObject(MUIO_Checkmark, "")),
+                            Child, (IPTR)HVSpace,
+                            Child, (IPTR)HVSpace,
+                        End),
+                    End),
+                End),
+                Child, (IPTR) (RectangleObject, 
+                    MUIA_Rectangle_HBar, TRUE,
+                    MUIA_FixHeight,      2,
+                End),
+                Child, (IPTR)(HGroup,
+                    Child, (IPTR)(saveBtn = SimpleButton(MSG(MSG_SAVE))),
+                    Child, (IPTR)(openBtn = SimpleButton(MSG(MSG_OPEN))),
+                    Child, (IPTR)HVSpace,
+                    Child, (IPTR)(useBtn = SimpleButton(MSG(MSG_USE))),
+                    Child, (IPTR)(undoBtn = SimpleButton(MSG(MSG_UNDO))),
+                    Child, (IPTR)(resetBtn = SimpleButton(MSG(MSG_RESET))),
+                    Child, (IPTR)HVSpace,
+                    Child, (IPTR)(cancelBtn = SimpleButton(MSG(MSG_CANCEL))),
+                End),
+            End), // WindowContents
+        End), // WindowObject
     End; // ApplicationObject
 
     if ( ! app)
     {
-	clean_exit("Can't create application\n");
+        clean_exit("Can't create application\n");
     }
     
     // disable unavailable functions
@@ -297,29 +297,29 @@ void gui_init(void)
     //set(devCM,    MUIA_Disabled, TRUE);
     // breakpoint option only available on hosted
     #if !(AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
-	set(breakPointCM,    MUIA_Disabled, TRUE);
+        set(breakPointCM,    MUIA_Disabled, TRUE);
     #endif
 
     gui_set();
     set(window, MUIA_Window_Open, TRUE);
 
     DoMethod(saveBtn, MUIM_Notify, MUIA_Pressed, FALSE,
-	(IPTR)app, 2, MUIM_CallHook, (IPTR)&save_hook);
+        (IPTR)app, 2, MUIM_CallHook, (IPTR)&save_hook);
 
     DoMethod(openBtn, MUIM_Notify, MUIA_Pressed, FALSE,
-	(IPTR)app, 2, MUIM_CallHook, (IPTR)&open_hook);
+        (IPTR)app, 2, MUIM_CallHook, (IPTR)&open_hook);
 
     DoMethod(useBtn, MUIM_Notify, MUIA_Pressed, FALSE,
-	(IPTR)app, 2, MUIM_CallHook, (IPTR)&use_hook);
+        (IPTR)app, 2, MUIM_CallHook, (IPTR)&use_hook);
 
     DoMethod(undoBtn, MUIM_Notify, MUIA_Pressed, FALSE,
-	(IPTR)app, 2, MUIM_CallHook, (IPTR)&undo_hook);
+        (IPTR)app, 2, MUIM_CallHook, (IPTR)&undo_hook);
 
     DoMethod(resetBtn, MUIM_Notify, MUIA_Pressed, FALSE,
-	(IPTR)app, 2, MUIM_CallHook, (IPTR)&reset_hook);
+        (IPTR)app, 2, MUIM_CallHook, (IPTR)&reset_hook);
 
     DoMethod(cancelBtn, MUIM_Notify, MUIA_Pressed, FALSE,
-	(IPTR)app, 2, MUIM_CallHook, (IPTR)&cancel_hook);
+        (IPTR)app, 2, MUIM_CallHook, (IPTR)&cancel_hook);
 }
 
 void gui_handleevents(void)
