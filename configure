@@ -908,7 +908,6 @@ enable_objc
 with_cpu
 with_fpu
 with_float
-with_aros_gcc
 with_portssources
 with_bootloader
 with_iconset
@@ -1601,9 +1600,9 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-kernel-gcc-version=VERSION
-                          Use host gcc-VERSION for building AROS
+                          Use gcc-VERSION for building bootstrap
   --with-gcc-version=VERSION
-                          Use host gcc-VERSION for building AROS
+                          Use gcc-VERSION for building AROS
   --with-optimization=FLAGS
                           Use optimization flags FLAGS (default=-O2).
   --with-paranoia=FLAGS   CC flags to enable paranoia
@@ -1632,7 +1631,6 @@ Optional Packages:
   --with-fpu=<spec>       Specify minumum FPU (default=$gcc_default_fpu).
   --with-float=<spec>     Specify floating point ABI
                           (default=$gcc_default_float_abi).
-  --with-aros-gcc=VERSION Use aros-gcc-VERSION for building AROS
   --with-portssources=DIR Where to download sourcecode for external ports
   --with-bootloader=NAME  Use a specific bootloader
   --with-iconset=NAME     Use a specific Icon-set (default=Gorilla).
@@ -7527,7 +7525,7 @@ $as_echo_n "checking what specific host gcc version to use... " >&6; }
 
 # Check whether --with-kernel-gcc-version was given.
 if test "${with_kernel_gcc_version+set}" = set; then :
-  withval=$with_kernel_gcc_version; kernel_tool_version="-$withval"
+  withval=$with_kernel_gcc_version; kernel_tool_version="$withval"
 else
   kernel_tool_version=""
 fi
@@ -7543,14 +7541,11 @@ $as_echo_n "checking what specific target gcc version to use... " >&6; }
 if test "${with_gcc_version+set}" = set; then :
   withval=$with_gcc_version; target_tool_version="$withval"
 else
-  target_tool_version="default"
+  target_tool_version=""
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_tool_version" >&5
 $as_echo "$target_tool_version" >&6; }
-if test "$target_tool_version" = "default"; then
-    target_tool_version=""
-fi
 
 #-----------------------------------------------------------------------------
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking what optimization flags to use" >&5
@@ -8620,19 +8615,6 @@ else
     elf_specs_in=config/elf-specs.in
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific AROS gcc version to use" >&5
-$as_echo_n "checking what specific AROS gcc version to use... " >&6; }
-
-# Check whether --with-aros-gcc was given.
-if test "${with_aros_gcc+set}" = set; then :
-  withval=$with_aros_gcc; aros_gcc_version="-$withval"
-else
-  aros_gcc_version=""
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_version" >&5
-$as_echo "$aros_gcc_version" >&6; }
-
 # Some compilers (ppc-elf-gcc is known to) have CPU defines in specs
 # Since we override specs, we may need to put these defines there
 if test "$gcc_target_cpu" != ""; then
@@ -8743,6 +8725,9 @@ if test "$cross_compiling" = "no" ; then
     fi
 fi
 
+if test "$kernel_tool_version" != ""; then
+    kernel_tool_version="-$kernel_tool_version"
+fi
 if test "$target_tool_version" != ""; then
     target_tool_version="-$target_tool_version"
 fi
@@ -8754,7 +8739,7 @@ fi
 # This takes, as input:
 #   crosstools             {yes,no}
 #   kernel_tool_version    {"",[version]}
-#   aros_gcc_version       {"",[version]}
+#   target_tool_version    {"",[version]}
 #   kernel_tool_prefix     {none,[some-arch-os-]}
 #   target_tool_prefix     ${aros_target_cpu}-aros-
 #   aros_tool_prefix       ${aros_target_cpu}-aros-
@@ -10772,8 +10757,8 @@ if test "$crosstools" = "yes"; then
 $as_echo "$target_tool_prefix" >&6; }
     # We are are building AROS crosstools
     tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
-    orig_target_cc="${tmp_tool_prefix}gcc${aros_gcc_version}"
-    orig_target_cxx="${tmp_tool_prefix}g++${aros_gcc_version}"
+    orig_target_cc="${tmp_tool_prefix}gcc${target_tool_version}"
+    orig_target_cxx="${tmp_tool_prefix}g++${target_tool_version}"
     orig_target_cpp="${tmp_tool_prefix}cpp"
     orig_target_ld="${tmp_tool_prefix}ld"
     orig_target_as="${tmp_tool_prefix}as"
