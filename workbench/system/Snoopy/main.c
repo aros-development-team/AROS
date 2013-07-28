@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,6 +11,7 @@
 #include <proto/dos.h>
 #include <proto/arossupport.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
 
 #include "main.h"
 #include "gui.h"
@@ -72,11 +73,11 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option,
     if (setup.onlyShowFails && result) return;
     if (setup.ignoreWB)
     {
-        if ( ! stricmp(name, "wanderer:wanderer")) return;
-        if ( ! stricmp(name, "new shell")) return;
-        if ( ! stricmp(name, "newshell")) return;
-        if ( ! stricmp(name, "boot shell")) return;
-        if ( ! stricmp(name, "background cli")) return;
+        if ( ! Stricmp(name, "wanderer:wanderer")) return;
+        if ( ! Stricmp(name, "new shell")) return;
+        if ( ! Stricmp(name, "newshell")) return;
+        if ( ! Stricmp(name, "boot shell")) return;
+        if ( ! Stricmp(name, "background cli")) return;
     }
 
     if (setup.match && ! MatchPatternNoCase(setup.parsedpattern, name))
