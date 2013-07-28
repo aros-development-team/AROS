@@ -115,11 +115,11 @@ AROS_LH1(BPTR, New_CreateDir,
     // result is exclusive lock or NULL
     BPTR result = AROS_CALL1(BPTR, patches[PATCH_CreateDir].oldfunc,
         AROS_LDA(CONST_STRPTR, name,    D1),
-	struct DosLibrary *, DOSBase);
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_CreateDir].enabled)
     {
-	main_output("CreateDir", name, 0, (IPTR)result, TRUE, TRUE);
+        main_output("CreateDir", name, 0, (IPTR)result, TRUE, TRUE);
     }
 
     return result;
@@ -139,13 +139,13 @@ AROS_LH1(BPTR, New_CurrentDir,
 
     // returns lock to old directory, 0 means boot filesystem
     BPTR result = AROS_CALL1(BPTR, patches[PATCH_CurrentDir].oldfunc,
-	AROS_LDA(BPTR, lock,    D1),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(BPTR, lock,    D1),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_CurrentDir].enabled)
     {
         lockpath = MyNameFromLock(lock, NULL, lockbuf, MAX_LOCK_LEN);
-	main_output("CurrentDir", lockpath, 0, TRUE, TRUE, FALSE);
+        main_output("CurrentDir", lockpath, 0, TRUE, TRUE, FALSE);
     }
 
     return result;
@@ -163,12 +163,12 @@ AROS_LH1(BOOL, New_DeleteFile,
 
     // true means deleting was OK
     BOOL result = AROS_CALL1(BOOL, patches[PATCH_DeleteFile].oldfunc,
-	AROS_LDA(CONST_STRPTR, name,    D1),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR, name,    D1),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_DeleteFile].enabled)
     {
-	main_output("Delete", name, 0, result, TRUE, TRUE);
+        main_output("Delete", name, 0, result, TRUE, TRUE);
     }
 
     return result;
@@ -187,19 +187,19 @@ AROS_LH2(LONG, New_DeleteVar,
 
     // true means variable was deleted
     LONG result = AROS_CALL2(LONG, patches[PATCH_DeleteVar].oldfunc,
-	AROS_LDA(CONST_STRPTR, name,    D1),
-	AROS_LDA(ULONG ,       flags,   D2),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR, name,    D1),
+        AROS_LDA(ULONG ,       flags,   D2),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_DeleteVar].enabled)
     {
-	CONST_STRPTR opt;
-	if      (flags & GVF_GLOBAL_ONLY) opt = MSG(MSG_GLOBAL);
+        CONST_STRPTR opt;
+        if      (flags & GVF_GLOBAL_ONLY) opt = MSG(MSG_GLOBAL);
         else if ((flags & 7) == LV_VAR)   opt = MSG(MSG_LOCAL);
         else if ((flags & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
         else                              opt = MSG(MSG_UNKNOWN);
 
-	main_output("DeleteVar", name, opt, result, TRUE, FALSE);
+        main_output("DeleteVar", name, opt, result, TRUE, FALSE);
     }
 
     return result;
@@ -219,14 +219,14 @@ AROS_LH3(LONG, New_Execute,
 
     // true means command could be started
     LONG result = AROS_CALL3(LONG, patches[PATCH_Execute].oldfunc,
-	AROS_LDA(CONST_STRPTR, string,  D1),
-	AROS_LDA(BPTR,   input ,  D2),
-	AROS_LDA(BPTR,   output,  D3),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR, string,  D1),
+        AROS_LDA(BPTR,   input ,  D2),
+        AROS_LDA(BPTR,   output,  D3),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_Execute].enabled)
     {
-	main_output("Execute", string ,0 , result, TRUE, FALSE);
+        main_output("Execute", string ,0 , result, TRUE, FALSE);
     }
 
     return result;
@@ -245,18 +245,18 @@ AROS_LH2(struct LocalVar *, New_FindVar,
 
     // NULL means variable not found
     struct LocalVar *result = AROS_CALL2(struct LocalVar *, patches[PATCH_FindVar].oldfunc,
-	AROS_LDA(CONST_STRPTR, name,    D1),
-	AROS_LDA(ULONG,        type,    D2),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR, name,    D1),
+        AROS_LDA(ULONG,        type,    D2),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_FindVar].enabled)
     {
-	CONST_STRPTR opt;
-	if      ((type & 7) == LV_VAR)   opt = MSG(MSG_LOCAL);
-	else if ((type & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
-	else                             opt = MSG(MSG_UNKNOWN);
+        CONST_STRPTR opt;
+        if      ((type & 7) == LV_VAR)   opt = MSG(MSG_LOCAL);
+        else if ((type & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
+        else                             opt = MSG(MSG_UNKNOWN);
 
-	main_output("FindVar", name, opt, (IPTR)result, TRUE, FALSE);
+        main_output("FindVar", name, opt, (IPTR)result, TRUE, FALSE);
     }
 
     return result;
@@ -277,21 +277,21 @@ AROS_LH4(LONG, New_GetVar,
 
     // -1 means variable not defined
     LONG result = AROS_CALL4(LONG, patches[PATCH_GetVar].oldfunc,
-	AROS_LDA(CONST_STRPTR, name,    D1),
-	AROS_LDA(STRPTR,       buffer,  D2),
-	AROS_LDA(LONG,         size,    D3),
-	AROS_LDA(LONG,         flags,   D4),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR, name,    D1),
+        AROS_LDA(STRPTR,       buffer,  D2),
+        AROS_LDA(LONG,         size,    D3),
+        AROS_LDA(LONG,         flags,   D4),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_GetVar].enabled)
     {
-	CONST_STRPTR opt;
-	if      (flags & GVF_GLOBAL_ONLY) opt = MSG(MSG_GLOBAL);
+        CONST_STRPTR opt;
+        if      (flags & GVF_GLOBAL_ONLY) opt = MSG(MSG_GLOBAL);
         else if ((flags & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
         else if (flags & GVF_LOCAL_ONLY)  opt = MSG(MSG_LOCAL);
         else                              opt = MSG(MSG_ANY);
 
-	main_output("GetVar", name, opt, result != -1, TRUE, FALSE);
+        main_output("GetVar", name, opt, result != -1, TRUE, FALSE);
     }
 
     return result;
@@ -309,12 +309,12 @@ AROS_LH1(BPTR, New_LoadSeg,
 
     // 0 means load failed
     BPTR result = AROS_CALL1(BPTR, patches[PATCH_LoadSeg].oldfunc,
-	AROS_LDA(CONST_STRPTR, name,    D1),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR, name,    D1),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_LoadSeg].enabled)
     {
-	main_output("LoadSeg", name, 0, (IPTR)result, TRUE, TRUE);
+        main_output("LoadSeg", name, 0, (IPTR)result, TRUE, TRUE);
     }
 
     return result;
@@ -333,28 +333,28 @@ AROS_LH2(BPTR, New_Lock,
 
     // 0 means error
     BPTR result = AROS_CALL2(BPTR, patches[PATCH_Lock].oldfunc,
-	AROS_LDA(CONST_STRPTR, name,       D1),
-	AROS_LDA(LONG,         accessMode, D2),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR, name,       D1),
+        AROS_LDA(LONG,         accessMode, D2),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_Lock].enabled)
     {
-	CONST_STRPTR opt;
-	if      (accessMode == ACCESS_READ)  opt = MSG(MSG_READ);
-	else if (accessMode == ACCESS_WRITE) opt = MSG(MSG_WRITE);
-	else                                 opt = MSG(MSG_READ_ASK);
+        CONST_STRPTR opt;
+        if      (accessMode == ACCESS_READ)  opt = MSG(MSG_READ);
+        else if (accessMode == ACCESS_WRITE) opt = MSG(MSG_WRITE);
+        else                                 opt = MSG(MSG_READ_ASK);
 
-	CONST_STRPTR curname = name;
-	if ( ! curname)
-	{
-	    curname="NULL";
-	}
-	else if ( ! setup.showPaths &&  *curname == '\0')
-	{
-	    curname = "\"\"";
-	}
+        CONST_STRPTR curname = name;
+        if ( ! curname)
+        {
+            curname="NULL";
+        }
+        else if ( ! setup.showPaths &&  *curname == '\0')
+        {
+            curname = "\"\"";
+        }
 
-	main_output("Lock", curname, opt, (IPTR)result, TRUE, FALSE);
+        main_output("Lock", curname, opt, (IPTR)result, TRUE, FALSE);
     }
 
     return result;
@@ -374,51 +374,51 @@ AROS_LH3(LONG, New_MakeLink,
 
     // result is boolean
     LONG result = AROS_CALL3(LONG, patches[PATCH_MakeLink].oldfunc,
-	AROS_LDA(CONST_STRPTR, name,    D1),
-	AROS_LDA(APTR,   dest,    D2),
-	AROS_LDA(LONG,   soft,    D3),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR, name,    D1),
+        AROS_LDA(APTR,   dest,    D2),
+        AROS_LDA(LONG,   soft,    D3),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_MakeLink].enabled)
     {
         struct Process *myproc = (struct Process *)SysBase->ThisTask;
 
-	CONST_STRPTR opt;
-	if (soft) opt = "Softlink";
-	else      opt = "Hardlink";
+        CONST_STRPTR opt;
+        if (soft) opt = "Softlink";
+        else      opt = "Hardlink";
 
-	int len = strlen(name);
-	char namestr[MAX_STR_LEN + 1];
-	if (len >= MAX_STR_LEN)
+        int len = strlen(name);
+        char namestr[MAX_STR_LEN + 1];
+        if (len >= MAX_STR_LEN)
         {
-	    strncpy(namestr, name, MAX_STR_LEN);
-	    namestr[MAX_STR_LEN] = 0;
-	}
+            strncpy(namestr, name, MAX_STR_LEN);
+            namestr[MAX_STR_LEN] = 0;
+        }
         else
         {
-	    if (setup.showPaths)
+            if (setup.showPaths)
             {
-		strcpy(namestr, MyNameFromLock(myproc->pr_CurrentDir,
-			    (char *)name, namestr, MAX_STR_LEN-2));
-		len = strlen(namestr);
-	    }
+                strcpy(namestr, MyNameFromLock(myproc->pr_CurrentDir,
+                            (char *)name, namestr, MAX_STR_LEN-2));
+                len = strlen(namestr);
+            }
             else
-		strcpy(namestr, name);
+                strcpy(namestr, name);
 
-	    strcat(namestr, " --> ");
-	    if (soft)
+            strcat(namestr, " --> ");
+            if (soft)
             {
-		strncat(namestr, (char *)dest, MAX_STR_LEN - len - 1);
-		namestr[MAX_STR_LEN] = 0;
-	    }
+                strncat(namestr, (char *)dest, MAX_STR_LEN - len - 1);
+                namestr[MAX_STR_LEN] = 0;
+            }
             else
             {
-		strcat(namestr, MyNameFromLock((BPTR)dest, NULL, namestr+len+1,
-			    MAX_STR_LEN-len-1));
-	    }
-	}
+                strcat(namestr, MyNameFromLock((BPTR)dest, NULL, namestr+len+1,
+                            MAX_STR_LEN-len-1));
+            }
+        }
 
-	main_output("MakeLink", namestr, opt, result, TRUE, FALSE);
+        main_output("MakeLink", namestr, opt, result, TRUE, FALSE);
     }
 
     return result;
@@ -437,13 +437,13 @@ AROS_LH2(BPTR, New_NewLoadSeg,
 
     // 0 means load failed
     BPTR result = AROS_CALL2(BPTR, patches[PATCH_NewLoadSeg].oldfunc,
-	AROS_LDA(CONST_STRPTR,           file,    D1),
-	AROS_LDA(struct TagItem *, tags,    D2),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR,           file,    D1),
+        AROS_LDA(struct TagItem *, tags,    D2),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_NewLoadSeg].enabled)
     {
-	main_output("NewLoadSeg", file, 0, (IPTR)result, TRUE, TRUE);
+        main_output("NewLoadSeg", file, 0, (IPTR)result, TRUE, TRUE);
     }
 
     return result;
@@ -462,21 +462,21 @@ AROS_LH2(BPTR, New_Open,
 
     // 0 means error
     BPTR result = AROS_CALL2(BPTR, patches[PATCH_Open].oldfunc,
-	AROS_LDA (CONST_STRPTR, name,       D1),
-	AROS_LDA (LONG,         accessMode, D2),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA (CONST_STRPTR, name,       D1),
+        AROS_LDA (LONG,         accessMode, D2),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_Open].enabled)
     {
-	CONST_STRPTR opt = NULL;
-	char optstr[10];
-	if      (accessMode == MODE_OLDFILE)   opt = MSG(MSG_READ);
-	else if (accessMode == MODE_NEWFILE)   opt = MSG(MSG_WRITE);
-	else if (accessMode == MODE_READWRITE) opt = MSG(MSG_MODIFY);
-	else
+        CONST_STRPTR opt = NULL;
+        char optstr[10];
+        if      (accessMode == MODE_OLDFILE)   opt = MSG(MSG_READ);
+        else if (accessMode == MODE_NEWFILE)   opt = MSG(MSG_WRITE);
+        else if (accessMode == MODE_READWRITE) opt = MSG(MSG_MODIFY);
+        else
             opt = MSG(MSG_UNKNOWN);
 
-	main_output("Open", name, opt ? opt : (STRPTR)optstr, (IPTR)result, TRUE, TRUE);
+        main_output("Open", name, opt ? opt : (STRPTR)optstr, (IPTR)result, TRUE, TRUE);
     }
 
     return result;
@@ -495,14 +495,14 @@ AROS_LH2(LONG, New_Rename,
 
     // bool
     LONG result = AROS_CALL2(LONG, patches[PATCH_Rename].oldfunc,
-	AROS_LDA(CONST_STRPTR, oldName, D1),
-	AROS_LDA(CONST_STRPTR, newName, D2),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR, oldName, D1),
+        AROS_LDA(CONST_STRPTR, newName, D2),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_Rename].enabled)
     {
-	main_output("Rename", oldName, 0, result, FALSE, TRUE);
-	main_output("to -->", newName, 0, result, TRUE, TRUE);
+        main_output("Rename", oldName, 0, result, FALSE, TRUE);
+        main_output("to -->", newName, 0, result, TRUE, TRUE);
     }
     
     return result;
@@ -523,26 +523,26 @@ AROS_LH4(LONG, New_RunCommand,
 
     // -1 means error
     LONG result = AROS_CALL4(LONG, patches[PATCH_RunCommand].oldfunc,
-	AROS_LDA(BPTR,   segList,   D1),
-	AROS_LDA(ULONG,  stacksize, D2),
-	AROS_LDA(CONST_STRPTR, argptr,    D3),
-	AROS_LDA(ULONG,  argsize,   D4),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(BPTR,   segList,   D1),
+        AROS_LDA(ULONG,  stacksize, D2),
+        AROS_LDA(CONST_STRPTR, argptr,    D3),
+        AROS_LDA(ULONG,  argsize,   D4),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_RunCommand].enabled)
     {
-	char argstr[MAX_STR_LEN + 1];
-	int pos;
-	for (pos = 0; pos < MAX_STR_LEN && argptr[pos] != 0 ; pos++)
-	{
-	    if (argptr[pos] == '\n')
-		argstr[pos] = ' ';
-	    else
-		argstr[pos] = argptr[pos];
-	}
+        char argstr[MAX_STR_LEN + 1];
+        int pos;
+        for (pos = 0; pos < MAX_STR_LEN && argptr[pos] != 0 ; pos++)
+        {
+            if (argptr[pos] == '\n')
+                argstr[pos] = ' ';
+            else
+                argstr[pos] = argptr[pos];
+        }
 
-	argstr[pos] = 0;
-	main_output("RunCommand", argstr, 0, result != -1, TRUE, FALSE);
+        argstr[pos] = 0;
+        main_output("RunCommand", argstr, 0, result != -1, TRUE, FALSE);
     }
     
     return result;
@@ -562,44 +562,44 @@ AROS_LH4(BOOL, New_SetVar,
     AROS_LIBFUNC_INIT
 
     BOOL result = AROS_CALL4(BOOL, patches[PATCH_SetVar].oldfunc,
-	AROS_LDA(CONST_STRPTR, name,    D1),
-	AROS_LDA(CONST_STRPTR, buffer,  D2),
-	AROS_LDA(LONG,         size,    D3),
-	AROS_LDA(LONG,         flags,   D4),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR, name,    D1),
+        AROS_LDA(CONST_STRPTR, buffer,  D2),
+        AROS_LDA(LONG,         size,    D3),
+        AROS_LDA(LONG,         flags,   D4),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_SetVar].enabled)
     {
-	CONST_STRPTR opt;
-	char varstr[MAX_STR_LEN + 1];
+        CONST_STRPTR opt;
+        char varstr[MAX_STR_LEN + 1];
         int vlen;
 
-	if      (flags & GVF_GLOBAL_ONLY) opt = MSG(MSG_GLOBAL);
-	else if ((flags & 7) == LV_VAR)   opt = MSG(MSG_LOCAL);
-	else if ((flags & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
-	else                              opt = MSG(MSG_UNKNOWN);
+        if      (flags & GVF_GLOBAL_ONLY) opt = MSG(MSG_GLOBAL);
+        else if ((flags & 7) == LV_VAR)   opt = MSG(MSG_LOCAL);
+        else if ((flags & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
+        else                              opt = MSG(MSG_UNKNOWN);
 
-	/*
-	 *              Now create a string that looks like "Variable=Value"
-	 *
-	 *              We go to some pains to ensure we don't overwrite our
-	 *              string length
-	 */
-	vlen = strlen(name);
-	if (vlen > (MAX_STR_LEN-1)) {
-	    strncpy(varstr, name, MAX_STR_LEN);
-	    varstr[MAX_STR_LEN] = 0;
-	} else {
-	    strcpy(varstr, name);
-	    strcat(varstr, "=");
-	    vlen = 98 - vlen;
-	    if (size != -1)
-		vlen = MIN(vlen, size);
+        /*
+         *              Now create a string that looks like "Variable=Value"
+         *
+         *              We go to some pains to ensure we don't overwrite our
+         *              string length
+         */
+        vlen = strlen(name);
+        if (vlen > (MAX_STR_LEN-1)) {
+            strncpy(varstr, name, MAX_STR_LEN);
+            varstr[MAX_STR_LEN] = 0;
+        } else {
+            strcpy(varstr, name);
+            strcat(varstr, "=");
+            vlen = 98 - vlen;
+            if (size != -1)
+                vlen = MIN(vlen, size);
 
-	    strncat(varstr, buffer, vlen);
-	    varstr[MAX_STR_LEN] = 0;
-	}
-	main_output("SetVar", varstr, opt, result, TRUE, FALSE);
+            strncat(varstr, buffer, vlen);
+            varstr[MAX_STR_LEN] = 0;
+        }
+        main_output("SetVar", varstr, opt, result, TRUE, FALSE);
     }
 
     return result;
@@ -618,15 +618,15 @@ AROS_LH2(LONG, New_SystemTagList,
 
     // -1 means error
     LONG result = AROS_CALL2(LONG, patches[PATCH_SystemTagList].oldfunc,
-	AROS_LDA(CONST_STRPTR,     command, D1),
-	AROS_LDA(struct TagItem *, tags,    D2),
-	struct DosLibrary *, DOSBase);
+        AROS_LDA(CONST_STRPTR,     command, D1),
+        AROS_LDA(struct TagItem *, tags,    D2),
+        struct DosLibrary *, DOSBase);
 
     if (patches[PATCH_SystemTagList].enabled)
     {
-	char optstr[20];
-	sprintf(optstr, "%d", (int)result);
-	main_output("SystemTagList", command, optstr, result != -1, TRUE, FALSE);
+        char optstr[20];
+        sprintf(optstr, "%d", (int)result);
+        main_output("SystemTagList", command, optstr, result != -1, TRUE, FALSE);
     }
 
     return result;
@@ -644,12 +644,12 @@ AROS_LH1(struct MsgPort *, New_FindPort,
 
     // NULL means error
     struct MsgPort *result = AROS_CALL1(struct MsgPort *, patches[PATCH_FindPort].oldfunc,
-	AROS_LDA(STRPTR, name,    A1),
-	struct ExecBase *, SysBase);
+        AROS_LDA(STRPTR, name,    A1),
+        struct ExecBase *, SysBase);
 
     if (patches[PATCH_FindPort].enabled)
     {
-	main_output("FindPort", name, 0, (IPTR)result, TRUE, FALSE);
+        main_output("FindPort", name, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -667,12 +667,12 @@ AROS_LH1(struct Resident *, New_FindResident,
 
     // NULL means error
     struct Resident *result = AROS_CALL1(struct Resident *, patches[PATCH_FindResident].oldfunc,
-	AROS_LDA(const UBYTE *, name,    A1),
-	struct ExecBase *, SysBase);
+        AROS_LDA(const UBYTE *, name,    A1),
+        struct ExecBase *, SysBase);
 
     if (patches[PATCH_FindResident].enabled)
     {
-	main_output("FindResident", name, 0, (IPTR)result, TRUE, FALSE);
+        main_output("FindResident", name, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -690,12 +690,12 @@ AROS_LH1(struct SignalSemaphore *, New_FindSemaphore,
 
     // NULL means error
     struct SignalSemaphore *result = AROS_CALL1(struct SignalSemaphore *, patches[PATCH_FindSemaphore].oldfunc,
-	AROS_LDA(STRPTR, name,    A1),
-	struct ExecBase *, SysBase);
+        AROS_LDA(STRPTR, name,    A1),
+        struct ExecBase *, SysBase);
 
     if (patches[PATCH_FindSemaphore].enabled)
     {
-	main_output("FindSemaphore", name, 0, (IPTR)result, TRUE, FALSE);
+        main_output("FindSemaphore", name, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -713,12 +713,12 @@ AROS_LH1(struct Task *, New_FindTask,
 
     // NULL means error
     struct Task *result = AROS_CALL1(struct Task *, patches[PATCH_FindTask].oldfunc,
-	AROS_LDA(STRPTR, name,    A1),
-	struct ExecBase *, SysBase);
+        AROS_LDA(STRPTR, name,    A1),
+        struct ExecBase *, SysBase);
 
     if ((name != NULL) && patches[PATCH_FindTask].enabled)
     {
-	main_output("FindTask", name, 0, (IPTR)result, TRUE, FALSE);
+        main_output("FindTask", name, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -739,18 +739,18 @@ AROS_LH4(LONG, New_OpenDevice,
 
     // 0 means OK
     LONG result = AROS_CALL4(LONG, patches[PATCH_OpenDevice].oldfunc,
-	AROS_LDA(CONST_STRPTR,       devName,    A0),
-	AROS_LDA(IPTR,               unitNumber, D0),
-	AROS_LDA(struct IORequest *, iORequest,  A1),
-	AROS_LDA(ULONG,              flags,      D1),
-	struct ExecBase *, SysBase);
+        AROS_LDA(CONST_STRPTR,       devName,    A0),
+        AROS_LDA(IPTR,               unitNumber, D0),
+        AROS_LDA(struct IORequest *, iORequest,  A1),
+        AROS_LDA(ULONG,              flags,      D1),
+        struct ExecBase *, SysBase);
 
     if (patches[PATCH_OpenDevice].enabled)
     {
-	char unitstr[20];
+        char unitstr[20];
         // FIXME: unitNumber can be a pointer
-	sprintf(unitstr, "Unit %d", (int)unitNumber);
-	main_output("OpenDevice", devName, unitstr, !result, TRUE, FALSE);
+        sprintf(unitstr, "Unit %d", (int)unitNumber);
+        main_output("OpenDevice", devName, unitstr, !result, TRUE, FALSE);
     }
     
     return result;
@@ -769,15 +769,15 @@ AROS_LH2(struct Library *, New_OpenLibrary,
 
     // 0 means error
     struct Library *result = AROS_CALL2(struct Library *, patches[PATCH_OpenLibrary].oldfunc,
-	AROS_LDA(CONST_STRPTR,  libName, A1),
-	AROS_LDA(ULONG,         version, D0),
-	struct ExecBase *, SysBase);
+        AROS_LDA(CONST_STRPTR,  libName, A1),
+        AROS_LDA(ULONG,         version, D0),
+        struct ExecBase *, SysBase);
 
     if (patches[PATCH_OpenLibrary].enabled)
     {
-	char verstr[20];
-	sprintf(verstr, MSG(MSG_VERSION), version);
-	main_output("OpenLibrary", libName, verstr, (IPTR)result, TRUE, FALSE);
+        char verstr[20];
+        sprintf(verstr, MSG(MSG_VERSION), version);
+        main_output("OpenLibrary", libName, verstr, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -795,12 +795,12 @@ AROS_LH1(APTR, New_OpenResource,
 
     // 0 means error
     APTR result = AROS_CALL1(APTR, patches[PATCH_OpenResource].oldfunc,
-	AROS_LDA(CONST_STRPTR, resName, A1),
-	struct ExecBase *, SysBase);
+        AROS_LDA(CONST_STRPTR, resName, A1),
+        struct ExecBase *, SysBase);
 
     if (patches[PATCH_OpenResource].enabled)
     {
-	main_output("OpenLibrary", resName, 0, (IPTR)result, TRUE, FALSE);
+        main_output("OpenLibrary", resName, 0, (IPTR)result, TRUE, FALSE);
     }
     
     return result;
@@ -818,12 +818,12 @@ AROS_LH1(struct Screen *, New_LockPubScreen,
 
     // 0 means error
     struct Screen *result = AROS_CALL1(struct Screen *, patches[PATCH_LockPubScreen].oldfunc,
-	AROS_LDA(CONST_STRPTR, name,    A0),
-	struct IntuitionBase *, IntuitionBase);
+        AROS_LDA(CONST_STRPTR, name,    A0),
+        struct IntuitionBase *, IntuitionBase);
 
     if (patches[PATCH_LockPubScreen].enabled)
     {
-	main_output("LockPubScreen", name, 0, (IPTR)result, TRUE, TRUE);
+        main_output("LockPubScreen", name, 0, (IPTR)result, TRUE, TRUE);
     }
     
     return result;
@@ -841,22 +841,22 @@ AROS_LH1(struct TextFont *, New_OpenFont,
 
     // 0 means error
     struct TextFont *result = AROS_CALL1(struct TextFont *, patches[PATCH_OpenFont].oldfunc,
-	AROS_LDA(struct TextAttr *, textAttr, A0),
-	struct GfxBase *, GfxBase);
+        AROS_LDA(struct TextAttr *, textAttr, A0),
+        struct GfxBase *, GfxBase);
 
     if (patches[PATCH_OpenFont].enabled)
     {
-	char *name;
-	char sizestr[20];
+        char *name;
+        char sizestr[20];
 
-	if (textAttr) {
-	    sprintf(sizestr, MSG(MSG_SIZE), textAttr->ta_YSize);
-	    name = textAttr->ta_Name;
-	} else {
-	    *sizestr = '\0';
-	    name = "\"\"";
-	}
-	main_output("OpenFont", name, sizestr, (IPTR)result, TRUE, FALSE);
+        if (textAttr) {
+            sprintf(sizestr, MSG(MSG_SIZE), textAttr->ta_YSize);
+            name = textAttr->ta_Name;
+        } else {
+            *sizestr = '\0';
+            name = "\"\"";
+        }
+        main_output("OpenFont", name, sizestr, (IPTR)result, TRUE, FALSE);
     }
 
     return result;
@@ -875,13 +875,13 @@ AROS_LH2(UBYTE *, New_FindToolType,
 
     // 0 means error
     UBYTE *result = AROS_CALL2(UBYTE *, patches[PATCH_FindToolType].oldfunc,
-	AROS_LDA(CONST STRPTR *, toolTypeArray, A0),
-	AROS_LDA(CONST STRPTR,   typeName,      A1),
-	struct Library *, IconBase);
+        AROS_LDA(CONST STRPTR *, toolTypeArray, A0),
+        AROS_LDA(CONST STRPTR,   typeName,      A1),
+        struct Library *, IconBase);
 
     if (patches[PATCH_FindToolType].enabled)
     {
-	main_output("FindToolType", typeName, 0, (IPTR)result, TRUE, FALSE);
+        main_output("FindToolType", typeName, 0, (IPTR)result, TRUE, FALSE);
     }
 
     return result;
@@ -899,13 +899,13 @@ AROS_LH2(BOOL, New_MatchToolValue,
     AROS_LIBFUNC_INIT
 
     BOOL result = AROS_CALL2(BOOL, patches[PATCH_MatchToolValue].oldfunc,
-	AROS_LDA(UBYTE *, typeString, A0),
-	AROS_LDA(UBYTE *, value,      A1),
-	struct Library *, IconBase);
+        AROS_LDA(UBYTE *, typeString, A0),
+        AROS_LDA(UBYTE *, value,      A1),
+        struct Library *, IconBase);
 
     if (patches[PATCH_MatchToolValue].enabled)
     {
-	main_output("MatchToolValue", typeString, value, result, TRUE, FALSE);
+        main_output("MatchToolValue", typeString, value, result, TRUE, FALSE);
     }
 
     return result;
@@ -956,12 +956,12 @@ void patches_init(void)
     int i;
     for (i=0; i<PATCH_last; i++)
     {
-	if (patches[i].newfunc);
-	{
-	    Forbid();
-	    patches[i].oldfunc = SetFunction(libbases[patches[i].libidx], patches[i].lvo, patches[i].newfunc);
-	    Permit();
-	}
+        if (patches[i].newfunc);
+        {
+            Forbid();
+            patches[i].oldfunc = SetFunction(libbases[patches[i].libidx], patches[i].lvo, patches[i].newfunc);
+            Permit();
+        }
     }
 }
 
@@ -1007,18 +1007,18 @@ void patches_reset(void)
 
     for (i=0; i<PATCH_last; i++)
     {
-	patches[i].enabled = FALSE;
+        patches[i].enabled = FALSE;
     }
     
     for (i=0; i<PATCH_last; i++)
     {
-	if (patches[i].oldfunc)
-	{
-	    Forbid();
-	    SetFunction(libbases[patches[i].libidx], patches[i].lvo, patches[i].oldfunc);
-	    Permit();
-	    patches[i].oldfunc = NULL;
-	}
+        if (patches[i].oldfunc)
+        {
+            Forbid();
+            SetFunction(libbases[patches[i].libidx], patches[i].lvo, patches[i].oldfunc);
+            Permit();
+            patches[i].oldfunc = NULL;
+        }
     }
 }
 
@@ -1187,7 +1187,7 @@ char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen)
     }
 
     savewinptr = myproc->pr_WindowPtr;
-    myproc->pr_WindowPtr = (APTR)-1;	/* Disable error requesters */
+    myproc->pr_WindowPtr = (APTR)-1;        /* Disable error requesters */
 
     newlock = DupLock(lock);
     if (lock && !newlock)
@@ -1198,7 +1198,7 @@ char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen)
             strcat(buf, ".../");
             strcat(buf, filename);
         }
-        myproc->pr_WindowPtr = savewinptr;	/* Re-enable error requesters */
+        myproc->pr_WindowPtr = savewinptr;        /* Re-enable error requesters */
         SetIoErr(savedioerr);
         return (buf);
     }
@@ -1318,7 +1318,7 @@ char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen)
     if (curlock)
         UnLock(curlock);
 
-    myproc->pr_WindowPtr = savewinptr;	/* Re-enable error requesters */
+    myproc->pr_WindowPtr = savewinptr;        /* Re-enable error requesters */
     SetIoErr(savedioerr);
     return (buf+pos);
 }

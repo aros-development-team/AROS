@@ -39,7 +39,7 @@ static void prettyprint(CONST_STRPTR str, LONG minlen)
     LONG i;
     for (i = len ; i < minlen ; i++)
     {
-	RawPutChar(' ');
+        RawPutChar(' ');
     }
 }
 
@@ -49,14 +49,14 @@ static void SNOOPY_breakpoint(void)
 {
     // interrupting makes only sense on "hosted" where we have a debugger
     #if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
-	#if defined(__i386__) || defined(__x86_64__)
-	    asm("int3");
-	#elif defined(__powerpc__)
-	    asm("trap");
-	#else
-	    // TODO: other platforms
-	    kprintf("[SNOOP] interrupt not supported on this platform\n");
-	#endif
+        #if defined(__i386__) || defined(__x86_64__)
+            asm("int3");
+        #elif defined(__powerpc__)
+            asm("trap");
+        #else
+            // TODO: other platforms
+            kprintf("[SNOOP] interrupt not supported on this platform\n");
+        #endif
     #endif
 }
 
@@ -72,17 +72,17 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option,
     if (setup.onlyShowFails && result) return;
     if (setup.ignoreWB)
     {
-	if ( ! stricmp(name, "wanderer:wanderer")) return;
-	if ( ! stricmp(name, "new shell")) return;
-	if ( ! stricmp(name, "newshell")) return;
-	if ( ! stricmp(name, "boot shell")) return;
-	if ( ! stricmp(name, "background cli")) return;
+        if ( ! stricmp(name, "wanderer:wanderer")) return;
+        if ( ! stricmp(name, "new shell")) return;
+        if ( ! stricmp(name, "newshell")) return;
+        if ( ! stricmp(name, "boot shell")) return;
+        if ( ! stricmp(name, "background cli")) return;
     }
 
     if (setup.match && ! MatchPatternNoCase(setup.parsedpattern, name))
     {
-	// pattern doesn't fit
-	return;
+        // pattern doesn't fit
+        return;
     }
 
     // FIXME: Can Forbid/Permit cause locks?
@@ -94,13 +94,13 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option,
 
     if (setup.showCliNr)
     {
-	int clinum = 0;
-	if (thistask->tc_Node.ln_Type == NT_PROCESS && ((struct Process *)thistask)->pr_CLI)
-	{
-	    clinum = ((struct Process *)thistask)->pr_TaskNum;
-	}
+        int clinum = 0;
+        if (thistask->tc_Node.ln_Type == NT_PROCESS && ((struct Process *)thistask)->pr_CLI)
+        {
+            clinum = ((struct Process *)thistask)->pr_TaskNum;
+        }
 
-	kprintf(" [%d]", clinum);
+        kprintf(" [%d]", clinum);
     }
 
     prettyprint(action, setup.actionLen);
@@ -139,7 +139,7 @@ void main_parsepattern(void)
     setup.parsedpattern[0] = '\0';
     if (ParsePatternNoCase(setup.pattern, setup.parsedpattern, PARSEDPATTERNLEN) != -1)
     {
-	setup.match = TRUE;
+        setup.match = TRUE;
     }
     Permit();
 }
@@ -150,8 +150,8 @@ void clean_exit(char *s)
     gui_cleanup();
     if (s)
     {
-	puts(s);
-	exit(RETURN_FAIL);
+        puts(s);
+        exit(RETURN_FAIL);
     }
     exit(RETURN_OK);
 }
