@@ -1,9 +1,7 @@
 /*
-    Copyright © 2006-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-#include <stdio.h>
 
 #include <aros/debug.h>
 #include <proto/dos.h>
@@ -11,12 +9,19 @@
 #include <proto/icon.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <proto/alib.h>
 
 #include "main.h"
 #include "patches.h"
 #include "setup.h"
 #include "locale.h"
 
+
+/*
+ * DO NOT USE functions that require a call into arosc.library in patch code as
+ * this can lead to leaking the Snoopy's aroscbase to the process that calls
+ * patched functions.
+ */
 
 #define MAX_LOCK_LEN  100             /* Max. length of a lock string */
 
@@ -624,8 +629,8 @@ AROS_LH2(LONG, New_SystemTagList,
 
     if (patches[PATCH_SystemTagList].enabled)
     {
-        char optstr[20];
-        sprintf(optstr, "%d", (int)result);
+        TEXT optstr[20];
+        __sprintf(optstr, "%d", (LONG)result);
         main_output("SystemTagList", command, optstr, result != -1, TRUE, FALSE);
     }
 
@@ -747,9 +752,9 @@ AROS_LH4(LONG, New_OpenDevice,
 
     if (patches[PATCH_OpenDevice].enabled)
     {
-        char unitstr[20];
+        TEXT unitstr[20];
         // FIXME: unitNumber can be a pointer
-        sprintf(unitstr, "Unit %d", (int)unitNumber);
+        __sprintf(unitstr, "Unit %d", (IPTR)unitNumber);
         main_output("OpenDevice", devName, unitstr, !result, TRUE, FALSE);
     }
     
@@ -775,8 +780,8 @@ AROS_LH2(struct Library *, New_OpenLibrary,
 
     if (patches[PATCH_OpenLibrary].enabled)
     {
-        char verstr[20];
-        sprintf(verstr, MSG(MSG_VERSION), version);
+        TEXT verstr[20];
+        __sprintf(verstr, MSG(MSG_VERSION), version);
         main_output("OpenLibrary", libName, verstr, (IPTR)result, TRUE, FALSE);
     }
     
@@ -846,11 +851,11 @@ AROS_LH1(struct TextFont *, New_OpenFont,
 
     if (patches[PATCH_OpenFont].enabled)
     {
-        char *name;
-        char sizestr[20];
+        STRPTR name;
+        TEXT sizestr[20];
 
         if (textAttr) {
-            sprintf(sizestr, MSG(MSG_SIZE), textAttr->ta_YSize);
+            __sprintf(sizestr, MSG(MSG_SIZE), textAttr->ta_YSize);
             name = textAttr->ta_Name;
         } else {
             *sizestr = '\0';
