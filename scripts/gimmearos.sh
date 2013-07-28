@@ -8,7 +8,7 @@
 
 # This script is public domain. Use it at your own risk.
 
-# $VER: gimmearos.sh 1.9 (19.4.2011)
+# $VER: gimmearos.sh 1.10 (28.07.2013)
 
 curdir="`pwd`"
 srcdir="aros-src"
@@ -281,8 +281,8 @@ do
             ;;
         12 ) echo -e "\nConfiguring linux-i386 V0 without debug...\n"
             mkdir -p "$portsdir"
-            mkdir -p aros-linux-v0-i386
-            cd aros-linux-v0-i386
+            mkdir -p aros-linux-i386-v0
+            cd aros-linux-i386-v0
             "../$srcdir_v0/configure" --target=linux-i386 --with-portssources="$curdir/$portsdir"
             ;;
         13 ) echo -e "\nConfiguring linux-x86_64 V0 with full debug...\n"
