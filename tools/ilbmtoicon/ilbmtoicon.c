@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tool to convert IFF ILBM images into Amiga icon file.
@@ -1585,8 +1585,8 @@ static void writeword(WORD l)
 {
     UBYTE f[2];
 
-    f[1] = (l >> 8) & 0xFF;
-    f[2] = l & 0xFF;
+    f[0] = (l >> 8) & 0xFF;
+    f[1] = l & 0xFF;
  
     if (fwrite(f, 1, 2, outfile) != 2)
     {
@@ -1965,6 +1965,8 @@ static LONG writeargb(APTR argb, ULONG argb_size)
         return 0;
     }
 
+    D(printf("ARGB: Compressed %d => %d\n", size, zsize));
+
     writelong(ID_ARGB);
     formsize = 10 + zsize;
     writelong(formsize);
@@ -2045,6 +2047,7 @@ static void writeicon(void)
 {
     struct diskobject dobj;
 
+    D(printf("Writing %s\n", outfilename));
     outfile = fopen(outfilename, "wb");
     if (!outfile) cleanup("Can't open output file for writing!", 1);
     
