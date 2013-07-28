@@ -721,16 +721,13 @@ fi
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what specific host gcc version to use])
-AC_ARG_WITH(kernel-gcc-version,AC_HELP_STRING([--with-kernel-gcc-version=VERSION],[Use host gcc-VERSION for building AROS]),kernel_tool_version="-$withval",kernel_tool_version="")
+AC_ARG_WITH(kernel-gcc-version,AC_HELP_STRING([--with-kernel-gcc-version=VERSION],[Use gcc-VERSION for building bootstrap]),kernel_tool_version="$withval",kernel_tool_version="")
 AC_MSG_RESULT($kernel_tool_version)
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what specific target gcc version to use])
-AC_ARG_WITH(gcc-version,AC_HELP_STRING([--with-gcc-version=VERSION],[Use host gcc-VERSION for building AROS]),target_tool_version="$withval",target_tool_version="default")
+AC_ARG_WITH(gcc-version,AC_HELP_STRING([--with-gcc-version=VERSION],[Use gcc-VERSION for building AROS]),target_tool_version="$withval",target_tool_version="")
 AC_MSG_RESULT($target_tool_version)
-if test "$target_tool_version" = "default"; then
-    target_tool_version=""
-fi
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what optimization flags to use])
@@ -1577,10 +1574,6 @@ else
     elf_specs_in=config/elf-specs.in
 fi
 
-AC_MSG_CHECKING([what specific AROS gcc version to use])
-AC_ARG_WITH(aros-gcc,AC_HELP_STRING([--with-aros-gcc=VERSION],[Use aros-gcc-VERSION for building AROS]),aros_gcc_version="-$withval",aros_gcc_version="")
-AC_MSG_RESULT($aros_gcc_version)
-
 # Some compilers (ppc-elf-gcc is known to) have CPU defines in specs
 # Since we override specs, we may need to put these defines there
 if test "$gcc_target_cpu" != ""; then
@@ -1670,6 +1663,9 @@ if test "$cross_compiling" = "no" ; then
     fi
 fi
 
+if test "$kernel_tool_version" != ""; then
+    kernel_tool_version="-$kernel_tool_version"
+fi
 if test "$target_tool_version" != ""; then
     target_tool_version="-$target_tool_version"
 fi
@@ -1681,7 +1677,7 @@ fi
 # This takes, as input:
 #   crosstools             {yes,no}
 #   kernel_tool_version    {"",[version]}
-#   aros_gcc_version       {"",[version]}
+#   target_tool_version    {"",[version]}
 #   kernel_tool_prefix     {none,[some-arch-os-]}
 #   target_tool_prefix     ${aros_target_cpu}-aros-
 #   aros_tool_prefix       ${aros_target_cpu}-aros-
@@ -1782,8 +1778,8 @@ if test "$crosstools" = "yes"; then
     AC_MSG_RESULT([$target_tool_prefix])
     # We are are building AROS crosstools
     tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
-    orig_target_cc="${tmp_tool_prefix}gcc${aros_gcc_version}"
-    orig_target_cxx="${tmp_tool_prefix}g++${aros_gcc_version}"
+    orig_target_cc="${tmp_tool_prefix}gcc${target_tool_version}"
+    orig_target_cxx="${tmp_tool_prefix}g++${target_tool_version}"
     orig_target_cpp="${tmp_tool_prefix}cpp"
     orig_target_ld="${tmp_tool_prefix}ld"
     orig_target_as="${tmp_tool_prefix}as"
