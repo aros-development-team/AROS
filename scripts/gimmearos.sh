@@ -72,6 +72,8 @@ case "$input" in
         install_pkg "apt-get install" libxxf86vm-dev
         install_pkg "apt-get install" libpng12-dev
         install_pkg "apt-get install" gcc-multilib
+        install_pkg "apt-get install" libsdl1.2-dev
+        install_pkg "apt-get install" byacc
         ;;
 
     2 ) echo -e "\nInstalling prerequisites with apt-get..."
@@ -97,6 +99,8 @@ case "$input" in
         install_pkg "apt-get install" libc6-dev-i386
         install_pkg "apt-get install" lib32gcc1
         install_pkg "apt-get install" ia32-libs
+        install_pkg "apt-get install" libsdl1.2-dev
+        install_pkg "apt-get install" byacc
         ;;
 
     3 ) echo -e "\nInstalling prerequisites with yum..."
