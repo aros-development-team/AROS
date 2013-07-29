@@ -2,31 +2,34 @@
 # AROS mmakefile.src generator version 0.01a
 # Jack Patton 2/24/2004 
 # Script to generate a mmakefile.src based upon the .c files in the current directory.
-# Please don't flame me for my lack of knowledge of mmake (too badly anyway ;) )!
 
 $tg = $ARGV[0];
 if (!$ARGV[0]) {
-print "Usage: genmfs <project name>\n";
-exit;
+    print "Usage: genmfs <project name>\n";
+    exit;
 }
 open(OUT,">mmakefile.src");
 print OUT "#   \$Id\$\n#\n#   Makefile to make $tg.\n\n";
 print OUT "include \$(TOP)/config/make.cfg\n\n";
 print OUT "EXEDIR := \$(AROSDIR)\n\n";
 print OUT "FILES := ";
+
 foreach $ln (`ls`) {
-next if $ln =~ m/mmakefile/;
-if ($ln =~ m/.c$/) {
-$ln =~ s/.c$//;
-$f = $ln;
-chomp($ln);
-print OUT "\\\n\t$ln ";
+    next if $ln =~ m/mmakefile/;
+    if ($ln =~ m/.c$/) {
+        $ln =~ s/.c$//;
+        $f = $ln;
+        chomp($ln);
+        print OUT "\\\n    $ln ";
+    }
 }
-}
+print OUT "\n\nUSER_CFLAGS :=";
+print OUT "\nUSER_INCLUDES :=";
+print OUT "\nUSER_LDFLAGS := ";
 print OUT "\n\n#MM $tg : includes linklibs\n\n";
 print OUT "%build_prog mmake=$tg \\\n";
 print OUT "     progname=$tg targetdir=\$(EXEDIR) \\\n";
-print OUT "     files=\$(FILES) uselibs=\"arossupport amiga arosc m\"\n\n";
+print OUT "     files=\$(FILES) uselibs=\"\"\n\n";
 print OUT "%common\n";
 close(OUT);
 
