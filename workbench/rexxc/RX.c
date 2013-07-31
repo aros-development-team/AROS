@@ -41,7 +41,11 @@ static BOOL init(void)
     rexxport = FindPort("REXX");
     if (rexxport == NULL)
     {
-        if (SystemTags("RexxMast", SYS_Asynch, TRUE, TAG_DONE) >= 0)
+        if (SystemTags("RexxMast", SYS_Asynch, TRUE,
+                SYS_Input, BNULL, SYS_Output, BNULL,
+                TAG_DONE
+            ) >= 0
+           )
         {
             SystemTags("WaitForPort REXX", TAG_DONE);
         }
@@ -49,7 +53,7 @@ static BOOL init(void)
     rexxport = FindPort("REXX");
     if (rexxport == NULL)
     {
-	FPuts(out, "Could not start RexxMast\n");
+	FPuts(out, "Could not start RexxMast; no Rexx interpreter seems to be installed\n");
 	return FALSE;
     }
     
