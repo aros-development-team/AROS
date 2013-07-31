@@ -61,13 +61,32 @@ struct USBNSDeviceQueryResult
 struct USB2OTGUnit
 {
     struct Unit         hu_Unit;
+
+    struct List		hu_IOPendingQueue;	/* Root Hub Pending IO Requests */
+
+    struct List         hu_TDQueue;
+    struct List         hu_PeriodicTDQueue;
+    struct List         hu_CtrlXFerQueue;
+    struct List         hu_IntXFerQueue;
+    struct List         hu_IsoXFerQueue;
+    struct List	        hu_BulkXFerQueue;
+
+    struct List         hu_AbortQueue;
+
     APTR                hu_GlobalIRQHandle;
-    UBYTE		hu_OperatingMode;            /* HOST/DEVICE mode */
+    struct Interrupt	hu_PendingInt;
+    struct Interrupt    hu_NakTimeoutInt;
+    struct timerequest  hu_NakTimeoutReq;
+    struct MsgPort      hu_NakTimeoutMsgPort;
+
+    UBYTE		hu_OperatingMode;       /* HOST/DEVICE mode */
     UBYTE		hu_HubAddr;
     UBYTE               hu_HostChans;
     UBYTE               hu_DevEPs;
     UBYTE               hu_DevInEPs;
+
     BOOL		hu_UnitAllocated;       /* unit opened */
+    BOOL                hu_HubPortChanged;      /* Root port state change */
 };
 
 /* PRIVATE device node */
@@ -82,10 +101,14 @@ struct USB2OTGDevice
     APTR		hd_MemPool;	        /* memory pool */
 
     struct USB2OTGUnit  *hd_Unit;	        /* we only currently support a single unit.. */
+    
+    struct MsgPort	*hd_MsgPort;
+    struct timerequest	*hd_TimerReq;	        /* Timer I/O Requests */
+
 };
 
-#define FNAME_DEV(x)    USB2OTG__Dev__ ## x
-#define FNAME_HUB(x)    USB2OTG__Hub__ ## x
+#define FNAME_DEV(x)            USB2OTG__Dev__ ## x
+#define FNAME_ROOTHUB(x)        USB2OTG__RootHub__ ## x
 
 #ifdef UtilityBase
 #undef UtilityBase
@@ -98,6 +121,9 @@ struct USB2OTGDevice
 #define	UtilityBase     USB2OTGBase->hd_UtilityBase
 
 #define KernelBase      USB2OTGBase->hd_KernelBase
+
+AROS_INTP(FNAME_DEV(PendingInt));
+AROS_INTP(FNAME_DEV(NakTimeoutInt));
 
 struct Unit             *FNAME_DEV(OpenUnit)(struct IOUsbHWReq *, LONG, struct USB2OTGDevice *);
 void                    FNAME_DEV(CloseUnit)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
@@ -119,6 +145,10 @@ WORD                    FNAME_DEV(cmdBulkXFer)(struct IOUsbHWReq *, struct USB2O
 WORD                    FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 WORD                    FNAME_DEV(cmdIsoXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
 
-WORD                    FNAME_HUB(cmdControlXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+void                    FNAME_DEV(Cause)(struct USB2OTGDevice *, struct Interrupt *);
+
+WORD                    FNAME_ROOTHUB(cmdControlXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_ROOTHUB(cmdIntXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+void                    FNAME_ROOTHUB(PendingIO)(struct USB2OTGUnit *);
 
 #endif /* USB2OTG_INTERN_H */
