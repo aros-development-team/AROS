@@ -158,12 +158,16 @@
 #define USB2OTG_AHB_PERIODICTRANSFEREMPTYLEVEL          (1 << 8)
 #define USB2OTG_AHB_REMMEMSUPP                          (1 << 21)
 #define USB2OTG_AHB_NOTIALLDMAWRIT                      (1 << 22)
-#define USB2OTG_AHB_DMAREMAINDERMODE                    (1 << 23)
+#define USB2OTG_AHB_DMAREMAINDERMODE                    23
+#define USB2OTG_AHB_DMAREMAINDERMODE_INCR               (0 << 23)
+#define USB2OTG_AHB_DMAREMAINDERMODE_SINGLE             (1 << 23)
 
 /* Bits in USB2OTG_USB */
 #define USB2OTG_USB_TOUTCAL                             (1 << 0)
 #define USB2OTG_USB_PHYINTERFACE                        (1 << 3)
-#define USB2OTG_USB_MODESELECT                          (1 << 4)
+#define USB2OTG_USB_MODESELECT                          4
+#define USB2OTG_USB_MODESELECT_ULPI                     (0 << USB2OTG_USB_MODESELECT)
+#define USB2OTG_USB_MODESELECT_UTMI                     (1 << USB2OTG_USB_MODESELECT)
 #define USB2OTG_USB_FSINTF                              (1 << 5)
 #define USB2OTG_USB_PHYSEL                              (1 << 6)
 #define USB2OTG_USB_DDRSEL                              (1 << 7)
@@ -186,6 +190,13 @@
 #define USB2OTG_USB_TX_END_DELAY                        (1 << 28)
 #define USB2OTG_USB_FORCE_HOST_MODE                     (1 << 29)
 #define USB2OTG_USB_FORCE_DEV_MODE                      (1 << 30)
+
+#define USB2OTG_RESET_CORESOFT                          (1 << 0)
+#define USB2OTG_RESET_HCLKSOFT                          (1 << 1)
+#define USB2OTG_RESET_HOSTFRAMECNTR                     (1 << 2)
+#define USB2OTG_RESET_INTOKENQUEUEFLUSH                 (1 << 3)
+#define USB2OTG_RESET_RXFIFOFLUSH                       (1 << 4)
+#define USB2OTG_RESET_TXFIFOFLUSH                       (1 << 5)
 
 /* Bits in USB2OTG_I2CCTRL */
 #define USB2OTG_I2CCTRL_READWRITEDATA                   (1 << 0)
