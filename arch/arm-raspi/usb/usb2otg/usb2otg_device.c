@@ -10,6 +10,8 @@
 #include <proto/kernel.h>
 #include <proto/utility.h>
 
+#include <proto/alib.h>
+
 #include <asm/bcm2835.h>
 #include <hardware/usb2otg.h>
 
@@ -32,7 +34,9 @@ static void GlobalIRQHandler(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBa
  */
 static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 {
-    volatile unsigned int otg_RegVal, otg_OperatingMode = 0;
+    volatile unsigned int *pmmailbox = (ARM_PERIIOBASE + 0xB880);
+    volatile unsigned int otg_RegVal;
+    unsigned int otg_OperatingMode = 0, pmres;
 
     D(bug("[USB2OTG] %s: USB2OTGBase @ 0x%p, SysBase @ 0x%p\n",
                  __PRETTY_FUNCTION__, USB2OTGBase, SysBase));
@@ -55,130 +59,238 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
         D(bug("[USB2OTG] %s: kernel.resource opened @ 0x%p\n",
                 __PRETTY_FUNCTION__, USB2OTGBase->hd_KernelBase));
 
-        bug("[USB2OTG] HS OTG Core Release: %c%c%x.%x%x%x\n",
-                    ((otg_RegVal >> 24) & 0xFF), ((otg_RegVal >> 16) & 0xFF),
-                    ((otg_RegVal >> 12) & 0xF), ((otg_RegVal >> 8) & 0xF), ((otg_RegVal >> 4) & 0xF), (otg_RegVal & 0xF)
-                    );
-
-        otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
-        bug("[USB2OTG] Architecture: %0x\n", ((otg_RegVal & (3 << 3)) >> 3));
-
-        if ((USB2OTGBase->hd_UtilityBase = (APTR)OpenLibrary("utility.library", 39)) != NULL)
+        if((USB2OTGBase->hd_MsgPort = CreateMsgPort()))
         {
-            USB2OTGBase->hd_MemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 16384, 4096);
-            if (USB2OTGBase->hd_MemPool)
+            if((USB2OTGBase->hd_TimerReq = (struct timerequest *) CreateIORequest(USB2OTGBase->hd_MsgPort, sizeof(struct timerequest))))
             {
-                int ns;
-
-                D(bug("[USB2OTG] %s: Allocated MemPool @ 0x%p\n",
-                            __PRETTY_FUNCTION__, USB2OTGBase->hd_MemPool));
-
-#if !defined(OTG_FORCEDEVICEMODE)
-                otg_OperatingMode |= USB2OTG_USBHOSTMODE;
-                D(
-                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HOSTCFG);
-                    bug("[USB2OTG] %s: Host Mode Config: %08x\n",
-                            __PRETTY_FUNCTION__, otg_RegVal);
-                )
-#endif
-#if !defined(OTG_FORCEHOSTMODE)
-                otg_OperatingMode |= USB2OTG_USBDEVICEMODE;
-                D(
-                    otg_RegVal = *((volatile unsigned int *)USB2OTG_DEVCFG);
-                    bug("[USB2OTG] %s: Device Mode Config: %08x\n",
-                        __PRETTY_FUNCTION__, otg_RegVal);
-                )
-#endif
-                if (USB2OTGBase)
+                if(!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) USB2OTGBase->hd_TimerReq, 0))
                 {
-                    D(
-                        otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE);
-                        bug("[USB2OTG] %s: HWConfig1: %08x\n",
-                                __PRETTY_FUNCTION__, otg_RegVal);
-                        otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
-                        bug("[USB2OTG] %s: HWConfig2: %08x\n",
-                                __PRETTY_FUNCTION__, otg_RegVal);
-                        otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE3);
-                        bug("[USB2OTG] %s: HWConfig3: %08x\n",
-                                __PRETTY_FUNCTION__, otg_RegVal);
-                        otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE4);
-                        bug("[USB2OTG] %s: HWConfig4: %08x\n",
-                                __PRETTY_FUNCTION__, otg_RegVal);
-                    )
+                    USB2OTGBase->hd_TimerReq->tr_node.io_Message.mn_Node.ln_Name = "USB2OTG Timer";
+                    USB2OTGBase->hd_TimerReq->tr_node.io_Command = TR_ADDREQUEST;
+                    D(bug("[USB2OTG] %s: timer.device opened\n",
+                            __PRETTY_FUNCTION__));
+        
+                    bug("[USB2OTG] HS OTG Core Release: %c%c%x.%x%x%x\n",
+                                ((otg_RegVal >> 24) & 0xFF), ((otg_RegVal >> 16) & 0xFF),
+                                ((otg_RegVal >> 12) & 0xF), ((otg_RegVal >> 8) & 0xF), ((otg_RegVal >> 4) & 0xF), (otg_RegVal & 0xF)
+                                );
 
-#if (0)
+                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
+                    bug("[USB2OTG] Architecture: %d - ", ((otg_RegVal & (3 << 3)) >> 3));
+                    switch (((otg_RegVal & (3 << 3)) >> 3))
+                    {
+                        case 2:
+                            bug("Internal DMA\n");
+                            break;
+                        case 1:
+                            bug("External DMA\n");
+                            break;
+                        default:
+                            bug("Slave Only\n");
+                            break;
+                    }
+
                     D(bug("[USB2OTG] %s: Disabling USB Interrupts (Globaly)..\n", __PRETTY_FUNCTION__));
                     otg_RegVal = *((volatile unsigned int *)USB2OTG_AHB);
                     otg_RegVal &= ~USB2OTG_AHB_INTENABLE;
+                    *((volatile unsigned int *)USB2OTG_INTRMASK) = 0;
                     *((volatile unsigned int *)USB2OTG_AHB) = otg_RegVal;
-                    D(bug("[USB2OTG] %s: AHB : %08x\n", __PRETTY_FUNCTION__, *((volatile unsigned int *)USB2OTG_AHB)));
-#endif
-                    D(bug("[USB2OTG] %s: Performing Soft Disconnect ..\n", __PRETTY_FUNCTION__));
-                    *((volatile unsigned int *)USB2OTG_DEVCTRL) = (1 << 1);
 
-                    for (ns = 0; ns < 32000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 32ms
-
-                    *((volatile unsigned int *)USB2OTG_RESET) = (1 << 0);
-
-                    for (ns = 0; ns < 8000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 8ms
-
-                    if ((USB2OTGBase->hd_Unit = AllocPooled(USB2OTGBase->hd_MemPool, sizeof(struct USB2OTGUnit))) != NULL)
+                    while (pmmailbox[6] & 0x80000000);
+                    pmmailbox[8] = 0x80;
+                    do {
+                        while (pmmailbox[6] & 0x40000000);		
+                    } while (((pmres = pmmailbox[0]) & 0xf) != 0);
+                    if (pmres != 0x80)
                     {
-                        D(bug("[USB2OTG] %s: Unit Allocated at 0x%p\n",
-                                    __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit));
-
-                        USB2OTGBase->hd_Unit->hu_OperatingMode = (otg_OperatingMode == (USB2OTG_USBHOSTMODE|USB2OTG_USBDEVICEMODE)) ? 0 : otg_OperatingMode;
-
-                        D(bug("[USB2OTG] %s: Unit Mode %d\n",
-                                    __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_OperatingMode));
-
-                        USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, GlobalIRQHandler, USB2OTGBase->hd_Unit, SysBase);
-
-                        D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p]\n",
-                                    __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_GlobalIRQHandle));
-
-                        D(bug("[USB2OTG] %s: Preparing Controller (non HSIC mode) ..\n", __PRETTY_FUNCTION__));
-                        *((volatile unsigned int *)USB2OTG_USB) = USB2OTG_USB_MODESELECT|USB2OTG_USB_USBTRDTIM(5)|(USB2OTGBase->hd_Unit->hu_OperatingMode << 29);
-                        *((volatile unsigned int *)USB2OTG_OTGCTRL) = 0;
-
-                        otg_RegVal = *((volatile unsigned int *)USB2OTG_LPMCONFIG);
-                        otg_RegVal &= ~USB2OTG_LPMCONFIG_HSICCONNECT;
-                        *((volatile unsigned int *)USB2OTG_LPMCONFIG) = otg_RegVal;
-
-                        D(bug("[USB2OTG] %s: Clearing Global NAK ..\n", __PRETTY_FUNCTION__));
-                        *((volatile unsigned int *)USB2OTG_DEVCTRL) = (1 << 10) | (1 << 8);
-
-                        D(bug("[USB2OTG] %s: Disabling Port ..\n", __PRETTY_FUNCTION__));
-                        *((volatile unsigned int *)USB2OTG_POWER) = 0xFFFFFFFF;
-
-                        for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
-
-                        D(bug("[USB2OTG] %s: Enabling Port ..\n", __PRETTY_FUNCTION__));
-                        *((volatile unsigned int *)USB2OTG_POWER) = 0;
-
-                        for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
-
-                        D(bug("[USB2OTG] %s: Pulling-Up D+ ..\n", __PRETTY_FUNCTION__));
-                        otg_RegVal = *((volatile unsigned int *)USB2OTG_DEVCTRL);
-                        otg_RegVal &= ~(1 << 1);
-                        *((volatile unsigned int *)USB2OTG_DEVCTRL) = otg_RegVal;
-
-                        bug("[USB2OTG] HS OTG USB Driver Initialised\n");
+                        bug("[USB2OTG] Failed to power on controller\n");
+                        //USB2OTGBase->hd_TimerReq
+                        //USB2OTGBase->hd_MsgPort
+                        USB2OTGBase = NULL;
+                        return FALSE;
                     }
+
+                    if ((USB2OTGBase->hd_UtilityBase = (APTR)OpenLibrary("utility.library", 39)) != NULL)
+                    {
+                        USB2OTGBase->hd_MemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 16384, 4096);
+                        if (USB2OTGBase->hd_MemPool)
+                        {
+                            int ns;
+
+                            D(bug("[USB2OTG] %s: Allocated MemPool @ 0x%p\n",
+                                        __PRETTY_FUNCTION__, USB2OTGBase->hd_MemPool));
+
+                            if (USB2OTGBase)
+                            {
+                                D(
+                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE);
+                                    bug("[USB2OTG] %s: HWConfig: %08x-", __PRETTY_FUNCTION__, otg_RegVal);
+                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
+                                    bug("%08x-", otg_RegVal);
+                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE3);
+                                    bug("%08x-", otg_RegVal);
+                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE4);
+                                    bug("%08x\n", otg_RegVal);
+                                )
+
+                                otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                otg_RegVal &= ~(USB2OTG_USB_ULPIDRIVEEXTERNALVBUS|USB2OTG_USB_TSDLINEPULSEENABLE);
+                                *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+
+                                D(bug("[USB2OTG] %s: Reseting Controller ..\n", __PRETTY_FUNCTION__));
+                                *((volatile unsigned int *)USB2OTG_RESET) = USB2OTG_RESET_CORESOFT;
+                                for (ns = 0; ns < 8000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 8ms
+                                if ((*((volatile unsigned int *)USB2OTG_RESET) & USB2OTG_RESET_CORESOFT) != 0)
+                                    bug("[USB2OTG] %s: Reset Timed-Out!\n", __PRETTY_FUNCTION__);
+
+                                if ((USB2OTGBase->hd_Unit = AllocPooled(USB2OTGBase->hd_MemPool, sizeof(struct USB2OTGUnit))) != NULL)
+                                {
+                                    D(bug("[USB2OTG] %s: Unit Allocated at 0x%p\n",
+                                                __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit));
+
+                                    NewList(&USB2OTGBase->hd_Unit->hu_IOPendingQueue);
+                                    
+                                    NewList(&USB2OTGBase->hd_Unit->hu_CtrlXFerQueue);
+                                    NewList(&USB2OTGBase->hd_Unit->hu_IntXFerQueue);
+                                    NewList(&USB2OTGBase->hd_Unit->hu_IsoXFerQueue);
+                                    NewList(&USB2OTGBase->hd_Unit->hu_BulkXFerQueue);
+                                    NewList(&USB2OTGBase->hd_Unit->hu_TDQueue);
+                                    NewList(&USB2OTGBase->hd_Unit->hu_AbortQueue);
+                                    NewList(&USB2OTGBase->hd_Unit->hu_PeriodicTDQueue);
+
+                                    USB2OTGBase->hd_Unit->hu_PendingInt.is_Node.ln_Type = NT_INTERRUPT;
+                                    USB2OTGBase->hd_Unit->hu_PendingInt.is_Node.ln_Name = "OTG2USB Pending Work Interrupt";
+                                    USB2OTGBase->hd_Unit->hu_PendingInt.is_Node.ln_Pri  = 0;
+                                    USB2OTGBase->hd_Unit->hu_PendingInt.is_Data = USB2OTGBase->hd_Unit;
+                                    USB2OTGBase->hd_Unit->hu_PendingInt.is_Code = (VOID_FUNC)FNAME_DEV(PendingInt);
+
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutInt.is_Node.ln_Type = NT_INTERRUPT;
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutInt.is_Node.ln_Name = "OTG2USB NakTimeout Interrupt";
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutInt.is_Node.ln_Pri  = -16;
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutInt.is_Data = USB2OTGBase->hd_Unit;
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutInt.is_Code = (VOID_FUNC)FNAME_DEV(NakTimeoutInt);
+
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutMsgPort.mp_Node.ln_Type = NT_MSGPORT;
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutMsgPort.mp_Flags = PA_SOFTINT;
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutMsgPort.mp_SigTask = &USB2OTGBase->hd_Unit->hu_NakTimeoutInt;
+                                    NewList(&USB2OTGBase->hd_Unit->hu_NakTimeoutMsgPort.mp_MsgList);
+
+                                    CopyMem(USB2OTGBase->hd_TimerReq, &USB2OTGBase->hd_Unit->hu_NakTimeoutReq, sizeof(struct timerequest));
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = &USB2OTGBase->hd_Unit->hu_NakTimeoutMsgPort;
+
+                                    USB2OTGBase->hd_Unit->hu_HubPortChanged = FALSE;
+
+                                    USB2OTGBase->hd_Unit->hu_OperatingMode = (otg_OperatingMode == (USB2OTG_USBHOSTMODE|USB2OTG_USBDEVICEMODE)) ? 0 : otg_OperatingMode;
+
+                                    D(bug("[USB2OTG] %s: Unit Mode %d\n",
+                                                __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_OperatingMode));
+
+                                    USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_HOSTPORT, GlobalIRQHandler, USB2OTGBase->hd_Unit, SysBase);
+
+                                    D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p] for IRQ #%ld\n",
+                                                __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_GlobalIRQHandle, IRQ_HOSTPORT));
+
+                                    D(bug("[USB2OTG] %s: Initialising PHY ..\n", __PRETTY_FUNCTION__));
+                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                    otg_RegVal &= ~USB2OTG_USB_PHYINTERFACE;
+                                    otg_RegVal |= USB2OTG_USB_MODESELECT_UTMI;
+                                    *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+
+                                    D(bug("[USB2OTG] %s: Reseting Controller ..\n", __PRETTY_FUNCTION__));
+                                    *((volatile unsigned int *)USB2OTG_RESET) = USB2OTG_RESET_CORESOFT;
+                                    for (ns = 0; ns < 8000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 8ms
+                                    if ((*((volatile unsigned int *)USB2OTG_RESET) & USB2OTG_RESET_CORESOFT) != 0)
+                                        bug("[USB2OTG] %s: Reset Timed-Out!\n", __PRETTY_FUNCTION__);
+                                    
+                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
+                                    if (((otg_RegVal & (3 << 6) >> 6) == 2) && ((otg_RegVal & (3 << 8) >> 8) == 1))
+                                    {
+                                        D(bug("[USB2OTG] %s: ULPI FSLS configuration: enabled.\n", __PRETTY_FUNCTION__));
+                                        otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                        otg_RegVal |= (USB2OTG_USB_ULPIFSLS|USB2OTG_USB_ULPI_CLK_SUS_M);
+                                        *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+                                    } else {
+                                        D(bug("[USB2OTG] %s: ULPI FSLS configuration: disabled.\n", __PRETTY_FUNCTION__));
+                                        otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                        otg_RegVal &= ~(USB2OTG_USB_ULPIFSLS|USB2OTG_USB_ULPI_CLK_SUS_M);
+                                        *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+                                    }
+
+                                    D(bug("[USB2OTG] %s: Enabling DMA configuration..\n", __PRETTY_FUNCTION__));
+                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_AHB);
+                                    otg_RegVal &= ~(1 << USB2OTG_AHB_DMAREMAINDERMODE);
+                                    otg_RegVal |= (USB2OTG_AHB_DMAENABLE|USB2OTG_AHB_DMAREMAINDERMODE_INCR);
+                                    *((volatile unsigned int *)USB2OTG_AHB) = otg_RegVal;
+                                    
+                                    D(bug("[USB2OTG] %s: Operating Mode: ", __PRETTY_FUNCTION__));
+                                    otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
+                                    switch (otg_RegVal & 7)
+                                    {
+                                        case 0:
+                                            D(bug("HNP/SRP\n"));
+                                            otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                            otg_RegVal |= (USB2OTG_USB_HNPCAPABLE|USB2OTG_USB_SRPCAPABLE);
+                                            *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+                                            break;
+                                        case 1:
+                                        case 3:
+                                        case 5:
+                                            D(bug("SRP\n"));
+                                            otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                            otg_RegVal &= ~USB2OTG_USB_HNPCAPABLE;
+                                            otg_RegVal |= USB2OTG_USB_SRPCAPABLE;
+                                            *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+                                            break;
+                                        case 2:
+                                        case 4:
+                                        case 6:
+                                            D(bug("No HNP or SRP\n"));
+                                            otg_RegVal = *((volatile unsigned int *)USB2OTG_USB);
+                                            otg_RegVal &= ~(USB2OTG_USB_HNPCAPABLE|USB2OTG_USB_SRPCAPABLE);
+                                            *((volatile unsigned int *)USB2OTG_USB) = otg_RegVal;
+                                            break;
+                                    }
+
+                                    bug("[USB2OTG] HS OTG USB Driver Initialised\n");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            D(bug("[USB2OTG] %s: Failed to Create MemPool\n",
+                                        __PRETTY_FUNCTION__));
+
+                            CloseLibrary((struct Library *) UtilityBase);
+                            USB2OTGBase = NULL;
+                        }
+                    }
+                    else
+                    {
+                        D(bug("[USB2OTG] %s: OpenLibrary(\"utility.library\", 39) failed!\n",
+                                    __PRETTY_FUNCTION__));
+
+                        USB2OTGBase = NULL;
+                    }
+                }
+                else
+                {
+                    D(bug("[USB2OTG] %s: OpenDevice(\"timer.device\") failed!\n",
+                                __PRETTY_FUNCTION__));
+
+                    USB2OTGBase = NULL;
                 }
             }
             else
             {
-                D(bug("[USB2OTG] %s: Failed to Create MemPool\n",
+                D(bug("[USB2OTG] %s: Failed to allocate timer IORequest\n",
                             __PRETTY_FUNCTION__));
 
-                CloseLibrary((struct Library *) UtilityBase);
                 USB2OTGBase = NULL;
             }
         }
         else
         {
-            D(bug("[USB2OTG] %s: OpenLibrary(\"utility.library\", 39) failed!\n",
+            D(bug("[USB2OTG] %s: Failed to create MsgPort\n",
                         __PRETTY_FUNCTION__));
 
             USB2OTGBase = NULL;
@@ -226,7 +338,7 @@ static int FNAME_DEV(Open)(LIBBASETYPEPTR USB2OTGBase, struct IOUsbHWReq *ioreq,
         {
             ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
             ioreq->iouh_Req.io_Error                   = 0;
-    
+
             return TRUE;
         }
     }   
@@ -288,7 +400,7 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
     struct USB2OTGUnit *otg_Unit = (struct USB2OTGUnit *) ioreq->iouh_Req.io_Unit;
     WORD ret;
 
-    D(bug("[USB2OTG] %s: IOReq @ 0x%08lx, USB2OTGBase @ 0x%08lx, cmd: %lu\n",
+    D(bug("[USB2OTG] %s: IOReq @ 0x%08lx, USB2OTGBase @ 0x%08lx [cmd:%lu]\n",
                 __PRETTY_FUNCTION__, ioreq, USB2OTGBase, ioreq->iouh_Req.io_Command));
 
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
@@ -407,3 +519,26 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
     AROS_LIBFUNC_EXIT
 }
 
+void FNAME_DEV(Cause)(LIBBASETYPEPTR USB2OTGBase, struct Interrupt *interrupt)
+{
+    /* this is a workaround for the original Cause() function missing tailed calls */
+    Disable();
+
+    if((interrupt->is_Node.ln_Type == NT_SOFTINT) || (interrupt->is_Node.ln_Type == NT_USER))
+    {
+        // signal tailed call
+        interrupt->is_Node.ln_Type = NT_USER;
+    } else {
+        do
+        {
+            interrupt->is_Node.ln_Type = NT_SOFTINT;
+            Forbid(); // make sure code is not interrupted by other tasks
+            Enable();
+            AROS_INTC1(interrupt->is_Code, interrupt->is_Data);
+            Disable();
+            Permit();
+        } while(interrupt->is_Node.ln_Type != NT_SOFTINT);
+        interrupt->is_Node.ln_Type = NT_INTERRUPT;
+    }
+    Enable();
+}
