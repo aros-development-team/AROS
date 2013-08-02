@@ -79,6 +79,7 @@ extern const struct Resident Exec_resident;
 extern struct ExecBase *AbsExecBase;
 
 extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
+extern void __attribute__((interrupt)) Exec_Supervisor_Trap_00 (void);
 
 #define _AS_STRING(x)	#x
 #define AS_STRING(x)	_AS_STRING(x)
@@ -703,6 +704,8 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
             BootS = GetBootStruct(oldSysBase);
             if (BootS) {
                 DEBUGPUTHEX(("BootStruct at", (ULONG)BootS));
+                DEBUGPUTHEX(("Original  SysBase at", (ULONG)BootS->RealBase));
+                DEBUGPUTHEX(("Secondary SysBase at", (ULONG)BootS->RealBase2));
                 bootmsgptr = BootS->kerneltags;
                 arosbootstrapmode = TRUE;
             }
@@ -910,7 +913,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
     /* Set privilege violation trap - we
      * need this to support the Exec/Supervisor call
      */
-    trap[8] = Exec_Supervisor_Trap;
+    trap[8] = (SysBase->AttnFlags & AFF_68010) ? Exec_Supervisor_Trap : Exec_Supervisor_Trap_00;
 
     /* SysBase is complete, now we can enable instruction caches safely. */
     CacheControl(CACRF_EnableI, CACRF_EnableI);
@@ -935,15 +938,20 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
      * if someone decides to use them. ArosBootStrap does not anymore need them,
      * it only needs ColdCapture.
      */
-    if (BootS && BootS->RealBase && iseven(BootS->RealBase)) {
-    	BootS->RealBase->ColdCapture = SysBase->ColdCapture;
-        if (IsSysBaseValid(BootS->RealBase)) {
-            oldSysBase = BootS->RealBase;
-            DEBUGPUTHEX(("[SysBase] Found original at", (ULONG)oldSysBase));
-        } else {
-            DEBUGPUTHEX(("[SysBase] Found original invalid at", (ULONG)BootS->RealBase));
-        }            
-        BootS->RealBase = NULL;
+    if (BootS) {
+        if (BootS->RealBase2) /* SysBase in autoconfig hack */
+            BootS->RealBase = BootS->RealBase2;
+        if (BootS->RealBase && iseven(BootS->RealBase)) {
+            BootS->RealBase->ColdCapture = SysBase->ColdCapture;
+            if (IsSysBaseValid(BootS->RealBase)) {
+                oldSysBase = BootS->RealBase;
+                DEBUGPUTHEX(("[SysBase] Found original at", (ULONG)oldSysBase));
+            } else {
+                DEBUGPUTHEX(("[SysBase] Found original invalid at", (ULONG)BootS->RealBase));
+            }
+            BootS->RealBase = NULL;
+            BootS->RealBase2 = NULL;
+        }
     }
 
     /* If oldSysBase is not NULL, that means that it
@@ -997,7 +1005,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
     /* Set privilege violation trap again.
      * AmigaIRQInit may have blown it away.
      */
-    trap[8] = Exec_Supervisor_Trap;
+    trap[8] = (SysBase->AttnFlags & AFF_68010) ? Exec_Supervisor_Trap : Exec_Supervisor_Trap_00;
 
     /* Attempt to allocate a real stack, and switch to it. */
     do {

@@ -34,6 +34,7 @@ struct BootStruct
 {
     ULONG magic;
     struct ExecBase *RealBase;
+    struct ExecBase *RealBase2;
     struct List *mlist;
     struct TagItem *kerneltags;
     struct Resident **reslist;
