@@ -42,6 +42,7 @@ struct BootStruct
 {
     ULONG magic;
     struct ExecBase *RealBase;
+    struct ExecBase *RealBase2;
     struct List *mlist;
     struct TagItem *kerneltags;
     struct Resident **reslist;
@@ -1092,7 +1093,7 @@ void coldcapturecode(void)
 	// It was AOS temp SysBase. Switch back to FakeBase.
 	// Interestingly ChkBase contains original SysBase pointer in this situation!
 	"move.l (%a4),%a1\n"
-	"move.l 38(%a0),4(%a1)\n" // SysBase -> BootStruct->RealBase
+	"move.l 38(%a0),8(%a1)\n" // Original SysBase -> BootStruct->RealBase2
 	"basenok:\n"
 	"bsr.s fixbase\n"
 	// and reset and try again.
@@ -1107,6 +1108,9 @@ void coldcapturecode(void)
 	"not.l	%d0\n"
 	"cmp.l	38(%a0),%d0\n" // ChkBase
 	"bne.s	basenok\n"
+
+	"move.l	(%a4),%a1\n"
+	"move.l	%a0,4(%a1)\n" // Original SysBase -> BootStruct->RealBase
 
 	// set early exceptions
 	"move.w	#8,%a1\n"
