@@ -1,57 +1,45 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
-*/
+    Command line options:
 
+    1. PUBSCREEN <name>: the name of the public screen to open the window on
+    2. TAPE <filename>: the name of a file to record the user interactions
+       into
+*/
+#include <exec/types.h>
+#include <dos/dos.h>
 #include <intuition/intuition.h>
-#include <libraries/gadtools.h>
-#include <libraries/locale.h>
+#include <intuition/classes.h>
+#include <libraries/mui.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
-#include <proto/graphics.h>
-#include <proto/gadtools.h>
 #include <proto/locale.h>
 #include <proto/alib.h>
+#include <proto/muimaster.h>
+#include <proto/utility.h>
 
 #include <stdio.h>
-#include <string.h>
-#include <ctype.h>
 #include <stdlib.h>
-#include <math.h>
+#include <string.h>
+
+struct IntuitionBase *IntuitionBase;
+struct GfxBase *GfxBase;
+struct Library *MUIMasterBase;
+struct Library *GadToolsBase;
+struct LocaleBase *LocaleBase;
 
 #define ARG_TEMPLATE "PUBSCREEN,TAPE/K"
-
 enum {ARG_PUBSCREEN,ARG_TAPE,NUM_ARGS};
 
-#define MAX_VAL_LEN 13
-
-#define INNER_SPACING_X 4
-#define INNER_SPACING_Y 4
-
-#define BUTTON_SPACING_X 4
-#define BUTTON_SPACING_Y 4
-
-#define BUTTON_LED_SPACING 4
-
-#define NUM_BUTTONS 20
-#define NUM_BUTTON_COLS 5
-#define NUM_BUTTON_ROWS 4
-
-#define BUTTON_EXTRA_WIDTH 8
-#define BUTTON_EXTRA_HEIGHT 4
-
-#define LED_EXTRA_HEIGHT 4
+/* The pattern of the tape name in case we log to a RAW: window */
+#define RAW_TAPE_NAME "RAW:%ld/%ld/%ld/%ld/Calculator Tape/INACTIVE/SCREEN%s"
 
 enum
 {
-    STATE_LEFTVAL, STATE_OP, STATE_RIGHTVAL, STATE_EQU
-};
-
-enum
-{
-    BTYPE_0,
+    BTYPE_0 = 0,
     BTYPE_1,
     BTYPE_2,
     BTYPE_3,
@@ -70,803 +58,769 @@ enum
     BTYPE_SUB,
     BTYPE_ADD,
     BTYPE_SIGN,
-    BTYPE_EQU,
-    
-    BTYPE_LED
+    BTYPE_EQU    
 };
 
-struct ButtonInfo
+#define NUM_BUTTONS 20
+#define DECIMAL_BUTTON_INDEX 16
+
+struct CalcButtonInfo
 {
-    char *text;
-    WORD type;
-    char key1;
-    char key2;
+    const char *label;
+    ULONG btype;
+    char shortcut;
 };
 
-static struct ButtonInfo bi[NUM_BUTTONS] =
+struct CalcButtonInfo BUTTONS[] =
 {
-    {"7"	,BTYPE_7	, '7'	, 0	},
-    {"8"	,BTYPE_8	, '8'	, 0	},
-    {"9"	,BTYPE_9	, '9'	, 0	},
-    {"CA"	,BTYPE_CA	, 'A'	, 127	},
-    {"CE"	,BTYPE_CE	, 'E'	, 0	},
-    
-    {"4"	,BTYPE_4	, '4'	, 0	},
-    {"5"	,BTYPE_5	, '5'	, 0	},
-    {"6"	,BTYPE_6	, '6'	, 0	},
-    {"×"	,BTYPE_MUL	, '*'	, 'X'	},
-    {":"	,BTYPE_DIV	, '/'	, ':'	},
-    
-    {"1"	,BTYPE_1	, '1'	, 0	},
-    {"2"	,BTYPE_2	, '2'	, 0	},
-    {"3"	,BTYPE_3	, '3'	, 0	},
-    {"+"	,BTYPE_ADD	, '+'	, 0	},
-    {"-"	,BTYPE_SUB	, '-'	, 0	},
-    
-    {"0"	,BTYPE_0	, '0'	, 0	},
-    {"."	,BTYPE_COMMA	, '.'	, ','	},
-    {"«"	,BTYPE_BS	, 8  	, 0	},
-    {"±"	,BTYPE_SIGN	, 'S'	, 0	},
-    {"="	,BTYPE_EQU	, '='	, 13	}
+    {"7", BTYPE_7, '7'}, {"8", BTYPE_8, '8'}, {"9", BTYPE_9, '9'}, {"CA", BTYPE_CA, 'A'}, {"CE", BTYPE_CE, 'E'},
+    {"4", BTYPE_4, '4'}, {"5", BTYPE_5, '5'}, {"6", BTYPE_6, '6'}, {"*", BTYPE_MUL, '*'}, {":", BTYPE_DIV, ':'},
+    {"1", BTYPE_1, '1'}, {"2", BTYPE_2, '2'}, {"3", BTYPE_3, '3'}, {"+", BTYPE_ADD, '+'}, {"-", BTYPE_SUB, '-'},
+    {"0", BTYPE_0, '0'}, {".", BTYPE_COMMA, '.'}, {"<<", BTYPE_BS, 8}, {"+/-", BTYPE_SIGN, 's'}, {"=", BTYPE_EQU, '='}
 };
 
+/*
+ * Most of the application state is local or in BOOPSI objects.
+ * The only global state is to communicate the command line arguments
+ */
+static char pubscrname[256];
+static char tapename[256];
+static BOOL use_tape;
 
-struct IntuitionBase *IntuitionBase;
-struct GfxBase *GfxBase;
-struct Library *GadToolsBase;
-#ifndef __MORPHOS__
-struct LocaleBase *LocaleBase;
-#else
-struct Library *LocaleBase;
-#endif
+/**********************************************************************
+ Tape BOOPSI class
+ **********************************************************************/
 
-static struct Screen *scr;
-static struct DrawInfo *dri;
-static struct Gadget *gadlist, *gad[NUM_BUTTONS + 2];
-static struct Window *win;
-static struct RDArgs *MyArgs;
-static APTR vi;
-static BPTR tapefh;
+#define TAPEA_FILEHANDLE    (TAG_USER + 20)
+#define TAPEM_NEWLINE       (TAG_USER + 21)
+#define TAPEM_PRINT_LVAL    (TAG_USER + 22)
+#define TAPEM_PRINT_RVAL    (TAG_USER + 23)
+#define TAPEM_PRINT_RESULT  (TAG_USER + 24)
 
-static WORD win_borderleft,win_bordertop;
-static WORD buttonwidth,buttonheight,ledheight;
-static WORD inner_winwidth,inner_winheight;
-static WORD vallen,state,operation;
+struct TapeData
+{
+    BPTR tapefh;
+};
 
-static BOOL dotape;
+struct MUIMP_PrintLval
+{
+    STACKED ULONG MethodID;
+    STACKED const char *str;
+};
 
-static double leftval,rightval;
+struct MUIMP_PrintRval
+{
+    STACKED ULONG MethodID;
+    STACKED char operator;
+    STACKED const char *str;
+};
 
-static char comma,*pubscrname;
-static char ledstring[256],visledstring[256],
-				tempstring[256],tapename[256];
+struct MUIMP_PrintResult
+{
+    STACKED ULONG MethodID;
+    STACKED const char *str;
+};
 
-static char *deftapename = "RAW:%ld/%ld/%ld/%ld/Calculator Tape/INACTIVE/SCREEN%s";
+IPTR mNewTape(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct TagItem *tagListState = msg->ops_AttrList, *tag;
+    Object *instance = (Object *) DoSuperMethodA(cl, obj, (APTR) msg);
+    struct TapeData *data = INST_DATA(cl, instance);
+    data->tapefh = NULL;
 
-UBYTE version[] = "$VER: Calculator 1.3 (07.10.2007) © AROS Dev Team";
+    while ((tag = (struct TagItem *) NextTagItem(&tagListState)))
+    {
+        switch (tag->ti_Tag)
+        {
+            case TAPEA_FILEHANDLE:
+                data->tapefh = (BPTR) tag->ti_Data;
+                break;
+            default:
+                break;
+        }
+    }
+    return (IPTR) instance;
+}
 
-static IPTR Args[NUM_ARGS];
+IPTR mDisposeTape(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct TapeData *data = INST_DATA(cl, obj);
+    if (data->tapefh) Close(data->tapefh);
+    return DoSuperMethodA(cl, obj, (APTR) msg);
+}
 
-static void Cleanup(char *msg)
+IPTR mTapeNewline(struct IClass *cl, Object *obj, APTR msg)
+{
+    struct TapeData *data = INST_DATA(cl, obj);
+    if (data->tapefh) FPutC(data->tapefh, '\n');
+    return (IPTR) obj;
+}
+
+IPTR mTapePrintLval(struct IClass *cl, Object *obj, struct MUIMP_PrintLval *msg)
+{
+    struct TapeData *data = INST_DATA(cl, obj);
+    if (data->tapefh)
+    {
+        FPutC(data->tapefh, '\t');
+        FPuts(data->tapefh, msg->str);
+        FPutC(data->tapefh, '\n');
+        Flush(data->tapefh);
+    }
+    return (IPTR) obj;
+}
+
+IPTR mTapePrintRval(struct IClass *cl, Object *obj, struct MUIMP_PrintRval *msg)
+{
+    struct TapeData *data = INST_DATA(cl, obj);
+    if (data->tapefh)
+    {
+        FPutC(data->tapefh, msg->operator);
+        FPutC(data->tapefh, '\t');
+        FPuts(data->tapefh, msg->str);
+        FPutC(data->tapefh, '\n');
+        Flush(data->tapefh);
+  }
+  return (IPTR) obj;
+}
+
+IPTR mTapePrintResult(struct IClass *cl, Object *obj, struct MUIMP_PrintResult *msg)
+{
+    struct TapeData *data = INST_DATA(cl, obj);
+    if (data->tapefh)
+    {
+        FPuts(data->tapefh, "=\t");
+        FPuts(data->tapefh, msg->str);
+        FPutC(data->tapefh, '\n');
+        Flush(data->tapefh);
+    }
+    return (IPTR) obj;
+}
+
+ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct TagItem *tagListState = msg->ops_AttrList, *tag;
+    struct TapeData *data = INST_DATA(cl, obj);
+
+    while ((tag = (struct TagItem *) NextTagItem(&tagListState)))
+    {
+        switch (tag->ti_Tag)
+        {
+            case TAPEA_FILEHANDLE:
+                data->tapefh = (BPTR) tag->ti_Data;
+                break;
+            default:
+                break;
+        }
+    }
+    return (IPTR) obj;
+}
+
+IPTR TapeDispatcher(struct IClass *cl, Object *obj, Msg msg)
+{
+    switch (msg->MethodID)
+    {
+        case OM_NEW:           return mNewTape(cl, obj, (APTR) msg);
+        case OM_DISPOSE:       return mDisposeTape(cl, obj, (APTR) msg);
+        case OM_SET:           return mSet(cl, obj, (APTR) msg);
+
+        case TAPEM_NEWLINE:    return mTapeNewline(cl, obj, (APTR) msg);
+        case TAPEM_PRINT_LVAL: return mTapePrintLval(cl, obj, (struct MUIMP_PrintLval *) msg);
+        case TAPEM_PRINT_RVAL: return mTapePrintRval(cl, obj, (struct MUIMP_PrintRval *) msg);
+        case TAPEM_PRINT_RESULT: return mTapePrintResult(cl, obj, (struct MUIMP_PrintResult *) msg);
+    }
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+static Class *make_tape_class(void)
+{
+    Class *cl;
+    cl = MakeClass(NULL, ROOTCLASS, NULL, sizeof(struct TapeData), 0);
+    if (cl) cl->cl_Dispatcher.h_Entry = TapeDispatcher;
+    return cl;
+}
+
+/**********************************************************************
+ Calculator BOOPSI class
+ **********************************************************************/
+
+#define MAX_DIGITS 13
+#define OM_ADD_KEY           (TAG_USER + 30)
+#define CALCA_DISPLAY        (TAG_USER + 31)
+#define CALCA_TAPE           (TAG_USER + 32)
+#define CALCA_DECIMAL_POINT  (TAG_USER + 33)
+
+#define EDIT_BUFFER_SIZE MAX_DIGITS + 2  /* space for '-' sign and terminator byte */
+const char *INITIAL_DISPLAY = "\033r0";
+enum { STATE_LEFTVAL, STATE_OP, STATE_RIGHTVAL, STATE_EQU };
+
+struct CalculatorData
+{
+    char edit_buffer[EDIT_BUFFER_SIZE];
+    int num_digits;
+    int state;
+    char decimal_point;
+  
+    double lvalue, rvalue;
+    int op;
+    Object *display, *tape;
+};
+
+struct MUIMP_CalcKey
+{
+    STACKED ULONG MethodID;
+    STACKED ULONG btype;
+};
+
+static char op2char(int op)
+{
+    switch (op) {
+        case BTYPE_MUL: return '*';
+        case BTYPE_DIV: return '*';
+        case BTYPE_SUB: return '-';
+        case BTYPE_ADD: return '+';
+        default: return '?';
+    }
+}
+
+static void clear_edit_buffer(struct CalculatorData *data)
+{
+    memset(data->edit_buffer, 0, EDIT_BUFFER_SIZE);
+    data->num_digits = 0;
+}
+
+IPTR mNewCalc(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct TagItem *tagListState = msg->ops_AttrList, *tag;
+    Object *instance = (Object *) DoSuperMethodA(cl, obj, (APTR) msg);
+    struct CalculatorData *data = INST_DATA(cl, instance);
+    clear_edit_buffer(data);
+    data->display = NULL;
+    data->tape = NULL;
+    data->state = STATE_LEFTVAL;
+    data->decimal_point = '.';
+
+    while ((tag = (struct TagItem *) NextTagItem(&tagListState)))
+    {
+        switch (tag->ti_Tag)
+        {
+            case CALCA_DISPLAY:
+                data->display = (Object *) tag->ti_Data;
+                break;
+            case CALCA_TAPE:
+                data->tape = (Object *) tag->ti_Data;
+                break;
+            case CALCA_DECIMAL_POINT:
+                data->decimal_point = (char) tag->ti_Data;
+                break;
+            default:
+                break;
+        }
+    }
+    return (IPTR) instance;
+}
+
+IPTR mDisposeCalc(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct CalculatorData *data = INST_DATA(cl, obj);
+    return DoSuperMethodA(cl, obj, (APTR) msg);
+}
+
+static BOOL is_operator(int btype)
+{
+    return btype >= BTYPE_MUL && btype <= BTYPE_ADD;
+}
+
+static BOOL can_insert_comma(struct CalculatorData *data)
+{
+    if (data->num_digits == 0) return TRUE;
+    else
+    {
+        int i;
+        for (i = 0; i < data->num_digits; i++)
+        {
+            if (data->edit_buffer[i] == '.') return FALSE;
+        }
+        return TRUE;
+    }
+}
+
+static double eval_result(double lvalue, double rvalue, int op)
+{
+    switch (op)
+    {
+        case BTYPE_MUL: return lvalue * rvalue;
+        case BTYPE_DIV: return lvalue / rvalue;
+        case BTYPE_SUB: return lvalue - rvalue;
+        case BTYPE_ADD: return lvalue + rvalue;
+        default: return 0;
+    }
+}
+
+
+static void localize_buffer(char *buffer, char decimal_point, int from, int to)
+{
+    int i;
+    for (i = from; i < to; i ++)
+    {
+        if (buffer[i] == '.')
+        {
+            buffer[i] = decimal_point;
+            break;
+        }
+    }
+}
+/*
+ * Rendering is centralized in this function, by copying
+ * the edit buffer into and manipulating the display buffer.
+ * MUI/Zune's text field right-justifies text through the inclusion
+ * of the "Esc-r" control sequence.
+ */
+static void display_state(struct CalculatorData *data)
+{
+    /* add 2 extra chars: Esc+'r' */
+    static char display_buffer[EDIT_BUFFER_SIZE + 2];
+
+    if (data->num_digits == 0)
+    {
+        SetAttrs(data->display, MUIA_Text_Contents, INITIAL_DISPLAY, TAG_DONE);
+    }
+    else
+    {
+        memset(display_buffer, 0, EDIT_BUFFER_SIZE + 2);
+        display_buffer[0] = '\033';
+        display_buffer[1] = 'r';
+        memcpy(display_buffer + 2, data->edit_buffer, data->num_digits);
+        localize_buffer(display_buffer, data->decimal_point, 2, MAX_DIGITS + 3);
+        SetAttrs(data->display, MUIA_Text_Contents, display_buffer, TAG_DONE);
+    }
+}
+
+static const char *localize_display(struct CalculatorData *data)
+{
+    static char buffer[EDIT_BUFFER_SIZE];
+    memset(buffer, 0, MAX_DIGITS + 1);
+    memcpy(buffer, data->edit_buffer, data->num_digits);
+    localize_buffer(buffer, data->decimal_point, 0, MAX_DIGITS + 1);
+    return buffer;
+}
+
+static void toggle_sign(struct CalculatorData *data)
+{
+    BOOL sign_found = FALSE;
+    int i;
+    if (data->state == STATE_LEFTVAL)       data->lvalue = -data->lvalue;
+    else if (data->state == STATE_RIGHTVAL) data->rvalue = -data->rvalue;
+
+    for (i = 0; i < EDIT_BUFFER_SIZE; i++)
+    {
+        if (data->edit_buffer[i] == '-')
+        {
+            sign_found = TRUE;
+            break;
+        }
+    }
+
+    if (sign_found)
+    {
+        /* eliminate the sign by shifting to the left */
+        data->num_digits--;
+        memmove(data->edit_buffer, data->edit_buffer + 1, data->num_digits);
+        data->edit_buffer[data->num_digits] = 0;
+    }
+    else
+    {
+        /* add sign by shifting to the right and inserting - */
+        memmove(data->edit_buffer + 1, data->edit_buffer, data->num_digits);
+        data->num_digits++;
+        data->edit_buffer[0] = '-';
+        data->edit_buffer[data->num_digits] = 0;
+    }
+    display_state(data);
+}
+
+/*
+ * This method implements the main logic of the calculator by performing transitions
+ * of a state machine.
+ */
+IPTR mAddCalcKey(struct IClass *cl, Object *obj, struct MUIMP_CalcKey *msg)
+{
+    struct CalculatorData *data = INST_DATA(cl, obj);
+    if (msg->btype <= BTYPE_9 && data->num_digits < MAX_DIGITS)
+    {
+        if (data->state == STATE_OP)
+        {
+            data->state = STATE_RIGHTVAL;
+            clear_edit_buffer(data);
+        }
+        if (data->state == STATE_EQU)
+        {
+            data->state = STATE_LEFTVAL;
+            clear_edit_buffer(data);
+        }
+        char digit = '0' + msg->btype;
+        data->edit_buffer[data->num_digits++] = digit;
+        display_state(data);
+
+    }
+    else if (msg->btype == BTYPE_COMMA && can_insert_comma(data))
+    {
+        data->edit_buffer[data->num_digits++] = '.';
+        display_state(data);
+    }
+    else if (is_operator(msg->btype))
+    {
+        if (data->state == STATE_LEFTVAL || data->state == STATE_EQU)
+        {
+            data->lvalue = strtod(data->edit_buffer, NULL);
+            data->state = STATE_OP;
+            data->op = msg->btype;
+            if (data->tape) DoMethod(data->tape, TAPEM_PRINT_LVAL, localize_display(data));
+        }
+    }
+    else if (msg->btype == BTYPE_EQU)
+    {
+        if (data->tape) DoMethod(data->tape, TAPEM_PRINT_RVAL, op2char(data->op), localize_display(data));
+
+        data->rvalue = strtod(data->edit_buffer, NULL);
+        data->state = STATE_EQU;
+        data->lvalue = eval_result(data->lvalue, data->rvalue, data->op);
+        snprintf(data->edit_buffer, MAX_DIGITS, "%f", data->lvalue);
+        /* note that there is no strnlen() in AROS !!! */
+        data->num_digits = strlen(data->edit_buffer);
+
+        display_state(data);
+        if (data->tape) DoMethod(data->tape, TAPEM_PRINT_RESULT, localize_display(data));
+    }
+    else if (msg->btype == BTYPE_CA)
+    {
+        data->lvalue = 0;
+        data->rvalue = 0;
+        data->op = BTYPE_ADD;
+        data->state = STATE_LEFTVAL;
+        clear_edit_buffer(data);
+
+        display_state(data);
+        if (data->tape) DoMethod(data->tape, TAPEM_NEWLINE);
+    }
+    else if (msg->btype == BTYPE_CE &&
+             (data->state == STATE_LEFTVAL || data->state == STATE_RIGHTVAL))
+    {
+        clear_edit_buffer(data);
+        display_state(data);      
+
+    }
+    else if (msg->btype == BTYPE_SIGN && data->state != STATE_OP)
+    {
+        toggle_sign(data);
+    }
+    else if (msg->btype == BTYPE_BS &&
+             (data->state == STATE_LEFTVAL || data->state == STATE_RIGHTVAL) &&
+             data->num_digits > 0)
+    {
+        data->edit_buffer[--data->num_digits] = 0;
+        display_state(data);
+    }
+    return (IPTR) obj;
+}
+
+IPTR CalculatorDispatcher(struct IClass *cl, Object *obj, Msg msg)
+{
+    switch (msg->MethodID)
+    {
+        case OM_NEW:     return mNewCalc(cl, obj, (APTR) msg);
+        case OM_DISPOSE: return mDisposeCalc(cl, obj, (APTR) msg);
+        case OM_ADD_KEY: return (IPTR) mAddCalcKey(cl, obj, (struct MUIMP_CalcKey *) msg);
+    }
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+static Class *make_calculator_class(void)
+{
+    Class *cl;
+    cl = MakeClass(NULL, ROOTCLASS, NULL, sizeof(struct CalculatorData), 0);
+    if (cl) cl->cl_Dispatcher.h_Entry = CalculatorDispatcher;
+    return cl;
+}
+
+/**********************************************************************
+ Main program
+ **********************************************************************/
+
+static void cleanup(char *msg)
 {
     WORD rc;
-    
     if (msg)
     {
-	printf("Calculator: %s\n",msg);
-	rc = RETURN_WARN;
-    } else {
-	rc = RETURN_OK;
+        fprintf(stderr, "Calculator: %s\n", msg);
+        rc = RETURN_WARN;
     }
-    
-    if (tapefh) Close(tapefh);
-    
-    if (win) CloseWindow(win);
-    
-    if (gadlist) FreeGadgets(gadlist);
-    
-    if (vi) FreeVisualInfo(vi);
-    if (dri) FreeScreenDrawInfo(scr,dri);
-    if (scr) UnlockPubScreen(0,scr);
-    
-    if (MyArgs) FreeArgs(MyArgs);
-    
-    if (LocaleBase) CloseLibrary((struct Library *)LocaleBase);
+    else
+    {
+        rc = RETURN_OK;
+    }
+    if (LocaleBase) CloseLibrary((struct Library *) LocaleBase);
+    if (MUIMasterBase) CloseLibrary((struct Library *) MUIMasterBase);
     if (GadToolsBase) CloseLibrary(GadToolsBase);
-    if (GfxBase) CloseLibrary((struct Library *)GfxBase);
-    if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
-    
-    exit (rc);
+    if (GfxBase) CloseLibrary((struct Library *) GfxBase);
+    if (IntuitionBase) CloseLibrary((struct Library *) IntuitionBase);
+    exit(rc);
 }
 
-static void DosError(void)
+static void dos_error(void)
 {
-    Fault(IoErr(),0,tempstring,255);
-    Cleanup(tempstring);
+    static char tempstring[256];
+    Fault(IoErr(), 0, tempstring, 255);
+    cleanup(tempstring);
 }
 
-static void OpenLibs(void)
+static char retrieve_decimal_point(void)
+{
+    struct Locale *loc;    
+    char result = '.';
+
+    if ((loc = OpenLocale(0)))
+    {
+    	  result = loc->loc_DecimalPoint[0];
+    	  CloseLocale(loc);
+    }
+    return result;
+}
+
+static void open_libs(void)
 {
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
     {
-	Cleanup("Can't open intuition.library V39!");
+        cleanup("Can't open intuition.library V39!");
     }
     
     if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",39)))
     {
-	Cleanup("Can't open graphics.library V39!");
+        cleanup("Can't open graphics.library V39!");
     }
     
     if (!(GadToolsBase = OpenLibrary("gadtools.library",39)))
     {
-	Cleanup("Can't open gadtools.library V39!");
+        cleanup("Can't open gadtools.library V39!");
     }
-    
-    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library",39);
+    if (!(MUIMasterBase = OpenLibrary("muimaster.library", 19)))
+    {
+        cleanup("Can't open muimaster.library V19!");
+    }
+    if (!(LocaleBase = (struct LocaleBase *) OpenLibrary("locale.library", 39)))
+    {
+        cleanup("Can't open locale.library V39!");
+    }
 }
 
-static void GetArguments(void)
+static void get_arguments(void)
 {
-    if (!(MyArgs = ReadArgs(ARG_TEMPLATE,(IPTR *)Args,0)))
-    {
-	DosError();
+    struct RDArgs *rdargs;
+    IPTR args[NUM_ARGS];
+    int i;
+
+    for (i = 0; i < NUM_ARGS; i++) args[i] = (IPTR) NULL;
+
+    if (!(rdargs = ReadArgs(ARG_TEMPLATE, (IPTR *) args,0))) dos_error();
+    
+    if (args[ARG_PUBSCREEN]) {
+        strncpy(pubscrname, (const char *) args[ARG_PUBSCREEN], 255);
     }
     
-    pubscrname = (char *)Args[ARG_PUBSCREEN];
-    
-    if (Args[ARG_TAPE])
+    if (args[ARG_TAPE])
     {
-	strcpy(tapename,(char *)Args[ARG_TAPE]);
-	dotape = TRUE;
+        use_tape = TRUE;
+        strncpy(tapename, (const char *) args[ARG_TAPE], 255);
     }
+    if (rdargs) FreeArgs(rdargs);
 }
 
-static void DoLocale(void)
+static void open_raw_tape_if_needed(Object *window, Object *obj_tape)
 {
-    struct Locale *loc;
-    
-    comma = '.';
-    
-    if ((loc = OpenLocale(0)))
+    if (use_tape && !strlen(tapename))
     {
-    	comma = loc->loc_DecimalPoint[0];
-    	CloseLocale(loc);
+        int x, y, w, h;
+        struct Window *win;
+        BPTR tapefh;
+
+        GetAttr(MUIA_Window_Window, window, (IPTR *) &win);
+        w = win->Width * 5 / 4;
+        h = win->Height;
+        x = win->LeftEdge;
+        y = win->TopEdge;
+
+        if (x > (win->WScreen->Width - (x + w))) x -= w;
+        else                                     x += win->WScreen->Width;
+
+        snprintf(tapename, 255, RAW_TAPE_NAME, x, y, w, h, pubscrname);
+        tapefh = Open(tapename, MODE_NEWFILE);
+        SetAttrs(obj_tape, TAPEA_FILEHANDLE, tapefh);
     }
-    
-    bi[16].text[0] = comma;
-}
-
-static void GetVisual(void)
-{
-    if (pubscrname) scr = LockPubScreen(pubscrname);
-    
-    if (!scr)
-    {
-	if (!(scr = LockPubScreen(0)))
-	{
-	    Cleanup("Can't lock screen!");
-	}
-    }
-    
-    if (!(dri = GetScreenDrawInfo(scr)))
-    {
-	Cleanup("Can't get drawinfo!");
-    }
-    
-    if (!(vi = GetVisualInfo(scr,0)))
-    {
-	Cleanup("Can't get visual info!");
-    }
-    
-    win_borderleft = scr->WBorLeft;
-
-    /* SDuvan: was scr->WBorTop + scr->Font->ta_YSize + 1 */
-    win_bordertop = scr->WBorTop + dri->dri_Font->tf_YSize + 1;
-
-}
-
-static void InitGUI(void)
-{
-    static struct RastPort temprp;
-    
-    WORD i,len;
-    
-    InitRastPort(&temprp);
-    SetFont(&temprp,dri->dri_Font);
-    
-    buttonheight = dri->dri_Font->tf_YSize + BUTTON_EXTRA_HEIGHT;
-    
-    for(i = 0;i < NUM_BUTTONS;i++)
-    {
-	len = TextLength(&temprp,bi[i].text,strlen(bi[i].text));
-	if (len > buttonwidth) buttonwidth = len;
-    }
-    
-    buttonwidth += BUTTON_EXTRA_WIDTH;
-    
-    ledheight = dri->dri_Font->tf_YSize + LED_EXTRA_HEIGHT;
-    
-    inner_winwidth = buttonwidth * NUM_BUTTON_COLS +
-	BUTTON_SPACING_X * (NUM_BUTTON_COLS - 1) + 
-	INNER_SPACING_X * 2;
-    
-    inner_winheight = buttonheight * NUM_BUTTON_ROWS +
-	BUTTON_SPACING_Y * (NUM_BUTTON_ROWS - 1) +
-	BUTTON_LED_SPACING +
-	ledheight +
-	INNER_SPACING_Y * 2;
-
-    strcpy(ledstring,"0");
-}
-
-static void MakeGadgets(void)
-{
-    struct Gadget *mygad = 0;
-    struct NewGadget ng = {0};
-    WORD col,row,i;
-    
-    ng.ng_VisualInfo = vi;
-    
-    mygad = CreateContext(&gadlist);
-    
-    ng.ng_GadgetID = BTYPE_LED;
-    
-    ng.ng_LeftEdge = win_borderleft + INNER_SPACING_X;
-    ng.ng_TopEdge  = win_bordertop + INNER_SPACING_Y;
-    ng.ng_Width = inner_winwidth - INNER_SPACING_X * 2;
-    ng.ng_Height = ledheight;
-    
-    mygad = gad[BTYPE_LED] = CreateGadget(TEXT_KIND,
-					  mygad,
-					  &ng,
-					  GTTX_Text, (IPTR) ledstring,
-					  GTTX_CopyText,TRUE,
-					  GTTX_Border,TRUE,
-					  GTTX_Justification,GTJ_RIGHT,
-					  TAG_DONE);
-    
-    i = 0;
-    
-    ng.ng_TopEdge = win_bordertop +
-	INNER_SPACING_Y + 
-	ledheight +
-	BUTTON_LED_SPACING;
-    
-    ng.ng_Width = buttonwidth;
-    ng.ng_Height = buttonheight;
-    
-    for(row = 0; row < NUM_BUTTON_ROWS; row++)
-    {
-	for(col = 0; col < NUM_BUTTON_COLS; col++, i++)
-	{
-	    ng.ng_GadgetID = bi[i].type;
-	    
-	    ng.ng_LeftEdge = win_borderleft +
-		INNER_SPACING_X +
-		col * (buttonwidth + BUTTON_SPACING_X);
-	    
-	    ng.ng_GadgetText = bi[i].text;
-	    
-	    mygad = gad[bi[i].type] = CreateGadgetA(BUTTON_KIND,
-						    mygad,
-						    &ng,
-						    0);
-	    
-	} /* for(col = 0;col < NUM_BUTTON_COLS; col++) */
-	
-	ng.ng_TopEdge += buttonheight + BUTTON_SPACING_Y;
-	
-    } /* for(row = 0; row < NUM_BUTTON_ROWS; row++) */
-    
-    if (!mygad)
-    {
-	Cleanup("Can't create gadgets!");
-    }
-    
-}
-
-static void MakeWin(void)
-{
-    win = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
-			 WA_Left,scr->MouseX,
-			 WA_Top,scr->MouseY,
-			 WA_InnerWidth,inner_winwidth,
-			 WA_InnerHeight,inner_winheight,
-			 WA_AutoAdjust,TRUE,
-			 WA_Title,(IPTR)"Calculator",
-			 WA_CloseGadget,TRUE,
-			 WA_DepthGadget,TRUE,
-			 WA_DragBar,TRUE,
-			 WA_Activate,TRUE,
-			 WA_SimpleRefresh,TRUE,
-			 WA_IDCMP,IDCMP_CLOSEWINDOW |
-			 IDCMP_GADGETUP |
-			 IDCMP_VANILLAKEY |
-			 IDCMP_RAWKEY |
-			 IDCMP_REFRESHWINDOW,
-			 WA_Gadgets,(IPTR)gadlist,
-			 TAG_DONE);
-
-    if (!win) Cleanup("Can't open window!");
-    
-    GT_RefreshWindow(win,0);
-    
-    ScreenToFront(win->WScreen);
-}
-
-static void OpenTape(void)
-{
-    struct List *l;
-    struct PubScreenNode *psn;
-    char *scrname = "";
-    WORD x,y,w,h;
-    
-    if (!(tapename[0]))
-    {
-	l = LockPubScreenList();
-	
-	psn = (struct PubScreenNode *)l->lh_Head;
-	
-	while (psn->psn_Node.ln_Succ)
-	{
-	    if (psn->psn_Screen == scr)
-	    {
-		if (psn->psn_Node.ln_Name)
-		{
-		    scrname = psn->psn_Node.ln_Name;
-		}
-		break;
-	    }
-	    psn = (struct PubScreenNode *)psn->psn_Node.ln_Succ;
-	}
-	
-	UnlockPubScreenList();
-	
-	w = win->Width * 5 / 4;
-	h = win->Height;
-	
-	x = win->LeftEdge;
-	y = win->TopEdge;
-	
-	if (x > (scr->Width - (x + w)))
-	{
-	    x -= w;
-	} else {
-	    x += win->Width;
-	}
-	sprintf(tapename,deftapename,x,y,w,h,scrname);
-    }
-    
-    if (!(tapefh = Open(tapename,MODE_NEWFILE)))
-    {
-	DisplayBeep(scr);
-    }
-}
-
-static double GetValue(void)
-{
-    double val;
-    char c = 0,*sp;
-    
-    sp = strchr(ledstring,comma);
-    if (sp)
-    {
-	c = *sp;
-	*sp = '.';
-    }
-    
-    val = strtod(ledstring,0);
-    
-    if (sp) *sp = c;
-    
-    return val;
-}
-
-static void GetLeftValue(void)
-{	
-    leftval = GetValue();
-}
-
-static void GetRightValue(void)
-{
-    rightval = GetValue();
-}
-
-static void LeftValToLED(void)
-{
-    char *sp;
-    
-    sprintf(ledstring,"%f",leftval);
-    
-    sp = strchr(ledstring,'.');
-    if (!sp) sp = strchr(ledstring,',');
-    if (sp) *sp = comma;	
-}
-
-static char *DoOperation(void)
-{
-    char *matherr = 0;
-    
-    switch (operation)
-    {
-    case BTYPE_ADD:
-	leftval += rightval;
-	break;
-	
-    case BTYPE_SUB:
-	leftval -= rightval;
-	break;
-	
-    case BTYPE_MUL:
-	leftval *= rightval;
-	break;
-	
-    case BTYPE_DIV:
-	if (rightval == 0.0)
-	{
-	    matherr = "Division by zero!";
-	} else {
-	    leftval /= rightval;
-	}
-	break;
-    }
-    
-    if (leftval > 9999999999999.0) // because of MAX_VAL_LEN
-    {
-	matherr = "Buffer overflow!";
-    }
-
-    if (!matherr) LeftValToLED();
-    
-    return matherr;
-}
-
-static void RefreshLED(void)
-{
-    strcpy(visledstring,ledstring);
-    
-    if ((ledstring[0] == ',') ||
-	(ledstring[0] == '\0') ||
-	((ledstring[0] >= '0') && (ledstring[0] <= '9')))
-    {
-	visledstring[0] = '\0';
-	
-	if ((ledstring[0] == ',') ||
-	    (ledstring[0] == '.') ||
-	    (ledstring[0] == '\0'))
-	{
-	    strcpy(visledstring,"0");
-	}
-	strcat(visledstring,ledstring);
-    }
-    
-    GT_SetGadgetAttrs(gad[BTYPE_LED],
-		      win,
-		      0,
-		      GTTX_Text,(IPTR)visledstring,
-		      TAG_DONE);
-}
-
-static void HandleButton(WORD type)
-{
-    char *matherr = 0;
-    WORD checklen;
-    BOOL refresh_led = FALSE;
-    
-    switch(type)
-    {
-    case BTYPE_0:
-    case BTYPE_1:
-    case BTYPE_2:
-    case BTYPE_3:
-    case BTYPE_4:
-    case BTYPE_5:
-    case BTYPE_6:
-    case BTYPE_7:
-    case BTYPE_8:
-    case BTYPE_9:
-	checklen = vallen;
-	if ((strchr(ledstring,comma))) checklen--;
-	if ((strchr(ledstring,'-'))) checklen--;
-	
-	if (checklen < MAX_VAL_LEN)
-	{
-	    if (state == STATE_OP)
-	    {
-		state = STATE_RIGHTVAL;
-	    } else if (state == STATE_EQU)
-	    {
-		state = STATE_LEFTVAL;
-	    }
-	    
-	    if ((vallen > 0) || (type != BTYPE_0))
-	    {
-		ledstring[vallen++] = type + '0';
-	    }
-	    ledstring[vallen] = '\0';
-	    
-	    refresh_led = TRUE;
-	    
-	} /* if (vallen < MAX_VAL_LEN) */
-	break;
-	
-    case BTYPE_COMMA:
-	if (!strchr(ledstring,comma))
-	{
-	    if (state == STATE_OP)
-	    {
-		state = STATE_RIGHTVAL;
-	    } else if (state == STATE_EQU)
-	    {
-		state = STATE_LEFTVAL;
-	    }
-	    
-	    ledstring[vallen++] = comma;
-	    ledstring[vallen] = '\0';
-	    
-	    refresh_led = TRUE;
-	    
-	} /* if (!strchr(ledstring,comma)) */
-	break;
-	
-    case BTYPE_CA:
-	vallen = 0;
-	leftval = 0.0;
-	rightval = 0.0;
-	operation = BTYPE_ADD;
-	
-	state = STATE_LEFTVAL;
-	
-	strcpy(ledstring,"0");
-	refresh_led = TRUE;
-	
-	if (tapefh) FPutC(tapefh, '\n');
-	break;
-	
-    case BTYPE_CE:
-	vallen = 0;
-	strcpy(ledstring,"0");
-	refresh_led = TRUE;
-	
-	switch (state)
-	{
-	case STATE_LEFTVAL:
-	    leftval = 0.0;
-	    break;
-	    
-	case STATE_OP:
-	case STATE_RIGHTVAL:
-	    rightval = 0.0;
-	    break;
-	}
-	break;
-	
-    case BTYPE_BS:
-	if (vallen)
-	{
-	    ledstring[--vallen] = '\0';
-	    if (vallen == 0) strcpy(ledstring,"0");				
-	    refresh_led = TRUE;
-	}
-	break;
-	
-    case BTYPE_SIGN:
-	switch(state)
-	{
-	case STATE_LEFTVAL:
-	case STATE_RIGHTVAL:
-	    if (ledstring[0] == '-')
-	    {
-		strcpy(ledstring,&ledstring[1]);
-	    } else {
-		strcpy(tempstring,ledstring);
-		strcpy(ledstring,"-");
-		strcat(ledstring,tempstring);
-	    }
-	    refresh_led = TRUE;
-	    break;
-	    
-	case STATE_EQU:
-	    leftval = -leftval;
-	    LeftValToLED();
-	    refresh_led = TRUE;
-	    break;
-	}
-	break;
-	
-    case BTYPE_ADD:
-    case BTYPE_SUB:
-    case BTYPE_MUL:
-    case BTYPE_DIV:
-	switch(state)
-	{
-	case STATE_LEFTVAL:
-	case STATE_EQU:
-	    GetLeftValue();
-	    rightval = leftval;
-	    
-	    state = STATE_OP;
-	    vallen = 0;
-	    strcpy(ledstring,"0");
-	    
-	    if (tapefh)
-	    {
-		FPutC(tapefh, '\t');
-		FPuts(tapefh, visledstring);
-		FPutC(tapefh, '\n');
-	        Flush(tapefh);
-	    }
-	    break;
-
-	case STATE_OP:
-	    break;
-	    
-	case STATE_RIGHTVAL:
-	    GetRightValue();
-	    matherr = DoOperation();
-	    state = STATE_OP;
-	    vallen = 0;				
-	    refresh_led = TRUE;
-	    
-	    if (tapefh)
-	    {
-		FPuts(tapefh,
-				(operation == BTYPE_ADD) ? "+" :
-				(operation == BTYPE_SUB) ? "-" :
-				(operation == BTYPE_DIV) ? ":" :
-				"×");
-		FPutC(tapefh, '\t');
-		FPuts(tapefh, visledstring);
-		FPutC(tapefh, '\n');
-		Flush(tapefh);
-	    }
-	    break;
-	    
-	} /* switch(state) */
-	
-	operation = type;
-	break;
-	
-    case BTYPE_EQU:
-	if (state == STATE_LEFTVAL)
-	{
-	    GetLeftValue();
-	    if (tapefh)
-	    {
-		FPutC(tapefh, '\t');
-		FPuts(tapefh, visledstring);
-		FPutC(tapefh, '\n');
-		Flush(tapefh);
-	    }
-	}	
-	else if (state == STATE_RIGHTVAL)
-	{
-	    GetRightValue();
-	    if (tapefh)
-	    {
-		FPuts(tapefh, 
-				(operation == BTYPE_ADD) ? "+" :
-				(operation == BTYPE_SUB) ? "-" :
-				(operation == BTYPE_DIV) ? ":" :
-				"×");
-		FPutC(tapefh, '\t');
-		FPuts(tapefh, visledstring);
-		FPutC(tapefh, '\n');
-		Flush(tapefh);
-	    }
-	}
-	
-	matherr = DoOperation();
-	state = STATE_EQU;
-	
-	vallen = 0;
-	
-	if (!matherr)
-	{
-	    RefreshLED();
-	    if (tapefh)
-	    {
-		FPuts(tapefh, "=\t");
-		FPuts(tapefh, visledstring);
-		FPutC(tapefh, '\n');
-		Flush(tapefh);
-	    }
-	} else {
-	    refresh_led = TRUE;
-	}
-	break;
-	
-    } /* switch(type) */
-    
-    if (matherr)
-    {
-	leftval = rightval = 0.0;
-	state = STATE_LEFTVAL;
-	operation = BTYPE_ADD;
-	vallen = 0;
-	strcpy(ledstring,matherr);
-	refresh_led = TRUE;
-    }
-    
-    if (refresh_led) RefreshLED();
-    
-}
-
-static void HandleAll(void)
-{
-    struct IntuiMessage *msg;
-    WORD icode,i;
-    ULONG signals;
-    
-    BOOL quitme = FALSE;
-    
-    if (dotape) OpenTape();
-
-    while(!quitme)
-    {
-	signals = Wait(1L << win->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
-
-	if (signals & (1L << win->UserPort->mp_SigBit))
-	{
-	    while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
-	    {
-	        switch(msg->Class)
-	        {
-	        case IDCMP_CLOSEWINDOW:
-		    quitme = TRUE;
-		    break;
-		
-	        case IDCMP_REFRESHWINDOW:
-		    GT_BeginRefresh(win);
-		    GT_EndRefresh(win,TRUE);
-		    break;
-		
-	        case IDCMP_GADGETUP:
-		    HandleButton(((struct Gadget *)msg->IAddress)->GadgetID);
-		    break;
-		
-	        case IDCMP_VANILLAKEY:
-		    icode = toupper(msg->Code);
-		
-		    for(i = 0;i < NUM_BUTTONS;i++)
-		    {
-		        if ((icode == bi[i].key1) ||
-			    (icode == bi[i].key2))
-		        {
-			    icode = bi[i].type;
-			    break;
-		        }
-		    }
-		    if (i < NUM_BUTTONS)
-		    {
-		        HandleButton(icode);
-		    } else if (icode == 27)
-		    {
-		        quitme = TRUE;
-		    }
-		    break;
-		
-	        } /* switch(msg->Class) */
-	    
-	        ReplyMsg((struct Message *)msg);
-	    } /* while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort))) */
-	} /* if(signals & (1L << win->UserPort->mp_SigBit)) */
-	if (signals & SIGBREAKF_CTRL_C)
-	    quitme = TRUE;
-
-    } /* while(!quitme) */
 }
 
 int main(void)
 {
-    OpenLibs();
-    GetArguments();
-    DoLocale();
-    GetVisual();
-    InitGUI();
-    MakeGadgets();
-    MakeWin();
-    HandleAll();
-    Cleanup(0);
+    Class *cl_calc = NULL, *cl_tape = NULL;
+    Object *app = NULL, *window = NULL, *display = NULL, *button[NUM_BUTTONS],
+      *obj_calc, *obj_tape;
+    char decimal_point, decimal_label[2];
+    struct Screen *pub_screen = NULL;
+    BPTR tapefh = NULL;
+    BOOL raw_window_tape = FALSE;
+    int i;
+
+    open_libs();
+    get_arguments();
+    decimal_point = retrieve_decimal_point();
+    snprintf(decimal_label, 2, "%c", decimal_point);
+
+    display = TextObject,
+        StringFrame,
+        MUIA_Text_Contents, INITIAL_DISPLAY,
+        MUIA_ShortHelp, "Display",
+    End;
+
+    cl_tape = make_tape_class();
+
+    if (use_tape && strlen(tapename)) {
+      tapefh = Open(tapename, MODE_NEWFILE);
+    } else if (use_tape) {
+      /* No filename - we will log into a raw window instead after it was
+         opened. */
+      raw_window_tape = TRUE;
+    }
+
+    if (tapefh) {
+      obj_tape = NewObject(cl_tape, NULL, TAPEA_FILEHANDLE, tapefh, TAG_DONE);
+    }
+    else
+    {
+      obj_tape = NewObject(cl_tape, NULL, TAG_DONE);
+    }
+
+    cl_calc = make_calculator_class();
+    obj_calc = NewObject(cl_calc, NULL,
+                         CALCA_DISPLAY, display,
+                         CALCA_TAPE, obj_tape,
+                         CALCA_DECIMAL_POINT, decimal_point,
+                         TAG_DONE);
+
+    for (i = 0; i < NUM_BUTTONS; i++)
+    {
+        button[i] = (i != DECIMAL_BUTTON_INDEX) ?
+          SimpleButton(BUTTONS[i].label) : SimpleButton(decimal_label);
+        if (BUTTONS[i].shortcut)
+        {
+            SetAttrs(button[i], MUIA_ControlChar, BUTTONS[i].shortcut, TAG_DONE);
+        }
+    }
+
+    if (strlen(pubscrname))
+    {
+        pub_screen = LockPubScreen((CONST_STRPTR) pubscrname);
+        if (!pub_screen)
+        {
+            printf("Can't lock public screen '%s' -> fallback to Wanderer!\n", pubscrname);
+            memset(pubscrname, 0, 256);
+            strcpy(pubscrname, "Workbench");
+            pub_screen = LockPubScreen((CONST_STRPTR) pubscrname);
+        }
+    }
+
+    app = ApplicationObject,
+          MUIA_Application_Title, "Calculator",
+          MUIA_Application_Version, "1.4",
+          MUIA_Application_Copyright, "Â©2007-2013, AROS Dev Team",
+          MUIA_Application_Author, "AROS Team",
+          MUIA_Application_Description, "Simple desktop calculator",
+          MUIA_Application_Base, "calculator",
+          SubWindow, window = WindowObject,
+            MUIA_Window_Title, "Calculator",
+            MUIA_Window_ID, MAKE_ID('C', 'A', 'L', 'C'),
+            MUIA_Window_AppWindow, TRUE,
+            MUIA_Window_Screen, pub_screen,
+            WindowContents, VGroup,
+              Child, display,
+
+              Child, HGroup, GroupSpacing(5), MUIA_Group_SameWidth, TRUE,
+                Child, button[0],
+                Child, button[1],
+                Child, button[2],
+                Child, button[3],
+                Child, button[4],
+              End,
+
+              Child, HGroup, GroupSpacing(5), MUIA_Group_SameWidth, TRUE,
+                Child, button[5],
+                Child, button[6],
+                Child, button[7],
+                Child, button[8],
+                Child, button[9],
+              End,
+
+              Child, HGroup, GroupSpacing(5), MUIA_Group_SameWidth, TRUE,
+                Child, button[10],
+                Child, button[11],
+                Child, button[12],
+                Child, button[13],
+                Child, button[14],
+              End,
+
+              Child, HGroup, GroupSpacing(5), MUIA_Group_SameWidth, TRUE,
+                Child, button[15],
+                Child, button[16],
+                Child, button[17],
+                Child, button[18],
+                Child, button[19],
+              End,
+
+            End,
+          End,
+        End;
+
+    DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+             app, 2, MUIM_Application_ReturnID,
+             MUIV_Application_ReturnID_Quit);
+
+    for (i = 0; i < NUM_BUTTONS; i++)
+    {
+        DoMethod(button[i], MUIM_Notify, MUIA_Pressed, FALSE,
+                 obj_calc, 2, OM_ADD_KEY, BUTTONS[i].btype);
+    }
+
+    SetAttrs(window, MUIA_Window_Open, TRUE, TAG_DONE);
+    open_raw_tape_if_needed(window, obj_tape);
+
+    if (pub_screen) UnlockPubScreen(0, pub_screen);
+    {
+        BOOL running = TRUE;
+        ULONG sigs = 0, id;
+
+        while (running) {
+            id = DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs);
+
+            switch(id)
+            {
+                case MUIV_Application_ReturnID_Quit:
+                    running = FALSE;
+                    break;
+                default:
+                    break;
+            }
+            if (running && sigs)
+            {
+                sigs = Wait(sigs | SIGBREAKF_CTRL_C);
+                if (sigs & SIGBREAKF_CTRL_C) break;
+            }
+        }
+    }
+    set((APTR) window, MUIA_Window_Open, FALSE);
+    MUI_DisposeObject(app);
+
+    DisposeObject(obj_calc);
+    DisposeObject(obj_tape);
+    FreeClass(cl_calc);
+    FreeClass(cl_tape);
+
+    cleanup(NULL);
     return 0;
 }
