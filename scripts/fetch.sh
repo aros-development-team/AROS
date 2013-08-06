@@ -111,7 +111,7 @@ fetch_multiple()
 {
     local origins="$1" file="$2" destination="$3"
     for origin in $origins; do
-        echo "Trying $origin/$file..."
+        echo "Trying     $origin/$file..."
         fetch "$origin" "$file" "$destination" && return  0
     done
 	
