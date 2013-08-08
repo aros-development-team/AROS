@@ -25,17 +25,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct IntuitionBase *IntuitionBase;
-struct GfxBase *GfxBase;
-struct Library *MUIMasterBase;
-struct Library *GadToolsBase;
-struct LocaleBase *LocaleBase;
+const char *version = "$VER: Calculator 1.4 (08.08.2013) © AROS Dev Team";
 
 #define ARG_TEMPLATE "PUBSCREEN,TAPE/K"
 enum {ARG_PUBSCREEN,ARG_TAPE,NUM_ARGS};
 
 /* The pattern of the tape name in case we log to a RAW: window */
-#define RAW_TAPE_NAME "RAW:%ld/%ld/%ld/%ld/Calculator Tape/INACTIVE/SCREEN%s"
+#define RAW_TAPE_NAME "RAW:%d/%d/%d/%d/Calculator Tape/INACTIVE/SCREEN%s"
 
 enum
 {
@@ -321,7 +317,6 @@ IPTR mNewCalc(struct IClass *cl, Object *obj, struct opSet *msg)
 
 IPTR mDisposeCalc(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct CalculatorData *data = INST_DATA(cl, obj);
     return DoSuperMethodA(cl, obj, (APTR) msg);
 }
 
@@ -558,11 +553,6 @@ static void cleanup(char *msg)
     {
         rc = RETURN_OK;
     }
-    if (LocaleBase) CloseLibrary((struct Library *) LocaleBase);
-    if (MUIMasterBase) CloseLibrary((struct Library *) MUIMasterBase);
-    if (GadToolsBase) CloseLibrary(GadToolsBase);
-    if (GfxBase) CloseLibrary((struct Library *) GfxBase);
-    if (IntuitionBase) CloseLibrary((struct Library *) IntuitionBase);
     exit(rc);
 }
 
@@ -584,32 +574,6 @@ static char retrieve_decimal_point(void)
     	  CloseLocale(loc);
     }
     return result;
-}
-
-static void open_libs(void)
-{
-    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
-    {
-        cleanup("Can't open intuition.library V39!");
-    }
-    
-    if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",39)))
-    {
-        cleanup("Can't open graphics.library V39!");
-    }
-    
-    if (!(GadToolsBase = OpenLibrary("gadtools.library",39)))
-    {
-        cleanup("Can't open gadtools.library V39!");
-    }
-    if (!(MUIMasterBase = OpenLibrary("muimaster.library", 19)))
-    {
-        cleanup("Can't open muimaster.library V19!");
-    }
-    if (!(LocaleBase = (struct LocaleBase *) OpenLibrary("locale.library", 39)))
-    {
-        cleanup("Can't open locale.library V39!");
-    }
 }
 
 static void get_arguments(void)
@@ -665,10 +629,8 @@ int main(void)
     char decimal_point, decimal_label[2];
     struct Screen *pub_screen = NULL;
     BPTR tapefh = NULL;
-    BOOL raw_window_tape = FALSE;
     int i;
 
-    open_libs();
     get_arguments();
     decimal_point = retrieve_decimal_point();
     snprintf(decimal_label, 2, "%c", decimal_point);
@@ -683,10 +645,6 @@ int main(void)
 
     if (use_tape && strlen(tapename)) {
       tapefh = Open(tapename, MODE_NEWFILE);
-    } else if (use_tape) {
-      /* No filename - we will log into a raw window instead after it was
-         opened. */
-      raw_window_tape = TRUE;
     }
 
     if (tapefh) {
