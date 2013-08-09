@@ -13,6 +13,9 @@
 #include "__fdesc.h"
 #include "__stdio.h"
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -57,7 +60,15 @@
     }
 
     /* Note: changes here might require changes in vfscanf.c!! */
-    
+
+    if (fdesc->fcb->privflags & _FCB_FLUSHONREAD)
+    {
+        D(bug("[fgetc]privflags before flush 0x%x\n", fdesc->fcb->privflags));
+        fdesc->fcb->privflags &= ~_FCB_FLUSHONREAD;
+        D(bug("[fgetc]privflags after flush 0x%x\n", fdesc->fcb->privflags));
+        Flush(fdesc->fcb->fh);
+    }
+
     c = FGetC ((BPTR)(fdesc->fcb->fh));
     if (c == EOF)
     {
