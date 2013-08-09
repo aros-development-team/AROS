@@ -84,6 +84,7 @@ struct HDAudioChip
     
     UWORD codecbits;
     UWORD codecnr;
+    UWORD function_group;
     
     ULONG *corb;
     ULONG corb_entries;

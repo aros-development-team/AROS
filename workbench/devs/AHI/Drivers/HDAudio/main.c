@@ -297,9 +297,9 @@ ULONG _AHIsub_Start(ULONG flags,
             (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
             (card->frequencies[card->selected_freq_index].div << 8) | // divisor
             FORMAT_24BITS | // set to 24-bit for now
-            FORMAT_STEREO , card); // stereo
+            FORMAT_STEREO, NULL, card); // stereo
 
-        send_command_4(card->codecnr, card->dac_nid, 0xA, 0, card);
+        send_command_4(card->codecnr, card->dac_nid, 0xA, 0, NULL, card);
 
 
         // set BDL for scatter/gather
@@ -307,7 +307,7 @@ ULONG _AHIsub_Start(ULONG flags,
         pci_outl(0, output_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
 
         // set stream ID and channel for DAC
-        send_command_12(card->codecnr, card->dac_nid, VERB_SET_CONVERTER_STREAM_CHANNEL, (output_stream->tag << 4), card); // stream 1, channel 0
+        send_command_12(card->codecnr, card->dac_nid, VERB_SET_CONVERTER_STREAM_CHANNEL, (output_stream->tag << 4), NULL, card); // stream 1, channel 0
 
         card->current_bytesize = dma_buffer_size;
         card->current_frames = AudioCtrl->ahiac_MaxBuffSamples;
@@ -348,14 +348,14 @@ ULONG _AHIsub_Start(ULONG flags,
             (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
             (card->frequencies[card->selected_freq_index].div << 8) | // divisor
             FORMAT_16BITS | // set to 16-bit for now
-            FORMAT_STEREO , card); // stereo
+            FORMAT_STEREO , NULL, card); // stereo
     
         // set BDL for scatter/gather
         pci_outl((ULONG) input_stream->bdl, input_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_LOW, card);
         pci_outl(0, input_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
     
         // set stream ID and channel for ADC
-        send_command_12(card->codecnr, card->adc_nid, VERB_SET_CONVERTER_STREAM_CHANNEL, (input_stream->tag << 4), card);
+        send_command_12(card->codecnr, card->adc_nid, VERB_SET_CONVERTER_STREAM_CHANNEL, (input_stream->tag << 4), NULL, card);
 
         D(bug("[HDAudio] RECORD\n"));
         codec_discovery(card); // tbd < --------------------
@@ -778,6 +778,6 @@ static BOOL stream_reset(struct Stream *stream, struct HDAudioChip *card)
 
 void set_converter_format(struct HDAudioChip *card, UBYTE nid)
 {
-    send_command_4(card->codecnr, nid, VERB_SET_CONVERTER_FORMAT, (1 << 14) | (0x3 << 4) | 1, card); // 44.1kHz 24-bits stereo
+    send_command_4(card->codecnr, nid, VERB_SET_CONVERTER_FORMAT, (1 << 14) | (0x3 << 4) | 1, NULL, card); // 44.1kHz 24-bits stereo
 }
 
