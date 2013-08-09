@@ -19,19 +19,19 @@ devs-monitors-wrapper-copy: $(DEVSDIR)/ATI \
 			    $(DEVSDIR)/NVidia $(DEVSDIR)/VMWare
 
 $(DEVSDIR)/ATI: $(STORAGEDIR)/Wrapper | $(DEVSDIR)
-	@$(ECHO) Creating $@...
+	@$(ECHO) "Creating   $@..."
 	@$(CP) -f $< $@
 
 $(DEVSDIR)/NVidia: $(STORAGEDIR)/Wrapper | $(DEVSDIR)
-	@$(ECHO) Creating $@...
+	@$(ECHO) "Creating   $@..."
 	@$(CP) -f $< $@
 
 $(DEVSDIR)/VMWare: $(STORAGEDIR)/Wrapper | $(DEVSDIR)
-	@$(ECHO) Creating $@...
+	@$(ECHO) "Creating   $@..."
 	@$(CP) -f $< $@
 
 $(DEVSDIR):
-	@$(ECHO) Creating $@...
+	@$(ECHO) "Creating   $@..."
 	@$(MKDIR) $(DEVSDIR)
 
 %common
