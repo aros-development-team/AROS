@@ -45,7 +45,8 @@ FILES := \
         vfork \
         vfork_execl \
         wait \
-        waitpid
+        waitpid \
+        stdin1 stdin2 stdin3 stdin4
 
 EXEDIR := $(AROS_TESTS)/clib
 
