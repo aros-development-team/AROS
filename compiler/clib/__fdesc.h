@@ -18,12 +18,14 @@ typedef struct _fcb
                 // if isdir == FALSE: BCPL pointer to struct FileHandle
     int  flags;
     unsigned int opencount;
-    char  isdir;
-    unsigned char privflags;
+    unsigned int privflags;
 } fcb;
 
 /* privflags */
-#define _FCB_DONTCLOSE_FH 1 
+#define _FCB_ISDIR        1<<0
+#define _FCB_DONTCLOSE_FH 1<<1
+#define _FCB_FLUSHONREAD  1<<2
+
 
 /* file descriptor structure - one per descriptor */
 typedef struct _fdesc

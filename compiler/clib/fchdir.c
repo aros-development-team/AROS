@@ -56,7 +56,7 @@
     BPTR handle = BNULL;
 
     fdesc *fdc = __getfdesc(fd);
-    if (!fdc->fcb->isdir)
+    if (!(fdc->fcb->privflags & _FCB_ISDIR))
     {
         errno = ENOTDIR;
         goto error; 

@@ -73,7 +73,7 @@
 	    return -1;
     }
 
-    if (fdesc->fcb->isdir)
+    if (fdesc->fcb->privflags & _FCB_ISDIR)
     {
         errno = EISDIR;
         return -1;

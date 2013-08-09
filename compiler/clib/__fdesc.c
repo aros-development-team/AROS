@@ -263,7 +263,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 
                 fh = lock;
                 FreeDosObject(DOS_FIB, fib);
-                currdesc->fcb->isdir = 1;
+                currdesc->fcb->privflags |= _FCB_ISDIR;
 
                 goto success;
             }
