@@ -452,7 +452,8 @@ int __init_stdfiles(struct aroscbase *aroscbase)
     errdesc->fcb->flags = O_WRONLY | O_APPEND;
 
     indesc->fcb->opencount = outdesc->fcb->opencount = errdesc->fcb->opencount = 1;
-    indesc->fcb->privflags = outdesc->fcb->privflags = errdesc->fcb->privflags = _FCB_DONTCLOSE_FH;
+    indesc->fcb->privflags = _FCB_DONTCLOSE_FH | _FCB_FLUSHONREAD;
+    outdesc->fcb->privflags = errdesc->fcb->privflags = _FCB_DONTCLOSE_FH;
 
     aroscbase->acb_fd_array[STDIN_FILENO]  = indesc;
     aroscbase->acb_fd_array[STDOUT_FILENO] = outdesc;

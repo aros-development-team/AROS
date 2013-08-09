@@ -140,6 +140,12 @@ static int __getc(void *_h)
 
     /* Note: changes here might require changes in fgetc.c!! */
 
+    if (h->fdesc->fcb->privflags & _FCB_FLUSHONREAD)
+    {
+        h->fdesc->fcb->privflags &= ~_FCB_FLUSHONREAD;
+        Flush(h->fdesc->fcb->fh);
+    }
+
     c = FGetC((BPTR)h->fdesc->fcb->fh);
     
     if (c == EOF)

@@ -22,9 +22,9 @@ typedef struct _fcb
 } fcb;
 
 /* privflags */
-#define _FCB_ISDIR        1<<0
-#define _FCB_DONTCLOSE_FH 1<<1
-#define _FCB_FLUSHONREAD  1<<2
+#define _FCB_ISDIR        ((unsigned int)1<<0)
+#define _FCB_DONTCLOSE_FH ((unsigned int)1<<1)
+#define _FCB_FLUSHONREAD  ((unsigned int)1<<2)
 
 
 /* file descriptor structure - one per descriptor */
