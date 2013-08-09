@@ -72,6 +72,7 @@ static BOOL init(void)
     }
     msg->rm_Action = RXCOMM | RXFF_RESULT;
     msg->rm_Stdin = Input();
+    Flush(msg->rm_Stdin); /* Remove command line arguments */
     msg->rm_Stdout = Output();
     
     return TRUE;
