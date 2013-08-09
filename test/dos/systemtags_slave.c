@@ -23,8 +23,13 @@ int main(int argc, char *argv[])
               data->input, data->output
         ));
 
-          input = SelectInput(data->input);
-          output = SelectOutput(data->output);
+        input = SelectInput(data->input);
+        output = SelectOutput(data->output);
+    }
+    else
+    {
+        /* Flush() will remove command line arguments from Input() */
+        Flush(Input());
     }
 
     FPuts(Output(), "Type something (+return):\n");
