@@ -20,7 +20,7 @@ int main()
     }
     else if(pid == 0)
     {
-	// Only _exit() and exec*() are valid in child context
+        printf("I'm child\n");
 	_exit(1);
     }
     else
@@ -43,7 +43,7 @@ int main()
 	}
 	else if(pid2 == 0)
 	{
-	    // Only _exit(), vfork(), and exec*() are valid in child context
+            printf("I'm second child\n");
 	    _exit(2);
 	}
 	waitpid(pid, NULL, 0);
@@ -54,7 +54,7 @@ int main()
 	int retval = 3;
 	if((int) pid2 > 0)
 	{
-	    // I'm child, I have my child with pid2
+            printf("I'm child, I have my child with pid2 %d\n", (int) pid2);
 	    int status = -1;
 	    waitpid(pid2, &status, 0);
 	    if (status != 4)
@@ -62,7 +62,7 @@ int main()
 	}
 	else if(pid2 == 0)
 	{
-	    // I am the child of a child
+	    printf("I'm the child of a child\n");
 	    _exit(4);
 	}
 	_exit(retval);
