@@ -16,8 +16,7 @@ include $(SRCDIR)/$(CURDIR)/../../mapi/mapi/sources.mak
 
 #MM- test-mesa : workbench-libs-mesa-module
 
-#MM workbench-libs-mesa-module : includes linklibs-galliumauxiliary \
-#MM workbench-libs-gallium workbench-libs-mesa-module-cpp
+#MM workbench-libs-mesa-module : includes linklibs-galliumauxiliary workbench-libs-gallium
 
 SHARED_LIB_SOURCES = \
             aros/emul_arosc \
@@ -145,37 +144,6 @@ CXX_SOURCES := \
     $(addprefix ../../glsl/, $(GLSL_GENERATED_CXX_SOURCES:.cpp=)) \
     ../../aros/emul_cpp \
 
-CXX_OBJECTS := $(addprefix $(OBJDIR)/cpp/, $(addsuffix .o, $(notdir $(CXX_SOURCES))))
-
-# Remove C-only flags
-CXX_FLAGS := $(CFLAGS) $(USER_CFLAGS) -fno-rtti -fno-exceptions -isystem $(AROS_DEVELOPMENT)/include
-CXX_FLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(CXX_FLAGS)))
-
-# Define the use of cross compiler
-ifeq ($(TARGET_CXX),)
-  CXX_CC := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-g++
-else
-  CXX_CC := $(TARGET_CXX)
-endif
-
-$(CXX_SOURCES) : workbench-libs-mesa-module-cpp-gendir
-	%compile_q cmd=$(CXX_CC) opt="$(CXX_FLAGS) $(TARGET_CFLAGS)" from=$(SRCDIR)/$(CURDIR)/$@.cpp to="$(addsuffix .o,$(addprefix $(OBJDIR)/cpp/,$(notdir $@)))"
-
-#MM
-workbench-libs-mesa-module-cpp-gendir : 
-	@$(MKDIR) $(OBJDIR)/cpp
-
-#MM
-workbench-libs-mesa-module-cpp : $(CXX_SOURCES)
-
-#MM
-workbench-libs-mesa-module-cpp-quick : $(CXX_SOURCES)
-
-# Compilation of C++ GLSL compiler
-
-# Hack to get C++ objects linked into module
-LDFLAGS += $(CXX_OBJECTS)
-
 LIBRARY_SOURCES = \
             $(addprefix ../../, $(LIB_MESA_SOURCES)) \
             $(addprefix ../../, $(AROSMESA_SOURCES)) \
@@ -186,11 +154,11 @@ LIBRARY_SOURCES = \
 
 %build_module mmake=workbench-libs-mesa-module \
     modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="arosmesa_getprocaddress" \
-    files="$(LIBRARY_SOURCES)" \
+    files="$(LIBRARY_SOURCES)" cxxfiles="$(CXX_SOURCES)" \
     uselibs="galliumauxiliary gallium"
 
 
-# NOTE: Both files have been generate and added to AROS repository. Once all 
+# NOTE: Both files have been generated and added to AROS repository. Once all
 # build machines support python 2.5 with libxml2, these targets can be enabled
 
 MESA_MAIN := $(SRCDIR)/$(CURDIR)/../../mesa/main
