@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,6 +35,12 @@
         in that case.
 
     NOTES
+        On AROS calling Flush() from different tasks on the same file handle
+        is serialised. This means that most of the time it is possible to
+        do I/O in one task to a file handle where Flush() is being called
+        in another task on that file handle.
+        No multi-thread safety is guaranteed though and data may be lost if
+        I/O is done in parallel from different tasks on the same file handle.
 
     EXAMPLE
 
