@@ -25,6 +25,14 @@
 #include "__fdesc.h"
 #include "__upath.h"
 
+/* TODO: Add locking to make filedesc usage thread safe
+   Using vfork()+exec*() i filedescriptors may be shared between different
+   tasks. Only one DOS file handle is used between shared file descriptors.
+   DOS file handles are not thread safe so we should add it here to make it
+   thread safe.
+   Possible implementation should carefully at performance impact.
+*/
+
 static struct SignalSemaphore __fdsem;
 static struct MinList __fdreglist;
 
