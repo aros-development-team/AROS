@@ -84,7 +84,6 @@ struct HDAudioChip
     
     UWORD codecbits;
     UWORD codecnr;
-    UWORD function_group;
     
     ULONG *corb;
     ULONG corb_entries;
@@ -101,6 +100,7 @@ struct HDAudioChip
     UBYTE nr_of_output_streams;
     
     // important node ID's
+    UBYTE function_group;
     UBYTE dac_nid; // front L&R
     UBYTE adc_nid;
     UBYTE adc_mixer_nid;
@@ -130,6 +130,8 @@ struct HDAudioChip
     ULONG nr_of_frequencies;
     ULONG selected_freq_index;
     
+    UBYTE eapd_gpio_mask;
+
     /*** PCI/Card initialization progress *********************************/
 
     /** TRUE if bus mastering is activated */
