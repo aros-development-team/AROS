@@ -125,59 +125,15 @@ USER_INCLUDES := \
 USER_CFLAGS := -DLIBRARYBUILD -fno-asynchronous-unwind-tables -fno-exceptions 
 
 
-################################################################################
-# Compilation of C++ libnurbs
-
 CC_SOURCES := \
     $(addprefix ../../, $(LIBNURBS_SOURCES)) \
 
 CPP_SOURCES := \
     ../../aros/emul_cpp \
 
-CXX_SOURCES := $(CC_SOURCES) $(CPP_SOURCES)
-
-CXX_OBJECTS := $(addprefix $(OBJDIR)/cpp/, $(addsuffix .o, $(notdir $(CXX_SOURCES))))
-
-# Remove C-only flags
-CXX_FLAGS := $(CFLAGS) $(USER_CFLAGS) -fno-rtti -fno-exceptions -isystem $(AROS_DEVELOPMENT)/include
-CXX_FLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(CXX_FLAGS)))
-
-# Define the use of cross compiler
-ifeq ($(TARGET_CXX),)
-  CXX_CC := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-g++
-else
-  CXX_CC := $(TARGET_CXX)
-endif
-
-$(CC_SOURCES) : workbench-libs-glu-module-cpp-gendir
-	%compile_q cmd=$(CXX_CC) opt=$(CXX_FLAGS) from=$(SRCDIR)/$(CURDIR)/$@.cc to="$(addsuffix .o,$(addprefix $(OBJDIR)/cpp/,$(notdir $@)))"
-
-$(CPP_SOURCES) : workbench-libs-glu-module-cpp-gendir
-	%compile_q cmd=$(CXX_CC) opt=$(CXX_FLAGS) from=$(SRCDIR)/$(CURDIR)/$@.cpp to="$(addsuffix .o,$(addprefix $(OBJDIR)/cpp/,$(notdir $@)))"
-
-#MM
-workbench-libs-glu-module-cpp-gendir : 
-	@$(MKDIR) $(OBJDIR)/cpp
-
-#MM- workbench-libs-glu-module-cpp : $(CROSSTOOLS_CXX_TARGET)
-
-#MM
-workbench-libs-glu-module-cpp : $(CC_SOURCES) $(CPP_SOURCES)
-
-#MM
-workbench-libs-glu-module-cpp-quick : $(CC_SOURCES) $(CPP_SOURCES)
-
-# Compilation of C++ libnurbs
-################################################################################
-
-# Hack to get C++ objects linked into module
-LDFLAGS += $(CXX_OBJECTS)
-
-#MM- workbench-libs-glu-module: workbench-libs-glu-module-cpp
-
 %build_module mmake=workbench-libs-glu-module \
     modname=glu modtype=library linklibname=GLU \
-    files="$(LIBRARY_SOURCES)" \
+    files="$(LIBRARY_SOURCES)" cxxfiles="$(CPP_SOURCES)" cxxccfiles="$(CC_SOURCES)" \
     uselibs="GL"
 
 %common
