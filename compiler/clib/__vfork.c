@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,6 +27,65 @@
 
 #include <aros/debug.h>
 #include <aros/startup.h>
+
+/*****************************************************************************
+
+    NAME
+#include <unistd.h>
+
+	pid_t vfork(
+
+    SYNOPSIS
+	void)
+
+    FUNCTION
+	Function to create a subprocess of the current process.
+        This is there to ease porting of software using the fork()/vfork()
+        POSIX functions. Due to different memory and process model fork()
+        is not implemented at the moment in the C library. vfork() is provided
+        with some extenden functionality. In POSIX standard the only guaranteed
+        functionality for vfork() is to have a exec*() function or _exit() called
+        right after the vfork() in the child.
+        Extra functionality for vfork():
+        - The child has it's own memory heap, memory allocation/deallocation
+          is allowed and heap will be removed when calling _exit() or will be used
+          for the code started by the exec*() functions.
+        - The child will have a copy of the file descriptors as specified by POSIX
+          standard for the fork() function. File I/O is possible in child, also
+          file manipulation with dup() etc.
+
+        Difference with fork():
+        - The virtual memory heap is not duplicated as in POSIX but the memory
+          is shared between parent and child. AROS lives in one big single memory
+          region so changes to memory in child are also seen by parent.
+
+        Behaviour for other resources not described in this doc may not be relied
+        on for future.
+
+    INPUTS
+	-
+
+    RESULT
+	-1: error, no child is started; errno will be set.
+        0: Running in child
+        >0: Running in parent, pid of child is return value.
+
+    NOTES
+        Current implementation of vfork() will only really start running things
+        in parallel on an exec*() call. After vfork() child code will run until
+        _exit() or exec*(). With _exit() child will exit and parent continue;
+        with exec*() child will be detached and parent will continue.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	execl(), execve(), execlp(), execv(), execvp()
+
+    INTERNALS
+
+******************************************************************************/
 
 /* The following functions are used to update the childs and parents privdata
    for the parent pretending to be running as child and for the child to take over. It is called
