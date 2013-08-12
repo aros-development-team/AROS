@@ -361,20 +361,6 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
             goto error;
         }
     }
-    
-    /* Set standard files to the standard files from arosc */
-    fdesc *in = __getfdesc(STDIN_FILENO), *out = __getfdesc(STDOUT_FILENO),
-        *err = __getfdesc(STDERR_FILENO);
-
-    if(in) 
-        aroscbase->acb_exec_oldin = SelectInput(in->fcb->fh);
-    if(out) 
-        aroscbase->acb_exec_oldout = SelectOutput(out->fcb->fh);
-    if (err)
-    {
-        aroscbase->acb_exec_olderr = me->pr_CES;
-        me->pr_CES = err->fcb->fh;
-    }
 
     D(bug("__exec_prepare: Done, returning %p\n", aroscbase));
 
@@ -440,12 +426,36 @@ void __exec_do(APTR id)
 
     D(bug("[__exec_do] Running program, aroscbase=%x\n", aroscbase));
 
+
+    /* Set standard files to the standard files from arosc */
+    fdesc *in = __getfdesc(STDIN_FILENO), *out = __getfdesc(STDOUT_FILENO),
+        *err = __getfdesc(STDERR_FILENO);
+    BPTR oldin = BNULL, oldout = BNULL, olderr = BNULL;
+    struct Process *me = (struct Process *)FindTask(NULL);
+
+    if(in)
+        oldin = SelectInput(in->fcb->fh);
+    if(out)
+        oldout = SelectOutput(out->fcb->fh);
+    if (err)
+    {
+        olderr = me->pr_CES;
+        me->pr_CES = err->fcb->fh;
+    }
+
     returncode = RunCommand(
         aroscbase->acb_exec_seglist,
         cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
         (STRPTR)aroscbase->acb_exec_args,
         strlen(aroscbase->acb_exec_args)
     );
+
+    if(oldin)
+        SelectInput(oldin);
+    if(oldout)
+        SelectOutput(oldout);
+    if(olderr)
+        me->pr_CES = olderr;
 
     D(bug("[__exec_do] Program ran, aroscbase=%x, __aros_getbase_aroscbase()=%x\n",
           aroscbase, __aros_getbase_aroscbase()
@@ -622,24 +632,6 @@ static char *appendargs(char *argptr, int *argssizeptr, char *const args[], APTR
 static void __exec_cleanup(struct aroscbase *aroscbase)
 {
     D(bug("__exec_cleanup: me(%x)\n", FindTask(NULL)));
-
-    if(aroscbase->acb_exec_oldin)
-    {
-        SelectInput(aroscbase->acb_exec_oldin);
-        aroscbase->acb_exec_oldin = (BPTR)NULL;
-    }
-    if(aroscbase->acb_exec_oldout)
-    {
-        SelectOutput(aroscbase->acb_exec_oldout);
-        aroscbase->acb_exec_oldout = (BPTR)NULL;
-    }
-    if(aroscbase->acb_exec_olderr)
-    {
-    	struct Process *me = (struct Process *)FindTask(NULL);
-    	
-    	me->pr_CES = aroscbase->acb_exec_olderr;
-        aroscbase->acb_exec_olderr = BNULL;
-    }
 
     if (aroscbase->acb_exec_pool)
     {
