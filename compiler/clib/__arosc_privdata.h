@@ -92,7 +92,6 @@ struct aroscbase
     char *acb_exec_taskname;
     APTR acb_exec_pool;
     char **acb_exec_tmparray;
-    BPTR acb_exec_oldin, acb_exec_oldout, acb_exec_olderr;
     struct Library *acb_exec_aroscbase;
 
     /* environ emulation */
