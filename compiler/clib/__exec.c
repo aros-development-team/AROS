@@ -431,16 +431,37 @@ void __exec_do(APTR id)
     fdesc *in = __getfdesc(STDIN_FILENO), *out = __getfdesc(STDOUT_FILENO),
         *err = __getfdesc(STDERR_FILENO);
     BPTR oldin = BNULL, oldout = BNULL, olderr = BNULL;
+    char inchanged = 0, outchanged = 0, errchanged = 0;
     struct Process *me = (struct Process *)FindTask(NULL);
 
-    if(in)
+    if(in && in->fcb->fh != Input())
+    {
         oldin = SelectInput(in->fcb->fh);
-    if(out)
+        inchanged = 1;
+    }
+    if(out && in->fcb->fh != Output())
+    {
         oldout = SelectOutput(out->fcb->fh);
+        outchanged = 1;
+    }
     if (err)
     {
-        olderr = me->pr_CES;
-        me->pr_CES = err->fcb->fh;
+        if (me->pr_CES)
+        {
+            if (me->pr_CES != err->fcb->fh)
+                errchanged = 1;
+        }
+        else /* me->pr_CES */
+        {
+            /* Only replace if stdout != stderr */
+            if (out && out->fcb->fh != err->fcb->fh)
+                errchanged = 1;
+        }
+        if (errchanged)
+        {
+            olderr = me->pr_CES;
+            me->pr_CES = err->fcb->fh;
+        }
     }
 
     returncode = RunCommand(
@@ -450,11 +471,11 @@ void __exec_do(APTR id)
         strlen(aroscbase->acb_exec_args)
     );
 
-    if(oldin)
+    if(inchanged)
         SelectInput(oldin);
-    if(oldout)
+    if(outchanged)
         SelectOutput(oldout);
-    if(olderr)
+    if(errchanged)
         me->pr_CES = olderr;
 
     D(bug("[__exec_do] Program ran, aroscbase=%x, __aros_getbase_aroscbase()=%x\n",
