@@ -52,11 +52,8 @@ static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device
 static void write_default_pin_config(UBYTE nid, ULONG data,
     struct HDAudioChip *card);
 static void set_gpio(UBYTE mask, struct HDAudioChip *card);
-static int find_pin_widget_with_encoding(struct HDAudioChip *card, UBYTE encoding);
 static BOOL interrogate_unknown_chip(struct HDAudioChip *card);
-static int find_audio_output(struct HDAudioChip *card, UBYTE digital);
-static int find_speaker_nid(struct HDAudioChip *card);
-static int find_headphone_nid(struct HDAudioChip *card);
+static UBYTE find_widget(struct HDAudioChip *card, UBYTE type, UBYTE pin_type);
 static BOOL power_up_all_nodes(struct HDAudioChip *card);
 
 struct Device *TimerBase = NULL;
@@ -1341,7 +1338,7 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
             
     
     // find out the first PCM DAC
-    dac = find_audio_output(card, 0); // analogue out
+    dac = find_widget(card, 0, 0);
     D(bug("[HDAudio] DAC NID = %xh\n", dac));
 	
     if (dac == -1)
@@ -1361,7 +1358,7 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
     }
 
     // find FRONT pin
-    front = find_pin_widget_with_encoding(card, 0);
+    front = find_widget(card, 4, 0);
     D(bug("[HDAudio] Front PIN = %xh\n", front));
 	
     if (front == -1)
@@ -1383,7 +1380,7 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
     }
     else
     {
-    	   speaker = find_pin_widget_with_encoding(card, 1);
+        speaker = find_widget(card, 4, 1);
     }
     D(bug("[HDAudio] Speaker NID = %xh\n", speaker));
 	
@@ -1392,7 +1389,7 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
         D(bug("[HDAudio] No speaker pin found, continuing anyway!\n"));
     }
         card->speaker_nid = speaker;
-        card->headphone_nid = find_headphone_nid(card);
+        card->headphone_nid = find_widget(card, 4, 2);
         
     D(bug("[HDAudio] Headphone NID = %xh\n", card->headphone_nid));
         
@@ -1526,152 +1523,71 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
 }
 
 
-static int find_pin_widget_with_encoding(struct HDAudioChip *card, UBYTE encoding)
+static UBYTE find_widget(struct HDAudioChip *card, UBYTE type, UBYTE pin_type)
 {
-    int i;
-    ULONG node_count_response = get_parameter(0, VERB_GET_PARMS_NODE_COUNT, card);
-    UBYTE node_count = node_count_response & 0xFF;
-    UBYTE starting_node = (node_count_response >> 16) & 0xFF;
-   
-    for (i = 0; i < node_count; i++)
-    {
-        ULONG function_group_response = get_parameter(starting_node + i, VERB_GET_PARMS_FUNCTION_GROUP_TYPE, card);
-        UBYTE function_group = function_group_response & 0xFF;
-        //bug("Function group = %x, UnSol cap = %x\n", function_group, (function_group_response >> 8) & 0x1);
-
-        if (function_group == AUDIO_FUNCTION)
-        {
-            int j;
-
-            ULONG subnode_count_response = get_parameter(starting_node + i, VERB_GET_PARMS_NODE_COUNT, card);
-            UBYTE subnode_count = subnode_count_response & 0xFF;
-            UBYTE sub_starting_node = (subnode_count_response >> 16) & 0xFF;
-            ULONG config_default;
-
-
-            for (j = 0; j < subnode_count; j++) // widgets
-            {
-                const ULONG NID = j + sub_starting_node;
-                ULONG widget_caps, pin_caps, connections;
-                BOOL ok;
-
-                widget_caps = get_parameter(NID, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
-                
-                if (((widget_caps >> 20) & 0xF) == 4) // node is a pin widget
-                {
-                    send_command_12(card->codecnr, NID, VERB_GET_CONFIG_DEFAULT, 0, &config_default, card);
-                    
-                    if (((config_default >> 20) & 0xF) == encoding)
-                    {
-                        D(bug("[HDAudio] Config default for NID %x = %x\n", NID, config_default));
-                        if ((widget_caps & 1 << 8) != 0)
-                            connections = get_parameter(NID, 0xE, card) & 0x7f;
-                        else
-                            connections = 0;
-                        pin_caps =
-                            get_parameter(NID, VERB_GET_PARMS_PIN_CAPS, card);
-                        switch (encoding)
-                        {
-                        case 0x0:
-                        case 0x1:
-                        case 0x2:
-                        case 0x4:
-                        case 0x5:
-                            ok = (pin_caps & PIN_CAPS_OUTPUT_CAPABLE) != 0 && connections != 0;
-                            break;
-                        default:
-                            ok = (pin_caps & PIN_CAPS_INPUT_CAPABLE) != 0;
-                        }
-
-                        // check speaker connection type is internal
-                        if (encoding == 1 && (config_default >> 16 & 0xB) != 3)
-                            ok = FALSE;
-
-                        if (ok)
-                            return (int) (NID);
-                    }  
-                }
-            }
-        }
-    }
-    
-    return -1;
-}
-
-
-static int find_headphone_nid(struct HDAudioChip *card)
-{
-    int i;
-    ULONG node_count_response = get_parameter(0, VERB_GET_PARMS_NODE_COUNT, card);
-    UBYTE node_count = node_count_response & 0xFF;
-    UBYTE starting_node = (node_count_response >> 16) & 0xFF;
-   
-    for (i = 0; i < node_count; i++)
-    {
-        ULONG function_group_response = get_parameter(starting_node + i, VERB_GET_PARMS_FUNCTION_GROUP_TYPE, card);
-        UBYTE function_group = function_group_response & 0xFF;
-        //bug("Function group = %x, UnSol cap = %x\n", function_group, (function_group_response >> 8) & 0x1);
-
-        if (function_group == AUDIO_FUNCTION)
-        {
-            int j;
-
-            ULONG subnode_count_response = get_parameter(starting_node + i, VERB_GET_PARMS_NODE_COUNT, card);
-            UBYTE subnode_count = subnode_count_response & 0xFF;
-            UBYTE sub_starting_node = (subnode_count_response >> 16) & 0xFF;
-            ULONG config_default;
-
-
-            for (j = 0; j < subnode_count; j++) // widgets
-            {
-                const ULONG NID = j + sub_starting_node;
-                ULONG widget_caps;
-
-                widget_caps = get_parameter(NID, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
-                
-                if (AUDIO_WIDGET_CAPS(widget_caps) == 4) // node is a pin widget
-                {
-                    send_command_12(card->codecnr, NID, VERB_GET_CONFIG_DEFAULT, 0, &config_default, card);
-                    
-                    if ( (((config_default >> 20) & 0xF) == 2) && // the default device/use is a headphone output
-                         (((config_default >> 16) & 0xF) == 1) ) // connection type is mini-jack
-                    {
-                       return (int) (NID);
-                    }  
-                }
-            }
-        }
-    }
-    
-    return -1;
-}
-
-
-static int find_audio_output(struct HDAudioChip *card, UBYTE digital)
-{
-    int i;
-
     ULONG node_count_response = get_parameter(card->function_group,
         VERB_GET_PARMS_NODE_COUNT, card);
     UBYTE node_count = node_count_response & 0xFF;
     UBYTE starting_node = (node_count_response >> 16) & 0xFF;
+    UBYTE i;
     ULONG config_default;
 
     for (i = 0; i < node_count; i++) // widgets
     {
-        const ULONG NID = i + starting_node;
-        ULONG widget_caps;
+        UBYTE nid = i + starting_node;
+        ULONG widget_caps, pin_caps, connections;
 
-        widget_caps = get_parameter(NID, VERB_GET_PARMS_AUDIO_WIDGET_CAPS,
+        widget_caps = get_parameter(nid, VERB_GET_PARMS_AUDIO_WIDGET_CAPS,
             card);
 
-        if (((widget_caps >> 20) & 0xF) == 0) // audio output
+        if (((widget_caps >> 20) & 0xF) == type)
         {
-            if ((widget_caps & 0x1) == 1 && // stereo
-                ((widget_caps >> 9) & 0x1) == digital)
+            BOOL ok;
+
+            if (type == 4) // node is a pin widget
             {
-                return (int) (NID);
-            }  
+                send_command_12(card->codecnr, nid, VERB_GET_CONFIG_DEFAULT,
+                    0, &config_default, card);
+
+                if (((config_default >> 20) & 0xF) == pin_type)
+                {
+                    D(bug("[HDAudio] Config default for NID %x = %x\n", nid,
+                        config_default));
+                    if ((widget_caps & 1 << 8) != 0)
+                        connections = get_parameter(nid, 0xE, card) & 0x7f;
+                    else
+                        connections = 0;
+                    pin_caps =
+                        get_parameter(nid, VERB_GET_PARMS_PIN_CAPS, card);
+                    switch (pin_type)
+                    {
+                    case 0x0:
+                    case 0x1:
+                    case 0x2:
+                    case 0x4:
+                    case 0x5:
+                        ok = (pin_caps & PIN_CAPS_OUTPUT_CAPABLE) != 0
+                            && connections != 0;
+                        break;
+                    default:
+                        ok = (pin_caps & PIN_CAPS_INPUT_CAPABLE) != 0;
+                    }
+
+                    // check speaker connection type is internal
+                    if (pin_type == 1 && (config_default >> 16 & 0xB) != 3)
+                        ok = FALSE;
+
+                    // check headphone connection type is mini-jack
+                    if (pin_type == 2 && (config_default >> 16 & 0xF) != 1)
+                        ok = FALSE;
+                }  
+            }
+            else
+                ok = (widget_caps & 0x1) == 1 && // stereo
+                    ((widget_caps >> 9) & 0x1) == 0; // analogue
+
+            if (ok)
+                return nid;
         }
     }
 
