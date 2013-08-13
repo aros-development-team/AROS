@@ -106,6 +106,8 @@ LONG launcher()
     struct vfork_data *udata = this->tc_UserData;
     BYTE child_signal;
     struct aroscbase *aroscbase = NULL, *pbase = udata->parent_aroscbase;
+    jmp_buf exec_exitjmp; /* jmp_buf for when calliing __exec_do */
+    int exec_error; /* errno for when calling __exec_do */
 
     /* Allocate signal for parent->child communication */
     child_signal = udata->child_signal = AllocSignal(-1);
@@ -134,10 +136,8 @@ LONG launcher()
     udata->child_aroscbase = aroscbase;
     aroscbase->acb_parent_does_upath = pbase->acb_doupath;
 
-    if (setjmp(udata->child_exitjmp) == 0)
+    if (setjmp(exec_exitjmp) == 0)
     {
-        __arosc_program_startup(udata->child_exitjmp, &udata->child_error);
-
         /* Setup complete, signal parent */
         D(bug("launcher: Signaling parent that we finished setup\n"));
         Signal(udata->parent, 1 << udata->parent_signal);
@@ -178,6 +178,9 @@ LONG launcher()
 
             if (exec_id)
             {
+                D(bug("launcher: catch _exit()\n"));
+                __arosc_program_startup(exec_exitjmp, &exec_error);
+                
                 D(bug("launcher: executing command\n"));
                 __exec_do(exec_id);
 
@@ -329,7 +332,7 @@ pid_t __vfork(jmp_buf env)
             D(bug("__vfork: Child: not executed\n"));
 
             /* et_Result is normally set in startup code but no exec was performed
-             so we have to mimic the startup code
+               so we have to mimic the startup code
              */
             etask = GetETask(udata->child);
             if (etask)
