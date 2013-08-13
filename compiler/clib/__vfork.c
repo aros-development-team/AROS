@@ -351,7 +351,8 @@ pid_t __vfork(jmp_buf env)
         fflush(NULL);
 
         D(bug("__vfork: Parent: restoring startup buffer\n"));
-        /* Restore parent startup buffer */
+        /* Restore parent errorptr and startup buffer */
+        __arosc_set_errorptr(&udata->parent_olderrorptr);
         jmp_buf dummy;
         __arosc_set_exitjmp(udata->parent_oldexitjmp, dummy);
 
