@@ -1650,45 +1650,31 @@ static int find_headphone_nid(struct HDAudioChip *card)
 static int find_audio_output(struct HDAudioChip *card, UBYTE digital)
 {
     int i;
-    ULONG node_count_response = get_parameter(0, VERB_GET_PARMS_NODE_COUNT, card);
+
+    ULONG node_count_response = get_parameter(card->function_group,
+        VERB_GET_PARMS_NODE_COUNT, card);
     UBYTE node_count = node_count_response & 0xFF;
     UBYTE starting_node = (node_count_response >> 16) & 0xFF;
-   
-    for (i = 0; i < node_count; i++)
+    ULONG config_default;
+
+    for (i = 0; i < node_count; i++) // widgets
     {
-        ULONG function_group_response = get_parameter(starting_node + i, VERB_GET_PARMS_FUNCTION_GROUP_TYPE, card);
-        UBYTE function_group = function_group_response & 0xFF;
-        //bug("Function group = %x, UnSol cap = %x\n", function_group, (function_group_response >> 8) & 0x1);
+        const ULONG NID = i + starting_node;
+        ULONG widget_caps;
 
-        if (function_group == AUDIO_FUNCTION)
+        widget_caps = get_parameter(NID, VERB_GET_PARMS_AUDIO_WIDGET_CAPS,
+            card);
+
+        if (((widget_caps >> 20) & 0xF) == 0) // audio output
         {
-            int j;
-
-            ULONG subnode_count_response = get_parameter(starting_node + i, VERB_GET_PARMS_NODE_COUNT, card);
-            UBYTE subnode_count = subnode_count_response & 0xFF;
-            UBYTE sub_starting_node = (subnode_count_response >> 16) & 0xFF;
-            ULONG config_default;
-
-
-            for (j = 0; j < subnode_count; j++) // widgets
+            if ((widget_caps & 0x1) == 1 && // stereo
+                ((widget_caps >> 9) & 0x1) == digital)
             {
-                const ULONG NID = j + sub_starting_node;
-                ULONG widget_caps;
-
-                widget_caps = get_parameter(NID, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
-                
-                if (((widget_caps >> 20) & 0xF) == 0) // audio output
-                {
-                    if ((widget_caps & 0x1) == 1 && // stereo
-                        ((widget_caps >> 9) & 0x1) == digital)
-                    {
-                        return (int) (NID);
-                    }  
-                }
-            }
+                return (int) (NID);
+            }  
         }
     }
-    
+
     return -1;
 }
 
