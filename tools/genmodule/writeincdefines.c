@@ -49,7 +49,7 @@ void writeincdefines(struct config *cfg)
 
     for (funclistit = cfg->funclist; funclistit!=NULL; funclistit = funclistit->next)
     {
-	if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
+	if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo) && funclistit->libcall != STACK)
 	{
             fprintf(out,
                     "\n"
@@ -60,18 +60,11 @@ void writeincdefines(struct config *cfg)
                     cfg->modulenameupper
             );
 
-	    if (funclistit->libcall != STACK)
-	    {
-		writedefineregister(out, funclistit, cfg);
-		if (!funclistit->novararg)
-		    writedefinevararg(out, funclistit, cfg);
-	    }
-	    else /* libcall == STACK */
-	    {
-		writedefinestack(out, funclistit, cfg);
-	    }
+            writedefineregister(out, funclistit, cfg);
+		    if (!funclistit->novararg)
+		        writedefinevararg(out, funclistit, cfg);
 	    
-	    writealiases(out, funclistit, cfg);
+            writealiases(out, funclistit, cfg);
 
             fprintf(out,
                     "\n"
@@ -414,30 +407,6 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 
 	free(varargname);
     }
-}
-
-void
-writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg)
-{
-    struct functionarg *arglistit;
-
-    /* Only if no peropener or pertask base */
-    if (cfg->options & OPTION_DUPBASE)
-    	return;
-
-    fprintf(out, "#define %s ((%s (*)(", funclistit->name, funclistit->type);
-    for (arglistit = funclistit->arguments;
-	 arglistit != NULL;
-	 arglistit = arglistit->next
-    )
-    {
-	fprintf(out, "%s", arglistit->arg);
-	if (arglistit->next != NULL)
-	    fprintf(out, ", ");
-    }
-    fprintf(out, "))__AROS_GETVECADDR(__aros_getbase_%s(),%d))\n",
-            cfg->libbase, funclistit->lvo
-    );
 }
 
 void
