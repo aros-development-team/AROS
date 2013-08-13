@@ -29,7 +29,6 @@ void writestubs(struct config *, int);
 void writefunclist(struct config *);
 void writefd(struct config *);
 void writeskel(struct config *cfg);
-void writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg);
 void writegetlibbase(struct config *cfg, int is_rel);
 
 #endif

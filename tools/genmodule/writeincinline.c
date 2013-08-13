@@ -47,7 +47,7 @@ void writeincinline(struct config *cfg)
 
     for (funclistit = cfg->funclist; funclistit!=NULL; funclistit = funclistit->next)
     {
-        if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
+        if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo) && funclistit->libcall != STACK)
         {
             fprintf(out,
                     "\n"
@@ -58,17 +58,9 @@ void writeincinline(struct config *cfg)
                     cfg->modulenameupper
             );
 
-            if (funclistit->libcall != STACK)
-            {
-                writeinlineregister(out, funclistit, cfg);
-                if (!funclistit->novararg)
-                    writeinlinevararg(out, funclistit, cfg);
-            }
-            else /* libcall == STACK */
-            {
-		/* This is the same as in defines */
-		writedefinestack(out, funclistit, cfg);
-            }
+            writeinlineregister(out, funclistit, cfg);
+            if (!funclistit->novararg)
+                writeinlinevararg(out, funclistit, cfg);
 
             writealiases(out, funclistit, cfg);
 
