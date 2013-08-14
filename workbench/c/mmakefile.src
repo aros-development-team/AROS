@@ -1,4 +1,4 @@
-# Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+# Copyright Â© 2003-2013, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -106,7 +106,7 @@ $(OBJDIR)/Eval.o : $(OBJDIR)/evalParser.tab.c $(SRCDIR)/$(CURDIR)/Eval.c
 	%compile_q from=$(SRCDIR)/$(CURDIR)/Eval.c opt="$(CFLAGS) -I$(OBJDIR)"
 
 $(OBJDIR)/Load.o : $(OBJDIR)/Eject.o
-	@$(ECHO) Copying $< to $@
+	@$(ECHO) "Copying    $< to $@"
 	@$(CP) $< $@
 
 %common

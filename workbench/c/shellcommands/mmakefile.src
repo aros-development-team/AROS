@@ -54,7 +54,7 @@ USER_CFLAGS := -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h \
     usestartup=no
 
 $(OBJDIR)/NewCLI.o : $(OBJDIR)/NewShell.o
-	@$(ECHO) Copying $< to $@
+	@$(ECHO) "Copying    $< to $@"
 	@$(CP) $< $@
 
 
