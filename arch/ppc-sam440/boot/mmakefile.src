@@ -108,7 +108,7 @@ kernel-package-sam440-ppc-quick: kernel-package-sam440-ppc
 	@$(ECHO)
 
 kernel-package-sam440-ppc:
-	@$(ECHO) Copying modules to boot/modules/
+	@$(ECHO) "Copying    modules to boot/modules/"
 	$(RM) -rf $(BINDIR)/boot/modules
 	%mkdirs_q $(BINDIR)/boot/modules
 	@$(CP) $(MODULES) $(BINDIR)/boot/modules/
