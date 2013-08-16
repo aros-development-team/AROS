@@ -167,7 +167,7 @@ unpack()
     local old_PWD="$PWD"
     cd $location
     
-    echo "Unpacking \`$archive'..."
+    echo "Unpacking  \`$archive'..."
     
     local ret=true
     case "$archive" in
