@@ -61,11 +61,10 @@ void ata_insl(struct pio_data *data, APTR address, ULONG count)
 void ata_outsw(struct pio_data *data, APTR address, ULONG count)
 {
     UWORD *addr = address;
-    UWORD *p = (UWORD*)(port + data);
 
     while(count)
     {
-        outw(*addr++, p);
+        outw(*addr++, data->ioBase);
         count -= 2;
     }
 }
@@ -85,7 +84,7 @@ void ata_outsl(struct pio_data *data, APTR address, ULONG count)
 {
     if (count & 2)
     {
-        ata_outsw(address, port, count, data);
+	ata_outsw(data, address, count);
     }
     else
     {
@@ -103,7 +102,7 @@ void ata_insl(struct pio_data *data, APTR address, ULONG count)
 {
     if (count & 2)
     {
-        ata_insw(address, count, data);
+        ata_insw(data, address, count);
     }
     else
     {
