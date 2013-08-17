@@ -14,6 +14,10 @@ char *tests[] =
     "mnt_names",
     "execl2",
     "execl2_vfork",
+    "argv0_test1",
+    "argv0_test2",
+    "argv0_test3",
+    "argv0_test4",
 
      NULL
 };
