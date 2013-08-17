@@ -35,7 +35,6 @@ typedef struct _fdesc
 } fdesc;
 
 struct aroscbase;
-int __register_init_fdarray(struct aroscbase *base);
 int __getfdslots(void);
 void __getfdarray(APTR *arrayptr, int *slotsptr);
 void __setfdarray(APTR array, int slots);
