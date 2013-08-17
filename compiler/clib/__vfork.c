@@ -98,6 +98,8 @@ static void parent_enterpretendchild(struct vfork_data *udata);
 static void child_takeover(struct vfork_data *udata);
 static void parent_leavepretendchild(struct vfork_data *udata);
 
+static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork_data *udata);
+
 LONG launcher()
 {
     D(bug("launcher: Entered child launcher, ThisTask=%p\n", SysBase->ThisTask));
@@ -350,33 +352,52 @@ pid_t __vfork(jmp_buf env)
         D(bug("__vfork: Parent: fflushing\n"));
         fflush(NULL);
 
-        D(bug("__vfork: Parent: restoring startup buffer\n"));
-        /* Restore parent errorptr and startup buffer */
-        __arosc_set_errorptr(udata->parent_olderrorptr);
-        jmp_buf dummy;
-        __arosc_set_exitjmp(udata->parent_oldexitjmp, dummy);
+        __vfork_exit_controlled_stack(udata);
 
-        D(bug("__vfork: Parent: freeing parent signal\n"));
-        FreeSignal(udata->parent_signal);
-
-        errno = udata->child_errno;
-
-        parent_leavepretendchild(udata);
-
-        /* Save some data from udata before udata is being freed */
-        ULONG child_id = udata->child_id;
-        jmp_buf env;
-        *env = *udata->vfork_jmp;
-
-        D(bug("__vfork: Parent: freeing udata\n"));
-        FreeMem(udata, sizeof(struct vfork_data));
-
-        D(bug("__vfork: Parent jumping to jmp_buf %p (child=%d)\n", env, child_id));
-        D(bug("__vfork: ip: %p, stack: %p\n", env->retaddr, env->regs[SP]));
-        vfork_longjmp(env, child_id);
         assert(0); /* not reached */
         return (pid_t) 1;
     }
+}
+
+/*
+ * The sole purpose of this function is to enable control over allocation of dummy and env.
+ * Previously they were allocated in the ending code of __vfork function. On ARM however
+ * this was causing immediate allocation of space at entry to the __vfork function. Moreover
+ * the jmp_buf is alligned(16) and as such is represeted on the stack as a pointer to stack
+ * region instead of offset from stack base.
+ *
+ * The exit block of __vfork function reprents a code that underwent a number of longjumps. The
+ * stack there is not guaranteed to be preserved, thus the on-stack pointer representing dummy
+ * and evn were also damaged. Extracting the code below allows to control when the variables
+ * are allocated (as long as the function remains not inlined).
+ */
+static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork_data *udata)
+{
+    jmp_buf dummy;
+    jmp_buf env;
+
+    D(bug("__vfork: Parent: restoring startup buffer\n"));
+    /* Restore parent errorptr and startup buffer */
+    __arosc_set_errorptr(udata->parent_olderrorptr);
+    __arosc_set_exitjmp(udata->parent_oldexitjmp, dummy);
+
+    D(bug("__vfork: Parent: freeing parent signal\n"));
+    FreeSignal(udata->parent_signal);
+
+    errno = udata->child_errno;
+
+    parent_leavepretendchild(udata);
+
+    /* Save some data from udata before udata is being freed */
+    ULONG child_id = udata->child_id;
+    *env = *udata->vfork_jmp;
+
+    D(bug("__vfork: Parent: freeing udata\n"));
+    FreeMem(udata, sizeof(struct vfork_data));
+
+    D(bug("__vfork: Parent jumping to jmp_buf %p (child=%d)\n", env, child_id));
+    D(bug("__vfork: ip: %p, stack: %p\n", env->retaddr, env->regs[SP]));
+    vfork_longjmp(env, child_id);
 }
 
 static void parent_enterpretendchild(struct vfork_data *udata)
