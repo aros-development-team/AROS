@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Support functions for POSIX exec*() functions.
@@ -42,6 +42,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
 {
     struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     char *filename2 = NULL;
+    const char *filename2_dos = NULL;
     int argssize = 512;
     struct Process *me;
     char ***environptr = __arosc_get_environptr();
@@ -134,7 +135,8 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
             strcpy(filename2, path_item);
             strcat(filename2, "/");
             strcat(filename2, filename);
-            lock = Lock(__path_u2a(filename2), SHARED_LOCK);
+            filename2_dos = __path_u2a(filename2);
+            lock = Lock(filename2_dos, SHARED_LOCK);
             D(bug("__exec_prepare: Lock(\"%s\") == %x\n", filename2, (APTR)lock));
         }
 
@@ -147,8 +149,10 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         }
     }
     else
+    {
         filename2 = (char *)filename;
-
+        filename2_dos = __path_u2a(filename2);
+    }
     
     if (aroscbase->acb_flags & PRETEND_CHILD)
     {
@@ -189,7 +193,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     aroscbase->acb_exec_args[0] = '\0';
 
     /* Let's check if it's a script */
-    BPTR fh = Open((CONST_STRPTR)__path_u2a(filename2), MODE_OLDFILE);
+    BPTR fh = Open((CONST_STRPTR)filename2_dos, MODE_OLDFILE);
     if(fh)
     {
     	if(FGetC(fh) == '#' && FGetC(fh) == '!')
@@ -241,6 +245,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
                     /* Set file to execute as the script interpreter */
                     filename2 = AllocPooled(aroscbase->acb_exec_pool, strlen(inter) + 1);
                     strcpy(filename2, inter);
+                    filename2_dos = __path_u2a(filename2);
                 }
             }
         }
@@ -291,16 +296,16 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     }
 
     /* Set taskname */
-    aroscbase->acb_exec_taskname = AllocPooled(aroscbase->acb_exec_pool, strlen(filename2) + 1);
+    aroscbase->acb_exec_taskname = AllocPooled(aroscbase->acb_exec_pool, strlen(filename2_dos) + 1);
     if (!aroscbase->acb_exec_taskname)
     {
         errno = ENOMEM;
         goto error;
     }
-    strcpy(aroscbase->acb_exec_taskname, filename2);
+    strcpy(aroscbase->acb_exec_taskname, filename2_dos);
     
     /* Load file to execute */
-    aroscbase->acb_exec_seglist = LoadSeg((CONST_STRPTR)__path_u2a(filename2));
+    aroscbase->acb_exec_seglist = LoadSeg((CONST_STRPTR)filename2_dos);
     if (!aroscbase->acb_exec_seglist)
     {
         errno = ENOEXEC;

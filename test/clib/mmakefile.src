@@ -47,7 +47,11 @@ FILES := \
         wait \
         waitpid \
         stdin1 stdin2 stdin3 stdin4 \
-        execl2 execl2_vfork execl2_slave
+        execl2 execl2_vfork execl2_slave \
+        argv0_test1 argv0_test2 argv0_slave
+
+FILES_NIXC := \
+        argv0_test3 argv0_test4
 
 EXEDIR := $(AROS_TESTS)/clib
 
@@ -55,6 +59,17 @@ EXEDIR := $(AROS_TESTS)/clib
 
 %build_progs mmake=test-clib \
     files=$(FILES) targetdir=$(EXEDIR)
+
+# From here on compile with -nix flag
+USER_CFLAGS := -nix
+USER_LDFLAGS := -nix
+
+%build_progs mmake=test-clib \
+    files=$(FILES_NIXC) targetdir=$(EXEDIR)
+
+# Use build_prog to recompile existing code to file with other name
+%build_prog mmake=test-clib \
+    progname=argv0_slave_nixc files=argv0_slave targetdir=$(EXEDIR)
 
 %common
 

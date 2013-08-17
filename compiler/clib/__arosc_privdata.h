@@ -77,9 +77,6 @@ struct aroscbase
     /* strerror */
     char acb_fault_buf[100];
 
-    /* __arosc_nixmain */
-    int acb_parent_does_upath;
-
     /* flock.c */
     struct List *acb_file_locks;
     

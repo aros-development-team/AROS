@@ -133,7 +133,6 @@ LONG launcher()
     D(bug("launcher: Opened aroscbase: %x\n", aroscbase));
 
     udata->child_aroscbase = aroscbase;
-    aroscbase->acb_parent_does_upath = pbase->acb_doupath;
 
     if (setjmp(exec_exitjmp) == 0)
     {
@@ -154,7 +153,7 @@ LONG launcher()
 
             /* Filenames passed from parent obey parent's acb_doupath */
 
-            aroscbase->acb_doupath = udata->child_aroscbase->acb_parent_does_upath;
+            aroscbase->acb_doupath = udata->parent_aroscbase->acb_doupath;
             D(bug("launcher: acb_doupath == %d for __exec_prepare()\n", aroscbase->acb_doupath));
 
             exec_id = udata->exec_id = __exec_prepare(udata->exec_filename, 0, udata->exec_argv, udata->exec_envp);
