@@ -122,8 +122,7 @@ LONG launcher()
         return -1;
     }
 
-    if (__register_init_fdarray(pbase))
-        aroscbase = (struct aroscbase *) OpenLibrary((STRPTR) "arosc.library", 0);
+    aroscbase = (struct aroscbase *) OpenLibrary((STRPTR) "arosc.library", 0);
     if (!aroscbase)
     {
         FreeSignal(child_signal);
@@ -132,8 +131,6 @@ LONG launcher()
         return -1;
     }
     D(bug("launcher: Opened aroscbase: %x\n", aroscbase));
-
-    aroscbase->acb_flags |= VFORK_PARENT;
 
     udata->child_aroscbase = aroscbase;
     aroscbase->acb_parent_does_upath = pbase->acb_doupath;
@@ -276,6 +273,8 @@ pid_t __vfork(jmp_buf env)
         vfork_longjmp(env, -1);
     }
 
+    aroscbase->acb_flags |= VFORK_PARENT;
+
     D(bug("__vfork: Parent: Creating child\n"));
     udata->child = (struct Task*) CreateNewProc(tags);
 
@@ -299,6 +298,8 @@ pid_t __vfork(jmp_buf env)
         errno = udata->child_errno;
         vfork_longjmp(env, -1);
     }
+
+    aroscbase->acb_flags &= ~VFORK_PARENT;
 
     D(bug("__vfork: Parent: Setting jmp_buf at %p\n", udata->parent_newexitjmp));
     if (setjmp(udata->parent_newexitjmp) == 0)

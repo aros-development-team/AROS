@@ -12,6 +12,8 @@ char *tests[] =
     "ctype",
     "sscanf",
     "mnt_names",
+    "execl2",
+    "execl2_vfork",
 
      NULL
 };

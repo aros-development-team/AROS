@@ -117,18 +117,18 @@ struct aroscbase
    this is indicated in the flags of the library.
    This way the child can use the parent arosc library during its initialization
    phase */
-#define EXEC_PARENT 1
-#define VFORK_PARENT 2
+#define EXEC_PARENT 0x00000001
+#define VFORK_PARENT 0x00000002
 
 /* This flag is set by vfork() to correctly report child process ID during
    execution of child code, even though that it's actually executed by parent
    process until execve() is called. */
-#define PRETEND_CHILD 4
+#define PRETEND_CHILD 0x00000004
 
 /* By default arosc.library creates new arosc_privdata when opened if 
    pr_ReturnAddr has changed (for example during RunCommand()). Setting 
    this flag prevents creation of new arosc_privdata. */
-#define KEEP_OLD_ACPD 8
+#define KEEP_OLD_ACPD 0x00000008
 
 /* By default a new process will get new ACPD when it(or any other library
    it uses) opens arosc.library. This flag prohibits that and forces the
@@ -137,10 +137,10 @@ struct aroscbase
    aroscbase can now be used from different tasks without the need
    for SHARE_ACPD_WITH_CHILD
 */
-#define SHARE_ACPD_WITH_CHILD 16
+#define SHARE_ACPD_WITH_CHILD 0x00000010
 
 /* Make a distinction between exit() and abort() */
-#define ABNORMAL_EXIT 32
+#define ABNORMAL_EXIT 0x00000020
 
 /* !acb_flags */
 

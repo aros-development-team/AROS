@@ -5,6 +5,8 @@
     File descriptors handling internals.
 */
 
+#include LC_LIBDEFS_FILE
+
 #include "__arosc_privdata.h"
 
 #include <string.h>
@@ -32,9 +34,6 @@
    thread safe.
    Possible implementation should carefully at performance impact.
 */
-
-static struct SignalSemaphore __fdsem;
-static struct MinList __fdreglist;
 
 void __getfdarray(APTR *arrayptr, int *slotsptr)
 {
@@ -366,50 +365,6 @@ void __free_fdesc(fdesc *desc)
 }
 
 
-struct __reg_fdarray {
-    struct MinNode node;
-    struct Task *task;
-    fdesc **fdarray;
-    int numslots;
-};
-
-/* Some local variables for register_init_fdarray */
-static struct SignalSemaphore __fdsem;
-static struct MinList __fdreglist;
-    
-int __init_vars(struct ExecBase *SysBase)
-{
-    InitSemaphore(&__fdsem);
-    NEWLIST(&__fdreglist);
-    
-    return TRUE;
-}
-
-int __register_init_fdarray(struct aroscbase *base)
-{
-    /* arosc privdata should not be used inside this function,
-     * this function is called before aroscbase is initialized
-     */
-    struct __reg_fdarray *regnode = AllocVec(sizeof(struct __reg_fdarray), MEMF_ANY|MEMF_CLEAR);
-
-    if (regnode == NULL)
-        return 0;
-
-    regnode->task = FindTask(NULL);
-    regnode->fdarray = base->acb_fd_array;
-    regnode->numslots = base->acb_numslots;
-    
-    D(bug("Allocated regnode: %p, fdarray: %p, numslots: %d\n",
-          regnode, regnode->fdarray, regnode->numslots
-    ));
-    
-    ObtainSemaphore(&__fdsem);
-    AddHead((struct List *)&__fdreglist, (struct Node *)regnode);
-    ReleaseSemaphore(&__fdsem);
-    
-    return 1;
-}
-
 /* FIXME: perhaps this has to be handled in a different way...  */
 int __init_stdfiles(struct aroscbase *aroscbase)
 {
@@ -496,35 +451,16 @@ static int __copy_fdarray(fdesc **__src_fd_array, int numslots)
 
 int __init_fd(struct aroscbase *aroscbase)
 {
-    struct __reg_fdarray *regnodeit, *regnode = NULL;
-    struct Task *self = FindTask(NULL);
+    struct aroscbase *paroscbase = __GM_GetBaseParent(aroscbase);
 
-    ObtainSemaphore(&__fdsem);
-    ForeachNode(&__fdreglist, regnodeit)
-    {
-        if (regnodeit->task == self)
-        {
-            regnode = regnodeit;
-    
-            D(bug("Found regnode: %p, fdarray: %p, numslots: %d\n",
-                  regnode, regnode->fdarray, regnode->numslots
-            ));
-            Remove((struct Node *)regnode);
-            break;
-        }
-    }
-    ReleaseSemaphore(&__fdsem);
-    
-    if (regnode == NULL)
-        return __init_stdfiles(aroscbase);
+    D(bug("Found parent aroscbase %p with flags 0x%x\n",
+          paroscbase, paroscbase ? paroscbase->acb_flags : 0
+    ));
+
+    if (paroscbase && (paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
+        return __copy_fdarray(paroscbase->acb_fd_array, paroscbase->acb_numslots);
     else
-    {
-        int ok = __copy_fdarray(regnode->fdarray, regnode->numslots);
-        
-        FreeVec(regnode);
-        
-        return ok;
-    }
+        return __init_stdfiles(aroscbase);
 }
 
 void __exit_fd(struct aroscbase *aroscbase)
@@ -580,7 +516,6 @@ void __updatestdio(void)
         aroscbase->acb_fd_array[STDERR_FILENO]->fcb->privflags = _FCB_DONTCLOSE_FH;
 }
 
-ADD2INIT(__init_vars, 0);
 ADD2OPENLIB(__init_fd, 2);
 ADD2CLOSELIB(__exit_fd, 2);
 
