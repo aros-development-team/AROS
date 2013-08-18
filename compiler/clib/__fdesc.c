@@ -371,6 +371,7 @@ int __init_stdfiles(struct aroscbase *aroscbase)
     struct Process *me;
     fcb *infcb = NULL, *outfcb = NULL, *errfcb = NULL;
     fdesc *indesc=NULL, *outdesc=NULL, *errdesc=NULL;
+    BPTR infh, outfh;
     int res = __getfdslot(2);
 
     if
@@ -397,26 +398,64 @@ int __init_stdfiles(struct aroscbase *aroscbase)
     	return 0;
     }
 
-    indesc->fdflags = 0;
-    outdesc->fdflags = 0;
-    errdesc->fdflags = 0;
-
-    indesc->fcb = infcb;
-    outdesc->fcb = outfcb;
-    errdesc->fcb = errfcb;
-
     me = (struct Process *)FindTask (NULL);
-    indesc->fcb->fh  = Input();
-    outdesc->fcb->fh = Output();
-    errdesc->fcb->fh = me->pr_CES ? me->pr_CES : me->pr_COS;
 
-    indesc->fcb->flags  = O_RDONLY;
-    outdesc->fcb->flags = O_WRONLY | O_APPEND;
-    errdesc->fcb->flags = O_WRONLY | O_APPEND;
+    infh = Input();
+    infcb->fh  = OpenFromLock(DupLockFromFH(infh));
+    infcb->flags  = O_RDONLY;
+    infcb->opencount = 1;
+    /* Remove (remaining) command line args on first read */
+    infcb->privflags = _FCB_FLUSHONREAD;
+    /* Use original fh if it can't be duplicated */
+    if (infcb->fh == BNULL)
+    {
+        infcb->fh = infh;
+        infcb->privflags |= _FCB_DONTCLOSE_FH;
+    }
+    indesc->fcb = infcb;
+    indesc->fdflags = 0;
+    D(bug("[__init_stdfiles]Input(): %p, infcb->fh: %p\n",
+          BADDR(Input()), BADDR(infcb->fh)
+    ));
 
-    indesc->fcb->opencount = outdesc->fcb->opencount = errdesc->fcb->opencount = 1;
-    indesc->fcb->privflags = _FCB_DONTCLOSE_FH | _FCB_FLUSHONREAD;
-    outdesc->fcb->privflags = errdesc->fcb->privflags = _FCB_DONTCLOSE_FH;
+    outfh = Output();
+    outfcb->fh = OpenFromLock(DupLockFromFH(outfh));
+    outfcb->flags = O_WRONLY | O_APPEND;
+    outfcb->opencount = 1;
+    /* Use original fh if it can't be duplicated */
+    if (outfcb->fh == BNULL)
+    {
+        outfcb->fh = outfh;
+        outfcb->privflags |= _FCB_DONTCLOSE_FH;
+    }
+    outdesc->fcb = outfcb;
+    outdesc->fdflags = 0;
+    D(bug("[__init_stdfiles]Output(): %p, outfcb->fh: %p\n",
+          BADDR(Output()), BADDR(outfcb->fh)
+    ));
+
+    if (me->pr_CES != BNULL)
+    {
+        errfcb->fh = OpenFromLock(DupLockFromFH(me->pr_CES));
+        /* Use original fh if it can't be duplicated */
+        if (errfcb->fh == BNULL)
+        {
+            errfcb->fh = me->pr_CES;
+            errfcb->privflags |= _FCB_DONTCLOSE_FH;
+        }
+    }
+    else
+    {
+        errfcb->fh = outdesc->fcb->fh;
+        errfcb->privflags = _FCB_DONTCLOSE_FH;
+    }
+    errfcb->flags = O_WRONLY | O_APPEND;
+    errfcb->opencount = 1;
+    errdesc->fcb = errfcb;
+    errdesc->fdflags = 0;
+    D(bug("[__init_stdfiles]me->pr_CES: %p, errfcb->fh: %p\n",
+          BADDR(me->pr_CES), BADDR(errfcb->fh)
+    ));
 
     aroscbase->acb_fd_array[STDIN_FILENO]  = indesc;
     aroscbase->acb_fd_array[STDOUT_FILENO] = outdesc;
@@ -500,6 +539,7 @@ void __updatestdio(void)
 {
     struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     struct Process *me;
+    fcb *fcb = NULL;
 
     me = (struct Process *)FindTask(NULL);
 
@@ -507,13 +547,33 @@ void __updatestdio(void)
     fflush(stdout);
     fflush(stderr);
 
-    aroscbase->acb_fd_array[STDIN_FILENO]->fcb->fh  = Input();
-    aroscbase->acb_fd_array[STDOUT_FILENO]->fcb->fh = Output();
-    aroscbase->acb_fd_array[STDERR_FILENO]->fcb->fh = me->pr_CES ? me->pr_CES : me->pr_COS;
+    fcb = aroscbase->acb_fd_array[STDIN_FILENO]->fcb;
+    if (!(fcb->privflags & _FCB_DONTCLOSE_FH))
+        Close(fcb->fh);
+    else
+        fcb->privflags &= ~_FCB_DONTCLOSE_FH;
+    fcb->fh = OpenFromLock(DupLockFromFH(Input()));
 
-    aroscbase->acb_fd_array[STDIN_FILENO]->fcb->privflags =
-        aroscbase->acb_fd_array[STDOUT_FILENO]->fcb->privflags =
-        aroscbase->acb_fd_array[STDERR_FILENO]->fcb->privflags = _FCB_DONTCLOSE_FH;
+    fcb = aroscbase->acb_fd_array[STDOUT_FILENO]->fcb;
+    if (!(fcb->privflags & _FCB_DONTCLOSE_FH))
+        Close(fcb->fh);
+    else
+        fcb->privflags &= ~_FCB_DONTCLOSE_FH;
+    fcb->fh = OpenFromLock(DupLockFromFH(Output()));
+
+    fcb = aroscbase->acb_fd_array[STDERR_FILENO]->fcb;
+    if (!(fcb->privflags & _FCB_DONTCLOSE_FH))
+        Close(fcb->fh);
+    if (me->pr_CES != BNULL)
+    {
+        fcb->fh = OpenFromLock(DupLockFromFH(me->pr_CES));
+        fcb->privflags &= ~_FCB_DONTCLOSE_FH;
+    }
+    else
+    {
+        fcb->fh = aroscbase->acb_fd_array[STDOUT_FILENO]->fcb->fh;
+        fcb->privflags |= _FCB_DONTCLOSE_FH;
+    }
 }
 
 ADD2OPENLIB(__init_fd, 2);
