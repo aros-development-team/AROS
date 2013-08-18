@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function system().
@@ -112,6 +112,7 @@ static int system_no_sh(const char *string)
     const char *apath;
     char *args, *cmd, *fullcmd;
     fdesc *in, *out, *err;
+    BPTR infh, outfh, errfh;
     int ret;
 
     D(bug("system_no_sh(%s)\n", string));
@@ -135,13 +136,27 @@ static int system_no_sh(const char *string)
     in = __getfdesc(STDIN_FILENO);
     out = __getfdesc(STDOUT_FILENO);
     err = __getfdesc(STDERR_FILENO);
-    
+
+    D(bug("[system_no_sh]in: %p, in->fcb->fh: %p\n", in, BADDR(in->fcb->fh)));
+    D(bug("[system_no_sh]out: %p, out->fcb->fh: %p\n", out, BADDR(out->fcb->fh)));
+    D(bug("[system_no_sh]err: %p, err->fcb->fh: %p\n", err, BADDR(err->fcb->fh)));
+
+    infh = in ? in->fcb->fh : BNULL;
+    outfh = out ? out->fcb->fh : BNULL;
+    errfh = err ? err->fcb->fh : BNULL;
+    if (outfh == errfh)
+        errfh = BNULL;
+
+    D(bug("[system_no_sh]infh: %p, outfh: %p, errfh %p\n",
+          BADDR(infh), BADDR(outfh), BADDR(errfh)
+    ));
+
     ret = (int)SystemTags
     (
          fullcmd,
-         SYS_Input, (IPTR)(in ? in->fcb->fh : BNULL),
-         SYS_Output, (IPTR)(out ? out->fcb->fh : BNULL),
-         SYS_Error, (IPTR)(err ? err->fcb->fh : BNULL),
+         SYS_Input, (IPTR)(infh),
+         SYS_Output, (IPTR)(outfh),
+         SYS_Error, (IPTR)(errfh),
          NULL
     );
 
