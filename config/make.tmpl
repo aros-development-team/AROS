@@ -1597,7 +1597,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 %define build_module mmake=/A modname=/A modtype=/A modsuffix= version= conffile= \
   files="$(basename $(call WILDCARD, *.c))" \
   cxxfiles="$(basename $(call WILDCARD, *.cpp))" \
-  cxxxxfiles="(basename $(call WILDCARD, *.cxx))" \
+  cxxxxfiles="$(basename $(call WILDCARD, *.cxx))" \
   cxxccfiles="$(basename $(call WILDCARD, *.cc))" \
   linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
