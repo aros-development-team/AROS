@@ -53,10 +53,6 @@ USER_CFLAGS := -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h \
     files=$(FILES) targetdir=$(AROS_C) \
     usestartup=no
 
-$(OBJDIR)/NewCLI.o : $(OBJDIR)/NewShell.o
-	@$(ECHO) "Copying    $< to $@"
-	@$(CP) $< $@
-
 
 # Embedded side of the world
 
