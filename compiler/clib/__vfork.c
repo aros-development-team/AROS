@@ -107,7 +107,7 @@ LONG launcher()
     struct Task *this = FindTask(NULL);
     struct vfork_data *udata = this->tc_UserData;
     BYTE child_signal;
-    struct aroscbase *aroscbase = NULL, *pbase = udata->parent_aroscbase;
+    struct aroscbase *aroscbase = NULL;
     jmp_buf exec_exitjmp; /* jmp_buf for when calliing __exec_do */
     int exec_error; /* errno for when calling __exec_do */
 
