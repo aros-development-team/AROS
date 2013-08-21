@@ -75,7 +75,7 @@ SH_FILES := \
     SetKeyboard \
     WaitX
 
-USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\"" -I$(OBJDIR)
 
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
@@ -102,11 +102,5 @@ $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...
 	@$(BISON) -o $@ $<
 
-$(OBJDIR)/Eval.o : $(OBJDIR)/evalParser.tab.c $(SRCDIR)/$(CURDIR)/Eval.c
-	%compile_q from=$(SRCDIR)/$(CURDIR)/Eval.c opt="$(CFLAGS) -I$(OBJDIR)"
+$(OBJDIR)/Eval.o : $(OBJDIR)/evalParser.tab.c
 
-$(OBJDIR)/Load.o : $(OBJDIR)/Eject.o
-	@$(ECHO) "Copying    $< to $@"
-	@$(CP) $< $@
-
-%common

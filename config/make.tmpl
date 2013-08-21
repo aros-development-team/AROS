@@ -276,7 +276,7 @@ GLOB_MKDIRS += %(dirs)
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file
-%define rule_compile basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target nix=no
+%define rule_compile basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target
 
 ifeq (%(targetdir),)
   TMP_TARGETBASE := %(basename)
@@ -312,11 +312,7 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
-ifeq (%(nix),yes)
-  $(TMP_TARGETBASE).o : CFLAGS := -nix %(cflags)
-else
-  $(TMP_TARGETBASE).o : CFLAGS := %(cflags)
-endif
+$(TMP_TARGETBASE).o : CFLAGS := %(cflags)
 $(TMP_TARGETBASE).o : %(basename).c
 	%compile_q cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
@@ -351,7 +347,7 @@ $(TMP_TARGETBASE).d : %(basename).c
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file
-%define rule_compile_cxx basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target nix=no
+%define rule_compile_cxx basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target
 
 ifeq (%(targetdir),)
   TMP_TARGETBASE := %(basename)
@@ -392,11 +388,7 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
-ifeq (%(nix),yes)
-  $(TMP_TARGETBASE).o : CFLAGS := -nix $(TMP_CXXFLAGS)
-else
-  $(TMP_TARGETBASE).o : CFLAGS := $(TMP_CXXFLAGS)
-endif
+$(TMP_TARGETBASE).o : CFLAGS := $(TMP_CXXFLAGS)
 $(TMP_TARGETBASE).o : %(basename).cpp
 	%compile_q cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
@@ -597,7 +589,7 @@ $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %%(suffix)
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .m file
-%define rule_compile_objc basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target nix=no
+%define rule_compile_objc basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target
 
 ifeq (%(targetdir),)
   TMP_TARGETBASE := %(basename)
@@ -638,11 +630,7 @@ $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 $(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
 
-ifeq (%(nix),yes)
-  $(TMP_TARGETBASE).o : CFLAGS := -nix $(TMP_OBJCFLAGS)
-else
-  $(TMP_TARGETBASE).o : CFLAGS := $(TMP_OBJCFLAGS)
-endif
+$(TMP_TARGETBASE).o : CFLAGS := $(TMP_OBJCFLAGS)
 $(TMP_TARGETBASE).o : %(basename).m
 	%compile_q cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
@@ -952,10 +940,11 @@ TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) $(TMP_EXTRA_LIBS)))
 TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
     $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
 )
+TMP_PROGS := $(addprefix %(targetdir)/,%(progs))
 
-$(addprefix %(targetdir)/,%(progs)) : LDFLAGS:= %(ldflags) $(TMP_EXTRA_LDFLAGS)
-$(addprefix %(targetdir)/,%(progs)) : LIBS:= $(addprefix -l,%(uselibs) $(TMP_EXTRA_LIBS) %(usehostlibs))
-$(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLIBS)
+$(TMP_PROGS) : LDFLAGS:= %(ldflags) $(TMP_EXTRA_LDFLAGS)
+$(TMP_PROGS) : LIBS:= $(addprefix -l,%(uselibs) $(TMP_EXTRA_LIBS) %(usehostlibs))
+$(TMP_PROGS) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLIBS)
 	%link_q from=$< opt=$(LDFLAGS) libs=$(LIBS)
 %end
 #------------------------------------------------------------------------------
@@ -1393,7 +1382,7 @@ BD_LDFLAGS   := %(ldflags)
 %(mmake) : $(BD_EXES)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
-%rule_compile basename=% targetdir=$(BD_OBJDIR) nix=%(nix) \
+%rule_compile_multi basenames=$(BD_FILES) targetdir=$(BD_OBJDIR) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
 
 %rule_link_progs progs=$(BD_FILES) nix=%(nix) \
