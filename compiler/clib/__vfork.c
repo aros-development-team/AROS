@@ -110,6 +110,7 @@ LONG launcher()
     struct aroscbase *aroscbase = NULL;
     jmp_buf exec_exitjmp; /* jmp_buf for when calliing __exec_do */
     int exec_error; /* errno for when calling __exec_do */
+    LONG ret = 0;
 
     /* Allocate signal for parent->child communication */
     child_signal = udata->child_signal = AllocSignal(-1);
@@ -186,8 +187,8 @@ LONG launcher()
             }
             else
             {
-                D(bug("launcher: exit because execve returned with an error\n"));
-                _exit(0);
+                D(bug("launcher: __exec_prepare returned with an error\n"));
+                ret = -1;
             }
         }
         else /* !udata->child_executed */
@@ -199,17 +200,16 @@ LONG launcher()
             Signal(udata->parent, 1 << udata->parent_signal);
         }
     }
-    else
-    {
-        D(bug("launcher: freeing child_signal\n"));
-        FreeSignal(child_signal);
-    }
 
+    D(bug("launcher: freeing child_signal\n"));
+    FreeSignal(child_signal);
+
+    D(bug("launcher: closing aroscbase\n"));
     CloseLibrary((struct Library *)aroscbase);
 
     D(bug("Child Done\n"));
 
-    return 0;
+    return ret;
 }
 
 /* This can be good for debugging */

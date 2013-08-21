@@ -8,6 +8,7 @@ int main()
 {
     pid_t pid;
 
+    /* Test vfork and a child doing execl() */
     pid = vfork();
     if((int) pid > 0)
     {
@@ -23,7 +24,26 @@ int main()
     {
         TEST(0);
     }
-  
+    printf("\n");
+
+    /* Testing child trying to exec non-existing program */
+    pid = vfork();
+    if((int) pid > 0)
+    {
+        printf("I'm parent, I have a child with pid %d\n", (int) pid);
+        waitpid(pid, NULL, 0);
+    }
+    else if(pid == 0)
+    {
+        TEST(execl(":XYZ/NotExist", "NotExist", "I'm child", NULL) == -1);
+        _exit(0);
+    }
+    else
+    {
+        TEST(0);
+    }
+
+    /* Testing nested vfork() + execl() */
     pid = vfork();
     if((int) pid > 0)
     {
