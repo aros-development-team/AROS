@@ -292,10 +292,10 @@ static int open(struct ataBase *ATABase, struct IORequest *iorq,
     /* Assume it failed */
     iorq->io_Error  = IOERR_OPENFAIL;
     iorq->io_Device = &ATABase->ata_Device;
-    iorq->io_Unit   = (APTR)-1;
+    iorq->io_Unit   = (APTR)(IPTR)-1;
 
     /* Try to find the unit */
-    HW_EnumDrivers(ATABase->ataObj, &searchHook, (APTR)unitnum);
+    HW_EnumDrivers(ATABase->ataObj, &searchHook, (APTR)(IPTR)unitnum);
 
     D(bug("[ATA%02d] Open result: %d\n", unitnum, iorq->io_Error));
 

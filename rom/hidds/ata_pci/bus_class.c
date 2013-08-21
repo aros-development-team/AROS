@@ -300,6 +300,10 @@ APTR PCIATA__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
     if (!data->dmaBuf)
         return NULL;
 
+    /* If the DMA buffer is not in the first 4G, we cannot do DMA */
+    if ((IPTR)data->dmaBuf != (ULONG)(IPTR)data->dmaBuf)
+        return NULL;
+
     dma = (struct dma_data *)OOP_DoSuperMethod(cl, o, msg);
     if (dma)
     {
@@ -311,7 +315,7 @@ APTR PCIATA__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
         if(0x1000 - ((ULONG)(IPTR)dma->ab_PRD & 0xfff) <
             PRD_MAX * sizeof(struct PRDEntry))
         {
-            dma->ab_PRD = (APTR)((((ULONG)(IPTR)dma->ab_PRD) + 0xfff) & ~0xfff);
+            dma->ab_PRD = (APTR)((((IPTR)dma->ab_PRD) + 0xfff) & ~0xfff);
         }
     }
 
