@@ -7,38 +7,38 @@
     Edit $(TOP)/configure.in and $(TOP)/config/config.h.in and rerun configure.
 */
 
-#define AROS_FLAVOUR_NATIVE		1
-#define AROS_FLAVOUR_STANDALONE		2
-#define AROS_FLAVOUR_EMULATION		4
-#define AROS_FLAVOUR_LINKLIB		8
-#define AROS_FLAVOUR_BINCOMPAT		16
+#define AROS_FLAVOUR_NATIVE             1
+#define AROS_FLAVOUR_STANDALONE         2
+#define AROS_FLAVOUR_EMULATION          4
+#define AROS_FLAVOUR_LINKLIB            8
+#define AROS_FLAVOUR_BINCOMPAT          16
 
 /* Always enabled for ABIv1 */
 #define AROS_DOS_PACKETS                1
 
-#define AROS_AMIGAOS_COMPLIANCE		@aros_amigaos_compliance@
+#define AROS_AMIGAOS_COMPLIANCE         @aros_amigaos_compliance@
 
-#define AROS_FLAVOUR	    	    	@aros_flavour_uc@
+#define AROS_FLAVOUR                    @aros_flavour_uc@
 
-#define AROS_DEFAULT_WBWIDTH		@aros_default_wbwidth@
-#define AROS_DEFAULT_WBHEIGHT		@aros_default_wbheight@
-#define AROS_DEFAULT_WBDEPTH		@aros_default_wbdepth@
+#define AROS_DEFAULT_WBWIDTH            @aros_default_wbwidth@
+#define AROS_DEFAULT_WBHEIGHT           @aros_default_wbheight@
+#define AROS_DEFAULT_WBDEPTH            @aros_default_wbdepth@
 
-#define AROS_SERIAL_DEBUG		@aros_serial_debug@
+#define AROS_SERIAL_DEBUG               @aros_serial_debug@
 
-#define AROS_PALM_DEBUG_HACK	    	@aros_palm_debug_hack@
+#define AROS_PALM_DEBUG_HACK            @aros_palm_debug_hack@
 
-#define AROS_NESTING_SUPERVISOR     	@aros_nesting_supervisor@
+#define AROS_NESTING_SUPERVISOR         @aros_nesting_supervisor@
 
-#define AROS_MUNGWALL_DEBUG 	    	@aros_mungwall_debug@
-#define AROS_STACK_DEBUG    	    	@aros_stack_debug@
-#define AROS_MODULES_DEBUG		@aros_modules_debug@
-#define USE_XSHM	    	    	@DO_XSHM_SUPPORT@
-#define USE_VIDMODE			@DO_VIDMODE_SUPPORT@
+#define AROS_MUNGWALL_DEBUG             @aros_mungwall_debug@
+#define AROS_STACK_DEBUG                @aros_stack_debug@
+#define AROS_MODULES_DEBUG              @aros_modules_debug@
+#define USE_XSHM                        @DO_XSHM_SUPPORT@
+#define USE_VIDMODE                     @DO_VIDMODE_SUPPORT@
 
-#define USE_MMU				@aros_enable_mmu@
+#define USE_MMU                         @aros_enable_mmu@
 
-#define ENABLE_DBUS			@ENABLE_DBUS@
-#define ENABLE_X11			@ENABLE_X11@
+#define ENABLE_DBUS                     @ENABLE_DBUS@
+#define ENABLE_X11                      @ENABLE_X11@
 
 #endif /* AROS_CONFIG_H */
