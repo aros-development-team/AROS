@@ -426,7 +426,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
     Object *list = data->list;
     struct MUI_List_TestPos_Result pos;
-    LONG seltype;
+    LONG seltype, new_active;
     IPTR result = 0;
     BOOL select = FALSE, multiselect = FALSE, clear = FALSE;
 
@@ -444,7 +444,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 {
                     data->mouse_click = MOUSE_CLICK_ENTRY;
 
-                    set(list, MUIA_List_Active, pos.entry);
+                    new_active = pos.entry;
 
                     select = TRUE;
                     clear =
@@ -481,6 +481,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 if (_isinobject(list, msg->imsg->MouseX, msg->imsg->MouseY))
                 {
                     data->range_select = FALSE;
+                    result = MUI_EventHandlerRC_Eat;
                 }
 
                 if (msg->imsg->Code == SELECTUP && data->mouse_click)
@@ -497,14 +498,14 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 switch (msg->imsg->Code)
                 {
                 case RAWKEY_UP:
-                    set(list, MUIA_List_Active, MUIV_List_Active_Up);
+                    new_active = MUIV_List_Active_Up;
                     select = clear =
                         data->multiselect == MUIV_Listview_MultiSelect_None;
                     seltype = MUIV_List_Select_On;
                     break;
 
                 case RAWKEY_DOWN:
-                    set(list, MUIA_List_Active, MUIV_List_Active_Down);
+                    new_active = MUIV_List_Active_Down;
                     select = clear =
                         data->multiselect == MUIV_Listview_MultiSelect_None;
                     seltype = MUIV_List_Select_On;
@@ -543,10 +544,13 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 
             if (clear)
             {
-                DoMethod(list, MUIM_List_Select,
-                    MUIV_List_Select_All,
+                DoMethod(list, MUIM_List_Select, multiselect ?
+                    MUIV_List_Select_All : MUIV_List_Select_Active,
                     MUIV_List_Select_Off, NULL);
             }
+
+            set(list, MUIA_List_Active, new_active);
+
             DoMethod(list, MUIM_List_Select,
                 MUIV_List_Select_Active,
                 seltype, NULL);
