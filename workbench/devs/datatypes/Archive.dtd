@@ -1,8 +1,8 @@
 # DataType Description for all kind of archives
 Name=Archive
-Version=$VER: Archive 1.0 (01.02.2007)
+Version=$VER: Archive 1.1 (21.08.2013)
 BaseName=archive
-Pattern=#?.(tar.gz|tgz)
+Pattern=#?.(lha|lzh|lzx|tar|tar.gz|tar.bz2|tgz|zip)
 GroupID=syst
 ID=arch
 Flags=DTF_BINARY
