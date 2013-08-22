@@ -5,6 +5,8 @@
 
 #include <exec/types.h>
 #include <proto/dos.h>
+
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "dos_intern.h"
@@ -63,12 +65,17 @@ LONG InternalFlush( struct FileHandle *fh, struct DosLibrary *DOSBase )
            This implementation is not fully race free but we try our best to
            reduce data loss as much as possible.
         */
+        D(bug("Characters written during Flush(); pos=%d, fh->fh_Pos=%d\n"
+              "\tfh->fh_Buf='%0.*s'\n",
+              pos, fh->fh_Pos,
+              fh->fh_Pos, fh->fh_Buf
+        ));
         int i, len = fh->fh_Pos - pos;
         char *dest = BADDR(fh->fh_Buf);
-        const char *src = dest + len;
+        const char *src = dest + pos;
+        fh->fh_Pos -= pos;
         for (i = 0; i < len; i++)
             *dest++ = *src++;
-        fh->fh_Pos -= pos;
     }
 
     fh->fh_Flags &= ~FHF_FLUSHING;
