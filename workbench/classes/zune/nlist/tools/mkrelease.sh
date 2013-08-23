@@ -7,7 +7,7 @@
 # Copyright (C) 1996-2001 by Gilles Masson (NList.mcc)
 # Copyright (C) 1999-2001 by Carsten Scholling (NListtree.mcc)
 # Copyright (C) 2006      by Daniel Allsopp (NBitmap.mcc)
-# Copyright (C) 2001-2008 by NList Open Source Team
+# Copyright (C) 2001-2013 by NList Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -39,6 +39,7 @@ mkdir -p "release/MCC_NList"
 mkdir -p "release/MCC_NList/Demos"
 mkdir -p "release/MCC_NList/Developer"
 mkdir -p "release/MCC_NList/Developer/Autodocs"
+mkdir -p "release/MCC_NList/Developer/Autodocs/MCC"
 mkdir -p "release/MCC_NList/Developer/C"
 mkdir -p "release/MCC_NList/Developer/C/Examples"
 mkdir -p "release/MCC_NList/Developer/C/include"
@@ -84,12 +85,12 @@ for os in os3 os4 mos aros-i386 aros-ppc aros-x86_64; do
 done
 
 make -C nlisttree_mcp catalogs
-for language in czech english-british french german polish swedish turkish; do
+for language in czech english-british french german greek italian polish swedish turkish; do
 	mkdir -p "release/MCC_NList/Locale/Catalogs/$language"
 	cp -a nlisttree_mcp/locale/$language.catalog "release/MCC_NList/Locale/Catalogs/$language/NListtree_mcp.catalog"
 done
 make -C nlistviews_mcp catalogs
-for language in czech french german swedish polish turkish; do
+for language in czech french german greek italian polish swedish turkish; do
 	mkdir -p "release/MCC_NList/Locale/Catalogs/$language"
 	cp -a nlistviews_mcp/locale/$language.catalog "release/MCC_NList/Locale/Catalogs/$language/NListviews_mcp.catalog"
 done
@@ -97,7 +98,7 @@ done
 cp -a -R dist/* "release/"
 cp -a AUTHORS ChangeLog COPYING "release/MCC_NList/"
 cp -a docs/ReadMe "release/MCC_NList/ReadMe"
-cp -a docs/*.doc "release/MCC_NList/Developer/Autodocs/"
+cp -a docs/*.doc "release/MCC_NList/Developer/Autodocs/MCC/"
 cp -a demo/*.c "release/MCC_NList/Developer/C/Examples/"
 cp -a demo/Makefile "release/MCC_NList/Developer/C/Examples/"
 cp -a include/mui/NBalance_mcc.h "release/MCC_NList/Developer/C/include/mui/"
@@ -113,3 +114,5 @@ echo "  MK MCC_NList-0.$1.lha"
 find release -nowarn -name ".svn" -exec rm -rf {} \; 2>/dev/null
 cd release
 lha -ao5q ../MCC_NList-0.$1.lha *
+cp MCC_NList/ReadMe ../MCC_NList-0.$1.readme
+cd ..

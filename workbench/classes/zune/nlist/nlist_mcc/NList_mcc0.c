@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -41,7 +41,7 @@
 static IPTR mNL_Show(struct IClass *cl,Object *obj,Msg msg)
 {
   IPTR retval;
-  register struct NLData *data = INST_DATA(cl,obj);
+  struct NLData *data = INST_DATA(cl,obj);
 
   ENTER();
 
@@ -86,10 +86,8 @@ static IPTR mNL_Show(struct IClass *cl,Object *obj,Msg msg)
   }
 
   if (data->VertPropObject)
-  { if (data->NList_Smooth)
-      set(data->VertPropObject,MUIA_Prop_DoSmooth, TRUE);
-    else
-      set(data->VertPropObject,MUIA_Prop_DoSmooth, FALSE);
+  {
+    set(data->VertPropObject,MUIA_Prop_DoSmooth, data->NList_Smooth);
   }
 
   GetNImage_Sizes(data);
@@ -102,7 +100,7 @@ static IPTR mNL_Show(struct IClass *cl,Object *obj,Msg msg)
 
 static IPTR mNL_Hide(struct IClass *cl,Object *obj,Msg msg)
 {
-  register struct NLData *data = INST_DATA(cl,obj);
+  struct NLData *data = INST_DATA(cl,obj);
   IPTR retval;
 
   ENTER();
@@ -576,6 +574,9 @@ static IPTR mNL_GoInactive(struct IClass *cl, Object *obj, UNUSED struct MUIP_NL
   ENTER();
 
   data->isActiveObject = FALSE;
+  // inactive list will no longer handle any actions
+  // caused by a pressed mouse button
+  data->moves = FALSE;
 
   if(data->NList_ActiveObjectOnClick == TRUE)
     DoMethod(obj, MUIM_NList_Redraw, MUIV_NList_Redraw_Selected);

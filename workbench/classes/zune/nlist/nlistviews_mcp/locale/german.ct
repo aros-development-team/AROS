@@ -1,5 +1,5 @@
 ## chunk AUTH Thore Böckelmann
-## version $VER: NListviews_mcp.catalog 2.1 (17.09.2009)
+## version $VER: NListviews_mcp.catalog 2.3 (16.4.2013)
 ## language deutsch
 ## codeset 0
 ;
@@ -38,7 +38,7 @@ Fest:
 ; Fixed Font:
 ;
 MSG_FIXED_FONT_HELP
-Währen Sie die Schriftart mit fester Breite für NList-Objekte
+Wählen Sie die Schriftart mit fester Breite für NList-Objekte
 ; Choose the fixed NList font.
 ;
 MSG_FIXED_FONT_ASL
@@ -471,7 +471,7 @@ Cursor anstatt dem inaktiven bewegt.
 ; rather than the unselected one.
 ;
 MSG_GROUP_MISC
-Verschiedenens
+Verschiedenes
 ; Miscellaneous
 ;
 MSG_GROUP_EXAMPLE
@@ -693,7 +693,7 @@ Latest public release can be found on aminet (dev/mui).\n\
 All releases are available on\n\
 http://www.sourceforge.net/projects/nlist-classes/\n\
 \033C\n\
-\033r\0333(C) 2001-2007 by NList Open Source Team\n\
+\033r\0333(C) 2001-2013 by NList Open Source Team\n\
 \033r\0333(C) 1996-1998 by Gilles Masson\n\
 \033r\0333http://www.sourceforge.net/projects/nlist-classes/\n\
 \033C\n\
@@ -742,7 +742,7 @@ http://www.sourceforge.net/projects/nlist-classes/\n\
 ; All releases are available on\n\
 ; http://www.sourceforge.net/projects/nlist-classes/\n\
 ; \033C\n\
-; \033r\0333(C) 2001-2007 by NList Open Source Team\n\
+; \033r\0333(C) 2001-2013 by NList Open Source Team\n\
 ; \033r\0333(C) 1996-1998 by Gilles Masson\n\
 ; \033r\0333http://www.sourceforge.net/projects/nlist-classes/\n\
 ; \033C\n\

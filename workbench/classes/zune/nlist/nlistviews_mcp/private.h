@@ -8,7 +8,7 @@
                                             and 0x9d510101 to 0x9d51013F)
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -95,7 +95,6 @@ struct NListviews_MCP_Data
   Object *mcp_poplistfct;
 
   struct KeyBinding *nlkeys;
-  LONG nlkeys_size;
   char QualifierString[192];
 
   char rawtext[MCPMAXRAWBUF];
@@ -107,5 +106,14 @@ struct NListviews_MCP_Data
 };
 
 #define LIBVER(lib) ((struct Library *)lib)->lib_Version
+#define LIBREV(lib) ((struct Library *)lib)->lib_Revision
+#define VERSION_IS_AT_LEAST(ver, rev, minver, minrev) (((ver) > (minver)) || ((ver) == (minver) && (rev) == (minrev)) || ((ver) == (minver) && (rev) > (minrev)))
+#define LIB_VERSION_IS_AT_LEAST(lib, minver, minrev)  VERSION_IS_AT_LEAST(((struct Library *)(lib))->lib_Version, ((struct Library *)(lib))->lib_Revision, minver, minrev)
+
+#if defined(__amigaos4__)
+#define AllocVecShared(size, flags)  AllocVecTags((size), AVT_Type, MEMF_SHARED, AVT_Lock, FALSE, ((flags)&MEMF_CLEAR) ? AVT_ClearWithValue : TAG_IGNORE, 0, TAG_DONE)
+#else
+#define AllocVecShared(size, flags)  AllocVec((size), (flags))
+#endif
 
 #endif /* MUI_NLISTVIEWS_priv_MCP_H */

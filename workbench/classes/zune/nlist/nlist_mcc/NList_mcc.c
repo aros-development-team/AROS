@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -72,7 +72,16 @@ DEFAULT_KEYS_ARRAY
     var_dest = -1; \
     if((tag = FindTagItem(attr, msg->ops_AttrList))) \
     { \
-      var_dest = tag->ti_Data; \
+      /* catch possible MUII_#? values, these must be used directly */ \
+      if(tag->ti_Data <= 0x00000100) \
+      { \
+        var_dest = (IPTR)tag->ti_Data; \
+      } \
+      else \
+      { \
+        strlcpy(var_dest##Buffer, (STRPTR)tag->ti_Data, sizeof(var_dest##Buffer)); \
+        var_dest = (IPTR)var_dest##Buffer; \
+      } \
       test_init = TRUE; \
     } \
     else \
@@ -100,7 +109,17 @@ DEFAULT_KEYS_ARRAY
     { \
       IPTR ptrd; \
       if (DoMethod(obj, MUIM_GetConfigItem, cfg_attr, &ptrd)) \
-        var_dest = ptrd; \
+      { \
+        if(ptrd <= 0x00000100) \
+        { \
+          var_dest = ptrd; \
+        } \
+        else \
+        { \
+          strlcpy(var_dest##Buffer, (STRPTR)ptrd, sizeof(var_dest##Buffer)); \
+          var_dest = (IPTR)var_dest##Buffer; \
+        } \
+      } \
       else \
         var_dest = (IPTR)(defaultval); \
     } \
@@ -602,6 +621,7 @@ IPTR mNL_New(struct IClass *cl,Object *obj,struct opSet *msg)
                                                   ASOPOOL_Puddle, puddleSize,
                                                   ASOPOOL_Threshold, threshold,
                                                   ASOPOOL_Name, "NList.mcc pool",
+                                                  ASOPOOL_LockMem, FALSE,
                                                   TAG_DONE);
     #else
     data->Pool = CreatePool(MEMF_ANY, puddleSize, threshold);
@@ -1004,7 +1024,7 @@ IPTR mNL_New(struct IClass *cl,Object *obj,struct opSet *msg)
 
 IPTR mNL_Dispose(struct IClass *cl,Object *obj,Msg msg)
 {
-  register struct NLData *data;
+  struct NLData *data;
   data = INST_DATA(cl,obj);
 
 /*D(bug("%lx|mNL_Dispose() 1 \n",obj));*/
@@ -1109,16 +1129,19 @@ IPTR mNL_Setup(struct IClass *cl,Object *obj,struct MUIP_Setup *msg)
     {
       struct TextAttr myta;
       LONG fsize = 8;
-      int pp=0;
-      char fname[32];
-      while ((fontname[pp] != '/') && (fontname[pp] != '\0'))
-      { if (pp < 42)
-          fname[pp] = fontname[pp];
-        pp++;
+      char fname[64];
+      char *p;
+
+      strlcpy(fname, fontname, sizeof(fname));
+      // strip the font size from the name and extract the number
+      if((p = strchr(fname, '/')) != NULL)
+      {
+        *p++ = '\0';
+        fsize = atol(p);
       }
-      if (fontname[pp] != '\0')
-        fsize = atol(&fontname[pp+1]);
-      fname[pp++]='.'; fname[pp++]='f'; fname[pp++]='o'; fname[pp++]='n'; fname[pp++]='t'; fname[pp++]='\0';
+      // append the ".font" suffix
+      strlcat(fname, ".font", sizeof(fname));
+
       myta.ta_Name = fname;
       myta.ta_YSize = fsize;
       myta.ta_Style = 0;
@@ -1359,10 +1382,8 @@ IPTR mNL_Setup(struct IClass *cl,Object *obj,struct MUIP_Setup *msg)
       data->NList_Smooth = DEFAULT_SMOOTHSCROLL;
 
     if (data->VertPropObject)
-    { if (data->NList_Smooth)
-        set(data->VertPropObject,MUIA_Prop_DoSmooth, TRUE);
-      else
-        set(data->VertPropObject,MUIA_Prop_DoSmooth, FALSE);
+    {
+      set(data->VertPropObject,MUIA_Prop_DoSmooth, data->NList_Smooth);
     }
   }
 
@@ -1565,7 +1586,7 @@ IPTR mNL_Setup(struct IClass *cl,Object *obj,struct MUIP_Setup *msg)
 
 IPTR mNL_Cleanup(struct IClass *cl,Object *obj,struct MUIP_Cleanup *msg)
 {
-  register struct NLData *data = INST_DATA(cl,obj);
+  struct NLData *data = INST_DATA(cl,obj);
   IPTR retval;
 
 /*D(bug("%lx|mNL_Cleanup() 1 \n",obj));*/
@@ -1607,6 +1628,7 @@ IPTR mNL_Cleanup(struct IClass *cl,Object *obj,struct MUIP_Cleanup *msg)
   release_pen(obj, &data->NList_SelectPen);
   release_pen(obj, &data->NList_CursorPen);
   release_pen(obj, &data->NList_UnselCurPen);
+  release_pen(obj, &data->NList_InactivePen);
 
   retval = DoSuperMethodA(cl,obj,(Msg) msg);
 

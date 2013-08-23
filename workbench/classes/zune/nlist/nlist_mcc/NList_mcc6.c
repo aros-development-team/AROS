@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -1232,7 +1232,7 @@ D(bug( "<====================================\n" ));
         TextExtent(data->rp, ptr1, curclen, &te);
         if ((ni == 0) && (te.te_Extent.MinX < 0))
           x2 -= te.te_Extent.MinX;
-        
+
         // save the coordinate of the next column start
         next_x = x2 + te.te_Width + afinfo->addinfo;
         D(DBF_DRAW, "next_x: %ld cmaxx: %ld");
@@ -1258,10 +1258,10 @@ D(bug( "<====================================\n" ));
           // not fit into the available regions (maximum x = maxx3). And
           // if so we go and calculate a new curclen
           if((curclen > 0) && (x2e > maxx3))
-          { 
+          {
             curclen = TextFit(data->rp, ptr1, curclen, &te, NULL, 1, maxx3 - x2, 32767);
             if(curclen > 0)
-            { 
+            {
               // find out the new end position of the string (x2e)
               TextExtent(data->rp, ptr1, curclen, &te);
               x2e = x2 + te.te_Width;
@@ -1390,7 +1390,6 @@ D(bug( "<====================================\n" ));
             {
               int txtlen;
               int clen; // number of pixels the current text has for positioning it
-              char *txt;
 
               // first we get the extent of the "..." text we are going to add
               TextExtent(data->rp, "...", 3, &te);
@@ -1403,7 +1402,8 @@ D(bug( "<====================================\n" ));
               // at all
               if(clen >= te.te_Width)
               {
-                int cstart = 0;
+                char *txt;
+                int cstart;
 
                 D(DBF_DRAW, "c1: %ld, c2: %ld x2: %ld x2e: %ld cmaxx: %ld minx3: %ld x2diff: %ld | %ld'%s'", cinfo->maxx-cinfo->minx, cmaxx-(x2-x2diff), x2, x2e, cmaxx, minx3, x2diff, next_x, afinfo->strptr);
 
@@ -1413,85 +1413,99 @@ D(bug( "<====================================\n" ));
                 // TextExtent() in a kind of iterative process so that we identify at which point we need to
                 // add our substitution "..." text.
                 txtlen = strlen(afinfo->strptr);
-                txt = AllocVecPooled(data->Pool, txtlen+3+1);
-                txt[0] = '\0'; // NUL terminate string to always use strlcat
-
-                if(cinfo->partcolsubst == PCS_LEFT)
+                if((txt = AllocVecPooled(data->Pool, txtlen+3+1)) != NULL)
                 {
-                  snprintf(txt, afinfo->len+3+1, "...%s", afinfo->strptr);
-                }
-                else if(cinfo->partcolsubst == PCS_RIGHT)
-                {
-                  snprintf(txt, afinfo->len+3+1, "%s...", afinfo->strptr);
-                }
-                else if(cinfo->partcolsubst == PCS_CENTER)
-                {
-                  strlcpy(txt, afinfo->strptr, txtlen/2);
-                  strlcat(txt, "...", txtlen/2+3);
-                  strlcat(txt, &afinfo->strptr[txtlen/2], txtlen+3+1);
-
-                  cstart = txtlen/2-1;
-                }
-
-                // get the new string length
-                txtlen = strlen(txt);
-
-                do
-                {
-                  TextExtent(data->rp, txt, txtlen, &te);
-
-                  D(DBF_DRAW, "te: %ld %ld: '%s'", te.te_Width, clen, txt);
-                  if(te.te_Width <= clen)
-                    break;
-
                   if(cinfo->partcolsubst == PCS_LEFT)
                   {
-                    // move the text after the first "..." one to the left
-                    // thus, actually moving the text start
-                    memmove(&txt[3], &txt[4], txtlen+1);
+                    snprintf(txt, txtlen+3+1, "...%s", afinfo->strptr);
+                    cstart = 0;
                   }
                   else if(cinfo->partcolsubst == PCS_RIGHT)
                   {
-                    // move the "..." text one char to the left
-                    txt[txtlen-1] = '\0';
-                    txt[txtlen-4] = '.';
+                    strlcpy(txt, afinfo->strptr, txtlen+1);
+                    strlcat(txt, "...", txtlen+3+1);
+                    cstart = txtlen-1;
                   }
                   else if(cinfo->partcolsubst == PCS_CENTER)
                   {
-                    // we strip text from the center but alternating
-                    // from the left portion and the from the right
-                    // portion around the "..." text
-                    if(txtlen % 2 == 0)
-                    {
-                      // move all text starting AT "..." one char to the left
-                      D(DBF_DRAW, "cstart: '%s'", &txt[cstart]);
-                      memmove(&txt[cstart-1], &txt[cstart], strlen(&txt[cstart])+1);
-                      cstart--;
-                    }
-                    else
-                    {
-                      // move all text starting AFTER "..." one char to the left
-                      memmove(&txt[cstart+3], &txt[cstart+3+1], strlen(&txt[cstart+3+1])+1);
-                    }
+                    strlcpy(txt, afinfo->strptr, txtlen/2);
+                    strlcat(txt, "...", txtlen/2+3);
+                    strlcat(txt, &afinfo->strptr[txtlen/2], txtlen+3+1);
+                    cstart = txtlen/2-1;
+                  }
+                  else
+                  {
+                    // make sure we have a NUL terminated string in any case
+                    txt[0] = '\0';
+                    cstart = 0;
                   }
 
-                  txtlen--;
+                  // get the new string length
+                  txtlen = strlen(txt);
+
+                  do
+                  {
+                    TextExtent(data->rp, txt, txtlen, &te);
+
+                    D(DBF_DRAW, "te: %ld %ld: '%s'", te.te_Width, clen, txt);
+                    if(te.te_Width <= clen)
+                      break;
+
+                    if(cinfo->partcolsubst == PCS_LEFT)
+                    {
+                      // move the text after the first "..." one to the left
+                      // thus, actually moving the text start
+                      memmove(&txt[3], &txt[4], txtlen+1);
+                    }
+                    else if(cinfo->partcolsubst == PCS_RIGHT)
+                    {
+                      // move the "..." text one char to the left
+                      txt[txtlen-1] = '\0';
+                      // make sure we don't cause a buffer underrun
+                      if(txtlen > 4)
+                        txt[txtlen-4] = '.';
+                    }
+                    else if(cinfo->partcolsubst == PCS_CENTER)
+                    {
+                      // we strip text from the center but alternating
+                      // from the left portion and the from the right
+                      // portion around the "..." text
+                      if(txtlen % 2 == 0)
+                      {
+                        // move all text starting AT "..." one char to the left
+                        // make sure we don't cause a buffer underrun
+                        if(cstart > 0)
+                        {
+                          D(DBF_DRAW, "cstart: '%s'", &txt[cstart]);
+                          memmove(&txt[cstart-1], &txt[cstart], strlen(&txt[cstart])+1);
+                          cstart--;
+                        }
+                      }
+                      else
+                      {
+                        // move all text starting AFTER "..." one char to the left
+                        memmove(&txt[cstart+3], &txt[cstart+3+1], strlen(&txt[cstart+3+1])+1);
+                      }
+                    }
+
+                    txtlen--;
+                  }
+                  while(TRUE);
+
+                  D(DBF_DRAW, "curclen: %ld txtlen: %ld, %ld: '%s' '%s'", curclen, txtlen, ptr1-afinfo->strptr, ptr1, txt);
+
+                  // calculate the len diff between afinfo->strptr and txt so that resizing
+                  // a column does redraw the right thing.
+                  if((ptr1-afinfo->strptr) > 0)
+                  {
+                    Text(data->rp, &txt[ptr1-afinfo->strptr], curclen);
+                    D(DBF_DRAW, "argh: %ld %ld '%s'", x2, curclen, &txt[ptr1-afinfo->strptr]);
+                  }
+                  else
+                    Text(data->rp, txt, txtlen);
+
+                  FreeVecPooled(data->Pool, txt);
                 }
-                while(TRUE);
-
-                D(DBF_DRAW, "curclen: %ld txtlen: %ld, %ld: '%s' '%s'", curclen, txtlen, ptr1-afinfo->strptr, ptr1, txt);
-
-                // calculate the len diff between afinfo->strptr and txt so that resizing
-                // a column does redraw the right thing.
-                if((ptr1-afinfo->strptr) > 0)
-                {
-                  Text(data->rp, &txt[ptr1-afinfo->strptr], curclen);
-                  D(DBF_DRAW, "argh: %ld %ld '%s'", x2, curclen, &txt[ptr1-afinfo->strptr]);
-                }
-                else
-                  Text(data->rp, txt, txtlen);
-
-                FreeVecPooled(data->Pool, txt);
               }
             }
             else
@@ -1669,6 +1683,7 @@ LONG DrawDragText(struct NLData *data,BOOL draw)
     rp = data->DragRPort;
   else
     rp = data->rp;
+
   if (rp && data->DragText)
   {
     char *text = data->DragText;
@@ -1684,9 +1699,7 @@ LONG DrawDragText(struct NLData *data,BOOL draw)
       _top(obj) = 0;
       _width(obj) = data->DragWidth;
       _height(obj) = data->DragHeight;
-      DoMethod(obj,MUIM_DrawBackground,(LONG) 0,(LONG) 0,
-                                       (LONG) data->DragWidth,(LONG) data->DragHeight,
-                                       (LONG) 0,(LONG) 0,(LONG) 0);
+      DrawBackground(obj, 0, 0, data->DragWidth, data->DragHeight, 0, 0);
       _rp(obj) = data->rp;
       _left(obj) = data->left;
       _top(obj) = data->top;
@@ -1726,9 +1739,7 @@ LONG DrawDragText(struct NLData *data,BOOL draw)
       _top(obj) = 0;
       _width(obj) = data->DragWidth;
       _height(obj) = data->DragHeight;
-      DoMethod(obj,MUIM_DrawBackground,(LONG) 0,(LONG) 0,
-                                       (LONG) data->DragWidth,(LONG) data->DragHeight,
-                                       (LONG) 0,(LONG) 0,(LONG) 0);
+      DrawBackground(obj, 0, 0, data->DragWidth, data->DragHeight, 0, 0);
       _rp(obj) = data->rp;
       _left(obj) = data->left;
       _top(obj) = data->top;
@@ -1741,7 +1752,8 @@ LONG DrawDragText(struct NLData *data,BOOL draw)
     return (w);
   }
   else
-  { data->DragText = NULL;
+  {
+    data->DragText = NULL;
     data->DragEntry = -1;
   }
   return (4);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 
         Name:           mccinit.c
-        Versionstring:  $VER: mccinit.c 1.25 (20.12.2010)
+        Versionstring:  $VER: mccinit.c 1.26 (06.03.2013)
         Author:         Jens Langner <Jens.Langner@light-speed.de>
         Distribution:   PD (public domain)
         Description:    library init file for easy generation of a MUI
@@ -68,6 +68,10 @@
                      function which gets called from LibClose() and LibExpunge()
                      with the correct base pointer.
   1.25  20.12.2010 : minimum required system version is now OS3.0 (V39).
+  1.26  06.03.2013 : removed _start entry point. This must be defined separately
+                     to ensure it is the very first piece of code in the final
+                     binary file.
+  WIP   23.08.2013   fix for making it compilabe for both ABIv1 and v0 of AROS.
 
  About:
 
@@ -190,6 +194,8 @@
 
 #ifdef __AROS__
 #include <aros/libcall.h>
+#include <utility/utility.h>
+#include <aros/config.h>
 #endif
 
 #include "SDI_compiler.h"
@@ -366,36 +372,8 @@ STATIC IPTR                   LIBFUNC MCC_Query  (REG(d0, LONG which));
 #endif
 
 /******************************************************************************/
-/* Dummy entry point and LibNull() function all in one                        */
+/* Dummy LibNull() function                                                   */
 /******************************************************************************/
-
-/*
- * The system (and compiler) rely on a symbol named _start which marks
- * the beginning of execution of an ELF file. To prevent others from
- * executing this library, and to keep the compiler/linker happy, we
- * define an empty _start symbol here.
- *
- * On the classic system (pre-AmigaOS4) this was usually done by
- * moveq #0,d0
- * rts
- *
- */
-
-#if defined(__amigaos4__) && !defined(__AROS__) && !defined(__MORPHOS__)
-#if !defined(__mc68000__)
-int32 _start(void)
-{
-  return RETURN_FAIL;
-}
-#else
-asm(".text                    \n\
-     .even                    \n\
-     .globl _start            \n\
-   _start:                    \n\
-     moveq #0,d0              \n\
-     rts");
-#endif
-#endif
 
 #if !defined(__amigaos4__)
 STATIC LONG LIBFUNC LibNull(VOID)
@@ -530,11 +508,21 @@ STATIC CONST CONST_APTR LibVectors[] =
   (CONST_APTR)LibNull,
   (CONST_APTR)MCC_Query,
   #else
-  (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, __MCC_, 1),
-  (CONST_APTR)AROS_SLIB_ENTRY(LibClose, __MCC_, 2),
-  (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, __MCC_, 3),
-  (CONST_APTR)LibNull,
-  (CONST_APTR)AROS_SLIB_ENTRY(MCC_Query, __MCC_, 5),
+    #if !defined(AROS_ABI) || (AROS_ABI == 0)
+    /* Do ABIv0 stuff here */
+    (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, __MCC_),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibClose, __MCC_),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, __MCC_),
+    (CONST_APTR)LibNull,
+    (CONST_APTR)AROS_SLIB_ENTRY(MCC_Query, __MCC_),
+    #else
+    /* Do ABIv1 stuff here */
+    (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, __MCC_, 1),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibClose, __MCC_, 2),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, __MCC_, 3),
+    (CONST_APTR)LibNull,
+    (CONST_APTR)AROS_SLIB_ENTRY(MCC_Query, __MCC_, 5),
+    #endif
   #endif
   (CONST_APTR)-1
 };

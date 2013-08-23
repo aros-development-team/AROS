@@ -1,8 +1,10 @@
-## version $VER: NListtree_mcp.catalog 2.2 (24.12.2011)
-## language svenska
+## version $VER: NListtree_mcp.catalog 2.1 (28.09.2012)
+## language greek
 ## codeset 0
-## chunk AUTH Pδr Boberg
+## chunk AUTH Anthony Iliakis (amiga.phantom@yahoo.gr)
 ;
+;
+; NListtree_mcp.cd - NListtree MUI custom prefs catalog description file
 ; $Id$
 ;
 ;#version 2
@@ -10,15 +12,15 @@
 ;
 ;
 MSG_TAB_LAYOUT
-Layout
+Διάταξη
 ; Layout
 ;
 MSG_GROUP_IMAGES_COLORS
-Bilder/fδrger
+Απεικονίσεις/Χρώματα
 ; Images/Colors
 ;
 MSG_BUTTON_LABEL_CLOSED
-Stδngd
+Κλειστό
 ; Closed
 ;
 MSG_BUTTON_SHORTCUT_CLOSED
@@ -26,15 +28,15 @@ c
 ; c
 ;
 MSG_HELP_CLOSED_IMAGE
-Bild att anvδnda fφr stδngda noder.
+Χρήση απεικόνισης για κλειστούς κόμβους.
 ; Image to use for closed nodes.
 ;
 MSG_WIN_TITLE_CLOSED_IMAGE
-Justera bild fφr stδngda noder
+Τροποποίηση απεικόνισης για κλειστούς κόμβους
 ; Adjust image for closed nodes
 ;
 MSG_BUTTON_LABEL_LINES
-Linjer
+Γραμμές
 ; Lines
 ;
 MSG_BUTTON_SHORTCUT_LINES
@@ -42,15 +44,15 @@ l
 ; l
 ;
 MSG_HELP_LINES_COLOR
-Fδrg att anvδnda fφr linjer.
+Χρήση χρώματος για τις γραμμές.
 ; Color to use for lines.
 ;
 MSG_WIN_TITLE_LINES_COLOR
-Justera linje fδrg
+Τροποποίηση χρώματος γραμμών
 ; Adjust lines color
 ;
 MSG_BUTTON_LABEL_OPEN
-Φppen
+Ανοικτό
 ; Open
 ;
 MSG_BUTTON_SHORTCUT_OPEN
@@ -58,15 +60,15 @@ o
 ; o
 ;
 MSG_HELP_OPEN_IMAGE
-Bild att anvδnda fφr φppna noder.
+Χρήση απεικόνισης για ανοικτούς κόμβους.
 ; Image to use for open nodes.
 ;
 MSG_WIN_TITLE_OPEN_IMAGE
-Justera bild fφr φppna noder
+Τροποποίηση απεικόνισης για ανοικτούς κόμβους
 ; Adjust image for open nodes
 ;
 MSG_BUTTON_LABEL_SHADOW
-Skugga
+Σκιά
 ; Shadow
 ;
 MSG_BUTTON_SHORTCUT_SHADOW
@@ -74,16 +76,17 @@ w
 ; w
 ;
 MSG_HELP_SHADOW_COLOR
-Fδrg att anvδnda fφr\natt kasta skugga efter linjer.
+Χρήση χρώματος για την επιβολή\n\
+σκιάς μετά τις γραμμές.
 ; Color to use to cast\n\
 ; shadows after lines.
 ;
 MSG_WIN_TITLE_SHADOW_COLOR
-Justera skugg fδrg
+Τροποποίηση χρώματος σκιάς
 ; Adjust shadow color
 ;
 MSG_BUTTON_LABEL_SPECIAL
-Special
+Ειδική
 ; Special
 ;
 MSG_BUTTON_SHORTCUT_SPECIAL
@@ -91,16 +94,17 @@ i
 ; i
 ;
 MSG_HELP_SPECIAL_IMAGE
-En speciell bild att visa\nefter varje nod.
+Μια ειδική απεικόνιση θα εμφανιστεί\n\
+μετά από κάθε κόμβο.
 ; A special image to be\n\
 ; displayed after every node.
 ;
 MSG_WIN_TITLE_SPECIAL_IMAGE
-Justera special bild
+Τροποποίηση ειδικής απεικόνισης
 ; Adjust special image
 ;
 MSG_BUTTON_LABEL_DRAW
-Rita
+Σχεδίαση
 ; Draw
 ;
 MSG_BUTTON_SHORTCUT_DRAW
@@ -108,20 +112,21 @@ d
 ; d
 ;
 MSG_HELP_DRAW_COLOR
-En rit fδrg att kombinera\nmed linje fδrgen.
+Ένα χρώμα σχεδίασης που θα συνδυαστεί\n\
+με το χρώμα των γραμμών.
 ; A draw color to be combined\n\
 ; with the lines color.
 ;
 MSG_WIN_TITLE_DRAW_COLOR
-Justera rit fδrg
+Τροποποίηση χρώματος σχεδίασης
 ; Adjust draw color
 ;
 MSG_GROUP_STYLE
-Stil
+Στύλ
 ; Style
 ;
 MSG_CYCLE_LABEL_STYLE
-Stil
+Στύλ
 ; Style
 ;
 MSG_CYCLE_SHORTCUT_STYLE
@@ -129,22 +134,25 @@ s
 ; s
 ;
 MSG_HELP_STYLE
-Vδlj hδr global stil fφr trδdet.\n\nBeroende pε ditt val, sε kan\nvissa av alternativen ovan\nbli otillgδngliga.
+Επιλέξτε εδώ το γενικό στύλ του δέντρου.\n\
+\n\
+Ανάλογα με την επιλογή σας, μερικές από τις\n\
+παραπάνω επιλογές μπορεί να γίνουν μη διαθέσιμες.
 ; Select here the global style of the tree.\n\
 ; \n\
 ; Depending on your choice, some of the\n\
 ; options above may become (un)available.
 ;
 MSG_CYCLE_ITEM_STYLE_NORMAL
-Normal
+Κανονικό
 ; Normal
 ;
 MSG_CYCLE_ITEM_STYLE_INSERTED
-Inmatad
+Εισαχθόμενο
 ; Inserted
 ;
 MSG_CYCLE_ITEM_STYLE_LINES
-Linjer
+Γραμμές
 ; Lines
 ;
 MSG_CYCLE_ITEM_STYLE_WIN98
@@ -156,7 +164,7 @@ Mac
 ; Mac
 ;
 MSG_CYCLE_ITEM_STYLE_LINES3D
-Linjer 3D
+Γραμμές 3D
 ; Lines 3D
 ;
 MSG_CYCLE_ITEM_STYLE_WIN98PLUS
@@ -164,11 +172,11 @@ Win98+
 ; Win98+
 ;
 MSG_CYCLE_ITEM_STYLE_GLOW
-Glφd
+Λάμψη
 ; Glow
 ;
 MSG_BUTTON_LABEL_SPACE
-Mellanrum
+Διάστημα
 ; Spacing
 ;
 MSG_BUTTON_SHORTCUT_SPACE
@@ -176,12 +184,13 @@ p
 ; p
 ;
 MSG_HELP_SPACE
-Ju mer mellanrum, desto\nvidare blir listtrδdet.
+Όσο περισσότερο διάστημα, τόσο ευρύτερη\n\
+θα γίνει η λίστα του δέντρου.
 ; The more spacing, the wider\n\
 ; the listtree will be.
 ;
 MSG_BUTTON_LABEL_REMEMBER
-Kom ihεg status?
+Υπενθύμιση κατάστασης;
 ; Remember status?
 ;
 MSG_BUTTON_SHORTCUT_REMEMBER
@@ -189,7 +198,12 @@ r
 ; r
 ;
 MSG_HELP_REMEMBER
-Om vald, kommer φppen/stδngd statusen\nfφr noder att 'kommas-ihεg' efter att listtrδdet\nstδngs nδsta gεng det φppnas igen.\n\nVar god notera att, en applikation kan\nεsidosδtta ditt val hδr.
+Αν ενεργοποιηθεί, η κατάσταση άνοιγμα/κλείσιμο των κόμβων\n\
+θα αποθηκευτεί μετά το κλείσιμο της λίστας δέντρου για την\n\
+επόμενη φορά που θα ανοιχτεί ξανά.\n\
+\n\
+Σημειώστε, όμως, ότι κάποιο πρόγραμμα μπορεί να υπερκαλύψει\n\
+την επιλογή σας.
 ; If enabled, the open/closed status of nodes\n\
 ; will be 'remembered' after the listtree is closed\n\
 ; the next time it is opened again.\n\
@@ -198,7 +212,7 @@ Om vald, kommer φppen/stδngd statusen\nfφr noder att 'kommas-ihεg' efter att lis
 ; can override your choice here.
 ;
 MSG_BUTTON_LABEL_AUTOSCROLL
-Autorulla?
+Αυτόματη κύλιση;
 ; Autoscroll?
 ;
 MSG_BUTTON_SHORTCUT_AUTOSCROLL
@@ -206,24 +220,29 @@ a
 ; a
 ;
 MSG_HELP_AUTOSCROLL
-Om vald, kommer listvyn att autorulla\ndess innehεll vid φppning av noder\nfφr att fφrsφka passa i det synliga omrεdet.
+Αν ενεργοποιηθεί, η εμφάνιση λίστας θα κυλίσει αυτόματα τα\n\
+περιεχόμενά της κατά το άνοιγμα κόμβων, προσπαθώντας να\n\
+ταιριάξει με την ορατή περιοχή.
 ; If enabled, the listview will auto-scroll its\n\
 ; contents when opening nodes to try and fit the\n\
 ; visible area.
 ;
 MSG_TAB_EXAMPLE
-Exempel
+Παράδειγμα
 ; Example
 ;
 MSG_HELP_LISTVIEW_EXAMPLE
-Detta NListtree objekt, reagerar i realtid\ntill δndringarna som du gφr under 'Layout' fliken.\n\nPrφva sε fεr du se! :)
+Αυτό το αντικείμενο NListtree αντιδρά σε πραγματικό χρόνο\n\
+στις αλλαγές που κάνετε κάτω από την ετικέττα 'Διάταξη'.\n\
+\n\
+Δώστε του μια προσπάθεια!
 ; This NListtree object reacts in real time to\n\
 ; the changes you apply under the 'Layout' tab.\n\
 ; \n\
 ; Give it a try! :)
 ;
 MSG_BUTTON_LABEL_EXPAND
-Expandera
+Ανάπτυξη
 ; Expand
 ;
 MSG_BUTTON_SHORTCUT_EXPAND
@@ -231,7 +250,7 @@ n
 ; n
 ;
 MSG_BUTTON_LABEL_COLLAPSE
-Kollapsa
+Σύμπτυξη
 ; Collapse
 ;
 MSG_BUTTON_SHORTCUT_COLLAPSE
@@ -239,40 +258,41 @@ e
 ; e
 ;
 MSG_BUTTON_LABEL_LINETYPES
-Linjetyp
+Τύπος γραμμής
 ; Line type
 ;
 MSG_BUTTON_SHORTCUT_LINETYPES
-1
+l
 ; l
 ;
 MSG_LINETYPE_DISABLED
-Inaktiverad
+Απενεργοποιημένη
 ; Disabled
 ;
 MSG_LINETYPE_NORMAL
-Normal
+Κανονική
 ; Normal
 ;
 MSG_LINETYPE_DOTTED
-Prickad
+Κουκίδες
 ; Dotted
 ;
 MSG_LINETYPE_SHADOW
-Skugga
+Σκιά
 ; Shadow
 ;
 MSG_LINETYPE_GLOW
-Glφd
+Λάμψη
 ; Glow
 ;
 MSG_HELP_LINETYPES
-Vδlj linjetyp att anvδndas fφr att rita\nindividuella nivεer i listtrδdet.
+Επιλέξτε τον τύπο γραμμής που θα χρησιμοποιηθεί για την\n\
+σχεδίαση των μεμονομένων επιπέδων στη λίστα του δέντρου.
 ; Select the line type used for drawing\n\
 ; the individual levels in the listtree.
 ;
 MSG_BUTTON_LABEL_FOLDER
-Mapp bild
+Φάκελος απεικόνισης
 ; Folder image
 ;
 MSG_BUTTON_SHORTCUT_FOLDER
@@ -280,16 +300,17 @@ f
 ; f
 ;
 MSG_WIN_TITLE_FOLDER_IMAGE
-Justera mapp bild
+Τροποποίηση φακέλου απεικόνισης
 ; Adjust folder image
 ;
 MSG_HELP_FOLDER_IMAGE
-En bild som visas framfφr varje nod\nsom innehεller en undernod.
+Εμφανίζεται μια απεικόνιση μπροστά από κάθε\n\
+κόμβο που περιλαμβάνει υπο-κόμβους.
 ; An image displayed in front of every\n\
 ; node containing subnodes.
 ;
 MSG_BUTTON_LABEL_FOLDERIMAGE
-Anvδnd mapp bild
+Χρήση φακέλου απεικόνισης
 ; Use folder image
 ;
 MSG_BUTTON_SHORTCUT_FOLDERIMAGE
@@ -297,13 +318,15 @@ i
 ; i
 ;
 MSG_HELP_FOLDERIMAGE
-Vδlj om du vill att en mapp bild syns\nframfφr varje nod som innehεller\nundernoder.
+Επιλέξτε αν θέλετε ένας φάκελος απεικόνισης να\n\
+εμφανίζεται μπροστά από κάθε κόμβο που περιέχει\n\
+υπο-κόμβους.
 ; Select if you want a folder image to\n\
 ; appear in front of every node containing\n\
 ; subnodes.
 ;
 MSG_BUTTON_LABEL_INDENTWIDTH
-Extra indragsbredd
+Επιπλέον πρόθεση μήκους
 ; Additional indent width
 ;
 MSG_BUTTON_SHORTCUT_INDENTWIDTH
@@ -311,12 +334,13 @@ w
 ; w
 ;
 MSG_HELP_INDENTWIDTH
-Specifiera en extra indragsbredd\n att applicera pε varje undernod.
+Καθορίστε μια επιπλέον πρόθεση μήκους\n\
+που θα εφαρμοστεί σε κάθε υπο-κόμβο.
 ; Specify an additional indent\n\
 ; width applied to each subnode.
 ;
 MSG_BUTTON_LABEL_GLOW
-Glφd fδrg
+Χρώμα λάμψης
 ; Glow color
 ;
 MSG_BUTTON_SHORTCUT_GLOW
@@ -324,11 +348,12 @@ g
 ; g
 ;
 MSG_WIN_TITLE_GLOW_COLOR
-Sδtt glφdlinjefδrg
+Ορίστε το χρώμα λάμψης γραμμής
 ; Set glow line color
 ;
 MSG_HELP_GLOW_COLOR
-Tillεter att sδtta fδrgen fφr glφdlinjer
+Επιτρέπει να ορίστε το χρώμα για τον\n\
+τύπο λάμψης γραμμής.
 ; Allows to set the color for the glow\n\
 ; line type
 ;

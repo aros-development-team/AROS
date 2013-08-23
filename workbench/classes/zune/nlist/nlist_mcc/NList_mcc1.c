@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,7 @@
 
 ***************************************************************************/
 
+#include <string.h>
 #include <stdlib.h>
 
 #include <clib/alib_protos.h>
@@ -56,7 +57,16 @@ extern const struct Hook NL_DestructHook_String;
   { \
     tag->ti_Tag = TAG_IGNORE; \
     test_init = TRUE; \
-    var_dest = tag->ti_Data; \
+    /* catch possible MUII_#? values, these must be used directly */ \
+    if(tag->ti_Data <= 0x00000100) \
+    { \
+      var_dest = (IPTR)tag->ti_Data; \
+    } \
+    else \
+    { \
+      strlcpy(var_dest##Buffer, (STRPTR)tag->ti_Data, sizeof(var_dest##Buffer)); \
+      var_dest = (IPTR)var_dest##Buffer; \
+    } \
     REDRAW_ALL; \
   }
 
@@ -65,7 +75,7 @@ extern const struct Hook NL_DestructHook_String;
 
 IPTR mNL_AskMinMax(struct IClass *cl,Object *obj,struct MUIP_AskMinMax *msg)
 {
-  register struct NLData *data = INST_DATA(cl,obj);
+  struct NLData *data = INST_DATA(cl,obj);
   LONG vinc = data->vinc;
 /*
  *   if (data->nodraw)
@@ -105,7 +115,7 @@ IPTR mNL_AskMinMax(struct IClass *cl,Object *obj,struct MUIP_AskMinMax *msg)
   if (((data->NList_SourceArray == 2) || data->VirtGroup) && (data->NList_Entries > 0))
   { struct RastPort *tmprp2 = NULL;
     if ((data->NList_AdjustWidth == -1) && !data->nodraw &&
-             (tmprp2 = (struct RastPort *) AllocVec(sizeof(struct RastPort),0)))
+             (tmprp2 = (struct RastPort *) AllocVecShared(sizeof(struct RastPort),0)))
     { struct RastPort *tmprp = data->rp;
       struct TextFont *tmpfont;
       WORD column,delta;
@@ -251,19 +261,23 @@ IPTR mNL_AskMinMax(struct IClass *cl,Object *obj,struct MUIP_AskMinMax *msg)
 
 IPTR mNL_Notify(struct IClass *cl,Object *obj,struct MUIP_Notify *msg)
 {
-  register struct NLData *data = INST_DATA(cl,obj);
-  switch (msg->TrigAttr)
+  struct NLData *data = INST_DATA(cl,obj);
+  switch(msg->TrigAttr)
   {
     case MUIA_NListview_Horiz_ScrollBar :
       WANT_NOTIFY(NTF_SB);
       data->scrollersobj = msg->DestObj;
       break;
+
     case MUIA_NList_Horiz_First :
       WANT_NOTIFY(NTF_HSB);
+      break;
+
     case MUIA_NList_Horiz_Entries :
     case MUIA_NList_Horiz_Visible :
     case MUIA_NList_HorizDeltaFactor :
       break;
+
     case MUIA_NList_Prop_First :
       WANT_NOTIFY(NTF_VSB);
       if (msg->DestObj && !data->VertPropObject)
@@ -276,15 +290,16 @@ IPTR mNL_Notify(struct IClass *cl,Object *obj,struct MUIP_Notify *msg)
       }
 
       if (data->VertPropObject)
-      { if (data->NList_Smooth)
-          set(data->VertPropObject,MUIA_Prop_DoSmooth, TRUE);
-        else
-          set(data->VertPropObject,MUIA_Prop_DoSmooth, FALSE);
+      {
+        set(data->VertPropObject,MUIA_Prop_DoSmooth, data->NList_Smooth);
       }
+      break;
+
     case MUIA_NList_VertDeltaFactor :
     case MUIA_NList_Prop_Entries :
     case MUIA_NList_Prop_Visible :
       break;
+
     case MUIA_List_Prop_First :
       if (msg->DestObj && !data->VertPropObject)
       {
@@ -323,67 +338,84 @@ IPTR mNL_Notify(struct IClass *cl,Object *obj,struct MUIP_Notify *msg)
             obj, 3, MUIM_NoNotifySet,MUIA_NList_Prop_First,MUIV_TriggerValue);
           DoMethod(obj, MUIM_Notify, MUIA_NList_VertDeltaFactor,MUIV_EveryTime,
             data->VertPropObject, 3, MUIM_NoNotifySet,MUIA_Prop_DeltaFactor,MUIV_TriggerValue);
-          if (data->NList_Smooth)
-            set(data->VertPropObject,MUIA_Prop_DoSmooth, TRUE);
-          else
-            set(data->VertPropObject,MUIA_Prop_DoSmooth, FALSE);
+          set(data->VertPropObject,MUIA_Prop_DoSmooth, data->NList_Smooth);
         }
       }
+      return (0);
+
     case MUIA_List_Prop_Entries :
     case MUIA_List_Prop_Visible :
       return (0);
+
     case MUIA_NList_First :
       WANT_NOTIFY(NTF_First);
       break;
+
     case MUIA_NList_Entries :
       WANT_NOTIFY(NTF_Entries);
       break;
+
     case MUIA_NList_Active :
       WANT_NOTIFY(NTF_Active);
       break;
+
     case MUIA_List_Active :
       WANT_NOTIFY(NTF_L_Active);
       break;
+
     case MUIA_NList_SelectChange :
       WANT_NOTIFY(NTF_Select);
       break;
+
     case MUIA_Listview_SelectChange :
       WANT_NOTIFY(NTF_LV_Select);
       break;
+
     case MUIA_NList_EntryClick :
       WANT_NOTIFY(NTF_EntryClick);
       break;
+
     case MUIA_NList_MultiClick :
       WANT_NOTIFY(NTF_Multiclick);
       break;
+
     case MUIA_NList_MultiClickAlone :
       WANT_NOTIFY(NTF_MulticlickAlone);
       break;
+
     case MUIA_NList_DoubleClick :
       msg->TrigVal = MUIV_EveryTime;
       WANT_NOTIFY(NTF_Doubleclick);
       break;
+
     case MUIA_Listview_DoubleClick :
       WANT_NOTIFY(NTF_LV_Doubleclick);
       break;
+
     case MUIA_NList_TitleClick :
       WANT_NOTIFY(NTF_TitleClick);
       break;
+
     case MUIA_NList_TitleClick2 :
       WANT_NOTIFY(NTF_TitleClick2);
       break;
+
     case MUIA_NList_ButtonClick :
       WANT_NOTIFY(NTF_ButtonClick);
       break;
+
     case MUIA_NList_LineHeight :
       WANT_NOTIFY(NTF_LineHeight);
       break;
+
     case MUIA_NList_DragSortInsert :
       WANT_NOTIFY(NTF_DragSortInsert);
       break;
+
     case MUIA_NList_InsertPosition :
       WANT_NOTIFY(NTF_Insert);
       break;
+
     case MUIA_NList_Columns :
       WANT_NOTIFY(NTF_Columns);
       break;
@@ -398,7 +430,7 @@ IPTR mNL_Notify(struct IClass *cl,Object *obj,struct MUIP_Notify *msg)
 
 IPTR mNL_Set(struct IClass *cl,Object *obj,Msg msg)
 {
-  register struct NLData *data = INST_DATA(cl,obj);
+  struct NLData *data = INST_DATA(cl,obj);
   IPTR retval;
   LONG do_things = TRUE;
   struct TagItem *tags,*tag;

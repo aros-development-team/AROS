@@ -8,7 +8,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -284,18 +284,18 @@ struct NLData
   LONG  NList_Input;
   LONG  NList_TypeSelect;
   LONG  NList_SelectChange;
-  ULONG NList_TitlePen;
-  ULONG NList_ListPen;
-  ULONG NList_SelectPen;
-  ULONG NList_CursorPen;
-  ULONG NList_UnselCurPen;
-  ULONG NList_InactivePen;
-  ULONG NList_TitleBackGround;
-  ULONG NList_ListBackGround;
-  ULONG NList_SelectBackground;
-  ULONG NList_CursorBackground;
-  ULONG NList_UnselCurBackground;
-  ULONG NList_InactiveBackground;
+  IPTR NList_TitlePen;
+  IPTR NList_ListPen;
+  IPTR NList_SelectPen;
+  IPTR NList_CursorPen;
+  IPTR NList_UnselCurPen;
+  IPTR NList_InactivePen;
+  IPTR NList_TitleBackGround;
+  IPTR NList_ListBackGround;
+  IPTR NList_SelectBackground;
+  IPTR NList_CursorBackground;
+  IPTR NList_UnselCurBackground;
+  IPTR NList_InactiveBackground;
   LONG  NList_DragType;
   LONG  NList_Dropable;
   LONG  NList_DragColOnly;
@@ -585,6 +585,19 @@ struct NLData
 
   struct InputEvent ievent;
   char rawtext[MAXRAWBUF];
+
+  char NList_TitlePenBuffer[128];
+  char NList_ListPenBuffer[128];
+  char NList_SelectPenBuffer[128];
+  char NList_CursorPenBuffer[128];
+  char NList_UnselCurPenBuffer[128];
+  char NList_InactivePenBuffer[128];
+  char NList_TitleBackGroundBuffer[128];
+  char NList_ListBackGroundBuffer[128];
+  char NList_SelectBackgroundBuffer[128];
+  char NList_CursorBackgroundBuffer[128];
+  char NList_UnselCurBackgroundBuffer[128];
+  char NList_InactiveBackgroundBuffer[128];
 };
 
 
@@ -635,5 +648,14 @@ IPTR xget(Object *obj, const IPTR attr);
 #define SET_FLAG(v,f)       ((v) |= (f))          // set the flag f in v
 #define CLEAR_FLAG(v,f)     ((v) &= ~(f))         // clear the flag f in v
 #define MASK_FLAG(v,f)      ((v) &= (f))          // mask the variable v with flag f bitwise
+
+#define VERSION_IS_AT_LEAST(ver, rev, minver, minrev) (((ver) > (minver)) || ((ver) == (minver) && (rev) == (minrev)) || ((ver) == (minver) && (rev) > (minrev)))
+#define LIB_VERSION_IS_AT_LEAST(lib, minver, minrev)  VERSION_IS_AT_LEAST(((struct Library *)(lib))->lib_Version, ((struct Library *)(lib))->lib_Revision, minver, minrev)
+
+#if defined(__amigaos4__)
+#define AllocVecShared(size, flags)  AllocVecTags((size), AVT_Type, MEMF_SHARED, AVT_Lock, FALSE, ((flags)&MEMF_CLEAR) ? AVT_ClearWithValue : TAG_IGNORE, 0, TAG_DONE)
+#else
+#define AllocVecShared(size, flags)  AllocVec((size), (flags))
+#endif
 
 #endif /* MUI_NList_priv_MCC_H */

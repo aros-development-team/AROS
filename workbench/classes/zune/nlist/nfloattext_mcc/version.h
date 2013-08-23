@@ -4,7 +4,7 @@
  Registered MUI class, Serial Number: 1d51 (0x9d5100a1 to 0x9d5100aF)
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2010 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -31,9 +31,9 @@
 
 // for setting all necessary version information
 #define LIB_VERSION    19
-#define LIB_REVISION   66
-#define LIB_DATE       "17.12.2011"
-#define LIB_COPYRIGHT  "Copyright (C) 2007-2011 NList Open Source Team"
+#define LIB_REVISION   71
+#define LIB_DATE       "25.04.2013"
+#define LIB_COPYRIGHT  "Copyright (C) 2001-2013 NList Open Source Team"
 
 // set the LIB_REV_STRING
 #define LIB_REV_STRING STR(LIB_VERSION) "." STR(LIB_REVISION)

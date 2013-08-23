@@ -2,7 +2,7 @@
 
  NBitmap.mcc - New Bitmap MUI Custom Class
  Copyright (C) 2006 by Daniel Allsopp
- Copyright (C) 2007-2008 by NList Open Source Team
+ Copyright (C) 2007-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -266,7 +266,7 @@ static BOOL NBitmap_ExamineData(Object *dt_obj, uint32 item, struct IClass *cl, 
       arraysize = (data->arraybpr) * data->height;
 
       /* get array of pixels */
-      if((data->arraypixels[item] = AllocVec(arraysize, MEMF_ANY|MEMF_CLEAR)) != NULL)
+      if((data->arraypixels[item] = AllocVecShared(arraysize, MEMF_ANY|MEMF_CLEAR)) != NULL)
       {
         ULONG error;
 
@@ -374,11 +374,7 @@ BOOL NBitmap_SetupShades(struct InstData *data)
   // the shades pixel color
   pixel = ((ULONG)data->prefs.overlay_r << 16) | ((ULONG)data->prefs.overlay_g << 8) | (ULONG)data->prefs.overlay_b;
 
-  #if defined(__MORPHOS__)
   if((data->pressedShadePixels = AllocVecAligned(data->shadeBytesPerRow * data->shadeHeight, MEMF_ANY, altivec_align ? 16 : 8, 0)) != NULL)
-  #else
-  if((data->pressedShadePixels = AllocVec(data->shadeBytesPerRow * data->shadeHeight, MEMF_ANY)) != NULL)
-  #endif
   {
     uint32 w, h;
     uint32 alpha;
@@ -403,11 +399,7 @@ BOOL NBitmap_SetupShades(struct InstData *data)
     }
   }
 
-  #if defined(__MORPHOS__)
   if((data->overShadePixels = AllocVecAligned(data->shadeBytesPerRow * data->shadeHeight, MEMF_ANY, altivec_align ? 16 : 8, 0)) != NULL)
-  #else
-  if((data->overShadePixels = AllocVec(data->shadeBytesPerRow * data->shadeHeight, MEMF_ANY)) != NULL)
-  #endif
   {
     uint32 w, h;
     uint32 alpha;
@@ -568,7 +560,7 @@ BOOL NBitmap_OldNewImage(struct IClass *cl, Object *obj)
               arraysize = (data->arraybpr) * data->height;
 
               /* get array of pixels */
-              if((data->arraypixels[i] = AllocVec(arraysize, MEMF_ANY|MEMF_CLEAR)) != NULL)
+              if((data->arraypixels[i] = AllocVecShared(arraysize, MEMF_ANY|MEMF_CLEAR)) != NULL)
               {
                 ULONG error;
 

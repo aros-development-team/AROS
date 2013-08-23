@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@ struct MUI_CustomClass *NGR_Class = NULL;
 
 static IPTR mNGR_New(struct IClass *cl,Object *obj,struct opSet *msg)
 {
-  register struct NGRData *data;
+  struct NGRData *data;
 
   if (!(obj = (Object *)DoSuperMethodA(cl,obj,(Msg) msg)))
     return(0);
@@ -46,66 +46,18 @@ static IPTR mNGR_New(struct IClass *cl,Object *obj,struct opSet *msg)
   return((IPTR) obj);
 }
 
-/*
- * static ULONG mNGR_Draw(struct IClass *cl,Object *obj,struct MUIP_Draw *msg)
- * {
- *   register struct NGRData *data = INST_DATA(cl,obj);
- *
- * D(bug("%lx|group|draw0 %lx %lx \n",obj,msg->flags,muiAreaData(obj)->mad_Flags));
- *
- *   if (data->DoDraw)
- *     DoSuperMethodA(cl,obj,(Msg) msg);
- *
- * D(bug("%lx|group|draw1 %lx %lx \n",obj,msg->flags,muiAreaData(obj)->mad_Flags));
- *
- *   return(0);
- * }
- */
-
-/*
-static ULONG mNGR_Set(struct IClass *cl,Object *obj,Msg msg)
-{
-  register struct NGRData *data = INST_DATA(cl,obj);
-  struct TagItem *tags,*tag;
-
-  for(tags = ((struct opSet *)msg)->ops_AttrList;(tag = (struct TagItem *) NextTagItem(&tags));)
-  {
-    switch (tag->ti_Tag)
-    { case MUIA_NList_Visible :
-        data->DoDraw = tag->ti_Data;
-    }
-  }
-  return (0);
-}
-*/
-
 static IPTR mNGR_AskMinMax(struct IClass *cl,Object *obj,struct MUIP_AskMinMax *msg)
 {
-//  register struct NLData *data = INST_DATA(cl,obj);
-/*D(bug("%lx|grp_AskMinMax() 1 \n",obj));*/
   DoSuperMethodA(cl,obj,(Msg) msg);
-/*D(bug("%lx|grp_AskMinMax() 2 \n",obj));*/
-  msg->MinMaxInfo->MinWidth  = 2;
-  msg->MinMaxInfo->DefWidth  = 20;
-  msg->MinMaxInfo->MaxWidth  = MUI_MAXMAX+100;
-  msg->MinMaxInfo->MinHeight = 3;
-  msg->MinMaxInfo->DefHeight = 20+100;
-  msg->MinMaxInfo->MaxHeight = MUI_MAXMAX+100;
-/*
- *   msg->MinMaxInfo->MinWidth  += MUI_MAXMAX;
- *   msg->MinMaxInfo->DefWidth  += MUI_MAXMAX;
- *   msg->MinMaxInfo->MaxWidth  += MUI_MAXMAX;
- *   msg->MinMaxInfo->MinHeight += MUI_MAXMAX;
- *   msg->MinMaxInfo->DefHeight += MUI_MAXMAX;
- *   msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
- * {
- * LONG w = (LONG) msg->MinMaxInfo->DefWidth;
- * LONG h = (LONG) msg->MinMaxInfo->DefHeight;
- * LONG w1 = (LONG) msg->MinMaxInfo->MinWidth;
- * LONG h1 = (LONG) msg->MinMaxInfo->MinHeight;
- * D(bug("%lx|group|w=%ld h=%ld (%ld,%ld) \n",obj,w,h,w1,h1));
- * }
- */
+
+  // do not overwrite the sizes given by our superclass but add our own sizes instead
+  msg->MinMaxInfo->MinWidth  += 2;
+  msg->MinMaxInfo->DefWidth  += 20;
+  msg->MinMaxInfo->MaxWidth  += MUI_MAXMAX;
+  msg->MinMaxInfo->MinHeight += 3;
+  msg->MinMaxInfo->DefHeight += 20+100;
+  msg->MinMaxInfo->MaxHeight += MUI_MAXMAX;
+
   return(0);
 }
 
@@ -137,4 +89,3 @@ void NGR_Delete(void)
     MUI_DeleteCustomClass(NGR_Class);
   NGR_Class = NULL;
 }
-

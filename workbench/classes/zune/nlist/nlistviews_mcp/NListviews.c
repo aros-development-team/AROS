@@ -5,7 +5,7 @@
                                             and 0x9d510101 to 0x9d51013F)
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2007 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -141,7 +141,7 @@ Object *MakeCheck(STRPTR label, STRPTR help, ULONG check)
   { \
     LONG ptrd=0; \
     get(obj, attr, &ptrd); \
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &ptrd, 8, cfg_attr); \
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &ptrd, sizeof(ptrd), cfg_attr); \
   }
 
 #define LOAD_DATASPEC(obj,attr,cfg_attr,defaultval) \
@@ -158,7 +158,7 @@ Object *MakeCheck(STRPTR label, STRPTR help, ULONG check)
     LONG ptrd=0; \
     get(obj, attr, &ptrd); \
     if (ptrd) \
-      DoMethod(msg->configdata, MUIM_Dataspace_Add, ptrd, sizeof(struct MUI_PenSpec), cfg_attr); \
+      DoMethod(msg->configdata, MUIM_Dataspace_Add, ptrd, strlen((char *)ptrd)+1, cfg_attr); \
   }
 
 #define SAVE_DATASPEC2(obj,attr,cfg_attr) \
@@ -166,7 +166,7 @@ Object *MakeCheck(STRPTR label, STRPTR help, ULONG check)
     LONG ptrd=0; \
     get(obj, attr, &ptrd); \
     if (ptrd) \
-      DoMethod(msg->configdata, MUIM_Dataspace_Add, ptrd, sizeof(struct MUI_ImageSpec), cfg_attr); \
+      DoMethod(msg->configdata, MUIM_Dataspace_Add, ptrd, strlen((char *)ptrd)+1, cfg_attr); \
   }
 
 #define LOAD_DATAFONT(obj,cfg_attr) \
@@ -241,7 +241,7 @@ static const char *MainTextArray[] =
   "All releases are available on",
   "http://www.sourceforge.net/projects/nlist-classes/",
   "\033C",
-  "\033r\0333(C) 2001-2007 by NList Open Source Team",
+  "\033r\0333(C) 2001-2013 by NList Open Source Team",
   "\033r\0333(C) 1996-1998 by Gilles Masson",
   "\033r\0333http://www.sourceforge.net/projects/nlist-classes/",
   "\033C",
@@ -377,11 +377,11 @@ static LONG NL_SaveKeys(struct NListviews_MCP_Data *data)
 {
   LONG pos,ne = 0;
   struct KeyBinding *key;
+
   get(data->mcp_listkeys, MUIA_NList_Entries, &ne);
   ne++;
-  data->nlkeys_size = ne*sizeof(struct KeyBinding);
 
-  if((data->nlkeys = (struct KeyBinding *) AllocMem(data->nlkeys_size+4,0L)))
+  if((data->nlkeys = (struct KeyBinding *)AllocVecShared(ne*sizeof(struct KeyBinding),MEMF_ANY)))
   {
     pos = 0;
 
@@ -415,10 +415,12 @@ static LONG NL_SaveKeys(struct NListviews_MCP_Data *data)
 static void NL_LoadKeys(Object *list,struct KeyBinding *keys)
 {
   int i = 0;
+
   set(list, MUIA_NList_Quiet, TRUE);
   DoMethod(list,MUIM_NList_Clear);
   while (keys[i].kb_KeyTag)
-  { DoMethod(list,MUIM_NList_InsertSingle,&keys[i], MUIV_NList_Insert_Bottom);
+  {
+    DoMethod(list,MUIM_NList_InsertSingle,&keys[i], MUIV_NList_Insert_Bottom);
     i++;
   }
   set(list, MUIA_NList_Quiet, FALSE);
@@ -502,10 +504,12 @@ HOOKPROTONH(TxtFctFunc, VOID, Object *list, long *val)
   Object *txtfct = (Object *) val[0];
   struct KeyBinding *key = NULL;
   LONG i = -1;
+
   get(txtfct,MUIA_UserData,&i);
   DoMethod(list,MUIM_NList_GetEntry,MUIV_NList_GetEntry_Active, &key);
-  if (key && (i >= 0))
-  { key->kb_KeyTag = keytags[i];
+  if(key && (i >= 0))
+  {
+    key->kb_KeyTag = keytags[i];
     DoMethod(list,MUIM_NList_Redraw,MUIV_NList_Redraw_Active);
     get(list,MUIA_NList_Active,&i);
     set(list,MUIA_NList_Active,i);
@@ -518,11 +522,13 @@ HOOKPROTONH(AckFunc, VOID, Object *list, long *val)
   Object *stringkey = (Object *) val[0];
   struct KeyBinding *key = NULL;
   char *ackstr = NULL;
+
   get(stringkey,MUIA_String_Contents, &ackstr);
   DoMethod(list,MUIM_NList_GetEntry,MUIV_NList_GetEntry_Active, &key);
   if (ackstr && key)
-  { 
+  {
     IX ix;
+
     ix.ix_Version = IX_VERSION;
     ParseIX(ackstr,&ix);
     key->kb_Qualifier = (ix.ix_Qualifier & KBQUAL_MASK) | ((ix.ix_QualSame << 12) & KBSYM_MASK);
@@ -538,17 +544,20 @@ HOOKPROTONH(ActiveFunc, VOID, Object *list, long *val)
 /*  Object *win = NULL;*/
   ULONG active = (ULONG) (val[1]);
   struct KeyBinding *key = NULL;
+
   if((LONG)active >= 0)
   {
     DoMethod(list,MUIM_NList_GetEntry,MUIV_NList_GetEntry_Active, &key);
 
     if (key)
-    { LONG i;
-      i = 0;
+    {
+      LONG i = 0;
+
       while ((keytags[i] > 0) && (keytags[i] != key->kb_KeyTag))
         i++;
       if (keytags[i] == key->kb_KeyTag)
-      { nnset(data->mcp_stringkey,MUIA_HotkeyString_Snoop, FALSE);
+      {
+        nnset(data->mcp_stringkey,MUIA_HotkeyString_Snoop, FALSE);
         nnset(data->mcp_stringkey,MUIA_Disabled, FALSE);
         nnset(data->mcp_snoopkey,MUIA_Disabled, FALSE);
         nnset(data->mcp_txtfct,MUIA_UserData,i);
@@ -567,7 +576,8 @@ HOOKPROTONH(ActiveFunc, VOID, Object *list, long *val)
     }
   }
   if (!key)
-  { nnset(data->mcp_txtfct,MUIA_UserData,-1);
+  {
+    nnset(data->mcp_txtfct,MUIA_UserData,-1);
     nnset(data->mcp_txtfct,MUIA_Text_Contents,"");
     nnset(data->mcp_stringkey,MUIA_String_Contents, "");
     nnset(data->mcp_stringkey,MUIA_Disabled, TRUE);
@@ -594,11 +604,14 @@ MakeStaticHook(UpdateHook, UpdateFunc);
 HOOKPROTONHNP(InsertFunc, VOID, Object *list)
 {
   if (list)
-  { struct KeyBinding *key;
+  {
+    struct KeyBinding *key;
     LONG pos = 0;
+
     DoMethod(list,MUIM_NList_GetEntry,MUIV_NList_GetEntry_Active, &key);
     if (!key)
-    { empty_key.kb_KeyTag = keytags[0];
+    {
+      empty_key.kb_KeyTag = keytags[0];
       key = &empty_key;
     }
     set(list,MUIA_NList_Quiet,TRUE);
@@ -614,6 +627,7 @@ HOOKPROTONH(DisplayFunc, VOID, Object *obj, struct NList_DisplayMessage *ndm)
 {
   struct KeyBinding *key = (struct KeyBinding *) ndm->entry;
   struct NListviews_MCP_Data *data = NULL;
+
   get(obj,MUIA_UserData,&data);
 
   if (key && data)
@@ -645,9 +659,9 @@ MakeStaticHook(DisplayHook, DisplayFunc);
 HOOKPROTONHNO(ConstructFunc, APTR, struct NList_ConstructMessage *ncm)
 {
   struct KeyBinding *key = (struct KeyBinding *) ncm->entry;
-
-  struct KeyBinding *key2 = (struct KeyBinding *) AllocMem(sizeof(struct KeyBinding),0L);
+  struct KeyBinding *key2 = (struct KeyBinding *) AllocVecShared(sizeof(struct KeyBinding),0L);
   if (key2)
+
     *key2 = *key;
 
   return ((APTR) key2);
@@ -658,7 +672,7 @@ HOOKPROTONHNO(DestructFunc, VOID, struct NList_DestructMessage *ndm)
 {
   struct KeyBinding *key = (struct KeyBinding *) ndm->entry;
 
-  FreeMem((void *) key,sizeof(struct KeyBinding));
+  FreeVec((void *) key);
 }
 MakeStaticHook(DestructHook, DestructFunc);
 
@@ -667,13 +681,18 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
   struct NListviews_MCP_Data *data;
   APTR group1, group2, group3, group4, group5;
   char *exampleText;
+  BOOL mui39;
+  BOOL safeNotifies;
 
-  static const char infotext[] = "\033bNListviews.mcp " LIB_REV_STRING "\033n (" LIB_DATE ")\n"
-                                 "Copyright (c) 1996-2001 Gilles Masson\n"
-                                 LIB_COPYRIGHT "\n\n"
-                                 "Distributed under the terms of the LGPL2.\n\n"
-                                 "For the latest version, check out:\n"
-                                 "http://www.sf.net/projects/nlist-classes/\n\n";
+  static const char infotext1[] = "\033bNListviews.mcp " LIB_REV_STRING "\033n (" LIB_DATE ")\n"
+                                  "Copyright (C) 1996-2001 Gilles Masson\n"
+                                  LIB_COPYRIGHT;
+  static const char infotext2[] = "\n"
+                                  "Distributed under the terms of the LGPL2.\n"
+                                  "\n"
+                                  "For the latest version, check out:\n"
+                                  "http://www.sf.net/projects/nlist-classes/\n"
+                                  "\n";
 
   if(!(obj = (Object *)DoSuperMethodA(cl, obj,(Msg) msg)))
     return(0);
@@ -744,7 +763,7 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
   }
 
   // create a duplicate of the translated text
-  if((exampleText = AllocVec((strlen(tr(MSG_EXAMPLE_TEXT))+1)*sizeof(char), MEMF_ANY)) != NULL)
+  if((exampleText = AllocVecShared((strlen(tr(MSG_EXAMPLE_TEXT))+1)*sizeof(char), MEMF_ANY)) != NULL)
   {
     char *p;
     LONG numLines = 0;
@@ -761,7 +780,7 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
     }
 
     // finally split the text into separate lines
-    if((data->exampleText = AllocVec((numLines+2)*sizeof(char *), MEMF_ANY|MEMF_CLEAR)) != NULL)
+    if((data->exampleText = AllocVecShared((numLines+2)*sizeof(char *), MEMF_ANY|MEMF_CLEAR)) != NULL)
     {
       LONG line;
 
@@ -772,7 +791,7 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
 
         q = strchr(p, '\n');
         *q++ = '\0';
-        data->exampleText[line] = AllocVec((strlen(p)+1)*sizeof(char), MEMF_ANY);
+        data->exampleText[line] = AllocVecShared((strlen(p)+1)*sizeof(char), MEMF_ANY);
         strcpy(data->exampleText[line], p);
         p = q;
       }
@@ -780,6 +799,8 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
 
     FreeVec(exampleText);
   }
+
+  mui39 = LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 0);
 
   group1 = GroupObject,
 
@@ -806,7 +827,7 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
             Child, Label(tr(MSG_NORMAL_FONT)),
             Child, data->mcp_Font = PopaslObject,
               MUIA_Popstring_String,  String2(0,80),
-              MUIA_Popstring_Button,  PopButton(MUII_PopUp),
+              MUIA_Popstring_Button,  PopButton(mui39 == TRUE ? MUII_PopFont : MUII_PopUp),
               MUIA_Popasl_Type,       ASL_FontRequest,
               MUIA_ShortHelp,         tr(MSG_NORMAL_FONT_HELP),
               ASLFO_TitleText,        tr(MSG_NORMAL_FONT_ASL),
@@ -815,7 +836,7 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
             Child, Label(tr(MSG_SMALL_FONT)),
             Child, data->mcp_Font_Little = PopaslObject,
               MUIA_Popstring_String,  String2(0,80),
-              MUIA_Popstring_Button,  PopButton(MUII_PopUp),
+              MUIA_Popstring_Button,  PopButton(mui39 == TRUE ? MUII_PopFont : MUII_PopUp),
               MUIA_Popasl_Type,       ASL_FontRequest,
               MUIA_ShortHelp,         tr(MSG_SMALL_FONT_HELP),
               ASLFO_TitleText,        tr(MSG_SMALL_FONT_ASL),
@@ -824,7 +845,7 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
             Child, Label(tr(MSG_FIXED_FONT)),
             Child, data->mcp_Font_Fixed = PopaslObject,
               MUIA_Popstring_String,  String2(0,80),
-              MUIA_Popstring_Button,  PopButton(MUII_PopUp),
+              MUIA_Popstring_Button,  PopButton(mui39 == TRUE ? MUII_PopFont : MUII_PopUp),
               MUIA_Popasl_Type,       ASL_FontRequest,
               MUIA_ShortHelp,         tr(MSG_FIXED_FONT_HELP),
               ASLFO_TitleText,        tr(MSG_FIXED_FONT_ASL),
@@ -988,6 +1009,29 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
   RS_HSB[3] = tr(MSG_HSB_NONE);
   RS_HSB[4] = NULL;
 
+  #if defined(__amigaos3__) || defined(__amigaos4__)
+  if(LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 5824))
+  {
+    // MUI4 for AmigaOS is safe for V20.5824+
+    safeNotifies = TRUE;
+  }
+  else if(LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 2346) && LIBREV(MUIMasterBase) < 5000)
+  {
+    // MUI3.9 for AmigaOS is safe for V20.2346+
+    safeNotifies = TRUE;
+  }
+  else
+  {
+    // MUI 3.8 and older version of MUI 3.9 or MUI4 are definitely unsafe
+    safeNotifies = FALSE;
+  }
+  #else
+  // MorphOS and AROS must be considered unsafe unless someone from the
+  // MorphOS/AROS team confirms that removing notifies in nested OM_SET
+  // calls is safe.
+  safeNotifies = FALSE;
+  #endif
+
   group3 =  VGroup,
 
               Child, HGroup,
@@ -998,6 +1042,7 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
                     Child, VSpace(0),
                     Child, data->mcp_R_HSB = RadioObject,
                       MUIA_Radio_Entries, RS_HSB,
+                      MUIA_Disabled, !safeNotifies,
                     End,
                     MUIA_ShortHelp, tr(MSG_SB_HORIZONTAL_HELP),
                     Child, VSpace(0),
@@ -1012,6 +1057,7 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
                     Child, VSpace(0),
                     Child, data->mcp_R_VSB = RadioObject,
                       MUIA_Radio_Entries,RS_VSB,
+                      MUIA_Disabled, !safeNotifies,
                     End,
                     MUIA_ShortHelp, tr(MSG_SB_VERTICAL_HELP),
                     Child, VSpace(0),
@@ -1292,11 +1338,11 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
                 MUIA_VertWeight, 10,
 
                 Child, VSpace(0),
+
                 Child, HGroup,
-
                   Child, HSpace(0),
-                  Child, VGroup,
 
+                  Child, VGroup,
                     Child, HGroup,
                       Child, data->mcp_SelectPointer = ImageObject,
                         ImageButtonFrame,
@@ -1313,10 +1359,12 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
 
                   End,
 
+                  Child, HSpace(0),
+
                   Child, HGroup,
                     Child, VGroup,
                       Child, VSpace(0),
-                        Child, RectangleObject,
+                      Child, RectangleObject,
                         MUIA_VertWeight,         0,
                         MUIA_Rectangle_HBar,     TRUE,
                         MUIA_Rectangle_BarTitle, tr(MSG_BAR_CONTEXTMENU),
@@ -1331,6 +1379,7 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
 
                   Child, HSpace(0),
                 End,
+
                 Child, VSpace(0),
               End,
 
@@ -1436,17 +1485,25 @@ static IPTR mNL_MCP_New(struct IClass *cl,Object *obj,struct opSet *msg)
 
     Child, CrawlingObject,
       TextFrame,
-      MUIA_FixHeightTxt, "\n\n",
+      MUIA_FixHeightTxt, infotext1,
       MUIA_Background,   "m1",
 
       Child, TextObject,
+        MUIA_Text_Copy, FALSE,
         MUIA_Text_PreParse, "\033c",
-        MUIA_Text_Contents, infotext,
+        MUIA_Text_Contents, infotext1,
       End,
 
       Child, TextObject,
+        MUIA_Text_Copy, FALSE,
         MUIA_Text_PreParse, "\033c",
-        MUIA_Text_Contents, infotext,
+        MUIA_Text_Contents, infotext2,
+      End,
+
+      Child, TextObject,
+        MUIA_Text_Copy, FALSE,
+        MUIA_Text_PreParse, "\033c",
+        MUIA_Text_Contents, infotext1,
       End,
     End,
 
@@ -1816,14 +1873,14 @@ IPTR mNL_MCP_GadgetsToConfig(struct IClass *cl,Object *obj,struct MUIP_Settingsg
       num = MUIV_NList_DragType_Borders;
     else
       num = MUIV_NList_DragType_Immediate;
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, 8, MUICFG_NList_DragType);
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, sizeof(num), MUICFG_NList_DragType);
   }
 
   {
     LONG ptrd=0,num;
     get(data->mcp_ColWidthDrag, MUIA_Radio_Active, &ptrd);
     num = ptrd;
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, 8, MUICFG_NList_ColWidthDrag);
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, sizeof(num), MUICFG_NList_ColWidthDrag);
   }
 
   {
@@ -1838,20 +1895,20 @@ IPTR mNL_MCP_GadgetsToConfig(struct IClass *cl,Object *obj,struct MUIP_Settingsg
       num |= MUIV_NList_MultiSelect_MMB_On;
     else
       num |= MUIV_NList_MultiSelect_MMB_Off;
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, 8, MUICFG_NList_MultiSelect);
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, sizeof(num), MUICFG_NList_MultiSelect);
   }
 
   {
     LONG ptrd=0,num;
     get(data->mcp_R_HSB, MUIA_Radio_Active, &ptrd);
     num = ptrd+1;
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, 8, MUICFG_NListview_HSB);
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, sizeof(num), MUICFG_NListview_HSB);
   }
   {
     LONG ptrd=0,num;
     get(data->mcp_R_VSB, MUIA_Radio_Active, &ptrd);
     num = ptrd+1;
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, 8, MUICFG_NListview_VSB);
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, sizeof(num), MUICFG_NListview_VSB);
   }
 
   {
@@ -1861,7 +1918,7 @@ IPTR mNL_MCP_GadgetsToConfig(struct IClass *cl,Object *obj,struct MUIP_Settingsg
       num = TRUE;
     else
       num = FALSE;
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, 8, MUICFG_NList_ForcePen);
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, sizeof(num), MUICFG_NList_ForcePen);
   }
 
   SAVE_DATALONG(data->mcp_DragLines,    MUIA_Numeric_Value,     MUICFG_NList_DragLines);
@@ -1878,7 +1935,7 @@ IPTR mNL_MCP_GadgetsToConfig(struct IClass *cl,Object *obj,struct MUIP_Settingsg
       num = TRUE;
     else
       num = FALSE;
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, 8, MUICFG_NList_SerMouseFix);
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, sizeof(num), MUICFG_NList_SerMouseFix);
   }
 
   {
@@ -1888,7 +1945,7 @@ IPTR mNL_MCP_GadgetsToConfig(struct IClass *cl,Object *obj,struct MUIP_Settingsg
       num = TRUE;
     else
       num = FALSE;
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, 8, MUICFG_NList_List_Select);
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, sizeof(num), MUICFG_NList_List_Select);
   }
 
   {
@@ -1898,7 +1955,7 @@ IPTR mNL_MCP_GadgetsToConfig(struct IClass *cl,Object *obj,struct MUIP_Settingsg
       num = TRUE;
     else
       num = FALSE;
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, 8, MUICFG_NList_PartialCol);
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, sizeof(num), MUICFG_NList_PartialCol);
   }
 
   {
@@ -1908,7 +1965,7 @@ IPTR mNL_MCP_GadgetsToConfig(struct IClass *cl,Object *obj,struct MUIP_Settingsg
       num = TRUE;
     else
       num = FALSE;
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, 8, MUICFG_NList_PartialChar);
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, sizeof(num), MUICFG_NList_PartialChar);
   }
 
   {
@@ -1918,14 +1975,15 @@ IPTR mNL_MCP_GadgetsToConfig(struct IClass *cl,Object *obj,struct MUIP_Settingsg
       num = MUIV_NList_ContextMenu_TopOnly;
     else if (ptrd == 2)
       num = MUIV_NList_ContextMenu_Never;
-    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, 8, MUICFG_NList_Menu);
+    DoMethod(msg->configdata, MUIM_Dataspace_Add, &num, sizeof(num), MUICFG_NList_Menu);
   }
 
   {
     LONG sk = NL_SaveKeys(data);
     if (sk > 0)
-    { DoMethod(msg->configdata, MUIM_Dataspace_Add, data->nlkeys, sk, MUICFG_NList_Keys);
-      FreeMem((void *) data->nlkeys,data->nlkeys_size+4);
+    {
+      DoMethod(msg->configdata, MUIM_Dataspace_Add, data->nlkeys, sk, MUICFG_NList_Keys);
+      FreeVec((void *) data->nlkeys);
       data->nlkeys = NULL;
     }
   }

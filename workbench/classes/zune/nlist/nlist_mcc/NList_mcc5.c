@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -651,10 +651,11 @@ static LONG DoRefresh(struct NLData *data)
  */
 
 
-LONG NL_DrawQuietBG(struct NLData *data,LONG dowhat,LONG bg)
+void NL_DrawQuietBG(struct NLData *data,LONG dowhat,LONG bg)
 {
   if (data->do_draw_all)
-  { if ((dowhat == 0) || (dowhat == 4))
+  {
+    if ((dowhat == 0) || (dowhat == 4))
       dowhat = 2;
     else if (dowhat == 3)
       dowhat = 1;
@@ -854,28 +855,7 @@ LONG NL_DrawQuietBG(struct NLData *data,LONG dowhat,LONG bg)
 
       break;
 
-    case 8 :  /* SetBackGroundForce */
-
-      {
-        ULONG mad_Flags = muiAreaData(data->this)->mad_Flags;
-
-        OCLASS(data->this) = data->ncl;
-        if (bg == data->actbackground)
-        {
-          data->nodraw++;
-          nnset(data->this,MUIA_Background,(IPTR)"0:128");
-          data->nodraw--;
-        }
-        data->actbackground = bg;
-        data->nodraw++;
-        nnset(data->this,MUIA_Background,bg);
-        OCLASS(data->this) = data->ocl;
-        data->nodraw--;
-        muiAreaData(data->this)->mad_Flags = mad_Flags;
-      }
-      break;
-
-    case 9 :  /* Make_Active_Visible */
+    case 8 :  /* Make_Active_Visible */
 
       if ((data->NList_AutoVisible) && (data->NList_Active >= 0) && (data->NList_Active < data->NList_Entries))
       {
@@ -894,7 +874,7 @@ LONG NL_DrawQuietBG(struct NLData *data,LONG dowhat,LONG bg)
       }
       break;
 
-    case 10 :  /* ForceMinMax */
+    case 9 :  /* ForceMinMax */
 
       DONE_NOTIFY(NTF_MinMax);
       if (!WANTED_NOTIFY(NTF_MinMax) && data->SHOW && data->DRAW && data->NL_Group && data->VirtGroup && data->NList_AdjustHeight)
@@ -914,7 +894,6 @@ LONG NL_DrawQuietBG(struct NLData *data,LONG dowhat,LONG bg)
       break;
 
   }
-  return (0L);
 }
 
 
@@ -1289,7 +1268,7 @@ IPTR mNL_List_ColWidth(struct IClass *cl,Object *obj,struct MUIP_NList_ColWidth 
 
 IPTR mNL_ContextMenuBuild(struct IClass *cl,Object *obj,struct MUIP_ContextMenuBuild *msg)
 {
-  register struct NLData *data = INST_DATA(cl,obj);
+  struct NLData *data = INST_DATA(cl,obj);
   Object *MenuObj = NULL;
   LONG column;
   LONG mo = 0;
@@ -1399,7 +1378,7 @@ IPTR mNL_ContextMenuBuild(struct IClass *cl,Object *obj,struct MUIP_ContextMenuB
 
 IPTR mNL_ContextMenuChoice(struct IClass *cl,Object *obj,struct MUIP_ContextMenuChoice *msg)
 {
-  register struct NLData *data = INST_DATA(cl,obj);
+  struct NLData *data = INST_DATA(cl,obj);
 
   if (data->NList_Disabled)
     return (0);

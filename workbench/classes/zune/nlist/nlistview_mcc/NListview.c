@@ -4,7 +4,7 @@
  Registered MUI class, Serial Number: 1d51 (0x9d510020 to 0x9d51002F)
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -138,6 +138,11 @@ static void AddVerticalScroller(Object *obj, struct NLVData *data)
 
   if(data->Vert_Attached == FALSE)
   {
+    ULONG entries;
+    ULONG visible;
+    ULONG first;
+    ULONG deltaFactor;
+
     D(DBF_STARTUP, "adding vertical scrollbar");
 
     DoMethod(obj, OM_ADDMEMBER, data->PR_Vert);
@@ -148,6 +153,21 @@ static void AddVerticalScroller(Object *obj, struct NLVData *data)
     DoMethod(data->LI_NList, MUIM_Notify, MUIA_NList_Prop_First,      MUIV_EveryTime,  data->PR_Vert,  3, MUIM_NoNotifySet, MUIA_Prop_First, MUIV_TriggerValue);
     DoMethod(data->PR_Vert,  MUIM_Notify, MUIA_Prop_First,            MUIV_EveryTime,  data->LI_NList, 3, MUIM_NoNotifySet, MUIA_NList_Prop_First, MUIV_TriggerValue);
     DoMethod(data->LI_NList, MUIM_Notify, MUIA_NList_VertDeltaFactor, MUIV_EveryTime,  data->PR_Vert,  3, MUIM_NoNotifySet, MUIA_Prop_DeltaFactor, MUIV_TriggerValue);
+
+	// Get and set the attributes we just have installed the notifications for to
+	// immediately trigger them. Otherwise hiding and showing again the scrollbar
+	// while the number of entries changed in the meantime will result in wrong
+	// scrollbar dimensions (i.e. when switching folders in YAM).
+	entries     = xget(data->LI_NList, MUIA_NList_Prop_Entries);
+	visible     = xget(data->LI_NList, MUIA_NList_Prop_Visible);
+	first       = xget(data->LI_NList, MUIA_NList_Prop_First);
+	deltaFactor = xget(data->LI_NList, MUIA_NList_VertDeltaFactor);
+    SetAttrs(data->LI_NList,
+      MUIA_NList_Prop_Entries,    entries,
+      MUIA_NList_Prop_Visible,    visible,
+      MUIA_NList_Prop_First,      first,
+      MUIA_NList_VertDeltaFactor, deltaFactor,
+      TAG_DONE);
 
     data->Vert_Attached = TRUE;
 
@@ -165,16 +185,12 @@ static void RemoveVerticalScroller(Object *obj, struct NLVData *data)
   {
     D(DBF_STARTUP, "removing vertical scrollbar");
 
-/*
     // remove notifications
     DoMethod(data->LI_NList, MUIM_KillNotifyObj, MUIA_NList_Prop_Entries,    data->PR_Vert);
     DoMethod(data->LI_NList, MUIM_KillNotifyObj, MUIA_NList_Prop_Visible,    data->PR_Vert);
     DoMethod(data->LI_NList, MUIM_KillNotifyObj, MUIA_NList_Prop_First,      data->PR_Vert);
-*/
     DoMethod(data->PR_Vert,  MUIM_KillNotifyObj, MUIA_Prop_First,            data->LI_NList);
-/*
     DoMethod(data->LI_NList, MUIM_KillNotifyObj, MUIA_NList_VertDeltaFactor, data->PR_Vert);
-*/
 
     DoMethod(obj, OM_REMMEMBER, data->PR_Vert);
 
@@ -219,16 +235,12 @@ static void RemoveHorizontalScroller(Object *obj, struct NLVData *data)
   {
     D(DBF_STARTUP, "removing horizontal scrollbar");
 
-/*
     // remove notifications
     DoMethod(data->LI_NList, MUIM_KillNotifyObj, MUIA_NList_Horiz_Entries,    data->PR_Horiz);
     DoMethod(data->LI_NList, MUIM_KillNotifyObj, MUIA_NList_Horiz_Visible,    data->PR_Horiz);
     DoMethod(data->LI_NList, MUIM_KillNotifyObj, MUIA_NList_Horiz_First,      data->PR_Horiz);
-*/
     DoMethod(data->PR_Horiz, MUIM_KillNotifyObj, MUIA_Prop_First,             data->LI_NList);
-/*
     DoMethod(data->LI_NList, MUIM_KillNotifyObj, MUIA_NList_HorizDeltaFactor, data->PR_Horiz);
-*/
 
     DoMethod(obj, OM_REMMEMBER, data->PR_Horiz);
 
@@ -243,8 +255,32 @@ static void RemoveHorizontalScroller(Object *obj, struct NLVData *data)
 static void NLV_Scrollers(Object *obj, struct NLVData *data, LONG vert, LONG horiz)
 {
   LONG scrollers = 0;
+  BOOL safeNotifies;
 
   ENTER();
+
+  #if defined(__amigaos3__) || defined(__amigaos4__)
+  if(LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 5824))
+  {
+    // MUI4 for AmigaOS is safe for V20.5824+
+    safeNotifies = TRUE;
+  }
+  else if(LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 2346) && LIBREV(MUIMasterBase) < 5000)
+  {
+    // MUI3.9 for AmigaOS is safe for V20.2346+
+    safeNotifies = TRUE;
+  }
+  else
+  {
+    // MUI 3.8 and older version of MUI 3.9 or MUI4 are definitely unsafe
+    safeNotifies = FALSE;
+  }
+  #else
+  // MorphOS and AROS must be considered unsafe unless someone from the
+  // MorphOS/AROS team confirms that removing notifies in nested OM_SET
+  // calls is safe.
+  safeNotifies = FALSE;
+  #endif
 
   if(vert & 0x0F)
   {
@@ -261,6 +297,10 @@ static void NLV_Scrollers(Object *obj, struct NLVData *data, LONG vert, LONG hor
     }
     else
       data->VertSB = data->Vert_ScrollBar;
+
+    // switch to always visible scrollbars if removing notifies is unsafe
+    if(safeNotifies == FALSE)
+      data->VertSB = MUIV_NListview_VSB_Always;
 
     switch(data->VertSB)
     {
@@ -301,6 +341,10 @@ static void NLV_Scrollers(Object *obj, struct NLVData *data, LONG vert, LONG hor
     }
     else
       data->HorizSB = data->Horiz_ScrollBar;
+
+    // switch to always visible scrollbars if removing notifies is unsafe
+    if(safeNotifies == FALSE)
+      data->HorizSB = MUIV_NListview_VSB_Always;
 
     switch (data->HorizSB)
     {

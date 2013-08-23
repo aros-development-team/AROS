@@ -5,7 +5,7 @@
 
  NListtree.mcc - New Listtree MUI Custom Class
  Copyright (C) 1999-2001 by Carsten Scholling
- Copyright (C) 2001-2011 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -915,5 +915,16 @@ void StringToClipboard(ULONG unit, STRPTR str);
 #define SET_FLAG(v,f)       ((v) |= (f))          // set the flag f in v
 #define CLEAR_FLAG(v,f)     ((v) &= ~(f))         // clear the flag f in v
 #define MASK_FLAG(v,f)      ((v) &= (f))          // mask the variable v with flag f bitwise
+
+#if defined(__amigaos4__)
+#define AllocVecShared(size, flags)  AllocVecTags((size), AVT_Type, MEMF_SHARED, AVT_Lock, FALSE, ((flags)&MEMF_CLEAR) ? AVT_ClearWithValue : TAG_IGNORE, 0, TAG_DONE)
+#else
+#define AllocVecShared(size, flags)  AllocVec((size), (flags))
+#endif
+
+#define LIBVER(lib) ((struct Library *)lib)->lib_Version
+#define LIBREV(lib) ((struct Library *)lib)->lib_Revision
+#define VERSION_IS_AT_LEAST(ver, rev, minver, minrev) (((ver) > (minver)) || ((ver) == (minver) && (rev) == (minrev)) || ((ver) == (minver) && (rev) > (minrev)))
+#define LIB_VERSION_IS_AT_LEAST(lib, minver, minrev)  VERSION_IS_AT_LEAST(((struct Library *)(lib))->lib_Version, ((struct Library *)(lib))->lib_Revision, minver, minrev)
 
 #endif /* NLISTTREE_MCC_PRIVATE_H */

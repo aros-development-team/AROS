@@ -1,7 +1,7 @@
 /***************************************************************************
 
  NBalance.mcc - New Balance MUI Custom Class
- Copyright (C) 2008 by NList Open Source Team
+ Copyright (C) 2008-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public

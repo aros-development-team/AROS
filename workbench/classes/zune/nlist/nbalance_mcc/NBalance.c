@@ -1,7 +1,7 @@
 /***************************************************************************
 
  NBalance.mcc - New Balance MUI Custom Class
- Copyright (C) 2008 by NList Open Source Team
+ Copyright (C) 2008-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -313,3 +313,126 @@ IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
   return result;
 }
 
+static BOOL FindNeighbours(Object *group, Object *obj, Object **prev, Object **next)
+{
+  BOOL success = FALSE;
+  struct List *childList;
+
+  ENTER();
+
+  *prev = NULL;
+  *next = NULL;
+
+  // get the group's list of children
+  if((childList = (struct List *)xget(group, MUIA_Group_ChildList)) != NULL)
+  {
+    Object *object_state = (Object *)childList->lh_Head;
+    Object *child;
+    BOOL objSeen = FALSE;
+
+    // iterate over all child objects
+    while((child = NextObject(&object_state)) != NULL)
+    {
+      // first check if we found the balaning object itself
+      if(child == obj)
+      {
+        objSeen = TRUE;
+        continue;
+      }
+
+      // remember the last object before and the first object after the balancing object
+      if(objSeen == FALSE)
+      {
+        *prev = child;
+      }
+      else
+      {
+        *next = child;
+        success = TRUE;
+        break;
+      }
+    }
+  }
+
+  RETURN(success);
+  return success;
+}
+
+IPTR mExport(UNUSED struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+{
+  ULONG id;
+
+  ENTER();
+
+  if((id = muiNotifyData(obj)->mnd_ObjectID) != 0)
+  {
+    // get our parent group and our neighbour objects
+    Object *parent = (Object *)xget(obj, MUIA_Parent);
+    Object *prev;
+    Object *next;
+
+    if(FindNeighbours(parent, obj, &prev, &next) == TRUE)
+    {
+      struct MUIS_Weights weights;
+
+      // get the weights of our neighbour objects and add them to the Dataspace object
+      weights.prevWeight = xget(prev, xget(parent, MUIA_Group_Horiz) ? MUIA_HorizWeight : MUIA_VertWeight);
+      weights.nextWeight = xget(next, xget(parent, MUIA_Group_Horiz) ? MUIA_HorizWeight : MUIA_VertWeight);
+      D(DBF_GUI, "weights: prev %ld, next %ld", weights.prevWeight, weights.nextWeight);
+      // add non-zero weights only
+      if(weights.prevWeight > 0 || weights.nextWeight > 0)
+      {
+        DoMethod(msg->dataspace, MUIM_Dataspace_Add, &weights, sizeof(weights), id);
+      }
+    }
+    else
+    {
+      W(DBF_GUI, "failed to find neighbour objects for object ID %08lx", id);
+    }
+  }
+
+  LEAVE();
+  return 0;
+}
+
+IPTR mImport(UNUSED struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+{
+  ULONG id;
+
+  ENTER();
+
+  if((id = muiNotifyData(obj)->mnd_ObjectID) != 0)
+  {
+    // get our parent group and our neighbour objects
+    Object *parent = (Object *)xget(obj, MUIA_Parent);
+    Object *prev;
+    Object *next;
+
+    if(FindNeighbours(parent, obj, &prev, &next) == TRUE)
+    {
+      struct MUIS_Weights *weights;
+
+      // get the saved weights from the Dataspace object and set them for our neighbour objects
+      if((weights = (struct MUIS_Weights *)DoMethod(msg->dataspace, MUIM_Dataspace_Find, id)) != NULL)
+      {
+        D(DBF_GUI, "weights: prev %ld, next %ld", weights->prevWeight, weights->nextWeight);
+        // set the weights only if they are non-zero
+        if(weights->prevWeight > 0)
+          set(prev, xget(parent, MUIA_Group_Horiz) ? MUIA_HorizWeight : MUIA_VertWeight, weights->prevWeight);
+        if(weights->nextWeight > 0)
+          set(next, xget(parent, MUIA_Group_Horiz) ? MUIA_HorizWeight : MUIA_VertWeight, weights->nextWeight);
+      }
+      else
+      {
+        W(DBF_GUI, "no saved weights found for object ID %08lx", id);
+      }
+    }
+    else
+    {
+      W(DBF_GUI, "failed to find neighbour objects for object ID %08lx", id);
+    }
+  }
+
+  LEAVE();
+  return 0;
+}

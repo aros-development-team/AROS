@@ -162,8 +162,8 @@ TESTTARGET= $(BINDIR)/NListtree-Prefs
 
 # Common compiler/linker flags
 WARN     = -W -Wall -Wwrite-strings -Wpointer-arith -Wsign-compare
-OPTFLAGS = -O3 -fomit-frame-pointer -funroll-loops
-DEBUG    = -DDEBUG -O0
+OPTFLAGS = -O3 -fomit-frame-pointer
+DEBUG    = -DDEBUG -fno-omit-frame-pointer -O0
 DEBUGSYM = -g -gstabs
 CFLAGS   = -I. -I../nlisttree_mcp -I../include $(CPU) $(WARN) \
            $(OPTFLAGS) $(DEBUG) $(DEBUGSYM) $(USER_CFLAGS) -c
@@ -184,15 +184,16 @@ COBJS = locale.o \
 TOBJS = NListtree-Prefs.o
 
 # available catalog translations
-CATALOGS = \
-  $(LOCALE)/czech.catalog \
-  $(LOCALE)/english-british.catalog \
-  $(LOCALE)/german.catalog \
-  $(LOCALE)/french.catalog \
-  $(LOCALE)/polish.catalog \
-  $(LOCALE)/swedish.catalog \
-  $(LOCALE)/turkish.catalog \
-  # $(LOCALE)/russian.catalog
+CATALOGS = $(LOCALE)/czech.catalog \
+           $(LOCALE)/english-british.catalog \
+           $(LOCALE)/german.catalog \
+           $(LOCALE)/greek.catalog \
+           $(LOCALE)/french.catalog \
+           $(LOCALE)/italian.catalog \
+           $(LOCALE)/polish.catalog \
+           $(LOCALE)/swedish.catalog \
+           $(LOCALE)/turkish.catalog \
+         # $(LOCALE)/russian.catalog
 
 MCCOBJS  = $(addprefix $(OBJDIR)/,$(LOBJS)) $(addprefix $(OBJDIR)/,$(COBJS))
 TESTOBJS = $(addprefix $(OBJDIR)/,$(COBJS)) $(addprefix $(OBJDIR)/,$(TOBJS))
@@ -275,7 +276,7 @@ ifeq ($(OS), aros-i386)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -292,7 +293,7 @@ ifeq ($(OS), aros-ppc)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -309,7 +310,7 @@ ifeq ($(OS), aros-x86_64)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -409,6 +410,7 @@ clean:
 	-$(RM) $(TARGET) $(TARGET).debug $(TARGET).map
 	-$(RM) $(TESTTARGET) $(TESTTARGET).debug $(TESTTARGET).map
 	-$(RM) $(MCCOBJS) $(TESTOBJS) $(M68KSTUBS)
+	-$(RM) $(CATALOGS)
 
 .PHONY: distclean
 distclean: clean

@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -255,13 +255,13 @@ BOOL NL_Read_Format(struct NLData *data,char *strformat,BOOL oldlist)
         pos2++;
       }
       if ((colmax > 0) && (colmax < DISPLAY_ARRAY_MAX) && (tmpcols = AllocVecPooled(data->Pool, (colmax+1)*sizeof(struct colinfo))) != NULL)
-      { 
+      {
         NL_Free_Format(data);
         data->cols = tmpcols;
         data->numcols = data->numcols2 = colmax;
         column = 0;
         while (column < colmax)
-        { 
+        {
           data->cols[column].c = &(data->cols[column]);
           data->cols[column].preparse = NULL;
           data->cols[column].colwidthmax = (WORD) -1;
@@ -878,7 +878,7 @@ SIPTR NL_CopyTo(struct NLData *data,LONG pos,char *filename,ULONG clipnum,APTR *
   {
     int len = strlen(clipstr) + 1;
 
-    if((retstr = (char *)AllocVec(len, 0L)) != NULL)
+    if((retstr = (char *)AllocVecShared(len, 0L)) != NULL)
       strlcpy(retstr, clipstr, len);
     ok = (SIPTR)retstr;
   }

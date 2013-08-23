@@ -1,7 +1,10 @@
 /***************************************************************************
 
- NListtree.mcc - New Listtree MUI Custom Class
- Copyright (C) 1999-2001 by Carsten Scholling
+ NList.mcc - New List MUI Custom Class
+ Registered MUI class, Serial Number: 1d51 0x9d510030 to 0x9d5100A0
+                                           0x9d5100C0 to 0x9d5100FF
+
+ Copyright (C) 1996-2001 by Gilles Masson
  Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
@@ -20,26 +23,28 @@
 
 ***************************************************************************/
 
-#if !defined(__AROS__) && (defined(__VBCC__) || defined(NO_INLINE_STDARG))
-#if defined(_M68000) || defined(__M68000) || defined(__mc68000)
+/*
+ * The system (and compiler) rely on a symbol named _start which marks
+ * the beginning of execution of an ELF file. To prevent others from
+ * executing this library, and to keep the compiler/linker happy, we
+ * define an empty _start symbol here.
+ *
+ * On the classic system (pre-AmigaOS4) this was usually done by
+ * moveq #0,d0
+ * rts
+ *
+ */
 
-#include <exec/types.h>
-
-/* FIX V45 breakage... */
-#if INCLUDE_VERSION < 45
-#define MY_CONST_STRPTR CONST_STRPTR
+#if defined(__amigaos3__)
+asm(".text\n\
+     .even\n\
+     .globl _start\n\
+    _start:\n\
+     moveq #20,d0\n\
+     rts");
 #else
-#define MY_CONST_STRPTR CONST STRPTR
-#endif
-
-#include <proto/intuition.h>
-
-APTR NewObject( struct IClass *classPtr, CONST_STRPTR classID, Tag tag1, ... )
-{ return NewObjectA(classPtr, classID, (struct TagItem *)&tag1); }
-ULONG SetAttrs( APTR object, ULONG tag1, ... )
-{ return SetAttrsA(object, (struct TagItem *)&tag1); }
-
-#else
-  #error "VARGS stubs are only save on m68k systems!"
-#endif
+LONG _start(void)
+{
+  return RETURN_FAIL;
+}
 #endif

@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -43,6 +43,12 @@
 #include "private.h"
 #include "version.h"
 #include "NList_grp.h"
+
+/******************************************************************************/
+/* include the minimal startup code to be able to start the class from a      */
+/* shell without crashing the system                                          */
+/******************************************************************************/
+#include "shellstart.c"
 
 #define VERSION             LIB_VERSION
 #define REVISION            LIB_REVISION

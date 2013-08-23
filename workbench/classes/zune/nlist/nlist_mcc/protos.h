@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -80,7 +80,7 @@ extern void NL_SetCols(struct NLData *data);
 extern LONG NL_DoNotifies(struct NLData *data,LONG which);
 extern void NL_UpdateScrollersValues(struct NLData *data);
 extern ULONG NL_UpdateScrollers(struct NLData *data,BOOL force);
-extern LONG NL_DrawQuietBG(struct NLData *data,LONG dowhat,LONG bg);
+extern void NL_DrawQuietBG(struct NLData *data,LONG dowhat,LONG bg);
 extern void NL_Select(struct NLData *data,LONG dowhat,LONG ent,BYTE sel);
 extern void ScrollVert(struct NLData *data,WORD dy,LONG LPVisible);
 extern void ScrollHoriz(struct NLData *data,WORD dx,LONG LPVisible);
@@ -149,8 +149,6 @@ extern ULONG NL_List_Replace(struct NLData *data,APTR entry,LONG pos,LONG wrapco
 extern ULONG NL_List_Clear(struct NLData *data);
 extern ULONG NL_List_Remove(struct NLData *data,LONG pos);
 extern ULONG NL_List_Exchange(struct NLData *data,LONG pos1,LONG pos2);
-extern ULONG NL_List_Move_Selected(struct NLData *data,LONG to);
-extern ULONG NL_List_Move(struct NLData *data,LONG from,LONG to);
 
 extern IPTR mNL_List_Sort(struct IClass *cl,Object *obj,struct  MUIP_NList_Sort *msg);
 extern IPTR mNL_List_Sort2(struct IClass *cl,Object *obj,struct  MUIP_NList_Sort2 *msg);

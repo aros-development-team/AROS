@@ -2,7 +2,7 @@
 
  NListtree.mcc - New Listtree MUI Custom Class
  Copyright (C) 1999-2001 by Carsten Scholling
- Copyright (C) 2001-2006 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -916,7 +916,7 @@ int main(UNUSED int argc, UNUSED char *argv[])
 		app = ApplicationObject,
 			MUIA_Application_Title,       "NListtree-Demo",
 			MUIA_Application_Version,     "$VER: NListtree-Demo 1.0 (" __DATE__ ")",
-			MUIA_Application_Copyright,   "Copyright (C) 2001-2006 by NList Open Source Team",
+			MUIA_Application_Copyright,   "Copyright (C) 2001-2013 by NList Open Source Team",
 			MUIA_Application_Author,      "NList Open Source Team",
 			MUIA_Application_Description, "Demonstration program for MUI class NListtree.mcc",
 			MUIA_Application_Base,        "NLISTTREEDEMO",

@@ -1,24 +1,25 @@
-## version $VER: NListtree_mcp.catalog 2.2 (24.12.2011)
-## language svenska
+## version $VER: NListtree_mcp.ct 2.1 (24.01.2013)
+## language italiano
 ## codeset 0
-## chunk AUTH Pär Boberg
+## chunk AUTH Translated by Samir Hawamdeh (http://www.betatesting.it/backforthefuture)
 ;
+; NListtree_mcp.cd - Catalogo italiano delle preferenze NListtree MUI
+; NListtree_mcp.cd - NListtree MUI custom prefs catalog description file
+; Compiled with FlexCat 2.11 PPC (AmigaOS4)
 ; $Id$
 ;
-;#version 2
-;#language english
-;
+; #version 2
 ;
 MSG_TAB_LAYOUT
 Layout
 ; Layout
 ;
 MSG_GROUP_IMAGES_COLORS
-Bilder/färger
+Immagini e colori
 ; Images/Colors
 ;
 MSG_BUTTON_LABEL_CLOSED
-Stängd
+Nodo chiuso
 ; Closed
 ;
 MSG_BUTTON_SHORTCUT_CLOSED
@@ -26,15 +27,15 @@ c
 ; c
 ;
 MSG_HELP_CLOSED_IMAGE
-Bild att använda för stängda noder.
+Immagine da usare per i nodi chiusi.
 ; Image to use for closed nodes.
 ;
 MSG_WIN_TITLE_CLOSED_IMAGE
-Justera bild för stängda noder
+Modifica immagine per i nodi chiusi
 ; Adjust image for closed nodes
 ;
 MSG_BUTTON_LABEL_LINES
-Linjer
+Linee
 ; Lines
 ;
 MSG_BUTTON_SHORTCUT_LINES
@@ -42,48 +43,49 @@ l
 ; l
 ;
 MSG_HELP_LINES_COLOR
-Färg att använda för linjer.
+Colore da usare per le linee.
 ; Color to use for lines.
 ;
 MSG_WIN_TITLE_LINES_COLOR
-Justera linje färg
+Modifica colore delle linee
 ; Adjust lines color
 ;
 MSG_BUTTON_LABEL_OPEN
-Öppen
+Nodo aperto
 ; Open
 ;
 MSG_BUTTON_SHORTCUT_OPEN
-o
+a
 ; o
 ;
 MSG_HELP_OPEN_IMAGE
-Bild att använda för öppna noder.
+Immagine da usare per i nodi aperti.
 ; Image to use for open nodes.
 ;
 MSG_WIN_TITLE_OPEN_IMAGE
-Justera bild för öppna noder
+Modifica immagine per i nodi aperti
 ; Adjust image for open nodes
 ;
 MSG_BUTTON_LABEL_SHADOW
-Skugga
+Ombra
 ; Shadow
 ;
 MSG_BUTTON_SHORTCUT_SHADOW
-w
+o
 ; w
 ;
 MSG_HELP_SHADOW_COLOR
-Färg att använda för\natt kasta skugga efter linjer.
+Colore da usare per la formazione\n\
+delle ombre dopo le linee.
 ; Color to use to cast\n\
 ; shadows after lines.
 ;
 MSG_WIN_TITLE_SHADOW_COLOR
-Justera skugg färg
+Modifica colore ombra
 ; Adjust shadow color
 ;
 MSG_BUTTON_LABEL_SPECIAL
-Special
+Speciale
 ; Special
 ;
 MSG_BUTTON_SHORTCUT_SPECIAL
@@ -91,16 +93,17 @@ i
 ; i
 ;
 MSG_HELP_SPECIAL_IMAGE
-En speciell bild att visa\nefter varje nod.
+Immagine speciale da visualizzare\n\
+dopo ogni nodo.
 ; A special image to be\n\
 ; displayed after every node.
 ;
 MSG_WIN_TITLE_SPECIAL_IMAGE
-Justera special bild
+Modifica immagine speciale
 ; Adjust special image
 ;
 MSG_BUTTON_LABEL_DRAW
-Rita
+Draw
 ; Draw
 ;
 MSG_BUTTON_SHORTCUT_DRAW
@@ -108,20 +111,21 @@ d
 ; d
 ;
 MSG_HELP_DRAW_COLOR
-En rit färg att kombinera\nmed linje färgen.
+Un colore draw da combinare\n\
+con i colori delle linee.
 ; A draw color to be combined\n\
 ; with the lines color.
 ;
 MSG_WIN_TITLE_DRAW_COLOR
-Justera rit färg
+Modifica colore draw
 ; Adjust draw color
 ;
 MSG_GROUP_STYLE
-Stil
+Stile
 ; Style
 ;
 MSG_CYCLE_LABEL_STYLE
-Stil
+Stile
 ; Style
 ;
 MSG_CYCLE_SHORTCUT_STYLE
@@ -129,46 +133,48 @@ s
 ; s
 ;
 MSG_HELP_STYLE
-Välj här global stil för trädet.\n\nBeroende på ditt val, så kan\nvissa av alternativen ovan\nbli otillgängliga.
+Seleziona qui lo stile globale dell'albero directory.\n\
+In base alle scelte effettuate alcune funzionalità\n\
+potrebbero risultare disattivate.
 ; Select here the global style of the tree.\n\
 ; \n\
 ; Depending on your choice, some of the\n\
 ; options above may become (un)available.
 ;
 MSG_CYCLE_ITEM_STYLE_NORMAL
-Normal
+Normale
 ; Normal
 ;
 MSG_CYCLE_ITEM_STYLE_INSERTED
-Inmatad
+Inserito
 ; Inserted
 ;
 MSG_CYCLE_ITEM_STYLE_LINES
-Linjer
+Linee
 ; Lines
 ;
 MSG_CYCLE_ITEM_STYLE_WIN98
-Win98
+Windows 98
 ; Win98
 ;
 MSG_CYCLE_ITEM_STYLE_MAC
-Mac
+MacOS
 ; Mac
 ;
 MSG_CYCLE_ITEM_STYLE_LINES3D
-Linjer 3D
+Linee 3D
 ; Lines 3D
 ;
 MSG_CYCLE_ITEM_STYLE_WIN98PLUS
-Win98+
+Windows 98+
 ; Win98+
 ;
 MSG_CYCLE_ITEM_STYLE_GLOW
-Glöd
+Glow
 ; Glow
 ;
 MSG_BUTTON_LABEL_SPACE
-Mellanrum
+Spaziatura
 ; Spacing
 ;
 MSG_BUTTON_SHORTCUT_SPACE
@@ -176,12 +182,13 @@ p
 ; p
 ;
 MSG_HELP_SPACE
-Ju mer mellanrum, desto\nvidare blir listträdet.
+Maggiore sarà lo spazio più\n\
+ampia sarà la listtree.
 ; The more spacing, the wider\n\
 ; the listtree will be.
 ;
 MSG_BUTTON_LABEL_REMEMBER
-Kom ihåg status?
+Ricorda stato?
 ; Remember status?
 ;
 MSG_BUTTON_SHORTCUT_REMEMBER
@@ -189,7 +196,13 @@ r
 ; r
 ;
 MSG_HELP_REMEMBER
-Om vald, kommer öppen/stängd statusen\nför noder att 'kommas-ihåg' efter att listträdet\nstängs nästa gång det öppnas igen.\n\nVar god notera att, en applikation kan\nåsidosätta ditt val här.
+Se attivato, lo stato dei nodi di apertura e chiusura\n\
+verrà memorizzato in tutte le listtree in precedenza\n\
+aperte.\n\
+\n\
+Non dimenticare però che le singole applicazioni\n\
+continueranno ad essere in grado di sovrascrivere\n\
+queste impostazioni.
 ; If enabled, the open/closed status of nodes\n\
 ; will be 'remembered' after the listtree is closed\n\
 ; the next time it is opened again.\n\
@@ -198,7 +211,7 @@ Om vald, kommer öppen/stängd statusen\nför noder att 'kommas-ihåg' efter att lis
 ; can override your choice here.
 ;
 MSG_BUTTON_LABEL_AUTOSCROLL
-Autorulla?
+Scorrimento automatico?
 ; Autoscroll?
 ;
 MSG_BUTTON_SHORTCUT_AUTOSCROLL
@@ -206,24 +219,29 @@ a
 ; a
 ;
 MSG_HELP_AUTOSCROLL
-Om vald, kommer listvyn att autorulla\ndess innehåll vid öppning av noder\nför att försöka passa i det synliga området.
+Se attivato la listview scrollerà automaticamente i\n\
+suoi contenuti durante l'apertuta dei nodi in modo\n\
+da adattarsi per quanto possibile all'area visibile.
 ; If enabled, the listview will auto-scroll its\n\
 ; contents when opening nodes to try and fit the\n\
 ; visible area.
 ;
 MSG_TAB_EXAMPLE
-Exempel
+Esempio
 ; Example
 ;
 MSG_HELP_LISTVIEW_EXAMPLE
-Detta NListtree objekt, reagerar i realtid\ntill ändringarna som du gör under 'Layout' fliken.\n\nPröva så får du se! :)
+L'oggetto NListtree è in grado di reagire in tempo\n\
+reale ad ogni modifica apportata al 'Layout'\n\
+\n\
+Fai alcune prove! :-)
 ; This NListtree object reacts in real time to\n\
 ; the changes you apply under the 'Layout' tab.\n\
 ; \n\
 ; Give it a try! :)
 ;
 MSG_BUTTON_LABEL_EXPAND
-Expandera
+Espandi
 ; Expand
 ;
 MSG_BUTTON_SHORTCUT_EXPAND
@@ -231,65 +249,67 @@ n
 ; n
 ;
 MSG_BUTTON_LABEL_COLLAPSE
-Kollapsa
+Comprimi
 ; Collapse
 ;
 MSG_BUTTON_SHORTCUT_COLLAPSE
-e
+m
 ; e
 ;
 MSG_BUTTON_LABEL_LINETYPES
-Linjetyp
+Linea tipo
 ; Line type
 ;
 MSG_BUTTON_SHORTCUT_LINETYPES
-1
+l
 ; l
 ;
 MSG_LINETYPE_DISABLED
-Inaktiverad
+disattivata
 ; Disabled
 ;
 MSG_LINETYPE_NORMAL
-Normal
+normale
 ; Normal
 ;
 MSG_LINETYPE_DOTTED
-Prickad
+puntata
 ; Dotted
 ;
 MSG_LINETYPE_SHADOW
-Skugga
+ombra
 ; Shadow
 ;
 MSG_LINETYPE_GLOW
-Glöd
+glow
 ; Glow
 ;
 MSG_HELP_LINETYPES
-Välj linjetyp att användas för att rita\nindividuella nivåer i listträdet.
+Seleziona il tipo di linea da usare per il disegno\n\
+dei livelli individuali all'interno della listtree.
 ; Select the line type used for drawing\n\
 ; the individual levels in the listtree.
 ;
 MSG_BUTTON_LABEL_FOLDER
-Mapp bild
+Immagine cassetto
 ; Folder image
 ;
 MSG_BUTTON_SHORTCUT_FOLDER
-f
+c
 ; f
 ;
 MSG_WIN_TITLE_FOLDER_IMAGE
-Justera mapp bild
+Modifica immagine cassetto
 ; Adjust folder image
 ;
 MSG_HELP_FOLDER_IMAGE
-En bild som visas framför varje nod\nsom innehåller en undernod.
+Un'immagine verrà mostrata davanti ad\n\
+ogni nodo contenente dei sotto-nodi.
 ; An image displayed in front of every\n\
 ; node containing subnodes.
 ;
 MSG_BUTTON_LABEL_FOLDERIMAGE
-Använd mapp bild
+Usa immagine cassetto
 ; Use folder image
 ;
 MSG_BUTTON_SHORTCUT_FOLDERIMAGE
@@ -297,26 +317,29 @@ i
 ; i
 ;
 MSG_HELP_FOLDERIMAGE
-Välj om du vill att en mapp bild syns\nframför varje nod som innehåller\nundernoder.
+Scegli se avere o meno un'immagine per la cartella\n\
+da visualizzare davanti ad ogni nodo contenente dei\n\
+sotto-nodi.
 ; Select if you want a folder image to\n\
 ; appear in front of every node containing\n\
 ; subnodes.
 ;
 MSG_BUTTON_LABEL_INDENTWIDTH
-Extra indragsbredd
+Larghezza indentazione aggiuntiva
 ; Additional indent width
 ;
 MSG_BUTTON_SHORTCUT_INDENTWIDTH
-w
+v
 ; w
 ;
 MSG_HELP_INDENTWIDTH
-Specifiera en extra indragsbredd\n att applicera på varje undernod.
+Specifica la larghezza dell'indentazione aggiuntiva\n\
+da applicare in ciascun sotto-nodo.
 ; Specify an additional indent\n\
 ; width applied to each subnode.
 ;
 MSG_BUTTON_LABEL_GLOW
-Glöd färg
+Colore glow
 ; Glow color
 ;
 MSG_BUTTON_SHORTCUT_GLOW
@@ -324,11 +347,12 @@ g
 ; g
 ;
 MSG_WIN_TITLE_GLOW_COLOR
-Sätt glödlinjefärg
+Imposta linea di colore glow
 ; Set glow line color
 ;
 MSG_HELP_GLOW_COLOR
-Tillåter att sätta färgen för glödlinjer
+Permette l'impostazione del colore\n\
+relativa al tipo di linea glow.
 ; Allows to set the color for the glow\n\
 ; line type
 ;

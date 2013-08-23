@@ -2,7 +2,7 @@
 
  NBitmap.mcc - New Bitmap MUI Custom Class
  Copyright (C) 2006 by Daniel Allsopp
- Copyright (C) 2007-2008 by NList Open Source Team
+ Copyright (C) 2007-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -43,7 +43,7 @@ ULONG _WPAA(APTR src, UWORD srcx, UWORD srcy, UWORD srcmod, struct RastPort *rp,
   {
     ULONG *buf;
 
-    if((buf = AllocVec(width * 4, MEMF_ANY)) != NULL)
+    if((buf = AllocVecShared(width * 4, MEMF_ANY)) != NULL)
     {
       ULONG x, y;
 

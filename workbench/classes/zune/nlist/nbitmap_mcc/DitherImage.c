@@ -2,7 +2,7 @@
 
  NBitmap.mcc - New Bitmap MUI Custom Class
  Copyright (C) 2006 by Daniel Allsopp
- Copyright (C) 2007 by NList Open Source Team
+ Copyright (C) 2007-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -80,7 +80,7 @@ APTR DitherImageA(CONST_APTR data, struct TagItem *tags)
   if(data != NULL && colorMap != NULL && width > 0 && height > 0)
   {
     // the 8bit chunky data don't need to reside in chip memory
-    if((result = AllocVec(width * height, MEMF_SHARED)) != NULL)
+    if((result = AllocVecShared(width * height, MEMF_ANY)) != NULL)
     {
       uint8 *mask = NULL;
       uint8 *mPtr = NULL;
@@ -93,8 +93,8 @@ APTR DitherImageA(CONST_APTR data, struct TagItem *tags)
       // function is interested in a mask at all
       if(format == MUIV_NBitmap_Type_ARGB32 && maskPtr != NULL)
       {
-        // the mask must reside in chip memory
-        mask = AllocVec(RAWIDTH(width) * height, MEMF_SHARED|MEMF_CLEAR|MEMF_CHIP);
+        // the mask MUST reside in chip memory
+        mask = AllocVec(RAWIDTH(width) * height, MEMF_CLEAR|MEMF_CHIP);
         *maskPtr = mask;
         mPtr = mask;
       }
@@ -218,7 +218,7 @@ APTR STDARGS VARARGS68K DitherImage(CONST_APTR data, Tag tag1, ...)
 {
   AROS_SLOWSTACKTAGS_PRE_AS(tag1, APTR)
   retval = DitherImageA(data, AROS_SLOWSTACKTAGS_ARG(tag1));
-  AROS_SLOWSTACKTAGS_POST 
+  AROS_SLOWSTACKTAGS_POST
 }
 #else
 #if !defined(__PPC__)

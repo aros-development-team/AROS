@@ -7,7 +7,7 @@
  Registered MUI class, Serial Number: 1d51 (0x9d5100a1 to 0x9d5100aF)
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -49,5 +49,10 @@ struct NFTData
   BOOL NFloattext_Copied;
 };
 
-#endif /* MUI_NFloattext_priv_MCC_H */
+#if defined(__amigaos4__)
+#define AllocVecShared(size, flags)  AllocVecTags((size), AVT_Type, MEMF_SHARED, AVT_Lock, FALSE, ((flags)&MEMF_CLEAR) ? AVT_ClearWithValue : TAG_IGNORE, 0, TAG_DONE)
+#else
+#define AllocVecShared(size, flags)  AllocVec((size), (flags))
+#endif
 
+#endif /* MUI_NFloattext_priv_MCC_H */
