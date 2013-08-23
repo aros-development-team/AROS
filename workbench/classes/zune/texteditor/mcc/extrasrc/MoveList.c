@@ -21,23 +21,32 @@
 ***************************************************************************/
 
 #include <proto/exec.h>
+#include <clib/alib_protos.h>
 
 #include "SDI_compiler.h"
 
 #include "Debug.h"
 
-// GetHead()
-// get the head element of a list
+// MoveList()
+// append all nodes from one list to another
 
-struct Node *GetHead(struct List *list)
+void MoveList(struct List *to, struct List *from)
 {
-  struct Node *result = NULL;
-
   ENTER();
 
-  if(list != NULL && IsListEmpty(list) == FALSE)
-    result = list->lh_Head;
+  if(to != NULL && from != NULL && IsListEmpty(from) == FALSE)
+  {
+    // connect tail node of "to" to the head node of "from"
+    to->lh_TailPred->ln_Succ = from->lh_Head;
+    to->lh_TailPred->ln_Succ->ln_Pred = to->lh_TailPred;
 
-  RETURN(result);
-  return result;
+    // connect tail node of "from" to "to" as tail
+    to->lh_TailPred = from->lh_TailPred;
+    to->lh_TailPred->ln_Succ = (struct Node *)&to->lh_Tail;
+
+    // clean "from" list
+    NewList(from);
+  }
+
+  LEAVE();
 }

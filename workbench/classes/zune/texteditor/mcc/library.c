@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -32,8 +32,16 @@
 /******************************************************************************/
 
 #include "private.h"
+
+#define DEBUG_USE_MALLOC_REDEFINE 1
 #include "Debug.h"
 #include "version.h"
+
+/******************************************************************************/
+/* include the minimal startup code to be able to start the class from a      */
+/* shell without crashing the system                                          */
+/******************************************************************************/
+#include "shellstart.c"
 
 #define VERSION       LIB_VERSION
 #define REVISION      LIB_REVISION

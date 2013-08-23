@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -31,9 +31,9 @@
 IPTR mExportText(struct IClass *cl, Object *obj, UNUSED struct MUIP_TextEditor_ExportText *msg)
 {
   struct InstData *data = INST_DATA(cl, obj);
-  struct line_node *node = data->firstline;
+  struct line_node *node;
   struct Hook *exportHook = data->ExportHook;
-  ULONG wraplen = data->ExportWrap;
+  LONG wraplen = data->ExportWrap;
   struct ExportMessage emsg;
   void *user_data = NULL;
 
@@ -42,9 +42,10 @@ IPTR mExportText(struct IClass *cl, Object *obj, UNUSED struct MUIP_TextEditor_E
   // clear the export message
   memset(&emsg, 0, sizeof(struct ExportMessage));
 
+  node = GetFirstLine(&data->linelist);
   while(node != NULL)
   {
-    struct line_node *next_node = node->next;
+    struct line_node *next = GetNextLine(node);
 
     emsg.UserData = user_data;
     emsg.Contents = node->line.Contents;
@@ -55,18 +56,18 @@ IPTR mExportText(struct IClass *cl, Object *obj, UNUSED struct MUIP_TextEditor_E
     emsg.Flow = node->line.Flow;
     emsg.Separator = node->line.Separator;
     emsg.ExportWrap = wraplen;
-    emsg.Last = !next_node;
+    emsg.Last = next == NULL;
 
     // to make sure that for the last line we don't export the additional,
     // artificial newline '\n' we reduce the passed length value by one.
-    if(next_node == NULL && emsg.Contents[node->line.Length-1] == '\n')
+    if(next == NULL && emsg.Contents[node->line.Length-1] == '\n')
       emsg.Length--;
 
     // call the ExportHook and exit immediately if it returns NULL
     if((user_data = (void*)CallHookPkt(exportHook, NULL, &emsg)) == NULL)
       break;
 
-    node = next_node;
+    node = next;
   }
 
   RETURN((IPTR)user_data);

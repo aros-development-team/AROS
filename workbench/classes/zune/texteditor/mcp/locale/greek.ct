@@ -1,8 +1,8 @@
-## version $VER: TextEditor_mcp.ct 2.7 (16.05.2012)
-## language svenska
+## version $VER: TextEditor_mcp.catalog 2.1 (30.09.2012)
+## language greek
 ## codeset 0
+## chunk AUTH Anthony Iliakis (amiga.phantom@yahoo.gr)
 ;
-## chunk AUTH Pδr Boberg
 ;
 ; TextEditor_mcp.cd - TextEditor MUI custom prefs catalog description file
 ; $Id$
@@ -12,56 +12,54 @@
 ;
 ;
 HelpBubble_BlockQual
-Hεll nere tangenten som du har valt hδr\n\
-och flytta markφren fφr att markera text.
+Μετακινήστε το πλήκτρο του κέρσορα και κρατήστε πατημένο το\n\
+προσδιοριστικό που έχετε ορίσει για να μαρκάρετε το κείμενο.
 ; Move the cursor key and hold down the qualifier\n\
 ; that you set here to mark text.
 ;
 HelpBubble_CheckWord
-Om denna funktion δr pεslagen, kommer editorn att\n\
-kontrollera ordet och visa fφrslag men endast\n\
-om ordet δr felstavat.
+Αν ενεργοποιηθεί, τότε ο κειμενογράφος θα ψάξει για την λέξη,\n\
+και θα δείξει μόνο τις προτιμήσεις αν η λέξη έχει γραφτεί λάθος.
 ; If enabled, then the editor will lookup the word,\n\
 ; and only show suggestions if the word is misspelled.
 ;
 HelpBubble_Smooth
-Detta aktiverar bildpunktsjδmn rullning.
+Αυτό ενεργοποιεί την ομαλή κύλιση των pixels.
 ; This enables pixel smooth scrolling.
 ;
 HelpBubble_TypeNSpell
-Aktivera detta, fφr att lεta editorn\n\
-kontrollera orden medan du skriver dem.
+Ενεργοποιήστε το για να αφήσετε τον κειμενογράφο\n\
+να ψάχνει τις λέξεις ενώ εσείς τις τυπώνετε.
 ; Enable this to let the editor\n\
 ; lookup the words while you type them.
 ;
 HelpBubble_UndoLevel
-Varje εngernivε krδver 10 byte minne.\n\
-Klipp ut och Kopiera krδver lite mera,\n\
-beroende pε storleken pε den markerade\n\
-texten som du klipper ut eller kopierar.
+Κάθε επίπεδο αναίρεσης τρώει μέχρι 10 bytes μνήμης.\n\
+Η αποκοπή και επικόλληση τρώει λίγο περισσότερο,\n\
+ανάλογα το μέγεθος του τμήματος που κάνετε επεξεργασία.
 ; Each undo level eats up 10 bytes of memory.\n\
 ; Cut and copy will take a little more,\n\
 ; depending on the size of the block you\n\
 ; are cutting or copying.
 ;
 MSG_Button_DefaultKeys
-_Standardknappar
+Προκαθορισμένα _πλήκτρα
 ; Default _keys
 ;
 MSG_Button_Delete
-_Ta bort
+_Διαγραφή
 ; _Delete
 ;
 MSG_Button_Insert
-_Lδgg till
+_Εισαγωγή
 ; _Insert
 ;
 MSG_ConfigMenu_CheckWord
-Kontrollera ord
+Έλεγχος λέξης
 ; Check word
 ;
 MSG_ConfigMenu_TypeNSpell
-Skriv och kontrollera
+Πληκτρολόγηση & ορθογραφία
 ; Type'n'spell
 ;
 MSG_CycleItem_Alt
@@ -69,11 +67,11 @@ Alt
 ; Alt
 ;
 MSG_CycleItem_Ctrl
-Kontroll
+Control
 ; Control
 ;
 MSG_CycleItem_Mouse
-(endast mus)
+(μόνο ποντίκι)
 ; (mouse only)
 ;
 MSG_CycleItem_Shift
@@ -89,111 +87,111 @@ CLI
 ; CLI
 ;
 MSG_Function_BOL
-Bφrjan av rad
+Αρχή γραμμής
 ; Beginning of line
 ;
 MSG_Function_Backspace
-Baksteg
+Backspace
 ; Backspace
 ;
 MSG_Function_Bottom
-Nederst
+Τέρμα
 ; Bottom
 ;
 MSG_Function_Copy
-Kopiera
+Αντιγραφή
 ; Copy
 ;
 MSG_Function_Cut
-Klipp ut
+Αποκοπή
 ; Cut
 ;
 MSG_Function_DelBOL
-Radera till bφrjan av raden
+Διαγραφή στο BOL
 ; Delete to BOL
 ;
 MSG_Function_DelBOW
-Radera till bφrjan av ordet
+Διαγραφή στο BOW
 ; Delete to BOW
 ;
 MSG_Function_DelEOL
-Radera till slutet av raden
+Διαγρφή στο EOL
 ; Delete to EOL
 ;
 MSG_Function_DelEOW
-Radera till slutet av ordet
+Διαγραφή στο EOW
 ; Delete to EOW
 ;
 MSG_Function_Delete
-Radera
+Διαγραφή
 ; Delete
 ;
 MSG_Function_Down
-Ner
+Κάτω
 ; Down
 ;
 MSG_Function_EOL
-Slutet av raden
+Τέλος γραμμής
 ; End of line
 ;
 MSG_Function_Left
-Vδnster
+Αριστερά
 ; Left
 ;
 MSG_Function_NextGadget
-Nδsta knapp
+Επόμενο gadget
 ; Next gadget
 ;
 MSG_Function_NxtPage
-Nδsta sida
+Επόμενη σελίδα
 ; Next page
 ;
 MSG_Function_NxtPara
-Nδsta paragraf
+Επόμενη παράγραφος
 ; Next paragraph
 ;
 MSG_Function_NxtSent
-Nδsta mening
+Επόμενη πρόταση
 ; Next sentence
 ;
 MSG_Function_NxtWord
-Nδsta ord
+Επόμενη λέξη
 ; Next word
 ;
 MSG_Function_Paste
-Klistra in
+Επικόλληση
 ; Paste
 ;
 MSG_Function_PrvPage
-Fφregεende sida
+Προηγούμενη σελίδα
 ; Prev page
 ;
 MSG_Function_PrvPara
-Fφregεende paragraf
+Προηγούμενη παράγραφος
 ; Prev paragraph
 ;
 MSG_Function_PrvSent
-Fφregεende mening
+Προηγούμενη πρόταση
 ; Prev sentence
 ;
 MSG_Function_PrvWord
-Fφregεende ord
+Προηγούμενη λέξη
 ; Prev word
 ;
 MSG_Function_Redo
-Gφr om
+Επανάληψη
 ; Redo
 ;
 MSG_Function_Return
-Retur
+Επιστροφή
 ; Return
 ;
 MSG_Function_Right
-Hφger
+Δεξιά
 ; Right
 ;
 MSG_Function_SuggestSpelling
-Fφreslε stavning
+Προτινόμενη ορθογραφία
 ; Suggest spelling
 ;
 MSG_Function_Tab
@@ -201,69 +199,70 @@ Tab
 ; Tab
 ;
 MSG_Function_Top
-Φverst
+Κορυφή
 ; Top
 ;
 MSG_Function_Undo
-Εngra
+Αναίρεση
 ; Undo
 ;
 MSG_Function_Up
-Upp
+Πάνω
 ; Up
 ;
 MSG_GroupTitle_Control
-Kontroll
+Έλεγχος
 ; Control
 ;
 MSG_GroupTitle_Cursor
-Markφr
+Κέρσορας
 ; Cursor
 ;
 MSG_GroupTitle_Design
-Design
+Σχεδίαση
 ; Design
 ;
 MSG_GroupTitle_Fonts
-Typsnitt
+Γραμματοσειρές
 ; Fonts
 ;
 MSG_GroupTitle_Separator
-Skiljelinje
+Διαχωριστής
 ; Separator
 ;
 MSG_HelpTxt_SpellChecker
- \33u Inledning \33n\n\
+ \33u Εισαγωγή \33n\n\
 \n\
-TextEditor-funktionen erbjuder en enkel integration med externa stavningskontroller, \
-vilket tillεter dig att anvδnda bεde kontrollera-medan-du-skriver funktionen samt normal ordgissning.\n\
+Το gadget TextEditor επιτρέπει την εύκολη υλοποίηση εξωτερικών ορθογραφικών ελέγχων, \
+κάνοντάς το δυνατό να έχετε τόσο την πληκτρολόγηση & ορθογραφία όσο και κανονικό \
+εντοπισμό λέξης.\n\
 \n\
- \33u Kontrollera kommandot \33n\n\
+ \33u Αναζήτηση εντολής \33n\n\
 \n\
-Fφr att anvδnda kontrollera-medan-du-skriver funktionen, mεste du stδlla in \
-kontrollera-kommandot att peka pε ett skript som kontrollerar ordet och stδller \
-in den globala variabeln \"Found\" till endera 0 (fφr inte funnen) eller 1 (fφr funnen). \
-Detta matchar fφrfarandet i AlphaSpell.\n\n\
-Du skriver %s dδr du vill ha ordet. Om du anvδnder AlphaSpell kan du skriva:\n\n\
+Για την πληκτρολόγηση & ορθογραφία θα πρέπει να ορίσετε την αναζήτηση εντολής σε ένα \
+σενάριο που θα ψάχνει την λέξη και θα ορίζει την μεταβλητή περιβάλλοντος \"Found\" σε \
+0 (αν δεν βρεθεί) ή 1 (αν υπάρχει ταύτιση). Αυτή ταυτίζει την προκαθορισμένη διαγωγή \
+του AlphaSpell.\n\n\
+Γράφετε %s εκεί που θέλετε την λέξη. Αν χρησιμοποιήσετε το AlphaSpell, τότε μπορείτε να χρησιμοποιήσετε:\n\n\
 \33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\
 \n\
-Du \33bmεste\33n komma ihεg citationstecknen. De sδger till ARexx att exekvera raden \
-som ett kommando istδllet fφr som ett skript.\n\
+Θα \33bπρέπει\33n να θυμάστε πάντα τις αποστρόφους, αφού θα επιτρέψει στην ARexx να το εκτελέσει \
+ως μια εντολή αντί για ένα σενάριο.\n\
 \n\
- \33u Fφreslε-kommandot \33n\n\
+ \33u Προτινόμενη εντολή \33n\n\
 \n\
-Om du trycker pε HELP-tangenten nδr du stεr pε ett ord, kommer editorn att exekvera detta \
-kommando, εterigen med %s ersatt med det aktuella ordet.\n\
-Ditt skript kommer att skapa en fil i T: med namnet \"Matches\". Denna fil lδses sedan \
-och innehεllet visas i en popup-listvy, varifrεn du kan vδlja det ord som ska ersδtta \
-det felstavade ordet. AlphaSpell-anvδndare kan skriva:\n\n\
+Αν πατήσετε το <HELP> πάνω σε μια λέξη, τότε ο κειμενογράφος θα εκτελέσει ξανά αυτή την \
+εντολή, αντικαταστώντας το %s με την τρέχουσα λέξη.\n\
+Το σενάριό σας θα πρέπει να δημιουργήσει ένα αρχείο στο T: με το όνομα \"Matches\". Αυτό το αρχείο \
+διαβάζεται από το gadget, και τα περιεχόμενά του εμφανίζονται σε μια listview, από όπου μπορείτε \
+να διαλέξετε μια λέξη που θα αντικαταστήσει την λάθος λέξη. Οι χρήστες AlphaSpell μπορούν να γράψουν:\n\n\
 \33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\
 \n\
-Om du anvδnder dig av metoderna beskrivna ovan, mεste du starta AlphaSpell \
-med \"ARexx\"-parametern.\n\
+Αν χρησιμοποιήσετε τις παραπάνω μεθόδους, τότε θα πρέπει να ξεκινήσετε το AlphaSpell με την \
+επιλογή \"ARexx\".\n\
 \n\
-Det δr rekommenderat att du placerar ordlistan i RAM: om du har \
-kontrollera-medan-du-skriver funktionen pεslagen.
+Είναι προτιμότερο να διατηρήσετε το λεξικό σας στην RAM εαν ενεργοποιήσετε την επιλογή \
+πληκτρολόγηση & ορθογραφία.
 ;  \33u Intro \33n\n\
 ; \n\
 ; The TextEditor gadget allows for easy integration of external spell checkers, \
@@ -297,247 +296,247 @@ kontrollera-medan-du-skriver funktionen pεslagen.
 ; the type'n'spell feature.
 ;
 MSG_LVLabel_Action
-\33c\0333Kommando:
+\33c\0333Ενέργεια:
 ; \33c\0333Action:
 ;
 MSG_LVLabel_Key
-\33c\0333Tangent:
+\33c\0333Πλήκτρο:
 ; \33c\0333Key:
 ;
 MSG_Label_Background
-Bakgrund
+Φόντο
 ; Background
 ;
 MSG_Label_BlinkSpeed
-Blinkhastighet
+Tαχύτητα αναβοσβήματος
 ; Blinkspeed
 ;
 MSG_Label_BlkQual
-Markeringskombination
+Προσδιοριστικό τμήματος
 ; Block qualifier
 ;
 MSG_Label_Cursor
-Normal
+Κανονικός
 ; Normal
 ;
 MSG_Label_Fixed
-Bestδmt
+Σταθερή
 ; Fixed
 ;
 MSG_Label_Frame
-Ram
+Πλαίσιο
 ; Frame
 ;
 MSG_Label_Highlight
-Markera
+Μαρκάρισμα
 ; Highlight
 ;
 MSG_Label_LookupCmd
-Kontrollera-kommando
+Εντολή αναζήτησης
 ; Lookup command
 ;
 MSG_Label_LookupWords
-Kontrollera ordet innan fφrslag pε andra ord ges?
+Αναζήτηση λέξης πριν την προτίμηση;
 ; Lookup word before suggesting?
 ;
 MSG_Label_Normal
-Normalt
+Κανονική
 ; Normal
 ;
 MSG_Label_Selected
-Markerad
+Επιλεγμένος
 ; Selected
 ;
 MSG_Label_SeparatorShadow
-Skugga
+Σκιά
 ; Shadow
 ;
 MSG_Label_SeparatorShine
-Sken
+Λάμψη
 ; Shine
 ;
 MSG_Label_Smooth
-Utjδmna
+Ομαλή
 ; Smooth
 ;
 MSG_Label_SpellNType
-Kontrollera stavning medan du skriver?
+Έλεγχος ορθογραφίας κατά την πληκτρολόγηση;
 ; Spell check as you type?
 ;
 MSG_Label_SuggestCmd
-Fφreslε-kommando
+Προτινόμενη εντολή
 ; Suggest command
 ;
 MSG_Label_TabSize
-Tab-storlek
+Μέγεθος tab
 ; Tab size
 ;
 MSG_Label_Text
-Text
+Κείμενο
 ; Text
 ;
 MSG_Label_UndoLevel
-Εngernivεer
+Επίπεδα αναίρεσης
 ; Undo levels
 ;
 MSG_Label_Width
-Bredd
+Μήκος
 ; Width
 ;
 MSG_MenuItem_Background
-Bakgrund
+Φόντο
 ; Background
 ;
 MSG_MenuItem_Bold
-Fet
+Έντονο
 ; Bold
 ;
 MSG_MenuItem_Center
-Mitten
+Κέντρο
 ; Center
 ;
 MSG_MenuItem_Copy
-Kopiera
+Αντιγραφή
 ; Copy
 ;
 MSG_MenuItem_Cut
-Klipp ut
+Αποκοπή
 ; Cut
 ;
 MSG_MenuItem_Delete
-Radera
+Διαγραφή
 ; Delete
 ;
 MSG_MenuItem_Fill
-Fyll
+Πλήρης
 ; Fill
 ;
 MSG_MenuItem_Halfshadow
-Halvskugga
+Μισή-σκιά
 ; Halfshadow
 ;
 MSG_MenuItem_Halfshine
-Halvsken
+Μισή-λάμψη
 ; Halfshine
 ;
 MSG_MenuItem_Italic
-Kursiv
+Πλάγια
 ; Italic
 ;
 MSG_MenuItem_Left
-Vδnster
+Αριστερά
 ; Left
 ;
 MSG_MenuItem_Mark
-Markera
+Μαρκάρισμα
 ; Mark
 ;
 MSG_MenuItem_Normal
-Normal
+Κανονική
 ; Normal
 ;
 MSG_MenuItem_Paste
-Klistra in
+Επικόλληση
 ; Paste
 ;
 MSG_MenuItem_Redo
-Gφr om
+Επανάληψη
 ; Redo
 ;
 MSG_MenuItem_Right
-Hφger
+Δεξιά
 ; Right
 ;
 MSG_MenuItem_Shadow
-Skugga
+Σκιά
 ; Shadow
 ;
 MSG_MenuItem_Shine
-Sken
+Λάμψη
 ; Shine
 ;
 MSG_MenuItem_Text
-Text
+Κείμενο
 ; Text
 ;
 MSG_MenuItem_Underline
-Understruken
+Υπογράμμιση
 ; Underline
 ;
 MSG_MenuItem_Undo
-Εngra
+Αναίρεση
 ; Undo
 ;
 MSG_MenuSubTitle_Alignment
-Justering
+Στοίχιση
 ; Alignment
 ;
 MSG_MenuSubTitle_Color
-Fδrg
+Χρώμα
 ; Color
 ;
 MSG_MenuTitle_Edit
-Redigera
+Επεξεργασία
 ; Edit
 ;
 MSG_Page_Keybindings
-Tangentkombinationer
+Συντομεύσεις
 ; Keybindings
 ;
 MSG_Page_Sample
-Exempel
+Δείγμα
 ; Sample
 ;
 MSG_Page_Settings
-Instδllningar
+Επιλογές
 ; Settings
 ;
 MSG_Page_SpellChecker
-Stavningskontroll
+Ορθογραφικός έλεγχος
 ; Spell checker
 ;
 MSG_PopWinTitle_Background
-Vδlj bakgrund
+Επιλογή φόντου
 ; Select background
 ;
 MSG_PopWinTitle_Cursor
-Vδlj markφrfδrg
+Επιλογή χρώματος κέρσορα
 ; Select cursor color
 ;
 MSG_PopWinTitle_Frame
-Justera ram
+Τροποποίηση πλαισίου
 ; Adjust frame
 ;
 MSG_PopWinTitle_Highlight
-Vδlj markeringsfδrg
+Επιλογή χρώματος μαρκαρίσματος
 ; Select highlight color
 ;
 MSG_PopWinTitle_Selected
-Vδlj markeringsfδrg
+Επιλογή χρώματος τμήματος
 ; Select block color
 ;
 MSG_PopWinTitle_SeparatorShadow
-Vδlj skiljelinjens skuggfδrg
+Επιλογή χρώματος σκιάς διαχωριστικών
 ; Select separators shadow color
 ;
 MSG_PopWinTitle_SeparatorShine
-Vδlj skiljelinjens skenfδrg
+Επιλογή χρώματος λάμψης διαχωριστικών
 ; Select separators shine color
 ;
 MSG_PopWinTitle_Text
-Vδlj textfδrg
+Επιλογή χρώματος κειμένου
 ; Select text color
 ;
 MSG_SliderText_MaxWidth
-Samma som bokstav
+Ίδιο με χαρακτήρα
 ; Same as char
 ;
 MSG_SliderText_MinSpeed
-Av
+Κλειστό
 ; Off
 ;
 MSG_SliderText_MinWidth
-1 bildpunkt
+1 pixel
 ; 1 pixel
 ;
 MSG_SliderText_StdSpeed
@@ -545,63 +544,64 @@ MSG_SliderText_StdSpeed
 ; \33r%ld ms
 ;
 MSG_SliderText_StdWidth
-%ld bildpunkter
+%ld pixels
 ; %ld pixels
 ;
 MSG_SliderText_TabSize
-%ld mellanslag
+%ld διαστήματα
 ; %ld spaces
 ;
 MSG_Function_GotoBookmark1
-Gε till bokmδrke 1
+Πήγαινε στον σελιδοδείκτη 1
 ; Goto bookmark 1
 ;
 MSG_Function_GotoBookmark2
-Gε till bokmδrke 2
+Πήγαινε στον σελιδοδείκτη 2
 ; Goto bookmark 2
 ;
 MSG_Function_GotoBookmark3
-Gε till bokmδrke 3
+Πήγαινε στον σελιδοδείκτη 3
 ; Goto bookmark 3
 ;
 MSG_Function_SetBookmark1
-Vδlj bokmδrke 1
+Ορίστε τον σελιδοδείκτη 1
 ; Set bookmark 1
 ;
 MSG_Function_SetBookmark2
-Vδlj bokmδrke 2
+Ορίστε τον σελιδοδείκτη 2
 ; Set bookmark 2
 ;
 MSG_Function_SetBookmark3
-Vδlj bokmδrke 3
+Ορίστε τον σελιδοδείκτη 3
 ; Set bookmark 3
 ;
 MSG_Button_Snoop
-Avlδs
+Εκμάθηση
 ; Snoop
 ;
 MSG_Function_DelLine
-Radera rad
+Διαγραφή γραμμής
 ; Delete line
 ;
 MSG_Function_SelectAll
-Vδlj alla
+Επιλογή όλων
 ; Select all
 ;
 MSG_Function_SelectNone
-Vδlj inga
+Καμία επιλογή
 ; Select none
 ;
 MSG_WarnConfigVersion_Title
-TextEditor.mcp varning
+Προειδοποίηση TextEditor.mcp
 ; TextEditor.mcp warning
 ;
 MSG_WarnConfigVersion
-Din nuvarande sparade tangent-uppsδttning δr inkompatibel\n\
-med den version av TextEditor.mcc du har installerad.\n\
+Οι τρέχοντες αποθηκευμένες συντομεύσεις σας είναι μη συμβατές\n\
+με την έκδοση TextEditor.mcc που έχετε εγκαταστήσει.\n\
 \n\
-Det δr rekommenderat att du εterstδller tangent-uppsδttningen\n\
-till dess fφrval och redigerar dem manuellt efterεt.
+Είναι προτινόμενο να επαναφέρετε τις τρέχουσες συντομεύσεις\n\
+στις εργοστασιακές ρυθμίσεις και να τις επεξεργαστείτε μετά\n\
+χειροκίνητα.
 ; Your currently saved keybindings setup is incompatible\n\
 ; with the version of TextEditor.mcc you have installed.\n\
 ; \n\
@@ -609,21 +609,21 @@ till dess fφrval och redigerar dem manuellt efterεt.
 ; to their defaults and edit them manually afterwards.
 ;
 MSG_ResetAbort
-Εterstδll|Avbryt
+Επαναφορά|Ματαίωση
 ; Reset|Abort
 ;
 MSG_WarnHotkeyString_Title
-TextEditor.mcp varning
+Προειδοποίηση TextEditor.mcp
 ; TextEditor.mcp warning
 ;
 MSG_WarnHotkeyString
-TextEditor.mcp kunde inte φppna den minst krδvda\n\
-versionen av HotkeyString.mcc klassen och\n\
-misslyckades dδrfφr under uppstart.\n\
+Ο TextEditor.mcp αδυνατεί να ανοίξει την ελάχιστη έκδοση που\n\
+απαιτείται της HotkeyString.mcc custom class και συνεπώς\n\
+απέτυχε κατά την αρχικοποίηση.\n\
 \n\
-Var god kontrollera att du har den senaste HotkeyString.mcc\n\
-klassen frεn http://www.sf.net/projects/bstring-mcc/\n\
-installerad och prφva igen.
+Παρακαλώ βεβαιωθείτε ότι έχετε την τελευταία HotkeyString.mcc\n\
+class από την http://www.sf.net/projects/bstring-mcc/\n\
+εγκατεστημένη και δοκιμάστε ξανά.
 ; TextEditor.mcp couldn't open the minimum required\n\
 ; version of the HotkeyString.mcc custom class and\n\
 ; therefore failed during initialization.\n\
@@ -633,161 +633,168 @@ installerad och prφva igen.
 ; installed and try again.
 ;
 MSG_Ok
-Ok
+ΟΚ
 ; Ok
 ;
 MSG_Label_InactiveCursor
-Inaktiv markφr
+Ανενεργός κέρσορας
 ; Inactive cursor
 ;
 MSG_HELP_InactiveCursor
-Om vald, sε visas en speciell markφr\n\
-nδr texteditorn δr i inaktivt tillstεnd.
+Αν επιλεχτεί, ένας τροποποιημένος κέρσορας θα χρησιμοποιηθεί\n\
+όταν ο κειμενογράφος δεν είναι ενεργός.
 ; If enabled, a custom cursor will be used\n\
 ; whenever the editor doesn't have the focus.
 ;
 MSG_Label_SelectPointer
-Vδljpekare
+Επιλογή δείκτη
 ; Selection pointer
 ;
 MSG_HELP_SelectPointer
-Om vald, kommer en speciell pekare att visas\n\
-nδr muspekaren δr ovanfφr texteditorn.
+Αν επιλεχτεί, ένας τροποποιημένος επιλεγμένος δείκτης θα εμφανιστεί\n\
+όταν το ποντίκι είναι πάνω από ενα texteditor gadget.
 ; If enabled, a custom selection pointer will appear\n\
 ; when the mouse pointer is above the texteditor gadget.
 ;
 MSG_Label_InactiveColor
-Inaktiv
+Ανενεργός
 ; Inactive
 ;
 MSG_PopWinTitle_InactiveColor
-Vδlj inaktiv fδrg
+Επιλογή ανενεργού χρώματος
 ; Select inactive color
 ;
 MSG_HELP_TABSIZE
-Hur mεnga teckenrutor markφren hoppar vid anvδndning av TAB-tangenten.
+Πόσα διαστήματα θα δημιουργούνται με το πάτημα του πλήκτρου <TAB>.
 ; How many spaces hitting the <TAB> key will jump.
 ;
 MSG_HELP_DESIGN_FRAME
-Detta δr en knapp fφr att justera en ram.\n\
-Klicka pε den fφr att φppna ett justeringsfφnster\n\
-eller anvδnd dra&slδpp fφr att kopiera\n\
-frεn eller till en annan ramjusteringsknapp.
+Αυτό είναι ένα κουμπί για την τροποποίηση του πλαισίου.\n\
+Κάντε κλικ για να ανοίξετε ένα παράθυρο τροποποίησης ή\n\
+κάντε χρήση της μεταφοράς & απόθεσης για να αντιγράψετε\n\
+ένα κουμπί τροποποίησης πλαισίου από ή σε άλλο πλαίσιο.
 ; This is a button to adjust a frame.\n\
 ; Click it to open an adjust window or\n\
 ; use the drag&drop facilities to copy\n\
 ; from or to another frame adjust button.
 ;
 MSG_HELP_DESIGN_BACKGROUND
-Detta δr en knapp fφr att justera en bakgrundsfδrg\n\
-eller mφnster. Klicka pε den fφr att φppna ett\n\
-justeringsfφnster eller anvδnd dra&slδpp frεn\n\
-eller till en annan bakgrundsjusteringsknapp.
+Αυτό είναι ένα κουμπί για την τροποποίηση του χρώματος\n\
+ή μοτίβου του φόντου. Κάντε κλικ για να ανοίξετε ένα\n\
+παράθυρο τροποποίησης ή κάντε χρήση της μεταφοράς &\n\
+απόθεσης για να αντιγράψετε ένα κουμπί τροποποίησης\n\
+φόντου από ή σε άλλο φόντο.
 ; This is a button to adjust a background\n\
 ; color or pattern. Click it to open an\n\
 ; adjust window or use the drag&drop facilities\n\
 ; to copy from or to another background adjust button.
 ;
 MSG_HELP_DESIGN_TEXT
-Detta δr fδrgen som anvδnds fφr texten.
+Αυτό είναι το χρώμα που χρησιμοποιείται\n\
+για την εκτύπωση του κειμένου.
 ; This is the color used to print the text.
 ;
 MSG_HELP_DESIGN_HIGHLIGHT
-Detta δr fδrgen som anvδnds\n\
-fφr markerad text.
+Αυτό είναι το χρώμα που χρησιμοποιείται\n\
+για την εκτύπωση του μαρκαρισμένου κειμένου.
 ; This is the color used to\n\
 ; print highlighted text.
 ;
 MSG_HELP_SEPARATOR_SHINE
-Detta δr fδrgen som anvδnds\n\
-fφr avdelningsrader.
+Αυτό είναι το χρώμα που χρησιμοποιείται\n\
+για την εκτύπωση μπάρας διαχωριστικού.
 ; This is the color used to\n\
 ; print separator bars.
 ;
 MSG_HELP_SEPARATOR_SHADOW
-Detta δr fδrgen som anvδnds fφr\n\
-avdelningsrader i skugg lδge.
+Αυτό είναι το χρώμα που χρησιμοποιείται για την\n\
+εκτύπωση μπάρας διαχωριστικού σε κατάσταση σκιάς.
 ; This is the color used to print\n\
 ; separator bars in shadow mode.
 ;
 MSG_HELP_FONTS_NORMAL
-Fφrvalt typsnitt som anvδnds av redigeraren.
+Προκαθορισμένη γραμματοσειρά που θα\n\
+χρησιμοποιηθεί από τον κειμενογράφο.
 ; Default font to be used by the editor.
 ;
 MSG_HELP_FONTS_FIXED
-Fφrvalt typsnitt som anvδnds av redigeraren\n\
-nδr typsnitt av fast bredd efterfrεgas.
+Προκαθορισμένη γραμματοσειρά που θα χρησιμοποιηθεί\n\
+από τον κειμενογράφο, άσχετα αν ζητηθεί μια σταθερή\n\
+γραμματοσειρά.
 ; Default font to be used by the editor\n\
 ; whenever a fixed width font is requested.
 ;
 MSG_HELP_CURSOR_NORMAL
-Fφrvald fδrg att anvδnda fφr markφren.
+Προκαθορισμένο χρώμα που θα\n\
+χρησιμοποιηθεί για τον κέρσορα.
 ; Default color to be used for the cursor.
 ;
 MSG_HELP_CURSOR_SELECTED
-Fδrg att anvδnda fφr markerad text.
+Χρώμα που θα χρησιμοποιηθεί για τον\n\
+κέρσορα σε επιλεγμένο κείμενο.
 ; Color to be used for the cursor\n\
 ; in selected text.
 ;
 MSG_HELP_CURSOR_INACTIVE
-Fδrg att anvδnda fφr markerad text\n\
-nδr redigeraren inte har fokus.
+Χρώμα που θα χρησιμοποιηθεί για την εκτύπωση\n\
+επιλεγμένου κειμένου όταν ο κειμενογράφος δεν\n\
+είναι ενεργός.
 ; Color to use to print selected text\n\
 ; when the editor doesn't have the focus.
 ;
 MSG_HELP_CURSOR_WIDTH
-Detta δr bredden som markφren skall ha.
+Αυτό είναι το μήκος που θα έχει ο κέρσορας.
 ; This is the width the cursor should have.
 ;
 MSG_HELP_CURSOR_BLINKSPEED
-Du kanske vill att markφren skall blinka\n\
-fφr att lδttare hitta den. Vδlj 'av' fφr att\n\
-stδnga av denna funktion.
+Μπορεί να θελήσετε ο κέρσορας να αναβοσβήνει\n\
+ώστε να τον βρίσκετε εύκολα. Επιλέξτε 'Κλειστό'\n\
+για να το απανεργοποιήσετε.
 ; You may want the cursor to blink to make\n\
 ; it easier to find. Select 'Off' to disable\n\
 ; this feature.
 ;
 MSG_HELP_BUTTON_DEFAULTKEYS
-Εterstδll alla tangentbindningar\n\
-till de inbyggda fφrvalda.
+Επαναφορά όλων των συντομεύσεων\n\
+στις εργοστασιακές ρυθμίσεις.
 ; Restore all keybindings\n\
 ; to the built-in defaults.
 ;
 MSG_HELP_BUTTON_SNOOP
-Anvδnd detta fδlt fφr att stδlla in en tangentbindning\n\
-fφr denna handling. Du kan antingen redigera direkt eller\n\
-anvδnda 'Avlδs' knappen sε att tangenttryckningar avlδses\n\
-tills du anvδnder knappen igen fφr att bekrδfta.
+Χρησιμοποιήστε αυτό το πεδίο για να ορίστε συντομεύσεις\n\
+για αυτή την ενέργεια. Μπορείτε είτε να επεξεργαστείτε το\n\
+gadget συμβολοσειράς άμεσα ή να πατήσετε στο κουμπί 'Έκμάθηση'\n\
+για να καθορίσετε τον συνδυασμό πλήκτρων μέχρι να τα πατήσετε\n\
+ξανά για επιβεβαίωση.
 ; Use this field to set a keybinding for this action.\n\
 ; You can either edit the string gadget directly or press\n\
 ; the 'Snoop' button to make the gadget monitor keypresses\n\
 ; until you press it again to confirm.
 ;
 MSG_HELP_BUTTON_INSERT
-Lδgg till en ny tangentbindning till listan.
+Προσθέστε μια νέα συντόμευση στη λίστα.
 ; Add a new keybinding to the list.
 ;
 MSG_HELP_BUTTON_DELETE
-Radera denna tangentbindning frεn listan.
+Διαγράψτε μια συντόμευση από την λίστα.
 ; Delete this keybinding from the list.
 ;
 MSG_HELP_SPELLCHECKER_LOOKUP_CMD
-Specifiera hδr 'slε-upp' kommandot du vill anvδnda\n\
-eller lδmna detta tomt fφr att stδnga av\n\
-kontrollera-medan-du-skriver funktionen.
+Καθορίστε εδώ την εντολή αναζήτησης που θέλετε να χρησιμοποιήσετε\n\
+ή αφήστε το κενό για να απενεργοποιήσετε την λειτοργία πληκτρολόγησης\n\
+και ορθογραφίας.
 ; Specify here the lookup command you want to use, or\n\
 ; leave this empty to disable the type'n'spell feature.
 ;
 MSG_HELP_SPELLCHECKER_SUGGEST_CMD
-Specifiera hδr kommandot som kommer att\n\
-anvδndas fφr att fφreslε ett alternativt ord.\n\
-Som fφrklarat ovan, vanligtvis sε bφr du\n\
-specifiera ett skript hδr.
+Καθορίστε εδώ την εντολή που θα χρησιμοποιηθεί για την\n\
+προτίμηση εναλλακτικής λέξης. Όπως αναφέρθηκε παραπάνω,\n\
+θα πρέπει να καθορίσετε ένα σενάριο εδώ.
 ; Specify here the command that will be used\n\
 ; to suggest an alternate word. As explained above,\n\
 ; usually you should specify a script here.
 ;
 MSG_UNDO_SLIDER_FORMAT
-%ld (+/- 5)
+%ld (+/-5)
 ; %ld (+/- 5)
 ;

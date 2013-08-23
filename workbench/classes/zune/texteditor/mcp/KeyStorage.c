@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -140,7 +140,7 @@ void ConvertKeyString(STRPTR keystring, UWORD action, struct KeyAction *storage)
     ULONG length = strlen(keystring);
     char *buffer;
 
-    if((buffer = AllocVec(length + 2, MEMF_ANY)) != NULL)
+    if((buffer = AllocVecShared(length + 2, MEMF_ANY)) != NULL)
     {
       strlcpy(buffer, keystring, length + 1);
       buffer[length] = '\n';
@@ -465,16 +465,16 @@ void ImportKeys(struct InstData_MCP *data, void *config)
 
 void ExportKeys(struct InstData_MCP *data, void *config)
 {
-    ULONG c, size;
-    struct te_key *entry;
-    struct te_key *entries;
+  ULONG c, size;
+  struct te_key *entry;
+  struct te_key *entries;
 
   c = xget(data->keybindings, MUIA_List_Entries);
   size = (c+1) * sizeof(struct te_key);
 
-  if((entries = (struct te_key *)AllocMem(size, MEMF_ANY)))
+  if((entries = (struct te_key *)AllocVecShared(size, MEMF_ANY)))
   {
-      struct te_key *buffer = entries+c;
+    struct te_key *buffer = entries+c;
 
     buffer->code = -1;
     while(c--)
@@ -486,7 +486,6 @@ void ExportKeys(struct InstData_MCP *data, void *config)
       buffer->act  = entry->act;
     }
     DoMethod(config, MUIM_Dataspace_Add, entries, size, MUICFG_TextEditor_Keybindings);
-    FreeMem((APTR)entries, size);
+    FreeVec(entries);
   }
 }
-

@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -151,7 +151,7 @@ BOOL Undo(struct InstData *data)
         STRPTR clip = GetBlock(data, &block);
 
         D(DBF_UNDO, "undo PASTEBLOCK");
-        CutBlock2(data, FALSE, FALSE, TRUE, &block);
+        CutBlock2(data, CUTF_CUT|CUTF_UPDATE, &block);
         action->clip = clip;
       }
       break;
@@ -320,7 +320,7 @@ BOOL Redo(struct InstData *data)
         STRPTR clip = GetBlock(data, &block);
 
         D(DBF_UNDO, "redo DELETEBLOCK/DELETEBLOCK_NOMOVE");
-        CutBlock2(data, FALSE, FALSE, TRUE, &block);
+        CutBlock2(data, CUTF_CUT|CUTF_UPDATE, &block);
         action->clip = clip;
       }
       break;
@@ -410,10 +410,12 @@ BOOL AddToUndoBuffer(struct InstData *data, enum EventType eventtype, void *even
       case ET_BACKSPACEMERGE:
       case ET_MERGELINES:
       {
+        struct line_node *next = GetNextLine(data->actualline);
+
         D(DBF_UNDO, "add undo MERGELINES/BACKSPACEMERGE");
-        action->del.highlight = data->actualline->next->line.Highlight;
-        action->del.flow = data->actualline->next->line.Flow;
-        action->del.separator = data->actualline->next->line.Separator;
+        action->del.highlight = next->line.Highlight;
+        action->del.flow = next->line.Flow;
+        action->del.separator = next->line.Separator;
       }
       break;
 
@@ -551,7 +553,7 @@ void ResizeUndoBuffer(struct InstData *data, ULONG newMaxUndoSteps)
         if(data->undoSteps != NULL)
         {
           // copy over the old undo steps
-          CopyMem(data->undoSteps, newUndoSteps, MIN(oldSize, newSize));
+          memcpy(newUndoSteps, data->undoSteps, MIN(oldSize, newSize));
         }
       }
     }

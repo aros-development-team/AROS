@@ -4,7 +4,7 @@
 #
 # TextEditor.mcc - Textediting MUI Custom Class
 # Copyright (C) 1997-2000 Allan Odgaard
-# Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+# Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,7 @@ mkdir -p "release/MCC_TextEditor/Demos"
 mkdir -p "release/MCC_TextEditor/Demos/Rexx"
 mkdir -p "release/MCC_TextEditor/Developer"
 mkdir -p "release/MCC_TextEditor/Developer/Autodocs"
+mkdir -p "release/MCC_TextEditor/Developer/Autodocs/MCC"
 mkdir -p "release/MCC_TextEditor/Developer/C"
 mkdir -p "release/MCC_TextEditor/Developer/C/Examples"
 mkdir -p "release/MCC_TextEditor/Developer/C/include"
@@ -63,7 +64,7 @@ for os in os3 os4 mos aros-i386 aros-ppc aros-x86_64; do
 done
 
 make -C mcp catalogs
-for language in czech danish french german russian swedish polish; do
+for language in czech danish french german greek italian polish russian swedish; do
 	mkdir -p "release/MCC_TextEditor/Locale/Catalogs/$language"
 	cp -a mcp/locale/$language.catalog "release/MCC_TextEditor/Locale/Catalogs/$language/TextEditor_mcp.catalog"
 done
@@ -74,7 +75,7 @@ cp -a AUTHORS ChangeLog COPYING "release/MCC_TextEditor/"
 cp -a doc/MCC_TextEditor.readme "release/MCC_TextEditor/ReadMe"
 cp -a demo/*.ilbm "release/MCC_TextEditor/Demos/"
 cp -a -R demo/rexx/* "release/MCC_TextEditor/Demos/Rexx/"
-cp -a doc/MCC_TextEditor.doc "release/MCC_TextEditor/Developer/Autodocs/"
+cp -a doc/MCC_TextEditor.doc "release/MCC_TextEditor/Developer/Autodocs/MCC/"
 cp -a demo/*.c "release/MCC_TextEditor/Developer/C/Examples/"
 cp -a demo/Makefile "release/MCC_TextEditor/Developer/C/Examples/"
 cp -a include/mui/TextEditor_mcc.h "release/MCC_TextEditor/Developer/C/include/mui/"
@@ -89,3 +90,5 @@ find release -nowarn -name ".svn" -exec rm -rf {} \; 2>/dev/null
 cd release
 rm -f ../MCC_TextEditor-$releasever.$releaserev.lha
 lha -ao5q ../MCC_TextEditor-$releasever.$releaserev.lha *
+cp MCC_TextEditor/ReadMe ../MCC_TextEditor-$releasever.$releaserev.readme
+cd ..

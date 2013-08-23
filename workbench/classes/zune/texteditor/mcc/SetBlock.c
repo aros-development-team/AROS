@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -39,11 +39,11 @@ IPTR mSetBlock(struct InstData *data, struct MUIP_TextEditor_SetBlock *msg)
   newblock.enabled = FALSE;
 
   // now we check&set the start variables to their corresponding values
-  if((LONG)msg->starty == MUIV_TextEditor_SetBlock_Min)
+  if(msg->starty == MUIV_TextEditor_SetBlock_Min)
     newblock.startline = LineNode(data, 1);
-  else  if((LONG)msg->starty == MUIV_TextEditor_SetBlock_Max)
+  else  if(msg->starty == MUIV_TextEditor_SetBlock_Max)
     newblock.startline = LineNode(data, data->totallines+1);
-  else if((LONG)msg->starty >= 0 && msg->starty <= (ULONG)data->totallines)
+  else if(msg->starty >= 0 && msg->starty <= data->totallines)
     newblock.startline = LineNode(data, msg->starty+1);
   else
     result = FALSE;
@@ -52,9 +52,9 @@ IPTR mSetBlock(struct InstData *data, struct MUIP_TextEditor_SetBlock *msg)
     newblock.startx = 0;
   else if(newblock.startline != NULL)
   {
-    if((LONG)msg->startx == MUIV_TextEditor_SetBlock_Max)
+    if(msg->startx == MUIV_TextEditor_SetBlock_Max)
       newblock.startx = (newblock.startline)->line.Length;
-    else if((LONG)msg->startx >= 0 && msg->startx <= (newblock.startline)->line.Length)
+    else if(msg->startx >= 0 && msg->startx <= (newblock.startline)->line.Length)
       newblock.startx = msg->startx;
     else
       result = FALSE;
@@ -63,22 +63,22 @@ IPTR mSetBlock(struct InstData *data, struct MUIP_TextEditor_SetBlock *msg)
     result = FALSE;
 
   // now we check&set the stop variables to their corresponding values
-  if((LONG)msg->stopy == MUIV_TextEditor_SetBlock_Min)
+  if(msg->stopy == MUIV_TextEditor_SetBlock_Min)
     newblock.stopline = LineNode(data, 1);
-  else  if((LONG)msg->stopy == MUIV_TextEditor_SetBlock_Max)
+  else  if(msg->stopy == MUIV_TextEditor_SetBlock_Max)
     newblock.stopline = LineNode(data, data->totallines+1);
-  else if((LONG)msg->stopy >= 0 && msg->stopy <= (ULONG)data->totallines)
+  else if(msg->stopy >= 0 && msg->stopy <= data->totallines)
     newblock.stopline = LineNode(data, msg->stopy+1);
   else
     result = FALSE;
 
-  if((LONG)msg->stopx == MUIV_TextEditor_SetBlock_Min)
+  if(msg->stopx == MUIV_TextEditor_SetBlock_Min)
     newblock.stopx = 0;
   else if(newblock.stopline != NULL)
   {
-    if((LONG)msg->stopx == MUIV_TextEditor_SetBlock_Max)
+    if(msg->stopx == MUIV_TextEditor_SetBlock_Max)
       newblock.stopx = (newblock.stopline)->line.Length;
-    else if((LONG)msg->stopx >= 0 && msg->stopx <= (newblock.stopline)->line.Length)
+    else if(msg->stopx >= 0 && msg->stopx <= (newblock.stopline)->line.Length)
       newblock.stopx = msg->stopx;
     else
       result = FALSE;
@@ -89,13 +89,12 @@ IPTR mSetBlock(struct InstData *data, struct MUIP_TextEditor_SetBlock *msg)
   // check if valid values had been specified for our start/stop values
   if(result == TRUE)
   {
+    // enable the block during the color/style changes
+    newblock.enabled = TRUE;
+
     if(isFlagSet(msg->operation, MUIF_TextEditor_SetBlock_Color))
     {
-      newblock.enabled = TRUE;
-
       AddColor(data, &newblock, (UWORD)msg->value);
-
-      newblock.enabled = FALSE;
     }
 
     if(isFlagSet(msg->operation, MUIF_TextEditor_SetBlock_StyleBold))
@@ -113,6 +112,9 @@ IPTR mSetBlock(struct InstData *data, struct MUIP_TextEditor_SetBlock *msg)
       AddStyle(data, &newblock, UNDERLINE, msg->value != 0);
     }
 
+    // disable the block again
+    newblock.enabled = FALSE;
+
     if(isFlagSet(msg->operation, MUIF_TextEditor_SetBlock_Flow))
     {
       LONG start, lines = 0;
@@ -129,9 +131,9 @@ IPTR mSetBlock(struct InstData *data, struct MUIP_TextEditor_SetBlock *msg)
       {
         lines += startline->visual;
         startline->line.Flow = msg->value;
-        startline = startline->next;
+        startline = GetNextLine(startline);
       }
-      while(startline != newblock2.stopline->next);
+      while(startline != GetNextLine(newblock2.stopline));
 
       if(start < 1)
         start = 1;

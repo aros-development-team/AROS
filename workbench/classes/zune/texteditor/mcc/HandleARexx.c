@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -87,7 +87,7 @@ enum
 static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, const char *txtargs)
 {
   struct line_node *oldactualline = data->actualline;
-  UWORD oldCPos_X = data->CPos_X;
+  LONG oldCPos_X = data->CPos_X;
   IPTR result = TRUE;
   LONG new_y = data->visual_y-1;
 
@@ -176,7 +176,7 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
         {
           STRPTR buffer;
 
-          if((buffer = AllocVec(16, MEMF_SHARED)) != NULL)
+          if((buffer = AllocVecShared(16, MEMF_ANY)) != NULL)
           {
             set(data->object, MUIA_TextEditor_CursorY, *(ULONG *)*args);
 
@@ -194,7 +194,7 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
         {
           STRPTR buffer;
 
-          if((buffer = AllocVec(16, MEMF_SHARED)) != NULL)
+          if((buffer = AllocVecShared(16, MEMF_ANY)) != NULL)
           {
             set(data->object, MUIA_TextEditor_CursorX, *(ULONG *)*args);
             // return the current column number, this may differ from the input value!
@@ -320,7 +320,7 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
       {
         STRPTR buffer;
 
-        if((buffer = AllocVec(data->actualline->line.Length+1, MEMF_SHARED)) != NULL)
+        if((buffer = AllocVecShared(data->actualline->line.Length+1, MEMF_ANY)) != NULL)
         {
           strlcpy(buffer, data->actualline->line.Contents, data->actualline->line.Length+1);
           result = (IPTR)buffer;
@@ -332,7 +332,7 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
       {
         STRPTR buffer;
 
-        if((buffer = AllocVec(16, MEMF_SHARED)) != NULL)
+        if((buffer = AllocVecShared(16, MEMF_ANY)) != NULL)
         {
           LONG pos = 0;
 
@@ -412,17 +412,7 @@ static IPTR CallFunction(struct InstData *data, UWORD function, IPTR *args, cons
 
       case SELECTALL:
       {
-        struct line_node *actual = data->firstline;
-
-        data->blockinfo.startline = actual;
-        data->blockinfo.startx = 0;
-
-        while(actual->next != NULL)
-          actual = actual->next;
-
-        data->blockinfo.stopline = actual;
-        data->blockinfo.stopx = data->blockinfo.stopline->line.Length-1;
-        data->blockinfo.enabled = TRUE;
+        MarkAllBlock(data, &data->blockinfo);
         MarkText(data, data->blockinfo.startx, data->blockinfo.startline, data->blockinfo.stopx, data->blockinfo.stopline);
       }
       break;

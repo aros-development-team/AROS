@@ -2,8 +2,337 @@
 MUI TextEditor MCC class - ChangeLog
 ------------------------------------
 
-$Id: ChangeLog 760 2011-11-26 15:45:20Z damato $
-$URL: https://texteditor-mcc.svn.sourceforge.net/svnroot/texteditor-mcc/releases/15.37/ChangeLog $
+$Id: ChangeLog 924 2013-04-25 14:50:37Z damato $
+$URL: svn://svn.code.sf.net/p/texteditor-mcc/code/releases/15.41/ChangeLog $
+
+#### v15.41 RELEASE ############################################################
+
+2013-04-25 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v15.41 release preparations
+  * include/muiextra.h: added definition of MUII_PopFont as some MUI SDK might
+    not have them yet.
+
+2013-04-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/greek.ct: updated greek translation kindly provided by Antonis
+    Iliakis.
+
+2013-04-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/CreatePrefsGroup.c: use the font popup button image for MUI 3.9+.
+
+2013-03-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccinit.c, include/shellstart.c: rearranged the code to ensure that
+    trying to start the final class from a shell does not crash.
+
+2013-01-11 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/AllocFunctions.c, misc: removed the wrapper functions for allocating
+    and freeing a line as they covered a single line only.
+
+2013-01-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/AllocFunctions.c, mcc/EditorStuff.c, mcc/BlockOperators.c: check for
+    possible references before removing/freeing a line, as getting the line's
+    preceeding or successing line after it has been removed from the line list
+    might dereference invalid pointers. This closes bug #107.
+
+2013-01-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c: for externally handled double clicks (i.e. the double
+    click hook) the not yet happend mouse release event will nevertheless be
+    treated as occured. Before it might have happened that the double click
+    hook launches a program which steals the focus and leaves the object
+    pending in a "mouse pressed" situation. This will result in an immediate
+    marking action as soon as the object regains the focus. For example this
+    happens when a URL is double clicked in YAM and if launching the browser
+    takes some seconds. This closes bug #106.
+
+2012-12-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * tools/mkrelease: add italian catalog to the release archive.
+
+#### v15.40 RELEASE ############################################################
+
+2012-12-20 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v15.40 release preparations
+
+2012-11-29 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/MixedFunctions.c, mcc/PrintLineWithStyle.c: apply MUIPEN() to all pen
+    values allocated by MUI_ObtainPen().
+
+2012-11-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Pointer.c: make use of the standard mouse pointer images in the AmigaOS4
+    build if intuition.library 53.37 is available.
+
+2012-09-20 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/ObjectCreator.c: don't trigger notifications in
+    MUIM_Mccprefs_ConfigToGadgets.
+  * mcp/ObjectCreator.c: save strings with their real length only instead of
+    their maximum length to assist MUI4's realtime prefs.
+
+2012-09-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c, mcc/InitConfig.c: apply the current configuration before
+    calling the superclass' MUIM_Setup to ensure the frame settings are applied
+    correctly.
+
+2012-09-03 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/italian.ct: updated italian translation kindly provided by Samir
+    Hawamdeh.
+
+2012-09-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/CreatePrefsGroup.c: the floattext object on the Spellchecking page now
+    accepts wheel scroll events.
+
+2012-09-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/italian.ct: added italian translation kindly provided by Samir
+    Hawamdeh.
+
+2012-08-31 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: fixed a redraw bug due to a wrong index check when
+    deleting characters at the end of a wrapped line.
+
+2012-08-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/CreatePrefsGroup.c: adjusted the crawling text to better match the
+    capabilities of Crawling.mcc.
+  * mcc/HandleInput.c: added support for the standard cut, copy, paste, undo and
+    redo keys of MUI4.
+
+2012-08-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/SetBlock.c: added missing block enabling when style changes were
+    requested along with setting the now block. Thanks to Andreas Falkenhahn for
+    the hint.
+
+2012-08-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Navigation.c: fixed several "use before check" occurences.
+  * mcc/HandleInput.c: fixed wrong handling of DEL key at the end of a line.
+  * mcc/misc: removed all the senseless distinction between "fast" and "slow"
+    background images. This makes the code a lot more understandable.
+
+2012-08-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: moved a check to a more appropriate location to avoid
+    leaving a function somewhere in the middle.
+  * mcc/EditorStuff.c: fixed a potential out of bounds access of the text line to
+    be printed.
+  * mcc/MixedFunctions.c: check the index to inside the array bounds before
+    accessing the array.
+  * mcc/EditorStuff.c: apply all further changes to a line only if a possible
+    expansion has succeeded before.
+  * mcc/MixedFunctions.c: removed all the handling of anti-aliased fonts. The
+    background area affected by redraw operations will always be cleared now no
+    matter what type of font is used.
+
+2012-08-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/MixedFunctions.c: fixed an endless loop when splitting a non-empty line
+    into two new lines.
+
+2012-08-20 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/MixedFunctions.c: put the line counting code into a separate function to
+    reduce code replication.
+  * mcc/PrintLineWithStyles.c: limit the drawing of the background of unwrapped
+    lines to the visual area.
+
+2012-08-16 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/BlockOperators.c: simplified the cutting block function prototypes to
+    carry less parameters and avoid double negation.
+  * mcc/EditorStuff.c: fixed a memory leak when pasting clipboards without using
+    styles or colors.
+  * mcc/EditorStuff.c: if things like right alignment or highlighting are found
+    in the clipboard these will be treated as clipboard entries created by TE.mcc
+    itself and everything will be restored correctly now.
+
+2012-08-15 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/BlockOperators.c: implemented a new function to mark the complete text.
+  * mcc/PrintLineWithStyles.c: correctly respect the maximum visibile width of
+    the object when drawing the text. This fixes bug #3558290.
+  * mcc/PrintLineWithStyles.c: don't print any text if there is no space left
+    for at least one character.
+
+2012-08-14 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/GetSetAttrs.c: treat a NULL content pointer as an empty text. Otherwise
+    setting a NULL content will have no effect.
+  * mcc/GetSetAttrs.c: enabling/disabling the object will cause a redraw event
+    only if the state really changes and MUI4 is not available.
+
+2012-08-09 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: avoid copying styles and colors too often.
+
+#### v15.39 RELEASE ############################################################
+
+2012-08-05 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v15.39 release preparations
+
+2012-08-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/InitConfig.c: restrict certain configuration values to their configurable
+    limits.
+  * mcc/GetSet.c, mcc/InitConfig.c, mcc/ImportText.c: added a new function to
+    reimport the current text with modified TAB size or TAB conversion mode. This
+    fixes the issues that may arise when the user has configured a custom TAB
+    size and an application has set a text containing TAB characters before the
+    class was able to access its configuration, i.e. before opening the window.
+    This changes ensures that the text will always be correctly displayed with
+    the configured TAB size.
+  * mcc/GetSet.c, mcc/InitConfig.c: added a new attribute MUIA_TextEditor_TabSize
+    to let an application enforce a specific number of spaces per TAB character
+    no matter what the user has configured.
+
+2012-07-20 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/GetSetAttrs.c: fixed a potential memory leak in case importing a text
+    failed. In this case the former text buffer was not freed.
+
+2012-07-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: use memmove() instead of strlcpy() when moving characters
+    backwards as the regions may overlap.
+  * mcc/EditorStuff.c: rely on the existing line length information instead of
+    calculating it from scratch when inserting or removing characters.
+
+2012-07-09 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/EditorStuff.c: added some more boundary checks when inserting or
+    deleting a range of characters. I hope this makes it possible to track down
+    those mysterious crashed during UpdateChange().
+  * mcc/Dispatcher.c, mcc/ImportHook.c: assume a default TAB size of 4 spaces
+    per TAB. The "Wetter" application tries to import a text before the
+    configuration has been parsed and this left the class with a TAB size of
+    zero which then was used to replace TAB characters by spaces. This closes
+    bug #3536338.
+  * mcc/misc: replaced several indirect object pointers by direct ones.
+  * mcc/misc: removed a global variable to keep the object's top position. This
+    value is better obtained by using _mtop(obj).
+
+2012-06-20 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/KeyStorage.c: don't allocate locked memory here as well and replaced an
+    AllocMem() call by AllocVec().
+
+2012-06-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: don't allocate locked memory.
+
+2012-05-16  Pär Boberg <pbobbenb@spray.se>
+
+  * mcp/locale/swedish.ct: updated and some minor corrections.
+
+2012-05-14 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/Makefile: removed .catalog files in clean target.
+  * mcp/locale/TextEditor_mcp.cd: replaced non-7bit-ASCII character by a
+    suitable sequence.
+
+#### v15.38 RELEASE ############################################################
+
+2012-05-12 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v15.38 release preparations
+  * mcc/Makefile: restored the -DNO_INLINE_STDARG define in CFLAGS as otherwise
+    our AROS cross-compilers won't build for these targets and raise some
+    "untermated macro" errors when building our test applications.
+  * doc/TextEditor.guide: removed the whole "History" section as we solely
+    rely on the ChangeLog in future as it is too much work to update the .guide
+    for every new release.
+
+2012-05-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c: restored the correct return code interpretation of the
+    double click hook that was inverted in r756. Now everything is conformant to
+    the Autodocs again.
+
+2012-04-07 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc: the graphics library TextLength() function is now used for situations where
+    only a fixed string is used, thus no \t can be in there.
+  * mcc/NewGfx.c: removed the xoffset dependance in TextLengthNew() and TextFitNew()
+    as I can't see any reason for that? In addition, this fixes the problem that
+    the number of pixels required in ConvertTabs mode and non-ConvertTabs mode
+    wasn't equal for an instered TAB.
+
+2012-04-05 Jens Langner <Jens.Langner@light-speed.de>
+
+  * ImportText.c, ImportHook.c, misc: changed ImportHook to also allow to specify
+    the number of spaces that should be used to convert tabs to spaces if this
+    operation is wanted.
+  * Keybindings.c, MCC_TextEditor.doc: changed default NextGadget keybinding to
+    use RCOMMAND+TAB instead of ALT+TAB because ALT+TAB is already taken by MUI
+    itself for switching windows.
+  * mcc: renamed 'RealTabs' to 'ConvertTabs' and made it default to TRUE so that
+    the old behaviour is reserved where TE.mcc always converts \t to spaces.
+  * mcc: removed the global TabSizePixels variable and moved it into the instance
+    data including reworked Text*New() functions in NewGfx.c.
+  * mcc/HandleInput.c: when a TE.mcc object has been active and the TAB has was
+    used the action always ended up in activating the next object in the
+    CycleChain as the new active object. However, when using the TAB key in an
+    editor the action should always end up in either storing real tabs (\t) or in
+    storing a number of spaces into the object according to the current settings.
+    However, this was not possible at all.
+
+2012-04-05 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c: fixed handling of the TAB key as real input key.
+
+2012-04-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/GetSetAttrs.c: added missing #include.
+
+2012-04-04 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/*: applied patch kindly provided by Nicolas Rybkin. Please note that
+    the functionality provided by this patch is not complete yet. But it should
+    provide basic functionality which will allow to put real tabs (\t) into a
+    texteditor (if the developer enabled this). Currently TE.mcc only supports
+    replacing tabs by a various number of spaces. With the patches provided
+    TE.mcc should be able to allow to press the TAB key and see \t to end up
+    in the buffer. However, as mentioned, the patches are not yet complete
+    and need some more work to end up in the final release.
+  * Makefile: got rid of -funroll-loops option as this one is potentially
+    dangerous under certain circumstances.
+
+2012-04-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/InitConfig.c: string pointers obtained from the MUI configuration must
+    be copied instead of rembembered directly. With MUI4's realtime prefs the
+    pointer might become invalid at any time and hence the class would operate
+    on invalid data after that.
+
+2012-02-16 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/ColorOperators.c: fixed adding new colors in case there was no color
+    used at all yet on a line.
+
+2012-01-29 Matthias Rustler <mrustler@gmx.de>
+
+  * Backport of AROS fixes.
+    SDI headers updated.
+
+2012-01-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c: mouse wheel events happening over the slider object are
+    now handled in the same way as over the editor object. This makes scrolling
+    speed to be the same no matter where the mouse pointer is located.
 
 #### v15.37 RELEASE ############################################################
 

@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -122,7 +122,6 @@ void _UNMEMTRACK(const char *file, const int line, const char *func, const void 
 #if !defined(DEBUG_USE_MALLOC_REDEFINE) && !defined(__SASC) && !defined(__VBCC__)
 
 // standard C-library memory functions
-
 #define malloc(s)               ({void *P = malloc(s);     _MEMTRACK(__FILE__, __LINE__, "malloc", P, s); P;})
 #define calloc(n, s)            ({void *P = calloc(n, s);  _MEMTRACK(__FILE__, __LINE__, "calloc", P, s); P;})
 #define realloc(p, s)           ({void *P; _UNMEMTRACK(__FILE__, __LINE__, "malloc|calloc|strdup|memdup|asprintf", p); P = realloc(p, s); _MEMTRACK(__FILE__, __LINE__, "realloc", P, s); P;})
@@ -162,6 +161,9 @@ void _UNMEMTRACK(const char *file, const int line, const char *func, const void 
 #undef FreeSignal
 #undef StartNotify
 #undef EndNotify
+#undef Remove
+#undef RemHead
+#undef RemTail
 #endif
 
 #if defined(__amigaos4__)
@@ -187,6 +189,9 @@ void _UNMEMTRACK(const char *file, const int line, const char *func, const void 
 #define FreeSignal(s)                 ({_UNMEMTRACK(__FILE__, __LINE__, "AllocSignal", (APTR)s); IExec->FreeSignal(s);})
 #define StartNotify(p)                ({LONG P = IDOS->StartNotify(p); _MEMTRACK(__FILE__, __LINE__, "StartNotify", p, (size_t)p); P;})
 #define EndNotify(p)                  ({_UNMEMTRACK(__FILE__, __LINE__, "StartNotify", p); IDOS->EndNotify(p);})
+#define Remove(n)                     ({struct Node *P = (struct Node *)(n); IExec->Remove(P); P->ln_Pred = P->ln_Succ = (struct Node *)0xcccccccc;})
+#define RemHead(l)                    ({struct Node *P = IExec->RemHead(l); if(P != NULL) P->ln_Pred = P->ln_Succ = (struct Node *)0xcccccccc; P;})
+#define RemTail(l)                    ({struct Node *P = IExec->RemTail(l); if(P != NULL) P->ln_Pred = P->ln_Succ = (struct Node *)0xcccccccc; P;})
 
 #elif defined(__MORPHOS__)
 
@@ -311,6 +316,30 @@ void _UNMEMTRACK(const char *file, const int line, const char *func, const void 
    LP1NR(894, EndNotify, \
       struct NotifyRequest *, __p0, d1, \
       , DOS_BASE_NAME, 0, 0, 0, 0, 0, 0); \
+})
+
+#define Remove(__p0) ({ \
+    struct Node *P = (struct Node *)(__p0); \
+    LP1NR(252, Remove, \
+       struct Node *, __p0, a1, \
+       , EXEC_BASE_NAME, 0, 0, 0, 0, 0, 0); \
+    P->ln_Pred = P->ln_Succ = (struct Node *)0xcccccccc; \
+})
+
+#define RemHead(__p0) ({ \
+    struct Node *P = LP1(258, struct Node *, RemHead, \
+       struct List *, __p0, a0, \
+       , EXEC_BASE_NAME, 0, 0, 0, 0, 0, 0); \
+    if(P != NULL) P->ln_Pred = P->ln_Succ = (struct Node *)0xcccccccc; \
+    P; \
+})
+
+#define RemTail(__p0) ({ \
+    struct Node *P = LP1(264, struct Node *, RemTail, \
+       struct List *, __p0, a0, \
+       , EXEC_BASE_NAME, 0, 0, 0, 0, 0, 0); \
+    if(P != NULL) P->ln_Pred = P->ln_Succ = (struct Node *)0xcccccccc; \
+    P; \
 })
 
 #elif !defined(__AROS__) // AmigaOS 3
@@ -491,6 +520,53 @@ void _UNMEMTRACK(const char *file, const int line, const char *func, const void 
   : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory"); \
   } \
 }})
+
+#define Remove(node) ({ \
+  struct Node * _Remove_node = (node); \
+  { \
+  register struct ExecBase * const __Remove__bn __asm("a6") = (struct ExecBase *) (EXEC_BASE_NAME);\
+  register struct Node * __Remove_node __asm("a1") = (_Remove_node); \
+  __asm volatile ("jsr a6@(-252:W)" \
+  : \
+  : "r"(__Remove__bn), "r"(__Remove_node)  \
+  : "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory"); \
+  } \
+  _Remove_node->ln_Pred = _Remove_node->ln_Succ = (struct Node *)0xcccccccc; \
+})
+
+#define RemHead(list) ({ \
+  struct List *_RemHead_list = (list); \
+  struct Node *_RemHead__re = \
+  ({ \
+  register struct ExecBase * const __RemHead__bn __asm("a6") = (struct ExecBase *) (EXEC_BASE_NAME);\
+  register struct Node *__RemHead__re __asm("d0"); \
+  register struct List *__RemHead__list __asm("a0") = (_RemHead_list); \
+  __asm volatile ("jsr a6@(-258:W)" \
+  : "=r"(__RemHead__re) \
+  : "r"(__RemHead__bn), "r"(__RemHead__list)  \
+  : "d1", "a0", "a1", "fp0", "fp1", "cc", "memory"); \
+  __RemHead__re; \
+  }); \
+  if(_RemHead__re != NULL) _RemHead__re->ln_Pred = _RemHead__re->ln_Succ = (struct Node *)0xcccccccc; \
+  _RemHead__re; \
+})
+
+#define RemTail(list) ({ \
+  struct List *_RemTail_list = (list); \
+  struct Node *_RemTail__re = \
+  ({ \
+  register struct ExecBase * const __RemTail__bn __asm("a6") = (struct ExecBase *) (EXEC_BASE_NAME);\
+  register struct Node *__RemTail__re __asm("d0"); \
+  register struct List *__RemTail__list __asm("a0") = (_RemTail_list); \
+  __asm volatile ("jsr a6@(-264:W)" \
+  : "=r"(__RemTail__re) \
+  : "r"(__RemTail__bn), "r"(__RemTail__list)  \
+  : "d1", "a0", "a1", "fp0", "fp1", "cc", "memory"); \
+  __RemTail__re; \
+  }); \
+  if(_RemTail__re != NULL) _RemTail__re->ln_Pred = _RemTail__re->ln_Succ = (struct Node *)0xcccccccc; \
+  _RemTail__re; \
+})
 
 #endif // amigaos4
 
