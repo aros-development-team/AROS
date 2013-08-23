@@ -13,7 +13,7 @@ FILES := library NListtree icon locale
   modname=NListtree modtype=mcp \
   files=$(FILES)
 
-TARGETDIR := $(AROS_CONTRIB)/Zune/MCC_NList/Locale/Catalogs
+TARGETDIR := $(AROS_CATALOGS)
 
 # CTs which aren't uptodate:
 # $(TARGETDIR)/russian/NListtree_mcp.catalog \

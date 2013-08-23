@@ -25,7 +25,7 @@ INCLUDE_FILES := NListviews_mcp.h
 %copy_includes path=mui
 
 
-TARGETDIR := $(AROS_CONTRIB)/Zune/MCC_NList/Locale/Catalogs
+TARGETDIR := $(AROS_CATALOGS)
 
 #MM
 classes-zune-nlistviews-mcp-catalogs : locale.h locale.c \
