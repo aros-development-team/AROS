@@ -85,16 +85,16 @@ endif
 # Link a module based upon a number of arguments and the standard $(LIBS)
 # and $(DEPLIBS) make variables.
 #
-%define link_module_q err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
+%define link_module_q cmd=$(AROS_CC) err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	@$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
-	@if $(AROS_CC) $(NOSTARTUP_LDFLAGS) %(ldflags) \
+	@if %(cmd) $(NOSTARTUP_LDFLAGS) %(ldflags) \
 	    $(GENMAP) %(objdir)/%(module).map \
 	    %(objs) %(libs) %(endtag) \
 	    -o $@ 2>&1 > %(objdir)/%(err); \
 	then \
 	    cat %(objdir)/%(err); \
 	else \
-	    echo "$(AROS_CC) $(NOSTARTUP_LDFLAGS) %(ldflags) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(endtag) -o $@"; \
+	    echo "%(cmd) $(NOSTARTUP_LDFLAGS) %(ldflags) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(endtag) -o $@"; \
 	    cat %(objdir)/%(err); \
 	    exit 1; \
 	fi
@@ -978,7 +978,7 @@ endif
 # The -noarosc flag is added so that modules are not linked with arosc.library
 # (see /config/specs.in file)
 %define rule_linkmodule module=/A objs=/A endobj=/A err=/A objdir=$(OBJDIR) \
-    ldflags=$(LDFLAGS) uselibs= usehostlibs=
+    cmd=$(AROS_CC) ldflags=$(LDFLAGS) uselibs= usehostlibs=
 
 TMP_LDFLAGS  := %(ldflags)
 # Make a list of the lib files the programs depend on.
@@ -1006,7 +1006,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
 %(module) : LIBS := $(addprefix -l,$(LIB_NAMES)) \
                     -L/usr/lib $(addprefix -l,%(usehostlibs))
 %(module) : %(objs) %(endobj) $(TMP_DEPLIBS) $(USER_DEPLIBS)
-	%link_module_q err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) -noarosc"
+	%link_module_q cmd=%(cmd) err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) -noarosc"
 
 %end
 #------------------------------------------------------------------------------
@@ -1534,12 +1534,12 @@ endif
 
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
 		 endobj= err=$(BD_ERR) objdir=%(objdir) \
-		 ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
+		 cmd=$(AROS_CC) ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 %rule_linkmodule module=$(BD_PKGMOD) objs=$(BD_OBJS) \
 		 endobj= err=$(BD_ERR) objdir=%(objdir) \
-		 ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
+		 cmd=$(AROS_CC) ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 # Link kernel object file
@@ -1757,6 +1757,12 @@ else
 endif
 BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
 
+ifneq ($(BD_CXXFILES) $(BD_CXXXXFILES) $(BD_CXXCCFILES),)
+BD_LINKCMD=$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-g++
+else
+BD_LINKCMD=$(AROS_CC)
+endif
+
 BD_RELLINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_RELLINKLIBFILES))
 BD_RELLINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_RELLINKLIBAFILES))
 ifeq ($(strip $(%(modname)_RELLINKLIBFILES) $(%(modname)_RELLINKLIBAFILES) %(linklibfiles)),)
@@ -1854,12 +1860,12 @@ endif
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(BD_MODULE) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
 		 endobj=$(BD_ENDOBJS) err=$(BD_ERR) objdir=%(objdir) \
-		 ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
+		 cmd=$(BD_LINKCMD) ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 %rule_linkmodule module=$(BD_PKGMOD) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
 		 endobj=$(BD_ENDOBJS) err=$(BD_ERR) objdir=%(objdir) \
-		 ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
+		 cmd=$(BD_LINKCMD) ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 # Link static lib
