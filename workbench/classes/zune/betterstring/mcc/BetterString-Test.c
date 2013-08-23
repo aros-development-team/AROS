@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -75,11 +75,7 @@ struct UtilityIFace *IUtility = NULL;
 struct KeymapIFace *IKeymap = NULL;
 #endif
 
-extern SAVEDS ASM ULONG _Dispatcher(REG(a0, struct IClass * cl), REG(a2, Object * obj), REG(a1, Msg msg));
-
-#ifdef __MORPHOS__
 DISPATCHERPROTO(_Dispatcher);
-#endif
 
 int main(void)
 {
@@ -115,7 +111,7 @@ int main(void)
     app =  ApplicationObject,
           MUIA_Application_Author,      "BetterString.mcc Open Source Team",
           MUIA_Application_Base,        "BetterString-Test",
-          MUIA_Application_Copyright,    "(C) 2005-2009 by BetterString.mcc Open Source Team",
+          MUIA_Application_Copyright,    "(C) 2005-2013 by BetterString.mcc Open Source Team",
           MUIA_Application_Description,  "BetterString.mcc demonstration program",
           MUIA_Application_Title,        "BetterString-Test",
           MUIA_Application_Version,      "$VER: BetterString-Demo V1.0 (18.05.2007)",
@@ -141,6 +137,7 @@ int main(void)
                 Child, a1 = (Object *)NewObject(mcc->mcc_Class, NULL,
                     MUIA_CycleChain, TRUE,
                     MUIA_Background, MUII_GroupBack,
+                    MUIA_Frame, MUIV_Frame_None,
                     MUIA_String_AdvanceOnCR, TRUE,
                     MUIA_String_MaxLen, 10,
                     MUIA_ObjectID, MAKE_ID('N','A','M','E'),
@@ -152,6 +149,7 @@ int main(void)
                 Child, a2 = (Object *)NewObject(mcc->mcc_Class, NULL,
                     MUIA_CycleChain, TRUE,
                     MUIA_Background, MUII_GroupBack,
+                    MUIA_Frame, MUIV_Frame_None,
                     MUIA_String_AdvanceOnCR, TRUE,
                     MUIA_ObjectID, MAKE_ID('S','T','R','T'),
                     End,
@@ -162,6 +160,7 @@ int main(void)
                 Child, NewObject(mcc->mcc_Class, NULL,
                     MUIA_CycleChain, TRUE,
                     MUIA_Background, MUII_GroupBack,
+                    MUIA_Frame, MUIV_Frame_None,
                     MUIA_String_AdvanceOnCR, TRUE,
                     MUIA_ObjectID, MAKE_ID('C','I','T','Y'),
                     End,
@@ -182,16 +181,16 @@ int main(void)
                 MUIA_String_Contents, "This is a wonderful example string!",
                 End,
               Child, NewObject(mcc->mcc_Class, NULL,
-                  StringFrame,
-                  MUIA_CycleChain, TRUE,
-                  MUIA_BetterString_InactiveContents, "This is a wonderful example string!",
-                  End,
+                StringFrame,
+                MUIA_CycleChain, TRUE,
+                MUIA_BetterString_InactiveContents, "This is a wonderful example string!",
+                End,
               Child, NewObject(mcc->mcc_Class, NULL,
-                  StringFrame,
-                  MUIA_CycleChain, TRUE,
-                  MUIA_String_Secret, TRUE,
-                  MUIA_BetterString_InactiveContents, "This is a wonderful example string!",
-                  End,
+                StringFrame,
+                MUIA_CycleChain, TRUE,
+                MUIA_String_Secret, TRUE,
+                MUIA_BetterString_InactiveContents, "This is a wonderful example string!",
+                End,
               Child, TextObject,
                 MUIA_Font, MUIV_Font_Tiny,
                 MUIA_Text_Contents, "\33cCentered",

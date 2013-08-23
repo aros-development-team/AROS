@@ -1,4 +1,4 @@
-## version $VER: BetterString_mcp.catalog 2.3 (3.1.2008)
+## version $VER: BetterString_mcp.catalog 2.4 (06.02.2013)
 ## language czech
 ## codeset 5
 ;
@@ -18,14 +18,6 @@ Pozadí
 MSG_Label_Cursor
 Kurzor:
 ; Cursor:
-;
-MSG_Label_Fonts
-Písmo:
-; Font:
-;
-MSG_Label_Frame
-Rámeèek:
-; Frame:
 ;
 MSG_Label_Inactive
 Neaktivní:

@@ -1,5 +1,5 @@
 ## chunk AUTH pferrucci@free.fr
-## version $VER: Betterstring_mcp.ct 2.0 (27.12.06)
+## version $VER: BetterString_mcp.catalog 2.2 (06.02.2013)
 ## language français
 ## codeset 0
 ;
@@ -23,14 +23,6 @@ Arrière-plan
 MSG_Label_Cursor
 Curseur :
 ; Cursor:
-;
-MSG_Label_Fonts
-Police :
-; Font:
-;
-MSG_Label_Frame
-Cadre :
-; Frame:
 ;
 MSG_Label_Inactive
 Inactif :
@@ -157,7 +149,7 @@ MSG_Help_DeleteToPrevNextWord_Shortcut
 ALT + Retour arrière/Suppression
 ;
 MSG_SelectOnActive
-Sélection lorsque l'objet est actif :
+Sélection lorsque l'objet est actif
 ;
 MSG_HELP_SelectOnActive
 Sélectionner automatiquement tout le texte\n\
@@ -165,7 +157,7 @@ lorsqu'un objet BetterString est activé\n\
 via la touche TAB ou à l'aide de la souris.
 ;
 MSG_SelectPointer
-Pointeur de sélection :
+Pointeur de sélection
 ;
 MSG_HELP_SelectPointer
 Si activé, un pointeur de sélection personnalisé apparaîtra\n\

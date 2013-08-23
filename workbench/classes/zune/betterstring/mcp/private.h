@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -43,8 +43,6 @@ enum
   Cursor,
   MarkedBack,
   MarkedText,
-  Font,
-  Frame,
   SelectOnActive,
   SelectPointer,
 
@@ -53,10 +51,16 @@ enum
 
 struct InstData_MCP
 {
+  BOOL mui4x;
   Object *Objects[NumberOfObject];
 };
 
 Object *CreatePrefsGroup(struct InstData_MCP *data);
+
+#define LIBVER(lib) ((struct Library *)lib)->lib_Version
+#define LIBREV(lib) ((struct Library *)lib)->lib_Revision
+#define VERSION_IS_AT_LEAST(ver, rev, minver, minrev) (((ver) > (minver)) || ((ver) == (minver) && (rev) == (minrev)) || ((ver) == (minver) && (rev) > (minrev)))
+#define LIB_VERSION_IS_AT_LEAST(lib, minver, minrev)  VERSION_IS_AT_LEAST(((struct Library *)(lib))->lib_Version, ((struct Library *)(lib))->lib_Revision, minver, minrev)
 
 /// xget()
 //  Gets an attribute value from a MUI object

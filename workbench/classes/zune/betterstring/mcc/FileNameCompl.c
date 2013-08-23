@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,11 @@
 #include <proto/utility.h>
 #include <proto/dos.h>
 
+#ifdef __AROS__
+/* for AROS_ABI */
+#include <aros/config.h>
+#endif
+
 #include "private.h"
 
 #include "Debug.h"
@@ -42,7 +47,7 @@ BOOL OverwriteA(STRPTR text, UWORD x, UWORD length, UWORD ptrn_length, struct In
 
   if(length < ptrn_length)
   {
-    UWORD expand = ptrn_length-length;
+    ULONG expand = ptrn_length-length;
 
     if(data->MaxLength && strlen(data->Contents)+expand > (unsigned int)(data->MaxLength-1))
     {
@@ -50,12 +55,14 @@ BOOL OverwriteA(STRPTR text, UWORD x, UWORD length, UWORD ptrn_length, struct In
       ptrn_length += (data->MaxLength-1)-strlen(data->Contents);
       result = FALSE;
     }
-    data->Contents = (STRPTR)SharedPoolExpand(data->Contents, expand);
-    strcpyback(data->Contents+x+ptrn_length, data->Contents+x+length);
+    if(ExpandContentString(&data->Contents, expand) == TRUE)
+      memmove(data->Contents+x+ptrn_length, data->Contents+x+length, strlen(data->Contents+x+length)+1);
+    else
+      E(DBF_ALWAYS, "content expansion by %ld bytes failed", expand);
   }
   else
   {
-    strcpy(data->Contents+x+ptrn_length, data->Contents+x+length);
+    memmove(data->Contents+x+ptrn_length, data->Contents+x+length, strlen(data->Contents+x+length)+1);
   }
   CopyMem(text, data->Contents+x, ptrn_length);
 
@@ -112,7 +119,7 @@ WORD VolumeStart(STRPTR text, WORD pos)
   return pos;
 }
 
-LONG FileNameStart(struct MUIP_BetterString_FileNameStart *msg)
+LONG mFileNameStart(struct MUIP_BetterString_FileNameStart *msg)
 {
   STRPTR buffer = msg->buffer;
   LONG pos = msg->pos;
@@ -179,7 +186,7 @@ VOID InsertFileName(UWORD namestart, struct InstData *data)
   LEAVE();
 }
 
-BOOL FileNameComplete (Object *obj, BOOL backwards, struct InstData *data)
+BOOL FileNameComplete(Object *obj, BOOL backwards, struct InstData *data)
 {
   BOOL edited = FALSE;
 
@@ -226,15 +233,21 @@ BOOL FileNameComplete (Object *obj, BOOL backwards, struct InstData *data)
           dl = LockDosList(LDF_READ|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS);
           while((dl = NextDosEntry(dl, LDF_READ|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS)) != NULL)
           {
-          #ifdef __AROS__
-            strlcpy(tmpBuffer, AROS_BSTR_ADDR(dl->dol_Name), AROS_BSTR_strlen(dl->dol_Name));
-          #else
+            #ifdef __AROS__
+              #if !defined(AROS_ABI) || (AROS_ABI == 0)
+              /* Do ABIv0 stuff here */
+              strlcpy(tmpBuffer, dl->dol_Ext.dol_AROS.dol_DevName, sizeof tmpBuffer);
+              #else
+              /* Do ABIv1 stuff here */
+              strlcpy(tmpBuffer, AROS_BSTR_ADDR(dl->dol_Name), AROS_BSTR_strlen(dl->dol_Name));
+              #endif
+            #else
             // dol_Name is a BSTR, we have to convert it to a regular C string
             char *bstr = BADDR(dl->dol_Name);
 
             // a BSTR cannot exceed 255 characters, hence the buffer size of 256 is enough in any case
             strlcpy(tmpBuffer, &bstr[1], (unsigned char)bstr[0]);
-          #endif
+            #endif
 
             if(Strnicmp(tmpBuffer, data->Contents+pos, cut) == 0)
             {
@@ -288,7 +301,7 @@ BOOL FileNameComplete (Object *obj, BOOL backwards, struct InstData *data)
           oldletter = data->Contents[namestart];
           data->Contents[namestart] = '\0';
 
-          if((fncbuffer = (struct FNCData *)SharedPoolAlloc(4100)))
+          if((fncbuffer = (struct FNCData *)SharedPoolAlloc(4100)) != NULL)
           {
             fncbuffer->next = NULL;
 
@@ -328,6 +341,11 @@ BOOL FileNameComplete (Object *obj, BOOL backwards, struct InstData *data)
                 }
                 UnLock(dirlock);
               }
+              else
+              {
+                SharedPoolFree(fncbuffer);
+              }
+
               FreeDosObject(DOS_EXALLCONTROL, (APTR)control);
             }
           }

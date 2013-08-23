@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -36,7 +36,7 @@
 
 #include "private.h"
 
-#include <SDI/SDI_stdarg.h>
+#include "SDI_stdarg.h"
 
 #define BlockEnabled(data)  (isFlagSet((data)->Flags, FLG_BlockEnabled) && (data)->BlockStart != (data)->BlockStop)
 
@@ -72,23 +72,26 @@ static int STDARGS MySPrintf(char *buf, const char *fmt, ...)
 
 static void AddToUndo(struct InstData *data)
 {
-  if(data->Undo)
-    SharedPoolFree(data->Undo);
+  ENTER();
 
-  if((data->Undo = (STRPTR)SharedPoolAlloc(strlen(data->Contents)+1)))
+  FreeContentString(data->Undo);
+
+  if((data->Undo = AllocContentString(strlen(data->Contents)+1)) != NULL)
   {
     strlcpy(data->Undo, data->Contents, strlen(data->Contents)+1);
     data->UndoPos = data->BufferPos;
     clearFlag(data->Flags, FLG_RedoAvailable);
   }
+
+  LEAVE();
 }
 
 static WORD AlignOffset(Object *obj, struct InstData *data)
 {
-  struct MUI_AreaData  *ad  = muiAreaData(obj);
-  struct TextFont  *font  = data->Font ? data->Font : ad->mad_Font;
-  WORD   width = ad->mad_Box.Width - ad->mad_subwidth;
+  WORD   width = _mwidth(obj);
   WORD   offset = 0;
+
+  ENTER();
 
   if(data->Alignment != MUIV_String_Format_Left)
   {
@@ -97,8 +100,8 @@ static WORD AlignOffset(Object *obj, struct InstData *data)
     UWORD  length, textlength, crsr_width;
     struct TextExtent tExtend;
 
-    SetFont(&data->rport, font);
-    length = TextFit(&data->rport, text, StrLength, &tExtend, NULL, 1, width, font->tf_YSize);
+    SetFont(&data->rport, _font(obj));
+    length = TextFit(&data->rport, text, StrLength, &tExtend, NULL, 1, width, _font(obj)->tf_YSize);
     textlength = TextLength(&data->rport, text, length);
 
     crsr_width = isFlagSet(data->Flags, FLG_Active) ? TextLength(&data->rport, (*(data->Contents+data->BufferPos) == '\0') ? (char *)"n" : (char *)(data->Contents+data->BufferPos), 1) : 0;
@@ -117,20 +120,31 @@ static WORD AlignOffset(Object *obj, struct InstData *data)
         break;
     }
   }
-  return(offset);
+
+  RETURN(offset);
+  return offset;
 }
 
 static BOOL Reject(UBYTE code, STRPTR reject)
 {
-  if(reject)
+  BOOL rc = TRUE;
+
+  ENTER();
+
+  if(reject != NULL)
   {
-    while(*reject)
+    while(*reject != '\0')
     {
       if(code == *reject++)
-        return(FALSE);
+      {
+        rc = FALSE;
+        break;
+      }
     }
   }
-  return(TRUE);
+
+  RETURN(rc);
+  return rc;
 }
 
 static BOOL Accept(UBYTE code, STRPTR accept)
@@ -160,7 +174,9 @@ static BOOL IsHex(UBYTE code)
 
 static LONG FindDigit(struct InstData *data)
 {
-    WORD  pos = data->BufferPos;
+  WORD  pos = data->BufferPos;
+
+  ENTER();
 
   if(IsDigit(data->locale, *(data->Contents+pos)))
   {
@@ -187,22 +203,29 @@ static LONG FindDigit(struct InstData *data)
       pos = -1;
     }
   }
-  return(pos);
+
+  RETURN(pos);
+  return pos;
 }
 
 static UWORD NextWord(STRPTR text, UWORD x, struct Locale *locale)
 {
+  ENTER();
+
   while(IsAlNum(locale, (UBYTE)text[x]))
     x++;
 
   while(text[x] != '\0' && !IsAlNum(locale, (UBYTE)text[x]))
     x++;
 
-  return(x);
+  RETURN(x);
+  return x;
 }
 
 static UWORD PrevWord(STRPTR text, UWORD x, struct Locale *locale)
 {
+  ENTER();
+
   if(x)
     x--;
 
@@ -212,36 +235,27 @@ static UWORD PrevWord(STRPTR text, UWORD x, struct Locale *locale)
   while(x > 0 && IsAlNum(locale, (UBYTE)text[x-1]))
     x--;
 
-  return(x);
-}
-
-void strcpyback(STRPTR dest, STRPTR src)
-{
-  UWORD  length;
-
-  length = strlen(src)+1;
-  dest = dest + length;
-  src = src + length;
-
-  length++;
-  while(--length)
-  {
-    *--dest = *--src;
-  }
+  RETURN(x);
+  return x;
 }
 
 void DeleteBlock(struct InstData *data)
 {
+  ENTER();
+
   AddToUndo(data);
 
   if(BlockEnabled(data) == TRUE)
   {
     UWORD Blk_Start, Blk_Width;
+
     Blk_Start = (data->BlockStart < data->BlockStop) ? data->BlockStart : data->BlockStop;
     Blk_Width = abs(data->BlockStop-data->BlockStart);
-    strcpy(data->Contents+Blk_Start, data->Contents+Blk_Start+Blk_Width);
+    memmove(data->Contents+Blk_Start, data->Contents+Blk_Start+Blk_Width, strlen(data->Contents+Blk_Start+Blk_Width)+1);
     data->BufferPos = Blk_Start;
   }
+
+  LEAVE();
 }
 
 static void CopyBlock(struct InstData *data)
@@ -298,22 +312,27 @@ static void Paste(struct InstData *data)
 
   ENTER();
 
-  // clear the selection
-  DeleteBlock(data);
-
-  ClipboardToString(&str, &length);
-  if(str != NULL && length > 0)
+  if(ClipboardToString(&str, &length) == TRUE)
   {
+    // clear the selection
+    DeleteBlock(data);
+
     if(data->MaxLength != 0 && strlen(data->Contents) + length > (ULONG)data->MaxLength - 1)
     {
       DisplayBeep(NULL);
       length = data->MaxLength - 1 - strlen(data->Contents);
     }
 
-    data->Contents = (STRPTR)SharedPoolExpand(data->Contents, length);
-    strcpyback(data->Contents + data->BufferPos + length, data->Contents + data->BufferPos);
-    memcpy(data->Contents + data->BufferPos, str, length);
-    data->BufferPos += length;
+    if(ExpandContentString(&data->Contents, length) == TRUE)
+    {
+      memmove(data->Contents + data->BufferPos + length, data->Contents + data->BufferPos, strlen(data->Contents + data->BufferPos)+1);
+      memcpy(data->Contents + data->BufferPos, str, length);
+      data->BufferPos += length;
+    }
+    else
+    {
+      E(DBF_ALWAYS, "content expansion by %ld bytes failed", length);
+    }
 
     SharedPoolFree(str);
   }
@@ -323,11 +342,13 @@ static void Paste(struct InstData *data)
 
 static void UndoRedo(struct InstData *data)
 {
-  STRPTR oldcontents = data->Contents;
-  UWORD oldpos = data->BufferPos;
+  STRPTR oldcontents;
+  UWORD oldpos;
 
   ENTER();
 
+  // swap content and undo pointers
+  oldcontents = data->Contents;
   data->Contents = data->Undo;
   data->Undo = oldcontents;
 
@@ -337,6 +358,9 @@ static void UndoRedo(struct InstData *data)
     setFlag(data->Flags, FLG_RedoAvailable);
 
   clearFlag(data->Flags, FLG_BlockEnabled);
+
+  // swap content and undo positions
+  oldpos = data->BufferPos;
   data->BufferPos = data->UndoPos;
   data->UndoPos = oldpos;
 
@@ -345,12 +369,15 @@ static void UndoRedo(struct InstData *data)
 
 static void RevertToOriginal(struct InstData *data)
 {
-  STRPTR oldcontents = data->Contents;
+  STRPTR oldcontents;
 
   ENTER();
 
+  // swap content and original pointers
+  oldcontents = data->Contents;
   data->Contents = data->Original;
   data->Original = oldcontents;
+
   setFlag(data->Flags, FLG_Original);
   clearFlag(data->Flags, FLG_BlockEnabled);
   data->BufferPos = strlen(data->Contents);
@@ -517,10 +544,37 @@ static BOOL DecToHex(struct InstData *data)
   return result;
 }
 
+void TriggerNotify(struct IClass *cl, Object *obj)
+{
+  struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+  struct TagItem tags[] =
+  {
+    { MUIA_String_Contents, (IPTR)data->Contents },
+    { TAG_DONE,             0                    }
+  };
+
+  ENTER();
+
+  // pass the attribute directly to our superclass as our own
+  // handling of OM_SET will suppress the notification in case
+  // the contents did not change
+  if(isFlagClear(data->Flags, FLG_NoNotify))
+  {
+    DoSuperMethod(cl, obj, OM_SET, tags, NULL);
+    clearFlag(data->Flags, FLG_NotifyQueued);
+  }
+  else
+    setFlag(data->Flags, FLG_NotifyQueued);
+
+  LEAVE();
+}
+
 ULONG ConvertKey(struct IntuiMessage *imsg)
 {
   struct InputEvent  event;
   unsigned char code = 0;
+
+  ENTER();
 
   event.ie_NextEvent      = NULL;
   event.ie_Class          = IECLASS_RAWKEY;
@@ -530,7 +584,9 @@ ULONG ConvertKey(struct IntuiMessage *imsg)
   event.ie_EventAddress   = (APTR *) *((IPTR *)imsg->IAddress);
 
   MapRawKey(&event, (STRPTR)&code, 1, NULL);
-  return(code);
+
+  RETURN(code);
+  return code;
 }
 
 IPTR mDoAction(struct IClass *cl, Object *obj, struct MUIP_BetterString_DoAction *msg)
@@ -541,7 +597,7 @@ IPTR mDoAction(struct IClass *cl, Object *obj, struct MUIP_BetterString_DoAction
 
   ENTER();
 
-  D(DBF_INPUT, "DoAction(%ld)", msg->action);
+  D(DBF_INPUT, "DoAction(%ld)");
 
   switch(msg->action)
   {
@@ -676,52 +732,104 @@ IPTR mDoAction(struct IClass *cl, Object *obj, struct MUIP_BetterString_DoAction
     break;
   }
 
-  if(edited == TRUE)
-  {
-    struct TagItem tags[] =
-    {
-      { MUIA_String_Contents, (IPTR)data->Contents  },
-      { TAG_DONE,             0                     }
-    };
-
-    DoSuperMethod(cl, obj, OM_SET, tags, NULL);
-  }
-
   MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+  if(edited == TRUE)
+    TriggerNotify(cl, obj);
 
   RETURN(result);
   return result;
 }
 
-IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-  struct MUI_AreaData *ad = muiAreaData(obj);
-  struct TextFont *Font = data->Font ? data->Font : ad->mad_Font;
-  IPTR  result = 0;
-  BOOL  movement = FALSE;
-  BOOL  edited = FALSE;
-  BOOL  FNC = FALSE;
-  Object *focus = NULL;
+  IPTR result = 0;
+  BOOL movement = FALSE;
+  BOOL edited = FALSE;
+  BOOL FNC = FALSE;
 
   ENTER();
 
-  if(msg->muikey == MUIKEY_UP)
-    focus = data->KeyUpFocus;
-  else if(msg->muikey == MUIKEY_DOWN)
-    focus = data->KeyDownFocus;
-
-  if(focus && _win(obj))
+  // handle the standard MUI keys first
+  if(msg->muikey != MUIKEY_NONE)
   {
-    set(_win(obj), MUIA_Window_ActiveObject, focus);
-    result = MUI_EventHandlerRC_Eat;
+    switch(msg->muikey)
+    {
+      case MUIKEY_UP:
+      {
+        if(data->KeyUpFocus != NULL && _win(obj) != NULL)
+        {
+          set(_win(obj), MUIA_Window_ActiveObject, data->KeyUpFocus);
+          result = MUI_EventHandlerRC_Eat;
+        }
+      }
+      break;
+
+      case MUIKEY_DOWN:
+      {
+        if(data->KeyDownFocus != NULL && _win(obj) != NULL)
+        {
+          set(_win(obj), MUIA_Window_ActiveObject, data->KeyDownFocus);
+          result = MUI_EventHandlerRC_Eat;
+        }
+      }
+      break;
+
+      case MUIKEY_COPY:
+      {
+        CopyBlock(data);
+        clearFlag(data->Flags, FLG_BlockEnabled);
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
+        result = MUI_EventHandlerRC_Eat;
+      }
+      break;
+
+      case MUIKEY_CUT:
+      {
+        CutBlock(data);
+        clearFlag(data->Flags, FLG_BlockEnabled);
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
+        TriggerNotify(cl, obj);
+        result = MUI_EventHandlerRC_Eat;
+      }
+      break;
+
+      case MUIKEY_PASTE:
+      {
+        Paste(data);
+        clearFlag(data->Flags, FLG_BlockEnabled);
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
+        TriggerNotify(cl, obj);
+        result = MUI_EventHandlerRC_Eat;
+      }
+      break;
+
+      case MUIKEY_UNDO:
+      case MUIKEY_REDO:
+      {
+        if(data->Undo && ((msg->muikey == MUIKEY_REDO && isFlagSet(data->Flags, FLG_RedoAvailable)) ||
+                          (msg->muikey == MUIKEY_UNDO && isFlagClear(data->Flags, FLG_RedoAvailable))))
+        {
+          UndoRedo(data);
+          clearFlag(data->Flags, FLG_BlockEnabled);
+          MUI_Redraw(obj, MADF_DRAWUPDATE);
+          TriggerNotify(cl, obj);
+          result = MUI_EventHandlerRC_Eat;
+        }
+        else
+          DisplayBeep(NULL);
+      }
+      break;
+    }
   }
-  else if(msg->imsg)
+
+  if(result == 0 && msg->imsg != NULL)
   {
     ULONG StringLength = strlen(data->Contents);
 
     if(msg->imsg->Class == IDCMP_RAWKEY &&
-//       msg->imsg->Code >= IECODE_KEY_CODE_FIRST &&
+    // msg->imsg->Code >= IECODE_KEY_CODE_FIRST &&
        msg->imsg->Code <= IECODE_KEY_CODE_LAST)
     {
       if(isFlagSet(data->Flags, FLG_Active))
@@ -829,7 +937,7 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                   if(isAnyFlagSet(msg->imsg->Qualifier, IEQUALIFIER_RSHIFT|IEQUALIFIER_LSHIFT|IEQUALIFIER_CONTROL))
                   {
                     AddToUndo(data);
-                    strcpy(data->Contents, data->Contents+data->BufferPos);
+                    memmove(data->Contents, data->Contents+data->BufferPos, strlen(data->Contents+data->BufferPos)+1);
                     data->BufferPos = 0;
                   }
                   else if(isAnyFlagSet(msg->imsg->Qualifier, IEQUALIFIER_RALT|IEQUALIFIER_LALT))
@@ -837,12 +945,12 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                     UWORD NewPos = PrevWord(data->Contents, data->BufferPos, data->locale);
 
                     AddToUndo(data);
-                    strcpy(data->Contents+NewPos, data->Contents+data->BufferPos);
+                    memmove(data->Contents+NewPos, data->Contents+data->BufferPos, strlen(data->Contents+data->BufferPos)+1);
                     data->BufferPos = NewPos;
                   }
                   else
                   {
-                    strcpy(data->Contents+data->BufferPos-1, data->Contents+data->BufferPos);
+                    memmove(data->Contents+data->BufferPos-1, data->Contents+data->BufferPos, strlen(data->Contents+data->BufferPos)+1);
                     data->BufferPos--;
                   }
                 }
@@ -869,12 +977,14 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                   }
                   else if(isAnyFlagSet(msg->imsg->Qualifier, IEQUALIFIER_RALT|IEQUALIFIER_LALT))
                   {
+                    STRPTR start = data->Contents+NextWord(data->Contents, data->BufferPos, data->locale);
+
                     AddToUndo(data);
-                    strcpy(data->Contents+data->BufferPos, data->Contents+NextWord(data->Contents, data->BufferPos, data->locale));
+                    memmove(data->Contents+data->BufferPos, start, strlen(start)+1);
                   }
                   else
                   {
-                    strcpy(data->Contents+data->BufferPos, data->Contents+data->BufferPos+1);
+                    memmove(data->Contents+data->BufferPos, data->Contents+data->BufferPos+1, strlen(data->Contents+data->BufferPos+1)+1);
                   }
                 }
               }
@@ -922,11 +1032,17 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                     if((data->MaxLength == 0 || (ULONG)data->MaxLength-1 > strlen(data->Contents)) &&
                        Accept(code, data->Accept) && Reject(code, data->Reject))
                     {
-                      data->Contents = (STRPTR)SharedPoolExpand(data->Contents, 1);
-                      strcpyback(data->Contents+data->BufferPos+1, data->Contents+data->BufferPos);
-                      *(data->Contents+data->BufferPos) = code;
-                      data->BufferPos++;
-                      edited = TRUE;
+                      if(ExpandContentString(&data->Contents, 1) == TRUE)
+                      {
+                        memmove(data->Contents+data->BufferPos+1, data->Contents+data->BufferPos, strlen(data->Contents + data->BufferPos)+1);
+                        *(data->Contents+data->BufferPos) = code;
+                        data->BufferPos++;
+                        edited = TRUE;
+                      }
+                      else
+                      {
+                        E(DBF_ALWAYS, "content expansion by %ld bytes failed", 1);
+                      }
                     }
                     else
                     {
@@ -1102,18 +1218,11 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
         if(isFlagSet(data->Flags, FLG_BlockEnabled))
           data->BlockStop = data->BufferPos;
 
-        if(edited)
-        {
-          struct TagItem tags[] =
-          {
-            { MUIA_String_Contents, (IPTR)data->Contents },
-            { TAG_DONE,             0                     }
-          };
-
-          DoSuperMethod(cl, obj, OM_SET, tags, NULL);
-        }
-
         MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+        if(edited == TRUE)
+          TriggerNotify(cl, obj);
+
         result = MUI_EventHandlerRC_Eat;
       }
       else
@@ -1187,13 +1296,13 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
           if(isAnyFlagSet(data->ehnode.ehn_Events, /*IDCMP_MOUSEMOVE|*/IDCMP_INTUITICKS))
           {
             DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-//            clearFlag(data->ehnode.ehn_Events, IDCMP_MOUSEMOVE);
+         // clearFlag(data->ehnode.ehn_Events, IDCMP_MOUSEMOVE);
             clearFlag(data->ehnode.ehn_Events, IDCMP_INTUITICKS);
             DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
           }
 
-          // make sure to select the whole betterstring content in case
-          // the objec was freshly active and the user pressed the mousebutton
+          // make sure to select the whole content in case the object was freshly activated
+          // and the user just released the mousebutton (no matter if inside or outside)
           if(isFlagSet(data->Flags, FLG_FreshActive) && BlockEnabled(data) == FALSE &&
              ((data->SelectOnActive == TRUE && isFlagClear(data->Flags, FLG_ForceSelectOff)) || isFlagSet(data->Flags, FLG_ForceSelectOn)))
           {
@@ -1208,10 +1317,10 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
             if(obj != active)
               E(DBF_STARTUP, "MUI error: %lx, %lx", active, obj);
 
-            WORD x = ad->mad_Box.Left + ad->mad_addleft;
-            WORD y = ad->mad_Box.Top  + ad->mad_addtop;
-            WORD width = ad->mad_Box.Width - ad->mad_subwidth;
-            WORD height = Font->tf_YSize;
+            WORD x = _mleft(obj);
+            WORD y = _mtop(obj);
+            WORD width = _mwidth(obj);
+            WORD height = _font(obj)->tf_YSize;
 
             if(!(msg->imsg->MouseX >= x && msg->imsg->MouseX < x+width && msg->imsg->MouseY >= y && msg->imsg->MouseY < y+height))
             {
@@ -1226,10 +1335,10 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
         }
         else if(msg->imsg->Code == IECODE_LBUTTON)
         {
-          WORD x = ad->mad_Box.Left + ad->mad_addleft;
-          WORD y = ad->mad_Box.Top  + ad->mad_addtop;
-          WORD width = ad->mad_Box.Width - ad->mad_subwidth;
-          WORD height = Font->tf_YSize;
+          WORD x = _mleft(obj);
+          WORD y = _mtop(obj);
+          WORD width = _mwidth(obj);
+          WORD height = _font(obj)->tf_YSize;
 
           // remember the pressed mouse button
           setFlag(data->Flags, FLG_MouseButtonDown);
@@ -1241,8 +1350,8 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 
             offset -= AlignOffset(obj, data);
 
-            SetFont(&data->rport, Font);
-            data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, Font->tf_YSize);
+            SetFont(&data->rport, _font(obj));
+            data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, _font(obj)->tf_YSize);
 
             if(data->BufferPos == data->BufferLastPos &&
                DoubleClick(data->StartSecs, data->StartMicros, msg->imsg->Seconds, msg->imsg->Micros))
@@ -1254,8 +1363,18 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 
               data->ClickCount++;
             }
+            else if((data->SelectOnActive == TRUE && isFlagClear(data->Flags, FLG_ForceSelectOff)) ||
+                    isFlagSet(data->Flags, FLG_ForceSelectOn))
+            {
+              // special handling for the "select on active" feature
+              // this makes it possible to start a selection upon the first click within
+              // the object *and* a full selection
+              data->ClickCount = 3;
+            }
             else
+            {
               data->ClickCount = 0;
+            }
 
             // lets save the current bufferpos to the lastpos variable
             data->BufferLastPos = data->BufferPos;
@@ -1310,14 +1429,20 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
             setFlag(data->Flags, FLG_BlockEnabled);
 
             DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-//            setFlag(data->ehnode.ehn_Events, IDCMP_MOUSEMOVE);
+         // setFlag(data->ehnode.ehn_Events, IDCMP_MOUSEMOVE);
             setFlag(data->ehnode.ehn_Events, IDCMP_INTUITICKS);
             DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
 
             if(isFlagSet(data->Flags, FLG_Active))
               MUI_Redraw(obj, MADF_DRAWUPDATE);
             else
+            {
+              // set the active flag now already
+              // this will be checked in MUIM_GoActive to distinguish between
+              // activation by mouse and by keyboard/application
+              setFlag(data->Flags, FLG_Active);
               set(_win(obj), MUIA_Window_ActiveObject, obj);
+            }
 
             result = MUI_EventHandlerRC_Eat;
           }
@@ -1330,9 +1455,9 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
               D(DBF_STARTUP, "Clicked outside gadget");
               setFlag(data->Flags, FLG_DragOutside);
 
-              DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-//              data->ehnode.ehn_Events |= IDCMP_MOUSEMOVE;
-              DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
+           // DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
+           // data->ehnode.ehn_Events |= IDCMP_MOUSEMOVE;
+           // DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
 #else
               set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
 #endif
@@ -1354,11 +1479,11 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
           WORD x, width, mousex;
           struct TextExtent tExtend;
 
-          x = ad->mad_Box.Left + ad->mad_addleft;
+          x = _mleft(obj);
           mousex = msg->imsg->MouseX - AlignOffset(obj, data);
-          width = ad->mad_Box.Width - ad->mad_subwidth;
+          width = _mwidth(obj);
 
-          SetFont(&data->rport, Font);
+          SetFont(&data->rport, _font(obj));
 
           switch(data->ClickCount)
           {
@@ -1377,7 +1502,7 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                   if(data->DisplayPos < StringLength)
                   {
                     data->DisplayPos++;
-                    data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, ad->mad_Box.Width - ad->mad_subwidth, Font->tf_YSize);
+                    data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, _mwidth(obj), _font(obj)->tf_YSize);
                   }
                   else
                   {
@@ -1391,7 +1516,7 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 /*                  if(offset < 0)
                     data->BufferPos = 0;
                   else
-*/                  data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, Font->tf_YSize);
+*/                  data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, _font(obj)->tf_YSize);
                 }
               }
               data->BlockStop = data->BufferPos;
@@ -1413,7 +1538,7 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
               {
 //                offset -= AlignOffset(obj, data);
                 if(offset > 0)
-                  newpos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, Font->tf_YSize);
+                  newpos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, _font(obj)->tf_YSize);
               }
 
               if(newpos >= data->BlockStart)
@@ -1442,4 +1567,42 @@ IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 
   RETURN(result);
   return result;
+}
+
+IPTR mInsert(struct IClass *cl, Object *obj, struct MUIP_BetterString_Insert *msg)
+{
+  struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+  UWORD pos;
+
+  ENTER();
+
+  switch(msg->pos)
+  {
+/*
+    case MUIV_BetterString_Insert_StartOfString:
+      pos = 0;
+    break;
+*/
+
+    case MUIV_BetterString_Insert_EndOfString:
+      pos = strlen(data->Contents);
+    break;
+
+    case MUIV_BetterString_Insert_BufferPos:
+      pos = data->BufferPos;
+    break;
+
+    default:
+      pos = msg->pos;
+    break;
+  }
+
+  Overwrite(msg->text, pos, 0, data);
+  clearFlag(data->Flags, FLG_BlockEnabled);
+  MUI_Redraw(obj, MADF_DRAWUPDATE);
+  // trigger a notification as we just changed the contents
+  TriggerNotify(cl, obj);
+
+  RETURN(TRUE);
+  return TRUE;
 }

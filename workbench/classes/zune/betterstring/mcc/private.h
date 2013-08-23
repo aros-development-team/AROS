@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -44,12 +44,12 @@ struct FNCData
 struct InstData
 {
   /* Normal stringgadget info */
-  STRPTR  Contents;
-  STRPTR  InactiveContents;
-  STRPTR  Original;   /* Amiga-q (toggle) */
-  STRPTR  Undo;       /* Amiga-z (toggle) */
-  STRPTR  Accept;
-  STRPTR  Reject;
+  char    *Contents;
+  char    *InactiveContents;
+  char    *Original;   /* Amiga-q (toggle) */
+  char    *Undo;       /* Amiga-z (toggle) */
+  char    *Accept;
+  char    *Reject;
   Object  *ForwardObject;
   Object  *Popup;     /* ctrl-p popup object */
   UWORD   DisplayPos;
@@ -65,9 +65,9 @@ struct InstData
   struct  RastPort            rport;
   struct  Locale            *locale;
   ULONG   Flags;
-  Object  *PopupMenu;
 
-  Object  *KeyUpFocus, *KeyDownFocus;
+  Object  *KeyUpFocus;
+  Object  *KeyDownFocus;
 
   // the selection pointer Object
   Object  *PointerObj;
@@ -98,33 +98,46 @@ struct InstData
   ULONG   CursorColor;
   ULONG   MarkedColor;
   ULONG   MarkedTextColor;
-  struct  TextFont *Font;
   BOOL    SelectOnActive;
   BOOL    SelectPointer;
 
+  char InactiveBackgroundBuffer[128];
+  char ActiveBackgroundBuffer[128];
+
   /* Edit hook */
   struct Hook *EditHook;
+
+  BOOL mui39;
+  BOOL mui4x;
+  STRPTR OwnBackground;
 };
 
-#define FLG_Secret          (1L << 0)
-#define FLG_AdvanceOnCr     (1L << 1)
-#define FLG_BlockEnabled    (1L << 2)
-#define FLG_Active          (1L << 3)
-#define FLG_Ghosted         (1L << 4)
-#define FLG_Shown           (1L << 5)
-#define FLG_Original        (1L << 6)
-#define FLG_RedoAvailable   (1L << 7)
-#define FLG_StayActive      (1L << 8)
-#define FLG_SetFrame        (1L << 9)
-#define FLG_OwnFont         (1L << 10)
-#define FLG_OwnBackground   (1L << 11)
-#define FLG_NoInput         (1L << 12)
-#define FLG_DragOutside     (1L << 13)
-#define FLG_NoShortcuts     (1L << 14)
-#define FLG_ForceSelectOn   (1L << 15)
-#define FLG_ForceSelectOff  (1L << 16)
-#define FLG_FreshActive     (1L << 17)
-#define FLG_MouseButtonDown (1L << 18)
+#define FLG_Secret                 (1L << 0)
+#define FLG_AdvanceOnCr            (1L << 1)
+#define FLG_BlockEnabled           (1L << 2)
+#define FLG_Active                 (1L << 3)
+#define FLG_Ghosted                (1L << 4)
+#define FLG_Shown                  (1L << 5)
+#define FLG_Original               (1L << 6)
+#define FLG_RedoAvailable          (1L << 7)
+#define FLG_StayActive             (1L << 8)
+#define FLG_OwnBackground          (1L << 11)
+#define FLG_NoInput                (1L << 12)
+#define FLG_DragOutside            (1L << 13)
+#define FLG_NoShortcuts            (1L << 14)
+#define FLG_ForceSelectOn          (1L << 15)
+#define FLG_ForceSelectOff         (1L << 16)
+#define FLG_FreshActive            (1L << 17)
+#define FLG_MouseButtonDown        (1L << 18)
+#define FLG_NoNotify               (1L << 19) // don't trigger notifications immediately but queue them instead
+#define FLG_NotifyQueued           (1L << 20) // there are notifications pending
+#define FLG_Setup                  (1L << 21) // successful MUIM_Setup
+#define FLG_WindowSleepNotifyAdded (1L << 22) // notify for MUIA_Window_Sleep was added
+#define FLG_DummyNotifyAdded       (1L << 23) // dummy notify was added
+
+// private attributes
+#define MUIA_BetterString_InternalSelectOnActive   0xad002000UL
+#define MUIA_BetterString_Nop                      0xad002001UL
 
 // proper RAWKEY_ defines were first introduced in OS4 and MorphOS
 // and unfortunately they are also a bit different, so lets
@@ -197,26 +210,33 @@ struct InstData
 
 // our prototypes
 VOID PrintString(struct IClass *, Object *);
-IPTR HandleInput(struct IClass *, Object *, struct MUIP_HandleEvent *);
+void TriggerNotify(struct IClass *cl, Object *obj);
 ULONG ConvertKey(struct IntuiMessage *);
 VOID DeleteBlock(struct InstData *);
 
-IPTR Get(struct IClass *, Object *, struct opGet *);
-IPTR Set(struct IClass *, Object *, struct opSet *);
+// HandleInput.c
 IPTR mDoAction(struct IClass *, Object *, struct MUIP_BetterString_DoAction *);
+IPTR mHandleInput(struct IClass *, Object *, struct MUIP_HandleEvent *);
+IPTR mInsert(struct IClass *cl, Object *obj, struct MUIP_BetterString_Insert *msg);
 
+// GetSetAttrs.c
+IPTR mGet(struct IClass *, Object *, struct opGet *);
+IPTR mSet(struct IClass *, Object *, struct opSet *);
+
+// AllocFunctions.c
 BOOL CreateSharedPool(void);
 void DeleteSharedPool(void);
 APTR SharedPoolAlloc(ULONG);
-VOID SharedPoolFree(APTR);
-APTR SharedPoolExpand(APTR, ULONG);
-
-VOID strcpyback(STRPTR, STRPTR);
+void SharedPoolFree(APTR);
+char *AllocContentString(ULONG size);
+void FreeContentString(char *str);
+ULONG ContentStringSize(char *str);
+BOOL ExpandContentString(char **str, ULONG extra);
 
 BOOL Overwrite(STRPTR, UWORD, UWORD, struct InstData *);
 BOOL OverwriteA(STRPTR, UWORD, UWORD, UWORD, struct InstData *);
 BOOL FileNameComplete(Object *, BOOL, struct InstData *);
-LONG FileNameStart(struct MUIP_BetterString_FileNameStart *msg);
+LONG mFileNameStart(struct MUIP_BetterString_FileNameStart *msg);
 
 WORD CmpStrings(REG(a0, STRPTR), REG(a1, STRPTR));
 
@@ -225,6 +245,10 @@ VOID FreeConfig(struct MUI_RenderInfo *, struct InstData *);
 
 struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG), REG(d1, LONG), REG(d2, LONG), REG(d3, LONG flags), REG(a0, struct BitMap *));
 VOID SAVEDS ASM MUIG_FreeBitMap(REG(a0, struct BitMap *));
+
+// Dispatcher.c
+void AddWindowSleepNotify(struct IClass *cl, Object *obj);
+void RemWindowSleepNotify(struct IClass *cl, Object *obj);
 
 // Pointer.c
 void SetupSelectPointer(struct InstData *data);
@@ -236,7 +260,7 @@ void HideSelectPointer(Object *obj, struct InstData *data);
 BOOL StartClipboardServer(void);
 void ShutdownClipboardServer(void);
 void StringToClipboard(STRPTR str, LONG length);
-void ClipboardToString(STRPTR *str, LONG *length);
+BOOL ClipboardToString(STRPTR *str, LONG *length);
 
 #define setFlag(mask, flag)             (mask) |= (flag)
 #define clearFlag(mask, flag)           (mask) &= ~(flag)
@@ -244,9 +268,14 @@ void ClipboardToString(STRPTR *str, LONG *length);
 #define isFlagSet(mask, flag)           (((mask) & (flag)) == (flag))
 #define isFlagClear(mask, flag)         (((mask) & (flag)) == 0)
 
+#define LIBVER(lib) ((struct Library *)lib)->lib_Version
+#define LIBREV(lib) ((struct Library *)lib)->lib_Revision
+#define VERSION_IS_AT_LEAST(ver, rev, minver, minrev) (((ver) > (minver)) || ((ver) == (minver) && (rev) == (minrev)) || ((ver) == (minver) && (rev) > (minrev)))
+#define LIB_VERSION_IS_AT_LEAST(lib, minver, minrev)  VERSION_IS_AT_LEAST(((struct Library *)(lib))->lib_Version, ((struct Library *)(lib))->lib_Revision, minver, minrev)
+
 #if defined(__MORPHOS__)
 #include <proto/exec.h>
-#define IS_MORPHOS2 (((struct Library *)SysBase)->lib_Version >= 51)
+#define IS_MORPHOS2 LIB_VERSION_IS_AT_LEAST(SysBase, 51, 0)
 #endif
 
 // some own usefull MUI-style macros to check mouse positions in objects
@@ -265,5 +294,37 @@ IPTR xget(Object *obj, const IPTR attr);
   #define xget(OBJ, ATTR) ({IPTR b=0; GetAttr(ATTR, OBJ, &b); b;})
 #endif
 ///
+
+#ifndef MUIKEY_CUT
+#define MUIKEY_CUT 22
+#endif
+
+#ifndef MUIKEY_COPY
+#define MUIKEY_COPY 23
+#endif
+
+#ifndef MUIKEY_PASTE
+#define MUIKEY_PASTE 24
+#endif
+
+#ifndef MUIKEY_UNDO
+#define MUIKEY_UNDO 25
+#endif
+
+#ifndef MUIKEY_REDO
+#define MUIKEY_REDO 26
+#endif
+
+#ifndef MUIA_String_Popup
+#define MUIA_String_Popup 0x80420d71
+#endif
+
+#ifndef MUII_StringBack
+#define MUII_StringBack        49
+#endif
+
+#ifndef MUII_StringActiveBack
+#define MUII_StringActiveBack  50
+#endif
 
 #endif /* BETTERSTRING_MCC_PRIV_H */

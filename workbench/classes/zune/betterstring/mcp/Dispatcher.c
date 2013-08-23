@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -38,23 +38,20 @@ struct PrefsExchangeData
   const ULONG Tag;
   const ULONG CfgItem;
   const ULONG Type;      // 0 = string, 1 = integer
-  const ULONG Length;
   const APTR  DefValue;
 };
 
-static struct PrefsExchangeData PrefsInfo[] =
+static const struct PrefsExchangeData PrefsInfo[] =
 {
-  { ActiveBack,     MUIA_Imagedisplay_Spec,  MUICFG_BetterString_ActiveBack,     0, 64,           (APTR)"2:m1"    },
-  { ActiveText,     MUIA_Pendisplay_Spec,    MUICFG_BetterString_ActiveText,     0, 32,           (APTR)"m5"      },
-  { InactiveBack,   MUIA_Imagedisplay_Spec,  MUICFG_BetterString_InactiveBack,   0, 64,           (APTR)"2:m2"    },
-  { InactiveText,   MUIA_Pendisplay_Spec,    MUICFG_BetterString_InactiveText,   0, 32,           (APTR)"m4"      },
-  { Cursor,         MUIA_Pendisplay_Spec,    MUICFG_BetterString_Cursor,         0, 32,           (APTR)"m0"      },
-  { MarkedBack,     MUIA_Pendisplay_Spec,    MUICFG_BetterString_MarkedBack,     0, 32,           (APTR)"m6"      },
-  { MarkedText,     MUIA_Pendisplay_Spec,    MUICFG_BetterString_MarkedText,     0, 32,           (APTR)"m5"      },
-  { Font,           MUIA_String_Contents,    MUICFG_BetterString_Font,           0,  0,           (APTR)""        },
-  { Frame,          MUIA_Framedisplay_Spec,  MUICFG_BetterString_Frame,          0, 32,           (APTR)"302211"  },
-  { SelectOnActive, MUIA_Selected,           MUICFG_BetterString_SelectOnActive, 1, sizeof(LONG), (APTR)0         },
-  { SelectPointer,  MUIA_Selected,           MUICFG_BetterString_SelectPointer,  1, sizeof(LONG), (APTR)1         }
+  { ActiveBack,     MUIA_Imagedisplay_Spec,  MUICFG_BetterString_ActiveBack,     0, (APTR)CFG_BetterString_ActiveBack_Def     },
+  { ActiveText,     MUIA_Pendisplay_Spec,    MUICFG_BetterString_ActiveText,     0, (APTR)CFG_BetterString_ActiveText_Def     },
+  { InactiveBack,   MUIA_Imagedisplay_Spec,  MUICFG_BetterString_InactiveBack,   0, (APTR)CFG_BetterString_InactiveBack_Def   },
+  { InactiveText,   MUIA_Pendisplay_Spec,    MUICFG_BetterString_InactiveText,   0, (APTR)CFG_BetterString_InactiveText_Def   },
+  { Cursor,         MUIA_Pendisplay_Spec,    MUICFG_BetterString_Cursor,         0, (APTR)CFG_BetterString_Cursor_Def         },
+  { MarkedBack,     MUIA_Pendisplay_Spec,    MUICFG_BetterString_MarkedBack,     0, (APTR)CFG_BetterString_MarkedBack_Def     },
+  { MarkedText,     MUIA_Pendisplay_Spec,    MUICFG_BetterString_MarkedText,     0, (APTR)CFG_BetterString_MarkedText_Def     },
+  { SelectOnActive, MUIA_Selected,           MUICFG_BetterString_SelectOnActive, 1, (APTR)CFG_BetterString_SelectOnActive_Def },
+  { SelectPointer,  MUIA_Selected,           MUICFG_BetterString_SelectPointer,  1, (APTR)CFG_BetterString_SelectPointer_Def  }
 };
 
 DISPATCHER(_DispatcherP)
@@ -71,8 +68,11 @@ DISPATCHER(_DispatcherP)
       if((obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg)))
       {
         struct InstData_MCP *data = (struct InstData_MCP *)INST_DATA(cl, obj);
-
         Object *prefsobject;
+
+        // everything beyond muimaster 20.5500 is considered to be MUI4
+        data->mui4x = LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 5500);
+
         if((prefsobject = CreatePrefsGroup(data)))
         {
           ULONG i;
@@ -80,10 +80,10 @@ DISPATCHER(_DispatcherP)
           DoMethod(obj, OM_ADDMEMBER, prefsobject);
 
           // This is MUI 3.9 stuff: Each registered object will get a context-menu, like normal pref-items
-          if(MUIMasterBase->lib_Version >= 20)
+          if(LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 0))
           {
             for(i=0; i < NumberOfObject; i++)
-              DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].CfgItem, 0L, NULL);
+              DoMethod(obj, MUIM_Mccprefs_RegisterGadget, data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].CfgItem, 2, NULL, PrefsInfo[i].Tag);
           }
 
           result = (IPTR)obj;
@@ -107,15 +107,15 @@ DISPATCHER(_DispatcherP)
 
         if(PrefsInfo[i].Type == 0)
         {
-          W(DBF_STARTUP, "0 MUIM_Dataspace_Find[%ld]: %08lx : %lx / %lx", i, PrefsInfo[i].CfgItem, cfg_val, cfg_val ? cfg_val : PrefsInfo[i].DefValue);
+          D(DBF_STARTUP, "0 MUIM_Dataspace_Find[%ld]: %08lx : %lx / %lx", i, PrefsInfo[i].CfgItem, cfg_val, cfg_val ? cfg_val : PrefsInfo[i].DefValue);
 
-          set(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag, cfg_val ? cfg_val : PrefsInfo[i].DefValue);
+          nnset(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag, cfg_val ? cfg_val : PrefsInfo[i].DefValue);
         }
         else
         {
-          W(DBF_STARTUP, "1 MUIM_Dataspace_Find[%ld]: %08lx : %P / %P", i, PrefsInfo[i].CfgItem, cfg_val, cfg_val ? *(IPTR *)cfg_val : (IPTR)PrefsInfo[i].DefValue);
+          D(DBF_STARTUP, "1 MUIM_Dataspace_Find[%ld]: %08lx : %P / %P", i, PrefsInfo[i].CfgItem, cfg_val, cfg_val ? *(IPTR *)cfg_val : (IPTR)PrefsInfo[i].DefValue);
 
-          set(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag, cfg_val ? *(IPTR *)cfg_val : (IPTR)PrefsInfo[i].DefValue);
+          nnset(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag, cfg_val ? *(IPTR *)cfg_val : (IPTR)PrefsInfo[i].DefValue);
         }
       }
     }
@@ -129,22 +129,40 @@ DISPATCHER(_DispatcherP)
       for(i=0; i < NumberOfObject; i++)
       {
         SIPTR cfg_val;
-        ULONG len;
 
         cfg_val = xget(data->Objects[PrefsInfo[i].ObjIndex], PrefsInfo[i].Tag);
-        len = PrefsInfo[i].Length;
 
         if(PrefsInfo[i].Type == 0)
         {
-          W(DBF_STARTUP, "0 MUIM_Dataspace_Add[%ld]: %08lx : %lx", i, PrefsInfo[i].CfgItem, cfg_val);
-          DoMethod(configdata, MUIM_Dataspace_Add, cfg_val, len > 0 ? len : strlen((char *)cfg_val)+1, PrefsInfo[i].CfgItem);
+          if(stricmp((char *)cfg_val, PrefsInfo[i].DefValue) != 0)
+          {
+            D(DBF_STARTUP, "0 MUIM_Dataspace_Add[%ld]: %08lx : %lx", i, PrefsInfo[i].CfgItem, cfg_val);
+            DoMethod(configdata, MUIM_Dataspace_Add, cfg_val, strlen((char *)cfg_val)+1, PrefsInfo[i].CfgItem);
+          }
+          else
+          {
+            D(DBF_STARTUP, "0 MUIM_Dataspace_Remove[%ld]: %08lx", i, PrefsInfo[i].CfgItem);
+            DoMethod(configdata, MUIM_Dataspace_Remove, PrefsInfo[i].CfgItem);
+          }
         }
         else
         {
-          W(DBF_STARTUP, "1 MUIM_Dataspace_Add[%ld]: %08lx : %lx / %lx", i, PrefsInfo[i].CfgItem, &cfg_val, cfg_val);
-          DoMethod(configdata, MUIM_Dataspace_Add, &cfg_val, len, PrefsInfo[i].CfgItem);
+          if(cfg_val != (SIPTR)PrefsInfo[i].DefValue)
+          {
+            D(DBF_STARTUP, "1 MUIM_Dataspace_Add[%ld]: %08lx : %lx / %lx", i, PrefsInfo[i].CfgItem, &cfg_val, cfg_val);
+            DoMethod(configdata, MUIM_Dataspace_Add, &cfg_val, sizeof(cfg_val), PrefsInfo[i].CfgItem);
+          }
+          else
+          {
+            D(DBF_STARTUP, "1 MUIM_Dataspace_Remove[%ld]: %08lx", i, PrefsInfo[i].CfgItem);
+            DoMethod(configdata, MUIM_Dataspace_Remove, PrefsInfo[i].CfgItem);
+          }
         }
       }
+
+      // erase obsolete settings
+      DoMethod(configdata, MUIM_Dataspace_Remove, MUICFG_BetterString_Font);
+      DoMethod(configdata, MUIM_Dataspace_Remove, MUICFG_BetterString_Frame);
     }
     break;
 

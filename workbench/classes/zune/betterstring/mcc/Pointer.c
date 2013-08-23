@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -70,6 +70,12 @@ static const ULONG selectPointer[] =
 #endif
 #ifndef POINTERA_Height
 #define POINTERA_Height    (POINTERA_Dummy + 0x09) // <= 64
+#endif
+#ifndef WA_PointerType
+#define WA_PointerType     (WA_Dummy + 0x50)
+#endif
+#ifndef POINTERTYPE_TEXT
+#define POINTERTYPE_TEXT   30
 #endif
 
 #else // __amigaos4__
@@ -295,7 +301,10 @@ void SetupSelectPointer(struct InstData *data)
 {
   ENTER();
 
-  #if defined(__MORPHOS__)
+  #if defined(__amigaos4__)
+  if(LIB_VERSION_IS_AT_LEAST(IntuitionBase, 53, 40))
+    data->PointerObj = (APTR)POINTERTYPE_TEXT;
+  #elif defined(__MORPHOS__)
   if(IS_MORPHOS2)
     data->PointerObj = (APTR)POINTERTYPE_SELECTTEXT;
   #endif
@@ -315,7 +324,7 @@ void SetupSelectPointer(struct InstData *data)
       POINTERA_YOffset,     (LONG)selectPointerYOffset,
       TAG_DONE);
     #else
-    if(((struct Library *)IntuitionBase)->lib_Version >= 39)
+    if(LIB_VERSION_IS_AT_LEAST(IntuitionBase, 39, 0))
     {
       data->PointerObj = (Object *)NewObject(NULL, (STRPTR)"pointerclass",
         POINTERA_BitMap,      (SIPTR)&selectPointerBitmap,
@@ -343,7 +352,10 @@ void CleanupSelectPointer(struct InstData *data)
 {
   ENTER();
 
-  #if defined(__MORPHOS__)
+  #if defined(__amigaos4__)
+  if(LIB_VERSION_IS_AT_LEAST(IntuitionBase, 53, 40))
+    data->PointerObj = NULL;
+  #elif defined(__MORPHOS__)
   if (IS_MORPHOS2)
     data->PointerObj = NULL;
   #endif
@@ -358,7 +370,7 @@ void CleanupSelectPointer(struct InstData *data)
     #if defined(__amigaos4__) || defined(__MORPHOS__)
     DisposeObject(data->PointerObj);
     #else
-    if(((struct Library *)IntuitionBase)->lib_Version >= 39)
+    if(LIB_VERSION_IS_AT_LEAST(IntuitionBase, 39, 0))
     {
       DisposeObject(data->PointerObj);
     }
@@ -397,12 +409,14 @@ void ShowSelectPointer(Object *obj, struct InstData *data)
     // that we can't unfortunately check for data->activeSelectPointer
     // here because otherwise we might end up with the standard
     // window pointer when quickly switching pointer TE.mcc
-    #if defined(__amigaos4__) || defined(__AROS__)
+    #if defined(__amigaos4__)
+    SetWindowPointer(_window(obj), LIB_VERSION_IS_AT_LEAST(IntuitionBase, 53, 40) ? WA_PointerType : WA_Pointer, data->PointerObj, TAG_DONE);
+    #elif defined(__AROS__)
     SetWindowPointer(_window(obj), WA_Pointer, data->PointerObj, TAG_DONE);
     #elif defined(__MORPHOS__)
     SetWindowPointer(_window(obj), IS_MORPHOS2 ? WA_PointerType : WA_Pointer, data->PointerObj, TAG_DONE);
     #else
-    if(((struct Library *)IntuitionBase)->lib_Version >= 39)
+    if(LIB_VERSION_IS_AT_LEAST(IntuitionBase, 39, 0))
       SetWindowPointer(_window(obj), WA_Pointer, data->PointerObj, TAG_DONE);
     else
       SetPointer(_window(obj), (APTR)data->PointerObj, selectPointerHeight,
@@ -427,7 +441,7 @@ void HideSelectPointer(Object *obj, struct InstData *data)
     #if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
     SetWindowPointer(_window(obj), TAG_DONE);
     #else
-    if(((struct Library *)IntuitionBase)->lib_Version >= 39)
+    if(LIB_VERSION_IS_AT_LEAST(IntuitionBase, 39, 0))
       SetWindowPointer(_window(obj), TAG_DONE);
     else
       ClearPointer(_window(obj));

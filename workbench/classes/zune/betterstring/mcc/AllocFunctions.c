@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -45,6 +45,7 @@ BOOL CreateSharedPool(void)
                                                 ASOPOOL_Threshold, 256,
                                                 ASOPOOL_Name, "BetterString.mcc shared pool",
                                                 ASOPOOL_Protected, TRUE,
+                                                ASOPOOL_LockMem, FALSE,
                                                 TAG_DONE);
   #elif defined(__MORPHOS__)
   sharedPool = CreatePool(MEMF_SEM_PROTECTED, 512, 256);
@@ -78,6 +79,28 @@ void DeleteSharedPool(void)
   LEAVE();
 }
 
+#if defined(__amigaos3__)
+static APTR AllocVecPooled(APTR poolHeader, ULONG memSize)
+{
+  ULONG *memory;
+
+  ENTER();
+
+  // add the number of bytes used to store the size information
+  memSize += sizeof(ULONG);
+
+  // allocate memory from the pool
+  if((memory = (ULONG *)AllocPooled(poolHeader, memSize)) != NULL)
+  {
+    // and finally store the size of the memory block, including the size itself
+    *memory++ = memSize;
+  }
+
+  RETURN(memory);
+  return memory;
+}
+#endif
+
 APTR SharedPoolAlloc(ULONG length)
 {
   ULONG *mem;
@@ -88,12 +111,7 @@ APTR SharedPoolAlloc(ULONG length)
   ObtainSemaphore(&sharedPoolSema);
   #endif
 
-  length = (length + sizeof(ULONG) + sizeof(ULONG) - 1) & ~(sizeof(ULONG)-1);
-  if((mem = AllocPooled(sharedPool, length)))
-  {
-    *mem = length;
-    mem += 1;
-  }
+  mem = AllocVecPooled(sharedPool, length);
 
   #if !defined(__amigaos4__) && !defined(__MORPHOS__)
   ReleaseSemaphore(&sharedPoolSema);
@@ -103,20 +121,33 @@ APTR SharedPoolAlloc(ULONG length)
   return mem;
 }
 
-VOID SharedPoolFree(APTR mem)
+#if defined(__amigaos3__)
+static void FreeVecPooled(APTR poolHeader, APTR memory)
 {
-  ULONG *memptr, length;
+  ULONG *mem = (ULONG *)memory;
+  ULONG memSize;
 
   ENTER();
 
-  memptr = &((ULONG *)mem)[-1];
-  length = *memptr;
+  // skip back over the stored size information
+  memSize = *(--mem);
+
+  // an return the memory block to the pool
+  FreePooled(poolHeader, mem, memSize);
+
+  LEAVE();
+}
+#endif
+
+void SharedPoolFree(APTR mem)
+{
+  ENTER();
 
   #if !defined(__amigaos4__) && !defined(__MORPHOS__)
   ObtainSemaphore(&sharedPoolSema);
   #endif
 
-  FreePooled(sharedPool, memptr, length);
+  FreeVecPooled(sharedPool, mem);
 
   #if !defined(__amigaos4__) && !defined(__MORPHOS__)
   ReleaseSemaphore(&sharedPoolSema);
@@ -125,23 +156,118 @@ VOID SharedPoolFree(APTR mem)
   LEAVE();
 }
 
-APTR SharedPoolExpand(APTR mem, ULONG extra)
+struct ContentString
 {
-  ULONG length = ((ULONG *)mem)[-1] - sizeof(ULONG);
-  ULONG sz = strlen((char *)mem) + extra;
+  ULONG size;
+  char string[0];
+};
+
+#define STR_TO_CSTR(str)    (struct ContentString *)(((size_t)(str)) - sizeof(struct ContentString))
+#define CSTR_TO_STR(cstr)   (&(cstr)->string[0])
+
+static struct ContentString *AllocContentStringInternal(ULONG size)
+{
+  struct ContentString *cstr;
 
   ENTER();
 
-  if(length <= sz)
+  if((cstr = SharedPoolAlloc(sizeof(*cstr) + size)) != NULL)
   {
-    APTR new_mem = SharedPoolAlloc(sz + 20);
-
-    CopyMem(mem, new_mem, length);
-    SharedPoolFree(mem);
-
-    mem = new_mem;
+    cstr->size = size;
+    cstr->string[0] = '\0';
   }
 
-  RETURN(mem);
-  return mem;
+  RETURN(cstr);
+  return cstr;
+}
+
+char *AllocContentString(ULONG size)
+{
+  struct ContentString *cstr;
+  char *result = NULL;
+
+  ENTER();
+
+  if((cstr = AllocContentStringInternal(size)) != NULL)
+  {
+    result = CSTR_TO_STR(cstr);
+  }
+
+  RETURN(result);
+  return result;
+}
+
+void FreeContentString(char *str)
+{
+  ENTER();
+
+  if(str != NULL)
+  {
+    struct ContentString *cstr = STR_TO_CSTR(str);
+
+    SharedPoolFree(cstr);
+  }
+
+  LEAVE();
+}
+
+ULONG ContentStringSize(char *str)
+{
+  ULONG size = 0;
+
+  ENTER();
+
+  if(str != NULL)
+  {
+    struct ContentString *cstr = STR_TO_CSTR(str);
+
+    size = cstr->size;
+  }
+
+  RETURN(size);
+  return size;
+}
+
+BOOL ExpandContentString(char **str, ULONG extra)
+{
+  BOOL success = FALSE;
+
+  ENTER();
+
+  if(*str != NULL)
+  {
+    struct ContentString *cstr = STR_TO_CSTR(*str);
+    ULONG newsize = strlen(cstr->string) + 1 + extra;
+
+    // check if we have to expand our contents string
+    if(cstr->size < newsize)
+    {
+      struct ContentString *newcstr;
+
+      // add another 32 bytes for less expansions in the future
+      newsize += 32;
+      if((newcstr = AllocContentStringInternal(newsize)) != NULL)
+      {
+        strlcpy(newcstr->string, cstr->string, newsize);
+        FreeContentString(*str);
+        *str = CSTR_TO_STR(newcstr);
+
+        success = TRUE;
+      }
+    }
+    else
+    {
+      // no expansion necessary, instant success
+      success = TRUE;
+    }
+  }
+  else
+  {
+    // allocate a new content string
+    if((*str = AllocContentString(extra)) != NULL)
+      success = TRUE;
+  }
+
+  RETURN(success);
+  return success;
 }

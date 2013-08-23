@@ -6,6 +6,7 @@ BetterString.mcc/MUIA_BetterString_InactiveContents
 BetterString.mcc/MUIA_BetterString_KeyUpFocus
 BetterString.mcc/MUIA_BetterString_KeyDownFocus
 BetterString.mcc/MUIA_BetterString_NoInput
+BetterString.mcc/MUIA_BetterString_NoNotify
 BetterString.mcc/MUIA_BetterString_NoShortcuts
 BetterString.mcc/MUIA_BetterString_SelectOnActive
 BetterString.mcc/MUIA_BetterString_SelectSize
@@ -17,8 +18,8 @@ BetterString.mcc/MUIM_BetterString_Insert
 BetterString.mcc/BetterString.mcc
 
     *******************************************************************
-    Copyright (C) 2005-2010 by BetterString.mcc Open Source Team
-    $Id: MCC_BetterString.doc 242 2010-05-01 07:29:36Z damato $
+    Copyright (C) 2005-2012 by BetterString.mcc Open Source Team
+    $Id: MCC_BetterString.doc 317 2012-05-10 17:44:55Z damato $
 
     BetterString is a stringgadget replacement. It is created for MUI,
     so using it should eliminate the problems with the original BOOPSI
@@ -90,6 +91,23 @@ BetterString.mcc/MUIM_BetterString_Insert
 
     FUNCTION
         Effectively turns the gadget into read-only mode.
+
+BetterString.mcc/MUIA_BetterString_NoNotify
+
+    NAME
+        MUIA_BetterString_NoNotify -- [ISG], BOOL
+
+    FUNCTION
+        If set to TRUE, BetterString will omit to send out notifies for
+        MUIA_String_Contents changes. However, as soon as this flag is
+        set back to FALSE a notification will be triggered in case during
+        the lifetime of NoNotify a notification event was prevented.
+
+    NOTE
+        This could be particularly helpful if certain consecutive 
+        operations need to be performed on a betterstring object and
+        the application wants to make sure that only one notification
+        will be triggered.
 
 BetterString.mcc/MUIA_BetterString_NoShortcuts
 

@@ -1,4 +1,4 @@
-## version $VER: BetterString_mcp.catalog 2.1 (15.4.2007)
+## version $VER: BetterString_mcp.catalog 2.2 (06.02.2013)
 ## codeset 0
 ## language dansk
 ;
@@ -18,14 +18,6 @@ Baggrund
 MSG_Label_Cursor
 Markør:
 ; Cursor:
-;
-MSG_Label_Fonts
-Skriftsnit:
-; Font:
-;
-MSG_Label_Frame
-Ramme:
-; Frame:
 ;
 MSG_Label_Inactive
 Inaktiv:

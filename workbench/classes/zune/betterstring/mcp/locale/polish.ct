@@ -1,4 +1,4 @@
-## version $VER: betterstring_mcp.catalog 2.0 (19.05.2010)
+## version $VER: BetterString_mcp.catalog 2.2 (06.02.2013)
 ## language polski
 ## codeset 5
 ## chunk AUTH Mariusz Danilewicz <mandi@interia.pl>
@@ -19,14 +19,6 @@ T³o
 MSG_Label_Cursor
 Kursor:
 ; Cursor:
-;
-MSG_Label_Fonts
-Czcionka:
-; Font:
-;
-MSG_Label_Frame
-Ramka:
-; Frame:
 ;
 MSG_Label_Inactive
 Niekatywny:
@@ -189,8 +181,8 @@ ALT + BACKSPACE/DELETE
 ; ALT + BACKSPACE/DELETE
 ;
 MSG_SelectOnActive
-Zaznaczanie przy aktywacji:
-; Select on Active:
+Zaznaczanie przy aktywacji
+; Select on Active
 ;
 MSG_HELP_SelectOnActive
 Automatycznie zaznacza ca³y tekst podczas\n\
@@ -201,8 +193,8 @@ klawisza TAB lub wska¼nika myszki.
 ; via TAB cycling or mouse activation.
 ;
 MSG_SelectPointer
-Wska¼nik zaznaczania:
-; Selection Pointer:
+Wska¼nik zaznaczania
+; Selection Pointer
 ;
 MSG_HELP_SelectPointer
 W³±czenie tej opcji spowoduje u¿ywanie w³asnego\n\

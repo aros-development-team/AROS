@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -34,95 +34,80 @@
 
 #include "Debug.h"
 
-ULONG GetCol (Object *obj, ULONG item, struct MUI_PenSpec *defaultcol, UNUSED struct InstData *data)
+static ULONG GetCol(Object *obj, ULONG item, struct MUI_PenSpec *defaultcol)
 {
-  ULONG res;
   struct MUI_PenSpec *spec;
 
-  if(DoMethod(obj, MUIM_GetConfigItem, item, &spec))
-      res = MUI_ObtainPen(muiRenderInfo(obj), spec, 0L);
-  else  res = MUI_ObtainPen(muiRenderInfo(obj), defaultcol, 0L);
+  if(DoMethod(obj, MUIM_GetConfigItem, item, &spec) == 0)
+    spec = defaultcol;
 
-  return res;
+  return MUI_ObtainPen(muiRenderInfo(obj), spec, 0L);
 }
 
-void InitConfig (Object *obj, struct InstData *data)
+void InitConfig(Object *obj, struct InstData *data)
 {
   IPTR setting;
 
   ENTER();
 
-  if(isFlagSet(data->Flags, FLG_SetFrame) && MUIMasterBase->lib_Version >= 20)
-    set(obj, MUIA_Frame, DoMethod(obj, MUIM_GetConfigItem, MUICFG_BetterString_Frame, &setting) ? (STRPTR)setting : (STRPTR)"302211");
-
-  data->InactiveText = GetCol(obj, MUICFG_BetterString_InactiveText, (struct MUI_PenSpec *)"m4", data);
-  data->ActiveText = GetCol(obj, MUICFG_BetterString_ActiveText, (struct MUI_PenSpec *)"m5", data);
-  data->CursorColor = GetCol(obj, MUICFG_BetterString_Cursor, (struct MUI_PenSpec *)"m0", data);
-  data->MarkedColor = GetCol(obj, MUICFG_BetterString_MarkedBack, (struct MUI_PenSpec *)"m6", data);
-  data->MarkedTextColor = GetCol(obj, MUICFG_BetterString_MarkedText, (struct MUI_PenSpec *)"m5", data);
+  data->InactiveText = GetCol(obj, MUICFG_BetterString_InactiveText, (struct MUI_PenSpec *)CFG_BetterString_InactiveText_Def);
+  data->ActiveText = GetCol(obj, MUICFG_BetterString_ActiveText, (struct MUI_PenSpec *)CFG_BetterString_ActiveText_Def);
+  data->CursorColor = GetCol(obj, MUICFG_BetterString_Cursor, (struct MUI_PenSpec *)CFG_BetterString_Cursor_Def);
+  data->MarkedColor = GetCol(obj, MUICFG_BetterString_MarkedBack, (struct MUI_PenSpec *)CFG_BetterString_MarkedBack_Def);
+  data->MarkedTextColor = GetCol(obj, MUICFG_BetterString_MarkedText, (struct MUI_PenSpec *)CFG_BetterString_MarkedText_Def);
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_BetterString_InactiveBack, &setting))
-    data->InactiveBackground = (STRPTR)setting;
-  else
-    data->InactiveBackground = (STRPTR)MUII_BACKGROUND;
-
-  if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_BetterString_ActiveBack, &setting))
-    data->ActiveBackground = (STRPTR)setting;
-  else
-    data->ActiveBackground = (STRPTR)"2:m1";
-
-  if(isFlagClear(data->Flags, FLG_OwnFont) && DoMethod(obj, MUIM_GetConfigItem, MUICFG_BetterString_Font, &setting))
   {
-    STRPTR src = (STRPTR)setting;
-
-    if(strlen(src) > 0)
-    {
-      char fontname[256];
-      struct TextAttr myfont = { fontname, 8, FS_NORMAL, 0 };
-      LONG c = 0;
-
-      while(src[c] != '/' && src[c] != '\0' && c < 255)
-      {
-        fontname[c] = src[c];
-        ++c;
-      }
-      strlcpy(&fontname[c], ".font", 256-c);
-      StrToLong(&src[c+1], &c);
-      myfont.ta_YSize = c;
-
-      data->Font = OpenDiskFont(&myfont);
-    }
-    else
-      data->Font = NULL;
+    // don't remember the string from the configuration but copy it
+    // with MUI4's realtime prefs the configuration might change upon
+    // canceling MUI prefs and hence we would operate on invalid data.
+    strlcpy(data->InactiveBackgroundBuffer, (STRPTR)setting, sizeof(data->InactiveBackgroundBuffer));
+    data->InactiveBackground = data->InactiveBackgroundBuffer;
   }
   else
-    data->Font = NULL;
+    data->InactiveBackground = (STRPTR)CFG_BetterString_InactiveBack_Def;
+
+  if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_BetterString_ActiveBack, &setting))
+  {
+    // don't remember the string from the configuration but copy it
+    // with MUI4's realtime prefs the configuration might change upon
+    // canceling MUI prefs and hence we would operate on invalid data.
+    strlcpy(data->ActiveBackgroundBuffer, (STRPTR)setting, sizeof(data->ActiveBackgroundBuffer));
+    data->ActiveBackground = data->ActiveBackgroundBuffer;
+  }
+  else
+    data->ActiveBackground = (STRPTR)CFG_BetterString_ActiveBack_Def;
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_BetterString_SelectOnActive, &setting))
     data->SelectOnActive = *(IPTR*)setting;
   else
-    data->SelectOnActive = FALSE;
+    data->SelectOnActive = CFG_BetterString_SelectOnActive_Def;
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_BetterString_SelectPointer, &setting))
     data->SelectPointer = *(IPTR*)setting;
   else
-    data->SelectPointer = FALSE;
+    data->SelectPointer = CFG_BetterString_SelectPointer_Def;
 
-  if(isFlagClear(data->Flags, FLG_OwnBackground))
+  if(isFlagSet(data->Flags, FLG_OwnBackground))
+    set(obj, MUIA_Background, data->OwnBackground);
+  else if(data->mui4x == TRUE)
+    set(obj, MUIA_Background, MUII_StringBack);
+  else
     set(obj, MUIA_Background, data->InactiveBackground);
 
   LEAVE();
 }
 
-VOID FreeConfig (struct MUI_RenderInfo *mri, struct InstData *data)
+VOID FreeConfig(struct MUI_RenderInfo *mri, struct InstData *data)
 {
+  ENTER();
+
   MUI_ReleasePen(mri, data->InactiveText);
   MUI_ReleasePen(mri, data->ActiveText);
   MUI_ReleasePen(mri, data->CursorColor);
   MUI_ReleasePen(mri, data->MarkedColor);
   MUI_ReleasePen(mri, data->MarkedTextColor);
 
-  if(data->Font)
-    CloseFont(data->Font);
+  LEAVE();
 }
 
