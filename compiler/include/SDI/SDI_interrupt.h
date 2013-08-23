@@ -15,6 +15,7 @@
                   and Dirk Stöcker I created files to handle interrupt
                   and handler functions in an API compatible way.
  1.1   25.04.06 : fixed MakeInterrupt() and MakeHandler() macro. (geit)
+ WIP   23.08.13 : ported to AROS. WARNING: FOR ABIv1 ONLY!
 
 */
 
