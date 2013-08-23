@@ -5,7 +5,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -58,40 +58,40 @@ extern "C" {
 
 #define TextEditor_Dummy   (0xad000000UL)
 
-#define MUIA_TextEditor_AreaMarked            (TextEditor_Dummy + 0x14)
-#define MUIA_TextEditor_ColorMap              (TextEditor_Dummy + 0x2f)
 #define MUIA_TextEditor_Contents              (TextEditor_Dummy + 0x02)
 #define MUIA_TextEditor_CursorX               (TextEditor_Dummy + 0x04)
 #define MUIA_TextEditor_CursorY               (TextEditor_Dummy + 0x05)
 #define MUIA_TextEditor_DoubleClickHook       (TextEditor_Dummy + 0x06)
+#define MUIA_TextEditor_TypeAndSpell          (TextEditor_Dummy + 0x07)
 #define MUIA_TextEditor_ExportHook            (TextEditor_Dummy + 0x08)
 #define MUIA_TextEditor_ExportWrap            (TextEditor_Dummy + 0x09)
 #define MUIA_TextEditor_FixedFont             (TextEditor_Dummy + 0x0a)
 #define MUIA_TextEditor_Flow                  (TextEditor_Dummy + 0x0b)
 #define MUIA_TextEditor_HasChanged            (TextEditor_Dummy + 0x0c)
-#define MUIA_TextEditor_ImportHook            (TextEditor_Dummy + 0x0e)
-#define MUIA_TextEditor_ImportWrap            (TextEditor_Dummy + 0x10)
-#define MUIA_TextEditor_InsertMode            (TextEditor_Dummy + 0x0f)
-#define MUIA_TextEditor_InVirtualGroup        (TextEditor_Dummy + 0x1b)
-#define MUIA_TextEditor_KeyBindings           (TextEditor_Dummy + 0x11)
-#define MUIA_TextEditor_MultiColorQuoting     (TextEditor_Dummy + 0x31)
-#define MUIA_TextEditor_NumLock               (TextEditor_Dummy + 0x18)
-#define MUIA_TextEditor_Pen                   (TextEditor_Dummy + 0x2e)
 #define MUIA_TextEditor_Prop_DeltaFactor      (TextEditor_Dummy + 0x0d)
+#define MUIA_TextEditor_ImportHook            (TextEditor_Dummy + 0x0e)
+#define MUIA_TextEditor_InsertMode            (TextEditor_Dummy + 0x0f)
+#define MUIA_TextEditor_ImportWrap            (TextEditor_Dummy + 0x10)
+#define MUIA_TextEditor_KeyBindings           (TextEditor_Dummy + 0x11)
+#define MUIA_TextEditor_UndoAvailable         (TextEditor_Dummy + 0x12)
+#define MUIA_TextEditor_RedoAvailable         (TextEditor_Dummy + 0x13)
+#define MUIA_TextEditor_AreaMarked            (TextEditor_Dummy + 0x14)
 #define MUIA_TextEditor_Prop_Entries          (TextEditor_Dummy + 0x15)
-#define MUIA_TextEditor_Prop_First            (TextEditor_Dummy + 0x20)
 #define MUIA_TextEditor_Prop_Visible          (TextEditor_Dummy + 0x16)
 #define MUIA_TextEditor_Quiet                 (TextEditor_Dummy + 0x17)
+#define MUIA_TextEditor_NumLock               (TextEditor_Dummy + 0x18)
 #define MUIA_TextEditor_ReadOnly              (TextEditor_Dummy + 0x19)
-#define MUIA_TextEditor_RedoAvailable         (TextEditor_Dummy + 0x13)
-#define MUIA_TextEditor_Separator             (TextEditor_Dummy + 0x2c)
 #define MUIA_TextEditor_Slider                (TextEditor_Dummy + 0x1a)
+#define MUIA_TextEditor_InVirtualGroup        (TextEditor_Dummy + 0x1b)
 #define MUIA_TextEditor_StyleBold             (TextEditor_Dummy + 0x1c)
 #define MUIA_TextEditor_StyleItalic           (TextEditor_Dummy + 0x1d)
 #define MUIA_TextEditor_StyleUnderline        (TextEditor_Dummy + 0x1e)
-#define MUIA_TextEditor_TypeAndSpell          (TextEditor_Dummy + 0x07)
-#define MUIA_TextEditor_UndoAvailable         (TextEditor_Dummy + 0x12)
+#define MUIA_TextEditor_Prop_First            (TextEditor_Dummy + 0x20)
 #define MUIA_TextEditor_WrapBorder            (TextEditor_Dummy + 0x21)
+#define MUIA_TextEditor_Separator             (TextEditor_Dummy + 0x2c)
+#define MUIA_TextEditor_Pen                   (TextEditor_Dummy + 0x2e)
+#define MUIA_TextEditor_ColorMap              (TextEditor_Dummy + 0x2f)
+#define MUIA_TextEditor_MultiColorQuoting     (TextEditor_Dummy + 0x31)
 #define MUIA_TextEditor_Rows                  (TextEditor_Dummy + 0x32)
 #define MUIA_TextEditor_Columns               (TextEditor_Dummy + 0x33)
 #define MUIA_TextEditor_AutoClip              (TextEditor_Dummy + 0x34)
@@ -102,14 +102,15 @@ extern "C" {
 #define MUIA_TextEditor_ActiveObjectOnClick   (TextEditor_Dummy + 0x3a)
 #define MUIA_TextEditor_PasteStyles           (TextEditor_Dummy + 0x3b)
 #define MUIA_TextEditor_PasteColors           (TextEditor_Dummy + 0x3c)
+#define MUIA_TextEditor_ConvertTabs           (TextEditor_Dummy + 0x3d)
+#define MUIA_TextEditor_WrapWords             (TextEditor_Dummy + 0x3e)
+#define MUIA_TextEditor_TabSize               (TextEditor_Dummy + 0x3f)
 
+#define MUIM_TextEditor_HandleError           (TextEditor_Dummy + 0x1f)
 #define MUIM_TextEditor_AddKeyBindings        (TextEditor_Dummy + 0x22)
 #define MUIM_TextEditor_ARexxCmd              (TextEditor_Dummy + 0x23)
-#define MUIM_TextEditor_BlockInfo             (TextEditor_Dummy + 0x30)
 #define MUIM_TextEditor_ClearText             (TextEditor_Dummy + 0x24)
-#define MUIM_TextEditor_ExportBlock           (TextEditor_Dummy + 0x37)
 #define MUIM_TextEditor_ExportText            (TextEditor_Dummy + 0x25)
-#define MUIM_TextEditor_HandleError           (TextEditor_Dummy + 0x1f)
 #define MUIM_TextEditor_InsertText            (TextEditor_Dummy + 0x26)
 #define MUIM_TextEditor_MacroBegin            (TextEditor_Dummy + 0x27)
 #define MUIM_TextEditor_MacroEnd              (TextEditor_Dummy + 0x28)
@@ -119,19 +120,21 @@ extern "C" {
 #define MUIM_TextEditor_MarkText              (TextEditor_Dummy + 0x2c)
 #define MUIM_TextEditor_QueryKeyAction        (TextEditor_Dummy + 0x2d)
 #define MUIM_TextEditor_SetBlock              (TextEditor_Dummy + 0x2e)
+#define MUIM_TextEditor_BlockInfo             (TextEditor_Dummy + 0x30)
+#define MUIM_TextEditor_ExportBlock           (TextEditor_Dummy + 0x37)
 
 struct MUIP_TextEditor_ARexxCmd          { STACKED ULONG MethodID; STACKED STRPTR command; };
-struct MUIP_TextEditor_BlockInfo         { STACKED ULONG MethodID; STACKED ULONG *startx; STACKED ULONG *starty; STACKED ULONG *stopx; STACKED ULONG *stopy; };
+struct MUIP_TextEditor_BlockInfo         { STACKED ULONG MethodID; STACKED LONG *startx; STACKED LONG *starty; STACKED LONG *stopx; STACKED LONG *stopy; };
 struct MUIP_TextEditor_ClearText         { STACKED ULONG MethodID; };
-struct MUIP_TextEditor_ExportBlock       { STACKED ULONG MethodID; STACKED ULONG flags; STACKED ULONG startx; STACKED ULONG starty; STACKED ULONG stopx; STACKED ULONG stopy; };
+struct MUIP_TextEditor_ExportBlock       { STACKED ULONG MethodID; STACKED ULONG flags; STACKED LONG startx; STACKED LONG starty; STACKED LONG stopx; STACKED LONG stopy; };
 struct MUIP_TextEditor_ExportText        { STACKED ULONG MethodID; };
 struct MUIP_TextEditor_HandleError       { STACKED ULONG MethodID; STACKED ULONG errorcode; }; /* See below for error codes */
 struct MUIP_TextEditor_InsertText        { STACKED ULONG MethodID; STACKED STRPTR text; STACKED LONG pos; }; /* See below for positions */
 struct MUIP_TextEditor_Replace           { STACKED ULONG MethodID; STACKED STRPTR NewString; STACKED ULONG Flags; };
 struct MUIP_TextEditor_Search            { STACKED ULONG MethodID; STACKED STRPTR SearchString; STACKED ULONG Flags; };
-struct MUIP_TextEditor_MarkText          { STACKED ULONG MethodID; STACKED ULONG start_crsr_x; STACKED ULONG start_crsr_y; STACKED ULONG stop_crsr_x; STACKED ULONG stop_crsr_y; };
+struct MUIP_TextEditor_MarkText          { STACKED ULONG MethodID; STACKED LONG start_crsr_x; STACKED LONG start_crsr_y; STACKED LONG stop_crsr_x; STACKED LONG stop_crsr_y; };
 struct MUIP_TextEditor_QueryKeyAction    { STACKED ULONG MethodID; STACKED ULONG keyAction; };
-struct MUIP_TextEditor_SetBlock          { STACKED ULONG MethodID; STACKED ULONG startx; STACKED ULONG starty; STACKED ULONG stopx; STACKED ULONG stopy; STACKED ULONG operation; STACKED ULONG value; };
+struct MUIP_TextEditor_SetBlock          { STACKED ULONG MethodID; STACKED LONG startx; STACKED LONG starty; STACKED LONG stopx; STACKED LONG stopy; STACKED ULONG operation; STACKED ULONG value; };
 
 #define MUIV_TextEditor_ExportHook_Plain       0x00000000UL
 #define MUIV_TextEditor_ExportHook_EMail       0x00000001UL
@@ -155,6 +158,9 @@ struct MUIP_TextEditor_SetBlock          { STACKED ULONG MethodID; STACKED ULONG
 #define MUIV_TextEditor_WrapMode_NoWrap        0x00000000UL
 #define MUIV_TextEditor_WrapMode_SoftWrap      0x00000001UL
 #define MUIV_TextEditor_WrapMode_HardWrap      0x00000002UL
+
+/* Values for MUIA_TextEditor_TabSize */
+#define MUIV_TextEditor_TabSize_Default        0
 
 /* Values for MUIM_TextEditor_MarkText */
 #define MUIV_TextEditor_MarkText_All           (-1)

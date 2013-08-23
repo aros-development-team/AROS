@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -219,7 +219,7 @@ int main(void)
             Object *app, *window, *clear, *cut, *copy, *paste, *erase,
                    *bold, *italic, *underline, *ischanged, *undo, *redo, *string,
                    *xslider, *yslider, *flow, *search, *replace, *wrapmode, *wrapborder,
-                   *rgroup, *isdisabled, *isreadonly;
+                   *rgroup, *isdisabled, *isreadonly, *converttabs, *wrapwords;
             Object *lower,*upper;
             Object *undoslider;
 
@@ -272,6 +272,7 @@ int main(void)
                           MUIA_FixHeight,     17,
                           MUIA_FixWidth,      24,
                           MUIA_InputMode,     MUIV_InputMode_Toggle,
+                          MUIA_CycleChain,    TRUE,
                           End,
 
                         Child, italic = TextObject,
@@ -282,6 +283,7 @@ int main(void)
                           MUIA_FixHeight,     17,
                           MUIA_FixWidth,      24,
                           MUIA_InputMode,     MUIV_InputMode_Toggle,
+                          MUIA_CycleChain,    TRUE,
                         End,
 
                         Child, underline = TextObject,
@@ -292,6 +294,7 @@ int main(void)
                           MUIA_FixHeight,     17,
                           MUIA_FixWidth,      24,
                           MUIA_InputMode,     MUIV_InputMode_Toggle,
+                          MUIA_CycleChain,    TRUE,
                         End,
 
                         Child, ischanged = MUI_MakeObject(MUIO_Checkmark, "Is changed?"),
@@ -300,7 +303,26 @@ int main(void)
                         Child, flow = MUI_MakeObject(MUIO_Cycle, NULL, flow_text),
                         Child, wrapmode = MUI_MakeObject(MUIO_Cycle, NULL, wrap_modes),
                         Child, wrapborder = MUI_MakeObject(MUIO_Slider, NULL, 0, 10000),
-
+                        Child, converttabs = TextObject,
+                          MUIA_Background,    MUII_ButtonBack,
+                          MUIA_Frame,         MUIV_Frame_Button,
+                          MUIA_Text_PreParse, "\33c",
+                          MUIA_Text_Contents, "Tabs2Spaces",
+                          MUIA_FixHeight,     17,
+                          MUIA_FixWidth,      24,
+                          MUIA_InputMode,     MUIV_InputMode_Toggle,
+                          MUIA_CycleChain,    TRUE,
+                          End,
+                        Child, wrapwords = TextObject,
+                          MUIA_Background,    MUII_ButtonBack,
+                          MUIA_Frame,         MUIV_Frame_Button,
+                          MUIA_Text_PreParse, "\33c",
+                          MUIA_Text_Contents, "Wrap words",
+                          MUIA_FixHeight,     17,
+                          MUIA_FixWidth,      24,
+                          MUIA_InputMode,     MUIV_InputMode_Toggle,
+                          MUIA_CycleChain,    TRUE,
+                          End,
                       End,
 
                       Child, HGroup,
@@ -350,6 +372,8 @@ int main(void)
   //                                  MUIA_TextEditor_WrapBorder, wrap_border,
   //                                MUIA_TextEditor_ExportWrap, 80,
                                     MUIA_TextEditor_WrapMode, MUIV_TextEditor_WrapMode_NoWrap,
+                                    MUIA_TextEditor_ConvertTabs, FALSE,
+                                    MUIA_TextEditor_WrapWords, FALSE,
 
                                   MUIA_TextEditor_ExportHook, MUIV_TextEditor_ExportHook_NoStyle,
   //                                MUIA_TextEditor_ImportHook, MUIV_TextEditor_ImportHook_EMail,
@@ -419,8 +443,8 @@ int main(void)
 
                             End,
   */                    Child, HGroup,
-                        Child, xslider = MUI_MakeObject(MUIO_Slider, NULL, 0, 10000),
-                        Child, yslider = MUI_MakeObject(MUIO_Slider, NULL, 0, 1000),
+                          Child, xslider = MUI_MakeObject(MUIO_Slider, NULL, 0, 10000),
+                          Child, yslider = MUI_MakeObject(MUIO_Slider, NULL, 0, 1000),
                         End,
                       Child, undoslider = MUI_MakeObject(MUIO_Slider, NULL, 0, 1000),
                       Child, string = StringObject,
@@ -440,7 +464,26 @@ int main(void)
               unsigned long running = 1;
               BPTR  fh;
 
+            set(clear, MUIA_CycleChain, TRUE);
+            set(cut, MUIA_CycleChain, TRUE);
+            set(copy, MUIA_CycleChain, TRUE);
+            set(paste, MUIA_CycleChain, TRUE);
+            set(erase, MUIA_CycleChain, TRUE);
+            set(undo, MUIA_CycleChain, TRUE);
+            set(redo, MUIA_CycleChain, TRUE);
+            set(search, MUIA_CycleChain, TRUE);
+            set(replace, MUIA_CycleChain, TRUE);
+            set(lower, MUIA_CycleChain, TRUE);
+            set(upper, MUIA_CycleChain, TRUE);
+            set(ischanged, MUIA_CycleChain, TRUE);
+            set(isdisabled, MUIA_CycleChain, TRUE);
+            set(isreadonly, MUIA_CycleChain, TRUE);
+            set(flow, MUIA_CycleChain, TRUE);
+            set(wrapmode, MUIA_CycleChain, TRUE);
+            set(wrapborder, MUIA_CycleChain, TRUE);
             set(editorgad, MUIA_TextEditor_Slider, slider);
+            set(xslider, MUIA_CycleChain, TRUE);
+            set(yslider, MUIA_CycleChain, TRUE);
 
             if(argarray[4])
             {
@@ -537,6 +580,11 @@ int main(void)
 
             DoMethod(window, MUIM_Notify, MUIA_Window_InputEvent, "f1", rgroup, 3, MUIM_Set, MUIA_Group_ActivePage, 0);
             DoMethod(window, MUIM_Notify, MUIA_Window_InputEvent, "f2", rgroup, 3, MUIM_Set, MUIA_Group_ActivePage, 1);
+
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_ConvertTabs, MUIV_EveryTime, converttabs, 3, MUIM_NoNotifySet, MUIA_Selected, MUIV_TriggerValue);
+            DoMethod(converttabs,  MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_ConvertTabs, MUIV_TriggerValue);
+            DoMethod(editorgad, MUIM_Notify, MUIA_TextEditor_WrapWords, MUIV_EveryTime, converttabs, 3, MUIM_NoNotifySet, MUIA_Selected, MUIV_TriggerValue);
+            DoMethod(wrapwords,  MUIM_Notify, MUIA_Selected, MUIV_EveryTime, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_WrapWords, MUIV_TriggerValue);
 
             set(window, MUIA_Window_ActiveObject, editorgad);
             set(window, MUIA_Window_Open, TRUE);

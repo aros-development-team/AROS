@@ -20,24 +20,28 @@
 
 ***************************************************************************/
 
-#include <proto/exec.h>
+/*
+ * The system (and compiler) rely on a symbol named _start which marks
+ * the beginning of execution of an ELF file. To prevent others from
+ * executing this library, and to keep the compiler/linker happy, we
+ * define an empty _start symbol here.
+ *
+ * On the classic system (pre-AmigaOS4) this was usually done by
+ * moveq #0,d0
+ * rts
+ *
+ */
 
-#include "SDI_compiler.h"
-
-#include "Debug.h"
-
-// GetHead()
-// get the head element of a list
-
-struct Node *GetHead(struct List *list)
+#if defined(__amigaos3__)
+asm(".text\n\
+     .even\n\
+     .globl _start\n\
+    _start:\n\
+     moveq #20,d0\n\
+     rts");
+#else
+LONG _start(void)
 {
-  struct Node *result = NULL;
-
-  ENTER();
-
-  if(list != NULL && IsListEmpty(list) == FALSE)
-    result = list->lh_Head;
-
-  RETURN(result);
-  return result;
+  return RETURN_FAIL;
 }
+#endif

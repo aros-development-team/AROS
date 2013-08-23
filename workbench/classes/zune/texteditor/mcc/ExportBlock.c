@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@ IPTR mExportBlock(struct IClass *cl, Object *obj, struct MUIP_TextEditor_ExportB
   struct InstData *data = INST_DATA(cl, obj);
   struct line_node *node;
   struct Hook *exportHook = data->ExportHook;
-  ULONG wraplen = data->ExportWrap;
+  LONG wraplen = data->ExportWrap;
   struct ExportMessage emsg;
   struct marking newblock;
   ULONG flags = msg->flags;
@@ -54,8 +54,7 @@ IPTR mExportBlock(struct IClass *cl, Object *obj, struct MUIP_TextEditor_ExportB
 
   if(isFlagSet(flags, MUIF_TextEditor_ExportBlock_TakeBlock))
   {
-
-    if(msg->starty <= (ULONG)data->totallines)
+    if(msg->starty <= data->totallines)
       newblock.startline = LineNode(data, msg->starty+1);
 
     if(msg->startx <= (newblock.startline)->line.Length)
@@ -64,7 +63,7 @@ IPTR mExportBlock(struct IClass *cl, Object *obj, struct MUIP_TextEditor_ExportB
     if(msg->stopx <= (newblock.startline)->line.Length)
       newblock.stopx = msg->stopx;
 
-    if(msg->starty <= (ULONG)data->totallines)
+    if(msg->stopy <= data->totallines)
       newblock.stopline = LineNode(data, msg->stopy+1);
   }
 
@@ -77,7 +76,7 @@ IPTR mExportBlock(struct IClass *cl, Object *obj, struct MUIP_TextEditor_ExportB
   // the currently active export hook
   while(node != NULL)
   {
-    struct line_node *next_node = node->next;
+    struct line_node *next = GetNextLine(node);
 
     emsg.UserData = user_data;
     emsg.Contents = node->line.Contents;
@@ -88,11 +87,11 @@ IPTR mExportBlock(struct IClass *cl, Object *obj, struct MUIP_TextEditor_ExportB
     emsg.Flow = node->line.Flow;
     emsg.Separator = node->line.Separator;
     emsg.ExportWrap = wraplen;
-    emsg.Last = next_node == NULL || node == newblock.stopline;
+    emsg.Last = next == NULL || node == newblock.stopline;
 
     // to make sure that for the last line we don't export the additional,
     // artificial newline '\n' we reduce the passed length value by one.
-    if(next_node == NULL && emsg.Contents[node->line.Length-1] == '\n')
+    if(next == NULL && emsg.Contents[node->line.Length-1] == '\n')
       emsg.Length--;
 
     // see if we have to skip some chars at the front or
@@ -119,7 +118,7 @@ IPTR mExportBlock(struct IClass *cl, Object *obj, struct MUIP_TextEditor_ExportB
     if(node == newblock.stopline)
       break;
 
-    node = next_node;
+    node = next;
   }
 
   RETURN((IPTR)user_data);

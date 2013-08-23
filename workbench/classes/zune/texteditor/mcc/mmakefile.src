@@ -10,7 +10,6 @@ USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)
 
 FILES := library \
         AllocBitMap \
-        AllocFunctions \
         BlockOperators \
         CaseConversion \
         ClipboardServer \
@@ -38,7 +37,9 @@ FILES := library \
         SpellChecker \
         StyleOperators \
         UndoFunctions \
-        Debug
+        NewGfx \
+        Debug \
+	extrasrc/MoveList
 
 %build_module_simple mmake=workbench-classes-zune-texteditor-class \
   modname=TextEditor modtype=mcc \

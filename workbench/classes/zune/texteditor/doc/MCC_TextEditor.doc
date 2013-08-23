@@ -7,6 +7,7 @@ TextEditor.mcc/MUIA_TextEditor_AutoClip
 TextEditor.mcc/MUIA_TextEditor_ColorMap
 TextEditor.mcc/MUIA_TextEditor_Columns
 TextEditor.mcc/MUIA_TextEditor_Contents
+TextEditor.mcc/MUIA_TextEditor_ConvertTabs
 TextEditor.mcc/MUIA_TextEditor_CursorPosition
 TextEditor.mcc/MUIA_TextEditor_CursorX
 TextEditor.mcc/MUIA_TextEditor_CursorY
@@ -37,11 +38,13 @@ TextEditor.mcc/MUIA_TextEditor_Slider
 TextEditor.mcc/MUIA_TextEditor_StyleBold
 TextEditor.mcc/MUIA_TextEditor_StyleItalic
 TextEditor.mcc/MUIA_TextEditor_StyleUnderline
+TextEditor.mcc/MUIA_TextEditor_TabSize
 TextEditor.mcc/MUIA_TextEditor_TypeAndSpell
 TextEditor.mcc/MUIA_TextEditor_UndoAvailable
 TextEditor.mcc/MUIA_TextEditor_UndoLevels
 TextEditor.mcc/MUIA_TextEditor_WrapBorder
 TextEditor.mcc/MUIA_TextEditor_WrapMode
+TextEditor.mcc/MUIA_TextEditor_WrapWords
 TextEditor.mcc/MUIM_TextEditor_ARexxCmd
 TextEditor.mcc/MUIM_TextEditor_BlockInfo
 TextEditor.mcc/MUIM_TextEditor_ClearText
@@ -61,7 +64,7 @@ TextEditor.mcc/MUIM_TextEditor_Search
 
     *******************************************************************
     Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
-    $Id: MCC_TextEditor.doc 612 2010-04-21 15:54:05Z damato $
+    $Id: MCC_TextEditor.doc 903 2012-11-29 13:27:34Z thboeckel $
 
     TextEditor.mcc is a multiline string gadget which holds most of the
     functions of a normal text editor including some special function-
@@ -167,7 +170,11 @@ TextEditor.mcc/MUIM_TextEditor_Search
         Bear in mind that your application may change screen, so the best
         place to allocate/free colors is in the MUIM_Show and MUIM_Hide
         methods of the editor gadget.  An example of this can be found in
-        TextEditor-Demo.c
+        TextEditor-Demo.c.
+
+        Please keep in mind to convert pens allocated by MUI_ObtainPen() to
+        values usable by any kind of graphic functions (i.e. SetAPen()) by
+        using the MUIPEN() macro!
 
     EXAMPLE
         /*  Create a cycle gadget which allows the user
@@ -235,11 +242,39 @@ TextEditor.mcc/MUIM_TextEditor_Search
     FUNCTION
         Set the contents of this gadget.  This should normally be a pointer to
         a text buffer, but if you have supplied your own import hook, then you
-        can set this to anything you like, e.g. a filehandle.
+        can set this to anything you like, e.g. a filehandle. Passing NULL as
+        pointer will be treated as an empty text.
+
+    NOTE
+        Setting a text content BEFORE the class has executed the MUIM_Setup
+        method will use the global default settings! This means that with active
+        TAB conversion TAB characters within the text will be converted using the
+        default TAB size of 4 spaces, no matter what the user has configured!
+        The better solution is to wait until MUIM_Setup has successully returned
+        and set the editor's initial content after that to ensure that the user
+        gets what he/she is expecting.
 
     SEE ALSO
-        MUIA_TextEditor_ImportHook
+        MUIA_TextEditor_ConvertTabs, MUIA_TextEditor_ImportHook
         MUIM_TextEditor_InsertText
+
+TextEditor.mcc/MUIA_TextEditor_ConvertTabs
+
+    NAME
+        MUIA_TextEditor_ConvertTabs -- [ISG], BOOL
+
+    FUNCTION
+        When TRUE (default) TextEditor will convert tabs (\t) to the number
+        of spaces specified by the user configuration setting. If FALSE,
+        TextEditor will instead put pure \t characters and just display
+        spaces to the user.
+
+    NOTE
+        Change of this attribute from TRUE to FALSE will cause update of
+        editor gadget (but cursor coordinates will be reset to zeroes).
+
+    SEE ALSO
+
 
 TextEditor.mcc/MUIA_TextEditor_CursorPosition
 
@@ -767,7 +802,7 @@ TextEditor.mcc/MUIM_TextEditor_Search
 
         In read-only mode:
           - there will be no cursor (only a normal TAB frame),
-          - TAB will activate the next gadget (instead of alt-TAB),
+          - TAB will activate the next gadget (instead of RCOMMAND+TAB),
           - the frame will be set to a ReadListFrame (may change),
           - there is no ARexx support, except "Copy".
 
@@ -907,6 +942,26 @@ TextEditor.mcc/MUIM_TextEditor_Search
     SEE ALSO
         MUIA_TextEditor_StyleBold, MUIA_TextEditor_StyleItalic
 
+TextEditor.mcc/MUIA_TextEditor_TabSize
+
+    NAME
+        MUIA_TextEditor_TabSize -- [ISG], ULONG
+
+    SPECIAL INPUTS
+        MUIV_TextEditor_TabSize_Default
+
+    FUNCTION
+        This tag overrides the global TAB size as configured by MUI prefs if
+        a specific number of spaces per TAB needs to be enforced.
+        Use MUIV_TextEditor_TabSize_Default to reset the value to the user
+        configured value. Valid values range from 2 to 12 spaces per TAB
+        character.
+        Use this attribute with care as it contradicts the MUI philosophy to
+        let the user choose the settings.
+
+    SEE ALSO
+        MUIA_TextEditor_ConvertTabs
+
 TextEditor.mcc/MUIA_TextEditor_TypeAndSpell
 
     NAME
@@ -963,7 +1018,9 @@ TextEditor.mcc/MUIM_TextEditor_Search
         at which text should be wrapped to the next line (i.e. 'autowrap').
 
         However, the way wrapping is done depends on the actual 'WrapMode'
-        that was specified by MUIA_TextEditor_WrapMode.
+        that was specified by MUIA_TextEditor_WrapMode. In addition,
+        MUIA_TextEditor_WrapWords will allow to set if TextEditor will wrap
+        at word boundaries or not.
 
         Per default the WrapBorder is set to 0 which in fact disables the
         wrapping and depending on the set WrapMode, wrapping will either be
@@ -971,7 +1028,8 @@ TextEditor.mcc/MUIM_TextEditor_Search
         which is the default.
 
     SEE ALSO
-        MUIA_TextEditro_WrapMode
+        MUIA_TextEditor_WrapMode
+        MUIA_TextEditor_WrapWords
         MUIA_TextEditor_ExportWrap
         MUIA_TextEditor_ImportWrap
 
@@ -1028,6 +1086,24 @@ TextEditor.mcc/MUIM_TextEditor_Search
         MUIA_TextEditro_WrapBorder
         MUIA_TextEditor_ExportWrap
         MUIA_TextEditor_ImportWrap
+
+
+TextEditor.mcc/MUIA_TextEditor_WrapWords
+
+    NAME
+        MUIA_TextEditor_WrapWords -- [ISG], BOOL
+
+    FUNCTION
+        When set to TRUE (default), wrapping will occur at word boundaries
+        (e.g. space or tab). If FALSE TextEditor.mcc will wrap at any
+        character.
+
+    NOTE
+        Change of this attribute will cause update of
+        editor gadget (but cursor coordinates will be reset to zeroes).
+
+    SEE ALSO
+        MUIA_TextEditor_WrapMode
 
 
 TextEditor.mcc/MUIM_TextEditor_ARexxCmd

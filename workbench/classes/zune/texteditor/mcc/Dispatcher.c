@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -47,45 +47,32 @@ DISPATCHERPROTO(_Dispatcher);
 /// ResetDisplay()
 void ResetDisplay(struct InstData *data)
 {
-  struct  line_node *line = data->firstline;
-  LONG    lines = 0;
-
   ENTER();
 
   data->blockinfo.enabled = FALSE;
   data->visual_y = 1;
   data->CPos_X = 0;
   data->pixel_x = 0;
-  data->actualline = line;
+  data->actualline = GetFirstLine(&data->linelist);
 
-  data->cursor_shown = 0;
+  data->cursor_shown = FALSE;
   if(data->shown == TRUE)
   {
-    while(line != NULL)
-    {
-      LONG c;
-
-      c = VisualHeight(data, line);
-      lines += c;
-      line->visual = c;
-      line = line->next;
-    }
-    data->totallines = lines;
-
+    data->totallines = CountLines(data, &data->linelist);
     data->Pen = GetColor(data->CPos_X, data->actualline);
     data->Flow = data->actualline->line.Flow;
     data->Separator = data->actualline->line.Separator;
     data->NoNotify = TRUE;
-    SetAttrs(data->object,  MUIA_TextEditor_Pen,            data->Pen,
-                    MUIA_TextEditor_Flow,         data->Flow,
-                    MUIA_TextEditor_Separator,        data->Separator,
-                    MUIA_TextEditor_Prop_Entries,     lines*data->fontheight,
-                    MUIA_TextEditor_Prop_Visible,     data->maxlines*data->fontheight,
-                    MUIA_TextEditor_Prop_First,     (data->visual_y-1)*data->fontheight,
-                    MUIA_TextEditor_Prop_DeltaFactor, data->fontheight,
-                    TAG_DONE);
+    SetAttrs(data->object,
+      MUIA_TextEditor_Pen,              data->Pen,
+      MUIA_TextEditor_Flow,             data->Flow,
+      MUIA_TextEditor_Separator,        data->Separator,
+      MUIA_TextEditor_Prop_Entries,     data->totallines*data->fontheight,
+      MUIA_TextEditor_Prop_Visible,     data->maxlines*data->fontheight,
+      MUIA_TextEditor_Prop_First,       (data->visual_y-1)*data->fontheight,
+      MUIA_TextEditor_Prop_DeltaFactor, data->fontheight,
+      TAG_DONE);
     data->NoNotify = FALSE;
-
 
     UpdateStyles(data);
 
@@ -130,11 +117,14 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     struct InstData *data = INST_DATA(cl, obj);
     data->object = obj;
 
+    InitLines(&data->linelist);
+
     #if defined(__amigaos4__)
     data->mypool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags, MEMF_SHARED|MEMF_CLEAR,
                                                     ASOPOOL_Puddle, 3*1024,
                                                     ASOPOOL_Threshold, 512,
                                                     ASOPOOL_Name, "TextEditor.mcc pool",
+                                                    ASOPOOL_LockMem, FALSE,
                                                     TAG_DONE);
     #else
     data->mypool = CreatePool(MEMF_ANY|MEMF_CLEAR, 3*1024, 512);
@@ -143,22 +133,47 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     {
       if((data->mylocale = OpenLocale(NULL)) != NULL)
       {
-        if((data->firstline = AllocLine(data)) != NULL)
+        struct line_node *firstLine;
+
+        if((firstLine = AllocVecPooled(data->mypool, sizeof(struct line_node))) != NULL)
         {
-          if(Init_LineNode(data, data->firstline, NULL, "\n") == TRUE)
+          if(Init_LineNode(data, firstLine, "\n") == TRUE)
           {
-            data->actualline = data->firstline;
+            AddLine(&data->linelist, firstLine);
+
+            data->actualline = firstLine;
             data->update = TRUE;
             data->ImportHook = &ImPlainHook;
             data->ImportWrap = 1023;
             data->WrapBorder = 0;
             data->WrapMode = MUIV_TextEditor_WrapMode_HardWrap;
+            data->WrapWords = TRUE; // wrap at word boundaries
+            data->TabSize = 4;       // default to 4 spaces per TAB
+            data->GlobalTabSize = 4; // default to 4 spaces per TAB
+            data->TabSizePixels = 4*8; // assume a fixed space width of 8 pixels per default
+            data->ConvertTabs = TRUE; // convert tab to spaces per default
 
             data->ExportHook = &ExportHookPlain;
             setFlag(data->flags, FLG_AutoClip);
             setFlag(data->flags, FLG_ActiveOnClick);
             setFlag(data->flags, FLG_PasteStyles);
             setFlag(data->flags, FLG_PasteColors);
+
+            #if defined(__amigaos3__) || defined(__amigaos4__)
+            if(MUIMasterBase->lib_Version > 20 || (MUIMasterBase->lib_Version == 20 && MUIMasterBase->lib_Revision >= 5640))
+            {
+              // MUI 4.0 for AmigaOS4 does the disabled pattern drawing itself,
+              // no need to do this on our own
+              setFlag(data->flags, FLG_MUI4);
+            }
+            #elif defined(__MORPHOS__)
+            if(MUIMasterBase->lib_Version > 20 || (MUIMasterBase->lib_Version == 20 && MUIMasterBase->lib_Revision >= 6906))
+            {
+              // MUI 4.0 for MorphOS does the disabled pattern drawing itself,
+              // no need to do this on our own
+              setFlag(data->flags, FLG_MUI4);
+            }
+            #endif
 
             if(FindTagItem(MUIA_Background, msg->ops_AttrList))
               setFlag(data->flags, FLG_OwnBackground);
@@ -203,8 +218,7 @@ static IPTR mDispose(struct IClass *cl, Object *obj, Msg msg)
   data->blockinfo.stopline = NULL;
 
   // free all lines with their contents
-  FreeTextMem(data, data->firstline);
-  data->firstline = NULL;
+  FreeTextMem(data, &data->linelist);
 
   if(data->mylocale != NULL)
   {
@@ -228,7 +242,7 @@ static IPTR mDispose(struct IClass *cl, Object *obj, Msg msg)
 
 ///
 /// mSetup()
-static IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
+static IPTR mSetup(struct IClass *cl, Object *obj, Msg msg)
 {
   IPTR result = FALSE;
   struct InstData *data = INST_DATA(cl, obj);
@@ -237,9 +251,9 @@ static IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
 
   // initialize the configuration of our TextEditor
   // object from the configuration set by the user
-  InitConfig(data, obj);
+  InitConfig(cl, obj);
 
-  if(DoSuperMethodA(cl, obj, (Msg)rinfo))
+  if(DoSuperMethodA(cl, obj, msg))
   {
     // disable that the object will automatically get a border when
     // the ActiveObjectOnClick option is active
@@ -254,6 +268,10 @@ static IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
     // initialize our temporary rastport
     InitRastPort(&data->tmprp);
     SetFont(&data->tmprp, data->font);
+
+    // calculate the amount of pixels a Tab<>Spaces conversion will take
+    data->TabSizePixels = data->TabSize*TextLength(&data->tmprp, " ", 1);
+    D(DBF_INPUT, "TabSizePixels: %d", data->TabSizePixels);
 
     // make sure we have a proper font setup here and
     // that our spellchecker suggest window object is also
@@ -294,6 +312,9 @@ static IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
     }
   }
 
+  if(result == FALSE)
+    FreeConfig(cl, obj);
+
   RETURN(result);
   return result;
 }
@@ -326,7 +347,7 @@ static IPTR mCleanup(struct IClass *cl, Object *obj, Msg msg)
     RejectInput(data);
   }
 
-  FreeConfig(data, muiRenderInfo(obj));
+  FreeConfig(cl, obj);
 
   result = DoSuperMethodA(cl, obj, msg);
 
@@ -340,7 +361,7 @@ static IPTR mAskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *ms
 {
   struct InstData *data = INST_DATA(cl, obj);
   struct MUI_MinMax *mi;
-  ULONG fontheight;
+  LONG fontheight;
 
   ENTER();
 
@@ -349,10 +370,10 @@ static IPTR mAskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *ms
 
   mi = ((struct MUIP_AskMinMax *)msg)->MinMaxInfo;
 
-  if(data->Columns)
+  if(data->Columns != 0)
   {
     // for the font width we take the nominal font width provided by the tf_XSize attribute
-    ULONG width = data->Columns * (data->font ? data->font->tf_XSize : _font(obj)->tf_XSize);
+    LONG width = data->Columns * (data->font ? data->font->tf_XSize : _font(obj)->tf_XSize);
 
     mi->MinWidth += width;
     mi->DefWidth += width;
@@ -366,9 +387,9 @@ static IPTR mAskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *ms
   }
 
   fontheight = data->font ? data->font->tf_YSize : _font(obj)->tf_YSize;
-  if(data->Rows)
+  if(data->Rows != 0)
   {
-    ULONG height = data->Rows * fontheight;
+    LONG height = data->Rows * fontheight;
 
     mi->MinHeight += height;
     mi->DefHeight += height;
@@ -390,8 +411,6 @@ static IPTR mAskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *ms
 static IPTR mShow(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = INST_DATA(cl, obj);
-  struct line_node  *line;
-  LONG  lines = 0;
 
   ENTER();
 
@@ -406,19 +425,8 @@ static IPTR mShow(struct IClass *cl, Object *obj, Msg msg)
   data->fontheight  = data->font->tf_YSize;
   data->maxlines    = _mheight(obj) / data->fontheight;
   data->ypos        = _mtop(obj);
-  data->realypos    = _mtop(obj);
 
-  line = data->firstline;
-  while(line != NULL)
-  {
-    LONG c;
-
-    c = VisualHeight(data, line);
-    lines += c;
-    line->visual = c;
-    line = line->next;
-  }
-  data->totallines = lines;
+  data->totallines = CountLines(data, &data->linelist);
 
   data->shown = TRUE;
   data->update = FALSE;
@@ -426,21 +434,22 @@ static IPTR mShow(struct IClass *cl, Object *obj, Msg msg)
   data->update = TRUE;
   data->shown = FALSE;
 
-  SetAttrs(obj, MUIA_TextEditor_Prop_DeltaFactor, data->fontheight,
-            MUIA_TextEditor_Prop_Entries,
-              ((lines-(data->visual_y-1) < data->maxlines) ?
+  SetAttrs(obj,
+    MUIA_TextEditor_Prop_DeltaFactor, data->fontheight,
+    MUIA_TextEditor_Prop_Entries,
+              ((data->totallines-(data->visual_y-1) < data->maxlines) ?
                 ((data->visual_y-1)+data->maxlines) :
-                ((data->maxlines > lines) ?
+                ((data->maxlines > data->totallines) ?
                   data->maxlines :
-                  lines))
+                  data->totallines))
                 * data->fontheight,
-            MUIA_TextEditor_Prop_First,     (data->visual_y-1)*data->fontheight,
-            MUIA_TextEditor_Prop_Visible,     data->maxlines*data->fontheight,
-            TAG_DONE);
+    MUIA_TextEditor_Prop_First,     (data->visual_y-1)*data->fontheight,
+    MUIA_TextEditor_Prop_Visible,     data->maxlines*data->fontheight,
+    TAG_DONE);
 
   // initialize the doublebuffering rastport
   InitRastPort(&data->doublerp);
-  data->doublebuffer = MUIG_AllocBitMap(_mwidth(data->object)+((data->fontheight-data->font->tf_Baseline+1)>>1)+1, data->fontheight, GetBitMapAttr(data->rport->BitMap, BMA_DEPTH), (BMF_CLEAR | BMF_INTERLEAVED), data->rport->BitMap);
+  data->doublebuffer = MUIG_AllocBitMap(_mwidth(obj)+((data->fontheight-data->font->tf_Baseline+1)>>1)+1, data->fontheight, GetBitMapAttr(data->rport->BitMap, BMA_DEPTH), (BMF_CLEAR | BMF_INTERLEAVED), data->rport->BitMap);
   data->doublerp.BitMap = data->doublebuffer;
   SetFont(&data->doublerp, data->font);
 
@@ -512,25 +521,25 @@ static IPTR mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     // we clear the very last part of the gadget
     // content at the very bottom because that one will not be
     // automatically cleared by PrintLine() later on
-    DoMethod(obj, MUIM_DrawBackground, _mleft(data->object), data->ypos+(data->fontheight * (data->maxlines)),
-                                       _mwidth(data->object), (_mheight(data->object)-(data->fontheight * (data->maxlines))),
-                                       _mleft(data->object), _mtop(data->object), 0);
+    DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj)+(data->fontheight * (data->maxlines)),
+                                       _mwidth(obj), (_mheight(obj)-(data->fontheight * (data->maxlines))),
+                                       _mleft(obj), _mtop(obj), 0);
+
+    // dump all text now
+    DumpText(data, data->visual_y, 0, data->maxlines, FALSE);
 
     // make sure we ghost out the whole area in case
     // the gadget was flagged as being ghosted.
-    if(isFlagSet(data->flags, FLG_Ghosted))
+    if(isFlagSet(data->flags, FLG_Ghosted) && isFlagClear(data->flags, FLG_MUI4))
     {
       UWORD newPattern[] = {0x1111, 0x4444};
 
       SetDrMd(data->rport, JAM1);
       SetAPen(data->rport, _pens(obj)[MPEN_SHADOW]);
       SetAfPt(data->rport, newPattern, 1);
-      RectFill(data->rport, _left(data->object), _top(data->object), _right(data->object), _bottom(data->object));
+      RectFill(data->rport, _left(obj), _top(obj), _right(obj), _bottom(obj));
       SetAfPt(data->rport, NULL, (UBYTE)-1);
     }
-
-    // dump all text now
-    DumpText(data, data->visual_y, 0, data->maxlines, FALSE);
   }
 
   RETURN(0);
@@ -712,8 +721,8 @@ DISPATCHER(_Dispatcher)
 
   ENTER();
 
-  //kprintf("Method: 0x%lx\n", msg->MethodID);
-//  D(DBF_STARTUP, "Stack usage: %ld %lx", (ULONG)FindTask(NULL)->tc_SPUpper - (ULONG)FindTask(NULL)->tc_SPReg);
+  //D(DBF_STARTUP, "Method: 0x%lx\n", msg->MethodID);
+  //D(DBF_STARTUP, "Stack usage: %ld %lx", (ULONG)FindTask(NULL)->tc_SPUpper - (ULONG)FindTask(NULL)->tc_SPReg);
 
   // this one must be catched before we try to obtain the instance data, because nobody
   // will guarantee that the pointer returned by INST_DATA() is valid if no object has
@@ -775,7 +784,7 @@ DISPATCHER(_Dispatcher)
     case OM_DISPOSE:                     result = mDispose(cl, obj, msg);                  RETURN(result); return result; break;
     case OM_GET:                         result = mGet(cl, obj, (APTR)msg);                RETURN(result); return result; break;
     case OM_SET:                         result = mSet(cl, obj, (APTR)msg);                                               break;
-    case MUIM_Setup:                     result = mSetup(cl, obj, (APTR)msg);              RETURN(result); return result; break;
+    case MUIM_Setup:                     result = mSetup(cl, obj, msg);                    RETURN(result); return result; break;
     case MUIM_Show:                      result = mShow(cl, obj, msg);                     RETURN(result); return result; break;
     case MUIM_AskMinMax:                 result = mAskMinMax(cl, obj, (APTR)msg);          RETURN(result); return result; break;
     case MUIM_Draw:                      result = mDraw(cl, obj, (APTR)msg);               RETURN(result); return result; break;
@@ -787,7 +796,7 @@ DISPATCHER(_Dispatcher)
     case MUIM_GoInactive:                result = mGoInactive(cl, obj, msg);               RETURN(result); return result; break;
     case MUIM_HandleEvent:
     {
-      ULONG oldx = data->CPos_X;
+      LONG oldx = data->CPos_X;
       struct line_node *oldy = data->actualline;
 
       // process all input events

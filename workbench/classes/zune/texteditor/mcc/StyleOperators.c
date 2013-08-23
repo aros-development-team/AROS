@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -119,11 +119,7 @@ void AddStyleToLine(struct InstData *data, LONG x, struct line_node *line, LONG 
   {
     while(styles->column != EOS && styles->column < x)
     {
-      struct LineStyle newStyle;
-
-      newStyle.column = styles->column;
-      newStyle.style = styles->style;
-      AddToGrow(&styleGrow, &newStyle);
+      AddToGrow(&styleGrow, styles);
 
       if(styles->style > 0xff)
         cur_style &= styles->style;
@@ -164,11 +160,7 @@ void AddStyleToLine(struct InstData *data, LONG x, struct line_node *line, LONG 
 
       if(styles->style != style && styles->style != invstyle)
       {
-        struct LineStyle newStyle;
-
-        newStyle.column = styles->column;
-        newStyle.style = styles->style;
-        AddToGrow(&styleGrow, &newStyle);
+        AddToGrow(&styleGrow, styles);
       }
 
       styles++;
@@ -188,11 +180,7 @@ void AddStyleToLine(struct InstData *data, LONG x, struct line_node *line, LONG 
   {
     while(styles->column != EOS)
     {
-      struct LineStyle newStyle;
-
-      newStyle.column = styles->column;
-      newStyle.style = styles->style;
-      AddToGrow(&styleGrow, &newStyle);
+      AddToGrow(&styleGrow, styles);
 
       styles++;
     }
@@ -221,8 +209,10 @@ void AddStyleToLine(struct InstData *data, LONG x, struct line_node *line, LONG 
 void AddStyle(struct InstData *data, struct marking *realblock, UWORD style, BOOL set)
 {
   struct marking newblock;
-  LONG startx, stopx;
-  struct line_node *startline, *stopline;
+  LONG startx;
+  LONG stopx;
+  struct line_node *startline;
+  struct line_node *stopline;
 
   ENTER();
 
@@ -268,13 +258,13 @@ void AddStyle(struct InstData *data, struct marking *realblock, UWORD style, BOO
   }
   else
   {
-    struct line_node *line = startline->next;
+    struct line_node *line = GetNextLine(startline);
 
     AddStyleToLine(data, startx, startline, startline->line.Length-startx-1, style);
     while(line != stopline)
     {
       AddStyleToLine(data, 0, line, line->line.Length-1, style);
-      line = line->next;
+      line = GetNextLine(line);
     }
     AddStyleToLine(data, 0, line, stopx, style);
   }
@@ -289,4 +279,3 @@ void AddStyle(struct InstData *data, struct marking *realblock, UWORD style, BOO
 }
 
 ///
-

@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -32,23 +32,26 @@
  Import the given 0 terminated text by invoking the given import Hook
  for every line
 ***********************************************************************/
-struct line_node *ImportText(struct InstData *data, char *contents, struct Hook *importHook, LONG wraplength)
+BOOL ImportText(struct InstData *data, const char *contents, struct Hook *importHook, LONG wraplength, struct MinList *lines)
 {
-  struct line_node *first_line;
+  struct line_node *line;
 
   ENTER();
 
-  if((first_line = AllocLine(data)) != NULL)
+  // make sure we start with an empty list of lines
+  InitLines(lines);
+
+  if((line = AllocVecPooled(data->mypool, sizeof(struct line_node))) != NULL)
   {
-    struct line_node *line;
     struct ImportMessage im;
+
+    memset(line, 0, sizeof(*line));
 
     im.Data = contents;
     im.ImportWrap = wraplength;
     im.PoolHandle = data->mypool;
-
-    memset(first_line, 0, sizeof(*first_line));
-    line = first_line;
+    im.ConvertTabs = data->ConvertTabs;
+    im.TabSize = data->TabSize;
 
     while(TRUE)
     {
@@ -62,57 +65,89 @@ struct line_node *ImportText(struct InstData *data, char *contents, struct Hook 
 
       if(im.Data == NULL)
       {
-        if(line->line.Contents == NULL)
+        if(line->line.Contents != NULL)
+        {
+          // add the last imported line to the list
+          AddLine(lines, line);
+        }
+        else
         {
           // free the line node if it didn't contain any contents
-          if(line->previous != NULL)
+          if(ContainsLines(lines) == FALSE)
           {
-            line->previous->next = NULL;
-            FreeLine(data, line);
+            FreeVecPooled(data->mypool, line);
           }
           else
           {
-            char *ctext;
-
             // if the line has nor predecessor it was obviously the first line
             // so we prepare a "fake" line_node to let the textEditor clear our
             // text
-            if((ctext = AllocVecPooled(data->mypool, 2)) != NULL)
-            {
-              ctext[0] = '\n';
-              ctext[1] = '\0';
-              line->line.Contents = ctext;
-              line->line.Length = 1;
-              line->line.allocatedContents = 2;
-            }
+            if(Init_LineNode(data, line, "\n") == TRUE)
+              AddLine(lines, line);
             else
-            {
-              FreeLine(data, first_line);
-              first_line = NULL;
-            }
+              FreeVecPooled(data->mypool, line);
           }
         }
+
+        // bail out
         break;
       }
 
-      if((new_line = AllocLine(data)) == NULL)
+      // add the imported line to the list
+      AddLine(lines, line);
+
+      if((new_line = AllocVecPooled(data->mypool, sizeof(struct line_node))) == NULL)
         break;
 
-      memset(new_line, 0, sizeof(*new_line));
-
-      // Inherit the flow from the previous line, but only if
-      // the clearFlow variable is not set
+      // inherit the flow from the current line for the next line,
+      // but only if the clearFlow variable is not set
       if(line->line.clearFlow == FALSE)
         new_line->line.Flow = line->line.Flow;
 
-      new_line->previous = line;
-      line->next = new_line;
       line = new_line;
     }
   }
 
-  RETURN(first_line);
-  return first_line;
+  RETURN(ContainsLines(lines));
+  return ContainsLines(lines);
+}
+
+///
+/// ReimportText
+// export and reimport the current text with modified TAB size or TAB conversion
+BOOL ReimportText(struct IClass *cl, Object *obj)
+{
+  struct InstData *data = INST_DATA(cl, obj);
+  BOOL result = FALSE;
+  char *buff;
+
+  ENTER();
+
+  if((buff = (char *)mExportText(cl, obj, NULL)) != NULL)
+  {
+    struct MinList newlines;
+    struct Hook *ExportHookCopy = data->ExportHook;
+
+    // use the plain export hook
+    data->ExportHook = &ExportHookPlain;
+
+    if(ImportText(data, buff, data->ImportHook, data->ImportWrap, &newlines) == TRUE)
+    {
+	  FreeTextMem(data, &data->linelist);
+      MoveLines(&data->linelist, &newlines);
+	  ResetDisplay(data);
+      ResetUndoBuffer(data);
+      result = TRUE;
+    }
+
+    FreeVec(buff);
+
+    // restore the former export hook
+    data->ExportHook = ExportHookCopy;
+  }
+
+  RETURN(result);
+  return result;
 }
 
 ///

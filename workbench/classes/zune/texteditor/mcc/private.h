@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,7 @@
 
 #include <graphics/rastport.h>
 #include <libraries/iffparse.h>
+#include <proto/exec.h>
 #include <proto/intuition.h>
 
 #include <libraries/mui.h>
@@ -34,31 +35,33 @@
 
 #include <mui/TextEditor_mcc.h>
 
+#include <limits.h>
+
 // if something in our configuration setup (keybindings, etc)
 // has changed we can increase the config version so that TextEditor
 // will popup a warning about and obsolete configuration.
 #define CONFIG_VERSION 4
 
-#define EOS        (unsigned short)-1
-#define EOC        (unsigned short)0xffff
+#define EOS       INT_MAX
+#define EOC       INT_MAX
 
 #define UNDERLINE 0x01
 #define BOLD      0x02
 #define ITALIC    0x04
 #define COLOURED  0x08
 
-// define memory flags not existing on older platforms
-#ifndef MEMF_SHARED
-#if defined(__MORPHOS__)
-#define MEMF_SHARED MEMF_ANY
+#if defined(__amigaos4__)
+#define AllocVecShared(size, flags)  AllocVecTags((size), AVT_Type, MEMF_SHARED, AVT_Lock, FALSE, ((flags)&MEMF_CLEAR) ? AVT_ClearWithValue : TAG_IGNORE, 0, TAG_DONE)
 #else
-#define MEMF_SHARED MEMF_PUBLIC
+#define AllocVecShared(size, flags)  AllocVec((size), (flags))
 #endif
-#endif
+
+#define VERSION_IS_AT_LEAST(ver, rev, minver, minrev) (((ver) > (minver)) || ((ver) == (minver) && (rev) == (minrev)) || ((ver) == (minver) && (rev) > (minrev)))
+#define LIB_VERSION_IS_AT_LEAST(lib, minver, minrev)  VERSION_IS_AT_LEAST(((struct Library *)(lib))->lib_Version, ((struct Library *)(lib))->lib_Revision, minver, minrev)
 
 #if defined(__MORPHOS__)
 #include <proto/exec.h>
-#define IS_MORPHOS2 (((struct Library *)SysBase)->lib_Version >= 51)
+#define IS_MORPHOS2 LIB_VERSION_IS_AT_LEAST(SysBase, 51, 0)
 #endif
 
 // proper RAWKEY_ defines were first introduced in OS4 and MorphOS
@@ -156,6 +159,9 @@
 #ifndef MIN
 #define MIN(a,b)          (((a) < (b)) ? (a) : (b))
 #endif
+#ifndef MINMAX
+#define MINMAX(min,x,max) (MAX((min),MIN((x),(max))))
+#endif
 
 enum EventType
 {
@@ -186,21 +192,21 @@ enum CursorState
 
 struct LineStyle
 {
-  UWORD column;
+  LONG column;
   UWORD style;
 };
 
 struct LineColor
 {
-  UWORD column;
+  LONG column;
   UWORD color;
 };
 
 struct LineNode
 {
   STRPTR   Contents;      // Set this to the linecontents (allocated via the poolhandle)
-  ULONG    Length;        // The length of the line (including the '\n')
-  ULONG allocatedContents;
+  LONG     Length;        // The length of the line (including the '\n')
+  LONG allocatedContents;
   struct LineStyle *Styles; // Set this to the styles used for this line (allocated via the poolhandle). The array is terminated by an (EOS,0) marker
   struct LineColor *Colors; // The colors to use (allocated via the poolhandle). The array is terminated by an (EOC,0) marker
   BOOL     Highlight;     // Set this to TRUE if you want the line to be highlighted
@@ -211,37 +217,36 @@ struct LineNode
 
 struct line_node
 {
-  struct line_node *next;     // Pointer to next line
-  struct line_node *previous; // Pointer to previous line
+  struct MinNode node;        // standard Exec MinNode
 
   struct LineNode line;
 
-  UWORD visual;               // How many lines are this line wrapped over
+  LONG visual;                // How many lines are this line wrapped over
   UWORD flags;                // Different flags...
 };
 
 struct bookmark
 {
-  struct  line_node *line;
-  UWORD   x;
+  struct line_node *line;
+  LONG x;
 };
 
 struct marking
 {
-  BOOL    enabled;              // Boolean that indicates wether block is on/off
-  struct  line_node *startline; // Line where blockings starts
-  UWORD   startx;               // X place of start
-  struct  line_node *stopline;  // Line where marking ends
-  UWORD   stopx;                // X place of stop
+  BOOL enabled;                // Boolean that indicates wether block is on/off
+  struct line_node *startline; // Line where blockings starts
+  LONG startx;                 // X place of start
+  struct line_node *stopline;  // Line where marking ends
+  LONG stopx;                  // X place of stop
 };
 
 struct pos_info
 {
-  struct  line_node *line;      // Pointer to actual line
-  UWORD   lines;                // Lines down
-  UWORD   x;                    // Chars in
-  UWORD   bytes;                // Lines in bytes
-  UWORD   extra;                // Lines+1 in bytes
+  struct line_node *line; // Pointer to actual line
+  LONG lines;             // Lines down
+  LONG x;                 // Chars in
+  LONG bytes;             // Lines in bytes
+  LONG extra;             // Lines+1 in bytes
 };
 
 struct UserAction
@@ -261,10 +266,12 @@ struct UserAction
 
   struct
   {
-    UWORD x, y;        // pasteblock
+    LONG x;            // pasteblock
+    LONG y;            // pasteblock
   } blk;
 
-  UWORD x, y;
+  LONG x;
+  LONG y;
 };
 
 struct ExportMessage
@@ -279,7 +286,7 @@ struct ExportMessage
   BOOL   Highlight;    // is the current line highlighted?
   UWORD  Flow;         // Current lines textflow
   UWORD  Separator;    // Current line contains a separator bar? see below
-  ULONG  ExportWrap;   // For your use only (reflects MUIA_TextEditor_ExportWrap)
+  LONG  ExportWrap;    // For your use only (reflects MUIA_TextEditor_ExportWrap)
   BOOL   Last;         // Set to TRUE if this is the last line
   APTR   data;         // pointer to the instance data of TextEditor.mcc (PRIVATE)
   BOOL   failure;      // something went wrong during the export
@@ -287,10 +294,12 @@ struct ExportMessage
 
 struct ImportMessage
 {
-  STRPTR  Data;               /* The first time the hook is called, then this will be either the value of MUIA_TextEditor_Contents, or the argument given to MUIM_TextEditor_Insert. */
-  struct  LineNode *linenode; /* Pointer to a linenode, which you should fill out */
-  APTR    PoolHandle;         /* A poolhandle, all allocations done for styles or contents must be made from this pool, and the size of the allocation must be stored in the first LONG */
-  ULONG   ImportWrap;         /* For your use only (reflects MUIA_TextEditor_ImportWrap) */
+  const char *Data;          // The first time the hook is called, then this will be either the value of MUIA_TextEditor_Contents, or the argument given to MUIM_TextEditor_Insert.
+  struct LineNode *linenode; // Pointer to a linenode, which you should fill out
+  APTR PoolHandle;           // A poolhandle, all allocations done for styles or contents must be made from this pool, and the size of the allocation must be stored in the first LONG
+  LONG ImportWrap;           // For your use only (reflects MUIA_TextEditor_ImportWrap)
+  ULONG ConvertTabs;         // do not convert to spaces when importing tabs (\t)
+  LONG TabSize;              // if convert tabs to spaces we specify here how many spaces to use
 };
 
 struct Grow
@@ -306,24 +315,23 @@ struct Grow
 
 struct InstData
 {
-  WORD    ypos;             // ypos of gadget
-  WORD    realypos;
-  UWORD   fontheight;       // font height
+  LONG    ypos;             // ypos of gadget
+  LONG    fontheight;       // font height
 
-  UWORD   CPos_X;           // Cursor x pos.
+  LONG    CPos_X;           // Cursor x pos.
   struct  line_node *actualline;    // The actual line...
-  WORD    pixel_x;          // Pixel x-pos of cursor. (for up/down movement)
+  LONG    pixel_x;          // Pixel x-pos of cursor. (for up/down movement)
   UWORD   style;            // Current style (bold-italic-underline)
   UWORD   Flow;
   UWORD   Separator;
 
   LONG    visual_y;         // The line nr of the top line
-  LONG    totallines;         // Total number of lines
+  LONG    totallines;       // Total number of lines
   LONG    maxlines;         // max visual lines in gadget
   ULONG   flags;
 
-  UWORD   cursor_shown;       // Width of stored cursor
-  Object  *object;          // Pointer to the object itself
+  BOOL    cursor_shown;       // visibility of the cursor
+  Object  *object;            // Pointer to the object itself
   struct  BitMap *doublebuffer; // Doublebuffer for line-printing
   BOOL    mousemove;
   UWORD   smooth_wait;        // Counter to see if smooth scroll is happening
@@ -338,7 +346,7 @@ struct InstData
   struct  TextFont  *font;
   APTR    mypool;
   struct  Locale    *mylocale;
-  struct  line_node *firstline;
+  struct  MinList    linelist;
   BOOL    shown;
   BOOL    update;
 
@@ -351,7 +359,8 @@ struct InstData
   Object  *KeyUpFocus;
   Object  *PointerObj;
 
-  ULONG   Rows, Columns;  // The value of the rows/columns tags
+  LONG    Rows;     // The value of the rows tag
+  LONG    Columns;  // The value of the columns tag
 
   struct te_key *RawkeyBindings;
   ULONG   blockqual;
@@ -368,23 +377,26 @@ struct InstData
   ULONG   allocatedpens;
 
   STRPTR  background;
-  BOOL    fastbackground;
   BOOL    use_fixedfont;
 
   struct  TextFont  *normalfont;
   struct  TextFont  *fixedfont;
 
   UWORD           BlinkSpeed;
-  UWORD           CursorWidth;
+  LONG            CursorWidth;
   struct  Hook    *DoubleClickHook;
   struct  Hook    *ExportHook;
   struct  Hook    *ImportHook;
-  ULONG           ExportWrap;
-  UWORD           ImportWrap;
+  LONG            ExportWrap;
+  LONG            ImportWrap;
   BOOL            HasChanged;
-  UWORD           TabSize;
-  ULONG           WrapBorder;
+  LONG            TabSize;        // number of spaces to use when Tab2Spaces is active
+  LONG            GlobalTabSize;  // number of spaces as configured in MUI prefs
+  LONG            TabSizePixels;  // number of pixels a Tab2Spaces conversion will consume
+  BOOL            ConvertTabs;    // convert to spaces when TAB key is used. Otherwise insert \t
+  LONG            WrapBorder;
   ULONG           WrapMode;
+  BOOL            WrapWords;      // wrap at words boundaries rather than hard wrapping at each char
   struct UserAction *undoSteps;   // pointer to memory for the undo actions
   ULONG           maxUndoSteps;   // how many steps can be put into the undoBuffer
   ULONG           usedUndoSteps;  // how many steps in the undoBuffer have been used so far
@@ -394,12 +406,12 @@ struct InstData
   BOOL            inactiveCursor;
   BOOL            selectPointer;
   BOOL            activeSelectPointer;
-  APTR            SuggestWindow;
-  APTR            SuggestListview;
-  UWORD           SuggestSpawn;
-  UWORD           LookupSpawn;
-  const char *    SuggestCmd;
-  const char *    LookupCmd;
+  Object *        SuggestWindow;
+  Object *        SuggestListview;
+  BOOL            SuggestSpawn;
+  BOOL            LookupSpawn;
+  char            SuggestCmd[256];
+  char            LookupCmd[256];
   ULONG           clipcount;
   APTR            cliphandle;
 
@@ -426,23 +438,19 @@ struct InstData
 struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG), REG(d1, LONG), REG(d2, LONG), REG(d3, LONG flags), REG(a0, struct BitMap *));
 void SAVEDS ASM MUIG_FreeBitMap(REG(a0, struct BitMap *));
 
-// AllocFunctions.c
-#if defined(__amigaos4__)
-#define SHARED_MEMFLAG          MEMF_SHARED
-#else
-#define SHARED_MEMFLAG          MEMF_ANY
-#endif
-
-// AllocFunctions.c
-struct line_node *AllocLine(struct InstData *);
-void FreeLine(struct InstData *, struct line_node *);
-
 // BlockOperators.c
+void MarkAllBlock(struct InstData *, struct marking *);
 STRPTR GetBlock(struct InstData *, struct marking *);
-void RedrawArea(struct InstData *, UWORD, struct line_node *, UWORD, struct line_node *);
+void RedrawArea(struct InstData *, LONG, struct line_node *, LONG, struct line_node *);
 void NiceBlock(struct marking *, struct marking *);
-LONG CutBlock(struct InstData *, BOOL, BOOL, BOOL);
-LONG CutBlock2(struct InstData *, BOOL, BOOL, BOOL, struct marking *);
+LONG CutBlock(struct InstData *, ULONG);
+LONG CutBlock2(struct InstData *, ULONG, struct marking *);
+void CheckBlock(struct InstData *, struct line_node *);
+
+// flags for CutBlock() and CutBlock2()
+#define CUTF_CLIPBOARD (1<<0)
+#define CUTF_CUT       (1<<1)
+#define CUTF_UPDATE    (1<<2)
 
 // CaseConversion.c
 void Key_ToUpper(struct InstData *);
@@ -507,11 +515,12 @@ void ScrollIntoDisplay(struct InstData *);
 void MarkText(struct InstData *, LONG, struct line_node *, LONG, struct line_node *);
 
 // ImportText.c
-struct line_node *ImportText(struct InstData *, char *, struct Hook *, LONG);
+BOOL ImportText(struct InstData *, const char *, struct Hook *, LONG, struct MinList *);
+BOOL ReimportText(struct IClass *, Object *);
 
 // InitConfig.c
-void InitConfig(struct InstData *, Object *);
-void FreeConfig(struct InstData *, struct MUI_RenderInfo *);
+void InitConfig(struct IClass *, Object *);
+void FreeConfig(struct IClass *, Object *);
 
 // Methods.c
 IPTR mMarkText(struct InstData *, struct MUIP_TextEditor_MarkText *);
@@ -525,25 +534,26 @@ ULONG InsertText(struct InstData *, STRPTR, BOOL);
 // MixedFunctions.c
 void AddClipping(struct InstData *);
 void RemoveClipping(struct InstData *);
-void FreeTextMem(struct InstData *, struct line_node *);
-BOOL Init_LineNode(struct InstData *, struct line_node *, struct line_node *, CONST_STRPTR);
+void FreeTextMem(struct InstData *, struct MinList *);
+BOOL Init_LineNode(struct InstData *, struct line_node *, CONST_STRPTR);
 BOOL ExpandLine(struct InstData *, struct line_node *, LONG);
 BOOL CompressLine(struct InstData *, struct line_node *);
+void InsertLines(struct MinList *lines, struct line_node *after);
 LONG LineCharsWidth(struct InstData *, CONST_STRPTR);
 ULONG VisualHeight(struct InstData *, struct line_node *);
 void OffsetToLines(struct InstData *, LONG, struct line_node *, struct pos_info *);
 LONG LineNr(struct InstData *, struct line_node *);
 struct line_node *LineNode(struct InstData *, LONG);
-void ScrollUp(struct InstData *, LONG, LONG);
-void ScrollDown(struct InstData *, LONG, LONG);
+void ScrollUpDown(struct InstData *);
 void SetCursor(struct InstData *, LONG, struct line_node *, BOOL);
 void DumpText(struct InstData *, LONG, LONG, LONG, BOOL);
 void GetLine(struct InstData *, LONG, struct pos_info *);
 LONG LineToVisual(struct InstData *, struct line_node *);
+LONG CountLines(struct InstData *, struct MinList *);
 
 // Navigation.c
-void SetBookmark(struct InstData *, UWORD);
-void GotoBookmark(struct InstData *, UWORD);
+void SetBookmark(struct InstData *, ULONG);
+void GotoBookmark(struct InstData *, ULONG);
 void GoTop(struct InstData *);
 void GoPreviousPage (struct InstData *);
 void GoPreviousLine(struct InstData *);
@@ -563,8 +573,8 @@ void GoLeft(struct InstData *);
 BOOL CheckSep(struct InstData *, char);
 BOOL CheckSent(struct InstData *, char);
 void NextLine(struct InstData *);
-ULONG FlowSpace(struct InstData *, UWORD, STRPTR);
-void PosFromCursor(struct InstData *, WORD, WORD);
+LONG FlowSpace(struct InstData *, UWORD, STRPTR);
+void PosFromCursor(struct InstData *, LONG, LONG);
 
 // Pointer.c
 void SetupSelectPointer(struct InstData *data);
@@ -573,10 +583,10 @@ void ShowSelectPointer(struct InstData *data, Object *obj);
 void HideSelectPointer(struct InstData *data, Object *obj);
 
 // PrintLineWithStyles.c
-ULONG convert(UWORD);
+ULONG ConvertStyle(UWORD);
 LONG PrintLine(struct InstData *, LONG, struct line_node *, LONG, BOOL);
 ULONG ConvertPen(struct InstData *, UWORD, BOOL);
-void DrawSeparator(struct InstData *, struct RastPort *, WORD, WORD, WORD, WORD);
+void DrawSeparator(struct InstData *, struct RastPort *, LONG, LONG, LONG, LONG);
 
 // Search.c
 IPTR mSearch(struct IClass *, Object *, struct MUIP_TextEditor_Search *);
@@ -604,6 +614,11 @@ void FreeUndoBuffer(struct InstData *);
 BOOL Undo(struct InstData *);
 BOOL Redo(struct InstData *);
 
+// NewGfx.c
+LONG TextLengthNew(struct RastPort *rp, const char *string, ULONG count, LONG tabSizePixels);
+ULONG TextFitNew(struct RastPort *rp, const char *string, ULONG strLen, struct TextExtent *textExtent, const struct TextExtent *constrainingExtent, LONG strDirection, LONG constrainingBitWidth, LONG constrainingBitHeight, LONG tabSizePixels);
+void TextNew(struct RastPort *rp, const char *string, ULONG count, LONG tabSizePixels);
+
 #if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
 // AllocVecPooled.c
 APTR AllocVecPooled(APTR, ULONG);
@@ -611,16 +626,43 @@ APTR AllocVecPooled(APTR, ULONG);
 void FreeVecPooled(APTR, APTR);
 #endif
 
-#if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
+#if !defined(GetHead)
 // GetHead.c
 struct Node *GetHead(struct List *);
+#endif
+#if !defined(GetPred)
 // GetPred.c
 struct Node *GetPred(struct Node *);
+#endif
+#if !defined(GetSucc)
 // GetSucc.c
 struct Node *GetSucc(struct Node *);
+#endif
+#if !defined(GetTail)
 // GetTail.c
 struct Node *GetTail(struct List *);
 #endif
+#if !defined(MoveList)
+// MoveList.c
+void MoveList(struct List *to, struct List *from);
+#endif
+
+// define some convenience functions for accessing the list of lines
+// to avoid constant type casting within the normal source
+#define GetFirstLine(lines)     (struct line_node *)(GetHead((struct List *)(lines)))
+#define GetLastLine(lines)      (struct line_node *)(GetTail((struct List *)(lines)))
+#define GetNextLine(line)       (struct line_node *)(GetSucc((struct Node *)(line)))
+#define GetPrevLine(line)       (struct line_node *)(GetPred((struct Node *)(line)))
+#define HasNextLine(line)       (GetSucc((struct Node *)(line)) != NULL)
+#define HasPrevLine(line)       (GetPred((struct Node *)(line)) != NULL)
+#define AddLine(lines, line)    AddTail((struct List *)(lines), (struct Node *)(line))
+#define InsertLine(line, after) Insert(NULL, (struct Node *)(line), (struct Node *)(after))
+#define RemLine(line)           Remove((struct Node *)(line))
+#define RemFirstLine(lines)     (struct line_node *)RemHead((struct List *)(lines))
+#define RemLastLine(lines)      (struct line_node *)RemTail((struct List *)(lines))
+#define MoveLines(to, from)     MoveList((struct List *)(to), (struct List *)(from))
+#define InitLines(lines)        NewList((struct List *)(lines))
+#define ContainsLines(lines)    (IsListEmpty((struct List *)(lines)) == FALSE)
 
 #if defined(DEBUG)
 void DumpLine(struct line_node *line);
@@ -636,15 +678,6 @@ extern struct Hook ImMIMEQuoteHook;
 extern struct Hook ExportHookPlain;
 extern struct Hook ExportHookEMail;
 extern struct Hook ExportHookNoStyle;
-
-struct UpdateData
-{
-  UWORD type;
-  UWORD x;
-  struct line_node *line;
-  UWORD length;
-  STRPTR characters;
-};
 
 #define IEQUALIFIER_SHIFT   0x0200
 #define IEQUALIFIER_ALT     0x0400
@@ -683,6 +716,8 @@ enum
   FLG_ActiveOnClick  = 1L << 20, // should the gadget activated on click
   FLG_PasteStyles    = 1L << 21, // respect styles when pasting text
   FLG_PasteColors    = 1L << 22, // respect colors when pasting text
+  FLG_ForcedTabSize  = 1L << 23, // override the user defined TAB size
+  FLG_MUI4           = 1L << 31, // running under MUI4
 
   FLG_NumberOf
 };
@@ -722,5 +757,27 @@ ULONG xget(Object *obj, const IPTR attr);
   #define xget(OBJ, ATTR) ({IPTR b=0; GetAttr(ATTR, OBJ, &b); b;})
 #endif
 ///
+
+#define ARRAY_SIZE(x)         (sizeof(x[0]) ? sizeof(x)/sizeof(x[0]) : 0)
+
+#ifndef MUIKEY_CUT
+#define MUIKEY_CUT 22
+#endif
+
+#ifndef MUIKEY_COPY
+#define MUIKEY_COPY 23
+#endif
+
+#ifndef MUIKEY_PASTE
+#define MUIKEY_PASTE 24
+#endif
+
+#ifndef MUIKEY_UNDO
+#define MUIKEY_UNDO 25
+#endif
+
+#ifndef MUIKEY_REDO
+#define MUIKEY_REDO 26
+#endif
 
 #endif /* TEXTEDITOR_MCC_PRIV_H */

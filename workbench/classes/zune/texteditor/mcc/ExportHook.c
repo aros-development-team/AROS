@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,7 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
   // create a temporary buffer if we don't have one yet
   if(buf == NULL)
   {
-    if((buf = AllocVec(sizeof(*buf), MEMF_SHARED|MEMF_CLEAR)) != NULL)
+    if((buf = AllocVecShared(sizeof(*buf), MEMF_CLEAR)) != NULL)
     {
       if(data != NULL)
       {
@@ -59,7 +59,7 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
       }
       else
       {
-        buf->buffer = AllocVec(1024, MEMF_SHARED|MEMF_CLEAR);
+        buf->buffer = AllocVecShared(1024, MEMF_CLEAR);
         buf->size = 1024;
       }
     }
@@ -91,7 +91,7 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
       }
       else
       {
-        buf->buffer = AllocVec(oldsize+expand+1024, MEMF_SHARED|MEMF_CLEAR);
+        buf->buffer = AllocVecShared(oldsize+expand+1024, MEMF_CLEAR);
         buf->size = oldsize+expand+1024;
       }
 
@@ -119,7 +119,7 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
       LONG length;
       struct LineStyle *styles = emsg->Styles;
       struct LineColor *colors = emsg->Colors;
-      UWORD lastpos = 0;
+      LONG lastpos = 0;
       UWORD currentstyle = 0;
       ULONG hookType = (IPTR)hook->h_Data;
       STRPTR startx;
@@ -172,12 +172,12 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
       if((styles != NULL || colors != NULL) &&
          (hookType == MUIV_TextEditor_ExportHook_EMail || hookType == MUIV_TextEditor_ExportHook_Plain))
       {
-        UWORD pos;
+        LONG pos;
         WORD style;
         BOOL coloured = FALSE;
         UWORD colour_state = 7;
-        UWORD nextStyleColumn;
-        UWORD nextColorColumn;
+        LONG nextStyleColumn;
+        LONG nextColorColumn;
 
         if(styles == NULL)
           nextStyleColumn = EOS;
@@ -367,9 +367,9 @@ HOOKPROTONO(ExportHookFunc, STRPTR, struct ExportMessage *emsg)
       // NUL terminate our buffer string
       *buf->pointer = '\0';
 
-      while(emsg->ExportWrap != 0 && buf->pointer-startx > (LONG)emsg->ExportWrap)
+      while(emsg->ExportWrap != 0 && buf->pointer-startx > emsg->ExportWrap)
       {
-        ULONG max = emsg->ExportWrap+1;
+        LONG max = emsg->ExportWrap+1;
 
         if(startx[emsg->ExportWrap] != '\n')
         {

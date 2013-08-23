@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -28,8 +28,12 @@
 /// MangleCharacters()
 static void MangleCharacters(struct InstData *data, char (*change)(char c))
 {
-  LONG startx, stopx, _startx;
-  struct line_node *startline, *stopline, *_startline;
+  LONG startx;
+  LONG stopx;
+  LONG _startx;
+  struct line_node *startline;
+  struct line_node *stopline;
+  struct line_node *_startline;
   struct marking newblock;
 
   ENTER();
@@ -62,7 +66,7 @@ static void MangleCharacters(struct InstData *data, char (*change)(char c))
   _startx = startx;
   _startline = startline;
 
-  while(startline != stopline->next)
+  while(startline != GetNextLine(stopline))
   {
     while(startline->line.Contents[startx] != '\n')
     {
@@ -74,7 +78,7 @@ static void MangleCharacters(struct InstData *data, char (*change)(char c))
       startx++;
     }
     startx = 0;
-    startline = startline->next;
+    startline = GetNextLine(startline);
   }
 
   data->HasChanged = TRUE;

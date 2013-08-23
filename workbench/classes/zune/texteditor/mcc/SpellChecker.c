@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -64,7 +64,7 @@ HOOKPROTONH(SelectCode, void, void *lvobj, long **parms)
   if(entry != NULL)
   {
     int length = strlen(entry);
-    UWORD oldpos;
+    LONG oldpos;
 
     if(Enabled(data))
       Key_Clear(data);
@@ -142,7 +142,11 @@ static BOOL SendRexx(CONST_STRPTR word, CONST_STRPTR command)
       SHOWSTRING(DBF_SPELL, buffer);
 
       rxmsg->rm_Action = RXCOMM;
+       #ifdef __AROS__
       if((rxmsg->rm_Args[0] = (IPTR)CreateArgstring(buffer, strlen(buffer))) != 0)
+      #else
+      if((rxmsg->rm_Args[0] = CreateArgstring(buffer, strlen(buffer))) != 0)
+      #endif
       {
         if(SafePutMsg("REXX", (struct Message *)rxmsg) == TRUE)
         {
@@ -394,10 +398,10 @@ static BOOL LookupWord(struct InstData *data, CONST_STRPTR word)
   SHOWSTRING(DBF_SPELL, word);
   SHOWVALUE(DBF_SPELL, data->LookupSpawn);
 
-  if(data->LookupSpawn != 0)
-    res = SendRexx(word, data->LookupCmd);
-  else
+  if(data->LookupSpawn == FALSE)
     res = SendCLI(word, data->LookupCmd);
+  else
+    res = SendRexx(word, data->LookupCmd);
 
   if(res == TRUE)
   {
@@ -429,7 +433,8 @@ static BOOL LookupWord(struct InstData *data, CONST_STRPTR word)
 /// SuggestWord()
 void SuggestWord(struct InstData *data)
 {
-  ULONG top, left;
+  LONG top;
+  LONG left;
   LONG line_nr;
   struct pos_info pos;
   struct line_node *line = data->actualline;
@@ -503,10 +508,10 @@ void SuggestWord(struct InstData *data)
       {
         BOOL res;
 
-        if(data->SuggestSpawn != 0)
-          res = SendRexx(word, data->SuggestCmd);
-        else
+        if(data->SuggestSpawn == FALSE)
           res = SendCLI(word, data->SuggestCmd);
+        else
+          res = SendRexx(word, data->SuggestCmd);
 
         if(res == TRUE)
         {

@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,7 @@
 #include <utility/tagitem.h>
 #include <clib/alib_protos.h>
 
+#include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/layers.h>
@@ -49,8 +50,10 @@ IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
   {
     case MUIA_TextEditor_CursorPosition:
     {
-      UWORD xplace, yplace, cursor_width;
-      UWORD x = data->CPos_X;
+      LONG xplace;
+      LONG yplace;
+      LONG cursor_width;
+      LONG x = data->CPos_X;
       struct line_node *line = data->actualline;
       LONG line_nr = LineToVisual(data, line) - 1;
       struct pos_info pos;
@@ -64,7 +67,7 @@ IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
       else
         cursor_width = data->CursorWidth;
 
-      xplace  = _mleft(data->object) + TextLength(&data->tmprp, &line->line.Contents[x-pos.x], pos.x);
+      xplace  = _mleft(obj) + TextLength(&data->tmprp, &line->line.Contents[x-pos.x], pos.x);
       xplace += FlowSpace(data, line->line.Flow, &line->line.Contents[pos.bytes]);
       yplace  = data->ypos + (data->fontheight * (line_nr + pos.lines - 1));
 
@@ -184,6 +187,10 @@ IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
       ti_Data = data->WrapMode;
     break;
 
+    case MUIA_TextEditor_WrapWords:
+      ti_Data = data->WrapWords;
+    break;
+
     case MUIA_Font:
       ti_Data = (IPTR)data->font;
       break;
@@ -200,10 +207,19 @@ IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
       ti_Data = isFlagSet(data->flags, FLG_PasteColors);
     break;
 
+    case MUIA_TextEditor_ConvertTabs:
+      ti_Data = data->ConvertTabs;
+    break;
+
+    case MUIA_TextEditor_TabSize:
+      ti_Data = data->TabSize;
+    break;
+
     default:
       LEAVE();
       return(DoSuperMethodA(cl, obj, (Msg)msg));
   }
+
   *msg->opg_Storage = ti_Data;
 
   RETURN(TRUE);
@@ -216,15 +232,18 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 {
   struct InstData *data = INST_DATA(cl, obj);
   struct TagItem *tags, *tag;
-  char  *contents = NULL;
-  IPTR  result = FALSE;
-  ULONG crsr_x = 0xffff, crsr_y = 0xffff;
+  const char *contents = NULL;
+  IPTR result = FALSE;
+  LONG crsr_x = INT_MAX;
+  LONG crsr_y = INT_MAX;
+  BOOL reimport = FALSE;
 
   ENTER();
 
   if(data->shown == TRUE && isFlagClear(data->flags, FLG_Draw))
   {
-    if((tag = FindTagItem(MUIA_Disabled, msg->ops_AttrList)) != NULL)
+    // handle the disabled flag only if we are not under control of MUI4
+    if(isFlagClear(data->flags, FLG_MUI4) && (tag = FindTagItem(MUIA_Disabled, msg->ops_AttrList)) != NULL)
     {
       if(tag->ti_Data)
         setFlag(data->flags, FLG_Ghosted);
@@ -250,17 +269,33 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
       break;
 
       case MUIA_Disabled:
-        if(ti_Data)
-          setFlag(data->flags, FLG_Ghosted);
-        else
-          clearFlag(data->flags, FLG_Ghosted);
+      {
+        BOOL modified = FALSE;
 
-        // make sure an eventually existing slider is disabled as well
+        if(ti_Data && isFlagClear(data->flags, FLG_Ghosted))
+        {
+          setFlag(data->flags, FLG_Ghosted);
+          modified = TRUE;
+        }
+        else if(!ti_Data && isFlagSet(data->flags, FLG_Ghosted))
+        {
+          clearFlag(data->flags, FLG_Ghosted);
+          modified = TRUE;
+        }
+
+        // perform a redraw only if the disabled state has really changed
+        // and we are NOT under the control of MUI4 which does the ghost
+        // effect itself
+        if(modified == TRUE && isFlagClear(data->flags, FLG_MUI4))
+        {
+          MUI_Redraw(obj, MADF_DRAWOBJECT);
+        }
+
+        // make sure a possibly existing slider is disabled as well
         if(data->slider != NULL)
           set(data->slider, MUIA_Disabled, ti_Data);
-
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
-        break;
+      }
+      break;
 
       case MUIA_TextEditor_Rows:
         data->Rows = ti_Data;
@@ -279,24 +314,24 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 
       case MUIA_TextEditor_ColorMap:
         data->colormap = (ULONG *)ti_Data;
-        break;
+      break;
 
       case MUIA_TextEditor_InVirtualGroup:
         if(ti_Data)
           setFlag(data->flags, FLG_InVGrp);
         else
           clearFlag(data->flags, FLG_InVGrp);
-        break;
+      break;
 
       case MUIA_TextEditor_CursorX:
         if(data->NoNotify == FALSE)
           crsr_x = ti_Data;
-        break;
+      break;
 
       case MUIA_TextEditor_CursorY:
         if(data->NoNotify == FALSE)
           crsr_y = ti_Data;
-        break;
+      break;
 
       case MUIA_TextEditor_Prop_Release:
         data->smooth_wait = ti_Data;
@@ -304,10 +339,10 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 
       case MUIA_TextEditor_Prop_First:
       {
-        if(((data->visual_y-1)*data->fontheight+(data->realypos - data->ypos) != (LONG)ti_Data) && data->shown == TRUE)
+        if(((data->visual_y-1)*data->fontheight+(_mtop(obj) - data->ypos) != (LONG)ti_Data) && data->shown == TRUE)
         {
           LONG     smooth;
-          LONG     lastpixel = ((data->visual_y-1)*data->fontheight) + (data->realypos - data->ypos);
+          LONG     lastpixel = ((data->visual_y-1)*data->fontheight) + (_mtop(obj) - data->ypos);
           struct   Hook  *oldhook;
           void    *cliphandle;
 
@@ -320,17 +355,16 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
             data->scr_direction = 0;
 
           oldhook = InstallLayerHook(data->rport->Layer, LAYERS_NOBACKFILL);
-          cliphandle = MUI_AddClipping(muiRenderInfo(data->object), _mleft(data->object), data->realypos, _mwidth(data->object), data->maxlines*data->fontheight);
+          cliphandle = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), data->maxlines*data->fontheight);
           if(smooth > 0 && smooth < data->maxlines*data->fontheight)
           {
             LONG line_nr;
 
             ScrollRasterBF(data->rport, 0, smooth,
-                          _mleft(data->object), data->realypos,
-                          _mleft(data->object) + _mwidth(data->object) - 1,
-                          data->realypos + (data->maxlines * data->fontheight) - 1);
+                          _mleft(obj), _mtop(obj),
+                          _mright(obj), _mtop(obj) + (data->maxlines * data->fontheight) - 1);
 
-            data->ypos = data->realypos - ti_Data%data->fontheight;
+            data->ypos = _mtop(obj) - ti_Data%data->fontheight;
             line_nr = data->maxlines-(smooth/data->fontheight)-1;
 
             {
@@ -338,10 +372,10 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 
               if(layer->DamageList && layer->DamageList->RegionRectangle)
               {
-                if(MUI_BeginRefresh(muiRenderInfo(data->object),0))
+                if(MUI_BeginRefresh(muiRenderInfo(obj),0))
                 {
-                  MUI_Redraw(data->object, MADF_DRAWOBJECT);
-                  MUI_EndRefresh(muiRenderInfo(data->object), 0);
+                  MUI_Redraw(obj, MADF_DRAWOBJECT);
+                  MUI_EndRefresh(muiRenderInfo(obj), 0);
                 }
               }
             }
@@ -355,19 +389,18 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
               LONG lines;
 
               ScrollRasterBF(data->rport, 0, smooth,
-                            _mleft(data->object), data->realypos,
-                            _mleft(data->object) + _mwidth(data->object) - 1,
-                            data->realypos + (data->maxlines * data->fontheight) - 1);
-              data->ypos = data->realypos - ti_Data%data->fontheight;
+                            _mleft(obj), _mtop(obj),
+                            _mright(obj), _mtop(obj) + (data->maxlines * data->fontheight) - 1);
+              data->ypos = _mtop(obj) - ti_Data%data->fontheight;
               lines = (-smooth/data->fontheight)+2;
               {
                 struct Layer *layer = data->rport->Layer;
 
                 if(layer->DamageList && layer->DamageList->RegionRectangle)
-                  if(MUI_BeginRefresh(muiRenderInfo(data->object),0))
+                  if(MUI_BeginRefresh(muiRenderInfo(obj),0))
                   {
-                    MUI_Redraw(data->object, MADF_DRAWOBJECT);
-                    MUI_EndRefresh(muiRenderInfo(data->object), 0);
+                    MUI_Redraw(obj, MADF_DRAWOBJECT);
+                    MUI_EndRefresh(muiRenderInfo(obj), 0);
                   }
               }
 
@@ -379,7 +412,7 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
                 DumpText(data, data->visual_y, 0, data->maxlines+1, FALSE);
             }
           }
-          MUI_RemoveClipping(muiRenderInfo(data->object), cliphandle);
+          MUI_RemoveClipping(muiRenderInfo(obj), cliphandle);
           InstallLayerHook(data->rport->Layer, oldhook);
 
           if(data->scrollaction == FALSE)
@@ -463,6 +496,7 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
       break;
 
       case MUIA_TextEditor_Quiet:
+      {
         if(ti_Data)
         {
           setFlag(data->flags, FLG_Quiet);
@@ -472,33 +506,36 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
           clearFlag(data->flags, FLG_Quiet);
           MUI_Redraw(obj, MADF_DRAWOBJECT);
           if(data->maxlines > data->totallines)
-            set(data->object, MUIA_TextEditor_Prop_Entries, data->maxlines*data->fontheight);
+            set(obj, MUIA_TextEditor_Prop_Entries, data->maxlines*data->fontheight);
           else
-            set(data->object, MUIA_TextEditor_Prop_Entries, data->totallines*data->fontheight);
-          set(data->object, MUIA_TextEditor_Prop_First, (data->visual_y-1)*data->fontheight);
+            set(obj, MUIA_TextEditor_Prop_Entries, data->totallines*data->fontheight);
+          set(obj, MUIA_TextEditor_Prop_First, (data->visual_y-1)*data->fontheight);
         }
-        break;
+      }
+      break;
 
       case MUIA_TextEditor_StyleBold:
         AddStyle(data, &data->blockinfo, BOLD, ti_Data != 0);
-        break;
+      break;
 
       case MUIA_TextEditor_StyleItalic:
         AddStyle(data, &data->blockinfo, ITALIC, ti_Data != 0);
-        break;
+      break;
 
       case MUIA_TextEditor_StyleUnderline:
         AddStyle(data, &data->blockinfo, UNDERLINE, ti_Data != 0);
-        break;
+      break;
 
       case MUIA_TextEditor_Pen:
+      {
         if(data->NoNotify == FALSE)
         {
           data->Pen = ti_Data;
           AddColor(data, &data->blockinfo, (UWORD)ti_Data);
           data->HasChanged = TRUE;
         }
-        break;
+      }
+      break;
 
       case MUIA_TextEditor_KeyUpFocus:
         data->KeyUpFocus = (Object *)ti_Data;
@@ -538,49 +575,55 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
       break;
 
       case MUIA_TextEditor_FixedFont:
+      {
+        if(data->shown == FALSE)
         {
-          if(data->shown == FALSE)
+          if(ti_Data)
           {
-            if(ti_Data)
-            {
-              data->font = data->fixedfont;
-              data->use_fixedfont = TRUE;
-            }
-            else
-            {
-              data->font = data->normalfont;
-              data->use_fixedfont = FALSE;
-            }
-
-            // now we check whether we have a valid font or not
-            // and if not we take the default one of our muiAreaData
-            if(data->font == NULL)
-              data->font = _font(obj);
+            data->font = data->fixedfont;
+            data->use_fixedfont = TRUE;
           }
-          break;
+          else
+          {
+            data->font = data->normalfont;
+            data->use_fixedfont = FALSE;
+          }
+
+          // now we check whether we have a valid font or not
+          // and if not we take the default one of our muiAreaData
+          if(data->font == NULL)
+            data->font = _font(obj);
         }
+      }
+      break;
+
       case MUIA_TextEditor_DoubleClickHook:
         data->DoubleClickHook = (struct Hook *)ti_Data;
-        break;
+      break;
 
       case MUIA_TextEditor_HasChanged:
+      {
         data->HasChanged = ti_Data;
         if(ti_Data == FALSE)
           clearFlag(data->flags, FLG_UndoLost);
-        break;
+      }
+      break;
 
       case MUIA_TextEditor_HorizontalScroll:
+      {
         if(ti_Data)
           setFlag(data->flags, FLG_HScroll);
         else
           clearFlag(data->flags, FLG_HScroll);
-        break;
+      }
+      break;
 
       case MUIA_TextEditor_Contents:
-        contents = (char *)ti_Data;
-        break;
+        contents = ti_Data ? (const char *)ti_Data : "";
+      break;
 
       case MUIA_TextEditor_ImportHook:
+      {
         switch(ti_Data)
         {
           case MUIV_TextEditor_ImportHook_Plain:
@@ -598,11 +641,12 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
           default:
             data->ImportHook = (struct Hook *)ti_Data;
         }
-        break;
+      }
+      break;
 
       case MUIA_TextEditor_ImportWrap:
         data->ImportWrap = ti_Data;
-        break;
+      break;
 
       case MUIA_TextEditor_ExportHook:
       {
@@ -628,12 +672,13 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 
       case MUIA_TextEditor_ExportWrap:
         data->ExportWrap = ti_Data;
-        break;
+      break;
 
       case MUIA_TextEditor_Flow:
+      {
         if(data->NoNotify == FALSE)
         {
-          LONG    start, lines = 0;
+          LONG start, lines = 0;
 
           data->Flow = ti_Data;
           if(Enabled(data))
@@ -645,12 +690,13 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
             startline = newblock.startline;
             start = LineToVisual(data, startline);
 
-            do {
+            do
+            {
               lines += startline->visual;
               startline->line.Flow = ti_Data;
-              startline = startline->next;
+              startline = GetNextLine(startline);
             }
-            while(startline != newblock.stopline->next);
+            while(startline != GetNextLine(newblock.stopline));
           }
           else
           {
@@ -666,11 +712,12 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
           DumpText(data, data->visual_y+start-1, start-1, start-1+lines, TRUE);
           data->HasChanged = TRUE;
         }
-        break;
+      }
+      break;
 
       case MUIA_TextEditor_WrapBorder:
       {
-        if(data->WrapBorder != ti_Data)
+        if(data->WrapBorder != (LONG)ti_Data)
         {
           data->WrapBorder = ti_Data;
           ResetDisplay(data);
@@ -690,56 +737,112 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 
       case MUIA_TextEditor_TypeAndSpell:
         data->TypeAndSpell = ti_Data;
-        break;
+      break;
 
       case MUIA_TextEditor_UndoLevels:
         data->userUndoBufferSize = TRUE;
         ResizeUndoBuffer(data, ti_Data);
-        break;
+      break;
 
       case MUIA_TextEditor_PasteStyles:
+      {
         if(ti_Data)
           setFlag(data->flags, FLG_PasteStyles);
         else
           clearFlag(data->flags, FLG_PasteStyles);
+      }
       break;
 
       case MUIA_TextEditor_PasteColors:
+      {
         if(ti_Data)
           setFlag(data->flags, FLG_PasteColors);
         else
           clearFlag(data->flags, FLG_PasteColors);
+      }
+      break;
+
+      case MUIA_TextEditor_ConvertTabs:
+      {
+        if(data->ConvertTabs != (BOOL)ti_Data)
+        {
+          data->ConvertTabs = ti_Data;
+          reimport = TRUE;
+        }
+      }
+      break;
+
+      case MUIA_TextEditor_TabSize:
+      {
+        if(data->TabSize != (LONG)ti_Data)
+        {
+          if(data->TabSize == MUIV_TextEditor_TabSize_Default)
+          {
+            // reset the TAB size to the configured value
+            if(data->TabSize != data->GlobalTabSize)
+            {
+              // reimport the text only if the TAB size really changes
+              data->TabSize = data->GlobalTabSize;
+              reimport = TRUE;
+            }
+            clearFlag(data->flags, FLG_ForcedTabSize);
+		  }
+          else
+          {
+            data->TabSize = MINMAX(2, ti_Data, 12);
+            setFlag(data->flags, FLG_ForcedTabSize);
+            // a reimport is definitely necessary
+            reimport = TRUE;
+          }
+        }
+      }
+      break;
+
+      case MUIA_TextEditor_WrapWords:
+      {
+        if(data->WrapWords != (BOOL)ti_Data)
+        {
+          data->WrapWords = ti_Data;
+          ResetDisplay(data);
+        }
+      }
       break;
     }
   }
 
+  if(reimport == TRUE)
+  {
+    // reimport the text to match the current TAB size and TAB conversion mode
+    result = ReimportText(cl, obj);
+  }
+
   if(contents != NULL)
   {
-    struct line_node *newcontents;
+    struct MinList newlines;
 
-    if((newcontents = ImportText(data, contents, data->ImportHook, data->ImportWrap)) != NULL)
+    if(ImportText(data, contents, data->ImportHook, data->ImportWrap, &newlines) == TRUE)
     {
-      FreeTextMem(data, data->firstline);
-      data->firstline = newcontents;
+      FreeTextMem(data, &data->linelist);
+      MoveLines(&data->linelist, &newlines);
       ResetDisplay(data);
       ResetUndoBuffer(data);
       result = TRUE;
     }
   }
 
-  if(crsr_x != 0xffff || crsr_y != 0xffff)
+  if(crsr_x != INT_MAX || crsr_y != INT_MAX)
   {
     SetCursor(data, data->CPos_X, data->actualline, FALSE);
 
-    if(crsr_y != 0xffff)
+    if(crsr_y != INT_MAX)
     {
       data->actualline = LineNode(data, crsr_y+1);
       if(data->actualline->line.Length < data->CPos_X)
         data->CPos_X = data->actualline->line.Length-1;
     }
-    if(crsr_x != 0xffff)
+    if(crsr_x != INT_MAX)
     {
-      data->CPos_X = (data->actualline->line.Length > (ULONG)crsr_x) ? (UWORD)crsr_x : (UWORD)data->actualline->line.Length-1;
+      data->CPos_X = (data->actualline->line.Length > crsr_x) ? crsr_x : data->actualline->line.Length-1;
     }
 
     ScrollIntoDisplay(data);

@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -293,6 +293,7 @@ static Object *TxtLabel(const char *text, ULONG weight)
 
 Object *CreatePrefsGroup(struct InstData_MCP *data)
 {
+  BOOL mui39;
   BOOL hotkeystringOk = FALSE;
   Object *slider, *button, *group,
          *editor, *keylist, *defaultkeys, *functionname,
@@ -332,12 +333,15 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
     { NM_END,   NULL, 0, 0, 0, (APTR)0 }
   };
 
-  static const char infotext[] = "\033bTextEditor.mcp " LIB_REV_STRING "\033n (" LIB_DATE ")\n"
-                                 "Copyright (c) 1997-2000 Allan Odgaard\n"
-                                 LIB_COPYRIGHT "\n\n"
-                                 "Distributed under the terms of the LGPL2.\n\n"
-                                 "For the latest version, check out:\n"
-                                 "http://www.sf.net/projects/texteditor-mcc/\n\n";
+  static const char infotext1[] = "\033bTextEditor.mcp " LIB_REV_STRING "\033n (" LIB_DATE ")\n"
+                                  "Copyright (C) 1997-2000 Allan Odgaard\n"
+                                  LIB_COPYRIGHT;
+  static const char infotext2[] = "\n"
+                                  "Distributed under the terms of the LGPL2.\n"
+	                              "\n"
+                                  "For the latest version, check out:\n"
+                                  "http://www.sf.net/projects/texteditor-mcc/\n"
+                                  "\n";
 
   ENTER();
 
@@ -380,6 +384,8 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
     RETURN(NULL);
     return NULL;
   }
+
+  mui39 = LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 0);
 
   data->editpopup = MUI_MakeObject(MUIO_MenustripNM, editpopupdata, NULL);
 
@@ -487,7 +493,6 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
             MUIA_Background, MUII_GroupBack,
             MUIA_Frame, MUIV_Frame_Group,
             MUIA_FrameTitle, tr(MSG_GroupTitle_Fonts),
-            Child, VSpace(0),
             Child, ColGroup(2),
               Child, TxtLabel(tr(MSG_Label_Normal), 0),
               Child, PopaslObject,
@@ -495,7 +500,7 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
                   StringFrame,
                   MUIA_CycleChain, TRUE,
                 End,
-                MUIA_Popstring_Button,  popNormalFontButton = MUI_MakeObject(MUIO_PopButton, MUII_PopUp),
+                MUIA_Popstring_Button,  popNormalFontButton = MUI_MakeObject(MUIO_PopButton, mui39 == TRUE ? MUII_PopFont : MUII_PopUp),
                 MUIA_Popasl_Type,     ASL_FontRequest,
                 MUIA_ShortHelp, tr(MSG_HELP_FONTS_NORMAL),
               End,
@@ -505,13 +510,12 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
                   StringFrame,
                   MUIA_CycleChain, TRUE,
                 End,
-                MUIA_Popstring_Button,  popFixedFontButton = MUI_MakeObject(MUIO_PopButton, MUII_PopUp),
+                MUIA_Popstring_Button,  popFixedFontButton = MUI_MakeObject(MUIO_PopButton, mui39 == TRUE ? MUII_PopFont : MUII_PopUp),
                 MUIA_Popasl_Type,     ASL_FontRequest,
                 ASLFO_Flags,        FOF_FIXEDWIDTHONLY,
                 MUIA_ShortHelp, tr(MSG_HELP_FONTS_FIXED),
               End,
             End,
-            Child, VSpace(0),
           End,
 
           Child, VGroup,
@@ -733,17 +737,25 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
 
     Child, CrawlingObject,
       TextFrame,
-      MUIA_FixHeightTxt, "\n\n",
+      MUIA_FixHeightTxt, infotext1,
       MUIA_Background,   "m1",
 
       Child, TextObject,
+        MUIA_Text_Copy, FALSE,
         MUIA_Text_PreParse, "\033c",
-        MUIA_Text_Contents, infotext,
+        MUIA_Text_Contents, infotext1,
       End,
 
       Child, TextObject,
+        MUIA_Text_Copy, FALSE,
         MUIA_Text_PreParse, "\033c",
-        MUIA_Text_Contents, infotext,
+        MUIA_Text_Contents, infotext2,
+      End,
+
+      Child, TextObject,
+        MUIA_Text_Copy, FALSE,
+        MUIA_Text_PreParse, "\033c",
+        MUIA_Text_Contents, infotext1,
       End,
     End,
 

@@ -1,67 +1,68 @@
-## version $VER: TextEditor_mcp.ct 2.7 (16.05.2012)
-## language svenska
+## version $VER: TextEditor_mcp.ct 2.1 (2.09.2012)
+## language italiano
 ## codeset 0
+## chunk AUTH Translated by Samir Hawamdeh (http://www.betatesting.it/backforthefuture)
 ;
-## chunk AUTH Pär Boberg
-;
+; TextEditor_mcp.cd - Catalogo italiano delle preferenze TextEditor MUI
 ; TextEditor_mcp.cd - TextEditor MUI custom prefs catalog description file
+; Compiled with FlexCat 2.10 PPC (AmigaOS4)
 ; $Id$
 ;
-;#version 2
-;#language english
-;
+; #version 2
 ;
 HelpBubble_BlockQual
-Håll nere tangenten som du har valt här\n\
-och flytta markören för att markera text.
+Muovi il tasto cursore tenendo premuto un tasto\n\
+qualificatore in modo da selezionare il testo.
 ; Move the cursor key and hold down the qualifier\n\
 ; that you set here to mark text.
 ;
 HelpBubble_CheckWord
-Om denna funktion är påslagen, kommer editorn att\n\
-kontrollera ordet och visa förslag men endast\n\
-om ordet är felstavat.
+Se selezionato l'editor di testo andrà alla ricerca\n\
+della parola corretta e in caso di errore mostrerà\n\
+un comodo suggerimento in tempo reale.
 ; If enabled, then the editor will lookup the word,\n\
 ; and only show suggestions if the word is misspelled.
 ;
 HelpBubble_Smooth
-Detta aktiverar bildpunktsjämn rullning.
+Attiva lo scorrimento smooth del pixel.
 ; This enables pixel smooth scrolling.
 ;
 HelpBubble_TypeNSpell
-Aktivera detta, för att låta editorn\n\
-kontrollera orden medan du skriver dem.
+Attiva questa opzione in modo da parmettere\n\
+la ricerca automatica delle parole mentre stai\n\
+scrivendo.
 ; Enable this to let the editor\n\
 ; lookup the words while you type them.
 ;
 HelpBubble_UndoLevel
-Varje ångernivå kräver 10 byte minne.\n\
-Klipp ut och Kopiera kräver lite mera,\n\
-beroende på storleken på den markerade\n\
-texten som du klipper ut eller kopierar.
+Ogni livello di ripristino utilizza almeno 10 byte di\n\
+memoria mentre le funzionalità di taglia e copia\n\
+possono richiederne di più, questo ovviamente in\n\
+base alle dimensioni reali del blocco di testo che si\n\
+desidera tagliare o copiare.
 ; Each undo level eats up 10 bytes of memory.\n\
 ; Cut and copy will take a little more,\n\
 ; depending on the size of the block you\n\
 ; are cutting or copying.
 ;
 MSG_Button_DefaultKeys
-_Standardknappar
+_Tasti predefiniti
 ; Default _keys
 ;
 MSG_Button_Delete
-_Ta bort
+_Cancella
 ; _Delete
 ;
 MSG_Button_Insert
-_Lägg till
+_Inserisci
 ; _Insert
 ;
 MSG_ConfigMenu_CheckWord
-Kontrollera ord
+Verifica parola
 ; Check word
 ;
 MSG_ConfigMenu_TypeNSpell
-Skriv och kontrollera
+Correttore automatico
 ; Type'n'spell
 ;
 MSG_CycleItem_Alt
@@ -69,11 +70,11 @@ Alt
 ; Alt
 ;
 MSG_CycleItem_Ctrl
-Kontroll
+Control
 ; Control
 ;
 MSG_CycleItem_Mouse
-(endast mus)
+(solo mouse)
 ; (mouse only)
 ;
 MSG_CycleItem_Shift
@@ -89,111 +90,111 @@ CLI
 ; CLI
 ;
 MSG_Function_BOL
-Början av rad
+Inizio della linea
 ; Beginning of line
 ;
 MSG_Function_Backspace
-Baksteg
+Backspace
 ; Backspace
 ;
 MSG_Function_Bottom
-Nederst
+Fine
 ; Bottom
 ;
 MSG_Function_Copy
-Kopiera
+Copia
 ; Copy
 ;
 MSG_Function_Cut
-Klipp ut
+Taglia
 ; Cut
 ;
 MSG_Function_DelBOL
-Radera till början av raden
+Cancella su BOL
 ; Delete to BOL
 ;
 MSG_Function_DelBOW
-Radera till början av ordet
+Cancella su BOW
 ; Delete to BOW
 ;
 MSG_Function_DelEOL
-Radera till slutet av raden
+Cancella su EOL
 ; Delete to EOL
 ;
 MSG_Function_DelEOW
-Radera till slutet av ordet
+Cancella su EOW
 ; Delete to EOW
 ;
 MSG_Function_Delete
-Radera
+Cancella
 ; Delete
 ;
 MSG_Function_Down
-Ner
+Giù
 ; Down
 ;
 MSG_Function_EOL
-Slutet av raden
+Fine della linea
 ; End of line
 ;
 MSG_Function_Left
-Vänster
+Sinistra
 ; Left
 ;
 MSG_Function_NextGadget
-Nästa knapp
+Gadget successivo
 ; Next gadget
 ;
 MSG_Function_NxtPage
-Nästa sida
+Pagina successiva
 ; Next page
 ;
 MSG_Function_NxtPara
-Nästa paragraf
+Paragrafo successivo
 ; Next paragraph
 ;
 MSG_Function_NxtSent
-Nästa mening
+Prossima frase
 ; Next sentence
 ;
 MSG_Function_NxtWord
-Nästa ord
+Parola successiva
 ; Next word
 ;
 MSG_Function_Paste
-Klistra in
+Incolla
 ; Paste
 ;
 MSG_Function_PrvPage
-Föregående sida
+Pagina precedente
 ; Prev page
 ;
 MSG_Function_PrvPara
-Föregående paragraf
+Paragrafo precedente
 ; Prev paragraph
 ;
 MSG_Function_PrvSent
-Föregående mening
+Frase precedente
 ; Prev sentence
 ;
 MSG_Function_PrvWord
-Föregående ord
+Parola precedente
 ; Prev word
 ;
 MSG_Function_Redo
-Gör om
+Annulla
 ; Redo
 ;
 MSG_Function_Return
-Retur
+Invio
 ; Return
 ;
 MSG_Function_Right
-Höger
+Destra
 ; Right
 ;
 MSG_Function_SuggestSpelling
-Föreslå stavning
+Suggerisci ortografia
 ; Suggest spelling
 ;
 MSG_Function_Tab
@@ -201,69 +202,71 @@ Tab
 ; Tab
 ;
 MSG_Function_Top
-Överst
+Inizio
 ; Top
 ;
 MSG_Function_Undo
-Ångra
+Ripristina
 ; Undo
 ;
 MSG_Function_Up
-Upp
+Su
 ; Up
 ;
 MSG_GroupTitle_Control
-Kontroll
+Controlli
 ; Control
 ;
 MSG_GroupTitle_Cursor
-Markör
+Cursore
 ; Cursor
 ;
 MSG_GroupTitle_Design
-Design
+Stile
 ; Design
 ;
 MSG_GroupTitle_Fonts
-Typsnitt
+Font
 ; Fonts
 ;
 MSG_GroupTitle_Separator
-Skiljelinje
+Separatore
 ; Separator
 ;
 MSG_HelpTxt_SpellChecker
- \33u Inledning \33n\n\
+ \33u Introduzione \33n\n\
 \n\
-TextEditor-funktionen erbjuder en enkel integration med externa stavningskontroller, \
-vilket tillåter dig att använda både kontrollera-medan-du-skriver funktionen samt normal ordgissning.\n\
+Il gadget TextEditor permette la facile intregrazione di un spell checkers rendendo possibile sia l'utilizzo\n\
+del classico correttore ortografico che dei comodi suggerimenti automatici durante la digitazione.\n\
 \n\
- \33u Kontrollera kommandot \33n\n\
+ \33u Comandi di ricerca \33n\n\
 \n\
-För att använda kontrollera-medan-du-skriver funktionen, måste du ställa in \
-kontrollera-kommandot att peka på ett skript som kontrollerar ordet och ställer \
-in den globala variabeln \"Found\" till endera 0 (för inte funnen) eller 1 (för funnen). \
-Detta matchar förfarandet i AlphaSpell.\n\n\
-Du skriver %s där du vill ha ordet. Om du använder AlphaSpell kan du skriva:\n\n\
+Per quanto riguarda il correttore ortografico è necessario impostare il comando con uno script che vada\n\
+poi a ricercare la parola esatta impostandola all'interno di una variabile d'ambiente di tipo \"Found\" o "0"\n\
+nel caso questa non fosse trovata, oppure "1" nel caso la corrispondenza della parola vada a buon fine.\n\
+\n\
+Questo sistema ad esempio corrisponde al funzionamento di AlphaSpell dove potresti scrivere '%s' dove\n\
+desideri inserire una parola, ad esempio sempre utilizzando AlphaSpell potresti usare:\n\n\
 \33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\
 \n\
-Du \33bmåste\33n komma ihåg citationstecknen. De säger till ARexx att exekvera raden \
-som ett kommando istället för som ett skript.\n\
+Ricorda, è \33bassolutamente necessario\33n ricordarsi le virgolette in modo che ARexx lo possa eseguire come\n\
+fosse comando anzichè uno script.\n\
 \n\
- \33u Föreslå-kommandot \33n\n\
+ \33u Suggerimento sui comandi \33n\n\
 \n\
-Om du trycker på HELP-tangenten när du står på ett ord, kommer editorn att exekvera detta \
-kommando, återigen med %s ersatt med det aktuella ordet.\n\
-Ditt skript kommer att skapa en fil i T: med namnet \"Matches\". Denna fil läses sedan \
-och innehållet visas i en popup-listvy, varifrån du kan välja det ord som ska ersätta \
-det felstavade ordet. AlphaSpell-användare kan skriva:\n\n\
-\33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\
+Premendo il tasto <HELP> (nel momento in cui il cursore è sopra una parola) l'editor di testo avvierà il\n\
+comando %s sostituendolo con la parola ad esso attribuita.\n\
 \n\
-Om du använder dig av metoderna beskrivna ovan, måste du starta AlphaSpell \
-med \"ARexx\"-parametern.\n\
+Lo script potrebbe creare un file in T: chiamato ad esempio \"Matches\", questo poi verrà letto dal gadget\n\
+ed il contenuto verrà listato in un apposito gadget popup dove sarà poi eventualmente possibile scegliere\n\
+qualsiasi altra parola in sostituzione a quelle attuali.\n\
 \n\
-Det är rekommenderat att du placerar ordlistan i RAM: om du har \
-kontrollera-medan-du-skriver funktionen påslagen.
+Ancora, gli utenti di AlphaSpell possono usare anche:\n\n\
+\33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Italian.ald\"\n\
+\n\
+Se stai usando i metodi descritti sopra allora è necessario avviare AlphaSpell con lo switch \"ARexx\".\n\
+\n\
+Infine è consigliato mantenere il proprio dizionario in RAM: durante l'attivazione del correttore ortografico.
 ;  \33u Intro \33n\n\
 ; \n\
 ; The TextEditor gadget allows for easy integration of external spell checkers, \
@@ -297,247 +300,247 @@ kontrollera-medan-du-skriver funktionen påslagen.
 ; the type'n'spell feature.
 ;
 MSG_LVLabel_Action
-\33c\0333Kommando:
+\33c\0333Azione:
 ; \33c\0333Action:
 ;
 MSG_LVLabel_Key
-\33c\0333Tangent:
+\33c\0333Tasto:
 ; \33c\0333Key:
 ;
 MSG_Label_Background
-Bakgrund
+Sfondo
 ; Background
 ;
 MSG_Label_BlinkSpeed
-Blinkhastighet
+Lampeggio
 ; Blinkspeed
 ;
 MSG_Label_BlkQual
-Markeringskombination
+Qualificatore blocco
 ; Block qualifier
 ;
 MSG_Label_Cursor
-Normal
+Normale
 ; Normal
 ;
 MSG_Label_Fixed
-Bestämt
+Fisso
 ; Fixed
 ;
 MSG_Label_Frame
-Ram
+Contorno
 ; Frame
 ;
 MSG_Label_Highlight
-Markera
+Highlight
 ; Highlight
 ;
 MSG_Label_LookupCmd
-Kontrollera-kommando
+Comando Lookup
 ; Lookup command
 ;
 MSG_Label_LookupWords
-Kontrollera ordet innan förslag på andra ord ges?
+Cerca la parola prima di suggerirla
 ; Lookup word before suggesting?
 ;
 MSG_Label_Normal
-Normalt
+Normale
 ; Normal
 ;
 MSG_Label_Selected
-Markerad
+Selezionato
 ; Selected
 ;
 MSG_Label_SeparatorShadow
-Skugga
+Ombra
 ; Shadow
 ;
 MSG_Label_SeparatorShine
-Sken
+Shine
 ; Shine
 ;
 MSG_Label_Smooth
-Utjämna
+Smooth
 ; Smooth
 ;
 MSG_Label_SpellNType
-Kontrollera stavning medan du skriver?
+Verifica ortografia in tempo reale
 ; Spell check as you type?
 ;
 MSG_Label_SuggestCmd
-Föreslå-kommando
+Suggerisci comando
 ; Suggest command
 ;
 MSG_Label_TabSize
-Tab-storlek
+Dimensione Tab
 ; Tab size
 ;
 MSG_Label_Text
-Text
+Testo
 ; Text
 ;
 MSG_Label_UndoLevel
-Ångernivåer
+Livelli di ripristino
 ; Undo levels
 ;
 MSG_Label_Width
-Bredd
+Larghezza
 ; Width
 ;
 MSG_MenuItem_Background
-Bakgrund
+Sfondo
 ; Background
 ;
 MSG_MenuItem_Bold
-Fet
+Grassetto
 ; Bold
 ;
 MSG_MenuItem_Center
-Mitten
+Centrato
 ; Center
 ;
 MSG_MenuItem_Copy
-Kopiera
+Copia
 ; Copy
 ;
 MSG_MenuItem_Cut
-Klipp ut
+Taglia
 ; Cut
 ;
 MSG_MenuItem_Delete
-Radera
+Cancella
 ; Delete
 ;
 MSG_MenuItem_Fill
-Fyll
+Riempi
 ; Fill
 ;
 MSG_MenuItem_Halfshadow
-Halvskugga
+Halfshadow
 ; Halfshadow
 ;
 MSG_MenuItem_Halfshine
-Halvsken
+Halfshine
 ; Halfshine
 ;
 MSG_MenuItem_Italic
-Kursiv
+Corsivo
 ; Italic
 ;
 MSG_MenuItem_Left
-Vänster
+Sinistra
 ; Left
 ;
 MSG_MenuItem_Mark
-Markera
+Selezione
 ; Mark
 ;
 MSG_MenuItem_Normal
-Normal
+Normale
 ; Normal
 ;
 MSG_MenuItem_Paste
-Klistra in
+Incolla
 ; Paste
 ;
 MSG_MenuItem_Redo
-Gör om
+Annulla
 ; Redo
 ;
 MSG_MenuItem_Right
-Höger
+Destra
 ; Right
 ;
 MSG_MenuItem_Shadow
-Skugga
+Ombra
 ; Shadow
 ;
 MSG_MenuItem_Shine
-Sken
+Shine
 ; Shine
 ;
 MSG_MenuItem_Text
-Text
+Testo
 ; Text
 ;
 MSG_MenuItem_Underline
-Understruken
+Sottolineato
 ; Underline
 ;
 MSG_MenuItem_Undo
-Ångra
+Ripristina
 ; Undo
 ;
 MSG_MenuSubTitle_Alignment
-Justering
+Allineamento
 ; Alignment
 ;
 MSG_MenuSubTitle_Color
-Färg
+Colore
 ; Color
 ;
 MSG_MenuTitle_Edit
-Redigera
+Modifica
 ; Edit
 ;
 MSG_Page_Keybindings
-Tangentkombinationer
+Scorciatoie
 ; Keybindings
 ;
 MSG_Page_Sample
-Exempel
+Esempio
 ; Sample
 ;
 MSG_Page_Settings
-Inställningar
+Impostazioni
 ; Settings
 ;
 MSG_Page_SpellChecker
-Stavningskontroll
+Correttore ortografico
 ; Spell checker
 ;
 MSG_PopWinTitle_Background
-Välj bakgrund
+Seleziona sfondo
 ; Select background
 ;
 MSG_PopWinTitle_Cursor
-Välj markörfärg
+Seleziona colore del cursore
 ; Select cursor color
 ;
 MSG_PopWinTitle_Frame
-Justera ram
+Modifica contorno
 ; Adjust frame
 ;
 MSG_PopWinTitle_Highlight
-Välj markeringsfärg
+Seleziona colore highlight
 ; Select highlight color
 ;
 MSG_PopWinTitle_Selected
-Välj markeringsfärg
+Seleziona blocco di colore
 ; Select block color
 ;
 MSG_PopWinTitle_SeparatorShadow
-Välj skiljelinjens skuggfärg
+Seleziona separatori ombra dei colori
 ; Select separators shadow color
 ;
 MSG_PopWinTitle_SeparatorShine
-Välj skiljelinjens skenfärg
+Seleziona separatori del colore shine
 ; Select separators shine color
 ;
 MSG_PopWinTitle_Text
-Välj textfärg
+Seleziona colore del testo
 ; Select text color
 ;
 MSG_SliderText_MaxWidth
-Samma som bokstav
+Come per i caratteri
 ; Same as char
 ;
 MSG_SliderText_MinSpeed
-Av
+Disattivo
 ; Off
 ;
 MSG_SliderText_MinWidth
-1 bildpunkt
+1 pixel
 ; 1 pixel
 ;
 MSG_SliderText_StdSpeed
@@ -545,63 +548,63 @@ MSG_SliderText_StdSpeed
 ; \33r%ld ms
 ;
 MSG_SliderText_StdWidth
-%ld bildpunkter
+%ld pixel
 ; %ld pixels
 ;
 MSG_SliderText_TabSize
-%ld mellanslag
+%ld spazi
 ; %ld spaces
 ;
 MSG_Function_GotoBookmark1
-Gå till bokmärke 1
+Vai al segnalibro 1
 ; Goto bookmark 1
 ;
 MSG_Function_GotoBookmark2
-Gå till bokmärke 2
+Vai al segnalibro 2
 ; Goto bookmark 2
 ;
 MSG_Function_GotoBookmark3
-Gå till bokmärke 3
+Vai al segnalibro 3
 ; Goto bookmark 3
 ;
 MSG_Function_SetBookmark1
-Välj bokmärke 1
+Imposta segnalibro 1
 ; Set bookmark 1
 ;
 MSG_Function_SetBookmark2
-Välj bokmärke 2
+Imposta segnalibro 2
 ; Set bookmark 2
 ;
 MSG_Function_SetBookmark3
-Välj bokmärke 3
+Imposta segnalibro 3
 ; Set bookmark 3
 ;
 MSG_Button_Snoop
-Avläs
+Snoop
 ; Snoop
 ;
 MSG_Function_DelLine
-Radera rad
+Cancella linea
 ; Delete line
 ;
 MSG_Function_SelectAll
-Välj alla
+Seleziona tutto
 ; Select all
 ;
 MSG_Function_SelectNone
-Välj inga
+Annulla selezione
 ; Select none
 ;
 MSG_WarnConfigVersion_Title
-TextEditor.mcp varning
+Avviso di TextEditor.mcp
 ; TextEditor.mcp warning
 ;
 MSG_WarnConfigVersion
-Din nuvarande sparade tangent-uppsättning är inkompatibel\n\
-med den version av TextEditor.mcc du har installerad.\n\
+Le attuali scorciatoie da tastiera salvate sono incompatibili con\n\
+la versione di TextEditor.mcc attualmente installata.\n\
 \n\
-Det är rekommenderat att du återställer tangent-uppsättningen\n\
-till dess förval och redigerar dem manuellt efteråt.
+Si consiglia di ritornare alle impostazioni predefinite editandole\n\
+poi manualmente.
 ; Your currently saved keybindings setup is incompatible\n\
 ; with the version of TextEditor.mcc you have installed.\n\
 ; \n\
@@ -609,21 +612,18 @@ till dess förval och redigerar dem manuellt efteråt.
 ; to their defaults and edit them manually afterwards.
 ;
 MSG_ResetAbort
-Återställ|Avbryt
+Resetta|Annulla
 ; Reset|Abort
 ;
 MSG_WarnHotkeyString_Title
-TextEditor.mcp varning
+Avviso di TextEditor.mcp
 ; TextEditor.mcp warning
 ;
 MSG_WarnHotkeyString
-TextEditor.mcp kunde inte öppna den minst krävda\n\
-versionen av HotkeyString.mcc klassen och\n\
-misslyckades därför under uppstart.\n\
-\n\
-Var god kontrollera att du har den senaste HotkeyString.mcc\n\
-klassen från http://www.sf.net/projects/bstring-mcc/\n\
-installerad och pröva igen.
+TextEditor.mcp non è stato in grado di aprire la versione\n\
+minima richiesta di HotkeyString.mcc\n\
+Per favore assicurati di aver installato l'ultima versione di\n\
+HotkeyString.mcc da http://www.sf.net/projects/bstring-mcc/
 ; TextEditor.mcp couldn't open the minimum required\n\
 ; version of the HotkeyString.mcc custom class and\n\
 ; therefore failed during initialization.\n\
@@ -637,152 +637,153 @@ Ok
 ; Ok
 ;
 MSG_Label_InactiveCursor
-Inaktiv markör
+Disattiva cursore
 ; Inactive cursor
 ;
 MSG_HELP_InactiveCursor
-Om vald, så visas en speciell markör\n\
-när texteditorn är i inaktivt tillstånd.
+Se attivato verrà usato un cursore personalizzato\n\
+qualora l'editor non avesse il focus.
 ; If enabled, a custom cursor will be used\n\
 ; whenever the editor doesn't have the focus.
 ;
 MSG_Label_SelectPointer
-Väljpekare
+Seleziona puntatore
 ; Selection pointer
 ;
 MSG_HELP_SelectPointer
-Om vald, kommer en speciell pekare att visas\n\
-när muspekaren är ovanför texteditorn.
+Se attivato verrà mostrato un puntatore di selezione personalizzato\n\
+qualora il puntatore del mouse sia al di sopra di un gadget texteditor.
 ; If enabled, a custom selection pointer will appear\n\
 ; when the mouse pointer is above the texteditor gadget.
 ;
 MSG_Label_InactiveColor
-Inaktiv
+Disattivo
 ; Inactive
 ;
 MSG_PopWinTitle_InactiveColor
-Välj inaktiv färg
+Seleziona colore disattivo
 ; Select inactive color
 ;
 MSG_HELP_TABSIZE
-Hur många teckenrutor markören hoppar vid användning av TAB-tangenten.
+Quanti spazi utilizzare alla pressione del tasto <TAB>
 ; How many spaces hitting the <TAB> key will jump.
 ;
 MSG_HELP_DESIGN_FRAME
-Detta är en knapp för att justera en ram.\n\
-Klicka på den för att öppna ett justeringsfönster\n\
-eller använd dra&släpp för att kopiera\n\
-från eller till en annan ramjusteringsknapp.
+Questo pulsante regola i vari contorni.\n\
+Fai click su di esso per aprire le impostazioni\n\
+o usa il drag&drop in modo da copiare da o\n\
+verso un altro pulsante di gestione contorni.
 ; This is a button to adjust a frame.\n\
 ; Click it to open an adjust window or\n\
 ; use the drag&drop facilities to copy\n\
 ; from or to another frame adjust button.
 ;
 MSG_HELP_DESIGN_BACKGROUND
-Detta är en knapp för att justera en bakgrundsfärg\n\
-eller mönster. Klicka på den för att öppna ett\n\
-justeringsfönster eller använd dra&släpp från\n\
-eller till en annan bakgrundsjusteringsknapp.
+Questo pulsante regola e modifica lo sfondo, un colore oppure\n\
+un motivo, fai click su di esso per aprire le impostazioni o usa\n\
+il drag&drop in modo da copiare da o verso un altro pulsante\n\
+di sfondo.
 ; This is a button to adjust a background\n\
 ; color or pattern. Click it to open an\n\
 ; adjust window or use the drag&drop facilities\n\
 ; to copy from or to another background adjust button.
 ;
 MSG_HELP_DESIGN_TEXT
-Detta är färgen som används för texten.
+Questo è il colore usato per il testo.
 ; This is the color used to print the text.
 ;
 MSG_HELP_DESIGN_HIGHLIGHT
-Detta är färgen som används\n\
-för markerad text.
+Questo è il colore usato per visualizzare il\n\
+testo illuminato.
 ; This is the color used to\n\
 ; print highlighted text.
 ;
 MSG_HELP_SEPARATOR_SHINE
-Detta är färgen som används\n\
-för avdelningsrader.
+Questo è il colore usato per visualizzare le\n\
+barre separatrici.
 ; This is the color used to\n\
 ; print separator bars.
 ;
 MSG_HELP_SEPARATOR_SHADOW
-Detta är färgen som används för\n\
-avdelningsrader i skugg läge.
+Questo è il colore usato per visualizzare le\n\
+barre separatrici in modalità ombra.
 ; This is the color used to print\n\
 ; separator bars in shadow mode.
 ;
 MSG_HELP_FONTS_NORMAL
-Förvalt typsnitt som används av redigeraren.
+Font predefinito da usare nell'editor.
 ; Default font to be used by the editor.
 ;
 MSG_HELP_FONTS_FIXED
-Förvalt typsnitt som används av redigeraren\n\
-när typsnitt av fast bredd efterfrågas.
+Font predefinito da utilizzare nell'editor qualora\n\
+venga richiesto un carattere a larghezza fissa.
 ; Default font to be used by the editor\n\
 ; whenever a fixed width font is requested.
 ;
 MSG_HELP_CURSOR_NORMAL
-Förvald färg att använda för markören.
+Colore predefinito usato per il cursore.
 ; Default color to be used for the cursor.
 ;
 MSG_HELP_CURSOR_SELECTED
-Färg att använda för markerad text.
+Colore da usare per il cursore in\n\
+modalità selezione testo.
 ; Color to be used for the cursor\n\
 ; in selected text.
 ;
 MSG_HELP_CURSOR_INACTIVE
-Färg att använda för markerad text\n\
-när redigeraren inte har fokus.
+Colore da usare per il testo selezionato\n\
+qualora l'editor non avesse il focus.
 ; Color to use to print selected text\n\
 ; when the editor doesn't have the focus.
 ;
 MSG_HELP_CURSOR_WIDTH
-Detta är bredden som markören skall ha.
+Questa è la dimensione che il cursore dovrebbe avere.
 ; This is the width the cursor should have.
 ;
 MSG_HELP_CURSOR_BLINKSPEED
-Du kanske vill att markören skall blinka\n\
-för att lättare hitta den. Välj 'av' för att\n\
-stänga av denna funktion.
+Potresti aver bisogno di un cursore lampeggiante\n\
+in modo da trovarlo più facilmente all'interno di un\n\
+blocco testo oppure puoi disattivare questo effetto\n\
+impostandolo su "Disattivo"
 ; You may want the cursor to blink to make\n\
 ; it easier to find. Select 'Off' to disable\n\
 ; this feature.
 ;
 MSG_HELP_BUTTON_DEFAULTKEYS
-Återställ alla tangentbindningar\n\
-till de inbyggda förvalda.
+Ripristina tutte le scorciatoie\n\
+da tastiera predefinite.
 ; Restore all keybindings\n\
 ; to the built-in defaults.
 ;
 MSG_HELP_BUTTON_SNOOP
-Använd detta fält för att ställa in en tangentbindning\n\
-för denna handling. Du kan antingen redigera direkt eller\n\
-använda 'Avläs' knappen så att tangenttryckningar avläses\n\
-tills du använder knappen igen för att bekräfta.
+Utilizza questo campo in modo da impostare una scorciatoia\n\
+da tastiera per questa specifica azione.\n\
+Ricorda che è possibile modificare direttamente la stringa del\n\
+gadget o usare il tasto Snoop per mantenere la pressione del\n\
+tasto fino a quando lo si preme di nuovo per la conferma.
 ; Use this field to set a keybinding for this action.\n\
 ; You can either edit the string gadget directly or press\n\
 ; the 'Snoop' button to make the gadget monitor keypresses\n\
 ; until you press it again to confirm.
 ;
 MSG_HELP_BUTTON_INSERT
-Lägg till en ny tangentbindning till listan.
+Aggiungi alla lista una nuova scorciatoia.
 ; Add a new keybinding to the list.
 ;
 MSG_HELP_BUTTON_DELETE
-Radera denna tangentbindning från listan.
+Cancella questa scorciatoia dalla lista.
 ; Delete this keybinding from the list.
 ;
 MSG_HELP_SPELLCHECKER_LOOKUP_CMD
-Specifiera här 'slå-upp' kommandot du vill använda\n\
-eller lämna detta tomt för att stänga av\n\
-kontrollera-medan-du-skriver funktionen.
+Specifica qui la ricerca del comando che si desidera utilizzare oppure\n\
+lascialo vuoto in modo da disattivare il correttore ortografico.
 ; Specify here the lookup command you want to use, or\n\
 ; leave this empty to disable the type'n'spell feature.
 ;
 MSG_HELP_SPELLCHECKER_SUGGEST_CMD
-Specifiera här kommandot som kommer att\n\
-användas för att föreslå ett alternativt ord.\n\
-Som förklarat ovan, vanligtvis så bör du\n\
-specifiera ett skript här.
+Specifica qui il comando che verrà utilizzato per i suggerimenti\n\
+automatici o per le parole alternative.\n\
+Generalmente potresti specificarlo con un particolare script.
 ; Specify here the command that will be used\n\
 ; to suggest an alternate word. As explained above,\n\
 ; usually you should specify a script here.

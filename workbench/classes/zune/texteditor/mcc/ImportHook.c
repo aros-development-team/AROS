@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
 
 /*************************************************************************/
 /// GetHex()
-static LONG GetHex(char *src)
+static LONG GetHex(const char *src)
 {
   LONG result = -1;
 
@@ -57,10 +57,10 @@ static LONG GetHex(char *src)
  Convert a =XX string to it's value (into *val). Returns TRUE if
  conversion was successfull in that case *src_ptr will advanved as well.
 *************************************************************************/
-static BOOL GetQP(char **src_ptr, unsigned char *val)
+static BOOL GetQP(const char **src_ptr, unsigned char *val)
 {
   unsigned char v;
-  char *src = *src_ptr;
+  const char *src = *src_ptr;
   int rc;
   BOOL result = FALSE;
 
@@ -90,7 +90,7 @@ static BOOL GetQP(char **src_ptr, unsigned char *val)
  Reads out the next value at *src_ptr and advances src_ptr.
  Returns TRUE if succedded else FALSE
 *************************************************************************/
-static BOOL GetLong(char **src_ptr, LONG *val)
+static BOOL GetLong(const char **src_ptr, LONG *val)
 {
   LONG chars;
   BOOL result = FALSE;
@@ -116,11 +116,11 @@ static BOOL GetLong(char **src_ptr, LONG *val)
 
  This function also counts the number of tabs within this line.
 *************************************************************************/
-static char *FindEOL(char *src, int *tabs_ptr)
+static const char *FindEOL(const char *src, int *tabs_ptr)
 {
   int tabs = 0;
   char c;
-  char *eol = src;
+  const char *eol = src;
 
   ENTER();
 
@@ -130,6 +130,7 @@ static char *FindEOL(char *src, int *tabs_ptr)
       tabs++;
     else if(c == '\r' || c == '\n')
       break;
+
     eol++;
   }
 
@@ -146,7 +147,7 @@ static char *FindEOL(char *src, int *tabs_ptr)
  searches through a string and returns TRUE if the string contains
  any text (except newlines) until the stopchar is found
 *************************************************************************/
-static BOOL ContainsText(char *str, char stopchar)
+static BOOL ContainsText(const char *str, const char stopchar)
 {
   BOOL contains = FALSE;
 
@@ -197,29 +198,38 @@ static BOOL ContainsText(char *str, char stopchar)
                      8 = StrikeThru   - Draw separator ontop of text.
                      16 = Thick        - Make separator extra thick.
 
- Note: Tabs are converted to spaces with a tab size of 4.
+ Note: Tabs are converted to the number of spaces specified in the
+       TE.mcc object used
+
 *************************************************************************/
 HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
 {
   STRPTR result = NULL;
-  char *eol;
-  char *src = msg->Data;
-  int tabs;
+  const char *eol;
+  const char *src = msg->Data;
+  int tabs = 0;
 
   ENTER();
 
-  if((eol = FindEOL(src, &tabs)) != NULL)
+  // check for a valid TAB size
+  if(msg->TabSize <= 0)
+  {
+    E(DBF_IMPORT, "invalid TAB size %ld", msg->TabSize);
+    // assume the default TAB size to avoid a division by zero
+    msg->TabSize = 4;
+  }
+
+  if((eol = FindEOL(src, msg->ConvertTabs == FALSE ? NULL : &tabs)) != NULL)
   {
     int len;
     struct LineNode *line = msg->linenode;
-    ULONG wrap = msg->ImportWrap;
+    LONG wrap = msg->ImportWrap;
     ULONG allocatedContents;
 
-    len = eol - src + 4 * tabs;
+    len = eol - src + (msg->TabSize * tabs);
 
-    // allocate some more memory for the possible quote mark '>', note that if
-    // a '=' is detected at the end of a line this memory is not sufficient!
-    allocatedContents = len+4;
+    // allocate memory for the contents plus the trailing LF and NUL bytes
+    allocatedContents = len+2;
     if((line->Contents = AllocVecPooled(msg->PoolHandle, allocatedContents)) != NULL)
     {
       unsigned char *dest_start = (unsigned char *)line->Contents;
@@ -247,12 +257,13 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
       {
         unsigned char c = *src++;
 
-        if(c == '\t')
+        if(c == '\t' && msg->ConvertTabs == TRUE)
         {
-          int i;
+          LONG i;
 
-          for (i=(dest - dest_start)% 4; i < 4; i++)
+          for(i=(dest - dest_start) % msg->TabSize; i < msg->TabSize; i++)
             *dest++ = ' ';
+
           continue;
         }
         else if(c == '\033') // ESC sequence
@@ -419,7 +430,7 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
           dest_word_start = dest;
         }
 
-        if(wrap != 0 && ((ULONG)(dest - dest_start)) >= wrap)
+        if(wrap != 0 && dest - dest_start >= wrap)
         {
           /* Only leave the loop, if we really have added some characters
            * (at least one word) to the line */
@@ -433,7 +444,6 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
         }
 
         *dest++ = c;
-
       } /* while (src < eol) */
 
       // terminate the color array, but only if there are any colors at all
@@ -459,7 +469,7 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
       // terminate the style array, but only if there are any styles at all
       if(style_grow.itemCount > 0)
       {
-        UWORD lastColumn = strlen(line->Contents)+1;
+        LONG lastColumn = strlen(line->Contents)+1;
 
         // ensure that we terminate the clip with plain style
         if(isFlagSet(state, BOLD))
@@ -501,7 +511,7 @@ HOOKPROTONHNO(PlainImportHookFunc, STRPTR, struct ImportMessage *msg)
     if(eol != NULL && eol[0] != '\0')
     {
       eol++;
-      result = eol;
+      result = (STRPTR)eol;
     }
   }
 
@@ -538,25 +548,27 @@ MakeHook(ImPlainHook, PlainImportHookFunc);
                      8 = StrikeThru   - Draw separator ontop of text.
                      16 = Thick        - Make separator extra thick.
 
- Note: Tabs are converted to spaces with a tab size of 4.
+ Note: Tabs are converted to the number of spaces specified in the
+       TE.mcc object used
+
 *************************************************************************/
 static STRPTR MimeImport(struct ImportMessage *msg, LONG type)
 {
   STRPTR result = NULL;
-  char *eol;
-  char *src = msg->Data;
-  int tabs;
+  const char *eol;
+  const char *src = msg->Data;
+  int tabs=0;
 
   ENTER();
 
-  if((eol = FindEOL(src, &tabs)) != NULL)
+  if((eol = FindEOL(src, msg->ConvertTabs == FALSE ? NULL : &tabs)) != NULL)
   {
     int len;
     struct LineNode *line = msg->linenode;
-    ULONG wrap = msg->ImportWrap;
+    LONG wrap = msg->ImportWrap;
     ULONG allocatedContents;
 
-    len = eol - src + 4 * tabs;
+    len = eol - src + (msg->TabSize * tabs);
 
     // allocate some more memory for the possible quote mark '>', note that if
     // a '=' is detected at the end of a line this memory is not sufficient!
@@ -621,11 +633,11 @@ static STRPTR MimeImport(struct ImportMessage *msg, LONG type)
         {
           lastWasSeparator = TRUE;
         }
-        else if(c == '\t')
+        else if(c == '\t' && msg->ConvertTabs == TRUE)
         {
-          int i;
+          LONG i;
 
-          for(i=(dest - dest_start)% 4; i < 4; i++)
+          for(i=(dest - dest_start) % msg->TabSize; i < msg->TabSize; i++)
             *dest++ = ' ';
 
           lastWasSeparator = TRUE;
@@ -737,11 +749,11 @@ static STRPTR MimeImport(struct ImportMessage *msg, LONG type)
 
               src += i + 1;
 
-              if((eol = FindEOL(src, &tabs)) == NULL)
+              if((eol = FindEOL(src, msg->ConvertTabs == FALSE ? NULL : &tabs)) == NULL)
                 break;
 
               /* The size of the dest buffer has to be increased now */
-              len += eol - src + 4 * tabs;
+              len += eol - src + (msg->TabSize * tabs);
 
               if((new_dest_start = (unsigned char*)AllocVecPooled(msg->PoolHandle, len + 4)) == NULL)
                 break;
@@ -918,7 +930,7 @@ static STRPTR MimeImport(struct ImportMessage *msg, LONG type)
           lastWasSeparator = FALSE;
         }
 
-        if(wrap != 0 && ((ULONG)(dest - dest_start)) >= wrap)
+        if(wrap != 0 && dest - dest_start >= wrap)
         {
           /* Only leave the loop, if we really have added some characters
            * (at least one word) to the line */
@@ -963,7 +975,7 @@ static STRPTR MimeImport(struct ImportMessage *msg, LONG type)
     if(eol != NULL && eol[0] != '\0')
     {
       eol++;
-      result = eol;
+      result = (STRPTR)eol;
     }
   }
 

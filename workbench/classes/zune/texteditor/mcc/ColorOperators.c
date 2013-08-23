@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -48,7 +48,7 @@ UWORD GetColor(LONG x, struct line_node *line)
 
 ///
 /// AddColorToLine()
-static void AddColorToLine(struct InstData *data, UWORD x, struct line_node *line, UWORD length, UWORD color)
+static void AddColorToLine(struct InstData *data, LONG x, struct line_node *line, LONG length, UWORD color)
 {
   struct Grow colorGrow;
   struct LineColor *colors;
@@ -65,13 +65,9 @@ static void AddColorToLine(struct InstData *data, UWORD x, struct line_node *lin
     // keep all color changes ahead of the new color
     while(colors->column != EOC && colors->column < x)
     {
-      struct LineColor newColor;
-
-      newColor.column = colors->column;
-      newColor.color = colors->color;
       oldcol = colors->color;
+      AddToGrow(&colorGrow, colors);
       colors++;
-      AddToGrow(&colorGrow, &newColor);
     }
   }
   // add the new color if it is different from the last one
@@ -106,11 +102,7 @@ static void AddColorToLine(struct InstData *data, UWORD x, struct line_node *lin
   {
     while(colors->column != EOC)
     {
-      struct LineColor newColor;
-
-      newColor.column = colors->column;
-      newColor.color = colors->color;
-      AddToGrow(&colorGrow, &newColor);
+      AddToGrow(&colorGrow, colors);
       colors++;
     }
   }
@@ -138,8 +130,10 @@ static void AddColorToLine(struct InstData *data, UWORD x, struct line_node *lin
 void AddColor(struct InstData *data, struct marking *realblock, UWORD color)
 {
   struct marking newblock;
-  struct line_node *startline, *stopline;
-  UWORD startx, stopx;
+  struct line_node *startline;
+  struct line_node *stopline;
+  LONG startx;
+  LONG stopx;
 
   ENTER();
 
@@ -167,13 +161,13 @@ void AddColor(struct InstData *data, struct marking *realblock, UWORD color)
   }
   else
   {
-    struct line_node *line = startline->next;
+    struct line_node *line = GetNextLine(startline);
 
     AddColorToLine(data, startx, startline, startline->line.Length-startx-1, color);
     while(line != stopline)
     {
       AddColorToLine(data, 0, line, line->line.Length-1, color);
-      line = line->next;
+      line = GetNextLine(line);
     }
     AddColorToLine(data, 0, line, stopx, color);
   }
@@ -183,4 +177,3 @@ void AddColor(struct InstData *data, struct marking *realblock, UWORD color)
 }
 
 ///
-

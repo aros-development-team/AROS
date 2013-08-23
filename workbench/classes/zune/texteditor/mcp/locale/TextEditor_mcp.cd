@@ -553,5 +553,5 @@ to suggest an alternate word. As explained above,\n\
 usually you should specify a script here.
 ;
 MSG_UNDO_SLIDER_FORMAT (159//)
-%ld (± 5)
+%ld (+/- 5)
 ;

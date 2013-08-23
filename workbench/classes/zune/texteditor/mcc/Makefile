@@ -161,7 +161,7 @@ TESTTARGET= $(BINDIR)/TextEditor-Test
 
 # Common compiler/linker flags
 WARN     = -W -Wall -Wwrite-strings -Wpointer-arith -Wsign-compare
-OPTFLAGS = -O3 -fomit-frame-pointer -funroll-loops
+OPTFLAGS = -O3 -fomit-frame-pointer
 DEBUG    = -DDEBUG -O0
 DEBUGSYM = -g -gstabs
 CFLAGS   = -I. -I../mcp -I../include $(CPU) $(WARN) $(OPTFLAGS) \
@@ -176,7 +176,6 @@ LDLIBS   =
 LOBJS = library.o
 
 COBJS = AllocBitMap.o \
-        AllocFunctions.o \
         BlockOperators.o \
         CaseConversion.o \
         ClipboardServer.o \
@@ -204,6 +203,7 @@ COBJS = AllocBitMap.o \
         SpellChecker.o \
         StyleOperators.o \
         UndoFunctions.o \
+        NewGfx.o \
         Debug.o
 
 TOBJS = TextEditor-Test.o
@@ -250,7 +250,7 @@ ifeq ($(OS), os3)
 
   # Compiler/Linker flags
   CPU     = -m68020-60 -msoft-float
-  CFLAGS  += -noixemul -DNO_INLINE_STDARG
+  CFLAGS  += -noixemul -DNO_INLINE_STDARG -D__amigaos3__
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug -lmui
 
@@ -261,7 +261,8 @@ ifeq ($(OS), os3)
            extrasrc/GetHead.o \
            extrasrc/GetPred.o \
            extrasrc/GetSucc.o \
-           extrasrc/GetTail.o
+           extrasrc/GetTail.o \
+           extrasrc/MoveList.o
 
 else
 ifeq ($(OS), mos)
@@ -282,6 +283,9 @@ ifeq ($(OS), mos)
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
 
+  # additional object files required
+  COBJS += extrasrc/MoveList.o
+
 else
 ifeq ($(OS), aros-i386)
 
@@ -295,9 +299,12 @@ ifeq ($(OS), aros-i386)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
+
+  # additional object files required
+  COBJS += extrasrc/MoveList.o
 
 else
 ifeq ($(OS), aros-ppc)
@@ -312,9 +319,12 @@ ifeq ($(OS), aros-ppc)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign
   LDLIBS += -larossupport -lrom -lmui
+
+  # additional object files required
+  COBJS += extrasrc/MoveList.o
 
 else
 ifeq ($(OS), aros-x86_64)
@@ -329,9 +339,12 @@ ifeq ($(OS), aros-x86_64)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign
   LDLIBS += -larossupport -lrom -lmui
+
+  # additional object files required
+  COBJS += extrasrc/MoveList.o
 
 endif
 endif

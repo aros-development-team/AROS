@@ -5,11 +5,6 @@ $(OBJDIR)/AllocBitMap.o: AllocBitMap.c ../include/SDI_compiler.h private.h \
   ../include/SDI_lib.h ../include/SDI_stdarg.h \
   ../include/mui/TextEditor_mcc.h ../include/amiga-align.h \
   ../include/default-align.h Debug.h
-$(OBJDIR)/AllocFunctions.o: AllocFunctions.c private.h ../include/libraries/mui.h \
-  ../include/muiextra.h ../include/mcc_common.h ../include/SDI_compiler.h \
-  ../include/SDI_hook.h ../include/SDI_lib.h ../include/SDI_stdarg.h \
-  ../include/mui/TextEditor_mcc.h ../include/amiga-align.h \
-  ../include/default-align.h Debug.h
 $(OBJDIR)/BlockOperators.o: BlockOperators.c private.h ../include/libraries/mui.h \
   ../include/muiextra.h ../include/mcc_common.h ../include/SDI_compiler.h \
   ../include/SDI_hook.h ../include/SDI_lib.h ../include/SDI_stdarg.h \
@@ -129,6 +124,11 @@ $(OBJDIR)/MixedFunctions.o: MixedFunctions.c ../include/libraries/mui.h \
   ../include/mui/TextEditor_mcc.h ../include/amiga-align.h \
   ../include/default-align.h Debug.h
 $(OBJDIR)/Navigation.o: Navigation.c private.h ../include/libraries/mui.h \
+  ../include/muiextra.h ../include/mcc_common.h ../include/SDI_compiler.h \
+  ../include/SDI_hook.h ../include/SDI_lib.h ../include/SDI_stdarg.h \
+  ../include/mui/TextEditor_mcc.h ../include/amiga-align.h \
+  ../include/default-align.h Debug.h
+$(OBJDIR)/NewGfx.o: NewGfx.c private.h ../include/libraries/mui.h \
   ../include/muiextra.h ../include/mcc_common.h ../include/SDI_compiler.h \
   ../include/SDI_hook.h ../include/SDI_lib.h ../include/SDI_stdarg.h \
   ../include/mui/TextEditor_mcc.h ../include/amiga-align.h \

@@ -113,6 +113,29 @@ CC      = gcc
 STRIP   = strip
 OBJDUMP = objdump
 
+# override commands for native builds
+ifeq ($(HOST), AmigaOS4)
+  # AmigaOS4 host
+#  RM    = delete force
+#  RMDIR = delete force all
+#  MKDIR = makedir
+  DATE  = gdate
+else
+ifeq ($(HOST), AmigaOS)
+  # AmigaOS3 host
+  RM    = delete force
+  RMDIR = delete force all
+  MKDIR = makedir
+else
+ifeq ($(HOST), MorphOS)
+  # MorphOS host
+  RM    = delete force
+  RMDIR = delete force all
+  MKDIR = makedir
+endif
+endif
+endif
+
 # path definitions
 CDUP  = /
 CDTHIS=
@@ -162,7 +185,7 @@ TESTTARGET= $(BINDIR)/TextEditor-Prefs
 
 # Common compiler/linker flags
 WARN     = -W -Wall -Wwrite-strings -Wpointer-arith -Wsign-compare
-OPTFLAGS = -O3 -fomit-frame-pointer -funroll-loops
+OPTFLAGS = -O3 -fomit-frame-pointer
 DEBUG    = -DDEBUG -O0
 DEBUGSYM = -g -gstabs
 CFLAGS   = -I. -I../include $(CPU) $(WARN) $(OPTFLAGS) \
@@ -195,9 +218,11 @@ CATALOGS = $(LOCALE)/czech.catalog \
            $(LOCALE)/danish.catalog \
            $(LOCALE)/french.catalog \
            $(LOCALE)/german.catalog \
+           $(LOCALE)/greek.catalog \
+           $(LOCALE)/italian.catalog \
+           $(LOCALE)/polish.catalog \
            $(LOCALE)/russian.catalog \
-           $(LOCALE)/swedish.catalog \
-           $(LOCALE)/polish.catalog
+           $(LOCALE)/swedish.catalog
 
 
 # different options per target OS
@@ -239,7 +264,7 @@ ifeq ($(OS), os3)
 
   # Compiler/Linker flags
   CPU     = -m68020-60 -msoft-float
-  CFLAGS  += -noixemul -DNO_INLINE_STDARG
+  CFLAGS  += -noixemul -DNO_INLINE_STDARG -D__amigaos3__
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug -lmui
 
@@ -283,7 +308,7 @@ ifeq ($(OS), aros-i386)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -300,7 +325,7 @@ ifeq ($(OS), aros-ppc)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -317,7 +342,7 @@ ifeq ($(OS), aros-x86_64)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign -DNO_INLINE_STDARG
   LDLIBS += -larossupport -lrom -lmui
 
@@ -422,6 +447,7 @@ clean:
 	-$(RM) $(TARGET) $(TARGET).debug $(TARGET).map
 	-$(RM) $(TESTTARGET) $(TESTTARGET).debug $(TESTTARGET).map
 	-$(RM) $(MCPOBJS) $(TESTOBJS) $(M68KSTUBS)
+	-$(RM) $(CATALOGS)
 
 .PHONY: distclean
 distclean: clean

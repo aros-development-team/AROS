@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -51,7 +51,7 @@ static struct TextFont *GetFont(UNUSED struct InstData *data, void *obj, long at
     int fontnameLen;
 
     fontnameLen = strlen(setting)+6;
-    if((fontname = AllocVec(fontnameLen, MEMF_SHARED|MEMF_CLEAR)) != NULL)
+    if((fontname = AllocVecShared(fontnameLen, MEMF_CLEAR)) != NULL)
     {
       char *sizePtr;
       struct TextAttr textAttr;
@@ -102,10 +102,12 @@ static void SetCol(struct InstData *data, void *obj, long item, ULONG *storage, 
 
 ///
 /// InitConfig()
-void InitConfig(struct InstData *data, Object *obj)
+void InitConfig(struct IClass *cl, Object *obj)
 {
+  struct InstData *data = INST_DATA(cl, obj);
   IPTR setting = 0;
   BOOL loadDefaultKeys = FALSE;
+  LONG oldTabSize = data->TabSize;
 
   ENTER();
 
@@ -134,7 +136,6 @@ void InitConfig(struct InstData *data, Object *obj)
     IPTR background = MUII_BACKGROUND;
 
     data->backgroundcolor = 0;
-    data->fastbackground = TRUE;
 
     if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Background, &setting) && setting != 0)
     {
@@ -147,46 +148,44 @@ void InitConfig(struct InstData *data, Object *obj)
         data->backgroundcolor = MUI_ObtainPen(muiRenderInfo(obj), spec, 0L);
         data->allocatedpens |= 1<<8;
       }
-      else if(bg_setting[0] != '\0')
-        data->fastbackground = FALSE;
 
       background = (IPTR)setting;
     }
     set(obj, MUIA_Background, background);
   }
-  else
-    data->fastbackground = FALSE;
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_TabSize, &setting))
   {
-    data->TabSize = *(long *)setting;
-    if(data->TabSize > 12)
-      data->TabSize = 4;
+    ULONG size = MINMAX(2, *(ULONG *)setting, 12);
+
+    // use the configured value only if the TAB size is not yet overridden
+    if(isFlagClear(data->flags, FLG_ForcedTabSize))
+      data->TabSize = size;
+
+    // remember the configured value in case the TAB size is being reset to the default value
+    data->GlobalTabSize = size;
   }
   else
   {
+    // assume the default value for both
     data->TabSize = 4;
+    data->GlobalTabSize = 4;
   }
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_CursorWidth, &setting))
-  {
-    data->CursorWidth = *(long *)setting;
-    if(data->CursorWidth > 6)
-      data->CursorWidth = 6;
-  }
+    data->CursorWidth = MINMAX(1, *(long *)setting, 6);
   else
-  {
     data->CursorWidth = 6;
-  }
 
-  data->normalfont  = GetFont(data, obj, MUICFG_TextEditor_NormalFont);
-  data->fixedfont   = GetFont(data, obj, MUICFG_TextEditor_FixedFont);
+  data->normalfont = GetFont(data, obj, MUICFG_TextEditor_NormalFont);
+  data->fixedfont = GetFont(data, obj, MUICFG_TextEditor_FixedFont);
   data->font = (data->use_fixedfont == TRUE) ? data->fixedfont : data->normalfont;
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_BlockQual, &setting))
   {
     switch(*(LONG *)setting)
     {
+      default:
       case 0:
         data->blockqual = IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT;
         break;
@@ -201,15 +200,16 @@ void InitConfig(struct InstData *data, Object *obj)
         break;
     }
   }
-  else  data->blockqual = IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT;
+  else
+    data->blockqual = IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT;
 
   data->BlinkSpeed = FALSE;
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_BlinkSpeed, &setting))
   {
-    if(*(LONG *)setting)
+    if(*(LONG *)setting != 0)
     {
       data->blinkhandler.ihn_Object    = obj;
-      data->blinkhandler.ihn_Millis    = *(LONG *)setting*25;
+      data->blinkhandler.ihn_Millis    = MINMAX(1, *(LONG *)setting, 20)*25;
       data->blinkhandler.ihn_Method    = MUIM_TextEditor_ToggleCursor;
       data->blinkhandler.ihn_Flags     = MUIIHNF_TIMER;
       data->BlinkSpeed = 1;
@@ -219,8 +219,9 @@ void InitConfig(struct InstData *data, Object *obj)
   if(isFlagClear(data->flags, FLG_OwnFrame))
   {
     if(MUIMasterBase->lib_Version >= 20)
-        set(obj, MUIA_Frame, DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Frame, &setting) ? (STRPTR)setting : (STRPTR)"302200");
-    else  set(obj, MUIA_Frame, MUIV_Frame_String);
+      set(obj, MUIA_Frame, DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Frame, &setting) ? (STRPTR)setting : (STRPTR)"302200");
+    else
+      set(obj, MUIA_Frame, MUIV_Frame_String);
   }
 
   data->TypeAndSpell = FALSE;
@@ -247,15 +248,14 @@ void InitConfig(struct InstData *data, Object *obj)
     setFlag(data->flags, FLG_FirstInit);
     data->NoNotify = TRUE;
     SetAttrs(obj,
-            MUIA_FillArea,              FALSE,
-            MUIA_TextEditor_Flow,       data->Flow,
-            MUIA_TextEditor_Pen,          data->Pen,
-            MUIA_TextEditor_AreaMarked,   FALSE,
-            MUIA_TextEditor_UndoAvailable,  FALSE,
-            MUIA_TextEditor_RedoAvailable,  FALSE,
-            MUIA_TextEditor_HasChanged,   FALSE,
-
-            TAG_DONE);
+      MUIA_FillArea, FALSE,
+      MUIA_TextEditor_Flow, data->Flow,
+      MUIA_TextEditor_Pen, data->Pen,
+      MUIA_TextEditor_AreaMarked, FALSE,
+      MUIA_TextEditor_UndoAvailable, FALSE,
+      MUIA_TextEditor_RedoAvailable, FALSE,
+      MUIA_TextEditor_HasChanged, FALSE,
+      TAG_DONE);
     data->NoNotify = FALSE;
   }
 
@@ -267,9 +267,7 @@ void InitConfig(struct InstData *data, Object *obj)
     setting = (long)&lort;
     DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_Smooth, &setting);
     if(data->slider != NULL)
-    {
       set(data->slider, MUIA_Prop_DoSmooth, *(long *)setting);
-    }
   }
 
   data->selectPointer = TRUE;
@@ -299,8 +297,8 @@ void InitConfig(struct InstData *data, Object *obj)
         undoSteps = *(long *)setting;
 
         // constrain the number of undo levels only if undo is enabled
-        if(undoSteps != 0 && undoSteps < 20)
-          undoSteps = 20;
+        if(undoSteps != 0)
+          undoSteps = MAX(undoSteps, 20);
       }
     }
     else
@@ -309,20 +307,20 @@ void InitConfig(struct InstData *data, Object *obj)
     ResizeUndoBuffer(data, undoSteps);
   }
 
-  data->LookupSpawn = 0;
-  data->LookupCmd = "";
+  data->LookupSpawn = FALSE;
+  data->LookupCmd[0] = '\0';
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_LookupCmd, &setting))
   {
-    data->LookupSpawn = (short) *(ULONG *)setting;
-    data->LookupCmd = (char *)setting+4;
+    data->LookupSpawn = (BOOL)*(ULONG *)setting;
+    strlcpy(data->LookupCmd, (char *)setting+4, sizeof(data->LookupCmd));
   }
 
-  data->SuggestSpawn = 1;
-  data->SuggestCmd  = "\"Open('f', 'T:Matches', 'W');WriteLn('f', '%s');Close('f')\"";
+  data->SuggestSpawn = TRUE;
+  strlcpy(data->SuggestCmd, "\"Open('f', 'T:Matches', 'W');WriteLn('f', '%s');Close('f')\"", sizeof(data->SuggestCmd));
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_SuggestCmd, &setting))
   {
-    data->SuggestSpawn = (short) *(ULONG *)setting;
-    data->SuggestCmd = (char *)setting+4;
+    data->SuggestSpawn = (BOOL)*(ULONG *)setting;
+    strlcpy(data->SuggestCmd, (char *)setting+4, sizeof(data->SuggestCmd));
   }
 
   if(DoMethod(obj, MUIM_GetConfigItem, MUICFG_TextEditor_ConfigVersion, &setting))
@@ -392,36 +390,44 @@ void InitConfig(struct InstData *data, Object *obj)
     }
   }
 
+  if(data->TabSize != oldTabSize)
+  {
+    // reimport the current text if the TAB size has changed
+    ReimportText(cl, obj);
+  }
+
   LEAVE();
 }
 
 ///
 /// FreeConfig()
-void FreeConfig(struct InstData *data, struct MUI_RenderInfo *mri)
+void FreeConfig(struct IClass *cl, Object *obj)
 {
+  struct InstData *data = INST_DATA(cl, obj);
+
   ENTER();
 
   if(data->RawkeyBindings != NULL)
     FreeVecPooled(data->mypool, data->RawkeyBindings);
 
   if(data->allocatedpens & (1<<0))
-    MUI_ReleasePen(mri, data->textcolor);
+    MUI_ReleasePen(muiRenderInfo(obj), data->textcolor);
   if(data->allocatedpens & (1<<1))
-    MUI_ReleasePen(mri, data->cursorcolor);
+    MUI_ReleasePen(muiRenderInfo(obj), data->cursorcolor);
   if(data->allocatedpens & (1<<2))
-    MUI_ReleasePen(mri, data->cursortextcolor);
+    MUI_ReleasePen(muiRenderInfo(obj), data->cursortextcolor);
   if(data->allocatedpens & (1<<3))
-    MUI_ReleasePen(mri, data->highlightcolor);
+    MUI_ReleasePen(muiRenderInfo(obj), data->highlightcolor);
   if(data->allocatedpens & (1<<4))
-    MUI_ReleasePen(mri, data->markedcolor);
+    MUI_ReleasePen(muiRenderInfo(obj), data->markedcolor);
   if(data->allocatedpens & (1<<5))
-    MUI_ReleasePen(mri, data->separatorshine);
+    MUI_ReleasePen(muiRenderInfo(obj), data->separatorshine);
   if(data->allocatedpens & (1<<6))
-    MUI_ReleasePen(mri, data->separatorshadow);
+    MUI_ReleasePen(muiRenderInfo(obj), data->separatorshadow);
   if(data->allocatedpens & (1<<7))
-    MUI_ReleasePen(mri, data->inactivecolor);
+    MUI_ReleasePen(muiRenderInfo(obj), data->inactivecolor);
   if(data->allocatedpens & (1<<8))
-    MUI_ReleasePen(mri, data->backgroundcolor);
+    MUI_ReleasePen(muiRenderInfo(obj), data->backgroundcolor);
 
   if(data->normalfont != NULL)
     CloseFont(data->normalfont);
