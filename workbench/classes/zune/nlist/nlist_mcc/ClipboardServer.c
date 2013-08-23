@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -68,10 +68,6 @@ struct ServerData
 #define ID_FORM    MAKE_ID('F','O','R','M')
 #define ID_FTXT    MAKE_ID('F','T','X','T')
 #define ID_CHRS    MAKE_ID('C','H','R','S')
-
-#ifndef MEMF_SHARED
-#define MEMF_SHARED       MEMF_ANY
-#endif
 
 /// StringToClipboard
 // copy a string to the clipboard, public callable function
@@ -265,7 +261,7 @@ BOOL StartClipboardServer(void)
   #if defined(__amigaos4__)
   serverLock = AllocSysObjectTags(ASOT_SEMAPHORE, TAG_DONE);
   #else
-  serverLock = AllocVec(sizeof(*serverLock), MEMF_CLEAR);
+  serverLock = AllocVecShared(sizeof(*serverLock), MEMF_CLEAR);
   #endif
   if(serverLock != NULL)
   {

@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2006 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -829,7 +829,7 @@ int main(UNUSED int argc, UNUSED char *argv[])
   APP_Main = ApplicationObject,
     MUIA_Application_Title      , "NList-Demo",
     MUIA_Application_Version    , "$VER: NList-Demo 1.0 (" __DATE__ ")",
-    MUIA_Application_Copyright  , "Copyright (C) 2001-2006 by NList Open Source Team",
+    MUIA_Application_Copyright  , "Copyright (C) 2001-2013 by NList Open Source Team",
     MUIA_Application_Author     , "NList Open Source Team",
     MUIA_Application_Description, "NList-Demo",
     MUIA_Application_Base       , "NList-Demo",

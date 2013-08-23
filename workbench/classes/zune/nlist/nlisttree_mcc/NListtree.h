@@ -5,7 +5,7 @@
 
  NListtree.mcc - New Listtree MUI Custom Class
  Copyright (C) 1999-2001 by Carsten Scholling
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -202,34 +202,35 @@ struct NListtree_Data
 /*
 **  Flag values for Flags field
 */
-#define NLTF_EMPTYNODES                   (1<<0)    // ***  Display empty nodes as leafs.
-#define NLTF_DUPNODENAMES                 (1<<1)    // ***  Do not copy "name"-field. Use supplied pointer.
-#define NLTF_QUIET                        (1<<2)    // ***  NListtree is in quiet state.
-#define NLTF_TITLE                        (1<<3)    // ***  Show title.
-#define NLTF_REFRESH                      (1<<4)    // ***  Do an general object refresh.
-#define NLTF_REMEMBER_STATUS              (1<<5)    // ***  Config: Remember open/close status of nodes.
-#define NLTF_DRAGDROPSORT                 (1<<6)    // ***  Enabled drag'n drop sort.
-#define NLTF_REDRAW                       (1<<7)    // ***  Redraw specified line.
-#define NLTF_AUTOVISIBLE                  (1<<8)    // ***  Activated entries will always be shown.
-#define NLTF_SELECT_METHOD                (1<<9)    // ***  Selection through Select method.
-#define NLTF_OVER_ARROW                   (1<<10)   // ***  Mouse clicked over arrow. No drag!!
-#define NLTF_DRAGDROP                     (1<<11)   // ***  Drag&Drop in in progress.
-#define NLTF_OPENAUTOSCROLL               (1<<12)   // ***  Config: Auto scroll entries when opening a node with a large list.
-#define NLTF_NO_TREE                      (1<<13)   // ***  Do not show a tree.
-#define NLTF_NLIST_NO_SCM_SUPPORT         (1<<14)   // ***  NList.mcc has no SelectChange method support implemented!
-#define NLTF_INT_COMPAREHOOK              (1<<15)   // ***  Internal compare hook used!
-#define NLTF_INT_CONSTRDESTRHOOK          (1<<16)   // ***  Internal construct/destruct hooks!
-#define NLTF_ACTIVENOTIFY                 (1<<17)   // ***  Active notify activated?
-#define NLTF_ISMCP                        (1<<18)   // ***  MCP is here ;-)
-#define NLTF_NLIST_DIRECT_ENTRY_SUPPORT   (1<<19)   // ***  NList version supports direct entry request via backpointer
-#define NLTF_NO_ROOT_TREE                 (1<<20)   // ***  Do not display root tree gfx.
-#define NLTF_SETACTIVE                    (1<<21)   // ***  Set the active entry.
-#define NLTF_AUTOSELECT_CHILDS            (1<<22)   // ***  Automatically select childs if their parents selected.
+#define NLTF_EMPTYNODES                   (1UL<<0)    // ***  Display empty nodes as leafs.
+#define NLTF_DUPNODENAMES                 (1UL<<1)    // ***  Do not copy "name"-field. Use supplied pointer.
+#define NLTF_QUIET                        (1UL<<2)    // ***  NListtree is in quiet state.
+#define NLTF_TITLE                        (1UL<<3)    // ***  Show title.
+#define NLTF_REFRESH                      (1UL<<4)    // ***  Do an general object refresh.
+#define NLTF_REMEMBER_STATUS              (1UL<<5)    // ***  Config: Remember open/close status of nodes.
+#define NLTF_DRAGDROPSORT                 (1UL<<6)    // ***  Enabled drag'n drop sort.
+#define NLTF_REDRAW                       (1UL<<7)    // ***  Redraw specified line.
+#define NLTF_AUTOVISIBLE                  (1UL<<8)    // ***  Activated entries will always be shown.
+#define NLTF_SELECT_METHOD                (1UL<<9)    // ***  Selection through Select method.
+#define NLTF_OVER_ARROW                   (1UL<<10)   // ***  Mouse clicked over arrow. No drag!!
+#define NLTF_DRAGDROP                     (1UL<<11)   // ***  Drag&Drop in in progress.
+#define NLTF_OPENAUTOSCROLL               (1UL<<12)   // ***  Config: Auto scroll entries when opening a node with a large list.
+#define NLTF_NO_TREE                      (1UL<<13)   // ***  Do not show a tree.
+#define NLTF_NLIST_NO_SCM_SUPPORT         (1UL<<14)   // ***  NList.mcc has no SelectChange method support implemented!
+#define NLTF_INT_COMPAREHOOK              (1UL<<15)   // ***  Internal compare hook used!
+#define NLTF_INT_CONSTRDESTRHOOK          (1UL<<16)   // ***  Internal construct/destruct hooks!
+#define NLTF_ACTIVENOTIFY                 (1UL<<17)   // ***  Active notify activated?
+#define NLTF_ISMCP                        (1UL<<18)   // ***  MCP is here ;-)
+#define NLTF_NLIST_DIRECT_ENTRY_SUPPORT   (1UL<<19)   // ***  NList version supports direct entry request via backpointer
+#define NLTF_NO_ROOT_TREE                 (1UL<<20)   // ***  Do not display root tree gfx.
+#define NLTF_SETACTIVE                    (1UL<<21)   // ***  Set the active entry.
+#define NLTF_AUTOSELECT_CHILDS            (1UL<<22)   // ***  Automatically select childs if their parents selected.
+#define NLTF_SAFE_NOTIFIES                (1UL<<23)   // ***  Is removing MUI notifies safe?
 
-#define NLTF_QUALIFIER_LCOMMAND           (1<<28)   // ***  Rawkey qualifier information.
-#define NLTF_QUALIFIER_LALT               (1<<29)
-#define NLTF_QUALIFIER_CONTROL            (1<<30)
-#define NLTF_QUALIFIER_LSHIFT             (1<<31)
+#define NLTF_QUALIFIER_LCOMMAND           (1UL<<28)   // ***  Rawkey qualifier information.
+#define NLTF_QUALIFIER_LALT               (1UL<<29)
+#define NLTF_QUALIFIER_CONTROL            (1UL<<30)
+#define NLTF_QUALIFIER_LSHIFT             (1UL<<31)
 
 
 #define INSERT_POS_HEAD                   -1L

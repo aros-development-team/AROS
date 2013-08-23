@@ -1,9 +1,9 @@
-Short:        NList custom classes for MUI, V0.111
+Short:        NList custom classes for MUI, V0.116
 Author:       NList Open Source Team
 Uploader:     Jens Langner <Jens.Langner@light-speed.de>
 Type:         dev/mui
-Version:      0.111
-Replaces:     dev/mui/MCC_NList-0.110.lha
+Version:      0.116
+Replaces:     dev/mui/MCC_NList-0.115.lha
 Requires:     AmigaOS V37+, MorphOS or AROS, MUI 3.8+, HotkeyString.mcc
 Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2; i386-aros; ppc-aros; x86_64-aros
 
@@ -27,14 +27,14 @@ enabling copy to clipboard and key moving.
 
 This package includes:
 
-NList.mcc         20.130    17.12.2011
-NListview.mcc     19.85     17.12.2011
-NFloattext.mcc    19.66     17.12.2011
-NListviews.mcp    19.81     17.12.2011
-NListtree.mcc     18.37     17.12.2011
-NListtree.mcp     18.25     17.12.2011
-NBitmap.mcc       15.15     17.12.2011
-NBalance.mcc      15.11     17.12.2011
+NList.mcc         20.135    25.04.2013
+NListview.mcc     19.90     25.04.2013
+NFloattext.mcc    19.71     25.04.2013
+NListviews.mcp    19.86     25.04.2013
+NListtree.mcc     18.42     25.04.2013
+NListtree.mcp     18.30     25.04.2013
+NBitmap.mcc       15.20     25.04.2013
+NBalance.mcc      15.16     25.04.2013
 
 
 INSTALLATION
@@ -67,7 +67,7 @@ The NList/NListview/NFloattext classes were originally written in 1996
 and are Copyright (C) 1996-1997 by Gilles Masson, whereas the NListtree
 classes were originally written in 1999 and are Copyright (C) 1999-2001
 by Carsten Scholling. Since 2001, both class families are maintained and
-Copyright (C) 2001-2010 by the NList Open Source Team.
+Copyright (C) 2001-2012 by the NList Open Source Team.
 
 The complete NList package is distributed under the GNU Lesser General
 Public License (LGPL) and the development is hosted at SourceForge.net:

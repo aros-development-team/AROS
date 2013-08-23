@@ -1,7 +1,7 @@
 /***************************************************************************
 
  NBalance.mcc - New Balance MUI Custom Class
- Copyright (C) 2008 by NList Open Source Team
+ Copyright (C) 2008-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -53,10 +53,18 @@ struct InstData
   struct MUI_EventHandlerNode ehnode;
 };
 
+#define VERSION_IS_AT_LEAST(ver, rev, minver, minrev) (((ver) > (minver)) || ((ver) == (minver) && (rev) == (minrev)) || ((ver) == (minver) && (rev) > (minrev)))
+#define LIB_VERSION_IS_AT_LEAST(lib, minver, minrev)  VERSION_IS_AT_LEAST(((struct Library *)(lib))->lib_Version, ((struct Library *)(lib))->lib_Revision, minver, minrev)
+
+#if defined(__MORPHOS__)
+#include <proto/exec.h>
+#define IS_MORPHOS2 LIB_VERSION_IS_AT_LEAST(SysBase, 51, 0)
+#endif
+
 /* macros */
 #define _id(obj) (muiNotifyData(obj)->mnd_ObjectID)
 #define _between(a,x,b) ((x)>=(a) && (x)<=(b))
-#define _isinobject(x,y) (_between(_mleft(obj),(x),_mright(obj)) && _between(_mtop(obj),(y),_mbottom(obj)))
+#define _isinobject(x,y) (_between(_left(obj),(x),_right(obj)) && _between(_top(obj),(y),_bottom(obj)))
 
 /// xget()
 //  Gets an attribute value from a MUI object
@@ -70,6 +78,13 @@ IPTR xget(Object *obj, const IPTR attr);
 #endif
 ///
 
+// structure to export/import the balancing weights
+struct MUIS_Weights
+{
+  ULONG prevWeight;
+  ULONG nextWeight;
+};
+
 /* prototypes */
 IPTR mNew(struct IClass *cl, Object *obj, struct opSet *set);
 IPTR mSet(struct IClass *cl, Object *obj, Msg msg);
@@ -78,5 +93,7 @@ IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo);
 IPTR mCleanup(struct IClass *cl, Object *obj, Msg msg);
 IPTR mHide(struct IClass *cl, Object *obj, Msg msg);
 IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg);
+IPTR mExport(struct IClass *cl, Object *obj, struct MUIP_Export *msg);
+IPTR mImport(struct IClass *cl, Object *obj, struct MUIP_Import *msg);
 
 #endif /* PRIVATE_H */

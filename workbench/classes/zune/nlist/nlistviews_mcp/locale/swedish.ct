@@ -1,10 +1,10 @@
-## version $VER: NListviews_mcp.ct 2.1 (18.09.2010)
+## version $VER: NListviews_mcp.ct 2.3 (16.05.2012)
 ## language svenska
 ## codeset 0
 ;
 ## chunk AUTH Pär Boberg
 ;
-; NListviews_mcp.ct - NList MUI custom prefs catalog translation file
+; NListviews_mcp.cd - NList MUI custom prefs catalog description file
 ; $Id$
 ;
 ;#version 2
@@ -56,7 +56,10 @@ Typsnittsmarginal:
 ; Font Margin:
 ;
 MSG_FONT_MARGIN_HELP
-Tillåter att sätta en vertikal marginal\nsom läggs till på typsnitts\nhöjden och resulterar i den förvalda\nlinjehöjden i ett NList objekt.
+Tillåter att sätta en vertikal marginal\n\
+som läggs till på typsnittshöjden och\n\
+resulterar i den förvalda linjehöjden i\n\
+ett NList objekt.
 ; Allows to set a vertical margin\n\
 ; which will be added to the font\n\
 ; height and result in the default\n\
@@ -79,7 +82,8 @@ Titel penna
 ; Title Pen
 ;
 MSG_TITLE_PEN_HELP
-För justering av pennfärgen för\nen titel.
+För justering av pennfärgen för\n\
+en titel.
 ; For adjusting the pen color of\n\
 ; a title.
 ;
@@ -92,7 +96,8 @@ Titelbakgrund
 ; Title Background
 ;
 MSG_TITLE_BG_HELP
-För justering av bakgrundsfärgen\nför en titel.
+För justering av bakgrundsfärgen\n\
+för en titel.
 ; For adjusting the background color\n\
 ; of a title.
 ;
@@ -101,7 +106,8 @@ List penna
 ; List Pen
 ;
 MSG_LIST_PEN_HELP
-För justering av pennfärgen\nför en lista.
+För justering av pennfärgen\n\
+för en lista.
 ; For adjusting the pen color of\n\
 ; a list.
 ;
@@ -114,7 +120,8 @@ Listbakgrund
 ; List Background
 ;
 MSG_LIST_BG_HELP
-För justering av bakgrundsfärgen\nför en lista.
+För justering av bakgrundsfärgen\n\
+för en lista.
 ; For adjusting the background color\n\
 ; of a list.
 ;
@@ -123,7 +130,8 @@ Vald post
 ; Selected Entry
 ;
 MSG_SELECT_PEN_HELP
-För justering av pennfärgen\nför valda poster.
+För justering av pennfärgen\n\
+för valda poster.
 ; For adjusting the pen color of\n\
 ; selected entries.
 ;
@@ -136,7 +144,8 @@ Vald post
 ; Selected Entry
 ;
 MSG_SELECT_BG_HELP
-För justering av bakgrundsfärgen\nför valda poster.
+För justering av bakgrundsfärgen\n\
+för valda poster.
 ; For adjusting the background color\n\
 ; of selected entries.
 ;
@@ -145,7 +154,8 @@ Vald markör
 ; Selected Cursor
 ;
 MSG_CURSOR_PEN_HELP
-För justering av pennfärgen\nför vald markör.
+För justering av pennfärgen\n\
+för vald markör.
 ; For adjusting the pen color of\n\
 ; a selected cursor.
 ;
@@ -158,7 +168,8 @@ Vald markör
 ; Selected Cursor
 ;
 MSG_CURSOR_BG_HELP
-För justering av bakgrundsfärgen\nför vald markör.
+För justering av bakgrundsfärgen\n\
+för vald markör.
 ; For adjusting the background color\n\
 ; of a selected cursor.
 ;
@@ -167,7 +178,8 @@ Ovald markör
 ; Unselected Cursor
 ;
 MSG_UNSEL_PEN_HELP
-För justering av pennfärgen\nför en ovald markör.
+För justering av pennfärgen\n\
+för en ovald markör.
 ; For adjusting the pen color of\n\
 ; an unselected cursor.
 ;
@@ -180,7 +192,8 @@ Ovald markör
 ; Unselected Cursor
 ;
 MSG_UNSEL_BG_HELP
-För justering av bakgrundsfärgen\nför en ovald markör.
+För justering av bakgrundsfärgen\n\
+för en ovald markör.
 ; For adjusting the background color\n\
 ; of an unselected cursor.
 ;
@@ -189,7 +202,8 @@ Inaktiv markör
 ; Inactive Cursor
 ;
 MSG_INACT_PEN_HELP
-För justering av pennfärgen\nför en inaktiv markör.
+För justering av pennfärgen\n\
+för en inaktiv markör.
 ; For adjusting the pen color of\n\
 ; an inactive cursor.
 ;
@@ -202,7 +216,8 @@ Inaktiv markör
 ; Inactive Cursor
 ;
 MSG_INACT_BG_HELP
-För justering av bakgrundsfärgen\nför en inaktiv markör.
+För justering av bakgrundsfärgen\n\
+för en inaktiv markör.
 ; For adjusting the background color\n\
 ; of an inactive cursor.
 ;
@@ -219,7 +234,8 @@ Alltid
 ; Always
 ;
 MSG_MULTISELECT_HELP
-Tillåter att specifiera förvalt\nflervalsläge.
+Tillåter att specifiera förvalt\n\
+flervalsläge.
 ; Allows to specify the default\n\
 ; multiselection mode.
 ;
@@ -228,7 +244,8 @@ MMK flerval
 ; MMB multiselection
 ;
 MSG_MMB_MULTISEL_HELP
-Välj om du vill använda mittenmusknappen\n(MMK) som flervalskvalificerare.
+Välj om du vill använda mittenmusknappen\n\
+(MMK) som flervalskvalificerare.
 ; Set it if you want to use the middle\n\
 ; mouse button (MMB) as a multiselection\n\
 ; qualifier.
@@ -250,7 +267,14 @@ via kvalificerare
 ; via Qualifier
 ;
 MSG_DRAGTYPE_HELP
-Välj dragläge. 'Omeddelbar' startar\ndra&släpp så fort du drar ett objekt.\n'vid kanter' för att visa en dra-operation\nså snart du passerat vänster/höger kanter\noch 'via kvalificerare' för att endast tillåta\ndra&släpp via en kvalificeringstangent\n(se 'Tangenter').\n\n'Omeddelbar' används endast i icke-flervalsläge.
+Välj dragläge. 'Omeddelbar' startar dra&släpp\n\
+så fort du drar ett objekt. 'vid kanter' för att\n\
+visa en drag operation så snart du passerat\n\
+vänster/höger kanter och 'via kvalificerare'\n\
+för att endast tillåta dra&släpp via en\n\
+kvalificeringstangent (se 'Tangenter').\n\
+\n\
+'Omeddelbar' används endast i icke-flervalsläge.
 ; Set the drag mode. 'Immediate' will start\n\
 ; drag&drop as soon as you drag an object.\n\
 ; 'at Borders' for showing a drag operation\n\
@@ -266,7 +290,10 @@ Synliga linjer
 ; Visible lines
 ;
 MSG_DRAG_LINES_HELP
-Ange max antal linjer som\nkommer att visas vid dra&släpp.\nOm fler linjer är valda, kommer\ndu att se ett meddelande\nliknande: 'Drar xx objekt...'.
+Ange max antal linjer som kommer\n\
+att visas vid dra&släpp. Om fler\n\
+linjer är valda, kommer du att se\n\
+ett meddelande liknande: 'Drar xx objekt...'.
 ; Give the max. number of lines\n\
 ; which will be shown when\n\
 ; doing drag&drop. If more lines\n\
@@ -298,7 +325,9 @@ Horisontellt dragreglage
 ; Horizontal Scrollbar
 ;
 MSG_SB_HORIZONTAL_HELP
-Välj förvalt läge\nför horisontellt dragreglage.\n(kan ändras av ett program)
+Välj förvalt läge för\n\
+horisontellt dragreglage.\n\
+(kan ändras av ett program)
 ; Set the default mode\n\
 ; for the horizontal scrollbar.\n\
 ; (may be overwritten by an\n\
@@ -309,7 +338,9 @@ Vertikalt dragreglage
 ; Vertical Scrollbar
 ;
 MSG_SB_VERTICAL_HELP
-Välj förvalt läge\nför vertikalt dragreglage.\n(kan ändras av ett program)
+Välj förvalt läge för\n\
+vertikalt dragreglage.\n\
+(kan ändras av ett program)
 ; Set the default mode\n\
 ; for the vertical scrollbar.\n\
 ; (may be overwritten by an\n\
@@ -317,14 +348,19 @@ Välj förvalt läge\nför vertikalt dragreglage.\n(kan ändras av ett program)
 ;
 MSG_SCROLLCONTROL
 Skrollkontroll
-; Scolling Control
+; Scrolling Control
 ;
 MSG_SMOOTH_SCROLLING
 Mjuk skrollning
 ; Smooth Scrolling
 ;
 MSG_SMOOTH_SCROLLING_HELP
-Om vald, kommer mjuk skrollning\natt användas för NList objekt.\nSom tillägg, vid användning av\n'mjuk' reglaget i normala MUI 'Listview'\nkonfigurationssidan kan hastigheten\nkontrolleras.
+Om vald, kommer mjuk skrollning\n\
+att användas för NList objekt.\n\
+Som tillägg, vid användning av\n\
+'mjuk' reglaget i normala MUI\n\
+'Listview' konfigurationssidan\n\
+kan hastigheten kontrolleras.
 ; If enabled, smoothing scrolling\n\
 ; will be used for NList objects.\n\
 ; In addition, by using the 'smooth'\n\
@@ -337,7 +373,11 @@ MMK Snabbhjul
 ; MMB Fast Wheel
 ;
 MSG_MMB_FASTWHEEL_HELP
-Om vald, kommer mittenmusknappen\natt användas som en kvalificerare för\natt utföra en snabb hjulskroll.\n(Se 'tangentbindningar' sidan också\nför fler hjulkvalificerare)
+Om vald, kommer mittenmusknappen\n\
+att användas som en kvalificerare för\n\
+att utföra en snabb hjulskroll.\n\
+(Se 'tangentbindningar' sidan också\n\
+för fler hjulkvalificerare)
 ; If enabled, the middle mouse button\n\
 ; can be used as a qualifier to perform\n\
 ; a fast scroll wheel action.\n\
@@ -349,7 +389,9 @@ Mushjul steg
 ; Mouse Wheel Step
 ;
 MSG_WHEEL_STEP_HELP
-Tillåter att specifiera antal linjer\nsom skrollas vid användning\nav en mus med skrollhjul.
+Tillåter att specifiera antal linjer\n\
+som skrollas vid användning av en mus\n\
+med skrollhjul.
 ; Allows to specify the amount of lines\n\
 ; that should be scrolled when using a\n\
 ; wheel mouse.
@@ -359,7 +401,10 @@ Mushjul snabbsteg
 ; Mouse Wheel Fast Step
 ;
 MSG_WHEEL_FAST_HELP
-Tillåter att specifiera antal linjer\nsom skrollas vid användning\nav en mus med skrollhjul och\nnär snabbhjulskvalificeraren\när nedtryckt.
+Tillåter att specifiera antal linjer\n\
+som skrollas vid användning av en mus\n\
+med skrollhjul och när snabbhjulskvalificeraren\n\
+är nedtryckt.
 ; Allows to specify the amount of lines\n\
 ; that should be scrolled when using a\n\
 ; wheel mouse and when the fast wheel\n\
@@ -374,7 +419,9 @@ Delvis kolumnmarkering
 ; Partial column mark
 ;
 MSG_PARTIAL_COL_MARK_HELP
-Om vald, kommer en speciell markering\natt visas på höger sida av en\nkolumn, ifall texten inte ryms.
+Om vald, kommer en speciell markering\n\
+att visas på höger sida av en kolumn,\n\
+ifall texten inte ryms.
 ; If enabled, a special mark will be drawn\n\
 ; at the right side of a column in case the\n\
 ; text didn't completly fit into it.
@@ -384,7 +431,9 @@ Tecken delvis ritade
 ; Partial chars drawn
 ;
 MSG_PARTIAL_CHARS_DRAWN_HELP
-Om vald, så kommer tecken som inte är\nfullt synliga vid vänster och höger\nhörn av ett NList objekt att inte ritas delvis.
+Om vald, så kommer tecken som inte är\n\
+fullt synliga vid vänster och höger\n\
+hörn av ett NList objekt att inte ritas delvis.
 ; If enabled, characters that are not fully\n\
 ; visible at the left and right corner of\n\
 ; an NList object will not be drawn partially.
@@ -394,7 +443,8 @@ Vertikalt centrerade linjer
 ; Vertical centered lines
 ;
 MSG_VERT_CENTERED_HELP
-Om aktiverat, så kommer textlinjer att\ncentreras vertikalt i ett NList objekt.
+Om aktiverat, så kommer textlinjer att\n\
+centreras vertikalt i ett NList objekt.
 ; If activated, the text lines are centered\n\
 ; vertically in a NList object.
 ;
@@ -403,7 +453,11 @@ Balancerade kolumner
 ; Balancing Columns
 ;
 MSG_BALANCING_COLS_HELP
-NList tillåter att ändra kolumnbredden\nvia mus, genom att dra i kolumnseparatorn\ni titelraden. Den flyttade raden kan visas\nantingen endast i titeln, genom hela linjer\neller så kan ändringarna visas direkt.
+NList tillåter att ändra kolumnbredden\n\
+via mus, genom att dra i kolumnseparatorn\n\
+i titelraden. Den flyttade raden kan visas\n\
+antingen endast i titeln, genom hela linjer\n\
+eller så kan ändringarna visas direkt.
 ; NList permits to change the column width\n\
 ; via mouse dragging the column separator in\n\
 ; the title bar. The moved bar can be visible\n\
@@ -432,7 +486,8 @@ Tvinga vald penna
 ; Force select pen
 ;
 MSG_FORCE_SELECT_PEN_HELP
-Om vald, kommer NList att kontrollera\natt 'vald', 'markör' och 'ovald'\nfärg tvingas.
+Om vald, kommer NList att kontrollera\n\
+att 'vald', 'markör' och 'ovald' färg tvingas.
 ; If enabled, NList will make sure that\n\
 ; the 'Selected', 'Cursor' and 'Unselected'\n\
 ; color will be forced.
@@ -442,7 +497,10 @@ Tangentbord flyttar markör
 ; Keyboard moves cursor
 ;
 MSG_MULTISEL_MOVEACTIVE_HELP
-Om vald, kommer tangentbordet som\nanvänds i ett NList objekt att\nflytta den aktiva markören, istället\nför den ovalda.
+Om vald, kommer tangentbordet som\n\
+används i ett NList objekt att flytta\n\
+den aktiva markören, istället\n\
+för den ovalda.
 ; If enabled, a keyboard use in an NList\n\
 ; object will move the active cursor\n\
 ; rather than the unselected one.
@@ -460,7 +518,9 @@ Seriell musfix
 ; Serial Mouse Fix
 ;
 MSG_SERMOUSE_FIX_HELP
-Om vald, försöker NList att fixa vanliga\ndra&släpp problem som är vanligt vid\nanvändning av en seriell mus.
+Om vald, försöker NList att fixa vanliga\n\
+dra&släpp problem som är vanligt vid\n\
+användning av en seriell mus.
 ; If enabled, NList tries to fix common\n\
 ; drag&drop issues that are related to using\n\
 ; a serial mouse.
@@ -470,7 +530,10 @@ Specialpekare för val
 ; Custom Select Pointer
 ;
 MSG_SELECT_POINTER_HELP
-Om vald och ett NList objekt är i\nteckenvist väljläge, kommer en speciell\npekare för val att visas, istället för\nworkbench standard pekare.
+Om vald och ett NList objekt är i\n\
+teckenvist väljläge, kommer en speciell\n\
+pekare för val att visas, istället för\n\
+workbench standard pekare.
 ; If enabled, and an NList object is in\n\
 ; charwise selection mode a custom select\n\
 ; pointer will be displayed instead of the\n\
@@ -481,7 +544,10 @@ Kontextmeny
 ; Context Menu
 ;
 MSG_DEFAULT_CONTEXT_MENU_HELP
-NList tillåter att dess förvalda\nkontextmeny, slås av eller på,\neller endast när muspekaren\när vid toppen av NList objektet.
+NList tillåter att dess förvalda\n\
+kontextmeny, slås av eller på,\n\
+eller endast när muspekaren\n\
+är vid toppen av NList objektet.
 ; NList permits to have its default\n\
 ; context menu being disabled or enabled\n\
 ; or only in case the mouse is at the top\n\
@@ -516,7 +582,9 @@ Uppdatera tangenter
 ; Update keys
 ;
 MSG_BUTTON_UPDATEKEYS_HELP
-Lägg till förvalda snabbtangenter\nför de funktioner som förnärvarande\ninte finns i listan.
+Lägg till förvalda snabbtangenter\n\
+för de funktioner som förnärvarande\n\
+inte finns i listan.
 ; Add the default hotkeys for\n\
 ; the functions which are not\n\
 ; currently in the list.
@@ -650,8 +718,55 @@ Händelse
 ; Action
 ;
 MSG_EXAMPLE_TEXT
-Om du har problem, försök öka stackvärdet\ni ikon informationen om du startar programmet\nvia ikonen. Stacken för CLI om du startar det\nfrån CLI Shell och om du startar det från något\nannat verktyg, läs dess dokumentation hur du\nökar stackstorleken.\nEn stack på 12kb, 16kb eller 20kb räcker vanligtvis.\n\nOm du fortfarande har problem, se om de händer\nmed demo programmet, kontakta mig sedan.\n\033C\nSenaste release kan hittas på Aminet (dev/mui).\nAlla releaser finns på\nhttp://www.sourceforge.net/projects/nlist-classes/\n\033C\n\033r\0333(C) 2001-2008 av NList Open Source Team\n\033r\0333(C)1996-1998 av Gilles Masson\n\033r\0333http://www.sourceforge.net/projects/nlist-classes/\n\033C\n\033cDenna nya list/listvy specialklass\n\033chanterar sin egen konfigurerbara bakgrunder,\n\033cpennor, typsnitt, rullister, tangenter och kvalifiserare\n\033C\n\033CTidigare sätt att hantera markör med flerval\n\033cär inte exakt samma som listvyn !\n\033cDra&släpp stöds, båda rullisterna kan\
- konfigureras\n\033catt försvinna automatiskt när de inte behövs\n\033ceftersom allt är synligt. Prova det...\n\033C\n\033cDu kan rulla horisontellt med tangenterna\n\033celler gå till höger och vänster om listen\n\033coch samtidigt välja med musen.\n\033cProva klicka på vänster/höger ramar !\n\033C\n\033cDu kan ändra kolumnernas bredd med att dra\n\033ci den vertikala separatorn mellan kolumntitlarna\n\033c(prova med att använda balanskvalifiseraren också).\n\033C\n\033cDu kan ändra kolumnernas ordning genom att dra i kolumntitlarna.\n\033C\n\033cDet finns inbyggt kopiera till klippbordet\n\033coch klassisk tecken val kapacitet.\n\033C\n\033cProva demo programmet för att testa allt det...\n\n\n\033r\033bGe feedback om det ! :-)\n\033C\n**************************************************************************************************\n
+Om du har problem, försök öka stackvärdet\n\
+i ikon informationen om du startar programmet\n\
+via ikonen. Stacken för CLI om du startar det\n\
+från CLI Shell och om du startar det från något\n\
+annat verktyg, läs dess dokumentation hur du\n\
+ökar stackstorleken. En stack på 12kb, 16kb eller\n\
+20kb räcker vanligtvis.\n\
+\n\
+Om du fortfarande har problem, se om det händer\n\
+med demo programmet, kontakta mig sedan.\n\
+\033C\n\
+Senaste release kan hittas på Aminet (dev/mui).\n\
+Alla releaser finns på\n\
+http://www.sourceforge.net/projects/nlist-classes/\n\
+\033C\n\
+\033r\0333(C) 2001-2012 av NList Open Source Team\n\
+\033r\0333(C) 1996-1998 av Gilles Masson\n\
+\033r\0333http://www.sourceforge.net/projects/nlist-classes/\n\
+\033C\n\
+\033cDenna nya list/listvy specialklass\n\
+\033chanterar sina egna konfigurerbara bakgrunder,\n\
+\033cpennor, typsnitt, rullister, tangenter och kvalificerare.\n\
+\033C\n\
+\033cTidigare sätt att hantera markör med flerval\n\
+\033cär inte exakt samma som listvyn !\n\
+\033cDra&släpp stöds, båda rullisterna kan konfigureras\n\
+\033catt försvinna automatiskt när de inte behövs,\n\
+\033ceftersom allt är synligt. Prova det...\n\
+\033C\n\
+\033cDu kan rulla horisontellt med tangenterna\n\
+\033celler gå till höger och vänster om listen\n\
+\033coch samtidigt välja med musen.\n\
+\033cProva klicka på vänster/höger ramar !\n\
+\033C\n\
+\033cDu kan ändra kolumnernas bredd genom att dra i\n\
+\033cden vertikala separatorn mellan kolumntitlarna\n\
+\033c(prova med att använda balanskvalificeraren också).\n\
+\033C\n\
+\033cDu kan ändra kolumnernas ordning genom att dra i kolumntitlarna.\n\
+\033C\n\
+\033cDet finns inbyggd kopiera till klippbordet\n\
+\033coch klassiskt teckenval kapacitet.\n\
+\033C\n\
+\033cProva demo programmet för att pröva allt detta...\n\
+\n\
+\n\
+\033r\033bGe feedback om det ! :-)\n\
+\033C\n\
+**************************************************************************************************\n
 ; If you have problems, try to increase the stack value,\n\
 ; in the icon infos if you launch the program from icon,\n\
 ; stack of CLI if you start it from CLI/Shell,\n\
@@ -665,7 +780,7 @@ Om du har problem, försök öka stackvärdet\ni ikon informationen om du startar pr
 ; All releases are available on\n\
 ; http://www.sourceforge.net/projects/nlist-classes/\n\
 ; \033C\n\
-; \033r\0333(C) 2001-2010 by NList Open Source Team\n\
+; \033r\0333(C) 2001-2013 by NList Open Source Team\n\
 ; \033r\0333(C) 1996-1998 by Gilles Masson\n\
 ; \033r\0333http://www.sourceforge.net/projects/nlist-classes/\n\
 ; \033C\n\

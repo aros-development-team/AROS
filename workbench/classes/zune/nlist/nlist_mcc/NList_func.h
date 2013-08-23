@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -85,18 +85,12 @@
 #define LESSQUIET                 NL_DrawQuietBG(data,6,0)
 
 #define SetBackGround(bg)         if((bg) != (ULONG)data->actbackground) NL_DrawQuietBG(data, 7, (bg));
-#define SetBackGroundForce(bg)    NL_DrawQuietBG(data,8,(bg))
 
-#define Make_Active_Visible       NL_DrawQuietBG(data,9,0)
+#define Make_Active_Visible       NL_DrawQuietBG(data,8,0)
 
-#define ForceMinMax               NL_DrawQuietBG(data,10,0)
+#define ForceMinMax               NL_DrawQuietBG(data,9,0)
 
 #define do_notifies(which)        NL_DoNotifies(data,(which))
-
-
-#define notify_Active             NL_DoNotifies(data,NTF_Active)
-#define notify_Select             NL_DoNotifies(data,(NTF_Select | NTF_LV_Select))
-#define do_notify_Select          NL_DoNotifies(data,(NTF_Select | NTF_LV_Select))
 
 
 #define SELECT(ent,sel)           NL_Select(data,0,(ent),(sel))

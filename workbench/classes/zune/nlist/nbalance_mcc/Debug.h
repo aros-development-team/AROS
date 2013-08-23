@@ -1,7 +1,7 @@
 /***************************************************************************
 
  NBalance.mcc - New Balance MUI Custom Class
- Copyright (C) 2008 by NList Open Source Team
+ Copyright (C) 2008-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -79,6 +79,7 @@ void kprintf(const char *formatString,...);
 #define DBF_ALWAYS              (1<<0)
 #define DBF_STARTUP             (1<<1)     // for startup/shutdown events
 #define DBF_INPUT               (1<<2)
+#define DBF_GUI                 (1<<3)
 #define DBF_ALL                 0xffffffff
 
 void SetupDebug(void);

@@ -7,7 +7,7 @@
                                             and 0x9d510101 to 0x9d51013F)
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2007 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -21,7 +21,7 @@
 
  NList classes Support Site:  http://www.sf.net/projects/nlist-classes
 
- $Id: C_h.sd 218 2007-09-16 10:02:20Z damato $
+ $Id: C_h.sd 675 2013-02-19 19:31:52Z thboeckel $
 
 ***************************************************************************/
 

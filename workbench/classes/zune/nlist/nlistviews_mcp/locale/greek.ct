@@ -1,281 +1,282 @@
-## version $VER: nlistviews_mcp.catalog 2.0 (20.05.2010)
-## language polski
-## codeset 5
-## chunk AUTH Mariusz Danilewicz <mandi@interia.pl>
+## version $VER: NListviews.catalog 2.1 (28.09.2012)
+## language greek
+## codeset 0
+## chunk AUTH Anthony Iliakis (amiga.phantom@yahoo.gr)
 ;
-; NListviews_mcp.ct - NList MUI custom prefs catalog Polish translation file
+;
+; NListviews_mcp.cd - NList MUI custom prefs catalog description file
 ; $Id$
+;
+;#version 2
+;#language english
 ;
 ;
 MSG_FONTS
-Czcionki
+Γραμματοσειρές
 ; Fonts
 ;
 MSG_NORMAL_FONT
-Normalna:
+Κανονική γραμματοσειρά:
 ; Normal Font:
 ;
 MSG_NORMAL_FONT_HELP
-Wybiera normaln± czcionkκ dla elementσw NList.
+Επιλέξτε μια κανονική NList γραμματοσειρά.
 ; Choose the normal NList font.
 ;
 MSG_NORMAL_FONT_ASL
-Proszκ wybraζ normaln± czcionkκ...
+Παρακαλώ επιλέξτε μια κανονική γραμματοσειρά...
 ; Please select the normal font...
 ;
 MSG_SMALL_FONT
-Ma³a:
+Μικρή γραμματοσειρά:
 ; Small Font:
 ;
 MSG_SMALL_FONT_HELP
-Wybiera ma³± czcionkκ dla elementσw NList.
+Επιλέξτε μια μικρή NList γραμματοσειρά.
 ; Choose the small NList font.
 ;
 MSG_SMALL_FONT_ASL
-Proszκ wybraζ ma³± czcionkκ...
+Παρακαλώ επιλέξτε μια μικρή γραμματοσειρά...
 ; Please select a small font...
 ;
 MSG_FIXED_FONT
-Nieproporcjonalna:
+Σταθερή γραμματοσειρά:
 ; Fixed Font:
 ;
 MSG_FIXED_FONT_HELP
-Wybiera nieproporcjonaln± czcionkκ dla elementσw NList.
+Επιλέξτε μια σταθερή NList γραμματοσειρά.
 ; Choose the fixed NList font.
 ;
 MSG_FIXED_FONT_ASL
-Proszκ wybraζ nieproporcjonaln± czcionkκ...
+Παρακαλώ επιλέξτε μια σταθερή γραμματοσειρά...
 ; Please select a fixed font...
 ;
 MSG_FONT_MARGIN
-Odstκpy:
+Περιθώριο γραμματοσειράς:
 ; Font Margin:
 ;
 MSG_FONT_MARGIN_HELP
-Pozwala okre¶liζ pionowe odstκpy,\n\
-ktσre zostan± dodane do wysoko¶ci\n\
-czcionki i w wyniku dadz± wysoko¶ζ\n\
-linii tekstu obiektσ NList.
+Επιτρέπει να ορίσετε ένα κάθετο περιθώριο\n\
+που θα προστεθεί στο ύψος της γραμματοσειράς\n\
+με αποτέλεσμα το προκαθορισμένο ύψος γραμμής\n\
+σε ένα αντικείμενο NList.
 ; Allows to set a vertical margin\n\
 ; which will be added to the font\n\
 ; height and result in the default\n\
 ; line height in an NList object.
 ;
 MSG_COLORS
-Kolory
+Χρώματα
 ; Colors
 ;
 MSG_TEXTCOLOR
-Pisak tekstu
+Πένα Κειμένου
 ; Text Pen
 ;
 MSG_BACKGROUNDCOLOR
-T³o
+Φόντο
 ; Background
 ;
 MSG_TITLE_PEN_WIN
-Pisak tytu³σw
+Πένα Τίτλου
 ; Title Pen
 ;
 MSG_TITLE_PEN_HELP
-Ustawia kolor pisaka\n\
-tytu³σw.
+Για την προσαρμογή του χρώματος\n\
+πένας για έναν τίτλο.
 ; For adjusting the pen color of\n\
 ; a title.
 ;
 MSG_PBG_TITLE
-\ecTytu³
+\ecΤίτλος
 ; \ecTitle
 ;
 MSG_TITLE_BG_WIN
-T³o tytu³u
+Φόντο Τίτλου
 ; Title Background
 ;
 MSG_TITLE_BG_HELP
-Ustawia kolor t³a\n\
-tytu³σw.
+Για την προσαρμογή του χρώματος\n\
+φόντου για έναν τίτλο.
 ; For adjusting the background color\n\
 ; of a title.
 ;
 MSG_LIST_PEN_WIN
-Pisak listy
+Πένα Λίστας
 ; List Pen
 ;
 MSG_LIST_PEN_HELP
-Ustawia kolor pisaka\n\
-listy.
+Για την προσαρμογή του χρώματος\n\
+πένας για μια λίστα.
 ; For adjusting the pen color of\n\
 ; a list.
 ;
 MSG_PBG_LIST
-\ecLista
+\ecΛίστα
 ; \ecList
 ;
 MSG_LIST_BG_WIN
-T³o listy
+Φόντο Λίστας
 ; List Background
 ;
 MSG_LIST_BG_HELP
-Ustawia kolor t³a\n\
-listy.
+Για την προσαρμογή του χρώματος\n\
+φόντου για μια λίστα.
 ; For adjusting the background color\n\
 ; of a list.
 ;
 MSG_SELECT_PEN_WIN
-Zaznaczony element
+Επιλεγμένη Καταχώρηση
 ; Selected Entry
 ;
 MSG_SELECT_PEN_HELP
-Ustawia kolor pisaka\n\
-zaznaczonych elementσw.
+Για την προσαρμογή του χρώματος\n\
+πένας για τις επιλεγμένες καταχωρήσεις.
 ; For adjusting the pen color of\n\
 ; selected entries.
 ;
 MSG_PBG_SELECT
-\ecZaznaczony
+\ecΕπιλεγμένη
 ; \ecSelected
 ;
 MSG_SELECT_BG_WIN
-Zaznaczony element
+Επιλεγμένη Καταχώρηση
 ; Selected Entry
 ;
 MSG_SELECT_BG_HELP
-Ustawia kolor t³a\n\
-zaznaczonych elementσw.
+Για την προσαρμογή του χρώματος\n\
+φόντου για τις επιλεγμένες καταχωρήσεις.
 ; For adjusting the background color\n\
 ; of selected entries.
 ;
 MSG_CURSOR_PEN_WIN
-Zaznaczony kursor
+Επιλεγμένος Κέρσορας
 ; Selected Cursor
 ;
 MSG_CURSOR_PEN_HELP
-Ustawia kolor pisaka\n\
-zaznaczonego kursora.
+Για την προσαρμογή του χρώματος\n\
+πένας για έναν επιλεγμένο κέρσορα.
 ; For adjusting the pen color of\n\
 ; a selected cursor.
 ;
 MSG_PBG_CURSOR
-\ecKursor
+\ecΚέρσορας
 ; \ecCursor
 ;
 MSG_CURSOR_BG_WIN
-Zaznaczony kursor
+Επιλεγμένος Κέρσορας
 ; Selected Cursor
 ;
 MSG_CURSOR_BG_HELP
-Ustawia kolor t³a\n\
-zaznaczonego kursora.
+Για την προσαρμογή του χρώματος\n\
+φόντου για έναν επιλεγμένο κέρσορα.
 ; For adjusting the background color\n\
 ; of a selected cursor.
 ;
 MSG_UNSEL_PEN_WIN
-Odznaczony kursor
+Καταργημένος Κέρσορας
 ; Unselected Cursor
 ;
 MSG_UNSEL_PEN_HELP
-Ustawia kolor pisaka\n\
-odznaczonego kursora.
+Για την προσαρμογή του χρώματος\n\
+πένας για έναν καταργημένο κέρσορα.
 ; For adjusting the pen color of\n\
 ; an unselected cursor.
 ;
 MSG_PBG_UNSEL
-\ecOdznaczony
+\ecΚαταργημένος
 ; \ecUnselected
 ;
 MSG_UNSEL_BG_WIN
-Odznaczony kursor
+Καταργημένος Κέρσορας
 ; Unselected Cursor
 ;
 MSG_UNSEL_BG_HELP
-Ustawia kolor t³a\n\
-odznaczonego kursora.
+Για την προσαρμογή του χρώματος\n\
+φόντου για έναν καταργημένο κέρσορα.
 ; For adjusting the background color\n\
 ; of an unselected cursor.
 ;
 MSG_INACT_PEN_WIN
-Nieaktywny kursor
+Ανενεργός Κέρσορας
 ; Inactive Cursor
 ;
 MSG_INACT_PEN_HELP
-Ustawia kolor pisaka\n\
-nieaktywnego kursora.
+Για την προσαρμογή του χρώματος\n\
+πένας για έναν ανενεργό κέρσορα.
 ; For adjusting the pen color of\n\
 ; an inactive cursor.
 ;
 MSG_PBG_INACT
-\ecNieaktywny
+\ecΑνενεργός
 ; \ecInactive
 ;
 MSG_INACT_BG_WIN
-Nieaktywny kursor
+Ανενεργός Κέρσορας
 ; Inactive Cursor
 ;
 MSG_INACT_BG_HELP
-Ustawia kolor t³a\n\
-nieaktywnego kursora.
+Για την προσαρμογή του χρώματος\n\
+φόντου για έναν ανενεργό κέρσορα.
 ; For adjusting the background color\n\
 ; of an inactive cursor.
 ;
 MSG_MULTISELECT
-Wybσr wielu elementσw
+Πολλαπλή Επιλογή
 ; MultiSelection
 ;
 MSG_MULTISELECT_QUAL
-z klawiszem wywo³uj±cym
+Μέσω προσδιοριστικού
 ; via Qualifier
 ;
 MSG_MULTISELECT_ALWAYS
-zawsze
+Πάντα
 ; Always
 ;
 MSG_MULTISELECT_HELP
-Pozwala na okre¶lenie domy¶lnego\n\
-trybu zaznaczania wielu elementσw.
+Επιτρέπει να καθορίσετε την προκαθορισμένη\n\
+κατάσταση πολλαπλής επιλογής.
 ; Allows to specify the default\n\
 ; multiselection mode.
 ;
 MSG_MMB_MULTISEL
-Zaznaczanie ¦PM
+Πολλαπλή επιλογή MMB
 ; MMB multiselection
 ;
 MSG_MMB_MULTISEL_HELP
-W³±cz tκ opcjκ je¶li chcesz uΏywaζ\n\
-¶rodkowego przycisku myszki (¦PM) jako\n\
-klawisz wywo³uj±cy zaznaczania wielu\n\
-elementσw.
+Ορίστε το αν θέλετε να χρησιμοποιήσετε το Μεσαίο\n\
+Κουμπί Ποντικιού (MMB) ως ένα προσδιοριστικό\n\
+πολλαπλής επιλογής.
 ; Set it if you want to use the middle\n\
 ; mouse button (MMB) as a multiselection\n\
 ; qualifier.
 ;
 MSG_DRAGDROP
-Przeci±gnij i upu¶ζ
+Μεταφορά & Απόθεση
 ; Drag&Drop
 ;
 MSG_DRAGTYPE_IMMEDIATE
-natychmiast
+¶μεση
 ; Immediate
 ;
 MSG_DRAGTYPE_BORDERS
-przy krawκdziach
+Στα περιγράμματα
 ; at Borders
 ;
 MSG_DRAGTYPE_QUALIFIER
-z klawiszem wywo³uj±cym
+Μέσω προσδιοριστικού
 ; via Qualifier
 ;
 MSG_DRAGTYPE_HELP
-Ustawia tryb przeci±gania. "\Natychmiast\"\n\
-powoduje rozpocz±ecie przeci±gania w momencie\n\
-poci±gniκcia obiektu. \"Przy krawκdziach\"\n\
-pokazuje operacjκ przeci±gania w chwili\n\
-przekroczenia lewej/prawej krawκdzi,\n\
-a \"z klawiszem wywo³uj±cym\" pozwala\n\
-na przeci±ganie jedynie po uΏyciu klawisza\n\
-wywo³uj±cego (zobacz zak³adkκ \"klawisze\").\n\
+Ορίστε την κατάσταση μεταφοράς. Η '¶μεση' θα ξεκινήσει\n\
+την μεταφορά & απόθεση μόλις μεταφέρετε ένα αντικείμενο.\n\
+'Στα περιγράμματα' εμφανίζοντας μια λειτουργία μεταφοράς\n\
+μόλις περάσετε τα δεξιά/αριστερά περιγράμματα και 'Μέσω\n\
+προσδιοριστικού' για να επιτρέψετε την μεταφορά & απόθεση\n\
+μόνο μέσω ενός προσδιοριστικού πλήκτρου (βλ. 'Πλήκτρα').\n\
 \n\
-\"Natychmiast\" jest uΏywane tylko w trybie\n\
-pojedynczego zaznaczenia.
+Η '¶μεση' χρησιμοποιείται μόνο όταν υπάρχει κατάσταση\n\
+μη πολλαπλής επιλογής.
 ; Set the drag mode. 'Immediate' will start\n\
 ; drag&drop as soon as you drag an object.\n\
 ; 'at Borders' for showing a drag operation\n\
@@ -287,16 +288,15 @@ pojedynczego zaznaczenia.
 ; mode.
 ;
 MSG_DRAG_LINES
-Widoczne linie
+Ορατές γραμμές
 ; Visible lines
 ;
 MSG_DRAG_LINES_HELP
-Okre¶l maksymaln± liczbκ linii,\n\
-ktσre bκd± wy¶wietlane podczas\n\
-operacji przeci±gania. Je¶li zostanie\n\
-zaznaczona wiκksza liczba linii\n\
-ujrzysz komunikat podobny do:\n\
-\"Przeci±ganie xx elementσw...\".
+Εισάγετε τον μέγιστο αριθμό γραμμών\n\
+που θα εμφανίζονται κατά την διάρκεια\n\
+μεταφοράς & απόθεσης. Αν έχουν επιλεχτεί\n\
+περισσότερες γραμμές, θα λάβετε ένα μήνυμα\n\
+σαν κι αυτό: 'Μεταφορά xx αντικειμένων...'.
 ; Give the max. number of lines\n\
 ; which will be shown when\n\
 ; doing drag&drop. If more lines\n\
@@ -304,67 +304,68 @@ ujrzysz komunikat podobny do:\n\
 ; similar to: 'Dragging xx Items...'.
 ;
 MSG_PAGE_FONTS
-Czcionki
+Γραμματοσειρές
 ; Fonts
 ;
 MSG_PAGE_COLORS
-Kolory
+Χρώματα
 ; Colors
 ;
 MSG_PAGE_OPTIONS
-Opcje
+Επιλογές
 ; Options
 ;
 MSG_PAGE_SCROLLING
-Przewijanie
+Κύλιση
 ; Scrolling
 ;
 MSG_PAGE_KEYBINDINGS
-Przypisanie klawiszy
+Συντομεύσεις Πληκτρολογίου
 ; Keybindings
 ;
 MSG_SB_HORIZONTAL
-Suwak poziomy
+Οριζόντια Μπάρα Κύλισης
 ; Horizontal Scrollbar
 ;
 MSG_SB_HORIZONTAL_HELP
-Ustawia domy¶ly tryb pracy\n\
-suwaka poziomego.\n\
-(ustawienie to moΏe byζ\n\
-zmienione przez aplikacje)
+Ορίστε την προκαθορισμένη κατάσταση\n\
+για την οριζόντια μπάρα κύλισης.\n\
+(μπορεί να αντικατασταθεί από άλλο\n\
+πρόγραμμα)
 ; Set the default mode\n\
 ; for the horizontal scrollbar.\n\
 ; (may be overwritten by an\n\
 ; application)
 ;
 MSG_SB_VERTICAL
-Suwak pionowy
+Κάθετη Μπάρα Κύλισης
 ; Vertical Scrollbar
 ;
 MSG_SB_VERTICAL_HELP
-Ustawia domy¶ly tryb pracy\n\
-suwaka pionowego.\n\
-(ustawienie to moΏe byζ\n\
-zmienione przez aplikacje)
+Ορίστε την προκαθορισμένη κατάσταση\n\
+για την κάθετη μπάρα κύλισης.\n\
+(μπορεί να αντικατασταθεί από άλλο\n\
+πρόγραμμα)
 ; Set the default mode\n\
 ; for the vertical scrollbar.\n\
 ; (may be overwritten by an\n\
 ; application)
 ;
 MSG_SCROLLCONTROL
-Kontrola przewijania
-; Scolling Control
+Έλεγχος Κύλισης
+; Scrolling Control
 ;
 MSG_SMOOTH_SCROLLING
-P³ynne przewijanie
+Ομαλή κύλιση
 ; Smooth Scrolling
 ;
 MSG_SMOOTH_SCROLLING_HELP
-Je¶li ta opcja jest w³±czona, uΏywane\n\
-bκdzie p³ynne przewijanie obiektσw klasy NList.\n\
-Dodatkowo, uΏywaj±c suwaka \"p³ynno¶ζ\"\n\
-na stronie ustawieρ \"Listy wy¶wietlania\" MUI\n\
-moΏna kontrolowaζ szybko¶ζ p³ynnego przewijania.
+Αν ενεργοποιηθεί, θα χρησιμοποιηθεί η\n\
+ομαλή κύλιση για τα αντικείμενα NList.\n\
+Επιπλέον, χρησιμοποιώντας την 'ομαλή'\n\
+oλίσθηση στην κανονική σελίδα διαμόρφωσης\n\
+MUI 'Listview', μπορεί να ελεγχεί η\n\
+ταχύτητα ομαλής κύλισης.
 ; If enabled, smoothing scrolling\n\
 ; will be used for NList objects.\n\
 ; In addition, by using the 'smooth'\n\
@@ -373,16 +374,16 @@ moΏna kontrolowaζ szybko¶ζ p³ynnego przewijania.
 ; the smooth scrolling can be controled.
 ;
 MSG_MMB_FASTWHEEL
-Szybkie przewijanie z ¦PM
+Γρήγορη ροδέλα MMB
 ; MMB Fast Wheel
 ;
 MSG_MMB_FASTWHEEL_HELP
-Je¶li ta opcja jest w³±czona, ¶rodkowy\n\
-przycisk myszki moΏe byζ uΏywany jako\n\
-klawisz wywo³uj±cy szybkie przewijanie\n\
-zawarto¶ci kσ³kiem myszki.\n\
-(Zobacz zak³adkκ \"Przypisanie klawiszy\"\n\
-by zobaczyζ pozosta³e klawisze wywo³uj±ce)
+Αν ενεργοποιηθεί, το μεσαίο κουμπί ποντικιού\n\
+μπορεί να χρησιμοποιηθεί ως ένα προσδιοριστικό\n\
+για την εκτέλεση μιας ενέργειας γρήγορης κύλισης\n\
+ροδέλας.\n\
+(Δείτε τις 'Συντομεύσεις Πληκτρολογίου' για\n\
+περισσότερες πληροφορίες προσδιοριστικών)
 ; If enabled, the middle mouse button\n\
 ; can be used as a qualifier to perform\n\
 ; a fast scroll wheel action.\n\
@@ -390,81 +391,79 @@ by zobaczyζ pozosta³e klawisze wywo³uj±ce)
 ; more wheel qualifiers)
 ;
 MSG_WHEEL_STEP
-Krok przewijania kσ³kiem
+Κλίμακα ροδέλας ποντικιού
 ; Mouse Wheel Step
 ;
 MSG_WHEEL_STEP_HELP
-Pozwala na okre¶lenie liczby linii\n\
-przewijanych przy uΏyciu przewijania\n\
-kσ³kiem myszki.
+Επιτρέπει να καθορίσετε την ποσότητα των γραμμών\n\
+που θα κυλιθούν όταν χρησιμοποιείτε την ροδέλα\n\
+του ποντικιού.
 ; Allows to specify the amount of lines\n\
 ; that should be scrolled when using a\n\
 ; wheel mouse.
 ;
 MSG_WHEEL_FAST
-Szybki krok przewijania kσ³kiem
+Γρήγορη κλίμακα ροδέλας ποντικιού
 ; Mouse Wheel Fast Step
 ;
 MSG_WHEEL_FAST_HELP
-Pozwala na okre¶lenie liczby linii\n\
-przewijanych przy uΏyciu przewijania\n\
-kσ³kiem myszki z wci¶niκtym klawiszem\n\
-wywo³uj±cym szybkiego przewijania.
+Επιτρέπει να καθορίσετε την ποσότητα των γραμμών\n\
+που θα κυλιθούν όταν χρησιμοποιείτε την ροδέλα\n\
+του ποντικιού και όταν το προσδιοριστικό της\n\
+γρήγορης ροδέλας έχει πατηθεί.
 ; Allows to specify the amount of lines\n\
 ; that should be scrolled when using a\n\
 ; wheel mouse and when the fast wheel\n\
 ; qualifier is pressed.
 ;
 MSG_LAYOUT
-Uk³ad
+Διάταξη
 ; Layout
 ;
 MSG_PARTIAL_COL_MARK
-Znacznik czκ¶ciowych kolumn
+Μερικό μαρκάρισμα στήλης
 ; Partial column mark
 ;
 MSG_PARTIAL_COL_MARK_HELP
-Je¶li ta opcja jest w³±czona, zpecjalny znacznik\n\
-bκdzie rysowany po prawej stronie kolumny w przypadku,\n\
-gdy tekst nie zmie¶ci siκ w calo¶ci w kolumnie.
+Αν ενεργοποιηθεί, θα σχεδιαστεί ένα ειδικό μαρκάρισμα\n\
+στην αριστερή μεριά της στήλης σε περίπτωση που το\n\
+κείμενο δεν προσαρμόζεται τελείως σε αυτή.
 ; If enabled, a special mark will be drawn\n\
 ; at the right side of a column in case the\n\
 ; text didn't completly fit into it.
 ;
 MSG_PARTIAL_CHARS_DRAWN
-Wy¶wietlaj czκ¶ciowo znaki
+Μερικώς σχεδιασμός χαρακτήρων
 ; Partial chars drawn
 ;
 MSG_PARTIAL_CHARS_DRAWN_HELP
-Je¶li ta opcja jest w³±czona, znaki, ktσre\n\
-nie s± w pe³ni widoczne przy lewej i prawej\n\
-krawκdzi obiektu NList, bκd± wy¶wietlane\n\
-czκ¶ciowo.
+Αν ενεργοποιηθεί, οι χαρακτήρες που δεν είναι τελείως\n\
+ορατοί στην δεξιά και αριστερή γωνία ενός αντικειμένου\n\
+NList, δεν θα σχεδιαστούν σε τμήματα.
 ; If enabled, characters that are not fully\n\
 ; visible at the left and right corner of\n\
 ; an NList object will not be drawn partially.
 ;
 MSG_VERT_CENTERED
-Linie wycentrowane w pionie
+Κάθετες κεντραρισμένες γραμμές
 ; Vertical centered lines
 ;
 MSG_VERT_CENTERED_HELP
-Je¶li ta opcja jest w³±czona, linie tekstowe\n\
-bκd± centrowane w pionie w obiektach klasy NList.
+Αν ενεργοποιηθεί, οι γραμμές κειμένου θα κεντράρονται\n\
+κάθετα σε ένα αντικείμενο NList.
 ; If activated, the text lines are centered\n\
 ; vertically in a NList object.
 ;
 MSG_BALANCING_COLS
-Balans kolumn
+Ισορροπία Στηλών
 ; Balancing Columns
 ;
 MSG_BALANCING_COLS_HELP
-Klasa NList pozwala na zmianκ szeroko¶ci kolumn\n\
-przez przeci±ganie myszk± separatora kolum\n\
-na belce tytu³owej. Przeci±gana belka moΏe byζ\n\
-widoczna w belce tytu³owej, jako linia widoczna\n\
-na ca³ej wysoko¶ci kolumny, lub teΏ zmiany mog±\n\
-byζ widoczne od razu.
+H NList επιτρέπει να αλλάξετε το μήκος στήλης\n\
+μέσω της μεταφοράς ποντικιού στον διαχωριστή στήλης\n\
+στην μπάρα τίτλου. Η μπάρα αυτή μπορεί να είναι ορατή\n\
+μόνο στον τίτλο, σε όλες τις γραμμές ή οι αλλαγές του\n\
+μήκους στήλης μπορούν να γίνουν αμέσως.
 ; NList permits to change the column width\n\
 ; via mouse dragging the column separator in\n\
 ; the title bar. The moved bar can be visible\n\
@@ -473,309 +472,304 @@ byζ widoczne od razu.
 ; be made visible instantly.
 ;
 MSG_COLWIDTHDRAG_TITLE
-belka tytu³owa
+Μπάρα τίτλου
 ; Title Bar
 ;
 MSG_COLWIDTHDRAG_FULLBAR
-kolumna
+Πλήρη μπάρα
 ; Full Bar
 ;
 MSG_COLWIDTHDRAG_VISIBLE
-widoczny
+Ορατή
 ; Visible
 ;
 MSG_COLOR_OPTIONS
-Opcje
+Επιλογές
 ; Options
 ;
 MSG_FORCE_SELECT_PEN
-Wymu¶ wybrane pisaki
+Εξαναγκασμός επιλεγμένης πένας
 ; Force select pen
 ;
 MSG_FORCE_SELECT_PEN_HELP
-Je¶li ta opcja jest w³±czona, klasa NList\n\
-wymusi uΏywania kolorσw wybranych dla elementσw:\n\
-\"zaznaczone\", \"kursor\" i \"odznaczone\".
+Αν ενεργοποιηθεί, η NList θα βεβαιωθεί ότι τα χρώματα\n\
+στις επιλογές 'Επιλεγμένη', 'Κέρσορας' και 'Καταργημένος'\n\
+θα χρησιμοποιηθούν.
 ; If enabled, NList will make sure that\n\
 ; the 'Selected', 'Cursor' and 'Unselected'\n\
 ; color will be forced.
 ;
 MSG_MULTISEL_MOVEACTIVE
-Klawisze przesuwaj± kursor
+Κίνηση κέρσορα μέσω πληκτρολογίου
 ; Keyboard moves cursor
 ;
 MSG_MULTISEL_MOVEACTIVE_HELP
-Je¶li ta opcja jest w³±czona, klawisze uΏywane\n\
-w obiekcie klasy NList bκd± przesuwa³y aktywny\n\
-kursor zamiast odznaczonego.
+Αν ενεργοποιηθεί, μια χρήση του πληκτρολογίου σε\n\
+ένα αντικείμενο NList θα μεταφέρει τον ενεργό\n\
+κέρσορα αντί τον μη επιλεγμένο.
 ; If enabled, a keyboard use in an NList\n\
 ; object will move the active cursor\n\
 ; rather than the unselected one.
 ;
 MSG_GROUP_MISC
-RσΏne
+Διάφορα
 ; Miscellaneous
 ;
 MSG_GROUP_EXAMPLE
-Przyk³ad
+Παράδειγμα
 ; Example
 ;
 MSG_SERMOUSE_FIX
-Poprawka na myszkκ szeregow±
+Επιδιόρθωση σειριακού ποντικιού
 ; Serial Mouse Fix
 ;
 MSG_SERMOUSE_FIX_HELP
-Je¶li ta opcja jest w³±czona, klasa NList\n\
-sprσbuje obej¶ζ najczκstsze problemy wystκpuj±ce\n\
-podczas przeci±gania elementσw zwi±zane z uΏywaniem\n\
-myszki szeregowej.
+Αν ενεργοποιηθεί, η NList θα προσπαθήσει να\n\
+επιδιορθώσει συχνά προβλήματα μεταφοράς &\n\
+απόθεσης που συσχετίζονται με την χρήση ενός\n\
+σειριακού ποντικιού.
 ; If enabled, NList tries to fix common\n\
 ; drag&drop issues that are related to using\n\
 ; a serial mouse.
 ;
 MSG_SELECT_POINTER
-W³asny kursor zaznaczania
+Επιλογή τροποποιημένου δείκτη
 ; Custom Select Pointer
 ;
 MSG_SELECT_POINTER_HELP
-Je¶li ta opcja jest w³±czona i obiekt klasy NList\n\
-jest w trybie zaznaczania znakσw, bκdzie uΏywany\n\
-w³asny kursor zaznaczania zamiast domy¶lnego,\n\
-systemowego wskaΌnika myszki.
+Αν ενεργοποιηθεί, και ένα αντικείμενο NList είναι σε\n\
+φάση επιλογής χαρακτήρα, θα εμφανιστεί ένας τροποποιημένος\n\
+δείκτης αντί για την απεικόνιση του προκαθορισμένου δείκτη\n\
+ποντικιού του Workbench.
 ; If enabled, and an NList object is in\n\
 ; charwise selection mode a custom select\n\
 ; pointer will be displayed instead of the\n\
 ; default workbench mouse pointer image.
 ;
 MSG_BAR_CONTEXTMENU
-Menu kontekstowe
+Mενού Περιβάλλοντος Επιλογών
 ; Context Menu
 ;
 MSG_DEFAULT_CONTEXT_MENU_HELP
-Klasa NList pozwala na w³±czenie lub wy³±czenie\n\
-jej domy¶lnego menu podrκcznego, lub w³±czenie\n\
-go tylko w przypadku, gdy wskaΌnik myszki znajduje\n\
-siκ na gσrze obiektu NList.
+Η NList επιτρέπει να έχει το προκαθορισμένο περιβάλλον\n\
+επιλογών ανενεργό ή ενεργό ή μόνο σε περίπτωση που το\n\
+ποντίκι βρίσκεται πάνω σε ένα αντικείμενο NList.
 ; NList permits to have its default\n\
 ; context menu being disabled or enabled\n\
 ; or only in case the mouse is at the top\n\
 ; of the NList object.
 ;
 MSG_SNOOP
-Przechwyζ
+Εκμάθηση
 ; Snoop
 ;
 MSG_SNOOP_KEY
-Rozpoczyna przechwytywanie klawisza wywo³uj±cego.
+Αρχίστε την εκμάθηση ενός πλήκτρου συντόμευσης.
 ; Start the grab of a hotkey.
 ;
 MSG_BUTTON_INSERT
-Wstaw
+Εισαγωγή
 ; Insert
 ;
 MSG_BUTTON_INSERT_HELP
-Pozwala na dodanie nowego klawisza wywo³uj±cego.
+Σας επιτρέπει να εισάγετε ένα καινούργιο πλήκτρο συντόμευσης.
 ; Allows to insert a new hotkey.
 ;
 MSG_BUTTON_REMOVE
-Usuρ
+Αφαίρεση
 ; Remove
 ;
 MSG_BUTTON_REMOVE_HELP
-Pozwala na usuniκcie istniej±cego klawisza wywo³uj±cego.
+Σας επιτρέπει να αφαιρέσετε ένα υπάρχων πλήκτρο συντόμευσης.
 ; Allows to remove an existing hotkey.
 ;
 MSG_BUTTON_UPDATEKEYS
-Aktualizuj klawisze
+Ενημέρωση πλήκτρων
 ; Update keys
 ;
 MSG_BUTTON_UPDATEKEYS_HELP
-Dodaje domy¶lne klawisze wywo³uj±ce\n\
-do funkcji, ktσre obecnie nie znajduj±\n\
-siκ na li¶cie.
+Προσθέστε τα προκαθορισμένα πλήκτρα συντόμευσης\n\
+για τις λειτουργίες που δεν υπάρχουν στην λίστα.
 ; Add the default hotkeys for\n\
 ; the functions which are not\n\
 ; currently in the list.
 ;
 MSG_BUTTON_DEFAULTKEYS
-Klawisze domy¶lne
+Προκαθορισμένα πλήκτρα
 ; Default keys
 ;
 MSG_BUTTON_DEFAULTKEYS_HELP
-Przywraca ustawienia wszystich klawiszy wywo³uj±cych do warto¶ci domy¶lnych.
+Επαναφέρει όλα τα πλήκτρα συντόμευσης στις αρχικές ρυθμίσεις.
 ; Resets all hotkeys to default ones.
 ;
 MSG_FUNC_MULTISELQUAL
-Klawisz wywo³uj±cy zaznaczanie wielu/bloku
+Πολλαπλή επιλογή/Φραγή προσδιοριστικού
 ; Multiselect/Block Qualifier
 ;
 MSG_FUNC_DRAGQUAL
-Klawisz wywo³uj±cy przeci±ganie
+Προσδιοριστικό μεταφοράς & απόθεσης
 ; Drag&Drop Qualifier
 ;
 MSG_FUNC_BALANCEQUAL
-Klawisz wywo³uj±cy balans obiektσw
+Ισορροπία προσδιοριστικού
 ; Balance Qualifier
 ;
 MSG_FUNC_COPYCLIP
-Skopiuj do schowka
+Αντιγραφή στο πρόχειρο
 ; Copy to clipboard
 ;
 MSG_FUNC_DEFCOLWIDTH
-Domy¶lna szeroko¶ζ kolumny
+Προκαθορισμένο μήκος στήλης
 ; Default width column
 ;
 MSG_FUNC_DEFALLCOLWIDTH
-Domy¶lna szeroko¶ζ wszystkich kolumn
+Προκαθορισμένο μήκος όλων των στηλών
 ; Default width all columns
 ;
 MSG_FUNC_DEFORDERCOL
-Domy¶lna kolejno¶ζ kolumny
+Προκαθορισμένη διάταξη στηλών
 ; Default order column
 ;
 MSG_FUNC_DEFALLORDERCOL
-Domy¶lna kolejno¶ζ wszystkich kolumn
+Προκαθορισμένη διάταξη όλων των στηλών
 ; Default order all columns
 ;
 MSG_FUNC_SELECTTOP
-Zaznacz do pocz±tku
+Επιλογή για μετακίνηση στην κορυφή
 ; Select to top
 ;
 MSG_FUNC_SELECTBOTTOM
-Zaznacz do koρca
+Επιλογή για μετακίνηση στο τέρμα
 ; Select to bottom
 ;
 MSG_FUNC_SELECTPAGEUP
-Zaznacz stronκ w gσrκ
+Επιλογή για μετακίνηση σελίδας πάνω
 ; Select to page up
 ;
 MSG_FUNC_SELECTPAGEDOWN
-Zaznacz stronκ w dσ³
+Επιλογή για μετακίνηση σελίδας κάτω
 ; Select to page down
 ;
 MSG_FUNC_SELECTUP
-Zaznacz w gσrκ
+Επιλογή για μετακίνηση πάνω
 ; Select up
 ;
 MSG_FUNC_SELECTDOWN
-Zaznacz w dσ³
+Επιλογή για μετακίνηση κάτω
 ; Select down
 ;
 MSG_FUNC_TOGGLEACTIVE
-Prze³±cz aktywny element
+Εναλλαγή ενεργού
 ; Toggle active
 ;
 MSG_FUNC_FASTWHEELQUAL
-Klawisz wywo³uj±cy szybkie przewijanie kσ³kiem
+Προσδιοριστικό γρήγορης ροδέλας
 ; Fast MouseWheel Qualifier
 ;
 MSG_FUNC_HORIZWHEELQUAL
-Klawisz wywo³uj±cy przewijanie kσ³kiem w poziomie
+Προσδιοριστικό οριζόντιας ροδέλας
 ; Horiz MouseWheel Qualifier
 ;
 MSG_FUNC_TITLECLICKQUAL
-Klawisz wywo³uj±cy wci¶niκcie tytu³u
+Προσδιοριστικό κλίκ τίτλου
 ; Title Click Qualifier
 ;
 MSG_VSB_ALWAYS
-zawsze
+Πάντα
 ; Always
 ;
 MSG_VSB_AUTO
-automatycznie
+Αυτόματα
 ; Auto
 ;
 MSG_VSB_FULLAUTO
-w pe³ni automatycznie
+Πλήρης αυτοματοποίηση
 ; FullAuto
 ;
 MSG_HSB_ALWAYS
-zawsze
+Πάντα
 ; Always
 ;
 MSG_HSB_AUTO
-autmatycznie
+Αυτόματα
 ; Auto
 ;
 MSG_HSB_FULLAUTO
-w pe³ni automatycznie
+Πλήρης αυτοματοποίηση
 ; FullAuto
 ;
 MSG_HSB_NONE
-brak
+Καμία
 ; None
 ;
 MSG_CMENU_ALWAYS
-zawsze
+Πάντα
 ; Always
 ;
 MSG_CMENU_TOPONLY
-tylko gσrne
+Μόνο κορυφή
 ; TopOnly
 ;
 MSG_CMENU_NEVER
-nigdy
+Ποτέ
 ; Never
 ;
 MSG_HOTKEYS_KEY
-Klawisz
+Πλήκτρο
 ; Key
 ;
 MSG_HOTKEYS_ACTION
-Dzia³anie
+Ενέργεια
 ; Action
 ;
 MSG_EXAMPLE_TEXT
-Je¶li masz jakie¶ problemy z dzia³aniem klasy, sprσbuj\n\
-zwiκkszyζ wielko¶ζ stosu w ikonce programu (w przypadku\n\
-uruchamiania programu z ikonki) lub wielko¶ζ stosu w linii\n\
-poleceρ (w przypadku uruchamiania programu z CLI/shella),\n\
-je¶li za¶ uruchamiasz obiekty klasy NList z poziomu innego\n\
-programu, przeczytaj jego dokumentacjκ by dowiedzieζ siκ jak\n\
-zwiκkszyζ dla niegowielko¶ζ stosu.\n\
-Stos o wielko¶ci 12kb, 16kb lub 20kb w wiκkszo¶ci przypadkσw\n\
-jest wystarczaj±cy.\n\
+Αν έχετε πρόβλημα, προσπαθήστε να αυξήσετε την τιμή της στοίβας, στις\n\
+πληροφορίες των εικονιδίων αν τρέχετε το πρόγραμμα μέσω αυτού ή στην\n\
+στοίβα του CLI αν το τρέχετε από το CLI/Shell.\n\
+¶μα το τρέχετε μέσω κάποιου προγράμματος, διαβάστε τις οδηγίες για να\n\
+δείτε πώς θα την αυξήσετε.\n\
+Μια στοίβα από 12Kb, 16Kb ή 20Kb είναι καλή ιδέα τις περισσότερες φορές.\n\
 \n\
-Je¶li nadal masz jakie¶ problemy, sprσbuj sprawdziζ, czy wystκpuj± one z programami demonstracyjnymi, je¶li tak, zg³o¶ je do mnie.\n\
+Αν έχετε ακόμα προβλήματα, προσπαθήστε να βρείτε αν γίνονται με το πρόγραμμα\n\
+επίδειξης (demo), και ενημερώστε μας.\n\
 \033C\n\
-Najnowsz± publicznie dostκpn± wersjκ moΏna znaleΌζ na Aminecie (dev/mui).\n\
-Wszystkie udostκpnione wersje dostκpne s± pod adresem:\n\
+Η τελευταία έκδοση μπορεί να βρεθεί στο Aminet (dev/mui).\n\
+Όλες οι εκδόσεις υπάρχουν στο\n\
 http://www.sourceforge.net/projects/nlist-classes/\n\
 \033C\n\
-\033r\0333(C) 2001-2013 by NList Open Source Team\n\
-\033r\0333(C) 1996-1998 by Gilles Masson\n\
+\033r\0333(C) 2001-2010 από την NList Open Source Team\n\
+\033r\0333(C) 1996-1998 από τον Gilles Masson\n\
 \033r\0333http://www.sourceforge.net/projects/nlist-classes/\n\
 \033C\n\
-\033cTa nowa klasa w³asna MUI list/list wy¶wietlania\n\
-\033cobs³uguje w³asne konfigurowalne t³a, pisaki,\n\
-\033cczcionki, suwaki, klawisze i klawisze wywo³uj±ce\n\
+\033cΑυτή η νέα list/listview custom class\n\
+\033cμεταχειρίζεται τις δικές της επιλογές φόντου, πένας,\n\
+\033cγραμματοσειρών, μπάρας κύλισης, πλήκτρων και προσδιοριστικών.\n\
+\033c\n\
+\033cΟ τρόπος που γίνεται αυτή η μεταχείρηση με την πολλαπλή\n\
+\033cεπιλογή δεν είναι ακριβώς όπως αυτός της παλαιάς listview!\n\
+\033cΥποστηρίζεται η μέθοδος μεταφοράς & απόθεσης, και οι δυο\n\
+\033cμπάρες κύλισης μπορούν να διαμορφωθούν ώστε να εξαφανίζονται\n\
+\033cαυτόματα όταν δεν χρειάζονται επειδή όλα είναι ορατά.\n\
+\033cΔοκιμάστε το...\n\
 \033C\n\
-\033cSposσb obs³ugi kursora w trybie zaznaczania wielu\n\
-\033celementσw nie jest dok³adnie taki sam jak w li¶cie wy¶wietlania!\n\
-\033cObs³ugiwane jest przeci±ganie i upuszczanie elementσw, oba suwaki\n\
-\033cmog± zostaζ skonfigurowane do automatycznego znikania\n\
-\033cgdy nie s± potrzebne, gdyΏ ca³y wy¶wietlany tekst jest widoczy.\n\
-\033cPo prostu wyprσbuj nowe funkcje...\n\
+\033cΜπορείτε να κάνετε οριζόντια κύλιση με τα πλήκτρα του κέρσορα,\n\
+\033cή πηγαίνοντας στην αριστερή ή δεξιά μεριά της λίστας, ενώ την\n\
+\033cεπιλέγετε με το ποντίκι.\n\
+\033cΔοκιμάστε να κάνετε κλίκ στα δεξιά/αριστερά περιγράμματα!\n\
 \033C\n\
-\033cMoΏesz przewijaζ tekst w poziomie przy uΏyciu klawiszy kursora,\n\
-\033club przesuwaj±c myszkκ w lewo i prawo w trakcie zaznaczania myszk±.\n\
-\033cSprσbuj po prostu klikn±ζ na lewej/prawej krawκdzi!\n\
+\033cΜπορείτε να αλλάξετε το μήκος των στηλών μεταφέροντας τον\n\
+\033cκάθετο διαχωριστή μεταξύ των τίτλων στηλών\n\
+\033c(δοκιμάστε το επίσης χρησιμοποιώντας τον προσδιοριστή ισορροπίας).\n\
 \033C\n\
-\033cMoΏesz zmieniaζ szeroko¶ζ kolumn po prostu przeci±gaj±c\n\
-\033cpionowy separator pomiκdzy tytu³ami kolum\n\
-\033c(sprσbuj teΏ uΏyζ klawiszy wywo³uj±cych balans obiektσw).\n\
+\033cΜπορείτε να αλλάξετε την διάταξη των στηλών μεταφέροντας\n\
+\033cτους τίτλους των στηλών.\n\
 \033C\n\
-\033cMoΏesz zmieniaζ kolejno¶ζ kolumn przeci±gaj±c nazwy kolumn.\n\
-\033C\n\
-\033cWbudowana jest takΏe obs³uga kopiowania tekstu do schowka\n\
-\033coraz moΏliwo¶ζ klasycznego zaznaczania znakσw.\n\
-\033C\n\
-\033cWyprσbuj programy demonstracyjne, by poznaζ wszystkie moΏliwo¶ci...\n\
+\033cΠροσπαθήστε με το πρόγραμμα επίδειξης για να τα δοκιμάσετε όλα αυτά...\n\
 \n\
 \n\
-\033r\033bDaj nam znaζ je¶li co¶ jest nie tak! :-)\n\
+\033r\033bΣτείτε την αξιολόγισή σας για αυτό το πρόγραμμα!\n\
 \033C\n\
-**************************************************************************************************\n
+\033cΕλληνική μετάφραση: Αντώνης Ηλιάκης (amiga.phantom@yahoo.gr)\n
 ; If you have problems, try to increase the stack value,\n\
 ; in the icon infos if you launch the program from icon,\n\
 ; stack of CLI if you start it from CLI/Shell,\n\
@@ -789,7 +783,7 @@ http://www.sourceforge.net/projects/nlist-classes/\n\
 ; All releases are available on\n\
 ; http://www.sourceforge.net/projects/nlist-classes/\n\
 ; \033C\n\
-; \033r\0333(C) 2001-2013 by NList Open Source Team\n\
+; \033r\0333(C) 2001-2010 by NList Open Source Team\n\
 ; \033r\0333(C) 1996-1998 by Gilles Masson\n\
 ; \033r\0333http://www.sourceforge.net/projects/nlist-classes/\n\
 ; \033C\n\

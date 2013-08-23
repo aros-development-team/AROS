@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -36,7 +36,7 @@ struct MUI_CustomClass *NLI_Class = NULL;
 
 static IPTR mNLI_Draw(struct IClass *cl,Object *obj,struct MUIP_Draw *msg)
 {
-  register struct NLIData *data = INST_DATA(cl,obj);
+  struct NLIData *data = INST_DATA(cl,obj);
   if (data->DoDraw)
     DoSuperMethodA(cl,obj,(Msg) msg);
 
@@ -46,7 +46,7 @@ static IPTR mNLI_Draw(struct IClass *cl,Object *obj,struct MUIP_Draw *msg)
 
 static IPTR mNLI_New(struct IClass *cl,Object *obj,struct opSet *msg)
 {
-  register struct NLIData *data;
+  struct NLIData *data;
 
   if (!(obj = (Object *)DoSuperMethodA(cl,obj,(Msg) msg)))
     return(0);
@@ -60,7 +60,7 @@ static IPTR mNLI_New(struct IClass *cl,Object *obj,struct opSet *msg)
 
 static IPTR mNLI_Set(struct IClass *cl,Object *obj,Msg msg)
 {
-  register struct NLIData *data = INST_DATA(cl,obj);
+  struct NLIData *data = INST_DATA(cl,obj);
   struct TagItem *tags,*tag;
 
   for(tags=((struct opSet *)msg)->ops_AttrList;(tag=(struct TagItem *) NextTagItem((APTR)&tags));)

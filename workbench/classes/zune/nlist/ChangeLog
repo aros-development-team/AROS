@@ -3,7 +3,249 @@ MUI NList MCC classes - ChangeLog
 ---------------------------------
 
 $Id$
-$URL: https://nlist-classes.svn.sourceforge.net/svnroot/nlist-classes/releases/0.111/ChangeLog $
+$URL: svn://svn.code.sf.net/p/nlist-classes/code/releases/0.116/ChangeLog $
+
+#### v0.116 RELEASE ###########################################################
+
+2013-04-25 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v0.116 release preparations
+  * include/muiextra.h: added definition of MUII_PopFont as some MUI SDK might
+    not have them yet.
+
+2013-04-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlisttree_mcp/locale/greek.ct, nlistviews_mcp/locale/greek.ct: updated greek
+    translation kindly provided by Antonis Iliakis.
+
+2013-04-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistviews_mcp/NListviews.c: use the font popup button image for MUI 3.9+.
+
+2013-04-16 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistviews_mcp/locale/german.ct: fixed a typo.
+
+2013-04-03 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistview_mcc/NListview.c: (re)adding the vertical scrollbar will trigger
+    the just installed notifications immediately. This solves the problem that
+    the scrollbar would have the wrong dimension in case the list's number of
+    total and visible entries has changed in the meantime (i.e. when switching
+    folders in YAM).
+
+2013-03-25 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlist_mcc/NList_mcc6.c: added a missing NULL pointer check for an allocation.
+  * nlist_mcc/NList_mcc6.c: fixed two possible buffer underruns in case even the
+    replacement sequence "..." was too long.
+  * nlistview_mcc/NListview.c: remove all added notifications when removing one
+    of the scrollbars. Otherwise the notification list will constantly grow upon
+    each readding and removing of a scrollbar object and therefore will make
+    notifications slower and slower.
+
+2013-03-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccinit.c, include/shellstart.c: rearranged the code to ensure that
+    trying to start the final class from a shell does not crash.
+  * nlist_mcc/NList_mcc0.c: abort any actions caused by a pressed left mouse
+    button whenever the object receives the MUIM_GoInactive method. This fixes
+    the issue described in YAM ticket #391: http://yam.ch/ticket/391
+  * nlist_mcc/NList_mcc2.c: don't "eat" IDCMP_(IN)ACTIVEWINDOW messages as other
+    objects might be interested in these as well. Having multiple NList objects
+    in one window should allow each of these to react on these IDCMP messages.
+
+2013-03-05 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlist_mcc/NList_func2.c: fixed MUIM_NList_SetActive when used with a flags
+    value of MUIV_NList_SetActive_Entry. Before the search for the given entry
+    was always failing.
+
+2013-01-31 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlist_mcc/NList_func.c: made the return value of MUIM_NList_GetPos consistent
+    by be TRUE if and only if the given entry could be found in the list. For all
+    other cases the position will be set to MUIV_NList_GetPos_End and FALSE will
+    be returned.
+
+2013-01-29 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlisttree_mcc/NListtree.c: pay attention to the possibly unsafe killing of
+    MUI notifies by doing an artificial OM_SET right after the kill to ensure
+    that Notify.mui has removed the killed notifies before another nested OM_SET
+    might happen.
+
+2013-01-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlisttree_mcc/NListtree.c: replaced all handcrafted flag checks and flag
+    modifications our typical flag macros.
+
+2013-01-26 Samir Hawamdeh <s.hawamdeh@tin.it>
+
+  * nlistviews_mcp/locale/italian.ct, nlisttree_mcp/locale/italian.ct:
+    update italian translation.
+
+2013-01-11 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistview_mcc/NListview.c, nlistviews_mcp/NListviews.c: enabling "on demand"
+    scrollbars is from now on forbidden in case an unsafe MUI version is found.
+    This affects MUI 3.8 in general and older versions of MUI 3.9 and MUI4. The
+    reason is that adding or removing the scrollbars on demand involves adding or
+    removing of notifies which is broken in older MUI versions if this happens
+    in nested OM_SET method calls. Since NList cannot know the global situation
+    in which it is instructed to add/remove its scrollbars and since this issue
+    can only be fixed in MUI itself we decided to disable this feature for the
+    affected MUI version to avoid nasty things like double freed memory (my MUI!)
+    to happen. MUI 3.9 and MUI4 for AmigaOS4 have been fixed in the meantime and
+    the MorphOS team has been informed how to fix this issue.
+
+2013-01-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nbalance_mcc/Pointer.c, nlist_mcc/Pointer.c: use the column and row resize
+    pointer types instead of simple arrow images and bumped minimum version of
+    intuition.library to 53.41 (AmigaOS4 only).
+
+#### v0.115 RELEASE ###########################################################
+
+2012-12-22 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v0.115 release preparations
+
+2012-12-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * tools/mkrelease: add italian catalog to the release archive.
+  * nbalance_mcc/NBalance.c: check the saved and loaded weight values to be
+    non-zero. Otherwise the GUI might become unresizable. Thanks to Christoph
+    Pölzl for the hint.
+
+#### v0.114 RELEASE ###########################################################
+
+2012-12-20 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v0.114 release preparations
+
+2012-11-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nbalance_mcc/Pointer.c, nlist_mcc/Pointer.c: make use of the standard mouse
+    pointer images in the AmigaOS4 build if intuition.library 53.37 is
+    available.
+
+2012-11-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nbalance_mcc/Dispatcher.c, nbalance_mcc/NBalance.c: implemented MUIM_Export
+    and MUIM_Import to save/load the surrounding group's balancing weights as
+    known from classes like BetterBalance.mcc.
+
+2012-10-11 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistviews_mcp/locale/italian.ct, nlisttree_mcp/locale/italian.ct: added
+    italian translation kindly provided by Samir Hawamdeh.
+
+2012-09-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistviews_mcp/NListviews.c: fixed the brain dead approach to save 32bit
+    values with 8 bytes.
+  * nlistviews_mcp/NListviews.c: save string variables with their current length
+    instead of their maximum length.
+  * nlisttree_mcp/NListtree.c: save string variables with their current length
+    instead of their maximum length.
+
+2012-08-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlisttree_mcp/NListtree.c, nlistviews_mcp/NListviews.c: adjusted the crawling
+    text to better match the capabilities of Crawling.mcc.
+
+2012-08-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: replaced all AllocVec() calls by AllocVecTags() for the AmigaOS4 build.
+    Also replaced all remaining AllocMem() calls by AllocVec(Tags)().
+
+#### v0.113 RELEASE ###########################################################
+
+2012-08-06 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v0.113 release preparations
+
+2012-06-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: don't allocate locked memory.
+
+2012-06-13 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlist_mcc/NList_mcc.c, nlist_mcc/NList_mcc1.c: fixed the screwed up display
+    in case MUII_WindowBack was set as background image and the list had a title.
+    This closes BZ #7873.
+
+2012-05-16  Pär Boberg <pbobbenb@spray.se>
+
+  * nlistviews_mcp/locale/swedish.ct: updated according to changes.
+
+2012-05-15 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nbalance_mcc/private.h: changed the _isinobject() macro to accept the
+    complete object's area and not just the inner space to match the active area
+    of Balance.mui's quite mode.
+
+2012-05-14 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/Makefile: removed .catalog files in clean target.
+
+#### v0.112 RELEASE ###########################################################
+
+2012-05-12 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final v0.112 release preparations
+  * nlist_mcc/Makefile, nlistview_mcc/Makefile: restored the -DNO_INLINE_STDARG
+    define in CFLAGS as otherwise our AROS cross-compilers won't build for these
+    targets and raise some "untermated macro" errors when building our test
+    applications.
+
+2012-05-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlist_mcc/NList_grp.c: the MUIM_AskMinMax method must not overwrite the sizes
+    returned by the superclass but add the own dimensions instead. This fixes the
+    spurious layout issues in conjunction with YAM.
+
+2012-04-17 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlist_mcc/NList_mcc.c, nlist_mcc/NList_mcc1.c: don't handle background specs
+    like MUII_#? as strings.
+
+2012-04-13 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistviews_mcp/locale/german.ct: fixed a typo.
+  * nlist_mcc/NList_mcc.c: cleaned up font name generation.
+
+2012-04-13 Jens Langner <Jens.Langner@light-speed.de>
+
+  * nlist_mcc/NList_func2.c: fixed bug where a sort operation of a single item
+    via drag&drop ended up moving the item to the wrong position if the item was
+    moved down (up worked).
+
+2012-04-07 Jens Langner <Jens.Langner@light-speed.de>
+
+  * Makefiles: removed -funroll-loops as that is potentially dangerous.
+
+2012-04-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlist_mcc/NList_mcc.c: added missing release of inactive pen.
+  * nlist_mcc/NList_mcc.c, nlist_mcc/NList_mcc1.c: string pointers obtained
+    from the MUI configuration must be copied instead of rembembered directly.
+    With MUI4's realtime prefs the pointer might become invalid at any time and
+    hence the class would operate on invalid data after that.
+
+2012-03-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistviews_mcp/locale: fixed a typo in the built in english strings.
+
+2012-01-29 Matthias Rustler <mrustler@gmx.de>
+
+  * misc: backport of AROS fixes.
+
+2011-12-24  Pär Boberg <pbobbenb@spray.se>
+
+  * nlisttree_mcp/locale/swedish.ct, nlistviews_mcp/locale/swedish.ct:
+    updated according to changes.
 
 #### v0.111 RELEASE ###########################################################
 
@@ -56,7 +298,7 @@ $URL: https://nlist-classes.svn.sourceforge.net/svnroot/nlist-classes/releases/0
 2011-07-11 Thore Böckelmann <tboeckel@gmx.de>
 
   * nlisttree_mcp/locale: updated german and english-british translations.
-  * nlisttree_mc[cp]: renamed the "dashed" mode to "dotted", as this is more 
+  * nlisttree_mc[cp]: renamed the "dashed" mode to "dotted", as this is more
     appropriate.
 
 2011-07-10 Jens Langner <Jens.Langner@light-speed.de>

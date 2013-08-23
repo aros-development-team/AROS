@@ -1,35 +1,38 @@
 #ifndef MUIA_Framedisplay_Spec
-#define MUIA_Framedisplay_Spec        0x80421794 // V11 isg struct MUI_FrameSpec
+#define MUIA_Framedisplay_Spec        0x80421794UL // V11 isg struct MUI_FrameSpec
 #endif
 #ifndef MUIA_Imagedisplay_Spec
-#define MUIA_Imagedisplay_Spec        0x8042a547 // V11 isg struct MUI_ImageSpec
+#define MUIA_Imagedisplay_Spec        0x8042a547UL // V11 isg struct MUI_ImageSpec
 #endif
 #ifndef MUIA_Imageadjust_Type
-#define MUIA_Imageadjust_Type         0x80422f2b // V11 i.. LONG
+#define MUIA_Imageadjust_Type         0x80422f2bUL // V11 i.. LONG
 #endif
 #ifndef MUIA_Prop_Release
-#define MUIA_Prop_Release             0x80429839
+#define MUIA_Prop_Release             0x80429839UL
 #endif
 #ifndef MUIA_Prop_DeltaFactor
-#define MUIA_Prop_DeltaFactor         0x80427C5E
+#define MUIA_Prop_DeltaFactor         0x80427C5EUL
 #endif
 #ifndef MUIA_Prop_DoSmooth
-#define MUIA_Prop_DoSmooth            0x804236ce // V4  i.. LONG
+#define MUIA_Prop_DoSmooth            0x804236ceUL // V4  i.. LONG
 #endif
 #ifndef MUIM_GoActive
-#define MUIM_GoActive			        0x8042491a
+#define MUIM_GoActive			            0x8042491aUL
 #endif
 #ifndef MUIM_GoInactive
-#define MUIM_GoInactive 		        0x80422c0c
+#define MUIM_GoInactive 		          0x80422c0cUL
 #endif
 #ifndef MUIA_Group_Type
-#define MUIA_Group_Type               0x8042e866 /* V11 ..g LONG */
+#define MUIA_Group_Type               0x8042e866UL /* V11 ..g LONG */
 #endif
 #ifndef MUIV_Group_Type_Horiz 
 #define MUIV_Group_Type_Horiz   1
 #endif
 #ifndef MUIM_Mccprefs_RegisterGadget
-#define MUIM_Mccprefs_RegisterGadget  0x80424828 // V20
+#define MUIM_Mccprefs_RegisterGadget  0x80424828UL // V20
+#endif
+#ifndef MUIA_Text_Copy
+#define MUIA_Text_Copy                0x80427727UL /* V20 i.. BOOL              */
 #endif
 #ifndef MBQ_MUI_MAXMAX
 #define MBQ_MUI_MAXMAX (10000)          /* use this for unlimited MaxWidth/Height */
@@ -44,22 +47,22 @@
 #define CrawlingObject MUI_NewObject("Crawling.mcc"
 #endif
 #ifndef MUIM_CreateDragImage
-#define MUIM_CreateDragImage 0x8042eb6f /* V18 */ /* Custom Class */
+#define MUIM_CreateDragImage          0x8042eb6fUL /* V18 */ /* Custom Class */
 #endif
 #ifndef MUIM_DeleteDragImage
-#define MUIM_DeleteDragImage 0x80423037 /* V18 */ /* Custom Class */
+#define MUIM_DeleteDragImage          0x80423037UL /* V18 */ /* Custom Class */
 #endif
 #ifndef MUIA_List_Prop_First
-#define MUIA_List_Prop_First    0x80429df3 /* V? ??? */
+#define MUIA_List_Prop_First          0x80429df3UL /* V? ??? */
 #endif
 #ifndef MUIA_List_Prop_Entries
-#define MUIA_List_Prop_Entries  0x8042a8f5 /* V? ??? */
+#define MUIA_List_Prop_Entries        0x8042a8f5UL /* V? ??? */
 #endif
 #ifndef MUIA_List_Prop_Visible
-#define MUIA_List_Prop_Visible  0x804273e9 /* V? ??? */
+#define MUIA_List_Prop_Visible        0x804273e9UL /* V? ??? */
 #endif
 #ifndef MUIA_Prop_TrueFirst
-#define MUIA_Prop_TrueFirst   0x804205dc /* V16 ..g LONG */
+#define MUIA_Prop_TrueFirst           0x804205dcUL /* V16 ..g LONG */
 #endif
 #ifndef MADF_DRAWACTIVE
 #define MADF_DRAWACTIVE        (1<< 2)
@@ -74,7 +77,10 @@
 #define MADF_DRAWALL           (MADF_DRAWACTIVE | MADF_DRAWOUTER | MADF_DRAWOBJECT)
 #endif
 #ifndef MUIA_Group_Forward
-#define MUIA_Group_Forward     0x80421422
+#define MUIA_Group_Forward            0x80421422UL
+#endif
+#ifndef MUII_PopFont
+#define MUII_PopFont           42
 #endif
 
 struct MUI_ImageSpec

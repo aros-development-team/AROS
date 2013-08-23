@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -437,7 +437,6 @@ IPTR mNL_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleInput *ms
           }
         }
         mNL_Trigger(cl,obj,NULL);
-        return (MUI_EventHandlerRC_Eat);
       break;
 
       case IDCMP_RAWKEY:
@@ -760,6 +759,7 @@ IPTR mNL_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleInput *ms
               (MultQual || (data->multiselect == MUIV_NList_MultiSelect_Always)))
             multi = 1;
           data->selectskiped = FALSE;
+
           // Using _isinobject2() here would also recognize clicks on the list's border
           // as clicks inside the list. But clicking on the border above the list's title
           // being interpreted like a click the first entry is not very intuitive. Thus
@@ -1488,7 +1488,9 @@ IPTR mNL_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleInput *ms
 /*            NL_RejectIDCMP(data,IDCMP_MOUSEMOVE,FALSE);*/
           }
           else
+          {
             NL_RequestIDCMP(data,IDCMP_MOUSEMOVE);
+		  }
         }
         else if ((data->adjustbar >= -4) && (data->adjustbar <= -2) && (msg->imsg->Class == IDCMP_MOUSEMOVE))
         { if ((data->adjustcolumn < data->numcols) &&
@@ -1870,14 +1872,15 @@ IPTR mNL_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleInput *ms
                 }
                 else
                 {
-                  // NL_List_Active(data,lactive,NULL,data->selectmode,FALSE,0);
-
+                  #if 0
                   // Is this call really required???
                   // It causes NList to misbehave if the user clicks in the list while the
                   // window has MUIA_Window_Sleep set to TRUE. In this case the click seems
                   // to be "cached" and is applied again as soon as the window is woken up
                   // again, which is definitely wrong.
                   // Well's have to see if commenting out this line causes any new misbehaviour.
+                  NL_List_Active(data,lactive,NULL,data->selectmode,FALSE,0);
+                  #endif
                 }
               }
             }
@@ -2043,7 +2046,7 @@ IPTR mNL_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleInput *ms
 
 IPTR mNL_CreateDragImage(struct IClass *cl,Object *obj,struct MUIP_CreateDragImage *msg)
 {
-  register struct NLData *data = INST_DATA(cl,obj);
+  struct NLData *data = INST_DATA(cl,obj);
   IPTR retval;
   if (data->DragRPort)
   { _rp(obj) = data->DragRPort;
@@ -2068,7 +2071,7 @@ IPTR mNL_CreateDragImage(struct IClass *cl,Object *obj,struct MUIP_CreateDragIma
 
 IPTR mNL_DeleteDragImage(struct IClass *cl,Object *obj,struct MUIP_DeleteDragImage *msg)
 {
-  register struct NLData *data = INST_DATA(cl,obj);
+  struct NLData *data = INST_DATA(cl,obj);
   IPTR retval = DoSuperMethodA(cl,obj,(Msg) msg);
 
   if (data->DragRPort)
@@ -2144,7 +2147,7 @@ BOOL NL_Prop_First_Adjust(struct NLData *data)
 
 IPTR mNL_Trigger(struct IClass *cl, UNUSED Object *obj, UNUSED Msg msg)
 {
-  register struct NLData *data = INST_DATA(cl,obj);
+  struct NLData *data = INST_DATA(cl,obj);
   /* attention, can be called with msg = NULL */
   if (data->SHOW && data->DRAW && !data->do_draw_all)
   {

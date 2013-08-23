@@ -6,7 +6,7 @@ NBalance.mcc/MUIA_NBalance_Pointer
 
     *******************************************************************
     Copyright (C) 2001-2010 by NList Open Source Team
-    $Id: MCC_NBalance.doc 401 2010-04-30 17:37:20Z damato $
+    $Id: MCC_NBalance.doc 650 2012-11-12 21:25:57Z thboeckel $
 
     This MCC public custom class is derived from the MUI standard
     balance class which handles the dragging/resizing of vertical and
@@ -23,6 +23,9 @@ NBalance.mcc/MUIA_NBalance_Pointer
     the very latest version and information regarding NBalance
     *******************************************************************
 
+NBalance.mcc is able to save the balancing weights permanently. Just set a
+unique MUIA_ObjectID and use MUIM_Application_Load/Save to permanently load
+or save the current balancing weights.
 NBalance.mcc/MUIA_NBalance_Pointer
 
     NAME

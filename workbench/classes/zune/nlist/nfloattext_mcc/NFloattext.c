@@ -4,7 +4,7 @@
  Registered MUI class, Serial Number: 1d51 (0x9d5100a1 to 0x9d5100aF)
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -38,9 +38,9 @@ static char *CopyText(char *textin)
 
   if (textin)
   {
-    int len = strlen(textin)+2;
+    int len = strlen(textin)+1;
 
-    if((textout = AllocVec(len,MEMF_ANY)))
+    if((textout = AllocVecShared(len,MEMF_ANY)))
       strlcpy(textout, textin, len);
   }
 
@@ -75,7 +75,7 @@ static Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 
 static IPTR mNFT_New(struct IClass *cl,Object *obj,struct opSet *msg)
 {
-  register struct NFTData *data;
+  struct NFTData *data;
   struct TagItem *tag;
   LONG Justify = FALSE;
   LONG Align = ALIGN_LEFT;
@@ -177,7 +177,7 @@ static IPTR mNFT_New(struct IClass *cl,Object *obj,struct opSet *msg)
 
 static IPTR mNFT_Dispose(struct IClass *cl,Object *obj,Msg msg)
 {
-  register struct NFTData *data;
+  struct NFTData *data;
   data = INST_DATA(cl,obj);
   DoMethod(obj,MUIM_NList_Clear,NULL);
   if (data->NFloattext_Copied && data->NFloattext_Text)
@@ -193,7 +193,7 @@ static IPTR mNFT_Dispose(struct IClass *cl,Object *obj,Msg msg)
 
 static IPTR mNFT_Set(struct IClass *cl,Object *obj,Msg msg)
 {
-  register struct NFTData *data = INST_DATA(cl,obj);
+  struct NFTData *data = INST_DATA(cl,obj);
   struct TagItem *tags,*tag;
 
   for (tags=((struct opSet *)msg)->ops_AttrList;(tag=NextTagItem((APTR)&tags));)
@@ -286,7 +286,7 @@ static IPTR mNFT_Get(struct IClass *cl,Object *obj,Msg msg)
 
 static IPTR mNFT_GetEntry(struct IClass *cl,Object *obj,struct MUIP_NFloattext_GetEntry *msg)
 {
-  register struct NFTData *data = INST_DATA(cl,obj);
+  struct NFTData *data = INST_DATA(cl,obj);
   struct MUI_NList_GetEntryInfo gei;
   gei.pos = msg->pos;
   gei.line = 0;
@@ -298,7 +298,7 @@ static IPTR mNFT_GetEntry(struct IClass *cl,Object *obj,struct MUIP_NFloattext_G
       { if (data->NFloattext_entry)
           FreeVec(data->NFloattext_entry);
         data->NFloattext_entry_len = gei.charlen+18;
-        data->NFloattext_entry = (char *) AllocVec(gei.charlen+20,MEMF_ANY);
+        data->NFloattext_entry = (char *) AllocVecShared(gei.charlen+20,MEMF_ANY);
       }
       if (data->NFloattext_entry)
       { char *nft_entry = data->NFloattext_entry;

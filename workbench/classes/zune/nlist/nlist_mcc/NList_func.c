@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2013 by NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -1681,7 +1681,10 @@ IPTR mNL_List_SetActive(struct IClass *cl, Object *obj, struct MUIP_NList_SetAct
   // check if the user used msg->pos for specifying the entry position (integer)
   // or by using the entry address
   if(isFlagSet(msg->flags, MUIV_NList_SetActive_Entry))
+  {
+    pos = MUIV_NList_GetPos_Start;
     NL_List_GetPos(data, (APTR)msg->pos, &pos);
+  }
 
   result = NL_List_Active(data, pos, NULL, data->NList_List_Select, FALSE, msg->flags);
   if(result == TRUE)
@@ -2142,41 +2145,38 @@ static BOOL NL_List_GetPos(struct NLData *data, APTR entry, LONG *pos)
 
   ENTER();
 
-  if(entry == NULL)
+  if(entry != NULL)
   {
-    *pos = MUIV_NList_GetPos_End;
-    result = FALSE;
-  }
-  else if((IPTR)entry == (IPTR)-2)
-  {
-    if(data->NList_LastInserted == -1)
-      *pos = (data->NList_Entries - 1);
-    else
-      *pos = data->NList_LastInserted;
-
-    result = TRUE;
-  }
-  else
-  {
-    LONG ent = *pos + 1;
-
-    while(ent < data->NList_Entries)
+    if((IPTR)entry == (IPTR)-2)
     {
-      if(data->EntriesArray[ent]->Entry == entry)
-      {
-        *pos = ent;
+      if(data->NList_LastInserted == -1)
+        *pos = (data->NList_Entries - 1);
+      else
+        *pos = data->NList_LastInserted;
 
-        result = TRUE;
-        break;
-      }
-      ent++;
-    }
-
-    if(result == FALSE)
-    {
-      *pos = MUIV_NList_GetPos_End;
       result = TRUE;
     }
+    else
+    {
+      LONG ent = *pos + 1;
+
+      while(ent < data->NList_Entries)
+      {
+        if(data->EntriesArray[ent]->Entry == entry)
+        {
+          *pos = ent;
+
+          result = TRUE;
+          break;
+        }
+        ent++;
+      }
+    }
+  }
+
+  if(result == FALSE)
+  {
+    *pos = MUIV_NList_GetPos_End;
   }
 
   RETURN(result);
