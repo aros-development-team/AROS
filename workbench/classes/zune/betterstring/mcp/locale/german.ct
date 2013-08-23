@@ -1,5 +1,5 @@
-## chunk AUTH Jens Langner
-## version $VER: Betterstring_mcp.ct 2.1 (11.01.09)
+## chunk AUTH Jens Langner, Thore Böckelmann
+## version $VER: BetterString_mcp.catalog 2.3 (06.02.2013)
 ## language deutsch
 ## codeset 0
 ;
@@ -19,14 +19,6 @@ Hintergrund
 MSG_Label_Cursor
 Cursor:
 ; Cursor:
-;
-MSG_Label_Fonts
-Zeichensatz:
-; Font:
-;
-MSG_Label_Frame
-Rahmen:
-; Frame:
 ;
 MSG_Label_Inactive
 Inaktiv:
@@ -153,7 +145,7 @@ MSG_Help_DeleteToPrevNextWord_Shortcut
 ALT + BACKSPACE/DELETE
 ;
 MSG_SelectOnActive
-Auswahl bei Aktivierung:
+Auswahl bei Aktivierung
 ;
 MSG_HELP_SelectOnActive
 Wenn ausgewählt wird der Inhalt eines\n\
@@ -161,7 +153,7 @@ BetterString Objektes automatisch selektiert\n\
 wenn es per TAB oder Mauszeiger aktiviert wird.
 ;
 MSG_SelectPointer
-Auswahl-Mauszeiger:
+Auswahl-Mauszeiger
 ;
 MSG_HELP_SelectPointer
 Wenn ausgewählt wird ein spezieller Mauszeiger\n\

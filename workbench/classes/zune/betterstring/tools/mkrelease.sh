@@ -4,7 +4,7 @@
 #
 # BetterString.mcc - A better String gadget MUI Custom Class
 # Copyright (C) 1997-2000 Allan Odgaard
-# Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+# Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@ mkdir -p "release"
 mkdir -p "release/MCC_BetterString"
 mkdir -p "release/MCC_BetterString/Developer"
 mkdir -p "release/MCC_BetterString/Developer/Autodocs"
+mkdir -p "release/MCC_BetterString/Developer/Autodocs/MCC"
 mkdir -p "release/MCC_BetterString/Developer/C"
 mkdir -p "release/MCC_BetterString/Developer/C/include"
 mkdir -p "release/MCC_BetterString/Developer/C/include/mui"
@@ -58,7 +59,7 @@ for os in os3 os4 mos aros-i386 aros-ppc aros-x86_64; do
 done
 
 make -C mcp catalogs
-for language in czech danish french german italian polish russian swedish; do
+for language in czech danish french german greek italian polish russian swedish; do
 	mkdir -p "release/MCC_BetterString/Locale/Catalogs/$language"
 	cp -a mcp/locale/$language.catalog "release/MCC_BetterString/Locale/Catalogs/$language/BetterString_mcp.catalog"
 done
@@ -66,8 +67,8 @@ done
 cp -a -R dist/* "release/"
 cp -a AUTHORS ChangeLog COPYING "release/MCC_BetterString/"
 cp -a doc/MCC_BetterString.readme "release/MCC_BetterString/ReadMe"
-cp -a doc/MCC_BetterString.doc "release/MCC_BetterString/Developer/Autodocs/"
-cp -a doc/MCC_HotkeyString.doc "release/MCC_BetterString/Developer/Autodocs/"
+cp -a doc/MCC_BetterString.doc "release/MCC_BetterString/Developer/Autodocs/MCC/"
+cp -a doc/MCC_HotkeyString.doc "release/MCC_BetterString/Developer/Autodocs/MCC/"
 cp -a include/mui/BetterString_mcc.h "release/MCC_BetterString/Developer/C/include/mui/"
 cp -a include/mui/HotkeyString_mcc.h "release/MCC_BetterString/Developer/C/include/mui/"
 cp -a mcp/locale/BetterString_mcp.cd "release/MCC_BetterString/Locale/"
@@ -79,3 +80,5 @@ echo "  MK MCC_BetterString-$releasever.$releaserev.lha"
 find release -nowarn -name ".svn" -exec rm -rf {} \; 2>/dev/null
 cd release
 lha -ao5q ../MCC_BetterString-$releasever.$releaserev.lha *
+cp MCC_BetterString/ReadMe ../MCC_BetterString-$releasever.$releaserev.readme
+cd ..

@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -32,17 +32,15 @@
 #include "private.h"
 #include "version.h"
 
-IPTR Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
   IPTR ti_Data;
 
+  ENTER();
+
   switch(msg->opg_AttrID)
   {
-    case MUIA_Font:
-      ti_Data = (IPTR)(data->Font ? data->Font : muiAreaData(obj)->mad_Font);
-    break;
-
     case MUIA_ControlChar:
       ti_Data = (IPTR)data->CtrlChar;
     break;
@@ -112,6 +110,10 @@ IPTR Get(struct IClass *cl, Object *obj, struct opGet *msg)
       ti_Data = isFlagSet(data->Flags, FLG_NoInput) ? TRUE : FALSE;
     break;
 
+    case MUIA_BetterString_NoNotify:
+      ti_Data = isFlagSet(data->Flags, FLG_NoNotify) ? TRUE : FALSE;
+    break;
+
     case MUIA_BetterString_InactiveContents:
       ti_Data = (IPTR)data->InactiveContents;
     break;
@@ -141,63 +143,79 @@ IPTR Get(struct IClass *cl, Object *obj, struct opGet *msg)
     break;
 
     default:
+      LEAVE();
       return DoSuperMethodA(cl, obj, (Msg)msg);
     break;
   }
 
   *msg->opg_Storage = ti_Data;
 
+  LEAVE();
   return TRUE;
 }
 
-IPTR Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
   struct TagItem *tags, *tag;
   char IntegerString[12];
-  IPTR ti_Data;
+  ULONG oldFlags;
+  ULONG newFlags;
+  BOOL redraw = FALSE;
 
-  struct TagItem boolMap[] =
+  const struct TagItem boolMap[] =
   {
     { MUIA_Disabled,                  FLG_Ghosted     },
     { MUIA_String_AdvanceOnCR,        FLG_AdvanceOnCr },
     { MUIA_String_Secret,             FLG_Secret      },
     { MUIA_BetterString_StayActive,   FLG_StayActive  },
     { MUIA_BetterString_NoInput,      FLG_NoInput     },
+    { MUIA_BetterString_NoNotify,     FLG_NoNotify    },
     { MUIA_BetterString_NoShortcuts,  FLG_NoShortcuts },
     { TAG_DONE,                       0               }
   };
 
-  tags = msg->ops_AttrList;
-  data->Flags = PackBoolTags(data->Flags, tags, boolMap);
+  ENTER();
 
-  while((tag = NextTagItem((APTR)&tags)))
+  tags = msg->ops_AttrList;
+  // remember the old flags before calculating the new one
+  oldFlags = data->Flags & (FLG_Ghosted|FLG_Secret);
+  data->Flags = PackBoolTags(data->Flags, tags, (struct TagItem *)boolMap);
+
+  while((tag = NextTagItem((APTR)&tags)) != NULL)
   {
-    ti_Data = tag->ti_Data;
+    IPTR ti_Data = tag->ti_Data;
+
     switch(tag->ti_Tag)
     {
-      case MUIA_Disabled:
-        MUI_Redraw(obj, MADF_DRAWOBJECT);
-      break;
-
       case MUIA_String_AttachedList:
+      {
         data->ForwardObject = (Object *)ti_Data;
+      }
       break;
 
       case MUIA_String_Accept:
+      {
         data->Accept = (STRPTR)ti_Data;
+      }
       break;
 
       case MUIA_String_BufferPos:
+      {
         data->BufferPos = (UWORD)ti_Data;
         clearFlag(data->Flags, FLG_BlockEnabled);
+        redraw = TRUE;
+      }
       break;
 
       case MUIA_BetterString_Columns:
+      {
         data->Width = (UWORD)ti_Data;
+      }
       break;
 
       case MUIA_String_Integer:
+      {
         tag->ti_Tag = TAG_IGNORE;
 
         // we are using snprintf() here not only to be on the safe
@@ -205,8 +223,8 @@ IPTR Set(struct IClass *cl, Object *obj, struct opSet *msg)
         // support it!
         snprintf(IntegerString, sizeof(IntegerString), "%d", (int)ti_Data);
         ti_Data = (IPTR)IntegerString;
-
-        // The missing break is intended!
+      }
+      // The missing break is intended!
 
       case MUIA_String_Contents:
       {
@@ -227,23 +245,33 @@ IPTR Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
           if(new_str != NULL)
           {
-            WORD extra = strlen(new_str)-strlen(data->Contents);
+            LONG extra = strlen(new_str)-strlen(data->Contents);
+            BOOL ok;
 
             if(extra > 0)
-              data->Contents = (STRPTR)SharedPoolExpand(data->Contents, extra);
+              ok = ExpandContentString(&data->Contents, extra);
+            else
+              ok = TRUE;
 
-            strcpy(data->Contents, new_str);
-            data->BufferPos = strlen(data->Contents);
-            data->DisplayPos = 0;
-            if(data->MaxLength != 0 && data->BufferPos >= data->MaxLength)
+            if(ok == TRUE)
             {
-              data->Contents[data->MaxLength-1] = '\0';
-              data->BufferPos = data->MaxLength-1;
-            }
+              strlcpy(data->Contents, new_str, ContentStringSize(data->Contents));
+              data->BufferPos = strlen(data->Contents);
+              data->DisplayPos = 0;
+              if(data->MaxLength != 0 && data->BufferPos >= data->MaxLength)
+              {
+                data->Contents[data->MaxLength-1] = '\0';
+                data->BufferPos = data->MaxLength-1;
+              }
 
-            // the start of a block cannot be behind the last character
-            if(data->BlockStart > strlen(data->Contents))
-              data->BlockStart = strlen(data->Contents);
+              // the start of a block cannot be behind the last character
+              if(data->BlockStart > strlen(data->Contents))
+                data->BlockStart = strlen(data->Contents);
+            }
+            else
+            {
+              E(DBF_ALWAYS, "content expansion by %ld bytes failed", extra);
+            }
           }
           else
           {
@@ -253,49 +281,84 @@ IPTR Set(struct IClass *cl, Object *obj, struct opSet *msg)
             data->BufferPos = 0;
             data->DisplayPos = 0;
           }
+
+          redraw = TRUE;
+
+          // if the no notify flag is set we set the queued
+          // flag and set the tag to IGNORE so that the superclass
+          // ignores it and thus does not trigger a notify.
+          if(isFlagSet(data->Flags, FLG_NoNotify))
+          {
+            setFlag(data->Flags, FLG_NotifyQueued);
+            tag->ti_Tag = TAG_IGNORE;
+          }
         }
         else
-        {
-//        if(data->Contents != (STRPTR)ti_Data)
-          tag->ti_Tag = TAG_IGNORE;
-        }
+          tag->ti_Tag = TAG_IGNORE; // set Tag to IGNORE so that superclass ignores it
       }
       break;
 
       case MUIA_ControlChar:
+      {
         data->CtrlChar = (UBYTE)ti_Data;
+      }
       break;
 
       case MUIA_String_DisplayPos:
+      {
         data->DisplayPos = (UWORD)ti_Data;
+        redraw = TRUE;
+      }
       break;
 
       case MUIA_String_Format:
+      {
         data->Alignment = (WORD)ti_Data;
+        redraw = TRUE;
+      }
       break;
 
       case MUIA_String_MaxLen:
+      {
         data->MaxLength = (UWORD)ti_Data;
+      }
       break;
 
       case MUIA_String_Reject:
+      {
         data->Reject = (STRPTR)ti_Data;
+      }
       break;
 
       case MUIA_String_EditHook:
+      {
         data->EditHook = (struct Hook *)ti_Data;
+      }
+      break;
+
+      case MUIA_String_Popup:
+      {
+        data->Popup = (Object *)ti_Data;
+      }
       break;
 
       case MUIA_BetterString_KeyUpFocus:
+      {
         data->KeyUpFocus = (Object *)ti_Data;
+      }
       break;
 
       case MUIA_BetterString_KeyDownFocus:
+      {
         data->KeyDownFocus = (Object *)ti_Data;
+      }
       break;
 
       case MUIA_BetterString_InactiveContents:
+      {
         data->InactiveContents = (STRPTR)ti_Data;
+        redraw = TRUE;
+      }
       break;
 
       case MUIA_BetterString_SelectSize:
@@ -310,34 +373,84 @@ IPTR Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
         if((ULONG)data->BlockStop > strlen(data->Contents))
           data->BlockStop = strlen(data->Contents);
+
+        redraw = TRUE;
       }
       break;
 
       case MUIA_BetterString_SelectOnActive:
       {
-         if(ti_Data == FALSE)
-         {
-            setFlag(data->Flags, FLG_ForceSelectOff);
-            clearFlag(data->Flags, FLG_ForceSelectOn);
-         }
-         else
-         {
-            setFlag(data->Flags, FLG_ForceSelectOn);
-            clearFlag(data->Flags, FLG_ForceSelectOff);
-         }
+        if(ti_Data == FALSE)
+        {
+          setFlag(data->Flags, FLG_ForceSelectOff);
+          clearFlag(data->Flags, FLG_ForceSelectOn);
+          // remove the notify
+          RemWindowSleepNotify(cl, obj);
+        }
+        else
+        {
+          setFlag(data->Flags, FLG_ForceSelectOn);
+          clearFlag(data->Flags, FLG_ForceSelectOff);
+          // add notify for MUIA_Window_Sleep if "select on active" is enabled
+          AddWindowSleepNotify(cl, obj);
+        }
       }
       break;
 
-      case 0x80420d71: /* MUIA_String_Popup */
-        data->Popup = (Object *)ti_Data;
+      case MUIA_BetterString_InternalSelectOnActive:
+      {
+        // this is the same as MUIA_BetterString_SelectOnActive, but without
+        // adding/removing the notify
+        if(ti_Data == FALSE)
+        {
+          setFlag(data->Flags, FLG_ForceSelectOff);
+          clearFlag(data->Flags, FLG_ForceSelectOn);
+        }
+        else
+        {
+          setFlag(data->Flags, FLG_ForceSelectOn);
+          clearFlag(data->Flags, FLG_ForceSelectOff);
+        }
+      }
       break;
 
+      case MUIA_BetterString_Nop:
+      {
+	    // as the name suggests, do nothing
+	  }
+	  break;
+
+      case MUIA_BetterString_NoNotify:
+      {
+        // trigger a notify only if a notification has been queued already
+        if(isFlagSet(data->Flags, FLG_NotifyQueued))
+        {
+          TriggerNotify(cl, obj);
+        }
+      }
+      break;
     }
   }
 
   if(data->BufferPos > strlen(data->Contents))
+  {
     data->BufferPos = strlen(data->Contents);
+    redraw = TRUE;
+  }
 
-  MUI_Redraw(obj, MADF_DRAWUPDATE);
-  return(0);
+  // check if some flags affecting the appearance have changed
+  newFlags = data->Flags & (FLG_Ghosted|FLG_Secret);
+  if(oldFlags != newFlags)
+  {
+    redraw = TRUE;
+  }
+
+  // redraw ourself only if something changed that affects the appearance
+  if(redraw == TRUE)
+  {
+    MUI_Redraw(obj, MADF_DRAWOBJECT);
+  }
+
+  LEAVE();
+  return 0;
 }

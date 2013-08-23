@@ -15,12 +15,6 @@ Background
 MSG_Label_Cursor (2//)
 Cursor:
 ;
-MSG_Label_Fonts (3//)
-Font:
-;
-MSG_Label_Frame (4//)
-Frame:
-;
 MSG_Label_Inactive (5//)
 Inactive:
 ;
@@ -142,7 +136,7 @@ MSG_Help_DeleteToPrevNextWord_Shortcut (44//)
 ALT + BACKSPACE/DELETE
 ;
 MSG_SelectOnActive (45//)
-Select on Active:
+Select on Active
 ;
 MSG_HELP_SelectOnActive (46//)
 Automatically select all text when a\n\
@@ -150,7 +144,7 @@ BetterString object gets activated\n\
 via TAB cycling or mouse activation.
 ;
 MSG_SelectPointer (47//)
-Selection Pointer:
+Selection Pointer
 ;
 MSG_HELP_SelectPointer (48//)
 If enabled, a custom selection pointer will appear\n\

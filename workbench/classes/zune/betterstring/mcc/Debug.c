@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -32,17 +32,12 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
-#include <SDI/SDI_compiler.h>
+#include "SDI_compiler.h"
+
+#include "private.h"
+
 #include "Debug.h"
 #include "version.h"
-
-// special flagging macros
-#define isFlagSet(v,f)      (((v) & (f)) == (f))  // return TRUE if the flag is set
-#define hasFlag(v,f)        (((v) & (f)) != 0)    // return TRUE if one of the flags in f is set in v
-#define isFlagClear(v,f)    (((v) & (f)) == 0)    // return TRUE if flag f is not set in v
-#define SET_FLAG(v,f)       ((v) |= (f))          // set the flag f in v
-#define CLEAR_FLAG(v,f)     ((v) &= ~(f))         // clear the flag f in v
-#define MASK_FLAG(v,f)      ((v) &= (f))          // mask the variable v with flag f bitwise
 
 // our static variables with default values
 static int indent_level = 0;
@@ -61,8 +56,7 @@ void SetupDebug(void)
 
   if(GetVar("betterstring.mcc.debug", var, sizeof(var), 0) > 0)
   {
-    char *tok;
-    char *debug = var;
+    char *s = var;
 
     // static list of our debugging classes tokens.
     // in the yamdebug variable these classes always start with a @
@@ -89,25 +83,31 @@ void SetupDebug(void)
       { NULL,        0             }
     };
 
+    kprintf("parsing ENV:betterstring.mcc.debug content '%s'\n", s);
+
     // we parse the env variable token-wise
-    while((tok = strtok(debug, ", ;")))
+    while(*s)
     {
       ULONG i;
+      char *e;
+
+      if((e = strpbrk(s, " ,;")) == NULL)
+        e = s+strlen(s);
 
       // check if the token is class definition or
       // just a flag definition
-      if(tok[0] == '@')
+      if(s[0] == '@')
       {
         // check if this call is a negation or not
-        if(tok[1] == '!')
+        if(s[1] == '!')
         {
           // search for the token and clear the flag
           for(i=0; dbclasses[i].token; i++)
           {
-            if(stricmp(tok+2, dbclasses[i].token) == 0)
+            if(strnicmp(&s[2], dbclasses[i].token, strlen(dbclasses[i].token)) == 0)
             {
               kprintf("clear '%s' debug class flag.\n", dbclasses[i].token);
-              CLEAR_FLAG(debug_classes, dbclasses[i].flag);
+              clearFlag(debug_classes, dbclasses[i].flag);
             }
           }
         }
@@ -116,10 +116,10 @@ void SetupDebug(void)
           // search for the token and set the flag
           for(i=0; dbclasses[i].token; i++)
           {
-            if(stricmp(tok+1, dbclasses[i].token) == 0)
+            if(strnicmp(&s[1], dbclasses[i].token, strlen(dbclasses[i].token)) == 0)
             {
               kprintf("set '%s' debug class flag\n", dbclasses[i].token);
-              SET_FLAG(debug_classes, dbclasses[i].flag);
+              setFlag(debug_classes, dbclasses[i].flag);
             }
           }
         }
@@ -127,14 +127,14 @@ void SetupDebug(void)
       else
       {
         // check if this call is a negation or not
-        if(tok[0] == '!')
+        if(s[0] == '!')
         {
           for(i=0; dbflags[i].token; i++)
           {
-            if(stricmp(tok+1, dbflags[i].token) == 0)
+            if(strnicmp(&s[1], dbflags[i].token, strlen(dbflags[i].token)) == 0)
             {
               kprintf("clear '%s' debug flag\n", dbflags[i].token);
-              CLEAR_FLAG(debug_flags, dbflags[i].flag);
+              clearFlag(debug_flags, dbflags[i].flag);
             }
           }
         }
@@ -142,7 +142,7 @@ void SetupDebug(void)
         {
           // check if the token was "ansi" and if so enable the ANSI color
           // output
-          if(stricmp(tok, "ansi") == 0)
+          if(strnicmp(s, "ansi", 4) == 0)
           {
             kprintf("ansi output enabled\n");
             ansi_output = TRUE;
@@ -151,18 +151,26 @@ void SetupDebug(void)
           {
             for(i=0; dbflags[i].token; i++)
             {
-              if(stricmp(tok, dbflags[i].token) == 0)
+              if(strnicmp(s, dbflags[i].token, strlen(dbflags[i].token)) == 0)
               {
                 kprintf("set '%s' debug flag\n", dbflags[i].token);
-                SET_FLAG(debug_flags, dbflags[i].flag);
+                setFlag(debug_flags, dbflags[i].flag);
               }
             }
           }
         }
       }
 
-      debug = NULL;
+      // set the next start to our last search
+      if(*e)
+        s = ++e;
+      else
+        break;
     }
+  }
+  else
+  {
+    kprintf("GetVar(\"betterstring.mcc.debug\") failed, error %ld\n", IoErr());
   }
 
   kprintf("set debug classes/flags (env:betterstring.mcc.debug): %08lx/%08lx\n", debug_classes, debug_flags);

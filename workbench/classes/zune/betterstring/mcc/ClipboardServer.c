@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -74,6 +74,8 @@ struct ServerData
 // copy a string to the clipboard, public callable function
 void StringToClipboard(STRPTR str, LONG length)
 {
+  ENTER();
+
   // lock out other tasks
   if(AttemptSemaphore(serverLock))
   {
@@ -101,14 +103,20 @@ void StringToClipboard(STRPTR str, LONG length)
   }
   else
     DisplayBeep(0);
+
+  LEAVE();
 }
 
 ///
 /// ClipboardToString
 // copy from the clipboard to a string, public callable function
 // the string must be FreeVec()ed externally
-void ClipboardToString(STRPTR *str, LONG *length)
+BOOL ClipboardToString(STRPTR *str, LONG *length)
 {
+  BOOL success = FALSE;
+
+  ENTER();
+
   // lock out other tasks
   if(AttemptSemaphore(serverLock))
   {
@@ -124,15 +132,23 @@ void ClipboardToString(STRPTR *str, LONG *length)
     PutMsg(serverPort, &msg);
     Remove((struct Node *)WaitPort(&replyPort));
 
-    // retrieve the values from the server
-    *str = sd.sd_String;
-    *length = sd.sd_Length;
+    if(sd.sd_String != NULL)
+    {
+      // retrieve the values from the server
+      *str = sd.sd_String;
+      *length = sd.sd_Length;
+
+      success = TRUE;
+    }
 
     // allow other tasks again
     ReleaseSemaphore(serverLock);
   }
   else
     DisplayBeep(0);
+
+  RETURN(success);
+  return success;
 }
 
 ///

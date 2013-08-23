@@ -7,8 +7,10 @@ include $(TOP)/config/make.cfg
 #MM workbench-classes-zune-betterstring-class includes linklibs
 
 # We need to use -idirafter, so that we
-# *don't* pick up the project's local MUI headers.
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../mcp -idirafter $(SRCDIR)/$(CURDIR)/../include
+# *don't* pick up the project's local MUI and SDI headers.
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../mcp \
+    -I$(AROS_DIR_INCLUDE)/SDI \
+    -idirafter $(SRCDIR)/$(CURDIR)/../include
 
 USER_LDFLAGS := -noarosc
 

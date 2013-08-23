@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,12 @@
 
 #include "private.h"
 #include "version.h"
+
+/******************************************************************************/
+/* include the minimal startup code to be able to start the class from a      */
+/* shell without crashing the system                                          */
+/******************************************************************************/
+#include "shellstart.c"
 
 #define VERSION       LIB_VERSION
 #define REVISION      LIB_REVISION

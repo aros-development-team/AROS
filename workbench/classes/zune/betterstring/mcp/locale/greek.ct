@@ -1,10 +1,10 @@
-## version $VER: BetterString_mcp.catalog 2.4 (06.02.2013)
-## language svenska
+## chunk AUTH Anthony Iliakis (amiga.phantom@yahoo.gr)
+## version $VER: BetterString_mcp.catalog 2.1 (28.09.2012)
+## language greek
 ## codeset 0
 ;
-## chunk AUTH Pδr Boberg
 ;
-; BetterString_mcp.ct - BetterString MUI custom prefs catalog translation file
+; BetterString_mcp.cd - BetterString MUI custom prefs catalog description file
 ; $Id$
 ;
 ;#version 2
@@ -12,35 +12,35 @@
 ;
 ;
 MSG_Label_Active
-Aktiv:
+Ενεργό:
 ; Active:
 ;
 MSG_Label_Background
-Bakgrund
+Φόντο
 ; Background
 ;
 MSG_Label_Cursor
-Markφr:
+Κέρσορας:
 ; Cursor:
 ;
 MSG_Label_Inactive
-Inaktiv:
+Ανενεργό:
 ; Inactive:
 ;
 MSG_Label_Marked
-Markerad:
+Μαρκαρισμένο:
 ; Marked:
 ;
 MSG_Label_Text
-Text
+Κείμενο
 ; Text
 ;
 MSG_String_TestString
-Testa BetterStrings styrka hδr!
+Δοκιμάστε εδώ τις δυνατότητες του BetterString!
 ; Test the power of BetterString here!
 ;
 MSG_Help_Copy
-Kopiera allt eller markerad text
+Αντιγράψτε όλο ή το μαρκαρισμένο κείμενο
 ; Copy all or marked text
 ;
 MSG_Help_Copy_Shortcut
@@ -48,7 +48,7 @@ Amiga + c
 ; Amiga + c
 ;
 MSG_Help_Cut
-Klipp ut allt eller markerad text
+Αποκοπή όλου ή του μαρκαρισμένου κειμένου
 ; Cut all or marked text
 ;
 MSG_Help_Cut_Shortcut
@@ -56,7 +56,7 @@ Amiga + x
 ; Amiga + x
 ;
 MSG_Help_Paste
-Klistra in
+Επικόλληση
 ; Paste
 ;
 MSG_Help_Paste_Shortcut
@@ -64,7 +64,7 @@ Amiga + v
 ; Amiga + v
 ;
 MSG_Help_Undo
-Εngra senaste radering
+Αναίρεση τελευταίας διαγραφής
 ; Undo last deletion
 ;
 MSG_Help_Undo_Shortcut
@@ -72,7 +72,7 @@ Amiga + z
 ; Amiga + z
 ;
 MSG_Help_Redo
-Gφr om senaste radering
+Επανάληψη τελευταίας διαγραφής
 ; Redo last deletion
 ;
 MSG_Help_Redo_Shortcut
@@ -80,7 +80,7 @@ Amiga + Z
 ; Amiga + Z
 ;
 MSG_Help_ToggleBuffer
-Vδxla mellan original och modifierad buffer
+Εναλλαγή μεταξύ αρχικής και τροποποιημένης προσωρινής μνήμης
 ; Toggle between original and modified buffer
 ;
 MSG_Help_ToggleBuffer_Shortcut
@@ -88,7 +88,7 @@ Amiga + q
 ; Amiga + q
 ;
 MSG_Help_ToggleCaseChar
-Vδxla mellan stor och liten bokstav
+Εναλλαγή παιζών/κεφαλαίων στον χαρακτήρα
 ; Toggle case on character
 ;
 MSG_Help_ToggleCaseChar_Shortcut
@@ -96,7 +96,7 @@ Amiga + g
 ; Amiga + g
 ;
 MSG_Help_ToggleCaseWord
-Vδxla mellan stor och liten bokstav pε ord
+Εναλλαγή παιζών/κεφαλαίων στην λέξη
 ; Toggle case on word
 ;
 MSG_Help_ToggleCaseWord_Shortcut
@@ -104,7 +104,7 @@ Amiga + G
 ; Amiga + G
 ;
 MSG_Help_IncreaseNumber
-Φka nummer
+Αυξήστε τον αριθμό
 ; Increase number
 ;
 MSG_Help_IncreaseNumber_Shortcut
@@ -112,7 +112,7 @@ Amiga + i
 ; Amiga + i
 ;
 MSG_Help_DecreaseNumber
-Minska nummer
+Μειώστε τον αριθμό
 ; Decrease number
 ;
 MSG_Help_DecreaseNumber_Shortcut
@@ -120,7 +120,7 @@ Amiga + d
 ; Amiga + d
 ;
 MSG_Help_HexToDecimal
-Hex till decimal
+Δεκαεξαδικό σε δεκαδικό σύστημα
 ; Hex to Decimal
 ;
 MSG_Help_HexToDecimal_Shortcut
@@ -128,7 +128,7 @@ Amiga + #
 ; Amiga + #
 ;
 MSG_Help_DecimalToHex
-Decimal till hex
+Δεκαδικό σε δεκαεξαδικό σύστημα
 ; Decimal to Hex
 ;
 MSG_Help_DecimalToHex_Shortcut
@@ -136,7 +136,7 @@ Amiga + $
 ; Amiga + $
 ;
 MSG_Help_FilenameCompletition
-Filnamnskomplettering (anvδnd SHIFT fφr att gε bakεt)
+Συμπλήρωση ονόματος αρχείου (χρησιμοποιήστε το SHIFT για να πάτε πίσω)
 ; Filenamecompletion (use SHIFT to cycle back)
 ;
 MSG_Help_FilenameCompletition_Shortcut
@@ -144,23 +144,23 @@ Amiga + TAB
 ; Amiga + TAB
 ;
 MSG_Help_Mark
-Markera
+Μαρκάρισμα
 ; Mark
 ;
 MSG_Help_Mark_Shortcut
-CTRL + markφr
+CTRL + κέρσορας
 ; CTRL + cursor
 ;
 MSG_Help_GotoToStartEndOfLine
-Gε till bφrjan/slutet av rad
+Πηγαίνετε στην αρχή/τέλος της γραμμής
 ; Goto to start/end of line
 ;
 MSG_Help_GotoToStartEndOfLine_Shortcut
-SHIFT + markφr
+SHIFT + κέρσορας
 ; SHIFT + cursor
 ;
 MSG_Help_DeleteToStartEndOfLine
-Radera till bφrjan/slutet av rad
+Διαγράψτε από την αρχή/τέλος της γραμμής
 ; Delete to start/end of line
 ;
 MSG_Help_DeleteToStartEndOfLine_Shortcut
@@ -168,15 +168,15 @@ SHIFT + BACKSPACE/DELETE
 ; SHIFT + BACKSPACE/DELETE
 ;
 MSG_Help_GotoToPrevNextWord
-Gε till fφregεende/nδsta ord
+Πηγαίνετε στην προηγούμενη/επόμενη λέξη
 ; Goto to previous/next word
 ;
 MSG_Help_GotoToPrevNextWord_Shortcut
-ALT + markφr
+ALT + κέρσορας
 ; ALT + cursor
 ;
 MSG_Help_DeleteToPrevNextWord
-Radera fφregεende/nδsta ord
+Διαγράψτε την προηγούμενη/επόμενη λέξη
 ; Delete previous/next word
 ;
 MSG_Help_DeleteToPrevNextWord_Shortcut
@@ -184,21 +184,21 @@ ALT + BACKSPACE/DELETE
 ; ALT + BACKSPACE/DELETE
 ;
 MSG_SelectOnActive
-Markera nδr aktiv
+Επιλογή όταν είναι ενεργό
 ; Select on Active
 ;
 MSG_HELP_SelectOnActive
-Markera automatiskt all text nδr ett\nBetterString objekt blir aktivt, via\nTAB cykling eller mus aktivering.
+Επιλογή όλου του κειμένου αυτόματα όταν ένα\n\αντικείμενο BetterString ενεργοποιείται μέσω της\n\κύλισης TAB ή την ενεργοποίηση του ποντικιού.
 ; Automatically select all text when a\n\
 ; BetterString object gets activated\n\
 ; via TAB cycling or mouse activation.
 ;
 MSG_SelectPointer
-Markeringspekare
+Επιλογή δείκτη
 ; Selection Pointer
 ;
 MSG_HELP_SelectPointer
-Om vald, kommer en specialpekare att visas\nnδr muspekaren δr ovanfφr ett betterstring objekt.
+Αν ενεργοποιηθεί, θα εμφανιστεί μια τροποποιημένη επιλογή δείκτη\n\όταν ο δείκτης του ποντικιού είναι πάνω από ένα αντικείμενο BetterString.
 ; If enabled, a custom selection pointer will appear\n\
 ; when the mouse pointer is above a betterstring gadget.
 ;

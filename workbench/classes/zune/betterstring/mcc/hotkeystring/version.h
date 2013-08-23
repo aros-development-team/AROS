@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -29,9 +29,9 @@
 
 // for setting all necessary version information
 #define LIB_VERSION    12
-#define LIB_REVISION   17
-#define LIB_DATE       "26.11.2011"
-#define LIB_COPYRIGHT  "Copyright (C) 2005-2011 BetterString.mcc Open Source Team"
+#define LIB_REVISION   21
+#define LIB_DATE       "25.04.2013"
+#define LIB_COPYRIGHT  "Copyright (C) 2005-2013 BetterString.mcc Open Source Team"
 
 // set the LIB_REV_STRING
 #define LIB_REV_STRING STR(LIB_VERSION) "." STR(LIB_REVISION)

@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -32,91 +32,73 @@
 
 #include "private.h"
 
-/*
-struct NewMenu PopupMenuData[] =
+static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-  NM_TITLE, "Stringgadget",       NULL, 0L, 0, (APTR)0,
-  NM_ITEM,  "Cut",                NULL, 0L, 0, (APTR)1,
-  NM_ITEM,  "Copy",               NULL, 0L, 0, (APTR)2,
-  NM_ITEM,  "Paste",              NULL, 0L, 0, (APTR)3,
-  NM_ITEM,  NM_BARLABEL,          NULL, 0L, 0, (APTR)0,
-  NM_ITEM,  "Undo",               NULL, 0L, 0, (APTR)4,
-  NM_ITEM,  "Redo",               NULL, 0L, 0, (APTR)5,
-  NM_ITEM,  "Original",           NULL, 0L, 0, (APTR)6,
-  NM_ITEM,  NM_BARLABEL,          NULL, 0L, 0, (APTR)0,
-  NM_ITEM,  "Complete path",      NULL, 0L, 0, (APTR)7,
-  NM_ITEM,  "Toggle case",        NULL, 0L, 0, (APTR)0,
-  NM_SUB,   "Character",          NULL, 0L, 0, (APTR)8,
-  NM_SUB,   "Word",               NULL, 0L, 0, (APTR)9,
-  NM_ITEM,  "Arithmetic",         NULL, 0L, 0, (APTR)0,
-  NM_SUB,   "Increase",           NULL, 0L, 0, (APTR)10,
-  NM_SUB,   "Decrease",           NULL, 0L, 0, (APTR)11,
-  NM_SUB,   "To decimal",         NULL, 0L, 0, (APTR)12,
-  NM_SUB,   "To hexadecimal",     NULL, 0L, 0, (APTR)13,
-  NM_END,   NULL,                 NULL, 0L, 0, (APTR)0
-};
-*/
+  ENTER();
 
-//#ifndef MUIM_Backfill
-//#define MUIA_CustomBackfill                 0x80420a63
-//#define MUIM_Backfill                       0x80428d73
-//struct  MUIP_Backfill { ULONG MethodID; LONG left; LONG top; LONG right; LONG bottom; LONG xoffset; LONG yoffset; };
-//#endif
-
-IPTR New(struct IClass *cl, Object *obj, struct opSet *msg)
-{
-  if((obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg)))
+  if((obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg)) != NULL)
   {
     struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
 
-//    kprintf("OM_NEW by %s\n", FindTask(NULL)->tc_Node.ln_Name);
-
-    data->locale = OpenLocale(NULL);
-    data->Contents = (STRPTR)SharedPoolAlloc(40);
-    *data->Contents = '\0';
-
-//    data->PopupMenu = MUI_MakeObject(MUIO_MenustripNM, PopupMenuData, NULL);
-    SetAttrs(obj,  MUIA_FillArea,    FALSE,
-//              MUIA_ContextMenu,  data->PopupMenu,
-//              MUIA_CustomBackfill, TRUE,
-              TAG_DONE );
-
-    if(FindTagItem(MUIA_Font, msg->ops_AttrList))
-      setFlag(data->Flags, FLG_OwnFont);
-
-    if(FindTagItem(MUIA_Background, msg->ops_AttrList))
-      setFlag(data->Flags, FLG_OwnBackground);
-
+    if((data->Contents = AllocContentString(40)) != NULL)
     {
       struct TagItem *tag;
 
-      if((tag = FindTagItem(MUIA_Frame, msg->ops_AttrList)))
+      set(obj, MUIA_FillArea, FALSE);
+
+      // muimaster V20 is MUI 3.9
+      data->mui39 = LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 0);
+      // everything beyond muimaster 20.5500 is considered to be MUI4
+      data->mui4x = LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 5500);
+
+      data->locale = OpenLocale(NULL);
+
+      if((tag = FindTagItem(MUIA_Background, msg->ops_AttrList)) != NULL)
       {
-        if(tag->ti_Data == MUIV_Frame_String)
-          setFlag(data->Flags, FLG_SetFrame);
+        setFlag(data->Flags, FLG_OwnBackground);
+        data->OwnBackground = (STRPTR)tag->ti_Data;
       }
+
+      mSet(cl, obj, (struct opSet *)msg);
+
+      data->BufferPos = 0;
     }
-
-    msg->MethodID = OM_SET;
-    Set(cl, obj, (struct opSet *)msg);
-    msg->MethodID = OM_NEW;
-    data->BufferPos = 0;
-
-    return((IPTR)obj);
+    else
+    {
+      CoerceMethod(cl, obj, OM_DISPOSE);
+      obj = NULL;
+    }
   }
-  CoerceMethod(cl, obj, OM_DISPOSE);
 
-  return(FALSE);
+  RETURN(obj);
+  return((IPTR)obj);
 }
 
-IPTR Dispose(struct IClass *cl, Object *obj, Msg msg)
+static IPTR mDispose(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
 
-//  kprintf("OM_DISPOSE by %s\n", FindTask(NULL)->tc_Node.ln_Name);
-/*  if(data->PopupMenu)
-    MUI_DisposeObject(data->PopupMenu);
-*/
+  ENTER();
+
+  if(isFlagSet(data->Flags, FLG_WindowSleepNotifyAdded))
+  {
+    E(DBF_INPUT, "MUIA_Window_Sleep notify still active at OM_DISPOSE!!");
+  }
+
+  FreeContentString(data->Contents);
+  data->Contents = NULL;
+
+  FreeContentString(data->Original);
+  data->Original = NULL;
+
+  FreeContentString(data->Undo);
+  data->Undo = NULL;
+
+  if(data->FNCBuffer != NULL)
+  {
+    SharedPoolFree(data->FNCBuffer);
+    data->FNCBuffer = NULL;
+  }
 
   if(data->locale != NULL)
   {
@@ -124,23 +106,29 @@ IPTR Dispose(struct IClass *cl, Object *obj, Msg msg)
     data->locale = NULL;
   }
 
-  return(DoSuperMethodA(cl, obj, msg));
+  LEAVE();
+  return DoSuperMethodA(cl, obj, msg);
 }
 
-IPTR Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+static IPTR mExport(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
   ULONG id;
 
+  ENTER();
+
   if((id = (muiNotifyData(obj)->mnd_ObjectID)) != 0)
     DoMethod(msg->dataspace, MUIM_Dataspace_Add, data->Contents, strlen(data->Contents)+1, id);
 
+  LEAVE();
   return 0;
 }
 
-IPTR Import(UNUSED struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+static IPTR mImport(UNUSED struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
   ULONG id;
+
+  ENTER();
 
   if((id = (muiNotifyData(obj)->mnd_ObjectID)) != 0)
   {
@@ -150,12 +138,121 @@ IPTR Import(UNUSED struct IClass *cl, Object *obj, struct MUIP_Import *msg)
       set(obj, MUIA_String_Contents, contents);
   }
 
+  LEAVE();
   return 0;
 }
 
-IPTR Setup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
+void AddWindowSleepNotify(struct IClass *cl, Object *obj)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+
+  ENTER();
+
+  // we must check for a successful MUIM_Setup, because this function might be called during
+  // OM_NEW and _win(obj) is not yet valid at that time
+  if(isFlagClear(data->Flags, FLG_WindowSleepNotifyAdded) && isFlagSet(data->Flags, FLG_Setup) && _win(obj) != NULL)
+  {
+    if(data->SelectOnActive == TRUE || isFlagSet(data->Flags, FLG_ForceSelectOn))
+    {
+      // !!! CAUTION !!!
+      // Ugly workaround for an ancient bug in MUI
+      // MUIbase <= 2.11 adds some notifies for certain attributes which in turn
+      // modify MUIA_Window_Sleep and hence trigger our own notify for this
+      // attribute.
+      // Removing our own notify will not remove it immediately but mark it as
+      // "killed" only by MUI. The removal happens when the notifies are checked
+      // for triggers. The problem arises if executing one notify triggers yet
+      // another notification handling on the same object. In this case the nested
+      // call will do the same removal as the first call is about to do next. This
+      // will cause a double Remove() and double free of memory later in the first
+      // call as here the pointer to the next notify to be handled has already been
+      // obtained and will be used without further checks in the next iteration.
+      // All this only happens if the removed notify directly follows the notify
+      // which causes the removal. Thus we add a dummy notify to produce a "hole"
+      // in the notify list and to let the nested notification check do its
+      // removal work without causing a bad impact on the first check. This "hole"
+      // just consists of another notify which never gets triggered. And even if
+      // it would get triggered it will not cause a nested notify check. Thus the
+      // first check will see this "hole" first before finally skipping the just
+      // removed notify.
+      // NOTE: this is neither a bug in MUIbase nor in BetterString but an ancient
+      // bug in MUI itself as it does not take into account that a set() may cause
+      // nested notifications which in turn may be removed inbetween!
+      BOOL safeNotifies;
+
+      #if defined(__amigaos3__) || defined(__amigaos4__)
+      if(LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 5824))
+      {
+        // MUI4 for AmigaOS is safe for V20.5824+
+        safeNotifies = TRUE;
+      }
+      else if(LIB_VERSION_IS_AT_LEAST(MUIMasterBase, 20, 2346) && LIBREV(MUIMasterBase) < 5000)
+      {
+        // MUI3.9 for AmigaOS is safe for V20.2346+
+        safeNotifies = TRUE;
+      }
+      else
+      {
+        // MUI 3.8 and older version of MUI 3.9 or MUI4 are definitely unsafe
+        safeNotifies = FALSE;
+      }
+      #else
+      // MorphOS and AROS must be considered unsafe unless someone from the
+      // MorphOS/AROS team confirms that removing notifies in nested OM_SET
+      // calls is safe.
+      safeNotifies = FALSE;
+      #endif
+
+      // add the dummy notify only once
+      if(safeNotifies == FALSE && isFlagClear(data->Flags, FLG_DummyNotifyAdded))
+      {
+        // add a notify for an attribute which will *NEVER* be modified, thus the
+        // trigger action will never be executed as well
+        DoMethod(_win(obj), MUIM_Notify, MUIA_BetterString_Nop, MUIV_EveryTime, obj, 5, MUIM_Set, MUIA_NoNotify, TRUE, MUIA_BetterString_Nop, MUIV_TriggerValue);
+        setFlag(data->Flags, FLG_DummyNotifyAdded);
+        D(DBF_INPUT, "added dummy notify");
+	  }
+
+      // If the "select on active" feature is active we must be notified in case our
+      // window is put to sleep to be able to deactivate the feature, because waking
+      // the window up again will let ourself go active again and we will select the
+      // complete content, even if it was not selected before. See YAM ticket #360
+      // for details.
+      // We must use a private attribute here, because the public attribute will remove
+      // the notify again as soon as it is triggered.
+      DoMethod(_win(obj), MUIM_Notify, MUIA_Window_Sleep, MUIV_EveryTime, obj, 3, MUIM_Set, MUIA_BetterString_InternalSelectOnActive, MUIV_NotTriggerValue);
+      setFlag(data->Flags, FLG_WindowSleepNotifyAdded);
+      D(DBF_INPUT, "added MUIA_Window_Sleep notify");
+    }
+  }
+
+  LEAVE();
+}
+
+void RemWindowSleepNotify(struct IClass *cl, Object *obj)
+{
+  struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+
+  ENTER();
+
+  // we must check for a successful MUIM_Setup, because this function might be called during
+  // OM_NEW and _win(obj) is not yet valid at that time
+  if(isFlagSet(data->Flags, FLG_WindowSleepNotifyAdded) && isFlagSet(data->Flags, FLG_Setup) && _win(obj) != NULL)
+  {
+    // remove the notify again
+    D(DBF_INPUT, "remove MUIA_Window_Sleep notify");
+    if(DoMethod(_win(obj), MUIM_KillNotifyObj, MUIA_Window_Sleep, obj) == 0)
+      E(DBF_INPUT, "removing MUIA_Window_Sleep notify failed?");
+    clearFlag(data->Flags, FLG_WindowSleepNotifyAdded);
+  }
+
+  LEAVE();
+}
+
+static IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
+{
+  struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+  IPTR rc = FALSE;
 
   ENTER();
 
@@ -163,18 +260,11 @@ IPTR Setup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
 
   if(DoSuperMethodA(cl, obj, (Msg)rinfo))
   {
-/*      ULONG color;
-    if(DoMethod(obj, MUIM_GetConfigItem, 132, &color))
-    {
-        UBYTE image[6];
-
-      strcpy(image, "2:");
-      strcat(image, (STRPTR)color);
-      set(obj, MUIA_Background, image);
-    }
-*/
-
+    // tell MUI we know how to indicate the active state
     _flags(obj) |= (1<<7);
+
+    // remember that we went through MUIM_Setup
+    setFlag(data->Flags, FLG_Setup);
 
     data->ehnode.ehn_Priority = 0;
     data->ehnode.ehn_Flags    = MUI_EHF_GUIMODE;
@@ -191,49 +281,51 @@ IPTR Setup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
 
-    RETURN(TRUE);
-    return(TRUE);
+    AddWindowSleepNotify(cl, obj);
+
+    rc = TRUE;
+  }
+  else
+  {
+    FreeConfig(muiRenderInfo(obj), data);
   }
 
-  RETURN(FALSE);
-  return(FALSE);
+  RETURN(rc);
+  return rc;
 }
 
-IPTR Cleanup(struct IClass *cl, Object *obj, Msg msg)
+static IPTR mCleanup(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+
+  ENTER();
 
   // cleanup the selection pointer
   CleanupSelectPointer(data);
 
+  RemWindowSleepNotify(cl, obj);
+
   DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
 
-  // make sure the gadget is being set to inactive state
-/*
-  if(isFlagSet(data->Flags, FLG_Active))
-  {
-    clearFlag(data->Flags, FLG_Active);
-    clearFlag(data->ehnode.ehn_Events, IDCMP_MOUSEMOVE);
-
-    if(isFlagClear(data->Flags, FLG_OwnBackground))
-      set(obj, MUIA_Background, data->InactiveBackground);
-  }
-*/
   FreeConfig(muiRenderInfo(obj), data);
 
-  return(DoSuperMethodA(cl, obj, msg));
+  // forget that we went through MUIM_Setup
+  clearFlag(data->Flags, FLG_Setup);
+
+  LEAVE();
+  return DoSuperMethodA(cl, obj, msg);
 }
 
-IPTR AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+static IPTR mAskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-  struct TextFont *font;
-  WORD Height;
+  LONG Height;
+
+  ENTER();
 
   DoSuperMethodA(cl, obj, (Msg)msg);
 
-  font = data->Font ? data->Font : muiAreaData(obj)->mad_Font;
-  Height = font->tf_YSize;
+  Height = _font(obj)->tf_YSize;
   msg->MinMaxInfo->MinHeight += Height;
   msg->MinMaxInfo->DefHeight += Height;
   msg->MinMaxInfo->MaxHeight += Height;
@@ -242,7 +334,7 @@ IPTR AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
   {
     ULONG width;
 
-    SetFont(&data->rport, font);
+    SetFont(&data->rport, _font(obj));
     width = data->Width * TextLength(&data->rport, "n", 1);
 
     msg->MinMaxInfo->MinWidth  += width;
@@ -256,36 +348,40 @@ IPTR AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
     msg->MinMaxInfo->MaxWidth  += MBQ_MUI_MAXMAX;
   }
 
-  return(0);
+  LEAVE();
+  return 0;
 }
 
-IPTR Show(struct IClass *cl, Object *obj, Msg msg)
+static IPTR mShow(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-  struct MUI_AreaData *ad = muiAreaData(obj);
-  struct BitMap *friendBMp = muiRenderInfo(obj)->mri_RastPort->BitMap;
+  struct BitMap *friendBMp = _rp(obj)->BitMap;
   WORD  width, height, depth;
-  struct TextFont *font = data->Font ? data->Font : ad->mad_Font;
+
+  ENTER();
 
   DoSuperMethodA(cl, obj, msg);
 
-  width = ad->mad_Box.Width - ad->mad_subwidth;
-  height = font->tf_YSize;
+  width = _mwidth(obj);
+  height = _font(obj)->tf_YSize;
   depth = ((struct Library *)GfxBase)->lib_Version >= 39 ? GetBitMapAttr(friendBMp, BMA_DEPTH) : friendBMp->Depth;
 
   InitRastPort(&data->rport);
-  data->rport.BitMap = MUIG_AllocBitMap(width+40, height, depth, (IPTR)NULL, friendBMp);
-  SetFont(&data->rport, font);
+  data->rport.BitMap = MUIG_AllocBitMap(width+40, height, depth, 0, friendBMp);
+  SetFont(&data->rport, _font(obj));
   SetDrMd(&data->rport, JAM1);
 
   setFlag(data->Flags, FLG_Shown);
 
-  return(TRUE);
+  RETURN(TRUE);
+  return TRUE;
 }
 
-IPTR Hide(struct IClass *cl, Object *obj, Msg msg)
+static IPTR mHide(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+
+  ENTER();
 
   clearFlag(data->Flags, FLG_Shown);
 
@@ -294,11 +390,14 @@ IPTR Hide(struct IClass *cl, Object *obj, Msg msg)
 
   MUIG_FreeBitMap(data->rport.BitMap);
 
-  return(DoSuperMethodA(cl, obj, msg));
+  LEAVE();
+  return DoSuperMethodA(cl, obj, msg);
 }
 
-IPTR mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+static IPTR mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
+  ENTER();
+
   DoSuperMethodA(cl, obj, (Msg)msg);
 
   if(isFlagSet(msg->flags, MADF_DRAWUPDATE) || isFlagSet(msg->flags, MADF_DRAWOBJECT))
@@ -306,13 +405,16 @@ IPTR mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     PrintString(cl, obj);
   }
 
-  return(0);
+  LEAVE();
+  return 0;
 }
 
-IPTR HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+static IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
   IPTR result;
+
+  ENTER();
 
   if(isFlagSet(data->Flags, FLG_Ghosted) || isFlagClear(data->Flags, FLG_Shown))
   {
@@ -322,7 +424,7 @@ IPTR HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
   {
     ULONG display_pos = data->DisplayPos;
 
-    result = HandleInput(cl, obj, msg);
+    result = mHandleInput(cl, obj, msg);
     if(display_pos != data->DisplayPos)
       set(obj, MUIA_String_DisplayPos, data->DisplayPos);
 
@@ -365,48 +467,55 @@ IPTR HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
     }
   }
 
+  RETURN(result);
   return result;
 }
 
-IPTR GoActive(struct IClass *cl, Object *obj, UNUSED Msg msg)
+static IPTR mGoActive(struct IClass *cl, Object *obj, UNUSED Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
 
-  D(DBF_INPUT, "GoActive: %08lx", obj);
+  ENTER();
 
-  setFlag(data->Flags, FLG_Active);
-  setFlag(data->Flags, FLG_FreshActive);
-/*
-  DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-  setFlag(data->ehnode.ehn_Events, IDCMP_RAWKEY);
-  DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
-*/
-  if(data->Original != NULL)
-    SharedPoolFree(data->Original);
+  D(DBF_INPUT, "GoActive: %08lx %08lx", obj, data->Flags);
 
-  if((data->Original = (STRPTR)SharedPoolAlloc(strlen(data->Contents)+1)) != NULL)
+  FreeContentString(data->Original);
+  if((data->Original = AllocContentString(strlen(data->Contents)+1)) != NULL)
     strlcpy(data->Original, data->Contents, strlen(data->Contents+1));
 
   // select everything if this is necessary or requested
-  if((data->SelectOnActive == TRUE && isFlagClear(data->Flags, FLG_MouseButtonDown) && isFlagClear(data->Flags, FLG_ForceSelectOff)) ||
+  if((data->SelectOnActive == TRUE && isFlagClear(data->Flags, FLG_ForceSelectOff)) ||
      isFlagSet(data->Flags, FLG_ForceSelectOn))
   {
-    data->BlockStart = 0;
-    data->BlockStop = strlen(data->Contents);
-    setFlag(data->Flags, FLG_BlockEnabled);
+    // If the active flag is still clear we have been activated by keyboard or by
+    // the application. Otherwise this method is called due to activation by mouse
+    // and we must skip the "select on active" stuff as this has been done already.
+    if(isFlagClear(data->Flags, FLG_Active))
+    {
+      DoMethod(obj, MUIM_BetterString_DoAction, MUIV_BetterString_DoAction_SelectAll);
+    }
   }
 
-  if(isFlagClear(data->Flags, FLG_OwnBackground))
+  //  now declare ourself as active
+  setFlag(data->Flags, FLG_Active);
+  setFlag(data->Flags, FLG_FreshActive);
+
+  if(isFlagClear(data->Flags, FLG_OwnBackground) && data->mui4x == FALSE)
     set(obj, MUIA_Background, data->ActiveBackground);
+  else if(data->mui4x == TRUE)
+    set(obj, MUIA_Background, MUII_StringActiveBack);
   else
     MUI_Redraw(obj, MADF_DRAWUPDATE);
 
+  RETURN(TRUE);
   return TRUE;
 }
 
-IPTR GoInactive(struct IClass *cl, Object *obj, UNUSED Msg msg)
+static IPTR mGoInactive(struct IClass *cl, Object *obj, UNUSED Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
+
+  ENTER();
 
   D(DBF_INPUT, "GoInActive: %08lx", obj);
 
@@ -415,42 +524,45 @@ IPTR GoInactive(struct IClass *cl, Object *obj, UNUSED Msg msg)
   clearFlag(data->Flags, FLG_BlockEnabled);
   clearFlag(data->Flags, FLG_Active);
   clearFlag(data->Flags, FLG_FreshActive);
-/*
-  DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
-  clearFlag(data->ehnode.ehn_Events, IDCMP_MOUSEMOVE);
-  DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehnode);
-*/
 
-  if(isFlagClear(data->Flags, FLG_OwnBackground))
-    set(obj, MUIA_Background, data->InactiveBackground);
+  if(isFlagSet(data->Flags, FLG_OwnBackground))
+  {
+    set(obj, MUIA_Background, data->OwnBackground);
+    // MUI 3.8 needs an explicit refresh
+    if(data->mui39 == FALSE && data->mui4x == FALSE)
+      MUI_Redraw(obj, MADF_DRAWUPDATE);
+  }
+  else if(data->mui4x == TRUE)
+    set(obj, MUIA_Background, MUII_StringBack);
   else
-    MUI_Redraw(obj, MADF_DRAWUPDATE);
+    set(obj, MUIA_Background, data->InactiveBackground);
 
+  RETURN(TRUE);
   return TRUE;
 }
 
 DISPATCHER(_Dispatcher)
 {
-  IPTR result = TRUE;
+  IPTR result;
 
   ENTER();
 
   switch(msg->MethodID)
   {
     case OM_NEW:
-      result = New(cl, obj, (struct opSet *)msg);
+      result = mNew(cl, obj, (struct opSet *)msg);
     break;
 
     case MUIM_Setup:
-      result = Setup(cl, obj, (struct MUI_RenderInfo *)msg);
+      result = mSetup(cl, obj, (struct MUI_RenderInfo *)msg);
     break;
 
     case MUIM_Show:
-      result = Show(cl, obj, msg);
+      result = mShow(cl, obj, msg);
     break;
 
     case MUIM_AskMinMax:
-      result = AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
+      result = mAskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
     break;
 
     case MUIM_Draw:
@@ -458,44 +570,44 @@ DISPATCHER(_Dispatcher)
     break;
 
     case OM_GET:
-      result = Get(cl, obj, (struct opGet *)msg);
+      result = mGet(cl, obj, (struct opGet *)msg);
     break;
 
     case OM_SET:
-      Set(cl, obj, (struct opSet *)msg);
+      mSet(cl, obj, (struct opSet *)msg);
       result = DoSuperMethodA(cl, obj, msg);
     break;
 
     case MUIM_HandleEvent:
-      result = HandleEvent(cl, obj, (struct MUIP_HandleEvent *)msg);
+      result = mHandleEvent(cl, obj, (struct MUIP_HandleEvent *)msg);
     break;
 
     case MUIM_GoActive:
-      result = GoActive(cl, obj, msg);
+      result = mGoActive(cl, obj, msg);
     break;
 
     case MUIM_GoInactive:
-      result = GoInactive(cl, obj, msg);
+      result = mGoInactive(cl, obj, msg);
     break;
 
     case MUIM_Hide:
-      result = Hide(cl, obj, msg);
+      result = mHide(cl, obj, msg);
     break;
 
     case MUIM_Cleanup:
-      result = Cleanup(cl, obj, msg);
+      result = mCleanup(cl, obj, msg);
     break;
 
     case OM_DISPOSE:
-      result = Dispose(cl, obj, msg);
+      result = mDispose(cl, obj, msg);
     break;
 
     case MUIM_Export:
-      result = Export(cl, obj, (struct MUIP_Export *)msg);
+      result = mExport(cl, obj, (struct MUIP_Export *)msg);
     break;
 
     case MUIM_Import:
-      result = Import(cl, obj, (struct MUIP_Import *)msg);
+      result = mImport(cl, obj, (struct MUIP_Import *)msg);
     break;
 
     case MUIM_BetterString_ClearSelected:
@@ -503,56 +615,20 @@ DISPATCHER(_Dispatcher)
       // forward the clear request to our new DoAction method
       // which in fact will do the very same, but a bit more clever
       DoMethod(obj, MUIM_BetterString_DoAction, MUIV_BetterString_DoAction_Delete);
+      result = TRUE;
     }
     break;
 
     case MUIM_BetterString_Insert:
-    {
-      struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
-      struct MUIP_BetterString_Insert *ins_msg = (struct MUIP_BetterString_Insert *)msg;
-      UWORD pos;
-
-      switch(ins_msg->pos)
-      {
-/*        case MUIV_BetterString_Insert_StartOfString:
-          pos = 0;
-          break;
-*/
-        case MUIV_BetterString_Insert_EndOfString:
-          pos = strlen(data->Contents);
-          break;
-
-        case MUIV_BetterString_Insert_BufferPos:
-          pos = data->BufferPos;
-          break;
-
-        default:
-          pos = ins_msg->pos;
-          break;
-      }
-      Overwrite(ins_msg->text, pos, 0, data);
-      clearFlag(data->Flags, FLG_BlockEnabled);
-      MUI_Redraw(obj, MADF_DRAWUPDATE);
-    }
+      result = mInsert(cl, obj, (struct MUIP_BetterString_Insert *)msg);
     break;
 
     case MUIM_BetterString_DoAction:
       result = mDoAction(cl, obj, (struct MUIP_BetterString_DoAction *)msg);
     break;
 
-
-/*
-    case MUIM_Backfill:
-    {
-      struct MUIP_Backfill *fill_msg = (struct MUIP_Backfill *)msg;
-
-      if(isFlagClear(data->Flags, FLG_Active))
-        DoMethod(obj, MUIM_DrawBackground, fill_msg->left, fill_msg->top, fill_msg->right-fill_msg->left+1, fill_msg->bottom-fill_msg->top+1, fill_msg->xoffset, fill_msg->yoffset);
-//      printf("%ld, %ld, %ld, %ld\n%ld, %ld\n", fill_msg->left, fill_msg->top, fill_msg->right, fill_msg->bottom, fill_msg->xoffset, fill_msg->yoffset);
-    }
-*/
     case MUIM_BetterString_FileNameStart:
-      result = FileNameStart((struct MUIP_BetterString_FileNameStart *)msg);
+      result = mFileNameStart((struct MUIP_BetterString_FileNameStart *)msg);
     break;
 
     default:

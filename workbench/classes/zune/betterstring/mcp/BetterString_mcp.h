@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -65,10 +65,25 @@ extern "C" {
 #define MUICFG_BetterString_Cursor          0xad000304UL
 #define MUICFG_BetterString_MarkedBack      0xad000305UL
 #define MUICFG_BetterString_MarkedText      0xad000308UL
-#define MUICFG_BetterString_Font            0xad000306UL
-#define MUICFG_BetterString_Frame           0xad000307UL
-#define MUICFG_BetterString_SelectOnActive  0xad000308UL
+#define MUICFG_BetterString_Font            0xad000306UL // obsolete
+#define MUICFG_BetterString_Frame           0xad000307UL // obsolete
+#define MUICFG_BetterString_SelectOnActive  0xad00030aUL
 #define MUICFG_BetterString_SelectPointer   0xad000309UL
+
+#define CFG_BetterString_ActiveBack_Def     "2:m1"
+#define CFG_BetterString_ActiveText_Def     "m5"
+#define CFG_BetterString_InactiveBack_Def   "2:m2"
+#define CFG_BetterString_InactiveText_Def   "m4"
+#define CFG_BetterString_Cursor_Def         "m0"
+#if defined(__amigaos4__)
+#define CFG_BetterString_MarkedBack_Def     "m7"
+#define CFG_BetterString_MarkedText_Def     "m8"
+#else
+#define CFG_BetterString_MarkedBack_Def     "m5"
+#define CFG_BetterString_MarkedText_Def     "m0"
+#endif
+#define CFG_BetterString_SelectOnActive_Def FALSE
+#define CFG_BetterString_SelectPointer_Def  TRUE
 
 #if !defined(__AROS__) && defined(__PPC__)
   #if defined(__GNUC__)

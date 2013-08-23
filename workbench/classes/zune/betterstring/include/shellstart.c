@@ -1,5 +1,3 @@
-##stringtype C
-##shortstrings
 /***************************************************************************
 
  BetterString.mcc - A better String gadget MUI Custom Class
@@ -18,25 +16,32 @@
 
  BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
 
- $Id: C_h.sd 395 2013-02-19 19:13:25Z thboeckel $
+ $Id$
 
 ***************************************************************************/
 
-/****************************************************************
-   This file was created automatically by `FlexCat V1.3'
-****************************************************************/
+/*
+ * The system (and compiler) rely on a symbol named _start which marks
+ * the beginning of execution of an ELF file. To prevent others from
+ * executing this library, and to keep the compiler/linker happy, we
+ * define an empty _start symbol here.
+ *
+ * On the classic system (pre-AmigaOS4) this was usually done by
+ * moveq #0,d0
+ * rts
+ *
+ */
 
-#ifndef %b_LOCALE_H
-#define %b_LOCALE_H
-#include <exec/types.h>
-
-#define MSG_Space ((APTR)1)
-
-extern const char *GetStr(APTR);
-extern const char *GetStripStr(APTR);
-extern void OpenCat(void);
-extern void CloseCat(void);
-
-extern const APTR _%i;\n#define %i ((APTR) &_%i)
-
-#endif /* %b_LOCALE_H */
+#if defined(__amigaos3__)
+asm(".text\n\
+     .even\n\
+     .globl _start\n\
+    _start:\n\
+     moveq #20,d0\n\
+     rts");
+#else
+LONG _start(void)
+{
+  return RETURN_FAIL;
+}
+#endif

@@ -2,8 +2,295 @@
 MUI BetterString MCC class - ChangeLog
 --------------------------------------
 
-$Id: ChangeLog 290 2011-11-26 13:14:52Z damato $
-$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/releases/11.21/ChangeLog $
+$Id: ChangeLog 405 2013-04-25 11:34:28Z damato $
+$URL: svn://svn.code.sf.net/p/bstring-mcc/code/releases/11.25/ChangeLog $
+
+#### v11.25 RELEASE ###########################################################
+
+2013-04-25 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 11.25 release preparations
+  * mcp/BetterString_mcp.h: changed default colors for marked text to match the
+    well-known defaults of string.mui.
+
+2013-04-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/greek.ct: updated greek translation kindly provided by Antonis
+    Iliakis.
+
+2013-03-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/PrintString.c: fixed a redraw issue with bitmap backgrounds.
+
+2013-03-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccinit.c, include/shellstart.c: rearranged the code to ensure that
+    trying to start the final class from a shell does not crash.
+
+2013-02-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc, mcp: when running under MUI 4.x BetterString will automatically fall
+    back to the background settings of the internal String.mui class to ensure
+    a consistent look of all string objects unless an application explicitly
+    sets a custom background. With MUI 3.x the user will still have to configure
+    the two background images, because here String.mui is based on intuition's
+    strgclass and hence there is nothing which could be cloned.
+
+2013-02-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc, mcp: completely removed the custom frame setting. Since BetterString is
+    meant as a replacement class for String.mui it is much more intuitive to have
+    to do the same steps when creating a BetterString object as when creating a
+    normal String.mui object. Furthermore it is also more intuitive for the user
+    to get the same look for all string objects rather than have a different look
+    for BetterString objects.
+
+2013-01-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/misc: completely reworked the string buffer handling to keep a size
+    information for each single string (normal, undo, original). Before the class
+    kept a size information for the normal contents string only and after the
+    first undo action this size information was bogus but still used whenever the
+    current allocation size needed to be checked. Upon the next contents change
+    memory was trashed due to this wrong size information.
+
+2013-01-15 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/CreatePrefsGroup.c: used a fixed height of 0 to enforce a suitable
+    height of all pen and frame buttons.
+
+#### v11.24 RELEASE ###########################################################
+
+2012-12-20 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 11.24 release preparations
+
+2012-12-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/InitConfig.c: fixed an ancient bug which prevented the custom mouse
+    pointer setting to be successfully applied if the default setting had to
+    be used.
+
+2012-12-14 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c, mcc/HandleInput.c: fixed a selection issue triggered by
+    YAM which was caused by the last change. Thanks to Christoph Pölzl for the
+    hint.
+
+2012-12-13 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c, mcc/HandleInput.c: don't perform the "select all"
+    operation immediately if the "select on active" feature is enabled and the
+    object becomes active, but defer this a bit. This makes it possible to
+    activate the object with the mouse and start to mark a section while the
+    mouse button is still pressed. And this also fixes the issue that keeping
+    the mouse button pressed always started a selection from the beginning of
+    the contents instead of the current position. Thanks to Christoph Pölzl for
+    the hint.
+
+2012-12-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c: added a workaround for an old and ancient MUI bug when
+    having to deal with removed notifications while causing further set()
+    operations which trigger nested notification checks. Thanks for Steffen
+    Gutmann for all the hints regarding this issue, as MUIbase was the only
+    known affected application so far.
+
+2012-12-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/ClipboardServer.c: changed the ClipboardToString() functions to return
+    a boolean value to indicate success and  to avoid memory leaks.
+  * mcc/HandleInput.c: clear the selection only if reading from clipboard was
+    successful.
+
+2012-12-09 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/AllocFunctions.c: use Alloc/FreeVecPooled instead of Alloc/FreePooled.
+  * mcc/misc: completely reworked the string expansion functions and added lots
+    of NULL pointer checks.
+  * mcc/misc: use memmove() instead of strcpy() to move characters within the
+    contents string as strcpy() is not guarateed to handle overlapping copies
+    correctly. Also replaced strcpyback() by memmove().
+  * mcc/Dispatcher.c: free the original string in OM_DISPOSE to avoid memory
+    leaks.
+
+2012-12-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c, mcc/GetSetAttrs.c: use a private attribute to temporarily
+    disable the "select on feature" feature when the window is put to sleep.
+    This makes it possible to use the notification even if the feature is
+    enabled by the application instead of the global/local configuration.
+  * mcc/Dispatcher.c: added some more security checks before adding the notify
+    as the function might be called during OM_NEW and accessing _win(obj) is not
+    yet allowed at that time.
+
+2012-12-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c: add the notification for MUIA_Window_Sleep as well if the
+    "select on active" feature has been acivated by setting the attribue
+    MUIA_BettString_SelectOnActive to TRUE. This will be remembered until the
+    method MUIM_Cleanup finally removes the notification again.
+
+2012-12-05 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c: added a notification for MUIA_Window_Sleep to be able to
+    deactivate the "select on active" feature until the window is woken up again.
+    This is necessary, because MUIA_Window_Sleep will modify the active object
+    and hence the object will go inactive and active again and thus select all
+    its contents, even if this was not the case before. This fixes YAM ticket
+    #360.
+  * mcc/GetSetAttrs.c: don't redraw the object if MUIA_BettString_SelectOnActive
+    is modified as this does not change anything visible unless the objects goes
+    active or inactive.
+
+2012-12-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/GetSetAttrs.c: fixed a wrong handling of queued notifications.
+
+2012-11-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/HandleInput.c: added some missing redraw events in case BetterString.mcc
+    reacted on certain standard MUI key shortcuts.
+
+2012-11-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Pointer.c: make use of the standard mouse pointer images in the AmigaOS4
+    build if intuition.library 53.37 is available.
+
+2012-09-20 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/Dispatcher.c: don't trigger notifications in
+    MUIM_Mccprefs_ConfigToGadgets.
+  * mcp/Dispatcher.c: save strings with their real length only instead of their
+    maximum length to assist MUI4's realtime prefs.
+  * mcp/Dispatcher.c: remove settings from the configuration if they match the
+    default value.
+
+2012-09-13 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/PrintString.c: added the former X offset again when drawing the complete
+    imagery. AfAOS' Text() replacement seems to need this additional space to
+    correctly print texts starting with 'J' or '*' when certain fonts are used.
+    Other systems might trash innocent memory. So better put it back in.
+
+2012-09-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c, mcc/InitConfig.c: apply the current configuration before
+    calling the superclass' MUIM_Setup to ensure the frame settings are applied
+    correctly.
+
+2012-09-11 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/PrintString.c: use the normal object's dimensions when calculating the
+    amount of fitting characters instead of deriving the dimensions from some
+    other values.
+
+2012-08-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/CreatePrefsGroup.c: adjusted the crawling text to better match the
+    capabilities of Crawling.mcc.
+  * mcc/HandleInput.c: added support for the standard cut, copy, paste, undo and
+    redo keys of MUI4.
+
+#### v11.23 RELEASE ###########################################################
+
+2012-08-05 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 11.23 release preparations
+
+2012-07-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/GetSetAttrs.c: don't handle MUIA_Disabled twice in OM_SET. All the
+    necessary stuff is already done by recalculating the flags.
+
+2012-06-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/AllocFunctions.c: don't allocate locked memory.
+
+2012-05-14 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/Makefile: removed .catalog files in clean target.
+  * mcp/locale/italian.ct: updated italian translation kindly provided by Samir
+    Hawamdeh.
+
+#### v11.22 RELEASE ###########################################################
+
+2012-05-12 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 11.22 release preparations
+  * mcp/Makefile: readded -DNO_INLINE_STDARG for aros-ppc and aros-x86_64
+    target as otherwise the cross-compiler won't build for these targets and
+    raise some unterminated macros errors.
+
+2012-05-10 Jens Langner <Jens.Langner@light-speed.de>
+
+  * GetSetAttr.c, HandleInput.c, private.h: implemented a new
+    MUIA_BetterString_NoNotify attribute which will allow to prevent
+    betterstring from sending out notifications on changes of the
+    MUIA_String_Contents attribute. This should help applications to
+    ensure that only one notification is triggered in case multiple
+    operations are performed in a row which change the content of the
+    string object.
+
+2012-05-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Dispatcher.c, HandleInput.c: MUIM_BetterString_Insert will now correctly
+    trigger a notification of MUIA_String_Contents.
+
+2012-05-03 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/GetSetAttrs.c: fixed the OM_SET method to redraw the object only if
+    there is something to be redrawn due to modified attributes. Especially
+    setting the disabled state to the same value again will cause one redraw
+    event only instead of two.
+
+2012-04-13 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcp/CreatePrefsGroup.c: reordered the checkmark objects so that they are
+    horizontal aligned properly to the previous objects.
+  * mcp/private.h: removed "Font" config object from object enum list or otherwise
+    the .mcp crashes.
+
+2012-04-13 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/PrintString.c: use MUIPEN() macro for all uses of pens allocated by MUI.
+  * mcc/Dispatcher.c, GetSetAttrs.c, HandleInput.c, mcc/PrintString.c: replaced
+    all direct peeking to public MUI structures by the appropriate macro calls.
+  * mcc/PrintString.c: the background must be drawn with the object's left/top
+    edge as offsets to let an inherited background be drawn correctly.
+  * mcp/CreatePrefsGroup.c: removed the custom font setting as BetterString
+    should behave like the built-in string class. Furthermore the advanced font
+    specs of MUI4 can only be applied if the font inheritance mechanism would be
+    fully replicated in BetterString.
+  * mcc/misc: removed the custom font support as stated above.
+  * mcc/InitConfig.c: fixed yet another possible invalid pointer value after a
+    configuration change.
+
+2012-04-07 Jens Langner <Jens.Langner@light-speed.de>
+
+  * Makefile: removed -funroll-loops as this option is potentially
+    dangerous.
+
+2012-04-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/Dispatcher.c: call InitConfig() after the superclass' MUIM_Setup
+    succeeded to avoid orphaned pen allocations.
+  * mcp/BetterString_mcp.h: fixed duplicate config ID for marked text color
+    and select on activate items. This will require every user to check the
+    settings and save them again, unfortunately.
+  * mcc/InitConfig.c: string pointers obtained from the MUI configuration must
+    be copied instead of rembembered directly. With MUI4's realtime prefs the
+    pointer might become invalid at any time and hence the class would operate
+    on invalid data after that.
+
+2012-03-29 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Makefile: added __amigaos3__ symbol for the OS3 build.
+
+2012-01-29 Matthias Rustler <mrustler@gmx.de>
+
+  * Backport of AROS fixes.
+  * SDI headers updated.
 
 #### v11.21 RELEASE ###########################################################
 
@@ -13,7 +300,7 @@ $URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/releases/11.21
 
 2011-09-12 Thore Böckelmann <tboeckel@gmx.de>
 
-  * mcc/PrintString.c: fixed the slightly wrong background drawing when 
+  * mcc/PrintString.c: fixed the slightly wrong background drawing when
     gradients are being used.
 
 2011-01-04 Thore Böckelmann <tboeckel@gmx.de>

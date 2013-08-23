@@ -2,7 +2,7 @@
 
  BetterString.mcc - A better String gadget MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2009 by BetterString.mcc Open Source Team
+ Copyright (C) 2005-2013 by BetterString.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -27,43 +27,45 @@
 #include <graphics/gfxmacros.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <proto/muimaster.h>
 
 #include "private.h"
 
+// This additional space is needed for certain fonts to be displayed
+// These fonts seem to render at negative corrdinates due to their
+// kerning values and hence the Text() function might trash innocent
+// memory, or in case of AfAOS' Text() replacement nothing will be
+// drawn at all.
+#define XOFF	10
+#define YOFF	0
+
 VOID PrintString(struct IClass *cl, Object *obj)
 {
-  struct InstData     *data     = (struct InstData *)INST_DATA(cl, obj);
-  struct RastPort   *oldrport = muiRenderInfo(obj)->mri_RastPort;
-  struct RastPort   *rport    = &data->rport;
-  struct MUI_AreaData *ad     = muiAreaData(obj);
-  struct TextFont   *font     = data->Font ? data->Font : ad->mad_Font;
+  struct InstData *data     = (struct InstData *)INST_DATA(cl, obj);
+  struct RastPort *oldrport = _rp(obj);
+  struct RastPort *rport    = &data->rport;
   struct TextExtent tExtend;
   STRPTR contents;
-  WORD width, height;
   WORD crsr_x=0, crsr_width=0, crsr_color=0;
-  WORD dst_x, dst_y, length, offset = 0, StrLength;
+  WORD length, offset = 0, StrLength;
   STRPTR text;
   BOOL   BlockEnabled = (isFlagSet(data->Flags, FLG_BlockEnabled) && data->BlockStart != data->BlockStop);
   UWORD  Blk_Start=0, Blk_Width=0;
   STRPTR fake_contents = NULL;
   BOOL showInactiveContents = FALSE;
 
-  dst_x = ad->mad_Box.Left + ad->mad_addleft;
-  dst_y = ad->mad_Box.Top  + ad->mad_addtop;
-  width = ad->mad_Box.Width - ad->mad_subwidth;
-  height = font->tf_YSize;
+  ENTER();
 
   contents = data->Contents;
   StrLength = strlen(contents);
 
   if(isFlagSet(data->Flags, FLG_Secret) && (fake_contents = (STRPTR)SharedPoolAlloc(StrLength+1)))
   {
-    WORD strlength = StrLength;
-
+    // fill the secret copy of the string with '*' and terminate it with NUL
+    if(StrLength > 0)
+      memset(fake_contents, '*', StrLength);
+    fake_contents[StrLength] = '\0';
     contents = fake_contents;
-    contents[strlength] = '\0';
-    while(strlength--)
-      contents[strlength] = '*';
   }
 
   if(StrLength == 0 && isFlagClear(data->Flags, FLG_Active) && data->InactiveContents != NULL)
@@ -73,7 +75,7 @@ VOID PrintString(struct IClass *cl, Object *obj)
     showInactiveContents = TRUE;
   }
 
-  SetFont(rport, font);
+  SetFont(rport, _font(obj));
   if(isFlagSet(data->Flags, FLG_Active) && BlockEnabled == FALSE)
   {
     char *c;
@@ -95,7 +97,7 @@ VOID PrintString(struct IClass *cl, Object *obj)
 
   if(StrLength)
   {
-    UWORD backdistance = TextFit(rport, contents+StrLength-1, StrLength, &tExtend, NULL, -1, width/*-crsr_width*/, font->tf_YSize);
+    UWORD backdistance = TextFit(rport, contents+StrLength-1, StrLength, &tExtend, NULL, -1, _mwidth(obj)/*-crsr_width*/, _mheight(obj));
 
     if(backdistance > StrLength-data->DisplayPos)
       data->DisplayPos = StrLength-backdistance;
@@ -103,7 +105,7 @@ VOID PrintString(struct IClass *cl, Object *obj)
 
   if(data->BufferPos)
   {
-    UWORD distance = TextFit(rport, contents+data->BufferPos-1, data->BufferPos, &tExtend, NULL, -1, width-crsr_width, font->tf_YSize);
+    UWORD distance = TextFit(rport, contents+data->BufferPos-1, data->BufferPos, &tExtend, NULL, -1, _mwidth(obj)-crsr_width, _mheight(obj));
 
     if(distance < data->BufferPos-data->DisplayPos)
       data->DisplayPos = data->BufferPos - distance;
@@ -136,58 +138,58 @@ VOID PrintString(struct IClass *cl, Object *obj)
     }
   }
 
-  muiRenderInfo(obj)->mri_RastPort = rport;
-  DoMethod(obj, MUIM_DrawBackground, 0, 0, _mwidth(obj), _mheight(obj), 0, 0, 0L);
-  muiRenderInfo(obj)->mri_RastPort = oldrport;
+  _rp(obj) = rport;
+  DoMethod(obj, MUIM_DrawBackground, 0+XOFF, 0+YOFF, _mwidth(obj), _mheight(obj), _mleft(obj)-XOFF, _mtop(obj)-YOFF, 0L);
+  _rp(obj) = oldrport;
 
-  length = TextFit(rport, text, StrLength, &tExtend, NULL, 1, width, font->tf_YSize);
+  length = TextFit(rport, text, StrLength, &tExtend, NULL, 1, _mwidth(obj), _mheight(obj));
   if(data->Alignment != MUIV_String_Format_Left)
   {
     UWORD textlength = TextLength(rport, text, length);
 
     if(crsr_width && !BlockEnabled && data->BufferPos == data->DisplayPos+StrLength)
     {
-      length = TextFit(rport, text, StrLength, &tExtend, NULL, 1, width-crsr_width, font->tf_YSize);
+      length = TextFit(rport, text, StrLength, &tExtend, NULL, 1, _mwidth(obj)-crsr_width, _mheight(obj));
       textlength += crsr_width;
     }
 
     switch(data->Alignment)
     {
       case MUIV_String_Format_Center:
-        offset = (width - textlength)/2;
+        offset = (_mwidth(obj) - textlength)/2;
         break;
       case MUIV_String_Format_Right:
-        offset = (width - textlength);
+        offset = (_mwidth(obj) - textlength);
         break;
     }
   }
 
-  if(crsr_width && crsr_x < width)
+  if(crsr_width && crsr_x < _mwidth(obj))
   {
-    SetAPen(rport, crsr_color);
-    if(crsr_x+crsr_width > width)
+    SetAPen(rport, MUIPEN(crsr_color));
+    if(crsr_x+crsr_width > _mwidth(obj))
     {
-      crsr_width = width-crsr_x;
+      crsr_width = _mwidth(obj)-crsr_x;
     }
-    RectFill(rport, offset+crsr_x, 0, offset+crsr_x+crsr_width-1, font->tf_YSize-1);
+    RectFill(rport, offset+crsr_x+XOFF, 0+YOFF, offset+crsr_x+crsr_width-1+XOFF, _font(obj)->tf_YSize-1+YOFF);
   }
 
   if(length)
   {
     UWORD newlength;
-    LONG textcolor= isFlagSet(data->Flags, FLG_Active) ? data->ActiveText : data->InactiveText;
+    LONG textcolor = isFlagSet(data->Flags, FLG_Active) ? data->ActiveText : data->InactiveText;
 
-    Move(rport, offset, font->tf_Baseline);
+    Move(rport, offset+XOFF, _font(obj)->tf_Baseline+YOFF);
 
     if(BlockEnabled && textcolor != (LONG)data->MarkedTextColor)
     {
       newlength = Blk_Start-data->DisplayPos;
-      SetAPen(rport, textcolor);
+      SetAPen(rport, MUIPEN(textcolor));
       Text(rport, text, newlength);
       text += newlength;
 
       newlength = (((Blk_Start-data->DisplayPos) + Blk_Width) > length) ? length - (Blk_Start-data->DisplayPos) : Blk_Width;
-      SetAPen(rport, data->MarkedTextColor);
+      SetAPen(rport, MUIPEN(data->MarkedTextColor));
       Text(rport, text, newlength);
       text += newlength;
 
@@ -201,7 +203,7 @@ VOID PrintString(struct IClass *cl, Object *obj)
       textcolor = _pens(obj)[MPEN_SHADOW];
     }
 
-    SetAPen(rport, textcolor);
+    SetAPen(rport, MUIPEN(textcolor));
     Text(rport, text, length);
 
     // switch back to normal style
@@ -212,7 +214,17 @@ VOID PrintString(struct IClass *cl, Object *obj)
   if(fake_contents != NULL)
     SharedPoolFree(fake_contents);
 
-  BltBitMapRastPort(data->rport.BitMap, 0, 0, muiRenderInfo(obj)->mri_RastPort, dst_x, dst_y, width, height, 0xc0);
+  BltBitMapRastPort(data->rport.BitMap, 0+XOFF, 0+YOFF, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), 0xc0);
+
+  #if defined(__amigaos3__) || defined(__amigaos4__)
+  if(MUIMasterBase->lib_Version > 20 || (MUIMasterBase->lib_Version == 20 && MUIMasterBase->lib_Revision >= 5640))
+  {
+    // MUI 4.0 for AmigaOS4 does the disabled pattern drawing itself,
+    // no need to do this on our own
+    LEAVE();
+    return;
+  }
+  #endif
 
   if(isFlagSet(data->Flags, FLG_Ghosted))
   {
@@ -221,7 +233,9 @@ VOID PrintString(struct IClass *cl, Object *obj)
 
     SetAfPt(rport, GhostPattern, 1);
     SetAPen(rport, _pens(obj)[MPEN_SHADOW]);
-    RectFill(rport, ad->mad_Box.Left, ad->mad_Box.Top, ad->mad_Box.Left+ad->mad_Box.Width-1, ad->mad_Box.Top+ad->mad_Box.Height-1);
+    RectFill(rport, _left(obj), _top(obj), _right(obj), _bottom(obj));
     SetAfPt(rport, 0, 0);
   }
+
+  LEAVE();
 }

@@ -4,7 +4,7 @@
 /* Includeheader
 
         Name:           SDI_hook.h
-        Versionstring:  $VER: SDI_hook.h 1.22 (24.06.2010)
+        Versionstring:  $VER: SDI_hook.h 1.24 (03.03.2011)
         Author:         SDI & Jens Langner
         Distribution:   PD
         Project page:   http://www.sf.net/projects/sditools/
@@ -50,6 +50,9 @@
  1.20  26.03.09 : fixed m68k define checks.
  1.21  19.05.09 : added SDISPATCHER() to generate a static dispatcher.
  1.22  24.06.10 : fixed AROS macros (Matthias Rustler).
+ 1.23  12.08.10 : added missing proto/alib.h include for AROS
+ 1.24  03.03.11 : fixed AROS macros for m68k (Jason McMullan)
+
 */
 
 /*
@@ -73,7 +76,7 @@
 /*
 ** Hook macros to handle the creation of Hooks/Dispatchers for different
 ** Operating System versions.
-** Currently AmigaOS and MorphOS is supported.
+** Currently AmigaOS, AROS, and MorphOS are supported.
 **
 ** For more information about hooks see include file <utility/hooks.h> or
 ** the relevant descriptions in utility.library autodocs.
@@ -112,7 +115,7 @@
 ** The ENTRY macro, which also gets the function name as argument.
 */
 
-#if defined(_M68000) || defined(__M68000) || defined(__mc68000)
+#if !defined(__AROS__) && (defined(_M68000) || defined(__M68000) || defined(__mc68000))
   #define HOOKPROTO(name, ret, obj, param) static SAVEDS ASM ret             \
     name(REG(a0, struct Hook *hook), REG(a2, obj), REG(a1, param))
   #define HOOKPROTONO(name, ret, param) static SAVEDS ASM ret                \
@@ -129,6 +132,8 @@
     name(REG(a2, obj))
   #define HOOKPROTONHNONP(name, ret) static SAVEDS ret name(void)
 #else
+  /* NOTE: This is fine for AROS, since HookEntry will handle stack params
+   */
   #define HOOKPROTO(name, ret, obj, param) static SAVEDS ret                 \
     name(struct Hook *hook, obj, param)
   #define HOOKPROTONO(name, ret, param) static SAVEDS ret                    \
@@ -189,7 +194,8 @@
     static ULONG name(struct IClass * cl, Object * obj, Msg msg)
   #define ENTRY(func) (APTR)&Gate_##func
 
-#elif __AROS__
+#elif defined(__AROS__)
+  #include <proto/alib.h>
 
   #define MakeHook(hookname, funcname) struct Hook hookname = {{NULL, NULL}, \
     (HOOKFUNC)HookEntry, (HOOKFUNC)funcname, NULL}
@@ -197,11 +203,26 @@
     {{NULL, NULL}, (HOOKFUNC)HookEntry, (HOOKFUNC)funcname, (APTR)data}
   #define MakeStaticHook(hookname, funcname) static struct Hook hookname =   \
     {{NULL, NULL}, (HOOKFUNC)HookEntry, (HOOKFUNC)funcname, NULL}
-  #define ENTRY(func) (APTR)func
-  #define DISPATCHERPROTO(name) SAVEDS ASM IPTR name(REG(a0,                 \
-    struct IClass * cl), REG(a2, Object * obj), REG(a1, Msg msg))
-  #define DISPATCHER(name) DISPATCHERPROTO(name)
-  #define SDISPATCHER(name) static DISPATCHERPROTO(name)
+  #define DISPATCHERPROTO(name)  \
+    IPTR name(struct IClass * cl, Object * obj, Msg msg); \
+    AROS_UFP3(IPTR, Gate_##name, \
+    	    AROS_UFPA(struct IClass *, cl, A0), \
+    	    AROS_UFPA(Object *, obj, A2), \
+    	    AROS_UFPA(Msg, msg, A1))
+  #define DISPATCHERx(x,name) \
+    x IPTR name(struct IClass * cl, Object * obj, Msg msg); \
+    x AROS_UFH3(IPTR, Gate_##name, \
+    	    AROS_UFHA(struct IClass *, cl, A0), \
+    	    AROS_UFHA(Object *, obj, A2), \
+    	    AROS_UFHA(Msg, msg, A1)) \
+    { AROS_USERFUNC_INIT \
+    	return name(cl, obj, msg); \
+      AROS_USERFUNC_EXIT \
+    } \
+    x IPTR name(struct IClass * cl, Object * obj, Msg msg)
+  #define DISPATCHER(name)  DISPATCHERx(,name)
+  #define SDISPATCHER(name) DISPATCHERx(static,name)
+  #define ENTRY(func) (APTR)Gate_##func
 
 #else /* !__MORPHOS__ && !__AROS__*/
 
