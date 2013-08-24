@@ -3,7 +3,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>FreeType-2.3.7 API Reference</title>
+<title>FreeType-2.5.0 API Reference</title>
 <style type="text/css">
   body { font-family: Verdana, Geneva, Arial, Helvetica, serif;
          color: #000000;
@@ -35,7 +35,7 @@
 <table align=center><tr><td><font size=-1>[<a href="ft2-index.html">Index</a>]</font></td>
 <td width="100%"></td>
 <td><font size=-1>[<a href="ft2-toc.html">TOC</a>]</font></td></tr></table>
-<center><h1>FreeType-2.3.7 API Reference</h1></center>
+<center><h1>FreeType-2.5.0 API Reference</h1></center>
 
 <center><h1>
 Glyph Stroker
@@ -87,9 +87,11 @@ Defined in FT_STROKER_H (freetype/ftstroke.h).
 
   <span class="keyword">typedef</span> <span class="keyword">enum</span>  FT_Stroker_LineJoin_
   {
-    <a href="ft2-glyph_stroker.html#FT_Stroker_LineJoin">FT_STROKER_LINEJOIN_ROUND</a> = 0,
-    <a href="ft2-glyph_stroker.html#FT_Stroker_LineJoin">FT_STROKER_LINEJOIN_BEVEL</a>,
-    <a href="ft2-glyph_stroker.html#FT_Stroker_LineJoin">FT_STROKER_LINEJOIN_MITER</a>
+    <a href="ft2-glyph_stroker.html#FT_Stroker_LineJoin">FT_STROKER_LINEJOIN_ROUND</a>          = 0,
+    <a href="ft2-glyph_stroker.html#FT_Stroker_LineJoin">FT_STROKER_LINEJOIN_BEVEL</a>          = 1,
+    <a href="ft2-glyph_stroker.html#FT_Stroker_LineJoin">FT_STROKER_LINEJOIN_MITER_VARIABLE</a> = 2,
+    <a href="ft2-glyph_stroker.html#FT_Stroker_LineJoin">FT_STROKER_LINEJOIN_MITER</a>          = <a href="ft2-glyph_stroker.html#FT_Stroker_LineJoin">FT_STROKER_LINEJOIN_MITER_VARIABLE</a>,
+    <a href="ft2-glyph_stroker.html#FT_Stroker_LineJoin">FT_STROKER_LINEJOIN_MITER_FIXED</a>    = 3
 
   } <b>FT_Stroker_LineJoin</b>;
 
@@ -106,11 +108,19 @@ Defined in FT_STROKER_H (freetype/ftstroke.h).
 </td></tr>
 <tr valign=top><td colspan=0><b>FT_STROKER_LINEJOIN_BEVEL</b></td></tr>
 <tr valign=top><td></td><td>
-<p>Used to render beveled line joins; i.e., the two joining lines are extended until they intersect.</p>
+<p>Used to render beveled line joins. The outer corner of the joined lines is filled by enclosing the triangular region of the corner with a straight line between the outer corners of each stroke.</p>
+</td></tr>
+<tr valign=top><td colspan=0><b>FT_STROKER_LINEJOIN_MITER_FIXED</b></td></tr>
+<tr valign=top><td></td><td>
+<p>Used to render mitered line joins, with fixed bevels if the miter limit is exceeded. The outer edges of the strokes for the two segments are extended until they meet at an angle. If the segments meet at too sharp an angle (such that the miter would extend from the intersection of the segments a distance greater than the product of the miter limit value and the border radius), then a bevel join (see above) is used instead. This prevents long spikes being created. FT_STROKER_LINEJOIN_MITER_FIXED generates a miter line join as used in PostScript and PDF.</p>
+</td></tr>
+<tr valign=top><td colspan=0><b>FT_STROKER_LINEJOIN_MITER_VARIABLE</b></td></tr>
+<tr valign=top><td></td><td>
+<p></p>
 </td></tr>
 <tr valign=top><td colspan=0><b>FT_STROKER_LINEJOIN_MITER</b></td></tr>
 <tr valign=top><td></td><td>
-<p>Same as beveled rendering, except that an additional line break is added if the angle between the two joining lines is too closed (this is useful to avoid unpleasant spikes in beveled rendering).</p>
+<p>Used to render mitered line joins, with variable bevels if the miter limit is exceeded. The intersection of the strokes is clipped at a line perpendicular to the bisector of the angle between the strokes, at the distance from the intersection of the segments equal to the product of the miter limit value and the border radius. This prevents long spikes being created. FT_STROKER_LINEJOIN_MITER_VARIABLE generates a mitered line join as used in XPS. FT_STROKER_LINEJOIN_MITER is an alias for FT_STROKER_LINEJOIN_MITER_VARIABLE, retained for backwards compatibility.</p>
 </td></tr>
 </table>
 </td></tr></table>
@@ -225,7 +235,7 @@ Defined in FT_STROKER_H (freetype/ftstroke.h).
 </table>
 </td></tr></table>
 <table align=center width="87%" cellpadding=5><tr bgcolor="#EEEEFF"><td><em><b>return</b></em></td></tr><tr><td>
-<p>The border index. <a href="ft2-glyph_stroker.html#FT_StrokerBorder">FT_STROKER_BORDER_LEFT</a> for empty or invalid outlines.</p>
+<p>The border index. <a href="ft2-glyph_stroker.html#FT_StrokerBorder">FT_STROKER_BORDER_RIGHT</a> for empty or invalid outlines.</p>
 </td></tr></table>
 </td></tr></table>
 <hr width="75%">
@@ -338,12 +348,12 @@ Defined in FT_STROKER_H (freetype/ftstroke.h).
 <p>The line join style.</p>
 </td></tr>
 <tr valign=top><td><b>miter_limit</b></td><td>
-<p>The miter limit for the FT_STROKER_LINEJOIN_MITER style, expressed as 16.16 fixed point value.</p>
+<p>The miter limit for the FT_STROKER_LINEJOIN_MITER_FIXED and FT_STROKER_LINEJOIN_MITER_VARIABLE line join styles, expressed as 16.16 fixed-point value.</p>
 </td></tr>
 </table>
 </td></tr></table>
 <table align=center width="87%" cellpadding=5><tr bgcolor="#EEEEFF"><td><em><b>note</b></em></td></tr><tr><td>
-<p>The radius is expressed in the same units that the outline coordinates.</p>
+<p>The radius is expressed in the same units as the outline coordinates.</p>
 </td></tr></table>
 </td></tr></table>
 <hr width="75%">
@@ -413,8 +423,8 @@ Defined in FT_STROKER_H (freetype/ftstroke.h).
 <p>FreeType error code. 0&nbsp;means success.</p>
 </td></tr></table>
 <table align=center width="87%" cellpadding=5><tr bgcolor="#EEEEFF"><td><em><b>note</b></em></td></tr><tr><td>
-<p>If &lsquo;opened&rsquo; is&nbsp;0 (the default), the outline is treated as a closed path, and the stroker will generate two distinct &lsquo;border&rsquo; outlines.</p>
-<p>If &lsquo;opened&rsquo; is&nbsp;1, the outline is processed as an open path, and the stroker will generate a single &lsquo;stroke&rsquo; outline.</p>
+<p>If &lsquo;opened&rsquo; is&nbsp;0 (the default), the outline is treated as a closed path, and the stroker generates two distinct &lsquo;border&rsquo; outlines.</p>
+<p>If &lsquo;opened&rsquo; is&nbsp;1, the outline is processed as an open path, and the stroker generates a single &lsquo;stroke&rsquo; outline.</p>
 <p>This function calls <a href="ft2-glyph_stroker.html#FT_Stroker_Rewind">FT_Stroker_Rewind</a> automatically.</p>
 </td></tr></table>
 </td></tr></table>
@@ -491,7 +501,7 @@ Defined in FT_STROKER_H (freetype/ftstroke.h).
 <p>FreeType error code. 0&nbsp;means success.</p>
 </td></tr></table>
 <table align=center width="87%" cellpadding=5><tr bgcolor="#EEEEFF"><td><em><b>note</b></em></td></tr><tr><td>
-<p>You should call this function after <a href="ft2-glyph_stroker.html#FT_Stroker_BeginSubPath">FT_Stroker_BeginSubPath</a>. If the subpath was not &lsquo;opened&rsquo;, this function will &lsquo;draw&rsquo; a single line segment to the start position when needed.</p>
+<p>You should call this function after <a href="ft2-glyph_stroker.html#FT_Stroker_BeginSubPath">FT_Stroker_BeginSubPath</a>. If the subpath was not &lsquo;opened&rsquo;, this function &lsquo;draws&rsquo; a single line segment to the start position when needed.</p>
 </td></tr></table>
 </td></tr></table>
 <hr width="75%">
@@ -640,7 +650,7 @@ Defined in FT_STROKER_H (freetype/ftstroke.h).
 
 </pre></table><br>
 <table align=center width="87%"><tr><td>
-<p>Call this function once you have finished parsing your paths with the stroker. It will return the number of points and contours necessary to export one of the &lsquo;border&rsquo; or &lsquo;stroke&rsquo; outlines generated by the stroker.</p>
+<p>Call this function once you have finished parsing your paths with the stroker. It returns the number of points and contours necessary to export one of the &lsquo;border&rsquo; or &lsquo;stroke&rsquo; outlines generated by the stroker.</p>
 </td></tr></table><br>
 <table align=center width="87%" cellpadding=5><tr bgcolor="#EEEEFF"><td><em><b>input</b></em></td></tr><tr><td>
 <p></p>
@@ -693,7 +703,7 @@ Defined in FT_STROKER_H (freetype/ftstroke.h).
 </pre></table><br>
 <table align=center width="87%"><tr><td>
 <p>Call this function after <a href="ft2-glyph_stroker.html#FT_Stroker_GetBorderCounts">FT_Stroker_GetBorderCounts</a> to export the corresponding border to your own <a href="ft2-outline_processing.html#FT_Outline">FT_Outline</a> structure.</p>
-<p>Note that this function will append the border points and contours to your outline, but will not try to resize its arrays.</p>
+<p>Note that this function appends the border points and contours to your outline, but does not try to resize its arrays.</p>
 </td></tr></table><br>
 <table align=center width="87%" cellpadding=5><tr bgcolor="#EEEEFF"><td><em><b>input</b></em></td></tr><tr><td>
 <p></p>
@@ -778,8 +788,8 @@ Defined in FT_STROKER_H (freetype/ftstroke.h).
 
 </pre></table><br>
 <table align=center width="87%"><tr><td>
-<p>Call this function after <a href="ft2-glyph_stroker.html#FT_Stroker_GetBorderCounts">FT_Stroker_GetBorderCounts</a> to export the all borders to your own <a href="ft2-outline_processing.html#FT_Outline">FT_Outline</a> structure.</p>
-<p>Note that this function will append the border points and contours to your outline, but will not try to resize its arrays.</p>
+<p>Call this function after <a href="ft2-glyph_stroker.html#FT_Stroker_GetBorderCounts">FT_Stroker_GetBorderCounts</a> to export all borders to your own <a href="ft2-outline_processing.html#FT_Outline">FT_Outline</a> structure.</p>
+<p>Note that this function appends the border points and contours to your outline, but does not try to resize its arrays.</p>
 </td></tr></table><br>
 <table align=center width="87%" cellpadding=5><tr bgcolor="#EEEEFF"><td><em><b>input</b></em></td></tr><tr><td>
 <p></p>
@@ -866,6 +876,7 @@ Defined in FT_STROKER_H (freetype/ftstroke.h).
 </td></tr></table>
 <table align=center width="87%" cellpadding=5><tr bgcolor="#EEEEFF"><td><em><b>note</b></em></td></tr><tr><td>
 <p>The source glyph is untouched in case of error.</p>
+<p>Adding stroke may yield a significantly wider and taller glyph depending on how large of a radius was used to stroke the glyph. You may need to manually adjust horizontal and vertical advance amounts to account for this added size.</p>
 </td></tr></table>
 </td></tr></table>
 <hr width="75%">
@@ -917,6 +928,7 @@ Defined in FT_STROKER_H (freetype/ftstroke.h).
 </td></tr></table>
 <table align=center width="87%" cellpadding=5><tr bgcolor="#EEEEFF"><td><em><b>note</b></em></td></tr><tr><td>
 <p>The source glyph is untouched in case of error.</p>
+<p>Adding stroke may yield a significantly wider and taller glyph depending on how large of a radius was used to stroke the glyph. You may need to manually adjust horizontal and vertical advance amounts to account for this added size.</p>
 </td></tr></table>
 </td></tr></table>
 <hr width="75%">

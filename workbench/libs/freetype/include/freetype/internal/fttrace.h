@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    Tracing handling (specification only).                               */
 /*                                                                         */
-/*  Copyright 2002, 2004, 2005, 2006, 2007 by                              */
+/*  Copyright 2002, 2004-2007, 2009, 2011-2013 by                          */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -31,16 +31,20 @@ FT_TRACE_DEF( init )      /* initialization          (ftinit.c)   */
 FT_TRACE_DEF( objs )      /* base objects            (ftobjs.c)   */
 FT_TRACE_DEF( outline )   /* outline management      (ftoutln.c)  */
 FT_TRACE_DEF( glyph )     /* glyph management        (ftglyph.c)  */
+FT_TRACE_DEF( gloader )   /* glyph loader            (ftgloadr.c) */
 
 FT_TRACE_DEF( raster )    /* monochrome rasterizer   (ftraster.c) */
 FT_TRACE_DEF( smooth )    /* anti-aliasing raster    (ftgrays.c)  */
 FT_TRACE_DEF( mm )        /* MM interface            (ftmm.c)     */
 FT_TRACE_DEF( raccess )   /* resource fork accessor  (ftrfork.c)  */
+FT_TRACE_DEF( synth )     /* bold/slant synthesizer  (ftsynth.c)  */
+FT_TRACE_DEF( bitmap )    /* bitmap checksum         (ftobjs.c)   */
 
   /* Cache sub-system */
 FT_TRACE_DEF( cache )     /* cache sub-system        (ftcache.c, etc.) */
 
   /* SFNT driver components */
+FT_TRACE_DEF( sfdriver )  /* SFNT font driver        (sfdriver.c) */
 FT_TRACE_DEF( sfobjs )    /* SFNT object handler     (sfobjs.c)   */
 FT_TRACE_DEF( ttcmap )    /* charmap handler         (ttcmap.c)   */
 FT_TRACE_DEF( ttkern )    /* kerning handler         (ttkern.c)   */
@@ -48,6 +52,7 @@ FT_TRACE_DEF( ttload )    /* basic TrueType tables   (ttload.c)   */
 FT_TRACE_DEF( ttmtx )     /* metrics-related tables  (ttmtx.c)    */
 FT_TRACE_DEF( ttpost )    /* PS table processing     (ttpost.c)   */
 FT_TRACE_DEF( ttsbit )    /* TrueType sbit handling  (ttsbit.c)   */
+FT_TRACE_DEF( ttbdf )     /* TrueType embedded BDF   (ttbdf.c)    */
 
   /* TrueType driver components */
 FT_TRACE_DEF( ttdriver )  /* TT font driver          (ttdriver.c) */
@@ -58,6 +63,7 @@ FT_TRACE_DEF( ttpload )   /* TT data/program loader  (ttpload.c)  */
 FT_TRACE_DEF( ttgxvar )   /* TrueType GX var handler (ttgxvar.c)  */
 
   /* Type 1 driver components */
+FT_TRACE_DEF( t1afm )
 FT_TRACE_DEF( t1driver )
 FT_TRACE_DEF( t1gload )
 FT_TRACE_DEF( t1hint )
@@ -68,6 +74,7 @@ FT_TRACE_DEF( t1parse )
   /* PostScript helper module `psaux' */
 FT_TRACE_DEF( t1decode )
 FT_TRACE_DEF( psobjs )
+FT_TRACE_DEF( psconv )
 
   /* PostScript hinting module `pshinter' */
 FT_TRACE_DEF( pshrec )
@@ -80,6 +87,10 @@ FT_TRACE_DEF( cffgload )
 FT_TRACE_DEF( cffload )
 FT_TRACE_DEF( cffobjs )
 FT_TRACE_DEF( cffparse )
+
+FT_TRACE_DEF( cf2blues )
+FT_TRACE_DEF( cf2hints )
+FT_TRACE_DEF( cf2interp )
 
   /* Type 42 driver component */
 FT_TRACE_DEF( t42 )
@@ -130,5 +141,12 @@ FT_TRACE_DEF( gxvtrak )
 FT_TRACE_DEF( gxvprop )
 FT_TRACE_DEF( gxvlcar )
 
+  /* autofit components */
+FT_TRACE_DEF( afmodule )
+FT_TRACE_DEF( afhints )
+FT_TRACE_DEF( afcjk )
+FT_TRACE_DEF( aflatin )
+FT_TRACE_DEF( aflatin2 )
+FT_TRACE_DEF( afwarp )
 
 /* END */

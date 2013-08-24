@@ -3,7 +3,7 @@
 #
 
 
-# Copyright 1996-2000, 2001, 2003, 2006, 2008 by
+# Copyright 1996-2001, 2003, 2006, 2008-2010, 2012 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -32,6 +32,16 @@
 #
 # See the comments in `builds/detect.mk' and `builds/PROJECT.mk' for more
 # details on host platform detection and library builds.
+
+
+# First of all, check whether we have `$(value ...)'.  We do this by testing
+# for `$(eval ...)' which has been introduced in the same GNU make version.
+
+eval_available :=
+$(eval eval_available := T)
+ifneq ($(eval_available),T)
+  $(error FreeType's build system needs a Make program which supports $$(value))
+endif
 
 
 .PHONY: all dist distclean modules setup
@@ -112,6 +122,7 @@ ifdef check_platform
   #
   is_unix := $(strip $(wildcard /sbin/init) \
                      $(wildcard /usr/sbin/init) \
+                     $(wildcard /dev/null) \
                      $(wildcard /hurd/auth))
   ifneq ($(is_unix),)
 
@@ -167,9 +178,9 @@ include $(TOP_DIR)/builds/modules.mk
 ifneq ($(findstring distx,$(MAKECMDGOALS)x),)
   FT_H := include/freetype/freetype.h
 
-  major := $(shell sed -n 's/.*FREETYPE_MAJOR.*\([0-9]\+\)/\1/p' < $(FT_H))
-  minor := $(shell sed -n 's/.*FREETYPE_MINOR.*\([0-9]\+\)/\1/p' < $(FT_H))
-  patch := $(shell sed -n 's/.*FREETYPE_PATCH.*\([0-9]\+\)/\1/p' < $(FT_H))
+  major := $(shell sed -n 's/.*FREETYPE_MAJOR[^0-9]*\([0-9]\+\)/\1/p' < $(FT_H))
+  minor := $(shell sed -n 's/.*FREETYPE_MINOR[^0-9]*\([0-9]\+\)/\1/p' < $(FT_H))
+  patch := $(shell sed -n 's/.*FREETYPE_PATCH[^0-9]*\([0-9]\+\)/\1/p' < $(FT_H))
 
   version    := $(major).$(minor).$(patch)
   winversion := $(major)$(minor)$(patch)
@@ -181,15 +192,16 @@ dist:
 	rm -f freetype-$(version).tar.bz2
 	rm -f ft$(winversion).zip
 
-	for d in `find . -wholename '*/CVS' -prune \
+	for d in `find . -wholename '*/.git' -prune \
 	                 -o -type f \
 	                 -o -print` ; do \
 	  mkdir -p tmp/$$d ; \
 	done ;
 
 	currdir=`pwd` ; \
-	for f in `find . -wholename '*/CVS' -prune \
-	                 -o -name .cvsignore \
+	for f in `find . -wholename '*/.git' -prune \
+	                 -o -name .gitignore \
+	                 -o -name .mailmap \
 	                 -o -type d \
 	                 -o -print` ; do \
 	  ln -s $$currdir/$$f tmp/$$f ; \
@@ -209,18 +221,19 @@ dist:
 	mv tmp freetype-$(version)
 
 	tar cfh - freetype-$(version) \
-	| gzip -c > freetype-$(version).tar.gz
+	| gzip -9 -c > freetype-$(version).tar.gz
 	tar cfh - freetype-$(version) \
 	| bzip2 -c > freetype-$(version).tar.bz2
 
 	@# Use CR/LF for zip files.
-	zip -lr ft$(winversion).zip freetype-$(version)
+	zip -lr9 ft$(winversion).zip freetype-$(version)
 
 	rm -fr freetype-$(version)
 
 
 # The locations of the latest `config.guess' and `config.sub' versions (from
-# GNU `config' CVS), relative to the `tmp' directory used during `make dist'.
+# GNU `config' git repository), relative to the `tmp' directory used during
+# `make dist'.
 #
 CONFIG_GUESS = ~/git/config/config.guess
 CONFIG_SUB   = ~/git/config/config.sub

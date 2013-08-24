@@ -1,4 +1,4 @@
-#  Sources (c) 2002, 2003, 2004, 2006, 2007, 2008
+#  Sources (c) 2002-2004, 2006-2009, 2012
 #    David Turner <david@freetype.org>
 #
 #
@@ -120,8 +120,8 @@ re_source_block_formats = [re_source_block_format1, re_source_block_format2]
 #
 # notice how each markup tag _must_ begin a new line
 #
-re_markup_tag1 = re.compile( r'''\s*<(\w*)>''' )  # <xxxx> format
-re_markup_tag2 = re.compile( r'''\s*@(\w*):''' )  # @xxxx: format
+re_markup_tag1 = re.compile( r'''\s*<((?:\w|-)*)>''' )  # <xxxx> format
+re_markup_tag2 = re.compile( r'''\s*@((?:\w|-)*):''' )  # @xxxx: format
 
 #
 # the list of supported markup tags, we could add new ones relatively
@@ -132,7 +132,7 @@ re_markup_tags = [re_markup_tag1, re_markup_tag2]
 #
 # used to detect a cross-reference, after markup tags have been stripped
 #
-re_crossref = re.compile( r'@(\w*)(.*)' )
+re_crossref = re.compile( r'@((?:\w|-)*)(.*)' )
 
 #
 # used to detect italic and bold styles in paragraph text
@@ -179,14 +179,14 @@ re_source_keywords = re.compile( '''\\b ( typedef   |
 ##
 ##  SOURCE BLOCK CLASS
 ##
-##   A SourceProcessor is in charge or reading a C source file
+##   A SourceProcessor is in charge of reading a C source file
 ##   and decomposing it into a series of different "SourceBlocks".
 ##   each one of these blocks can be made of the following data:
 ##
 ##   - A documentation comment block that starts with "/**" and
 ##     whose exact format will be discussed later
 ##
-##   - normal sources lines, include comments
+##   - normal sources lines, including comments
 ##
 ##   the important fields in a text block are the following ones:
 ##
@@ -255,7 +255,7 @@ class  SourceBlock:
 ##
 ##  SOURCE PROCESSOR CLASS
 ##
-##   The SourceProcessor is in charge or reading a C source file
+##   The SourceProcessor is in charge of reading a C source file
 ##   and decomposing it into a series of different "SourceBlock"
 ##   objects.
 ##
@@ -301,7 +301,7 @@ class  SourceProcessor:
                 self.process_normal_line( line )
             else:
                 if self.format.end.match( line ):
-                    # that's a normal block end, add it to lines and
+                    # that's a normal block end, add it to 'lines' and
                     # create a new block
                     self.lines.append( line )
                     self.add_block_lines()

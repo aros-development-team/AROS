@@ -5,7 +5,7 @@
 /*    Auto-fitter dummy routines to be used if no hinting should be        */
 /*    performed (body).                                                    */
 /*                                                                         */
-/*  Copyright 2003, 2004, 2005 by                                          */
+/*  Copyright 2003-2005, 2011, 2013 by                                     */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -19,6 +19,7 @@
 
 #include "afdummy.h"
 #include "afhints.h"
+#include "aferrors.h"
 
 
   static FT_Error
@@ -27,7 +28,7 @@
   {
     af_glyph_hints_rescale( hints,
                             metrics );
-    return 0;
+    return FT_Err_Ok;
   }
 
 
@@ -38,17 +39,16 @@
     FT_UNUSED( hints );
     FT_UNUSED( outline );
 
-    return 0;
+    return FT_Err_Ok;
   }
 
 
-  FT_CALLBACK_TABLE_DEF const AF_ScriptClassRec
-  af_dummy_script_class =
-  {
-    AF_SCRIPT_NONE,
+  AF_DEFINE_SCRIPT_CLASS( af_dummy_script_class,
+    AF_SCRIPT_DUMMY,
     NULL,
+    0,
 
-    sizeof( AF_ScriptMetricsRec ),
+    sizeof ( AF_ScriptMetricsRec ),
 
     (AF_Script_InitMetricsFunc) NULL,
     (AF_Script_ScaleMetricsFunc)NULL,
@@ -56,7 +56,7 @@
 
     (AF_Script_InitHintsFunc)   af_dummy_hints_init,
     (AF_Script_ApplyHintsFunc)  af_dummy_hints_apply
-  };
+  )
 
 
 /* END */

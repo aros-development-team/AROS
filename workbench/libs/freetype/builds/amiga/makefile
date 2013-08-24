@@ -5,7 +5,7 @@
 #
 
 
-# Copyright 2005, 2006, 2007 by
+# Copyright 2005, 2006, 2007, 2009 by
 # Werner Lemberg and Detlef Würkner.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -93,6 +93,12 @@ ftbdf.ppc.o: $(FTSRC)/base/ftbdf.c
 ftbitmap.ppc.o: $(FTSRC)/base/ftbitmap.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
+ftcid.ppc.o: $(FTSRC)/base/ftcid.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+ftfstype.ppc.o: $(FTSRC)/base/ftfstype.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
 ftgasp.ppc.o: $(FTSRC)/base/ftgasp.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
@@ -109,6 +115,9 @@ ftmm.ppc.o: $(FTSRC)/base/ftmm.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 ftotval.ppc.o: $(FTSRC)/base/ftotval.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+ftpatent.ppc.o: $(FTSRC)/base/ftpatent.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 ftpfr.ppc.o: $(FTSRC)/base/ftpfr.c
@@ -225,6 +234,11 @@ pcf.ppc.o: $(FTSRC)/pcf/pcf.c
 gzip.ppc.o: $(FTSRC)/gzip/ftgzip.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
+# FreeType2 library bzip2 support for compressed PCF bitmap fonts
+#
+bzip2.ppc.o: $(FTSRC)/bzip2/ftbzip2.c
+	$(CC) -c $(CFLAGS) -o $@ $<
+
 #
 # FreeType2 library compress support for compressed PCF bitmap fonts
 #
@@ -255,10 +269,11 @@ gxvalid.ppc.o: $(FTSRC)/gxvalid/gxvalid.c
 otvalid.ppc.o: $(FTSRC)/otvalid/otvalid.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-BASEPPC = ftbase.ppc.o ftbbox.ppc.o ftbdf.ppc.o ftbitmap.ppc.o      \
-	  ftgasp.ppc.o ftglyph.ppc.o ftgxvalid.ppc.o ftlcdfil.ppc.o \
-	  ftmm.ppc.o ftotval.ppc.o ftpfr.ppc.o ftstroke.ppc.o       \
-	  ftsynth.ppc.o fttype1.ppc.o ftwinfnt.ppc.o ftxf86.ppc.o
+BASEPPC = ftbase.ppc.o ftbbox.ppc.o ftbdf.ppc.o ftbitmap.ppc.o ftcid.ppc.o   \
+	  ftfstype.ppc.o ftgasp.ppc.o ftglyph.ppc.o ftgxval.ppc.o            \
+	  ftlcdfil.ppc.o ftmm.ppc.o ftotval.ppc.o ftpatent.ppc.o ftpfr.ppc.o \
+	  ftstroke.ppc.o ftsynth.ppc.o fttype1.ppc.o ftwinfnt.ppc.o          \
+	  ftxf86.ppc.o
 
 DEBUGPPC = ftdebug.ppc.o ftdebugpure.ppc.o
 
@@ -275,8 +290,8 @@ RASTERPPC = raster.ppc.o smooth.ppc.o
 FONTDPPC = cff.ppc.o type1.ppc.o type42.ppc.o type1cid.ppc.o truetype.ppc.o\
 	   bdf.ppc.o pcf.ppc.o pfr.ppc.o winfnt.ppc.o
 
-libft2_ppc.a:    $(BASEPPC) $(AFITPPC) $(GXVPPC) $(OTVPPC) $(PSPPC) $(RASTERPPC) sfnt.ppc.o ftcache.ppc.o $(FONTDPPC) gzip.ppc.o lzw.ppc.o
-	$(AR) $@ $(BASEPPC) $(AFITPPC) $(GXVPPC) $(OTVPPC) $(PSPPC) $(RASTERPPC) sfnt.ppc.o ftcache.ppc.o $(FONTDPPC) gzip.ppc.o lzw.ppc.o
+libft2_ppc.a:    $(BASEPPC) $(AFITPPC) $(GXVPPC) $(OTVPPC) $(PSPPC) $(RASTERPPC) sfnt.ppc.o ftcache.ppc.o $(FONTDPPC) gzip.ppc.o bzip2.ppc.o lzw.ppc.o
+	$(AR) $@ $(BASEPPC) $(AFITPPC) $(GXVPPC) $(OTVPPC) $(PSPPC) $(RASTERPPC) sfnt.ppc.o ftcache.ppc.o $(FONTDPPC) gzip.ppc.o bzip2.ppc.o lzw.ppc.o
 	-@ ($(RANLIB) $@ || true) >/dev/null 2>&1
 
 #Local Variables:
