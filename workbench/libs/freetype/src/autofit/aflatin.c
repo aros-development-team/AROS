@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    Auto-fitter hinting routines for latin script (body).                */
 /*                                                                         */
-/*  Copyright 2003, 2004, 2005, 2006, 2007 by                              */
+/*  Copyright 2003-2013 by                                                 */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -16,13 +16,28 @@
 /***************************************************************************/
 
 
+#include <ft2build.h>
+#include FT_ADVANCES_H
+#include FT_INTERNAL_DEBUG_H
+
+#include "afglobal.h"
 #include "aflatin.h"
 #include "aferrors.h"
 
 
-#ifdef AF_USE_WARPER
+#ifdef AF_CONFIG_OPTION_USE_WARPER
 #include "afwarp.h"
 #endif
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
+  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
+  /* messages during execution.                                            */
+  /*                                                                       */
+#undef  FT_COMPONENT
+#define FT_COMPONENT  trace_aflatin
 
 
   /*************************************************************************/
@@ -33,14 +48,20 @@
   /*************************************************************************/
   /*************************************************************************/
 
+
+  /* Find segments and links, compute all stem widths, and initialize */
+  /* standard width and height for the glyph with given charcode.     */
+
   FT_LOCAL_DEF( void )
   af_latin_metrics_init_widths( AF_LatinMetrics  metrics,
-                                FT_Face          face,
-                                FT_ULong         charcode )
+                                FT_Face          face )
   {
     /* scan the array of segments in each direction */
     AF_GlyphHintsRec  hints[1];
 
+
+    FT_TRACE5(( "standard widths computation\n"
+                "===========================\n\n" ));
 
     af_glyph_hints_init( hints, face->memory );
 
@@ -48,16 +69,20 @@
     metrics->axis[AF_DIMENSION_VERT].width_count = 0;
 
     {
-      FT_Error             error;
-      FT_UInt              glyph_index;
-      int                  dim;
-      AF_LatinMetricsRec   dummy[1];
-      AF_Scaler            scaler = &dummy->root.scaler;
+      FT_Error            error;
+      FT_UInt             glyph_index;
+      int                 dim;
+      AF_LatinMetricsRec  dummy[1];
+      AF_Scaler           scaler = &dummy->root.scaler;
 
 
-      glyph_index = FT_Get_Char_Index( face, charcode );
+      glyph_index = FT_Get_Char_Index( face,
+                                       metrics->root.clazz->standard_char );
       if ( glyph_index == 0 )
         goto Exit;
+
+      FT_TRACE5(( "standard character: 0x%X (glyph index %d)\n",
+                  metrics->root.clazz->standard_char, glyph_index ));
 
       error = FT_Load_Glyph( face, glyph_index, FT_LOAD_NO_SCALE );
       if ( error || face->glyph->outline.n_points <= 0 )
@@ -66,15 +91,19 @@
       FT_ZERO( dummy );
 
       dummy->units_per_em = metrics->units_per_em;
-      scaler->x_scale     = scaler->y_scale = 0x10000L;
-      scaler->x_delta     = scaler->y_delta = 0;
+
+      scaler->x_scale = 0x10000L;
+      scaler->y_scale = 0x10000L;
+      scaler->x_delta = 0;
+      scaler->y_delta = 0;
+
       scaler->face        = face;
       scaler->render_mode = FT_RENDER_MODE_NORMAL;
       scaler->flags       = 0;
 
       af_glyph_hints_rescale( hints, (AF_ScriptMetrics)dummy );
 
-      error = af_glyph_hints_reload( hints, &face->glyph->outline, 0 );
+      error = af_glyph_hints_reload( hints, &face->glyph->outline );
       if ( error )
         goto Exit;
 
@@ -112,11 +141,14 @@
               dist = -dist;
 
             if ( num_widths < AF_LATIN_MAX_WIDTHS )
-              axis->widths[ num_widths++ ].org = dist;
+              axis->widths[num_widths++].org = dist;
           }
         }
 
-        af_sort_widths( num_widths, axis->widths );
+        /* this also replaces multiple almost identical stem widths */
+        /* with a single one (the value 100 is heuristic) */
+        af_sort_and_quantize_widths( &num_widths, axis->widths,
+                                     dummy->units_per_em / 100 );
         axis->width_count = num_widths;
       }
 
@@ -135,8 +167,27 @@
         axis->edge_distance_threshold = stdw / 5;
         axis->standard_width          = stdw;
         axis->extra_light             = 0;
+
+#ifdef FT_DEBUG_LEVEL_TRACE
+        {
+          FT_UInt  i;
+
+
+          FT_TRACE5(( "%s widths:\n",
+                      dim == AF_DIMENSION_VERT ? "horizontal"
+                                               : "vertical" ));
+
+          FT_TRACE5(( "  %d (standard)", axis->standard_width ));
+          for ( i = 1; i < axis->width_count; i++ )
+            FT_TRACE5(( " %d", axis->widths[i].org ));
+
+          FT_TRACE5(( "\n" ));
+        }
+#endif
       }
     }
+
+    FT_TRACE5(( "\n" ));
 
     af_glyph_hints_done( hints );
   }
@@ -146,7 +197,8 @@
 #define AF_LATIN_MAX_TEST_CHARACTERS  12
 
 
-  static const char* const  af_latin_blue_chars[AF_LATIN_MAX_BLUES] =
+  static const char af_latin_blue_chars[AF_LATIN_MAX_BLUES]
+                                       [AF_LATIN_MAX_TEST_CHARACTERS + 1] =
   {
     "THEZOCQS",
     "HEZLOCUS",
@@ -156,6 +208,9 @@
     "pqgjy"
   };
 
+
+  /* Find all blue zones.  Flat segments give the reference points, */
+  /* round segments the overshoot positions.                        */
 
   static void
   af_latin_metrics_init_blues( AF_LatinMetrics  metrics,
@@ -169,15 +224,15 @@
     AF_LatinBlue  blue;
     FT_Error      error;
     AF_LatinAxis  axis  = &metrics->axis[AF_DIMENSION_VERT];
-    FT_GlyphSlot  glyph = face->glyph;
+    FT_Outline    outline;
 
 
     /* we compute the blues simply by loading each character from the    */
-    /* 'af_latin_blue_chars[blues]' string, then compute its top-most or */
+    /* `af_latin_blue_chars[blues]' string, then finding its top-most or */
     /* bottom-most points (depending on `AF_IS_TOP_BLUE')                */
 
-    AF_LOG(( "blue zones computation\n" ));
-    AF_LOG(( "------------------------------------------------\n" ));
+    FT_TRACE5(( "blue zones computation\n"
+                "======================\n\n" ));
 
     for ( bb = 0; bb < AF_LATIN_BLUE_MAX; bb++ )
     {
@@ -187,7 +242,7 @@
       FT_Pos*      blue_shoot;
 
 
-      AF_LOG(( "blue %3d: ", bb ));
+      FT_TRACE5(( "blue zone %d:\n", bb ));
 
       num_flats  = 0;
       num_rounds = 0;
@@ -195,28 +250,28 @@
       for ( ; p < limit && *p; p++ )
       {
         FT_UInt     glyph_index;
-        FT_Int      best_point, best_y, best_first, best_last;
+        FT_Pos      best_y;                            /* same as points.y */
+        FT_Int      best_point, best_contour_first, best_contour_last;
         FT_Vector*  points;
         FT_Bool     round = 0;
 
-
-        AF_LOG(( "'%c'", *p ));
 
         /* load the character in the face -- skip unknown or empty ones */
         glyph_index = FT_Get_Char_Index( face, (FT_UInt)*p );
         if ( glyph_index == 0 )
           continue;
 
-        error = FT_Load_Glyph( face, glyph_index, FT_LOAD_NO_SCALE );
-        if ( error || glyph->outline.n_points <= 0 )
+        error   = FT_Load_Glyph( face, glyph_index, FT_LOAD_NO_SCALE );
+        outline = face->glyph->outline;
+        if ( error || outline.n_points <= 0 )
           continue;
 
         /* now compute min or max point indices and coordinates */
-        points      = glyph->outline.points;
-        best_point  = -1;
-        best_y      = 0;  /* make compiler happy */
-        best_first  = 0;  /* ditto */
-        best_last   = 0;  /* ditto */
+        points             = outline.points;
+        best_point         = -1;
+        best_y             = 0;  /* make compiler happy */
+        best_contour_first = 0;  /* ditto */
+        best_contour_last  = 0;  /* ditto */
 
         {
           FT_Int  nn;
@@ -224,19 +279,19 @@
           FT_Int  last  = -1;
 
 
-          for ( nn = 0; nn < glyph->outline.n_contours; first = last+1, nn++ )
+          for ( nn = 0; nn < outline.n_contours; first = last + 1, nn++ )
           {
             FT_Int  old_best_point = best_point;
             FT_Int  pp;
 
 
-            last = glyph->outline.contours[nn];
+            last = outline.contours[nn];
 
             /* Avoid single-point contours since they are never rasterized. */
             /* In some fonts, they correspond to mark attachment points     */
             /* which are way outside of the glyph's real outline.           */
             if ( last <= first )
-                continue;
+              continue;
 
             if ( AF_LATIN_IS_TOP_BLUE( bb ) )
             {
@@ -259,11 +314,11 @@
 
             if ( best_point != old_best_point )
             {
-              best_first = first;
-              best_last  = last;
+              best_contour_first = first;
+              best_contour_last  = last;
             }
           }
-          AF_LOG(( "%5d", best_y ));
+          FT_TRACE5(( "  %c  %ld", *p, best_y ));
         }
 
         /* now check whether the point belongs to a straight or round   */
@@ -271,47 +326,86 @@
         /* lies, then inspect its previous and next points              */
         if ( best_point >= 0 )
         {
+          FT_Pos  best_x = points[best_point].x;
           FT_Int  prev, next;
+          FT_Int  best_on_point_first, best_on_point_last;
           FT_Pos  dist;
 
 
-          /* now look for the previous and next points that are not on the */
-          /* same Y coordinate.  Threshold the `closeness'...              */
+          if ( FT_CURVE_TAG( outline.tags[best_point] ) == FT_CURVE_TAG_ON )
+          {
+            best_on_point_first = best_point;
+            best_on_point_last  = best_point;
+          }
+          else
+          {
+            best_on_point_first = -1;
+            best_on_point_last  = -1;
+          }
+
+          /* look for the previous and next points that are not on the */
+          /* same Y coordinate, then threshold the `closeness'...      */
           prev = best_point;
           next = prev;
 
           do
           {
-            if ( prev > best_first )
+            if ( prev > best_contour_first )
               prev--;
             else
-              prev = best_last;
+              prev = best_contour_last;
 
-            dist = points[prev].y - best_y;
-            if ( dist < -5 || dist > 5 )
-              break;
+            dist = FT_ABS( points[prev].y - best_y );
+            /* accept a small distance or a small angle (both values are */
+            /* heuristic; value 20 corresponds to approx. 2.9 degrees)   */
+            if ( dist > 5 )
+              if ( FT_ABS( points[prev].x - best_x ) <= 20 * dist )
+                break;
+
+            if ( FT_CURVE_TAG( outline.tags[prev] ) == FT_CURVE_TAG_ON )
+            {
+              best_on_point_first = prev;
+              if ( best_on_point_last < 0 )
+                best_on_point_last = prev;
+            }
 
           } while ( prev != best_point );
 
           do
           {
-            if ( next < best_last )
+            if ( next < best_contour_last )
               next++;
             else
-              next = best_first;
+              next = best_contour_first;
 
-            dist = points[next].y - best_y;
-            if ( dist < -5 || dist > 5 )
-              break;
+            dist = FT_ABS( points[next].y - best_y );
+            if ( dist > 5 )
+              if ( FT_ABS( points[next].x - best_x ) <= 20 * dist )
+                break;
+
+            if ( FT_CURVE_TAG( outline.tags[next] ) == FT_CURVE_TAG_ON )
+            {
+              best_on_point_last = next;
+              if ( best_on_point_first < 0 )
+                best_on_point_first = next;
+            }
 
           } while ( next != best_point );
 
-          /* now, set the `round' flag depending on the segment's kind */
-          round = FT_BOOL(
-            FT_CURVE_TAG( glyph->outline.tags[prev] ) != FT_CURVE_TAG_ON ||
-            FT_CURVE_TAG( glyph->outline.tags[next] ) != FT_CURVE_TAG_ON );
+          /* now set the `round' flag depending on the segment's kind */
+          /* (value 8 is heuristic)                                   */
+          if ( best_on_point_first >= 0                               &&
+               best_on_point_last >= 0                                &&
+               (FT_UInt)( FT_ABS( points[best_on_point_last].x -
+                                  points[best_on_point_first].x ) ) >
+                 metrics->units_per_em / 8                            )
+            round = 0;
+          else
+            round = FT_BOOL(
+              FT_CURVE_TAG( outline.tags[prev] ) != FT_CURVE_TAG_ON ||
+              FT_CURVE_TAG( outline.tags[next] ) != FT_CURVE_TAG_ON );
 
-          AF_LOG(( "%c ", round ? 'r' : 'f' ));
+          FT_TRACE5(( " (%s)\n", round ? "round" : "flat" ));
         }
 
         if ( round )
@@ -320,15 +414,13 @@
           flats[num_flats++]   = best_y;
       }
 
-      AF_LOG(( "\n" ));
-
       if ( num_flats == 0 && num_rounds == 0 )
       {
         /*
          *  we couldn't find a single glyph to compute this blue zone,
          *  we will simply ignore it then
          */
-        AF_LOG(( "empty!\n" ));
+        FT_TRACE5(( "  empty\n" ));
         continue;
       }
 
@@ -338,9 +430,9 @@
       af_sort_pos( num_rounds, rounds );
       af_sort_pos( num_flats,  flats );
 
-      blue       = & axis->blues[axis->blue_count];
-      blue_ref   = & blue->ref.org;
-      blue_shoot = & blue->shoot.org;
+      blue       = &axis->blues[axis->blue_count];
+      blue_ref   = &blue->ref.org;
+      blue_shoot = &blue->shoot.org;
 
       axis->blue_count++;
 
@@ -371,7 +463,13 @@
 
 
         if ( AF_LATIN_IS_TOP_BLUE( bb ) ^ over_ref )
-          *blue_shoot = *blue_ref = ( shoot + ref ) / 2;
+        {
+          *blue_ref   =
+          *blue_shoot = ( shoot + ref ) / 2;
+
+          FT_TRACE5(( "  [overshoot smaller than reference,"
+                      " taking mean value]\n" ));
+        }
       }
 
       blue->flags = 0;
@@ -379,59 +477,96 @@
         blue->flags |= AF_LATIN_BLUE_TOP;
 
       /*
-       * The following flags is used later to adjust the y and x scales
+       * The following flag is used later to adjust the y and x scales
        * in order to optimize the pixel grid alignment of the top of small
        * letters.
        */
       if ( bb == AF_LATIN_BLUE_SMALL_TOP )
         blue->flags |= AF_LATIN_BLUE_ADJUSTMENT;
 
-      AF_LOG(( "-- ref = %ld, shoot = %ld\n", *blue_ref, *blue_shoot ));
+      FT_TRACE5(( "    -> reference = %ld\n"
+                  "       overshoot = %ld\n",
+                  *blue_ref, *blue_shoot ));
     }
+
+    FT_TRACE5(( "\n" ));
 
     return;
   }
 
 
+  /* Check whether all ASCII digits have the same advance width. */
+
+  FT_LOCAL_DEF( void )
+  af_latin_metrics_check_digits( AF_LatinMetrics  metrics,
+                                 FT_Face          face )
+  {
+    FT_UInt   i;
+    FT_Bool   started = 0, same_width = 1;
+    FT_Fixed  advance, old_advance = 0;
+
+
+    /* digit `0' is 0x30 in all supported charmaps */
+    for ( i = 0x30; i <= 0x39; i++ )
+    {
+      FT_UInt  glyph_index;
+
+
+      glyph_index = FT_Get_Char_Index( face, i );
+      if ( glyph_index == 0 )
+        continue;
+
+      if ( FT_Get_Advance( face, glyph_index,
+                           FT_LOAD_NO_SCALE         |
+                           FT_LOAD_NO_HINTING       |
+                           FT_LOAD_IGNORE_TRANSFORM,
+                           &advance ) )
+        continue;
+
+      if ( started )
+      {
+        if ( advance != old_advance )
+        {
+          same_width = 0;
+          break;
+        }
+      }
+      else
+      {
+        old_advance = advance;
+        started     = 1;
+      }
+    }
+
+    metrics->root.digits_have_same_width = same_width;
+  }
+
+
+  /* Initialize global metrics. */
+
   FT_LOCAL_DEF( FT_Error )
   af_latin_metrics_init( AF_LatinMetrics  metrics,
                          FT_Face          face )
   {
-    FT_Error    error = AF_Err_Ok;
     FT_CharMap  oldmap = face->charmap;
-    FT_UInt     ee;
-
-    static const FT_Encoding  latin_encodings[] =
-    {
-      FT_ENCODING_UNICODE,
-      FT_ENCODING_APPLE_ROMAN,
-      FT_ENCODING_ADOBE_STANDARD,
-      FT_ENCODING_ADOBE_LATIN_1,
-      FT_ENCODING_NONE  /* end of list */
-    };
 
 
     metrics->units_per_em = face->units_per_EM;
 
-    /* do we have a latin charmap in there? */
-    for ( ee = 0; latin_encodings[ee] != FT_ENCODING_NONE; ee++ )
+    if ( !FT_Select_Charmap( face, FT_ENCODING_UNICODE ) )
     {
-      error = FT_Select_Charmap( face, latin_encodings[ee] );
-      if ( !error )
-        break;
-    }
-
-    if ( !error )
-    {
-      /* For now, compute the standard width and height from the `o'. */
-      af_latin_metrics_init_widths( metrics, face, 'o' );
+      af_latin_metrics_init_widths( metrics, face );
       af_latin_metrics_init_blues( metrics, face );
+      af_latin_metrics_check_digits( metrics, face );
     }
 
     FT_Set_Charmap( face, oldmap );
-    return AF_Err_Ok;
+    return FT_Err_Ok;
   }
 
+
+  /* Adjust scaling value, then scale and shift widths   */
+  /* and blue zones (if applicable) for given dimension. */
 
   static void
   af_latin_metrics_scale_dim( AF_LatinMetrics  metrics,
@@ -483,9 +618,26 @@
 
       if ( blue )
       {
-        FT_Pos  scaled = FT_MulFix( blue->shoot.org, scaler->y_scale );
-        FT_Pos  fitted = ( scaled + 40 ) & ~63;
+        FT_Pos   scaled;
+        FT_Pos   threshold;
+        FT_Pos   fitted;
+        FT_UInt  limit;
+        FT_UInt  ppem;
 
+
+        scaled    = FT_MulFix( blue->shoot.org, scaler->y_scale );
+        ppem      = metrics->root.scaler.face->size->metrics.x_ppem;
+        limit     = metrics->root.globals->increase_x_height;
+        threshold = 40;
+
+        /* if the `increase-x-height' property is active, */
+        /* we round up much more often                    */
+        if ( limit                                 &&
+             ppem <= limit                         &&
+             ppem >= AF_PROP_INCREASE_X_HEIGHT_MIN )
+          threshold = 52;
+
+        fitted = ( scaled + threshold ) & ~63;
 
         if ( scaled != fitted )
         {
@@ -498,9 +650,7 @@
           else
 #endif
           if ( dim == AF_DIMENSION_VERT )
-          {
             scale = FT_MulDiv( scale, fitted, scaled );
-          }
         }
       }
     }
@@ -519,7 +669,7 @@
       metrics->root.scaler.y_delta = delta;
     }
 
-    /* scale the standard widths */
+    /* scale the widths */
     for ( nn = 0; nn < axis->width_count; nn++ )
     {
       AF_Width  width = axis->widths + nn;
@@ -530,7 +680,7 @@
     }
 
     /* an extra-light axis corresponds to a standard width that is */
-    /* smaller than 0.75 pixels                                    */
+    /* smaller than 5/8 pixels                                     */
     axis->extra_light =
       (FT_Bool)( FT_MulFix( axis->standard_width, scale ) < 32 + 8 );
 
@@ -553,9 +703,17 @@
         dist = FT_MulFix( blue->ref.org - blue->shoot.org, scale );
         if ( dist <= 48 && dist >= -48 )
         {
-          FT_Pos  delta1, delta2;
+#if 0
+          FT_Pos  delta1;
+#endif
+          FT_Pos  delta2;
 
 
+          /* use discrete values for blue zone widths */
+
+#if 0
+
+          /* generic, original code */
           delta1 = blue->shoot.org - blue->ref.org;
           delta2 = delta1;
           if ( delta1 < 0 )
@@ -576,6 +734,28 @@
           blue->ref.fit   = FT_PIX_ROUND( blue->ref.cur );
           blue->shoot.fit = blue->ref.fit + delta2;
 
+#else
+
+          /* simplified version due to abs(dist) <= 48 */
+          delta2 = dist;
+          if ( dist < 0 )
+            delta2 = -delta2;
+
+          if ( delta2 < 32 )
+            delta2 = 0;
+          else if ( delta2 < 48 )
+            delta2 = 32;
+          else
+            delta2 = 64;
+
+          if ( dist < 0 )
+            delta2 = -delta2;
+
+          blue->ref.fit   = FT_PIX_ROUND( blue->ref.cur );
+          blue->shoot.fit = blue->ref.fit - delta2;
+
+#endif
+
           blue->flags |= AF_LATIN_BLUE_ACTIVE;
         }
       }
@@ -583,12 +763,15 @@
   }
 
 
+  /* Scale global values in both directions. */
+
   FT_LOCAL_DEF( void )
   af_latin_metrics_scale( AF_LatinMetrics  metrics,
                           AF_Scaler        scaler )
   {
     metrics->root.scaler.render_mode = scaler->render_mode;
     metrics->root.scaler.face        = scaler->face;
+    metrics->root.scaler.flags       = scaler->flags;
 
     af_latin_metrics_scale_dim( metrics, scaler, AF_DIMENSION_HORZ );
     af_latin_metrics_scale_dim( metrics, scaler, AF_DIMENSION_VERT );
@@ -603,18 +786,21 @@
   /*************************************************************************/
   /*************************************************************************/
 
+
+  /* Walk over all contours and compute its segments. */
+
   FT_LOCAL_DEF( FT_Error )
   af_latin_hints_compute_segments( AF_GlyphHints  hints,
                                    AF_Dimension   dim )
   {
-    AF_AxisHints  axis          = &hints->axis[dim];
-    FT_Memory     memory        = hints->memory;
-    FT_Error      error         = AF_Err_Ok;
-    AF_Segment    segment       = NULL;
-    AF_SegmentRec seg0;
-    AF_Point*     contour       = hints->contours;
-    AF_Point*     contour_limit = contour + hints->num_contours;
-    AF_Direction  major_dir, segment_dir;
+    AF_AxisHints   axis          = &hints->axis[dim];
+    FT_Memory      memory        = hints->memory;
+    FT_Error       error         = FT_Err_Ok;
+    AF_Segment     segment       = NULL;
+    AF_SegmentRec  seg0;
+    AF_Point*      contour       = hints->contours;
+    AF_Point*      contour_limit = contour + hints->num_contours;
+    AF_Direction   major_dir, segment_dir;
 
 
     FT_ZERO( &seg0 );
@@ -710,7 +896,7 @@
             /* a segment is round if either its first or last point */
             /* is a control point                                   */
             if ( ( segment->first->flags | point->flags ) &
-                   AF_FLAG_CONTROL                        )
+                 AF_FLAG_CONTROL                          )
               segment->flags |= AF_EDGE_ROUND;
 
             /* compute segment size */
@@ -729,7 +915,7 @@
 
             on_edge = 0;
             segment = NULL;
-            /* fallthrough */
+            /* fall through */
           }
         }
 
@@ -756,7 +942,6 @@
           min_pos = max_pos = point->u;
           segment->first    = point;
           segment->last     = point;
-          segment->contour  = contour;
           on_edge           = 1;
         }
 
@@ -766,8 +951,8 @@
     } /* contours */
 
 
-    /* now slightly increase the height of segments when this makes */
-    /* sense -- this is used to better detect and ignore serifs     */
+    /* now slightly increase the height of segments if this makes */
+    /* sense -- this is used to better detect and ignore serifs   */
     {
       AF_Segment  segments     = axis->segments;
       AF_Segment  segments_end = segments + axis->num_segments;
@@ -822,6 +1007,8 @@
   }
 
 
+  /* Link segments to form stems and serifs. */
+
   FT_LOCAL_DEF( void )
   af_latin_hints_link_segments( AF_GlyphHints  hints,
                                 AF_Dimension   dim )
@@ -847,51 +1034,56 @@
       if ( seg1->dir != axis->major_dir || seg1->first == seg1->last )
         continue;
 
+      /* search for stems having opposite directions, */
+      /* with seg1 to the `left' of seg2              */
       for ( seg2 = segments; seg2 < segment_limit; seg2++ )
-        if ( seg1->dir + seg2->dir == 0 && seg2->pos > seg1->pos )
+      {
+        FT_Pos  pos1 = seg1->pos;
+        FT_Pos  pos2 = seg2->pos;
+
+
+        if ( seg1->dir + seg2->dir == 0 && pos2 > pos1 )
         {
-          FT_Pos  pos1 = seg1->pos;
-          FT_Pos  pos2 = seg2->pos;
+          /* compute distance between the two segments */
           FT_Pos  dist = pos2 - pos1;
+          FT_Pos  min  = seg1->min_coord;
+          FT_Pos  max  = seg1->max_coord;
+          FT_Pos  len, score;
 
 
-          if ( dist < 0 )
-            dist = -dist;
+          if ( min < seg2->min_coord )
+            min = seg2->min_coord;
 
+          if ( max > seg2->max_coord )
+            max = seg2->max_coord;
+
+          /* compute maximum coordinate difference of the two segments */
+          len = max - min;
+          if ( len >= len_threshold )
           {
-            FT_Pos  min = seg1->min_coord;
-            FT_Pos  max = seg1->max_coord;
-            FT_Pos  len, score;
+            /* small coordinate differences cause a higher score, and     */
+            /* segments with a greater distance cause a higher score also */
+            score = dist + len_score / len;
 
-
-            if ( min < seg2->min_coord )
-              min = seg2->min_coord;
-
-            if ( max > seg2->max_coord )
-              max = seg2->max_coord;
-
-            len = max - min;
-            if ( len >= len_threshold )
+            /* and we search for the smallest score */
+            /* of the sum of the two values         */
+            if ( score < seg1->score )
             {
-              score = dist + len_score / len;
+              seg1->score = score;
+              seg1->link  = seg2;
+            }
 
-              if ( score < seg1->score )
-              {
-                seg1->score = score;
-                seg1->link  = seg2;
-              }
-
-              if ( score < seg2->score )
-              {
-                seg2->score = score;
-                seg2->link  = seg1;
-              }
+            if ( score < seg2->score )
+            {
+              seg2->score = score;
+              seg2->link  = seg1;
             }
           }
         }
+      }
     }
 
-    /* now, compute the `serif' segments */
+    /* now compute the `serif' segments, cf. explanations in `afhints.h' */
     for ( seg1 = segments; seg1 < segment_limit; seg1++ )
     {
       seg2 = seg1->link;
@@ -908,12 +1100,14 @@
   }
 
 
+  /* Link segments to edges, using feature analysis for selection. */
+
   FT_LOCAL_DEF( FT_Error )
   af_latin_hints_compute_edges( AF_GlyphHints  hints,
                                 AF_Dimension   dim )
   {
     AF_AxisHints  axis   = &hints->axis[dim];
-    FT_Error      error  = AF_Err_Ok;
+    FT_Error      error  = FT_Err_Ok;
     FT_Memory     memory = hints->memory;
     AF_LatinAxis  laxis  = &((AF_LatinMetrics)hints->metrics)->axis[dim];
 
@@ -921,7 +1115,9 @@
     AF_Segment    segment_limit = segments + axis->num_segments;
     AF_Segment    seg;
 
+#if 0
     AF_Direction  up_dir;
+#endif
     FT_Fixed      scale;
     FT_Pos        edge_distance_threshold;
     FT_Pos        segment_length_threshold;
@@ -932,11 +1128,13 @@
     scale = ( dim == AF_DIMENSION_HORZ ) ? hints->x_scale
                                          : hints->y_scale;
 
+#if 0
     up_dir = ( dim == AF_DIMENSION_HORZ ) ? AF_DIR_UP
                                           : AF_DIR_RIGHT;
+#endif
 
     /*
-     *  We ignore all segments that are less than 1 pixels in length,
+     *  We ignore all segments that are less than 1 pixel in length
      *  to avoid many problems with serif fonts.  We compute the
      *  corresponding threshold in font units.
      */
@@ -947,20 +1145,21 @@
 
     /*********************************************************************/
     /*                                                                   */
-    /* We will begin by generating a sorted table of edges for the       */
-    /* current direction.  To do so, we simply scan each segment and try */
-    /* to find an edge in our table that corresponds to its position.    */
+    /* We begin by generating a sorted table of edges for the current    */
+    /* direction.  To do so, we simply scan each segment and try to find */
+    /* an edge in our table that corresponds to its position.            */
     /*                                                                   */
     /* If no edge is found, we create and insert a new edge in the       */
     /* sorted table.  Otherwise, we simply add the segment to the edge's */
-    /* list which will be processed in the second step to compute the    */
+    /* list which gets processed in the second step to compute the       */
     /* edge's properties.                                                */
     /*                                                                   */
-    /* Note that the edges table is sorted along the segment/edge        */
+    /* Note that the table of edges is sorted along the segment/edge     */
     /* position.                                                         */
     /*                                                                   */
     /*********************************************************************/
 
+    /* assure that edge distance threshold is at most 0.25px */
     edge_distance_threshold = FT_MulFix( laxis->edge_distance_threshold,
                                          scale );
     if ( edge_distance_threshold > 64 / 4 )
@@ -971,7 +1170,7 @@
 
     for ( seg = segments; seg < segment_limit; seg++ )
     {
-      AF_Edge  found = 0;
+      AF_Edge  found = NULL;
       FT_Int   ee;
 
 
@@ -1020,9 +1219,10 @@
 
         edge->first    = seg;
         edge->last     = seg;
-        edge->fpos     = seg->pos;
         edge->dir      = seg->dir;
-        edge->opos     = edge->pos = FT_MulFix( seg->pos, scale );
+        edge->fpos     = seg->pos;
+        edge->opos     = FT_MulFix( seg->pos, scale );
+        edge->pos      = edge->opos;
         seg->edge_next = seg;
       }
       else
@@ -1036,17 +1236,17 @@
     }
 
 
-    /*********************************************************************/
-    /*                                                                   */
-    /* Good, we will now compute each edge's properties according to     */
-    /* segments found on its position.  Basically, these are:            */
-    /*                                                                   */
-    /*  - edge's main direction                                          */
-    /*  - stem edge, serif edge or both (which defaults to stem then)    */
-    /*  - rounded edge, straight or both (which defaults to straight)    */
-    /*  - link for edge                                                  */
-    /*                                                                   */
-    /*********************************************************************/
+    /******************************************************************/
+    /*                                                                */
+    /* Good, we now compute each edge's properties according to the   */
+    /* segments found on its position.  Basically, these are          */
+    /*                                                                */
+    /*  - the edge's main direction                                   */
+    /*  - stem edge, serif edge or both (which defaults to stem then) */
+    /*  - rounded edge, straight or both (which defaults to straight) */
+    /*  - link for edge                                               */
+    /*                                                                */
+    /******************************************************************/
 
     /* first of all, set the `edge' field in each segment -- this is */
     /* required in order to compute edge links                       */
@@ -1074,13 +1274,15 @@
           } while ( seg != edge->first );
       }
 
-      /* now, compute each edge properties */
+      /* now compute each edge properties */
       for ( edge = edges; edge < edge_limit; edge++ )
       {
         FT_Int  is_round    = 0;  /* does it contain round segments?    */
         FT_Int  is_straight = 0;  /* does it contain straight segments? */
+#if 0
         FT_Pos  ups         = 0;  /* number of upwards segments         */
         FT_Pos  downs       = 0;  /* number of downwards segments       */
+#endif
 
 
         seg = edge->first;
@@ -1096,11 +1298,13 @@
           else
             is_straight++;
 
+#if 0
           /* check for segment direction */
           if ( seg->dir == up_dir )
-            ups   += seg->max_coord-seg->min_coord;
+            ups   += seg->max_coord - seg->min_coord;
           else
-            downs += seg->max_coord-seg->min_coord;
+            downs += seg->max_coord - seg->min_coord;
+#endif
 
           /* check for links -- if seg->serif is set, then seg->link must */
           /* be ignored                                                   */
@@ -1176,7 +1380,7 @@
           edge->dir = 0;  /* both up and down! */
 #endif
 
-        /* gets rid of serifs if link is set                */
+        /* get rid of serifs if link is set                 */
         /* XXX: This gets rid of many unpleasant artefacts! */
         /*      Example: the `c' in cour.pfa at size 13     */
 
@@ -1189,6 +1393,8 @@
     return error;
   }
 
+
+  /* Detect segments and edges for given dimension. */
 
   FT_LOCAL_DEF( FT_Error )
   af_latin_hints_detect_features( AF_GlyphHints  hints,
@@ -1204,18 +1410,21 @@
 
       error = af_latin_hints_compute_edges( hints, dim );
     }
+
     return error;
   }
 
+
+  /* Compute all edges which lie within blue zones. */
 
   FT_LOCAL_DEF( void )
   af_latin_hints_compute_blue_edges( AF_GlyphHints    hints,
                                      AF_LatinMetrics  metrics )
   {
-    AF_AxisHints  axis       = &hints->axis[ AF_DIMENSION_VERT ];
+    AF_AxisHints  axis       = &hints->axis[AF_DIMENSION_VERT];
     AF_Edge       edge       = axis->edges;
     AF_Edge       edge_limit = edge + axis->num_edges;
-    AF_LatinAxis  latin      = &metrics->axis[ AF_DIMENSION_VERT ];
+    AF_LatinAxis  latin      = &metrics->axis[AF_DIMENSION_VERT];
     FT_Fixed      scale      = latin->scale;
 
 
@@ -1225,24 +1434,26 @@
     /* for each horizontal edge search the blue zone which is closest */
     for ( ; edge < edge_limit; edge++ )
     {
-      FT_Int    bb;
+      FT_UInt   bb;
       AF_Width  best_blue = NULL;
       FT_Pos    best_dist;  /* initial threshold */
 
 
       /* compute the initial threshold as a fraction of the EM size */
+      /* (the value 40 is heuristic)                                */
       best_dist = FT_MulFix( metrics->units_per_em / 40, scale );
 
+      /* assure a minimum distance of 0.5px */
       if ( best_dist > 64 / 2 )
         best_dist = 64 / 2;
 
-      for ( bb = 0; bb < AF_LATIN_BLUE_MAX; bb++ )
+      for ( bb = 0; bb < latin->blue_count; bb++ )
       {
         AF_LatinBlue  blue = latin->blues + bb;
         FT_Bool       is_top_blue, is_major_dir;
 
 
-        /* skip inactive blue zones (i.e., those that are too small) */
+        /* skip inactive blue zones (i.e., those that are too large) */
         if ( !( blue->flags & AF_LATIN_BLUE_ACTIVE ) )
           continue;
 
@@ -1270,12 +1481,13 @@
           if ( dist < best_dist )
           {
             best_dist = dist;
-            best_blue = & blue->ref;
+            best_blue = &blue->ref;
           }
 
-          /* now, compare it to the overshoot position if the edge is     */
-          /* rounded, and if the edge is over the reference position of a */
-          /* top zone, or under the reference position of a bottom zone   */
+          /* now compare it to the overshoot position and check whether */
+          /* the edge is rounded, and whether the edge is over the      */
+          /* reference position of a top zone, or under the reference   */
+          /* position of a bottom zone                                  */
           if ( edge->flags & AF_EDGE_ROUND && dist != 0 )
           {
             FT_Bool  is_under_ref = FT_BOOL( edge->fpos < blue->ref.org );
@@ -1283,7 +1495,6 @@
 
             if ( is_top_blue ^ is_under_ref )
             {
-              blue = latin->blues + bb;
               dist = edge->fpos - blue->shoot.org;
               if ( dist < 0 )
                 dist = -dist;
@@ -1292,7 +1503,7 @@
               if ( dist < best_dist )
               {
                 best_dist = dist;
-                best_blue = & blue->shoot;
+                best_blue = &blue->shoot;
               }
             }
           }
@@ -1304,6 +1515,8 @@
     }
   }
 
+
+  /* Initalize hinting engine. */
 
   static FT_Error
   af_latin_hints_init( AF_GlyphHints    hints,
@@ -1318,7 +1531,7 @@
 
     /*
      *  correct x_scale and y_scale if needed, since they may have
-     *  been modified `af_latin_metrics_scale_dim' above
+     *  been modified by `af_latin_metrics_scale_dim' above
      */
     hints->x_scale = metrics->axis[AF_DIMENSION_HORZ].scale;
     hints->x_delta = metrics->axis[AF_DIMENSION_HORZ].delta;
@@ -1328,11 +1541,9 @@
     /* compute flags depending on render mode, etc. */
     mode = metrics->root.scaler.render_mode;
 
-#if 0 /* #ifdef AF_USE_WARPER */
+#if 0 /* #ifdef AF_CONFIG_OPTION_USE_WARPER */
     if ( mode == FT_RENDER_MODE_LCD || mode == FT_RENDER_MODE_LCD_V )
-    {
       metrics->root.scaler.render_mode = mode = FT_RENDER_MODE_NORMAL;
-    }
 #endif
 
     scaler_flags = hints->scaler_flags;
@@ -1365,14 +1576,14 @@
      *  In `light' hinting mode we disable horizontal hinting completely.
      *  We also do it if the face is italic.
      */
-    if ( mode == FT_RENDER_MODE_LIGHT                    ||
-         (face->style_flags & FT_STYLE_FLAG_ITALIC) != 0 )
+    if ( mode == FT_RENDER_MODE_LIGHT                      ||
+         ( face->style_flags & FT_STYLE_FLAG_ITALIC ) != 0 )
       scaler_flags |= AF_SCALER_FLAG_NO_HORIZONTAL;
 
     hints->scaler_flags = scaler_flags;
     hints->other_flags  = other_flags;
 
-    return 0;
+    return FT_Err_Ok;
   }
 
 
@@ -1384,8 +1595,8 @@
   /*************************************************************************/
   /*************************************************************************/
 
-  /* snap a given width in scaled coordinates to one of the */
-  /* current standard widths                                */
+  /* Snap a given width in scaled coordinates to one of the */
+  /* current standard widths.                               */
 
   static FT_Pos
   af_latin_snap_width( AF_Width  widths,
@@ -1432,7 +1643,9 @@
   }
 
 
-  /* compute the snapped width of a given stem */
+  /* Compute the snapped width of a given stem, ignoring very thin ones. */
+  /* There is a lot of voodoo in this function; changing the hard-coded  */
+  /* parameters influence the whole hinting process.                     */
 
   static FT_Pos
   af_latin_compute_stem_width( AF_GlyphHints  hints,
@@ -1449,7 +1662,7 @@
 
 
     if ( !AF_LATIN_HINTS_DO_STEM_ADJUST( hints ) ||
-          axis->extra_light                      )
+         axis->extra_light                       )
       return width;
 
     if ( dist < 0 )
@@ -1464,11 +1677,12 @@
       /* smooth hinting process: very lightly quantize the stem width */
 
       /* leave the widths of serifs alone */
-
-      if ( ( stem_flags & AF_EDGE_SERIF ) && vertical && ( dist < 3 * 64 ) )
+      if ( ( stem_flags & AF_EDGE_SERIF ) &&
+           vertical                       &&
+           ( dist < 3 * 64 )              )
         goto Done_Width;
 
-      else if ( ( base_flags & AF_EDGE_ROUND ) )
+      else if ( base_flags & AF_EDGE_ROUND )
       {
         if ( dist < 80 )
           dist = 64;
@@ -1482,21 +1696,18 @@
 
 
         /* compare to standard width */
-        if ( axis->width_count > 0 )
+        delta = dist - axis->widths[0].cur;
+
+        if ( delta < 0 )
+          delta = -delta;
+
+        if ( delta < 40 )
         {
-          delta = dist - axis->widths[0].cur;
+          dist = axis->widths[0].cur;
+          if ( dist < 48 )
+            dist = 48;
 
-          if ( delta < 0 )
-            delta = -delta;
-
-          if ( delta < 40 )
-          {
-            dist = axis->widths[0].cur;
-            if ( dist < 48 )
-              dist = 48;
-
-            goto Done_Width;
-          }
+          goto Done_Width;
         }
 
         if ( dist < 3 * 64 )
@@ -1523,6 +1734,7 @@
     else
     {
       /* strong hinting process: snap the stem width to integer pixels */
+
       FT_Pos  org_dist = dist;
 
 
@@ -1567,7 +1779,7 @@
             /* not hinted, appear a lot bolder or thinner than the    */
             /* vertical stems.                                        */
 
-            FT_Int  delta;
+            FT_Pos  delta;
 
 
             dist = ( dist + 22 ) & ~63;
@@ -1575,7 +1787,7 @@
             if ( delta < 0 )
               delta = -delta;
 
-            if (delta >= 16)
+            if ( delta >= 16 )
             {
               dist = org_dist;
               if ( dist < 48 )
@@ -1597,7 +1809,7 @@
   }
 
 
-  /* align one stem edge relative to the previous stem edge */
+  /* Align one stem edge relative to the previous stem edge. */
 
   static void
   af_latin_align_linked_edge( AF_GlyphHints  hints,
@@ -1615,12 +1827,15 @@
 
     stem_edge->pos = base_edge->pos + fitted_width;
 
-    AF_LOG(( "LINK: edge %d (opos=%.2f) linked to (%.2f), "
-             "dist was %.2f, now %.2f\n",
-             stem_edge-hints->axis[dim].edges, stem_edge->opos / 64.0,
-             stem_edge->pos / 64.0, dist / 64.0, fitted_width / 64.0 ));
+    FT_TRACE5(( "  LINK: edge %d (opos=%.2f) linked to %.2f,"
+                " dist was %.2f, now %.2f\n",
+                stem_edge-hints->axis[dim].edges, stem_edge->opos / 64.0,
+                stem_edge->pos / 64.0, dist / 64.0, fitted_width / 64.0 ));
   }
 
+
+  /* Shift the coordinates of the `serif' edge by the same amount */
+  /* as the corresponding `base' edge has been moved already.     */
 
   static void
   af_latin_align_serif_edge( AF_GlyphHints  hints,
@@ -1629,7 +1844,7 @@
   {
     FT_UNUSED( hints );
 
-    serif->pos = base->pos + (serif->opos - base->opos);
+    serif->pos = base->pos + ( serif->opos - base->opos );
   }
 
 
@@ -1644,6 +1859,8 @@
   /*************************************************************************/
 
 
+  /* The main grid-fitting routine. */
+
   FT_LOCAL_DEF( void )
   af_latin_hint_edges( AF_GlyphHints  hints,
                        AF_Dimension   dim )
@@ -1651,11 +1868,18 @@
     AF_AxisHints  axis       = &hints->axis[dim];
     AF_Edge       edges      = axis->edges;
     AF_Edge       edge_limit = edges + axis->num_edges;
-    FT_Int        n_edges;
+    FT_PtrDist    n_edges;
     AF_Edge       edge;
-    AF_Edge       anchor     = 0;
+    AF_Edge       anchor     = NULL;
     FT_Int        has_serifs = 0;
 
+#ifdef FT_DEBUG_LEVEL_TRACE
+    FT_UInt       num_actions = 0;
+#endif
+
+
+    FT_TRACE5(( "%s edge hinting\n",
+                dim == AF_DIMENSION_VERT ? "horizontal" : "vertical" ));
 
     /* we begin by aligning all stems relative to the blue zone */
     /* if needed -- that's only for horizontal edges            */
@@ -1665,7 +1889,7 @@
       for ( edge = edges; edge < edge_limit; edge++ )
       {
         AF_Width  blue;
-        AF_Edge   edge1, edge2;
+        AF_Edge   edge1, edge2; /* these edges form the stem to check */
 
 
         if ( edge->flags & AF_EDGE_DONE )
@@ -1676,9 +1900,9 @@
         edge2 = edge->link;
 
         if ( blue )
-        {
           edge1 = edge;
-        }
+
+        /* flip edges if the other stem is aligned to a blue zone */
         else if ( edge2 && edge2->blue_edge )
         {
           blue  = edge2->blue_edge;
@@ -1689,10 +1913,20 @@
         if ( !edge1 )
           continue;
 
-        AF_LOG(( "BLUE: edge %d (opos=%.2f) snapped to (%.2f), "
-                 "was (%.2f)\n",
-                 edge1-edges, edge1->opos / 64.0, blue->fit / 64.0,
-                 edge1->pos / 64.0 ));
+#ifdef FT_DEBUG_LEVEL_TRACE
+        if ( !anchor )
+          FT_TRACE5(( "  BLUE_ANCHOR: edge %d (opos=%.2f) snapped to %.2f,"
+                      " was %.2f (anchor=edge %d)\n",
+                      edge1 - edges, edge1->opos / 64.0, blue->fit / 64.0,
+                      edge1->pos / 64.0, edge - edges ));
+        else
+          FT_TRACE5(( "  BLUE: edge %d (opos=%.2f) snapped to %.2f,"
+                      " was %.2f\n",
+                      edge1 - edges, edge1->opos / 64.0, blue->fit / 64.0,
+                      edge1->pos / 64.0 ));
+
+        num_actions++;
+#endif
 
         edge1->pos    = blue->fit;
         edge1->flags |= AF_EDGE_DONE;
@@ -1701,6 +1935,10 @@
         {
           af_latin_align_linked_edge( hints, dim, edge1, edge2 );
           edge2->flags |= AF_EDGE_DONE;
+
+#ifdef FT_DEBUG_LEVEL_TRACE
+          num_actions++;
+#endif
         }
 
         if ( !anchor )
@@ -1708,8 +1946,8 @@
       }
     }
 
-    /* now we will align all stem edges, trying to maintain the */
-    /* relative order of stems in the glyph                     */
+    /* now we align all other stem edges, trying to maintain the */
+    /* relative order of stems in the glyph                      */
     for ( edge = edges; edge < edge_limit; edge++ )
     {
       AF_Edge  edge2;
@@ -1731,15 +1969,21 @@
       /* this should not happen, but it's better to be safe */
       if ( edge2->blue_edge )
       {
-        AF_LOG(( "ASSERTION FAILED for edge %d\n", edge2-edges ));
+        FT_TRACE5(( "  ASSERTION FAILED for edge %d\n", edge2-edges ));
 
         af_latin_align_linked_edge( hints, dim, edge2, edge );
         edge->flags |= AF_EDGE_DONE;
+
+#ifdef FT_DEBUG_LEVEL_TRACE
+        num_actions++;
+#endif
         continue;
       }
 
       if ( !anchor )
       {
+        /* if we reach this if clause, no stem has been aligned yet */
+
         FT_Pos  org_len, org_center, cur_len;
         FT_Pos  cur_pos1, error1, error2, u_off, d_off;
 
@@ -1749,10 +1993,19 @@
                     hints, dim, org_len,
                     (AF_Edge_Flags)edge->flags,
                     (AF_Edge_Flags)edge2->flags );
+
+        /* some voodoo to specially round edges for small stem widths; */
+        /* the idea is to align the center of a stem, then shifting    */
+        /* the stem edges to suitable positions                        */
         if ( cur_len <= 64 )
-          u_off = d_off = 32;
+        {
+          /* width <= 1px */
+          u_off = 32;
+          d_off = 32;
+        }
         else
         {
+          /* 1px < width < 1.5px */
           u_off = 38;
           d_off = 26;
         }
@@ -1760,7 +2013,6 @@
         if ( cur_len < 96 )
         {
           org_center = edge->opos + ( org_len >> 1 );
-
           cur_pos1   = FT_PIX_ROUND( org_center );
 
           error1 = org_center - ( cur_pos1 - u_off );
@@ -1782,16 +2034,20 @@
         else
           edge->pos = FT_PIX_ROUND( edge->opos );
 
-        AF_LOG(( "ANCHOR: edge %d (opos=%.2f) and %d (opos=%.2f) "
-                 "snapped to (%.2f) (%.2f)\n",
-                 edge-edges, edge->opos / 64.0,
-                 edge2-edges, edge2->opos / 64.0,
-                 edge->pos / 64.0, edge2->pos / 64.0 ));
-        anchor = edge;
-
+        anchor       = edge;
         edge->flags |= AF_EDGE_DONE;
 
+        FT_TRACE5(( "  ANCHOR: edge %d (opos=%.2f) and %d (opos=%.2f)"
+                    " snapped to %.2f and %.2f\n",
+                    edge - edges, edge->opos / 64.0,
+                    edge2 - edges, edge2->opos / 64.0,
+                    edge->pos / 64.0, edge2->pos / 64.0 ));
+
         af_latin_align_linked_edge( hints, dim, edge, edge2 );
+
+#ifdef FT_DEBUG_LEVEL_TRACE
+        num_actions += 2;
+#endif
       }
       else
       {
@@ -1804,12 +2060,18 @@
         org_center = org_pos + ( org_len >> 1 );
 
         cur_len = af_latin_compute_stem_width(
-                   hints, dim, org_len,
-                   (AF_Edge_Flags)edge->flags,
-                   (AF_Edge_Flags)edge2->flags );
+                    hints, dim, org_len,
+                    (AF_Edge_Flags)edge->flags,
+                    (AF_Edge_Flags)edge2->flags );
 
         if ( edge2->flags & AF_EDGE_DONE )
+        {
+          FT_TRACE5(( "  ADJUST: edge %d (pos=%.2f) moved to %.2f\n",
+                      edge - edges, edge->pos / 64.0,
+                      ( edge2->pos - cur_len ) / 64.0 ));
+
           edge->pos = edge2->pos - cur_len;
+        }
 
         else if ( cur_len < 96 )
         {
@@ -1818,8 +2080,11 @@
 
           cur_pos1 = FT_PIX_ROUND( org_center );
 
-          if (cur_len <= 64 )
-            u_off = d_off = 32;
+          if ( cur_len <= 64 )
+          {
+            u_off = 32;
+            d_off = 32;
+          }
           else
           {
             u_off = 38;
@@ -1842,12 +2107,13 @@
           edge->pos  = cur_pos1 - cur_len / 2;
           edge2->pos = cur_pos1 + cur_len / 2;
 
-          AF_LOG(( "STEM: %d (opos=%.2f) to %d (opos=%.2f) "
-                   "snapped to (%.2f) and (%.2f)\n",
-                   edge-edges, edge->opos / 64.0,
-                   edge2-edges, edge2->opos / 64.0,
-                   edge->pos / 64.0, edge2->pos / 64.0 ));
+          FT_TRACE5(( "  STEM: edge %d (opos=%.2f) linked to %d (opos=%.2f)"
+                      " snapped to %.2f and %.2f\n",
+                      edge - edges, edge->opos / 64.0,
+                      edge2 - edges, edge2->opos / 64.0,
+                      edge->pos / 64.0, edge2->pos / 64.0 ));
         }
+
         else
         {
           org_pos    = anchor->pos + ( edge->opos - anchor->opos );
@@ -1859,33 +2125,42 @@
                          (AF_Edge_Flags)edge->flags,
                          (AF_Edge_Flags)edge2->flags );
 
-          cur_pos1   = FT_PIX_ROUND( org_pos );
-          delta1     = cur_pos1 + ( cur_len >> 1 ) - org_center;
+          cur_pos1 = FT_PIX_ROUND( org_pos );
+          delta1   = cur_pos1 + ( cur_len >> 1 ) - org_center;
           if ( delta1 < 0 )
             delta1 = -delta1;
 
-          cur_pos2   = FT_PIX_ROUND( org_pos + org_len ) - cur_len;
-          delta2     = cur_pos2 + ( cur_len >> 1 ) - org_center;
+          cur_pos2 = FT_PIX_ROUND( org_pos + org_len ) - cur_len;
+          delta2   = cur_pos2 + ( cur_len >> 1 ) - org_center;
           if ( delta2 < 0 )
             delta2 = -delta2;
 
           edge->pos  = ( delta1 < delta2 ) ? cur_pos1 : cur_pos2;
           edge2->pos = edge->pos + cur_len;
 
-          AF_LOG(( "STEM: %d (opos=%.2f) to %d (opos=%.2f) "
-                   "snapped to (%.2f) and (%.2f)\n",
-                   edge-edges, edge->opos / 64.0,
-                   edge2-edges, edge2->opos / 64.0,
-                   edge->pos / 64.0, edge2->pos / 64.0 ));
+          FT_TRACE5(( "  STEM: edge %d (opos=%.2f) linked to %d (opos=%.2f)"
+                      " snapped to %.2f and %.2f\n",
+                      edge - edges, edge->opos / 64.0,
+                      edge2 - edges, edge2->opos / 64.0,
+                      edge->pos / 64.0, edge2->pos / 64.0 ));
         }
+
+#ifdef FT_DEBUG_LEVEL_TRACE
+        num_actions++;
+#endif
 
         edge->flags  |= AF_EDGE_DONE;
         edge2->flags |= AF_EDGE_DONE;
 
         if ( edge > edges && edge->pos < edge[-1].pos )
         {
-          AF_LOG(( "BOUND: %d (pos=%.2f) to (%.2f)\n",
-                   edge-edges, edge->pos / 64.0, edge[-1].pos / 64.0 ));
+#ifdef FT_DEBUG_LEVEL_TRACE
+          FT_TRACE5(( "  BOUND: edge %d (pos=%.2f) moved to %.2f\n",
+                      edge - edges, edge->pos / 64.0, edge[-1].pos / 64.0 ));
+
+          num_actions++;
+#endif
+
           edge->pos = edge[-1].pos;
         }
       }
@@ -1979,18 +2254,19 @@
         if ( delta < 64 + 16 )
         {
           af_latin_align_serif_edge( hints, edge->serif, edge );
-          AF_LOG(( "SERIF: edge %d (opos=%.2f) serif to %d (opos=%.2f) "
-                   "aligned to (%.2f)\n",
-                   edge-edges, edge->opos / 64.0,
-                   edge->serif - edges, edge->serif->opos / 64.0,
-                   edge->pos / 64.0 ));
+          FT_TRACE5(( "  SERIF: edge %d (opos=%.2f) serif to %d (opos=%.2f)"
+                      " aligned to %.2f\n",
+                      edge - edges, edge->opos / 64.0,
+                      edge->serif - edges, edge->serif->opos / 64.0,
+                      edge->pos / 64.0 ));
         }
         else if ( !anchor )
         {
-          AF_LOG(( "SERIF_ANCHOR: edge %d (opos=%.2f) snapped to (%.2f)\n",
-                   edge-edges, edge->opos / 64.0, edge->pos / 64.0 ));
           edge->pos = FT_PIX_ROUND( edge->opos );
           anchor    = edge;
+          FT_TRACE5(( "  SERIF_ANCHOR: edge %d (opos=%.2f)"
+                      " snapped to %.2f\n",
+                      edge-edges, edge->opos / 64.0, edge->pos / 64.0 ));
         }
         else
         {
@@ -2008,38 +2284,71 @@
           if ( before >= edges && before < edge   &&
                after < edge_limit && after > edge )
           {
-            edge->pos = before->pos +
+            if ( after->opos == before->opos )
+              edge->pos = before->pos;
+            else
+              edge->pos = before->pos +
                           FT_MulDiv( edge->opos - before->opos,
                                      after->pos - before->pos,
                                      after->opos - before->opos );
-            AF_LOG(( "SERIF_LINK1: edge %d (opos=%.2f) snapped to (%.2f) "
-                     "from %d (opos=%.2f)\n",
-                     edge-edges, edge->opos / 64.0,
-                     edge->pos / 64.0, before - edges,
-                     before->opos / 64.0 ));
+
+            FT_TRACE5(( "  SERIF_LINK1: edge %d (opos=%.2f) snapped to %.2f"
+                        " from %d (opos=%.2f)\n",
+                        edge - edges, edge->opos / 64.0,
+                        edge->pos / 64.0,
+                        before - edges, before->opos / 64.0 ));
           }
           else
           {
             edge->pos = anchor->pos +
                         ( ( edge->opos - anchor->opos + 16 ) & ~31 );
-            AF_LOG(( "SERIF_LINK2: edge %d (opos=%.2f) snapped to (%.2f)\n",
-                     edge-edges, edge->opos / 64.0, edge->pos / 64.0 ));
+            FT_TRACE5(( "  SERIF_LINK2: edge %d (opos=%.2f)"
+                        " snapped to %.2f\n",
+                        edge - edges, edge->opos / 64.0, edge->pos / 64.0 ));
           }
         }
 
+#ifdef FT_DEBUG_LEVEL_TRACE
+        num_actions++;
+#endif
         edge->flags |= AF_EDGE_DONE;
 
         if ( edge > edges && edge->pos < edge[-1].pos )
+        {
+#ifdef FT_DEBUG_LEVEL_TRACE
+          FT_TRACE5(( "  BOUND: edge %d (pos=%.2f) moved to %.2f\n",
+                      edge - edges, edge->pos / 64.0, edge[-1].pos / 64.0 ));
+
+          num_actions++;
+#endif
           edge->pos = edge[-1].pos;
+        }
 
         if ( edge + 1 < edge_limit        &&
              edge[1].flags & AF_EDGE_DONE &&
              edge->pos > edge[1].pos      )
+        {
+#ifdef FT_DEBUG_LEVEL_TRACE
+          FT_TRACE5(( "  BOUND: edge %d (pos=%.2f) moved to %.2f\n",
+                      edge - edges, edge->pos / 64.0, edge[1].pos / 64.0 ));
+
+          num_actions++;
+#endif
+
           edge->pos = edge[1].pos;
+        }
       }
     }
+
+#ifdef FT_DEBUG_LEVEL_TRACE
+    if ( !num_actions )
+      FT_TRACE5(( "  (none)\n" ));
+    FT_TRACE5(( "\n" ));
+#endif
   }
 
+
+  /* Apply the complete hinting algorithm to a latin glyph. */
 
   static FT_Error
   af_latin_hints_apply( AF_GlyphHints    hints,
@@ -2050,14 +2359,14 @@
     int       dim;
 
 
-    error = af_glyph_hints_reload( hints, outline, 1 );
+    error = af_glyph_hints_reload( hints, outline );
     if ( error )
       goto Exit;
 
     /* analyze glyph outline */
-#ifdef AF_USE_WARPER
+#ifdef AF_CONFIG_OPTION_USE_WARPER
     if ( metrics->root.scaler.render_mode == FT_RENDER_MODE_LIGHT ||
-         AF_HINTS_DO_HORIZONTAL( hints ) )
+         AF_HINTS_DO_HORIZONTAL( hints )                          )
 #else
     if ( AF_HINTS_DO_HORIZONTAL( hints ) )
 #endif
@@ -2079,17 +2388,19 @@
     /* grid-fit the outline */
     for ( dim = 0; dim < AF_DIMENSION_MAX; dim++ )
     {
-#ifdef AF_USE_WARPER
-      if ( ( dim == AF_DIMENSION_HORZ &&
-             metrics->root.scaler.render_mode == FT_RENDER_MODE_LIGHT ) )
+#ifdef AF_CONFIG_OPTION_USE_WARPER
+      if ( dim == AF_DIMENSION_HORZ                                 &&
+           metrics->root.scaler.render_mode == FT_RENDER_MODE_LIGHT )
       {
         AF_WarperRec  warper;
         FT_Fixed      scale;
         FT_Pos        delta;
 
 
-        af_warper_compute( &warper, hints, dim, &scale, &delta );
-        af_glyph_hints_scale_dim( hints, dim, scale, delta );
+        af_warper_compute( &warper, hints, (AF_Dimension)dim,
+                           &scale, &delta );
+        af_glyph_hints_scale_dim( hints, (AF_Dimension)dim,
+                                  scale, delta );
         continue;
       }
 #endif
@@ -2124,37 +2435,44 @@
 
   static const AF_Script_UniRangeRec  af_latin_uniranges[] =
   {
-    { 0x0020, 0x007F },  /* Basic Latin (no control characters) */
-    { 0x00A0, 0x00FF },  /* Latin-1 Supplement (no control characters) */
-    { 0x0100, 0x017F },  /* Latin Extended-A */
-    { 0x0180, 0x024F },  /* Latin Extended-B */
-    { 0x0250, 0x02AF },  /* IPA Extensions */
-    { 0x02B0, 0x02FF },  /* Spacing Modifier Letters */
-    { 0x0300, 0x036F },  /* Combining Diacritical Marks */
-    { 0x0370, 0x03FF },  /* Greek and Coptic */
-    { 0x0400, 0x04FF },  /* Cyrillic */
-    { 0x0500, 0x052F },  /* Cyrillic Supplement */
-    { 0x1D00, 0x1D7F },  /* Phonetic Extensions */
-    { 0x1D80, 0x1DBF },  /* Phonetic Extensions Supplement */
-    { 0x1DC0, 0x1DFF },  /* Combining Diacritical Marks Supplement */
-    { 0x1E00, 0x1EFF },  /* Latin Extended Additional */
-    { 0x1F00, 0x1FFF },  /* Greek Extended */
-    { 0x2000, 0x206F },  /* General Punctuation */
-    { 0x2070, 0x209F },  /* Superscripts and Subscripts */
-    { 0x20A0, 0x20CF },  /* Currency Symbols */
-    { 0x2150, 0x218F },  /* Number Forms */
-    { 0x2460, 0x24FF },  /* Enclosed Alphanumerics */
-    { 0     , 0      }
+    AF_UNIRANGE_REC(  0x0020UL,  0x007FUL ),  /* Basic Latin (no control chars) */
+    AF_UNIRANGE_REC(  0x00A0UL,  0x00FFUL ),  /* Latin-1 Supplement (no control chars) */
+    AF_UNIRANGE_REC(  0x0100UL,  0x017FUL ),  /* Latin Extended-A */
+    AF_UNIRANGE_REC(  0x0180UL,  0x024FUL ),  /* Latin Extended-B */
+    AF_UNIRANGE_REC(  0x0250UL,  0x02AFUL ),  /* IPA Extensions */
+    AF_UNIRANGE_REC(  0x02B0UL,  0x02FFUL ),  /* Spacing Modifier Letters */
+    AF_UNIRANGE_REC(  0x0300UL,  0x036FUL ),  /* Combining Diacritical Marks */
+    AF_UNIRANGE_REC(  0x0370UL,  0x03FFUL ),  /* Greek and Coptic */
+    AF_UNIRANGE_REC(  0x0400UL,  0x04FFUL ),  /* Cyrillic */
+    AF_UNIRANGE_REC(  0x0500UL,  0x052FUL ),  /* Cyrillic Supplement */
+    AF_UNIRANGE_REC(  0x1D00UL,  0x1D7FUL ),  /* Phonetic Extensions */
+    AF_UNIRANGE_REC(  0x1D80UL,  0x1DBFUL ),  /* Phonetic Extensions Supplement */
+    AF_UNIRANGE_REC(  0x1DC0UL,  0x1DFFUL ),  /* Combining Diacritical Marks Supplement */
+    AF_UNIRANGE_REC(  0x1E00UL,  0x1EFFUL ),  /* Latin Extended Additional */
+    AF_UNIRANGE_REC(  0x1F00UL,  0x1FFFUL ),  /* Greek Extended */
+    AF_UNIRANGE_REC(  0x2000UL,  0x206FUL ),  /* General Punctuation */
+    AF_UNIRANGE_REC(  0x2070UL,  0x209FUL ),  /* Superscripts and Subscripts */
+    AF_UNIRANGE_REC(  0x20A0UL,  0x20CFUL ),  /* Currency Symbols */
+    AF_UNIRANGE_REC(  0x2150UL,  0x218FUL ),  /* Number Forms */
+    AF_UNIRANGE_REC(  0x2460UL,  0x24FFUL ),  /* Enclosed Alphanumerics */
+    AF_UNIRANGE_REC(  0x2C60UL,  0x2C7FUL ),  /* Latin Extended-C */
+    AF_UNIRANGE_REC(  0x2DE0UL,  0x2DFFUL ),  /* Cyrillic Extended-A */
+    AF_UNIRANGE_REC(  0x2E00UL,  0x2E7FUL ),  /* Supplemental Punctuation */
+    AF_UNIRANGE_REC(  0xA640UL,  0xA69FUL ),  /* Cyrillic Extended-B */
+    AF_UNIRANGE_REC(  0xA720UL,  0xA7FFUL ),  /* Latin Extended-D */
+    AF_UNIRANGE_REC(  0xFB00UL,  0xFB06UL ),  /* Alphab. Present. Forms (Latin Ligs) */
+    AF_UNIRANGE_REC( 0x1D400UL, 0x1D7FFUL ),  /* Mathematical Alphanumeric Symbols */
+    AF_UNIRANGE_REC( 0x1F100UL, 0x1F1FFUL ),  /* Enclosed Alphanumeric Supplement */
+    AF_UNIRANGE_REC(       0UL,       0UL )
   };
 
 
-  FT_CALLBACK_TABLE_DEF const AF_ScriptClassRec
-  af_latin_script_class =
-  {
+  AF_DEFINE_SCRIPT_CLASS( af_latin_script_class,
     AF_SCRIPT_LATIN,
     af_latin_uniranges,
+    'o',
 
-    sizeof( AF_LatinMetricsRec ),
+    sizeof ( AF_LatinMetricsRec ),
 
     (AF_Script_InitMetricsFunc) af_latin_metrics_init,
     (AF_Script_ScaleMetricsFunc)af_latin_metrics_scale,
@@ -2162,7 +2480,7 @@
 
     (AF_Script_InitHintsFunc)   af_latin_hints_init,
     (AF_Script_ApplyHintsFunc)  af_latin_hints_apply
-  };
+  )
 
 
 /* END */

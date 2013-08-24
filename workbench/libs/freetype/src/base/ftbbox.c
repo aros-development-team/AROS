@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    FreeType bbox computation (body).                                    */
 /*                                                                         */
-/*  Copyright 1996-2001, 2002, 2004, 2006 by                               */
+/*  Copyright 1996-2002, 2004, 2006, 2010, 2013 by                         */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used        */
@@ -25,10 +25,13 @@
 
 
 #include <ft2build.h>
+#include FT_INTERNAL_DEBUG_H
+
 #include FT_BBOX_H
 #include FT_IMAGE_H
 #include FT_OUTLINE_H
 #include FT_INTERNAL_CALC_H
+#include FT_INTERNAL_OBJECTS_H
 
 
   typedef struct  TBBox_Rec_
@@ -139,7 +142,7 @@
   /*                                                                       */
   /* <Description>                                                         */
   /*    This function is used as a `conic_to' emitter during               */
-  /*    FT_Raster_Decompose().  It checks a conic Bezier curve with the    */
+  /*    FT_Outline_Decompose().  It checks a conic Bezier curve with the   */
   /*    current bounding box, and computes its extrema if necessary to     */
   /*    update it.                                                         */
   /*                                                                       */
@@ -221,65 +224,100 @@
                     FT_Pos*  min,
                     FT_Pos*  max )
   {
-    FT_Pos  stack[32*3 + 1], *arc;
+    FT_Pos  q1, q2, q3, q4;
 
 
-    arc = stack;
+    q1 = p1;
+    q2 = p2;
+    q3 = p3;
+    q4 = p4;
 
-    arc[0] = p1;
-    arc[1] = p2;
-    arc[2] = p3;
-    arc[3] = p4;
-
-    do
+    /* for a conic segment to possibly reach new maximum     */
+    /* one of its off-points must be above the current value */
+    while ( q2 > *max || q3 > *max )
     {
-      FT_Pos  y1 = arc[0];
-      FT_Pos  y2 = arc[1];
-      FT_Pos  y3 = arc[2];
-      FT_Pos  y4 = arc[3];
-
-
-      if ( y1 == y4 )
+      /* determine which half contains the maximum and split */
+      if ( q1 + q2 > q3 + q4 ) /* first half */
       {
-        if ( y1 == y2 && y1 == y3 )                         /* flat */
-          goto Test;
+        q4 = q4 + q3;
+        q3 = q3 + q2;
+        q2 = q2 + q1;
+        q4 = q4 + q3;
+        q3 = q3 + q2;
+        q4 = ( q4 + q3 ) / 8;
+        q3 = q3 / 4;
+        q2 = q2 / 2;
       }
-      else if ( y1 < y4 )
+      else                     /* second half */
       {
-        if ( y2 >= y1 && y2 <= y4 && y3 >= y1 && y3 <= y4 ) /* ascending */
-          goto Test;
-      }
-      else
-      {
-        if ( y2 >= y4 && y2 <= y1 && y3 >= y4 && y3 <= y1 ) /* descending */
-        {
-          y2 = y1;
-          y1 = y4;
-          y4 = y2;
-          goto Test;
-        }
+        q1 = q1 + q2;
+        q2 = q2 + q3;
+        q3 = q3 + q4;
+        q1 = q1 + q2;
+        q2 = q2 + q3;
+        q1 = ( q1 + q2 ) / 8;
+        q2 = q2 / 4;
+        q3 = q3 / 2;
       }
 
-      /* unknown direction -- split the arc in two */
-      arc[6] = y4;
-      arc[1] = y1 = ( y1 + y2 ) / 2;
-      arc[5] = y4 = ( y4 + y3 ) / 2;
-      y2 = ( y2 + y3 ) / 2;
-      arc[2] = y1 = ( y1 + y2 ) / 2;
-      arc[4] = y4 = ( y4 + y2 ) / 2;
-      arc[3] = ( y1 + y4 ) / 2;
+      /* check if either end reached the maximum */
+      if ( q1 == q2 && q1 >= q3 )
+      {
+        *max = q1;
+        break;
+      }
+      if ( q3 == q4 && q2 <= q4 )
+      {
+        *max = q4;
+        break;
+      }
+    }
 
-      arc += 3;
-      goto Suite;
+    q1 = p1;
+    q2 = p2;
+    q3 = p3;
+    q4 = p4;
 
-   Test:
-      if ( y1 < *min ) *min = y1;
-      if ( y4 > *max ) *max = y4;
-      arc -= 3;
+    /* for a conic segment to possibly reach new minimum     */
+    /* one of its off-points must be below the current value */
+    while ( q2 < *min || q3 < *min )
+    {
+      /* determine which half contains the minimum and split */
+      if ( q1 + q2 < q3 + q4 ) /* first half */
+      {
+        q4 = q4 + q3;
+        q3 = q3 + q2;
+        q2 = q2 + q1;
+        q4 = q4 + q3;
+        q3 = q3 + q2;
+        q4 = ( q4 + q3 ) / 8;
+        q3 = q3 / 4;
+        q2 = q2 / 2;
+      }
+      else                     /* second half */
+      {
+        q1 = q1 + q2;
+        q2 = q2 + q3;
+        q3 = q3 + q4;
+        q1 = q1 + q2;
+        q2 = q2 + q3;
+        q1 = ( q1 + q2 ) / 8;
+        q2 = q2 / 4;
+        q3 = q3 / 2;
+      }
 
-    Suite:
-      ;
-    } while ( arc >= stack );
+      /* check if either end reached the minimum */
+      if ( q1 == q2 && q1 <= q3 )
+      {
+        *min = q1;
+        break;
+      }
+      if ( q3 == q4 && q2 >= q4 )
+      {
+        *min = q4;
+        break;
+      }
+    }
   }
 
 #else
@@ -357,107 +395,57 @@
         return;
     }
 
-    /* There are some split points.  Find them. */
+    /* There are some split points.  Find them.                        */
+    /* We already made sure that a, b, and c below cannot be all zero. */
     {
       FT_Pos    a = y4 - 3*y3 + 3*y2 - y1;
       FT_Pos    b = y3 - 2*y2 + y1;
       FT_Pos    c = y2 - y1;
       FT_Pos    d;
       FT_Fixed  t;
+      FT_Int    shift;
 
 
       /* We need to solve `ax^2+2bx+c' here, without floating points!      */
       /* The trick is to normalize to a different representation in order  */
-      /* to use our 16.16 fixed point routines.                            */
+      /* to use our 16.16 fixed-point routines.                            */
       /*                                                                   */
       /* We compute FT_MulFix(b,b) and FT_MulFix(a,c) after normalization. */
       /* These values must fit into a single 16.16 value.                  */
       /*                                                                   */
-      /* We normalize a, b, and c to `8.16' fixed float values to ensure   */
-      /* that its product is held in a `16.16' value.                      */
+      /* We normalize a, b, and c to `8.16' fixed-point values to ensure   */
+      /* that their product is held in a `16.16' value including the sign. */
+      /* Necessarily, we need to shift `a', `b', and `c' so that the most  */
+      /* significant bit of their absolute values is at position 22.       */
+      /*                                                                   */
+      /* This also means that we are using 23 bits of precision to compute */
+      /* the zeros, independently of the range of the original polynomial  */
+      /* coefficients.                                                     */
+      /*                                                                   */
+      /* This algorithm should ensure reasonably accurate values for the   */
+      /* zeros.  Note that they are only expressed with 16 bits when       */
+      /* computing the extrema (the zeros need to be in 0..1 exclusive     */
+      /* to be considered part of the arc).                                */
 
+      shift = FT_MSB( FT_ABS( a ) | FT_ABS( b ) | FT_ABS( c ) );
+
+      if ( shift > 22 )
       {
-        FT_ULong  t1, t2;
-        int       shift = 0;
+        shift -= 22;
 
+        /* this loses some bits of precision, but we use 23 of them */
+        /* for the computation anyway                               */
+        a >>= shift;
+        b >>= shift;
+        c >>= shift;
+      }
+      else
+      {
+        shift = 22 - shift;
 
-        /* The following computation is based on the fact that for   */
-        /* any value `y', if `n' is the position of the most         */
-        /* significant bit of `abs(y)' (starting from 0 for the      */
-        /* least significant bit), then `y' is in the range          */
-        /*                                                           */
-        /*   -2^n..2^n-1                                             */
-        /*                                                           */
-        /* We want to shift `a', `b', and `c' concurrently in order  */
-        /* to ensure that they all fit in 8.16 values, which maps    */
-        /* to the integer range `-2^23..2^23-1'.                     */
-        /*                                                           */
-        /* Necessarily, we need to shift `a', `b', and `c' so that   */
-        /* the most significant bit of its absolute values is at     */
-        /* _most_ at position 23.                                    */
-        /*                                                           */
-        /* We begin by computing `t1' as the bitwise `OR' of the     */
-        /* absolute values of `a', `b', `c'.                         */
-
-        t1  = (FT_ULong)( ( a >= 0 ) ? a : -a );
-        t2  = (FT_ULong)( ( b >= 0 ) ? b : -b );
-        t1 |= t2;
-        t2  = (FT_ULong)( ( c >= 0 ) ? c : -c );
-        t1 |= t2;
-
-        /* Now we can be sure that the most significant bit of `t1'  */
-        /* is the most significant bit of either `a', `b', or `c',   */
-        /* depending on the greatest integer range of the particular */
-        /* variable.                                                 */
-        /*                                                           */
-        /* Next, we compute the `shift', by shifting `t1' as many    */
-        /* times as necessary to move its MSB to position 23.  This  */
-        /* corresponds to a value of `t1' that is in the range       */
-        /* 0x40_0000..0x7F_FFFF.                                     */
-        /*                                                           */
-        /* Finally, we shift `a', `b', and `c' by the same amount.   */
-        /* This ensures that all values are now in the range         */
-        /* -2^23..2^23, i.e., they are now expressed as 8.16         */
-        /* fixed-float numbers.  This also means that we are using   */
-        /* 24 bits of precision to compute the zeros, independently  */
-        /* of the range of the original polynomial coefficients.     */
-        /*                                                           */
-        /* This algorithm should ensure reasonably accurate values   */
-        /* for the zeros.  Note that they are only expressed with    */
-        /* 16 bits when computing the extrema (the zeros need to     */
-        /* be in 0..1 exclusive to be considered part of the arc).   */
-
-        if ( t1 == 0 )  /* all coefficients are 0! */
-          return;
-
-        if ( t1 > 0x7FFFFFUL )
-        {
-          do
-          {
-            shift++;
-            t1 >>= 1;
-
-          } while ( t1 > 0x7FFFFFUL );
-
-          /* this loses some bits of precision, but we use 24 of them */
-          /* for the computation anyway                               */
-          a >>= shift;
-          b >>= shift;
-          c >>= shift;
-        }
-        else if ( t1 < 0x400000UL )
-        {
-          do
-          {
-            shift++;
-            t1 <<= 1;
-
-          } while ( t1 < 0x400000UL );
-
-          a <<= shift;
-          b <<= shift;
-          c <<= shift;
-        }
+        a <<= shift;
+        b <<= shift;
+        c <<= shift;
       }
 
       /* handle a == 0 */
@@ -506,7 +494,7 @@
   /*                                                                       */
   /* <Description>                                                         */
   /*    This function is used as a `cubic_to' emitter during               */
-  /*    FT_Raster_Decompose().  It checks a cubic Bezier curve with the    */
+  /*    FT_Outline_Decompose().  It checks a cubic Bezier curve with the   */
   /*    current bounding box, and computes its extrema if necessary to     */
   /*    update it.                                                         */
   /*                                                                       */
@@ -559,6 +547,13 @@
     return 0;
   }
 
+FT_DEFINE_OUTLINE_FUNCS(bbox_interface,
+    (FT_Outline_MoveTo_Func) BBox_Move_To,
+    (FT_Outline_LineTo_Func) BBox_Move_To,
+    (FT_Outline_ConicTo_Func)BBox_Conic_To,
+    (FT_Outline_CubicTo_Func)BBox_Cubic_To,
+    0, 0
+  )
 
   /* documentation is in ftbbox.h */
 
@@ -573,10 +568,10 @@
 
 
     if ( !abbox )
-      return FT_Err_Invalid_Argument;
+      return FT_THROW( Invalid_Argument );
 
     if ( !outline )
-      return FT_Err_Invalid_Outline;
+      return FT_THROW( Invalid_Outline );
 
     /* if outline is empty, return (0,0,0,0) */
     if ( outline->n_points == 0 || outline->n_contours <= 0 )
@@ -628,18 +623,13 @@
       /* the two boxes are different, now walk over the outline to */
       /* get the Bezier arc extrema.                               */
 
-      static const FT_Outline_Funcs  bbox_interface =
-      {
-        (FT_Outline_MoveTo_Func) BBox_Move_To,
-        (FT_Outline_LineTo_Func) BBox_Move_To,
-        (FT_Outline_ConicTo_Func)BBox_Conic_To,
-        (FT_Outline_CubicTo_Func)BBox_Cubic_To,
-        0, 0
-      };
-
       FT_Error   error;
       TBBox_Rec  user;
 
+#ifdef FT_CONFIG_OPTION_PIC
+      FT_Outline_Funcs bbox_interface;
+      Init_Class_bbox_interface(&bbox_interface);
+#endif
 
       user.bbox = bbox;
 

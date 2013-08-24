@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    CID objects manager (body).                                          */
 /*                                                                         */
-/*  Copyright 1996-2001, 2002, 2003, 2004, 2005, 2006 by                   */
+/*  Copyright 1996-2006, 2008, 2010-2011, 2013 by                          */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -131,7 +131,7 @@
   cid_size_init( FT_Size  cidsize )     /* CID_Size */
   {
     CID_Size           size  = (CID_Size)cidsize;
-    FT_Error           error = 0;
+    FT_Error           error = FT_Err_Ok;
     PSH_Globals_Funcs  funcs = cid_size_get_globals_funcs( size );
 
 
@@ -169,7 +169,7 @@
                         size->metrics.y_scale,
                         0, 0 );
 
-    return CID_Err_Ok;
+    return FT_Err_Ok;
   }
 
 
@@ -193,61 +193,61 @@
   FT_LOCAL_DEF( void )
   cid_face_done( FT_Face  cidface )         /* CID_Face */
   {
-    CID_Face   face = (CID_Face)cidface;
-    FT_Memory  memory;
+    CID_Face      face = (CID_Face)cidface;
+    FT_Memory     memory;
+    CID_FaceInfo  cid;
+    PS_FontInfo   info;
 
 
-    if ( face )
+    if ( !face )
+      return;
+
+    cid    = &face->cid;
+    info   = &cid->font_info;
+    memory = cidface->memory;
+
+    /* release subrs */
+    if ( face->subrs )
     {
-      CID_FaceInfo  cid  = &face->cid;
-      PS_FontInfo   info = &cid->font_info;
+      FT_Int  n;
 
 
-      memory = cidface->memory;
-
-      /* release subrs */
-      if ( face->subrs )
+      for ( n = 0; n < cid->num_dicts; n++ )
       {
-        FT_Int  n;
+        CID_Subrs  subr = face->subrs + n;
 
 
-        for ( n = 0; n < cid->num_dicts; n++ )
+        if ( subr->code )
         {
-          CID_Subrs  subr = face->subrs + n;
-
-
-          if ( subr->code )
-          {
-            FT_FREE( subr->code[0] );
-            FT_FREE( subr->code );
-          }
+          FT_FREE( subr->code[0] );
+          FT_FREE( subr->code );
         }
-
-        FT_FREE( face->subrs );
       }
 
-      /* release FontInfo strings */
-      FT_FREE( info->version );
-      FT_FREE( info->notice );
-      FT_FREE( info->full_name );
-      FT_FREE( info->family_name );
-      FT_FREE( info->weight );
-
-      /* release font dictionaries */
-      FT_FREE( cid->font_dicts );
-      cid->num_dicts = 0;
-
-      /* release other strings */
-      FT_FREE( cid->cid_font_name );
-      FT_FREE( cid->registry );
-      FT_FREE( cid->ordering );
-
-      cidface->family_name = 0;
-      cidface->style_name  = 0;
-
-      FT_FREE( face->binary_data );
-      FT_FREE( face->cid_stream );
+      FT_FREE( face->subrs );
     }
+
+    /* release FontInfo strings */
+    FT_FREE( info->version );
+    FT_FREE( info->notice );
+    FT_FREE( info->full_name );
+    FT_FREE( info->family_name );
+    FT_FREE( info->weight );
+
+    /* release font dictionaries */
+    FT_FREE( cid->font_dicts );
+    cid->num_dicts = 0;
+
+    /* release other strings */
+    FT_FREE( cid->cid_font_name );
+    FT_FREE( cid->registry );
+    FT_FREE( cid->ordering );
+
+    cidface->family_name = 0;
+    cidface->style_name  = 0;
+
+    FT_FREE( face->binary_data );
+    FT_FREE( face->cid_stream );
   }
 
 
@@ -299,6 +299,13 @@
       psaux = (PSAux_Service)FT_Get_Module_Interface(
                 FT_FACE_LIBRARY( face ), "psaux" );
 
+      if ( !psaux )
+      {
+        FT_ERROR(( "cid_face_init: cannot access `psaux' module\n" ));
+        error = FT_THROW( Missing_Module );
+        goto Exit;
+      }
+
       face->psaux = psaux;
     }
 
@@ -310,6 +317,8 @@
 
       face->pshinter = pshinter;
     }
+
+    FT_TRACE2(( "CID driver\n" ));
 
     /* open the tokenizer; this will also check the font format */
     if ( FT_STREAM_SEEK( 0 ) )
@@ -324,10 +333,11 @@
       goto Exit;
 
     /* check the face index */
+    /* XXX: handle CID fonts with more than a single face */
     if ( face_index != 0 )
     {
       FT_ERROR(( "cid_face_init: invalid face index\n" ));
-      error = CID_Err_Invalid_Argument;
+      error = FT_THROW( Invalid_Argument );
       goto Exit;
     }
 
@@ -412,10 +422,11 @@
       cidface->num_fixed_sizes = 0;
       cidface->available_sizes = 0;
 
-      cidface->bbox.xMin =   cid->font_bbox.xMin             >> 16;
-      cidface->bbox.yMin =   cid->font_bbox.yMin             >> 16;
-      cidface->bbox.xMax = ( cid->font_bbox.xMax + 0xFFFFU ) >> 16;
-      cidface->bbox.yMax = ( cid->font_bbox.yMax + 0xFFFFU ) >> 16;
+      cidface->bbox.xMin =   cid->font_bbox.xMin            >> 16;
+      cidface->bbox.yMin =   cid->font_bbox.yMin            >> 16;
+      /* no `U' suffix here to 0xFFFF! */
+      cidface->bbox.xMax = ( cid->font_bbox.xMax + 0xFFFF ) >> 16;
+      cidface->bbox.yMax = ( cid->font_bbox.yMax + 0xFFFF ) >> 16;
 
       if ( !cidface->units_per_EM )
         cidface->units_per_EM = 1000;
@@ -455,7 +466,7 @@
   {
     FT_UNUSED( driver );
 
-    return CID_Err_Ok;
+    return FT_Err_Ok;
   }
 
 

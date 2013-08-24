@@ -38,14 +38,20 @@ I. Standard procedure
 
       src/base/ftbdf.c        -- optional, see <freetype/ftbdf.h>
       src/base/ftbitmap.c     -- optional, see <freetype/ftbitmap.h>
+      src/base/ftcid.c        -- optional, see <freetype/ftcid.h>
+      src/base/ftfstype.c     -- optional
+      src/base/ftgasp.c       -- optional, see <freetype/ftgasp.h>
       src/base/ftgxval.c      -- optional, see <freetype/ftgxval.h>
+      src/base/ftlcdfil.c     -- optional, see <freetype/ftlcdfil.h>
       src/base/ftmm.c         -- optional, see <freetype/ftmm.h>
       src/base/ftotval.c      -- optional, see <freetype/ftotval.h>
+      src/base/ftpatent.c     -- optional
       src/base/ftpfr.c        -- optional, see <freetype/ftpfr.h>
       src/base/ftstroke.c     -- optional, see <freetype/ftstroke.h>
       src/base/ftsynth.c      -- optional, see <freetype/ftsynth.h>
       src/base/fttype1.c      -- optional, see <freetype/t1tables.h>
       src/base/ftwinfnt.c     -- optional, see <freetype/ftwinfnt.h>
+      src/base/ftxf86.c       -- optional, see <freetype/ftxf86.h>
 
       src/base/ftmac.c        -- only on the Macintosh
 
@@ -63,8 +69,8 @@ I. Standard procedure
       src/type42/type42.c     -- Type 42 font driver
       src/winfonts/winfnt.c   -- Windows FONT / FNT font driver
 
-    -- rasterizers (optional; at least one is needed for
-       vector formats)
+    -- rasterizers (optional; at least one is needed for vector
+       formats)
 
       src/raster/raster.c     -- monochrome rasterizer
       src/smooth/smooth.c     -- anti-aliasing rasterizer
@@ -75,6 +81,7 @@ I. Standard procedure
       src/cache/ftcache.c     -- cache sub-system (in beta)
       src/gzip/ftgzip.c       -- support for compressed fonts (.gz)
       src/lzw/ftlzw.c         -- support for compressed fonts (.Z)
+      src/bzip2/ftbzip2.c     -- support for compressed fonts (.bz2)
       src/gxvalid/gxvalid.c   -- TrueTypeGX/AAT table validation
       src/otvalid/otvalid.c   -- OpenType table validation
       src/psaux/psaux.c       -- PostScript Type 1 parsing
@@ -84,11 +91,21 @@ I. Standard procedure
 
     Notes:
 
+      `ftcache.c'  needs `ftglyph.c'
+      `ftfstype.c' needs `fttype1.c'
+      `ftglyph.c'  needs `ftbitmap.c'
+      `ftstroke.c' needs `ftglyph.c'
+      `ftsynth.c'  needs `ftbitmap.c'
+
       `cff.c'      needs `sfnt.c', `pshinter.c', and `psnames.c'
       `truetype.c' needs `sfnt.c' and `psnames.c'
       `type1.c'    needs `psaux.c' `pshinter.c', and `psnames.c'
       `type1cid.c' needs `psaux.c', `pshinter.c', and `psnames.c'
       `type42.c'   needs `truetype.c'
+
+      To use `ftbzip2.c', an application must be linked with a library
+      which implements bzip2 support  (and the bzip2 header files must
+      be available also during compilation).
 
 
   Read the file `CUSTOMIZE' in case  you want to compile only a subset
@@ -115,10 +132,10 @@ II. Support for flat-directory compilation
 
   2. Compile sources
 
-      cc -c -Ifreetype2/include ftsystem.c
-      cc -c -Ifreetype2/include ftinit.c
-      cc -c -Ifreetype2/include ftdebug.c
-      cc -c -Ifreetype2/include ftbase.c
+      cc -c -Ifreetype2/include -DFT2_BUILD_LIBRARY ftsystem.c
+      cc -c -Ifreetype2/include -DFT2_BUILD_LIBRARY ftinit.c
+      cc -c -Ifreetype2/include -DFT2_BUILD_LIBRARY ftdebug.c
+      cc -c -Ifreetype2/include -DFT2_BUILD_LIBRARY ftbase.c
       etc.
 
     You don't  need to define  the FT_FLAT_COMPILATION macro  (as this
@@ -126,7 +143,7 @@ II. Support for flat-directory compilation
 
 ----------------------------------------------------------------------
 
-Copyright 2003, 2005, 2006 by
+Copyright 2003, 2005, 2006, 2009, 2010 by
 David Turner, Robert Wilhelm, and Werner Lemberg.
 
 This  file is  part of  the FreeType  project, and  may only  be used,
