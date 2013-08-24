@@ -30,8 +30,7 @@
 #include <proto/utility.h>
 #include <proto/dos.h>
 
-#ifdef __AROS__
-/* for AROS_ABI */
+#ifdef AROS_ABI_V1
 #include <aros/config.h>
 #endif
 
@@ -234,12 +233,10 @@ BOOL FileNameComplete(Object *obj, BOOL backwards, struct InstData *data)
           while((dl = NextDosEntry(dl, LDF_READ|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS)) != NULL)
           {
             #ifdef __AROS__
-              #if !defined(AROS_ABI) || (AROS_ABI == 0)
-              /* Do ABIv0 stuff here */
-              strlcpy(tmpBuffer, dl->dol_Ext.dol_AROS.dol_DevName, sizeof tmpBuffer);
-              #else
-              /* Do ABIv1 stuff here */
+              #ifdef AROS_ABI_V1
               strlcpy(tmpBuffer, AROS_BSTR_ADDR(dl->dol_Name), AROS_BSTR_strlen(dl->dol_Name));
+              #else
+              strlcpy(tmpBuffer, dl->dol_Ext.dol_AROS.dol_DevName, sizeof tmpBuffer);
               #endif
             #else
             // dol_Name is a BSTR, we have to convert it to a regular C string

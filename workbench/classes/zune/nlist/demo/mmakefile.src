@@ -9,8 +9,9 @@ FILES := NList-Demo \
 EXEDIR := $(AROSDIR)/Demos/Zune/MCC_NList
 
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include
-USER_CFLAGS := -DNO_INLINE_STDARG
+USER_CFLAGS := -DNO_INLINE_STDARG -DAROS_ABI_V1
 USER_CFLAGS += $(PARANOIA_CFLAGS)
+
 
 #MM classes-zune-nlist-demo : includes linklibs \
 #MM 	    	    	    	      classes-zune-nlist \

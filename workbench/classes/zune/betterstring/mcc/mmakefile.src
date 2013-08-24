@@ -9,7 +9,7 @@ include $(TOP)/config/make.cfg
 # We need to use -idirafter, so that we
 # *don't* pick up the project's local MUI headers.
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../mcp -idirafter $(SRCDIR)/$(CURDIR)/../include
-
+USER_CFLAGS := -DAROS_ABI_V1
 USER_LDFLAGS := -noarosc
 
 FILES := \
@@ -31,7 +31,7 @@ FILES := \
 
 
 
-USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include
 USER_CFLAGS := -DNO_INLINE_STDARG
 
 %build_prog mmake=workbench-classes-zune-betterstring-test \

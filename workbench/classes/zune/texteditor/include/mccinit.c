@@ -71,7 +71,7 @@
   1.26  06.03.2013 : removed _start entry point. This must be defined separately
                      to ensure it is the very first piece of code in the final
                      binary file.
-  WIP   23.08.2013   fix for making it compilabe for both ABIv1 and v0 of AROS.
+  WIP   24.08.2013   fix for making it compilabe for both ABIv1 and v0 of AROS.
 
  About:
 
@@ -195,7 +195,9 @@
 #ifdef __AROS__
 #include <aros/libcall.h>
 #include <utility/utility.h>
+#ifdef AROS_ABI_V1
 #include <aros/config.h>
+#endif
 #endif
 
 #include "SDI_compiler.h"
@@ -508,20 +510,18 @@ STATIC CONST CONST_APTR LibVectors[] =
   (CONST_APTR)LibNull,
   (CONST_APTR)MCC_Query,
   #else
-    #if !defined(AROS_ABI) || (AROS_ABI == 0)
-    /* Do ABIv0 stuff here */
-    (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, __MCC_),
-    (CONST_APTR)AROS_SLIB_ENTRY(LibClose, __MCC_),
-    (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, __MCC_),
-    (CONST_APTR)LibNull,
-    (CONST_APTR)AROS_SLIB_ENTRY(MCC_Query, __MCC_),
-    #else
-    /* Do ABIv1 stuff here */
+    #ifdef AROS_ABI_V1
     (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, __MCC_, 1),
     (CONST_APTR)AROS_SLIB_ENTRY(LibClose, __MCC_, 2),
     (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, __MCC_, 3),
     (CONST_APTR)LibNull,
     (CONST_APTR)AROS_SLIB_ENTRY(MCC_Query, __MCC_, 5),
+    #else
+    (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, __MCC_),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibClose, __MCC_),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, __MCC_),
+    (CONST_APTR)LibNull,
+    (CONST_APTR)AROS_SLIB_ENTRY(MCC_Query, __MCC_),
     #endif
   #endif
   (CONST_APTR)-1
