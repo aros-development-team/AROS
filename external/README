@@ -1,0 +1,11 @@
+This directory is for packages which are external
+AND create binaries in different directories, e.g.
+workbench/libs/openurl which creates a library,
+a preferences editor and a command.
+
+Exceptions:
+* Larger packages which aren't needed by the core
+  should go to trunk/contrib.
+* if only some additional headers/docs/catalogs/tests
+  are created or copied the packages can stay in an
+  appropriate directory like workbench/libs.
