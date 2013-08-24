@@ -79,3 +79,5 @@ find release -nowarn -name ".svn" -exec rm -rf {} \; 2>/dev/null
 find release -nowarn -name "mmakefile.src" -exec rm -rf {} \; 2>/dev/null
 cd release
 lha -ao5q ../codesets-$releasever.$releaserev.lha *
+cp codesets/ReadMe ../codesets-$releasever.$releaserev.readme
+cd ..

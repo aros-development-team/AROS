@@ -5,6 +5,40 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+#### 6.15 RELEASE ########################################################
+
+2013-04-25 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 6.15 release preparations.
+
+2013-03-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/libinit.c: rearranged the code to ensure that trying to start the final
+    library from a shell does not crash.
+
+#### 6.14 RELEASE ########################################################
+
+2012-08-05 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 6.14 release preparations.
+
+2012-06-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/init.c: don't allocate locked memory.
+
+2012-04-07 Jens Langner <Jens.Langner@light-speed.de>
+
+  * Makefile: removed -funroll-loops as this is potentially dangerous.
+
+2012-03-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/libinit.c: fixed the broken build for all non-AROS platforms.
+
+2012-01-29  Matthias Rustler <mrustler@gmx.de>
+
+  * Backport of some AROS fixes.
+    SDI headers updated.
+
 #### 6.13 RELEASE ########################################################
 
 2011-11-26 Jens Langner <Jens.Langner@light-speed.de>

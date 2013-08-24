@@ -2,8 +2,8 @@ Short:    Library handling codesets and character conversions
 Author:   codesets.library Open Source Team
 Uploader: Jens Langner <Jens.Langner@light-speed.de>
 Type:     util/libs
-Version:  6.13
-Replaces: util/libs/codesets-6.12.lha
+Version:  6.15
+Replaces: util/libs/codesets-6.14.lha
 Requires: AmigaOS 3.0+, MorphOS or AROS
 Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2; i386-aros; ppc-aros; x86_64-aros
 
