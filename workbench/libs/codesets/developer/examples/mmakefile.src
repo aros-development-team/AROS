@@ -15,7 +15,8 @@ EXEDIR := $(AROS_TESTS)/Codesetslib
 # We need to use -idirafter, so that we
 # *don't* pick up the project's local MUI headers.
 USER_CFLAGS = -idirafter $(SRCDIR)/$(CURDIR)/../include \
-	      -idirafter $(SRCDIR)/$(CURDIR)/../../include
+	      -idirafter $(SRCDIR)/$(CURDIR)/../../include \
+	      -DAROS_ABI_V1
 
 %build_progs mmake=workbench-libs-codesets-test \
     files=$(FILES) targetdir=$(EXEDIR)

@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2010 by codesets.library Open Source Team
+ Copyright (C) 2005-2013 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,34 @@
 #include <proto/exec.h>
 
 #include "debug.h"
+
+/****************************************************************************/
+
+/*
+ * The system (and compiler) rely on a symbol named _start which marks
+ * the beginning of execution of an ELF file. To prevent others from
+ * executing this library, and to keep the compiler/linker happy, we
+ * define an empty _start symbol here.
+ *
+ * On the classic system (pre-AmigaOS4) this was usually done by
+ * moveq #0,d0
+ * rts
+ *
+ */
+
+#if defined(__amigaos3__)
+asm(".text\n\
+     .even\n\
+     .globl _start\n\
+    _start:\n\
+     moveq #20,d0\n\
+     rts");
+#else
+LONG _start(void)
+{
+  return RETURN_FAIL;
+}
+#endif
 
 /****************************************************************************/
 
@@ -157,34 +185,6 @@ static LONG                   LIBFUNC LibNull    (void);
 
 /****************************************************************************/
 
-/*
- * The system (and compiler) rely on a symbol named _start which marks
- * the beginning of execution of an ELF file. To prevent others from
- * executing this library, and to keep the compiler/linker happy, we
- * define an empty _start symbol here.
- *
- * On the classic system (pre-AmigaOS4) this was usually done by
- * moveq #0,d0
- * rts
- *
- */
-
-#if defined(__amigaos4__) && !defined(__AROS__) && !defined(__MORPHOS__)
-#if !defined(__mc68000__)
-int32 _start(void)
-{
-  return RETURN_FAIL;
-}
-#else
-asm(".text                    \n\
-     .even                    \n\
-     .globl _start            \n\
-   _start:                    \n\
-     moveq #0,d0              \n\
-     rts");
-#endif
-#endif
-
 static LONG LIBFUNC LibNull(VOID)
 {
   return(0);
@@ -307,9 +307,21 @@ STATIC CONST CONST_APTR LibVectors[] =
   #ifdef __MORPHOS__
   (CONST_APTR)FUNCARRAY_32BIT_NATIVE,
   #endif
-  (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, Codesets, 1),
-  (CONST_APTR)AROS_SLIB_ENTRY(LibClose, Codesets, 2),
-  (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, Codesets, 3),
+  #if defined(__AROS__)
+    #ifdef AROS_ABI_V1
+    (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, Codesets, 1),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibClose, Codesets, 2),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, Codesets, 3),
+    #else
+    (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, Codesets),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibClose, Codesets),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, Codesets),
+    #endif
+  #else
+  (CONST_APTR)LibOpen,
+  (CONST_APTR)LibClose,
+  (CONST_APTR)LibExpunge,
+  #endif
   (CONST_APTR)LibNull,
   (CONST_APTR)libvector,
   (CONST_APTR)-1

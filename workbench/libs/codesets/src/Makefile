@@ -163,12 +163,21 @@ TARGET   = $(BINDIR)/codesets.library
 
 # Common compiler/linker flags
 WARN     = -W -Wall -Wwrite-strings -Wpointer-arith -Wsign-compare
-OPTFLAGS = -O3 -fomit-frame-pointer -funroll-loops
+OPTFLAGS = -O3 -fomit-frame-pointer
 DEBUG    = -DDEBUG -O0
 DEBUGSYM = -g -gstabs
 CFLAGS   = -I. -I../include $(CPU) $(WARN) $(OPTFLAGS) $(DEBUG) $(DEBUGSYM) $(USER_CFLAGS)
 LDFLAGS  = $(CPU) $(DEBUGSYM) -nostartfiles
 LDLIBS   =
+
+OBJS =  libinit.o    \
+        init.o       \
+        utils.o      \
+        base64.o     \
+        convertUTF.o \
+        codesets.o   \
+        codepages.o  \
+        debug.o
 
 # different options per target OS
 ifeq ($(OS), os4)
@@ -193,7 +202,7 @@ ifeq ($(OS), os4)
   LDFLAGS  += -mcrt=$(CRT)
 
   # additional object files required
-  OBJS = stubs-amigaos4.o
+  OBJS += stubs-amigaos4.o
   M68KSTUBS = $(OBJDIR)/codesets_68k.o
 
 else
@@ -210,7 +219,7 @@ ifeq ($(OS), os3)
   endif
 
   # Compiler/Linker flags
-  CPU	    = -m68020-60 -msoft-float
+  CPU	    = -m68020-60 -msoft-float -D__amigaos3__
   CFLAGS  += -noixemul
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
@@ -234,7 +243,7 @@ ifeq ($(OS), mos)
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
 
-  OBJS = stubs-morphos.o
+  OBJS += stubs-morphos.o
 
 else
 ifeq ($(OS), aros-i386)
@@ -249,7 +258,7 @@ ifeq ($(OS), aros-i386)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign
   LDLIBS += -lrom
 
@@ -266,7 +275,7 @@ ifeq ($(OS), aros-ppc)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign
   LDLIBS += -lrom
 
@@ -283,7 +292,7 @@ ifeq ($(OS), aros-x86_64)
   endif
 
   # Compiler/Linker flags
-  OPTFLAGS = -O2 -fomit-frame-pointer -funroll-loops
+  OPTFLAGS = -O2 -fomit-frame-pointer
   CFLAGS += -Wno-pointer-sign
   LDLIBS += -lrom
 
@@ -297,15 +306,6 @@ endif
 ###########################################################################
 # Here starts all stuff that is common for all target platforms and
 # hosts.
-
-OBJS += libinit.o    \
-        init.o       \
-        utils.o      \
-        base64.o     \
-        convertUTF.o \
-        codesets.o   \
-        codepages.o  \
-        debug.o
 
 # main target
 .PHONY: all
