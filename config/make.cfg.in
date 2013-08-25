@@ -134,7 +134,15 @@ MKSUNXIBOOT     := $(TOOLDIR)/mksunxiboot$(HOST_EXE_SUFFIX)
 RESIDENT_BEGIN  := compiler/libinit/libentry
 
 AROS_CC         := $(TARGET_CC)
+ifneq ($(TARGET_CXX),)
 AROS_CPP        := $(TARGET_CXX)
+else
+ifneq ($(TARGET_CPP),)
+AROS_CPP        := $(TARGET_CPP)
+else
+AROS_CPP        := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-g++
+endif
+endif
 AROS_CPPEXTS    := cpp cxx cc c++
 AROS_AS         := $(TARGET_AS)
 AROS_LD         := $(TARGET_LD)
