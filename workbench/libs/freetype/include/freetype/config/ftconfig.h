@@ -367,8 +367,11 @@ FT_BEGIN_HEADER
 
 #ifdef __GNUC__
 
-#if defined( __arm__ ) && !defined( __thumb__ )    && \
-    !( defined( __CC_ARM ) || defined( __ARMCC__ ) )
+/* FIXME: find out why we have to disable this for AROS to avoid an
+   error about conflicting types.
+*/
+#if !defined(__AROS__) && (defined( __arm__ ) && !defined( __thumb__ )    && \
+    !( defined( __CC_ARM ) || defined( __ARMCC__ ) ) )
 #define FT_MULFIX_ASSEMBLER  FT_MulFix_arm
 
   /* documentation is in freetype.h */
