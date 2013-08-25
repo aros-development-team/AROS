@@ -134,7 +134,7 @@ MKSUNXIBOOT     := $(TOOLDIR)/mksunxiboot$(HOST_EXE_SUFFIX)
 RESIDENT_BEGIN  := compiler/libinit/libentry
 
 AROS_CC         := $(TARGET_CC)
-AROS_CPP        := $(TARGET_CPP)
+AROS_CPP        := $(TARGET_CXX)
 AROS_CPPEXTS    := cpp cxx cc c++
 AROS_AS         := $(TARGET_AS)
 AROS_LD         := $(TARGET_LD)
