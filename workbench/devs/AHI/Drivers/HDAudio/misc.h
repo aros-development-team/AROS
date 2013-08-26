@@ -20,8 +20,8 @@ void pci_free_consistent(void* addr);
 void micro_delay(unsigned int val);
 
 // returns the RIRBWP just before sending the command. Used for 12-bit verbs
-BOOL send_command_12(UBYTE codec, UBYTE node, UWORD verb, UBYTE payload, ULONG *result, struct HDAudioChip *card);
-BOOL send_command_4(UBYTE codec, UBYTE node, UBYTE verb, UWORD payload, ULONG *result, struct HDAudioChip *card);
+ULONG send_command_12(UBYTE codec, UBYTE node, UWORD verb, UBYTE payload, struct HDAudioChip *card);
+ULONG send_command_4(UBYTE codec, UBYTE node, UBYTE verb, UWORD payload, struct HDAudioChip *card);
 ULONG get_parameter(UBYTE node, UBYTE parameter, struct HDAudioChip *card);
 
 void set_monitor_volumes(struct HDAudioChip *card, double dB);
