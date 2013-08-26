@@ -119,7 +119,7 @@ endif
 # Create the dependency file %(to) for %(from)
 %define mkdepend_q flags=$(CFLAGS) from=$< to=$@ cc=$(AROS_CC)
 	%mkdir_q dir="$(dir %(to))"
-	@$(ECHO) "Makedepend $(patsubst $(TOP)/%,%,$(if $(filter /%,%(from)),$(abspath %(from)),$(abspath $(TOP)/$(CURDIR)/%(from))))..."
+	@$(ECHO) "Makedepend $(if $(filter /%,%(from)),$(if $(filter $(SRCDIR)/%,$(abspath %(from))),$(patsubst $(SRCDIR)/%,%,$(abspath %(from))),$(patsubst $(TOP)/%,%,$(abspath %(from)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(from))))..."
 	@AROS_CC="%(cc)" $(MKDEPEND) %(flags) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) %(from) -o %(to)
 %end
 #------------------------------------------------------------------------------
