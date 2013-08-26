@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -47,7 +47,9 @@ AROS_UFHA(APTR         , msg , A1))
 
     struct ScreenModeSelector_DATA *data = INST_DATA(OCLASS(obj), obj);    
 
-    return set(obj, MUIA_ScreenModeSelector_Active, data->ids_array[*(IPTR *)msg]);
+    /* Note: the value used to set MUIA_List_Active may not be an index */
+    return set(obj, MUIA_ScreenModeSelector_Active,
+        data->ids_array[XGET(obj, MUIA_List_Active)]);
     
     AROS_USERFUNC_EXIT;
 }
@@ -149,7 +151,7 @@ Object *ScreenModeSelector__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
         MUIA_List_Format, (IPTR)"BAR,",
         MUIA_List_SourceArray, (IPTR)modes_array,
         MUIA_List_Title, TRUE,
-        MUIA_CycleChain, TRUE, /* CHECKME: Keyboard input in the list doesn't work, why? */
+        MUIA_CycleChain, TRUE,
     End;
 
     self = (Object *)DoSuperNewTags
@@ -251,7 +253,8 @@ IPTR ScreenModeSelector__OM_GET(Class *CLASS, Object *self, struct opGet *messag
     switch (message->opg_AttrID)
     {
         case MUIA_ScreenModeSelector_Active:
-            *message->opg_Storage = data->ids_array[XGET(self, MUIA_Cycle_Active)];
+            *message->opg_Storage =
+                data->ids_array[XGET(self, MUIA_List_Active)];
             break;
         default:
             return DoSuperMethodA(CLASS, self, (Msg)message);

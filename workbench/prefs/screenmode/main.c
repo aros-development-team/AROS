@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,8 +20,8 @@
 #include "prefs.h"
 #include "smeditor.h"
 
-#define VERSION "ScreenMode Preferences 1.4 (30.01.2010)"
-#define COPYRIGHT "Copyright © 1995-2010, The AROS Development Team"
+#define VERSION "ScreenMode Preferences 1.5 (26.8.2013)"
+#define COPYRIGHT "Copyright © 1995-2013, The AROS Development Team"
 
 static const char vers[] = VERSION;
 static const char version[] = "$VER: " VERSION "\n";
