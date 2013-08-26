@@ -1,6 +1,6 @@
-diff -urN binutils-2.21.1.orig/bfd/config.bfd binutils-2.21.1/bfd/config.bfd
---- binutils-2.21.1.orig/bfd/config.bfd	2011-04-01 08:02:42.000000000 -0400
-+++ binutils-2.21.1/bfd/config.bfd	2011-11-18 12:12:30.000000000 -0500
+diff -ruN binutils-2.21.1/bfd/config.bfd binutils-2.21.1.aros/bfd/config.bfd
+--- binutils-2.21.1/bfd/config.bfd	2011-04-01 14:02:42.000000000 +0200
++++ binutils-2.21.1.aros/bfd/config.bfd	2011-06-27 09:39:00.000000000 +0200
 @@ -281,7 +281,7 @@
      ;;
    arm-*-elf | arm-*-freebsd* | arm*-*-linux-* | arm*-*-conix* | \
@@ -52,9 +52,20 @@ diff -urN binutils-2.21.1.orig/bfd/config.bfd binutils-2.21.1/bfd/config.bfd
  
    s390-*-linux*)
      targ_defvec=bfd_elf32_s390_vec
-diff -urN binutils-2.21.1.orig/config.guess binutils-2.21.1/config.guess
---- binutils-2.21.1.orig/config.guess	2010-06-01 13:53:40.000000000 -0400
-+++ binutils-2.21.1/config.guess	2011-06-27 03:39:00.000000000 -0400
+diff -ruN binutils-2.21.1/binutils/sysdep.h binutils-2.21.1.aros/binutils/sysdep.h
+--- binutils-2.21.1/binutils/sysdep.h	2009-03-18 12:27:17.000000000 +0100
++++ binutils-2.21.1.aros/binutils/sysdep.h	2011-06-27 09:39:00.000000000 +0200
+@@ -26,6 +26,7 @@
+ #include "ansidecl.h"
+ #include <stdio.h>
+ #include <sys/types.h>
++#include <sys/stat.h>
+ 
+ #include "bfdver.h"
+ 
+diff -ruN binutils-2.21.1/config.guess binutils-2.21.1.aros/config.guess
+--- binutils-2.21.1/config.guess	2010-06-01 19:53:40.000000000 +0200
++++ binutils-2.21.1.aros/config.guess	2011-06-27 09:39:00.000000000 +0200
 @@ -289,6 +289,9 @@
      *:[Mm]orph[Oo][Ss]:*:*)
  	echo ${UNAME_MACHINE}-unknown-morphos
@@ -65,9 +76,9 @@ diff -urN binutils-2.21.1.orig/config.guess binutils-2.21.1/config.guess
      *:OS/390:*:*)
  	echo i370-ibm-openedition
  	exit ;;
-diff -urN binutils-2.21.1.orig/intl/configure binutils-2.21.1/intl/configure
---- binutils-2.21.1.orig/intl/configure	2010-11-05 06:31:38.000000000 -0400
-+++ binutils-2.21.1/intl/configure	2011-06-27 03:39:00.000000000 -0400
+diff -ruN binutils-2.21.1/intl/configure binutils-2.21.1.aros/intl/configure
+--- binutils-2.21.1/intl/configure	2010-11-05 11:31:38.000000000 +0100
++++ binutils-2.21.1.aros/intl/configure	2011-06-27 09:39:00.000000000 +0200
 @@ -4606,6 +4606,9 @@
  
  int main ()
@@ -78,15 +89,15 @@ diff -urN binutils-2.21.1.orig/intl/configure binutils-2.21.1/intl/configure
    signal (SIGFPE, sigfpe_handler);
  /* IRIX and AIX (when "xlc -qcheck" is used) yield signal SIGTRAP.  */
  #if (defined (__sgi) || defined (_AIX)) && defined (SIGTRAP)
-diff -urN binutils-2.21.1.orig/ld/configure.tgt binutils-2.21.1/ld/configure.tgt
---- binutils-2.21.1.orig/ld/configure.tgt	2011-04-01 08:03:54.000000000 -0400
-+++ binutils-2.21.1/ld/configure.tgt	2011-11-18 12:13:44.000000000 -0500
+diff -ruN binutils-2.21.1/ld/configure.tgt binutils-2.21.1.aros/ld/configure.tgt
+--- binutils-2.21.1/ld/configure.tgt	2011-04-01 14:03:54.000000000 +0200
++++ binutils-2.21.1.aros/ld/configure.tgt	2013-08-26 13:30:21.000000000 +0200
 @@ -79,6 +79,10 @@
  			targ_extra_emuls="armelfb armelf armelf_linux"
  			targ_extra_libpath="armelf_linux"
  			;;
-+arm*-*-aros*)		targ_emul=armelf_linux_eabi
-+			targ_extra_emuls=armelfb_linux_eabi
++arm*-*-aros*)		targ_emul=armelf_aros
++			targ_extra_emuls=armelfb_aros
 +			targ_extra_libpath=$targ_extra_emuls
 +			;;
  arm*-*-linux-*eabi)	targ_emul=armelf_linux_eabi
@@ -118,3 +129,76 @@ diff -urN binutils-2.21.1.orig/ld/configure.tgt binutils-2.21.1/ld/configure.tgt
  rs6000-*-aix[5-9]*)	targ_emul=aix5rs6 ;;
  rs6000-*-aix*)		targ_emul=aixrs6
  			;;
+diff -ruN binutils-2.21.1/ld/emulparams/armelf_aros.sh binutils-2.21.1.aros/ld/emulparams/armelf_aros.sh
+--- binutils-2.21.1/ld/emulparams/armelf_aros.sh	1970-01-01 01:00:00.000000000 +0100
++++ binutils-2.21.1.aros/ld/emulparams/armelf_aros.sh	2012-06-28 13:50:52.000000000 +0200
+@@ -0,0 +1,3 @@
++. ${srcdir}/emulparams/armelf_linux_eabi.sh
++# Remap R_ARM_TARGET2 to R_ARM_ABS32
++TARGET2_TYPE=abs
+diff -ruN binutils-2.21.1/ld/emulparams/armelfb_aros.sh binutils-2.21.1.aros/ld/emulparams/armelfb_aros.sh
+--- binutils-2.21.1/ld/emulparams/armelfb_aros.sh	1970-01-01 01:00:00.000000000 +0100
++++ binutils-2.21.1.aros/ld/emulparams/armelfb_aros.sh	2012-06-28 13:50:52.000000000 +0200
+@@ -0,0 +1,2 @@
++. ${srcdir}/emulparams/armelf_aros.sh
++OUTPUT_FORMAT="elf32-bigarm"
+diff -ruN binutils-2.21.1/ld/Makefile.in binutils-2.21.1.aros/ld/Makefile.in
+--- binutils-2.21.1/ld/Makefile.in	2011-03-16 09:37:30.000000000 +0100
++++ binutils-2.21.1.aros/ld/Makefile.in	2013-08-26 13:33:27.000000000 +0200
+@@ -445,12 +445,14 @@
+ 	earmaoutl.c \
+ 	earmcoff.c \
+ 	earmelf.c \
++	earmelf_aros.c \
+ 	earmelf_fbsd.c \
+ 	earmelf_linux.c \
+ 	earmelf_linux_eabi.c \
+ 	earmelf_nbsd.c \
+ 	earmelf_vxworks.c \
+ 	earmelfb.c \
++	earmelfb_aros.c \
+ 	earmelfb_linux.c \
+ 	earmelfb_linux_eabi.c \
+ 	earmelfb_nbsd.c \
+@@ -1027,12 +1029,14 @@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmaoutl.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmcoff.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelf.Po@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelf_aros.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelf_fbsd.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelf_linux.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelf_linux_eabi.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelf_nbsd.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelf_vxworks.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelfb.Po@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelfb_aros.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelfb_linux.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelfb_linux_eabi.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/earmelfb_nbsd.Po@am__quote@
+@@ -2114,6 +2118,12 @@
+   $(ELF_DEPS) $(srcdir)/emultempl/armelf.em \
+   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
+ 	${GENSCRIPTS} armelf_linux_eabi "$(tdir_armelf_linux_abi)"
++earmelf_aros.c: $(srcdir)/emulparams/armelf_aros.sh \
++  $(srcdir)/emulparams/armelf_linux_eabi.sh \
++  $(srcdir)/emulparams/armelf_linux.sh \
++  $(ELF_DEPS) $(srcdir)/emultempl/armelf.em \
++  $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} armelf_aros "$(tdir_armelf_aros)"
+ earmelf_nbsd.c: $(srcdir)/emulparams/armelf_nbsd.sh \
+   $(srcdir)/emulparams/armelf.sh \
+   $(ELF_DEPS) $(srcdir)/emultempl/armelf.em \
+@@ -2140,6 +2150,13 @@
+   $(ELF_DEPS) $(srcdir)/emultempl/armelf.em \
+   $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
+ 	${GENSCRIPTS} armelfb_linux_eabi "$(tdir_armelfb_linux_abi)"
++earmelfb_aros.c: $(srcdir)/emulparams/armelfb_aros.sh \
++  $(srcdir)/emulparams/armelf_aros.sh \
++  $(srcdir)/emulparams/armelf_linux_eabi.sh \
++  $(srcdir)/emulparams/armelf_linux.sh \
++  $(ELF_DEPS) $(srcdir)/emultempl/armelf.em \
++  $(srcdir)/scripttempl/elf.sc ${GEN_DEPENDS}
++	${GENSCRIPTS} armelfb_aros "$(tdir_armelfb_aros)"
+ earmelfb_nbsd.c: $(srcdir)/emulparams/armelfb_nbsd.sh \
+   $(srcdir)/emulparams/armelf_nbsd.sh \
+   $(srcdir)/emulparams/armelf.sh \
