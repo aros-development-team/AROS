@@ -903,7 +903,7 @@ case "$target_os" in
             *armhf*)
                 aros_target_cpu="arm"
                 target_cpu="arm"
-                aros_object_format="armelf_linux_eabi"
+                aros_object_format="armelf_aros"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm -D__linux__"
                 gcc_target_cpu="arm"
@@ -918,7 +918,7 @@ case "$target_os" in
                 ;;
             *arm*)
                 aros_target_cpu="arm"
-                aros_object_format="armelf_linux_eabi"
+                aros_object_format="armelf_aros"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm -D__linux__"
                 gcc_target_cpu="arm"
@@ -1098,7 +1098,7 @@ case "$target_os" in
             *arm*)
                 aros_ios_platform="iPhoneOS"
                 aros_target_cpu="arm"
-                aros_object_format="armelf_linux_eabi"
+                aros_object_format="armelf_aros"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
                 aros_arch_libs="-laeabi"
                 aros_default_wbdepth=8
@@ -1260,7 +1260,7 @@ case "$target_os" in
         aros_target_arch="efika"
         aros_shared_default="no"
         aros_target_cpu="arm"
-        aros_object_format="armelf_linux_eabi"
+        aros_object_format="armelf_aros"
         aros_flavour="standalone"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
         aros_kernel_ldflags=""
@@ -1309,7 +1309,7 @@ case "$target_os" in
         aros_flavour="standalone"
         aros_target_arch="raspi"
         aros_target_cpu="arm"
-        aros_object_format="armelf_linux_eabi"
+        aros_object_format="armelf_aros"
         aros_shared_default="no"
         aros_arch_libs="-laeabi"
 
@@ -1393,7 +1393,7 @@ case "$target_os" in
                 ;;
             *arm*)
                 aros_target_cpu="arm"
-                aros_object_format="armelf_linux_eabi"
+                aros_object_format="armelf_aros"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
                 aros_arch_libs="-laeabi"
                 aros_default_wbdepth=8
