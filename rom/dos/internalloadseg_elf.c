@@ -573,6 +573,7 @@ static int relocate
             }
             break;
 
+            case R_ARM_TARGET1: /* use for constructurs/destructurs, maps to R_ARM_ABS32 */
             case R_ARM_ABS32:
                 *p += s;
                 break;
