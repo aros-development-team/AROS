@@ -231,6 +231,8 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->selfnotify_hook.h_Data = data;
     data->noforward = FALSE;
 
+    data->last_active = -1;
+
     data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
     data->ehn.ehn_Flags = 0;
@@ -549,7 +551,8 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     MUIV_List_Select_Off, NULL);
             }
 
-            set(list, MUIA_List_Active, new_active);
+            if (new_active != XGET(list, MUIA_List_Active))
+                set(list, MUIA_List_Active, new_active);
 
             DoMethod(list, MUIM_List_Select,
                 MUIV_List_Select_Active,
