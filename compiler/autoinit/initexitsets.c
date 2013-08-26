@@ -39,10 +39,14 @@ void __attribute__((weak)) __deregister_frame(void *begin) {}
 THIS_PROGRAM_HANDLES_SYMBOLSET(LIBS)
 THIS_PROGRAM_HANDLES_SYMBOLSET(CTORS)
 THIS_PROGRAM_HANDLES_SYMBOLSET(DTORS)
+THIS_PROGRAM_HANDLES_SYMBOLSET(INIT_ARRAY)
+THIS_PROGRAM_HANDLES_SYMBOLSET(FINI_ARRAY)
 THIS_PROGRAM_HANDLES_SYMBOLSET(INIT)
 THIS_PROGRAM_HANDLES_SYMBOLSET(EXIT)
 DEFINESET(CTORS);
 DEFINESET(DTORS);
+DEFINESET(INIT_ARRAY);
+DEFINESET(FINI_ARRAY);
 DEFINESET(INIT);
 DEFINESET(EXIT);
 
@@ -55,17 +59,21 @@ static void __startup_initexit(struct ExecBase *SysBase)
         __register_frame(&__eh_frame_start);
 
         if (set_call_funcs(SETNAME(INIT), 1, 1))
-	{
+        {
             /* ctors/dtors get called in inverse order than init funcs */
             set_call_funcs(SETNAME(CTORS), -1, 0);
 
+            set_call_funcs(SETNAME(INIT_ARRAY), 1, 0);
+
             __startup_entries_next();
+
+            set_call_funcs(SETNAME(FINI_ARRAY), -1, 0);
 
             set_call_funcs(SETNAME(DTORS), 1, 0);
         }
         set_call_funcs(SETNAME(EXIT), -1, 0);
 
-	__deregister_frame(&__eh_frame_start);
+        __deregister_frame(&__eh_frame_start);
     }
     set_close_libraries();
     

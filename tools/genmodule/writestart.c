@@ -510,6 +510,10 @@ static void writedeclsets(FILE *out, struct config *cfg)
 	    "THIS_PROGRAM_HANDLES_SYMBOLSET(DTORS)\n"
 	    "DECLARESET(CTORS)\n"
 	    "DECLARESET(DTORS)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(INIT_ARRAY)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(FINI_ARRAY)\n"
+	    "DECLARESET(INIT_ARRAY)\n"
+	    "DECLARESET(FINI_ARRAY)\n"
 	    "THIS_PROGRAM_HANDLES_SYMBOLSET(INITLIB)\n"
 	    "THIS_PROGRAM_HANDLES_SYMBOLSET(EXPUNGELIB)\n"
 	    "DECLARESET(INITLIB)\n"
@@ -1013,6 +1017,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "1)\n"
 	    "    {\n"
 	    "        set_call_funcs(SETNAME(CTORS), -1, 0);\n"
+	    "        set_call_funcs(SETNAME(INIT_ARRAY), 1, 0);\n"
 	    "\n"
     );
     
@@ -1027,6 +1032,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "    {\n"
 	    "        if (initcalled)\n"
 	    "            set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, LIBBASE);\n"
+	    "        set_call_funcs(SETNAME(FINI_ARRAY), -1, 0);\n"
 	    "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
 	    "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
     );
@@ -1416,6 +1422,7 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 		"\n"
 		"        Remove((struct Node *)LIBBASE);\n"
 		"\n"
+		"        set_call_funcs(SETNAME(FINI_ARRAY), -1, 0);\n"
 		"        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
 		"        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
 	);
@@ -1655,6 +1662,8 @@ static void writesets(FILE *out, struct config *cfg)
 	fprintf(out,
 	    "DEFINESET(CTORS)\n"
 	    "DEFINESET(DTORS)\n"
+	    "DEFINESET(INIT_ARRAY)\n"
+	    "DEFINESET(FINI_ARRAY)\n"
 	    "DEFINESET(INITLIB)\n"
 	    "DEFINESET(EXPUNGELIB)\n"
     	);
