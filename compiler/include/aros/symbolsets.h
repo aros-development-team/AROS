@@ -53,9 +53,25 @@ const void * const SETNAME(set)[] __attribute__((weak))={0,0};
 
     The functions have to be invoked respectively right before the program enters
     the main() function and right after the program exits the main() function.
+
+    ctors is called in backward order, dtors in forward order.
 */
 #define ADD2CTORS(symbol, pri) ADD2SET(symbol, CTORS, pri)
 #define ADD2DTORS(symbol, pri) ADD2SET(symbol, DTORS, pri)
+
+/*
+    init_array and fini_array sets are used by c++ to store static constructors/destructors
+    pointers in them on ARM EABI.
+
+    The functions have to be invoked respectively right before the program enters
+    the main() function and right after the program exits the main() function.
+
+    init_array is called in forward order, fini_array in backward order.
+
+    init_array is called after ctors, fini_array is called before dtors
+*/
+#define ADD2INITARRAY(symbol, pri) ADD2SET(symbol, INIT_ARRAY, pri)
+#define ADD2FINIARRAY(symbol, pri) ADD2SET(symbol, FINI_ARRAY, pri)
 
 /*
     init and exit sets are like the ctors and dtors sets, except that they take

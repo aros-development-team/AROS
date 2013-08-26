@@ -115,6 +115,13 @@ void emit_sets(setnode *setlist, FILE *out)
     }
 }
 
+/*
+    Notes on sections:
+    .ctors/.dtors - up to GCC 4.6 this was the defafult section where static C++ constructurs
+    were placed for majority of targers
+   .init_array/.fini_array - ARM EABI is using these sections to place static C++ constructors.
+    As of GCC 4.6 the constructors can be placed in .init_array/.fini_array for any target
+ */
 
 void parse_secname(const char *secname, setnode **setlist_ptr)
 {
@@ -129,6 +136,12 @@ void parse_secname(const char *secname, setnode **setlist_ptr)
         off = 1;
     else
     if (strncmp(secname, ".dtors", 5) == 0)
+        off = 1;
+    else
+    if (strncmp(secname, ".init_array", 11) == 0)
+        off = 1;
+    else
+    if (strncmp(secname, ".fini_array", 11) == 0)
         off = 1;
     else
 	return;
