@@ -122,7 +122,7 @@ IPTR mNewTape(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tagListState = msg->ops_AttrList, *tag;
     Object *instance = (Object *) DoSuperMethodA(cl, obj, (APTR) msg);
     struct TapeData *data = INST_DATA(cl, instance);
-    data->tapefh = NULL;
+    data->tapefh = BNULL;
 
     while ((tag = (struct TagItem *) NextTagItem(&tagListState)))
     {
@@ -628,7 +628,7 @@ int main(void)
       *obj_calc, *obj_tape;
     char decimal_point, decimal_label[2];
     struct Screen *pub_screen = NULL;
-    BPTR tapefh = NULL;
+    BPTR tapefh = BNULL;
     int i;
 
     get_arguments();
