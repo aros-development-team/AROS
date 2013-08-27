@@ -428,7 +428,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
     Object *list = data->list;
     struct MUI_List_TestPos_Result pos;
-    LONG seltype, new_active;
+    LONG seltype, new_active = 0;
     IPTR result = 0;
     BOOL select = FALSE, multiselect = FALSE, clear = FALSE;
 
