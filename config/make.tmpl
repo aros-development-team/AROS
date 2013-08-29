@@ -364,8 +364,8 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(TMP_TARGETBASE).o : TMP_CMD:=$(AROS_CPP) $(TARGET_CFLAGS)
-$(TMP_TARGETBASE).d : TMP_CMD:=$(AROS_CPP) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(AROS_CXX) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(AROS_CXX) $(TARGET_CFLAGS)
 $(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
@@ -536,7 +536,7 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(AROS_CPP) $(TARGET_CFLAGS)
+  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(AROS_CXX) $(TARGET_CFLAGS)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
   $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
@@ -1751,7 +1751,7 @@ endif
 BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
 
 ifneq ($(BD_CXXFILES) $(BD_CXXXXFILES) $(BD_CXXCCFILES),)
-BD_LINKCMD=$(AROS_CPP)
+BD_LINKCMD=$(AROS_CXX)
 else
 BD_LINKCMD=$(AROS_CC)
 endif
