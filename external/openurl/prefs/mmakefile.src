@@ -4,14 +4,14 @@
 
 include $(TOP)/config/make.cfg
 
-#MM workbench-libs-openurl-prefs : includes linklibs \
-#MM workbench-libs-openurl-lib \
-#MM workbench-libs-openurl-catalogs \
-#MM workbench-libs-openurl-prefs-setup \
-#MM workbench-libs-openurl-prefs-icon
+#MM external-openurl-prefs : includes linklibs \
+#MM external-openurl-lib \
+#MM external-openurl-catalogs \
+#MM external-openurl-prefs-setup \
+#MM external-openurl-prefs-icon
 
 #MM
-workbench-libs-openurl-prefs-setup : locale.h 
+external-openurl-prefs-setup : locale.h 
 
 EXE := OpenURL
 EXEDIR := $(AROS_PREFS)
@@ -36,7 +36,7 @@ FILES := \
         vastubs \
         debug
 
-%build_prog mmake=workbench-libs-openurl-prefs \
+%build_prog mmake=external-openurl-prefs \
     progname=$(EXE) files=$(FILES) \
     targetdir=$(EXEDIR)
 
