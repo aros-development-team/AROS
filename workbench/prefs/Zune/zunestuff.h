@@ -58,16 +58,7 @@ void ConfigToPen (Object *configdata, ULONG cfg, Object *poppen);
 void ConfigToCycle (Object *configdata, ULONG cfg, Object *cycle);
 void ConfigToString (Object *configdata, ULONG cfg, Object *string);
 
-#ifndef __GNUC__
-LONG XGET(Object * obj, ULONG attr);
-#endif
-
 #define getstring(obj) (char*)XGET(obj,MUIA_String_Contents)
 #define FindFont(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
-
-#ifdef __amigaos4__
-Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...);
-#endif
-
 
 #endif /* _ZUNE_ZUNESTUFF_H */
