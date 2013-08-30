@@ -19,6 +19,15 @@
 
 #include "zunestuff.h"
 
+struct MUI_CustomClass *ClassListview_CLASS;
+
+struct ClassListview_DATA
+{
+    Object *list;
+    struct MUI_EventHandlerNode   ehn;
+};
+
+
 IPTR ClassListview__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 {
     struct ClassListview_DATA        *data = NULL;
@@ -122,3 +131,15 @@ BOOPSI_DISPATCHER(IPTR, ClassListview_Dispatcher, CLASS, self, message)
     return 0;
 }
 BOOPSI_DISPATCHER_END
+
+
+struct MUI_CustomClass *create_listview_class(void)
+{
+    return MUI_CreateCustomClass(NULL, MUIC_Listview, NULL, sizeof(struct ClassListview_DATA), ClassListview_Dispatcher);
+}
+
+void delete_listview_class(void)
+{
+    if (ClassListview_CLASS)
+        MUI_DeleteCustomClass(ClassListview_CLASS);
+}

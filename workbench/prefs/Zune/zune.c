@@ -57,8 +57,6 @@ struct MUI_CustomClass *MCC_Query(ULONG d0);
 #endif
 #endif
 
-extern IPTR ClassListview_Dispatcher();
-struct MUI_CustomClass *ClassListview_CLASS;
 
 #define ZUNEVERSION "$VER: Zune 0.2 (22.02.2006) AROS Dev Team"
 
@@ -142,14 +140,13 @@ static Object *main_page_space; /* a space object */
 
 void close_classes(void)
 {
-    MUI_DeleteCustomClass(ClassListview_CLASS);
+    delete_listview_class();
 }
 
 int open_classes(void)
 {
-    if (1)
+    if ((ClassListview_CLASS = create_listview_class()) != NULL)
     {
-        ClassListview_CLASS = MUI_CreateCustomClass(NULL, MUIC_Listview, NULL, sizeof(struct ClassListview_DATA), ClassListview_Dispatcher);
         return 1;
     }
     else
