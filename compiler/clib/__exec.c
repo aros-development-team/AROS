@@ -476,6 +476,12 @@ void __exec_do(APTR id)
         strlen(aroscbase->acb_exec_args)
     );
 
+    /* RunCommand() does not Close() standard output so may not flush either.
+       So to be sure flush them here */
+    Flush(Output());
+    if (me->pr_CES)
+        Flush(me->pr_CES);
+
     if(inchanged)
         SelectInput(oldin);
     if(outchanged)
