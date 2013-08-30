@@ -1,11 +1,11 @@
 /* Automatically generated header! Do not edit! */
 
-#ifndef _INLINE_OPENURL_H
-#define _INLINE_OPENURL_H
+#ifndef _PPCINLINE_OPENURL_H
+#define _PPCINLINE_OPENURL_H
 
-#ifndef __INLINE_MACROS_H
-#include <inline/macros.h>
-#endif /* !__INLINE_MACROS_H */
+#ifndef __PPCINLINE_MACROS_H
+#include <ppcinline/macros.h>
+#endif /* !__PPCINLINE_MACROS_H */
 
 #ifndef OPENURL_BASE_NAME
 #define OPENURL_BASE_NAME OpenURLBase

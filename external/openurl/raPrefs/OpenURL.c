@@ -502,7 +502,7 @@ int main()
 
     RA_SetUpHook(idcmphook, IDCMPFunc, NULL);
 
-    if((AppPort = IExec->CreateMsgPort()) != NULL)
+    if((AppPort = IExec->AllocSysObjectTags(ASOT_PORT, TAG_DONE)) != NULL)
     {
         IExec->NewList(&list_Brow);
         IExec->NewList(&list_Mail);
@@ -555,7 +555,7 @@ int main()
         IListBrowser->FreeListBrowserList(&list_FTPs);
         IListBrowser->FreeListBrowserList(&list_Mail);
         IListBrowser->FreeListBrowserList(&list_Brow);
-        IExec->DeleteMsgPort(AppPort);
+        IExec->FreeSysObject(ASOT_PORT, AppPort);
     }
 
     IExec->DropInterface((struct Interface*)IOpenURL);

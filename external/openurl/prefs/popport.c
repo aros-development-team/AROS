@@ -88,9 +88,9 @@ static IPTR mListSetup(struct IClass *cl, Object *obj, Msg msg)
         // don't distinguish between OS4 and other systems here, because AllocSysObject()
         // might do things which break the surrounding Forbid(), which AllocVec() is
         // guaranteed *NOT* to do.
-        if((portNode = AllocVec(sizeof(*portNode), MEMF_CLEAR)) != NULL)
+        if((portNode = AllocVecShared(sizeof(*portNode), MEMF_CLEAR)) != NULL)
         {
-          if((portNode->name = AllocVec(strlen(mstate->ln_Name)+1, MEMF_ANY)) != NULL)
+          if((portNode->name = AllocVecShared(strlen(mstate->ln_Name)+1, MEMF_ANY)) != NULL)
           {
             strcpy(portNode->name, mstate->ln_Name);
             AddTail(portList, &portNode->node);

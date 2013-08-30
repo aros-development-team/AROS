@@ -1,4 +1,4 @@
-## version $VER: OpenURL.catalog 7.2 (1.12.2005)
+## version $VER: OpenURL.catalog 7.3 (06.11.2012)
 ## codeset 0
 ## language italiano
 ;
@@ -46,9 +46,6 @@ Impossibile create la classe App
 ;
 MSG_Err_NoWinClass
 Impossibile create la classe Win
-;
-MSG_Err_NoPensClass
-Impossibile create la classe Pens
 ;
 MSG_Err_NoAppListClass
 Impossibile create la classe AppList
@@ -132,7 +129,7 @@ S\0Salva
 MSG_Menu_Use
 U\0Usa
 ;
-MSG_Menu_LastSaveds
+MSG_Menu_LastSaved
 L\0Ultimi valori salvati
 ;
 MSG_Menu_Restore
@@ -140,9 +137,6 @@ R\0Repristina
 ;
 MSG_Menu_Defaults
 D\0Valori di defaults
-;
-MSG_Menu_Pens
-P\0Modifica penne...
 ;
 MSG_Menu_MUI
 M\0MUI...
@@ -441,74 +435,8 @@ Se impostato, quando si deve raggiungere una URL,\n\
 una nuova applicazione è lanciato, se nessuna è\n\
 in funzione.
 ;
-MSG_Pens_WinTitle
-Modifica penne
-;
-MSG_Pens_EnabledPen
-_Abilitate
-;
-MSG_Pens_EnabledPen_Help
-Penna usata per le voci abilitate.
-;
-MSG_Pens_EnabledPen_WinTitle
-Penna abilitate
-;
-MSG_Pens_DisabledPen
-_Disabilitate
-;
-MSG_Pens_DisabledPen_Help
-Penna usata per le voci disabilitate.
-;
-MSG_Pens_DisabledPen_WinTitle
-Penna disabilitate
-;
-MSG_Pens_DetailPen
-Dettagli
-;
-MSG_Pens_DetailPen_Help
-Penna usata per i dettagli
-;
-MSG_Pens_DetailPen_WinTitle
-Penna dettagli
-;
 MSG_About_WinTitle
 Informazioni OpenURL
-;
-MSG_About_Info
-Informazioni
-; Information
-;
-MSG_About_Version
-Versione:
-; Version:
-;
-MSG_About_Authors
-Autori:
-; Authors:
-;
-MSG_About_Support
-Supporto:
-; Support:
-;
-MSG_About_ThirdParts
-Terze parti
-; Third parts
-;
-MSG_About_OfCourse
-, naturalmente!
-; , of course!
-;
-MSG_About_Translation
-
-;
-;
-MSG_About_Translator
-
-;
-;
-MSG_About_TranslatorURL
-
-;
 ;
 MSG_About_OK
 _OK

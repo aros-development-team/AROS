@@ -1,6 +1,10 @@
-## version $VER: openurl.catalog 7.2 (19.2.2006) By Harry Samwel
-## codeset 0
+## version $VER: openurl.catalog 7.3 (25.12.2011)
 ## language svenska
+## codeset 0
+;
+## chunk AUTH Pär Boberg
+;
+; catcomp OpenURL.cd CTFILE OpenURL.ct
 ;
 MSG_ErrReqTitle
 OpenURL Fel
@@ -46,10 +50,6 @@ MSG_Err_NoWinClass
 Kan inte skapa WinClass
 ; Can't create WinClass
 ;
-MSG_Err_NoPensClass
-Kan inte skapa PensClass
-; Can't create PensClass
-;
 MSG_Err_NoAppListClass
 Kan inte skapa AppListClass
 ; Can't create AppListClass
@@ -75,7 +75,7 @@ Kan inte skapa PopphClass
 ; Can't create PopphClass
 ;
 MSG_Err_NoApp
-Kan inte skapa application object
+Kan inte skapa applikationsobjekt
 ; Can't create application object
 ;
 MSG_Err_NoPrefs
@@ -83,8 +83,9 @@ Kan inte få inställningar från openurl.library
 ; Can't obtain prefs from openurl.library
 ;
 MSG_Err_BadPrefs
-Denna versionen av OpenURL kan inte hantera\n openurl.library inställningsfiler för version %ld
-; This version of this program doesn't know how\nto handle openurl.library prefs version %ld
+Denna version av OpenURL kan inte hantera\nopenurl.library inställningar med version %ld
+; This version of this program doesn't know how\n\
+; to handle openurl.library prefs version %ld
 ;
 MSG_Err_FailedSave
 Kan inte spara inställningar
@@ -134,9 +135,9 @@ MSG_Menu_Use
 U\0Använd
 ; U\0Use
 ;
-MSG_Menu_LastSaveds
-L\0Senast sparade
-; L\0Last saveds
+MSG_Menu_LastSaved
+L\0Senast sparad
+; L\0Last saved
 ;
 MSG_Menu_Restore
 R\0Återställ
@@ -144,11 +145,7 @@ R\0Återställ
 ;
 MSG_Menu_Defaults
 D\0Förinställda inställningar
-; D\0Defaults settings
-;
-MSG_Menu_Pens
-P\0Ändra pennor...
-; P\0Adjust pens...
+; D\0Default settings
 ;
 MSG_Menu_MUI
 M\0MUI inställningar...
@@ -159,7 +156,7 @@ OpenURL
 ; OpenURL
 ;
 MSG_Win_Labels_Browsers
-Webb
+Webbläsare
 ; Browsers
 ;
 MSG_Win_Labels_Mailers
@@ -171,7 +168,7 @@ FTP
 ; FTPs
 ;
 MSG_Win_Labels_Misc
-Allmänt
+Diverse
 ; Misc
 ;
 MSG_Win_Save
@@ -239,11 +236,11 @@ Radera aktiv post.
 ; Delete active entry.
 ;
 MSG_AppList_Disable
-Avak_tivera
+Inak_tivera
 ; D_isable
 ;
 MSG_AppList_Disable_Help
-Avaktivera aktiv post.
+Inaktivera aktiv post.
 ; Disable active entry.
 ;
 MSG_AppList_MoveUp_Help
@@ -253,6 +250,7 @@ Flytta aktiv post upp.
 MSG_AppList_MoveDown_Help
 Flytta aktiv post ner.
 ; Move active entry down.
+;
 ;
 MSG_Edit_Use
 _Använd
@@ -291,8 +289,9 @@ URL
 ; URL
 ;
 MSG_Edit_PopScreen
-Allmän skärm namn
+Namn för allmän skärm
 ; Public screen name
+;
 ;
 MSG_Edit_Name
 Na_mn
@@ -316,7 +315,8 @@ A_Rexx port
 ;
 MSG_Edit_Port_Help
 Namn på applikationens ARexx port\natt sända kommandon till.
-; Name of the application ARexx port\nto send commands to.
+; Name of the application ARexx port\n\
+; to send commands to.
 ;
 MSG_Edit_Show
 V_isa
@@ -331,8 +331,9 @@ Visa _överst
 ; _To front
 ;
 MSG_Edit_Screen_Help
-ARexx kommando för att flytta applikationens\nskärm främst.
-; ARexx command to move the application\nscreen to front.
+ARexx kommando för att flytta applikationens\nskärm överst.
+; ARexx command to move the application\n\
+; screen to front.
 ;
 MSG_Edit_OpenURL
 Öppna _URL
@@ -347,8 +348,9 @@ _Nytt fönster
 ; N_ew window
 ;
 MSG_Edit_NewWin_Help
-ARexx kommando för att komma åt en URL\n i ett nytt fönster (eller flik).
-; ARexx command to reach an URL\nin a new window (or tab).
+ARexx kommando för att komma åt en URL\ni ett nytt fönster (eller flik).
+; ARexx command to reach an URL\n\
+; in a new window (or tab).
 ;
 MSG_Browser_List_Help
 Lista på webbläsare.
@@ -361,6 +363,7 @@ Redigera Webbläsare
 MSG_Browser_NewBrowser
 Ny webbläsare
 ; New browser
+;
 ;
 MSG_Mailer_List_Help
 Lista på E-post program.
@@ -379,8 +382,9 @@ Skriv _e-post
 ; _Write mail
 ;
 MSG_Mailer_Write_Help
-ARexx kommando för att öppna ett\n\"skriv ny e-post fönster\".
-; ARexx command to open a\n\"write a new EMail window\".
+ARexx kommando för att öppna\n\"skriv nytt e-post fönster\".
+; ARexx command to open a\n\
+; \"write a new EMail window\".
 ;
 MSG_Mailer_PopAddress
 Adress
@@ -397,6 +401,7 @@ Brevtext
 MSG_Mailer_PopBodyFile
 Bifogad fil
 ; Body file
+;
 ;
 MSG_FTP_List_Help
 Lista på FTP klienter.
@@ -416,14 +421,15 @@ _Ta bort 'ftp://'
 ;
 MSG_FTP_RemoveURLQualifier_Help
 Om vald, tas \"ftp://\" bort\nfrån URLn.
-; If selected, \"ftp://\" is removed\nfrom the URL.
+; If selected, \"ftp://\" is removed\n\
+; from the URL.
 ;
 MSG_Misc_Options
-Alternativ
+URL
 ; Options
 ;
 MSG_Misc_Defaults
-Förinställda
+Alternativ
 ; Defaults
 ;
 MSG_Misc_Prepend
@@ -432,7 +438,9 @@ _Lägg till \"http://\" före URLer som saknar det
 ;
 MSG_Misc_Prepend_Help
 Om vald, läggs \"http://\" till framför alla URLer\nsom saknar det, så att det öppnas i webbläsaren.
-; If selected, \"http://\" is added to any URL\nwithout a scheme, so that it is opened in the\nbrowser.
+; If selected, \"http://\" is added to any URL\n\
+; without a scheme, so that it is opened in the\n\
+; browser.
 ;
 MSG_Misc_UseMailer
 S_änd \"mailto:\" URLer till e-post applikationen
@@ -440,7 +448,9 @@ S_änd \"mailto:\" URLer till e-post applikationen
 ;
 MSG_Misc_UseMailer_Help
 Om vald, sänds alla \"mailto:\" URLer till\ne-post programmet, annars sänds dom till\nwebbläsaren.
-; If selected, \"mailto:\" URLs are sent to\nthe mailer, otherwise they are sent to the\nbrowser.
+; If selected, \"mailto:\" URLs are sent to\n\
+; the mailer, otherwise they are sent to the\n\
+; browser.
 ;
 MSG_Misc_UseFTP
 Sä_nd \"ftp://\" URLer till FTP applikationen
@@ -448,125 +458,57 @@ Sä_nd \"ftp://\" URLer till FTP applikationen
 ;
 MSG_Misc_UseFTP_Help
 Om vald, kommer alla \"ftp://\" URLer att\nsändas till FTP klienten, annars sänds\ndessa till webbläsaren.
-; If selected, \"fpt://\" URLs are sent to\nthe FTP client, otherwise they are sent to\nthe browser.
+; If selected, \"fpt://\" URLs are sent to\n\
+; the FTP client, otherwise they are sent to\n\
+; the browser.
 ;
 MSG_Misc_Show
 V_isa applikation
 ; Un_iconify application
 ;
 MSG_Misc_Show_Help
-Om vald, kommer applikationen att gå ur\nikonifierat löge före sändning av URLen.
-; If selected, the application is uniconified,\nbefore sending the URL to it.
+Om vald, kommer applikationen att gå ur\nikonifierat läge, före sändning av URLen.
+; If selected, the application is uniconified,\n\
+; before sending the URL to it.
 ;
 MSG_Misc_Bring
-_Flytta webbläsarskärmen främst
+_Flytta webbläsarskärmen överst
 ; _Bring browser screen to front
 ;
 MSG_Misc_Bring_Help
-Om vald, kommer applikationens skärm att flyttas\nfrämst, före sändning av URLen.
-; If selected, the application screen is moved\nto front, before sending the URL.
+Om vald, kommer applikationens skärm att flyttas\növerst, före sändning av URLen.
+; If selected, the application screen is moved\n\
+; to front, before sending the URL.
 ;
 MSG_Misc_Open
 _Öppna URL i ett nytt programfönster (eller flik)
 ; _Open URL in new client window (or tab)
 ;
 MSG_Misc_Open_Help
-Om vald, kommer ett nytt applikationsfönster (eller flik)\natt öppnas före sändning av URLen.
-; If selected, a new application window (or tab)\nis opened, before sending the URL.
+Om vald, kommer ett nytt applikationsfönster (eller flik)\natt öppnas, före sändning av URLen.
+; If selected, a new application window (or tab)\n\
+; is opened, before sending the URL.
 ;
 MSG_Misc_Launch
-Starta _webbläsare om en inte körs.
+Starta _webbläsare om en inte körs
 ; _Launch browser if one isn't running
 ;
 MSG_Misc_Launch_Help
 Om vald, startas en ny applikation, om ingen hittas.
 ; If selected, a new application is run, if none is found.
 ;
-MSG_Pens_WinTitle
-Ändra pennor
-; Adjust pens
-;
-MSG_Pens_EnabledPen
-_Aktiverad
-; _Enabled
-;
-MSG_Pens_EnabledPen_Help
-Penna som används för aktiverade posters lampa.
-; Pen used for enabled entries lamp.
-;
-MSG_Pens_EnabledPen_WinTitle
-Aktiverad penna
-; Enabled pen
-;
-MSG_Pens_DisabledPen
-A_vaktiverad
-; _Disabled
-;
-MSG_Pens_DisabledPen_Help
-Penna som används för avaktiverade posters lampa.
-; Pen used for disabled entries lamp.
-;
-MSG_Pens_DisabledPen_WinTitle
-Avaktiverad penna
-; Disabled pen
-;
-MSG_Pens_DetailPen
-_Kontur
-; Deta_il
-;
-MSG_Pens_DetailPen_Help
-Penna som används för lampkontur.
-; Pen used for lamp details.
-;
-MSG_Pens_DetailPen_WinTitle
-Konturpenna
-; Detail pen
-;
 MSG_About_WinTitle
 Om OpenURL
 ; About OpenURL
 ;
-MSG_About_Descr
-OpenURL är ett "shared library" för att enkelt sända\nURLer från applikationer till webbläsare, e-post program\noch FTP klienter. OpenURL är distribuerat som "Public Domain".
-; OpenURL is a shared library for easily sending\nURLs from applications to browsers, mailers and\nFTP clients. OpenURL is destributed in the Public Domain.
-;
-MSG_About_Info
-Information
-; Information
-;
-MSG_About_Version
-Version:
-; Version:
-;
-MSG_About_Authors
-Upphovsmän:
-; Authors:
-;
-MSG_About_Support
-Support:
-; Support:
-;
-MSG_About_ThirdParts
-Tredje parts
-; Third parts
-;
-MSG_About_OfCourse
-, så klart!
-; , of course!
-;
-MSG_About_Translation
-Svensk översättning av
-; 
-;
-MSG_About_Translator
-Harry Samwel
-; 
-;
-MSG_About_TranslatorURL
-harry.samwel@oktv.se
-; 
-;
 MSG_About_OK
-_Okej
+_OK
 ; _OK
+;
+MSG_About_Descr
+\33bOpenURL\33n är ett "delat bibliotek" för att enkelt sända\nURLer från applikationer till webbläsare, e-post program\noch FTP klienter.\n\n\33cOpenURL är "Public Domain" mjukvara.
+; \33bOpenURL\33n is a shared library for easily sending\n\
+; URLs from applications to browsers, mailers\n\
+; and FTP clients.\n\n\
+; \33cOpenURL is a Public Domain Software.
 ;

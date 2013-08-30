@@ -96,6 +96,12 @@
 
 #define MAXIMUM_FILENAME_LENGTH 108
 
+#if defined(__amigaos4__)
+#define AllocVecShared(size, flags)  AllocVecTags((size), AVT_Type, MEMF_SHARED, AVT_Lock, FALSE, ((flags)&MEMF_CLEAR) ? AVT_ClearWithValue : TAG_IGNORE, 0, TAG_DONE)
+#else
+#define AllocVecShared(size, flags)  AllocVec((size), (flags))
+#endif
+
 /* --------------------------- library bases ------------------------------ */
 extern struct Library *IconBase;
 #if defined(__AROS__)
@@ -307,7 +313,7 @@ LONG SmartReadArgs(struct WBStartup * wb_startup, struct SmartArgs * args)
          if (!args->sa_Buffer)
          {
             args->sa_BufferSize = MAX(SA_MINIMUM_BUFFER_SIZE, args->sa_BufferSize);
-            args->sa_Buffer = AllocMem(args->sa_BufferSize, MEMF_ANY);
+            args->sa_Buffer = AllocVecShared(args->sa_BufferSize, MEMF_ANY);
             args->sa_Flags |= SAF_ALLOCBUFFER;
          }
 
@@ -334,7 +340,7 @@ LONG SmartReadArgs(struct WBStartup * wb_startup, struct SmartArgs * args)
                STRPTR temp;
                STRPTR ptr;
 
-               if (num > 1 && args->sa_FileParameter >= 0 && (temp = AllocMem(TEMPSIZE, MEMF_ANY)))
+               if (num > 1 && args->sa_FileParameter >= 0 && (temp = AllocVecShared(TEMPSIZE, MEMF_ANY)))
                {
                   ULONG modes = 0;
 
@@ -356,7 +362,7 @@ LONG SmartReadArgs(struct WBStartup * wb_startup, struct SmartArgs * args)
                      wbarg++;
                   }
 
-                  FreeMem(temp, TEMPSIZE);
+                  FreeVec(temp);
                }
 
                D(DBF_STARTUP, "tooltypes=%08lx", (ULONG)tooltypes);
@@ -382,7 +388,7 @@ LONG SmartReadArgs(struct WBStartup * wb_startup, struct SmartArgs * args)
                            if (!Stricmp(name, "WINDOW"))
                            {
                               STRPTR win;
-                              if ((win = AllocVec((ULONG) strlen(ptr + 1) + 1, MEMF_ANY)))
+                              if ((win = AllocVecShared((ULONG) strlen(ptr + 1) + 1, MEMF_ANY)))
                               {
                                  strcpy(win, ptr + 1);
                                  args->sa_Window = win;
@@ -483,7 +489,7 @@ void SmartFreeArgs(struct SmartArgs *args)
          FreeDosObject(DOS_RDARGS, args->sa_RDArgs);
 
    if (args->sa_Flags & SAF_ALLOCBUFFER)
-      FreeMem(args->sa_Buffer, args->sa_BufferSize);
+      FreeVec(args->sa_Buffer);
 
    if (args->sa_WindowFH)
    {

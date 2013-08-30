@@ -68,7 +68,7 @@ void initStrings(void)
             int                     cnt;
 
             // OK we managed to open the catalog, now go to initialize our own CatComArray
-            privateCatCompArray = (struct CatCompArrayType *) AllocVec( sizeof(CatCompArray), MEMF_ANY );
+            privateCatCompArray = (struct CatCompArrayType *) AllocVecShared( sizeof(CatCompArray), MEMF_ANY );
             if( privateCatCompArray )
             {
                 // ok we have allocated our memory, go for initialization : we copy the whole memory into it

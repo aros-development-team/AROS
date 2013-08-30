@@ -89,3 +89,5 @@ find release -nowarn -name ".svn" -exec rm -rf {} \; 2>/dev/null
 cd release
 rm -f ../OpenURL-$releasever.$releaserev.lha
 lha -ao5q ../OpenURL-$releasever.$releaserev.lha *
+cp OpenURL/ReadMe ../OpenURL-$releasever.$releaserev.readme
+cd ..

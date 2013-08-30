@@ -279,9 +279,21 @@ STATIC CONST CONST_APTR LibVectors[] =
   #ifdef __MORPHOS__
   (CONST_APTR)FUNCARRAY_32BIT_NATIVE,
   #endif
-  (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, Openurl, 1),
-  (CONST_APTR)AROS_SLIB_ENTRY(LibClose, Openurl, 2),
-  (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, Openurl, 3),
+  #if defined(__AROS__)
+    #ifdef AROS_ABI_V1
+    (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, Openurl, 1),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibClose, Openurl, 2),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, Openurl, 3),
+    #else
+    (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, Openurl),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibClose, Openurl),
+    (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, Openurl),
+    #endif
+  #else
+  (CONST_APTR)LibOpen,
+  (CONST_APTR)LibClose,
+  (CONST_APTR)LibExpunge,
+  #endif
   (CONST_APTR)LibNull,
   (CONST_APTR)libvector,
   (CONST_APTR)-1

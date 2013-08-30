@@ -93,7 +93,18 @@ static ULONG openStuff(ULONG *arg0, ULONG *arg1)
 	else
 	  g_MUI4 = TRUE;
 
-    if(!(g_pool = CreatePool(MEMF_PUBLIC|MEMF_CLEAR,8192,4196)))
+    #if defined(__amigaos4__)
+    g_pool = AllocSysObjectTags(ASOT_MEMPOOL,
+      ASOPOOL_MFlags,    MEMF_SHARED|MEMF_CLEAR,
+      ASOPOOL_Puddle,    8192,
+      ASOPOOL_Threshold, 4196,
+      ASOPOOL_Name,      (ULONG)"OpenURL shared pool",
+      ASOPOOL_LockMem,   FALSE,
+      TAG_DONE);
+    #else
+    g_pool = CreatePool(MEMF_PUBLIC|MEMF_CLEAR,8192,4196);
+    #endif
+    if(g_pool == NULL)
       return MSG_Err_NoMem;
 
     *arg0 = 37;
@@ -191,8 +202,14 @@ static void closeStuff(void)
       MUIMasterBase = NULL;
     }
 
-    if(g_pool)
+    if(g_pool != NULL)
+    {
+      #if defined(__amigaos4__)
+      FreeSysObject(ASOT_MEMPOOL, g_pool);
+      #else
       DeletePool(g_pool);
+      #endif
+    }
 }
 
 /**************************************************************************/
