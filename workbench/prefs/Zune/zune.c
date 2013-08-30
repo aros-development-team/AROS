@@ -36,6 +36,9 @@
 #include "framesp.h"
 #include "zunestuff.h"
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 /************************************************************************/
 
 #ifndef MAXFILENAMELENGTH
@@ -157,35 +160,25 @@ int open_classes(void)
 }
 
 
-struct page_entry
-{
-    char *name;
-    struct MUI_CustomClass *cl; /* The class pointer,  maybe NULL */
-    Object *group;  /* The group which should be is displayed, maybe NULL */
-    const struct __MUIBuiltinClass *desc;
-    struct Library *mcp_library;
-    UBYTE mcp_namebuffer[MAXFILENAMELENGTH + 1];
-};
-
 #define MAX_PAGE_ENTRIES 100
 
 /* the name field is set in init_gui() */
 struct page_entry main_page_entries[MAX_PAGE_ENTRIES + 1] =
 {
-/*      {"Info",NULL,NULL,NULL}, */
-    { "",   NULL, NULL, &_MUIP_System_desc     },
-    { "",   NULL, NULL, &_MUIP_Windows_desc    },
-    { "",   NULL, NULL, &_MUIP_Groups_desc     },
-    { "",   NULL, NULL, &_MUIP_Buttons_desc    },
-    { "",   NULL, NULL, &_MUIP_Cycles_desc     },
-    { "",   NULL, NULL, &_MUIP_Sliders_desc    },
-    { "",   NULL, NULL, &_MUIP_Scrollbars_desc },
-    { "",   NULL, NULL, &_MUIP_Listviews_desc  },
-    { "",   NULL, NULL, &_MUIP_Strings_desc    },
-    { "",   NULL, NULL, &_MUIP_Navigation_desc },
-    { "",   NULL, NULL, &_MUIP_Special_desc    },
-    { "",   NULL, NULL, &_MUIP_Frames_desc     },
-    { NULL, NULL, NULL, NULL                   },
+/*  {"Info", NULL, NULL, NULL, NULL, NULL}, */
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_System_desc     },
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_Windows_desc    },
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_Groups_desc     },
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_Buttons_desc    },
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_Cycles_desc     },
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_Sliders_desc    },
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_Scrollbars_desc },
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_Listviews_desc  },
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_Strings_desc    },
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_Navigation_desc },
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_Special_desc    },
+    { "",   NULL, NULL, NULL, NULL, &_MUIP_Frames_desc     },
+    { NULL, NULL, NULL, NULL, NULL, NULL                   },
 };
 
 struct MUI_CustomClass *create_class(const struct __MUIBuiltinClass *desc)
@@ -209,7 +202,9 @@ static void main_page_list_display(struct Hook *h, char **strings, struct page_e
 {
     if (entry)
     {
-        strings[0] = entry->name;
+        sprintf(entry->mcp_imagespec, "\33O[%08lx]", (long unsigned)entry->mcp_listimage);
+        *strings++ = entry->mcp_imagespec;
+        *strings   = entry->name;
     }
 }
 
@@ -336,6 +331,9 @@ void find_mcps(void)
                                 
                                 pe->cl = mcp;
                                 pe->mcp_library = mcclib;
+                                pe->mcp_image = (Object *)MCC_Query(2); /* Get MCP image */
+                                D(bug("[Zune Prefs/find_mcps] image %p\n", pe->mcp_image));
+
                                 mcclib = NULL;
                                 
                                 pe->mcp_namebuffer[0] = 27;
@@ -511,6 +509,7 @@ int init_gui(void)
                         MUIA_Listview_List, main_page_list = ListObject,
                             InputListFrame,
                             MUIA_List_AdjustWidth, TRUE,
+                            MUIA_List_Format, ",",
                             MUIA_List_DisplayHook, &page_display_hook,
                             End,
                         TAG_DONE)),

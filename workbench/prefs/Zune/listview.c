@@ -53,20 +53,51 @@ IPTR ClassListview__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *mess
 IPTR ClassListview__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *message)
 {
     struct ClassListview_DATA        *data = INST_DATA(CLASS, obj);
+    LONG i;
 
     if (!DoSuperMethodA(CLASS, obj, (Msg) message)) return (IPTR)NULL;
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
+    for(i = 0; ; i++)
+    {
+        struct page_entry *entry;
+
+        DoMethod(data->list, MUIM_List_GetEntry, i, &entry);
+        if (!entry)
+            break;
+
+        if (entry->mcp_image)
+        {
+            entry->mcp_listimage =
+                (APTR)DoMethod(data->list, MUIM_List_CreateImage, entry->mcp_image, 0);
+        }
+        D(bug("listview setup image %p listimage %p\n",
+            entry->mcp_image, entry->mcp_listimage));
+    }
     return 1;
 }
 
 IPTR ClassListview__MUIM_Cleanup(struct IClass *CLASS, Object *obj, struct MUIP_Cleanup *message)
 {
     struct ClassListview_DATA        *data = INST_DATA(CLASS, obj);
+    LONG i;
 
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 
+    for(i = 0; ; i++)
+    {
+        struct page_entry *entry;
+
+        DoMethod(data->list, MUIM_List_GetEntry, i, &entry);
+        if (!entry)
+            break;
+
+        if (entry->mcp_listimage)
+        {
+            DoMethod(data->list, MUIM_List_DeleteImage, entry->mcp_listimage, 0);
+        }
+    }
     return DoSuperMethodA(CLASS, obj, (Msg)message);
 }
 

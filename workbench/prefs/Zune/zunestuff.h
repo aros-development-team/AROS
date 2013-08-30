@@ -17,6 +17,20 @@ struct MUI_CustomClass *create_listview_class(void);
 void delete_listview_class(void);
 
 
+struct page_entry
+{
+    char *name;
+    struct MUI_CustomClass *cl; /* The class pointer,  maybe NULL */
+    Object *group;  /* The group which should be is displayed, maybe NULL */
+    Object *mcp_image;  /* Result of MCC_Query(2) */
+    APTR mcp_listimage; /* mcp_image translated to list image */
+    const struct __MUIBuiltinClass *desc;
+    struct Library *mcp_library;
+    UBYTE mcp_namebuffer[MAXFILENAMELENGTH + 1];
+    UBYTE mcp_imagespec[30]; /* Image specification of MCP image */
+};
+
+
 Object *MakeButton (CONST_STRPTR str);
 Object *MakeCycle (CONST_STRPTR label, CONST_STRPTR entries[]);
 Object *MakeCheck (CONST_STRPTR label);
