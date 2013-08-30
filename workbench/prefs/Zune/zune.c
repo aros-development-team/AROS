@@ -46,8 +46,8 @@
 
 #ifdef __AROS__
 #define MCC_Query(x) AROS_LVO_CALL1(struct MUI_CustomClass *,          \
-		                    AROS_LCA(LONG, (x), D0),           \
-				    struct Library *, mcclib, 5, lib)
+                                    AROS_LCA(LONG, (x), D0),           \
+                                    struct Library *, mcclib, 5, lib)
 #else
 
 #ifdef __amigaos4__
@@ -98,15 +98,15 @@ int open_libs(void)
 #ifdef __amigaos4__
     if (!(ZuneMasterBase = OpenLibrary("zunemaster.library",0)))
     {
-    	printf("Unable to open zunemaster.library\n");
-    	return 0;
+        printf("Unable to open zunemaster.library\n");
+        return 0;
     }
 
     if (!(IZuneMaster = (struct ZuneMasterIFace*)GetInterface(ZuneMasterBase,"main",1,NULL)))
     {
-    	printf("Unable to get main interface of zunemaster.library\n");
-    	CloseLibrary(ZuneMasterBase); ZuneMasterBase = NULL;
-    	return 0;
+        printf("Unable to get main interface of zunemaster.library\n");
+        CloseLibrary(ZuneMasterBase); ZuneMasterBase = NULL;
+        return 0;
     }
 #endif
     return 1;
@@ -147,16 +147,16 @@ void close_classes(void)
 
 int open_classes(void)
 {
-     if (1)
-     {
-         ClassListview_CLASS = MUI_CreateCustomClass(NULL, MUIC_Listview, NULL, sizeof(struct ClassListview_DATA), ClassListview_Dispatcher);
-	 return 1;
-     }
-     else
-     {
-	 close_classes();
-	 return 0;
-     }
+    if (1)
+    {
+        ClassListview_CLASS = MUI_CreateCustomClass(NULL, MUIC_Listview, NULL, sizeof(struct ClassListview_DATA), ClassListview_Dispatcher);
+        return 1;
+    }
+    else
+    {
+        close_classes();
+        return 0;
+    }
 }
 
 
@@ -226,16 +226,16 @@ void main_page_active(void)
     Object *new_group;
 
     if (new_active == -1)
-	new_group = main_page_space;
+        new_group = main_page_space;
     else
     {
-	new_group = main_page_entries[new_active].group;
-	if (!new_group)
-	    new_group = main_page_space;
+        new_group = main_page_entries[new_active].group;
+        if (!new_group)
+            new_group = main_page_space;
     }
 
     if (new_group == main_page_group_displayed)
-	return;
+        return;
 
     DoMethod(main_page_group, MUIM_Group_InitChange);
     DoMethod(main_page_group, OM_REMMEMBER, (IPTR)main_page_group_displayed);
@@ -302,77 +302,77 @@ void find_mcps(void)
     
     for(pe = main_page_entries; pe->name; pe++)
     {
-    	num_page_entries++;
+        num_page_entries++;
     }
     
     olddir = CurrentDir(BNULL);
     
     while((dp = GetDeviceProc("LIBS:", dp)))
     {
-    	CurrentDir(dp->dvp_Lock);
-	
-	for(pathptr = searchpaths; *pathptr; pathptr++)
-	{
-	    struct AnchorPath *ap;
-	    LONG    	       match;
-	    
-	    ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 256, MEMF_CLEAR);
-	    if (ap)
-	    {
-	    	ap->ap_Strlen = 256;
-		
-		for(match = MatchFirst((STRPTR)*pathptr, ap);
-		    match == 0;
-		    match = MatchNext(ap))
-		{
-		    struct Library *mcclib;
-		    
-		    if (num_page_entries < MAX_PAGE_ENTRIES)
-		    {
-			if ((mcclib = OpenLibrary(ap->ap_Buf, 0)))
-			{
-		    	    struct MUI_CustomClass *mcp;
+        CurrentDir(dp->dvp_Lock);
+        
+        for(pathptr = searchpaths; *pathptr; pathptr++)
+        {
+            struct AnchorPath *ap;
+            LONG               match;
+            
+            ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 256, MEMF_CLEAR);
+            if (ap)
+            {
+                ap->ap_Strlen = 256;
+                
+                for(match = MatchFirst((STRPTR)*pathptr, ap);
+                    match == 0;
+                    match = MatchNext(ap))
+                {
+                    struct Library *mcclib;
+                    
+                    if (num_page_entries < MAX_PAGE_ENTRIES)
+                    {
+                        if ((mcclib = OpenLibrary(ap->ap_Buf, 0)))
+                        {
+                            struct MUI_CustomClass *mcp;
 
-		    	    if ((mcp = MCC_Query(1)))
-			    {
-			    	char *sp;
-				
-				pe->cl = mcp;
-				pe->mcp_library = mcclib;
-				mcclib = NULL;
-				
-				pe->mcp_namebuffer[0] = 27;
-				pe->mcp_namebuffer[1] = '3';
-				strncpy(pe->mcp_namebuffer + 2, mcp->mcc_Class->cl_ID, sizeof(pe->mcp_namebuffer) - 3);
-				
-				if ((sp = strrchr(pe->mcp_namebuffer, '.')))
-				    *sp = '\0';
-				
-				pe->name = pe->mcp_namebuffer;
-						
-				pe++;
-				num_page_entries++;
-				
-			    } /* if ((mcp = MCC_Query(1))) */
+                            if ((mcp = MCC_Query(1)))
+                            {
+                                char *sp;
+                                
+                                pe->cl = mcp;
+                                pe->mcp_library = mcclib;
+                                mcclib = NULL;
+                                
+                                pe->mcp_namebuffer[0] = 27;
+                                pe->mcp_namebuffer[1] = '3';
+                                strncpy(pe->mcp_namebuffer + 2, mcp->mcc_Class->cl_ID, sizeof(pe->mcp_namebuffer) - 3);
+                                
+                                if ((sp = strrchr(pe->mcp_namebuffer, '.')))
+                                    *sp = '\0';
+                                
+                                pe->name = pe->mcp_namebuffer;
+                                                
+                                pe++;
+                                num_page_entries++;
+                                
+                            } /* if ((mcp = MCC_Query(1))) */
 
-		    	    if (mcclib) CloseLibrary(mcclib);
-			    
-			} /* if ((mcclib = OpenLibrary(ap->ap_Buf, 0))) */
+                            if (mcclib) CloseLibrary(mcclib);
+                            
+                        } /* if ((mcclib = OpenLibrary(ap->ap_Buf, 0))) */
 
-		    } /* if (num_page_entries < MAX_PAGE_ENTRIES) */
-		    
-		} /* for(match = ... */
-		
-		MatchEnd(ap);
-		
-	    	FreeVec(ap);
-		
-	    } /* if (ap) */
-	    
-	} /* for(pathptr = searchpaths; *pathptr; pathptr++) */
-	
-    	if (!(dp->dvp_Flags & DVPF_ASSIGN)) break;
-	
+                    } /* if (num_page_entries < MAX_PAGE_ENTRIES) */
+                    
+                } /* for(match = ... */
+                
+                MatchEnd(ap);
+                
+                FreeVec(ap);
+                
+            } /* if (ap) */
+            
+        } /* for(pathptr = searchpaths; *pathptr; pathptr++) */
+        
+        if (!(dp->dvp_Flags & DVPF_ASSIGN)) break;
+        
     } /* while((dp = GetDeviceProc("LIBS:", dp))) */
     
     FreeDeviceProc(dp);
@@ -389,43 +389,43 @@ void deinit_gui(void)
     int i;
 
     if (app)
-	MUI_DisposeObject(app);
+        MUI_DisposeObject(app);
 
     for (i = 0; main_page_entries[i].name; i++)
     {
-	if ((main_page_entries[i].group != NULL) &&
-	    (main_page_entries[i].group != main_page_group_displayed))
-	{
-	    DisposeObject(main_page_entries[i].group);
-	}
+        if ((main_page_entries[i].group != NULL) &&
+            (main_page_entries[i].group != main_page_group_displayed))
+        {
+            DisposeObject(main_page_entries[i].group);
+        }
 
-    	if (main_page_entries[i].mcp_library)
-	{
-	    main_page_entries[i].cl = NULL; /* Prevent MUI_DeleteCustomClass call below */
-	   
-	    if ((main_page_entries[i].group == NULL) ||
-	        (main_page_entries[i].group != main_page_group_displayed))
-	    {
-	    	/* Only close library if main_page_group_displayed is not this page,
-		   because in that case the object got automatically killed through
-		   MUI_DisposeObject(app) which also does the CloseLibrary()!! */
-		   
-    		CloseLibrary(main_page_entries[i].mcp_library);
-    		main_page_entries[i].mcp_library = NULL;
-	    }	    
-	}
-	
-	main_page_entries[i].group = NULL;
-    	
-	if (main_page_entries[i].cl != NULL)
-	{
-	    MUI_DeleteCustomClass(main_page_entries[i].cl);
-	    main_page_entries[i].cl = NULL;
-	}
+        if (main_page_entries[i].mcp_library)
+        {
+            main_page_entries[i].cl = NULL; /* Prevent MUI_DeleteCustomClass call below */
+           
+            if ((main_page_entries[i].group == NULL) ||
+                (main_page_entries[i].group != main_page_group_displayed))
+            {
+                /* Only close library if main_page_group_displayed is not this page,
+                   because in that case the object got automatically killed through
+                   MUI_DisposeObject(app) which also does the CloseLibrary()!! */
+                   
+                CloseLibrary(main_page_entries[i].mcp_library);
+                main_page_entries[i].mcp_library = NULL;
+            }       
+        }
+        
+        main_page_entries[i].group = NULL;
+        
+        if (main_page_entries[i].cl != NULL)
+        {
+            MUI_DeleteCustomClass(main_page_entries[i].cl);
+            main_page_entries[i].cl = NULL;
+        }
     }
 
     if (main_page_group_displayed != main_page_space)
-	MUI_DisposeObject(main_page_space);
+        MUI_DisposeObject(main_page_space);
 }
 
 /****************************************************************
@@ -466,11 +466,11 @@ int init_gui(void)
 #endif
 
     if (!strcmp(appname, "global"))
-	wintitle = (STRPTR) _(MSG_WINTITLE1);
+        wintitle = (STRPTR) _(MSG_WINTITLE1);
     else
     {
-	snprintf(titlebuf, 255, _(MSG_WINTITLE2), appname);
-	wintitle = titlebuf;
+        snprintf(titlebuf, 255, _(MSG_WINTITLE2), appname);
+        wintitle = titlebuf;
     }
 
     app = ApplicationObject,
@@ -479,129 +479,129 @@ int init_gui(void)
         MUIA_Application_Copyright, (IPTR) " 2006, The AROS Development Team",
         MUIA_Application_Description, wintitle,
         MUIA_Application_Base, "ZUNEPREF",
-	MUIA_Application_Menustrip, MenuitemObject,
-	    MUIA_Family_Child, MenuitemObject,
-	    	MUIA_Menuitem_Title, _(MSG_MEN_PROJECT),
-	    	MUIA_Family_Child, open_menuitem = MenuitemObject,
-		    MUIA_Menuitem_Title, _(MSG_MEN_OPEN), MUIA_Menuitem_Shortcut, _(MSG_MEN_OPEN_SC),
-		End,
-	    	MUIA_Family_Child, append_menuitem = MenuitemObject, MUIA_Menuitem_Title, _(MSG_MEN_APPEND), End,
-	    	MUIA_Family_Child, saveas_menuitem = MenuitemObject,
-		    MUIA_Menuitem_Title, _(MSG_MEN_SAVEAS), MUIA_Menuitem_Shortcut, _(MSG_MEN_SAVEAS_SC),
-		End,
-	    	MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, NM_BARLABEL, End,
-	    	MUIA_Family_Child, aboutzune_menuitem = MenuitemObject,
-		    MUIA_Menuitem_Title, _(MSG_MEN_ABOUT), MUIA_Menuitem_Shortcut, _(MSG_MEN_ABOUT_SC),
-		End,
-	    	MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, NM_BARLABEL, End,
-	    	MUIA_Family_Child, quit_menuitem = MenuitemObject,
-		    MUIA_Menuitem_Title, _(MSG_MEN_QUIT), MUIA_Menuitem_Shortcut, _(MSG_MEN_QUIT_SC),
-		End,
-	    	End,
-	    End,
-    	SubWindow, main_wnd = WindowObject,
-    	    MUIA_Window_Title, (IPTR)wintitle,
-	    MUIA_Window_Activate, TRUE,
-	    MUIA_Window_CloseGadget, FALSE,
-	    MUIA_Window_ID, MAKE_ID('Z','W','I','N'),
+        MUIA_Application_Menustrip, MenuitemObject,
+            MUIA_Family_Child, MenuitemObject,
+                MUIA_Menuitem_Title, _(MSG_MEN_PROJECT),
+                MUIA_Family_Child, open_menuitem = MenuitemObject,
+                    MUIA_Menuitem_Title, _(MSG_MEN_OPEN), MUIA_Menuitem_Shortcut, _(MSG_MEN_OPEN_SC),
+                End,
+                MUIA_Family_Child, append_menuitem = MenuitemObject, MUIA_Menuitem_Title, _(MSG_MEN_APPEND), End,
+                MUIA_Family_Child, saveas_menuitem = MenuitemObject,
+                    MUIA_Menuitem_Title, _(MSG_MEN_SAVEAS), MUIA_Menuitem_Shortcut, _(MSG_MEN_SAVEAS_SC),
+                End,
+                MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, NM_BARLABEL, End,
+                MUIA_Family_Child, aboutzune_menuitem = MenuitemObject,
+                    MUIA_Menuitem_Title, _(MSG_MEN_ABOUT), MUIA_Menuitem_Shortcut, _(MSG_MEN_ABOUT_SC),
+                End,
+                MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, NM_BARLABEL, End,
+                MUIA_Family_Child, quit_menuitem = MenuitemObject,
+                    MUIA_Menuitem_Title, _(MSG_MEN_QUIT), MUIA_Menuitem_Shortcut, _(MSG_MEN_QUIT_SC),
+                End,
+            End,
+        End,
+        SubWindow, main_wnd = WindowObject,
+            MUIA_Window_Title, (IPTR)wintitle,
+            MUIA_Window_Activate, TRUE,
+            MUIA_Window_CloseGadget, FALSE,
+            MUIA_Window_ID, MAKE_ID('Z','W','I','N'),
 
-	    WindowContents, VGroup,
-	        MUIA_Group_VertSpacing, 10,
-    	    	Child, HGroup,
-	          Child, VGroup,
-		    Child, (NewObject(ClassListview_CLASS->mcc_Class, NULL,
-	                MUIA_CycleChain, 1,
-			MUIA_Listview_List, main_page_list = ListObject,
-			    InputListFrame,
-	                    MUIA_List_AdjustWidth, TRUE,
-			    MUIA_List_DisplayHook, &page_display_hook,
-			    End,
-			TAG_DONE)),
-		    Child, HGroup,
-	                Child, MUI_NewObject(MUIC_Popframe,
-					     MUIA_FixHeight, 20,
-					     MUIA_Window_Title, (IPTR) _(MSG_FRAME_CLIPBOARD),
-					     TAG_DONE),
-	                Child, MUI_NewObject(MUIC_Popimage,
-					     MUIA_FixHeight, 20,
-					     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
-					     MUIA_Window_Title, (IPTR) _(MSG_IMAGE_CLIPBOARD),
-					     TAG_DONE),
-		        End, /* HGroup */
-	            End,
-		    Child, VGroup,
-	                TextFrame,
-			InnerSpacing(6,6),
-	                MUIA_Background, MUII_PageBack,
-			Child, main_page_group = VGroup,
-			    Child, main_page_group_displayed = main_page_space = HVSpace,
-			    End,
-			End,
-		    End,
-		Child, HGroup,
-		    Child, test_button = ImageButton(_(MSG_GAD_TEST), "THEME:Images/Gadgets/Prefs/Test"),
-		    Child, HVSpace,
-		    Child, save_button = ImageButton(_(MSG_GAD_SAVE), "THEME:Images/Gadgets/Prefs/Save"),
-		    Child, use_button = ImageButton(_(MSG_GAD_USE), "THEME:Images/Gadgets/Prefs/Use"),
-		    Child, cancel_button = ImageButton(_(MSG_GAD_CANCEL), "THEME:Images/Gadgets/Prefs/Cancel"),
-		    End,
-		End,
-    	    End,
-    	End;
+            WindowContents, VGroup,
+                MUIA_Group_VertSpacing, 10,
+                Child, HGroup,
+                  Child, VGroup,
+                    Child, (NewObject(ClassListview_CLASS->mcc_Class, NULL,
+                        MUIA_CycleChain, 1,
+                        MUIA_Listview_List, main_page_list = ListObject,
+                            InputListFrame,
+                            MUIA_List_AdjustWidth, TRUE,
+                            MUIA_List_DisplayHook, &page_display_hook,
+                            End,
+                        TAG_DONE)),
+                    Child, HGroup,
+                        Child, MUI_NewObject(MUIC_Popframe,
+                                             MUIA_FixHeight, 20,
+                                             MUIA_Window_Title, (IPTR) _(MSG_FRAME_CLIPBOARD),
+                                             TAG_DONE),
+                        Child, MUI_NewObject(MUIC_Popimage,
+                                             MUIA_FixHeight, 20,
+                                             MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
+                                             MUIA_Window_Title, (IPTR) _(MSG_IMAGE_CLIPBOARD),
+                                             TAG_DONE),
+                        End, /* HGroup */
+                    End,
+                    Child, VGroup,
+                        TextFrame,
+                        InnerSpacing(6,6),
+                        MUIA_Background, MUII_PageBack,
+                        Child, main_page_group = VGroup,
+                            Child, main_page_group_displayed = main_page_space = HVSpace,
+                            End,
+                        End,
+                    End,
+                Child, HGroup,
+                    Child, test_button = ImageButton(_(MSG_GAD_TEST), "THEME:Images/Gadgets/Prefs/Test"),
+                    Child, HVSpace,
+                    Child, save_button = ImageButton(_(MSG_GAD_SAVE), "THEME:Images/Gadgets/Prefs/Save"),
+                    Child, use_button = ImageButton(_(MSG_GAD_USE), "THEME:Images/Gadgets/Prefs/Use"),
+                    Child, cancel_button = ImageButton(_(MSG_GAD_CANCEL), "THEME:Images/Gadgets/Prefs/Cancel"),
+                    End,
+                End,
+            End,
+        End;
 
     if (app)
     {
-    	int i;
+        int i;
 
-	DoMethod(main_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-		 (IPTR)app, 3, MUIM_CallHook, (IPTR)&hook_standard,
-		 (IPTR)main_cancel_pressed);
-	DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
-		 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_cancel_pressed);
-	DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
-		 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_save_pressed);
-	DoMethod(use_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
-		 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_use_pressed);
-	DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 6,
-		 MUIM_Application_PushMethod, (IPTR)app, 3, MUIM_CallHook,
-		 (IPTR)&hook_standard, (IPTR)main_test_pressed);
-	DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
-		 MUIV_EveryTime, (IPTR)app, 3, MUIM_CallHook,
-		 (IPTR)&hook_standard, (IPTR)main_cancel_pressed);
+        DoMethod(main_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+                 (IPTR)app, 3, MUIM_CallHook, (IPTR)&hook_standard,
+                 (IPTR)main_cancel_pressed);
+        DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
+                 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_cancel_pressed);
+        DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
+                 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_save_pressed);
+        DoMethod(use_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
+                 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_use_pressed);
+        DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 6,
+                 MUIM_Application_PushMethod, (IPTR)app, 3, MUIM_CallHook,
+                 (IPTR)&hook_standard, (IPTR)main_test_pressed);
+        DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
+                 MUIV_EveryTime, (IPTR)app, 3, MUIM_CallHook,
+                 (IPTR)&hook_standard, (IPTR)main_cancel_pressed);
         DoMethod(open_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
                  MUIV_EveryTime, (IPTR)app, 3, MUIM_CallHook,
                  (IPTR)&hook_standard, (IPTR)main_open_menu);   
         DoMethod(saveas_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
                  MUIV_EveryTime, (IPTR)app, 3, MUIM_CallHook,
                  (IPTR)&hook_standard, (IPTR)main_saveas_menu); 
-	DoMethod(aboutzune_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
-		 MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_AboutMUI,
-		 (IPTR)main_wnd);
+        DoMethod(aboutzune_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
+                 MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_AboutMUI,
+                 (IPTR)main_wnd);
 
-	for (i = 0; main_page_entries[i].name != NULL; i++)
-	{
-	    struct page_entry *p = &main_page_entries[i];
+        for (i = 0; main_page_entries[i].name != NULL; i++)
+        {
+            struct page_entry *p = &main_page_entries[i];
 
-	    if (!p->cl) p->cl = create_class(p->desc);
+            if (!p->cl) p->cl = create_class(p->desc);
 
-	    if (!(p->cl && (p->group = NewObject(p->cl->mcc_Class, NULL, TAG_DONE))))
-	    {
-		deinit_gui();
-		return 0;
-	    }
+            if (!(p->cl && (p->group = NewObject(p->cl->mcc_Class, NULL, TAG_DONE))))
+            {
+                deinit_gui();
+                return 0;
+            }
 
-	    DoMethod(main_page_list, MUIM_List_InsertSingle, (IPTR)p,
-		     MUIV_List_Insert_Bottom);
-	}
+            DoMethod(main_page_list, MUIM_List_InsertSingle, (IPTR)p,
+                     MUIV_List_Insert_Bottom);
+        }
 
-	DoMethod(main_page_list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-		 (IPTR)app, 3, MUIM_CallHook, (IPTR)&hook_standard,
-		 (IPTR)main_page_active);
+        DoMethod(main_page_list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+                 (IPTR)app, 3, MUIM_CallHook, (IPTR)&hook_standard,
+                 (IPTR)main_page_active);
 
-	/* Activate first entry */
-	set(main_page_list,MUIA_List_Active,0);
+        /* Activate first entry */
+        set(main_page_list,MUIA_List_Active,0);
 
-	return 1;
+        return 1;
     }
     return 0;
 }
@@ -614,25 +614,25 @@ void load_prefs(CONST_STRPTR name)
     Object *configdata;
 
     configdata = MUI_NewObject(MUIC_Configdata,
-			       MUIA_Configdata_ApplicationBase, (IPTR)name,
-			       TAG_DONE);
+                               MUIA_Configdata_ApplicationBase, (IPTR)name,
+                               TAG_DONE);
     if (configdata != NULL)
     {
-	int i;
+        int i;
 
-/*  	D(bug("zune::load_prefs: created configdata %p\n", configdata)); */
-	LastSavedConfigdata = configdata;
+/*      D(bug("zune::load_prefs: created configdata %p\n", configdata)); */
+        LastSavedConfigdata = configdata;
 
         /* Call MUIM_Settingsgroup_ConfigToGadgets for every group */
-	for (i=0;main_page_entries[i].name;i++)
-	{
-	    struct page_entry *p = &main_page_entries[i];
-	    if (p->group)
-		DoMethod(p->group, MUIM_Settingsgroup_ConfigToGadgets,
-			 (IPTR)configdata);
-	}
+        for (i=0;main_page_entries[i].name;i++)
+        {
+            struct page_entry *p = &main_page_entries[i];
+            if (p->group)
+                DoMethod(p->group, MUIM_Settingsgroup_ConfigToGadgets,
+                         (IPTR)configdata);
+        }
 
-/*  	D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
+/*      D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
     }
 }
 
@@ -706,34 +706,34 @@ void save_prefs(CONST_STRPTR name, BOOL envarc)
 
     configdata = MUI_NewObject(MUIC_Configdata,
                     //MUIA_Configdata_ApplicationBase, name,
-			       MUIA_Configdata_Application,appaddr,
-			       TAG_DONE);
+                               MUIA_Configdata_Application,appaddr,
+                               TAG_DONE);
     if (configdata != NULL)
     {
-	int i;
-	char buf[255];
+        int i;
+        char buf[255];
 
-/*  	D(bug("zune::save_prefs: created configdata %p\n", configdata)); */
+/*      D(bug("zune::save_prefs: created configdata %p\n", configdata)); */
 
         /* Call MUIM_Settingsgroup_GadgetsToConfig for every group */
-	for (i=0;main_page_entries[i].name;i++)
-	{
-	    struct page_entry *p = &main_page_entries[i];
-	    if (p->group)
-		DoMethod(p->group, MUIM_Settingsgroup_GadgetsToConfig,
-			 (IPTR)configdata);
-	}
+        for (i=0;main_page_entries[i].name;i++)
+        {
+            struct page_entry *p = &main_page_entries[i];
+            if (p->group)
+                DoMethod(p->group, MUIM_Settingsgroup_GadgetsToConfig,
+                         (IPTR)configdata);
+        }
 
-	if (envarc)
-	{
-	    snprintf(buf, 255, "ENVARC:zune/%s.prefs", name);
-	    DoMethod(configdata, MUIM_Configdata_Save, (IPTR)buf);
-	}
-	snprintf(buf, 255, "ENV:zune/%s.prefs", name);
-	DoMethod(configdata, MUIM_Configdata_Save, (IPTR)buf);
+        if (envarc)
+        {
+            snprintf(buf, 255, "ENVARC:zune/%s.prefs", name);
+            DoMethod(configdata, MUIM_Configdata_Save, (IPTR)buf);
+        }
+        snprintf(buf, 255, "ENV:zune/%s.prefs", name);
+        DoMethod(configdata, MUIM_Configdata_Save, (IPTR)buf);
 
-    	MUI_DisposeObject(configdata);
-/*  	D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
+        MUI_DisposeObject(configdata);
+/*      D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
     }
 }
 
@@ -776,7 +776,7 @@ void main_saveas_menu(void)
             MUI_DisposeObject(configdata);
             /*      D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
         }                     
-                                  
+
     } 
 
 }
@@ -790,14 +790,14 @@ void loop(void)
     ULONG sigs = 0;
 
     while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
-	  != MUIV_Application_ReturnID_Quit)
+          != MUIV_Application_ReturnID_Quit)
     {
-	if (sigs)
-	{
-	    sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
-	    if (sigs & SIGBREAKF_CTRL_C) break;
-	    if (sigs & SIGBREAKF_CTRL_D) break;
-	}
+        if (sigs)
+        {
+            sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+            if (sigs & SIGBREAKF_CTRL_C) break;
+            if (sigs & SIGBREAKF_CTRL_D) break;
+        }
     }
 }
 
@@ -818,50 +818,49 @@ int main(void)
 
     if (Cli())
     {
-    rda = ReadArgs("/A,/N", args, NULL);
-    appname=(STRPTR)args[ARG_APPNAME];
-    appaddr=(APTR)args[ARG_APPADDR];
-    if (appaddr)appaddr=*(appaddr);
-	}
-	else
-	{
-	    appname = 0;
-	}
+        rda = ReadArgs("/A,/N", args, NULL);
+        appname=(STRPTR)args[ARG_APPNAME];
+        appaddr=(APTR)args[ARG_APPADDR];
+        if (appaddr)appaddr=*(appaddr);
+    }
+    else
+    {
+        appname = 0;
+    }
 
-    
     if (retval == RETURN_OK)
     {
-	if (!appname)
-	    appname = "global";
+        if (!appname)
+            appname = "global";
 
-	if (open_libs())
-	{
-	    if (open_classes())
-	    {
-	    	find_mcps();
-		NewDir = Lock("RAM:", SHARED_LOCK);
-		if (NewDir)
-		    OldDir = CurrentDir(NewDir);
-		if (init_gui())
-		{
-		    load_prefs((STRPTR)args[ARG_APPNAME]);
-		    set(main_wnd, MUIA_Window_Open, TRUE);
-		    if (XGET(main_wnd,MUIA_Window_Open))
-		    {
-			loop();
-		    }
-		    if (LastSavedConfigdata)
-			MUI_DisposeObject(LastSavedConfigdata);
-		    deinit_gui();
-		}
-		if (NewDir) {
-		    CurrentDir(OldDir);
-		    UnLock(NewDir);
-		}
-		close_classes();
-	    }
-	    close_libs();
-	}
+        if (open_libs())
+        {
+            if (open_classes())
+            {
+                find_mcps();
+                NewDir = Lock("RAM:", SHARED_LOCK);
+                if (NewDir)
+                    OldDir = CurrentDir(NewDir);
+                if (init_gui())
+                {
+                    load_prefs((STRPTR)args[ARG_APPNAME]);
+                    set(main_wnd, MUIA_Window_Open, TRUE);
+                    if (XGET(main_wnd,MUIA_Window_Open))
+                    {
+                        loop();
+                    }
+                    if (LastSavedConfigdata)
+                        MUI_DisposeObject(LastSavedConfigdata);
+                    deinit_gui();
+                }
+                if (NewDir) {
+                    CurrentDir(OldDir);
+                    UnLock(NewDir);
+                }
+                close_classes();
+            }
+            close_libs();
+        }
     }
     
     if (rda) FreeArgs(rda);
