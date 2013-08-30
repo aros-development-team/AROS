@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-#MM workbench-libs-openurl-cmd : includes linklibs workbench-libs-openurl-lib
+#MM external-openurl-cmd : includes linklibs external-openurl-lib
 
 EXE    := OpenURL
 EXEDIR := $(AROS_C)
@@ -13,7 +13,7 @@ FILES  := OpenURL SmartReadArgs debug
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
 USER_CFLAGS := -DNO_INLINE_STDARG
 
-%build_prog mmake=workbench-libs-openurl-cmd \
+%build_prog mmake=external-openurl-cmd \
     progname=$(EXE) files=$(FILES) \
     targetdir=$(EXEDIR)
 

@@ -5,7 +5,7 @@
 include $(TOP)/config/make.cfg
 
 #MM
-workbench-libs-openurl-catalogs : \
+external-openurl-catalogs : \
     $(AROS_CATALOGS)/german/OpenURL.catalog \
     $(AROS_CATALOGS)/french/OpenURL.catalog \
     $(AROS_CATALOGS)/polish/OpenURL.catalog
