@@ -879,7 +879,7 @@ static void writehandler(FILE *out, struct config *cfg)
             "    return TRUE;\n"
             "}\n"
             "\n"
-            );
+    );
 }
 
 static void writeinitlib(FILE *out, struct config *cfg)
@@ -1335,6 +1335,7 @@ static void writecloselib(FILE *out, struct config *cfg)
 	fprintf(out,
 		"    LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(LIBBASE);\n"
                 "    struct __GM_DupBase *dupbase = (struct __GM_DupBase *)LIBBASE;\n"
+                "    __aros_setoffsettable(LIBBASE);\n"
         );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
@@ -1408,6 +1409,8 @@ static void writeexpungelib(FILE *out, struct config *cfg)
                     "#endif\n"
             );
         }
+        if (cfg->options & OPTION_DUPBASE)
+            fprintf(out, "    __aros_setoffsettable(LIBBASE);\n");
 	fprintf(out,
 		"\n"
 		"    if ( ((struct Library *)LIBBASE)->lib_OpenCnt == 0 )\n"
