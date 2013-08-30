@@ -11,11 +11,11 @@
 #include <libraries/asl.h>
 #include "locale.h"
 
-struct ClassListview_DATA
-{
-    Object *list;
-   struct MUI_EventHandlerNode   ehn;
-};
+/* listview class */
+extern struct MUI_CustomClass *ClassListview_CLASS;
+struct MUI_CustomClass *create_listview_class(void);
+void delete_listview_class(void);
+
 
 Object *MakeButton (CONST_STRPTR str);
 Object *MakeCycle (CONST_STRPTR label, CONST_STRPTR entries[]);
