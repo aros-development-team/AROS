@@ -1,9 +1,7 @@
-## version $VER: openurl.catalog 7.1 (28.05.2009)
+## version $VER: openurl.catalog 7.2 (25.4.2012)
 ## language deutsch
 ## codeset 0
-;
-;
-; catcomp OpenURL.cd CTFILE OpenURL.ct
+## chunk AUTH Jens Langner, Thore Bˆckelmann
 ;
 MSG_ErrReqTitle
 OpenURL Fehler
@@ -191,7 +189,7 @@ _‹bernehmen
 ; _Apply
 ;
 MSG_Win_Apply_Help
-Einstellungen benutzen ohne das Fenster zu schliessen.
+Einstellungen benutzen ohne das Fenster zu schlieﬂen.
 ; Use preferences without closing window.
 ;
 MSG_Win_Cancel
@@ -199,7 +197,7 @@ _Abbrechen
 ; _Cancel
 ;
 MSG_Win_Cancel_Help
-Einstellungen benutzen und das Fenster schliessen.
+Einstellungen benutzen und das Fenster schlieﬂen.
 ; Close window, without using preferences.
 ;
 MSG_AppList_Add
@@ -264,7 +262,7 @@ _Abbrechen
 ; _Cancel
 ;
 MSG_Edit_Cancel_Help
-Schliesst Fenster.
+Schlieﬂt Fenster.
 ; Close window.
 ;
 MSG_Edit_ListName

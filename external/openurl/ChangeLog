@@ -2,8 +2,55 @@
 openurl.library - ChangeLog
 ---------------------------
 
-$Id: ChangeLog 167 2011-11-26 15:36:24Z damato $
-$URL: https://openurllib.svn.sourceforge.net/svnroot/openurllib/releases/7.10/ChangeLog $
+$Id: ChangeLog 191 2012-12-20 15:52:10Z damato $
+$URL: svn://svn.code.sf.net/p/openurllib/code/releases/7.12/ChangeLog $
+
+#### v7.12 RELEASE #############################################################
+
+2012-12-20  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.12 release preparations
+
+2012-11-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/api.c: changed the name of the prefs program to the currently used
+    scheme.
+  * locale/italian.ct: removed lots of unused strings.
+
+2012-08-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: replaced all deprecated function call by appropriate replacements for
+    the AmigaOS4 build.
+
+#### v7.11 RELEASE #############################################################
+
+2012-08-05  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.11 release preparations
+
+2012-06-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/init.c: don't allocate locked memory.
+
+2012-04-25 Thore Böckelmann <tboeckel@gmx.de>
+
+  * locale/german.ct: replaced some "ss" by "ß". This closes bug #3364499.
+
+2012-04-07  Jens Langner <Jens.Langner@light-speed.de>
+
+  * Makefile: removed -funroll-loops as this is potentially dangerous.
+
+2012-03-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/libinit.c: fixed the broken build for all non-AROS platforms.
+
+2012-01-29 Matthias Rustler <mrustler@gmx.de>
+
+  * misc: backport of AROS fixes.
+
+2011-12-25  Pär Boberg <pbobbenb@spray.se>
+
+  * locale/swedish.ct: updated to the latest changes.
 
 #### v7.10 RELEASE #############################################################
 

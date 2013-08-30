@@ -309,13 +309,13 @@ ULONG LIBFUNC URL_LaunchPrefsAppA(REG(a0,UNUSED struct TagItem *attrs))
         // Ok let's try to be backward compatible
         if(GetVar("OpenURL_Prefs_Path", name, sizeof(name), GVF_GLOBAL_ONLY) <= 0)
         {
-          strlcpy(name, "\"Sys:Prefs/Open URL\"", sizeof(name));
+          strlcpy(name, "SYS:Prefs/OpenURL", sizeof(name));
         }
       }
       else
       {
         name[0]='\"';
-        strcpy(name+1+len,"/Open URL\"");
+        strcpy(name+1+len,"/OpenURL\"");
         name[len+11]='\0';
       }
 

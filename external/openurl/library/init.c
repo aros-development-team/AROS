@@ -150,7 +150,8 @@ initBase(struct LibraryHeader *lib)
         lib->pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags,    MEMF_SHARED|MEMF_CLEAR,
                                                      ASOPOOL_Puddle,    4096,
                                                      ASOPOOL_Threshold, 512,
-                                                     ASOPOOL_Name, "openurl.library pool",
+                                                     ASOPOOL_Name,      "openurl.library pool",
+                                                     ASOPOOL_LockMem,   FALSE,
                                                      TAG_DONE);
         #else
         lib->pool = CreatePool(MEMF_CLEAR, 4096, 512);

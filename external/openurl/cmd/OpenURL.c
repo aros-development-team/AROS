@@ -73,6 +73,12 @@ struct Library *OpenURLBase;
 #define OPENURL_VERSION_STR "4"  /* Used by error message */
 #define MAXIMUM_ERROR_LENGTH 120 /* Size of buffer for error messages */
 
+#if defined(__amigaos4__)
+#define AllocVecShared(size, flags)  AllocVecTags((size), AVT_Type, MEMF_SHARED, AVT_Lock, FALSE, ((flags)&MEMF_CLEAR) ? AVT_ClearWithValue : TAG_IGNORE, 0, TAG_DONE)
+#else
+#define AllocVecShared(size, flags)  AllocVec((size), (flags))
+#endif
+
 /* Some shit necessary because C standard libraries suck */
 ULONG ulong_max(ULONG a, ULONG b)
 {
@@ -148,8 +154,8 @@ int main(int argc,char **argv)
             if (error_code==0)
             {
                /* Allocate string buffers */
-               real_url = AllocVec(MAXIMUM_URL_LENGTH, MEMF_ANY);
-               filename = AllocVec(MAXIMUM_URL_LENGTH, MEMF_ANY);
+               real_url = AllocVecShared(MAXIMUM_URL_LENGTH, MEMF_ANY);
+               filename = AllocVecShared(MAXIMUM_URL_LENGTH, MEMF_ANY);
                if (!real_url || !filename)
                {
                   /* Not enough memory */
