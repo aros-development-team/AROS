@@ -22,6 +22,7 @@
 #include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <dos/dos.h>
+#include <dos/stdio.h>
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
 #include "__fdesc.h"
@@ -434,11 +435,16 @@ int __init_stdfiles(struct aroscbase *aroscbase)
           BADDR(Output()), BADDR(outfcb->fh)
     ));
 
+    /* Normally stderr is expected to be unbuffered for POSIX.
+       We only do this if we can duplicate the handle otherwise
+       we obey the buffering of the error stream as originally set.
+    */
     if (me->pr_CES != BNULL)
     {
         errfcb->fh = OpenFromLock(DupLockFromFH(me->pr_CES));
-        /* Use original fh if it can't be duplicated */
-        if (errfcb->fh == BNULL)
+        if (errfcb->fh != BNULL)
+            SetVBuf((BPTR) errfcb->fh, NULL, BUF_NONE, -1);
+        else /* File handle could not be duplicated; use original */
         {
             errfcb->fh = me->pr_CES;
             errfcb->privflags |= _FCB_DONTCLOSE_FH;
@@ -446,8 +452,14 @@ int __init_stdfiles(struct aroscbase *aroscbase)
     }
     else
     {
-        errfcb->fh = outdesc->fcb->fh;
-        errfcb->privflags = _FCB_DONTCLOSE_FH;
+        errfcb->fh = OpenFromLock(DupLockFromFH(Output()));
+        if (errfcb->fh != BNULL)
+            SetVBuf((BPTR) errfcb->fh, NULL, BUF_NONE, -1);
+        else /* File handle could not be duplicated; use original */
+        {
+            errfcb->fh = outfcb->fh;
+            errfcb->privflags = _FCB_DONTCLOSE_FH;
+        }
     }
     errfcb->flags = O_WRONLY | O_APPEND;
     errfcb->opencount = 1;
