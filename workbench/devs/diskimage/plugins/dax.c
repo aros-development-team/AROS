@@ -32,7 +32,6 @@
 #ifdef __AROS__
 #  include <zlib.h>
 #  define Uncompress uncompress
-   struct Library ZBase;
 #else
 #  include <libraries/z.h>
 #  include <proto/z.h>
@@ -98,7 +97,11 @@ struct DiskImagePlugin dax_plugin = {
 struct Library *SysBase;
 struct Library *DOSBase;
 static struct DIPluginIFace *IPlugin;
+#ifndef __AROS__
 #define ZBase image->zbase
+#else
+struct Library *ZBase;
+#endif
 
 BOOL DAX_Init (struct DiskImagePlugin *Self, const struct PluginData *data) {
 	SysBase = data->SysBase;

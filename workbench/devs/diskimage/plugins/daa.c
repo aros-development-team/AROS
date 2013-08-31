@@ -37,7 +37,6 @@
 #  define Inflate inflate
 #  define InflateEnd inflateEnd
 #  define InflateReset inflateReset
-   struct Library ZBase;
 #else
 #  include <libraries/z.h>
 #  include <proto/z.h>
@@ -113,7 +112,11 @@ struct Library *SysBase;
 struct Library *DOSBase;
 static struct Library *UtilityBase;
 static struct DIPluginIFace *IPlugin;
+#ifndef __AROS__
 #define ZBase image->zbase
+#else
+struct Library *ZBase;
+#endif
 
 BOOL DAA_Init (struct DiskImagePlugin *Self, const struct PluginData *data) {
 	SysBase = data->SysBase;
