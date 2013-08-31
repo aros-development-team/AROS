@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 
 #MM arostcp-libs-muimiamipanel : \
 #MM     includes-copy \
-#MM     contrib-zune-classes-lamp-class-includes \
+#MM     workbench-zune-classes-lamp-class-includes \
 #MM     contrib-zune-classes-bwin-class-includes \
 #MM     contrib-zune-classes-thebar-class-includes \
 #MM     contrib-zune-classes-urltext-class-includes \
