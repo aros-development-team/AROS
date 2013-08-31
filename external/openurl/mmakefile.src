@@ -4,6 +4,8 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- external-openurl : external-openurl-prefs external-openurl-cmd
+#MM- external : external-openurl
+
+#MM- external-openurl : external-openurl-lib external-openurl-prefs external-openurl-cmd
 
 %common
