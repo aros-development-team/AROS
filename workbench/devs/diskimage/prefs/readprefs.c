@@ -47,7 +47,9 @@ typedef struct {
 	BOOL has_key;
 	TEXT key[64];
 	TEXT value[512];
+#ifndef __AROS__
 	struct Library *expatbase;
+#endif
 	XML_Parser parser;
 	BOOL error;
 } parser_data;
@@ -57,16 +59,14 @@ static void end_element_handler (void *user_data, const char *name);
 static void character_data_handler (void *user_data, const char *s, int len);
 
 BOOL ReadPrefs (PrefsObject *dict, CONST_STRPTR filename) {
-	struct Library *ExpatBase;
 	BOOL res = FALSE;
-#ifdef __AROS__
-	ExpatBase = OpenLibrary("expat_au.library", 0);
-#else
+#ifndef __AROS__
+	struct Library *ExpatBase;
 	ExpatBase = OpenLibrary("expat.library", 4);
-#endif
 	if (!ExpatBase) {
 		return res;
 	}
+#endif
 	if (dict && dict->type == PREFS_DICTIONARY) {
 		BPTR file;
 		ClearPrefsDictionary(dict);
@@ -87,7 +87,9 @@ BOOL ReadPrefs (PrefsObject *dict, CONST_STRPTR filename) {
 					data->key_tag = FALSE;
 					data->value_tag = FALSE;
 					data->has_key = FALSE;
+#ifndef __AROS__
 					data->expatbase = ExpatBase;
+#endif
 					data->parser = parser;
 					data->error = FALSE;
 					XML_SetUserData(parser, data);
@@ -118,12 +120,16 @@ BOOL ReadPrefs (PrefsObject *dict, CONST_STRPTR filename) {
 			Close(file);
 		}
 	}
+#ifndef __AROS__
 	CloseLibrary(ExpatBase);
+#endif
 	return res;
 }
 
 static void stop_parser (parser_data *data) {
-	struct Library __unused *ExpatBase = data->expatbase;
+#ifndef __AROS__
+	struct Library *ExpatBase = data->expatbase;
+#endif
 	data->error = TRUE;
 	XML_StopParser(data->parser, XML_TRUE);
 }

@@ -35,9 +35,6 @@
 #  include <zlib.h>
 #  include <bzlib.h>
 #  define Uncompress uncompress
-   struct Library *BZ2Base;
-   struct Library *ZBase;
-   struct Library *ExpatBase;
 #else
 #  include <libraries/expat.h>
 #  include <libraries/z.h>
@@ -125,8 +122,14 @@ struct DiskImagePlugin dmg_plugin = {
 struct Library *SysBase;
 struct Library *DOSBase;
 static struct DIPluginIFace *IPlugin;
+#ifndef __AROS__
 #define ZBase image->zbase
 #define BZ2Base image->bz2base
+#else
+struct Library *BZ2Base;
+struct Library *ZBase;
+struct Library *ExpatBase;
+#endif
 
 BOOL DMG_Init (struct DiskImagePlugin *Self, const struct PluginData *data) {
 	SysBase = data->SysBase;
@@ -285,7 +288,9 @@ APTR DMG_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file,
 		XML_Parser parser;
 		XML_Parser_Data parser_data;
 		int xml_error;
-		struct Library __unused *ExpatBase;
+#ifndef __AROS__
+		struct Library *ExpatBase;
+#endif
 
 		xml_offset = rbe64(&koly->xml_offset);
 		xml_length = rbe64(&koly->xml_length);
@@ -575,7 +580,9 @@ static void xml_start_element_handler (void *user_data,
 	const char *name, const char **attrs)
 {
 	XML_Parser_Data *data = user_data;
-	struct Library __unused *ExpatBase = data->expatbase;
+#ifndef __AROS__
+	struct Library *ExpatBase = data->expatbase;
+#endif
 	if (data->error) return;
 
 	if (data->current_tag_depth == 0) {
@@ -604,7 +611,9 @@ static void xml_end_element_handler (void *user_data,
 	const char *name)
 {
 	XML_Parser_Data *data = user_data;
-	struct Library __unused *ExpatBase = data->expatbase;
+#ifndef __AROS__
+	struct Library *ExpatBase = data->expatbase;
+#endif
 	if (data->error) return;
 
 	data->current_tag_depth--;
@@ -643,7 +652,9 @@ static void xml_character_data_handler (void *user_data,
 	const char *s, int len)
 {
 	XML_Parser_Data *data = user_data;
-	struct Library __unused *ExpatBase = data->expatbase;
+#ifndef __AROS__
+	struct Library *ExpatBase = data->expatbase;
+#endif
 	if (data->error) return;
 
 	if (data->is_in_data_tag && len > 0) {
