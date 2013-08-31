@@ -79,6 +79,7 @@
 #include "wanderer.h"
 #include "Classes/iconlist.h"
 #include "Classes/iconlist_attributes.h"
+#include "Classes/icon_attributes.h"
 #include "locale.h"
 #include "appobjects.h"
 
@@ -1999,7 +2000,10 @@ void wanderer_menufunc_icon_snapshot(IPTR *flags)
                     node->ie_DiskObj->do_CurrentX = NO_ICON_POSITION;
                     node->ie_DiskObj->do_CurrentY = NO_ICON_POSITION;
                 }
-                PutIconTagList(entry->ile_IconEntry->ie_IconNode.ln_Name, node->ie_DiskObj, icontags);
+                if (node->ie_Flags & ICONENTRY_FLAG_HASICON)
+                    PutIconTagList(entry->ile_IconEntry->ie_IconNode.ln_Name, node->ie_DiskObj, icontags);
+                else
+                    PutIconTagList(entry->ile_IconEntry->ie_IconNode.ln_Name, node->ie_DiskObj, TAG_DONE);
                 D(bug("[Wanderer] %s: saved ..\n", __PRETTY_FUNCTION__));
             }
             else
