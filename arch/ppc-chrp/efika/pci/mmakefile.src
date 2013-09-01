@@ -1,6 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-%build_module mmake=kernel-pci-efika \
+%build_module mmake=kernel-hidd-pci-efika \
   modname=pci-efika modtype=hidd \
   files="pci_efika_init driverclass"

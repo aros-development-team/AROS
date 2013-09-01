@@ -8,7 +8,7 @@ FILES	:=	\
 	bitmap
 
 #MM- workbench-hidds: hidd-sm502
-#MM- hidd-sm502-includes: kernel-pci-includes
+#MM- hidd-sm502-includes: kernel-hidd-pci-includes
 
 %build_module mmake=hidd-sm502 \
   modname=sm502 modtype=hidd \

@@ -23,9 +23,9 @@ include $(TOP)/config/make.cfg
 #MM     kernel-aros \
 #MM     kernel-misc \
 #MM     kernel-timer \
-#MM     kernel-pci \
-#MM     kernel-pci-amcc440 \
-#MM     kernel-pci-amcc460 \
+#MM     kernel-hidd-pci \
+#MM     kernel-hidd-pci-amcc440 \
+#MM     kernel-hidd-pci-amcc460 \
 #MM     kernel-graphics \
 #MM     kernel-layers \
 #MM     kernel-keymap \

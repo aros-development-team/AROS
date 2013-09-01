@@ -8,8 +8,7 @@ include $(TOP)/config/make.cfg
 #MM- kernel-pc-i386-drivers : \
 #MM    kernel-pc-i386-serial-kobj \
 #MM    kernel-pc-i386-parallel-kobj \
-#MM    kernel-pci-kobj \
-#MM    kernel-pci-pcipc-kobj \
+#MM    kernel-hidd-pci-pcipc-kobj \
 #MM    kernel-ata-kobj
 
 #
