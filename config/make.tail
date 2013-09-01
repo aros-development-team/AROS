@@ -1,4 +1,4 @@
-#   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+#   Copyright © 1995-2013, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: General rules included at the end of a generated mmakefile
@@ -18,7 +18,7 @@ $(GENMODULE) : $(GENMODULE_DEPS)
 
 # Disk-based module header
 $(GENDIR)/$(RESIDENT_BEGIN).o : $(SRCDIR)/$(RESIDENT_BEGIN).c
-	@$(ECHO) Compiling $@...
+	@$(ECHO) "Compiling  $(CURDIR)/$(RESIDENT_BEGIN).c"
 	@$(TARGET_CC) -c $(CFLAGS) $< -o $@
 
 $(SRCDIR)/tools/cxref/configure : $(SRCDIR)/tools/cxref/configure.in
