@@ -267,7 +267,7 @@ cmsBool CMSEXPORT cmsMD5computeID(cmsHPROFILE hProfile)
     _cmsICCPROFILE* Icc = (_cmsICCPROFILE*) hProfile;
     _cmsICCPROFILE Keep;
 
-	_cmsAssert(hProfile != NULL);
+    _cmsAssert(hProfile != NULL);
 
     ContextID = cmsGetProfileContextID(hProfile);
 
@@ -309,7 +309,7 @@ cmsBool CMSEXPORT cmsMD5computeID(cmsHPROFILE hProfile)
 Error:
 
     // Free resources as something went wrong
-    if (MD5 != NULL) _cmsFree(ContextID, MD5);
+    // "MD5" cannot be other than NULL here, so no need to free it
     if (Mem != NULL) _cmsFree(ContextID, Mem);
     memmove(Icc, &Keep, sizeof(_cmsICCPROFILE));
     return FALSE;

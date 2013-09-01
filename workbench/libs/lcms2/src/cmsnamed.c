@@ -330,9 +330,9 @@ const wchar_t* _cmsMLUgetWide(const cmsMLU* mlu,
     if (Best == -1)
         Best = 0;
 
-     v = mlu ->Entries + Best;
+    v = mlu ->Entries + Best;
 
-     if (UsedLanguageCode != NULL) *UsedLanguageCode = v ->Language;
+    if (UsedLanguageCode != NULL) *UsedLanguageCode = v ->Language;
     if (UsedCountryCode  != NULL) *UsedCountryCode = v ->Country;
 
     if (len != NULL) *len   = v ->Len;
@@ -446,6 +446,35 @@ CMSAPI cmsBool CMSEXPORT cmsMLUgetTranslation(const cmsMLU* mlu,
 }
 
 
+
+// Get the number of translations in the MLU object
+cmsUInt32Number CMSEXPORT cmsMLUtranslationsCount(const cmsMLU* mlu)
+{
+    if (mlu == NULL) return 0;
+    return mlu->UsedEntries;
+}
+
+// Get the language and country codes for a specific MLU index
+cmsBool CMSEXPORT cmsMLUtranslationsCodes(const cmsMLU* mlu,
+                                          cmsUInt32Number idx,
+                                          char LanguageCode[3],
+                                          char CountryCode[3])
+{
+    _cmsMLUentry *entry;
+
+    if (mlu == NULL) return FALSE;
+
+    if (idx >= (cmsUInt32Number) mlu->UsedEntries) return FALSE;
+
+    entry = &mlu->Entries[idx];
+    
+    *(cmsUInt16Number *)LanguageCode = _cmsAdjustEndianess16(entry->Language);
+    *(cmsUInt16Number *)CountryCode  = _cmsAdjustEndianess16(entry->Country);
+
+    return TRUE;
+}
+
+
 // Named color lists --------------------------------------------------------------------------------------------
 
 // Grow the list to keep at least NumElements
@@ -488,8 +517,8 @@ cmsNAMEDCOLORLIST* CMSEXPORT cmsAllocNamedColorList(cmsContext ContextID, cmsUIn
     while (v -> Allocated < n)
         GrowNamedColorList(v);
 
-    strncpy(v ->Prefix, Prefix, sizeof(v ->Prefix));
-    strncpy(v ->Suffix, Suffix, sizeof(v ->Suffix));
+    strncpy(v ->Prefix, Prefix, sizeof(v ->Prefix)-1);
+    strncpy(v ->Suffix, Suffix, sizeof(v ->Suffix)-1);
     v->Prefix[32] = v->Suffix[32] = 0;
 
     v -> ColorantCount = ColorantCount;
@@ -500,8 +529,9 @@ cmsNAMEDCOLORLIST* CMSEXPORT cmsAllocNamedColorList(cmsContext ContextID, cmsUIn
 // Free a list
 void CMSEXPORT cmsFreeNamedColorList(cmsNAMEDCOLORLIST* v)
 {
+    if (v == NULL) return;
     if (v ->List) _cmsFree(v ->ContextID, v ->List);
-    if (v) _cmsFree(v ->ContextID, v);
+    _cmsFree(v ->ContextID, v);
 }
 
 cmsNAMEDCOLORLIST* CMSEXPORT cmsDupNamedColorList(const cmsNAMEDCOLORLIST* v)
@@ -547,9 +577,7 @@ cmsBool  CMSEXPORT cmsAppendNamedColor(cmsNAMEDCOLORLIST* NamedColorList,
 
     if (Name != NULL) {
 
-        strncpy(NamedColorList ->List[NamedColorList ->nColors].Name, Name,
-                    sizeof(NamedColorList ->List[NamedColorList ->nColors].Name));
-
+        strncpy(NamedColorList ->List[NamedColorList ->nColors].Name, Name, cmsMAX_PATH-1);
         NamedColorList ->List[NamedColorList ->nColors].Name[cmsMAX_PATH-1] = 0;
 
     }
@@ -705,6 +733,10 @@ cmsSEQ* CMSEXPORT cmsAllocProfileSequenceDescription(cmsContext ContextID, cmsUI
     Seq -> seq      = (cmsPSEQDESC*) _cmsCalloc(ContextID, n, sizeof(cmsPSEQDESC));
     Seq -> n        = n;
 
+    if (Seq -> seq == NULL) {
+        _cmsFree(ContextID, Seq);
+        return NULL;
+    }
 
     for (i=0; i < n; i++) {
         Seq -> seq[i].Manufacturer = NULL;
@@ -857,15 +889,12 @@ cmsHANDLE CMSEXPORT cmsDictDup(cmsHANDLE hDict)
 {
     _cmsDICT* old_dict = (_cmsDICT*) hDict;
     cmsHANDLE hNew;
-    _cmsDICT* new_dict;
     cmsDICTentry *entry;
 
     _cmsAssert(old_dict != NULL);
 
     hNew  = cmsDictAlloc(old_dict ->ContextID);
     if (hNew == NULL) return NULL;
-
-    new_dict = (_cmsDICT*) hNew;
 
     // Walk the list freeing all nodes
     entry = old_dict ->head;

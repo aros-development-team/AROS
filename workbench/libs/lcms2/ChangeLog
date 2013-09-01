@@ -1,3 +1,9 @@
+
+
+This is a timeline change log, see features included in each release ABOVE release number
+
+
+-----------------------
 2.0 Major version bump
 -----------------------
 
@@ -24,6 +30,7 @@ Added Duotone support (Bilinear interpolation)
 Fixed a bug on curve reversing when source curves have few points
 Added bound check in floating point interpolation
 
+-----------------------
 2.1 Maintenance release
 -----------------------
 
@@ -42,7 +49,7 @@ Added dictionary metatag support
 Fixed a bug on ReadRAWtag 
 Pascal unit now is supported by Free Pascal Compiler
 
-
+-----------------------
 2.2 Maintenance release
 -----------------------
 
@@ -54,6 +61,7 @@ Adding a memory alignment macro for CGATS parser
 Updated to ICC spec 4.3
 Added compatibilty with Argyll's CGATS parser
 
+-----------------------
 2.3 Maintenance release
 -----------------------
 
@@ -84,5 +92,36 @@ Fixed a bug in XYZ floating point PCS
 Fixed an unitialized read on PatchLUT
 Added a check for maximum input channels
 
+--------------------
 2.4 Featured release
 --------------------
+
+User defined parametric curves can now be saved in ICC profiles.
+RGB profiles using same tone curves for several channels are storing now only one copy of the curve (saves space)
+Fixed a multithead bug on optimization (StageDEF)
+Fixed some 64 bit warnings on size_t to uint32 conversions
+update black point detection algorithm to reflect ICC changes
+Added new cmsPlugInTHR() and fixed some race conditions (thanks to Artifex)
+Added error descriptions on cmsSmoothToneCurve 
+Fixed a bug on  big endian platforms not supporting uint64 or long long.
+Fixed some bugs on floating point curves.
+Several improvements in cgats parser.
+Several minor issues found by cppcheck
+Fixed devicelink generation for 8 bits
+Added a reference for Mac MLU tag
+Added a way to read the profile creator from header
+Added identity curves support for write V2 LUT 
+More changes from Artifex
+Added TIFF Lab16 handling on tifficc
+Added some fixes from XhmikosR
+Fixed a bug in parametric curves
+Remove spurious tabs added by git merge of pull request
+Added support for VS2012
+Added a simple project for cppcheck
+Rendering intent used when creating the transform is now propagated to profile header in cmsTransform2Devicelink. This is because 7.2.15 in spec 4.3
+Transform2Devicelink now keeps white point when guessing deviceclass is enabled
+Added some checks for non-happy path, mostly failing mallocs
+
+-----------------------
+2.5 Maintenance release
+-----------------------

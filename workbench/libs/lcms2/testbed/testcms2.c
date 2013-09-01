@@ -174,7 +174,7 @@ static
 void DebugMemPrintTotals(void)
 {
     printf("[Memory statistics]\n");
-    printf("Allocated = %d MaxAlloc = %d Single block hit = %d\n", TotalMemory, MaxAllocated, SingleHit);
+    printf("Allocated = %u MaxAlloc = %u Single block hit = %u\n", TotalMemory, MaxAllocated, SingleHit);
 }
 
 // Here we go with the plug-in declaration
@@ -297,7 +297,7 @@ void DumpToneCurve(cmsToneCurve* gamma, const char* FileName)
     for (i=0; i < gamma ->nEntries; i++) {
         char Val[30];
 
-        sprintf(Val, "%d", i);
+        sprintf(Val, "%u", i);
         cmsIT8SetDataRowCol(hIT8, i, 0, Val);
         sprintf(Val, "0x%x", gamma ->Table16[i]);
         cmsIT8SetDataRowCol(hIT8, i, 1, Val);
@@ -1023,7 +1023,7 @@ cmsInt32Number ExhaustiveCheck1DLERP(void)
     printf("\n");
     for (j=10; j <= 4096; j++) {
 
-        if ((j % 10) == 0) printf("%d    \r", j);
+        if ((j % 10) == 0) printf("%u    \r", j);
 
         if (!Check1D(j, FALSE, 1)) return 0;
     }
@@ -1040,7 +1040,7 @@ cmsInt32Number ExhaustiveCheck1DLERPDown(void)
     printf("\n");
     for (j=10; j <= 4096; j++) {
 
-        if ((j % 10) == 0) printf("%d    \r", j);
+        if ((j % 10) == 0) printf("%u    \r", j);
 
         if (!Check1D(j, TRUE, 1)) return 0;
     }
@@ -5389,12 +5389,12 @@ cmsInt32Number CheckBadTransforms(void)
 
     {
 
-    cmsHPROFILE h1 = cmsOpenProfileFromFile("test1.icc", "r");
-    cmsHPROFILE h2 = cmsCreate_sRGBProfile();
+    cmsHPROFILE hp1 = cmsOpenProfileFromFile("test1.icc", "r");
+    cmsHPROFILE hp2 = cmsCreate_sRGBProfile();
 
-    x1 = cmsCreateTransform(h1, TYPE_BGR_8, h2, TYPE_BGR_8, INTENT_PERCEPTUAL, 0);
+    x1 = cmsCreateTransform(hp1, TYPE_BGR_8, hp2, TYPE_BGR_8, INTENT_PERCEPTUAL, 0);
 
-    cmsCloseProfile(h1); cmsCloseProfile(h2);
+    cmsCloseProfile(hp1); cmsCloseProfile(hp2);
     if (x1 != NULL) {
         cmsDeleteTransform(x1);
         return 0;
@@ -5562,10 +5562,8 @@ cmsInt32Number Compare16bitXFORM(cmsHTRANSFORM xform1, cmsHTRANSFORM xform2, cms
 static
 cmsInt32Number CheckFloatlinearXFORM(cmsHTRANSFORM xform, cmsInt32Number nChan)
 {
-    cmsInt32Number n2, i, j;
+    cmsInt32Number i, j;
     cmsFloat32Number In[cmsMAXCHANNELS], Out[cmsMAXCHANNELS];
-
-    n2=0;
 
     for (j=0; j < 0xFFFF; j++) {
 
@@ -5589,10 +5587,8 @@ cmsInt32Number CheckFloatlinearXFORM(cmsHTRANSFORM xform, cmsInt32Number nChan)
 static
 cmsInt32Number CompareFloatXFORM(cmsHTRANSFORM xform1, cmsHTRANSFORM xform2, cmsInt32Number nChan)
 {
-    cmsInt32Number n2, i, j;
+    cmsInt32Number i, j;
     cmsFloat32Number In[cmsMAXCHANNELS], Out1[cmsMAXCHANNELS], Out2[cmsMAXCHANNELS];
-
-    n2=0;
 
     for (j=0; j < 0xFFFF; j++) {
 
@@ -6683,7 +6679,8 @@ void GenerateCSA(const char* cInProf, const char* FileName)
 
     _cmsFree(BuffThread, Buffer);
     cmsCloseProfile(hProfile);
-    remove(FileName);
+    if (FileName != NULL)
+        remove(FileName);
 }
 
 
@@ -6717,7 +6714,8 @@ void GenerateCRD(const char* cOutProf, const char* FileName)
 
     _cmsFree(BuffThread, Buffer);
     cmsCloseProfile(hProfile);
-    remove(FileName);
+    if (FileName != NULL)
+        remove(FileName);
 }
 
 static
@@ -7043,9 +7041,9 @@ int CheckMD5(void)
     cmsCloseProfile(pProfile);
 
 
-     pProfile = cmsOpenProfileFromFile("sRGBlcms2.icc", "r");
+    pProfile = cmsOpenProfileFromFile("sRGBlcms2.icc", "r");
 
-      h =(_cmsICCPROFILE*) pProfile;
+    h =(_cmsICCPROFILE*) pProfile;
     if (cmsMD5computeID(pProfile)) cmsGetHeaderProfileID(pProfile, ProfileID3.ID8);
     if (cmsMD5computeID(pProfile)) cmsGetHeaderProfileID(pProfile,ProfileID4.ID8);
 
@@ -7097,7 +7095,7 @@ int CheckLinking(void)
     cmsWriteTag(h, cmsSigAToB0Tag, pipeline);
     cmsPipelineFree(pipeline);
 
-	if (!cmsSaveProfileToFile(h, "lcms2link2.icc")) return 0;
+    if (!cmsSaveProfileToFile(h, "lcms2link2.icc")) return 0;
     cmsCloseProfile(h);
 
 
@@ -7289,6 +7287,203 @@ cmsInt32Number ChecksRGB2LabFLT(void)
     return 1;
 }
 
+/*
+ * parametric curve for Rec709
+ */
+static
+double Rec709(double L)
+{
+    if (L <0.018) return 4.5*L;
+    else
+    {
+          double a = 1.099* pow(L, 0.45);
+          
+          a = a - 0.099;
+          return a;
+    }
+}
+
+
+static
+cmsInt32Number CheckParametricRec709(void)
+{
+    cmsFloat64Number params[7];
+    cmsToneCurve* t;
+    int i;
+
+    params[0] = 0.45; /* y */
+    params[1] = pow(1.099, 1.0 / 0.45); /* a */
+    params[2] = 0.0; /* b */
+    params[3] = 4.5; /* c */
+    params[4] = 0.018; /* d */
+    params[5] = -0.099; /* e */
+    params[6] = 0.0; /* f */
+        
+    t = cmsBuildParametricToneCurve (NULL, 5, params);
+
+
+    for (i=0; i < 256; i++)
+    {
+        cmsFloat32Number n = (cmsFloat32Number) i / 255.0F;
+        cmsUInt16Number f1 = (cmsUInt16Number) floor(255.0 * cmsEvalToneCurveFloat(t, n) + 0.5);
+        cmsUInt16Number f2 = (cmsUInt16Number) floor(255.0*Rec709((double) i / 255.0) + 0.5);
+
+        if (f1 != f2) 
+        {
+            cmsFreeToneCurve(t);
+            return 0;
+        }
+    }
+
+    cmsFreeToneCurve(t);
+    return 1;
+}
+
+
+#define kNumPoints  10
+
+typedef cmsFloat32Number(*Function)(cmsFloat32Number x);
+
+static cmsFloat32Number StraightLine( cmsFloat32Number x) 
+{
+    return (cmsFloat32Number) (0.1 + 0.9 * x);
+}
+
+static cmsInt32Number TestCurve( const char* label, cmsToneCurve* curve, Function fn) 
+{
+    cmsInt32Number ok = 1;
+    int i;
+    for (i = 0; i < kNumPoints*3; i++) {
+        
+        cmsFloat32Number x = (cmsFloat32Number)i / (kNumPoints*3 - 1);
+        cmsFloat32Number expectedY = fn(x);
+        cmsFloat32Number out = cmsEvalToneCurveFloat( curve, x);
+        
+        if (!IsGoodVal(label, expectedY, out, FLOAT_PRECISSION)) {
+            ok = 0;
+        }
+    }
+    return ok;
+}
+
+static
+cmsInt32Number CheckFloatSamples(void)
+{
+    cmsFloat32Number y[kNumPoints];
+    int i;
+    cmsToneCurve *curve;
+    cmsInt32Number ok;
+
+    for (i = 0; i < kNumPoints; i++) {
+        cmsFloat32Number x = (cmsFloat32Number)i / (kNumPoints-1);
+        
+        y[i] = StraightLine(x);
+    }
+    
+    curve = cmsBuildTabulatedToneCurveFloat(NULL, kNumPoints, y);
+    ok = TestCurve( "Float Samples", curve, StraightLine);
+    cmsFreeToneCurve(curve);
+    
+    return ok;
+}
+
+static
+cmsInt32Number CheckFloatSegments(void)
+{
+    cmsInt32Number ok = 1;
+    int i;
+    cmsToneCurve *curve;
+    
+    cmsFloat32Number y[ kNumPoints];
+    
+    // build a segmented curve with a sampled section...
+    cmsCurveSegment Seg[3];
+    
+    // Initialize segmented curve part up to 0.1
+    Seg[0].x0 = -1e22f;      // -infinity
+    Seg[0].x1 = 0.1f;
+    Seg[0].Type = 6;             // Y = (a * X + b) ^ Gamma + c
+    Seg[0].Params[0] = 1.0f;     // gamma
+    Seg[0].Params[1] = 0.9f;     // a
+    Seg[0].Params[2] = 0.0f;        // b
+    Seg[0].Params[3] = 0.1f;     // c
+    Seg[0].Params[4] = 0.0f;
+    
+    // From zero to 1
+    Seg[1].x0 = 0.1f;
+    Seg[1].x1 = 0.9f;
+    Seg[1].Type = 0;
+    
+    Seg[1].nGridPoints = kNumPoints;
+    Seg[1].SampledPoints = y;
+    
+    for (i = 0; i < kNumPoints; i++) {
+        cmsFloat32Number x = (cmsFloat32Number) (0.1 + ((cmsFloat32Number)i / (kNumPoints-1)) * (0.9 - 0.1));
+        y[i] = StraightLine(x);
+    }
+    
+    // from 1 to +infinity
+    Seg[2].x0 = 0.9f;
+    Seg[2].x1 = 1e22f;   // +infinity
+    Seg[2].Type = 6;
+    
+    Seg[2].Params[0] = 1.0f;
+    Seg[2].Params[1] = 0.9f;
+    Seg[2].Params[2] = 0.0f;
+    Seg[2].Params[3] = 0.1f;
+    Seg[2].Params[4] = 0.0f;
+    
+    curve = cmsBuildSegmentedToneCurve(0, 3, Seg);
+    
+    ok = TestCurve( "Float Segmented Curve", curve, StraightLine);
+
+    cmsFreeToneCurve( curve);
+
+    return ok;
+}
+
+
+static
+cmsInt32Number CheckReadRAW(void)
+{
+    cmsInt32Number tag_size, tag_size1;
+    char buffer[4];
+    cmsHPROFILE hProfile;
+    
+
+    SubTest("RAW read on on-disk");
+    hProfile = cmsOpenProfileFromFile("test1.icc", "r");
+
+    if (hProfile == NULL) 
+        return 0;
+    
+    tag_size = cmsReadRawTag(hProfile, cmsSigGamutTag, buffer, 4);
+    tag_size1 = cmsReadRawTag(hProfile, cmsSigGamutTag, NULL, 0);
+
+    cmsCloseProfile(hProfile);
+
+    if (tag_size != 4)
+        return 0;
+
+    if (tag_size1 != 37009)
+        return 0;
+
+    SubTest("RAW read on in-memory created profiles");
+    hProfile = cmsCreate_sRGBProfile();
+    tag_size = cmsReadRawTag(hProfile, cmsSigGreenColorantTag, buffer, 4);
+    tag_size1 = cmsReadRawTag(hProfile, cmsSigGreenColorantTag, NULL, 0);
+
+    cmsCloseProfile(hProfile);
+
+    if (tag_size != 4)
+        return 0;
+    if (tag_size1 != 20)
+        return 0;
+
+    return 1;
+}
+
+
 
 // --------------------------------------------------------------------------------------------------
 // P E R F O R M A N C E   C H E C K S
@@ -7378,7 +7573,7 @@ void SpeedTest16bitsCMYK(const char * Title, cmsHPROFILE hlcmsProfileIn, cmsHPRO
     Scanline_rgb2 *In;
     cmsUInt32Number Mb;
 
-    if (hlcmsProfileOut == NULL || hlcmsProfileOut == NULL)
+    if (hlcmsProfileIn == NULL || hlcmsProfileOut == NULL)
         Die("Unable to open profiles");
 
     hlcmsxform  = cmsCreateTransformTHR(DbgThread(), hlcmsProfileIn, TYPE_CMYK_16,
@@ -7680,7 +7875,7 @@ void PrintSupportedIntents(void)
 
     printf("Supported intents:\n");
     for (i=0; i < n; i++) {
-        printf("\t%d - %s\n", Codes[i], Descriptions[i]);
+        printf("\t%u - %s\n", Codes[i], Descriptions[i]);
     }
     printf("\n");
 }
@@ -8159,6 +8354,10 @@ int main(int argc, char* argv[])
     Check("Linking", CheckLinking);
     Check("floating point tags on XYZ", CheckFloatXYZ);
     Check("RGB->Lab->RGB with alpha on FLT", ChecksRGB2LabFLT);
+    Check("Parametric curve on Rec709", CheckParametricRec709);
+    Check("Floating Point sampled curve with non-zero start", CheckFloatSamples);
+    Check("Floating Point segmented curve with short sampled segement", CheckFloatSegments);
+    Check("Read RAW portions", CheckReadRAW);
     }
 
 
