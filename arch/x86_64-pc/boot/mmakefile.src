@@ -29,8 +29,8 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-hidd-vga-kobj		 \
 #MM			   kernel-hidd-irq-kobj		 \
 #MM			   kernel-hidd-vesa-kobj	 \
-#MM			   kernel-pci-kobj		 \
-#MM			   kernel-pci-pcipc-kobj	 \
+#MM			   kernel-hidd-pci-kobj		 \
+#MM			   kernel-hidd-pci-pcipc-kobj	 \
 #MM			   kernel-processor-kobj
 
 KRSRCS  := acpi battclock efi hpet processor

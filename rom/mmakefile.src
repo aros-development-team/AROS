@@ -20,7 +20,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-devs-keyboard \
 #MM     kernel-hidd \
 #MM     kernel-oop \
-#MM     kernel-pci \
+#MM     kernel-hidd-pci \
 #MM     kernel-layers \
 #MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
@@ -49,7 +49,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-layers-includes \
 #MM     kernel-timer-includes \
 #MM     kernel-oop-includes \
-#MM     kernel-pci-includes \
+#MM     kernel-hidd-pci-includes \
 #MM     kernel-battclock-includes \
 #MM     kernel-misc-includes \
 #MM	kernel-openfirmware-includes \

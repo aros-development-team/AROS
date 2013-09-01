@@ -1,6 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-%build_module mmake=kernel-pci-amcc440 \
+%build_module mmake=kernel-hidd-pci-amcc440 \
   modname=pci-amcc440 modtype=hidd \
   files="pci_amcc440_init driverclass"

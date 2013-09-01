@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES := pcipc_init driverclass pciconf1 pciconf2
 
-%build_module mmake=kernel-pci-pcipc \
+%build_module mmake=kernel-hidd-pci-pcipc \
     modname=pcipc modtype=hidd \
     files=$(FILES)
 
