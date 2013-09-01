@@ -4,7 +4,7 @@ include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
 
 #MM hidd-nouveau : hidd-i2c hidd-agp hidd-gallium
 
-GALLIUM_NOUVEUA_SOURCES = \
+GALLIUM_NOUVEAU_SOURCES = \
             drivers/nouveau/nouveau_screen \
             drivers/nouveau/nouveau_fence \
             drivers/nouveau/nouveau_mm \
@@ -110,7 +110,7 @@ NOUVEAU_HIDD_SOURCES := \
             $(addprefix $(DRM_PATH),$(AROS_DRM_NVIDIA_SOURCES))         \
             $(addprefix $(DRM_PATH),$(AROS_LIBDRM_CORE_SOURCES))        \
             $(addprefix $(DRM_PATH),$(AROS_LIBDRM_NVIDIA_SOURCES))      \
-            $(addprefix $(GALLIUM_PATH), $(GALLIUM_NOUVEUA_SOURCES))    \
+            $(addprefix $(GALLIUM_PATH), $(GALLIUM_NOUVEAU_SOURCES))    \
             $(addprefix $(XF86_NOUVEAU_PATH), $(XF86_NOUVEAU_SOURCES))  \
 
 USER_INCLUDES := \
