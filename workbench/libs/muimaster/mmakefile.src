@@ -409,7 +409,7 @@ CLASSINCLUDES := $(foreach f, $(CLASSES), $(SRCDIR)/$(CURDIR)/classes/$(f).h) \
                  $(foreach f, $(EXTCLASSES), $(SRCDIR)/$(CURDIR)/classes/$(f).h)
 FILES         := $(FILES) $(CLASSFILES)
 
-#MM- workbench-libs-muimaster : includes linklibs workbench-libs-coolimages workbench-libs-bz2
+#MM- workbench-libs-muimaster : includes linklibs workbench-libs-coolimages external-bz2
 
 %build_module mmake=workbench-libs-muimaster \
     modname=muimaster modtype=library \

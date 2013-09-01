@@ -9,7 +9,7 @@ EXEDIR          := $(AROS_TESTS)/bz2
 #MM- test : test-bz2
 #MM- test-quick : test-bz2-quick
 
-#MM test-bz2 : includes linklibs workbench-libs-bz2
+#MM test-bz2 : includes linklibs external-bz2
 
 %build_progs mmake=test-bz2 \
     files=$(FILES) targetdir=$(EXEDIR) \
