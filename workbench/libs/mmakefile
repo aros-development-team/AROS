@@ -42,7 +42,6 @@
 #MM     workbench-libs-popupmenu \
 #MM     workbench-libs-version \
 #MM     workbench-libs-identify \
-#MM     workbench-libs-bz2 \
 #MM     workbench-libs-expat \
 #MM     workbench-libs-z \
 #MM     workbench-libs-jpeg \
@@ -84,7 +83,6 @@
 #MM     workbench-libs-muiscreen-includes \
 #MM     workbench-libs-popupmenu-includes \
 #MM     workbench-libs-identify-includes \
-#MM     workbench-libs-bz2-includes \
 #MM     workbench-libs-expat-includes \
 #MM     workbench-libs-z-includes \
 #MM     workbench-libs-jpeg-includes \
