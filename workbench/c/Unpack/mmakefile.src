@@ -9,7 +9,7 @@ EXEDIR      := $(AROS_C)
 USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 #MM- workbench-c : workbench-c-unpack
-#MM workbench-c-unpack : includes linklibs workbench-libs-bz2
+#MM workbench-c-unpack : includes linklibs external-bz2
 
 %build_prog mmake=workbench-c-unpack \
     progname=Unpack targetdir=$(EXEDIR) \
