@@ -18,7 +18,7 @@ $(GENMODULE) : $(GENMODULE_DEPS)
 
 # Disk-based module header
 $(GENDIR)/$(RESIDENT_BEGIN).o : $(SRCDIR)/$(RESIDENT_BEGIN).c
-	@$(ECHO) "Compiling  $(CURDIR)/$(RESIDENT_BEGIN).c"
+	@$(ECHO) "Compiling  $<"
 	@$(TARGET_CC) -c $(CFLAGS) $< -o $@
 
 $(SRCDIR)/tools/cxref/configure : $(SRCDIR)/tools/cxref/configure.in
