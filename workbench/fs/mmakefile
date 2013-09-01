@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 workbench-fs-complete : $(AROS_FS)/automount-config
 
 $(AROS_FS)/automount-config : automount-config
-	@$(ECHO) Copying $<...
+	@$(ECHO) "Copying    $<..."
 	@$(CP) $^ $@
 
 #MM
