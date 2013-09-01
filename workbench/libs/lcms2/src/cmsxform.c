@@ -367,7 +367,7 @@ typedef struct _cmsTransformCollection_st {
 static _cmsTransformCollection* TransformCollection = NULL;
 
 // Register new ways to transform
-cmsBool  _cmsRegisterTransformPlugin(cmsPluginBase* Data)
+cmsBool  _cmsRegisterTransformPlugin(cmsContext id, cmsPluginBase* Data)
 {
     cmsPluginTransform* Plugin = (cmsPluginTransform*) Data;
     _cmsTransformCollection* fl;
@@ -383,7 +383,7 @@ cmsBool  _cmsRegisterTransformPlugin(cmsPluginBase* Data)
    if (Plugin ->Factory == NULL) return FALSE;
 
 
-    fl = (_cmsTransformCollection*) _cmsPluginMalloc(sizeof(_cmsTransformCollection));
+    fl = (_cmsTransformCollection*) _cmsPluginMalloc(id, sizeof(_cmsTransformCollection));
     if (fl == NULL) return FALSE;
 
       // Copy the parameters
@@ -622,6 +622,22 @@ cmsBool  IsProperColorSpace(cmsColorSpaceSignature Check, cmsUInt32Number dwForm
 
 // ----------------------------------------------------------------------------------------------------------------
 
+static
+void SetWhitePoint(cmsCIEXYZ* wtPt, const cmsCIEXYZ* src)
+{
+    if (src == NULL) {
+        wtPt ->X = cmsD50X;
+        wtPt ->Y = cmsD50Y;
+        wtPt ->Z = cmsD50Z;
+    }
+    else {
+        wtPt ->X = src->X;
+        wtPt ->Y = src->Y;
+        wtPt ->Z = src->Z;
+    }
+
+}
+
 // New to lcms 2.0 -- have all parameters available.
 cmsHTRANSFORM CMSEXPORT cmsCreateExtendedTransform(cmsContext ContextID,
                                                    cmsUInt32Number nProfiles, cmsHPROFILE hProfiles[],
@@ -634,8 +650,7 @@ cmsHTRANSFORM CMSEXPORT cmsCreateExtendedTransform(cmsContext ContextID,
                                                    cmsUInt32Number OutputFormat,
                                                    cmsUInt32Number dwFlags)
 {
-    _cmsTRANSFORM* xform;
-    cmsBool  FloatTransform;
+    _cmsTRANSFORM* xform;    
     cmsColorSpaceSignature EntryColorSpace;
     cmsColorSpaceSignature ExitColorSpace;
     cmsPipeline* Lut;
@@ -652,9 +667,7 @@ cmsHTRANSFORM CMSEXPORT cmsCreateExtendedTransform(cmsContext ContextID,
         if (hGamutProfile == NULL) dwFlags &= ~cmsFLAGS_GAMUTCHECK;
     }
 
-    // On floating point transforms, inhibit optimizations
-    FloatTransform = (_cmsFormatterIsFloat(InputFormat) && _cmsFormatterIsFloat(OutputFormat));
-
+    // On floating point transforms, inhibit cache
     if (_cmsFormatterIsFloat(InputFormat) || _cmsFormatterIsFloat(OutputFormat))
         dwFlags |= cmsFLAGS_NOCACHE;
 
@@ -701,6 +714,10 @@ cmsHTRANSFORM CMSEXPORT cmsCreateExtendedTransform(cmsContext ContextID,
     xform ->ExitColorSpace  = ExitColorSpace;
     xform ->RenderingIntent = Intents[nProfiles-1];
 
+    // Take white points
+    SetWhitePoint(&xform->EntryWhitePoint, (cmsCIEXYZ*) cmsReadTag(hProfiles[0], cmsSigMediaWhitePointTag));
+    SetWhitePoint(&xform->ExitWhitePoint,  (cmsCIEXYZ*) cmsReadTag(hProfiles[nProfiles-1], cmsSigMediaWhitePointTag));
+   
 
     // Create a gamut check LUT if requested
     if (hGamutProfile != NULL && (dwFlags & cmsFLAGS_GAMUTCHECK))

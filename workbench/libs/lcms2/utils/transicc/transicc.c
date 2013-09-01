@@ -166,7 +166,7 @@ void HandleSwitches(int argc, char *argv[])
         case 'd':
         case 'D': {
             cmsFloat64Number ObserverAdaptationState = atof(xoptarg);
-            if (ObserverAdaptationState < 0 && 
+            if (ObserverAdaptationState < 0 || 
                 ObserverAdaptationState > 1.0)
                 FatalError("Adaptation states should be between 0 and 1");
 
@@ -653,7 +653,7 @@ void PrintFloatResults(cmsFloat64Number Value[])
         }
         else {
             OutputRange = 1;
-            sprintf(ChannelName, "Channel #%d", i + 1);
+            sprintf(ChannelName, "Channel #%u", i + 1);
         }
 
         v = (cmsFloat64Number) Value[i]* OutputRange;
@@ -724,7 +724,7 @@ void TakeFloatValues(cmsFloat64Number Float[])
         }
         else {
             InputRange = 1;
-            sprintf(ChannelName, "Channel #%d", i+1);
+            sprintf(ChannelName, "Channel #%u", i+1);
         }
 
         GetLine(Buffer, "%s? ", ChannelName);
@@ -773,7 +773,7 @@ void PrintEncodedResults(cmsUInt16Number Encoded[])
             cmsNamedColorInfo(OutputColorant, i, ChannelName, NULL, NULL, NULL, NULL);          
         }
         else {          
-            sprintf(ChannelName, "Channel #%d", i + 1);
+            sprintf(ChannelName, "Channel #%u", i + 1);
         }
 
         if (Verbose > 0)
@@ -842,7 +842,7 @@ cmsFloat64Number GetIT8Val(const char* Name, cmsFloat64Number Max)
 // Read input values from CGATS file.
 
 static
-void TakeCGATSValues(int nPatch, cmsFloat64Number Float[])
+    void TakeCGATSValues(int nPatch, cmsFloat64Number Float[])
 {
 
     // At first take the name if SAMPLE_ID is present
@@ -856,15 +856,15 @@ void TakeCGATSValues(int nPatch, cmsFloat64Number Float[])
 
     if (InputNamedColor) {
 
-      const cmsNAMEDCOLORLIST* NamedColorList;
-      int index;
+        const cmsNAMEDCOLORLIST* NamedColorList;
+        int index;
 
-      NamedColorList = cmsGetNamedColorList(hTrans);
-      if (NamedColorList == NULL) 
-          FatalError("Malformed named color profile");
-      
-      index = cmsNamedColorIndex(NamedColorList, CGATSPatch);
-      if (index < 0) 
+        NamedColorList = cmsGetNamedColorList(hTrans);
+        if (NamedColorList == NULL) 
+            FatalError("Malformed named color profile");
+
+        index = cmsNamedColorIndex(NamedColorList, CGATSPatch);
+        if (index < 0) 
             FatalError("Named color '%s' not found in the profile", CGATSPatch); 
 
         Float[0] = index;
@@ -936,12 +936,12 @@ void TakeCGATSValues(int nPatch, cmsFloat64Number Float[])
 
                 char Buffer[255];
 
-                sprintf(Buffer, "%dCLR_%d", n, i+1);
+                sprintf(Buffer, "%uCLR_%u", n, i+1);
                 Float[i] = GetIT8Val(Buffer, 100.0);
             }
 
         }
-	break;
+        break;
 
     default: 
         {
@@ -952,7 +952,7 @@ void TakeCGATSValues(int nPatch, cmsFloat64Number Float[])
 
                 char Buffer[255];
 
-                sprintf(Buffer, "CHAN_%d", i+1);
+                sprintf(Buffer, "CHAN_%u", i+1);
                 Float[i] = GetIT8Val(Buffer, 1.0);
             }
 
@@ -1045,12 +1045,12 @@ void PutCGATSValues(cmsFloat64Number Float[])
 
                 char Buffer[255];
 
-                sprintf(Buffer, "%dCLR_%d", n, i+1);
+                sprintf(Buffer, "%uCLR_%u", n, i+1);
 
                 SetCGATSfld(Buffer, Float[i] * 100.0);
             }
         }
-	break;
+        break;
 
     default: 
         {
@@ -1062,7 +1062,7 @@ void PutCGATSValues(cmsFloat64Number Float[])
 
                 char Buffer[255];
 
-                sprintf(Buffer, "CHAN_%d", i+1);
+                sprintf(Buffer, "CHAN_%u", i+1);
 
                 SetCGATSfld(Buffer, Float[i]);
             }
@@ -1154,20 +1154,20 @@ void SetOutputDataFormat(void)
     case cmsSig13colorData:
     case cmsSig14colorData:
     case cmsSig15colorData:
-	{
-	    int i, n;
-	    char Buffer[255];
+        {
+            int i, n;
+            char Buffer[255];
 
-	    n = cmsChannelsOf(OutputColorSpace);
-	    cmsIT8SetPropertyDbl(hIT8out, "NUMBER_OF_FIELDS", n+1);
-	    cmsIT8SetDataFormat(hIT8out, 0, "SAMPLE_ID");
+            n = cmsChannelsOf(OutputColorSpace);
+            cmsIT8SetPropertyDbl(hIT8out, "NUMBER_OF_FIELDS", n+1);
+            cmsIT8SetDataFormat(hIT8out, 0, "SAMPLE_ID");
 
-	    for (i=1; i <= n; i++) {
-		sprintf(Buffer, "%dCLR_%d", n, i);
-		cmsIT8SetDataFormat(hIT8out, i, Buffer);
-	    }
-	}
-	break;
+            for (i=1; i <= n; i++) {
+                sprintf(Buffer, "%dCLR_%d", n, i);
+                cmsIT8SetDataFormat(hIT8out, i, Buffer);
+            }
+        }
+        break;
 
     default: {
 

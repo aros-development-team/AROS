@@ -169,26 +169,26 @@ void CMSEXPORT cmsLab2XYZ(const cmsCIEXYZ* WhitePoint, cmsCIEXYZ* xyz,  const cm
 static
 cmsFloat64Number L2float2(cmsUInt16Number v)
 {
-	return (cmsFloat64Number) v / 652.800;
+    return (cmsFloat64Number) v / 652.800;
 }
 
 // the a/b part
 static
 cmsFloat64Number ab2float2(cmsUInt16Number v)
 {
-	return ((cmsFloat64Number) v / 256.0) - 128.0;
+    return ((cmsFloat64Number) v / 256.0) - 128.0;
 }
 
 static
 cmsUInt16Number L2Fix2(cmsFloat64Number L)
 {
-	return _cmsQuickSaturateWord(L *  652.8);
+    return _cmsQuickSaturateWord(L *  652.8);
 }
 
 static
 cmsUInt16Number ab2Fix2(cmsFloat64Number ab)
 {
-	return _cmsQuickSaturateWord((ab + 128.0) * 256.0);
+    return _cmsQuickSaturateWord((ab + 128.0) * 256.0);
 }
 
 
@@ -869,9 +869,11 @@ cmsUInt32Number CMSEXPORT cmsChannelsOf(cmsColorSpaceSignature ColorSpace)
 {
     switch (ColorSpace) {
 
+    case cmsSigMCH1Data:
     case cmsSig1colorData:
     case cmsSigGrayData: return 1;
 
+    case cmsSigMCH2Data:
     case cmsSig2colorData:  return 2;
 
     case cmsSigXYZData:
@@ -883,10 +885,12 @@ cmsUInt32Number CMSEXPORT cmsChannelsOf(cmsColorSpaceSignature ColorSpace)
     case cmsSigHsvData:
     case cmsSigHlsData:
     case cmsSigCmyData:
+    case cmsSigMCH3Data:
     case cmsSig3colorData:  return 3;
 
     case cmsSigLuvKData:
     case cmsSigCmykData:
+    case cmsSigMCH4Data:
     case cmsSig4colorData:  return 4;
 
     case cmsSigMCH5Data:

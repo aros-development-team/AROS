@@ -54,7 +54,6 @@ cmsBool  _cmsRegisterInterpPlugin(cmsPluginBase* Data)
 
 
 // Set the interpolation method
-
 cmsBool _cmsSetInterpolationRoutine(cmsInterpParams* p)
 {
     // Invoke factory, possibly in the Plug-in
@@ -815,7 +814,7 @@ void Eval4Inputs(register const cmsUInt16Number Input[],
                      register cmsUInt16Number Output[],
                      register const cmsInterpParams* p16)
 {
-    const cmsUInt16Number* LutTable = (cmsUInt16Number*) p16 -> Table;
+    const cmsUInt16Number* LutTable;
     cmsS15Fixed16Number fk;
     cmsS15Fixed16Number k0, rk;
     int K0, K1;
