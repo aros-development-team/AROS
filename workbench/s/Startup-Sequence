@@ -21,7 +21,7 @@ Assign "FONTS:"   "SYS:Fonts"
 Assign "HELP:"    "LOCALE:Help" DEFER
 Assign "THEMES:"  "SYS:System/Themes" >NIL:
 Assign "IMAGES:"  "SYS:System/Images" DEFER
-;Assign "PRINTERS:" "DEVS:Printers"
+Assign "PRINTERS:" "DEVS:Printers"
 Assign "WANDERER:" "SYS:System/Wanderer" DEFER
 
 If EXISTS "SYS:Classes/USB"
