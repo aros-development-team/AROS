@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 %build_archspecific \
-  mainmmake=hidd-radeon maindir=workbench/hidds/hidd.radeon \
-  arch=chrp-ppc cflags="$(CFLAGS) -I$(SRCDIR)/workbench/hidds/hidd.radeon"\
+  mainmmake=hidd-radeon maindir=workbench/hidds/radeon \
+  arch=chrp-ppc cflags="$(CFLAGS) -I$(SRCDIR)/workbench/hidds/radeon"\
   files="radeon_bios"
 
