@@ -50,6 +50,9 @@ Use
 MSG_GAD_CANCEL (//)
 Cancel
 ;
+MSG_ENABLETHEMES (//)
+Enable Theme'ing?
+;
 MSG_PREVIEW (//)
 Preview..
 ;
