@@ -1,0 +1,19 @@
+# Copyright © 2013, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES  := main appearanceeditor themepreview misc locale args
+
+EXEDIR := $(AROS_PREFS)
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+
+#MM- workbench-prefs : workbench-prefs-appearance
+#MM workbench-prefs-appearance : includes linklibs workbench-prefs-appearance-catalogs
+
+%build_prog mmake=workbench-prefs-appearance \
+    progname=Appearance targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui"
+
+%common
