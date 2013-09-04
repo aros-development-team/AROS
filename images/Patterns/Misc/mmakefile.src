@@ -22,6 +22,7 @@ FILES := \
     wp_ivy.png \
     wp_rose10.png
 
-%copy_files_q mmake=workbench-prefs-patterns files=$(FILES) dst=$(AROSDIR)/Prefs/Presets/Patterns/Misc
+%copy_files_q mmake=workbench-prefs-patterns files=$(FILES) \
+    dst=$(AROSDIR)/Prefs/Presets/Patterns/Misc
 
 %common

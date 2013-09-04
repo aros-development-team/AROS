@@ -13,7 +13,7 @@ FILES := \
     10-Infiniton_arosgreen.jpg
     
 
-%copy_files_q mmake=workbench-prefs-patterns-wallpapercomp files=$(FILES) \
+%copy_files_q mmake=workbench-prefs-patterns files=$(FILES) \
     dst=$(AROSDIR)/Prefs/Presets/Patterns/WallpaperComp2007
 
 %common
