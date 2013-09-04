@@ -21,3 +21,4 @@ $(AROS_ENVARC)/% : %
 #MM
 workbench-prefs-envarc-theme:
 	@echo "THEMES:$(AROS_GUI_THEME)" > $(AROS_ENVARC)/SYS/theme.var
+	@echo "THEMES:$(AROS_GUI_THEME)" > $(AROS_PREFS)/Presets/theme.default
