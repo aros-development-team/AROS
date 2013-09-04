@@ -48,7 +48,9 @@ FILES := \
         waitpid \
         stdin1 stdin2 stdin3 stdin4 \
         execl2 execl2_vfork execl2_slave \
-        argv0_test1 argv0_test2 argv0_slave
+        argv0_test1 argv0_test2 argv0_slave \
+        abort \
+        assert
 
 FILES_NIXC := \
         argv0_test3 argv0_test4 argv0_slave_nixc
