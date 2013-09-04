@@ -1,0 +1,63 @@
+;
+MSG_WINTITLE (//)
+Appearance Preferences
+;
+MSG_MEN_PROJECT (//)
+Project
+;
+MSG_MEN_PROJECT_OPEN (//)
+O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS (//)
+A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT (//)
+Q\0Quit
+;
+MSG_MEN_EDIT (//)
+Edit
+;
+MSG_MEN_EDIT_DEFAULT (//)
+D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED (//)
+L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE (//)
+R\0Restore
+;
+MSG_MEN_SETTINGS (//)
+Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS (//)
+I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE (//)
+Load Appearance Preferences
+;
+MSG_ASL_SAVE_TITLE (//)
+Save Appearance Preferences
+;
+MSG_OK (//)
+Ok
+;
+MSG_GAD_SAVE (//)
+Save
+;
+MSG_GAD_USE (//)
+Use
+;
+MSG_GAD_CANCEL (//)
+Cancel
+;
+MSG_PREVIEW (//)
+Preview..
+;
+MSG_SELECTEDTHEME (//)
+Theme
+;
+MSG_ENABLEZUNEPREFS (//)
+Inherit Zune Configuration?
+;
+MSG_ENABLEWANDPREFS (//)
+Inherit Wanderer Configuration?
