@@ -63,18 +63,11 @@ Object *ThemePreview__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         TAG_DONE
     );
 
-    if (self)
-    {
-        SETUP_INST_DATA;
-    }
-
     return self;
 }
 
 IPTR ThemePreview__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
-    SETUP_INST_DATA;
-
     D(bug("[ThemePreview] %s()\n", __PRETTY_FUNCTION__));
 
     return DoSuperMethodA(CLASS, self, message);
@@ -82,7 +75,6 @@ IPTR ThemePreview__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 
 IPTR ThemePreview__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
-    SETUP_INST_DATA;
     struct TagItem *tags, *tag;
 
     for (tags = message->ops_AttrList; (tag = NextTagItem(&tags)); )
