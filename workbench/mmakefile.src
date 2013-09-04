@@ -45,9 +45,10 @@ include $(TOP)/config/make.cfg
 WBSTARTUPDIR := $(AROSDIR)/WBStartup
 WBSTORAGEDIR := $(AROSDIR)/Storage
 WBDOSDRIVERDIRS := $(AROSDIR)/Devs/DOSDrivers $(AROSDIR)/Storage/DOSDrivers
+WBPRINTERS := $(AROSDIR)/Devs/Printers
 
 #MM
 workbench-directories ::
-    %mkdirs_q $(WBSTARTUPDIR) $(WBSTORAGEDIR) $(WBDOSDRIVERDIRS)
+    %mkdirs_q $(WBSTARTUPDIR) $(WBSTORAGEDIR) $(WBDOSDRIVERDIRS) $(WBPRINTERS)
 
 #MM- clean : clean-workbench
