@@ -39,6 +39,7 @@ struct DecorConfig
     LONG    STitleColorShadow;
 
     /* Window Section */
+    LONG    WinFrameStyle;
     BOOL    BarRounded;
     BOOL    BarVertical;
     LONG    BarHeight;
