@@ -979,26 +979,28 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         /* Shading borders */
         int bbt = bt;
 
-        if (bl > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt, 0, bbt, 0, wh - 1);
-        if (bb > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, wh - 1, 0, wh - 1, ww - 1, wh - 1);
-        if (br > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt , ww - 1, bbt , ww - 1, wh - 1);
-        if (bl > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt, bl - 1, bbt, bl - 1, wh - bb);
-        if (bb > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, wh - bb, bl - 1, wh - bb, ww - br, wh - bb);
-        if (br > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt , ww - br, bbt , ww - br, wh - bb);
-        if (bl > 2) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, bbt, 1, bbt, 1, wh - 2);
-        if (bl > 3) {
-            if (bb > 1) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, bl - 2, bbt, bl - 2, wh - bb + 1);
-            else ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, bl - 2, bbt, bl - 2, wh - bb);
-        }
-        if (br > 2) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, ww - 2, bbt, ww - 2, wh - 2);
-        if (bb > 2) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, wh - 2, 1, wh - 2, ww - 2, wh - 2);
-        if (bb > 3) {
-            if ((bl > 0) && (br > 0)) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, wh - bb + 1, bl, wh - bb + 1, ww - br, wh - bb + 1);
-        }
-        if (br > 3) {
-            if (bb > 1) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
-        }
-        
+        if (data->dc->WinFrameStyle > 0)
+        {
+            if (bl > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt, 0, bbt, 0, wh - 1);
+            if (bb > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, wh - 1, 0, wh - 1, ww - 1, wh - 1);
+            if (br > 0) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt , ww - 1, bbt , ww - 1, wh - 1);
+            if (bl > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt, bl - 1, bbt, bl - 1, wh - bb);
+            if (bb > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, wh - bb, bl - 1, wh - bb, ww - br, wh - bb);
+            if (br > 1) ShadeLine(dpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_d, bbt , ww - br, bbt , ww - br, wh - bb);
+            if (bl > 2) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, bbt, 1, bbt, 1, wh - 2);
+            if (bl > 3) {
+                if (bb > 1) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, bl - 2, bbt, bl - 2, wh - bb + 1);
+                else ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, bl - 2, bbt, bl - 2, wh - bb);
+            }
+            if (br > 2) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, bbt, ww - 2, bbt, ww - 2, wh - 2);
+            if (bb > 2) ShadeLine(mpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_m, wh - 2, 1, wh - 2, ww - 2, wh - 2);
+            if (bb > 3) {
+                if ((bl > 0) && (br > 0)) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, wh - bb + 1, bl, wh - bb + 1, ww - br, wh - bb + 1);
+            }
+            if (br > 3) {
+                if (bb > 1) ShadeLine(lpen, tc, data->dc->UseGradients, rp, ni, bc, data->dc->ShadeValues_l, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
+            }
+        }        
         FreeVec(buf);
     }
     return TRUE;

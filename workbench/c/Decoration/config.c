@@ -190,6 +190,7 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
     BPTR    lock;
     BPTR    olddir = 0;
 
+    dc->WinFrameStyle = 1;
     dc->BarJoinTB_o = 0;
     dc->BarJoinTB_s = 0;
     dc->BarPreGadget_o = 0;
@@ -331,6 +332,8 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
 		D(bug("Decoration/ReadSystemConfig: Parsing line '%s'\n", line));
                 if ((v = strstr(line, "NoInactiveSelected ")) == line) {
                     dc->GadgetsThreeState = GetBool(v, "Yes");
+                } else if ((v = strstr(line, "FrameStyle ")) == line) {
+                    dc->WinFrameStyle = GetInt(v);
                 } else if ((v = strstr(line, "BarRounded ")) == line) {
                     dc->BarRounded = GetBool(v, "Yes");
                 } else if ((v = strstr(line, "WindowTitleMode ")) == line) {
