@@ -70,7 +70,7 @@ static IPTR AppearanceEditor__ListToArray(struct List *ThemeList)
         FreeVec(ThemeEntry);
     }
 
-    return ThemeArray;
+    return (IPTR)ThemeArray;
 }
 
 AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
@@ -79,7 +79,6 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
 	  AROS_UFHA(APTR, msg, A1))
 {
     AROS_USERFUNC_INIT
-    struct AppearanceEditor_DATA *data = h->h_Data;
 
     D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
 
@@ -110,12 +109,14 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
 
     Object      *_ThemePreviewObj;
     Object      *_ThemeSelectionObj;
+#if (0)
     Object      *_ThemeWandPrefsObj;
+#endif
     Object      *_ThemeZunePrefsObj;
 
     struct List _ThemesAvailable;
     struct Node *_ThemeEntry;
-    IPTR        _ThemeArray = NULL;
+    IPTR        _ThemeArray = (IPTR)NULL;
 
     BPTR        _ThemeLock = BNULL;
 
@@ -200,7 +201,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         data->te_OptionWand = _ThemeWandPrefsObj;
 #endif
 
-        data->te_ThemeArray = _ThemeArray;
+        data->te_ThemeArray = (APTR)_ThemeArray;
 
         data->te_PreviewHook.h_Entry = (HOOKFUNC)AppearanceEditor__PreviewHookFunc;
 	data->te_PreviewHook.h_Data = data;
@@ -235,7 +236,7 @@ IPTR AppearanceEditor__OM_DISPOSE(Class *CLASS, Object *self, struct opSet *mess
 
     D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
 
-    while (data->te_ThemeArray[index] != NULL)
+    while (data->te_ThemeArray[index] != (IPTR)NULL)
     {
         D(bug("[AppearanceEditor] %s: Freeing %02d: %s\n", __PRETTY_FUNCTION__, index, data->te_ThemeArray[index]));
         FreeVec(data->te_ThemeArray[index]);
@@ -267,7 +268,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
 
             D(bug("[AppearanceEditor] %s: Prefs Theme = '%s'\n", __PRETTY_FUNCTION__, tmpThemeFile));
 
-            while (data->te_ThemeArray[index] != NULL)
+            while ((char *)data->te_ThemeArray[index] != NULL)
             {
                 if (strncmp((char *)data->te_ThemeArray[index], tmpThemeFile, strlen((char *)data->te_ThemeArray[index])) == 0)
                 {
@@ -306,7 +307,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
         GET(data->te_ThemeChoice, MUIA_Cycle_Active, &active);
         D(bug("[AppearanceEditor] %s: Selected Theme = [%02d] '%s'\n", __PRETTY_FUNCTION__, active, data->te_ThemeArray[active]));
 
-        tmpThemePath = AllocVec(strlen(THEMES_BASE) + strlen(data->te_ThemeArray[active]) + 1, MEMF_CLEAR);
+        tmpThemePath = AllocVec(strlen(THEMES_BASE) + strlen((char *)data->te_ThemeArray[active]) + 1, MEMF_CLEAR);
         sprintf(tmpThemePath, "%s%s", THEMES_BASE, (char *)data->te_ThemeArray[active]);
 
         if (FPuts(message->fh, tmpThemePath))
@@ -340,9 +341,9 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
 
     D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
 
-    while (data->te_ThemeArray[index] != NULL)
+    while ((char *)data->te_ThemeArray[index] != NULL)
     {
-        if (!strcmp(data->te_ThemeArray[index], THEMES_DEFAULT))
+        if (!strcmp((char *)data->te_ThemeArray[index], THEMES_DEFAULT))
         {
             SET(data->te_ThemeChoice, MUIA_Cycle_Active, index);
             break;
