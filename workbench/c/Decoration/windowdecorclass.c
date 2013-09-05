@@ -939,6 +939,10 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
     if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
     {
         UBYTE * buf = NULL;
+        int         overlap = 0;
+
+        if (data->dc->WinFrameStyle > 0)
+            overlap = 2;
         
         if (data->dc->UseGradients)
         {
@@ -953,25 +957,25 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         if (data->dc->UseGradients)
         {
             /* Reuse the buffer for blitting frames */
-            if (window->BorderLeft > 2) HorizRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
+            if (window->BorderLeft > overlap) HorizRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
                                             0, window->BorderTop, 
                                             window->BorderLeft, window->Height - window->BorderTop);
-            if (window->BorderRight > 2) HorizRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
+            if (window->BorderRight > overlap) HorizRepeatBuffer(buf, window->BorderTop, pen, wd->truecolor, rp, 
                                             window->Width - window->BorderRight, window->BorderTop,
                                             window->BorderRight, window->Height - window->BorderTop);
-            if (window->BorderBottom > 2) HorizRepeatBuffer(buf, window->Height - window->BorderBottom, pen, wd->truecolor, rp,
+            if (window->BorderBottom > overlap) HorizRepeatBuffer(buf, window->Height - window->BorderBottom, pen, wd->truecolor, rp,
                                             0, window->Height - window->BorderBottom,
                                             window->Width, window->BorderBottom);
         }
         else
         {
-            if (window->BorderLeft > 2) HorizVertRepeatNewImage(ni, color, 0, window->BorderTop, rp,  
+            if (window->BorderLeft > overlap) HorizVertRepeatNewImage(ni, color, 0, window->BorderTop, rp,  
                                             0, window->BorderTop, 
                                             window->BorderLeft - 1, window->Height - window->BorderTop);
-            if (window->BorderRight > 2) HorizVertRepeatNewImage(ni, color, window->Width - window->BorderRight , window->BorderTop, rp,  
+            if (window->BorderRight > overlap) HorizVertRepeatNewImage(ni, color, window->Width - window->BorderRight , window->BorderTop, rp,  
                                             window->Width - window->BorderRight , window->BorderTop, 
                                             window->BorderRight, window->Height - window->BorderTop);
-            if (window->BorderBottom > 2) HorizVertRepeatNewImage(ni, color, 0, window->Height - window->BorderBottom, rp,  
+            if (window->BorderBottom > overlap) HorizVertRepeatNewImage(ni, color, 0, window->Height - window->BorderBottom, rp,  
                                             0, window->Height - window->BorderBottom, 
                                             window->Width, window->BorderBottom);
         }
