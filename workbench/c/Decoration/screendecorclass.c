@@ -211,9 +211,19 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     struct Screen          *scr = msg->sdp_Screen;
     struct DrawInfo        *dri = msg->sdp_Dri;
     UWORD                  *pens = dri->dri_Pens;
-    LONG                    left, right = 0, titlelen = 0;
+    LONG                    left, right = 0, len;
     BOOL                    hastitle = TRUE;
     BOOL		    beeping = scr->Flags & BEEPING;
+
+    if (data->dc->SBarChildPre_s > 0)
+        len = data->dc->SBarChildPre_o - 1;
+    else if (data->dc->SBarGadPre_s >0)
+        len = data->dc->SBarGadPre_o - 1;
+    else
+        len = sd->img_stitlebar->w;
+    
+    if (len == 0)
+        len = 1;
 
     if (beeping) {
         SetAPen(rp, pens[BARDETAILPEN]);
@@ -221,7 +231,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     } else {
         if (sd->img_stitlebar->ok)
             WriteVerticalScaledTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0,
-                sd->img_stitlebar->w, 0, 0, data->dc->SBarHeight, scr->Width, scr->BarHeight + 1);
+                len , 0, 0, data->dc->SBarHeight, scr->Width, scr->BarHeight + 1);
     }
     if (sd->img_sbarlogo->ok)
         WriteTiledImageHorizontal(rp, sd->img_sbarlogo, 0, 0, 
@@ -231,10 +241,11 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     if (scr->Title == NULL)
         hastitle = FALSE;
 
+    len = 0;
     if (hastitle)
     {
         scr_findtitlearea(scr, &left, &right);
-        titlelen = strlen(scr->Title);
+        len = strlen(scr->Title);
         if (data->FirstChild)
         {
             if (((struct Gadget *)(data->FirstChild))->Width > 2) {
@@ -242,8 +253,8 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
                 right = right - ((struct Gadget *)(data->FirstChild))->Width + 1; 
             }
         }
-        titlelen = TextFit(rp, scr->Title, titlelen, &te, NULL, 1, right - data->dc->STitleOffset, scr->BarHeight);
-        if (titlelen == 0) hastitle = 0;
+        len = TextFit(rp, scr->Title, len, &te, NULL, 1, right - data->dc->STitleOffset, scr->BarHeight);
+        if (len == 0) hastitle = 0;
     }
 
     if (hastitle)
@@ -260,36 +271,36 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         {
             SetAPen(rp, pens[beeping ? BARBLOCKPEN : BARDETAILPEN]);
             Move(rp, tx, ty);
-            Text(rp, scr->Title, titlelen);
+            Text(rp, scr->Title, len);
         }
         else if (data->dc->STitleOutline)
         {
             SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
             SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
 
-            Move(rp, tx + 1, ty ); Text(rp, scr->Title, titlelen);
-            Move(rp, tx + 2, ty ); Text(rp, scr->Title, titlelen);
-            Move(rp, tx , ty ); Text(rp, scr->Title, titlelen);
-            Move(rp, tx, ty + 1);  Text(rp, scr->Title, titlelen);
-            Move(rp, tx, ty + 2);  Text(rp, scr->Title, titlelen);
-            Move(rp, tx + 1, ty + 2);  Text(rp, scr->Title, titlelen);
-            Move(rp, tx + 2, ty + 1);  Text(rp, scr->Title, titlelen);
-            Move(rp, tx + 2, ty + 2);  Text(rp, scr->Title, titlelen);
+            Move(rp, tx + 1, ty ); Text(rp, scr->Title, len);
+            Move(rp, tx + 2, ty ); Text(rp, scr->Title, len);
+            Move(rp, tx , ty ); Text(rp, scr->Title, len);
+            Move(rp, tx, ty + 1);  Text(rp, scr->Title, len);
+            Move(rp, tx, ty + 2);  Text(rp, scr->Title, len);
+            Move(rp, tx + 1, ty + 2);  Text(rp, scr->Title, len);
+            Move(rp, tx + 2, ty + 1);  Text(rp, scr->Title, len);
+            Move(rp, tx + 2, ty + 2);  Text(rp, scr->Title, len);
 
             SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
             Move(rp, tx + 1, ty + 1);
-            Text(rp, scr->Title, titlelen);
+            Text(rp, scr->Title, len);
             SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
         }
         else
         {
             SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
             Move(rp, tx + 1, ty + 1 );
-            Text(rp, scr->Title, titlelen);
+            Text(rp, scr->Title, len);
 
             SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
             Move(rp, tx, ty);
-            Text(rp, scr->Title, titlelen);
+            Text(rp, scr->Title, len);
         }
     }
 
