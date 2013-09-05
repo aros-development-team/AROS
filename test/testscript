@@ -3,3 +3,5 @@ amiga2date
 printf_f
 versionlib
 dos/addpart
+clib/abort
+clib/exit
