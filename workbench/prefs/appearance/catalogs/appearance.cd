@@ -54,7 +54,10 @@ MSG_ENABLETHEMES (//)
 Enable Theme'ing?
 ;
 MSG_PREVIEW (//)
-Preview..
+Preview
+;
+MSG_NOPREVIEW (//)
+-Preview Unavailable-
 ;
 MSG_SELECTEDTHEME (//)
 Theme
