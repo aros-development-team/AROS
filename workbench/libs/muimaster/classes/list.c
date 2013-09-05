@@ -1060,6 +1060,11 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             _handle_bool_tag(data->flags, tag->ti_Data, LIST_DRAGSORTABLE);
             set(obj, MUIA_Draggable, tag->ti_Data);
             break;
+
+        case MUIA_Selected:
+            /* Swallow this so the Area class doesn't redraw us */
+            tag->ti_Tag = TAG_IGNORE;
+            break;
         }
     }
 
