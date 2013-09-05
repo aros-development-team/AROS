@@ -135,8 +135,8 @@ IPTR ThemePreview__MUIM_AskMinMax(struct IClass *CLASS, Object *self, struct MUI
     message->MinMaxInfo->DefWidth  += PREVIEW_WIDTH;
     message->MinMaxInfo->DefHeight += PREVIEW_HEIGHT;
 
-    message->MinMaxInfo->MaxWidth = PREVIEW_WIDTH;
-    message->MinMaxInfo->MaxHeight = PREVIEW_HEIGHT;
+    message->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+    message->MinMaxInfo->MaxHeight = MUI_MAXMAX;
 
     return rc;
 }
