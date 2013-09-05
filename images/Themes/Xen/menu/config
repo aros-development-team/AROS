@@ -1,0 +1,9 @@
+TileTop = 15
+TileRight = 13
+TileBottom = 15
+TileLeft = 6
+
+InnerTop = 6
+InnerRight = 12
+InnerBottom = 11
+InnerLeft = 6
