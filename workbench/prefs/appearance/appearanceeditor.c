@@ -18,6 +18,8 @@
 
 #include <proto/alib.h>
 
+#include <libraries/mui.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -30,6 +32,7 @@
 struct AppearanceEditor_DATA
 {
     Object *te_ThemePreview;
+    Object *te_ThemeEnable;
     Object *te_ThemeChoice;
     Object *te_OptionZune;
 #if (0)
@@ -39,9 +42,12 @@ struct AppearanceEditor_DATA
     struct Hook te_PreviewHook;
 };
 
+static    STRPTR THEMES_DEFAULT;
+static    STRPTR THEMES_AMIGAOS = "AmigaOS3.x";
 static    CONST_STRPTR THEMES_BASE = "THEMES:";
-static    CONST_STRPTR THEMES_DEFAULT = "ice";
-static    CONST_STRPTR THEMES_OPTZUNEPATH = "ENV:Zune/usethemeprefs";
+static    CONST_STRPTR THEMES_ENVPATH = "SYS/theme.var";
+static    CONST_STRPTR THEMES_DEFPATH = "SYS:Prefs/Presets/theme.default";
+static    CONST_STRPTR THEMES_OPTZUNEPATH = "Zune/usethemeprefs";
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct AppearanceEditor_DATA *data = INST_DATA(CLASS, self)
@@ -79,9 +85,26 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
 	  AROS_UFHA(APTR, msg, A1))
 {
     AROS_USERFUNC_INIT
+    struct AppearanceEditor_DATA *data = h->h_Data;
 
     D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
 
+    if (XGET(data->te_ThemeEnable, MUIA_Selected))
+    {
+        SET(data->te_ThemeChoice, MUIA_Disabled, FALSE);
+        SET(data->te_OptionZune, MUIA_Disabled, FALSE);
+#if (0)
+        SET(data->te_OptionWand, MUIA_Disabled, FALSE);
+#endif
+    }
+    else
+    {
+        SET(data->te_ThemeChoice, MUIA_Disabled, TRUE);
+        SET(data->te_OptionZune, MUIA_Disabled, TRUE);
+#if (0)
+        SET(data->te_OptionWand, MUIA_Disabled, TRUE);
+#endif
+    }
     SET(self, MUIA_PrefsEditor_Changed, TRUE);
 
     AROS_USERFUNC_EXIT
@@ -108,6 +131,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
     BOOL        ExAllMore;
 
     Object      *_ThemePreviewObj;
+    Object      *_ThemeEnable;
     Object      *_ThemeSelectionObj;
 #if (0)
     Object      *_ThemeWandPrefsObj;
@@ -125,39 +149,57 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
     NewList(&_ThemesAvailable);
 
     // Find Available Themes ...
-    if (((_ThemeLock = Lock(THEMES_BASE, SHARED_LOCK)) != BNULL) && ((ExAllBuffer = AllocVec(kExallBufSize, MEMF_CLEAR|MEMF_PUBLIC)) != NULL))
+    if ((ExAllBuffer = AllocVec(kExallBufSize, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
     {
-        struct ExAllControl  *eac;
-        if ((eac = AllocDosObject(DOS_EXALLCONTROL,NULL)) != NULL)
+        if (GetVar(THEMES_DEFPATH, ExAllBuffer, kExallBufSize, GVF_GLOBAL_ONLY) == -1)
+            THEMES_DEFAULT = THEMES_AMIGAOS;
+        else
         {
-            struct ExAllData *ead = (struct ExAllData*)ExAllBuffer;
-            eac->eac_LastKey = 0;
-            do {
-               ExAllMore = ExAll(_ThemeLock, ead, kExallBufSize, ED_COMMENT, eac);
-                if ((!ExAllMore) && (IoErr() != ERROR_NO_MORE_ENTRIES)) {
-                    break;
-                }
-                if (eac->eac_Entries == 0) {
-                    continue;
-                }
-                ead = (struct ExAllData *)ExAllBuffer;
-                do {
-                    if (ead->ed_Type == ST_USERDIR)
-                    {
-                        _ThemeEntry = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-                        _ThemeEntry->ln_Name = StrDup(ead->ed_Name);
-                        AddTail(&_ThemesAvailable, _ThemeEntry);
-                    }
-                    ead = ead->ed_Next;
-                } while (ead);
-            } while (ExAllMore);
-            FreeDosObject(DOS_EXALLCONTROL, eac);
+            THEMES_DEFAULT = AllocVec(strlen(ExAllBuffer) + 1, MEMF_CLEAR);
+            CopyMem(ExAllBuffer, (APTR)THEMES_DEFAULT, strlen(ExAllBuffer));
         }
-        FreeVec(ExAllBuffer);
+        
+        if ((_ThemeLock = Lock(THEMES_BASE, SHARED_LOCK)) != BNULL)
+        {
+            struct ExAllControl  *eac;
+            if ((eac = AllocDosObject(DOS_EXALLCONTROL,NULL)) != NULL)
+            {
+                struct ExAllData *ead = (struct ExAllData*)ExAllBuffer;
+                eac->eac_LastKey = 0;
+                do {
+                   ExAllMore = ExAll(_ThemeLock, ead, kExallBufSize, ED_COMMENT, eac);
+                    if ((!ExAllMore) && (IoErr() != ERROR_NO_MORE_ENTRIES)) {
+                        break;
+                    }
+                    if (eac->eac_Entries == 0) {
+                        continue;
+                    }
+                    ead = (struct ExAllData *)ExAllBuffer;
+                    do {
+                        if (ead->ed_Type == ST_USERDIR)
+                        {
+                            _ThemeEntry = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                            _ThemeEntry->ln_Name = StrDup(ead->ed_Name);
+                            AddTail(&_ThemesAvailable, _ThemeEntry);
+                        }
+                        ead = ead->ed_Next;
+                    } while (ead);
+                } while (ExAllMore);
+                FreeDosObject(DOS_EXALLCONTROL, eac);
+            }
+            FreeVec(ExAllBuffer);
+            UnLock(_ThemeLock);
+        }
+        else
+        {
+            //TODO: Display a warning about missing themes: assign
+        }
     }
-
-    if (_ThemeLock)
-        UnLock(_ThemeLock);
+    else
+    {
+        // Catastrophic failure - not enough memory to allocate exall buffer =S
+        return (Object *)NULL;
+    }
 
     _ThemeArray =  AppearanceEditor__ListToArray(&_ThemesAvailable);
 
@@ -165,7 +207,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
     (
         CLASS, self, NULL,
         MUIA_PrefsEditor_Name, _(MSG_WINTITLE),
-        MUIA_PrefsEditor_Path, (IPTR) "SYS/theme.var",
+        MUIA_PrefsEditor_Path, (IPTR) THEMES_ENVPATH,
         MUIA_PrefsEditor_IconTool, (IPTR) "SYS:Prefs/Theme",
 
         Child, VGroup,
@@ -173,6 +215,8 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
             End),
             Child, (IPTR)ColGroup(2),
                 MUIA_Group_SameWidth, FALSE,
+                Child, (IPTR)Label1(_(MSG_ENABLETHEMES)),
+                Child, (IPTR)(_ThemeEnable = (Object *)AppearanceEditor__Checkmark(TRUE)),
                 Child, (IPTR)Label1(_(MSG_SELECTEDTHEME)),
                 Child, (IPTR)(_ThemeSelectionObj = (Object *)CycleObject,
                     MUIA_CycleChain, 1,
@@ -195,16 +239,23 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         SETUP_INST_DATA;
 
         data->te_ThemePreview = _ThemePreviewObj;
+        data->te_ThemeEnable = _ThemeEnable;
         data->te_ThemeChoice = _ThemeSelectionObj;
         data->te_OptionZune = _ThemeZunePrefsObj;
 #if (0)
         data->te_OptionWand = _ThemeWandPrefsObj;
 #endif
 
-        data->te_ThemeArray = (APTR)_ThemeArray;
+        data->te_ThemeArray = (IPTR *)_ThemeArray;
 
         data->te_PreviewHook.h_Entry = (HOOKFUNC)AppearanceEditor__PreviewHookFunc;
 	data->te_PreviewHook.h_Data = data;
+
+        DoMethod
+        (
+            data->te_ThemeEnable, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->te_PreviewHook, (IPTR)NULL
+        );
 
         DoMethod
         (
@@ -239,14 +290,52 @@ IPTR AppearanceEditor__OM_DISPOSE(Class *CLASS, Object *self, struct opSet *mess
     while (data->te_ThemeArray[index] != (IPTR)NULL)
     {
         D(bug("[AppearanceEditor] %s: Freeing %02d: %s\n", __PRETTY_FUNCTION__, index, data->te_ThemeArray[index]));
-        FreeVec(data->te_ThemeArray[index]);
+        FreeVec((APTR)data->te_ThemeArray[index]);
         index++;
     }
     FreeVec((APTR)data->te_ThemeArray);
 
+    if (THEMES_DEFAULT != THEMES_AMIGAOS)
+        FreeVec(THEMES_DEFAULT);
+
     return DoSuperMethodA(CLASS, self, message);
 }
 
+IPTR AppearanceEditor__MUIM_PrefsEditor_Import
+(
+    Class *CLASS, Object *self,
+    struct MUIP_PrefsEditor_Import *message
+)
+{
+    SETUP_INST_DATA;
+    BOOL success = TRUE;
+    BPTR fh;
+
+    D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
+
+    if ((fh = Open(message->filename, MODE_OLDFILE)) != BNULL)
+    {
+        NNSET(data->te_ThemeEnable, MUIA_Selected, TRUE);
+        SET(data->te_ThemeChoice, MUIA_Disabled, FALSE);
+        SET(data->te_OptionZune, MUIA_Disabled, FALSE);
+#if (0)
+        SET(data->te_OptionWand, MUIA_Disabled, FALSE);
+#endif
+        success = DoMethod(self, MUIM_PrefsEditor_ImportFH, (IPTR) fh);
+        Close(fh);
+    }
+    else
+    {
+        NNSET(data->te_ThemeEnable, MUIA_Selected, FALSE);
+        SET(data->te_ThemeChoice, MUIA_Disabled, TRUE);
+        SET(data->te_OptionZune, MUIA_Disabled, TRUE);
+#if (0)
+        SET(data->te_OptionWand, MUIA_Disabled, TRUE);
+#endif
+    }
+
+    return success;
+}
 
 IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
     Class *CLASS, Object *self,
@@ -268,7 +357,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
 
             D(bug("[AppearanceEditor] %s: Prefs Theme = '%s'\n", __PRETTY_FUNCTION__, tmpThemeFile));
 
-            while ((char *)data->te_ThemeArray[index] != NULL)
+            while (data->te_ThemeArray[index] != (IPTR)NULL)
             {
                 if (strncmp((char *)data->te_ThemeArray[index], tmpThemeFile, strlen((char *)data->te_ThemeArray[index])) == 0)
                 {
@@ -285,6 +374,29 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
 
     NNSET(data->te_OptionZune, MUIA_Selected, optzune);
     
+    return success;
+}
+
+IPTR AppearanceEditor__MUIM_PrefsEditor_Export
+(
+    Class *CLASS, Object *self,
+    struct MUIP_PrefsEditor_Export *message
+)
+{
+    SETUP_INST_DATA;
+    BOOL success = TRUE;
+
+    D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));    
+
+    if (XGET(data->te_ThemeEnable, MUIA_Selected))
+    {
+        success = DoSuperMethodA(CLASS, self, message);
+    }
+    else
+    {
+        DeleteVar(THEMES_ENVPATH, GVF_GLOBAL_ONLY);
+    }
+
     return success;
 }
 
@@ -341,7 +453,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
 
     D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
 
-    while ((char *)data->te_ThemeArray[index] != NULL)
+    while (data->te_ThemeArray[index] != (IPTR)NULL)
     {
         if (!strcmp((char *)data->te_ThemeArray[index], THEMES_DEFAULT))
         {
@@ -358,12 +470,14 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
 }
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_5
+ZUNE_CUSTOMCLASS_7
 (
     AppearanceEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                       struct opSet *,
     OM_DISPOSE,                   struct opSet *,
+    MUIM_PrefsEditor_Import,      struct MUIP_PrefsEditor_Import *,
     MUIM_PrefsEditor_ImportFH,    struct MUIP_PrefsEditor_ImportFH *,
+    MUIM_PrefsEditor_Export,      struct MUIP_PrefsEditor_Export *,
     MUIM_PrefsEditor_ExportFH,    struct MUIP_PrefsEditor_ExportFH *,
     MUIM_PrefsEditor_SetDefaults, Msg
 );
