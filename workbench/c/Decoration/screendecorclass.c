@@ -120,24 +120,28 @@ static IPTR scrdecor_get(Class *cl, Object *obj, struct opGet *msg)
 
 /**************************************************************************************************/
 
-static void scr_findtitlearea(struct Screen *scr, LONG *left, LONG *right)
+static void scr_findtitlearea(struct scrdecor_data *data, struct Screen *scr, LONG *left, LONG *right)
 {
     struct Gadget *g;
 
-    *left = 0;
-    *right = scr->Width - 1;
+    LONG minx = 0, maxx = scr->Width - 1;
 
     for (g = scr->FirstGadget; g; g = g->NextGadget)
     {
         if (!(g->Flags & GFLG_RELRIGHT))
         {
-            if (g->LeftEdge + g->Width > *left) *left = g->LeftEdge + g->Width;
+            if (g->LeftEdge + g->Width > minx) minx = g->LeftEdge + g->Width;
         }
         else
         {
-            if (g->LeftEdge + scr->Width - 1 - 1 < *right) *right = g->LeftEdge + scr->Width - 1 - 1;
+            if (g->LeftEdge + scr->Width - 1 - 1 < maxx) maxx = g->LeftEdge + scr->Width - 1 - 1;
         }
     }
+    if (maxx != scr->Width - 1)
+        maxx -= (data->dc->SBarGadPre_s + data->dc->SBarGadPost_s + 1);
+    
+    *left = minx;
+    *right = maxx;
 }
 
 static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
@@ -185,9 +189,9 @@ static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
 
                             DoMethodA(data->FirstChild, &childlayoutmsg);
 
-                            scr_findtitlearea((childgadinf.gi_Screen), &left, &right);
+                            scr_findtitlearea(data, (childgadinf.gi_Screen), &left, &right);
 
-                            ((struct Gadget *)(data->FirstChild))->LeftEdge = right - ((struct Gadget *)(data->FirstChild))->Width + 1;
+                            ((struct Gadget *)(data->FirstChild))->LeftEdge = right - ((struct Gadget *)(data->FirstChild))->Width + data->dc->SBarGadPost_s + 1;
 
                             childlayoutmsg.MethodID = GM_GOACTIVE;
                             DoMethodA(data->FirstChild, &childlayoutmsg);
@@ -206,18 +210,16 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
 {
     struct scrdecor_data   *data = INST_DATA(cl, obj);
     struct ScreenData      *sd = (struct ScreenData *) msg->sdp_UserBuffer;
-    struct TextExtent       te;
     struct RastPort        *rp = msg->sdp_RPort;
     struct Screen          *scr = msg->sdp_Screen;
     struct DrawInfo        *dri = msg->sdp_Dri;
     UWORD                  *pens = dri->dri_Pens;
     LONG                    left, right = 0, len;
-    BOOL                    hastitle = TRUE;
     BOOL		    beeping = scr->Flags & BEEPING;
 
-    if (data->dc->SBarChildPre_s > 0)
+    if ((data->dc->SBarChildPre_s > 0) && (data->dc->SBarChildPre_s < sd->img_stitlebar->w))
         len = data->dc->SBarChildPre_o - 1;
-    else if (data->dc->SBarGadPre_s >0)
+    else if ((data->dc->SBarGadPre_s > 0) && (data->dc->SBarGadPre_s < sd->img_stitlebar->w))
         len = data->dc->SBarGadPre_o - 1;
     else
         len = sd->img_stitlebar->w;
@@ -225,82 +227,111 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     if (len == 0)
         len = 1;
 
-    if (beeping) {
+    scr_findtitlearea(data, scr, &left, &right);
+
+    if (beeping)
+    {
         SetAPen(rp, pens[BARDETAILPEN]);
         RectFill(rp, 0, 0, scr->Width, sd->img_stitlebar->h);
-    } else {
-        if (sd->img_stitlebar->ok)
-            WriteVerticalScaledTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0,
-                len , 0, 0, data->dc->SBarHeight, scr->Width, scr->BarHeight + 1);
     }
-    if (sd->img_sbarlogo->ok)
-        WriteTiledImageHorizontal(rp, sd->img_sbarlogo, 0, 0, 
-            sd->img_sbarlogo->w, data->dc->SLogoOffset, 
-            (scr->BarHeight + 1 - sd->img_sbarlogo->h) / 2, sd->img_sbarlogo->w);
-
-    if (scr->Title == NULL)
-        hastitle = FALSE;
-
-    len = 0;
-    if (hastitle)
+    else
     {
-        scr_findtitlearea(scr, &left, &right);
-        len = strlen(scr->Title);
+        if (sd->img_stitlebar->ok)
+        {
+            if (data->dc->SBarGadPre_s > 0)
+            {
+                WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
+                    data->dc->SBarGadPre_o, data->dc->SBarGadPre_s,
+                    right + 1, 0, data->dc->SBarGadPre_o);
+            }
+            if (data->dc->SBarGadFill_s > 0)
+            {
+                WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
+                    data->dc->SBarGadFill_o, data->dc->SBarGadFill_s,
+                    right + data->dc->SBarGadPre_s + 1, 0, scr->Width - (right + data->dc->SBarGadPre_s + data->dc->SBarGadPost_s));
+            }
+            if (data->dc->SBarGadPost_s > 0)
+            {
+                WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
+                    data->dc->SBarGadPost_o, data->dc->SBarGadPost_s,
+                    scr->Width - data->dc->SBarGadPost_s, 0, data->dc->SBarGadPost_s);
+            }
+        }
+
         if (data->FirstChild)
         {
             if (((struct Gadget *)(data->FirstChild))->Width > 2) {
                 D(bug("[screendecor] draw_screenbar: titlechild width = %d\n", ((struct Gadget *)(data->FirstChild))->Width));
-                right = right - ((struct Gadget *)(data->FirstChild))->Width + 1; 
+                right = right - ((struct Gadget *)(data->FirstChild))->Width + data->dc->SBarChildPre_s + data->dc->SBarChildPost_s + 1; 
             }
         }
-        len = TextFit(rp, scr->Title, len, &te, NULL, 1, right - data->dc->STitleOffset, scr->BarHeight);
-        if (len == 0) hastitle = 0;
+
+        if (sd->img_stitlebar->ok)
+        {
+            WriteVerticalScaledTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0,
+                len , 0, 0, data->dc->SBarHeight, right, scr->BarHeight + 1);
+
+        }
     }
 
-    if (hastitle)
+    if (sd->img_sbarlogo->ok)
     {
-        UWORD tx = data->dc->STitleOffset;
-        UWORD tymax = scr->BarHeight - (dri->dri_Font->tf_YSize - dri->dri_Font->tf_Baseline) - 1;
-        UWORD ty = ((scr->BarHeight + dri->dri_Font->tf_Baseline - 1) >> 1);
-        if (ty > tymax) ty = tymax;
+        WriteTiledImageHorizontal(rp, sd->img_sbarlogo, 0, 0, 
+            sd->img_sbarlogo->w, data->dc->SLogoOffset, 
+            (scr->BarHeight + 1 - sd->img_sbarlogo->h) / 2, sd->img_sbarlogo->w);
+    }
 
-        SetFont(rp, msg->sdp_Dri->dri_Font);
-        SetDrMd(rp, JAM1);
+    if (scr->Title != NULL)
+    {
+        struct TextExtent te;
 
-        if (!sd->truecolor || ((data->dc->STitleOutline == FALSE) && (data->dc->STitleShadow == FALSE)))
+        len = strlen(scr->Title);
+
+        if ((len = TextFit(rp, scr->Title, len, &te, NULL, 1, right - data->dc->STitleOffset, scr->BarHeight)) != 0)
         {
-            SetAPen(rp, pens[beeping ? BARBLOCKPEN : BARDETAILPEN]);
-            Move(rp, tx, ty);
-            Text(rp, scr->Title, len);
-        }
-        else if (data->dc->STitleOutline)
-        {
-            SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
-            SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
+            UWORD tx = data->dc->STitleOffset;
+            UWORD tymax = scr->BarHeight - (dri->dri_Font->tf_YSize - dri->dri_Font->tf_Baseline) - 1;
+            UWORD ty = ((scr->BarHeight + dri->dri_Font->tf_Baseline - 1) >> 1);
+            if (ty > tymax) ty = tymax;
 
-            Move(rp, tx + 1, ty ); Text(rp, scr->Title, len);
-            Move(rp, tx + 2, ty ); Text(rp, scr->Title, len);
-            Move(rp, tx , ty ); Text(rp, scr->Title, len);
-            Move(rp, tx, ty + 1);  Text(rp, scr->Title, len);
-            Move(rp, tx, ty + 2);  Text(rp, scr->Title, len);
-            Move(rp, tx + 1, ty + 2);  Text(rp, scr->Title, len);
-            Move(rp, tx + 2, ty + 1);  Text(rp, scr->Title, len);
-            Move(rp, tx + 2, ty + 2);  Text(rp, scr->Title, len);
+            SetFont(rp, msg->sdp_Dri->dri_Font);
+            SetDrMd(rp, JAM1);
 
-            SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
-            Move(rp, tx + 1, ty + 1);
-            Text(rp, scr->Title, len);
-            SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
-        }
-        else
-        {
-            SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
-            Move(rp, tx + 1, ty + 1 );
-            Text(rp, scr->Title, len);
+            if (!(sd->truecolor) || ((data->dc->STitleOutline == FALSE) && (data->dc->STitleShadow == FALSE)))
+            {
+                SetAPen(rp, pens[beeping ? BARBLOCKPEN : BARDETAILPEN]);
+                Move(rp, tx, ty);
+                Text(rp, scr->Title, len);
+            }
+            else if (data->dc->STitleOutline)
+            {
+                SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
 
-            SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
-            Move(rp, tx, ty);
-            Text(rp, scr->Title, len);
+                Move(rp, tx + 1, ty ); Text(rp, scr->Title, len);
+                Move(rp, tx + 2, ty ); Text(rp, scr->Title, len);
+                Move(rp, tx , ty ); Text(rp, scr->Title, len);
+                Move(rp, tx, ty + 1);  Text(rp, scr->Title, len);
+                Move(rp, tx, ty + 2);  Text(rp, scr->Title, len);
+                Move(rp, tx + 1, ty + 2);  Text(rp, scr->Title, len);
+                Move(rp, tx + 2, ty + 1);  Text(rp, scr->Title, len);
+                Move(rp, tx + 2, ty + 2);  Text(rp, scr->Title, len);
+
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
+                Move(rp, tx + 1, ty + 1);
+                Text(rp, scr->Title, len);
+                SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
+            }
+            else
+            {
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
+                Move(rp, tx + 1, ty + 1 );
+                Text(rp, scr->Title, len);
+
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
+                Move(rp, tx, ty);
+                Text(rp, scr->Title, len);
+            }
         }
     }
 
@@ -314,13 +345,31 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
             GREDRAW_REDRAW
         };
 
+        if (data->dc->SBarChildPre_s > 0)
+        {
+            WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
+                data->dc->SBarChildPre_o, data->dc->SBarChildPre_s,
+                right + 1, 0, data->dc->SBarChildPre_s);
+        }
+        if (data->dc->SBarChildFill_s > 0)
+        {
+            WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
+                data->dc->SBarChildFill_o, data->dc->SBarChildFill_s,
+                right + data->dc->SBarChildPre_s + 1, 0, ((struct Gadget *)(data->FirstChild))->Width);
+        }
+        if (data->dc->SBarChildPost_s > 0)
+        {
+            WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
+                data->dc->SBarChildPost_o, data->dc->SBarChildPost_s,
+                right + data->dc->SBarChildPre_s + ((struct Gadget *)(data->FirstChild))->Width + 1, 0, data->dc->SBarChildPost_s);
+        }
         childgadinf.gi_Screen = ((struct Gadget *)(data->FirstChild))->SpecialInfo = scr;
         childgadinf.gi_RastPort = rp;
         childgadinf.gi_Pens.DetailPen = pens[DETAILPEN];
         childgadinf.gi_Pens.BlockPen = pens[BLOCKPEN];
         childgadinf.gi_DrInfo = dri;
-        childgadinf.gi_Domain.Left = right;
-        childgadinf.gi_Domain.Top = 0 + CHILDPADDING;
+        childgadinf.gi_Domain.Left = right + data->dc->SBarChildPre_s;
+        childgadinf.gi_Domain.Top = 0 + CHILDPADDING; // TODO: Get the real area from the theme..
         childgadinf.gi_Domain.Width = ((struct Gadget *)(data->FirstChild))->Width;
         childgadinf.gi_Domain.Height = sd->img_stitlebar->h - (CHILDPADDING << 1);
         D(bug("[screendecor] draw_screenbar: rendering titlechild @ 0x%p, msg @ 0x%p, info @ 0x%p\n", data->FirstChild, &childrendermsg, &childgadinf));
@@ -361,7 +410,7 @@ static IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImag
 
     if (msg->sdp_Which == SDEPTHIMAGE)
     {
-        if (&sd->img_sdepth)
+        if (sd->img_sdepth)
         {
             DrawScaledStatefulGadgetImageToRP(rp, sd->img_sdepth, state, left, top, width, height);
         }
@@ -384,7 +433,7 @@ static IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutSc
         switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
         {
             case GTYP_SDEPTH:
-                gadget->LeftEdge = -gadget->Width + 1;
+                gadget->LeftEdge = -(gadget->Width + data->dc->SBarGadPost_s);
                 gadget->TopEdge = (data->dc->SBarHeight - sd->img_sdepth->h) >> 1;
                 gadget->Flags &= ~GFLG_RELWIDTH;
                 gadget->Flags |= GFLG_RELRIGHT;
