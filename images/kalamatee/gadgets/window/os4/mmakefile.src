@@ -1,8 +1,0 @@
-include $(TOP)/config/make.cfg
-
-FILES := win_close win_depth win_size win_zoom
-
-%copy_files_q mmake=themes-kalamatee-images-gadgets-window-os4 files=$(FILES) \
-    dst=$(AROS_IMAGES)/Gadgets/Window
-
-%common
