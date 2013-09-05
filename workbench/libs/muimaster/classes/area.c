@@ -87,10 +87,10 @@ Area.mui/MUIM_AskMinMax             done
 Area.mui/MUIM_Cleanup               done
 Area.mui/MUIM_ContextMenuBuild	    done
 Area.mui/MUIM_ContextMenuChoice     done
-Area.mui/MUIM_CreateBubble
-Area.mui/MUIM_CreateShortHelp
-Area.mui/MUIM_DeleteBubble
-Area.mui/MUIM_DeleteShortHelp
+Area.mui/MUIM_CreateBubble          done
+Area.mui/MUIM_CreateShortHelp       done
+Area.mui/MUIM_DeleteBubble          done
+Area.mui/MUIM_DeleteShortHelp       done
 Area.mui/MUIM_DragBegin
 Area.mui/MUIM_DragDrop              done
 Area.mui/MUIM_DragFinish
@@ -714,15 +714,11 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 data->mad_Flags &= ~MADF_SELECTED;
                 MUI_Redraw(obj, MADF_DRAWOBJECT);
             }
+#if 0 // CHECKME: What's the purpose of this? What superclass will care?
             else
             {
                 tag->ti_Tag = TAG_IGNORE;
             }
-#if 0
-            if (data->mad_Flags & MADF_SHOWSELSTATE)
-                MUI_Redraw(obj, MADF_DRAWOBJECT);
-            else
-                MUI_Redraw(obj, MADF_DRAWUPDATE);
 #endif
             break;
 
@@ -851,6 +847,7 @@ static IPTR Area__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         return TRUE;
 
     case MUIA_Timer:
+        STORE = data->mad_Timeval;
         return TRUE;
 
     case MUIA_TopEdge:
@@ -1299,7 +1296,7 @@ static IPTR Area__MUIM_Draw(struct IClass *cl, Object *obj,
     }
 
 
-/* Background cant be drawn without knowing anything about frame, thus some
+/* Background can't be drawn without knowing anything about frame, thus some
 * calculations are made before background and frame drawing.
 */
     {
@@ -1720,7 +1717,7 @@ static IPTR Area__MUIM_Cleanup(struct IClass *cl, Object *obj,
             MUIV_Window_ActiveObject_None);
     }
 
-    /* It's save to call the following function with NULL */
+    /* It's safe to call the following function with NULL */
     if ((data->mad_Flags & MADF_SHOWSELSTATE) &&
         (data->mad_InputMode != MUIV_InputMode_None))
     {
@@ -1807,7 +1804,7 @@ static IPTR Area__MUIM_GoInactive(struct IClass *cl, Object *obj, Msg msg)
 }
 
 /**************************************************************************
-This one or derived methods wont be called if short help is
+This one or derived methods won't be called if short help is
 not set in area instdata. So set this to a dummy val if overriding
 **************************************************************************/
 static IPTR Area__MUIM_CreateShortHelp(struct IClass *cl, Object *obj,
@@ -1951,6 +1948,7 @@ static IPTR event_button(Class *cl, Object *obj,
             handle_press(cl, obj);
             return MUI_EventHandlerRC_Eat;
         }
+        break;
 
     case SELECTUP:
         if (data->mad_InputMode == MUIV_InputMode_None)
@@ -1958,6 +1956,8 @@ static IPTR event_button(Class *cl, Object *obj,
 
         if (data->mad_ehn.ehn_Events != IDCMP_MOUSEBUTTONS)
         {
+            /* Extra events must have been added by SELECTDOWN case above,
+               so this object is waiting to be unclicked (RelVerify) */
             DoMethod(_win(obj), MUIM_Window_RemEventHandler,
                 (IPTR) &data->mad_ehn);
             data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
