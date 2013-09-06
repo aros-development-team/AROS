@@ -138,7 +138,7 @@ static void scr_findtitlearea(struct scrdecor_data *data, struct Screen *scr, LO
         }
     }
     if (maxx != scr->Width - 1)
-        maxx -= (data->dc->SBarGadPre_s + data->dc->SBarGadPost_s + 1);
+        maxx = maxx - (data->dc->SBarGadPre_s + data->dc->SBarGadPost_s);
     
     *left = minx;
     *right = maxx;
@@ -191,7 +191,7 @@ static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
 
                             scr_findtitlearea(data, (childgadinf.gi_Screen), &left, &right);
 
-                            ((struct Gadget *)(data->FirstChild))->LeftEdge = right - ((struct Gadget *)(data->FirstChild))->Width + data->dc->SBarGadPost_s + 1;
+                            ((struct Gadget *)(data->FirstChild))->LeftEdge = right - (((struct Gadget *)(data->FirstChild))->Width + data->dc->SBarGadPost_s + 1);
 
                             childlayoutmsg.MethodID = GM_GOACTIVE;
                             DoMethodA(data->FirstChild, &childlayoutmsg);
@@ -214,18 +214,18 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     struct Screen          *scr = msg->sdp_Screen;
     struct DrawInfo        *dri = msg->sdp_Dri;
     UWORD                  *pens = dri->dri_Pens;
-    LONG                    left, right = 0, len;
+    LONG                    left, right = 0, len, filllen;
     BOOL		    beeping = scr->Flags & BEEPING;
 
     if ((data->dc->SBarChildPre_s > 0) && (data->dc->SBarChildPre_s < sd->img_stitlebar->w))
-        len = data->dc->SBarChildPre_o - 1;
+        filllen = data->dc->SBarChildPre_o - 1;
     else if ((data->dc->SBarGadPre_s > 0) && (data->dc->SBarGadPre_s < sd->img_stitlebar->w))
-        len = data->dc->SBarGadPre_o - 1;
+        filllen = data->dc->SBarGadPre_o - 1;
     else
-        len = sd->img_stitlebar->w;
+        filllen = sd->img_stitlebar->w;
     
-    if (len == 0)
-        len = 1;
+    if (filllen == 0)
+        filllen = 1;
 
     scr_findtitlearea(data, scr, &left, &right);
 
@@ -258,18 +258,15 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
             }
         }
 
-        if (data->FirstChild)
-        {
-            if (((struct Gadget *)(data->FirstChild))->Width > 2) {
-                D(bug("[screendecor] draw_screenbar: titlechild width = %d\n", ((struct Gadget *)(data->FirstChild))->Width));
-                right = right - ((struct Gadget *)(data->FirstChild))->Width + data->dc->SBarChildPre_s + data->dc->SBarChildPost_s + 1; 
-            }
+        if ((data->FirstChild) && (((struct Gadget *)(data->FirstChild))->Width > 2)) {
+            D(bug("[screendecor] draw_screenbar: titlechild width = %d\n", ((struct Gadget *)(data->FirstChild))->Width));
+            right = right - (((struct Gadget *)(data->FirstChild))->Width + data->dc->SBarChildPre_s + data->dc->SBarChildPost_s); 
         }
 
         if (sd->img_stitlebar->ok)
         {
             WriteVerticalScaledTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0,
-                len , 0, 0, data->dc->SBarHeight, right, scr->BarHeight + 1);
+                filllen , 0, 0, data->dc->SBarHeight, right, scr->BarHeight + 1);
 
         }
     }
@@ -345,23 +342,31 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
             GREDRAW_REDRAW
         };
 
-        if (data->dc->SBarChildPre_s > 0)
+        if (sd->img_stitlebar->ok)
         {
-            WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
-                data->dc->SBarChildPre_o, data->dc->SBarChildPre_s,
-                right + 1, 0, data->dc->SBarChildPre_s);
-        }
-        if (data->dc->SBarChildFill_s > 0)
-        {
-            WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
-                data->dc->SBarChildFill_o, data->dc->SBarChildFill_s,
-                right + data->dc->SBarChildPre_s + 1, 0, ((struct Gadget *)(data->FirstChild))->Width);
-        }
-        if (data->dc->SBarChildPost_s > 0)
-        {
-            WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
-                data->dc->SBarChildPost_o, data->dc->SBarChildPost_s,
-                right + data->dc->SBarChildPre_s + ((struct Gadget *)(data->FirstChild))->Width + 1, 0, data->dc->SBarChildPost_s);
+            if (data->dc->SBarChildPre_s > 0)
+            {
+                WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
+                    data->dc->SBarChildPre_o, data->dc->SBarChildPre_s,
+                    right + 1, 0, data->dc->SBarChildPre_s);
+            }
+            if (data->dc->SBarChildFill_s > 0)
+            {
+                WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
+                    data->dc->SBarChildFill_o, data->dc->SBarChildFill_s,
+                    right + data->dc->SBarChildPre_s + 1, 0, ((struct Gadget *)(data->FirstChild))->Width);
+            }
+            else
+            {
+                WriteVerticalScaledTiledImageHorizontal(rp, sd->img_stitlebar, 0,
+                    0, filllen , right + data->dc->SBarChildPre_s + 1, 0, data->dc->SBarHeight, right, scr->BarHeight + 1);
+            }
+            if (data->dc->SBarChildPost_s > 0)
+            {
+                WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0,
+                    data->dc->SBarChildPost_o, data->dc->SBarChildPost_s,
+                    right + data->dc->SBarChildPre_s + ((struct Gadget *)(data->FirstChild))->Width + 1, 0, data->dc->SBarChildPost_s);
+            }
         }
         childgadinf.gi_Screen = ((struct Gadget *)(data->FirstChild))->SpecialInfo = scr;
         childgadinf.gi_RastPort = rp;
