@@ -218,9 +218,9 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     BOOL		    beeping = scr->Flags & BEEPING;
 
     if ((data->dc->SBarChildPre_s > 0) && (data->dc->SBarChildPre_s < sd->img_stitlebar->w))
-        filllen = data->dc->SBarChildPre_o - 1;
+        filllen = data->dc->SBarChildPre_o;
     else if ((data->dc->SBarGadPre_s > 0) && (data->dc->SBarGadPre_s < sd->img_stitlebar->w))
-        filllen = data->dc->SBarGadPre_o - 1;
+        filllen = data->dc->SBarGadPre_o;
     else
         filllen = sd->img_stitlebar->w;
     
