@@ -266,7 +266,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         if (sd->img_stitlebar->ok)
         {
             WriteVerticalScaledTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0,
-                filllen , 0, 0, data->dc->SBarHeight, right, scr->BarHeight + 1);
+                filllen , 0, 0, data->dc->SBarHeight, right + 1, scr->BarHeight + 1);
 
         }
     }
@@ -373,9 +373,9 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         childgadinf.gi_Pens.DetailPen = pens[DETAILPEN];
         childgadinf.gi_Pens.BlockPen = pens[BLOCKPEN];
         childgadinf.gi_DrInfo = dri;
-        childgadinf.gi_Domain.Left = right + data->dc->SBarChildPre_s;
-        childgadinf.gi_Domain.Top = 0 + CHILDPADDING; // TODO: Get the real area from the theme..
+        childgadinf.gi_Domain.Left = right + data->dc->SBarChildPre_s + 1;
         childgadinf.gi_Domain.Width = ((struct Gadget *)(data->FirstChild))->Width;
+        childgadinf.gi_Domain.Top = 0 + CHILDPADDING; // TODO: Get the real area from the theme..
         childgadinf.gi_Domain.Height = sd->img_stitlebar->h - (CHILDPADDING << 1);
         D(bug("[screendecor] draw_screenbar: rendering titlechild @ 0x%p, msg @ 0x%p, info @ 0x%p\n", data->FirstChild, &childrendermsg, &childgadinf));
         DoMethodA(data->FirstChild, &childrendermsg);
