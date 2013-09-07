@@ -1,29 +1,27 @@
 /* ===================== AmigaOS 1.x theme =============================== */
 CloseRight          = No         /* put the Close image to the right */
 
-BaseColors = 0x00c6d7ec 0x00d0d0d0  /* base color fore activated and deactivated borderlines ARGB format */
-
 RightBorderGads     = 16         /* width of the right border when gadgets are used */
 BottomBorderGads    = 18         /* height of the bottom border when gadgets are used */
 
 /* the following configuration values are double ints, the first is an offset, the 2nd a width/hight */
 
-ContainerTop        = 0  2    /* top part of the propotional container */
-ContainerVertTile   = 2  2    /* the tileable part of the container */
-ContainerBottom     = 4  2    /* the bottom part of the container */
+ContainerTop        = 0   2      /* top part of the propotional container */
+ContainerVertTile   = 2   2      /* the tileable part of the container */
+ContainerBottom     = 4   2      /* the bottom part of the container */
 
-ContainerLeft       = 0  2    /* as above but for the vertical bars */
-ContainerHorTile    = 2  2
-ContainerRight      = 4  2
+ContainerLeft       = 0   2      /* as above but for the vertical bars */
+ContainerHorTile    = 2   2
+ContainerRight      = 4   2
 
 /* knobs consist of a top/left, a upper/left tileable part, a gripper, a bottom/right tileable part and a bottom/right part */
-KnobTop             = 0   2     /* upper part of the knob */
-KnobTileTop         = 2   2     /* the upper tileable part */
-KnobVertGripper     = 2   2     /* the gripper */
-KnobTileBottom      = 2   2     /* the bottom tileable part */
-KnobBottom          = 4   2     /* the bottom part */
+KnobTop             = 0   2      /* upper part of the knob */
+KnobTileTop         = 2   2      /* the upper tileable part */
+KnobVertGripper     = 2   2      /* the gripper */
+KnobTileBottom      = 2   2      /* the bottom tileable part */
+KnobBottom          = 4   2      /* the bottom part */
 
-KnobLeft            = 0   2     /* as above but for horizontal knob */
+KnobLeft            = 0   2      /* as above but for horizontal knob */
 KnobTileLeft        = 2   2
 KnobHorGripper      = 2   2
 KnobTileRight       = 2   2
@@ -31,49 +29,46 @@ KnobRight           = 4   2
 
 /* =================================================================== */
 
-UseGradients        = No          /* use gradients instead of the default image in Borders */
-ActivatedGradient   = 0xf3f3f3 0xf1f1f1 0     /* top bottom and arc for the Activated Gradient (ARGB Format) maybe arc does not work */
-DeactivatedGradient = 0xf2f2f2 0xf2f2f2 0   /* same but for deactivated windows */
+UseGradients        = No         /* use gradients instead of the default image in Borders */
 
-NoInactiveSelected  = No          /* Window border gadgets have only 3 states? */
+NoInactiveSelected  = No         /* Window border gadgets have only 3 states? */
 
 /* =================================================================== */
 
-SBarHeight          = 20           /* height of the Screentitlebar */
-LogoOffset          = 0            /* put the Screenlogo at this offset (horizontal position) */
+SBarHeight          = 20         /* height of the Screentitlebar */
+LogoOffset          = 0          /* put the Screenlogo at this offset (horizontal position) */
 TitleOffset         = 5          /* offset for the Title of a Screen */
-SBarChildPre        = 56   4
-SBarChildFill       = 60   2
-SBarChildPost       = 78   4
-SBarGadPre          = 92   2
-SBarGadFill         = 94   2
-SBarGadPost         = 96   4
+SBarChildPre        = 56  4
+SBarChildFill       = 60  2
+SBarChildPost       = 78  4
+SBarGadPre          = 92  2
+SBarGadFill         = 94  2
+SBarGadPost         = 96  4
 
 /* =================================================================== */
 
-FillTitleBar        = Yes
-FrameStyle          = 0         /* Dont "Frame" Window borders */
-BarHeight           = 20        /* Height of window titlebar */
+FrameStyle          = 0          /* Dont "Frame" Window borders */
+BarHeight           = 20         /* Height of window titlebar */
 
-BarLayout           = Vertical  /* Horizontal (default) or Vertical, should be Vertical */
-BarRounded          = No        /* Titlebar top corners should be rounded? (BETA maybe it will not work 100%) */
-BarMasking          = No        /* Picture mask defines titlebar shape? */
+BarLayout           = Vertical   /* Horizontal (default) or Vertical, should be Vertical */
+BarRounded          = No         /* Titlebar top corners should be rounded? (BETA maybe it will not work 100%) */
+BarMasking          = No         /* Picture mask defines titlebar shape? */
 
 /* =================================================================== */
 
-BarPre              =   0     1  /* Left end of titlebar if no gadgets follow */
-BarPreGadget        =   0     4  /* Left end of titlebar if some gadgets follow */
-BarLGadgetFill      =   4     2  /* Tileable background for left-side gadgets */
-BarJoinGB           =   6     1  /* Join between gadgets and left part of dragbar */
-BarLFill            =   6     1  /* Tileable background for left part of dragbar */
-BarJoinBT           =   6     1  /* Join between left part of dragbar and title */
-BarTitleFill        =   7     2  /* Tileable background for title */
-BarJoinTB           =   10    2  /* Join between title and right part of dragbar */
-BarRFill            =   12    4  /* Tileable background for right part of dragbar */
-BarJoinBG           =   15    2  /* Join between right part of dragbar and gadgets */
-BarRGadgetFill      =   17    2  /* Tileable background for right-side gadgets */
-BarPostGadget       =   19    5  /* Right end of titlebar if some gadgets precede */
-BarPost             =   15    2  /* Right end of titlebar if no gadgets precede */
+BarPre              = 0   1      /* Left end of titlebar if no gadgets follow */
+BarPreGadget        = 0   4      /* Left end of titlebar if some gadgets follow */
+BarLGadgetFill      = 4   2      /* Tileable background for left-side gadgets */
+BarJoinGB           = 6   1      /* Join between gadgets and left part of dragbar */
+BarLFill            = 6   1      /* Tileable background for left part of dragbar */
+BarJoinBT           = 6   1      /* Join between left part of dragbar and title */
+BarTitleFill        = 7   2      /* Tileable background for title */
+BarJoinTB           = 10  2      /* Join between title and right part of dragbar */
+BarRFill            = 12  4      /* Tileable background for right part of dragbar */
+BarJoinBG           = 15  2      /* Join between right part of dragbar and gadgets */
+BarRGadgetFill      = 17  2      /* Tileable background for right-side gadgets */
+BarPostGadget       = 19  5      /* Right end of titlebar if some gadgets precede */
+BarPost             = 15  2      /* Right end of titlebar if no gadgets precede */
 
 /* =================================================================== */
 /* sizes of borders when no gadgets are alive */
