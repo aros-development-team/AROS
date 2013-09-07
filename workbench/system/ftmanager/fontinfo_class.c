@@ -157,7 +157,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 	Object *family, *fixed, /**algo_style,*/ *face_num, *preview, *preview_group;
 	Object *gray, *test_string, *test_size, *serif, *space_width;
 	Object *metric, *bbox_ymin, *bbox_ymax;
-	char name_buf[27];
+	char name_buf[50];
 	int k, l;
 	const char *q, *r;
 
@@ -244,33 +244,9 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 		return 0;
 	}
 
-	q = face->family_name;
-	r = face->style_name;
-	k = 0;
-	l = -1;
-	while (k < sizeof(name_buf) - 1)
-	{
-		while (*q == ' ')
-			++q;
-		if (!*q)
-		{
-			if (r)
-			{
-				q = r;
-				r = NULL;
-				continue;
-			}
-			break;
-		}
-		if (*q == '.')
-			l = k;
-		name_buf[k] = ToLower(*q);
-		++k;
-		++q;
-	}
-	if (l > 0)
-		k = l;
-	name_buf[k] = '\0';
+	strlcpy(name_buf, face->family_name, sizeof name_buf);
+	strlcat(name_buf, " ", sizeof name_buf);
+	strlcat(name_buf, face->style_name, sizeof name_buf);
 
 	postscript = FT_Get_Sfnt_Table(face, ft_sfnt_post);
 	os2 = FT_Get_Sfnt_Table(face, ft_sfnt_os2);
@@ -302,7 +278,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 			StringFrame,
 			MUIA_String_Contents, name_buf,
 			MUIA_String_AdvanceOnCR, TRUE,
-			MUIA_String_MaxLen, 27,
+			MUIA_String_MaxLen, 50,
 			MUIA_CycleChain, TRUE,
 			End,
 		Child, Label2(_(MSG_LABEL_FAMILY)),
