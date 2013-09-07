@@ -3,31 +3,31 @@ CloseRight          = No         /* put the Close image to the right */
 
 BaseColors = 0x00a1a1a1 0x00a1a1a1  /* base color fore activated and deactivated borderlines ARGB format */
 
-RightBorderGads     = 25         /* width of the right border when gadgets are used */
-BottomBorderGads    = 25         /* height of the bottom border when gadgets are used */
+RightBorderGads     = 15         /* width of the right border when gadgets are used */
+BottomBorderGads    = 15         /* height of the bottom border when gadgets are used */
 
 /* the following configuration values are double ints, the first is an offset, the 2nd a width/hight */
 
-ContainerTop        = 0    11    /* top part of the propotional container */
-ContainerVertTile   = 12  272    /* the tileable part of the container */
-ContainerBottom     = 284  12    /* the bottom part of the container */
+ContainerTop        = 0    15    /* top part of the propotional container */
+ContainerVertTile   = 20  100    /* the tileable part of the container */
+ContainerBottom     = 181  15    /* the bottom part of the container */
 
-ContainerLeft       = 0    11    /* as above but for the vertical bars */
-ContainerHorTile    = 12  272
-ContainerRight      = 284  12
+ContainerLeft       = 0    15    /* as above but for the vertical bars */
+ContainerHorTile    = 20  200
+ContainerRight      = 181  15
 
 /* knobs consist of a top/left, a upper/left tileable part, a gripper, a bottom/right tileable part and a bottom/right part */
-KnobTop             = 0     4     /* upper part of the knob */
-KnobTileTop         = 4    54     /* the upper tileable part */
-KnobVertGripper     = 64   10     /* the gripper */
-KnobTileBottom      = 75   52     /* the bottom tileable part */
-KnobBottom          = 136   4     /* the bottom part */
+KnobTop             = 0    20     /* upper part of the knob */
+KnobTileTop         = 20   80     /* the upper tileable part */
+KnobVertGripper     = 62    0     /* the gripper */
+KnobTileBottom      = 20   80     /* the bottom tileable part */
+KnobBottom          = 120  20     /* the bottom part */
 
-KnobLeft            = 0     4     /* as above but for horizontal knob */
-KnobTileLeft        = 4    54
-KnobHorGripper      = 64   10
-KnobTileRight       = 75   52
-KnobRight           = 136   4 
+KnobLeft            = 0    20     /* as above but for horizontal knob */
+KnobTileLeft        = 20   80
+KnobHorGripper      = 62    0
+KnobTileRight       = 20   80
+KnobRight           = 120  20 
 
 /* =================================================================== */
 
