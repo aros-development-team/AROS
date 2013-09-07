@@ -18,7 +18,7 @@ kernel-cgxbootpic-includes: $(GENDIR)/$(CURDIR)/bootpic_image.h
   files="cgxbootpic_init renderbootpic"
 
 $(GENDIR)/$(CURDIR)/bootpic_image.h : $(BOOTPIC_IMAGE).ilbm
-	@$(ECHO) Creating bootpic_image.h...
+	@$(ECHO) "Creating   bootpic_image.h..."
 	@$(ILBMTOC) $< >$@
 
 %common

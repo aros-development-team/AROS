@@ -190,5 +190,5 @@ USER_INCLUDES := -D__DOS_NOLIBBASE__ \
 $(GENDIR)/$(CURDIR)/shutdownscreen.d : $(GENDIR)/$(CURDIR)/shutdown_image.h
 
 $(GENDIR)/$(CURDIR)/shutdown_image.h : shutdown.ilbm
-	@$(ECHO) Creating $@...
+	@$(ECHO) "Creating   $@..."
 	@$(ILBMTOC) $< >$@
