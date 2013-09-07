@@ -18,7 +18,7 @@ USER_INCLUDES := -I$(SRCDIR)/rom/devs -I$(GENDIR)/$(CURDIR)
 $(GENDIR)/$(CURDIR)/bootanim.d : $(GENDIR)/$(CURDIR)/nomedia_image.h
 
 $(GENDIR)/$(CURDIR)/nomedia_image.h : $(NOMEDIA_IMAGE).ilbm
-	@$(ECHO) Creating $@...
+	@$(ECHO) "Creating   $@..."
 	@$(ILBMTOC) $< >$@
 
 %common
