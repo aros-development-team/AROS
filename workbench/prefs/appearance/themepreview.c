@@ -165,14 +165,14 @@ IPTR ThemePreview__MUIM_Draw(struct IClass *CLASS, Object *self, struct MUIP_Dra
     }
     else
     {
-        char *unavailableStr = _(MSG_NOPREVIEW);
+        char *unavailableStr = (char *)_(MSG_NOPREVIEW);
         int len = strlen(unavailableStr);
         struct TextExtent       te;
 
         len = TextFit(_rp(self), unavailableStr, len, &te, NULL, 1, _mright(self) - _mleft(self) + 1, _mbottom(self) - _mtop(self) + 1);
 
         SetDrMd(_rp(self), JAM1);
-        Move(_rp(self), ((_mright(self) - _mleft(self) + 1 + te.te_Width) >> 1), ((_mbottom(self) - _mtop(self) + 1 + te.te_Height) >> 1));
+        Move(_rp(self), ((_mright(self) - _mleft(self) + 1) >> 1) - (te.te_Width >> 1), ((_mbottom(self) - _mtop(self) + 1) >> 1) - (te.te_Height >> 1));
         Text(_rp(self), unavailableStr, len);
     }
     return 0;
