@@ -3,9 +3,16 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-fonts : workbench-fonts-truetype
+#MM- workbench-fonts : workbench-fonts-truetype-cpy workbench-fonts-truetype-extra
 
-#MM- workbench-fonts-truetype : workbench-fonts-dejavu-ttf workbench-fonts-dejavu-font
+%copy_files_q mmake=workbench-fonts-truetype-cpy files="$(call WILDCARD, *.ttf)" \
+    dst=$(AROSDIR)/Fonts/TrueType
 
-%copy_files_q mmake=workbench-fonts-dejavu-ttf  files="$(call WILDCARD, *.ttf)" dst=$(AROSDIR)/Fonts/TrueType
-%copy_files_q mmake=workbench-fonts-dejavu-font files="$(call WILDCARD, *.font *.otag)" dst=$(AROSDIR)/Fonts
+#MM
+workbench-fonts-truetype-extra :
+	@cd $(SRCDIR)/$(CURDIR); for file in *.font *.otag; do \
+            if [ ! -e "$(AROSDIR)/Fonts/$$file" ]; then \
+                $(ECHO) Copying "$$file"...; \
+                $(CP) "$$file" $(AROSDIR)/Fonts; \
+            fi; \
+        done
