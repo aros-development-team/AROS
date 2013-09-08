@@ -91,7 +91,7 @@
     lock = Lock(aname, SHARED_LOCK);
     if (!lock)
     {
-	errno = __arosc_ioerr2errno(IoErr());
+	errno = __stdc_ioerr2errno(IoErr());
 	goto err3;
     }
 
@@ -111,7 +111,7 @@
 
     if (!Examine(lock, dir->priv))
     {
-	errno = __arosc_ioerr2errno(IoErr());
+	errno = __stdc_ioerr2errno(IoErr());
 	goto err4;
     }
 

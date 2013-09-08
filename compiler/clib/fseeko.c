@@ -82,7 +82,7 @@
     cnt = Seek (fh, 0, OFFSET_CURRENT);
     if (cnt == -1)
     {
-    	errno = __arosc_ioerr2errno (IoErr ());
+        errno = __stdc_ioerr2errno (IoErr ());
         return -1;
     }
 
@@ -90,7 +90,7 @@
     fib = AllocDosObject(DOS_FIB, NULL);
     if (!fib)
     {
-        errno = __arosc_ioerr2errno(IoErr());
+        errno = __stdc_ioerr2errno(IoErr());
         return -1;
     }
 
@@ -150,7 +150,7 @@
     cnt = Seek (fh, finalseekposition, OFFSET_BEGINNING);
 
     if (cnt == -1)
-    	errno = __arosc_ioerr2errno (IoErr ());
+        errno = __stdc_ioerr2errno (IoErr ());
     else
     {
         /* It's specified that upon success fseeko should clear EOF flag

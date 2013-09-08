@@ -225,7 +225,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
                 (IoErr() == ERROR_OBJECT_NOT_FOUND && !(flags & O_CREAT))
             )
             {
-                errno = __arosc_ioerr2errno(IoErr());
+                errno = __stdc_ioerr2errno(IoErr());
                 goto err;
             }
         }
@@ -241,7 +241,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
             fib = AllocDosObject(DOS_FIB, NULL);
             if (!fib)
             {
-               errno = __arosc_ioerr2errno(IoErr());
+               errno = __stdc_ioerr2errno(IoErr());
                goto err;
             }
 
@@ -292,7 +292,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     {
 	ULONG ioerr = IoErr();
 	D(bug("__open: Open ioerr=%d\n", ioerr));
-	errno = __arosc_ioerr2errno(ioerr);
+	errno = __stdc_ioerr2errno(ioerr);
         goto err;
     }
    
@@ -307,7 +307,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	       ioerr != ERROR_ACTION_NOT_KNOWN)
 	    {
 		D(bug("__open: SetFileSize ioerr=%d\n", ioerr));
-	        errno = __arosc_ioerr2errno(ioerr);
+	        errno = __stdc_ioerr2errno(ioerr);
                 goto err;
 	    }
 	}
@@ -317,7 +317,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     if((flags & O_APPEND) && (flags & (O_RDWR | O_WRONLY)))
     {
         if(Seek(fh, 0, OFFSET_END) != 0) {
-            errno = __arosc_ioerr2errno(IoErr());
+            errno = __stdc_ioerr2errno(IoErr());
             goto err;
         }
     }

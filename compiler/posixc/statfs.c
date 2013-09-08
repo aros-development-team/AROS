@@ -98,7 +98,7 @@ short getnixfilesystemtype(LONG id_DiskType);
     }
 	
     if(ioerr != 0) {
-	errno = __arosc_ioerr2errno(ioerr);
+	errno = __stdc_ioerr2errno(ioerr);
 	return -1;
     }
 

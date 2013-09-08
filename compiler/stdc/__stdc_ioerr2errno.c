@@ -10,7 +10,7 @@
 #include <dos/dosasl.h>
 #include <errno.h>
 
-int __arosc_ioerr2errno (int ioerr)
+int __stdc_ioerr2errno (int ioerr)
 {
     switch (ioerr)
     {
@@ -51,4 +51,4 @@ int __arosc_ioerr2errno (int ioerr)
     }
 
     return MAX_ERRNO+ioerr;
-} /* __arosc_ioerr2errno */
+} /* __stdc_ioerr2errno */

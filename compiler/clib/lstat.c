@@ -90,7 +90,7 @@ static BPTR __lock(
             return __stat_from_path(path, sb);
         }
 
-        errno = __arosc_ioerr2errno(IoErr());
+        errno = __stdc_ioerr2errno(IoErr());
         return -1;
     }
     else

@@ -68,7 +68,7 @@
 
     if (cnt == -1)
     {
-        errno = __arosc_ioerr2errno (IoErr ());
+        errno = __stdc_ioerr2errno (IoErr ());
         
         cnt = 0;
     }

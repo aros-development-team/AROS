@@ -67,7 +67,7 @@ static int __putc(int c, void *fhp)
     BPTR fh = MKBADDR(fhp);
     if (FPutC(fh, c) == EOF)
     {
-	errno = __arosc_ioerr2errno(IoErr());
+	errno = __stdc_ioerr2errno(IoErr());
 	return EOF;
     }
 

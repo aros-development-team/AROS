@@ -79,7 +79,6 @@ SHARED	:= \
         __arosc_gmtoffset \
         __arosc_environ \
         __arosc_init \
-	__arosc_ioerr2errno \
         __arosc_nixmain \
         __arosc_startup \
 	__arosc_userdata \

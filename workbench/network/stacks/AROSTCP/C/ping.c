@@ -389,7 +389,7 @@ int main(argc, argv)
 	int argc;
 	char **argv;
 {
-  extern int errno, optind;
+  extern int optind;
   extern char *optarg;
   struct timeval timeout;
   struct hostent *hp;

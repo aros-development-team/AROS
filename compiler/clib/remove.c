@@ -44,7 +44,7 @@
 {
     if (!DeleteFile (__path_u2a(pathname)))
     {
-	errno = __arosc_ioerr2errno (IoErr());
+	errno = __stdc_ioerr2errno (IoErr());
 	return -1;
     }
 

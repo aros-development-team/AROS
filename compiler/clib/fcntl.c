@@ -153,7 +153,7 @@
                 return 0;
             }
 
-            errno = __arosc_ioerr2errno(IoErr());
+            errno = __stdc_ioerr2errno(IoErr());
             return -1;
         }
 

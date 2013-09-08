@@ -150,6 +150,6 @@
 
     return Seek((BPTR)fdesc->fcb->fh, 0, OFFSET_CURRENT);
 error:
-    errno = __arosc_ioerr2errno (IoErr ());
+    errno = __stdc_ioerr2errno (IoErr ());
     return (off_t) -1;
 } /* lseek */

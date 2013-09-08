@@ -124,7 +124,7 @@
     free((void*) oldpath);
 
     if(ioerr)
-	errno = __arosc_ioerr2errno(ioerr);
+	errno = __stdc_ioerr2errno(ioerr);
 
     return retval;
 } /* symlink */

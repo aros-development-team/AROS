@@ -175,8 +175,6 @@ struct Library * SocketBase;
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
 
-extern int errno;
-
 static int file(char *name);
 static int set(int argc, char **argv);
 static void get(char *host);

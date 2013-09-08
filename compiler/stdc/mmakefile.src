@@ -3,11 +3,16 @@ include $(TOP)/config/make.cfg
 STDC := \
     __ctype \
     __optionallibs \
+    __stdc_ioerr2errno \
     longjmp \
     setjmp
 
 STDC_LINKLIB := \
     __ctype_linklib
+
+# The common files will be put both in the shared and in the static link lib
+STDC_COMMON := \
+    __stdc_geterrnoptr
 
 STDCIO := \
     __stdcio_init
@@ -16,12 +21,15 @@ STDCIO := \
 #MM- linklibs-clib-shared : compiler-stdc compiler-stdcio
 #MM- core-linklibs : linklibs-stdc linklibs-stdcio
 
+STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(STDC_COMMON)))
+
 USER_CFLAGS := -noposixc
 USER_LDFLAGS := -nostdc -noposixc
 
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
-    files=$(STDC) linklibfiles=$(STDC_LINKLIB)
+    files="$(STDC) $(STDC_COMMON)" \
+    linklibfiles=$(STDC_LINKLIB) linklibobjs=$(STDC_LINKOBJS)
 
 %build_module mmake=compiler-stdcio \
     modname=stdcio modtype=library \

@@ -64,7 +64,7 @@
     CurrentDir(lock);
     if (NameFromLock (lock, pathname, FILENAME_MAX) == 0)
     {
-	errno = __arosc_ioerr2errno (IoErr ());
+	errno = __stdc_ioerr2errno (IoErr ());
 	return NULL;
     }
 

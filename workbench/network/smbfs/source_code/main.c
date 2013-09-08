@@ -262,7 +262,6 @@ struct Locale *				Locale;
 
 /****************************************************************************/
 
-int							errno;
 #ifndef h_errno
 int							h_errno;
 #endif

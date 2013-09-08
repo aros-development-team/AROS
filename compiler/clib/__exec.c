@@ -254,7 +254,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     else
     {
         /* Simply assume it doesn't exist */
-        errno = __arosc_ioerr2errno(IoErr());
+        errno = __stdc_ioerr2errno(IoErr());
         goto error;
     }
 

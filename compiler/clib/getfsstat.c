@@ -150,7 +150,7 @@ short getnixfilesystemtype(LONG id_DiskType)
     UnLockDosList(LDF_READ | LDF_VOLUMES);
 
     if(ioerr) {
-	errno = __arosc_ioerr2errno(ioerr);
+	errno = __stdc_ioerr2errno(ioerr);
 	return -1;
     }
     return fscount;

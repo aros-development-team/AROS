@@ -72,7 +72,7 @@
 
     if( newlock == BNULL )
     {
-        errno = __arosc_ioerr2errno( IoErr() );
+        errno = __stdc_ioerr2errno( IoErr() );
         goto error;
     }
     oldlock = CurrentDir( newlock );

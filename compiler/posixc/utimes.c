@@ -79,7 +79,7 @@
     if (SetFileDate(file, &ds))
 	return 0;
     else
-	errno = __arosc_ioerr2errno(IoErr());
+	errno = __stdc_ioerr2errno(IoErr());
 
     return -1;
 }
