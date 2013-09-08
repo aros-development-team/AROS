@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function strxfrm().
@@ -39,7 +39,7 @@
         value is n or more, the contents of dst are indeterminate.
 
     NOTES
-        arosc.library only support "C" locale so strxfrm is equivalent to
+        stdc.library only support "C" locale so strxfrm is equivalent to
         strncpy.
 
     EXAMPLE

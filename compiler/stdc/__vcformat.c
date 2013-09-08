@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to format a string like printf().
@@ -7,7 +7,7 @@
 
 /*
  * This function is used by debug functions during early startup.
- * Please keep it self-contained, at least when compiled with -DAROSC_ROM.
+ * Please keep it self-contained, at least when compiled with -DSTDC_STATIC.
  */
 
 /* Original source from libnix */
@@ -23,11 +23,10 @@
 #	define ULONG_MAX   4294967295UL
 #endif
 #include <ctype.h>
-#include "__math.h"
 #include <math.h>
 #include <float.h>
 
-#ifndef AROSC_ROM
+#ifndef STDC_STATIC
 #define FULL_SPECIFIERS
 #endif
 

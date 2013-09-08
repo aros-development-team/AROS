@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    C function vsnprintf().
+    C99 function vsnprintf().
 */
 /* Original source from libnix */
 

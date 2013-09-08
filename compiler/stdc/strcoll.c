@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function strcoll().
@@ -29,7 +29,7 @@
 	it may be greater then 1 or less than -1.
 
     NOTES
-        arosc.library only implements "C" locale so strcoll() is equivalent
+        stdc.library only implements "C" locale so strcoll() is equivalent
         to strcmp()
 
     EXAMPLE

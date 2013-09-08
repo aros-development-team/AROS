@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    C function vsscanf().
+    C99 function vsscanf().
 */
 /* Original source from libnix */
 #include <stdio.h>
@@ -25,7 +25,7 @@ static int _vsscanf_unget (int c, char ** str)
 /*****************************************************************************
 
     NAME */
-	#include <stdio.h>
+#include <stdio.h>
 #include <stdarg.h>
 
 	int vsscanf (

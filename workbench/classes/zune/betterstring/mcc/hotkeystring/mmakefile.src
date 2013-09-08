@@ -13,7 +13,7 @@ FILES := Dispatcher HandleInput Debug
 	 
 %build_module_simple mmake=workbench-classes-zune-hotkeystring-class \
   modname=HotkeyString modtype=mcc \
-  files="library $(FILES)"
+  files="library $(FILES)" uselibs=stdc.static
 
 
 

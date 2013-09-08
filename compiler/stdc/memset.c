@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    C99 function memcpy().
+    C99 function memset().
 */
 
 #include <proto/exec.h>

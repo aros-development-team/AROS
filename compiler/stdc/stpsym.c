@@ -1,8 +1,8 @@
 /*
-    Copyright © 2002, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    C function stpsym().
+    SAS/C function stpsym().
 */
 
 #include <ctype.h>

@@ -31,7 +31,7 @@
 static char *rcsid = "$OpenBSD: strlcat.c,v 1.8 2001/05/13 15:40:15 deraadt Exp $";
 #endif /* LIBC_SCCS and not lint */
 
-#include <sys/types.h>
+#include <stddef.h>
 #include <string.h>
 
 /*

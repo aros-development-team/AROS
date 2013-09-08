@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to scan a string like scanf().
@@ -16,7 +16,9 @@
 #include <ctype.h>
 #include <math.h>
 
+#ifndef STDC_STATIC
 #define FULL_SPECIFIERS
+#endif
 
 /* some macros to cut this short
  * NEXT(c);         read next character

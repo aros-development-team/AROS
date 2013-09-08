@@ -19,51 +19,8 @@ COMMON	:= \
 	__filesystem_support \
 	getopt \
 	getopt_long \
-        memchr \
-	memcmp \
-	memcpy \
-	memmove \
-	memset \
-	putchar \
-	stcd_l \
-	stcl_d \
-	stcl_h \
-	stcl_o \
-	stch_l \
-	stco_l \
-	stcu_d \
-	stccpy \
-	stpblk \
-	stpcpy \
-	stpsym \
-	strcasecmp \
-	strcasestr \
-	strcat \
-	strchr \
-	strcmp \
-        strcoll \
-	strcpy \
-	strcspn \
-	strdup \
-	strndup \
-	strlcat \
-	strlcpy \
-	strlen \
-	strlwr \
-	strncasecmp \
-	strncat \
-	strncmp \
-	strncpy \
-	strpbrk \
-	strrchr \
-	strrev \
-	strsep \
-	strspn \
-	strstr \
-	strtok \
-	strupr \
-	strxfrm \
-	swab
+        putchar \
+        swab
 
 #   - Shared are in either the shared linklib, or the arosc module
 SHARED	:= \
@@ -83,8 +40,6 @@ SHARED	:= \
 	__stat \
 	__stdio \
 	__upath \
-	__vcformat \
-	__vcscan \
 	__vfork \
 	abort \
 	access \
@@ -237,9 +192,6 @@ SHARED	:= \
 	sigprocmask \
 	sigsuspend \
 	sleep \
-	snprintf \
-	sprintf \
-	sscanf \
 	stat \
 	strftime \
 	strerror \
@@ -270,9 +222,6 @@ SHARED	:= \
 	vfscanf \
 	vprintf \
 	vscanf \
-	vsnprintf \
-	vsprintf \
-	vsscanf \
 	wait \
 	waitpid \
 	write
@@ -292,66 +241,13 @@ SHARED_LINKLIB := \
 #       or not.
 ROM_ONLY := \
 	__arosc_userdata \
-	__assert_kernel \
-	__vcformat \
-	__vcscan
+	__assert_kernel
 
-ROM_COMMON := \
-	memchr \
-	memcmp \
-	memcpy \
-	memmove \
-	memset \
-	stccpy \
-	stcd_l \
-	stcl_d \
-	stcl_h \
-	stcl_o \
-	stch_l \
-	stco_l \
-	stcu_d \
-	stpblk \
-	stpcpy \
-	strcasecmp \
-	strcasestr \
-	strcat \
-	strchr \
-	strcmp \
-	strcpy \
-	strcspn \
-	strlen \
-	strlcat \
-	strlcpy \
-	strncasecmp \
-	strncat \
-	strncmp \
-	strncpy \
-	strpbrk \
-	strrchr \
-	strrev \
-	strspn \
-	strstr
+ROM_COMMON :=
 
 # Objects for libarosc.static.a, from the static build.
 ROM_STATIC := \
-	__filesystem_support \
-	snprintf \
-	sprintf \
-	sscanf \
-	stcd_l \
-	stch_l \
-	stcl_d \
-	strchr \
-	strspn \
-	strtok \
-	vsnprintf \
-	vsprintf \
-	vsscanf \
-        ../stdc/math/e_sqrt \
-        ../stdc/math/e_pow \
-        ../stdc/math/s_copysign \
-        ../stdc/math/s_fabs \
-        ../stdc/math/s_scalbn
+	__filesystem_support
 
 
 #MM- core-linklibs : linklibs-arosc linklibs-rom
