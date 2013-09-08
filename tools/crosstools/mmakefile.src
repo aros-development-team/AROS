@@ -64,7 +64,7 @@ icu-installflag := $(CROSSTOOLSDIR)/.installflag-icu-$(ICU_VERSION)
 #MM- tools-crosstools-ppc    : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-arm    : tools-crosstools-gcc crosstools-gcc
 
-#MM- crosstools-gcc: includes-copy-mlib core-linklibs
+#MM- crosstools-gcc: core-linklibs
 
 #MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros \
 #MM                        compiler-includes compiler-clib-includes \

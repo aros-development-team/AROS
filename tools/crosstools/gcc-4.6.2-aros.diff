@@ -205,7 +205,7 @@ diff -ruN gcc-4.6.2/gcc/config/arm/unwind-arm.c gcc-4.6.2.aros/gcc/config/arm/un
 diff -ruN gcc-4.6.2/gcc/config/aros.h gcc-4.6.2.aros/gcc/config/aros.h
 --- gcc-4.6.2/gcc/config/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/aros.h	2013-08-26 07:55:42.000000000 +0200
-@@ -0,0 +1,100 @@
+@@ -0,0 +1,109 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -278,11 +278,20 @@ diff -ruN gcc-4.6.2/gcc/config/aros.h gcc-4.6.2.aros/gcc/config/aros.h
 +#define ENDFILE_SPEC \
 +  "-lautoinit"
 +
-+#undef STANDARD_INCLUDE_DIR
-+#define STANDARD_INCLUDE_DIR "/include"
++#undef INCLUDE_DEFAULTS
++#define INCLUDE_DEFAULTS \
++{ \
++    { GPLUSPLUS_INCLUDE_DIR, "G++", 1, 1, 0, 0 }, \
++    { GPLUSPLUS_TOOL_INCLUDE_DIR, "G++", 1, 1, 0, 1 }, \
++    { GPLUSPLUS_BACKWARD_INCLUDE_DIR, "G++", 1, 1, 0, 0 }, \
++    { "/local/include", 0, 0, 1, 1, 0 }, \
++    { "/include", STANDARD_INCLUDE_COMPONENT, 0, 0, 1, 0 }, \
++    { GCC_INCLUDE_DIR, "GCC", 0, 0, 0, 0 }, \
++    { 0, 0, 0, 0, 0, 0 } \
++}; \
 +
-+#undef LOCAL_INCLUDE_DIR
-+#define LOCAL_INCLUDE_DIR "/local/include"
++#undef CPP_SPEC
++#define CPP_SPEC "-isystem %R/include/aros/posixc -isystem %R/include/aros/stdc"
 +
 +/* This is for -profile to use -lc_p instead of -lc.  */
 +#ifndef CC1_SPEC
@@ -309,7 +318,7 @@ diff -ruN gcc-4.6.2/gcc/config/aros.h gcc-4.6.2.aros/gcc/config/aros.h
 diff -ruN gcc-4.6.2/gcc/config/i386/aros64.h gcc-4.6.2.aros/gcc/config/i386/aros64.h
 --- gcc-4.6.2/gcc/config/i386/aros64.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/i386/aros64.h	2013-08-26 07:55:42.000000000 +0200
-@@ -0,0 +1,43 @@
+@@ -0,0 +1,40 @@
 +/* Definitions for AMD x86_64 running AROS systems with ELF64 format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
 +   Free Software Foundation, Inc.
@@ -337,9 +346,6 @@ diff -ruN gcc-4.6.2/gcc/config/i386/aros64.h gcc-4.6.2.aros/gcc/config/i386/aros
 +
 +#undef TARGET_VERSION
 +#define TARGET_VERSION fprintf (stderr, " (x86_64 AROS/ELF)");
-+
-+#undef CPP_SPEC
-+#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"
 +
 +/* The svr4 ABI for the i386 says that records and unions are returned
 +   in memory.  In the 64bit compilation we will turn this flag off in
@@ -452,7 +458,7 @@ diff -ruN gcc-4.6.2/gcc/config/m68k/t-aros gcc-4.6.2.aros/gcc/config/m68k/t-aros
 diff -ruN gcc-4.6.2/gcc/config/rs6000/aros.h gcc-4.6.2.aros/gcc/config/rs6000/aros.h
 --- gcc-4.6.2/gcc/config/rs6000/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/rs6000/aros.h	2013-08-26 07:55:42.000000000 +0200
-@@ -0,0 +1,164 @@
+@@ -0,0 +1,161 @@
 +/* Definitions for Powerpc running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
 +   Free Software Foundation, Inc.
@@ -559,9 +565,6 @@ diff -ruN gcc-4.6.2/gcc/config/rs6000/aros.h gcc-4.6.2.aros/gcc/config/rs6000/ar
 +#define SUBTARGET_FRAME_POINTER_REQUIRED crtl->profile
 +seems to be handled by rs6000/rs6000.h
 +*/
-+
-+#undef CPP_SPEC
-+#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"
 +
 +#undef CC1_SPEC
 +#define CC1_SPEC "%(cc1_cpu) %{profile:-p}"
