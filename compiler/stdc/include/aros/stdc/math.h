@@ -105,13 +105,17 @@ extern const union __nan_un {
     : (sizeof (x) == sizeof (double)) ? __isinf(x)	\
     : __isinfl(x))
 #define	isnan(x)					\
-    ((sizeof (x) == sizeof (float)) ? __isnanf(x)       \
+    ((sizeof (x) == sizeof (float)) ? __isnanf(x)	\
     : (sizeof (x) == sizeof (double)) ? __isnan(x)	\
     : __isnanl(x))
 #define	isnormal(x)					\
     ((sizeof (x) == sizeof (float)) ? __isnormalf(x)	\
     : (sizeof (x) == sizeof (double)) ? __isnormal(x)	\
     : __isnormall(x))
+#define	signbit(x)					\
+    ((sizeof (x) == sizeof (float)) ? __signbitf(x)	\
+    : (sizeof (x) == sizeof (double)) ? __signbit(x)	\
+    : __signbitl(x))
 
 #ifdef __MATH_BUILTIN_RELOPS
 #define	isgreater(x, y)		__builtin_isgreater((x), (y))
@@ -130,10 +134,6 @@ extern const union __nan_un {
 #define	isunordered(x, y)	(isnan(x) || isnan(y))
 #endif /* __MATH_BUILTIN_RELOPS */
 
-#define	signbit(x)					\
-    ((sizeof (x) == sizeof (float)) ? __signbitf(x)	\
-    : (sizeof (x) == sizeof (double)) ? __signbit(x)	\
-    : __signbitl(x))
 
 #if FLT_EVAL_METHOD <= 0
 typedef	double double_t;
@@ -164,7 +164,15 @@ typedef long double float_t;
 #define	M_SQRT1_2	0.70710678118654752440	/* 1/sqrt(2) */
 
 #define	MAXFLOAT	((float)3.40282346638528860e+38)
-extern int signgam;
+
+/* This is not fully standard compliant, code should normally be able
+ * to just declare extern int signgam; in the program but this is not
+ * supported.
+ */
+int *__stdc_getsigngamptr(void);
+#ifndef signgam
+#define signgam (*__stdc_getsigngamptr())
+#endif
 
 #define	HUGE		MAXFLOAT
 
@@ -175,26 +183,31 @@ extern int signgam;
  */
 __BEGIN_DECLS
 /*
- * ANSI/POSIX
+ * Internal support functions
  */
-// NOT IMPL int	__fpclassifyd(double) __pure2;
+// NOT IMPL int	__fpclassify(double) __pure2;
 // NOT IMPL int	__fpclassifyf(float) __pure2;
 // NOT IMPL int	__fpclassifyl(long double) __pure2;
 int	__isfinitef(float) __pure2;
 int	__isfinite(double) __pure2;
+int	__isfinitef(float) __pure2;
 int	__isfinitel(long double) __pure2;
 int	__isinf(double) __pure2;
 int	__isinff(float) __pure2;
 int	__isinfl(long double) __pure2;
 int     __isnan(double) __pure2;
+int     __isnanf(float) __pure2;
 int	__isnanl(long double) __pure2;
-int	__isnormalf(float) __pure2;
 int	__isnormal(double) __pure2;
+int	__isnormalf(float) __pure2;
 int	__isnormall(long double) __pure2;
 int	__signbit(double) __pure2;
 int	__signbitf(float) __pure2;
 int	__signbitl(long double) __pure2;
 
+/*
+ * C99 double versions of functions
+ */
 double	acos(double);
 double	asin(double);
 double	atan(double);
@@ -203,54 +216,75 @@ double	cos(double);
 double	sin(double);
 double	tan(double);
 
+double	acosh(double);
+double	asinh(double);
+double	atanh(double);
 double	cosh(double);
 double	sinh(double);
 double	tanh(double);
 
 double	exp(double);
+double	exp2(double);
+double	expm1(double);
 double	frexp(double, int *);	/* fundamentally !__pure2 */
+int	ilogb(double) __pure2;
 double	ldexp(double, int);
 double	log(double);
 double	log10(double);
+double	log1p(double);
+//NOT IMPL double	log2(double);
+double	logb(double);
 double	modf(double, double *);	/* fundamentally !__pure2 */
+double	scalbn(double, int);
+double	scalbln(double, long);
 
+double	cbrt(double);
+double	fabs(double) __pure2;
+double	hypot(double, double);
 double	pow(double, double);
 double	sqrt(double);
 
-double	ceil(double);
-double	fabs(double) __pure2;
-double	floor(double);
-double	fmod(double, double);
-
-/*
- * These functions are not in C90.
- */
-double	acosh(double);
-double	asinh(double);
-double	atanh(double);
-double	cbrt(double);
 double	erf(double);
 double	erfc(double);
-double	exp2(double);
-double	expm1(double);
-double	fma(double, double, double);
-double	hypot(double, double);
-int	ilogb(double) __pure2;
-int	(isinf)(double) __pure2;
-int	(isnan)(double) __pure2;
 double	lgamma(double);
-long long llrint(double);
-long long llround(double);
-double	log1p(double);
-double	logb(double);
+//NOT IMPL double	tgamma(double);
+
+double	ceil(double);
+double	floor(double);
+double	nearbyint(double);
+double	rint(double);
 long	lrint(double);
+long long llrint(double);
+double	round(double);
 long	lround(double);
-double	nextafter(double, double);
+long long llround(double);
+double	trunc(double);
+
+double	fmod(double, double);
 double	remainder(double, double);
 double	remquo(double, double, int *);
-double	rint(double);
-double  nan(const char *tagp);
 
+double	copysign(double, double) __pure2;
+double  nan(const char *tagp);
+double	nextafter(double, double);
+double	nexttoward(double, long double);
+
+double	fdim(double, double);
+double	fmax(double, double) __pure2;
+double	fmin(double, double) __pure2;
+
+double	fma(double, double, double);
+
+/* aliases */
+double	gamma(double);
+double	drem(double, double);
+int	finite(double) __pure2;
+int	(isinf)(double) __pure2;
+int	(isnan)(double) __pure2;
+
+/*
+ * double functions extensions; mostly from BSD
+ */
 double	j0(double);
 double	j1(double);
 double	jn(int, double);
@@ -258,40 +292,16 @@ double	scalb(double, double);
 double	y0(double);
 double	y1(double);
 double	yn(int, double);
-
-double	gamma(double);
-
-double	copysign(double, double) __pure2;
-double	fdim(double, double);
-double	fmax(double, double) __pure2;
-double	fmin(double, double) __pure2;
-double	nearbyint(double);
-double	round(double);
-double	scalbln(double, long);
-double	scalbn(double, int);
-double	tgamma(double);
-double	trunc(double);
-
-/*
- * BSD math library entry points
- */
-double	drem(double, double);
-int	finite(double) __pure2;
-int	__isnanf(float) __pure2;
-
-/*
- * Reentrant version of gamma & lgamma; passes signgam back by reference
- * as the second argument; user must allocate space for signgam.
- */
 double	gamma_r(double, int *);
 double	lgamma_r(double, int *);
+void	sincos(double x, double *sin, double *cos);
 
-/*
- * IEEE Test Vector
- */
+/* IEEE Test Vector */
 double	significand(double);
 
-/* float versions of ANSI/POSIX functions */
+/*
+ * C99 float versions of functions
+ */
 float	acosf(float);
 float	asinf(float);
 float	atanf(float);
@@ -300,67 +310,75 @@ float	cosf(float);
 float	sinf(float);
 float	tanf(float);
 
+float	acoshf(float);
+float	asinhf(float);
+float	atanhf(float);
 float	coshf(float);
 float	sinhf(float);
 float	tanhf(float);
 
-float	exp2f(float);
 float	expf(float);
+float	exp2f(float);
 float	expm1f(float);
 float	frexpf(float, int *);	/* fundamentally !__pure2 */
 int	ilogbf(float) __pure2;
 float	ldexpf(float, int);
+float	logf(float);
 float	log10f(float);
 float	log1pf(float);
-float	logf(float);
+//NOT IMPL float	log2f(float);
+float	logbf(float);
 float	modff(float, float *);	/* fundamentally !__pure2 */
+float	scalbnf(float, int);
+float	scalblnf(float, long);
 
+float	cbrtf(float);
+float	fabsf(float) __pure2;
+float	hypotf(float, float);
 float	powf(float, float);
 float	sqrtf(float);
 
-float	ceilf(float);
-float	fabsf(float) __pure2;
-float	floorf(float);
-float	fmodf(float, float);
-float	roundf(float);
-
 float	erff(float);
 float	erfcf(float);
-float	hypotf(float, float);
 float	lgammaf(float);
+//NOT IMPL float	tgammaf(float);
 
-float	acoshf(float);
-float	asinhf(float);
-float	atanhf(float);
-float	cbrtf(float);
-float	logbf(float);
-float	copysignf(float, float) __pure2;
-long long llrintf(float);
-long long llroundf(float);
-long	lrintf(float);
-long	lroundf(float);
+float	ceilf(float);
+float	floorf(float);
 float	nearbyintf(float);
-float	nextafterf(float, float);
-float	remainderf(float, float);
-float	remquof(float, float, int *);
 float	rintf(float);
-float	scalblnf(float, long);
-float	scalbnf(float, int);
+long	lrintf(float);
+long long llrintf(float);
+float	roundf(float);
+long	lroundf(float);
+long long llroundf(float);
 float	truncf(float);
 
+float	fmodf(float, float);
+float	remainderf(float, float);
+float	remquof(float, float, int *);
+
+float	copysignf(float, float) __pure2;
+float   nanf(const char *tagp);
+float	nextafterf(float, float);
+float	nexttowardf(float, long double);
+
 float	fdimf(float, float);
-float	fmaf(float, float, float);
 float	fmaxf(float, float) __pure2;
 float	fminf(float, float) __pure2;
 
-float   nanf(const char *tagp);
+float	fmaf(float, float, float);
 
-/*
- * float versions of BSD math library entry points
- */
+/* aliases */
+float	gammaf(float);
 float	dremf(float, float);
 int	finitef(float) __pure2;
-float	gammaf(float);
+int	isinff(float) __pure2;
+int	isnanf(float) __pure2;
+
+/*
+ * float functions extensions; mostly from BSD
+ */
 float	j0f(float);
 float	j1f(float);
 float	jnf(int, float);
@@ -368,83 +386,106 @@ float	scalbf(float, float);
 float	y0f(float);
 float	y1f(float);
 float	ynf(int, float);
-
-/*
- * Float versions of reentrant version of gamma & lgamma; passes
- * signgam back by reference as the second argument; user must
- * allocate space for signgam.
- */
 float	gammaf_r(float, int *);
 float	lgammaf_r(float, int *);
+void	sincosf(float x, float *sin, float *cos);
 
-/*
- * float version of IEEE Test Vector
- */
+/* IEEE Test Vector */
 float	significandf(float);
 
 /*
- * long double versions of ISO/POSIX math functions
+ * C99 long double versions of functions
  */
-// NOT IMPL long double	acoshl(long double);
-// NOT IMPL long double	acosl(long double);
-// NOT IMPL long double	asinhl(long double);
-// NOT IMPL long double	asinl(long double);
-// NOT IMPL long double	atan2l(long double, long double);
-// NOT IMPL long double	atanhl(long double);
-// NOT IMPL long double	atanl(long double);
-// NOT IMPL long double	cbrtl(long double);
-long double	ceill(long double);
-long double	copysignl(long double, long double) __pure2;
-// NOT IMPL long double	coshl(long double);
-// NOT IMPL long double	cosl(long double);
-// NOT IMPL long double	erfcl(long double);
-// NOT IMPL long double	erfl(long double);
-// NOT IMPL long double	exp2l(long double);
-// NOT IMPL long double	expl(long double);
-// NOT IMPL long double	expm1l(long double);
-long double	fabsl(long double) __pure2;
-long double	fdiml(long double, long double);
-long double	floorl(long double);
-long double	fmal(long double, long double, long double);
-long double	fmaxl(long double, long double) __pure2;
-long double	fminl(long double, long double) __pure2;
-// NOT IMPL long double	fmodl(long double, long double);
+//NOT IMPL long double	acosl(long double);
+//NOT IMPL long double	asinl(long double);
+//NOT IMPL long double	atanl(long double);
+//NOT IMPL long double	atan2l(long double, long double);
+//NOT IMPL long double	cosl(long double);
+//NOT IMPL long double	sinl(long double);
+//NOT IMPL long double	tanl(long double);
+
+//NOT IMPL long double	acoshl(long double);
+//NOT IMPL long double	asinhl(long double);
+//NOT IMPL long double	atanhl(long double);
+//NOT IMPL long double	coshl(long double);
+//NOT IMPL long double	sinhl(long double);
+//NOT IMPL long double	tanhl(long double);
+
+//NOT IMPL long double	expl(long double);
+//NOT IMPL long double	exp2l(long double);
+//NOT IMPL long double	expm1l(long double);
 long double	frexpl(long double value, int *); /* fundamentally !__pure2 */
-// NOT IMPL long double	hypotl(long double, long double);
 int		ilogbl(long double) __pure2;
 long double	ldexpl(long double, int);
-// NOT IMPL long double	lgammal(long double);
-// NOT IMPL long long	llrintl(long double);
-long long	llroundl(long double);
-// NOT IMPL long double	log10l(long double);
-// NOT IMPL long double	log1pl(long double);
-// NOT IMPL long double	log2l(long double);
-// NOT IMPL long double	logbl(long double);
-// NOT IMPL long double	logl(long double);
-// NOT IMPL long		lrintl(long double);
-long		lroundl(long double);
+//NOT IMPL long double	logl(long double);
+//NOT IMPL long double	log10l(long double);
+//NOT IMPL long double	log1pl(long double);
+//NOT IMPL long double	log2l(long double);
+//NOT IMPL long double	logbl(long double);
 long double	modfl(long double, long double *); /* fundamentally !__pure2 */
-// NOT IMPL long double	nanl(const char *) __pure2;
-// NOT IMPL long double	nearbyintl(long double);
-long double	nextafterl(long double, long double);
-double		nexttoward(double, long double);
-float		nexttowardf(float, long double);
-long double	nexttowardl(long double, long double);
-// NOT IMPL long double	powl(long double, long double);
-// NOT IMPL long double	remainderl(long double, long double);
-// NOT IMPL long double	remquol(long double, long double, int *);
-// NOT IMPL long double	rintl(long double);
-long double	roundl(long double);
-long double	scalblnl(long double, long);
 long double	scalbnl(long double, int);
-// NOT IMPL long double	sinhl(long double);
-// NOT IMPL long double	sinl(long double);
-// NOT IMPL long double	sqrtl(long double);
-// NOT IMPL long double	tanhl(long double);
-// NOT IMPL long double	tanl(long double);
-// NOT IMPL long double	tgammal(long double);
+long double	scalblnl(long double, long);
+
+//NOT IMPL long double	cbrtl(long double);
+long double	fabsl(long double) __pure2;
+//NOT IMPL long double	hypotl(long double, long double);
+//NOT IMPL long double	powl(long double, long double);
+//NOT IMPL long double	sqrtl(long double);
+
+//NOT IMPL long double	erfl(long double);
+//NOT IMPL long double	erfcl(long double);
+//NOT IMPL long double	lgammal(long double);
+//NOT IMPL long double	tgammal(long double);
+
+long double	ceill(long double);
+long double	floorl(long double);
+//NOT IMPL long double	nearbyintl(long double);
+//NOT IMPL long double	rintl(long double);
+//NOT IMPL long		lrintl(long double);
+//NOT IMPL long long	llrintl(long double);
+long double	roundl(long double);
+long		lroundl(long double);
+long long	llroundl(long double);
 long double	truncl(long double);
+
+//NOT IMPL long double	fmodl(long double, long double);
+//NOT IMPL long double	remainderl(long double, long double);
+//NOT IMPL long double	remquol(long double, long double, int *);
+
+long double	copysignl(long double, long double) __pure2;
 long double     nanl(const char *tagp);
+long double	nextafterl(long double, long double);
+long double	nexttowardl(long double, long double);
+
+long double	fdiml(long double, long double);
+long double	fmaxl(long double, long double) __pure2;
+long double	fminl(long double, long double) __pure2;
+
+long double	fmal(long double, long double, long double);
+
+/* aliases */
+//NOT IMPL long double 	gammal(long double);
+//NOT IMPL long double	dreml(long double, long double);
+int	finitel(long double) __pure2;
+int	isinfl(long double) __pure2;
+int	isnanl(long double) __pure2;
+
+/*
+ * long double extensions; mostly from BSD
+ */
+//NOT IMPL long double	j0l(long double);
+//NOT IMPL long double	j1l(long double);
+//NOT IMPL long double	jnl(int, long double);
+//NOT IMPL long double	scalbl(long double, long double);
+//NOT IMPL long double	y0l(long double);
+//NOT IMPL long double	y1l(long double);
+//NOT IMPL long double	ynl(int, long double);
+//NOT IMPL long double	gammal_r(long double, int *);
+//NOT IMPL long double	lgammal_r(long double, int *);
+void	sincosl(long double x, long double *sin, long double *cos);
+
+/* IEEE Test Vector */
+//NOT IMPL long double	significandl(long double);
 
 __END_DECLS
 

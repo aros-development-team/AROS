@@ -26,10 +26,11 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_gammaf.c,v 1.6 2002/05/28 17
 #include "math.h"
 #include "math_private.h"
 
-extern int signgam;
+#include "__stdc_intbase.h"
 
 float
 __ieee754_gammaf(float x)
 {
-	return __ieee754_gammaf_r(x,&signgam);
+	struct StdCBase *StdCBase = __aros_getbase_StdCBase();
+	return __ieee754_gammaf_r(x,&StdCBase->_signgam);
 }

@@ -117,7 +117,7 @@ BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 
 %link_kickstart mmake=kernel-link-base file=$(BINDIR)/boot/aros-base \
 	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) res=$(BASE_RSRCS) \
-	uselibs="autoinit libinit amiga arossupport arosc.static romhack arosm hiddstubs stdc.static" \
+	uselibs="autoinit libinit amiga arossupport arosc.static romhack hiddstubs stdc.static" \
 	map=$(GENDIR)/boot/kernel-base.map
 
 # *** PKG kickstart package ***

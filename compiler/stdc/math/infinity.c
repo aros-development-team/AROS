@@ -6,7 +6,9 @@
 */
 
 /* These definitions are used if no architecture-specific version of this file
- * is available. They assume we're dealing with IEEE 754 floating point. */
+ * is available or needed. They assume we're dealing with IEEE 754 floating
+ * point.
+ */
 
 #include <aros/system.h>
 #include <math.h>

@@ -3,7 +3,6 @@
  * Public domain.
  */
 
-#include <sys/cdefs.h>
 #if defined(LIBM_SCCS) && !defined(lint)
 __RCSID("$NetBSD: s_isinff.c,v 1.6 2003/07/26 19:25:06 salo Exp $");
 #endif
