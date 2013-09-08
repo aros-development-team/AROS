@@ -8,7 +8,7 @@
     Alternate spellings. This is designed to be used by people who use
     languages that may not support the standard C symbols.
 
-    See ISO C Standard Sect 7.9
+    See C99 Standard Sect 7.9
 */
 
 #ifndef __cplusplus

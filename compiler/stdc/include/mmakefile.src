@@ -1,0 +1,9 @@
+include $(TOP)/config/make.cfg
+
+INCLUDES := $(call WILDCARD, aros/stdc/*.h aros/types/*.h)
+
+#MM- linklibs-clib-includes : linklibs-stdc-includes-files
+#MM- includes-copy : linklibs-stdc-includes-files
+
+%copy_includes mmake=linklibs-stdc-includes-files \
+    includes=$(INCLUDES)
