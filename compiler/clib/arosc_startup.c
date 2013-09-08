@@ -1,16 +1,33 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: autoinit library - arosc.library specific code
     Lang: english
 */
 
+#include <libraries/stdc.h>
+#include <libraries/stdcio.h>
+#include <libraries/posixc.h>
+
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <aros/startup.h>
 
-#include <sys/arosc.h>
+#include "__arosc_privdata.h"
+
+static int __arosc_init(void)
+{
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+
+    aroscbase->StdCBase = __aros_getbase_StdCBase();
+    aroscbase->StdCIOBase = __aros_getbase_StdCIOBase();
+    aroscbase->PosixCBase = __aros_getbase_PosixCBase();
+
+    return aroscbase->StdCBase != NULL
+           && aroscbase->StdCIOBase != NULL
+           && aroscbase->PosixCBase != NULL;
+}
 
 static void __arosc_startup(struct ExecBase *SysBase)
 {
@@ -37,4 +54,5 @@ static void __arosc_startup(struct ExecBase *SysBase)
     D(bug("[__arosc_startup] Leave\n"));
 }
 
+ADD2INIT(__arosc_init, -50);
 ADD2SET(__arosc_startup, PROGRAM_ENTRIES, 0);

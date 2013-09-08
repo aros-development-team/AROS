@@ -19,6 +19,10 @@ struct vfork_data;
 struct signal_func_data;
 struct random_state;
 
+struct StdCBase;
+struct StdCIOBase;
+struct PosixCBase;
+
 struct aroscbase
 {
     struct Library acb_library;
@@ -106,6 +110,11 @@ struct aroscbase
     /* Used for arosc startup code */
     int *acb_startup_error_ptr;
     jmp_buf acb_exit_jmp_buf;
+
+    /* temp bases until we are gone */
+    struct StdCBase *StdCBase;
+    struct StdCIOBase *StdCIOBase;
+    struct PosixCBase *PosixCBase;
 };
 
 /* acb_flags */

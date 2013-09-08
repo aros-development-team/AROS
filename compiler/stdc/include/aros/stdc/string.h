@@ -2,12 +2,12 @@
 #define _STDC_STRING_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 & POSIX.1-2008 header file string.h with extra SAS/C and other extensions
     Also the POSIX.1-2008 extension to string.h will be included in
-    arosstdc.library. This avoids opening of arosnixc.library by programs
+    stdc.library. This avoids opening of posixc.library by programs
     that only use few simple POSIX string functions.
 */
 #include <aros/system.h>

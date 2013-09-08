@@ -1,0 +1,32 @@
+include $(TOP)/config/make.cfg
+
+STDC := \
+    __optionallibs
+
+STDCIO := \
+    __stdcio_init
+
+#MM- linklibs-clib-includes : compiler-stdc-includes compiler-stdcio-includes
+#MM- linklibs-clib-shared : compiler-stdc compiler-stdcio
+#MM- core-linklibs : linklibs-stdc linklibs-stdcio
+
+USER_CFLAGS := -noposixc
+USER_LDFLAGS := -nostdc -noposixc
+
+%build_module mmake=compiler-stdc \
+    modname=stdc modtype=library \
+    files=$(STDC)
+
+%build_module mmake=compiler-stdcio \
+    modname=stdcio modtype=library \
+    files=$(STDCIO) \
+    uselibs="stdc_rel"
+
+STDC_STATIC := \
+    empty
+
+USER_CFLAGS := -DSTDC_STATIC
+
+#MM- core-linklibs : linklibs-stdc-static
+%build_linklib mmake=linklibs-stdc-static libname=stdc.static \
+    files="$(STDC_STATIC)" objdir=$(GENDIR)/$(CURDIR)/static

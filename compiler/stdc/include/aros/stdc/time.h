@@ -2,7 +2,7 @@
 #define _STDC_TIME_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file time.h
@@ -48,7 +48,7 @@ struct tm *gmtime(const time_t *);
 struct tm *localtime(const time_t *);
 size_t     strftime(char *, size_t, const char *, const struct tm *);
 
-/* Reentrant versions are put as extension to C99 in arosstdc.library */
+/* Reentrant versions are put as extension to C99 in stdc.library */
 char *asctime_r(const struct tm *, char *);
 char *ctime_r(const time_t *, char *);
 struct tm *gmtime_r(const time_t *, struct tm *);
