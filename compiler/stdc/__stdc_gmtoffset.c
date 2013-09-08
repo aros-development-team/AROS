@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal arossstdc function to get current GMT offset
@@ -7,6 +7,8 @@
 #include <proto/exec.h>
 #include <proto/locale.h>
 #include <exec/execbase.h>
+
+#include "__optionallibs.h"
 
 /*****************************************************************************
 
@@ -40,24 +42,10 @@
 
 ******************************************************************************/
 {
-    static struct LocaleBase *LocaleBase = NULL;
     struct Locale *loc;
     int gmtoffset = 0;
 
-    if (!LocaleBase)
-    {
-        struct Node *found;
-
-        /* Only open locale.library if it does not have to be loaded from disk */
-        Forbid();
-        found = FindName(&SysBase->LibList, "locale.library");
-        Permit();
-
-        if (found)
-            LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 0);
-    }
-
-    if (LocaleBase && (loc = OpenLocale(NULL)))
+    if (__locale_available() && (loc = OpenLocale(NULL)))
     {
         gmtoffset = (int)loc->loc_GMTOffset;
         CloseLocale(loc);
