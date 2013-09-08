@@ -1,5 +1,5 @@
-#ifndef _SYS_TIMES_H
-#define _SYS_TIMES_H
+#ifndef _POSIXC_SYS_TIMES_H
+#define _POSIXC_SYS_TIMES_H
 
 /*
     Copyright © 2004-2012, The AROS Development Team. All rights reserved.
@@ -24,5 +24,5 @@ clock_t times(struct tms *buffer);
 
 __END_DECLS
 
-#endif /* _SYS_TIMES_H */
+#endif /* _POSIXC_SYS_TIMES_H */
 

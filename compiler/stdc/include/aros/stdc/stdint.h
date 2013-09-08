@@ -1,5 +1,5 @@
-#ifndef _STDINT_H_
-#define _STDINT_H_
+#ifndef _STDC_STDINT_H_
+#define _STDC_STDINT_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -91,4 +91,4 @@
 
 #endif /* !__cplusplus || __STDC_CONSTANT_MACROS */
 
-#endif /* _STDINT_H_ */
+#endif /* _STDC_STDINT_H_ */

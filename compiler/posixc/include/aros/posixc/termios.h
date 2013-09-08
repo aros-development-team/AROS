@@ -1,5 +1,5 @@
-#ifndef _TERMIOS_H
-#define _TERMIOS_H 1
+#ifndef _POSIXC_TERMIOS_H
+#define _POSIXC_TERMIOS_H
 
 /*
  * Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -160,4 +160,5 @@ int tcsetattr(int __fd, int __optional_actions,
 
 __END_DECLS
 
-#endif
+#endif /* _POSIXC_TERMIOS_H */
+

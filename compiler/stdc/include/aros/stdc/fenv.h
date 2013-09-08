@@ -18,8 +18,8 @@
 #   include <aros/m68k/fenv.h>
 
 /* otherwise just use the stub implementation */
-#elif !defined _FENV_H_
-#define _FENV_H_
+#elif !defined _STDC_FENV_H_
+#define _STDC_FENV_H_
 
 #include <aros/system.h>
 #include <aros/types/fenv_t.h>

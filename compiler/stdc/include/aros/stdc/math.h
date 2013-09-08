@@ -14,8 +14,8 @@
  * $FreeBSD: src/lib/msun/src/math.h,v 1.62 2007/01/07 07:54:21 das Exp $
  */
 
-#ifndef _MATH_H_
-#define _MATH_H_
+#ifndef _STDC_MATH_H_
+#define _STDC_MATH_H_
 
 #include <aros/system.h>
 #include <inttypes.h>
@@ -448,4 +448,4 @@ long double     nanl(const char *tagp);
 
 __END_DECLS
 
-#endif /* !_MATH_H_ */
+#endif /* !_STDC_MATH_H_ */

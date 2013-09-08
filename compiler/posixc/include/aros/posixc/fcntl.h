@@ -1,5 +1,5 @@
-#ifndef _FCNTL_H_
-#define _FCNTL_H_
+#ifndef _POSIXC_FCNTL_H_
+#define _POSIXC_FCNTL_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -155,4 +155,4 @@ int open  (const char * filename, int flags, ...);
 
 __END_DECLS
 
-#endif /* _FCNTL_H_ */
+#endif /* _POSIXC_FCNTL_H_ */

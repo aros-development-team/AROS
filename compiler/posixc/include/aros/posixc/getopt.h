@@ -37,8 +37,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _GETOPT_H_
-#define _GETOPT_H_
+#ifndef _POSIXC_GETOPT_H_
+#define _POSIXC_GETOPT_H_
 
 #include <aros/system.h>
 
@@ -82,4 +82,4 @@ extern int optreset;			/* getopt(3) external variable */
 #endif
 __END_DECLS
  
-#endif /* !_GETOPT_H_ */
+#endif /* !_POSIXC_GETOPT_H_ */

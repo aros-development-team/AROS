@@ -1,5 +1,5 @@
-#ifndef _STDDEF_H_
-#define _STDDEF_H_
+#ifndef _STDC_STDDEF_H_
+#define _STDC_STDDEF_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -15,4 +15,4 @@
 
 #define offsetof(type, field)	    ((size_t)(&((type *)0)->field))
 
-#endif /* _STDDEF_H_ */
+#endif /* _STDC_STDDEF_H_ */

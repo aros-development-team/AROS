@@ -1,5 +1,5 @@
-#ifndef _SYS_STAT_H
-#define _SYS_STAT_H
+#ifndef _POSIXC_SYS_STAT_H
+#define _POSIXC_SYS_STAT_H
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -119,4 +119,4 @@ mode_t umask(mode_t numask);
 
 __END_DECLS
 
-#endif /* _SYS_STAT_H */
+#endif /* _POSIXC_SYS_STAT_H */

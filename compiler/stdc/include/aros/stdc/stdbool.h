@@ -1,5 +1,5 @@
-#ifndef _STDBOOL_H_
-#define _STDBOOL_H_
+#ifndef _STDC_STDBOOL_H_
+#define _STDC_STDBOOL_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -40,4 +40,4 @@ typedef int	_Bool;
 #endif /* __cplusplus */
 
 
-#endif /* _STDBOOL_H_ */
+#endif /* _STDC_STDBOOL_H_ */

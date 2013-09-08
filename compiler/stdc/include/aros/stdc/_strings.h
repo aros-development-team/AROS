@@ -1,5 +1,5 @@
-#ifndef __STRINGS_H_
-#define __STRINGS_H_
+#ifndef _STDC__STRINGS_H_
+#define _STDC__STRINGS_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -66,4 +66,4 @@ char *strcasestr(const char * str, const char * search);
 
 __END_DECLS
 
-#endif /* __STRINGS_H_ */
+#endif /* _STDC__STRINGS_H_ */

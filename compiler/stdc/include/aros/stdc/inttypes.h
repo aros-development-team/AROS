@@ -1,5 +1,5 @@
-#ifndef _INTTYPES_H_
-#define _INTTYPES_H_
+#ifndef _STDC_INTTYPES_H_
+#define _STDC_INTTYPES_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -259,4 +259,4 @@ uintmax_t strtoumax(const char * restrict nptr,
 
 __END_DECLS
 
-#endif /* _INTTYPES_H_ */
+#endif /* _STDC_INTTYPES_H_ */

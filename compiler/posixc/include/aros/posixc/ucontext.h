@@ -1,5 +1,5 @@
-#ifndef _UCONTEXT_H_
-#define _UCONTEXT_H_
+#ifndef _POSIXC_UCONTEXT_H_
+#define _POSIXC_UCONTEXT_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -22,4 +22,4 @@ __BEGIN_DECLS
 
 __END_DECLS
 
-#endif /* _UCONTEXT_H_ */
+#endif /* _POSIXC_UCONTEXT_H_ */

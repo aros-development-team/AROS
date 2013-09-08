@@ -39,8 +39,8 @@
  */
 
 
-#ifndef _SYS_MOUNT_H_
-#define _SYS_MOUNT_H_
+#ifndef _POSIXC_SYS_MOUNT_H_
+#define _POSIXC_SYS_MOUNT_H_
 
 #ifndef _POSIX_SOURCE
 
@@ -120,4 +120,4 @@ __END_DECLS
 
 #endif /* ! _POSIX_SOURCE */
 
-#endif /* !_SYS_MOUNT_H_ */
+#endif /* !_POSIXC_SYS_MOUNT_H_ */

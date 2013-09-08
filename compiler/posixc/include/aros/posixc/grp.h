@@ -1,5 +1,5 @@
-#ifndef _GRP_H_
-#define	_GRP_H_
+#ifndef _POSIXC_GRP_H_
+#define	_POSIXC_GRP_H_
 
 /*
     Copyright © 2003-2012, The AROS Development Team. All rights reserved.
@@ -31,4 +31,4 @@ void setgrent(void);
 
 __END_DECLS
 
-#endif /* _GRP_H_ */
+#endif /* _POSIXC_GRP_H_ */

@@ -7,8 +7,8 @@
  * POSIX.1-2008 header file sys/resource.h
  */
 
-#ifndef SYS_RESOURCE_H
-#define SYS_RESOURCE_H
+#ifndef _POSIXC_SYS_RESOURCE_H
+#define _POSIXC_SYS_RESOURCE_H
 
 #include <aros/system.h>
 #include <aros/cpu.h>
@@ -65,4 +65,4 @@ int setrlimit(int, const struct rlimit *);
 
 __END_DECLS
 
-#endif /* SYS_RESOURCE_H */
+#endif /* _POSIXC_SYS_RESOURCE_H */

@@ -1,5 +1,5 @@
-#ifndef _COMPLEX_H_
-#define _COMPLEX_H_
+#ifndef _STDC_COMPLEX_H_
+#define _STDC_COMPLEX_H_
 /*
     Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
@@ -101,4 +101,4 @@ __END_DECLS
 #define creall(z)	(__real__ (z))
 #endif
 
-#endif /* _COMPLEX_H_ */
+#endif /* _STDC_COMPLEX_H_ */
