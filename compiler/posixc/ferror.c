@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function ferror().
@@ -40,5 +40,5 @@
 
 ******************************************************************************/
 {
-    return (stream->flags & _STDIO_ERROR) != 0;
+    return (stream->flags & __POSIXC_STDIO_ERROR) != 0;
 } /* ferror */

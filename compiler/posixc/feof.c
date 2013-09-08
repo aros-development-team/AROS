@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function feof().
@@ -42,6 +42,6 @@
 
 ******************************************************************************/
 {
-    return (stream->flags & _STDIO_EOF) != 0;
+    return (stream->flags & __POSIXC_STDIO_EOF) != 0;
 } /* feof */
 

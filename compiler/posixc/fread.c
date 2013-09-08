@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fread().
@@ -58,7 +58,7 @@
 
     if (!fdesc)
     {
-	stream->flags |= _STDIO_ERROR;
+	stream->flags |= __POSIXC_STDIO_ERROR;
 	errno = EBADF;
 	return 0;
     }
@@ -68,13 +68,13 @@
     if (cnt == -1)
     {
 	errno = __stdc_ioerr2errno (IoErr ());
-	stream->flags |= _STDIO_ERROR;
+	stream->flags |= __POSIXC_STDIO_ERROR;
 
 	cnt = 0;
     }
     else if (cnt == 0 || cnt < nblocks)
     {
-	stream->flags |= _STDIO_EOF;
+	stream->flags |= __POSIXC_STDIO_EOF;
     }
 
     return cnt;

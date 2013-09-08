@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fclose().
@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include "__stdio.h"
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 
 /*****************************************************************************
 
@@ -35,8 +35,6 @@
 	error. In either case no further access to the stream is possible.
 
     NOTES
-        This function must not be used in a shared library or
-        in a threaded application.
 
     EXAMPLE
 
@@ -49,7 +47,8 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     FILENODE * fn;
 
     if (close(stream->fd) == -1)
@@ -58,7 +57,7 @@
     fn = FILE2FILENODE (stream);
     Remove ((struct Node *)fn);
 
-    FreePooled(aroscbase->acb_internalpool, fn, sizeof(FILENODE));
+    FreePooled(PosixCBase->internalpool, fn, sizeof(FILENODE));
 
     return 0;
 } /* fclose */

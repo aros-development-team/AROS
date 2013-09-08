@@ -1,5 +1,5 @@
 /* 
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: special main function for code which has to use special *nix features.
@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <sys/param.h>
 
-#include "__arosc_privdata.h"
 #include "__upath.h"
 
 static BOOL clone_vars(struct MinList *old_vars);
@@ -34,18 +33,19 @@ static void restore_vars(struct MinList *old_vars);
 static void free_vars(struct MinList *vars);
 static void update_PATH(void);
 
-int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
+int __posixc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase(), *paroscbase;
-    int *errorptr = __arosc_get_errorptr();
+    struct PosixCIntBase *PosixCBase, *pPosixCBase;
+    int *errorptr = __stdc_get_errorptr();
     char *old_argv0 = NULL;
     char *new_argv0 = NULL;
     struct MinList old_vars;
 
-    D(bug("__arosc_nixmain: @begin, Task=%x\n", FindTask(NULL)));
+    D(bug("__posixc_nixmain: @begin, Task=%x\n", FindTask(NULL)));
+    PosixCBase = (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
     /* Trigger *nix path handling on.  */
-    aroscbase->acb_doupath = 1;
+    PosixCBase->doupath = 1;
 
     /* argv[0] usually contains the name of the program, possibly with the full
        path to it. Here we translate that path, which is an AmigaDOS-style path,
@@ -68,11 +68,11 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
        we avoid it.
        The cloning does not need to be performed if flags of parent have VFORK_PARENT
        or EXEC_PARENT flags */
-    paroscbase = __GM_GetBaseParent(aroscbase);
-    D(bug("__arosc_nixmain: paroscbase = %x, Task=%x\n", paroscbase, FindTask(NULL)));
-    if (!paroscbase || !(paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
+    pPosixCBase = __GM_GetBaseParent(PosixCBase);
+    D(bug("__posixc_nixmain: pPosixCBase = %x, Task=%x\n", pPosixCBase, FindTask(NULL)));
+    if (!pPosixCBase || !(pPosixCBase->flags & (VFORK_PARENT | EXEC_PARENT)))
     {
-        D(bug("__arosc_nixmain: Cloning LocalVars"));
+        D(bug("__posixc_nixmain: Cloning LocalVars"));
         if (!clone_vars(&old_vars))
 	{
             if (errorptr)
@@ -99,10 +99,10 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
             *errorptr = ret;
     }
     else
-        D(bug("__arosc_nixmain: setjmp() != 0\n"));
+        D(bug("__posixc_nixmain: setjmp() != 0\n"));
 
-    D(bug("__arosc_nixmain: paroscbase = %x, Task=%x\n", paroscbase, FindTask(NULL)));
-    if (!paroscbase || !(paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
+    D(bug("__posixc_nixmain: pPosixCBase = %x, Task=%x\n", pPosixCBase, FindTask(NULL)));
+    if (!pPosixCBase || !(pPosixCBase->flags & (VFORK_PARENT | EXEC_PARENT)))
         restore_vars(&old_vars);
 
 err_vars:
@@ -114,7 +114,7 @@ err_vars:
 	argv[0] = (char *)old_argv0;
     }
 
-    D(bug("__arosc_nixmain: @end, Task=%x\n", FindTask(NULL)));
+    D(bug("__posixc_nixmain: @end, Task=%x\n", FindTask(NULL)));
 
     return (errorptr != NULL) ? *errorptr : 0;
 }

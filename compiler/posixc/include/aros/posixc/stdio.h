@@ -20,14 +20,6 @@
 
 #define P_tmpdir	"T:"		/* Default temporary path */
 
-#undef stderr
-#undef stdin
-#undef stdout
-
-#define stderr (__get_arosc_userdata()->acud_stderr)
-#define stdin  (__get_arosc_userdata()->acud_stdin)
-#define stdout (__get_arosc_userdata()->acud_stdout)
-
 __BEGIN_DECLS
 
 /* NOTIMPL char	*ctermid(char *); */
@@ -52,6 +44,11 @@ FILE *popen(const char *, const char *);
 /* NOTIMPL int      renameat(int, const char *, int, const char *); */
 char *tempnam(const char *dir, const char *pfx);
 /* NOTIMPL int      vdprintf(int, const char *restrict, va_list); */
+
+/* Following function is here for clib2 compatibility and abc-shell
+   Don't use in new code
+*/
+int __get_default_file (int file_descriptor, long * file_handle);
 
 /* Implement deprecated POSIX.1-2001 functions as static inline functions. */
 static __inline__ int getw(FILE *stream)

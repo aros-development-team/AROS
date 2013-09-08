@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function fdopen().
+    POSIX.1-2008 function fdopen().
 */
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 
 #include <stdlib.h>
 #include <fcntl.h>
@@ -50,8 +50,6 @@
 	descriptor currently not in use by the process.
 
     NOTES
-        This function must not be used in a shared library or
-        in a threaded application.
 
     EXAMPLE
 
@@ -64,7 +62,8 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     int oflags, wanted_accmode, current_accmode;
     fdesc *fdesc;
     FILENODE *fn;
@@ -98,10 +97,10 @@
     	}
     }
 
-    fn = AllocPooled(aroscbase->acb_internalpool, sizeof(FILENODE));
+    fn = AllocPooled(PosixCBase->internalpool, sizeof(FILENODE));
     if (!fn) return NULL;
 
-    AddTail ((struct List *)&aroscbase->acb_stdio_files, (struct Node *)fn);
+    AddTail ((struct List *)&PosixCBase->stdio_files, (struct Node *)fn);
 
     fn->File.flags = __oflags2sflags(oflags);
     fn->File.fd    = filedes;

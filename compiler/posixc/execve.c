@@ -2,7 +2,7 @@
     Copyright © 2008-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function execve().
+    POSIX.1-2008 function execve().
 */
 
 #define DEBUG 0

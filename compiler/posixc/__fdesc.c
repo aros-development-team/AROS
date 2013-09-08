@@ -7,8 +7,6 @@
 
 #include LC_LIBDEFS_FILE
 
-#include "__arosc_privdata.h"
-
 #include <string.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -38,53 +36,65 @@
 
 void __getfdarray(APTR *arrayptr, int *slotsptr)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
-    *arrayptr = aroscbase->acb_fd_array;
-    *slotsptr = aroscbase->acb_numslots;
+    *arrayptr = PosixCBase->fd_array;
+    *slotsptr = PosixCBase->fd_slots;
 }
 
 void __setfdarray(APTR array, int slots)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
-    aroscbase->acb_fd_array = array;
-    aroscbase->acb_numslots = slots;
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
+    PosixCBase->fd_array = array;
+    PosixCBase->fd_slots = slots;
 }
 
-void __setfdarraybase(struct aroscbase *aroscbase2)
+void __setfdarraybase(struct PosixCIntBase *PosixCBase2)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
-    aroscbase->acb_fd_array = aroscbase2->acb_fd_array;
-    aroscbase->acb_numslots = aroscbase2->acb_numslots;
+    PosixCBase->fd_array = PosixCBase2->fd_array;
+    PosixCBase->fd_slots = PosixCBase2->fd_slots;
 }
 
 int __getfdslots(void)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
-    return aroscbase->acb_numslots;
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
+    return PosixCBase->fd_slots;
 }
 
 fdesc *__getfdesc(register int fd)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
-    return ((aroscbase->acb_numslots>fd) && (fd>=0))?aroscbase->acb_fd_array[fd]:NULL;
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
+    return ((PosixCBase->fd_slots>fd) && (fd>=0))?PosixCBase->fd_array[fd]:NULL;
 }
 
 void __setfdesc(register int fd, fdesc *desc)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
     /* FIXME: Check if fd is in valid range... */
-    aroscbase->acb_fd_array[fd] = desc;
+    PosixCBase->fd_array[fd] = desc;
 }
 
 int __getfirstfd(register int startfd)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
     /* FIXME: Check if fd is in valid range... */
     for (
 	;
-	startfd < aroscbase->acb_numslots && aroscbase->acb_fd_array[startfd];
+	startfd < PosixCBase->fd_slots && PosixCBase->fd_array[startfd];
 	startfd++
     );
 
@@ -93,37 +103,33 @@ int __getfirstfd(register int startfd)
 
 int __getfdslot(int wanted_fd)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
-    if (wanted_fd>=aroscbase->acb_numslots)
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
+    if (wanted_fd>=PosixCBase->fd_slots)
     {
         void *tmp;
         
-        tmp = AllocPooled(aroscbase->acb_internalpool, (wanted_fd+1)*sizeof(fdesc *));
+        tmp = AllocPooled(PosixCBase->internalpool, (wanted_fd+1)*sizeof(fdesc *));
         
         if (!tmp) return -1;
 
-        if (aroscbase->acb_fd_array)
+        if (PosixCBase->fd_array)
         {
-            size_t size = aroscbase->acb_numslots*sizeof(fdesc *);
-            CopyMem(aroscbase->acb_fd_array, tmp, size);
-            FreePooled(aroscbase->acb_internalpool, aroscbase->acb_fd_array, size);
+            size_t size = PosixCBase->fd_slots*sizeof(fdesc *);
+            CopyMem(PosixCBase->fd_array, tmp, size);
+            FreePooled(PosixCBase->internalpool, PosixCBase->fd_array, size);
         }
 
-        aroscbase->acb_fd_array = tmp;
-
-        memset(
-            aroscbase->acb_fd_array + aroscbase->acb_numslots,
-            0,
-            (wanted_fd - aroscbase->acb_numslots + 1) * sizeof(fdesc *)
-        );
-        aroscbase->acb_numslots = wanted_fd+1;
+        PosixCBase->fd_array = tmp;
+        PosixCBase->fd_slots = wanted_fd+1;
     }
     else if (wanted_fd < 0)
     {
         errno = EINVAL;
         return -1;
     }
-    else if (aroscbase->acb_fd_array[wanted_fd])
+    else if (PosixCBase->fd_array[wanted_fd])
     {
         close(wanted_fd);
     }
@@ -163,14 +169,16 @@ LONG __oflags2amode(int flags)
 
 int __open(int wanted_fd, const char *pathname, int flags, int mode)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
     BPTR fh = BNULL, lock = BNULL;
     fdesc *currdesc = NULL;
     fcb *cblock = NULL;
     struct FileInfoBlock *fib = NULL;
     LONG  openmode = __oflags2amode(flags);
 
-    if (aroscbase->acb_doupath && pathname[0] == '\0')
+    if (PosixCBase->doupath && pathname[0] == '\0')
     {
         /* On *nix "" is not really a valid file name.  */
         errno = ENOENT;
@@ -348,26 +356,29 @@ err:
 
 fdesc *__alloc_fdesc(void)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     fdesc * desc;
     
-    desc = AllocPooled(aroscbase->acb_internalpool, sizeof(fdesc));
+    desc = AllocPooled(PosixCBase->internalpool, sizeof(fdesc));
     
-    D(bug("Allocated fdesc %x from %x pool\n", desc, aroscbase->acb_internalpool));
+    D(bug("Allocated fdesc %x from %x pool\n", desc, PosixCBase->internalpool));
     
     return desc;
 }
 
 void __free_fdesc(fdesc *desc)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
-    D(bug("Freeing fdesc %x from %x pool\n", desc, aroscbase->acb_internalpool));
-    FreePooled(aroscbase->acb_internalpool, desc, sizeof(fdesc));
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
+    D(bug("Freeing fdesc %x from %x pool\n", desc, PosixCBase->internalpool));
+    FreePooled(PosixCBase->internalpool, desc, sizeof(fdesc));
 }
 
 
 /* FIXME: perhaps this has to be handled in a different way...  */
-int __init_stdfiles(struct aroscbase *aroscbase)
+int __init_stdfiles(struct PosixCIntBase *PosixCBase)
 {
     struct Process *me;
     fcb *infcb = NULL, *outfcb = NULL, *errfcb = NULL;
@@ -469,69 +480,71 @@ int __init_stdfiles(struct aroscbase *aroscbase)
           BADDR(me->pr_CES), BADDR(errfcb->fh)
     ));
 
-    aroscbase->acb_fd_array[STDIN_FILENO]  = indesc;
-    aroscbase->acb_fd_array[STDOUT_FILENO] = outdesc;
-    aroscbase->acb_fd_array[STDERR_FILENO] = errdesc;
+    PosixCBase->fd_array[STDIN_FILENO]  = indesc;
+    PosixCBase->fd_array[STDOUT_FILENO] = outdesc;
+    PosixCBase->fd_array[STDERR_FILENO] = errdesc;
 
     return 1;
 }
 
-static int __copy_fdarray(fdesc **__src_fd_array, int numslots)
+static int __copy_fdarray(fdesc **__src_fd_array, int fd_slots)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     int i;
     
-    for(i = numslots - 1; i >= 0; i--)
+    for(i = fd_slots - 1; i >= 0; i--)
     {
         if(__src_fd_array[i])
         {
             if(__getfdslot(i) != i)
                 return 0;
             
-            if((aroscbase->acb_fd_array[i] = __alloc_fdesc()) == NULL)
+            if((PosixCBase->fd_array[i] = __alloc_fdesc()) == NULL)
                 return 0;
 
-            aroscbase->acb_fd_array[i]->fdflags = __src_fd_array[i]->fdflags;
-            aroscbase->acb_fd_array[i]->fcb = __src_fd_array[i]->fcb;
-            aroscbase->acb_fd_array[i]->fcb->opencount++;
+            PosixCBase->fd_array[i]->fdflags = __src_fd_array[i]->fdflags;
+            PosixCBase->fd_array[i]->fcb = __src_fd_array[i]->fcb;
+            PosixCBase->fd_array[i]->fcb->opencount++;
         }
     }
     
     return 1;
 }
 
-int __init_fd(struct aroscbase *aroscbase)
+int __init_fd(struct PosixCIntBase *PosixCBase)
 {
-    struct aroscbase *paroscbase = __GM_GetBaseParent(aroscbase);
+    struct PosixCIntBase *pPosixCBase =
+        (struct PosixCIntBase *)__GM_GetBaseParent(PosixCBase);
 
-    D(bug("Found parent aroscbase %p with flags 0x%x\n",
-          paroscbase, paroscbase ? paroscbase->acb_flags : 0
+    D(bug("Found parent PosixCBase %p with flags 0x%x\n",
+          pPosixCBase, pPosixCBase ? pPosixCBase->flags : 0
     ));
 
-    if (paroscbase && (paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
-        return __copy_fdarray(paroscbase->acb_fd_array, paroscbase->acb_numslots);
+    if (pPosixCBase && (pPosixCBase->flags & (VFORK_PARENT | EXEC_PARENT)))
+        return __copy_fdarray(pPosixCBase->fd_array, pPosixCBase->fd_slots);
     else
-        return __init_stdfiles(aroscbase);
+        return __init_stdfiles(PosixCBase);
 }
 
-void __exit_fd(struct aroscbase *aroscbase)
+void __exit_fd(struct PosixCIntBase *PosixCBase)
 {
-    int i = aroscbase->acb_numslots;
+    int i = PosixCBase->fd_slots;
     while (i)
     {
-	if (aroscbase->acb_fd_array[--i])
+	if (PosixCBase->fd_array[--i])
 	    close(i);
     }
 }
 
 void __close_on_exec_fdescs(void)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
-
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     int i;
     fdesc *fd;
 
-    for (i = aroscbase->acb_numslots - 1; i >= 0; i--)
+    for (i = PosixCBase->fd_slots - 1; i >= 0; i--)
     {
         if ((fd = __getfdesc(i)) != NULL)
         {
@@ -549,31 +562,32 @@ void __close_on_exec_fdescs(void)
 
 void __updatestdio(void)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     struct Process *me;
     fcb *fcb = NULL;
 
     me = (struct Process *)FindTask(NULL);
 
-    fflush(stdin);
-    fflush(stdout);
-    fflush(stderr);
+    fflush(((struct PosixCBase *)PosixCBase)->_stdin);
+    fflush(((struct PosixCBase *)PosixCBase)->_stdout);
+    fflush(((struct PosixCBase *)PosixCBase)->_stderr);
 
-    fcb = aroscbase->acb_fd_array[STDIN_FILENO]->fcb;
+    fcb = PosixCBase->fd_array[STDIN_FILENO]->fcb;
     if (!(fcb->privflags & _FCB_DONTCLOSE_FH))
         Close(fcb->fh);
     else
         fcb->privflags &= ~_FCB_DONTCLOSE_FH;
     fcb->fh = OpenFromLock(DupLockFromFH(Input()));
 
-    fcb = aroscbase->acb_fd_array[STDOUT_FILENO]->fcb;
+    fcb = PosixCBase->fd_array[STDOUT_FILENO]->fcb;
     if (!(fcb->privflags & _FCB_DONTCLOSE_FH))
         Close(fcb->fh);
     else
         fcb->privflags &= ~_FCB_DONTCLOSE_FH;
     fcb->fh = OpenFromLock(DupLockFromFH(Output()));
 
-    fcb = aroscbase->acb_fd_array[STDERR_FILENO]->fcb;
+    fcb = PosixCBase->fd_array[STDERR_FILENO]->fcb;
     if (!(fcb->privflags & _FCB_DONTCLOSE_FH))
         Close(fcb->fh);
     if (me->pr_CES != BNULL)
@@ -583,7 +597,7 @@ void __updatestdio(void)
     }
     else
     {
-        fcb->fh = aroscbase->acb_fd_array[STDOUT_FILENO]->fcb->fh;
+        fcb->fh = PosixCBase->fd_array[STDOUT_FILENO]->fcb->fh;
         fcb->privflags |= _FCB_DONTCLOSE_FH;
     }
 }

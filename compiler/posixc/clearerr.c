@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function clearerr().
@@ -41,6 +41,6 @@
 
 ******************************************************************************/
 {
-    stream->flags &= ~(_STDIO_EOF | _STDIO_ERROR);
+    stream->flags &= ~(__POSIXC_STDIO_EOF | __POSIXC_STDIO_ERROR);
 } /* clearerr */
 

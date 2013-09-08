@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fgets().
@@ -55,7 +55,7 @@
     BUGS
 
     SEE ALSO
-	fopen(), gets(), fputs(), putc()
+	fopen(), gets(), fputs()
 
     INTERNALS
 
@@ -66,7 +66,7 @@
     if (!fdesc)
     {
     	errno = EBADF;
-	stream->flags |= _STDIO_ERROR;
+	stream->flags |= __POSIXC_STDIO_ERROR;
 
 	return NULL;
     }
@@ -78,11 +78,11 @@
 	if (IoErr ())
 	{
 	    errno = __stdc_ioerr2errno(IoErr());
-	    stream->flags |= _STDIO_ERROR;
+	    stream->flags |= __POSIXC_STDIO_ERROR;
         }
 	else
 	{
-	    stream->flags |= _STDIO_EOF;
+	    stream->flags |= __POSIXC_STDIO_EOF;
 	}
     }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function gets().
@@ -9,6 +9,7 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <libraries/posixc.h>
 #include "__fdesc.h"
 
 #include <string.h>
@@ -51,7 +52,9 @@
 
 ******************************************************************************/
 {
-    char *s = fgets(buffer, BUFSIZ, stdin);
+    struct PosixCBase *PosixCBase = __aros_getbase_PosixCBase();
+
+    char *s = fgets(buffer, BUFSIZ, PosixCBase->_stdin);
     if (s)
     {
 	/* strip trailing \n */

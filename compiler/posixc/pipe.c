@@ -7,9 +7,8 @@
 #include <proto/exec.h>
 #include <exec/exec.h>
 
-#include <stdlib.h>
+#include <stdio.h>
 #include <fcntl.h>
-#include <stdio.h> /* For snprintf */
 #include <errno.h>
 
 #include "__fdesc.h"
@@ -78,7 +77,7 @@
     pipeno++;
     Permit();
 
-    snprintf(pipe_name, sizeof(pipe_name), "PIPE:cpipe-%08x-%d",
+    snprintf(pipe_name, sizeof(pipe_name), "PIPE:cpipe-%08lx-%d",
                (unsigned long)getpid(), pipeno);
     pipe_name[sizeof(pipe_name)-1] = 0;
 

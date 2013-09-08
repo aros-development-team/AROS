@@ -8,6 +8,8 @@
 
 #include "__fdesc.h"
 
+/* FIXME: Do we need this function ? */
+
 /*****************************************************************************
 
     NAME */
@@ -30,8 +32,9 @@
 	!=0 on error, 0 on success.
 
     NOTES
-    This function is not a part of the ISO C standard, it comes from clib2
-    project and was implemented to make porting of abc-shell easier.
+        This function is not a part of the ISO C standard, it comes from clib2
+        project and was implemented to make porting of abc-shell easier.
+        Function should not be used in new code.
 
     EXAMPLE
 

@@ -20,7 +20,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 #include "__exec.h"
 #include "__upath.h"
 #include "__fdesc.h"
@@ -33,14 +33,15 @@ static BOOL containswhite(const char *str);
 static char *escape(const char *str);
 static char *appendarg(char *argptr, int *argptrsize, const char *arg, APTR pool);
 static char *appendargs(char *argptr, int *argptrsize, char *const args[], APTR pool);
-static void __exec_cleanup(struct aroscbase *aroscbase);
+static void __exec_cleanup(struct PosixCIntBase *PosixCBase);
 
 /* Public functions */
 /********************/
 
 APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], char *const envp[])
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     char *filename2 = NULL;
     const char *filename2_dos = NULL;
     int argssize = 512;
@@ -61,13 +62,16 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     /* Use own memory to allocate so that no stdc.library functions need to be called
        exec_pool can also be allocated in __exec_valist2array
     */
-    if (!aroscbase->acb_exec_pool)
-        aroscbase->acb_exec_pool = CreatePool(MEMF_PUBLIC, 1024, 512);
-    if (!aroscbase->acb_exec_pool)
+    if (!PosixCBase->exec_pool)
+        PosixCBase->exec_pool = CreatePool(MEMF_PUBLIC, 1024, 512);
+    if (!PosixCBase->exec_pool)
     {
         errno = ENOMEM;
         goto error;
     }
+
+    /* Remember current stdcbase, child may overwrite it and mess up exiting */
+    PosixCBase->exec_oldstdcbase = PosixCBase->PosixCBase.StdCBase;
 
     /* Search path if asked and no directory separator is present in the file */
     if (searchpath && index(filename, '/') == NULL && index(filename, ':') == NULL)
@@ -96,14 +100,14 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
 
         D(bug("__exec_prepare: PATH('%s')\n", path));
 
-        path_ptr = AllocPooled(aroscbase->acb_exec_pool, strlen(path) + 1);
+        path_ptr = AllocPooled(PosixCBase->exec_pool, strlen(path) + 1);
         strcpy(path_ptr, path);
         path = path_ptr;
 
         D(bug("__exec_prepare: PATH('%s')\n", path));
 
         size = 128;
-        filename2 = AllocPooled(aroscbase->acb_exec_pool, size);
+        filename2 = AllocPooled(PosixCBase->exec_pool, size);
         if (!filename2)
         {
             errno = ENOMEM;
@@ -122,9 +126,9 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
 
             if (len > size)
             {
-                FreePooled(aroscbase->acb_exec_pool, filename2, size);
+                FreePooled(PosixCBase->exec_pool, filename2, size);
                 size = len;
-                filename2 = AllocPooled(aroscbase->acb_exec_pool, size);
+                filename2 = AllocPooled(PosixCBase->exec_pool, size);
                 if (!filename2)
                 {
                     errno = ENOMEM;
@@ -154,9 +158,9 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         filename2_dos = __path_u2a(filename2);
     }
     
-    if (aroscbase->acb_flags & PRETEND_CHILD)
+    if (PosixCBase->flags & PRETEND_CHILD)
     {
-        struct vfork_data *udata = aroscbase->acb_vfork_data;
+        struct vfork_data *udata = PosixCBase->vfork_data;
             
         udata->exec_filename = filename2;
         udata->exec_argv = argv;
@@ -185,12 +189,12 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
               udata->exec_id, udata->child_errno
         ));
         
-        return aroscbase;
+        return (APTR)PosixCBase;
     }
 
     D(bug("__exec_prepare: Not running as PRETEND_CHILD\n"));
-    aroscbase->acb_exec_args = AllocPooled(aroscbase->acb_exec_pool, argssize);
-    aroscbase->acb_exec_args[0] = '\0';
+    PosixCBase->exec_args = AllocPooled(PosixCBase->exec_pool, argssize);
+    PosixCBase->exec_args[0] = '\0';
 
     /* Let's check if it's a script */
     BPTR fh = Open((CONST_STRPTR)filename2_dos, MODE_OLDFILE);
@@ -233,17 +237,17 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
                     {
                         args[0] = filename2;
                     }
-                    aroscbase->acb_exec_args = appendargs(
-                        aroscbase->acb_exec_args, &argssize, args, aroscbase->acb_exec_pool
+                    PosixCBase->exec_args = appendargs(
+                        PosixCBase->exec_args, &argssize, args, PosixCBase->exec_pool
                     );
-                    if (!aroscbase->acb_exec_args)
+                    if (!PosixCBase->exec_args)
                     {
                         errno = ENOMEM;
                         goto error;
                     }
 
                     /* Set file to execute as the script interpreter */
-                    filename2 = AllocPooled(aroscbase->acb_exec_pool, strlen(inter) + 1);
+                    filename2 = AllocPooled(PosixCBase->exec_pool, strlen(inter) + 1);
                     strcpy(filename2, inter);
                     filename2_dos = __path_u2a(filename2);
                 }
@@ -259,18 +263,18 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     }
 
     /* Add arguments to command line args */
-    aroscbase->acb_exec_args = appendargs(aroscbase->acb_exec_args, &argssize, argv + 1, aroscbase->acb_exec_pool);
-    if (!aroscbase->acb_exec_args)
+    PosixCBase->exec_args = appendargs(PosixCBase->exec_args, &argssize, argv + 1, PosixCBase->exec_pool);
+    if (!PosixCBase->exec_args)
     {
         errno = ENOMEM;
         goto error;
     }
 
     /* End command line args with '\n' */
-    if(strlen(aroscbase->acb_exec_args) > 0)
-    	aroscbase->acb_exec_args[strlen(aroscbase->acb_exec_args) - 1] = '\n';
+    if(strlen(PosixCBase->exec_args) > 0)
+        PosixCBase->exec_args[strlen(PosixCBase->exec_args) - 1] = '\n';
     else
-    	strcat(aroscbase->acb_exec_args, "\n");
+        strcat(PosixCBase->exec_args, "\n");
 
     /* let's make some sanity tests */
     struct stat st;
@@ -296,17 +300,17 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     }
 
     /* Set taskname */
-    aroscbase->acb_exec_taskname = AllocPooled(aroscbase->acb_exec_pool, strlen(filename2_dos) + 1);
-    if (!aroscbase->acb_exec_taskname)
+    PosixCBase->exec_taskname = AllocPooled(PosixCBase->exec_pool, strlen(filename2_dos) + 1);
+    if (!PosixCBase->exec_taskname)
     {
         errno = ENOMEM;
         goto error;
     }
-    strcpy(aroscbase->acb_exec_taskname, filename2_dos);
+    strcpy(PosixCBase->exec_taskname, filename2_dos);
     
     /* Load file to execute */
-    aroscbase->acb_exec_seglist = LoadSeg((CONST_STRPTR)filename2_dos);
-    if (!aroscbase->acb_exec_seglist)
+    PosixCBase->exec_seglist = LoadSeg((CONST_STRPTR)filename2_dos);
+    if (!PosixCBase->exec_seglist)
     {
         errno = ENOEXEC;
         goto error;
@@ -370,10 +374,10 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     D(bug("__exec_prepare: Done, returning %p\n", aroscbase));
 
     /* Everything OK */
-    return (APTR)aroscbase;
+    return (APTR)PosixCBase;
 
 error:
-    __exec_cleanup(aroscbase);
+    __exec_cleanup(PosixCBase);
     
     return (APTR)NULL;
 }
@@ -381,7 +385,8 @@ error:
 
 void __exec_do(APTR id)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     char *oldtaskname;
     struct CommandLineInterface *cli = Cli();
     struct Task *self = FindTask(NULL);
@@ -391,14 +396,13 @@ void __exec_do(APTR id)
 
     /* id is unused */
     (void)id;
-    /* When exec is not called under vfork condition id == __aros_getbase_aroscbase()
-       When exec is called under vfork condition we need to use __aros_getbase_aroscbase() in the
-       parent to check for PRETEND_CHILD and find the udata for signaling the child
-    */
 
-    if (aroscbase->acb_flags & PRETEND_CHILD)
+    /* When exec is called under vfork condition, the PRETEND_CHILD flag is set
+       and we need to signal child that exec is called.
+    */
+    if (PosixCBase->flags & PRETEND_CHILD)
     {
-        struct vfork_data *udata = aroscbase->acb_vfork_data;
+        struct vfork_data *udata = PosixCBase->vfork_data;
 
         D(bug("[__exec_do] PRETEND_CHILD\n"));
 
@@ -411,7 +415,7 @@ void __exec_do(APTR id)
 
         /* Clean up in parent */
 	D(bug("[__exec_do] Cleaning up parent\n"));
-        __exec_cleanup(aroscbase);
+        __exec_cleanup(PosixCBase);
         
         /* Continue as parent process */
 	D(bug("[__exec_do] Stop running as PRETEND_CHILD\n"));
@@ -423,13 +427,11 @@ void __exec_do(APTR id)
 
     D(bug("[__exec_do] !PRETEND_CHILD\n"));
 
-    aroscbase->acb_flags |= EXEC_PARENT;
+    PosixCBase->flags |= EXEC_PARENT;
 
     oldtaskname = self->tc_Node.ln_Name;
-    self->tc_Node.ln_Name = aroscbase->acb_exec_taskname;
-    SetProgramName((STRPTR)aroscbase->acb_exec_taskname);
-
-    D(bug("[__exec_do] Running program, aroscbase=%x\n", aroscbase));
+    self->tc_Node.ln_Name = PosixCBase->exec_taskname;
+    SetProgramName((STRPTR)PosixCBase->exec_taskname);
 
 
     /* Set standard files to the standard files from arosc */
@@ -469,11 +471,12 @@ void __exec_do(APTR id)
         }
     }
 
+    D(bug("[__exec_do] Running program, PosixCBase=%x\n", PosixCBase));
     returncode = RunCommand(
-        aroscbase->acb_exec_seglist,
+        PosixCBase->exec_seglist,
         cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
-        (STRPTR)aroscbase->acb_exec_args,
-        strlen(aroscbase->acb_exec_args)
+        (STRPTR)PosixCBase->exec_args,
+        strlen(PosixCBase->exec_args)
     );
 
     /* RunCommand() does not Close() standard output so may not flush either.
@@ -489,30 +492,31 @@ void __exec_do(APTR id)
     if(errchanged)
         me->pr_CES = olderr;
 
-    D(bug("[__exec_do] Program ran, aroscbase=%x, __aros_getbase_aroscbase()=%x\n",
-          aroscbase, __aros_getbase_aroscbase()
+    D(bug("[__exec_do] Program ran, PosixCBase=%x, __aros_getbase_PosixCBase()=%x\n",
+          PosixCBase, __aros_getbase_PosixCBase()
       )
     );
 
     self->tc_Node.ln_Name = oldtaskname;
     SetProgramName((STRPTR)oldtaskname);
 
-    __exec_cleanup(aroscbase);
+    __exec_cleanup(PosixCBase);
     
-    D(bug("[__exec_do] exiting from non-forked\n"));
-    _exit(returncode);
+    D(bug("[__exec_do] exiting from non-forked __exec()\n"));
+    _Exit(returncode);
 }
 
 
 char *const *__exec_valist2array(const char *arg1, va_list list)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     int argc, i;
     static char *no_arg[] = {NULL};
     va_list list2;
     char *argit;
     
-    assert(aroscbase->acb_exec_tmparray == NULL);
+    assert(PosixCBase->exec_tmparray == NULL);
     
     va_copy(list2, list);
     
@@ -525,36 +529,38 @@ char *const *__exec_valist2array(const char *arg1, va_list list)
     )
         argc++;
     
-    if (!(aroscbase->acb_exec_tmparray = malloc((argc+1)*(sizeof(char *)))))
+    if (!(PosixCBase->exec_tmparray = malloc((argc+1)*(sizeof(char *)))))
     {
         D(bug("__exec_valist2array: Memory allocation failed\n"));
         va_end(list2);
         return NULL;
     }
     
-    aroscbase->acb_exec_tmparray[0] = (char *)arg1;
+    PosixCBase->exec_tmparray[0] = (char *)arg1;
     for (argit = va_arg(list2, char *), i = 1;
          i <= argc; /* i == argc will copy the NULL pointer */
          argit = va_arg(list2, char *), i++
     )
     {
         D(bug("arg %d: %x\n", i, argit));
-        aroscbase->acb_exec_tmparray[i] = argit;
+        PosixCBase->exec_tmparray[i] = argit;
     }
    
     va_end(list2);
     
-    return aroscbase->acb_exec_tmparray;
+    return PosixCBase->exec_tmparray;
 }
 
 
 void __exec_cleanup_array()
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
-    if (aroscbase->acb_exec_tmparray)
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
+    if (PosixCBase->exec_tmparray)
     {
-        free((void *)aroscbase->acb_exec_tmparray);
-        aroscbase->acb_exec_tmparray = NULL;
+        free((void *)PosixCBase->exec_tmparray);
+        PosixCBase->exec_tmparray = NULL;
     }
 }
 
@@ -661,18 +667,24 @@ static char *appendargs(char *argptr, int *argssizeptr, char *const args[], APTR
     return argptr;
 }
 
-static void __exec_cleanup(struct aroscbase *aroscbase)
+static void __exec_cleanup(struct PosixCIntBase *PosixCBase)
 {
     D(bug("__exec_cleanup: me(%x)\n", FindTask(NULL)));
 
-    if (aroscbase->acb_exec_pool)
+    if (PosixCBase->exec_pool)
     {
-        DeletePool(aroscbase->acb_exec_pool);
-        aroscbase->acb_exec_pool = NULL;
+        DeletePool(PosixCBase->exec_pool);
+        PosixCBase->exec_pool = NULL;
     }
-    if (aroscbase->acb_exec_seglist)
+    if (PosixCBase->exec_seglist)
     {
-        UnLoadSeg(aroscbase->acb_exec_seglist);
-        aroscbase->acb_exec_seglist = (BPTR)NULL;
+        UnLoadSeg(PosixCBase->exec_seglist);
+        PosixCBase->exec_seglist = (BPTR)NULL;
+    }
+
+    if (PosixCBase->exec_oldstdcbase)
+    {
+        PosixCBase->PosixCBase.StdCBase = PosixCBase->exec_oldstdcbase;
+        PosixCBase->exec_oldstdcbase = NULL;
     }
 }

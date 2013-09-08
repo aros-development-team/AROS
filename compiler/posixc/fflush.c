@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function fflush().
 */
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 
 #include <exec/types.h>
 #include <exec/lists.h>
@@ -50,16 +50,17 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
     /* flush all streams opened for output */
     if (!stream)
     {
 	FILENODE *fn;
 
-	ForeachNode (&aroscbase->acb_stdio_files, fn)
+	ForeachNode (&PosixCBase->stdio_files, fn)
 	{
-	    if (fn->File.flags & _STDIO_WRITE)
+	    if (fn->File.flags & __POSIXC_STDIO_WRITE)
 	    {
 	    	fdesc *fdesc = __getfdesc(fn->File.fd);
 
@@ -81,7 +82,7 @@
     {
     	fdesc *fdesc = __getfdesc(stream->fd);
 
-	if (!fdesc || !(stream->flags & _STDIO_WRITE))
+	if (!fdesc || !(stream->flags & __POSIXC_STDIO_WRITE))
 	{
 	    errno = EBADF;
 	    return EOF;

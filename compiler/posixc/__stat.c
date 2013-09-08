@@ -14,7 +14,6 @@
 #include <time.h>
 
 #include "__stat.h"
-#include "__arosc_privdata.h"
 
 #include <sys/stat.h>
 #include <aros/debug.h>
@@ -583,6 +582,8 @@ static void __fill_statbuffer(
     sb->st_ino     = hash;    /* hash value will be truncated if st_ino size is
                                  smaller than uint64_t, but it's ok */
     sb->st_size    = (off_t)fib->fib_Size;
+    /* FIXME: Update to properly handle the struct timespec fields
+       st_atim, st_mtim and st_ctim */
     sb->st_atime   =
     sb->st_ctime   =
     sb->st_mtime   = (fib->fib_Date.ds_Days * 24*60 + fib->fib_Date.ds_Minute + __stdc_gmtoffset()) * 60 +

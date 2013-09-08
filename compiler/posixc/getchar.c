@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function getchar().
@@ -10,6 +10,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "__fdesc.h"
+
+#include "__posixc_intbase.h"
 
 #define _STDIO_H_NOMACRO
 #include <stdio.h>
@@ -46,6 +48,9 @@
 
 ******************************************************************************/
 {
-    return fgetc(stdin);
+    struct PosixCBase *PosixCBase = 
+        (struct PosixCBase *)__aros_getbase_PosixCBase();
+
+    return fgetc(PosixCBase->_stdin);
 } /* getc */
 

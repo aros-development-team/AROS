@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function execvp().
+    POSIX.1-2008 function execvp().
 */
 
 #include <aros/debug.h>
@@ -13,7 +13,6 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "__arosc_privdata.h"
 #include "__exec.h"
 
 /*****************************************************************************

@@ -2,7 +2,7 @@
     Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function fsync().
+    POSIX.1-2008 function fsync().
 */
 
 #include <exec/types.h>
@@ -10,13 +10,12 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <errno.h>
+#include <fcntl.h>
 #include "__fdesc.h"
 
 /*****************************************************************************
 
     NAME */
-
-#include <fcntl.h>
 #include <unistd.h>
 
 	int fsync(

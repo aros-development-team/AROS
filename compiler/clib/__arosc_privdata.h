@@ -42,22 +42,8 @@ struct aroscbase
     /* malloc.c */
     APTR acb_mempool;
 
-    /* __stdio.c */
-    struct MinList acb_stdio_files;
-
     /* clock.c */
     clock_t acb_starttime;
-
-    /* __open.c */
-    int acb_numslots;
-    struct _fdesc **acb_fd_array;
-
-    /* umask.c */
-    mode_t acb_umask;
-
-    /* Used by chdir() */
-    int  acb_cd_changed;
-    BPTR acb_cd_lock;
 
     /* __arosc_usedata  */
     APTR  acb_process_returnaddr;
@@ -77,17 +63,6 @@ struct aroscbase
     /* flock.c */
     struct List *acb_file_locks;
     
-    /* __vfork.c */
-    struct vfork_data *acb_vfork_data;
-    
-    /* __exec.c */
-    BPTR acb_exec_seglist;
-    char *acb_exec_args;
-    char *acb_exec_taskname;
-    APTR acb_exec_pool;
-    char **acb_exec_tmparray;
-    struct Library *acb_exec_aroscbase;
-
     /* rand */
     unsigned int acb_srand_seed;
 
@@ -101,18 +76,6 @@ struct aroscbase
 };
 
 /* acb_flags */
-
-/* When a program is started with the exec functions and from vfork,
-   this is indicated in the flags of the library.
-   This way the child can use the parent arosc library during its initialization
-   phase */
-#define EXEC_PARENT 0x00000001
-#define VFORK_PARENT 0x00000002
-
-/* This flag is set by vfork() to correctly report child process ID during
-   execution of child code, even though that it's actually executed by parent
-   process until execve() is called. */
-#define PRETEND_CHILD 0x00000004
 
 /* By default arosc.library creates new arosc_privdata when opened if 
    pr_ReturnAddr has changed (for example during RunCommand()). Setting 

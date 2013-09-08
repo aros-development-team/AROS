@@ -2,17 +2,15 @@
     Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    C99 function system().
+    POSIX.1-2008 function system().
 */
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 
 #include <dos/dos.h>
 #include <proto/dos.h>
-//#include <utility/tagitem.h>
 #include <unistd.h>
 #include <errno.h>
-//#include <sys/types.h>
 #include <sys/wait.h>
 
 #include "__fdesc.h"
@@ -52,12 +50,13 @@ static int system_no_sh(const char *string);
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     BPTR lock;
     APTR old_proc_window;
     struct Process *me;
 
-    if (!aroscbase->acb_doupath)
+    if (!PosixCBase->doupath)
         return system_no_sh(string);
     
     if (string == NULL || string[0] == '\0')
@@ -84,7 +83,8 @@ static int system_no_sh(const char *string);
 
 static int system_sh(const char *string)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     pid_t pid = vfork();
     int status;
 
@@ -98,7 +98,7 @@ static int system_sh(const char *string)
     }
     else if(pid == 0)
     {
-	execl((aroscbase->acb_doupath ? "/bin/sh" : "bin:sh"), "sh", "-c", string, (char *) NULL);
+	execl((PosixCBase->doupath ? "/bin/sh" : "bin:sh"), "sh", "-c", string, (char *) NULL);
 	_exit(127);
     }
     else
