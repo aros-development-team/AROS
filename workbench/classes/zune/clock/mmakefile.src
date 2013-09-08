@@ -10,7 +10,7 @@ INCLUDE_FILES := clock.h
 %build_module \
     mmake=workbench-classes-zune-clock \
     modname=Clock modtype=mcc \
-    conffile=clock.conf
+    conffile=clock.conf uselibs=stdc
     
 %copy_includes path=zune
     

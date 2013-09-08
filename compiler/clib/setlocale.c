@@ -29,7 +29,7 @@
         The lconv struct
 
     NOTES
-        arosstdc.library only support "C" locale. So only NULL or
+        stdc.library only support "C" locale. So only NULL or
         "C" are accepted for locale and this function does not
         have an effect.
 

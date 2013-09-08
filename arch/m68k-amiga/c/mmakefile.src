@@ -35,7 +35,7 @@ USER_AFLAGS := -I$(GENINCDIR) -Os
 
 AROS_BOOT := $(BINDIR)/boot
 
-USER_LDFLAGS := -noarosc
+USER_LDFLAGS := -noarosc -nostdc
 
 FILES := gdbstub
 
@@ -52,7 +52,7 @@ FILES := gdbstop
 CFILES := SetPatchAROS
 AFILES := newstackswap
 USER_INCLUDES := -isystem $(SRCDIR)/rom/dos/include
-USER_LDFLAGS  := -L$(GENDIR)/lib -noarosc
+USER_LDFLAGS  := -L$(GENDIR)/lib -noarosc -nostdc
 
 %build_prog mmake=workbench-c-m68k-setpatcharos progname=SetPatchAROS \
     files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_BOOT) \

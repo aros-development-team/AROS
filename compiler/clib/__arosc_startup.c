@@ -235,7 +235,7 @@
         In normal operation this function does not return.
         If this function returns it means that this function was called in a
         context where jmp_buf for exit was not initialized. Likely cause is
-        a module that opened arosstdc.library.
+        a module that opened stdc.library.
         Be sure to capture this situation.
 
     EXAMPLE

@@ -82,7 +82,7 @@ $(GENDIR)/$(CURDIR)/vgapi_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
 %build_module mmake=workbench-libs-vega \
     modname=vega modtype=library linklibname=OpenVG \
     files="$(LIBRARY_SOURCES)" \
-    uselibs="galliumauxiliary"
+    uselibs="galliumauxiliary stdcio stdc"
 
 %common
 

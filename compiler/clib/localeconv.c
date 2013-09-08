@@ -59,7 +59,7 @@ static const struct lconv _lconv =
         The lconv struct
 
     NOTES
-        arosstdc.library only support "C" locale so always the same data
+        stdc.library only support "C" locale so always the same data
         is returned.
 
     EXAMPLE

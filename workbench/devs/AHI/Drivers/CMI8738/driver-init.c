@@ -36,6 +36,9 @@ struct DriverBase* AHIsubBase;
 
 struct DosLibrary* DOSBase;
 struct Library*             ExpansionBase = NULL;
+#ifdef __AROS__
+struct Library * StdCBase = NULL;
+#endif
 
 struct VendorDevice
 {
@@ -86,6 +89,15 @@ DriverInit( struct DriverBase* ahisubbase )
         Req( "CMI8738: Unable to open 'expansion.library' version 1.\n" );
         return FALSE;
     }
+
+#ifdef __AROS__
+    StdCBase = OpenLibrary( "stdc.library", 0 );
+    if( StdCBase == NULL )
+    {
+        Req( "CMI8738: Unable to open 'stdc.library'.\n" );
+        return FALSE;
+    }
+#endif
 
     if (!ahi_pci_init(ahisubbase))
     {
@@ -212,6 +224,11 @@ DriverCleanup( struct DriverBase* AHIsubBase )
   FreeVec( CMI8738Base->driverdatas ); 
 
   ahi_pci_exit();
+
+#ifdef __AROS__
+  if (StdCBase)
+      CloseLibrary( StdCBase );
+#endif
 
   if (ExpansionBase)
     CloseLibrary( (struct Library*) ExpansionBase);
