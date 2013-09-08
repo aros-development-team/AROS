@@ -12,17 +12,10 @@ USER_CFLAGS :=  -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/include \
 
 TESTDIR := $(BINDIR)/Tests
 
-# Lists of files
-#   - Common always exist in the link library.
-
-COMMON	:= \
-	__filesystem_support
-
 #   - Shared are in either the shared linklib, or the arosc module
 SHARED	:= \
         __arosc_init \
-	__arosc_userdata \
-	sharecontextwithchild
+	__arosc_userdata
 
 # Note: These files are compiled differently
 #       depending on whether -DAROSC_ROM is used
@@ -33,8 +26,7 @@ ROM_ONLY := \
 ROM_COMMON :=
 
 # Objects for libarosc.static.a, from the static build.
-ROM_STATIC := \
-	__filesystem_support
+ROM_STATIC :=
 
 
 #MM- core-linklibs : linklibs-arosc linklibs-rom
@@ -50,10 +42,6 @@ ROM_STATIC := \
 #MM      linklibs-clib-common-clean linklibs-rom-clean
 
 #MM- linklibs-clib-quick : linklibs-clib-shared-quick linklibs-rom-quick
-
-%build_linklib mmake=linklibs-clib-common \
-    libname=arosccommon files="$(COMMON) $(add-prefix arch/,$(COMMON_ARCH))" \
-    libdir=$(OBJDIR)
 
 
 #   Also build $(AROS_LIB)/libarosc.static.a
@@ -78,14 +66,12 @@ AROSC_LINKLIB_OBJS := $(addsuffix .o, \
     $(addprefix $(OBJDIR)/,$(COMMON)) \
     $(addprefix $(OBJDIR)/arch/,$(COMMON_ARCH)) \
 )
-USER_LDFLAGS := -L$(OBJDIR)
 %build_module mmake=linklibs-clib-shared \
     modname=arosc modtype=library objdir=$(OBJDIR)/shared \
     cflags="$(CFLAGS) -DAROSC_SHARED" \
     files="$(SHARED)" \
     linklibobjs=$(AROSC_LINKLIB_OBJS) \
-    uselibs="arosccommon posixc_rel stdcio_rel stdc_rel"
-USER_LDFLAGS :=
+    uselibs="posixc_rel stdcio_rel stdc_rel"
 
 # x86_64 needs a reduced 32bit libarosc.a lib.
 %rule_compile_multi basenames=$(ROM_COMMON) \
