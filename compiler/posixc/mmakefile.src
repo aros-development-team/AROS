@@ -197,7 +197,12 @@ POSIXC_ARCH := \
     vfork_longjmp
 
 POSIXC_LINKLIB := \
-    posixc_environ
+    ftime \
+    gcvt \
+    getopt \
+    getopt_long \
+    posixc_environ \
+    setlinebuf
 
 # Both in linklib and shared library
 POSIXC_COMMON := \

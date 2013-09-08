@@ -73,12 +73,16 @@ char	*optarg;		/* argument associated with option */
     RESULT
 
     NOTES
+        Due to the usage of global variables this function is now put in
+        the static link library. This means each compilation unit using
+        getopt_long has it's own getopt_long state tracking.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        getopt_long()
 
     INTERNALS
 

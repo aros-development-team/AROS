@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2001 function gcvt().
@@ -35,13 +35,17 @@
 	The address of the string pointed to by buf.
 
     NOTES
+        This function is deprecated and not present anymore in POSIX.1-2008.
+        This function should not be used in new code and old code should
+        be fixed to remove usage.
+        This function is part of libposixc.a and may be removed in the future.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	sprintf()
+	stdc.library/sprintf()
 
     INTERNALS
 
