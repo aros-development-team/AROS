@@ -1,9 +1,9 @@
 /*
-    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 #include "__fdesc.h"
 
 #include <exec/types.h>
@@ -50,7 +50,8 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     BPTR oldlock = BNULL;
     BPTR newlock = BNULL;
     BPTR handle = BNULL;
@@ -77,14 +78,14 @@
     }
     oldlock = CurrentDir( newlock );
 
-    if( aroscbase->acb_cd_changed )
+    if( PosixCBase->cd_changed )
     {
         UnLock( oldlock );
     }
     else
     {
-        aroscbase->acb_cd_changed = TRUE;
-        aroscbase->acb_cd_lock    = oldlock;
+        PosixCBase->cd_changed = TRUE;
+        PosixCBase->cd_lock    = oldlock;
     }       
     return 0;
 

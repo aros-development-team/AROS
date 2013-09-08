@@ -2,15 +2,18 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: utility internal function __path_u2a()
+    Desc: PosixC internal functions for Amiga<>UNIX filename conversion
     Lang: english
 */
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 static const char *__path_devstuff_u2a(const char *path);
 static void  __path_normalstuff_u2a(const char *path, char *buf);
@@ -50,12 +53,19 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     const char *newpath;
 
+    D(bug("Entering __path_u2a(\"%s\")\n", upath));
+
     /* Does the path really need to be converted?  */
-    if (!aroscbase->acb_doupath)
+    if (!PosixCBase->doupath)
+    {
+        D(bug("__path_u2a: No conversion needed\n"));
+
         return upath;
+    }
 
     /* Safety check.  */
     if (upath == NULL)
@@ -65,7 +75,9 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     }
 
     /* Some scripts (config.guess) try to access /.attbin
-       which is MacOS-specific thing. Block it. */
+       which is MacOS-specific thing. Block it.
+       FIXME: Can we avod this hack ?
+    */
     if (!strncmp(upath, "/.attbin", 8))
     {
 	errno = ENOENT;
@@ -79,8 +91,10 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     newpath = __path_devstuff_u2a(upath);
     if (!newpath)
     {
+        D(bug("__path_u2a: No /dev stuff, doing normal conversion\n"));
+
         /* Else, convert it normally */
-	newpath = realloc_nocopy(aroscbase->acb_apathbuf, strlen(upath) + 1);
+	newpath = realloc_nocopy(PosixCBase->upathbuf, strlen(upath) + 1);
 
 	if (newpath == NULL)
 	{
@@ -88,10 +102,12 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 	    return NULL;
 	}
 
-        aroscbase->acb_apathbuf = (char *)newpath;
-	__path_normalstuff_u2a(upath, aroscbase->acb_apathbuf);
+        PosixCBase->upathbuf = (char *)newpath;
+	__path_normalstuff_u2a(upath, PosixCBase->upathbuf);
     }
 
+    D(bug("__path_u2a: converted path \"%s\"\n", newpath));
+      
     return newpath;
 }
 
@@ -130,7 +146,8 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     const char *old_apath = apath;
     char ch, *upath, *old_upath;
     size_t size = 0;
@@ -152,7 +169,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
         return NULL;
     }
 
-    if (!aroscbase->acb_doupath)
+    if (!PosixCBase->doupath)
         return apath;
 	
     while ((ch = *apath++))
@@ -166,14 +183,14 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     if (size == 0)
         return "";
 
-    old_upath = realloc_nocopy(aroscbase->acb_apathbuf, 1 + size + 1);
+    old_upath = realloc_nocopy(PosixCBase->upathbuf, 1 + size + 1);
     if (old_upath == NULL)
     {
 	errno = ENOMEM;
 	return NULL;
     }
 
-    aroscbase->acb_apathbuf = old_upath;
+    PosixCBase->upathbuf = old_upath;
     upath = ++old_upath;
     apath = old_apath;
 

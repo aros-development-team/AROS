@@ -16,6 +16,7 @@
 #include "__fdesc.h"
 #include "__upath.h"
 
+/* The following function is located in chmod.c */
 ULONG prot_u2a(mode_t protect);
 
 /*****************************************************************************

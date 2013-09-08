@@ -19,12 +19,12 @@ struct __sFILE
     int flags;
 };
 
-#define _STDIO_EOF    0x0001L
-#define _STDIO_ERROR  0x0002L
-#define _STDIO_WRITE  0x0004L
-#define _STDIO_READ   0x0008L
-#define _STDIO_RDWR   _STDIO_WRITE | _STDIO_READ
-#define _STDIO_APPEND 0x0010L
+#define __POSIXC_STDIO_EOF    0x0001L
+#define __POSIXC_STDIO_ERROR  0x0002L
+#define __POSIXC_STDIO_WRITE  0x0004L
+#define __POSIXC_STDIO_READ   0x0008L
+#define __POSIXC_STDIO_RDWR   __POSIXC_STDIO_WRITE | __POSIXC_STDIO_READ
+#define __POSIXC_STDIO_APPEND 0x0010L
 
 typedef struct
 {

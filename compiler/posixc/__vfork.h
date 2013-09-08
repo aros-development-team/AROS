@@ -2,7 +2,7 @@
 #define __VFORK_H
 
 /*
-    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,6 +15,8 @@
 
 #include "__fdesc.h"
 
+struct PosixCIntBase;
+
 struct vfork_data
 {
     struct vfork_data *prev;
@@ -24,8 +26,8 @@ struct vfork_data
     int *parent_olderrorptr;
     jmp_buf parent_oldexitjmp, parent_newexitjmp;
     BYTE parent_signal;
-    struct aroscbase *parent_aroscbase;
-    APTR parent_mempool;
+    struct PosixCIntBase *parent_posixcbase;
+    struct StdCBase *parent_stdcbase;
     int parent_cd_changed;
     BPTR parent_cd_lock;
     BPTR parent_curdir;
@@ -39,7 +41,7 @@ struct vfork_data
     int child_executed;
     int child_error, child_errno;
     BYTE child_signal;
-    struct aroscbase *child_aroscbase;
+    struct PosixCIntBase *child_posixcbase;
     jmp_buf child_exitjmp;
 
     const char *exec_filename;

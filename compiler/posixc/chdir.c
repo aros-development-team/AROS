@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function chdir().
 */
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 
 #include <exec/types.h>
 #include <dos/dos.h>
@@ -54,7 +54,8 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     BPTR oldlock;
     BPTR newlock;
     
@@ -73,14 +74,14 @@
 
     oldlock = CurrentDir( newlock );
     
-    if( aroscbase->acb_cd_changed )
+    if( PosixCBase->cd_changed )
     {
     	UnLock( oldlock );
     }
     else
     {
-    	aroscbase->acb_cd_changed = TRUE;
-	aroscbase->acb_cd_lock    = oldlock;
+    	PosixCBase->cd_changed = TRUE;
+	PosixCBase->cd_lock    = oldlock;
     }    
     
     return 0;
@@ -91,18 +92,18 @@ error:
     return -1;
 }
 
-int __init_chdir(struct aroscbase *aroscbase)
+int __init_chdir(struct PosixCIntBase *PosixCBase)
 {
-    aroscbase->acb_cd_changed = FALSE;
+    PosixCBase->cd_changed = FALSE;
 
     return 1;
 }
 
-void __exit_chdir(struct aroscbase *aroscbase)
+void __exit_chdir(struct PosixCIntBase *PosixCBase)
 {
-    if( aroscbase->acb_cd_changed )
+    if( PosixCBase->cd_changed )
     {
-        BPTR lock = CurrentDir( aroscbase->acb_cd_lock );
+        BPTR lock = CurrentDir( PosixCBase->cd_lock );
 
         UnLock( lock );
     }

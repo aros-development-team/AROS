@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function readdir().
+    POSIX.1-2008 function readdir().
 */
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 
 #include <dos/dos.h>
 #include <proto/dos.h>
@@ -64,7 +64,8 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     int const max = MAXFILENAMELENGTH > NAME_MAX ? NAME_MAX : MAXFILENAMELENGTH;
     fdesc *desc;
 
@@ -85,7 +86,7 @@
     	return NULL;
     }
 
-    if (aroscbase->acb_doupath && dir->pos == 0)
+    if (PosixCBase->doupath && dir->pos == 0)
     {
         dir->ent.d_type = DT_DIR;
         dir->ent.d_name[0]='.';
@@ -93,7 +94,7 @@
         dir->ent.d_reclen = 1;
     } 
     else
-    if (aroscbase->acb_doupath && dir->pos == 1)
+    if (PosixCBase->doupath && dir->pos == 1)
     {
         dir->ent.d_type = DT_DIR;
         dir->ent.d_name[0]='.';
@@ -122,7 +123,7 @@
         while (TRUE)
         {
 
-            if (aroscbase->acb_doupath && name[0] == '.')
+            if (PosixCBase->doupath && name[0] == '.')
             { 
                 if (name[1] == '.')
                 {      

@@ -3,8 +3,6 @@
     $Id$
 */
 
-#include "__arosc_privdata.h"
-
 #include <aros/symbolsets.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -39,29 +37,30 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
-    mode_t oumask = aroscbase->acb_umask;
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    mode_t oumask = PosixCBase->umask;
 
-    aroscbase->acb_umask = numask;
+    PosixCBase->umask = numask;
 
     return oumask;
 }
 
-static int __umask_init(struct aroscbase *aroscbase)
+static int __umask_init(struct PosixCIntBase *PosixCBase)
 {
-    struct aroscbase *paroscbase;
+    struct PosixCIntBase *pPosixCBase;
 
-    paroscbase = __GM_GetBaseParent(aroscbase);
+    pPosixCBase = __GM_GetBaseParent(PosixCBase);
 
     /* TODO: Implement umask() properly
        Currently information is not used in any of the related functions
     */
 
      /* Child of exec*()/vfork() functions inherit umask of parent */
-    if (paroscbase && (paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
-        aroscbase->acb_umask = paroscbase->acb_umask;
+    if (pPosixCBase && (pPosixCBase->flags & (VFORK_PARENT | EXEC_PARENT)))
+        PosixCBase->umask = pPosixCBase->umask;
     else
-        aroscbase->acb_umask = S_IWGRP|S_IWOTH;
+        PosixCBase->umask = S_IWGRP|S_IWOTH;
 
     return 1;
 }

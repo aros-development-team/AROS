@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function vfscanf()
@@ -120,11 +120,11 @@ static int __ungetc(int c, void *_h)
 
 	if (errno)
 	{
-	    h->stream->flags |= _STDIO_ERROR;
+	    h->stream->flags |= __POSIXC_STDIO_ERROR;
 	}
 	else
 	{
-	    h->stream->flags |= _STDIO_EOF;
+	    h->stream->flags |= __POSIXC_STDIO_EOF;
 	}
 	
 	c = EOF;
@@ -155,11 +155,11 @@ static int __getc(void *_h)
 	if (c)
 	{
 	    errno = __stdc_ioerr2errno(c);
-	    h->stream->flags |= _STDIO_ERROR;
+	    h->stream->flags |= __POSIXC_STDIO_ERROR;
 	}
 	else
 	{
-	    h->stream->flags |= _STDIO_EOF;
+	    h->stream->flags |= __POSIXC_STDIO_EOF;
 	}
 	
 	c = EOF;

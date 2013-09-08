@@ -1,0 +1,13 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_AFLAGS 	:= -I$(GENINCDIR)
+
+#MM- compiler-posixc-arm : includes-asm_h-arm
+
+%build_archspecific \
+  mainmmake=compiler-posixc maindir=compiler/posixc \
+  arch=arm \
+  asmfiles="vfork vfork_longjmp"
+
+%common

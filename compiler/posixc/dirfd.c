@@ -2,7 +2,7 @@
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function dirfd().
+    POSIX.1-2008 function dirfd().
 */
 
 #define DEBUG 0

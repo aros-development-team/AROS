@@ -34,11 +34,11 @@ typedef struct _fdesc
     int  fdflags;
 } fdesc;
 
-struct aroscbase;
+struct PosixCIntBase;
 int __getfdslots(void);
 void __getfdarray(APTR *arrayptr, int *slotsptr);
 void __setfdarray(APTR array, int slots);
-void __setfdarraybase(struct aroscbase *base);
+void __setfdarraybase(struct PosixCIntBase *PosixCBase2);
 fdesc *__getfdesc(register int fd);
 void __setfdesc(register int fd, fdesc *fdesc);
 int __getfdslot(int wanted_fd);

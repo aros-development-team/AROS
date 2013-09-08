@@ -1,12 +1,12 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: stdio internals
     Lang: English
 */
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,15 +86,15 @@ int __oflags2sflags(int omode)
     switch (omode & O_ACCMODE)
     {
     	case O_RDONLY:
-	    ret = _STDIO_READ;
+	    ret = __POSIXC_STDIO_READ;
     	    break;
 
 	case O_WRONLY:
-	    ret = _STDIO_WRITE;
+	    ret = __POSIXC_STDIO_WRITE;
 	    break;
 
 	case O_RDWR:
-	    ret = _STDIO_READ | _STDIO_WRITE;
+	    ret = __POSIXC_STDIO_READ | __POSIXC_STDIO_WRITE;
 	    break;
 
         default:
@@ -103,20 +103,21 @@ int __oflags2sflags(int omode)
     }
 
     if (omode & O_APPEND)
-    	ret |= _STDIO_APPEND;
+        ret |= __POSIXC_STDIO_APPEND;
 
     return ret;
 }
 
-int __init_stdio(struct aroscbase *aroscbase)
+int __init_stdio(struct PosixCIntBase *PosixCIntBase)
 {
-    NEWLIST(&aroscbase->acb_stdio_files);
+    struct PosixCBase *PosixCBase = (struct PosixCBase *)PosixCIntBase;
+    NEWLIST(&PosixCIntBase->stdio_files);
 
     if
     (
-        !(stdin  = fdopen(STDIN_FILENO, NULL))  ||
-    	!(stdout = fdopen(STDOUT_FILENO, NULL)) ||
-    	!(stderr = fdopen(STDERR_FILENO, NULL))
+        !(PosixCBase->_stdin  = fdopen(STDIN_FILENO, NULL))  ||
+    	!(PosixCBase->_stdout = fdopen(STDOUT_FILENO, NULL)) ||
+    	!(PosixCBase->_stderr = fdopen(STDERR_FILENO, NULL))
     )
     {
     	SetIoErr(ERROR_NO_FREE_STORE);
@@ -127,5 +128,3 @@ int __init_stdio(struct aroscbase *aroscbase)
 }
 
 ADD2OPENLIB(__init_stdio, 5);
-
-

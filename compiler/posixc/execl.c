@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function execl().
+    POSIX.1-2008 function execl().
 */
 
 #include <aros/debug.h>
@@ -10,7 +10,6 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "__arosc_privdata.h"
 #include "__exec.h"
 
 /*****************************************************************************

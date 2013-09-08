@@ -1,11 +1,9 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function close().
 */
-
-#include "__arosc_privdata.h"
 
 #include <unistd.h>
 #include <stdlib.h>

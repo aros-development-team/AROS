@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,8 +9,7 @@
 
 #include <errno.h>
 
-#include "__arosc_privdata.h"
-#include "__filesystem_support.h"
+#include "__posixc_intbase.h"
 #include "__stat.h"
 #include "__upath.h"
 
@@ -59,12 +58,13 @@ static BPTR __lock(
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase = 
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     int res = 0;
     BPTR lock;
 
     /* check for empty path before potential conversion from "." to "" */
-    if (aroscbase->acb_doupath && path && *path == '\0')
+    if (PosixCBase->doupath && path && *path == '\0')
     {
         errno = ENOENT;
         return -1;

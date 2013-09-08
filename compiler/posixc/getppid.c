@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,7 +11,7 @@
 #include <assert.h>
 
 #include "__vfork.h"
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 
 /*****************************************************************************
 
@@ -41,14 +41,15 @@
 
 ******************************************************************************/
 {
-  struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+  struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
   struct Task *ParentTask;
   struct ETask *eThisTask;
   struct ETask *et;
 
-  if(aroscbase->acb_flags & PRETEND_CHILD)
+  if(PosixCBase->flags & PRETEND_CHILD)
   {
-    struct vfork_data *udata = aroscbase->acb_vfork_data;
+    struct vfork_data *udata = PosixCBase->vfork_data;
     eThisTask = GetETask(udata->child);
   }
   else

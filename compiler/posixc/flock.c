@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     4.4BSD function flock().
@@ -16,7 +16,7 @@
 #include <errno.h>
 
 #include "__fdesc.h"
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 
 struct FlockNode
 {
@@ -84,8 +84,8 @@ void RemoveFromList(struct SignalSemaphore *sem);
 	Since advisory locks semantics is equal to exec.library semaphores
 	semantics, semaphores are used to implement locks. For a given file
 	a semaphore named FLOCK(path) is created where path is a full path to
-	the file. Locks held by a given process are stored on aroscbase->acb_file_locks
-	and released during process exit.
+	the file. Locks held by a given process are stored in
+        PosixCBase->file_locks and released during process exit.
 
 ******************************************************************************/
 {
@@ -220,23 +220,25 @@ void RemoveFromList(struct SignalSemaphore *sem);
 
 LONG AddToList(struct SignalSemaphore *sem)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     struct FlockNode *node;
     node = AllocMem(sizeof(struct FlockNode), MEMF_ANY | MEMF_CLEAR);
     if(!node)
 	return -1;
     node->sem = sem;
-    AddHead(aroscbase->acb_file_locks, (struct Node*) node);
+    AddHead((struct List *)PosixCBase->file_locks, (struct Node*) node);
     return 0;
 }
 
 void RemoveFromList(struct SignalSemaphore *sem)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     struct FlockNode *varNode;
     struct Node *tmpNode;
     
-    ForeachNodeSafe(aroscbase->acb_file_locks, varNode, tmpNode)
+    ForeachNodeSafe(PosixCBase->file_locks, varNode, tmpNode)
     {
 	if(varNode->sem == sem)
 	{
@@ -248,17 +250,17 @@ void RemoveFromList(struct SignalSemaphore *sem)
 }
 
 /* __init_flocks is called during library init.
-   aroscbase->acb_file_locks will be initialized here and then copied
+   PosixCBase->file_locks will be initialized here and then copied
    in all libbases for each open of the library.
    This means that a global file_locks list is used, this is needed as flocks
    are used for locking between different processes.
 */
-int __init_flocks(struct aroscbase *base)
+int __init_flocks(struct PosixCIntBase *PosixCBase)
 {
-    base->acb_file_locks = AllocMem(sizeof(struct MinList), MEMF_PUBLIC);
-    NEWLIST(base->acb_file_locks);
+    PosixCBase->file_locks = AllocMem(sizeof(struct MinList), MEMF_PUBLIC);
+    NEWLIST(PosixCBase->file_locks);
 
-    D(bug("[flock] Initialized lock list at 0x%p\n", base->acb_file_locks));
+    D(bug("[flock] Initialized lock list at 0x%p\n", PosixCBase->file_locks));
 
     return 1;
 }
@@ -267,14 +269,14 @@ int __init_flocks(struct aroscbase *base)
    This function will be called when no other program has arosc.library open
    so no protection should be needed.
 */
-void __unlock_flocks(struct aroscbase *base)
+void __unlock_flocks(struct PosixCIntBase *PosixCBase)
 {
     struct FlockNode *lock;
     struct SignalSemaphore *sem;
 
-    D(bug("[flock] Freeing lock list at 0x%p\n", base->acb_file_locks));
+    D(bug("[flock] Freeing lock list at 0x%p\n", PosixCBase->file_locks));
 
-    while ((lock = (struct FlockNode *) REMHEAD(base->acb_file_locks)))
+    while ((lock = (struct FlockNode *) REMHEAD(PosixCBase->file_locks)))
     {
         sem = lock->sem;
         ReleaseSemaphore(sem);
@@ -288,8 +290,8 @@ void __unlock_flocks(struct aroscbase *base)
         FreeVec(sem->ss_Link.ln_Name);
         FreeVec(sem);
     }
-    FreeMem(base->acb_file_locks, sizeof(struct MinList));
-    base->acb_file_locks = NULL;
+    FreeMem(PosixCBase->file_locks, sizeof(struct MinList));
+    PosixCBase->file_locks = NULL;
 }
 
 ADD2INITLIB(__init_flocks, 1);

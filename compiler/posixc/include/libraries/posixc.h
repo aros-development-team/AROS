@@ -13,11 +13,16 @@
 #include <libraries/stdc.h>
 #include <libraries/stdcio.h>
 
+#define _STDIO_H_NOMACRO
+#include <stdio.h>
+
 struct PosixCBase
 {
     struct Library lib;
     struct StdCBase *StdCBase;
     struct StdCIOBase *StdCIOBase;
+
+    FILE *_stdin, *_stdout, *_stderr;
 };
 
 struct PosixCBase *__aros_getbase_PosixCBase(void);

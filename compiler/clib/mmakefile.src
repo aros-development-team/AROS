@@ -25,77 +25,26 @@ COMMON	:= \
 #   - Shared are in either the shared linklib, or the arosc module
 SHARED	:= \
         __arosc_init \
-        __arosc_nixmain \
 	__arosc_userdata \
 	__assert \
-	__get_default_file \
-        __exec \
-        __fdesc \
-	__stat \
-	__stdio \
-	__upath \
-	__vfork \
+        __upath \
 	access \
 	basename \
 	cfgetispeed \
 	cfgetospeed \
 	cfsetispeed \
 	cfsetospeed \
-	chdir \
-	chmod \
 	chown \
-	clearerr \
-	close \
-	closedir \
 	creat \
-	dirfd \
 	dirname \
-	dup \
-	dup2 \
 	endgrent \
 	endpwent \
-        execl \
-        execlp \
-        execv \
-        execve \
-        execvp \
-    fchdir \
-	fchmod \
 	fchown \
-	fclose \
-	fcntl \
-	fdopen \
-	feof \
-	ferror \
-	fflush \
-	fgetc \
-	fgetpos \
-	fgets \
-	fileno \
-	flock \
-	fopen \
-	fprintf \
-	fscanf \
-	fsync \
-        fputc \
-	fputs \
-	fread \
-	freopen \
-	fseek \
-	fseeko \
-	fsetpos \
-	fstat \
-	ftell \
 	ftello \
-	ftruncate \
-	fwrite \
         getc \
-        getchar \
 	getcwd \
 	getfsstat \
 	statfs \
-        getpid \
-        getrlimit \
 	gettimeofday \
         getuid \
         geteuid \
@@ -107,32 +56,21 @@ SHARED	:= \
 	getgrent \
 	getlogin \
 	getpgrp \
-	getppid \
         getpwent \
         getpwnam \
         getpwuid \
-        gets \
-	isatty \
         kill \
 	link \
-	lseek \
-        lstat \
 	mkdir \
 	mknod \
         mkstemp \
 	mktemp \
-	open \
-	opendir \
 	pathconf \
 	pclose \
 	perror \
-	pipe \
-	popen \
 	printf \
         putc \
 	puts \
-	read \
-	readdir \
 	readlink \
 	regex/regerror	\
 	regex/regexec	\
@@ -144,7 +82,6 @@ SHARED	:= \
 	rewinddir \
         rmdir \
 	scanf \
-	seekdir \
 	setbuf \
 	setgid \
 	setgrent \
@@ -152,7 +89,6 @@ SHARED	:= \
         setpwent \
         setrlimit \
 	setuid \
-	setvbuf \
 	sharecontextwithchild \
 	sigaction \
 	sigaddset \
@@ -164,14 +100,11 @@ SHARED	:= \
 	sigprocmask \
 	sigsuspend \
 	sleep \
-	stat \
 	strerror \
 	sync \
 	sysconf \
 	symlink \
-	system \
 	tcgetattr \
-	telldir \
 	tempnam \
 	times \
 	tmpfile \
@@ -179,22 +112,12 @@ SHARED	:= \
 	truncate \
 	tcsetattr \
 	ttyname \
-	umask \
-	ungetc \
 	uname \
 	unlink \
-	updatestdio \
 	utime \
 	utimes \
-	vfprintf \
-	vfscanf \
 	vprintf \
-	vscanf \
-	write
-
-SHARED_ARCH := \
-    vfork \
-    vfork_longjmp
+	vscanf
 
 SHARED_LINKLIB := \
 	ftime \
@@ -259,7 +182,7 @@ USER_LDFLAGS := -L$(OBJDIR)
 %build_module mmake=linklibs-clib-shared \
     modname=arosc modtype=library objdir=$(OBJDIR)/shared \
     cflags="$(CFLAGS) -DAROSC_SHARED" \
-    files="$(SHARED) $(SHARED_ARCH)" \
+    files="$(SHARED)" \
     linklibfiles=$(SHARED_LINKLIB) linklibobjs=$(AROSC_LINKLIB_OBJS) \
     uselibs="arosccommon posixc_rel stdcio_rel stdc_rel"
 USER_LDFLAGS :=

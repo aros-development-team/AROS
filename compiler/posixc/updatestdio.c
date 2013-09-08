@@ -20,8 +20,10 @@
         dos.library functions like SelectInput(), ...
 
     INPUTS
+        -
 
     RESULT
+        -
 
     NOTES
         stdin, stdout and stderr will be flushed before they are updated.

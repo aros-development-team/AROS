@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function getrlimit().
+    POSIX.1-2008 function getrlimit().
 */
 
 #include <errno.h>
