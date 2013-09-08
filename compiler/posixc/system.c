@@ -33,12 +33,19 @@ static int system_no_sh(const char *string);
 	const char *string)
 
 /*  FUNCTION
+        Execute a command string. If string is NULL then 1 will be returned.
 
     INPUTS
+        string - command to execute or NULL
 
     RESULT
+        Return value of command executed. If value < 0 errno indicates error.
+        1 is return if string is NULL.
 
     NOTES
+        The system() version of posixc.library will translate UNIX<>Amiga
+        if applicable as well as use a shell for executing text batch
+        commands.
 
     EXAMPLE
 

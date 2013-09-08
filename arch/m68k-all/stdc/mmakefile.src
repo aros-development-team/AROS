@@ -16,7 +16,7 @@ USER_AFLAGS  := -I$(GENINCDIR) -DDEBUG=0
 #MM- test-clib: test-clib-$(AROS_TARGET_CPU)
 #MM- test-clib-m68k: includes-asm_h-m68k test-clib-m68k-jmptests
 
-USER_AFLAGS := -I$(GENINCDIR) -DDEBUG_MAGIC=0x40506070 -DDEBUG=1
+USER_AFLAGS := -I$(GENINCDIR) # -DDEBUG_MAGIC=0x40506070 -DDEBUG=1
 AFILES:=jmptests setjmp longjmp ../posixc/vfork ../posixc/vfork_longjmp
 
 %build_prog mmake=test-clib-m68k-jmptests files= asmfiles=$(AFILES) \

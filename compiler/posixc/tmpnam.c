@@ -85,7 +85,7 @@ extern char *_mktemp(char *);
 
 	if (s == NULL)
 		s = buf;
-	(void)snprintf(s, L_tmpnam, "%stmp.%lu.XXXXXX", P_tmpdir, tmpcount);
+	(void)snprintf(s, L_tmpnam, "%stmp.%u.XXXXXX", P_tmpdir, tmpcount);
 	++tmpcount;
 	return (_mktemp(s));
 }

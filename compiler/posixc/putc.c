@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function putc().
@@ -36,6 +36,6 @@
         fputc()
 
     INTERNALS
-        putc() is just an alias for fputc()
+        putc() is an alias for fputc()
 
 ******************************************************************************/

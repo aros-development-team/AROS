@@ -1,9 +1,12 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function vscanf()
 */
+
+#include <libraries/posixc.h>
+
 #include <stdarg.h>
 
 /*****************************************************************************
@@ -40,6 +43,8 @@
 
 ******************************************************************************/
 {
-    return vfscanf (stdin, format, args);
+    struct PosixCBase *PosixCBase = __aros_getbase_PosixCBase();
+
+    return vfscanf (PosixCBase->_stdin, format, args);
 } /* vscanf */
 

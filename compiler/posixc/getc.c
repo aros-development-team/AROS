@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function getc().
@@ -35,6 +35,6 @@
 	fgetc(), fputc(), putc()
 
     INTERNALS
-        getc() is just an alias for fgetc().
+        getc() is an alias for fgetc().
 
 ******************************************************************************/

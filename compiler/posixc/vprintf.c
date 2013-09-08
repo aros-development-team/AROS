@@ -1,9 +1,12 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function vprintf()
 */
+
+#include <libraries/posixc.h>
+
 #include <stdarg.h>
 
 /*****************************************************************************
@@ -39,6 +42,8 @@
 
 ******************************************************************************/
 {
-    return vfprintf (stdout, format, args);
+    struct PosixCBase *PosixCBase = __aros_getbase_PosixCBase();
+
+    return vfprintf (PosixCBase->_stdout, format, args);
 } /* vprintf */
 

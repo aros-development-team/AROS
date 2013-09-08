@@ -2,7 +2,7 @@
     This file has been released into the Public Domain.
     $Id$
 
-    POSIX function tmpfile().
+    POSIX.1-2008 function tmpfile().
 */
 
 #include <sys/param.h>
