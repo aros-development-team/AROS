@@ -1532,7 +1532,7 @@ diff -ruN gcc-4.6.2/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-4.6.2.aros
 @@ -0,0 +1,56 @@
 +  const ctype_base::mask*
 +  ctype<char>::classic_table() throw()
-+  { return __ctype_b; }
++  { return *__ctype_b_ptr; }
 +
 +  ctype<char>::ctype(__c_locale, const mask* __table, bool __del, 
 +		     size_t __refs) 

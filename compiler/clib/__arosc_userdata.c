@@ -7,8 +7,6 @@
 #include <aros/symbolsets.h>
 #include <stdlib.h>
 
-#include "__ctype.h"
-
 #include <aros/debug.h>
 
 /* Provide local aroscbase for the static version of arosc */

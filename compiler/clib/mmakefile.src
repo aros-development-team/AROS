@@ -84,7 +84,6 @@ SHARED	:= \
         __arosc_startup \
 	__arosc_userdata \
 	__assert \
-	__ctype \
 	__get_default_file \
 	__env \
         __exec \
@@ -331,13 +330,11 @@ SHARED_LINKLIB := \
 	ftime \
 	gcvt \
 	usleep \
-        __ctype_linklib
 
 # Note: These files are compiled differently
 #       depending on whether -DAROSC_ROM is used
 #       or not.
 ROM_ONLY := \
-	__ctype \
 	__arosc_userdata \
 	__assert_kernel \
 	__vcformat \
