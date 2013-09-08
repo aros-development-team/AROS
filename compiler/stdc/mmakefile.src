@@ -5,6 +5,7 @@ STDC := \
     __exitfunc \
     __optionallibs \
     __signal \
+    __stdc_assert \
     __stdc_gmtoffset \
     __stdc_ioerr2errno \
     __stdc_startup \
@@ -194,6 +195,7 @@ STDC_COMMON := \
     math/infinity
 
 STDCIO := \
+    __stdcio_assert \
     __stdcio_init \
     __stdio \
     clearerr \
