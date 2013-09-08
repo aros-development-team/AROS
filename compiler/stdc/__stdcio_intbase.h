@@ -12,6 +12,8 @@
 
 #include <libraries/stdcio.h>
 
+#include "__stdio.h"
+
 struct StdCIOIntBase
 {
     struct StdCIOBase StdCIOBase;
@@ -19,6 +21,15 @@ struct StdCIOIntBase
     /* getenv.c */
     LONG varsize;
     char *envvar;
+
+    /* __stdio.c */
+    void *streampool;
+    struct MinList files;
+    struct __sFILE intstdin, intstdout, intstderr;
+
+    /* tmpnam.c */
+    char tmpnambuffer[L_tmpnam];
+    unsigned long filecount;
 };
 
 #endif //__STDCIO_INTBASE_H

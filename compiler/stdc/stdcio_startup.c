@@ -12,7 +12,7 @@
 #include <proto/stdcio.h>
 #include <libraries/stdcio.h>
 
-static int __stdcdos_startup(void)
+static int __stdcio_startup(void)
 {
     struct StdCIOBase *StdCIOBase = __aros_getbase_StdCIOBase();
 
@@ -21,4 +21,4 @@ static int __stdcdos_startup(void)
     return StdCIOBase->StdCBase != NULL;
 }
 
-ADD2INIT(__stdcdos_startup, -50);
+ADD2INIT(__stdcio_startup, -50);

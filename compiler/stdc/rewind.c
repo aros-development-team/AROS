@@ -2,7 +2,7 @@
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Change the position in a stream.
+    C99 function rewind()
 */
 
 /*****************************************************************************
@@ -17,6 +17,7 @@
 
 /*  FUNCTION
 	Change the current position in a stream to the beginning.
+        It also clears the error indication of the stream.
 
     INPUTS
 	stream - Modify this stream

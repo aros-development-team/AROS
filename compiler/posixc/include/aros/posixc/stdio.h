@@ -11,6 +11,8 @@
 /* C99 */
 #include <aros/stdc/stdio.h>
 
+#include <sys/arosc.h>
+
 #include <aros/types/off_t.h>
 #include <aros/types/ssize_t.h>
 
@@ -18,6 +20,13 @@
 
 #define P_tmpdir	"T:"		/* Default temporary path */
 
+#undef stderr
+#undef stdin
+#undef stdout
+
+#define stderr (__get_arosc_userdata()->acud_stderr)
+#define stdin  (__get_arosc_userdata()->acud_stdin)
+#define stdout (__get_arosc_userdata()->acud_stdout)
 
 __BEGIN_DECLS
 

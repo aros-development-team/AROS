@@ -2,7 +2,7 @@
 #define _STDC_STDIO_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file stdio.h
@@ -15,8 +15,6 @@
     This is too compiler specific to handle at the moment.
 */
 #include <stdarg.h>
-
-#include <sys/arosc.h>
 
 #include <aros/types/size_t.h>
 
@@ -46,12 +44,20 @@ typedef struct __sFILE FILE;
 
 #define TMP_MAX		10240		/* Must be > 10000 */
 
-#define stderr (__get_arosc_userdata()->acud_stderr)
-#define stdin  (__get_arosc_userdata()->acud_stdin)
-#define stdout (__get_arosc_userdata()->acud_stdout)
-
-
 __BEGIN_DECLS
+
+/* Functions are provided in static linklib in order to be able to access internal
+   fields without needing to include proto/stdcio.h.
+   These functions will be different if one links with or without posixc.
+*/
+FILE *__stdio_getstdin(void);
+FILE *__stdio_getstdout(void);
+FILE *__stdio_getstderr(void);
+
+#define stdin __stdio_getstdin()
+#define stdout __stdio_getstdout()
+#define stderr __stdio_getstderr()
+
 
 /* Internal functions */
 int __vcformat (void * data, int (*outc)(int, void *),
