@@ -1,8 +1,8 @@
 /*
-    Copyright © 2003-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function rmdir().
+    POSIX.1-2008 function rmdir().
 */
 
 #include <stdio.h>

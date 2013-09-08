@@ -1,8 +1,8 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function getuid().
+    POSIX.1-2008 function getuid().
 */
 
 /*****************************************************************************
@@ -22,7 +22,7 @@
     RESULT
 	
     NOTES
-        Always 0 is returned.
+        Always 0 is returned for the moment.
 
     EXAMPLE
 

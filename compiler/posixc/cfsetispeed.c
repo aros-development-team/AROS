@@ -1,6 +1,6 @@
 #include <errno.h>
 
-#include "__arosc_termios.h"
+#include "__termios.h"
 
 /* FIXME: Add autodoc */
 int cfsetispeed(struct termios *__termios_p, speed_t speed)

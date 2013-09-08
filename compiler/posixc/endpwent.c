@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -34,8 +34,8 @@
 
 ******************************************************************************/
 {
-    /* FIXME: Implement endpwent() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    /* TODO: Implement endpwent() */
+    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
     
     return;
 }

@@ -18,73 +18,14 @@ TESTDIR := $(BINDIR)/Tests
 COMMON	:= \
 	__filesystem_support \
 	getopt \
-	getopt_long \
-        swab
+	getopt_long
 
 #   - Shared are in either the shared linklib, or the arosc module
 SHARED	:= \
         __arosc_init \
 	__arosc_userdata \
-	cfgetispeed \
-	cfgetospeed \
-	cfsetispeed \
-	cfsetospeed \
-	creat \
-	endgrent \
-	endpwent \
-	fchown \
-	gettimeofday \
-        getuid \
-        geteuid \
-        getgid \
-        getegid \
-        getgrgid \
-	getgroups \
-	getgrnam \
-	getgrent \
-	getlogin \
-	getpgrp \
-        getpwent \
-        getpwnam \
-        getpwuid \
-        kill \
-	link \
-	mknod \
-	mktemp \
-	pathconf \
-	regex/regerror	\
-	regex/regexec	\
-	regex/regcomp	\
-	regex/regfree	\
-	rewinddir \
-        rmdir \
-	setgid \
-	setgrent \
 	setlinebuf \
-        setpwent \
-        setrlimit \
-	setuid \
-	sharecontextwithchild \
-	sigaction \
-	sigaddset \
-	sigdelset \
-	sigemptyset \
-	sigfillset \
-	sigismember \
-	sigpending \
-	sigprocmask \
-	sigsuspend \
-	sleep \
-	sync \
-	sysconf \
-	tcgetattr \
-	times \
-	truncate \
-	tcsetattr \
-	ttyname \
-	uname \
-	unlink \
-	utime
+	sharecontextwithchild
 
 SHARED_LINKLIB := \
 	ftime \

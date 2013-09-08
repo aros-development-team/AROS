@@ -4,6 +4,7 @@
 */
 
 #include <aros/debug.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -34,8 +35,9 @@
 
 ******************************************************************************/
 {
-    /* FIXME: Implement endgrent() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    /* TODO: Implement endgrent() */
+    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
+    errno = ENOSYS;
 
     return;
 }

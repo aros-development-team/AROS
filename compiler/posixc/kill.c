@@ -1,8 +1,8 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function kill().
+    POSIX.1-2008 function kill().
 */
 
 #include <aros/debug.h>
@@ -39,7 +39,7 @@
 ******************************************************************************/
 {
     /* TODO: Implement kill() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
     errno = ENOSYS;
 
     return -1;

@@ -1,8 +1,8 @@
-#ifndef __AROSC_TERMIOS_H
-#define __AROSC_TERMIOS_H
+#ifndef ___TERMIOS_H
+#define ___TERMIOS_H
 
 /*
- * Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+ * Copyright © 1995-2013, The AROS Development Team. All rights reserved.
  * $Id$
  *
  * internal header file for POSIX.1-2008 termios.h support
@@ -22,4 +22,4 @@ struct termios_intern {
     speed_t c_ospeed;	/* output speed */
 };
 
-#endif /* __AROSC_TERMIOS_H */
+#endif /* ___TERMIOS_H */

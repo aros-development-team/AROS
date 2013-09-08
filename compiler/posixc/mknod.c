@@ -1,10 +1,11 @@
 /*
-    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function mknod().
 */
 
+#include <aros/debug.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -42,6 +43,7 @@
 ******************************************************************************/
 {
     /* TODO: Implement mknod() */
+    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
     errno = EPERM;
     return -1;
 } /* mknod */

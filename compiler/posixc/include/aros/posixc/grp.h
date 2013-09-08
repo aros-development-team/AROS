@@ -25,7 +25,7 @@ struct group *getgrgid(gid_t gid);
 struct group *getgrnam(const char *name);
 /* NOTIMPL int getgrgid_r(gid_t gid, struct group *grp, char *buffer, size_t bufsize,
         struct group **result); */
-/* NOTIMPL int getgrname_r(const char *name, struct group *grp, char *buffer,
+/* NOTIMPL int getgrnam_r(const char *name, struct group *grp, char *buffer,
         size_t bufsize, struct group **resule); */
 void setgrent(void);
 

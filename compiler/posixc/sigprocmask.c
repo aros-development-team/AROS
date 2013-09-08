@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function sigprocmask().
@@ -41,7 +41,7 @@
 ******************************************************************************/
 {
     /* TODO: Implement sigprocmask() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
     errno = ENOSYS;
     
     return -1;

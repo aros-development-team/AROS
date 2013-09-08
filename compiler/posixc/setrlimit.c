@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function setrlimit().
+    POSIX.1-2008 function setrlimit().
 */
 
 #include <errno.h>
@@ -29,6 +29,7 @@
 	On success, returns 0. -1 and errno on error.
 
     NOTES
+        Currently always returns -1 and errno is set to EINVAL
 
     EXAMPLE
 
