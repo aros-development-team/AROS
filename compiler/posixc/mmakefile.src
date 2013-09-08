@@ -16,17 +16,24 @@ POSIXC := \
     __vfork \
     access \
     basename \
+    cfgetispeed \
+    cfgetospeed \
+    cfsetispeed \
+    cfsetospeed \
     chdir \
     chmod \
     chown \
     clearerr \
     close \
     closedir \
+    creat \
     dirfd \
     dirname \
     drand48 \
     dup \
     dup2 \
+    endgrent \
+    endpwent \
     erand48 \
     execl \
     execlp \
@@ -35,6 +42,7 @@ POSIXC := \
     execvp \
     fchdir \
     fchmod \
+    fchown \
     fclose \
     fcntl \
     fdopen \
@@ -64,26 +72,45 @@ POSIXC := \
     fwrite \
     getchar \
     getcwd \
+    getegid \
+    geteuid \
     getenv \
     getfsstat \
+    getgid \
+    getgrent \
+    getgrgid \
+    getgrnam \
+    getgroups \
     getloadavg \
+    getlogin \
+    getpgrp \
     getpid \
     getppid \
+    getpwent \
+    getpwnam \
+    getpwuid \
     getrlimit \
     gets \
+    gettimeofday \
+    getuid \
     isatty \
     jrand48 \
+    kill \
     lcong48 \
+    link \
     lrand48 \
     lseek \
     lstat \
     mkdir \
+    mknod \
     mkstemp \
+    mktemp \
     mrand48 \
     nanosleep \
     nrand48 \
     open \
     opendir \
+    pathconf \
     pclose \
     perror \
     pipe \
@@ -98,31 +125,62 @@ POSIXC := \
     readdir \
     readlink \
     realpath \
+    regex/regerror \
+    regex/regexec \
+    regex/regcomp \
+    regex/regfree \
     remove \
     rename \
     rewind \
+    rewinddir \
+    rmdir \
     scanf \
     seed48 \
     seekdir \
     setbuf \
     setenv \
+    setgid \
+    setgrent \
+    setpwent \
+    setrlimit \
+    setuid \
     setvbuf \
+    sigaction \
+    sigaddset \
+    sigdelset \
+    sigemptyset \
+    sigfillset \
+    sigismember \
+    sigpending \
+    sigprocmask \
+    sigsuspend \
+    sleep \
     srand48 \
     stat \
     statfs \
     strerror \
     strptime \
+    swab \
     symlink \
+    sync \
+    sysconf \
     system \
+    tcgetattr \
+    tcsetattr \
     telldir \
     tempnam \
+    times \
     tmpfile \
     tmpnam \
+    truncate \
+    ttyname \
     umask \
+    uname \
     ungetc \
     unsetenv \
     updatestdio \
     usleep \
+    utime \
     utimes \
     vfprintf \
     vfscanf \

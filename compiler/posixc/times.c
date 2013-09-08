@@ -1,8 +1,8 @@
 /*
-    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function times().
+    POSIX.1-2008 function times().
 */
 
 #include <aros/debug.h>
@@ -39,7 +39,7 @@
 ******************************************************************************/
 {
     /* TODO: Implement times() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
     errno = ENOSYS;
     
     tms->tms_utime  = 0;

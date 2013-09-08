@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,7 +37,7 @@
 ******************************************************************************/
 {
     /* TODO: Implement setpwent() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
     errno = ENOSYS;
 
     return;

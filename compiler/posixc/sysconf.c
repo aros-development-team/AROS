@@ -1,8 +1,8 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function sysconf().
+    POSIX.1-2008 function sysconf().
 */
 
 #include <errno.h>
@@ -25,11 +25,11 @@
     RESULT
 
     NOTES
+        Currently only _SC_ARG_MAX handling is implemented
 
     EXAMPLE
 
     BUGS
-        Currently only _SC_ARG_MAX handling is implemented
 
     SEE ALSO
 

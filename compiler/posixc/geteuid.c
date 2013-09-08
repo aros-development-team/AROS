@@ -1,11 +1,9 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function geteuid().
+    POSIX.1-2008 function geteuid().
 */
-
-#include <sys/types.h>
 
 /*****************************************************************************
 
@@ -24,7 +22,8 @@
     RESULT
 	
     NOTES
-    	
+        Always returns 0 for the moment.
+
     EXAMPLE
 
     BUGS

@@ -5,8 +5,6 @@
     Query the current time and/or timezone.
 */
 
-#include "__arosc_privdata.h"
-
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
@@ -26,7 +24,6 @@ static void __init_timerbase(void);
 
     NAME */
 #include <sys/time.h>
-#include <unistd.h>
 
 	int gettimeofday (
 
@@ -97,7 +94,8 @@ static void __init_timerbase(void);
     BUGS
 
     SEE ALSO
-	ctime(), asctime(), localtime(), time()
+	stdc.library/ctime(), stdc.library/asctime(), stdc.library/localtime(),
+        stdc.library/time()
 
     INTERNALS
 
@@ -173,7 +171,10 @@ static void __init_timerbase(void)
 static void __exit_timerbase(APTR dummy)
 {
     if (TimerBase != NULL)
+    {
         CloseDevice((struct IORequest *)&__timereq);
+        TimerBase = NULL;
+    }
 }
 
 ADD2EXIT(__exit_timerbase, 0);

@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function closedir().
+    POSIX.1-2008 function closedir().
 */
 
 #include <proto/dos.h>

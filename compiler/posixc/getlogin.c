@@ -1,6 +1,8 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
     $Id$
+
+    POSIX.1-2008 function getlogin().
 */
 
 #include <aros/debug.h>
@@ -37,7 +39,7 @@
 ******************************************************************************/
 {
     /* TODO: Implement getlogin() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
     
     errno = ENOSYS;
     return NULL;
