@@ -74,10 +74,6 @@ COMMON	:= \
 	strxfrm \
 	swab
 
-COMMON_ARCH := \
-	longjmp \
-	setjmp
-
 #   - Shared are in either the shared linklib, or the arosc module
 SHARED	:= \
         __arosc_gmtoffset \
@@ -388,10 +384,6 @@ ROM_COMMON := \
 	strspn \
 	strstr \
 	strtod
-
-ROM_COMMON_ARCH := \
-	longjmp \
-	setjmp
 
 # Objects for libarosc.static.a, from the static build.
 ROM_STATIC := \

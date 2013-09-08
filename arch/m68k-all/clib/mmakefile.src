@@ -4,28 +4,9 @@ include $(TOP)/config/make.cfg
 USER_AFLAGS  := -I$(GENINCDIR) -DDEBUG=0
 
 %build_archspecific \
-  mainmmake=linklibs-clib-common maindir=compiler/clib \
-  arch=m68k \
-  asmfiles="longjmp setjmp"
-
-%build_archspecific \
   mainmmake=linklibs-clib-shared maindir=compiler/clib/shared \
   arch=m68k \
   asmfiles="vfork vfork_longjmp"
-
-#MM- linklibs-clib-common-m68k : includes-asm_h-m68k
-#MM- linklibs-clib-shared-m68k : includes-asm_h-m68k
-
-USER_AFLAGS := -I$(GENINCDIR) -DDEBUG_MAGIC=0x40506070 -DDEBUG=1
-AFILES:=jmptests setjmp longjmp vfork vfork_longjmp
-
-#MM- test-clib: test-clib-$(AROS_TARGET_CPU)
-#MM- test-clib-m68k: includes-asm_h-m68k test-clib-m68k-jmptests
-
-%build_prog mmake=test-clib-m68k-jmptests files= asmfiles=$(AFILES) \
-            progname=jmptests targetdir=$(AROS_TESTS)/clib \
-            usestartup=no
-
 
 %common
 

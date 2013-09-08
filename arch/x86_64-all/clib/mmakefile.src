@@ -2,17 +2,10 @@
 include $(TOP)/config/make.cfg
 
 USER_AFLAGS 	:= -I$(GENINCDIR)
-%build_archspecific \
-  mainmmake=linklibs-clib-common maindir=compiler/clib \
-  arch=x86_64 \
-  asmfiles="longjmp setjmp"
 
 %build_archspecific \
   mainmmake=linklibs-clib-shared maindir=compiler/clib/shared \
   arch=x86_64 \
   asmfiles="vfork vfork_longjmp"
-
-#MM linklibs-clib-common-x86_64 : includes-asm_h-x86_64
-#MM linklibs-clib-shared-x86_64 : includes-asm_h-x86_64
 
 %common
