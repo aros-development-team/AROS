@@ -24,12 +24,12 @@
 #define _ISpunct    0x0400  /* .,:;!? */
 #define _ISalnum    (_ISalpha | _ISdigit)
 
-extern const unsigned short int * __ctype_b;
-extern const unsigned char * __ctype_toupper;
-extern const unsigned char * __ctype_tolower;
+extern const unsigned short int * const * const __ctype_b_ptr;
+extern const unsigned char * const * const __ctype_toupper_ptr;
+extern const unsigned char * const * const __ctype_tolower_ptr;
 
 #define _istype(c,type) \
-    (__ctype_b[((int) (c)) & 0xff] & (unsigned short int) (type))
+    ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (type))
 
 #define __ctype_make_func(__name__, __body__)    \
 __BEGIN_DECLS                          \
@@ -50,8 +50,8 @@ __ctype_make_func(isblank,  _istype(c,_ISblank))
 __ctype_make_func(iscntrl,  _istype(c,_IScntrl))
 __ctype_make_func(ispunct,  _istype(c,_ISpunct))
 __ctype_make_func(isalnum,  _istype(c,_ISalnum))
-__ctype_make_func(toupper,  (int)__ctype_toupper[((int)(c)) & 0xff])
-__ctype_make_func(tolower,  (int)__ctype_tolower[((int)(c)) & 0xff])
+__ctype_make_func(toupper,  (*__ctype_toupper_ptr)[((int)(c)) & 0xff])
+__ctype_make_func(tolower,  (*__ctype_tolower_ptr)[((int)(c)) & 0xff])
 
 /* POSIX.1-2008/XSI extensions that are provided in stdc.library */
 __ctype_make_func(isascii,  (c & ~0x7F) == 0)

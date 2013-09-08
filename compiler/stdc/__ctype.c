@@ -1,25 +1,12 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-/* Move these symbols out of the way, because
- * we're going to be using a slighty different
- * definition of these for the static library
- * (a const *)
- */
-#define __ctype_b __ctype_b_external
-#define __ctype_toupper __ctype_toupper_external
-#define __ctype_tolower __ctype_tolower_external
-
 #include <aros/symbolsets.h>
+#include <libraries/stdc.h>
+
 #include <ctype.h>
-
-#include "__arosc_privdata.h"
-
-#undef __ctype_b
-#undef __ctype_toupper
-#undef __ctype_tolower
 
 static const unsigned short int __ctype_b_array[256] =
 {
@@ -355,32 +342,32 @@ static const unsigned char __ctype_tolower_array[256] =
     248,249,250,251, 252,253,254,255,
 };
 
-#ifdef AROSC_SHARED
-const unsigned short *__ctype_b = &__ctype_b_array[0];
-const unsigned char  *__ctype_toupper = &__ctype_toupper_array[0];
-const unsigned char  *__ctype_tolower = &__ctype_tolower_array[0];
+/* Pointers have to be available both when in static linklib and
+   internally to stdc.library also
+*/
+const unsigned short int * const __ctype_b = &__ctype_b_array[0];
+const unsigned char * const __ctype_toupper = &__ctype_toupper_array[0];
+const unsigned char * const __ctype_tolower = &__ctype_tolower_array[0];
 
-const struct arosc_ctype *__get_arosc_ctype(void)
+const unsigned short int * const * const __ctype_b_ptr = &__ctype_b;
+const unsigned char * const * const __ctype_toupper_ptr = &__ctype_toupper;
+const unsigned char * const * const __ctype_tolower_ptr = &__ctype_tolower;
+
+#ifndef STDC_STATIC
+static int __ctype_init(struct StdCBase *StdCBase)
 {
-    return &__get_arosc_userdata()->acud_ctype;
-}
-
-static int __ctype_init(struct ExecBase *SysBase)
-{
-    struct arosc_userdata *acud = __get_arosc_userdata();
-
-    acud->acud_ctype.b       = __ctype_b;
-    acud->acud_ctype.toupper = __ctype_toupper;
-    acud->acud_ctype.tolower = __ctype_tolower;
+    /* Currently these values are the same for all libbases
+       but could in theory be changed in the future to make
+       it locale dependent.
+    */
+    StdCBase->__ctype_b = &__ctype_b_array[0];
+    StdCBase->__ctype_toupper = &__ctype_toupper_array[0];
+    StdCBase->__ctype_tolower = &__ctype_tolower_array[0];
 
     return 1;
 }
 
-ADD2INIT(__ctype_init, 20);
-#else
-const unsigned short * const __ctype_b = &__ctype_b_array[0];
-const unsigned char  * const __ctype_toupper = &__ctype_toupper_array[0];
-const unsigned char  * const __ctype_tolower = &__ctype_tolower_array[0];
+ADD2INITLIB(__ctype_init, 20);
 #endif
 
 /*****************************************************************************

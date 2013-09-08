@@ -14,6 +14,11 @@
 struct StdCBase
 {
     struct Library lib;
+
+    /* ctype.h */
+    const unsigned short int * __ctype_b;
+    const unsigned char * __ctype_toupper;
+    const unsigned char * __ctype_tolower;
 };
 
 __BEGIN_DECLS
