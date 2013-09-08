@@ -1,5 +1,5 @@
-#ifndef _SYS_SELECT_H_
-#define _SYS_SELECT_H_
+#ifndef _POSIXC_SYS_SELECT_H_
+#define _POSIXC_SYS_SELECT_H_
 
 /*
     Copyright © 2010-2012, The AROS Development Team. All rights reserved.
@@ -50,4 +50,4 @@ __BEGIN_DECLS
 
 __END_DECLS
 
-#endif /* _SYS_SELECT_H_ */
+#endif /* _POSIXC_SYS_SELECT_H_ */

@@ -1,5 +1,5 @@
-#ifndef _SYS_UIO_H_
-#define _SYS_UIO_H_
+#ifndef _POSIXC_SYS_UIO_H_
+#define _POSIXC_SYS_UIO_H_
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
@@ -19,4 +19,4 @@ ssize_t writev(int fd, const struct iovec *iovec, int count);
 
 __END_DECLS
 
-#endif /* _SYS_UIO_H_ */
+#endif /* _POSIXC_SYS_UIO_H_ */

@@ -1,5 +1,5 @@
-#ifndef _UNISTD_H_
-#define _UNISTD_H_
+#ifndef _POSIXC_UNISTD_H_
+#define _POSIXC_UNISTD_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -459,4 +459,4 @@ __END_DECLS
 void __arosc_set_environptr(char ***environ_ptr);
 char ***__arosc_get_environptr(void);
 
-#endif /* _UNISTD_H_ */
+#endif /* _POSIXC_UNISTD_H_ */

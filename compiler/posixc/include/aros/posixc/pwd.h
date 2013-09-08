@@ -1,5 +1,5 @@
-#ifndef _PWD_H_
-#define	_PWD_H_
+#ifndef _POSIXC_PWD_H_
+#define	_POSIXC_PWD_H_
 
 /*
     Copyright © 2003-2012, The AROS Development Team. All rights reserved.
@@ -37,4 +37,4 @@ void setpwent(void);
 
 __END_DECLS
 
-#endif /* _PWD_H_ */
+#endif /* _POSIXC_PWD_H_ */

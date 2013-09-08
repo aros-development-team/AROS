@@ -1,5 +1,5 @@
-#ifndef _SYS_TIMEB_H_
-#define _SYS_TIMEB_H_
+#ifndef _POSIXC_SYS_TIMEB_H_
+#define _POSIXC_SYS_TIMEB_H_
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
@@ -26,4 +26,4 @@ int ftime(struct timeb *tp);
 
 __END_DECLS
 
-#endif /* _SYS_TIMEB_H_ */
+#endif /* _POSIXC_SYS_TIMEB_H_ */

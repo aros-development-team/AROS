@@ -1,5 +1,5 @@
-#ifndef _SYS_UTSNAME_H
-#define _SYS_UTSNAME_H
+#ifndef _POSIXC_SYS_UTSNAME_H
+#define _POSIXC_SYS_UTSNAME_H
 
 /*
     Copyright © 2008-2012, The AROS Development Team. All rights reserved.
@@ -27,4 +27,4 @@ int uname(struct utsname *name);
 
 __END_DECLS
 
-#endif /* _SYS_UTSNAME_H */
+#endif /* _POSIXC_SYS_UTSNAME_H */

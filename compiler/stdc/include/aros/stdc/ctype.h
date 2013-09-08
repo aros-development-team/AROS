@@ -1,5 +1,5 @@
-#ifndef _CTYPE_H_
-#define _CTYPE_H_
+#ifndef _STDC_CTYPE_H_
+#define _STDC_CTYPE_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -59,4 +59,4 @@ __ctype_make_func(toascii,  c & 0x7F)
 #define _toupper(c) toupper(c)
 #define _tolower(c) tolower(c)
 
-#endif /* _CTYPE_H_ */
+#endif /* _STDC_CTYPE_H_ */

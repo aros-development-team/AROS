@@ -6,8 +6,8 @@
     It is not part of POSIX or C99 but we provide for legacy applications.
 */
 
-#ifndef	_ALLOCA_H
-#define	_ALLOCA_H
+#ifndef	_POSIXC_ALLOCA_H
+#define	_POSIXC_ALLOCA_H
 
 #include <aros/system.h>
 
@@ -27,4 +27,4 @@ void *alloca(size_t size);
 __END_DECLS
 
 
-#endif /* alloca.h */
+#endif /* _POSIXC_ALLOCA_H */

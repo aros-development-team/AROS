@@ -1,5 +1,5 @@
-#ifndef	_UTIME_H_
-#define	_UTIME_H_
+#ifndef	_POSIXC_UTIME_H_
+#define	_POSIXC_UTIME_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -21,4 +21,4 @@ int utime(const char *, const struct utimbuf *);
 
 __END_DECLS
 
-#endif /* !_UTIME_H_ */
+#endif /* !_POSIXC_UTIME_H_ */

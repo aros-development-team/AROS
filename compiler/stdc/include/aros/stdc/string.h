@@ -1,11 +1,14 @@
-#ifndef _STRING_H_
-#define _STRING_H_
+#ifndef _STDC_STRING_H_
+#define _STDC_STRING_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: C99 & POSIX.1-2008 header file string.h
+    C99 & POSIX.1-2008 header file string.h with extra SAS/C and other extensions
+    Also the POSIX.1-2008 extension to string.h will be included in
+    arosstdc.library. This avoids opening of arosnixc.library by programs
+    that only use few simple POSIX string functions.
 */
 #include <aros/system.h>
 
@@ -99,4 +102,4 @@ char * stpblk( const char * str );
 
 __END_DECLS
 
-#endif /* _STRING_H_ */
+#endif /* _STDC_STRING_H_ */

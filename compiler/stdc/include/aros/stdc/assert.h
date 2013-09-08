@@ -1,5 +1,5 @@
-#ifndef _ASSERT_H_
-#define _ASSERT_H_
+#ifndef _STDC_ASSERT_H_
+#define _STDC_ASSERT_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -27,4 +27,4 @@ void __assert(const char *, const char *, unsigned int);
 
 __END_DECLS
 
-#endif /* _ASSERT_H_ */
+#endif /* _STDC_ASSERT_H_ */

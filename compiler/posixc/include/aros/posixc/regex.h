@@ -71,8 +71,8 @@
  *	@(#)regex.h	8.2 (Berkeley) 1/3/94
  */
 
-#ifndef _REGEX_H_
-#define	_REGEX_H_
+#ifndef _POSIXC_REGEX_H_
+#define	_POSIXC_REGEX_H_
 
 #include <aros/system.h>
 
@@ -138,4 +138,4 @@ int	regexec(const regex_t * restrict,
 void	regfree(regex_t *);
 __END_DECLS
 
-#endif /* !_REGEX_H_ */
+#endif /* !_POSIXC_REGEX_H_ */

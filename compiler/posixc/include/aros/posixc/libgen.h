@@ -5,8 +5,8 @@
     POSIX.1-2008 header file libgen.h
 */
 
-#ifndef _LIBGEN_H
-#define _LIBGEN_H
+#ifndef _POSIXC_LIBGEN_H
+#define _POSIXC_LIBGEN_H
 
 #include <aros/system.h>
 
@@ -17,4 +17,4 @@ char *dirname(char *);
 
 __END_DECLS
 
-#endif /* _LIBGEN_H */
+#endif /* _POSIXC_LIBGEN_H */

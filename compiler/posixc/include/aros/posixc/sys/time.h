@@ -1,5 +1,5 @@
-#ifndef _SYS_TIME_H_
-#define _SYS_TIME_H_
+#ifndef _POSIXC_SYS_TIME_H_
+#define _POSIXC_SYS_TIME_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -84,4 +84,4 @@ int utimes(const char *, const struct timeval tvp[2]);
 
 __END_DECLS
 
-#endif /* _SYS_TIME_H_ */
+#endif /* _POSIXC_SYS_TIME_H_ */

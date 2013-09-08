@@ -1,5 +1,5 @@
-#ifndef _SYS_TYPES_H_
-#define _SYS_TYPES_H_
+#ifndef _POSIXC_SYS_TYPES_H_
+#define _POSIXC_SYS_TYPES_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -88,4 +88,4 @@ typedef int32_t                   swblk_t;    /* Swap offset              */
 #define __ntohs(w) AROS_BE2WORD(w)
 #define __ntohl(l) AROS_BE2LONG(l)
 
-#endif /* _SYS_TYPES_H_BSD */
+#endif /* _POSIXC_SYS_TYPES_H_ */

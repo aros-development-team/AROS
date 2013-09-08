@@ -1,5 +1,5 @@
-#ifndef SYS_WAIT_H_
-#define SYS_WAIT_H_
+#ifndef _POSIXC_SYS_WAIT_H_
+#define _POSIXC_SYS_WAIT_H_
 
 /*
     Copyright © 2002-2012, The AROS Development Team. All rights reserved.
@@ -45,4 +45,4 @@ pid_t waitpid(pid_t pid, int *status, int options);
 
 __END_DECLS
 
-#endif /* SYS_WAIT_H_ */
+#endif /* _POSIXC_SYS_WAIT_H_ */

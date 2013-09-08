@@ -1,5 +1,5 @@
-#ifndef _WCHAR_H_
-#define _WCHAR_H_
+#ifndef _STDC_WCHAR_H_
+#define _STDC_WCHAR_H_
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
@@ -130,4 +130,4 @@ __BEGIN_DECLS
 
 __END_DECLS
 
-#endif /* _WCHAR_T_ */
+#endif /* _STDC_WCHAR_T_ */

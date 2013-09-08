@@ -1,5 +1,5 @@
-#ifndef _ISO646_H_
-#define _ISO646_H_
+#ifndef _STDC_ISO646_H_
+#define _STDC_ISO646_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -25,4 +25,4 @@
 #define xor_eq	    ^=
 #endif
 
-#endif /* _ISO646_H_ */
+#endif /* _STDC_ISO646_H_ */

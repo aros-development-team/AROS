@@ -1,5 +1,5 @@
-#ifndef _DIRENT_H_
-#define _DIRENT_H_
+#ifndef _POSIXC_DIRENT_H_
+#define _POSIXC_DIRENT_H_
 
 /*
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
@@ -69,4 +69,4 @@ long telldir(DIR *dir);
 
 __END_DECLS
 
-#endif /* !_DIRENT_H_ */
+#endif /* !_POSIXC_DIRENT_H_ */

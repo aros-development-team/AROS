@@ -1,5 +1,5 @@
-#ifndef _SYS_PARAM_H_
-#define _SYS_PARAM_H_
+#ifndef _POSIXC_SYS_PARAM_H_
+#define _POSIXC_SYS_PARAM_H_
 /*
     Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
@@ -99,4 +99,4 @@
     MINBUCKET, MAXALLOCSAVE, FSHIFT, FSCALE, dbtoc(), ctodb()
 */
 
-#endif /* _SYS_PARAM_H_ */
+#endif /* _POSIXC_SYS_PARAM_H_ */
