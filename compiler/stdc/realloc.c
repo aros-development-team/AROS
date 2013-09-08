@@ -11,7 +11,6 @@
 /*****************************************************************************
 
     NAME */
-#include <sys/types.h>
 #include <stdlib.h>
 
 	void * realloc (
@@ -39,16 +38,12 @@
 	If you get NULL, the memory at oldmem will not have been freed and
 	can still be used.
 
-        This function must not be used in a shared library or
-        in a threaded application.
-
-
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	free(), malloc(), calloc()
+	calloc(), free(), malloc()
 
     INTERNALS
 

@@ -2,80 +2,77 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function posix_memalign().
+    AROS extension function malloc_align().
 */
 
-#include "__arosc_privdata.h"
+#include <exec/types.h>
+
 #include "__memalign.h"
 
 #include <errno.h>
-#include <dos/dos.h>
-#include <exec/memory.h>
-#include <proto/exec.h>
-#include <aros/symbolsets.h>
-#include <aros/debug.h>
-#include <sys/param.h>
+
+#define powerof2(x) ((((x)-1)&(x))==0)
 
 /*****************************************************************************
 
     NAME */
 #include <stdlib.h>
 
-	int posix_memalign (
+	void *malloc_align (
 
 /*  SYNOPSIS */
-        void **memptr,
-        size_t alignment,
-        size_t size)
+        size_t size,
+        size_t alignment)
 
 /*  FUNCTION
         Allocate aligned memory.
 
     INPUTS
-        memptr - Pointer to a place to store the pointer to allocated memory.
+	size - How much memory to allocate.
         alignment - Alignment of allocated memory. The address of the
                     allocated memory will be a multiple of this value, which
                     must be a power of two and a multiple of sizeof(void *).
-	size - How much memory to allocate.
 
     RESULT
-        Returns zero on success.
-        Returns EINVAL if the alignment parameter was not a power of two, or
-        was not a multiple of sizeof(void *).
-        Returns ENOMEM if there was insufficient memory to fulfill the request.
+        A pointer to the allocated memory or NULL.
 
     NOTES
-        Memory allocated by posix_memalign() should be freed with free(). If
+        errno is set to EINVAL if the alignment parameter was not a power of
+        two, or was not a multiple of sizeof(void *).
+        errno is set to ENOMEM if there was insufficient memory to fulfill
+        the request.
+        Memory allocated by malloc_align() should be freed with free(). If
         not, it will be freed when the program terminates.
 
-        This function must not be used in a shared library or in a threaded
-	application.
-
-        If an error occurs, errno will not be set.
+        This function is AROS specific.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	free()
+	calloc(), free(), malloc()
 
     INTERNALS
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
-    UBYTE *mem = NULL, *orig;
+    char *mem = NULL, *orig;
 
     /* check the alignment is valid */
     if (alignment % sizeof(void *) != 0 || !powerof2(alignment))
-        return EINVAL;
+    {
+        errno = EINVAL;
+        return NULL;
+    }
 
     /* allocate enough space to satisfy the alignment and save some info */
-    mem = AllocPooled(aroscbase->acb_mempool, AROS_ALIGN(sizeof(size_t)) + sizeof(void *)
-        + AROS_ALIGN(sizeof(size_t)) + alignment + size);
+    mem = malloc(size + alignment + AROS_ALIGN(sizeof(size_t)) + AROS_ALIGN(sizeof(void *)));
     if (mem == NULL)
-        return ENOMEM;
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
 
     /* store the size for free(). it will add AROS_ALIGN(sizeof(size_t))
      * itself */
@@ -83,21 +80,13 @@
     mem += AROS_ALIGN(sizeof(size_t));
 
     /* if it's already aligned correctly, then we just use it as-is */
-    if (((IPTR) mem & (alignment-1)) == 0) {
-        *memptr = mem;
-        return 0;
-    }
+    if (((IPTR) mem & (alignment-1)) == 0)
+        return mem;
 
     orig = mem;
 
-    /* Make room for a pointer to original malloc()-style allocation, and
-     * a magic value */
-    mem += sizeof(void *) + AROS_ALIGN(sizeof(size_t));
-
-    /* move forward to an even alignment boundary (if we get here, requested
-     * alignment is greater than AROS_WORSTALIGN) */
-    mem = (UBYTE *) (((IPTR) mem + alignment - 1) & -alignment);
-    *memptr = mem;
+    /* move forward to an even alignment boundary */
+    mem = (char *) (((IPTR) mem + alignment - 1) & -alignment);
 
     /* store a magic number in the place that free() will look for the
      * allocation size, so it can handle this specially */
@@ -108,5 +97,5 @@
     mem -= sizeof(void *);
     *((void **) mem) = orig;
 
-    return 0;
+    return mem;
 } /* posix_memalign */

@@ -5,7 +5,7 @@
     C99 function free().
 */
 
-#include "__arosc_privdata.h"
+#include "__stdc_intbase.h"
 #include "__memalign.h"
 
 #include <exec/memory.h>
@@ -33,8 +33,6 @@
 	None.
 
     NOTES
-        This function must not be used in a shared library or in a threaded
-	application.
 
     EXAMPLE
 
@@ -47,9 +45,10 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     if (memory)
     {
+        struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
+
 	unsigned char *mem;
 	size_t         size;
 
@@ -60,7 +59,7 @@
             free(((void **) mem)[-1]);
         else {
             size += AROS_ALIGN(sizeof(size_t));
-	    FreePooled (aroscbase->acb_mempool, mem, size);
+	    FreePooled (StdCBase->mempool, mem, size);
         }
     }
 

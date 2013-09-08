@@ -111,11 +111,18 @@ int __getfdslot(int wanted_fd)
 
         aroscbase->acb_fd_array = tmp;
 
-        memset(
-            aroscbase->acb_fd_array + aroscbase->acb_numslots,
-            0,
-            (wanted_fd - aroscbase->acb_numslots + 1) * sizeof(fdesc *)
-        );
+        //        memset(
+        //aroscbase->acb_fd_array + aroscbase->acb_numslots,
+        //    0,
+        //    (wanted_fd - aroscbase->acb_numslots + 1) * sizeof(fdesc *)
+        //);
+        int i;
+        for (i = aroscbase->acb_numslots;
+             i <= aroscbase->acb_numslots + wanted_fd;
+             i++
+        )
+            aroscbase->acb_fd_array[i] = NULL;
+
         aroscbase->acb_numslots = wanted_fd+1;
     }
     else if (wanted_fd < 0)
