@@ -1,61 +1,23 @@
-/*-
- * Copyright (c) 1990, 1993, 1994
- *	The Regents of the University of California.  All rights reserved.
- *
- * This code is derived from software contributed to Berkeley by
- * Chris Torek.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
+/*
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    $Id$
 
-#if defined(LIBC_SCCS) && !defined(lint)
-static char sccsid[] = "@(#)tmpnam.c	8.3 (Berkeley) 3/28/94";
-#endif /* LIBC_SCCS and not lint */
+    C99 function tmpnam().
+    This function is based on the public domain libnix code
+*/
 
-#include <sys/types.h>
+#include <stdlib.h>
+#include <dos/dos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <aros/libcall.h>
 
-#include <stdio.h>
-#include <unistd.h>
-
-#ifdef __AROS__
-#   include <stdlib.h>
-#   define _mktemp mktemp
-#else
-__warn_references(tmpnam,
-    "warning: tmpnam() possibly used unsafely; consider using mkstemp()");
-
-extern char *_mktemp(char *);
-#endif
+#include "__stdcio_intbase.h"
 
 /*****************************************************************************
 
     NAME */
+#include <stdio.h>
 
 	char *tmpnam(
 
@@ -63,10 +25,19 @@ extern char *_mktemp(char *);
 	char *s)
 
 /*  FUNCTION
+        The tmpnam function generates a string that is a valid file name and
+        that is not the same as the name of an existing file. The function
+        is potentially capable of generating TMP_MAX different strings, but
+        any or all of them may already be in use by existing files and thus
+        not be suitable return values.
 
     INPUTS
+        Pointer to a string of at least L_tmpnam characters.
 
     RESULT
+        The resulting file name is returned in the input string pointer
+        or a pointer to an internal buffer if NULL was passed to the function.
+        If file name generation failed a NULL is returned.
 
     NOTES
 
@@ -75,17 +46,25 @@ extern char *_mktemp(char *);
     BUGS
 
     SEE ALSO
+        tmpfile()
 
     INTERNALS
 
 ******************************************************************************/
 {
-	static unsigned int tmpcount;
-	static char buf[L_tmpnam];
+    struct StdCIOIntBase *StdCIOBase =
+        (struct StdCIOIntBase *)__aros_getbase_StdCIOBase();
+    BPTR filelock;
+    if (s == NULL)
+        s = StdCIOBase->tmpnambuffer;
 
-	if (s == NULL)
-		s = buf;
-	(void)snprintf(s, L_tmpnam, "%stmp.%lu.XXXXXX", P_tmpdir, tmpcount);
-	++tmpcount;
-	return (_mktemp(s));
+    do /* generate a filename that doesn't exist */
+    {
+        sprintf(s,"T:tempfile_stdc_%p_%lu",FindTask(NULL),StdCIOBase->filecount++);
+        filelock = Lock(s,ACCESS_WRITE);
+        if(filelock != 0)
+            UnLock(filelock);
+    } while(filelock!=0 || IoErr()==ERROR_OBJECT_IN_USE);
+
+    return s;
 }

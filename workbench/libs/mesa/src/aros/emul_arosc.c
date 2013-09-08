@@ -286,6 +286,24 @@ int vfprintf(FILE * restrict stream, const char * restrict format,
     return 0;
 }
 
+FILE *__stdio_getstdin(void)
+{
+    IMPLEMENT();
+    return NULL;
+}
+
+FILE *__stdio_getstderr(void)
+{
+    IMPLEMENT();
+    return NULL;
+}
+
+FILE *__stdio_getstdout(void)
+{
+    IMPLEMENT();
+    return NULL;
+}
+
 double strtod (const char * str,char ** endptr)
 {
     /* Unit tests available in : tests/clib/strtod.c */

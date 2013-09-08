@@ -12,10 +12,15 @@
 #include <exec/libraries.h>
 #include <libraries/stdc.h>
 
+#define _STDIO_H_NOMACRO
+#include <stdio.h>
+
 struct StdCIOBase
 {
     struct Library lib;
     struct StdCBase *StdCBase;
+
+    FILE *_stdin, *_stdout, *_stderr;
 };
 
 __BEGIN_DECLS

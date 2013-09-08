@@ -195,7 +195,49 @@ STDC_COMMON := \
 
 STDCIO := \
     __stdcio_init \
-    getenv
+    __stdio \
+    clearerr \
+    fclose \
+    feof \
+    ferror \
+    fflush \
+    fgetc \
+    fgetpos \
+    fgets \
+    fopen \
+    fprintf \
+    fputc \
+    fputs \
+    fread \
+    freopen \
+    fscanf \
+    fseek \
+    fsetpos \
+    ftell \
+    fwrite \
+    getchar \
+    getenv \
+    gets \
+    printf \
+    putchar \
+    puts \
+    remove \
+    rename \
+    rewind \
+    scanf \
+    setbuf \
+    setvbuf \
+    tmpfile \
+    tmpnam \
+    ungetc \
+    vfprintf \
+    vfscanf \
+    vprintf \
+    vscanf
+
+# The common files will be put both in the shared and in the static link lib
+STDCIO_COMMON := \
+    __stdcio_stdstreams
 
 #MM- linklibs-clib-includes : compiler-stdc-includes compiler-stdcio-includes
 #MM- linklibs-clib-shared : compiler-stdc compiler-stdcio
@@ -215,9 +257,12 @@ USER_CFLAGS += -Wno-unused-variable -Wno-parentheses -Wno-uninitialized
     files="$(STDC) $(STDC_COMMON)" \
     linklibfiles=$(STDC_LINKLIB) linklibobjs=$(STDC_LINKOBJS)
 
+STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(STDCIO_COMMON))))
+
 %build_module mmake=compiler-stdcio \
     modname=stdcio modtype=library \
-    files=$(STDCIO) \
+    files="$(STDCIO) $(STDCIO_COMMON)" \
+    linklibobjs=$(STDCIO_LINKOBJS) \
     uselibs="stdc_rel"
 
 STDC_STATIC := \

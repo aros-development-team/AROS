@@ -7,7 +7,6 @@
 
 #include <proto/dos.h>
 #include <errno.h>
-#include "__upath.h"
 
 /*****************************************************************************
 
@@ -29,22 +28,20 @@
 	0 on success and -1 on error. In case of an error, errno is set.
 	
     NOTES
-    	Identical to unlink
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-    	unlink()
 
     INTERNALS
 
 ******************************************************************************/
 {
-    if (!DeleteFile (__path_u2a(pathname)))
+    if (!DeleteFile (pathname))
     {
-	errno = __arosc_ioerr2errno (IoErr());
+	errno = __stdc_ioerr2errno (IoErr());
 	return -1;
     }
 
