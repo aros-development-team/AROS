@@ -2,7 +2,7 @@
 #define _STDC_ERRNO_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file errno.h
@@ -72,6 +72,8 @@
  */
 #define MAX_ERRNO	1000  		/* Numbers should never be bigger than this value */
 
+/* __STDC_ELAST gives the highest value of errno used by stdc.library */
+#define __STDC_ELAST EILSEQ
 
 __BEGIN_DECLS
 
