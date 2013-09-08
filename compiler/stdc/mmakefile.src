@@ -4,8 +4,12 @@ STDC := \
     __ctype \
     __optionallibs \
     __stdc_ioerr2errno \
+    calloc \
     fenv _fenv \
+    free \
     longjmp \
+    malloc \
+    malloc_align \
     math/e_acos  math/e_acosf \
     math/e_acosh  math/e_acoshf \
     math/e_asin  math/e_asinf \
@@ -77,6 +81,8 @@ STDC := \
     math/s_trunc  math/s_truncf  math/s_truncl \
     math/sincos  math/sincosf  math/sincosl \
     math/w_cabs  math/w_cabsf \
+    realloc \
+    realloc_nocopy \
     setjmp
 
 # If long double != double use these; otherwise, we alias the double versions

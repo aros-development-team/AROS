@@ -33,8 +33,6 @@
 	the memory will be freed for you when the application exits.
 
     NOTES
-        This function must not be used in a shared library or
-        in a threaded application.
 
     EXAMPLE
 

@@ -104,7 +104,6 @@ SHARED	:= \
 	atol \
 	basename \
 	bsearch \
-	calloc \
 	cfgetispeed \
 	cfgetospeed \
 	cfsetispeed \
@@ -156,7 +155,6 @@ SHARED	:= \
         fputc \
 	fputs \
 	fread \
-	free \
 	freopen \
 	fseek \
 	fseeko \
@@ -205,7 +203,6 @@ SHARED	:= \
 	lrand48 \
 	lseek \
         lstat \
-	malloc \
 	mkdir \
 	mknod \
         mkstemp \
@@ -222,7 +219,6 @@ SHARED	:= \
 	perror \
 	pipe \
 	popen \
-        posix_memalign \
 	printf \
 	putenv \
         putc \
@@ -234,8 +230,6 @@ SHARED	:= \
 	read \
 	readdir \
 	readlink \
-	realloc \
-	realloc_nocopy \
 	realpath \
 	regex/regerror	\
 	regex/regexec	\

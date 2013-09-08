@@ -5,7 +5,7 @@
     C99 function malloc().
 */
 
-#include "__arosc_privdata.h"
+#include "__stdc_intbase.h"
 
 #define DEBUG 0
 
@@ -39,8 +39,6 @@
 	the memory will be freed for you when the application exits.
 
     NOTES
-        This function must not be used in a shared library or in a threaded
-	application.
 
     EXAMPLE
 
@@ -53,11 +51,11 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
     UBYTE *mem = NULL;
 
     /* Allocate the memory */
-    mem = AllocPooled (aroscbase->acb_mempool, size + AROS_ALIGN(sizeof(size_t)));
+    mem = AllocPooled (StdCBase->mempool, size + AROS_ALIGN(sizeof(size_t)));
     if (mem)
     {
 	*((size_t *)mem) = size;
@@ -71,17 +69,17 @@
 } /* malloc */
 
 
-int __init_memstuff(struct aroscbase *aroscbase)
+int __init_memstuff(struct StdCIntBase *StdCBase)
 {
-    D(bug("__init_memstuff: task(%x), aroscbase(%x)\n",
-          FindTask(NULL), aroscbase
+    D(bug("__init_memstuff: task(%x), StdCBase(%x)\n",
+          FindTask(NULL), StdCBase
     ));
 
-    aroscbase->acb_mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
+    StdCBase->mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
 
-    D(bug("__init_memstuff: aroscbase->acb_mempool(%x)\n", aroscbase->acb_mempool));
+    D(bug("__init_memstuff: StdCBase->mempool(%x)\n", StdCBase->mempool));
 
-    if (!aroscbase->acb_mempool)
+    if (!StdCBase->mempool)
     {
 	return 0;
     }
@@ -90,15 +88,15 @@ int __init_memstuff(struct aroscbase *aroscbase)
 }
 
 
-void __exit_memstuff(struct aroscbase *aroscbase)
+void __exit_memstuff(struct StdCIntBase *StdCBase)
 {
-    D(bug("__exit_memstuff: task(%x), aroscbase(%x), acb_mempool(%x)\n",
-          FindTask(NULL), aroscbase, aroscbase->acb_mempool
+    D(bug("__exit_memstuff: task(%x), StdCBase(%x), acb_mempool(%x)\n",
+          FindTask(NULL), StdCBase, StdCBase->mempool
     ));
 
-    if (aroscbase->acb_mempool)
+    if (StdCBase->mempool)
     {
-	DeletePool(aroscbase->acb_mempool);
+	DeletePool(StdCBase->mempool);
     }
 }
 

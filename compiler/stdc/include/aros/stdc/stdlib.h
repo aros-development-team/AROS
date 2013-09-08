@@ -123,6 +123,7 @@ int mblen(const char *s, size_t n);
 /* INLINE size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n); */
 
 /* AROS extra */
+void *malloc_align(size_t size, size_t alignment); /* AROS specific */
 void *realloc_nocopy(void *oldmem, size_t newsize); /* AROS specific */
 int   on_exit(void (*func)(int, void *), void *);
 

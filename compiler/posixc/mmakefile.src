@@ -1,7 +1,8 @@
 include $(TOP)/config/make.cfg
 
 POSIXC := \
-    __posixc_init
+    __posixc_init \
+    posix_memalign
 
 #MM- linklibs-clib-includes : compiler-posixc-includes
 #MM- linklibs-clib-shared : compiler-posixc

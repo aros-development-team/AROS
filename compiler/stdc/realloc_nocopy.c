@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,9 +37,6 @@
     NOTES
 	If you get NULL, the memory at oldmem will not have been freed and
 	can still be used.
-
-        This function must not be used in a shared library or
-        in a threaded application.
 
         This function is AROS specific.
 

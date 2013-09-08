@@ -15,6 +15,9 @@
 struct StdCIntBase
 {
     struct StdCBase StdCBase;
+
+    /* stdlib.h */
+    APTR mempool;
 };
 
 #endif //__STDC_INTBASE_H
