@@ -10,12 +10,15 @@ POSIXC := \
     lcong48 \
     lrand48 \
     mrand48 \
+    nanosleep \
     nrand48 \
     posix_memalign \
     random \
     realpath \
     seed48 \
-    srand48
+    srand48 \
+    strptime \
+    usleep
 
 #MM- linklibs-clib-includes : compiler-posixc-includes
 #MM- linklibs-clib-shared : compiler-posixc

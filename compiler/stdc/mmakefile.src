@@ -3,19 +3,26 @@ include $(TOP)/config/make.cfg
 STDC := \
     __ctype \
     __optionallibs \
+    __stdc_gmtoffset \
     __stdc_ioerr2errno \
     __vcformat \
     __vcscan \
     abs labs llabs \
+    asctime asctime_r \
     atof \
     atoi \
     atol \
     bsearch \
     calloc \
+    clock \
+    ctime ctime_r \
+    difftime \
     div ldiv lldiv \
     fenv _fenv \
     free \
+    gmtime gmtime_r \
     localeconv \
+    localtime localtime_r \
     longjmp \
     malloc \
     malloc_align \
@@ -96,6 +103,7 @@ STDC := \
     memcpy \
     memmove \
     memset \
+    mktime \
     qsort \
     rand \
     realloc \
@@ -124,6 +132,7 @@ STDC := \
     strcpy \
     strcspn \
     strdup \
+    strftime \
     strlcat \
     strlcpy \
     strlen \
@@ -149,6 +158,7 @@ STDC := \
     strtoumax \
     strupr \
     strxfrm \
+    time \
     vsnprintf \
     vsprintf \
     vsscanf

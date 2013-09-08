@@ -11,6 +11,12 @@
 #define __STDC_INTBASE_H
 
 #include <libraries/stdc.h>
+#include <devices/timer.h>
+
+#include <time.h>
+
+#include <aros/types/clock_t.h>
+
 
 struct StdCIntBase
 {
@@ -19,6 +25,13 @@ struct StdCIntBase
     /* stdlib.h */
     APTR mempool;
     unsigned int srand_seed;
+
+    /* time.h and it's functions */
+    struct timerequest timereq;
+    struct MsgPort timeport;
+    char timebuffer[26];
+    struct tm tmbuffer;
+    clock_t starttime;
 };
 
 #endif //__STDC_INTBASE_H

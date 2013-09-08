@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Convert a time into UTC, reentrant.
@@ -8,7 +8,7 @@
 /* At the moment no daylight saving time information
  * Implementation has to be changed when DST is implemented in AROS
  */
-int __dstflag = -1;
+static int __dstflag = -1;
 
 static char monthtable[] =
 {
