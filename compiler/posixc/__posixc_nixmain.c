@@ -92,7 +92,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
     {
         int ret;
 
-        __arosc_set_exitjmp(exitjmp, dummyjmp);
+        __stdc_set_exitjmp(exitjmp, dummyjmp);
 
         ret = (*main)(argc, argv);
         if (errorptr)

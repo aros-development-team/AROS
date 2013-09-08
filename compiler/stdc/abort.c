@@ -1,17 +1,14 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function exit().
 */
 
-#include <exec/types.h>
-#include <setjmp.h>
-#include <stdio.h>
+#include <libraries/stdc.h>
+
 #include <signal.h>
 #include <assert.h>
-
-#include "__arosc_privdata.h"
 
 /*****************************************************************************
 
@@ -55,7 +52,7 @@
     raise(SIGABRT);
 
     /* Abort anyway */
-    __arosc_jmp2exit(0, 20);
+    __stdc_jmp2exit(0, 20);
 
     assert(0); /* Should not be reached and will likely bomb recursively */
 }

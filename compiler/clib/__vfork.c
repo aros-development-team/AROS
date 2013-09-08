@@ -8,6 +8,7 @@
 #include <exec/exec.h>
 #include <exec/tasks.h>
 #include <dos/dos.h>
+#include <libraries/stdc.h>
 #include <aros/cpu.h>
 
 #include <sys/types.h>
@@ -185,7 +186,7 @@ LONG launcher()
             if (exec_id)
             {
                 D(bug("launcher: catch _exit()\n"));
-                __arosc_program_startup(exec_exitjmp, &exec_error);
+                __stdc_program_startup(exec_exitjmp, &exec_error);
                 
                 D(bug("launcher: executing command\n"));
                 __exec_do(exec_id);
@@ -310,9 +311,9 @@ pid_t __vfork(jmp_buf env)
     D(bug("__vfork: Parent: Setting jmp_buf at %p\n", udata->parent_newexitjmp));
     if (setjmp(udata->parent_newexitjmp) == 0)
     {
-        udata->parent_olderrorptr = __arosc_set_errorptr(&udata->child_error);
+        udata->parent_olderrorptr = __stdc_set_errorptr(&udata->child_error);
         udata->child_error = *udata->parent_olderrorptr;
-        __arosc_set_exitjmp(udata->parent_newexitjmp, udata->parent_oldexitjmp);
+        __stdc_set_exitjmp(udata->parent_newexitjmp, udata->parent_oldexitjmp);
 
         parent_enterpretendchild(udata);
 
@@ -385,8 +386,8 @@ static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork
 
     D(bug("__vfork: Parent: restoring startup buffer\n"));
     /* Restore parent errorptr and startup buffer */
-    __arosc_set_errorptr(udata->parent_olderrorptr);
-    __arosc_set_exitjmp(udata->parent_oldexitjmp, dummy);
+    __stdc_set_errorptr(udata->parent_olderrorptr);
+    __stdc_set_exitjmp(udata->parent_oldexitjmp, dummy);
 
     D(bug("__vfork: Parent: freeing parent signal\n"));
     FreeSignal(udata->parent_signal);
