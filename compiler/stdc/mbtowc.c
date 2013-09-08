@@ -1,5 +1,5 @@
 /*
-    Copyright © 2007-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function mbtowc().
@@ -36,7 +36,7 @@
         resp. don't or do have state-dependent encodings.
 
     NOTES
-	arosc.library currenlty only supports "C" locale
+	stdc.library currenlty only supports "C" locale
         This means that the function returns 0 when s is NULL and only 0, 1 or -1
         when s is not NULL.
 

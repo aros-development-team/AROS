@@ -100,7 +100,9 @@ USER_LIBS   := mui
     mmake=workbench-classes-zune-balance \
     modname=Balance modtype=mui files=balance \
     conffile=balance.conf \
-    cflags="$(CFLAGS) -DZUNE_BUILTIN_BALANCE=0"
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_BALANCE=0" \
+    uselibs="stdc"
+# stdc for rand()
 
 #MM workbench-classes-zune-coloradjust : includes
 %build_module \

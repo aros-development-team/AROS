@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 functions rand() and srand().
 */
 
-#include "__arosc_privdata.h"
+#include "__stdc_intbase.h"
 
 #include <aros/symbolsets.h>
 
@@ -41,11 +41,11 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    aroscbase->acb_srand_seed = aroscbase->acb_srand_seed * 1103515245 + 12345;
+    StdCBase->srand_seed = StdCBase->srand_seed * 1103515245 + 12345;
 
-    return aroscbase->acb_srand_seed % RAND_MAX;
+    return StdCBase->srand_seed % RAND_MAX;
 } /* rand */
 
 
@@ -71,7 +71,7 @@
 	None.
 
     NOTES
-        One seed value per arosc.library is kept which normally corresponds
+        One seed value per stdc.library is kept which normally corresponds
         with per task.
 
     EXAMPLE
@@ -85,14 +85,14 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    aroscbase->acb_srand_seed = seed;
+    StdCBase->srand_seed = seed;
 } /* srand */
 
-static int __rand_seedinit(struct aroscbase *aroscbase)
+static int __rand_seedinit(struct StdCIntBase *StdCBase)
 {
-    aroscbase->acb_srand_seed = 1;
+    StdCBase->srand_seed = 1;
 
     return 1;
 }

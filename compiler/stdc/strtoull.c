@@ -90,7 +90,7 @@
 
     if (base < 0 || base == 1 || base > 36)
     {
-#ifndef AROSC_ROM
+#ifndef STDC_STATIC
         errno = EINVAL;
 #endif
         if (endptr)
@@ -175,7 +175,7 @@
         if (any < 0)
         {
             val = ULLONG_MAX;
-#ifndef AROSC_ROM
+#ifndef STDC_STATIC
             errno = ERANGE;
 #endif
         }

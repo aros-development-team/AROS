@@ -6,6 +6,6 @@ USER_CFLAGS := -DHOST_OS_$(ARCH) -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\
 %build_module mmake=workbench-devs-tap-unix \
     modname=tap modtype=device version=$(AROS_TARGET_PLATFORM) \
     moduledir=Devs/Networks \
-    files="init command iotask"
+    files="init command iotask" uselibs=stdc
 
 %common

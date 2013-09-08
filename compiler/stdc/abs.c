@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-	labs()
+	labs(), llabs()
 
     INTERNALS
 

@@ -7,7 +7,6 @@ include $(TOP)/config/make.cfg
 #   overlap.
 #
 USER_CFLAGS :=  -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/include \
-	-D__mb_cur_max=MB_CUR_MAX		\
 	-DADATE="\"$(shell date '+%d.%m.%Y')\"" \
 	-fno-builtin
 
@@ -18,13 +17,8 @@ TESTDIR := $(BINDIR)/Tests
 
 COMMON	:= \
 	__filesystem_support \
-	atof \
-	div \
 	getopt \
 	getopt_long \
-	ldiv \
-	lldiv \
-	mblen \
         memchr \
 	memcmp \
 	memcpy \
@@ -66,7 +60,6 @@ COMMON	:= \
 	strsep \
 	strspn \
 	strstr \
-	strtod \
 	strtok \
 	strupr \
 	strxfrm \
@@ -86,7 +79,6 @@ SHARED	:= \
         __exec \
 	__exitfunc \
         __fdesc \
-	__rand48 \
         __signal \
 	__stat \
 	__stdio \
@@ -95,15 +87,11 @@ SHARED	:= \
 	__vcscan \
 	__vfork \
 	abort \
-	abs \
 	access \
 	asctime \
         asctime_r \
 	atexit \
-	atoi \
-	atol \
 	basename \
-	bsearch \
 	cfgetispeed \
 	cfgetospeed \
 	cfsetispeed \
@@ -121,12 +109,10 @@ SHARED	:= \
 	difftime \
 	dirfd \
 	dirname \
-	drand48 \
 	dup \
 	dup2 \
 	endgrent \
 	endpwent \
-	erand48 \
         execl \
         execlp \
         execv \
@@ -188,19 +174,13 @@ SHARED	:= \
         getpwnam \
         getpwuid \
         gets \
-	getloadavg \
 	gmtime \
     gmtime_r \
 	isatty \
-	jrand48 \
         kill \
-	labs \
-	lcong48 \
 	link \
-        localeconv \
 	localtime \
         localtime_r \
-	lrand48 \
 	lseek \
         lstat \
 	mkdir \
@@ -208,9 +188,7 @@ SHARED	:= \
         mkstemp \
 	mktemp \
 	mktime \
-	mrand48 \
 	nanosleep \
-	nrand48 \
 	on_exit \
 	open \
 	opendir \
@@ -223,14 +201,10 @@ SHARED	:= \
 	putenv \
         putc \
 	puts \
-	qsort \
 	raise \
-	rand \
-	random \
 	read \
 	readdir \
 	readlink \
-	realpath \
 	regex/regerror	\
 	regex/regexec	\
 	regex/regcomp	\
@@ -241,14 +215,12 @@ SHARED	:= \
 	rewinddir \
         rmdir \
 	scanf \
-	seed48 \
 	seekdir \
 	setbuf \
 	setenv \
 	setgid \
 	setgrent \
 	setlinebuf \
-        setlocale \
         setpwent \
         setrlimit \
 	setuid \
@@ -267,18 +239,11 @@ SHARED	:= \
 	sleep \
 	snprintf \
 	sprintf \
-	srand48 \
 	sscanf \
 	stat \
 	strftime \
 	strerror \
 	strptime \
-	strtoimax \
-	strtol \
-	strtoll \
-	strtoul \
-	strtoull \
-	strtoumax \
 	sync \
 	sysconf \
 	symlink \
@@ -332,11 +297,6 @@ ROM_ONLY := \
 	__vcscan
 
 ROM_COMMON := \
-	atof \
-	div \
-	ldiv \
-	lldiv \
-	mblen \
 	memchr \
 	memcmp \
 	memcpy \
@@ -370,19 +330,11 @@ ROM_COMMON := \
 	strrchr \
 	strrev \
 	strspn \
-	strstr \
-	strtod
+	strstr
 
 # Objects for libarosc.static.a, from the static build.
 ROM_STATIC := \
 	__filesystem_support \
-	abs \
-	atoi \
-	atol \
-	bsearch \
-	labs \
-	qsort \
-	rand_rom \
 	snprintf \
 	sprintf \
 	sscanf \
@@ -391,10 +343,6 @@ ROM_STATIC := \
 	stcl_d \
 	strchr \
 	strspn \
-	strtol \
-	strtoll \
-	strtoul \
-	strtoull \
 	strtok \
 	vsnprintf \
 	vsprintf \

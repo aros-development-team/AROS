@@ -12,9 +12,14 @@
 
 #include <libraries/posixc.h>
 
+struct random_state;
+
 struct PosixCIntBase
 {
     struct PosixCBase PosixCBase;
+
+    /* random.c */
+    struct random_state *rs;
 };
 
 #endif //__POSIXC_INTBASE_H

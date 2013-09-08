@@ -10,9 +10,6 @@
 
 #include <aros/system.h>
 
-
-#include <sys/arosc.h>
-
 #include <aros/types/size_t.h>
 #include <aros/types/wchar_t.h>
 
@@ -40,7 +37,7 @@ typedef struct lldiv_t {
 #define EXIT_FAILURE	20 /* Failing exit status */
 
 /* Gives the largest size of a multibyte character for the current locale */
-#define MB_CUR_MAX      (__get_arosc_userdata()->acud_mb_cur_max)
+#define MB_CUR_MAX      (__stdc_mb_cur_max())
 
 #define RAND_MAX	   2147483647
 
@@ -123,6 +120,7 @@ int mblen(const char *s, size_t n);
 /* INLINE size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n); */
 
 /* AROS extra */
+int __stdc_mb_cur_max(void);
 void *malloc_align(size_t size, size_t alignment); /* AROS specific */
 void *realloc_nocopy(void *oldmem, size_t newsize); /* AROS specific */
 int   on_exit(void (*func)(int, void *), void *);
