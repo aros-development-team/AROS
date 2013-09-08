@@ -11,6 +11,6 @@ USER_CFLAGS := -DUSE_NLIST -DMUIMASTER_YES_INLINE_STDARG
 
 %build_module mmake=kernel-usb-classes-hid \
     modname=hid modtype=usbclass modsuffix="class" \
-    files="$(FILES)"
+    files="$(FILES)" uselibs=stdc
 
 %common

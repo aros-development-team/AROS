@@ -25,7 +25,7 @@
     RESULT
 
     NOTES
-        arosc.library currently only implements "C" locale
+        stdc.library currently only implements "C" locale
 
     EXAMPLE
 

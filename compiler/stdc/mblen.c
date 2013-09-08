@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function mblen().
@@ -10,8 +10,6 @@
 /*****************************************************************************
 
     NAME */
-
-#include <string.h>
 #include <stdlib.h>
 
 	int mblen(
@@ -36,7 +34,7 @@
         resp. don't or do have state-dependent encodings.
 
     NOTES
-	arosc.library currently only implements the "C" locale
+	stdc.library currently only implements the "C" locale
         This means that either 0 or 1 is returned when s is not NULL.
 
     EXAMPLE

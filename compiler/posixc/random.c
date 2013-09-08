@@ -17,12 +17,13 @@
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <string.h>
 #include <proto/exec.h>
-
-#include "__arosc_privdata.h"
-
 #include <aros/symbolsets.h>
+
+#include <string.h>
+#include <stdlib.h>
+
+#include "__nixc_intbase.h"
 
 /*
  * random.c:
@@ -182,47 +183,34 @@ static void init_random_state(struct random_state *rs)
     rs->end_ptr   = &rs->randtbl[ DEG_3 + 1 ];
 }
 
-#ifdef AROSC_SHARED
 static struct random_state *get_random_state(void)
 {
+    struct PosixCIntBase *PosixCIntBase = (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     struct random_state *rs;
 
-    struct aroscbase *base = __aros_getbase_aroscbase();
+    if (PosixCIntBase->rs)
+        return PosixCIntBase->rs;
 
-    if (base->acb_random)
-        return base->acb_random;
-
-    if ((rs = AllocMem(sizeof(*rs), MEMF_ANY))) {
+    if ((rs = malloc(sizeof(*rs))))
+    {
         init_random_state(rs);
 
-        base->acb_random = rs;
+        PosixCIntBase->rs = rs;
         return rs;
     }
 
     return NULL;
 }
 
-static void free_random_state(struct aroscbase *base)
+static void free_random_state(struct PosixCIntBase *PosixCIntBase)
 {
-    if (base->acb_random) {
-        FreeMem(base->acb_random, sizeof(struct random_state));
-        base->acb_random = NULL;
+    if (PosixCIntBase->rs) {
+        FreeMem(PosixCIntBase->rs, sizeof(struct random_state));
+        PosixCIntBase->rs = NULL;
     }
 }
 
 ADD2CLOSELIB(free_random_state, 0)
-#else
-static struct random_state __random;
-
-static inline struct random_state *get_random_state(void)
-{
-    if (__random.end_ptr == NULL)
-        init_random_state(&__random);
-
-    return &__random;
-}
-#endif
-
 
 
 /*

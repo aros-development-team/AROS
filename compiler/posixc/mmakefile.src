@@ -2,7 +2,20 @@ include $(TOP)/config/make.cfg
 
 POSIXC := \
     __posixc_init \
-    posix_memalign
+    __rand48 \
+    drand48 \
+    erand48 \
+    getloadavg \
+    jrand48 \
+    lcong48 \
+    lrand48 \
+    mrand48 \
+    nrand48 \
+    posix_memalign \
+    random \
+    realpath \
+    seed48 \
+    srand48
 
 #MM- linklibs-clib-includes : compiler-posixc-includes
 #MM- linklibs-clib-shared : compiler-posixc

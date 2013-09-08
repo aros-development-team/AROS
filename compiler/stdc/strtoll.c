@@ -108,9 +108,7 @@
 	{
 	    if ((signed long long)val > 0)
 	    {
-#ifndef AROSC_ROM
 		errno = ERANGE;
-#endif
 		val = LLONG_MIN;
 	    }
 	}
@@ -118,9 +116,7 @@
 	{
 	    if ((signed long long)val < 0)
 	    {
-#ifndef AROSC_ROM
 		errno = ERANGE;
-#endif
 		val = LLONG_MAX;
 	    }
 	}

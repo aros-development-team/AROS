@@ -1,5 +1,5 @@
 /*
-    Copyright © 2007-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function mbstowcs().
@@ -25,7 +25,7 @@
     RESULT
 
     NOTES
-        arosc.library currenlty only implements "C" locale.
+        stdc.library currenlty only implements "C" locale.
 
     EXAMPLE
 

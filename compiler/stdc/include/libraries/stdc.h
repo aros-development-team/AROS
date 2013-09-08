@@ -25,6 +25,9 @@ struct StdCBase
 
     /* math.h */
     int _signgam;
+
+    /* stdlib.h */
+    int mb_cur_max;
 };
 
 __BEGIN_DECLS

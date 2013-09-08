@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-	abs()
+	abs(), llabs()
 
     INTERNALS
 

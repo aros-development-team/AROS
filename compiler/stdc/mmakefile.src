@@ -4,9 +4,16 @@ STDC := \
     __ctype \
     __optionallibs \
     __stdc_ioerr2errno \
+    abs labs llabs \
+    atof \
+    atoi \
+    atol \
+    bsearch \
     calloc \
+    div ldiv lldiv \
     fenv _fenv \
     free \
+    localeconv \
     longjmp \
     malloc \
     malloc_align \
@@ -81,9 +88,20 @@ STDC := \
     math/s_trunc  math/s_truncf  math/s_truncl \
     math/sincos  math/sincosf  math/sincosl \
     math/w_cabs  math/w_cabsf \
+    mblen \
+    qsort \
+    rand \
     realloc \
     realloc_nocopy \
-    setjmp
+    setjmp \
+    setlocale \
+    strtod \
+    strtoimax \
+    strtol \
+    strtoll \
+    strtoul \
+    strtoull \
+    strtoumax
 
 # If long double != double use these; otherwise, we alias the double versions
 # These are architectures that have LDBL_MANT_DIG == 53 in float.h
@@ -101,6 +119,7 @@ STDC_LINKLIB := \
 STDC_COMMON := \
     __stdc_geterrnoptr \
     __stdc_getsigngamptr \
+    __stdc_mb_cur_max \
     math/infinity
 
 STDCIO := \
@@ -131,7 +150,13 @@ USER_CFLAGS += -Wno-unused-variable -Wno-parentheses -Wno-uninitialized
 
 STDC_STATIC := \
     __ctype \
-    math/e_sqrt
+    atoi \
+    atol \
+    bsearch \
+    math/e_sqrt \
+    qsort \
+    strtol \
+    strtoul
 
 USER_CFLAGS := -DSTDC_STATIC
 

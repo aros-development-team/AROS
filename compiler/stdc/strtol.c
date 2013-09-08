@@ -103,7 +103,7 @@
         {
             if ((signed long)val > 0)
             {
-#ifndef AROSC_ROM
+#ifndef STDC_STATIC
                 errno = ERANGE;
 #endif
                 val = LONG_MIN;
@@ -113,7 +113,7 @@
         {
             if ((signed long)val < 0)
             {
-#ifndef AROSC_ROM
+#ifndef STDC_STATIC
                 errno = ERANGE;
 #endif
                 val = LONG_MAX;

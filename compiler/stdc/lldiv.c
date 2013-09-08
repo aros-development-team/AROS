@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ISO C function lldiv
+    Desc: C99 function lldiv
 */
 
 #include <aros/system.h>
@@ -47,8 +47,6 @@
     INTERNALS
 
 ******************************************************************************/
-#if 0
-    /* Currently disabled because of linking issues */
 {
     lldiv_t ret;
 
@@ -64,10 +62,5 @@
 
     return ret;
 }
-#else
-{
-    abort();
-}
-#endif /* 0 */
 #endif /* AROS_HAVE_LONG_LONG */
 

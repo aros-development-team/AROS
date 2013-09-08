@@ -2,7 +2,7 @@
     Copyright © 2008, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function strtoimax().
+    C99 function strtoimax().
 */
 
 #include <stdlib.h>

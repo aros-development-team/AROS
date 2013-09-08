@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    C99 function atoi().
+    C99 function llabs().
 */
 
 /*****************************************************************************
@@ -10,42 +10,38 @@
     NAME */
 #include <stdlib.h>
 
-	int atoi (
+	long long llabs (
 
 /*  SYNOPSIS */
-	const char * str)
+	long long j)
 
 /*  FUNCTION
-	Convert a string of digits into an integer.
+	Compute the absolute value of j.
 
     INPUTS
-	str - The string which should be converted. Leading
-		whitespace are ignored. The number may be prefixed
-		by a '+' or '-'.
+	j - A signed long long
 
     RESULT
-	The value of string str.
+	The absolute value of j.
 
     NOTES
 
     EXAMPLE
 	// returns 1
-	atoi ("  \t +1");
+	labs (1L);
 
 	// returns 1
-	atoi ("1");
-
-	// returns -1
-	atoi ("  \n -1");
+	labs (-1L);
 
     BUGS
 
     SEE ALSO
-        atof(), atol(), strtod(), strtol(), strtoul()
+	abs(), labs()
 
     INTERNALS
 
 ******************************************************************************/
 {
-    return strtol(str, (char **)NULL, 10);
-} /* atoi */
+    return (j < 0) ? -j : j;
+} /* labs */
+

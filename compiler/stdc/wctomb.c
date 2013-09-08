@@ -31,7 +31,7 @@
         string resp don't or do have state-dependent encodings.
 
     NOTES
-	arosc.library currently only implements "C" locale.
+	stdc.library currently only implements "C" locale.
         This means that 0 is returned when s is NULL and 0, 1 or -1 when s is
         not NULL.
 
