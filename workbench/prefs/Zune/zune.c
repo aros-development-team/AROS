@@ -75,21 +75,6 @@ void restore_prefs(CONST_STRPTR name);
 /************************************************************************/
 
 
-/****************************************************************
- Open needed libraries
-*****************************************************************/
-int open_libs(void)
-{
-    return 1;
-}
-
-/****************************************************************
- Close opened libraries
-*****************************************************************/
-void close_libs(void)
-{
-}
-
 struct Hook hook_standard;
 
 static Object *app;
@@ -786,33 +771,29 @@ int main(void)
         if (!appname)
             appname = "global";
 
-        if (open_libs())
+        if (open_classes())
         {
-            if (open_classes())
+            find_mcps();
+            NewDir = Lock("RAM:", SHARED_LOCK);
+            if (NewDir)
+                OldDir = CurrentDir(NewDir);
+            if (init_gui())
             {
-                find_mcps();
-                NewDir = Lock("RAM:", SHARED_LOCK);
-                if (NewDir)
-                    OldDir = CurrentDir(NewDir);
-                if (init_gui())
+                load_prefs((STRPTR)args[ARG_APPNAME]);
+                set(main_wnd, MUIA_Window_Open, TRUE);
+                if (XGET(main_wnd,MUIA_Window_Open))
                 {
-                    load_prefs((STRPTR)args[ARG_APPNAME]);
-                    set(main_wnd, MUIA_Window_Open, TRUE);
-                    if (XGET(main_wnd,MUIA_Window_Open))
-                    {
-                        loop();
-                    }
-                    if (LastSavedConfigdata)
-                        MUI_DisposeObject(LastSavedConfigdata);
-                    deinit_gui();
+                    loop();
                 }
-                if (NewDir) {
-                    CurrentDir(OldDir);
-                    UnLock(NewDir);
-                }
-                close_classes();
+                if (LastSavedConfigdata)
+                    MUI_DisposeObject(LastSavedConfigdata);
+                deinit_gui();
             }
-            close_libs();
+            if (NewDir) {
+                CurrentDir(OldDir);
+                UnLock(NewDir);
+            }
+            close_classes();
         }
     }
     
