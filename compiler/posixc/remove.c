@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    C99 function remove().
+    C99 function remove() with optional Amiga<>Posix file name conversion.
 */
 
 #include <proto/dos.h>
@@ -14,12 +14,12 @@
     NAME */
 #include <stdio.h>
 
-	int remove (
+/*	int remove (
 
-/*  SYNOPSIS */
+    SYNOPSIS
 	const char * pathname)
 
-/*  FUNCTION
+    FUNCTION
 	Deletes a file or directory.
 
     INPUTS
@@ -39,15 +39,46 @@
     	unlink()
 
     INTERNALS
+        Uses stdcio.library remove() function after path name conversion
 
 ******************************************************************************/
+int __posixc_remove(const char * pathname)
 {
-    if (!DeleteFile (__path_u2a(pathname)))
-    {
-	errno = __stdc_ioerr2errno (IoErr());
-	return -1;
-    }
-
-    return 0;
+    return remove(__path_u2a(pathname));
 } /* remove */
 
+
+/*****************************************************************************
+
+    NAME
+#include <unistd.h>
+
+	int unlink (
+
+    SYNOPSIS
+	const char * pathname)
+
+    FUNCTION
+	Delete a file from disk.
+
+    INPUTS
+	pathname - Complete path to the file
+
+    RESULT
+	0 on success and -1 on error. In case of an error, errno is set.
+
+    NOTES
+    	Identical to remove
+
+    EXAMPLE
+	// Delete the file xyz in the current directory
+	unlink ("xyz");
+
+    BUGS
+
+    SEE ALSO
+        remove()
+
+    INTERNALS
+
+******************************************************************************/

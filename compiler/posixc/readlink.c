@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 function readlink().
@@ -11,8 +11,7 @@
 
 #include <errno.h>
 
-#include "__arosc_privdata.h"
-#include "__filesystem_support.h"
+#include "__posixc_intbase.h"
 #include "__upath.h"
 
 /*****************************************************************************
@@ -42,14 +41,15 @@
 	global variable errno.
 */
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     ssize_t          res = -1;
     struct DevProc   *dvp = NULL;
     LONG             error;
     struct Process   *me = (struct Process *)FindTask(NULL);
 
     /* check for empty path before potential conversion from "." to "" */
-    if (aroscbase->acb_doupath && path && *path == '\0')
+    if (PosixCBase->doupath && path && *path == '\0')
     {
         errno = ENOENT;
         return res;

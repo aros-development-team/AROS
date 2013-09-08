@@ -13,12 +13,16 @@ POSIXC := \
     __stat \
     __upath \
     __vfork \
+    access \
+    basename \
     chdir \
     chmod \
+    chown \
     clearerr \
     close \
     closedir \
     dirfd \
+    dirname \
     drand48 \
     dup \
     dup2 \
@@ -57,7 +61,9 @@ POSIXC := \
     ftruncate \
     fwrite \
     getchar \
+    getcwd \
     getenv \
+    getfsstat \
     getloadavg \
     getpid \
     getppid \
@@ -69,6 +75,8 @@ POSIXC := \
     lrand48 \
     lseek \
     lstat \
+    mkdir \
+    mkstemp \
     mrand48 \
     nanosleep \
     nrand48 \
@@ -81,13 +89,17 @@ POSIXC := \
     random \
     read \
     readdir \
+    readlink \
     realpath \
+    remove \
+    rename \
     seed48 \
     seekdir \
     setenv \
     setvbuf \
     srand48 \
     stat \
+    statfs \
     strptime \
     symlink \
     system \
@@ -97,6 +109,7 @@ POSIXC := \
     unsetenv \
     updatestdio \
     usleep \
+    utimes \
     vfprintf \
     vfscanf \
     wait \
