@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function perror().
@@ -47,7 +47,7 @@
 	fputs(": ", stderr);
     }
 
-    fputs(strerror(errno), stderr);
+    fputs(__posixc_strerror(errno), stderr);
     fputs("\n", stderr);
 
 } /* perror */

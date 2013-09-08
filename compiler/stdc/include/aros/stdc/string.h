@@ -51,6 +51,9 @@ void *memset (void * dest, int c, size_t n);
 char *strerror (int n);
 size_t strlen (const char * str);
 
+/* AROS specific function */
+char *__stdc_strerror(int n); /* This will be aliased to strerror() */
+
 __END_DECLS
 
 

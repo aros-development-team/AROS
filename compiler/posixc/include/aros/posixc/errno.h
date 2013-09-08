@@ -2,7 +2,7 @@
 #define _POSIXC_ERRNO_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file errno.h
@@ -129,6 +129,6 @@
 #define	ESHUTDOWN	58		/* Can't send after socket shutdown */
 #endif
 
-#define ELAST		96		/* Points to highest used errno */
+#define __POSIXC_ELAST	EPROTO		/* Points to highest used errno in this include */
 
 #endif /* _POSIXC_ERRNO_H_ */

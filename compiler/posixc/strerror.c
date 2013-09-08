@@ -5,12 +5,8 @@
     C99 function strerror().
 */
 
-#include "__arosc_privdata.h"
-
-#include <proto/dos.h>
 #include <clib/macros.h>
 #include <errno.h>
-#include <stdio.h>
 
 static const char * _errstrings[];
 
@@ -19,7 +15,7 @@ static const char * _errstrings[];
     NAME */
 #include <string.h>
 
-	char * strerror (
+	char * __posixc_strerror (
 
 /*  SYNOPSIS */
 	int n)
@@ -34,64 +30,57 @@ static const char * _errstrings[];
 	A string describing the error.
 
     NOTES
+        This function is used to override the strerror() function of
+        stdc.library to handle the extra errnos from posixc.library.
+        It is aliased as strerror() in libposixc.a
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        stdc.library/__stdc_strerror(), stdc.library/strerror()
 
     INTERNALS
 
 ******************************************************************************/
 {
-    if (n > MAX_ERRNO)
-    {
-        struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    char *s;
+    
+    s = (char *)_errstrings[MIN(n, __POSIXC_ELAST+1)];
 
-	Fault(n - MAX_ERRNO, NULL, aroscbase->acb_fault_buf, sizeof(aroscbase->acb_fault_buf));
-
-	return aroscbase->acb_fault_buf;
-    }
-    else
-    {
-        char *s;
-
-        s = (char *)_errstrings[MIN(n, ELAST+1)];
-
-        if (s == NULL)
-            s = (char *)"Errno out of range";
-
-        return s;
-    }
+    return (s != NULL ? s : __stdc_strerror(n));
 } /* strerror */
 
 
-static const char * _errstrings[ELAST + 2] =
+/* Only POSIX.1-2008 specific codes are here
+   C99 codes will be handled by calling __stdc_strerror()
+ */
+static const char * _errstrings[__POSIXC_ELAST+2] =
 {
     /* 0	       */	"No error",
     /* EPERM	       */	"Operation not permitted",
-    /* ENOENT	       */	"No such file or directory",
+    /* C99   	       */	NULL,
     /* ESRCH	       */	"No such process",
-    /* EINTR	       */	"Interrupted system call",
+    /* C99  	       */	NULL,
     /* EIO	       */	"I/O error",
     /* ENXIO	       */	"No such device or address",
     /* E2BIG	       */	"Arg list too long",
-    /* ENOEXEC	       */	"Exec format error",
+    /* C99    	       */	NULL,
     /* EBADF	       */	"Bad file number",
     /* ECHILD	       */	"No child processes",
     /* EDEADLK	       */	"Resource deadlock would occur",
-    /* ENOMEM	       */	"Out of memory",
-    /* EACCES	       */	"Permission denied",
+    /* C99   	       */	NULL,
+    /* C99   	       */	NULL,
     /* EFAULT	       */	"Bad address",
     /* NA	       */	NULL,
-    /* EBUSY	       */	"Device or resource busy",
-    /* EEXIST	       */	"File exists",
-    /* EXDEV	       */	"Cross-device link",
+    /* C99  	       */	NULL,
+    /* C99   	       */	NULL,
+    /* C99  	       */	NULL,
     /* ENODEV	       */	"No such device",
-    /* ENOTDIR	       */	"Not a directory",
+    /* C99    	       */	NULL,
     /* EISDIR	       */	"Is a directory",
-    /* EINVAL	       */	"Invalid argument",
+    /* C99   	       */	NULL,
     /* ENFILE	       */	"File table overflow",
     /* EMFILE	       */	"Too many open files",
     /* ENOTTY	       */	"Not a typewriter",
@@ -102,8 +91,8 @@ static const char * _errstrings[ELAST + 2] =
     /* EROFS	       */	"Read-only file system",
     /* EMLINK	       */	"Too many links",
     /* EPIPE	       */	"Broken pipe",
-    /* NA	       */	NULL,
-    /* ERANGE	       */	"Math result not representable",
+    /* C99	       */	NULL,
+    /* C99    	       */	NULL,
     /* EAGAIN	       */	"Try again",
     /* EINPROGRESS     */	"Operation now in progress",
     /* EALREADY        */	"Operation already in progress",
@@ -124,7 +113,7 @@ static const char * _errstrings[ELAST + 2] =
     /* ENETRESET       */	"Network dropped connection because of reset",
     /* ECONNABORTED    */	"Software caused connection abort",
     /* ECONNRESET      */	"Connection reset by peer",
-    /* ENOBUFS	       */	"No buffer space available",
+    /* C99    	       */	NULL,
     /* EISCONN	       */	"Transport endpoint is already connected",
     /* ENOTCONN        */	"Transport endpoint is not connected",
     /* ESHUTDOWN       */	"Cannot send after transport endpoint shutdown",
@@ -154,7 +143,7 @@ static const char * _errstrings[ELAST + 2] =
     /* EIDRM	       */	"Identifier removed",
     /* ENOMSG	       */	"No message of desired type",
     /* EOVERFLOW       */	"Value too large for defined data type",
-    /* EILSEQ	       */	"Illegal byte sequence",
+    /* C99   	       */	NULL,
     /* ENOTSUP	       */	"Not supported",
     /* ECANCELED       */	"Operation canceled",
     /* EBADMSG	       */	"Bad or Corrupt message",

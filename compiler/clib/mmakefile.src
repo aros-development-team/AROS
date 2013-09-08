@@ -75,7 +75,6 @@ SHARED	:= \
 	sigprocmask \
 	sigsuspend \
 	sleep \
-	strerror \
 	sync \
 	sysconf \
 	tcgetattr \

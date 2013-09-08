@@ -47,6 +47,9 @@ struct StdCIntBase
 
     /* signal.c & co. */
     struct signal_func_data *sigfunc_array;
+
+    /* strerror.c */
+    char *fault_buf;
 };
 
 /* Make a distinction between exit() and abort() */

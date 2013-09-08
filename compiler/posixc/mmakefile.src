@@ -110,6 +110,7 @@ POSIXC := \
     srand48 \
     stat \
     statfs \
+    strerror \
     strptime \
     symlink \
     system \
