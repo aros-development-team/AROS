@@ -56,7 +56,7 @@
 
     if (FPutC((BPTR)fdesc->fcb->fh, c) == EOF)
     {
-	errno = __arosc_ioerr2errno(IoErr());
+	errno = __stdc_ioerr2errno(IoErr());
 	c = EOF;
     }
 

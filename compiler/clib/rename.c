@@ -79,7 +79,7 @@
 	    if (!DeleteFile(anewpath))
 	    {
 		LONG ioerr = IoErr();
-		errno = __arosc_ioerr2errno(ioerr);
+		errno = __stdc_ioerr2errno(ioerr);
 		D(bug("rename(%s, %s) delete errno=%d, IoErr=%d\n",
 			aoldpath, anewpath, errno, ioerr));
 		free(aoldpath);
@@ -92,7 +92,7 @@
     if (!Rename (aoldpath, anewpath))
     {
 	LONG ioerr = IoErr();
-	errno = __arosc_ioerr2errno(ioerr);
+	errno = __stdc_ioerr2errno(ioerr);
 	D(bug("rename(%s, %s) errno=%d, IoErr=%d\n",
 		aoldpath, anewpath, errno, ioerr));
 	free(aoldpath);

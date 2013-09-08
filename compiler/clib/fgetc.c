@@ -76,7 +76,7 @@
 
 	if (c)
 	{
-    	    errno = __arosc_ioerr2errno (c);
+            errno = __stdc_ioerr2errno (c);
 
 	    stream->flags |= _STDIO_ERROR;
 	}

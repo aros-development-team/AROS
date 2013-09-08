@@ -71,7 +71,7 @@
     FreeDeviceProc(dvp);
 
     if (error)
-        errno = __arosc_ioerr2errno(error);
+        errno = __stdc_ioerr2errno(error);
 
     return res;
 }

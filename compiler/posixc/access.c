@@ -113,14 +113,14 @@
     lock = Lock(apath, SHARED_LOCK);
     if (lock == BNULL)
     {
-        errno = __arosc_ioerr2errno(IoErr());
+        errno = __stdc_ioerr2errno(IoErr());
         return -1;
     }
 
     fib = AllocDosObject(DOS_FIB, NULL);
     if (!fib)
     {
-        errno = __arosc_ioerr2errno(IoErr());
+        errno = __stdc_ioerr2errno(IoErr());
         UnLock(lock);
         return -1;
     }

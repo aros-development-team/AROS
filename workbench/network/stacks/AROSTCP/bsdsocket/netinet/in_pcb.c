@@ -413,7 +413,7 @@ in_pcbnotify(head, dst, fport_arg, laddr, lport_arg, cmd, notify)
 	register struct inpcb *inp, *oinp;
 	struct in_addr faddr;
 	u_short fport = fport_arg, lport = lport_arg;
-	int errno, s;
+	int _errno, s;
 
 	if ((unsigned)cmd > PRC_NCMDS || dst->sa_family != AF_INET)
 		return;
@@ -435,7 +435,7 @@ in_pcbnotify(head, dst, fport_arg, laddr, lport_arg, cmd, notify)
 		if (cmd != PRC_HOSTDEAD)
 			notify = in_rtchange;
 	}
-	errno = inetctlerrmap[cmd];
+	_errno = inetctlerrmap[cmd];
 	s = splnet();
 	for (inp = head->lh_first; inp != NULL;) {
 		if (inp->inp_faddr.s_addr != faddr.s_addr ||
@@ -449,7 +449,7 @@ in_pcbnotify(head, dst, fport_arg, laddr, lport_arg, cmd, notify)
 		oinp = inp;
 		inp = inp->inp_list.le_next;
 		if (notify)
-			(*notify)(oinp, errno);
+			(*notify)(oinp, _errno);
 	}
 	splx(s);
 }

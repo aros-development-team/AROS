@@ -60,7 +60,7 @@
     cnt = Seek (fh, 0, OFFSET_CURRENT);
 
     if (cnt == -1)
-	errno = __arosc_ioerr2errno (IoErr ());
+	errno = __stdc_ioerr2errno (IoErr ());
 
     return cnt;
 } /* ftell */

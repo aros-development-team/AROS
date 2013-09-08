@@ -56,7 +56,7 @@
 
     if (FPuts((BPTR)fdesc->fcb->fh, str) == -1)
     {
-	errno = __arosc_ioerr2errno(IoErr());
+	errno = __stdc_ioerr2errno(IoErr());
 	return EOF;
     }
 

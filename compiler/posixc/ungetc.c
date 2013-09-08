@@ -68,7 +68,7 @@
 
     if (!UnGetC ((BPTR)fdesc->fcb->fh, c))
     {
-	errno = __arosc_ioerr2errno (IoErr ());
+	errno = __stdc_ioerr2errno (IoErr ());
 
 	if (errno)
 	    stream->flags |= _STDIO_ERROR;

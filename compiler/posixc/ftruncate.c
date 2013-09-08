@@ -81,7 +81,7 @@
 
     if ((length = SetFileSize(fdesc->fcb->fh, length, OFFSET_BEGINNING)) == -1)
     {
-    	errno = __arosc_ioerr2errno(IoErr());
+        errno = __stdc_ioerr2errno(IoErr());
     	return -1;
     }
     else

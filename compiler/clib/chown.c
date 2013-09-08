@@ -72,13 +72,13 @@
     {
         if (!(fib = AllocDosObject(DOS_FIB, NULL)))
         {
-            errno = __arosc_ioerr2errno(IoErr());
+            errno = __stdc_ioerr2errno(IoErr());
             goto out;
         }
     
         if (!(lock = Lock(path, SHARED_LOCK)) || !Examine(lock, fib))
         {
-            errno = __arosc_ioerr2errno(IoErr());
+            errno = __stdc_ioerr2errno(IoErr());
             goto out;
         }
 
@@ -101,7 +101,7 @@
 
     if (changed && !SetOwner(path, owner << 16 | group))
     {
-        errno = __arosc_ioerr2errno(IoErr());
+        errno = __stdc_ioerr2errno(IoErr());
         goto out;
     }
 

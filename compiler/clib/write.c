@@ -59,7 +59,7 @@
     cnt = Write ((BPTR)fdesc->fcb->fh, (void *)buf, count);
 
     if (cnt == -1)
-	errno = __arosc_ioerr2errno (IoErr ());
+	errno = __stdc_ioerr2errno (IoErr ());
 
     return cnt;
 } /* write */

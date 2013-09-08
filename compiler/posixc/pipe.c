@@ -96,7 +96,7 @@
 
     if (!writer)
     {
-        errno = __arosc_ioerr2errno(IoErr());
+        errno = __stdc_ioerr2errno(IoErr());
         __free_fdesc(rdesc);
         __free_fdesc(wdesc);
         return -1;

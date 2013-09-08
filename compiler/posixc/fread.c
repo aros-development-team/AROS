@@ -67,7 +67,7 @@
 
     if (cnt == -1)
     {
-	errno = __arosc_ioerr2errno (IoErr ());
+	errno = __stdc_ioerr2errno (IoErr ());
 	stream->flags |= _STDIO_ERROR;
 
 	cnt = 0;

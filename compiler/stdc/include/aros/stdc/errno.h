@@ -47,8 +47,6 @@
  *	@(#)errno.h	8.5 (Berkeley) 1/21/94
  */
 #include <aros/system.h>
-#include <sys/arosc.h>
-
 
 /* C99 required error codes */
 #define	EDOM		33		/* Numerical argument out of domain */
@@ -77,19 +75,21 @@
 
 __BEGIN_DECLS
 
-__pure static __inline__ int *__get_errno_ptr(void);
-__pure static __inline__ int *__get_errno_ptr(void)
-{
-    return &__get_arosc_userdata()->acud_errno;
-}
-#define errno (*__get_errno_ptr())
+/* This function is a link library function.
+   This way errno.h include file can be kept clean without
+   exposing AROS specific defines as defined in exec/types.h etc.
+*/
+int *__stdc_geterrnoptr(void);
+#ifndef errno
+#define errno (*__stdc_geterrnoptr())
+#endif
 
 /* AROS specific functions to translate DOS error numbers to errno.
    ioerrno2errno() will always call the function for the selected C
    linklib, __arosc_ioerr2errno() is always the arosc.library version.
  */
 int ioerr2errno(int ioerr);
-int __arosc_ioerr2errno(int ioerr); 
+int __stdc_ioerr2errno(int ioerr); 
 
 __END_DECLS
 

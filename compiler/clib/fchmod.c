@@ -71,7 +71,7 @@ ULONG prot_u2a(mode_t protect);
     {
         if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
         {
-            errno = __arosc_ioerr2errno(IoErr());
+            errno = __stdc_ioerr2errno(IoErr());
             return -1;
         }
             
@@ -79,7 +79,7 @@ ULONG prot_u2a(mode_t protect);
             break;
         else if(IoErr() != ERROR_LINE_TOO_LONG)
         {
-            errno = __arosc_ioerr2errno(IoErr());
+            errno = __stdc_ioerr2errno(IoErr());
             FreeVec(buffer);
             return -1;
         }
@@ -91,7 +91,7 @@ ULONG prot_u2a(mode_t protect);
     if (!SetProtection(buffer, prot_u2a(mode)))
     {
 	FreeVec(buffer);
-	errno = __arosc_ioerr2errno(IoErr());
+	errno = __stdc_ioerr2errno(IoErr());
 	return -1;
     }
 

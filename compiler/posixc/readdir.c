@@ -110,7 +110,7 @@
 	    dir->pos--;
 	    if (IoErr() != ERROR_NO_MORE_ENTRIES)
 	    {
-    	        errno = __arosc_ioerr2errno(IoErr());
+                errno = __stdc_ioerr2errno(IoErr());
 		D(bug(") errno=%d\n", (int)errno));
             }
 	    D(else

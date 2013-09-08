@@ -117,7 +117,7 @@ void RemoveFromList(struct SignalSemaphore *sem);
     {
         if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
         {
-            errno = __arosc_ioerr2errno(IoErr());
+            errno = __stdc_ioerr2errno(IoErr());
             return -1;
         }
 
@@ -125,7 +125,7 @@ void RemoveFromList(struct SignalSemaphore *sem);
             break;
         else if(IoErr() != ERROR_LINE_TOO_LONG)
         {
-            errno = __arosc_ioerr2errno(IoErr());
+            errno = __stdc_ioerr2errno(IoErr());
             FreeVec(buffer);
             return -1;
         }
