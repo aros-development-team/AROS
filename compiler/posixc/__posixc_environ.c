@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS specific function for environ emulation handling
@@ -9,7 +9,7 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 #include "__env.h"
 
 #include <stdio.h>
@@ -22,7 +22,7 @@
     NAME */
 #include <stdlib.h>
 
-	void __arosc_set_environptr (
+	int __posixc_set_environptr (
 
 /*  SYNOPSIS */
 	char ***environptr)
@@ -34,7 +34,7 @@
 	environptr - ptr to the child environ variable (== &environ).
 
     RESULT
-        -
+        0 on fail, other value on succes
 
     NOTES
         This function will enable environ emulation. This means that
@@ -50,26 +50,23 @@
         This is still TODO.
 
     SEE ALSO
-        __arosc_get_environptr(), getenv(), setenv()
+        __posixc_get_environptr(), getenv(), setenv()
 
     INTERNALS
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     int len;
 
     D(bug("Initializing POSIX environ emulation\n"));
 
-    aroscbase->acb_environptr = environptr;
+    PosixCBase->environptr = environptr;
 
     len = __env_get_environ(NULL, 0);
     *environptr = malloc(len);
-    if (__env_get_environ(*environptr, len) < 0)
-    {
-        fputs("Internal error with environ initialization\n", stderr);
-        abort();
-    }
+    return (__env_get_environ(*environptr, len) >= 0);
 }
 
 /*****************************************************************************
@@ -77,14 +74,14 @@
     NAME */
 #include <stdlib.h>
 
-	char ***__arosc_get_environptr (
+	char ***__posixc_get_environptr (
 
 /*  SYNOPSIS */
 	void)
 
 /*  FUNCTION
 	This function the get pointer to the child environ global variable
-        currently used by arosc.library.
+        currently used by posixc.library.
 
     INPUTS
         -
@@ -100,13 +97,14 @@
     BUGS
 
     SEE ALSO
-        __arosc_set_environptr()
+        __posixc_set_environptr()
 
     INTERNALS
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
-    return aroscbase->acb_environptr;
+    return PosixCBase->environptr;
 }

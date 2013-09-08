@@ -452,11 +452,11 @@ void        sharecontextwithchild(int share); /* AROS specific call */
 
 __END_DECLS
 
-/* arosc.library internal function to initialize environ handling simulation
+/* posixc.library internal functions to initialize environ handling simulation
    This code should normally not be called as it will automatically be called
    when a user program references the 'extern char **environ' variable.
 */
-void __arosc_set_environptr(char ***environ_ptr);
-char ***__arosc_get_environptr(void);
+int __posixc_set_environptr(char ***environ_ptr);
+char ***__posixc_get_environptr(void);
 
 #endif /* _POSIXC_UNISTD_H_ */

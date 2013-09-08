@@ -15,6 +15,10 @@
 struct StdCIOIntBase
 {
     struct StdCIOBase StdCIOBase;
+
+    /* getenv.c */
+    LONG varsize;
+    char *envvar;
 };
 
 #endif //__STDCIO_INTBASE_H

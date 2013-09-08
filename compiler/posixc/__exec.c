@@ -45,7 +45,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     const char *filename2_dos = NULL;
     int argssize = 512;
     struct Process *me;
-    char ***environptr = __arosc_get_environptr();
+    char ***environptr = __posixc_get_environptr();
     char **environ = (environptr != NULL) ? *environptr : NULL;
 
     D(bug("Entering __exec_prepare(\"%s\", %d, %x, %x)\n",

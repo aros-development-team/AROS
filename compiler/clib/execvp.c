@@ -53,7 +53,7 @@
 
 ******************************************************************************/
 {
-    char ***environptr = __arosc_get_environptr();
+    char ***environptr = __posixc_get_environptr();
     char **environ = (environptr != NULL) ? *environptr : NULL;
     APTR id = __exec_prepare(file, 1, argv, environ);
     if(!id)
