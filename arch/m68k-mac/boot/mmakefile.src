@@ -1,7 +1,7 @@
 include $(TOP)/config/make.cfg
 
 FILES   := libexec
-USELIBS := hiddstubs amiga arossupport arosc.static autoinit libinit gcc1
+USELIBS := hiddstubs amiga arossupport autoinit libinit gcc1 stdc.static
 #USELIBS := arossupport rom autoinit libinit gcc1
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))

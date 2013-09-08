@@ -1,5 +1,7 @@
 include $(TOP)/config/make.cfg
 
+#MM- AROS : compiler-posixc
+
 POSIXC := \
     __env \
     __exec \
@@ -208,8 +210,6 @@ POSIXC_LINKLIB := \
 POSIXC_COMMON := \
     __posixc_stdstreams
 
-#MM- linklibs-clib-includes : compiler-posixc-includes
-#MM- linklibs-clib-shared : compiler-posixc
 #MM- core-linklibs : linklibs-posixc
 
 USER_LDFLAGS := -noposixc

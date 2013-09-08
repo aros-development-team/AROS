@@ -56,7 +56,7 @@ Q ?= @
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
 
-USELIBS := amiga arossupport arosc.static autoinit libinit stdc.static
+USELIBS := amiga arossupport autoinit libinit stdc.static
 LIBS    := -L$(GENDIR)/lib -lloadseg $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 

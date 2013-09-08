@@ -15,7 +15,7 @@ OS_INCLUDES   := -I$(GENINCDIR)
 #MM	linklibs-zlib \
 #MM	linklibs-arossupport \
 #MM	linklibs-autoinit \
-#MM	linklibs-arosc \
+#MM     linklibs-rom \
 #MM	linklibs-coolimages  \
 #MM	linklibs-gcc1-m68000
 

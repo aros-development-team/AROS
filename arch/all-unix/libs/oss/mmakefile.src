@@ -19,7 +19,6 @@ FILES := funcs
 #MM     hidd-unixio-stubs \
 #MM     linklibs-amiga \
 #MM     linklibs-arossupport \
-#MM     linklibs-clib \
 #MM     linklibs-libinit \
 #MM     linklibs-startup
 

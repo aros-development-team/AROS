@@ -9,7 +9,7 @@ kernel-raspi-arm: $(OSGENDIR)/boot/core.elf
 
 $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
 		%mkdirs_q $(OSGENDIR)/boot
-		$(TARGET_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(LIBDIR) -larossupport -larosc.static -lautoinit -llibinit -lstdc.static -laeabi
+		$(TARGET_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(LIBDIR) -larossupport -lautoinit -llibinit -lstdc.static -laeabi
 		$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
 
 #MM kernel-kernel-raspi-arm : includes

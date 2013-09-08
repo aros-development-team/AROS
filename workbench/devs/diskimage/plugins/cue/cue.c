@@ -123,7 +123,7 @@ struct DIPluginIFace *IPlugin;
 struct Library *MPEGABase;
 #endif
 #if defined(USE_MPG123) && defined(__AROS__)
-struct Library *aroscbase;
+struct Library *StdCBase;
 #endif
 
 #ifdef USE_MPG123
@@ -138,7 +138,7 @@ BOOL CUE_Init (struct DiskImagePlugin *Self, const struct PluginData *data) {
 	IPlugin = data->IPlugin;
 #ifdef USE_MPG123
 #ifdef __AROS__
-	aroscbase = data->aroscbase;
+	StdCBase = data->StdCBase;
 #endif
 	if (!malloc_init()) {
 		return FALSE;

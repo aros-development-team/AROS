@@ -11,8 +11,6 @@
 /* C99 */
 #include <aros/stdc/time.h>
 
-#include <sys/arosc.h>
-
 /* TODO: CLOCKS_PER_SEC is supposed to be 1000000 on SUSv2 platforms apparently */
 
 #include <aros/types/clockid_t.h>

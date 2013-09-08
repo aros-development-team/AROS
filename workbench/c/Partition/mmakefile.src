@@ -8,7 +8,7 @@ FILES := main args
 #MM- workbench-c : workbench-c-partition
 #MM workbench-c-partition : includes linklibs 
 
-USER_LDFLAGS := -noarosc -nostdc
+USER_LDFLAGS := -nostdc
 
 %build_prog mmake=workbench-c-partition \
     progname=Partition targetdir=$(AROS_C) \

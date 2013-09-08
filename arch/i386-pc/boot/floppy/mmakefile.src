@@ -50,7 +50,8 @@ BOOT_TAR_EXECUTABLES := \
     Devs/clipboard.device \
     Devs/serial.device \
     L/pipe-handler \
-    Libs/arosc.library Libs/asl.library Libs/commodities.library \
+    Libs/stdc.library Libs/stdcio.library \
+    Libs/asl.library Libs/commodities.library \
     Libs/cybergraphics.library \
     Libs/datatypes.library Libs/diskfont.library Libs/gadtools.library \
     Libs/icon.library Libs/workbench.library \
