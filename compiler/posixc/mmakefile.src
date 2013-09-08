@@ -24,7 +24,9 @@ POSIXC := \
     srand48 \
     strptime \
     unsetenv \
-    usleep
+    usleep \
+    wait \
+    waitpid
 
 POSIXC_LINKLIB := \
     posixc_environ

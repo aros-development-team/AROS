@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,10 +7,7 @@
 
 #include <aros/debug.h>
 #include <proto/exec.h>
-#include <aros/startup.h>
 #include <aros/debug.h>
-
-#include "__arosc_privdata.h"
 
 #include <sys/types.h>
 #include <errno.h>

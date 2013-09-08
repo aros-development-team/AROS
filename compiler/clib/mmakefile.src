@@ -190,8 +190,6 @@ SHARED	:= \
 	vfscanf \
 	vprintf \
 	vscanf \
-	wait \
-	waitpid \
 	write
 
 SHARED_ARCH := \
