@@ -155,7 +155,7 @@ LIBRARY_SOURCES = \
 %build_module mmake=workbench-libs-mesa-module \
     modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="arosmesa_getprocaddress" \
     files="$(LIBRARY_SOURCES)" cxxfiles="$(CXX_SOURCES)" \
-    uselibs="galliumauxiliary gallium"
+    uselibs="galliumauxiliary gallium stdcio stdc"
 
 
 # NOTE: Both files have been generated and added to AROS repository. Once all

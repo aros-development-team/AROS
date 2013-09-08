@@ -17,4 +17,4 @@ FUNCS := \
 
 %build_module mmake=workbench-gadgets-colorwheel \
     modname=colorwheel modtype=gadget \
-    files="$(FUNCS) $(FILES)"
+    files="$(FUNCS) $(FILES)" uselibs=stdc

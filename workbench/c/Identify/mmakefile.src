@@ -7,7 +7,7 @@ FILES	:= main
 #MM- workbench-c : workbench-c-identify
 #MM workbench-c-identify : includes linklibs
 
-USER_LDFLAGS := -noarosc
+USER_LDFLAGS := -noarosc -nostdc
 
 %build_prog mmake=workbench-c-identify \
     progname=Identify targetdir=$(AROS_C) \

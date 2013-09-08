@@ -42,6 +42,12 @@ struct ExecIFace*  IExec      = NULL;
 struct MMUIFace*   IMMU       = NULL;
 #endif
 
+#ifdef __AROS__
+#include <proto/stdc.h>
+
+struct StdCBase *StdCBase = NULL;
+#endif
+
 
 #include "8010.h"
 
@@ -95,6 +101,16 @@ DriverInit( struct DriverBase* ahisubbase )
 /*        Req("Couldn't open IUtility interface!\n"); */
 /*        return FALSE; */
 /*   } */
+#endif
+
+#ifdef __AROS__
+  StdCBase = (struct StdCBase *) OpenLibrary( "stdc.library", 0 ); 
+
+  if( StdCBase == NULL )
+  {
+    Req( "Unable to open 'stdc.library'.\n" );
+    return FALSE;
+  }
 #endif
 
   if (!ahi_pci_init(ahisubbase))
@@ -278,6 +294,10 @@ DriverCleanup( struct DriverBase* AHIsubBase )
   }
 
   FreeVec( EMU10kxBase->driverdatas ); 
+
+#ifdef __AROS__
+  CloseLibrary( (struct Library*) StdCBase );
+#endif
     
 #ifdef __AMIGAOS4__
   DropInterface((struct Interface *) IDOS);

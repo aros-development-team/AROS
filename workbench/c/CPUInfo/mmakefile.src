@@ -16,7 +16,7 @@ EXEDIR  := $(AROS_C)
 
 #MM workbench-c-cpuinfo : includes linklibs kernel-cpu-pc-i386
 
-USER_LDFLAGS := -noarosc
+USER_LDFLAGS := -noarosc -nostdc
 
 %build_prog mmake=workbench-c-cpuinfo \
     progname=CPUInfo targetdir=$(EXEDIR) \

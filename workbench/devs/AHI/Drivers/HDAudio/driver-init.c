@@ -23,6 +23,7 @@ All Rights Reserved.
 #ifdef __AROS__
 #include <aros/debug.h>
 struct DosLibrary* DOSBase;
+struct Library *StdCBase = NULL;
 #endif
 #include <stdlib.h>
 
@@ -72,6 +73,15 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
         Req("Unable to open 'dos.library' version 37.\n");
         return FALSE;
     }
+
+#ifdef __AROS__
+    StdCBase = OpenLibrary("stdc.library", 0);
+    if (StdCBase == NULL)
+    {
+        Req("Unable to open 'stdc.library'.\n");
+        return FALSE;
+    }
+#endif
 
     if (!ahi_pci_init(ahisubbase))
     {
@@ -168,6 +178,13 @@ VOID DriverCleanup(struct DriverBase* AHIsubBase)
     FreeVec(card_base->driverdatas); 
 
     ahi_pci_exit();
+
+#ifdef __AROS__
+    if (StdCBase)
+    {
+        CloseLibrary(StdCBase);
+    }
+#endif
 
     if (DOSBase)
     {

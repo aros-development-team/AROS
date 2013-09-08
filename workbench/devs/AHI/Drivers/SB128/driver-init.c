@@ -32,6 +32,9 @@ All Rights Reserved.
 struct DosLibrary* DOSBase;
 struct DriverBase* AHIsubBase;
 struct Library*             ExpansionBase = NULL;
+#ifdef __AROS__
+struct Library *StdCBase = NULL;
+#endif
 
 struct VendorDevice
 {
@@ -80,6 +83,15 @@ DriverInit( struct DriverBase* ahisubbase )
     Req( "Unable to open 'expansion.library' version 1.\n" );
     return FALSE;
   }
+
+#ifdef __AROS__
+  StdCBase = OpenLibrary( "stdc.library", 0 );
+  if( StdCBase == NULL)
+  {
+    Req( "Unable to open 'stdc.library'.\n" );
+    return FALSE;
+  }
+#endif
 
     if (!ahi_pci_init(ahisubbase))
     {
@@ -240,6 +252,11 @@ DriverCleanup( struct DriverBase* AHIsubBase )
     DeletePort(replymp);*/
 
   ahi_pci_exit();
+
+#ifdef __AROS__
+  if (StdCBase)
+      CloseLibrary( StdCBase );
+#endif
 
   if (ExpansionBase)
     CloseLibrary( (struct Library*) ExpansionBase );

@@ -134,7 +134,7 @@ CPP_SOURCES := \
 %build_module mmake=workbench-libs-glu-module \
     modname=glu modtype=library linklibname=GLU \
     files="$(LIBRARY_SOURCES)" cxxfiles="$(CPP_SOURCES)" cxxccfiles="$(CC_SOURCES)" \
-    uselibs="GL"
+    uselibs="GL stdcio stdc"
 
 %common
 

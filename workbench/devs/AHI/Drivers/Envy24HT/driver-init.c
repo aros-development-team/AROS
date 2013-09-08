@@ -45,6 +45,10 @@ struct MMUIFace*            IMMU          = NULL;
 #define DEVICE_ID 0x1724
 #define CARD_STRING "Envy24HT"
 
+#ifdef __AROS__
+#include <proto/stdc.h>
+struct StdCBase *StdCBase = NULL;
+#endif
 
 /******************************************************************************
 ** Custom driver init *********************************************************
@@ -59,6 +63,14 @@ BOOL DriverInit( struct DriverBase* ahisubbase )
     DEBUGPRINTF("\n%s DriverInit\n", CARD_STRING);
 
     AHIsubBase = ahisubbase;
+
+#ifdef __AROS__
+    StdCBase = (struct StdCBase *)OpenLibrary((CONST_STRPTR)"stdc.library", 0);
+    if (!StdCBase)
+    {
+        return FALSE;
+    }
+#endif
 
     if (!ahi_pci_init(ahisubbase))
     {
@@ -174,4 +186,12 @@ DriverCleanup( struct DriverBase* AHIsubBase )
   FREEVEC( CardBase->driverdatas ); 
 
   ahi_pci_exit();
+
+#ifdef __AROS__
+  if (StdCBase)
+  {
+    CloseLibrary((struct Library *)StdCBase);
+    StdCBase = NULL;
+  }
+#endif
 }
