@@ -2628,7 +2628,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 # endif
 #
 
-%define build_with_configure mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) prefix= \
+%define build_with_configure mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) gendir= prefix= \
     aros_prefix= extraoptions= extracflags= nix_dir_layout= nix=no compiler=target \
     install_target=install preconfigure= postconfigure= postinstall= \
     install_env= use_build_env=no
@@ -2674,18 +2674,25 @@ endif
 # Set legacy 'host' variable based on chosen compiler
 ifeq (%(compiler),host)
     host := yes
-	ifeq (%(package),)
-		%(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)
-	else
-		%(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)/%(package)
-	endif
+    ifeq (%(package),)
+        %(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)
+    else
+        %(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)/%(package)
+    endif
 else
     host := no
-	ifeq (%(package),)
-		%(mmake)-pkgdir := $(GENDIR)/$(CURDIR)
-	else
-		%(mmake)-pkgdir := $(GENDIR)/$(CURDIR)/%(package)
-	endif
+    ifeq (%(package),)
+        %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)
+    else
+        %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)/%(package)
+    endif
+endif
+ifneq (%(gendir),)
+    ifeq (%(package),)
+        %(mmake)-pkgdir := %(gendir)/$(CURDIR)
+    else
+        %(mmake)-pkgdir := %(gendir)/$(CURDIR)/%(package)
+    endif
 endif
 
 %(mmake)-configflag := $(%(mmake)-pkgdir)/.configured
@@ -2992,7 +2999,7 @@ endif
 #    - create_pkg       = create a distributable package of the compiled sources, defaults to no
 
 %define fetch_and_build mmake=/A package=/A subpackage= compiler=target install_target=install \
-    version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= package_repo= patch=no patch_repo= \
+    version=/A suffixes="tar.bz2 tar.gz" srcdir= builddir= gendir= package_repo= patch=no patch_repo= \
     prefix= aros_prefix= extraoptions= extracflags= preconfigure= postconfigure= postinstall= \
     install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no
 
@@ -3062,7 +3069,8 @@ ifneq (%(create_pkg),no)
 endif
 
 %build_with_configure mmake=%(mmake)-%(subpackage) package=%(package) compiler=%(compiler) install_target=%(install_target) \
-     srcdir=$(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-builddir) install_env=%(install_env) use_build_env=%(use_build_env) \
+     srcdir=$(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-builddir) gendir=%(gendir) \
+     install_env=%(install_env) use_build_env=%(use_build_env) \
      nix=%(nix) nix_dir_layout=%(nix_dir_layout) prefix="$(%(mmake)-prefix)" \
      aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall) \
      %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)" extracflags="%(extracflags)"
