@@ -7,3 +7,4 @@
    be provided.
 */
 int __locale_available(void);
+int __intuition_available(void);

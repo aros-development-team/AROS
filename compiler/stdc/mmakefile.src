@@ -4,6 +4,7 @@ STDC := \
     __ctype \
     __exitfunc \
     __optionallibs \
+    __signal \
     __stdc_gmtoffset \
     __stdc_ioerr2errno \
     __stdc_startup \
@@ -112,11 +113,13 @@ STDC := \
     mktime \
     on_exit \
     qsort \
+    raise \
     rand \
     realloc \
     realloc_nocopy \
     setjmp \
     setlocale \
+    signal \
     snprintf \
     sprintf \
     sscanf \
