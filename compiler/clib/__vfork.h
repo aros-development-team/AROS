@@ -35,9 +35,7 @@ struct vfork_data
     fdesc **parent_fd_array;
     int parent_flags;
 
-    ULONG child_id;
     struct Task *child;
-    struct arosc_privdata *cpriv;
     int child_executed;
     int child_error, child_errno;
     BYTE child_signal;

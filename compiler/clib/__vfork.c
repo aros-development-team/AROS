@@ -300,8 +300,6 @@ pid_t __vfork(jmp_buf env)
         vfork_longjmp(env, -1);
     }
     D(bug("__vfork: Parent: Child created %p, waiting to finish setup\n", udata->child));
-    udata->child_id = GetETaskID(udata->child);
-    D(bug("__vfork: Parent: Got unique child id: %d\n", udata->child_id));
 
     /* Wait for child to finish setup */
     Wait(1 << udata->parent_signal);
@@ -324,9 +322,13 @@ pid_t __vfork(jmp_buf env)
 
         parent_enterpretendchild(udata);
 
-        D(bug("__vfork: Child %d jumping to jmp_buf %p\n", udata->child_id, &udata->vfork_jmp));
-        D(bug("__vfork: ip: %p, stack: %p alt: %p\n", udata->vfork_jmp[0].retaddr, udata->vfork_jmp[0].regs[SP],
-                udata->vfork_jmp[0].regs[ALT]));
+        D(bug("__vfork: Child(%p) jumping to jmp_buf %p\n",
+              udata->child, &udata->vfork_jmp
+        ));
+        D(bug("__vfork: ip: %p, stack: %p alt: %p\n",
+              udata->vfork_jmp[0].retaddr, udata->vfork_jmp[0].regs[SP],
+              udata->vfork_jmp[0].regs[ALT]
+        ));
 
         vfork_longjmp(udata->vfork_jmp, 0);
         assert(0); /* not reached */
@@ -415,15 +417,14 @@ static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork
     __stdc_set_exitjmp(udata->parent_oldexitjmp, dummy);
 
     /* Save some data from udata before udata is being freed */
-    ULONG child_id = udata->child_id;
     *env = *udata->vfork_jmp;
 
     D(bug("__vfork: Parent: freeing udata\n"));
     FreeMem(udata, sizeof(struct vfork_data));
 
-    D(bug("__vfork: Parent jumping to jmp_buf %p (child=%d)\n", env, child_id));
+    D(bug("__vfork: Parent jumping to jmp_buf %p\n", env));
     D(bug("__vfork: ip: %p, stack: %p\n", env->retaddr, env->regs[SP]));
-    vfork_longjmp(env, child_id);
+    vfork_longjmp(env, GetETaskID(udata->child));
 }
 
 static void parent_enterpretendchild(struct vfork_data *udata)
