@@ -11,8 +11,6 @@
 /* C99 */
 #include <aros/stdc/stdio.h>
 
-#include <sys/arosc.h>
-
 #include <aros/types/off_t.h>
 #include <aros/types/ssize_t.h>
 

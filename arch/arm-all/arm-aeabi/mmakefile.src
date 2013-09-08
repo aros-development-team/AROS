@@ -4,10 +4,8 @@
 #
 include $(TOP)/config/make.cfg
 
-# clib needs it :)
-
-#MM- linklibs-clib-shared-arm : includes-asm_h-arm linklibs-aeabi-arm
-#MM- linklibs-clib-common-arm: linklibs-aeabi-arm
+# TODO: Move this into the gcc source code ?
+#MM- compiler-stdc-arm : includes-asm_h-arm linklibs-aeabi-arm
 
 %build_linklib mmake=linklibs-aeabi-arm \
     libname=aeabi files="uldiv ldiv" asmfiles="uidivmod idivmod uldivmod ldivmod idiv0 ldiv0 unwind"

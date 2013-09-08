@@ -105,7 +105,7 @@ struct PluginData {
 	struct Library *UtilityBase;
 	struct DIPluginIFace *IPlugin;
 #ifdef __AROS__
-	struct Library *aroscbase;
+	struct Library *StdCBase;
 #endif
 };
 

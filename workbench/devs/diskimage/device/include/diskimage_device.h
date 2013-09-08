@@ -74,10 +74,10 @@ struct DiskImageBase {
 	struct Library *SysBase;
 	struct Library *DOSBase;
 	struct Library *UtilityBase;
-#ifdef __AROS__
-	struct Library *aroscbase;
-#endif
 	struct Library *IntuitionBase;
+#ifdef __AROS__
+	struct Library *StdCBase;
+#endif
 };
 
 enum {

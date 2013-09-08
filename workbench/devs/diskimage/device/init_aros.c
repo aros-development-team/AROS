@@ -24,23 +24,18 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
-// in contrast to init.c we use auto opening for AROS (except arosc.library).
-// #define __NOLIBBASE__
+// in contrast to init.c we use auto opening for AROS
 
 #include "diskimage_device.h"
 #include "progress.h"
 #include <exec/exec.h>
 #include <proto/exec.h>
+#include <proto/stdc.h>
 
 #include <expat.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
-
-// struct Library *SysBase;
-// struct Library *DOSBase;
-// struct Library *IntuitionBase;
-struct Library *aroscbase;
 
 static void FreeBaseVars (struct DiskImageBase *libBase);
 static struct DiskImageUnit *InitUnit (struct DiskImageBase *libBase, ULONG unit_number);
@@ -52,29 +47,21 @@ static int LibInit(struct DiskImageBase *libBase)
 
 	libBase->SysBase = (struct Library *)SysBase;
 
-#if 1
-	if ((libBase->DOSBase = DOSBase) &&
-		(libBase->UtilityBase = UtilityBase) &&
-		(aroscbase = libBase->aroscbase = OpenLibrary("arosc.library", 41)) &&
-		(libBase->IntuitionBase = IntuitionBase))
-#else
-	if ((DOSBase = libBase->DOSBase = OpenLibrary("dos.library", MIN_OS_VERSION)) &&
-		(libBase->UtilityBase = OpenLibrary("utility.library", MIN_OS_VERSION)) &&
-		(aroscbase = libBase->aroscbase = OpenLibrary("arosc.library", 41)) &&
-		(IntuitionBase = libBase->IntuitionBase = OpenLibrary("intuition.library", MIN_OS_VERSION)))
-#endif
-	{
-		if ((libBase->UnitSemaphore = CreateSemaphore()) &&
-			(libBase->PluginSemaphore = CreateSemaphore()) &&
-			(libBase->DiskChangeSemaphore = CreateSemaphore()) &&
-			(libBase->Units = CreateList(TRUE)) &&
-			(libBase->Plugins = CreateList(TRUE)) &&
-			(libBase->ReloadPluginsHooks = CreateList(TRUE)) &&
-			(libBase->DiskChangeHooks = CreateList(TRUE)))
-		{
-			return TRUE;
-		}
-	}
+	libBase->DOSBase = (struct Library *)__aros_getbase_DOSBase();
+        libBase->UtilityBase = (struct Library *)__aros_getbase_UtilityBase();
+        libBase->IntuitionBase = (struct Library *)__aros_getbase_IntuitionBase();
+        libBase->StdCBase = (struct Library *)__aros_getbase_StdCBase();
+
+        if ((libBase->UnitSemaphore = CreateSemaphore()) &&
+            (libBase->PluginSemaphore = CreateSemaphore()) &&
+            (libBase->DiskChangeSemaphore = CreateSemaphore()) &&
+            (libBase->Units = CreateList(TRUE)) &&
+            (libBase->Plugins = CreateList(TRUE)) &&
+            (libBase->ReloadPluginsHooks = CreateList(TRUE)) &&
+            (libBase->DiskChangeHooks = CreateList(TRUE)))
+        {
+            return TRUE;
+        }
 
 	FreeBaseVars(libBase);
 	return FALSE;
@@ -90,12 +77,6 @@ static void FreeBaseVars (struct DiskImageBase *libBase) {
 	DeleteSemaphore(libBase->DiskChangeSemaphore);
 	DeleteSemaphore(libBase->PluginSemaphore);
 	DeleteSemaphore(libBase->UnitSemaphore);
-
-	if (libBase->aroscbase) CloseLibrary(libBase->aroscbase);
-
-	// if (libBase->IntuitionBase) CloseLibrary(libBase->IntuitionBase);
-	// if (libBase->UtilityBase) CloseLibrary(libBase->UtilityBase);
-	// if (libBase->DOSBase) CloseLibrary(libBase->DOSBase);
 }
 
 static int LibOpen(struct DiskImageBase *libBase, struct IORequest *io, ULONG unit_number, ULONG flags)
@@ -103,8 +84,6 @@ static int LibOpen(struct DiskImageBase *libBase, struct IORequest *io, ULONG un
 	D(bug("[diskimage/open] libbase %p opencnt %d IORequest %p unit %d flags %d\n",
 		libBase, libBase->LibNode.lib_OpenCnt, io, unit_number, flags));
 
-	// struct Library *SysBase = libBase->SysBase;
-	// struct Library *DOSBase = libBase->DOSBase;
 	struct DiskImageUnit *unit;
 
 	/* Subtle point: any AllocMem() call can cause a call to this device's
@@ -116,15 +95,6 @@ static int LibOpen(struct DiskImageBase *libBase, struct IORequest *io, ULONG un
 	io->io_Unit = NULL;
 	io->io_Error = IOERR_SUCCESS;
 
-#ifndef __AROS__
-	if (libBase->LibNode.lib_OpenCnt++ == 0) {
-		ObtainSemaphore(libBase->PluginSemaphore);
-		InitLocaleInfo(SysBase, &libBase->LocaleInfo, "diskimagedevice.catalog");
-		LoadPlugins(libBase);
-		ReleaseSemaphore(libBase->PluginSemaphore);
-	}
-#endif
-	
 	if (unit_number == ~0) {
 		io->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 
@@ -226,7 +196,6 @@ static int LibClose(struct DiskImageBase *libBase, struct IORequest *io)
 {
 	D(bug("[diskimage/close] libbase %p IORequest %p unit %d\n", libBase, io, io->io_Unit));
 
-	// struct Library *SysBase = libBase->SysBase;
 	struct DiskImageUnit *unit = (struct DiskImageUnit *)io->io_Unit;
 
 	ObtainSemaphore(libBase->UnitSemaphore);

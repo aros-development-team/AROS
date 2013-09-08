@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 #MM- core-linklibs : linklibs-startup
 #MM- linklibs: linklibs-startup
 #MM linklibs-startup : linklibs-startup-setup includes includes-copy \
-#MM     compiler-posixc-includes
+#MM     compiler-stdc-includes compiler-posixc-includes
 
 FILES :=        \
 	startup \

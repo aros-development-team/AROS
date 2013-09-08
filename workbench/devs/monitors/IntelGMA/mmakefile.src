@@ -35,7 +35,6 @@ USER_INCLUDES := \
                 -I$(GALLIUM_PATH)/include
 
     USER_CFLAGS := -std=gnu99
-    USER_LDFLAGS:= -noarosc
 
 FILES := intelG45_init intelG45_class intelG45_i2c intelG45_bitmap \
     intelG45_lowlevel intelG45_memory compositingclass startup \

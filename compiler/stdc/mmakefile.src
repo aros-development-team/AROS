@@ -1,5 +1,7 @@
 include $(TOP)/config/make.cfg
 
+#MM- AROS : compiler-stdc compiler-stdcio
+
 STDC := \
     __ctype \
     __exitfunc \
@@ -245,8 +247,6 @@ STDCIO := \
 STDCIO_COMMON := \
     __stdcio_stdstreams
 
-#MM- linklibs-clib-includes : compiler-stdc-includes compiler-stdcio-includes
-#MM- linklibs-clib-shared : compiler-stdc compiler-stdcio
 #MM- core-linklibs : linklibs-stdc linklibs-stdcio linklibs-libm
 
 STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(notdir $(STDC_COMMON))))

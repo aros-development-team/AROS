@@ -38,6 +38,13 @@
 #include <SDI_hook.h>
 #include "rev/DiskImageGUI_rev.h"
 
+#ifdef __AROS__
+#define DEBUG 1
+#include <aros/debug.h>
+#else
+#define D(x) 
+#endif
+
 CONST TEXT USED verstag[] = VERSTAG;
 
 struct LocaleInfo LocaleInfo;
@@ -78,7 +85,9 @@ int main (void) {
 	if (!Icon) {
 		goto error;
 	}
-	
+
+        D(bug("Got Icon\n"));
+
 	FileReq = MUI_AllocAslRequestTags(ASL_FileRequest,
 		ASLFR_SleepWindow,		TRUE,
 		ASLFR_InitialDrawer,	TTString(Icon, "FILEDIR", ""),
@@ -100,14 +109,20 @@ int main (void) {
 		goto error;
 	}
 		
+        D(bug("Got Classes\n"));
+
 	if (!OpenDiskImageDevice(~0)) {
 		goto error;
 	}
+
+        D(bug("diskimage.device opened\n"));
 
 	if (!CreateGUI()) {
 		goto error;
 	}
 	
+        D(bug("GUI Created\n"));
+
 	DiskChangeParams[0] = (IPTR)FindTask(NULL);
 	DiskChangeParams[1] = (1UL << DiskChangeSignal);
 	DiskChangeHook = CreateHook((HOOKFUNC)SignalFunc, DiskChangeParams);
@@ -156,8 +171,11 @@ int main (void) {
 			}
 		}
 	}
-	
+
+        D(bug("DiskImageGUI ending...\n"));
+
 error:
+        D(bug("In error/cleanup section\n"));
 	CleanupGUI();
 	PluginList_FreeClass(PluginListClass);
 	DriveList_FreeClass(DriveListClass);

@@ -9,7 +9,7 @@ FILES := galliumclass init
 %copy_includes path=hidd dir=include
 
 #MM- workbench-hidds: hidd-gallium
-#MM hidd-gallium : includes linklibs-clib linklibs-libinit
+#MM hidd-gallium : includes
 
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
