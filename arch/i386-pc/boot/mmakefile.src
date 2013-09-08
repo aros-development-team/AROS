@@ -38,7 +38,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-workbench-devs-pc-i386
 
 EXEDIR  := $(BINDIR)/boot
-USELIBS	:= hiddstubs amiga arossupport debug arosc.static arosm autoinit libinit stdc.static
+USELIBS	:= hiddstubs amiga arossupport debug arosc.static autoinit libinit stdc.static
 
 KRSRCS  := acpi battclock efi hpet processor
 KLIBS   := exec expansion

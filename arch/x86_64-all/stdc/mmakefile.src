@@ -8,6 +8,6 @@ USER_AFLAGS 	:= -I$(GENINCDIR)
   mainmmake=compiler-stdc \
   maindir=compiler/stdc \
   arch=x86_64 \
-  asmfiles="longjmp setjmp"
+  files="fenv" asmfiles="longjmp setjmp"
 
 #MM compiler-stdc-x86_64 : includes-asm_h-x86_64

@@ -8,7 +8,7 @@ USER_AFLAGS  := -I$(GENINCDIR) -DDEBUG=0
   mainmmake=compiler-stdc \
   maindir=compiler/stdc \
   arch=m68k \
-  asmfiles="longjmp setjmp"
+  files="fenv" asmfiles="longjmp setjmp"
 
 #MM- compiler-stdc-m68k : includes-asm_h-m68k
 

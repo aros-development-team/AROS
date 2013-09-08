@@ -25,10 +25,11 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_lgamma.c,v 1.8 2005/02/04 18
 #include "math.h"
 #include "math_private.h"
 
-extern int signgam;
+#include "__stdc_intbase.h"
 
 double
 __ieee754_lgamma(double x)
 {
-	return __ieee754_lgamma_r(x,&signgam);
+	struct StdCBase *StdCBase = __aros_getbase_StdCBase();
+	return __ieee754_lgamma_r(x,&StdCBase->_signgam);
 }

@@ -12,7 +12,6 @@ OS_INCLUDES   := -I$(GENINCDIR)
 #Instead of the target 'compiler' I need to make the target compiler-nofpu
 #MM- compiler-nofpu : setup includes \
 #MM	linklibs-amiga \
-#MM	linklibs-arosm \
 #MM	linklibs-zlib \
 #MM	linklibs-arossupport \
 #MM	linklibs-autoinit \

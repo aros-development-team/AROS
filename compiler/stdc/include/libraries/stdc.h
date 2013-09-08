@@ -22,6 +22,9 @@ struct StdCBase
 
     /* errno.h */
     int _errno;
+
+    /* math.h */
+    int _signgam;
 };
 
 __BEGIN_DECLS

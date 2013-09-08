@@ -6,7 +6,7 @@ EXEDIR      := $(BINDIR)/Demos
 OBJDIR      := $(GENDIR)/test/HiddGraphics
 
 STARTUP = $(LIBDIR)/startup.o
-LIBS    = -L$(LIBDIR) -larossupport -lamiga $(TOOL).a -larosc -larosm
+LIBS    = -L$(LIBDIR) -larossupport -lamiga $(TOOL).a -lstdc
 
 FILES	    := \
 	BitMapNewDispose \

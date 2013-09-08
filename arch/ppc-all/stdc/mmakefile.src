@@ -8,6 +8,6 @@ USER_AFLAGS 	:= -I$(GENINCDIR)
   mainmmake=compiler-stdc \
   maindir=compiler/stdc \
   arch=ppc \
-  asmfiles="longjmp setjmp"
+  files="fenv" asmfiles="longjmp setjmp"
 
 #MM compiler-stdc-ppc : includes-asm_h-ppc

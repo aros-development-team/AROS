@@ -18,12 +18,10 @@ TESTDIR := $(BINDIR)/Tests
 
 COMMON	:= \
 	__filesystem_support \
-	__isinf \
 	atof \
 	div \
 	getopt \
 	getopt_long \
-	isinf \
 	ldiv \
 	lldiv \
 	mblen \
@@ -384,12 +382,10 @@ ROM_COMMON := \
 # Objects for libarosc.static.a, from the static build.
 ROM_STATIC := \
 	__filesystem_support \
-	__isinf \
 	abs \
 	atoi \
 	atol \
 	bsearch \
-	isinf \
 	labs \
 	qsort \
 	rand_rom \
@@ -408,7 +404,12 @@ ROM_STATIC := \
 	strtok \
 	vsnprintf \
 	vsprintf \
-	vsscanf
+	vsscanf \
+        ../stdc/math/e_sqrt \
+        ../stdc/math/e_pow \
+        ../stdc/math/s_copysign \
+        ../stdc/math/s_fabs \
+        ../stdc/math/s_scalbn
 
 
 #MM- core-linklibs : linklibs-arosc linklibs-rom

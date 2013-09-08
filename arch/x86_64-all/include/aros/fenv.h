@@ -114,7 +114,8 @@ feclearexcept(int __excepts)
 static __inline int
 fegetexceptflag(fexcept_t *__flagp, int __excepts)
 {
-	int __mxcsr, __status;
+	short __status;
+	int __mxcsr;
 
 	__stmxcsr(&__mxcsr);
 	__fnstsw(&__status);
