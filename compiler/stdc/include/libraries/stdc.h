@@ -30,6 +30,9 @@ struct StdCBase
 
     /* stdlib.h */
     int mb_cur_max;
+
+    /* signal.h */
+    unsigned char sigrunning, sigpending;
 };
 
 __BEGIN_DECLS

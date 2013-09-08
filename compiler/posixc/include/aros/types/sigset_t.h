@@ -10,7 +10,7 @@
 
 #include <aros/cpu.h>
 
-/* TODO: Determine value for __NIXC_SIGBITS */
+/* TODO: Determine value for __POSIXC_SIGBITS */
 #define _SIG_WORDS		4
 #define _SIG_MAXSIG		(_SIG_WORDS * 32)
 

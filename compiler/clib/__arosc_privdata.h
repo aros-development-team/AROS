@@ -16,7 +16,6 @@
 struct _fdesc;
 struct __env_item;
 struct vfork_data;
-struct signal_func_data;
 struct random_state;
 
 struct StdCBase;
@@ -94,9 +93,6 @@ struct aroscbase
 
     /* environ emulation */
     char ***acb_environptr;
-
-    /* signal.c & co. */
-    struct signal_func_data *acb_sigfunc_array;
 
     /* rand */
     unsigned int acb_srand_seed;

@@ -4,19 +4,29 @@
 */
 
 #include <proto/exec.h>
+#include <proto/intuition.h>
 #include <libraries/stdc.h>
 
-#include <signal.h>
+/* We include the signal.h of posixc.library for getting min/max signal number
+   TODO: Implement more elegant way to get maximum and minimum signal number
+*/
+#include <aros/posixc/signal.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 
-#include "__arosc_privdata.h"
+#include "__stdc_intbase.h"
 #include "__signal.h"
+#include "__optionallibs.h"
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 struct signal_func_data *__sig_getfuncdata(int signum)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
     int i;
 
     if (signum < SIGHUP || signum > _SIGMAX)
@@ -25,14 +35,11 @@ struct signal_func_data *__sig_getfuncdata(int signum)
         return NULL;
     }
 
-    if (aroscbase->acb_sigfunc_array == NULL)
+    if (StdCBase->sigfunc_array == NULL)
     {
-        aroscbase->acb_sigfunc_array =
-            AllocPooled(aroscbase->acb_internalpool,
-                        _SIGMAX*sizeof(struct signal_func_data)
-            );
+        StdCBase->sigfunc_array = malloc(_SIGMAX*sizeof(struct signal_func_data));
 
-        if (!aroscbase->acb_sigfunc_array)
+        if (!StdCBase->sigfunc_array)
         {
             errno = ENOMEM;
             return NULL;
@@ -40,31 +47,57 @@ struct signal_func_data *__sig_getfuncdata(int signum)
 
         for (i = 0; i < _SIGMAX; i++)
         {
-            aroscbase->acb_sigfunc_array[i].sigfunc = SIG_DFL;
-            aroscbase->acb_sigfunc_array[i].flags = 0;
+            StdCBase->sigfunc_array[i].sigfunc = SIG_DFL;
+            StdCBase->sigfunc_array[i].flags = 0;
         }
     }
 
-    return &aroscbase->acb_sigfunc_array[signum-1];
+    return &StdCBase->sigfunc_array[signum-1];
 }
 
 /* Handler for SIG_DFL */
+/* TODO: Maybe a mechanism has to be implemented so that default signal handler
+   can be overloaded by libraries. For example by stdcio.library or posixc.library
+   so they can use stdio for presenting the caught signal
+*/
 void __sig_default(int signum)
 {
+    char s[50];
+    char *taskname = FindTask(NULL)->tc_Node.ln_Name;
+
     switch (signum)
     {
     case SIGABRT:
-        fprintf(stderr, "Program aborted.\n");
+        sprintf(s, "Program '%s' aborted.", taskname);
         break;
 
     case SIGTERM:
-        fprintf(stderr, "Program terminated.\n");
+        sprintf(s, "Program '%s' terminated.", taskname);
         break;
 
     default:
-        fprintf(stderr, "Caught signal %d; aborting...\n", signum);
+        sprintf(s, "Program '%s' caught signal %d\naborting...",
+                taskname, signum
+        );
         break;
     }
+
+    /* Open requester if IntuitionBase is available otherwise use kprintf() */
+    if (__intuition_available())
+    {
+        struct EasyStruct es =
+            {
+                sizeof(struct EasyStruct),
+                0,
+                "Caught Signal",
+                "%s",
+                "OK"
+            };
+        
+        EasyRequest(NULL, &es, NULL, s);
+    }
+    else
+        kprintf("%s\n", s);
 
     __stdc_jmp2exit(0, 20);
 
