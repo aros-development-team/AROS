@@ -194,7 +194,8 @@ STDC_COMMON := \
     math/infinity
 
 STDCIO := \
-    __stdcio_init
+    __stdcio_init \
+    getenv
 
 #MM- linklibs-clib-includes : compiler-stdc-includes compiler-stdcio-includes
 #MM- linklibs-clib-shared : compiler-stdc compiler-stdcio

@@ -51,7 +51,7 @@
 {
     va_list args;
     char *const *argv;
-    char ***environptr = __arosc_get_environptr();
+    char ***environptr = __posixc_get_environptr();
     char **environ = (environptr != NULL) ? *environptr : NULL;
 
     va_start(args, arg);

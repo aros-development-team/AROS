@@ -140,6 +140,10 @@ LONG launcher()
           aroscbase, aroscbase->StdCBase
       )
     );
+    /* Temporary run with parent PosixCBase;
+       this code will be removed when vfork() is moved
+    */
+    aroscbase->PosixCBase = pbase->PosixCBase;
 
     udata->child_aroscbase = aroscbase;
 
@@ -420,8 +424,10 @@ static void parent_enterpretendchild(struct vfork_data *udata)
     aroscbase->acb_mempool = udata->child_aroscbase->acb_mempool;
 
     /* Remember and switch env var list */
-    udata->parent_env_list = aroscbase->acb_env_list;
-    aroscbase->acb_env_list = udata->child_aroscbase->acb_env_list;
+    // Temporary disabled, needs to be enabled in
+    // posixc.library/__vfork.c later on
+    //udata->parent_env_list = aroscbase->acb_env_list;
+    //aroscbase->acb_env_list = udata->child_aroscbase->acb_env_list;
 
     /* Remember and switch fd descriptor table */
     udata->parent_internalpool = aroscbase->acb_internalpool;
@@ -465,7 +471,9 @@ static void parent_leavepretendchild(struct vfork_data *udata)
     aroscbase->acb_mempool = udata->parent_mempool;
 
     /* Restore parent's env var list */
-    aroscbase->acb_env_list = udata->parent_env_list;
+    // Temporary disabled, needs to be enabled in
+    // posixc.library/__vfork.c later on
+    //aroscbase->acb_env_list = udata->parent_env_list;
 
     /* Restore parent's old fd_array */
     aroscbase->acb_internalpool = udata->parent_internalpool;

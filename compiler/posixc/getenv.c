@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function getenv().
@@ -30,7 +30,10 @@
 	Pointer to the variable's value, or NULL on failure.
 
     NOTES
-        This function must not be used in a shared library.
+        The returned contents of the environment variable is cached per
+        PosixCBase and per variable name. So the returned value is valid
+        and does not change until a next call to getenv with the same
+        PosixCBase and the same name.
 
     EXAMPLE
 

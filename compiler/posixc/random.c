@@ -23,7 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "__nixc_intbase.h"
+#include "__posixc_intbase.h"
 
 /*
  * random.c:

@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal functions for environment variables handling.
 */
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -18,7 +18,7 @@
 
 #if AROS_AMIGAOS_COMPLIANCE && (AROS_AMIGAOS_COMPLIANCE >= 30)
 /* ScanVars is a Morphos addition in dos.library v50, so we
- * have this stub here for arosc.library compatability with
+ * have this stub here for posixc.library compatability with
  * dos.library v30..v39.
  */
 static LONG v30_ScanVars(struct Hook *hook, ULONG flags, APTR userdata)
@@ -91,12 +91,13 @@ err1:
 
 static __env_item **internal_findvar(register const char *name)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
    __env_item **curr;
 
    for (
-       curr = &aroscbase->acb_env_list;
+       curr = &PosixCBase->env_list;
        *curr && strcmp((*curr)->name, name);
        curr = &((*curr)->next)
    );

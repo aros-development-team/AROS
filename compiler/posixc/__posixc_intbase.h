@@ -13,6 +13,7 @@
 #include <libraries/posixc.h>
 
 struct random_state;
+struct __env_item;
 
 struct PosixCIntBase
 {
@@ -20,6 +21,12 @@ struct PosixCIntBase
 
     /* random.c */
     struct random_state *rs;
+
+    /* __posixc_environ.c; don't use this field outside that file */
+    char ***environptr;
+
+    /* __env.c */
+    struct __env_item *env_list;
 };
 
 #endif //__POSIXC_INTBASE_H

@@ -24,13 +24,11 @@ COMMON	:= \
 
 #   - Shared are in either the shared linklib, or the arosc module
 SHARED	:= \
-        __arosc_environ \
         __arosc_init \
         __arosc_nixmain \
 	__arosc_userdata \
 	__assert \
 	__get_default_file \
-	__env \
         __exec \
         __fdesc \
 	__stat \
@@ -94,7 +92,6 @@ SHARED	:= \
         getc \
         getchar \
 	getcwd \
-	getenv \
 	getfsstat \
 	statfs \
         getpid \
@@ -132,7 +129,6 @@ SHARED	:= \
 	pipe \
 	popen \
 	printf \
-	putenv \
         putc \
 	puts \
 	read \
@@ -150,7 +146,6 @@ SHARED	:= \
 	scanf \
 	seekdir \
 	setbuf \
-	setenv \
 	setgid \
 	setgrent \
 	setlinebuf \
@@ -188,7 +183,6 @@ SHARED	:= \
 	ungetc \
 	uname \
 	unlink \
-	unsetenv \
 	updatestdio \
 	utime \
 	utimes \
@@ -205,7 +199,6 @@ SHARED_ARCH := \
     vfork_longjmp
 
 SHARED_LINKLIB := \
-        arosc_environ \
 	ftime \
 	gcvt
 
