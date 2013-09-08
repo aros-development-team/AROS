@@ -1,9 +1,11 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function puts().
 */
+
+#include <libraries/posixc.h>
 
 /*****************************************************************************
 
@@ -44,12 +46,14 @@
     INTERNALS
 
 ******************************************************************************/
- {
+{
+    struct PosixCBase *PosixCBase = __aros_getbase_PosixCBase();
+
     if
     (
-        fputs (str, stdout)  == EOF ||
-        fputs ("\n", stdout) == EOF ||
-        fflush (stdout)      == EOF
+        fputs (str, PosixCBase->_stdout)  == EOF ||
+        fputs ("\n", PosixCBase->_stdout) == EOF ||
+        fflush (PosixCBase->_stdout)      == EOF
     )
     {
 	return EOF;

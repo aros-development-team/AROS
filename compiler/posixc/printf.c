@@ -1,9 +1,11 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function printf().
 */
+
+#include <libraries/posixc.h>
 
 #include <stdarg.h>
 
@@ -251,23 +253,24 @@
 	often impossible to assure.
 
     SEE ALSO
-	fprintf(), vprintf(), vfprintf(), sprintf(), vsprintf(),
-	vsnprintf()
+	fprintf(), vprintf(), vfprintf(), stdc.library/sprintf(),
+        stdc.library/vsprintf(), stdc.library/vsnprintf()
 
     INTERNALS
 
 ******************************************************************************/
 {
+    struct PosixCBase *PosixCBase = __aros_getbase_PosixCBase();
     int     retval;
     va_list args;
 
     va_start (args, format);
 
-    retval = vfprintf (stdout, format, args);
+    retval = vfprintf (PosixCBase->_stdout, format, args);
 
     va_end (args);
 
-    fflush (stdout);
+    fflush (PosixCBase->_stdout);
 
     return retval;
 } /* printf */

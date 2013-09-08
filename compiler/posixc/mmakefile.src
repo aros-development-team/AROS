@@ -59,6 +59,7 @@ POSIXC := \
     fstat \
     fsync \
     ftell \
+    ftello \
     ftruncate \
     fwrite \
     getchar \
@@ -83,10 +84,15 @@ POSIXC := \
     nrand48 \
     open \
     opendir \
+    pclose \
+    perror \
     pipe \
     popen \
     posix_memalign \
+    printf \
+    putchar \
     putenv \
+    puts \
     random \
     read \
     readdir \
@@ -94,8 +100,11 @@ POSIXC := \
     realpath \
     remove \
     rename \
+    rewind \
+    scanf \
     seed48 \
     seekdir \
+    setbuf \
     setenv \
     setvbuf \
     srand48 \
@@ -105,6 +114,9 @@ POSIXC := \
     symlink \
     system \
     telldir \
+    tempnam \
+    tmpfile \
+    tmpnam \
     umask \
     ungetc \
     unsetenv \
@@ -113,6 +125,8 @@ POSIXC := \
     utimes \
     vfprintf \
     vfscanf \
+    vprintf \
+    vscanf \
     wait \
     waitpid \
     write

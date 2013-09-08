@@ -1,9 +1,14 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function putchar()
 */
+
+#include <libraries/posixc.h>
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -34,6 +39,10 @@
 
 ******************************************************************************/
 {
-    return putc(c, stdout);
+    struct PosixCBase *PosixCBase = __aros_getbase_PosixCBase();
+
+    D(bug("[putchar]PosixCBase: %p, stdout: %p\n", PosixCBase, PosixCBase->_stdout));
+
+    return fputc(c, PosixCBase->_stdout);
 }
 
