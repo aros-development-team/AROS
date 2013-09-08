@@ -1,0 +1,13 @@
+# $Id$
+#
+include $(TOP)/config/make.cfg
+
+USER_AFLAGS 	:= -I$(GENINCDIR)
+
+%build_archspecific \
+  mainmmake=compiler-stdc \
+  maindir=compiler/stdc \
+  arch=x86_64 \
+  asmfiles="longjmp setjmp"
+
+#MM compiler-stdc-x86_64 : includes-asm_h-x86_64

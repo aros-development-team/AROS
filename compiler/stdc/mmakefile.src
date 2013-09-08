@@ -1,7 +1,9 @@
 include $(TOP)/config/make.cfg
 
 STDC := \
-    __optionallibs
+    __optionallibs \
+    longjmp \
+    setjmp
 
 STDCIO := \
     __stdcio_init
@@ -30,3 +32,11 @@ USER_CFLAGS := -DSTDC_STATIC
 #MM- core-linklibs : linklibs-stdc-static
 %build_linklib mmake=linklibs-stdc-static libname=stdc.static \
     files="$(STDC_STATIC)" objdir=$(GENDIR)/$(CURDIR)/static
+
+#MM- linklibs-romhack : compiler-stdc
+# FIXME: The next romhack linklib is a temporary hack and has to be
+# excommunicated in the future !
+# setjmp()/longjmp() is used in dos.library so make it available.
+# Plan to put stdc.library also in aros-base rom so this is not needed anymore
+%build_linklib mmake=linklibs-romhack \
+    libname=romhack files="setjmp longjmp"
