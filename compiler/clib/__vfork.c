@@ -187,6 +187,9 @@ LONG launcher()
             /* Inform parent that we won't use udata anymore */
             Signal(udata->parent, 1 << udata->parent_signal);
 
+            D(bug("launcher: waiting for parent to be after _exit()\n"));
+            Wait(1 << udata->child_signal);
+
             if (exec_id)
             {
                 D(bug("launcher: catch _exit()\n"));
@@ -388,17 +391,28 @@ static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork
     jmp_buf dummy;
     jmp_buf env;
 
-    D(bug("__vfork: Parent: restoring startup buffer\n"));
-    /* Restore parent errorptr and startup buffer */
-    __stdc_set_errorptr(udata->parent_olderrorptr);
-    __stdc_set_exitjmp(udata->parent_oldexitjmp, dummy);
-
     D(bug("__vfork: Parent: freeing parent signal\n"));
     FreeSignal(udata->parent_signal);
 
     errno = udata->child_errno;
 
+    /* leavepretendchild will restore old StdCBase and thus also
+       old startup jmp_buf.
+       This is also the reason this function has to be called before
+       signaling child that we are after _exit().
+    */
     parent_leavepretendchild(udata);
+
+    if(udata->child_executed)
+    {
+        D(bug("__vfork: Inform child that we are after _exit()\n"));
+        Signal(udata->child, 1 << udata->child_signal);
+    }
+
+    D(bug("__vfork: Parent: restoring startup buffer\n"));
+    /* Restore parent errorptr and startup buffer */
+    __stdc_set_errorptr(udata->parent_olderrorptr);
+    __stdc_set_exitjmp(udata->parent_oldexitjmp, dummy);
 
     /* Save some data from udata before udata is being freed */
     ULONG child_id = udata->child_id;
