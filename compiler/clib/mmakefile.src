@@ -27,24 +27,16 @@ SHARED	:= \
         __arosc_init \
 	__arosc_userdata \
 	__assert \
-        __upath \
-	access \
-	basename \
 	cfgetispeed \
 	cfgetospeed \
 	cfsetispeed \
 	cfsetospeed \
-	chown \
 	creat \
-	dirname \
 	endgrent \
 	endpwent \
 	fchown \
 	ftello \
         getc \
-	getcwd \
-	getfsstat \
-	statfs \
 	gettimeofday \
         getuid \
         geteuid \
@@ -61,9 +53,7 @@ SHARED	:= \
         getpwuid \
         kill \
 	link \
-	mkdir \
 	mknod \
-        mkstemp \
 	mktemp \
 	pathconf \
 	pclose \
@@ -71,13 +61,10 @@ SHARED	:= \
 	printf \
         putc \
 	puts \
-	readlink \
 	regex/regerror	\
 	regex/regexec	\
 	regex/regcomp	\
 	regex/regfree	\
-	remove \
-	rename \
 	rewind \
 	rewinddir \
         rmdir \
@@ -103,7 +90,6 @@ SHARED	:= \
 	strerror \
 	sync \
 	sysconf \
-	symlink \
 	tcgetattr \
 	tempnam \
 	times \
@@ -115,7 +101,6 @@ SHARED	:= \
 	uname \
 	unlink \
 	utime \
-	utimes \
 	vprintf \
 	vscanf
 

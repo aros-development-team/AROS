@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    C99 function rename().
+    C99 function rename() with optional Amiga<>Posix file name conversion.
 */
 
 #include <proto/dos.h>
@@ -19,13 +19,13 @@
     NAME */
 #include <stdio.h>
 
-	int rename (
+/*	int rename (
 
-/*  SYNOPSIS */
+    SYNOPSIS
 	const char * oldpath,
 	const char * newpath)
 
-/*  FUNCTION
+    FUNCTION
 	Renames a file or directory.
 
     INPUTS
@@ -44,12 +44,14 @@
     SEE ALSO
 
     INTERNALS
+        Uses stdcio.library rename() function after path name conversion
 
 ******************************************************************************/
+int __posixc_rename (const char * oldpath, const char * newpath)
 {
           STRPTR aoldpath = (STRPTR)strdup((const char*)__path_u2a(oldpath));
     CONST_STRPTR anewpath = __path_u2a(newpath);
-    BPTR oldlock, newlock;
+    int ret;
 
     /* __path_u2a has resolved paths like /toto/../a */
     if (anewpath[0] == '.')
@@ -62,47 +64,10 @@
 	}
     }
 
-    /* try to delete newpath first */
-    Forbid();
-
-    newlock = Lock(anewpath, SHARED_LOCK);
-    if (newlock)
-    {
-	UnLock(newlock);
-
-	oldlock = Lock(aoldpath, EXCLUSIVE_LOCK);
-	if (oldlock)
-	{
-	    UnLock(oldlock);
-
-	    /* DeleteFile returns an error if directory is non-empty */
-	    if (!DeleteFile(anewpath))
-	    {
-		LONG ioerr = IoErr();
-		errno = __stdc_ioerr2errno(ioerr);
-		D(bug("rename(%s, %s) delete errno=%d, IoErr=%d\n",
-			aoldpath, anewpath, errno, ioerr));
-		free(aoldpath);
-		Permit();
-		return -1;
-	    }
-	}
-    }
-
-    if (!Rename (aoldpath, anewpath))
-    {
-	LONG ioerr = IoErr();
-	errno = __stdc_ioerr2errno(ioerr);
-	D(bug("rename(%s, %s) errno=%d, IoErr=%d\n",
-		aoldpath, anewpath, errno, ioerr));
-	free(aoldpath);
-	Permit();
-	return -1;
-    }
+    ret = rename(aoldpath, anewpath);
 
     free(aoldpath);
-    Permit();
-    return 0;
 
+    return ret;
 } /* rename */
 

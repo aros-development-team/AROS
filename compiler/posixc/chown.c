@@ -1,6 +1,8 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
+
+    POSIX.1-2008 chown() function
 */
 
 #include <aros/debug.h>
@@ -9,7 +11,7 @@
 
 #include <errno.h>
 
-#include "__arosc_privdata.h"
+#include "__posixc_intbase.h"
 #include "__upath.h"
 
 /*****************************************************************************
@@ -50,14 +52,15 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     int                  res     = -1;
     BPTR                 lock    = BNULL;
     struct FileInfoBlock *fib    = NULL;
     BOOL                 changed = TRUE;
 
     /* check for empty path before potential conversion from "." to "" */
-    if (aroscbase->acb_doupath && path && *path == '\0')
+    if (PosixCBase->doupath && path && *path == '\0')
     {
         errno = ENOENT;
         goto out;

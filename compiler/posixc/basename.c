@@ -2,7 +2,7 @@
     Copyright © 2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function basename().
+    POSIX.1-2008 function basename().
 */
 
 #include "__upath.h"
