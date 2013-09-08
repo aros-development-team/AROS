@@ -4,6 +4,7 @@ POSIXC := \
     __env \
     __exec \
     __fdesc \
+    __posixc_assert \
     __posixc_environ \
     __posixc_init \
     __posixc_nixmain \

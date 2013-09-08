@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     assert()
@@ -10,40 +10,44 @@
 
 /*****************************************************************************
 
-    NAME
+    NAME */
 #include <assert.h>
 
-	void assert (
+	void __posixc_assert (
 
-    SYNOPSIS
-	expr)
+/*  SYNOPSIS */
+	const char * expr,
+        const char * file,
+        unsigned int line)
 
-    FUNCTION
-	Evaluates the expression expr and if it's FALSE or NULL, then
-	printf a message and stops the program. The message will
-	contain the expression, the name of the file with the assert
-	in it and the line in the file.
+/*  FUNCTION
+        This is a function that is used for implementation of the C99 assert()
+        function.
 
     INPUTS
 	expr - The expression to evaluate. The type of the expression does
 		not matter, only if its zero/NULL or not.
+        file - Name of the source file.
+        line - Line number of assert() call.
 
     RESULT
-	The function doesn't return.
+        The function doesn't return.
 
     NOTES
+        Different versions of this function are available. This function
+        is used when a program is using posixc.library.
 
     EXAMPLE
-	// Make sure that x equals 1
-	assert (x==1);
 
     BUGS
 
     SEE ALSO
+        stdc.library/assert(), stdc.library/__stdc_assert(),
+        stdc.library/__stdcio_assert()
 
     INTERNALS
+
 ******************************************************************************/
-void __assert (const char * expr, const char * file, unsigned int line)
 {
     fprintf (stderr, "Assertion (%s) failed in %s:%u\n", expr, file, line);
     exit (10);
