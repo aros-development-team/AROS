@@ -27,22 +27,18 @@ SHARED	:= \
         __arosc_environ \
         __arosc_init \
         __arosc_nixmain \
-        __arosc_startup \
 	__arosc_userdata \
 	__assert \
 	__get_default_file \
 	__env \
         __exec \
-	__exitfunc \
         __fdesc \
         __signal \
 	__stat \
 	__stdio \
 	__upath \
 	__vfork \
-	abort \
 	access \
-	atexit \
 	basename \
 	cfgetispeed \
 	cfgetospeed \
@@ -66,8 +62,6 @@ SHARED	:= \
         execv \
         execve \
         execvp \
-	exit \
-        _exit \
     fchdir \
 	fchmod \
 	fchown \
@@ -131,7 +125,6 @@ SHARED	:= \
 	mknod \
         mkstemp \
 	mktemp \
-	on_exit \
 	open \
 	opendir \
 	pathconf \

@@ -1,25 +1,20 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function _exit().
+    C99 function _Exit().
 */
 
-#include <aros/debug.h>
+#include <libraries/stdc.h>
 
-#include "__arosc_privdata.h"
-
-#include <exec/types.h>
-#include <setjmp.h>
 #include <assert.h>
-#include <aros/startup.h>
 
 /*****************************************************************************
 
     NAME */
-#include <unistd.h>
+#include <stdlib.h>
 
-	void _exit (
+	void _Exit (
 
 /*  SYNOPSIS */
 	int code)
@@ -40,11 +35,9 @@
         This function must not be used in a shared library or in a threaded
         application.
 
-   EXAMPLE
+    EXAMPLE
 
     BUGS
-        Currently, this function *does* trigger user exit-handlers to be 
-        called.
 
     SEE ALSO
 	exit()
@@ -53,7 +46,7 @@
 
 ******************************************************************************/
 {
-    __arosc_jmp2exit(0, code);
+    __stdc_jmp2exit(0, code);
 
     /* never reached */
     assert(0);

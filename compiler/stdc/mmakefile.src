@@ -2,13 +2,18 @@ include $(TOP)/config/make.cfg
 
 STDC := \
     __ctype \
+    __exitfunc \
     __optionallibs \
     __stdc_gmtoffset \
     __stdc_ioerr2errno \
+    __stdc_startup \
     __vcformat \
     __vcscan \
+    _exit \
+    abort \
     abs labs llabs \
     asctime asctime_r \
+    atexit \
     atof \
     atoi \
     atol \
@@ -18,6 +23,7 @@ STDC := \
     ctime ctime_r \
     difftime \
     div ldiv lldiv \
+    exit \
     fenv _fenv \
     free \
     gmtime gmtime_r \
@@ -104,6 +110,7 @@ STDC := \
     memmove \
     memset \
     mktime \
+    on_exit \
     qsort \
     rand \
     realloc \

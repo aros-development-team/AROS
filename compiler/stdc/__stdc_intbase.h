@@ -22,6 +22,9 @@ struct StdCIntBase
 {
     struct StdCBase StdCBase;
 
+    /* common */
+    int flags;
+
     /* stdlib.h */
     APTR mempool;
     unsigned int srand_seed;
@@ -32,6 +35,16 @@ struct StdCIntBase
     char timebuffer[26];
     struct tm tmbuffer;
     clock_t starttime;
+
+    /* __stdc_startup.c */
+    int *startup_errorptr;
+    jmp_buf exit_jmpbuf;
+
+    /* atexit.c */
+    struct MinList atexit_list;
 };
+
+/* Make a distinction between exit() and abort() */
+#define ABNORMAL_EXIT 0x00000001
 
 #endif //__STDC_INTBASE_H

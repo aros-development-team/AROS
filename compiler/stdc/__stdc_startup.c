@@ -1,9 +1,6 @@
 /*
     Copyright © 2009-2013, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: arosc library - support code for entering and leaving a program
-    Lang: english
 */
 #include <dos/stdio.h>
 #include <exec/alerts.h>
@@ -15,13 +12,13 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include "__arosc_privdata.h"
+#include "__stdc_intbase.h"
 #include "__exitfunc.h"
 
 /*****************************************************************************
 
     NAME */
-        void __arosc_program_startup(
+        void __stdc_program_startup(
 
 /*  SYNOPSIS */
         jmp_buf exitjmp,
@@ -29,7 +26,7 @@
 
 /*  FUNCTION
         This is called during program startup and before calling main.
-        This is to allow arosc.library to do some initialization that couldn't
+        This is to allow stdc.library to do some initialization that couldn't
         be done when opening the library.
 
     INPUTS
@@ -43,6 +40,10 @@
         This function is normally called by the startup code so one
         should not need to do it oneself.
 
+        TODO: Maybe this function should be implemented using Tags so that
+        functionality can be extended in the future without breaking backwards
+        compatibility.
+
     EXAMPLE
 
     BUGS
@@ -53,25 +54,26 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    D(bug("[__arosc_program_startup] aroscbase 0x%p\n", aroscbase));
+    D(bug("[__stdc_program_startup] StdCBase 0x%p\n", StdCBase));
 
-    aroscbase->acb_startup_error_ptr = errorptr;
-    *aroscbase->acb_exit_jmp_buf = *exitjmp;
+    StdCBase->startup_errorptr = errorptr;
+    *StdCBase->exit_jmpbuf = *exitjmp;
 }
 
 /*****************************************************************************
 
     NAME */
-	void __arosc_program_end(
+	void __stdc_program_end(
 
 /*  SYNOPSIS */
         void)
 
 /*  FUNCTION
         This function is to be called when main() has returned or after
-        program has exited. This allows to arosc.library to do some
+        program has exited. This allows to stdc.library to do some
         cleanup that can't be done during closing of the library.
 
     INPUTS
@@ -84,6 +86,10 @@
         This function is normally called by the startup code so one
         should not need to do it oneself.
 
+        TODO: Maybe this function should be implemented using Tags so that
+        functionality can be extended in the future without breaking backwards
+        compatibility.
+
     EXAMPLE
 
     BUGS
@@ -95,17 +101,18 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
-    D(bug("[__arosc_program_end]\n"));
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
+    D(bug("[__stdc_program_end]\n"));
 
-    if (!(aroscbase->acb_flags & ABNORMAL_EXIT))
+    if (!(StdCBase->flags & ABNORMAL_EXIT))
         __callexitfuncs();
 }
 
 /*****************************************************************************
 
     NAME */
-	int *__arosc_set_errorptr(
+	int *__stdc_set_errorptr(
 
 /*  SYNOPSIS */
         int *errorptr)
@@ -132,10 +139,11 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
-    int *old = aroscbase->acb_startup_error_ptr;
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
+    int *old = StdCBase->startup_errorptr;
 
-    aroscbase->acb_startup_error_ptr = errorptr;
+    StdCBase->startup_errorptr = errorptr;
 
     return old;
 }
@@ -143,7 +151,7 @@
 /*****************************************************************************
 
     NAME */
-	int *__arosc_get_errorptr(
+	int *__stdc_get_errorptr(
 
 /*  SYNOPSIS */
         void)
@@ -170,14 +178,15 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
-    return aroscbase->acb_startup_error_ptr;
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
+    return StdCBase->startup_errorptr;
 }
 
 /*****************************************************************************
 
     NAME */
-	 void __arosc_set_exitjmp(
+	 void __stdc_set_exitjmp(
 
 /*  SYNOPSIS */
         jmp_buf exitjmp,
@@ -205,16 +214,17 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
    
-    *previousjmp = *aroscbase->acb_exit_jmp_buf;
-    *aroscbase->acb_exit_jmp_buf = *exitjmp;
+    *previousjmp = *StdCBase->exit_jmpbuf;
+    *StdCBase->exit_jmpbuf = *exitjmp;
 }
 
 /*****************************************************************************
 
     NAME */
-	void __arosc_jmp2exit(
+	void __stdc_jmp2exit(
 
 /*  SYNOPSIS */
         int normal,
@@ -248,22 +258,23 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    /* No __arosc_progam_startup() called; Alert()
+    /* No __stdc_progam_startup() called; Alert()
     */
-    if (aroscbase->acb_startup_error_ptr == NULL)
+    if (StdCBase->startup_errorptr == NULL)
     {
-        kprintf("[__arosc_jmp2exit] Trying to exit without proper initialization\n");
+        kprintf("[__stdc_jmp2exit] Trying to exit without proper initialization\n");
         Alert(AT_DeadEnd | AG_BadParm);
     }
 
     if (!normal)
-        aroscbase->acb_flags |= ABNORMAL_EXIT;
+        StdCBase->flags |= ABNORMAL_EXIT;
 
-    *aroscbase->acb_startup_error_ptr = retcode;
+    *StdCBase->startup_errorptr = retcode;
 
-    longjmp(aroscbase->acb_exit_jmp_buf, 1);
+    longjmp(StdCBase->exit_jmpbuf, 1);
 
     assert(0); /* Not reached */
 }

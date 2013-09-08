@@ -1,9 +1,10 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <proto/exec.h>
+#include <libraries/stdc.h>
 
 #include <signal.h>
 #include <errno.h>
@@ -65,7 +66,7 @@ void __sig_default(int signum)
         break;
     }
 
-    __arosc_jmp2exit(0, 20);
+    __stdc_jmp2exit(0, 20);
 
     assert(0); /* Should not be reached */
 }

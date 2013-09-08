@@ -16,6 +16,7 @@
 #include <proto/dos.h>
 #include <exec/lists.h>
 #include <dos/dos.h>
+#include <libraries/stdc.h>
 #include <aros/startup.h>
 
 #define DEBUG 0
@@ -37,7 +38,7 @@ static void update_PATH(void);
 int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 {
     struct aroscbase *aroscbase = __aros_getbase_aroscbase(), *paroscbase;
-    int *errorptr = __arosc_get_errorptr();
+    int *errorptr = __stdc_get_errorptr();
     char *old_argv0 = NULL;
     char *new_argv0 = NULL;
     struct MinList old_vars;
@@ -92,7 +93,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
     {
         int ret;
 
-        __arosc_set_exitjmp(exitjmp, dummyjmp);
+        __stdc_set_exitjmp(exitjmp, dummyjmp);
 
         ret = (*main)(argc, argv);
         if (errorptr)

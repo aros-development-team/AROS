@@ -1,9 +1,9 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "__arosc_privdata.h"
+#include "__stdc_intbase.h"
 
 #include <aros/symbolsets.h>
 #include <exec/lists.h>
@@ -11,27 +11,29 @@
 
 int __addexitfunc(struct AtExitNode *aen)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
     
-    ADDHEAD((struct List *)&aroscbase->acb_atexit_list, (struct Node *)aen);
+    ADDHEAD((struct List *)&StdCBase->atexit_list, (struct Node *)aen);
 
     return 0;
 }
 
-int __init_atexit(struct aroscbase *aroscbase)
+int __init_atexit(struct StdCIntBase *StdCBase)
 {
-    NEWLIST((struct List *)&aroscbase->acb_atexit_list);
+    NEWLIST((struct List *)&StdCBase->atexit_list);
 
     return 1;
 }
 
 void __callexitfuncs(void)
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
     struct AtExitNode *aen;
 
     while (
-        (aen = (struct AtExitNode *) REMHEAD((struct List *) &aroscbase->acb_atexit_list))
+        (aen = (struct AtExitNode *) REMHEAD((struct List *) &StdCBase->atexit_list))
     )
     {
         switch (aen->node.ln_Type)
@@ -42,7 +44,7 @@ void __callexitfuncs(void)
 
         case AEN_PTR:
             {
-                int *errorptr = __arosc_get_errorptr();
+                int *errorptr = __stdc_get_errorptr();
                 aen->func.fptr(errorptr != NULL ? *errorptr : 0, aen->ptr);
             }
             break;
