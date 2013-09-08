@@ -1,9 +1,11 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Convert a time into a string.
 */
+
+#include "__stdc_intbase.h"
 
 /*****************************************************************************
 
@@ -29,8 +31,9 @@
 	the date and time functions.
 
     NOTES
-        This function must not be used in a shared library or
-        in a threaded application. Use localtime_r() instead.
+        Resulting tm struct is buffered per stdc.library and shared
+        with gmtime().
+        
 
     EXAMPLE
 	time_t	    tt;
@@ -51,7 +54,7 @@
 
 ******************************************************************************/
 {
-    static struct tm tm;
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    return localtime_r (tt, &tm);
+    return localtime_r (tt, &StdCBase->tmbuffer);
 } /* localtime */

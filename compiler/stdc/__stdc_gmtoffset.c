@@ -13,7 +13,7 @@
     NAME */
 #include <time.h>
 
-	int __arosc_gmtoffset (
+	int __stdc_gmtoffset (
 
 /*  SYNOPSIS */
         void)

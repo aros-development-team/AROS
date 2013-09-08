@@ -24,7 +24,6 @@ COMMON	:= \
 
 #   - Shared are in either the shared linklib, or the arosc module
 SHARED	:= \
-        __arosc_gmtoffset \
         __arosc_environ \
         __arosc_init \
         __arosc_nixmain \
@@ -43,8 +42,6 @@ SHARED	:= \
 	__vfork \
 	abort \
 	access \
-	asctime \
-        asctime_r \
 	atexit \
 	basename \
 	cfgetispeed \
@@ -55,13 +52,9 @@ SHARED	:= \
 	chmod \
 	chown \
 	clearerr \
-	ctime \
-        ctime_r \
-	clock \
 	close \
 	closedir \
 	creat \
-	difftime \
 	dirfd \
 	dirname \
 	dup \
@@ -129,21 +122,15 @@ SHARED	:= \
         getpwnam \
         getpwuid \
         gets \
-	gmtime \
-    gmtime_r \
 	isatty \
         kill \
 	link \
-	localtime \
-        localtime_r \
 	lseek \
         lstat \
 	mkdir \
 	mknod \
         mkstemp \
 	mktemp \
-	mktime \
-	nanosleep \
 	on_exit \
 	open \
 	opendir \
@@ -193,9 +180,7 @@ SHARED	:= \
 	sigsuspend \
 	sleep \
 	stat \
-	strftime \
 	strerror \
-	strptime \
 	sync \
 	sysconf \
 	symlink \
@@ -203,7 +188,6 @@ SHARED	:= \
 	tcgetattr \
 	telldir \
 	tempnam \
-	time \
 	times \
 	tmpfile \
 	tmpnam \
@@ -233,8 +217,7 @@ SHARED_ARCH := \
 SHARED_LINKLIB := \
         arosc_environ \
 	ftime \
-	gcvt \
-	usleep \
+	gcvt
 
 # Note: These files are compiled differently
 #       depending on whether -DAROSC_ROM is used

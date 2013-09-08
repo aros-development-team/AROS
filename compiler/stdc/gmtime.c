@@ -1,9 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Convert a time into UTC.
 */
+
+#include "__stdc_intbase.h"
 
 /*****************************************************************************
 
@@ -31,8 +33,8 @@
         lost with the call of any of the date and time functions.
 
     NOTES
-        This function must not be used in a shared library or
-        in a threaded application. Use gmtime_r() instead.
+        Resulting tm struct is buffered per stdc.library and shared
+        with localtime().
 
     EXAMPLE
 	time_t	    tt;
@@ -53,7 +55,8 @@
 
 ******************************************************************************/
 {
-    static struct tm tm;
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
+    extern struct tm * gmtime_r (const time_t * tt, struct tm * tm);
 
-    return gmtime_r(tt, &tm);
+    return gmtime_r(tt, &StdCBase->tmbuffer);
 } /* gmtime */

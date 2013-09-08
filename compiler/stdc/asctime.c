@@ -1,9 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Convert a time into a string.
 */
+
+#include "__stdc_intbase.h"
 
 /*****************************************************************************
 
@@ -30,8 +32,7 @@
         date and time functions.
 
     NOTES
-        This function must not be used in a shared library or
-        in a threaded application. Use asctime_r() instead.
+        The returned string is buffered per stdc.library base.
 
     EXAMPLE
 	time_t	    tt;
@@ -56,9 +57,9 @@
 
 ******************************************************************************/
 {
-    static char buffer[26];
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    asctime_r (tm, buffer);
+    strftime (StdCBase->timebuffer, 26, "%C\n", tm);
 
-    return buffer;
+    return StdCBase->timebuffer;
 } /* asctime */

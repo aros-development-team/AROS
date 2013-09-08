@@ -1,15 +1,13 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Returns time passed since start of program.
 */
 
-#include "__arosc_privdata.h"
-
-#include <dos/dos.h>
-#include <proto/dos.h>
 #include <aros/symbolsets.h>
+
+#include "__stdc_intbase.h"
 
 /*****************************************************************************
 
@@ -32,8 +30,9 @@
 	number of seconds divide by CLOCKS_PER_SEC.
 
     NOTES
-        This function must not be used in a shared library or
-        in a threaded application.
+        Reference point is set when stdc.library is opened.
+        If you use the function from another shared library the reference
+        point is thus when this library opened stdc.library
 
     EXAMPLE
 
@@ -46,14 +45,14 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    return (clock_t)time(NULL) - aroscbase->acb_starttime;
+    return (clock_t)time(NULL) - StdCBase->starttime;
 } /* clock */
 
-int __init_clock(struct aroscbase *aroscbase)
+int __init_clock(struct StdCIntBase *StdCBase)
 {
-    aroscbase->acb_starttime = (clock_t)time(NULL);
+    StdCBase->starttime = (clock_t)time(NULL);
 
     return 1;
 }

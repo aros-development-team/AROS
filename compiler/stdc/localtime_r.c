@@ -5,8 +5,6 @@
     Convert a time into a string, reentrant.
 */
 
-#include "__arosc_privdata.h"
-
 /*****************************************************************************
 
     NAME */
@@ -75,7 +73,7 @@
 {
     time_t ti = *tt;
 
-    ti -= __arosc_gmtoffset() * 60;
+    ti -= __stdc_gmtoffset() * 60;
 
     return gmtime_r (&ti, tm);
 } /* localtime_r */
