@@ -16,20 +16,13 @@ TESTDIR := $(BINDIR)/Tests
 #   - Common always exist in the link library.
 
 COMMON	:= \
-	__filesystem_support \
-	getopt \
-	getopt_long
+	__filesystem_support
 
 #   - Shared are in either the shared linklib, or the arosc module
 SHARED	:= \
         __arosc_init \
 	__arosc_userdata \
-	setlinebuf \
 	sharecontextwithchild
-
-SHARED_LINKLIB := \
-	ftime \
-	gcvt
 
 # Note: These files are compiled differently
 #       depending on whether -DAROSC_ROM is used
@@ -90,7 +83,7 @@ USER_LDFLAGS := -L$(OBJDIR)
     modname=arosc modtype=library objdir=$(OBJDIR)/shared \
     cflags="$(CFLAGS) -DAROSC_SHARED" \
     files="$(SHARED)" \
-    linklibfiles=$(SHARED_LINKLIB) linklibobjs=$(AROSC_LINKLIB_OBJS) \
+    linklibobjs=$(AROSC_LINKLIB_OBJS) \
     uselibs="arosccommon posixc_rel stdcio_rel stdc_rel"
 USER_LDFLAGS :=
 

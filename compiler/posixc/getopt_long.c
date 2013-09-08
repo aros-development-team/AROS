@@ -684,6 +684,9 @@ getopt(int nargc, char * const *nargv, const char *options)
         ment list has been exhausted.
 
     NOTES
+        Due to the usage of global variables this function is now put in
+        the static link library. This means each compilation unit using
+        getopt has it's own getopt state tracking.
 
     EXAMPLE
 
