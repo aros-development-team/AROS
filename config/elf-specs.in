@@ -5,7 +5,7 @@
 
 
 *aros_include:
-%{!nostdinc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include/aros/posixc -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include/aros/stdc -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include}
+%{!nostdinc:%{!nostdc:%{!noposixc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include/aros/posixc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include/aros/stdc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include}
 
 *endfile:
 
@@ -14,7 +14,7 @@
 -m @aros_object_format@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib
 
 *lib:
--lmui -lamiga -larossupport -lamiga -larosc%{noarosc:.static} -lm -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -llibinit -lautoinit
+-lmui -lamiga -larossupport -lamiga %{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc} -larosc%{noarosc:.static} %{!noarosc:-lposixc -lstdcio -lstdc} -lm -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -llibinit -lautoinit %{nostdc:-lstdc.static}
 
 *libgcc:
 @aros_arch_libs@ -lgcc

@@ -87,14 +87,14 @@ endif
 #
 %define link_module_q cmd=$(AROS_CC) err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	@$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
-	@if %(cmd) $(NOSTARTUP_LDFLAGS) %(ldflags) \
+	@if %(cmd) $(NOSTARTUP_LDFLAGS) -noarosc -nostdc %(ldflags) \
 	    $(GENMAP) %(objdir)/%(module).map \
 	    %(objs) %(libs) %(endtag) \
 	    -o $@ 2>&1 > %(objdir)/%(err); \
 	then \
 	    cat %(objdir)/%(err); \
 	else \
-	    echo "%(cmd) $(NOSTARTUP_LDFLAGS) %(ldflags) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(endtag) -o $@"; \
+	    echo "%(cmd) $(NOSTARTUP_LDFLAGS) -noarosc -nostdc %(ldflags) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(endtag) -o $@"; \
 	    cat %(objdir)/%(err); \
 	    exit 1; \
 	fi
@@ -844,8 +844,7 @@ ifeq (%(nix),yes)
     TMP_EXTRA_LDFLAGS += $(NIX_LDFLAGS)
 endif
 ifeq (%(usestartup),no)
-    TMP_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS)
-    TMP_EXTRA_LIBS += arosc.static
+    TMP_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS) -noarosc -nostdc
     ifeq (%(linker),target)
         TMP_EXTRA_LIBS += libinit autoinit
     endif
@@ -911,8 +910,8 @@ ifeq (%(nix),yes)
     TMP_EXTRA_LDFLAGS += $(NIX_LDFLAGS)
 endif
 ifeq (%(usestartup),no)
-    TMP_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS)
-    TMP_EXTRA_LIBS += arosc.static libinit autoinit
+    TMP_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS) -noarosc -nostdc
+    TMP_EXTRA_LIBS += libinit autoinit
 endif
 ifeq (%(detach),yes)
     TMP_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
@@ -999,7 +998,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
 %(module) : LIBS := $(addprefix -l,$(LIB_NAMES)) \
                     -L/usr/lib $(addprefix -l,%(usehostlibs))
 %(module) : %(objs) %(endobj) $(TMP_DEPLIBS) $(USER_DEPLIBS)
-	%link_module_q cmd=%(cmd) err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) -noarosc"
+	%link_module_q cmd=%(cmd) err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) -noarosc -nostdc"
 
 %end
 #------------------------------------------------------------------------------
@@ -1544,7 +1543,7 @@ BD_KBASE := DOSBase IntuitionBase LayersBase GfxBase OOPBase \
 
 BD_SYMBOLS := $(BD_KBASE)
 
-BD_KLIB := hiddstubs amiga arossupport arosc.static arosm autoinit libinit
+BD_KLIB := hiddstubs amiga arossupport autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
 $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_SYMBOLS))
@@ -1892,7 +1891,7 @@ BD_KBASE := DOSBase IntuitionBase LayersBase GfxBase OOPBase \
 
 BD_SYMBOLS := $(BD_KBASE)
 
-BD_KLIB := hiddstubs amiga arossupport arosc.static arosm autoinit libinit
+BD_KLIB := hiddstubs amiga arossupport autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
 $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS) $(%(modname)_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_SYMBOLS))
@@ -3287,7 +3286,7 @@ endif
 
 %(file): KOBJS := $(KOBJS)
 %(file): LDFLAGS := $(TMP_LDFLAGS) $(NOSTARTUP_LDFLAGS) \
-                    -noarosc -nosysbase -Wl,-Ur
+                    -noarosc -nostdc -nosysbase -Wl,-Ur
 %(file): LDLIBS := $(addprefix -l, %(uselibs))
 %(file): $(KOBJS) $(DEPLIBS) | $(TMP_DIRS)
 	@$(ECHO) "Kickstart  $(subst $(TARGETDIR)/,,$@)..."

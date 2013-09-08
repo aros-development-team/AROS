@@ -2,7 +2,7 @@
 #define _STDC_CTYPE_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file ctype.h
@@ -53,7 +53,7 @@ __ctype_make_func(isalnum,  _istype(c,_ISalnum))
 __ctype_make_func(toupper,  (int)__ctype_toupper[((int)(c)) & 0xff])
 __ctype_make_func(tolower,  (int)__ctype_tolower[((int)(c)) & 0xff])
 
-/* POSIX.1-2008/XSI extensions that are provided in arosstdc.library */
+/* POSIX.1-2008/XSI extensions that are provided in stdc.library */
 __ctype_make_func(isascii,  (c & ~0x7F) == 0)
 __ctype_make_func(toascii,  c & 0x7F)
 #define _toupper(c) toupper(c)

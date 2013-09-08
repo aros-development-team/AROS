@@ -1,0 +1,13 @@
+include $(TOP)/config/make.cfg
+
+POSIXC := \
+    __posixc_init
+
+#MM- linklibs-clib-includes : compiler-posixc-includes
+#MM- linklibs-clib-shared : compiler-posixc
+#MM- core-linklibs : linklibs-posixc
+
+%build_module mmake=compiler-posixc \
+    modname=posixc modtype=library \
+    files=$(POSIXC) \
+    uselibs="stdc_rel stdcio_rel"

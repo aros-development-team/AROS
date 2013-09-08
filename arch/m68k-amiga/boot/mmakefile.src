@@ -51,13 +51,13 @@ Q ?= @
 #MM     workbench-libs-nonvolatile-kobj \
 #MM     workbench-libs-nvdisk-kobj \
 #MM     workbench-libs-workbench-kobj \
-#MM     linklibs-loadseg
+#MM     linklibs-loadseg \
+#MM     linklibs-stdc-static
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
 
-USELIBS := amiga arossupport arosc.static arosm autoinit libinit \
-	   hiddstubs 
-LIBS    := $(addprefix -l,$(USELIBS)) -L$(GENDIR)/lib -lloadseg
+USELIBS := amiga arossupport arosc.static arosm autoinit libinit stdc.static
+LIBS    := -L$(GENDIR)/lib -lloadseg $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 # Force rebuilding, so that we always get new date strings
