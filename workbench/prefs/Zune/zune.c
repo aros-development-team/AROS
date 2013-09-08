@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2012, The AROS Development Team.
+    Copyright  2002-2013, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -75,7 +75,14 @@ void restore_prefs(CONST_STRPTR name);
 /************************************************************************/
 
 
-struct Hook hook_standard;
+static struct Hook main_cancel_pressed_hook;
+static struct Hook main_save_pressed_hook;
+static struct Hook main_use_pressed_hook;
+static struct Hook main_test_pressed_hook;
+static struct Hook main_open_menu_hook;
+static struct Hook main_saveas_menu_hook;
+static struct Hook main_page_active_hook;
+static struct Hook page_display_hook;
 
 static Object *app;
 static Object *open_menuitem;
@@ -137,14 +144,6 @@ struct MUI_CustomClass *create_class(const struct __MUIBuiltinClass *desc)
     return MUI_CreateCustomClass(NULL,MUIC_Settingsgroup,NULL,desc->datasize,desc->dispatcher);
 }
 
-/****************************************************************
- Our standard hook function, for easy call backs
-*****************************************************************/
-static void hook_func_standard(struct Hook *h, void *dummy, IPTR *funcptr)
-{
-    void (*func) (IPTR *) = (void (*)(IPTR *)) (*funcptr);
-    if (func) func(funcptr + 1);
-}
 
 /****************************************************************
  The display function for the page listview
@@ -395,10 +394,27 @@ int init_gui(void)
     main_page_entries[10].name = (char *)_(MSG_DSC_SPECIAL);
     main_page_entries[11].name = (char *)_(MSG_DSC_FRAMES);
 
-    static struct Hook page_display_hook;
+    main_cancel_pressed_hook.h_Entry = HookEntry;
+    main_cancel_pressed_hook.h_SubEntry = (HOOKFUNC)main_cancel_pressed;
 
-    hook_standard.h_Entry = HookEntry;
-    hook_standard.h_SubEntry = (APTR)hook_func_standard;
+    main_save_pressed_hook.h_Entry = HookEntry;
+    main_save_pressed_hook.h_SubEntry = (HOOKFUNC)main_save_pressed;
+
+    main_use_pressed_hook.h_Entry = HookEntry;
+    main_use_pressed_hook.h_SubEntry = (HOOKFUNC)main_use_pressed;
+
+    main_test_pressed_hook.h_Entry = HookEntry;
+    main_test_pressed_hook.h_SubEntry = (HOOKFUNC)main_test_pressed;
+
+    main_open_menu_hook.h_Entry = HookEntry;
+    main_open_menu_hook.h_SubEntry = (HOOKFUNC)main_open_menu;
+
+    main_saveas_menu_hook.h_Entry = HookEntry;
+    main_saveas_menu_hook.h_SubEntry = (HOOKFUNC)main_saveas_menu;
+
+    main_page_active_hook.h_Entry = HookEntry;
+    main_page_active_hook.h_SubEntry = (HOOKFUNC)main_page_active;
+
     page_display_hook.h_Entry = HookEntry;
     page_display_hook.h_SubEntry = (APTR)main_page_list_display;
 
@@ -492,26 +508,25 @@ int init_gui(void)
         int i;
 
         DoMethod(main_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-                 (IPTR)app, 3, MUIM_CallHook, (IPTR)&hook_standard,
-                 (IPTR)main_cancel_pressed);
-        DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
-                 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_cancel_pressed);
-        DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
-                 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_save_pressed);
-        DoMethod(use_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 3,
-                 MUIM_CallHook, (IPTR)&hook_standard, (IPTR)main_use_pressed);
-        DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 6,
-                 MUIM_Application_PushMethod, (IPTR)app, 3, MUIM_CallHook,
-                 (IPTR)&hook_standard, (IPTR)main_test_pressed);
+                 (IPTR)app, 2, MUIM_CallHook, (IPTR)&main_cancel_pressed_hook);
+        DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2,
+                 MUIM_CallHook, (IPTR)&main_cancel_pressed_hook);
+        DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2,
+                 MUIM_CallHook, (IPTR)&main_save_pressed_hook);
+        DoMethod(use_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 2,
+                 MUIM_CallHook, (IPTR)&main_use_pressed_hook);
+        DoMethod(test_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)app, 5,
+                 MUIM_Application_PushMethod, (IPTR)app, 2, MUIM_CallHook,
+                 (IPTR)&main_test_pressed_hook);
         DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
-                 MUIV_EveryTime, (IPTR)app, 3, MUIM_CallHook,
-                 (IPTR)&hook_standard, (IPTR)main_cancel_pressed);
+                 MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook,
+                 (IPTR)&main_cancel_pressed_hook);
         DoMethod(open_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
-                 MUIV_EveryTime, (IPTR)app, 3, MUIM_CallHook,
-                 (IPTR)&hook_standard, (IPTR)main_open_menu);   
+                 MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook,
+                 (IPTR)&main_open_menu_hook);   
         DoMethod(saveas_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
-                 MUIV_EveryTime, (IPTR)app, 3, MUIM_CallHook,
-                 (IPTR)&hook_standard, (IPTR)main_saveas_menu); 
+                 MUIV_EveryTime, (IPTR)app, 2, MUIM_CallHook,
+                 (IPTR)&main_saveas_menu_hook); 
         DoMethod(aboutzune_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger,
                  MUIV_EveryTime, (IPTR)app, 2, MUIM_Application_AboutMUI,
                  (IPTR)main_wnd);
@@ -533,8 +548,7 @@ int init_gui(void)
         }
 
         DoMethod(main_page_list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-                 (IPTR)app, 3, MUIM_CallHook, (IPTR)&hook_standard,
-                 (IPTR)main_page_active);
+                 (IPTR)app, 3, MUIM_CallHook, (IPTR)&main_page_active_hook);
 
         /* Activate first entry */
         set(main_page_list,MUIA_List_Active,0);
