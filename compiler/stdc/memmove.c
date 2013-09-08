@@ -50,13 +50,11 @@ typedef	int word;		/* "word" used for optimal copy speed */
 /*
  * Copy a block of memory, handling overlap.
  */
-#include <string.h>
-
 
 /*****************************************************************************
 
     NAME */
-#include <stdlib.h>
+#include <string.h>
 
         void *memmove (
 
@@ -66,10 +64,15 @@ typedef	int word;		/* "word" used for optimal copy speed */
         size_t length)
 
 /*  FUNCTION
+        Copy a block of memory, handling overlap.
 
     INPUTS
+        dst0: destination for copy
+        src0: source for copy
+        length: number of bytes to copy
 
     RESULT
+        dst0
 
     NOTES
 
@@ -145,3 +148,9 @@ typedef	int word;		/* "word" used for optimal copy speed */
 done:
 	return (dst0);
 }
+
+
+/* Provide a memcpy symbol for static link library */
+#include <aros/system.h>
+#include <string.h>
+AROS_MAKE_ALIAS(memmove, memcpy);

@@ -4,6 +4,8 @@ STDC := \
     __ctype \
     __optionallibs \
     __stdc_ioerr2errno \
+    __vcformat \
+    __vcscan \
     abs labs llabs \
     atof \
     atoi \
@@ -89,19 +91,67 @@ STDC := \
     math/sincos  math/sincosf  math/sincosl \
     math/w_cabs  math/w_cabsf \
     mblen \
+    memchr \
+    memcmp \
+    memcpy \
+    memmove \
+    memset \
     qsort \
     rand \
     realloc \
     realloc_nocopy \
     setjmp \
     setlocale \
+    snprintf \
+    sprintf \
+    sscanf \
+    stccpy \
+    stcd_l \
+    stch_l \
+    stcl_d \
+    stcl_h \
+    stcl_o \
+    stco_l \
+    stcu_d \
+    stpblk \
+    stpcpy \
+    stpsym \
+    strcasecmp \
+    strcat \
+    strchr \
+    strcmp \
+    strcoll \
+    strcpy \
+    strcspn \
+    strdup \
+    strlcat \
+    strlcpy \
+    strlen \
+    strlwr \
+    strncasecmp \
+    strncat \
+    strncmp \
+    strncpy \
+    strndup \
+    strpbrk \
+    strrchr \
+    strrev \
+    strsep \
+    strspn \
+    strstr \
     strtod \
     strtoimax \
+    strtok \
     strtol \
     strtoll \
     strtoul \
     strtoull \
-    strtoumax
+    strtoumax \
+    strupr \
+    strxfrm \
+    vsnprintf \
+    vsprintf \
+    vsscanf
 
 # If long double != double use these; otherwise, we alias the double versions
 # These are architectures that have LDBL_MANT_DIG == 53 in float.h
@@ -113,7 +163,8 @@ endif
 endif
 
 STDC_LINKLIB := \
-    __ctype_linklib
+    __ctype_linklib \
+    strcasestr
 
 # The common files will be put both in the shared and in the static link lib
 STDC_COMMON := \
@@ -150,13 +201,51 @@ USER_CFLAGS += -Wno-unused-variable -Wno-parentheses -Wno-uninitialized
 
 STDC_STATIC := \
     __ctype \
+    __vcformat \
+    __vcscan \
     atoi \
     atol \
     bsearch \
     math/e_sqrt \
+    memchr \
+    memcmp \
+    memcpy \
+    memmove \
+    memset \
     qsort \
+    snprintf \
+    sprintf \
+    sscanf \
+    stccpy \
+    stpblk \
+    strcasecmp \
+    strcasestr \
+    strcat \
+    stcd_l \
+    stch_l \
+    stcl_d \
+    stcl_h \
+    stcl_o \
+    stco_l \
+    stcu_d \
+    strchr \
+    strcmp \
+    strcpy \
+    strlcat \
+    strlcpy \
+    strlen \
+    strncasecmp \
+    strncat \
+    strncpy \
+    strncmp \
+    strpbrk \
+    strrchr \
+    strstr \
     strtol \
-    strtoul
+    strtoul \
+    vsnprintf \
+    vsprintf \
+    vsscanf
 
 USER_CFLAGS := -DSTDC_STATIC
 

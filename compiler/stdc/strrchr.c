@@ -6,7 +6,6 @@
 */
 
 #include <aros/macros.h>
-#include <stdio.h>
 
 /*****************************************************************************
 
@@ -69,5 +68,3 @@
 
     return p;
 } /* strrchr */
-
-AROS_MAKE_ALIAS(strrchr, rindex);

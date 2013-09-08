@@ -1,11 +1,9 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     BSD function strsep().
 */
-
-#include <stdio.h>
 
 /*****************************************************************************
 
