@@ -249,7 +249,7 @@ static void ahci_io_complete(struct ata_xfer *xa)
     Remove(&io->io_Message.mn_Node);
     ReleaseSemaphore(&unit->sim_Lock);
 
-    assert(!(io->io_Flags & IOF_QUICK));
+    ASSERT(!(io->io_Flags & IOF_QUICK));
 
     D(bug("[AHCI%02ld] IO %p Final, io_Flags = %d, io_Error = %d\n", unit->sim_Unit, io, io->io_Flags, io->io_Error));
     ReplyMsg(&io->io_Message);

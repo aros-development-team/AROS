@@ -58,7 +58,7 @@ typedef struct {
 
 /* Kernel stuff */
 
-#define KKASSERT(expr)  assert(expr)
+#define KKASSERT(expr)  ASSERT(expr)
 
 int kvsnrprintf(char *str, size_t size, int radix, const char *format, va_list ap);
 int kvsnprintf(char *str, size_t size, const char *format, va_list ap);
