@@ -158,14 +158,14 @@ void bus_dmamem_free(bus_dma_tag_t tag, void *vaddr, bus_dmamap_t map)
     TAILQ_FOREACH(slab, &tag->dt_slabs, sl_node) {
         if (vaddr >= slab->sl_segment && vaddr <= (slab->sl_segment + end_offset)) {
             int slot = (vaddr - slab->sl_segment) / tag->dt_segsize;
-            assert(slab->sl_segmap & (1 << slot));
+            ASSERT(slab->sl_segmap & (1 << slot));
             slab->sl_segmap &= ~(1 << slot);
             slab->sl_segfree++;
             break;
         }
     }
 
-    assert(slab != NULL);
+    ASSERT(slab != NULL);
 }
 
 int bus_dmamap_create(bus_dma_tag_t tag, unsigned flags, bus_dmamap_t *map)
