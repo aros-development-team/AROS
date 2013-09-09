@@ -628,7 +628,7 @@ OpenLibs ( void )
 #if defined(__AROS__)
   /* StdC library */
 
-  StdCBase = (struct StdCBase *) OpenLibrary( "stdc.library", 1 );
+  StdCBase = (struct StdCBase *) OpenLibrary( "stdc.library", 0 );
 
   if( StdCBase == NULL)
   {
