@@ -74,7 +74,7 @@ USER_AFLAGS := -m68060 -DADATE="\"$(shell date "+%d.%m.%Y")\""
 # of CHIP RAM, but is only used until RTF_COLDSTART.
 #
 # Right before RTF_COLDSTART, a new SS will be allocated from the fastest
-# available RAM, and this 0x800-0x1000 area will be ignored.
+# available RAM, and this initial area will be ignored.
 ROMLOC_ss  := 0x003f800
 
 # Main ROM (0xf80000 - 0xffffff)
