@@ -62,7 +62,7 @@ struct header
 
     struct Locale *def_locale = NULL;
     struct IntCatalog *catalog = NULL;
-    char *language;
+    char *language, *langnative;
     char *app_language;         /* Language given with tag OC_BuiltInLanguage */
     char *specific_language;    /* Language given with tag OC_Language */
     struct Process *MyProcess;
@@ -84,61 +84,48 @@ struct header
 
     if (!locale)
     {
-        DEBUG_OPENCATALOG(dprintf("OpenCatalogA: no locale\n"));
-        locale = def_locale = OpenLocale(NULL);
-        DEBUG_OPENCATALOG(dprintf("OpenCatalogA: def_locale 0x%lx\n",
-                def_locale));
-    }
-
-    if (!locale)
-    {
-        DEBUG_OPENCATALOG(dprintf("OpenCatalogA: nolocale..done\n"));
-        return NULL;
+        if (!(locale = OpenLocale(NULL)))
+        {
+            DEBUG_OPENCATALOG(dprintf("OpenCatalogA: no locale to use? ..done\n"));
+            return NULL;
+        }
+        def_locale = locale;
+        DEBUG_OPENCATALOG(dprintf("OpenCatalogA: default locale @ 0x%lx\n", def_locale));
     }
 
     MyProcess = (struct Process *)FindTask(NULL);
 
-    specific_language = (char *)GetTagData(OC_Language, (IPTR) 0, tags);
-
-    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: specific lang 0x%lx\n",
-            specific_language));
-    if (specific_language)
+    if ((specific_language = (char *)GetTagData(OC_Language, (IPTR) 0, tags)))
     {
         language = specific_language;
         pref_language = -1;
-        DEBUG_OPENCATALOG(dprintf("OpenCatalogA: language 0x%lx\n",
-                language));
+        DEBUG_OPENCATALOG(dprintf("OpenCatalogA: requested language '%s' @ 0x%lx\n", language, language));
     }
     else
     {
-        language = locale->loc_PrefLanguages[0];
+        if ((language = locale->loc_PrefLanguages[0]) == NULL)
+        {
+            if (def_locale)
+                CloseLocale(def_locale);
+            DEBUG_OPENCATALOG(dprintf("OpenCatalogA: no language to use? ..done\n"));
+            return NULL;
+        }
         pref_language = 0;
-        DEBUG_OPENCATALOG(dprintf("OpenCatalogA: language 0x%lx\n",
-                language));
-    }
-
-    if (language == NULL)
-    {
-        if (def_locale)
-            CloseLocale(def_locale);
-        DEBUG_OPENCATALOG(dprintf("OpenCatalogA: nolanguage..done\n"));
-        return NULL;
+        DEBUG_OPENCATALOG(dprintf("OpenCatalogA: default language '%s' @ 0x%lx\n", language, language));
     }
 
     /*
      ** Check whether the built in language of the application matches
-     ** the language of the default locale. If it matches, then I
+     ** the language of the default locale. If it matches, then we
      ** don't need to load anything.
      */
 
-    app_language = "english";
     app_language = (char *)GetTagData(OC_BuiltInLanguage,
-        (IPTR) app_language, tags);
+        (IPTR) "english", tags);
 
-    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: app_language 0x%lx\n",
-            app_language));
+    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: app_language '%s' @ 0x%lx\n", app_language, app_language));
 
-    if (NULL != app_language && 0 == strcasecmp(app_language, language))
+    if (app_language && (0 == strcasecmp(app_language, language)))
     {
         if (def_locale)
             CloseLocale(def_locale);
@@ -169,9 +156,9 @@ struct header
         ForeachNode(&IntLB(LocaleBase)->lb_CatalogList, catalog)
         {
             if (catalog->ic_Name &&
-                0 == strcmp(catalog->ic_Name, name) &&
                 catalog->ic_Catalog.cat_Language &&
-                0 == strcmp(catalog->ic_Catalog.cat_Language, language))
+                (0 == strcmp(catalog->ic_Name, name)) &&
+                (0 == strcmp(catalog->ic_Catalog.cat_Language, language)))
             {
                 DEBUG_OPENCATALOG(dprintf
                     ("OpenCatalogA: found Catalog 0x%lx\n", catalog));
