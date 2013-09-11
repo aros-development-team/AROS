@@ -150,7 +150,7 @@ static size_t format_longlong(char *buffer, char type, unsigned long long v)
  * As a consequence, %llu and %lld do not work in x86-64 bootstrap. Use hexadecimal
  * output or fix this.
  */
-#ifndef AROSC_LIB32
+#ifndef STDC_LIB32
     	do
     	{
     	    char c = v % 10;
