@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM kernel-bootstrap-pc-x86_64: linklibs-rom32 linklibs-bootconsole32 linklibs-bootstrap32
+#MM kernel-bootstrap-pc-x86_64: linklibs-stdc-static32 linklibs-bootconsole32 linklibs-bootstrap32
 
 MAINDIR := arch/all-pc/bootstrap
 

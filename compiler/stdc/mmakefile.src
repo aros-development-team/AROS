@@ -337,6 +337,12 @@ USER_CFLAGS += -Wno-unused-variable -Wno-parentheses -Wno-uninitialized
 %build_linklib mmake=linklibs-romhack \
     libname=romhack files="setjmp longjmp"
 
+# x86_64 needs a 32bit version stdc.static
+%build_linklib mmake=linklibs-stdc-static32 \
+    libname=stdc.static files="$(STDC_STATIC)" objs=$(ROM_COMMON_OBJ32) \
+    cflags="-m32 $(CFLAGS) -DSTDC_LIB32 -DSTDC_STATIC" \
+    objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
+
 # A dummy libm.a is provided so that -lm link option does not produce an error
 # objdir is provided to avoid that arch specific files end up in libm.a
 %build_linklib mmake=linklibs-libm \
