@@ -777,6 +777,8 @@ struct NepHidBase
     ULONG              *nh_IntFuncTable;
 
     struct NepClassHid  nh_DummyNCH;      /* Dummy NCH for default config */
+
+    LONG                nh_Seed;          /* seed variable for random numbers */
 };
 
 #define WACOM_HASTILT    1
