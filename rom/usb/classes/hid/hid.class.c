@@ -12,6 +12,13 @@
 
 #include <proto/datatypes.h>
 
+static LONG _rand(struct NepHidBase *nh)
+{
+    nh->nh_Seed = nh->nh_Seed * 1103515245 + 12345;
+
+    return nh->nh_Seed;
+}
+
 /* /// "Lib Stuff" */
 const STRPTR GM_UNIQUENAME(libname) = MOD_NAME_STRING;
 
@@ -5158,11 +5165,11 @@ BOOL nDoAction(struct NepClassHid *nch, struct NepHidAction *nha, struct NepHidI
                 break;
 
             case HUAT_RANDOMBIT:
-                var1 = rand() & 1;
+                var1 = _rand(nch->nch_ClsBase) & 1;
                 break;
 
             case HUAT_RANDOMVAL:
-                var1 = rand();
+                var1 = _rand(nch->nch_ClsBase);
                 break;
 
             case HUAT_TIMER:
@@ -5245,11 +5252,11 @@ BOOL nDoAction(struct NepClassHid *nch, struct NepHidAction *nha, struct NepHidI
                 break;
 
             case HUAT_RANDOMBIT:
-                var2 = rand() & 1;
+                var2 = _rand(nch->nch_ClsBase) & 1;
                 break;
 
             case HUAT_RANDOMVAL:
-                var2 = rand();
+                var2 = _rand(nch->nch_ClsBase);
                 break;
 
             case HUAT_TIMER:
@@ -5407,11 +5414,11 @@ BOOL nDoAction(struct NepClassHid *nch, struct NepHidAction *nha, struct NepHidI
                 break;
 
             case HUAT_RANDOMBIT:
-                value = rand() & 1;
+                value = _rand(nch->nch_ClsBase) & 1;
                 break;
 
             case HUAT_RANDOMVAL:
-                value = rand();
+                value = _rand(nch->nch_ClsBase);
                 break;
 
             case HUAT_TIMER:
