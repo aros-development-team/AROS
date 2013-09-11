@@ -23,7 +23,7 @@ VOID ShowMessage(CONST_STRPTR msg)
         {
             es.es_StructSize   = sizeof(es);
             es.es_Flags        = 0;
-            es.es_Title        = (CONST_STRPTR) "Serial";
+            es.es_Title        = (CONST_STRPTR) "IControl";
             es.es_TextFormat   = (CONST_STRPTR) msg;
             es.es_GadgetFormat = _(MSG_OK);
 
@@ -31,7 +31,7 @@ VOID ShowMessage(CONST_STRPTR msg)
         }
         else
         {
-            printf("Serial: %s\n", msg);
+            printf("IControl: %s\n", msg);
         }
     }
 }
