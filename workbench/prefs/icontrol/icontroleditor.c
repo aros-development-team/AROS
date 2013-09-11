@@ -62,6 +62,7 @@ struct IControlEditor_DATA
     Object  *menutypeobj;
     Object  *menulookobj;
     Object  *menustickobj;
+    Object  *menutitlepullobj;
     Object  *offscreenobj;
     Object  *defpubscrobj;
     Object  *scrleftdragobj;
@@ -173,6 +174,7 @@ static void SetPreviewImage(Object *previewpage, struct IControlEditor_DATA **da
     IPTR look = 0;
 
     GET((*data)->menutypeobj, MUIA_Cycle_Active, &type);
+    SET((*data)->menutitlepullobj, MUIA_Disabled, (type == 0) ? TRUE : FALSE);
     GET((*data)->menulookobj, MUIA_Cycle_Active, &look);
 
     NNSET(previewpage, MUIA_Group_ActivePage, type * 2 + look);
@@ -195,55 +197,33 @@ BOOL Gadgets2IControlPrefs(struct IControlEditor_DATA *data)
     STRPTR key = NULL;
     struct InputXpression ix = {IX_VERSION, 0};
 
+    // Clear options we are about to set..
+    prefs->ic_Flags &= ~(ICF_POPUPMENUS | ICF_3DMENUS | ICF_PULLDOWNTITLEMENUS | ICF_STICKYMENUS | ICF_OFFSCREENLAYERS | ICF_DEFPUBSCREEN);
+    
     GET(data->menutypeobj, MUIA_Cycle_Active, &active);
-    if (active == 0)
-    {
-        prefs->ic_Flags &= ~ICF_POPUPMENUS;
-    }
-    else
+    if (active != 0)
     {
         prefs->ic_Flags |= ICF_POPUPMENUS;
+        GET(data->menutitlepullobj, MUIA_Selected, &active);
+        if (active != 0)
+            prefs->ic_Flags |= ICF_PULLDOWNTITLEMENUS;
     }
 
     GET(data->menulookobj, MUIA_Cycle_Active, &active);
-    if (active == 0)
-    {
-        prefs->ic_Flags &= ~ICF_3DMENUS;
-    }
-    else
-    {
+    if (active != 0)
         prefs->ic_Flags |= ICF_3DMENUS;
-    }
 
     GET(data->menustickobj, MUIA_Selected, &active);
-    if (active == 0)
-    {
-        prefs->ic_Flags &= ~ICF_STICKYMENUS;
-    }
-    else
-    {
+    if (active != 0)
         prefs->ic_Flags |= ICF_STICKYMENUS;
-    }
 
     GET(data->offscreenobj, MUIA_Selected, &active);
-    if (active == 0)
-    {
-        prefs->ic_Flags &= ~ICF_OFFSCREENLAYERS;
-    }
-    else
-    {
+    if (active != 0)
         prefs->ic_Flags |= ICF_OFFSCREENLAYERS;
-    }
 
     GET(data->defpubscrobj, MUIA_Selected, &active);
-    if (active == 0)
-    {
-        prefs->ic_Flags &= ~ICF_DEFPUBSCREEN;
-    }
-    else
-    {
+    if (active != 0)
         prefs->ic_Flags |= ICF_DEFPUBSCREEN;
-    }
 
     prefs->ic_VDragModes[0] = 0;
     GET(data->scrleftdragobj, MUIA_Selected, &active);
@@ -288,6 +268,8 @@ BOOL IControlPrefs2Gadgets(struct IControlEditor_DATA *data)
     NNSET(data->menutypeobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_POPUPMENUS) ? 1 : 0);
     NNSET(data->menulookobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_3DMENUS) ? 1 : 0);
     NNSET(data->menustickobj, MUIA_Selected, (prefs->ic_Flags & ICF_STICKYMENUS) ? 1 : 0);
+    NNSET(data->menutitlepullobj, MUIA_Selected, (prefs->ic_Flags & ICF_PULLDOWNTITLEMENUS) ? 1 : 0);
+    NNSET(data->menutitlepullobj, MUIA_Disabled, (prefs->ic_Flags & ICF_3DMENUS) ? FALSE : TRUE);
     NNSET(data->offscreenobj, MUIA_Selected, (prefs->ic_Flags & ICF_OFFSCREENLAYERS) ? 1 : 0);
     NNSET(data->defpubscrobj, MUIA_Selected, (prefs->ic_Flags & ICF_DEFPUBSCREEN) ? 1 : 0);
     NNSET(data->scrleftdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_LBOUND);
@@ -312,7 +294,7 @@ IPTR IControlEditor__OM_NEW
 {
     struct IControlEditor_DATA *data = NULL;
     Object *previewpage, *menutypeobj, *menulookobj;
-    Object *menustickobj;
+    Object *menustickobj, *menutitlepullobj;
     Object *offscreenobj;
     Object *defpubscrobj;
     Object *scrleftdragobj, *scrrightdragobj, *scrtopdragobj, *scrbotdragobj;
@@ -333,7 +315,7 @@ IPTR IControlEditor__OM_NEW
     menulook_labels[0] = _(MSG_MENUS_LOOK_CLASSIC);
     menulook_labels[1] = _(MSG_MENUS_LOOK_3D);
 
-    D(printf("Creating window object...\n"));
+    D(bug("Creating window object...\n"));
 
     self = (Object *) DoSuperNewTags
     (
@@ -357,6 +339,8 @@ IPTR IControlEditor__OM_NEW
                     Child, HSpace(0),
                     Child, Label1(_(MSG_MENUS_STICKY)),
                     Child, menustickobj = MUI_MakeObject(MUIO_Checkmark, NULL),
+                    Child, Label1(_(MSG_MENUS_TITLEPOPUP)),
+                    Child, menutitlepullobj = MUI_MakeObject(MUIO_Checkmark, NULL),
                 End,
                 Child, VSpace(1),
                 Child, previewpage = PageGroup,
@@ -461,7 +445,7 @@ IPTR IControlEditor__OM_NEW
         TAG_DONE
     );
 
-    D(printf("Created prefs window object 0x%p\n", self));
+    D(bug("Created prefs window object 0x%p\n", self));
 
     if (self == NULL) goto error;
 
@@ -469,6 +453,7 @@ IPTR IControlEditor__OM_NEW
     data->menutypeobj = menutypeobj;
     data->menulookobj = menulookobj;
     data->menustickobj = menustickobj;
+    data->menutitlepullobj = menutitlepullobj;
     data->offscreenobj = offscreenobj;
     SET(data->offscreenobj, MUIA_ShortHelp, __(MSG_OFFSCREEN_DESC));
     data->defpubscrobj = defpubscrobj;
@@ -507,6 +492,12 @@ IPTR IControlEditor__OM_NEW
     DoMethod
     (
         menustickobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+    );
+
+    DoMethod
+    (
+        menutitlepullobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
         (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
     );
 
