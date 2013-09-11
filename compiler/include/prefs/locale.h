@@ -19,10 +19,10 @@
 #define ID_LCLE MAKE_ID('L','C','L','E')
 #define ID_CTRY MAKE_ID('C','T','R','Y')
 
-struct CountryPrefs {
+struct RegionPrefs {
     ULONG cp_Reserved[4];
 
-    ULONG cp_CountryCode;
+    ULONG cp_RegionCode;
     ULONG cp_TelephoneCode;
     UBYTE cp_MeasuringSystem;
 
@@ -62,14 +62,20 @@ struct CountryPrefs {
     UBYTE cp_CalendarType;
 };
 
+#define CountryPrefs   RegionPrefs
+#define cp_CountryCode cp_RegionCode
+
 struct LocalePrefs {
     ULONG lp_Reserved[4];
-    char  lp_CountryName[32];
+    char  lp_RegionName[32];
     char  lp_PreferredLanguages[10][30];
     LONG  lp_GMTOffset;
     ULONG lp_Flags;			/* The same as loc_Flags in struct Locale */
 
-    struct CountryPrefs lp_CountryData;
+    struct CountryPrefs lp_RegionData;
 };
+
+#define lp_CountryName lp_RegionName
+#define lp_CountryData lp_RegionData
 
 #endif /* PREFS_LOCALE_H */
