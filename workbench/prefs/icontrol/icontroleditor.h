@@ -1,5 +1,5 @@
-#ifndef _SEREDITOR_H_
-#define _SEREDITOR_H_
+#ifndef _ICONTROLEDITOR_H_
+#define _ICONTROLEDITOR_H_
 
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
@@ -17,4 +17,4 @@ extern struct MUI_CustomClass *IControlEditor_CLASS;
 
 #define IControlEditorObject BOOPSIOBJMACRO_START(IControlEditor_CLASS->mcc_Class)
 
-#endif
+#endif /* _ICONTROLEDITOR_H_ */
