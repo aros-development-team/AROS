@@ -56,8 +56,9 @@ struct IControlPrefs {
 #define ICF_SCREENACTIVATION    (1<<26)
 
 /* AROS extension */
-#define ICF_3DMENUS     	(1<<16)
-#define ICF_POPUPMENUS	    	(1<<15)
+#define ICF_PULLDOWNTITLEMENUS	(1<<17)
+#define ICF_POPUPMENUS	    	(1<<16)
+#define ICF_3DMENUS     	(1<<15)
 #define ICF_AVOIDWINBORDERERASE (1<<14)
 
 /* Screen drag modes */
