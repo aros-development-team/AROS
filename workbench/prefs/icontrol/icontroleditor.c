@@ -266,10 +266,10 @@ BOOL IControlPrefs2Gadgets(struct IControlEditor_DATA *data)
     };
 
     NNSET(data->menutypeobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_POPUPMENUS) ? 1 : 0);
+    NNSET(data->menutitlepullobj, MUIA_Selected, (prefs->ic_Flags & ICF_PULLDOWNTITLEMENUS) ? 1 : 0);
+    SET(data->menutitlepullobj, MUIA_Disabled, (prefs->ic_Flags & ICF_POPUPMENUS) ? FALSE : TRUE);
     NNSET(data->menulookobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_3DMENUS) ? 1 : 0);
     NNSET(data->menustickobj, MUIA_Selected, (prefs->ic_Flags & ICF_STICKYMENUS) ? 1 : 0);
-    NNSET(data->menutitlepullobj, MUIA_Selected, (prefs->ic_Flags & ICF_PULLDOWNTITLEMENUS) ? 1 : 0);
-    NNSET(data->menutitlepullobj, MUIA_Disabled, (prefs->ic_Flags & ICF_3DMENUS) ? FALSE : TRUE);
     NNSET(data->offscreenobj, MUIA_Selected, (prefs->ic_Flags & ICF_OFFSCREENLAYERS) ? 1 : 0);
     NNSET(data->defpubscrobj, MUIA_Selected, (prefs->ic_Flags & ICF_DEFPUBSCREEN) ? 1 : 0);
     NNSET(data->scrleftdragobj, MUIA_Selected, prefs->ic_VDragModes[0] & ICVDM_LBOUND);
