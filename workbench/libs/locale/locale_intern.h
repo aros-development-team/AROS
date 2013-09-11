@@ -36,45 +36,45 @@
    a Locale which was once set as default Locale never gets freed from
    memory. */
    
-#define REPLACEMENTFUNCS_LOCK_LOCALE 0
+#define REPLACEMENTFUNCS_LOCK_LOCALE    0
 
 /* [New]FormatString: Allow %width.limit formatting in all format
    tokens not just s and b. 1 = yes. 0 = no. exec.doc/RawDoFmt autodoc
    is wrong %d and %x do support this, too, so this should be set to 1. */
 
-#define        USE_GLOBALLIMIT              1
+#define USE_GLOBALLIMIT                 1
 
 /* [New]FormatString: Should formatting routine support 64bit formatting
    %L<type> and %ll<type>. 1 = yes. 0 = no. Current implementation use
    QUAD and UQUAD types. */
 
-#define USE_QUADFMT                  1
+#define USE_QUADFMT                     1
 
 struct IntLocaleBase
 {
-    struct LocaleBase        lb_LocaleBase;
+    struct LocaleBase                   lb_LocaleBase;
 
-    struct IntLocale        *lb_DefaultLocale;
-    struct IntLocale        *lb_CurrentLocale;
-    struct SignalSemaphore   lb_LocaleLock;
-    struct SignalSemaphore   lb_CatalogLock;
-    struct MinList           lb_CatalogList;
+    struct IntLocale                    *lb_DefaultLocale;
+    struct IntLocale                    *lb_CurrentLocale;
+    struct SignalSemaphore              lb_LocaleLock;
+    struct SignalSemaphore              lb_CatalogLock;
+    struct MinList                      lb_CatalogList;
 };
 
 struct IntLocale
 {
-    struct Locale       il_Locale;
+    struct Locale                       il_Locale;
 
-    UWORD                il_Count;
-    struct Library      *il_CurrentLanguage;
-    struct Catalog      *il_DosCatalog;
-    APTR                 il_LanguageFunctions[32];
+    UWORD                               il_Count;
+    struct Library                      *il_CurrentLanguage;
+    struct Catalog                      *il_DosCatalog;
+    APTR                                il_LanguageFunctions[32];
 
     /* Need to put all sorts of crap here later. */
-    UBYTE                LocaleName[30];
-    UBYTE                LanguageName[30];
+    UBYTE                               LocaleName[30];
+    UBYTE                               LanguageName[30];
     
-    UBYTE                PreferredLanguages[10][30];
+    UBYTE                               PreferredLanguages[10][30];
 
     /*
     ** Don't change the order of the following field,
@@ -83,58 +83,58 @@ struct IntLocale
     ** as well!
     */
       
-    UBYTE                DateTimeFormat[80];
-    UBYTE                DateFormat[40];
-    UBYTE                TimeFormat[40];
-    UBYTE                ShortDateTimeFormat[80];
-    UBYTE                ShortDateFormat[40];
-    UBYTE                ShortTimeFormat[40];
+    UBYTE                               DateTimeFormat[80];
+    UBYTE                               DateFormat[40];
+    UBYTE                               TimeFormat[40];
+    UBYTE                               ShortDateTimeFormat[80];
+    UBYTE                               ShortDateFormat[40];
+    UBYTE                               ShortTimeFormat[40];
 
-    UBYTE                DecimalPoint[10];
-    UBYTE                GroupSeparator[10];
-    UBYTE                FracGroupSeparator[10];
-    UBYTE                Grouping[10];
-    UBYTE                FracGrouping[10];
-    UBYTE                MonDecimalPoint[10];
-    UBYTE                MonGroupSeparator[10];
-    UBYTE                MonFracGroupSeparator[10];
-    UBYTE                MonGrouping[10];
-    UBYTE                MonFracGrouping[10];
+    UBYTE                               DecimalPoint[10];
+    UBYTE                               GroupSeparator[10];
+    UBYTE                               FracGroupSeparator[10];
+    UBYTE                               Grouping[10];
+    UBYTE                               FracGrouping[10];
+    UBYTE                               MonDecimalPoint[10];
+    UBYTE                               MonGroupSeparator[10];
+    UBYTE                               MonFracGroupSeparator[10];
+    UBYTE                               MonGrouping[10];
+    UBYTE                               MonFracGrouping[10];
 
-    UBYTE                MonCS[10];
-    UBYTE                MonSmallCS[10];
-    UBYTE                MonIntCS[10];
-    UBYTE                MonPositiveSign[10];
+    UBYTE                               MonCS[10];
+    UBYTE                               MonSmallCS[10];
+    UBYTE                               MonIntCS[10];
+    UBYTE                               MonPositiveSign[10];
 
-    UBYTE                MonNegativeSign[10];
+    UBYTE                               MonNegativeSign[10];
 };
 
 struct CatStr
 {
-    STRPTR cs_String;
-    ULONG  cs_Id;  /* Really signed, but needs to be unsigned for ICF_INORDER */
+    STRPTR                              cs_String;
+    ULONG                               cs_Id;  /* Really signed, but needs to be unsigned for ICF_INORDER */
 };
 
 /* see Amiga Developer CD 2.1:NDK/NDK_3.1/Examples1/locale/SelfLoad/catalog.c */
 
 struct CodeSet
 {
-    ULONG cs_CodeSet;
-    ULONG cs_Reserved[7];
+    ULONG                               cs_CodeSet;
+    ULONG                               cs_Reserved[7];
 };
 
 struct IntCatalog
 {
-    struct Catalog      ic_Catalog;
-    struct CodeSet      ic_CodeSet;
-    struct CatStr      *ic_CatStrings;
-    UBYTE              *ic_StringChunk;
-    ULONG               ic_NumStrings;
-    ULONG               ic_DataSize;
-    UWORD               ic_UseCount;
-    ULONG               ic_Flags;
-    UBYTE               ic_LanguageName[30];
-    UBYTE               ic_Name[0]; // name of file passed to OpenCatalogA()
+    struct Catalog                      ic_Catalog;
+    struct CodeSet                      ic_CodeSet;
+    struct CatStr                       *ic_CatStrings;
+    UBYTE                               *ic_StringChunk;
+    ULONG                               ic_NumStrings;
+    ULONG                               ic_DataSize;
+    UWORD                               ic_UseCount;
+    ULONG                               ic_Flags;
+    UBYTE                               ic_LanguageName[30];
+    UBYTE                               ic_Name[0]; // name of file passed to OpenCatalogA()
     /* structure size depends on length of ic_Name string */
 };
 
@@ -159,7 +159,6 @@ struct IntCatalog
 #define ID_LANG MAKE_ID('L','A','N','G')
 #define ID_CSET MAKE_ID('C','S','E','T')
 #define ID_STRS MAKE_ID('S','T','R','S')
-
 
 void dispose_catalog(struct IntCatalog * cat,
                      struct LocaleBase * LocaleBase);

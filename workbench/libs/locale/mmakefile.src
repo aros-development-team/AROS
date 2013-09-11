@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := defaultlocale english initlocale catalog_funcs patches 
+FILES := defaultlocale english initlocale languages catalog_funcs patches 
 FUNCS := \
     closecatalog closelocale convtolower convtoupper \
     formatdate formatstring getcatalogstr getlocalestr \

@@ -6,6 +6,9 @@
     Lang: english
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/types.h>
 #include <exec/lists.h>
@@ -20,41 +23,35 @@
 #include LC_LIBDEFS_FILE
 
 /* This global variable is needed for LocRawDoFmt */
-
 struct LocaleBase *globallocalebase = NULL;
 
-/* Avoid using nasty #defines if we can :-) */
 AROS_MAKE_ALIAS(globallocalebase, LocaleBase);
 
 static int Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct IntLocale *def;
-
     /* A few internal functions need to access a global LocaleBase pointer,
        because they're used to patch dos.library functions, and thus don't
        directly get a LocaleBase pointer. Someday, with TLS, this will go away. */
     globallocalebase = (struct LocaleBase *)LIBBASE;
 
-    /* Do whatever static initialisation you need here */
+    /* perform static initialisation */
     InitSemaphore(&((struct IntLocaleBase *)LIBBASE)->lb_LocaleLock);
     InitSemaphore(&((struct IntLocaleBase *)LIBBASE)->lb_CatalogLock);
 
     NEWLIST(&((struct IntLocaleBase *)LIBBASE)->lb_CatalogList);
 
-    IntLB(LIBBASE)->lb_DefaultLocale = def =
-        AllocMem(sizeof(struct IntLocale), MEMF_CLEAR | MEMF_ANY);
-    if (def != NULL)
+    if ((IntLB(LIBBASE)->lb_DefaultLocale = AllocMem(sizeof(struct IntLocale), MEMF_CLEAR | MEMF_ANY)) != NULL)
     {
         /* Copy the defaults to our new structure */
-        CopyMem(&defLocale, def, sizeof(struct Locale));
+        CopyMem(&defLocale, IntLB(LIBBASE)->lb_DefaultLocale, sizeof(struct Locale));
 
         /* Set lb_CurrentLocale *BEFORE* SetLocaleLanguage */
-        IntLB(LIBBASE)->lb_CurrentLocale = def;
+        IntLB(LIBBASE)->lb_CurrentLocale = IntLB(LIBBASE)->lb_DefaultLocale;
 
         /* Setup the languages - will not fail here. */
-        SetLocaleLanguage(def, (struct LocaleBase *)LIBBASE);
+        SetLocaleLanguage(IntLB(LIBBASE)->lb_DefaultLocale, (struct LocaleBase *)LIBBASE);
 
-        def->il_Count = 0;
+        IntLB(LIBBASE)->lb_DefaultLocale->il_Count = 0;
         InstallPatches();
 
         return TRUE;
@@ -62,6 +59,5 @@ static int Init(LIBBASETYPEPTR LIBBASE)
 
     return FALSE;
 }
-
 
 ADD2INITLIB(Init, 0);
