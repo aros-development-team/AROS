@@ -1,13 +1,12 @@
-#include <exec/types.h>
+#ifndef _MISC_H
+#define _MISC_H
 
-VOID	InitLocale( VOID );
-VOID	FreeLocale( VOID );
-CONST_STRPTR	GetString( CONST_STRPTR );
-VOID	LocalizeMenus( struct NewMenu * );
-VOID	LocalizeLabels( CONST_STRPTR * );
+/*
+    Copyright © 2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
-ULONG	EasyReq( STRPTR, STRPTR, APTR );
-ULONG	LocEZReq( STRPTR, STRPTR, ... );
-ULONG	EZReq( STRPTR, STRPTR, ... );
+/*** Prototypes *************************************************************/
+VOID ShowMessage(CONST_STRPTR msg);
 
-#include "rtstrings.h"
+#endif /* _MISC_H */

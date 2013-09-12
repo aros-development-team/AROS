@@ -1,3 +1,5 @@
+41.0 (11.09.2013)       Rewrite ReqTools Prefs using Zune/ AROS System Prefs objects.
+
 38.283 (01.10.2001)     ReqTools Preferences now uses WaitPort() instead of Wait(), tapping
                         several signalports at once, now including CTRL-C signals. Support
                         for IDCMP_VANILLAKEY has also been added. Currently, ReqTools only
