@@ -104,8 +104,8 @@ BOOT_TAR_MISC := \
     Prefs/Env-Archive/SYS/def_RAM.info \
     Prefs/Env-Archive/SYS/def_Tool.info \
     S/Shell-Startup S/Startup-Sequence \
-    System/Themes/Mason \
-    System/Themes/$(AROS_GUI_THEME)
+    Prefs/Presets/Themes/Mason \
+    Prefs/Presets/$(AROS_GUI_THEME)
 
 
 BOOT_SRC_DIR    := $(AROSDIR)
