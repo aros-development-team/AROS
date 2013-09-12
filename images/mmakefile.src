@@ -7,4 +7,4 @@ include $(TOP)/config/make.cfg
 
 %copy_files_q mmake=workbench-images files="$(call WILDCARD, *.png *.jpg)" dst=$(AROS_IMAGES)
 
-%copy_dir_recursive mmake=workbench-images-themes src=$(SRCDIR)/images/Themes dst=$(AROSDIR)/Prefs/Presets/Themes
+%copy_dir_recursive mmake=workbench-images-themes src=$(SRCDIR)/images/Themes dst=$(AROS_THEMES)
