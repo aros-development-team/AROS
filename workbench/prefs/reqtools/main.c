@@ -7,6 +7,9 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -17,9 +20,6 @@
 #include "reqtoolseditor.h"
 #include "args.h"
 #include "prefs.h"
-
- #define DEBUG 1 
-#include <aros/debug.h>
 
 #define VERSION "$VER: ReqTools 41.0 (11.09.2013) AROS Dev Team"
 

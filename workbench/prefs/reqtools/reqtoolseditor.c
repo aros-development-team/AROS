@@ -6,7 +6,7 @@ Desc:
 Lang: English
  */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <devices/rawkeycodes.h>
@@ -341,6 +341,7 @@ IPTR ReqToolsEditor__OM_NEW
                         Child, TextObject,
                             StringFrame,
                             MUIA_FramePhantomHoriz, TRUE,
+                            MUIA_Text_PreParse, "\33r",
                             MUIA_Text_Contents, __(MSG_OFFSET),
                         End,
                         Child, TextObject,
@@ -351,6 +352,7 @@ IPTR ReqToolsEditor__OM_NEW
                         Child, TextObject,
                             StringFrame,
                             MUIA_FramePhantomHoriz, TRUE,
+                            MUIA_Text_PreParse, "\33r",
                             MUIA_Text_Contents, __(MSG_NR_OF_ENTRIES),
                         End,
                         Child, TextObject,
@@ -360,7 +362,7 @@ IPTR ReqToolsEditor__OM_NEW
                         End,
                     End,
                     Child, VGroup,
-                        Child, ColGroup(2),
+                        Child, ColGroup(3),
                             Child, Label1("X"),
                             Child, (IPTR)(offsetxobj = StringObject,
                                     StringFrame,
@@ -369,6 +371,7 @@ IPTR ReqToolsEditor__OM_NEW
                                     MUIA_String_Accept, (IPTR)"0123456789",
                                     MUIA_FixWidthTxt, (IPTR)"55555",
                                 End),
+                            Child, HSpace(100),
                             Child, Label1("Y"),
                             Child, (IPTR)(offsetyobj = StringObject,
                                     StringFrame,
@@ -377,6 +380,7 @@ IPTR ReqToolsEditor__OM_NEW
                                     MUIA_String_Accept, (IPTR)"0123456789",
                                     MUIA_FixWidthTxt, (IPTR)"55555",
                                 End),
+                            Child, HSpace(100),
                             Child, Label1(__(MSG_MIN)),
                             Child, (IPTR)(minvisobj = StringObject,
                                     StringFrame,
@@ -385,6 +389,7 @@ IPTR ReqToolsEditor__OM_NEW
                                     MUIA_String_Accept, (IPTR)"0123456789",
                                     MUIA_FixWidthTxt, (IPTR)"55555",
                                 End),
+                            Child, HSpace(100),
                             Child, Label1(__(MSG_MAX)),
                             Child, (IPTR)(maxvisobj = StringObject,
                                     StringFrame,
@@ -393,6 +398,7 @@ IPTR ReqToolsEditor__OM_NEW
                                     MUIA_String_Accept, (IPTR)"0123456789",
                                     MUIA_FixWidthTxt, (IPTR)"55555",
                                 End),
+                            Child, HSpace(100),
                         End,
                     End,
                 End,
