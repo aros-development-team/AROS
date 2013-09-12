@@ -3,6 +3,9 @@
     $Id$
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <exec/types.h>
 #include <proto/locale.h>
 
@@ -10,7 +13,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/Prefs/ReqTools.catalog"
-#define CATALOG_VERSION  2
+#define CATALOG_VERSION  38
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;
@@ -35,7 +38,7 @@ CONST_STRPTR _(LONG id)
     // Localise if possible/necessary
     if ((_str != NULL) && (LocaleBase != NULL) && (catalog != NULL))
     {
-        _str = GetCatalogStr(catalog, id, _str);
+        _str = GetCatalogStr(catalog, (ULONG)id, _str);
     }
 
     return _str;
@@ -59,5 +62,6 @@ VOID Locale_Initialize(VOID)
 
 VOID Locale_Deinitialize(VOID)
 {
-    if (LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
+    if (LocaleBase != NULL && catalog != NULL)
+        CloseCatalog(catalog);
 }
