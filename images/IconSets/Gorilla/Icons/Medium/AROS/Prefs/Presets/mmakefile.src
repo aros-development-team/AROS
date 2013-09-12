@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS := Patterns
+ICONS := Patterns Themes
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-prefs-presets-clean
 #MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-prefs-presets

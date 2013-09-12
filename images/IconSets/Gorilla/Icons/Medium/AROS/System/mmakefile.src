@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS := About FixFonts Format FTManager Themes SysMon WorkBook Snoopy Shell
+ICONS := About FixFonts Format FTManager SysMon WorkBook Snoopy Shell
 IMGS  := DiskImageGUI-1.png DiskImageGUI-2.png
 DSKIM := DiskImageGUI
 
