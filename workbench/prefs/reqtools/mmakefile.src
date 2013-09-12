@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := reqtools gui misc rtstrings ver
+FILES := main args reqtoolseditor reqtoolsstringify locale misc prefs
 
 EXEDIR := $(AROSDIR)/Prefs
 
