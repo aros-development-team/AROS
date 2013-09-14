@@ -435,6 +435,7 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
                     DoMethod(_win(obj), MUIM_Window_AddEventHandler,
                         (IPTR) & data->ehn);
+                    set(obj, MUIA_Pressed, TRUE);
                     data->state = 1;
                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                 }
@@ -462,6 +463,7 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 DoMethod(_win(obj), MUIM_Window_AddEventHandler,
                     (IPTR) & data->ehn);
                 data->state = 0;
+                set(obj, MUIA_Pressed, FALSE);
                 MUI_Redraw(obj, MADF_DRAWUPDATE);
             }
         }
