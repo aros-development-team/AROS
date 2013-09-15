@@ -12,11 +12,18 @@
 #include <proto/stdcio.h>
 #include <libraries/stdcio.h>
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 static int __stdcio_startup(void)
 {
     struct StdCIOBase *StdCIOBase = __aros_getbase_StdCIOBase();
 
     StdCIOBase->StdCBase = __aros_getbase_StdCBase();
+
+    D(bug("[__stdcio_startup]StdCIOBase->StdCBase = %p\n",
+          StdCIOBase->StdCBase
+    ));
 
     return StdCIOBase->StdCBase != NULL;
 }
