@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate memory in a pool.
@@ -42,7 +42,9 @@
 	struct ExecBase *, SysBase, 118, Exec)
 
 /*  FUNCTION
-	Allocate memory out of a private memory pool.
+	Allocate memory out of a private memory pool. The memory must be
+	freed with FreePooled(), or by deallocating the entire pool with
+	DeletePool().
 
     INPUTS
 	poolHeader - Handle of the memory pool
