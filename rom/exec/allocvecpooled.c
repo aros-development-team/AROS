@@ -1,29 +1,64 @@
 /*
-    Copyright � 2003-2012, The AROS Development Team. All rights reserved.
+    Copyright � 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <aros/libcall.h>
-#include <proto/exec.h>
-#include <exec/memheaderext.h>
 #include "exec_intern.h"
 #include <aros/debug.h>
 
-AROS_LH2(APTR, AllocVecPooled,
-    AROS_LHA(APTR, pool, D0),
-    AROS_LHA(IPTR, size, D1),
-    struct ExecBase *, SysBase, 169, Exec)
+/*****************************************************************************
+
+    NAME */
+#include <exec/memory.h>
+#include <exec/memheaderext.h>
+#include <proto/exec.h>
+
+        AROS_LH2(APTR, AllocVecPooled,
+
+/*  SYNOPSIS */
+        AROS_LHA(APTR, poolHeader, A0),
+        AROS_LHA(IPTR, memSize, D0),
+
+/*  LOCATION */
+        struct ExecBase *, SysBase, 169, Exec)
+
+/*  FUNCTION
+        Allocate memory out of a private memory pool and remember the size.
+        The memory must be freed with FreeVecPooled(), or by deallocating
+        the entire pool with DeletePool().
+
+    INPUTS
+        poolHeader - Handle of the memory pool
+        memSize    - Number of bytes you want to get
+
+    RESULT
+        A pointer to the number of bytes you wanted or NULL if the memory
+        couldn't be allocated
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        CreatePool(), DeletePool(), FreeVecPooled()
+
+    INTERNALS
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     
-    struct MemHeaderExt *mhe = (struct MemHeaderExt *)pool;
+    struct MemHeaderExt *mhe = (struct MemHeaderExt *)poolHeader;
     
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED)
     {
         ULONG attributes = (ULONG)(IPTR)mhe->mhe_MemHeader.mh_First;
 
         if (mhe->mhe_Alloc)
-            return mhe->mhe_AllocVec(mhe, size, &attributes);
+            return mhe->mhe_AllocVec(mhe, memSize, &attributes);
         else
             return NULL;
     }
@@ -31,14 +66,14 @@ AROS_LH2(APTR, AllocVecPooled,
     {
         IPTR *memory;
 
-        if (pool == NULL) return NULL;
+        if (poolHeader == NULL) return NULL;
 
-        size   += sizeof(IPTR);
-        memory  = AllocPooled(pool, size);
+        memSize   += sizeof(IPTR);
+        memory  = AllocPooled(poolHeader, memSize);
 
         if (memory != NULL)
         {
-            *memory++ = size;
+            *memory++ = memSize;
         }
 
         return memory;
