@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by AllocPooled().
@@ -30,7 +30,8 @@
 	struct ExecBase *, SysBase, 119, Exec)
 
 /*  FUNCTION
-	Free memory allocated out of a private memory pool.
+	Free memory that was allocated out of a private memory pool by
+        AllocPooled().
 
     INPUTS
 	poolHeader - Handle of the memory pool
