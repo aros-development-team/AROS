@@ -1862,11 +1862,12 @@ endif
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 # Link static lib
+BD_LINKLIBNAME := $(shell echo %(linklibname) | tr A-Z a-z)
+BD_MODNAME     := $(shell echo %(modname) | tr A-Z a-z)
 ifneq ($(BD_LINKLIB),)
-%rule_link_linklib libname=%(modname)$(BD_LIBSUFFIX) objs=$(BD_LINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
-
-ifneq (%(modname),%(linklibname))
 %rule_link_linklib libname=%(linklibname)$(BD_LIBSUFFIX) objs=$(BD_LINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
+ifneq ($(BD_MODNAME),$(BD_LINKLIBNAME))
+%rule_link_linklib libname=%(modname)$(BD_LIBSUFFIX) objs=$(BD_LINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
 endif
 
 $(BD_LINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
@@ -1874,9 +1875,9 @@ GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
 endif
 
 ifneq ($(BD_RELLINKLIB),)
-%rule_link_linklib libname=%(modname)_rel$(BD_LIBSUFFIX) objs=$(BD_RELLINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
-ifneq (%(modname),%(linklibname))
 %rule_link_linklib libname=%(linklibname)_rel$(BD_LIBSUFFIX) objs=$(BD_RELLINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
+ifneq ($(BD_MODNAME),$(BD_LINKLIBNAME))
+%rule_link_linklib libname=%(modname)_rel$(BD_LIBSUFFIX) objs=$(BD_RELLINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
 endif
 
 $(BD_RELLINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
