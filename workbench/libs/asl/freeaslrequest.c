@@ -15,19 +15,19 @@
     NAME */
 #include <proto/asl.h>
 
-	AROS_LH1(void, FreeAslRequest,
+        AROS_LH1(void, FreeAslRequest,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, requester, A0),
+        AROS_LHA(APTR, requester, A0),
 
 /*  LOCATION */
-	struct Library *, AslBase, 9, Asl)
+        struct Library *, AslBase, 9, Asl)
 
 /*  FUNCTION
-	Frees a requester that was allocated with AllocAslRequest().
+        Frees a requester that was allocated with AllocAslRequest().
 
     INPUTS
-	requester - The requester that is to be freed.
+        requester - The requester that is to be freed.
 
     RESULT
 
@@ -42,8 +42,8 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    asl_lib.fd and clib/asl_protos.h
+        27-11-96    digulla automatically created from
+                            asl_lib.fd and clib/asl_protos.h
 
 *****************************************************************************/
 {
@@ -56,19 +56,19 @@
 
     if ((reqnode = FindReqNode(requester, ASLB(AslBase))) != NULL)
     {
-    	/* Strip requester specific stuff */
-    	StripRequester(requester, reqnode->rn_IntReq->ir_ReqType, ASLB(AslBase));
-    	
-	FreeVec(requester);
-	DeletePool(reqnode->rn_IntReq->ir_MemPool);
-	FreeVec(reqnode->rn_IntReq);
-	
-	ObtainSemaphore( &(ASLB(AslBase)->ReqListSem) );
-	Remove( (struct Node *)reqnode );
-	ReleaseSemaphore( &(ASLB(AslBase)->ReqListSem) );
-		
-	FreeMem(reqnode, sizeof (struct ReqNode));
-		
+        /* Strip requester specific stuff */
+        StripRequester(requester, reqnode->rn_IntReq->ir_ReqType, ASLB(AslBase));
+
+        FreeVec(requester);
+        DeletePool(reqnode->rn_IntReq->ir_MemPool);
+        FreeVec(reqnode->rn_IntReq);
+
+        ObtainSemaphore( &(ASLB(AslBase)->ReqListSem) );
+        Remove( (struct Node *)reqnode );
+        ReleaseSemaphore( &(ASLB(AslBase)->ReqListSem) );
+
+        FreeMem(reqnode, sizeof (struct ReqNode));
+
     }
 
     return;

@@ -35,15 +35,15 @@
 #ifndef NewRectRegion
 #define NewRectRegion(_MinX,_MinY,_MaxX,_MaxY) \
 ({ struct Region *_region; \
-	if ((_region = NewRegion())) \
-	{ struct Rectangle _rect; \
-		_rect.MinX = _MinX; \
-		_rect.MinY = _MinY; \
-		_rect.MaxX = _MaxX; \
-		_rect.MaxY = _MaxY; \
-		if (!OrRectRegion(_region, &_rect)) { DisposeRegion(_region); _region = NULL; } \
-	} \
-	_region; \
+        if ((_region = NewRegion())) \
+        { struct Rectangle _rect; \
+                _rect.MinX = _MinX; \
+                _rect.MinY = _MinY; \
+                _rect.MaxX = _MaxX; \
+                _rect.MaxY = _MaxY; \
+                if (!OrRectRegion(_region, &_rect)) { DisposeRegion(_region); _region = NULL; } \
+        } \
+        _region; \
 })
 #endif
 #endif
@@ -62,13 +62,13 @@ IPTR AslEraser__OM_NEW(Class * cl, Object * o, struct opSet * msg)
 
     if (g)
     {
-    	g->Flags |= GFLG_RELSPECIAL;
-	
-	g->LeftEdge = 20000;
-	g->TopEdge  = 20000;
-	g->Width    = 1;
-	g->Height   = 1;
-		
+        g->Flags |= GFLG_RELSPECIAL;
+
+        g->LeftEdge = 20000;
+        g->TopEdge  = 20000;
+        g->Width    = 1;
+        g->Height   = 1;
+
     } /* if (g) */
 
     return (IPTR)g;
@@ -90,55 +90,55 @@ IPTR AslEraser__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
     {
-    	struct Window *win = msg->gpr_GInfo->gi_Window;
-    	struct RastPort *rp = msg->gpr_RPort;
-    	struct Region *clip;
-	
-    	if ((clip = NewRectRegion(win->BorderLeft,
-	    	    	    	  win->BorderTop,
-				  win->Width - 1 - win->BorderRight,
-				  win->Height - 1 - win->BorderBottom)))
-	{
-	    struct Gadget *g = win->FirstGadget;
-	    struct RegionRectangle *rr;
-	    
-	    while(g)
-	    {
-	    	struct Rectangle rect;
-		
-    	    	getgadgetbounds(g, msg->gpr_GInfo, &x, &y, &w, &h);
-		
-		rect.MinX = x;
-		rect.MinY = y;
-		rect.MaxX = x + w - 1;
-		rect.MaxY = y + h - 1;
-		
-		ClearRectRegion(clip, &rect);
-		
-	    	g = g->NextGadget;
-	    }
-	    
-	    
-	    SetABPenDrMd(rp, msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN], 0, JAM2);
-	    rr = clip->RegionRectangle;
-	    while(rr)
-	    {
-	    	x  = clip->bounds.MinX + rr->bounds.MinX;
-	    	y  = clip->bounds.MinY + rr->bounds.MinY;
-	    	x2 = clip->bounds.MinX + rr->bounds.MaxX;
-	    	y2 = clip->bounds.MinY + rr->bounds.MaxY;
-	    	
-		RectFill(rp, x, y, x2, y2);
-		
-	    	rr = rr->Next;
-	    }
-	    
-	    DisposeRegion(clip);
-	    
-	}
-	
+        struct Window *win = msg->gpr_GInfo->gi_Window;
+        struct RastPort *rp = msg->gpr_RPort;
+        struct Region *clip;
+
+        if ((clip = NewRectRegion(win->BorderLeft,
+                                  win->BorderTop,
+                                  win->Width - 1 - win->BorderRight,
+                                  win->Height - 1 - win->BorderBottom)))
+        {
+            struct Gadget *g = win->FirstGadget;
+            struct RegionRectangle *rr;
+
+            while(g)
+            {
+                struct Rectangle rect;
+
+                getgadgetbounds(g, msg->gpr_GInfo, &x, &y, &w, &h);
+
+                rect.MinX = x;
+                rect.MinY = y;
+                rect.MaxX = x + w - 1;
+                rect.MaxY = y + h - 1;
+
+                ClearRectRegion(clip, &rect);
+
+                g = g->NextGadget;
+            }
+
+
+            SetABPenDrMd(rp, msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN], 0, JAM2);
+            rr = clip->RegionRectangle;
+            while(rr)
+            {
+                x  = clip->bounds.MinX + rr->bounds.MinX;
+                y  = clip->bounds.MinY + rr->bounds.MinY;
+                x2 = clip->bounds.MinX + rr->bounds.MaxX;
+                y2 = clip->bounds.MinY + rr->bounds.MaxY;
+
+                RectFill(rp, x, y, x2, y2);
+
+                rr = rr->Next;
+            }
+
+            DisposeRegion(clip);
+
+        }
+
     } /* if (msg->gpr_Redraw == GREDRAW_REDRAW) */
-      
+
     return 0;
 }
 

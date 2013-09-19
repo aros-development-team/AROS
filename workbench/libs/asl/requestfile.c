@@ -14,16 +14,16 @@
 #include <libraries/asl.h>
 #include "asl_intern.h"
 
-	AROS_LH1(BOOL, RequestFile,
+        AROS_LH1(BOOL, RequestFile,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct FileRequester *, fileReq, A0),
+        AROS_LHA(struct FileRequester *, fileReq, A0),
 
 /*  LOCATION */
-	struct Library *, AslBase, 7, Asl)
+        struct Library *, AslBase, 7, Asl)
 
 /*  FUNCTION
-	Obsolete. Use AslRequest() instead.
+        Obsolete. Use AslRequest() instead.
 
     INPUTS
 
@@ -36,13 +36,13 @@
     BUGS
 
     SEE ALSO
-	AslRequest()
+        AslRequest()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    asl_lib.fd and clib/asl_protos.h
+        27-11-96    digulla automatically created from
+                            asl_lib.fd and clib/asl_protos.h
 
 *****************************************************************************/
 {
