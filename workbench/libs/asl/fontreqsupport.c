@@ -135,6 +135,12 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
             if (avf_start->af_Attr.ta_Flags & FPF_PROPORTIONAL) continue;
         }
 
+        if (strlen(avf_start->af_Attr.ta_Name) >= sizeof fontnode->Name)
+        {
+            D(bug("[ASL] Font %s ignored because name too long\n", avf_start->af_Attr.ta_Name));
+            continue;
+        }
+
         if (iforeq->ifo_FilterFunc)
         {
 #ifdef __MORPHOS__
@@ -396,13 +402,13 @@ void FOChangeActiveFont(struct LayoutData *ld, WORD delta, UWORD quali, BOOL jum
                item's text (in this case move normally = one step)) */
 
             struct ASLLVFontReqNode *node;
-            UBYTE                   buffer[MAXFONTNAME + 2];
+            UBYTE                   buffer[MAXASLFONTNAME + 6];
             STRPTR                  val;
             WORD                    i, len;
             BOOL                    dojump = TRUE;
 
             GetAttr(STRINGA_TextVal, udata->NameString, (IPTR *)&val);
-            strcpy(buffer, val);
+            strlcpy(buffer, val, sizeof buffer);
 
             len = strlen(buffer);
 
@@ -593,11 +599,11 @@ void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct Asl
         {ASLLV_Labels   , 0     },
         {TAG_DONE               }
     };
-    UBYTE                   initialfontname[MAXFONTNAME + 2];
+    UBYTE                   initialfontname[MAXASLFONTNAME + 6];
     char                    *sp;
     WORD                    i = 0;
 
-    strncpy(initialfontname, fontname, MAXFONTNAME + 1);
+    strlcpy(initialfontname, fontname, sizeof initialfontname);
     if ((sp = strchr(initialfontname, '.'))) *sp = '\0';
 
     FOSetSizeString(fontsize, ld, AslBase);

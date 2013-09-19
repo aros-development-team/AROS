@@ -32,6 +32,9 @@
 #define FOREQ_FIRST_OBJECT(x)           ((x)->NameListview)
 #define FOREQ_LAST_OBJECT(x)            ((x)->EraserGadget)
 
+/* Max. length of font name without ".font\0" */
+#define MAXASLFONTNAME                  (MAXFILENAMELENGTH - 6)
+
 struct FOUserData
 {
     Object                      *NameListview;
@@ -71,7 +74,7 @@ struct ASLLVFontReqNode
     struct List         SizeList;
     struct TextAttr     TAttr;
     UWORD               NumSizes;
-    UBYTE               Name[MAXFONTNAME + 2];
+    UBYTE               Name[MAXASLFONTNAME + 6];
     struct Node         SizeNode[0];
     /* growing */
 };

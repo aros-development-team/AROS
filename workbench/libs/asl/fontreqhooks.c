@@ -625,7 +625,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
             {GA_Height          , udata->ButHeight                  },
             {GA_Previous        , (IPTR)gad                         },
             {STRINGA_TextVal    , (IPTR)""                          },
-            {STRINGA_MaxChars   , MAXFONTNAME                       },
+            {STRINGA_MaxChars   , MAXASLFONTNAME                    },
             {STRINGA_EditHook   , (IPTR)&udata->StringEditHook      },
             {GA_ID              , ID_NAMESTRING                     },
             {GA_RelVerify       , TRUE                              },
