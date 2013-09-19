@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,7 +39,7 @@ AROS_UFH3(ULONG, Scrollgroup_Layout_Function,
     {
     case MUILM_MINMAX:
         {
-            /* Calulate the minmax dimension of the group,
+            /* Calculate the minmax dimension of the group.
              ** We only have a fixed number of children, so we need
              ** no NextObject()
              */
@@ -365,6 +365,27 @@ IPTR Scrollgroup__OM_NEW(struct IClass *cl, Object *obj,
     return (IPTR) obj;
 }
 
+IPTR Scrollgroup__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    struct Scrollgroup_DATA *data = INST_DATA(cl, obj);
+#define STORE *(msg->opg_Storage)
+
+    switch (msg->opg_AttrID)
+    {
+    case MUIA_Scrollgroup_Contents:
+        STORE = (IPTR) data->contents;
+        return 1;
+    case MUIA_Scrollgroup_HorizBar:
+        STORE = (IPTR) data->horiz;
+        return 1;
+    case MUIA_Scrollgroup_VertBar:
+        STORE = (IPTR) data->vert;
+        return 1;
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
 IPTR Scrollgroup__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Scrollgroup_DATA *data = INST_DATA(cl, obj);
@@ -387,7 +408,6 @@ IPTR Scrollgroup__MUIM_Show(struct IClass *cl, Object *obj,
         MUIA_Prop_Entries, width,
         MUIA_Prop_Visible, _mwidth(data->contents), TAG_DONE);
 
-
     SetAttrs(data->vert, MUIA_Prop_First, top,
         MUIA_Prop_Entries, height,
         MUIA_Prop_Visible, _mheight(data->contents), TAG_DONE);
@@ -402,6 +422,8 @@ BOOPSI_DISPATCHER(IPTR, Scrollgroup_Dispatcher, cl, obj, msg)
     {
     case OM_NEW:
         return Scrollgroup__OM_NEW(cl, obj, (struct opSet *)msg);
+    case OM_GET:
+        return Scrollgroup__OM_GET(cl, obj, (struct opGet *)msg);
     case OM_DISPOSE:
         return Scrollgroup__OM_DISPOSE(cl, obj, msg);
     case MUIM_Show:
