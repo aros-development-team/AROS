@@ -11,23 +11,23 @@
 
 struct CoolImage
 {
-    const UBYTE	*data;
-    const UBYTE	*pal;
-    WORD 	width;
-    WORD	height;
-    WORD	depth;
+    const UBYTE *data;
+    const UBYTE *pal;
+    WORD        width;
+    WORD        height;
+    WORD        depth;
 };
 
 extern const struct CoolImage cool_saveimage,
-			      cool_loadimage,
-			      cool_useimage,
-			      cool_cancelimage,
-			      cool_dotimage,
-			      cool_dotimage2,
-			      cool_warnimage,
-			      cool_diskimage,
-			      cool_switchimage,
-			      cool_monitorimage,
-			      cool_infoimage,
-			      cool_askimage,
-			      cool_keyimage;
+                              cool_loadimage,
+                              cool_useimage,
+                              cool_cancelimage,
+                              cool_dotimage,
+                              cool_dotimage2,
+                              cool_warnimage,
+                              cool_diskimage,
+                              cool_switchimage,
+                              cool_monitorimage,
+                              cool_infoimage,
+                              cool_askimage,
+                              cool_keyimage;

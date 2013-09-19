@@ -26,15 +26,15 @@
 /* Options */
 
 #ifdef __MORPHOS__
-#define SPECIALREQ_COOL_BUTTONS 	0
+#define SPECIALREQ_COOL_BUTTONS         0
 #else
-#define SPECIALREQ_COOL_BUTTONS 	1
+#define SPECIALREQ_COOL_BUTTONS         1
 #endif
 
 /*****************************************************************************************/
 
 STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR canceltext,
-		  struct LayoutData *ld, struct AslBase_intern *AslBase);
+                  struct LayoutData *ld, struct AslBase_intern *AslBase);
 
 /*****************************************************************************************/
 

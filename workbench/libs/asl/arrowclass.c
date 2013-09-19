@@ -44,14 +44,14 @@ IPTR AslArrow__OM_NOTIFY(Class * cl, Object * o, struct opUpdate *msg)
 {
     struct AslArrowData *data;
     IPTR retval = 0;
-    
+
     data = INST_DATA(cl, o);
 
     if (!data->scrollticker || (data->scrollticker == SCROLLTICKER))
     {
         retval = DoSuperMethodA(cl, o, (Msg)msg);
     }
-    
+
     if (data->scrollticker) data->scrollticker--;
 
     return retval;
@@ -63,12 +63,12 @@ IPTR AslArrow__GM_GOACTIVE(Class * cl, Object * o, struct gpInput *msg)
 {
     struct AslArrowData *data;
     IPTR retval;
-    
+
     data = INST_DATA(cl, o);
     data->scrollticker = SCROLLTICKER;
-    
+
     retval = DoSuperMethodA(cl, o, (Msg)msg);
-    
+
     return retval;
 }
 

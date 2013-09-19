@@ -2,7 +2,7 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: 
+    Desc:
     Lang: English.
 */
 
@@ -75,37 +75,37 @@ struct AslBase_intern;
 /* Internal requester structure */
 struct IntReq
 {
-    UWORD		ir_ReqType;
-    struct Window	*ir_Window;
-    struct Screen	*ir_Screen;
-    STRPTR		ir_PubScreenName;
-    struct Hook 	*ir_IntuiMsgFunc;
-    struct TextAttr	*ir_TextAttr;
-    struct Locale	*ir_Locale;
-    struct Catalog  	*ir_Catalog;
-    APTR		ir_MemPool;
-    ULONG		ir_MemPoolPuddle;  	/* if 0, no pool is created */
-    ULONG		ir_MemPoolThresh;
-    LONG    	    	ir_TitleID;
-    STRPTR		ir_TitleText;
-    STRPTR		ir_PositiveText;
-    STRPTR		ir_NegativeText;
-    WORD		ir_LeftEdge;
-    WORD		ir_TopEdge;
-    WORD		ir_Width;
-    WORD		ir_Height;
-    UBYTE		ir_Flags;
+    UWORD               ir_ReqType;
+    struct Window       *ir_Window;
+    struct Screen       *ir_Screen;
+    STRPTR              ir_PubScreenName;
+    struct Hook         *ir_IntuiMsgFunc;
+    struct TextAttr     *ir_TextAttr;
+    struct Locale       *ir_Locale;
+    struct Catalog      *ir_Catalog;
+    APTR                ir_MemPool;
+    ULONG               ir_MemPoolPuddle;       /* if 0, no pool is created */
+    ULONG               ir_MemPoolThresh;
+    LONG                ir_TitleID;
+    STRPTR              ir_TitleText;
+    STRPTR              ir_PositiveText;
+    STRPTR              ir_NegativeText;
+    WORD                ir_LeftEdge;
+    WORD                ir_TopEdge;
+    WORD                ir_Width;
+    WORD                ir_Height;
+    UBYTE               ir_Flags;
 
-    APTR		ir_BasePtr;	/* Compatability: Saved copy of REG_A4 */
+    APTR                ir_BasePtr;     /* Compatability: Saved copy of REG_A4 */
 };
 
 /* Nodes in the ReqList */
 struct ReqNode
 {
-    struct MinNode	rn_Node;
-    APTR		rn_Req;
-    struct IntReq	*rn_IntReq;
-    struct Window   	*rn_ReqWindow;
+    struct MinNode      rn_Node;
+    APTR                rn_Req;
+    struct IntReq       *rn_IntReq;
+    struct Window       *rn_ReqWindow;
 };
 
 /*****************************************************************************************/
@@ -114,126 +114,126 @@ struct ReqNode
 
 struct IntFileReq
 {
-    struct IntReq	ifr_IntReq;
+    struct IntReq       ifr_IntReq;
 
-    STRPTR		ifr_File;
-    STRPTR		ifr_Drawer;
-    STRPTR		ifr_Pattern;
-    STRPTR		ifr_AcceptPattern;
-    STRPTR		ifr_RejectPattern;
-    UBYTE		ifr_Flags1;
-    UBYTE		ifr_Flags2;
-    struct Hook 	*ifr_FilterFunc;
+    STRPTR              ifr_File;
+    STRPTR              ifr_Drawer;
+    STRPTR              ifr_Pattern;
+    STRPTR              ifr_AcceptPattern;
+    STRPTR              ifr_RejectPattern;
+    UBYTE               ifr_Flags1;
+    UBYTE               ifr_Flags2;
+    struct Hook         *ifr_FilterFunc;
 
 #ifdef __MORPHOS__
-    APTR 		ifr_HookFunc;
+    APTR                ifr_HookFunc;
 #else
-    ULONG 		(*ifr_HookFunc)(ULONG mask, APTR object, struct FileRequester *fr);
+    ULONG               (*ifr_HookFunc)(ULONG mask, APTR object, struct FileRequester *fr);
 #endif
-    			/* ASLFR_HookFunc = Combined callback function */
+                        /* ASLFR_HookFunc = Combined callback function */
 
-    ULONG		*ifr_GetSortBy;
-    ULONG		*ifr_GetSortOrder;
-    ULONG		*ifr_GetSortDrawers;
-    UWORD		ifr_SortBy;
-    UWORD		ifr_SortOrder;
-    UWORD		ifr_SortDrawers;
-    BOOL		ifr_InitialShowVolumes;        
+    ULONG               *ifr_GetSortBy;
+    ULONG               *ifr_GetSortOrder;
+    ULONG               *ifr_GetSortDrawers;
+    UWORD               ifr_SortBy;
+    UWORD               ifr_SortOrder;
+    UWORD               ifr_SortDrawers;
+    BOOL                ifr_InitialShowVolumes;
 };
 
 /*****************************************************************************************/
 
 struct IntFontReq
 {
-    struct IntReq	ifo_IntReq;
-    struct TextAttr	ifo_TextAttr;
-    UBYTE		ifo_FrontPen;
-    UBYTE		ifo_BackPen;
-    UBYTE		ifo_DrawMode;
+    struct IntReq       ifo_IntReq;
+    struct TextAttr     ifo_TextAttr;
+    UBYTE               ifo_FrontPen;
+    UBYTE               ifo_BackPen;
+    UBYTE               ifo_DrawMode;
 
-    UBYTE		ifo_Flags;
-    UWORD		ifo_MinHeight;
-    UWORD		ifo_MaxHeight;
-    struct Hook		*ifo_FilterFunc;
+    UBYTE               ifo_Flags;
+    UWORD               ifo_MinHeight;
+    UWORD               ifo_MaxHeight;
+    struct Hook         *ifo_FilterFunc;
 
 #ifdef __MORPHOS__
-    APTR 		ifo_HookFunc;
+    APTR                ifo_HookFunc;
 #else
-    ULONG		(*ifo_HookFunc)(ULONG, APTR, struct FontRequester *);
+    ULONG               (*ifo_HookFunc)(ULONG, APTR, struct FontRequester *);
 #endif
 
-    UWORD		ifo_MaxFrontPen;
-    UWORD		ifo_MaxBackPen;
+    UWORD               ifo_MaxFrontPen;
+    UWORD               ifo_MaxBackPen;
 
-    STRPTR		*ifo_ModeList;
-    STRPTR  	    	 ifo_SampleText;
-    UBYTE		*ifo_FrontPens;
-    UBYTE		*ifo_BackPens;
+    STRPTR              *ifo_ModeList;
+    STRPTR               ifo_SampleText;
+    UBYTE               *ifo_FrontPens;
+    UBYTE               *ifo_BackPens;
 
-    STRPTR		ifo_DrawModeJAM1Text;
-    STRPTR		ifo_DrawModeJAM2Text;
-    STRPTR  	    	ifo_DrawModeCOMPText;
-    STRPTR		ifo_DrawMode0Text; 
+    STRPTR              ifo_DrawModeJAM1Text;
+    STRPTR              ifo_DrawModeJAM2Text;
+    STRPTR              ifo_DrawModeCOMPText;
+    STRPTR              ifo_DrawMode0Text;
 };
 
 /*****************************************************************************************/
 
-#define ISMF_DOAUTOSCROLL 	1
-#define ISMF_DODEPTH      	2
-#define ISMF_DOHEIGHT     	4
-#define ISMF_DOWIDTH      	8
-#define ISMF_DOOVERSCAN   	16
+#define ISMF_DOAUTOSCROLL       1
+#define ISMF_DODEPTH            2
+#define ISMF_DOHEIGHT           4
+#define ISMF_DOWIDTH            8
+#define ISMF_DOOVERSCAN         16
 
 /*****************************************************************************************/
 
 struct IntSMReq
 {
-    struct IntReq	ism_IntReq;
-    struct List		*ism_CustomSMList;
-    struct Hook		*ism_FilterFunc;		
-    ULONG		ism_Flags;
-    ULONG		ism_DisplayID;
-    ULONG	 	ism_DisplayWidth;
-    ULONG		ism_DisplayHeight;
-    ULONG		ism_BitMapWidth;
-    ULONG		ism_BitMapHeight;
-    UWORD		ism_DisplayDepth;
-    UWORD		ism_OverscanType;
-    BOOL		ism_AutoScroll;
-    ULONG		ism_PropertyFlags;
-    ULONG		ism_PropertyMask;
-    LONG		ism_MinDepth;
-    LONG		ism_MaxDepth;
-    LONG		ism_MinWidth;
-    LONG		ism_MaxWidth;
-    LONG		ism_MinHeight;
-    LONG		ism_MaxHeight;
-    LONG		ism_InfoLeftEdge;
-    LONG		ism_InfoTopEdge;
-    BOOL		ism_InfoOpened;
-    
-    STRPTR		ism_Overscan1Text;
-    STRPTR		ism_Overscan2Text;
-    STRPTR		ism_Overscan3Text;
-    STRPTR		ism_Overscan4Text;
-    STRPTR		ism_OverscanNullText;
-    STRPTR		ism_AutoScrollOFFText;
-    STRPTR		ism_AutoScrollONText;
-    STRPTR		ism_AutoScroll0Text;
-    
-    STRPTR		ism_PropertyList_Title;
-    STRPTR		ism_PropertyList_NotWB;
-    STRPTR		ism_PropertyList_NotGenlock;
-    STRPTR		ism_PropertyList_NotDraggable;
-    STRPTR		ism_PropertyList_HAM;
-    STRPTR		ism_PropertyList_EHB;
-    STRPTR		ism_PropertyList_Interlace;
-    STRPTR		ism_PropertyList_ECS;
-    STRPTR		ism_PropertyList_WB;
-    STRPTR		ism_PropertyList_Genlock;
-    STRPTR		ism_PropertyList_Draggable;
-    STRPTR		ism_PropertyList_DPFPri2;
-    STRPTR		ism_PropertyList_RefreshRate;
+    struct IntReq       ism_IntReq;
+    struct List         *ism_CustomSMList;
+    struct Hook         *ism_FilterFunc;
+    ULONG               ism_Flags;
+    ULONG               ism_DisplayID;
+    ULONG               ism_DisplayWidth;
+    ULONG               ism_DisplayHeight;
+    ULONG               ism_BitMapWidth;
+    ULONG               ism_BitMapHeight;
+    UWORD               ism_DisplayDepth;
+    UWORD               ism_OverscanType;
+    BOOL                ism_AutoScroll;
+    ULONG               ism_PropertyFlags;
+    ULONG               ism_PropertyMask;
+    LONG                ism_MinDepth;
+    LONG                ism_MaxDepth;
+    LONG                ism_MinWidth;
+    LONG                ism_MaxWidth;
+    LONG                ism_MinHeight;
+    LONG                ism_MaxHeight;
+    LONG                ism_InfoLeftEdge;
+    LONG                ism_InfoTopEdge;
+    BOOL                ism_InfoOpened;
+
+    STRPTR              ism_Overscan1Text;
+    STRPTR              ism_Overscan2Text;
+    STRPTR              ism_Overscan3Text;
+    STRPTR              ism_Overscan4Text;
+    STRPTR              ism_OverscanNullText;
+    STRPTR              ism_AutoScrollOFFText;
+    STRPTR              ism_AutoScrollONText;
+    STRPTR              ism_AutoScroll0Text;
+
+    STRPTR              ism_PropertyList_Title;
+    STRPTR              ism_PropertyList_NotWB;
+    STRPTR              ism_PropertyList_NotGenlock;
+    STRPTR              ism_PropertyList_NotDraggable;
+    STRPTR              ism_PropertyList_HAM;
+    STRPTR              ism_PropertyList_EHB;
+    STRPTR              ism_PropertyList_Interlace;
+    STRPTR              ism_PropertyList_ECS;
+    STRPTR              ism_PropertyList_WB;
+    STRPTR              ism_PropertyList_Genlock;
+    STRPTR              ism_PropertyList_Draggable;
+    STRPTR              ism_PropertyList_DPFPri2;
+    STRPTR              ism_PropertyList_RefreshRate;
 };
 
 #define SREQ_FIRST_PROPERTY_ITEM(x) ((x)->ism_PropertyList_NotWB)
@@ -244,18 +244,18 @@ struct IntSMReq
 /* structure for passing arguments to tag parsing hooks */
 struct ParseTagArgs
 {
-    struct IntReq	*pta_IntReq;
-    APTR		pta_Req;
-    struct TagItem	*pta_Tags;
+    struct IntReq       *pta_IntReq;
+    APTR                pta_Req;
+    struct TagItem      *pta_Tags;
 };
 
 struct AslReqInfo
 {
-    ULONG 	IntReqSize;
-    ULONG 	ReqSize;
-    APTR  	DefaultReq;
+    ULONG       IntReqSize;
+    ULONG       ReqSize;
+    APTR        DefaultReq;
     /* Size of userdata for GadgetryHook and EventHook */
-    ULONG 	UserDataSize;
+    ULONG       UserDataSize;
     struct Hook ParseTagsHook;
     struct Hook GadgetryHook;
 };
@@ -265,10 +265,10 @@ struct AslReqInfo
 /* Flags */
 
 #define IF_PRIVATEIDCMP  (1 << 0)
-#define IF_SLEEPWINDOW	 (1 << 1)
+#define IF_SLEEPWINDOW   (1 << 1)
 #define IF_USER_POSTEXT  (1 << 2)
 #define IF_USER_NEGTEXT  (1 << 3)
-#define IF_POPTOFRONT	 (1 << 4)
+#define IF_POPTOFRONT    (1 << 4)
 #define IF_POPPEDTOFRONT (1 << 5)
 #define IF_OPENINACTIVE  (1 << 6)
 
@@ -277,19 +277,19 @@ struct AslReqInfo
 struct AslBase_intern
 {
     struct Library              Lib;
-    struct MinList		ReqList;
-    struct SignalSemaphore	ReqListSem;
-    struct AslReqInfo		ReqInfo[3];
-    Class 			*aslpropclass;
-    Class			*aslarrowclass;
-    Class			*asllistviewclass;
-    Class			*aslbuttonclass;
-    Class			*aslstringclass;
-    Class			*aslcycleclass;
-    Class   	    	    	*aslfontpreviewclass;
-    Class   	    	    	*aslfontstyleclass;
-    Class   	    	    	*aslcolorpickerclass;
-    Class   	    	    	*asleraserclass;
+    struct MinList              ReqList;
+    struct SignalSemaphore      ReqListSem;
+    struct AslReqInfo           ReqInfo[3];
+    Class                       *aslpropclass;
+    Class                       *aslarrowclass;
+    Class                       *asllistviewclass;
+    Class                       *aslbuttonclass;
+    Class                       *aslstringclass;
+    Class                       *aslcycleclass;
+    Class                       *aslfontpreviewclass;
+    Class                       *aslfontstyleclass;
+    Class                       *aslcolorpickerclass;
+    Class                       *asleraserclass;
 };
 
 /*****************************************************************************************/
@@ -306,42 +306,42 @@ VOID StripRequester(APTR, UWORD, struct AslBase_intern *AslBase);
 WORD CountNodes(struct List *list, WORD flag);
 struct Node *FindListNode(struct List *list, WORD which);
 void SortInNode(APTR req, struct List *list, struct Node *node,
-		WORD (*compare)(APTR, APTR, APTR, struct AslBase_intern *),
-		struct AslBase_intern *AslBase);
+                WORD (*compare)(APTR, APTR, APTR, struct AslBase_intern *),
+                struct AslBase_intern *AslBase);
 
 APTR MyAllocVecPooled(APTR pool, IPTR size, struct AslBase_intern *AslBase);
 void MyFreeVecPooled(APTR mem, struct AslBase_intern *AslBase);
 char *PooledCloneString(const char *name1, const char *name2, APTR pool,
-			struct AslBase_intern *AslBase);
+                        struct AslBase_intern *AslBase);
 char *PooledCloneStringLen(const char *name1, ULONG len1, const char *name2, ULONG len2, APTR pool,
-			   struct AslBase_intern *AslBase);
+                           struct AslBase_intern *AslBase);
 char *VecCloneString(const char *name1, const char *name2, struct AslBase_intern *AslBase);
 char *VecPooledCloneString(const char *name1, const char *name2, APTR pool,
-			   struct AslBase_intern *AslBase);
+                           struct AslBase_intern *AslBase);
 char *PooledUIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase);
 void CloseWindowSafely(struct Window *window, struct AslBase_intern *AslBase);
 
 AROS_UFP3(ULONG, StringEditFunc,
-    AROS_UFPA(struct Hook *,		hook,		A0),
-    AROS_UFPA(struct SGWork *,		sgw,		A2),
-    AROS_UFPA(ULONG *, 			command,	A1));
+    AROS_UFPA(struct Hook *,            hook,           A0),
+    AROS_UFPA(struct SGWork *,          sgw,            A2),
+    AROS_UFPA(ULONG *,                  command,        A1));
 
 void PaintInnerFrame(struct RastPort *rp, struct DrawInfo *dri, Object *frameobj,
-    	    	     struct IBox *framebox, struct IBox *innerbox, ULONG pen,
-		     struct AslBase_intern *AslBase);
-void PaintBoxFrame(struct RastPort *rp, struct IBox *outerbox, struct IBox *innerbox, 
-    	    	   ULONG pen, struct AslBase_intern *AslBase);
+                     struct IBox *framebox, struct IBox *innerbox, ULONG pen,
+                     struct AslBase_intern *AslBase);
+void PaintBoxFrame(struct RastPort *rp, struct IBox *outerbox, struct IBox *innerbox,
+                   ULONG pen, struct AslBase_intern *AslBase);
 
 /* gadgets.c */
 
-BOOL makescrollergadget(struct ScrollerGadget *scrollergad, struct LayoutData *ld, 
-			struct TagItem *tags, struct AslBase_intern *AslBase);
+BOOL makescrollergadget(struct ScrollerGadget *scrollergad, struct LayoutData *ld,
+                        struct TagItem *tags, struct AslBase_intern *AslBase);
 void killscrollergadget(struct ScrollerGadget *scrollergad, struct AslBase_intern *AslBase);
 void getgadgetcoords(struct Gadget *gad, struct GadgetInfo *gi, WORD *x, WORD *y, WORD *w, WORD *h);
 void getgadgetbounds(struct Gadget *gad, struct GadgetInfo *gi, WORD *x, WORD *y, WORD *w, WORD *h);
 
 void connectscrollerandlistview(struct ScrollerGadget *scrollergad, Object *listview,
-				struct AslBase_intern *AslBase);
+                                struct AslBase_intern *AslBase);
 void FreeObjects(Object **first, Object **last, struct AslBase_intern *AslBase);
 
 /* locale.c */
@@ -392,15 +392,15 @@ AROS_UFP3(ULONG, SMGadgetryHook,
 
 /* Return values for the gadgetry hooks */
 #define GHRET_FINISHED_OK   2
-#define GHRET_OK	    1
-#define GHRET_FAIL	    0
+#define GHRET_OK            1
+#define GHRET_FAIL          0
 
 /* Handy macros */
 #define SETFLAG(flagvar, boolvar, flag) \
     if (boolvar)                        \
-	flagvar |= flag;		\
-    else				\
-	flagvar &= ~flag;
+        flagvar |= flag;                \
+    else                                \
+        flagvar &= ~flag;
 
 
 /*****************************************************************************************/
@@ -428,50 +428,50 @@ struct AslArrowData
 /* AslListView class */
 struct AslListViewData
 {
-    Object		*frame;
-    struct LayoutData 	*ld;
-    struct List		*labels;
-    struct Node		**nodetable;
-    struct List		emptylist;
-    struct Hook		default_renderhook;
-    struct Hook		*renderhook;
-    struct TextFont 	*font;
-    struct Rectangle	*renderrect;
-    ULONG  		clicksec;
-    ULONG		clickmicro;
-    WORD		minx;
-    WORD   		miny;
-    WORD		maxx;
-    WORD		maxy;
-    WORD		width;
-    WORD		height;
-    WORD		itemheight;
-    WORD		spacing;
-    LONG		lineheight;
-    LONG		visible;
-    LONG		top;
-    LONG		total;
-    LONG		active;
-    LONG    	    	visiblepixels;
-    LONG    	    	toppixel;
-    LONG    	    	totalpixels;
-    WORD		rendersingleitem;
-    WORD		scroll;
-    BYTE		layouted;
-    BYTE		doubleclicked;
-    BYTE		dosavemode;
-    BYTE		domultiselect;
-    BYTE		multiselecting;
-    BYTE		readonly;
+    Object              *frame;
+    struct LayoutData   *ld;
+    struct List         *labels;
+    struct Node         **nodetable;
+    struct List         emptylist;
+    struct Hook         default_renderhook;
+    struct Hook         *renderhook;
+    struct TextFont     *font;
+    struct Rectangle    *renderrect;
+    ULONG               clicksec;
+    ULONG               clickmicro;
+    WORD                minx;
+    WORD                miny;
+    WORD                maxx;
+    WORD                maxy;
+    WORD                width;
+    WORD                height;
+    WORD                itemheight;
+    WORD                spacing;
+    LONG                lineheight;
+    LONG                visible;
+    LONG                top;
+    LONG                total;
+    LONG                active;
+    LONG                visiblepixels;
+    LONG                toppixel;
+    LONG                totalpixels;
+    WORD                rendersingleitem;
+    WORD                scroll;
+    BYTE                layouted;
+    BYTE                doubleclicked;
+    BYTE                dosavemode;
+    BYTE                domultiselect;
+    BYTE                multiselecting;
+    BYTE                readonly;
 };
 
 /* AslButton class */
 struct AslButtonData
 {
-    Object 		*frame;
-    struct LayoutData 	*ld;
-    struct CoolImage  	*coolimage;
-    ULONG		*coolimagepal;
+    Object              *frame;
+    struct LayoutData   *ld;
+    struct CoolImage    *coolimage;
+    ULONG               *coolimagepal;
 };
 
 #define BUTTON_OWN_INPUT_HANDLING 1
@@ -490,101 +490,101 @@ struct AslStringData
 /* AslCycle class */
 struct CycleItem
 {
-    char	*string;
-    WORD	charlen;
-    WORD	pixellen;
+    char        *string;
+    WORD        charlen;
+    WORD        pixellen;
 };
 
 struct AslCycleData
 {
-    Object			*frame;
-    struct CycleItem		*itemmemory;
-    struct RastPort		*rp;
-    struct RastPort		clonerp;
-    struct DrawInfo		*dri;
-    struct TextFont		*font;
-    struct Window		*popupwindow;
-    char			**labels;
-    WORD			itemheight;
-    WORD			itemwidth;
-    WORD			menuleft;
-    WORD			menutop;
-    WORD			menuwidth;
-    WORD			menuheight;
-    WORD			numitems;
-    WORD			active;
-    WORD			visible;
-    WORD			top;
-    WORD			selected;
-    WORD			menux1;
-    WORD			menuy1;
-    WORD			menux2;
-    WORD			menuy2;
-    WORD			layerx1;
-    WORD			layery1;
-    WORD			layerx2;
-    WORD			layery2;
-    BYTE			borderleft;
-    BYTE			borderright;
-    BYTE			bordertop;
-    BYTE			borderbottom;
-    BYTE			maypopup;
-    BYTE			popup;
-    BYTE			popupwindowtype;
-    BYTE			uparrowblack;
-    BYTE			downarrowblack;
-    BYTE			sentgadgetup;
-    BYTE			turbocountdown;
+    Object                      *frame;
+    struct CycleItem            *itemmemory;
+    struct RastPort             *rp;
+    struct RastPort             clonerp;
+    struct DrawInfo             *dri;
+    struct TextFont             *font;
+    struct Window               *popupwindow;
+    char                        **labels;
+    WORD                        itemheight;
+    WORD                        itemwidth;
+    WORD                        menuleft;
+    WORD                        menutop;
+    WORD                        menuwidth;
+    WORD                        menuheight;
+    WORD                        numitems;
+    WORD                        active;
+    WORD                        visible;
+    WORD                        top;
+    WORD                        selected;
+    WORD                        menux1;
+    WORD                        menuy1;
+    WORD                        menux2;
+    WORD                        menuy2;
+    WORD                        layerx1;
+    WORD                        layery1;
+    WORD                        layerx2;
+    WORD                        layery2;
+    BYTE                        borderleft;
+    BYTE                        borderright;
+    BYTE                        bordertop;
+    BYTE                        borderbottom;
+    BYTE                        maypopup;
+    BYTE                        popup;
+    BYTE                        popupwindowtype;
+    BYTE                        uparrowblack;
+    BYTE                        downarrowblack;
+    BYTE                        sentgadgetup;
+    BYTE                        turbocountdown;
 };
 
 /* AslFontPreview class */
 struct AslFontPreviewData
 {
-    Object 		*frame;
-    struct TextFont 	*font;
-    STRPTR  	    	 previewtext;
-    UBYTE   	    	 apen, bpen, drawstyle;
+    Object              *frame;
+    struct TextFont     *font;
+    STRPTR               previewtext;
+    UBYTE                apen, bpen, drawstyle;
 };
 
 /* ASlFontStyle class */
 struct AslFontStyleData
 {
-    Object 		*frame;
-    STRPTR  	    	 text[3];
-    UBYTE   	    	 style;
+    Object              *frame;
+    STRPTR               text[3];
+    UBYTE                style;
 };
 
 /* AslColorPicker class */
 struct AslColorPickerData
 {
-    Object	       *frame;
+    Object             *frame;
     struct Window      *popupwindow;
     struct RastPort    *rp;
-    UBYTE   	       *colortable;
-    WORD   	    	numcolors;
-    WORD   	    	color;
-    WORD    	    	selected;
-    WORD    	    	menuwidth;
-    WORD    	    	menuheight;
-    WORD    	    	menux1;
-    WORD    	    	menuy1;
-    WORD    	    	menux2;
-    WORD    	    	menuy2;
-    WORD    	    	layerx1;
-    WORD    	    	layery1;
-    WORD    	    	layerx2;
-    WORD    	    	layery2;
-    WORD    	    	columns;
-    WORD    	    	rows;
-    WORD    	    	cellwidth;
-    WORD    	    	cellheight;
-    WORD    	    	cellspacex;
-    WORD    	    	cellspacey;
-    WORD    	    	borderleft;
-    WORD    	    	bordertop;
-    WORD    	    	borderright;
-    WORD    	    	borderbottom;
-    BYTE    	    	sentgadgetup;
+    UBYTE              *colortable;
+    WORD                numcolors;
+    WORD                color;
+    WORD                selected;
+    WORD                menuwidth;
+    WORD                menuheight;
+    WORD                menux1;
+    WORD                menuy1;
+    WORD                menux2;
+    WORD                menuy2;
+    WORD                layerx1;
+    WORD                layery1;
+    WORD                layerx2;
+    WORD                layery2;
+    WORD                columns;
+    WORD                rows;
+    WORD                cellwidth;
+    WORD                cellheight;
+    WORD                cellspacex;
+    WORD                cellspacey;
+    WORD                borderleft;
+    WORD                bordertop;
+    WORD                borderright;
+    WORD                borderbottom;
+    BYTE                sentgadgetup;
 };
 
 
