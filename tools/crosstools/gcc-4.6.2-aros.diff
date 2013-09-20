@@ -1624,7 +1624,23 @@ diff -ruN gcc-4.6.2/libstdc++-v3/configure gcc-4.6.2.aros/libstdc++-v3/configure
  
    enable_win32_dll=no
  
-@@ -26484,6 +26483,58 @@
+@@ -18131,6 +18130,7 @@
+ {
+ struct iovec iov[2];
+        writev(0, iov, 0);
++#error be sure to fail
+   ;
+   return 0;
+ }
+@@ -18153,6 +18153,7 @@
+ {
+ struct iovec iov[2];
+        writev(0, iov, 0);
++#error be sure to fail
+   ;
+   return 0;
+ }
+@@ -26484,6 +26485,58 @@
  
  # Base decisions on target environment.
  case "${host}" in
