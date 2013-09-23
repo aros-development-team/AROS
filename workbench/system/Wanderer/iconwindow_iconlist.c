@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2009, The AROS Development Team. All rights reserved.
+  Copyright  2004-2013, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -550,6 +550,7 @@ BOOL IconWindowIconList__Func_ParseBackdrop(Class *CLASS, Object *self, char *bd
                                 retVal = TRUE;
                             }
                         }
+                        FreeVec(bdrp_fullfile);
                     }
                 }
                 FreeMem(linebuf, BDRPLINELEN_MAX);
@@ -1183,8 +1184,6 @@ IPTR IconWindowIconList__MUIM_IconList_Update
                     {
                         struct DiskObject    *_nb_dob = NULL;
 
-                        volumel_data->iwvcd_UserFolderPath = userfiles_path;
-
                         D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: UserFilesLocation Path storage @ 0x%p\n", userfiles_path));
 
                         strcpy(userfiles_path, __icwc_intern_TxtBuff);
@@ -1210,6 +1209,7 @@ IPTR IconWindowIconList__MUIM_IconList_Update
                                 sort_list = TRUE;
                             }
                         }
+                        FreeVec(userfiles_path);
                     }
                 }
             }

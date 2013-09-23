@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2012, The AROS Development Team. All rights reserved.
+  Copyright  2004-2013, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -110,7 +110,6 @@ struct IconWindowVolumeList_DATA
 
     IPTR                        iwvcd_ShowNetworkBrowser;
     IPTR                        iwvcd_ShowUserFolder;
-    char                        *iwvcd_UserFolderPath;
 
     /* File System update handling */
     struct MsgPort              *iwvcd_FSNotifyPort;
@@ -410,6 +409,7 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
                                 }
                             }
                         }
+                        FreeVec(bdrp_fullfile);
                     }
                 }
                 FreeMem(linebuf, BDRPLINELEN_MAX);
@@ -1003,8 +1003,6 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
                         {
                             struct DiskObject    *_nb_dob = NULL;
 
-                            volumel_data->iwvcd_UserFolderPath = userfiles_path;
-
                             D(bug("[Wanderer:VolumeList] %s: UserFilesLocation Path storage @ 0x%p\n", __PRETTY_FUNCTION__, userfiles_path));
 
                             strcpy(userfiles_path, __icwc_intern_TxtBuff);
@@ -1028,6 +1026,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
                                     Obj_UserFilesIcon->ln_Pri = 5;   /// Special dirs get Priority 5
                                 }
                             }
+                            FreeVec(userfiles_path);
                         }
                     }
                 }

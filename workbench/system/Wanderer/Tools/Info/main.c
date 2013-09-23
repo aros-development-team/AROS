@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1410,8 +1410,8 @@ D(bug("[WBInfo: Couldn't create app\n"));
 funcmain_exit:
     if (scanStruct) FreeMem(scanStruct, sizeof(struct DirScanProcess));
     if (icon) FreeDiskObject(icon);
-    if (ap) FreeVec(ap);
-    if (file) FreeVec(file);
-    if (name) FreeVec(name);
+    FreeVec(ap);
+    FreeVec(file);
+    FreeVec(name);
     return retval;
 }

@@ -241,7 +241,10 @@ IPTR panelToolBar__PrefsSetup(Class *CLASS, Object *self, struct opSet *message)
         if (panelToolBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return 0;
 
+// FIXME: this is never freed
         extension_PrefsData = AllocVec(TOOLBAR_PREFSSIZE, MEMF_CLEAR);
+        if (extension_PrefsData == NULL)
+            return 0;
 
         /* Setup notification on prefs file --------------------------------*/
         struct Wanderer_FSHandler *_prefsNotifyHandler = NULL;

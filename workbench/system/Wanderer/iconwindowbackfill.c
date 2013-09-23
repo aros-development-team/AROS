@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2011, The AROS Development Team. All rights reserved.
+  Copyright  2004-2013, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -589,7 +589,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
     }
 #endif
     D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource Record\n"));
-    if (this_BFI->bfi_Source->bfsir_SourceImage) FreeVec(this_BFI->bfi_Source->bfsir_SourceImage);
+    FreeVec(this_BFI->bfi_Source->bfsir_SourceImage);
     FreeMem(this_BFI->bfi_Source, sizeof(struct BackFillSourceImageRecord));
     this_BFI->bfi_Source = NULL;
     return FALSE;
