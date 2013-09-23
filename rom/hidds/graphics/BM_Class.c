@@ -4218,7 +4218,7 @@ VOID BM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
                 msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
 
     cemd = GC_COLEXP(gc);
-    fg   = GC_FG(gc);Sticky jingles
+    fg   = GC_FG(gc);
     bg   = GC_BG(gc);
 
 /* bug("------------- Blit_ColExp: (%d, %d, %d, %d, %d, %d) cemd=%d, fg=%p, bg=%p -------------\n"
@@ -5137,7 +5137,7 @@ void BM__Hidd_BitMap__SetPixFmt(OOP_Class *cl, OOP_Object *o, OOP_Object *pf)
 /*
  * Change visible state of the bitmap.
  * Used in mirrored framebuffer mode. Actually needed because
- * of semaphore barried, which makes sure that bitmap state does
+ * of semaphore barrier, which makes sure that bitmap state does
  * not change during scrolling or updating operation. Prevents possibilities
  * of screen corruption during concurrently running scrolling with Show.
  */
