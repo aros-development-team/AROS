@@ -2172,7 +2172,7 @@ D(bug("[Icon]: %s()\n", __PRETTY_FUNCTION__));
 ///Icon__MUIM_Icon_CreateEntry()
 /**************************************************************************
 MUIM_Icon_CreateEntry.
-Returns 0 on failure otherwise it returns the icons entry ..
+Returns 0 on failure; otherwise it returns the icon's entry.
 **************************************************************************/
 IPTR Icon__MUIM_Icon_CreateEntry(struct IClass *CLASS, Object *obj, struct MUIP_Icon_CreateEntry *message)
 {

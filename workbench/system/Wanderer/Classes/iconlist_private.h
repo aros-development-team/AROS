@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef _ICONLIST_PRIVATE_H_
 #define _ICONLIST_PRIVATE_H_
 
@@ -114,7 +119,6 @@ struct IconList_DATA
     BOOL                          icld_LassoActive;
 
 
-    struct IconViewModeAttribs    *icld_IVMAttribs;
     struct ListViewModeAttribs    *icld_LVMAttribs;
 
     /* TODO: move config options to a seperate struct */

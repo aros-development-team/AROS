@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -481,9 +481,9 @@ IPTR DiskInfo__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
         DeleteMsgPort(data->dki_NotifyPort);
     }
 
-    if (data->dki_DOSDev) FreeVec(data->dki_DOSDev);
-    if (data->dki_DOSDevInfo) FreeVec(data->dki_DOSDevInfo);
-    if (data->dki_FileSys) FreeVec(data->dki_FileSys);
+    FreeVec(data->dki_DOSDev);
+    FreeVec(data->dki_DOSDevInfo);
+    FreeVec(data->dki_FileSys);
 
     return DoSuperMethodA(CLASS, self, message);
 }

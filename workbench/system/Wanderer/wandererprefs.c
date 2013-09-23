@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2010, The AROS Development Team. All rights reserved.
+  Copyright  2004-2013, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -762,8 +762,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs_ProccessViewSettingsChunk()\n"));
   if (_viewSettings_Node)
   {
 D(bug("[Wanderer:Prefs] WandererPrefs_ProccessViewSettingsChunk: Updating Existing node @ 0x%p\n", _viewSettings_Node));
-    if (_viewSettings_Node->wpbn_Background)
-        FreeVec((APTR)_viewSettings_Node->wpbn_Background);
+    FreeVec((APTR)_viewSettings_Node->wpbn_Background);
     /* TODO: Free any Cached backgrounds here .. */
   }
   else

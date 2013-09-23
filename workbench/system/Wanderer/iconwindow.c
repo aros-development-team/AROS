@@ -1,5 +1,5 @@
 /*
-  Copyright © 2004-2012, The AROS Development Team. All rights reserved.
+  Copyright © 2004-2013, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -189,6 +189,8 @@ STATIC VOID IconWindow_StoreSettings(Object * iconwindow)
 
         drawericon->do_Gadget.UserData = (APTR)1;
 
+        if (drawericon->do_DrawerData != NULL)
+        {
         drawericon->do_DrawerData->dd_NewWindow.TopEdge = XGET(iconwindow, MUIA_Window_TopEdge);
         drawericon->do_DrawerData->dd_NewWindow.LeftEdge = XGET(iconwindow, MUIA_Window_LeftEdge);
         drawericon->do_DrawerData->dd_NewWindow.Width = XGET(iconwindow, MUIA_Window_Width);
@@ -218,6 +220,7 @@ STATIC VOID IconWindow_StoreSettings(Object * iconwindow)
              */
             drawericon->do_DrawerData->dd_ViewModes = DDVM_BYNAME;
         }
+        }
 
         /* Save settings into Tool Types */
         {
@@ -240,6 +243,8 @@ STATIC VOID IconWindow_StoreSettings(Object * iconwindow)
             /* Create new pointer array */
             newtooltypes = AllocVec(sizeof(STRPTR) * (tocopy + TT_COUNT + 1), MEMF_CLEAR);
 
+            if (newtooltypes != NULL)
+            {
             /* Copy, inew will have last index value */
             if (oldtooltypes != NULL)
             {
@@ -266,6 +271,7 @@ STATIC VOID IconWindow_StoreSettings(Object * iconwindow)
             for (i = 0; i < inew; i++)
                 FreeVec(newtooltypes[i]);
             FreeVec(newtooltypes);
+            }
         }
     }
 }
@@ -916,8 +922,7 @@ IPTR IconWindow__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
         }
     }
   
-    if (data->iwd_BackFill_hook)
-        FreeVec(data->iwd_BackFill_hook);
+    FreeVec(data->iwd_BackFill_hook);
   
     return DoSuperMethodA(CLASS, self, message);
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2007-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,7 @@ struct TagItem DummyTags[] = { {TAG_DONE, 0}};
 /* define some nonglobal data that can be used by the display hook */
 
 ///strcrem()
-void  strcrem(char *s, char *d, char c) 
+static void strcrem(char *s, char *d, char c) 
 {
     while (*s) {
         if (*s != c) *d++= *s;
@@ -171,7 +171,7 @@ WORD AskChoiceCentered(const char *title, const char *strg, const char *gadgets,
 ///
 
 ///combinePath()
-char *combinePath(APTR pool, char *path, char *file) 
+static char *combinePath(APTR pool, char *path, char *file)
 {
     int l;
     char *out;
@@ -195,7 +195,7 @@ char *combinePath(APTR pool, char *path, char *file)
 ///
 
 ///allocPath()
-char *allocPath(APTR pool, char *str) 
+static char *allocPath(APTR pool, char *str)
 {
     char *s0, *s1, *s;
     int  l;
@@ -236,7 +236,7 @@ void freeString(APTR pool, char *str)
 ** return:     char     pointer to string or NULL
 **
 */              
-char *allocString(APTR pool, char *str) 
+static char *allocString(APTR pool, char *str) 
 {
     char  *b;
     int  l;
@@ -254,55 +254,9 @@ char *allocString(APTR pool, char *str)
 }
 ///
 
-///InfoRename()
-void InfoRename(APTR pool, char *from, char *to) 
+///CombineString()
+char *CombineString(char *format, ...)
 {
-    char *frominfo, *toinfo;
-
-    if ((from == NULL) || (to == NULL)) return;
-
-    frominfo = AllocVecPooled(pool, strlen(from)+6);
-
-    if (frominfo) 
-    {
-        strncpy (frominfo, from, strlen(from));
-        strcat(frominfo,".info");
-        toinfo = AllocVecPooled(pool, strlen(to)+6);
-
-        if (toinfo) 
-        {
-            strncpy (toinfo, to, strlen(to));
-            strcat(toinfo,".info");
-            if (Rename(from, to)) Rename(frominfo, toinfo);
-            freeString(pool, toinfo);
-        }
-        freeString(pool, frominfo);
-    }
-}
-///
-
-///allocPathFromLock()
-char  *allocPathFromLock(APTR pool, BPTR lock) 
-{
-    char *pathb, *path;
-
-    path = NULL;
-    pathb = AllocVecPooled(pool, PATHBUFFERSIZE);
-    if (pathb) 
-    {
-        if (NameFromLock(lock, pathb, PATHBUFFERSIZE)) 
-        {
-            path = allocString(pool, pathb);
-        }
-        FreeVecPooled(pool, pathb);
-    }
-    return path;
-}
-///
-
-///combineString()
-char  *CombineString(char *format, ...) {
-
     int   cnt = 0, cnt1;
     int   len;
     char  *s, *s1, *str, *p;
@@ -352,131 +306,8 @@ char  *CombineString(char *format, ...) {
 }
 ///
 
-///isPathRecursive()
-ULONG isPathRecursive(APTR pool, char *source, char *destination) 
-{
-    BPTR          srcLock, destLock;
-    ULONG     back;
-    char        *p1, *p2;
-
-    back = PATH_NOINFO;
-    srcLock = Lock(source, SHARED_LOCK);
-    if (srcLock) 
-    {
-        destLock = Lock(destination, SHARED_LOCK);
-        if (destLock) 
-        {
-            p1 = allocPathFromLock(pool, srcLock);
-            if (p1) 
-            {
-                p2 = allocPathFromLock(pool, destLock);
-                if (p2) 
-                {
-                    if (strstr(p2, p1) == p2) back = PATH_RECURSIVE; else back = PATH_NONRECURSIVE;
-
-                    freeString(pool, p2);
-                }
-                freeString(pool, p1);
-            }
-            UnLock(destLock);
-        }
-        UnLock(srcLock);
-    }
-    return back;
-}
-///
-
-///FileExists()
-BOOL FileExists(char *name) 
-{
-    BOOL       info;
-    BPTR       nLock;
-    APTR       win;
-    struct   Task      *t;
-
-    t = FindTask(NULL);
-    win = ((struct Process *) t)->pr_WindowPtr;
-    ((struct Process *) t)->pr_WindowPtr = (APTR) -1;     //disable error requester
-
-    info = FALSE;
-    nLock = Lock(name, SHARED_LOCK);
-    if (nLock) 
-    {
-        UnLock(nLock);
-        info = TRUE;
-    }
-    ((struct Process *) t)->pr_WindowPtr = win;      //enable error requester
-    return info;
-}
-///
-
-///GetFileLength()
-LONG GetFileLength(char *name) 
-{
-    LONG       info = -1;
-    BPTR       in;
-    APTR       win;
-    struct   Task      *t;
-
-    t = FindTask(NULL);
-    win = ((struct Process *) t)->pr_WindowPtr;
-    ((struct Process *) t)->pr_WindowPtr = (APTR) -1;     //disable error requester
-
-    in = Open(name, MODE_OLDFILE);
-    if (in) {
-        Seek(in, 0, OFFSET_END);
-        info = Seek(in, 0, OFFSET_BEGINNING);
-        Close(in);
-    }
-    ((struct Process *) t)->pr_WindowPtr = win;      //enable error requester
-    return info;
-}
-///
-
-///DisposeFileInformations()
-void DisposeFileInformations(APTR pool, struct FileInfo *fi) 
-{
-    if (fi->comment) freeString(pool, fi->comment);
-    fi->comment = NULL;
-}
-///
-
-///GetFileInformations()
-BOOL GetFileInformations(APTR pool, char *name, struct FileInfo *fi) 
-{
-    struct  FileInfoBlock  *FIB;
-    LONG    Success2;
-    BOOL    info = FALSE;
-    BPTR    nLock;
-
-    fi->len = 0;
-    fi->comment = NULL;
-    fi->protection = 0;
-    
-    FIB = (struct FileInfoBlock*) AllocDosObject(DOS_FIB,DummyTags);
-    if (FIB) 
-    {
-        nLock = Lock(name, ACCESS_READ);
-        if (nLock) 
-        {
-            Success2 = Examine(nLock,FIB);
-            if (Success2) 
-            {
-                info = TRUE;
-                fi->len = FIB->fib_Size;
-                if (strlen(FIB->fib_Comment) > 0) fi->comment = allocString(pool, FIB->fib_Comment);
-                fi->protection = FIB->fib_Protection;
-            }
-            UnLock(nLock);
-        }
-        FreeDosObject (DOS_FIB,(APTR) FIB);
-    }
-    return info;
-}
-///
-
 ///GetFileInfo()
-LONG GetFileInfo(char *name) 
+static LONG GetFileInfo(char *name)
 {
     struct  FileInfoBlock  *FIB;
     LONG       info,Success2;
@@ -507,7 +338,7 @@ LONG GetFileInfo(char *name)
 ///
 
 ///GetProtectionInfo()
-LONG GetProtectionInfo(char *name) 
+static LONG GetProtectionInfo(char *name)
 {
     struct  FileInfoBlock  *FIB;
     LONG       info,Success2;
@@ -535,7 +366,7 @@ LONG GetProtectionInfo(char *name)
 ///
 
 ///GetCommentInfo()
-char *GetCommentInfo(APTR pool, char *name) 
+static char *GetCommentInfo(APTR pool, char *name)
 {
     struct  FileInfoBlock  *FIB;
     LONG       Success2;
@@ -564,14 +395,18 @@ char *GetCommentInfo(APTR pool, char *name)
 ///
 
 ///deleteFile()
-BOOL  deleteFile(char *file) {
+static BOOL deleteFile(char *file)
+{
     DeleteFile(file);
     return TRUE;
 }
 ///
 
 ///copyFile()
-BOOL  copyFile(APTR pool, char *file, char *destpath, struct FileInfoBlock *fileinfo, struct Hook *displayHook, struct dCopyStruct *display) {
+static BOOL copyFile(APTR pool, char *file, char *destpath,
+    struct FileInfoBlock *fileinfo, struct Hook *displayHook,
+    struct dCopyStruct *display)
+{
     struct  FileInfoBlock  *fib;
     char   *to;
     LONG   clen, wlen;
@@ -662,7 +497,6 @@ BOOL  copyFile(APTR pool, char *file, char *destpath, struct FileInfoBlock *file
                     {
                         SetComment(to, fib->fib_Comment);
                         SetProtection(to, fib->fib_Protection);
-                        if (fileinfo == NULL) FreeDosObject (DOS_FIB,(APTR) fib);
                     }
                 }
                 Close(in);
@@ -671,6 +505,8 @@ BOOL  copyFile(APTR pool, char *file, char *destpath, struct FileInfoBlock *file
         }
         freeString(pool, to);
     }
+    if (fileinfo == NULL) FreeDosObject(DOS_FIB,(APTR) fib);
+
     return quit;
 }
 ///
@@ -708,7 +544,8 @@ static VOID handleUnprotect(LONG info, char * spath, char * file, char * target,
 #define pmode (opModes->protectmode)
 #define omode (opModes->overwritemode)
 ///actionDir()
-BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, struct Hook *dHook, struct OpModes * opModes, APTR userdata)
+static BOOL actionDir(APTR pool, ULONG flags, char *source, char *dest,
+    BOOL quit, struct Hook *dHook, struct OpModes * opModes, APTR userdata)
 {
     struct  FileInfoBlock  *FIB, *FIB2;
     struct  dCopyStruct    display;
@@ -798,7 +635,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, str
                                 unprotect = FALSE;
                                 del = FALSE;
 
-                                /* If deleting, ask for confirmation and ask to upprotect */
+                                /* If deleting, ask for confirmation and ask to unprotect */
                                 if (opModes && (dmode != OPMODE_NONE) && ((flags & ACTION_DELETE) != 0))
                                 {
                                     if ((dmode == OPMODE_ASK) || (dmode == OPMODE_YES) || (dmode == OPMODE_ALL) || (dmode == OPMODE_NO))
@@ -824,7 +661,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, str
                                     }
                                 }
 
-                                /* If directory was create or we are deleting, trawer deeper and repeat actions */
+                                /* If directory was created or we are deleting, trawl deeper and repeat actions */
                                 if (created || ((flags & ACTION_DELETE) !=0)) 
                                 {
                                     if (((dmode == OPMODE_NO) || (dmode == OPMODE_NONE)) && (flags == ACTION_DELETE))
@@ -837,7 +674,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, str
                                     }
                                 }
 
-                                /* If deleting and all actions succeded in deeper directory, add the directory to "to be deleted" list */
+                                /* If deleting and all actions succeeded in deeper directory, add the directory to "to be deleted" list */
                                 if (!quit && del && unprotect) 
                                 {
                                     if (FIB->fib_FileName) 
@@ -864,7 +701,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, str
                                         }
                                     }
                                 }
-                                if (dname) freeString(pool, dname);
+                                freeString(pool, dname);
                             } 
                             else 
                             {
@@ -913,8 +750,8 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, str
                                                 }
                                             }
                                         }
+                                        freeString(pool, dpath);
                                     }
-                                    if (dpath) freeString(pool, dpath);
                                 }
 
                                 /* Copy the file */
@@ -1227,11 +1064,11 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
                         }
                     }
                 }
+                freeString(pool, dpath);
             }
-            freeString(pool, dpath);
         }
-        freeString(pool, path);
     }
+    freeString(pool, path);
 
     if (dir) 
     {
@@ -1267,7 +1104,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
             display.flags = (flags &= ~ACTION_UPDATE);
             if (displayHook) CallHook(displayHook, (Object *) &display, NULL);
             back = copyFile(pool, s, d, NULL, displayHook, &display);
-            if (path) freeString(pool, path);
+            freeString(pool, path);
         }
     }
 

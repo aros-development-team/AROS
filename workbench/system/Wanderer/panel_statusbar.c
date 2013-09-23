@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2010, The AROS Development Team. All rights reserved.
+  Copyright  2004-2013, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -305,7 +305,10 @@ static IPTR panelStatusBar__PrefsSetup(Class *CLASS, Object *self, struct opSet 
         if (panelStatusBarPrivate->iwp_Node.ln_Name != (char *)extension_Name)
             return 0;
 
+// FIXME: this is never freed
         extension_PrefsData = AllocVec(STATUSBAR_PREFSSIZE, MEMF_CLEAR);
+        if (extension_PrefsData == NULL)
+            return 0;
 
         /* Setup notification on prefs file --------------------------------*/
         struct Wanderer_FSHandler *_prefsNotifyHandler = NULL;
