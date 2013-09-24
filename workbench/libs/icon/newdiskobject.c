@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,13 +19,13 @@
 
 /*  SYNOPSIS */
         AROS_LHA(ULONG, type, D0),
-        
+
 /*  LOCATION */
         struct IconBase *, IconBase, 29, Icon)
 
 /*  FUNCTION
-	Create empty diskobject structure.
-	
+	Creates an empty DiskObject structure.
+
     INPUTS
 	type - WBDISK, WBDRAWER, WBTOOL, WBPROJECT,
 	       WBGARBAGE, WBDEVICE or WBKICK
@@ -33,7 +33,6 @@
     RESULT
 
     NOTES
-	Not implemented.
 
     EXAMPLE
 
@@ -47,29 +46,29 @@
 {
     AROS_LIBFUNC_INIT
 
-    int i;
-    APTR pool;
+    APTR result = NULL;
     struct NativeIcon *ni;
-    
-    pool = CreatePool(0,1024,1024);
-    if (!pool) return NULL;
+    UWORD i;
 
-    /* AROS doesn't need the gfx to be placed in chip niory, so we can use pools */
-    ni = (struct NativeIcon *)AllocPooled(pool, sizeof(struct NativeIcon));
-    if (!ni) return NULL;
-
-    memset(ni, 0, sizeof(*ni));
+    ni = (struct NativeIcon *)AllocMem(sizeof(struct NativeIcon), MEMF_CLEAR);
+    if (ni == NULL)
+        return NULL;
 
     ni->ni_DiskObject.do_Type = type;
-    
+
     NEWLIST(&ni->ni_FreeList.fl_MemList);
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < 2; i++)
         ni->ni_Image[i].TransparentColor = -1;
+
+    if (AddFreeList(&ni->ni_FreeList, ni, sizeof(struct NativeIcon)))
+    {
+        AddIconToList(ni, IconBase);
+        result = &ni->ni_DiskObject;
     }
+    else
+        FreeMem(ni, sizeof(struct NativeIcon));
 
-    AddIconToList(ni, IconBase);
+    return result;
 
-    return &ni->ni_DiskObject;
-    
     AROS_LIBFUNC_EXIT
-} /* NewDiskObject() */
+}
