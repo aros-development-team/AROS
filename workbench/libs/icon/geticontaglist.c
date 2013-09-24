@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,8 +25,12 @@
 	struct IconBase *, IconBase, 30, Icon)
 
 /*  FUNCTION
-	Open icon from disk
+	Opens an icon from disk.
+
     INPUTS
+	name - object path (without .info extension). May be NULL when
+	    retrieving a default icon.
+	tags - tag list containing tags described below.
 
     TAGS
 	ICONA_ErrorCode (LONG *)
@@ -34,7 +38,8 @@
 		overrides the "name" parameter.
 	ICONGETA_GetDefaultName (STRPTR) - Name of default icon to get. This
 		overrides the "name" parameter.
-	ICONGETA_FailIfUnavailable (BOOL)
+	ICONGETA_FailIfUnavailable (BOOL) - Find a default icon if there is no
+		specific icon.
 	ICONGETA_GetPaletteMappedIcon (BOOL)
 	ICONGETA_IsDefaultIcon (LONG *) - Upon completion of this function, the
 	    referenced LONG will be set to a boolean value indicating whether

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -23,15 +23,15 @@
 	struct IconBase *, IconBase, 12, Icon)
 
 /*  FUNCTION
-	Adds supplied memory chunk to the supplied freelist.
-	All memory added in to the freelist can later be deallocated through
-	one single FreeFreeList() call.
+	Adds supplied memory chunk to the supplied freelist. The memory chunk
+	must have been allocated by AllocMem(). All memory added into the
+	freelist can later be deallocated through a single FreeFreeList() call.
 
     INPUTS
 	freelist - pointer to freelist struct previously allocated by
-		the programmer.
+	    the programmer.
 	mem - memory to add to the freelist.
-	size - size of memory chunk to add to the frelist.
+	size - size of memory chunk to add to the freelist.
 
     RESULT
 	FALSE on failure, else TRUE.
@@ -58,7 +58,7 @@
     /* We get hold of the last memlist node inside the list */
     memlist = (struct MemList*)freelist->fl_MemList.lh_TailPred;
 
-    /* Is this memlist full ? */
+    /* Is this memlist full? */
     if (freelist->fl_NumFree == 0)
     {
 	/* No more room, we must allocate a new entry */
@@ -73,7 +73,7 @@
 	AddTail ((struct List*)&freelist->fl_MemList, (struct Node*)memlist);
     }
 
-    /* Insert the the supplied parameters */
+    /* Insert the supplied parameters */
     mementry = &memlist->ml_ME[freelist->fl_NumFree - 1];
 
     mementry->me_Un.meu_Addr = mem;
