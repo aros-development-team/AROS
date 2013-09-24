@@ -58,7 +58,7 @@ extern const IPTR IconDesc[];
     nativeicon = NATIVEICON(diskobj);
    
     /* Remove all layout specific data
-     * (ie displayable bitmaps, pen allocations, etc)
+     * (i.e. displayable bitmaps, pen allocations, etc.)
      */
     LayoutIconA(diskobj, NULL, NULL);
 
