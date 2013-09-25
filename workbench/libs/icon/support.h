@@ -2,7 +2,7 @@
 #define _SUPPORT_H_
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,6 +26,8 @@ VOID __UnLockObject_WB(BPTR lock, struct IconBase *IconBase);
 CONST_STRPTR GetDefaultIconName(LONG type);
 
 LONG CalcIconHash(struct DiskObject *dobj);
+APTR AllocMemIcon(struct DiskObject *icon, IPTR size, ULONG req,
+    struct IconBase *IconBase);
 VOID AddIconToList(struct NativeIcon *icon, struct IconBase *IconBase);
 VOID RemoveIconFromList(struct NativeIcon *icon, struct IconBase *IconBase);
 struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconBase);

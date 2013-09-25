@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Miscellaneous support functions.
@@ -144,7 +144,8 @@ VOID __FetchIconARGB_WB(struct DiskObject *icon, int id, struct IconBase *IconBa
     if (image->ARGB == NULL && ni->ni_Image[0].ARGB != NULL) {
         /* Synthesize a selected ARGB icon */
         ULONG area = ni->ni_Face.Width * ni->ni_Face.Height;
-        image->ARGB = AllocMemIcon(icon, area * sizeof(UBYTE) * 4, MEMF_PUBLIC);
+        image->ARGB = AllocMemIcon(icon, area * sizeof(UBYTE) * 4,
+            MEMF_PUBLIC, IconBase);
         if (image->ARGB) {
             CopyMem(ni->ni_Image[0].ARGB, (APTR)image->ARGB, area * sizeof(UBYTE) * 4);
             UBYTE *cp;
@@ -189,7 +190,8 @@ VOID __FetchIconImage_WB(struct DiskObject *icon, int id, struct IconBase *IconB
             ULONG pens = ni->ni_Image[0].Pens;
             struct ColorRegister *newpal;
 
-            newpal = AllocMemIcon(icon, sizeof(struct ColorRegister)*pens, MEMF_PUBLIC);
+            newpal = AllocMemIcon(icon, sizeof(struct ColorRegister) * pens,
+                MEMF_PUBLIC, IconBase);
             if (newpal) {
                 ULONG i;
 
@@ -206,7 +208,9 @@ VOID __FetchIconImage_WB(struct DiskObject *icon, int id, struct IconBase *IconB
             }
         }
     } else if (image->ARGB) {
-        image->ImageData = AllocMemIcon(icon, ni->ni_Face.Width * ni->ni_Face.Height, MEMF_PUBLIC);
+        image->ImageData =
+            AllocMemIcon(icon, ni->ni_Face.Width * ni->ni_Face.Height,
+                MEMF_PUBLIC, IconBase);
         image->Pens = 17;
         image->Palette = ehb_palette;
         image->TransparentColor = 17;
@@ -251,14 +255,15 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
     /* Ensure that do_DrawerData exists for WBDISK and WBDRAWER objects */
     if ((icon->do_Type == WBDISK || icon->do_Type == WBDRAWER) &&
         icon->do_DrawerData == NULL) {
-        icon->do_DrawerData = AllocMemIcon(icon, sizeof(struct DrawerData), MEMF_PUBLIC | MEMF_CLEAR);
+        icon->do_DrawerData = AllocMemIcon(icon, sizeof(struct DrawerData),
+            MEMF_PUBLIC | MEMF_CLEAR, IconBase);
         icon->do_DrawerData->dd_NewWindow.LeftEdge = 50;
         icon->do_DrawerData->dd_NewWindow.TopEdge = 50;
         icon->do_DrawerData->dd_NewWindow.Width = 400;
         icon->do_DrawerData->dd_NewWindow.Height = 150;
     }
 
-    /* Clean out dangling pointers that should no long be
+    /* Clean out dangling pointers that should no longer be
      * present
      */
     if (icon->do_DrawerData) {
@@ -480,6 +485,26 @@ LONG CalcIconHash(struct DiskObject *dobj)
     }
     	
     return hash & (ICONLIST_HASHSIZE-1);
+}
+
+/* Allocate memory, and save to an icon's freelist
+ */
+APTR AllocMemIcon(struct DiskObject *icon, IPTR size, ULONG req,
+    struct IconBase *IconBase)
+{
+    APTR mem;
+
+    mem = AllocMem(size, req);
+    if (mem != NULL)
+    {
+        if (!AddFreeList((struct FreeList *)&icon[1], mem, size))
+        {
+            FreeMem(mem, size);
+            mem = NULL;
+        }
+    }
+
+    return mem;
 }
 
 VOID AddIconToList(struct NativeIcon *icon, struct IconBase *IconBase)

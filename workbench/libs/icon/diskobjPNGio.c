@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -146,7 +146,8 @@ ULONG *ReadMemPNG(struct DiskObject *icon, APTR stream, LONG *width, LONG *heigh
 
         PNG_GetImageData(handle, (APTR *)&src, NULL);
 
-        argb = AllocMemIcon(icon, (*width) * (*height) * sizeof(ULONG), MEMF_PUBLIC);
+        argb = AllocMemIcon(icon, (*width) * (*height) * sizeof(ULONG),
+            MEMF_PUBLIC, IconBase);
         if (argb) {
             xoff = ((*width) - w)/2;
             yoff = ((*height) - h)/2;
@@ -205,8 +206,9 @@ STATIC BOOL MakePlanarImage(struct NativeIcon *icon, struct Image **img, UBYTE *
     UWORD *p1, *p2;
     ULONG *s = (ULONG *) src;
 
-    *img = (struct Image *) AllocMemIcon(&icon->ni_DiskObject, sizeof(struct Image) + planesize * 2,
-            MEMF_PUBLIC | MEMF_CLEAR);
+    *img = (struct Image *) AllocMemIcon(&icon->ni_DiskObject,
+        sizeof(struct Image) + planesize * 2, MEMF_PUBLIC | MEMF_CLEAR,
+        IconBase);
     if (*img == NULL)
         return FALSE;
 
@@ -343,7 +345,8 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
        icOn chunk. And it must also work when loading an icon and then
        saving it using another name. */
 
-    data = AllocMemIcon(&icon->ni_DiskObject, filesize, MEMF_PUBLIC);
+    data = AllocMemIcon(&icon->ni_DiskObject, filesize, MEMF_PUBLIC,
+        IconBase);
     if (!data)
         return FALSE;
 
@@ -460,7 +463,9 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 		
 		if (need_drawerdata && !(DO(icon)->do_DrawerData))
 		{
-		    DO(icon)->do_DrawerData = AllocMemIcon(DO(icon), sizeof(struct DrawerData), MEMF_PUBLIC | MEMF_CLEAR);
+		    DO(icon)->do_DrawerData =
+                        AllocMemIcon(DO(icon), sizeof(struct DrawerData),
+                            MEMF_PUBLIC | MEMF_CLEAR, IconBase);
 		    if (!(DO(icon)->do_DrawerData))
 		    {
 		    	ok = FALSE;
@@ -510,7 +515,9 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 			break;
 
     	    	    case ATTR_DEFAULTTOOL:
-		    	DO(icon)->do_DefaultTool = AllocMemIcon(DO(icon), strlen((char *)val) + 1, MEMF_PUBLIC | MEMF_CLEAR);
+		    	DO(icon)->do_DefaultTool =
+                            AllocMemIcon(DO(icon), strlen((char *)val) + 1,
+                                MEMF_PUBLIC | MEMF_CLEAR, IconBase);
 			if (DO(icon)->do_DefaultTool)
 			{
 			    strcpy(DO(icon)->do_DefaultTool, (char *)val);
@@ -535,7 +542,10 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 
 			    ttarraysize += 10;
 
-			    DO(icon)->do_ToolTypes = AllocMemIcon(DO(icon), ttarraysize * sizeof(APTR), MEMF_PUBLIC | MEMF_CLEAR);
+			    DO(icon)->do_ToolTypes =
+                                AllocMemIcon(DO(icon),
+                                    ttarraysize * sizeof(APTR),
+                                    MEMF_PUBLIC | MEMF_CLEAR, IconBase);
 			    if (DO(icon)->do_ToolTypes)
 			    {
 			    	D(bug("[Icon.PNG] Allocated array of %u entries @ 0x%p (old 0x%p)\n", ttarraysize, DO(icon)->do_ToolTypes, old_tooltypes));
@@ -554,7 +564,9 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 
 			if (!ok) break;
 			
-			DO(icon)->do_ToolTypes[ttnum - 1] = AllocMemIcon(DO(icon), strlen((char *)val) + 1, MEMF_PUBLIC | MEMF_CLEAR);
+			DO(icon)->do_ToolTypes[ttnum - 1] =
+                            AllocMemIcon(DO(icon), strlen((char *)val) + 1,
+                            MEMF_PUBLIC | MEMF_CLEAR, IconBase);
 			if (DO(icon)->do_ToolTypes[ttnum - 1])
 			{
 			    strcpy(DO(icon)->do_ToolTypes[ttnum - 1], (char *)val);
@@ -643,7 +655,9 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
     {
     	ULONG size = icon->ni_Face.Width * icon->ni_Face.Height;
 	
-    	if ((icon->ni_Image[1].ARGB = AllocMemIcon(&icon->ni_DiskObject, size * sizeof(ULONG), MEMF_PUBLIC)))
+    	if ((icon->ni_Image[1].ARGB =
+            AllocMemIcon(&icon->ni_DiskObject, size * sizeof(ULONG),
+                MEMF_PUBLIC, IconBase)))
 	{
 	    ULONG *src = (ULONG *)icon->ni_Image[0].ARGB;
 	    ULONG *dst = (ULONG *)icon->ni_Image[1].ARGB;
