@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -83,7 +83,7 @@ png_voidp my_malloc_fn(png_structp png_ptr, png_size_t size)
 
 void my_free_fn(png_structp png_ptr, png_voidp ptr)
 {
-    if (ptr) FreeVec(ptr);
+    FreeVec(ptr);
 }
 
 /**************************************************************************************************/
@@ -242,7 +242,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     {
     	D(bug("png.datatype/LoadPNG(): Error!\n"));
     	png_destroy_read_struct(&png.png_ptr, &png.png_info_ptr, &png.png_end_info_ptr);
-	if (buffer) FreeVec(buffer);
+	FreeVec(buffer);
 	PNG_Exit(&png, ERROR_UNKNOWN);
 	return FALSE;
     }
@@ -551,8 +551,8 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
     {
         D(bug("png.datatype/SavePNG(): Error!\n"));
         png_destroy_write_struct(&png.png_ptr, &png.png_info_ptr);
-        if (linebuf) FreeVec(linebuf);
-        if (png_palette) FreeVec(png_palette);
+        FreeVec(linebuf);
+        FreeVec(png_palette);
         PNG_Exit(&png, ERROR_UNKNOWN);
         return FALSE;
     }
@@ -662,7 +662,7 @@ static BOOL SavePNG(struct IClass *cl, Object *o, struct dtWrite *dtw)
     png_write_end(png.png_ptr, png.png_info_ptr);
 
     FreeVec(linebuf);
-    if (png_palette) FreeVec(png_palette);
+    FreeVec(png_palette);
 
     png_destroy_write_struct(&png.png_ptr, &png.png_info_ptr);
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -124,7 +124,7 @@ static APTR PNG_LoadImageInternal(APTR handle, CONST_STRPTR const *chunkstoread,
     struct PNGHandle *pnghandle = NULL;
     APTR    	      buffer = NULL;
     UBYTE   	      header[8];
-    APTR    	      retval = 0;
+    APTR    	      retval = NULL;
     BOOL    	      ok = TRUE;
     
     if (!handle) return NULL;
@@ -141,7 +141,7 @@ static APTR PNG_LoadImageInternal(APTR handle, CONST_STRPTR const *chunkstoread,
 	
 	if (mh->size < 8)
 	{
-    	    D(bug("PNG_LoadImageInternal: Memory file to small: %d\n", mh->size));
+    	    D(bug("PNG_LoadImageInternal: Memory file too small: %d\n", mh->size));
 	    ok = FALSE;
 	}
 	else
@@ -360,7 +360,7 @@ static APTR PNG_LoadImageInternal(APTR handle, CONST_STRPTR const *chunkstoread,
     		modulo = buffersize; buffersize *= png.png_height;
 	    }
 
-	    buffer = AllocVec(buffersize, 0);
+	    buffer = AllocVec(buffersize, MEMF_ANY);
     	    if (!buffer) png_error(png.png_ptr, "Out of memory!");
 
     	    bpp = png.png_depth / 8;
@@ -380,7 +380,7 @@ static APTR PNG_LoadImageInternal(APTR handle, CONST_STRPTR const *chunkstoread,
 
 		    if (png.png_num_lace_passes == 0)
 		    {
-		    	memcpy(pnghandle->data + y * bpr, buf, bpr);			
+		    	memcpy(pnghandle->data + y * bpr, buf, bpr);
 		    }
 
 		} /* for(y = 0, buf = buffer; y < png.png_height; y++, buf += modulo) */
@@ -450,13 +450,13 @@ static APTR PNG_LoadImageInternal(APTR handle, CONST_STRPTR const *chunkstoread,
     
     if (png.png_ptr)
     {
-    	if (buffer) FreeVec(buffer);
+    	FreeVec(buffer);
     	png_destroy_read_struct(&png.png_ptr, &png.png_info_ptr, &png.png_end_info_ptr);
     }
         
     if (!ok)
     {
-    	if (pnghandle) FreeVec(pnghandle);
+    	FreeVec(pnghandle);
     }
 	    
     return retval;
@@ -584,7 +584,7 @@ AROS_LH1(void, PNG_FreeImage,
 {
     AROS_LIBFUNC_INIT
 
-    if (pnghandle) FreeVec(pnghandle);
+    FreeVec(pnghandle);
     
     AROS_LIBFUNC_EXIT
 }
@@ -597,7 +597,7 @@ AROS_LH1(void, PNG_FreeChunk,
 {
     AROS_LIBFUNC_INIT
 
-    if (chunk) FreeVec(chunk);
+    FreeVec(chunk);
     
     AROS_LIBFUNC_EXIT
 }
