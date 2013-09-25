@@ -2,7 +2,7 @@
 #define ICON_INTERN_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -91,7 +91,7 @@ struct NativeIcon
     /* The 'laid out' icon. The laid out data will
      * also be resized for the screen's aspect ratio,
      * so the nil_Width and nil_Height will probably
-     * be different then the original image on some
+     * be different than the original image on some
      * screens.
      */
     struct Screen    *ni_Screen;      /* Screen for the layout */
@@ -144,16 +144,6 @@ struct NativeIcon
 #define RSS_TOOLTYPES_READ	(1 << 5)
 
 #define NATIVEICON(icon) ((struct NativeIcon *)((UBYTE *)(icon) - offsetof(struct NativeIcon, ni_DiskObject)))
-
-/* Allocate, and save to an icon's freelist
- */
-#define AllocMemIcon(icon, size, req) \
-    ({ APTR _ret; struct DiskObject *_icon = (icon); \
-       ULONG _size = (ULONG)(size); \
-       ULONG _req = (ULONG)(req); \
-       _ret = AllocMem(_size, _req); \
-       if (_ret) AddFreeList((struct FreeList *)&_icon[1], _ret, _size); \
-       _ret; })
 
 struct IconBase
 {

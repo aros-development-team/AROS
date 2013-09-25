@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -239,7 +239,7 @@ STATIC BOOL ReadARGB35(struct DiskObject *icon, struct IFFHandle *iff, struct Fi
     
     D(bug("[%s] ARGB size is %dx%d, %d => %d bytes\n", __func__, imagew, imageh, chunksize, size));
 
-    src = mem = AllocMemIcon(icon, chunksize, MEMF_PUBLIC);
+    src = mem = AllocMemIcon(icon, chunksize, MEMF_PUBLIC, IconBase);
     if (!src) return FALSE;
     
     if (ReadChunkBytes(iff, src, chunksize) != chunksize)
@@ -247,7 +247,7 @@ STATIC BOOL ReadARGB35(struct DiskObject *icon, struct IFFHandle *iff, struct Fi
 	goto fail;
     }
     
-    argb = AllocMemIcon(icon, size, MEMF_PUBLIC);
+    argb = AllocMemIcon(icon, size, MEMF_PUBLIC, IconBase);
     if (!argb) goto fail;
  
     zsize = AROS_BE2WORD(*((UWORD *)(src + 6))) + 1;
@@ -294,7 +294,7 @@ STATIC BOOL ReadImage35(struct DiskObject *icon, struct IFFHandle *iff, struct F
 
     size = imgsize + palsize;
         
-    src = mem = AllocMemIcon(icon, size, MEMF_PUBLIC);
+    src = mem = AllocMemIcon(icon, size, MEMF_PUBLIC, IconBase);
     if (!src) return FALSE;
     
     if (ReadChunkBytes(iff, src, size) != size)
@@ -308,12 +308,12 @@ STATIC BOOL ReadImage35(struct DiskObject *icon, struct IFFHandle *iff, struct F
             return FALSE;
     
     	size = numcols * sizeof(struct ColorRegister);
-    	imgpal = AllocMemIcon(icon, size, MEMF_PUBLIC);
+    	imgpal = AllocMemIcon(icon, size, MEMF_PUBLIC, IconBase);
     	if (!imgpal) goto fail;
     }
 
     size = imagew * imageh;
-    imgdata = AllocMemIcon(icon, size, MEMF_PUBLIC);
+    imgdata = AllocMemIcon(icon, size, MEMF_PUBLIC, IconBase);
     if (!imgdata) goto fail;
     
     if (ic->ImageFormat == 0)
@@ -442,7 +442,8 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     if (IFFParseBase == NULL)
     	return FALSE;
     
-    data = AllocMemIcon(&icon->ni_DiskObject, extrasize, MEMF_PUBLIC);
+    data = AllocMemIcon(&icon->ni_DiskObject, extrasize, MEMF_PUBLIC,
+        IconBase);
     if (data == NULL)
         return FALSE;
 
@@ -621,7 +622,7 @@ static UBYTE *Encode35(struct DiskObject *icon, ULONG depth, UBYTE *dtype, LONG 
     UBYTE *buf;
     LONG  ressize, numcopy, numequal;
 
-    buf = AllocMemIcon(icon, size * 2, MEMF_PUBLIC);
+    buf = AllocMemIcon(icon, size * 2, MEMF_PUBLIC, IconBase);
     if (!buf) return NULL;
 
     numcopy = 0;

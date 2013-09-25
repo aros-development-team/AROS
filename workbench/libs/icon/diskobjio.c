@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Read an icon from an .info file
@@ -388,7 +388,8 @@ kprintf ("ProcessOldDrawerData\n");
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    ptr = AllocMemIcon(icon, sizeof(struct DrawerData), MEMF_PUBLIC);
+	    ptr = AllocMemIcon(icon, sizeof(struct DrawerData), MEMF_PUBLIC,
+                IconBase);
 	    if (ptr == NULL)
 	        return FALSE;
 
@@ -429,7 +430,8 @@ static struct Image * ReadImage (struct DiskObject *icon, struct Hook * streamho
     ULONG	   t;
     struct IconBase *IconBase = streamhook->h_Data;
 
-    image = AllocMemIcon(icon, sizeof(struct Image), MEMF_PUBLIC | MEMF_CLEAR);
+    image = AllocMemIcon(icon, sizeof(struct Image),
+        MEMF_PUBLIC | MEMF_CLEAR, IconBase);
     if (!image)
         return NULL;
 
@@ -447,7 +449,8 @@ static struct Image * ReadImage (struct DiskObject *icon, struct Hook * streamho
 
     if (size)
     {
-	if (!(image->ImageData = AllocMemIcon(icon, size, MEMF_PUBLIC | MEMF_CHIP)) )
+	if (!(image->ImageData = AllocMemIcon(icon, size,
+            MEMF_PUBLIC | MEMF_CHIP, IconBase)))
 	    return NULL;
 
 	size >>= 1;
@@ -663,7 +666,7 @@ static STRPTR ReadIconString (struct DiskObject *icon, struct Hook * streamhook,
     if (!ReadLong (streamhook, &len, (APTR)file))
 	return NULL;
 
-    str = AllocMemIcon(icon, len, MEMF_PUBLIC);
+    str = AllocMemIcon(icon, len, MEMF_PUBLIC, IconBase);
 
     if (!str)
 	return NULL;
@@ -831,7 +834,8 @@ kprintf ("ProcessToolTypes\n");
 	    	return TRUE;
 	    }
 
-	    ttarray = AllocMemIcon(icon, (count+1)*sizeof(STRPTR), MEMF_PUBLIC);
+	    ttarray = AllocMemIcon(icon, (count+1)*sizeof(STRPTR),
+                MEMF_PUBLIC, IconBase);
 	    if (!ttarray) return FALSE;
 
 #if 0

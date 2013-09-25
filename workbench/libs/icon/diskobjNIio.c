@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -160,7 +160,8 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
    
     size = width * height;
     
-    img->ImageData = AllocMemIcon(&icon->ni_DiskObject, size, MEMF_PUBLIC);
+    img->ImageData =
+        AllocMemIcon(&icon->ni_DiskObject, size, MEMF_PUBLIC, IconBase);
     if (!img->ImageData) return FALSE;
 
     if (!which)
@@ -172,7 +173,8 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     }
     
     size = numcols * sizeof(struct ColorRegister);
-    img->Palette = AllocMemIcon(&icon->ni_DiskObject, size, MEMF_PUBLIC);
+    img->Palette =
+        AllocMemIcon(&icon->ni_DiskObject, size, MEMF_PUBLIC, IconBase);
     if (!img->Palette) return FALSE;
 
     img->TransparentColor = transp ? 0 : -1;

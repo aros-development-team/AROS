@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -19,7 +19,7 @@ STATIC STRPTR StrDupIcon(struct DiskObject *dobj, STRPTR str, APTR IconBase)
 {
     char *newstr;
     if (!str) return NULL;
-    newstr = AllocMemIcon(dobj, strlen(str)+1, MEMF_PUBLIC);
+    newstr = AllocMemIcon(dobj, strlen(str)+1, MEMF_PUBLIC, IconBase);
     if (newstr) strcpy(newstr,str);
     return newstr;
 }
@@ -28,7 +28,7 @@ STATIC APTR MemDupIcon(struct DiskObject *dobj, CONST_APTR src, ULONG size, APTR
 {
     UBYTE *newmem;
     
-    newmem = AllocMemIcon(dobj, size, MEMF_PUBLIC);
+    newmem = AllocMemIcon(dobj, size, MEMF_PUBLIC, IconBase);
     if (newmem) CopyMem(src, newmem, size);
     
     return newmem;
@@ -46,7 +46,8 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
     if (!dupImage)
     	return src;
 
-    dest = (struct Image*)AllocMemIcon(dobj, sizeof(struct Image), MEMF_PUBLIC);
+    dest = (struct Image*)AllocMemIcon(dobj, sizeof(struct Image),
+        MEMF_PUBLIC, IconBase);
     if (dest)
     {
 	int data_size = 0;
@@ -79,7 +80,8 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
 	if (!dupImageData)
 	    return dest;
 	
-	if ((dest->ImageData = AllocMemIcon(dobj, data_size, MEMF_PUBLIC | MEMF_CHIP)))
+	if ((dest->ImageData = AllocMemIcon(dobj, data_size,
+            MEMF_PUBLIC | MEMF_CHIP, IconBase)))
 	{
 	    memcpy(dest->ImageData,src->ImageData,data_size);
 #ifdef OUTPUT_DATA
@@ -235,7 +237,8 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
     {
     	LONG size;
 	
-	dobj->do_DrawerData = AllocMemIcon(dobj, sizeof(struct DrawerData), MEMF_PUBLIC);
+	dobj->do_DrawerData = AllocMemIcon(dobj, sizeof(struct DrawerData),
+            MEMF_PUBLIC, IconBase);
     	if (!dobj->do_DrawerData) goto fail;
 	
  	if (((SIPTR)icon->do_Gadget.UserData > 0) &&
@@ -278,7 +281,8 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
 	/* Get number of tool types */
 	for (num_tts = 0;icon->do_ToolTypes[num_tts];num_tts++);
 
-	if ((dobj->do_ToolTypes = (STRPTR *)AllocMemIcon(dobj,sizeof(char*)*(num_tts+1), MEMF_PUBLIC)))
+	if ((dobj->do_ToolTypes = (STRPTR *)AllocMemIcon(dobj,
+            sizeof(char*) * (num_tts + 1), MEMF_PUBLIC, IconBase)))
 	{
 	    int i;
 	    for (i=0;i<num_tts;i++)
