@@ -20,6 +20,8 @@ OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddGCAttrBase;
 OOP_AttrBase HiddCompositingAttrBase;
 
+const TEXT version[] = "$VER: Compositor 41.0 (26.09.2013)\n";
+
 static const struct OOP_ABDescr attrbases[] = 
 {
     { IID_Hidd_PixFmt,          &HiddPixFmtAttrBase },
