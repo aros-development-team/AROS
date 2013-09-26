@@ -18,7 +18,7 @@ OOP_AttrBase HiddPixFmtAttrBase;
 OOP_AttrBase HiddSyncAttrBase;
 OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddGCAttrBase;
-OOP_AttrBase HiddCompositingAttrBase;
+OOP_AttrBase HiddCompositorAttrBase;
 
 const TEXT version[] = "$VER: Compositor 41.0 (26.09.2013)\n";
 
@@ -28,7 +28,7 @@ static const struct OOP_ABDescr attrbases[] =
     { IID_Hidd_Sync,            &HiddSyncAttrBase },
     { IID_Hidd_BitMap,          &HiddBitMapAttrBase },
     { IID_Hidd_GC,              &HiddGCAttrBase },
-    { IID_Hidd_Compositing,     &HiddCompositingAttrBase },
+    { IID_Hidd_Compositor,     &HiddCompositorAttrBase },
     { NULL, NULL }
 };
 
@@ -37,19 +37,19 @@ static OOP_Class *InitClass(void)
     OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
     OOP_Class *cl = NULL;
 
-    struct TagItem Compositing_tags[] =
+    struct TagItem Compositor_tags[] =
     {
         {aMeta_SuperID	     , (IPTR)CLID_Root			 },
-        {aMeta_InterfaceDescr, (IPTR)Compositing_ifdescr	 },
-        {aMeta_InstSize	     , sizeof(struct HIDDCompositingData)},
-        {aMeta_ID	     , (IPTR)CLID_Hidd_Compositing	 },
+        {aMeta_InterfaceDescr, (IPTR)Compositor_ifdescr	 },
+        {aMeta_InstSize	     , sizeof(struct HIDDCompositorData)},
+        {aMeta_ID	     , (IPTR)CLID_Hidd_Compositor	 },
         {TAG_DONE	     , 0				 }
     };
 
     if (MetaAttrBase == 0)
         return NULL;
 
-    cl = OOP_NewObject(NULL, CLID_HiddMeta, Compositing_tags);
+    cl = OOP_NewObject(NULL, CLID_HiddMeta, Compositor_tags);
     if (cl)
     	OOP_AddClass(cl);
 
@@ -75,7 +75,7 @@ int main(void)
 	{
 	    if (OOP_ObtainAttrBases(attrbases))
 	    {
-    	    	if (OOP_FindClass(CLID_Hidd_Compositing))
+    	    	if (OOP_FindClass(CLID_Hidd_Compositor))
     	    	{
 	    	    /* Double-starting is a valid operation. */
 	    	    ret = RETURN_OK;
