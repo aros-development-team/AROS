@@ -31,23 +31,43 @@
 
 struct AppearanceEditor_DATA
 {
-    Object *te_ThemePreview;
-    Object *te_ThemeEnable;
-    Object *te_ThemeChoice;
-    Object *te_OptionZune;
+    Object *ae_ThemePreview;
+    Object *ae_ThemeEnable;
+    Object *ae_ThemeChoice;
+    Object *ae_OptionZune;
 #if (0)
-    Object *te_OptionWand;
+    Object *ae_OptionWand;
 #endif
-    IPTR   *te_ThemeArray;
-    struct Hook te_PreviewHook;
+
+    Object *ae_CompEnable;
+    Object *ae_CompBelow;
+    Object *ae_CompLeft;
+    Object *ae_CompRight;
+    Object *ae_CompAlpha;
+
+    IPTR   *ae_ThemeArray;
+    struct Hook ae_PreviewHook;
 };
 
 static    STRPTR THEMES_DEFAULT;
 static    STRPTR THEMES_AMIGAOS = "AmigaOS3.x";
 static    CONST_STRPTR THEMES_BASE = "THEMES:";
 static    CONST_STRPTR THEMES_ENVPATH = "SYS/theme.var";
+static    CONST_STRPTR COMPOSITE_ENVPATH = "SYS/compositor.prefs";
 static    CONST_STRPTR THEMES_DEFPATH = "SYS:Prefs/Presets/theme.default";
 static    CONST_STRPTR THEMES_OPTZUNEPATH = "Zune/usethemeprefs";
+
+#define COMPOSITE_PEFSTEMPLATE  "ABOVE/S,BELOW/S,LEFT/S,RIGHT/S,ALPHA/S"
+
+enum
+{
+    ARG_ABOVE = 0,
+    ARG_BELOW,
+    ARG_LEFT,
+    ARG_RIGHT,
+    ARG_ALPHA,
+    NOOFARGS
+};
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct AppearanceEditor_DATA *data = INST_DATA(CLASS, self)
@@ -86,25 +106,22 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
 {
     AROS_USERFUNC_INIT
     struct AppearanceEditor_DATA *data = h->h_Data;
-
+    BOOL themeEnable, compEnable;
     D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
 
-    if (XGET(data->te_ThemeEnable, MUIA_Selected))
-    {
-        SET(data->te_ThemeChoice, MUIA_Disabled, FALSE);
-        SET(data->te_OptionZune, MUIA_Disabled, FALSE);
+    themeEnable = (BOOL)XGET(data->ae_ThemeEnable, MUIA_Selected);
+    SET(data->ae_ThemeChoice, MUIA_Disabled, !(themeEnable));
+    SET(data->ae_OptionZune, MUIA_Disabled, !(themeEnable));
 #if (0)
-        SET(data->te_OptionWand, MUIA_Disabled, FALSE);
+    SET(data->ae_OptionWand, MUIA_Disabled, !(themeEnable));
 #endif
-    }
-    else
-    {
-        SET(data->te_ThemeChoice, MUIA_Disabled, TRUE);
-        SET(data->te_OptionZune, MUIA_Disabled, TRUE);
-#if (0)
-        SET(data->te_OptionWand, MUIA_Disabled, TRUE);
-#endif
-    }
+
+    compEnable = (BOOL)XGET(data->ae_CompEnable, MUIA_Selected);
+    SET(data->ae_CompBelow, MUIA_Disabled, !(compEnable));
+    SET(data->ae_CompLeft, MUIA_Disabled, !(compEnable));
+    SET(data->ae_CompRight, MUIA_Disabled, !(compEnable));
+    SET(data->ae_CompAlpha, MUIA_Disabled, !(compEnable));
+
     SET(self, MUIA_PrefsEditor_Changed, TRUE);
 
     AROS_USERFUNC_EXIT
@@ -226,70 +243,78 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
             Child, RegisterGroup(tab_labels),
                 MUIA_Register_Frame, TRUE,
                 Child, VGroup,
-                    Child, (IPTR)ColGroup(2),
-                        MUIA_Group_SameWidth, FALSE,
-                        Child, (IPTR)Label1(_(MSG_ENABLETHEMES)),
-                        Child, HGroup,
-                            Child, (IPTR)(_ThemeEnable = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                    Child, HGroup,
+                        Child, HVSpace,
+                        Child, (IPTR)ColGroup(2),
+                            MUIA_Group_SameWidth, FALSE,
+                            Child, (IPTR)Label1(_(MSG_ENABLETHEMES)),
+                            Child, HGroup,
+                                Child, (IPTR)(_ThemeEnable = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                                Child, HVSpace,
+                            End,
                             Child, HVSpace,
+                            Child, RectangleObject,
+                                MUIA_Background, MUII_FILL,
+                                MUIA_FixHeight, 2,
+                            End,
+                            Child, (IPTR)Label1(_(MSG_SELECTEDTHEME)),
+                            Child, (IPTR)(_ThemeSelectionObj = (Object *)CycleObject,
+                                MUIA_CycleChain, 1,
+                                MUIA_Cycle_Entries, _ThemeArray,
+                            End),
+                            Child, (IPTR)Label1(_(MSG_ENABLEZUNEPREFS)),
+                            Child, HGroup,
+                                Child, (IPTR)(_ThemeZunePrefsObj = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                                Child, HVSpace,
+                            End,
+#if (0)
+                            Child, (IPTR)Label1(_(MSG_ENABLEWANDPREFS)),
+                            Child, HGroup,
+                                Child, (IPTR)(_ThemeWandPrefsObj = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                                Child, HVSpace,
+                            End,
+#endif
                         End,
                         Child, HVSpace,
-                        Child, RectangleObject,
-                            MUIA_Background, MUII_FILL,
-                            MUIA_FixHeight, 2,
-                        End,
-                        Child, (IPTR)Label1(_(MSG_SELECTEDTHEME)),
-                        Child, (IPTR)(_ThemeSelectionObj = (Object *)CycleObject,
-                            MUIA_CycleChain, 1,
-                            MUIA_Cycle_Entries, _ThemeArray,
-                        End),
-                        Child, (IPTR)Label1(_(MSG_ENABLEZUNEPREFS)),
-                        Child, HGroup,
-                            Child, (IPTR)(_ThemeZunePrefsObj = (Object *)AppearanceEditor__Checkmark(TRUE)),
-                            Child, HVSpace,
-                        End,
-#if (0)
-                        Child, (IPTR)Label1(_(MSG_ENABLEWANDPREFS)),
-                        Child, HGroup,
-                            Child, (IPTR)(_ThemeWandPrefsObj = (Object *)AppearanceEditor__Checkmark(TRUE)),
-                            Child, HVSpace,
-                        End,
-#endif
                     End,
                 End,
                 Child, VGroup,
-                    Child, (IPTR)ColGroup(2),
-                        MUIA_Group_SameWidth, FALSE,
-                        Child, (IPTR)Label1("Enable Screen Compositing"),
-                        Child, HGroup,
-                            Child, (IPTR)(_CompEnable = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                    Child, HGroup,
+                        Child, HVSpace,
+                        Child, (IPTR)ColGroup(2),
+                            MUIA_Group_SameWidth, FALSE,
+                            Child, (IPTR)Label1("Enable Screen Composition"),
+                            Child, HGroup,
+                                Child, (IPTR)(_CompEnable = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                                Child, HVSpace,
+                            End,
+                            Child, (IPTR)Label1("Composite Below"),
+                            Child, HGroup,
+                                Child, (IPTR)(_CompBelow = (Object *)AppearanceEditor__Checkmark(FALSE)),
+                                Child, HVSpace,
+                            End,
+                            Child, (IPTR)Label1("Composite Left"),
+                            Child, HGroup,
+                                Child, (IPTR)(_CompLeft = (Object *)AppearanceEditor__Checkmark(FALSE)),
+                                Child, HVSpace,
+                            End,
+                            Child, (IPTR)Label1("Composite Right"),
+                            Child, HGroup,
+                                Child, (IPTR)(_CompRight = (Object *)AppearanceEditor__Checkmark(FALSE)),
+                                Child, HVSpace,
+                            End,
                             Child, HVSpace,
-                        End,
-                        Child, (IPTR)Label1("Composite Below"),
-                        Child, HGroup,
-                            Child, (IPTR)(_CompBelow = (Object *)AppearanceEditor__Checkmark(FALSE)),
-                            Child, HVSpace,
-                        End,
-                        Child, (IPTR)Label1("Composite Left"),
-                        Child, HGroup,
-                            Child, (IPTR)(_CompLeft = (Object *)AppearanceEditor__Checkmark(FALSE)),
-                            Child, HVSpace,
-                        End,
-                        Child, (IPTR)Label1("Composite Right"),
-                        Child, HGroup,
-                            Child, (IPTR)(_CompRight = (Object *)AppearanceEditor__Checkmark(FALSE)),
-                            Child, HVSpace,
+                            Child, RectangleObject,
+                                MUIA_Background, MUII_FILL,
+                                MUIA_FixHeight, 2,
+                            End,
+                            Child, (IPTR)Label1("Enable Compositing with Alpha"),
+                            Child, HGroup,
+                                Child, (IPTR)(_CompAlpha = (Object *)AppearanceEditor__Checkmark(FALSE)),
+                                Child, HVSpace,
+                            End,
                         End,
                         Child, HVSpace,
-                        Child, RectangleObject,
-                            MUIA_Background, MUII_FILL,
-                            MUIA_FixHeight, 2,
-                        End,
-                        Child, (IPTR)Label1("Enable Compositing with Alpha"),
-                        Child, HGroup,
-                            Child, (IPTR)(_CompAlpha = (Object *)AppearanceEditor__Checkmark(FALSE)),
-                            Child, HVSpace,
-                        End,
                     End,
                     Child, HVSpace,
                 End,
@@ -303,43 +328,79 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
     {
         SETUP_INST_DATA;
 
-        data->te_ThemePreview = _ThemePreviewObj;
-        data->te_ThemeEnable = _ThemeEnable;
-        data->te_ThemeChoice = _ThemeSelectionObj;
-        data->te_OptionZune = _ThemeZunePrefsObj;
+        data->ae_ThemePreview = _ThemePreviewObj;
+        data->ae_ThemeEnable = _ThemeEnable;
+        data->ae_ThemeChoice = _ThemeSelectionObj;
+        data->ae_OptionZune = _ThemeZunePrefsObj;
 #if (0)
-        data->te_OptionWand = _ThemeWandPrefsObj;
+        data->ae_OptionWand = _ThemeWandPrefsObj;
 #endif
 
-        data->te_ThemeArray = (IPTR *)_ThemeArray;
+        data->ae_CompEnable = _CompEnable;
+        data->ae_CompBelow = _CompBelow;
+        data->ae_CompLeft = _CompLeft;
+        data->ae_CompRight = _CompRight;
+        data->ae_CompAlpha = _CompAlpha;
 
-        data->te_PreviewHook.h_Entry = (HOOKFUNC)AppearanceEditor__PreviewHookFunc;
-	data->te_PreviewHook.h_Data = data;
+        data->ae_ThemeArray = (IPTR *)_ThemeArray;
+
+        data->ae_PreviewHook.h_Entry = (HOOKFUNC)AppearanceEditor__PreviewHookFunc;
+	data->ae_PreviewHook.h_Data = data;
 
         DoMethod
         (
-            data->te_ThemeEnable, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->te_PreviewHook, (IPTR)NULL
+            data->ae_ThemeEnable, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
         );
 
         DoMethod
         (
-            data->te_ThemeChoice, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->te_PreviewHook, (IPTR)NULL
+            data->ae_ThemeChoice, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
         );
 
         DoMethod
         (
-            data->te_OptionZune, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->te_PreviewHook, (IPTR)NULL
+            data->ae_OptionZune, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
         );
 #if (0)
         DoMethod
         (
-            data->te_OptionWand, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->te_PreviewHook, (IPTR)NULL
+            data->ae_OptionWand, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
         );
 #endif
+
+        DoMethod
+        (
+            data->ae_CompEnable, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
+        );
+
+        DoMethod
+        (
+            data->ae_CompBelow, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
+        );
+
+        DoMethod
+        (
+            data->ae_CompLeft, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
+        );
+
+        DoMethod
+        (
+            data->ae_CompRight, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
+        );
+
+        DoMethod
+        (
+            data->ae_CompAlpha, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
+        );
     }
 
     return self;
@@ -352,13 +413,13 @@ IPTR AppearanceEditor__OM_DISPOSE(Class *CLASS, Object *self, struct opSet *mess
 
     D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
 
-    while (data->te_ThemeArray[index] != (IPTR)NULL)
+    while (data->ae_ThemeArray[index] != (IPTR)NULL)
     {
-        D(bug("[AppearanceEditor] %s: Freeing %02d: %s\n", __PRETTY_FUNCTION__, index, data->te_ThemeArray[index]));
-        FreeVec((APTR)data->te_ThemeArray[index]);
+        D(bug("[AppearanceEditor] %s: Freeing %02d: %s\n", __PRETTY_FUNCTION__, index, data->ae_ThemeArray[index]));
+        FreeVec((APTR)data->ae_ThemeArray[index]);
         index++;
     }
-    FreeVec((APTR)data->te_ThemeArray);
+    FreeVec((APTR)data->ae_ThemeArray);
 
     if (THEMES_DEFAULT != THEMES_AMIGAOS)
         FreeVec(THEMES_DEFAULT);
@@ -380,23 +441,24 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Import
 
     if ((fh = Open(message->filename, MODE_OLDFILE)) != BNULL)
     {
-        NNSET(data->te_ThemeEnable, MUIA_Selected, TRUE);
-        SET(data->te_ThemeChoice, MUIA_Disabled, FALSE);
-        SET(data->te_OptionZune, MUIA_Disabled, FALSE);
+        NNSET(data->ae_ThemeEnable, MUIA_Selected, TRUE);
+        SET(data->ae_ThemeChoice, MUIA_Disabled, FALSE);
+        SET(data->ae_OptionZune, MUIA_Disabled, FALSE);
 #if (0)
-        SET(data->te_OptionWand, MUIA_Disabled, FALSE);
+        SET(data->ae_OptionWand, MUIA_Disabled, FALSE);
 #endif
         success = DoMethod(self, MUIM_PrefsEditor_ImportFH, (IPTR) fh);
         Close(fh);
     }
     else
     {
-        NNSET(data->te_ThemeEnable, MUIA_Selected, FALSE);
-        SET(data->te_ThemeChoice, MUIA_Disabled, TRUE);
-        SET(data->te_OptionZune, MUIA_Disabled, TRUE);
+        NNSET(data->ae_ThemeEnable, MUIA_Selected, FALSE);
+        SET(data->ae_ThemeChoice, MUIA_Disabled, TRUE);
+        SET(data->ae_OptionZune, MUIA_Disabled, TRUE);
 #if (0)
-        SET(data->te_OptionWand, MUIA_Disabled, TRUE);
+        SET(data->ae_OptionWand, MUIA_Disabled, TRUE);
 #endif
+        success = DoMethod(self, MUIM_PrefsEditor_ImportFH, NULL);
     }
 
     return success;
@@ -409,36 +471,62 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
 {
     SETUP_INST_DATA;
     BOOL success = TRUE, optzune = TRUE;
-    TEXT tmpThemePath[1024];
+    TEXT importBuffer[1024];
     int index = 0;
 
     D(bug("[AppearanceEditor] %s(FH@ 0x%p)\n", __PRETTY_FUNCTION__, message->fh));
 
     if (message->fh)
     {
-        if (FGets(message->fh, tmpThemePath, 1024))
+        if (FGets(message->fh, importBuffer, 1024))
         {
-            char *tmpThemeFile = FilePart(tmpThemePath);
+            char *tmpThemeFile = FilePart(importBuffer);
 
             D(bug("[AppearanceEditor] %s: Prefs Theme = '%s'\n", __PRETTY_FUNCTION__, tmpThemeFile));
 
-            while (data->te_ThemeArray[index] != (IPTR)NULL)
+            while (data->ae_ThemeArray[index] != (IPTR)NULL)
             {
-                if (strncmp((char *)data->te_ThemeArray[index], tmpThemeFile, strlen((char *)data->te_ThemeArray[index])) == 0)
+                if (strncmp((char *)data->ae_ThemeArray[index], tmpThemeFile, strlen((char *)data->ae_ThemeArray[index])) == 0)
                 {
-                    NNSET(data->te_ThemeChoice, MUIA_Cycle_Active, index);
+                    NNSET(data->ae_ThemeChoice, MUIA_Cycle_Active, index);
                     break;
                 }
                 index++;
             }
         }
+        if (GetVar(THEMES_OPTZUNEPATH, importBuffer, 1, GVF_GLOBAL_ONLY) == -1)
+            optzune = FALSE;
+
+        NNSET(data->ae_OptionZune, MUIA_Selected, optzune);
     }
 
-    if (GetVar(THEMES_OPTZUNEPATH, tmpThemePath, 1, GVF_GLOBAL_ONLY) == -1)
-        optzune = FALSE;
+    if (GetVar(COMPOSITE_ENVPATH, importBuffer, 1024, GVF_GLOBAL_ONLY) != -1)
+    {
+        struct RDArgs *rdargs;
+        IPTR CompArgs[NOOFARGS] = { 0 };
 
-    NNSET(data->te_OptionZune, MUIA_Selected, optzune);
-    
+        if ((rdargs = AllocDosObjectTags(DOS_RDARGS, TAG_END)) != NULL)
+        {
+            rdargs->RDA_Source.CS_Buffer = importBuffer;
+            rdargs->RDA_Source.CS_Length = strlen(rdargs->RDA_Source.CS_Buffer);
+            rdargs->RDA_DAList = NULL;
+            rdargs->RDA_Buffer = NULL;
+            rdargs->RDA_BufSiz = 0;
+            rdargs->RDA_ExtHelp = NULL;
+            rdargs->RDA_Flags = 0;
+
+            if (ReadArgs(COMPOSITE_PEFSTEMPLATE, CompArgs, rdargs) != NULL)
+            {
+                NNSET(data->ae_CompEnable, MUIA_Selected, (BOOL)CompArgs[ARG_ABOVE]);
+                NNSET(data->ae_CompBelow, MUIA_Selected, (BOOL)CompArgs[ARG_BELOW]);
+                NNSET(data->ae_CompLeft, MUIA_Selected, (BOOL)CompArgs[ARG_LEFT]);
+                NNSET(data->ae_CompRight, MUIA_Selected, (BOOL)CompArgs[ARG_RIGHT]);
+                NNSET(data->ae_CompAlpha, MUIA_Selected, (BOOL)CompArgs[ARG_ALPHA]);
+                FreeArgs(rdargs);
+            }
+            FreeDosObject(DOS_RDARGS, rdargs);
+        }
+    }
     return success;
 }
 
@@ -453,13 +541,14 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Export
 
     D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));    
 
-    if (XGET(data->te_ThemeEnable, MUIA_Selected))
+    if (XGET(data->ae_ThemeEnable, MUIA_Selected))
     {
         success = DoSuperMethodA(CLASS, self, message);
     }
     else
     {
         DeleteVar(THEMES_ENVPATH, GVF_GLOBAL_ONLY);
+        success = DoMethod(self, MUIM_PrefsEditor_ExportFH, NULL);
     }
 
     return success;
@@ -473,38 +562,68 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
 {
     SETUP_INST_DATA;
     BOOL success = TRUE;
+    char *exportBuffer;
     IPTR  active = 0;
 
     D(bug("[AppearanceEditor] %s(FH@ 0x%p)\n", __PRETTY_FUNCTION__, message->fh));
 
-    if (message->fh)
+    if ((exportBuffer = AllocVec(1024, MEMF_CLEAR)) != NULL)
     {
-        char *tmpThemePath;
-
-        GET(data->te_ThemeChoice, MUIA_Cycle_Active, &active);
-        D(bug("[AppearanceEditor] %s: Selected Theme = [%02d] '%s'\n", __PRETTY_FUNCTION__, active, data->te_ThemeArray[active]));
-
-        tmpThemePath = AllocVec(strlen(THEMES_BASE) + strlen((char *)data->te_ThemeArray[active]) + 1, MEMF_CLEAR);
-        sprintf(tmpThemePath, "%s%s", THEMES_BASE, (char *)data->te_ThemeArray[active]);
-
-        if (FPuts(message->fh, tmpThemePath))
-            success = FALSE;
-
-        if (XGET(data->te_OptionZune, MUIA_Selected))
+        if (message->fh)
         {
-            sprintf(tmpThemePath, "True");
-            SetVar(THEMES_OPTZUNEPATH, tmpThemePath, 4,GVF_GLOBAL_ONLY);
+            GET(data->ae_ThemeChoice, MUIA_Cycle_Active, &active);
+            D(bug("[AppearanceEditor] %s: Selected Theme = [%02d] '%s'\n", __PRETTY_FUNCTION__, active, data->ae_ThemeArray[active]));
+
+            sprintf(exportBuffer, "%s%s", THEMES_BASE, (char *)data->ae_ThemeArray[active]);
+
+            if (FPuts(message->fh, exportBuffer))
+                success = FALSE;
+
+            if (XGET(data->ae_OptionZune, MUIA_Selected))
+            {
+                sprintf(exportBuffer, "True");
+                SetVar(THEMES_OPTZUNEPATH, exportBuffer, 4,GVF_GLOBAL_ONLY);
+            }
+            else
+            {
+                DeleteVar(THEMES_OPTZUNEPATH, GVF_GLOBAL_ONLY);
+            }
+            // TODO: Signal Decoration to relaod the theme
+        }
+        if (XGET(data->ae_CompEnable, MUIA_Selected))
+        {
+            int ebPos;
+
+            sprintf(exportBuffer, "ABOVE");
+            ebPos = strlen(exportBuffer);
+            if (XGET(data->ae_CompBelow, MUIA_Selected))
+            {
+                sprintf(exportBuffer + ebPos, " BELOW");
+                ebPos = strlen(exportBuffer);
+            }
+            if (XGET(data->ae_CompLeft, MUIA_Selected))
+            {
+                sprintf(exportBuffer + ebPos, " LEFT");
+                ebPos = strlen(exportBuffer);
+            }
+            if (XGET(data->ae_CompRight, MUIA_Selected))
+            {
+                sprintf(exportBuffer + ebPos, " RIGHT");
+                ebPos = strlen(exportBuffer);
+            }
+            if (XGET(data->ae_CompAlpha, MUIA_Selected))
+            {
+                sprintf(exportBuffer + ebPos, " ALPHA");
+                ebPos = strlen(exportBuffer);
+            }
+            SetVar(COMPOSITE_ENVPATH, exportBuffer, ebPos,GVF_GLOBAL_ONLY);
         }
         else
         {
-            DeleteVar(THEMES_OPTZUNEPATH, GVF_GLOBAL_ONLY);
+            DeleteVar(COMPOSITE_ENVPATH, GVF_GLOBAL_ONLY);
         }
-        
-        FreeVec(tmpThemePath);
-        
-        // TODO: Signal Decoration to relaod the theme
     }
-    
+    FreeVec(exportBuffer);
     return success;
 }
 
@@ -518,19 +637,28 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
 
     D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
 
-    while (data->te_ThemeArray[index] != (IPTR)NULL)
+    // Theme options
+    while (data->ae_ThemeArray[index] != (IPTR)NULL)
     {
-        if (!strcmp((char *)data->te_ThemeArray[index], THEMES_DEFAULT))
+        if (!strcmp((char *)data->ae_ThemeArray[index], THEMES_DEFAULT))
         {
-            SET(data->te_ThemeChoice, MUIA_Cycle_Active, index);
+            SET(data->ae_ThemeChoice, MUIA_Cycle_Active, index);
             break;
         }
         index++;
     }
-    SET(data->te_OptionZune, MUIA_Selected, TRUE);
+    SET(data->ae_OptionZune, MUIA_Selected, TRUE);
 #if (0)
-    SET(data->te_OptionWand, MUIA_Selected, TRUE);
+    SET(data->ae_OptionWand, MUIA_Selected, TRUE);
 #endif
+
+    // Compositor options
+    SET(data->ae_CompEnable, MUIA_Selected, TRUE);
+    SET(data->ae_CompBelow, MUIA_Selected, FALSE);
+    SET(data->ae_CompLeft, MUIA_Selected, FALSE);
+    SET(data->ae_CompRight, MUIA_Selected, FALSE);
+    SET(data->ae_CompAlpha, MUIA_Selected, TRUE);
+
     return TRUE;
 }
 
