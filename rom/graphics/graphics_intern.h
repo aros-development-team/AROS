@@ -94,8 +94,8 @@ struct monitor_driverdata
     /* FakeGfx-related */
     OOP_Object      	      *gfxhidd_orig;	/* Real graphics driver object			  */
 
-    /* Composer-related */
-    OOP_Object		      *composer;	/* composition HIDD object			  */
+    /* Compositor-related */
+    OOP_Object		      *compositor;	/* composition HIDD object			  */
 
     /* Framebuffer stuff */
     struct BitMap   	      *frontbm;		/* Currently shown bitmap			  */
@@ -135,7 +135,7 @@ struct common_driverdata
     /* HIDD classes */
     OOP_Class		      *fakegfxclass;		/* Fakegfx (SW sprite) classes	   */
     OOP_Class		      *fakefbclass;
-    OOP_Class		      *composerClass;		/* Composer class		   */
+    OOP_Class		      *compositorClass;		/* Compositor class		   */
     OOP_Class		      *gcClass;			/* GC class			   */
 
     /* Attribute bases */

@@ -15,7 +15,7 @@
 #include <string.h>
 
 #include "graphics_intern.h"
-#include "compositing_driver.h"
+#include "compositor_driver.h"
 #include "dispinfo.h"
 
 /****************************************************************************************/
@@ -340,9 +340,9 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 	     * It can't be done in another way because only we (graphics.library) know about existence
 	     * of software screen composition.
 	     */
-	    if (DIH(handle)->drv->composer)
+	    if (DIH(handle)->drv->compositor)
 	    {
-	    	OOP_GetAttr(DIH(handle)->drv->composer, aHidd_Compositing_Capabilities, &di->reserved[0]);
+	    	OOP_GetAttr(DIH(handle)->drv->compositor, aHidd_Compositor_Capabilities, &di->reserved[0]);
 	    }
 	    else
 	    {
@@ -385,7 +385,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 	     */
 	    mi->PreferredModeID = ID;
 
-	    if (DIH(handle)->drv->composer)
+	    if (DIH(handle)->drv->compositor)
 	    {
 	    	/*
 	    	 * If we have software screen composition, we know we can compose.
