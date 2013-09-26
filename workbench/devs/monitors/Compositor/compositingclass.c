@@ -938,56 +938,64 @@ void METHOD(Compositing, Root, Dispose)
 
 VOID METHOD(Compositing, Root, Get)
 {
+    ULONG idx;
+
     struct HIDDCompositingData *compdata = OOP_INST_DATA(cl, o);
 
-    switch (msg->attrID)
+    if (IS_COMPOSITOR_ATTR(msg->attrID, idx))
     {
-        case aoHidd_Compositing_Capabilities:
-        {
-            D(bug("[%s] Composite Capabilities: %lx\n", __PRETTY_FUNCTION__, compdata->capabilities));
-            *msg->storage = (IPTR)COMPF_ABOVE|COMPF_BELOW|COMPF_LEFT|COMPF_RIGHT;
-            return;
-        }
-        case aoHidd_Compositing_BackFillHook:
-        {
-            D(bug("[%s] BackFillHook: 0x%p\n", __PRETTY_FUNCTION__, compdata->backfillhook));
-            *msg->storage = (IPTR)compdata->backfillhook;
-            return;
-        }
+	switch (idx)
+	{
+            case aoHidd_Compositing_Capabilities:
+            {
+                D(bug("[%s] Composite Capabilities: %lx\n", __PRETTY_FUNCTION__, compdata->capabilities));
+                *msg->storage = (IPTR)COMPF_ABOVE|COMPF_BELOW|COMPF_LEFT|COMPF_RIGHT;
+                return;
+            }
+            case aoHidd_Compositing_BackFillHook:
+            {
+                D(bug("[%s] BackFillHook: 0x%p\n", __PRETTY_FUNCTION__, compdata->backfillhook));
+                *msg->storage = (IPTR)compdata->backfillhook;
+                return;
+            }
+	}
     }
-
     OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
 VOID METHOD(Compositing, Root, Set)
 {
+    ULONG idx;
+
     struct HIDDCompositingData *compdata = OOP_INST_DATA(cl, o);
     struct TagItem *tag, *tstate = msg->attrList;
 
     while ((tag = NextTagItem(&tstate)))
     {
-        switch (tag->ti_Tag)
+        if (IS_COMPOSITOR_ATTR(tag->ti_Tag, idx))
         {
-            case aoHidd_Compositing_Capabilities:
+            switch (idx)
             {
-                D(bug("[%s] Composite Capabilities: %lx -> %lx\n", __PRETTY_FUNCTION__, compdata->capabilities, tag->ti_Data));
-                compdata->capabilities = (ULONG)tag->ti_Data;
-                break;
-            }
-            case aoHidd_Compositing_BackFillHook:
-            {
-                if (tag->ti_Data)
+                case aoHidd_Compositing_Capabilities:
                 {
-                    D(bug("[%s] BackFillHook: 0x%p -> 0x%p\n", __PRETTY_FUNCTION__, compdata->backfillhook, tag->ti_Data));
-                    compdata->backfillhook = (struct Hook *)tag->ti_Data;
+                    D(bug("[%s] Composite Capabilities: %lx -> %lx\n", __PRETTY_FUNCTION__, compdata->capabilities, tag->ti_Data));
+                    compdata->capabilities = (ULONG)tag->ti_Data;
+                    break;
                 }
-                else
+                case aoHidd_Compositing_BackFillHook:
                 {
-                    D(bug("[%s] Default BackFillHook\n", __PRETTY_FUNCTION__));
-                    compdata->backfillhook = &compdata->defaultbackfill;
+                    if (tag->ti_Data)
+                    {
+                        D(bug("[%s] BackFillHook: 0x%p -> 0x%p\n", __PRETTY_FUNCTION__, compdata->backfillhook, tag->ti_Data));
+                        compdata->backfillhook = (struct Hook *)tag->ti_Data;
+                    }
+                    else
+                    {
+                        D(bug("[%s] Default BackFillHook\n", __PRETTY_FUNCTION__));
+                        compdata->backfillhook = &compdata->defaultbackfill;
+                    }
+                    break;
                 }
-
-                break;
             }
         }
     }
