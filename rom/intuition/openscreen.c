@@ -2432,8 +2432,6 @@ VOID int_openscreen(struct OpenScreenActionMsg *msg,
 
         rmsg.lock = FALSE;
         int_RethinkDisplay(&rmsg,IntuitionBase);
-        
-        bug("[Graphics] %s: ** Screen Top = %d,%d\n", __PRETTY_FUNCTION__, screen->Screen.LeftEdge, screen->Screen.TopEdge);
     }
 
 #ifdef SKINS
