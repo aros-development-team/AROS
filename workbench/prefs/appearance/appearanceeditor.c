@@ -127,26 +127,36 @@ Object *AppearanceEditor__Checkmark(BOOL selected)
 /*** Methods ****************************************************************/
 Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    UBYTE       *ExAllBuffer = NULL;
-    BOOL        ExAllMore;
+    CONST_STRPTR        tab_labels[3];
+    UBYTE               *ExAllBuffer = NULL;
+    BOOL                ExAllMore;
 
-    Object      *_ThemePreviewObj;
-    Object      *_ThemeEnable;
-    Object      *_ThemeSelectionObj;
+    Object              *_ThemePreviewObj;
+    Object              *_ThemeEnable;
+    Object              *_ThemeSelectionObj;
 #if (0)
-    Object      *_ThemeWandPrefsObj;
+    Object              *_ThemeWandPrefsObj;
 #endif
-    Object      *_ThemeZunePrefsObj;
+    Object              *_ThemeZunePrefsObj;
+    Object              *_CompEnable;
+    Object              *_CompBelow;
+    Object              *_CompLeft;
+    Object              *_CompRight;
+    Object              *_CompAlpha;
 
-    struct List _ThemesAvailable;
-    struct Node *_ThemeEntry;
-    IPTR        _ThemeArray = (IPTR)NULL;
+    struct List         _ThemesAvailable;
+    struct Node         *_ThemeEntry;
+    IPTR                _ThemeArray = (IPTR)NULL;
 
-    BPTR        _ThemeLock = BNULL;
+    BPTR                _ThemeLock = BNULL;
 
     D(bug("[AppearanceEditor] %s()\n", __PRETTY_FUNCTION__));
 
     NewList(&_ThemesAvailable);
+
+    tab_labels[0] = "Theme'ing";
+    tab_labels[1] = "Compositing";
+    tab_labels[2] = NULL;
 
     // Find Available Themes ...
     if ((ExAllBuffer = AllocVec(kExallBufSize, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
@@ -213,35 +223,76 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         Child, VGroup,
 	    Child, (IPTR)(_ThemePreviewObj = ThemePreviewObject,
             End),
-            Child, (IPTR)ColGroup(2),
-                MUIA_Group_SameWidth, FALSE,
-                Child, (IPTR)Label1(_(MSG_ENABLETHEMES)),
-                Child, HGroup,
-                    Child, (IPTR)(_ThemeEnable = (Object *)AppearanceEditor__Checkmark(TRUE)),
-                    Child, HVSpace,
-                End,
-                Child, HVSpace,
-                Child, RectangleObject,
-                    MUIA_Background, MUII_FILL,
-                    MUIA_FixHeight, 2,
-                End,
-                Child, (IPTR)Label1(_(MSG_SELECTEDTHEME)),
-                Child, (IPTR)(_ThemeSelectionObj = (Object *)CycleObject,
-                    MUIA_CycleChain, 1,
-                    MUIA_Cycle_Entries, _ThemeArray,
-                End),
-                Child, (IPTR)Label1(_(MSG_ENABLEZUNEPREFS)),
-                Child, HGroup,
-                    Child, (IPTR)(_ThemeZunePrefsObj = (Object *)AppearanceEditor__Checkmark(TRUE)),
-                    Child, HVSpace,
-                End,
+            Child, RegisterGroup(tab_labels),
+                MUIA_Register_Frame, TRUE,
+                Child, VGroup,
+                    Child, (IPTR)ColGroup(2),
+                        MUIA_Group_SameWidth, FALSE,
+                        Child, (IPTR)Label1(_(MSG_ENABLETHEMES)),
+                        Child, HGroup,
+                            Child, (IPTR)(_ThemeEnable = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                            Child, HVSpace,
+                        End,
+                        Child, HVSpace,
+                        Child, RectangleObject,
+                            MUIA_Background, MUII_FILL,
+                            MUIA_FixHeight, 2,
+                        End,
+                        Child, (IPTR)Label1(_(MSG_SELECTEDTHEME)),
+                        Child, (IPTR)(_ThemeSelectionObj = (Object *)CycleObject,
+                            MUIA_CycleChain, 1,
+                            MUIA_Cycle_Entries, _ThemeArray,
+                        End),
+                        Child, (IPTR)Label1(_(MSG_ENABLEZUNEPREFS)),
+                        Child, HGroup,
+                            Child, (IPTR)(_ThemeZunePrefsObj = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                            Child, HVSpace,
+                        End,
 #if (0)
-                Child, (IPTR)Label1(_(MSG_ENABLEWANDPREFS)),
-                Child, HGroup,
-                    Child, (IPTR)(_ThemeWandPrefsObj = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                        Child, (IPTR)Label1(_(MSG_ENABLEWANDPREFS)),
+                        Child, HGroup,
+                            Child, (IPTR)(_ThemeWandPrefsObj = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                            Child, HVSpace,
+                        End,
+#endif
+                    End,
+                End,
+                Child, VGroup,
+                    Child, (IPTR)ColGroup(2),
+                        MUIA_Group_SameWidth, FALSE,
+                        Child, (IPTR)Label1("Enable Screen Compositing"),
+                        Child, HGroup,
+                            Child, (IPTR)(_CompEnable = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                            Child, HVSpace,
+                        End,
+                        Child, (IPTR)Label1("Composite Below"),
+                        Child, HGroup,
+                            Child, (IPTR)(_CompBelow = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                            Child, HVSpace,
+                        End,
+                        Child, (IPTR)Label1("Composite Left"),
+                        Child, HGroup,
+                            Child, (IPTR)(_CompLeft = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                            Child, HVSpace,
+                        End,
+                        Child, (IPTR)Label1("Composite Right"),
+                        Child, HGroup,
+                            Child, (IPTR)(_CompRight = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                            Child, HVSpace,
+                        End,
+                        Child, HVSpace,
+                        Child, RectangleObject,
+                            MUIA_Background, MUII_FILL,
+                            MUIA_FixHeight, 2,
+                        End,
+                        Child, (IPTR)Label1("Enable Compositing with Alpha"),
+                        Child, HGroup,
+                            Child, (IPTR)(_CompAlpha = (Object *)AppearanceEditor__Checkmark(TRUE)),
+                            Child, HVSpace,
+                        End,
+                    End,
                     Child, HVSpace,
                 End,
-#endif
             End,
         End,
 
