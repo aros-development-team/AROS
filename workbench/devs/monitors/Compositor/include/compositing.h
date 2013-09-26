@@ -37,7 +37,8 @@ enum
 enum
 {
     aoHidd_Compositing_GfxHidd = 0, 	/* [I..] Gfx driver object connected with this compositing object */
-    aoHidd_Compositing_Capabilities,	/* [G..] Composition capabilities of this implementation	  */
+    aoHidd_Compositing_Capabilities,	/* [ISG] Composition capabilities of this implementation	  */
+    aoHidd_Compositing_BackFillHook,	/* [ISG] Rendering hook for void space                            */
     aoHidd_Compositing_FrameBuffer,	/* [I..] Driver's framebuffer bitmap				  */
 
     num_Hidd_Compositing_Attrs
@@ -45,6 +46,7 @@ enum
 
 #define aHidd_Compositing_GfxHidd  	(HiddCompositingAttrBase + aoHidd_Compositing_GfxHidd)
 #define aHidd_Compositing_Capabilities  (HiddCompositingAttrBase + aoHidd_Compositing_Capabilities)
+#define aHidd_Compositing_BackFillHook  (HiddCompositingAttrBase + aoHidd_Compositing_BackFillHook)
 #define aHidd_Compositing_FrameBuffer   (HiddCompositingAttrBase + aoHidd_Compositing_FrameBuffer)
 
 #define IS_COMPOSITING_ATTR(attr, idx) \
@@ -73,6 +75,14 @@ struct pHidd_Compositing_BitMapPositionChange
     OOP_Object      *bm;
     SIPTR           *newxoffset;
     SIPTR           *newyoffset;
+};
+
+struct HIDD_BackFillHookMsg
+{
+    void                        *dummy;
+    struct Rectangle            *bounds;
+    LONG                        offsetx;
+    LONG                        offsety;
 };
 
 #endif /* HIDD_COMPOSITING_H */
