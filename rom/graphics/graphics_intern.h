@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_INTERN_H
 #define GRAPHICS_INTERN_H
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header file for graphics.library
