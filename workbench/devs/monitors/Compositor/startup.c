@@ -7,7 +7,7 @@
 #include <proto/graphics.h>
 #include <proto/oop.h>
 
-#include "compositing_intern.h"
+#include "compositor_intern.h"
 
 /* Libraries */
 struct Library *OOPBase;

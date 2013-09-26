@@ -35,7 +35,7 @@
 #include <graphics/view.h>
 #include <hidd/graphics.h>
 
-#include "compositing_intern.h"
+#include "compositor_intern.h"
 
 #define COMPOSITE_PREFS "SYS/compositor.prefs"
 #define COMPOSITE_PEFSTEMPLATE  "ABOVE/S,BELOW/S,LEFT/S,RIGHT/S,ALPHA/S"
