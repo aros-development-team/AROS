@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Update specified region of the bitmap, taking software composition into account.
