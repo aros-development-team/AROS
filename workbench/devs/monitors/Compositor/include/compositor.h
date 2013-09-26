@@ -2,7 +2,7 @@
 #define HIDD_COMPOSITOR_H
 /*
     Copyright © 2010-2013, The AROS Development Team. All rights reserved.
-    $Id: compositor.h 35441 2010-11-13 22:17:39Z deadwood $
+    $Id$
 */
 
 #include <oop/oop.h>

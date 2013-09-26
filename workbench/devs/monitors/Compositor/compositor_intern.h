@@ -2,8 +2,8 @@
 #define _COMPOSITOR_INTERN_H
 
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
-    $Id: compositor_intern.h 38695 2011-05-15 18:21:22Z deadwood $
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include "compositor.h"
