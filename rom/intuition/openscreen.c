@@ -1096,7 +1096,13 @@ static const char THIS_FILE[] = __FILE__;
     {
         success = TRUE;
 #ifdef __AROS__ /* AROS: Get HIDD composition flags */
-        screen->SpecialFlags = dimensions.reserved[0] << 8;
+        ULONG compflags = GetTagData(SA_CompositingFlags, COMPF_ABOVE, tagList);
+
+        DEBUG_OPENSCREEN(dprintf("OpenScreen: Requested Composition Flags %08x\n", compflags));
+        DEBUG_OPENSCREEN(dprintf("OpenScreen: Supported Composition Flags %08x\n", dimensions.reserved[0]));
+
+        screen->SpecialFlags = (compflags & dimensions.reserved[0]) << 8;
+
         if (draggable) screen->SpecialFlags |= SF_Draggable;
 #else
         screen->Monitor = monitor.Mspc;
