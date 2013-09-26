@@ -15,37 +15,48 @@
 
 struct StackBitMapNode
 {
-    struct MinNode    n;
-    OOP_Object	     *bm;
-    struct Rectangle  screenvisiblerect; /* Visible part */
-    BOOL              isscreenvisible;	 /* Visible flag */
-    SIPTR	      leftedge;		 /* Offset */
-    SIPTR	      topedge;
+    struct MinNode              n;
+    OOP_Object	                *bm;
+    struct Region               *screenregion;
+    struct Rectangle            screenvisiblerect;      /* Visible part */
+    SIPTR	                leftedge;		/* Offset */
+    SIPTR	                topedge;
+    ULONG                       sbmflags;
 };
+
+#define STACKNODE_ALPHA         (1 << 0)
+#define STACKNODE_VISIBLE       (1 << 1)
 
 struct HIDDCompositingData
 {
+    struct GfxBase	        *GraphicsBase;
     /* Bitmap to which all screen bitmaps are composited. Height/Width always 
        matches visible mode */
-    OOP_Object             *compositedbitmap;
+    OOP_Object                  *compositedbitmap;
 
     /* Pointer to actuall screen bitmap, result of last HIDD_Gfx_Show().
        Needed for graphics.library only. */
-    OOP_Object             *screenbitmap;
+    OOP_Object                  *screenbitmap;
 
     /* Pointer to top bitmap on stack */
-    OOP_Object             *topbitmap;
+    OOP_Object                  *topbitmap;
 
-    HIDDT_ModeID            screenmodeid;   /* ModeID of currently visible mode */
-    struct Rectangle        screenrect;     /* Dimensions of currently visible mode */
-    BOOL                    modeschanged;   /* TRUE if new top bitmap has different mode than current screenmodeid */
+    HIDDT_ModeID                screenmodeid;   /* ModeID of currently visible mode             */
+    struct Rectangle            screenrect;     /* Dimensions of currently visible mode         */
 
-    struct MinList          bitmapstack;
-    struct SignalSemaphore  semaphore;
-    
-    OOP_Object             *gfx;           /* GFX driver object			    */
-    OOP_Object		   *fb;		   /* Framebuffer bitmap (if present)	    */
-    OOP_Object             *gc;            /* GC object used for drawing operations */
+    struct MinList              bitmapstack;
+    struct SignalSemaphore      semaphore;
+
+    struct Region               *alpharegion;
+
+    struct Hook                 defaultbackfill;
+    struct Hook                 *backfillhook;
+
+    OOP_Object                  *gfx;           /* GFX driver object			        */
+    OOP_Object		        *fb;		/* Framebuffer bitmap (if present)	        */
+    OOP_Object                  *gc;            /* GC object used for drawing operations        */
+    ULONG                       capabilities;
+    BOOL                        modeschanged;   /* TRUE if new top bitmap has different mode than current screenmodeid */
 };
 
 #define METHOD(base, id, name) \
