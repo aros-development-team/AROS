@@ -1,6 +1,6 @@
 /*
-    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
-    $Id: compositorclass.c 38905 2011-05-29 06:54:59Z deadwood $
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #define DEBUG 0
