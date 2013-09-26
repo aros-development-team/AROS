@@ -69,4 +69,7 @@ struct HIDDCompositingData
 extern OOP_AttrBase HiddCompositingAttrBase;
 extern const struct OOP_InterfaceDescr Compositing_ifdescr[];
 
+#define IS_COMPOSITOR_ATTR(attr, idx)  \
+        ( ( ( idx ) = (attr) - HiddCompositingAttrBase) < num_Hidd_Compositing_Attrs)
+
 #endif /* _COMPOSITING_INTERN_H */
