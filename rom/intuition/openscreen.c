@@ -1126,19 +1126,21 @@ static const char THIS_FILE[] = __FILE__;
         if (ns.Width == STDSCREENWIDTH || ns.Width == 0 || adaptsize)
             ns.Width = dclip->MaxX - dclip->MinX + 1;
         /* AROS: Added raster size limit support */
+#if (0)
         else if (ns.Width < dimensions.MinRasterWidth)
             ns.Width = dimensions.MinRasterWidth;
         else if (ns.Width > dimensions.MaxRasterWidth)
             ns.Width = dimensions.MaxRasterWidth;
-
+#endif
         if (ns.Height == STDSCREENHEIGHT || ns.Height == 0 || adaptsize)
             ns.Height = dclip->MaxY - dclip->MinY + 1;
         /* AROS: Added raster size limit support */
+#if (0)
         else if (ns.Height < dimensions.MinRasterHeight)
             ns.Height = dimensions.MinRasterHeight;
         else if (ns.Height > dimensions.MaxRasterHeight)
             ns.Height = dimensions.MaxRasterHeight;
-
+#endif
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Monitor 0x%lx Width %ld Height %ld\n",
                      screen->Monitor, ns.Width, ns.Height));
 
@@ -2430,6 +2432,8 @@ VOID int_openscreen(struct OpenScreenActionMsg *msg,
 
         rmsg.lock = FALSE;
         int_RethinkDisplay(&rmsg,IntuitionBase);
+        
+        bug("[Graphics] %s: ** Screen Top = %d,%d\n", __PRETTY_FUNCTION__, screen->Screen.LeftEdge, screen->Screen.TopEdge);
     }
 
 #ifdef SKINS
