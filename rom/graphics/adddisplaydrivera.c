@@ -8,13 +8,13 @@
 
 #include <aros/debug.h>
 #include <graphics/driver.h>
-#include <hidd/compositing.h>
+#include <hidd/compositor.h>
 #include <oop/oop.h>
 
 #include <proto/utility.h>
 
 #include "graphics_intern.h"
-#include "compositing_driver.h"
+#include "compositor_driver.h"
 #include "dispinfo.h"
 
 #define CL(x) ((OOP_Class *)x)
@@ -162,10 +162,10 @@
      * MAGIC: Detect composition HIDD here.
      * This allows to hotplug it, and even (potentially) replace.
      */
-    if (IS_CLASS(gfxclass, CLID_Hidd_Compositing))
+    if (IS_CLASS(gfxclass, CLID_Hidd_Compositor))
     {
 	ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
-    	ret = composer_Install(gfxclass, GfxBase);
+    	ret = compositor_Install(gfxclass, GfxBase);
     	ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
 
     	return ret;

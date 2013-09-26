@@ -8,7 +8,7 @@
 */
 
 #include "graphics_intern.h"
-#include "compositing_driver.h"
+#include "compositor_driver.h"
 #include "gfxfuncsupport.h"
 
 #include <hidd/graphics.h>
@@ -33,8 +33,8 @@ void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWOR
 {
     struct monitor_driverdata *mdd = GET_BM_DRIVERDATA(bitmap);
 
-    if (mdd->composer)
-    	composer_UpdateBitMap(mdd->composer, bm, x, y, width, height, GfxBase);
+    if (mdd->compositor)
+    	compositor_UpdateBitMap(mdd->compositor, bm, x, y, width, height, GfxBase);
     else
     	HIDD_BM_UpdateRect(bm, x, y, width, height);
 }

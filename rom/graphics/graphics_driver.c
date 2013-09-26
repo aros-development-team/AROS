@@ -34,7 +34,7 @@
 
 #include <intuition/intuition.h>
 
-#include <hidd/compositing.h>
+#include <hidd/compositor.h>
 #include <hidd/graphics.h>
 
 #include <cybergraphx/cybergraphics.h>
@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "graphics_intern.h"
-#include "compositing_driver.h"
+#include "compositor_driver.h"
 #include "fakegfxhidd.h"
 #include "intregions.h"
 #include "dispinfo.h"
@@ -251,7 +251,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 	    	if (colmod == vHidd_ColorModel_TrueColor)
 	    	{
 		    /*
-		     * At the moment software composer supports only truecolor screens.
+		     * At the moment software compositor supports only truecolor screens.
 		     * There also definitions for DirectColor, gray, etc, but there is
 		     * no such hardware supported by now.
 		     */
@@ -312,7 +312,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 		D(bug("[driver_Setup] Software screen composition required\n"));
 
 		mdd->flags |= DF_SoftCompose;
-		composer_Setup(mdd, GfxBase);
+		compositor_Setup(mdd, GfxBase);
 	    }
 
 	    return mdd;
@@ -348,7 +348,7 @@ void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 	CDD(GfxBase)->DriverNotify(mdd->userdata, FALSE, CDD(GfxBase)->notify_data);
 
     /* Dispose associated stuff */
-    OOP_DisposeObject(mdd->composer);
+    OOP_DisposeObject(mdd->compositor);
     OOP_DisposeObject(mdd->framebuffer);
 
     if (mdd->flags & DF_UseFakeGfx)
@@ -433,7 +433,7 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
 
     /*
      * ShowViewPorts not supported.
-     * Perhaps we can use software screen composer. But for proper operation
+     * Perhaps we can use software screen compositor. But for proper operation
      * we need to figure out our frontmost bitmap.
      */
     if (vpd)
@@ -448,16 +448,16 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
     }
     DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Old bitmap 0x%p, New bitmap 0x%p, object 0x%p\n", mdd->frontbm, bitmap, bm));
 
-    if (mdd->composer)
+    if (mdd->compositor)
     {
     	/*
-    	 * Composer present. Give ViewPorts chain to it.
+    	 * Compositor present. Give ViewPorts chain to it.
     	 * For improved visual appearance it will call Show itself and return its result.
-    	 * The composer is expected to handle all possible failures internally. If some
+    	 * The compositor is expected to handle all possible failures internally. If some
     	 * internal error happens, it must fail back to single HIDD_Gfx_Show().
     	 */
-    	fb = composer_LoadViewPorts(mdd->composer, vpd, &compositing, GfxBase);
-    	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Composer returned 0x%p, active: %d\n", fb, compositing));
+    	fb = compositor_LoadViewPorts(mdd->compositor, vpd, &compositing, GfxBase);
+    	DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Compositor returned 0x%p, active: %d\n", fb, compositing));
     }
     else
     {

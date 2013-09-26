@@ -10,7 +10,7 @@
 #include <proto/oop.h>
 
 #include "graphics_intern.h"
-#include "compositing_driver.h"
+#include "compositor_driver.h"
 #include "gfxfuncsupport.h"
 
 /*****************************************************************************
@@ -70,26 +70,26 @@
     	IPTR y = vp->DyOffset;
     	BOOL compositing = FALSE;
 
-    	D(bug("[ScrollVPort] ViewPort 0x%p, Extra 0x%p, composer 0x%p, offset (%ld, %ld)\n", vp, vpe, mdd->composer, x, y));
+    	D(bug("[ScrollVPort] ViewPort 0x%p, Extra 0x%p, compositor 0x%p, offset (%ld, %ld)\n", vp, vpe, mdd->compositor, x, y));
 
     	/*
     	 * First we actually move the bitmap.
     	 * If we are using software composition, this will update bitmap's offsets, for
     	 * the case if this move will cause the screen to be completely covered with this
-    	 * bitmap (while previously it was not). In this case the composer will dispose
+    	 * bitmap (while previously it was not). In this case the compositor will dispose
     	 * own working bitmap and display our bitmap instead. In effect of position update
     	 * it will appear already in correct position. This will improve visual appearance
     	 * of the scrolling.
     	 */
 	OOP_SetAttrsTags(bm, aHidd_BitMap_LeftEdge, x, aHidd_BitMap_TopEdge, y, TAG_DONE);
 
-    	if (mdd->composer)
+    	if (mdd->compositor)
     	{
 	    /*
-	     * Perform the operation via software composer.
+	     * Perform the operation via software compositor.
 	     * x and y will be updated to the validated values.
 	     */
-    	    compositing = composer_ScrollBitMap(mdd->composer, bm, &x, &y, GfxBase);
+    	    compositing = compositor_ScrollBitMap(mdd->compositor, bm, &x, &y, GfxBase);
 
 	    if (compositing)
     	    {
