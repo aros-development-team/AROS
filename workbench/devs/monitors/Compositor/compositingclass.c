@@ -812,44 +812,47 @@ VOID CompositorParseConfig(struct HIDDCompositingData *compdata)
     compdata->capabilities = COMPF_ABOVE;
 
     rdargs = AllocDosObjectTags(DOS_RDARGS, TAG_END);
-    if ((rdargs != NULL) && (GetVar(COMPOSITE_PREFS, CompConfig, 1024, GVF_GLOBAL_ONLY) != -1))
+    if (rdargs != NULL)
     {
-        rdargs->RDA_Source.CS_Buffer = CompConfig;
-        rdargs->RDA_Source.CS_Length = strlen(rdargs->RDA_Source.CS_Buffer);
-        rdargs->RDA_DAList = NULL;
-        rdargs->RDA_Buffer = NULL;
-        rdargs->RDA_BufSiz = 0;
-        rdargs->RDA_ExtHelp = NULL;
-        rdargs->RDA_Flags = 0;
-
-        if (ReadArgs(COMPOSITE_PEFSTEMPLATE, CompArgs, rdargs) != NULL)
+        if (GetVar(COMPOSITE_PREFS, CompConfig, 1024, GVF_GLOBAL_ONLY) != -1)
         {
-            if (CompArgs[ARG_ABOVE])
-                compdata->capabilities |= COMPF_ABOVE;
-            else
-                compdata->capabilities &= ~COMPF_ABOVE;
-            
-            if (CompArgs[ARG_BELOW])
-                compdata->capabilities |= COMPF_BELOW;
-            else
-                compdata->capabilities &= ~COMPF_BELOW;
-            
-            if (CompArgs[ARG_LEFT])
-                compdata->capabilities |= COMPF_LEFT;
-            else
-                compdata->capabilities &= ~COMPF_LEFT;
-            
-            if (CompArgs[ARG_RIGHT])
-                compdata->capabilities |= COMPF_RIGHT;
-            else
-                compdata->capabilities &= ~COMPF_RIGHT;
-/*
-            if (CompArgs[ARG_ALPHA])
-                compdata->capabilities |= COMPF_ALPHA;
-            else
-                compdata->capabilities &= ~COMPF_ALPHA;
-*/
-            FreeArgs(rdargs);
+            rdargs->RDA_Source.CS_Buffer = CompConfig;
+            rdargs->RDA_Source.CS_Length = strlen(rdargs->RDA_Source.CS_Buffer);
+            rdargs->RDA_DAList = NULL;
+            rdargs->RDA_Buffer = NULL;
+            rdargs->RDA_BufSiz = 0;
+            rdargs->RDA_ExtHelp = NULL;
+            rdargs->RDA_Flags = 0;
+
+            if (ReadArgs(COMPOSITE_PEFSTEMPLATE, CompArgs, rdargs) != NULL)
+            {
+                if (CompArgs[ARG_ABOVE])
+                    compdata->capabilities |= COMPF_ABOVE;
+                else
+                    compdata->capabilities &= ~COMPF_ABOVE;
+                
+                if (CompArgs[ARG_BELOW])
+                    compdata->capabilities |= COMPF_BELOW;
+                else
+                    compdata->capabilities &= ~COMPF_BELOW;
+                
+                if (CompArgs[ARG_LEFT])
+                    compdata->capabilities |= COMPF_LEFT;
+                else
+                    compdata->capabilities &= ~COMPF_LEFT;
+                
+                if (CompArgs[ARG_RIGHT])
+                    compdata->capabilities |= COMPF_RIGHT;
+                else
+                    compdata->capabilities &= ~COMPF_RIGHT;
+    /*
+                if (CompArgs[ARG_ALPHA])
+                    compdata->capabilities |= COMPF_ALPHA;
+                else
+                    compdata->capabilities &= ~COMPF_ALPHA;
+    */
+                FreeArgs(rdargs);
+            }
         }
         FreeDosObject(DOS_RDARGS, rdargs);
     }
