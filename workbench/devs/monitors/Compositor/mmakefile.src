@@ -1,20 +1,20 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-devs-monitors: devs-monitors-composition
+#MM- workbench-devs-monitors: devs-monitors-compositor
 
-FILES   := compositingclass startup
+FILES   := compositorclass startup
 EXEDIR  := $(AROSDIR)/Devs/Monitors
 EXENAME := Compositor
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
 
-%build_prog mmake=devs-monitors-composition \
+%build_prog mmake=devs-monitors-compositor \
            progname=$(EXENAME) targetdir=$(EXEDIR) \
            files=$(FILES)
 
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
-%copy_includes mmake=includes-composition-copy path=hidd dir=include
+%copy_includes mmake=includes-compositor-copy path=hidd dir=include
 
 %common
