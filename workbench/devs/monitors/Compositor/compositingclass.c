@@ -26,16 +26,30 @@
 
 #include <aros/debug.h>
 
-#include <graphics/view.h>
-
-#include <hidd/graphics.h>
-
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 
+#include <graphics/view.h>
+#include <hidd/graphics.h>
+
 #include "compositing_intern.h"
+
+#define COMPOSITE_PREFS "SYS/compositor.prefs"
+#define COMPOSITE_PEFSTEMPLATE  "ABOVE/S,BELOW/S,LEFT/S,RIGHT/S,ALPHA/S"
+
+enum
+{
+    ARG_ABOVE = 0,
+    ARG_BELOW,
+    ARG_LEFT,
+    ARG_RIGHT,
+    ARG_ALPHA,
+    NOOFARGS
+};
+
 
 #ifdef GfxBase
 #undef GfxBase
@@ -788,6 +802,59 @@ static void HIDDCompositingReset(struct HIDDCompositingData *compdata)
     compdata->screenbitmap = NULL;
 }
 
+VOID CompositorParseConfig(struct HIDDCompositingData *compdata)
+{
+    struct RDArgs *rdargs;
+    IPTR CompArgs[NOOFARGS] = { 0 };
+    TEXT CompConfig[1024];
+
+    /* use default amiga-like capabailities */
+    compdata->capabilities = COMPF_ABOVE;
+
+    rdargs = AllocDosObjectTags(DOS_RDARGS, TAG_END);
+    if ((rdargs != NULL) && (GetVar(COMPOSITE_PREFS, CompConfig, 1024, GVF_GLOBAL_ONLY) != -1))
+    {
+        rdargs->RDA_Source.CS_Buffer = CompConfig;
+        rdargs->RDA_Source.CS_Length = strlen(rdargs->RDA_Source.CS_Buffer);
+        rdargs->RDA_DAList = NULL;
+        rdargs->RDA_Buffer = NULL;
+        rdargs->RDA_BufSiz = 0;
+        rdargs->RDA_ExtHelp = NULL;
+        rdargs->RDA_Flags = 0;
+
+        if (ReadArgs(COMPOSITE_PEFSTEMPLATE, CompArgs, rdargs) != NULL)
+        {
+            if (CompArgs[ARG_ABOVE])
+                compdata->capabilities |= COMPF_ABOVE;
+            else
+                compdata->capabilities &= ~COMPF_ABOVE;
+            
+            if (CompArgs[ARG_BELOW])
+                compdata->capabilities |= COMPF_BELOW;
+            else
+                compdata->capabilities &= ~COMPF_BELOW;
+            
+            if (CompArgs[ARG_LEFT])
+                compdata->capabilities |= COMPF_LEFT;
+            else
+                compdata->capabilities &= ~COMPF_LEFT;
+            
+            if (CompArgs[ARG_RIGHT])
+                compdata->capabilities |= COMPF_RIGHT;
+            else
+                compdata->capabilities &= ~COMPF_RIGHT;
+/*
+            if (CompArgs[ARG_ALPHA])
+                compdata->capabilities |= COMPF_ALPHA;
+            else
+                compdata->capabilities &= ~COMPF_ALPHA;
+*/
+            FreeArgs(rdargs);
+        }
+        FreeDosObject(DOS_RDARGS, rdargs);
+    }
+}
+
 AROS_UFH3(void, CompositorDefaultBackFillFunc,
     AROS_UFHA(struct Hook *             , h,      A0),
     AROS_UFHA(OOP_Object *              , bm,     A2),
@@ -814,10 +881,10 @@ OOP_Object *METHOD(Compositing, Root, New)
         OOP_MethodID disposemid;
         struct HIDDCompositingData *compdata = OOP_INST_DATA(cl, o);
 
-        /* use default amiga-like capabailities */
-        compdata->capabilities = COMPF_ABOVE;
-
         D(bug("[%s] Compositor @ 0x%p, data @ 0x%p\n", __PRETTY_FUNCTION__, o, compdata));
+
+        CompositorParseConfig(compdata);
+
         D(bug("[%s] Composite Capabilities: %08lx\n", __PRETTY_FUNCTION__, compdata->capabilities));
 
         compdata->screenmodeid = vHidd_ModeID_Invalid;
