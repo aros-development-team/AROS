@@ -25,8 +25,10 @@ struct StackBitMapNode
 };
 
 // sbmflags bits 0 to 3 are reserved for the normal compositing flags.
-#define STACKNODE_ALPHA         (1 << 4)
-#define STACKNODE_VISIBLE       (1 << 5)
+#define STACKNODEB_HASALPHA      4
+#define STACKNODEF_HASALPHA      (1 << STACKNODEB_HASALPHA)
+#define STACKNODEB_VISIBLE       5
+#define STACKNODEF_VISIBLE       (1 << STACKNODEB_VISIBLE)
 
 struct HIDDCompositorData
 {
@@ -48,8 +50,6 @@ struct HIDDCompositorData
     struct MinList              bitmapstack;
     struct SignalSemaphore      semaphore;
 
-    struct Region               *alpharegion;
-
     struct Hook                 defaultbackfill;
     struct Hook                 *backfillhook;
 
@@ -57,8 +57,12 @@ struct HIDDCompositorData
     OOP_Object		        *fb;		/* Framebuffer bitmap (if present)	        */
     OOP_Object                  *gc;            /* GC object used for drawing operations        */
     ULONG                       capabilities;
+    ULONG                       flags;        
     BOOL                        modeschanged;   /* TRUE if new top bitmap has different mode than current screenmodeid */
 };
+
+#define COMPSTATEB_HASALPHA     0
+#define COMPSTATEF_HASALPHA     (1 << COMPSTATEB_HASALPHA)
 
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
