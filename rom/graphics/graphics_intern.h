@@ -95,7 +95,7 @@ struct monitor_driverdata
     OOP_Object      	      *gfxhidd_orig;	/* Real graphics driver object			  */
 
     /* Compositor-related */
-    OOP_Object		      *compositor;	/* composition HIDD object			  */
+    OOP_Object		      *compositor;	/* screen composition HIDD object		  */
 
     /* Framebuffer stuff */
     struct BitMap   	      *frontbm;		/* Currently shown bitmap			  */
@@ -147,7 +147,7 @@ struct common_driverdata
     OOP_AttrBase    	     hiddGfxAttrBase;
     OOP_AttrBase    	     hiddFakeGfxHiddAttrBase;
     OOP_AttrBase	     hiddFakeFBAttrBase;
-    OOP_AttrBase	     hiddCompositingAttrBase;
+    OOP_AttrBase	     hiddCompositorAttrBase;
 };
 
 #define CDD(base)   	    ((struct common_driverdata *)&PrivGBase(base)->shared_driverdata)
@@ -160,7 +160,7 @@ struct common_driverdata
 #define __IHidd_Gfx         	CDD(GfxBase)->hiddGfxAttrBase
 #define __IHidd_FakeGfxHidd 	CDD(GfxBase)->hiddFakeGfxHiddAttrBase
 #define __IHidd_FakeFB	    	CDD(GfxBase)->hiddFakeFBAttrBase
-#define HiddCompositingAttrBase CDD(GfxBase)->hiddCompositingAttrBase
+#define HiddCompositorAttrBase  CDD(GfxBase)->hiddCompositorAttrBase
 
 /* Hashtable sizes. Must be powers of two */
 #define GFXASSOCIATE_HASHSIZE   8
@@ -202,7 +202,7 @@ struct GfxBase_intern
     OOP_MethodID                HiddGCBase;
     OOP_MethodID                HiddGfxBase;
     OOP_MethodID                HiddPlanarBMBase;
-    OOP_MethodID		HiddCompositingMethodBase;
+    OOP_MethodID		HiddCompositorMethodBase;
 };
 
 
