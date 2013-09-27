@@ -24,8 +24,9 @@ struct StackBitMapNode
     ULONG                       sbmflags;
 };
 
-#define STACKNODE_ALPHA         (1 << 0)
-#define STACKNODE_VISIBLE       (1 << 1)
+// sbmflags bits 0 to 3 are reserved for the normal compositing flags.
+#define STACKNODE_ALPHA         (1 << 4)
+#define STACKNODE_VISIBLE       (1 << 5)
 
 struct HIDDCompositorData
 {
