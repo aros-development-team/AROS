@@ -26,6 +26,7 @@
 
 #include <aros/debug.h>
 
+#include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
@@ -60,21 +61,6 @@ enum
 
 #define MAX(a,b) a > b ? a : b
 #define MIN(a,b) a < b ? a : b
-
-static BOOL AndRectRect(struct Rectangle * rect1, struct Rectangle * rect2,
-    struct Rectangle * intersect)
-{
-    intersect->MinX = MAX(rect1->MinX, rect2->MinX);
-    intersect->MinY = MAX(rect1->MinY, rect2->MinY);
-    intersect->MaxX = MIN(rect1->MaxX, rect2->MaxX);
-    intersect->MaxY = MIN(rect1->MaxY, rect2->MaxY);
-    
-    if ((intersect->MinX > intersect->MaxX) ||
-        (intersect->MinY > intersect->MaxY))
-        return FALSE;
-    else
-        return TRUE;
-}
 
 static struct StackBitMapNode * HIDDCompositorIsBitMapOnStack(struct HIDDCompositorData * compdata, OOP_Object * bm)
 {
