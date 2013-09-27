@@ -818,7 +818,7 @@ VOID CompositorParseConfig(struct HIDDCompositorData *compdata)
         {
             rdargs->RDA_Source.CS_Buffer = CompConfig;
             rdargs->RDA_Source.CS_Length = strlen(rdargs->RDA_Source.CS_Buffer);
-            rdargs->RDA_DAList = NULL;
+            rdargs->RDA_DAList = (IPTR)NULL;
             rdargs->RDA_Buffer = NULL;
             rdargs->RDA_BufSiz = 0;
             rdargs->RDA_ExtHelp = NULL;
@@ -903,7 +903,7 @@ OOP_Object *METHOD(Compositor, Root, New)
         compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositor_GfxHidd, 0, msg->attrList);
         compdata->fb  = (OOP_Object *)GetTagData(aHidd_Compositor_FrameBuffer, 0, msg->attrList);
 
-        compdata->GraphicsBase = OpenLibrary("graphics.library", 41);
+        compdata->GraphicsBase = (APTR)OpenLibrary("graphics.library", 41);
 
 	/* GfxHidd is mandatory */
         if ((compdata->GraphicsBase) && (compdata->gfx != NULL))
