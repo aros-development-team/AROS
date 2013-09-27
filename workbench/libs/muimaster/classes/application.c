@@ -1,6 +1,6 @@
 /*
-    Copyright  1999, David Le Corfec.
-    Copyright  2002-2012, The AROS Development Team.
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002-2013, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -1835,9 +1835,28 @@ static IPTR Application__MUIM_SetUDataOnce(struct IClass *cl, Object *obj,
 }
 
 
-/**************************************************************************
- MUIM_Application_AboutMUI: brought up the about window, centered on refwindow
-**************************************************************************/
+/****** Application.mui/MUIM_Application_AboutMUI ****************************
+*
+*   NAME
+*       MUIM_Application_AboutMUI (V14)
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_Application_AboutMUI, Object refwindow);
+*
+*   FUNCTION
+*       Show Zune's About window.
+*
+*   INPUTS
+*       refwindow - the window object relative to which the About window will
+*           be placed.
+*
+*   SEE ALSO
+*       MUIA_Window_RefWindow.
+*
+******************************************************************************
+*
+*/
+
 static IPTR Application__MUIM_AboutMUI(struct IClass *cl, Object *obj,
     struct MUIP_Application_AboutMUI *msg)
 {
@@ -1851,18 +1870,11 @@ static IPTR Application__MUIM_AboutMUI(struct IClass *cl, Object *obj,
             MUIV_Window_LeftEdge_Centered, MUIA_Window_TopEdge,
             MUIV_Window_TopEdge_Centered, MUIA_Aboutmui_Application, obj,
             End;
-        if (!data->app_AboutWin)
-            return 0;
-        DoMethod(data->app_AboutWin, MUIM_Notify, MUIA_Window_CloseRequest,
-            TRUE, (IPTR) obj, 3, MUIM_WriteLong, 0L,
-            (IPTR) & data->app_AboutWin);
-    }                           /* if (!data->app_AboutWin) */
+    }
 
     if (data->app_AboutWin)
-    {
-
         set(data->app_AboutWin, MUIA_Window_Open, TRUE);
-    }
+
     return 0;
 }
 
