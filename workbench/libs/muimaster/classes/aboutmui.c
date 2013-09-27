@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -885,24 +885,27 @@ static const unsigned char body[] =
 #define IMAGE
 #endif /* !USE_INTERNAL_IMAGE */
 
-static void CloseAboutWindowFunc(const struct Hook *hook, Object *app, APTR msg)
-{
-    Object *aboutwin = *(Object **)msg;
-
-    set(aboutwin, MUIA_Window_Open, FALSE);
-    DoMethod(app, OM_REMMEMBER, (IPTR)aboutwin);
-    MUI_DisposeObject(aboutwin);
-}
+/****** Aboutmui.mui/MUIA_Aboutmui_Application *******************************
+*
+*   NAME
+*       MUIA_Aboutmui_Application -- (V11) [I..], Object *
+*
+*   FUNCTION
+*       The application object that the About window belongs to. If
+*       specified, the window will automatically be added to the application,
+*       and will be closed when the user clicks on its close gadget.
+*
+******************************************************************************
+*
+*/
 
 IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Aboutmui_DATA   *data;
     struct TagItem *tag, *tags;
-    static const struct Hook closehook = { { NULL, NULL }, HookEntry,
-					   (APTR)CloseAboutWindowFunc, NULL };
     static const char about_text[] = "Zune, a MUI clone\n"
 	"\nCompiled on " __DATE__
-	"\nCopyright (C) 2002-2012, The AROS Development Team.";
+	"\nCopyright (C) 2002-2013, The AROS Development Team.";
 
     obj = (Object *) DoSuperNewTags
     (
@@ -942,8 +945,7 @@ IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         DoMethod
         (
             obj, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-            (IPTR)data->app, 6, MUIM_Application_PushMethod, 
-            (IPTR)data->app, 3, MUIM_CallHook, (IPTR)&closehook, (IPTR)obj
+            (IPTR)obj, 3, MUIM_Set, MUIA_Window_Open, FALSE
         );
     }
 
