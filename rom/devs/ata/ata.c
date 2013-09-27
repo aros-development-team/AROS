@@ -912,6 +912,7 @@ void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
                              */
                             unit->DaemonReq->io_Device = &ATABase->ata_Device;
                             unit->DaemonReq->io_Unit   = &unit->au_Unit;
+                            unit->DaemonReq->io_Command = HD_SCSICMD+1;
 
                             ObtainSemaphore(&ATABase->DaemonSem);
                             AddTail((struct List *)&ATABase->Daemon_ios,
