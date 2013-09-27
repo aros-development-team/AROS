@@ -12,7 +12,7 @@ FILES	  := \
 	gels_internal \
 	objcache \
 	default_font \
-	compositing_driver \
+	compositor_driver \
 	graphics_driver \
 	fakegfxhidd \
 	dispinfo \
@@ -214,9 +214,9 @@ FUNCTIONS := \
 
 #MM- core-linklibs : linklibs-graphics
 
-#MM kernel-graphics     : includes-composition-copy
-#MM kernel-graphics-kobj: includes-composition-copy
-#MM kernel-graphics-pkg : includes-composition-copy
+#MM kernel-graphics     : includes-compositor-copy
+#MM kernel-graphics-kobj: includes-compositor-copy
+#MM kernel-graphics-pkg : includes-compositor-copy
 
 %build_module mmake=kernel-graphics \
   modname=graphics modtype=library \
