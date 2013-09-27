@@ -62,7 +62,7 @@ struct header
 
     struct Locale *def_locale = NULL;
     struct IntCatalog *catalog = NULL;
-    char *language, *langnative;
+    char *language;
     char *app_language;         /* Language given with tag OC_BuiltInLanguage */
     char *specific_language;    /* Language given with tag OC_Language */
     struct Process *MyProcess;
@@ -89,7 +89,7 @@ struct header
             DEBUG_OPENCATALOG(dprintf("OpenCatalogA: no locale to use? ..done\n"));
             return NULL;
         }
-        def_locale = locale;
+        def_locale = (struct Locale *)locale;
         DEBUG_OPENCATALOG(dprintf("OpenCatalogA: default locale @ 0x%lx\n", def_locale));
     }
 
