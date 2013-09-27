@@ -1,4 +1,4 @@
-#include <hidd/compositing.h>
+#include <hidd/compositor.h>
 #include <hidd/graphics.h>
 #include <oop/oop.h>
 
