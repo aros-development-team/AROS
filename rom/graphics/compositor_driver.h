@@ -44,7 +44,7 @@ static inline void compositor_UpdateBitMap(OOP_Object *o, OOP_Object *bitmap, UW
     OOP_DoMethod(o, &msg.mID);
 }
 
-/* Service functions defined in compositing_driver.c */
+/* Service functions defined in compositor_driver.c */
 
 ULONG compositor_Install(OOP_Class *cl, struct GfxBase *GfxBase);
 void compositor_Setup(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
