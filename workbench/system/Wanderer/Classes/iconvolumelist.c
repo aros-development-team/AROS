@@ -495,18 +495,26 @@ IPTR IconVolumeList__OM_NEW(struct IClass *CLASS, Object * obj,
 
 ///
 
-struct IconEntry *FindIconlistVolumeIcon(struct List *iconlist,
-    char *icondevname)
+static struct IconEntry *FindIconlistVolumeIcon(struct List *iconlist,
+    char *icondevname, char *iconvolname)
 {
     struct IconEntry *foundEntry = NULL;
 
+    /* First look for icons representing offline volumes which match the volume name */
     ForeachNode(iconlist, foundEntry)
     {
         if ((foundEntry->ie_IconListEntry.type == ST_ROOT)
-            && (((strcasecmp(foundEntry->ie_IconNode.ln_Name,
-                            icondevname)) == 0)
-                || ((strcasecmp(foundEntry->ie_IconListEntry.label,
-                            icondevname)) == 0)))
+            && (foundEntry->ie_IconListEntry.flags & ICONENTRY_VOL_OFFLINE)
+            && (strcasecmp(foundEntry->ie_IconListEntry.label, iconvolname) == 0))
+            return foundEntry;
+    }
+
+    /* Then, match on device name */
+    ForeachNode(iconlist, foundEntry)
+    {
+        if ((foundEntry->ie_IconListEntry.type == ST_ROOT)
+            && (((strcasecmp(foundEntry->ie_IconNode.ln_Name, icondevname)) == 0)
+                    || ((strcasecmp(foundEntry->ie_IconListEntry.label, icondevname)) == 0)))
             return foundEntry;
     }
     return NULL;
@@ -560,19 +568,19 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
                     D(bug("[IconVolumeList] %s: Processing '%s'\n",
                             __PRETTY_FUNCTION__, devname));
 
-                    if ((this_Icon =
-                            FindIconlistVolumeIcon(iconlist,
-                                devname)) != NULL)
+                    if ((this_Icon = FindIconlistVolumeIcon(iconlist, devname, dvn->dvn_VolName)) != NULL)
                     {
                         BOOL entrychanged = FALSE;
                         volDOB = this_Icon->ie_DiskObj;
 
                         if (dvn->dvn_Flags & ICONENTRY_VOL_OFFLINE)
-                            this_Icon->ie_IconListEntry.flags |=
-                                ICONENTRY_VOL_OFFLINE;
+                            this_Icon->ie_IconListEntry.flags |= ICONENTRY_VOL_OFFLINE;
+                        else
+                            this_Icon->ie_IconListEntry.flags &= ~ICONENTRY_VOL_OFFLINE;
                         if (dvn->dvn_Flags & ICONENTRY_VOL_DISABLED)
-                            this_Icon->ie_IconListEntry.flags |=
-                                ICONENTRY_VOL_DISABLED;
+                            this_Icon->ie_IconListEntry.flags |= ICONENTRY_VOL_DISABLED;
+                        else
+                            this_Icon->ie_IconListEntry.flags &= ~ICONENTRY_VOL_DISABLED;
 
                         Remove((struct Node *)&this_Icon->ie_IconNode);
 
@@ -606,14 +614,14 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
 
                         if (entrychanged)
                         {
-                            D(bug
-                                ("[IconVolumeList] %s: IconEntry changed - updating..\n",
-                                    __PRETTY_FUNCTION__));
+                            struct VolumeIcon_Private *volPrivate = this_Icon->ie_IconListEntry.udata;
+
+                            D(bug("[IconVolumeList] %s: IconEntry changed - updating..\n", __PRETTY_FUNCTION__));
                             this_Icon =
-                                (struct IconEntry *)DoMethod(obj,
-                                MUIM_IconList_UpdateEntry, this_Icon,
-                                (IPTR) devname, (IPTR) dvn->dvn_VolName,
-                                (IPTR) NULL, volDOB, ST_ROOT);
+                                (struct IconEntry *)DoMethod(obj, MUIM_IconList_UpdateEntry, this_Icon,
+                                (IPTR) devname, (IPTR) dvn->dvn_VolName, (IPTR) NULL, volDOB, ST_ROOT);
+
+                            volPrivate->vip_FLags = dvn->dvn_Flags;
                         }
                         if (this_Icon)
                             AddTail(&newiconlist,
