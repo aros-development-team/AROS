@@ -174,7 +174,7 @@
             msgport = ((struct FileHandle *) BADDR(arg1))->fh_Type;
             dl = (struct DeviceList*)BADDR(dopacket1(DOSBase, NULL, msgport, ACTION_CURRENT_VOLUME, ((struct FileHandle *) BADDR(arg1))->fh_Arg1));
             if (dl)
-                volname = (char*)BADDR(dl->dl_Name) + 1;
+                volname =  AROS_BSTR_ADDR(dl->dl_Name);
             break;
             
         case REPORT_TASK:
@@ -211,7 +211,7 @@
                 return DOSTRUE;
 
             dl = (struct DeviceList *) arg1;
-            volname = (char*)BADDR(dl->dl_Name) + 1;
+            volname = AROS_BSTR_ADDR(dl->dl_Name);
             msgport = dl->dl_Task;
             break;
             
