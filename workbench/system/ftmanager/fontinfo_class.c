@@ -158,8 +158,6 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 	Object *gray, *test_string, *test_size, *serif, *space_width;
 	Object *metric, *bbox_ymin, *bbox_ymax;
 	char name_buf[50];
-	int k, l;
-	const char *q, *r;
 
 	static CONST_STRPTR stem_weight_names[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
         stem_weight_names[0] =_(MSG_WEIGHT_ULTRATHIN);
