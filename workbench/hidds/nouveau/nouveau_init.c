@@ -63,10 +63,6 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     
     InitSemaphore(&LIBBASE->sd.multibitmapsemaphore);
 
-    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
-    LIBBASE->sd.rgbpatched = FALSE;
-    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
-
     NouveauMemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 32 * 1024, 16 * 1024);
     
     globalcarddataptr = &LIBBASE->sd.carddata;
