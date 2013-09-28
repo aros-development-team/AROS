@@ -72,7 +72,7 @@ USER_CFLAGS :=  -DFEATURE_GL=1 \
 %build_module mmake=workbench-libs-egl \
     modname=egl modtype=library linklibname=EGL \
     files="$(LIBRARY_SOURCES)" \
-    uselibs="galliumauxiliary gallium stdcio stdc"
+    uselibs="galliumauxiliary gallium GL stdcio stdc"
 
 %common
 

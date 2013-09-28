@@ -24,7 +24,10 @@ PUBLIC struct st_api * st_gl_api_create(void)
 static VOID CloseMesa()
 {
     if (MesaBase)
+    {
         CloseLibrary(MesaBase);
+        MesaBase = NULL;
+    }
 }
 
 ADD2EXPUNGELIB(CloseMesa, 5)

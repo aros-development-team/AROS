@@ -11,9 +11,13 @@
 
 #include <stdlib.h>
 
-// TO REMOVE
-#include "eglmisc.h"
+#include <GL/arosmesa.h>
 
+extern struct Library * MesaBase;
+
+/* General note: due to fact that AROSMesa API is not symmetric with EGL api,
+ * AROSMesa context is not created in EGL create context, but in EGL MakeCurrent
+ */
 
 struct egl_arosmesa
 {
@@ -23,12 +27,26 @@ struct egl_arosmesa
 struct egl_arosmesa_context
 {
     _EGLContext base;
+    AROSMesaContext amesactx;
 };
+
+static inline struct egl_arosmesa_context * egl_arosmesa_context(_EGLContext * ctx)
+{
+    return (struct egl_arosmesa_context *)ctx;
+}
 
 struct egl_arosmesa_surface
 {
     _EGLSurface base;
+    struct Window * win;
 };
+
+static _EGLProc egl_arosmesa_getprocaddress(_EGLDriver *drv, const char *procname)
+{
+    (void) drv;
+
+    return AROSMesaGetProcAddress(procname);
+}
 
 static EGLBoolean egl_arosmesa_terminate(_EGLDriver *drv, _EGLDisplay *disp)
 {
@@ -46,7 +64,11 @@ static EGLBoolean egl_arosmesa_destroycontext(_EGLDriver *drv, _EGLDisplay *dpy,
 
     if (_eglPutContext(ctx))
     {
-        free(ctx);
+        struct egl_arosmesa_context * eglctx = egl_arosmesa_context(ctx);
+        AROSMesaMakeCurrent(NULL);
+        if (eglctx->amesactx)
+            AROSMesaDestroyContext(eglctx->amesactx);
+        free(eglctx);
     }
 
     return EGL_TRUE;
@@ -66,6 +88,7 @@ static EGLBoolean egl_arosmesa_destroysurface(_EGLDriver *drv, _EGLDisplay *disp
 
 static EGLBoolean egl_arosmesa_swapbuffers(_EGLDriver *drv, _EGLDisplay *disp, _EGLSurface *draw)
 {
+    AROSMesaSwapBuffers(disp->DriverData);
     return EGL_TRUE;
 }
 
@@ -78,7 +101,69 @@ static EGLBoolean egl_arosmesa_makecurrent(_EGLDriver *drv, _EGLDisplay *disp, _
     if (!_eglBindContext(ctx, dsurf, rsurf, &old_ctx, &old_dsurf, &old_rsurf))
         return EGL_FALSE;
 
-    return EGL_TRUE;
+    /* Since AROSMesa API is not symmetric with EGL, context handling needs to be performed here */
+
+    /* Do nothing */
+    if ((ctx == NULL) && (old_ctx == NULL))
+        return EGL_TRUE;
+
+    /* Unbind the current context */
+    if ((ctx == NULL) && (old_ctx != NULL))
+    {
+        AROSMesaMakeCurrent(NULL);
+        _eglPutSurface(old_dsurf);
+        _eglPutSurface(old_rsurf);
+        _eglPutContext(old_ctx);
+        disp->DriverData = NULL;
+        return EGL_TRUE;
+    }
+
+    /* Create when needed and bind new context */
+    if (ctx != NULL)
+    {
+        struct egl_arosmesa_context * eglctx = egl_arosmesa_context(ctx);
+
+        if (old_ctx != NULL)
+        {
+            _eglPutSurface(old_dsurf);
+            _eglPutSurface(old_rsurf);
+            _eglPutContext(old_ctx);
+            disp->DriverData = NULL;
+        }
+
+        if (eglctx->amesactx == NULL)
+        {
+            struct TagItem attributes [14];
+            struct Window * win = ((struct egl_arosmesa_surface *)dsurf)->win;
+            int i = 0;
+
+            attributes[i].ti_Tag = AMA_Window;      attributes[i++].ti_Data = (IPTR)win;
+            attributes[i].ti_Tag = AMA_Left;        attributes[i++].ti_Data = win->BorderLeft;
+            attributes[i].ti_Tag = AMA_Top;         attributes[i++].ti_Data = win->BorderTop;
+            attributes[i].ti_Tag = AMA_Bottom;      attributes[i++].ti_Data = win->BorderBottom;
+            attributes[i].ti_Tag = AMA_Right;       attributes[i++].ti_Data = win->BorderRight;
+
+            attributes[i].ti_Tag = AMA_DoubleBuf;   attributes[i++].ti_Data = GL_TRUE;
+
+            attributes[i].ti_Tag = AMA_RGBMode;     attributes[i++].ti_Data = GL_TRUE;
+
+            attributes[i].ti_Tag = AMA_NoStencil;   attributes[i++].ti_Data = GL_TRUE;
+            attributes[i].ti_Tag = AMA_NoAccum;     attributes[i++].ti_Data = GL_TRUE;
+
+            attributes[i].ti_Tag = TAG_DONE;
+
+            eglctx->amesactx = AROSMesaCreateContext(attributes);
+        }
+
+        if (eglctx->amesactx != NULL)
+        {
+            AROSMesaMakeCurrent(eglctx->amesactx);
+            disp->DriverData = eglctx->amesactx;
+            return EGL_TRUE;
+        }
+    }
+
+    return EGL_FALSE;
 }
 
 static _EGLSurface * egl_arosmesa_createwindowsurface(_EGLDriver *drv, _EGLDisplay *disp,
@@ -92,8 +177,9 @@ static _EGLSurface * egl_arosmesa_createwindowsurface(_EGLDriver *drv, _EGLDispl
         return NULL;
     }
 
-    surf->base.Width = window->Width;
-    surf->base.Height = window->Height;
+    surf->base.Width = window->Width - window->BorderLeft - window->BorderRight;
+    surf->base.Height = window->Height - window->BorderTop -  window->BorderBottom;
+    surf->win = window;
 
     return &surf->base;
 }
@@ -108,6 +194,8 @@ static _EGLContext * egl_arosmesa_createcontext(_EGLDriver *drv, _EGLDisplay *di
         free(ctx);
         return NULL;
     }
+
+    ctx->amesactx = NULL; /* Context is created elsewhere */
 
     return &ctx->base;
 }
@@ -148,8 +236,8 @@ egl_arosmesa_initialize(_EGLDriver *drv, _EGLDisplay *dpy)
 
 void egl_arosmesa_init_driver_api(_EGLDriver * drv)
 {
-//TO UNCOMMENT
-    //_eglInitDriverFallbacks(drv);
+
+    _eglInitDriverFallbacks(drv);
 
     drv->API.Initialize = egl_arosmesa_initialize;
     drv->API.CreateContext = egl_arosmesa_createcontext;
@@ -159,12 +247,12 @@ void egl_arosmesa_init_driver_api(_EGLDriver * drv)
     drv->API.DestroySurface = egl_arosmesa_destroysurface;
     drv->API.DestroyContext = egl_arosmesa_destroycontext;
     drv->API.Terminate = egl_arosmesa_terminate;
-    // TODO: implement getprocaddress
-    // drv->API.GetProcAddress
+    drv->API.GetProcAddress = egl_arosmesa_getprocaddress;
+}
 
-// TO REMOVE
-    drv->API.QueryString = _eglQueryString;
-    drv->API.ChooseConfig = _eglChooseConfig;
+void egl_arosmesa_unload(_EGLDriver *drv)
+{
+    free(drv);
 }
 
 _EGLDriver *
@@ -172,10 +260,28 @@ _eglBuiltInDriverAROSMesa(const char *args)
 {
     struct egl_arosmesa * drv = calloc(1, sizeof(struct egl_arosmesa));
 
-    egl_arosmesa_init_driver_api(&drv->base);
-    drv->base.Name = "AROSMesa";
-    // TODO: implement unload
-    drv->base.Unload = NULL;
+    if (!MesaBase)
+        MesaBase = OpenLibrary("mesa.library", 0L);
 
-    return &drv->base;
+    if (MesaBase)
+    {
+        egl_arosmesa_init_driver_api(&drv->base);
+        drv->base.Name = "AROSMesa";
+        drv->base.Unload = egl_arosmesa_unload;
+
+        return &drv->base;
+    }
+    else
+        return NULL;
 }
+
+static VOID CloseMesa()
+{
+    if (MesaBase)
+    {
+        CloseLibrary(MesaBase);
+        MesaBase = NULL;
+    }
+}
+
+ADD2EXPUNGELIB(CloseMesa, 5)
