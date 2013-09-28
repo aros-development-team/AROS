@@ -831,6 +831,10 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         *msg->opg_Storage = (IPTR)screen->Screen.BarLayer->rp->Font;
         break;
 
+    case SA_CompositingFlags:
+        *msg->opg_Storage = (IPTR)(screen->SpecialFlags >> 8);
+        break;
+
     case SA_OpacitySupport:    /* These are reserved in AROS */
     case SA_SourceAlphaSupport:
     case SA_ScreenbarSignal:
