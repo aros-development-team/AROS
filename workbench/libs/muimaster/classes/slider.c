@@ -401,7 +401,9 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     case IDCMP_MOUSEBUTTONS:
         if (msg->imsg->Code == SELECTDOWN)
         {
-            if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
+            if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY)
+                && (msg->imsg->Qualifier
+                & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) == 0)
             {
                 if (data->flags & SLIDER_HORIZ)
                 {
@@ -506,15 +508,23 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             {
             case RAWKEY_UP:
                 increase = (data->flags & SLIDER_HORIZ) != 0;
+                if (XGET(obj, MUIA_Numeric_RevUpDown))
+                    increase = !increase;
                 break;
             case RAWKEY_DOWN:
                 increase = (data->flags & SLIDER_HORIZ) == 0;
+                if (XGET(obj, MUIA_Numeric_RevUpDown))
+                    increase = !increase;
                 break;
             case RAWKEY_LEFT:
                 increase = FALSE;
+                if (XGET(obj, MUIA_Numeric_RevLeftRight))
+                    increase = !increase;
                 break;
             case RAWKEY_RIGHT:
                 increase = TRUE;
+                if (XGET(obj, MUIA_Numeric_RevLeftRight))
+                    increase = !increase;
                 break;
             default:
                 change = FALSE;
