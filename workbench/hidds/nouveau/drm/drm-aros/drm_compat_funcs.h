@@ -233,20 +233,26 @@ static inline int atomic_inc_not_zero(atomic_t *v)
 }
 
 /* Lock handling */
+
+/* A code protected by spin lock is quaranteed to be atomic. This means that
+ * preemtion on this CPU needs to be disabled for the time of executing.
+ * Additionally, if the _irq variant of spin lock functions is used,
+ * it is also guaraneteed that interrupts are disabled on the executing CPU.
+ * The _bh variant disables the "bottom half" processing which is currently not
+ * implemented in compat wrappers.
+ */
+
 static inline void spin_lock_init(spinlock_t * lock)
 {
-    /* atomic_set(&lock->lock, 0); Does not work - causes deadlock */
-    InitSemaphore(&lock->semaphore);
+    /* No-Op */
 }
 static inline void spin_lock(spinlock_t * lock)
 {
-    /* while(atomic_cmpxchg(&lock->lock, 0, 1) != 0); Does not work - causes deadlock */
-    ObtainSemaphore(&lock->semaphore);
+    Forbid();
 }
 static inline void spin_unlock(spinlock_t * lock)
 {
-    /* atomic_set(&lock->lock, 0); Does not work - causes deadlock */
-    ReleaseSemaphore(&lock->semaphore);
+    Permit();
 }
 
 #define spin_lock_bh(x)                 spin_lock(x)
@@ -271,22 +277,20 @@ do                      \
 #define spin_lock_irq(x)                spin_lock_irqsave(x, 0)
 #define spin_unlock_irq(x)              spin_unlock_irqrestore(x, 0)
 
-/* TODO: This may work incorreclty if write_lock and read_lock are used for the same lock
-   read_lock allows concurent readers as lock as there is no writer */
+/* TODO: This may work incorrectly if write_lock and read_lock are used for the same lock as
+ * read_lock allows concurent readers as long as there is no writer
+ */
 static inline void rwlock_init(rwlock_t * lock)
 {
-    /* atomic_set(&lock->lock, 0); Does not work - causes deadlock */
-    InitSemaphore(&lock->semaphore);
+    /* No-Op */
 }
 static inline void write_lock(rwlock_t * lock)
 {
-    /* while(atomic_cmpxchg(&lock->lock, 0, 1) != 0); Does not work - causes deadlock */
-    ObtainSemaphore(&lock->semaphore);
+    Forbid();
 }
 static inline void write_unlock(rwlock_t * lock)
 {
-    /* atomic_set(&lock->lock, 0); Does not work - causes deadlock */
-    ReleaseSemaphore(&lock->semaphore);
+    Permit();
 }
 
 /* Reference counted objects implementation */
