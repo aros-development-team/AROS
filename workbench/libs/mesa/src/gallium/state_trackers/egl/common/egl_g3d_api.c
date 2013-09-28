@@ -125,6 +125,28 @@ egl_g3d_choose_config(_EGLDriver *drv, _EGLDisplay *dpy, const EGLint *attribs,
 
    if (!num_configs)
       return _eglError(EGL_BAD_PARAMETER, "eglChooseConfigs");
+#if defined(_EGL_OS_AROS)
+    /* This is the earliest place where client indicates which API is it interested in. Due to fact that
+     * HostGL is not providing Gallium st_api, we detected if we are capable of continuing with Gallium EGL
+     * driver and if not we "chain load" the display into AROSMesa EGL driver
+     */
+   int j = -1;
+   while (attribs[++j] != EGL_NONE)
+   {
+       if (attribs[j] == EGL_RENDERABLE_TYPE)
+       {
+           if (attribs[++j] == EGL_OPENGL_BIT)
+           {
+               if (egl_g3d_get_st_api(drv, EGL_OPENGL_BIT) == NULL)
+               {
+                   dpy->Driver = _eglBuiltInDriverAROSMesa(NULL);
+                   dpy->Driver->API.Initialize(dpy->Driver, dpy);
+                   return dpy->Driver->API.ChooseConfig(dpy->Driver, dpy,attribs, configs, size, num_configs);
+               }
+           }
+       }
+   }
+#endif
 
    if (!_eglParseConfigAttribList(&criteria, dpy, attribs))
       return _eglError(EGL_BAD_ATTRIBUTE, "eglChooseConfig");

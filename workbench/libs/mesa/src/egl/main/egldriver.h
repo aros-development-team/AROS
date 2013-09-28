@@ -95,6 +95,10 @@ _eglBuiltInDriverDRI2(const char *args);
 extern _EGLDriver *
 _eglBuiltInDriverGLX(const char *args);
 
+#if defined(_EGL_OS_AROS)
+extern _EGLDriver *
+_eglBuiltInDriverAROSMesa(const char *args);
+#endif
 
 PUBLIC _EGLDriver *
 _eglMain(const char *args);
