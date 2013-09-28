@@ -33,6 +33,7 @@ EGL_SOURCES = \
             egl/main/eglstring \
             egl/main/eglsurface \
             egl/main/eglsync \
+            egl/drivers/arosmesa/egl_arosmesa \
             gallium/state_trackers/egl/common/egl_g3d \
             gallium/state_trackers/egl/common/egl_g3d_api \
             gallium/state_trackers/egl/common/egl_g3d_image \
