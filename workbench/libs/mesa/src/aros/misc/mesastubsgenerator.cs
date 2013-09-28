@@ -688,7 +688,7 @@ namespace glstubgenerator
 					swMangledImplementation.WriteLine("    /* glBegin/glEnd must be atomic */");
 				else
 					swMangledImplementation.WriteLine("    HOSTGL_PRE");
-				swMangledImplementation.WriteLine("    D(bug(\"TASK: 0x%x, {0}\", FindTask(NULL)));", f.Name);
+				swMangledImplementation.WriteLine("    D(bug(\"[HostGL] TASK: 0x%x, {0}\", FindTask(NULL)));", f.Name);
 
 				if (f.ReturnsVoid())
 					swMangledImplementation.Write("    GLCALL({0}", f.Name);
