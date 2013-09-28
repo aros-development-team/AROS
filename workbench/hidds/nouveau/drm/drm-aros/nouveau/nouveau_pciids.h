@@ -465,6 +465,7 @@ struct drm_pciid nouveau_pciids [] =
     { 0x10de, 0x087f }, /* ION LE VGA */
     { 0x10de, 0x08a4 }, /* GT216 [GeForce 320M] */
     { 0x10de, 0x0a20 }, /* GT216 [GeForce GT 220] */
+    { 0x10de, 0x0a22 }, /* GeForce 315 */
     { 0x10de, 0x0a23 }, /* GT218 [GeForce 210] */
     { 0x10de, 0x0a28 }, /* GT216 [GeForce GT 230M] */
     { 0x10de, 0x0a29 }, /* GT216 [GeForce GT 330M] */
