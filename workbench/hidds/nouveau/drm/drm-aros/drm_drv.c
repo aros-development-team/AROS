@@ -108,6 +108,8 @@ int drm_init(struct drm_driver * driver)
     if (drm_aros_pci_find_supported_video_card(driver))
         return -1;
 
+    bug("\003\n"); /* Tell vga text mode debug output to die */
+
     if (drm_init_device(driver))
     {
         drm_exit(driver);
