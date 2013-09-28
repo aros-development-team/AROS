@@ -681,10 +681,13 @@ namespace glstubgenerator
 				}
 				swMangledImplementation.WriteLine(")");
 				swMangledImplementation.WriteLine("{");
+				if (!f.ReturnsVoid())
+					swMangledImplementation.WriteLine("    {0} _ret;", f.ReturnType);
+				swMangledImplementation.WriteLine("    HOSTGL_PRE");
 				if (f.ReturnsVoid())
 					swMangledImplementation.Write("    GLCALL({0}", f.Name);
 				else
-					swMangledImplementation.Write("    return GLCALL({0}", f.Name);
+					swMangledImplementation.Write("    _ret = GLCALL({0}", f.Name);
 				if (f.Arguments.Count > 0)
 				{
 					int i = 0;
@@ -692,7 +695,9 @@ namespace glstubgenerator
 						swMangledImplementation.Write(", {0}", f.Arguments[i].Name);
 				}
 				swMangledImplementation.WriteLine(");");
-
+				swMangledImplementation.WriteLine("    HOSTGL_POST");
+				if (!f.ReturnsVoid())
+					swMangledImplementation.WriteLine("    return _ret;");
 				swMangledImplementation.WriteLine("}");
 				swMangledImplementation.WriteLine();
 			}
