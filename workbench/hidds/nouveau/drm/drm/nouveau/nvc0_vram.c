@@ -70,6 +70,14 @@ nvc0_vram_new(struct drm_device *dev, u64 size, u32 align, u32 ncmin,
 	align >>= 12;
 	ncmin >>= 12;
 
+#ifdef __AROS__
+    /* Workaround which forces allocation to be contiguous in VRAM.
+       Without this some gfx cards cause display corruption, because
+       displaying of non contiguous bitmap does not work for whatever
+       reason. */
+
+    if (ncmin < size) ncmin = size;
+#endif
 	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
 	if (!mem)
 		return -ENOMEM;
