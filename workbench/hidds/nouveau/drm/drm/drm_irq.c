@@ -409,6 +409,7 @@ int drm_irq_install(struct drm_device *dev)
     
     ObtainSemaphore(&dev->struct_mutex.semaphore);
     if (dev->irq_enabled) {
+        ReleaseSemaphore(&dev->struct_mutex.semaphore);
         return -EBUSY;
     }
     dev->irq_enabled = 1;
