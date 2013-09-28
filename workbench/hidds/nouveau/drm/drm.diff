@@ -796,28 +796,28 @@ diff -ur /data/deadwood/source/drm-orig/drm_irq.c drm/drm_irq.c
  int drm_irq_install(struct drm_device *dev)
  {
  	int ret = 0;
-@@ -382,7 +392,85 @@
+@@ -382,7 +392,59 @@
  	return ret;
  }
  EXPORT_SYMBOL(drm_irq_install);
 +#else
-+static AROS_UFHI1(interrupt_handler,struct drm_device *,dev)
++static AROS_INTH1(interrupt_handler, struct drm_device *, dev)
 +{
-+    AROS_USERFUNC_INIT
++    AROS_INTFUNC_INIT
 +    if (dev->driver->irq_handler)
 +        dev->driver->irq_handler(dev);
 +    return FALSE;
-+    AROS_USERFUNC_EXIT
++    AROS_INTFUNC_EXIT
 +}
- 
++
 +int drm_irq_install(struct drm_device *dev)
 +{
-+    
 +    IPTR INTLine = 0;
-+    int retval = -EINVAL;
++    int retval = 0;
 +    
 +    ObtainSemaphore(&dev->struct_mutex.semaphore);
 +    if (dev->irq_enabled) {
++        ReleaseSemaphore(&dev->struct_mutex.semaphore);
 +        return -EBUSY;
 +    }
 +    dev->irq_enabled = 1;
@@ -826,43 +826,17 @@ diff -ur /data/deadwood/source/drm-orig/drm_irq.c drm/drm_irq.c
 +    if (dev->driver->irq_preinstall)
 +        dev->driver->irq_preinstall(dev);
 +
-+    
-+    
-+    
-+     dev->IntHandler.is_Node.ln_Type = NT_INTERRUPT;
-+     dev->IntHandler.is_Node.ln_Pri = 10;
-+     dev->IntHandler.is_Node.ln_Name = "Gallium3D INT Handler";
-+     dev->IntHandler.is_Code = (VOID_FUNC)interrupt_handler;
-+     dev->IntHandler.is_Data = dev;
++    dev->IntHandler.is_Node.ln_Type = NT_INTERRUPT;
++    dev->IntHandler.is_Node.ln_Pri = 10;
++    dev->IntHandler.is_Node.ln_Name = "Gallium3D INT Handler";
++    dev->IntHandler.is_Code = (VOID_FUNC)interrupt_handler;
++    dev->IntHandler.is_Data = dev;
 +
-+     OOP_GetAttr((OOP_Object *)dev->pdev->oopdev, aHidd_PCIDevice_INTLine, &INTLine);
-+     DRM_DEBUG("INTLine: %d\n", INTLine);
++    OOP_GetAttr((OOP_Object *)dev->pdev->oopdev, aHidd_PCIDevice_INTLine, &INTLine);
++    DRM_DEBUG("INTLine: %d\n", INTLine);
 +
-+     AddIntServer(INTB_KERNEL + INTLine, &dev->IntHandler);
++    AddIntServer(INTB_KERNEL + INTLine, &dev->IntHandler);
 +
-+        
-+        
-+       
-+      
-+     
-+    
-+   
-+
-+  
-+    retval = 0;
-+
-+ 
-+     
-+    
-+
-+    if (retval != 0)
-+    {
-+        ObtainSemaphore(&dev->struct_mutex.semaphore);
-+        dev->irq_enabled = 0;
-+        ReleaseSemaphore(&dev->struct_mutex.semaphore);
-+        return retval;
-+    }
-+    
 +    if (dev->driver->irq_postinstall)
 +    {
 +        retval = dev->driver->irq_postinstall(dev);
@@ -877,12 +851,12 @@ diff -ur /data/deadwood/source/drm-orig/drm_irq.c drm/drm_irq.c
 +    return retval;
 +}
 +#endif
-+
+ 
 +#if !defined(__AROS__)
  /**
   * Uninstall the IRQ handler.
   *
-@@ -433,7 +521,48 @@
+@@ -433,7 +495,34 @@
  	return 0;
  }
  EXPORT_SYMBOL(drm_irq_uninstall);
@@ -890,8 +864,8 @@ diff -ur /data/deadwood/source/drm-orig/drm_irq.c drm/drm_irq.c
 +int drm_irq_uninstall(struct drm_device *dev)
 +{
 +    int irq_enabled;
-+    struct OOP_Object *o = NULL;
 +    int retval = -EINVAL;
++    IPTR INTLine;
 +
 +    ObtainSemaphore(&dev->struct_mutex.semaphore);
 +    irq_enabled = dev->irq_enabled;
@@ -904,26 +878,12 @@ diff -ur /data/deadwood/source/drm-orig/drm_irq.c drm/drm_irq.c
 +    if (dev->driver->irq_uninstall)
 +        dev->driver->irq_uninstall(dev);
 +
-+    o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
++    OOP_GetAttr((OOP_Object *)dev->pdev->oopdev, aHidd_PCIDevice_INTLine, &INTLine);
++    DRM_DEBUG("INTLine: %d\n", INTLine);
 +
-+    if (o)
-+    {
-+        struct pHidd_IRQ_RemHandler __msg__ = {
-+            mID:            OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_RemHandler),
-+            handlerinfo:    dev->IntHandler,
-+        }, *msg = &__msg__;
++    RemIntServer(INTB_KERNEL + INTLine, &dev->IntHandler);
 +
-+        if (OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg))
-+        {
-+            HIDDNouveauFree(dev->IntHandler);
-+            dev->IntHandler = NULL;
-+            retval = 0;
-+        }
-+
-+        OOP_DisposeObject((OOP_Object *)o);
-+    }
-+
-+    return retval;
++    return 0;
 +}
 +#endif
  
@@ -931,14 +891,14 @@ diff -ur /data/deadwood/source/drm-orig/drm_irq.c drm/drm_irq.c
  /**
   * IRQ control ioctl.
   *
-@@ -1349,3 +1478,4 @@
+@@ -1349,3 +1438,4 @@
  	return true;
  }
  EXPORT_SYMBOL(drm_handle_vblank);
 +#endif
 diff -ur /data/deadwood/source/drm-orig/drm_memory.c drm/drm_memory.c
 --- /data/deadwood/source/drm-orig/drm_memory.c	2011-02-13 19:09:47.000000000 +0100
-+++ drm/drm_memory.c	2011-09-12 20:46:05.000000000 +0200
++++ drm/drm_memory.c	2011-09-17 08:03:13.000000000 +0200
 @@ -33,7 +33,9 @@
   * OTHER DEALINGS IN THE SOFTWARE.
   */
@@ -2953,7 +2913,7 @@ diff -ur /data/deadwood/source/drm-orig/nouveau/nv50_graph.c drm/nouveau/nv50_gr
  
 diff -ur /data/deadwood/source/drm-orig/nouveau/nv50_vram.c drm/nouveau/nv50_vram.c
 --- /data/deadwood/source/drm-orig/nouveau/nv50_vram.c	2011-09-08 21:07:54.000000000 +0200
-+++ drm/nouveau/nv50_vram.c	2011-09-17 08:03:16.000000000 +0200
++++ drm/nouveau/nv50_vram.c	2013-09-28 19:35:37.000000000 +0200
 @@ -24,7 +24,7 @@
  
  #include "drmP.h"
@@ -2963,6 +2923,22 @@ diff -ur /data/deadwood/source/drm-orig/nouveau/nv50_vram.c drm/nouveau/nv50_vra
  
  static int types[0x80] = {
  	1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+@@ -95,6 +95,15 @@
+ 	align >>= 12;
+ 	size_nc >>= 12;
+ 
++#ifdef __AROS__
++    /* Workaround which forces allocation to be contiguous in VRAM.
++       Without this some gfx cards cause display corruption, because
++       displaying of non contiguous bitmap does not work for whatever
++       reason. */
++       
++    if (size_nc < size) size_nc = size;
++#endif
++
+ 	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
+ 	if (!mem)
+ 		return -ENOMEM;
 diff -ur /data/deadwood/source/drm-orig/nouveau/nva3_copy.c drm/nouveau/nva3_copy.c
 --- /data/deadwood/source/drm-orig/nouveau/nva3_copy.c	2011-09-08 21:07:54.000000000 +0200
 +++ drm/nouveau/nva3_copy.c	2011-09-17 08:03:13.000000000 +0200
@@ -3105,7 +3081,7 @@ diff -ur /data/deadwood/source/drm-orig/nouveau/nvc0_grctx.c drm/nouveau/nvc0_gr
  static void
 diff -ur /data/deadwood/source/drm-orig/nouveau/nvc0_vram.c drm/nouveau/nvc0_vram.c
 --- /data/deadwood/source/drm-orig/nouveau/nvc0_vram.c	2011-09-08 21:07:54.000000000 +0200
-+++ drm/nouveau/nvc0_vram.c	2011-09-17 08:03:16.000000000 +0200
++++ drm/nouveau/nvc0_vram.c	2013-09-28 19:35:37.000000000 +0200
 @@ -24,7 +24,7 @@
  
  #include "drmP.h"
@@ -3115,9 +3091,24 @@ diff -ur /data/deadwood/source/drm-orig/nouveau/nvc0_vram.c drm/nouveau/nvc0_vra
  
  /* 0 = unsupported
   * 1 = non-compressed
+@@ -70,6 +70,14 @@
+ 	align >>= 12;
+ 	ncmin >>= 12;
+ 
++#ifdef __AROS__
++    /* Workaround which forces allocation to be contiguous in VRAM.
++       Without this some gfx cards cause display corruption, because
++       displaying of non contiguous bitmap does not work for whatever
++       reason. */
++
++    if (ncmin < size) ncmin = size;
++#endif
+ 	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
+ 	if (!mem)
+ 		return -ENOMEM;
 diff -ur /data/deadwood/source/drm-orig/nouveau/nvd0_display.c drm/nouveau/nvd0_display.c
 --- /data/deadwood/source/drm-orig/nouveau/nvd0_display.c	2011-09-08 21:07:54.000000000 +0200
-+++ drm/nouveau/nvd0_display.c	2011-09-18 12:09:35.000000000 +0200
++++ drm/nouveau/nvd0_display.c	2011-09-17 08:03:13.000000000 +0200
 @@ -22,7 +22,9 @@
   * Authors: Ben Skeggs
   */
