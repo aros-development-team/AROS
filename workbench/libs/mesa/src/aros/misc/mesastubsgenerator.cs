@@ -683,7 +683,13 @@ namespace glstubgenerator
 				swMangledImplementation.WriteLine("{");
 				if (!f.ReturnsVoid())
 					swMangledImplementation.WriteLine("    {0} _ret;", f.ReturnType);
-				swMangledImplementation.WriteLine("    HOSTGL_PRE");
+
+				if (f.Name.Equals("glEnd"))
+					swMangledImplementation.WriteLine("    /* glBegin/glEnd must be atomic */");
+				else
+					swMangledImplementation.WriteLine("    HOSTGL_PRE");
+				swMangledImplementation.WriteLine("    D(bug(\"TASK: 0x%x, {0}\", FindTask(NULL)));", f.Name);
+
 				if (f.ReturnsVoid())
 					swMangledImplementation.Write("    GLCALL({0}", f.Name);
 				else
@@ -695,7 +701,13 @@ namespace glstubgenerator
 						swMangledImplementation.Write(", {0}", f.Arguments[i].Name);
 				}
 				swMangledImplementation.WriteLine(");");
-				swMangledImplementation.WriteLine("    HOSTGL_POST");
+
+				swMangledImplementation.WriteLine("    D(bug(\"...exit\\n\"));");
+				if (f.Name.Equals("glBegin"))
+					swMangledImplementation.WriteLine("    /* glBegin/glEnd must be atomic */");
+				else
+					swMangledImplementation.WriteLine("    HOSTGL_POST");
+
 				if (!f.ReturnsVoid())
 					swMangledImplementation.WriteLine("    return _ret;");
 				swMangledImplementation.WriteLine("}");
