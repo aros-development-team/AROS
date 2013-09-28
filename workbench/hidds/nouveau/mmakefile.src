@@ -104,7 +104,6 @@ NOUVEAU_HIDD_SOURCES := \
             nouveau_accel \
             nouveaui2c \
             arosc_emul \
-            hack_patchrgbconv \
             compositingclass \
             $(addprefix $(DRM_PATH),$(AROS_DRM_CORE_SOURCES))           \
             $(addprefix $(DRM_PATH),$(AROS_DRM_NVIDIA_SOURCES))         \

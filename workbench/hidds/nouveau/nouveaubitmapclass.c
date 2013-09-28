@@ -30,10 +30,6 @@ VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset)
     bmdata->yoffset = newyoffset;
 }
 
-/* TEMP - FIXME HACK FOR PATCHRGBCONV */
-void HACK_PATCHRGBCONV(OOP_Object * bitmap);
-/* TEMP - FIXME HACK FOR PATCHRGBCONV */
-
 /* PUBLIC METHODS */
 OOP_Object * METHOD(NouveauBitMap, Root, New)
 {
@@ -103,16 +99,6 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     if (bmdata->compositing == NULL)
         goto exit_fail;
 
-    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
-    /* Yes, it can be called more than once */
-    if (!SD(cl)->rgbpatched)
-    {
-        SD(cl)->rgbpatched = TRUE;
-        HACK_PATCHRGBCONV(o);
-    }
-    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
-    
-    
     return o;
 
 exit_fail:

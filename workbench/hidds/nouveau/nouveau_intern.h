@@ -195,10 +195,6 @@ struct staticdata
     struct CardData carddata;
     
     struct SignalSemaphore multibitmapsemaphore;
-    
-    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
-    volatile BOOL rgbpatched;
-    /* TEMP - FIXME HACK FOR PATCHRGBCONV */
 };
 
 LIBBASETYPE 
