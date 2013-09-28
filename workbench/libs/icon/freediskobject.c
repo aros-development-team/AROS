@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -64,8 +64,9 @@ extern const IPTR IconDesc[];
 
     RemoveIconFromList(nativeicon, LB(IconBase));
 
-    /* It's enough to free our FreeList */
+    /* It's enough to free our FreeList and the top-level structure */
     FreeFreeList(&nativeicon->ni_FreeList);
+    FreeMem(nativeicon, sizeof(struct NativeIcon));
 
     AROS_LIBFUNC_EXIT
     

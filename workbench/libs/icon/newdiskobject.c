@@ -60,13 +60,8 @@
     for (i = 0; i < 2; i++)
         ni->ni_Image[i].TransparentColor = -1;
 
-    if (AddFreeList(&ni->ni_FreeList, ni, sizeof(struct NativeIcon)))
-    {
-        AddIconToList(ni, IconBase);
-        result = &ni->ni_DiskObject;
-    }
-    else
-        FreeMem(ni, sizeof(struct NativeIcon));
+    AddIconToList(ni, IconBase);
+    result = &ni->ni_DiskObject;
 
     return result;
 

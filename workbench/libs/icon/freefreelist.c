@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -40,21 +40,16 @@
 
     INTERNALS
 
-    HISTORY
-	2006-04-10 Test for NULL pointer added
-	
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
+    struct MemList *node;
+
     if ( ! freelist) return;
     
-    while (!IsListEmpty(&freelist->fl_MemList))
-    {
-	struct MemList *node = (struct MemList*)freelist->fl_MemList.lh_Head;
-	Remove ((struct Node*)node);
-	FreeEntry (node);
-    }
+    while ((node = (struct MemList *)RemTail(&freelist->fl_MemList)) != NULL)
+        FreeEntry(node);
 
     AROS_LIBFUNC_EXIT
 } /* FreeFreeList */
