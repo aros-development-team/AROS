@@ -127,7 +127,7 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../.. \
 
 USER_CFLAGS := -ffast-math -DMAPI_MODE_UTIL -DFEATURE_GL=1 \
-                -DAROSMESA_TYPES='"arosmesa_types.h"' -DAPIMINLINE='' \
+                -DAROSMESA_TYPES='"arosmesa_types.h"' \
                 -DMAPI_ABI_HEADER=\"glapi/glapi_mapi_tmp.h\"
 
 LIB_MESA_SOURCES = \

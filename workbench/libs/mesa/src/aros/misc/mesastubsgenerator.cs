@@ -646,7 +646,7 @@ namespace glstubgenerator
 			
 			foreach (Function f in functions)
 			{
-				swMangledHeader.Write("APIMINLINE {0} m{1} (", f.ReturnType, f.Name);
+				swMangledHeader.Write("{0} m{1} (", f.ReturnType, f.Name);
 				if (f.Arguments.Count > 0)
 				{
 					int i = 0;
@@ -671,7 +671,7 @@ namespace glstubgenerator
 
 			foreach (Function f in functions)
 			{
-				swMangledImplementation.Write("inline {0} m{1} (", f.ReturnType, f.Name);
+				swMangledImplementation.Write("{0} m{1} (", f.ReturnType, f.Name);
 				if (f.Arguments.Count > 0)
 				{
 					int i = 0;
