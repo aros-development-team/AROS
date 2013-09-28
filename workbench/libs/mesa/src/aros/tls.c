@@ -80,6 +80,19 @@ VOID ClearFromTLS(struct TaskLocalStorage * tls)
     /* Clearing is inserting a NULL. Element can't be removed from list - since
        there is no read locking, altering structure of list when other tasks
        are reading it, would cause crashes */
+    /* TODO: How real clearing can be achieved:
+     * a) acquire write lock
+     * b) copy all element (copy not relink!) from _current list to _new list except for the element that
+     *    is beeing cleared
+     * c) _old = _current, _current = _new
+     * d) release write lock
+     *
+     * How to delete _old? It can't be deleted right away, because some read tasks can be iterating over it.
+     * a) put it on garbage collect list (the whole list, not relinking nodes!) and clear it when shutting down
+     * b) use memory pool to allocate all TLS objects and clear pool at shutdown
+     *
+     * Solution b is much easier and convenient
+     */
     InsertIntoTLS(tls, NULL);
 }
 
