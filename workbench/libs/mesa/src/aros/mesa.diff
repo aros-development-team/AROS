@@ -1,6 +1,6 @@
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/include/EGL/eglplatform.h ./mesa/include/EGL/eglplatform.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/include/EGL/eglplatform.h ./mesa/include/EGL/eglplatform.h
 --- /data/deadwood/source/Mesa-7.11-staging/include/EGL/eglplatform.h	2011-07-09 03:37:09.000000000 +0200
-+++ ./mesa/include/EGL/eglplatform.h	2011-09-05 20:03:01.000000000 +0200
++++ ./mesa/include/EGL/eglplatform.h	2011-10-18 19:34:24.000000000 +0200
 @@ -90,6 +90,14 @@
  typedef struct gbm_bo      *EGLNativePixmapType;
  typedef void               *EGLNativeWindowType;
@@ -16,7 +16,18 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #elif defined(__unix__) || defined(__unix)
  
  #ifdef MESA_EGL_NO_X11_HEADERS
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglcompiler.h ./mesa/src/egl/main/eglcompiler.h
+@@ -127,6 +135,10 @@
+  * handles are 64 bit types, then EGLint should be defined as a signed 64-bit
+  * integer type.
+  */
++#if !defined(__AROS__)
+ typedef khronos_int32_t EGLint;
++#else
++typedef SIPTR EGLint;
++#endif
+ 
+ #endif /* __eglplatform_h */
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglcompiler.h ./mesa/src/egl/main/eglcompiler.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglcompiler.h	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/egl/main/eglcompiler.h	2011-09-05 20:03:01.000000000 +0200
 @@ -36,6 +36,7 @@
@@ -27,9 +38,9 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #elif defined(_MSC_VER)
     typedef __int8             int8_t;
     typedef unsigned __int8    uint8_t;
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglconfig.c ./mesa/src/egl/main/eglconfig.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglconfig.c ./mesa/src/egl/main/eglconfig.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglconfig.c	2011-07-09 03:37:09.000000000 +0200
-+++ ./mesa/src/egl/main/eglconfig.c	2011-09-05 20:03:01.000000000 +0200
++++ ./mesa/src/egl/main/eglconfig.c	2012-01-21 18:22:14.000000000 +0100
 @@ -263,7 +263,7 @@
  
     /* check attributes by their types */
@@ -48,7 +59,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  _eglFallbackCompare(const _EGLConfig *conf1, const _EGLConfig *conf2,
                     void *priv_data)
  {
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglcurrent.c ./mesa/src/egl/main/eglcurrent.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglcurrent.c ./mesa/src/egl/main/eglcurrent.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglcurrent.c	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/egl/main/eglcurrent.c	2011-09-05 20:03:01.000000000 +0200
 @@ -108,6 +108,55 @@
@@ -107,7 +118,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #else /* PTHREADS */
  static const _EGLThreadInfo *_egl_TSD;
  static void (*_egl_FreeTSD)(_EGLThreadInfo *);
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egldisplay.c ./mesa/src/egl/main/egldisplay.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egldisplay.c ./mesa/src/egl/main/egldisplay.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egldisplay.c	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/egl/main/egldisplay.c	2011-09-05 20:03:01.000000000 +0200
 @@ -59,7 +59,8 @@
@@ -136,7 +147,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
        dpy = dpy->Next;
     }
  
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egldisplay.h ./mesa/src/egl/main/egldisplay.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egldisplay.h ./mesa/src/egl/main/egldisplay.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egldisplay.h	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/egl/main/egldisplay.h	2011-09-05 20:03:01.000000000 +0200
 @@ -44,6 +44,7 @@
@@ -147,9 +158,9 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
     _EGL_NUM_PLATFORMS,
     _EGL_INVALID_PLATFORM = -1
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egldriver.c ./mesa/src/egl/main/egldriver.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egldriver.c ./mesa/src/egl/main/egldriver.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egldriver.c	2011-07-09 03:37:09.000000000 +0200
-+++ ./mesa/src/egl/main/egldriver.c	2011-09-05 20:03:01.000000000 +0200
++++ ./mesa/src/egl/main/egldriver.c	2012-01-22 09:08:51.000000000 +0100
 @@ -32,7 +32,6 @@
   * Functions for choosing and opening/loading device drivers.
   */
@@ -250,7 +261,21 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
     _eglPreloadForEach(search_path, callback, callback_data);
  }
 +#endif
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egllog.c ./mesa/src/egl/main/egllog.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egldriver.h ./mesa/src/egl/main/egldriver.h
+--- /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egldriver.h	2011-07-09 03:37:09.000000000 +0200
++++ ./mesa/src/egl/main/egldriver.h	2012-01-21 16:25:55.000000000 +0100
+@@ -95,6 +95,10 @@
+ extern _EGLDriver *
+ _eglBuiltInDriverGLX(const char *args);
+ 
++#if defined(_EGL_OS_AROS)
++extern _EGLDriver *
++_eglBuiltInDriverAROSMesa(const char *args);
++#endif
+ 
+ PUBLIC _EGLDriver *
+ _eglMain(const char *args);
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egllog.c ./mesa/src/egl/main/egllog.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egllog.c	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/egl/main/egllog.c	2011-09-05 20:03:01.000000000 +0200
 @@ -56,11 +56,18 @@
@@ -303,7 +328,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
     /* it is fine to call _eglLog now */
     if (log_env && level < 0) {
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglmutex.h ./mesa/src/egl/main/eglmutex.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglmutex.h ./mesa/src/egl/main/eglmutex.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/egl/main/eglmutex.h	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/egl/main/eglmutex.h	2011-09-05 20:03:01.000000000 +0200
 @@ -63,6 +63,48 @@
@@ -355,7 +380,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #else
  
  typedef int _EGLMutex;
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egltypedefs.h ./mesa/src/egl/main/egltypedefs.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egltypedefs.h ./mesa/src/egl/main/egltypedefs.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egltypedefs.h	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/egl/main/egltypedefs.h	2011-09-05 20:03:01.000000000 +0200
 @@ -38,6 +38,12 @@
@@ -371,7 +396,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  typedef struct _egl_api _EGLAPI;
  
  typedef struct _egl_array _EGLArray;
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/os/os_thread.h ./mesa/src/gallium/auxiliary/os/os_thread.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/os/os_thread.h ./mesa/src/gallium/auxiliary/os/os_thread.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/os/os_thread.h	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/auxiliary/os/os_thread.h	2011-09-05 20:03:01.000000000 +0200
 @@ -237,6 +237,63 @@
@@ -438,7 +463,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #else
  
  #include "os/os_time.h"
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/os/os_time.c ./mesa/src/gallium/auxiliary/os/os_time.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/os/os_time.c ./mesa/src/gallium/auxiliary/os/os_time.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/os/os_time.c	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/auxiliary/os/os_time.c	2011-09-05 20:03:01.000000000 +0200
 @@ -35,7 +35,7 @@
@@ -459,7 +484,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
     struct timeval tv;
     gettimeofday(&tv, NULL);
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/os/os_time.h ./mesa/src/gallium/auxiliary/os/os_time.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/os/os_time.h ./mesa/src/gallium/auxiliary/os/os_time.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/os/os_time.h	2010-04-27 23:41:59.000000000 +0200
 +++ ./mesa/src/gallium/auxiliary/os/os_time.h	2011-08-31 12:37:34.000000000 +0200
 @@ -38,7 +38,7 @@
@@ -480,9 +505,9 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #define os_time_sleep(_usecs) usleep(_usecs)
  #else
  void
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/util/u_atomic.h ./mesa/src/gallium/auxiliary/util/u_atomic.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/util/u_atomic.h ./mesa/src/gallium/auxiliary/util/u_atomic.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/util/u_atomic.h	2010-10-19 19:58:28.000000000 +0200
-+++ ./mesa/src/gallium/auxiliary/util/u_atomic.h	2011-08-31 12:37:34.000000000 +0200
++++ ./mesa/src/gallium/auxiliary/util/u_atomic.h	2011-12-17 11:25:59.000000000 +0100
 @@ -29,8 +29,12 @@
  #define PIPE_ATOMIC_ASM_MSVC_X86                
  #elif (defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86))
@@ -566,10 +591,15 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
  
  /* Implementation using GCC-provided synchronization intrinsics
-@@ -343,6 +410,64 @@
- #endif
+@@ -338,6 +405,64 @@
  
- 
+ #ifdef __cplusplus
+ }
++#endif
++
++#endif
++
++
 +#if defined(PIPE_ATOMIC_OS_AROS_CPU_M68K)
 +
 +#define PIPE_ATOMIC "AROS OS atomic functions"
@@ -591,7 +621,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
 +   /* FIXME: AROS needs an atomic decrement and return... */
 +   Disable();
 +   AROS_ATOMIC_DEC(*(LONG *)v);
-+   n = (*v != 0) ? TRUE : FALSE;
++   n = (*v == 0) ? TRUE : FALSE;
 +   Enable();
 +
 +   return n;
@@ -623,15 +653,10 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
 +
 +#ifdef __cplusplus
 +}
-+#endif
-+
-+#endif
-+
-+
- #ifndef PIPE_ATOMIC
- #error "No pipe_atomic implementation selected"
  #endif
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/util/u_math.c ./mesa/src/gallium/auxiliary/util/u_math.c
+ 
+ #endif
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/util/u_math.c ./mesa/src/gallium/auxiliary/util/u_math.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/util/u_math.c	2010-02-05 01:10:39.000000000 +0100
 +++ ./mesa/src/gallium/auxiliary/util/u_math.c	2011-08-31 12:37:34.000000000 +0200
 @@ -42,6 +42,13 @@
@@ -648,7 +673,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
  /** log2(x), for x in [1.0, 2.0) */
  float log2_table[LOG2_TABLE_SIZE];
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/util/u_math.h ./mesa/src/gallium/auxiliary/util/u_math.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/util/u_math.h ./mesa/src/gallium/auxiliary/util/u_math.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/util/u_math.h	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/auxiliary/util/u_math.h	2011-09-05 20:03:01.000000000 +0200
 @@ -411,6 +411,8 @@
@@ -676,7 +701,21 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #else
     /* K&R classic bitcount.
      *
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nouveau/nouveau_fence.c ./mesa/src/gallium/drivers/nouveau/nouveau_fence.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/i915/i915_prim_vbuf.c ./mesa/src/gallium/drivers/i915/i915_prim_vbuf.c
+--- /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/i915/i915_prim_vbuf.c	2011-07-09 03:37:09.000000000 +0200
++++ ./mesa/src/gallium/drivers/i915/i915_prim_vbuf.c	2011-12-17 11:25:59.000000000 +0100
+@@ -400,8 +400,8 @@
+    case PIPE_PRIM_LINE_LOOP:
+       if (nr >= 2) {
+          for (i = start + 1; i < end; i++)
+-            OUT_BATCH((i-0) | (i+0) << 16);
+-         OUT_BATCH((i-0) | ( start) << 16);
++            OUT_BATCH((i-1) | (i+0) << 16);
++         OUT_BATCH((i-1) | ( start) << 16);
+       }
+       break;
+    case PIPE_PRIM_QUADS:
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nouveau/nouveau_fence.c ./mesa/src/gallium/drivers/nouveau/nouveau_fence.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nouveau/nouveau_fence.c	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/drivers/nouveau/nouveau_fence.c	2011-10-01 18:30:20.000000000 +0200
 @@ -31,6 +31,10 @@
@@ -730,7 +769,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
 +
     nouveau_fence_new(screen, &screen->fence.current, FALSE);
  }
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nv50/nv50_tgsi_to_nc.c ./mesa/src/gallium/drivers/nv50/nv50_tgsi_to_nc.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nv50/nv50_tgsi_to_nc.c ./mesa/src/gallium/drivers/nv50/nv50_tgsi_to_nc.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nv50/nv50_tgsi_to_nc.c	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/drivers/nv50/nv50_tgsi_to_nc.c	2011-09-05 20:03:01.000000000 +0200
 @@ -1480,7 +1480,7 @@
@@ -742,7 +781,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
     const int tic = insn->Src[1].Register.Index;
     const int tsc = tic;
     const int cube = (insn->Texture.Texture  == TGSI_TEXTURE_CUBE) ? 1 : 0;
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nvfx/nv30_fragtex.c ./mesa/src/gallium/drivers/nvfx/nv30_fragtex.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nvfx/nv30_fragtex.c ./mesa/src/gallium/drivers/nvfx/nv30_fragtex.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nvfx/nv30_fragtex.c	2011-04-08 21:31:18.000000000 +0200
 +++ ./mesa/src/gallium/drivers/nvfx/nv30_fragtex.c	2011-09-30 21:45:16.000000000 +0200
 @@ -9,7 +9,9 @@
@@ -765,7 +804,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  	ps->filt |= (int)(cso->lod_bias * 256.0) & 0x1fff;
  
  	ps->max_lod = (int)CLAMP(cso->max_lod, 0.0, 15.0);
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nvfx/nv40_fragtex.c ./mesa/src/gallium/drivers/nvfx/nv40_fragtex.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nvfx/nv40_fragtex.c ./mesa/src/gallium/drivers/nvfx/nv40_fragtex.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/drivers/nvfx/nv40_fragtex.c	2011-04-08 21:31:18.000000000 +0200
 +++ ./mesa/src/gallium/drivers/nvfx/nv40_fragtex.c	2011-09-30 21:45:16.000000000 +0200
 @@ -8,7 +8,9 @@
@@ -788,7 +827,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  	ps->filt |= (int)(cso->lod_bias * 256.0) & 0x1fff;
  
  	ps->max_lod = (int)(CLAMP(cso->max_lod, 0.0, 15.0 + (255.0 / 256.0)) * 256.0);
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/include/pipe/p_config.h ./mesa/src/gallium/include/pipe/p_config.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/include/pipe/p_config.h ./mesa/src/gallium/include/pipe/p_config.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/include/pipe/p_config.h	2011-08-01 05:23:42.000000000 +0200
 +++ ./mesa/src/gallium/include/pipe/p_config.h	2011-09-05 20:03:01.000000000 +0200
 @@ -82,10 +82,18 @@
@@ -847,9 +886,9 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  /*
   * Try to auto-detect the subsystem.
   * 
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d_api.c ./mesa/src/gallium/state_trackers/egl/common/egl_g3d_api.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d_api.c ./mesa/src/gallium/state_trackers/egl/common/egl_g3d_api.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d_api.c	2011-07-09 03:37:09.000000000 +0200
-+++ ./mesa/src/gallium/state_trackers/egl/common/egl_g3d_api.c	2011-09-05 20:03:01.000000000 +0200
++++ ./mesa/src/gallium/state_trackers/egl/common/egl_g3d_api.c	2012-01-22 09:28:44.000000000 +0100
 @@ -86,7 +86,7 @@
     return stapi;
  }
@@ -859,7 +898,36 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  egl_g3d_compare_config(const _EGLConfig *conf1, const _EGLConfig *conf2,
                         void *priv_data)
  {
-@@ -247,6 +247,7 @@
+@@ -125,6 +125,28 @@
+ 
+    if (!num_configs)
+       return _eglError(EGL_BAD_PARAMETER, "eglChooseConfigs");
++#if defined(_EGL_OS_AROS)
++    /* This is the earliest place where client indicates which API is it interested in. Due to fact that
++     * HostGL is not providing Gallium st_api, we detected if we are capable of continuing with Gallium EGL
++     * driver and if not we "chain load" the display into AROSMesa EGL driver
++     */
++   int j = -1;
++   while (attribs[++j] != EGL_NONE)
++   {
++       if (attribs[j] == EGL_RENDERABLE_TYPE)
++       {
++           if (attribs[++j] == EGL_OPENGL_BIT)
++           {
++               if (egl_g3d_get_st_api(drv, EGL_OPENGL_BIT) == NULL)
++               {
++                   dpy->Driver = _eglBuiltInDriverAROSMesa(NULL);
++                   dpy->Driver->API.Initialize(dpy->Driver, dpy);
++                   return dpy->Driver->API.ChooseConfig(dpy->Driver, dpy,attribs, configs, size, num_configs);
++               }
++           }
++       }
++   }
++#endif
+ 
+    if (!_eglParseConfigAttribList(&criteria, dpy, attribs))
+       return _eglError(EGL_BAD_ATTRIBUTE, "eglChooseConfig");
+@@ -247,6 +269,7 @@
     struct egl_g3d_surface *gsurf;
     struct native_surface *nsurf;
     const char *err;
@@ -867,7 +935,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
     switch (arg->type) {
     case EGL_WINDOW_BIT:
-@@ -304,8 +305,9 @@
+@@ -304,8 +327,9 @@
        return NULL;
     }
     /* initialize the geometry */
@@ -879,7 +947,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
        nsurf->destroy(nsurf);
        FREE(gsurf);
        return NULL;
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d.c ./mesa/src/gallium/state_trackers/egl/common/egl_g3d.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d.c ./mesa/src/gallium/state_trackers/egl/common/egl_g3d.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d.c	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/state_trackers/egl/common/egl_g3d.c	2011-09-05 20:03:01.000000000 +0200
 @@ -56,6 +56,7 @@
@@ -950,7 +1018,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
        /* TODO support for hotplug */
        native_modes =
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d_loader.h ./mesa/src/gallium/state_trackers/egl/common/egl_g3d_loader.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d_loader.h ./mesa/src/gallium/state_trackers/egl/common/egl_g3d_loader.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d_loader.h	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/state_trackers/egl/common/egl_g3d_loader.h	2011-09-05 20:03:01.000000000 +0200
 @@ -40,8 +40,10 @@
@@ -964,7 +1032,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  };
  
  _EGLDriver *
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d_st.c ./mesa/src/gallium/state_trackers/egl/common/egl_g3d_st.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d_st.c ./mesa/src/gallium/state_trackers/egl/common/egl_g3d_st.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/egl_g3d_st.c	2011-07-07 02:04:59.000000000 +0200
 +++ ./mesa/src/gallium/state_trackers/egl/common/egl_g3d_st.c	2011-09-05 20:03:01.000000000 +0200
 @@ -207,6 +207,7 @@
@@ -991,7 +1059,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
     for (i = 0; i < count; i++) {
        struct pipe_resource *tex;
        int natt;
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/native.h ./mesa/src/gallium/state_trackers/egl/common/native.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/native.h ./mesa/src/gallium/state_trackers/egl/common/native.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/egl/common/native.h	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/state_trackers/egl/common/native.h	2011-09-05 20:03:01.000000000 +0200
 @@ -220,10 +220,12 @@
@@ -1022,7 +1090,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
 +
  #endif /* _NATIVE_H_ */
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/api.h ./mesa/src/gallium/state_trackers/vega/api.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/api.h ./mesa/src/gallium/state_trackers/vega/api.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/api.h	2011-01-23 03:05:41.000000000 +0100
 +++ ./mesa/src/gallium/state_trackers/vega/api.h	2011-08-31 12:37:41.000000000 +0200
 @@ -33,6 +33,11 @@
@@ -1037,7 +1105,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #include "api_tmp.h"
  
  struct mapi_table;
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/mask.c ./mesa/src/gallium/state_trackers/vega/mask.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/mask.c ./mesa/src/gallium/state_trackers/vega/mask.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/mask.c	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/state_trackers/vega/mask.c	2011-09-05 20:03:01.000000000 +0200
 @@ -384,9 +384,11 @@
@@ -1052,7 +1120,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
     mask_resource_fill(layer->sampler_view->texture,
                        x, y, width, height, value);
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/path.c ./mesa/src/gallium/state_trackers/vega/path.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/path.c ./mesa/src/gallium/state_trackers/vega/path.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/path.c	2011-01-23 03:05:41.000000000 +0100
 +++ ./mesa/src/gallium/state_trackers/vega/path.c	2011-09-05 20:03:01.000000000 +0200
 @@ -1093,8 +1093,8 @@
@@ -1066,7 +1134,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
        pd->ox = x3;
        pd->oy = y3;
        pd->px = x2;
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/vgu.c ./mesa/src/gallium/state_trackers/vega/vgu.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/vgu.c ./mesa/src/gallium/state_trackers/vega/vgu.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/vgu.c	2011-05-13 01:47:18.000000000 +0200
 +++ ./mesa/src/gallium/state_trackers/vega/vgu.c	2011-09-03 13:11:05.000000000 +0200
 @@ -37,6 +37,10 @@
@@ -1080,7 +1148,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
  static void vgu_append_float_coords(VGPath path,
                                      const VGubyte *cmds,
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/targets/egl-static/egl.c ./mesa/src/gallium/targets/egl-static/egl.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/targets/egl-static/egl.c ./mesa/src/gallium/targets/egl-static/egl.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/targets/egl-static/egl.c	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/targets/egl-static/egl.c	2011-09-05 20:03:01.000000000 +0200
 @@ -60,6 +60,7 @@
@@ -1110,10 +1178,10 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
     return &egl_g3d_loader;
  }
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/targets/egl-static/st_GL.c ./mesa/src/gallium/targets/egl-static/st_GL.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/targets/egl-static/st_GL.c ./mesa/src/gallium/targets/egl-static/st_GL.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/targets/egl-static/st_GL.c	2011-07-09 03:37:09.000000000 +0200
-+++ ./mesa/src/gallium/targets/egl-static/st_GL.c	2011-09-05 20:03:01.000000000 +0200
-@@ -1,38 +1,30 @@
++++ ./mesa/src/gallium/targets/egl-static/st_GL.c	2012-01-21 20:54:03.000000000 +0100
+@@ -1,38 +1,33 @@
 -/*
 - * Mesa 3-D graphics library
 - * Version:  7.10
@@ -1174,11 +1242,14 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  {
 -   return st_gl_api_create();
 +    if (MesaBase)
++    {
 +        CloseLibrary(MesaBase);
++        MesaBase = NULL;
++    }
  }
 +
 +ADD2EXPUNGELIB(CloseMesa, 5)
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glsl/ir_function.cpp ./mesa/src/glsl/ir_function.cpp
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glsl/ir_function.cpp ./mesa/src/glsl/ir_function.cpp
 --- /data/deadwood/source/Mesa-7.11-staging/src/glsl/ir_function.cpp	2011-07-20 01:39:56.000000000 +0200
 +++ ./mesa/src/glsl/ir_function.cpp	2011-09-05 20:03:01.000000000 +0200
 @@ -111,7 +111,7 @@
@@ -1190,7 +1261,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
        switch ((enum ir_variable_mode)(param->mode)) {
        case ir_var_auto:
        case ir_var_uniform:
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glsl/ir.h ./mesa/src/glsl/ir.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glsl/ir.h ./mesa/src/glsl/ir.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/glsl/ir.h	2011-07-23 10:54:07.000000000 +0200
 +++ ./mesa/src/glsl/ir.h	2011-09-05 20:03:01.000000000 +0200
 @@ -41,6 +41,14 @@
@@ -1208,7 +1279,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  /**
   * Class tags
   *
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glsl/ralloc.c ./mesa/src/glsl/ralloc.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glsl/ralloc.c ./mesa/src/glsl/ralloc.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/glsl/ralloc.c	2011-07-09 03:31:41.000000000 +0200
 +++ ./mesa/src/glsl/ralloc.c	2011-09-05 20:03:01.000000000 +0200
 @@ -28,6 +28,10 @@
@@ -1222,7 +1293,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #include "ralloc.h"
  
  #ifdef __GNUC__
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glsl/ralloc.h ./mesa/src/glsl/ralloc.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glsl/ralloc.h ./mesa/src/glsl/ralloc.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/glsl/ralloc.h	2011-07-09 03:31:41.000000000 +0200
 +++ ./mesa/src/glsl/ralloc.h	2011-09-05 20:03:01.000000000 +0200
 @@ -53,7 +53,9 @@
@@ -1235,7 +1306,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
  /**
   * \def ralloc(ctx, type)
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glsl/s_expression.cpp ./mesa/src/glsl/s_expression.cpp
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glsl/s_expression.cpp ./mesa/src/glsl/s_expression.cpp
 --- /data/deadwood/source/Mesa-7.11-staging/src/glsl/s_expression.cpp	2011-07-09 03:32:30.000000000 +0200
 +++ ./mesa/src/glsl/s_expression.cpp	2011-09-05 20:03:01.000000000 +0200
 @@ -25,6 +25,11 @@
@@ -1250,7 +1321,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  s_symbol::s_symbol(const char *tmp, size_t n)
  {
     this->str = ralloc_strndup (this, tmp, n);
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glu/sgi/include/gluos.h ./mesa/src/glu/sgi/include/gluos.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glu/sgi/include/gluos.h ./mesa/src/glu/sgi/include/gluos.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/glu/sgi/include/gluos.h	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/glu/sgi/include/gluos.h	2011-09-05 20:03:01.000000000 +0200
 @@ -2,6 +2,13 @@
@@ -1267,7 +1338,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #ifdef __VMS
  #ifdef __cplusplus
  #pragma message disable nocordel
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glu/sgi/libutil/mipmap.c ./mesa/src/glu/sgi/libutil/mipmap.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glu/sgi/libutil/mipmap.c ./mesa/src/glu/sgi/libutil/mipmap.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/glu/sgi/libutil/mipmap.c	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/glu/sgi/libutil/mipmap.c	2011-09-05 20:03:01.000000000 +0200
 @@ -4886,7 +4886,7 @@
@@ -1315,7 +1386,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
     int elementsPerLine;
     const GLushort *iter2;
     int ii, jj, dd, k;
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/gl_API.xml ./mesa/src/mapi/glapi/gen/gl_API.xml
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/gl_API.xml ./mesa/src/mapi/glapi/gen/gl_API.xml
 --- /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/gl_API.xml	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/mapi/glapi/gen/gl_API.xml	2011-09-05 20:03:01.000000000 +0200
 @@ -12318,7 +12318,7 @@
@@ -1327,7 +1398,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
      </function>
      <function name="GetTexParameterPointervAPPLE" offset="assign" static_dispatch="false">
          <param name="target" type="GLenum"/>
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/gl_procs.py ./mesa/src/mapi/glapi/gen/gl_procs.py
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/gl_procs.py ./mesa/src/mapi/glapi/gen/gl_procs.py
 --- /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/gl_procs.py	2011-01-06 01:19:15.000000000 +0100
 +++ ./mesa/src/mapi/glapi/gen/gl_procs.py	2011-09-08 18:20:04.000000000 +0200
 @@ -107,7 +107,11 @@
@@ -1343,7 +1414,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  					self.printFunctionString( n )
  					
  					if func.has_different_protocol(n):
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/gl_XML.py ./mesa/src/mapi/glapi/gen/gl_XML.py
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/gl_XML.py ./mesa/src/mapi/glapi/gen/gl_XML.py
 --- /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/gl_XML.py	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/mapi/glapi/gen/gl_XML.py	2011-09-05 20:03:01.000000000 +0200
 @@ -629,8 +629,9 @@
@@ -1358,7 +1429,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
  		self.entry_points.append( name )
  		if alias:
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/Makefile ./mesa/src/mapi/glapi/gen/Makefile
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/Makefile ./mesa/src/mapi/glapi/gen/Makefile
 --- /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/gen/Makefile	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/mapi/glapi/gen/Makefile	2011-09-05 20:03:01.000000000 +0200
 @@ -5,7 +5,9 @@
@@ -1390,7 +1461,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
  ######################################################################
  
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/glapi_entrypoint.c ./mesa/src/mapi/glapi/glapi_entrypoint.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/glapi_entrypoint.c ./mesa/src/mapi/glapi/glapi_entrypoint.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/glapi_entrypoint.c	2010-10-19 19:58:29.000000000 +0200
 +++ ./mesa/src/mapi/glapi/glapi_entrypoint.c	2011-09-05 20:03:01.000000000 +0200
 @@ -309,10 +309,12 @@
@@ -1406,7 +1477,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
  
  _glapi_proc
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/glapi_gentable.c ./mesa/src/mapi/glapi/glapi_gentable.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/glapi_gentable.c ./mesa/src/mapi/glapi/glapi_gentable.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/glapi_gentable.c	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/mapi/glapi/glapi_gentable.c	2011-09-07 20:43:14.000000000 +0200
 @@ -27,6 +27,7 @@
@@ -1437,7 +1508,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  }
 +#endif
  
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/glapi.h ./mesa/src/mapi/glapi/glapi.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/glapi.h ./mesa/src/mapi/glapi/glapi.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/mapi/glapi/glapi.h	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/mapi/glapi/glapi.h	2011-09-05 20:03:01.000000000 +0200
 @@ -92,6 +92,17 @@
@@ -1458,9 +1529,9 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #else
  
  _GLAPI_EXPORT extern struct _glapi_table *_glapi_Dispatch;
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/mapi/u_current.c ./mesa/src/mapi/mapi/u_current.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/mapi/u_current.c ./mesa/src/mapi/mapi/u_current.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/mapi/mapi/u_current.c	2011-07-09 03:37:10.000000000 +0200
-+++ ./mesa/src/mapi/mapi/u_current.c	2011-09-05 20:03:01.000000000 +0200
++++ ./mesa/src/mapi/mapi/u_current.c	2011-12-17 11:25:59.000000000 +0100
 @@ -108,9 +108,17 @@
  
  #else
@@ -1506,16 +1577,20 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #else
     u_current_table = (struct mapi_table *) tbl;
  #endif
-@@ -260,6 +274,8 @@
+@@ -260,6 +274,12 @@
  #elif defined(THREADS)
     return (struct mapi_table *) ((ThreadSafe) ?
           u_tsd_get(&u_current_table_tsd) : (void *) u_current_table);
 +#elif defined(__AROS__)
-+   return (struct mapi_table *)GetFromTLS(u_current_table);
++   struct mapi_table *tbl;
++   tbl = (struct mapi_table *)GetFromTLS(u_current_table);
++   if (tbl == NULL)
++       tbl = (struct mapi_table *) table_noop_array;
++   return tbl;
  #else
     return u_current_table;
  #endif
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/mapi/u_current.h ./mesa/src/mapi/mapi/u_current.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mapi/mapi/u_current.h ./mesa/src/mapi/mapi/u_current.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/mapi/mapi/u_current.h	2011-05-13 01:47:18.000000000 +0200
 +++ ./mesa/src/mapi/mapi/u_current.h	2011-09-05 20:03:01.000000000 +0200
 @@ -36,6 +36,8 @@
@@ -1545,7 +1620,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #else
     return likely(u_current_user) ? u_current_user : u_current_get_user_internal();
  #endif
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/compiler.h ./mesa/src/mesa/main/compiler.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/compiler.h ./mesa/src/mesa/main/compiler.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/compiler.h	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/mesa/main/compiler.h	2011-09-05 20:03:01.000000000 +0200
 @@ -255,6 +255,8 @@
@@ -1567,7 +1642,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  #if !defined(_WIN32_WCE)
  #if defined(BUILD_FOR_SNAP) && defined(CHECKED)
  #  define ASSERT(X)   _CHECK(X) 
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/dispatch.h ./mesa/src/mesa/main/dispatch.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/dispatch.h ./mesa/src/mesa/main/dispatch.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/dispatch.h	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/mesa/main/dispatch.h	2011-09-07 20:43:00.000000000 +0200
 @@ -12099,14 +12099,14 @@
@@ -1587,7 +1662,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
     SET_by_offset(disp, _gloffset_TextureRangeAPPLE, fn);
  }
  
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/dlist.c ./mesa/src/mesa/main/dlist.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/dlist.c ./mesa/src/mesa/main/dlist.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/dlist.c	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/mesa/main/dlist.c	2011-09-05 20:03:01.000000000 +0200
 @@ -7541,6 +7541,7 @@
@@ -1628,7 +1703,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
              break;
           case OPCODE_CLEAR_BUFFER_FI:
              /*CALL_ClearBufferfi(ctx->Exec, (n[1].e, n[2].i, n[3].f, n[4].i));*/
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/imports.c ./mesa/src/mesa/main/imports.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/imports.c ./mesa/src/mesa/main/imports.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/imports.c	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/mesa/main/imports.c	2011-09-05 20:03:01.000000000 +0200
 @@ -453,14 +453,14 @@
@@ -1657,7 +1732,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
     ((_GNUC__ == 3 && __GNUC_MINOR__ < 4) && __GNUC__ < 4)
  /**
   * Return number of bits set in given GLuint.
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/imports.h ./mesa/src/mesa/main/imports.h
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/imports.h ./mesa/src/mesa/main/imports.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/imports.h	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/mesa/main/imports.h	2011-09-05 20:03:01.000000000 +0200
 @@ -560,7 +560,7 @@
@@ -1669,7 +1744,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
  #ifdef __MINGW32__
  #define ffs __builtin_ffs
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/querymatrix.c ./mesa/src/mesa/main/querymatrix.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/querymatrix.c ./mesa/src/mesa/main/querymatrix.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/querymatrix.c	2010-12-14 22:43:15.000000000 +0100
 +++ ./mesa/src/mesa/main/querymatrix.c	2011-08-31 12:37:50.000000000 +0200
 @@ -76,6 +76,10 @@
@@ -1683,7 +1758,7 @@ diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Da
  
  #elif !defined(_XOPEN_SOURCE) || _XOPEN_SOURCE < 600
  
-diff -ur --exclude-from=./mesa/src/aros/mesa.diff.excluded -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/version.c ./mesa/src/mesa/main/version.c
+diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/version.c ./mesa/src/mesa/main/version.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/mesa/main/version.c	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/mesa/main/version.c	2011-09-05 20:03:01.000000000 +0200
 @@ -25,7 +25,9 @@
