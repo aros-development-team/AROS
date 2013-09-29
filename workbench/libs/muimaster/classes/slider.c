@@ -6,8 +6,6 @@
     $Id$
 */
 
-#include <devices/rawkeycodes.h>
-
 #include <string.h>
 
 #include <clib/alib_protos.h>
@@ -108,7 +106,7 @@ IPTR Slider__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     data->flags = flags;
 
-    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
+    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
     data->ehn.ehn_Priority = 0;
     data->ehn.ehn_Flags = 0;
     data->ehn.ehn_Object = obj;
@@ -391,8 +389,7 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
-    IPTR result = 0;
-    BOOL increase, change = FALSE;
+    BOOL increase;
 
     if (!msg->imsg)
         return 0;
@@ -499,65 +496,9 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             }
         }
         break;
-
-    case IDCMP_RAWKEY:
-        if (XGET(_win(obj), MUIA_Window_ActiveObject) == (IPTR)obj)
-        {
-            change = TRUE;
-            switch (msg->imsg->Code)
-            {
-            case RAWKEY_UP:
-                increase = (data->flags & SLIDER_HORIZ) != 0;
-                if (XGET(obj, MUIA_Numeric_RevUpDown))
-                    increase = !increase;
-                break;
-            case RAWKEY_DOWN:
-                increase = (data->flags & SLIDER_HORIZ) == 0;
-                if (XGET(obj, MUIA_Numeric_RevUpDown))
-                    increase = !increase;
-                break;
-            case RAWKEY_LEFT:
-                increase = FALSE;
-                if (XGET(obj, MUIA_Numeric_RevLeftRight))
-                    increase = !increase;
-                break;
-            case RAWKEY_RIGHT:
-                increase = TRUE;
-                if (XGET(obj, MUIA_Numeric_RevLeftRight))
-                    increase = !increase;
-                break;
-            default:
-                change = FALSE;
-            }
-        }
-        if (!change && _isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
-        {
-            change = TRUE;
-            switch (msg->imsg->Code)
-            {
-            case RAWKEY_NM_WHEEL_UP:
-                increase = (data->flags & SLIDER_HORIZ) != 0;
-                break;
-            case RAWKEY_NM_WHEEL_DOWN:
-                increase = (data->flags & SLIDER_HORIZ) == 0;
-                break;
-            default:
-                change = FALSE;
-            }
-        }
-        if (change)
-        {
-            if (XGET(obj, MUIA_Numeric_Reverse))
-                increase = !increase;
-            DoMethod(obj, increase ?
-                MUIM_Numeric_Increase : MUIM_Numeric_Decrease, 1);
-            result = MUI_EventHandlerRC_Eat;
-        }
-        break;
-
     }
 
-    return result;
+    return 0;
 }
 
 BOOPSI_DISPATCHER(IPTR, Slider_Dispatcher, cl, obj, msg)
