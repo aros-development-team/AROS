@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <devices/rawkeycodes.h>
 #include <stdio.h>
 
 #include <clib/alib_protos.h>
@@ -284,10 +285,15 @@ IPTR Numeric__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
+    IPTR result = 0;
+    BOOL increase, change;
 
     if (msg->muikey != MUIKEY_NONE)
     {
         LONG step;
+        BOOL use_absolute = FALSE, is_horizontal = FALSE;
+
+        result = MUI_EventHandlerRC_Eat;
 
         if (data->max - data->min < 10)
             step = 1;
@@ -306,72 +312,99 @@ IPTR Numeric__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         case MUIKEY_RELEASE:
             return MUI_EventHandlerRC_Eat;
 
-        case MUIKEY_BOTTOM:
-        case MUIKEY_LINEEND:
-            if (data->flags & NUMERIC_REVUPDOWN)
-                set(obj, MUIA_Numeric_Value, data->min);
-            else
-                set(obj, MUIA_Numeric_Value, data->max);
-            return MUI_EventHandlerRC_Eat;
-
         case MUIKEY_TOP:
         case MUIKEY_LINESTART:
-            if (data->flags & NUMERIC_REVUPDOWN)
-                set(obj, MUIA_Numeric_Value, data->max);
-            else
-                set(obj, MUIA_Numeric_Value, data->min);
-            return MUI_EventHandlerRC_Eat;
+            use_absolute = TRUE;
+            is_horizontal = TRUE;
+            step = -1;
+            break;
+
+        case MUIKEY_BOTTOM:
+        case MUIKEY_LINEEND:
+            use_absolute = TRUE;
+            is_horizontal = TRUE;
+            step = 1;
+            break;
 
         case MUIKEY_LEFT:
-            if (data->flags & NUMERIC_REVLEFTRIGHT)
-                DoMethod(obj, MUIM_Numeric_Increase, 1);
-            else
-                DoMethod(obj, MUIM_Numeric_Decrease, 1);
-            return MUI_EventHandlerRC_Eat;
+            is_horizontal = TRUE;
+            step = -1;
+            break;
 
         case MUIKEY_RIGHT:
-            if (data->flags & NUMERIC_REVLEFTRIGHT)
-                DoMethod(obj, MUIM_Numeric_Decrease, 1);
-            else
-                DoMethod(obj, MUIM_Numeric_Increase, 1);
-            return MUI_EventHandlerRC_Eat;
+            is_horizontal = TRUE;
+            step = 1;
+            break;
 
         case MUIKEY_UP:
-            if (data->flags & NUMERIC_REVUPDOWN)
-                DoMethod(obj, MUIM_Numeric_Increase, 1);
-            else
-                DoMethod(obj, MUIM_Numeric_Decrease, 1);
-            return MUI_EventHandlerRC_Eat;
+            step = -1;
+            break;
 
         case MUIKEY_DOWN:
-            if (data->flags & NUMERIC_REVUPDOWN)
-                DoMethod(obj, MUIM_Numeric_Decrease, 1);
-            else
-                DoMethod(obj, MUIM_Numeric_Increase, 1);
-            return MUI_EventHandlerRC_Eat;
+            step = 1;
+            break;
 
         case MUIKEY_PAGEDOWN:
         case MUIKEY_WORDRIGHT:
-            if (data->flags & NUMERIC_REVUPDOWN)
-                DoMethod(obj, MUIM_Numeric_Decrease, step);
-            else
-                DoMethod(obj, MUIM_Numeric_Increase, step);
-            return MUI_EventHandlerRC_Eat;
+            break;
 
         case MUIKEY_PAGEUP:
         case MUIKEY_WORDLEFT:
-            if (data->flags & NUMERIC_REVUPDOWN)
-                DoMethod(obj, MUIM_Numeric_Increase, step);
-            else
-                DoMethod(obj, MUIM_Numeric_Decrease, step);
-            return MUI_EventHandlerRC_Eat;
+                step = -step;
+            break;
 
         default:
             return 0;
         }
+
+        /* Send gadget in proper direction */
+        if (step != 0)
+        {
+            if (data->flags & NUMERIC_REVERSE)
+                step = -step;
+
+            if ((is_horizontal && (data->flags & NUMERIC_REVLEFTRIGHT) != 0)
+                || (!is_horizontal && (data->flags & NUMERIC_REVUPDOWN) != 0))
+                step = -step;
+
+            if (use_absolute)
+            {
+                if (step > 0)
+                    step = data->max;
+                else
+                    step = data->min;
+                step -= data->value;
+            }
+
+            DoMethod(obj, MUIM_Numeric_Increase, step);
+        }
+    }
+    else if (msg->imsg->Class == IDCMP_RAWKEY
+        && _isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
+    {
+        change = TRUE;
+        switch (msg->imsg->Code)
+        {
+        case RAWKEY_NM_WHEEL_UP:
+            increase = FALSE;
+            break;
+        case RAWKEY_NM_WHEEL_DOWN:
+            increase = TRUE;
+            break;
+        default:
+            change = FALSE;
+        }
+        if (change)
+        {
+            if (data->flags & NUMERIC_REVERSE)
+                increase = !increase;
+            DoMethod(obj, increase ?
+                MUIM_Numeric_Increase : MUIM_Numeric_Decrease, 1);
+            result = MUI_EventHandlerRC_Eat;
+        }
     }
 
-    return 0;
+    return result;
 }
 
 
