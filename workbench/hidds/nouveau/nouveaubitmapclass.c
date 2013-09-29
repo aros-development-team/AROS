@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -95,8 +95,8 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     if (bmdata->bo == NULL)
         goto exit_fail;
 
-    bmdata->compositing = (OOP_Object *)GetTagData(aHidd_BitMap_Nouveau_CompositingHidd, 0, msg->attrList);
-    if (bmdata->compositing == NULL)
+    bmdata->compositor = (OOP_Object *)GetTagData(aHidd_BitMap_Nouveau_CompositorHidd, 0, msg->attrList);
+    if (bmdata->compositor == NULL)
         goto exit_fail;
 
     return o;
@@ -186,7 +186,7 @@ VOID METHOD(NouveauBitMap, Root, Set)
     if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
     {
         /* If there was a change requested, validate it */
-        struct pHidd_Compositing_ValidateBitMapPositionChange vbpcmsg =
+        struct pHidd_Compositor_ValidateBitMapPositionChange vbpcmsg =
         {
             mID : SD(cl)->mid_ValidateBitMapPositionChange,
             bm : o,
@@ -194,12 +194,12 @@ VOID METHOD(NouveauBitMap, Root, Set)
             newyoffset : &newyoffset
         };
         
-        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&vbpcmsg);
+        OOP_DoMethod(bmdata->compositor, (OOP_Msg)&vbpcmsg);
         
         if ((newxoffset != bmdata->xoffset) || (newyoffset != bmdata->yoffset))
         {
             /* If change passed validation, execute it */
-            struct pHidd_Compositing_BitMapPositionChanged bpcmsg =
+            struct pHidd_Compositor_BitMapPositionChanged bpcmsg =
             {
                 mID : SD(cl)->mid_BitMapPositionChanged,
                 bm : o
@@ -207,7 +207,7 @@ VOID METHOD(NouveauBitMap, Root, Set)
 
             HIDDNouveauSetOffsets(o, newxoffset, newyoffset);
         
-            OOP_DoMethod(bmdata->compositing, (OOP_Msg)&bpcmsg);
+            OOP_DoMethod(bmdata->compositor, (OOP_Msg)&bpcmsg);
         }
     }
 
@@ -826,7 +826,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)
     
     if (bmdata->displayable)
     {
-        struct pHidd_Compositing_BitMapRectChanged brcmsg =
+        struct pHidd_Compositor_BitMapRectChanged brcmsg =
         {
             mID : SD(cl)->mid_BitMapRectChanged,
             bm : o,
@@ -836,6 +836,6 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)
             height : msg->height
         };
         
-        OOP_DoMethod(bmdata->compositing, (OOP_Msg)&brcmsg);    
+        OOP_DoMethod(bmdata->compositor, (OOP_Msg)&brcmsg);    
     }
 }

@@ -1,7 +1,7 @@
 #ifndef _NOUVEAU_INTERN_H
 #define _NOUVEAU_INTERN_H
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -50,7 +50,7 @@ struct HIDDNouveauData
     ULONG               selectedcrtcid;
     APTR                selectedmode;
     APTR                selectedconnector;
-    OOP_Object          *compositing;
+    OOP_Object          *compositor;
 };
 
 #define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
@@ -64,12 +64,12 @@ extern OOP_AttrBase HiddBitMapNouveauAttrBase;
 
 enum
 {
-    aoHidd_BitMap_Nouveau_CompositingHidd,       /* [I..] The compositing object that will be used by bitmap */
+    aoHidd_BitMap_Nouveau_CompositorHidd,       /* [I..] The compositor object that will be used by bitmap */
     
     num_Hidd_BitMap_Nouveau_Attrs
 };
 
-#define aHidd_BitMap_Nouveau_CompositingHidd    (HiddBitMapNouveauAttrBase + aoHidd_BitMap_Nouveau_CompositingHidd)
+#define aHidd_BitMap_Nouveau_CompositorHidd    (HiddBitMapNouveauAttrBase + aoHidd_BitMap_Nouveau_CompositorHidd)
 
 #define IS_BITMAPNOUVEAU_ATTR(attr, idx) \
     (((idx) = (attr) - HiddBitMapNouveauAttrBase) < num_Hidd_BitMap_Nouveau_Attrs)
@@ -90,7 +90,7 @@ struct HIDDNouveauBitMapData
     BOOL    displayable;    /* Can bitmap be displayed on screen */
     
     /* Information connected with display */
-    OOP_Object  *compositing;   /* Compositing object used by bitmap */
+    OOP_Object  *compositor;   /* Compositor object used by bitmap */
     LONG        xoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
     LONG        yoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
     ULONG       fbid;           /* Contains ID under which bitmap 
@@ -163,7 +163,7 @@ struct staticdata
     OOP_Class       *bmclass;
     OOP_Class       *i2cclass;
     OOP_Class       *galliumclass;
-    OOP_Class       *compositingclass;
+    OOP_Class       *compositorclass;
     
     OOP_AttrBase    pixFmtAttrBase;
     OOP_AttrBase    gfxAttrBase;
@@ -174,7 +174,7 @@ struct staticdata
     OOP_AttrBase    i2cNouveauAttrBase;
     OOP_AttrBase    galliumAttrBase;
     OOP_AttrBase    gcAttrBase;
-    OOP_AttrBase    compositingAttrBase;
+    OOP_AttrBase    compositorAttrBase;
     OOP_AttrBase    bitMapNouveauAttrBase;
     
     OOP_MethodID    mid_CopyMemBox16;

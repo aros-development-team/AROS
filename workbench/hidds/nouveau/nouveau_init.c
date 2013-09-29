@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,7 +33,7 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     { IID_Hidd_I2C_Nouveau,     &LIBBASE->sd.i2cNouveauAttrBase },
     { IID_Hidd_Gallium,         &LIBBASE->sd.galliumAttrBase },
     { IID_Hidd_GC,              &LIBBASE->sd.gcAttrBase },
-    { IID_Hidd_Compositing,     &LIBBASE->sd.compositingAttrBase },
+    { IID_Hidd_Compositor,     &LIBBASE->sd.compositorAttrBase },
     { IID_Hidd_BitMap_Nouveau,  &LIBBASE->sd.bitMapNouveauAttrBase },
     { NULL, NULL }
     };
@@ -53,11 +53,11 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->sd.mid_GetPixFmt       = OOP_GetMethodID((STRPTR)IID_Hidd_Gfx, moHidd_Gfx_GetPixFmt);
 
     LIBBASE->sd.mid_BitMapPositionChanged   =
-        OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapPositionChanged);
+        OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_BitMapPositionChanged);
     LIBBASE->sd.mid_BitMapRectChanged       = 
-        OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_BitMapRectChanged);
+        OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_BitMapRectChanged);
     LIBBASE->sd.mid_ValidateBitMapPositionChange =
-        OOP_GetMethodID((STRPTR)IID_Hidd_Compositing, moHidd_Compositing_ValidateBitMapPositionChange);
+        OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_ValidateBitMapPositionChange);
 
   
     
