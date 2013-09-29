@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2008, The AROS Development Team.
+    Copyright © 2002-2013, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -312,6 +312,7 @@ int main(void)
 {
     Object *wnd,*second_wnd;
     Object *open_button;
+    Object *about_button;
     Object *quit_button;
     Object *repeat_button;
     Object *objects_button;
@@ -321,9 +322,9 @@ int main(void)
     Object *list_add_button, *list_remove_button, *list_clear_button;
     Object *country_radio[2];
 
-    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges","Radio","Icon List","Balancing",NULL};
+    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges","Numeric","Radio","Icon List","Balancing",NULL};
     static char **radio_entries1 = pages;
-    static char *radio_entries2[] = {"Paris","Pataya","London","New-York","Reykjavik",NULL};
+    static char *radio_entries2[] = {"Paris","Pataya","London","New York","Reykjavik",NULL};
 
     static struct list_entry entry1 = {"Testentry1","Col2: Entry1"};
     static struct list_entry entry2 = {"Entry2","Col2: Entry2"};
@@ -513,6 +514,88 @@ int main(void)
 	                    End,
 		        End,
 
+		    /* numeric */
+		    Child, HGroup,
+	                Child, ColGroup(2), GroupFrameT("Horizontal Sliders"),
+		            Child, MUI_MakeObject(MUIO_Label,"Normal:",0),
+		            Child, SliderObject,
+		                MUIA_Slider_Horiz, TRUE,
+		                MUIA_Numeric_Min, 0,
+		                MUIA_Numeric_Max, 100,
+		                MUIA_CycleChain, 1,
+		                End,
+			    Child, MUI_MakeObject(MUIO_Label,"Reverse:",0),
+		            Child, SliderObject,
+		                MUIA_Numeric_Reverse, TRUE,
+		                MUIA_Numeric_Min, 0,
+		                MUIA_Numeric_Max, 100,
+		                MUIA_CycleChain, 1,
+		                End,
+			    Child, MUI_MakeObject(MUIO_Label,"Quiet:",0),
+		            Child, SliderObject,
+		                MUIA_Slider_Quiet, TRUE,
+		                MUIA_Numeric_Min, 0,
+		                MUIA_Numeric_Max, 100,
+		                MUIA_CycleChain, 1,
+		                End,
+	                    End,
+	                Child, ColGroup(3), GroupFrameT("Vertical Sliders"),
+			    Child, MUI_MakeObject(MUIO_Label,"Normal",0),
+			    Child, MUI_MakeObject(MUIO_Label,"Reverse",0),
+			    Child, MUI_MakeObject(MUIO_Label,"Quiet",0),
+		            Child, SliderObject,
+		                MUIA_Slider_Horiz, FALSE,
+		                MUIA_Numeric_Min, 0,
+		                MUIA_Numeric_Max, 100,
+		                MUIA_CycleChain, 1,
+		                End,
+		            Child, SliderObject,
+		                MUIA_Slider_Horiz, FALSE,
+		                MUIA_Numeric_Reverse, TRUE,
+		                MUIA_Numeric_Min, 0,
+		                MUIA_Numeric_Max, 100,
+		                MUIA_CycleChain, 1,
+		                End,
+		            Child, SliderObject,
+		                MUIA_Slider_Horiz, FALSE,
+		                MUIA_Slider_Quiet, TRUE,
+		                MUIA_Numeric_Min, 0,
+		                MUIA_Numeric_Max, 100,
+		                MUIA_CycleChain, 1,
+		                End,
+	                    End,
+	                Child, ColGroup(2), GroupFrameT("Numeric Buttons"),
+			    Child, MUI_MakeObject(MUIO_Label,"Normal:",0),
+		            Child, NumericbuttonObject,
+		                MUIA_Numeric_Min, 0,
+		                MUIA_Numeric_Max, 100,
+		                MUIA_CycleChain, 1,
+		                End,
+			    Child, MUI_MakeObject(MUIO_Label,"Reverse:",0),
+		            Child, NumericbuttonObject,
+		                MUIA_Numeric_Reverse, TRUE,
+		                MUIA_Numeric_Min, 0,
+		                MUIA_Numeric_Max, 100,
+		                MUIA_CycleChain, 1,
+		                End,
+	                    End,
+	                Child, ColGroup(2), GroupFrameT("Knobs"),
+			    Child, MUI_MakeObject(MUIO_Label,"Normal",0),
+			    Child, MUI_MakeObject(MUIO_Label,"Reverse",0),
+		            Child, KnobObject,
+		                MUIA_Numeric_Min, 0,
+		                MUIA_Numeric_Max, 100,
+		                MUIA_CycleChain, 1,
+		                End,
+		            Child, KnobObject,
+		                MUIA_Numeric_Reverse, TRUE,
+		                MUIA_Numeric_Min, 0,
+		                MUIA_Numeric_Max, 100,
+		                MUIA_CycleChain, 1,
+		                End,
+	                    End,
+		        End,
+
 		    /* radios */
 		    Child, HGroup,
 	                Child, VGroup, 
@@ -573,6 +656,14 @@ Child, BalanceObject, End,
 		    End,
 
 		Child, HGroup,
+		    Child, about_button = TextObject,
+			ButtonFrame,
+			MUIA_InputMode, MUIV_InputMode_RelVerify,
+			MUIA_CycleChain, 1,
+			MUIA_Background, MUII_ButtonBack,
+			MUIA_Text_PreParse, "\33c",
+			MUIA_Text_Contents, "About",
+			End,
 		    Child, quit_button = TextObject,
 			ButtonFrame,
 			MUIA_InputMode, MUIV_InputMode_RelVerify,
@@ -604,6 +695,7 @@ Child, BalanceObject, End,
 	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	DoMethod(second_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, second_wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
 	DoMethod(open_button, MUIM_Notify, MUIA_Pressed, FALSE, second_wnd, 3,  MUIM_Set, MUIA_Window_Open, TRUE);
+	DoMethod(about_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_AboutMUI, NULL);
 	DoMethod(quit_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	DoMethod(objects_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_CallHook, &hook_objects);
 	DoMethod(repeat_button, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook);
