@@ -1,6 +1,6 @@
 /*
  * Copyright 2009 Nouveau Project
- * Copyright (C) 2010-2011, The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2013, The AROS Development Team. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),

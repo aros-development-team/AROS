@@ -1,11 +1,11 @@
-#ifndef _COMPOSITING_INTERN_H
-#define _COMPOSITING_INTERN_H
+#ifndef _COMPOSITOR_INTERN_H
+#define _COMPOSITOR_INTERN_H
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "compositing.h"
+#include "compositor.h"
 
 #include <exec/lists.h>
 
@@ -27,14 +27,14 @@ struct StackBitMapNode
     LONG                displayedheight;
 };
 
-struct HIDDCompositingData
+struct HIDDCompositorData
 {
     /* Bitmap to which all screen bitmaps are composited. Height/Width always 
        matches visible mode */
     OOP_Object              *compositedbitmap;
     
     /* Pointer to actuall screen bitmap - either compositedbitmap or topbitmap. 
-       Can only be set in HIDDCompositingToggleCompositing */
+       Can only be set in HIDDCompositorToggleCompositing */
     OOP_Object              *screenbitmap;
 
     /* Pointer to top bitmap on stack */
@@ -56,7 +56,7 @@ struct HIDDCompositingData
     OOP_AttrBase    syncAttrBase;
     OOP_AttrBase    bitMapAttrBase;
     OOP_AttrBase    gcAttrBase;
-    OOP_AttrBase    compositingAttrBase;
+    OOP_AttrBase    compositorAttrBase;
 };
 
 #define METHOD(base, id, name) \
@@ -66,8 +66,8 @@ struct HIDDCompositingData
 
 #define SD(cl)                      (&BASE(cl->UserData)->sd)
 
-#define LOCK_COMPOSITING_READ       { ObtainSemaphoreShared(&compdata->semaphore); }
-#define LOCK_COMPOSITING_WRITE      { ObtainSemaphore(&compdata->semaphore); }
-#define UNLOCK_COMPOSITING          { ReleaseSemaphore(&compdata->semaphore); }
+#define LOCK_COMPOSITOR_READ       { ObtainSemaphoreShared(&compdata->semaphore); }
+#define LOCK_COMPOSITOR_WRITE      { ObtainSemaphore(&compdata->semaphore); }
+#define UNLOCK_COMPOSITOR          { ReleaseSemaphore(&compdata->semaphore); }
 
-#endif /* _COMPOSITING_INTERN_H */
+#endif /* _COMPOSITOR_INTERN_H */

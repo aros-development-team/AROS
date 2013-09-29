@@ -1,10 +1,10 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include "nouveau_intern.h"
-#include "compositing.h"
+#include "compositor.h"
 
 #include <graphics/displayinfo.h>
 #include <proto/utility.h>
@@ -21,7 +21,7 @@
 #undef HiddGfxNouveauAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
-#undef HiddCompositingAttrBase
+#undef HiddCompositorAttrBase
 #undef HiddBitMapNouveauAttrBase
 
 #define HiddPixFmtAttrBase          (SD(cl)->pixFmtAttrBase)
@@ -29,7 +29,7 @@
 #define HiddGfxNouveauAttrBase      (SD(cl)->gfxNouveauAttrBase)
 #define HiddSyncAttrBase            (SD(cl)->syncAttrBase)
 #define HiddBitMapAttrBase          (SD(cl)->bitMapAttrBase)
-#define HiddCompositingAttrBase     (SD(cl)->compositingAttrBase)
+#define HiddCompositorAttrBase     (SD(cl)->compositorAttrBase)
 #define HiddBitMapNouveauAttrBase   (SD(cl)->bitMapNouveauAttrBase)
 
 #define MAX_BITMAP_WIDTH    4096
@@ -520,14 +520,14 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 break;
             }
 
-            /* Create compositing object */
+            /* Create compositor object */
             {
                 struct TagItem comptags [] =
                 {
-                    { aHidd_Compositing_GfxHidd, (IPTR)o },
+                    { aHidd_Compositor_GfxHidd, (IPTR)o },
                     { TAG_DONE, TAG_DONE }
                 };
-                gfxdata->compositing = OOP_NewObject(SD(cl)->compositingclass, NULL, comptags);
+                gfxdata->compositor = OOP_NewObject(SD(cl)->compositorclass, NULL, comptags);
                 /* TODO: Check if object was created, how to handle ? */
             }
 
@@ -540,7 +540,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
 }
 
 /* FIXME: IMPLEMENT DISPOSE - calling nouveau_close(), freeing cursor bo, gart bo, 
-    selectedconnector, gfxdata->compositing, HIDDNouveauAccelFree */
+    selectedconnector, gfxdata->compositor, HIDDNouveauAccelFree */
 
 /* FIXME: IMPLEMENT DISPOSE BITMAP - REMOVE FROM FB IF MARKED AS SUCH */
 
@@ -554,7 +554,7 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
     {
         { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
         { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_Align */
-        { aHidd_BitMap_Nouveau_CompositingHidd, (IPTR)gfxdata->compositing },
+        { aHidd_BitMap_Nouveau_CompositorHidd, (IPTR)gfxdata->compositor },
         { TAG_MORE, (IPTR)msg->attrList }
     };
 
@@ -711,15 +711,15 @@ VOID METHOD(Nouveau, Root, Get)
 ULONG METHOD(Nouveau, Hidd_Gfx, ShowViewPorts)
 {
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
-    struct pHidd_Compositing_BitMapStackChanged bscmsg =
+    struct pHidd_Compositor_BitMapStackChanged bscmsg =
     {
-        mID : OOP_GetMethodID(IID_Hidd_Compositing, moHidd_Compositing_BitMapStackChanged),
+        mID : OOP_GetMethodID(IID_Hidd_Compositor, moHidd_Compositor_BitMapStackChanged),
         data : msg->Data
     };
     
     D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", (msg->Data ? (msg->Data->Bitmap) : NULL)));
 
-    OOP_DoMethod(gfxdata->compositing, (OOP_Msg)&bscmsg);
+    OOP_DoMethod(gfxdata->compositor, (OOP_Msg)&bscmsg);
 
     return TRUE; /* Indicate driver supports this method */
 }
