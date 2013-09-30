@@ -55,7 +55,7 @@
 struct MUIP_IconList_Clear              {STACKED ULONG MethodID;};
 struct MUIP_IconList_Update             {STACKED ULONG MethodID;};
 struct MUIP_IconList_RethinkDimensions  {STACKED ULONG MethodID; STACKED struct IconEntry *singleicon;};
-struct MUIP_IconList_CreateEntry        {STACKED ULONG MethodID; STACKED STRPTR filename; STACKED STRPTR label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *entry_dob; STACKED ULONG type;};
+struct MUIP_IconList_CreateEntry        {STACKED ULONG MethodID; STACKED STRPTR filename; STACKED STRPTR label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *entry_dob; STACKED ULONG type; STACKED APTR udata;};
 struct MUIP_IconList_UpdateEntry        {STACKED ULONG MethodID; STACKED struct IconEntry *entry; STACKED STRPTR filename; STACKED STRPTR label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *entry_dob; STACKED ULONG type;};
 struct MUIP_IconList_DestroyEntry       {STACKED ULONG MethodID; STACKED struct IconEntry *entry;};
 struct MUIP_IconList_PropagateEntryPos  {STACKED ULONG MethodID; STACKED struct IconEntry *entry;};

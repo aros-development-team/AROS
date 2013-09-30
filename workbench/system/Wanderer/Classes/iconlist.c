@@ -4409,7 +4409,7 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
     strcpy(entry->ie_IconNode.ln_Name, message->filename);
     strcpy(entry->ie_IconListEntry.label, message->label);
 
-    entry->ie_IconListEntry.udata = NULL;
+    entry->ie_IconListEntry.udata = message->udata;
 
     entry->ie_IconX = dob->do_CurrentX;
     entry->ie_IconY = dob->do_CurrentY;

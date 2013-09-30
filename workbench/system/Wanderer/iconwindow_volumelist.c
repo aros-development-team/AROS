@@ -398,7 +398,7 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
 
                             if (bdrp_currfile_dob)
                             {
-                                if ((this_entry = (struct IconEntry *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob, 0)))
+                                if ((this_entry = (struct IconEntry *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob, 0, (IPTR)NULL)))
                                 {
                                     this_entry->ie_IconNode.ln_Pri = 1;
                                     this_entry->ie_IconListEntry.type = lofTYPE;
@@ -911,7 +911,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
                     LayoutIconA(dupdo, _screen(self), NULL);
                     CONST_STRPTR label = AppIcon_GetLabel(appicon);
                     appentry = (struct IconEntry *)DoMethod(self,
-                            MUIM_IconList_CreateEntry, (IPTR)"?APPICON?", (IPTR)label, (IPTR)NULL, (IPTR)dupdo, 0);
+                            MUIM_IconList_CreateEntry, (IPTR)"?APPICON?", (IPTR)label, (IPTR)NULL, (IPTR)dupdo, 0, (IPTR)NULL);
                     if (appentry)
                     {
                         appentry->ie_User1 = (APTR)appicon;
@@ -968,7 +968,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
                     if (_nb_dob)
                     {
-                        if ((Obj_NetworkIcon = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob, 0)))
+                        if ((Obj_NetworkIcon = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob, 0, (IPTR)NULL)))
                         {
                             Obj_NetworkIcon->ln_Pri = 4;   /// Network Access gets Priority 4 so its displayed after special dirs
 //                            D(bug("[Wanderer:VolumeList] %s: NetworkBrowser Icon Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
@@ -1021,7 +1021,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
                             if (_nb_dob)
                             {
-                                if ((Obj_UserFilesIcon = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, userfiles_path, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob, 0)))
+                                if ((Obj_UserFilesIcon = (struct Node *)DoMethod(self, MUIM_IconList_CreateEntry, userfiles_path, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob, 0, (IPTR)NULL)))
                                 {
                                     Obj_UserFilesIcon->ln_Pri = 5;   /// Special dirs get Priority 5
                                 }
