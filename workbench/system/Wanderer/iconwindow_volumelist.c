@@ -853,7 +853,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
         {
             if ((volentry->ie_IconListEntry.type == ST_ROOT)
                 && ((volentry->ie_IconNode.ln_Pri == -2) || (volentry->ie_IconNode.ln_Pri == -5))
-                && !(volentry->ie_IconListEntry.flags & ICONENTRY_VOL_OFFLINE))
+                && !(_volpriv(volentry)->vip_FLags & ICONENTRY_VOL_OFFLINE))
             {
                 if (volentry->ie_IconNode.ln_Pri == -5) volentry->ie_IconNode.ln_Pri = 5;
                 else volentry->ie_IconNode.ln_Pri = 2;
@@ -1171,7 +1171,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Objec
     volPrivate = message->entry->ie_IconListEntry.udata;
 
     if (message->entry->ie_IconListEntry.type == ST_ROOT
-        && (message->entry->ie_IconListEntry.flags &
+        && (_volpriv(message->entry)->vip_FLags &
         (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED)) != 0)
     {
         if (volPrivate->vip_FSNotifyRequest.nr_Name != NULL)
