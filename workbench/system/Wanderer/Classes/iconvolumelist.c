@@ -504,7 +504,7 @@ static struct IconEntry *FindIconlistVolumeIcon(struct List *iconlist,
     ForeachNode(iconlist, foundEntry)
     {
         if ((foundEntry->ie_IconListEntry.type == ST_ROOT)
-            && (foundEntry->ie_IconListEntry.flags & ICONENTRY_VOL_OFFLINE)
+            && (_volpriv(foundEntry)->vip_FLags & ICONENTRY_VOL_OFFLINE)
             && (strcasecmp(foundEntry->ie_IconListEntry.label, iconvolname) == 0))
             return foundEntry;
     }
@@ -573,15 +573,6 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
                         BOOL entrychanged = FALSE;
                         volDOB = this_Icon->ie_DiskObj;
 
-                        if (dvn->dvn_Flags & ICONENTRY_VOL_OFFLINE)
-                            this_Icon->ie_IconListEntry.flags |= ICONENTRY_VOL_OFFLINE;
-                        else
-                            this_Icon->ie_IconListEntry.flags &= ~ICONENTRY_VOL_OFFLINE;
-                        if (dvn->dvn_Flags & ICONENTRY_VOL_DISABLED)
-                            this_Icon->ie_IconListEntry.flags |= ICONENTRY_VOL_DISABLED;
-                        else
-                            this_Icon->ie_IconListEntry.flags &= ~ICONENTRY_VOL_DISABLED;
-
                         Remove((struct Node *)&this_Icon->ie_IconNode);
 
                         D(bug
@@ -596,10 +587,7 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
                             entrychanged = TRUE;
 
                         if ((this_Icon->ie_IconListEntry.udata) &&
-                            (dvn->dvn_Flags !=
-                                ((struct VolumeIcon_Private *)
-                                    this_Icon->ie_IconListEntry.udata)->
-                                vip_FLags))
+                            (dvn->dvn_Flags != _volpriv(this_Icon)->vip_FLags))
                             entrychanged = TRUE;
 
                         if ((dvn->dvn_Flags & ICONENTRY_VOL_DISABLED)
@@ -614,14 +602,12 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
 
                         if (entrychanged)
                         {
-                            struct VolumeIcon_Private *volPrivate = this_Icon->ie_IconListEntry.udata;
-
                             D(bug("[IconVolumeList] %s: IconEntry changed - updating..\n", __PRETTY_FUNCTION__));
                             this_Icon =
                                 (struct IconEntry *)DoMethod(obj, MUIM_IconList_UpdateEntry, this_Icon,
                                 (IPTR) devname, (IPTR) dvn->dvn_VolName, (IPTR) NULL, volDOB, ST_ROOT);
 
-                            volPrivate->vip_FLags = dvn->dvn_Flags;
+                            _volpriv(this_Icon)->vip_FLags = dvn->dvn_Flags;
                         }
                         if (this_Icon)
                             AddTail(&newiconlist,
@@ -644,10 +630,7 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass * CLASS,
                                     (IPTR) devname, (IPTR) dvn->dvn_VolName,
                                     (IPTR) NULL, volDOB, ST_ROOT)) != NULL)
                         {
-                            struct VolumeIcon_Private *volPrivate =
-                                this_Icon->ie_IconListEntry.udata;
-
-                            volPrivate->vip_FLags = dvn->dvn_Flags;
+                            _volpriv(this_Icon)->vip_FLags = dvn->dvn_Flags;
 
                             D(bug
                                 ("[IconVolumeList] %s: Created IconEntry for '%s' @ %p\n",
