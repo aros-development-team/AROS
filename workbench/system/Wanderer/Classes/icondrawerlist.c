@@ -181,7 +181,7 @@ static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
 
                     this_Icon = NULL;
 
-                    if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib, (IPTR)NULL, 0)))
+                    if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib, (IPTR)NULL, 0, (IPTR)NULL)))
                     {
                         D(bug("[IconDrawerList] %s: Icon entry allocated @ 0x%p\n", __PRETTY_FUNCTION__, this_Icon));
                         DoMethod(obj, MUIM_Family_AddTail, (struct Node*)&this_Icon->ie_IconNode);
