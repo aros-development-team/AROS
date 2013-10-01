@@ -175,6 +175,7 @@ static const char THIS_FILE[] = __FILE__;
     BOOL                   workbench = FALSE;
     ULONG                  requesteddepth = 1;
     BOOL                   draggable = TRUE;
+    ULONG                  compflags = COMPF_ABOVE; // Default to AmigaOS like behaviour.
 
     struct TagItem   modetags[] =
     {
@@ -483,6 +484,9 @@ static const char THIS_FILE[] = __FILE__;
 #endif
             switch(tag->ti_Tag)
             {
+            case SA_CompositingFlags:
+                compflags = tag->ti_Data;
+                break;
             case SA_Left:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Left %ld\n",tag->ti_Data));
                 ns.LeftEdge  = tag->ti_Data;
@@ -1096,11 +1100,6 @@ static const char THIS_FILE[] = __FILE__;
     {
         success = TRUE;
 #ifdef __AROS__ /* AROS: Get HIDD composition flags */
-        ULONG compflags = GetTagData(SA_CompositingFlags, COMPF_ABOVE, tagList);
-
-        DEBUG_OPENSCREEN(dprintf("OpenScreen: Requested Composition Flags %08x\n", compflags));
-        DEBUG_OPENSCREEN(dprintf("OpenScreen: Supported Composition Flags %08x\n", dimensions.reserved[0]));
-
         screen->SpecialFlags = (compflags & dimensions.reserved[0]) << 8;
 
         if (draggable) screen->SpecialFlags |= SF_Draggable;
