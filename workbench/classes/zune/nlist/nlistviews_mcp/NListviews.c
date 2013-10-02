@@ -130,8 +130,8 @@ Object *MakeCheck(STRPTR label, STRPTR help, ULONG check)
 
 #define LOAD_DATALONG(obj,attr,cfg_attr,defaultval) \
   { \
-    LONG *ptrd; \
-    if((ptrd = (LONG *) DoMethod(msg->configdata, MUIM_Dataspace_Find, cfg_attr))) \
+    ULONG *ptrd; \
+    if((ptrd = (ULONG *) DoMethod(msg->configdata, MUIM_Dataspace_Find, cfg_attr))) \
       set(obj, attr, *ptrd); \
     else \
       set(obj, attr, defaultval); \
@@ -139,14 +139,14 @@ Object *MakeCheck(STRPTR label, STRPTR help, ULONG check)
 
 #define SAVE_DATALONG(obj,attr,cfg_attr) \
   { \
-    LONG ptrd=0; \
+    IPTR ptrd=0; \
     get(obj, attr, &ptrd); \
     DoMethod(msg->configdata, MUIM_Dataspace_Add, &ptrd, sizeof(ptrd), cfg_attr); \
   }
 
 #define LOAD_DATASPEC(obj,attr,cfg_attr,defaultval) \
   { \
-    LONG ptrd; \
+    IPTR ptrd; \
     if((ptrd = DoMethod(msg->configdata, MUIM_Dataspace_Find, cfg_attr))) \
       set(obj, attr, ptrd); \
     else \
@@ -155,7 +155,7 @@ Object *MakeCheck(STRPTR label, STRPTR help, ULONG check)
 
 #define SAVE_DATASPEC(obj,attr,cfg_attr) \
   { \
-    LONG ptrd=0; \
+    IPTR ptrd=0; \
     get(obj, attr, &ptrd); \
     if (ptrd) \
       DoMethod(msg->configdata, MUIM_Dataspace_Add, ptrd, strlen((char *)ptrd)+1, cfg_attr); \
@@ -163,7 +163,7 @@ Object *MakeCheck(STRPTR label, STRPTR help, ULONG check)
 
 #define SAVE_DATASPEC2(obj,attr,cfg_attr) \
   { \
-    LONG ptrd=0; \
+    IPTR ptrd=0; \
     get(obj, attr, &ptrd); \
     if (ptrd) \
       DoMethod(msg->configdata, MUIM_Dataspace_Add, ptrd, strlen((char *)ptrd)+1, cfg_attr); \

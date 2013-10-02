@@ -904,7 +904,7 @@ static IPTR _GadgetsToConfig( struct IClass *cl, Object *obj, struct MUIP_Settin
 {
   struct NListtreeP_Data *data = INST_DATA( cl, obj );
   char buf[8];
-  ULONG d=0;
+  IPTR d=0;
 
   ENTER();
 
