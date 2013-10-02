@@ -21,7 +21,7 @@ struct StackBitMapNode
     struct Rectangle            screenvisiblerect;      /* Visible part */
     SIPTR	                leftedge;		/* Offset */
     SIPTR	                topedge;
-    ULONG                       sbmflags;
+    IPTR                        sbmflags;
 };
 
 // sbmflags bits 0 to 3 are reserved for the normal compositing flags.
@@ -29,13 +29,18 @@ struct StackBitMapNode
 #define STACKNODEF_HASALPHA      (1 << STACKNODEB_HASALPHA)
 #define STACKNODEB_VISIBLE       5
 #define STACKNODEF_VISIBLE       (1 << STACKNODEB_VISIBLE)
+#define STACKNODEB_DISPLAYABLE   6
+#define STACKNODEF_DISPLAYABLE   (1 << STACKNODEB_DISPLAYABLE)
 
 struct HIDDCompositorData
 {
     struct GfxBase	        *GraphicsBase;
+    struct IntuitionBase        *IntuitionBase;
+
     /* Bitmap to which all screen bitmaps are composited. Height/Width always 
        matches visible mode */
-    OOP_Object                  *compositedbitmap;
+    OOP_Object                  *displaybitmap;
+    OOP_Object                  *intermedbitmap;
 
     /* Pointer to actuall screen bitmap, result of last HIDD_Gfx_Show().
        Needed for graphics.library only. */
@@ -45,7 +50,8 @@ struct HIDDCompositorData
     OOP_Object                  *topbitmap;
 
     HIDDT_ModeID                screenmodeid;   /* ModeID of currently visible mode             */
-    struct Rectangle            screenrect;     /* Dimensions of currently visible mode         */
+    struct Rectangle            displayrect;     /* Dimensions of currently visible mode         */
+    struct Region               *alpharegion;
 
     struct MinList              bitmapstack;
     struct SignalSemaphore      semaphore;
