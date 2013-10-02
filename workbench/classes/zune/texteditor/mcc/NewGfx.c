@@ -93,7 +93,7 @@ ULONG TextFitNew(struct RastPort *rp, const char *string, ULONG strLen, struct T
     {
       // we parsed the string until the end
       // add the number of fitting remaining characters
-      result += TextFit(rp, tptr0, strLen0, textExtent, constrainingExtent, strDirection, constrainingBitWidth, constrainingBitHeight);
+      result += TextFit(rp, tptr0, strLen0, textExtent, (struct TextExtent *)constrainingExtent, strDirection, constrainingBitWidth, constrainingBitHeight);
       break;
     }
 
@@ -103,7 +103,7 @@ ULONG TextFitNew(struct RastPort *rp, const char *string, ULONG strLen, struct T
     {
       // we found a TAB, calculate the number of fitting characters so far
       if(strLen0 != 0)
-        result += TextFit(rp, tptr0, strLen0, textExtent, constrainingExtent, strDirection, constrainingBitWidth, constrainingBitHeight);
+        result += TextFit(rp, tptr0, strLen0, textExtent, (struct TextExtent *)constrainingExtent, strDirection, constrainingBitWidth, constrainingBitHeight);
 
       // substract the width of the maximum width
       constrainingBitWidth -= TextLengthNew(rp, tptr0, strLen0+1, tabSizePixels);
