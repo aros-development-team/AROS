@@ -68,11 +68,18 @@ struct HIDD_ModeProperties
 
 };
 
-#define COMPF_ABOVE 0x0001 /* We can see another screen above this screen */
-#define COMPF_BELOW 0x0002 /* ...below ...                                */
-#define COMPF_LEFT  0x0004 /* ... to the left of ...                      */
-#define COMPF_RIGHT 0x0008 /* ... to the right of ...                     */
-#define COMPF_SAME  0x0100 /* We can compose only with the same sync      */
+#define COMPB_ABOVE             0
+#define COMPF_ABOVE             (1 << COMPB_ABOVE)      /* Compositive above screens       */
+#define COMPB_BELOW             1
+#define COMPF_BELOW             (1 << COMPB_BELOW)      /* ... below ...                   */
+#define COMPB_LEFT              2
+#define COMPF_LEFT              (1 << COMPB_LEFT)        /* ... to the left of ...         */
+#define COMPB_RIGHT             3
+#define COMPF_RIGHT             (1 << COMPB_RIGHT)      /* ... and to the right of ...     */
+#define COMPB_ALPHA             7
+#define COMPF_ALPHA             (1 << COMPB_ALPHA)
+#define COMPB_SAME              8
+#define COMPF_SAME              (1 << COMPB_SAME)       /* can only composit the same sync */
 
 struct ViewPort;
 struct View;
