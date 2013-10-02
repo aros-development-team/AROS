@@ -25,8 +25,8 @@
 
 /* NList_mcc.c */
 
-extern void release_pen(Object *obj, ULONG *pen);
-extern void obtain_pen(Object *obj, ULONG *pen, struct MUI_PenSpec *ps);
+extern void release_pen(Object *obj, IPTR *pen);
+extern void obtain_pen(Object *obj, IPTR *pen, struct MUI_PenSpec *ps);
 extern IPTR mNL_New(struct IClass *cl,Object *obj,struct opSet *msg);
 extern IPTR mNL_Dispose(struct IClass *cl,Object *obj,Msg msg);
 extern IPTR mNL_Setup(struct IClass *cl,Object *obj,struct MUIP_Setup *msg);
