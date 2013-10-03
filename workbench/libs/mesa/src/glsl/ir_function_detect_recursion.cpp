@@ -238,7 +238,11 @@ public:
    bool progress;
 };
 
-static void
+/* AROS: Removing static fixes an invalid compilation under
+ * gcc 4.6.2 -O2 mode where code generated remove_unlinked_functions
+ * in would loop indefinatelly
+ */
+void
 destroy_links(exec_list *list, function *f)
 {
    foreach_list_safe(node, list) {
