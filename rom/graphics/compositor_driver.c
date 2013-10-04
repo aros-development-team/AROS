@@ -65,3 +65,25 @@ void compositor_Setup(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
     D(bug("[Compositor] Added compositor object 0x%p to driver 0x%p (%s)\n", mdd->compositor, mdd->gfxhidd,
      	  OOP_OCLASS(mdd->gfxhidd_orig)->ClassNode.ln_Name));
 }
+
+BOOL compositor_IsBMCompositable(OOP_Object *bm, struct GfxBase *GfxBase)
+{
+    D(bug("[GfxCompositor] IsBm @ 0x%p Compositable?\n", bm));
+
+    return TRUE;
+}
+
+BOOL compositor_SetBMCompositable(OOP_Object *bm, struct GfxBase *GfxBase)
+{
+    if (!(OOP_GET(bm, aHidd_BitMap_Displayable)))
+    {
+        struct TagItem composittags[] = {
+            {aHidd_BitMap_Compositable, TRUE},
+            {TAG_DONE	     , 0    }
+        };
+
+        D(bug("[GfxCompositor]: Marking BitMap 0x%lx as Compositable\n", bm));
+        OOP_SetAttrs(bm, composittags);
+    }
+    return TRUE;
+}
