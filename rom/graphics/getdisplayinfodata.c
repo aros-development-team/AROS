@@ -277,9 +277,17 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 	    /* At the moment sprites always have the same resolution as display */
 	    di->SpriteResolution = di->Resolution;
 
+            /* 
+                    AROS extensions to allow querying if a hidd bitmap can be displayed
+                    via the display compositor, and to enable it.
+                    e.g openscreen uses these to determine if a custombitmap may be displayed.
+                */
+            di->reserved[0] = compositor_IsBMCompositable;
+            di->reserved[1] = compositor_SetBMCompositable;
+
 	    break;
 	}
-	    
+
 	case DTAG_DIMS:
 	{
 	    struct DimensionInfo *di;
