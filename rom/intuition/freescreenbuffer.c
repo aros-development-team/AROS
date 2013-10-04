@@ -86,7 +86,7 @@
 
                 IS(screen)->RestoreDBufInfo->dbi_SafeMessage.mn_ReplyPort = &safereply;
 
-                scb.sb_BitMap = IS(screen)->AllocatedBitmap;
+                scb.sb_BitMap = IS(screen)->AllocatedBitMap;
                 scb.sb_DBufInfo = IS(screen)->RestoreDBufInfo;
 
                 ChangeScreenBuffer(screen, &scb);

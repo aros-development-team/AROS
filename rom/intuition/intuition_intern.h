@@ -744,7 +744,7 @@ struct IntScreen
     Object                  *WinDecorObj;
     struct NewDecorator     *Decorator;
 
-    struct BitMap           *AllocatedBitmap;
+    struct BitMap           *AllocatedBitMap;
     struct DBufInfo         *RestoreDBufInfo;
 #ifdef SKINS
     WORD                     LastClockPos;

@@ -548,7 +548,7 @@ void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
     D(bug("[intuition] CreateScreenBar()\n"));
     
 #ifdef SKINS
-    if (scr->Flags & SCREENQUIET || (GetPrivScreen(scr)->SpecialFlags & SF_InvisibleBar))
+    if ((scr->Flags & SCREENQUIET) || (GetPrivScreen(scr)->SpecialFlags & SF_InvisibleBar))
         front = FALSE;
 
     if (GetPrivScreen(scr)->SpecialFlags & SF_AppearingBar)
