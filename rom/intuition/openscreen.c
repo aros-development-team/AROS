@@ -1170,7 +1170,7 @@ static const char THIS_FILE[] = __FILE__;
             {
                 if (dispinfo.reserved[0] && __IsCompositable(HIDD_BM_OBJ(custombm), GfxBase))
                 {
-                    dprintf("OpenScreen: Marking CustomBitMap 0x%lx as compositable\n", custombm);
+                    DEBUG_OPENSCREEN(dprintf("OpenScreen: Marking CustomBitMap 0x%lx as compositable\n", custombm));
                     __MakeDisplayable(HIDD_BM_OBJ(custombm), GfxBase);
                 }
                 else
