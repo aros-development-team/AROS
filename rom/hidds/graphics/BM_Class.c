@@ -974,7 +974,8 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
         if (ok && (data->displayable || data->compositable))
         {
-            HIDDT_ModeID bmmodeid;
+            HIDDT_ModeID bmmodeid = data->modeid;
+
             /* We should always get modeid, but we check anyway */
             if ((data->compositable) &&  (data->friend))
             {
