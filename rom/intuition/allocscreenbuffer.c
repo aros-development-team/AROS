@@ -116,7 +116,7 @@
                     /* Get a bitmap */
                     if (flags & SB_SCREEN_BITMAP)
                     {
-                        bitmap = IS(screen)->AllocatedBitmap;
+                        bitmap = IS(screen)->AllocatedBitMap;
                     }
                     else
                     {

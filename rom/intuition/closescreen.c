@@ -242,9 +242,9 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
     ReadPixel(&screen->RastPort,0,0);
 
     /* Free the screen's bitmap */
-    if (IS(screen)->AllocatedBitmap)
+    if (IS(screen)->AllocatedBitMap)
     {
-        FreeBitMap(IS(screen)->AllocatedBitmap);
+        FreeBitMap(IS(screen)->AllocatedBitMap);
     }
 
     screen->RastPort.BitMap = NULL;

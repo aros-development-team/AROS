@@ -563,7 +563,7 @@ static const char THIS_FILE[] = __FILE__;
                 }
                 else
                 {
-                    DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_BitMap==NULL specified, custom bitmap use disabled\n"));
+                    DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_BitMap==NULL specified, custom BitMap use disabled\n"));
                 }
                 break;
 
@@ -802,7 +802,7 @@ static const char THIS_FILE[] = __FILE__;
         ULONG depth = (ULONG)-1;
 
 #ifndef __AROS__
-        /*AROS: We don't need these flags because we keep ModeID together with the bitmap */
+        /*AROS: We don't need these flags because we keep ModeID together with the BitMap */
         screen->Support3D = TRUE;
         allocbitmapflags |= BMF_3DTARGET;
 #endif
@@ -1093,7 +1093,9 @@ static const char THIS_FILE[] = __FILE__;
 
     if (ok && (displayinfo = FindDisplayInfo(modeid)) != NULL &&
         GetDisplayInfoData(displayinfo, (APTR)&dimensions, sizeof(dimensions), DTAG_DIMS, modeid)
-#ifndef __AROS__ /* AROS: We don't need MonitorSpec */
+#ifdef __AROS__ /* AROS: We don't need MonitorSpec, however we get DisplayInfo early to get the compositors bm hooks. */
+        && GetDisplayInfoData(displayinfo, (APTR)&dispinfo, sizeof(dispinfo), DTAG_DISP, modeid)
+#else 
         && GetDisplayInfoData(displayinfo, (APTR)&monitor, sizeof(monitor), DTAG_MNTR, modeid)
 #endif
        )
@@ -1155,8 +1157,27 @@ static const char THIS_FILE[] = __FILE__;
             custombm = ns.CustomBitMap;
 #ifdef __AROS__ /* AROS: We don't have CGX in kickstart */
             /* FIXME: This prevents planar CUSTOMBITMAP on m68k Amiga from working */
-            if (!IS_HIDD_BM(custombm) || (modeid != HIDD_BM_HIDDMODE(custombm)))
+            BOOL (*__IsCompositable) (OOP_Object *, struct GfxBase *) = dispinfo.reserved[0];
+            BOOL (*__MakeDisplayable) (OOP_Object *, struct GfxBase *) = dispinfo.reserved[1];
+
+            if (!IS_HIDD_BM(custombm))
+                //|| (modeid != HIDD_BM_HIDDMODE(custombm)))
+            {
+                // TODO: Query the compositor  to find out if we can display the BitMap
                 custombm = NULL;
+            }
+            else
+            {
+                if (dispinfo.reserved[0] && __IsCompositable(HIDD_BM_OBJ(custombm), GfxBase))
+                {
+                    dprintf("OpenScreen: Marking CustomBitMap 0x%lx as compositable\n", custombm);
+                    __MakeDisplayable(HIDD_BM_OBJ(custombm), GfxBase);
+                }
+                else
+                {
+                    custombm = NULL;
+                }
+            }
 #else
             if (IsCyberModeID(modeid) && custombm)
             {
@@ -1173,7 +1194,7 @@ static const char THIS_FILE[] = __FILE__;
             {
                screen->Screen.RastPort.BitMap = custombm;
                ns.Depth       =   GetBitMapAttr(ns.CustomBitMap,BMA_DEPTH);
-               DEBUG_OPENSCREEN(dprintf("OpenScreen: CustomBitmap Depth %ld\n",
+               DEBUG_OPENSCREEN(dprintf("OpenScreen: CustomBitMap Depth %ld\n",
                                         ns.Depth));
             } else {
                 ns.CustomBitMap = NULL;
@@ -1245,7 +1266,7 @@ static const char THIS_FILE[] = __FILE__;
 
             DoMethod((Object*)screen->IMonitorNode,MM_GetRootBitMap,pixfmt,(ULONG)&root);
 
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: root bitmap 0x%lx\n",root));
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: root BitMap 0x%lx\n",root));
 
             do
             {
@@ -1272,9 +1293,9 @@ static const char THIS_FILE[] = __FILE__;
             }
             while((screen->Screen.RastPort.BitMap == NULL) && (retrycnt--));
 #endif
-            screen->AllocatedBitmap = screen->Screen.RastPort.BitMap;
+            screen->AllocatedBitMap = screen->Screen.RastPort.BitMap;
 
-            DEBUG_OPENSCREEN(dprintf("OpenScreen: allocated bitmap 0x%lx\n",screen->AllocatedBitmap));
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: allocated BitMap 0x%lx\n",screen->AllocatedBitMap));
 
             if (screen->Screen.RastPort.BitMap)
             {
@@ -1291,7 +1312,7 @@ static const char THIS_FILE[] = __FILE__;
                         struct RastPort rport;
 
                         InitRastPort(&rport);
-                        rport.BitMap = screen->AllocatedBitmap;
+                        rport.BitMap = screen->AllocatedBitMap;
                         SetRPAttrs(&rport,RPTAG_PenMode,FALSE,RPTAG_FgColor,0x0,TAG_DONE);
 
                         RectFill(&rport,ns.Width,0,stdwidth - 1,ns.Height - 1);
@@ -1302,7 +1323,7 @@ static const char THIS_FILE[] = __FILE__;
                         struct RastPort rport;
 
                         InitRastPort(&rport);
-                        rport.BitMap = screen->AllocatedBitmap;
+                        rport.BitMap = screen->AllocatedBitMap;
                         SetRPAttrs(&rport,RPTAG_PenMode,FALSE,RPTAG_FgColor,0x0,TAG_DONE);
 
                         RectFill(&rport,0,ns.Height,ns.Width - 1,stdheight - 1);
@@ -1321,7 +1342,7 @@ static const char THIS_FILE[] = __FILE__;
         SetError(OSERR_UNKNOWNMODE); /* AROS: Added error code setting, fixed MorphOS bug */
     }
 
-    D(bug("got bitmap\n"));
+    D(bug("got BitMap\n"));
 
     /* Init screen's viewport */
     InitVPort(&screen->Screen.ViewPort);
@@ -1341,7 +1362,7 @@ static const char THIS_FILE[] = __FILE__;
     {
         ok = FALSE;
     } else {
-        /* Store pointer to bitmap, so we can get hold of it
+        /* Store pointer to BitMap, so we can get hold of it
            from withing LoadRGBxx() functions
         */
         D(bug("got allocated stuff\n"));
@@ -1350,8 +1371,8 @@ static const char THIS_FILE[] = __FILE__;
 
     if (ok)
     {
-        /* Read depth from the bitmap to avoid AttachPalExtra/ObtainPen getting
-         * confused if cgx decided to allocate a higher depth bitmap than what
+        /* Read depth from the BitMap to avoid AttachPalExtra/ObtainPen getting
+         * confused if cgx decided to allocate a higher depth BitMap than what
          * was asked.
          */
         ns.Depth = GetBitMapAttr(screen->Screen.RastPort.BitMap,BMA_DEPTH);
@@ -1540,7 +1561,7 @@ static const char THIS_FILE[] = __FILE__;
              * should take into account that on screens with less than 11 colors this simply
              * won't work
              *
-             * TODO: I think we should have SpriteBase attribute for the bitmap which
+             * TODO: I think we should have SpriteBase attribute for the BitMap which
              * defaults to acceptable value. We should just get its default value here.
              * The same attribute would be set by VideoControl() and MakeVPort() in order
              * to actually apply the value.
@@ -1621,7 +1642,7 @@ static const char THIS_FILE[] = __FILE__;
          * AROS: AmigaOS(tm) 3.1-compatible mouse colors handling
          * 1. Allocate pens for the mouse pointer only on LUT screens.
          *    On hi- and truecolor screens sprite colors come from colormap attached
-         *    to the sprite bitmap itself. See pointerclass::New() for details.
+         *    to the sprite BitMap itself. See pointerclass::New() for details.
          * 2. Use 32-bit pointer colors instead of KS1.3 ActivePreferences->color17
          */
         if (ns.Depth < 9)
@@ -1695,8 +1716,8 @@ static const char THIS_FILE[] = __FILE__;
             screen->Screen.Flags |= SCREENHIRES;
 
         /*
-           Copy the data from the rastport's bitmap
-           to the screen's bitmap structure
+           Copy the data from the rastport's BitMap
+           to the screen's BitMap structure
         */
         UpdateScreenBitMap(&screen->Screen, IntuitionBase);
 
@@ -1771,12 +1792,12 @@ static const char THIS_FILE[] = __FILE__;
         }
         D(bug("layers intited screen\n"));
 
-        /* AROS: Get resolution data from DisplayInfo */
-        GetDisplayInfoData(NULL, (APTR)&dispinfo, sizeof(dispinfo), DTAG_DISP, modeid);
-#ifdef __MORPHOS__
-		screen->DInfo.dri_Version = MOS_DRI_VERSION;
+        /* AROS: We have already obtained resolution data from DisplayInfo */
+#ifdef __AROS__
+        screen->DInfo.dri_Version = DRI_VERSION;
 #else
-		screen->DInfo.dri_Version = DRI_VERSION;
+        GetDisplayInfoData(NULL, (APTR)&dispinfo, sizeof(dispinfo), DTAG_DISP, modeid);
+        screen->DInfo.dri_Version = MOS_DRI_VERSION;
 #endif
         screen->DInfo.dri_NumPens = NUMDRIPENS;
         screen->DInfo.dri_Pens = screen->Pens;
@@ -2334,10 +2355,10 @@ static const char THIS_FILE[] = __FILE__;
             CloseFont(screen->DInfo.dri_Font);
         }
 
-        if (screen->AllocatedBitmap && !(ns.Type & CUSTOMBITMAP))
+        if (screen->AllocatedBitMap && !(ns.Type & CUSTOMBITMAP))
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Free BitMap\n"));
-            FreeBitMap(screen->AllocatedBitmap);
+            FreeBitMap(screen->AllocatedBitMap);
         }
 
         if (screen->Screen.ViewPort.RasInfo)
