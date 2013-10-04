@@ -899,6 +899,8 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
         data->modeid = vHidd_ModeID_Invalid;
         data->align  = 16;
 
+        data->compositable = FALSE;
+
         tstate = msg->attrList;
         while ((tag = NextTagItem(&tstate)))
         {
@@ -935,6 +937,10 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
                 case aoHidd_BitMap_Displayable:
                     data->displayable = tag->ti_Data;
                     break;
+
+                case aoHidd_BitMap_Compositable:
+                    data->compositable = tag->ti_Data;
+                    break;
                 
                 case aoHidd_BitMap_FrameBuffer:
                     data->framebuffer = tag->ti_Data;
@@ -966,22 +972,29 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
         if (data->framebuffer)
             data->displayable = TRUE;
 
-        if (ok && data->displayable)
+        if (ok && (data->displayable || data->compositable))
         {
+            HIDDT_ModeID bmmodeid;
             /* We should always get modeid, but we check anyway */
-            if (data->modeid == vHidd_ModeID_Invalid)
+            if ((data->compositable) &&  (data->friend))
             {
-                D(bug("!!! BitMap:New() DID NOT GET MODEID FOR DISPLAYABLE BITMAP !!!\n"));
-                ok = FALSE;
+                OOP_GetAttr(data->friend, aHidd_BitMap_ModeID, &bmmodeid);
+                D(bug("!!! BitMap:New() Using Friends ModeID - 0x%08X !!!\n", bmmodeid));
+            }
+
+            if (bmmodeid == vHidd_ModeID_Invalid)
+            {
+                D(bug("!!! BitMap:New() NO VALID MODEID SPECIFIED FOR DISPLAYABLE BITMAP !!!\n"));
+                data->compositable = ok = FALSE;
             }
             else
             {
                 OOP_Object *sync, *pf;
 
-                if (!HIDD_Gfx_GetMode(data->gfxhidd, data->modeid, &sync, &pf))
+                if (!HIDD_Gfx_GetMode(data->gfxhidd, bmmodeid, &sync, &pf))
                 {
-                    D(bug("!!! BitMap::New() RECEIVED INVALID MODEID 0x%08X\n", data->modeid));
-                    ok = FALSE;
+                    D(bug("!!! BitMap::New() RECEIVED INVALID MODEID 0x%08X\n", bmmodeid));
+                    data->compositable = ok = FALSE;
                 }
                 else
                 {
@@ -5105,6 +5118,45 @@ void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem
             case aoHidd_BitMap_BytesPerRow:
                 data->bytesPerRow = tag->ti_Data;
                 break;
+
+            case aoHidd_BitMap_Compositable:
+                data->compositable = tag->ti_Data;
+                if (data->compositable)
+                {
+                    HIDDT_ModeID compositmodeid;
+                    struct Library *OOPBase = csd->cs_OOPBase;
+
+                    if (data->friend)
+                    {
+                        OOP_GetAttr(data->friend, aHidd_BitMap_ModeID, &compositmodeid);
+                    }
+                    else
+                        compositmodeid = data->modeid;
+
+                    if (compositmodeid == vHidd_ModeID_Invalid)
+                    {
+                        data->compositable = FALSE;
+                    }
+                    else
+                    {
+                        OOP_Object *sync, *pf;
+
+                        if (!HIDD_Gfx_GetMode(data->gfxhidd, compositmodeid, &sync, &pf))
+                        {
+                            data->compositable = FALSE;
+                        }
+                        else
+                        {
+                            /* Get display size from the modeid */
+                            OOP_GetAttr(sync, aHidd_Sync_HDisp, &data->displayWidth);
+                            OOP_GetAttr(sync, aHidd_Sync_VDisp, &data->displayHeight);
+                            data->display.MaxX = data->displayWidth;
+                            data->display.MaxY = data->displayHeight;
+
+                            D(bug("[BitMap] Bitmap %dx%d, display %dx%d\n", data->width, data->height, data->display.width, data->display.height));
+                        }
+                    }
+                }
             }
         }
     }
