@@ -18,6 +18,45 @@
 #define CYBERGFXNAME	    	    "cybergraphics.library"
 #define CYBERGFX_INCLUDE_VERSION    41UL
 
+/* ProcessPixelArray Operations (v50) */
+
+#define POP_BRIGHTEN                0
+#define POP_DARKEN                  1
+#define POP_SETALPHA                2
+#define POP_TINT                    3
+#define POP_BLUR                    4
+#define POP_COLOR2GREY              5
+#define POP_NEGATIVE                6
+#define POP_NEGFADE                 7
+#define POP_TINTFADE                8
+#define POP_GRADIENT                9
+#define POP_SHIFTRGB                10
+
+#define GRADTYPE_HORIZONTAL         0
+#define GRADTYPE_VERTICAL           1
+#define GRADTYPE_RECTANGLE          2
+#define GRADTYPE_LINEAR_ANGLE       3
+#define GRADTYPE_RADIAL             4
+
+#define RGBSHIFT_BGR                (1UL)
+#define RGBSHIFT_BRG                (2UL)
+#define RGBSHIFT_GBR                (3UL)
+#define RGBSHIFT_GRB                (4UL)
+#define RGBSHIFT_RBG                (5UL)
+
+#define PPAOPTAG_FADEFULLSCALE      0x85231020
+#define PPAOPTAG_FADEOFFSET         0x85231021
+
+#define PPAOPTAG_GRADIENTTYPE       0x85231022
+#define PPAOPTAG_GRADCOLOR1         0x85231023
+#define PPAOPTAG_GRADCOLOR2         0x85231024
+#define PPAOPTAG_GRADFULLSCALE      PPAOPTAG_FADEFULLSCALE
+#define PPAOPTAG_GRADOFFSET         PPAOPTAG_FADEOFFSET
+#define PPAOPTAG_GRADSYMCENTER      0x85231026
+
+#define PPAOPTAG_RGBMASK            0x85231025
+
+/* ModeList Node */
 
 struct CyberModeNode
 {
