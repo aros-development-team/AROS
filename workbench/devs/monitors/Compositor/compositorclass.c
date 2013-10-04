@@ -550,10 +550,11 @@ static VOID HIDDCompositorRedrawAlphaRegions(struct HIDDCompositorData *compdata
                 DREDRAWSCR(bug("[Compositor:%s] Alpha-Region [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(alpharect)));
 
                 HIDDCompositorRedrawBitmap(compdata, renderTarget, n, &alpharect);
-                HIDD_BM_UpdateRect(compdata->displaybitmap,
-                   alpharect.MinX, alpharect.MinY,
-                   alpharect.MaxX - alpharect.MinX + 1,
-                   alpharect.MaxY - alpharect.MinY + 1);
+                if (renderTarget == compdata->displaybitmap)
+                    HIDD_BM_UpdateRect(compdata->displaybitmap,
+                       alpharect.MinX, alpharect.MinY,
+                       alpharect.MaxX - alpharect.MinX + 1,
+                       alpharect.MaxY - alpharect.MinY + 1);
 
                 srrect = srrect->Next;
             }
@@ -660,17 +661,34 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
     if (renderTarget != compdata->displaybitmap)
     {
         DREDRAWSCR(bug("[Compositor:%s] Copying Alpha Intermediary BitMap\n", __PRETTY_FUNCTION__, _RECT(tmprect)));
-        HIDD_Gfx_CopyBox(compdata->gfx, renderTarget,
-                compdata->displayrect.MinX, compdata->displayrect.MinY,
-                compdata->displaybitmap,
-                compdata->displayrect.MinX, compdata->displayrect.MinY,
-                compdata->displayrect.MaxX - compdata->displayrect.MinX + 1,
-                compdata->displayrect.MaxY - compdata->displayrect.MinY + 1,
-                compdata->gc);
-        HIDD_BM_UpdateRect(compdata->displaybitmap,
-                compdata->displayrect.MinX, compdata->displayrect.MinY,
-                compdata->displayrect.MaxX - compdata->displayrect.MinX + 1,
-                compdata->displayrect.MaxY - compdata->displayrect.MinY + 1);
+        if (!(drawrect))
+        {
+            HIDD_Gfx_CopyBox(compdata->gfx, renderTarget,
+                    compdata->displayrect.MinX, compdata->displayrect.MinY,
+                    compdata->displaybitmap,
+                    compdata->displayrect.MinX, compdata->displayrect.MinY,
+                    compdata->displayrect.MaxX - compdata->displayrect.MinX + 1,
+                    compdata->displayrect.MaxY - compdata->displayrect.MinY + 1,
+                    compdata->gc);
+            HIDD_BM_UpdateRect(compdata->displaybitmap,
+                    compdata->displayrect.MinX, compdata->displayrect.MinY,
+                    compdata->displayrect.MaxX - compdata->displayrect.MinX + 1,
+                    compdata->displayrect.MaxY - compdata->displayrect.MinY + 1);
+        }
+        else
+        {
+            HIDD_Gfx_CopyBox(compdata->gfx, renderTarget,
+                    drawrect->MinX, drawrect->MinY,
+                    compdata->displaybitmap,
+                    drawrect->MinX, drawrect->MinY,
+                    drawrect->MaxX - drawrect->MinX + 1,
+                    drawrect->MaxY - drawrect->MinY + 1,
+                    compdata->gc);
+            HIDD_BM_UpdateRect(compdata->displaybitmap,
+                    drawrect->MinX, drawrect->MinY,
+                    drawrect->MaxX - drawrect->MinX + 1,
+                    drawrect->MaxY - drawrect->MinY + 1);
+        }
     }
 }
 
@@ -1360,7 +1378,8 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
                     }
                     else
                     {
-                        updateAlphaBmps = TRUE;
+                        updateAlphaBmps = FALSE;
+                        HIDDCompositorRedrawVisibleRegions(compdata, &dstandvisrect);
                     }
                     if (updateAlphaBmps)
                         HIDDCompositorRedrawAlphaRegions(compdata, &dstandvisrect);
