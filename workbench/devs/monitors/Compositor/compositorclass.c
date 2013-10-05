@@ -463,23 +463,15 @@ static inline void HIDDCompositorRedrawBitmap(struct HIDDCompositorData *compdat
 
     if (!(n->sbmflags & STACKNODEF_HASALPHA))
     {
-        if (n->sbmflags & STACKNODEF_DISPLAYABLE)
-        {
-            DREDRAWBM(bug("[Compositor:%s] Blitting %dx%d [from %d, %d]\n", __PRETTY_FUNCTION__, blitwidth, blitheight, 
-                  rect->MinX - n->leftedge, rect->MinY - n->topedge));
+        DREDRAWBM(bug("[Compositor:%s] Blitting %dx%d [from %d, %d]\n", __PRETTY_FUNCTION__, blitwidth, blitheight, 
+              rect->MinX - n->leftedge, rect->MinY - n->topedge));
 
-            HIDD_Gfx_CopyBox(compdata->gfx, n->bm,
-                            /* Transform to source bitmap coord system */
-                            rect->MinX - n->leftedge, rect->MinY - n->topedge,
-                            renderTarget,
-                            rect->MinX, rect->MinY, blitwidth, blitheight,
-                            compdata->gc);
-        }
-        else
-        {
-            DREDRAWBM(bug("[Compositor:%s] Unhandled Blit [%dx%d from %d, %d]\n", __PRETTY_FUNCTION__, blitwidth, blitheight, 
-                  rect->MinX - n->leftedge, rect->MinY - n->topedge));
-        }
+        HIDD_Gfx_CopyBox(compdata->gfx, n->bm,
+                        /* Transform to source bitmap coord system */
+                        rect->MinX - n->leftedge, rect->MinY - n->topedge,
+                        renderTarget,
+                        rect->MinX, rect->MinY, blitwidth, blitheight,
+                        compdata->gc);
     }
     else
     {
