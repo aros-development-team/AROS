@@ -350,12 +350,15 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 	     */
 	    if (DIH(handle)->drv->compositor)
 	    {
-	    	OOP_GetAttr(DIH(handle)->drv->compositor, aHidd_Compositor_Capabilities, &di->reserved[0]);
+                IPTR capabilities, state;
+                OOP_GetAttr(DIH(handle)->drv->compositor, aHidd_Compositor_Capabilities, &capabilities);
+                OOP_GetAttr(DIH(handle)->drv->compositor, aHidd_Compositor_State, &state);
+                di->reserved[0] = (capabilities << 16) | state;
 	    }
 	    else
 	    {
-		HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
-		di->reserved[0] = HIDDProps.CompositionFlags;
+                HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+                di->reserved[0] = (HIDDProps.CompositionFlags << 16) | HIDDProps.CompositionFlags;
 	    }
 
 	    /* This is for cybergraphics.library */
