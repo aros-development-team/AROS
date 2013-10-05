@@ -165,7 +165,7 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
         OrRectRegion(dispvisregion, &compdata->displayrect);
 
         compdata->flags &= ~COMPSTATEF_HASALPHA;
-        if (!(compdata->alpharegion))
+        if (compdata->alpharegion)
         {
             DisposeRegion(compdata->alpharegion);
             compdata->alpharegion = NULL;
