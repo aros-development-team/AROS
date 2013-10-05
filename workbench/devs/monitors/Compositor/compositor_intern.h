@@ -25,11 +25,9 @@ struct StackBitMapNode
 };
 
 // sbmflags bits 0 to 3 are reserved for the normal compositing flags.
-#define STACKNODEB_HASALPHA      4
-#define STACKNODEF_HASALPHA      (1 << STACKNODEB_HASALPHA)
-#define STACKNODEB_VISIBLE       5
+#define STACKNODEB_VISIBLE       16
 #define STACKNODEF_VISIBLE       (1 << STACKNODEB_VISIBLE)
-#define STACKNODEB_DISPLAYABLE   6
+#define STACKNODEB_DISPLAYABLE   17
 #define STACKNODEF_DISPLAYABLE   (1 << STACKNODEB_DISPLAYABLE)
 
 struct HIDDCompositorData
