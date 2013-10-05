@@ -151,7 +151,11 @@ PlaybackInterrupt( struct SB128_DATA* card )
 
     while( i > 0 )
     {
+#ifdef __AMIGAOS4__
       *dst = ( ( *src & 0xff ) << 8 ) | ( ( *src & 0xff00 ) >> 8 );
+#else
+      *dst = *src;
+#endif
 
       src += skip;
       dst += 1;
@@ -192,6 +196,7 @@ RecordInterrupt( struct SB128_DATA* card )
   //Invalidate cache so that data read from DMA buffer is correct - Articia hack
   CacheClearE(card->current_record_buffer, card->current_record_bytesize, CACRF_InvalidateD);
 
+#ifdef __AMIGAOS4__
   while( i < shorts )
   {
     *ptr = ( ( *ptr & 0xff ) << 8 ) | ( ( *ptr & 0xff00 ) >> 8 );
@@ -199,6 +204,8 @@ RecordInterrupt( struct SB128_DATA* card )
     ++i;
     ++ptr;
   }
+#else
+#endif
 
   CallHookPkt( AudioCtrl->ahiac_SamplerFunc, (Object*) AudioCtrl, &rm );
 
