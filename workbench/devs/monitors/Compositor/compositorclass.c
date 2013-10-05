@@ -42,7 +42,7 @@
 #define COMPOSITOR_PREFS "SYS/compositor.prefs"
 #define COMPOSITOR_PEFSTEMPLATE  "ABOVE/S,BELOW/S,LEFT/S,RIGHT/S,ALPHA/S"
 
-#define CAPABILITY_FLAGS (COMPF_ABOVE|COMPF_BELOW|COMPF_LEFT|COMPF_RIGHT)
+#define CAPABILITY_FLAGS (COMPF_ABOVE|COMPF_BELOW|COMPF_LEFT|COMPF_RIGHT|COMPF_ALPHA)
 
 enum
 {
@@ -165,7 +165,11 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
         OrRectRegion(dispvisregion, &compdata->displayrect);
 
         compdata->flags &= ~COMPSTATEF_HASALPHA;
-
+        if (!(compdata->alpharegion))
+        {
+            DisposeRegion(compdata->alpharegion);
+            compdata->alpharegion = NULL;
+        }
         DRECALC(bug("[Compositor:%s] DisplayRegion @ 0x%p\n", __PRETTY_FUNCTION__, dispvisregion));
 
         ForeachNodeSafe(&compdata->bitmapstack, n, tmpn)
@@ -196,7 +200,7 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
                 {
                     AndRectRect(&n->screenregion->bounds, &compdata->displayrect, &n->screenvisiblerect);
 
-                    if (!(n->sbmflags & STACKNODEF_HASALPHA))
+                    if (!(n->sbmflags & COMPF_ALPHA))
                         ClearRectRegion(dispvisregion, &n->screenvisiblerect);
                     else
                     {
@@ -389,7 +393,7 @@ static void UpdateDisplayMode(struct HIDDCompositorData *compdata)
     for (n = (struct StackBitMapNode *)compdata->bitmapstack.mlh_TailPred;
     	 n->n.mln_Pred; n = (struct StackBitMapNode *)n->n.mln_Pred)
     {
-        if ((!(n->sbmflags & STACKNODEF_HASALPHA)) && (n->sbmflags & STACKNODEF_DISPLAYABLE))
+        if ((!(n->sbmflags & COMPF_ALPHA)) && (n->sbmflags & STACKNODEF_DISPLAYABLE))
         {
             OOP_GetAttr(n->bm, aHidd_BitMap_ModeID, &modeid);
             HIDD_Gfx_GetMode(compdata->gfx, modeid, &sync, &pf);
@@ -463,7 +467,7 @@ static inline void HIDDCompositorRedrawBitmap(struct HIDDCompositorData *compdat
     DREDRAWBM(bug("[Compositor:%s] Redraw BitMap 0x%p, Rect[%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, n->bm,
     		  rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
 
-    if (!(n->sbmflags & STACKNODEF_HASALPHA))
+    if (!(n->sbmflags & COMPF_ALPHA))
     {
         DREDRAWBM(bug("[Compositor:%s] Blitting %dx%d [from %d, %d]\n", __PRETTY_FUNCTION__, blitwidth, blitheight, 
               rect->MinX - n->leftedge, rect->MinY - n->topedge));
@@ -522,7 +526,7 @@ static VOID HIDDCompositorRedrawAlphaRegions(struct HIDDCompositorData *compdata
         n->n.mln_Pred; n = (struct StackBitMapNode *)n->n.mln_Pred)
     {
         if ((n->sbmflags & STACKNODEF_VISIBLE) &&
-            (n->sbmflags & STACKNODEF_HASALPHA) &&
+            (n->sbmflags & COMPF_ALPHA) &&
             (n->screenregion))
         {
             DREDRAWSCR(bug("[Compositor:%s] Alpha-ScreenRegion @ 0x%p ScreenBitMap @ 0x%p [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__,
@@ -586,7 +590,7 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
         ForeachNode(&compdata->bitmapstack, n)
         {
             if ((n->sbmflags & STACKNODEF_VISIBLE) &&
-                (!(n->sbmflags & STACKNODEF_HASALPHA)) &&
+                (!(n->sbmflags & COMPF_ALPHA)) &&
                 (n->screenregion))
             {
                 DREDRAWSCR(bug("[Compositor:%s] ScreenRegion @ 0x%p ScreenBitMap @ 0x%p [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__,
@@ -1052,7 +1056,7 @@ OOP_Object *METHOD(Compositor, Root, New)
 
         CompositorParseConfig(compdata);
 
-        compdata->capabilities = (OOP_Object *)GetTagData(aHidd_Compositor_State, compdata->capabilities, msg->attrList);
+        compdata->capabilities = (ULONG)GetTagData(aHidd_Compositor_State, compdata->capabilities, msg->attrList);
 
         D(bug("[%s] Compositor Capabilities: %08lx\n", __PRETTY_FUNCTION__, compdata->capabilities));
 
@@ -1242,7 +1246,7 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
             n->sbmflags |= STACKNODEF_DISPLAYABLE;
         }
 
-        if (compdata->capabilities & COMPF_ALPHA)
+        if (n->sbmflags & COMPF_ALPHA)
         {
             bmpxfmt = (OOP_Object *)OOP_GET(n->bm, aHidd_BitMap_PixFmt);
             bmstdfmt = (int)OOP_GET(bmpxfmt, aHidd_PixFmt_StdPixFmt);
@@ -1257,19 +1261,18 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
                 {
                     DSTACK(bug("[Compositor] %s: Screen BitMap has Alpha\n", __PRETTY_FUNCTION__));
 
-                    n->sbmflags |= STACKNODEF_HASALPHA;
                     compdata->flags |= COMPSTATEF_HASALPHA;
                     break;
                 }
                 default:
                 {
-                    n->sbmflags &= ~STACKNODEF_HASALPHA;
+                    n->sbmflags &= ~COMPF_ALPHA;
                     break;
                 }
             }
         }
 
-        if (!(n->sbmflags & STACKNODEF_HASALPHA))
+        if (!(n->sbmflags & COMPF_ALPHA))
         {
             if ((((BOOL)OOP_GET(n->bm, aHidd_BitMap_Displayable)) != TRUE))
                 n->sbmflags &= ~STACKNODEF_DISPLAYABLE;
@@ -1370,7 +1373,7 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
                     /* Intersection is valid. Blit. */
                     DUPDATE(bug("[%s] Clipped rect (%d, %d) - (%d, %d)\n", __PRETTY_FUNCTION__, _RECT(dstandvisrect)));
 
-                    if (!(n->sbmflags & STACKNODEF_HASALPHA))
+                    if (!(n->sbmflags & COMPF_ALPHA))
                     {
                         if ((compdata->alpharegion) && (isRectInRegion(compdata->alpharegion, &dstandvisrect)))
                         {
@@ -1384,6 +1387,7 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
                         updateAlphaBmps = FALSE;
                         HIDDCompositorRedrawVisibleRegions(compdata, &dstandvisrect);
                     }
+
                     if (updateAlphaBmps)
                         HIDDCompositorRedrawAlphaRegions(compdata, &dstandvisrect);
 
@@ -1443,7 +1447,7 @@ IPTR METHOD(Compositor, Hidd_Compositor, BitMapPositionChange)
 
     	if ((modeid == vHidd_ModeID_Invalid) && (OOP_GET(msg->bm, aHidd_BitMap_Compositable)))
         {
-            OOP_GetAttr(msg->bm, aHidd_BitMap_Friend, &bmfriend);
+            OOP_GetAttr(msg->bm, aHidd_BitMap_Friend, (IPTR *)&bmfriend);
             if (bmfriend)
                 OOP_GetAttr(bmfriend, aHidd_BitMap_ModeID, &modeid);
         }
