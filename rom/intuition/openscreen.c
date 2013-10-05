@@ -1156,27 +1156,25 @@ static const char THIS_FILE[] = __FILE__;
             struct BitMap *custombm;
             custombm = ns.CustomBitMap;
 #ifdef __AROS__ /* AROS: We don't have CGX in kickstart */
-            /* FIXME: This prevents planar CUSTOMBITMAP on m68k Amiga from working */
-            BOOL (*__IsCompositable) (OOP_Object *, struct GfxBase *) = dispinfo.reserved[0];
-            BOOL (*__MakeDisplayable) (OOP_Object *, struct GfxBase *) = dispinfo.reserved[1];
+            /* FIXME: m68k Compositor needs to report that it can composit planar bitmaps */
+            BOOL (*__IsCompositable) (struct BitMap *, DisplayInfoHandle, struct GfxBase *) = dispinfo.reserved[0];
+            BOOL (*__MakeDisplayable) (struct BitMap *, DisplayInfoHandle, struct GfxBase *) = dispinfo.reserved[1];
 
-            if (!IS_HIDD_BM(custombm))
-                //|| (modeid != HIDD_BM_HIDDMODE(custombm)))
+            if (dispinfo.reserved[0])
             {
-                // TODO: Query the compositor  to find out if we can display the BitMap
-                custombm = NULL;
-            }
-            else
-            {
-                if (dispinfo.reserved[0] && __IsCompositable(HIDD_BM_OBJ(custombm), GfxBase))
+                if (__IsCompositable(custombm, displayinfo, GfxBase))
                 {
                     DEBUG_OPENSCREEN(dprintf("OpenScreen: Marking CustomBitMap 0x%lx as compositable\n", custombm));
-                    __MakeDisplayable(HIDD_BM_OBJ(custombm), GfxBase);
+                    __MakeDisplayable(custombm, displayinfo, GfxBase);
                 }
                 else
                 {
                     custombm = NULL;
                 }
+            }
+            else if ((!IS_HIDD_BM(custombm)) || (modeid != HIDD_BM_HIDDMODE(custombm)))
+            {
+                custombm = NULL;
             }
 #else
             if (IsCyberModeID(modeid) && custombm)
