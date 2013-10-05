@@ -7,6 +7,7 @@
 
 #include "graphics_intern.h"
 #include "compositor_driver.h"
+#include "dispinfo.h"
 
 ULONG compositor_Install(OOP_Class *cl, struct GfxBase *GfxBase)
 {
@@ -66,24 +67,32 @@ void compositor_Setup(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
      	  OOP_OCLASS(mdd->gfxhidd_orig)->ClassNode.ln_Name));
 }
 
-BOOL compositor_IsBMCompositable(OOP_Object *bm, struct GfxBase *GfxBase)
+BOOL compositor_IsBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handle, struct GfxBase *GfxBase)
 {
-    D(bug("[GfxCompositor] IsBm @ 0x%p Compositable?\n", bm));
-
-    return TRUE;
-}
-
-BOOL compositor_SetBMCompositable(OOP_Object *bm, struct GfxBase *GfxBase)
-{
-    if (!(OOP_GET(bm, aHidd_BitMap_Displayable)))
+    if (DIH(handle)->drv->compositor)
     {
-        struct TagItem composittags[] = {
-            {aHidd_BitMap_Compositable, TRUE},
-            {TAG_DONE	     , 0    }
+        struct pHidd_Compositor_BitMapValidate msg =
+        {
+            mID    : PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapValidate,
+            bm     : bitmap,
         };
 
-        D(bug("[GfxCompositor]: Marking BitMap 0x%lx as Compositable\n", bm));
-        OOP_SetAttrs(bm, composittags);
+        return (BOOL)OOP_DoMethod(DIH(handle)->drv->compositor, &msg.mID);
     }
-    return TRUE;
+    return FALSE;
+}
+
+BOOL compositor_SetBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handle, struct GfxBase *GfxBase)
+{
+    if (DIH(handle)->drv->compositor)
+    {
+        struct pHidd_Compositor_BitMapEnable msg =
+        {
+            mID    : PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapEnable,
+            bm     : bitmap,
+        };
+
+        return (BOOL)OOP_DoMethod(DIH(handle)->drv->compositor, &msg.mID);
+    }
+    return FALSE;
 }

@@ -49,5 +49,5 @@ static inline void compositor_UpdateBitMap(OOP_Object *o, OOP_Object *bitmap, UW
 ULONG compositor_Install(OOP_Class *cl, struct GfxBase *GfxBase);
 void compositor_Setup(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
 /* Validate and enable composition of alien bitmap formats */
-BOOL compositor_IsBMCompositable(OOP_Object *bm, struct GfxBase *GfxBase);
-BOOL compositor_SetBMCompositable(OOP_Object *bm, struct GfxBase *GfxBase);
+BOOL compositor_IsBMCompositable(struct BitMap *bm, DisplayInfoHandle, struct GfxBase *GfxBase);
+BOOL compositor_SetBMCompositable(struct BitMap *bm, DisplayInfoHandle, struct GfxBase *GfxBase);
