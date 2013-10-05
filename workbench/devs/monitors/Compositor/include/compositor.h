@@ -37,16 +37,18 @@ enum
 
 enum
 {
-    aoHidd_Compositor_GfxHidd = 0, 	/* [I..] Gfx driver object connected with this compositor object */
-    aoHidd_Compositor_Capabilities,	/* [ISG] Composition capabilities of this implementation	  */
+    aoHidd_Compositor_GfxHidd = 0, 	/* [I..] Gfx driver object connected with this compositor object  */
+    aoHidd_Compositor_Capabilities,	/* [..G] Composition capabilities of this implementation	  */
+    aoHidd_Compositor_State,	        /* [ISG] Currently used capabilities                              */
     aoHidd_Compositor_BackFillHook,	/* [ISG] Rendering hook for void space                            */
     aoHidd_Compositor_FrameBuffer,	/* [I..] Driver's framebuffer bitmap				  */
 
     num_Hidd_Compositor_Attrs
 };
 
-#define aHidd_Compositor_GfxHidd  	(HiddCompositorAttrBase + aoHidd_Compositor_GfxHidd)
+#define aHidd_Compositor_GfxHidd       (HiddCompositorAttrBase + aoHidd_Compositor_GfxHidd)
 #define aHidd_Compositor_Capabilities  (HiddCompositorAttrBase + aoHidd_Compositor_Capabilities)
+#define aHidd_Compositor_State         (HiddCompositorAttrBase + aoHidd_Compositor_State)
 #define aHidd_Compositor_BackFillHook  (HiddCompositorAttrBase + aoHidd_Compositor_BackFillHook)
 #define aHidd_Compositor_FrameBuffer   (HiddCompositorAttrBase + aoHidd_Compositor_FrameBuffer)
 
