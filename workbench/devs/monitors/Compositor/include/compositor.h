@@ -30,7 +30,8 @@ enum
     moHidd_Compositor_BitMapRectChanged,
     moHidd_Compositor_BitMapPositionChange,
     moHidd_Compositor_DisplayRectChanged,
-
+    moHidd_Compositor_BitMapValidate,
+    moHidd_Compositor_BitMapEnable,
     NUM_COMPOSITOR_METHODS
 };
 
@@ -75,6 +76,18 @@ struct pHidd_Compositor_BitMapPositionChange
     OOP_Object      *bm;
     SIPTR           *newxoffset;
     SIPTR           *newyoffset;
+};
+
+struct pHidd_Compositor_BitMapValidate
+{
+    OOP_MethodID    mID;
+    struct BitMap     *bm;
+};
+
+struct pHidd_Compositor_BitMapEnable
+{
+    OOP_MethodID    mID;
+    struct BitMap     *bm;
 };
 
 struct HIDD_BackFillHookMsg

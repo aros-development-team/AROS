@@ -1491,6 +1491,34 @@ IPTR METHOD(Compositor, Hidd_Compositor, BitMapPositionChange)
     return compdata->displaybitmap ? TRUE : FALSE;
 }
 
+IPTR METHOD(Compositor, Hidd_Compositor, BitMapValidate)
+{
+    if (IS_HIDD_BM(msg->bm))
+        return TRUE;
+    
+    return FALSE;
+}
+
+IPTR METHOD(Compositor, Hidd_Compositor, BitMapEnable)
+{
+    if (IS_HIDD_BM(msg->bm))
+    {
+        if (!(OOP_GET(HIDD_BM_OBJ(msg->bm), aHidd_BitMap_Displayable)))
+        {
+            struct TagItem composittags[] = {
+                {aHidd_BitMap_Compositable, TRUE},
+                {TAG_DONE	     , 0    }
+            };
+
+            D(bug("[GfxCompositor]: Marking BitMap 0x%lx as Compositable\n", msg->bm));
+            OOP_SetAttrs(HIDD_BM_OBJ(msg->bm), composittags);
+        }
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 #define NUM_Compositor_Root_METHODS 4
 
 static const struct OOP_MethodDescr Compositor_Root_descr[] =
@@ -1502,13 +1530,15 @@ static const struct OOP_MethodDescr Compositor_Root_descr[] =
     {NULL, 0}
 };
 
-#define NUM_Compositor_Hidd_Compositor_METHODS 3
+#define NUM_Compositor_Hidd_Compositor_METHODS 5
 
 static const struct OOP_MethodDescr Compositor_Hidd_Compositor_descr[] =
 {
     {(OOP_MethodFunc)Compositor__Hidd_Compositor__BitMapStackChanged, moHidd_Compositor_BitMapStackChanged},
     {(OOP_MethodFunc)Compositor__Hidd_Compositor__BitMapRectChanged, moHidd_Compositor_BitMapRectChanged},
     {(OOP_MethodFunc)Compositor__Hidd_Compositor__BitMapPositionChange, moHidd_Compositor_BitMapPositionChange},
+    {(OOP_MethodFunc)Compositor__Hidd_Compositor__BitMapValidate, moHidd_Compositor_BitMapValidate},
+    {(OOP_MethodFunc)Compositor__Hidd_Compositor__BitMapEnable, moHidd_Compositor_BitMapEnable},
     {NULL, 0}
 };
 
