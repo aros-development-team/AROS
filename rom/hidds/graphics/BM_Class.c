@@ -1201,6 +1201,10 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
             *msg->storage = data->framebuffer ? TRUE : data->visible;
             return;
 
+        case aoHidd_BitMap_Compositable:
+            *msg->storage = (IPTR)data->compositable;
+            return;
+
         /*
          * The following two are stored with inverted sign!
          * Verbose explanation is in Set method.
@@ -4459,7 +4463,7 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
                     xoffset = 0;
                 else if (xoffset > limit)
                     xoffset = limit;
-                D(bug("[BitMap] xoffset requested %ld, got %d\n", -tag->ti_Data, xoffset));
+                bug("[BitMap] xoffset requested %ld, got %d\n", -tag->ti_Data, xoffset);
                 break;
 
             case aoHidd_BitMap_TopEdge:
@@ -4469,7 +4473,7 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
                     yoffset = 0;
                 else if (yoffset > limit)
                     yoffset = limit;
-                D(bug("[BitMap] yoffset requested %ld, got %d\n", -tag->ti_Data, yoffset));
+                bug("[BitMap] yoffset requested %ld, got %d\n", -tag->ti_Data, yoffset);
                 break;
 	    }
         }
