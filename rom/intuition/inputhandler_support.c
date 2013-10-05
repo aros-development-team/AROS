@@ -25,6 +25,7 @@
 #include <intuition/cghooks.h>
 #include <intuition/sghooks.h>
 #include <devices/inputevent.h>
+#include <hidd/graphics.h>
 #include <string.h>
 
 #include "inputhandler.h"
@@ -68,7 +69,7 @@
 void notify_mousemove_screensandwindows(struct IntuitionBase * IntuitionBase)
 {
     LONG               lock = LockIBase(0);
-    struct Screen *scr = IntuitionBase->FirstScreen;
+    struct Screen *scr;
 
     for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen)
     {
@@ -81,16 +82,10 @@ void notify_mousemove_screensandwindows(struct IntuitionBase * IntuitionBase)
         scr->MouseX = IntuitionBase->MouseX - scr->LeftEdge;
         scr->MouseY = IntuitionBase->MouseY - scr->TopEdge;
 
-        /*
-        ** Visit all windows of this screen
-        */
-        win = scr->FirstWindow;
-
-        while (NULL != win)
+        /* update windows belonging to this screen */
+        for (win = scr->FirstWindow; win; win = win->NextWindow)
         {
             UpdateMouseCoords(win);
-
-            win = win -> NextWindow;
         }
     }
 
@@ -1447,15 +1442,41 @@ struct Screen *FindHighestScreen(struct IntuitionBase *IntuitionBase)
 struct Screen *FindActiveScreen(struct IntuitionBase *IntuitionBase)
 {
     struct Screen *scr;
-    
+    WORD MinX, MinY, MaxX, MaxY;
+    ULONG compflags;
+
     for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen) {
         /* We check only screens which are on this monitor */
         if (GetPrivScreen(scr)->IMonitorNode != GetPrivIBase(IntuitionBase)->ActiveMonitor)
             continue;
 
-        /* If the mouse is inside screen's bitmap, we found it */
-        if ((scr->MouseX >= 0) && (scr->MouseY >= 0) &&
-           ((scr->MouseX < scr->Width) && scr->MouseY < scr->Height))
+        compflags = GetPrivScreen(scr)->SpecialFlags >> 8;
+
+        /* adjust screen bounds if compositing */
+        if (compflags & COMPF_ABOVE)
+            MinY = 0;
+        else
+            MinY = -(scr->TopEdge);
+
+        if (compflags & COMPF_BELOW)
+            MaxY = scr->Height;
+        else
+            MaxY = scr->MouseY + 1;
+
+        if (compflags & COMPF_LEFT)
+            MinX = 0;
+        else
+            MinX = -(scr->LeftEdge);
+
+        if (compflags & COMPF_RIGHT)
+            MaxX = scr->Width;
+        else
+            MaxX = scr->MouseX + 1;
+
+        bug("[Intuition] Bounds %d,%d->%d,%d\n", MinX, MinY, MaxX, MaxY);
+        /* If the mouse is inside screen's bounds, we found it */
+        if ((scr->MouseX >= MinX) && (scr->MouseY >= MinY) &&
+           ((scr->MouseX < MaxX) && scr->MouseY < MaxY))
                break;
     }
     return scr;
