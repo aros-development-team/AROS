@@ -1473,7 +1473,7 @@ struct Screen *FindActiveScreen(struct IntuitionBase *IntuitionBase)
         else
             MaxX = scr->MouseX + 1;
 
-        bug("[Intuition] Bounds %d,%d->%d,%d\n", MinX, MinY, MaxX, MaxY);
+        D(bug("[Intuition] Bounds %d,%d->%d,%d\n", MinX, MinY, MaxX, MaxY));
         /* If the mouse is inside screen's bounds, we found it */
         if ((scr->MouseX >= MinX) && (scr->MouseY >= MinY) &&
            ((scr->MouseX < MaxX) && scr->MouseY < MaxY))
