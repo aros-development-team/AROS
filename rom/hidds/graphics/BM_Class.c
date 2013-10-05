@@ -4463,7 +4463,7 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
                     xoffset = 0;
                 else if (xoffset > limit)
                     xoffset = limit;
-                bug("[BitMap] xoffset requested %ld, got %d\n", -tag->ti_Data, xoffset);
+                D(bug("[BitMap] xoffset requested %ld, got %d\n", -tag->ti_Data, xoffset));
                 break;
 
             case aoHidd_BitMap_TopEdge:
@@ -4473,7 +4473,7 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
                     yoffset = 0;
                 else if (yoffset > limit)
                     yoffset = limit;
-                bug("[BitMap] yoffset requested %ld, got %d\n", -tag->ti_Data, yoffset);
+                D(bug("[BitMap] yoffset requested %ld, got %d\n", -tag->ti_Data, yoffset));
                 break;
 	    }
         }
