@@ -1437,20 +1437,27 @@ IPTR METHOD(Compositor, Hidd_Compositor, BitMapPositionChange)
     {
 	/* The bitmap is not displayed yet. Validate against its own ModeID size. */
     	HIDDT_ModeID modeid = vHidd_ModeID_Invalid;
-    	OOP_Object *sync, *pf;
+    	OOP_Object *bmfriend, *sync, *pf;
 
     	OOP_GetAttr(msg->bm, aHidd_BitMap_ModeID, &modeid);
 
-    	if (modeid == vHidd_ModeID_Invalid)
-    	{
-    	    /*
-    	     * Nondisplayable bitmaps don't scroll.
-    	     * In fact they simply can't get in here because MakeVPort() performs the validation.
-    	     * But who knows what bug can slip into someone's software...
-    	     */
-    	    UNLOCK_COMPOSITOR
-    	    return FALSE;
-    	}
+    	if ((modeid == vHidd_ModeID_Invalid) && (OOP_GET(msg->bm, aHidd_BitMap_Compositable)))
+        {
+            OOP_GetAttr(msg->bm, aHidd_BitMap_Friend, &bmfriend);
+            if (bmfriend)
+                OOP_GetAttr(bmfriend, aHidd_BitMap_ModeID, &modeid);
+        }
+
+        if (modeid == vHidd_ModeID_Invalid)
+        {
+            /*
+                * Nondisplayable bitmaps don't scroll.
+                * In fact they simply can't get in here because MakeVPort() performs the validation.
+                * But who knows what bug can slip into someone's software...
+                */
+            UNLOCK_COMPOSITOR
+            return FALSE;
+        }
 
     	HIDD_Gfx_GetMode(compdata->gfx, modeid, &sync, &pf);
     	OOP_GetAttr(sync, aHidd_Sync_HDisp, &disp_width);
