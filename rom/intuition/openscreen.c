@@ -1102,7 +1102,7 @@ static const char THIS_FILE[] = __FILE__;
     {
         success = TRUE;
 #ifdef __AROS__ /* AROS: Get HIDD composition flags */
-        screen->SpecialFlags = (compflags & dimensions.reserved[0]) << 8;
+        screen->SpecialFlags = ((compflags & (dimensions.reserved[0] >> 16)) | (dimensions.reserved[0] & 0xFFFF)) << 8;
 
         if (draggable) screen->SpecialFlags |= SF_Draggable;
 #else
@@ -1147,9 +1147,9 @@ static const char THIS_FILE[] = __FILE__;
             ns.Height = dimensions.MinRasterHeight;
         else if (ns.Height > dimensions.MaxRasterHeight)
             ns.Height = dimensions.MaxRasterHeight;
-#endif
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Monitor 0x%lx Width %ld Height %ld\n",
                      screen->Monitor, ns.Width, ns.Height));
+#endif
 
         if (ns.Type & CUSTOMBITMAP)
         {
