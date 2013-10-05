@@ -42,6 +42,8 @@
 #define COMPOSITOR_PREFS "SYS/compositor.prefs"
 #define COMPOSITOR_PEFSTEMPLATE  "ABOVE/S,BELOW/S,LEFT/S,RIGHT/S,ALPHA/S"
 
+#define CAPABILITY_FLAGS (COMPF_ABOVE|COMPF_BELOW|COMPF_LEFT|COMPF_RIGHT)
+
 enum
 {
     ARG_ABOVE = 0,
@@ -1050,7 +1052,9 @@ OOP_Object *METHOD(Compositor, Root, New)
 
         CompositorParseConfig(compdata);
 
-        D(bug("[%s] Composite Capabilities: %08lx\n", __PRETTY_FUNCTION__, compdata->capabilities));
+        compdata->capabilities = (OOP_Object *)GetTagData(aHidd_Compositor_State, compdata->capabilities, msg->attrList);
+
+        D(bug("[%s] Compositor Capabilities: %08lx\n", __PRETTY_FUNCTION__, compdata->capabilities));
 
         compdata->screenmodeid = vHidd_ModeID_Invalid;
 
@@ -1111,8 +1115,14 @@ VOID METHOD(Compositor, Root, Get)
 	{
             case aoHidd_Compositor_Capabilities:
             {
-                D(bug("[%s] Composite Capabilities: %lx\n", __PRETTY_FUNCTION__, compdata->capabilities));
-                *msg->storage = (IPTR)COMPF_ABOVE|COMPF_BELOW|COMPF_LEFT|COMPF_RIGHT;
+                *msg->storage = (IPTR)CAPABILITY_FLAGS;
+                D(bug("[%s] Compositor Capabilities: %lx\n", __PRETTY_FUNCTION__, *msg->storage));
+                return;
+            }
+            case aoHidd_Compositor_State:
+            {
+                *msg->storage = (IPTR)(compdata->capabilities & CAPABILITY_FLAGS);
+                D(bug("[%s] Compositor State: %lx\n", __PRETTY_FUNCTION__, compdata->capabilities));
                 return;
             }
             case aoHidd_Compositor_BackFillHook:
@@ -1139,10 +1149,11 @@ VOID METHOD(Compositor, Root, Set)
         {
             switch (idx)
             {
-                case aoHidd_Compositor_Capabilities:
+                case aoHidd_Compositor_State:
                 {
-                    D(bug("[%s] Composite Capabilities: %lx -> %lx\n", __PRETTY_FUNCTION__, compdata->capabilities, tag->ti_Data));
-                    compdata->capabilities = (ULONG)tag->ti_Data;
+                    D(bug("[%s] Compositor Capabilities State: %lx -> ", __PRETTY_FUNCTION__, compdata->capabilities));
+                    compdata->capabilities = (ULONG)(tag->ti_Data & CAPABILITY_FLAGS);
+                    D(bug("%lx\n", compdata->capabilities));
                     break;
                 }
                 case aoHidd_Compositor_BackFillHook:
