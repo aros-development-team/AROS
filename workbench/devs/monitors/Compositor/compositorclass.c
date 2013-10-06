@@ -72,11 +72,10 @@ enum
 BOOL isRectInRegion(struct Region *region, struct Rectangle *rect)
 {
     struct RegionRectangle *rrect = region->RegionRectangle;
-    struct Rectangle tmprect;
 
     while (rrect)
     {
-        if (AndRectRect(&rrect->bounds, rect, &tmprect))
+        if (AndRectRect(&rrect->bounds, rect, NULL))
             return TRUE;
 
         rrect = rrect->Next;
@@ -763,10 +762,11 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
      * mirroring has a negative impact on performance.
      */
     OOP_Object *oldcompositedbitmap = compdata->displaybitmap;
+    struct StackBitMapNode *topnode = compdata->bitmapstack.mlh_Head;
     OOP_Object *newscreenbitmap = NULL;
     struct TagItem bmtags[5];
 
-    BOOL ok = TRUE;
+    BOOL ok = TRUE, composit = FALSE;
 
     /* (a) If mode change is needed, enforce opening a new screen */
     if (compdata->modeschanged)
@@ -781,14 +781,17 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     bmtags[3].ti_Tag = aHidd_BitMap_ModeID;         bmtags[3].ti_Data = compdata->screenmodeid;
     bmtags[4].ti_Tag = TAG_DONE;                    bmtags[4].ti_Data = TAG_DONE;
 
-#if (0)
-    /*
-     * This condition is enough as compositing allows only dragging screen down
-     * and not up/left/right at the moment.
-     */
-    if (topedge > 0)
+    if ((topnode->topedge > 0) || (bmtags[1].ti_Data > OOP_GET(topnode->bm, aHidd_BitMap_Height)))
+        composit = TRUE;
+
+    if ((topnode->leftedge > 0) || (bmtags[0].ti_Data > OOP_GET(topnode->bm, aHidd_BitMap_Width)))
+        composit = TRUE;
+
+    if (topnode->sbmflags & COMPF_ALPHA)
+        composit = TRUE;
+
+    if (composit)
     {
-#endif
         /* (b) */
         if (compdata->displaybitmap == NULL)
         {
@@ -863,7 +866,6 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
          */
         if (ok)
             HIDDCompositorRedrawVisibleRegions(compdata, NULL);
-#if(0)
     }
     else if (oldcompositedbitmap || newtop)
     {
@@ -877,7 +879,6 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
         newscreenbitmap = compdata->topbitmap;
         compdata->displaybitmap = NULL;
     }
-#endif
 
     DTOGGLE(bug("[Compositor:%s] oldcompbmp 0x%p, topbmp 0x%p, compbmp 0x%p, newscreenbmp 0x%p\n", __PRETTY_FUNCTION__,
             oldcompositedbitmap, compdata->topbitmap, compdata->displaybitmap, newscreenbitmap));
