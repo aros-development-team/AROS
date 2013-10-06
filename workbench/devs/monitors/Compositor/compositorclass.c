@@ -542,18 +542,17 @@ static VOID HIDDCompositorRedrawAlphaRegions(struct HIDDCompositorData *compdata
                 alpharect.MaxX = srrect->bounds.MaxX + n->screenregion->bounds.MinX;
                 alpharect.MaxY = srrect->bounds.MaxY + n->screenregion->bounds.MinY;
 
-                if ((drawrect) && !AndRectRect(drawrect, &alpharect, &alpharect))
-                    continue;
+                if (!(drawrect) || AndRectRect(drawrect, &alpharect, &alpharect))
+                {
+                    DREDRAWSCR(bug("[Compositor:%s] Alpha-Region [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(alpharect)));
 
-                DREDRAWSCR(bug("[Compositor:%s] Alpha-Region [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(alpharect)));
-
-                HIDDCompositorRedrawBitmap(compdata, renderTarget, n, &alpharect);
-                if (renderTarget == compdata->displaybitmap)
-                    HIDD_BM_UpdateRect(compdata->displaybitmap,
-                       alpharect.MinX, alpharect.MinY,
-                       alpharect.MaxX - alpharect.MinX + 1,
-                       alpharect.MaxY - alpharect.MinY + 1);
-
+                    HIDDCompositorRedrawBitmap(compdata, renderTarget, n, &alpharect);
+                    if (renderTarget == compdata->displaybitmap)
+                        HIDD_BM_UpdateRect(compdata->displaybitmap,
+                           alpharect.MinX, alpharect.MinY,
+                           alpharect.MaxX - alpharect.MinX + 1,
+                           alpharect.MaxY - alpharect.MinY + 1);
+                }
                 srrect = srrect->Next;
             }
         }
@@ -606,18 +605,17 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
                     tmprect.MaxX = srrect->bounds.MaxX + n->screenregion->bounds.MinX;
                     tmprect.MaxY = srrect->bounds.MaxY + n->screenregion->bounds.MinY;
 
-                    if ((drawrect) && !AndRectRect(drawrect, &tmprect, &tmprect))
-                        continue;
+                    if (!(drawrect) || AndRectRect(drawrect, &tmprect, &tmprect))
+                    {
+                        DREDRAWSCR(bug("[Compositor:%s] Region [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(tmprect)));
 
-                    DREDRAWSCR(bug("[Compositor:%s] Region [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(tmprect)));
-
-                    HIDDCompositorRedrawBitmap(compdata, renderTarget, n, &tmprect);
-                    if (renderTarget == compdata->displaybitmap)
-                        HIDD_BM_UpdateRect(compdata->displaybitmap,
-                           tmprect.MinX, tmprect.MinY,
-                           tmprect.MaxX - tmprect.MinX + 1,
-                           tmprect.MaxY - tmprect.MinY + 1);
-
+                        HIDDCompositorRedrawBitmap(compdata, renderTarget, n, &tmprect);
+                        if (renderTarget == compdata->displaybitmap)
+                            HIDD_BM_UpdateRect(compdata->displaybitmap,
+                               tmprect.MinX, tmprect.MinY,
+                               tmprect.MaxX - tmprect.MinX + 1,
+                               tmprect.MaxY - tmprect.MinY + 1);
+                    }
                     srrect = srrect->Next;
                 }
                 ClearRegionRegion(n->screenregion, dispvisregion);
@@ -633,21 +631,20 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
             tmprect.MaxX = dispclrrect->bounds.MaxX + dispvisregion->bounds.MinX;
             tmprect.MaxY = dispclrrect->bounds.MaxY + dispvisregion->bounds.MinY;
 
-            if ((drawrect) && !AndRectRect(drawrect, &tmprect, &tmprect))
-                continue;
+            if (!(drawrect) || AndRectRect(drawrect, &tmprect, &tmprect))
+            {
+                DREDRAWSCR(bug("[Compositor:%s] Render Display Void Region [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(tmprect)));
 
-            DREDRAWSCR(bug("[Compositor:%s] Render Display Void Region [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(tmprect)));
-
-            clearmsg.bounds = &tmprect;
-            clearmsg.offsetx = 0;
-            clearmsg.offsety = 0;
-            CallHookPkt(compdata->backfillhook, renderTarget, &clearmsg);
-            if (renderTarget == compdata->displaybitmap)
-                HIDD_BM_UpdateRect(compdata->displaybitmap,
-                   tmprect.MinX, tmprect.MinY,
-                   tmprect.MaxX - tmprect.MinX + 1,
-                   tmprect.MaxY - tmprect.MinY + 1);
-
+                clearmsg.bounds = &tmprect;
+                clearmsg.offsetx = 0;
+                clearmsg.offsety = 0;
+                CallHookPkt(compdata->backfillhook, renderTarget, &clearmsg);
+                if (renderTarget == compdata->displaybitmap)
+                    HIDD_BM_UpdateRect(compdata->displaybitmap,
+                       tmprect.MinX, tmprect.MinY,
+                       tmprect.MaxX - tmprect.MinX + 1,
+                       tmprect.MaxY - tmprect.MinY + 1);
+            }
             dispclrrect = dispclrrect->Next;
         }
         if (compdata->flags & COMPSTATEF_HASALPHA)
