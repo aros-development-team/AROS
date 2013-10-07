@@ -545,6 +545,15 @@ static VOID HIDDCompositorRedrawAlphaRegions(struct HIDDCompositorData *compdata
                 {
                     DREDRAWSCR(bug("[Compositor:%s] Alpha-Region [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, _RECT(alpharect)));
 
+                    if (n->prealphacomphook)
+                    {
+                        struct HIDD_BackFillHookMsg preprocessmsg;
+                        preprocessmsg.bounds = &alpharect;
+                        preprocessmsg.offsetx = 0;
+                        preprocessmsg.offsety = 0;
+                        CallHookPkt(n->prealphacomphook, renderTarget, &preprocessmsg);
+                    }
+
                     HIDDCompositorRedrawBitmap(compdata, renderTarget, n, &alpharect);
                     if (renderTarget == compdata->displaybitmap)
                         HIDD_BM_UpdateRect(compdata->displaybitmap,
@@ -1201,6 +1210,8 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
     {
         UNLOCK_COMPOSITOR
 
+        DSTACK(bug("[Compositor] %s: No ViewPort specified\n", __PRETTY_FUNCTION__));
+
 	/* Blank screen */
 	HIDDCompositorShowSingle(compdata, NULL);
 
@@ -1242,6 +1253,11 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
             GetAttr(SA_CompositingFlags, (Object *)bmScreen, &n->sbmflags);
             DSTACK(bug("[Compositor] %s: CompositingFlags %08x\n", __PRETTY_FUNCTION__, n->sbmflags));
             n->sbmflags |= STACKNODEF_DISPLAYABLE;
+            if (n->sbmflags & COMPF_ALPHA)
+            {
+                GetAttr(SA_AlphaPreCompositHook, (Object *)bmScreen, (IPTR *)&n->prealphacomphook);
+                DSTACK(bug("[Compositor] %s: Pre-AlphaComposit Hook @ 0x%p\n", __PRETTY_FUNCTION__, n->prealphacomphook));
+            }
         }
 
         if (n->sbmflags & COMPF_ALPHA)

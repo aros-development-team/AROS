@@ -22,6 +22,7 @@ struct StackBitMapNode
     SIPTR	                leftedge;		/* Offset */
     SIPTR	                topedge;
     IPTR                        sbmflags;
+    struct Hook                 *prealphacomphook;
 };
 
 // sbmflags bits 0 to 3 are reserved for the normal compositing flags.
