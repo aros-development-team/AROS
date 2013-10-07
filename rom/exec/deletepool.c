@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Delete a memory pool including all its memory.
@@ -29,7 +29,7 @@
 	struct ExecBase *, SysBase, 117, Exec)
 
 /*  FUNCTION
-	Delete a pool including all it's memory.
+	Delete a pool including all its memory.
 
     INPUTS
 	poolHeader - The pool allocated with CreatePool() or NULL.
@@ -43,7 +43,8 @@
     BUGS
 
     SEE ALSO
-	CreatePool(), AllocPooled(), FreePooled()
+	CreatePool(), AllocPooled(), FreePooled(), AllocVecPooled(),
+	FreeVecPooled()
 
     INTERNALS
 

@@ -50,4 +50,4 @@ struct arosmesa_context
 /* GL API for state tracker */
 extern struct st_api * glstapi;
 
-#endif /* AROSMESA_INTERNAL_H */
+#endif /* AROSMESA_TYPES_H */

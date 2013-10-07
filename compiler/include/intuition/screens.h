@@ -343,4 +343,4 @@ struct DrawInfo
 #define OSERR_ATTACHFAIL   8
 #define OSERR_NOTAVAILABLE 9
 
-#endif /* GRAPHICS_SCREENS_H */
+#endif /* INTUITION_SCREENS_H */

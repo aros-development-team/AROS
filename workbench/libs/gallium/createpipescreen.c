@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,10 +24,10 @@
 
 /*  FUNCTION
         Creates a gallium pipe screen.
- 
+
     INPUTS
         tags - a pointer to tags to be used during creation.
- 
+
     TAGS
         CPS_GalliumInterfaceVersion - Indicates a version of gallium interface
             that a client is expected to receive. The client expected version
@@ -38,13 +38,11 @@
             See also CreatePipeScreenV.
 
     RESULT
-        A valid pipe screen instance or NULL of creation was not succesfull.
- 
+        A valid pipe screen instance or NULL if creation was not successful.
+
     BUGS
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
