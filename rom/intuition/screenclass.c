@@ -836,7 +836,6 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         break;
 
     case SA_AlphaPreCompositHook:
-        bug("[ScreenClass] %s: SA_AlphaPreCompositHook\n", __PRETTY_FUNCTION__);
         *msg->opg_Storage = (IPTR)screen->preAlphaCompHook;
         break;
 
@@ -916,7 +915,6 @@ IPTR ScreenClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
         case SA_AlphaPreCompositHook:
             {
                 screen->preAlphaCompHook = (struct Hook *)tag->ti_Data;
-                bug("[ScreenClass] %s: SA_AlphaPreCompositHook @ 0x%p\n", __PRETTY_FUNCTION__, screen->preAlphaCompHook);
             }
             break;
         }
