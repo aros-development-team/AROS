@@ -2027,6 +2027,22 @@ void wanderer_menufunc_icon_snapshot(IPTR *flags)
     D(bug("[Wanderer] %s: finished ..\n", __PRETTY_FUNCTION__));
 }
 
+static char * get_volume(char * path)
+{
+    char * _return = NULL;
+    char * sep = strchr(path, ':');
+
+    if (sep)
+    {
+        int i = (int)(sep - path);
+        _return = AllocVec(i + 2, MEMF_CLEAR);
+        if (_return != NULL)
+            CopyMem(path, _return, i + 1);
+    }
+
+    return _return;
+}
+
 #define BDRPLINELEN_MAX 1024
 
 struct DesktopLinkIcon_Entry
@@ -2054,19 +2070,8 @@ void wanderer_menufunc_icon_leaveout(void)
     {
         D(bug("[Wanderer] %s: dir '%s'\n", __PRETTY_FUNCTION__, leavout_dir));
         
-        char *entryVolume = NULL;
-        int i;
+        char *entryVolume = get_volume(leavout_dir);
 
-        for (i = 0; i < strlen(leavout_dir); i++)
-        {
-            if (leavout_dir[i] == ':')
-            {
-                entryVolume = AllocVec(i + 2, MEMF_CLEAR);
-                if (entryVolume != NULL)
-                    CopyMem(leavout_dir, entryVolume, i + 1);
-            }
-        }
-        
         if (entryVolume != NULL)
         {
             D(bug("[Wanderer] %s: Updating .backdrop file for volume '%s'.. \n", __PRETTY_FUNCTION__, entryVolume));
@@ -2250,19 +2255,8 @@ void wanderer_menufunc_icon_putaway(void)
             D(bug("[Wanderer] %s: entry = '%s' @ %p, (%p)\n", __PRETTY_FUNCTION__,
                     entry->ile_IconEntry->ie_IconNode.ln_Name, entry, node));
 
-            char *entryVolume = NULL;
-            int i;
+            char *entryVolume = get_volume(entry->ile_IconEntry->ie_IconNode.ln_Name);
 
-            for (i = 0; i < strlen(entry->ile_IconEntry->ie_IconNode.ln_Name); i++)
-            {
-                if (entry->ile_IconEntry->ie_IconNode.ln_Name[i] == ':')
-                {
-                    entryVolume = AllocVec(i + 2, MEMF_CLEAR);
-                    if (entryVolume != NULL)
-                        CopyMem(entry->ile_IconEntry->ie_IconNode.ln_Name, entryVolume, i + 1);
-                }
-            }
-            
             if (entryVolume == NULL)
             {
                 D(bug("[Wanderer] %s: couldnt figure out the volume name.. ?????\n", __PRETTY_FUNCTION__));
