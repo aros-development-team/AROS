@@ -910,6 +910,10 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
             {
                 switch (idx)
                 {
+                case aoHidd_BitMap_BMStruct:
+                    data->bmstruct = (struct BitMap *)tag->ti_Data;
+                    break;
+
                 case aoHidd_BitMap_Width:
                     data->width = tag->ti_Data;
                     break;
@@ -1143,6 +1147,10 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
     {
         switch(idx)
         {
+        case aoHidd_BitMap_BMStruct:
+            *msg->storage = (IPTR)data->bmstruct;
+            break;
+
         case aoHidd_BitMap_Width:
             *msg->storage = data->width;
              D(bug("  width: %i\n", data->width));
