@@ -2296,7 +2296,7 @@ void wanderer_menufunc_icon_putaway(void)
                 FreeVec(entryVolume);
             }
             
-            if (paiVolume == NULL)
+            if (paiVolume != NULL)
             {
                 paiEntry = AllocMem(sizeof(struct DesktopLinkIcon_Entry), MEMF_CLEAR);
                 if (paiEntry != NULL)
@@ -2381,7 +2381,7 @@ void wanderer_menufunc_icon_putaway(void)
                     D(bug("[Wanderer] %s:       Removing entry '%s'\n", __PRETTY_FUNCTION__, paiEntry->dlie_Node.ln_Name));
                     Remove(&paiEntry->dlie_Node);
                     FreeVec(paiEntry->dlie_Node.ln_Name);
-                    FreeVec(paiEntry);
+                    FreeMem(paiEntry, sizeof(struct DesktopLinkIcon_Entry));
                     bdrp_changed = TRUE;
                 }
                 Remove(&paieNode->dlie_Node);
