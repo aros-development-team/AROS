@@ -762,7 +762,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
      * mirroring has a negative impact on performance.
      */
     OOP_Object *oldcompositedbitmap = compdata->displaybitmap;
-    struct StackBitMapNode *topnode = compdata->bitmapstack.mlh_Head;
+    struct StackBitMapNode *topnode = (struct StackBitMapNode *)compdata->bitmapstack.mlh_Head;
     OOP_Object *newscreenbitmap = NULL;
     struct TagItem bmtags[5];
 
