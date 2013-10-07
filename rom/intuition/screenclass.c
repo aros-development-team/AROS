@@ -835,6 +835,11 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         *msg->opg_Storage = (IPTR)(screen->SpecialFlags >> 8);
         break;
 
+    case SA_AlphaPreCompositHook:
+        bug("[ScreenClass] %s: SA_AlphaPreCompositHook\n", __PRETTY_FUNCTION__);
+        *msg->opg_Storage = (IPTR)screen->preAlphaCompHook;
+        break;
+
     case SA_OpacitySupport:    /* These are reserved in AROS */
     case SA_SourceAlphaSupport:
     case SA_ScreenbarSignal:
@@ -905,6 +910,13 @@ IPTR ScreenClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
             {
                 screen->GammaControl.GammaTableG = (UBYTE *)tag->ti_Data;
                 gammaset = TRUE;
+            }
+            break;
+
+        case SA_AlphaPreCompositHook:
+            {
+                screen->preAlphaCompHook = (struct Hook *)tag->ti_Data;
+                bug("[ScreenClass] %s: SA_AlphaPreCompositHook @ 0x%p\n", __PRETTY_FUNCTION__, screen->preAlphaCompHook);
             }
             break;
         }
