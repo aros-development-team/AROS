@@ -1149,7 +1149,7 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
         {
         case aoHidd_BitMap_BMStruct:
             *msg->storage = (IPTR)data->bmstruct;
-            break;
+             return;
 
         case aoHidd_BitMap_Width:
             *msg->storage = data->width;
