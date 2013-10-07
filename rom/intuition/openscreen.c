@@ -487,11 +487,11 @@ static const char THIS_FILE[] = __FILE__;
             {
             case SA_CompositingFlags:
                 compflags = tag->ti_Data;
-                dprintf("OpenScreen: SA_CompositingFlags 0x%p\n", compflags);
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_CompositingFlags 0x%p\n", compflags));
                 break;
             case SA_AlphaPreCompositHook:
                 compalphahook = (struct Hook *)tag->ti_Data;
-                dprintf("OpenScreen: SA_AlphaPreCompositHook 0x%p\n", compalphahook);
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_AlphaPreCompositHook 0x%p\n", compalphahook));
                 break;
             case SA_Left:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Left %ld\n",tag->ti_Data));
