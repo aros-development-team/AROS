@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -32,7 +32,7 @@
     tagList - This is a list of attribute/value-pairs
  
     RESULT
-    Depends in the class. For gadgets, this value is non-zero if
+    Depends on the class. For gadgets, this value is non-zero if
     they need redrawing after the values have changed. Other classes
     will define other return values.
  

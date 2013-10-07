@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -28,8 +28,8 @@
 
 /*  FUNCTION
         Close a filehandle opened with Open(). If the file was used
-        with buffered I/O the final write may fail and thus Close()
-        return an error. The file is closed in any case.
+        with buffered I/O, the final write may fail and thus Close()
+        may return an error. The file is closed in any case.
 
     INPUTS
         file  --  filehandle

@@ -41,28 +41,31 @@
 	void)
 
     FUNCTION
-	Function to create a subprocess of the current process.
+        Function to create a subprocess of the current process.
+
         This is there to ease porting of software using the fork()/vfork()
-        POSIX functions. Due to different memory and process model fork()
+        POSIX functions. Due to a different memory and process model, fork()
         is not implemented at the moment in the C library. vfork() is provided
-        with some extenden functionality. In POSIX standard the only guaranteed
-        functionality for vfork() is to have a exec*() function or _exit() called
-        right after the vfork() in the child.
+        with some extended functionality. In the POSIX standard the only
+        guaranteed functionality for vfork() is to have an exec*() function or
+        exit() called right after the vfork() in the child.
+
         Extra functionality for vfork():
-        - The child has it's own memory heap, memory allocation/deallocation
-          is allowed and heap will be removed when calling _exit() or will be used
-          for the code started by the exec*() functions.
-        - The child will have a copy of the file descriptors as specified by POSIX
-          standard for the fork() function. File I/O is possible in child, also
-          file manipulation with dup() etc.
+        - The child has its own memory heap; memory allocation/deallocation
+          is allowed and the heap will be removed when calling _exit() or will
+          be used for the code started by the exec*() functions.
+        - The child will have a copy of the file descriptors as specified by
+          the POSIX standard for the fork() function. File I/O is possible in
+          the child, as is file manipulation with dup() etc.
 
         Difference with fork():
         - The virtual memory heap is not duplicated as in POSIX but the memory
-          is shared between parent and child. AROS lives in one big single memory
-          region so changes to memory in child are also seen by parent.
+          is shared between parent and child. AROS lives in one big single
+          memory region so changes to memory in the child are also seen by the
+          parent.
 
-        Behaviour for other resources not described in this doc may not be relied
-        on for future.
+        Behaviour for other resources not described in this doc may not be
+        relied on for future compatibility.
 
     INPUTS
 	-
@@ -74,9 +77,10 @@
 
     NOTES
         Current implementation of vfork() will only really start running things
-        in parallel on an exec*() call. After vfork() child code will run until
-        _exit() or exec*(). With _exit() child will exit and parent continue;
-        with exec*() child will be detached and parent will continue.
+        in parallel on an exec*() call. After vfork(), child code will run until
+        _exit() or exec*(). With _exit(), the child will exit and the parent
+        will continue; with exec*(), the child will be detached and the parent
+        will continue.
 
     EXAMPLE
 
@@ -89,13 +93,13 @@
 
 ******************************************************************************/
 
-/* The following functions are used to update the childs and parents privdata
+/* The following functions are used to update the child's and parent's privdata
    for the parent pretending to be running as child and for the child to take
    over. It is called in the following sequence:
-   parent_enterpretendchild() is called in vfork so the parent pretends to be
-   running as child child_takeover() is called by child if exec*() so it can
-   continue from the parent state parent_leavepretendchild() is called by parent
-   to switch back to be running as parent
+   parent_enterpretendchild() is called in vfork() so the parent pretends to be
+   running as child; child_takeover() is called by child if exec*() so it can
+   continue from the parent state; parent_leavepretendchild() is called by
+   parent to switch back to be running as parent
 */
 static void parent_enterpretendchild(struct vfork_data *udata);
 static void child_takeover(struct vfork_data *udata);
@@ -126,7 +130,7 @@ LONG launcher()
         return -1;
     }
 
-    /* TODO: Can we avoid opening posixc.library for child process ? */
+    /* TODO: Can we avoid opening posixc.library for child process? */
     PosixCBase = (struct PosixCIntBase *)OpenLibrary((STRPTR) "posixc.library", 0);
     if (PosixCBase)
     {
@@ -398,12 +402,12 @@ pid_t __vfork(jmp_buf env)
  * The sole purpose of this function is to enable control over allocation of dummy and env.
  * Previously they were allocated in the ending code of __vfork function. On ARM however
  * this was causing immediate allocation of space at entry to the __vfork function. Moreover
- * the jmp_buf is alligned(16) and as such is represeted on the stack as a pointer to stack
+ * the jmp_buf is aligned(16) and as such is represented on the stack as a pointer to stack
  * region instead of offset from stack base.
  *
- * The exit block of __vfork function reprents a code that underwent a number of longjumps. The
+ * The exit block of __vfork function represents code that underwent a number of longjumps. The
  * stack there is not guaranteed to be preserved, thus the on-stack pointer representing dummy
- * and evn were also damaged. Extracting the code below allows to control when the variables
+ * and env were also damaged. Extracting the code below allows to control when the variables
  * are allocated (as long as the function remains not inlined).
  */
 static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork_data *udata)
