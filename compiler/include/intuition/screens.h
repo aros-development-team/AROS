@@ -211,7 +211,7 @@ struct ExtNewScreen
 #define SA_ScreenbarTextPen     (SA_Dummy + 135) /* [..G] ULONG           Pen color for the screenbar text                    */
 #define SA_ScreenbarTextFont    (SA_Dummy + 136) /* [..G] struct TextFont * Font for the screenbar text                       */
 #define SA_ScreenbarSignal      (SA_Dummy + 137) /* [..G] ULONG           Reserved (MorphOS: signal bit for screenbar pluins) */
-#define SA_ExactMatchMonitorName (SA_Dummy + 138)/* [I..] BOOL         Strictly obey SA_MonitorName                        */
+#define SA_ExactMatchMonitorName (SA_Dummy + 138)/* [I..] BOOL            Strictly obey SA_MonitorName                        */
 #define SA_CompositingLayers    (SA_Dummy + 139) /* [I.G] BOOL            Reserved (MorphOS: use composition for layers)      */
 #define SA_CompositingFlags     (SA_Dummy + 140) /* [ISG] ULONG           AROS: Allow openers to request compositing modes    */
 #define SA_AlphaPreCompositHook (SA_Dummy + 141) /* [ISG] Hook *          AROS: Hook to Pre-Process Composited buffers        */
