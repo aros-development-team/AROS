@@ -36,6 +36,9 @@ struct HIDDCompositorData
     struct GfxBase	        *GraphicsBase;
     struct IntuitionBase        *IntuitionBase;
 
+    ULONG                       capabilities;
+    ULONG                       flags;
+
     /* Bitmap to which all screen bitmaps are composited. Height/Width always 
        matches visible mode */
     OOP_Object                  *displaybitmap;
@@ -48,22 +51,24 @@ struct HIDDCompositorData
     /* Pointer to top bitmap on stack */
     OOP_Object                  *topbitmap;
 
-    HIDDT_ModeID                screenmodeid;   /* ModeID of currently visible mode             */
     struct Rectangle            displayrect;     /* Dimensions of currently visible mode         */
     struct Region               *alpharegion;
 
     struct MinList              bitmapstack;
     struct SignalSemaphore      semaphore;
 
-    struct Hook                 defaultbackfill;
     struct Hook                 *backfillhook;
 
     OOP_Object                  *gfx;           /* GFX driver object			        */
     OOP_Object		        *fb;		/* Framebuffer bitmap (if present)	        */
     OOP_Object                  *gc;            /* GC object used for drawing operations        */
-    ULONG                       capabilities;
-    ULONG                       flags;        
-    BOOL                        modeschanged;   /* TRUE if new top bitmap has different mode than current screenmodeid */
+
+    ULONG                       displayid;
+    HIDDT_ModeID                displaymode;    /* ModeID of currently visible mode             */
+    UBYTE                       displaydepth;
+
+    struct Hook                 defaultbackfill;
+    BOOL                        modeschanged;   /* TRUE if new top bitmap has different mode than current displaymode */
 };
 
 #define COMPSTATEB_HASALPHA     0
