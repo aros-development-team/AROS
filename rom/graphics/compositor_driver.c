@@ -59,7 +59,8 @@ void compositor_Setup(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
      * This allows us to have transparent software mouse pointer support.
      */
     mdd->compositor = OOP_NewObjectTags(CDD(GfxBase)->compositorClass, NULL,
-				      aHidd_Compositor_GfxHidd, mdd->gfxhidd, 
+				      aHidd_Compositor_GfxHidd, mdd->gfxhidd,
+				      aHidd_Compositor_DisplayID, mdd->id,
 				      aHidd_Compositor_FrameBuffer, mdd->framebuffer, TAG_DONE);
 
     /* ... but print name of the original driver, to be informative */
