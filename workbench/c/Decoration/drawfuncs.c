@@ -1092,7 +1092,6 @@ AROS_UFH3(void, RectShadeFunc,
     UWORD       offy = 0;
 
     ULONG       color;
-    ULONG       *curpix;
     HIDDT_Color col;
 
     struct ShadeData *data = h->h_Data;
