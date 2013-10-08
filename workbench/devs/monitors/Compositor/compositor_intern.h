@@ -18,7 +18,6 @@ struct StackBitMapNode
     struct MinNode              n;
     OOP_Object	                *bm;
     struct Region               *screenregion;
-    struct Rectangle            screenvisiblerect;      /* Visible part */
     SIPTR	                leftedge;		/* Offset */
     SIPTR	                topedge;
     IPTR                        sbmflags;
