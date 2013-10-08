@@ -61,9 +61,9 @@
     struct TagItem *tag;
     BOOL reallyunlock = TRUE;
     struct RectList *rl = NULL;
-    struct BitMap *bm;
+    struct BitMap *bm = (struct BitMap *)Handle;
 
-    if (Handle)
+    if (bm)
     {
         while ((tag = NextTagItem(&Tags)))
         {
@@ -86,23 +86,14 @@
         }
         
         if (reallyunlock)
-        {
-            HIDD_BM_ReleaseDirectAccess((OOP_Object *)Handle);
-        }
-
-        OOP_GetAttr((OOP_Object *)Handle, aHidd_BitMap_BMStruct, (IPTR *)&bm);
+            HIDD_BM_ReleaseDirectAccess(HIDD_BM_OBJ(bm));
 
         if (rl)
         {
             
         }
         else
-        {
-            IPTR w, h;
-            OOP_GetAttr(Handle, aHidd_BitMap_Width, &w);
-            OOP_GetAttr(Handle, aHidd_BitMap_Height, &h);
-            UpdateBitMap(bm, 0, 0, w, h);
-        }
+            UpdateBitMap(bm, 0, 0, GetCyberMapAttr(bm, CYBRMATTR_WIDTH), GetCyberMapAttr(bm, CYBRMATTR_HEIGHT));
     }
     AROS_LIBFUNC_EXIT
 } /* UnLockBitMapTagList */
