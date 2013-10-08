@@ -15,6 +15,6 @@
 
 void ProcessPixelArrayBlurFunc(struct RastPort *opRast, struct Rectangle *opRect, struct Library *CyberGfxBase)
 {
-    bug ("[Cgfx] %s(%d)\n", __PRETTY_FUNCTION__, value);
+    bug ("[Cgfx] %s()\n", __PRETTY_FUNCTION__);
     bug ("[Cgfx] %s: Blur operator not implemented\n", __PRETTY_FUNCTION__);
 }
