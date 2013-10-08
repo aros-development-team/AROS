@@ -3,14 +3,18 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <intuition/imageclass.h>
 #include <graphics/rpattr.h>
 #include <libraries/cybergraphics.h>
 #include <proto/arossupport.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
+#include <proto/layers.h>
 #include <proto/exec.h>
-#include <aros/debug.h>
+
+#include <hidd/graphics.h>
 
 #include <math.h>
 
@@ -1034,32 +1038,118 @@ void PutImageToRP(struct RastPort *rp, struct NewImage *ni, UWORD x, UWORD y) {
     }
 }
 
-BOOL inRastClipRect(struct RastPort*rp, UWORD x, UWORD y)
+struct ShadeData
 {
-    struct ClipRect *RastClipRect;
-    
-    if (!(rp->Layer))
-        return TRUE;
-    else
+    struct NewImage     *ni;
+    UWORD               fact;
+};
+
+struct layerhookmsg
+{
+    struct Layer *l;
+/*  struct Rectangle rect; (replaced by the next line!) */
+    WORD MinX, MinY, MaxX, MaxY;
+    LONG OffsetX, OffsetY;
+};
+
+ULONG CalcShade(ULONG base, UWORD fact)
+{
+    int     c0, c1, c2, c3;
+
+    c0 = (base >> 24) & 0xff;
+    c1 = (base >> 16) & 0xff;
+    c2 = (base >> 8) & 0xff;
+    c3 = base & 0xff;
+    c0 *= fact;
+    c1 *= fact;
+    c2 *= fact;
+    c3 *= fact;
+    c0 = c0 >> 8;
+    c1 = c1 >> 8;
+    c2 = c2 >> 8;
+    c3 = c3 >> 8;
+
+    if (c0 > 255) c0 = 255;
+    if (c1 > 255) c1 = 255;
+    if (c2 > 255) c2 = 255;
+    if (c3 > 255) c3 = 255;
+
+    return ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0);
+}
+
+AROS_UFH3(void, RectShadeFunc,
+    AROS_UFHA(struct Hook *        , h,      A0),
+    AROS_UFHA(struct RastPort *    , rp,     A2),
+    AROS_UFHA(struct layerhookmsg *, msg,    A1))
+{
+    AROS_USERFUNC_INIT
+
+    APTR        bm_handle;
+    ULONG       bm_bytesperrow;
+    IPTR        bm_baseaddress;
+
+    int         px, py, x, y;
+    UWORD       offy = 0;
+
+    ULONG       color;
+    ULONG       *curpix;
+
+    struct ShadeData *data = h->h_Data;
+
+    bm_handle = LockBitMapTags(rp->BitMap,
+                    LBMI_BYTESPERROW,   &bm_bytesperrow,
+                    LBMI_BASEADDRESS,   &bm_baseaddress,
+                    TAG_END);
+
+    if (msg->MinX == msg->MaxX)
     {
-        for (RastClipRect = rp->Layer->ClipRect; RastClipRect != NULL; RastClipRect = RastClipRect->Next)
+        x = msg->MinX % data->ni->w; 
+        for (py = msg->MinY; py < msg->MaxY; py++)
         {
-            if  ((x >= RastClipRect->bounds.MinX) &&
-                 (x <= RastClipRect->bounds.MaxX) &&
-                 (y >= RastClipRect->bounds.MinY) &&
-                 (y <= RastClipRect->bounds.MaxY))
-                return TRUE;
+            y = (py - offy) % data->ni->h;
+            color = CalcShade(data->ni->data[x + y * data->ni->w], data->fact);
+            
+            if (bm_handle)
+            {
+                curpix = (ULONG *)((int)bm_baseaddress + ((int)py * (int)bm_bytesperrow) + (int)(msg->MinX << 2));
+                *curpix = color;
+            }
+            else
+            {
+                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), msg->MinX, py, color);
+            }
         }
     }
-    return FALSE;
+    else
+    {
+        y = (msg->MinY - offy) % data->ni->h;
+        for (px = msg->MinX; px < msg->MaxX; px++) {
+            x = px % data->ni->h;
+            color = CalcShade(data->ni->data[x + y * data->ni->w], data->fact);
+            
+            if (bm_handle)
+            {
+                curpix = (ULONG *)((int)bm_baseaddress + ((int)msg->MinY * (int)bm_bytesperrow) + (int)(px << 2));
+                *curpix = color;
+            }
+            else
+            {
+                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, msg->MinY, color);
+            }
+        }
+    }
+
+    if (bm_handle)
+        UnLockBitMap(bm_handle);
+    else
+        UpdateBitMap(rp->BitMap, msg->MinX, msg->MinY, msg->MaxX - msg->MinX + 1, msg->MaxY - msg->MinY + 1);
+
+    AROS_USERFUNC_EXIT
 }
 
 void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct NewImage *ni, ULONG basecolor, UWORD fact, UWORD _offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1)
 {
-    int px, py, x, y;
-    ULONG   c;
-    int     c0, c1, c2, c3;
-    UWORD   offy = 0;
+    ULONG   color;
 
     if ((x1 < x0) || (y1 < y0)) return;
     if (!tc)
@@ -1071,181 +1161,29 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
     }
     if (usegradients)
     {
-        c = basecolor;
-        c3 = (c >> 24) & 0xff;
-        c2 = (c >> 16) & 0xff;
-        c1 = (c >> 8) & 0xff;
-        c0 = c & 0xff;
-        c0 *= fact;
-        c1 *= fact;
-        c2 *= fact;
-        c3 *= fact;
-        c0 = c0 >> 8;
-        c1 = c1 >> 8;
-        c2 = c2 >> 8;
-        c3 = c3 >> 8;
-        if (c0 > 255) c0 = 255;
-        if (c1 > 255) c1 = 255;
-        if (c2 > 255) c2 = 255;
-        if (c3 > 255) c3 = 255;
-        c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
-        SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, c, TAG_DONE);
+        color = CalcShade(basecolor, fact);
+        SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, color, TAG_DONE);
         Move(rp, x0, y0);
         Draw(rp, x1, y1);
     }
     else if (ni->ok)
     {
-#if (0)
-	APTR bitMapHandle;
-        ULONG bm_bytesperrow;
-        IPTR  bm_baseaddress;
+        struct ShadeData shadeParams;
+        struct Hook      shadeHook;
+	struct Rectangle shadeRect;
 
-        bitMapHandle = LockBitMapTags(rp->BitMap,
-                                                    LBMI_BYTESPERROW,   &bm_bytesperrow,
-                                                    LBMI_BASEADDRESS,   &bm_baseaddress,
-                                                    TAG_END);
-        
-        if (bitMapHandle)
-        {
-            ULONG *curpix;
+        shadeRect.MinX = x0;
+        shadeRect.MaxX = x1;
+        shadeRect.MinY = y0;
+        shadeRect.MaxY = y1;
 
-            if (rp->Layer)
-            {
-                x0 += rp->Layer->bounds.MinX - rp->Layer->Scroll_X;
-                x1 += rp->Layer->bounds.MinX - rp->Layer->Scroll_X;
-                y0 += rp->Layer->bounds.MinY - rp->Layer->Scroll_Y;
-                y1 += rp->Layer->bounds.MinY - rp->Layer->Scroll_Y;
-                if ((x0 > rp->Layer->bounds.MaxX) || (y0 > rp->Layer->bounds.MaxY))
-                {
-                     UnLockBitMap(bitMapHandle);
-                    return;
-                }
-                if (x1 > rp->Layer->bounds.MaxX)
-                    x1 = rp->Layer->bounds.MaxX;
-                if (y1 > rp->Layer->bounds.MaxY)
-                    y1 = rp->Layer->bounds.MaxY;
-            }
+        shadeParams.ni = ni;
+        shadeParams.fact = fact;
 
-            if (x0 == x1)
-            {
-                x = x0 % ni->w; 
-                for (py = y0; py < y1; py++)
-                {
-                    if (inRastClipRect(rp, x0, py))
-                    {
-                        y = (py - offy) % ni->h;
-                        c = ni->data[x + y * ni->w];
-                        c0 = (c >> 24) & 0xff;
-                        c1 = (c >> 16) & 0xff;
-                        c2 = (c >> 8) & 0xff;
-                        c3 = c & 0xff;
-                        c0 *= fact;
-                        c1 *= fact;
-                        c2 *= fact;
-                        c3 *= fact;
-                        c0 = c0 >> 8;
-                        c1 = c1 >> 8;
-                        c2 = c2 >> 8;
-                        c3 = c3 >> 8;
-                        if (c0 > 255) c0 = 255;
-                        if (c1 > 255) c1 = 255;
-                        if (c2 > 255) c2 = 255;
-                        if (c3 > 255) c3 = 255;
-                        c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
-                        
-                        curpix = (ULONG *)((int)bm_baseaddress + ((int)py * (int)bm_bytesperrow) + (int)(x0 << 2));
-                        *curpix = c;
-                    }
-                }
-            } else {
-                y = (y0 - offy) % ni->h;
-                for (px = x0; px < x1; px++) {
-                    if (inRastClipRect(rp, px, y0))
-                    {
-                        x = px % ni->h;
-                        c = ni->data[x + y * ni->w];
-                        c0 = (c >> 24) & 0xff;
-                        c1 = (c >> 16) & 0xff;
-                        c2 = (c >> 8) & 0xff;
-                        c3 = c & 0xff;
-                        c0 *= fact;
-                        c1 *= fact;
-                        c2 *= fact;
-                        c3 *= fact;
-                        c0 = c0 >> 8;
-                        c1 = c1 >> 8;
-                        c2 = c2 >> 8;
-                        c3 = c3 >> 8;
-                        if (c0 > 255) c0 = 255;
-                        if (c1 > 255) c1 = 255;
-                        if (c2 > 255) c2 = 255;
-                        if (c3 > 255) c3 = 255;
-                        c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
+        shadeHook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(RectShadeFunc);
+        shadeHook.h_Data = &shadeParams;
 
-                        curpix = (ULONG *)((int)bm_baseaddress + ((int)y0 * (int)bm_bytesperrow) + (int)(px << 2));
-                        *curpix = c;
-                    }
-                }
-            }
-            UnLockBitMap(bitMapHandle);
-        }
-        else
-        {
-#endif
-            if (x0 == x1)
-            {
-                x = x0 % ni->w; 
-                for (py = y0; py < y1; py++)
-                {
-                    y = (py - offy) % ni->h;
-                    c = ni->data[x + y * ni->w];
-                    c0 = (c >> 24) & 0xff;
-                    c1 = (c >> 16) & 0xff;
-                    c2 = (c >> 8) & 0xff;
-                    c3 = c & 0xff;
-                    c0 *= fact;
-                    c1 *= fact;
-                    c2 *= fact;
-                    c3 *= fact;
-                    c0 = c0 >> 8;
-                    c1 = c1 >> 8;
-                    c2 = c2 >> 8;
-                    c3 = c3 >> 8;
-                    if (c0 > 255) c0 = 255;
-                    if (c1 > 255) c1 = 255;
-                    if (c2 > 255) c2 = 255;
-                    if (c3 > 255) c3 = 255;
-                    c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
-                    WriteRGBPixel(rp, x0, py, c);
-                }
-            } else {
-                y = (y0 - offy) % ni->h;
-                for (px = x0; px < x1; px++) {
-                    x = px % ni->h;
-                    c = ni->data[x + y * ni->w];
-                    c0 = (c >> 24) & 0xff;
-                    c1 = (c >> 16) & 0xff;
-                    c2 = (c >> 8) & 0xff;
-                    c3 = c & 0xff;
-                    c0 *= fact;
-                    c1 *= fact;
-                    c2 *= fact;
-                    c3 *= fact;
-                    c0 = c0 >> 8;
-                    c1 = c1 >> 8;
-                    c2 = c2 >> 8;
-                    c3 = c3 >> 8;
-                    if (c0 > 255) c0 = 255;
-                    if (c1 > 255) c1 = 255;
-                    if (c2 > 255) c2 = 255;
-                    if (c3 > 255) c3 = 255;
-                    c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
-                    WriteRGBPixel(rp, px, y0, c);
-                }
-            }
-#if (0)
-        }
-#endif
+        DoHookClipRects(&shadeHook, rp, &shadeRect);
     }
     else
     {
