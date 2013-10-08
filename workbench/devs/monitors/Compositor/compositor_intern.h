@@ -72,6 +72,8 @@ struct HIDDCompositorData
 
 #define COMPSTATEB_HASALPHA     0
 #define COMPSTATEF_HASALPHA     (1 << COMPSTATEB_HASALPHA)
+#define COMPSTATEB_DEEPLUT       1
+#define COMPSTATEF_DEEPLUT      (1 << COMPSTATEB_DEEPLUT)
 
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
