@@ -1093,6 +1093,7 @@ AROS_UFH3(void, RectShadeFunc,
 
     ULONG       color;
     ULONG       *curpix;
+    HIDDT_Color col;
 
     struct ShadeData *data = h->h_Data;
 
@@ -1111,14 +1112,21 @@ AROS_UFH3(void, RectShadeFunc,
             
             if (bm_handle)
             {
-                curpix = (ULONG *)((int)bm_baseaddress + ((int)py * (int)bm_bytesperrow) + (int)(msg->MinX << 2));
-                *curpix = color;
+                col.alpha = (HIDDT_ColComp)((color >> 16) & 0x0000FF00);
+                col.red = (HIDDT_ColComp)((color >> 8) & 0x0000FF00);
+                col.green = (HIDDT_ColComp)(color & 0x0000FF00);
+                col.blue = (HIDDT_ColComp)((color << 8) & 0x0000FF00);
+
+                HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
+                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), msg->MinX, py, col.pixval);
             }
             else
             {
+#if (0)
                 if (IS_HIDD_BM(rp->BitMap))
                     HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), msg->MinX, py, color);
                 else
+#endif
                     WriteRGBPixel(rp, msg->MinX - rp->Layer->bounds.MinX - rp->Layer->Scroll_X, py - rp->Layer->bounds.MinY - rp->Layer->Scroll_Y, color);
             }
         }
@@ -1132,14 +1140,21 @@ AROS_UFH3(void, RectShadeFunc,
             
             if (bm_handle)
             {
-                curpix = (ULONG *)((int)bm_baseaddress + ((int)msg->MinY * (int)bm_bytesperrow) + (int)(px << 2));
-                *curpix = color;
+                col.alpha = (HIDDT_ColComp)((color >> 16) & 0x0000FF00);
+                col.red = (HIDDT_ColComp)((color >> 8) & 0x0000FF00);
+                col.green = (HIDDT_ColComp)(color & 0x0000FF00);
+                col.blue = (HIDDT_ColComp)((color << 8) & 0x0000FF00);
+
+                HIDDT_Pixel pixel = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
+                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, msg->MinY, pixel);
             }
             else
             {
+#if (0)
                 if (IS_HIDD_BM(rp->BitMap))
                     HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, msg->MinY, color);
                 else
+#endif
                     WriteRGBPixel(rp, px - rp->Layer->bounds.MinX - rp->Layer->Scroll_X, msg->MinY - rp->Layer->bounds.MinY - rp->Layer->Scroll_Y, color);
             }
         }
