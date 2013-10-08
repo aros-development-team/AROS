@@ -20,7 +20,7 @@ OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddGCAttrBase;
 OOP_AttrBase HiddCompositorAttrBase;
 
-const TEXT version[] = "$VER: Compositor 41.0 (26.09.2013)\n";
+const TEXT version[] = "$VER: Compositor 41.1 (8.10.2013)\n";
 
 static const struct OOP_ABDescr attrbases[] = 
 {
