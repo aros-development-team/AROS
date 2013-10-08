@@ -1837,7 +1837,7 @@ VOID BM__Hidd_BitMap__DrawRect(OOP_Class *cl, OOP_Object *obj,
     FUNCTION
 
         Draws a solid rectangle. minX and minY specifies the upper
-        left corner of the rectangle. minY and maxY specifies the lower
+        left corner of the rectangle. maxX and maxY specifies the lower
         right corner of the rectangle.
         The function does not clip the rectangle against the drawing area.
 
