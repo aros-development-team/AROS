@@ -187,7 +187,7 @@
 	}
     }
     
-    return HIDD_BM_OBJ(bm);
+    return bm;
 
     AROS_LIBFUNC_EXIT
 } /* LockBitMapTagList */
