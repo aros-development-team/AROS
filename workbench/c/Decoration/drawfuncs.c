@@ -1075,55 +1075,145 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
     }
     else if (ni->ok)
     {
-        if (x0 == x1)
+	APTR bitMapHandle;
+        ULONG bm_bytesperrow;
+        IPTR  bm_baseaddress;
+
+        bitMapHandle = LockBitMapTags(rp->BitMap,
+                                                    LBMI_BYTESPERROW,   &bm_bytesperrow,
+                                                    LBMI_BASEADDRESS,   &bm_baseaddress,
+                                                    TAG_END);
+        
+        if (bitMapHandle)
         {
-            x = x0 % ni->w; 
-            for (py = y0; py < y1; py++)
+            ULONG *curpix;
+
+            if (rp->Layer)
             {
-                y = (py - offy) % ni->h;
-                c = ni->data[x + y * ni->w];
-                c0 = (c >> 24) & 0xff;
-                c1 = (c >> 16) & 0xff;
-                c2 = (c >> 8) & 0xff;
-                c3 = c & 0xff;
-                c0 *= fact;
-                c1 *= fact;
-                c2 *= fact;
-                c3 *= fact;
-                c0 = c0 >> 8;
-                c1 = c1 >> 8;
-                c2 = c2 >> 8;
-                c3 = c3 >> 8;
-                if (c0 > 255) c0 = 255;
-                if (c1 > 255) c1 = 255;
-                if (c2 > 255) c2 = 255;
-                if (c3 > 255) c3 = 255;
-                c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
-                WriteRGBPixel(rp, x0, py, c);
+                x0 += rp->Layer->bounds.MinX - rp->Layer->Scroll_X;
+                x1 += rp->Layer->bounds.MinX - rp->Layer->Scroll_X;
+                y0 += rp->Layer->bounds.MinY - rp->Layer->Scroll_Y;
+                y1 += rp->Layer->bounds.MinY - rp->Layer->Scroll_Y;
+                if ((x0 > rp->Layer->bounds.MaxX) || (y0 > rp->Layer->bounds.MaxY))
+                {
+                     UnLockBitMap(bitMapHandle);
+                    return;
+                }
+                if (x1 > rp->Layer->bounds.MaxX)
+                    x1 = rp->Layer->bounds.MaxX;
+                if (y1 > rp->Layer->bounds.MaxY)
+                    y1 = rp->Layer->bounds.MaxY;
             }
-        } else {
-            y = (y0 - offy) % ni->h;
-            for (px = x0; px < x1; px++) {
-                x = px % ni->h;
-                c = ni->data[x + y * ni->w];
-                c0 = (c >> 24) & 0xff;
-                c1 = (c >> 16) & 0xff;
-                c2 = (c >> 8) & 0xff;
-                c3 = c & 0xff;
-                c0 *= fact;
-                c1 *= fact;
-                c2 *= fact;
-                c3 *= fact;
-                c0 = c0 >> 8;
-                c1 = c1 >> 8;
-                c2 = c2 >> 8;
-                c3 = c3 >> 8;
-                if (c0 > 255) c0 = 255;
-                if (c1 > 255) c1 = 255;
-                if (c2 > 255) c2 = 255;
-                if (c3 > 255) c3 = 255;
-                c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
-                WriteRGBPixel(rp, px, y0, c);
+
+            if (x0 == x1)
+            {
+                x = x0 % ni->w; 
+                for (py = y0; py < y1; py++)
+                {
+                    y = (py - offy) % ni->h;
+                    c = ni->data[x + y * ni->w];
+                    c0 = (c >> 24) & 0xff;
+                    c1 = (c >> 16) & 0xff;
+                    c2 = (c >> 8) & 0xff;
+                    c3 = c & 0xff;
+                    c0 *= fact;
+                    c1 *= fact;
+                    c2 *= fact;
+                    c3 *= fact;
+                    c0 = c0 >> 8;
+                    c1 = c1 >> 8;
+                    c2 = c2 >> 8;
+                    c3 = c3 >> 8;
+                    if (c0 > 255) c0 = 255;
+                    if (c1 > 255) c1 = 255;
+                    if (c2 > 255) c2 = 255;
+                    if (c3 > 255) c3 = 255;
+                    c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
+                    
+                    curpix = (ULONG *)((int)bm_baseaddress + ((int)py * (int)bm_bytesperrow) + (int)(x0 << 2));
+                    *curpix = c;
+                }
+            } else {
+                y = (y0 - offy) % ni->h;
+                for (px = x0; px < x1; px++) {
+                    x = px % ni->h;
+                    c = ni->data[x + y * ni->w];
+                    c0 = (c >> 24) & 0xff;
+                    c1 = (c >> 16) & 0xff;
+                    c2 = (c >> 8) & 0xff;
+                    c3 = c & 0xff;
+                    c0 *= fact;
+                    c1 *= fact;
+                    c2 *= fact;
+                    c3 *= fact;
+                    c0 = c0 >> 8;
+                    c1 = c1 >> 8;
+                    c2 = c2 >> 8;
+                    c3 = c3 >> 8;
+                    if (c0 > 255) c0 = 255;
+                    if (c1 > 255) c1 = 255;
+                    if (c2 > 255) c2 = 255;
+                    if (c3 > 255) c3 = 255;
+                    c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
+
+                    curpix = (ULONG *)((int)bm_baseaddress + ((int)y0 * (int)bm_bytesperrow) + (int)(px << 2));
+                    *curpix = c;
+                }
+            }
+            UnLockBitMap(bitMapHandle);
+        }
+        else
+        {
+            if (x0 == x1)
+            {
+                x = x0 % ni->w; 
+                for (py = y0; py < y1; py++)
+                {
+                    y = (py - offy) % ni->h;
+                    c = ni->data[x + y * ni->w];
+                    c0 = (c >> 24) & 0xff;
+                    c1 = (c >> 16) & 0xff;
+                    c2 = (c >> 8) & 0xff;
+                    c3 = c & 0xff;
+                    c0 *= fact;
+                    c1 *= fact;
+                    c2 *= fact;
+                    c3 *= fact;
+                    c0 = c0 >> 8;
+                    c1 = c1 >> 8;
+                    c2 = c2 >> 8;
+                    c3 = c3 >> 8;
+                    if (c0 > 255) c0 = 255;
+                    if (c1 > 255) c1 = 255;
+                    if (c2 > 255) c2 = 255;
+                    if (c3 > 255) c3 = 255;
+                    c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
+                    WriteRGBPixel(rp, x0, py, c);
+                }
+            } else {
+                y = (y0 - offy) % ni->h;
+                for (px = x0; px < x1; px++) {
+                    x = px % ni->h;
+                    c = ni->data[x + y * ni->w];
+                    c0 = (c >> 24) & 0xff;
+                    c1 = (c >> 16) & 0xff;
+                    c2 = (c >> 8) & 0xff;
+                    c3 = c & 0xff;
+                    c0 *= fact;
+                    c1 *= fact;
+                    c2 *= fact;
+                    c3 *= fact;
+                    c0 = c0 >> 8;
+                    c1 = c1 >> 8;
+                    c2 = c2 >> 8;
+                    c3 = c3 >> 8;
+                    if (c0 > 255) c0 = 255;
+                    if (c1 > 255) c1 = 255;
+                    if (c2 > 255) c2 = 255;
+                    if (c3 > 255) c3 = 255;
+                    c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
+                    WriteRGBPixel(rp, px, y0, c);
+                }
             }
         }
     }
