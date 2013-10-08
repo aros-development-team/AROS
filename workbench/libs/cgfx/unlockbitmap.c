@@ -54,10 +54,7 @@
     };
 
     if (Handle)
-    {
         UnLockBitMapTagList(Handle, ultags);
-//        HIDD_BM_ReleaseDirectAccess((OOP_Object *)Handle);
-    }
 
     AROS_LIBFUNC_EXIT
 } /* UnLockBitMap */
