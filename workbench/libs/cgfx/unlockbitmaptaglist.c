@@ -60,37 +60,49 @@
     
     struct TagItem *tag;
     BOOL reallyunlock = TRUE;
-    
-    while ((tag = NextTagItem(&Tags)))
-    {
-    	switch (tag->ti_Tag)
-	{
-	    case UBMI_REALLYUNLOCK:
-	    	reallyunlock = (BOOL)tag->ti_Data;
-		break;
-		
-	    case UBMI_UPDATERECTS:
-	    {
-#if 0
-	    	struct RectList *rl;
-		
-		rl = (struct RectList *)tag->ti_Data;
-		
-		/* TODO: Call HIDD_BM_UpdateRect() for all the regions */
-#endif		
-	    	break;
-	    }
-	
-	    default:
-	    	D(bug("!!! UNKNOWN TAG PASSED TO UnLockBitMapTagList() !!!\n"));
-		break;
-	}
-    }
-    
-    if (reallyunlock)
-    {
-	HIDD_BM_ReleaseDirectAccess((OOP_Object *)Handle);
-    }
+    struct RectList *rl = NULL;
+    struct BitMap *bm;
 
+    if (Handle)
+    {
+        while ((tag = NextTagItem(&Tags)))
+        {
+            switch (tag->ti_Tag)
+            {
+                case UBMI_REALLYUNLOCK:
+                    reallyunlock = (BOOL)tag->ti_Data;
+                    break;
+                    
+                case UBMI_UPDATERECTS:
+                {
+                    rl = (struct RectList *)tag->ti_Data;
+                    break;
+                }
+            
+                default:
+                    D(bug("!!! UNKNOWN TAG PASSED TO UnLockBitMapTagList() !!!\n"));
+                    break;
+            }
+        }
+        
+        if (reallyunlock)
+        {
+            HIDD_BM_ReleaseDirectAccess((OOP_Object *)Handle);
+        }
+
+        OOP_GetAttr((OOP_Object *)Handle, aHidd_BitMap_BMStruct, (IPTR *)&bm);
+
+        if (rl)
+        {
+            
+        }
+        else
+        {
+            IPTR w, h;
+            OOP_GetAttr(Handle, aHidd_BitMap_Width, &w);
+            OOP_GetAttr(Handle, aHidd_BitMap_Height, &h);
+            UpdateBitMap(bm, 0, 0, w, h);
+        }
+    }
     AROS_LIBFUNC_EXIT
 } /* UnLockBitMapTagList */
