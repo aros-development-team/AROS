@@ -282,8 +282,8 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
                     via the display compositor, and to enable it.
                     e.g openscreen uses these to determine if a custombitmap may be displayed.
                 */
-            di->reserved[0] = compositor_IsBMCompositable;
-            di->reserved[1] = compositor_SetBMCompositable;
+            di->reserved[0] = (IPTR)compositor_IsBMCompositable;
+            di->reserved[1] = (IPTR)compositor_SetBMCompositable;
 
 	    break;
 	}

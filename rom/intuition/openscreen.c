@@ -1164,8 +1164,8 @@ static const char THIS_FILE[] = __FILE__;
             custombm = ns.CustomBitMap;
 #ifdef __AROS__ /* AROS: We don't have CGX in kickstart */
             /* FIXME: m68k Compositor needs to report that it can composit planar bitmaps */
-            BOOL (*__IsCompositable) (struct BitMap *, DisplayInfoHandle, struct GfxBase *) = dispinfo.reserved[0];
-            BOOL (*__MakeDisplayable) (struct BitMap *, DisplayInfoHandle, struct GfxBase *) = dispinfo.reserved[1];
+            BOOL (*__IsCompositable) (struct BitMap *, DisplayInfoHandle, struct GfxBase *) = (APTR)dispinfo.reserved[0];
+            BOOL (*__MakeDisplayable) (struct BitMap *, DisplayInfoHandle, struct GfxBase *) = (APTR)dispinfo.reserved[1];
 
             if (dispinfo.reserved[0])
             {
