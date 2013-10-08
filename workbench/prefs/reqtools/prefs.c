@@ -59,9 +59,9 @@ BOOL Prefs_ImportFH(BPTR fh)
 #define loadprefs reqtoolsprefs
 #else
     struct ReqToolsPrefs    loadprefs;
+    int                     i;
 #endif
     BOOL                    retval = FALSE;
-    int                     i;
 
     if (Read(fh, &loadprefs, sizeof(loadprefs)) == sizeof(loadprefs))
     {
@@ -91,9 +91,9 @@ BOOL Prefs_ExportFH(BPTR fh)
 #define saveprefs reqtoolsprefs
 #else
     struct ReqToolsPrefs    saveprefs;
+    int                     i;
 #endif
     BOOL                    retval = FALSE;
-    int                     i;
 
     D(bug("SavePrefsFH: fh: %lx\n", fh));
 
