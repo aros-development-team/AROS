@@ -1085,6 +1085,7 @@ static void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *da
 
     labelSplit_CharsDone = 0;
     labelSplit_CharsSplit = 0;
+    labelSplit_CurSplitWidth = 0;
 
     while (labelSplit_CharsDone < labelSplit_LabelLength)
     {
