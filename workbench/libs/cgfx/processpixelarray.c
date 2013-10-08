@@ -13,6 +13,7 @@
 #include <proto/utility.h>
 
 #include "cybergraphics_intern.h"
+#include "processpixelarray_ops.h"
 
 /*****************************************************************************
 
@@ -85,28 +86,80 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* TODO: Implement me */
+    struct Rectangle    opRect;
+    
+    opRect.MinX = destX;
+    opRect.MaxX = destY;
+    opRect.MinY = opRect.MinX + sizeX - 1;
+    opRect.MaxY = opRect.MinY + sizeY - 1;
 
-    bug("ProcessPixelArray not implemented\n");
+    switch (operation)
+    {
+    case POP_BRIGHTEN:
+        ProcessPixelArrayBrightnessFunc(rp, &opRect, value, CyberGfxBase);
+        break;
+    case POP_DARKEN:
+        ProcessPixelArrayBrightnessFunc(rp, &opRect, -value, CyberGfxBase);
+        break;
+    case POP_SETALPHA:
+        ProcessPixelArrayAlphaFunc(rp, &opRect, value, CyberGfxBase);
+        break;
+    case POP_TINT:
+        ProcessPixelArrayTintFunc(rp, &opRect, value, CyberGfxBase);
+        break;
+    case POP_BLUR:
+        ProcessPixelArrayBlurFunc(rp, &opRect, CyberGfxBase);
+        break;
+    case POP_COLOR2GREY:
+        ProcessPixelArrayColor2GreyFunc(rp, &opRect, CyberGfxBase);
+        break;
+    case POP_NEGATIVE:
+        ProcessPixelArrayNegativeFunc(rp, &opRect, CyberGfxBase);
+        break;
+    case POP_NEGFADE:
+        ProcessPixelArrayNegativeFadeFunc(rp, &opRect, CyberGfxBase);
+        break;
+    case POP_TINTFADE:
+        ProcessPixelArrayTintFadeFunc(rp, &opRect, CyberGfxBase);
+        break;
+    case POP_GRADIENT:
+    {
+        struct TagItem *tstate;
+        struct TagItem *tag;
+        BOOL  gradHoriz = TRUE, gradFull = FALSE;
+        ULONG gradCol1 = 0, gradCol2 = 0xFFFFFF;
+        ULONG gradOffset = 0;
 
-#if 0
-    struct TagItem *tstate;
-    struct TagItem *tag;
-
-    for (tstate = tags; (tag = NextTagItem(&tstate)); ) {
-	switch (tag->ti_Tag) {
-	    case aaa:
-	    	minwidth = (ULONG)tag->ti_Data;
-		break;
-		
-
-	    default:
-	    	D(bug("!!! UNKNOWN TAG PASSED TO ProcessPixelArray\n"));
-		break;
-	} 	
+        for (tstate = taglist; (tag = NextTagItem(&tstate)); ) {
+            switch (tag->ti_Tag) {
+                case PPAOPTAG_GRADIENTTYPE:
+                    if (tag->ti_Data == GRADTYPE_VERTICAL)
+                        gradHoriz = FALSE;
+                    break;
+                case PPAOPTAG_GRADCOLOR1:
+                    gradCol1 = tag->ti_Data;
+                    break;
+                case PPAOPTAG_GRADCOLOR2:
+                    gradCol2 = tag->ti_Data;
+                    break;
+                case PPAOPTAG_GRADFULLSCALE:
+                    break;
+                case PPAOPTAG_GRADOFFSET:
+                    break;
+                default:
+                    D(bug("[Cgfx] %s: Unknown POP_GRADIENT TAG 0x%08x\n", __PRETTY_FUNCTION__, tag->ti_Tag));
+                    break;
+            } 	
+        }
+        ProcessPixelArrayGradientFunc(rp, &opRect, gradHoriz, gradOffset, gradCol1, gradCol2, gradFull, CyberGfxBase);
+        break;
     }
-
-#endif
-
+    case POP_SHIFTRGB:
+        ProcessPixelArrayShiftRGBFunc(rp, &opRect, CyberGfxBase);
+        break;
+    default:
+        D(bug("[Cgfx] %s: Unhandled operation %d\n", __PRETTY_FUNCTION__, operation));
+        break;
+    }
     AROS_LIBFUNC_EXIT
 }
