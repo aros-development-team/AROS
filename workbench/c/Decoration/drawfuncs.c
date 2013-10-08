@@ -1034,6 +1034,26 @@ void PutImageToRP(struct RastPort *rp, struct NewImage *ni, UWORD x, UWORD y) {
     }
 }
 
+BOOL inRastClipRect(struct RastPort*rp, UWORD x, UWORD y)
+{
+    struct ClipRect *RastClipRect;
+    
+    if (!(rp->Layer))
+        return TRUE;
+    else
+    {
+        for (RastClipRect = rp->Layer->ClipRect; RastClipRect != NULL; RastClipRect = RastClipRect->Next)
+        {
+            if  ((x >= RastClipRect->bounds.MinX) &&
+                 (x <= RastClipRect->bounds.MaxX) &&
+                 (y >= RastClipRect->bounds.MinY) &&
+                 (y <= RastClipRect->bounds.MaxY))
+                return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct NewImage *ni, ULONG basecolor, UWORD fact, UWORD _offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1)
 {
     int px, py, x, y;
@@ -1075,6 +1095,7 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
     }
     else if (ni->ok)
     {
+#if (0)
 	APTR bitMapHandle;
         ULONG bm_bytesperrow;
         IPTR  bm_baseaddress;
@@ -1110,60 +1131,67 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
                 x = x0 % ni->w; 
                 for (py = y0; py < y1; py++)
                 {
-                    y = (py - offy) % ni->h;
-                    c = ni->data[x + y * ni->w];
-                    c0 = (c >> 24) & 0xff;
-                    c1 = (c >> 16) & 0xff;
-                    c2 = (c >> 8) & 0xff;
-                    c3 = c & 0xff;
-                    c0 *= fact;
-                    c1 *= fact;
-                    c2 *= fact;
-                    c3 *= fact;
-                    c0 = c0 >> 8;
-                    c1 = c1 >> 8;
-                    c2 = c2 >> 8;
-                    c3 = c3 >> 8;
-                    if (c0 > 255) c0 = 255;
-                    if (c1 > 255) c1 = 255;
-                    if (c2 > 255) c2 = 255;
-                    if (c3 > 255) c3 = 255;
-                    c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
-                    
-                    curpix = (ULONG *)((int)bm_baseaddress + ((int)py * (int)bm_bytesperrow) + (int)(x0 << 2));
-                    *curpix = c;
+                    if (inRastClipRect(rp, x0, py))
+                    {
+                        y = (py - offy) % ni->h;
+                        c = ni->data[x + y * ni->w];
+                        c0 = (c >> 24) & 0xff;
+                        c1 = (c >> 16) & 0xff;
+                        c2 = (c >> 8) & 0xff;
+                        c3 = c & 0xff;
+                        c0 *= fact;
+                        c1 *= fact;
+                        c2 *= fact;
+                        c3 *= fact;
+                        c0 = c0 >> 8;
+                        c1 = c1 >> 8;
+                        c2 = c2 >> 8;
+                        c3 = c3 >> 8;
+                        if (c0 > 255) c0 = 255;
+                        if (c1 > 255) c1 = 255;
+                        if (c2 > 255) c2 = 255;
+                        if (c3 > 255) c3 = 255;
+                        c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
+                        
+                        curpix = (ULONG *)((int)bm_baseaddress + ((int)py * (int)bm_bytesperrow) + (int)(x0 << 2));
+                        *curpix = c;
+                    }
                 }
             } else {
                 y = (y0 - offy) % ni->h;
                 for (px = x0; px < x1; px++) {
-                    x = px % ni->h;
-                    c = ni->data[x + y * ni->w];
-                    c0 = (c >> 24) & 0xff;
-                    c1 = (c >> 16) & 0xff;
-                    c2 = (c >> 8) & 0xff;
-                    c3 = c & 0xff;
-                    c0 *= fact;
-                    c1 *= fact;
-                    c2 *= fact;
-                    c3 *= fact;
-                    c0 = c0 >> 8;
-                    c1 = c1 >> 8;
-                    c2 = c2 >> 8;
-                    c3 = c3 >> 8;
-                    if (c0 > 255) c0 = 255;
-                    if (c1 > 255) c1 = 255;
-                    if (c2 > 255) c2 = 255;
-                    if (c3 > 255) c3 = 255;
-                    c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
+                    if (inRastClipRect(rp, px, y0))
+                    {
+                        x = px % ni->h;
+                        c = ni->data[x + y * ni->w];
+                        c0 = (c >> 24) & 0xff;
+                        c1 = (c >> 16) & 0xff;
+                        c2 = (c >> 8) & 0xff;
+                        c3 = c & 0xff;
+                        c0 *= fact;
+                        c1 *= fact;
+                        c2 *= fact;
+                        c3 *= fact;
+                        c0 = c0 >> 8;
+                        c1 = c1 >> 8;
+                        c2 = c2 >> 8;
+                        c3 = c3 >> 8;
+                        if (c0 > 255) c0 = 255;
+                        if (c1 > 255) c1 = 255;
+                        if (c2 > 255) c2 = 255;
+                        if (c3 > 255) c3 = 255;
+                        c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
 
-                    curpix = (ULONG *)((int)bm_baseaddress + ((int)y0 * (int)bm_bytesperrow) + (int)(px << 2));
-                    *curpix = c;
+                        curpix = (ULONG *)((int)bm_baseaddress + ((int)y0 * (int)bm_bytesperrow) + (int)(px << 2));
+                        *curpix = c;
+                    }
                 }
             }
             UnLockBitMap(bitMapHandle);
         }
         else
         {
+#endif
             if (x0 == x1)
             {
                 x = x0 % ni->w; 
@@ -1215,7 +1243,9 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
                     WriteRGBPixel(rp, px, y0, c);
                 }
             }
+#if (0)
         }
+#endif
     }
     else
     {
