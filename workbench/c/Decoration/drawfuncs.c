@@ -1116,7 +1116,10 @@ AROS_UFH3(void, RectShadeFunc,
             }
             else
             {
-                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), msg->MinX, py, color);
+                if (IS_HIDD_BM(rp->BitMap))
+                    HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), msg->MinX, py, color);
+                else
+                    WriteRGBPixel(rp, msg->MinX - rp->Layer->bounds.MinX - rp->Layer->Scroll_X, py - rp->Layer->bounds.MinY - rp->Layer->Scroll_Y, color);
             }
         }
     }
@@ -1134,7 +1137,10 @@ AROS_UFH3(void, RectShadeFunc,
             }
             else
             {
-                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, msg->MinY, color);
+                if (IS_HIDD_BM(rp->BitMap))
+                    HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, msg->MinY, color);
+                else
+                    WriteRGBPixel(rp, px - rp->Layer->bounds.MinX - rp->Layer->Scroll_X, msg->MinY - rp->Layer->bounds.MinY - rp->Layer->Scroll_Y, color);
             }
         }
     }
