@@ -15,6 +15,6 @@
 
 void ProcessPixelArrayAlphaFunc(struct RastPort *opRast, struct Rectangle *opRect, UBYTE alphalevel, struct Library *CyberGfxBase)
 {
-    bug ("[Cgfx] %s(%d)\n", __PRETTY_FUNCTION__, value);
+    bug ("[Cgfx] %s(%d)\n", __PRETTY_FUNCTION__, alphalevel);
     bug ("[Cgfx] %s: SetAlpha operator not implemented\n", __PRETTY_FUNCTION__);
 }
