@@ -47,7 +47,7 @@ static IPTR ReqToolsStringify__MUIM_Numeric_Stringify(Class  * cl, Object * obj,
 
     D(bug("[ReqToolsEditor.class] %s()\n", __PRETTY_FUNCTION__));
 
-    sprintf((char *)data->buf, "%3d%%", msg->value);
+    sprintf((char *)data->buf, "%3d%%", (int)msg->value);
 
     return (IPTR)data->buf;
 }
