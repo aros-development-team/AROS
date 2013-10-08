@@ -12,7 +12,7 @@
 #include <exec/execbase.h>
 
 #undef FreeMem /* Don't use any kind of macro here :) We want the real thing */
-void FreeMem(void *, IPTR);
+void FreeMem(APTR, IPTR);
 
 
 extern struct ExecBase * SysBase;
