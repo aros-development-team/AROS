@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Offscreen bitmap class for VMWare hidd.
@@ -115,8 +115,7 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
     EnterFunc(bug("VMWareSVGA.BitMap::Dispose()\n"));
-    if (data->VideoData)
-        FreeVec(data->VideoData);
+    FreeVec(data->VideoData);
     OOP_DoSuperMethod(cl, o, msg);
     ReturnVoid("VMWareSVGA.BitMap::Dispose");
 }
