@@ -692,6 +692,8 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
                     clearmsg.offsety = 0;
                     CallHookPkt(compdata->backfillhook, clearbm, &clearmsg);
                 }
+                else
+                    HIDDCompositorFillRect(compdata, renderTarget, tmprect.MinX, tmprect.MinY, tmprect.MaxX, tmprect.MaxY);
 
                 if (renderTarget == compdata->displaybitmap)
                     HIDD_BM_UpdateRect(compdata->displaybitmap,
