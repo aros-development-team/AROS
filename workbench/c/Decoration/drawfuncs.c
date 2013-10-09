@@ -1042,6 +1042,10 @@ struct ShadeData
 {
     struct NewImage     *ni;
     UWORD               fact;
+    /* RectList for UnLockBitMap */
+    ULONG               rl_num;
+    IPTR                  rl_next;
+    struct Rectangle rl_rect;
 };
 
 struct layerhookmsg
@@ -1160,7 +1164,21 @@ AROS_UFH3(void, RectShadeFunc,
     }
 
     if (bm_handle)
-        UnLockBitMap(bm_handle);
+    {
+        struct TagItem bm_ultags[3] =
+        {
+                {UBMI_REALLYUNLOCK, TRUE                },
+                {UBMI_UPDATERECTS,  (IPTR)&data->rl_num },
+                {TAG_DONE, 0                            }
+        };
+
+        data->rl_rect.MinX = msg->MinX;
+        data->rl_rect.MinY = msg->MinY;
+        data->rl_rect.MaxX = msg->MaxX;
+        data->rl_rect.MaxY = msg->MaxY;
+
+        UnLockBitMapTagList(bm_handle, bm_ultags);
+    }
     else
         UpdateBitMap(rp->BitMap, msg->MinX, msg->MinY, msg->MaxX - msg->MinX + 1, msg->MaxY - msg->MinY + 1);
 
@@ -1199,6 +1217,8 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
 
         shadeParams.ni = ni;
         shadeParams.fact = fact;
+        shadeParams.rl_num = 1;
+        shadeParams.rl_next = (IPTR)NULL;
 
         shadeHook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(RectShadeFunc);
         shadeHook.h_Data = &shadeParams;

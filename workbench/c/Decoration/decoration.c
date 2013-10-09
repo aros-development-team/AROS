@@ -52,7 +52,7 @@
 #include "newimage.h"
 #include "config.h"
 
-const TEXT version_string[] = "$VER: Decoration 1.6 (8.10.2013)";
+const TEXT version_string[] = "$VER: Decoration 1.7 (9.10.2013)";
 
 STRPTR __detached_name = "Decorator";
 
