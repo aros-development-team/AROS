@@ -1108,7 +1108,7 @@ AROS_UFH3(void, RectShadeFunc,
     if (msg->MinX == msg->MaxX)
     {
         x = msg->MinX % data->ni->w; 
-        for (py = msg->MinY; py < msg->MaxY; py++)
+        for (py = msg->MinY; py < (msg->MaxY + 1); py++)
         {
             y = (py - offy) % data->ni->h;
             color = CalcShade(data->ni->data[x + y * data->ni->w], data->fact);
@@ -1132,7 +1132,7 @@ AROS_UFH3(void, RectShadeFunc,
     else
     {
         y = (msg->MinY - offy) % data->ni->h;
-        for (px = msg->MinX; px < msg->MaxX; px++) {
+        for (px = msg->MinX; px < (msg->MaxX + 1); px++) {
             x = px % data->ni->h;
             color = CalcShade(data->ni->data[x + y * data->ni->w], data->fact);
 
