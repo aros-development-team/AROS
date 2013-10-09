@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -129,8 +129,7 @@ VOID i915BridgeDevice__Root__Dispose(OOP_Class * cl, OOP_Object * o, OOP_Msg msg
     /* TODO: unmap agpsd->intelgatttable */
     /* TODO: unmap agpsd->intelregs */
 
-    if (i915bddata->scratchmembuffer)
-        FreeVec(i915bddata->scratchmembuffer);
+    FreeVec(i915bddata->scratchmembuffer);
     i915bddata->scratchmembuffer = NULL;
     i915bddata->scratchmem = NULL;
 

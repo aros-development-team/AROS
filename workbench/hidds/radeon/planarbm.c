@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics planar bitmap class implementation.
@@ -157,10 +157,7 @@ VOID ATIPlanBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 		{
 			for (i = 0; i < data->depth; i ++)
 			{
-				if (NULL != data->planes[i])
-				{
-					FreeVec(data->planes[i]);
-				}
+				FreeVec(data->planes[i]);
 			}
 			FreeVec(data->planes);
 		}

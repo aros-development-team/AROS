@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -422,13 +422,11 @@ VOID GenericBridgeDevice__Root__Dispose(OOP_Class * cl, OOP_Object * o, OOP_Msg 
     D(bug("[AGP] Freeing GATT table 0x%x, scratch memory 0x%x\n",
         (ULONG)gbddata->gatttable, (ULONG)gbddata->scratchmem));
 
-    if (gbddata->scratchmembuffer)
-        FreeVec(gbddata->scratchmembuffer);
+    FreeVec(gbddata->scratchmembuffer);
     gbddata->scratchmembuffer = NULL;
     gbddata->scratchmem = NULL;
     
-    if (gbddata->gatttablebuffer)
-        FreeVec(gbddata->gatttablebuffer);
+    FreeVec(gbddata->gatttablebuffer);
     gbddata->gatttablebuffer = NULL;
     gbddata->gatttable = NULL;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VMWare.
@@ -230,8 +230,7 @@ D(bug("[VMWareSVGA] %s: Setting Sync Mode %d for Display %d\n", __PRETTY_FUNCTIO
 
 VOID VMWareSVGA__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    if (XSD(cl)->mouse.shape != NULL)
-        FreeVec(XSD(cl)->mouse.shape);
+    FreeVec(XSD(cl)->mouse.shape);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -502,8 +501,7 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct p
     {
         displayCursorVMWareSVGA(&XSD(cl)->data, 0);
         data->mouse.oopshape = NULL;
-        if (data->mouse.shape != NULL)
-            FreeVec(data->mouse.shape);
+        FreeVec(data->mouse.shape);
         data->mouse.shape = NULL;
         return TRUE;
     }
@@ -530,8 +528,7 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct p
         return TRUE;
 #else
         /* convert shape to vmware needs */
-        if (data->mouse.shape != NULL)
-            FreeVec(data->mouse.shape);
+        FreeVec(data->mouse.shape);
         data->mouse.shape = AllocVec(SVGA_PIXMAP_SIZE(data->mouse.width, data->mouse.height, data->data.bitsperpixel)*4, MEMF_PUBLIC);
         if (data->mouse.shape != NULL)
         {
