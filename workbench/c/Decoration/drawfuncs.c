@@ -1112,7 +1112,7 @@ AROS_UFH3(void, RectShadeFunc,
         {
             y = (py - offy) % data->ni->h;
             color = CalcShade(data->ni->data[x + y * data->ni->w], data->fact);
-            
+
             if (bm_handle)
             {
                 col.alpha = (HIDDT_ColComp)((color >> 16) & 0x0000FF00);
@@ -1125,12 +1125,7 @@ AROS_UFH3(void, RectShadeFunc,
             }
             else
             {
-#if (0)
-                if (IS_HIDD_BM(rp->BitMap))
-                    HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), msg->MinX, py, color);
-                else
-#endif
-                    WriteRGBPixel(rp, msg->MinX - rp->Layer->bounds.MinX - rp->Layer->Scroll_X, py - rp->Layer->bounds.MinY - rp->Layer->Scroll_Y, color);
+                WriteRGBPixel(rp, msg->OffsetX, py + msg->OffsetY - msg->MinY, color);
             }
         }
     }
@@ -1140,7 +1135,7 @@ AROS_UFH3(void, RectShadeFunc,
         for (px = msg->MinX; px < msg->MaxX; px++) {
             x = px % data->ni->h;
             color = CalcShade(data->ni->data[x + y * data->ni->w], data->fact);
-            
+
             if (bm_handle)
             {
                 col.alpha = (HIDDT_ColComp)((color >> 16) & 0x0000FF00);
@@ -1153,12 +1148,7 @@ AROS_UFH3(void, RectShadeFunc,
             }
             else
             {
-#if (0)
-                if (IS_HIDD_BM(rp->BitMap))
-                    HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, msg->MinY, color);
-                else
-#endif
-                    WriteRGBPixel(rp, px - rp->Layer->bounds.MinX - rp->Layer->Scroll_X, msg->MinY - rp->Layer->bounds.MinY - rp->Layer->Scroll_Y, color);
+                WriteRGBPixel(rp, px + msg->OffsetX - msg->MinX, msg->OffsetY, color);
             }
         }
     }
