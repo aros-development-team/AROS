@@ -1107,10 +1107,10 @@ AROS_UFH3(void, RectShadeFunc,
 
     if (msg->MinX == msg->MaxX)
     {
-        x = msg->OffsetX % data->ni->w; 
+        x = (msg->MinX - rp->Layer->bounds.MinX) % data->ni->w; 
         for (py = msg->MinY; py < (msg->MaxY + 1); py++)
         {
-            y = (py + msg->OffsetY - msg->MinY - offy) % data->ni->h;
+            y = (py - rp->Layer->bounds.MinY) % data->ni->h;
             color = CalcShade(data->ni->data[x + y * data->ni->w], data->fact);
 
             if (bm_handle)
@@ -1120,8 +1120,7 @@ AROS_UFH3(void, RectShadeFunc,
                 col.green = (HIDDT_ColComp)(color & 0x0000FF00);
                 col.blue = (HIDDT_ColComp)((color << 8) & 0x0000FF00);
 
-                HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
-                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), msg->MinX, py, col.pixval);
+                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), msg->MinX, py, HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
             }
             else
             {
@@ -1131,9 +1130,9 @@ AROS_UFH3(void, RectShadeFunc,
     }
     else
     {
-        y = (msg->OffsetY - offy) % data->ni->h;
+        y = (msg->MinY - rp->Layer->bounds.MinY) % data->ni->h;
         for (px = msg->MinX; px < (msg->MaxX + 1); px++) {
-            x = (px + msg->OffsetX - msg->MinX) % data->ni->h;
+            x = (px - rp->Layer->bounds.MinX) % data->ni->h;
             color = CalcShade(data->ni->data[x + y * data->ni->w], data->fact);
 
             if (bm_handle)
@@ -1143,8 +1142,7 @@ AROS_UFH3(void, RectShadeFunc,
                 col.green = (HIDDT_ColComp)(color & 0x0000FF00);
                 col.blue = (HIDDT_ColComp)((color << 8) & 0x0000FF00);
 
-                HIDDT_Pixel pixel = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
-                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, msg->MinY, pixel);
+                HIDD_BM_PutPixel(HIDD_BM_OBJ(rp->BitMap), px, msg->MinY, HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col));
             }
             else
             {
