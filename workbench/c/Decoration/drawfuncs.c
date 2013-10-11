@@ -1078,7 +1078,7 @@ ULONG CalcShade(ULONG base, UWORD fact)
     if (c2 > 255) c2 = 255;
     if (c3 > 255) c3 = 255;
 
-    return ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0);
+    return (ULONG)((c0 << 24) | (c1 << 16) | (c2 << 8) | c3);
 }
 
 AROS_UFH3(void, RectShadeFunc,
@@ -1093,7 +1093,6 @@ AROS_UFH3(void, RectShadeFunc,
     IPTR        bm_baseaddress;
 
     int         px, py, x, y;
-    UWORD       offy = 0;
 
     ULONG       color;
     HIDDT_Color col;
