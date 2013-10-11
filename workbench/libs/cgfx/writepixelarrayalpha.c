@@ -66,6 +66,8 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
         count - the number of pixels written to.
 
     NOTES
+        Because of the X11 driver you have to set the drawmode
+        to JAM1 with SetDrMd().
 
     EXAMPLE
 
@@ -73,7 +75,7 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
         The globalalpha parameter is currently ignored.
 
     SEE ALSO
-        WritePixelArray()
+        WritePixelArray(), graphics.library/SetDrMd()
 
     INTERNALS
 
