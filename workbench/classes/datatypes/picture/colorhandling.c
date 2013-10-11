@@ -358,8 +358,14 @@ BOOL AllocDestBM( struct Picture_Data *pd )
     ULONG flags = BMF_MINPLANES;
     struct BitMap *friend_bm = NULL;
     
-    if (pd->UseFriendBM && pd->DestScreen)
+    if (pd->UseFriendBM && pd->DestScreen &&
+            (pd->SrcPixelFormat != 1 && pd->SrcPixelFormat != 2))
+    {
+        /* Use friend bitmap, unless the source data has alpha component
+         * in which case a 32bit bitmap is required for propper blitting
+         */
         friend_bm = pd->DestScreen->RastPort.BitMap;
+    }
     else if (pd->TrueColorDest && (pd->SrcPixelFormat != -1))
         flags |= (BMF_SPECIALFMT | SHIFT_PIXFMT(pixelformats[pd->SrcPixelFormat]));
     D(bug("[AllocDestBM] Friend: 0x%p, flags: 0x%08lX\n", friend_bm, flags));
