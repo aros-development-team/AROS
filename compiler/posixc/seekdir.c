@@ -43,7 +43,7 @@
     if (!desc)
         return;
 
-    if (!ExamineFH(desc->fcb->fh, dir->priv))
+    if (!Examine(desc->fcb->fh, dir->priv))
         return;
 
     if (offset > 1)
