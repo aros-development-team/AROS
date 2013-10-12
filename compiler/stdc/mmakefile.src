@@ -167,6 +167,7 @@ STDC := \
     strtod \
     strtoimax \
     strtok \
+    strtok_r \
     strtol \
     strtoll \
     strtoul \
