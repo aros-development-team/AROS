@@ -75,7 +75,7 @@ char *strdup(const char *);
 char *strndup(const char *, size_t);
 /* NOTIMPL size_t strnlen(const char *, size_t); */
 /* NOTIMPL char *strsignal(int); */
-/* NOTIMPL char *strtok_r(char *restrict, const char *restrict, char **restrict); */
+char *strtok_r(char *restrict, const char *restrict, char **restrict);
 /* NOTIMPL size_t strxfrm_l(char *restrict, const char *restrict,
        size_t, locale_t); */
 
