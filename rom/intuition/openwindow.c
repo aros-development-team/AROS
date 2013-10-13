@@ -1366,10 +1366,17 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
         struct Layer * L = CreateUpfrontLayerTagList(
                                    &w->WScreen->LayerInfo
                                    , w->WScreen->RastPort.BitMap
+#ifndef __MORPHOS
+                                   , w->RelLeftEdge
+                                   , w->RelTopEdge
+                                   , w->RelLeftEdge + w->Width - 1
+                                   , w->RelTopEdge  + w->Height - 1
+#else
                                    , w->LeftEdge
                                    , w->TopEdge
                                    , w->LeftEdge + w->Width - 1
                                    , w->TopEdge  + w->Height - 1
+#endif
                                    , LAYERSIMPLE | (layerflags & LAYERBACKDROP)
                                    , (struct TagItem *)&layertags);
 
@@ -1403,10 +1410,17 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
         w->WLayer = CreateUpfrontLayerTagList(
                 &w->WScreen->LayerInfo
                 , w->WScreen->RastPort.BitMap
+#ifndef __MORPHOS__
+                , w->RelLeftEdge + w->BorderLeft
+                , w->RelTopEdge  + w->BorderTop
+                , w->RelLeftEdge + w->BorderLeft + w->GZZWidth - 1
+                , w->RelTopEdge  + w->BorderTop + w->GZZHeight - 1
+#else
                 , w->LeftEdge + w->BorderLeft
                 , w->TopEdge  + w->BorderTop
                 , w->LeftEdge + w->BorderLeft + w->GZZWidth - 1
                 , w->TopEdge  + w->BorderTop + w->GZZHeight - 1
+#endif
                 , layerflags
                 , (struct TagItem *)&layertags);
 
@@ -1455,10 +1469,17 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
         w->WLayer = CreateUpfrontLayerTagList(      &w->WScreen->LayerInfo,
                                 w->WScreen->RastPort.BitMap,
+#ifndef __MORPHOS__
+                                w->RelLeftEdge,
+                                w->RelTopEdge,
+                                w->RelLeftEdge + w->Width - 1,
+                                w->RelTopEdge  + w->Height - 1,
+#else
                                 w->LeftEdge,
                                 w->TopEdge,
                                 w->LeftEdge + w->Width - 1,
                                 w->TopEdge  + w->Height - 1,
+#endif
                                 layerflags,
                                 (struct TagItem *)&layertags);
 
