@@ -2429,37 +2429,19 @@ GLOB_MKDIRS += %(dst)
 # Copy a directory recursively to another place, preserving the original 
 # hierarchical structure
 #
-# src: the source directory whose content will be copied
-# dst: the directory where to copy src's content. If not existing, it will be made.
+# src: the source directory whose content will be copied.
+# dst: the directories where to copy src's content. If not existing, they will be made.
+# excludefiles: files which must not be copied. Path must be relative to src.
 
 %define copy_dir_recursive mmake=/A src=. dst=/A excludefiles=
 
-%(mmake)_SRC   := $(shell echo %(src) | sed 's/^\(.\):\//\/\1\//')
-%(mmake)_FILES := $(shell cd $(if $(filter /%,$(%(mmake)_SRC)),$(%(mmake)_SRC),$(SRCDIR)/$(CURDIR)/$(%(mmake)_SRC)); find . -path '*/CVS' -prune -o -path '*/.svn' -prune -o -name .cvsignore -prune -o -name mmakefile -prune -o -name mmakefile.src -prune $(%(mmake)_FILTER) -o -type f -print)
-%(mmake)_DIRS  := $(sort $(dir $(%(mmake)_FILES)))
-
-%(mmake)_EXCLUDEFILES := $(addprefix ./,%(excludefiles))
-%(mmake)_FILES := $(filter-out $(%(mmake)_EXCLUDEFILES),$(%(mmake)_FILES))
-
-GLOB_MKDIRS += $(GENDIR)/$(CURDIR)
+%(mmake)_EXCLUDEFILES := %(excludefiles)
 
 .PHONY : %(mmake)
 
 #MM
-%(mmake): | $(GENDIR)/$(CURDIR)
-	@m="$(GENDIR)/$(CURDIR)/%(mmake)-auxiliary.mak";        \
-	$(ECHO) "all: $(addprefix \$$(DST)/,$(%(mmake)_FILES))" > $$m 
-	@m="$(GENDIR)/$(CURDIR)/%(mmake)-auxiliary.mak";    \
-	for d in $(%(mmake)_DIRS); do                      \
-	    $(ECHO) "\$$(DST)/$$d: ; $(MKDIR) \$$@" >> $$m;  \
-	done
-	@m="$(GENDIR)/$(CURDIR)/%(mmake)-auxiliary.mak";                           \
-	for f in $(%(mmake)_FILES); do                                            \
-	    $(ECHO) "\$$(DST)/$$f: \$$(SRC)/$$f | \$$(dir \$$(DST)/$$f); $(CP) \$$< \$$@" >> $$m; \
-	done;  \
-	for dst in %(dst); do \
-	    $(MAKE) -f $$m DST=$$dst SRC=$(if $(filter /%,$(%(mmake)_SRC)),$(%(mmake)_SRC),$(SRCDIR)/$(CURDIR)/$(%(mmake)_SRC)) all; \
-	done
+%(mmake) :
+	@cd $(SRCDIR)/$(CURDIR) && $(CPYDIRREC) -s %(src) -d %(dst) -e $(%(mmake)_EXCLUDEFILES)
 
 %end
 #------------------------------------------------------------------------------
