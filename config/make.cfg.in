@@ -105,7 +105,8 @@ SCRIPTDIR            := $(GENDIR)/scripts
 
 MKDEPEND             := $(SRCDIR)/scripts/mkdep
 FETCH                := $(SRCDIR)/scripts/fetch.sh
-   
+CPYDIRREC            := @PYTHON@ $(SRCDIR)/scripts/cpy-dir-rec.py
+
 # The paths to the generated tools
 TOOLDIR		:= $(HOSTDIR)/tools
 TOOLLIB		:= $(TOOLDIR)/libtool.a
