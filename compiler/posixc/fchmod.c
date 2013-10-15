@@ -76,7 +76,7 @@ ULONG prot_u2a(mode_t protect);
             return -1;
         }
             
-        if(NameFromFH(fdesc->fcb->fh, buffer, buffersize))
+        if(NameFromFH(fdesc->fcb->handle, buffer, buffersize))
             break;
         else if(IoErr() != ERROR_LINE_TOO_LONG)
         {

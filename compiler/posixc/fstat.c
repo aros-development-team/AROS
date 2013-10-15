@@ -59,6 +59,6 @@
 	return -1;
     }
 
-    return __stat(desc->fcb->fh, sb, (desc->fcb->privflags & _FCB_ISDIR) ? FALSE : TRUE);
+    return __stat(desc->fcb->handle, sb, (desc->fcb->privflags & _FCB_ISDIR) ? FALSE : TRUE);
 }
 

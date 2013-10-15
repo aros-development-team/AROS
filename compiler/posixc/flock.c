@@ -121,7 +121,7 @@ void RemoveFromList(struct SignalSemaphore *sem);
             return -1;
         }
 
-        if(NameFromFH(fdesc->fcb->fh, (STRPTR) ((IPTR) buffer + 6), buffersize - 7))
+        if(NameFromFH(fdesc->fcb->handle, (STRPTR) ((IPTR) buffer + 6), buffersize - 7))
             break;
         else if(IoErr() != ERROR_LINE_TOO_LONG)
         {

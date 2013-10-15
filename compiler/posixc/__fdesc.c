@@ -332,7 +332,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 
 
 success:
-    currdesc->fcb->fh        = fh;
+    currdesc->fcb->handle    = fh;
     currdesc->fcb->flags     = flags;
     currdesc->fcb->opencount = 1;
 
@@ -413,37 +413,37 @@ int __init_stdfiles(struct PosixCIntBase *PosixCBase)
     me = (struct Process *)FindTask (NULL);
 
     infh = Input();
-    infcb->fh  = OpenFromLock(DupLockFromFH(infh));
+    infcb->handle = OpenFromLock(DupLockFromFH(infh));
     infcb->flags  = O_RDONLY;
     infcb->opencount = 1;
     /* Remove (remaining) command line args on first read */
     infcb->privflags = _FCB_FLUSHONREAD;
     /* Use original fh if it can't be duplicated */
-    if (infcb->fh == BNULL)
+    if (infcb->handle == BNULL)
     {
-        infcb->fh = infh;
+        infcb->handle = infh;
         infcb->privflags |= _FCB_DONTCLOSE_FH;
     }
     indesc->fcb = infcb;
     indesc->fdflags = 0;
-    D(bug("[__init_stdfiles]Input(): %p, infcb->fh: %p\n",
-          BADDR(Input()), BADDR(infcb->fh)
+    D(bug("[__init_stdfiles]Input(): %p, infcb->handle: %p\n",
+          BADDR(Input()), BADDR(infcb->handle)
     ));
 
     outfh = Output();
-    outfcb->fh = OpenFromLock(DupLockFromFH(outfh));
+    outfcb->handle = OpenFromLock(DupLockFromFH(outfh));
     outfcb->flags = O_WRONLY | O_APPEND;
     outfcb->opencount = 1;
     /* Use original fh if it can't be duplicated */
-    if (outfcb->fh == BNULL)
+    if (outfcb->handle == BNULL)
     {
-        outfcb->fh = outfh;
+        outfcb->handle = outfh;
         outfcb->privflags |= _FCB_DONTCLOSE_FH;
     }
     outdesc->fcb = outfcb;
     outdesc->fdflags = 0;
-    D(bug("[__init_stdfiles]Output(): %p, outfcb->fh: %p\n",
-          BADDR(Output()), BADDR(outfcb->fh)
+    D(bug("[__init_stdfiles]Output(): %p, outfcb->handle: %p\n",
+          BADDR(Output()), BADDR(outfcb->handle)
     ));
 
     /* Normally stderr is expected to be unbuffered for POSIX.
@@ -452,23 +452,23 @@ int __init_stdfiles(struct PosixCIntBase *PosixCBase)
     */
     if (me->pr_CES != BNULL)
     {
-        errfcb->fh = OpenFromLock(DupLockFromFH(me->pr_CES));
-        if (errfcb->fh != BNULL)
-            SetVBuf((BPTR) errfcb->fh, NULL, BUF_NONE, -1);
+        errfcb->handle = OpenFromLock(DupLockFromFH(me->pr_CES));
+        if (errfcb->handle != BNULL)
+            SetVBuf(errfcb->handle, NULL, BUF_NONE, -1);
         else /* File handle could not be duplicated; use original */
         {
-            errfcb->fh = me->pr_CES;
+            errfcb->handle = me->pr_CES;
             errfcb->privflags |= _FCB_DONTCLOSE_FH;
         }
     }
     else
     {
-        errfcb->fh = OpenFromLock(DupLockFromFH(Output()));
-        if (errfcb->fh != BNULL)
-            SetVBuf((BPTR) errfcb->fh, NULL, BUF_NONE, -1);
+        errfcb->handle = OpenFromLock(DupLockFromFH(Output()));
+        if (errfcb->handle != BNULL)
+            SetVBuf((BPTR) errfcb->handle, NULL, BUF_NONE, -1);
         else /* File handle could not be duplicated; use original */
         {
-            errfcb->fh = outfcb->fh;
+            errfcb->handle = outfcb->handle;
             errfcb->privflags = _FCB_DONTCLOSE_FH;
         }
     }
@@ -476,8 +476,8 @@ int __init_stdfiles(struct PosixCIntBase *PosixCBase)
     errfcb->opencount = 1;
     errdesc->fcb = errfcb;
     errdesc->fdflags = 0;
-    D(bug("[__init_stdfiles]me->pr_CES: %p, errfcb->fh: %p\n",
-          BADDR(me->pr_CES), BADDR(errfcb->fh)
+    D(bug("[__init_stdfiles]me->pr_CES: %p, errfcb->handle: %p\n",
+          BADDR(me->pr_CES), BADDR(errfcb->handle)
     ));
 
     PosixCBase->fd_array[STDIN_FILENO]  = indesc;
@@ -575,29 +575,29 @@ void __updatestdio(void)
 
     fcb = PosixCBase->fd_array[STDIN_FILENO]->fcb;
     if (!(fcb->privflags & _FCB_DONTCLOSE_FH))
-        Close(fcb->fh);
+        Close(fcb->handle);
     else
         fcb->privflags &= ~_FCB_DONTCLOSE_FH;
-    fcb->fh = OpenFromLock(DupLockFromFH(Input()));
+    fcb->handle = OpenFromLock(DupLockFromFH(Input()));
 
     fcb = PosixCBase->fd_array[STDOUT_FILENO]->fcb;
     if (!(fcb->privflags & _FCB_DONTCLOSE_FH))
-        Close(fcb->fh);
+        Close(fcb->handle);
     else
         fcb->privflags &= ~_FCB_DONTCLOSE_FH;
-    fcb->fh = OpenFromLock(DupLockFromFH(Output()));
+    fcb->handle = OpenFromLock(DupLockFromFH(Output()));
 
     fcb = PosixCBase->fd_array[STDERR_FILENO]->fcb;
     if (!(fcb->privflags & _FCB_DONTCLOSE_FH))
-        Close(fcb->fh);
+        Close(fcb->handle);
     if (me->pr_CES != BNULL)
     {
-        fcb->fh = OpenFromLock(DupLockFromFH(me->pr_CES));
+        fcb->handle = OpenFromLock(DupLockFromFH(me->pr_CES));
         fcb->privflags &= ~_FCB_DONTCLOSE_FH;
     }
     else
     {
-        fcb->fh = PosixCBase->fd_array[STDOUT_FILENO]->fcb->fh;
+        fcb->handle = PosixCBase->fd_array[STDOUT_FILENO]->fcb->handle;
         fcb->privflags |= _FCB_DONTCLOSE_FH;
     }
 }

@@ -62,7 +62,7 @@
     }
 
     if (nblocks > 0 && size > 0)
-	cnt = FWrite ((BPTR)fdesc->fcb->fh, (CONST APTR)buf, size, nblocks);
+	cnt = FWrite (fdesc->fcb->handle, (CONST APTR)buf, size, nblocks);
     else
 	cnt = 0;
 

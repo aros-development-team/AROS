@@ -104,7 +104,7 @@
     pipedes[0] = __getfdslot(__getfirstfd(0));
     rdesc->fdflags = 0;
     rdesc->fcb = rfcb;
-    rdesc->fcb->fh        = reader;
+    rdesc->fcb->handle    = reader;
     rdesc->fcb->flags     = O_RDONLY;
     rdesc->fcb->opencount = 1;
     __setfdesc(pipedes[0], rdesc);
@@ -112,7 +112,7 @@
     pipedes[1] = __getfdslot(__getfirstfd(pipedes[0]));
     wdesc->fdflags = 0;
     wdesc->fcb = wfcb;
-    wdesc->fcb->fh        = writer;
+    wdesc->fcb->handle    = writer;
     wdesc->fcb->flags     = O_WRONLY;
     wdesc->fcb->opencount = 1;
     __setfdesc(pipedes[1], wdesc);

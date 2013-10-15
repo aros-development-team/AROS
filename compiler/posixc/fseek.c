@@ -79,7 +79,7 @@
         return -1;
     }
 
-    fh = (BPTR)(fdesc->fcb->fh);
+    fh = fdesc->fcb->handle;
 
     /* This is buffered IO, flush the buffer before any Seek */
     Flush (fh);

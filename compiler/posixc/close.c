@@ -80,11 +80,11 @@
             // don't close directories because we don't Open() them.
             if (fdesc->fcb->privflags & _FCB_ISDIR)
             {
-                UnLock(fdesc->fcb->fh);
+                UnLock(fdesc->fcb->handle);
             }
             else
             {
-                Close(fdesc->fcb->fh);
+                Close(fdesc->fcb->handle);
             }
         }
 

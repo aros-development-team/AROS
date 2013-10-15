@@ -39,7 +39,7 @@
     fdesc *desc = __getfdesc(fd);
 
     if (desc)
-        return IsInteractive(desc->fcb->fh)?1:0;
+        return IsInteractive(desc->fcb->handle)?1:0;
 
     return 0;
 }

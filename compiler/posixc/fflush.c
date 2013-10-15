@@ -70,7 +70,7 @@
 		    return EOF;
       		}
 
-		if (!Flush((BPTR)fdesc->fcb->fh))
+		if (!Flush(fdesc->fcb->handle))
 		{
 		    errno = __stdc_ioerr2errno(IoErr());
 		    return EOF;
@@ -88,7 +88,7 @@
 	    return EOF;
 	}
 
-	if (Flush((BPTR)fdesc->fcb->fh))
+	if (Flush(fdesc->fcb->handle))
 	    return 0;
     }
 

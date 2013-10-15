@@ -144,13 +144,13 @@ static int system_no_sh(const char *string)
     out = __getfdesc(STDOUT_FILENO);
     err = __getfdesc(STDERR_FILENO);
 
-    D(bug("[system_no_sh]in: %p, in->fcb->fh: %p\n", in, BADDR(in->fcb->fh)));
-    D(bug("[system_no_sh]out: %p, out->fcb->fh: %p\n", out, BADDR(out->fcb->fh)));
-    D(bug("[system_no_sh]err: %p, err->fcb->fh: %p\n", err, BADDR(err->fcb->fh)));
+    D(bug("[system_no_sh]in: %p, in->fcb->fh: %p\n", in, BADDR(in->fcb->handle)));
+    D(bug("[system_no_sh]out: %p, out->fcb->fh: %p\n", out, BADDR(out->fcb->handle)));
+    D(bug("[system_no_sh]err: %p, err->fcb->fh: %p\n", err, BADDR(err->fcb->handle)));
 
-    infh = in ? in->fcb->fh : BNULL;
-    outfh = out ? out->fcb->fh : BNULL;
-    errfh = err ? err->fcb->fh : BNULL;
+    infh = in ? in->fcb->handle : BNULL;
+    outfh = out ? out->fcb->handle : BNULL;
+    errfh = err ? err->fcb->handle : BNULL;
     if (outfh == errfh)
         errfh = BNULL;
 

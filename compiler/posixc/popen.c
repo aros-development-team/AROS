@@ -85,13 +85,13 @@
             { TAG_DONE    , 0                                               }
         };
 
-	tags[fdtopass].ti_Data     = (IPTR)__getfdesc(pipefds[fdtopass])->fcb->fh;
+	tags[fdtopass].ti_Data     = (IPTR)__getfdesc(pipefds[fdtopass])->fcb->handle;
 	tags[1 - fdtopass].ti_Data = SYS_DupStream;
 
 	if (SystemTagList(command, tags) != -1)
 	{
 	    /* Little trick to deallocate memory which otherwise wouldn't get deallocated */
-            __getfdesc(pipefds[fdtopass])->fcb->fh = BNULL;
+            __getfdesc(pipefds[fdtopass])->fcb->handle = BNULL;
   	    close(pipefds[fdtopass]);
 
             return fdopen(pipefds[1 - fdtopass], NULL);

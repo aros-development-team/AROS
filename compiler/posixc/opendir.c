@@ -135,7 +135,7 @@
     }
     desc->fdflags = 0;
     desc->fcb = cblock;
-    desc->fcb->fh = lock;
+    desc->fcb->handle = lock;
     desc->fcb->flags = O_RDONLY;
     desc->fcb->opencount = 1;
     desc->fcb->privflags |= _FCB_ISDIR;

@@ -441,33 +441,33 @@ void __exec_do(APTR id)
     char inchanged = 0, outchanged = 0, errchanged = 0;
     struct Process *me = (struct Process *)FindTask(NULL);
 
-    if(in && in->fcb->fh != Input())
+    if(in && in->fcb->handle != Input())
     {
-        oldin = SelectInput(in->fcb->fh);
+        oldin = SelectInput(in->fcb->handle);
         inchanged = 1;
     }
-    if(out && in->fcb->fh != Output())
+    if(out && in->fcb->handle != Output())
     {
-        oldout = SelectOutput(out->fcb->fh);
+        oldout = SelectOutput(out->fcb->handle);
         outchanged = 1;
     }
     if (err)
     {
         if (me->pr_CES)
         {
-            if (me->pr_CES != err->fcb->fh)
+            if (me->pr_CES != err->fcb->handle)
                 errchanged = 1;
         }
         else /* me->pr_CES */
         {
             /* Only replace if stdout != stderr */
-            if (out && out->fcb->fh != err->fcb->fh)
+            if (out && out->fcb->handle != err->fcb->handle)
                 errchanged = 1;
         }
         if (errchanged)
         {
             olderr = me->pr_CES;
-            me->pr_CES = err->fcb->fh;
+            me->pr_CES = err->fcb->handle;
         }
     }
 

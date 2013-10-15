@@ -75,11 +75,11 @@
 	return -1;
     }
 
-    oldpos = Seek(fdesc->fcb->fh, 0, OFFSET_END);
-    size   = Seek(fdesc->fcb->fh, 0, OFFSET_CURRENT);
-    Seek(fdesc->fcb->fh, oldpos, OFFSET_BEGINNING);
+    oldpos = Seek(fdesc->fcb->handle, 0, OFFSET_END);
+    size   = Seek(fdesc->fcb->handle, 0, OFFSET_CURRENT);
+    Seek(fdesc->fcb->handle, oldpos, OFFSET_BEGINNING);
 
-    if ((length = SetFileSize(fdesc->fcb->fh, length, OFFSET_BEGINNING)) == -1)
+    if ((length = SetFileSize(fdesc->fcb->handle, length, OFFSET_BEGINNING)) == -1)
     {
         errno = __stdc_ioerr2errno(IoErr());
     	return -1;
@@ -91,18 +91,18 @@
 
 	length -= size;
 
-	oldpos = Seek(fdesc->fcb->fh, size, OFFSET_BEGINNING);
+	oldpos = Seek(fdesc->fcb->handle, size, OFFSET_BEGINNING);
 
 	while (length >= 16)
 	{
-	    FWrite(fdesc->fcb->fh, buf, 16, 1);
+	    FWrite(fdesc->fcb->handle, buf, 16, 1);
 	    length -= 16;
  	}
 	if (length)
-	    FWrite(fdesc->fcb->fh, buf, length, 1);
+	    FWrite(fdesc->fcb->handle, buf, length, 1);
 
-    	Flush(fdesc->fcb->fh);
-	Seek(fdesc->fcb->fh, oldpos, OFFSET_BEGINNING);
+    	Flush(fdesc->fcb->handle);
+	Seek(fdesc->fcb->handle, oldpos, OFFSET_BEGINNING);
     }
 
     return 0;
