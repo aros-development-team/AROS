@@ -3,7 +3,8 @@
 
 # Copy directory 'src' recursively to 'dst' while ignoring
 # all files given by 'ignore' parameter. Only files younger
-# than those in 'dst' are copied.
+# than those in 'dst' are copied. You can specify multiple
+# 'dst' directories.
 
 # The files '.cvsignore', 'mmakefile.src' and the directories
 # 'CVS', '.svn' are ignored.
@@ -13,6 +14,17 @@
 # which contain space characters.
 
 import sys, os, shutil
+
+
+def in_ignore_list(name, ignore):
+    # check if rightmost part of name is in ignore list
+    for ign in ignore:
+        if len(name) >= len(ign):
+            if name[-len(ign):] == ign:
+                # print "%s found in ignore list" % name
+                return True
+    return False
+
 
 def copy_tree(src, dst, ignore):
     names = os.listdir(src)
@@ -29,7 +41,7 @@ def copy_tree(src, dst, ignore):
                 # print "Copying dir %s to %s" % (srcname, dstname)
                 copy_tree(srcname, dstname, ignore)
         else:
-            if (name not in (".cvsignore", "mmakefile.src")) and (srcname not in ignore):
+            if (name not in (".cvsignore", "mmakefile.src")) and not in_ignore_list(srcname, ignore):
                 if not os.path.exists(dstname) or (os.path.getctime(srcname) > os.path.getctime(dstname)):
                     # print "Copying file %s to %s" % (srcname, dstname)
                     shutil.copy(srcname, dstname)
@@ -52,6 +64,11 @@ for arg in sys.argv:
         state = st_dest
     elif arg == "-e":
         state = st_exclude
+    elif arg == "-h":
+        print "Usage: python cpy-dir-rec.py -s <souredir> -d <target directories> [-e <files to exclude>]"
+    elif arg[0] == "-":
+        print "cpy-dir-rec: unknown argument %s" % arg
+        sys.exit(1)
     else:
         if state == st_source:
             sourcedir = arg
