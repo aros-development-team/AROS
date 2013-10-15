@@ -83,7 +83,7 @@ static int __ungetc(int c, void *_h);
     }
 
 
-    Flush (h.fdesc->fcb->fh);
+    Flush (h.fdesc->fcb->handle);
 
     return __vcscan (&h, __getc, __ungetc, format, args);
 #else
@@ -97,7 +97,7 @@ static int __ungetc(int c, void *_h);
 	return 0;
     }
 
-    Flush (fdesc->fcb->fh);
+    Flush (fdesc->fcb->handle);
     
     return __vcscan (stream, fgetc, ungetc, format, args);
        
@@ -114,7 +114,7 @@ static int __ungetc(int c, void *_h)
     if (c < -1)
 	c = (unsigned int)c;
 
-    if (!UnGetC((BPTR)h->fdesc->fcb->fh, c))
+    if (!UnGetC(h->fdesc->fcb->handle, c))
     {
 	errno = __stdc_ioerr2errno(IoErr());
 
@@ -143,10 +143,10 @@ static int __getc(void *_h)
     if (h->fdesc->fcb->privflags & _FCB_FLUSHONREAD)
     {
         h->fdesc->fcb->privflags &= ~_FCB_FLUSHONREAD;
-        Flush(h->fdesc->fcb->fh);
+        Flush(h->fdesc->fcb->handle);
     }
 
-    c = FGetC((BPTR)h->fdesc->fcb->fh);
+    c = FGetC(h->fdesc->fcb->handle);
     
     if (c == EOF)
     {

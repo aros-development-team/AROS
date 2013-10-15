@@ -54,7 +54,7 @@
     )
         return -1;
     else
-        *(BPTR*)file_handle = (BPTR) fd->fcb->fh;
+        *(BPTR*)file_handle = fd->fcb->handle;
 
     return 0;
 }

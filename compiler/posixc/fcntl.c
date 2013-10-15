@@ -146,7 +146,7 @@
   
             arg &= (O_NONBLOCK|O_APPEND|O_ASYNC);
 
-            if (ChangeMode(CHANGE_FH, desc->fcb->fh, oldmode | __oflags2amode(arg)) == DOSTRUE)
+            if (ChangeMode(CHANGE_FH, desc->fcb->handle, oldmode | __oflags2amode(arg)) == DOSTRUE)
             {
                 desc->fcb->flags &= ~(O_NONBLOCK|O_APPEND|O_ASYNC);
                 desc->fcb->flags |= arg;

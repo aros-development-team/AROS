@@ -58,7 +58,7 @@ static int __putc(int c, void *fh);
 	return 0;
     }
 
-    return __vcformat ((void *)BADDR(fdesc->fcb->fh), __putc, format, args);
+    return __vcformat ((void *)BADDR(fdesc->fcb->handle), __putc, format, args);
 } /* vfprintf */
 
 

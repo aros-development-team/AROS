@@ -106,7 +106,7 @@
     {
         struct FileInfoBlock *fib = (struct FileInfoBlock *)dir->priv;
 
-        if (!ExNext(desc->fcb->fh, fib))
+        if (!ExNext(desc->fcb->handle, fib))
         {
 	    dir->pos--;
 	    if (IoErr() != ERROR_NO_MORE_ENTRIES)

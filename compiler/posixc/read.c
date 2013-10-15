@@ -64,7 +64,7 @@
 	return -1;
     }
 
-    cnt = Read ((BPTR)fdesc->fcb->fh, buf, count);
+    cnt = Read (fdesc->fcb->handle, buf, count);
 
     if (cnt == -1)
 	errno = __stdc_ioerr2errno (IoErr ());

@@ -66,10 +66,10 @@
         D(bug("[fgetc]privflags before flush 0x%x\n", fdesc->fcb->privflags));
         fdesc->fcb->privflags &= ~_FCB_FLUSHONREAD;
         D(bug("[fgetc]privflags after flush 0x%x\n", fdesc->fcb->privflags));
-        Flush(fdesc->fcb->fh);
+        Flush(fdesc->fcb->handle);
     }
 
-    c = FGetC ((BPTR)(fdesc->fcb->fh));
+    c = FGetC (fdesc->fcb->handle);
     if (c == EOF)
     {
 	c = IoErr ();

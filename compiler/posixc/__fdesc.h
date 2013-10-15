@@ -14,7 +14,7 @@
 /* file control block - one per file handle */
 typedef struct _fcb
 {
-    BPTR fh;    // if privflags has flag _FCB_ISDIR: BCPL pointer to struct FileLock  
+    BPTR handle;// if privflags has flag _FCB_ISDIR: BCPL pointer to struct FileLock  
                 // otherwise: BCPL pointer to struct FileHandle
     int  flags;
     unsigned int opencount;

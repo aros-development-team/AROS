@@ -49,7 +49,7 @@
         return -1;
     }
 
-    if (!Flush((BPTR) fdesc->fcb->fh))
+    if (!Flush(fdesc->fcb->handle))
     {
         errno = __stdc_ioerr2errno(IoErr());
         return -1;

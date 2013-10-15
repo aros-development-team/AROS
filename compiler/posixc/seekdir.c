@@ -43,14 +43,14 @@
     if (!desc)
         return;
 
-    if (!Examine(desc->fcb->fh, dir->priv))
+    if (!Examine(desc->fcb->handle, dir->priv))
         return;
 
     if (offset > 1)
        	for
 	(
 	    pos = 2;
-	    (pos <= offset) && ExNext(desc->fcb->fh, dir->priv);
+	    (pos <= offset) && ExNext(desc->fcb->handle, dir->priv);
 	    pos++
 	);
     dir->pos = pos;

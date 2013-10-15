@@ -71,7 +71,7 @@
 	return NULL;
     }
 
-    buffer = FGets ((BPTR)fdesc->fcb->fh, buffer, size);
+    buffer = FGets (fdesc->fcb->handle, buffer, size);
 
     if (!buffer)
     {

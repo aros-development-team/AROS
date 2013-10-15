@@ -65,7 +65,7 @@
 
     if (--desc->fcb->opencount == 0)
     {
-        UnLock(desc->fcb->fh);
+        UnLock(desc->fcb->handle);
         FreeVec(desc->fcb);
     }
     __free_fdesc(desc);
