@@ -188,7 +188,6 @@ int SetInstance(FT_GlyphEngine *ge)
 void RenderGlyph(FT_GlyphEngine *ge, int glyph_8bits)
 {
     FT_Error error;
-    int do_transform;
     FT_Vector offset;
     FT_Glyph_Metrics *metrics;
     FT_Bitmap bitmap;
@@ -217,8 +216,6 @@ void RenderGlyph(FT_GlyphEngine *ge, int glyph_8bits)
     FT_Outline_Get_CBox(&ge->face->glyph->outline, &bbox);
 
     metrics = &ge->face->glyph->metrics;
-
-    do_transform=(ge->do_rotate || ge->do_shear);
 
     /* how big is glyph */
     bitmap.width = F266Ceil(bbox.xMax) - F266Floor(bbox.xMin);
