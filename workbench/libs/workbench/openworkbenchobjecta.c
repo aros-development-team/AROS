@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Open a drawer or launch a program.
@@ -622,6 +622,8 @@ static BOOL HandleTool
     D(bug("[WBLIB] OpenWorkbenchObjectA: it's a TOOL (%s)\n", tool));
 
     path = StrDup(name);
+    if (path == NULL)
+        return FALSE;
     *(PathPart(path)) = 0;
 
     if
