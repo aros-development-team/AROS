@@ -460,8 +460,7 @@ BOOL MyRenameDosEntry(struct Handler *handler, struct DosList *entry, const TEXT
    if(error == 0)
    {
       old_name = BADDR(entry->dol_Name);
-      if(old_name != NULL)
-         FreeVec(old_name);
+      FreeVec(old_name);
       entry->dol_Name = MKBADDR(name_copy);
    }
 
@@ -501,8 +500,7 @@ BOOL MyRenameDosEntry(struct DosList *entry, const TEXT *name)
    if(error == 0)
    {
       old_name = BADDR(entry->dol_Name);
-      if(old_name != NULL)
-         FreeVec(old_name);
+      FreeVec(old_name);
       entry->dol_Name = MKBADDR(name_copy);
    }
 

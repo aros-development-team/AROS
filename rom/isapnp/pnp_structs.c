@@ -88,10 +88,7 @@ AROS_LH1(void, ISAPNP_FreeCard,
     ISAPNP_FreeDevice( dev, res );
   }
 
-  if( card->isapnpc_Node.ln_Name != NULL )
-  {
-    FreeVec( card->isapnpc_Node.ln_Name );
-  }
+  FreeVec( card->isapnpc_Node.ln_Name );
 
   FreeVec( card );
 
@@ -178,11 +175,7 @@ AROS_LH1(void, ISAPNP_FreeDevice,
   }
 
 
-  if( dev->isapnpd_Node.ln_Name != NULL )
-  {
-    FreeVec( dev->isapnpd_Node.ln_Name );
-  }
-
+  FreeVec( dev->isapnpd_Node.ln_Name );
   FreeVec( dev );
 
   AROS_LIBFUNC_EXIT

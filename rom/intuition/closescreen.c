@@ -342,8 +342,7 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
 
         Remove((struct Node *)IS(screen)->pubScrNode);
 
-        if(IS(screen)->pubScrNode->psn_Node.ln_Name != NULL)
-            FreeVec(IS(screen)->pubScrNode->psn_Node.ln_Name);
+        FreeVec(IS(screen)->pubScrNode->psn_Node.ln_Name);
 
         FreeMem(IS(screen)->pubScrNode,
                 sizeof(struct PubScreenNode));

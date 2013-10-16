@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -268,8 +268,7 @@
         }
 
         ok = vbuf_inject(cis, command, commandlen, DOSBase);
-        if (cmdcopy)
-            FreeVec(cmdcopy);
+        FreeVec(cmdcopy);
 
         if (!ok)
             goto end;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -79,8 +79,7 @@ ObjectCache *create_object_cache(OOP_Class *classPtr, STRPTR classID, struct Tag
 	    	    return (ObjectCache *)oc;
 	    	}
 		
-		if (NULL != oc->class_id)
-		    FreeVec(oc->class_id);
+		FreeVec(oc->class_id);
 		    
 	    } /* if (got class) */
 		
@@ -128,8 +127,7 @@ VOID delete_object_cache(ObjectCache *objectCache, struct GfxBase *GfxBase)
     
     FreeTagItems(oc->create_tags);
     
-    if (NULL != oc->class_id)
-	FreeVec(oc->class_id);
+    FreeVec(oc->class_id);
     
     ReleaseSemaphore(&oc->lock);
 

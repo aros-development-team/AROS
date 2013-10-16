@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,7 +25,7 @@ int main()
     for(i = 0; i < count; i++)
     {    
         memory = AllocVec(100, MEMF_ANY);
-        if (memory) FreeVec(memory);
+        FreeVec(memory);
     }
     
     gettimeofday(&tv_end, NULL);

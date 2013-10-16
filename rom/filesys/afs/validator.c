@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -790,12 +790,9 @@ LONG bm_allocate_bitmap(DiskStructure *ds)
 void bm_free_bitmap(DiskStructure* ds)
 {
 	D(bug("[afs validate]: freeing previously allocated bitmaps\n"));
-	if (ds->bitmap != 0)
-		FreeVec(ds->bitmap);
-	if (ds->bm_blocks != 0)
-		FreeVec(ds->bm_blocks);
-	if (ds->bme_blocks != 0)
-		FreeVec(ds->bme_blocks);
+	FreeVec(ds->bitmap);
+	FreeVec(ds->bm_blocks);
+	FreeVec(ds->bme_blocks);
 }
 
 BitmapResult bm_mark_block(DiskStructure *ds, ULONG block)

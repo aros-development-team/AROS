@@ -206,10 +206,8 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
 	       it right now, and do nothing more */
 	    if (mod->m_segcnt == 0)
 	    {
-		if (mod->m_str)
-		    FreeVec(mod->m_str);
-		if (mod->m_shstr)
-		    FreeVec(mod->m_shstr);
+		FreeVec(mod->m_str);
+		FreeVec(mod->m_shstr);
 		FreeVec(mod);
 
 		return;
