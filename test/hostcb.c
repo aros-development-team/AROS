@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Tool to access host clipboard, when using a hosted version of AROS.
@@ -60,8 +60,8 @@ static void cleanup(char *msg, ULONG retcode)
     }
     
     if (fh) Close(fh);
-    if (hostbuffer) FreeVec(hostbuffer);
-    if (filebuffer) FreeVec(filebuffer);
+    FreeVec(hostbuffer);
+    FreeVec(filebuffer);
     if (myargs) FreeArgs(myargs);
     
     if (IFFParseBase) CloseLibrary(IFFParseBase);

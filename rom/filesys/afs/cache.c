@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -62,8 +62,7 @@ ULONG i;
 }
 
 void freeCache(struct AFSBase *afsbase, struct BlockCache *cache) {
-	if (cache != NULL)
-		FreeVec(cache);
+	FreeVec(cache);
 }
 
 void clearCache(struct AFSBase *afsbase, struct BlockCache *cache) {

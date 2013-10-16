@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -43,7 +43,7 @@ struct MenuMessage *AllocMenuMessage(struct IntuitionBase *IntuitionBase)
 
 void FreeMenuMessage(struct MenuMessage *msg, struct IntuitionBase *IntuitionBase)
 {
-    if (msg) FreeVec(msg);
+    FreeVec(msg);
 }
 
 

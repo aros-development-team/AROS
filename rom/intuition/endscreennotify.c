@@ -1,9 +1,9 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2013, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
- 
-    Remove a Intuition Notification.
+
+    Remove an Intuition Notification.
 */
 
 #include <intuition/intuition.h>
@@ -11,7 +11,7 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 
 #include <proto/exec.h>
@@ -27,39 +27,37 @@
          struct IntuitionBase *, IntuitionBase, 155, Intuition)
 
 /*  FUNCTION
-	Remove a Screen Notifications from Intuition.
- 
+	Remove a Screen Notification from Intuition.
+
     INPUTS
-	notify - notification returned from StartScreenNotifyTagList() 
- 
+	notify - notification returned from StartScreenNotifyTagList()
+
     RESULT
-	BOOL - if false Notification is in use and cannot be removed, try later
- 
+	BOOL - if FALSE, Notification is in use and cannot be removed; try later
+
     NOTES
 	This function is compatible with AmigaOS v4.
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-	StartScreenNotifyTagList() 
-    
+	StartScreenNotifyTagList()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
     BOOL back;
 
-    if (notify == 0) return TRUE;
+    if (notify == NULL) return TRUE;
 
     if ((back = AttemptSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock)))
     {
-        if (((struct IntScreenNotify*) notify)->pubname) FreeVec(((struct IntScreenNotify*) notify)->pubname);
+        FreeVec(((struct IntScreenNotify*) notify)->pubname);
         Remove((struct Node *) notify);
         FreeVec((void *)notify);
     	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ScreenNotificationListLock);

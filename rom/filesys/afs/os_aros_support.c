@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -222,8 +222,7 @@ LONG osMediumInit
 void osMediumFree(struct AFSBase *afsbase, struct Volume *volume, LONG all) {
 	remDosVolume(afsbase, volume);
 	if (all)
-		if (volume->devicelist.dl_Name != BNULL)
-			FreeVec(BADDR(volume->devicelist.dl_Name));
+		FreeVec(BADDR(volume->devicelist.dl_Name));
 }
 
 /************************** I/O ******************************************/

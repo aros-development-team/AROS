@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <intuition/intuition.h>
@@ -200,8 +205,7 @@ static void action(void)
 	
     } /* while(!Keys[KC_ESC]) */
 
-    if (buf)
-	FreeVec(buf);
+    FreeVec(buf);
 }
 
 /***********************************************************************************/

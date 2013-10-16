@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013 The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -136,8 +136,7 @@
             return cli;
             
 enomem:
-            if(cli != NULL)
-                FreeVec(cli);
+            FreeVec(cli);
             
             FreeVec(dir);
             FreeVec(command);

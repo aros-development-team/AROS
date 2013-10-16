@@ -241,8 +241,7 @@ static struct CDFS *CDFS_Init(struct ExecBase *SysBase)
     }
     Permit();
 
-    if (dispose)
-        FreeVec(dispose);
+    FreeVec(dispose);
 
     return cdfs;
 }

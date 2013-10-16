@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new process
@@ -575,10 +575,7 @@ error:
         Close(ces);
     }
 
-    if (argptr != NULL)
-    {
-        FreeVec(argptr);
-    }
+    FreeVec(argptr);
 
     if (memlist != NULL)
     {
@@ -843,8 +840,7 @@ static void DosEntry(void)
             UnLoadSeg(segarray[3]);
     }
 
-    if (me->pr_SegList)
-        FreeVec(BADDR(me->pr_SegList));
+    FreeVec(BADDR(me->pr_SegList));
 
     if (me->pr_GlobVec && me->pr_GlobVec != ((struct DosLibrary *)DOSBase)->dl_GV) {
         D(bug("[DosEntry] Looks like someone screwed up %p's pr_GlobVec (%p != dl_GV of %p)\n", me, me->pr_GlobVec, ((struct DosLibrary *)DOSBase)->dl_GV));

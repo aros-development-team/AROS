@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <diskfont/diskfont.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -17,7 +22,7 @@ void cleanup(char *msg)
 {
     if (msg) printf("aftest: %s\n", msg);
     
-    if (buf) FreeVec(buf);
+    FreeVec(buf);
     
     if (UtilityBase) CloseLibrary((struct Library *)UtilityBase);
     if (DiskfontBase) CloseLibrary(DiskfontBase);

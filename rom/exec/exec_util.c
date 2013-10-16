@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Exec utility functions.
@@ -235,8 +235,7 @@ Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase)
 {
     IPTR *ts = et->et_TaskStorage;
 
-    if(et->et_Result2)
-        FreeVec(et->et_Result2);
+    FreeVec(et->et_Result2);
 
 #ifdef DEBUG_ETASK
     FreeVec(IntETask(et)->iet_Me);

@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/exec.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -109,10 +114,7 @@ static struct AChain *Match_AllocAChain(LONG extrasize, struct DosLibrary *DOSBa
 
 static void Match_FreeAChain(struct AChain *ac, struct DosLibrary *DOSBase)
 {
-    if (ac)
-    {
-	FreeVec(ac);
-    }
+    FreeVec(ac);
 }
 
 /*****************************************************************************************
@@ -317,7 +319,7 @@ static LONG BuildAChainList(STRPTR pattern, struct AnchorPath *AP,
     } while (*patternpos++ != '\0');
 
 done:
-    if (patterncopy) FreeVec(patterncopy);
+    FreeVec(patterncopy);
 
     if (!error)
     {

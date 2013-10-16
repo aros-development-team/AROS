@@ -275,7 +275,7 @@ LONG Match_BuildAChainList(CONST_STRPTR pattern, struct AnchorPath *ap,
     } while (*patternpos++ != '\0');
 
 done:
-    if (patterncopy) FreeVec(patterncopy);
+    FreeVec(patterncopy);
 
     if (!error)
     {
