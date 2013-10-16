@@ -844,8 +844,9 @@ ifeq (%(nix),yes)
     TMP_EXTRA_LDFLAGS += $(NIX_LDFLAGS)
 endif
 ifeq (%(usestartup),no)
-    TMP_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS) -nostdc
+    TMP_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS)
     ifeq (%(linker),target)
+        TMP_EXTRA_LDFLAGS += -nostdc
         TMP_EXTRA_LIBS += libinit autoinit
     endif
 endif
