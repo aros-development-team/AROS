@@ -124,7 +124,7 @@ struct NativeIcon
          * You must call LayoutIconA(icon, NULL, NULL) or
          * FreeDiskObject() to free this memory.
          */
-        ULONG         *Pen;         /* Pallete n to Pen m mapping */
+        ULONG         *Pen;         /* Palette n to Pen m mapping */
         struct BitMap *BitMap;      /* 'friend' of the Screen */
         PLANEPTR       BitMask;     /* TransparentColor >= 0 bitmask */
         APTR           ARGBMap;     /* ARGB, rescaled version */

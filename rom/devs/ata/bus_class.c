@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/debug.h>
 #include <hidd/ata.h>
 #include <oop/oop.h>
@@ -490,7 +495,7 @@ static AROS_INTH1(ataBus_Reset, struct ata_Bus *, bus)
         CLID_Hidd_ATABus
 
     FUNCTION
-        If this attribute set to FALSE during object creation, the object
+        If this attribute is set to FALSE during object creation, the object
         will be destroyed if no devices are detected on the bus.
 
         This can be useful for optional buses like legacy ISA controllers,
