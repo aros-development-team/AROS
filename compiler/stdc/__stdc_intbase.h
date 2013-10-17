@@ -50,6 +50,9 @@ struct StdCIntBase
 
     /* strerror.c */
     char *fault_buf;
+
+    /* strtok.c */
+    char *last;
 };
 
 /* Make a distinction between exit() and abort() */

@@ -34,6 +34,7 @@ FILES := \
         stpblk \
         strchr \
         strptime \
+        strtok \
         strtod \
         strtol \
         strtoul \
