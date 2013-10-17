@@ -119,7 +119,7 @@
 #define MAX_SFS_SIZE (124L * 1024)
 #define MAX_SIZE(A) (((A) == &sfs0) ? MAX_SFS_SIZE : MAX_FFS_SIZE)
 
-const TEXT version_string[] = "$VER: Partition 41.6 (15.10.2013)";
+const TEXT version_string[] = "$VER: Partition 41.7 (17.10.2013)";
 
 static const struct PartitionType dos3 = { "DOS\3", 4 };
 #if AROS_BIG_ENDIAN
@@ -253,7 +253,10 @@ int main(void)
         if ((root = OpenRootPartition(device, unit)) == NULL)
         {
             error = ERROR_UNKNOWN;
-            PutStr("*** Could not open root partition!\n");
+            Printf("*** Could not open root partition of device %s, unit %d!\n", device, unit);
+            PutStr("Make sure that you provided correct device name and unit number.\n");
+            PutStr("For example primary master IDE device will most likely map to\n");
+            PutStr("ata.device, unit 0 and secondary slave to ata.device, unit 3\n");
         }
     }
 
