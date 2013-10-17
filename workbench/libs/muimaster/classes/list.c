@@ -2324,7 +2324,7 @@ IPTR List__MUIM_Jump(struct IClass *cl, Object *obj,
         break;
     }
 
-    if (pos > data->entries_num)
+    if (pos >= data->entries_num)
     {
         pos = data->entries_num - 1;
     }
