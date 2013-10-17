@@ -8,6 +8,7 @@ char *tests[] =
     "chdir",
     "strchr",
     "stpblk",
+    "strtok",
     "tmpfile",
     "ctype",
     "sscanf",

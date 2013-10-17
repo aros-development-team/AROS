@@ -5,6 +5,9 @@
     C99 function strtok().
 */
 
+#include "__stdc_intbase.h"
+#include <aros/symbolsets.h>
+
 /*****************************************************************************
 
     NAME */
@@ -61,24 +64,34 @@
 
 ******************************************************************************/
 {
-    static char * t;
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
 
     if (str != NULL)
-	t = str;
+	StdCBase->last = str;
     else
-	str = t;
+	str = StdCBase->last;
 
     str += strspn (str, sep);
 
     if (*str == '\0')
 	return NULL;
 
-    t = str;
+    StdCBase->last = str;
 
-    t += strcspn (str, sep);
+    StdCBase->last += strcspn (str, sep);
 
-    if (*t != '\0')
-	*t ++ = '\0';
+    if (*StdCBase->last != '\0')
+	*StdCBase->last ++ = '\0';
 
     return str;
 } /* strtok */
+
+
+static int __strtok_init(struct StdCIntBase *StdCBase)
+{
+    StdCBase->last = NULL;
+
+    return 1;
+}
+
+ADD2OPENLIB(__strtok_init, 0);
