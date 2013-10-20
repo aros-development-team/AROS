@@ -95,6 +95,7 @@ POSIXC := \
     gets \
     gettimeofday \
     getuid \
+    ioctl \
     isatty \
     jrand48 \
     kill \
