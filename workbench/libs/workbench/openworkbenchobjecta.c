@@ -616,15 +616,8 @@ static BOOL HandleTool
     */
 
     BOOL success = FALSE;
-    CONST_STRPTR tool = icon->do_DefaultTool ? icon->do_DefaultTool : name;
-    TEXT *path;
 
-    D(bug("[WBLIB] OpenWorkbenchObjectA: it's a TOOL (%s)\n", tool));
-
-    path = StrDup(name);
-    if (path == NULL)
-        return FALSE;
-    *(PathPart(path)) = 0;
+    D(bug("[WBLIB] OpenWorkbenchObjectA: it's a TOOL\n"));
 
     if
     (
@@ -633,7 +626,7 @@ static BOOL HandleTool
     )
     {
         /* It's a Workbench program */
-        BPTR lock = Lock(path, ACCESS_READ);
+        BPTR lock = Lock(name, ACCESS_READ);
 
         D(bug("[WBLIB] OpenWorkbenchObjectA: it's a WB program\n"));
 
@@ -672,7 +665,7 @@ static BOOL HandleTool
 
             success = WB_LaunchProgram
             (
-                tool, lock, FilePart(name), wbp_Tags, WorkbenchBase
+                name, lock, FilePart(name), wbp_Tags, WorkbenchBase
             );
 
             if (!success)
@@ -682,7 +675,7 @@ static BOOL HandleTool
                     Most likely it will also fail, but we
                     might get lucky.
                 */
-                success = CLI_LaunchProgram(tool, wbp_Tags, WorkbenchBase);
+                success = CLI_LaunchProgram(name, wbp_Tags, WorkbenchBase);
             }
 
             UnLock(lock);
@@ -694,10 +687,8 @@ static BOOL HandleTool
 
         D(bug("[WBLIB] OpenWorkbenchObjectA: it's a CLI program\n"));
 
-        success = CLI_LaunchProgram(tool, tags, WorkbenchBase);
+        success = CLI_LaunchProgram(name, tags, WorkbenchBase);
     }
-
-    FreeVec(path);
 
     return success;
 }
