@@ -28,8 +28,8 @@
 /*** Prototypes *************************************************************/
 static BOOL   CLI_LaunchProgram(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
 static STRPTR CLI_BuildCommandLine(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
-static BOOL   WB_LaunchProgram(CONST_STRPTR tool, BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
-static BOOL   WB_BuildArguments(struct WBStartup *startup, CONST_STRPTR tool, BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+static BOOL   WB_LaunchProgram(BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+static BOOL   WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
 static BOOL   HandleDrawer(STRPTR name, struct WorkbenchBase *WorkbenchBase);
 static BOOL   HandleTool(STRPTR name, LONG isDefaultIcon, struct DiskObject *icon, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
 static BOOL   HandleProject(STRPTR name, LONG isDefaultIcon, struct DiskObject *icon, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
@@ -342,8 +342,7 @@ error:
 
 static BOOL WB_BuildArguments
 (
-    struct WBStartup *startup, CONST_STRPTR tool,
-    BPTR lock, CONST_STRPTR name, struct TagItem *tags,
+    struct WBStartup *startup, BPTR lock, CONST_STRPTR name, struct TagItem *tags,
     struct WorkbenchBase *WorkbenchBase
 )
 {
@@ -452,11 +451,6 @@ static BOOL WB_BuildArguments
             }
         }
 
-        if (tool) {
-            startup->sm_Segment = LoadSeg(tool);
-            D(bug("[%s] startup->sm_Segment = %p (%s)\n", __func__, startup->sm_Segment, tool));
-        }
-
         return TRUE;
     }
     else
@@ -490,9 +484,7 @@ error:
 
 static BOOL WB_LaunchProgram
 (
-    CONST_STRPTR tool,
-    BPTR lock, CONST_STRPTR name,
-    struct TagItem *tags,
+    BPTR lock, CONST_STRPTR name, struct TagItem *tags,
     struct WorkbenchBase *WorkbenchBase
 )
 {
@@ -538,7 +530,7 @@ static BOOL WB_LaunchProgram
     }
 
     /*-- Build the arguments array -----------------------------------------*/
-    if (!WB_BuildArguments(startup, tool, lock, name, tags, WorkbenchBase))
+    if (!WB_BuildArguments(startup, lock, name, tags, WorkbenchBase))
     {
         D(bug("[WBLIB] WB_LaunchProgram: Failed to build arguments\n"));
         goto error;
@@ -632,50 +624,56 @@ static BOOL HandleTool
 
         if (lock != BNULL)
         {
-            IPTR stacksize = icon->do_StackSize;
+            BPTR parent = ParentDir(lock);
 
-            D(bug("[WBLIB] OpenWorkbenchObjectA: PROGDIR: is %s\n", path));
-            if (stacksize < WorkbenchBase->wb_DefaultStackSize)
-                stacksize = WorkbenchBase->wb_DefaultStackSize;
-
-            /* check for TOOLPRI */
-            LONG priority = 0;
-            STRPTR prio_tt = FindToolType(icon->do_ToolTypes, "TOOLPRI");
-            if (prio_tt)
+            if (parent != BNULL)
             {
-                StrToLong(prio_tt, &priority);
-                if (priority < -128)
-                    priority = -128;
-                if (priority > 127)
-                    priority = 127;
-            }
-            
-            D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes, priority %d\n", stacksize, priority));
+                IPTR stacksize = icon->do_StackSize;
 
-            struct TagItem wbp_Tags[] =
-            {
-                { NP_StackSize,   stacksize },
-                { NP_Priority,    priority  },
-                { TAG_MORE, (IPTR)tags      },
-                { TAG_DONE,       0         }
-            };
+                if (stacksize < WorkbenchBase->wb_DefaultStackSize)
+                    stacksize = WorkbenchBase->wb_DefaultStackSize;
 
-            if (tags == NULL)
-                wbp_Tags[2].ti_Tag = TAG_IGNORE;
+                /* check for TOOLPRI */
+                LONG priority = 0;
+                STRPTR prio_tt = FindToolType(icon->do_ToolTypes, "TOOLPRI");
+                if (prio_tt)
+                {
+                    StrToLong(prio_tt, &priority);
+                    if (priority < -128)
+                        priority = -128;
+                    if (priority > 127)
+                        priority = 127;
+                }
+                
+                D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes, priority %d\n", stacksize, priority));
 
-            success = WB_LaunchProgram
-            (
-                name, lock, FilePart(name), wbp_Tags, WorkbenchBase
-            );
+                struct TagItem wbp_Tags[] =
+                {
+                    { NP_StackSize,   stacksize },
+                    { NP_Priority,    priority  },
+                    { TAG_MORE, (IPTR)tags      },
+                    { TAG_DONE,       0         }
+                };
 
-            if (!success)
-            {
-                /*
-                    Fallback to launching it as a CLI program.
-                    Most likely it will also fail, but we
-                    might get lucky.
-                */
-                success = CLI_LaunchProgram(name, wbp_Tags, WorkbenchBase);
+                if (tags == NULL)
+                    wbp_Tags[2].ti_Tag = TAG_IGNORE;
+
+                success = WB_LaunchProgram
+                (
+                    parent, FilePart(name), wbp_Tags, WorkbenchBase
+                );
+
+                if (!success)
+                {
+                    /*
+                        Fallback to launching it as a CLI program.
+                        Most likely it will also fail, but we
+                        might get lucky.
+                    */
+                    success = CLI_LaunchProgram(name, wbp_Tags, WorkbenchBase);
+                }
+
+                UnLock(parent);
             }
 
             UnLock(lock);
@@ -784,7 +782,7 @@ static BOOL HandleProject
                     found = TRUE;
                     success = WB_LaunchProgram
                     (
-                        NULL, deftool_parent, FilePart(icon->do_DefaultTool), deftool_tags, WorkbenchBase
+                        deftool_parent, FilePart(icon->do_DefaultTool), deftool_tags, WorkbenchBase
                     );
                 }
                 UnLock(deftool_parent);
@@ -814,7 +812,7 @@ static BOOL HandleProject
                             {
                                 success = WB_LaunchProgram
                                 (
-                                    NULL, deftool_parent, icon->do_DefaultTool, deftool_tags, WorkbenchBase
+                                    deftool_parent, icon->do_DefaultTool, deftool_tags, WorkbenchBase
                                 );
  
                                 running = FALSE;
