@@ -43,6 +43,10 @@ ifeq ($(DEST),)
   DEST := Devs
 endif
 
+ifeq ($(MODEDEST),)
+  MODEDEST := $(DEST)
+endif
+
 INSTALL		= @INSTALL@
 INSTALL_PROGRAM	= @INSTALL_PROGRAM@
 INSTALL_DATA	= @INSTALL_DATA@
@@ -76,9 +80,9 @@ distclean:	clean
 maintainer-clean: distclean
 
 install:	all
-	$(INSTALL) -d $(PREFIX)/$(DEST)/AHI $(PREFIX)/$(DEST)/AudioModes
+	$(INSTALL) -d $(PREFIX)/$(DEST)/AHI $(PREFIX)/$(MODEDEST)/AudioModes
 	$(INSTALL_PROGRAM) $(DRIVER) $(PREFIX)/$(DEST)/AHI/
-	$(INSTALL_DATA) $(MODEFILE) $(PREFIX)/$(DEST)/AudioModes/
+	$(INSTALL_DATA) $(MODEFILE) $(PREFIX)/$(MODEDEST)/AudioModes/
 
 revup:
 	@rev=`cat $(srcdir)/version.rev` && echo `expr $$rev + 1` > $(srcdir)/version.rev
