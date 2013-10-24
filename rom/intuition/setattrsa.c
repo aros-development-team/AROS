@@ -17,39 +17,39 @@
     AROS_LH2(ULONG, SetAttrsA,
 
 /*  SYNOPSIS */
-         AROS_LHA(APTR            , object, A0),
-         AROS_LHA(struct TagItem *, tagList, A1),
+        AROS_LHA(APTR            , object, A0),
+        AROS_LHA(struct TagItem *, tagList, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 108, Intuition)
+        struct IntuitionBase *, IntuitionBase, 108, Intuition)
 
 /*  FUNCTION
-    Changes several attributes of an object at the same time. How the
-    object interprets the new attributes depends on the class.
- 
+        Changes several attributes of an object at the same time. How the
+        object interprets the new attributes depends on the class.
+
     INPUTS
-    object - Change the attributes of this object
-    tagList - This is a list of attribute/value-pairs
- 
+        object - Change the attributes of this object
+        tagList - This is a list of attribute/value-pairs
+
     RESULT
-    Depends on the class. For gadgets, this value is non-zero if
-    they need redrawing after the values have changed. Other classes
-    will define other return values.
- 
+        Depends on the class. For gadgets, this value is non-zero if
+        they need redrawing after the values have changed. Other classes
+        will define other return values.
+
     NOTES
-    This function sends OM_SET to the object.
- 
+        This function sends OM_SET to the object.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    NewObjectA(), DisposeObject(), GetAttr(), MakeClass(),
-    "Basic Object-Oriented Programming System for Intuition" and
-    "boopsi Class Reference" Dokument.
- 
+        NewObjectA(), DisposeObject(), GetAttr(), MakeClass(),
+        "Basic Object-Oriented Programming System for Intuition" and
+        "boopsi Class Reference" Document.
+
     INTERNALS
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
