@@ -106,7 +106,7 @@ enum
 
 
 /**************************************************************************
- Buffer_SetNewContents
+ Buffer_Alloc
  Allocate memory for buffer
 **************************************************************************/
 static BOOL Buffer_Alloc(struct MUI_StringData *data)
@@ -424,7 +424,7 @@ IPTR String__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->BufferSize = 80;
     data->Columns = -1;
 
-    Buffer_SetNewContents(data, "");    /* <-- isnt this pointless? */
+    Buffer_SetNewContents(data, "");    /* <-- isn't this pointless? */
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
@@ -1617,6 +1617,7 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         case MUIKEY_PRESS:
             {
                 UBYTE *buf = NULL;
+                LONG val = 0;
 
                 get(obj, MUIA_String_Contents, &buf);
 
@@ -1635,7 +1636,12 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                         MUIV_Window_ActiveObject_None);
                 }
 
+                /* Notify listeners of new string value */
                 set(obj, MUIA_String_Acknowledge, buf);
+
+                /* Notify listeners of new integer value (if any) */
+                StrToLong(buf, &val);
+                superset(obj, MUIA_String_Integer, val);
             }
             break;
 
