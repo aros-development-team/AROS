@@ -25,7 +25,7 @@
 #include <aros/debug.h>
 
 /* the following should go in a single include file which then only
-** constits of the public constants and members. Actually this is easy
+** consists of the public constants and members. Actually this is easy
 */
 
 #define TEST_ICONLIST
@@ -35,6 +35,24 @@
 #include "../../workbench/system/Wanderer/Classes/iconlist_attributes.h"
 #include "../../workbench/system/Wanderer/Classes/iconlist.h"
 #endif
+
+#define NUMERIC_MIN 0
+#define NUMERIC_MAX 100
+
+enum
+{
+    HNSLIDER,
+    HRSLIDER,
+    HQSLIDER,
+    VNSLIDER,
+    VRSLIDER,
+    VQSLIDER,
+    NNUMERICBUTTON,
+    RNUMERICBUTTON,
+    NKNOB,
+    RKNOB,
+    NUMERIC_COUNT
+};
 
 struct Library *MUIMasterBase;
 struct Library *ColorWheelBase;
@@ -320,7 +338,11 @@ int main(void)
     Object *context_menu;
     Object *popobject, *listview;
     Object *list_add_button, *list_remove_button, *list_clear_button;
+    Object *numerics[NUMERIC_COUNT];
+    Object *min_string, *max_string;
+    Object *slider_button;
     Object *country_radio[2];
+    UWORD i;
 
     static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges","Numeric","Radio","Icon List","Balancing",NULL};
     static char **radio_entries1 = pages;
@@ -380,7 +402,7 @@ int main(void)
 	    MUIA_Window_Activate, TRUE,
 
     	    WindowContents, VGroup,
-    	    	Child, TextObject, MUIA_Background, "2:cfffffff,cfffffff,10000000", TextFrame, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
+    	    	Child, TextObject, MUIA_Background, "2:cfffffff,cfffffff,10000000", TextFrame, MUIA_Text_Contents, "\33cHello World!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
     	    	Child, popobject = PopobjectObject,
     	    	    MUIA_Popstring_String, MUI_MakeObject(MUIO_String, NULL, 200),
     	    	    MUIA_Popstring_Button, PopButton(MUII_PopUp),
@@ -518,24 +540,24 @@ int main(void)
 		    Child, HGroup,
 	                Child, ColGroup(2), GroupFrameT("Horizontal Sliders"),
 		            Child, MUI_MakeObject(MUIO_Label,"Normal:",0),
-		            Child, SliderObject,
+		            Child, numerics[HNSLIDER] = SliderObject,
 		                MUIA_Slider_Horiz, TRUE,
-		                MUIA_Numeric_Min, 0,
-		                MUIA_Numeric_Max, 100,
+		                MUIA_Numeric_Min, NUMERIC_MIN,
+		                MUIA_Numeric_Max, NUMERIC_MAX,
 		                MUIA_CycleChain, 1,
 		                End,
 			    Child, MUI_MakeObject(MUIO_Label,"Reverse:",0),
-		            Child, SliderObject,
+		            Child, numerics[HRSLIDER] = SliderObject,
 		                MUIA_Numeric_Reverse, TRUE,
-		                MUIA_Numeric_Min, 0,
-		                MUIA_Numeric_Max, 100,
+		                MUIA_Numeric_Min, NUMERIC_MIN,
+		                MUIA_Numeric_Max, NUMERIC_MAX,
 		                MUIA_CycleChain, 1,
 		                End,
 			    Child, MUI_MakeObject(MUIO_Label,"Quiet:",0),
-		            Child, SliderObject,
+		            Child, numerics[HQSLIDER] = SliderObject,
 		                MUIA_Slider_Quiet, TRUE,
-		                MUIA_Numeric_Min, 0,
-		                MUIA_Numeric_Max, 100,
+		                MUIA_Numeric_Min, NUMERIC_MIN,
+		                MUIA_Numeric_Max, NUMERIC_MAX,
 		                MUIA_CycleChain, 1,
 		                End,
 	                    End,
@@ -543,57 +565,83 @@ int main(void)
 			    Child, MUI_MakeObject(MUIO_Label,"Normal",0),
 			    Child, MUI_MakeObject(MUIO_Label,"Reverse",0),
 			    Child, MUI_MakeObject(MUIO_Label,"Quiet",0),
-		            Child, SliderObject,
+		            Child, numerics[VNSLIDER] = SliderObject,
 		                MUIA_Slider_Horiz, FALSE,
-		                MUIA_Numeric_Min, 0,
-		                MUIA_Numeric_Max, 100,
+		                MUIA_Numeric_Min, NUMERIC_MIN,
+		                MUIA_Numeric_Max, NUMERIC_MAX,
 		                MUIA_CycleChain, 1,
 		                End,
-		            Child, SliderObject,
+		            Child, numerics[VRSLIDER] = SliderObject,
 		                MUIA_Slider_Horiz, FALSE,
 		                MUIA_Numeric_Reverse, TRUE,
-		                MUIA_Numeric_Min, 0,
-		                MUIA_Numeric_Max, 100,
+		                MUIA_Numeric_Min, NUMERIC_MIN,
+		                MUIA_Numeric_Max, NUMERIC_MAX,
 		                MUIA_CycleChain, 1,
 		                End,
-		            Child, SliderObject,
+		            Child, numerics[VQSLIDER] = SliderObject,
 		                MUIA_Slider_Horiz, FALSE,
 		                MUIA_Slider_Quiet, TRUE,
-		                MUIA_Numeric_Min, 0,
-		                MUIA_Numeric_Max, 100,
+		                MUIA_Numeric_Min, NUMERIC_MIN,
+		                MUIA_Numeric_Max, NUMERIC_MAX,
 		                MUIA_CycleChain, 1,
 		                End,
 	                    End,
 	                Child, ColGroup(2), GroupFrameT("Numeric Buttons"),
 			    Child, MUI_MakeObject(MUIO_Label,"Normal:",0),
-		            Child, NumericbuttonObject,
-		                MUIA_Numeric_Min, 0,
-		                MUIA_Numeric_Max, 100,
+		            Child, numerics[NNUMERICBUTTON] = NumericbuttonObject,
+		                MUIA_Numeric_Min, NUMERIC_MIN,
+		                MUIA_Numeric_Max, NUMERIC_MAX,
 		                MUIA_CycleChain, 1,
 		                End,
 			    Child, MUI_MakeObject(MUIO_Label,"Reverse:",0),
-		            Child, NumericbuttonObject,
+		            Child, numerics[RNUMERICBUTTON] = NumericbuttonObject,
 		                MUIA_Numeric_Reverse, TRUE,
-		                MUIA_Numeric_Min, 0,
-		                MUIA_Numeric_Max, 100,
+		                MUIA_Numeric_Min, NUMERIC_MIN,
+		                MUIA_Numeric_Max, NUMERIC_MAX,
 		                MUIA_CycleChain, 1,
 		                End,
 	                    End,
 	                Child, ColGroup(2), GroupFrameT("Knobs"),
 			    Child, MUI_MakeObject(MUIO_Label,"Normal",0),
 			    Child, MUI_MakeObject(MUIO_Label,"Reverse",0),
-		            Child, KnobObject,
-		                MUIA_Numeric_Min, 0,
-		                MUIA_Numeric_Max, 100,
+		            Child, numerics[NKNOB] = KnobObject,
+		                MUIA_Numeric_Min, NUMERIC_MIN,
+		                MUIA_Numeric_Max, NUMERIC_MAX,
 		                MUIA_CycleChain, 1,
 		                End,
-		            Child, KnobObject,
+		            Child, numerics[RKNOB] = KnobObject,
 		                MUIA_Numeric_Reverse, TRUE,
-		                MUIA_Numeric_Min, 0,
-		                MUIA_Numeric_Max, 100,
+		                MUIA_Numeric_Min, NUMERIC_MIN,
+		                MUIA_Numeric_Max, NUMERIC_MAX,
 		                MUIA_CycleChain, 1,
 		                End,
 	                    End,
+
+	                Child, ColGroup(2),
+			    Child, MUI_MakeObject(MUIO_Label,"Minimum Value:",0),
+                    	    Child, min_string = (Object *)StringObject,
+                        	StringFrame,
+                        	MUIA_String_Accept, (IPTR)"-0123456789",
+                        	MUIA_String_Integer, NUMERIC_MIN,
+                        	MUIA_CycleChain, 1,
+                    	        End,
+			    Child, MUI_MakeObject(MUIO_Label,"Maximum Value:",0),
+                    	    Child, max_string = (Object *)StringObject,
+                        	StringFrame,
+                        	MUIA_String_Accept, (IPTR)"-0123456789",
+                        	MUIA_String_Integer, NUMERIC_MAX,
+                        	MUIA_CycleChain, 1,
+                    	        End,
+		            Child, slider_button = TextObject,
+			        ButtonFrame,
+			        MUIA_InputMode, MUIV_InputMode_RelVerify,
+			        MUIA_CycleChain, 1,
+			        MUIA_Background, MUII_ButtonBack,
+			        MUIA_Text_PreParse, "\33c",
+			        MUIA_Text_Contents, "Change Slider Orientations",
+	                        End,
+			    Child, MUI_MakeObject(MUIO_Label,"",0),
+			    End,
 		        End,
 
 		    /* radios */
@@ -717,6 +765,14 @@ Child, BalanceObject, End,
 	DoMethod(list_add_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, add_function);
         DoMethod(list_remove_button, MUIM_Notify, MUIA_Pressed, FALSE, list2, 2, MUIM_List_Remove, MUIV_List_Remove_Active);
 	DoMethod(list_clear_button, MUIM_Notify, MUIA_Pressed, FALSE, list2, 1, MUIM_List_Clear);
+
+        /* numeric */
+        for (i = 0; i < NUMERIC_COUNT; i++)
+        {
+            DoMethod(min_string, MUIM_Notify, MUIA_String_Integer, MUIV_EveryTime, numerics[i], 3, MUIM_Set, MUIA_Numeric_Min, MUIV_TriggerValue);
+            DoMethod(max_string, MUIM_Notify, MUIA_String_Integer, MUIV_EveryTime, numerics[i], 3, MUIM_Set, MUIA_Numeric_Max, MUIV_TriggerValue);
+        }
+        DoMethod(slider_button, MUIM_Notify, MUIA_Pressed, FALSE, numerics[HRSLIDER], 3, MUIM_Set, MUIA_Slider_Horiz, FALSE);
 
 	/* radio */
 	DoMethod(country_radio[0], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[1], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
