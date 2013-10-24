@@ -364,6 +364,8 @@
     attr, (IPTR)(value), TAG_DONE)
 #define nnfset(obj, attr, value) SetAttrs(obj, MUIA_Group_Forward, FALSE, \
     MUIA_NoNotify, TRUE, attr, (IPTR)(value), TAG_DONE)
+#define superset(obj, attr, value) SetSuperAttrs(OCLASS(obj), obj, \
+    attr, (IPTR)(value), TAG_DONE)
 
 /* Some aliases... */
 #define GET(obj, attr, store) get(obj, attr, store)
