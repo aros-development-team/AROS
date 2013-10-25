@@ -36,6 +36,8 @@
 #include "../../workbench/system/Wanderer/Classes/iconlist.h"
 #endif
 
+#define LIST_COUNT 5
+
 #define NUMERIC_MIN 0
 #define NUMERIC_MAX 100
 
@@ -337,7 +339,10 @@ int main(void)
     Object *about_item, *quit_item;
     Object *context_menu;
     Object *popobject, *listview;
+    Object *lists[LIST_COUNT];
     Object *list_add_button, *list_remove_button, *list_clear_button;
+    Object *dragsortable_check, *showdropmarks_check, *quiet_check;
+    Object *sort_button, *clear_button, *fill_button;
     Object *numerics[NUMERIC_COUNT];
     Object *min_string, *max_string;
     Object *slider_button;
@@ -345,8 +350,14 @@ int main(void)
     UWORD i;
 
     static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges","Numeric","Radio","Icon List","Balancing",NULL};
+    static char *list_pages[] = {"Single Column (1)","Single Column (2)",NULL};
     static char **radio_entries1 = pages;
     static char *radio_entries2[] = {"Paris","Pataya","London","New York","Reykjavik",NULL};
+    static char *fruits[] = {"Strawberry", "Apple", "Banana", "Orange",
+        "Grapefruit", "Kumquat", "Plum", "Raspberry", "Apricot", "Grape",
+        "Peach", "Lemon", "Lime", "Date", "Pineapple", "Blueberry", "Papaya",
+        "Cranberry", "Gooseberry", "Pear", "Fig", "Coconut", "Melon",
+        "Pumpkin", NULL};
 
     static struct list_entry entry1 = {"Testentry1","Col2: Entry1"};
     static struct list_entry entry2 = {"Entry2","Col2: Entry2"};
@@ -497,6 +508,90 @@ int main(void)
 			    End,
 			Child, save_button = MUI_MakeObject(MUIO_Button, "Save"),
 			End,
+
+		    /* lists */
+    	    	Child, RegisterGroup(list_pages),
+                    Child, VGroup,
+		    Child, ColGroup(LIST_COUNT),
+	                Child, VGroup, GroupFrameT("No Multiselect"),
+		    	    Child, ListviewObject,
+			        MUIA_Listview_List, lists[0] = ListObject,
+				    InputListFrame,
+    	    	    	            MUIA_List_SourceArray, fruits,
+			    	    End,
+		                MUIA_Listview_MultiSelect, MUIV_Listview_MultiSelect_None,
+		                MUIA_CycleChain, 1,
+		                End,
+	                    End,
+	                Child, VGroup, GroupFrameT("Default Multiselect"),
+		    	    Child, ListviewObject,
+			        MUIA_Listview_List, lists[1] = ListObject,
+				    InputListFrame,
+    	    	    	            MUIA_List_SourceArray, fruits,
+			    	    End,
+		                MUIA_Listview_ScrollerPos, MUIV_Listview_ScrollerPos_Left,
+		                MUIA_CycleChain, 1,
+		                End,
+	                    End,
+	                Child, VGroup, GroupFrameT("Shifted Multiselect"),
+		    	    Child, ListviewObject,
+			        MUIA_Listview_List, lists[2] = ListObject,
+				    InputListFrame,
+    	    	    	            MUIA_List_SourceArray, fruits,
+			    	    End,
+		                MUIA_Listview_MultiSelect, MUIV_Listview_MultiSelect_Shifted,
+		                MUIA_Listview_ScrollerPos, MUIV_Listview_ScrollerPos_Right,
+		                MUIA_CycleChain, 1,
+		                End,
+	                    End,
+	                Child, VGroup, GroupFrameT("Unconditional Multiselect"),
+		    	    Child, ListviewObject,
+			        MUIA_Listview_List, lists[3] = ListObject,
+				    InputListFrame,
+    	    	    	            MUIA_List_SourceArray, fruits,
+			    	    End,
+		                MUIA_Listview_MultiSelect, MUIV_Listview_MultiSelect_Always,
+		                MUIA_Listview_ScrollerPos, MUIV_Listview_ScrollerPos_None,
+		                MUIA_CycleChain, 1,
+		                End,
+	                    End,
+	                Child, VGroup, GroupFrameT("Read Only"),
+		    	    Child, ListviewObject,
+			        MUIA_Listview_List, lists[4] = ListObject,
+				    ReadListFrame,
+    	    	    	            MUIA_List_SourceArray, fruits,
+			    	    End,
+			        MUIA_Listview_Input, FALSE,
+		                MUIA_CycleChain, 1,
+		                End,
+	                    End,
+                        End,
+                    Child, RectangleObject,
+		        MUIA_VertWeight,0,
+		        MUIA_Rectangle_HBar, TRUE,
+		        MUIA_Rectangle_BarTitle,"List Controls",
+		        End,
+		    Child, ColGroup(3),
+	        	Child, sort_button = MUI_MakeObject(MUIO_Button, "Sort"),
+	        	Child, clear_button = MUI_MakeObject(MUIO_Button, "Clear"),
+	        	Child, fill_button = MUI_MakeObject(MUIO_Button, "Fill"),
+                        Child, HGroup,
+			    Child, dragsortable_check = MUI_MakeObject(MUIO_Checkmark,NULL),
+			    Child, MUI_MakeObject(MUIO_Label,"Drag sortable",0),
+                            Child, HVSpace,
+	                    End,
+                        Child, HGroup,
+			    Child, showdropmarks_check = MUI_MakeObject(MUIO_Checkmark,NULL),
+			    Child, MUI_MakeObject(MUIO_Label,"Show drop marks",0),
+                            Child, HVSpace,
+	                    End,
+                        Child, HGroup,
+			    Child, quiet_check = MUI_MakeObject(MUIO_Checkmark,NULL),
+			    Child, MUI_MakeObject(MUIO_Label,"Quiet",0),
+                            Child, HVSpace,
+	                    End,
+			End,
+			End,
 		    Child, VGroup,
 		    	Child, ListviewObject,
 			    MUIA_Listview_List, list2 = ListObject,
@@ -510,6 +605,7 @@ int main(void)
 			    Child, list_clear_button = MUI_MakeObject(MUIO_Button,"_Clear"),
 			    End,
 			End,
+		    End,
 
 		    /* gauges */
 		    Child, HGroup,
@@ -758,6 +854,18 @@ Child, BalanceObject, End,
 
 	DoMethod(quit_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	DoMethod(about_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, about_function);
+
+        /* list */
+	set(showdropmarks_check,MUIA_Selected,TRUE);
+        for (i = 0; i < LIST_COUNT; i++)
+        {
+            DoMethod(sort_button, MUIM_Notify, MUIA_Pressed, FALSE, lists[i], 1, MUIM_List_Sort);
+            DoMethod(clear_button, MUIM_Notify, MUIA_Pressed, FALSE, lists[i], 1, MUIM_List_Clear);
+            DoMethod(fill_button, MUIM_Notify, MUIA_Pressed, FALSE, lists[i], 4, MUIM_List_Insert, fruits, -1, MUIV_List_Insert_Bottom);
+            DoMethod(dragsortable_check, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, lists[i], 3, MUIM_Set, MUIA_List_DragSortable, MUIV_TriggerValue);
+            DoMethod(showdropmarks_check, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, lists[i], 3, MUIM_Set, MUIA_List_ShowDropMarks, MUIV_TriggerValue);
+            DoMethod(quiet_check, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, lists[i], 3, MUIM_Set, MUIA_List_Quiet, MUIV_TriggerValue);
+        }
 
 	DoMethod(listview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE, popobject, 2, MUIM_Popstring_Close, TRUE);
 
