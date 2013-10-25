@@ -114,7 +114,7 @@ struct RectList
                     {
                         D(bug("[Cybergfx] %s: Updating BitMap Rect [%d, %d -> %d, %d]\n", __PRETTY_FUNCTION__, rectCurrent->MinX, rectCurrent->MinY, rectCurrent->MaxX, rectCurrent->MaxY));
                         UpdateBitMap(bm, rectCurrent->MinX, rectCurrent->MinY, rectCurrent->MaxX - rectCurrent->MinX + 1, rectCurrent->MaxY - rectCurrent->MinY + 1);
-                        rectCurrent = (struct Rectangle *)((int)rectCurrent + sizeof(struct Rectangle));
+                        rectCurrent = &rectCurrent[1];
                     }
                 }
                 rl = rl->rl_next;
