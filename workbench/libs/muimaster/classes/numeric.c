@@ -139,9 +139,11 @@ IPTR Numeric__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             break;
         case MUIA_Numeric_Max:
             data->max = tag->ti_Data;
+            data->value = CLAMP(data->value, data->min, data->max);
             break;
         case MUIA_Numeric_Min:
             data->min = tag->ti_Data;
+            data->value = CLAMP(data->value, data->min, data->max);
             break;
         case MUIA_Numeric_Reverse:
             _handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVERSE);
