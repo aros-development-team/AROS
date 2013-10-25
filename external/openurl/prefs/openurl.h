@@ -412,6 +412,10 @@ enum
 #define MBAR      {NM_ITEM,(STRPTR)NM_BARLABEL,0,0,0,NULL}
 #define MEND      {NM_END,NULL,0,0,0,NULL}
 
+#ifdef superset
+/* AROS defines this in mui.h */
+#undef superset
+#endif
 #define superset(cl,obj,attr,value)    SetSuperAttrs((APTR)(cl),(Object *)(obj),(ULONG)(attr),(IPTR)(value),TAG_DONE)
 #define supernnset(cl,obj,attr,value)  SetSuperAttrs((APTR)(cl),(Object *)(obj),(ULONG)(attr),(IPTR)(value),MUIA_NoNotify,TRUE,TAG_DONE)
 #define superget(cl,obj,attr,valPtr)   DoSuperMethod((APTR)(cl),(Object *)(obj),OM_GET,(ULONG)(attr),(IPTR)(valPtr))
