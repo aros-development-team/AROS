@@ -65,6 +65,64 @@ enum slider_flags
     } while(0)
 
 
+static void CalcKnobDimensions(struct IClass *cl, Object *obj)
+{
+    struct MUI_SliderData *data = INST_DATA(cl, obj);
+    const struct ZuneFrameGfx *knob_frame;
+    LONG min = 0;
+    LONG max = 0;
+    LONG val;
+    LONG width;
+    struct RastPort rp;
+
+    knob_frame =
+        zune_zframe_get(obj,
+        &muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob]);
+
+    InitRastPort(&rp);
+    SetFont(&rp, _font(obj));
+
+    width = 0;
+
+    longget(obj, MUIA_Numeric_Min, &min);
+    longget(obj, MUIA_Numeric_Max, &max);
+
+    if ((max - min) > MUI_MAXMAX)
+    {
+        min = 0;
+        max = MUI_MAXMAX;
+    }
+
+    /* Determine the width of the knob */
+    for (val = min; val <= max; val++)
+    {
+        LONG nw;
+        char *buf;
+
+        buf = (char *)DoMethod(obj, MUIM_Numeric_Stringify, val);
+        nw = TextLength(&rp, buf, strlen(buf));
+        if (nw > width)
+            width = nw;
+    }
+    data->max_text_width = width;
+    data->knob_width = width +
+        knob_frame->ileft +
+        knob_frame->iright +
+        muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerLeft +
+        muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerRight;
+
+    data->knob_height = _font(obj)->tf_YSize +
+        knob_frame->itop +
+        knob_frame->ibottom +
+        muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerTop +
+        muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerBottom;
+
+    if (data->flags & SLIDER_HORIZ)
+        data->knob_length = data->knob_width;
+    else
+        data->knob_length = data->knob_height;
+}
+
 /**************************************************************************
  OM_NEW
 **************************************************************************/
@@ -127,12 +185,39 @@ IPTR Slider__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
+        case MUIA_Slider_Horiz:
+            _handle_bool_tag(data->flags, tag->ti_Data, SLIDER_HORIZ);
+            CalcKnobDimensions(cl, obj);
+            data->flags &= ~(SLIDER_VALIDOFFSET | SLIDER_VALIDSTRING);
+            MUI_Redraw(obj, MADF_DRAWOBJECT);
+            break;
         case MUIA_Numeric_Value:
+        case MUIA_Numeric_Min:
+        case MUIA_Numeric_Max:
+        case MUIA_Numeric_Format:
             /* reset the knob position and string */
             data->flags &= ~(SLIDER_VALIDOFFSET | SLIDER_VALIDSTRING);
             break;
         }
     }
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
+/**************************************************************************
+ OM_GET
+**************************************************************************/
+IPTR Slider__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    struct MUI_SliderData *data = INST_DATA(cl, obj);
+    IPTR *store = msg->opg_Storage;
+
+    switch (msg->opg_AttrID)
+    {
+    case MUIA_Slider_Horiz:
+        *store = ((data->flags & SLIDER_HORIZ) != 0);
+        return TRUE;
+    }
+
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
@@ -153,55 +238,11 @@ IPTR Slider__MUIM_Setup(struct IClass *cl, Object *obj,
     if (!DoSuperMethodA(cl, obj, (Msg) msg))
         return FALSE;
 
-    knob_frame =
-        zune_zframe_get(obj,
-        &muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob]);
     data->knob_bg = zune_imspec_setup(MUII_SliderKnob, muiRenderInfo(obj));
 
-    InitRastPort(&rp);
-    SetFont(&rp, _font(obj));
-
-    width = 0;
-
-    longget(obj, MUIA_Numeric_Min, &min);
-    longget(obj, MUIA_Numeric_Max, &max);
-
-    if ((max - min) > MUI_MAXMAX)
-    {
-        min = 0;
-        max = MUI_MAXMAX;
-    }
-
-    /* Determine the width of the knob */
-    for (val = min; val <= max; val++)
-    {
-        LONG nw;
-        char *buf;
-
-        buf = (char *)DoMethod(obj, MUIM_Numeric_Stringify, val);
-        nw = TextLength(&rp, buf, strlen(buf));
-        if (nw > width)
-            width = nw;
-    }
-    data->max_text_width = width;
-    data->knob_width = width +
-        knob_frame->ileft +
-        knob_frame->iright +
-        muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerLeft +
-        muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerRight;
-
-    data->knob_height = _font(obj)->tf_YSize +
-        knob_frame->itop +
-        knob_frame->ibottom +
-        muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerTop +
-        muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerBottom;
+    CalcKnobDimensions(cl, obj);
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) & data->ehn);
-
-    if (data->flags & SLIDER_HORIZ)
-        data->knob_length = data->knob_width;
-    else
-        data->knob_length = data->knob_height;
 
     return TRUE;
 }
@@ -509,6 +550,8 @@ BOOPSI_DISPATCHER(IPTR, Slider_Dispatcher, cl, obj, msg)
         return Slider__OM_NEW(cl, obj, (struct opSet *)msg);
     case OM_SET:
         return Slider__OM_SET(cl, obj, (struct opSet *)msg);
+    case OM_GET:
+        return Slider__OM_GET(cl, obj, (struct opGet *)msg);
     case MUIM_Setup:
         return Slider__MUIM_Setup(cl, obj, (APTR) msg);
     case MUIM_Cleanup:
