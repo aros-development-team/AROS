@@ -228,12 +228,6 @@ IPTR Slider__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
-    const struct ZuneFrameGfx *knob_frame;
-    LONG min = 0;
-    LONG max = 0;
-    LONG val;
-    LONG width;
-    struct RastPort rp;
 
     if (!DoSuperMethodA(cl, obj, (Msg) msg))
         return FALSE;
