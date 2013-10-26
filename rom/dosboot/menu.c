@@ -314,81 +314,6 @@ static void initPageExpansion(LIBBASETYPEPTR DOSBootBase)
    }
 }
 
-static BOOL bstreqcstr(BSTR bstr, CONST_STRPTR cstr)
-{
-    int clen;
-    int blen;
-
-    clen = strlen(cstr);
-    blen = AROS_BSTR_strlen(bstr);
-    if (clen != blen)
-        return FALSE;
-
-    return (memcmp(AROS_BSTR_ADDR(bstr),cstr,clen) == 0);
-}
-
-void selectBootDevice(LIBBASETYPEPTR DOSBootBase, STRPTR bootDeviceName)
-{
-    struct BootNode *bn = NULL;
-
-    if (bootDeviceName == NULL &&
-        DOSBootBase->db_BootNode != NULL)
-        return;
-
-    Forbid(); /* .. access to ExpansionBase->MountList */
-
-    if (DOSBootBase->db_BootNode == NULL && bootDeviceName == NULL)
-    {
-        bn = (APTR)GetHead(&DOSBootBase->bm_ExpansionBase->MountList);
-    }
-    else
-    {
-        struct BootNode *i;
-        ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, i)
-        {
-            struct DeviceNode *dn;
-
-            dn = i->bn_DeviceNode;
-            if (dn == NULL || dn->dn_Name == BNULL)
-                continue;
-
-            if (bstreqcstr(dn->dn_Name, bootDeviceName))
-            {
-                bn = i;
-                break;
-            }
-        }
-    }
-
-    Permit();
-
-    DOSBootBase->db_BootNode = bn;
-}
-
-/* This makes the selected boot device the actual
- * boot device. It also updates the boot flags.
- */
-static void setBootDevice(LIBBASETYPEPTR DOSBootBase)
-{
-    struct BootNode *bn;
-
-    bn = DOSBootBase->db_BootNode;
-
-    if (bn != NULL)
-    {
-        Remove((struct Node *)bn);
-        bn->bn_Node.ln_Type = NT_BOOTNODE;
-        bn->bn_Node.ln_Pri = 127;
-        /* We use AddHead() instead of Enqueue() here
-         * to *insure* that this gets to the front of
-         * the boot list.
-         */
-        AddHead(&DOSBootBase->bm_ExpansionBase->MountList, (struct Node *)bn);
-    }
-
-    DOSBootBase->bm_ExpansionBase->eb_BootFlags = DOSBootBase->db_BootFlags;
-}
-
 static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 {
     struct Window *win = DOSBootBase->bm_Window;
@@ -678,9 +603,6 @@ int bootmenu_Init(LIBBASETYPEPTR LIBBASE, BOOL WantBootMenu)
         D(kprintf("[BootMenu] bootmenu_Init: Entering Boot Menu ...\n"));
         bmi_RetVal = initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
     }
-
-    /* Make the user's selection the top boot device */
-    setBootDevice(LIBBASE);
 
     return bmi_RetVal;
 }
