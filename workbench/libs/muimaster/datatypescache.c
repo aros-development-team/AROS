@@ -1,7 +1,6 @@
 /*
-    Copyright  2002-2011, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
+
     $Id$
 */
 
@@ -51,6 +50,44 @@ struct BltMaskHook
     struct BitMap *srcBitMap;
     LONG srcx, srcy;
     LONG destx, desty;
+};
+
+#define RECTSIZEX(r) ((r)->MaxX-(r)->MinX+1)
+#define RECTSIZEY(r) ((r)->MaxY-(r)->MinY+1)
+
+#define MOD(x,y) ((x)<0 ? (y)-((-(x))%(y)) : (x)%(y))
+
+struct BackFillMsg
+{
+    struct Layer *Layer;
+    struct Rectangle Bounds;
+    LONG OffsetX;
+    LONG OffsetY;
+};
+
+struct BackFillOptions
+{
+    WORD MaxCopyWidth;   // maximum width for the copy
+    WORD MaxCopyHeight;  // maximum height for the copy
+//      BOOL CenterX;    // center the tiles horizontally?
+//      BOOL CenterY;    // center the tiles vertically?
+    WORD OffsetX;      // offset to add
+    WORD OffsetY;      // offset to add
+    BOOL OffsetTitleY; // add the screen titlebar height to the vertical offset?
+};
+
+struct BackFillInfo
+{
+    struct Hook Hook;
+    WORD Width;
+    WORD Height;
+    struct BitMap *BitMap;
+    /*  struct Screen *Screen; */ /* Needed for centering */
+    WORD CopyWidth;
+    WORD CopyHeight;
+    struct BackFillOptions Options;
+    WORD OffsetX;
+    WORD OffsetY;
 };
 
 #ifndef __AROS__
@@ -761,6 +798,12 @@ void dt_dispose_picture(struct dt_node *node)
         if (!node->count)
         {
             Remove((struct Node *)node);
+            if (node->bfi != NULL)
+            {
+                if (node->bfi->BitMap != NULL)
+                    FreeBitMap(node->bfi->BitMap);
+                FreeVec(node->bfi);
+            }
             if (node->mode == MODE_PROP)
                 FreePropConfig(node);
             else
@@ -787,7 +830,6 @@ int dt_height(struct dt_node *node)
     else
         return 0;
 }
-
 
 void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x,
     int y)
@@ -924,45 +966,6 @@ void dt_put_mim_on_rastport(struct dt_node *node, struct RastPort *rp,
 
     }
 }
-
-#define RECTSIZEX(r) ((r)->MaxX-(r)->MinX+1)
-#define RECTSIZEY(r) ((r)->MaxY-(r)->MinY+1)
-
-#define MOD(x,y) ((x)<0 ? (y)-((-(x))%(y)) : (x)%(y))
-
-struct BackFillMsg
-{
-    struct Layer *Layer;
-    struct Rectangle Bounds;
-    LONG OffsetX;
-    LONG OffsetY;
-};
-
-struct BackFillOptions
-{
-    WORD MaxCopyWidth;   // maximum width for the copy
-    WORD MaxCopyHeight;  // maximum height for the copy
-//      BOOL CenterX;    // center the tiles horizontally?
-//      BOOL CenterY;    // center the tiles vertically?
-    WORD OffsetX;      // offset to add
-    WORD OffsetY;      // offset to add
-    BOOL OffsetTitleY; // add the screen titlebar height to the vertical offset?
-};
-
-struct BackFillInfo
-{
-    struct Hook Hook;
-    WORD Width;
-    WORD Height;
-    struct BitMap *BitMap;
-    /*  struct Screen *Screen; */ /* Needed for centering */
-    WORD CopyWidth;
-    WORD CopyHeight;
-    struct BackFillOptions Options;
-    WORD OffsetX;
-    WORD OffsetY;
-};
-
 
 static void CopyTiledBitMap(struct BitMap *Src, WORD SrcOffsetX,
     WORD SrcOffsetY, WORD SrcSizeX, WORD SrcSizeY, struct BitMap *Dst,
