@@ -39,6 +39,7 @@ struct DOSBootBase
     struct Screen        *bm_Screen;		/* Screen					  */
     struct Window        *bm_Window;		/* Window and gadgets		  */
     struct MainGadgets    bm_MainGadgets;
+    APTR                   bm_BootNode; /* Boot node selected in the menu */
 
     struct BootConfig     bm_BootConfig;	/* Current HIDD configuration     */
     APTR		  animData;		/* Animation stuff		  */
