@@ -393,6 +393,8 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
         }
 
         if (de && ismedia) {
+            STRPTR sunit = "kMGT";
+
             for (i = 0; i < 4; i++) {
                 dostype[i] = (de->de_DosType >> ((3 - i) * 8)) & 0xff;
                 if (dostype[i] < 9)
@@ -405,13 +407,17 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
            size = (de->de_HighCyl - de->de_LowCyl + 1) * de->de_Surfaces * de->de_BlocksPerTrack;
            /* try to prevent ULONG overflow */
            if (de->de_SizeBlock <= 128)
-                   size /= 2;
-            else
-                    size *= de->de_SizeBlock / 256;
+               size /= 2;
+           else
+               size *= de->de_SizeBlock / 256;
+           while(size > 1024 * 10) { /* Wrap on 10x unit to be more precise in displaying */
+               size /= 1024;
+               sunit++;
+           }
 
-            NewRawDoFmt("%s [%08lx] %ldk", RAWFMTFUNC_STRING, text,
+            NewRawDoFmt("%s [%08lx] %ld%c", RAWFMTFUNC_STRING, text,
                 dostype, de->de_DosType,
-                size);
+                size, (*sunit));
             textp = text;
         } else if (!devopen) {
             textp = "[device open error]";
