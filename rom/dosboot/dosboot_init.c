@@ -96,11 +96,7 @@ static void selectBootDevice(LIBBASETYPEPTR DOSBootBase, STRPTR bootDeviceName)
 
     Forbid(); /* .. access to ExpansionBase->MountList */
 
-    if (DOSBootBase->db_BootNode == NULL && bootDeviceName == NULL)
-    {
-        bn = (APTR)GetHead(&DOSBootBase->bm_ExpansionBase->MountList);
-    }
-    else
+    if (bootDeviceName != NULL)
     {
         struct BootNode *i;
         ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, i)
@@ -118,6 +114,10 @@ static void selectBootDevice(LIBBASETYPEPTR DOSBootBase, STRPTR bootDeviceName)
             }
         }
     }
+
+    /* Default */
+    if (bn == NULL)
+        bn = (APTR)GetHead(&DOSBootBase->bm_ExpansionBase->MountList);
 
     Permit();
 
