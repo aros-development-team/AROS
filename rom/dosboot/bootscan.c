@@ -265,10 +265,16 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
     struct DeviceNode *dn = bn->bn_DeviceNode;
     BOOL res = FALSE;
 
-    D(bug("CheckPartition('%b') handler = %x\n", dn->dn_Name, dn->dn_SegList));
-    
+    D(bug("CheckPartition('%b') handler seglist = %x, handler = %s\n", dn->dn_Name,
+            dn->dn_SegList, AROS_BSTR_ADDR(dn->dn_Handler)));
+
+    /* Examples:
+     * ata.device registers a HDx device describing whole disk with no handler name and no seglist
+     * massstorage.class registers each partition giving it a handler name but not seglist
+     */
+
     /* If we already have filesystem handler, don't do anything */
-    if (dn->dn_SegList == BNULL)
+    if (dn->dn_SegList == BNULL && dn->dn_Handler == BNULL)
     {
     	struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
 
