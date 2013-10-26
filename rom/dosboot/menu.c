@@ -331,6 +331,7 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
     struct Window *win = DOSBootBase->bm_Window;
     struct BootNode *bn;
     WORD y = 70;
+    WORD xoff = (win->Width - 640) / 2;
     char text[100], *textp;
 
     SetAPen(win->RPort, 1);
@@ -363,7 +364,7 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
             bn->bn_Node.ln_Pri,
             AROS_BSTR_ADDR(fssm->fssm_Device),
             fssm->fssm_Unit);
-        Move(win->RPort, 20, y);
+        Move(win->RPort, 20 + xoff, y);
         Text(win->RPort, text, strlen(text));
 
         textp = NULL;
@@ -411,7 +412,7 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
             textp = "[no media]";
         }
         if (textp) {
-            Move(win->RPort, 400, y);
+            Move(win->RPort, 400 + xoff, y);
             Text(win->RPort, textp, strlen(textp));
         }
 
