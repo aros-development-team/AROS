@@ -202,7 +202,7 @@ static void toggleMode(LIBBASETYPEPTR DOSBootBase)
 #endif
 }
 
-static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
+static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win, WORD page)
 {
     WORD exit = -1;
     struct IntuiMessage *msg;
@@ -225,20 +225,20 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
                     else if (msg->Code >= 'a' && msg->Code <='j') {
                         BYTE pos = msg->Code - 'a', i = 0;
                         struct BootNode *bn;
-                        DOSBootBase->db_BootNode = NULL;
+                        DOSBootBase->bm_BootNode = NULL;
 
                         Forbid(); /* .. access to ExpansionBase->MountList */
                         ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, bn)
                         {
                             if (i++ == pos)
                             {
-                                DOSBootBase->db_BootNode = bn;
+                                DOSBootBase->bm_BootNode = bn;
                                 break;
                             }
                         }
                         Permit();
 
-                        if (DOSBootBase->db_BootNode != NULL)
+                        if (DOSBootBase->bm_BootNode != NULL)
                         {
                             /* Refresh itself */
                             exit = PAGE_BOOT;
@@ -261,9 +261,16 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
                         exit = EXIT_BOOT_WNSS;
                         break;
                     case BUTTON_CANCEL:
-                        DOSBootBase->db_BootNode = NULL;
-                        /* Fallthrough */
+                        if (page == PAGE_BOOT)
+                            DOSBootBase->bm_BootNode = NULL;
+                        exit = PAGE_MAIN;
+                        break;
                     case BUTTON_USE:
+                        /* Preserve selected value */
+                        if (page == PAGE_BOOT)
+                            if (DOSBootBase->bm_BootNode != NULL)
+                                DOSBootBase->db_BootNode = DOSBootBase->bm_BootNode;
+                        /* Fallthrough */
                     case BUTTON_CONTINUE:
                         exit = PAGE_MAIN;
                         break;
@@ -359,7 +366,7 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
         }
 
         NewRawDoFmt("%c%10s: %4d %s-%ld", RAWFMTFUNC_STRING, text,
-            (DOSBootBase->db_BootNode == bn) ? '*' : IsBootableNode(bn) ? '+' : ' ',
+            (DOSBootBase->bm_BootNode == bn) ? '*' : IsBootableNode(bn) ? '+' : ' ',
             AROS_BSTR_ADDR(dn->dn_Name),
             bn->bn_Node.ln_Pri,
             AROS_BSTR_ADDR(fssm->fssm_Device),
@@ -445,7 +452,16 @@ static void initPage(LIBBASETYPEPTR DOSBootBase, WORD page)
     centertext(DOSBootBase, 2, 10, text);
     
     if (page == PAGE_BOOT)
+    {
+        /* Set the default */
+        if (DOSBootBase->bm_BootNode == NULL)
+            DOSBootBase->bm_BootNode = DOSBootBase->db_BootNode;
+
         initPageBoot(DOSBootBase);
+        centertext(DOSBootBase, 1, 30, "Press A-J to select boot device");
+        centertext(DOSBootBase, 1, 45, "\"+\" => bootable, \"*\" => selected for boot");
+
+    }
     else if (page == PAGE_EXPANSION)
         initPageExpansion(DOSBootBase);
 
@@ -456,11 +472,6 @@ static void initPage(LIBBASETYPEPTR DOSBootBase, WORD page)
         }
     }
 
-    if (page == PAGE_BOOT)
-    {
-        centertext(DOSBootBase, 1, 30, "Press A-J to select boot device");
-        centertext(DOSBootBase, 1, 45, "\"+\" => bootable, \"*\" => selected for boot");
-    }
 }
 
 static WORD initWindow(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg, WORD page)
@@ -496,7 +507,7 @@ static WORD initWindow(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg, WORD
             D(bug("[BootMenu] initScreen: Window RastPort @ %p\n", DOSBootBase->bm_Window->RPort));
             D(bug("[BootMenu] initScreen: Window UserPort @ %p\n", DOSBootBase->bm_Window->UserPort));
             initPage(DOSBootBase, page);
-            newpage = msgLoop(DOSBootBase, DOSBootBase->bm_Window);
+            newpage = msgLoop(DOSBootBase, DOSBootBase->bm_Window, page);
         }
         CloseWindow(DOSBootBase->bm_Window);
     }
