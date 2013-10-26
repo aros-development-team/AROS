@@ -139,7 +139,6 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
 		else if (0 == strnicmp(node->ln_Name, "bootdevice=", 11))
 		{
 		    LIBBASE->db_BootDevice = &node->ln_Name[11];
-		    selectBootDevice(LIBBASE);
 		}
                 else if (0 == stricmp(node->ln_Name, "econsole"))
                 {
@@ -153,6 +152,9 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
 
     /* Scan for any additional partition volumes */
     dosboot_BootScan(LIBBASE);
+
+    /* Select the initial boot device, so that the choice is available in the menu */
+    selectBootDevice(LIBBASE);
 
     /* Show the boot menu if needed */
     bootmenu_Init(LIBBASE, WantBootMenu);
