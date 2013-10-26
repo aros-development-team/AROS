@@ -96,19 +96,31 @@ static BOOL initHidds(LIBBASETYPEPTR DOSBootBase)
 
 #endif
 
+static LONG centerx(LIBBASETYPEPTR DOSBootBase, LONG width)
+{
+    return (DOSBootBase->bm_Screen->Width - width) / 2;
+}
+
+static LONG rightto(LIBBASETYPEPTR DOSBootBase, LONG width, LONG right)
+{
+    return DOSBootBase->bm_Screen->Width - width - right;
+}
+
 static struct Gadget *createGadgetsBoot(LIBBASETYPEPTR DOSBootBase) 
 {
+    LONG cx = centerx((struct DOSBootBase *)DOSBootBase, 280);
+
     /* Create Option Gadgets */
     DOSBootBase->bm_MainGadgets.bootopt = createButton(
-                                                        180, 63, 280, 14,
+                                                        cx, 63, 280, 14,
                                                         NULL, "Boot Options...",
                                                         BUTTON_BOOT_OPTIONS, (struct DOSBootBase *)DOSBootBase);
     DOSBootBase->bm_MainGadgets.displayopt = createButton(
-                                                        180, 84, 280, 14,
+                                                        cx, 84, 280, 14,
                                                         DOSBootBase->bm_MainGadgets.bootopt->gadget, "Display Options...",
                                                         BUTTON_DISPLAY_OPTIONS, (struct DOSBootBase *)DOSBootBase);
     DOSBootBase->bm_MainGadgets.expboarddiag = createButton(
-                                                        180, 105, 280, 14, 
+                                                        cx, 105, 280, 14,
                                                         DOSBootBase->bm_MainGadgets.displayopt->gadget, "Expansion Board Diagnostic...",
                                                         BUTTON_EXPBOARDDIAG, (struct DOSBootBase *)DOSBootBase);
     /* Create BOOT Gadgets */
@@ -117,7 +129,7 @@ static struct Gadget *createGadgetsBoot(LIBBASETYPEPTR DOSBootBase)
                                                     DOSBootBase->bm_MainGadgets.expboarddiag->gadget, "Boot",
                                                     BUTTON_BOOT, (struct DOSBootBase *)DOSBootBase);
     DOSBootBase->bm_MainGadgets.bootnss = createButton(
-                                                    344, DOSBootBase->bottomY, 280, 14,
+                                                    rightto((struct DOSBootBase *)DOSBootBase, 280, 16), DOSBootBase->bottomY, 280, 14,
                                                     DOSBootBase->bm_MainGadgets.boot->gadget, "Boot With No Startup-Sequence",
                                                     BUTTON_BOOT_WNSS, (struct DOSBootBase *)DOSBootBase);
     if (!DOSBootBase->bm_MainGadgets.bootopt ||
@@ -136,7 +148,7 @@ static struct Gadget *createGadgetsUseCancel(LIBBASETYPEPTR DOSBootBase)
                                                 NULL, "Use",
                                                 BUTTON_USE, (struct DOSBootBase *)DOSBootBase);
     DOSBootBase->bm_MainGadgets.cancel = createButton(
-                                                344, DOSBootBase->bottomY, 280, 14,
+                                                rightto((struct DOSBootBase *)DOSBootBase, 280, 16), DOSBootBase->bottomY, 280, 14,
                                                 DOSBootBase->bm_MainGadgets.use->gadget, "Cancel",
                                                 BUTTON_CANCEL, (struct DOSBootBase *)DOSBootBase);
     if (!DOSBootBase->bm_MainGadgets.use ||
