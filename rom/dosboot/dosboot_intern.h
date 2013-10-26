@@ -31,7 +31,6 @@ struct DOSBootBase
     struct Node           db_Node;		/* Node for linking into the list */
     IPTR 		  db_BootFlags;		/* Bootup flags (identical to ExpansionBase->eb_BootFlags) */
     
-    char                 *db_BootDevice;	/* Device to boot up from	  */
     struct BootNode      *db_BootNode;		/* Device to boot up from	  */
 
     struct GfxBase       *bm_GfxBase;		/* Library bases	  	  */
