@@ -43,28 +43,28 @@
 static void bootDelay(ULONG timeout)
 {
     struct timerequest  timerio;
-    struct MsgPort 	timermp;
+    struct MsgPort     timermp;
     
     memset(&timermp, 0, sizeof(timermp));
     
     timermp.mp_Node.ln_Type = NT_MSGPORT;
-    timermp.mp_Flags 	    = PA_SIGNAL;
-    timermp.mp_SigBit	    = SIGB_SINGLE;
-    timermp.mp_SigTask	    = FindTask(NULL);    
+    timermp.mp_Flags        = PA_SIGNAL;
+    timermp.mp_SigBit       = SIGB_SINGLE;
+    timermp.mp_SigTask      = FindTask(NULL);
     NEWLIST(&timermp.mp_MsgList);
   
-    timerio.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    timerio.tr_node.io_Message.mn_ReplyPort    = &timermp;
-    timerio.tr_node.io_Message.mn_Length       = sizeof(timermp);
+    timerio.tr_node.io_Message.mn_Node.ln_Type  = NT_REPLYMSG;
+    timerio.tr_node.io_Message.mn_ReplyPort     = &timermp;
+    timerio.tr_node.io_Message.mn_Length        = sizeof(timermp);
 
     if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)&timerio, 0) != 0) {
         D(bug("dosboot: Can't open timer.device unit 0\n"));
         return;
     }
 
-    timerio.tr_node.io_Command 		       = TR_ADDREQUEST;
-    timerio.tr_time.tv_secs                    = timeout / TICKS_PER_SECOND;
-    timerio.tr_time.tv_micro  		       = 1000000UL / TICKS_PER_SECOND * (timeout % TICKS_PER_SECOND);
+    timerio.tr_node.io_Command  = TR_ADDREQUEST;
+    timerio.tr_time.tv_secs     = timeout / TICKS_PER_SECOND;
+    timerio.tr_time.tv_micro    = 1000000UL / TICKS_PER_SECOND * (timeout % TICKS_PER_SECOND);
 
     SetSignal(0, SIGF_SINGLE);
 
@@ -179,23 +179,23 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
      */
     if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
     {
-    	struct List *args = GetBootInfo(BL_Args);
+        struct List *args = GetBootInfo(BL_Args);
 
-    	if (args)
-    	{
-    	    struct Node *node;
+        if (args)
+        {
+            struct Node *node;
 
-    	    ForeachNode(args, node)
-    	    {
-    		if (0 == strncmp(node->ln_Name, "bootdelay=", 10))
-    		{
-    		    ULONG delay = atoi(&node->ln_Name[10]);
+            ForeachNode(args, node)
+            {
+                if (0 == strncmp(node->ln_Name, "bootdelay=", 10))
+                {
+                    ULONG delay = atoi(&node->ln_Name[10]);
 
-		    D(bug("[Boot] delay of %d seconds requested.", delay));
-		    if (delay)
-		    	bootDelay(delay * 50);
-    		}
-    		else if (0 == stricmp(node->ln_Name, "bootmenu"))
+                    D(bug("[Boot] delay of %d seconds requested.", delay));
+                    if (delay)
+                        bootDelay(delay * 50);
+                }
+                else if (0 == stricmp(node->ln_Name, "bootmenu"))
                 {
                     D(bug("[BootMenu] bootmenu_Init: Forced with bootloader argument\n"));
                     WantBootMenu = TRUE;
@@ -204,26 +204,26 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
                  * TODO: The following two flags should have corresponding switches
                  * in 'display options' page.
                  */
-		else if (0 == stricmp(node->ln_Name, "nomonitors"))
-		{
-		    LIBBASE->db_BootFlags |= BF_NO_DISPLAY_DRIVERS;
-		}
-		else if (0 == stricmp(node->ln_Name, "nocomposition"))
-		{
-		    LIBBASE->db_BootFlags |= BF_NO_COMPOSITION;
-		}
-		else if (0 == strnicmp(node->ln_Name, "bootdevice=", 11))
-		{
-		    bootDeviceName = &node->ln_Name[11];
-		}
+                else if (0 == stricmp(node->ln_Name, "nomonitors"))
+                {
+                    LIBBASE->db_BootFlags |= BF_NO_DISPLAY_DRIVERS;
+                }
+                else if (0 == stricmp(node->ln_Name, "nocomposition"))
+                {
+                    LIBBASE->db_BootFlags |= BF_NO_COMPOSITION;
+                }
+                else if (0 == strnicmp(node->ln_Name, "bootdevice=", 11))
+                {
+                    bootDeviceName = &node->ln_Name[11];
+                }
                 else if (0 == stricmp(node->ln_Name, "econsole"))
                 {
                     LIBBASE->db_BootFlags |= BF_EMERGENCY_CONSOLE;
                     D(bug("[Boot] Emergency console selected\n"));
                 }
-    	    }
-    	    ExpansionBase->eb_BootFlags = LIBBASE->db_BootFlags;
-    	}
+            }
+            ExpansionBase->eb_BootFlags = LIBBASE->db_BootFlags;
+        }
     }
 
     /* Scan for any additional partition volumes */
