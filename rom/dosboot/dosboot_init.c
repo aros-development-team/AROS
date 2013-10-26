@@ -67,10 +67,85 @@ static void bootDelay(ULONG timeout)
     timerio.tr_time.tv_micro  		       = 1000000UL / TICKS_PER_SECOND * (timeout % TICKS_PER_SECOND);
 
     SetSignal(0, SIGF_SINGLE);
-	
+
     DoIO(&timerio.tr_node);
 
     CloseDevice((struct IORequest *)&timerio);
+}
+
+static BOOL bstreqcstr(BSTR bstr, CONST_STRPTR cstr)
+{
+    int clen;
+    int blen;
+
+    clen = strlen(cstr);
+    blen = AROS_BSTR_strlen(bstr);
+    if (clen != blen)
+        return FALSE;
+
+    return (memcmp(AROS_BSTR_ADDR(bstr),cstr,clen) == 0);
+}
+
+static void selectBootDevice(LIBBASETYPEPTR DOSBootBase, STRPTR bootDeviceName)
+{
+    struct BootNode *bn = NULL;
+
+    if (bootDeviceName == NULL &&
+        DOSBootBase->db_BootNode != NULL)
+        return;
+
+    Forbid(); /* .. access to ExpansionBase->MountList */
+
+    if (DOSBootBase->db_BootNode == NULL && bootDeviceName == NULL)
+    {
+        bn = (APTR)GetHead(&DOSBootBase->bm_ExpansionBase->MountList);
+    }
+    else
+    {
+        struct BootNode *i;
+        ForeachNode(&DOSBootBase->bm_ExpansionBase->MountList, i)
+        {
+            struct DeviceNode *dn;
+
+            dn = i->bn_DeviceNode;
+            if (dn == NULL || dn->dn_Name == BNULL)
+                continue;
+
+            if (bstreqcstr(dn->dn_Name, bootDeviceName))
+            {
+                bn = i;
+                break;
+            }
+        }
+    }
+
+    Permit();
+
+    DOSBootBase->db_BootNode = bn;
+}
+
+/* This makes the selected boot device the actual
+ * boot device. It also updates the boot flags.
+ */
+static void setBootDevice(LIBBASETYPEPTR DOSBootBase)
+{
+    struct BootNode *bn;
+
+    bn = DOSBootBase->db_BootNode;
+
+    if (bn != NULL)
+    {
+        Remove((struct Node *)bn);
+        bn->bn_Node.ln_Type = NT_BOOTNODE;
+        bn->bn_Node.ln_Pri = 127;
+        /* We use AddHead() instead of Enqueue() here
+         * to *insure* that this gets to the front of
+         * the boot list.
+         */
+        AddHead(&DOSBootBase->bm_ExpansionBase->MountList, (struct Node *)bn);
+    }
+
+    DOSBootBase->bm_ExpansionBase->eb_BootFlags = DOSBootBase->db_BootFlags;
 }
 
 int dosboot_Init(LIBBASETYPEPTR LIBBASE)
@@ -159,6 +234,9 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
 
     /* Show the boot menu if needed */
     bootmenu_Init(LIBBASE, WantBootMenu);
+
+    /* Set final boot device */
+    setBootDevice(LIBBASE);
 
     /* We want to be able to find ourselves in RTF_AFTERDOS */
     LIBBASE->bm_Screen = NULL;
