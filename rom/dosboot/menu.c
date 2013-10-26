@@ -318,7 +318,7 @@ static void initPageBoot(LIBBASETYPEPTR DOSBootBase)
 {
     struct Window *win = DOSBootBase->bm_Window;
     struct BootNode *bn;
-    WORD y = 50;
+    WORD y = 70;
     char text[100], *textp;
 
     SetAPen(win->RPort, 1);
@@ -444,7 +444,10 @@ static void initPage(LIBBASETYPEPTR DOSBootBase, WORD page)
     }
 
     if (page == PAGE_BOOT)
+    {
         centertext(DOSBootBase, 1, 30, "Press A-J to select boot device");
+        centertext(DOSBootBase, 1, 45, "\"+\" => bootable, \"*\" => selected for boot");
+    }
 }
 
 static WORD initWindow(LIBBASETYPEPTR DOSBootBase, struct BootConfig *bcfg, WORD page)
