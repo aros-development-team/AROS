@@ -79,6 +79,7 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
     void *BootLoaderBase;
     BOOL WantBootMenu = FALSE;
     ULONG t;
+    STRPTR bootDeviceName = NULL;
 
     LIBBASE->delayTicks = 50;
 
@@ -138,7 +139,7 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
 		}
 		else if (0 == strnicmp(node->ln_Name, "bootdevice=", 11))
 		{
-		    LIBBASE->db_BootDevice = &node->ln_Name[11];
+		    bootDeviceName = &node->ln_Name[11];
 		}
                 else if (0 == stricmp(node->ln_Name, "econsole"))
                 {
@@ -154,7 +155,7 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
     dosboot_BootScan(LIBBASE);
 
     /* Select the initial boot device, so that the choice is available in the menu */
-    selectBootDevice(LIBBASE);
+    selectBootDevice(LIBBASE, bootDeviceName);
 
     /* Show the boot menu if needed */
     bootmenu_Init(LIBBASE, WantBootMenu);

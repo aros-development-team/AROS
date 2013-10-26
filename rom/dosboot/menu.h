@@ -4,6 +4,6 @@
 #include "dosboot_intern.h"
 
 int bootmenu_Init(LIBBASETYPEPTR LIBBASE, BOOL WantBootMenu);
-void selectBootDevice(LIBBASETYPEPTR DOSBootBase);
+void selectBootDevice(LIBBASETYPEPTR DOSBootBase, STRPTR bootDeviceName);
 
 #endif

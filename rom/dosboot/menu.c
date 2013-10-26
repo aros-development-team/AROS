@@ -327,17 +327,17 @@ static BOOL bstreqcstr(BSTR bstr, CONST_STRPTR cstr)
     return (memcmp(AROS_BSTR_ADDR(bstr),cstr,clen) == 0);
 }
 
-void selectBootDevice(LIBBASETYPEPTR DOSBootBase)
+void selectBootDevice(LIBBASETYPEPTR DOSBootBase, STRPTR bootDeviceName)
 {
     struct BootNode *bn = NULL;
 
-    if (DOSBootBase->db_BootDevice == NULL &&
+    if (bootDeviceName == NULL &&
         DOSBootBase->db_BootNode != NULL)
         return;
 
     Forbid(); /* .. access to ExpansionBase->MountList */
 
-    if (DOSBootBase->db_BootNode == NULL && DOSBootBase->db_BootDevice == NULL)
+    if (DOSBootBase->db_BootNode == NULL && bootDeviceName == NULL)
     {
         bn = (APTR)GetHead(&DOSBootBase->bm_ExpansionBase->MountList);
     }
@@ -352,7 +352,7 @@ void selectBootDevice(LIBBASETYPEPTR DOSBootBase)
             if (dn == NULL || dn->dn_Name == BNULL)
                 continue;
 
-            if (bstreqcstr(dn->dn_Name, DOSBootBase->db_BootDevice))
+            if (bstreqcstr(dn->dn_Name, bootDeviceName))
             {
                 bn = i;
                 break;
@@ -363,7 +363,6 @@ void selectBootDevice(LIBBASETYPEPTR DOSBootBase)
     Permit();
 
     DOSBootBase->db_BootNode = bn;
-    DOSBootBase->db_BootDevice = NULL;
 }
 
 /* This makes the selected boot device the actual
