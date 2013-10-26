@@ -268,14 +268,14 @@ static UWORD msgLoop(LIBBASETYPEPTR DOSBootBase, struct Window *win)
                         exit = PAGE_MAIN;
                         break;
                     case BUTTON_BOOT_OPTIONS:
-						exit = PAGE_BOOT;
-						break;
+                        exit = PAGE_BOOT;
+                        break;
                     case BUTTON_EXPBOARDDIAG:
-						exit = PAGE_EXPANSION;
-						break;
+                        exit = PAGE_EXPANSION;
+                        break;
                     case BUTTON_DISPLAY_OPTIONS:
-						exit = PAGE_DISPLAY;
-						break;
+                        exit = PAGE_DISPLAY;
+                        break;
                     }
                 }
                 ReplyMsg((struct Message *)msg);
