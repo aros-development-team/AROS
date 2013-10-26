@@ -253,7 +253,11 @@ static int RectAndRect(struct Rectangle *a, struct Rectangle *b)
 ///
 
 ///RegionAndRect()
-static int RegionAndRect(struct Region * a, struct Rectangle *b)
+/*
+ * offx and offy define the largest jump from b->MinX b->MinY that is safe not to
+ * miss a free zone of size b
+ */
+static int RegionAndRect(struct Region * a, struct Rectangle *b, LONG *offx, LONG *offy)
 {
     D(bug("Region (%d, %d)(%d, %d), Rect (%d, %d)(%d, %d)\n",
             (LONG)a->bounds.MinX, (LONG)a->bounds.MinY, (LONG)a->bounds.MaxX, (LONG)a->bounds.MaxY,
@@ -274,9 +278,14 @@ static int RegionAndRect(struct Region * a, struct Rectangle *b)
                     a->bounds.MinX + c->bounds.MaxX,
                     a->bounds.MinY + c->bounds.MaxY
             }; /* We need absolute coordinates */
+            struct Rectangle intersect;
 
-            if (RectAndRect(&d, b))
+            if (AndRectRect(&d, b, &intersect))
+            {
+                *offx = (LONG)(intersect.MaxX - intersect.MinX + 1);
+                *offy = (LONG)(intersect.MaxY - intersect.MinY + 1);
                 return 1;
+            }
             c = c->Next;
         }
     }
@@ -1958,7 +1967,7 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
             }
             else
             {
-                LONG gridx, gridy, stepx, stepy, addx = 0;
+                LONG gridx, gridy, stepx = 0, stepy = 0, addx = 0;
                 struct Rectangle iconarea;
                 BOOL first = TRUE;
 
@@ -1967,8 +1976,6 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
                 {
                     gridx = data->icld_IconAreaLargestWidth + data->icld__Option_IconHorizontalSpacing;
                     gridy = data->icld_IconLargestHeight + data->icld__Option_IconImageSpacing + data->icld_LabelLargestHeight + data->icld__Option_IconVerticalSpacing;
-                    stepx = gridx;
-                    stepy = gridy;
                 }
                 else
                 {
@@ -1976,22 +1983,25 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
                     {
                         gridx = data->icld_IconAreaLargestWidth; /* This gives better centering effect */
                         gridy = entry->ie_AreaHeight + data->icld__Option_IconVerticalSpacing;
-                        stepx = gridx;
-                        stepy = 2;
                         addx =  (gridx - entry->ie_AreaWidth) / 2;
                     }
                     else
                     {
                         gridx = entry->ie_AreaWidth + data->icld__Option_IconHorizontalSpacing;
                         gridy = entry->ie_AreaHeight + data->icld__Option_IconVerticalSpacing;
-                        stepx = 2;
-                        stepy = gridy;
                     }
                 }
 
                 /* Find first not occupied spot matching the calculate rectangle */
                 do
                 {
+                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                    {
+                        /* Overwrite value set via RegionAndRect */
+                        stepx = gridx;
+                        stepy = gridy;
+                    }
+
                     if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
                     {
                         /* Advance to next position */
@@ -2001,7 +2011,7 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
                                 ((cur_y + gridy - data->icld__Option_IconBorderOverlap) >= data->icld_ViewHeight))
                         {
                             /* Wrap "around" if the icon would be below bottom border */
-                            cur_x += stepx;
+                            cur_x += gridx;
                             cur_y =  top;
                         }
                     }
@@ -2015,7 +2025,7 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
                         {
                             /* Wrap "around" if the icon would be right of right border */
                             cur_x =  left;
-                            cur_y += stepy;
+                            cur_y += gridy;
                         }
                     }
 
@@ -2026,7 +2036,7 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
 
                     first = FALSE;
 
-                } while(RegionAndRect(occupied, &iconarea));
+                } while(RegionAndRect(occupied, &iconarea, &stepx, &stepy));
 
                 entry->ie_IconX = iconarea.MinX + addx;
                 entry->ie_IconY = iconarea.MinY;
