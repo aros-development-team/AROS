@@ -2130,10 +2130,6 @@ BD_LINKLIB    := %(libdir)/lib%(libname).a
 #MM %(mmake) : includes-generate-deps
 %(mmake) : $(BD_LINKLIB)
 
-#MM
-%(mmake)-clean ::
-	@$(RM) $(BD_OBJS) $(BD_DEPS)
-
 ifeq ($(TARGET),%(mmake))
 ifneq ($(dir $(BD_FILES)),./)
 TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
@@ -2155,6 +2151,12 @@ endif
 $(BD_OBJS) $(BD_DEPS) : | %(objdir)
 $(BD_LINKLIB) : | %(libdir)
 GLOB_MKDIRS += %(objdir) %(libdir)
+
+%(mmake)-clean : FILES := $(BD_OBJS) $(BD_LINKLIB) $(BD_DEPS)
+#MM
+%(mmake)-clean ::
+	@$(ECHO) "Cleaning up for metatarget %(mmake)"
+	@$(RM) $(FILES)
 
 %end
 #------------------------------------------------------------------------------
@@ -2211,9 +2213,11 @@ ifneq (%(source),)
 	@$(FLEXCAT) $(BD_DESC).cd $@=$(BD_SRC).sd
 endif
 
+%(mmake)-clean : FILES := $(BD_OBJS) %(source)
 #MM
 %(mmake)-clean ::
-	$(RM) $(BD_OBJS) %(source)
+	@$(ECHO) "Cleaning up for metatarget %(mmake)"
+	@$(RM) $(FILES)
 
 .PHONY: %(mmake) %(mmake)-clean
 
