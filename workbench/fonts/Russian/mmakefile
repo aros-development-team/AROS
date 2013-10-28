@@ -2,7 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-FONTSDIRRU  := $(BINDIR)/Fonts/Russian
+FONTSDIRRU  := $(AROSDIR)/Fonts/Russian
 
 FONTSRU     := XEN_Amiga-1251 XHelvetica_Amiga-1251 topaz_Amiga-1251 SWScrFont_Amiga-1251 Scala_Amiga-1251
 FONTFILESRU := $(foreach f, $(FONTSRU), $(foreach s, $(filter-out $(f)/CVS, $(wildcard $(f)/*)), $(FONTSDIRRU)/$(s)))

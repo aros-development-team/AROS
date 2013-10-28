@@ -12,7 +12,7 @@ FILES := gfxclass bitmapclass eventtask startup
   modname=uikit modtype=hidd \
   files=$(FILES) uselibs="hiddstubs"
 
-NATIVE_BINDIR := $(BINDIR)/Libs/Host
+NATIVE_BINDIR := $(AROSDIR)/Libs/Host
 NATIVE_OBJDIR := $(GENDIR)/$(CURDIR)
 
 NATIVE_FILES   := native_api alertdelegate displaycontroller displaywindow

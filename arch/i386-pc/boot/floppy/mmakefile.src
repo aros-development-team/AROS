@@ -165,7 +165,7 @@ bootdisk-pc-i386-quick : bootdisk-pc-i386
 systemdisk-pc-i386-quick : systemdisk-pc-i386
 
 $(DISTDIR)/aros-pc-i386.img: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) \
- $(BINDIR)/boot/bootstrap-pc.gz \
+ $(AROSDIR)/boot/bootstrap-pc.gz \
  $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 	@$(MKDIR) -p "$(DISTDIR)"
 	$(RM) $@
@@ -234,7 +234,7 @@ install-systemdisk :
 #MM
 install-pc-i386 :
 	@$(ECHO) -n "Copying AROS kernel to /aros/boot directory... "
-	@cp $(BINDIR)/boot/aros-pc-i386 /aros/boot/
+	@cp $(AROSDIR)/boot/aros-pc-i386 /aros/boot/
 	@$(ECHO) "Done."
 
 #MM

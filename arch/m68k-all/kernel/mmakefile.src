@@ -7,11 +7,11 @@ FILES=dispatch schedule switch m68k_exception kernel_cpu kernel_intr \
 AFILES=issuper fpusavecontext fpurestorecontext buserror
 
 USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-	       -I$(GENINCDIR) -I$(BINDIR)/Development/include \
+	       -I$(GENINCDIR) -I$(AROSDIR)/Development/include \
 	       -DPARANOIA_STACK
 
 USER_AFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-	       -I$(GENINCDIR) -I$(BINDIR)/Development/include \
+	       -I$(GENINCDIR) -I$(AROSDIR)/Development/include \
 	       -m68060
 
 %build_archspecific \

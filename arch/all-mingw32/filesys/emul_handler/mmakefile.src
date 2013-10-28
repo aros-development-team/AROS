@@ -14,7 +14,7 @@ FILES := emul_host_mingw32 emul_host filenames
   maindir=$(MAINDIR) \
   arch=mingw32 files=$(FILES)
 
-NATIVE_BINDIR := $(BINDIR)/Libs/Host
+NATIVE_BINDIR := $(AROSDIR)/Libs/Host
 NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib
 
 NATIVE_FILES  := emul_handler_native

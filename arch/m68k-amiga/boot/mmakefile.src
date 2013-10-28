@@ -58,7 +58,7 @@ Q ?= @
 
 USELIBS := amiga arossupport autoinit libinit stdc.static
 LIBS    := -L$(GENDIR)/lib -lloadseg $(addprefix -l,$(USELIBS))
-DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
+DEPLIBS := $(addprefix $(AROS_LIB)/lib,$(addsuffix .a,$(USELIBS)))
 
 # Force rebuilding, so that we always get new date strings
 rom_entry.o: FORCE
@@ -159,7 +159,7 @@ $(DISTDIR)/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.
 		-Wl,--defsym -Wl,AbsExecBase=0x4 \
 		-m68000 \
 		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-rom.ld \
-		-L$(LIBDIR) $(LIBS) -lgcc
+		-L$(AROS_LIB) $(LIBS) -lgcc
 
 $(DISTDIR)/aros-amiga-m68k.elf: $(DISTDIR)/aros-amiga-m68k-reloc.elf
 	$(Q)$(KERNEL_LD) -o $@ \
@@ -188,10 +188,10 @@ USER_CFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
 
 $(KOBJSDIR)/%.o : %.c
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(USER_CFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR)"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(USER_CFLAGS) -I$(AROSDIR)/Development/include -I$(GENINCDIR)"
 
 $(KOBJSDIR)/%.o : %.S
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(AFLAGS) $(USER_AFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR)"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(AFLAGS) $(USER_AFLAGS) -I$(AROSDIR)/Development/include -I$(GENINCDIR)"
 
 $(KOBJSDIR)/%.d : %.c
 	%mkdepend_q
@@ -220,7 +220,7 @@ DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 
 ## Compressed elf for AROSBootstrap
 
-BOOTDIR := $(BINDIR)/boot
+BOOTDIR := $(AROSDIR)/boot
 
 #MM- kernel-link-amiga-m68k: kernel-boot-elf
 #MM- kernel-link-amiga-m68k-quick: kernel-boot-elf-quick
@@ -299,7 +299,7 @@ $(DISTDIR)/aros-amiga-m68k-ram.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.sr
 		-Wl,--defsym -Wl,AbsExecBase=0x4 \
 		-m68000 \
 		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-ram.ld \
-		-L$(LIBDIR) $(LIBS) -lgcc
+		-L$(AROS_LIB) $(LIBS) -lgcc
 
 
 $(BOOTDIR)/aros.elf: $(DISTDIR)/aros-amiga-m68k-ram.elf \

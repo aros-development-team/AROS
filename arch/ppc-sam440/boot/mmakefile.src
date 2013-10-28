@@ -68,16 +68,16 @@ include $(TOP)/config/make.cfg
 #MM- kernel-link-sam440-ppc: setup-sam440-ppc kernel-kernel-kobj kernel-exec-kobj kernel-sam440-ppc-quick
 
 #MM
-kernel-link-sam440-ppc: $(BINDIR)/boot/aros-amcc440
+kernel-link-sam440-ppc: $(AROSDIR)/boot/aros-amcc440
 
 #MM
-kernel-link-sam440-ppc-quick: $(BINDIR)/boot/aros-amcc440
+kernel-link-sam440-ppc-quick: $(AROSDIR)/boot/aros-amcc440
 
-$(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
+$(AROSDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
 	@$(ECHO) "Linking    boot/aros-amcc440"
 	$(TARGET_CC) -nostartfiles -Wl,-Map -Wl,$(OSGENDIR)/boot/kernel.map -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/ldscript.lds \
         -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o \
-        -L$(LIBDIR) -larossupport -lamiga -lautoinit -llibinit -lstdc.static -lgcc
+        -L$(AROS_LIB) -larossupport -lamiga -lautoinit -llibinit -lstdc.static -lgcc
 
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos debug poseidon
@@ -90,14 +90,14 @@ PKG_USB_PSD  := hid hub bootmouse bootkeyboard massstorage
 PKG_HOOKS    := econsole
 
 MODULES := \
-	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .hook, $(PKG_HOOKS))) \
-	$(addprefix $(BINDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
-	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
-	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
-	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD))) \
+	$(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
+	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
+	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
+	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .hook, $(PKG_HOOKS))) \
+	$(addprefix $(AROSDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
+	$(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
+	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
+	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD))) \
 
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
@@ -109,10 +109,10 @@ kernel-package-sam440-ppc-quick: kernel-package-sam440-ppc
 
 kernel-package-sam440-ppc:
 	@$(ECHO) "Copying    modules to boot/modules/"
-	$(RM) -rf $(BINDIR)/boot/modules
-	%mkdirs_q $(BINDIR)/boot/modules
-	@$(CP) $(MODULES) $(BINDIR)/boot/modules/
-	#$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg
+	$(RM) -rf $(AROSDIR)/boot/modules
+	%mkdirs_q $(AROSDIR)/boot/modules
+	@$(CP) $(MODULES) $(AROSDIR)/boot/modules/
+	#$(SRCDIR)/tools/package/pkg c $(AROSDIR)/boot/kernel.pkg $(AROSDIR)/.pkg
 	
 bootiso-sam440-ppc: $(AROSDIR)/.backdrop $(TARGET_ISO)
 
@@ -143,6 +143,6 @@ $(TARGET_ISO):
 
 #MM setup-sam440-ppc
 setup-sam440-ppc : $(SRCDIR)/$(CURDIR)/menu.lst
-	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
-	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(BINDIR)/boot/
-#	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst.DH0 $(BINDIR)/boot/
+	%mkdirs_q $(AROSDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
+	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(AROSDIR)/boot/
+#	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst.DH0 $(AROSDIR)/boot/

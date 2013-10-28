@@ -24,29 +24,29 @@ PKG_USB      :=
 PKG_USB_PSD  := 
 
 MODULES := \
-	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
-	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
-	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
-	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD)))
+	$(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
+	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
+	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
+	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
+	$(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
+	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
+	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD)))
 
 #MM-
 boot-script-efika-arm: boot.script
 	mkimage -A arm -O linux -T script -n "AROS boot script" -d $(SRCDIR)/$(CURDIR)/boot.script $(AROSDIR)/boot/boot.scr
 
 kernel-package-efika-arm:
-	$(RM) -rf $(BINDIR)/boot/modules
-	%mkdirs_q $(BINDIR)/boot/modules
-	@mv $(MODULES) $(BINDIR)/boot/modules/
-	$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/boot/modules
-	mkimage -A arm -O linux -T ramdisk -C none -n "AROS rom" -d $(BINDIR)/boot/kernel.pkg $(AROSDIR)/boot/uInitrd-aros
+	$(RM) -rf $(AROSDIR)/boot/modules
+	%mkdirs_q $(AROSDIR)/boot/modules
+	@mv $(MODULES) $(AROSDIR)/boot/modules/
+	$(SRCDIR)/tools/package/pkg c $(AROSDIR)/boot/kernel.pkg $(AROSDIR)/boot/modules
+	mkimage -A arm -O linux -T ramdisk -C none -n "AROS rom" -d $(AROSDIR)/boot/kernel.pkg $(AROSDIR)/boot/uInitrd-aros
 
 arosboot-efika: $(AROSDIR)/boot/arosboot
 
 $(AROSDIR)/boot/arosboot: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/kernel.bin.o
-	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/kernel.bin.o -L$(LIBDIR) -lm -larosc.static -lm -laeabi -o $@
+	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/kernel.bin.o -L$(AROS_LIB) -lm -larosc.static -lm -laeabi -o $@
 	$(OBJCOPY) -O binary $@ $@.bin
 	gzip $@.bin
 	mv $@.bin.gz $@.bin

@@ -5,4 +5,4 @@ FILES := Package-Startup
 
 ##MM- workbench-devs-AHI : ahi-s-startup
 
-%copy_files_q mmake=ahi-s-startup dst=$(CONTRIBDIR)/AHI/S
+%copy_files_q mmake=ahi-s-startup dst=$(AROS_CONTRIB)/AHI/S

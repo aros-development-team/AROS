@@ -13,7 +13,7 @@ FILES := kernel_startup kernel_debug kernel_intr kernel_cpu cpu_$(CPU)
   arch=mingw32 \
   files="$(FILES) $(FUNCS)"
 
-NATIVE_BINDIR := $(BINDIR)/Libs/Host
+NATIVE_BINDIR := $(AROSDIR)/Libs/Host
 NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib
 
 NATIVE_FILES  := host_debug host_intr host_mmu

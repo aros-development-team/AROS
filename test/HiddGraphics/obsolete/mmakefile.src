@@ -5,8 +5,8 @@ include $(TOP)/config/make.cfg
 EXEDIR      := $(BINDIR)/Demos
 OBJDIR      := $(GENDIR)/test/HiddGraphics
 
-STARTUP = $(LIBDIR)/startup.o
-LIBS    = -L$(LIBDIR) -larossupport -lamiga $(TOOL).a -lstdc
+STARTUP = $(AROS_LIB)/startup.o
+LIBS    = -L$(AROS_LIB) -larossupport -lamiga $(TOOL).a -lstdc
 
 FILES	    := \
 	BitMapNewDispose \
@@ -40,7 +40,7 @@ obsolete-test-hidd-graphics-quick : $(EXES)
 clean ::
 	-$(RM) $(EXES)
 
-$(EXEDIR)/% : $(OBJDIR)/%.o $(TOOL).a $(LIBDIR)/startup.o $(DEPLIBS) | $(EXEDIR)
+$(EXEDIR)/% : $(OBJDIR)/%.o $(TOOL).a $(AROS_LIB)/startup.o $(DEPLIBS) | $(EXEDIR)
 	%link_q
 
 $(OBJDIR)/%.o : %.c | $(OBJDIR)

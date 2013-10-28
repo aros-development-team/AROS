@@ -19,7 +19,7 @@ DISK_EXEDIR := $(AROS_DEVS)/Monitors
     progname=GDI targetdir=$(DISK_EXEDIR) \
     files=$(DISK_FILES)
 
-NATIVE_BINDIR := $(BINDIR)/Libs/Host
+NATIVE_BINDIR := $(AROSDIR)/Libs/Host
 NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib
 
 NATIVE_FILES  := gdi_native

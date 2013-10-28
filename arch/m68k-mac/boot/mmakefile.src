@@ -4,7 +4,7 @@ FILES   := libexec
 USELIBS := hiddstubs amiga arossupport autoinit libinit gcc1 stdc.static
 #USELIBS := arossupport rom autoinit libinit gcc1
 LIBS    := $(addprefix -l,$(USELIBS))
-DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
+DEPLIBS := $(addprefix $(AROS_LIB)/lib,$(addsuffix .a,$(USELIBS)))
 
 KLIBS   := exec aros #dos graphics utility intuition keymap \
            #mathieeesingbas expansion oop layers workbench cybergraphics
@@ -22,25 +22,25 @@ KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
 
 #MM kernel-link-mac-m68k : setup-mac-m68k
-kernel-link-mac-m68k : $(BINDIR)/aros-mac-m68k $(BINDIR)/aros.elf $(BINDIR)/aros_stripped.elf $(BINDIR)/aros_floppy.img
+kernel-link-mac-m68k : $(AROSDIR)/aros-mac-m68k $(AROSDIR)/aros.elf $(AROSDIR)/aros_stripped.elf $(AROSDIR)/aros_floppy.img
 
-$(BINDIR)/aros-mac-m68k : $(OBJS) $(DEPLIBS)
+$(AROSDIR)/aros-mac-m68k : $(OBJS) $(DEPLIBS)
 	@$(ECHO) Linking $@...
-	$(CC) $(KOBJS) -ffreestanding -nostartfiles -nostdlib -o $@ -L$(LIBDIR) $(LIBS) -nostdlib
+	$(CC) $(KOBJS) -ffreestanding -nostartfiles -nostdlib -o $@ -L$(AROS_LIB) $(LIBS) -nostdlib
 
-$(BINDIR)/aros.elf : entrycode.o $(BINDIR)/aros-mac-m68k
+$(AROSDIR)/aros.elf : entrycode.o $(AROSDIR)/aros-mac-m68k
 	@$(ECHO) Linking executable $@... 
-	m68k-linux-ld -e hardware_reset_init_1 -Ttext 0x1000 -Map $(BINDIR)/aros.map -o $@ $^
+	m68k-linux-ld -e hardware_reset_init_1 -Ttext 0x1000 -Map $(AROSDIR)/aros.map -o $@ $^
 
-$(BINDIR)/aros_stripped.elf : $(BINDIR)/aros.elf
+$(AROSDIR)/aros_stripped.elf : $(AROSDIR)/aros.elf
 	@$(ECHO) Striping to $@...
 	$(TARGET_STRIP) -d -o $@ $^
 
-$(BINDIR)/aros_floppy.img : $(BINDIR)/aros_stripped.elf
+$(AROSDIR)/aros_floppy.img : $(AROSDIR)/aros_stripped.elf
 	@$(ECHO) Making floppy image
 	emile-install -f /lib/emile/first_floppy -s /lib/emile/m68k-second_floppy -k $^ $@
-#	@$(ECHO) "Generating $(BINDIR)/aros.rom..."
-#	@$(OBJCOPY) -O binary $@ $(BINDIR)/aros.rom -v -S --pad-to=0x100000
+#	@$(ECHO) "Generating $(AROSDIR)/aros.rom..."
+#	@$(OBJCOPY) -O binary $@ $(AROSDIR)/aros.rom -v -S --pad-to=0x100000
 
 #rom-pp-m68k: clean aros.rom
 

@@ -5,7 +5,7 @@
 include $(TOP)/config/make.cfg
 
 FILES  := testboot
-EXEDIR := $(BINDIR)/boot
+EXEDIR := $(AROSDIR)/boot
 
 %build_prog mmake=test-mingw32-boot \
     progname=testboot targetdir=$(EXEDIR) \
