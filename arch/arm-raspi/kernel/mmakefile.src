@@ -9,14 +9,14 @@ kernel-raspi-arm: $(OSGENDIR)/boot/core.elf
 
 $(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
 		%mkdirs_q $(OSGENDIR)/boot
-		$(TARGET_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(LIBDIR) -larossupport -lautoinit -llibinit -lstdc.static -laeabi
+		$(TARGET_LD) -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static -laeabi
 		$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
 
 #MM kernel-kernel-raspi-arm : includes
 #MM kernel-kernel-raspi-arm-kobj : includes
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-                 -I$(GENINCDIR) -I$(BINDIR)/Development/include
+                 -I$(GENINCDIR) -I$(AROSDIR)/Development/include
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel arch=raspi-arm \

@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-EXEDIR  := $(BINDIR)/boot
+EXEDIR  := $(AROSDIR)/boot
 
 FILES         := hostinterface hostlib kickstart kputc memory shutdown support
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \

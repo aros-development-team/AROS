@@ -33,7 +33,7 @@ BOOTLOADER_ELTORITO_REL := boot/grub/i386-pc/grub2_eltorito
 endif
 
 BOOT_FILES := bootstrap-pc.gz aros-bsp-pc-i386.gz aros-base.pkg.gz aros-fs.pkg.gz poseidon.pkg.gz
-ISO_DEPS := $(addprefix $(BINDIR)/boot/, $(BOOT_FILES))
+ISO_DEPS := $(addprefix $(AROSDIR)/boot/, $(BOOT_FILES))
 
 $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
 $(warning LANG = $(LANG))

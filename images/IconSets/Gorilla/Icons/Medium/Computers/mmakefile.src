@@ -9,4 +9,4 @@ ICONS := Amiga Linux Networked_Amiga Networked_Linux Networked_Windows Generic \
 #MM- themes-gorilla-icons-clean : themes-gorilla-icons-computers-clean
 #MM- themes-gorilla-icons : themes-gorilla-icons-computers
 %build_icons mmake=themes-gorilla-icons-computers icons=$(ICONS) \
-             dir=$(CONTRIBDIR)/Icons/Gorilla/Computers
+             dir=$(AROS_CONTRIB)/Icons/Gorilla/Computers

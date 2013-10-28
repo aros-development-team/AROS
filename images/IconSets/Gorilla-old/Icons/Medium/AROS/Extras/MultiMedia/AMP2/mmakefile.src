@@ -9,4 +9,4 @@ ICONS := Plugin AMP
 
 #MM- iconset-Gorilla-old-icons-clean : iconset-Gorilla-old-icons-aros-clean
 #MM- iconset-Gorilla-old-icons : iconset-Gorilla-old-icons-amp2
-%build_icons mmake=iconset-Gorilla-old-icons-amp2 icons=$(ICONS) dir=$(CONTRIBDIR)/MultiMedia/AMP2
+%build_icons mmake=iconset-Gorilla-old-icons-amp2 icons=$(ICONS) dir=$(AROS_CONTRIB)/MultiMedia/AMP2

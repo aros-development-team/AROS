@@ -9,4 +9,4 @@ ICONS := MultiMedia DOpus Demos Development Games Networking
 
 #MM- iconset-Gorilla-icons-clean : iconset-Gorilla-icons-aros-clean
 #MM- iconset-Gorilla-icons : iconset-Gorilla-icons-contrib
-%build_icons mmake=iconset-Gorilla-icons-contrib icons=$(ICONS) dir=$(CONTRIBDIR)
+%build_icons mmake=iconset-Gorilla-icons-contrib icons=$(ICONS) dir=$(AROS_CONTRIB)

@@ -15,7 +15,7 @@ FILES :=        \
 	nixmain \
 	elf-startup
 
-OBJS  := $(addprefix $(LIBDIR)/,$(addsuffix .o,$(FILES)))
+OBJS  := $(addprefix $(AROS_LIB)/,$(addsuffix .o,$(FILES)))
 DEPS  := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .d,$(FILES)))
 
 linklibs-startup: $(OBJS)
@@ -23,13 +23,13 @@ linklibs-startup: $(OBJS)
 #MM
 linklibs-startup-quick: $(OBJS)
 
-$(LIBDIR)/%.o : $(GENDIR)/$(CURDIR)/%.o
+$(AROS_LIB)/%.o : $(GENDIR)/$(CURDIR)/%.o
 	@$(CP) $< $@
 
 %rule_compile basename=% targetdir=$(GENDIR)/$(CURDIR)
 
 #MM linklibs-startup-setup
-%rule_makedirs dirs="$(GENDIR)/$(CURDIR) $(LIBDIR)" setuptarget=linklibs-startup-setup
+%rule_makedirs dirs="$(GENDIR)/$(CURDIR) $(AROS_LIB)" setuptarget=linklibs-startup-setup
 
 %copy_includes includes=startup.h path=aros
 

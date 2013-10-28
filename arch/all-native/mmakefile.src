@@ -21,10 +21,10 @@ include $(TOP)/config/make.cfg
 FS_LIBS     := partition
 FS_HANDLERS := afs cdrom sfs fat
 
-%make_package mmake=kernel-package-fs file=$(BINDIR)/boot/aros-fs.pkg \
+%make_package mmake=kernel-package-fs file=$(AROSDIR)/boot/aros-fs.pkg \
 	      handlers=$(FS_HANDLERS) libs=$(FS_LIBS)
 	      
-%link_kickstart mmake=kernel-link-fs file=$(BINDIR)/boot/aros-fs \
+%link_kickstart mmake=kernel-link-fs file=$(AROSDIR)/boot/aros-fs \
 	handlers=$(FS_HANDLERS) libs=$(FS_LIBS) \
 	uselibs="debug" \
 	map=$(GENDIR)/boot/kernel-fs.map deps=kernel-fs-objs

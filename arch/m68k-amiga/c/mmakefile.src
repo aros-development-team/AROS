@@ -33,7 +33,7 @@ USER_AFLAGS := -I$(GENINCDIR) -Os
 
 #MM workbench-c-m68k-setpatcharos : linklibs-loadseg
 
-AROS_BOOT := $(BINDIR)/boot
+AROS_BOOT := $(AROSDIR)/boot
 
 USER_LDFLAGS := -nostdc
 

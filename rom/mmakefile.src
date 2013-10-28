@@ -115,7 +115,7 @@ BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 # own kernel.resource targets (and even different includes)
 #MM kernel-link-base: kernel-kernel-includes kernel-objs linklibs-romhack
 
-%link_kickstart mmake=kernel-link-base file=$(BINDIR)/boot/aros-base \
+%link_kickstart mmake=kernel-link-base file=$(AROSDIR)/boot/aros-base \
 	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) res=$(BASE_RSRCS) \
 	uselibs="autoinit libinit amiga arossupport romhack hiddstubs stdc.static" \
 	map=$(GENDIR)/boot/kernel-base.map

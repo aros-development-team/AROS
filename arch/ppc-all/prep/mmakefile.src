@@ -16,10 +16,10 @@ kernel-link-prep-ppc : $(OSGENDIR)/boot/aros-prep
 
 $(OSGENDIR)/boot/aros-prep : $(OBJS)
 	$(LD) -N -e startup -T CoreLink.lds -Ttext 0x00f00000 -Map $(OSGENDIR)/boot/aros.map \
-	    -o $@ $(OBJS) -L$(LIBDIR) $(LIBS)
+	    -o $@ $(OBJS) -L$(AROS_LIB) $(LIBS)
 	$(STRIP) --strip-unneeded -R .note -R .comment $@
 	$(OBJCOPY) -O binary $@
-	./preplink $@ $(BINDIR)/boot/aros-prep.img
+	./preplink $@ $(AROSDIR)/boot/aros-prep.img
 
 #MM setup-ppc : 
 setup-ppc : preplink
@@ -27,7 +27,7 @@ setup-ppc : preplink
 
 #MM setup-prep-ppc :
 setup-prep-ppc:
-	%mkdirs_q $(BINDIR)/boot
+	%mkdirs_q $(AROSDIR)/boot
 
 $(OBJDIR)/%.o : %.S
 	%assemble_q

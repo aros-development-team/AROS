@@ -15,7 +15,7 @@ FILES = \
     prefs
 
 EXEDIR      := $(AROSDIR)/Tools
-PREFSDIR    := $(BINDIR)/Prefs/Env-Archive
+PREFSDIR    := $(AROSDIR)/Prefs/Env-Archive
 USER_CFLAGS := -DHAVE_COOLIMAGES
 
 #MM- workbench-tools: workbench-tools-hdtoolbox

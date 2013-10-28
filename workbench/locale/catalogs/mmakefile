@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-DIRS := $(BINDIR)/Locale $(BINDIR)/Locale/Catalogs
+DIRS := $(AROSDIR)/Locale $(AROSDIR)/Locale/Catalogs
 
 #MM- workbench-locale : workbench-locale-setup
 

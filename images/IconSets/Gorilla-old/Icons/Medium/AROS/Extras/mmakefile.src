@@ -9,4 +9,4 @@ ICONS := MultiMedia
 
 #MM- iconset-Gorilla-old-icons-clean : iconset-Gorilla-old-icons-aros-clean
 #MM- iconset-Gorilla-old-icons : iconset-Gorilla-old-icons-contrib
-%build_icons mmake=iconset-Gorilla-old-icons-contrib icons=$(ICONS) dir=$(CONTRIBDIR)
+%build_icons mmake=iconset-Gorilla-old-icons-contrib icons=$(ICONS) dir=$(AROS_CONTRIB)

@@ -57,7 +57,7 @@ FILES := bsdsocket_init bsdsocket_open bsdsocket_util netdb_util
     modname=bsdsocket modtype=library \
     files="$(FILES) $(FUNCS)"
 
-NATIVE_BINDIR := $(BINDIR)/Libs/Host
+NATIVE_BINDIR := $(AROSDIR)/Libs/Host
 NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib
 
 NATIVE_FILES  := host_socket

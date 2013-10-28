@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-EXEDIR := $(BINDIR)/boot
+EXEDIR := $(AROSDIR)/boot
 
 FILES := main bootstrap elf_io filesystem hostinterface kickstart log memory support shutdown runtime ui
 PROG  := AROSBootstrap

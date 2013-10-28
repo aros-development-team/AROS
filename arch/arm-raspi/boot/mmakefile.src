@@ -79,30 +79,30 @@ PKG_USB      := hid hub bootmouse bootkeyboard massstorage
 PKG_HOOKS    := 
  
 MODULES := \
-	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
-	$(addprefix $(BINDIR)/Devs/, $(addsuffix .hook, $(PKG_HOOKS))) \
-	$(addprefix $(BINDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
-	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
-	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB)))
+	$(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
+	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
+	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
+	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .hook, $(PKG_HOOKS))) \
+	$(addprefix $(AROSDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
+	$(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
+	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB)))
 
 #MM
 distfiles-raspi-fw:
 	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(addsuffix ?raw=true, $(file)))" -O "$(addprefix $(AROSDIR)/, $(file))"))
 
-kernel-package-raspi-arm:  $(BINDIR)/arosraspi.rom
+kernel-package-raspi-arm:  $(AROSDIR)/arosraspi.rom
 
- $(BINDIR)/arosraspi.rom:
+ $(AROSDIR)/arosraspi.rom:
 	$(RM) -rf $(OSGENDIR)/boot/modules
 	%mkdirs_q $(OSGENDIR)/boot/modules
 	@mv $(MODULES) $(OSGENDIR)/boot/modules/
-	$(SRCDIR)/tools/package/pkg c $(BINDIR)/arosraspi.rom $(OSGENDIR)/boot/modules
+	$(SRCDIR)/tools/package/pkg c $(AROSDIR)/arosraspi.rom $(OSGENDIR)/boot/modules
 
 %copy_files_q mmake=kernel-raspi-config-copy files="$(CONFIG_FILE)" dst=$(AROSDIR)
 
 $(AROSDIR)/arosraspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
-	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/core.bin.o -L$(LIBDIR) -lstdc.static -laeabi -o $(OSGENDIR)/boot/arosraspi.img.elf
+	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/arosraspi.img.elf
 	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/arosraspi.img.elf $@
 
 $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
@@ -111,7 +111,7 @@ $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 
 distfiles-raspi: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.bz2
 
-$(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.bz2: $(AROSDIR)/arosraspi.img  $(BINDIR)/arosraspi.rom
+$(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-raspi-armhf.tar.bz2: $(AROSDIR)/arosraspi.img  $(AROSDIR)/arosraspi.rom
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(DISTDIR)"

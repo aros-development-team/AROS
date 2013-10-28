@@ -7,7 +7,7 @@ ifeq ($(CPU),x86_64)
     ARCH_DEFS := -DMULTIBOOT_64BIT
     ARCH_LIBS := -L$(GENDIR)/lib32 -nostdlib 
 else
-    ARCH_LIBS := -L$(BINDIR)/Development/lib -L$(GENDIR)/lib
+    ARCH_LIBS := -L$(AROSDIR)/Development/lib -L$(GENDIR)/lib
 endif
 
 FILES	     := bootstrap memory_io multiboot1 multiboot2 support vesa_setup
@@ -16,7 +16,7 @@ USER_CFLAGS  := -m32 -isystem $(SRCDIR)/arch/all-native/bootconsole/include -isy
 USER_LDFLAGS := -m32 -Wl,-N,-e,kernel_bootstrap -Wl,-Map,$(GENDIR)/boot/bootstrap-pc.map \
 		-Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds -static-libgcc $(ARCH_LIBS)
 USER_OBJS    := $(OBJDIR)/vesa.bin.o
-EXEDIR       := $(BINDIR)/boot
+EXEDIR       := $(AROSDIR)/boot
 EXENAME      := bootstrap-pc
 
 %build_prog mmake=kernel-bootstrap-pc progname=$(EXENAME) \

@@ -37,7 +37,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-hidd-vga-kobj		\
 #MM     kernel-workbench-devs-pc-i386
 
-EXEDIR  := $(BINDIR)/boot
+EXEDIR  := $(AROSDIR)/boot
 USELIBS	:= hiddstubs amiga arossupport debug autoinit libinit stdc.static
 
 KRSRCS  := acpi battclock efi hpet processor
@@ -64,7 +64,7 @@ KHIDDS  := ata_pci i8042 vesagfx vgah pci pcipc serial parallel
 LEGACY_DEVS  := trackdisk
 LEGACY_HIDDS := serialmouse
 
-%make_package mmake=kernel-legacy-pc-i386 file=$(BINDIR)/boot/aros-legacy-pc-i386.pkg \
+%make_package mmake=kernel-legacy-pc-i386 file=$(AROSDIR)/boot/aros-legacy-pc-i386.pkg \
 	devs=$(LEGACY_DEVS) hidds=$(LEGACY_HIDDS) res=$(LEGACY_RSRCS)
 
 %common

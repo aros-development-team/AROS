@@ -2,7 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-FONTSDIR    := $(BINDIR)/Fonts
+FONTSDIR    := $(AROSDIR)/Fonts
 
 FONTS       := fixed arial stop ttcourier XEN
 FONTFILES   := $(foreach f, $(FONTS), $(foreach s, $(filter-out $(f)/CVS, $(call WILDCARD, $(f)/*)), $(FONTSDIR)/$(s)))
