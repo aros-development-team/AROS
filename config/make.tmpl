@@ -862,7 +862,7 @@ TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
 # Add trailing /
 TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
 # Add normal linklib path
-TMP_DIRS += $(LIBDIR)/
+TMP_DIRS += $(AROS_LIB)/
 # add lib and .a to static linklib names
 TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) $(TMP_EXTRA_LIBS)))
 ifeq (%(usestartup),yes)
@@ -926,7 +926,7 @@ TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
 # Add trailing /
 TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
 # Add normal linklib path
-TMP_DIRS += $(LIBDIR)/
+TMP_DIRS += $(AROS_LIB)/
 # add lib and .a to static linklib names
 TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) $(TMP_EXTRA_LIBS)))
 # search for the linklibs in the given path, ignore ones not found
@@ -945,7 +945,7 @@ $(TMP_PROGS) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLIBS)
 
 #------------------------------------------------------------------------------
 # Link the %(objs) to the library %(libdir)/lib%(libname).a
-%define rule_link_linklib libname=/A objs=/A libdir=$(LIBDIR) linker=target
+%define rule_link_linklib libname=/A objs=/A libdir=$(AROS_LIB) linker=target
 
 ifeq (%(linker),target)
 %(libdir)/lib%(libname).a : TMP_AR:=$(AR)
@@ -983,7 +983,7 @@ TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
 # Add trailing /
 TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
 # Add normal linklib path
-TMP_DIRS += $(LIBDIR)/
+TMP_DIRS += $(AROS_LIB)/
 # add lib and .a to static linklib names
 TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) libinit autoinit))
 # search for the linklibs in the given path, ignore ones not found
@@ -2092,12 +2092,12 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # - dflags are the flags use during makedepend (default equal to cflags)
 # - aflags are the flags use during assembling (default $(AFLAGS))
 # - objdir is where the .o are generated
-# - libdir is the directory where the linklib will be placed (default $(LIBDIR))
+# - libdir is the directory where the linklib will be placed (default $(AROS_LIB))
 %define build_linklib mmake=/A libname=/A \
   files="$(basename $(call WILDCARD, *.c))" \
   cxxfiles="$(basename $(call WILDCARD, *.cpp))" \
   asmfiles= objs= compiler=target \
-  cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) objdir=$(OBJDIR) libdir=$(LIBDIR)
+  cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) objdir=$(OBJDIR) libdir=$(AROS_LIB)
 
 # assign and generate the local variables used in this macro
 OBJDIR        ?= $(GENDIR)/$(CURDIR)
@@ -2528,7 +2528,7 @@ $(STUBS_DEP) : $(STUBS_SRC)
 	%mkdepend_q flags=%(dflags)
 
 setup ::
-	%mkdirs_q $(OBJDIR) $(LIBDIR)
+	%mkdirs_q $(OBJDIR) $(AROS_LIB)
 
 #MM
 clean ::
@@ -3251,7 +3251,7 @@ TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
 # Add trailing /
 TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
 # Add normal linklib path
-TMP_DIRS += $(LIBDIR)/
+TMP_DIRS += $(AROS_LIB)/
 # add lib and .a to static linklib names
 TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) libinit autoinit))
 # search for the linklibs in the given path, ignore ones not found
