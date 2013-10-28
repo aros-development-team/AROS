@@ -184,13 +184,8 @@ LDFLAGS     = $(USER_LDFLAGS) $(CONFIG_LDFLAGS)
 IOS_LDFLAGS  := -F$(IOS_SDK_PATH)/System/Library/Frameworks
 
 # Compatibility with old variables
-
-
 OBJDIR      	:=	$(GENDIR)/$(CURDIR)
-BINDIR	    	:=	$(AROSDIR)
-EXEDIR	    	:=	$(AROSDIR)/C
 LIBDIR	    	:=	$(AROS_LIB)
-CONTRIBDIR      :=      $(AROS_CONTRIB)
 OSGENDIR    	:=	$(GENDIR)/rom
 KOBJSDIR        :=      $(GENDIR)/kobjs
 PKGDIR		:=	$(GENDIR)/pkg
