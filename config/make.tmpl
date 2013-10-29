@@ -2084,23 +2084,26 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # - libname is the baselibname e.g. lib%(libname).a will be created
 # - files are the C source files to include in the lib. The list of files
 #   has to be given without the .c suffix
+# - cxxfiles are the C++ source files to include in the lib. The list of files
+#   has to be given without the .cpp suffix
 # - asmfiles are the asm files to include in the lib. The list of files has to
 #   be given without the .s suffix
 # - objs additional object to link into the linklib. The objects have to be
 #   given with full absolute path and the .o suffix.
+# - objdir is where the .o are generated. Defaults to $(GENDIR)/$(CURDIR)
+# - libdir is the directory where the linklib will be placed (default $(AROS_LIB))
 # - cflags are the flags to compile the source (default $(CFLAGS))
 # - dflags are the flags use during makedepend (default equal to cflags)
 # - aflags are the flags use during assembling (default $(AFLAGS))
-# - objdir is where the .o are generated
-# - libdir is the directory where the linklib will be placed (default $(AROS_LIB))
-%define build_linklib mmake=/A libname=/A \
-  files="$(basename $(call WILDCARD, *.c))" \
-  cxxfiles="$(basename $(call WILDCARD, *.cpp))" \
-  asmfiles= objs= compiler=target \
-  cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) objdir=$(OBJDIR) libdir=$(AROS_LIB)
+# - compiler can be target, host or kernel. Defaults to target.
+%define build_linklib mmake=/A libname=/A files=$(BD_LIBNAME) cxxfiles= \
+  asmfiles= objs= objdir=$(GENDIR)/$(CURDIR) libdir=$(AROS_LIB) \
+  cflags=$(CFLAGS) dflags=$(BD_CFLAGS) \
+  aflags=$(AFLAGS) compiler=target
 
 # assign and generate the local variables used in this macro
-OBJDIR        ?= $(GENDIR)/$(CURDIR)
+BD_LIBNAME    := %(libname)
+BD_LINKLIB    := %(libdir)/lib%(libname).a
 
 BD_FILES      := %(files)
 BD_CXXFILES   := %(cxxfiles)
@@ -2115,15 +2118,9 @@ BD_OBJS       := $(BD_ARCHOBJS) \
                  %(objs)
 BD_DEPS       := $(patsubst %.o,%.d,$(BD_OBJS))
 
-BD_CFLAGS     := %(cflags)
-ifeq (%(dflags),)
-BD_DFLAGS     := $(BD_CFLAGS)
-else
-BD_DFLAGS     := %(dflags)
-endif
-BD_AFLAGS     := %(aflags)
-
-BD_LINKLIB    := %(libdir)/lib%(libname).a
+BD_CFLAGS    := %(cflags)
+BD_AFLAGS    := %(aflags)
+BD_DFLAGS    := %(dflags)
 
 .PHONY : %(mmake) %(mmake)-clean
 
@@ -2440,13 +2437,11 @@ GLOB_MKDIRS += %(dst)
 
 %define copy_dir_recursive mmake=/A src=. dst=/A excludefiles=
 
-%(mmake)_EXCLUDEFILES := %(excludefiles)
-
 .PHONY : %(mmake)
 
 #MM
 %(mmake) :
-	@cd $(SRCDIR)/$(CURDIR) && $(CPYDIRREC) -s %(src) -d %(dst) -e $(%(mmake)_EXCLUDEFILES)
+	@cd $(SRCDIR)/$(CURDIR) && $(CPYDIRREC) -s %(src) -d %(dst) -e %(excludefiles)
 
 %end
 #------------------------------------------------------------------------------
