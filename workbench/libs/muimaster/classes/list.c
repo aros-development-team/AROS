@@ -342,7 +342,7 @@ static void FreeListFormat(struct MUI_ListData *data)
 }
 
 /**************************************************************************
- Parses the given format string (also frees a previouly parsed format).
+ Parses the given format string (also frees a previously parsed format).
  Return 0 on failure.
 **************************************************************************/
 static int ParseListFormat(struct MUI_ListData *data, STRPTR format)
@@ -778,7 +778,6 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     else
         data->entries[ENTRY_TITLE] = NULL;
 
-
     if (array)
     {
         int i;
@@ -789,7 +788,6 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         DoMethod(obj, MUIM_List_Insert, (IPTR) array, i,
             MUIV_List_Insert_Top);
     }
-
 
     if ((data->entries_num) && (new_entries_active != MUIV_List_Active_Off))
     {
@@ -980,8 +978,6 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                     else
                         DoMethod(obj, MUIM_List_SelectChange,
                             MUIV_List_Active_Off, MUIV_List_Select_Off, 0);
-
-                    set(obj, MUIA_Listview_SelectChange, TRUE);
 
                     data->update = 2;
                     data->update_pos = old;
