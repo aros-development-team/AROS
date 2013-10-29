@@ -1,8 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#INCLUDES    := -I$(BINDIR)/include -I$(TOP)/amiga/include
-EXEDIR      := $(BINDIR)/Demos
+#INCLUDES    := -I$(AROSDIR)/include -I$(TOP)/amiga/include
+EXEDIR      := $(AROSDIR)/Demos
 OBJDIR      := $(GENDIR)/test/HiddGraphics
 
 STARTUP = $(AROS_LIB)/startup.o

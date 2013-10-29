@@ -5,7 +5,7 @@
 include $(TOP)/config/make.cfg
 
 FILES  := testboot
-EXEDIR := $(BINDIR)/boot
+EXEDIR := $(AROSDIR)/boot
 
 USER_CFLAGS  := -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 USER_LDFLAGS := -L $(GENDIR)/lib
