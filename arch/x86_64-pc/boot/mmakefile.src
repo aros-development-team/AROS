@@ -40,7 +40,7 @@ KHIDDS  := parallel pci pcipc serial vesagfx vgah ata_pci i8042
 
 USER_LDFLAGS := -L$(GENDIR)/lib
 
-%link_kickstart mmake=kernel-bsp-x86_64-pc file=$(BINDIR)/boot/aros-bsp-pc-x86_64 \
+%link_kickstart mmake=kernel-bsp-x86_64-pc file=$(AROSDIR)/boot/aros-bsp-pc-x86_64 \
 	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
 	uselibs="bootconsole hiddstubs" \
 	map=$(GENDIR)/boot/kernel-bsp-x86_64-pc.map
@@ -54,7 +54,7 @@ USER_LDFLAGS := -L$(GENDIR)/lib
 LEGACY_DEVS  := trackdisk
 LEGACY_HIDDS := serialmouse
 
-%make_package mmake=kernel-legacy-pc-x86_64 file=$(BINDIR)/boot/aros-legacy-pc-x86_64.pkg \
+%make_package mmake=kernel-legacy-pc-x86_64 file=$(AROSDIR)/boot/aros-legacy-pc-x86_64.pkg \
 	devs=$(LEGACY_DEVS) hidds=$(LEGACY_HIDDS)
 
 %common

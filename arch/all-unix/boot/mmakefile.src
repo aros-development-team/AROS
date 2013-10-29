@@ -13,7 +13,7 @@ endif
 #MM
 boot-unix: $(AROSDIR)/boot/AROSBootstrap.conf
 
-$(AROSDIR)/boot/AROSBootstrap.conf: mkbootconf.sh $(BINDIR)/boot AROSBootstrap.conf
+$(AROSDIR)/boot/AROSBootstrap.conf: mkbootconf.sh $(AROSDIR)/boot AROSBootstrap.conf
 	@$(ECHO) "Writing    $@..."
 	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(SRCDIR)/$(CURDIR) $(BSP) >$@
 
