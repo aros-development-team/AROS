@@ -146,7 +146,7 @@ BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 #MM     kernel-oop-pkg \
 #MM     kernel-layers-pkg
 
-%make_package mmake=kernel-package-base file=$(BINDIR)/boot/aros-base.pkg \
+%make_package mmake=kernel-package-base file=$(AROSDIR)/boot/aros-base.pkg \
 	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) res=$(BASE_RSRCS)
 
 %common
