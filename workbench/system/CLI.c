@@ -86,34 +86,50 @@
 
 ******************************************************************************/
 
-#include <aros/debug.h>
-#include <clib/alib_protos.h>
-
-#include <exec/memory.h>
-#include <proto/exec.h>
 #include <proto/dos.h>
-#include <dos/dosextens.h>
-#include <dos/dostags.h>
-#include <aros/asmcall.h>
-#include <string.h>
-#include <workbench/startup.h>
+#include <proto/icon.h>
+
+//#define DEBUG 1
+#include <aros/debug.h>
 
 int main(int argc, char **argv)
 {
-    UBYTE **tt;
+    struct DiskObject *dobj;
     LONG rc = RETURN_FAIL;
 
-    tt = ArgArrayInit(argc, (UBYTE **)argv);
-    if (tt) {
+    dobj = GetDiskObject("PROGDIR:Shell");
+    if (dobj)
+    {
         ULONG stack;
         BPTR win, from;
+        STRPTR result, winspec, fromspec;
+        STRPTR *toolarray = dobj->do_ToolTypes;
 
-        stack = ArgInt(tt, "STACK", AROS_STACKSIZE);
-        from  = Open(ArgString(tt, "FROM", "S:Shell-Startup"), MODE_OLDFILE);
-        win   = Open(ArgString(tt, "WINDOW", "CON:0/50//130/AROS-Shell/CLOSE"), MODE_NEWFILE);
+        result = FindToolType(toolarray, "STACK");
+        if (result)
+            StrToLong(result, &stack);
+        else
+            stack = AROS_STACKSIZE;
+
+        result = FindToolType(toolarray, "FROM");
+        if (result)
+            fromspec = result;
+        else
+            fromspec = "S:Shell-Startup";
+
+        result = FindToolType(toolarray, "WINDOW");
+        if (result)
+            winspec = result;
+        else
+            winspec = "S:Shell-Startup";
+
+        from  = Open(fromspec, MODE_OLDFILE);
+        win   = Open(winspec, MODE_NEWFILE);
 
         if (stack < AROS_STACKSIZE)
             stack = AROS_STACKSIZE;
+
+        D(bug("[CLI] stack %d from %s window %s\n", stack, fromspec, winspec));
 
         if (win)
         {
@@ -143,7 +159,7 @@ int main(int argc, char **argv)
         Close(win);
         Close(from);
 
-        ArgArrayDone();
+        FreeDiskObject(dobj);
     }
 
     return rc;
