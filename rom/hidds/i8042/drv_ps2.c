@@ -351,8 +351,8 @@ int mouse_ps2reset(struct mouse_data *data)
 
     /* Reset mouse */
     aux_write_ack(KBD_OUTCMD_RESET);
-    kbd_wait_for_input();    /* Test result (0xAA) */
-    kbd_wait_for_input();    /* Mouse type */
+    aux_wait_for_input();    /* Test result (0xAA) */
+    aux_wait_for_input();    /* Mouse type */
 
     data->mouse_protocol = PS2_PROTOCOL_STANDARD;
     data->mouse_packetsize = 3;
@@ -360,6 +360,7 @@ int mouse_ps2reset(struct mouse_data *data)
 #if INTELLIMOUSE_SUPPORT
     if (detect_intellimouse())
     {
+        D(bug("[Mouse] PS/2 Intellimouse detected\n"));
         data->mouse_protocol = PS2_PROTOCOL_INTELLIMOUSE;
         data->mouse_packetsize = 4;
     }
