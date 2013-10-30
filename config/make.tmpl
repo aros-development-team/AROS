@@ -1441,7 +1441,7 @@ OBJDIR ?= $(GENDIR)/$(CURDIR)
 BD_MODDIR := %(moduledir)
 ifeq ($(BD_MODDIR),)
   ifeq (%(modtype),library)
-    BD_MODDIR  := $(AROS_LIBS)
+    BD_MODDIR  := $(AROS_LIBRARIES)
   endif
   ifeq (%(modtype),gadget)
     BD_MODDIR  := $(AROS_GADGETS)
