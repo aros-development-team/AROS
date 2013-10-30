@@ -64,5 +64,6 @@ void aux_write_noack(int val);
 void kbd_write_output_w(int data);
 int kbd_clear_input(void);
 int kbd_wait_for_input(void);
+int aux_wait_for_input(void);
 void kbd_write_command_w(int data); 
 void kbd_usleep(LONG usec);

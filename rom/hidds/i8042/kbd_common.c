@@ -11,7 +11,7 @@
 
 #define TIMER_RPROK 3599597124UL
 
-int kbd_wait_for_input(void);
+static int wait_for_input(ULONG timeout);
 
 static ULONG usec2tick(ULONG usec)
 {
@@ -106,7 +106,7 @@ void aux_write_ack(int val)
     kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE);
     kb_wait(1000);
     kbd_write_output(val);
-    kbd_wait_for_input();
+    aux_wait_for_input();
 }
 
 void aux_write_noack(int val)
@@ -166,8 +166,16 @@ int kbd_clear_input(void)
 
 int kbd_wait_for_input(void)
 {
-    ULONG timeout = 100;
+    return wait_for_input(100);
+}
 
+int aux_wait_for_input(void)
+{
+    return wait_for_input(1000);
+}
+
+static int wait_for_input(ULONG timeout)
+{
     do
     {
         int retval = kbd_read_data();
