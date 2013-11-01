@@ -9,5 +9,6 @@ include $(TOP)/config/make.cfg
 #MM- workbench-hosted:  $(SDL_HIDD_TARGET)	\
 #MM			kernel-fs-afs		\
 #MM			kernel-fs-cdvdfs	\
+#MM			kernel-fs-cdfs		\
 #MM			kernel-fs-sfs		\
 #MM			kernel-partition
