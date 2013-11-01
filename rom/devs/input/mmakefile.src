@@ -3,6 +3,9 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-input : includes linklibs
 
+#MM- includes-generate : \
+#MM      kernel-input-includes
+
 FUNCS := peekqualifier
 FILES := processevents support
 
