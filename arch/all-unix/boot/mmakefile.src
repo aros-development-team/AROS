@@ -34,7 +34,7 @@ $(AROSDIR)/boot:
 #MM	kernel-timer-kobj			\
 #MM	kernel-expansion-kobj			\
 #MM	kernel-exec-kobj			\
-#MM     $(X11_HIDD_TARGET)		        \
+#MM     $(UNIXGFX_HIDD_TARGET)		        \
 #MM     kernel-fs-emul-kobj                     \
 #MM	kernel-unixio-kobj			\
 #MM	linklibs
@@ -50,10 +50,10 @@ ifeq ("$(ARCH)-$(AROS_TARGET_VARIANT)","linux-")
     # Note ending dash - we add these only for variant-less (desktop) Linux
     KHIDDS  += linuxfb linuxinput
 endif
-ifeq ("$(X11_HIDD_TARGET)", "kernel-x11gfx-kobj")
+ifeq ("$(UNIXGFX_HIDD_TARGET)", "kernel-x11gfx-kobj")
     KHIDDS += x11gfx
 endif
-ifeq ("$(X11_HIDD_TARGET)", "kernel-hidd-androidgfx-kobj")
+ifeq ("$(UNIXGFX_HIDD_TARGET)", "kernel-hidd-androidgfx-kobj")
     KHIDDS += androidgfx
 endif
 
