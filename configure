@@ -639,7 +639,7 @@ aros_default_wbwidth
 oss_library_target
 pci_hidd_target
 sdl_hidd_target
-x11_hidd_target
+unixgfx_hidd_target
 aros_cflags_format_security
 aros_cflags_strict_overflow
 aros_cflags_enum_compare
@@ -7918,7 +7918,7 @@ case "$target_os" in
                     aros_kernel_includes="-isystem $aros_android_ndk/usr/include"
                 fi
                 need_x11=no
-                                                x11_hidd_target=kernel-hidd-androidgfx-kobj
+                                                unixgfx_hidd_target=kernel-hidd-androidgfx-kobj
                 # Disable implicit PIC mode
                 aros_target_cflags="$aros_target_cflags -fno-pic"
                 kernel_tool_prefix="$android_tool_prefix-"
@@ -13769,7 +13769,7 @@ fi
             fi
 
         else
-                        x11_hidd_target=kernel-x11gfx-kobj
+                        unixgfx_hidd_target=kernel-x11gfx-kobj
             ENABLE_X11=1
 
                         # Check whether --enable-x11_shm was given.

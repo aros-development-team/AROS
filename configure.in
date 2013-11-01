@@ -961,9 +961,7 @@ case "$target_os" in
                     aros_kernel_includes="-isystem $aros_android_ndk/usr/include"
                 fi
                 need_x11=no
-                dnl (Ab)use $(X11_HIDD_TARGET) as "Default display driver target"
-                dnl in order not to fill mmakefiles with garbage
-                x11_hidd_target=kernel-hidd-androidgfx-kobj
+                unixgfx_hidd_target=kernel-hidd-androidgfx-kobj
                 # Disable implicit PIC mode
                 aros_target_cflags="$aros_target_cflags -fno-pic"
                 kernel_tool_prefix="$android_tool_prefix-"
@@ -2365,7 +2363,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
         
         else
             dnl found it, setup the metatarget
-            x11_hidd_target=kernel-x11gfx-kobj
+            unixgfx_hidd_target=kernel-x11gfx-kobj"
             ENABLE_X11=1
 
             dnl setup shared memory extensions
@@ -2634,7 +2632,7 @@ AC_SUBST(aros_cflags_strict_overflow)
 AC_SUBST(aros_cflags_format_security)
 
 # Graphics Related
-AC_SUBST(x11_hidd_target)
+AC_SUBST(unixgfx_hidd_target)
 AC_SUBST(sdl_hidd_target)
 AC_SUBST(pci_hidd_target)
 AC_SUBST(oss_library_target)

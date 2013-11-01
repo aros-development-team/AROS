@@ -103,7 +103,7 @@ AS		:= $(TARGET_AS)
 AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
 
 # Optional components
-X11_HIDD_TARGET       := @x11_hidd_target@
+UNIXGFX_HIDD_TARGET   := @unixgfx_hidd_target@
 SDL_HIDD_TARGET       := @sdl_hidd_target@
 PCI_HIDD_TARGET       := @pci_hidd_target@
 OSS_LIBRARY_TARGET    := @oss_library_target@
