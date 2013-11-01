@@ -3,6 +3,7 @@ default 3
 
 title AROS (native graphics)
     multiboot /boot/bootstrap-pc.gz ATA=32bit
+    module /boot/kernel-pc-i386.gz
     module /boot/aros-bsp-pc-i386.gz
     module /boot/aros-base.pkg.gz
     module /boot/aros-fs.pkg.gz
@@ -10,6 +11,7 @@ title AROS (native graphics)
 
 title AROS (true colour VESA graphics)
     multiboot /boot/bootstrap-pc.gz vesa=32bit ATA=32bit nomonitors
+    module /boot/kernel-pc-i386.gz
     module /boot/aros-bsp-pc-i386.gz
     module /boot/aros-base.pkg.gz
     module /boot/aros-fs.pkg.gz
@@ -17,6 +19,7 @@ title AROS (true colour VESA graphics)
 	
 title AROS (high colour VESA graphics)
     multiboot /boot/bootstrap-pc.gz vesa=16bit ATA=32bit nomonitors
+    module /boot/kernel-pc-i386.gz
     module /boot/aros-bsp-pc-i386.gz
     module /boot/aros-base.pkg.gz
     module /boot/aros-fs.pkg.gz
@@ -24,6 +27,7 @@ title AROS (high colour VESA graphics)
 
 title AROS (true colour VESA graphics, legacy drivers)
     multiboot /boot/bootstrap-pc.gz vesa=32bit ATA=32bit nomonitors
+    module /boot/kernel-pc-i386.gz
     module /boot/aros-bsp-pc-i386.gz
     module /boot/aros-legacy-pc-i386.pkg.gz
     module /boot/aros-base.pkg.gz
@@ -32,6 +36,7 @@ title AROS (true colour VESA graphics, legacy drivers)
 
 title AROS (true colour VESA graphics: 1024x768)
     multiboot /boot/bootstrap-pc.gz vesa=1024x768 ATA=32bit nomonitors
+    module /boot/kernel-pc-i386.gz
     module /boot/aros-bsp-pc-i386.gz
     module /boot/aros-base.pkg.gz
     module /boot/aros-fs.pkg.gz
@@ -39,6 +44,7 @@ title AROS (true colour VESA graphics: 1024x768)
 
 title AROS (true colour VESA graphics: 1280x1024)
     multiboot /boot/bootstrap-pc.gz vesa=1280x1024 ATA=32bit nomonitors
+    module /boot/kernel-pc-i386.gz
     module /boot/aros-bsp-pc-i386.gz
     module /boot/aros-base.pkg.gz
     module /boot/aros-fs.pkg.gz
@@ -46,6 +52,7 @@ title AROS (true colour VESA graphics: 1280x1024)
 
 title AROS (VGA graphics, safe mode)
     multiboot /boot/bootstrap-pc.gz ATA=nodma debug=memory nomonitors
+    module /boot/kernel-pc-i386.gz
     module /boot/aros-bsp-pc-i386.gz
     module /boot/aros-base.pkg.gz
     module /boot/aros-fs.pkg.gz
