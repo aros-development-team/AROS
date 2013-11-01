@@ -4,14 +4,14 @@ include $(TOP)/config/make.cfg
 # What our port consists of
 
 #MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-pc-gz
-#MM- kernel-link-pc-x86_64 : kernel-bsp-x86_64-pc-gz kernel-legacy-x86_64-pc-gz \
+#MM- kernel-link-pc-x86_64 : kernel-bsp-pc-x86_64-gz kernel-legacy-pc-x86_64-gz \
 #MM                          kernel-package-base-gz  kernel-package-usb-gz      \
 #MM                          kernel-package-fs-gz
 #MM- workbench-pc-x86_64   : workbench-drivers kernel-pc-i386-trackdisk
 
 # -------- x86_64-pc board support package --------
 
-#MM kernel-bsp-x86_64-pc : linklibs-bootconsole		 \
+#MM kernel-bsp-pc-x86_64 : linklibs-bootconsole		 \
 #MM			   kernel-kernel-kobj		 \
 #MM			   kernel-exec-kobj		 \
 #MM			   kernel-ata-kobj		 \
@@ -39,14 +39,14 @@ KHIDDS  := parallel pci pcipc serial vesagfx vgah ata_pci i8042
 
 USER_LDFLAGS := -L$(GENDIR)/lib
 
-%link_kickstart mmake=kernel-bsp-x86_64-pc file=$(AROSDIR)/boot/aros-bsp-pc-x86_64 \
+%link_kickstart mmake=kernel-bsp-pc-x86_64 file=$(AROSDIR)/boot/aros-bsp-pc-x86_64 \
 	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
 	uselibs="bootconsole hiddstubs" \
 	map=$(GENDIR)/boot/kernel-bsp-x86_64-pc.map
 
 # -------- x86_64-pc legacy drivers package --------
 
-#MM- kernel-legacy-pc-i386 :	        \
+#MM- kernel-legacy-pc-x86_64 :	        \
 #MM     kernel-hidd-serialmouse-pkg     \
 #MM     kernel-devs-trackdisk-pkg
 
