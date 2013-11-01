@@ -103,8 +103,12 @@ BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 #MM     kernel-intuition-kobj \
 #MM     kernel-keymap-kobj \
 #MM	kernel-lddemon-kobj \
-#MM     kernel-devs \
-#MM	kernel-fs-kobj \
+#MM     kernel-console-kobj \
+#MM     kernel-gameport-kobj \
+#MM     kernel-input-kobj \
+#MM     kernel-keyboard-kobj \
+#MM	kernel-fs-ram-kobj \
+#MM     kernel-fs-con-kobj \
 #MM     kernel-hidd-kobj \
 #MM     kernel-oop-kobj \
 #MM     kernel-layers-kobj \
@@ -129,7 +133,8 @@ BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 #MM	kernel-dosboot-pkg \
 #MM	kernel-debug-pkg \
 #MM	kernel-filesystem-pkg \
-#MM	kernel-fs-pkg \
+#MM	kernel-fs-ram-pkg \
+#MM     kernel-fs-con-pkg \
 #MM     kernel-graphics-pkg \
 #MM     kernel-hidd-graphics-pkg \
 #MM     kernel-hidd-kbd-pkg \
