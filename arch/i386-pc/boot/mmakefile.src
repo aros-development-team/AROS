@@ -27,18 +27,15 @@ include $(TOP)/config/make.cfg
 #MM	kernel-ata-kobj 		\
 #MM     kernel-hidd-pciata-kobj         \
 #MM	kernel-ahci-kobj 		\
-#MM	kernel-oop-kobj 		\
-#MM	kernel-utility-kobj 		\
-#MM	kernel-debug-kobj 		\
-#MM	kernel-pc-i386-drivers 		\
+#MM	kernel-pc-i386-serial-kobj 	\
+#MM	kernel-pc-i386-parallel-kobj 	\
 #MM     kernel-hidd-i8042-kobj          \
 #MM     kernel-hidd-pci-kobj		\
+#MM     kernel-hidd-pci-pcipc-kobj	\
 #MM     kernel-hidd-vesa-kobj 		\
-#MM     kernel-hidd-vga-kobj		\
-#MM     kernel-workbench-devs-pc-i386
+#MM     kernel-hidd-vga-kobj
 
 EXEDIR  := $(AROSDIR)/boot
-USELIBS	:= hiddstubs amiga arossupport debug autoinit libinit stdc.static
 
 KRSRCS  := acpi battclock efi hpet processor
 KLIBS   := exec expansion
@@ -48,7 +45,7 @@ KHIDDS  := ata_pci i8042 vesagfx vgah pci pcipc serial parallel
 %link_kickstart mmake=kernel-bsp-pc-i386 file=$(EXEDIR)/aros-bsp-pc-i386 \
 	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) \
 	startup=$(KOBJSDIR)/kernel_resource.o \
-	uselibs=$(USELIBS) map=$(GENDIR)/boot/kernel-i386-pc.map
+	uselibs=hiddstubs map=$(GENDIR)/boot/kernel-i386-pc.map
 
 #
 # Legacy drivers package

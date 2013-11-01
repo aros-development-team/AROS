@@ -2,16 +2,6 @@
 include $(TOP)/config/make.cfg
 
 #
-# Rules to create Kernel drivers for pc-i386
-#
-
-#MM- kernel-pc-i386-drivers : \
-#MM    kernel-pc-i386-serial-kobj \
-#MM    kernel-pc-i386-parallel-kobj \
-#MM    kernel-hidd-pci-pcipc-kobj \
-#MM    kernel-ata-kobj
-
-#
 # Rules to create Support drivers for pc-i386
 # These are not needed as part of the kernel - and so get created seperately
 #
