@@ -76,13 +76,11 @@ PKG_DEVS     :=  input gameport keyboard console timer sdcard USBHardware/usb2ot
 PKG_HANDLERS := con ram cdrom sfs fat afs
 PKG_HIDDS    := graphics mouse keyboard hiddclass i2c i2c-bcm2835 videocoregfx
 PKG_USB      := hid hub bootmouse bootkeyboard massstorage
-PKG_HOOKS    := 
  
 MODULES := \
 	$(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
 	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
 	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .hook, $(PKG_HOOKS))) \
 	$(addprefix $(AROSDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
 	$(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
 	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB)))

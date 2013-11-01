@@ -83,17 +83,15 @@ $(AROSDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_lib
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos debug poseidon
 PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor FileSystem shell shellcommands
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
-PKG_HANDLERS := con ram cdrom sfs fat afs
+PKG_HANDLERS := con ram cdrom sfs fat afs econsole
 PKG_HIDDS    := graphics mouse keyboard hiddclass ata_pci pci pci-amcc440 pci-amcc460 i2c i2c-amcc440 usb ohci sm502
 PKG_USB      := hid
 PKG_USB_PSD  := hid hub bootmouse bootkeyboard massstorage
-PKG_HOOKS    := econsole
 
 MODULES := \
 	$(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
 	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
 	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .hook, $(PKG_HOOKS))) \
 	$(addprefix $(AROSDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
 	$(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
 	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
