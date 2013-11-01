@@ -21,14 +21,6 @@ FILES := adminspaces \
 
 USER_CFLAGS := -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-# %build_module_simple is actually the same as %build_prog with usestartup=no
-# However %build_prog doesn't support -kobj and -pkg targets, so we use
-# %build_module_simple here.
-# This macro doesn't prepend standard resident anti-run protection code,
-# so we can have own own startup routine. This allows us to build the
-# same module for both putting on disk and including into kickstart.
-# Resident startup code is very small, so we don't bother about binary size.
-
 %build_module mmake=kernel-fs-sfs \
     modname=sfs modtype=handler \
     files="$(FILES)" uselibs=debug
