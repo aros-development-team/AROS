@@ -4,45 +4,47 @@ include $(TOP)/config/make.cfg
 # What our port consists of
 
 #MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-pc-gz
-#MM- kernel-link-pc-x86_64 : kernel-bsp-pc-x86_64-gz kernel-legacy-pc-x86_64-gz \
+#MM- kernel-link-pc-x86_64 : kernel-pc-x86_64-kernel-gz \
+#MM                          kernel-bsp-pc-x86_64-gz kernel-legacy-pc-x86_64-gz \
 #MM                          kernel-package-base-gz  kernel-package-usb-gz      \
 #MM                          kernel-package-fs-gz
 #MM- workbench-pc-x86_64   : workbench-drivers kernel-pc-i386-trackdisk
 
+# -------- x86_64-pc kernel --------
+
+#MM- kernel-pc-x86_64-kernel: kernel-kernel-kobj kernel-exec-kobj
+
+%link_kickstart mmake=kernel-pc-x86_64-kernel file=$(AROSDIR)/boot/kernel-pc-x86_64 \
+	startup=$(KOBJSDIR)/kernel_resource.o libs=exec
+
 # -------- x86_64-pc board support package --------
 
 #MM kernel-bsp-pc-x86_64 : linklibs-bootconsole		 \
-#MM			   kernel-kernel-kobj		 \
-#MM			   kernel-exec-kobj		 \
-#MM			   kernel-ata-kobj		 \
-#MM                        kernel-hidd-pciata-kobj       \
-#MM			   kernel-ahci-kobj		 \
-#MM			   kernel-battclock-kobj	 \
-#MM			   kernel-efi-kobj		 \
-#MM			   kernel-timer-kobj		 \
-#MM			   kernel-expansion-kobj	 \
-#MM			   kernel-pc-acpi-kobj		 \
-#MM			   kernel-pc-hpet-kobj		 \
-#MM			   kernel-hidd-i8042-kobj	 \
-#MM			   kernel-pc-i386-serial-kobj	 \
-#MM			   kernel-pc-i386-parallel-kobj	 \
-#MM			   kernel-hidd-vga-kobj		 \
-#MM			   kernel-hidd-vesa-kobj	 \
-#MM			   kernel-hidd-pci-kobj		 \
-#MM			   kernel-hidd-pci-pcipc-kobj	 \
-#MM			   kernel-processor-kobj
+#MM			   kernel-ata-pkg		 \
+#MM                        kernel-hidd-pciata-pkg	 \
+#MM			   kernel-ahci-pkg		 \
+#MM			   kernel-battclock-pkg		 \
+#MM			   kernel-efi-pkg		 \
+#MM			   kernel-timer-pkg		 \
+#MM			   kernel-expansion-pkg		 \
+#MM			   kernel-pc-acpi-pkg		 \
+#MM			   kernel-pc-hpet-pkg		 \
+#MM			   kernel-hidd-i8042-pkg	 \
+#MM			   kernel-pc-i386-serial-pkg	 \
+#MM			   kernel-pc-i386-parallel-pkg	 \
+#MM			   kernel-hidd-vga-pkg		 \
+#MM			   kernel-hidd-vesa-pkg		 \
+#MM			   kernel-hidd-pci-pkg		 \
+#MM			   kernel-hidd-pci-pcipc-pkg	 \
+#MM			   kernel-processor-pkg
 
 KRSRCS  := acpi battclock efi hpet processor
-KLIBS   := exec expansion
+KLIBS   := expansion
 KDEVS   := ata ahci timer
 KHIDDS  := parallel pci pcipc serial vesagfx vgah ata_pci i8042
 
-USER_LDFLAGS := -L$(GENDIR)/lib
-
-%link_kickstart mmake=kernel-bsp-pc-x86_64 file=$(AROSDIR)/boot/aros-bsp-pc-x86_64 \
-	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
-	uselibs="bootconsole hiddstubs" \
-	map=$(GENDIR)/boot/kernel-bsp-x86_64-pc.map
+%make_package mmake=kernel-bsp-pc-x86_64 file=$(AROSDIR)/boot/aros-bsp-pc-x86_64 \
+	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS)
 
 # -------- x86_64-pc legacy drivers package --------
 

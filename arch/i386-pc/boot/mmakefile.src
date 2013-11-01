@@ -8,6 +8,7 @@ include $(TOP)/config/make.cfg
 #
 
 #MM- kernel-link-pc-i386 :	\
+#MM     kernel-pc-i386-kernel-gz \
 #MM	kernel-bsp-pc-i386-gz	\
 #MM     kernel-legacy-pc-i386-gz \
 #MM	kernel-package-base-gz	\
@@ -15,37 +16,49 @@ include $(TOP)/config/make.cfg
 #MM	kernel-package-fs-gz
 
 #
+# The kernel
+#
+
+#MM- kernel-pc-i386-kernel:	\
+#MM     kernel-kernel-kobj	\
+#MM     kernel-exec-kobj
+
+KLIBS   := exec
+
+%link_kickstart mmake=kernel-pc-i386-kernel file=$(AROSDIR)/boot/kernel-pc-i386 \
+	startup=$(KOBJSDIR)/kernel_resource.o libs=$(KLIBS) \
+
+#
 # Board support package
 #
 
 #MM- kernel-bsp-pc-i386 :		\
 #MM	linklibs			\
-#MM     kernel-bsp-objs			\
-#MM	kernel-efi-kobj			\
-#MM	kernel-pc-acpi-kobj		\
-#MM	kernel-pc-hpet-kobj		\
-#MM	kernel-ata-kobj 		\
-#MM     kernel-hidd-pciata-kobj         \
-#MM	kernel-ahci-kobj 		\
-#MM	kernel-pc-i386-serial-kobj 	\
-#MM	kernel-pc-i386-parallel-kobj 	\
-#MM     kernel-hidd-i8042-kobj          \
-#MM     kernel-hidd-pci-kobj		\
-#MM     kernel-hidd-pci-pcipc-kobj	\
-#MM     kernel-hidd-vesa-kobj 		\
-#MM     kernel-hidd-vga-kobj
+#MM	kernel-battclock-pkg		\
+#MM	kernel-processor-pkg		\
+#MM	kernel-timer-pkg		\
+#MM	kernel-expansion-pkg		\
+#MM	kernel-efi-pkg 			\
+#MM	kernel-pc-acpi-pkg 		\
+#MM	kernel-pc-hpet-pkg 		\
+#MM	kernel-ata-pkg  		\
+#MM     kernel-hidd-pciata-pkg          \
+#MM	kernel-ahci-pkg  		\
+#MM	kernel-pc-i386-serial-pkg 	\
+#MM	kernel-pc-i386-parallel-pkg 	\
+#MM     kernel-hidd-i8042-pkg           \
+#MM     kernel-hidd-pci-pkg 		\
+#MM     kernel-hidd-pci-pcipc-pkg	\
+#MM     kernel-hidd-vesa-pkg  		\
+#MM     kernel-hidd-vga-pkg
 
-EXEDIR  := $(AROSDIR)/boot
+KRSRCS      := acpi efi hpet battclock processor
+KLIBS       := expansion
+KDEVS       := ahci ata timer
+KHIDDS      := ata_pci i8042 vesagfx vgah pci pcipc serial parallel
 
-KRSRCS  := acpi battclock efi hpet processor
-KLIBS   := exec expansion
-KDEVS   := timer ahci ata
-KHIDDS  := ata_pci i8042 vesagfx vgah pci pcipc serial parallel
-
-%link_kickstart mmake=kernel-bsp-pc-i386 file=$(EXEDIR)/aros-bsp-pc-i386 \
-	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) \
-	startup=$(KOBJSDIR)/kernel_resource.o \
-	uselibs=hiddstubs map=$(GENDIR)/boot/kernel-i386-pc.map
+%make_package mmake=kernel-bsp-pc-i386 file=$(AROSDIR)/boot/aros-bsp-pc-i386 \
+    devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS)
 
 #
 # Legacy drivers package
