@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS	:= $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
-#MM- kernel-exec-arm: includes-asm_h-arm
+#MM- kernel-exec-arm: includes-asm_h-arm kernel-kernel-includes
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
