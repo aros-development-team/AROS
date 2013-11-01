@@ -29,7 +29,7 @@ BOOT_TAR_EXECUTABLES := \
     C/MakeDir C/MakeLink C/Mount C/NewShell C/Path C/Prompt C/Protect C/Quit \
     C/Reboot C/Relabel C/Rename C/Resident C/Run C/Search C/Set C/SetClock \
     C/SetDate C/Setenv C/Skip C/Stack C/Status C/Touch C/Type C/Unalias \
-    C/Unset C/Unsetenv C/Version C/Which C/Why C/install-i386-pc \
+    C/Unset C/Unsetenv C/Why C/install-i386-pc \
     C/Partition \
     Classes/DataTypes/ascii.datatype \
     Classes/DataTypes/binary.datatype \
@@ -48,7 +48,6 @@ BOOT_TAR_EXECUTABLES := \
     Classes/Zune/IconVolumeList.mui Classes/Zune/PrefsWindow.mcc \
     Classes/Zune/PrefsEditor.mcc Classes/Zune/SystemPrefsWindow.mcc \
     Devs/clipboard.device \
-    Devs/serial.device \
     L/pipe-handler \
     Libs/stdc.library Libs/stdcio.library \
     Libs/asl.library Libs/commodities.library \
