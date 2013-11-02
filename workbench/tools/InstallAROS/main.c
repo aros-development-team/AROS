@@ -184,6 +184,7 @@ Object *grub_unit = NULL;
 
 Object *reboot_group = NULL;
 LONG BootLoaderType;
+BOOL gfx_font_exists;
 
 ULONG GuessFirstHD(CONST_STRPTR device);
 static struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path);
@@ -2209,9 +2210,9 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
             /* Grub 2 text/gfx mode */
             GET(data->instc_options_grub->gopt_grub2mode, MUIA_Cycle_Active,
                 &option);
-            if (option == 1)
+
+            /* Rename _unicode.pf2 <-> unicode.pf2 if necessary */
             {
-                /* gfx mode - copy _unicode.pf2 -> unicode.pf2 */
                 ULONG newDstLen =
                     strlen(dstPath) + strlen("_unicode.pf2") + 2;
                 TEXT srcFile[newDstLen];
@@ -2222,19 +2223,10 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
                 AddPart(srcFile, "_unicode.pf2", newDstLen);
                 AddPart(dstFile, "unicode.pf2", newDstLen);
 
-                DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
-            }
-            else
-            {
-                /* other - delete unicode.pf2 */
-                ULONG newDstLen =
-                    strlen(dstPath) + strlen("unicode.pf2") + 2;
-                TEXT dstFile[newDstLen];
-
-                sprintf(dstFile, "%s", dstPath);
-                AddPart(dstFile, "unicode.pf2", newDstLen);
-
-                DeleteFile(dstFile);
+                if (option == 1 && !gfx_font_exists)
+                    Rename(srcFile, dstFile);
+                else if (option == 0 && gfx_font_exists)
+                    Rename(dstFile, srcFile);
             }
 
             /* Add entry to boot MS Windows if present */
@@ -3353,9 +3345,12 @@ int main(int argc, char *argv[])
     AddPart(source_path, "boot/grub/unicode.pf2", 256);
     if ((lock = Lock(source_path, SHARED_LOCK)) != BNULL)
     {
+        gfx_font_exists = TRUE;
         SET(cycle_grub2mode, MUIA_Cycle_Active, 1);
         UnLock(lock);
     }
+    else
+        gfx_font_exists = FALSE;
 
     FreeVec(source_path);
 
@@ -3399,7 +3394,7 @@ int main(int argc, char *argv[])
 
     Object *app = ApplicationObject,
         MUIA_Application_Title,       (IPTR) "AROS Installer",
-        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.15 (5.11.2012)",
+        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.16 (28.12.2012)",
         MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2012, The AROS Development Team. All rights reserved.",
         MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
         MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
