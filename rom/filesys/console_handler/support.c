@@ -352,6 +352,10 @@ BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
                             fh->screenname[paramlen - 6] = '\0';
                         }
                     }
+                    else if (!strnicmp(param, "BOOT", paramlen)) /* Private parameter */
+                    {
+                        fh->flags |= FHFLG_BOOTCON;
+                    }
                     break;
 
                 } /* switch(paramid) */

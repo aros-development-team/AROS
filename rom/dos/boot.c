@@ -125,7 +125,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
     }
 
     if (cis == BNULL)
-        cis = Open("CON:////AROS/AUTO/CLOSE/SMART", MODE_OLDFILE);
+        cis = Open("CON:////AROS/AUTO/CLOSE/SMART/BOOT", MODE_OLDFILE);
 
     if (cis) {
         BPTR cos = OpenFromLock(DupLockFromFH(cis));

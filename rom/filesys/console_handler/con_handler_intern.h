@@ -109,6 +109,7 @@ struct filehandle
 #define FHFLG_CONSOLEDEVICEOPEN 128
 #define FHFLG_EOF               256
 #define FHFLG_WAITFORCLOSE      512 /* Console with WAIT is waiting to be closed */
+#define FHFLG_BOOTCON           1024/* Special marker for boot console */
 
 #undef InputBase
 #undef IntuitionBase
