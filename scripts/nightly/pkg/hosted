@@ -13,15 +13,17 @@ printi "Creating AROS/"$BUILDTARGET" system package..."
 PACKAGE=$BASENAME-$BUILDTARGET-system
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
+if [ -z ${BUILDTARGETDIR+x} ]; then BUILDTARGETDIR=$BUILDTARGET; fi
+
 delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly
+execute ./configure --target=$BUILDTARGET $BUILDEXTRAOPTS --enable-ccache --enable-build-type=nightly
 make
 make    default-x11keymaptable
 
-cd      $BUILD_BASE/AROS/bin/$BUILDTARGET
+cd      $BUILD_BASE/AROS/bin/$BUILDTARGETDIR
 move    AROS $PACKAGE
 
 copy    $SOURCE_AROS/LICENSE $PACKAGE
