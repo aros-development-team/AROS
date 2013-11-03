@@ -20,6 +20,7 @@
  *    We reuse MorphOS skin code where appropriate.
  */
 
+#include <aros/config.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <intuition/screens.h>
