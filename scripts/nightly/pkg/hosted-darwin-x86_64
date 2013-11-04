@@ -2,36 +2,6 @@
 # Creates darwin-x86-64 "hosted" binary packages.
 
 BUILDTARGET=darwin-x86_64
+BUILDEXTRAOPTS=(--with-kernel-gcc-version=4.2.1)
 
-source $SP/setup
-# The log-name MUST match the name of the package script
-setl   hosted-$BUILDTARGET.log
-
-ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
-
-printi "Creating AROS/"$BUILDTARGET" system package..."
-PACKAGE=$BASENAME-$BUILDTARGET-system
-ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
-
-delete  $BUILD_BASE/AROS
-copy    $SOURCE_AROS      $BUILD_BASE/AROS
-
-cd      $BUILD_BASE/AROS
-execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-kernel-gcc-version=4.2.1
-make
-make    default-x11keymaptable
-
-cd      $BUILD_BASE/AROS/bin/$BUILDTARGET
-move    AROS $PACKAGE
-
-copy    $SOURCE_AROS/LICENSE $PACKAGE
-copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
-delete	$PACKAGE/Include
-delete	$PACKAGE/lib
-
-archive $ARCHIVE $PACKAGE
-
-cd      $ROOT
-delete  $BUILD_BASE/AROS
-resetl
-
+source $SP/pkg/hosted
