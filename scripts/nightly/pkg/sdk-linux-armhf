@@ -1,0 +1,7 @@
+#!/bin/zsh
+# Creates AROS/linux-armhf SDK package.
+
+BUILDTARGET=linux-armhf
+BUILDTARGETDIR=linux-arm
+
+source  $SP/pkg/sdk

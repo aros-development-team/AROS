@@ -3,32 +3,4 @@
 
 BUILDTARGET=linux-ppc
 
-source  $SP/setup
-
-# The log-name MUST match the name of the package script
-setl   sdk-$BUILDTARGET.log
-
-ARCHIVE_BASE=$ARCHIVE_BASE/Development_Tools
-
-printi "Creating AROS/$BUILDTARGET SDK package..."
-
-delete  $BUILD_BASE/AROS
-copy    $SOURCE_AROS      $BUILD_BASE/AROS
-
-cd      $BUILD_BASE/AROS
-execute ./configure --target=$BUILDTARGET --enable-build-type=nightly --enable-debug=symbols --with-optimization="-O2"
-make    sdk
-
-PACKAGE=$BASENAME-$BUILDTARGET-sdk
-ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
-
-cd      $BUILD_BASE/AROS/bin/$BUILDTARGET
-move    AROS-SDK $PACKAGE
-archive $ARCHIVE $PACKAGE
-
-cd      $ROOT
-delete  $BUILD_BASE/AROS
-
-cd      $ROOT
-resetl
-
+source  $SP/pkg/sdk
