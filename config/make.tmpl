@@ -492,7 +492,8 @@ $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
 # in the object directory without the directory part of the source file.
 # options
 # - basenames: the basenames of the files to compile. The names may include
-#   relative or absolute path names. No wildcard is allowed
+#   relative or absolute path names. No wildcard is allowed. basenames will be 
+#   matched to supported AROS_CXXEXTS.
 # - cflags (default $(CFLAGS)): the C flags to use for compilation
 # - dflags: the flags used during creation of dependency file. If not specified
 #   the same value as cflags will be used
@@ -501,71 +502,76 @@ $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
 #   empty, path names will be stripped from the file names so that all files
 #   are in that dir and not in subdirectories.
 # - compiler (default target): compiler to use, target, kernel or host
-# - suffix (default .cpp): suffix for source files to compile
 %define rule_compile_cxx_multi basenames=/A cflags=$(CFLAGS) dflags= \
-    targetdir= compiler=target suffix=.cpp
+    targetdir= compiler=target
 
 # Adjust compiler flags to suit C++
 TMP_CXXFLAGS := %(cflags)
-TMP_CXXFLAGS := $(TMP_CXXFLAGS) -fno-rtti -fno-exceptions -fno-check-new -isystem $(AROS_DEVELOPMENT)/include
 TMP_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_CXXFLAGS)))
+TMP_CXXFLAGS := $(TMP_CXXFLAGS) -fno-rtti -fno-exceptions -fno-check-new -isystem $(AROS_DEVELOPMENT)/include
+
+TMP_CXXABSBASENAMES := $(foreach TMP_CXXBASE,%(basenames),$(if $(filter /%,$(TMP_CXXBASE)),$(TMP_CXXBASE),$(abspath $(TMP_SRCDIR)/$(CURDIR)/$(TMP_CXXBASE))))
+ifneq ($(TMP_CXXABSBASENAMES),)
+TMP_CXXBASENAMES := $(basename $(TMP_CXXABSBASENAMES))
+
+# Identify the "real" c++ files from the passed in basenames
+TMP_CXXFILES  := $(strip $(foreach TMP_CXXBASE,$(TMP_CXXABSBASENAMES), $(firstword $(wildcard $(foreach TMP_EXT, $(AROS_CXXEXTS),$(addsuffix .$(TMP_EXT),$(TMP_CXXBASE)))))))
 
 ifeq (%(targetdir),)
-  TMP_TARGETS := $(addsuffix .o,%(basenames))
-  TMP_DTARGETS := $(addsuffix .d,%(basenames))
+  TMP_CXXTARGETS := $(notdir $(TMP_CXXBASENAMES:=.o))
+  TMP_CXXDTARGETS := $(notdir $(TMP_CXXBASENAMES:=.d))
   TMP_WILDCARD := %
 else
-  TMP_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,$(notdir %(basenames))))
-  TMP_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,$(notdir %(basenames))))
+  TMP_CXXTARGETS := $(addprefix %(targetdir)/,$(notdir $(TMP_CXXBASENAMES:=.o)))
+  TMP_CXXDTARGETS := $(addprefix %(targetdir)/,$(notdir $(TMP_CXXBASENAMES:=.d)))
   TMP_WILDCARD := %(targetdir)/%
 
   # Be sure that all source files are generated
-  $(TMP_TARGETS) $(TMP_DTARGETS) : | $(addsuffix %(suffix),%(basenames))
-
-  # Be sure that all source files are found
-  TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
-  TMP_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
-  TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
-  ifneq ($(TMP_DIRS),)
-    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
-    vpath %%(suffix) $(TMP_DIRS)
-  endif
+  $(TMP_CXXTARGETS) $(TMP_CXXDTARGETS) : | $(TMP_CXXFILES)
 endif
 
 ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(AROS_CXX) $(TARGET_CFLAGS)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+  TMP_CXXCMD:=$(AROS_CXX) $(TARGET_CFLAGS)
+  TMP_CXXIQUOTE:=$(CFLAGS_IQUOTE)
+  TMP_CXXIQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
 ifeq (%(compiler),host)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_CXX)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+  TMP_CXXCMD:=$(HOST_CXX)
+  TMP_CXXIQUOTE:=$(HOST_IQUOTE)
+  TMP_CXXIQUOTE_END:=$(HOST_IQUOTE_END)
 endif
 ifeq (%(compiler),kernel)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CXX) $(KERNEL_CFLAGS)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
-  $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+  TMP_CXXCMD:=$(KERNEL_CXX) $(KERNEL_CFLAGS)
+  TMP_CXXIQUOTE:=$(KERNEL_IQUOTE)
+  TMP_CXXIQUOTE_END:=$(KERNEL_IQUOTE_END)
 endif
-
-$(TMP_TARGETS) : CFLAGS := $(TMP_CXXFLAGS)
-$(TMP_TARGETS) : $(TMP_WILDCARD).o : %%(suffix)
-	%compile_q cmd=$(CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
 
 ifeq (%(dflags),)
-  $(TMP_DTARGETS) : DFLAGS:=$(TMP_CXXFLAGS)
+  TMP_CXXDFLAGS:=$(TMP_CXXFLAGS)
 else
   ifeq (%(dflags),%(cflags))
-    $(TMP_DTARGETS) : DFLAGS:=$(TMP_CXXFLAGS)
+    TMP_CXXDFLAGS:=$(TMP_CXXFLAGS)
   else
-    $(TMP_DTARGETS) : DFLAGS:=%(dflags)
+    TMP_CXXDFLAGS:=%(dflags)
   endif
 endif
-$(TMP_DTARGETS) : $(TMP_WILDCARD).d : %%(suffix)
-	%mkdepend_q cc=$(CMD) flags=$(DFLAGS)
+
+define cxx_multi_recipe_template
+ $(1).o : $(2)
+ 	%compile_q cmd=$(TMP_CXXCMD) opt=$(TMP_CXXFLAGS) iquote=$(TMP_CXXIQUOTE) iquote_end=$(TMP_CXXIQUOTE_END) from=$(2) to=$(1).o
+
+ $(1).d : $(2)
+ 	%mkdepend_q cc=$(TMP_CXXCMD) flags=$(TMP_CXXDFLAGS) from=$(2) to=$(1).d
+endef
+ifeq (%(targetdir),)
+  $(foreach TMP_CXXFILE,$(TMP_CXXFILES),$(eval $(call cxx_multi_recipe_template,$(notdir $(basename $(TMP_CXXFILE))),$(TMP_CXXFILE))))
+else
+  $(foreach TMP_CXXFILE,$(TMP_CXXFILES),$(eval $(call cxx_multi_recipe_template,$(addprefix %(targetdir)/,$(notdir $(basename $(TMP_CXXFILE)))),$(TMP_CXXFILE))))
+endif
+endif
 %end
 #------------------------------------------------------------------------------
 
@@ -1290,9 +1296,9 @@ ifeq ($(BD_LINKER),)
 endif
 
 BD_FILES     := %(files)
-BD_CXXFILES  := %(cxxfiles)
 BD_OBJCFILES := %(objcfiles)
 BD_ASMFILES  := %(asmfiles)
+BD_CXXFILES := %(cxxfiles)
 
 BD_ARCHOBJS   := $(wildcard $(BD_OBJDIR)/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
@@ -1579,9 +1585,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 # Explanation of this macro is done in the developer's manual
 %define build_module mmake=/A modname=/A modtype=/A modsuffix= version= conffile= \
   files="$(basename $(call WILDCARD, *.c))" \
-  cxxfiles="$(basename $(call WILDCARD, *.cpp))" \
-  cxxxxfiles="$(basename $(call WILDCARD, *.cxx))" \
-  cxxccfiles="$(basename $(call WILDCARD, *.cc))" \
+  cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
   linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
@@ -1717,9 +1721,7 @@ GLOB_MKDIRS += $(BD_FDDIR)
 ## Compilation
 ##
 BD_FILES      := %(files)
-BD_CXXFILES   := %(cxxfiles)
-BD_CXXXXFILES := %(cxxxxfiles)
-BD_CXXCCFILES := %(cxxccfiles)
+BD_CXXFILES := %(cxxfiles)
 
 BD_FDIRS      := $(sort $(dir $(BD_FILES)))
 
@@ -1751,7 +1753,7 @@ else
 endif
 BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
 
-ifneq ($(BD_CXXFILES) $(BD_CXXXXFILES) $(BD_CXXCCFILES),)
+ifneq ($(BD_CXXFILES),)
 BD_LINKCMD=$(AROS_CXX)
 else
 BD_LINKCMD=$(AROS_CC)
@@ -1783,14 +1785,6 @@ BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES) $(BD_LINKLIBCFILES) \
     compiler=%(compiler)
 %rule_compile_cxx_multi \
     basenames=$(BD_CXXFILES) targetdir=%(objdir) \
-    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) \
-    compiler=%(compiler)
-%rule_compile_cxx_multi \
-    basenames=$(BD_CXXXXFILES) targetdir=%(objdir) suffix=.cxx \
-    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) \
-    compiler=%(compiler)
-%rule_compile_cxx_multi \
-    basenames=$(BD_CXXCCFILES) targetdir=%(objdir) suffix=.cc \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) \
     compiler=%(compiler)
 
@@ -1826,8 +1820,7 @@ BD_KOBJ   := $(KOBJSDIR)/%(modname)_$(BD_SUFFIX).o
 %(mmake)-linklib    : $(BD_LINKLIB) $(BD_RELLINKLIB)
 
 BD_OBJS := $(addsuffix .o,$(BD_STARTFILES)) $(BD_ARCHOBJS) \
-           $(addsuffix .o, $(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES)))) \
-           $(addsuffix .o, $(addprefix %(objdir)/,$(notdir $(BD_CXXFILES) $(BD_CXXXXFILES) $(BD_CXXCCFILES))))
+           $(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES:=.o) $(BD_CXXFILES:=.o)))
 
 ifeq (%(nostartup),yes)
 # Handlers always have entry point
@@ -1906,8 +1899,8 @@ $(BD_KOBJ) : $(BD_OBJS) $(USER_OBJS) $(BD_ENDOBJS)
 
 ## Dependency fine-tuning
 ##
-BD_DEPS := $(addsuffix .d,$(addprefix %(objdir)/,$(notdir $(BD_CCFILES) $(BD_TARGETCCFILES)))) \
-           $(addsuffix .d,$(addprefix %(objdir)/,$(notdir $(BD_CXXFILES) $(BD_CXXXXFILES) $(BD_CXXCCFILES))))
+BD_DEPS := $(addprefix %(objdir)/,$(notdir $(BD_CCFILES:=.d) $(BD_TARGETCCFILES:=.d) $(BD_CXXFILES:=.d)))
+
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-pkg %(mmake)-pkg-quick" deps=$(BD_DEPS)
 
 $(BD_OBJS) $(BD_DEPS) : | %(objdir)
@@ -2084,8 +2077,8 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # - libname is the baselibname e.g. lib%(libname).a will be created
 # - files are the C source files to include in the lib. The list of files
 #   has to be given without the .c suffix
-# - cxxfiles are the C++ source files to include in the lib. The list of files
-#   has to be given without the .cpp suffix
+# - cxxfiles are C++ source files without suffix.
+#   NB: files will be matched in the order .cpp > .cxx > .cc
 # - asmfiles are the asm files to include in the lib. The list of files has to
 #   be given without the .s suffix
 # - objs additional object to link into the linklib. The objects have to be
@@ -2095,7 +2088,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # - cflags are the flags to compile the source (default $(CFLAGS))
 # - dflags are the flags use during makedepend (default equal to cflags)
 # - aflags are the flags use during assembling (default $(AFLAGS))
-# - compiler can be target, host or kernel. Defaults to target.
+# - libdir is the directory where the linklib will be placed (default $(AROS_LIB))
 %define build_linklib mmake=/A libname=/A files=$(BD_LIBNAME) cxxfiles= \
   asmfiles= objs= objdir=$(GENDIR)/$(CURDIR) libdir=$(AROS_LIB) \
   cflags=$(CFLAGS) dflags=$(BD_CFLAGS) \
@@ -2106,15 +2099,15 @@ BD_LIBNAME    := %(libname)
 BD_LINKLIB    := %(libdir)/lib%(libname).a
 
 BD_FILES      := %(files)
-BD_CXXFILES   := %(cxxfiles)
 BD_ASMFILES   := %(asmfiles)
+BD_CXXFILES := %(cxxfiles)
 
 BD_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
 BD_OBJS       := $(BD_ARCHOBJS) \
-                 $(addsuffix .o,$(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES) $(BD_CXXFILES) $(BD_ASMFILES)))) \
+                 $(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES:=.o) $(BD_CXXFILES:=.o) $(BD_ASMFILES:=.o))) \
                  %(objs)
 BD_DEPS       := $(patsubst %.o,%.d,$(BD_OBJS))
 
