@@ -1003,8 +1003,14 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
 %(module) : ERR := %(err)
 %(module) : OBJDIR := %(objdir)
 %(module) : LDFLAGS := $(TMP_LDFLAGS)
+ifeq (%(usehostlibs),)
+%(module) : LIBS := $(addprefix -l,$(LIB_NAMES))
+else
+# Warning: the -L/usr/lib here can result in modules
+# linking against host libs instead of AROS libs (e.g stdc++) !!
 %(module) : LIBS := $(addprefix -l,$(LIB_NAMES)) \
                     -L/usr/lib $(addprefix -l,%(usehostlibs))
+endif 
 %(module) : %(objs) %(endobj) $(TMP_DEPLIBS) $(USER_DEPLIBS)
 	%link_module_q cmd=%(cmd) err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR) ldflags="$(LDFLAGS) -nostdc"
 
