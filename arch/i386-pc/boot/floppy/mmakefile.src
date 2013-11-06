@@ -27,13 +27,10 @@ BOOT_TAR_EXECUTABLES := \
     C/EndCLI C/EndIf C/EndSkip C/Execute C/FailAt C/Fault C/Filenote System/Format \
     C/Get C/Getenv C/IPrefs C/If C/Info C/Join C/Lab C/List \
     C/MakeDir C/MakeLink C/Mount C/NewShell C/Path C/Prompt C/Protect C/Quit \
-    C/Reboot C/Relabel C/Rename C/Resident C/Run C/Search C/Set C/SetClock \
+    C/Reboot C/Relabel C/Rename C/Resident C/Run C/Set C/SetClock \
     C/SetDate C/Setenv C/Skip C/Stack C/Status C/Touch C/Type C/Unalias \
     C/Unset C/Unsetenv C/Why C/install-i386-pc \
     C/Partition \
-    Classes/DataTypes/ascii.datatype \
-    Classes/DataTypes/binary.datatype \
-    Classes/DataTypes/text.datatype \
     Classes/DataTypes/picture.datatype \
     Classes/DataTypes/ilbm.datatype \
     Classes/DataTypes/png.datatype \
