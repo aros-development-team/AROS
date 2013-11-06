@@ -43,7 +43,7 @@ KLIBS   := expansion
 KDEVS   := ata ahci timer
 KHIDDS  := parallel pci pcipc serial vesagfx vgah ata_pci i8042
 
-%make_package mmake=kernel-bsp-pc-x86_64 file=$(AROSDIR)/boot/aros-bsp-pc-x86_64 \
+%make_package mmake=kernel-bsp-pc-x86_64 file=$(AROSDIR)/boot/aros-bsp-pc-x86_64.pkg \
 	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS)
 
 # -------- x86_64-pc legacy drivers package --------

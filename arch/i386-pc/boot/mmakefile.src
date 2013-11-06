@@ -57,7 +57,7 @@ KLIBS       := expansion
 KDEVS       := ahci ata timer
 KHIDDS      := ata_pci i8042 vesagfx vgah pci pcipc serial parallel
 
-%make_package mmake=kernel-bsp-pc-i386 file=$(AROSDIR)/boot/aros-bsp-pc-i386 \
+%make_package mmake=kernel-bsp-pc-i386 file=$(AROSDIR)/boot/aros-bsp-pc-i386.pkg \
     devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS)
 
 #
