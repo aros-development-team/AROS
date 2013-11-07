@@ -353,12 +353,12 @@ BOOL PCIATA__Hidd_ATABus__SetXferMode(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
             type &= ~(1 << (5 + (msg->UnitNum & 1)));
         }
 
-        DINIT(bug("[ADMA] SetXferMode: Trying to apply new DMA (%lx) status: %02lx (unit %ld)\n", unit->au_DMAPort, type, unitNum));
+        DINIT(bug("[PCI-ATA] SetXferMode: Trying to apply new DMA (%lx) status: %02lx (unit %ld)\n", unit->au_DMAPort, type, unitNum));
 
         ata_outb(type, dma_Status + unit->au_DMAPort);
         if (type != (inb(dma_Status + unit->au_DMAPort) & 0x60))
         {
-            D(bug("[ADMA] SetXferMode: Failed to modify DMA state for this device\n"));
+            D(bug("[PCI-ATA] SetXferMode: Failed to modify DMA state for this device\n"));
             return FALSE;
         }
     }

@@ -2,7 +2,7 @@
     Copyright © 2004-2013, The AROS Development Team. All rights reserved
     $Id$
 
-    Desc: Generic ADMA controller driver
+    Desc: Generic PCI-DMA ATA controller driver
     Lang: English
 */
 
@@ -25,7 +25,7 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
     IPTR phy_mem;
     LONG items = 0;
 
-    D(bug("[ADMA] dma_Setup(addr %p, len %d, PRDEntry  @ %p for %s)\n", addr, len, array, read ? "READ" : "WRITE"));
+    D(bug("[PCI-ATA] dma_Setup(addr %p, len %d, PRDEntry  @ %p for %s)\n", addr, len, array, read ? "READ" : "WRITE"));
 
     /*
      * in future you may have to put this in prd construction procedure
@@ -35,7 +35,7 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
         tmp = len;
         phy_mem = (IPTR)CachePreDMA(addr, &tmp, flg);
 
-        D(bug("[ADMA] dma_Setup: Translating V:%p > P:%p (%ld bytes)\n", addr, phy_mem, tmp));
+        D(bug("[PCI-ATA] dma_Setup: Translating V:%p > P:%p (%ld bytes)\n", addr, phy_mem, tmp));
         /*
          * update all addresses for the next call
          */
@@ -53,12 +53,12 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
              */
             if (phy_mem > 0xffffffffull)
             {
-                D(bug("[ADMA] dma_Setup: ERROR: ATA DMA POINTERS BEYOND MAXIMUM ALLOWED ADDRESS!\n"));
+                D(bug("[PCI-ATA] dma_Setup: ERROR: ATA DMA POINTERS BEYOND MAXIMUM ALLOWED ADDRESS!\n"));
                 return 0;
             }
             if (items > PRD_MAX)
             {
-                D(bug("[ATA  ] dma_Setup: ERROR: ATA DMA PRD TABLE SIZE TOO LARGE\n"));
+                D(bug("[PCI-ATA] dma_Setup: ERROR: ATA DMA PRD TABLE SIZE TOO LARGE\n"));
                 return 0;
             }
 
@@ -72,7 +72,7 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
             /*
              * update PRD with address and remainder
              */
-            D(bug("[ADMA] dma_Setup: Inserting into PRD Table: %p / %d @ %p\n", phy_mem, rem, array));
+            D(bug("[PCI-ATA] dma_Setup: Inserting into PRD Table: %p / %d @ %p\n", phy_mem, rem, array));
             array->prde_Address = AROS_LONG2LE(phy_mem);
             array->prde_Length  = AROS_LONG2LE((rem & 0xffff));
             ++array;
@@ -91,7 +91,7 @@ static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
         --array;
         array->prde_Length |= AROS_LONG2LE(PRDE_EOT);
     }
-    D(bug("[ADMA] dma_Setup: PRD Table set - %u items in total.\n", items));
+    D(bug("[PCI-ATA] dma_Setup: PRD Table set - %u items in total.\n", items));
 
     /*
      * PRD table all set.

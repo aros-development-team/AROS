@@ -2,7 +2,7 @@
     Copyright © 2004-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ADMA hardware definitions
+    Desc: PCI-DMA hardware definitions
     Lang: English
 */
 

@@ -159,21 +159,21 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     /* First check subclass */
     if ((SubClass == PCI_SUBCLASS_SCSI) || (SubClass == PCI_SUBCLASS_SAS))
     {
-        D(bug("{PCI-ATA] Unsupported subclass %d\n", SubClass));
+        D(bug("[PCI-ATA] Unsupported subclass %d\n", SubClass));
         return;
     }
     
     owner = HIDD_PCIDevice_Obtain(Device, base->lib.lib_Node.ln_Name);
     if (owner)
     {
-        D(bug("{PCI-ATA] Already owned by %s\n", owner));
+        D(bug("[PCI-ATA] Already owned by %s\n", owner));
         return;
     }
 
     devRef = AllocMem(sizeof(struct PCIDeviceRef), MEMF_ANY);
     if (!devRef)
     {
-        D(bug("{PCI-ATA] Failed to allocate reference structure\n"));
+        D(bug("[PCI-ATA] Failed to allocate reference structure\n"));
         return;
     }    
 
