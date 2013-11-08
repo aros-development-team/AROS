@@ -638,7 +638,7 @@ static void HandleIO(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static const ULONG IMMEDIATE_COMMANDS = 0x803ff1e3; // 10000000001111111111000111100011
 
 /* See whether the command can be done quick */
-BOOL isSlow(ULONG comm)
+static BOOL isSlow(ULONG comm)
 {
     BOOL slow = TRUE;   /* Assume always slow command */
 
@@ -964,5 +964,3 @@ void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase)
         }
     }
 }
-
-/* vim: set ts=4 sw=4 :*/
