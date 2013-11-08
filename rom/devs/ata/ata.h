@@ -350,24 +350,16 @@ AROS_UFP3(BOOL, Hidd_ATABus_Tick,
           AROS_UFPA(OOP_Object *, obj, A2),
           AROS_UFPA(struct ataBase *, ATABase, A1));
 
-void ata_ResetBus(struct ata_Bus *);
 void ata_InitBus(struct ata_Bus *);
-
-BYTE atapi_SendPacket(struct ata_Unit *, APTR, APTR, LONG, BOOL*, BOOL);
 int atapi_TestUnitOK(struct ata_Unit *);
-
-BYTE atapi_Identify(struct ata_Unit*);
-BYTE ata_Identify(struct ata_Unit*);
-
-BYTE atapi_DirectSCSI(struct ata_Unit*, struct SCSICmd *);
-ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
-
 BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit);
 void ata_init_unit(struct ata_Bus *bus, struct ata_Unit *unit, UBYTE u);
-BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
 
+BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
 void BusTaskCode(struct ata_Bus *bus, struct ataBase *ATABase);
 void DaemonCode(struct ataBase *LIBBASE);
+
+BYTE SCSIEmu(struct ata_Unit*, struct SCSICmd*);
 
 #define ATAPI_SS_EJECT  0x02
 #define ATAPI_SS_LOAD   0x03
@@ -380,8 +372,6 @@ struct atapi_StartStop
     UBYTE   flags;
     UBYTE   pad2[7];
 };
-
-BYTE SCSIEmu(struct ata_Unit*, struct SCSICmd*);
 
 #endif // _ATA_H
 

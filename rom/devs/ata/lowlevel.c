@@ -19,7 +19,7 @@
 #define DUMP_MORE(a)
 #define DATA(a) D(a)
 #define DATAPI(a) D(a)
-#define DINIT(a) (a)
+#define DINIT(a) D(a)
 #else
 #define DIRQ(a)      do { } while (0)
 #define DIRQ_MORE(a) do { } while (0)
@@ -46,12 +46,7 @@
 #include "ata_bus.h"
 #include "timer.h"
 
-/*
-    Prototypes of static functions from lowlevel.c. I do not want to make them
-    non-static as I'd like to remove as much symbols from global table as possible.
-    Besides some of this functions could conflict with old ide.device or any other
-    device.
-*/
+static BYTE ata_Identify(struct ata_Unit *unit);
 static BYTE ata_ReadSector32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static BYTE ata_ReadSector64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
 static BYTE ata_ReadMultiple32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
@@ -64,14 +59,19 @@ static BYTE ata_WriteMultiple32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static BYTE ata_WriteMultiple64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
 static BYTE ata_WriteDMA32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static BYTE ata_WriteDMA64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+static void ata_ResetBus(struct ata_Bus *bus);
 static BYTE ata_Eject(struct ata_Unit *);
 static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout);
 
-static BYTE atapi_EndCmd(struct ata_Unit *unit);
-
+static BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data,
+    LONG datalen, BOOL *dma, BOOL write);
+static BYTE atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd);
 static BYTE atapi_Read(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static BYTE atapi_Write(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static BYTE atapi_Eject(struct ata_Unit *);
+static ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense,
+    ULONG senselen);
+static BYTE atapi_EndCmd(struct ata_Unit *unit);
 
 static void common_SetBestXferMode(struct ata_Unit* unit);
 
@@ -157,13 +157,15 @@ static inline BOOL ata_SelectUnit(struct ata_Unit* unit)
  * handle IRQ; still fast and efficient, supposed to verify if this irq is for us and take adequate steps
  * part of code moved here from ata.c to reduce containment
  */
-void ata_IRQSignalTask(struct ata_Bus *bus)
+static void ata_IRQSignalTask(struct ata_Bus *bus)
 {
     bus->ab_IntCnt++;
     Signal(bus->ab_Task, 1UL << bus->ab_SleepySignal);
 }
 
-void ata_IRQSetHandler(struct ata_Unit *unit, void (*handler)(struct ata_Unit*, UBYTE), APTR piomem, ULONG blklen, ULONG piolen)
+static void ata_IRQSetHandler(struct ata_Unit *unit,
+    void (*handler)(struct ata_Unit*, UBYTE), APTR piomem, ULONG blklen,
+    ULONG piolen)
 {
     if (NULL != handler)
         unit->au_cmd_error = 0;
@@ -174,7 +176,7 @@ void ata_IRQSetHandler(struct ata_Unit *unit, void (*handler)(struct ata_Unit*, 
     unit->au_Bus->ab_HandleIRQ = handler;
 }
 
-void ata_IRQNoData(struct ata_Unit *unit, UBYTE status)
+static void ata_IRQNoData(struct ata_Unit *unit, UBYTE status)
 {
     if (status & ATAF_BUSY)
         return;
@@ -187,7 +189,7 @@ void ata_IRQNoData(struct ata_Unit *unit, UBYTE status)
     ata_IRQSignalTask(unit->au_Bus);
 }
 
-void ata_IRQPIORead(struct ata_Unit *unit, UBYTE status)
+static void ata_IRQPIORead(struct ata_Unit *unit, UBYTE status)
 {
     if (status & ATAF_DATAREQ)
     {
@@ -210,7 +212,7 @@ void ata_IRQPIORead(struct ata_Unit *unit, UBYTE status)
     ata_IRQNoData(unit, status);
 }
 
-void ata_PIOWriteBlk(struct ata_Unit *unit)
+static void ata_PIOWriteBlk(struct ata_Unit *unit)
 {
     Unit_OutS(unit, unit->au_cmd_data, unit->au_cmd_length);
 
@@ -223,7 +225,7 @@ void ata_PIOWriteBlk(struct ata_Unit *unit)
         unit->au_cmd_length = unit->au_cmd_total;
 }
 
-void ata_IRQPIOWrite(struct ata_Unit *unit, UBYTE status)
+static void ata_IRQPIOWrite(struct ata_Unit *unit, UBYTE status)
 {
     if (status & ATAF_DATAREQ) {
 	DIRQ(bug("[ATA  ] IRQ: PIOWriteData - DRQ.\n"));
@@ -234,7 +236,7 @@ void ata_IRQPIOWrite(struct ata_Unit *unit, UBYTE status)
     ata_IRQNoData(unit, status);
 }
 
-void ata_IRQDMAReadWrite(struct ata_Unit *unit, UBYTE status)
+static void ata_IRQDMAReadWrite(struct ata_Unit *unit, UBYTE status)
 {
     struct ata_Bus *bus = unit->au_Bus;
     ULONG stat = DMA_GetResult(bus);
@@ -258,7 +260,7 @@ void ata_IRQDMAReadWrite(struct ata_Unit *unit, UBYTE status)
     }
 }
 
-void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
+static void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
 {
     struct ata_Bus *bus = unit->au_Bus;
     ULONG size = 0;
@@ -306,7 +308,7 @@ void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
         ata_IRQSetHandler(unit, &ata_IRQNoData, NULL, 0, 0);
 }
 
-void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
+static void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
 {
     struct ata_Bus *bus = unit->au_Bus;
     ULONG size = 0;
@@ -353,7 +355,8 @@ void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
 /*
  * wait for timeout or drive ready
  */
-BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
+static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
+    UBYTE *stout)
 {
     struct ata_Bus *bus = unit->au_Bus;
     UBYTE status;
@@ -684,7 +687,8 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
 /*
  * atapi packet iface
  */
-BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen, BOOL *dma, BOOL write)
+static BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data,
+    LONG datalen, BOOL *dma, BOOL write)
 {
     struct ata_Bus *bus = unit->au_Bus;
     *dma = *dma && (unit->au_Flags & AF_DMA) ? TRUE : FALSE;
@@ -816,7 +820,7 @@ BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datale
     return err;
 }
 
-BYTE atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
+static BYTE atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
 {
     APTR buffer = cmd->scsi_Data;
     ULONG length = cmd->scsi_Length;
@@ -1143,7 +1147,7 @@ static void common_SetBestXferMode(struct ata_Unit* unit)
     common_SetXferMode(unit, AB_XFER_PIO0);
 }
 
-void common_DetectXferModes(struct ata_Unit* unit)
+static void common_DetectXferModes(struct ata_Unit* unit)
 {
     int iter;
 
@@ -1244,7 +1248,7 @@ void common_DetectXferModes(struct ata_Unit* unit)
 #define SWAP_LE_LONG(x) (x) = AROS_LE2LONG((x))
 #define SWAP_LE_QUAD(x) (x) = AROS_LE2LONG((x) >> 32) | (((QUAD)(AROS_LE2LONG((x) & 0xffffffff))) << 32)
 
-BYTE ata_Identify(struct ata_Unit* unit)
+static BYTE ata_Identify(struct ata_Unit *unit)
 {
     BOOL atapi = unit->au_Bus->ab_Dev[unit->au_UnitNum & 1] & 0x80;
     ata_CommandBlock acb =
@@ -2005,7 +2009,8 @@ static BYTE atapi_Eject(struct ata_Unit *unit)
     return unit->au_DirectSCSI(unit, &sc);
 }
 
-ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen)
+static ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense,
+    ULONG senselen)
 {
     UBYTE cmd[] = {
        3, 0, 0, 0, senselen & 0xfe, 0
@@ -2033,7 +2038,8 @@ ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen)
     return ((sense[2]&0xf)<<16) | (sense[12]<<8) | (sense[13]);
 }
 
-ULONG ata_ReadSignature(struct ata_Bus *bus, int unit, BOOL *DiagExecuted)
+static ULONG ata_ReadSignature(struct ata_Bus *bus, int unit,
+    BOOL *DiagExecuted)
 {
     UBYTE tmp1, tmp2;
 
@@ -2110,7 +2116,7 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit, BOOL *DiagExecuted)
     }
 }
 
-void ata_ResetBus(struct ata_Bus *bus)
+static void ata_ResetBus(struct ata_Bus *bus)
 {
     struct ataBase *ATABase = bus->ab_Base;
     OOP_Object *obj = OOP_OBJECT(ATABase->busClass, bus);
@@ -2305,7 +2311,3 @@ static BYTE atapi_EndCmd(struct ata_Unit *unit)
        return ErrorMap[status >> 4];
     }
 }
-
-/*
- * vim: ts=4 et sw=4 fdm=marker fmr={,}
- */

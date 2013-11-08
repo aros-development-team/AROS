@@ -221,7 +221,7 @@ static int ata_init(struct ataBase *ATABase)
                        TASKTAG_NAME       , "ATA.daemon",
                        TASKTAG_STACKSIZE  , STACK_SIZE,
                        TASKTAG_TASKMSGPORT, &ATABase->DaemonPort,
-                       TASKTAG_PRI        , TASK_PRI - 1,	/* The daemon should have a little bit lower Pri as handler tasks */
+                       TASKTAG_PRI        , TASK_PRI - 1,	/* The daemon should have a little bit lower Pri than handler tasks */
                        TASKTAG_ARG1       , ATABase,
                        TAG_DONE))
     {
@@ -325,4 +325,3 @@ ADD2INITLIB(ata_init, 0)
 ADD2EXPUNGELIB(ata_expunge, 0)
 ADD2OPENDEV(open, 0)
 ADD2CLOSEDEV(close, 0)
-/* vim: set ts=8 sts=4 et : */

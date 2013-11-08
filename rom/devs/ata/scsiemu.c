@@ -22,11 +22,13 @@ static void wl(UBYTE *p, ULONG v)
     p[2] = v >> 8;
     p[3] = v;
 }
+
 static void ww(UBYTE *p, UWORD v)
 {
     p[0] = v >> 8;
     p[1] = v;
 }
+
 static ULONG rl(UBYTE *p)
 {
     return (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | (p[3]);
@@ -36,6 +38,7 @@ static UBYTE scsi_read32(struct ata_Unit *unit, APTR data, ULONG offset, ULONG l
 {
      return unit->au_Read32(unit, offset, len, data, outlen);
 }
+
 static UBYTE scsi_write32(struct ata_Unit *unit, APTR data, ULONG offset, ULONG len, ULONG *outlen)
 {
      return unit->au_Write32(unit, offset, len, data, outlen);
