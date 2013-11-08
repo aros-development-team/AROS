@@ -5,13 +5,15 @@
  *
  * ----------------------------------------------------------------------
  * This code is (C) Copyright 1993,1994 by Frank Munkert.
- *              (C) Copyright 2002-2011 The AROS Development Team
+ *              (C) Copyright 2002-2013 The AROS Development Team
  * All rights reserved.
  * This software may be freely distributed and redistributed for
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
  *
+ * 08-Nov-13 neil      - Only delay 2 seconds upon exiting if debugging is
+ *                       enabled.
  * 18-Dec-11 twilen    - Added media change interrupt support (SCANINTERVAL=-1).
  * 11-Aug-10 sonic     - Fixed for 64-bit compatibility
  * 04-Jun-10 neil      - No longer removes device node and seglist when
@@ -192,7 +194,7 @@ ULONG __abox__ = 1;
 #endif
 
 #ifndef __AROS__
-char __version__[] = "\0$VER: CDVDFS 1.7 (28.12.2012)";
+char __version__[] = "\0$VER: CDVDFS 1.8 (8.11.2013)";
 
 LONG SAVEDS Main(void)
 {
@@ -372,7 +374,7 @@ ULONG signals;
     /*
      * Delay returning a successful ACTION_DIE packet until now, to avoid
      * inconveniences such as having the trackdisk device disappear before
-     * we close it.
+     * we close it (e.g. when using a USB drive).
      */
     returnpacket(global, global->g_death_packet);
 
@@ -1086,7 +1088,7 @@ openbreak:
 	if (notdone)
 		return notdone;
    BUG(dbprintf(global, "Can we remove ourselves? ");)
-   Delay(100);	    /*	I wanna even see the debug message! */
+   BUG(Delay(100);)	    /*	I wanna even see the debug message! */
    Forbid();
 	if (
 			global->g_cd &&
