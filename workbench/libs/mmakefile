@@ -47,7 +47,8 @@
 #MM     workbench-libs-jpeg \
 #MM     workbench-libs-png \
 #MM     workbench-libs-lcms2 \
-#MM     workbench-libs-gallium
+#MM     workbench-libs-gallium \
+#MM     workbench-libs-vega
 
 #MM- includes-generate : \
 #MM     workbench-libs-amigaguide-includes \
@@ -89,4 +90,5 @@
 #MM     workbench-libs-jpeg-includes \
 #MM     workbench-libs-png-includes \
 #MM     workbench-libs-lcms2-includes \
-#MM     workbench-libs-gallium-includes
+#MM     workbench-libs-gallium-includes \
+#MM     workbench-libs-vega-includes
