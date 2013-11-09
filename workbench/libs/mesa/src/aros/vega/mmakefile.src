@@ -5,9 +5,6 @@ include $(TOP)/config/make.cfg
 # Vega                                                                         #
 ################################################################################
 
-#MM- workbench-libs-complete : workbench-libs-vega-$(AROS_TARGET_TOOLCHAIN)
-#MM- workbench-libs-vega-yes : workbench-libs-vega
-
 #MM- workbench-libs-vega : workbench-libs-vega-generated includes linklibs-galliumauxiliary
 
 SHARED_LIB_SOURCES = \
@@ -78,6 +75,8 @@ $(GENDIR)/$(CURDIR)/api_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
 $(GENDIR)/$(CURDIR)/vgapi_tmp.h : $(SRCDIR)/$(CURDIR)/../../mapi/vgapi/vgapi.csv
 	@$(MKDIR) $(GENDIR)/$(CURDIR)
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/../../mapi/mapi/mapi_abi.py $< --printer vgapi --mode lib > $@
+
+#MM- core-linklibs : linklibs-vega
 
 %build_module mmake=workbench-libs-vega \
     modname=vega modtype=library linklibname=OpenVG \
