@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Find a CLI process by number
@@ -36,8 +36,7 @@
         Pointer to the process if found, NULL otherwise.
 
     NOTES
-
-    The process calling this function doesn't need to do any locking.
+        The process calling this function doesn't need to do any locking.
 
     EXAMPLE
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -26,22 +26,20 @@
         struct DosLibrary *, DOSBase, 42, Dos)
 
 /*  FUNCTION
-
-    Wait for a packet to arrive at your process' pr_MsgPort. It will call
-    pr_PktWait if such a function is installed.
+        Wait for a packet to arrive at your process's pr_MsgPort. It will call
+        pr_PktWait if such a function is installed.
 
     INPUTS
+        None.
 
     RESULT
-
-    The packet we received.
+        packet - The packet we received.
 
     NOTES
+        The packet will be released from the port.
 
-    The packet will be released from the port.
-
-    This function should NOT be used. It's there only for AmigaOS
-    compatibility.
+        This function should NOT be used. It's there only for AmigaOS
+        compatibility.
 
     EXAMPLE
 

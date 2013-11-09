@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DosGetString() - Support for localized strings.
@@ -26,7 +26,7 @@
         the number stringNum. 
 
     INPUTS
-        stringNum   -   The number of the string you want.
+        stringNum - The number of the string you want.
 
     RESULT
         A pointer to a string, or NULL if no string could be found with

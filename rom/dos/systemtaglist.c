@@ -34,63 +34,61 @@
         struct DosLibrary *, DOSBase, 101, Dos)
 
 /*  FUNCTION
+        Execute a command via a shell. As defaults, the process will use the
+        current Input() and Output(), and the current directory as well as the
+        path will be inherited from your process. If no path is specified, this
+        path will be used to find the command.
 
-    Execute a command via a shell. As defaults, the process will use the
-    current Input() and Output(), and the current directory as well as the
-    path will be inherited from your process. If no path is specified, this
-    path will be used to find the command.
         Normally, the boot shell is used but other shells may be specified
-    via tags. The tags are passed through to CreateNewProc() except those
-    that conflict with SystemTagList(). Currently, these are
+        via tags. The tags are passed through to CreateNewProc() except those
+        that conflict with SystemTagList(). Currently, these are
 
-        NP_Seglist
-        NP_FreeSeglist
-        NP_Entry
-        NP_Input
-        NP_Error
-        NP_Output
-        NP_CloseInput
-        NP_CloseOutput
-        NP_CloseError
-        NP_HomeDir
-        NP_Cli
-        NP_Arguments
-        NP_Synchrounous
-        NP_UserData
-
+            NP_Seglist
+            NP_FreeSeglist
+            NP_Entry
+            NP_Input
+            NP_Error
+            NP_Output
+            NP_CloseInput
+            NP_CloseOutput
+            NP_CloseError
+            NP_HomeDir
+            NP_Cli
+            NP_Arguments
+            NP_Synchrounous
+            NP_UserData
 
     INPUTS
-
-    command  --  program and arguments as a string
-    tags     --  see <dos/dostags.h>. Note that both SystemTagList() tags and
-                 tags for CreateNewProc() may be passed.
+        command - program and arguments as a string
+        tags    - see <dos/dostags.h>. Note that both SystemTagList() tags and
+                  tags for CreateNewProc() may be passed.
 
     RESULT
-
-    The return code of the command executed or -1 if the command could
-    not run because the shell couldn't be created. If the command is not
-    found, the shell will return an error code, usually RETURN_ERROR.
+        The return code of the command executed or -1 if the command could
+        not run because the shell couldn't be created. If the command is not
+        found, the shell will return an error code, usually RETURN_ERROR.
 
     NOTES
+        You must close the input and output filehandles yourself (if needed)
+        after System() returns if they were specified via SYS_Input or
+        SYS_Output (also, see below).
 
-    You must close the input and output filehandles yourself (if needed)
-    after System() returns if they were specified via SYS_Input or
-    SYS_Output (also, see below).
         You may NOT use the same filehandle for both SYS_Input and SYS_Output.
-    If you want them to be the same CON: window, set SYS_Input to a filehandle
-    on the CON: window and set SYS_Output to NULL. Then the shell will
-    automatically set the output by opening CONSOLE: on that handler.
+        If you want them to be the same CON: window, set SYS_Input to a
+        filehandle on the CON: window and set SYS_Output to NULL. Then the
+        shell will automatically set the output by opening CONSOLE: on that
+        handler.
+
         If you specified SYS_Asynch, both the input and the output filehandles
-    will be closed when the command is finished (even if this was your Input()
-    and Output().
+        will be closed when the command is finished (even if this was your
+        Input() and Output()).
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-
-    Execute(), CreateNewProc(), Input(), Output(), <dos/dostags.h>
+        Execute(), CreateNewProc(), Input(), Output(), <dos/dostags.h>
 
     INTERNALS
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Set the console handler for the current process.
@@ -29,14 +29,12 @@
         old handler.
 
     INPUTS
-        handler         - The new console handler for the process.
+        handler - The new console handler for the process.
 
     RESULT
         The address of the old handler.
 
     NOTES
-        The use of Task in the name is because historically filesystem
-        handlers were tasks (instead of Devices).
 
     EXAMPLE
 

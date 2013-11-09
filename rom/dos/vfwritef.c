@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -30,33 +30,31 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus,
         struct DosLibrary *, DOSBase, 58, Dos)
 
 /*  FUNCTION
+        Write a formatted string (with supplied values) to a specified file.
+        The string may be of any length and the routine is buffered.
+        The following format commands may be used (preceded by a '%') a la
+        printf().
 
-    Write a formatted string (with supplied values) to a specified file.
-    The string may be of any length and the routine is buffered.
-    The following format commands may be used (preceded by a '%') a la printf.
-
-        S   --  string (C style)
-        Tx  --  writes a left justified string padding it to be (at least)
-                x bytes long
-        C   --  character
-        Ox  --  octal number; maximum width x characters
-        Xx  --  hexadecimal number; maximum width x characters
-        Ix  --  decimal number; maximum width x chararcters
-        N   --  decimal number; any length
-        Ux  --  unsigned decimal number; maximum width x characters
-        $   --  ignore parameter
+            S  - string (C style)
+            Tx - writes a left justified string padding it to be (at least)
+                 x bytes long
+            C  - character
+            Ox - octal number; maximum width x characters
+            Xx - hexadecimal number; maximum width x characters
+            Ix - decimal number; maximum width x chararcters
+            N  - decimal number; any length
+            Ux - unsigned decimal number; maximum width x characters
+            $  - ignore parameter
 
         Note: 'x' above is the character value - '0'.
 
     INPUTS
-
-    fh        --  file to write the output to
-    fmt       --  format string
-    argarray  --  pointer to an array of formatting values
+        fh       - file to write the output to
+        fmt      - format string
+        argarray - pointer to an array of formatting values
 
     RESULT
-
-    The number of bytes written or -1 if there was an error.
+        The number of bytes written or -1 if there was an error.
 
     NOTES
 
@@ -65,8 +63,7 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus,
     BUGS
 
     SEE ALSO
-
-    VFPrintf(), FPutC()
+        VFPrintf(), FPutC()
 
     INTERNALS
 

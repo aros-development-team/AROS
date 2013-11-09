@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -30,7 +30,7 @@
         Free a lock created with Lock().
 
     INPUTS
-        lock -- The lock to free
+        lock - The lock to free
 
     RESULT
 

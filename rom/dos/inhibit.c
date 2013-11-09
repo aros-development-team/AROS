@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <proto/exec.h>
@@ -21,23 +21,19 @@
         struct DosLibrary *, DOSBase, 121, Dos)
 
 /*  FUNCTION
-
-    Stop a filesystem from being used.
+        Stop a filesystem from being used.
 
     INPUTS
-
-    name   --  Name of the device to inhibit (including a ':')
-    onoff  --  Specify whether to inhibit (DOSTRUE) or uninhibit (DOSFALSE)
-               the device
+        name  - Name of the device to inhibit (including a ':')
+        onoff - Specify whether to inhibit (DOSTRUE) or uninhibit (DOSFALSE)
+                the device
 
     RESULT
-
-    A boolean telling whether the action was carried out.
+        A boolean telling whether the action was carried out.
 
     NOTES
-
-    After uninhibiting a device anything might have happened like the disk
-    in the drive was removed.
+        After uninhibiting a device anything might have happened like the disk
+        in the drive was removed.
 
     EXAMPLE
 

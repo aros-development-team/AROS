@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,18 +27,15 @@
         struct DosLibrary *, DOSBase, 162, Dos)
 
 /*  FUNCTION
-
-    Similar to MatchPattern(), only case insensitive (see there for
-    more information). For use with ParsePatternNoCase().
+        Similar to MatchPattern(), only case insensitive (see there for
+        more information). For use with ParsePatternNoCase().
 
     INPUTS
-
-    pat  --  Pattern as returned by ParsePatternNoCase()
-    str  --  String to match against the pattern 'pat'
+        pat - Pattern as returned by ParsePatternNoCase()
+        str - String to match against the pattern 'pat'
 
     RESULT
-
-    Boolean telling whether the match was successful or not.
+        Boolean telling whether the match was successful or not.
 
     NOTES
 
@@ -47,8 +44,7 @@
     BUGS
 
     SEE ALSO
-
-    MatchPattern(), ParsePatternNoCase()
+        MatchPattern(), ParsePatternNoCase()
 
     INTERNALS
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: dos.library function ExamineFH().
@@ -41,7 +41,8 @@
     SEE ALSO
 
     INTERNALS
-*/
+
+*****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 

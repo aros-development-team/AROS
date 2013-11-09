@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -25,32 +25,28 @@
         struct DosLibrary *, DOSBase, 19, Dos)
 
 /*  FUNCTION
-
-    Get information about a volume in the system.
+        Get information about a volume in the system.
 
     INPUTS
-
-    lock            --  a lock on any file on the volume for which information
-                        should be supplied, or 0
-    parameterBlock  --  pointer to an InfoData structure
+        lock           - a lock on any file on the volume for which information
+                         should be supplied, or 0
+        parameterBlock - pointer to an InfoData structure
 
     RESULT
-
-    Boolean indicating success or failure. If TRUE (success) the
-    'parameterBlock' is filled with information on the volume.
+        Boolean indicating success or failure. If TRUE (success) the
+        'parameterBlock' is filled with information on the volume.
 
     NOTES
-    Supplying a lock of 0 will return InfoData from the task
-    that is returned from GetFileSysTask().
-    (Usually the boot volumes' filesystem "SYS:")
+        Supplying a lock of 0 will return InfoData from the task that is
+        returned from GetFileSysTask() (usually the boot volume's filesystem
+        "SYS:").
         
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-
-    <dos/dos.h>
+        <dos/dos.h>
 
     INTERNALS
 

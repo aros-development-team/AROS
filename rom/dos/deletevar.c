@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DeleteVar() - Deletes a local or environmental variable.
@@ -33,17 +33,16 @@
         type LV_VAR.
 
     INPUTS
-        name    -   the name of the variable to delete. Note that variable
-                    names follow the same syntax and semantics as filesystem
-                    names.
+        name  - the name of the variable to delete. Note that variable
+                names follow the same syntax and semantics as filesystem
+                names.
 
-        flags   -   A combination of the type of variable (low 8 bits), and
-                    flags to control the behaviour of this routine.
-                    Currently defined flags:
+        flags - A combination of the type of variable (low 8 bits), and
+                flags to control the behaviour of this routine.
+                Currently defined flags:
 
-                    GVF_LOCAL_ONLY  - delete a local variable.
-                    GVF_GLOBAL_ONLY - delete a global environmental variable.
-
+                GVF_LOCAL_ONLY  - delete a local variable.
+                GVF_GLOBAL_ONLY - delete a global environmental variable.
 
     RESULT
         If non-zero, the variable was deleted successfully,
@@ -61,7 +60,7 @@
     SEE ALSO
 
     INTERNALS
-        XXX: Find out whether GVF_SAVE_VAR does actually effect this function.
+        XXX: Find out whether GVF_SAVE_VAR does actually affect this function.
 
 *****************************************************************************/
 {

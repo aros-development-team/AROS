@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -30,18 +30,17 @@
         struct DosLibrary *, DOSBase, 40, Dos)
 
 /*  FUNCTION
-
-    Send a dos packet to a filesystem and wait for the action to complete.
+        Send a dos packet to a filesystem and wait for the action to complete.
 
     INPUTS
 
     RESULT
 
     NOTES
+        Callable from a task.
 
-    Callable from a task.
-
-    This function should NOT be used; it's only here for AmigaOS compatibility.
+        This function should NOT be used; it's only here for AmigaOS
+        compatibility.
 
     EXAMPLE
 

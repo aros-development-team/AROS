@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Convert a DateTime struct into strings.
@@ -107,7 +107,6 @@ const char *const Dos_SubstDateTable[]=
     NOTES
 
     EXAMPLE
-        See below.
 
     BUGS
 

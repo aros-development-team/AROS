@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetDeviceProc() - Find the filesystem for a path.
@@ -41,8 +41,8 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         as NULL.
 
     INPUTS
-        name            - Name of the object to find.
-        dp              - Previous result of GetDeviceProc() or NULL.
+        name - Name of the object to find.
+        dp   - Previous result of GetDeviceProc() or NULL.
 
     RESULT
         A pointer to a DevProc structure containing the information

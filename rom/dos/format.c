@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Format a device.
@@ -31,9 +31,9 @@
         The device should already have been formatted.
 
     INPUTS
-        devicename      - Name of the device to format.
-        volumename      - The name you wish the volume to be called.
-        dostype         - The DOS type you wish on the disk.
+        devicename - Name of the device to format.
+        volumename - The name you wish the volume to be called.
+        dostype    - The DOS type you wish on the disk.
 
     RESULT
         != 0 if the format was successful, 0 otherwise.

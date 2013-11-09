@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Set the current mode of a console device.
@@ -26,10 +26,10 @@
         RAW: mode and CON: mode.
 
     INPUTS
-        fh      -   The filehandle describing the console.
-        mode    -   The new mode of the console:
-                        1   - RAW: mode
-                        0   - CON: mode
+        fh   - The filehandle describing the console.
+        mode - The new mode of the console:
+                   1 - RAW: mode
+                   0 - CON: mode
 
     RESULT
         This function will return whether it succeeded:

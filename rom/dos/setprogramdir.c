@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Set the home directory for a program (PROGDIR:)
@@ -30,8 +30,8 @@
         to easily access files which are supplied with the program.
 
     INPUTS
-        lock    -   The lock to set as the new program directory. NULL
-                    is a valid value.
+        lock - The lock to set as the new program directory. NULL
+               is a valid value.
 
     RESULT
         This function will return the old program directory lock.

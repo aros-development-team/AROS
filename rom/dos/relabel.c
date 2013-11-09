@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -24,17 +24,14 @@
         struct DosLibrary *, DOSBase, 120, Dos)
 
 /*  FUNCTION
-
-    Change names of a volume.
+        Change names of a volume.
 
     INPUTS
-
-    drive    --  The name of the device to rename (including the ':').
-    newname  --  The new name for the device (without the ':').
+        drive   - The name of the device to rename (including the ':').
+        newname - The new name for the device (without the ':').
 
     RESULT
-
-    A boolean telling whether the name change was successful or not.
+        A boolean telling whether the name change was successful or not.
 
     NOTES
 

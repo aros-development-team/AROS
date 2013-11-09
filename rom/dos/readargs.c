@@ -1,6 +1,5 @@
-
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -162,10 +161,10 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
                       template.
                    /F Eats the rest of the line even if there are option
                       keywords in it.
-        array         - Array to be filled with the result values. The array must
+        array    - Array to be filled with the result values. The array must
                    be intialized to the default values before calling
                    ReadArgs().
-        rdargs         - An optional RDArgs structure determining the type of
+        rdargs   - An optional RDArgs structure determining the type of
                    input to process.
 
     RESULT

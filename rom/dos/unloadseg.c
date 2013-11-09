@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -46,6 +46,7 @@ static AROS_UFH3(void, FreeFunc,
     RESULT
         success = returns whether everything went ok. Returns FALSE if
                   seglist was NULL.
+
     NOTES
 
     EXAMPLE

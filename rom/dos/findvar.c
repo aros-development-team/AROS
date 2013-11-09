@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Find a local variable.
@@ -32,12 +32,12 @@
         Finds a local variable structure.
 
     INPUTS
-        name   --   the name of the variable you wish to find. Note that
-                    variable names follow the same syntax and semantics
-                    as filesystem names.
-        type   --   The type of variable to be found (see <dos/var.h>).
-                    Actually, only the lower 8 bits of "type" are used
-                    by FindVar().
+        name - the name of the variable you wish to find. Note that
+               variable names follow the same syntax and semantics
+               as filesystem names.
+        type - The type of variable to be found (see <dos/var.h>).
+               Actually, only the lower 8 bits of "type" are used
+               by FindVar().
 
     RESULT
         A pointer to the LocalVar structure for that variable if it was

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Convert a string into a long
@@ -32,10 +32,10 @@
         converted or -1 if no valid number could be found.
 
     NOTES
-        The routine doesn't check if the number if too large.
+        The routine doesn't check if the number is too large.
+        Examples of valid number: 5, -1, +3, +0007, etc.
 
     EXAMPLE
-        // Valid number are: 5, -1, +3, +0007, etc.
 
     BUGS
 

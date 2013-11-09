@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new directory.
@@ -33,7 +33,7 @@
         exclusive lock on the new diretory is returned.
 
     INPUTS
-        name  -- NUL terminated name.
+        name - NUL terminated name.
 
     RESULT
         Exclusive lock to the new directory or 0 if it couldn't be created.

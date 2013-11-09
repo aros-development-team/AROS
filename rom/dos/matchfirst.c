@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,7 +27,6 @@
         struct DosLibrary *, DOSBase, 137, Dos)
 
 /*  FUNCTION
-
         Searches for the first file or directory that matches a given pattern.
         MatchFirst() initializes the AnchorPath structure for you but you
         must initilize the following fields: ap_Flags, ap_Strlen, ap_BreakBits
@@ -39,9 +38,9 @@
         patterns, see ParsePattern().
 
     INPUTS
-        pat  - pattern to search for
-        AP   - pointer to (initilized) AnchorPath structure
-        
+        pat - pattern to search for
+        AP  - pointer to (initilized) AnchorPath structure
+
     RESULT
         0     = success
         other = DOS error code

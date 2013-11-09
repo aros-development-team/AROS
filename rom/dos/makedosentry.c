@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Creates an entry for the dos list.
@@ -31,11 +31,10 @@
         be a device, a volume or an assign node.
 
     INPUTS
-        name  --  pointer to name
-        type  --  type of list entry to create
+        name - pointer to name
+        type - type of list entry to create
 
     RESULT
-
         The new device entry, or NULL if it couldn't be created.
 
     NOTES
@@ -45,13 +44,11 @@
     BUGS
 
     SEE ALSO
-
-    AddDosEntry(), RemDosEntry(), FindDosEntry(), LockDosList(),
-    NextDosEntry(), FreeDosEntry()
+        AddDosEntry(), RemDosEntry(), FindDosEntry(), LockDosList(),
+        NextDosEntry(), FreeDosEntry()
 
     INTERNALS
-
-    This call should be replaced by a value for AllocDosObject().
+        This call should be replaced by a value for AllocDosObject().
 
 *****************************************************************************/
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -23,33 +23,28 @@
         struct DosLibrary *, DOSBase, 46, Dos)
 
 /*  FUNCTION
-
-    Lock several records at the same time. The timeout specified is applied
-    to each lock to attempt. The array of RecordLock:s is terminated with
-    an entry where rec_FH is equal to NULL.
+        Lock several records at the same time. The timeout specified is applied
+        to each lock to attempt. The array of RecordLock:s is terminated with
+        an entry where rec_FH is equal to NULL.
 
     INPUTS
-
-    recArray  --  array of records to lock
-    timeout   --  maximum number of ticks to wait for a lock to be ready
+        recArray - array of records to lock
+        timeout  - maximum number of ticks to wait for a lock to be ready
 
     RESULT
-
-    Success/failure indication. In case of a success, all the record locks
-    are locked. In case of failure, no record locks are locked.
+        Success/failure indication. In case of a success, all the record locks
+        are locked. In case of failure, no record locks are locked.
 
     NOTES
-
-    A set of records should always be locked in the same order so as to
-    reduce possiblities of deadlock.
+        A set of records should always be locked in the same order so as to
+        reduce possiblities of deadlock.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-
-    UnLockRecords()
+        UnLockRecords()
 
     INTERNALS
 

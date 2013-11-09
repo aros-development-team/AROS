@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: dos.library function Fault()
@@ -41,14 +41,14 @@
         followed by the error number will be added to the string.
 
     INPUTS
-        code    -   The error code.
-        header  -   The string to prepend to the buffer before the error
-                    text. This may be NULL in which case nothing is prepended.
-        buffer  -   The destination buffer.
-        len     -   Length of the buffer.
+        code   - The error code.
+        header - The string to prepend to the buffer before the error
+                 text. This may be NULL in which case nothing is prepended.
+        buffer - The destination buffer.
+        len    - Length of the buffer.
 
     RESULT
-        Number of characters placed in the buffer, may be 0.
+        Number of characters placed in the buffer. May be 0.
 
     NOTES
 

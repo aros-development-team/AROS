@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -25,29 +25,25 @@
         struct DosLibrary *, DOSBase, 47, Dos)
 
 /*  FUNCTION
-
-    Release a lock made with LockRecord().
+        Release a lock made with LockRecord().
 
     INPUTS
-
-    fh      --  filehandle the lock was made on
-    offset  --  starting position of the lock
-    length  --  length of the record in bytes
+        fh     - filehandle the lock was made on
+        offset - starting position of the lock
+        length - length of the record in bytes
 
     RESULT
 
     NOTES
-
-    The length and offset must match the corresponding LockRecord()
-    call.
+        The length and offset must match the corresponding LockRecord()
+        call.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-
-    LockRecord(), UnLockRecords()
+        LockRecord(), UnLockRecords()
 
     INTERNALS
 

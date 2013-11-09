@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a segment from the system list.
@@ -32,7 +32,7 @@
         removed (although they can be replaced).
 
     INPUTS
-        seg             - Segment to remove.
+        seg - Segment to remove.
 
     RESULT
         != 0    Segment was removed

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Examine a directory.
@@ -31,83 +31,76 @@
         struct DosLibrary *, DOSBase, 72, Dos)
 
 /*  FUNCTION
-
-    Examine an entire directory.
+        Examine an entire directory.
 
     INPUTS
-
-    lock     --  lock on the directory to be examined
-    buffer   --  buffer for the data that is returned (must be aligned)
-                 which is filled with (partial) ExAllData structures
-                 (see NOTES)
-    size     --  size of 'buffer' in bytes
-    data     --  type of the data to be returned
-    control  --  a control structure allocated by AllocDosObject()
+        lock    - lock on the directory to be examined
+        buffer  - buffer for the data that is returned (must be aligned)
+                  which is filled with (partial) ExAllData structures
+                  (see NOTES)
+        size    - size of 'buffer' in bytes
+        data    - type of the data to be returned
+        control - a control structure allocated by AllocDosObject()
 
     RESULT
-
-    An indicator of if ExAll() is done. If FALSE is returned, either ExAll()
-    has completed in which case IoErr() is ERROR_NO_MORE_ENTRIES or an
-    error occurred. If a non-zero value is returned ExAll() must be called
-    again until it returns FALSE.
+        An indicator of whether ExAll() is finished. If FALSE is returned,
+        either ExAll() has completed, in which case IoErr() is
+        ERROR_NO_MORE_ENTRIES, or an error occurred. If a non-zero value is
+        returned, ExAll() must be called again until it returns FALSE.
 
     NOTES
-    
-    The following information is essential information on the ExAllData
-    structure:
+        The following information is essential information in the ExAllData
+        structure:
 
-    ed_Type:
+        ed_Type:
 
-    ED_NAME        --  filename
-    ED_TYPE        --  type
-    ED_SIZE        --  size in bytes
-    ED_PROTECTION  --  protection bits
-    ED_DATE        --  date information (3 longwords)
-    ED_COMMENT     --  file comment (NULL if no comment exists)
-    ED_OWNER       --  owner user and group id
+            ED_NAME       - filename
+            ED_TYPE       - type
+            ED_SIZE       - size in bytes
+            ED_PROTECTION - protection bits
+            ED_DATE       - date information (3 longwords)
+            ED_COMMENT    - file comment (NULL if no comment exists)
+            ED_OWNER      - owner user and group id
 
-    This is an incremental list meaning that if you specify ED_OWNER you
-    will get ALL attributes!
+            This is an incremental list, meaning that if you specify ED_OWNER
+            you will get ALL attributes!
 
+            Filesystems that support ExAll() must support at least up to
+            ED_COMMENT. If a filesystem doesn't support a particular type,
+            ERROR_BAD_NUMBER must be returned.
 
-    Filesystems that support ExAll() must support at least up to ED_COMMENT.
-    If a filesystem doesn't support a particular type, ERROR_BAD_NUMBER must
-    be returned.
+        ed_Next: pointer to the next entry in the buffer. The last entry
+                 has a NULL value for ed_Next.
 
-    ed_Next : pointer to the next entry in the buffer. The last entry
-               has a NULL value for ed_Next.
+        The control structure have the following fields:
 
+        eac_Entries: the number of entries in the buffer after a call to
+                     ExAll(). Make sure that your code handles the case when
+                     eac_Entries is 0 and ExAll() returns TRUE.
 
-    The control structure have the following fields.
+        eac_LastKey: must be initialized to 0 before calling ExAll() for the
+                     first time.
 
-    eac_Entries : the number of entries in the buffer after a call to ExAll().
-                  Make sure that your code handles the case when eac_Entries
-                  is 0 and ExAll() returns TRUE.
+        eac_MatchString: if NULL then information on all files will be returned.
+                         If non-NULL it's interpreted as a pointer to a string
+                         used for pattern matching which files to return
+                         information on. This string must have been parsed by
+                         ParsePatternNoCase()!
 
-    eac_LastKey : must be initialized to 0 before calling ExAll() for the
-                  first time.
+        eac_MatchFunc: pointer to a hook that will be called to decide if an
+                       entry should be included in the buffer. If NULL, no
+                       matching function will be called. The hook is called as
+                       follows:
 
-    eac_MatchString : if NULL then information on all files will be returned.
-                      If non-NULL it's interpreted as a pointer to a string
-                      used for pattern matching which files to return
-                      information on. This string must have been parsed by
-                      ParsePatternNoCase()!
-
-    eac_MatchFunc : pointer to a hook that will be called to decide if an
-                    entry should be included in the buffer. If NULL, no
-                    matching function will be called. The hook is called as
-                    follows
-
-                        BOOL = MatchFunc(hook, data, typeptr)
+                            BOOL = MatchFunc(hook, data, typeptr)
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-
-    Examine(), ExNext(), MatchPatternNoCase(), ParsePatternNoCase(),
-    AllocDosObject(), ExAllEnd()
+        Examine(), ExNext(), MatchPatternNoCase(), ParsePatternNoCase(),
+        AllocDosObject(), ExAllEnd()
 
     INTERNALS
 

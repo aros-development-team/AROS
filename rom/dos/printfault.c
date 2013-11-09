@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -31,9 +31,9 @@
         the error code given.
 
     INPUTS
-        code    --  Error code.
-        header  --  Text to print before the error message. This may be NULL
-                    in which case only the error message is printed.
+        code   - Error code.
+        header - Text to print before the error message. This may be NULL
+                 in which case only the error message is printed.
 
     RESULT
         Boolean success indicator.

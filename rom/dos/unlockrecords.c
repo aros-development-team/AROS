@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -22,26 +22,23 @@
         struct DosLibrary *, DOSBase, 48, Dos)
 
 /*  FUNCTION
+        Release an array of record locks obtained with LockRecords().
 
-    Release an array of record locks obtained with LockRecords().
-    
     INPUTS
-
-    recArray  --  array of record locks (previously locked with LockRecords())
+        recArray - array of record locks (previously locked with LockRecords())
 
     RESULT
+        success - Boolean success indicator.
 
     NOTES
-
-    A array of records may not be modified when records are locked.
+        An array of records may not be modified when records are locked.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-
-    LockRecords()
+        LockRecords()
 
     INTERNALS
 

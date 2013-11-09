@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,7 +27,7 @@
         Sets the dos error code for the current process.
 
     INPUTS
-        result -- new error code
+        result - new error code
 
     RESULT
         Old error code.

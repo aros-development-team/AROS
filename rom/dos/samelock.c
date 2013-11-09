@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -25,7 +25,7 @@
         Compares two locks.
 
     INPUTS
-        lock1, lock2 - locks
+        lock1, lock2 - locks to compare
 
     RESULT
         LOCK_SAME        - locks points to the same object

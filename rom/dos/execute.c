@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Execute a CLI command
@@ -28,28 +28,26 @@
         struct DosLibrary *, DOSBase, 37, Dos)
 
 /*  FUNCTION
+        Execute a CLI command specified in 'string'. This string may contain
+        features you may use on the shell commandline like redirection using >,
+        < or >>. Execute() doesn't return until the command(s) that should be
+        executed are finished.
 
-    Execute a CLI command specified in 'string'. This string may contain
-    features you may use on the shell commandline like redirection using >,
-    < or >>. Execute() doesn't return until the command(s) that should be
-    executed are finished.
         If 'input' is not NULL, more commands will be read from this stream
-    until end of file is reached. 'output' will be used as the output stream
-    of the commands (if output is not redirected). If 'output' is NULL the
-    current window is used for output -- note that programs run from the
-    Workbench doesn't normally have a current window.
+        until end of file is reached. 'output' will be used as the output stream
+        of the commands (if output is not redirected). If 'output' is NULL the
+        current window is used for output -- note that programs run from the
+        Workbench doesn't normally have a current window.
 
     INPUTS
-
-    string  --  pointer to a NULL-terminated string with commands
-                (may be NULL)
-    input   --  stream to use as input (may be NULL)
-    output  --  stream to use as output (may be NULL)
+        string - pointer to a NULL-terminated string with commands
+                 (may be NULL)
+        input  - stream to use as input (may be NULL)
+        output - stream to use as output (may be NULL)
 
     RESULT
-
-    Boolean telling whether Execute() could find and start the specified
-    command(s). (This is NOT the return code of the command(s).)
+        Boolean telling whether Execute() could find and start the specified
+        command(s). (This is NOT the return code of the command(s).)
 
     NOTES
 
@@ -62,11 +60,10 @@
     SystemTagList()
 
     INTERNALS
-
-    To get the right result, the function ExecCommand() (used by both Execute()
-    and SystemTagList()) uses NP_Synchronous to wait for the commands to
-    finish. This is not the way AmigaOS does it as NP_Synchronous is not
-    implemented (but defined).
+        To get the right result, the function ExecCommand() (used by both
+        Execute() and SystemTagList()) uses NP_Synchronous to wait for the
+        commands to finish. This is not the way AmigaOS does it as
+        NP_Synchronous is not implemented (but defined).
 
 *****************************************************************************/
 {

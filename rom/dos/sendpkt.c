@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -33,19 +33,16 @@
         struct DosLibrary *, DOSBase, 41, Dos)
 
 /*  FUNCTION
-
-    Send a packet to a handler without waiting for the result. The packet will
-    be returned to 'replyport'.
+        Send a packet to a handler without waiting for the result. The packet
+        will be returned to 'replyport'.
 
     INPUTS
-
-    packet     --  the (initialized) packet to send
-    port       --  the MsgPort to send the packet to
-    replyport  --  the MsgPort to which the packet will be replied
+        packet    - the (initialized) packet to send
+        port      - the MsgPort to send the packet to
+        replyport - the MsgPort to which the packet will be replied
 
     RESULT
-
-    This function is callable from a task.
+        This function is callable from a task.
 
     NOTES
 
@@ -54,8 +51,7 @@
     BUGS
 
     SEE ALSO
-
-    DoPkt(), WaitPkt(), AbortPkt()
+        DoPkt(), WaitPkt(), AbortPkt()
 
     INTERNALS
 
