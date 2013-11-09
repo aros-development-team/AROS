@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -37,7 +37,7 @@
         freefunc - Function to be called to free memory
 
     RESULT
-        DOSTRUE if everything wents O.K.
+        DOSTRUE if everything went OK.
 
     NOTES
 

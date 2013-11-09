@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new process (in an old way).
@@ -38,10 +38,10 @@
         as it is much more flexible.
 
     INPUTS
-        name        --   Name of the new process.
-        pri         --   Starting priority.
-        segList     --   BCPL pointer to a seglist.
-        stackSize   --   The size of the initial process stack.
+        name      - Name of the new process.
+        pri       - Starting priority.
+        segList   - BCPL pointer to a seglist.
+        stackSize - The size of the initial process stack.
 
     RESULT
         Pointer to the pr_MsgPort in the Process structure. Will

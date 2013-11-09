@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -24,20 +24,17 @@
         struct DosLibrary *, DOSBase, 155, Dos)
 
 /*  FUNCTION
-
-    Set up a process to be a shell using a startup packet.
+        Set up a process to be a shell using a startup packet.
 
     INPUTS
-
-    packet  --  startup arguments that were passed to the shell
-                If NULL, defaults will be used
+        packet  --  startup arguments that were passed to the shell
+                    If NULL, defaults will be used
 
     RESULT
 
     NOTES
-
-    Called to initialize CLI private data structures, when
-    the User Shell is in interactive mode.
+        Called to initialize CLI private data structures, when
+        the User Shell is in interactive mode.
 
     EXAMPLE
 

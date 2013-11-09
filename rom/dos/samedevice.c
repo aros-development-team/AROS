@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -25,10 +25,10 @@
         Checks if two locks are on the same device.
 
     INPUTS
-        lock1, lock2 - locks
+        lock1, lock2 - locks to compare
 
     RESULT
-        DOSTRUE when they are on the same device
+        DOSTRUE when locks are on the same device
 
     NOTES
 

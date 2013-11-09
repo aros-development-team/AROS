@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -29,7 +29,7 @@
         reset to the original value before process exit.
 
     INPUTS
-        string  -   The new argument string. (A C string).
+        string - The new argument string (a C string).
 
     RESULT
         The address of the previous argument string. May be NULL.

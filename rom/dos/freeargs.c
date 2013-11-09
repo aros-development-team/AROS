@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free arguments structure from ReadArgs()
@@ -30,8 +30,8 @@
         have to free it yourself with FreeDosObject().
 
     INPUTS
-        args            - The data used by ReadArgs(). May be NULL,
-                          in which case, FreeArgs() does nothing.
+        args - The data used by ReadArgs(). May be NULL, in which case,
+               FreeArgs() does nothing.
 
     RESULT
         Some memory will have been returned to the system.

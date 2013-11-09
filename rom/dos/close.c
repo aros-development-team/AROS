@@ -32,7 +32,7 @@
         may return an error. The file is closed in any case.
 
     INPUTS
-        file  --  filehandle
+        file - filehandle
 
     RESULT
         0 if there was an error. != 0 on success.

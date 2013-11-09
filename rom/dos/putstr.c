@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Lang: english
@@ -22,7 +22,6 @@
         AROS_LHA(CONST_STRPTR, string, D1),
 
 /*  LOCATION */
-
         struct DosLibrary *, DOSBase, 158, Dos)
 
 /*  FUNCTION

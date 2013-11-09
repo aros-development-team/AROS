@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -63,28 +63,28 @@ static long internalBootCliHandler(void);
 
 /*  FUNCTION
 
-    Set up the first shell process.
+        Set up the first shell process.
 
-    Currently, no DOS Packet arguments are used by this
-    routine.
+        Currently, no DOS Packet arguments are used by this
+        routine.
 
-    A new Boot Cli process is created, and 'dp' is
-    sent to it. If the boot shell succeeds, then 'dp'
-    is returned with dp_Res1 = DOSTRUE.
-    has started.
+        A new Boot Cli process is created, and 'dp' is
+        sent to it. If the boot shell succeeds, then 'dp'
+        is returned with dp_Res1 = DOSTRUE.
+        has started.
     
     INPUTS
 
-    dp  --  startup arguments specified as a packet
+        dp -- startup arguments specified as a packet
 
     RESULT
 
-    RETURN_OK on success, ERROR_* (from dp_Res2) on failure.
+        RETURN_OK on success, ERROR_* (from dp_Res2) on failure.
 
     NOTES
 
-    This function is internal to AROS, and should never be
-    called by user space.
+        This function is internal to AROS, and should never be
+        called by user space.
 
     EXAMPLE
 

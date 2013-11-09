@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -30,13 +30,11 @@
         struct DosLibrary *, DOSBase, 149, Dos)
 
 /*  FUNCTION
-
-    End a notification (quit notifying for a request previously sent with
-    StartNotify()).
+        End a notification (quit notifying for a request previously sent with
+        StartNotify()).
 
     INPUTS
-
-    notify  --  NotifyRequest used with StartNotify()
+        notify - NotifyRequest used with StartNotify()
 
     RESULT
 
@@ -47,8 +45,7 @@
     BUGS
 
     SEE ALSO
-
-    StartNotify()
+        StartNotify()
 
     INTERNALS
 

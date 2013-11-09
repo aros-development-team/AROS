@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,34 +27,30 @@
         struct DosLibrary *, DOSBase, 45, Dos)
 
 /*  FUNCTION
-
-    Lock a portion of a file for exclusive access. A timeout may be specified
-    which is the maximum amount of time to wait for the record to be available.
+        Lock a portion of a file for exclusive access. A timeout may be
+        specified which is the maximum amount of time to wait for the record
+        to be available.
 
     INPUTS
-
-    fh       --  file handle for the file to lock a record of
-    offset   --  starting position of the lock
-    length   --  length of the record in bytes
-    mode     --  lock type
-    timeout  --  timeout interval measured in ticks (may be 0)
+        fh      - file handle for the file to lock a record of
+        offset  - starting position of the lock
+        length  - length of the record in bytes
+        mode    - lock type
+        timeout - timeout interval measured in ticks (may be 0)
 
     RESULT
-
-    Success/failure indicator.
+        Success/failure indicator.
 
     NOTES
-
-    Record locks are cooperative, meaning that they only affect other calls
-    to LockRecord().
+        Record locks are cooperative, meaning that they only affect other calls
+        to LockRecord().
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-
-    LockRecords(), UnLockRecord()
+        LockRecords(), UnLockRecord()
 
     INTERNALS
 

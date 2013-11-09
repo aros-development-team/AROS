@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,32 +27,26 @@
         struct DosLibrary *, DOSBase, 148, Dos)
 
 /*  FUNCTION
-
-    Send a notification request to a filesystem. You will then be notified
-    whenever the file (or directory) changes.
+        Send a notification request to a filesystem. You will then be notified
+        whenever the file (or directory) changes.
 
     INPUTS
-
-    notify  --  a notification request for the file or directory to monitor
+        notify - a notification request for the file or directory to monitor
 
     RESULT
-
-    Success/failure indicator.
+        Success/failure indicator.
 
     NOTES
-
-    The file or directory connected to a notification request does not have
-    to exist at the time of calling StartNotify().
-    The NotifyRequest used with this function should not be altered while
-    active.
+        The file or directory connected to a notification request does not
+        have to exist at the time of calling StartNotify(). The NotifyRequest
+        used with this function should not be altered while active.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-
-    EndNotify(), <dos/notify.h>
+        EndNotify(), <dos/notify.h>
 
     INTERNALS
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Set the current filesystem handler for a process.
@@ -29,7 +29,7 @@
         the old filesystem handler will be returned.
 
     INPUTS
-        task            - The new filesystem handler.
+        task - The new filesystem handler.
 
     RESULT
         The old filesystem handler.

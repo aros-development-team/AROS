@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -27,8 +27,8 @@
         MatchFirst() and MatchNext().
 
     INPUTS
-        AP  - pointer to Anchor Path structure which had been passed to
-              MatchFirst() before.
+        AP - pointer to Anchor Path structure which had been passed to
+             MatchFirst() before.
 
     RESULT
         None.

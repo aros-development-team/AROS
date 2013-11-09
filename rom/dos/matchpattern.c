@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -26,18 +26,15 @@
         struct DosLibrary *, DOSBase, 141, Dos)
 
 /*  FUNCTION
-
-    Check if a string matches a pattern. The pattern must be a pattern as
-    output by ParsePattern(). Note that this routine is case sensitive.
+        Check if a string matches a pattern. The pattern must be a pattern as
+        output by ParsePattern(). Note that this routine is case sensitive.
 
     INPUTS
-
-    pat   --   Pattern string (as returned by ParsePattern())
-    str   --   The string to match against the pattern 'pat'
+        pat - Pattern string (as returned by ParsePattern())
+        str - The string to match against the pattern 'pat'
 
     RESULT
-
-    Boolean telling whether the string matched the pattern.
+        Boolean telling whether the string matched the pattern.
 
     NOTES
 
@@ -46,8 +43,7 @@
     BUGS
 
     SEE ALSO
-
-    ParsePattern(), MatchPatternNoCase(), MatchFirst(), MatchNext()
+        ParsePattern(), MatchPatternNoCase(), MatchFirst(), MatchNext()
 
     INTERNALS
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Rename a file
@@ -47,7 +47,6 @@
     SEE ALSO
 
     INTERNALS
-        Calls the action FSA_RENAME on the filesystem-handler.
 
 *****************************************************************************/
 {

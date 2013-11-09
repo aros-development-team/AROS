@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Set the owner of a file.
@@ -28,8 +28,8 @@
 /*  FUNCTION
 
     INPUTS
-        name        --  name of the file
-        owner_info  --  (UID << 16) + GID
+        name       - name of the file
+        owner_info - (UID << 16) + GID
 
     RESULT
         != 0 if all went well, 0 else. IoErr() gives additional

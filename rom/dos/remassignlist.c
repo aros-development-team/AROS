@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RemAssignList() - Remove an entry from a multi-dir assign.
@@ -33,12 +33,12 @@
         lock for the entry in the list will be unlocked.
 
     INPUTS
-        name    -   Name of the device to remove lock from. This should
-                    not contain the trailing ':'.
-        lock    -   Lock on the object to remove from the list.
+        name    - Name of the device to remove lock from. This should
+                  not contain the trailing ':'.
+        lock    - Lock on the object to remove from the list.
 
     RESULT
-        success -   Have we actually succeeded
+        success - Have we actually succeeded
 
     NOTES
 

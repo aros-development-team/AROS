@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -54,7 +54,7 @@
     EXAMPLE
 
     BUGS
-    Currently only local variables scanning is implemented.
+        Currently only local variables scanning is implemented.
 
     SEE ALSO
         DeleteVar(), FindVar(), GetVar(), SetVar(), <dos/var.h>

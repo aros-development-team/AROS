@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -29,32 +29,29 @@
         struct DosLibrary *, DOSBase, 165, Dos)
 
 /*  FUNCTION
-
-    Stop an ExAll() operation before returning ERROR_NO_MORE_ENTRIES.
+        Stop an ExAll() operation before returning ERROR_NO_MORE_ENTRIES.
 
     INPUTS
+        The inputs should correspond to the inputs for the ExAll() function.
 
-    The inputs should correspond to the inputs for the ExAll() function.
-
-    lock     --  lock on the directory that is being examined
-    buffer   --  buffer for data returned
-    size     --  size of 'buffer' in bytes
-    type     --  type of data to be returned
-    control  --  control data structure
+        lock    - lock on the directory that is being examined
+        buffer  - buffer for data returned
+        size    - size of 'buffer' in bytes
+        type    - type of data to be returned
+        control - control data structure
 
     RESULT
 
     NOTES
-
-    The control data structure must have been allocated with AllocDosObject().
+        The control data structure must have been allocated with
+        AllocDosObject().
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-
-    ExAll(), AllocDosObject()
+        ExAll(), AllocDosObject()
 
     INTERNALS
 

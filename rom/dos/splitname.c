@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Split a path into pieces
@@ -58,7 +58,6 @@
     NOTES
 
     EXAMPLE
-        See below.
 
     BUGS
 

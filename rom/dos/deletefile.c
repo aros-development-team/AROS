@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Delete a file or directory.
@@ -32,7 +32,7 @@
         May fail if the file is in use or protected from deletion.
 
     INPUTS
-        name       - NUL terminated name.
+        name - NUL terminated name.
 
     RESULT
         != 0 if the file is gone, 0 if is still there.

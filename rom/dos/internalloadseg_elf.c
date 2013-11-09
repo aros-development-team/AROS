@@ -1,12 +1,9 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code to dynamically load ELF executables
     Lang: english
-
-    1997/12/13: Changed filename to internalloadseg_elf.c
-                Original file was created by digulla.
 */
 
 #define DATTR(x)
@@ -574,7 +571,8 @@ static int relocate
             break;
 
             case R_ARM_TARGET2: /* maps to R_ARM_ABS32 under EABI for AROS*/
-            case R_ARM_TARGET1: /* use for constructurs/destructurs, maps to R_ARM_ABS32 */
+            case R_ARM_TARGET1: /* use for constructors/destructors; maps to
+                                   R_ARM_ABS32 */
             case R_ARM_ABS32:
                 *p += s;
                 break;

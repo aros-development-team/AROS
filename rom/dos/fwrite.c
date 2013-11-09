@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Lang: english
@@ -32,8 +32,8 @@
     INPUTS
         fh        - Write to this file
         block     - The data begins here
-    blocklen  - number of bytes per block.  Must be > 0.
-    numblocks - number of blocks to write.  Must be > 0.
+        blocklen  - number of bytes per block.  Must be > 0.
+        numblocks - number of blocks to write.  Must be > 0.
 
     RESULT
         The number of blocks written to the file or EOF on error. IoErr()

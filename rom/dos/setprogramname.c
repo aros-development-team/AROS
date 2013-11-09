@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sets the name of the current program.
@@ -32,7 +32,7 @@
         does nothing.
 
     INPUTS
-        name  --  Name for the current program.
+        name - Name for the current program.
 
     RESULT
         != 0 on success, 0 on failure.

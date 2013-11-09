@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -25,7 +25,7 @@
         Free a dos list entry created with MakeDosEntry().
 
     INPUTS
-        dlist  --  pointer to dos list entry. May be NULL.
+        dlist - pointer to dos list entry. May be NULL.
 
     RESULT
 

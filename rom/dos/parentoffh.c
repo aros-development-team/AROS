@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Lock the directory a file is located in
@@ -28,12 +28,11 @@
         Lock the directory a file is located in.
 
     INPUTS
-        fh  - Filhandle of which you want to obtain the parent
-        
+        fh   - Filehandle of which you want to obtain the parent
+
     RESULT
         lock - Lock on the parent directory of the filehandle or
                NULL for failure.
-               
 
     NOTES
 
@@ -43,7 +42,7 @@
 
     SEE ALSO
         Lock(), UnLock(), ParentDir() 
-        
+
     INTERNALS
 
 *****************************************************************************/

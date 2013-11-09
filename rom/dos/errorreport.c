@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -34,26 +34,25 @@
         struct DosLibrary *, DOSBase, 80, Dos)
 
 /*  FUNCTION
-    Displays a requester with Retry/Cancel buttons for an error.
-    IoErr() is set to "code".
-        
+        Displays a requester with Retry/Cancel buttons for an error.
+        IoErr() is set to "code".
+
     INPUTS
+        code   - The error to put up the requester for
+        type   - Type of request:
+                     REPORT_LOCK   - arg1 is a lock (BPTR).
+                     REPORT_FH     - arg1 is a filehandle (BPTR).
+                     REPORT_VOLUME - arg1 is a volumenode (C pointer).
+                     REPORT_INSERT - arg1 is the string for the volume name.
 
-    code    --  The error to put up the requester for
-    type    --  Type of request
-
-                REPORT_LOCK    --  arg1 is a lock (BPTR).
-                REPORT_FH      --  arg1 is a filehandle (BPTR).
-                REPORT_VOLUME  --  arg1 is a volumenode (C pointer).
-                REPORT_INSERT  --  arg1 is the string for the volumename
-
-    arg1    --  Argument according to type (see above)
-    device  --  Optional handler task address (obsolete!)
+        arg1   - Argument according to type (see above)
+        device - Optional handler task address (obsolete!)
 
     RESULT
-    DOSFALSE - user has selected "Retry"
-    DOSTRUE  - user has selected "Cancel" or code wasn't understood or
-               pr_WindowPtr is -1 or if an attempt to open the requester fails.
+        DOSFALSE - user has selected "Retry"
+        DOSTRUE  - user has selected "Cancel" or code wasn't understood or
+                   pr_WindowPtr is -1 or if an attempt to open the requester
+                   fails.
 
     NOTES
 

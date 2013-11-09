@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -45,11 +45,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-        04-06-07    sonic   merged back from MorphOS source code
-        29-10-95    digulla automatically created from
-                            dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -35,9 +35,9 @@
         Displays an error message to and gets response from a user.
 
     INPUTS
-        formatStr   --  printf-style formatted string
-        flags       --  arguments to EasyRequestArgs()
-        args        --  arguments to 'formatStr'
+        formatStr - printf-style formatted string
+        flags     - arguments to EasyRequestArgs()
+        args      - arguments to 'formatStr'
 
     RESULT
         Nothing
