@@ -92,4 +92,5 @@
 #MM     workbench-libs-lcms2-includes \
 #MM     workbench-libs-gallium-includes \
 #MM     workbench-libs-vega-includes \
-#MM     workbench-libs-mesa-includes
+#MM     workbench-libs-mesa-includes \
+#MM     workbench-libs-glu-includes
