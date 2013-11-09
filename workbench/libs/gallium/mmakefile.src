@@ -1,10 +1,8 @@
 #   $Id$
 #
 
-
 include $(TOP)/config/make.cfg
 
-#MM- workbench-libs-complete : workbench-libs-gallium
 #MM workbench-libs-gallium : includes hidd-gallium
 
 USER_INCLUDES := \
@@ -17,6 +15,8 @@ LIB_GALLIUM_SOURCES = \
             bltpiperesourcerastport \
             gallium_init \
             gallium_func
+
+#MM- core-linklibs : linklibs-gallium
 
 %build_module mmake=workbench-libs-gallium \
     modname=gallium modtype=library linklibname=gallium \
