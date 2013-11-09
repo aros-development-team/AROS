@@ -9,7 +9,7 @@ EXEDIR          := $(AROS_TESTS)/png
 #MM- test : test-png
 #MM- test-quick : test-png-quick
 
-#MM test-png : includes linklibs workbench-libs-png
+#MM test-png : includes linklibs workbench-libs-png-linklib
 
 %build_progs mmake=test-png \
     files=$(FILES) targetdir=$(EXEDIR) \
