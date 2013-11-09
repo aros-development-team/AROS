@@ -19,6 +19,8 @@ USER_CFLAGS := -DNO_GETENV
 # We trust upstream
 USER_CFLAGS += -Wno-main
 
+#MM- core-linklibs : linklibs-jpeg
+
 %build_module mmake=workbench-libs-jpeg \
   modname=jpeg_au modtype=library \
   files="$(FILES)" linklibname=jpeg
