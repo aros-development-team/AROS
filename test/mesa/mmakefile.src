@@ -8,6 +8,10 @@ FILES 	    :=  mesasimplerendering \
                 
 EXEDIR      := $(AROSDIR)/Tests
 
+#MM- test : test-mesa
+
+#MM test-mesa : includes linklibs workbench-libs-mesa-linklib
+
 %build_progs mmake=test-mesa \
     targetdir=$(EXEDIR) \
     files="$(FILES)" uselibs="GL"

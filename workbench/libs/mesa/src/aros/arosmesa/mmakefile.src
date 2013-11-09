@@ -12,11 +12,7 @@ include $(SRCDIR)/$(CURDIR)/../../mapi/mapi/sources.mak
 #MM- workbench-libs-complete : workbench-libs-mesa-$(AROS_TARGET_TOOLCHAIN)
 #MM- workbench-libs-mesa-yes : workbench-libs-mesa
 
-#MM- workbench-libs-mesa : workbench-libs-mesa-$(AROS_TARGET_CPU) workbench-libs-mesa-module test-mesa
-
-#MM- test-mesa : workbench-libs-mesa-module
-
-#MM workbench-libs-mesa-module : includes linklibs-galliumauxiliary workbench-libs-gallium
+#MM workbench-libs-mesa : includes linklibs-galliumauxiliary workbench-libs-gallium-linklib
 
 SHARED_LIB_SOURCES = \
             aros/emul_arosc \
@@ -150,9 +146,9 @@ LIBRARY_SOURCES = \
             $(addprefix ../../, $(SHARED_LIB_SOURCES)) \
             arosmesa_library_api \
 
-##MM- workbench-libs-mesa-module-quick : workbench-libs-mesa-module-cpp-quick
+#MM- core-linklibs : linklibs-mesa
 
-%build_module mmake=workbench-libs-mesa-module \
+%build_module mmake=workbench-libs-mesa \
     modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="arosmesa_getprocaddress" \
     files="$(LIBRARY_SOURCES)" cxxfiles="$(CXX_SOURCES)" \
     uselibs="galliumauxiliary gallium stdcio stdc"
@@ -164,7 +160,7 @@ LIBRARY_SOURCES = \
 MESA_MAIN := $(SRCDIR)/$(CURDIR)/../../mesa/main
 
 #MM
-workbench-libs-mesa-module-generated : $(MESA_MAIN)/api_exec_es1.c $(MESA_MAIN)/api_exec_es2.c
+workbench-libs-mesa-generated : $(MESA_MAIN)/api_exec_es1.c $(MESA_MAIN)/api_exec_es2.c
 
 $(MESA_MAIN)/api_exec_es1.c :
 	@$(PYTHON) $(MESA_MAIN)/es_generator.py -S $(MESA_MAIN)/APIspec.xml -V GLES1.1 > $@
