@@ -8,9 +8,7 @@ include $(TOP)/config/make.cfg
 #MM- workbench-libs-complete : workbench-libs-glu-$(AROS_TARGET_TOOLCHAIN)
 #MM- workbench-libs-glu-yes : workbench-libs-glu
 
-#MM- workbench-libs-glu : workbench-libs-glu-module
-
-#MM workbench-libs-glu-module : includes workbench-libs-mesa
+#MM workbench-libs-glu : includes workbench-libs-mesa-linklib
 
 SHARED_LIB_SOURCES = \
             aros/emul_arosc \
@@ -131,7 +129,9 @@ CC_SOURCES := \
 CPP_SOURCES := \
     ../../aros/emul_cpp \
 
-%build_module mmake=workbench-libs-glu-module \
+#MM- core-linklibs : linklibs-glu
+
+%build_module mmake=workbench-libs-glu \
     modname=glu modtype=library linklibname=GLU \
     files="$(LIBRARY_SOURCES)" cxxfiles="$(CPP_SOURCES) $(CC_SOURCES)" \
     uselibs="GL stdcio stdc"
