@@ -65,7 +65,7 @@ USER_CFLAGS += -Wno-error
 #MM workbench-libs-freetype-module : workbench-libs-freetype-includes
 
 %build_linklib mmake=workbench-libs-freetype-linklib libname=freetype2.static \
-    files=$(FT2FILES)
+    files=$(FT2FILES) objdir=$(OBJDIR)/static
 
 %build_module mmake=workbench-libs-freetype-module modname=freetype2 \
     modtype=library files="$(SHFILES) $(FT2FILES)" uselibs="stdc"
