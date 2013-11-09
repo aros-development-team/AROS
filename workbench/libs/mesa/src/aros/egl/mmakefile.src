@@ -5,11 +5,8 @@ include $(TOP)/config/make.cfg
 # EGL                                                                          #
 ################################################################################
 
-#MM- workbench-libs-complete : workbench-libs-egl-$(AROS_TARGET_TOOLCHAIN)
-#MM- workbench-libs-egl-yes : workbench-libs-egl
-
-#MM- workbench-libs-egl : includes workbench-libs-mesa workbench-libs-vega \
-#MM     workbench-libs-gallium
+#MM- workbench-libs-egl : includes workbench-libs-mesa-linklib workbench-libs-vega-linklib \
+#MM     workbench-libs-gallium-linklib
 
 SHARED_LIB_SOURCES = \
             aros/emul_arosc \
@@ -68,6 +65,8 @@ USER_CFLAGS :=  -DFEATURE_GL=1 \
                 -D_EGL_OS_AROS=1 \
                 -DHAVE_AROS_BACKEND \
                 -D_EGL_MAIN=_eglBuiltInDriverGALLIUM \
+
+#MM- core-linklibs : linklibs-egl
 
 %build_module mmake=workbench-libs-egl \
     modname=egl modtype=library linklibname=EGL \
