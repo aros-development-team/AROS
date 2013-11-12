@@ -198,6 +198,7 @@ struct UsbStdStrDesc
 #define PRINTER_CLASSCODE     0x07
 #define MASSSTORE_CLASSCODE   0x08
 #define HUB_CLASSCODE         0x09
+#define HUB_SUBCLASS            0x00
 #define SMARTCARD_CLASSCODE   0x0b
 #define SECURITY_CLASSCODE    0x0d
 #define VIDEO_CLASSCODE       0x0e
