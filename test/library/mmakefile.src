@@ -2,10 +2,10 @@ include $(TOP)/config/make.cfg
 
 #MM- test : test-library
 #MM- test-library : test-library-dummytest \
-#MM-     test-library-dummytest_auto \
-#MM-     test-library-usereltest \
-#MM-     test-library-peropenertest \
-#MM-     test-library-peropenertest_child
+#MM      test-library-dummytest_auto \
+#MM      test-library-usereltest \
+#MM      test-library-peropenertest \
+#MM      test-library-peropenertest_child
 #MM- test-library-userellib: includes-pertask includes-dummy linklibs-pertask linklibs-dummy
 #MM test-library-dummytest : test-library-dummylib
 #MM test-library-dummytest_auto : test-library-dummylib
