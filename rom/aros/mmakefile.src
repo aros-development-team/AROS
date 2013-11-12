@@ -9,9 +9,9 @@ include $(TOP)/config/make.cfg
 #MM- kernel-aros-kobj : linklibs kernel-aros-create-abi-file
 
 #MM- kernel-aros-includes : \
-#MM-     kernel-exec-includes \
-#MM-     kernel-utility-includes \
-#MM-     includes-copy
+#MM      kernel-exec-includes \
+#MM      kernel-utility-includes \
+#MM      includes-copy
 #MM- core-linklibs: linklibs-aros
 
 USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
