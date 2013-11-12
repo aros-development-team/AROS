@@ -2095,7 +2095,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # - dflags are the flags use during makedepend (default equal to cflags)
 # - aflags are the flags use during assembling (default $(AFLAGS))
 # - libdir is the directory where the linklib will be placed (default $(AROS_LIB))
-%define build_linklib mmake=/A libname=/A files=$(BD_LIBNAME) cxxfiles= \
+%define build_linklib mmake=/A libname=/A files= cxxfiles= \
   asmfiles= objs= objdir=$(GENDIR)/$(CURDIR) libdir=$(AROS_LIB) \
   cflags=$(CFLAGS) dflags=$(BD_CFLAGS) \
   aflags=$(AFLAGS) compiler=target
@@ -2127,12 +2127,8 @@ BD_DFLAGS    := %(dflags)
 %(mmake) : $(BD_LINKLIB)
 
 ifeq ($(TARGET),%(mmake))
-ifneq ($(dir $(BD_FILES)),./)
-TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
-vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir $(BD_FILES)))
-endif
 
-%rule_compile basename=% targetdir=%(objdir) \
+%rule_compile_multi basenames=$(BD_FILES) targetdir=%(objdir) \
     compiler=%(compiler) cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
 %rule_compile_cxx_multi basenames=$(BD_CXXFILES) targetdir=%(objdir) \
     compiler=%(compiler) cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)

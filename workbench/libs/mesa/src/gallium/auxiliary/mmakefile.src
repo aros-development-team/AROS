@@ -150,11 +150,11 @@ GALLIUM_AUXILIARY_SOURCES = \
 
 
 GALLIUM_AUXILIARY_GENERATED_SOURCES = \
-            indices/u_indices_gen \
-            indices/u_unfilled_gen \
-            util/u_format_srgb \
-            util/u_format_table \
-            util/u_half \
+            $(GENDIR)/$(CURDIR)/indices/u_indices_gen \
+            $(GENDIR)/$(CURDIR)/indices/u_unfilled_gen \
+            $(GENDIR)/$(CURDIR)/util/u_format_srgb \
+            $(GENDIR)/$(CURDIR)/util/u_format_table \
+            $(GENDIR)/$(CURDIR)/util/u_half \
 
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
