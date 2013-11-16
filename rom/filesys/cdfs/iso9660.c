@@ -406,26 +406,32 @@ static LONG isoFindCmp(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG exte
     return RETURN_FAIL;
 }
 
+struct namecmp {
+    struct CDFS  *cdfs;
+    CONST_STRPTR file;
+    int          len;
+};
+
+BOOL cmp(struct ISOLock *fl, APTR data)
+{
+    struct namecmp *d = data;
+    struct CDFS *cdfs = d->cdfs;
+
+    D(bug("%s: file \"%s\"(%d) vs \"%s\"(%d)\n",  __func__,
+                d->file, d->len, &fl->il_Public.cl_FileInfoBlock.fib_FileName[1],
+                fl->il_Public.cl_FileInfoBlock.fib_FileName[0]));
+
+    return (d->len == fl->il_Public.cl_FileInfoBlock.fib_FileName[0] &&
+            Strnicmp(d->file, &fl->il_Public.cl_FileInfoBlock.fib_FileName[1], d->len) == 0);
+}
+
 static LONG isoFindName(struct CDFSVolume *vol, struct ISOLock *ifile, CONST_STRPTR file, struct ISOLock *iparent)
 {
-    struct CDFS *cdfs = vol->cv_CDFSBase;
-    struct namecmp {
-        CONST_STRPTR file;
-        int len;
-    } data;
-
-    BOOL cmp(struct ISOLock *fl, APTR data) {
-        struct namecmp *d = data;
-        D(bug("%s: file \"%s\"(%d) vs \"%s\"(%d)\n",  __func__,
-                    d->file, d->len, &fl->il_Public.cl_FileInfoBlock.fib_FileName[1],
-                    fl->il_Public.cl_FileInfoBlock.fib_FileName[0]));
-
-        return (d->len == fl->il_Public.cl_FileInfoBlock.fib_FileName[0] &&
-             Strnicmp(d->file, &ifile->il_Public.cl_FileInfoBlock.fib_FileName[1], d->len) == 0);
-    }
-
-    data.file = file;
-    data.len = strlen(file);
+    struct namecmp data = {
+        .cdfs = vol->cv_CDFSBase,
+        .file = file,
+        .len  = strlen(file)
+    };
 
     return isoFindCmp(vol, ifile, iparent->il_Extent, cmp, &data);
 }
