@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -7,48 +7,42 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(void, SetDefaultPubScreen,
+        AROS_LH1(void, SetDefaultPubScreen,
 
 /*  SYNOPSIS */
-         AROS_LHA(UBYTE *, name, A0),
+        AROS_LHA(UBYTE *, name, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 90, Intuition)
+        struct IntuitionBase *, IntuitionBase, 90, Intuition)
 
 /*  FUNCTION
- 
-    Specifies the default public screen for visitor windows to open up on.
+        Specifies the default public screen for visitor windows to open up on.
         The screen is used when a requested public screen is not available
-    and the FALLBACK option is enabled or when the visitor window asks for
-    the default public screen.
- 
+        and the FALLBACK option is enabled or when the visitor window asks for
+        the default public screen.
+
     INPUTS
- 
-    name  --  The name of the public screen that should be used as default,
-              or NULL to specify the Workbench screen.
- 
+        name - The name of the public screen that should be used as default,
+               or NULL to specify the Workbench screen.
+
     RESULT
- 
+        None.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
-    OpenWindow(), OpenScreen()
- 
+        OpenWindow(), OpenScreen()
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -7,42 +7,40 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(void, InitRequester,
+        AROS_LH1(void, InitRequester,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Requester *, requester, A0),
+        AROS_LHA(struct Requester *, requester, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 23, Intuition)
+        struct IntuitionBase *, IntuitionBase, 23, Intuition)
 
 /*  FUNCTION
         This function is OBSOLETE and should not be called. To preserve
-    compatibility with old programs, calling this function is a no-op.
- 
+        compatibility with old programs, calling this function is a no-op.
+
     INPUTS
-    requester - The struct Requester to be initialized
- 
+        requester - The struct Requester to be initialized
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
         This function is obsolete.
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    Request(), EndRequest()
- 
+        Request(), EndRequest()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

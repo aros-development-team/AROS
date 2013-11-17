@@ -91,14 +91,13 @@ static const char THIS_FILE[] = __FILE__;
 /*****************************************************************************
  
     NAME */
-
-    AROS_LH1(struct Screen *, OpenScreen,
+        AROS_LH1(struct Screen *, OpenScreen,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct NewScreen *, newScreen, A0),
+        AROS_LHA(struct NewScreen *, newScreen, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 33, Intuition)
+        struct IntuitionBase *, IntuitionBase, 33, Intuition)
 
 /*  FUNCTION
 
@@ -115,13 +114,9 @@ static const char THIS_FILE[] = __FILE__;
     SEE ALSO
 
     INTERNALS
-       The function relies on private data being passed in DimensionInfo.reserved[0]
-       by graphics.library/GetDisplayInfoData(). Keep this in sync when modifying
-       the code.
-
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
+        The function relies on private data being passed in
+        DimensionInfo.reserved[0] by graphics.library/GetDisplayInfoData().
+        Keep this in sync when modifying the code.
 
 *****************************************************************************/
 {

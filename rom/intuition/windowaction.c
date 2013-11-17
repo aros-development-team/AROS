@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2010, The AROS Development Team. All rights reserved.
+    Copyright  2003-2013, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -11,11 +11,11 @@
 #include "inputhandler_support.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH3(void, WindowAction,
+        AROS_LH3(void, WindowAction,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Window *, window, A0),
@@ -26,7 +26,7 @@
 	struct IntuitionBase *, IntuitionBase, 157, Intuition)
 
 /*  FUNCTION
-	Perform an acynchronous action on a window that is not controlled
+	Perform an asynchronous action on a window that is not controlled
 	by the caller task.
 
 	This function is safe even when the window is destroyed by the owner
@@ -36,7 +36,7 @@
 	window - a window to act upon
 	action - a requested action code
 	tags   - additional parameters, depending on the action
-	
+
 	Currently defined actions are:
 
 	  WAC_SENDIDCMPCLOSE - send an IDCMP_CLOSEWINDOW message.
@@ -46,15 +46,15 @@
 
     NOTES
 	This function is compatible with MorphOS.
-	
-	The requested action is executed asynchronously, the function actually
+
+	The requested action is executed asynchronously; the function actually
 	returns before it is complete.
 
     EXAMPLE
- 
+
     BUGS
 	At the moment only WAC_SENDIDCMPCLOSE action is implemented.
- 
+
     SEE ALSO
 
     INTERNALS

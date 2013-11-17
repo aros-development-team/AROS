@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
- 
+
     Move window in front of all other windows.
 */
 
@@ -21,38 +21,38 @@ static VOID int_windowtofront(struct WindowToFrontActionMsg *msg,
                               struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-    AROS_LH1(void, WindowToFront,
+        AROS_LH1(void, WindowToFront,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 52, Intuition)
+        struct IntuitionBase *, IntuitionBase, 52, Intuition)
 
 /*  FUNCTION
-    Bring a window to the front (ie. before any other window).
- 
+        Bring a window to the front (i.e. before any other window).
+
     INPUTS
-    window - Which window
- 
+        window - Which window
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -8,43 +8,41 @@
 #include <proto/exec.h>
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 #include <exec/types.h>
 #include <intuition/intuition.h>
 
-    AROS_LH1(void, FreeSysRequest,
+        AROS_LH1(void, FreeSysRequest,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 62, Intuition)
+        struct IntuitionBase *, IntuitionBase, 62, Intuition)
 
 /*  FUNCTION
-    Frees a requester made with BuildSysRequest() or
-    BuildEasyRequestArgs().
- 
+        Frees a requester made with BuildSysRequest() or
+        BuildEasyRequestArgs().
+
     INPUTS
-    Window - The requester to be freed. May be NULL or 1.
- 
+        window - The requester to be freed. May be NULL or 1.
+
     RESULT
- 
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
-    BuildSysRequest() requesters not supported, yet.
- 
+        BuildSysRequest() requesters not supported, yet.
+
     SEE ALSO
-    BuildSysRequest(), BuildEasyRequestArgs()
- 
+        BuildSysRequest(), BuildEasyRequestArgs()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

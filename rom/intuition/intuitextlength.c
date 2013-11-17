@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -9,46 +9,42 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-    AROS_LH1(LONG, IntuiTextLength,
+        AROS_LH1(LONG, IntuiTextLength,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct IntuiText *, iText, A0),
+        AROS_LHA(struct IntuiText *, iText, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 55, Intuition)
+        struct IntuitionBase *, IntuitionBase, 55, Intuition)
 
 /*  FUNCTION
-    Measure the length of the IntuiText passed to the function. Further
-    IntuiTexts in iText->NextText are ignored. The length is measured in
-    pixels.
- 
+        Measure the length of the IntuiText passed to the function. Further
+        IntuiTexts in iText->NextText are ignored. The length is measured in
+        pixels.
+
     INPUTS
-    iText - The size of this text. If iText->ITextFont contains NULL,
-        the systems font is used (and *not* the font of the currently
-        active screen !).
- 
+        iText - The size of this text. If iText->ITextFont contains NULL,
+            the system's font is used (and *not* the font of the currently
+            active screen!).
+
     RESULT
-    The width of the text in pixels.
- 
+        The width of the text in pixels.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

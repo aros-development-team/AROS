@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -16,13 +16,13 @@
 #include <intuition/classes.h>
 #include <proto/intuition.h>
 
-    AROS_LH1(APTR, NextObject,
+        AROS_LH1(APTR, NextObject,
 
 /*  SYNOPSIS */
-         AROS_LHA(APTR, objectPtrPtr, A0),
+        AROS_LHA(APTR, objectPtrPtr, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 111, Intuition)
+        struct IntuitionBase *, IntuitionBase, 111, Intuition)
 
 /*  FUNCTION
         Use this function to iterate through a list of BOOPSI objects.
@@ -47,7 +47,7 @@
     SEE ALSO
         NewObjectA(),
         "Basic Object-Oriented Programming System for Intuition" and
-        "boopsi Class Reference" Document.
+        "Boopsi Class Reference" Document.
 
     INTERNALS
 

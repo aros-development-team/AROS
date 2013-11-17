@@ -9,12 +9,12 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
 
-    AROS_LH2(ULONG, SetAttrsA,
+        AROS_LH2(ULONG, SetAttrsA,
 
 /*  SYNOPSIS */
         AROS_LHA(APTR            , object, A0),
@@ -46,7 +46,7 @@
     SEE ALSO
         NewObjectA(), DisposeObject(), GetAttr(), MakeClass(),
         "Basic Object-Oriented Programming System for Intuition" and
-        "boopsi Class Reference" Document.
+        "Boopsi Class Reference" Document.
 
     INTERNALS
 

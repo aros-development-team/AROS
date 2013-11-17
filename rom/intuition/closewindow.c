@@ -1,6 +1,6 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
-    Copyright Â© 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -63,7 +63,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
         None.
 
     NOTES
-        The window might not have been disappeared when this function returns.
+        The window might not have disappeared when this function returns.
 
     EXAMPLE
 
@@ -73,10 +73,6 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
         OpenWindow(), OpenWindowTagList()
 
     INTERNALS
-
-    HISTORY
-        29-10-95    digulla automatically created from
-                    intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {

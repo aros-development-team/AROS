@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -9,46 +9,47 @@
 static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(void, UnlockPubScreen,
+        AROS_LH2(void, UnlockPubScreen,
 
 /*  SYNOPSIS */
-         AROS_LHA(UBYTE         *, name, A0),
-         AROS_LHA(struct Screen *, screen, A1),
+        AROS_LHA(UBYTE         *, name, A0),
+        AROS_LHA(struct Screen *, screen, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 86, Intuition)
+        struct IntuitionBase *, IntuitionBase, 86, Intuition)
 
 /*  FUNCTION
-    Release a lock to a screen locked by LockPubScreen().
-    Identify screen by the pointer returned from LockPubScreen()
-    and pass NULL name in normal cases.
-    Sometimes it might be useful to specify the name string. In
-    this case the screen pointer will be ignored.
- 
+        Release a lock to a screen locked by LockPubScreen().
+        Identify screen by the pointer returned from LockPubScreen()
+        and pass NULL name in normal cases.
+
+        Sometimes it might be useful to specify the name string. In
+        this case the screen pointer will be ignored.
+
     INPUTS
-    name - Name of the public screen to unlock. The name is case insensitive.
-    screen - Pointer to the screen to unlock
- 
+        name - Name of the public screen to unlock. The name is case
+            insensitive.
+        screen - Pointer to the screen to unlock.
+
     RESULT
- 
+        None.
+
     NOTES
-    The screen parameter will be ignored if name is non-NULL
- 
+        The screen parameter will be ignored if name is non-NULL.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    LockPubScreen()
- 
+        LockPubScreen()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

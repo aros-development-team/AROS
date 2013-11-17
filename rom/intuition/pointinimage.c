@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -9,47 +9,43 @@
 #include <proto/alib.h>
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
 #include <proto/intuition.h>
 
-    AROS_LH2(BOOL, PointInImage,
+        AROS_LH2(BOOL, PointInImage,
 
 /*  SYNOPSIS */
-         AROS_LHA(ULONG,          point, D0),
-         AROS_LHA(struct Image *, image, A0),
+        AROS_LHA(ULONG,          point, D0),
+        AROS_LHA(struct Image *, image, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 104, Intuition)
+        struct IntuitionBase *, IntuitionBase, 104, Intuition)
 
 /*  FUNCTION
-    Check whether a point is inside an image.
- 
+        Check whether a point is inside an image.
+
     INPUTS
-    point - This are the packed point coordinates. The X coordinate
-        in in the upper 16 bits and the Y coordinate is in the
-        lower 16 bits. The coordinates are signed.
-    image - Check against this image.
- 
+        point - This are the packed point coordinates. The X coordinate
+            in in the upper 16 bits and the Y coordinate is in the
+            lower 16 bits. The coordinates are signed.
+        image - Check against this image.
+
     RESULT
-    TRUE is the point is inside the image, FALSE otherwise.
- 
+        TRUE if the point is inside the image, FALSE otherwise.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

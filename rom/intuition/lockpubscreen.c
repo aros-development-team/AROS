@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -10,74 +10,64 @@
 static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(struct Screen *, LockPubScreen,
+        AROS_LH1(struct Screen *, LockPubScreen,
 
 /*  SYNOPSIS */
-         AROS_LHA(CONST_STRPTR, name, A0),
+        AROS_LHA(CONST_STRPTR, name, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 85, Intuition)
+        struct IntuitionBase *, IntuitionBase, 85, Intuition)
 
 /*  FUNCTION
- 
-    Locks a public screen, thus preventing it from closing.
-    This is useful if you want to put up a visitor window on a public screen
-    and need to check some of the public screen's field first -- not locking
-    the screen may lead to the public screen not existing when your visitor
-    window is ready.
- 
-    If you try to lock the Workbench screen or the default public screen
-    and there isn't any, the Workbench screen will be automatically opened
-    and locked.
- 
+        Locks a public screen, thus preventing it from closing. This is
+        useful if you want to put up a visitor window on a public screen
+        and need to check some of the public screen's fields first -- not
+        locking the screen may lead to the public screen not existing when
+        your visitor window is ready.
+
+        If you try to lock the Workbench screen or the default public screen
+        and there isn't any, the Workbench screen will be automatically opened
+        and locked.
+
     INPUTS
- 
-    Name   --  Name of the public screen or NULL for the default public
+        name - Name of the public screen or NULL for the default public
                screen. The name "Workbench" refers to the Workbench screen.
                The name is case insensitive.
- 
+
     RESULT
- 
-    A pointer to the screen or NULL if something went wrong. Failure can
-    happen for instance when the public screen is in private state or doesn't
-    exist.
- 
+        A pointer to the screen or NULL if something went wrong. Failure can
+        happen for instance when the public screen is in private state or
+        doesn't exist.
+
     NOTES
- 
-    You don't need to hold the lock when your visitor window is opened as
-    the pubscreen cannot be closed as long as there are visitor windows
-    on it.
- 
+        You don't need to hold the lock when your visitor window is opened as
+        the pubscreen cannot be closed as long as there are visitor windows
+        on it.
+
     EXAMPLE
+        To open a visitor window which needs information from the screen
+        structure of the public screen to open on, do this:
  
-    To open a visitor window which needs information from the screen structure
-    of the public screen to open on, do this:
- 
-    if((pubscreen = LockPubScreen("PubScreentoOpenon")) != NULL)
-    {
-        ...check pubscreen's internal data...
-    OpenWindow(VisitorWindow, pubscreen);
-    UnlockPubScreen(NULL, pubscreen);
-    ...use your visitor window...
-    CloseWindow(VisitorWindow);
-    }
- 
+        if((pubscreen = LockPubScreen("PubScreentoOpenon")) != NULL)
+        {
+            ...check pubscreen's internal data...
+            OpenWindow(VisitorWindow, pubscreen);
+            UnlockPubScreen(NULL, pubscreen);
+            ...use your visitor window...
+            CloseWindow(VisitorWindow);
+        }
+
     BUGS
- 
+
     SEE ALSO
- 
-    OpenWindow(), UnlockPubScreen(), GetScreenData()
- 
+        OpenWindow(), UnlockPubScreen(), GetScreenData()
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

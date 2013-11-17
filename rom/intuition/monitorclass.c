@@ -24,7 +24,7 @@
 #include "monitorclass_intern.h"
 #include "monitorclass_private.h"
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	--background_monitorclass--
@@ -33,16 +33,18 @@
 	MONITORCLASS
 
     NOTES
-	In AROS display drivers have associated BOOPSI objects of MONITORCLASS class.
-	This class provides information about relative physical placement of monitors
-	in user's workspace as well as some additional properties.
+	In AROS display drivers have associated BOOPSI objects of MONITORCLASS
+	class. This class provides information about relative physical
+	placement of monitors in user's workspace as well as some additional
+	properties.
 
-	MONITORCLASS is a pseudo name. This class is in fact private to the system and
-	does not have a public ID. The user can't create objects of this class manually.
+	MONITORCLASS is a pseudo-name. This class is in fact private to the
+	system and does not have a public ID. The user can't create objects of
+	this class manually.
 
 	This class is fully compatible with MorphOS starting from v2.6.
 
-*****************************************************************************************/
+*****************************************************************************/
 
 Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionBase)
 {
@@ -72,7 +74,7 @@ Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionB
     }
 }
 
-/*i*********************************************************************************/
+/*i**************************************************************************/
 
 static void SetPointerPos(struct IMonitorNode *data, struct IntuitionBase *IntuitionBase)
 {
@@ -92,7 +94,7 @@ static void SetPointerPos(struct IMonitorNode *data, struct IntuitionBase *Intui
     HIDD_Gfx_SetCursorPos(data->handle->gfxhidd, x, y);
 }
 
-/*i*********************************************************************************/
+/*i**************************************************************************/
 
 static void ActivationHandler(Object *mon, OOP_Object *bitmap)
 {
@@ -103,7 +105,7 @@ static void ActivationHandler(Object *mon, OOP_Object *bitmap)
     GetPrivIBase(IntuitionBase)->NewMonitor = mon;
 }
 
-/*i*********************************************************************************/
+/*i**************************************************************************/
 
 static void ResetGamma(struct IMonitorNode *data)
 {
@@ -199,7 +201,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     return o;
 }
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_MonitorName
@@ -211,7 +213,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Query monitor driver name
+	Query monitor driver name.
 
     NOTES
 
@@ -223,9 +225,9 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_Manufacturer
@@ -240,7 +242,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	Query video card hardware manufacturer name
 
     NOTES
-	Not all drivers may specify manufacturer string. NULL is a valid return value.
+	Not all drivers may specify manufacturer string. NULL is a valid
+	return value.
 
     EXAMPLE
 
@@ -250,9 +253,9 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_ManufacturerID
@@ -264,12 +267,12 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Query video card hardware's numeric manufacturer ID (which may come from PCI,
-	Zorro, etc).
+	Query video card hardware's numeric manufacturer ID (which may come
+	from PCI, Zorro, etc).
 
     NOTES
-	Not all drivers may have assigned IDs. For example VGA driver and virtual
-	hosted drivers do not associate themselves with any IDs.
+	Not all drivers may have assigned IDs. For example VGA driver and
+	virtual hosted drivers do not associate themselves with any IDs.
 
     EXAMPLE
 
@@ -280,9 +283,9 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_ProductID
@@ -294,11 +297,12 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Query video card hardware's numeric product ID (which may come from PCI, Zorro, etc).
+	Query video card hardware's numeric product ID (which may come from
+	PCI, Zorro, etc).
 
     NOTES
-	Not all drivers may have assigned IDs. For example VGA driver and virtual
-	hosted drivers do not associate themselves with any IDs.
+	Not all drivers may have assigned IDs. For example VGA driver and
+	virtual hosted drivers do not associate themselves with any IDs.
 
     EXAMPLE
 
@@ -309,9 +313,9 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_MemorySize
@@ -336,9 +340,9 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_PixelFormats
@@ -352,9 +356,10 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     FUNCTION
 	Query table of supported pixelformats.
 
-	A returned value is a pointer to static array of ULONGs, one ULONG per CyberGraphX
-	pixelformat. Values of these ULONGs are actually booleans. TRUE value in the array
-	says that the pixelformat is supported,	FALSE means it's not.
+	A returned value is a pointer to static array of ULONGs, one ULONG per
+	CyberGraphX pixelformat. Values of these ULONGs are actually booleans.
+	A TRUE value in the array says that the pixelformat is supported,
+	FALSE means it is not.
 
     NOTES
 
@@ -372,9 +377,9 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_TopLeftMonitor
@@ -386,11 +391,11 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Get a pointer to a monitor placed in top-left diagonal direction relative to
-	the current one.
+	Get a pointer to a monitor placed in top-left diagonal direction
+	relative tothe current one.
 
-	This attribute is used to describe relative placement of monitors in user's
-	physical environment.
+	This attribute is used to describe relative placement of monitors in
+	user's physical environment.
 
     NOTES
 
@@ -401,14 +406,15 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	monitor object.
 
     SEE ALSO
-	MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor, MA_MiddleRightMonitor,
-	MA_BottomLeftMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+	MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
+	MA_MiddleRightMonitor, MA_BottomLeftMonitor, MA_BottomMiddleMonitor,
+	MA_BottomRightMonitor
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_TopMiddleMonitor
@@ -420,28 +426,30 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Get a pointer to a monitor placed in top direction relative to the current one.
+	Get a pointer to a monitor placed in top direction relative to the
+	current one.
 
-	This attribute is used to describe relative placement of monitors in user's
-	physical environment.
+	This attribute is used to describe relative placement of monitors in
+	the user's physical environment.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
-	monitor object.
+    	In MorphOS up to v2.5 this attribute returns a monitor ID, not a
+	pointer to a monitor object.
 
     SEE ALSO
-	MA_TopLeftMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor, MA_MiddleRightMonitor,
-	MA_BottomLeftMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+	MA_TopLeftMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
+	MA_MiddleRightMonitor, MA_BottomLeftMonitor, MA_BottomMiddleMonitor,
+	MA_BottomRightMonitor
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_TopRightMonitor
@@ -453,29 +461,30 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Get a pointer to a monitor placed in top-right diagonal direction relative to
-	the current one.
+	Get a pointer to a monitor placed in top-right diagonal direction
+	relative to the current one.
 
-	This attribute is used to describe relative placement of monitors in user's
-	physical environment.
+	This attribute is used to describe relative placement of monitors in
+	the user's physical environment.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
-	monitor object.
+    	In MorphOS up to v2.5 this attribute returns a monitor ID, not a
+	pointer to a monitor object.
 
     SEE ALSO
-	MA_TopLeftMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor, MA_MiddleRightMonitor,
-	MA_BottomLeftMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+	MA_TopLeftMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
+	MA_MiddleRightMonitor, MA_BottomLeftMonitor, MA_BottomMiddleMonitor,
+	MA_BottomRightMonitor
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_MiddleLeftMonitor
@@ -490,26 +499,27 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	Get a pointer to a monitor placed in left direction relative to
 	the current one.
 
-	This attribute is used to describe relative placement of monitors in user's
-	physical environment.
+	This attribute is used to describe relative placement of monitors in
+	the user's physical environment.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
-	monitor object.
+    	In MorphOS up to v2.5 this attribute returns a monitor ID, not a
+	pointer to a monitor object.
 
     SEE ALSO
-	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleRightMonitor,
-	MA_BottomLeftMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior,
+	MA_MiddleRightMonitor, MA_BottomLeftMonitor, MA_BottomMiddleMonitor,
+	MA_BottomRightMonitor
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_MiddleRightMonitor
@@ -524,26 +534,27 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	Get a pointer to a monitor placed in right direction relative to
 	the current one.
 
-	This attribute is used to describe relative placement of monitors in user's
-	physical environment.
+	This attribute is used to describe relative placement of monitors in
+	the user's physical environment.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
-	monitor object.
+    	In MorphOS up to v2.5 this attribute returns a monitor ID, not a
+	pointer to a monitor object.
 
     SEE ALSO
-	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
-	MA_BottomLeftMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior,
+	MA_MiddleLeftMonitor, MA_BottomLeftMonitor, MA_BottomMiddleMonitor,
+	MA_BottomRightMonitor
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_BottomLeftMonitor
@@ -555,29 +566,30 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Get a pointer to a monitor placed in bottom-left diagonal direction relative to
-	the current one.
+	Get a pointer to a monitor placed in bottom-left diagonal direction
+	relative to the current one.
 
-	This attribute is used to describe relative placement of monitors in user's
-	physical environment.
+	This attribute is used to describe relative placement of monitors in
+	the user's physical environment.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
-	monitor object.
+    	In MorphOS up to v2.5 this attribute returns a monitor ID, not a
+	pointer to a monitor object.
 
     SEE ALSO
-	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
-	MA_MiddleRightMonitor, MA_BottomMiddleMonitor, MA_BottomRightMonitor
+	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior,
+	MA_MiddleLeftMonitor, MA_MiddleRightMonitor, MA_BottomMiddleMonitor,
+	MA_BottomRightMonitor
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_BottomMiddleMonitor
@@ -589,28 +601,30 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Get a pointer to a monitor placed in bottom direction relative to the current one.
+	Get a pointer to a monitor placed in bottom direction relative to the
+	current one.
 
-	This attribute is used to describe relative placement of monitors in user's
-	physical environment.
+	This attribute is used to describe relative placement of monitors in
+	the user's physical environment.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
-	monitor object.
+    	In MorphOS up to v2.5 this attribute returns a monitor ID, not a
+	pointer to a monitor object.
 
     SEE ALSO
-	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
-	MA_MiddleRightMonitor, MA_BottomLeftMonitor, MA_BottomRightMonitor
+	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior,
+	MA_MiddleLeftMonitor, MA_MiddleRightMonitor, MA_BottomLeftMonitor,
+	MA_BottomRightMonitor
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_BottomRightMonitor
@@ -622,29 +636,30 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Get a pointer to a monitor placed in bottom-right diagonal direction relative to
-	the current one.
+	Get a pointer to a monitor placed in bottom-right diagonal direction
+	relative to the current one.
 
-	This attribute is used to describe relative placement of monitors in user's
-	physical environment.
+	This attribute is used to describe relative placement of monitors in
+	the user's physical environment.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-    	In MorphOS up to v2.5 this attribute returns monitor ID, not a pointer to a
-	monitor object.
+    	In MorphOS up to v2.5 this attribute returns a monitor ID, not a
+	pointer to a monitor object.
 
     SEE ALSO
-	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior, MA_MiddleLeftMonitor,
-	MA_MiddleRightMonitor, MA_BottomLeftMonitor, MA_BottomMiddleMonitor
+	MA_TopLeftMonitor, MA_TopMiddleMonitor, MA_TopRightMonior,
+	MA_MiddleLeftMonitor, MA_MiddleRightMonitor, MA_BottomLeftMonitor,
+	MA_BottomMiddleMonitor
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_GammaControl
@@ -656,7 +671,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Query if the display driver supports gamma control
+	Query if the display driver supports gamma control.
 
     NOTES
 
@@ -669,9 +684,9 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_PointerType
@@ -686,11 +701,12 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	Query supported mouse pointer sprite formats.
 
 	The returned value is a combination of the following bit flags:
-	  PointerType_3Plus1 - color 0 transparent, 1-3 visible	(Amiga(tm) chipset sprite)
-	  PointerType_2Plus1 - color 0 transparent, 1 undefined (can be for example clear or
-			       inverse), 2-3 visible
-	  PointerType_ARGB   - Direct color bitmap (hi-color or truecolor, possibly with alpha
-			       channel
+	  PointerType_3Plus1 - color 0 transparent, 1-3 visible	(Amiga(tm)
+	                       chipset sprite)
+	  PointerType_2Plus1 - color 0 transparent, 1 undefined (can be for
+	                       example clear or inverse), 2-3 visible
+	  PointerType_ARGB   - Direct color bitmap (hi-color or truecolor,
+	                       possibly with alpha channel
 
     NOTES
 
@@ -703,9 +719,9 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_DriverName
@@ -718,7 +734,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     FUNCTION
 	Query CyberGraphX driver name. It is the name which can be given to
-	cybergraphics.library/BestCModeIDTagList() as CYBRBIDTG_BoardName value.
+	cybergraphics.library/BestCModeIDTagList() as CYBRBIDTG_BoardName
+	value.
 
     NOTES
 
@@ -731,9 +748,9 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_MemoryClock
@@ -745,7 +762,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 	MONITORCLASS
 
     FUNCTION
-	Query video card's memory clock in Hz. 0 is a valid value meaning 'unknown'.
+	Query the video card's memory clock in Hertz. 0 is a valid value
+	meaning 'unknown'.
 
     NOTES
 
@@ -758,9 +776,9 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	MA_Windowed
@@ -774,16 +792,16 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     FUNCTION
 	Check if this monitor is a window on hosted OS desktop.
 
-	This means that the host OS is responsible for handling mouse input and display
-	activation. Monitors with this attribute set to TRUE should be ignored by
-	multi-display desktop configuration software.
+	This means that the host OS is responsible for handling mouse input
+	and display activation. Monitors with this attribute set to TRUE
+	should be ignored by multi-display desktop configuration software.
 
-	These monitors should have no spatial links to other monitors. Activation of these
-	monitors is done by clicking on their windows on the host's desktop and is handled
-	by the driver itself.
+	These monitors should have no spatial links to other monitors.
+	Activation of these monitors is done by clicking on their windows on
+	the host's desktop and is handled by the driver itself.
 
     NOTES
-	This attribute is AROS-specific, it does not exist in MorphOS.
+	This attribute is AROS-specific; it does not exist in MorphOS.
 
     EXAMPLE
 
@@ -793,9 +811,9 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
-/*i*********************************************************************************/
+/*i**************************************************************************/
 
 IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
@@ -896,7 +914,7 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
     return TRUE;
 }
 
-/*i*********************************************************************************/
+/*i**************************************************************************/
 
 IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
@@ -949,7 +967,7 @@ IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
     return DoSuperMethodA(cl, o, (Msg)msg);
 }
 
-/*i*********************************************************************************/
+/*i**************************************************************************/
 
 #define Relink(nextAttr, prev, prevAttr, next)		\
     if (prev)						\
@@ -995,30 +1013,33 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
     return DoSuperMethodA(cl, o, msg);
 }
 
-/*i**********************************************************************************
+/*i***************************************************************************
 
     NAME
 	MM_GetRootBitMap
 
     SYNOPSIS
-        DoMethod(Object *obj, ULONG MethodID, ULONG PixelFormat, struct BitMap **Store);
+        DoMethod(Object *obj, ULONG MethodID, ULONG PixelFormat,
+	    struct BitMap **Store);
 
         DoMethodA(Object *obj, struct msGetRootBitMap *msg);
 
     LOCATION
 
     FUNCTION
-	This method is provided only for source code compatibility with MorphOS operating
-	system.
+	This method is provided only for source code compatibility with the
+	MorphOS operating system.
 
-	Under MorphOS this method returns a pointer to internal root bitmap of the
-	display driver corresponding to the specified pixelformat. Displayable bitmaps are
-	supposed to be created as friends of the root bitmap.
+	Under MorphOS this method returns a pointer to internal root bitmap of
+	the display driver corresponding to the specified pixelformat.
+	Displayable bitmaps are supposed to be created as friends of the root
+	bitmap.
 
-	In AROS displayable bitmaps need complete display mode information and not
-	only pixelformat. So this method will never be implemented and will always return NULL
-	pointer. In order to create a displayable RTG bitmap on AROS the user needs to supply
-	a taglist with BMATags_DisplayID specification to AllocBitMap() function.
+	In AROS displayable bitmaps need complete display mode information and
+	not only pixelformat. So this method will never be implemented and will
+	always return a NULL pointer. In order to create a displayable RTG
+	bitmap on AROS the user needs to supply a taglist with
+	BMATags_DisplayID specification to the AllocBitMap() function.
 
     INPUTS
 	obj         - A monitor object
@@ -1040,7 +1061,7 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
     INTERNALS
 
-************************************************************************************/
+*****************************************************************************/
 
 IPTR MonitorClass__MM_GetRootBitMap(Class *cl, Object *obj, struct msGetRootBitMap *msg)
 {
@@ -1049,7 +1070,7 @@ IPTR MonitorClass__MM_GetRootBitMap(Class *cl, Object *obj, struct msGetRootBitM
     return 0;
 }
 
-/*i**********************************************************************************
+/*i***************************************************************************
 
     NAME
 	MM_Query3DSupport
@@ -1062,15 +1083,17 @@ IPTR MonitorClass__MM_GetRootBitMap(Class *cl, Object *obj, struct msGetRootBitM
     LOCATION
 
     FUNCTION
-	Ask the display driver for type of 3D support for the given pixelformat.
+	Ask the display driver for type of 3D support for the given
+	pixelformat.
 
 	Supplied storage will be filled with one of:
 	    MSQUERY3D_UNKNOWN  - Unsupported pixelformat or some internal error
-	    MSQUERY3D_NODRIVER - There is no 3D support for the given pixelformat
-	    MSQUERY3D_SWDRIVER - A software 3D support is available for the given
-				 pixelformat
-	    MSQUERY3D_HWDRIVER - A hardware 3D support is available for the given
-				 pixelformat
+	    MSQUERY3D_NODRIVER - There is no 3D support for the given
+	                         pixelformat
+	    MSQUERY3D_SWDRIVER - A software 3D support is available for the
+	                         given pixelformat
+	    MSQUERY3D_HWDRIVER - A hardware 3D support is available for the
+	                         given pixelformat
 
     INPUTS
 	obj         - A monitor object to query
@@ -1091,7 +1114,7 @@ IPTR MonitorClass__MM_GetRootBitMap(Class *cl, Object *obj, struct msGetRootBitM
 
     INTERNALS
 
-************************************************************************************/
+*****************************************************************************/
 
 IPTR MonitorClass__MM_Query3DSupport(Class *cl, Object *obj, struct msQuery3DSupport *msg)
 {
@@ -1120,33 +1143,34 @@ IPTR MonitorClass__MM_Query3DSupport(Class *cl, Object *obj, struct msQuery3DSup
     return *msg->Store;
 }
 
-/*i**********************************************************************************
+/*i***************************************************************************
 
     NAME
 	MM_GetDefaultGammaTables
 
     SYNOPSIS
-        DoMethod(Object *obj, ULONG MethodID, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
+        DoMethod(Object *obj, ULONG MethodID, UBYTE *Red, UBYTE *Green,
+	    UBYTE *Blue);
 
         DoMethodA(Object *obj, struct msGetDefaultGammaTables *msg);
 
     LOCATION
 
     FUNCTION
-	Get default gamma correction tables for the monitor
+	Get default gamma correction tables for the monitor.
 
     INPUTS
 	obj      - A monitor object to query
 	MethodID - MM_GetDefaultGammaTables
-	Red	 - A pointer to an array of 256 bytes where gamma correction data for
-		   red component will be placed. You may speciy a NULL pointer in order
-		   to ignore this component.
-	Green	 - A pointer to an array of 256 bytes where gamma correction data for
-		   green component will be placed. You may speciy a NULL pointer in order
-		   to ignore this component.
-	Blue	 - A pointer to an array of 256 bytes where gamma correction data for
-		   blue component will be placed. You may speciy a NULL pointer in order
-		   to ignore this component.
+	Red	 - A pointer to an array of 256 bytes where gamma correction
+	           data for the red component will be placed. You may specify
+	           a NULL pointer in order to ignore this component.
+	Green	 - A pointer to an array of 256 bytes where gamma correction
+	           data for the green component will be placed. You may
+	           specify a NULL pointer in order to ignore this component.
+	Blue	 - A pointer to an array of 256 bytes where gamma correction
+	           data for the blue component will be placed. You may specify
+	           a NULL pointer in order to ignore this component.
 
     RESULT
 	Undefined.
@@ -1162,7 +1186,7 @@ IPTR MonitorClass__MM_Query3DSupport(Class *cl, Object *obj, struct msQuery3DSup
 
     INTERNALS
 
-************************************************************************************/
+*****************************************************************************/
 
 void MonitorClass__MM_GetDefaultGammaTables(Class *cl, Object *obj, struct msGetDefaultGammaTables *msg)
 {
@@ -1179,7 +1203,7 @@ void MonitorClass__MM_GetDefaultGammaTables(Class *cl, Object *obj, struct msGet
      }
 }
 
-/*i**********************************************************************************
+/*i***************************************************************************
 
     NAME
 	MM_GetDefaultPixelFormat
@@ -1192,14 +1216,15 @@ void MonitorClass__MM_GetDefaultGammaTables(Class *cl, Object *obj, struct msGet
     LOCATION
 
     FUNCTION
-	Get driver's preferred pixelformat for specified bitmap depth.
+	Get the driver's preferred pixelformat for the specified bitmap depth.
 
     INPUTS
 	obj      - A monitor object
 	MethodID - MM_GetDefaultPixelFormat
 	Depth	 - Depth to ask about
-	Store	 - A pointer to an ULONG location where CyberGraphX pixelformat
-		   number will be placed. -1 means unsupported depth.
+	Store	 - A pointer to an ULONG location where CyberGraphX
+	           pixelformat number will be placed. -1 means unsupported
+	           depth.
 
     RESULT
 	Undefined.
@@ -1214,7 +1239,7 @@ void MonitorClass__MM_GetDefaultGammaTables(Class *cl, Object *obj, struct msGet
 
     INTERNALS
 
-************************************************************************************/
+*****************************************************************************/
 
 IPTR MonitorClass__MM_GetDefaultPixelFormat(Class *cl, Object *obj, struct msGetDefaultPixelFormat *msg)
 {
@@ -1242,28 +1267,31 @@ IPTR MonitorClass__MM_GetDefaultPixelFormat(Class *cl, Object *obj, struct msGet
     return *msg->Store;
 }
 
-/*i**********************************************************************************
+/*i***************************************************************************
 
     NAME
 	MM_GetPointerBounds
 
     SYNOPSIS
-        DoMethod(Object *obj, ULONG MethodID, ULONG PointerType, ULONG *Width, ULONG *Height);
+	DoMethod(Object *obj, ULONG MethodID, ULONG PointerType, ULONG *Width,
+	    ULONG *Height);
 
-        DoMethodA(Object *obj, struct msGetPointerBounds *msg);
+	DoMethodA(Object *obj, struct msGetPointerBounds *msg);
 
     LOCATION
 	monitorclass
 
     FUNCTION
-	Get maximum allowed size of mouse pointer sprite.
+	Get the maximum allowed size of a mouse pointer sprite.
 
     INPUTS
 	obj         - A monitor object
 	MethodID    - MM_GetPointerBounds
 	PointerType - Pointer type (one of PointerType_...)
-	Width	    - A pointer to an ULONG location where width will be placed.
-	Height	    - A pointer to an ULONG location where height will be placed.
+	Width	    - A pointer to an ULONG location where width will be
+	              placed.
+	Height	    - A pointer to an ULONG location where height will be
+	              placed.
 
     RESULT
 	FALSE is given pointer type is not supported, TRUE otherwise.
@@ -1280,7 +1308,7 @@ IPTR MonitorClass__MM_GetDefaultPixelFormat(Class *cl, Object *obj, struct msGet
 
     INTERNALS
 
-************************************************************************************/
+*****************************************************************************/
 
 IPTR MonitorClass__MM_GetPointerBounds(Class *cl, Object *obj, struct msGetPointerBounds *msg)
 {
@@ -1291,7 +1319,7 @@ IPTR MonitorClass__MM_GetPointerBounds(Class *cl, Object *obj, struct msGetPoint
     return HIDD_Gfx_GetMaxSpriteSize(data->handle->gfxhidd, msg->PointerType, msg->Width, msg->Height);
 }
 
-/*i**********************************************************************************
+/*i***************************************************************************
 
     NAME
 	MM_RunBlanker
@@ -1306,8 +1334,8 @@ IPTR MonitorClass__MM_GetPointerBounds(Class *cl, Object *obj, struct msGetPoint
     FUNCTION
 	Starts screensaver on the monitor.
 
-	At the moment AROS has no integrated screensaver support. The method is
-	considered reserved and not implemented.
+	At the moment AROS has no integrated screensaver support. The method
+	is considered reserved and not implemented.
 
     INPUTS
 	obj         - A monitor object
@@ -1327,7 +1355,7 @@ IPTR MonitorClass__MM_GetPointerBounds(Class *cl, Object *obj, struct msGetPoint
 
     INTERNALS
 
-************************************************************************************/
+*****************************************************************************/
 
 IPTR MonitorClass__MM_RunBlanker(Class *cl, Object *obj, Msg *msg)
 {
@@ -1336,7 +1364,7 @@ IPTR MonitorClass__MM_RunBlanker(Class *cl, Object *obj, Msg *msg)
     return FALSE;
 }
 
-/*i**********************************************************************************
+/*i***************************************************************************
 
     NAME
 	MM_EnterPowerSaveMode
@@ -1368,10 +1396,10 @@ IPTR MonitorClass__MM_RunBlanker(Class *cl, Object *obj, Msg *msg)
 	MM_RunBlanker, MM_ExitBlanker
 
     INTERNALS
-	Current implementation just immediately sets DMPS level to "Off" for the
-	monitor.
+	Current implementation just immediately sets DMPS level to "Off" for
+	the monitor.
 
-************************************************************************************/
+*****************************************************************************/
 
 IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
 {
@@ -1388,7 +1416,7 @@ IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
     return OOP_SetAttrs(data->handle->gfxhidd, tags);
 }
 
-/*i**********************************************************************************
+/*i***************************************************************************
 
     NAME
 	MM_ExitBlanker
@@ -1404,8 +1432,8 @@ IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
 	Stops screensaver and/or power saving mode on the monitor.
 
     INPUTS
-	obj         - A monitor object
-	MethodID    - MM_ExitBlanker
+	obj      - A monitor object
+	MethodID - MM_ExitBlanker
 
     RESULT
 	Undefined.
@@ -1421,7 +1449,7 @@ IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
 
     INTERNALS
 
-************************************************************************************/
+*****************************************************************************/
 
 IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
 {
@@ -1438,33 +1466,34 @@ IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
     return OOP_SetAttrs(data->handle->gfxhidd, tags);
 }
 
-/*i**********************************************************************************
+/*i***************************************************************************
 
     NAME
 	MM_SetDefaultGammaTables
 
     SYNOPSIS
-        DoMethod(Object *obj, ULONG MethodID, UBYTE *Red, UBYTE *Green, UBYTE *Blue);
+        DoMethod(Object *obj, ULONG MethodID, UBYTE *Red, UBYTE *Green,
+	    UBYTE *Blue);
 
         DoMethodA(Object *obj, struct msSetDefaultGammaTables *msg);
 
     LOCATION
 
     FUNCTION
-	Set default gamma correction tables for the monitor
+	Set default gamma correction tables for the monitor.
 
     INPUTS
 	obj      - A monitor object to query
 	MethodID - MM_GetDefaultGammaTables
-	Red	 - A pointer to an array of 256 bytes where gamma correction data for
-		   red component is placed. You may speciy a NULL pointer in order
-		   to ignore this component.
-	Green	 - A pointer to an array of 256 bytes where gamma correction data for
-		   green component is placed. You may speciy a NULL pointer in order
-		   to ignore this component.
-	Blue	 - A pointer to an array of 256 bytes where gamma correction data for
-		   blue component is placed. You may speciy a NULL pointer in order
-		   to ignore this component.
+	Red	 - A pointer to an array of 256 bytes where gamma correction
+	           data for the red component is placed. You may specify a
+	           NULL pointer in order to ignore this component.
+	Green	 - A pointer to an array of 256 bytes where gamma correction
+	           data for the green component is placed. You may specify a
+	           NULL pointer in order to ignore this component.
+	Blue	 - A pointer to an array of 256 bytes where gamma correction
+	           data for the blue component is placed. You may specify a
+	           NULL pointer in order to ignore this component.
 
     RESULT
 	Undefined.
@@ -1481,7 +1510,7 @@ IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
 
     INTERNALS
 
-************************************************************************************/
+*****************************************************************************/
 
 IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSetDefaultGammaTables *msg)
 {
@@ -1527,7 +1556,7 @@ IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSet
     return FALSE;
 }
 
-/*i**********************************************************************************/
+/*i**************************************************************************/
 
 ULONG MonitorClass__MM_GetCompositionFlags(Class *cl, Object *obj, struct msGetCompositionFlags *msg)
 {
@@ -1541,7 +1570,7 @@ ULONG MonitorClass__MM_GetCompositionFlags(Class *cl, Object *obj, struct msGetC
     return modeprops.CompositionFlags;
 }
 
-/*i**********************************************************************************/
+/*i**************************************************************************/
 
 void MonitorClass__MM_SetPointerPos(Class *cl, Object *obj, struct msSetPointerPos *msg)
 {
@@ -1553,7 +1582,7 @@ void MonitorClass__MM_SetPointerPos(Class *cl, Object *obj, struct msSetPointerP
     SetPointerPos(data, IntuitionBase);
 }
 
-/*i**********************************************************************************/
+/*i**************************************************************************/
 
 IPTR MonitorClass__MM_CheckID(Class *cl, Object *obj, struct msGetCompositionFlags *msg)
 {
@@ -1562,7 +1591,7 @@ IPTR MonitorClass__MM_CheckID(Class *cl, Object *obj, struct msGetCompositionFla
     return ((msg->ModeID & data->handle->mask) == data->handle->id);
 }
 
-/*i**********************************************************************************/
+/*i**************************************************************************/
 
 IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointerShape *msg)
 {

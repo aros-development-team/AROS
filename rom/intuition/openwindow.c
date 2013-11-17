@@ -1,6 +1,6 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
-    Copyright Â© 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -56,26 +56,24 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 /*****************************************************************************
 
     NAME */
-
-    AROS_LH1(struct Window *, OpenWindow,
+        AROS_LH1(struct Window *, OpenWindow,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct NewWindow *, newWindow, A0),
+        AROS_LHA(struct NewWindow *, newWindow, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 34, Intuition)
+        struct IntuitionBase *, IntuitionBase, 34, Intuition)
 
 /*  FUNCTION
-    Opens a new window with the characteristics specified in
-    newWindow.
+        Opens a new window with the characteristics specified in
+        newWindow.
 
     INPUTS
-    newWindow - How you would like your new window.
+        newWindow - How you would like your new window.
 
     RESULT
-    A pointer to the new window or NULL if it couldn't be
-    opened. Reasons for this might be lack of memory or illegal
-    attributes.
+        A pointer to the new window or NULL if it couldn't be opened. Reasons
+        for this might be lack of memory or illegal attributes.
 
     NOTES
 
@@ -84,7 +82,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     BUGS
 
     SEE ALSO
-    CloseWindow(), ModifyIDCMP()
+        CloseWindow(), ModifyIDCMP()
 
     INTERNALS
 

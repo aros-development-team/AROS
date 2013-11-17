@@ -1,6 +1,6 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
-    Copyright Â© 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -26,17 +26,17 @@ void clipbordergadgets(struct Region *region,struct Window *w,struct IntuitionBa
 #endif
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(void, RefreshWindowFrame,
+        AROS_LH1(void, RefreshWindowFrame,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 76, Intuition)
+        struct IntuitionBase *, IntuitionBase, 76, Intuition)
 
 /*  FUNCTION
 	Redraw window borders.
@@ -45,17 +45,17 @@ void clipbordergadgets(struct Region *region,struct Window *w,struct IntuitionBa
 	window - pointer to a window whose borders should be redrawn
 
     RESULT
- 
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

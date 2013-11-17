@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -12,7 +12,7 @@
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(void, FreeIntuiMessage,
+        AROS_LH1(void, FreeIntuiMessage,
 
 /*  SYNOPSIS */
          AROS_LHA(struct IntuiMessage *, imsg, A0),
@@ -21,28 +21,26 @@
          struct IntuitionBase *, IntuitionBase, 149, Intuition)
 
 /*  FUNCTION
-    Private to AROS: free an IntuiMessage previously allocated
-    with AllocIntuiMessage.
- 
+        Private to AROS: free an IntuiMessage previously allocated
+        with AllocIntuiMessage.
+
     INPUTS
-    imsg - The IntuiMessage. May be NULL.
- 
+        imsg - The IntuiMessage. May be NULL.
+
     RESULT
-    none
- 
+        None.
+
     NOTES
-    This private function is also present in MorphOS v50.
- 
+        This private function is also present in MorphOS v50.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

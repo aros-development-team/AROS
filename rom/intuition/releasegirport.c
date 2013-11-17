@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -14,37 +14,33 @@
 #include <graphics/rastport.h>
 #include <proto/intuition.h>
 
-    AROS_LH1(void, ReleaseGIRPort,
+        AROS_LH1(void, ReleaseGIRPort,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct RastPort *, rp, A0),
+        AROS_LHA(struct RastPort *, rp, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 94, Intuition)
+        struct IntuitionBase *, IntuitionBase, 94, Intuition)
 
 /*  FUNCTION
-    Release a RastPort previously obtained by ObtainGIRPort().
- 
+        Release a RastPort previously obtained by ObtainGIRPort().
+
     INPUTS
-    rp - The result of ObtainGIRPort()
- 
+        rp - The result of ObtainGIRPort()
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

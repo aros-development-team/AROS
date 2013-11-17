@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -9,41 +9,41 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(struct Preferences *, GetPrefs,
+        AROS_LH2(struct Preferences *, GetPrefs,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Preferences * , prefbuffer, A0),
-         AROS_LHA(WORD                 , size, D0),
+        AROS_LHA(struct Preferences * , prefbuffer, A0),
+        AROS_LHA(WORD                 , size, D0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 22, Intuition)
+        struct IntuitionBase *, IntuitionBase, 22, Intuition)
 
 /*  FUNCTION
-    Gets a copy of the current Preferences structure.
- 
+        Gets a copy of the current Preferences structure.
+
     INPUTS
-    prefbuffer - The buffer which contains your settings for the
-        preferences.
-    size - The number of bytes of the buffer you want to be copied.
- 
+        prefbuffer - The buffer which contains your settings for the
+            preferences.
+        size - The number of bytes of the buffer you want to be copied.
+
     RESULT
-    Returns your parameter buffer.
- 
+        Returns your parameter buffer.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    GetDefPrefs(), SetPrefs()
- 
+        GetDefPrefs(), SetPrefs()
+
     INTERNALS
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

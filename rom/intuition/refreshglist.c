@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -22,61 +22,57 @@ void rendergadget(struct Gadget *gadgets,struct Window *window, struct Requester
 struct Gadget *findprevgadget(struct Gadget *gadget,struct Window *window,struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-    AROS_LH4(void, RefreshGList,
+        AROS_LH4(void, RefreshGList,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Gadget    *, gadgets, A0),
-         AROS_LHA(struct Window    *, window, A1),
-         AROS_LHA(struct Requester *, requester, A2),
-         AROS_LHA(LONG              , numGad, D0),
+        AROS_LHA(struct Gadget    *, gadgets, A0),
+        AROS_LHA(struct Window    *, window, A1),
+        AROS_LHA(struct Requester *, requester, A2),
+        AROS_LHA(LONG              , numGad, D0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 72, Intuition)
+        struct IntuitionBase *, IntuitionBase, 72, Intuition)
 
 /*  FUNCTION
-    Refresh (draw anew) the specified number of gadgets starting
-    at the specified gadget.
- 
+        Refresh (draw anew) the specified number of gadgets starting
+        at the specified gadget.
+
     INPUTS
-    gadgets - This is the first gadget which will be refreshed.
-    window - The window which contains the gadget
-    requester - If the gadget has GTYP_REQGADGET set, this must be
-        a pointer to a Requester; otherwise the value is
-        ignored.
-    numGad - How many gadgets should be refreshed. The value
-        may range from 0 to MAXLONG. If there are less gadgets
-        in the list than numGad, only the gadgets in the
-        list will be refreshed.
- 
+        gadgets - This is the first gadget which will be refreshed.
+        window - The window which contains the gadget
+        requester - If the gadget has GTYP_REQGADGET set, this must be
+            a pointer to a Requester; otherwise the value is
+            ignored.
+        numGad - How many gadgets should be refreshed. The value
+            may range from 0 to MAXLONG. If there are less gadgets
+            in the list than numGad, only the gadgets in the
+            list will be refreshed.
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
-    This function *must not* be called inside a
-    BeginRefresh()/EndRefresh() pair.
- 
+        This function *must not* be called inside a
+        BeginRefresh()/EndRefresh() pair.
+
     EXAMPLE
-    // Refresh one gadget
-    RefreshGList (&gadget, win, NULL, 1);
- 
-    // Refresh all gadgets in the window
-    RefreshGList (win->FirstGadget, win, NULL, -1L);
- 
+        // Refresh one gadget
+        RefreshGList (&gadget, win, NULL, 1);
+
+        // Refresh all gadgets in the window
+        RefreshGList (win->FirstGadget, win, NULL, -1L);
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

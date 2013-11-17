@@ -34,13 +34,13 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(void, ActivateWindow,
+        AROS_LH1(void, ActivateWindow,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 75, Intuition)
+        struct IntuitionBase *, IntuitionBase, 75, Intuition)
 
 /*  FUNCTION
         Activates the specified window. The window gets the focus

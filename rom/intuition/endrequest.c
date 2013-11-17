@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -23,43 +23,41 @@ static VOID int_endrequest(struct EndRequestActionMsg *msg,
                            struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(void, EndRequest,
+        AROS_LH2(void, EndRequest,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Requester *, requester, A0),
-         AROS_LHA(struct Window *   , window, A1),
+        AROS_LHA(struct Requester *, requester, A0),
+        AROS_LHA(struct Window *   , window, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 20, Intuition)
+        struct IntuitionBase *, IntuitionBase, 20, Intuition)
 
 /*  FUNCTION
-    Remove a requester from the specified window.
-    Other open requesters of this window stay alive.
- 
+        Remove a requester from the specified window. Other open requesters
+        of this window stay alive.
+
     INPUTS
-    requester - The requester to be deleted
-    window - The window to which the requester belongs
- 
+        requester - The requester to be deleted
+        window - The window to which the requester belongs
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    InitRequester(), Request()
+        InitRequester(), Request()
  
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

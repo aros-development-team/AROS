@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -24,24 +24,24 @@ static VOID int_request(struct RequestActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(BOOL, Request,
+        AROS_LH2(BOOL, Request,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Requester *, requester, A0),
-         AROS_LHA(struct Window *   , window, A1),
+        AROS_LHA(struct Requester *, requester, A0),
+        AROS_LHA(struct Window *   , window, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 40, Intuition)
+        struct IntuitionBase *, IntuitionBase, 40, Intuition)
 
 /*  FUNCTION
-    Add a requester to specified window and display it.
+        Add a requester to specified window and display it.
 
     INPUTS
-    requester - The requester to be displayed
-    window - The window to which the requester belongs
+        requester - The requester to be displayed
+        window - The window to which the requester belongs
 
     RESULT
-    TRUE if requester was opened successfully, FALSE else.
+        TRUE if requester was opened successfully, FALSE else.
 
     NOTES
 
@@ -50,11 +50,9 @@ static VOID int_request(struct RequestActionMsg *msg,
     BUGS
 
     SEE ALSO
-    EndRequest(), InitRequester()
+        EndRequest(), InitRequester()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

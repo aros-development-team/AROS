@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -10,46 +10,42 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(ULONG, LockIBase,
+        AROS_LH1(ULONG, LockIBase,
 
 /*  SYNOPSIS */
-         AROS_LHA(ULONG, What, D0),
+        AROS_LHA(ULONG, What, D0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 69, Intuition)
+        struct IntuitionBase *, IntuitionBase, 69, Intuition)
 
 /*  FUNCTION
-    Locks Intuition. While you hold this lock, no fields of Intuition
-    will change. Please release this as soon as possible.
- 
+        Locks Intuition. While you hold this lock, no fields of Intuition
+        will change. Please release this as soon as possible.
+
     INPUTS
-    What - Which fields of Intuition should be locked. The only allowed
-        value for this is currently 0 which means to lock everything.
- 
+        What - Which fields of Intuition should be locked. The only allowed
+            value for this is currently 0 which means to lock everything.
+
     RESULT
-    The result of this function must be passed to UnlockIBase().
- 
+        The result of this function must be passed to UnlockIBase().
+
     NOTES
-    You *must not* call this function if you have any locks on other
-    system resources like layers and LayerInfo locks.
- 
+        You *must not* call this function if you have any locks on other
+        system resources like layers and LayerInfo locks.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    UnLockIBase()
- 
+        UnLockIBase()
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

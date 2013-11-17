@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -24,41 +24,39 @@ static VOID int_changewindowshape(struct ChangeWindowShapeActionMsg *msg,
 #endif
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH3(struct Region *, ChangeWindowShape,
+        AROS_LH3(struct Region *, ChangeWindowShape,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
-         AROS_LHA(struct Region *, newshape, A1),
-         AROS_LHA(struct Hook *, callback, A2),
+        AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Region *, newshape, A1),
+        AROS_LHA(struct Hook *, callback, A2),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 143, Intuition)
+        struct IntuitionBase *, IntuitionBase, 143, Intuition)
 
 /*  FUNCTION
- 
+
     INPUTS
-         window - The window to affect.
- 
+        window - The window to affect.
+
     RESULT
- 
+
     NOTES
-         This function is also present in MorphOS v50, however
-         not implemented and reserved.
- 
+        This function is also present in MorphOS v50, however
+        not implemented and reserved.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -24,46 +24,44 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
                             struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-    AROS_LH3(UWORD, RemoveGList,
+        AROS_LH3(UWORD, RemoveGList,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, remPtr, A0),
-         AROS_LHA(struct Gadget *, gadget, A1),
-         AROS_LHA(LONG           , numGad, D0),
+        AROS_LHA(struct Window *, remPtr, A0),
+        AROS_LHA(struct Gadget *, gadget, A1),
+        AROS_LHA(LONG           , numGad, D0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 74, Intuition)
+        struct IntuitionBase *, IntuitionBase, 74, Intuition)
 
 /*  FUNCTION
 	Remove sublist of gadgets from a window.
-	
+
     INPUTS
 	remPtr - window from which gadgets should be removed
 	gadget - pointer gadget to be removed
 	numGad - number of gadgets to remove. Use -1 to remove
-		 all gadgets to the end of the list.
+	         all gadgets to the end of the list.
 
     RESULT
 	Ordinal number of the removed gadget or -1 on failure
 
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
 	RemoveGadget(), AddGadget(), AddGList()
 
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -21,7 +21,7 @@
 #define USE_FASTPLANEPICK0    1
 
 /*****************************************************************************
- 
+
     NAME */
 #include <graphics/rastport.h>
 #include <graphics/rpattr.h>
@@ -29,49 +29,45 @@
 #include <intuition/imageclass.h>
 #include <proto/intuition.h>
 
-    AROS_LH6(void, DrawImageState,
+        AROS_LH6(void, DrawImageState,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct RastPort *, rp,         A0),
-         AROS_LHA(struct Image    *, image,      A1),
-         AROS_LHA(LONG             , leftOffset, D0),
-         AROS_LHA(LONG             , topOffset,  D1),
-         AROS_LHA(ULONG            , state,      D2),
-         AROS_LHA(struct DrawInfo *, drawInfo,   A2),
+        AROS_LHA(struct RastPort *, rp,         A0),
+        AROS_LHA(struct Image    *, image,      A1),
+        AROS_LHA(LONG             , leftOffset, D0),
+        AROS_LHA(LONG             , topOffset,  D1),
+        AROS_LHA(ULONG            , state,      D2),
+        AROS_LHA(struct DrawInfo *, drawInfo,   A2),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 103, Intuition)
+        struct IntuitionBase *, IntuitionBase, 103, Intuition)
 
 /*  FUNCTION
-    This function renders an image in a certain state.
- 
+        This function renders an image in a certain state.
+
     INPUTS
-    rp - Render in this RastPort
-    image - Render this image
-    leftOffset, topOffset - Add this offset to the position stored in the
-        image.
-    state - Which state (see intuition/imageclass.h for possible
-        values).
-    drawInfo - The DrawInfo from the screen.
- 
+        rp - Render in this RastPort
+        image - Render this image
+        leftOffset, topOffset - Add this offset to the position stored in the
+            image.
+        state - Which state (see intuition/imageclass.h for possible
+            values).
+        drawInfo - The DrawInfo from the screen.
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
-    DrawImageState(), handles both boopsi and conventional images.
- 
+        DrawImageState(), handles both boopsi and conventional images.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

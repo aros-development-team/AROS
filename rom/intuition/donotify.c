@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -65,50 +65,49 @@ static struct IntuiMessage *SendIDCMPUpdate(Class *cl, Object *o, struct opUpdat
 }
 
 /*****i***********************************************************************
- 
-    NAME */
 
-    AROS_LH4(IPTR, DoNotify,
+    NAME */
+        AROS_LH4(IPTR, DoNotify,
 
 /*  SYNOPSIS */
-         AROS_LHA(Class *,      cl, A0),
-         AROS_LHA(Object *,     o,  A1),
-         AROS_LHA(struct ICData *,  ic, A2),
-         AROS_LHA(struct opUpdate *,    msg,    A3),
+        AROS_LHA(Class *,      cl, A0),
+        AROS_LHA(Object *,     o,  A1),
+        AROS_LHA(struct ICData *,  ic, A2),
+        AROS_LHA(struct opUpdate *,    msg,    A3),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 145, Intuition)
+        struct IntuitionBase *, IntuitionBase, 145, Intuition)
 
 /*  FUNCTION
-    This function provides a way for icclass objects to notify
-    their listeners when they are notifying. It is mainly
-    provided as an external function for intuition.library's
-    gadgetclass implementation, which contains an inbuilt
-    icclass.
- 
+        This function provides a way for icclass objects to notify
+        their listeners when they are notifying. It is mainly
+        provided as an external function for intuition.library's
+        gadgetclass implementation, which contains an inbuilt
+        icclass.
+
     INPUTS
         cl      - my class
         o       - this object
         icdata  - interconnection information
         msg     - the message given to the OM_NOTIFY method
- 
+
     RESULT
-    The objects listening to this object will be notified.
- 
-    Note: Return value not clear.
+        The objects listening to this object will be notified.
+
+        Note: Return value not clear.
  
     NOTES
-    This function is also present in MorphOS v50, however
-    considered private.
- 
+        This function is also present in MorphOS v50; however it is
+        considered private there.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
+
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

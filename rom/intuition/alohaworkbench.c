@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -11,13 +11,13 @@
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(void, AlohaWorkbench,
+        AROS_LH1(void, AlohaWorkbench,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct MsgPort *, wbmsgport, A0),
+        AROS_LHA(struct MsgPort *, wbmsgport, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 67, Intuition)
+        struct IntuitionBase *, IntuitionBase, 67, Intuition)
 
 /*  FUNCTION
         The WorkBench program wants to call this function to signal
@@ -52,8 +52,6 @@
         workbench.library/RegisterWorkbench()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

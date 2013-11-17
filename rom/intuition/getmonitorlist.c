@@ -1,7 +1,7 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
- 
+
     Get a copy of monitors list
 */
 
@@ -18,13 +18,13 @@
 
 #include <proto/intuition.h>
 
-    AROS_LH1(Object **, GetMonitorList,
+        AROS_LH1(Object **, GetMonitorList,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct TagItem *, tags, A1),
+        AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 161, Intuition)
+        struct IntuitionBase *, IntuitionBase, 161, Intuition)
 
 /*  FUNCTION
 	Obtain an array of monitorclass objects installed in the
@@ -50,11 +50,9 @@
     BUGS
 
     SEE ALSO
-	FreeMonitorList() 
+	FreeMonitorList()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -15,7 +15,7 @@
 #endif
 
 /*****************************************************************************
- 
+
     NAME */
 #include <graphics/rastport.h>
 #include <graphics/rpattr.h>
@@ -23,45 +23,40 @@
 #include <intuition/imageclass.h>
 #include <proto/intuition.h>
 
-    AROS_LH4(void, EraseImage,
+        AROS_LH4(void, EraseImage,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct RastPort *, rp, A0),
-         AROS_LHA(struct Image    *, image, A1),
-         AROS_LHA(LONG             , leftOffset, D0),
-         AROS_LHA(LONG             , topOffset, D1),
+        AROS_LHA(struct RastPort *, rp, A0),
+        AROS_LHA(struct Image    *, image, A1),
+        AROS_LHA(LONG             , leftOffset, D0),
+        AROS_LHA(LONG             , topOffset, D1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 105, Intuition)
+        struct IntuitionBase *, IntuitionBase, 105, Intuition)
 
 /*  FUNCTION
-    Erase an image on the screen.
- 
+        Erase an image on the screen.
+
     INPUTS
-    rp - Render in this RastPort
-    image - Erase this image
-    leftOffset, topOffset - Add this offset the the position in the
-        image.
- 
+        rp - Render in this RastPort
+        image - Erase this image
+        leftOffset, topOffset - Add this offset the the position in the
+            image.
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    DrawImage(), DrawImageState()
- 
+        DrawImage(), DrawImageState()
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
-    23-10.96    aldi    commited the code
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

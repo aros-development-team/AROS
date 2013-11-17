@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -16,65 +16,61 @@
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH9(void, NewModifyProp,
+        AROS_LH9(void, NewModifyProp,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Gadget    *, gadget, A0),
-         AROS_LHA(struct Window    *, window, A1),
-         AROS_LHA(struct Requester *, requester, A2),
-         AROS_LHA(ULONG             , flags, D0),
-         AROS_LHA(ULONG             , horizPot, D1),
-         AROS_LHA(ULONG             , vertPot, D2),
-         AROS_LHA(ULONG             , horizBody, D3),
-         AROS_LHA(ULONG             , vertBody, D4),
-         AROS_LHA(LONG              , numGad, D5),
+        AROS_LHA(struct Gadget    *, gadget, A0),
+        AROS_LHA(struct Window    *, window, A1),
+        AROS_LHA(struct Requester *, requester, A2),
+        AROS_LHA(ULONG             , flags, D0),
+        AROS_LHA(ULONG             , horizPot, D1),
+        AROS_LHA(ULONG             , vertPot, D2),
+        AROS_LHA(ULONG             , horizBody, D3),
+        AROS_LHA(ULONG             , vertBody, D4),
+        AROS_LHA(LONG              , numGad, D5),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 78, Intuition)
+        struct IntuitionBase *, IntuitionBase, 78, Intuition)
 
 /*  FUNCTION
-    Changes the values in the PropInfo-structure of a proportional
-    gadget and refreshes the specified number of gadgets beginning
-    at the proportional gadget. If numGad is 0 (zero), then no
-    refreshing is done.
+        Changes the values in the PropInfo-structure of a proportional
+        gadget and refreshes the specified number of gadgets beginning
+        at the proportional gadget. If numGad is 0 (zero), then no
+        refreshing is done.
 
     INPUTS
-    gadget - Must be a PROPGADGET.
-    window - The window which contains the gadget
-    requester - If the gadget has GTYP_REQGADGET set, this must be
-        non-NULL.
-    flags - New flags
-    horizPot - New value for the HorizPot field of the PropInfo
-    vertPot - New value for the VertPot field of the PropInfo
-    horizBody - New value for the HorizBody field of the PropInfo
-    vertBody - New value for the VertBody field of the PropInfo
-    numGad - How many gadgets to refresh. 0 means none (not even
-        the current gadget) and -1 means all of them.
+        gadget - Must be a PROPGADGET.
+        window - The window which contains the gadget
+        requester - If the gadget has GTYP_REQGADGET set, this must be
+            non-NULL.
+        flags - New flags
+        horizPot - New value for the HorizPot field of the PropInfo
+        vertPot - New value for the VertPot field of the PropInfo
+        horizBody - New value for the HorizBody field of the PropInfo
+        vertBody - New value for the VertBody field of the PropInfo
+        numGad - How many gadgets to refresh. 0 means none (not even
+            the current gadget) and -1 means all of them.
 
     RESULT
-    None.
+        None.
 
     NOTES
-    If NewModifyProp does not work for you, check if you
-    really have a gadget with GTYP_PROPGADGET set. If you
-    create a new gadget object from PROPGCLASS, you
-    might very well get a GTYP_CUSTOMGADGET gadget.
-    As a workaround, you might have to set the
-    gadget type to GTYP_PROPGADGET manually during the
-    call to NewModifyProp. Intuition does this, too.
+        If NewModifyProp does not work for you, check if you
+        really have a gadget with GTYP_PROPGADGET set. If you
+        create a new gadget object from PROPGCLASS, you
+        might very well get a GTYP_CUSTOMGADGET gadget.
+        As a workaround, you might have to set the
+        gadget type to GTYP_PROPGADGET manually during the
+        call to NewModifyProp. Intuition does this, too.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-    ModifyProp(), RefreshGadgets(), RefreshGList()
+        ModifyProp(), RefreshGadgets(), RefreshGList()
 
     INTERNALS
-
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {

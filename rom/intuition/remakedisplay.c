@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -8,40 +8,38 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH0(LONG, RemakeDisplay,
+        AROS_LH0(LONG, RemakeDisplay,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 64, Intuition)
+        struct IntuitionBase *, IntuitionBase, 64, Intuition)
 
 /*  FUNCTION
-    Remake the entire Intuition display.
-    
+        Remake the entire Intuition display.
+
     INPUTS
-    None.
- 
+        None.
+
     RESULT
-    Zero for success, non-zero for failure.
- 
+        Zero for success, non-zero for failure.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    RethinkDisplay(), MakeScreen(), graphics.library/MakeVPort(),
-    graphics.library/MrgCop(), graphics.library/LoadView()
- 
+        RethinkDisplay(), MakeScreen(), graphics.library/MakeVPort(),
+        graphics.library/MrgCop(), graphics.library/LoadView()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

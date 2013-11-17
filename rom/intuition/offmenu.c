@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -7,43 +7,41 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/intuition.h>
 
-    AROS_LH2(void, OffMenu,
+        AROS_LH2(void, OffMenu,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window    *, window, A0),
-         AROS_LHA(UWORD             , menunumber, D0),
+        AROS_LHA(struct Window    *, window, A0),
+        AROS_LHA(UWORD             , menunumber, D0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 30, Intuition)
+        struct IntuitionBase *, IntuitionBase, 30, Intuition)
 
 /*  FUNCTION
-    Disable a whole menu, an item or a sub-item depending on
-    the menunumber.
- 
+        Disable a whole menu, an item or a sub-item depending on
+        the menunumber.
+
     INPUTS
-    window - The window, the menu belongs to
-    menunumber - The packed information on what piece of menu to disable
- 
+        window - The window, the menu belongs to
+        menunumber - The packed information on what piece of menu to disable
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    OnMenu(), ResetMenuStrip()
- 
+        OnMenu(), ResetMenuStrip()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

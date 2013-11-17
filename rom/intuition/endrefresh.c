@@ -9,27 +9,27 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(void, EndRefresh,
+        AROS_LH2(void, EndRefresh,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
-         AROS_LHA(BOOL           , complete, D0),
+        AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(BOOL           , complete, D0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 61, Intuition)
+        struct IntuitionBase *, IntuitionBase, 61, Intuition)
 
 /*  FUNCTION
-	Finishes refreshing which was initialized with BeginRefresh().
-	The argument |complete| is usually TRUE. It can be useful to
-	set it to FALSE when refreshing is split into several tasks.
+        Finishes refreshing which was initialized with BeginRefresh().
+        The argument |complete| is usually TRUE. It can be useful to
+        set it to FALSE when refreshing is split into several tasks.
 
     INPUTS
-	window   - the window to be refreshed
-	complete - BOOL which states if all refreshing is done
+        window   - the window to be refreshed
+        complete - BOOL which states if all refreshing is done
 
     RESULT
  
@@ -40,10 +40,10 @@
     BUGS
  
     SEE ALSO
-	BeginRefresh()
+        BeginRefresh()
 
     INTERNALS
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

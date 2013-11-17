@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -16,29 +16,29 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-    AROS_LH4(void, PrintIText,
+        AROS_LH4(void, PrintIText,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct RastPort  *, rp, A0),
-         AROS_LHA(struct IntuiText *, iText, A1),
-         AROS_LHA(LONG              , leftOffset, D0),
-         AROS_LHA(LONG              , topOffset, D1),
+        AROS_LHA(struct RastPort  *, rp, A0),
+        AROS_LHA(struct IntuiText *, iText, A1),
+        AROS_LHA(LONG              , leftOffset, D0),
+        AROS_LHA(LONG              , topOffset, D1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 36, Intuition)
+        struct IntuitionBase *, IntuitionBase, 36, Intuition)
 
 /*  FUNCTION
-    Render an IntuiText in the specified RastPort with the
-    specified offset.
+        Render an IntuiText in the specified RastPort with the
+        specified offset.
 
     INPUTS
-    rp - Draw into this RastPort
-    iText - Render this text
-    leftOffset, topOffset - Starting-Point. All coordinates in the
-        IntuiText structures are relative to this point.
+        rp - Draw into this RastPort
+        iText - Render this text
+        leftOffset, topOffset - Starting-Point. All coordinates in the
+            IntuiText structures are relative to this point.
 
     RESULT
-    None.
+        None.
 
     NOTES
 
@@ -49,10 +49,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {

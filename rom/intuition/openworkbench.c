@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -42,26 +42,24 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
 /*****************************************************************************
 
     NAME */
-
-    AROS_LH0(IPTR, OpenWorkBench,
+        AROS_LH0(IPTR, OpenWorkBench,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 35, Intuition)
+        struct IntuitionBase *, IntuitionBase, 35, Intuition)
 
 /*  FUNCTION
-    Attempt to open the Workbench screen.
+        Attempt to open the Workbench screen.
 
     INPUTS
-    None.
+        None.
 
     RESULT
-    Tries to (re)open WorkBench screen. If successful return value
-    is a pointer to the screen structure, which shouldn't be used,
-    because other programs may close the WorkBench and make the
-    pointer invalid.
-    If this function fails the return value is NULL.
+        Tries to (re)open WorkBench screen. If successful return value
+        is a pointer to the screen structure, which shouldn't be used,
+        because other programs may close the WorkBench and make the
+        pointer invalid. If this function fails the return value is NULL.
 
     NOTES
 
@@ -70,7 +68,7 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
     BUGS
 
     SEE ALSO
-    CloseWorkBench()
+        CloseWorkBench()
 
     INTERNALS
 

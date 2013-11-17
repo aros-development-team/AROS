@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -19,43 +19,42 @@ static VOID int_movewindowinfrontof(struct MoveWindowInFrontOfActionMsg *msg,
                                     struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(void, MoveWindowInFrontOf,
+        AROS_LH2(void, MoveWindowInFrontOf,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
-         AROS_LHA(struct Window *, behindwindow, A1),
+        AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Window *, behindwindow, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 80, Intuition)
+        struct IntuitionBase *, IntuitionBase, 80, Intuition)
 
 /*  FUNCTION
-    Arrange the relative depth of a window.
- 
+        Arrange the relative depth of a window.
+
     INPUTS
-    window - the window to reposition
-    behindwindow - the window the other one will be brought in front of
- 
+        window - the window to reposition
+        behindwindow - the window the other one will be brought in front of
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    WindowToFront(), WindowToBack(), hyperlayers.library/MoveLayerInFrontOf()
- 
+        WindowToFront(), WindowToBack(),
+        hyperlayers.library/MoveLayerInFrontOf()
+
     INTERNALS
-    Uses layers.library/MoveLayerInFrontOf().
- 
-    HISTORY
- 
+        Uses layers.library/MoveLayerInFrontOf().
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

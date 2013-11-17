@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -14,20 +14,20 @@ static void ShowLayer(struct Layer *);
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH0(void, DumpIntuiState,
+        AROS_LH0(void, DumpIntuiState,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 152, Intuition)
+        struct IntuitionBase *, IntuitionBase, 152, Intuition)
 
 /*  FUNCTION
-    Private: dump the internal state of intuition.
+        Private: dump the internal state of intuition.
 
     INPUTS
 
     RESULT
-        none
+        None.
 
     NOTES
 

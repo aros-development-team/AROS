@@ -18,25 +18,25 @@
 /*****************************************************************************
 
     NAME */
-    AROS_LH3(ULONG, SetIPrefs,
+        AROS_LH3(ULONG, SetIPrefs,
 
 /*  SYNOPSIS */
-         AROS_LHA(APTR , data, A0),
-         AROS_LHA(ULONG, length, D0),
-         AROS_LHA(ULONG, type, D1),
+        AROS_LHA(APTR , data, A0),
+        AROS_LHA(ULONG, length, D0),
+        AROS_LHA(ULONG, type, D1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 96, Intuition)
+        struct IntuitionBase *, IntuitionBase, 96, Intuition)
 
 /*  FUNCTION
 
     INPUTS
 
     RESULT
-    Depending on the operation
+        Depending on the operation.
 
     NOTES
-        This function is currently considered private
+        This function is currently considered private.
 
     EXAMPLE
 
@@ -45,8 +45,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

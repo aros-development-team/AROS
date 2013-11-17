@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -63,29 +63,29 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
 static int charsinstring(CONST_STRPTR string, char c);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 #include <exec/types.h>
 #include <intuition/intuition.h>
 
-    AROS_LH4(struct Window *, BuildEasyRequestArgs,
+        AROS_LH4(struct Window *, BuildEasyRequestArgs,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window     *, RefWindow, A0),
-         AROS_LHA(struct EasyStruct *, easyStruct, A1),
-         AROS_LHA(ULONG              , IDCMP, D0),
-         AROS_LHA(APTR               , Args, A3),
+        AROS_LHA(struct Window     *, RefWindow, A0),
+        AROS_LHA(struct EasyStruct *, easyStruct, A1),
+        AROS_LHA(ULONG              , IDCMP, D0),
+        AROS_LHA(APTR               , Args, A3),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 99, Intuition)
+        struct IntuitionBase *, IntuitionBase, 99, Intuition)
 
 /*  FUNCTION
 	Opens a requester, which provides one or more choices. The control is
 	returned to the application after the requester was opened. It is
 	handled by subsequent calls to SysReqHandler() and closed by calling
 	FreeSysRequest().
- 
+
     INPUTS
 	RefWindow - A reference window. If NULL, the requester opens on
 		    the default public screen.
@@ -96,24 +96,22 @@ static int charsinstring(CONST_STRPTR string, char c);
 		etc. Note that this is not a pointer to the flags as in
 		EasyRequestArgs().
 	Args - The arguments for easyStruct->es_TextFormat.
- 
+
     RESULT
 	Returns a pointer to the requester. Use this pointer only for calls
 	to SysReqHandler() and FreeSysRequest().
- 
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
 	EasyRequestArgs(), SysReqHandler(), FreeSysRequest()
- 
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

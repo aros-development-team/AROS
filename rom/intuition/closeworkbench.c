@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -10,40 +10,37 @@
 #include <proto/intuition.h>
 
 /*****************************************************************************
- 
-    NAME */
 
-    AROS_LH0(LONG, CloseWorkBench,
+    NAME */
+        AROS_LH0(LONG, CloseWorkBench,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 13, Intuition)
+        struct IntuitionBase *, IntuitionBase, 13, Intuition)
 
 /*  FUNCTION
-    Attempt to close the Workbench screen. This will fail if there are any
-    non-Drawer windows open on it.
- 
+        Attempt to close the Workbench screen. This will fail if there are any
+        non-Drawer windows open on it.
+
     INPUTS
- 
+
     RESULT
-	success - TRUE if Workbench screen could be closed.
- 
+        success - TRUE if Workbench screen could be closed.
+
     NOTES
-	If the Workbench screen is already closed when this function is called,
-	FALSE is returned.
- 
+        If the Workbench screen is already closed when this function is called,
+        FALSE is returned.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    OpenWorkBench()
- 
+        OpenWorkBench()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -19,46 +19,44 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(BOOL, ShowWindow,
+        AROS_LH2(BOOL, ShowWindow,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
-         AROS_LHA(struct Window *, other, A1),
+        AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Window *, other, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 140, Intuition)
+        struct IntuitionBase *, IntuitionBase, 140, Intuition)
 
 /*  FUNCTION
         Make a window visible. This function does not bring the
         window back into the visible area of the screen but rather
         switches it into visible state.
- 
+
     INPUTS
 	window - The window to affect.
- 
+
     RESULT
 	Success indicator. On AROS it's always TRUE.
- 
+
     NOTES
 	This function is soure-compatible with AmigaOS v4.
         This function is also present in MorphOS v50, however
         considered private.
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
 	HideWindow()
- 
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
