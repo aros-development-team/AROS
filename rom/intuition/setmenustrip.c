@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -11,51 +11,48 @@ void CalculateDims(struct Window *win, struct Menu *menu);
 void Characterize(struct Menu *menu);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 #include <proto/exec.h>
 #include <intuition/intuition.h>
 
-    AROS_LH2(BOOL, SetMenuStrip,
+        AROS_LH2(BOOL, SetMenuStrip,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
-         AROS_LHA(struct Menu   *, menu  , A1),
+        AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Menu   *, menu  , A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 44, Intuition)
+        struct IntuitionBase *, IntuitionBase, 44, Intuition)
 
 /*  FUNCTION
-    This function adds a MenuStrip to the Window, which can be invoked
-    by the user after this call by pressing the right mouse button.
-    Menus with no MenuItems will not be attached.
- 
+        This function adds a MenuStrip to the Window, which can be invoked
+        by the user after this call by pressing the right mouse button.
+        Menus with no MenuItems will not be attached.
+
     INPUTS
-    window - The window to add the MenuStrip to
-    menu   - The menu to be added to the window above.
- 
+        window - The window to add the MenuStrip to
+        menu   - The menu to be added to the window above.
+
     RESULT
-    TRUE if all menus have at least one menuitem.
- 
+        TRUE if all menus have at least one menuitem.
+
     NOTES
-    This function calculates internal values and is therfore the
-    official way to add a new MenuStrip to Window.
-    Always do a ClearMenuStrip() before closing the Window or adding
-    another MenuStrip to the Window.
- 
+        This function calculates internal values and is therfore the
+        official way to add a new MenuStrip to Window.
+        Always do a ClearMenuStrip() before closing the Window or adding
+        another MenuStrip to the Window.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    ResetMenuStrip(), ClearMenuStrip()
- 
+        ResetMenuStrip(), ClearMenuStrip()
+
     INTERNALS
- 
-    HISTORY
-    11.06.99  SDuvan  implemented function
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

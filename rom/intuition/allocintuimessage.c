@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -8,41 +8,40 @@
 #include <exec/exec.h>
 
 /*****i***********************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(struct IntuiMessage *, AllocIntuiMessage,
+        AROS_LH1(struct IntuiMessage *, AllocIntuiMessage,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 148, Intuition)
+        struct IntuitionBase *, IntuitionBase, 148, Intuition)
 
 /*  FUNCTION
-    Private to AROS: allocate an IntuiMessage. IntuiMessage->Window
-    will be set to window by this function.
- 
+        Private to AROS: allocate an IntuiMessage. IntuiMessage->Window
+        will be set to window by this function.
+
     INPUTS
-    window - The window to which the IntuiMessage will be sent
- 
+        window - The window to which the IntuiMessage will be sent
+
     RESULT
-    an allocated IntuiMessage structure. Must be freed with FreeIntuiMessage
- 
+        An allocated IntuiMessage structure. Must be freed with
+        FreeIntuiMessage().
+
     NOTES
-    This private function is also present in MorphOS v50.
- 
+        This private function is also present in MorphOS v50.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

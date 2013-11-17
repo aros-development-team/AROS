@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -12,51 +12,47 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <graphics/rastport.h>
 #include <intuition/cghooks.h>
 #include <proto/intuition.h>
 
-    AROS_LH1(struct RastPort *, ObtainGIRPort,
+        AROS_LH1(struct RastPort *, ObtainGIRPort,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct GadgetInfo *, gInfo, A0),
+        AROS_LHA(struct GadgetInfo *, gInfo, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 93, Intuition)
+        struct IntuitionBase *, IntuitionBase, 93, Intuition)
 
 /*  FUNCTION
-    This function sets up a RastPort for exclusive use by custom
-    gadget hook routines. Call this function each time a hook
-    routine needs to render into the gadget and ReleaseGIRPort()
-    immediately afterwards.
- 
+        This function sets up a RastPort for exclusive use by custom
+        gadget hook routines. Call this function each time a hook
+        routine needs to render into the gadget and ReleaseGIRPort()
+        immediately afterwards.
+
     INPUTS
-    gInfo - Pointer to GadgetInfo structure, as passed to each
-    custom gadget hook function.
- 
+        gInfo - Pointer to GadgetInfo structure, as passed to each
+            custom gadget hook function.
+
     RESULT
-    Pointer to a RastPort you can render to. NULL if you aren't
-    allowed to render into this gadget.
- 
+        Pointer to a RastPort you can render to. NULL if you aren't
+        allowed to render into this gadget.
+
     NOTES
-    If a routine passes a RastPort, eg. GM_RENDER, ObtainGIRPort()
-    needn't be called.
- 
+        If a routine passes a RastPort, eg. GM_RENDER, ObtainGIRPort()
+        needn't be called.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    ReleaseGIRPort()
- 
+        ReleaseGIRPort()
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -27,41 +27,40 @@
 
 
 /*****i************************************************************************
- 
+
     NAME */
-    AROS_UFH3(IPTR, rootDispatcher,
+        AROS_UFH3(IPTR, rootDispatcher,
 
 /*  SYNOPSIS */
-          AROS_UFHA(Class  *, cl,  A0),
-          AROS_UFHA(Object *, o,   A2),
-          AROS_UFHA(Msg,      msg, A1))
+        AROS_UFHA(Class  *, cl,  A0),
+        AROS_UFHA(Object *, o,   A2),
+        AROS_UFHA(Msg,      msg, A1))
 
 /*  FUNCTION
-    internal !
- 
-    Processes all messages sent to the RootClass. Unknown messages are
-    silently ignored.
- 
+        Internal function!
+
+        Processes all messages sent to the RootClass. Unknown messages are
+        silently ignored.
+
     INPUTS
-    cl - Pointer to the RootClass
-    o - This object was the destination for the message in the first
-        place
-    msg - This is the message.
- 
+        cl - Pointer to the RootClass
+        o - This object was the destination for the message in the first
+            place
+        msg - This is the message.
+
     RESULT
-    Processes the message. The meaning of the result depends on the
-    type of the message.
- 
+        The meaning of the result depends on the type of the message.
+
     NOTES
-    This is a good place to debug BOOPSI objects since every message
-    should eventually show up here.
- 
+        This is a good place to debug BOOPSI objects since every message
+        should eventually show up here.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
 ******************************************************************************/
 {
     AROS_USERFUNC_INIT

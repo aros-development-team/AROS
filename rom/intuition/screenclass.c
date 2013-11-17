@@ -24,7 +24,7 @@
 #include "intuition_customize.h"
 #include "monitorclass_private.h"
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
 	--background_screenclass--
@@ -33,16 +33,16 @@
 	screenclass
 
     NOTES
-	In AROS screens are BOOPSI objects. It is possible to modify certain properties
-        of the screen by using SetAttrs() and GetAttr() functions.
-
-	screenclass by itself is private to the system and does not have a public ID.
-        The user can't create objects of this class manually. Screens are created and
-        destroyed as usually, using OpenScreen() and CloseScreen() functions.
+	In AROS screens are BOOPSI objects. It is possible to modify certain
+	properties of the screen by using the SetAttrs() and GetAttr()
+	functions. screenclass by itself is private to the system and does not
+	have a public ID. The user can't create objects of this class
+	manually. Screens are created and destroyed as usual, using
+	the OpenScreen() and CloseScreen() functions.
 
 	This class is fully compatible with MorphOS starting from v2.x.
 
-*****************************************************************************************/
+*****************************************************************************/
 
 IPTR ScreenClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
@@ -105,7 +105,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
     return 0;
 }
 
-/*i***************************************************************************************
+/*i***************************************************************************
 
     NAME
         SA_Left
@@ -117,7 +117,8 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-        Position of left edge of the screen relative to top-left physical display corner.
+        Position of left edge of the screen relative to top-left physical
+        display corner.
 
     NOTES
 
@@ -129,8 +130,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_Top
@@ -142,7 +144,8 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-        Position of top edge of the screen relative to top-left physical display corner.
+        Position of top edge of the screen relative to top-left physical
+        display corner.
 
     NOTES
 
@@ -154,8 +157,8 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+/*i***************************************************************************
 
     NAME
         SA_Width
@@ -179,8 +182,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_Height
@@ -204,8 +208,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_Depth
@@ -220,9 +225,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         Depth of the screen.
 
     NOTES
-        This attribute returns real depth, however old structure fields, for example
-        screen->RastPort.BitMap->bm_Depth, in case of direct-color screens will
-        contain 8 for purposes of backwards compatibility. 
+        This attribute returns the real depth; however, old structure fields,
+        for example screen->RastPort.BitMap->bm_Depth, in case of direct-color
+        screens will contain 8 for purposes of backwards compatibility.
 
     EXAMPLE
 
@@ -232,8 +237,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_PubName
@@ -257,8 +263,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_DisplayID
@@ -282,8 +289,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_Behind
@@ -311,8 +319,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_MonitorName
@@ -324,8 +333,8 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-        Name of the monitorclass object (AKA display device name) to which this screen
-        belongs.
+        Name of the monitorclass object (AKA display device name) to which
+        this screen belongs.
 
     NOTES
 
@@ -338,8 +347,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_MonitorObject
@@ -351,7 +361,8 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-        Returns display device (monitorclass) object to which this screen belongs
+        Returns display device (monitorclass) object to which this screen
+        belongs.
 
     NOTES
 
@@ -364,8 +375,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_TopLeftScreen
@@ -377,14 +389,16 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-	Get a pointer to a public screen displayed on a monitor placed in top-left diagonal
-        direction relative to this screen's one. If the frontmost screen on the given
-        monitor is not public, NULL will be returned.
+        Get a pointer to a public screen displayed on a monitor placed in
+        top-left diagonal direction relative to this screen's one. If the
+        frontmost screen on the given monitor is not public, NULL will be
+        returned.
 
     NOTES
-        AROS supports screen composition, so more than one screen is actually displayed
-        at any given time. In order to match MorphOS semantics this attribute takes into
-        account only the frontmost screen on the given monitor.
+        AROS supports screen composition, so more than one screen is actually
+        displayed at any given time. In order to match MorphOS semantics this
+        attribute takes into account only the frontmost screen on the given
+        monitor.
 
     EXAMPLE
 
@@ -395,8 +409,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_TopMiddleScreen
@@ -408,14 +423,15 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-	Get a pointer to a public screen displayed on a monitor placed in top direction
-        relative to this screen's one. If the frontmost screen on the given monitor is
-        not public, NULL will be returned.
+        Get a pointer to a public screen displayed on a monitor placed in top
+        direction relative to this screen's one. If the frontmost screen on
+        the given monitor is not public, NULL will be returned.
 
     NOTES
-        AROS supports screen composition, so more than one screen is actually displayed
-        at any given time. In order to match MorphOS semantics this attribute takes into
-        account only the frontmost screen on the given monitor.
+        AROS supports screen composition, so more than one screen is actually
+        displayed at any given time. In order to match MorphOS semantics this
+        attribute takes into account only the frontmost screen on the given
+        monitor.
 
     EXAMPLE
 
@@ -426,8 +442,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_TopRightScreen
@@ -439,14 +456,15 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-	Get a pointer to a screen displayed on a monitor placed in top-right diagonal
-        direction relative to this screen's one. If the frontmost screen on the given
-        monitor is not public, NULL will be returned.
+	Get a pointer to a screen displayed on a monitor placed in top-right
+        diagonal direction relative to this screen's one. If the frontmost
+        screen on the given monitor is not public, NULL will be returned.
 
     NOTES
-        AROS supports screen composition, so more than one screen is actually displayed
-        at any given time. In order to match MorphOS semantics this attribute takes into
-        account only the frontmost screen on the given monitor.
+        AROS supports screen composition, so more than one screen is actually
+        displayed at any given time. In order to match MorphOS semantics this
+        attribute takes into account only the frontmost screen on the given
+        monitor.
 
     EXAMPLE
 
@@ -457,8 +475,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_MiddleLeftScreen
@@ -470,14 +489,15 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-	Get a pointer to a public screen displayed on a monitor placed in left direction
-        relative to this screen's one. If the frontmost screen on the given monitor is
-        not public, NULL will be returned.
+	Get a pointer to a public screen displayed on a monitor placed in left
+        direction relative to this screen's one. If the frontmost screen on
+        the given monitor is not public, NULL will be returned.
 
     NOTES
-        AROS supports screen composition, so more than one screen is actually displayed
-        at any given time. In order to match MorphOS semantics this attribute takes into
-        account only the frontmost screen on the given monitor.
+        AROS supports screen composition, so more than one screen is actually
+        displayed at any given time. In order to match MorphOS semantics this
+        attribute takes into account only the frontmost screen on the given
+        monitor.
 
     EXAMPLE
 
@@ -488,8 +508,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_MiddleRightScreen
@@ -501,14 +522,15 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-	Get a pointer to a public screen displayed on a monitor placed in left direction
-        relative to this screen's one. If the frontmost screen on the given monitor is
-        not public, NULL will be returned.
+	Get a pointer to a public screen displayed on a monitor placed in left
+        direction relative to this screen's one. If the frontmost screen on
+        the given monitor is not public, NULL will be returned.
 
     NOTES
-        AROS supports screen composition, so more than one screen is actually displayed
-        at any given time. In order to match MorphOS semantics this attribute takes into
-        account only the frontmost screen on the given monitor.
+        AROS supports screen composition, so more than one screen is actually
+        displayed at any given time. In order to match MorphOS semantics this
+        attribute takes into account only the frontmost screen on the given
+        monitor.
 
     EXAMPLE
 
@@ -519,8 +541,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_BottomLeftScreen
@@ -532,14 +555,16 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-	Get a pointer to a public screen displayed on a monitor placed in bottom-left
-        diagonal direction relative to this screen's one. If the frontmost screen on
-        the given monitor is not public, NULL will be returned.
+	Get a pointer to a public screen displayed on a monitor placed in
+        bottom-left diagonal direction relative to this screen's one. If the
+        frontmost screen on the given monitor is not public, NULL will be
+        returned.
 
     NOTES
-        AROS supports screen composition, so more than one screen is actually displayed
-        at any given time. In order to match MorphOS semantics this attribute takes into
-        account only the frontmost screen on the given monitor.
+        AROS supports screen composition, so more than one screen is actually
+        displayed at any given time. In order to match MorphOS semantics this
+        attribute takes into account only the frontmost screen on the given
+        monitor.
 
     EXAMPLE
 
@@ -550,8 +575,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_BottomMiddleScreen
@@ -563,14 +589,15 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-	Get a pointer to a public screen displayed on a monitor placed in bottom direction
-        relative to this screen's one. If the frontmost screen on the given monitor is
-        not public, NULL will be returned.
+	Get a pointer to a public screen displayed on a monitor placed in
+        bottom direction relative to this screen's one. If the frontmost
+        screen on the given monitor is not public, NULL will be returned.
 
     NOTES
-        AROS supports screen composition, so more than one screen is actually displayed
-        at any given time. In order to match MorphOS semantics this attribute takes into
-        account only the frontmost screen on the given monitor.
+        AROS supports screen composition, so more than one screen is actually
+        displayed at any given time. In order to match MorphOS semantics this
+        attribute takes into account only the frontmost screen on the given
+        monitor.
 
     EXAMPLE
 
@@ -581,8 +608,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_BottomRightScreen
@@ -594,14 +622,16 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-	Get a pointer to a screen displayed on a monitor placed in bottom-right diagonal
-        direction relative to this screen's one. If the frontmost screen on the given
-        monitor is not public, NULL will be returned.
+	Get a pointer to a screen displayed on a monitor placed in
+        bottom-right diagonal direction relative to this screen's one. If the
+        frontmost screen on the given monitor is not public, NULL will be
+        returned.
 
     NOTES
-        AROS supports screen composition, so more than one screen is actually displayed
-        at any given time. In order to match MorphOS semantics this attribute takes into
-        account only the frontmost screen on the given monitor.
+        AROS supports screen composition, so more than one screen is actually
+        displayed at any given time. In order to match MorphOS semantics this
+        attribute takes into account only the frontmost screen on the given
+        monitor.
 
     EXAMPLE
 
@@ -612,8 +642,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_StopBlanker
@@ -625,8 +656,8 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-        This attribute is currently reserved and exists only for source compatibility with
-        MorphOS.
+        This attribute is currently reserved and exists only for source
+        compatibility with MorphOS.
 
     NOTES
 
@@ -638,8 +669,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_ShowPointer
@@ -651,8 +683,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-        Setting this attribute to FALSE makes mouse pointer invisible on your custom screen.
-        Default value is TRUE. Setting this attribute on public screens is ignore.
+        Setting this attribute to FALSE makes mouse pointer invisible on your
+        custom screen. The default value is TRUE. Setting this attribute on
+        public screens is ignored.
 
     NOTES
 
@@ -664,8 +697,9 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
-/*i***************************************************************************************
+*****************************************************************************/
+
+/*i***************************************************************************
 
     NAME
         SA_GammaControl
@@ -677,14 +711,14 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
         screenclass
 
     FUNCTION
-        Setting this attribute to TRUE enables to use SA_GammaRed, SA_GammaBlue and
-        SA_GammaGreen attributes to supply custom gamma correction table for your
-        screen.
+        Setting this attribute to TRUE enables use of the SA_GammaRed,
+        SA_GammaBlue and SA_GammaGreen attributes to supply a custom gamma
+        correction table for your screen.
 
     NOTES
-        Since in AROS more than one screen can be visible simultaneously, current
-        display gamma correction table is determined by the frontmost screen on
-        that display.
+        Since in AROS more than one screen can be visible simultaneously, the
+        current display gamma correction table is determined by the frontmost
+        screen on that display.
 
     EXAMPLE
 
@@ -694,7 +728,7 @@ static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBa
 
     INTERNALS
 
-*****************************************************************************************/
+*****************************************************************************/
 
 IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {

@@ -1,6 +1,6 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
-    Copyright Â© 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -16,39 +16,40 @@
 #include "inputhandler_actions.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(void, ChangeDecoration,
+        AROS_LH2(void, ChangeDecoration,
 
 /*  SYNOPSIS */
-	 AROS_LHA(ULONG, ID, D0),
-	 AROS_LHA(struct NewDecorator *, nd, A0),
+        AROS_LHA(ULONG, ID, D0),
+        AROS_LHA(struct NewDecorator *, nd, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 152, Intuition)
+        struct IntuitionBase *, IntuitionBase, 152, Intuition)
 
 /*  FUNCTION
-	Setup a new decorator for intuition windows, screens or menus.
+        Setup a new decorator for intuition windows, screens or menus.
 
     INPUTS
-	ID - identifier for decorations, see screens.h
-	nd -  an ID dependent NewDecorator structure
+        ID - identifier for decorations, see screens.h
+        nd - an ID dependent NewDecorator structure
 
     RESULT
-	void - this Function cannot fail, 
+        None.
 
     NOTES
-	The function fails if screens are open, use ChangeIntuition() to notify applications that
-	the UI will be changed.
+        The function fails if screens are open; use ChangeIntuition() to
+        notify applications that the UI will be changed.
 
-	This function is private and AROS-specific. Do not use it in regular applications.
+        This function is private and AROS-specific. Do not use it in regular
+        applications.
 
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
 	intuition/screens.h
 

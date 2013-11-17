@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
- 
+
     Move a window around on the screen.
 */
 
@@ -22,43 +22,41 @@ static VOID int_movewindow(struct MoveWindowActionMsg *msg,
 
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH3(void, MoveWindow,
+        AROS_LH3(void, MoveWindow,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
-         AROS_LHA(LONG           , dx, D0),
-         AROS_LHA(LONG           , dy, D1),
+        AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(LONG           , dx, D0),
+        AROS_LHA(LONG           , dy, D1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 28, Intuition)
+        struct IntuitionBase *, IntuitionBase, 28, Intuition)
 
 /*  FUNCTION
-    Change the position of a window on the screen.
- 
+        Change the position of a window on the screen.
+
     INPUTS
-    window - Move this window
-    dx, dy - Move it that many pixels along the axis (right, down)
- 
+        window - Move this window
+        dx, dy - Move it that many pixels along the axis (right, down)
+
     RESULT
-    The window will move when the next input event will be received.
- 
+        The window will move when the next input event will be received.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    SizeWindow()
- 
+        SizeWindow()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

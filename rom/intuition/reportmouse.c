@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -12,14 +12,14 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-    AROS_LH2(void, ReportMouse,
+        AROS_LH2(void, ReportMouse,
 
 /*  SYNOPSIS */
-         AROS_LHA(LONG           , flag, D0),
-         AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(LONG           , flag, D0),
+        AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 39, Intuition)
+        struct IntuitionBase *, IntuitionBase, 39, Intuition)
 
 /*  FUNCTION
         Enable or disable the window flag REPORTMOUSE. If the flag is

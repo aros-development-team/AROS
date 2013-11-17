@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -11,38 +11,33 @@
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH0(VOID, UnlockPubScreenList,
+        AROS_LH0(VOID, UnlockPubScreenList,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 88, Intuition)
+        struct IntuitionBase *, IntuitionBase, 88, Intuition)
 
 /*  FUNCTION
- 
-    Release lock made by LockPubScreenList().
- 
+        Release lock made by LockPubScreenList().
+
     INPUTS
- 
+        None.
+
     RESULT
- 
+        None.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
-    LockPubScreenList()
- 
+        LockPubScreenList()
+
     INTERNALS
- 
-    HISTORY
-        21-06-98    SDuvan  Implemented
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

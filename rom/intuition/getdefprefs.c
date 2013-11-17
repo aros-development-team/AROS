@@ -9,41 +9,41 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(struct Preferences *, GetDefPrefs,
+        AROS_LH2(struct Preferences *, GetDefPrefs,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Preferences * , prefbuffer, A0),
-         AROS_LHA(WORD                 , size, D0),
+        AROS_LHA(struct Preferences * , prefbuffer, A0),
+        AROS_LHA(WORD                 , size, D0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 21, Intuition)
+        struct IntuitionBase *, IntuitionBase, 21, Intuition)
 
 /*  FUNCTION
-    Gets a copy of the Intuition default Preferences structure.
- 
+        Gets a copy of the Intuition default Preferences structure.
+
     INPUTS
-    prefbuffer - The buffer which contains your settings for the
-        preferences.
-    size - The number of bytes of the buffer you want to be copied.
- 
+        prefbuffer - The buffer which contains your settings for the
+            preferences.
+        size - The number of bytes of the buffer you want to be copied.
+
     RESULT
-    Returns your parameter buffer.
- 
+        Returns your parameter buffer.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    GetPrefs(), SetPrefs()
- 
+        GetPrefs(), SetPrefs()
+
     INTERNALS
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

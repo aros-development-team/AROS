@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -9,46 +9,46 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
 
-    AROS_LH1(void, DisposeObject,
+        AROS_LH1(void, DisposeObject,
 
 /*  SYNOPSIS */
-         AROS_LHA(APTR, object, A0),
+        AROS_LHA(APTR, object, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 107, Intuition)
+        struct IntuitionBase *, IntuitionBase, 107, Intuition)
 
 /*  FUNCTION
-    Deletes a BOOPSI object. All memory associated with the object
-    is freed. The object must have been created with NewObject().
-    Some object contain other object which might be freed as well
-    when this function is used on the "parent" while others might
-    also contain children but won't free them. Read the documentation
-    of the class carefully to find out how it behaves.
- 
+        Deletes a BOOPSI object. All memory associated with the object
+        is freed. The object must have been created with NewObject().
+        Some object contain other object which might be freed as well
+        when this function is used on the "parent" while others might
+        also contain children but won't free them. Read the documentation
+        of the class carefully to find out how it behaves.
+
     INPUTS
-    object - The result of a call to NewObject() or a similar function,
-         may be NULL.
- 
+        object - The result of a call to NewObject() or a similar function,
+             may be NULL.
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
-    This functions sends OM_DISPOSE to the oejct.
- 
+        This functions sends OM_DISPOSE to the oejct.
+
     EXAMPLE
  
     BUGS
  
     SEE ALSO
-    NewObjectA(), SetAttrsA(), GetAttr(), MakeClass()
-    "Basic Object-Oriented Programming System for Intuition" and
-    "boopsi Class Reference" Dokument.
- 
+        NewObjectA(), SetAttrsA(), GetAttr(), MakeClass()
+        "Basic Object-Oriented Programming System for Intuition" and
+        "boopsi Class Reference" Document.
+
     INTERNALS
  
 *****************************************************************************/

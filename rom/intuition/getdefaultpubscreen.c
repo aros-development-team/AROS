@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -8,42 +8,42 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(struct Screen *, GetDefaultPubScreen,
+        AROS_LH1(struct Screen *, GetDefaultPubScreen,
 
 /*  SYNOPSIS */
-         AROS_LHA(UBYTE *, nameBuffer, A0),
+        AROS_LHA(UBYTE *, nameBuffer, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 97, Intuition)
+        struct IntuitionBase *, IntuitionBase, 97, Intuition)
 
 /*  FUNCTION
-    Returns the name of the current default public screen.
-    This will be "Workbench" if there is no default public screen.
- 
+        Returns the name of the current default public screen. This will be
+        "Workbench" if there is no default public screen.
+
     INPUTS
-    nameBuffer - A buffer of length MAXPUBSCREENNAME
- 
+        nameBuffer - A buffer of length MAXPUBSCREENNAME
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
-    Only Public Screen Manager utilities want to use this function
-    since it is easy to open a window on the default public screen
-    without specifying a name.
- 
+        Only Public Screen Manager utilities want to use this function
+        since it is easy to open a window on the default public screen
+        without specifying a name.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    SetDefaultPubScreen(), OpenWindow()
- 
+        SetDefaultPubScreen(), OpenWindow()
+
     INTERNALS
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

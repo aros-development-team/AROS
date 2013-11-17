@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -31,19 +31,19 @@ static VOID int_scrollwindowraster(struct ScrollWindowRasterMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH7(void, ScrollWindowRaster,
+        AROS_LH7(void, ScrollWindowRaster,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, win , A1),
-         AROS_LHA(WORD           , dx  , D0),
-         AROS_LHA(WORD           , dy  , D1),
-         AROS_LHA(WORD           , xmin, D2),
-         AROS_LHA(WORD           , ymin, D3),
-         AROS_LHA(WORD           , xmax, D4),
-         AROS_LHA(WORD           , ymax, D5),
+        AROS_LHA(struct Window *, win , A1),
+        AROS_LHA(WORD           , dx  , D0),
+        AROS_LHA(WORD           , dy  , D1),
+        AROS_LHA(WORD           , xmin, D2),
+        AROS_LHA(WORD           , ymin, D3),
+        AROS_LHA(WORD           , xmax, D4),
+        AROS_LHA(WORD           , ymax, D5),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 133, Intuition)
+        struct IntuitionBase *, IntuitionBase, 133, Intuition)
 
 /*  FUNCTION
         Scrolls the content of the rectangle defined by (xmin,ymin)-
@@ -135,7 +135,7 @@ static VOID int_scrollwindowraster(struct ScrollWindowRasterMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH7(void, ScrollWindowRasterNoFill,
+        AROS_LH7(void, ScrollWindowRasterNoFill,
 
 /*  SYNOPSIS */
         AROS_LHA(struct Window *, win , A1),

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -8,40 +8,38 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(LONG, MakeScreen,
+        AROS_LH1(LONG, MakeScreen,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Screen *, screen, A0),
+        AROS_LHA(struct Screen *, screen, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 63, Intuition)
+        struct IntuitionBase *, IntuitionBase, 63, Intuition)
 
 /*  FUNCTION
-    Create viewport of the screen.
-    
+        Create viewport of the screen.
+
     INPUTS
-    Pointer to your custom screen.
- 
+        Pointer to your custom screen.
+
     RESULT
-    Zero for success, non-zero for failure.
- 
+        Zero for success, non-zero for failure.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    RemakeDisplay(), RethinkDisplay(), graphics.library/MakeVPort(),
- 
+        RemakeDisplay(), RethinkDisplay(), graphics.library/MakeVPort().
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

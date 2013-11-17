@@ -11,35 +11,35 @@
 #include <intuition/pointerclass.h>
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(void, SetWindowPointerA,
+        AROS_LH2(void, SetWindowPointerA,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window * , window , A0),
-         AROS_LHA(struct TagItem *, taglist, A1),
+        AROS_LHA(struct Window * , window , A0),
+        AROS_LHA(struct TagItem *, taglist, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 136, Intuition)
+        struct IntuitionBase *, IntuitionBase, 136, Intuition)
 
 /*  FUNCTION
- 
+
     INPUTS
- 
+
     RESULT
- 
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

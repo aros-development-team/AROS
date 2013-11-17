@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -19,11 +19,11 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(BOOL, HideWindow,
+        AROS_LH1(BOOL, HideWindow,
 
 /*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
@@ -33,29 +33,27 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
 
 /*  FUNCTION
         Make a window invisible.
- 
+
     INPUTS
 	window - The window to affect.
- 
+
     RESULT
 	Success indicator. On AROS this is always TRUE.
- 
+
     NOTES
 	This function is source-compatible with AmigaOS v4.
         This function is also present in MorphOS v50, however
         considered private.
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
 	ShowWindow()
- 
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

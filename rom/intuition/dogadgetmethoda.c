@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -22,32 +22,32 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-    AROS_LH4(IPTR, DoGadgetMethodA,
+        AROS_LH4(IPTR, DoGadgetMethodA,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Gadget    *, gad, A0),
-         AROS_LHA(struct Window    *, win, A1),
-         AROS_LHA(struct Requester *, req, A2),
-         AROS_LHA(Msg               , msg, A3),
+        AROS_LHA(struct Gadget    *, gad, A0),
+        AROS_LHA(struct Window    *, win, A1),
+        AROS_LHA(struct Requester *, req, A2),
+        AROS_LHA(Msg               , msg, A3),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 135, Intuition)
+        struct IntuitionBase *, IntuitionBase, 135, Intuition)
 
 /*  FUNCTION
-    Invokes a BOOPSI method on an object with a GadgetInfo derived from
-    the supplied window or requester parameter.
+        Invokes a BOOPSI method on an object with a GadgetInfo derived from
+        the supplied window or requester parameter.
 
     INPUTS
-    gad - The gadget to work on
-    win - The window which contains the gadget or the requester with
-        the gadgets.
-    req - If the gadget is in a requester, you must specify that one,
-        too.
-    message - Send this message to the gadget.
+        gad - The gadget to work on
+        win - The window which contains the gadget or the requester with
+            the gadgets.
+        req - If the gadget is in a requester, you must specify that one,
+            too.
+        message - Send this message to the gadget.
 
     RESULT
-    The result depends on the contents of the message sent to the
-    gadget.
+        The result depends on the contents of the message sent to the
+        gadget.
 
     NOTES
 
@@ -58,29 +58,24 @@
     SEE ALSO
 
     INTERNALS
-    I have derived from a simular function from ClassAct where I have
-    to "fake" the function which is not implemented under OS 2.04.
-    There are likely a few differences between this routine and the
-    real code, but this gets the job done.
+        I have derived from a simular function from ClassAct where I have
+        to "fake" the function which is not implemented under OS 2.04.
+        There are likely a few differences between this routine and the
+        real code, but this gets the job done.
 
-    One thing to note, the Amiga Rom routine causes some form of
-    (layer?) locking. I presume the point of the lock is to avoid
-    removing the gadget from the window during a refresh, or to avoid
-    resizing the window during refresh, etc.
+        One thing to note, the Amiga Rom routine causes some form of
+        (layer?) locking. I presume the point of the lock is to avoid
+        removing the gadget from the window during a refresh, or to avoid
+        resizing the window during refresh, etc.
 
-    This locking is fairly obvious within Workbench itself. When
-    refreshing most any boopsi gadget(s) via RefreshGList() and you try
-    to drag a Workbench icon you will get stuck in a layer lock.
-    Workbench has a deadlock timer and is smart enough to release the
-    lock and abort the drag. With this routine below this locking does
-    not occur. Some might call it a good thing, however the issue
-    should be revisited once more of Intuition has been implemented -
-    if it hasn't been already?!. :)
-
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
-    25-10-96    calid   submitted the code
+        This locking is fairly obvious within Workbench itself. When
+        refreshing most any boopsi gadget(s) via RefreshGList() and you try
+        to drag a Workbench icon you will get stuck in a layer lock.
+        Workbench has a deadlock timer and is smart enough to release the
+        lock and abort the drag. With this routine below this locking does
+        not occur. Some might call it a good thing, however the issue
+        should be revisited once more of Intuition has been implemented -
+        if it hasn't been already?!. :)
 
 *****************************************************************************/
 {

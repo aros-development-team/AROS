@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -23,46 +23,44 @@ static VOID int_changewindowbox(struct ChangeWindowBoxActionMsg *msg,
                                 struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH5(void, ChangeWindowBox,
+        AROS_LH5(void, ChangeWindowBox,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
-         AROS_LHA(LONG           , left, D0),
-         AROS_LHA(LONG           , top, D1),
-         AROS_LHA(LONG           , width, D2),
-         AROS_LHA(LONG           , height, D3),
+        AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(LONG           , left, D0),
+        AROS_LHA(LONG           , top, D1),
+        AROS_LHA(LONG           , width, D2),
+        AROS_LHA(LONG           , height, D3),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 81, Intuition)
+        struct IntuitionBase *, IntuitionBase, 81, Intuition)
 
 /*  FUNCTION
-    Set the new position and size of a window in one call.
- 
+        Set the new position and size of a window in one call.
+
     INPUTS
-    window - Change this window
-    left, top - New position
-    width, height - New size
- 
+        window - Change this window
+        left, top - New position
+        width, height - New size
+
     RESULT
- 
+
     NOTES
-    This call is deferred. Wait() for IDCMP_CHANGEWINDOW if your
-    program depends on the new size.
- 
+        This call is deferred. Wait() for IDCMP_CHANGEWINDOW if your
+        program depends on the new size.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

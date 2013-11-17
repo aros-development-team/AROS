@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -10,18 +10,18 @@
 #include <proto/exec.h>
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(struct Window *, OpenWindowTagList,
+        AROS_LH2(struct Window *, OpenWindowTagList,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct NewWindow *, newWindow, A0),
-         AROS_LHA(struct TagItem   *, tagList, A1),
+        AROS_LHA(struct NewWindow *, newWindow, A0),
+        AROS_LHA(struct TagItem   *, tagList, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 101, Intuition)
+        struct IntuitionBase *, IntuitionBase, 101, Intuition)
 
 /*  FUNCTION
 	Open a new window.
@@ -43,25 +43,25 @@
 	WA_Flags
 	    Initial values for various boolean window properties. Can be
 	    overwritten by WA_... tags.
-	
+
 	WA_Gadgets (struct Gadget *)
 	    Pointer to a linked list of gadgets
-	
+
 	WA_Title (STRPTR) - Window title string
-	
+
 	WA_CustomScreen (struct Screen *)
 	    Open window on the given screen
-	
+
 	WA_SuperBitMap (struct BitMap *)
 	    Create window with superbitmap refreshing
-	
+
 	WA_MinWidth           - Minimum width of the window
 	WA_MinHeight          - Minimum height of the window
 	WA_MaxWidth           - Maximum width of the window
 	WA_MaxHeight          - Maximum height of the window
 	    Use 0 to keep the current size as limit. The maximums can be
 	    set to -1 or ~0 to limit size only to screen dimension.
-	
+
 	WA_SizeGadget (BOOL)  - Make window resizeable
 	WA_DragBar (BOOL)     - Make window dragable
 	WA_DepthGadget (BOOL) - Add a depth gadget
@@ -69,38 +69,38 @@
 
 	WA_Backdrop (BOOL)
 	    Create a window which is placed behind other windows
-	
+
 	WA_ReportMouse (BOOL) - Store mouse position in struct Window
-	
+
 	WA_NoCareRefresh (BOOL)
 	    Use this if you don't want to be responsible for calling
 	    BeginRefresh()/EndRefresh().
-	
+
 	WA_Borderless (BOOL) - Create borderless window
-	
+
 	WA_Activate (BOOL)
 	    Make this window the active one, i.e. it
 	    receives the input from mouse and keyboard.
-	
+
 	WA_RMBTrap (BOOL)
 	    Set to TRUE if you want to get button events
 	    events for the right mouse button.
-	
+
 	WA_SimpleRefresh (BOOL)
 	    Enable simplerefresh mode. Only specify if TRUE.
-	
+
 	WA_SmartRefresh (BOOL)
 	    Enable smartrefresh mode. Only specify if TRUE.
-	
+
 	WA_SizeBRight (BOOL)    - Place size gadget in right window border
 	WA_SizeBBottom (BOOL)   - Place size gadget in bottom window border
-	
+
 	WA_GimmeZeroZero (BOOL)
-	    Create a GimmeZeroZero window. The window borders have their own layer,
-	    so you can't overdraw it. The coordinate 0,0 is related to the inner
-	    area of the window. This makes handling of windows easier, but it
-	    slows down the system.
-	
+	    Create a GimmeZeroZero window. The window borders have their own
+	    layer, so you can't overdraw it. The coordinate 0,0 is related to
+	    the inner area of the window. This makes handling of windows
+	    easier, but it slows down the system.
+
 	WA_NewLookMenus (BOOL)
 	    Use DrawInfo colors for rendering the menu bar.
 
@@ -117,7 +117,7 @@
 	WA_InnerWidth
 	WA_InnerHeight
 	    Dimensions of the interior region of the window.
-	    
+
 	    Note that this restricts border gadgets:
 	    - GACT_LEFTBORDER gadgets can't be GFLG_RELWIDTH if
 	      WA_InnerWidth is used.
@@ -218,26 +218,21 @@
 
 	WA_ShapeHook (struct Hook *)
 
-
     RESULT
-    A pointer to the new window or NULL if it couldn't be
-    opened. Reasons for this might be lack of memory or illegal
-    attributes.
- 
+        A pointer to the new window or NULL if it couldn't be
+        opened. Reasons for this might be lack of memory or illegal
+        attributes.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

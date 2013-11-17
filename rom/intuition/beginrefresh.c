@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -19,42 +19,42 @@
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(void, BeginRefresh,
+        AROS_LH1(void, BeginRefresh,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 59, Intuition)
+        struct IntuitionBase *, IntuitionBase, 59, Intuition)
 
 /*  FUNCTION
-	Initializes optimized refreshing. It restricts redrawing to areas which
-	need refreshing after a window has been moved or has changed size.
-	
+        Initializes optimized refreshing. It restricts redrawing to areas which
+        need refreshing after a window has been moved or has changed size.
+
     INPUTS
-	window - window which needs refreshing
+        window - window which needs refreshing
 
     RESULT
 
     NOTES
-	Only simple graphics.library functions are allowed between
-	BeginRefresh() and EndRefresh().
-	
-	BeginRefresh()/EndRefresh() should always be called when an
-	IDCMP_REFRESHWINDWOW message happens.
-	
+        Only simple graphics.library functions are allowed between
+        BeginRefresh() and EndRefresh().
+
+        BeginRefresh()/EndRefresh() should always be called when an
+        IDCMP_REFRESHWINDWOW message happens.
+
     EXAMPLE
-	somewhere in your window's event handling loop:
-	
-	case IDCMP_REFRESHWINDWOW:
-	    BeginRefresh(mywindow);
-	    EndRefresh(mywindow, TRUE);
-	    break;
+        Somewhere in your window's event handling loop:
+
+        case IDCMP_REFRESHWINDWOW:
+            BeginRefresh(mywindow);
+            EndRefresh(mywindow, TRUE);
+            break;
 
     BUGS
 
     SEE ALSO
-	EndRefresh()
+        EndRefresh()
 
     INTERNALS
 

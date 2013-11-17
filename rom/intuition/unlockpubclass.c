@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
- 
+
     Unlocks the public classes list.
 */
 
@@ -10,39 +10,37 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH0(void, unlockPubClass,
+        AROS_LH0(void, unlockPubClass,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 121, Intuition)
+        struct IntuitionBase *, IntuitionBase, 121, Intuition)
 
 /*  FUNCTION
- 
-    Unlocks the public classes list.
- 
+        Unlocks the public classes list.
+
     INPUTS
- 
+        None.
+
     RESULT
- 
+        None.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
-    lockPubClass()
- 
+        lockPubClass()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

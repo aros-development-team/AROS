@@ -17,20 +17,20 @@
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH3(ULONG, GetDrawInfoAttr,
+        AROS_LH3(ULONG, GetDrawInfoAttr,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct DrawInfo *, drawInfo, A0),
-         AROS_LHA(ULONG            , attrID, D0),
-         AROS_LHA(IPTR *           , resultPtr, A1),
+        AROS_LHA(struct DrawInfo *, drawInfo, A0),
+        AROS_LHA(ULONG            , attrID, D0),
+        AROS_LHA(IPTR *           , resultPtr, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 156, Intuition)
+        struct IntuitionBase *, IntuitionBase, 156, Intuition)
 
 /*  FUNCTION
          Gets value of the specified attribute from DrawInfo object, or
          system default value (for some attributes).
- 
+
     INPUTS
          drawInfo - an object pointer to query. It is possible to set this
                     argument to NULL when querying GDIA_Color or GDIA_Pen
@@ -60,22 +60,22 @@
 
          resultPtr - an optional storage area for success indicator. You
                      can set this parameter to NULL.
- 
+
     RESULT
          A value of the specified attribute. resultPtr, if supplied, gets
          TRUE for success and FALSE for failure.
- 
+
     NOTES
          This function is compatible with MorphOS
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
+
 *****************************************************************************/
 
 /*

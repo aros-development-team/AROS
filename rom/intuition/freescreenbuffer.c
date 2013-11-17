@@ -1,8 +1,8 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
-    Copyright Â© 2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
- 
+
     Desc: Intuition function FreeScreenBuffer()
     Lang: english
 */
@@ -11,52 +11,50 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/screens.h>
 #include <proto/intuition.h>
 
-    AROS_LH2(void, FreeScreenBuffer,
+        AROS_LH2(void, FreeScreenBuffer,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Screen *      , screen, A0),
-         AROS_LHA(struct ScreenBuffer *, screenbuffer, A1),
+        AROS_LHA(struct Screen *      , screen, A0),
+        AROS_LHA(struct ScreenBuffer *, screenbuffer, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 129, Intuition)
+        struct IntuitionBase *, IntuitionBase, 129, Intuition)
 
 /*  FUNCTION
-    Frees a ScreenBuffer allocated by AllocScreenBuffer() and releases
-    associated resources. You have to call this before closing your
-    screen.
- 
+        Frees a ScreenBuffer allocated by AllocScreenBuffer() and releases
+        associated resources. You have to call this before closing your
+        screen.
+
     INPUTS
-    screen - The screen this screenbuffer belongs to
-    screenbuffer - The screenbuffer obtained by AllocScreenBuffer()
-        It is safe to pass NULL.
- 
+        screen - The screen this screenbuffer belongs to
+        screenbuffer - The screenbuffer obtained by AllocScreenBuffer().
+            It is safe to pass NULL.
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
-    When used SB_SCREEN_BITMAP on allocating the ScreenBuffer
-    (ie. the ScreenBuffer only refers to the screen's BitMap) you must
-    FreeScreenBuffer() the ScreenBuffer before closing the screen.
-    Intuition will recognize when FreeScreenBuffer() is called for the
-    currently installed ScreenBuffer that it must not free the BitMap.
-    This is left to the CloseScreen() function.
- 
+        When used SB_SCREEN_BITMAP on allocating the ScreenBuffer
+        (ie. the ScreenBuffer only refers to the screen's BitMap) you must
+        FreeScreenBuffer() the ScreenBuffer before closing the screen.
+        Intuition will recognize when FreeScreenBuffer() is called for the
+        currently installed ScreenBuffer that it must not free the BitMap.
+        This is left to the CloseScreen() function.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    AllocScreenBuffer(), ChangeScreenBuffer()
- 
+        AllocScreenBuffer(), ChangeScreenBuffer()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

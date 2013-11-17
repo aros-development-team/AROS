@@ -28,46 +28,44 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
 }
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH3(struct Preferences *, SetPrefs,
+        AROS_LH3(struct Preferences *, SetPrefs,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Preferences * , prefbuffer, A0),
-         AROS_LHA(LONG                 , size, D0),
-         AROS_LHA(BOOL                 , inform, D1),
+        AROS_LHA(struct Preferences * , prefbuffer, A0),
+        AROS_LHA(LONG                 , size, D0),
+        AROS_LHA(BOOL                 , inform, D1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 54, Intuition)
+        struct IntuitionBase *, IntuitionBase, 54, Intuition)
 
 /*  FUNCTION
-    Sets the current Preferences structure.
- 
+        Sets the current Preferences structure.
+
     INPUTS
-    prefbuffer - The buffer which contains your settings for the
-        preferences.
-    size - The number of bytes of the buffer you want to be copied.
-    inform - If TRUE, all windows with IDCMP_NEWPREFS IDCMPFlags set
-        get an IDCMP_NEWPREFS message.
- 
+        prefbuffer - The buffer which contains your settings for the
+            preferences.
+        size - The number of bytes of the buffer you want to be copied.
+        inform - If TRUE, all windows with IDCMP_NEWPREFS IDCMPFlags set
+            get an IDCMP_NEWPREFS message.
+
     RESULT
-    Returns your parameter buffer.
- 
+        Returns your parameter buffer.
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    GetDefPrefs(), GetPrefs()
- 
+        GetDefPrefs(), GetPrefs()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

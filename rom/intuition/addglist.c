@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -8,7 +8,7 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
@@ -18,50 +18,48 @@
 #define DEBUG 0
 #   include <aros/debug.h>
 
-    AROS_LH5(UWORD, AddGList,
+        AROS_LH5(UWORD, AddGList,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window    *, window, A0),
-         AROS_LHA(struct Gadget    *, gadget, A1),
-         AROS_LHA(ULONG             , position, D0),
-         AROS_LHA(LONG              , numGad, D1),
-         AROS_LHA(struct Requester *, requester, A2),
+        AROS_LHA(struct Window    *, window, A0),
+        AROS_LHA(struct Gadget    *, gadget, A1),
+        AROS_LHA(ULONG             , position, D0),
+        AROS_LHA(LONG              , numGad, D1),
+        AROS_LHA(struct Requester *, requester, A2),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 73, Intuition)
+        struct IntuitionBase *, IntuitionBase, 73, Intuition)
 
 /*  FUNCTION
-    Add some gadgets to a window.
- 
+        Add some gadgets to a window.
+
     INPUTS
-    window - Add gadgets to this window
-    gadget - This is the list of gadgets to add
-    position - Where to insert the gadgets in the list of gadgets
-        already in the window. Use 0 to insert the gadgets
-        before all others in the window or ~0 to append them.
-    numGad - How many gadgets of the list should be added.
-        Use -1 to add all gadgets in the list.
-    requester - Pointer to the requester structure if the window is
-        a requester.
- 
+        window - Add gadgets to this window
+        gadget - This is the list of gadgets to add
+        position - Where to insert the gadgets in the list of gadgets
+            already in the window. Use 0 to insert the gadgets
+            before all others in the window or ~0 to append them.
+        numGad - How many gadgets of the list should be added.
+            Use -1 to add all gadgets in the list.
+        requester - Pointer to the requester structure if the window is
+            a requester.
+
     RESULT
-    The actual position where the gadgets were inserted.
- 
+        The actual position where the gadgets were inserted.
+
     NOTES
-    The gadgets will just be added. To make them visible, you must
-    refresh the window or the gadgets.
- 
+        The gadgets will just be added. To make them visible, you must
+        refresh the window or the gadgets.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    RefreshGadgets(), RefreshGList()
- 
+        RefreshGadgets(), RefreshGList()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

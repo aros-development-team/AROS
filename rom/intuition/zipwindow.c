@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -17,45 +17,43 @@ static VOID int_zipwindow(struct ZipWindowActionMsg *msg,
                           struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-    AROS_LH1(void, ZipWindow,
+        AROS_LH1(void, ZipWindow,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 84, Intuition)
+        struct IntuitionBase *, IntuitionBase, 84, Intuition)
 
 /*  FUNCTION
-    "Zip" (move and resize) a window to the coordinates and dimensions
-    the window had at the last call of ZipWindow(), or invoked via the
-    zoom-gadget.
- 
+        "Zip" (move and resize) a window to the coordinates and dimensions
+        the window had at the last call of ZipWindow(), or invoked via the
+        zoom-gadget.
+
     INPUTS
-    window - Which window
- 
+        window - Which window
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
-    This call is deferred. Wait() for IDCMP_CHANGEWINDOW if your
-    program depends on the new size.
- 
+        This call is deferred. Wait() for IDCMP_CHANGEWINDOW if your
+        program depends on the new size.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    ChangeWindowBox(), MoveWindow(), SizeWindow()
- 
+        ChangeWindowBox(), MoveWindow(), SizeWindow()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

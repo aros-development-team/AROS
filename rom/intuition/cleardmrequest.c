@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -7,40 +7,38 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH1(BOOL, ClearDMRequest,
+        AROS_LH1(BOOL, ClearDMRequest,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Window *, window, A0),
+        AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 8, Intuition)
+        struct IntuitionBase *, IntuitionBase, 8, Intuition)
 
 /*  FUNCTION
-    Detach the DMRequest from the window
+        Detach the DMRequest from the window
 
     INPUTS
-    window - The window from which the DMRequest is to be cleared
- 
+        window - The window from which the DMRequest is to be cleared
+
     RESULT
-    TRUE if requester could successfully be detached.
+        TRUE if requester could successfully be detached.
 
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    SetDMRequest(), Request()
- 
+        SetDMRequest(), Request()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -7,40 +7,38 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH0(BOOL, WBenchToBack,
+        AROS_LH0(BOOL, WBenchToBack,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 56, Intuition)
+        struct IntuitionBase *, IntuitionBase, 56, Intuition)
 
 /*  FUNCTION
-    Bring the WorkBench behind all other screens.
- 
+        Bring the WorkBench behind all other screens.
+
     INPUTS
- 
+
     RESULT
-    TRUE if the Workbench screen is open, FALSE else.
- 
+        TRUE if the Workbench screen is open, FALSE otherwise.
+
     NOTES
-    This function does not influence the position of the screen,
-    it just changes the depth-arrangement of the screens.
- 
+        This function does not influence the position of the screen,
+        it just changes the depth-arrangement of the screens.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
-    ScreenToBack(), ScreenToFront(), WBenchToFront()
- 
+        ScreenToBack(), ScreenToFront(), WBenchToFront()
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

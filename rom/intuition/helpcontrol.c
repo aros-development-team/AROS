@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -11,7 +11,7 @@
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH2(void, HelpControl,
+        AROS_LH2(void, HelpControl,
 
 /*  SYNOPSIS */
         AROS_LHA(struct Window *, window, A0),

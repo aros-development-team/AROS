@@ -1,6 +1,6 @@
 /*
-    Copyright Â© 1995-2013, The AROS Development Team. All rights reserved.
-    Copyright Â© 2001-2013, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
     Close a screen.
@@ -45,46 +45,39 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
                             struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/screens.h>
 #include <proto/intuition.h>
 
-    AROS_LH1(BOOL, CloseScreen,
+        AROS_LH1(BOOL, CloseScreen,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Screen *, screen, A0),
+        AROS_LHA(struct Screen *, screen, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 11, Intuition)
+        struct IntuitionBase *, IntuitionBase, 11, Intuition)
 
 /*  FUNCTION
- 
-    Release all resources held by a screen and close it down visually.
- 
+        Release all resources held by a screen and close it down visually.
+
     INPUTS
- 
-    screen  --  pointer to the screen to be closed
- 
+        screen - pointer to the screen to be closed
+
     RESULT
- 
-    TRUE if the screen is successfully closed, FALSE if there were still
-    windows left on the screen (which means the screen is not closed).
- 
+        TRUE if the screen is successfully closed, FALSE if there were still
+        windows left on the screen (which means the screen is not closed).
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

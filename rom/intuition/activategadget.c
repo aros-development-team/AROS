@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -26,43 +26,41 @@ static VOID int_activategadget(struct ActivateGadgetActionMsg *msg,
                                struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
- 
+
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH3(BOOL, ActivateGadget,
+        AROS_LH3(BOOL, ActivateGadget,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Gadget *   , gadget, A0),
-         AROS_LHA(struct Window *   , window, A1),
-         AROS_LHA(struct Requester *, requester, A2),
+        AROS_LHA(struct Gadget *   , gadget, A0),
+        AROS_LHA(struct Window *   , window, A1),
+        AROS_LHA(struct Requester *, requester, A2),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 77, Intuition)
+        struct IntuitionBase *, IntuitionBase, 77, Intuition)
 
 /*  FUNCTION
-    Activates the specified gadget.
- 
+        Activates the specified gadget.
+
     INPUTS
-    gadget - The gadget to activate
-    window - The window which contains the gadget
-    requester - The requester which contains the gadget or
-        NULL if it is not a requester gadget
- 
+        gadget - The gadget to activate
+        window - The window which contains the gadget
+        requester - The requester which contains the gadget or
+            NULL if it is not a requester gadget
+
     RESULT
- 
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

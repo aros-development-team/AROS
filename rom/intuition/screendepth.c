@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2013, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
     Change order of screens.
@@ -27,61 +27,60 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH3(void, ScreenDepth,
+        AROS_LH3(void, ScreenDepth,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Screen *, screen, A0),
-         AROS_LHA(ULONG          , flags, D0),
-         AROS_LHA(APTR           , reserved, A1),
+        AROS_LHA(struct Screen *, screen, A0),
+        AROS_LHA(ULONG          , flags, D0),
+        AROS_LHA(APTR           , reserved, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 131, Intuition)
+        struct IntuitionBase *, IntuitionBase, 131, Intuition)
 
 /*  FUNCTION
-    Move the specified screen to the front or back, based on passed flag.
-    If the screen is in a group, the screen will change its position in
-    the group only. If the screen is the parent of a group, the whole
-    group will be moved.
+        Move the specified screen to the front or back, based on passed flag.
+        If the screen is in a group, the screen will change its position in
+        the group only. If the screen is the parent of a group, the whole
+        group will be moved.
 
     INPUTS
-    screen - Move this screen.
-    flags - SDEPTH_TOFRONT or SDEPTH_TOBACK for bringing the screen to
-        front or back.
-        If the screen is a child of another screen you may specify
-        SDEPTH_INFAMILY to move the screen within the family. If
-        not specified the whole family will move.
-    reserved - For future use. MUST be NULL by now.
+        screen - Move this screen.
+        flags - SDEPTH_TOFRONT or SDEPTH_TOBACK for bringing the screen to
+            front or back.
+            If the screen is a child of another screen you may specify
+            SDEPTH_INFAMILY to move the screen within the family. If
+            not specified the whole family will move.
+        reserved - For future use. MUST be NULL by now.
 
     RESULT
-    None.
+        None.
 
     NOTES
-    Only the owner of the screen should use SDEPTH_INFAMILY.
-    Intentionally commodities should not change the internal arrangement
-    of screen families.
+        Only the owner of the screen should use SDEPTH_INFAMILY.
+        Intentionally commodities should not change the internal arrangement
+        of screen families.
 
     EXAMPLE
 
     BUGS
+        I am not sure, if it is enough to just send a SNOTIFY message to one 
+        screen. I would suggest, the former FirstScreen gets a SDEPTH_TOBACK 
+        message and the new FirstScreen gets a SDEPTH_TOFRONT message.
+        Currently only the screen supplied with ScreenDepth gets a message.
 
-    I am not sure, if it is enough, to just send a SNOTIFY message to one 
-    screen.  I would suggest, the former FirstScreen gets a SDEPTH_TOBACK 
-    message and the new FirstScreen gets a SDEPTH_TOFRONT message.
-    Currently only the screen supplied with ScreenDepth gets a message.
-   
-    But those messages need to be sent in front of the actual
-    screen depth change because of the SNOTIFY_WAIT_REPLY-flag must be
-    able to block the action. But we only know after int_screendepth(), 
-    if there was a change and which change took place. 
+        But those messages need to be sent in front of the actual
+        screen depth change because of the SNOTIFY_WAIT_REPLY-flag must be
+        able to block the action. But we only know after int_screendepth(), 
+        if there was a change and which change took place. 
 
-    So I leave it, as it is. This way SNOTIFY_WAIT_REPLY should work 
-    at least. Is there something written in the AutoDocs, how this has 
-    to be done (each screen gets a message)?
+        So I leave it, as it is. This way SNOTIFY_WAIT_REPLY should work 
+        at least. Is there something written in the AutoDocs, how this has 
+        to be done (each screen gets a message)?
 
-    (o1i)
+        (o1i)
 
     SEE ALSO
-    ScreenToBack(), ScreenToFront()
+        ScreenToBack(), ScreenToFront()
 
     INTERNALS
 

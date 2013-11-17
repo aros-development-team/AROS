@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -19,39 +19,37 @@
 #include <aros/debug.h>
 
 /*****i************************************************************************
- 
+
     NAME */
 #include <intuition/classes.h>
 #include <proto/intuition.h>
 
-    AROS_LH1(struct IClass *, FindClass,
+        AROS_LH1(struct IClass *, FindClass,
 
 /*  SYNOPSIS */
-         AROS_LHA(ClassID,  classID, A0),
+        AROS_LHA(ClassID,  classID, A0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 112, Intuition)
+        struct IntuitionBase *, IntuitionBase, 112, Intuition)
 
 /*  FUNCTION
- 
+
     INPUTS
- 
+
     RESULT
- 
+
     NOTES
-    	This function is binary-compatible with AmigaOS v3, however it is
-    	considered private.
- 
+        This function is binary-compatible with AmigaOS v3, however it is
+        considered private.
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
- 
+
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

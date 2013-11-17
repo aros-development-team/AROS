@@ -16,21 +16,21 @@
     NAME */
 #include <proto/intuition.h>
 
-    AROS_LH0(LONG, RethinkDisplay,
+        AROS_LH0(LONG, RethinkDisplay,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 65, Intuition)
+        struct IntuitionBase *, IntuitionBase, 65, Intuition)
 
 /*  FUNCTION
-    Check and update, ie. redisplay the whole Intuition display.
+        Check and update, i.e. redisplay the whole Intuition display.
 
     INPUTS
-    None.
+        None.
 
     RESULT
-    Zero for success, non-zero for failure.
+        Zero for success, non-zero for failure.
 
     NOTES
 
@@ -39,12 +39,10 @@
     BUGS
 
     SEE ALSO
-    RemakeDisplay(), MakeScreen(), graphics.library/MakeVPort(),
-    graphics.library/MrgCop(), graphics.library/LoadView()
+        RemakeDisplay(), MakeScreen(), graphics.library/MakeVPort(),
+        graphics.library/MrgCop(), graphics.library/LoadView()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

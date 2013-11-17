@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -10,76 +10,72 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <graphics/rastport.h>
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-    AROS_LH4(void, DrawBorder,
+        AROS_LH4(void, DrawBorder,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct RastPort *, rp, A0),
-         AROS_LHA(struct Border   *, border, A1),
-         AROS_LHA(LONG             , leftOffset, D0),
-         AROS_LHA(LONG             , topOffset, D1),
+        AROS_LHA(struct RastPort *, rp, A0),
+        AROS_LHA(struct Border   *, border, A1),
+        AROS_LHA(LONG             , leftOffset, D0),
+        AROS_LHA(LONG             , topOffset, D1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 18, Intuition)
+        struct IntuitionBase *, IntuitionBase, 18, Intuition)
 
 /*  FUNCTION
-    Draws one or more borders in the specified RastPort. Rendering
-    will start at the position which you get when you add the offsets
-    leftOffset and topOffset to the LeftEdge and TopEdge specified
-    in the Border structure. All coordinates are relative to that point.
- 
+        Draws one or more borders in the specified RastPort. Rendering
+        will start at the position which you get when you add the offsets
+        leftOffset and topOffset to the LeftEdge and TopEdge specified
+        in the Border structure. All coordinates are relative to that point.
+
     INPUTS
-    rp - The RastPort to render into
-    border - Information what and how to render
-    leftOffset, topOffset - Initial starting position
- 
+        rp - The RastPort to render into
+        border - Information what and how to render
+        leftOffset, topOffset - Initial starting position
+
     RESULT
-    None.
- 
+        None.
+
     NOTES
- 
+
     EXAMPLE
-    // Draw a house with one stroke
-    // The drawing starts at the lower left edge
-    WORD XY[] =
-    {
-        10, -10,
-        10,   0,
-         0, -10,
-        10, -10,
-         5, -15,
-         0, -10,
-         0,   0,
-        10,   0,
-    };
-    struct Border demo =
-    {
-        100, 100,   // Position
-        1, 2,   // Pens
-        JAM1,   // Drawmode
-        8,      // Number of pairs in XY
-        XY,     // Vector offsets
-        NULL    // No next border
-    };
- 
-    // Render the house with the bottom left edge at 150, 50
-    DrawBorder (rp, &demo, 50, -50);
- 
+        // Draw a house with one stroke
+        // The drawing starts at the lower left edge
+        WORD XY[] =
+        {
+            10, -10,
+            10,   0,
+             0, -10,
+            10, -10,
+             5, -15,
+             0, -10,
+             0,   0,
+            10,   0,
+        };
+        struct Border demo =
+        {
+            100, 100,   // Position
+            1, 2,   // Pens
+            JAM1,   // Drawmode
+            8,      // Number of pairs in XY
+            XY,     // Vector offsets
+            NULL    // No next border
+        };
+
+        // Render the house with the bottom left edge at 150, 50
+        DrawBorder (rp, &demo, 50, -50);
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

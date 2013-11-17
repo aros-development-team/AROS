@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -9,45 +9,41 @@
 #include <proto/exec.h>
 
 /*****************************************************************************
- 
+
     NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-    AROS_LH2(void, FreeRemember,
+        AROS_LH2(void, FreeRemember,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct Remember **, rememberKey, A0),
-         AROS_LHA(LONG              , reallyForget, D0),
+        AROS_LHA(struct Remember **, rememberKey, A0),
+        AROS_LHA(LONG              , reallyForget, D0),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 68, Intuition)
+        struct IntuitionBase *, IntuitionBase, 68, Intuition)
 
 /*  FUNCTION
 	Free memory allocated by AllocRemember().
-	
+
     INPUTS
 	rememberKey  - address of a pointer to struct Remember
 	reallyForget - TRUE  release all memory
 	               FALSE release only link nodes
 
     RESULT
- 
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
 	AllocRemember()
 
     INTERNALS
- 
-    HISTORY
-    27-11-96    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

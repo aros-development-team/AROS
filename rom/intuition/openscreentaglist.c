@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -7,28 +7,28 @@
 #include "intuition_intern.h"
 
 /*****************************************************************************
- 
+
     NAME */
 #include <utility/tagitem.h>
 #include <intuition/screens.h>
 #include <proto/intuition.h>
 
-    AROS_LH2(struct Screen *, OpenScreenTagList,
+        AROS_LH2(struct Screen *, OpenScreenTagList,
 
 /*  SYNOPSIS */
-         AROS_LHA(struct NewScreen *, newScreen, A0),
-         AROS_LHA(struct TagItem   *, tagList, A1),
+        AROS_LHA(struct NewScreen *, newScreen, A0),
+        AROS_LHA(struct TagItem   *, tagList, A1),
 
 /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 102, Intuition)
+        struct IntuitionBase *, IntuitionBase, 102, Intuition)
 
 /*  FUNCTION
-    Open a screen
-    
+        Open a screen
+
     INPUTS
-    newScreen - struct with screen specification. This is for compatibility
-		with OpenScreen() and usually set to NULL.
-    tagList   - tags which specify the screen
+        newScreen - struct with screen specification. This is for compatibility
+            with OpenScreen() and usually set to NULL.
+        tagList   - tags which specify the screen
 
     TAGS
 	SA_Left
@@ -155,9 +155,9 @@
 
 	    Values:
 		0 - Fixed-width font (old-style)
-		1 - Font which is set by font preferences editor. Note: windows opened
-		    on this screen will still have the rastport initialized with the
-		    fixed-width font (sysfont 0).
+		1 - Font which is set by font preferences editor. Note:
+		    windows opened on this screen will still have the rastport
+		    initialized with the fixed-width font (sysfont 0).
 
 	    Default: 0
 
@@ -188,8 +188,9 @@
 	    Default: FALSE
 
 	SA_SharePens (BOOL)
-	    Per default, Intuition obtains the pens of a public screen with PENF_EXCLUSIVE.
-	    Set this to TRUE to instruct Intuition to leave the pens unallocated.
+	    Per default, Intuition obtains the pens of a public screen with
+	    PENF_EXCLUSIVE. Set this to TRUE to instruct Intuition to leave
+	    the pens unallocated.
 	    Default: FALSE
 
 	SA_Colors32 (ULONG *)
@@ -219,30 +220,26 @@
 	    Minimize the Inter-Screen-Gap. For compatibility,
 
     RESULT
-    Pointer to screen or NULL if opening fails.
-    
-    NOTES
-    If you need a pointer to the screen's bitmap use Screen->RastPort.BitMap
-    instead of &Screen->BitMap.
+        Pointer to screen or NULL if opening fails.
 
-    If you want DOS requester to appear on your screen you have to do:
-	process = FindTask(0);
-	process->pr_WindowPtr = (APTR) window;
-    The old value of pr->WindowPtr must be reset before you quit your
-    program.
+    NOTES
+        If you need a pointer to the screen's bitmap use
+        Screen->RastPort.BitMap instead of &Screen->BitMap.
+
+        If you want DOS requester to appear on your screen you have to do:
+            process = FindTask(0);
+            process->pr_WindowPtr = (APTR) window;
+        The old value of pr->WindowPtr must be reset before you quit your
+        program.
 
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
- 
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
