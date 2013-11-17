@@ -40,6 +40,6 @@ endif
 
 %build_module mmake=kernel-kernel \
   modname=kernel modtype=resource version=$(AROS_TARGET_PLATFORM) \
-  files="$(FILES) $(FUNCS)" uselibs="$(USER_LIBS)" nostartup=no
+  files="$(FILES) $(FUNCS)" nostartup=no
 
 %common

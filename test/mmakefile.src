@@ -92,7 +92,7 @@ USER_INCLUDES := -I$(SRCDIR)/workbench/libs
 USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 #MM- test : test-common test-sh test-clib test-kernel test-exec test-intuition \
-#MM  test-layers test-zune workbench-libs-version test-$(AROS_ARCH) test-testscript
+#MM  test-layers test-zune workbench-libs-version test-$(AROS_TARGET_ARCH) test-testscript
 
 #MM  test-common : includes workbench-libs-version linklibs
 #MM  test-sh : includes linklibs
@@ -109,14 +109,5 @@ USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
     files=$(HOSTEDTESTFILES) targetdir=$(EXEDIR)
 
 %copy_files_q mmake=test-testscript files="testscript" dst=$(EXEDIR)
-
-
-# Test for dynamic metatargets
-
-_MM_ ::
-	@$(ECHO) "#MM FOO : BAR1 BAR2"
-	@$(ECHO) "#MM- FOOVIRT : BAR1 BAR2 \\"
-	@$(ECHO) "#MM BAR3"
-
 
 %common

@@ -12,12 +12,11 @@ PROG  := CEBoot.exe
 USER_CFLAGS   := -Wno-attributes -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_LDFLAGS  := -L$(GENDIR)/lib
 USER_INCLUDES := -I$(GENINCDIR) -isystem $(SRCDIR)/bootstrap/include
-LIBS	      := bootstrap
 
 #MM kernel-bootstrap-wince: linklibs-bootstrap
 
 %build_prog mmake=kernel-bootstrap-wince \
     progname=$(PROG) targetdir=$(EXEDIR) \
-    files=$(FILES) compiler=kernel uselibs="$(LIBS)"
+    files=$(FILES) compiler=kernel uselibs="bootstrap"
 
 %common
