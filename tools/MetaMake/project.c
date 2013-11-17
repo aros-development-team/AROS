@@ -60,7 +60,7 @@ readvars (struct Project * prj)
 
     prj->readvars = 0;
 
-    printf ("Read vars...\n");
+    printf ("[MMAKE] Read vars...\n");
 
     setvar (&prj->vars, "TOP", prj->buildtop);
     setvar (&prj->vars, "SRCDIR", prj->srctop);
@@ -81,7 +81,7 @@ readvars (struct Project * prj)
         {
             char * gen = xstrdup (substvars (&prj->vars, prj->genglobalvarfile));
 
-            printf ("Generating %s...\n", fn);
+            printf ("[MMAKE] Generating %s...\n", fn);
 
             if (!execute (prj, gen, "-", "-", ""))
             {
@@ -127,7 +127,7 @@ readvars (struct Project * prj)
             *ptr = 0;
 
             if (debug)
-                printf ("%s=%s\n", name, substvars (&prj->vars, value));
+                printf ("[MMAKE] %s=%s\n", name, substvars (&prj->vars, value));
 
             setvar (&prj->vars, name, substvars (&prj->vars, value));
         }
@@ -164,13 +164,13 @@ readvars (struct Project * prj)
 
     if (debug)
     {
-        printf ("project %s.genmfdeps=\n", prj->node.name);
+        printf ("[MMAKE] project %s.genmfdeps=\n", prj->node.name);
         printlist (&prj->genmakefiledeps);
     }
 
     if (debug)
     {
-        printf ("project %s.vars=", prj->node.name);
+        printf ("[MMAKE] project %s.vars=", prj->node.name);
         printvarlist (&prj->vars);
     }
 }
@@ -283,7 +283,7 @@ callmake (struct Project * prj, const char * tname, struct Makefile * makefile)
     strcat (buffer, tname);
 
     if (!quiet)
-        printf ("Making %s in %s\n", tname, path);
+        printf ("[MMAKE] Making %s in %s\n", tname, path);
 
     if (!execute (prj, prj->maketool, "-", "-", buffer))
     {
@@ -337,7 +337,7 @@ initprojects (void)
     if (!optfh)
     {
         fprintf (stderr,
-                "Please set the HOME or MMAKE_CONFIG env var (with setenv or export)\n"
+                "[MMAKE] Please set the HOME or MMAKE_CONFIG env var (with setenv or export)\n"
                 );
         error ("Opening mmake.config for reading");
         exit (10);
@@ -460,7 +460,7 @@ initprojects (void)
 
     if (debug)
     {
-        printf ("known projects: ");
+        printf ("[MMAKE] known projects: ");
         printlist (&projects);
     }
 }
@@ -528,13 +528,13 @@ execute (struct Project * prj, const char * cmd, const char * in,
     debug(printf("MMAKE:project.c->execute: parsed cmd '%s'\n", buffer));
 
     if (verbose)
-        printf ("Executing %s...\n", cmdstr);
+        printf ("[MMAKE] Executing %s...\n", cmdstr);
 
     rc = system (cmdstr);
 
     if (rc)
     {
-        printf ("%s failed: %d\n", cmdstr, rc);
+        printf ("[MMAKE] %s failed: %d\n", cmdstr, rc);
     }
 
     return !rc;
@@ -550,7 +550,7 @@ maketarget (struct Project * prj, char * tname)
     struct List deps;
 
     if (!quiet)
-        printf ("Building %s.%s\n", prj->node.name, tname);
+        printf ("[MMAKE] Building %s.%s\n", prj->node.name, tname);
 
     NewList (&deps);
 
@@ -569,7 +569,7 @@ maketarget (struct Project * prj, char * tname)
     if (!target)
     {
         if (!quiet)
-            printf ("Nothing known about target %s in project %s\n", tname, prj->node.name);
+            printf ("[MMAKE] Nothing known about target %s in project %s\n", tname, prj->node.name);
         return;
     }
 
@@ -590,7 +590,7 @@ maketarget (struct Project * prj, char * tname)
         if (!subtarget)
         {
             if (!quiet)
-                printf ("Nothing known about target %s in project %s\n", node->name, prj->node.name);
+                printf ("[MMAKE] Nothing known about target %s in project %s\n", node->name, prj->node.name);
         }
         else if (!subtarget->updated)
         {

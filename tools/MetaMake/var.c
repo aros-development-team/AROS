@@ -31,6 +31,8 @@ Boston, MA 02111-1307, USA.  */
 
 #include "var.h"
 #include "mem.h"
+#include "mmake.h"
+
 
 /* Functions */
 char *
@@ -48,6 +50,8 @@ getvar (struct List * varlist, const char * varname)
     {
 	return env_val;
     }
+    if (!quiet)
+	printf("[MMAKE] Variable %s doesn't exist\n", varname);
     sprintf (buffer, "?$(%s)", varname);
     return buffer;
 }

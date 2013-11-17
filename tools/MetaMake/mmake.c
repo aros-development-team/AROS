@@ -87,7 +87,7 @@ error (char * fmt, ...)
 {
     va_list args;
     VA_START (args, fmt);
-    fprintf (stderr, "Error: ");
+    fprintf (stderr, "[MMAKE] Error: ");
     vfprintf (stderr, fmt, args);
     if (errno != 0)
 	fprintf (stderr, ": %s", strerror (errno));
@@ -201,7 +201,7 @@ main (int argc, char ** argv)
 
 	if (!prj)
 	{
-	    printf ("Nothing known about project %s\n", pname);
+	    printf ("[MMAKE] Nothing known about project %s\n", pname);
 	    return 20;
 	}
 
