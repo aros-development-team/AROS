@@ -12,7 +12,6 @@ PROG  := AROSBootstrap
 USER_CFLAGS   := -Wno-attributes -DADATE="\"$(shell date '+%d.%m.%Y')\""
 USER_LDFLAGS  := -L$(GENDIR)/lib
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR) -isystem $(SRCDIR)/bootstrap/include
-LIBS	      := bootstrap
 
 # Allow to add host-specific options
 -include $(SRCDIR)/arch/all-$(FAMILY)/bootstrap/make.opts
@@ -23,6 +22,6 @@ LIBS	      := bootstrap
 
 %build_prog mmake=kernel-bootstrap-hosted \
     progname=$(PROG)$(EXE_SUFFIX) targetdir=$(EXEDIR) \
-    files=$(FILES) compiler=kernel uselibs="$(LIBS)"
+    files=$(FILES) compiler=kernel uselibs="bootstrap"
 
 %common
