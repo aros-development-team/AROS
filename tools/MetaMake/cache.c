@@ -293,7 +293,7 @@ writecacheend:
     {
 	unlink (path);
 
-	printf ("Warning: Creating the cache failed\n");
+	printf ("[MMAKE] Warning: Creating the cache failed\n");
     }
 }
 
@@ -603,17 +603,17 @@ activatecache (struct Project *prj)
     debug(printf("MMAKE:cache.c->activatecache: Cache read.\n"));
 
     progress_reset (stdout);
-    printf ("Scanning dirs...\n");
+    printf ("[MMAKE] Scanning dirs...\n");
     reread = updatemflist (cache, cache->topdir, &regeneratefiles);
 
     debug(printf("MMAKE:cache.c->activatecache: Updated MF list.\n"));
 
     if (verbose)
-	printf ("Reread %d dirs\n", reread);
+	printf ("[MMAKE] Reread %d dirs\n", reread);
 
     if (debug)
     {
-	printf ("Directory tree for project %s\n", prj->node.name);
+	printf ("[MMAKE] Directory tree for project %s\n", prj->node.name);
 	printdirnode (cache->topdir, 0);
     }
 
@@ -665,23 +665,23 @@ activatecache (struct Project *prj)
     debug(printf("MMAKE:cache.c->activatecache: Regenerated MFs\n"));
 
     progress_reset (stdout);
-    printf ("Scanning makefiles...\n");
+    printf ("[MMAKE] Scanning makefiles...\n");
     reread = updatetargetlist (prj, cache, cache->topdir);
     if (verbose)
-	printf ("Reread %d makefiles\n", reread);
+	printf ("[MMAKE] Reread %d makefiles\n", reread);
     if (debug)
     {
-	printf ("Makefile and target tree for project %s\n", prj->node.name);
+	printf ("[MMAKE] Makefile and target tree for project %s\n", prj->node.name);
 	printdirnodemftarget (cache->topdir);
     }
 
     writecache (cache);
 
-    printf ("Collecting targets...\n");
+    printf ("[MMAKE] Collecting targets...\n");
     buildtargetlist (cache, cache->topdir);
     if (debug)
     {
-	printf ("Targetlist of project %s\n", prj->node.name);
+	printf ("[MMAKE] Targetlist of project %s\n", prj->node.name);
 	printtargetlist (&cache->publicpart.targets);
     }
 

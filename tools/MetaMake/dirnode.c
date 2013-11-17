@@ -239,7 +239,7 @@ readtargets(struct DirNode * node, struct Makefile * makefile, FILE * fh)
 		{
 		    if (count > 1)
 		    {
-			printf ("Warning: Multiple metatargets, only the 1st will be added in %s:%d (%s)\n",
+			printf ("[MMAKE] Warning: Multiple metatargets, only the 1st will be added in %s:%d (%s)\n",
 				makefile->node.name, lineno, buildpath(node)
 			       );
 			/* FIXME: should we better add all metatargets? */
@@ -255,7 +255,7 @@ readtargets(struct DirNode * node, struct Makefile * makefile, FILE * fh)
 			mftarget->virtualtarget = 0;
 		}
 		else
-		    printf ("Warning: Can't find metatarget in %s:%d (%s)\n", makefile->node.name, lineno, buildpath(node));
+		    printf ("[MMAKE] Warning: Can't find metatarget in %s:%d (%s)\n", makefile->node.name, lineno, buildpath(node));
 	    }
 	    else
 	    {
@@ -284,7 +284,7 @@ readtargets(struct DirNode * node, struct Makefile * makefile, FILE * fh)
 		if (count > 1 && count2 == 0)
 		{
 		    /* could mean a missing colon */
-		    printf ("Warning: multiple metatargets but no prerequisites %s:%d (%s)\n",
+		    printf ("[MMAKE] Warning: multiple metatargets but no prerequisites %s:%d (%s)\n",
 			    makefile->node.name, lineno, buildpath(node)
 			   );
 		}
@@ -325,52 +325,6 @@ readtargets(struct DirNode * node, struct Makefile * makefile, FILE * fh)
 #if 0
     printf ("Read %d lines\n", lineno);
 #endif
-}
-
-/* Call mmakefile with _MM_ target */
-static int
-callmake_mm (struct Project * prj, struct Makefile * makefile)
-{
-    static char buffer[4096];
-    const char * path = buildpath (makefile->dir);
-    const char * tname = "_MM_";
-    int t;
-
-    debug(printf("MMAKE:project.c->callmake()\n"));
-
-#if 0
-    if (makefile->generated)
-	chdir (prj->buildtop);
-    else
-	chdir (prj->srctop);
-    chdir (path);
-#endif
-
-    setvar (&prj->vars, "CURDIR", path);
-    setvar (&prj->vars, "TARGET", tname);
-
-    buffer[0] = '\0';
-
-    for (t=0; t<mflagc; t++)
-    {
-	strcat (buffer, mflags[t]);
-	strcat (buffer, " ");
-    }
-
-    if (strcmp (makefile->node.name, "Makefile")!=0 && strcmp (makefile->node.name, "makefile")!=0);
-    {
-	strcat (buffer, "--file=");
-	strcat (buffer, makefile->node.name);
-	strcat (buffer, " ");
-    }
-
-    strcat (buffer, tname);
-
-    printf ("Making %s in %s\n", tname, path);
-
-    /* TODO: create filename for output */
-    /* execute returns 0 for error */
-    return execute (prj, prj->maketool, "-", "-" /* "/home/mazze/mmtest" */, buffer);
 }
 
 void
@@ -537,7 +491,7 @@ scandirnode (struct DirNode * node, const char * mfname, struct List * ignoredir
 	debug(printf("MMAKE:dirnode.c->scandirnode dir->time changed .. scanning\n"));
 
 	if (debug)
-	    printf("scandirnode(): scanning %s\n",
+	    printf("[MMAKE] scandirnode(): scanning %s\n",
 		    strlen(node->node.name)==0 ? "topdir" : buildpath(node)
 		  );
 
@@ -671,7 +625,7 @@ scandirnode (struct DirNode * node, const char * mfname, struct List * ignoredir
     debug(printf("MMAKE:dirnode.c->scandirnode: Finished scanning dir '%s'\n", node->node.name));
     if (debug)
     {
-	printf ("scandirnode()\n");
+	printf ("[MMAKE] scandirnode()\n");
 	printdirnode (node, 1);
     }
 
@@ -730,7 +684,7 @@ scanmakefiles (struct Project * prj, struct DirNode * node, struct List * vars)
 	if (st.st_mtime > makefile->time)
 	{
 	    if (debug)
-		printf("scanmakefiles(): scanning makefile in %s/%s\n",
+		printf("[MMAKE] scanmakefiles(): scanning makefile in %s/%s\n",
 			strlen(node->node.name)==0 ? "topdir" : buildpath(node),
 			makefile->node.name
 		      );
@@ -757,16 +711,6 @@ scanmakefiles (struct Project * prj, struct DirNode * node, struct List * vars)
 	    makefile->time = st.st_mtime;
 
 	    fclose (fh);
-
-#if 0
-            /* Call make for _MM_ target */
-	    if (callmake_mm (prj, makefile))
-	    {
-		/* _MM_ found */
-		/* TODO: parsing of the result */
-		/* exit (666); */
-	    }
-#endif
 
 	} /* If the makefile needed to be scanned */
     } /* For all makefiles in the project */
@@ -821,7 +765,7 @@ addmakefile (struct DirNode * node, const char * filename)
 	    {
 		struct stat st;
 
-		printf ("Trying to stat %s\n", name);
+		printf ("[MMAKE] Trying to stat %s\n", name);
 
 		if (stat(name, &st) != 0)
 		{
