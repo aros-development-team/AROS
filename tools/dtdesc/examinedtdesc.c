@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 
    case MAKE_ID('D','T','H','D'):
    {
-    struct DataTypeHeader *DTH;
+    struct FileDataTypeHeader *DTH;
     unsigned char *DTHDBuffer;
 
     DTHDBuffer=malloc(IH->BytesLeftInChunk);
@@ -134,12 +134,12 @@ int main(int argc, char **argv)
      goto TheEnd;
     }
 
-    DTH=(struct DataTypeHeader *) DTHDBuffer;
+    DTH=(struct FileDataTypeHeader *) DTHDBuffer;
 
-    DTH->dth_Name     = (uint8_t *)  Swap32IfLE(((uint32_t) DTH->dth_Name));
-    DTH->dth_BaseName = (uint8_t *)  Swap32IfLE(((uint32_t) DTH->dth_BaseName));
-    DTH->dth_Pattern  = (uint8_t *)  Swap32IfLE(((uint32_t) DTH->dth_Pattern));
-    DTH->dth_Mask     = (uint16_t *) Swap32IfLE(((uint32_t) DTH->dth_Mask));
+    DTH->dth_Name     = Swap32IfLE(DTH->dth_Name);
+    DTH->dth_BaseName = Swap32IfLE(DTH->dth_BaseName);
+    DTH->dth_Pattern  = Swap32IfLE(DTH->dth_Pattern);
+    DTH->dth_Mask     = Swap32IfLE(DTH->dth_Mask);
     DTH->dth_GroupID  = Swap32IfLE(DTH->dth_GroupID);
     DTH->dth_ID       = Swap32IfLE(DTH->dth_ID);
     DTH->dth_MaskLen  = Swap16IfLE(DTH->dth_MaskLen);
@@ -147,9 +147,9 @@ int main(int argc, char **argv)
     DTH->dth_Flags    = Swap16IfLE(DTH->dth_Flags);
     DTH->dth_Priority = Swap16IfLE(DTH->dth_Priority);
 
-    fprintf(stdout, "BaseName=%s\n", (char *) (((long) DTHDBuffer) + ((long) DTH->dth_BaseName)));
+    fprintf(stdout, "BaseName=%s\n", DTHDBuffer + DTH->dth_BaseName);
 
-    fprintf(stdout, "Pattern=%s\n", (char *) (((long) DTHDBuffer) + ((long) DTH->dth_Pattern)));
+    fprintf(stdout, "Pattern=%s\n", DTHDBuffer + DTH->dth_Pattern);
 
     fprintf(stdout, "Mask=");
     for(i=1; i<=DTH->dth_MaskLen; i++)
@@ -157,9 +157,9 @@ int main(int argc, char **argv)
     #if 1
     	unsigned short mask;
 	
-	mask = *((unsigned char *) (((long) DTHDBuffer) + ((long) DTH->dth_Mask) + (2*i-2)));
+	mask = *((unsigned char *) ((DTHDBuffer + DTH->dth_Mask) + (2*i-2)));
 	mask *= 256;
-	mask += *((unsigned char *) (((long) DTHDBuffer) + ((long) DTH->dth_Mask) + (2*i-1)));
+	mask += *((unsigned char *) ((DTHDBuffer + DTH->dth_Mask) + (2*i-1)));
 	
 	if ((short)mask < 0)
 	{
