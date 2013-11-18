@@ -304,6 +304,7 @@ STDC_STATIC := \
     strchr \
     strcmp \
     strcpy \
+    strcspn \
     strlcat \
     strlcpy \
     strlen \
