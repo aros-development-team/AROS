@@ -4355,7 +4355,7 @@ uint32 FuncAMICALL(struct AmiPragma *ap, uint32 flags, strptr name)
 
   for(i = 0; i < ap->NumArgs; ++i)
   {
-    DoOutput(RegNames[ap->Args[i].ArgReg]);
+    DoOutput("%s",RegNames[ap->Args[i].ArgReg]);
     if(i+1 < ap->NumArgs)
       DoOutput(",");
   }
@@ -4475,7 +4475,7 @@ uint32 FuncAsmText(struct AmiPragma *ap, uint32 flags, strptr name)
         {
           ++offset;
           l ^= 1 << i;
-          DoOutput(RegNamesUpper[i]);
+          DoOutput("%s",RegNamesUpper[i]);
           if(l)
             DoOutput("/");
         }
@@ -4500,7 +4500,7 @@ uint32 FuncAsmText(struct AmiPragma *ap, uint32 flags, strptr name)
       {
         offset += 3;
         l ^= 1 << i;
-        DoOutput(RegNamesUpper[REG_FP0 + i]);
+        DoOutput("%s",RegNamesUpper[REG_FP0 + i]);
         if(l)
           DoOutput("/");
       }
@@ -4647,7 +4647,7 @@ uint32 FuncAsmText(struct AmiPragma *ap, uint32 flags, strptr name)
       if(fregs & (1 << i))
       {
         fregs ^= 1 << i;
-        DoOutput(RegNamesUpper[REG_FP0 + i]);
+        DoOutput("%s",RegNamesUpper[REG_FP0 + i]);
         if(fregs)
           DoOutput("/");
       }
@@ -4675,7 +4675,7 @@ uint32 FuncAsmText(struct AmiPragma *ap, uint32 flags, strptr name)
         if(registers & (1 << i))
         {
           registers ^= 1 << i;
-          DoOutput(RegNamesUpper[i]);
+          DoOutput("%s",RegNamesUpper[i]);
           if(registers)
             DoOutput("/");
         }
@@ -6437,7 +6437,7 @@ uint32 FuncBMAP(struct AmiPragma *ap, uint32 flags, strptr name)
     }
   }
 
-  DoOutput(name);
+  DoOutput("%s",name);
   reg = 0;                      DoOutputDirect(&reg, 1);
   reg = (-ap->Bias)>>8;         DoOutputDirect(&reg, 1);
   reg = -ap->Bias;              DoOutputDirect(&reg, 1);
@@ -6663,8 +6663,8 @@ uint32 FuncVBCCWOSInline(struct AmiPragma *ap, uint32 flags, strptr name)
       /* save tag1 and load taglist-pointer */
       DoOutput("\\tstw\\t%s%d,%d(%s1)\\n"
                "\\taddi\\t%s%d,%s1,%d\\n",
-      PPCRegPrefix, k+2, 20+k*4, PPCRegPrefix, PPCRegPrefix,
-      k+2, PPCRegPrefix, 20+k*4);
+      PPCRegPrefix, (int)k+2, 20+(int)k*4, PPCRegPrefix, PPCRegPrefix,
+      (int)k+2, PPCRegPrefix, 20+(int)k*4);
     }
     DoOutput("\\tlwz\\t%s11,_%s(%s2)\\n"
              "\\tlwz\\t%s0,-%d(%s11)\\n"
@@ -6694,8 +6694,8 @@ uint32 FuncVBCCWOSInline(struct AmiPragma *ap, uint32 flags, strptr name)
       /* save tag1 and load taglist-pointer */
       DoOutput("\\tstw\\t%s%d,%d(%s1)\\n"
                "\\taddi\\t%s%d,%s1,%d\\n",
-      PPCRegPrefix, k+3, 24+k*4, PPCRegPrefix, PPCRegPrefix,
-      k+3, PPCRegPrefix, 24+k*4);
+      PPCRegPrefix, (int)k+3, 24+(int)k*4, PPCRegPrefix, PPCRegPrefix,
+      (int)k+3, PPCRegPrefix, 24+(int)k*4);
     }
     DoOutput("\\tlwz\\t%s0,-%d(%s3)\\n"
              "\\tmtlr\\t%s0\\n"
@@ -7858,7 +7858,7 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[3].st_other */
   EndPutM16Inc(data2, 1);                                       /* esym[3].st_shndx - the second entry is program section! */
 
-  sprintf((strptr)data+i, name); while(data[i++]) ; /* get next store space */
+  sprintf((strptr)data+i, "%s", name); while(data[i++]) ; /* get next store space */
   EndPutM32Inc(data2, i);                                       /* esym[4].st_name */
   EndPutM32Inc(data2, 0);                                       /* esym[4].st_value */
   EndPutM32Inc(data2, 0);                                       /* esym[4].st_size */
@@ -7876,7 +7876,7 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
     *(data2++) = 0;                                             /* esym[5].st_other */
     EndPutM16/*Inc*/(data2, 0);                                 /* esym[5].st_shndx */
 
-    sprintf((strptr)data+i, BaseName); while(data[i++]) ; /* get next store space */
+    sprintf((strptr)data+i, "%s", BaseName); while(data[i++]) ; /* get next store space */
   }
   EndPutM32(data3+(3*40)+(5*4), i);                             /* esh[5].sh_size */
   while(i&3) /* long aligned */
@@ -8581,7 +8581,7 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[3].st_other */
   EndPutM16Inc(data2, 1);                                       /* esym[3].st_shndx - the second entry is program section! */
 
-  sprintf((strptr)data+i, name); while(data[i++]) ; /* get next store space */
+  sprintf((strptr)data+i, "%s", name); while(data[i++]) ; /* get next store space */
   if(BaseName)
   {
     EndPutM32Inc(data2, i);                                     /* esym[4].st_name */
@@ -8591,7 +8591,7 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
     *(data2++) = 0;                                             /* esym[4].st_other */
     EndPutM16/*Inc*/(data2, 0);                                 /* esym[4].st_shndx */
 
-    sprintf((strptr)data+i, BaseName); while(data[i++]) ; /* get next store space */
+    sprintf((strptr)data+i, "%s", BaseName); while(data[i++]) ; /* get next store space */
   }
   EndPutM32(data3+(3*40)+(5*4), i);                             /* esh[5].sh_size */
   while(i&3) /* long aligned */
