@@ -1,4 +1,4 @@
-/* $Id: mount.c 10.13 1999/09/11 17:05:14 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: mount.c $
  * Revision 10.13  1999/09/11  17:05:14  Michiel
  * bugfix versie 18.4

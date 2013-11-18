@@ -1,4 +1,4 @@
-/* $Id: lock.c 11.4 1999/02/22 16:33:43 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: lock.c $
  * Revision 11.4  1999/02/22  16:33:43  Michiel
  * Changes for increasing deldir capacity

@@ -1,4 +1,4 @@
-/* $Id: mount.c 10.11 1998/10/02 07:25:34 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: mount.c $
  * Revision 10.11  1998/10/02  07:25:34  Michiel
  * *** empty log message ***

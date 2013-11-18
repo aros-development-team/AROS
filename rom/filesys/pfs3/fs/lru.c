@@ -1,4 +1,4 @@
-/* $Id: lru.c 10.21 1999/05/14 11:31:34 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: lru.c $
  * Revision 10.21  1999/05/14  11:31:34  Michiel
  * Long filename support implemented; bugfixes

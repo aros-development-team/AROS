@@ -1,4 +1,4 @@
-/* $Id: german_messages.c 1.13 1999/05/14 11:31:34 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: german_messages.c $
  * Revision 1.13  1999/05/14  11:31:34  Michiel
  * Long filename support implemented; bugfixes

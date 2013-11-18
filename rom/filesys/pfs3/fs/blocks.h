@@ -1,4 +1,4 @@
-/* $Id: blocks.h 1.21 1999/06/13 16:46:01 Michiel Exp Michiel $
+/* $Id$
  * $Log: blocks.h $
  * Revision 1.21  1999/06/13  16:46:01  Michiel
  * MAXNUMRESERVED raised

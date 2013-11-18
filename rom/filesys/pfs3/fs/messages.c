@@ -1,4 +1,4 @@
-/* $Id: messages.c 1.10 1999/05/14 11:31:34 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: messages.c $
  * Revision 1.10  1999/05/14  11:31:34  Michiel
  * Long filename support implemented; bugfixes

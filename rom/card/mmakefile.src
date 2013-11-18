@@ -1,4 +1,4 @@
-# $Id: mmakefile.src $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/card \

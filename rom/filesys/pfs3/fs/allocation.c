@@ -9,7 +9,7 @@
  *
  * Revision History:
  *
- *  $Id: allocation.c 14.8 1999/09/11 17:05:14 Michiel Exp Michiel $
+ *  $Id$
  *
  *  $Log: allocation.c $
  * Revision 14.8  1999/09/11  17:05:14  Michiel

@@ -4,7 +4,7 @@
 /****************************************************************************************/
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -106,7 +106,7 @@ do                                  \
 /*
  * private AROS fields in RastPort struct:
  * longreserved[0] - pointer to GC class (see oop's _OOP_OBJECT() macro)
- * longreserved[1] - Enbedded hidd.graphics.gc object starts here
+ * longreserved[1] - Embedded hidd.graphics.gc object starts here
  */
 
 #define RP_GC(rp)	    ((APTR)&((rp)->longreserved[1]))

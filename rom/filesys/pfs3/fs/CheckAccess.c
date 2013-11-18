@@ -1,4 +1,4 @@
-/* $Id: CheckAccess.c 1.1 1996/01/03 10:18:38 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: CheckAccess.c $
  * Revision 1.1  1996/01/03  10:18:38  Michiel
  * Initial revision
