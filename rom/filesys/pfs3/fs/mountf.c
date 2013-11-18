@@ -1,4 +1,4 @@
-/* $Id: mountf.c 1.1 1997/03/03 22:04:04 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: mountf.c $
  * Revision 1.1  1997/03/03  22:04:04  Michiel
  * Initial revision

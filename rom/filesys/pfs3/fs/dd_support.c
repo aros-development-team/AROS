@@ -1,4 +1,4 @@
-/* $Id: dd_support.c 1.9 1999/02/22 16:33:43 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: dd_support.c $
  * Revision 1.9  1999/02/22  16:33:43  Michiel
  * Changes for increasing deldir capacity

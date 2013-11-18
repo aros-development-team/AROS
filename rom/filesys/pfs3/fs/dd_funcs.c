@@ -1,4 +1,4 @@
-/* $Id: dd_funcs.c 1.20 1999/09/11 17:05:14 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: dd_funcs.c $
  * Revision 1.20  1999/09/11  17:05:14  Michiel
  * bugfix version 18.4

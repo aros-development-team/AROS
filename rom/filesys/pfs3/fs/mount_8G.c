@@ -1,4 +1,4 @@
-/* $Id: mount.c 10.9 1998/09/03 07:12:14 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: mount.c $
  * Revision 10.9  1998/09/03  07:12:14  Michiel
  * Test for 5GB

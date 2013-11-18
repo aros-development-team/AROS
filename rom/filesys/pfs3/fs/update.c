@@ -1,4 +1,4 @@
-/* $Id: update.c 12.12 1999/05/14 11:31:34 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: update.c $
  * Revision 12.12  1999/05/14  11:31:34  Michiel
  * Long filename support implemented; bugfixes

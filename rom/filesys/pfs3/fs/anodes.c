@@ -1,4 +1,4 @@
-/* $Id: anodes.c 13.9 1998/09/27 11:26:37 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: anodes.c $
  * Revision 13.9  1998/09/27  11:26:37  Michiel
  * bugfixes

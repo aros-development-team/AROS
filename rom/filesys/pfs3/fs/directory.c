@@ -1,4 +1,4 @@
-/* $Id: directory.c 15.21 1999/09/11 17:05:14 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: directory.c $
  * Revision 15.21  1999/09/11  17:05:14  Michiel
  * bugfix version 18.4

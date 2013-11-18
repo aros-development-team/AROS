@@ -1,4 +1,4 @@
-/* $Id: format.c 11.29 1999/05/14 11:21:33 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: format.c $
  * Revision 11.29  1999/05/14  11:21:33  Michiel
  * Bigger reserved area (2x)

@@ -1,4 +1,4 @@
-/* $Id: init.c 12.9 1999/09/11 17:05:14 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: init.c $
  * Revision 12.9  1999/09/11  17:05:14  Michiel
  * bugfix version 18.4

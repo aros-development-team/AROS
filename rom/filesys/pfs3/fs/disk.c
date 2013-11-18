@@ -1,4 +1,4 @@
-/* $Id: disk.c 15.12 1999/03/25 22:05:00 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: disk.c $
  * Revision 15.12  1999/03/25  22:05:00  Michiel
  * fixed deldir related (beta) bug

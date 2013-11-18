@@ -1,4 +1,4 @@
-/* $Id: dostohandlerinterface.c 13.10 1999/05/14 11:31:34 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: dostohandlerinterface.c $
  * Revision 13.10  1999/05/14  11:31:34  Michiel
  * Long filename support implemented; bugfixes

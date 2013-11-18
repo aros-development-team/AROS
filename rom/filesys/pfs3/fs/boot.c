@@ -1,5 +1,5 @@
 
-/* $Id: boot.c 13.5 1999/05/14 11:31:34 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: boot.c $
  * Revision 13.5  1999/05/14  11:31:34  Michiel
  * Long filename support implemented; bugfixes

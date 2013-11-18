@@ -1,4 +1,4 @@
-/* $Id: volume.c 11.34 1999/09/11 17:05:14 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: volume.c $
  * Revision 11.34  1999/09/11  17:05:14  Michiel
  * bugfix version 18.4

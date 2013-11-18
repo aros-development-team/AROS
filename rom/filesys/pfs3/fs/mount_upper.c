@@ -1,4 +1,4 @@
-/* $Id: mount.c 10.12 1999/05/14 11:31:34 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: mount.c $
  * Revision 10.12  1999/05/14  11:31:34  Michiel
  * Long filename support implemented; bugfixes

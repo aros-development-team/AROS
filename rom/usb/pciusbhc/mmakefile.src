@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src 38850 2011-05-26 09:57:19Z sonic $
+#   $Id$
 include $(TOP)/config/make.cfg
 
 #MM- kernel-usb-pciusbhc : kernel-usb-pciuhci

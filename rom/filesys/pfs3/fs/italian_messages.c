@@ -1,4 +1,4 @@
-/* $Id: messages.c 1.9 1999/03/09 10:31:35 Michiel Exp Michiel $ */
+/* $Id$ */
 /* $Log: messages.c $
  * Revision 1.9  1999/03/09  10:31:35  Michiel
  * 00110: definizione numero di release

@@ -1,4 +1,4 @@
-/* $Id: struct.h 2.16 1999/05/14 11:31:34 Michiel Exp Michiel $
+/* $Id$
  * $Log: struct.h $
  * Revision 2.16  1999/05/14  11:31:34  Michiel
  * Long filename support implemented; bugfixes
