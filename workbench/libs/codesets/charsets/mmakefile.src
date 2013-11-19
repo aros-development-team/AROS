@@ -8,6 +8,6 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-libs-codesets-charsets
 
-%copy_dir_recursive mmake=workbench-libs-codesets-charsets src=$(SRCDIR)/$(CURDIR) dst=$(AROS_DIR_LIBRARIES)/Charsets
+%copy_dir_recursive mmake=workbench-libs-codesets-charsets src=$(SRCDIR)/$(CURDIR) dst=$(AROS_LIBRARIES)/Charsets
 
 %common
