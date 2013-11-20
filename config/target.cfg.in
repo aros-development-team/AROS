@@ -148,3 +148,5 @@ endif
 PRIV_EXEC_INCLUDES += -I$(SRCDIR)/arch/$(CPU)-all/exec \
                       -I$(SRCDIR)/rom/exec
 
+# Android
+AROS_ANDROID_ANTAPK := @aros_android_antapk@
