@@ -12,8 +12,8 @@ android-bootstrap-setup:
 
 android-bootstrap-ant-build:
 	@$(ECHO) Buiding Android application...
-	@cd $(GENDIR)/$(CURDIR); $(ANT) release
-	@$(CP) -f $(GENDIR)/$(CURDIR)/bin/AROSBootstrap-release.apk $(TARGETDIR)/AROSBootstrap.apk
+	@cd $(GENDIR)/$(CURDIR); $(ANT) $(AROS_ANDROID_ANTAPK)
+	@$(CP) -f $(GENDIR)/$(CURDIR)/bin/AROSBootstrap-$(AROS_ANDROID_ANTAPK).apk $(TARGETDIR)/AROSBootstrap.apk
 
 android-bootstrap-no-ant:
 	@$(ECHO) Apache Ant is not installed, Android bootstrap is not built.

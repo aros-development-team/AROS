@@ -825,6 +825,13 @@ ios)
         AC_MSG_WARN([Apache Ant is missing, Java bootstrap can't be built automatically])
     fi
 
+    AC_MSG_CHECKING([Build debug or release apk])
+    AC_ARG_WITH(apk-version,AC_HELP_STRING([--with-apk-version=(release|debug)],[Which version of AROSBootstrap.apk to compile. Release version needs key for signing, debug version will only run in emulator. (default=release)]),aros_android_antapk=$withval,aros_android_antapk=release)
+    if test $aros_android_antapk != release -a $aros_android_antapk != debug; then
+        AC_MSG_ERROR([apk-version has to be release or debug])
+    fi
+    AC_MSG_RESULT($aros_android_antapk)
+
     dnl MSYS bash can't run .bat files directly, then need to be started via cmd.exe
     if test "$host_os" = "mingw32"; then
         android_tool="cmd //c $android_tool"
@@ -2674,6 +2681,7 @@ AC_SUBST(gcc_default_float_abi)
 # Android related
 AC_SUBST(android_tool)
 AC_SUBST(aros_android_level)
+AC_SUBST(aros_android_antapk)
 
 # DBUS related
 AC_SUBST(ENABLE_DBUS)
