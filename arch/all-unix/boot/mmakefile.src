@@ -23,7 +23,7 @@ $(AROSDIR)/boot:
 
 # -------- Kickstart part --------
 
-#MM- kernel-unix: kernel-link-base
+#MM- kernel-unix: kernel-objs
 
 #MM- kernel-link-unix : \
 #MM     kernel-$(ARCH)-$(AROS_TARGET_VARIANT)   \
