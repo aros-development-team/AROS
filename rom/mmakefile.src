@@ -77,52 +77,33 @@ include $(TOP)/config/make.cfg
 #MM	kernel-expansion-pkg		\
 #MM	kernel-exec-pkg
 
-# This is what kickstart base package consists of.
-# These modules are architecture-independent and can work on both hosted and native systems.
-
-BASE_DEVICES  := console input gameport keyboard
-BASE_HANDLERS := ram con
-BASE_HIDD     := hiddclass graphics keyboard mouse
-BASE_LIBS     := aros debug dos graphics intuition keymap layers oop utility
-BASE_RSRCS    := bootloader dosboot FileSystem lddemon
-
 # *** ELF kickstart package ***
 
 #MM- kernel-objs : \
-#MM     kernel-aros-kobj \
-#MM	kernel-bootloader-kobj \
-#MM     kernel-dos-kobj \
-#MM	kernel-debug-kobj \
-#MM     kernel-dosboot-kobj \
-#MM	kernel-filesystem-kobj \
-#MM     kernel-graphics-kobj \
-#MM     kernel-hidd-graphics-kobj \
-#MM     kernel-hidd-kbd-kobj \
-#MM     kernel-hidd-mouse-kobj \
-#MM     kernel-utility-kobj \
-#MM     kernel-intuition-kobj \
-#MM     kernel-keymap-kobj \
-#MM	kernel-lddemon-kobj \
-#MM     kernel-console-kobj \
-#MM     kernel-gameport-kobj \
-#MM     kernel-input-kobj \
-#MM     kernel-keyboard-kobj \
-#MM	kernel-fs-ram-kobj \
-#MM     kernel-fs-con-kobj \
-#MM     kernel-hidd-kobj \
-#MM     kernel-oop-kobj \
-#MM     kernel-layers-kobj \
+#MM     kernel-aros \
+#MM	kernel-bootloader \
+#MM     kernel-dos \
+#MM	kernel-debug \
+#MM     kernel-dosboot \
+#MM	kernel-filesystem \
+#MM     kernel-graphics \
+#MM     kernel-hidd-graphics \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     kernel-utility \
+#MM     kernel-intuition \
+#MM     kernel-keymap \
+#MM	kernel-lddemon \
+#MM     kernel-console \
+#MM     kernel-gameport \
+#MM     kernel-input \
+#MM     kernel-keyboard \
+#MM	kernel-fs-ram \
+#MM     kernel-fs-con \
+#MM     kernel-hidd \
+#MM     kernel-oop \
+#MM     kernel-layers \
 #MM     kernel-usb-kobj-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-
-# Workaround: kernel-kernel-includes is built before kernel-exec-kobj, otherwise building exec
-# fails (it needs kernel.resource includes). We still do it here because older ports use
-# own kernel.resource targets (and even different includes)
-#MM kernel-link-base: kernel-kernel-includes kernel-objs linklibs-romhack
-
-%link_kickstart mmake=kernel-link-base file=$(AROSDIR)/boot/aros-base \
-	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) res=$(BASE_RSRCS) \
-	uselibs="autoinit libinit amiga arossupport romhack hiddstubs stdc.static" \
-	map=$(GENDIR)/boot/kernel-base.map
 
 # *** PKG kickstart package ***
 

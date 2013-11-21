@@ -12,7 +12,7 @@ MINGW32_RES	 := hostlib battclock processor
 
 #MM- boot-mingw32: kernel-bootstrap-hosted kernel-boot-mingw32
 
-#MM- AROS-mingw32-$(CPU): kernel-link-mingw32 kernel-link-base kernel-link-hosted \
+#MM- AROS-mingw32-$(CPU): kernel-link-mingw32 kernel-objs kernel-link-hosted \
 #MM			  workbench-hosted
 
 #MM- kernel-link-mingw32: kernel-kernel-kobj		\
