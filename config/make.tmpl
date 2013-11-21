@@ -1595,7 +1595,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
   linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
-  compiler=target nostartup=yes
+  compiler=target nostartup=yes archspecific=no
 
 # Define metamake targets and their dependencies
 #MM- includes-all : %(mmake)-includes
@@ -1657,6 +1657,9 @@ ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
 include %(objdir)/Makefile.%(modname)%(modtype)
 
 BD_DEFMODDIR := $(%(modname)_MODDIR)
+ifeq (%(archspecific),yes)
+BD_DEFMODDIR := $(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/$(BD_DEFMODDIR)
+endif
 
 
 ## include files generation
