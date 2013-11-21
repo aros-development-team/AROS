@@ -15,7 +15,7 @@ USER_CFLAGS += -Wno-attributes
 
 %build_module mmake=kernel-unixio \
     modname=unixio modtype=hidd version=$(AROS_TARGET_PLATFORM) \
-    files=unixio_class
+    files=unixio_class archspecific=yes
 
 MY_INCLS := $(call WILDCARD, include/*.h)
 DEST_INC := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))

@@ -25,6 +25,6 @@ FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
 
 %build_module mmake=kernel-timer \
   modname=timer modtype=device version=$(AROS_TARGET_PLATFORM) \
-  files="$(FUNCS) $(FILES)"
+  files="$(FUNCS) $(FILES)" archspecific=yes
 
 %common

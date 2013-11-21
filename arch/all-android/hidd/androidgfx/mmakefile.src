@@ -7,6 +7,6 @@ FILES := startup agfx abitmap akbd amouse server
 
 %build_module mmake=kernel-hidd-androidgfx \
   modname=androidgfx modtype=hidd \
-  files=$(FILES) uselibs="hiddstubs"
+  files=$(FILES) uselibs="hiddstubs" archspecific=yes
 
 %common

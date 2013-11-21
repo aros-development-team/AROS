@@ -1,11 +1,5 @@
 include $(TOP)/config/make.cfg
 
-ifeq ($(AROS_TARGET_VARIANT),)
-    BSP := $(ARCH)
-else
-    BSP := $(AROS_TARGET_VARIANT)
-endif
-
 # -------- Bootstrap part --------
 
 #MM boot-unix: kernel-bootstrap-hosted
@@ -22,7 +16,7 @@ $(AROSDIR)/boot/AROSBootstrap.conf: AROSBootstrap.conf
 endif
 $(AROSDIR)/boot/AROSBootstrap.conf: mkbootconf.sh | $(AROSDIR)/boot
 	@$(ECHO) "Writing    $@..."
-	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(INPUT_FILE) $(BSP) >$@
+	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(INPUT_FILE) $(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX) >$@
 
 $(AROSDIR)/boot:
 	@$(ECHO) "Making     $@..."
@@ -54,7 +48,7 @@ KHNDLRS :=
 KHIDDS  := 
 KRSRCS  := 
 
-%link_kickstart mmake=kernel-link-unix file=$(AROSDIR)/boot/aros-bsp-$(BSP) \
+%link_kickstart mmake=kernel-link-unix file=$(AROSDIR)/boot/aros-bsp-$(AROS_TARGET_ATRCH)$(AROS_TARGET_SUFFIX) \
 	devs=$(KDEVS) handlers=$(KHNDLRS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
 	uselibs="hiddstubs"
 
