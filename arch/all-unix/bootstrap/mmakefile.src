@@ -8,7 +8,8 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
 		 -I$(SRCDIR)/arch/all-unix/kernel   \
 		 -I$(GENINCDIR) \
 		 -isystem $(SRCDIR)/bootstrap/include \
-		 -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
+		 -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
+USER_CFLAGS   := -DARCH=\"$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)\"
 
 %build_archspecific \
 	mainmmake=kernel-bootstrap-hosted maindir=arch/all-hosted/bootstrap arch=unix \

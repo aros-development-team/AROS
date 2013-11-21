@@ -1,6 +1,6 @@
 #include "support.h"
 
-char *DefaultConfig = "boot/AROSBootstrap.conf";
+char *DefaultConfig = ARCH "/AROSBootstrap.conf";
 
 char *getosversion(const char *version)
 {
