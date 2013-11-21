@@ -3,8 +3,8 @@ include $(TOP)/config/make.cfg
 
 # Note ending dash - we build these only for variant-less (desktop) Linux
 #MM- kernel-linux- :              \
-#MM    kernel-hidd-linuxfb-kobj   \
-#MM    kernel-hidd-linuxinput-kobj
+#MM    kernel-hidd-linuxfb        \
+#MM    kernel-hidd-linuxinput
 
 #MM- workbench-linux-$(CPU) : \
 #MM      workbench-unix \

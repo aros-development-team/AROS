@@ -13,9 +13,16 @@ endif
 #MM
 boot-unix: $(AROSDIR)/boot/AROSBootstrap.conf
 
-$(AROSDIR)/boot/AROSBootstrap.conf: mkbootconf.sh $(AROSDIR)/boot AROSBootstrap.conf
+ifeq ($(AROS_TARGET_VARIANT),android))
+$(AROSDIR)/boot/AROSBootstrap.conf: INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap_android.conf
+$(AROSDIR)/boot/AROSBootstrap.conf: AROSBootstrap_android.conf
+else
+$(AROSDIR)/boot/AROSBootstrap.conf: INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap.conf
+$(AROSDIR)/boot/AROSBootstrap.conf: AROSBootstrap.conf
+endif
+$(AROSDIR)/boot/AROSBootstrap.conf: mkbootconf.sh | $(AROSDIR)/boot
 	@$(ECHO) "Writing    $@..."
-	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(SRCDIR)/$(CURDIR) $(BSP) >$@
+	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(INPUT_FILE) $(BSP) >$@
 
 $(AROSDIR)/boot:
 	@$(ECHO) "Making     $@..."
@@ -28,34 +35,24 @@ $(AROSDIR)/boot:
 #MM- kernel-link-unix : \
 #MM     kernel-$(ARCH)-$(AROS_TARGET_VARIANT)   \
 #MM	kernel-kernel-kobj			\
-#MM     kernel-hostlib-kobj			\
-#MM	kernel-battclock-kobj			\
-#MM	kernel-processor-kobj			\
-#MM	kernel-timer-kobj			\
-#MM	kernel-expansion-kobj			\
+#MM     kernel-hostlib     			\
+#MM	kernel-battclock     			\
+#MM	kernel-processor     			\
+#MM	kernel-timer     			\
+#MM	kernel-expansion     			\
 #MM	kernel-exec-kobj			\
 #MM     $(UNIXGFX_HIDD_TARGET)		        \
-#MM     kernel-fs-emul-kobj                     \
-#MM	kernel-unixio-kobj			\
+#MM     kernel-fs-emul                          \
+#MM	kernel-unixio     			\
 #MM	linklibs
 
 # ---- UNIX board support package ----
 
-KDEVS	:= timer
-KLIBS   := exec expansion
-KHNDLRS := emul
-KHIDDS  := unixio
-KRSRCS  := battclock hostlib processor
-ifeq ("$(ARCH)-$(AROS_TARGET_VARIANT)","linux-")
-    # Note ending dash - we add these only for variant-less (desktop) Linux
-    KHIDDS  += linuxfb linuxinput
-endif
-ifeq ("$(UNIXGFX_HIDD_TARGET)", "kernel-x11gfx-kobj")
-    KHIDDS += x11gfx
-endif
-ifeq ("$(UNIXGFX_HIDD_TARGET)", "kernel-hidd-androidgfx-kobj")
-    KHIDDS += androidgfx
-endif
+KDEVS	:= 
+KLIBS   := exec
+KHNDLRS := 
+KHIDDS  := 
+KRSRCS  := 
 
 %link_kickstart mmake=kernel-link-unix file=$(AROSDIR)/boot/aros-bsp-$(BSP) \
 	devs=$(KDEVS) handlers=$(KHNDLRS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \

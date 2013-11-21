@@ -968,7 +968,7 @@ case "$target_os" in
                     aros_kernel_includes="-isystem $aros_android_ndk/usr/include"
                 fi
                 need_x11=no
-                unixgfx_hidd_target=kernel-hidd-androidgfx-kobj
+                unixgfx_hidd_target=kernel-hidd-androidgfx
                 # Disable implicit PIC mode
                 aros_target_cflags="$aros_target_cflags -fno-pic"
                 kernel_tool_prefix="$android_tool_prefix-"
@@ -2370,7 +2370,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
         
         else
             dnl found it, setup the metatarget
-            unixgfx_hidd_target=kernel-x11gfx-kobj"
+            unixgfx_hidd_target=kernel-x11gfx
             ENABLE_X11=1
 
             dnl setup shared memory extensions
