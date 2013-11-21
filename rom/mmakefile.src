@@ -63,10 +63,10 @@ include $(TOP)/config/make.cfg
 # All these components are machine-specific.
 #MM- kernel-bsp-objs:			\
 #MM	kernel-kernel-kobj		\
-#MM	kernel-battclock-kobj		\
-#MM	kernel-processor-kobj		\
-#MM	kernel-timer-kobj		\
-#MM	kernel-expansion-kobj		\
+#MM	kernel-battclock     		\
+#MM	kernel-processor     		\
+#MM	kernel-timer     		\
+#MM	kernel-expansion     		\
 #MM	kernel-exec-kobj
 
 #MM- kernel-bsp-pkg:			\
