@@ -5,22 +5,22 @@ include $(TOP)/config/make.cfg
 #MM boot-unix: kernel-bootstrap-hosted
 
 #MM
-boot-unix: $(AROSDIR)/boot/AROSBootstrap.conf
+boot-unix: $(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/AROSBootstrap.conf
 
 ifeq ($(AROS_TARGET_VARIANT),android))
-$(AROSDIR)/boot/AROSBootstrap.conf: INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap_android.conf
-$(AROSDIR)/boot/AROSBootstrap.conf: AROSBootstrap_android.conf
+$(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/AROSBootstrap.conf: INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap_android.conf
+$(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/AROSBootstrap.conf: AROSBootstrap_android.conf
 else
-$(AROSDIR)/boot/AROSBootstrap.conf: INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap.conf
-$(AROSDIR)/boot/AROSBootstrap.conf: AROSBootstrap.conf
+$(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/AROSBootstrap.conf: INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap.conf
+$(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/AROSBootstrap.conf: AROSBootstrap.conf
 endif
-$(AROSDIR)/boot/AROSBootstrap.conf: mkbootconf.sh | $(AROSDIR)/boot
+$(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/AROSBootstrap.conf: mkbootconf.sh | $(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
 	@$(ECHO) "Writing    $@..."
 	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(INPUT_FILE) $(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX) >$@
 
-$(AROSDIR)/boot:
+$(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX):
 	@$(ECHO) "Making     $@..."
-	@mkdir -p $(AROSDIR)/boot
+	@mkdir -p $@
 
 # -------- Kickstart part --------
 
@@ -48,7 +48,7 @@ KHNDLRS :=
 KHIDDS  := 
 KRSRCS  := 
 
-%link_kickstart mmake=kernel-link-unix file=$(AROSDIR)/boot/aros-bsp-$(AROS_TARGET_ATRCH)$(AROS_TARGET_SUFFIX) \
+%link_kickstart mmake=kernel-link-unix file=$(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/kernel \
 	devs=$(KDEVS) handlers=$(KHNDLRS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
 	uselibs="hiddstubs"
 

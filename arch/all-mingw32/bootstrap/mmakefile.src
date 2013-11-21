@@ -1,7 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-EXEDIR  := $(AROSDIR)/boot
 ICONDIR := $(GENDIR)/arch/all-hosted/bootstrap/arch
 
 FILES         := filesystem hostinterface hostlib log memory shutdown support ui
@@ -9,6 +8,7 @@ ICON          := $(ICONDIR)/icon.o
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
 		 -I$(SRCDIR)/arch/all-mingw32/kernel   \
 		 -I$(GENINCDIR)
+USER_CFLAGS   := -DARCH=$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
 
 #MM kernel-bootstrap-hosted-mingw32: kernel-bootstrap-icon-mingw32
 
