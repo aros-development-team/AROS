@@ -9,6 +9,6 @@ FUNCS := open close getpointer freeerrorstr getinterface dropinterface lock unlo
 
 %build_module mmake=kernel-hostlib \
     modname=hostlib modtype=resource version=$(AROS_TARGET_PLATFORM) \
-    files="hostlib_init $(FUNCS)"
+    files="hostlib_init $(FUNCS)" archspecific=yes
 
 %common

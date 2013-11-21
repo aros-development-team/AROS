@@ -19,6 +19,6 @@ FUNCTIONS := readbattclock resetbattclock writebattclock
 
 %build_module mmake=kernel-battclock \
     modname=battclock modtype=resource version=$(AROS_TARGET_PLATFORM) \
-    files="$(FUNCTIONS)"
+    files="$(FUNCTIONS)" archspecific=yes
 
 %common
