@@ -4,7 +4,6 @@
 include $(TOP)/config/make.cfg
 
 #MM-  workbench-system-wanderer-classes : \
-##MM  wanderer-classes-icon \
 #MM  wanderer-classes-iconlist \
 #MM  wanderer-classes-icondrawerlist \
 #MM  wanderer-classes-iconvolumelist \
