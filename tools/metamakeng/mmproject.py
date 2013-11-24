@@ -1,6 +1,6 @@
 # -*- coding: iso-8859-15 -*-
 
-import errno, logging, os, re, sys
+import errno, logging, os, re, runpy, sys
 
 import mmgenmf, mmtarget, mmvar
 
@@ -72,6 +72,9 @@ class Project:
                             raise
                     mmgenmf.genmf(genmakefilescript, infilename, outfilename)
                 self.parsemakefile(parent, True)
+            elif "extmmakefile" in files:
+                runpy.run_path(os.path.join(self.srctop, parent, "extmmakefile"),
+                    init_globals={"project":self}, run_name="__main__")
             elif "mmakefile" in files:
                 self.parsemakefile(parent, False)
 
