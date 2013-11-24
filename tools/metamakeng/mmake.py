@@ -1,12 +1,14 @@
 # -*- coding: iso-8859-15 -*-
 
-import sys, os
+import logging, os, sys
 
 import mmproject, mmglobal
 
 mflags = []
 targets = []
 srcdir = builddir = currdir = os.getcwd()
+
+loglevel = logging.WARNING
 
 for idx in range(1, len(sys.argv)):
     arg = sys.argv[idx]
@@ -18,12 +20,12 @@ for idx in range(1, len(sys.argv)):
             srcdir = arg[9:]
         elif arg.startswith("--builddir"):
             builddir = arg[11:]
-        elif arg == "--verbose" or arg == "-v":
-            mmglobal.verbose = True
         elif arg == "--quiet" or arg == "-q":
-            mmglobal.quiet = True
+            loglevel = logging.ERROR
+        elif arg == "--verbose" or arg == "-v":
+            loglevel = logging.INFO
         elif arg == "--debug":
-            mmglobal.debug = True
+            loglevel = logging.DEBUG
         elif arg == "--help":
             print "%s [--srcdir=<directory>] [--builddir=<directory>] [--version] [-v,--verbose] [-q,--quiet] [--debug] [--help]" % (sys.argv[0])
             sys.exit(0)
@@ -32,24 +34,24 @@ for idx in range(1, len(sys.argv)):
     else:
         targets.append(arg)
 
-    if mmglobal.verbose:
-        mmglobal.quiet = False
-        print "SRCDIR   '%s'" % (srcdir)
-        print "BUILDDIR '%s'" % (builddir)
+    logging.basicConfig(level=loglevel)
+
+    logging.info("SRCDIR   '%s'" % (srcdir))
+    logging.info("BUILDDIR '%s'" % (builddir))
 
     if mmglobal.debug:
         mmglobal.quiet = False
 
-    mmglobal.debugout("MMAKE:mmake.py: parsed command line options")
+    logging.debug("[MMAKE] mmake.py: parsed command line options")
 
     myproject = mmproject.Project(srcdir, builddir, mflags)
 
-    mmglobal.debugout("MMAKE:mmake.py: projects initialised")
+    logging.debug("[MMAKE] mmake.py: projects initialised")
 
     for t in targets:
         projectname, _, targetname = t.partition(".")
         if targetname == "":
             targetname = projectname
 
-        mmglobal.debugout("MMAKE:mmake.py calling maketarget '%s'" % (targetname))
+        logging.debug("[MMAKE] mmake.py calling maketarget '%s'" % (targetname))
         myproject.maketarget(targetname)

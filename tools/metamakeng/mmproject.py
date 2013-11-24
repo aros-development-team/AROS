@@ -1,6 +1,6 @@
 # -*- coding: iso-8859-15 -*-
 
-import errno, os, re, sys
+import errno, logging, os, re, sys
 
 import mmgenmf, mmglobal, mmtarget, mmvar
 
@@ -50,8 +50,7 @@ class Project:
 
 
     def maketarget(self, targetname):
-        if not mmglobal.quiet:
-            print "[MMAKE] Building %s.%s\n" % (self.name, targetname)
+        logging.info("[MMAKE] Building %s.%s\n" % (self.name, targetname))
 
         os.chdir(self.srctop)
         self.readvars()
@@ -189,11 +188,11 @@ class Project:
                         #print "%s dep %s" % (" " * level * 4, dependency)
                         self.build_recursive(level + 1, dependency)
                 else:
-                    print "[MMAKE] nothing known about subtarget %s" % (dependency)
+                    logging.warning("[MMAKE] nothing known about subtarget %s" % (dependency))
             for makefile in target.makefiles:
                 self.callmake(targetname, makefile)
         else:
-            print "[MMAKE] nothing known about target %s" % (targetname)
+            logging.warning("[MMAKE] nothing known about target %s" % (targetname))
 
 
     def execute(self, command, infile, outfile, arguments):
@@ -208,13 +207,12 @@ class Project:
         cmdstr = cmdstr + arguments
         cmdstr = self.vars.subst(cmdstr)
 
-        if mmglobal.verbose:
-            print "[MMAKE] Executing %s..." % (cmdstr)
+        logging.info("[MMAKE] Executing %s..." % (cmdstr))
 
         rc = os.system(cmdstr)
 
         if rc:
-            print "[MMAKE] %s failed: %d" % (cmdstr, rc)
+            logging.error("[MMAKE] %s failed: %d" % (cmdstr, rc))
 
         return not rc
 
@@ -238,8 +236,7 @@ class Project:
 
         buffer = buffer + " --file=mmakefile %s" % (targetname)
 
-        if not mmglobal.quiet:
-            print "[MMAKE] Making %s in %s" % (targetname, path)
+        logging.info("[MMAKE] Making %s in %s" % (targetname, path))
 
         if not self.execute(self.maketool, "-", "-", buffer):
-            sys.exit("[MMAKE] Error while running make in %s", path)
+            raise ("[MMAKE] Error while running make in %s", path)
