@@ -1188,6 +1188,7 @@ static void EmulHandler_work(struct ExecBase *SysBase)
     struct MsgPort *mp;
     struct filehandle *fhv;
     struct emulbase *emulbase;
+    const STRPTR hname = "emul-handler";
 
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
     if (!DOSBase)
@@ -1201,13 +1202,24 @@ static void EmulHandler_work(struct ExecBase *SysBase)
     dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
 
     D(bug("EMUL: Open resource\n"));
-    emulbase = OpenResource("emul-handler");
+    emulbase = OpenResource(hname);
     if (!emulbase)
     {
         D(bug("EMUL: FATAL - can't find myself\n"));
         ReplyPkt(dp, DOSFALSE, ERROR_INVALID_RESIDENT_LIBRARY);
         return;
     }
+
+    /* emul-handler is really a .resource. This causes the problem that the startup code is not put
+     * at the beginning of module, making RunHandler not beeing able to "start" the handler if it
+     * is loaded at later date (for example by "mount home:"). Making the module resident is
+     * a workaround for this problem. The full solution would most likely mean separating most of
+     * the code to real .resource and then building a thin "real handler" emul-handler on top of
+     * that resource.
+     */
+    if (FindSegment(hname, NULL, TRUE) == BNULL)
+        AddSegment(hname, CreateSegList(EmulHandlerMain), CMD_INTERNAL);
+
 
     fssm = BADDR(dp->dp_Arg2);
     if (fssm)

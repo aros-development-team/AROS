@@ -66,7 +66,7 @@ static LONG startup(struct emulbase *emulbase)
         if (dn)
         {
             dn->dn_SegList = CreateSegList(EmulHandlerMain);
-            dn->dn_Handler = AROS_CONST_BSTR("emul.handler");
+            dn->dn_Handler = AROS_CONST_BSTR("emul-handler");
             dn->dn_StackSize = 16384;
             dn->dn_GlobalVec = (BPTR)-1;
 
