@@ -30,7 +30,7 @@ $
 """, re.MULTILINE | re.VERBOSE)
 
 class Project:
-    def __init__(self, srcdir, builddir, mflags):
+    def __init__(self, srcdir, builddir, mflags, dryrun):
         self.name = "AROS"
         self.maketool = "$(HOST_MAKE) $(MKARGS) TOP=$(TOP) SRCDIR=$(SRCDIR) CURDIR=$(CURDIR) TARGET=$(TARGET)"
         self.defaulttarget = "AROS"
@@ -44,13 +44,14 @@ class Project:
         self.srctop = srcdir
         self.buildtop = builddir
         self.mflags = mflags
+        self.dryrun = dryrun
 
         self.vars = mmvar.VarList()
         self.targets = mmtarget.TargetList()
 
 
     def maketarget(self, targetname):
-        logging.info("[MMAKE] Building %s.%s\n" % (self.name, targetname))
+        logging.info("[MMAKE] Building %s.%s" % (self.name, targetname))
 
         os.chdir(self.srctop)
         self.readvars()
@@ -176,8 +177,6 @@ class Project:
 
 
     def build_recursive(self, level, targetname):
-        #print "%s level %d target %s " % (" " * level * 4, level, targetname)
-
         if targetname in self.targets:
             target = self.targets[targetname]
             target.updated = True
@@ -185,12 +184,14 @@ class Project:
                 if dependency in self.targets:
                     subtarget = self.targets[dependency]
                     if not subtarget.updated:
-                        #print "%s dep %s" % (" " * level * 4, dependency)
                         self.build_recursive(level + 1, dependency)
                 else:
                     logging.warning("[MMAKE] nothing known about subtarget %s" % (dependency))
             for makefile in target.makefiles:
-                self.callmake(targetname, makefile)
+                if not self.dryrun:
+                    self.callmake(targetname, makefile)
+                else:
+                    print "[MMAKE] %starget '%s' dir '%s'" % (" " * level * 3, targetname, makefile.directory)
         else:
             logging.warning("[MMAKE] nothing known about target %s" % (targetname))
 
@@ -239,4 +240,4 @@ class Project:
         logging.info("[MMAKE] Making %s in %s" % (targetname, path))
 
         if not self.execute(self.maketool, "-", "-", buffer):
-            raise ("[MMAKE] Error while running make in %s", path)
+            raise Exception("[MMAKE] Error while running make in %s", path)

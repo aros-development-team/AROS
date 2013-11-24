@@ -7,7 +7,7 @@ import mmproject
 mflags = []
 targets = []
 srcdir = builddir = currdir = os.getcwd()
-
+dryrun = False
 loglevel = logging.WARNING
 
 for idx in range(1, len(sys.argv)):
@@ -26,6 +26,8 @@ for idx in range(1, len(sys.argv)):
             loglevel = logging.INFO
         elif arg == "--debug":
             loglevel = logging.DEBUG
+        elif arg == "--dryrun":
+            dryrun = True
         elif arg == "--help":
             print "%s [--srcdir=<directory>] [--builddir=<directory>] [--version] [-v,--verbose] [-q,--quiet] [--debug] [--help]" % (sys.argv[0])
             sys.exit(0)
@@ -36,12 +38,12 @@ for idx in range(1, len(sys.argv)):
 
 logging.basicConfig(level=loglevel)
 
-logging.info("SRCDIR   '%s'" % (srcdir))
-logging.info("BUILDDIR '%s'" % (builddir))
+logging.info("[MMAKE] SRCDIR   '%s'" % (srcdir))
+logging.info("[MMAKE] BUILDDIR '%s'" % (builddir))
 
 logging.debug("[MMAKE] mmake.py: parsed command line options")
 
-myproject = mmproject.Project(srcdir, builddir, mflags)
+myproject = mmproject.Project(srcdir, builddir, mflags, dryrun)
 
 logging.debug("[MMAKE] mmake.py: projects initialised")
 
