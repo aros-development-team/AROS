@@ -2,7 +2,7 @@
 
 import errno, logging, os, re, sys
 
-import mmgenmf, mmglobal, mmtarget, mmvar
+import mmgenmf, mmtarget, mmvar
 
 
 # regex for #MM... lines

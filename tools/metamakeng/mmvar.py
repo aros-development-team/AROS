@@ -2,8 +2,6 @@
 
 import os, string
 
-import mmglobal
-
 class MyTemplate(string.Template):
     # Template with () brackets instead of {}
     pattern = r"""
