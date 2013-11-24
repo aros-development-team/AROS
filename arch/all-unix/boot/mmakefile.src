@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 #MM
 boot-unix: $(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/AROSBootstrap.conf
 
-ifeq ($(AROS_TARGET_VARIANT),android))
+ifeq ($(AROS_TARGET_VARIANT),android)
 $(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/AROSBootstrap.conf: INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap_android.conf
 $(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/AROSBootstrap.conf: AROSBootstrap_android.conf
 else
