@@ -1,3 +1,8 @@
 print "****** It flies *****"
-print project.maketool
-print project.vars["TOP"]
+
+buildenv.add_virtual_metatarget("foo", ["bar"])
+
+buildenv.output(
+    mmake="bar",
+    text="This text is printed by the 'output' function. TOP=$(TOP)"
+)
