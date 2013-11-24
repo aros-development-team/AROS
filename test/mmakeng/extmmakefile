@@ -1,0 +1,3 @@
+print "****** It flies *****"
+print project.maketool
+print project.vars["TOP"]
