@@ -1,5 +1,7 @@
 # -*- coding: iso-8859-15 -*-
 
+import mmfunction
+
 class Makefile:
     def __init__(self, directory, generated):
         if directory == None:
@@ -15,6 +17,7 @@ class Makefile:
 class Target():
     def __init__(self):
         self.makefiles = []     # Makefile() objects
+        self.functions = []     # functions for extmmakefiles
         self.dependencies = []  # list of dependency target names
         self.updated = False    # protection against recursion
 
@@ -24,6 +27,13 @@ class Target():
             self.makefiles.append(makefile)
         else:
             raise TypeError("[MMAKE] 'makefile' is not a Makefile object")
+
+
+    def add_function(self, function):
+        if isinstance(function, mmfunction.Function):
+            self.functions.append(function)
+        else:
+            raise TypeError("[MMAKE] 'function' is not a Function object")
 
 
     def add_dependencies(self, dependencies):
@@ -51,6 +61,7 @@ class TargetList(dict):
     def __setitem__(self, key, value):
         raise KeyError("[MMAKE] setting is not allowed")
 
+
     def add_target(self, targetname, directory, generated, dependencies):
         if targetname == None or targetname == "":
             raise ValueError("[MMAKE] 'targetname' not defined")
@@ -74,6 +85,14 @@ class TargetList(dict):
         if targetname in self:
             oldtarget = dict.__getitem__(self, targetname)
             oldtarget.add_dependencies(dependencies)
+        else:
+            raise KeyError("[MMAKE] targetname '%s' doesn't exist" % (targetname))
+
+
+    def add_function(self, targetname, function):
+        if targetname in self:
+            oldtarget = dict.__getitem__(self, targetname)
+            oldtarget.add_function(function)
         else:
             raise KeyError("[MMAKE] targetname '%s' doesn't exist" % (targetname))
 

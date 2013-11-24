@@ -2,7 +2,7 @@
 
 import errno, logging, os, re, runpy, sys
 
-import mmgenmf, mmtarget, mmvar
+import mmbuildenv, mmgenmf, mmtarget, mmvar
 
 
 # regex for #MM... lines
@@ -48,6 +48,7 @@ class Project:
 
         self.vars = mmvar.VarList()
         self.targets = mmtarget.TargetList()
+        self.buildenv = mmbuildenv.BuildEnv(self)
 
 
     def maketarget(self, targetname):
@@ -61,7 +62,11 @@ class Project:
             for igndir in self.ignoredirs:
                 if igndir in dirs:
                     dirs.remove(igndir)
-            if "mmakefile.src" in files:
+            if "extmmakefile" in files:
+                self.vars["CURDIR"] = parent
+                runpy.run_path(os.path.join(self.srctop, parent, "extmmakefile"),
+                    init_globals={"buildenv":self.buildenv}, run_name="__main__")
+            elif "mmakefile.src" in files:
                 infilename = os.path.join(parent, "mmakefile.src") # relative to srctop
                 outfilename = os.path.join(self.buildtop, parent, "mmakefile")
                 if not os.path.exists(outfilename) or (os.path.getmtime(infilename) > os.path.getmtime(outfilename)):
@@ -72,9 +77,6 @@ class Project:
                             raise
                     mmgenmf.genmf(genmakefilescript, infilename, outfilename)
                 self.parsemakefile(parent, True)
-            elif "extmmakefile" in files:
-                runpy.run_path(os.path.join(self.srctop, parent, "extmmakefile"),
-                    init_globals={"project":self}, run_name="__main__")
             elif "mmakefile" in files:
                 self.parsemakefile(parent, False)
 
@@ -190,11 +192,19 @@ class Project:
                         self.build_recursive(level + 1, dependency)
                 else:
                     logging.warning("[MMAKE] nothing known about subtarget %s" % (dependency))
+
             for makefile in target.makefiles:
                 if not self.dryrun:
                     self.callmake(targetname, makefile)
                 else:
                     print "[MMAKE] %starget '%s' dir '%s'" % (" " * level * 3, targetname, makefile.directory)
+
+            for function in target.functions:
+                if not self.dryrun:
+                    function.execute()
+                else:
+                    print "[MMAKE] %starget '%s'" % (" " * level * 3, targetname)
+
         else:
             logging.warning("[MMAKE] nothing known about target %s" % (targetname))
 
