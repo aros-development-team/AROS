@@ -2,7 +2,7 @@
 
 import logging, os, sys
 
-import mmproject, mmglobal
+import mmproject
 
 mflags = []
 targets = []
@@ -34,24 +34,21 @@ for idx in range(1, len(sys.argv)):
     else:
         targets.append(arg)
 
-    logging.basicConfig(level=loglevel)
+logging.basicConfig(level=loglevel)
 
-    logging.info("SRCDIR   '%s'" % (srcdir))
-    logging.info("BUILDDIR '%s'" % (builddir))
+logging.info("SRCDIR   '%s'" % (srcdir))
+logging.info("BUILDDIR '%s'" % (builddir))
 
-    if mmglobal.debug:
-        mmglobal.quiet = False
+logging.debug("[MMAKE] mmake.py: parsed command line options")
 
-    logging.debug("[MMAKE] mmake.py: parsed command line options")
+myproject = mmproject.Project(srcdir, builddir, mflags)
 
-    myproject = mmproject.Project(srcdir, builddir, mflags)
+logging.debug("[MMAKE] mmake.py: projects initialised")
 
-    logging.debug("[MMAKE] mmake.py: projects initialised")
+for t in targets:
+    projectname, _, targetname = t.partition(".")
+    if targetname == "":
+        targetname = projectname
 
-    for t in targets:
-        projectname, _, targetname = t.partition(".")
-        if targetname == "":
-            targetname = projectname
-
-        logging.debug("[MMAKE] mmake.py calling maketarget '%s'" % (targetname))
-        myproject.maketarget(targetname)
+    logging.debug("[MMAKE] mmake.py calling maketarget '%s'" % (targetname))
+    myproject.maketarget(targetname)
