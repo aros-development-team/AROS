@@ -80,22 +80,30 @@ $(AROSDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_lib
         -L$(AROS_LIB) -larossupport -lamiga -lautoinit -llibinit -lstdc.static -lgcc
 
 
-PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos debug poseidon
-PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor FileSystem shell shellcommands
-PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
-PKG_HANDLERS := con ram cdrom sfs fat afs econsole
-PKG_HIDDS    := graphics mouse keyboard hiddclass ata_pci pci pci-amcc440 pci-amcc460 i2c i2c-amcc440 usb ohci sm502
+PKG_LIBS     := aros debug dos graphics intuition keymap layers oop partition poseidon utility workbench
+PKG_RSRC     := bootloader dosboot FileSystem lddemon misc shell shellcommands usbromstartup
+PKG_DEVS     := ata console gameport input keyboard USBHardware/pciusb
+
+ARCH_LIBS    := expansion
+ARCH_RSRC    := battclock processor
+ARCH_DEVS    := timer
+
+PKG_HANDLERS := afs cdrom con econsole fat ram sfs
+PKG_HIDDS    := ata_pci graphics hiddclass i2c i2c-amcc440 keyboard mouse ohci pci pci-amcc440 pci-amcc460 sm502 usb
 PKG_USB      := hid
-PKG_USB_PSD  := hid hub bootmouse bootkeyboard massstorage
+PKG_USB_PSD  := bootmouse bootkeyboard hid hub massstorage
 
 MODULES := \
-	$(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
-	$(addprefix $(AROSDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
-	$(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
-	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
-	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD))) \
+        $(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
+        $(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
+        $(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
+        $(addprefix $(AROSDIR)/$(ARCH)/Libs/, $(addsuffix .library, $(ARCH_LIBS))) \
+        $(addprefix $(AROSDIR)/$(ARCH)/Devs/, $(addsuffix .device, $(ARCH_DEVS))) \
+        $(addprefix $(AROSDIR)/$(ARCH)/Devs/, $(addsuffix .resource, $(ARCH_RSRC))) \
+        $(addprefix $(AROSDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
+        $(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
+        $(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
+        $(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD))) \
 
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
