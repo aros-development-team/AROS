@@ -1,7 +1,7 @@
 # -*- coding: iso-8859-15 -*-
 # Copyright © 2003-2013, The AROS Development Team. All rights reserved.
 
-import sys, re, os, errno
+import logging, sys, re, os, errno
 
 # A regular expression for the start of a template instantiation (ex. %build_module)
 re_tmplinst = re.compile('%([a-zA-Z0-9][a-zA-Z0-9_]*)(?=(?:\s|$))')
@@ -338,7 +338,8 @@ def genmf(templatefilename, infilename, outfilename):
     closeout = 1
     template.hascommon = 0
 
-    #print "[GENMF] in %s out %s" % (infilename, outfilename)
+    logging.debug("[GENMF] in %s out %s" % (infilename, outfilename))
+
     try:
         writelines(lines, generate_templrefs(lines, templates), templates, outfile)
     except GenmfException, ge:
