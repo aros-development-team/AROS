@@ -43,7 +43,49 @@ logging.info("[MMAKE] BUILDDIR '%s'" % (builddir))
 
 logging.debug("[MMAKE] mmake.py: parsed command line options")
 
-myproject = mmproject.Project(srcdir, builddir, mflags, dryrun)
+projectlist = {}
+
+with open("mmake.config", "r") as filehandle:
+    newproject = mmproject.Project(srcdir, builddir, mflags, dryrun)    # create default project
+    projectlist[newproject.name] = newproject
+    for line in filehandle:
+        if line.startswith("#") or line.startswith("\n"):
+            continue
+        elif line.startswith("["):
+            end = line.find("]", 2)
+            if end != -1:
+                name = line[1:end]
+                newproject = mmproject.Project(srcdir, builddir, mflags, dryrun)
+                newproject.name = name
+                projectlist[newproject.name] = newproject
+        else:
+            space = line.find(" ")
+            if space != -1:
+                cmd = line[0 : space]
+                value = line[space + 1 : ].strip()
+                if cmd == "add":
+                    newproject.extramakefiles.append(value)
+                elif cmd == "ignoredir":
+                    newproject.ignoredirs.append(value)
+                elif cmd == "defaultmakefilename":
+                    newproject.defaultmakefilename = value
+                elif cmd == "top":
+                    newproject.srctop = value
+                elif cmd == "defaulttarget":
+                    newproject.defaulttarget = value
+                elif cmd == "genmakefilescript":
+                    newproject.genmakefilescript = value
+                elif cmd == "genmakefiledeps":
+                    deps = value.split()
+                    newproject.genmakefiledeps = newproject.genmakefiledeps + deps
+                elif cmd == "globalvarfile":
+                    newproject.globalvarfiles.append(value)
+                elif cmd == "genglobalvarfile":
+                    newproject.genglobalvarfile = value
+                elif cmd == "maketool":
+                    newproject.maketool = value
+                else:
+                    newproject.vars[cmd] = value
 
 logging.debug("[MMAKE] mmake.py: projects initialised")
 
@@ -52,5 +94,10 @@ for t in targets:
     if targetname == "":
         targetname = projectname
 
+    if projectname not in projectlist:
+        logging.error("[MMAKE] Nothing known about project %s" % (projectname))
+        sys.exit(20)
+
     logging.debug("[MMAKE] mmake.py calling maketarget '%s'" % (targetname))
+    myproject = projectlist[projectname]
     myproject.maketarget(targetname)
