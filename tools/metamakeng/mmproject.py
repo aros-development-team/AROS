@@ -208,9 +208,9 @@ class Project:
 
             for function in target.functions:
                 if not self.dryrun:
-                    function.execute()
+                    self.callfunction(targetname, function)
                 else:
-                    print "[MMAKE] %starget '%s'" % (" " * level * 3, targetname)
+                    print "[MMAKE] %starget '%s' dir '%s'" % (" " * level * 3, targetname, function.directory)
 
         else:
             logging.warning("[MMAKE] nothing known about target %s" % (targetname))
@@ -238,7 +238,7 @@ class Project:
         return not rc
 
 
-    def callmake (self, targetname, makefile):
+    def callmake(self, targetname, makefile):
         path = makefile.directory
 
         if makefile.generated:
@@ -260,4 +260,19 @@ class Project:
         logging.info("[MMAKE] Making %s in %s" % (targetname, path))
 
         if not self.execute(self.maketool, "-", "-", buffer):
+            raise Exception("[MMAKE] Error while running make in %s", path)
+
+
+    def callfunction(self, targetname, function):
+        path = function.directory
+
+        os.chdir(self.srctop)
+        os.chdir(path)
+
+        self.vars["CURDIR"] = path
+        self.vars["TARGET"] = targetname
+
+        logging.info("[MMAKE] Making %s in %s" % (targetname, path))
+
+        if not function.execute():
             raise Exception("[MMAKE] Error while running make in %s", path)

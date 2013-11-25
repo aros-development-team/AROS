@@ -20,7 +20,7 @@ class BuildEnv:
 
 
     def add_function(self, targetname, function):
-        self.add_virtual_metatarget(targetname, [])             # metatarget must exit before we can add functions
+        self.add_virtual_metatarget(targetname, [])             # metatarget must exist before we can add functions
         self.project.targets.add_function(targetname, function) # add the function object
 
 

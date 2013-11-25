@@ -4,5 +4,5 @@ buildenv.add_virtual_metatarget("foo", ["bar"])
 
 buildenv.output(
     mmake="bar",
-    text="This text is printed by the 'output' function. TOP=$(TOP)"
+    text="This text is printed by the 'output' function. TOP=$(TOP) CURDIR=$(CURDIR)"
 )
