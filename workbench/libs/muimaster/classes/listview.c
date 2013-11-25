@@ -36,7 +36,6 @@ struct MUI_ListviewData
     struct MUI_EventHandlerNode ehn;
 
     int mouse_click;            /* see below if mouse is held down */
-    BOOL range_select;
 
     /* double click */
     ULONG last_secs;
@@ -441,7 +440,8 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         switch (msg->muikey)
         {
         case MUIKEY_TOGGLE:
-            if (data->multiselect != MUIV_Listview_MultiSelect_None)
+            if (data->multiselect != MUIV_Listview_MultiSelect_None
+                && !data->read_only)
             {
                 select = TRUE;
                 multiselect = TRUE;
@@ -530,8 +530,9 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                         & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) == 0);
                     seltype = clear ?
                         MUIV_List_Select_On: MUIV_List_Select_Toggle;
-                    data->range_select = FALSE;
-                    select = new_active != XGET(list, MUIA_List_Active)
+//                    data->range_select = FALSE;
+//                    select = new_active != XGET(list, MUIA_List_Active)
+                    select = new_active != old_active
                         || data->multiselect != MUIV_Listview_MultiSelect_None;
 
                     /* Handle MUIA_Listview_ClickColumn */
@@ -551,20 +552,51 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                         data->last_secs = msg->imsg->Seconds;
                         data->last_mics = msg->imsg->Micros;
                     }
+
+                    DoMethod(_win(list), MUIM_Window_RemEventHandler,
+                        (IPTR) &data->ehn);
+                    data->ehn.ehn_Events |=
+                        (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
+                    DoMethod(_win(list), MUIM_Window_AddEventHandler,
+                        (IPTR) &data->ehn);
                 }
             }
             else
             {
-                if (_isinobject(list, msg->imsg->MouseX, msg->imsg->MouseY))
-                {
-                    data->range_select = FALSE;
-                }
-
                 if (msg->imsg->Code == SELECTUP && data->mouse_click)
                 {
                     set(_win(obj), MUIA_Window_ActiveObject, (IPTR)obj);
                     data->mouse_click = 0;
                 }
+
+                DoMethod(_win(list), MUIM_Window_RemEventHandler,
+                    (IPTR) &data->ehn);
+                data->ehn.ehn_Events &=
+                    ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
+                DoMethod(_win(list), MUIM_Window_AddEventHandler,
+                    (IPTR) &data->ehn);
+            }
+            break;
+
+        case IDCMP_MOUSEMOVE:
+        case IDCMP_INTUITICKS:
+            if (pos.flags & MUI_LPR_ABOVE)
+                new_active = MUIV_List_Active_Up;
+            else if (pos.flags & MUI_LPR_BELOW)
+                new_active = MUIV_List_Active_Down;
+            else
+                new_active = pos.entry;
+
+            select = new_active != old_active;
+
+            if (select)
+            {
+                clear = data->multiselect == MUIV_Listview_MultiSelect_None;
+                if (clear)
+                    seltype = MUIV_List_Select_On;
+                else
+                    DoMethod(list, MUIM_List_Select, MUIV_List_Select_Active,
+                        MUIV_List_Select_Ask, &seltype);
             }
             break;
 
