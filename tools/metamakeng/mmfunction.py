@@ -3,6 +3,7 @@
 class Function:
     def __init__(self, buildenv):
         self.buildenv = buildenv
+        self.directory = buildenv.get_variable("CURDIR")
 
 
 class Output(Function):
@@ -14,3 +15,4 @@ class Output(Function):
     def execute(self):
         text = self.buildenv.substitute(self.text)
         print text
+        return True
