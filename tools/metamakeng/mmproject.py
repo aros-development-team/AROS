@@ -58,7 +58,9 @@ class Project:
         os.chdir(self.srctop)
         self.readvars()
 
-        genmakefilescript = self.vars.subst(self.genmakefilescript)
+        # We are overwriting this because we don't use external GENMF anymore.
+        genmakefilescript = "$(SRCDIR)/config/make.tmpl"
+        genmakefilescript = self.vars.subst(genmakefilescript)
 
         makefilename = self.defaultmakefilename
         srcmakefilename = makefilename + ".src"
