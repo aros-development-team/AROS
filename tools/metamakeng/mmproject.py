@@ -31,18 +31,19 @@ $
 
 class Project:
     def __init__(self, srcdir, builddir, mflags, dryrun):
-        self.name = "AROS"
-        self.maketool = "$(HOST_MAKE) $(MKARGS) TOP=$(TOP) SRCDIR=$(SRCDIR) CURDIR=$(CURDIR) TARGET=$(TARGET)"
-        self.defaulttarget = "AROS"
-        self.genmakefilescript = "$(SRCDIR)/config/make.tmpl"
-        self.genmakefiledeps = ["$(SRCDIR)/config/make.tmpl"]
-        self.globalvarfiles = ("$(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)/gen/config/host.cfg",
-            "$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)/gen/config/target.cfg")
-        self.genglobalvarfile = "sh $(TOP)/configure"
-        self.ignoredirs = ("CVS", "bin", "intuition.morphos", ".svn", ".unmaintained", "distfiles")
-
+        self.name = "DEFAULT"
+        self.maketool = "make \"TOP=$(TOP)\" \"SRCDIR=$(SRCDIR)\" \"CURDIR=$(CURDIR)\""
+        self.defaultmakefilename = "Makefile"
         self.srctop = srcdir
         self.buildtop = builddir
+        self.defaulttarget = "all"
+        self.genmakefilescript = ""
+        self.genglobalvarfile = ""
+
+        self.globalvarfiles = []
+        self.genmakefiledeps = []
+        self.ignoredirs = []
+
         self.mflags = mflags
         self.dryrun = dryrun
 
@@ -58,17 +59,22 @@ class Project:
         self.readvars()
 
         genmakefilescript = self.vars.subst(self.genmakefilescript)
+
+        makefilename = self.defaultmakefilename
+        srcmakefilename = makefilename + ".src"
+        extmakefilename = makefilename + ".ext"
+
         for parent, dirs, files in os.walk("."):
             for igndir in self.ignoredirs:
                 if igndir in dirs:
                     dirs.remove(igndir)
-            if "extmmakefile" in files:
+            if extmakefilename in files:
                 self.vars["CURDIR"] = parent
-                runpy.run_path(os.path.join(self.srctop, parent, "extmmakefile"),
+                runpy.run_path(os.path.join(self.srctop, parent, extmakefilename),
                     init_globals={"buildenv":self.buildenv}, run_name="__main__")
-            elif "mmakefile.src" in files:
-                infilename = os.path.join(parent, "mmakefile.src") # relative to srctop
-                outfilename = os.path.join(self.buildtop, parent, "mmakefile")
+            elif srcmakefilename in files:
+                infilename = os.path.join(parent, srcmakefilename) # relative to srctop
+                outfilename = os.path.join(self.buildtop, parent, makefilename)
                 if not os.path.exists(outfilename) or (os.path.getmtime(infilename) > os.path.getmtime(outfilename)):
                     try:
                         os.makedirs(os.path.join(self.buildtop, parent))
@@ -77,7 +83,7 @@ class Project:
                             raise
                     mmgenmf.genmf(genmakefilescript, infilename, outfilename)
                 self.parsemakefile(parent, True)
-            elif "mmakefile" in files:
+            elif makefilename in files:
                 self.parsemakefile(parent, False)
 
 
@@ -93,6 +99,7 @@ class Project:
         self.vars["CURDIR"] = ""
 
         self.vars["AROS_TARGET_VARIANT"] = ""
+        self.vars["MMLIST"] = "MMLIST"          # variable should come from dircache
 
         for varfile in self.globalvarfiles:
             filename = self.vars.subst(varfile)
@@ -248,7 +255,7 @@ class Project:
         for flag in self.mflags:
             buffer = buffer + flag + " "
 
-        buffer = buffer + " --file=mmakefile %s" % (targetname)
+        buffer = buffer + " --file=%s %s" % (self.defaultmakefilename, targetname)
 
         logging.info("[MMAKE] Making %s in %s" % (targetname, path))
 
