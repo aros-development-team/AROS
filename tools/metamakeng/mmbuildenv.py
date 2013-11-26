@@ -28,3 +28,9 @@ class BuildEnv:
         mmake = self.substitute(mmake)                  # substitute variables like $(TOP)
         function = mmfunction.Output(self, text)        # create a function object
         self.add_function(mmake, function)              # add it to the function list of the metatarget
+
+
+    def mkdirs(self, mmake, dirs):
+        mmake = self.substitute(mmake)                  # substitute variables like $(TOP)
+        function = mmfunction.MkDirs(self, dirs)        # create a function object
+        self.add_function(mmake, function)              # add it to the function list of the metatarget

@@ -101,7 +101,14 @@ class Project:
         self.vars["CURDIR"] = ""
 
         self.vars["AROS_TARGET_VARIANT"] = ""
-        self.vars["MMLIST"] = "MMLIST"          # variable should come from dircache
+        
+        # Temp solution during developing of metamakeng
+        self.vars["USER_INCLUDES"] = ""
+        self.vars["USER_CFLAGS"] = ""
+        self.vars["USER_AFLAGS"] = ""
+        self.vars["USER_LDFLAGS"] = ""
+        self.globalvarfiles.append("$(SRCDIR)/tools/metamakeng/make.cfg")
+
 
         for varfile in self.globalvarfiles:
             filename = self.vars.subst(varfile)
