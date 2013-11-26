@@ -22,7 +22,7 @@ class VarList(dict):
             env_val = os.getenv(key)
             if env_val:
                 return env_val
-        raise KeyError("[MMAKE] can't find variable %s" % (key))
+        raise KeyError("[MMAKE] can't find variable '%s'" % (key))
         #return "?$(%s)" % (key)
 
 

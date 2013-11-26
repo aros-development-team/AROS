@@ -6,3 +6,5 @@ buildenv.output(
     mmake="bar",
     text="This text is printed by the 'output' function. TOP=$(TOP) CURDIR=$(CURDIR)"
 )
+
+buildenv.mkdirs(mmake="bar", dirs=["$(AROS_TESTS)/metamakeng/qqq", "$(AROS_TESTS)/metamakeng/rrr"])
