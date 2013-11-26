@@ -1,3 +1,12 @@
+/*
+ * Copyright (C) 2013, The AROS Development Team
+ * All right reserved.
+ * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
+ *
+ * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
+ * 
+ * $Id$
+ */
 
 #include <aros/m68k/asm.h>
 #include <aros/config.h>
@@ -6,6 +15,7 @@
 	.chip 68000
 	.align 4 
 
+	.globl __MemoryTest
 	.globl rom_init
 rom_init:
 	bra.w normal_init
@@ -93,7 +103,7 @@ arosbootstrap_init:
 	move.l	#0x08000000,%a0
 	move.l	#0x08000000,%a1
 	move.l	#0x00100000,%d0
-	bsr		.L_memtest
+	bsr		__MemoryTest
 	bmi.s	.test32bit
 .is32bit:
 	/* set AttnFlags AFB_ADDR32 */
@@ -115,13 +125,13 @@ arosbootstrap_init:
 	bne.s	0f
 	move.l	#0x00dc0000,%a1
 0:	move.l	#0x00040000,%d0
-	bsr		.L_memtest
+	bsr		__MemoryTest
 	
 	/* chip ram */
 	sub.l	%a0,%a0
 	move.l	#0x00200000,%a1
 	move.l	#0x00040000,%d0
-	bsr		.L_memtest
+	bsr		__MemoryTest
 	beq	chipfault
 
 	/* end of memory region list */
@@ -139,152 +149,6 @@ chipfault:
 looping:
 	nop
 	bra.s	looping
-
-	.globl MemoryTest
-MemoryTest:
-	movem.l	%d2-%d5/%a2-%a3/%a5,%sp@-
-	move.w	0xdff01c,%sp@-	/* save INTENA */
-	subq.l	#8,%sp
-	move.l	%sp,%a5
-	bsr.s	.L_memtest
-	addq.l	#8,%sp
-	move.w	%sp@+,%d1
-	or.w	#0x8000,%d1
-	move.w	%d1,0xdff09a	/* restore INTENA */
-	movem.l	%sp@+,%d2-%d5/%a2-%a3/%a5
-	rts
-
-	/******** Memory tester *******/
-	 * IN: A0 - Address, A1 - Max end address, A5 - outtable
-	 * IN: D0 = block size
-	 * OUT: D0 - Detected size
-	 * TRASH: D1, D2, D3, D4, D5, A1, A2, A3
-	 */
-.L_memtest:
-	move.l	%d0,%d5
-	move.l	%a0,%a5@			/* write start address */
-	move.l	%a1,%d0
-	sub.l	%a0,%d0				/* max size */
-
-	move.l	%a0,%d1
-	and.l	#0xff000000,%d1
-	beq.s	.L_memtest_24bitaddr
-	/* test if 32bit address mirrors address zero */
-	move.l	%d1,%a1
-	move.l	0.w,%d2				/* save old */
-	move.l	0x100.w,%d3
-	move.l	#0xfecaf00d,%d1
-	move.l	%d1,0.w
-	nop
-	not.w	%d1
-	move.l	%d1,0x100.w			/* write something else, some bus types "remember" old value */
-	not.w	%d1
-	nop							/* force 68040/060 bus cycle to finish */
-	cmp.l	%a1@,%d1
-	bne.s	.L_memtest_32bitok	/* different? no mirror */
-	move.l	#0xcafed00d,%d1
-	move.l	%d1,0.w
-	nop
-	not.w	%d1
-	move.l	%d1,0x100.w
-	not.w	%d1
-	nop
-	cmp.l	%a1@,%d1
-	bne.s	.L_memtest_32bitok	/* check again, maybe 0 already had our test value */
-	move.l	%d2,0.w				/* restore saved value */
-	move.l	%d3,0x100.w
-	moveq	#-1,%d1
-	bra		.L_memtest_none		/* 24-bit CPU, do not test this range */
-.L_memtest_32bitok:
-	move.l	%d2,0.w				/* restore saved value */
-	move.l	%d3,0x100.w
-.L_memtest_24bitaddr:
-
-	/* a0 = tested address, d0 = max size, d1 = current size */
-
-	clr.l	%d1
-.L_memtest_loop:
-	cmp.l	%d0,%d1
-	bge		.L_memtest_done
-
-	move.l	%a0,%d2
-	and.l	#0xff000000,%d2
-	bne.s	.L_memtest_chipcheck_done	/* no chiptest if 32bit address */
-	move.w	#0x7fff,0xdff09a
-	nop
-	tst.w	%a0@(0x1c,%d1)				/* If non-zero, this is not INTENAR */
-	bne.s	.L_memtest_chipcheck_done
-	/* It was zero ... */
-	move.w	#0xc000,0xdff09a			/* Try the master enable */
-	nop
-	tst.w	%a0@(0x1c,%d1)				/* If still zero, not INTENAR */
-	bne 	.L_memtest_done				/* It was a custom chip. */
-.L_memtest_chipcheck_done:
-
-	move.l	%a0,%a2
-	add.l	%d1,%a2
-	cmp.l	#.L_memtest,%a2		/* Make sure we don't modify our own test code */
-	bcs.s	.L_memtest_nottestcode
-	cmp.l	#.L_memtest_end,%a2
-	bcs.s	.L_memtest_next
-.L_memtest_nottestcode:
-
-	move.l	%a0@(%d1),%d3		/* read old value */
-	move.l	%a0@,%a2			/* save mirror test contents */
-	move.l	#0xfecaf00d,%a0@	/* write mirror test value */
-	nop
-	move.l	#0xcafed00d,%d2
-	move.l	%d2,%a0@(%d1)		/* write test pattern */
-	nop
-	tst.l	%d1					/* first test addrress? */
-	beq.s	.L_memtest_nomirror
-	cmp.l	%a0@,%d2			/* no, check mirrorirng */
-	bne.s	.L_memtest_nomirror
-	move.l	%a2,%a0@			/* restore mirror test contents */
-	bra.s	.L_memtest_done
-.L_memtest_nomirror:
-
-	not.l	%d2
-	move.l	%a0@(4,%d1),%a3		/* read temp address */
-	move.l	%d2,%a0@(4,%d1)		/* fill bus with something else */
-	not.l	%d2
-	nop
-	move.l	%a0@(%d1),%d4		/* read test pattern */
-	move.l	%a3,%a0@(4,%d1)		/* restore */
-
-	cmp.l	%d4,%d2				/* pattern match? */
-	bne.s	.L_memtest_done
-	neg.l	%d2					/* test pattern 2 */
-
-	move.l	%d2,%a0@(%d1)		/* write test pattern */
-	nop
-	not.l	%d2
-	move.l	%a0@(4,%d1),%a3		/* read temp address */
-	move.l	%d2,%a0@(4,%d1)		/* fill bus with something else */
-	not.l	%d2
-	nop
-	move.l	%a0@(%d1),%d4		/* read test pattern */
-	move.l	%a3,%a0@(4,%d1)		/* restore */
-
-	cmp.l	%d4,%d2
-	bne.s	.L_memtest_done
-	not.l	%d2
-	move.l	%d3,%a0@(%d1)		/* write old value back */
-
-	move.l	%a2,%a0@			/* restore mirror test contents */
-.L_memtest_next:
-	add.l	%d5,%d1				/* next block */
-	bra		.L_memtest_loop
-
-.L_memtest_done:
-	tst.l	%d1					/* nothing found? */
-	beq.s	.L_memtest_none
-	addq.l	#4,%a5
-	move.l	%d1,%a5@+
-.L_memtest_none:
-	move.l	%d1,%d0
-	rts
-.L_memtest_end:
 
 #define STACK_OFFSET (6*4)
 	.globl Early_Exception

@@ -8,4 +8,4 @@ FUNCTIONS := readexpansionbyte readexpansionrom configchain configboard writeexp
 
 %build_archspecific \
   mainmmake=kernel-expansion maindir=rom/expansion arch=amiga-m68k \
-  files="$(FUNCTIONS)" modulename=expansion
+  files="$(FUNCTIONS)" asmfiles="memorytest" modulename=expansion

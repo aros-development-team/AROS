@@ -81,7 +81,7 @@ ROMLOC_ss  := 0x003f800
 ROMLOC_rom := 0x0f80000
 
 FILES=start early debug mmu
-AFILES=rom_entry rom_init cpu_detect superstack_swap
+AFILES=rom_entry rom_init memorytest cpu_detect superstack_swap
 
 KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
