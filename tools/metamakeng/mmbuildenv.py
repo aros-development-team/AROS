@@ -144,3 +144,17 @@ class BuildEnv:
         mmake = self.substitute(mmake)
         function = mmfunction.CopyFiles(self, files, src, dst)
         self.add_function(mmake, function)
+
+
+    def copy_dir_recursive(self, mmake, src, dst, excludefiles=[]):
+        """Builder which copies directories recursively.
+
+        Keyword arguments:
+        src -- source directory
+        dst -- destination directory
+        excludefiles -- list of files which should not be copied
+
+        """
+        mmake = self.substitute(mmake)
+        function = mmfunction.CopyDirRecursive(self, src, dst, excludefiles)
+        self.add_function(mmake, function)
