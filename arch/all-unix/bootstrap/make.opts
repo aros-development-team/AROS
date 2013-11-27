@@ -1,1 +1,1 @@
-LIBS += gcc dl
+USER_LDFLAGS += -ldl
