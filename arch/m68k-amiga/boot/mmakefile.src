@@ -27,6 +27,7 @@ Q ?= @
 #MM     kernel-cia-kobj \
 #MM     kernel-debug-kobj \
 #MM     kernel-disk-kobj \
+#MM     kernel-expansion-kobj \
 #MM     kernel-filesystem-kobj \
 #MM     kernel-freeanim-kobj \
 #MM     kernel-fs-afs-kobj \
