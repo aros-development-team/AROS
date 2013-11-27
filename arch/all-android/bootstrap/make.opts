@@ -1,5 +1,4 @@
-KERNEL_LDFLAGS += -shared
-LIBS	       += log
+KERNEL_LDFLAGS += -shared -llog
 PROG	       := lib$(PROG)
 EXE_SUFFIX     := .so
 
