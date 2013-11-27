@@ -7,4 +7,20 @@ buildenv.output(
     text="This text is printed by the 'output' function. TOP=$(TOP) CURDIR=$(CURDIR)"
 )
 
-buildenv.mkdirs(mmake="bar", dirs=["$(AROS_TESTS)/metamakeng/qqq", "$(AROS_TESTS)/metamakeng/rrr"])
+buildenv.mkdirs(
+    mmake="bar",
+    dirs=["$(AROS_TESTS)/metamakeng/qqq", "$(AROS_TESTS)/metamakeng/rrr"]
+)
+
+buildenv.copy_files(
+    mmake="bar",
+    files=["file1", "file2", "file3"],
+    src="",
+    dst="$(AROS_TESTS)/metamakeng"
+)
+
+buildenv.copy_dir_recursive(
+    mmake="bar",
+    src="$(SRCDIR)/workbench/fonts/truetype/bitstream",
+    dst="$(AROS_TESTS)/metamakeng/bitstream"
+)
