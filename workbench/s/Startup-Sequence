@@ -57,7 +57,7 @@ Copy >NIL: "ENVARC:" "ENV:" ALL NOPRO NOREQ PAT "~(def_#?.info)"
 If EXISTS "ENV:SYS/theme.var"
     Assign "THEME:" "${SYS/theme.var}"
 else
-    Assign "THEME:" "THEMES:OS3.1/"
+    Assign "THEME:" "THEMES:AROSDefault"
 endif
 
 Touch >NIL: "FONTS:__TEST__"
