@@ -111,7 +111,7 @@ ROMLOC_ss  := 0x003f800
 ROMLOC_rom := 0x0f80000
 
 FILES=start early debug mmu
-AFILES=rom_entry rom_init memorytest cpu_detect superstack_swap
+AFILES=rom_entry rom_init cpu_detect superstack_swap
 
 KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
@@ -236,6 +236,11 @@ $(KOBJSDIR)/%.d : %.c
 # .. except for kernel.resource. Our boot code needs symbols from it
 #    (krnPrepareExecBase and krnCreateMemHeader)
 %/kernel_resource.ko: %/kernel_resource.o
+	$(Q)$(CP) $< $@
+
+# .. except for expansion.library. Our boot code needs symbols from it
+#    (__MemoryTest)
+%/expansion_library.ko: %/expansion_library.o
 	$(Q)$(CP) $< $@
 
 # Localize symbols for everybody else though!
