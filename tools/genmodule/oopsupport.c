@@ -180,7 +180,6 @@ void writeoopinit(FILE *out, struct classinfo *cl)
         "    return cl != NULL;\n"
         "}\n",
         cl->basename,
-        cl->basename,
         cl->basename
     );
 
