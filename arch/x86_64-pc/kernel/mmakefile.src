@@ -11,9 +11,9 @@ USER_AFLAGS   := -I$(GENINCDIR)
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
-#MM kernel-kernel-pc-x86_64 : includes-asm_h-$(CPU) includes kernel-kernel-includes
-#MM kernel-kernel-pc-x86_64-pkg : includes-asm_h-$(CPU) includes kernel-kernel-includes
-#MM kernel-kernel-pc-x86_64-kobj : includes-asm_h-$(CPU) includes kernel-kernel-includes
+#MM kernel-kernel-pc-x86_64 : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole
+#MM kernel-kernel-pc-x86_64-pkg : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole
+#MM kernel-kernel-pc-x86_64-kobj : includes-asm_h-$(CPU) includes kernel-kernel-includes linklibs-bootconsole
 #MM kernel-kernel-pc-x86_64-quick : kernel-kernel-native-quick
 #MM kernel-kernel-pc-x86_64-pkg-quick : kernel-kernel-native-quick
 #MM kernel-kernel-pc-x86_64-kobj-quick : kernel-kernel-native-quick
