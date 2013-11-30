@@ -103,7 +103,7 @@ arosbootstrap_init:
 	move.l	#0x08000000,%a0
 	move.l	#0x08000000,%a1
 	move.l	#0x00100000,%d0
-	jbsr	__MemoryTest
+	jsr	__MemoryTest
 	bmi.s	.test32bit
 .is32bit:
 	/* set AttnFlags AFB_ADDR32 */
@@ -125,13 +125,13 @@ arosbootstrap_init:
 	bne.s	0f
 	move.l	#0x00dc0000,%a1
 0:	move.l	#0x00040000,%d0
-	jbsr	__MemoryTest
+	jsr	__MemoryTest
 	
 	/* chip ram */
 	sub.l	%a0,%a0
 	move.l	#0x00200000,%a1
 	move.l	#0x00040000,%d0
-	jbsr	__MemoryTest
+	jsr	__MemoryTest
 	beq	chipfault
 
 	/* end of memory region list */

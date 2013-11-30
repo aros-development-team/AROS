@@ -95,7 +95,7 @@ rom_entry.o: FORCE
 
 ext_entry.o: FORCE
 
-# USe -m68000 when compiling .S files, as we will need the
+# USe -m68060 when compiling .S files, as we will need the
 # expanded instruction set to detect alterate CPUs
 USER_AFLAGS := -m68060 -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
