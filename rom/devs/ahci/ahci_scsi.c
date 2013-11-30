@@ -176,7 +176,7 @@ static void ahci_ata_sense(struct ata_xfer *xa,
         }
     }
 
-    memset(sense_data, 0, sizeof(sense_data));
+    memset(sense_data, 0, sizeof(*sense_data));
 
     sense_data->error_code = SSD_ERRCODE_VALID | SSD_CURRENT_ERROR;
 
