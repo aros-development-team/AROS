@@ -26,6 +26,9 @@
 /* Define to 1 if you have the `kse_create' function. */
 #undef HAVE_KSE_CREATE
 
+/* Define to 1 if you have the `png' library (-lpng). */
+#undef HAVE_LIBPNG
+
 /* Define to 1 if you have the `makecontext' function. */
 #undef HAVE_MAKECONTEXT
 
