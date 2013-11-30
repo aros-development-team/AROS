@@ -12,7 +12,7 @@
 #include "misc.h"
 #include "volumes.h"
 
-LONG error;
+SIPTR error;
 
 struct PathElement {
 	struct PathElement *next;
@@ -127,12 +127,12 @@ struct AfsHandle *dah;
 				retval = 0;
 			}
 			else
-				printf("error %ld\n", error);
+				printf("error %ld\n", (long)error);
 		}
 		closef(NULL, ah);
 	}
 	else
-		printf("error %ld\n", error);
+		printf("error %ld\n", (long)error);
 	return retval;
 }
 
@@ -400,11 +400,11 @@ struct Volume *volume;
 				flush(afsbase, volume);
 			}
 			else
-				printf("Error %ld!\n", error);
+				printf("Error %ld!\n", (long)error);
 			uninitVolume(afsbase, volume);
 		}
 		else
-			printf("Error %ld!\n", error);
+			printf("Error %ld!\n", (long)error);
 	}
 	return retval;
 }
