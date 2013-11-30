@@ -20,7 +20,10 @@ MemoryTest:
 	move.w	0xdff01c,%sp@-	/* save INTENA */
 	subq.l	#8,%sp
 	move.l	%sp,%a5
-	bsr.s	__MemoryTest
+	/* Not bsr.s, since GAS turns that into a R_M68K_PC8 relocation, which
+	 * won't translate properly via elf2hunk
+	 */
+	jsr		__MemoryTest
 	addq.l	#8,%sp
 	move.w	%sp@+,%d1
 	or.w	#0x8000,%d1
