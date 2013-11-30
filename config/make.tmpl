@@ -64,15 +64,15 @@ endif
 # Link a specified number of objects to an executable
 %define link_q cmd=$(AROS_CC) opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS) strip=$(STRIP)
 	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,%(to))..."
-	@$(IF) %(cmd) %(opt) %(from) -o %(to) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+	@$(IF) %(cmd) %(from) -o %(to) %(libs) %(opt) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-				$(ECHO) "%(to): %(cmd) %(opt) %(from) -o %(to) %(libs)" >> $(GENDIR)/errors ; \
+				$(ECHO) "%(to): %(cmd) %(from) -o %(to) %(libs) %(opt)" >> $(GENDIR)/errors ; \
 				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	   	else \
 			$(NOP) ; \
     		fi ; \
 	else \
-	    $(ECHO) "Link failed: %(cmd) %(opt) %(from) -o %(to) %(libs)" 1>&2 ; \
+	    $(ECHO) "Link failed: %(cmd) %(from) -o %(to) %(libs) %(opt)" 1>&2 ; \
 	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi; \
