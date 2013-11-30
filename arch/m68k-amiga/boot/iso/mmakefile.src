@@ -83,7 +83,6 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
 	@$(RM) -rf "$(AROSDIR).HUNK/Sources"*
 	@$(RM) -rf "$(AROSDIR).HUNK/boot/aros.elf"
 	@$(CP) "$(AROSDIR)/Emergency-Boot/boot/aros.hunk.gz" "$(AROSDIR).HUNK/boot"
-	@$(CP) $(SRCDIR)/arch/m68k-amiga/s/Startup-Sequence "$(AROSDIR).HUNK/S/Startup-Sequence"
 	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs "$(AROSDIR).HUNK/Prefs/Env-Archive/SYS/Wanderer/global.prefs"
 	@mkisofs -f \
 		-o $@ \
@@ -101,8 +100,6 @@ $(DEVEL_ISO):   $(AROSDIR)/.backdrop \
 		$(AROSDIR)/Sources \
 		$(AROSDIR)/README.txt.info  \
 		$(AROSDIR)/README.txt
-	%mkdirs_q $(AROSDIR)/S
-	@$(CP) $(SRCDIR)/arch/m68k-amiga/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs $(AROSDIR).iso/Prefs/Env-Archive/SYS/Wanderer/global.prefs
 	@mkisofs -f \
 		-o $@ \
