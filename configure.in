@@ -105,9 +105,9 @@ aros_host_cxx="$CXX"
 AROS_TOOL_CCPATH(aros_host_ld,ld)
 AROS_REQUIRED(ld,$aros_host_ld)
 aros_host_make="make"
-aros_host_cflags=$CFLAGS
-aros_host_cxxflags=$CXXFLAGS
-aros_host_ldflags=$LDFLAGS
+aros_host_cflags="$CFLAGS"
+aros_host_cxxflags="$CXXFLAGS"
+aros_host_ldflags="$LDFLAGS"
 aros_host_debug="-g -O0"
 aros_host_mkdep="\$(SRCDIR)/scripts/mkdep"
 aros_host_mkargs="--no-print-directory"
