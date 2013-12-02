@@ -354,10 +354,10 @@ void *mh_ReAlloc(struct MemHeaderExt *mhe, APTR  old,  IPTR size)
 	return NULL;
 }
 
-ULONG mh_Avail(struct MemHeaderExt *mhe, ULONG flags)
+IPTR mh_Avail(struct MemHeaderExt *mhe, ULONG flags)
 {
 	struct ati_staticdata *sd = (APTR)mhe->mhe_UserData;
-	ULONG size = 0;
+	IPTR size = 0;
 
 //	Forbid();
 
