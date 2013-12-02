@@ -37,7 +37,7 @@ static struct mb_mmap *mmap_convert(struct mb2_tag_mmap *tag, unsigned long *mma
     volatile struct mb2_mmap *mmap2 = tag->mmap;
     volatile struct mb_mmap *mmap = (void *)tag->mmap - 4;
     int mmap2_len = tag->size - sizeof(struct mb2_tag_mmap);
-    struct mb_mmap *ret = mmap;
+    struct mb_mmap *ret = (struct mb_mmap *)mmap;
 
     DMMAP(kprintf("[Multiboot2] Memory map at 0x%p, total size %u, entry size %u\n", mmap2, mmap2_len, tag->entry_size));
 
