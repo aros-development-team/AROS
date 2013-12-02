@@ -136,7 +136,17 @@ BOOLEAN AcpiOsWritable(void *Memory, ACPI_SIZE Length)
 
 ACPI_THREAD_ID AcpiOsGetThreadId(void)
 {
-    return (ACPI_THREAD_ID)FindTask(NULL);
+    ACPI_THREAD_ID tid;
+    
+    tid = (ACPI_THREAD_ID)FindTask(NULL);
+
+    /* If we are running during kernel bring-up, return
+     * TID 1
+     */
+    if (tid == 0)
+        tid = 1;
+
+    return tid;
 }
 
 ACPI_STATUS AcpiOsExecute(ACPI_EXECUTE_TYPE Type, ACPI_OSD_EXEC_CALLBACK Function, void *Context)
@@ -402,6 +412,37 @@ ACPI_STATUS AcpiOsGetLine(char *Buffer, UINT32 BufferLength, UINT32 *BytesRead)
 
 #define ACPI_MAX_INIT_TABLES 64
 
+static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
+{
+    ACPI_STATUS err;
+
+    err = AcpiInitializeSubsystem();
+    if (ACPI_FAILURE(err)) {
+        D(bug("%s: AcpiInitializeSubsystem() = %d\n", __func__, err));
+        return FALSE;
+    }
+
+    err = AcpiLoadTables();
+    if (ACPI_FAILURE(err)) {
+        D(bug("%s: AcpiLoadTables() = %d\n", __func__, err));
+        return FALSE;
+    }
+
+    err = AcpiEnableSubsystem(ACPI_NO_HANDLER_INIT);
+    if (ACPI_FAILURE(err)) {
+        D(bug("%s: AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION) = %d\n", __func__, err));
+        return FALSE;
+    }
+
+    err = AcpiInitializeObjects(ACPI_NO_HANDLER_INIT);
+    if (ACPI_FAILURE(err)) {
+        D(bug("%s: AcpiInitializeObjects(ACPI_FULL_INITIALIZATION) = %d\n", __func__, err));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 int ACPICA_init(struct ACPICABase *ACPICABase)
 {
     ACPI_TABLE_MCFG *mcfg;
@@ -418,39 +459,17 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
     }
 
     if (AcpiGetTable("MCFG", 1, (ACPI_TABLE_HEADER **)&mcfg) == AE_OK) {
-        ACPICABase->ab_PCIs = mcfg->Header.Length / sizeof(ACPI_MCFG_ALLOCATION);
+        ACPICABase->ab_PCIs = (mcfg->Header.Length - sizeof(*mcfg)) / sizeof(ACPI_MCFG_ALLOCATION);
         ACPICABase->ab_PCI = (ACPI_MCFG_ALLOCATION *)&mcfg[1];
     } else {
         ACPICABase->ab_PCIs = 0;
     }
 
-    err = AcpiInitializeSubsystem();
-    if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiInitializeSubsystem() = %d\n", __func__, err));
-        return FALSE;
-    }
-
-    err = AcpiReallocateRootTable();
-    if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiReallocateRootTable() = %d\n", __func__, err));
-        return FALSE;
-    }
-
-    err = AcpiLoadTables();
-    if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiLoadTables() = %d\n", __func__, err));
-        return FALSE;
-    }
-
-    err = AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
-    if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION) = %d\n", __func__, err));
-        return FALSE;
-    }
-
-    err = AcpiInitializeObjects(ACPI_FULL_INITIALIZATION);
-    if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiInitializeObjects(ACPI_FULL_INITIALIZATION) = %d\n", __func__, err));
+    /* Everything else is in the late initialization thread,
+     * which will start at the highest priority once mulitasking begins
+     */
+    if (NewCreateTask(TASKTAG_PC, ACPICA_InitTask, TASKTAG_NAME, "ACPICA_InitTask", TASKTAG_PRI, 127, TASKTAG_ARG1, ACPICABase, TAG_DONE) == NULL) {
+        AcpiTerminate();
         return FALSE;
     }
 
@@ -464,3 +483,4 @@ int ACPICA_expunge(struct ACPICABase *ACPICABase)
 
     return TRUE;
 }
+ADD2EXPUNGELIB(ACPICA_expunge, 0)
