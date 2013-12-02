@@ -1,0 +1,34 @@
+# $Id: mmakefile.src 39345 2011-06-17 05:55:29Z jmcmullan $
+include $(TOP)/config/make.cfg
+
+ACPICA_INCLUDE := ../../source/include
+
+ACPICA_SOURCES := \
+       $(call WILDCARD, ../../source/components/executer/*.c) \
+       $(call WILDCARD, ../../source/components/hardware/*.c) \
+       $(call WILDCARD, ../../source/components/dispatcher/*.c) \
+       $(call WILDCARD, ../../source/components/tables/*.c) \
+       $(call WILDCARD, ../../source/components/events/*.c) \
+       $(call WILDCARD, ../../source/components/parser/*.c) \
+       $(call WILDCARD, ../../source/components/utilities/*.c) \
+       $(call WILDCARD, ../../source/components/resources/*.c) \
+       $(call WILDCARD, ../../source/components/namespace/*.c)
+
+FILES := acpios_aros \
+         $(ACPICA_SOURCES:%.c=%)
+
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/$(ACPICA_INCLUDE)
+
+%build_module mmake=kernel-pc-acpica \
+  modname=acpica modtype=library \
+  files="$(FILES)"
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+
+%copy_includes path=libraries dir=include
+
+INCLUDE_FILES := $(call WILDCARD, $(ACPICA_INCLUDE)/*.h)
+
+%copy_includes path=acpica dir=$(ACPICA_INCLUDE)
+
+%common
