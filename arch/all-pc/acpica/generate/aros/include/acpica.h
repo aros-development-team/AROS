@@ -44,5 +44,6 @@
 #include <acpica/acbuffer.h>
 #include <acpica/acrestyp.h>
 #include <acpica/acpixf.h>
+#include <acpica/acexcep.h>
 
 #endif /* LIBRARIES_ACPICA_H */
