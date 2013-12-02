@@ -187,6 +187,9 @@
 #elif defined(__HAIKU__)
 #include "achaiku.h"
 
+#elif defined(__AROS__)
+#include "acaros.h"
+
 #else
 
 /* Unknown environment */
