@@ -410,6 +410,35 @@ ACPI_STATUS AcpiOsGetLine(char *Buffer, UINT32 BufferLength, UINT32 *BytesRead)
     return AE_NOT_IMPLEMENTED;
 }
 
+/*
+ * AROS Custom Code
+ */
+LONG AcpiScanTables(char *Signature, const struct Hook *Hook, APTR UserData)
+{
+    int i;
+    LONG count;
+
+    for (count = 0, i = 1; ; i++) {
+        ACPI_STATUS err;
+        ACPI_TABLE_HEADER *hdr;
+        IPTR ok;
+
+        err = AcpiGetTable(Signature, i, &hdr);
+        if (err != AE_OK)
+            break;
+
+        if (Hook) {
+            ok = CALLHOOKPKT((struct Hook *)Hook, hdr, UserData);
+        } else {
+            ok = TRUE;
+        }
+        if (ok)
+            count++;
+    }
+
+    return count;
+}
+
 #define ACPI_MAX_INIT_TABLES 64
 
 static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
