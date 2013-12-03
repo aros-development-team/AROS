@@ -138,7 +138,7 @@ ACPI_THREAD_ID AcpiOsGetThreadId(void)
 {
     ACPI_THREAD_ID tid;
     
-    tid = (ACPI_THREAD_ID)FindTask(NULL);
+    tid = (ACPI_THREAD_ID)(ACPI_PHYSICAL_ADDRESS)FindTask(NULL);
 
     /* If we are running during kernel bring-up, return
      * TID 1
@@ -318,7 +318,7 @@ static UINT8 *find_pci(struct ACPICABase *ACPICABase, ACPI_PCI_ID *PciId)
             PciId->Bus > ma->EndBusNumber)
             continue;
 
-        return (UINT8 *)ma->Address;
+        return (UINT8 *)(ACPI_PHYSICAL_ADDRESS)ma->Address;
     }
 
     return NULL;
