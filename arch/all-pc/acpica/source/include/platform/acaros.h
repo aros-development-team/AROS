@@ -7,6 +7,27 @@
 #ifndef __ACAROS_H__
 #define __ACAROS_H__
 
+#if defined(__i386__) || defined(__x86_64__)
+#define ACPI_DIV_64_BY_32(n_hi, n_lo, d32, q32, r32) \
+    asm volatile ( \
+            "mov %2, %%edx\n" \
+            "mov %3, %%eax\n" \
+            "div %4\n" \
+            "mov %%eax, %0\n" \
+            "mov %%edx, %1\n" \
+            : "=r" (q32), "=r" (r32) \
+            : "r" (n_hi), "r" (n_lo), "r" (d32) \
+            : "%eax", "%edx" );
+
+#define ACPI_SHIFT_RIGHT_64(n_hi, n_lo) \
+    asm volatile ( \
+            "shr $1, %0\n" \
+            "rcr $1, %1\n" \
+            : "=r" (n_hi), "=r" (n_lo) \
+            : "0" (n_hi), "1" (n_lo) \
+            );
+#endif
+
 /* Common (in-kernel/user-space) ACPICA configuration */
 
 #define ACPI_USE_SYSTEM_CLIBRARY
@@ -50,11 +71,6 @@
 #define ACPI_SPINLOCK   struct SignalSemaphore *
 #define ACPI_SEMAPHORE  struct SignalSemaphore *
 #define ACPI_UINTPTR_T  IPTR
-
-#define ACPI_SHIFT_RIGHT_64(n_hi, n_lo) \
-        { n_hi <<= 1;  \
-          n_hi |= (n_lo >> 31) & 1; \
-          n_lo <<= 1; }
 
 #define ACPI_FLUSH_CPU_CACHE()  CacheClearU()
 #define ACPI_ACQUIRE_GLOBAL_LOCK(facs,acq) \
