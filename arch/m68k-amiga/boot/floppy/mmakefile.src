@@ -78,11 +78,7 @@ $(DISTDIR)/bootdisk-amiga-m68k.adf: \
 	$(COPYTOAFS) $@ --type OFS --name "AROS Kickstart" --size 1760 $(BOOT_DEST_DIR)
 	$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
 
-$(BOOT_DEST_DIR)/S/Startup-Sequence:
-	@$(CP) $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot $@
-	@$(CHMOD) +x $@
-
-$(BOOT_DEST_DIR)/S/Startup-Sequence: $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot
+$(BOOT_DEST_DIR)/S/Startup-Sequence: $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot | $(BOOT_DEST_DIR)/S
 	@$(CP) $< $@
 	@$(CHMOD) +x $@
 
