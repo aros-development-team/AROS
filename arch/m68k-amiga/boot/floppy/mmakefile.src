@@ -6,13 +6,11 @@ include $(TOP)/config/make.cfg
 #MM bootdisk-amiga-m68k : \
 #MM           kernel-link-amiga-m68k \
 #MM           workbench-c-m68k
-#MM bootdisk-amiga-m68k-quick : bootdisk-setup-amiga-m68k-quick bootdisk-amiga-m68k-quick
+#MM bootdisk-amiga-m68k-quick : bootdisk-amiga-m68k-quick
 
 
-BOOT_FILES := \
+ELF2HUNK_FILES := \
     boot/AROSBootstrap \
-    boot/aros.hunk.gz \
-    Disk.info \
     C/Assign \
     C/Avail \
     C/Copy \
@@ -41,17 +39,27 @@ BOOT_FILES := \
     C/Which \
     Devs/DOSDrivers/PIPE \
     Libs/version.library \
-    S/Shell-Startup \
+    S/Shell-Startup
+
+OTHER_FILES := \
+    boot/aros.hunk.gz \
+    Disk.info \
     S/Startup-Sequence
 
 BOOT_SRC_DIR  := $(AROSDIR)
 BOOT_DEST_DIR := $(AROSDIR)/Emergency-Boot
 
-BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
+ELF2HUNK_DEST_FILES := $(addprefix $(BOOT_DEST_DIR)/,$(ELF2HUNK_FILES))
+OTHER_DEST_FILES := $(addprefix $(BOOT_DEST_DIR)/,$(OTHER_FILES))
+BOOT_DEST_FILES := $(ELF2HUNK_DEST_FILES) $(OTHER_DEST_FILES)
+
+# Create directories
+BOOT_DEST_DIRS := $(dir $(BOOT_DEST_FILES))
+GLOB_MKDIRS += $(BOOT_DEST_DIRS) $(DISTDIR)
 
 #MM
-bootdisk-setup-amiga-m68k :
-	-$(RM) -rf $(BOOT_DEST_DIR)
+bootdisk-amiga-m68k-clean:
+	$(RM) $(BOOT_DEST_DIR) $(DISTDIR)/bootdisk-amiga-m68k.adf
 
 #MM
 bootdisk-amiga-m68k: $(DISTDIR)/bootdisk-amiga-m68k.adf
@@ -59,14 +67,13 @@ bootdisk-amiga-m68k: $(DISTDIR)/bootdisk-amiga-m68k.adf
 .PHONY: bootdisk-amiga-m68k-quick
 
 #MM
-bootdisk-amiga-m68k-quick : bootdisk-setup-amiga-m68k bootdisk-amiga-m68k
+bootdisk-amiga-m68k-quick : bootdisk-amiga-m68k
 
 $(DISTDIR)/bootdisk-amiga-m68k.adf: \
-	    bootdisk-setup-amiga-m68k \
 	    $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) \
 	    $(BOOT_DEST_DIR).info \
-	    $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
-	@$(MKDIR) -p "$(DISTDIR)"
+	    $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) \
+	    | $(DISTDIR)
 	$(RM) $@
 	$(COPYTOAFS) $@ --type OFS --name "AROS Kickstart" --size 1760 $(BOOT_DEST_DIR)
 	$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
@@ -79,19 +86,16 @@ $(BOOT_DEST_DIR)/S/Startup-Sequence: $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot
 	@$(CP) $< $@
 	@$(CHMOD) +x $@
 
-$(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
-	%mkdirs_q $(dir $@)
+$(ELF2HUNK_DEST_FILES) : $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/% | $(BOOT_DEST_DIRS)
 	@$(ELF2HUNK) $< $@
 
-$(BOOT_DEST_DIR)/Disk.info: $(SRCDIR)/$(CURDIR)/AROSBoot.info.src $(SRCDIR)/$(CURDIR)/AROSBoot.png
-	%mkdirs_q $(dir $@)
+$(BOOT_DEST_DIR)/Disk.info: $(SRCDIR)/$(CURDIR)/AROSBoot.info.src $(SRCDIR)/$(CURDIR)/AROSBoot.png | $(BOOT_DEST_DIR)
 	@$(ILBMTOICON) --no-iff $^ $@
 
 $(BOOT_DEST_DIR).info: $(SRCDIR)/$(CURDIR)/Emergency-Boot.info.src $(SRCDIR)/$(CURDIR)/AROSBoot.png
 	@$(ILBMTOICON) $^ $@
 
-$(BOOT_DEST_DIR)/%.hunk.gz : $(BOOT_SRC_DIR)/%.elf
-	%mkdirs_q $(dir $@)
+$(BOOT_DEST_DIR)/boot/aros.hunk.gz : $(BOOT_SRC_DIR)/boot/aros.elf | $(BOOT_DEST_DIR)/boot
 	@$(ELF2HUNK) $< - | gzip -c - >$@
 
 $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURDIR)/install.c
@@ -99,8 +103,5 @@ $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURD
 	@$(MKDIR) -p $(GENDIR)/$(CURDIR)
 	@$(HOST_CC) $(HOST_CFLAGS) $(SRCDIR)/$(CURDIR)/install.c -o $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 
-#MM
-clean ::
-	-$(RM) $(TESTS)
 
 %common
