@@ -347,7 +347,7 @@ static void readsectionconfig(struct config *, struct classinfo *cl, struct inte
 static void readsectioncdef(struct config *);
 static void readsectioncdefprivate(struct config *);
 static void readsectionstartup(struct config *);
-static void readsectionfunctionlist(const char *type, struct functionhead **funclistptr, unsigned int firstlvo, int isattribute);
+static void readsectionfunctionlist(const char *type, struct functionhead **funclistptr, unsigned int firstlvo, int isattribute, enum libcall def_libcall);
 static void readsectionclass_methodlist(struct classinfo *);
 static void readsectionclass(struct config *);
 static void readsectionhandler(struct config *);
@@ -452,7 +452,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
 	{
 	    static char *parts[] =
 	    {
-		"config", "cdefprivate", "cdef", "startup", "functionlist", "methodlist", "class", "handler", "interface", "attributelist"
+		"config", "cdefprivate", "cdef", "startup", "functionlist", "methodlist", "class", "handler", "interface", "attributelist", "cfunctionlist"
 	    };
 	    const unsigned int nums = sizeof(parts)/sizeof(char *);
 	    unsigned int partnum;
@@ -513,7 +513,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
                 if (cfg->basename==NULL)
                     exitfileerror(20, "section functionlist has to come after section config\n");
 
-		readsectionfunctionlist("functionlist", &cfg->funclist, cfg->firstlvo, 0);
+		readsectionfunctionlist("functionlist", &cfg->funclist, cfg->firstlvo, 0, REGISTERMACRO);
 		cfg->intcfg |= CFG_NOREADFUNCS;
 		break;
 
@@ -523,7 +523,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
 		if (cl)
 		    readsectionclass_methodlist(cl);
                 else
-                    readsectionfunctionlist("methodlist", &in->methodlist, 0, 0);
+                    readsectionfunctionlist("methodlist", &in->methodlist, 0, 0, REGISTERMACRO);
 		cfg->intcfg |= CFG_NOREADFUNCS;
 		break;
 		
@@ -543,8 +543,17 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
 	    case 10: /* attributelist */
 	        if (!in)
 	            exitfileerror(20, "attributelist only valid in interface sections\n");
-	        readsectionfunctionlist("attributelist", &in->attributelist, 0, 1);
+	        readsectionfunctionlist("attributelist", &in->attributelist, 0, 1, INVALID);
 	        break;
+        case 11: /* cfunctionlist */
+            if (inclass)
+                exitfileerror(20, "cfunctionlist section not allow in class section\n");
+                    if (cfg->basename==NULL)
+                        exitfileerror(20, "section cfunctionlist has to come after section config\n");
+
+            readsectionfunctionlist("cfunctionlist", &cfg->funclist, cfg->firstlvo, 0, REGISTER);
+            cfg->intcfg |= CFG_NOREADFUNCS;
+            break;
 	    }
 	}
 	else if (strlen(line)!=0)
@@ -1417,7 +1426,7 @@ static void readsectionstartup(struct config *cfg)
     }
 }
 
-static void readsectionfunctionlist(const char *type, struct functionhead **funclistptr, unsigned int firstlvo, int isattribute)
+static void readsectionfunctionlist(const char *type, struct functionhead **funclistptr, unsigned int firstlvo, int isattribute, enum libcall def_libcall)
 {
     int atend = 0, i;
     char *line, *s, *s2;
@@ -1786,7 +1795,7 @@ static void readsectionfunctionlist(const char *type, struct functionhead **func
 				  argcount, regcount
 		    );
 
-		(*funclistptr)->libcall = REGISTERMACRO;
+		(*funclistptr)->libcall = def_libcall;
 		for (i = 0; i < argcount; i++)
 		    funcaddarg(*funclistptr, args[i], regs[i]);
 	    } 
