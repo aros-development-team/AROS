@@ -1,7 +1,6 @@
 #include <aros/symbolsets.h>
 #include <asm/cpu.h>
 #include <exec/execbase.h>
-#include <resources/acpi.h>
 #include <proto/exec.h>
 
 #include "kernel_base.h"
@@ -80,13 +79,18 @@ static int PlatformInit(struct KernelBase *KernelBase)
 
 ADD2INITLIB(PlatformInit, 10);
 
+/* This must be global, since acpica.library is a rellib
+ */
+struct Library *ACPICABase;
+
 void PlatformPostInit(void)
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
-    struct ACPIBase *ACPIBase = OpenResource("acpi.resource");
 
-    if (ACPIBase)
-        pdata->kb_APIC = acpi_APIC_Init(ACPIBase);
+    ACPICABase = OpenLibrary("acpica.library", 0);
+
+    if (ACPICABase)
+        pdata->kb_APIC = acpi_APIC_Init(ACPICABase);
 
     if (!pdata->kb_APIC)
     {

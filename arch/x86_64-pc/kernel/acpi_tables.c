@@ -4,9 +4,8 @@
 */
 
 #include <aros/asmcall.h>
-#include <resources/acpi.h>
 #include <proto/arossupport.h>
-#include <proto/acpi.h>
+#include <proto/acpica.h>
 
 #include <inttypes.h>
 #include <string.h>
@@ -19,18 +18,23 @@
 #include "apic.h"
 
 #define D(x) x
+   
+/* This must be global, for acpica.library is a rellib
+ */
+struct Library *ACPICABase;
 
 ULONG acpi_Initialize(void)
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
-    struct ACPIBase *ACPIBase = OpenResource("acpi.resource");
+        
+    ACPICABase = OpenLibrary("acpica.library", 0);
 
     D(bug("[Kernel] core_ACPIInitialise()\n"));
 
-    if (!ACPIBase)
+    if (!ACPICABase)
     {
-    	D(bug("[Kernel] acpi.resource not found, no ACPI\n"));
+    	D(bug("[Kernel] acpica.library not found, no ACPICA\n"));
     	return 0;
     }
 
@@ -38,7 +42,7 @@ ULONG acpi_Initialize(void)
      * ACPI exists. Parse all the data.
      * Currently we only initialize local APIC.
      */
-    pdata->kb_APIC = acpi_APIC_Init(ACPIBase);
+    pdata->kb_APIC = acpi_APIC_Init(ACPICABase);
 
     return 1;
 }

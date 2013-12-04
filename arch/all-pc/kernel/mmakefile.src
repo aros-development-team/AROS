@@ -9,12 +9,12 @@ MAINDIR	      := rom/kernel
 USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 		  -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
-#MM- kernel-kernel-pc : kernel-pc-acpi-includes linklibs-bootconsole kernel-kernel-native
-#MM- kernel-kernel-pc-kobj : kernel-pc-acpi-includes linklibs-bootconsole kernel-kernel-native
-#MM- kernel-kernel-pc-pkg : kernel-pc-acpi-includes linklibs-bootconsole kernel-kernel-native
-#MM- kernel-kernel-pc-quick : kernel-pc-acpi-includes kernel-kernel-native-quick
-#MM- kernel-kernel-pc-kobj-quick : kernel-pc-acpi-includes kernel-kernel-native-quick
-#MM- kernel-kernel-pc-pkg-quick : kernel-pc-acpi-includes kernel-kernel-native-quick
+#MM- kernel-kernel-pc : kernel-pc-acpica-linklib  linklibs-bootconsole kernel-kernel-native
+#MM- kernel-kernel-pc-kobj : kernel-pc-acpica-linklib linklibs-bootconsole kernel-kernel-native
+#MM- kernel-kernel-pc-pkg : kernel-pc-acpica-linklib linklibs-bootconsole kernel-kernel-native
+#MM- kernel-kernel-pc-quick : kernel-pc-acpica-linklib kernel-kernel-native-quick
+#MM- kernel-kernel-pc-kobj-quick : kernel-pc-acpica-linklib kernel-kernel-native-quick
+#MM- kernel-kernel-pc-pkg-quick : kernel-pc-acpica-linklib kernel-kernel-native-quick
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \

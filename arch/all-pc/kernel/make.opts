@@ -1,1 +1,1 @@
-USER_LDFLAGS := -L$(GENDIR)/lib -lbootconsole
+USER_LDFLAGS := -L$(GENDIR)/lib -lbootconsole -lacpica
