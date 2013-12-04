@@ -5,11 +5,16 @@
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
+#define DEBUG 1
 #include <aros/debug.h>
+
+#include <hardware/efi/config.h>
 
 #include <proto/exec.h>
 #include <proto/timer.h>
-#include <proto/acpi.h>
+#include <proto/efi.h>
+#include <proto/kernel.h>
+
 #include <asm/io.h>
 
 #include <devices/timer.h>
@@ -72,6 +77,22 @@ ACPI_PHYSICAL_ADDRESS AcpiOsGetRootPointer(void)
 {
     NEED_ACPICABASE
 
+    if (ACPICABase->ab_RootPointer == 0) {
+        struct Library *EFIBase = OpenResource("efi.resource");
+        if (EFIBase) {
+            const uuid_t acpi_20_guid = ACPI_20_TABLE_GUID;
+            const uuid_t acpi_10_guid = ACPI_TABLE_GUID;
+            ACPICABase->ab_RootPointer = (ACPI_PHYSICAL_ADDRESS)EFI_FindConfigTable(&acpi_20_guid);
+
+            /* No ACPI 2.0 table? */
+            if (ACPICABase->ab_RootPointer == 0) {
+                ACPICABase->ab_RootPointer = (ACPI_PHYSICAL_ADDRESS)EFI_FindConfigTable(&acpi_10_guid);
+            }
+        }
+    }
+
+    /* Nope, no EFI available... Scan the ROM area
+     */
     if (ACPICABase->ab_RootPointer == 0) {
         AcpiFindRootPointer(&ACPICABase->ab_RootPointer);
     }
@@ -246,15 +267,45 @@ void AcpiOsReleaseLock(ACPI_SPINLOCK Handle, ACPI_CPU_FLAGS Flags)
     AcpiOsSignalSemaphore (Handle, 1);
 }
 
+struct AcpiOsInt {
+    struct Interrupt ai_Interrupt;
+    ACPI_OSD_HANDLER ai_Handler;
+    void *ai_Context;
+};
+
+static AROS_INTH1(AcpiOsIntServer, struct AcpiOsInt *, ai)
+{
+    AROS_INTFUNC_INIT
+
+    UINT32 ret;
+
+    ret = ai->ai_Handler(ai->ai_Context);
+
+    return (ret == ACPI_INTERRUPT_HANDLED) ? TRUE : FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
 ACPI_STATUS AcpiOsInstallInterruptHandler(UINT32 InterruptLevel, ACPI_OSD_HANDLER Handler, void *Context)
 {
-    bug("FIXME: %s\n", __func__);
-    return AE_NOT_IMPLEMENTED;
+    struct AcpiOsInt *ai;
+
+    if ((ai = ACPI_ALLOCATE(sizeof(*ai)))) {
+        ai->ai_Interrupt.is_Node.ln_Name = "ACPI";
+        ai->ai_Interrupt.is_Code = (APTR)AcpiOsIntServer;
+        ai->ai_Interrupt.is_Data = (APTR)ai;
+        ai->ai_Handler = Handler;
+        ai->ai_Context = Context;
+        AddIntServer(INTB_KERNEL + InterruptLevel, &ai->ai_Interrupt);
+        return AE_OK;
+    }
+
+    return AE_NO_MEMORY;
 }
 
 ACPI_STATUS AcpiOsRemoveInterruptHandler(UINT32 InterruptNumber, ACPI_OSD_HANDLER Handler)
 {
-    bug("FIXME: %s\n", __func__);
+    bug("FIXME: %s (InterruptLevel=%d)\n", __func__, InterruptNumber);
     return AE_NOT_IMPLEMENTED;
 }
 
@@ -444,6 +495,7 @@ LONG AcpiScanTables(char *Signature, const struct Hook *Hook, APTR UserData)
 static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
 {
     ACPI_STATUS err;
+    const UINT8 initlevel = ACPI_FULL_INITIALIZATION;
 
     err = AcpiInitializeSubsystem();
     if (ACPI_FAILURE(err)) {
@@ -457,17 +509,19 @@ static int ACPICA_InitTask(struct ACPICABase *ACPICABase)
         return FALSE;
     }
 
-    err = AcpiEnableSubsystem(ACPI_NO_HANDLER_INIT);
+    err = AcpiEnableSubsystem(initlevel);
     if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION) = %d\n", __func__, err));
+        D(bug("%s: AcpiEnableSubsystem(0x%02x) = %d\n", __func__, initlevel, err));
         return FALSE;
     }
 
-    err = AcpiInitializeObjects(ACPI_NO_HANDLER_INIT);
+    err = AcpiInitializeObjects(initlevel);
     if (ACPI_FAILURE(err)) {
-        D(bug("%s: AcpiInitializeObjects(ACPI_FULL_INITIALIZATION) = %d\n", __func__, err));
+        D(bug("%s: AcpiInitializeObjects(0x%02x) = %d\n", __func__, initlevel, err));
         return FALSE;
     }
+
+    D(bug("[ACPI] Full initialization complete\n"));
 
     return TRUE;
 }
@@ -476,8 +530,20 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
 {
     ACPI_TABLE_MCFG *mcfg;
     ACPI_STATUS err;
+    struct Library *KernelBase;
+
+    if ((KernelBase = OpenResource("kernel.resource"))) {
+        struct TagItem *cmdline = LibFindTagItem(KRN_CmdLine, KrnGetBootInfo());
+
+        if (cmdline && strcasestr((char *)cmdline->ti_Data, "noacpi")) {
+            D(bug("[ACPI] Disabled from command line\n"));
+            return FALSE;
+        }
+    }
 
     THIS_ACPICABASE(ACPICABase);
+
+    AcpiDbgLevel = ~0;
 
     ACPICABase->ab_RootPointer = 0;
 

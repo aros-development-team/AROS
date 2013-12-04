@@ -14,6 +14,14 @@ ACPICA_SOURCES := \
        $(call WILDCARD, ../../source/components/resources/*.c) \
        $(call WILDCARD, ../../source/components/namespace/*.c)
 
+# ACPICA debugging options
+#ACPICA_SOURCES +=  \
+#       $(call WILDCARD, ../../source/components/disassembler/*.c)
+#USER_CFLAGS += -DACPI_DEBUG_OUTPUT=1 -DACPI_DISASSEMBLER=1
+
+# AROS Glue code debugging options
+USER_FLAGS += -DDEBUG=1
+
 FILES := acpios_aros \
          $(ACPICA_SOURCES:%.c=%)
 
