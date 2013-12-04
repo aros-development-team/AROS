@@ -12,10 +12,9 @@
 #include <exec/lists.h>
 #include <graphics/driver.h>
 #include <graphics/gfxbase.h>
-#include <resources/acpi.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
-#include <proto/acpi.h>
+#include <proto/acpica.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
@@ -53,7 +52,6 @@ static struct OOP_ABDescr abd[] =
 
 static int PCVGA_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct ACPIBase *ACPIBase;
     struct GfxBase *GfxBase;
     struct vga_staticdata *xsd = &LIBBASE->vsd;
     struct vgaModeEntry *entry;
@@ -67,12 +65,12 @@ static int PCVGA_Init(LIBBASETYPEPTR LIBBASE)
 	return FALSE;
     }
 
-    ACPIBase = OpenResource("acpi.resource");
-    if (ACPIBase)
+    if (ACPICABase)
     {
-        struct ACPI_TABLE_TYPE_FADT *fadt = ACPI_FindSDT(ACPI_MAKE_ID('F','A','C','P'));
-
-        if (fadt && (fadt->pc_arch & FACP_PC_NO_VGA))
+        ACPI_TABLE_FADT *fadt;
+        
+        if ((AcpiGetTable("FACP", 1, (ACPI_TABLE_HEADER **)&fadt) == AE_OK) &&
+            (fadt->BootFlags & ACPI_FADT_NO_VGA))
         {
             D(bug("[VGA] Disabled by ACPI\n"));
             return FALSE;
