@@ -55,6 +55,7 @@ static int PCVGA_Init(LIBBASETYPEPTR LIBBASE)
     struct GfxBase *GfxBase;
     struct vga_staticdata *xsd = &LIBBASE->vsd;
     struct vgaModeEntry *entry;
+    struct Library *ACPICABase;
     BOOL res = FALSE;
     int i;
 
@@ -65,7 +66,7 @@ static int PCVGA_Init(LIBBASETYPEPTR LIBBASE)
 	return FALSE;
     }
 
-    if (ACPICABase)
+    if ((ACPICABase = OpenLibrary("acpica.library", 0)))
     {
         ACPI_TABLE_FADT *fadt;
         
@@ -73,8 +74,10 @@ static int PCVGA_Init(LIBBASETYPEPTR LIBBASE)
             (fadt->BootFlags & ACPI_FADT_NO_VGA))
         {
             D(bug("[VGA] Disabled by ACPI\n"));
+            CloseLibrary(ACPICABase);
             return FALSE;
         }
+        CloseLibrary(ACPICABase);
     }
 
     InitSemaphore(&xsd->sema);
