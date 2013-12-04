@@ -3,6 +3,8 @@ include $(TOP)/config/make.cfg
 
 FILES := battclock_init readbattclock writebattclock
 
+USER_CFLAGS += -DDEBUG=1
+
 %build_archspecific \
   mainmmake=kernel-battclock maindir=rom/battclock arch=pc \
   files="$(FILES)" modulename=battclock
