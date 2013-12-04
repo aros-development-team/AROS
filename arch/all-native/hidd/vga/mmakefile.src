@@ -5,6 +5,6 @@ FILES := vga_init vgaclass vgahw bitmap
 
 %build_module mmake=kernel-hidd-vga \
   modname=vgah modtype=hidd \
-  files=$(FILES)
+  files=$(FILES) uselibs="acpica"
 
 %common
