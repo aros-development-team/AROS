@@ -11,6 +11,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 
 #define _stringify(x) #x
 #define stringify(x) _stringify(x)
@@ -57,6 +58,8 @@
 DECLARE_main(name);                                                           \
 DECLARE_DOSBase_global                                                        \
                                                                               \
+THIS_PROGRAM_HANDLES_SYMBOLSET(LIBS)                                          \
+                                                                              \
 __startup static AROS_PROCH(_entry, __argstr, argsize, SysBase)               \
 {                                                                             \
     AROS_PROCFUNC_INIT                                                        \
@@ -97,7 +100,10 @@ __startup static AROS_PROCH(_entry, __argstr, argsize, SysBase)               \
         goto __exit;                                                          \
     }                                                                         \
                                                                               \
-    __retcode = CALL_main(name);                                              \
+    if (set_open_libraries()) {                                               \
+        __retcode = CALL_main(name);                                          \
+        set_close_libraries();                                                \
+    }                                                                         \
                                                                               \
 __exit:                                                                       \
     if (__rda) FreeArgs(__rda);                                               \
