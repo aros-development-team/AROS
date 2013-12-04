@@ -19,14 +19,11 @@
 
 #define D(x) x
    
-/* This must be global, for acpica.library is a rellib
- */
-struct Library *ACPICABase;
-
 ULONG acpi_Initialize(void)
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
+    struct Library *ACPICABase;
         
     ACPICABase = OpenLibrary("acpica.library", 0);
 
@@ -43,6 +40,8 @@ ULONG acpi_Initialize(void)
      * Currently we only initialize local APIC.
      */
     pdata->kb_APIC = acpi_APIC_Init(ACPICABase);
+
+    CloseLibrary(ACPICABase);
 
     return 1;
 }
