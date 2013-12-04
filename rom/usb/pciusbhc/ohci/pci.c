@@ -10,9 +10,7 @@
 #include <devices/timer.h>
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
-#include <resources/acpi.h>
 
-#include <proto/acpi.h>
 #include <proto/bootloader.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -33,6 +31,10 @@
 #endif
 #ifdef __x86_64__
 #define HAVE_ACPI
+#endif
+
+#ifdef HAVE_ACPI
+#include <proto/acpica.h>
 #endif
 
 #undef HiddPCIDeviceAttrBase
@@ -403,26 +405,20 @@ static int getArguments(struct PCIDevice *base)
 {
     APTR BootLoaderBase;
 #ifdef HAVE_ACPI
-    struct ACPIBase *ACPIBase;
+    ACPI_TABLE_HEADER *dsdt;
+    ACPI_STATUS err;
 
-    ACPIBase = OpenResource("acpi.resource");
-    if (ACPIBase)
-    {
-        /*
-         * Use ACPI IDs to identify known machines which need HDF_FORCEPOWER
-         * to work. Currently we know only MacMini.
-         */
-        struct ACPI_TABLE_DEF_HEADER *dsdt =
-            ACPI_FindSDT(ACPI_MAKE_ID('D', 'S', 'D', 'T'));
-
-        if (dsdt)
+    /*
+     * Use ACPI IDs to identify known machines which need HDF_FORCEPOWER
+     * to work. Currently we know only MacMini.
+     */
+    err = AcpiGetTable("DSDT", 1, &dsdt);
+    if (err == AE_OK) {
+        /* Yes, the last byte in ID is zero */
+        if (strcmp(dsdt->OemTableId, "Macmini") == 0)
         {
-            /* Yes, the last byte in ID is zero */
-            if (strcmp(dsdt->oem_table_id, "Macmini") == 0)
-            {
-                base->hd_Flags = HDF_FORCEPOWER;
-                return TRUE;
-            }
+            base->hd_Flags = HDF_FORCEPOWER;
+            return TRUE;
         }
     }
 #endif
