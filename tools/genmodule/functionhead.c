@@ -142,8 +142,9 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 		    "         %s, %s, %u, %s)\n"
 		    "{\n"
 		    "    AROS_LIBFUNC_INIT\n\n"
-		    "    return %s(",
+		    "    %s%s(",
 		    cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename,
+		    (strcasecmp(funclistit->type, "void") == 0) ? "" : "return ",
 		    funclistit->internalname
 	    );
 	    for (arglistit = funclistit->arguments, first = 1;

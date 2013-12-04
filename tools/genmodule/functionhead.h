@@ -15,7 +15,7 @@
 
 #include "stringlist.h"
 
-enum libcall { STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
+enum libcall { INVALID, STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
 
 struct functionarg {
     struct functionarg *next;
