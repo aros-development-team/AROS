@@ -6,7 +6,7 @@ FILES   := startup kernel_debug platform_init ictl kernel_cpu traps utils smp
 AFILES  := core_interrupts reboot
 MAINDIR := rom/kernel
 
-#MM kernel-kernel-pc-i386 : includes-asm_h-i386 linklibs-bootconsole
+#MM kernel-kernel-pc-i386 : kernel-pc-acpica-includes includes-asm_h-i386 linklibs-bootconsole
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
                  -I$(SRCDIR)/arch/all-native/kernel \

@@ -39,7 +39,7 @@ KLIBS   := exec
 #MM	kernel-timer-pkg		\
 #MM	kernel-expansion-pkg		\
 #MM	kernel-efi-pkg 			\
-#MM	kernel-pc-acpi-pkg 		\
+#MM	kernel-pc-acpica-pkg 		\
 #MM	kernel-pc-hpet-pkg 		\
 #MM	kernel-ata-pkg  		\
 #MM     kernel-hidd-pciata-pkg          \
@@ -52,8 +52,8 @@ KLIBS   := exec
 #MM     kernel-hidd-vesa-pkg  		\
 #MM     kernel-hidd-vga-pkg
 
-KRSRCS      := acpi efi hpet battclock processor
-KLIBS       := expansion
+KRSRCS      := efi hpet battclock processor
+KLIBS       := acpica expansion
 KDEVS       := ahci ata timer
 KHIDDS      := ata_pci i8042 vesagfx vgah pci pcipc serial parallel
 

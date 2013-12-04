@@ -11,7 +11,6 @@
 
 #include <asm/cpu.h>
 #include <hardware/vbe.h>
-#include <resources/acpi.h>
 
 #include <inttypes.h>
 

@@ -7,7 +7,7 @@
 */
 
 #include <asm/cpu.h>
-#include <resources/acpi.h>
+#include <proto/acpica.h>
 
 /*
  * Per-CPU data
@@ -25,7 +25,7 @@ struct APICData
 {
     IPTR	   lapicBase; 	/* Local APIC base address			*/
     IPTR	   ioapicBase;	/* IOAPIC base address				*/
-    APTR	   acpiBase;	/* acpi.resource base (cached)			*/
+    APTR	   acpicaBase;	/* acpica.library base (cached)			*/
     APTR	   acpi_madt;	/* ACPI MADT pointer (cached)			*/
     ULONG	   count;	/* Total number of APICs in the system		*/
     UWORD	   flags;	/* See below					*/
@@ -51,6 +51,6 @@ static inline IPTR core_APIC_GetBase(void)
     return rdmsri(0x1B) & APIC_BASE_MASK;
 }
 
-struct APICData *acpi_APIC_Init(struct ACPIBase *ACPIBase);
+struct APICData *acpi_APIC_Init(struct Library *ACPIBase);
 struct APICData *core_APIC_Probe(void);
 UBYTE core_APIC_GetNumber(struct APICData *data);

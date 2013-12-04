@@ -449,12 +449,12 @@ void kernel_cstart(const struct TagItem *start_msg)
      * RTF_SINGLETASK residents are called with supervisor privilege level.
      * Original AmigaOS(tm) does the same, some Amiga hardware expansion ROM
      * rely on it. Here we continue the tradition, because it's useful for
-     * acpi.resource (which needs to look for RSDP in zero page).
+     * acpica.library (which needs to look for RSDP in the first 1M)
      */
     InitCode(RTF_SINGLETASK, 0);
 
     /*
-     * After InitCode(RTF_SINGLETASK) we may have acpi.resource.
+     * After InitCode(RTF_SINGLETASK) we may have acpica.library
      * Now we can use ACPI information in order to set up advanced things (SMP, APIC, etc).
      * Interrupts are still disabled and we are still supervisor.
      */

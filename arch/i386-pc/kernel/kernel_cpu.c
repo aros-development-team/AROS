@@ -10,7 +10,6 @@
 #include <exec/tasks.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
-#include <resources/acpi.h>
 #include <proto/exec.h>
 
 #include "etask.h"

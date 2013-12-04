@@ -21,13 +21,13 @@ include $(TOP)/config/make.cfg
 
 #MM kernel-bsp-pc-x86_64 : linklibs-bootconsole		 \
 #MM			   kernel-ata-pkg		 \
-#MM                        kernel-hidd-pciata-pkg	 \
+#MM			   kernel-hidd-pciata-pkg	 \
 #MM			   kernel-ahci-pkg		 \
 #MM			   kernel-battclock-pkg		 \
 #MM			   kernel-efi-pkg		 \
 #MM			   kernel-timer-pkg		 \
 #MM			   kernel-expansion-pkg		 \
-#MM			   kernel-pc-acpi-pkg		 \
+#MM			   kernel-pc-acpica-pkg		 \
 #MM			   kernel-pc-hpet-pkg		 \
 #MM			   kernel-hidd-i8042-pkg	 \
 #MM			   kernel-pc-i386-serial-pkg	 \
@@ -38,8 +38,8 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-hidd-pci-pcipc-pkg	 \
 #MM			   kernel-processor-pkg
 
-KRSRCS  := acpi battclock efi hpet processor
-KLIBS   := expansion
+KRSRCS  := battclock efi hpet processor
+KLIBS   := expansion acpica
 KDEVS   := ata ahci timer
 KHIDDS  := parallel pci pcipc serial vesagfx vgah ata_pci i8042
 
