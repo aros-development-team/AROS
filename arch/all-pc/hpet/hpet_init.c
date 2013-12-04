@@ -51,28 +51,33 @@ static const struct Hook enumHook =
 
 static int hpet_Init(struct HPETBase *base)
 {
+    struct Library *ACPICABase;
+
     base->unitCnt = 0;
 
+    ACPICABase = OpenLibrary("acpica.library", 0);
     if (!ACPICABase)
-    	return FALSE;
+        return FALSE;
 
     /* During the 1st pass base->units is NULL, so we will just count HPETs */
     AcpiScanTables("HPET", &enumHook, base);
 
     D(bug("[HPET] %u units total\n", base->unitCnt));
-    if (!base->unitCnt)
-    	return FALSE;
+    if (base->unitCnt) {
+        base->units = AllocMem(sizeof(struct HPETUnit) * base->unitCnt, MEMF_CLEAR);
+        if (base->units) {
+            InitSemaphore(&base->lock);
 
-    base->units = AllocMem(sizeof(struct HPETUnit) * base->unitCnt, MEMF_CLEAR);
-    if (!base->units)
-    	return FALSE;
+            /* Fill in the data */
+            base->unitCnt = 0;
+            AcpiScanTables("HPET", &enumHook, base);
+            CloseLibrary(ACPICABase);
 
-    InitSemaphore(&base->lock);
+            return TRUE;
+        }
+    }
 
-    /* Fill in the data */
-    base->unitCnt = 0;
-    AcpiScanTables("HPET", &enumHook, base);
-
+    CloseLibrary(ACPICABase);
     return TRUE;
 }
 
