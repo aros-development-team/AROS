@@ -23,6 +23,8 @@ USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/$(ACPICA_INCLUDE)
   modname=acpica modtype=library \
   files="$(FILES)"
 
+# Headers
+
 INCLUDE_FILES := $(call WILDCARD, include/*.h)
 
 %copy_includes path=libraries dir=include
@@ -30,5 +32,17 @@ INCLUDE_FILES := $(call WILDCARD, include/*.h)
 INCLUDE_FILES := $(call WILDCARD, $(ACPICA_INCLUDE)/*.h)
 
 %copy_includes path=acpica dir=$(ACPICA_INCLUDE)
+
+# Programs
+
+USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+
+FILES := ACPIInfo
+
+#MM- workbench-c : workbench-c-$(AROS_TARGET_ARCH)-acpi
+#MM- workbench-c-quick : workbench-c-$(AROS_TARGET_ARCH)-acpi-quick
+
+%build_progs mmake=workbench-c-pc-acpi targetdir=$(AROS_C) \
+  files="$(FILES)" usestartup=no uselibs="acpica"
 
 %common
