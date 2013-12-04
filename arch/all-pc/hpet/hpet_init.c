@@ -2,35 +2,35 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <exec/memory.h>
-#include <resources/acpi.h>
 #include <utility/hooks.h>
 #include <proto/acpi.h>
 #include <proto/exec.h>
+#include <proto/acpica.h>
 
 #include "hpet_intern.h"
 
 AROS_UFH3(static BOOL, hpetEnumFunc,
 	  AROS_UFHA(struct Hook *, hook, A0),
-	  AROS_UFHA(struct ACPI_TABLE_TYPE_HPET *, table, A2),
+	  AROS_UFHA(ACPI_TABLE_HPET *, table, A2),
 	  AROS_UFHA(struct HPETBase *, base, A1))
 {
     AROS_USERFUNC_INIT
 
     ULONG n;
 
-    if (table->addr.address_space_id != ACPI_SPACE_MEM)
+    if (table->Address.SpaceId != ACPI_ADR_SPACE_SYSTEM_MEMORY)
     	return FALSE;
 
-    n = (table->id & HPET_NUM_COMPARATORS_MASK) >> HPET_NUM_COMPARATORS_SHIFT;
+    n = (table->Id & HPET_NUM_COMPARATORS_MASK) >> HPET_NUM_COMPARATORS_SHIFT;
 
     if (base->units)
     {
-    	IPTR blk = table->addr.address + 0x0100;
+    	IPTR blk = table->Address.Address + 0x0100;
     	ULONG i;
 
     	for (i = 0; i < n; i++)
     	{
-    	    base->units[base->unitCnt + i].base  = table->addr.address;
+    	    base->units[base->unitCnt + i].base  = table->Address.Address;
     	    base->units[base->unitCnt + i].block = blk;
     	    base->units[base->unitCnt + i].Owner = NULL;
 
@@ -51,14 +51,13 @@ static const struct Hook enumHook =
 
 static int hpet_Init(struct HPETBase *base)
 {
-    struct ACPIBase *ACPIBase;
+    base->unitCnt = 0;
 
-    ACPIBase = OpenResource("acpi.resource");
-    if (!ACPIBase)
+    if (!ACPICABase)
     	return FALSE;
 
     /* During the 1st pass base->units is NULL, so we will just count HPETs */
-    ACPI_ScanSDT(ACPI_MAKE_ID('H','P','E','T'), &enumHook, base);
+    AcpiScanTables("HPET", &enumHook, base);
 
     D(bug("[HPET] %u units total\n", base->unitCnt));
     if (!base->unitCnt)
@@ -72,7 +71,7 @@ static int hpet_Init(struct HPETBase *base)
 
     /* Fill in the data */
     base->unitCnt = 0;
-    ACPI_ScanSDT(ACPI_MAKE_ID('H','P','E','T'), &enumHook, base);
+    AcpiScanTables("HPET", &enumHook, base);
 
     return TRUE;
 }
