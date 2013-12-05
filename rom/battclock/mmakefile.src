@@ -15,14 +15,10 @@ USER_INCLUDES += -I$(SRCDIR)/rom/battclock
 #MM kernel-battclock : includes kernel-battclock-$(ARCH)-$(CPU)
 #MM kernel-battclock-linklib : includes kernel-battclock-$(ARCH)-$(CPU)
 
-ifeq ($(ARCH),pc)
-    USELIBS += acpica
-endif
-
 FUNCTIONS := readbattclock resetbattclock writebattclock
 
 %build_module mmake=kernel-battclock \
     modname=battclock modtype=resource version=$(AROS_TARGET_PLATFORM) \
-    files="$(FUNCTIONS)" archspecific=yes uselibs=$(USELIBS)
+    files="$(FUNCTIONS)" archspecific=yes
 
 %common
