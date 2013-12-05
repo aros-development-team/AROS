@@ -108,17 +108,17 @@ BOOT_DEST_DIR   := $(OSGENDIR)/boot/bootdisk
 SYSTEM_DEST_DIR := $(OSGENDIR)/boot/systemdisk
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub)
-BOOT_FILES += boot/grub/stage1
-BOOT_TAR_MISC += boot/grub/menu.lst.DH0 boot/grub/stage2
-BOOT_EXTRA_FILES += $(BOOT_DEST_DIR)/boot/grub/stage2
+BOOT_FILES += $(AROS_DIR_ARCH)/grub/stage1
+BOOT_TAR_MISC += $(AROS_DIR_ARCH)/grub/menu.lst.DH0 $(AROS_DIR_ARCH)/grub/stage2
+BOOT_EXTRA_FILES += $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub/stage2
 
-$(BOOT_DEST_DIR)/boot/grub/stage2 $(SYSTEM_DEST_DIR)/boot/grub/stage2:
-	@$(CP) $(AROSDIR)/boot/grub/stage2_hdisk $@
+$(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub/stage2 $(SYSTEM_DEST_DIR)/$(AROS_DIR_ARCH)/grub/stage2:
+	@$(CP) $(AROSARCHDIR)/grub/stage2_hdisk $@
 endif
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub2)
-BOOT_FILES += boot/grub/grub.cfg
-BOOT_TAR_MISC += boot/grub/grub.cfg
+BOOT_FILES += $(AROS_DIR_ARCH)/grub/grub.cfg
+BOOT_TAR_MISC += $(AROS_DIR_ARCH)/grub/grub.cfg
 endif
 
 BOOT_TAR_FILES := $(BOOT_TAR_EXECUTABLES) $(BOOT_TAR_ICONS) $(BOOT_TAR_MISC)
@@ -132,8 +132,8 @@ bootdisk-setup-pc-i386 :
 	@$(MKDIR) "$(AROSDIR)/Tools/Boot Disks"
 	-$(RM) $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)
-	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
-	@$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(BOOT_DEST_DIR)/boot/grub/
+	%mkdirs_q $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub
+	@$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub/
 
 #MM
 systemdisk-setup-pc-i386 :
@@ -160,7 +160,7 @@ bootdisk-pc-i386-quick : bootdisk-pc-i386
 systemdisk-pc-i386-quick : systemdisk-pc-i386
 
 $(DISTDIR)/aros-pc-i386.img: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) \
- $(AROSDIR)/boot/bootstrap-pc.gz \
+ $(AROSARCHDIR)/bootstrap.gz \
  $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 	@$(MKDIR) -p "$(DISTDIR)"
 	$(RM) $@
@@ -229,7 +229,7 @@ install-systemdisk :
 #MM
 install-pc-i386 :
 	@$(ECHO) -n "Copying AROS kernel to /aros/boot directory... "
-	@cp $(AROSDIR)/boot/aros-pc-i386 /aros/boot/
+	@cp $(AROSARCHDIR)/kernel /aros/boot/kernel-pc-i386
 	@$(ECHO) "Done."
 
 #MM

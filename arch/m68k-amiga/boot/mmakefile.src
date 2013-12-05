@@ -207,8 +207,8 @@ $(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/
 		$(DISTDIR)/aros-amiga-m68k.elf $@
 	$(Q)echo -n "$*: "
 	$(Q)$(HOSTGENDIR)/tools/romcheck $@
-	$(Q)$(MKDIR) $(AROSDIR)/boot
-	$(Q)$(CP) $@ $(AROSDIR)/boot/aros-$*.bin
+	$(Q)$(MKDIR) $(AROSARCHDIR)
+	$(Q)$(CP) $@ $(AROSARCHDIR)/aros-$*.bin
 
 #MM
 clean ::
@@ -255,15 +255,13 @@ DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 
 ## Compressed elf for AROSBootstrap
 
-BOOTDIR := $(AROSDIR)/boot
-
 #MM- kernel-link-amiga-m68k: kernel-boot-elf
 #MM- kernel-link-amiga-m68k-quick: kernel-boot-elf-quick
 
 #MM kernel-boot-elf:
 #MM kernel-boot-elf-quick:
-kernel-boot-elf: $(BOOTDIR)/aros.elf
-kernel-boot-elf-quick: $(BOOTDIR)/aros.elf
+kernel-boot-elf: $(AROSARCHDIR)/aros.elf
+kernel-boot-elf-quick: $(AROSARCHDIR)/aros.elf
 
 # Main ROM, that must live in MEMF_LOCAL memory
 
@@ -337,9 +335,9 @@ $(DISTDIR)/aros-amiga-m68k-ram.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.sr
 		-L$(AROS_LIB) $(LIBS) -lgcc
 
 
-$(BOOTDIR)/aros.elf: $(DISTDIR)/aros-amiga-m68k-ram.elf \
+$(AROSARCHDIR)/aros.elf: $(DISTDIR)/aros-amiga-m68k-ram.elf \
 	$(SRCDIR)/$(CURDIR)/mmakefile.src
-	$(Q)$(MKDIR) $(BOOTDIR)
+	$(Q)$(MKDIR) $(AROSARCHDIR)
 	$(Q)$(TARGET_OBJCOPY) \
 	    --strip-unneeded \
 	    $< $@

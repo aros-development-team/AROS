@@ -1658,7 +1658,7 @@ include %(objdir)/Makefile.%(modname)%(modtype)
 
 BD_DEFMODDIR := $(%(modname)_MODDIR)
 ifeq (%(archspecific),yes)
-BD_DEFMODDIR := $(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/$(BD_DEFMODDIR)
+BD_DEFMODDIR := $(AROS_DIR_ARCH)/$(BD_DEFMODDIR)
 endif
 
 

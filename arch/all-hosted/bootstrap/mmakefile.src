@@ -1,8 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-EXEDIR := $(AROSDIR)/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
-
 FILES := main bootstrap elf_io filesystem hostinterface kickstart log memory support shutdown runtime ui
 PROG  := AROSBootstrap
 
@@ -10,7 +8,7 @@ PROG  := AROSBootstrap
 ## where its strcmp() builtin generates a number of spurious
 ## complaints with -O1 or higher optimizations enabled.
 USER_CFLAGS   := -Wno-attributes -DADATE="\"$(shell date '+%d.%m.%Y')\"" \
-    -DARCH=\"$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)\"
+    -DARCH=\"$(AROS_DIR_ARCH)\"
 USER_LDFLAGS  := -L$(GENDIR)/lib
 USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR) -isystem $(SRCDIR)/bootstrap/include
 
@@ -22,7 +20,7 @@ USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR) -isystem $(S
 #MM kernel-bootstrap-hosted: linklibs-bootstrap linklibs-arossupport
 
 %build_prog mmake=kernel-bootstrap-hosted \
-    progname=$(PROG)$(EXE_SUFFIX) targetdir=$(EXEDIR) \
+    progname=$(PROG)$(EXE_SUFFIX) targetdir=$(AROSARCHDIR) \
     files=$(FILES) compiler=kernel uselibs="bootstrap"
 
 %common

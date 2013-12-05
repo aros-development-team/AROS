@@ -16,8 +16,8 @@ USER_CFLAGS  := -m32 -isystem $(SRCDIR)/arch/all-native/bootconsole/include -isy
 USER_LDFLAGS := -m32 -Wl,-N,-e,kernel_bootstrap -Wl,-Map,$(GENDIR)/boot/bootstrap-pc.map \
 		-Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds -static-libgcc $(ARCH_LIBS)
 USER_OBJS    := $(OBJDIR)/vesa.bin.o
-EXEDIR       := $(AROSDIR)/boot
-EXENAME      := bootstrap-pc
+EXEDIR       := $(AROSDIR)/Arch/pc
+EXENAME      := bootstrap
 
 %build_prog mmake=kernel-bootstrap-pc progname=$(EXENAME) \
 	files=$(FILES) targetdir=$(EXEDIR) \

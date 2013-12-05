@@ -10,7 +10,7 @@ include $(TOP)/config/make.cfg
 
 
 ELF2HUNK_FILES := \
-    boot/AROSBootstrap \
+    $(AROS_DIR_ARCH)/AROSBootstrap \
     C/Assign \
     C/Avail \
     C/Copy \
@@ -42,7 +42,7 @@ ELF2HUNK_FILES := \
     S/Shell-Startup
 
 OTHER_FILES := \
-    boot/aros.hunk.gz \
+    $(AROS_DIR_ARCH)/aros.hunk.gz \
     Disk.info \
     S/Startup-Sequence
 
@@ -91,7 +91,7 @@ $(BOOT_DEST_DIR)/Disk.info: $(SRCDIR)/$(CURDIR)/AROSBoot.info.src $(SRCDIR)/$(CU
 $(BOOT_DEST_DIR).info: $(SRCDIR)/$(CURDIR)/Emergency-Boot.info.src $(SRCDIR)/$(CURDIR)/AROSBoot.png
 	@$(ILBMTOICON) $^ $@
 
-$(BOOT_DEST_DIR)/boot/aros.hunk.gz : $(BOOT_SRC_DIR)/boot/aros.elf | $(BOOT_DEST_DIR)/boot
+$(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/aros.hunk.gz : $(BOOT_SRC_DIR)/$(AROS_DIR_ARCH)/aros.elf | $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)
 	@$(ELF2HUNK) $< - | gzip -c - >$@
 
 $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURDIR)/install.c

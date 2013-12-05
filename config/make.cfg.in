@@ -50,6 +50,8 @@ SPECS                := $(GENDIR)/config/specs
 
 # This is the directory structure for an AROS system.
 AROSDIR	             := $(TARGETDIR)/AROS
+# Dir for arch specific modules and binaries
+AROSARCHDIR          := $(AROSDIR)/Arch/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
 
 # Relative paths for standard directories
 AROS_DIR_C           := C
@@ -66,6 +68,7 @@ AROS_DIR_DEVELOPMENT := Development
 AROS_DIR_INCLUDE     := $(AROS_DIR_DEVELOPMENT)/include
 AROS_DIR_LIB         := $(AROS_DIR_DEVELOPMENT)/lib
 AROS_DIR_CONTRIB     := Extras
+AROS_DIR_ARCH        := Arch/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
 
 # Absolute paths for standard directories
 AROS_C	             := $(AROSDIR)/$(AROS_DIR_C)

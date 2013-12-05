@@ -7,12 +7,12 @@ include $(TOP)/config/make.cfg
 #MM- grub2-pc-i386: arch-common-grub2 grub2-iso-setup
 
 bootloader-grub2-pc-i386: \
- $(AROSDIR)/boot/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
+ $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
 bootloader-grub2gfx-pc-i386: \
- $(AROSDIR)/boot/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
+ $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
 
-$(AROSDIR)/boot/grub/grub.cfg: grub.cfg
-	$(CP) $< $(AROSDIR)/boot/grub/
+$(AROSARCHDIR)/grub/grub.cfg: grub.cfg
+	$(CP) $< $(AROSARCHDIR)/grub/
 
 $(AROSDIR)/EFI/BOOT/grub/grub.cfg: grub-efi.cfg
 	@$(ECHO) Copying $@...

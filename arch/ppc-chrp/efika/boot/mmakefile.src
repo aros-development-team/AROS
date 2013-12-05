@@ -88,18 +88,18 @@ MODULES_USB := \
 .PHONY: $(PORTSDIR)/aros-efika.iso
 	
 kernel-package-chrp-ppc-efika:
-	$(RM) -rf $(AROSDIR)/boot/modules
+	$(RM) -rf $(AROSARCHDIR)/modules
 	$(RM) -rf $(AROSDIR)/.pkg
-	%mkdirs_q $(AROSDIR)/boot/modules
+	%mkdirs_q $(AROSARCHDIR)/modules
 	%mkdirs_q $(AROSDIR)/.pkg
 	@mv $(MODULES_GENERIC) $(AROSDIR)/.pkg
-	$(SRCDIR)/tools/package/pkg c $(AROSDIR)/boot/modules/aros-ppc-generic.pkg $(AROSDIR)/.pkg
+	$(SRCDIR)/tools/package/pkg c $(AROSARCHDIR)/modules/aros-ppc-generic.pkg $(AROSDIR)/.pkg
 	$(RM) -rf $(AROSDIR)/.pkg/*
 	@mv $(MODULES_EFIKA) $(AROSDIR)/.pkg
-	$(SRCDIR)/tools/package/pkg c $(AROSDIR)/boot/modules/aros-ppc-efika.pkg $(AROSDIR)/.pkg
+	$(SRCDIR)/tools/package/pkg c $(AROSARCHDIR)/modules/aros-ppc-efika.pkg $(AROSDIR)/.pkg
 	$(RM) -rf $(AROSDIR)/.pkg/*
 	@mv $(MODULES_USB) $(AROSDIR)/.pkg
-	$(SRCDIR)/tools/package/pkg c $(AROSDIR)/boot/modules/aros-usb.pkg $(AROSDIR)/.pkg
+	$(SRCDIR)/tools/package/pkg c $(AROSARCHDIR)/modules/aros-usb.pkg $(AROSDIR)/.pkg
 	$(RM) -rf $(AROSDIR)/.pkg
 
 
@@ -133,5 +133,5 @@ $(TARGET_ISO):
                 
 #MM setup-chrp-ppc-efika
 setup-chrp-ppc-efika :
-	%mkdirs_q $(AROSDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
-	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(AROSDIR)/boot/
+	%mkdirs_q $(AROSARCHDIR) $(OSGENDIR)/boot $(TARGETDIR)
+	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(AROSARCHDIR)/

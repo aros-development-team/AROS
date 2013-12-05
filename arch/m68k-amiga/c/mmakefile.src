@@ -33,8 +33,6 @@ USER_AFLAGS := -I$(GENINCDIR) -Os
 
 #MM workbench-c-m68k-setpatcharos : linklibs-loadseg
 
-AROS_BOOT := $(AROSDIR)/boot
-
 USER_LDFLAGS := -nostdc
 
 FILES := gdbstub
@@ -55,13 +53,13 @@ USER_INCLUDES := -isystem $(SRCDIR)/rom/dos/include
 USER_LDFLAGS  := -L$(GENDIR)/lib -nostdc
 
 %build_prog mmake=workbench-c-m68k-setpatcharos progname=SetPatchAROS \
-    files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_BOOT) \
+    files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROSARCHDIR) \
     uselibs="loadseg"
 
 CFILES	      := AROSBootstrap
 
 %build_prog mmake=workbench-c-m68k-arosbootstrap progname=AROSBootstrap \
-    files=$(CFILES) targetdir=$(AROS_BOOT) \
+    files=$(CFILES) targetdir=$(AROSARCHDIR) \
     usestartup=no uselibs="loadseg z.static"
 
 CFILES	      := mmudump

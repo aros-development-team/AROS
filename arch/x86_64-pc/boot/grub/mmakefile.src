@@ -5,10 +5,10 @@ include $(TOP)/config/make.cfg
 
 #MM grub-pc-x86_64: grub-quick grub-copy-stages
 
-grub-pc-x86_64: $(AROSDIR)/boot/grub/menu.lst $(AROSDIR)/boot/grub/menu.lst.DH0
+grub-pc-x86_64: $(AROSARCHDIR)/grub/menu.lst $(AROSARCHDIR)/grub/menu.lst.DH0
 
-$(AROSDIR)/boot/grub/menu.lst:
-		$(CP) menu.lst $(AROSDIR)/boot/grub/
+$(AROSARCHDIR)/grub/menu.lst:
+		$(CP) menu.lst $(AROSARCHDIR)/grub/
 
-$(AROSDIR)/boot/grub/menu.lst.DH0:
-		$(CP) menu.lst.DH0 $(AROSDIR)/boot/grub/
+$(AROSARCHDIR)/grub/menu.lst.DH0:
+		$(CP) menu.lst.DH0 $(AROSARCHDIR)/grub/

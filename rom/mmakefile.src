@@ -141,7 +141,7 @@ BASE_HIDD     := hiddclass graphics keyboard mouse
 BASE_LIBS     := aros debug dos graphics intuition keymap layers oop utility
 BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 
-%make_package mmake=kernel-package-base file=$(AROSDIR)/boot/aros-base.pkg \
+%make_package mmake=kernel-package-base file=$(AROSDIR)/Arch/aros-base.pkg \
 	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) res=$(BASE_RSRCS)
 
 %common
