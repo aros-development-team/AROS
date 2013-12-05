@@ -5,10 +5,10 @@ include $(TOP)/config/make.cfg
 
 #MM grub-pc-i386: grub-quick grub-copy-stages
 
-grub-pc-i386: $(AROSDIR)/boot/grub/menu.lst $(AROSDIR)/boot/grub/menu.lst.DH0
+grub-pc-i386: $(AROSARCHDIR)/grub/menu.lst $(AROSARCHDIR)/grub/menu.lst.DH0
 
-$(AROSDIR)/boot/grub/menu.lst: menu.lst
-		$(CP) $< $(AROSDIR)/boot/grub/
+$(AROSARCHDIR)/grub/menu.lst: menu.lst
+		$(CP) $< $(AROSARCHDIR)/grub/
 
-$(AROSDIR)/boot/grub/menu.lst.DH0: menu.lst.DH0
-		$(CP) $< $(AROSDIR)/boot/grub/
+$(AROSARCHDIR)/grub/menu.lst.DH0: menu.lst.DH0
+		$(CP) $< $(AROSARCHDIR)/grub/

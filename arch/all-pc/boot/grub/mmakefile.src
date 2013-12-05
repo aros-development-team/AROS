@@ -1,4 +1,4 @@
-# Copyright © 2004, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2013, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -13,7 +13,7 @@ GRUBOPTS += --enable-affs --disable-fat --disable-ffs --disable-minix --disable-
 endif
 
 #MM
-grub-copy-stages : $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2 $(AROSDIR)/boot/grub/stage2_hdisk $(AROSDIR)/boot/grub/iso9660_stage1_5
+grub-copy-stages : $(AROSARCHDIR)/grub/stage1 $(AROSARCHDIR)/grub/stage2 $(AROSARCHDIR)/grub/stage2_hdisk $(AROSARCHDIR)/grub/iso9660_stage1_5
 
 # DO NOT DECLARE CFLAGS HERE
 # OR MAKE SURE -fno-stack-protector IS DETECTED IF COMPILER SUPPORTS IT
@@ -21,18 +21,18 @@ grub-copy-stages : $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2 $(ARO
 %build_with_configure mmake=grub compiler=kernel install_target= \
     extraoptions="$(GRUBOPTS)" 
     
-$(AROSDIR)/boot/grub/stage1: $(GENDIR)/$(CURDIR)/stage1/stage1
+$(AROSARCHDIR)/grub/stage1: $(GENDIR)/$(CURDIR)/stage1/stage1
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@
 
-$(AROSDIR)/boot/grub/stage2: $(GENDIR)/$(CURDIR)/stage2/stage2_eltorito
+$(AROSARCHDIR)/grub/stage2: $(GENDIR)/$(CURDIR)/stage2/stage2_eltorito
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@
 
-$(AROSDIR)/boot/grub/stage2_hdisk: $(GENDIR)/$(CURDIR)/stage2/stage2
+$(AROSARCHDIR)/grub/stage2_hdisk: $(GENDIR)/$(CURDIR)/stage2/stage2
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@
 
-$(AROSDIR)/boot/grub/iso9660_stage1_5: $(GENDIR)/$(CURDIR)/stage2/iso9660_stage1_5
+$(AROSARCHDIR)/grub/iso9660_stage1_5: $(GENDIR)/$(CURDIR)/stage2/iso9660_stage1_5
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@

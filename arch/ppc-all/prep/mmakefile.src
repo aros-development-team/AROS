@@ -19,7 +19,7 @@ $(OSGENDIR)/boot/aros-prep : $(OBJS)
 	    -o $@ $(OBJS) -L$(AROS_LIB) $(LIBS)
 	$(STRIP) --strip-unneeded -R .note -R .comment $@
 	$(OBJCOPY) -O binary $@
-	./preplink $@ $(AROSDIR)/boot/aros-prep.img
+	./preplink $@ $(AROSARCHDIR)/aros-prep.img
 
 #MM setup-ppc : 
 setup-ppc : preplink
@@ -27,7 +27,7 @@ setup-ppc : preplink
 
 #MM setup-prep-ppc :
 setup-prep-ppc:
-	%mkdirs_q $(AROSDIR)/boot
+	%mkdirs_q $(AROSARCHDIR)
 
 $(OBJDIR)/%.o : %.S
 	%assemble_q

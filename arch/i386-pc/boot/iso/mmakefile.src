@@ -21,20 +21,21 @@ bootiso-pc-i386-quick: $(TARGET_ISO)
 .PHONY: bootiso-pc-i386-quick
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub)
-BOOTLOADER_ELTORITO_REL := boot/grub/iso9660_stage1_5
+BOOTLOADER_ELTORITO_REL := $(AROS_DIR_ARCH)/grub/iso9660_stage1_5
 endif
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub2)
-BOOTLOADER_ELTORITO_REL := boot/grub/i386-pc/grub2_eltorito
+BOOTLOADER_ELTORITO_REL := $(AROS_DIR_ARCH)/grub/i386-pc/grub2_eltorito
 endif
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub2gfx)
-BOOTLOADER_ELTORITO_REL := boot/grub/i386-pc/grub2_eltorito
+BOOTLOADER_ELTORITO_REL := $(AROS_DIR_ARCH)/grub/i386-pc/grub2_eltorito
 endif
 
-BOOT_FILES := bootstrap-pc.gz kernel-pc-i386.gz aros-bsp-pc-i386.pkg.gz\
- aros-legacy-pc-i386.pkg.gz aros-base.pkg.gz aros-fs.pkg.gz poseidon.pkg.gz
-ISO_DEPS := $(addprefix $(AROSDIR)/boot/, $(BOOT_FILES))
+PC_BOOT_FILES  := bootstrap.gz kernel.gz aros-bsp.pkg.gz aros-legacy.pkg.gz
+ARCH_BOOT_FILE := aros-base.pkg.gz aros-fs.pkg.gz poseidon.pkg.gz
+ISO_DEPS := $(addprefix $(AROSARCHDIR)/, $(PC_BOOT_FILES)) \
+    $(addprefix $(AROSDIR)/Arch,$(ARCH_BOOT_FILES))
 
 $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
 $(warning LANG = $(LANG))
@@ -46,7 +47,7 @@ $(TARGET_ISO): $(ISO_DEPS)
 	@mkisofs -f \
 		-o $@ \
 		-b $(BOOTLOADER_ELTORITO_REL) \
-		-c boot/boot.catalog \
+		-c $(AROS_DIR_ARCH)/boot.catalog \
                 -no-emul-boot \
                 -boot-load-size 4 \
                 -boot-info-table \

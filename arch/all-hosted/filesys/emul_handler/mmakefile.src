@@ -21,6 +21,7 @@ endif
 
 %build_module mmake=kernel-fs-emul \
     modname=emul modtype=resource modsuffix=handler version=$(AROS_TARGET_PLATFORM) \
-    files="$(FILES) $(FUNCS)" moduledir=$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)/L
+    files="$(FILES) $(FUNCS)" \
+    moduledir=$(AROS_DIR_ARCH)/L
 
 %common

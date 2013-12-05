@@ -25,7 +25,7 @@ include $(TOP)/config/make.cfg
 
 KLIBS   := exec
 
-%link_kickstart mmake=kernel-pc-i386-kernel file=$(AROSDIR)/boot/kernel-pc-i386 \
+%link_kickstart mmake=kernel-pc-i386-kernel file=$(AROSARCHDIR)/kernel \
 	startup=$(KOBJSDIR)/kernel_resource.o libs=$(KLIBS) \
 
 #
@@ -57,7 +57,7 @@ KLIBS       := acpica expansion
 KDEVS       := ahci ata timer
 KHIDDS      := ata_pci i8042 vesagfx vgah pci pcipc serial parallel
 
-%make_package mmake=kernel-bsp-pc-i386 file=$(AROSDIR)/boot/aros-bsp-pc-i386.pkg \
+%make_package mmake=kernel-bsp-pc-i386 file=$(AROSARCHDIR)/aros-bsp.pkg \
     devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS)
 
 #
@@ -74,7 +74,7 @@ KHIDDS      := ata_pci i8042 vesagfx vgah pci pcipc serial parallel
 LEGACY_DEVS  := trackdisk
 LEGACY_HIDDS := serialmouse
 
-%make_package mmake=kernel-legacy-pc-i386 file=$(AROSDIR)/boot/aros-legacy-pc-i386.pkg \
+%make_package mmake=kernel-legacy-pc-i386 file=$(AROSARCHDIR)/aros-legacy.pkg \
 	devs=$(LEGACY_DEVS) hidds=$(LEGACY_HIDDS) res=$(LEGACY_RSRCS)
 
 %common

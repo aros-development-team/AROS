@@ -69,7 +69,7 @@ USB_RES     := usbromstartup
 
 #MM kernel-package-usb : kernel-usb-pkg
 
-%make_package mmake=kernel-package-usb file=$(AROSDIR)/boot/poseidon.pkg \
+%make_package mmake=kernel-package-usb file=$(AROSDIR)/Arch/poseidon.pkg \
 	classes=$(USB_CLASSES) devs=$(USB_DEVS) libs=$(USB_LIBS) res=$(USB_RES)
 
 # --- ELF kickstart package ---
@@ -84,7 +84,7 @@ USB_RES     := usbromstartup
 #MM      kernel-usb-pciusb-kobj		\
 #MM	 kernel-usb-usbromstartup-kobj
 
-%link_kickstart mmake=kernel-link-usb file=$(AROSDIR)/boot/poseidon \
+%link_kickstart mmake=kernel-link-usb file=$(AROSDIR)/Arch/poseidon \
 	classes=$(USB_CLASSES) devs=$(USB_DEVS) libs=$(USB_LIBS) res=$(USB_RES) \
 	uselibs="debug hiddstubs" \
 	map=$(GENDIR)/boot/kernel-usb.map deps=kernel-usb-kobj
