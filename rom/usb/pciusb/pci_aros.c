@@ -9,7 +9,6 @@
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
 
-#include <proto/acpica.h>
 #include <proto/bootloader.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -20,6 +19,18 @@
 
 #include "uhwcmd.h"
 #include "ohciproto.h"
+
+#ifdef __i386__
+#define HAVE_ACPI
+#endif
+#ifdef __x86_64__
+#define HAVE_ACPI
+#endif
+
+#ifdef HAVE_ACPI
+#include <proto/acpica.h>
+#endif
+
 
 #define NewList NEWLIST
 
@@ -611,6 +622,7 @@ APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr)
 static int getArguments(struct PCIDevice *base)
 {
     APTR BootLoaderBase;
+#ifdef HAVE_ACPI
     struct Library *ACPICABase;
 
     if ((ACPICABase = OpenLibrary("acpica.library", 0))) {
@@ -632,6 +644,7 @@ static int getArguments(struct PCIDevice *base)
         }
         CloseLibrary(ACPICABase);
     }
+#endif
 
     BootLoaderBase = OpenResource("bootloader.resource");
     if (BootLoaderBase)
