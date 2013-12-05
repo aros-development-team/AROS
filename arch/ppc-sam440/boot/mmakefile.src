@@ -68,13 +68,13 @@ include $(TOP)/config/make.cfg
 #MM- kernel-link-sam440-ppc: setup-sam440-ppc kernel-kernel-kobj kernel-exec-kobj kernel-sam440-ppc-quick
 
 #MM
-kernel-link-sam440-ppc: $(AROSARCHDIR)/aros-amcc440
+kernel-link-sam440-ppc: $(AROSARCHDIR)/kernel
 
 #MM
-kernel-link-sam440-ppc-quick: $(AROSARCHDIR)/aros-amcc440
+kernel-link-sam440-ppc-quick: $(AROSARCHDIR)/kernel
 
-$(AROSARCHDIR)/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
-	@$(ECHO) "Linking    boot/aros-amcc440"
+$(AROSARCHDIR)/kernel: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
+	@$(ECHO) "Linking    $(AROS_DIR_ARCH)/kernel"
 	$(TARGET_CC) -nostartfiles -Wl,-Map -Wl,$(OSGENDIR)/boot/kernel.map -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/ldscript.lds \
         -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o \
         -L$(AROS_LIB) -larossupport -lamiga -lautoinit -llibinit -lstdc.static -lgcc

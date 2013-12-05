@@ -4,7 +4,7 @@ delay 5
 default 0
 
 title AROS on Sam4x0
-    kernel Arch/sam440/aros-amcc440
+    kernel Arch/sam440/kernel
     module Arch/sam440/modules/afs-handler
     module Arch/sam440/modules/ram-handler
     module Arch/sam440/modules/aros.library
@@ -59,7 +59,7 @@ title AROS on Sam4x0
     module Arch/sam440/modules/workbench.library
 
 title AROS on Sam4x0 Debug
-    kernel Arch/sam440/aros-amcc440 sysdebug=all econsole
+    kernel Arch/sam440/kernel sysdebug=all econsole
     module Arch/sam440/modules/afs-handler
     module Arch/sam440/modules/ram-handler
     module Arch/sam440/modules/aros.library
@@ -114,7 +114,7 @@ title AROS on Sam4x0 Debug
     module Arch/sam440/modules/workbench.library
 
 title AROS on Sam4x0 Test Alternative Usb
-    kernel Arch/sam440/aros-amcc440
+    kernel Arch/sam440/kernel
     module Arch/sam440/modules/afs-handler
     module Arch/sam440/modules/ram-handler
     module Arch/sam440/modules/aros.library
