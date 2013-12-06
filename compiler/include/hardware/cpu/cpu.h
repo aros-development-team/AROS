@@ -15,7 +15,6 @@
 #   include <exec/semaphores.h>
 #endif
 
-#include <hardware/acpi/acpi.h>
 #include <hardware/pic/pic.h>
 
 /* ALL supported processor families should have an entry here (for future compatability - DO NOT CHANGE THE ORDER!) */
@@ -111,7 +110,7 @@ struct CPUBase
     struct  Node                CPUB_Node;
     struct  ExecBase            *CPUB_SysBase;
     struct  UtilityBase         *CPUB_UtilBase;
-    struct  ACPIBase            *CPUB_ACPIBase;
+    struct  Library             *CPUB_ACPICABase;
     struct  PICBase             *CPUB_PICBase;
 
     struct SignalSemaphore      CPUB_ListLock;                   /* Control access to the cpu list..                         */

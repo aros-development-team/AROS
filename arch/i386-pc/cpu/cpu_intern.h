@@ -30,9 +30,6 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <hardware/intbits.h>
-#include <asm/segments.h>
-#include <asm/linkage.h>
-#include <asm/ptrace.h>
 #include <dos/dosextens.h>
 
 #include <aros/arossupportbase.h>
@@ -59,8 +56,6 @@
 #include <hardware/cpu/cpu.h>                   /* NicJA - Experimental CPU specific Data Structs */
 #include <hardware/cpu/cpu_i386.h>              /* NicJA - Experimental CPU specific Data Structs */
 #include <hardware/cpu/cpu_mpspec.h>            /* NicJA - Experimental SMP specific Data Structs */
-
-#include <hardware/acpi/acpi.h>                 /* NicJA - Experimental ACPI/APIC specific Data Structs */
 
 #include LC_LIBDEFS_FILE
 
@@ -115,9 +110,9 @@ int     mpfcb_checksum( unsigned char *mpcb, int len );
 void    smp_read_mpc_oem( struct mp_config_oemtable *oemtable, unsigned short oemsize, struct SMP_Definition *SMP_Group );
 void    mps_oem_check ( struct mp_config_table *mpcf, char *oem, char *productid, struct SMP_Definition *SMP_Group );
 int     smp_alloc_memory ( void );
-int     scan_for_smpconfig ( unsigned long base, unsigned long length );
-int     find_smp_config ( void );
+APTR    scan_for_smpconfig ( APTR base, unsigned long length );
+APTR    find_smp_config ( void );
 void    get_smp_config ( struct intel_mp_confblock *mpcfb, struct CPUBase *CPUBase  );
-int     smp_read_mpcfb ( struct mp_config_table *mpcf, struct CPUBase *CPUBase );
+struct SMP_Definition *smp_read_mpcfb ( struct mp_config_table *mpcf, struct CPUBase *CPUBase );
 
 #endif /* _CPU_INTERN_H */

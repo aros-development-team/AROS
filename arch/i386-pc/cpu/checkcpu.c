@@ -30,20 +30,20 @@ UWORD i386_CheckCPU_FPU( void );
 
 void i386_CheckCPU_Type( struct i386_compat_intern *CPU_intern )
 {
-    unsigned long           li,maxi,maxei,eax,ebx,ecx,edx,newcr0;
+    unsigned long           maxi,eax,ebx,ecx,edx,newcr0;
     BOOL                    CRxSet = FALSE;
-    int                     i,loop;
-    char                    *strVendor;
+    int                     i;
+    char                    *strVendor = NULL;
     
     CPU_intern->x86_cpuid = -1;
     CPU_intern->x86 = 3;
 
-#warning TODO: code the EFLAGS-> AC Bit check
+/* TODO: code the EFLAGS-> AC Bit check */
     if ( TRUE ) /* Can we set EFLAGS-> AC Bit? */
     {
         CPU_intern->x86 = 4;                                                /* Ok we have something better than a 386.. */
 
-#warning TODO: code the ID flag check
+/* TODO: code the ID flag check */
         if ( TRUE ) /* Try to change ID flag -if we can CPUID is implemented */
         {
             /* Ok we CPUID!! Hurray!.. */
@@ -52,7 +52,7 @@ void i386_CheckCPU_Type( struct i386_compat_intern *CPU_intern )
 
             i386_cpuid( 0,unused,ebx,ecx,edx );                             /* Max CPUID level supported &  Vendor Name */
 
-            *strVendor = &CPU_intern->x86_vendor_id;
+            strVendor = (char *)&CPU_intern->x86_vendor_id;
 
             for(i=0;i<4;i++) strVendor[i]   = ( ebx >> (8*i) );
             for(i=0;i<4;i++) strVendor[4+i] = ( edx >> (8*i) );
@@ -94,7 +94,7 @@ void i386_CheckCPU_Type( struct i386_compat_intern *CPU_intern )
         newcr0 |= 0x2;
     }
 
-#warning TODO: Next line disabled due to problems .. (setcr0)
+/* TODO: Next line disabled due to problems .. (setcr0) */
     i386_setcr0(newcr0);
 
     CPU_intern->x86_hard_math = i386_CheckCPU_FPU();
@@ -102,7 +102,7 @@ void i386_CheckCPU_Type( struct i386_compat_intern *CPU_intern )
 
     cpu_ready += 1;
 
-#warning TODO: Next line disabled due to problems .. (invalidate LDT etc,)
+/* TODO: Next line disabled due to problems .. (invalidate LDT etc,) */
     /* Invalidate LDT */
 	/* Clear D flag as needed by AROS and gcc */
 
