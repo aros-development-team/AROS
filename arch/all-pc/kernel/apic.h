@@ -26,7 +26,7 @@ struct APICData
     IPTR	   lapicBase; 	/* Local APIC base address			*/
     IPTR	   ioapicBase;	/* IOAPIC base address				*/
     APTR	   acpicaBase;	/* acpica.library base (cached)			*/
-    APTR	   acpi_madt;	/* ACPI MADT pointer (cached)			*/
+    CONST_APTR	   acpi_madt;	/* ACPI MADT pointer (cached)			*/
     ULONG	   count;	/* Total number of APICs in the system		*/
     UWORD	   flags;	/* See below					*/
     struct CPUData cores[0];	/* Per-CPU data					*/
