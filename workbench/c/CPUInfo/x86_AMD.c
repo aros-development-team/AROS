@@ -16,7 +16,7 @@
 
 *****************************************************************************************************/
 
-#include "../x86.h"
+#include "x86.h"
 
 /********************************************
 		         Structures
@@ -105,11 +105,11 @@ float   athloncoef2[] = {12, 19.0, 12, 20.0, 13.0, 13.5, 14.0, 21.0, 15, 22, 16,
 
 void    i386_poll_AMD32_FSB ( ULONG extclock, struct i386_compat_intern * CPUi386 )
 {
-	unsigned int                mcgsrl;
-	unsigned int                mcgsth;
-	unsigned long               temp;
-	double                      dramclock;
-	float                       coef;
+	//unsigned int                mcgsrl;
+	//unsigned int                mcgsth;
+	//unsigned long               temp;
+	//double                      dramclock;
+	//float                       coef;
 
     //if (CPUi386->x86_capability & X86_FEATURE_TSC)
     //{
@@ -164,6 +164,7 @@ void    i386_AMD_Athlon_Parse_MSR ( void )
 void    i386_AMD_K6_Parse_MSR ( int family, int model, int stepping )
 {
 	unsigned long msrvala=0,msrvalb=0;
+	unsigned long long msrval;
 
 	printf("\t\t\t\t31       23       15       7 \n");
 	i386_Parse_MSR( MSR_K6_WHCR, 32 );
@@ -171,10 +172,11 @@ void    i386_AMD_K6_Parse_MSR ( int family, int model, int stepping )
 	if ( ( model < 8 ) || ( ( model==8 ) && ( stepping <8 ) ) )               /* Original K6 or K6-2 (old core). */
     {
         i386_rdmsr( MSR_K6_WHCR, msrvala, msrvalb )
-		if ( ( ( msrvalb << 32 ) | msrvala ) == 1 ) 
+        msrval = ( (unsigned long long)msrvalb << 32 ) | msrvala;
+		if ( msrval == 1 ) 
         {
-			printf ("Write allocate enable limit: %dMbytes\n", (int) ( (  ( ( msrvalb << 32 ) | msrvala ) & 0x7e ) >>1 ) * 4 );
-			printf ("Write allocate 15-16M bytes: %s\n",  ( ( msrvalb << 32 ) | msrvala ) & 1 ? "enabled" : "disabled" );
+			printf ("Write allocate enable limit: %dMbytes\n", (int) ( (  msrval & 0x7e ) >>1 ) * 4 );
+			printf ("Write allocate 15-16M bytes: %s\n",  msrval & 1 ? "enabled" : "disabled" );
 		}
         else printf ("Couldn't read WHCR register.\n");
 	}
@@ -183,13 +185,13 @@ void    i386_AMD_K6_Parse_MSR ( int family, int model, int stepping )
 	if ( ( model > 8 ) || ( ( model == 8 ) && ( stepping >= 8 ) ) )               /* K6-2 core (Stepping 8-F), K6-III or later. */
     {   
         i386_rdmsr( MSR_K6_WHCR, msrvala, msrvalb );
-		if ( ( ( msrvalb << 32 ) | msrvala ) == 1)
+		if ( msrval == 1)
         {
-			if (!( ( ( msrvalb << 32 ) | msrvala ) & ( 0x3ff << 22 ) ) )	printf ("    Write allocate disabled\n");
+			if (!( msrval & ( 0x3ff << 22 ) ) )	printf ("    Write allocate disabled\n");
 			else 
             {
-				printf ("    Write allocate enable limit: %dMbytes\n", (int) ( (  ( ( msrvalb << 32 ) | msrvala ) >> 22) & 0x3ff ) * 4 );
-				printf ("    Write allocate 15-16M bytes: %s\n",  ( ( msrvalb << 32 ) | msrvala ) & (1<<16) ? "enabled" : "disabled" );
+				printf ("    Write allocate enable limit: %dMbytes\n", (int) ( (  msrval >> 22) & 0x3ff ) * 4 );
+				printf ("    Write allocate 15-16M bytes: %s\n",  msrval & (1<<16) ? "enabled" : "disabled" );
 			}
 		}
         else printf ("  Couldn't read WHCR register.\n");
@@ -199,14 +201,14 @@ void    i386_AMD_K6_Parse_MSR ( int family, int model, int stepping )
 	if ( ( family == 5 ) && ( model >= 8 ) )                         /* Dump EWBE register on K6-2 & K6-3 */
     {
         i386_rdmsr( MSR_K6_EFER, msrvala, msrvalb );
-		if ( ( ( msrvalb << 32 ) | msrvala ) == 1 )
+		if ( msrval == 1 )
         {
-			if ( ( ( msrvalb << 32 ) | msrvala ) & ( 1 << 0 ) ) printf ("System call extension present.\n");
-			if ( ( ( msrvalb << 32 ) | msrvala ) & ( 1 << 1 ) ) printf ("Data prefetch enabled.\n");
+			if ( msrval & ( 1 << 0 ) ) printf ("System call extension present.\n");
+			if ( msrval & ( 1 << 1 ) ) printf ("Data prefetch enabled.\n");
 			else printf ("    Data prefetch disabled.\n");
 
 			printf ("  EWBE mode: ");
-			switch ( ( ( ( msrvalb << 32 ) | msrvala ) & ( 1 << 2 | 1 << 3 | 1 << 4 ) ) >> 2 ) 
+			switch ( ( msrval & ( 1 << 2 | 1 << 3 | 1 << 4 ) ) >> 2 ) 
             {
 				case 0:	printf ("    strong ordering (slowest performance)\n");
 					break;
@@ -224,18 +226,18 @@ void    i386_AMD_K6_Parse_MSR ( int family, int model, int stepping )
 	printf ("\n");
 }
 
-/********************************************/
-/*
-
-/********************************************/
+/********************************************
+ *
+ *
+ ********************************************/
 
 void    parse_i386_AMD ( int maxi, struct i386_compat_intern * CPUi386 )
 {
     struct  CPU_INTERN_DATA *global;
-    ULONG                   speed, maxei,unused,connection;
+    ULONG __unused__        speed, maxei,unused,connection;
     char                    *BUFF_STR, *AMD_CPU_NAME, *AMD_CPU_IDENTITY, *AMD_CPU_FEATURES, *AMD_CPU_CACHE, *AMD_CPU_ADDR;
     int                     AMD_CPU_NAME_cnt, AMD_CPU_IDENTITY_cnt, AMD_CPU_FEATURES_cnt, AMD_CPU_CACHE_cnt, AMD_CPU_ADDR_cnt;
-    int                     stepping,model,reserved;
+    int __unused__          stepping,model,reserved;
     int                     family = 0;
 
     if ( ( global = AllocMem( sizeof( struct CPU_INTERN_DATA ), MEMF_PUBLIC|MEMF_CLEAR ) ) )
@@ -265,7 +267,7 @@ void    parse_i386_AMD ( int maxi, struct i386_compat_intern * CPUi386 )
             if ( family == 15 )
             {
                 extended_family = (eax >> 20) & 0xff;
-                sprintf( BUFF_STR,"    Extended family %d",extended_family);
+                sprintf( BUFF_STR,"    Extended family %lu",extended_family);
                 AMD_CPU_IDENTITY_cnt = AddBufferLine( AMD_CPU_IDENTITY_cnt, AMD_CPU_IDENTITY, BUFF_STR);
 
                 switch ( extended_family )
@@ -491,7 +493,7 @@ void    parse_i386_AMD ( int maxi, struct i386_compat_intern * CPUi386 )
 
         if ( maxei == 0 ) return;
 
-        int stepping,model,generation,reserved;
+        int __unused__ stepping,model,generation,reserved;
 
         if ( maxei >= 0x80000001 )
         {

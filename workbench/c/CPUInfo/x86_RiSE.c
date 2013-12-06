@@ -2,7 +2,7 @@
     Copyright © 2000, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Probe installed National Semiconductor  Geode CPUs and display relevant information
+    Desc: Probe installed Rise Technology mP6 CPUs and display relevant information
     Lang: english
 */
 
@@ -12,23 +12,21 @@
      Currently Supports:
 
         i386 compatable families...
-            National Semiconductor  Geode
+            Rise Technology mP6
 
 *****************************************************************************************************/
 
-#include "../x86.h"
+#include "x86.h"
 
 /********************************************
- National Semiconductor  specific information
+          Rise  specific information
  ********************************************/
 
-void    parse_i386_NSC( int maxi, struct i386_compat_intern * CPUi386 )
+void    parse_i386_Rise( int maxi, struct i386_compat_intern * CPUi386 )
 {
 
     struct  CPU_INTERN_DATA *global;
-    ULONG                   speed, maxei,unused;
-    int                     family = 0;
-    char                    *BUFF_STR;
+    ULONG __unused__        speed;
 
     if ((global = AllocMem(sizeof(struct CPU_INTERN_DATA),MEMF_PUBLIC|MEMF_CLEAR)))
     {

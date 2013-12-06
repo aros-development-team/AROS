@@ -16,7 +16,7 @@
 
 *****************************************************************************************************/
 
-#include "../x86.h"
+#include "x86.h"
 
 /********************************************
 		         Structures
@@ -94,7 +94,7 @@ char *Intel_feature_flags[] = {
 
 /* Decode Intel TLB and cache info descriptors */
 
-char    i386_intel_TLB_decode ( int tlb, char *BUFF_STR )
+char   *i386_intel_TLB_decode ( int tlb, char *BUFF_STR )
 {
     tlb &= 0xff;
     if(tlb != 0)  sprintf( BUFF_STR,"%02x: ",tlb);
@@ -234,8 +234,8 @@ char    i386_intel_TLB_decode ( int tlb, char *BUFF_STR )
 void    parse_i386_Intel ( int maxi, struct i386_compat_intern * CPUi386 )
 {
     struct  CPU_INTERN_DATA *global;
-    ULONG                   speed, maxei,unused;
-    int                     family = 0;
+    ULONG __unused__        speed, maxei,unused;
+    int __unused__          family = 0;
     char                    *BUFF_STR, *Intel_CPU_NAME, *Intel_CPU_IDENTITY, *Intel_CPU_FEATURES, *Intel_CPU_CACHE, *Intel_CPU_ADDR;
     int                     Intel_CPU_NAME_cnt, Intel_CPU_IDENTITY_cnt, Intel_CPU_FEATURES_cnt, Intel_CPU_CACHE_cnt, Intel_CPU_ADDR_cnt;
 

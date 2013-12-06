@@ -5,18 +5,16 @@ include $(TOP)/config/make.cfg
 
 FILES	:= main 
 
-x86FILES := x86/main \
-            x86/AMD/main \
-            x86/Cyrix/main \
-            x86/Intel/main \
-            x86/NatSemi/main \
-            x86/RiSE/main
+x86FILES := x86 \
+            x86_AMD \
+            x86_Cyrix \
+            x86_Intel \
+            x86_NatSemi \
+            x86_RiSE
 
 EXEDIR  := $(AROS_C)
 
 #MM workbench-c-cpuinfo : includes linklibs kernel-cpu-pc-i386
-
-USER_LDFLAGS := -nostdc
 
 %build_prog mmake=workbench-c-cpuinfo \
     progname=CPUInfo targetdir=$(EXEDIR) \
