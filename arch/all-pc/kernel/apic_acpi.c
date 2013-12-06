@@ -259,7 +259,7 @@ struct APICData *acpi_APIC_Init(struct Library *ACPICABase)
 {
     ULONG result;
     ACPI_STATUS err;
-    ACPI_TABLE_MADT *madt;
+    const ACPI_TABLE_MADT *madt;
     struct APICData *data;
 
     /* 
