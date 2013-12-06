@@ -211,7 +211,7 @@ static const struct Hook ACPI_TableParse_NMI_Src_hook =
  ************************************************************************************************/
 /************************************************************************************************/
 
-static int MADT_ScanEntries(ACPI_TABLE_MADT *madt, enum AcpiMadtType type, const struct Hook *hook, APTR userdata)
+static int MADT_ScanEntries(CONST ACPI_TABLE_MADT *madt, enum AcpiMadtType type, const struct Hook *hook, APTR userdata)
 {
     UINT8 *madt_entry = (UINT8 *)&madt[1];
     UINT8 *madt_end  = (UINT8 *)madt + madt->Header.Length;
