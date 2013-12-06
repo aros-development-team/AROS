@@ -3,14 +3,7 @@
     $Id$
 */
 
-#include <exec/memory.h>
-#include <libraries/asl.h>
-#include <libraries/mui.h>
-#include <resources/acpi.h>
-#include <utility/tagitem.h>
-#include <utility/hooks.h>
-
-#include <proto/acpi.h>
+#include <proto/acpica.h>
 #include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -18,6 +11,12 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
+
+#include <exec/memory.h>
+#include <libraries/asl.h>
+#include <libraries/mui.h>
+#include <utility/tagitem.h>
+#include <utility/hooks.h>
 
 #include <aros/debug.h>
 
@@ -33,7 +32,7 @@
 
 const char version[] = "$VER: " VERSION " (" ADATE ")\n";
 
-struct ACPIBase *ACPIBase;
+struct Library *ACPICABase;
 
 static void ShowError(Object *application, Object *window, CONST_STRPTR message, BOOL useIOError)
 {
@@ -73,6 +72,8 @@ void cleanup(CONST_STRPTR message)
 	ShowError(NULL, NULL, message, TRUE);
 	exit(RETURN_FAIL);
     }
+
+    CloseLibrary(ACPICABase);
 }
 
 Object *MakeLabel(STRPTR str)
@@ -98,12 +99,12 @@ Object *menu_quit, *menu_dump_parsed, *menu_dump_raw;
 
 AROS_UFH3(static void, display_function,
     AROS_UFHA(struct Hook *, h,  A0),
-    AROS_UFHA(char **, strings, A2),
-    AROS_UFHA(struct ACPI_TABLE_DEF_HEADER *, table, A1))
+    AROS_UFHA(const char **, strings, A2),
+    AROS_UFHA(const ACPI_TABLE_HEADER *, table, A1))
 {
     AROS_USERFUNC_INIT
 
-    const struct Parser *t = FindParser(table->signature);
+    const struct Parser *t = FindParser(table->Signature);
 
     if (t)
     {
@@ -111,7 +112,7 @@ AROS_UFH3(static void, display_function,
 	return;
     }
 
-    snprintf(buf, sizeof(buf), "%s (%4.4s)", _(MSG_UNKNOWN), (char *)&table->signature);
+    snprintf(buf, sizeof(buf), "%s (%4.4s)", _(MSG_UNKNOWN), table->Signature);
     strings[0] = buf;
 
     AROS_USERFUNC_EXIT
@@ -130,7 +131,7 @@ AROS_UFH3(static void, select_function,
     AROS_USERFUNC_INIT
 
     IPTR mode, active;
-    struct ACPI_TABLE_DEF_HEADER *table;
+    const ACPI_TABLE_HEADER *table;
     const struct Parser *t;    
 
     GetAttr(MUIA_Cycle_Active, ModeCycle, &mode);
@@ -147,7 +148,7 @@ AROS_UFH3(static void, select_function,
 
 	if (mode == 0)
 	{
-	    t = FindParser(table->signature);
+	    t = FindParser(table->Signature);
 	    if (t)
 	    	parser = t->parser;
 	}
@@ -228,7 +229,7 @@ static void dump_callback(const char *str)
 
 AROS_UFH3(static IPTR, dumpFunc,
 	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(struct ACPI_TABLE_DEF_HEADER *, table, A2),
+	  AROS_UFHA(const ACPI_TABLE_HEADER *, table, A2),
 	  AROS_UFHA(BOOL, parsed, A1))
 {
     AROS_USERFUNC_INIT
@@ -237,7 +238,7 @@ AROS_UFH3(static IPTR, dumpFunc,
 
     if (parsed)
     {
-	const struct Parser *t = FindParser(table->signature);
+	const struct Parser *t = FindParser(table->Signature);
 
 	if (t)
 	    parser = t->parser;
@@ -272,8 +273,9 @@ AROS_UFH3(static void, dump_function,
     DumpFile = RequestFile();
     if (DumpFile)
     {
-    	CALLHOOKPKT((struct Hook *)&dumpHook, ACPIBase->ACPIB_SDT_Addr, (APTR)(IPTR)parsed);
-	ACPI_ScanSDT(ACPI_ID_ALL, &dumpHook, (APTR)(IPTR)parsed);
+        int i;
+        for (i = 0; ParserTable[i].name; i++)
+            AcpiScanTables(ParserTable[i].signature, &dumpHook, (APTR)(IPTR)parsed);
 
 	Close(DumpFile);
     }
@@ -418,7 +420,7 @@ static BOOL GUIinit()
 
 AROS_UFH3(static IPTR, tableFunc,
 	  AROS_UFHA(struct Hook *, table_hook, A0),
-	  AROS_UFHA(struct ACPI_TABLE_DEF_HEADER *, table, A2),
+	  AROS_UFHA(const ACPI_TABLE_HEADER *, table, A2),
 	  AROS_UFHA(void *, unused, A1))
 {
     AROS_USERFUNC_INIT
@@ -438,18 +440,20 @@ int __nocommandline = 1;
 
 int main(void)
 {
+    int i;
+
     if (!Locale_Initialize())
 	cleanup(_(MSG_ERROR_LOCALE));
 
-    ACPIBase = OpenResource("acpi.resource");
-    if (!ACPIBase)
+    ACPICABase = OpenLibrary("acpica.library",0);
+    if (!ACPICABase)
 	cleanup(_(MSG_ERROR_NO_ACPI));
 
     if (GUIinit())
     {
 	/* Populate tables list */
-	DoMethod(TablesList, MUIM_List_InsertSingle, ACPIBase->ACPIB_SDT_Addr, MUIV_List_Insert_Bottom);
-	ACPI_ScanSDT(ACPI_ID_ALL, &tableHook, NULL);
+	for (i = 0; ParserTable[i].name; i++)
+	    AcpiScanTables(ParserTable[i].signature, &tableHook, NULL);
 
 	set(MainWindow, MUIA_Window_Open, TRUE);
 
