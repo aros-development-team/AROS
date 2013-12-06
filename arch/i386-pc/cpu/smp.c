@@ -10,8 +10,8 @@
 void parse_MP_Processor (struct mpc_config_processor *mc, struct SMP_Definition *SMP_Group )
 {
     struct  CPU_Definition          *ThisCPU, *CPUList;
-    struct  i386_compat_intern      *ThisCPU_intern;
-    int                             cpuapicver, apicid;
+    struct  i386_compat_intern      *ThisCPU_intern = NULL;
+    int                             cpuapicver, apicid = 0;
     //physid_mask_t           tmp;
 
     CPUList = CPUBase->CPUB_Processors;
@@ -67,7 +67,7 @@ void parse_MP_Processor (struct mpc_config_processor *mc, struct SMP_Definition 
         ThisCPU->CPU_Enabled = TRUE;    /* got to be enabled or we wouldnt be here.. */
         ThisCPU->CPU_IsOnline = TRUE;                                                                   /* CPU is online ..                     */
         ThisCPU->CPU_BootCPU = TRUE;
-        ThisCPU->CPU_SMPGroup = SMP_Group;
+        ThisCPU->CPU_SMPGroup = (ULONG *)SMP_Group;
         kprintf(DEBUG_NAME_STR ": CPU List item for BOOT CPU updated..[PhysicalID=%d]!\n", ThisCPU->CPU_Physical);
     }
     else
@@ -89,7 +89,7 @@ void parse_MP_Processor (struct mpc_config_processor *mc, struct SMP_Definition 
             ThisCPU->CPU_ID = CPUList->CPU_Physical;                                                    /* we are the only CPU at this time ..  */
             ThisCPU->CPU_IsOnline = FALSE;                                                              /* CPU is online ..                     */
             ThisCPU->CPU_BootCPU = FALSE;                                                               /* CPU bootd system..                   */
-            ThisCPU->CPU_SMPGroup = SMP_Group;
+            ThisCPU->CPU_SMPGroup = (ULONG *)SMP_Group;
 
             kprintf(DEBUG_NAME_STR ": New CPU List item created @ %p, for [PhysicalID=%d]\n", ThisCPU_intern, ThisCPU->CPU_Physical);
 
@@ -104,7 +104,7 @@ void parse_MP_Processor (struct mpc_config_processor *mc, struct SMP_Definition 
                 kprintf(DEBUG_NAME_STR ": i386 private structure allocated @ %p\n",ThisCPU_intern);
                 ThisCPU->CPU_Private1 = ThisCPU_intern;                                                 /* We dont fill it in yet - probed l8r  */
             }
-            AddTail(&CPUList->CPU_CPUList,&ThisCPU->CPU_CPUList);                                       /* Add the CPU to the system List       */
+            AddTail((struct List *)&CPUList->CPU_CPUList,(struct Node *)&ThisCPU->CPU_CPUList);                                       /* Add the CPU to the system List       */
         }
     }
 
@@ -152,7 +152,7 @@ void parse_MP_IntSrc (struct mpc_config_intsrc *mc, struct SMP_Definition *SMP_G
     //mp_irqs [mp_irq_entries] = *mc;
     kprintf(DEBUG_NAME_STR ": Int: type %d, pol %d, trig %d, bus %d, IRQ %02x, APIC ID %x, APIC INT %02x\n",	mc->mpc_irqtype, mc->mpc_irqflag & 3, (mc->mpc_irqflag >> 2) & 3, mc->mpc_srcbus, mc->mpc_srcbusirq, mc->mpc_dstapic, mc->mpc_dstirq);
 
-#warning TODO: Replace the following print with ALERT
+/* TODO: Replace the following print with ALERT */
     //if (++mp_irq_entries == MAX_IRQ_SOURCES)  kprintf(DEBUG_NAME_STR ": DIE HERE!!! (BUG) ");
 }
 
@@ -163,7 +163,7 @@ void parse_MP_LIntSrc (struct mpc_config_lintsrc *mc, struct SMP_Definition *SMP
 	Apparently all exisitng SMP boards use ExtINT/LVT1 == LINT0 and NMI/LVT2 == LINT1 
     The following check will show us if this assumptions is false. Until then we do not have to add baggage.
     */
-#warning TODO: Replace the following prints with ALERTS
+/* TODO: Replace the following prints with ALERTS */
 
     if ((mc->mpc_irqtype == mp_ExtINT) && (mc->mpc_destapiclint != 0)) kprintf(DEBUG_NAME_STR ": DIE HERE!!! (BUG) ");//BUG();
 
@@ -177,7 +177,7 @@ void parse_MP_Bus (struct mpc_config_bus *mc, struct SMP_Definition *SMP_Group )
     memcpy(str, mc->mpc_bustype, 6);
     str[6] = 0;
 
-#warning TODO: Implemenet parse_MP_Bus
+/* TODO: Implemenet parse_MP_Bus */
     //mpc_oem_bus_info(mc, str, translation_table[SMP_Group->SMP_RecordCount]);
 
     //if (strncmp(str, BUSTYPE_ISA, sizeof(BUSTYPE_ISA)-1) == 0)
@@ -273,7 +273,7 @@ void mps_oem_check(struct mp_config_table *mpcf, char *oem, char *productid, str
 int smp_alloc_memory(void)
 {
     ULONG                   trampoline_base;
-#warning TODO: properly allocate SMP memory    
+/* TODO: properly allocate SMP memory  */
     //if ( ( trampoline_base = (void *) alloc_bootmem_low_pages(PAGE_SIZE)) >= 0x0009F000)   /* Has to be in very low memory so we can execute real-mode AP code.  */
     //{
         trampoline_base = 0x0009E000;
@@ -284,16 +284,16 @@ int smp_alloc_memory(void)
 
 /**************************************************************************/
 
-int scan_for_smpconfig (unsigned long base, unsigned long length)
+APTR scan_for_smpconfig (APTR base, unsigned long length)
 {
-    unsigned    int                 *basepointer = base;
+    ULONG *basepointer = base;
     struct      intel_mp_confblock  *mpcfb;
 
     kprintf(DEBUG_NAME_STR ": Scan for SMP = %p for %ld bytes.\n", basepointer,length);
 
     while (length > 0)
     {
-        mpcfb = (struct intel_mp_floating *)basepointer;
+        mpcfb = (struct intel_mp_confblock *)basepointer;
 
         if ((*basepointer == SMP_MAGIC_IDENT))
         {
@@ -312,13 +312,13 @@ int scan_for_smpconfig (unsigned long base, unsigned long length)
     return NULL;
 }
 
-int find_smp_config (void)
+APTR find_smp_config (void)
 {
-    unsigned int confAddr;
+    APTR confAddr;
 
-    if  ((confAddr = scan_for_smpconfig(0x00000000,0x400))) return confAddr;          /* Scan the bottom 1K for a signature        */
-    if	((confAddr = scan_for_smpconfig(0x0009FC00,0x400))) return confAddr;          /* Scan the top 1K of base RAM (639*0x400)   */
-    if  ((confAddr = scan_for_smpconfig(0x000F0000,0x10000))) return confAddr;        /* Scan the 64K of bios                      */
+    if  ((confAddr = scan_for_smpconfig((APTR)0x00000000,0x400))) return confAddr;          /* Scan the bottom 1K for a signature        */
+    if	((confAddr = scan_for_smpconfig((APTR)0x0009FC00,0x400))) return confAddr;          /* Scan the top 1K of base RAM (639*0x400)   */
+    if  ((confAddr = scan_for_smpconfig((APTR)0x000F0000,0x10000))) return confAddr;        /* Scan the 64K of bios                      */
 
     /*  If it is an SMP machine we should know now, unless the
         configuration is in an EISA/MCA bus machine with an
@@ -332,8 +332,7 @@ int find_smp_config (void)
         table may have been corrupted during early boot. These
         loaders are buggy and should be fixed.                      */
 
-    confAddr = *(unsigned short *)(0x0000040E);
-    confAddr <<= 4;
+    confAddr = (APTR)(((IPTR)*(UWORD *)(0x0000040E)) << 4);
     return scan_for_smpconfig(confAddr, 0x1000);
 }
 
@@ -342,9 +341,9 @@ void get_smp_config ( struct intel_mp_confblock *mpcfb, struct CPUBase *CPUBase)
     struct  SMP_Definition  *SMP_Group;
     BOOL                    SMPERROR = FALSE;
     ULONG                   pic_mode;
-    struct  ACPIBase        *ACPIBase;
+    struct  Library         *ACPICABase;
 
-    ACPIBase = CPUBase->CPUB_ACPIBase;
+    ACPICABase = CPUBase->CPUB_ACPICABase;
 
     kprintf(DEBUG_NAME_STR ": Processing SMP config...\n");
 
@@ -355,13 +354,11 @@ void get_smp_config ( struct intel_mp_confblock *mpcfb, struct CPUBase *CPUBase)
         Note that ACPI supports both logical (e.g. Hyper-Threading) and physical 
 	processors, where MPS only supports physical.                              */
 
-    if (ACPIBase)
+    if (ACPICABase)
     {
-        if (ACPIBase->ACPIB_ACPI_LAPIC && ACPIBase->ACPIB_ACPI_IOAPIC) {
-            kprintf(DEBUG_NAME_STR ":   Using ACPI (MADT) for SMP configuration information\n");
-	    return;
-	}
-	else if (ACPIBase->ACPIB_ACPI_LAPIC) kprintf(DEBUG_NAME_STR ": Using ACPI for processor (LAPIC) configuration information\n");
+        
+        kprintf(DEBUG_NAME_STR ":   FIXME: Use ACPI (MADT) for SMP configuration information\n");
+        return;
     }
     kprintf(DEBUG_NAME_STR ":   Intel MultiProcessor Specification v1.%d\n", mpcfb->mpcf_specification);
 
@@ -425,46 +422,46 @@ void get_smp_config ( struct intel_mp_confblock *mpcfb, struct CPUBase *CPUBase)
     /* Only use the first configuration found. */
 }
 
-int smp_read_mpcfb(struct mp_config_table *mpcf, struct CPUBase *CPUBase)
+struct SMP_Definition *smp_read_mpcfb(struct mp_config_table *mpcf, struct CPUBase *CPUBase)
 {
     char                            str[16];
     char                            oem[10];
     int                             count = sizeof(*mpcf);
     unsigned char                   *mpt = ((unsigned char *)mpcf) + count;
     struct  SMP_Definition          *SMP_Group;
-    struct  ACPIBase                *ACPIBase;
 
-    ACPIBase = CPUBase->CPUB_ACPIBase;
+    if (CPUBase->CPUB_ACPICABase)
+        return NULL;
 
     if (memcmp(mpcf->mpc_signature,MPC_SIGNATURE,4))
     {
 	kprintf(DEBUG_NAME_STR ": ERROR - SMP mptable: bad signature [0x%x]!\n", *(ULONG *)mpcf->mpc_signature);
-	return 0;
+	return NULL;
     }
 
     if (mpfcb_checksum((unsigned char *)mpcf,mpcf->mpc_length))
     {
 	kprintf(DEBUG_NAME_STR ": ERROR - SMP mptable: checksum error!\n");
-	return 0;
+	return NULL;
     }
 
     if (mpcf->mpc_spec != 0x01 && mpcf->mpc_spec != 0x04)
     {
         kprintf(DEBUG_NAME_STR ": ERROR - SMP mptable: bad table version (%d)!!\n",mpcf->mpc_spec);
-        return 0;
+        return NULL;
     }
 
     if (!mpcf->mpc_lapic)
     {
 	kprintf(DEBUG_NAME_STR ": ERROR - SMP mptable: null local APIC address!\n");
-	return 0;
+	return NULL;
     }
 
     /* Create the SMP group block */
     SMP_Group = AllocMem( sizeof(struct SMP_Definition), MEMF_CLEAR | MEMF_PUBLIC );
     if (CPUBase->CPUB_SMP_Groups)
     {  
-        AddTail(CPUBase->CPUB_SMP_Groups,&SMP_Group->SMP_SMPList);                       /* Add this SMP group to the list */
+        AddTail((struct List *)CPUBase->CPUB_SMP_Groups,(struct Node *)&SMP_Group->SMP_SMPList);                       /* Add this SMP group to the list */
         kprintf(DEBUG_NAME_STR ": SMP Group Item @ 0x%p, Inserted into List @ 0x%p\n",&SMP_Group->SMP_SMPList,CPUBase->CPUB_SMP_Groups); 
 
         InitSemaphore( &SMP_Group->SMP_GrpLock);
@@ -494,8 +491,7 @@ int smp_read_mpcfb(struct mp_config_table *mpcf, struct CPUBase *CPUBase)
     kprintf(DEBUG_NAME_STR ":   APIC at: 0x%lX\n",mpcf->mpc_lapic);
 
     /*  Save the local APIC address (it might be non-default) - though only if we're not using ACPI.	*/
-
-    if (!( ACPIBase )||( (ACPIBase) && (!ACPIBase->ACPIB_ACPI_LAPIC) )) SMP_Group->SMP_APIC = mpcf->mpc_lapic;
+    SMP_Group->SMP_APIC = (APTR)mpcf->mpc_lapic;
 
     /*  Now process the configuration blocks.   */
 
@@ -508,7 +504,7 @@ int smp_read_mpcfb(struct mp_config_table *mpcf, struct CPUBase *CPUBase)
 	    {
 		struct mpc_config_processor *mc= (struct mpc_config_processor *)mpt;
 		
-		if (!( ACPIBase )||( (ACPIBase) && (!ACPIBase->ACPIB_ACPI_LAPIC) )) parse_MP_Processor( mc, SMP_Group ); /* ACPI may have already provided this data */
+	parse_MP_Processor( mc, SMP_Group ); /* ACPI may have already provided this data */
 
                 mpt += sizeof( *mc );
 		count += sizeof( *mc );

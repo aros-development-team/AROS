@@ -20,19 +20,26 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CPUBase)
 {
     struct intel_mp_confblock       *mpcfb = NULL;
     struct CPU_Definition           *AvailCPUs = NULL;
-    struct i386_compat_intern       *BootCPU_intern = NULL;
-    struct  ACPIBase                *ACPIBase = NULL;
+    struct Library                  *ACPICABase = NULL;
 
     CPUBase->CPUB_BOOT_Physical = -1;                                                   /* set to a single cpu for now          */
     CPUBase->CPUB_BOOT_Logical = -1;
 
-    mpcfb = find_smp_config();
+    /*  Parse the ACPI tables for possible boot-time SMP configuration. */
+    CPUBase->CPUB_ACPICABase = OpenLibrary("acpica.library",0);
+    kprintf(DEBUG_NAME_STR ": acpica.library @ %p\n",CPUBase->CPUB_ACPICABase);
+        
+    ACPICABase = CPUBase->CPUB_ACPICABase;
+    if (ACPICABase)
+        return TRUE;
+
+    mpcfb = (APTR)find_smp_config();
 
     if ( mpcfb )
     {
 	kprintf(DEBUG_NAME_STR ": Found SMP 1.4 MP table = 0x%p\n", mpcfb);
 	AllocAbs( 4096, mpcfb);
-	if (mpcfb->mpcf_physptr) AllocAbs( 4096, mpcfb->mpcf_physptr );
+	if (mpcfb->mpcf_physptr) AllocAbs( 4096, (APTR)mpcfb->mpcf_physptr );
 	kprintf(DEBUG_NAME_STR ": SMP Table(s) protected\n");
     }
     else kprintf(DEBUG_NAME_STR ": NO compatable SMP hardware found.\n");
@@ -54,11 +61,11 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CPUBase)
 	return FALSE;
     }
 
-#warning TODO: Patch functions with suitable replacements (bug fixes/speed ups) - BEFORE SMP SETUP!
+/* TODO: Patch functions with suitable replacements (bug fixes/speed ups) - BEFORE SMP SETUP! */
 
     if ( mpcfb )  /* SMP? */
     {
-	AllocAbs( 4096, smp_alloc_memory());                                    /* Create The Trampoline page..
+	AllocAbs( 4096, (APTR)smp_alloc_memory());                                    /* Create The Trampoline page..
 										 Has to be in very low memory so we can execute
 										 real-mode AP code.                               */
 	BootCPU->CPU_Private2 = mpcfb;                                          /* Store the pointer to the SMP config block        */
@@ -67,17 +74,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CPUBase)
 
     CPUBase->CPUB_Processors = AvailCPUs; // done !
 
-    AddTail(&AvailCPUs->CPU_CPUList,&BootCPU->CPU_CPUList);
+    AddTail((struct List *)&AvailCPUs->CPU_CPUList,(struct Node *)&BootCPU->CPU_CPUList);
     kprintf(DEBUG_NAME_STR ": CPU List created = 0x%p, Boot CPU inserted..0x%p\n",AvailCPUs,BootCPU);
-
-    /*  Parse the ACPI tables for possible boot-time SMP configuration. */
-    CPUBase->CPUB_ACPIBase = OpenResource("acpi.resource");
-    kprintf(DEBUG_NAME_STR ": acpi.resource @ %p\n",CPUBase->CPUB_ACPIBase);
-        
-    ACPIBase = CPUBase->CPUB_ACPIBase;
-    ACPIBase->ACPIB_CPUBase = CPUBase;                                          /* pass our base poiner over   */
-
-    //ACPI_Init();                                                                /* make sure ACPI is online .. */
 
     if (mpcfb) get_smp_config( mpcfb, CPUBase );
 
@@ -88,6 +86,7 @@ ADD2INITLIB(GM_UNIQUENAME(Init), 0)
 
 /* WARNING!!! THIS NEXT FUNCTION RUS IN KERNEL LAND _ NO DEBUG OUTPUT ETC>> BE CAREFULL! */
 
+#undef SysBase
 void prepare_primary_cpu(struct ExecBase *SysBase)
 {
     struct i386_compat_intern       *BootCPU_intern;
@@ -107,7 +106,7 @@ void prepare_primary_cpu(struct ExecBase *SysBase)
         if( BootCPU_intern )
         {
 
-#warning TODO: The next line is broken - fix the checkcpu function
+/* TODO: The next line is broken - fix the checkcpu function */
             i386_CheckCPU_Type( BootCPU_intern );
 
             BootCPU->CPU_Private1 = BootCPU_intern;
