@@ -58,7 +58,7 @@ AROS_UFP3S(struct ExecBase *, GM_UNIQUENAME(init),
  * COLDSTART level).
  * Such mechanism allows kernel.resource boot code to do some additional setup after
  * all SINGLETASK residents are run. Usually these are various lowlevel hardware resources
- * (like acpi.resource, efi.resource, etc) which can be needed for kernel.resource to
+ * (like acpica.library, efi.resource, etc) which can be needed for kernel.resource to
  * complete own setup. This helps to get rid of additional ROMTag hooks.
  * There's one more magic with this ROMTag: it's called twice. First time it's called manually
  * from within krnPrepareExecBase(), for initial ExecBase creation. This magic is described below.

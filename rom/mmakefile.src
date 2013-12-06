@@ -26,7 +26,7 @@ include $(TOP)/config/make.cfg
 
 # This metatarget represents all includes for SDK.
 # Note that it includes also some machine-specific modules (hostlib.resource,
-# acpi.resource, efi.resource, etc). This is because our SDK is universal.
+# acpica.library, efi.resource, etc). This is because our SDK is universal.
 
 #MM- includes-generate : \
 #MM     kernel-kernel-includes \

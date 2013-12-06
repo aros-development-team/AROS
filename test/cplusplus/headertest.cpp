@@ -6,8 +6,6 @@
 // get rid of a dbus error
 #define DBUS_API_SUBJECT_TO_CHANGE
 
-#include <hardware/acpi/acpi.h>
-
 // ADF redefines AROS types
 //#include <adf/adf_blk.h>
 //#include <adf/adf_defs.h>
