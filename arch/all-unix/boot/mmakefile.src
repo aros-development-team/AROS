@@ -4,10 +4,10 @@ include $(TOP)/config/make.cfg
 
 #MM boot-unix: kernel-bootstrap-hosted
 
+BOOTSTRAPCONF := $(AROSARCHDIR)/AROSBootstrap.conf
+
 #MM
 boot-unix: $(BOOTSTRAPCONF)
-
-BOOTSTRAPCONF := $(AROSARCHDIR)/AROSBootstrap.conf
 
 ifeq ($(AROS_TARGET_VARIANT),android)
 $(BOOTSTRAPCONF): INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap_android.conf
