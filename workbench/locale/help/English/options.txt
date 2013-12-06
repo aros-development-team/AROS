@@ -135,9 +135,9 @@ from this device. Do not add ':' at the end.
  Force power on all OHCI USB ports to ON and disable overcurrent detection. Known to be needed on
 Intel MacMini. Try this if your USB doesn't work.
 
- acpi.resource
+ acpica.library
 ================================================================================================
 
  noacpi
 
- Totally disables ACPI subsystem. acpi.resource is not initialized.
+ Totally disables ACPI subsystem. acpica.library is not initialized.
