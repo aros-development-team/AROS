@@ -464,7 +464,7 @@ ACPI_STATUS AcpiOsGetLine(char *Buffer, UINT32 BufferLength, UINT32 *BytesRead)
 /*
  * AROS Custom Code
  */
-LONG AcpiScanTables(char *Signature, const struct Hook *Hook, APTR UserData)
+LONG AcpiScanTables(const char *Signature, const struct Hook *Hook, APTR UserData)
 {
     int i;
     LONG count;
@@ -474,7 +474,7 @@ LONG AcpiScanTables(char *Signature, const struct Hook *Hook, APTR UserData)
         ACPI_TABLE_HEADER *hdr;
         IPTR ok;
 
-        err = AcpiGetTable(Signature, i, &hdr);
+        err = AcpiGetTable((ACPI_STRING)Signature, i, &hdr);
         if (err != AE_OK)
             break;
 
