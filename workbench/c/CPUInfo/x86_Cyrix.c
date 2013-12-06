@@ -16,7 +16,7 @@
 
 *****************************************************************************************************/
 
-#include "../x86.h"
+#include "x86.h"
 
 /********************************************
 		    Cyrix CPU Features
@@ -129,7 +129,7 @@ char *Cyrix_extended_feature_flags[] = {
         Cyrix specific information
  ********************************************/
 
-char    i386_cyrix_TLB_decode ( int tlb, char *BUFF_STR )
+char *i386_cyrix_TLB_decode ( int tlb, char *BUFF_STR )
 {
     switch(tlb & 0xff)
     {
@@ -142,6 +142,8 @@ char    i386_cyrix_TLB_decode ( int tlb, char *BUFF_STR )
         sprintf( BUFF_STR, "        L1 Cache: 16KB 4-way associative 16 bytes/line\n" );
         break;
     }
+
+    return BUFF_STR;
 }
 
 /********************************************/
@@ -149,8 +151,8 @@ char    i386_cyrix_TLB_decode ( int tlb, char *BUFF_STR )
 void    parse_i386_Cyrix ( int maxi, struct i386_compat_intern * CPUi386 )
 {
     struct  CPU_INTERN_DATA *global;
-    ULONG                   speed, maxei,unused;
-    int                     family = 0;
+    ULONG __unused__        speed, maxei,unused;
+    int __unused__          family = 0;
     char                    *BUFF_STR, *Cyrix_CPU_NAME, *Cyrix_CPU_IDENTITY, *Cyrix_CPU_FEATURES, *Cyrix_CPU_CACHE, *Cyrix_CPU_ADDR;
     int                     Cyrix_CPU_NAME_cnt, Cyrix_CPU_IDENTITY_cnt, Cyrix_CPU_FEATURES_cnt, Cyrix_CPU_CACHE_cnt, Cyrix_CPU_ADDR_cnt;
 
@@ -167,15 +169,13 @@ void    parse_i386_Cyrix ( int maxi, struct i386_compat_intern * CPUi386 )
 
         Cyrix_CPU_FEATURES_cnt = AddBufferLine( Cyrix_CPU_FEATURES_cnt, Cyrix_CPU_FEATURES, "    Cyrix-specific functions\n" );
 
-        int i;
-
         i386_cpuid(0x80000000,maxei,unused,unused,unused);
 
         /* Do standard stuff */
         if(maxi >= 1)
         {
             unsigned long                   eax,unused,edx;
-            int                             stepping,model,family,reserved;
+            int __unused__                  stepping,model,family,reserved;
 
             i386_cpuid(1,eax,unused,unused,edx);
 
@@ -283,7 +283,7 @@ void    parse_i386_Cyrix ( int maxi, struct i386_compat_intern * CPUi386 )
         if ( maxei >= 0x80000001 )
         {
             unsigned long                   eax, ebx, ecx, edx;
-            int                             stepping, model, family, reserved, i;
+            int __unused__                  stepping, model, family, reserved, i;
 
             i386_cpuid( 0x80000001, eax, ebx, ecx, edx );
 
@@ -321,7 +321,7 @@ void    parse_i386_Cyrix ( int maxi, struct i386_compat_intern * CPUi386 )
 
         if ( maxei >= 0x80000002 )                                              /* Processor identification string */
         {
-            char                namestring[49],*cp;
+            char __unused__     namestring[49],*cp;
             int                 j;
             cp = namestring;
             

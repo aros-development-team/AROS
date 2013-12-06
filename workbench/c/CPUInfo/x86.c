@@ -57,7 +57,7 @@ void    i386_getregs ( char *out, int eax,int ebx,int ecx,int edx )
 
 void    i386_printregs ( int eax,int ebx,int ecx,int edx )
 {
-    char                    *out[17];
+    char                    out[17];
     i386_getregs( out, eax, ebx, ecx, edx );
     printf( out );
 }
@@ -66,7 +66,7 @@ void    i386_printregs ( int eax,int ebx,int ecx,int edx )
 
 int     i386_sprintregs ( int buffpos, char *buffer, int eax,int ebx,int ecx,int edx) /* returns buffer position */
 {
-    char                    *out[17];
+    char                    out[17];
 	ULONG                   size;
 
     i386_getregs( out, eax, ebx, ecx, edx );
@@ -108,7 +108,7 @@ void    i386_Parse_MSR ( unsigned int msr, int size)
     unsigned long long          msrres;
 
     i386_rdmsr( msr, msrvala, msrvalb );
-    msrres = ( ( msrvalb << 32 ) | msrvala );
+    msrres = ( ( (unsigned long long)msrvalb << 32 ) | msrvala );
 
 	if ( msrres  == 1 )
     {
@@ -206,9 +206,10 @@ void    parse_i386 ( struct i386_compat_intern * CPUi386, ULONG CPU_ID )
     printf("    intern.x86_cpuid       : %08x\n",CPUi386->x86_cpuid);
     printf("    intern.x86_capability  : %08x\n",CPUi386->x86_capability); */
 
-    strVendor = &CPUi386->x86_vendor_id;
+    strVendor = (char *)&CPUi386->x86_vendor_id;
 
-#warning TODO: Insert code to verify CPUID instruction availability
+/* TODO: Insert code to verify CPUID instruction availability */
+    (void)strVendor;
 
     i386_cpuid(0,maxi,unused,unused,unused);
     maxi &= 0xffff;                                                     /* The high-order word is non-zero on some Cyrix CPUs */
@@ -322,9 +323,10 @@ void    parse_i386_Transmeta( int maxi, struct i386_compat_intern * CPUi386 )
 {
 
     struct  CPU_INTERN_DATA *global;
-    ULONG                   speed, maxei,unused;
-    int                     family = 0;
-    char                    *BUFF_STR;
+    ULONG                   speed;
+    //ULONG                   maxei,unused;
+    //int                     family = 0;
+    //char                    *BUFF_STR;
 
     if ((global = AllocMem(sizeof(struct CPU_INTERN_DATA),MEMF_PUBLIC|MEMF_CLEAR)))
     {
@@ -343,6 +345,7 @@ void    parse_i386_Transmeta( int maxi, struct i386_compat_intern * CPUi386 )
 
         //}
             speed = i386_approx_mhz();
+            (void)speed;
         }
     else
     {
@@ -361,13 +364,12 @@ void    parse_i386_UMC( int maxi, struct i386_compat_intern * CPUi386 )
 {
 
     struct  CPU_INTERN_DATA *global;
-    ULONG                   speed, maxei,unused;
-    int                     family = 0;
-    char                    *BUFF_STR;
+    ULONG                   speed;
 
     if ((global = AllocMem(sizeof(struct CPU_INTERN_DATA),MEMF_PUBLIC|MEMF_CLEAR)))
     {
             speed = i386_approx_mhz();
+            (void)speed;
     }
     else
     {
@@ -386,13 +388,11 @@ void    parse_i386_NexGen( int maxi, struct i386_compat_intern * CPUi386 )
 {
 
     struct  CPU_INTERN_DATA *global;
-    ULONG                   speed, maxei,unused;
-    int                     family = 0;
-    char                    *BUFF_STR;
+    //ULONG                   speed;
 
     if ((global = AllocMem(sizeof(struct CPU_INTERN_DATA),MEMF_PUBLIC|MEMF_CLEAR)))
     {
-            speed = i386_approx_mhz();
+            //speed = i386_approx_mhz();
     }
     else
     {
@@ -411,13 +411,11 @@ void    parse_i386_Centaur( int maxi, struct i386_compat_intern * CPUi386 )
 {
 
     struct  CPU_INTERN_DATA *global;
-    ULONG                   speed, maxei,unused;
-    int                     family = 0;
-    char                    *BUFF_STR;
+    //ULONG                   speed;
 
     if ((global = AllocMem(sizeof(struct CPU_INTERN_DATA),MEMF_PUBLIC|MEMF_CLEAR)))
     {
-            speed = i386_approx_mhz();
+            //speed = i386_approx_mhz();
     }
     else
     {
@@ -436,13 +434,12 @@ void    parse_i386_SiS( int maxi, struct i386_compat_intern * CPUi386 )
 {
 
     struct  CPU_INTERN_DATA *global;
-    ULONG                   speed, maxei,unused;
-    int                     family = 0;
-    char                    *BUFF_STR;
+    ULONG                   speed;
 
     if ((global = AllocMem(sizeof(struct CPU_INTERN_DATA),MEMF_PUBLIC|MEMF_CLEAR)))
     {
             speed = i386_approx_mhz();
+            (void)speed;
     }
     else
     {

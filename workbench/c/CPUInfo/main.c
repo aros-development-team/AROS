@@ -77,10 +77,8 @@ int     main ( void )
     struct      RDArgs              *rda;
     struct      MinNode             *CPUNode, *FamilyNode;
     int                             cpu_count, family_count, currentFamily;
-    int                             result;
     int                             error = RETURN_OK;
     IPTR                            args[NOOFARGS] = { (IPTR)FALSE, };
-    ULONG  buffers = 0;
 
     rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 
@@ -96,7 +94,7 @@ int     main ( void )
 
     if (VERBOSE) printf( " Performing VERBOSE Probe...\n\n" );
 
-    if ( CPUResBase = OpenResource( "cpu.resource" ) )
+    if (( CPUResBase = OpenResource( "cpu.resource" ) ))
     {
         cpu_count = 0;  /* Initialise the cpu list counter */
         CPUList = (struct CPU_Definition *)CPUResBase->CPUB_Processors;
@@ -123,7 +121,7 @@ int     main ( void )
             FoundCPUs = (struct CPU_Definition *)CPUList->CPU_CPUList.mlh_Head;
 
             printf( "Processor Family ID  : %d\n", FoundFamilies->CPUF_FamilyID );
-            printf( "Processor Family Name: %s\nn", FoundFamilies->CPUF_Name );
+            printf( "Processor Family Name: %s\nn", (char *)FoundFamilies->CPUF_Name );
             printf( "Processor Handler    @ %p\nn", FoundFamilies->CPUF_Resource );
 
             currentFamily = FoundFamilies->CPUF_FamilyID;
@@ -140,8 +138,8 @@ int     main ( void )
                         if ( FoundCPUs->CPU_IsOnline == TRUE) printf(" (online)\n");
                         else  printf( " (offline)\n" );
 
-                        printf( "  Processor Family : [%p]\n", FoundCPUs->CPU_Family );
-                        printf( "  Processor Model  : [%p]\n", FoundCPUs->CPU_Model );
+                        printf( "  Processor Family : [0x%08x]\n", FoundCPUs->CPU_Family );
+                        printf( "  Processor Model  : [0x%08x]\n", FoundCPUs->CPU_Model );
 
                         if ( VERBOSE )                                                              /* Perform a thorough CPU list? */
                         {
@@ -154,7 +152,7 @@ int     main ( void )
                         {
                             struct  SMP_Definition          *CPUsSMPGrp;
 
-                            CPUsSMPGrp   = FoundCPUs->CPU_SMPGroup;
+                            CPUsSMPGrp   = (struct SMP_Definition *)FoundCPUs->CPU_SMPGroup;
                             
                             /* . This CPU is a member of an SMP group .. */
                             printf("  Member of SMP Group @ %p\n", CPUsSMPGrp);
@@ -190,7 +188,7 @@ int     main ( void )
         if (cpu_count != (CPUList->CPU_Physical))
         {
             error = RETURN_FAIL;        
-            printf("WARNING: Number of CPU's in list != registered number (list = %p,Registered=  %p).\n",cpu_count,CPUList->CPU_Physical);
+            printf("WARNING: Number of CPU's in list != registered number (list = %d,Registered=  %d).\n",cpu_count, CPUList->CPU_Physical);
         }
     }
     else 

@@ -52,7 +52,14 @@
 
 #include    <hardware/cpu/cpu_i386.h>
 
-#include "../cpuinfo.h"
+#include "cpuinfo.h"
+
+#ifdef __GNUC__
+#define __unused__ __attribute__((__unused__))
+#else
+#undef __unused__
+#define __unused__
+#endif
 
 /********************************************
 		       ASM Functions
