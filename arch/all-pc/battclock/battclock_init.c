@@ -9,10 +9,11 @@
 /* auto init */
 static int BattClock_Init(struct BattClockBase *BattClockBase)
 {
+    struct Library *ACPICABase;
     InitSemaphore(&BattClockBase->sem);
     BattClockBase->century = CENTURY;	/* Default offset */
 
-    if (ACPICABase)
+    if ((ACPICABase = OpenLibrary("acpica.library",0)))
     {
         ACPI_TABLE_FADT *fadt;
         ACPI_STATUS err;
