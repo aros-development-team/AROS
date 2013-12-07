@@ -3,7 +3,6 @@
 #include <aros/symbolsets.h>
 #include <exec/memory.h>
 #include <utility/hooks.h>
-#include <proto/acpi.h>
 #include <proto/exec.h>
 #include <proto/acpica.h>
 

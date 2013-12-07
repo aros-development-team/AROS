@@ -41,7 +41,6 @@
 
 #include <hardware/custom.h>
 
-//#include <proto/acpi.h>
 #include <proto/exec.h>
 #include <proto/cpu.h>
 

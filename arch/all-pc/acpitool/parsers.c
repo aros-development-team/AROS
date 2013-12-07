@@ -1,5 +1,3 @@
-#include <proto/acpi.h>
-
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
