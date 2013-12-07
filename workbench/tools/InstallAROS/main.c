@@ -64,7 +64,7 @@
 #define inputFile_path          "Prefs/Input\""
 #define prefssrc_path           "ENV:SYS"
 #define prefs_path              "Prefs/Env-Archive/SYS"
-#define BOOT_PATH               "boot"
+#define ARCH_PATH               "Arch/pc"
 #define GRUB_PATH               "grub"
 
 #define locale_prfs_file        "locale.prefs"  /* please note the suffixed \" */
@@ -794,7 +794,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                     tmp_grub = AllocVec(100, MEMF_CLEAR | MEMF_PUBLIC);
 
                     GET(dest_volume, MUIA_String_Contents, &option);
-                    sprintf(tmp_grub, "%s:boot/grub",
+                    sprintf(tmp_grub, "%s:Arch/pc/grub",
                         (CONST_STRPTR) option);
 
                     /* Guess the best disk to install GRUB's bootblock to */
@@ -2008,6 +2008,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         TEXT tmp[100];
         BOOL success = FALSE;
         CONST_STRPTR core_dirs[] = {
+            "Arch", "Arch",
             "C", "C",
             "Classes", "Classes",
             "Devs", "Devs",
@@ -2034,13 +2035,6 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
             "Copying Core System files...");
         sprintf(destinationPath, "%s:", dest_Path);
         CopyDirArray(CLASS, self, source_Path, destinationPath, core_dirs);
-
-        /* Copy kernel files */
-        strcpy(tmp, source_Path);
-        AddPart(tmp, BOOT_PATH, 100);
-        sprintf(destinationPath, "%s:%s", dest_Path, BOOT_PATH);
-        DoMethod(self, MUIM_IC_CopyFiles, tmp, destinationPath, "#?",
-            FALSE);
 
         /* Copy AROS.boot file */
         sprintf(tmp, "%s", source_Path);
@@ -2163,16 +2157,12 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
     GET(data->instc_options_main->opt_bootloader, MUIA_Selected, &option);
     if (option && (data->inst_success == MUIV_Inst_InProgress))
     {
-        CONST_STRPTR grub2_dirs[] = {
-            "grub", "grub",
-            NULL
-        };
         int numgrubfiles = 0, file_count = 0;
         LONG part_no;
         ULONG srcLen =
-            strlen(source_Path) + strlen(BOOT_PATH) + strlen(GRUB_PATH) + 4;
+            strlen(source_Path) + strlen(ARCH_PATH) + strlen(GRUB_PATH) + 4;
         ULONG dstLen =
-            strlen(dest_Path) + strlen(BOOT_PATH) + strlen(GRUB_PATH) + 4;
+            strlen(dest_Path) + strlen(ARCH_PATH) + strlen(GRUB_PATH) + 4;
         TEXT srcPath[srcLen];
         TEXT dstPath[dstLen];
         TEXT tmp[256];
@@ -2184,8 +2174,8 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         SET(data->label, MUIA_Text_Contents, "Copying BOOT files...");
 
         strcpy(srcPath, source_Path);
-        AddPart(srcPath, BOOT_PATH, srcLen);
-        sprintf(dstPath, "%s:%s", dest_Path, BOOT_PATH);
+        AddPart(srcPath, ARCH_PATH, srcLen);
+        sprintf(dstPath, "%s:%s", dest_Path, ARCH_PATH);
 
         /* Get drive chosen to install GRUB bootblock to */
         GET(grub_device, MUIA_String_Contents, &option);
@@ -2195,13 +2185,6 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         switch (BootLoaderType)
         {
         case BOOTLOADER_GRUB2:
-
-            /* Copying Core system Files */
-            D(bug("[INSTALLER] Copying Core files...\n"));
-            SET(data->label, MUIA_Text_Contents,
-                "Copying bootloader files...");
-            CopyDirArray(CLASS, self, srcPath, dstPath, grub2_dirs);
-
             AddPart(srcPath, GRUB_PATH, srcLen);
             AddPart(dstPath, GRUB_PATH, dstLen);
 
