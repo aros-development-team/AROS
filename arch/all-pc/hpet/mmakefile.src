@@ -10,6 +10,6 @@ USER_CFLAGS += -DDEBUG=1
 
 %build_module mmake=kernel-pc-hpet \
   modname=hpet modtype=resource \
-  files="$(FILES) $(FUNCS)"
+  files="$(FILES) $(FUNCS)" uselibs=acpica
 
 %common

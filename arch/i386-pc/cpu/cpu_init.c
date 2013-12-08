@@ -16,20 +16,20 @@ void i386_CheckCPU_Type( struct i386_compat_intern *CPU_intern );
 
 static struct CPU_Definition *BootCPU;                      /* Pointer used by the exec launched boot cpu probe */ 
 
+/* acpica.library is optional */
+struct Library *ACPICABase = NULL;
+
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CPUBase)
 {
     struct intel_mp_confblock       *mpcfb = NULL;
     struct CPU_Definition           *AvailCPUs = NULL;
-    struct Library                  *ACPICABase = NULL;
 
     CPUBase->CPUB_BOOT_Physical = -1;                                                   /* set to a single cpu for now          */
     CPUBase->CPUB_BOOT_Logical = -1;
 
     /*  Parse the ACPI tables for possible boot-time SMP configuration. */
-    CPUBase->CPUB_ACPICABase = OpenLibrary("acpica.library",0);
-    kprintf(DEBUG_NAME_STR ": acpica.library @ %p\n",CPUBase->CPUB_ACPICABase);
-        
-    ACPICABase = CPUBase->CPUB_ACPICABase;
+    ACPICABase = OpenLibrary("acpica.library",0);
+    kprintf(DEBUG_NAME_STR ": acpica.library @ %p\n", ACPICABase);
     if (ACPICABase)
         return TRUE;
 

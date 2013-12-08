@@ -13,6 +13,6 @@ EXEDIR      := $(AROSDIR)/Tools
 
 %build_prog mmake=workbench-tools-acpitool \
     progname=ACPITool targetdir=$(EXEDIR) \
-    files=$(FILES)
+    files=$(FILES) uselibs=acpica
 
 %common

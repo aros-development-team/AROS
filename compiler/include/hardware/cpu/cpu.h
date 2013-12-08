@@ -110,7 +110,6 @@ struct CPUBase
     struct  Node                CPUB_Node;
     struct  ExecBase            *CPUB_SysBase;
     struct  UtilityBase         *CPUB_UtilBase;
-    struct  Library             *CPUB_ACPICABase;
     struct  PICBase             *CPUB_PICBase;
 
     struct SignalSemaphore      CPUB_ListLock;                   /* Control access to the cpu list..                         */

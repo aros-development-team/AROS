@@ -8,6 +8,9 @@
 
 #include "hpet_intern.h"
 
+/* acpica.library is optional */
+struct Library *ACPICABase = NULL;
+
 AROS_UFH3(static BOOL, hpetEnumFunc,
 	  AROS_UFHA(struct Hook *, hook, A0),
 	  AROS_UFHA(ACPI_TABLE_HPET *, table, A2),
@@ -50,8 +53,6 @@ static const struct Hook enumHook =
 
 static int hpet_Init(struct HPETBase *base)
 {
-    struct Library *ACPICABase;
-
     base->unitCnt = 0;
 
     ACPICABase = OpenLibrary("acpica.library", 0);
@@ -71,12 +72,14 @@ static int hpet_Init(struct HPETBase *base)
             base->unitCnt = 0;
             AcpiScanTables("HPET", &enumHook, base);
             CloseLibrary(ACPICABase);
+            ACPICABase = NULL;
 
             return TRUE;
         }
     }
 
     CloseLibrary(ACPICABase);
+    ACPICABase = NULL;
     return TRUE;
 }
 

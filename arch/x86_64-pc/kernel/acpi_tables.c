@@ -18,12 +18,14 @@
 #include "apic.h"
 
 #define D(x) x
+
+/* acpica.library is optional */
+struct Library *ACPICABase = NULL;
    
 ULONG acpi_Initialize(void)
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
-    struct Library *ACPICABase;
         
     ACPICABase = OpenLibrary("acpica.library", 0);
 
@@ -39,9 +41,10 @@ ULONG acpi_Initialize(void)
      * ACPI exists. Parse all the data.
      * Currently we only initialize local APIC.
      */
-    pdata->kb_APIC = acpi_APIC_Init(ACPICABase);
+    pdata->kb_APIC = acpi_APIC_Init();
 
     CloseLibrary(ACPICABase);
+    ACPICABase = NULL;
 
     return 1;
 }

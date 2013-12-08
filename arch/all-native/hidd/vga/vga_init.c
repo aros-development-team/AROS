@@ -31,6 +31,9 @@ extern struct vgaModeDesc vgaDefMode[];
 #define DEBUG 0
 #include <aros/debug.h>
 
+/* ACPICABase is optional */
+struct Library *ACPICABase = NULL;
+
 OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddChunkyBMAttrBase;
 OOP_AttrBase HiddPixFmtAttrBase;
@@ -55,7 +58,6 @@ static int PCVGA_Init(LIBBASETYPEPTR LIBBASE)
     struct GfxBase *GfxBase;
     struct vga_staticdata *xsd = &LIBBASE->vsd;
     struct vgaModeEntry *entry;
-    struct Library *ACPICABase;
     BOOL res = FALSE;
     int i;
 
@@ -75,9 +77,11 @@ static int PCVGA_Init(LIBBASETYPEPTR LIBBASE)
         {
             D(bug("[VGA] Disabled by ACPI\n"));
             CloseLibrary(ACPICABase);
+            ACPICABase = NULL;
             return FALSE;
         }
         CloseLibrary(ACPICABase);
+        ACPICABase = NULL;
     }
 
     InitSemaphore(&xsd->sema);
