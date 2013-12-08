@@ -19,27 +19,10 @@
 
 #include <devices/timer.h>
 
-#include "acpi.h"
-#include "accommon.h"
-#include "amlcode.h"
-#include "acparser.h"
-#include "acdebug.h"
-#include "acmacros.h"
+#include "acpica_intern.h"
 
 #define _COMPONENT          ACPI_OS_SERVICES
         ACPI_MODULE_NAME    ("osarosxf")
-
-struct ACPICABase {
-    struct Library ab_Lib;
-    struct MsgPort *ab_TimeMsgPort;
-    struct timerequest *ab_TimeRequest;
-    struct Library *ab_TimerBase;
-
-    ACPI_MCFG_ALLOCATION *ab_PCI;
-    int ab_PCIs;
-
-    ACPI_PHYSICAL_ADDRESS ab_RootPointer;
-};
 
 #if 1 /* Use a global. Icky */
 struct ACPICABase *Global_ACPICABase;
