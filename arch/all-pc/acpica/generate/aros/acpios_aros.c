@@ -5,6 +5,7 @@
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
+#define __ACPICA_NOLIBBASE__
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -15,6 +16,8 @@
 #include <proto/efi.h>
 #include <proto/kernel.h>
 
+#include <proto/acpica.h>
+
 #include <asm/io.h>
 
 #include <devices/timer.h>
@@ -24,16 +27,17 @@
 #define _COMPONENT          ACPI_OS_SERVICES
         ACPI_MODULE_NAME    ("osarosxf")
 
-#if 1 /* Use a global. Icky */
-struct ACPICABase *Global_ACPICABase;
-
-#define NEED_ACPICABASE         struct ACPICABase *ACPICABase = Global_ACPICABase;
-#define THIS_ACPICABASE(base)   Global_ACPICABase = base
-#endif
+/* FIXME: __aros_getbase_ACPICABase() for internal use should be handled
+   properly by genmodule
+*/
+#undef __aros_getbase_ACPICABase
+struct Library *__aros_getbase_ACPICABase(void);
 
 ACPI_STATUS AcpiOsInitialize (void)
 {
-    NEED_ACPICABASE
+    struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
+
+    D(bug("[ACPI]AcpiOsInitialize(): ACPICABase=0x%x\n", ACPICABase));
 
     if ((ACPICABase->ab_TimeMsgPort = CreateMsgPort())) {
         if ((ACPICABase->ab_TimeRequest = CreateIORequest(ACPICABase->ab_TimeMsgPort, sizeof(*ACPICABase->ab_TimeRequest)))) {
@@ -48,7 +52,9 @@ ACPI_STATUS AcpiOsInitialize (void)
 
 ACPI_STATUS AcpiOsTerminate (void)
 {
-    NEED_ACPICABASE
+    struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
+
+    D(bug("[ACPI]AcpiOsTerminate(): ACPICABase=0x%x\n", ACPICABase));
 
     DeleteIORequest(ACPICABase->ab_TimeRequest);
     DeleteMsgPort(ACPICABase->ab_TimeMsgPort);
@@ -58,7 +64,9 @@ ACPI_STATUS AcpiOsTerminate (void)
 
 ACPI_PHYSICAL_ADDRESS AcpiOsGetRootPointer(void)
 {
-    NEED_ACPICABASE
+    struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
+
+    D(bug("[ACPI]AcpiOsGetRootPointer(): ACPICABase=0x%x\n", ACPICABase));
 
     if (ACPICABase->ab_RootPointer == 0) {
         struct Library *EFIBase = OpenResource("efi.resource");
@@ -162,7 +170,9 @@ ACPI_STATUS AcpiOsExecute(ACPI_EXECUTE_TYPE Type, ACPI_OSD_EXEC_CALLBACK Functio
 
 void AcpiOsSleep(UINT64 Milliseconds)
 {
-    NEED_ACPICABASE
+    struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
+
+    D(bug("[ACPI]AcpiOsSleep(): ACPICABase=0x%x\n", ACPICABase));
 
     ACPICABase->ab_TimeRequest->tr_node.io_Command = TR_ADDREQUEST;
     ACPICABase->ab_TimeRequest->tr_time.tv_secs = Milliseconds / 1000;
@@ -172,7 +182,9 @@ void AcpiOsSleep(UINT64 Milliseconds)
 
 void AcpiOsStall(UINT32 Microseconds)
 {
-    NEED_ACPICABASE
+    struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
+
+    D(bug("[ACPI]AcpiOsStall(): ACPICABase=0x%x\n", ACPICABase));
 
     ACPICABase->ab_TimeRequest->tr_node.io_Command = TR_ADDREQUEST;
     ACPICABase->ab_TimeRequest->tr_time.tv_secs = Microseconds / 1000000;
@@ -360,9 +372,10 @@ static UINT8 *find_pci(struct ACPICABase *ACPICABase, ACPI_PCI_ID *PciId)
 
 ACPI_STATUS AcpiOsReadPciConfiguration(ACPI_PCI_ID *PciId, UINT32 Register, UINT64 *Value, UINT32 Width)
 {
+    struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
     UINT8 *ecam;
 
-    NEED_ACPICABASE
+    D(bug("[ACPI]AcpiOsReadPciConfiguration(): ACPICABase=0x%x\n", ACPICABase));
 
     if ((ecam = find_pci(ACPICABase, PciId))) {
         UINT32 offset = (PciId->Bus << 20) | (PciId->Device << 15) | (PciId->Function << 12) | Register;
@@ -382,9 +395,10 @@ ACPI_STATUS AcpiOsReadPciConfiguration(ACPI_PCI_ID *PciId, UINT32 Register, UINT
 
 ACPI_STATUS AcpiOsWritePciConfiguration(ACPI_PCI_ID *PciId, UINT32 Register, UINT64 Value, UINT32 Width)
 {
+    struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
     UINT8 *ecam;
 
-    NEED_ACPICABASE
+    D(bug("[ACPI]AcpiOsWritePciConfiguration(): ACPICABase=0x%x\n", ACPICABase));
 
     if ((ecam = find_pci(ACPICABase, PciId))) {
         UINT32 offset = (PciId->Bus << 20) | (PciId->Device << 15) | (PciId->Function << 12) | Register;
@@ -420,10 +434,11 @@ void AcpiOsVprintf(const char *Format, va_list Args)
  */
 UINT64 AcpiOsGetTimer(void)
 {
+    struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
     struct Library *TimerBase;
     struct timeval tv;
 
-    NEED_ACPICABASE
+    D(bug("[ACPI]AcpiOsGetTimer(): ACPICABase=0x%x\n", ACPICABase));
 
     TimerBase = ACPICABase->ab_TimerBase;
 
@@ -515,6 +530,8 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
     ACPI_STATUS err;
     struct Library *KernelBase;
 
+    D(bug("[ACPI]ACPICA_init(ACPICABase=0x%x)\n", ACPICABase));
+
     if ((KernelBase = OpenResource("kernel.resource"))) {
         struct TagItem *cmdline = LibFindTagItem(KRN_CmdLine, KrnGetBootInfo());
 
@@ -523,8 +540,6 @@ int ACPICA_init(struct ACPICABase *ACPICABase)
             return FALSE;
         }
     }
-
-    THIS_ACPICABASE(ACPICABase);
 
     AcpiDbgLevel = ~0;
 
