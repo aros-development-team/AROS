@@ -255,7 +255,7 @@ void acpi_APIC_InitCPU(struct APICData *data, IPTR cpuNum)
 }
 
 /* Initialize APIC from ACPI data */
-struct APICData *acpi_APIC_Init(struct Library *ACPICABase)
+struct APICData *acpi_APIC_Init(void)
 {
     ULONG result;
     ACPI_STATUS err;
@@ -286,8 +286,7 @@ struct APICData *acpi_APIC_Init(struct Library *ACPICABase)
 	    return NULL;
 
         data->lapicBase = madt->Address;
-        data->acpicaBase  = ACPICABase;	/* Cache ACPI data for secondary cores */
-        data->acpi_madt = madt;
+        data->acpi_madt = madt;	/* Cache ACPI data for secondary cores */
         data->count	= 1;		/* Only one CPU is running right now */
         data->flags     = ((madt->Flags & ACPI_MADT_PCAT_COMPAT) == ACPI_MADT_MULTIPLE_APIC) ? APF_8259 : 0;
 

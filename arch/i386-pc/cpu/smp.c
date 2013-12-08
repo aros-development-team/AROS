@@ -341,9 +341,6 @@ void get_smp_config ( struct intel_mp_confblock *mpcfb, struct CPUBase *CPUBase)
     struct  SMP_Definition  *SMP_Group;
     BOOL                    SMPERROR = FALSE;
     ULONG                   pic_mode;
-    struct  Library         *ACPICABase;
-
-    ACPICABase = CPUBase->CPUB_ACPICABase;
 
     kprintf(DEBUG_NAME_STR ": Processing SMP config...\n");
 
@@ -430,7 +427,7 @@ struct SMP_Definition *smp_read_mpcfb(struct mp_config_table *mpcf, struct CPUBa
     unsigned char                   *mpt = ((unsigned char *)mpcf) + count;
     struct  SMP_Definition          *SMP_Group;
 
-    if (CPUBase->CPUB_ACPICABase)
+    if (ACPICABase)
         return NULL;
 
     if (memcmp(mpcf->mpc_signature,MPC_SIGNATURE,4))

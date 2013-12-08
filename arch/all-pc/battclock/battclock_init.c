@@ -6,10 +6,12 @@
 #include "battclock_intern.h"
 #include "cmos.h"
 
+/* acpica.library is optional */
+struct Library *ACPICABase = NULL;
+
 /* auto init */
 static int BattClock_Init(struct BattClockBase *BattClockBase)
 {
-    struct Library *ACPICABase;
     InitSemaphore(&BattClockBase->sem);
     BattClockBase->century = CENTURY;	/* Default offset */
 
@@ -27,6 +29,8 @@ static int BattClock_Init(struct BattClockBase *BattClockBase)
                 BattClockBase->century = fadt->Century;
             }
         }
+        CloseLibrary(ACPICABase);
+        ACPICABase = NULL;
     }
 
     return 1;

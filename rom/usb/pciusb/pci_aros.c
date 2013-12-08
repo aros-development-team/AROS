@@ -20,15 +20,10 @@
 #include "uhwcmd.h"
 #include "ohciproto.h"
 
-#ifdef __i386__
-#define HAVE_ACPI
-#endif
-#ifdef __x86_64__
-#define HAVE_ACPI
-#endif
-
-#ifdef HAVE_ACPI
+#ifdef HAVE_ACPICA
 #include <proto/acpica.h>
+/* acpica.library is optional */
+struct Library *ACPICABase = NULL;
 #endif
 
 
@@ -622,8 +617,7 @@ APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr)
 static int getArguments(struct PCIDevice *base)
 {
     APTR BootLoaderBase;
-#ifdef HAVE_ACPI
-    struct Library *ACPICABase;
+#ifdef HAVE_ACPICA
 
     if ((ACPICABase = OpenLibrary("acpica.library", 0))) {
         /*
@@ -643,6 +637,7 @@ static int getArguments(struct PCIDevice *base)
             }
         }
         CloseLibrary(ACPICABase);
+        ACPICABase = NULL;
     }
 #endif
 

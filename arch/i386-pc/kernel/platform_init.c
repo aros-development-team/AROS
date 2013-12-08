@@ -79,9 +79,8 @@ static int PlatformInit(struct KernelBase *KernelBase)
 
 ADD2INITLIB(PlatformInit, 10);
 
-/* This must be global, since acpica.library is a rellib
- */
-struct Library *ACPICABase;
+/* acpica.library is optional */
+struct Library *ACPICABase = NULL;
 
 void PlatformPostInit(void)
 {
@@ -90,7 +89,7 @@ void PlatformPostInit(void)
     ACPICABase = OpenLibrary("acpica.library", 0);
 
     if (ACPICABase)
-        pdata->kb_APIC = acpi_APIC_Init(ACPICABase);
+        pdata->kb_APIC = acpi_APIC_Init();
 
     if (!pdata->kb_APIC)
     {

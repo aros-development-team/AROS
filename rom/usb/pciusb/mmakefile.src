@@ -11,6 +11,13 @@ kernel-usb-pciusb-directories ::
 
 #MM- kernel-usb-pciusb : kernel-usb-pciusb-directories 
 
+#FIXME: Currently pciusb.device is different when compiled for pc or not.
+#       It should thus normally be in SYS:Arch but it is not ATM.
+ifeq ($(ARCH),pc)
+USER_CFLAGS := -DHAVE_ACPICA=1
+USER_LDFLAGS := -lacpica
+endif
+
 %build_module mmake=kernel-usb-pciusb \
     modname=pciusb modtype=device \
     moduledir=Devs/USBHardware \

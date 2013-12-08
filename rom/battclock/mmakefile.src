@@ -11,6 +11,11 @@ ifneq ($(FAMILY),)
     USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/battclock
 endif
 USER_INCLUDES += -I$(SRCDIR)/rom/battclock
+# uselibs parameter from %build_module is not fit (yet) for optional libs
+# use good old USER_LDFLAGS instead for the moment
+ifeq ($(ARCH),pc)
+    USER_LDFLAGS := -lacpica
+endif
 
 #MM kernel-battclock : includes kernel-battclock-$(ARCH)-$(CPU)
 #MM kernel-battclock-linklib : includes kernel-battclock-$(ARCH)-$(CPU)
