@@ -87,14 +87,14 @@ endif
 #
 %define link_module_q cmd=$(AROS_CC) err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	@$(ECHO) "Building   $(subst $(TARGETDIR)/,,$@) ..."
-	@if %(cmd) $(NOSTARTUP_LDFLAGS) -nostdc %(ldflags) \
+	@if %(cmd) $(NOSTARTUP_LDFLAGS) -nostdc \
 	    $(GENMAP) %(objdir)/%(module).map \
-	    %(objs) %(libs) %(endtag) \
+	    %(objs) %(libs) %(ldflags) %(endtag) \
 	    -o $@ 2>&1 > %(objdir)/%(err); \
 	then \
 	    cat %(objdir)/%(err); \
 	else \
-	    echo "%(cmd) $(NOSTARTUP_LDFLAGS) -nostdc %(ldflags) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(endtag) -o $@"; \
+	    echo "%(cmd) $(NOSTARTUP_LDFLAGS) -nostdc $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(ldflags) %(endtag) -o $@"; \
 	    cat %(objdir)/%(err); \
 	    exit 1; \
 	fi
