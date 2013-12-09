@@ -211,7 +211,7 @@ main (int argc, char ** argv)
 
     expungeprojects ();
 
-    chdir (currdir);
+    ASSERT(chdir (currdir) == 0);
 
     free (currdir);
 
