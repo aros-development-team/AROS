@@ -548,7 +548,6 @@ void ShowWarn(const char *msg, ...)
   if(!Quiet)
     {
     fprintf(stderr, (char *) msgWarning, ScanFile, ScanLine);
-#warning the following line produces segfault on x86_64
     vfprintf(stderr, msg, ptr);
     putc('\n', stderr);
     }
@@ -2634,7 +2633,7 @@ void Usage(void)
 
 {
   fputs((char *) msgUsageHead, stderr);
-  fprintf(stderr, ": FlexCat CDFILE/A,CTFILE,CATALOG/K,NEWCTFILE/K,SOURCES/M,\n                WARNCTGAPS/S,NOOPTIM/S,FILL/S,FLUSH/S,NOBEEP/S,\n                QUIET/S,NOLANGTOLOWER/S,NOBUFFEREDIO/S,\n                MODIFIED/S,COPYMSGNEW/S,OLDMSGNEW/K, NOSPACE/S\n\n", VString);
+  fprintf(stderr, ": FlexCat CDFILE/A,CTFILE,CATALOG/K,NEWCTFILE/K,SOURCES/M,\n                WARNCTGAPS/S,NOOPTIM/S,FILL/S,FLUSH/S,NOBEEP/S,\n                QUIET/S,NOLANGTOLOWER/S,NOBUFFEREDIO/S,\n                MODIFIED/S,COPYMSGNEW/S,OLDMSGNEW/K, NOSPACE/S\n\n");
   fprintf(stderr, "%s\n%s\n%s\n%s\n", msgUsage, msgUsage_2, msgUsage_3, msgUsage_4 );
   fprintf(stderr, "\n\n%s"
 /*
