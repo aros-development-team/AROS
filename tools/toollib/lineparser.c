@@ -30,7 +30,11 @@ char *get_line(FILE *fd)
 
     fseek(fd, -len, SEEK_CUR);
     line = malloc( (len+1) * sizeof(char) );
-    fread(line, 1, len, fd);
+    count = fread(line, 1, len, fd);
+    if (count != len) {
+        free(line);
+        return NULL;
+    }
     line[len] = 0;
     len--;
 
