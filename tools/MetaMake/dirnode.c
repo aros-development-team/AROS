@@ -114,7 +114,7 @@ readtargets(struct DirNode * node, struct Makefile * makefile, FILE * fh)
 	    strcpy (ptr, line);
 	    xfree (line);
 	    line = ptr;
-	    fgets (line+strlen(line), linelen-strlen(line), fh);
+	    ASSERT(fgets (line+strlen(line), linelen-strlen(line), fh) != NULL);
 	}
 
 	if (line[strlen(line)-1] == '\n')
@@ -155,7 +155,7 @@ readtargets(struct DirNode * node, struct Makefile * makefile, FILE * fh)
 		    strcpy (ptr, line);
 		    xfree (line);
 		    line = ptr;
-		    fgets (line+strlen(line), linelen-strlen(line), fh);
+		    ASSERT(fgets (line+strlen(line), linelen-strlen(line), fh) != NULL);
 		    ptr = line + pos;
 		}
 
@@ -224,7 +224,7 @@ readtargets(struct DirNode * node, struct Makefile * makefile, FILE * fh)
 	    {
 		/* Line with only #MM, metatarget is on next line */
 		char ** targets;
-		fgets (line, linelen, fh);
+		ASSERT(fgets (line, linelen, fh) != NULL);
 		lineno ++;
 
 		ptr = line;
@@ -729,7 +729,7 @@ addmakefile (struct DirNode * node, const char * filename)
     struct DirNode * subnode;
     struct Makefile * makefile = NULL;
 
-    getcwd(curdir, PATH_MAX);
+    ASSERT(getcwd(curdir, PATH_MAX) != NULL);
 
     while (ptr != NULL)
     {
@@ -747,10 +747,10 @@ addmakefile (struct DirNode * node, const char * filename)
 	    if (subnode == NULL)
 	    {
 		xfree(name);
-		chdir (curdir);
+		ASSERT(chdir (curdir) == 0);
 		return NULL;
 	    }
-	    chdir (name);
+	    ASSERT(chdir (name) == 0);
 	    node = subnode;
 	    ptr = ptr + len + 1;
 	}
@@ -774,7 +774,7 @@ addmakefile (struct DirNode * node, const char * filename)
 		    if (stat (name, &st) != 0)
 		    {
 			xfree (name);
-			chdir (curdir);
+			ASSERT(chdir (curdir) == 0);
 			return NULL;
 		    }
 		    name[len]=0;
@@ -793,7 +793,7 @@ addmakefile (struct DirNode * node, const char * filename)
 	xfree (name);
     }
 
-    chdir (curdir);
+    ASSERT(chdir (curdir) == 0);
 
     return makefile;
 }

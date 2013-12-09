@@ -257,10 +257,11 @@ callmake (struct Project * prj, const char * tname, struct Makefile * makefile)
     debug(printf("MMAKE:project.c->callmake()\n"));
 
     if (makefile->generated)
-        chdir (prj->buildtop);
+        ASSERT(chdir (prj->buildtop) == 0);
     else
-        chdir (prj->srctop);
-    chdir (path);
+        ASSERT(chdir (prj->srctop) == 0);
+    if (path[0] != 0)
+        ASSERT(chdir (path) == 0);
 
     setvar (&prj->vars, "CURDIR", path);
     setvar (&prj->vars, "TARGET", tname);
@@ -554,7 +555,7 @@ maketarget (struct Project * prj, char * tname)
 
     NewList (&deps);
 
-    chdir (prj->srctop);
+    ASSERT(chdir (prj->srctop) == 0);
 
     readvars (prj);
 

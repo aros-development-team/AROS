@@ -58,16 +58,14 @@ readstring (FILE * fh, char **strptr)
     uint32_t in;
     int32_t len;
 
-    fread(&in, sizeof(in), 1, fh);
-    if (ferror(fh))
+    if (fread(&in, sizeof(in), 1, fh) != 1)
 	return 0;
 
     len = ntohl(in);
     if (len>0)
     {
 	*strptr = xmalloc (len+1);
-	fread (*strptr, len, 1, fh);
-	if (ferror(fh))
+	if (fread (*strptr, len, 1, fh) != 1)
 	{
 	    xfree (*strptr);
 	    return 0;
@@ -98,9 +96,11 @@ readint32 (FILE * fh, int32_t * iptr)
 {
     uint32_t in;
 
-    fread(&in, sizeof(in), 1, fh);
-    if (!ferror(fh))
-	*iptr = ntohl(in);
+    if (fread(&in, sizeof(in), 1, fh) == 1)
+        *iptr = ntohl(in);
+    else
+        *iptr = 0;
+
 
     return !ferror(fh);
 }
@@ -121,9 +121,10 @@ readuint32 (FILE * fh, uint32_t * iptr)
 {
     uint32_t in;
 
-    fread(&in, sizeof(in), 1, fh);
-    if (!ferror(fh))
-	*iptr = ntohl(in);
+    if (fread(&in, sizeof(in), 1, fh) == 1)
+        *iptr = ntohl(in);
+    else
+        *iptr = 0;
 
     return !ferror(fh);
 }

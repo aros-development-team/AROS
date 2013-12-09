@@ -331,7 +331,7 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
 	static char currdir[PATH_MAX];
 	struct Regenerate *reg = new (struct Regenerate);
 
-	getcwd(currdir, PATH_MAX);
+	ASSERT(getcwd(currdir, PATH_MAX) != NULL);
 	reg->dir = xstrdup (buildpath(makefile->dir));
 	reg->src = mfsrc;
 	reg->dest = xstrdup (makefile->node.name);
@@ -390,7 +390,7 @@ updatemflist (struct Cache_priv * cache, struct DirNode * node, struct List * re
     }
 
     if (goup)
-	chdir(curdir);
+	ASSERT(chdir(curdir) == 0);
 
     progress (stdout);
 
@@ -618,7 +618,7 @@ activatecache (struct Project *prj)
     }
 
     /* Add the extra makefiles to the tree if needed */
-    chdir (cache->project->buildtop);
+    ASSERT(chdir (cache->project->buildtop) == 0);
     NewList (&newadded);
     ForeachNode (&cache->project->extramakefiles, extrafile)
     {

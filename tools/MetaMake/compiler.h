@@ -1,6 +1,9 @@
 #ifndef __COMPILER_H
 #define __COMPILER_H
 
+#include <assert.h>
+#define ASSERT(x)   assert(x)
+
 #if defined __GNUC__ && defined __GNUC_MINOR__
 #    define __GNUC_PREREQ(maj, min) \
          ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
