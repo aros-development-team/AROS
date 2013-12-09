@@ -9,6 +9,8 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
+#include "acpica_intern.h"
+
 #include <hardware/efi/config.h>
 
 #include <proto/exec.h>
@@ -21,8 +23,6 @@
 #include <asm/io.h>
 
 #include <devices/timer.h>
-
-#include "acpica_intern.h"
 
 #define _COMPONENT          ACPI_OS_SERVICES
         ACPI_MODULE_NAME    ("osarosxf")

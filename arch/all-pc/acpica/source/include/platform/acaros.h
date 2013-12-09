@@ -61,16 +61,9 @@
 #error Unsupported hardware architecture!
 #endif
 
-#define COMPILER_DEPENDENT_INT64    int64_t
-#define COMPILER_DEPENDENT_UINT64   uint64_t
-
 #ifndef __cdecl
 #define __cdecl
 #endif
-
-#define ACPI_SPINLOCK   struct SignalSemaphore *
-#define ACPI_SEMAPHORE  struct SignalSemaphore *
-#define ACPI_UINTPTR_T  IPTR
 
 #define ACPI_FLUSH_CPU_CACHE()  CacheClearU()
 #define ACPI_ACQUIRE_GLOBAL_LOCK(facs,acq) \
@@ -87,5 +80,7 @@
 /* AROS uses GCC */
 
 #include "acgcc.h"
+
+#include <libraries/acpica.h>
 
 #endif /* __ACAROS_H__ */
