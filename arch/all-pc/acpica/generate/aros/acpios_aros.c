@@ -241,25 +241,80 @@ ACPI_STATUS AcpiOsSignalSemaphore(ACPI_SEMAPHORE Handle, UINT32 Units)
     return AE_OK;
 }
 
+/* FIXME: Use SpinLock primitives once they exist in kernel.resource! */
+#define MIN_PRI -128
+struct SpinLock {
+    volatile ULONG sl_Lock;
+};
+
+static inline struct SpinLock *CreateSpin(VOID)
+{
+    return AllocVec(sizeof(struct SpinLock), MEMF_ANY | MEMF_CLEAR);
+}
+
+static inline void DeleteSpin(struct SpinLock *sl)
+{
+    Disable();
+    while (sl->sl_Lock > 0) {
+        Enable();
+        sl->sl_Lock--;
+    }
+    Enable();
+
+    FreeVec(sl);
+}
+
+static inline VOID LockSpin(struct SpinLock *sl)
+{
+    BYTE pri, pri_lower;
+    struct Task *task = FindTask(NULL);
+
+    pri = task->tc_Node.ln_Pri;
+    pri_lower = pri;
+
+    do {
+        Disable();
+        if (sl->sl_Lock == 0) {
+            sl->sl_Lock++;
+            if (pri_lower != pri)
+                SetTaskPri(task, pri);
+            break;
+        }
+        Enable();
+        if (pri_lower > MIN_PRI)
+            pri_lower--;
+        SetTaskPri(task, pri_lower);
+    } while (1);
+}
+
+static inline void UnlockSpin(struct SpinLock *sl)
+{
+    sl->sl_Lock--;
+    Enable();
+}
+
 ACPI_STATUS AcpiOsCreateLock(ACPI_SPINLOCK *OutHandle)
 {
-    return AcpiOsCreateSemaphore (1, 1, OutHandle);
+    *OutHandle = CreateSpin();
+
+    return (*OutHandle == NULL) ? AE_NO_MEMORY : AE_OK;
 }
 
 void AcpiOsDeleteLock(ACPI_SPINLOCK Handle)
 {
-    AcpiOsDeleteSemaphore (Handle);
+    DeleteSpin(Handle);
 }
 
 ACPI_CPU_FLAGS AcpiOsAcquireLock(ACPI_SPINLOCK Handle)
 {
-    AcpiOsWaitSemaphore (Handle, 1, 0xFFFF);
-    return AE_OK;
+    LockSpin(Handle);
+    return 1;
 }
 
 void AcpiOsReleaseLock(ACPI_SPINLOCK Handle, ACPI_CPU_FLAGS Flags)
 {
-    AcpiOsSignalSemaphore (Handle, 1);
+    if (Flags == 1)
+        UnlockSpin(Handle);
 }
 
 struct AcpiOsInt {
