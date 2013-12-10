@@ -584,6 +584,16 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
 	}
 	D(kprintf("%s: Sector size: %d bytes\n", ATANAME(ap, atx), at->at_identify.sector_size));
 
+#if 1 /* Temporary debugging... */
+    int i;
+    kprintf("%s: ATA IDENTIFY\n", ATANAME(ap, atx));
+    for (i = 0; i < 128; i++) {
+        if ((i%8) == 0) kprintf("%s %3d:", ATANAME(ap, atx), i);
+        kprintf(" %04x", ((uint16_t *)(&at->at_identify))[i]);
+        if ((i%8) == 7) kprintf("\n");
+    }
+#endif
+
 	return (0);
 }
 
