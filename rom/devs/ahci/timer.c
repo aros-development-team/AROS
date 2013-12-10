@@ -13,7 +13,6 @@
  * 2005-03-05  T. Wiszkowski       created file; initial benchmarked nanowait and timer-based micro/sec wait
  */
 
-#define DEBUG 0
 #include <exec/types.h>
 #include <devices/timer.h>
 #include <exec/io.h>

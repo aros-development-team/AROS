@@ -33,7 +33,7 @@ int bus_dma_tag_create(bus_dma_tag_t parent, bus_size_t alignment, bus_size_t bo
 {
     bus_dma_tag_t tag;
 
-    D(bug("%s: Allocating tag, %d objects of size %d, aligned by %d\n", __func__, nsegments, maxsegsz, alignment));
+    D2(bug("%s: Allocating tag, %d objects of size %d, aligned by %d\n", __func__, nsegments, maxsegsz, alignment));
 
     if (nsegments > BUS_DMA_MAX_SEGMENTS) {
         D(bug("%s: Too many segments, max is %d\n", __func__, BUS_DMA_MAX_SEGMENTS));
@@ -53,7 +53,7 @@ int bus_dma_tag_create(bus_dma_tag_t parent, bus_size_t alignment, bus_size_t bo
 
     TAILQ_INIT(&tag->dt_slabs);
 
-    D(bug("%s: %p: Tag created\n", __func__, tag));
+    D2(bug("%s: %p: Tag created\n", __func__, tag));
 
     (*dmat) = tag;
     return 0;
@@ -94,7 +94,7 @@ static struct bus_dma_tag_slab *bus_dmamem_alloc_slab(bus_dma_tag_t tag)
     }
 
     slab->sl_segment = (APTR)(((IPTR)slab->sl_memory + boundary - 4) & ~(boundary-1));
-    D(bug("%s: %p: Memory %p, %dx%d segments at %p\n", __func__, tag, slab->sl_memory, tag->dt_nsegments, tag->dt_maxsegsz, slab->sl_segment));
+    D2(bug("%s: %p: Memory %p, %dx%d segments at %p\n", __func__, tag, slab->sl_memory, tag->dt_nsegments, tag->dt_maxsegsz, slab->sl_segment));
 
     slab->sl_segfree = tag->dt_nsegments;
 
@@ -122,7 +122,7 @@ int bus_dmamem_alloc(bus_dma_tag_t tag, void **vaddr, unsigned flags, bus_dmamap
         }
     }
 
-    D(bug("%s: %p: Slab %p 0x%08llx\n", __func__, tag, slab, slab->sl_segmap));
+    D2(bug("%s: %p: Slab %p 0x%08llx\n", __func__, tag, slab, slab->sl_segmap));
     for (i = 0; i < tag->dt_nsegments; i++ ) {
         if ((slab->sl_segmap & (1 << i)) == 0) {
             slab->sl_segmap |= (1 << i);
@@ -135,7 +135,7 @@ int bus_dmamem_alloc(bus_dma_tag_t tag, void **vaddr, unsigned flags, bus_dmamap
     if (flags & MEMF_CLEAR)
         memset(addr, 0, tag->dt_segsize);
 
-    D(bug("%s: %p: Allocated slot %d, %p: size %d\n", __func__, tag, i, addr, tag->dt_maxsegsz));
+    D2(bug("%s: %p: Allocated slot %d, %p: size %d\n", __func__, tag, i, addr, tag->dt_maxsegsz));
     if (vaddr)
         *vaddr = addr;
 

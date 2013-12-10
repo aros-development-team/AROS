@@ -9,8 +9,6 @@
 /* Maintainer: Jason S. McMullan <jason.mcmullan@gmail.com>
  */
 
-#define DEBUG 0
-
 #include <aros/debug.h>
 #include <aros/atomic.h>
 #include <aros/symbolsets.h>

@@ -18,6 +18,13 @@
 
 #include <aros/debug.h>
 
+#undef D2
+#if DEBUG > 1
+#define D2(x) x
+#else
+#define D2(x)
+#endif
+
 #include <proto/exec.h>
 #include <proto/oop.h>
 
