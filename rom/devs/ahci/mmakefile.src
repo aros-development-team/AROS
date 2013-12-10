@@ -18,6 +18,10 @@ FILES = ahci_init \
 USER_CFLAGS += -D__BSD_VISIBLE
 # Enable coalescing
 #USER_CFLAGS += -DAHCI_COALESCE
+# Enable ACHI debugging
+#USER_CFLAGS += -DAHCI_DEBUG
+# Enable AROS debugging
+#USER_CFLAGS += -DDEBUG=1
 
 %build_module mmake=kernel-ahci \
   modname=ahci modtype=device \

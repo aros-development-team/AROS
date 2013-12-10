@@ -9,8 +9,6 @@
 /* Maintainer: Jason S. McMullan <jason.mcmullan@gmail.com>
  */
 
-#define DEBUG 0
-
 #include <aros/debug.h>
 #include <aros/atomic.h>
 #include <aros/symbolsets.h>
@@ -84,6 +82,7 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         return TRUE;
     }
     if ((len & bmask) || len == 0) {
+        D(bug("[AHCI%02ld] IO %p Fault, io_Flags = %d, io_Command = %d, IOERR_BADLENGTH (len=0x%x, bmask=0x%x)\n", unit->sim_Unit, io, io->io_Flags, io->io_Command, len, bmask));
         io->io_Error = IOERR_BADLENGTH;
         return TRUE;
     }
@@ -342,6 +341,7 @@ bad_cmd:
         done = TRUE;
         break;
 bad_length:
+        D(bug("[AHCI%02ld] IO %p Fault, io_Flags = %d, io_Command = %d, IOERR_BADLENGTH (len = %d)\n", unit->sim_Unit, io, io->io_Flags, io->io_Command, len));
         io->io_Error = IOERR_BADLENGTH;
         done = TRUE;
         break;
@@ -365,7 +365,7 @@ bad_address:
         ReplyMsg(&io->io_Message);
 
     if (done)
-        D(bug("[AHCI%02ld] IO %p Quick, io_Flags = %d, io_Error = %d\n", unit->sim_Unit, io, io->io_Flags, io->io_Error));
+        D(bug("[AHCI%02ld] IO %p Quick, io_Flags = %d, io_Comand = %d, io_Error = %d\n", unit->sim_Unit, io, io->io_Flags, io->io_Command, io->io_Error));
 
     AROS_LIBFUNC_EXIT
 }
