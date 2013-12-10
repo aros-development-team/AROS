@@ -15,15 +15,15 @@ bootiso-pc-x86_64-quick: $(TARGET_ISO)
 .PHONY: $(TARGET_ISO)
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub)
-BOOTLOADER_ELTORITO_REL := boot/grub/iso9660_stage1_5
+BOOTLOADER_ELTORITO_REL := $(AROS_DIR_ARCH)/grub/iso9660_stage1_5
 endif
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub2)
-BOOTLOADER_ELTORITO_REL := boot/grub/i386-pc/grub2_eltorito
+BOOTLOADER_ELTORITO_REL := $(AROS_DIR_ARCH)/grub/i386-pc/grub2_eltorito
 endif
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub2gfx)
-BOOTLOADER_ELTORITO_REL := boot/grub/i386-pc/grub2_eltorito
+BOOTLOADER_ELTORITO_REL := $(AROS_DIR_ARCH)/grub/i386-pc/grub2_eltorito
 endif
 
 $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
