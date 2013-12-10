@@ -559,6 +559,31 @@ ahci_cam_probe_disk(struct ahci_port *ap, struct ata_port *atx)
 		ahci_ata_put_xfer(xa);
 	}
 
+	/* Fix up sector size, if the Word 106 is valid */
+	if ((at->at_identify.phys_sect_sz & 0xc000) == 0x4000) {
+		/* Physical sector size is longer than 256 16-bit words? */
+		if (at->at_identify.phys_sect_sz & (1 << 12)) { 
+			ULONG logsize;
+			D(ULONG physize;)
+			logsize = at->at_identify.words_lsec[0]; 
+			logsize <<= 16;
+			logsize += at->at_identify.words_lsec[1];
+			D(physize = logsize >> (at->at_identify.phys_sect_sz & 3));
+			D(kprintf("%s: Logical  sector size: %d bytes\n",
+			            ATANAME(ap, atx), logsize * 2));
+			D(kprintf("%s: Physical sector size: %d bytes\n",
+			            ATANAME(ap, atx), physize * 2));
+			at->at_identify.sector_size = logsize * 2;
+		} else {
+			D(kprintf("%s: Physical sector size == Logical sector size\n", ATANAME(ap, atx)));
+			at->at_identify.sector_size = 256 * 2;
+		}
+	} else {
+		kprintf("%s: ATA IDENTIFY: Invalid Word 106: 0x%04x\n", ATANAME(ap, atx), at->at_identify.phys_sect_sz);
+		at->at_identify.sector_size = 256 * 2;
+	}
+	D(kprintf("%s: Sector size: %d bytes\n", ATANAME(ap, atx), at->at_identify.sector_size));
+
 	return (0);
 }
 
