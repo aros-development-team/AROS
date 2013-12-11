@@ -54,8 +54,7 @@ struct MUI_ListviewData
 #define MOUSE_CLICK_ENTRY 1     /* on entry clicked */
 #define MOUSE_CLICK_TITLE 2     /* on title clicked */
 
-static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely,
-    UWORD qual);
+static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely);
 
 ULONG Listview_Layout_Function(struct Hook *hook, Object *obj,
     struct MUI_LayoutMsg *lm)
@@ -430,6 +429,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     LONG seltype, old_active, new_active;
     IPTR result = 0;
     BOOL select = FALSE, multiselect = FALSE, clear = FALSE;
+    WORD delta;
 
     new_active = old_active = XGET(list, MUIA_List_Active);
 
@@ -601,16 +601,23 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             break;
 
         case IDCMP_RAWKEY:
-            if (_isinobject(list, msg->imsg->MouseX, msg->imsg->MouseY))
+            if (_isinobject(data->vert, msg->imsg->MouseX, msg->imsg->MouseY))
+                delta = 1;
+            else if (_isinobject(list, msg->imsg->MouseX, msg->imsg->MouseY))
+                delta = 4;
+            else
+                delta = 0;
+
+            if (delta != 0)
             {
                 switch (msg->imsg->Code)
                 {
                 case RAWKEY_NM_WHEEL_UP:
-                    DoWheelMove(cl, obj, -1, msg->imsg->Qualifier);
+                    DoWheelMove(cl, obj, -delta);
                     break;
 
                 case RAWKEY_NM_WHEEL_DOWN:
-                    DoWheelMove(cl, obj, 1, msg->imsg->Qualifier);
+                    DoWheelMove(cl, obj, delta);
                     break;
                 }
                 result = MUI_EventHandlerRC_Eat;
@@ -648,8 +655,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     return result;
 }
 
-static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely,
-    UWORD qual)
+static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely)
 {
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
     LONG new, first, entries, visible;
@@ -658,21 +664,7 @@ static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely,
     entries = XGET(data->list, MUIA_List_Entries);
     visible = XGET(data->list, MUIA_List_Visible);
 
-    if (qual & IEQUALIFIER_CONTROL)
-    {
-        if (wheely < 0)
-            new = 0;
-        if (wheely > 0)
-            new = entries;
-    }
-    else if (qual & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
-    {
-        new += wheely * visible;
-    }
-    else
-    {
-        new += wheely * 3;
-    }
+    new += wheely;
 
     if (new > entries - visible)
     {
