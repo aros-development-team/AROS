@@ -426,18 +426,44 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
     Object *list = data->list;
     struct MUI_List_TestPos_Result pos;
-    LONG seltype, old_active, new_active;
+    LONG seltype, old_active, new_active, visible;
     IPTR result = 0;
     BOOL select = FALSE, multiselect = FALSE, clear = FALSE;
     WORD delta;
+    typeof(msg->muikey) muikey = msg->muikey;
 
     new_active = old_active = XGET(list, MUIA_List_Active);
+    visible = XGET(list, MUIA_List_Visible);
 
-    if (msg->muikey != MUIKEY_NONE)
+    if (muikey != MUIKEY_NONE)
     {
         result = MUI_EventHandlerRC_Eat;
 
-        switch (msg->muikey)
+        /* Make keys behave differently in read-only mode */
+        if (data->read_only)
+        {
+            switch (muikey)
+            {
+            case MUIKEY_TOP:
+                muikey = MUIKEY_LINESTART;
+                break;
+
+            case MUIKEY_BOTTOM:
+                muikey = MUIKEY_LINEEND;
+                break;
+
+            case MUIKEY_UP:
+                muikey = MUIKEY_LEFT;
+                break;
+
+            case MUIKEY_DOWN:
+            case MUIKEY_PRESS:
+                muikey = MUIKEY_RIGHT;
+                break;
+            }
+        }
+
+        switch (muikey)
         {
         case MUIKEY_TOGGLE:
             if (data->multiselect != MUIV_Listview_MultiSelect_None
@@ -488,11 +514,17 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             break;
 
         case MUIKEY_PAGEUP:
-            new_active = MUIV_List_Active_PageUp;
+            if (data->read_only)
+                DoWheelMove(cl, obj, -visible);
+            else
+                new_active = MUIV_List_Active_PageUp;
             break;
 
         case MUIKEY_PAGEDOWN:
-            new_active = MUIV_List_Active_PageDown;
+            if (data->read_only)
+                DoWheelMove(cl, obj, visible);
+            else
+                new_active = MUIV_List_Active_PageDown;
             break;
 
         default:
@@ -520,6 +552,8 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 {
                     data->mouse_click = MOUSE_CLICK_ENTRY;
 
+                if (!data->read_only)
+                {
                     new_active = pos.entry;
 
                     clear =
@@ -530,8 +564,6 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                         & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) == 0);
                     seltype = clear ?
                         MUIV_List_Select_On: MUIV_List_Select_Toggle;
-//                    data->range_select = FALSE;
-//                    select = new_active != XGET(list, MUIA_List_Active)
                     select = new_active != old_active
                         || data->multiselect != MUIV_Listview_MultiSelect_None;
 
@@ -559,6 +591,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                         (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
                     DoMethod(_win(list), MUIM_Window_AddEventHandler,
                         (IPTR) &data->ehn);
+                }
                 }
             }
             else
@@ -637,7 +670,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 MUIV_List_Select_All : MUIV_List_Select_Active,
                 MUIV_List_Select_Off, NULL);
         }
-        if (multiselect && msg->muikey == MUIKEY_TOGGLE)
+        if (multiselect && muikey == MUIKEY_TOGGLE)
         {
             DoMethod(list, MUIM_List_Select,
                 MUIV_List_Select_Active,
