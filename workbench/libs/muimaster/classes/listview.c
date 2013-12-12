@@ -552,46 +552,47 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 {
                     data->mouse_click = MOUSE_CLICK_ENTRY;
 
-                if (!data->read_only)
-                {
-                    new_active = pos.entry;
-
-                    clear =
-                        data->multiselect == MUIV_Listview_MultiSelect_None
-                        || (data->multiselect
-                        == MUIV_Listview_MultiSelect_Shifted
-                        && (msg->imsg->Qualifier
-                        & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) == 0);
-                    seltype = clear ?
-                        MUIV_List_Select_On: MUIV_List_Select_Toggle;
-                    select = new_active != old_active
-                        || data->multiselect != MUIV_Listview_MultiSelect_None;
-
-                    /* Handle MUIA_Listview_ClickColumn */
-                    data->click_column = pos.column;
-
-                    if (data->last_active == pos.entry
-                        && DoubleClick(data->last_secs, data->last_mics,
-                            msg->imsg->Seconds, msg->imsg->Micros))
+                    if (!data->read_only)
                     {
-                        set(obj, MUIA_Listview_DoubleClick, TRUE);
-                        data->last_active = -1;
-                        data->last_secs = data->last_mics = 0;
-                    }
-                    else
-                    {
-                        data->last_active = pos.entry;
-                        data->last_secs = msg->imsg->Seconds;
-                        data->last_mics = msg->imsg->Micros;
-                    }
+                        new_active = pos.entry;
 
-                    DoMethod(_win(list), MUIM_Window_RemEventHandler,
-                        (IPTR) &data->ehn);
-                    data->ehn.ehn_Events |=
-                        (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
-                    DoMethod(_win(list), MUIM_Window_AddEventHandler,
-                        (IPTR) &data->ehn);
-                }
+                        clear =
+                            data->multiselect == MUIV_Listview_MultiSelect_None
+                            || (data->multiselect
+                            == MUIV_Listview_MultiSelect_Shifted
+                            && (msg->imsg->Qualifier
+                            & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) == 0);
+                        seltype = clear ?
+                            MUIV_List_Select_On: MUIV_List_Select_Toggle;
+                        select = new_active != old_active
+                            || data->multiselect
+                            != MUIV_Listview_MultiSelect_None;
+
+                        /* Handle MUIA_Listview_ClickColumn */
+                        data->click_column = pos.column;
+
+                        if (data->last_active == pos.entry
+                            && DoubleClick(data->last_secs, data->last_mics,
+                                msg->imsg->Seconds, msg->imsg->Micros))
+                        {
+                            set(obj, MUIA_Listview_DoubleClick, TRUE);
+                            data->last_active = -1;
+                            data->last_secs = data->last_mics = 0;
+                        }
+                        else
+                        {
+                            data->last_active = pos.entry;
+                            data->last_secs = msg->imsg->Seconds;
+                            data->last_mics = msg->imsg->Micros;
+                        }
+
+                        DoMethod(_win(list), MUIM_Window_RemEventHandler,
+                            (IPTR) &data->ehn);
+                        data->ehn.ehn_Events |=
+                            (IDCMP_MOUSEMOVE | IDCMP_INTUITICKS);
+                        DoMethod(_win(list), MUIM_Window_AddEventHandler,
+                            (IPTR) &data->ehn);
+                    }
                 }
             }
             else
