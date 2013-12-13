@@ -104,7 +104,8 @@ struct ata_identify {
 	u_int16_t	reserved5[2];	/*  73 */
 	u_int16_t	qdepth;		/*  75 */
 	u_int16_t	satacap;	/*  76 */
-	u_int16_t	reserved6;	/*  77 */
+	u_int16_t	satacap2;	/*  77 */
+#define SATA_CAP2_SNDRCV_FPDMA		(1 << 6)
 	u_int16_t	satafsup;	/*  78 */
 	u_int16_t	satafen;	/*  79 */
 	u_int16_t	majver;		/*  80 */
@@ -153,7 +154,9 @@ struct ata_identify {
 	u_int16_t	padding5[6];	/* 170 */
 	u_int16_t	curmedser[30];	/* 176 */
 	u_int16_t	sctsupport;	/* 206 */
-	u_int16_t	padding4[48];	/* 207 */
+	u_int16_t	padding4[10];	/* 207 */
+	u_int16_t	nomrota_rate;	/* 217 */
+	u_int16_t	padding6[37];	/* 218 */
 	u_int16_t	integrity;	/* 255 */
 } __packed;
 

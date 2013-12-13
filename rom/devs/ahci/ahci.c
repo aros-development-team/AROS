@@ -90,8 +90,9 @@ static u_int32_t ahci_pactive(struct ahci_port *ap);
 int
 ahci_init(struct ahci_softc *sc)
 {
-	u_int32_t	cap, pi;
+	u_int32_t	pi;
 	u_int32_t pleft;
+	u_int32_t	bios_cap, vers;
 	int		i;
 	struct ahci_port *ap;
 
@@ -99,11 +100,17 @@ ahci_init(struct ahci_softc *sc)
 		ahci_read(sc, AHCI_REG_GHC), AHCI_FMT_GHC);
 
 	/*
+	 * AHCI version.
+	 */
+	vers = ahci_read(sc, AHCI_REG_VS);
+	(void)vers; // Unused (for now: jmcmullan)
+
+	/*
 	 * save BIOS initialised parameters, enable staggered spin up
 	 */
-	cap = ahci_read(sc, AHCI_REG_CAP);
-	cap &= AHCI_REG_CAP_SMPS;
-	cap |= AHCI_REG_CAP_SSS;
+	bios_cap = ahci_read(sc, AHCI_REG_CAP);
+	bios_cap &= AHCI_REG_CAP_SMPS | AHCI_REG_CAP_SSS;
+
 	pi = ahci_read(sc, AHCI_REG_PI);
 
 	/*
@@ -167,7 +174,9 @@ ahci_init(struct ahci_softc *sc)
 	ahci_os_sleep(500);
 
 	ahci_read(sc, AHCI_REG_GHC);		/* flush */
-	ahci_write(sc, AHCI_REG_CAP, cap);
+
+	bios_cap |= AHCI_REG_CAP_SSS;
+	ahci_write(sc, AHCI_REG_CAP, ahci_read(sc, AHCI_REG_CAP) | bios_cap);
 	ahci_write(sc, AHCI_REG_PI, pi);
 	ahci_read(sc, AHCI_REG_GHC);		/* flush */
 
@@ -2177,9 +2186,18 @@ ahci_issue_pending_commands(struct ahci_port *ap, struct ahci_ccb *ccb)
 
 	/*
 	 * Pull the next ccb off the queue and run it if possible.
+	 *
+	 * The error CCB supercedes all normal queue operations and
+	 * implies exclusive access while the error CCB is active.
 	 */
-	if ((ccb = TAILQ_FIRST(&ap->ap_ccb_pending)) == NULL)
-		return;
+	if (ccb != ap->ap_err_ccb) {
+		if ((ccb = TAILQ_FIRST(&ap->ap_ccb_pending)) == NULL)
+			return;
+		if (ap->ap_flags & AP_F_ERR_CCB_RESERVED) {
+			kprintf("DELAY CCB slot %d\n", ccb->ccb_slot);
+			return;
+		}
+	}
 
 	/*
 	 * Handle exclusivity requirements.
