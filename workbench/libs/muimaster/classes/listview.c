@@ -27,12 +27,12 @@ extern struct Library *MUIMasterBase;
 struct MUI_ListviewData
 {
     Object *list, *group, *vert;
-    struct Hook *layout_hook;
     struct Hook hook;
     struct Hook selfnotify_hook;
     BOOL noforward;
     BOOL read_only;
     IPTR multiselect;
+    IPTR scroller_pos;
     struct MUI_EventHandlerNode ehn;
 
     int mouse_click;            /* see below if mouse is held down */
@@ -55,69 +55,6 @@ struct MUI_ListviewData
 #define MOUSE_CLICK_TITLE 2     /* on title clicked */
 
 static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely);
-
-ULONG Listview_Layout_Function(struct Hook *hook, Object *obj,
-    struct MUI_LayoutMsg *lm)
-{
-    struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
-
-    switch (lm->lm_Type)
-    {
-    case MUILM_MINMAX:
-        {
-            /* Calculate the minmax dimension of the group,
-             ** We only have a fixed number of children, so we need
-             ** no NextObject()
-             */
-            lm->lm_MinMax.MinWidth =
-                _minwidth(data->list) + _minwidth(data->vert);
-            lm->lm_MinMax.DefWidth =
-                _defwidth(data->list) + _defwidth(data->vert);
-            lm->lm_MinMax.MaxWidth =
-                _maxwidth(data->list) + _maxwidth(data->vert);
-            lm->lm_MinMax.MaxWidth =
-                MIN(lm->lm_MinMax.MaxWidth, MUI_MAXMAX);
-
-            lm->lm_MinMax.MinHeight =
-                MAX(_minheight(data->list), _minheight(data->vert));
-            lm->lm_MinMax.DefHeight =
-                MAX(_defheight(data->list), lm->lm_MinMax.MinHeight);
-            lm->lm_MinMax.MaxHeight =
-                MIN(_maxheight(data->list), _maxheight(data->vert));
-            lm->lm_MinMax.MaxHeight =
-                MIN(lm->lm_MinMax.MaxHeight, MUI_MAXMAX);
-            return 0;
-        }
-
-    case MUILM_LAYOUT:
-        {
-            /* Now place the objects between
-             * (0, 0, lm->lm_Layout.Width - 1, lm->lm_Layout.Height - 1)
-             */
-
-            LONG vert_width = _minwidth(data->vert);
-            LONG lay_width = lm->lm_Layout.Width;
-            LONG lay_height = lm->lm_Layout.Height;
-            LONG cont_width;
-            LONG cont_height;
-
-            /* We need all scrollbars and the button */
-            set(data->vert, MUIA_ShowMe, TRUE);
-                /* We could also overload MUIM_Show... */
-            cont_width = lay_width - vert_width;
-            cont_height = lay_height;
-
-            MUI_Layout(data->vert, cont_width, 0, vert_width, cont_height,
-                0);
-
-            /* Layout the group a second time, note that setting _mwidth() and
-               _mheight() should be enough, or we invent a new flag */
-            MUI_Layout(data->list, 0, 0, cont_width, cont_height, 0);
-            return 1;
-        }
-    }
-    return 0;
-}
 
 #define PROP_VERT_FIRST   1
 #define LIST_VERT_FIRST   4
@@ -174,7 +111,6 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ListviewData *data;
     struct TagItem *tag, *tags;
-    struct Hook *layout_hook;
     Object *group, *vert;
     Object *list =
         (Object *) GetTagData(MUIA_Listview_List, (IPTR) NULL,
@@ -186,39 +122,27 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!list)
         return (IPTR) NULL;
 
-    layout_hook = mui_alloc_struct(struct Hook);
-    if (!layout_hook)
-        return (IPTR) NULL;
-
-    layout_hook->h_Entry = HookEntry;
-    layout_hook->h_SubEntry = (HOOKFUNC) Listview_Layout_Function;
+    vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End;
 
     obj = (Object *) DoSuperNewTags(cl, obj, NULL,
         MUIA_Group_Horiz, FALSE,
         MUIA_CycleChain, cyclechain,
         MUIA_InnerLeft, 0,
         MUIA_InnerRight, 0,
-        Child, (IPTR) (group = GroupObject,
+        Child, (IPTR) (group = HGroup,
             MUIA_InnerLeft, 0,
             MUIA_InnerRight, 0,
-            MUIA_Group_LayoutHook, (IPTR) layout_hook,
-            Child, (IPTR) list,
-            Child, (IPTR) (vert =
-                ScrollbarObject, MUIA_Group_Horiz, FALSE, End), End),
+            MUIA_Group_Spacing, 0,
+            End),
         TAG_DONE);
 
     if (!obj)
-    {
-        mui_free(layout_hook);
         return (IPTR) NULL;
-    }
 
     data = INST_DATA(cl, obj);
-    layout_hook->h_Data = data;
     data->list = list;
     data->vert = vert;
     data->group = group;
-    data->layout_hook = layout_hook;
 
     data->hook.h_Entry = HookEntry;
     data->hook.h_SubEntry = (HOOKFUNC) Listview_Function;
@@ -251,7 +175,26 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             case MUIA_Listview_MultiSelect:
                 data->multiselect = tag->ti_Data;
                 break;
+            case MUIA_Listview_ScrollerPos:
+                data->scroller_pos = tag->ti_Data;
+                break;
         }
+    }
+
+    /* Add list and/or scroller */
+    switch (data->scroller_pos)
+    {
+    case MUIV_Listview_ScrollerPos_None:
+        DoMethod(group, OM_ADDMEMBER, list);
+        break;
+    case MUIV_Listview_ScrollerPos_Left:
+        DoMethod(group, OM_ADDMEMBER, vert);
+        DoMethod(group, OM_ADDMEMBER, list);
+        break;
+    default:
+        DoMethod(group, OM_ADDMEMBER, list);
+        DoMethod(group, OM_ADDMEMBER, vert);
+        break;
     }
 
     get(list, MUIA_List_VertProp_First, &first);
@@ -290,9 +233,6 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 IPTR Listview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_ListviewData *data = INST_DATA(cl, obj);
-
-    mui_free(data->layout_hook);        /* is always here */
     return DoSuperMethodA(cl, obj, msg);
 }
 
