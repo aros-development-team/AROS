@@ -31,7 +31,7 @@ X11KEYMAPTABLE_ALT_NB_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey-alt-nb.tab
 FILES	   := startup x11_hostlib x11_init x11 support x11gfx onbitmap offbitmap \
               x11kbd x11mouse x11clipboard xshm fullscreen bitmap_common
 
-#MM kernel-x11gfx : x11keymaptable 
+#MM kernel-x11gfx : x11keymaptable devs-monitors-x11
 #MM kernel-x11gfx-kobj : x11keymaptable devs-monitors-x11
 
 %build_module mmake=kernel-x11gfx \
