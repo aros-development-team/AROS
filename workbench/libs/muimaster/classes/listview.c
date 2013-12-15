@@ -368,7 +368,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUI_List_TestPos_Result pos;
     LONG seltype, old_active, new_active, visible;
     IPTR result = 0;
-    BOOL select = FALSE, multiselect = FALSE, clear = FALSE;
+    BOOL select = FALSE, clear = FALSE;
     WORD delta;
     typeof(msg->muikey) muikey = msg->muikey;
 
@@ -410,13 +410,14 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 && !data->read_only)
             {
                 select = TRUE;
-                multiselect = TRUE;
-                seltype = MUIV_List_Select_Toggle;
                 data->click_column = data->def_click_column;
                 new_active = MUIV_List_Active_Down;
             }
             else
+            {
                 DoMethod(list, MUIM_List_Jump, 0);
+                muikey = MUIKEY_NONE;
+            }
             break;
 
         case MUIKEY_TOP:
@@ -470,13 +471,6 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         default:
             result = 0;
         }
-
-        if (new_active != old_active)
-        {
-            select = clear =
-                data->multiselect == MUIV_Listview_MultiSelect_None;
-            seltype = MUIV_List_Select_On;
-        }
     }
     else if (msg->imsg)
     {
@@ -496,21 +490,19 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     {
                         new_active = pos.entry;
 
-                        clear =
-                            data->multiselect == MUIV_Listview_MultiSelect_None
-                            || (data->multiselect
+                        clear = (data->multiselect
                             == MUIV_Listview_MultiSelect_Shifted
                             && (msg->imsg->Qualifier
                             & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) == 0);
                         seltype = clear ?
                             MUIV_List_Select_On: MUIV_List_Select_Toggle;
-                        select = new_active != old_active
-                            || data->multiselect
+                        select = data->multiselect
                             != MUIV_Listview_MultiSelect_None;
 
                         /* Handle MUIA_Listview_ClickColumn */
                         data->click_column = pos.column;
 
+                        /* Handle double clicking */
                         if (data->last_active == pos.entry
                             && DoubleClick(data->last_secs, data->last_mics,
                                 msg->imsg->Seconds, msg->imsg->Micros))
@@ -526,6 +518,8 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                             data->last_mics = msg->imsg->Micros;
                         }
 
+                        /* Look out for mouse movement and timer events while
+                           mouse button is down */
                         DoMethod(_win(list), MUIM_Window_RemEventHandler,
                             (IPTR) &data->ehn);
                         data->ehn.ehn_Events |=
@@ -537,12 +531,14 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             }
             else
             {
+                /* Activate object */
                 if (msg->imsg->Code == SELECTUP && data->mouse_click)
                 {
                     set(_win(obj), MUIA_Window_ActiveObject, (IPTR)obj);
                     data->mouse_click = 0;
                 }
 
+                /* Restore normal event mask */
                 DoMethod(_win(list), MUIM_Window_RemEventHandler,
                     (IPTR) &data->ehn);
                 data->ehn.ehn_Events &=
@@ -561,20 +557,16 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             else
                 new_active = pos.entry;
 
-            select = new_active != old_active;
-
+            select = new_active != old_active
+                && data->multiselect != MUIV_Listview_MultiSelect_None;
             if (select)
-            {
-                clear = data->multiselect == MUIV_Listview_MultiSelect_None;
-                if (clear)
-                    seltype = MUIV_List_Select_On;
-                else
-                    DoMethod(list, MUIM_List_Select, MUIV_List_Select_Active,
-                        MUIV_List_Select_Ask, &seltype);
-            }
+                DoMethod(list, MUIM_List_Select, MUIV_List_Select_Active,
+                    MUIV_List_Select_Ask, &seltype);
+
             break;
 
         case IDCMP_RAWKEY:
+            /* Scroll wheel */
             if (_isinobject(data->vert, msg->imsg->MouseX, msg->imsg->MouseY))
                 delta = 1;
             else if (_isinobject(list, msg->imsg->MouseX, msg->imsg->MouseY))
@@ -600,31 +592,27 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         }
     }
 
-    if (select || new_active != old_active)
+    /* Change selected and active entries */
+    if (clear)
     {
-        multiselect = multiselect
-            || data->multiselect != MUIV_Listview_MultiSelect_None;
-
-        if (clear)
-        {
-            DoMethod(list, MUIM_List_Select, multiselect ?
-                MUIV_List_Select_All : MUIV_List_Select_Active,
-                MUIV_List_Select_Off, NULL);
-        }
-        if (multiselect && muikey == MUIKEY_TOGGLE)
-        {
-            DoMethod(list, MUIM_List_Select,
-                MUIV_List_Select_Active,
-                MUIV_List_Select_Toggle, NULL);
-        }
-
-        if (new_active != old_active)
-            set(list, MUIA_List_Active, new_active);
-
-        if (select)
-            DoMethod(list, MUIM_List_Select, MUIV_List_Select_Active,
-                seltype, NULL);
+        DoMethod(list, MUIM_List_Select, MUIV_List_Select_All,
+            MUIV_List_Select_Off, NULL);
     }
+
+    if (muikey == MUIKEY_TOGGLE)
+    {
+        DoMethod(list, MUIM_List_Select,
+            MUIV_List_Select_Active,
+            MUIV_List_Select_Toggle, NULL);
+        select = FALSE;
+    }
+
+    if (new_active != old_active)
+        set(list, MUIA_List_Active, new_active);
+
+    if (select)
+        DoMethod(list, MUIM_List_Select, MUIV_List_Select_Active, seltype,
+            NULL);
 
     return result;
 }
