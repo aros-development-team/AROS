@@ -82,7 +82,7 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
     msg.windowTitle = windowTitle;
     msg.screenTitle = screenTitle;
 
-    DoASyncAction((APTR)int_setwindowtitles , &msg.msg, sizeof(msg), IntuitionBase);
+    int_setwindowtitles(&msg, IntuitionBase);
 
     AROS_LIBFUNC_EXIT
 } /* SetWindowTitles */
