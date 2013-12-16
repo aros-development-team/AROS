@@ -19,6 +19,7 @@
 #include "misc.h"
 #include "registertab.h"
 #include "page_language.h"
+#include "languagelist.h"
 
 /*** Instance Data **********************************************************/
 
@@ -438,6 +439,7 @@ Object *Language__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Language_DATA *data;
     struct TagItem *tstate, *tag;
+    struct Object *avail_list, *pref_list;
 
     D(bug("[LocalePrefs-LanguageClass] Language Class New\n"));
 
@@ -479,18 +481,23 @@ Object *Language__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->clear = MUI_MakeObject(MUIO_Button, __(MSG_GAD_CLEAR_LANGUAGES));
 
     data->available = ListviewObject, MUIA_Listview_List,
-        ListObject,
+        avail_list = NewObject(Languagelist_CLASS->mcc_Class, 0,
             InputListFrame,
+            MUIA_Draggable, TRUE,
             MUIA_List_SourceArray, data->strings_available,
-        End,
-    End;
+            TAG_DONE),
+        End;
 
     data->preferred = ListviewObject, MUIA_Listview_List,
-        ListObject,
+        pref_list = NewObject(Languagelist_CLASS->mcc_Class, 0,
             InputListFrame,
+            MUIA_Draggable, TRUE,
             MUIA_List_SourceArray, data->strings_preferred,
-        End,
-    End;
+            TAG_DONE),
+        End;
+
+    set(pref_list, MUIA_UserData, avail_list);
+    set(avail_list, MUIA_UserData, pref_list);
 
     data->charset = TextObject,
         TextFrame,

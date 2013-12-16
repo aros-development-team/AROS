@@ -1,6 +1,6 @@
 /*
-   Copyright  2003-2013, The AROS Development Team. All rights reserved.
-   $Id$
+    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include <aros/debug.h>
@@ -38,9 +38,9 @@ struct MUI_CustomClass     *Region_CLASS;
 
 /*** Helpers *****************************************************************/
 
-/*************************************************
- * The display function for the KeyTypes listview
- *************************************************/
+/**********************************************
+ * The display function for the Region listview
+ **********************************************/
 STATIC VOID region_display_func(struct Hook *h, char **array, struct ListviewEntry *entry)
 {
     *array++ = entry->displayflag;

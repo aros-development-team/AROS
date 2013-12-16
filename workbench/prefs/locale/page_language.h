@@ -12,7 +12,7 @@
 /*** Identifier base ********************************************************/
 #define MUIB_Language                   (TAG_USER | 0x30000000)
 
-/*** Attributes *************************************************************/
+/*** Methods ****************************************************************/
 #define MUIM_Language_GetBaseName       (MUIB_Language | 0)
 #define MUIM_Language_GetNativeName     (MUIB_Language | 1)
 

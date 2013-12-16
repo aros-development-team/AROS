@@ -24,7 +24,7 @@
 #include "args.h"
 #include "prefs.h"
 
-#define VERSION "$VER: Locale 2.2 (24.05.2011) AROS Dev Team"
+#define VERSION "$VER: Locale 2.3 (16.12.2013) AROS Dev Team"
 
 /*********************************************************************************************/
 
