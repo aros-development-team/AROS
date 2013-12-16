@@ -1371,8 +1371,9 @@ static void ActivateObject(struct MUI_WindowData *data)
 
 /* handle intuimessage while an object is being dragged
  * (reply imsg before returning)
+ * Returns TRUE if finished dragging.
  */
-void HandleDragging(Object *oWin, struct MUI_WindowData *data,
+static BOOL HandleDragging(Object *oWin, struct MUI_WindowData *data,
     struct IntuiMessage *imsg)
 {
     struct Window *iWin;
@@ -1507,14 +1508,14 @@ void HandleDragging(Object *oWin, struct MUI_WindowData *data,
             UndrawDragNDrop(data->wd_dnd);
             if (imsg->Code == SELECTUP && data->wd_DropObject)
             {
-                DoMethod(data->wd_DropObject, MUIM_DragFinish,
-                    (IPTR) data->wd_DragObject);
                 DoMethod(data->wd_DropObject, MUIM_DragDrop,
                     (IPTR) data->wd_DragObject,
                     imsg->MouseX + iWin->LeftEdge -
                     data->wd_DropWindow->LeftEdge,
                     imsg->MouseY + iWin->TopEdge -
                     data->wd_DropWindow->TopEdge);
+                DoMethod(data->wd_DropObject, MUIM_DragFinish,
+                    (IPTR) data->wd_DragObject);
                 data->wd_DropObject = NULL;
             }
             else if (imsg->Code == SELECTUP)
@@ -1550,7 +1551,10 @@ void HandleDragging(Object *oWin, struct MUI_WindowData *data,
         /* stop listening to IDCMP_MOUSEMOVE */
         ChangeEvents(data, GetDefaultEvents());
     }
-    ReplyMsg((struct Message *)imsg);
+    if (!finish_drag)
+        ReplyMsg((struct Message *)imsg);
+
+    return finish_drag;
 }
 
 /* Reply to imsg if handled */
@@ -2390,8 +2394,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
     if (data->wd_DragObject)
     {
-        HandleDragging(oWin, data, imsg);
-        return;
+        if (!HandleDragging(oWin, data, imsg))
+            return;
     }
 
     handled = HandleWindowEvent(oWin, data, imsg);
