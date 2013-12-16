@@ -2653,7 +2653,7 @@ IPTR List__MUIM_DragFinish(struct IClass *cl, Object *obj,
 
     data->drop_mark_y = -1;
 
-    return 0;
+    return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
 
