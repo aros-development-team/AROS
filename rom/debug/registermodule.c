@@ -164,9 +164,12 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
                 if (sections[i].size)
                 {
                     /* If we have string table, copy it */
-                    if ((sections[i].type == SHT_STRTAB) && (i != shstr) && (!mod->m_str)) {
-                        D(bug("[Debug] Symbol name table of length %d in section %d\n", sections[i].size, i));
-                        mod->m_str = getstrtab(&sections[i]);
+                    if ((sections[i].type == SHT_STRTAB) && (!mod->m_str)) {
+                        /* We are looking for .strtab, not .shstrtab or .stabstr */
+                        if (mod->m_shstr && (strcmp(&mod->m_shstr[sections[i].name], ".strtab") == 0)) {
+                            D(bug("[Debug] Symbol name table of length %d in section %d\n", sections[i].size, i));
+                            mod->m_str = getstrtab(&sections[i]);
+                        }
                     }
 
                     /* Every loadable section with nonzero size got a corresponding DOS segment */
