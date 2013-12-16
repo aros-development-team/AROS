@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main args misc locale \
+FILES 	    := main args misc locale languagelist \
                page_language page_region page_timezone prefs registertab
 
 EXEDIR      := $(AROSDIR)/Prefs
