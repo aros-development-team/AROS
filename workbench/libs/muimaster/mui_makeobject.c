@@ -515,7 +515,7 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath,
                 MUIA_Numeric_Min, params[1],
                 MUIA_Numeric_Max, params[2],
                 (params[3] ? MUIA_Numeric_Format : TAG_IGNORE), params[3],
-                (control_char ? MUIA_ControlChar: TAG_IGNORE), control_char,        
+                (control_char ? MUIA_ControlChar: TAG_IGNORE), control_char,
                 TAG_DONE);
         }
         break;

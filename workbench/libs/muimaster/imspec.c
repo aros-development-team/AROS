@@ -565,7 +565,6 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s,
     return spec;
 }
 
-/* bug : never called in textengine, fix this */
 void zune_imspec_cleanup(struct MUI_ImageSpec_intern *spec)
 {
     if (!spec)
