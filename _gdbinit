@@ -361,6 +361,9 @@ end
 define loadseg
     _debug_init
     dont-repeat
+    # disable pagination so that when there are hundreds of text sections within a module
+    # it is not needed to keep pressing enter when building the loadseg.tmp file
+    set pagination off
     if $_debug_ModList
         set $step = 1
         set $segnode = (struct segment *)$_debug_ModList->mlh_Head
@@ -464,6 +467,8 @@ define loadseg
 
 
     end
+
+    set pagination on
 end
 document loadseg
 Loads the module that contains the given address
