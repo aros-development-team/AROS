@@ -40,7 +40,7 @@ static int Debug_Init(struct DebugBase *DebugBase)
 
     KernelBase = OpenResource("kernel.resource");
     if (!KernelBase)
-    	return FALSE;
+            return FALSE;
 
     NEWLIST(&DebugBase->db_Modules);
     InitSemaphore(&DebugBase->db_ModSem);

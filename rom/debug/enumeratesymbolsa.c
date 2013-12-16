@@ -24,11 +24,11 @@ static void EnumerateKickstartModules(struct Hook * handler, struct Library * De
         AROS_LH2(void, EnumerateSymbolsA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Hook *, handler, A0),
-	AROS_LHA(struct TagItem *, tags, A1),
+        AROS_LHA(struct Hook *, handler, A0),
+        AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-	struct Library *, DebugBase, 8, Debug)
+        struct Library *, DebugBase, 8, Debug)
 
 /*  FUNCTION
     Function will call the handler hook for all symbols from kickstart and
