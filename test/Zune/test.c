@@ -1072,10 +1072,12 @@ int main(void)
             WindowContents, VGroup,
                 Child, DropTextObject,
                     MUIA_Text_Contents, "Drop here", 
-                    MUIA_Dropable, TRUE,End,
+                    MUIA_Dropable, TRUE,
                     End,
                 End,
-            End;
+            End,
+
+        End;
 
     if (app)
     {
