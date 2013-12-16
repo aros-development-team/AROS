@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -362,7 +362,7 @@ BOOL AllocDestBM( struct Picture_Data *pd )
             (pd->SrcPixelFormat != 1 && pd->SrcPixelFormat != 2))
     {
         /* Use friend bitmap, unless the source data has alpha component
-         * in which case a 32bit bitmap is required for propper blitting
+         * in which case a 32bit bitmap is required for proper blitting
          */
         friend_bm = pd->DestScreen->RastPort.BitMap;
     }
