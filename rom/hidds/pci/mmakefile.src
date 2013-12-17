@@ -9,6 +9,7 @@ FILES	:= pci_init pcidriverclass pcideviceclass pciclass pciutil
 
 #MM kernel-hidd-pci : kernel-hidd-pci-ids
 #MM kernel-hidd-pci-kobj : kernel-hidd-pci-ids
+#MM kernel-hidd-pci-pkg : kernel-hidd-pci-ids
 
 #MM
 includes-copy : $(AROS_INCLUDES)/hidd/pci.h $(GENINCDIR)/hidd/pci.h
