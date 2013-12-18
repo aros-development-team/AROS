@@ -14,6 +14,7 @@ void writestubs(struct config *cfg, int is_rel)
     struct functionhead *funclistit;
     struct stringlist *aliasesit;
     struct functionarg *arglistit;
+    struct stringlist *linelistit;
 
     snprintf(line, 255, "%s/%s_%sstubs.c", cfg->gendir, cfg->modulename, is_rel ? "rel" : "");
     out = fopen(line, "w");
@@ -63,6 +64,23 @@ void writestubs(struct config *cfg, int is_rel)
         if (is_rel)
             fprintf(out, "#define __%s_RELLIBBASE__\n", cfg->modulenameupper);
         fprintf(out, "#include <proto/%s.h>\n", cfg->modulename);
+    }
+    else
+    {
+	fprintf(out,
+	    "#include <exec/types.h>\n"
+	    "#include <aros/system.h>\n\n"
+	);
+
+	for (linelistit = cfg->cdefprivatelines; linelistit!=NULL; linelistit = linelistit->next)
+	    fprintf(out, "%s\n", linelistit->s);
+
+        fprintf(out,
+	    "\n"
+	    "%s__aros_getbase_%s(void);\n"
+	    "\n",
+	    cfg->libbasetypeptrextern, cfg->libbase
+        );
     }
     
     fprintf
