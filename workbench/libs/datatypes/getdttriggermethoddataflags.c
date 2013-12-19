@@ -83,7 +83,6 @@
     case  STM_STOP:
     case  STM_RESUME:
 	return STMD_VOID;
-	break;
     
     case  STM_COMMAND:
 	return STMD_STRPTR;

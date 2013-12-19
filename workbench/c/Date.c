@@ -272,7 +272,7 @@ int main(void)
     {
         if (args[ARG_DAY] != NULL || args[ARG_DATE] != NULL || args[ARG_TIME] != NULL)
         {
-            if ((error = setdate(args) == RETURN_OK))
+            if (((error = setdate(args)) == RETURN_OK))
             {
                 if (args[ARG_VER] != NULL)
                     printdate(args[ARG_VER]);

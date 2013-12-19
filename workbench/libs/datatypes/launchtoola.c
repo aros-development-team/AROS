@@ -178,11 +178,9 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
 
 	/* Do some "RX command" here */
 	return 0;
-	break;
 
     default:
 	return 0;
-	break;
     }
 
     return 1;

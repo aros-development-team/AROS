@@ -1651,7 +1651,7 @@ void MonitorClass__MM_SetScreenGamma(Class *cl, Object *obj, struct msSetScreenG
                     data->active_b = gamma->GammaTableB;
                     screengamma++;
                 }
-                if (gamma->GammaTableG);
+                if (gamma->GammaTableG)
                 {
                     data->active_g = gamma->GammaTableG;
                     screengamma++;

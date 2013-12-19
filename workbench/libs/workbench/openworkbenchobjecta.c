@@ -420,7 +420,6 @@ static BOOL WB_BuildArguments
                             {
                                 D(bug("[WBLIB] WB_BuildArguments: Failed to duplicate lock!\n"));
                                 goto error;
-                                break;
                             }
                         }
                         else
@@ -437,7 +436,6 @@ static BOOL WB_BuildArguments
                             {
                                 D(bug("[WBLIB] WB_BuildArguments: Failed to duplicate string!\n"));
                                 goto error;
-                                break;
                             }
                         }
                         else
