@@ -484,7 +484,7 @@ fail:
             data->drag_gadgetlock = FALSE;
         }
 	
-	if (data->drag_inputhandlerlock);
+	if (data->drag_inputhandlerlock)
 	{
 	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
 	    data->drag_inputhandlerlock = FALSE;
@@ -1221,7 +1221,7 @@ fail:
             data->drag_gadgetlock = FALSE;
         }
 	
-	if (data->drag_inputhandlerlock);
+	if (data->drag_inputhandlerlock)
 	{
 	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
 	    data->drag_inputhandlerlock = FALSE;

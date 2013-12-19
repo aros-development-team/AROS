@@ -165,7 +165,6 @@ static char *allocPath(char *str, APTR WorkbenchBase);
 static char *allocPath(char *str, APTR WorkbenchBase)
 {
     char *s0, *s1, *s;
-    int  l;
 
     s = NULL;
     s0 = str;
@@ -173,6 +172,8 @@ static char *allocPath(char *str, APTR WorkbenchBase)
     s1 = PathPart(str);
     if (s1)
     {
+        int  l;
+
         for (l = 0; s0 != s1; s0++,l++);
         s = AllocVec(l + 1, MEMF_CLEAR);
         if (s) strncpy(s, str, l);
