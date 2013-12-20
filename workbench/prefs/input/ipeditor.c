@@ -1,5 +1,5 @@
 /*
-    Copyright  2003-2011, The AROS Development Team. All rights reserved.
+    Copyright  2003-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -174,7 +174,6 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         GroupFrameT(__(MSG_GAD_KEY_TYPE)),
                         MUIA_Weight, 50,
                         Child, (IPTR)ListviewObject,
-                            MUIA_Listview_Input, FALSE,
                             MUIA_Listview_List, (IPTR)(keyTypes = (Object *)ListObject,
                                 InputListFrame,
                                 MUIA_List_AutoVisible, TRUE,
