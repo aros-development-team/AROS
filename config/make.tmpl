@@ -1716,7 +1716,7 @@ GLOB_MKDIRS += %(objdir)/include
 
 
 ## Create FD file
-BD_FDDIR := $(AROS_DEVELOPMENT)/fd
+BD_FDDIR := %(prefix)/$(AROS_DIR_DEVELOPMENT)/fd
 %(mmake)-fd : $(BD_FDDIR)/%(modname)_lib.fd
 
 %rule_genmodule_fd modname=%(modname) modtype=%(modtype) \
