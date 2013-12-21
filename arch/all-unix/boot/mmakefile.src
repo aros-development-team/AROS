@@ -12,6 +12,9 @@ boot-unix: $(BOOTSTRAPCONF)
 ifeq ($(AROS_TARGET_VARIANT),android)
 $(BOOTSTRAPCONF): INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap_android.conf
 $(BOOTSTRAPCONF): AROSBootstrap_android.conf
+else ifeq ($(AROS_TARGET_ARCH),darwin)
+$(BOOTSTRAPCONF): INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap_darwin.conf
+$(BOOTSTRAPCONF): AROSBootstrap_darwin.conf
 else
 $(BOOTSTRAPCONF): INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap.conf
 $(BOOTSTRAPCONF): AROSBootstrap.conf
