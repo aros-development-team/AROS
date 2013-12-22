@@ -274,7 +274,7 @@ callmake (struct Project * prj, const char * tname, struct Makefile * makefile)
         strcat (buffer, " ");
     }
 
-    if (strcmp (makefile->node.name, "Makefile")!=0 && strcmp (makefile->node.name, "makefile")!=0);
+    if (strcmp (makefile->node.name, "Makefile")!=0 && strcmp (makefile->node.name, "makefile")!=0)
     {
         strcat (buffer, "--file=");
         strcat (buffer, makefile->node.name);
