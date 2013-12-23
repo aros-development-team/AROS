@@ -34,6 +34,7 @@
 static int Debug_Init(struct DebugBase *DebugBase)
 {
     struct TagItem *bootMsg;
+    struct ELF_ModuleInfo *kmod;
 #if AROS_MODULES_DEBUG
     struct HostInterface *HostIFace;
 #endif
@@ -47,6 +48,12 @@ static int Debug_Init(struct DebugBase *DebugBase)
 
     bootMsg = KrnGetBootInfo();
     DebugBase->db_KernelModules = (struct ELF_ModuleInfo *)LibGetTagData(KRN_DebugInfo, 0, bootMsg);
+
+
+    for (kmod = DBGBASE(DebugBase)->db_KernelModules; kmod; kmod = kmod->Next)
+    {
+        RegisterModule_ELF(kmod->Name, BNULL, kmod->eh, kmod->sh, (struct Library *)DebugBase);
+    }
 
 #if AROS_MODULES_DEBUG
     HostIFace = (APTR)LibGetTagData(KRN_HostInterface, 0, bootMsg);
