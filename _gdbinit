@@ -33,13 +33,11 @@ define _debug_init
     if $_debug_DebugBase != 0
         set $_debug_DebugBase = (struct DebugBase *)($_debug_DebugBase)
         # This is the case for debugging a ROM
-        set $_debug_ModList = &($_debug_DebugBase->db_Modules)
-        set $_debug_Mod2List = &($_debug_DebugBase->db_LoadedModules)
+        set $_debug_ModList = &($_debug_DebugBase->db_LoadedModules)
         set $_debug_KickList = $_debug_DebugBase->db_KernelModules
     else
         # This is the case for debugging a bootstrap
-        init-if-undefined $_debug_ModList = Debug_ModList - 1
-        init-if-undefined $_debug_Mod2List = Debug_ModList
+        init-if-undefined $_debug_ModList = Debug_ModList
         init-if-undefined $_debug_KickList = Debug_KickList
     end
 end
@@ -186,16 +184,21 @@ end
 
 define modlist
     _debug_init
-    printf "Segment           Module\n"
+    printf "Segment                                   Module\n"
 
     if $_debug_ModList
         printf "---------------------------------------------------------------------\n"
-        set $segnode = (struct segment *)$_debug_ModList->mlh_Head
+        set $modnode = (module_t *)$_debug_ModList->mlh_Head
 
-        while ($segnode->s_node.mln_Succ != 0)
-            printf "%p %12s %2u %32s\n", $segnode->s_lowest, $segnode->s_name, $segnode->s_num, $segnode->s_mod->m_name
+        while ($modnode->m_node.mln_Succ != 0)
+            set $segidx = 0
+            while ($segidx < $modnode->m_segcnt)
+                set $segnode = $modnode->m_segments[$segidx]
+                printf "%p %12s %2u %42s\n", $segnode->s_lowest, $segnode->s_name, $segnode->s_num, $segnode->s_mod->m_name
+                set $segidx = $segidx + 1
+            end
 
-            set $segnode = (struct segment *)$segnode->s_node.mln_Succ
+            set $modnode = (module_t *)$modnode->m_node.mln_Succ
         end
     end
 
@@ -210,7 +213,7 @@ define modlist
         set $i = 0
         while ($i < $shnum)
             if ($sh->addr != 0) && ($sh->size != 0)
-        printf "%p              %2u %32s\n", $sh->addr, $i, $kicknode->Name
+        printf "%p              %2u %42s\n", $sh->addr, $i, $kicknode->Name
         end
         set $sh = $sh + 1
         set $i = $i + 1
@@ -222,28 +225,78 @@ document modlist
 List of all the modules currently loaded in memory
 end
 
+# Execute a binary search over sorter array of segments
+define find_segment_in_module
+    set $arg_mod = $arg0
+    set $arg_address = $arg1
+    set $find_segment_in_module_result = 0
+    set $local_minsegidx = 0
+    set $local_maxsegidx = $arg_mod->m_segcnt - 1
+    set $_again = 1
+
+    while ($_again == 1)
+        set $local_segidx = ($local_maxsegidx + $local_minsegidx) / 2
+
+        if $arg_mod->m_segments[$local_segidx]->s_lowest <= $arg_address
+            if $arg_mod->m_segments[$local_segidx]->s_highest >= $arg_address
+                set $find_segment_in_module_result = $arg_mod->m_segments[$local_segidx]
+                loop_break
+            else
+                set $local_minsegidx = $local_segidx + 1
+            end
+        else
+            set $local_maxsegidx = $local_segidx - 1
+        end
+
+        if $local_maxsegidx < $local_minsegidx
+            # Not found, aborting
+            loop_break
+        end
+    end
+end
+
+define find_module_and_segment
+    _debug_init
+    set $find_module_and_segment_result_module = 0
+    set $find_module_and_segment_result_segment = 0
+
+    if $_debug_ModList
+        set $modnode = (module_t *)$_debug_ModList->mlh_Head
+
+        while ($modnode->m_node.mln_Succ != 0)
+            if $arg0 >= $modnode->m_lowest && $arg0 <= $modnode->m_highest
+
+                find_segment_in_module $modnode $arg0
+
+                if $find_segment_in_module_result
+                    set $find_module_and_segment_result_module = $modnode
+                    set $find_module_and_segment_result_segment = $find_segment_in_module_result
+                    loop_break
+                end
+            end
+            set $modnode = (module_t *)$modnode->m_node.mln_Succ
+        end
+    end
+end
+
 define findaddr
     _debug_init
     set $cont = 1
 
     #first search in modules loaded from disk
     printf "Searching in the loaded modules...\n"
-    if $_debug_ModList
-        set $segnode = (struct segment *)$_debug_ModList->mlh_Head
 
-        while ($segnode->s_node.mln_Succ != 0) && $cont
-        if $arg0 >= $segnode->s_lowest && $arg0 <= $segnode->s_highest
-                printf "Address found in %s, in segment %p.\nIf this is an executable, its .text section starts at %p.\n", $segnode->s_mod->m_name, $segnode->s_seg, $segnode->s_lowest
+    find_module_and_segment $arg0
 
-                set $cont = 0
-            end
-            set $segnode = (struct segment *)$segnode->s_node.mln_Succ
-        end
+    if $find_module_and_segment_result_module && $find_module_and_segment_result_segment
+        set $segnode = $find_module_and_segment_result_segment
+        printf "Address found in %s, in segment %p.\nIf this is an executable, its .text section starts at %p.\n", $segnode->s_mod->m_name, $segnode->s_seg, $segnode->s_lowest
+        set $cont = 0
     end
 
     if $cont
     printf "Searching in the kickstart list...\n"
-        set $kicknode = $_debug_KickList
+    set $kicknode = $_debug_KickList
 
     while ($kicknode != 0) && $cont
             set $eh = $kicknode->eh
@@ -360,74 +413,37 @@ define end_log
   set logging off
 end
 
-# Execute a binary search over sorter array of segments
-define find_segment_in_module
-    set $arg_mod = $arg0
-    set $arg_address = $arg1
-    set $find_segment_in_module_result = 0
-    set $local_minsegidx = 0
-    set $local_maxsegidx = $arg_mod->m_segcnt - 1
-    set $_again = 1
-
-    while ($_again == 1)
-        set $local_segidx = ($local_maxsegidx + $local_minsegidx) / 2
-
-        if $arg_mod->m_segments[$local_segidx]->s_lowest <= $arg_address
-            if $arg_mod->m_segments[$local_segidx]->s_highest >= $arg_address
-                set $find_segment_in_module_result = $arg_mod->m_segments[$local_segidx]
-                loop_break
-            else
-                set $local_minsegidx = $local_segidx
-            end
-        else
-            set $local_maxsegidx = $local_segidx
-        end
-
-        if $local_maxsegidx - $local_minsegidx == 1
-            # Not found, aborting
-            loop_break
-        end
-    end
-end
-
 define loadseg
     _debug_init
     dont-repeat
     set pagination off
-    if $_debug_Mod2List
+    if $_debug_ModList
         set $step = 1
-        set $modnode = (module_t *)$_debug_Mod2List->mlh_Head
-        while ($modnode->m_node.mln_Succ != 0)
-            if $arg0 >= $modnode->m_lowest && $arg0 <= $modnode->m_highest
-                set $this_mod = $modnode
-                find_segment_in_module $this_mod $arg0
 
-                if $find_segment_in_module_result
-                    # This is workaround for some flushing problem when loadseg.tmp had module name before command
-                    printf "\n"
+        find_module_and_segment $arg0
 
-                    log_to_file segname.tmp on
-                    printf "%s", $this_mod->m_name
-                    end_log
-                    shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
-                    log_to_file loadseg.tmp on
-                    printf "add-symbol-file "
-                    end_log
-                    shell head -n1 segname.tmp >>loadseg.tmp
-                    log_to_file loadseg.tmp off
-                    printf " %s", $this_mod->m_seggdbhlp
-                    set $step = 2
-                    end_log
-                    if ($step > 1)
-                        source loadseg.tmp
-                        loop_break
-                    end
-                end
+        if $find_module_and_segment_result_module && $find_module_and_segment_result_segment
+            # This is workaround for some flushing problem when loadseg.tmp had module name before command
+            printf "\n"
 
-            end
-            set $modnode = (module_t *)$modnode->m_node.mln_Succ
+            set $this_mod = $find_module_and_segment_result_module
+
+            log_to_file segname.tmp on
+            printf "%s", $this_mod->m_name
+            end_log
+            shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
+            log_to_file loadseg.tmp on
+            printf "add-symbol-file "
+            end_log
+            shell head -n1 segname.tmp >>loadseg.tmp
+            log_to_file loadseg.tmp off
+            printf " %s", $this_mod->m_seggdbhlp
+            end_log
+
+            source loadseg.tmp
+
+            set $step = 2
         end
-
 
         if $step < 2
             set $kicknode = $_debug_KickList
@@ -530,15 +546,13 @@ end
 
 define loadmods
     _debug_init
-    
-    if $_debug_ModList
-        set $_segnode = (struct segment *)$_debug_ModList->mlh_Head
 
-        while ($_segnode->s_node.mln_Succ != 0)
-            if $_segnode->s_num == 1
-                loadseg $_segnode->s_lowest
-            end
-            set $_segnode = (struct segment *)$_segnode->s_node.mln_Succ
+    if $_debug_ModList
+        set $loadmods_modnode = (module_t *)$_debug_ModList->mlh_Head
+
+        while ($loadmods_modnode->m_node.mln_Succ != 0)
+            loadseg $loadmods_modnode->m_lowest
+            set $loadmods_modnode = (module_t *)$loadmods_modnode->m_node.mln_Succ
         end
     end
 end
@@ -600,24 +614,25 @@ define loadbt
     set $_again = 1
     while ($_again == 1)
         printf "Checking frame #%d\n", $_frame_counter
-        
+
         set $_again = 0
-        
+
         log_to_file loadseg.tmp on
+        set pagination off
         bt
         end_log
 
         # Check if frame exists
-        
+
         log_to_file frameinfo.tmp on
         printf "shell grep \"#%d .*\" loadseg.tmp | sed \"s/#.*/set \\$_again = 1/\" >loadbt.tmp\n", $_frame_counter
         end_log
-        
+
         source frameinfo.tmp
         source loadbt.tmp
 
         if $_again == 1
-        
+
             # If frame is unresolved ("in ??") transform to "loadseg address"
             
             log_to_file frameinfo.tmp on
@@ -627,12 +642,14 @@ define loadbt
             source frameinfo.tmp
             source loadbt.tmp
 
-            set $_frame_counter = $_frame_counter + 1        
+            set $_frame_counter = $_frame_counter + 1
             if ($_frame_counter == 1000)
                 set $_again = 0
             end
         end
-    end        
+    end
+
+    set pagination on
 end
 document loadbt
 Tries to automatically load the symbols for all unresolved stack frames
