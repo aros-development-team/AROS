@@ -72,7 +72,7 @@ static BOOL ScanAndRemoveSegment(module_t *mod, BPTR segList);
         {
             struct Node * tmpnode;
 
-            ForeachNodeSafe(&DBGBASE(DebugBase)->db_LoadedModules, mod, tmpnode)
+            ForeachNodeSafe(&DBGBASE(DebugBase)->db_Modules, mod, tmpnode)
             {
                 if (ScanAndRemoveSegment(mod, segList))
                 {
