@@ -366,10 +366,29 @@ define end_log
   set logging off
 end
 
+define loadmod
+    set pagination off
+    set $this_mod = $arg0
+
+    log_to_file segname.tmp on
+    printf "%s", $this_mod->m_name
+    end_log
+    shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
+    log_to_file loadseg.tmp on
+    printf "add-symbol-file "
+    end_log
+    shell head -n1 segname.tmp >>loadseg.tmp
+    log_to_file loadseg.tmp off
+    printf " %s", $this_mod->m_seggdbhlp
+    end_log
+
+    source loadseg.tmp
+    set pagination on
+end
+
 define loadseg
     _debug_init
     dont-repeat
-    set pagination off
     if $_debug_ModList
         set $step = 1
 
@@ -379,21 +398,7 @@ define loadseg
             # This is workaround for some flushing problem when loadseg.tmp had module name before command
             printf "\n"
 
-            set $this_mod = $find_module_and_segment_result_module
-
-            log_to_file segname.tmp on
-            printf "%s", $this_mod->m_name
-            end_log
-            shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
-            log_to_file loadseg.tmp on
-            printf "add-symbol-file "
-            end_log
-            shell head -n1 segname.tmp >>loadseg.tmp
-            log_to_file loadseg.tmp off
-            printf " %s", $this_mod->m_seggdbhlp
-            end_log
-
-            source loadseg.tmp
+            loadmod $find_module_and_segment_result_module
 
             set $step = 2
         end
@@ -403,8 +408,6 @@ define loadseg
         end
 
     end
-
-    set pagination on
 end
 document loadseg
 Loads the module that contains the given address
@@ -417,7 +420,7 @@ define loadmods
         set $loadmods_modnode = (module_t *)$_debug_ModList->mlh_Head
 
         while ($loadmods_modnode->m_node.mln_Succ != 0)
-            loadseg $loadmods_modnode->m_lowest
+            loadmod $loadmods_modnode
             set $loadmods_modnode = (module_t *)$loadmods_modnode->m_node.mln_Succ
         end
     end
