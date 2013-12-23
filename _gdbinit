@@ -33,12 +33,10 @@ define _debug_init
     if $_debug_DebugBase != 0
         set $_debug_DebugBase = (struct DebugBase *)($_debug_DebugBase)
         # This is the case for debugging a ROM
-        set $_debug_ModList = &($_debug_DebugBase->db_LoadedModules)
-        set $_debug_KickList = $_debug_DebugBase->db_KernelModules
+        set $_debug_ModList = &($_debug_DebugBase->db_Modules)
     else
         # This is the case for debugging a bootstrap
         init-if-undefined $_debug_ModList = Debug_ModList
-        init-if-undefined $_debug_KickList = Debug_KickList
     end
 end
 document _debug_init
@@ -201,25 +199,6 @@ define modlist
             set $modnode = (module_t *)$modnode->m_node.mln_Succ
         end
     end
-
-    printf "---------------------------------------------------------------------\n"
-    set $kicknode = $_debug_KickList
-
-    while ($kicknode != 0)
-        set $eh = $kicknode->eh
-        set $sh = $kicknode->sh
-        set $shnum = $eh->shnum
-
-        set $i = 0
-        while ($i < $shnum)
-            if ($sh->addr != 0) && ($sh->size != 0)
-        printf "%p              %2u %42s\n", $sh->addr, $i, $kicknode->Name
-        end
-        set $sh = $sh + 1
-        set $i = $i + 1
-    end
-        set $kicknode = $kicknode->Next
-    end
 end
 document modlist
 List of all the modules currently loaded in memory
@@ -292,34 +271,6 @@ define findaddr
         set $segnode = $find_module_and_segment_result_segment
         printf "Address found in %s, in segment %p.\nIf this is an executable, its .text section starts at %p.\n", $segnode->s_mod->m_name, $segnode->s_seg, $segnode->s_lowest
         set $cont = 0
-    end
-
-    if $cont
-    printf "Searching in the kickstart list...\n"
-    set $kicknode = $_debug_KickList
-
-    while ($kicknode != 0) && $cont
-            set $eh = $kicknode->eh
-            set $sh = $kicknode->sh
-            set $shnum = $eh->shnum
-
-            set $i = 0
-            while ($i < $shnum) && $cont
-                if ($sh->addr != 0) && ($sh->size != 0)
-            set $lowest  = $sh->addr
-            set $highest = $sh->addr + $sh->size - 1
-
-            if $arg0 >= $lowest && $arg0 <= $highest
-                printf "Address found in %s in section number %d starting at %p.\n", $kicknode->Name, $i, $lowest
-                        set $cont = 0
-                    end
-                end
-
-        set $sh = $sh + 1
-        set $i = $i + 1
-        end
-            set $kicknode = $kicknode->Next
-        end
     end
 
     #then in the resident list
@@ -446,69 +397,6 @@ define loadseg
         end
 
         if $step < 2
-            set $kicknode = $_debug_KickList
-
-            while ($kicknode != 0) && $step == 1
-                set $eh = $kicknode->eh
-                set $sh = $kicknode->sh
-                set $shnum = $eh->shnum
-
-                set $i = 0
-                while ($i < $shnum)
-                    if ($sh->addr != 0) && ($sh->size != 0)
-                        set $lowest  = $sh->addr
-                        set $highest = $sh->addr + $sh->size - 1
-
-                        if $arg0 >= $lowest && $arg0 <= $highest
-                            set $shstrndx = $eh->shstrndx
-                            set $shstr = 0
-
-                            if ($shstrndx < 0xFF00)
-                                set $shstr = $shstrndx
-                            end
-                            if ($shstrndx > 0xFFFF)
-                                set $shstr = $shstrndx - (0x10000 - 0xFF00)
-                            end
-
-                            log_to_file segname.tmp on
-                            printf "%s", $kicknode->Name
-                            end_log
-                            shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
-                            log_to_file loadseg.tmp on
-                            printf "add-symbol-file "
-                            end_log
-                            shell head -n1 segname.tmp >>loadseg.tmp
-                            log_to_file loadseg.tmp off
-                            printf " %p", $lowest
-
-                            set $sh = $sh + 1
-                            set $i = $i + 1
-
-                            while ($i < $shnum)
-                                if ($sh->addr != 0) && ($sh->size != 0)
-#                                   This code does not work, cause error. I have no knowledge on how to make it work.
-#                                    set $segname = $kicknode->sh[$shstr] + $sh->name
-#                                    printf " -s %s %p", $segname, $sh->addr
-                                end
-                                set $step = $step + 1
-                                set $sh = $sh + 1
-                                set $i = $i + 1
-                            end
-
-                            end_log
-                            source loadseg.tmp
-                            loop_break
-                        end
-                    end
-
-                    set $sh = $sh + 1
-                    set $i = $i + 1
-                end
-                set $kicknode = $kicknode->Next
-            end
-        end
-
-        if $step < 2
             printf "No matching module for this address\n"
         end
 
@@ -518,30 +406,6 @@ define loadseg
 end
 document loadseg
 Loads the module that contains the given address
-end
-
-define loadkick
-    _debug_init
-    set $_kicknode = $_debug_KickList
-
-    while ($_kicknode != 0)
-        set $_eh = $_kicknode->eh
-        set $_sh = $_kicknode->sh
-        set $_shnum = $_eh->shnum
-
-        set $_i = 0
-        while ($_i < $_shnum)
-            if ($_i == 1) && ($_sh->addr != 0) && ($_sh->size != 0)
-                loadseg $_sh->addr
-            end
-            set $_sh = $_sh + 1
-            set $_i = $_i + 1
-        end
-        set $_kicknode = $_kicknode->Next
-    end
-end
-document loadkick
-Loads the Kickstart (symbols)
 end
 
 define loadmods
@@ -558,14 +422,6 @@ define loadmods
 end
 document loadmods
 Loads all the modules (symbols)
-end
-
-define loadall
-    loadkick
-    loadmods
-end
-document loadall
-Loads the symbols of the Kickstart and all modules
 end
 
 define loadframe
