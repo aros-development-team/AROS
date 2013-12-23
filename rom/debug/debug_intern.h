@@ -33,8 +33,10 @@ typedef struct
 #endif
     dbg_sym_t       *m_symbols;     /* Array of associated symbols */
     unsigned long   m_symcnt;       /* Number of symbols in the array */
-    void *          m_lowest;       /* Lowest address of all segments */
-    void *          m_highest;      /* Highest address of all segments */
+    void            *m_lowest;      /* Lowest address of all segments */
+    void            *m_highest;     /* Highest address of all segments */
+    void            *m_gaplowest;   /* Lowest address of biggest gap */
+    void            *m_gaphighest;  /* Highest address of biggest gap */
     char            m_name[1];      /* Module name, variable length */
 } module_t;
 

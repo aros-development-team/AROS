@@ -213,7 +213,8 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list)
 {
     struct segment *seg;
     struct Node *tmpnode;
-    LONG segidx = 0, i= 0;
+    LONG segidx = 0, i = 0;
+    IPTR maxgapsize = 0;
 #if AROS_MODULES_DEBUG
     TEXT buffer[512];
     STRPTR last = NULL;
@@ -276,6 +277,23 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list)
     /* Set module address range information */
     mod->m_lowest = mod->m_segments[0]->s_lowest;
     mod->m_highest = mod->m_segments[mod->m_segcnt - 1]->s_highest;
+
+    /* Calculate biggest gap */
+    mod->m_gaplowest  = (void *)-1;
+    mod->m_gaphighest = (void *)0;
+
+    for (i = 0; i < mod->m_segcnt - 1; i++)
+    {
+        IPTR gapsize = (IPTR)mod->m_segments[i + 1]->s_lowest - (IPTR)mod->m_segments[i]->s_highest - 1;
+        if (gapsize > maxgapsize)
+        {
+            maxgapsize = gapsize;
+            mod->m_gaplowest  = (void *)((IPTR)mod->m_segments[i]->s_highest + 1);
+            mod->m_gaphighest = (void *)((IPTR)mod->m_segments[i + 1]->s_lowest - 1);
+        }
+    }
+
+    bug("[Debug] Module %s gap 0x%x - 0x%x\n", mod->m_name, mod->m_gaplowest, mod->m_gaphighest);
 }
 
 static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType, APTR DebugInfo, struct Library *DebugBase)
