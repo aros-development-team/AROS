@@ -43,6 +43,7 @@ static int Debug_Init(struct DebugBase *DebugBase)
             return FALSE;
 
     NEWLIST(&DebugBase->db_Modules);
+    NEWLIST(&DebugBase->db_LoadedModules);
     InitSemaphore(&DebugBase->db_ModSem);
 
     bootMsg = KrnGetBootInfo();
@@ -56,7 +57,7 @@ static int Debug_Init(struct DebugBase *DebugBase)
      * and it can read debug information only from there
      */
     if (HostIFace && HostIFace->ModListPtr)
-        *HostIFace->ModListPtr = &DebugBase->db_Modules;
+        *HostIFace->ModListPtr = &DebugBase->db_LoadedModules;
 #endif
 
     D(bug("[Debug] Debug_Init() done\n"));

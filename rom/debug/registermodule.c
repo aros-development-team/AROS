@@ -14,6 +14,7 @@
 #include <exec/lists.h>
 #include <libraries/debug.h>
 #include <proto/exec.h>
+#include <clib/alib_protos.h>
 
 #include <stdint.h>
 #include <string.h>
@@ -59,6 +60,11 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
         return;
     strcpy(mod->m_name, name);
     mod->m_seg = segList;
+
+    ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+    AddTail((struct List *)&DBGBASE(DebugBase)->db_LoadedModules, (struct Node *)mod);
+    ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+
     while (segList) {
         ULONG *segPtr = BADDR(segList);
         struct segment *seg = AllocMem(sizeof(struct segment), MEMF_PUBLIC | MEMF_CLEAR);
@@ -79,6 +85,65 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
     }
 }
 
+static void HandleModuleSegments(module_t *mod, struct MinList * list, ULONG seggdbhlplen)
+{
+    struct segment *seg;
+    LONG segidx = 0, i= 0;
+#if AROS_MODULES_DEBUG
+    TEXT buffer[512];
+    STRPTR last = NULL;
+#endif
+
+    mod->m_segments = AllocVec(mod->m_segcnt * sizeof(struct segment *), MEMF_PUBLIC | MEMF_CLEAR);
+
+    ForeachNode(list, seg)
+    {
+        if (seg->s_mod == mod)
+        {
+            /* Assign segment to module */
+            mod->m_segments[segidx++] = seg;
+
+            /* Correct module address range information */
+            if (mod->m_lowest > seg->s_lowest)
+                mod->m_lowest = seg->s_lowest;
+            if (mod->m_highest < seg->s_highest)
+                mod->m_highest = seg->s_highest;
+
+#if AROS_MODULES_DEBUG
+            /* This solution isn't pretty but it allows to actually load symbols of C++
+             * heavy programs in sane time. The original approach with generating
+             * this in .gdbinit script took about 3 minutes for binary with around 4000
+             * sections. Now loading symbols for such file takes 2-3 seconds.
+             */
+            if (mod->m_seggdbhlp == NULL)
+            {
+                mod->m_seggdbhlp = AllocVec(seggdbhlplen, MEMF_PUBLIC | MEMF_CLEAR);
+                __sprintf(mod->m_seggdbhlp, "0x%x ", seg->s_lowest);
+                last = mod->m_seggdbhlp + strlen(mod->m_seggdbhlp);
+            }
+            else
+            {
+                __sprintf(buffer, "-s %s 0x%x ", seg->s_name, seg->s_lowest);
+                strcpy(last, buffer);
+                last += strlen(buffer);
+            }
+#endif
+        }
+    }
+
+    /* Sort the symbols by their address so that searching can be faster */
+    while(i < mod->m_segcnt - 1)
+    {
+        if (mod->m_segments[i]->s_lowest > mod->m_segments[i + 1]->s_lowest)
+        {
+            struct segment *temp = mod->m_segments[i + 1];
+            mod->m_segments[i + 1] = mod->m_segments[i];
+            mod->m_segments[i] = temp;
+            if (i > 0) i -= 1; /* Repeat the check on previous element */
+        }
+        else i++;
+    }
+}
 
 /*****************************************************************************
 
@@ -133,7 +198,7 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
 
     if (debugType == DEBUG_ELF)
     {
-            struct elfheader *eh = ((struct ELF_DebugInfo *)debugInfo)->eh;
+        struct elfheader *eh = ((struct ELF_DebugInfo *)debugInfo)->eh;
         struct sheader *sections = ((struct ELF_DebugInfo *)debugInfo)->sh;
         module_t *mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC|MEMF_CLEAR);
 
@@ -141,6 +206,7 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
         {
             ULONG int_shnum    = eh->shnum;
             ULONG int_shstrndx = eh->shstrndx;
+            ULONG int_seggdbhlplen = 0;
             ULONG shstr;
             ULONG i;
 
@@ -157,6 +223,8 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
             mod->m_seg = segList;
             if (sections[shstr].type == SHT_STRTAB)
                 mod->m_shstr = getstrtab(&sections[shstr]);
+            mod->m_lowest  = (void*)-1;
+            mod->m_highest = (void*)0;
 
             for (i=0; i < int_shnum; i++)
             {
@@ -186,7 +254,10 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
                             seg->s_mod     = mod;
                             seg->s_num     = i;
                             if (mod->m_shstr)
+                            {
                                 seg->s_name = &mod->m_shstr[sections[i].name];
+                                int_seggdbhlplen += strlen(seg->s_name) + 5 + 2 + sizeof(APTR) * 2;
+                            }
                             else
                                 seg->s_name = NULL;
 
@@ -215,6 +286,12 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
 
                 return;
             }
+
+            ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+            AddTail((struct List *)&DBGBASE(DebugBase)->db_LoadedModules, (struct Node *)mod);
+            ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+
+            HandleModuleSegments(mod, &DBGBASE(DebugBase)->db_Modules, int_seggdbhlplen);
 
             /* Parse module's symbol table */
             for (i=0; i < int_shnum; i++)

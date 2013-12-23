@@ -92,6 +92,11 @@
                         FreeVec(mod->m_shstr);
                     }
 
+                    Remove((struct Node *)mod);
+                    FreeVec(mod->m_segments);
+#if AROS_MODULES_DEBUG
+                    FreeVec(mod->m_seggdbhlp);
+#endif
                     /* Free module descriptor at last */
                     FreeVec(mod);
                 }
