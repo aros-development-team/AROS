@@ -51,7 +51,6 @@ struct segment
 struct DebugBase
 {
     struct Library          db_Lib;
-    struct MinList          db_Modules;
     struct MinList          db_LoadedModules;
     struct ELF_ModuleInfo   *db_KernelModules;
     struct SignalSemaphore  db_ModSem;
