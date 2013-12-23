@@ -249,12 +249,12 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list)
             if (mod->m_seggdbhlp == NULL)
             {
                 mod->m_seggdbhlp = AllocVec(seggdbhlplen, MEMF_PUBLIC | MEMF_CLEAR);
-                __sprintf(mod->m_seggdbhlp, "0x%x ", seg->s_lowest);
+                __sprintf(mod->m_seggdbhlp, "0x%lx ", seg->s_lowest);
                 last = mod->m_seggdbhlp + strlen(mod->m_seggdbhlp);
             }
             else
             {
-                __sprintf(buffer, "-s %s 0x%x ", seg->s_name, seg->s_lowest);
+                __sprintf(buffer, "-s %s 0x%lx ", seg->s_name, seg->s_lowest);
                 strcpy(last, buffer);
                 last += strlen(buffer);
             }
