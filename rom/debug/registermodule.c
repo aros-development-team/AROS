@@ -158,7 +158,7 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
                             AddTail((struct List *)&tmplist, (struct Node *)seg);
 
                             ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-                            AddTail((struct List *)&DBGBASE(DebugBase)->db_LoadedModules, (struct Node *)mod);
+                            AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)mod);
                             ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 
                             HandleModuleSegments(mod, &tmplist);
@@ -311,7 +311,7 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
     }
 
     ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-    AddTail((struct List *)&DBGBASE(DebugBase)->db_LoadedModules, (struct Node *)mod);
+    AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)mod);
     ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 
     HandleModuleSegments(mod, &tmplist);
@@ -406,7 +406,7 @@ void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, st
         }
 
         ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-        AddTail((struct List *)&DBGBASE(DebugBase)->db_LoadedModules, (struct Node *)mod);
+        AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)mod);
         ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 
         HandleModuleSegments(mod, &tmplist);

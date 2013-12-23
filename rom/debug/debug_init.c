@@ -43,14 +43,14 @@ static int Debug_Init(struct DebugBase *DebugBase)
     if (!KernelBase)
             return FALSE;
 
-    NEWLIST(&DebugBase->db_LoadedModules);
+    NEWLIST(&DebugBase->db_Modules);
     InitSemaphore(&DebugBase->db_ModSem);
 
     bootMsg = KrnGetBootInfo();
-    DebugBase->db_KernelModules = (struct ELF_ModuleInfo *)LibGetTagData(KRN_DebugInfo, 0, bootMsg);
+    kmod = (struct ELF_ModuleInfo *)LibGetTagData(KRN_DebugInfo, 0, bootMsg);
 
 
-    for (kmod = DBGBASE(DebugBase)->db_KernelModules; kmod; kmod = kmod->Next)
+    for (; kmod; kmod = kmod->Next)
     {
         RegisterModule_ELF(kmod->Name, BNULL, kmod->eh, kmod->sh, (struct Library *)DebugBase);
     }
@@ -63,7 +63,7 @@ static int Debug_Init(struct DebugBase *DebugBase)
      * and it can read debug information only from there
      */
     if (HostIFace && HostIFace->ModListPtr)
-        *HostIFace->ModListPtr = &DebugBase->db_LoadedModules;
+        *HostIFace->ModListPtr = &DebugBase->db_Modules;
 #endif
 
     D(bug("[Debug] Debug_Init() done\n"));
