@@ -62,7 +62,8 @@ static struct segment * FindSegment(void *addr, struct Library *DebugBase)
         DSEGS(bug("[Debug] Checking module 0x%p - 0x%p, %s\n", mod->m_lowest, mod->m_highest, mod->m_name));
 
         /* if address suits the module bounds, you got a candidate */
-        if ((mod->m_lowest <= addr) && (mod->m_highest >= addr))
+        if (!((mod->m_gaplowest <= addr) && (mod->m_gaphighest >= addr)) &&
+                ((mod->m_lowest <= addr) && (mod->m_highest >= addr)))
         {
             struct segment *seg = FindSegmentInModule(addr, mod);
             if (seg)
