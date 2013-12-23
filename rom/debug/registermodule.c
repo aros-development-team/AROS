@@ -25,8 +25,6 @@ static inline char *getstrtab(struct sheader *sh);
 static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR value);
 static void HandleModuleSegments(module_t *mod, struct MinList * list);
 static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType, APTR DebugInfo, struct Library *DebugBase);
-static void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, struct sheader *sections,
-        struct Library *DebugBase);
 
 /*****************************************************************************
 
@@ -319,10 +317,13 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
     HandleModuleSegments(mod, &tmplist);
 }
 
-static void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, struct sheader *sections,
+void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, struct sheader *sections,
         struct Library *DebugBase)
 {
     module_t *mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC|MEMF_CLEAR);
+    BOOL segListSkip = (segList == BNULL ? TRUE : FALSE);
+
+    D(bug("[Debug] RegisterModule_ELF(%s)\n", name));
 
     if (mod)
     {
@@ -363,7 +364,7 @@ static void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader 
                 }
 
                 /* Every loadable section with nonzero size got a corresponding DOS segment */
-                if (segList && (sections[i].flags & SHF_ALLOC))
+                if ((segListSkip || segList) && (sections[i].flags & SHF_ALLOC))
                 {
                     struct segment *seg = AllocMem(sizeof(struct segment), MEMF_PUBLIC);
 
@@ -386,7 +387,7 @@ static void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader 
                     }
 
                     /* Advance to next DOS segment */
-                    segList = *(BPTR *)BADDR(segList);
+                    if (!segListSkip) segList = *(BPTR *)BADDR(segList);
                 }
             }
         }
@@ -409,6 +410,7 @@ static void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader 
         ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 
         HandleModuleSegments(mod, &tmplist);
+        D(bug("[Debug] Module %s, 0x%x - 0x%x added to list of modules\n", mod->m_name, mod->m_lowest, mod->m_highest));
 
         /* Parse module's symbol table */
         for (i=0; i < int_shnum; i++)

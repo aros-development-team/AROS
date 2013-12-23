@@ -9,6 +9,7 @@
 #include <dos/bptr.h>
 #include <exec/libraries.h>
 #include <exec/semaphores.h>
+#include <libraries/debug.h>
 
 typedef struct
 {
@@ -59,3 +60,6 @@ struct DebugBase
 
 #define DBGBASE(x) ((struct DebugBase *)x)
 #define KernelBase  DBGBASE(DebugBase)->db_KernelBase
+
+void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, struct sheader *sections,
+        struct Library *DebugBase);
