@@ -205,9 +205,10 @@ List of all the modules currently loaded in memory
 end
 
 # Execute a binary search over sorter array of segments
+# Keep this function synchronized with decodelocation.c, FindSegmentInModule
 define find_segment_in_module
-    set $arg_mod = $arg0
-    set $arg_address = $arg1
+    set $arg_address = $arg0
+    set $arg_mod = $arg1
     set $find_segment_in_module_result = 0
     set $local_minsegidx = 0
     set $local_maxsegidx = $arg_mod->m_segcnt - 1
@@ -234,10 +235,10 @@ define find_segment_in_module
     end
 end
 
-define find_module_and_segment
+# Keep this function synchronized with decodelocation.c, FindSegment
+define find_segment
     _debug_init
-    set $find_module_and_segment_result_module = 0
-    set $find_module_and_segment_result_segment = 0
+    set $find_segment_result = 0
 
     if $_debug_ModList
         set $modnode = (module_t *)$_debug_ModList->mlh_Head
@@ -246,11 +247,10 @@ define find_module_and_segment
             if !($modnode->m_gaplowest <= $arg0 && $modnode->m_gaphighest >= $arg0)
                 if $modnode->m_lowest <= $arg0 && $modnode->m_highest >= $arg0
 
-                    find_segment_in_module $modnode $arg0
+                    find_segment_in_module $arg0 $modnode
 
                     if $find_segment_in_module_result
-                        set $find_module_and_segment_result_module = $modnode
-                        set $find_module_and_segment_result_segment = $find_segment_in_module_result
+                        set $find_segment_result = $find_segment_in_module_result
                         loop_break
                     end
                 end
@@ -267,10 +267,10 @@ define findaddr
     #first search in modules loaded from disk
     printf "Searching in the loaded modules...\n"
 
-    find_module_and_segment $arg0
+    find_segment $arg0
 
-    if $find_module_and_segment_result_module && $find_module_and_segment_result_segment
-        set $segnode = $find_module_and_segment_result_segment
+    if $find_segment_result
+        set $segnode = $find_segment_result
         printf "Address found in %s, in segment %p.\nIf this is an executable, its .text section starts at %p.\n", $segnode->s_mod->m_name, $segnode->s_seg, $segnode->s_lowest
         set $cont = 0
     end
@@ -392,13 +392,13 @@ define loadseg
     if $_debug_ModList
         set $step = 1
 
-        find_module_and_segment $arg0
+        find_segment $arg0
 
-        if $find_module_and_segment_result_module && $find_module_and_segment_result_segment
+        if $find_segment_result
             # This is workaround for some flushing problem when loadseg.tmp had module name before command
             printf "\n"
 
-            loadmod $find_module_and_segment_result_module
+            loadmod $find_segment_result->s_mod
 
             set $step = 2
         end
