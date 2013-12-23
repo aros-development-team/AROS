@@ -18,6 +18,61 @@
 
 #include "debug_intern.h"
 
+/* Binary search over sorted array of segments */
+static struct segment * FindSegmentInModule(void *addr, module_t *mod)
+{
+    LONG idx, minidx = 0, maxidx = mod->m_segcnt - 1;
+
+    while(TRUE)
+    {
+        idx = (maxidx + minidx) / 2;
+
+        if (mod->m_segments[idx]->s_lowest <= addr)
+        {
+            if (mod->m_segments[idx]->s_highest >= addr)
+            {
+                return mod->m_segments[idx];
+            }
+            else
+            {
+                /* cut off segments with lower addresses */
+                minidx = idx + 1;
+            }
+        }
+        else
+        {
+            /* cut off segments with higher addresses */
+            maxidx = idx - 1;
+        }
+
+        /* Not found, aborting */
+        if (maxidx < minidx)
+            return NULL;
+    }
+
+    return NULL;
+}
+
+static struct segment * FindSegment(void *addr, struct Library *DebugBase)
+{
+    module_t * mod;
+
+    ForeachNode(&DBGBASE(DebugBase)->db_LoadedModules, mod)
+    {
+        DSEGS(bug("[Debug] Checking module 0x%p - 0x%p, %s\n", mod->m_lowest, mod->m_highest, mod->m_name));
+
+        /* if address suits the module bounds, you got a candidate */
+        if ((mod->m_lowest <= addr) && (mod->m_highest >= addr))
+        {
+            struct segment *seg = FindSegmentInModule(addr, mod);
+            if (seg)
+                return seg;
+        }
+    }
+
+    return NULL;
+}
+
 static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **funend, void *addr)
 {
     dbg_sym_t *sym = mod->m_symbols;
@@ -190,30 +245,23 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
     if (!super)
         ObtainSemaphoreShared(&DBGBASE(DebugBase)->db_ModSem);
 
-    ForeachNode(&DBGBASE(DebugBase)->db_Modules, seg)
+    seg = FindSegment(addr, DebugBase);
+    if (seg)
     {
-        DSEGS(bug("[Debug] Checking segment 0x%p - 0x%p, num %u, module %s\n", seg->s_lowest, seg->s_highest, seg->s_num, seg->s_mod->m_name));
+        D(bug("[Debug] Found module %s, Segment %u (%s, 0x%p - 0x%p)\n", seg->s_mod->m_name, seg->s_num,
+               seg->s_name, seg->s_lowest, seg->s_highest));
 
-        /* if address suits the segment bounds, you got it */
-        if ((seg->s_lowest <= addr) && (seg->s_highest >= addr))
-        {
-            D(bug("[Debug] Found module %s, Segment %u (%s, 0x%p - 0x%p)\n", seg->s_mod->m_name, seg->s_num,
-                   seg->s_name, seg->s_lowest, seg->s_highest));
+        *module   = seg->s_mod->m_name;
+        *segment  = seg->s_name;
+        *secptr   = seg->s_seg;
+        *secnum   = seg->s_num;
+        *secstart = seg->s_lowest;
+        *secend   = seg->s_highest;
+        *secfirst = seg->s_mod->m_seg;
 
-            *module   = seg->s_mod->m_name;
-            *segment  = seg->s_name;
-            *secptr   = seg->s_seg;
-            *secnum   = seg->s_num;
-            *secstart = seg->s_lowest;
-            *secend   = seg->s_highest;
-            *secfirst = seg->s_mod->m_seg;
-
-            /* Now look up the function if requested */
-            if (FindSymbol(seg->s_mod, function, funstart, funend, symaddr)) {
-                ret = 1;
-                break;
-            }
-        }
+        /* Now look up the function if requested */
+        FindSymbol(seg->s_mod, function, funstart, funend, symaddr);
+        ret = 1;
     }
 
     if (!super)
@@ -222,7 +270,7 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
     /* Try to search kernel debug information if found nothing */
     if (!ret)
     {
-            struct ELF_ModuleInfo *kmod;
+        struct ELF_ModuleInfo *kmod;
 
         D(bug("[Debug] Checking kernel modules...\n"));
 

@@ -21,129 +21,10 @@
 
 #include "debug_intern.h"
 
-static inline char *getstrtab(struct sheader *sh)
-{
-    char *str;
-
-    str = AllocVec(sh->size, MEMF_PUBLIC);
-    if (str)
-        CopyMem(sh->addr, str, sh->size);
-
-    return str;
-}
-
-static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR value)
-{
-    if (mod->m_str)
-        sym->s_name = &mod->m_str[st->name];
-    else
-        sym->s_name = NULL;
-
-    sym->s_lowest = value;
-    if (st->size)
-        sym->s_highest = value + st->size - 1;
-    else
-        /* For symbols with zero size KDL_SymbolEnd will give NULL */ 
-        sym->s_highest = NULL;
-
-    /* We count symbols here because not all of them can be added */
-    mod->m_symcnt++;
-}
-
-static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType, APTR DebugInfo, struct Library *DebugBase)
-{
-    module_t *mod;
-    int i = 0;
-
-    mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC|MEMF_CLEAR);
-    if (!mod)
-        return;
-    strcpy(mod->m_name, name);
-    mod->m_seg = segList;
-
-    ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-    AddTail((struct List *)&DBGBASE(DebugBase)->db_LoadedModules, (struct Node *)mod);
-    ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-
-    while (segList) {
-        ULONG *segPtr = BADDR(segList);
-        struct segment *seg = AllocMem(sizeof(struct segment), MEMF_PUBLIC | MEMF_CLEAR);
-        if (seg) {
-            seg->s_lowest  = (UBYTE*)segPtr - 4;
-            seg->s_highest = (UBYTE*)segPtr + segPtr[-1];
-            seg->s_seg     = segList;
-            seg->s_num     = i;
-            seg->s_mod     = mod;
-            mod->m_segcnt++;
-            ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-            AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)seg);
-            ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-            D(bug("[Debug] Adding segment %d 0x%p (%p-%p)\n", i, segList, seg->s_lowest, seg->s_highest));
-        }
-        segList = *(BPTR *)BADDR(segList);
-        i++;
-    }
-}
-
-static void HandleModuleSegments(module_t *mod, struct MinList * list, ULONG seggdbhlplen)
-{
-    struct segment *seg;
-    LONG segidx = 0, i= 0;
-#if AROS_MODULES_DEBUG
-    TEXT buffer[512];
-    STRPTR last = NULL;
-#endif
-
-    mod->m_segments = AllocVec(mod->m_segcnt * sizeof(struct segment *), MEMF_PUBLIC | MEMF_CLEAR);
-
-    ForeachNode(list, seg)
-    {
-        if (seg->s_mod == mod)
-        {
-            /* Assign segment to module */
-            mod->m_segments[segidx++] = seg;
-
-            /* Correct module address range information */
-            if (mod->m_lowest > seg->s_lowest)
-                mod->m_lowest = seg->s_lowest;
-            if (mod->m_highest < seg->s_highest)
-                mod->m_highest = seg->s_highest;
-
-#if AROS_MODULES_DEBUG
-            /* This solution isn't pretty but it allows to actually load symbols of C++
-             * heavy programs in sane time. The original approach with generating
-             * this in .gdbinit script took about 3 minutes for binary with around 4000
-             * sections. Now loading symbols for such file takes 2-3 seconds.
-             */
-            if (mod->m_seggdbhlp == NULL)
-            {
-                mod->m_seggdbhlp = AllocVec(seggdbhlplen, MEMF_PUBLIC | MEMF_CLEAR);
-                __sprintf(mod->m_seggdbhlp, "0x%x ", seg->s_lowest);
-                last = mod->m_seggdbhlp + strlen(mod->m_seggdbhlp);
-            }
-            else
-            {
-                __sprintf(buffer, "-s %s 0x%x ", seg->s_name, seg->s_lowest);
-                strcpy(last, buffer);
-                last += strlen(buffer);
-            }
-#endif
-        }
-    }
-
-    /* Sort the symbols by their address so that searching can be faster */
-    while(i < mod->m_segcnt - 1)
-    {
-        if (mod->m_segments[i]->s_lowest > mod->m_segments[i + 1]->s_lowest)
-        {
-            struct segment *temp = mod->m_segments[i + 1];
-            mod->m_segments[i + 1] = mod->m_segments[i];
-            mod->m_segments[i] = temp;
-            if (i > 0) i -= 1; /* Repeat the check on previous element */
-        }
-        else i++;
-    }
-}
+static inline char *getstrtab(struct sheader *sh);
+static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR value);
+static void HandleModuleSegments(module_t *mod, struct MinList * list);
+static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType, APTR DebugInfo, struct Library *DebugBase);
 
 /*****************************************************************************
 
@@ -206,9 +87,11 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list, ULONG seg
         {
             ULONG int_shnum    = eh->shnum;
             ULONG int_shstrndx = eh->shstrndx;
-            ULONG int_seggdbhlplen = 0;
             ULONG shstr;
             ULONG i;
+            struct MinList tmplist;
+
+            NEWLIST(&tmplist);
 
             /* Get wider versions of shnum and shstrndx from first section header if needed */
             if (int_shnum == 0)
@@ -223,8 +106,6 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list, ULONG seg
             mod->m_seg = segList;
             if (sections[shstr].type == SHT_STRTAB)
                 mod->m_shstr = getstrtab(&sections[shstr]);
-            mod->m_lowest  = (void*)-1;
-            mod->m_highest = (void*)0;
 
             for (i=0; i < int_shnum; i++)
             {
@@ -254,18 +135,13 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list, ULONG seg
                             seg->s_mod     = mod;
                             seg->s_num     = i;
                             if (mod->m_shstr)
-                            {
                                 seg->s_name = &mod->m_shstr[sections[i].name];
-                                int_seggdbhlplen += strlen(seg->s_name) + 5 + 2 + sizeof(APTR) * 2;
-                            }
                             else
                                 seg->s_name = NULL;
 
                             mod->m_segcnt++;
 
-                            ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-                            AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)seg);
-                            ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+                            AddTail((struct List *)&tmplist, (struct Node *)seg);
                         }
 
                         /* Advance to next DOS segment */
@@ -291,7 +167,7 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list, ULONG seg
             AddTail((struct List *)&DBGBASE(DebugBase)->db_LoadedModules, (struct Node *)mod);
             ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
 
-            HandleModuleSegments(mod, &DBGBASE(DebugBase)->db_Modules, int_seggdbhlplen);
+            HandleModuleSegments(mod, &tmplist);
 
             /* Parse module's symbol table */
             for (i=0; i < int_shnum; i++)
@@ -337,7 +213,7 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list, ULONG seg
 
         ForeachNode(debugInfo, pm) {
             struct segment *seg;
-           
+
             seg = AllocVec(sizeof(struct segment) + sizeof(module_t) + strlen(pm->m_name), MEMF_PUBLIC|MEMF_CLEAR);
 
             if (seg) {
@@ -358,8 +234,8 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list, ULONG seg
 
                 mod->m_shstr = NULL;
                 mod->m_str = NULL;
-                mod->m_segcnt = 0;
-               
+                mod->m_segcnt = 1;
+
                 /* Determine the size of the string table */
                 symbols = 0;
                 ForeachNode(&pm->m_symbols, sym) {
@@ -392,6 +268,9 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list, ULONG seg
 
                         mod->m_symbols = AllocVec(sizeof(*mod->m_symbols) * symbols, MEMF_PUBLIC);
                         if (mod->m_symbols) {
+                            struct MinList tmplist;
+                            NEWLIST(&tmplist);
+
                             dsym = mod->m_symbols;
                             ForeachNode(&pm->m_symbols, sym) {
                                 dsym->s_name = ((APTR)sym->s_name - str_l) + mod->m_str;
@@ -399,9 +278,15 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list, ULONG seg
                                 dsym->s_highest= (APTR)(uintptr_t)sym->s_highest;
                                 dsym++;
                             }
+
+                            AddTail((struct List *)&tmplist, (struct Node *)seg);
+
                             ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-                            AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)seg);
+                            AddTail((struct List *)&DBGBASE(DebugBase)->db_LoadedModules, (struct Node *)mod);
                             ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+
+                            HandleModuleSegments(mod, &tmplist);
+
                             continue;
                         }
 
@@ -410,10 +295,148 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list, ULONG seg
 
                     FreeVec(seg);
                 }
+
             }
         }
     } else if (debugType == DEBUG_HUNK) {
         RegisterModule_Hunk(name, segList, debugType, debugInfo, DebugBase);
     }
     AROS_LIBFUNC_EXIT
+}
+
+static inline char *getstrtab(struct sheader *sh)
+{
+    char *str;
+
+    str = AllocVec(sh->size, MEMF_PUBLIC);
+    if (str)
+        CopyMem(sh->addr, str, sh->size);
+
+    return str;
+}
+
+static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR value)
+{
+    if (mod->m_str)
+        sym->s_name = &mod->m_str[st->name];
+    else
+        sym->s_name = NULL;
+
+    sym->s_lowest = value;
+    if (st->size)
+        sym->s_highest = value + st->size - 1;
+    else
+        /* For symbols with zero size KDL_SymbolEnd will give NULL */
+        sym->s_highest = NULL;
+
+    /* We count symbols here because not all of them can be added */
+    mod->m_symcnt++;
+}
+
+static void HandleModuleSegments(module_t *mod, struct MinList * list)
+{
+    struct segment *seg;
+    struct Node *tmpnode;
+    LONG segidx = 0, i= 0;
+#if AROS_MODULES_DEBUG
+    TEXT buffer[512];
+    STRPTR last = NULL;
+    ULONG seggdbhlplen = 0;
+#endif
+
+    mod->m_segments = AllocVec(mod->m_segcnt * sizeof(struct segment *), MEMF_PUBLIC | MEMF_CLEAR);
+
+#if AROS_MODULES_DEBUG
+    ForeachNode(list, seg)
+    {
+        if (seg->s_name) seggdbhlplen += strlen(seg->s_name) + 5 + 2 + sizeof(APTR) * 2;
+    }
+#endif
+
+    ForeachNodeSafe(list, seg, tmpnode)
+    {
+        Remove((struct Node*)seg);
+
+        /* Assign segment to module */
+        mod->m_segments[segidx++] = seg;
+
+#if AROS_MODULES_DEBUG
+        /* This solution isn't pretty but it allows to actually load symbols of C++
+         * heavy programs in sane time. The original approach with generating
+         * this in .gdbinit script took about 3 minutes for binary with around 4000
+         * sections. Now loading symbols for such file takes 2-3 seconds.
+         */
+        if (seg->s_name) /* Only for segments which have a name */
+        {
+            if (mod->m_seggdbhlp == NULL)
+            {
+                mod->m_seggdbhlp = AllocVec(seggdbhlplen, MEMF_PUBLIC | MEMF_CLEAR);
+                __sprintf(mod->m_seggdbhlp, "0x%x ", seg->s_lowest);
+                last = mod->m_seggdbhlp + strlen(mod->m_seggdbhlp);
+            }
+            else
+            {
+                __sprintf(buffer, "-s %s 0x%x ", seg->s_name, seg->s_lowest);
+                strcpy(last, buffer);
+                last += strlen(buffer);
+            }
+        }
+#endif
+    }
+
+    /* Sort the symbols by their address so that searching can be faster */
+    while(i < mod->m_segcnt - 1)
+    {
+        if (mod->m_segments[i]->s_lowest > mod->m_segments[i + 1]->s_lowest)
+        {
+            struct segment *temp = mod->m_segments[i + 1];
+            mod->m_segments[i + 1] = mod->m_segments[i];
+            mod->m_segments[i] = temp;
+            if (i > 0) i -= 1; /* Repeat the check on previous element */
+        }
+        else i++;
+    }
+
+    /* Set module address range information */
+    mod->m_lowest = mod->m_segments[0]->s_lowest;
+    mod->m_highest = mod->m_segments[mod->m_segcnt - 1]->s_highest;
+}
+
+static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType, APTR DebugInfo, struct Library *DebugBase)
+{
+    module_t *mod;
+    int i = 0;
+    struct MinList tmplist;
+
+    mod = AllocVec(sizeof(module_t) + strlen(name), MEMF_PUBLIC|MEMF_CLEAR);
+    if (!mod)
+        return;
+    NEWLIST(&tmplist);
+    strcpy(mod->m_name, name);
+    mod->m_seg = segList;
+
+    while (segList) {
+        ULONG *segPtr = BADDR(segList);
+        struct segment *seg = AllocMem(sizeof(struct segment), MEMF_PUBLIC | MEMF_CLEAR);
+        if (seg) {
+            seg->s_lowest  = (UBYTE*)segPtr - 4;
+            seg->s_highest = (UBYTE*)segPtr + segPtr[-1];
+            seg->s_seg     = segList;
+            seg->s_num     = i;
+            seg->s_mod     = mod;
+            mod->m_segcnt++;
+
+            AddTail((struct List *)&tmplist, (struct Node *)seg);
+
+            D(bug("[Debug] Adding segment %d 0x%p (%p-%p)\n", i, segList, seg->s_lowest, seg->s_highest));
+        }
+        segList = *(BPTR *)BADDR(segList);
+        i++;
+    }
+
+    ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+    AddTail((struct List *)&DBGBASE(DebugBase)->db_LoadedModules, (struct Node *)mod);
+    ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+
+    HandleModuleSegments(mod, &tmplist);
 }

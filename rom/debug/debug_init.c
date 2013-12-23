@@ -42,7 +42,6 @@ static int Debug_Init(struct DebugBase *DebugBase)
     if (!KernelBase)
             return FALSE;
 
-    NEWLIST(&DebugBase->db_Modules);
     NEWLIST(&DebugBase->db_LoadedModules);
     InitSemaphore(&DebugBase->db_ModSem);
 

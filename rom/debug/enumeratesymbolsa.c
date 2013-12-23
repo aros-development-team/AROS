@@ -87,16 +87,14 @@ static inline void callhook(struct Hook * handler, CONST_STRPTR modname, CONST_S
 
 static void EnumerateLoadedModules(struct Hook * handler, struct Library * DebugBase)
 {
-    struct segment *seg;
+    module_t *mod;
 
-    ForeachNode(&DBGBASE(DebugBase)->db_Modules, seg)
+    ForeachNode(&DBGBASE(DebugBase)->db_LoadedModules, mod)
     {
-        module_t *mod = seg->s_mod;
         dbg_sym_t *sym = mod->m_symbols;
         ULONG i;
 
-        D(bug("[Debug] Checking segment 0x%p - 0x%p, num %u, module %s\n",
-                seg->s_lowest, seg->s_highest, seg->s_num, mod->m_name));
+        D(bug("[Debug] Checking module %s\n", mod->m_name));
 
         for (i = 0; i < mod->m_symcnt; i++)
         {
