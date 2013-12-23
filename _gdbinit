@@ -34,10 +34,12 @@ define _debug_init
         set $_debug_DebugBase = (struct DebugBase *)($_debug_DebugBase)
         # This is the case for debugging a ROM
         set $_debug_ModList = &($_debug_DebugBase->db_Modules)
+        set $_debug_Mod2List = &($_debug_DebugBase->db_LoadedModules)
         set $_debug_KickList = $_debug_DebugBase->db_KernelModules
     else
         # This is the case for debugging a bootstrap
-        init-if-undefined $_debug_ModList = Debug_ModList
+        init-if-undefined $_debug_ModList = Debug_ModList - 1
+        init-if-undefined $_debug_Mod2List = Debug_ModList
         init-if-undefined $_debug_KickList = Debug_KickList
     end
 end
@@ -358,43 +360,72 @@ define end_log
   set logging off
 end
 
+# Execute a binary search over sorter array of segments
+define find_segment_in_module
+    set $arg_mod = $arg0
+    set $arg_address = $arg1
+    set $find_segment_in_module_result = 0
+    set $local_minsegidx = 0
+    set $local_maxsegidx = $arg_mod->m_segcnt - 1
+    set $_again = 1
+
+    while ($_again == 1)
+        set $local_segidx = ($local_maxsegidx + $local_minsegidx) / 2
+
+        if $arg_mod->m_segments[$local_segidx]->s_lowest <= $arg_address
+            if $arg_mod->m_segments[$local_segidx]->s_highest >= $arg_address
+                set $find_segment_in_module_result = $arg_mod->m_segments[$local_segidx]
+                loop_break
+            else
+                set $local_minsegidx = $local_segidx
+            end
+        else
+            set $local_maxsegidx = $local_segidx
+        end
+
+        if $local_maxsegidx - $local_minsegidx == 1
+            # Not found, aborting
+            loop_break
+        end
+    end
+end
+
 define loadseg
     _debug_init
     dont-repeat
-    # disable pagination so that when there are hundreds of text sections within a module
-    # it is not needed to keep pressing enter when building the loadseg.tmp file
     set pagination off
-    if $_debug_ModList
+    if $_debug_Mod2List
         set $step = 1
-        set $segnode = (struct segment *)$_debug_ModList->mlh_Head
-        while ($segnode->s_node.mln_Succ != 0) && $step == 1
-            if $arg0 >= $segnode->s_lowest && $arg0 <= $segnode->s_highest
-                set $this_mod = $segnode->s_mod
-                log_to_file segname.tmp on
-                printf "%s", $segnode->s_mod->m_name
-                end_log
-                shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
-                log_to_file loadseg.tmp on
-                printf "add-symbol-file "
-                end_log
-                shell head -n1 segname.tmp >>loadseg.tmp
-                log_to_file loadseg.tmp off
-                printf " %p", $segnode->s_lowest
-                if $segnode->s_node.mln_Succ != 0
-                    set $segnode = (struct segment *)$segnode->s_node.mln_Succ
-                    while ($segnode->s_node.mln_Succ != 0) && ($segnode->s_mod == $this_mod)
-                        printf " -s %s %p", $segnode->s_name, $segnode->s_lowest
-                        set $segnode = (struct segment *)$segnode->s_node.mln_Succ
-                    end
+        set $modnode = (module_t *)$_debug_Mod2List->mlh_Head
+        while ($modnode->m_node.mln_Succ != 0)
+            if $arg0 >= $modnode->m_lowest && $arg0 <= $modnode->m_highest
+                set $this_mod = $modnode
+                find_segment_in_module $this_mod $arg0
+
+                if $find_segment_in_module_result
+                    # This is workaround for some flushing problem when loadseg.tmp had module name before command
+                    printf "\n"
+
+                    log_to_file segname.tmp on
+                    printf "%s", $this_mod->m_name
+                    end_log
+                    shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
+                    log_to_file loadseg.tmp on
+                    printf "add-symbol-file "
+                    end_log
+                    shell head -n1 segname.tmp >>loadseg.tmp
+                    log_to_file loadseg.tmp off
+                    printf " %s", $this_mod->m_seggdbhlp
                     set $step = 2
+                    end_log
+                    if ($step > 1)
+                        source loadseg.tmp
+                        loop_break
+                    end
                 end
-                end_log
-                if ($step > 1)
-                    source loadseg.tmp
-                    loop_break
-                end
+
             end
-            set $segnode = (struct segment *)$segnode->s_node.mln_Succ
+            set $modnode = (module_t *)$modnode->m_node.mln_Succ
         end
 
 
@@ -464,7 +495,6 @@ define loadseg
         if $step < 2
             printf "No matching module for this address\n"
         end
-
 
     end
 
