@@ -293,7 +293,7 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list)
         }
     }
 
-    bug("[Debug] Module %s gap 0x%x - 0x%x\n", mod->m_name, mod->m_gaplowest, mod->m_gaphighest);
+    D(bug("[Debug] Module %s gap 0x%x - 0x%x\n", mod->m_name, mod->m_gaplowest, mod->m_gaphighest));
 }
 
 static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType, APTR DebugInfo, struct Library *DebugBase)
