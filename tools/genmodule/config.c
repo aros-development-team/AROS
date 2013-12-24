@@ -55,7 +55,7 @@ freeBanner(char *banner)
 
 const static char usage[] =
     "\n"
-    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-n]\n"
+    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-v versionextra]\n"
     "       {writefiles|writemakefile|writeincludes|writelibdefs|writefunclist|writefd|writeskel} modname modtype\n"
 ;
 
