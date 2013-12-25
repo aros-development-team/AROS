@@ -148,6 +148,37 @@ GALLIUM_AUXILIARY_SOURCES = \
 	util/u_upload_mgr \
 	util/u_vbuf_mgr
 
+GALLIVM_SOURCES = \
+        gallivm/lp_bld_arit \
+        gallivm/lp_bld_assert \
+        gallivm/lp_bld_bitarit \
+        gallivm/lp_bld_const \
+        gallivm/lp_bld_conv \
+        gallivm/lp_bld_flow \
+        gallivm/lp_bld_format_aos \
+        gallivm/lp_bld_format_soa \
+        gallivm/lp_bld_format_yuv \
+        gallivm/lp_bld_gather \
+        gallivm/lp_bld_init \
+        gallivm/lp_bld_intr \
+        gallivm/lp_bld_logic \
+        gallivm/lp_bld_pack \
+        gallivm/lp_bld_printf \
+        gallivm/lp_bld_quad \
+        gallivm/lp_bld_sample \
+        gallivm/lp_bld_sample_aos \
+        gallivm/lp_bld_sample_soa \
+        gallivm/lp_bld_struct \
+        gallivm/lp_bld_swizzle \
+        gallivm/lp_bld_tgsi_aos \
+        gallivm/lp_bld_tgsi_info \
+        gallivm/lp_bld_tgsi_soa \
+        gallivm/lp_bld_type \
+        draw/draw_llvm \
+        draw/draw_llvm_sample \
+        draw/draw_llvm_translate \
+        draw/draw_vs_llvm \
+        draw/draw_pt_fetch_shade_pipeline_llvm
 
 GALLIUM_AUXILIARY_GENERATED_SOURCES = \
             $(GENDIR)/$(CURDIR)/indices/u_indices_gen \
@@ -165,6 +196,11 @@ USER_CFLAGS := -ffast-math
 
 %build_linklib mmake=linklibs-galliumauxiliary libname=galliumauxiliary \
     files="$(GALLIUM_AUXILIARY_SOURCES) $(GALLIUM_AUXILIARY_GENERATED_SOURCES)"
+
+USER_CFLAGS := -ffast-math -DHAVE_LLVM=0x0209 -D__STDC_CONSTANT_MACROS
+
+%build_linklib mmake=linklibs-galliumvm libname=galliumvm \
+    files="$(GALLIVM_SOURCES)" cxxfiles="gallivm/lp_bld_misc" objdir=$(OBJDIR)/galliumvm
 
 #MM
 linklibs-galliumauxiliary-generated : $(GENDIR)/$(CURDIR)/util/u_format_table.c $(GENDIR)/$(CURDIR)/util/u_format_srgb.c $(GENDIR)/$(CURDIR)/util/u_half.c $(GENDIR)/$(CURDIR)/indices/u_unfilled_gen.c $(GENDIR)/$(CURDIR)/indices/u_indices_gen.c
