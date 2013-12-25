@@ -1,0 +1,10 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(call WILDCARD, *.h)
+
+#MM- includes-copy
+%copy_includes path=gallium/gallivm includes=$(INCLUDE_FILES)
+
+%common
+
