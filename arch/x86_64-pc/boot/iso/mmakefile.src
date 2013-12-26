@@ -35,7 +35,7 @@ $(TARGET_ISO):
 	@mkisofs -f \
                 -o $@ \
                 -b $(BOOTLOADER_ELTORITO_REL) \
-                -c boot/boot.catalog \
+                -c $(AROS_DIR_ARCH)/boot.catalog \
                 -no-emul-boot \
                 -boot-load-size 4 \
                 -boot-info-table \
