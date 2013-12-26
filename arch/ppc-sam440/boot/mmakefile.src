@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM- AROS-sam440-ppc: \
 #MM     kernel-sam440-ppc \
-#MM     kernel-package-sam440-ppc \
+#MM     kernel-modules-sam440-ppc \
 #MM     workbench-complete \
 #MM     workbench-devs-networks-emac-powerpc \
 #MM     aros-tcpip-apps
@@ -13,7 +13,7 @@ include $(TOP)/config/make.cfg
 #MM     parthenope-sam440 \
 #MM     AROS-sam440-ppc
 
-#MM kernel-package-sam440-ppc: \
+#MM- kernel-modules-sam440-ppc: \
 #MM     linklibs-rom \
 #MM     kernel-expansion \
 #MM     kernel-utility \
@@ -79,46 +79,9 @@ $(AROSARCHDIR)/kernel: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
         -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o \
         -L$(AROS_LIB) -larossupport -lamiga -lautoinit -llibinit -lstdc.static -lgcc
 
-
-PKG_LIBS     := aros debug dos graphics intuition keymap layers oop partition poseidon utility workbench
-PKG_RSRC     := bootloader dosboot FileSystem lddemon misc shell shellcommands usbromstartup
-PKG_DEVS     := ata console gameport input keyboard USBHardware/pciusb
-
-ARCH_LIBS    := expansion
-ARCH_RSRC    := battclock processor
-ARCH_DEVS    := timer
-
-PKG_HANDLERS := afs cdrom con econsole fat ram sfs
-PKG_HIDDS    := ata_pci graphics hiddclass i2c i2c-amcc440 keyboard mouse ohci pci pci-amcc440 pci-amcc460 sm502 usb
-PKG_USB      := hid
-PKG_USB_PSD  := bootmouse bootkeyboard hid hub massstorage
-
-MODULES := \
-        $(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
-        $(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
-        $(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
-        $(addprefix $(AROSARCHDIR)/Libs/, $(addsuffix .library, $(ARCH_LIBS))) \
-        $(addprefix $(AROSARCHDIR)/Devs/, $(addsuffix .device, $(ARCH_DEVS))) \
-        $(addprefix $(AROSARCHDIR)/Devs/, $(addsuffix .resource, $(ARCH_RSRC))) \
-        $(addprefix $(AROSDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
-        $(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
-        $(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
-        $(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD))) \
-
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
 .PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
-
-#MM kernel-package-sam440-ppc-quick:
-kernel-package-sam440-ppc-quick: kernel-package-sam440-ppc
-	@$(ECHO)
-
-kernel-package-sam440-ppc:
-	@$(ECHO) "Copying    modules to boot/modules/"
-	$(RM) -rf $(AROSARCHDIR)/modules
-	%mkdirs_q $(AROSARCHDIR)/modules
-	@$(CP) $(MODULES) $(AROSARCHDIR)/modules/
-	#$(SRCDIR)/tools/package/pkg c $(AROSARCHDIR)/kernel.pkg $(AROSDIR)/.pkg
 	
 bootiso-sam440-ppc: $(AROSDIR)/.backdrop $(TARGET_ISO)
 
