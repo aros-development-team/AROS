@@ -38,14 +38,6 @@ include $(TOP)/config/make.cfg
 #MM     kernel-usb-classes-hub		\
 #MM     kernel-usb-classes-massstorage
 
-# Build a set of of kickstart-resident classes for PKG packaging
-#MM- kernel-usb-classes-pkg :			\
-#MM     kernel-usb-classes-bootkeyboard-pkg	\
-#MM     kernel-usb-classes-bootmouse-pkg	\
-#MM     kernel-usb-classes-hid-pkg		\
-#MM     kernel-usb-classes-hub-pkg		\
-#MM     kernel-usb-classes-massstorage-pkg
-
 # Build a set of kickstart-resident classes for ELF packaging
 #MM kernel-usb-classes-kobj :			\
 #MM     kernel-usb-classes-bootkeyboard-kobj	\

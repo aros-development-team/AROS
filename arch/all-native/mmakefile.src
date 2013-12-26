@@ -4,11 +4,11 @@ include $(TOP)/config/make.cfg
 # These include filesystems and dos starter
 
 #MM kernel-package-fs:		\
-#MM	kernel-fs-afs-pkg	\
-#MM	kernel-fs-cdvdfs-pkg	\
-#MM	kernel-fs-sfs-pkg	\
-#MM	kernel-fs-fat-pkg	\
-#MM	kernel-partition-pkg
+#MM	kernel-fs-afs		\
+#MM	kernel-fs-cdvdfs	\
+#MM	kernel-fs-sfs		\
+#MM	kernel-fs-fat		\
+#MM	kernel-partition
 
 FS_LIBS     := partition
 FS_HANDLERS := afs cdrom sfs fat

@@ -1429,13 +1429,11 @@ GLOB_MKDIRS += $(BD_TARGETDIR) $(BD_OBJDIR)
 # Define metamake targets and their dependencies
 #MM %(mmake) : core-linklibs includes-generate-deps
 #MM %(mmake)-kobj : core-linklibs includes-generate-deps
-#MM %(mmake)-pkg  : core-linklibs includes-generate-deps
 #MM %(mmake)-kobj-quick
-#MM %(mmake)-pkg-quick
 #MM %(mmake)-quick
 #MM %(mmake)-clean
 
-BD_ALLTARGETS := %(mmake) %(mmake)-clean %(mmake)-quick %(mmake)-kobj %(mmake)-pkg
+BD_ALLTARGETS := %(mmake) %(mmake)-clean %(mmake)-quick %(mmake)-kobj
 
 .PHONY : $(BD_ALLTARGETS)
 
@@ -1508,23 +1506,18 @@ BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),%(files))
 # Handlers use dash instead of dot in their names
 ifeq (%(modtype),handler)
 BD_MODULE := $(BD_MODDIR)/%(modname)-%(modtype)
-BD_PKGMOD := $(PKGDIR)/%(modname)-%(modtype)
 else
 ifeq (%(modtype),printer)
 BD_MODULE := $(BD_MODDIR)/%(modname)
-BD_PKGMOD := $(PKGDIR)/%(modname)
 else
 BD_MODULE := $(BD_MODDIR)/%(modname).%(modtype)
-BD_PKGMOD := $(PKGDIR)/%(modname).%(modtype)
 endif
 endif
 BD_KOBJ   := $(KOBJSDIR)/%(modname)_%(modtype).o
 
 %(mmake)-quick : %(mmake)
-%(mmake)-pkg-quick  : $(BD_PKGMOD)
 %(mmake)-kobj-quick : $(BD_KOBJ)
 %(mmake)       : $(BD_MODULE)
-%(mmake)-pkg   : $(BD_PKGMOD)
 %(mmake)-kobj  : $(BD_KOBJ)
 
 # The module is linked from all the compiled .o files
@@ -1539,11 +1532,6 @@ else
 endif
 
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
-		 endobj= err=$(BD_ERR) objdir=%(objdir) \
-		 cmd=$(AROS_CC) ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
-		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
-
-%rule_linkmodule module=$(BD_PKGMOD) objs=$(BD_OBJS) \
 		 endobj= err=$(BD_ERR) objdir=%(objdir) \
 		 cmd=$(AROS_CC) ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
@@ -1571,7 +1559,7 @@ $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 ## Dependency fine-tuning
 ##
 BD_DEPS       := $(addprefix %(objdir)/, $(addsuffix .d,%(files)))
-%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-pkg" deps=$(BD_DEPS)
+%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj" deps=$(BD_DEPS)
 
 $(BD_OBJS) $(BD_DEPS) : | %(objdir)
 $(BD_MODULE) : | $(BD_MODDIR)
@@ -1606,8 +1594,6 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 #MM %(mmake) : %(mmake)-includes core-linklibs linklibs-%(uselibs)
 #MM %(mmake)-kobj : %(mmake)-includes core-linklibs linklibs-%(uselibs)
 #MM %(mmake)-kobj-quick : %(mmake)-includes-quick
-#MM %(mmake)-pkg : %(mmake)-includes core-linklibs linklibs-%(uselibs)
-#MM %(mmake)-pkg-quick : %(mmake)-includes-quick
 #MM %(mmake)-linklib : %(mmake)-includes includes-%(uselibs)
 #MM %(mmake)-quick : %(mmake)-includes-quick
 #MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
@@ -1621,7 +1607,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
     %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
-    %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-pkg %(mmake)-pkg-quick \
+    %(mmake)-kobj %(mmake)-kobj-quick \
     %(mmake)-linklib %(mmake)-fd
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
@@ -1813,17 +1799,13 @@ endif
 # Handlers use dash instead of dot in their names
 ifeq ($(BD_SUFFIX),handler)
 BD_MODULE := %(prefix)/%(moduledir)/%(modname)-$(BD_SUFFIX)
-BD_PKGMOD := $(PKGDIR)/%(modname)-$(BD_SUFFIX)
 else
 BD_MODULE := %(prefix)/%(moduledir)/%(modname).$(BD_SUFFIX)
-BD_PKGMOD := $(PKGDIR)/%(modname).$(BD_SUFFIX)
 endif
 BD_KOBJ   := $(KOBJSDIR)/%(modname)_$(BD_SUFFIX).o
 
 %(mmake)-quick      : %(mmake)
 %(mmake)            : $(BD_MODULE) $(BD_LINKLIB) $(BD_RELLINKLIB)
-%(mmake)-pkg        : $(BD_PKGMOD) $(BD_LINKLIB) $(BD_RELLINKLIB)
-%(mmake)-pkg-quick  : $(BD_PKGMOD) $(BD_LINKLIB) $(BD_RELLINKLIB)
 %(mmake)-kobj       : $(BD_KOBJ) $(BD_LINKLIB) $(BD_RELLINKLIB)
 %(mmake)-kobj-quick : $(BD_KOBJ) $(BD_LINKLIB) $(BD_RELLINKLIB)
 %(mmake)-linklib    : $(BD_LINKLIB) $(BD_RELLINKLIB)
@@ -1855,11 +1837,6 @@ endif
 
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(BD_MODULE) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
-		 endobj=$(BD_ENDOBJS) err=$(BD_ERR) objdir=%(objdir) \
-		 cmd=$(BD_LINKCMD) ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
-		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
-
-%rule_linkmodule module=$(BD_PKGMOD) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
 		 endobj=$(BD_ENDOBJS) err=$(BD_ERR) objdir=%(objdir) \
 		 cmd=$(BD_LINKCMD) ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
@@ -1910,16 +1887,15 @@ $(BD_KOBJ) : $(BD_OBJS) $(USER_OBJS) $(BD_ENDOBJS)
 ##
 BD_DEPS := $(addprefix %(objdir)/,$(notdir $(BD_CCFILES:=.d) $(BD_TARGETCCFILES:=.d) $(BD_CXXFILES:=.d)))
 
-%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-pkg %(mmake)-pkg-quick" deps=$(BD_DEPS)
+%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick" deps=$(BD_DEPS)
 
 $(BD_OBJS) $(BD_DEPS) : | %(objdir)
 $(BD_MODULE) : | %(prefix)/%(moduledir)
-$(BD_PKGMOD) : | $(PKGDIR)
 $(BD_KOBJ)   : | $(KOBJSDIR)
-GLOB_MKDIRS += %(objdir) %(prefix)/%(moduledir) $(KOBJSDIR) $(PKGDIR)
+GLOB_MKDIRS += %(objdir) %(prefix)/%(moduledir) $(KOBJSDIR)
 
 # Some include files need to be generated before the .c can be parsed.
-ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick %(mmake)-pkg %(mmake)-pkg-quick),) # Only for this target these deps are wanted
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick),) # Only for this target these deps are wanted
 
 BD_DFILE_DEPS := $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) \
     $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES))
@@ -1959,7 +1935,6 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 #MM- includes-all : %(mmake)-includes
 #MM %(mmake) : %(mmake)-includes core-linklibs
 #MM %(mmake)-kobj : %(mmake)-includes core-linklibs
-#MM %(mmake)-pkg  : %(mmake)-includes core-linklibs
 #MM %(mmake)-linklib : %(mmake)-includes
 #MM %(mmake)-quick : %(mmake)-includes-quick
 #MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
@@ -1972,7 +1947,7 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # All MetaMake targets defined by this macro
 BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
     %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
-    %(mmake)-kobj %(mmake)-pkg
+    %(mmake)-kobj
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
 
@@ -2297,12 +2272,6 @@ endif
 #MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
 #MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
 #MM- %(mainmmake)-kobj-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-$(CPU)-quick \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-quick \
-#MM			    %(mainmmake)-$(FAMILY)-quick %(mainmmake)-$(CPU)-quick
-#MM- %(mainmmake)-pkg :     %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH)-$(CPU) \
-#MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT) %(mainmmake)-$(ARCH) \
-#MM			    %(mainmmake)-$(FAMILY) %(mainmmake)-$(CPU)
-#MM- %(mainmmake)-pkg-quick : %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-$(CPU)-quick \
 #MM			    %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-quick \
 #MM			    %(mainmmake)-$(FAMILY)-quick %(mainmmake)-$(CPU)-quick
 #MM- %(mainmmake)-quick :   %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)-quick %(mainmmake)-$(ARCH)-$(CPU)-quick \
@@ -3164,18 +3133,26 @@ postinstall-%(package)-delete-la-files:
 #
 # Other arguments are self-explanatory
 
-%define make_package mmake=/A file=/A classes= devs= handlers= hidds= libs= res=
+%define make_package mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
+    arch_classes= arch_devs= arch_handlers= arch_hidds= arch_libs= arch_res=
 
-PKG_CLASSES   := $(addsuffix .class, %(classes))
-PKG_DEVICES   := $(addsuffix .device, %(devs))
-PKG_HANDLERS  := $(addsuffix -handler, %(handlers))
-PKG_HIDD      := $(addsuffix .hidd, %(hidds))
-PKG_LIBS      := $(addsuffix .library, %(libs))
-PKG_RESOURCES := $(addsuffix .resource, %(res))
+PKG_CLASSES   := $(addprefix $(AROS_CLASSES)/,$(addsuffix .class, %(classes)))
+PKG_DEVICES   := $(addprefix $(AROS_DEVS)/,$(addsuffix .device, %(devs)))
+PKG_HANDLERS  := $(addprefix $(AROS_FS)/,$(addsuffix -handler, %(handlers)))
+PKG_HIDD      := $(addprefix $(AROS_DEVS)/Drivers/,$(addsuffix .hidd, %(hidds)))
+PKG_LIBS      := $(addprefix $(AROS_LIBRARIES)/,$(addsuffix .library, %(libs)))
+PKG_RESOURCES := $(addprefix $(AROS_DEVS)/,$(addsuffix .resource, %(res)))
 
-PKG_FILES := $(PKG_CLASSES) $(PKG_DEVICES) $(PKG_HANDLERS) $(PKG_HIDD) $(PKG_LIBS) $(PKG_RESOURCES)
+PKG_CLASSES_ARCH   := $(addprefix $(AROS_CLASSES_ARCH)/,$(addsuffix .class, %(arch_classes)))
+PKG_DEVICES_ARCH   := $(addprefix $(AROS_DEVS_ARCH)/,$(addsuffix .device, %(arch_devs)))
+PKG_HANDLERS_ARCH  := $(addprefix $(AROS_FS_ARCH)/,$(addsuffix -handler, %(arch_handlers)))
+PKG_HIDD_ARCH      := $(addprefix $(AROS_DEVS_ARCH)/Drivers/,$(addsuffix .hidd, %(arch_hidds)))
+PKG_LIBRARIES_ARCH := $(addprefix $(AROS_LIBRARIES_ARCH)/,$(addsuffix .library, %(arch_libs)))
+PKG_RESOURCES_ARCH := $(addprefix $(AROS_DEVS_ARCH)/,$(addsuffix .resource, %(arch_res)))
+
+PKG_FILES := $(PKG_CLASSES) $(PKG_DEVICES) $(PKG_HANDLERS) $(PKG_HIDD) $(PKG_LIBS) $(PKG_RESOURCES) \
+    $(PKG_CLASSES_ARCH) $(PKG_DEVICES_ARCH) $(PKG_HANDLERS_ARCH) $(PKG_HIDD_ARCH) $(PKG_LIBRARIES_ARCH) $(PKG_RESOURCES_ARCH)
 PKG_DIR   := $(dir %(file))
-PKG_DEPS  := $(addprefix $(PKGDIR)/, $(PKG_FILES))
 
 #MM
 %(mmake) : %(file)
@@ -3183,10 +3160,9 @@ PKG_DEPS  := $(addprefix $(PKGDIR)/, $(PKG_FILES))
 #MM
 %(mmake)-quick : %(file)
 
-%(file): PKG_FILES := $(PKG_FILES)
-%(file): $(PKG_DEPS) | $(PKG_DIR)
+%(file): $(PKG_FILES) | $(PKG_DIR)
 	@$(ECHO) Packaging $@...
-	@$(SRCDIR)/tools/package/pkg c $@ $(PKGDIR) $(PKG_FILES)
+	@$(SRCDIR)/tools/package/pkg c $@ $^
 
 %compress_file mmake=%(mmake) file=%(file)
 

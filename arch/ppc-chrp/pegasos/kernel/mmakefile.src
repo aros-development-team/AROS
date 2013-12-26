@@ -9,7 +9,6 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(MAINDIR) -I$(SRCDIR)/rom/ex
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
 #MM kernel-kernel-chrp-ppc-pegasos : linklibs-bootconsole kernel-kernel-native-ppc
-#MM kernel-kernel-chrp-ppc-pegasos-pkg : linklibs-bootconsole kernel-kernel-native-ppc
 #MM kernel-kernel-chrp-ppc-pegasos-kobj : linklibs-bootconsole kernel-kernel-native-ppc
 
 %build_archspecific \

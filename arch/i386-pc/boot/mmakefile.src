@@ -34,40 +34,44 @@ KLIBS   := exec
 
 #MM- kernel-bsp-pc-i386 :		\
 #MM	linklibs			\
-#MM	kernel-battclock-pkg		\
-#MM	kernel-processor-pkg		\
-#MM	kernel-timer-pkg		\
-#MM	kernel-expansion-pkg		\
-#MM	kernel-efi-pkg 			\
-#MM	kernel-pc-acpica-pkg 		\
-#MM	kernel-pc-hpet-pkg 		\
-#MM	kernel-ata-pkg  		\
-#MM     kernel-hidd-pciata-pkg          \
-#MM	kernel-ahci-pkg  		\
-#MM	kernel-pc-i386-serial-pkg 	\
-#MM	kernel-pc-i386-parallel-pkg 	\
-#MM     kernel-hidd-i8042-pkg           \
-#MM     kernel-hidd-pci-pkg 		\
-#MM     kernel-hidd-pci-pcipc-pkg	\
-#MM     kernel-hidd-vesa-pkg  		\
-#MM     kernel-hidd-vga-pkg
+#MM	kernel-battclock    		\
+#MM	kernel-processor    		\
+#MM	kernel-timer    		\
+#MM	kernel-expansion    		\
+#MM	kernel-efi     			\
+#MM	kernel-pc-acpica   		\
+#MM	kernel-pc-hpet     		\
+#MM	kernel-ata      		\
+#MM     kernel-hidd-pciata              \
+#MM	kernel-ahci      		\
+#MM	kernel-pc-i386-serial     	\
+#MM	kernel-pc-i386-parallel     	\
+#MM     kernel-hidd-i8042               \
+#MM     kernel-hidd-pci     		\
+#MM     kernel-hidd-pci-pcipc    	\
+#MM     kernel-hidd-vesa      		\
+#MM     kernel-hidd-vga    
 
-KRSRCS      := efi hpet battclock processor
-KLIBS       := acpica expansion
-KDEVS       := ahci ata timer
+KRSRCS      := efi hpet
+KRSRCS_ARCH := battclock processor
+KLIBS       := acpica
+KLIBS_ARCH  := expansion
+KDEVS       := ahci ata
+KDEVS_ARCH  := timer
 KHIDDS      := ata_pci i8042 vesagfx vgah pci pcipc serial parallel
 
 %make_package mmake=kernel-bsp-pc-i386 file=$(AROSARCHDIR)/aros-bsp.pkg \
-    devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS)
+    devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) \
+    arch_libs=$(KLIBS_ARCH) res=$(KRSRCS) arch_res=$(KRSRCS_ARCH)
 
 #
 # Legacy drivers package
 #
 
-#MM- kernel-legacy-pc-i386 :	        \
-#MM     kernel-hidd-serialmouse-pkg     \
-#MM     kernel-devs-trackdisk-pkg       \
-#MM	kernel-isapnp-pkg
+#MM- kernel-legacy-pc-i386 :        \
+#MM     kernel-hidd-serialmouse     \
+#MM     kernel-devs-trackdisk       \
+#MM	kernel-isapnp
 
 # ISAPnP disabled because totally untested
 #LEGACY_RSRCS := isapnp

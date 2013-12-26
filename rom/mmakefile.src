@@ -69,14 +69,6 @@ include $(TOP)/config/make.cfg
 #MM	kernel-expansion     		\
 #MM	kernel-exec-kobj
 
-#MM- kernel-bsp-pkg:			\
-#MM	kernel-kernel-pkg		\
-#MM	kernel-battclock-pkg		\
-#MM	kernel-processor-pkg		\
-#MM	kernel-timer-pkg		\
-#MM	kernel-expansion-pkg		\
-#MM	kernel-exec-pkg
-
 # *** ELF kickstart package ***
 
 #MM- kernel-objs : \
@@ -108,29 +100,35 @@ include $(TOP)/config/make.cfg
 # *** PKG kickstart package ***
 
 #MM kernel-package-base : \
-#MM     kernel-aros-pkg \
-#MM	kernel-bootloader-pkg \
-#MM     kernel-dos-pkg \
-#MM	kernel-dosboot-pkg \
-#MM	kernel-debug-pkg \
-#MM	kernel-filesystem-pkg \
-#MM	kernel-fs-ram-pkg \
-#MM     kernel-fs-con-pkg \
-#MM     kernel-graphics-pkg \
-#MM     kernel-hidd-graphics-pkg \
-#MM     kernel-hidd-kbd-pkg \
-#MM     kernel-hidd-mouse-pkg \
-#MM     kernel-utility-pkg \
-#MM     kernel-intuition-pkg \
-#MM     kernel-keymap-pkg \
-#MM	kernel-lddemon-pkg \
-#MM     kernel-console-pkg \
-#MM	kernel-gameport-pkg \
-#MM	kernel-input-pkg \
-#MM	kernel-keyboard-pkg \
-#MM     kernel-hidd-pkg \
-#MM     kernel-oop-pkg \
-#MM     kernel-layers-pkg
+#MM     kernel-aros \
+#MM	kernel-bootloader \
+#MM     kernel-dos \
+#MM	kernel-dosboot \
+#MM	kernel-debug \
+#MM	kernel-filesystem \
+#MM	kernel-fs-ram \
+#MM     kernel-fs-con \
+#MM     kernel-graphics \
+#MM     kernel-hidd-graphics \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     kernel-utility \
+#MM     kernel-intuition \
+#MM     kernel-keymap \
+#MM	kernel-lddemon \
+#MM     kernel-console \
+#MM	kernel-gameport \
+#MM	kernel-input \
+#MM	kernel-keyboard \
+#MM     kernel-hidd \
+#MM     kernel-oop \
+#MM     kernel-layers
+
+BASE_DEVICES  := console input gameport keyboard
+BASE_HANDLERS := ram con
+BASE_HIDD     := hiddclass graphics keyboard mouse
+BASE_LIBS     := aros debug dos graphics intuition keymap layers oop utility
+BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 
 # This is what kickstart base package consists of.
 # These modules are architecture-independent and can work on both hosted and native systems.
