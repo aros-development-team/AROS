@@ -686,7 +686,7 @@ getopt(int nargc, char * const *nargv, const char *options)
     NOTES
         Due to the usage of global variables this function is now put in
         the static link library. This means each compilation unit using
-        getopt has it's own getopt state tracking.
+        getopt_long has its own getopt_long state tracking.
 
     EXAMPLE
 
