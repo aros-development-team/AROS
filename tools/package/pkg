@@ -120,17 +120,17 @@ def unpack( source, destination ):
     os.chdir( oldwd )
     
 
-def pack( source, destination ):
+def pack( destination, files ):
     'pack( source, destination ) -> None'
     
     output = open( destination, 'wb' )
-    
+
     oldwd = os.getcwd()
-    os.chdir( source )
+    if os.path.isdir( files[0] ):
+        os.chdir( files[0] )
+        files = files[1:]
     
-    if len(sys.argv) > 4:
-	files = sys.argv[4:]
-    else:
+    if len(files) == 0:
     	files = listFiles()   
 
     writeHeader( output, PKG_VERSION )
@@ -160,12 +160,14 @@ def pack( source, destination ):
     
 if __name__ == '__main__':
     mode        = sys.argv[1]
-    source      = sys.argv[2]
-    destination = sys.argv[3]
     
     if   mode == 'c':
-        pack( destination, source )
+        destination = sys.argv[2]
+        files = sys.argv[3:]
+        pack( destination, files )
     elif mode == 'x':
+        source      = sys.argv[2]
+        destination = sys.argv[3]
         unpack( source, destination )
     else:
         print 'Invalid mode.'

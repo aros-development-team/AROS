@@ -3,54 +3,46 @@ include $(TOP)/config/make.cfg
 
 #MM- AROS-chrp-ppc-efika: \
 #MM     kernel-chrp-ppc-efika \
+#MM     kernel-package-chrp-ppc-generic \
 #MM     kernel-package-chrp-ppc-efika \
+#MM     kernel-package-chrp-ppc-usb \
 #MM	kernel-package-fs \
+#MM     kernel-misc \
 #MM     ub2lb-chrp-ppc-efika \
-#MM     workbench-complete
+#MM     workbench-complete \
+#MM     workbench-devs-networks-fec-powerpc
 
 #MM bootiso-chrp-ppc-efika: \
 #MM     boot \
 #MM     AROS-chrp-ppc-efika
 
-#MM kernel-package-chrp-ppc-efika: \
-#MM     kernel-bootloader \
-#MM     kernel-bestcomm-chrp-ppc-efika \
+
+#MM kernel-package-chrp-ppc-generic: \
+#MM     kernel-aros \
 #MM     kernel-expansion \
 #MM     kernel-utility \
-#MM     kernel-openfirmware \
 #MM     kernel-oop \
-#MM     kernel-battclock \
-#MM     kernel-hidd \
-#MM     kernel-aros \
-#MM     kernel-misc \
-#MM     kernel-timer \
-#MM     kernel-hidd-pci \
-#MM     kernel-hidd-pci-efika \
 #MM     kernel-graphics \
-#MM     workbench-libs-cgfx-kobj \
 #MM     kernel-layers \
-#MM     kernel-keymap \
 #MM     kernel-intuition \
+#MM     kernel-keymap \
+#MM     workbench-libs-workbench \
+#MM     kernel-dos \
+#MM     kernel-dosboot \
+#MM     kernel-bestcomm-chrp-ppc-efika \
+#MM	kernel-lddemon \
 #MM     kernel-input \
 #MM     kernel-gameport \
 #MM     kernel-keyboard \
 #MM     kernel-console \
 #MM     kernel-fs-con \
-#MM     workbench-libs-workbench \
-#MM     kernel-boot \
-#MM     kernel-dos \
-#MM	kernel-lddemon \
-#MM     kernel-dosboot \
-#MM     kernel-ata \
-#MM     hidd-i2c \
-#MM     hidd-radeon \
-#MM     hidd-usb \
 #MM     kernel-fs-ram \
 #MM     kernel-hidd-graphics \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
-#MM     workbench-devs-networks-fec-powerpc \
-#MM     kernel-processor
+#MM     kernel-hidd \
+#MM     hidd-i2c \
+#MM     kernel-hidd-pci
 
 PKG_GEN_LIBS 	:= aros expansion utility oop graphics layers intuition keymap workbench dos
 PKG_GEN_RSRC 	:= dosboot bestcomm lddemon
@@ -58,51 +50,47 @@ PKG_GEN_DEVS 	:= input gameport keyboard console
 PKG_GEN_HANDLERS:= con ram
 PKG_GEN_HIDDS	:= graphics keyboard mouse hiddclass i2c pci
 
+%make_package mmake=kernel-package-chrp-ppc-generic \
+    file=$(AROSDIR)/boot/modules/aros-ppc-generic.pkg \
+    libs=$(PKG_GEN_LIBS) res=$(PKG_GEN_RSRC) devs=$(PKG_GEN_DEVS) \
+    handlers=$(PKG_GEN_HANDLERS) hidds=$(PKG_GEN_HIDDS)
+
+
+#MM kernel-package-chrp-ppc-efika: \
+#MM     kernel-battclock \
+#MM     kernel-bootloader \
+#MM     kernel-openfirmware \
+#MM     kernel-processor \
+#MM     kernel-timer \
+#MM     kernel-ata \
+#MM     hidd-radeon \
+#MM     kernel-hidd-pci-efika
+
 PKG_EFI_LIBS 	:= 
 PKG_EFI_RSRC 	:= battclock bootloader openfirmware processor
 PKG_EFI_DEVS 	:= timer ata
 PKG_EFI_HANDLERS:= 
 PKG_EFI_HIDDS	:= radeon pci-efika
 
-PKG_HIDDS_USB 	:= usb ohci
-PKG_USB			:= hid storage
+%make_package mmake=kernel-package-chrp-ppc-efika \
+    file=$(AROSDIR)/boot/modules/aros-ppc-efika.pkg \
+    libs=$(PKG_GEN_LIBS) res=$(PKG_GEN_RSRC) devs=$(PKG_GEN_DEVS) \
+    handlers=$(PKG_GEN_HANDLERS) hidds=$(PKG_GEN_HIDDS)
 
-MODULES_GENERIC := \
-	$(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_GEN_LIBS))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_GEN_DEVS))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_GEN_RSRC))) \
-	$(addprefix $(AROSDIR)/L/,    $(addsuffix -handler, $(PKG_GEN_HANDLERS))) \
-	$(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_GEN_HIDDS)))
 
-MODULES_EFIKA := \
-	$(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_EFI_LIBS))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_EFI_DEVS))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_EFI_RSRC))) \
-	$(addprefix $(AROSDIR)/L/,    $(addsuffix -handler, $(PKG_EFI_HANDLERS))) \
-	$(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_EFI_HIDDS)))
+#MM kernel-package-chrp-ppc-usb: \
+#MM     hidd-usb
 
-MODULES_USB := \
-	$(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS_USB))) \
-	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB)))
+PKG_USB_HIDDS 	:= usb ohci
+PKG_USB_CLASSES	:= USB/hid USB/storage
+
+%make_package mmake=kernel-package-chrp-ppc-usb \
+    file=$(AROSARCHDIR)/modules/aros-ppc-usb.pkg \
+    hidds=$(PKG_USB_HIDDS) classes=$(PKG_USB_CLASSES)
+
+
 
 .PHONY: $(PORTSDIR)/aros-efika.iso
-	
-kernel-package-chrp-ppc-efika:
-	$(RM) -rf $(AROSARCHDIR)/modules
-	$(RM) -rf $(AROSDIR)/.pkg
-	%mkdirs_q $(AROSARCHDIR)/modules
-	%mkdirs_q $(AROSDIR)/.pkg
-	@mv $(MODULES_GENERIC) $(AROSDIR)/.pkg
-	$(SRCDIR)/tools/package/pkg c $(AROSARCHDIR)/modules/aros-ppc-generic.pkg $(AROSDIR)/.pkg
-	$(RM) -rf $(AROSDIR)/.pkg/*
-	@mv $(MODULES_EFIKA) $(AROSDIR)/.pkg
-	$(SRCDIR)/tools/package/pkg c $(AROSARCHDIR)/modules/aros-ppc-efika.pkg $(AROSDIR)/.pkg
-	$(RM) -rf $(AROSDIR)/.pkg/*
-	@mv $(MODULES_USB) $(AROSDIR)/.pkg
-	$(SRCDIR)/tools/package/pkg c $(AROSARCHDIR)/modules/aros-usb.pkg $(AROSDIR)/.pkg
-	$(RM) -rf $(AROSDIR)/.pkg
-
-
 
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 

@@ -8,7 +8,10 @@ USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
 #MM arosboot-efika: \
 #MM	   kernel-efika-arm \
 #MM    boot-script-efika-arm \
-#MM    kernel-package-efika-arm
+#MM    kernel-image-efika-arm
+
+#MM kernel-image-efika-arm: \
+#MM     kernel-package-efika-arm
 
 #MM kernel-package-efika-arm: \
 #MM     kernel-oop \
@@ -20,27 +23,17 @@ PKG_RSRC     :=
 PKG_DEVS     := 
 PKG_HANDLERS := 
 PKG_HIDDS    := i2c
-PKG_USB      := 
-PKG_USB_PSD  := 
+PKG_CLASSES  :=
 
-MODULES := \
-	$(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
-	$(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
-	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
-	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB_PSD)))
+%make_package mmake=kernel-package-efika-arm file=$(AROSDIR)/boot/kernel.pkg \
+    libs=$(PKG_LIBS) res=$(PKG_RSRC) devs=$(PKG_DEVS) handlers=$(PKG_HANDLERS) \
+    hidds=$(PKD_HIDDS) classes=$(PKG_CLASSES)
 
 #MM-
 boot-script-efika-arm: boot.script
 	mkimage -A arm -O linux -T script -n "AROS boot script" -d $(SRCDIR)/$(CURDIR)/boot.script $(AROSDIR)/boot/boot.scr
 
-kernel-package-efika-arm:
-	$(RM) -rf $(AROSDIR)/boot/modules
-	%mkdirs_q $(AROSDIR)/boot/modules
-	@mv $(MODULES) $(AROSDIR)/boot/modules/
-	$(SRCDIR)/tools/package/pkg c $(AROSDIR)/boot/kernel.pkg $(AROSDIR)/boot/modules
+kernel-image-efika-arm:
 	mkimage -A arm -O linux -T ramdisk -C none -n "AROS rom" -d $(AROSDIR)/boot/kernel.pkg $(AROSDIR)/boot/uInitrd-aros
 
 arosboot-efika: $(AROSDIR)/boot/arosboot

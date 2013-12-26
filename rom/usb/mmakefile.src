@@ -10,7 +10,8 @@ include $(TOP)/config/make.cfg
 #MM      kernel-usb-classes \
 #MM      kernel-usb-shellapps \
 #MM      kernel-usb-trident \
-#MM      kernel-usb-pciusb
+#MM      kernel-usb-pciusb \
+#MM      kernel-usb-usbromstartup
 
 #MM- kernel-usb-nopci : \
 #MM      kernel-usb-poseidon \
@@ -46,47 +47,17 @@ include $(TOP)/config/make.cfg
 #MM- kernel-usb-sam440-ppc : \
 #MM         kernel-usb
 
-#MM- kernel-usb-kobj-sam440-ppc : \
-#MM      kernel-usb-kobj
-
 # This is kickstart package contents
-USB_CLASSES := bootkeyboard bootmouse hub hid massstorage
-USB_DEVS    := pciusb
+USB_CLASSES := USB/bootkeyboard USB/bootmouse USB/hub USB/hid USB/massstorage
+USB_DEVS    := USBHardware/pciusb
 USB_LIBS    := poseidon
 USB_RES     := usbromstartup
 
 # --- PKG kickstart package ---
 
-#MM- kernel-usb-pkg :			\
-#MM      kernel-usb-poseidon-pkg	\
-#MM      kernel-usb-shelltools		\
-#MM      kernel-usb-classes		\
-#MM	 kernel-usb-classes-pkg		\
-#MM      kernel-usb-shellapps		\
-#MM      kernel-usb-trident		\
-#MM      kernel-usb-pciusb-pkg		\
-#MM	 kernel-usb-usbromstartup-pkg
-
-#MM kernel-package-usb : kernel-usb-pkg
+#MM kernel-package-usb : kernel-usb
 
 %make_package mmake=kernel-package-usb file=$(AROSDIR)/Arch/poseidon.pkg \
 	classes=$(USB_CLASSES) devs=$(USB_DEVS) libs=$(USB_LIBS) res=$(USB_RES)
-
-# --- ELF kickstart package ---
-
-#MM- kernel-usb-kobj :			\
-#MM      kernel-usb-poseidon-kobj	\
-#MM      kernel-usb-shelltools		\
-#MM      kernel-usb-classes		\
-#MM	 kernel-usb-classes-kobj	\
-#MM      kernel-usb-shellapps		\
-#MM      kernel-usb-trident		\
-#MM      kernel-usb-pciusb-kobj		\
-#MM	 kernel-usb-usbromstartup-kobj
-
-%link_kickstart mmake=kernel-link-usb file=$(AROSDIR)/Arch/poseidon \
-	classes=$(USB_CLASSES) devs=$(USB_DEVS) libs=$(USB_LIBS) res=$(USB_RES) \
-	uselibs="debug hiddstubs" \
-	map=$(GENDIR)/boot/kernel-usb.map deps=kernel-usb-kobj
 
 %common

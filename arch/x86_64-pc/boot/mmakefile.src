@@ -20,37 +20,41 @@ include $(TOP)/config/make.cfg
 # -------- x86_64-pc board support package --------
 
 #MM kernel-bsp-pc-x86_64 : linklibs-bootconsole		 \
-#MM			   kernel-ata-pkg		 \
-#MM			   kernel-hidd-pciata-pkg	 \
-#MM			   kernel-ahci-pkg		 \
-#MM			   kernel-battclock-pkg		 \
-#MM			   kernel-efi-pkg		 \
-#MM			   kernel-timer-pkg		 \
-#MM			   kernel-expansion-pkg		 \
-#MM			   kernel-pc-acpica-pkg		 \
-#MM			   kernel-pc-hpet-pkg		 \
-#MM			   kernel-hidd-i8042-pkg	 \
-#MM			   kernel-pc-i386-serial-pkg	 \
-#MM			   kernel-pc-i386-parallel-pkg	 \
-#MM			   kernel-hidd-vga-pkg		 \
-#MM			   kernel-hidd-vesa-pkg		 \
-#MM			   kernel-hidd-pci-pkg		 \
-#MM			   kernel-hidd-pci-pcipc-pkg	 \
-#MM			   kernel-processor-pkg
+#MM			   kernel-ata    		 \
+#MM			   kernel-hidd-pciata    	 \
+#MM			   kernel-ahci    		 \
+#MM			   kernel-battclock    		 \
+#MM			   kernel-efi    		 \
+#MM			   kernel-timer    		 \
+#MM			   kernel-expansion    		 \
+#MM			   kernel-pc-acpica  		 \
+#MM			   kernel-pc-hpet    		 \
+#MM			   kernel-hidd-i8042    	 \
+#MM			   kernel-pc-i386-serial    	 \
+#MM			   kernel-pc-i386-parallel    	 \
+#MM			   kernel-hidd-vga    		 \
+#MM			   kernel-hidd-vesa    		 \
+#MM			   kernel-hidd-pci    		 \
+#MM			   kernel-hidd-pci-pcipc    	 \
+#MM			   kernel-processor
 
-KRSRCS  := battclock efi hpet processor
-KLIBS   := expansion acpica
-KDEVS   := ata ahci timer
-KHIDDS  := parallel pci pcipc serial vesagfx vgah ata_pci i8042
+KRSRCS      := efi hpet
+KRSRCS_ARCH := battclock processor
+KLIBS       := acpica
+KLIBS_ARCH  := expansion
+KDEVS       := ata ahci
+KDEVS_ARCH  := timer
+KHIDDS      := parallel pci pcipc serial vesagfx vgah ata_pci i8042
 
 %make_package mmake=kernel-bsp-pc-x86_64 file=$(AROSARCHDIR)/aros-bsp.pkg \
-	devs=$(KDEVS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS)
+	devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) \
+        arch_libs=$(KLIBS_ARCH) res=$(KRSRCS) arch_res=$(KRSRCS_ARCH)
 
 # -------- x86_64-pc legacy drivers package --------
 
 #MM- kernel-legacy-pc-x86_64 :	        \
-#MM     kernel-hidd-serialmouse-pkg     \
-#MM     kernel-devs-trackdisk-pkg
+#MM     kernel-hidd-serialmouse         \
+#MM     kernel-devs-trackdisk
 
 LEGACY_DEVS  := trackdisk
 LEGACY_HIDDS := serialmouse

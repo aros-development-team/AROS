@@ -70,32 +70,24 @@ USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include
 RASPIFW_URI     := https://github.com/Hexxeh/rpi-firmware/blob/master
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat fixup_cd.dat start.elf start_cd.elf start_x.elf
 
-PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
-PKG_RSRC     :=  misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox processor
-PKG_DEVS     :=  input gameport keyboard console timer sdcard USBHardware/usb2otg
-PKG_HANDLERS := con ram cdrom sfs fat afs
-PKG_HIDDS    := graphics mouse keyboard hiddclass i2c i2c-bcm2835 videocoregfx
-PKG_USB      := hid hub bootmouse bootkeyboard massstorage
+PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos debug poseidon cgxbootpic
+PKG_LIBS_ARCH := expansion
+PKG_RSRC      := misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands vcmbox
+PKG_RSRC_ARCH := processor
+PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
+PKG_DEVS_ARCH := timer
+PKG_HANDLERS  := con ram cdrom sfs fat afs
+PKG_HIDDS     := graphics mouse keyboard hiddclass i2c i2c-bcm2835 videocoregfx
+PKG_CLASSES   := USB/hid USB/hub USB/bootmouse USB/bootkeyboard USB/massstorage
  
-MODULES := \
-	$(addprefix $(AROSDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
-	$(addprefix $(AROSDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
-	$(addprefix $(AROSDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
-	$(addprefix $(AROSDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
-	$(addprefix $(AROSDIR)/Classes/USB/, $(addsuffix .class, $(PKG_USB)))
+%make_package mmake=kernel-package-raspi-arm file=$(AROSDIR)/arosraspi.rom \
+    libs=$(PKG_LIBS) arch_libs=$(PKG_LIBS_ARCH) res=$(PKG_RSRC) \
+    arch_res=$(PKG_RSRC_ARCH) devs=$(PKG_DEVS) arch_devs=$(PKG_DEVS_ARCH) \
+    handlers=$(PKG_HANDLERS) hidds=$(PKG_HIDDS) classes=$(PKG_CLASSES)
 
 #MM
 distfiles-raspi-fw:
 	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(addsuffix ?raw=true, $(file)))" -O "$(addprefix $(AROSDIR)/, $(file))"))
-
-kernel-package-raspi-arm:  $(AROSDIR)/arosraspi.rom
-
- $(AROSDIR)/arosraspi.rom:
-	$(RM) -rf $(OSGENDIR)/boot/modules
-	%mkdirs_q $(OSGENDIR)/boot/modules
-	@mv $(MODULES) $(OSGENDIR)/boot/modules/
-	$(SRCDIR)/tools/package/pkg c $(AROSDIR)/arosraspi.rom $(OSGENDIR)/boot/modules
 
 %copy_files_q mmake=kernel-raspi-config-copy files="$(CONFIG_FILE)" dst=$(AROSDIR)
 

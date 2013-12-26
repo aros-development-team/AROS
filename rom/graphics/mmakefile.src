@@ -216,7 +216,6 @@ FUNCTIONS := \
 
 #MM kernel-graphics     : includes-compositor-copy
 #MM kernel-graphics-kobj: includes-compositor-copy
-#MM kernel-graphics-pkg : includes-compositor-copy
 
 %build_module mmake=kernel-graphics \
   modname=graphics modtype=library \
