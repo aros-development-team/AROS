@@ -76,7 +76,8 @@ COMMONTESTFILES := \
     fsresource \
     taskstorage \
     mountlist \
-    smult
+    smult \
+    crashtest
 
 SHTESTFILES=\
     pcilist \
