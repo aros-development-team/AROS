@@ -38,6 +38,7 @@ GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT) --with-build-sysroot=$(AROS
 GCC_EXTRA_OPTS += --disable-bootstrap 
 GCC_EXTRA_OPTS += --enable-sjlj-exceptions=no --enable-tls=no
 GCC_EXTRA_OPTS += --with-dwarf2
+GCC_EXTRA_OPTS += --enable-frame-pointer
 GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 GCC_UNUSED_BUT_SET_VARIABLE := -Wno-unused-but-set-variable
 GCC_ARRAY_BOUNDS            := -Wno-array-bounds
