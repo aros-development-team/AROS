@@ -3,7 +3,7 @@
     $Id$
 
     Get pointer to errno variable in stdc.library libbase.
-    This function is both in static linklib as in stdc.library.
+    This function is in both the static linklib and stdc.library.
 */
 #include <libraries/stdc.h>
 

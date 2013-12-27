@@ -2,10 +2,10 @@
 #define _STDC__STRINGS_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: POSIX.1-2008 header file <strings.h>, with some extesions
+    Desc: POSIX.1-2008 header file <strings.h>, with some extensions
           File is named _strings.h and included from strings.h.
           This allows string.h to include _strings.h without generating
           conflict with catcomp generated strings.h file.
