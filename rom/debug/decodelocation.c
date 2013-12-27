@@ -83,6 +83,10 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
     if (!addr)
         return TRUE;
 
+    *function = NULL;
+    *funstart = NULL;
+    *funend   = NULL;
+
     for (i = 0; i < mod->m_symcnt; i++)
     {
         APTR highest = sym[i].s_highest;
