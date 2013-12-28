@@ -8,12 +8,12 @@
 
 # This script is public domain. Use it at your own risk.
 
-# $VER: gimmearos.sh 1.10 (28.07.2013)
+# $VER: gimmearos.sh 1.11 (28.12.2013) WIP
 
 curdir="`pwd`"
 srcdir="aros-src"
 srcdir_v0="aros-src-v0"
-portsdir="ports-src"
+portsdir="$HOME/aros-ports-src"
 cpucoresforcompile="2"
 
 install_pkg()
@@ -245,77 +245,75 @@ do
             mkdir -p "$portsdir"
             mkdir -p aros-linux-i386-dbg
             cd aros-linux-i386-dbg
-            "../$srcdir/configure" --target=linux-i386 --enable-debug=all --with-portssources="$curdir/$portsdir"
+            "../$srcdir/configure" --target=linux-i386 --enable-debug=all --with-portssources="$portsdir"
             ;;
         2 ) echo -e "\nConfiguring linux-i386 V1 without debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-i386
             cd aros-linux-i386
-            "../$srcdir/configure" --target=linux-i386 --with-portssources="$curdir/$portsdir"
+            "../$srcdir/configure" --target=linux-i386 --with-portssources="$portsdir"
             ;;
         3 ) echo -e "\nConfiguring linux-x86_64 V1 with full debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-x86_64-dbg
             cd aros-linux-x86_64-dbg
-            "../$srcdir/configure" --target=linux-x86_64 --enable-debug=all --with-portssources="$curdir/$portsdir"
+            "../$srcdir/configure" --target=linux-x86_64 --enable-debug=all --with-portssources="$portsdir"
             ;;
         4 ) echo -e "\nConfiguring linux-x86_64 V1 without debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-x86_64
             cd aros-linux-x86_64
-            "../$srcdir/configure" --target=linux-x86_64 --with-portssources="$curdir/$portsdir"
+            "../$srcdir/configure" --target=linux-x86_64 --with-portssources="$portsdir"
             ;;
         5 ) echo -e "\nConfiguring pc-i386 V1...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-pc-i386
             cd aros-pc-i386
-            "../$srcdir/configure" --target=pc-i386 --with-portssources="$curdir/$portsdir"
+            "../$srcdir/configure" --target=pc-i386 --with-portssources="$portsdir"
             ;;
         6 ) echo -e "\nConfiguring pc-x86_64 V1...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-pc-x86_64
             cd aros-pc-x86_64
-            "../$srcdir/configure" --target=pc-x86_64 --with-portssources="$curdir/$portsdir"
+            "../$srcdir/configure" --target=pc-x86_64 --with-portssources="$portsdir"
             ;;
-
 
         11 ) echo -e "\nConfiguring linux-i386 V0 with full debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-i386-v0-dbg
             cd aros-linux-i386-v0-dbg
-            "../$srcdir_v0/configure" --target=linux-i386 --enable-debug=all --with-portssources="$curdir/$portsdir"
+            "../$srcdir_v0/configure" --target=linux-i386 --enable-debug=all --with-portssources="$portsdir"
             ;;
         12 ) echo -e "\nConfiguring linux-i386 V0 without debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-i386-v0
             cd aros-linux-i386-v0
-            "../$srcdir_v0/configure" --target=linux-i386 --with-portssources="$curdir/$portsdir"
+            "../$srcdir_v0/configure" --target=linux-i386 --with-portssources="$portsdir"
             ;;
         13 ) echo -e "\nConfiguring linux-x86_64 V0 with full debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-x86_64-v0-dbg
             cd aros-linux-x86_64-v0-dbg
-            "../$srcdir_v0/configure" --target=linux-x86_64 --enable-debug=all --with-portssources="$curdir/$portsdir"
+            "../$srcdir_v0/configure" --target=linux-x86_64 --enable-debug=all --with-portssources="$portsdir"
             ;;
         14 ) echo -e "\nConfiguring linux-x86_64 V0 without debug...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-linux-x86_64-v0
             cd aros-linux-x86_64-v0
-            "../$srcdir_v0/configure" --target=linux-x86_64 --with-portssources="$curdir/$portsdir"
+            "../$srcdir_v0/configure" --target=linux-x86_64 --with-portssources="$portsdir"
             ;;
         15 ) echo -e "\nConfiguring pc-i386 V0...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-pc-i386-v0
             cd aros-pc-i386-v0
-            "../$srcdir_v0/configure" --target=pc-i386 --with-portssources="$curdir/$portsdir"
+            "../$srcdir_v0/configure" --target=pc-i386 --with-portssources="$portsdir"
             ;;
         16 ) echo -e "\nConfiguring pc-x86_64 V0...\n"
             mkdir -p "$portsdir"
             mkdir -p aros-pc-x86_64-v0
             cd aros-pc-x86_64-v0
-            "../$srcdir_v0/configure" --target=pc-x86_64 --with-portssources="$curdir/$portsdir"
+            "../$srcdir_v0/configure" --target=pc-x86_64 --with-portssources="$portsdir"
             ;;
-
 
         0 ) exit 0
             ;;
@@ -349,43 +347,43 @@ do
     case "$input" in
         1 ) echo -e "\nBuilding linux-i386 V1 with full debug...\n"
             cd aros-linux-i386-dbg
-            make "-j"$cpucoresforcompile
+            make -j$cpucoresforcompile
             make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-dbg/bin/<target>/AROS"
             ;;
         2 ) echo -e "\nBuilding linux-i386 V1 without debug...\n"
             cd aros-linux-i386
-            make "-j"$cpucoresforcompile
+            make -j$cpucoresforcompile
             make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386/bin/<target>/AROS"
             ;;
         3 ) echo -e "\nBuilding linux-x86_64 V1 with full debug...\n"
             cd aros-linux-x86_64-dbg
-            make "-j"$cpucoresforcompile
+            make -j$cpucoresforcompile
             make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64-dbg/bin/<target>/AROS"
             ;;
         4 ) echo -e "\nBuilding linux-x86_64 V1 without debug...\n"
             cd aros-linux-x86_64
-            make "-j"$cpucoresforcompile
+            make -j$cpucoresforcompile
             make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64/bin/<target>/AROS"
             ;;
         5 ) echo -e "\nBuilding pc-i386 V1...\n"
             cd aros-pc-i386
-            make "-j"$cpucoresforcompile
-            make default-x11keymaptable
+            make -j$cpucoresforcompile
+            make -j$cpucoresforcompile bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-i386/bin/<target>/AROS"
             ;;
         6 ) echo -e "\nBuilding pc-x86_64 V1...\n"
             cd aros-pc-x86_64
-            make "-j"$cpucoresforcompile
-            make default-x11keymaptable
+            make -j$cpucoresforcompile
+            make -j$cpucoresforcompile bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-x86_64/bin/<target>/AROS"
             ;;
@@ -393,47 +391,49 @@ do
 
         11 ) echo -e "\nBuilding linux-i386 V0 with full debug...\n"
             cd aros-linux-i386-v0-dbg
-            make "-j"$cpucoresforcompile
+            make -j$cpucoresforcompile
             make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-v0-dbg/bin/<target>/AROS"
             ;;
         12 ) echo -e "\nBuilding linux-i386 V0 without debug...\n"
             cd aros-linux-i386-v0
-            make "-j"$cpucoresforcompile
+            make -j$cpucoresforcompile
             make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-v0/bin/<target>/AROS"
             ;;
         13 ) echo -e "\nBuilding linux-x86_64 V0 with full debug...\n"
             cd aros-linux-x86_64-v0-dbg
-            make "-j"$cpucoresforcompile
+            make -j$cpucoresforcompile
             make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64-dbg/bin/<target>/AROS"
             ;;
         14 ) echo -e "\nBuilding linux-x86_64 V0 without debug...\n"
             cd aros-linux-x86_64-v0
-            make "-j"$cpucoresforcompile
+            make -j$cpucoresforcompile
             make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64-v0/bin/<target>/AROS"
             ;;
         15 ) echo -e "\nBuilding pc-i386 V0...\n"
             cd aros-pc-i386-v0
-            make "-j"$cpucoresforcompile
-            make default-x11keymaptable
+            make -j$cpucoresforcompile
+            make -j$cpucoresforcompile bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-i386-v0/bin/<target>/AROS"
             ;;
         16 ) echo -e "\nBuilding pc-x86_64 V0...\n"
             cd aros-pc-x86_64-v0
-            make "-j"$cpucoresforcompile
-            make default-x11keymaptable
+            make -j$cpucoresforcompile
+            make -j$cpucoresforcompile bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-x86_64-v0/bin/<target>/AROS"
             ;;
 
+        0 ) exit 0
+            ;;
     esac
 done
 
