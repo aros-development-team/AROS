@@ -6,8 +6,8 @@ clean ::
 	-$(RM) ./machine
 
 #MM
-machine :
-	$(HOST_CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -I$(AROS_INCLUDES) -o machine machine.c
+machine : $(SRCDIR)/$(CURDIR)/machine.c
+	$(HOST_CC) -idirafter $(AROS_INCLUDES) -o machine $(SRCDIR)/$(CURDIR)/machine.c
 	./machine
 
 #MM- AROS : kernel kernel-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) kernel-$(ARCH)-$(CPU) kernel-$(FAMILY)
