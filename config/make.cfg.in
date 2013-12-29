@@ -135,7 +135,6 @@ INFOINFO        := $(TOOLDIR)/infoinfo$(HOST_EXE_SUFFIX)
 GENSETS         := $(TOOLDIR)/gensets$(HOST_EXE_SUFFIX)
 COLLECT-AROS    := $(TOOLDIR)/collect-aros$(HOST_EXE_SUFFIX)
 GENMODULE       := $(TOOLDIR)/genmodule$(HOST_EXE_SUFFIX)
-CXREF           := $(TOOLDIR)/cxref$(HOST_EXE_SUFFIX)
 SETREV          := $(TOOLDIR)/setrev$(HOST_EXE_SUFFIX)
 MKSUNXIBOOT     := $(TOOLDIR)/mksunxiboot$(HOST_EXE_SUFFIX)
 

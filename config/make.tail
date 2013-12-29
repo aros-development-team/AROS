@@ -20,20 +20,3 @@ $(GENMODULE) : $(GENMODULE_DEPS)
 $(GENDIR)/$(RESIDENT_BEGIN).o : $(SRCDIR)/$(RESIDENT_BEGIN).c
 	@$(ECHO) "Compiling  $<"
 	@$(TARGET_CC) -c $(CFLAGS) $< -o $@
-
-$(SRCDIR)/tools/cxref/configure : $(SRCDIR)/tools/cxref/configure.in
-	cd $(SRCDIR)/tools/cxref ; aclocal ; autoconf
-
-$(TOP)/tools/cxref/Makefile : $(SRCDIR)/tools/cxref/configure $(SRCDIR)/tools/cxref/Makefile.in
-	@$(IF) [ ! -d $(TOP)/tools/cxref ]; then \
-	    $(MECHO) $(MKDIR) "$(TOP)/tools/cxref" ; \
-	    $(MKDIR) "$(TOP)/tools/cxref"; \
-	fi;
-	cd $(TOP)/tools/cxref ; \
-	CC='' CFLAGS="$(HOST_CFLAGS)" LDFLAGS="$(HOST_LDFLAGS)" $(SRCDIR)/tools/cxref/configure --prefix=$(TOOLDIR) --oldincludedir=/include
-
-$(CXREF): $(SRCDIR)/tools/cxref/*.[chyl] $(SRCDIR)/tools/cxref/cpp/*.[ch] $(SRCDIR)/tools/cxref/query/*.[ch] \
-		$(TOP)/tools/cxref/Makefile
-	$(MAKE) $(MKARGS) -C $(SRCDIR)/tools/cxref TOP=$(TOP) SRCDIR=$(SRCDIR) 
-	cp $(TOP)/tools/cxref/cxref$(HOST_EXE_SUFFIX) $(CXREF)
-
