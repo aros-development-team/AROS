@@ -64,45 +64,53 @@
         struct Node *p, *p2; /* Avoid casts */
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)poolHeader;
 
-        D(bug("[DeletePool] Pool header 0x%p\n", pool));
-
-        /*
-         * The poolHeader is in fact a MemHeader structure. Check, if it was
-         * MEMF_MANAGED memory...
-         */
-        if (!(mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED))
+        if (pool->PoolMagic != POOL_MAGIC)
         {
-            /*
-             * We are going to deallocate the whole pool.
-             * Scan mungwall's allocations list and remove all chunks belonging to the pool.
-             */
-            MungWall_Scan(pool, &tp, SysBase);
+            PoolManagerAlert(PME_DEL_POOL_INV_POOL, 0, 0, NULL, NULL, poolHeader);
+        }
+        else
+        {
+            D(bug("[DeletePool] Pool header 0x%p\n", pool));
+            pool->PoolMagic = 0x0;
 
             /*
-             * Free the list of puddles.
-             * Remember that initial puddle containing the pool structure is also in this list.
-             * We do not need to free it until everything else is freed.
+             * The poolHeader is in fact a MemHeader structure. Check, if it was
+             * MEMF_MANAGED memory...
              */
-            for (p = (struct Node *)pool->PuddleList.mlh_Head; p->ln_Succ; p = p2)
+            if (!(mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED))
             {
-                p2 = p->ln_Succ;
+                /*
+                 * We are going to deallocate the whole pool.
+                 * Scan mungwall's allocations list and remove all chunks belonging to the pool.
+                 */
+                MungWall_Scan(pool, &tp, SysBase);
 
-                D(bug("[DeletePool] Puddle 0x%p...", p));
-
-                if (p != poolHeader)
+                /*
+                 * Free the list of puddles.
+                 * Remember that initial puddle containing the pool structure is also in this list.
+                 * We do not need to free it until everything else is freed.
+                 */
+                for (p = (struct Node *)pool->PuddleList.mlh_Head; p->ln_Succ; p = p2)
                 {
-                    D(bug(" freeing"));
-                    FreeMemHeader(p, &tp, SysBase);
+                    p2 = p->ln_Succ;
+
+                    D(bug("[DeletePool] Puddle 0x%p...", p));
+
+                    if (p != poolHeader)
+                    {
+                        D(bug(" freeing"));
+                        FreeMemHeader(p, &tp, SysBase);
+                    }
+                    D(bug("\n"));
                 }
-                D(bug("\n"));
+
+
             }
 
-
+            /* Free the last puddle, containing the pool header */
+            D(bug("[DeletePool] Freeing initial puddle 0x%p\n", poolHeader));
+            FreeMemHeader(poolHeader, &tp, SysBase);
         }
-
-        /* Free the last puddle, containing the pool header */
-        D(bug("[DeletePool] Freeing initial puddle 0x%p\n", poolHeader));
-        FreeMemHeader(poolHeader, &tp, SysBase);
     }
 
     AROS_LIBFUNC_EXIT

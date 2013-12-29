@@ -30,12 +30,15 @@
 #define MEM_UNLOCK	Permit()
 #endif
 
+#define POOL_MAGIC AROS_MAKE_ID('P','o','O','l')
+
 /* Private Pool structure */
 struct Pool 
 {
     struct MinList PuddleList;
     ULONG Requirements;
     ULONG PuddleSize;
+    ULONG PoolMagic;
 };
 
 struct ProtectedPool
@@ -85,6 +88,14 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struc
 APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase);
 void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, struct ExecBase *SysBase);
 IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase);
+
+#define PME_FREE_NO_CHUNK       1
+#define PME_FREE_INV_POOL       2
+#define PME_FREE_MXD_POOL       3
+#define PME_ALLOC_INV_POOL      4
+#define PME_DEL_POOL_INV_POOL   5
+
+void PoolManagerAlert(ULONG code, ULONG flags, IPTR memSize, APTR memory, APTR poolHeaderMH, APTR poolHeader);
 
 #define BLOCK_TOTAL \
 ((sizeof(struct Block)+AROS_WORSTALIGN-1)&~(AROS_WORSTALIGN-1))
