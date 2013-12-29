@@ -57,7 +57,7 @@
 
 ******************************************************************************/
 {
-    char *mem = NULL, *orig;
+    char *mem = NULL, *orig, *tmp;
 
     /* check the alignment is valid */
     if (alignment % sizeof(void *) != 0 || !powerof2(alignment))
@@ -74,11 +74,6 @@
         return NULL;
     }
 
-    /* store the size for free(). it will add AROS_ALIGN(sizeof(size_t))
-     * itself */
-    *((size_t *) mem) = size + alignment + AROS_ALIGN(sizeof(void *));
-    mem += AROS_ALIGN(sizeof(size_t));
-
     /* if it's already aligned correctly, then we just use it as-is */
     if (((IPTR) mem & (alignment-1)) == 0)
         return mem;
@@ -87,15 +82,16 @@
 
     /* move forward to an even alignment boundary */
     mem = (char *) (((IPTR) mem + alignment - 1) & -alignment);
+    tmp = mem;
 
     /* store a magic number in the place that free() will look for the
      * allocation size, so it can handle this specially */
-    mem -= AROS_ALIGN(sizeof(size_t *));
-    *((size_t *) mem) = MEMALIGN_MAGIC;
+    tmp -= AROS_ALIGN(sizeof(size_t *));
+    *((size_t *) tmp) = MEMALIGN_MAGIC;
 
     /* then store the original pointer before it, for free() to find */
-    mem -= sizeof(void *);
-    *((void **) mem) = orig;
+    tmp -= sizeof(void *);
+    *((void **) tmp) = orig;
 
     return mem;
 } /* posix_memalign */
