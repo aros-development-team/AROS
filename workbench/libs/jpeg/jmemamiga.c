@@ -20,7 +20,7 @@
 #include <exec/memory.h>
 #include <exec/types.h>
 
-static APTR _mempool;
+static APTR _mempool = NULL;
 
 #if defined(__AROS__)
 #undef GLOBAL
@@ -31,10 +31,7 @@ static APTR _mempool;
 #include "jpeglib.h"
 #include "jmemsys.h"		/* import the system-dependent declarations */
 
-/*
- * Memory allocation and freeing are controlled by the regular library
- * routines malloc() and free().
- */
+#include <aros/symbolsets.h>
 
 GLOBAL(void *)
 jpeg_get_small (j_common_ptr cinfo, size_t sizeofobject)
@@ -106,13 +103,26 @@ jpeg_open_backing_store (j_common_ptr cinfo, backing_store_ptr info,
 GLOBAL(long)
 jpeg_mem_init (j_common_ptr cinfo)
 {
-    _mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
-         
     return AvailMem(MEMF_LARGEST);
 }
 
 GLOBAL(void)
 jpeg_mem_term (j_common_ptr cinfo)
 {
-    DeletePool(_mempool);
 }
+
+static int JPEG_Init(struct Library * base)
+{
+    _mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
+
+    return 1;
+}
+
+static void JPEG_Expunge(struct Library * base)
+{
+    DeletePool(_mempool);
+    _mempool = NULL;
+}
+
+ADD2INITLIB(JPEG_Init, 0);
+ADD2EXPUNGELIB(JPEG_Expunge, 0)
