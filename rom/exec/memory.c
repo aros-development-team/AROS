@@ -939,6 +939,11 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
         memSize += MUNGWALL_TOTAL_SIZE;
 
+    if (pool->pool.PoolMagic != POOL_MAGIC)
+    {
+        PoolManagerAlert(PME_ALLOC_INV_POOL, AT_DeadEnd, memSize, NULL, NULL, poolHeader);
+    }
+
     if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
     {
         ObtainSemaphore(&pool->sem);
@@ -1094,18 +1099,8 @@ void InternalFreePooled(APTR poolHeader, APTR memory, IPTR memSize, struct Trace
     if ((mh->mh_Node.ln_Type != NT_MEMORY) ||
     (freeStart < mh->mh_Lower) || (freeStart + freeSize > mh->mh_Upper))
     {
-        /*
-         * Something is wrong.
-         * TODO: the following should actually be printed as part of the alert.
-         * In future there should be some kind of "alert context". CPU alerts
-         * (like illegal access) should remember CPU context there. Memory manager
-         * alerts (like this one) should remember some own information.
-         */
-        bug("[MM] Pool manager error\n");
-        bug("[MM] Attempt to free %u bytes at 0x%p\n", memSize, memory);
-        bug("[MM] The chunk does not belong to a pool\n");
-
-        Alert(AN_BadFreeAddr);
+        /* Something is wrong. */
+        PoolManagerAlert(PME_FREE_NO_CHUNK, 0, memSize, memory, NULL, NULL);
     }
     else
     {
@@ -1113,12 +1108,14 @@ void InternalFreePooled(APTR poolHeader, APTR memory, IPTR memSize, struct Trace
         IPTR size;
         APTR poolHeaderMH = (APTR)((IPTR)pool - MEMHEADER_TOTAL);
 
+        if (pool->pool.PoolMagic != POOL_MAGIC)
+        {
+            PoolManagerAlert(PME_FREE_INV_POOL, AT_DeadEnd, memSize, memory, poolHeaderMH, NULL);
+        }
+
         if (poolHeaderMH != poolHeader)
         {
-            bug("[MM] Pool manager error\n");
-            bug("[MM] Attempt to free %u bytes at 0x%p\n", memSize, memory);
-            bug("[MM] The chunk belongs to pool 0x%p, but call indicated pool 0x%p\n", poolHeaderMH, poolHeader);
-            Alert(AN_BadFreeAddr);
+            PoolManagerAlert(PME_FREE_MXD_POOL, 0, memSize, memory, poolHeaderMH, poolHeader);
         }
 
         if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
@@ -1198,4 +1195,53 @@ ULONG checkMemHandlers(struct checkMemHandlersState *cmhs, struct ExecBase *SysB
 
     ReleaseSemaphore(&PrivExecBase(SysBase)->LowMemSem);
     return MEM_DID_NOTHING;
+}
+
+void PoolManagerAlert(ULONG code, ULONG flags, IPTR memSize, APTR memory, APTR poolHeaderMH, APTR poolHeader)
+{
+   /*
+    * TODO: the following should actually be printed as part of the alert.
+    * In future there should be some kind of "alert context". CPU alerts
+    * (like illegal access) should remember CPU context there. Memory manager
+    * alerts (like this one) should remember some own information.
+    */
+
+   bug("[MM] Pool manager error\n");
+   switch(code)
+   {
+   case PME_FREE_NO_CHUNK:
+   case PME_FREE_INV_POOL:
+   case PME_FREE_MXD_POOL:
+       bug("[MM] Attempt to free %u bytes at 0x%p\n", memSize, memory);
+       break;
+   case PME_ALLOC_INV_POOL:
+       bug("[MM] Attempt to allocate %u bytes\n", memSize);
+       break;
+   case PME_DEL_POOL_INV_POOL:
+       bug("[MM] Attempt to free pool 0x%p which is not marked as valid\n", poolHeader);
+       break;
+   default:
+       break;
+   }
+
+   switch(code)
+    {
+    case PME_FREE_NO_CHUNK:
+        bug("[MM] The chunk does not belong to a pool\n");
+        break;
+    case PME_FREE_INV_POOL:
+        bug("[MM] The chunk belongs to pool 0x%p which is not marked as valid\n", poolHeaderMH);
+        break;
+    case PME_FREE_MXD_POOL:
+        bug("[MM] The chunk belongs to pool 0x%p, but call indicated pool 0x%p\n", poolHeaderMH, poolHeader);
+        break;
+    case PME_ALLOC_INV_POOL:
+        bug("[MM] Requested to allocate from pool 0x%p which is not marked as valid\n", poolHeader);
+        break;
+    default:
+        break;
+    }
+
+
+   Alert(AN_BadFreeAddr | flags);
 }

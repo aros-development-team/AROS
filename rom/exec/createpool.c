@@ -128,6 +128,7 @@
 	NEWLIST((struct List *)&pool->pool.PuddleList);
 	pool->pool.Requirements = requirements;
 	pool->pool.PuddleSize   = puddleSize;
+	pool->pool.PoolMagic   = POOL_MAGIC;
 
 	if (requirements & MEMF_SEM_PROTECTED)
 	{
