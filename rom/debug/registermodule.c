@@ -360,7 +360,7 @@ void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, st
                 int_shstrndx = sections[0].link;
 
         D(bug("[Debug] %d sections at 0x%p\n", int_shnum, sections));
-        shstr = SHINDEX(int_shstrndx);
+        shstr = int_shstrndx;
 
         strcpy(mod->m_name, name);
         mod->m_seg = segList;

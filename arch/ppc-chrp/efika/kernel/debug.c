@@ -194,14 +194,6 @@ struct hunk
 #define BPTR2HUNK(bptr) ((struct hunk *)((char *)BADDR(bptr) - offsetof(struct hunk, next)))
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
 
-/* convert section header number to array index */
-#define SHINDEX(n) \
-    ((n) < SHN_LORESERVE ? (n) : ((n) <= SHN_HIRESERVE ? 0 : (n) - (SHN_HIRESERVE + 1 - SHN_LORESERVE)))
-
-/* convert section header array index to section number */
-#define SHNUM(i) \
-    ((i) < SHN_LORESERVE ? (i) : (i) + (SHN_HIRESERVE + 1 - SHN_LORESERVE))
-
 AROS_LH3(void, KrnRegisterModule,
 		AROS_LHA(const char *, 		name, A0),
 		AROS_LHA(struct sheader *,	sections, A1),
@@ -233,7 +225,7 @@ AROS_LH3(void, KrnRegisterModule,
 			for (i=0; i < eh->int_shnum; i++)
 			{
 				/* If we have string table, copy it */
-				if (sections[i].type == SHT_STRTAB && i != SHINDEX(eh->int_shstrndx))
+				if (sections[i].type == SHT_STRTAB && i != eh->int_shstrndx)
 				{
 //					D(bug("[KRN]  symbol table of length %d in section %d\n", sections[i].size, i));
 

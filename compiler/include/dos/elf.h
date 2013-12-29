@@ -257,13 +257,16 @@ struct rela
     elf_intptr_t  addend;   /* Constant addend used to compute value */
 };
 
+/* Note: the conversion below is not in line with ELF specification and is fixed in GNU binutils since 2008
+ * See: https://sourceware.org/bugzilla/show_bug.cgi?id=5900
+ */
 /* convert section header number to array index */
-#define SHINDEX(n) \
-    ((n) < SHN_LORESERVE ? (n) : ((n) <= SHN_HIRESERVE ? 0 : (n) - (SHN_HIRESERVE + 1 - SHN_LORESERVE)))
+/*#define SHINDEX(n) \
+    ((n) < SHN_LORESERVE ? (n) : ((n) <= SHN_HIRESERVE ? 0 : (n) - (SHN_HIRESERVE + 1 - SHN_LORESERVE)))*/
 
 /* convert section header array index to section number */
-#define SHNUM(i) \
-    ((i) < SHN_LORESERVE ? (i) : (i) + (SHN_HIRESERVE + 1 - SHN_LORESERVE))
+/*#define SHNUM(i) \
+    ((i) < SHN_LORESERVE ? (i) : (i) + (SHN_HIRESERVE + 1 - SHN_LORESERVE))*/
 
 /* ARM-specific attributes section definitions follow */
 
