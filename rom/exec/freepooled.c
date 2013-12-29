@@ -50,10 +50,6 @@
 	CreatePool(), DeletePool(), AllocPooled()
 
     INTERNALS
-	In AROS memory allocated from pool remembers where it came from.
-	Because of this poolHeader is effectively ignored and is present
-	only for compatibility reasons. However, do not rely on this! For
-	other operating systems of Amiga(tm) family this is not true!
 
 ******************************************************************************/
 {
@@ -70,7 +66,7 @@
     {
         struct TraceLocation tp = CURRENT_LOCATION("FreePooled");
 
-        InternalFreePooled(memory, memSize, &tp, SysBase);
+        InternalFreePooled(poolHeader, memory, memSize, &tp, SysBase);
     }
 
     AROS_LIBFUNC_EXIT

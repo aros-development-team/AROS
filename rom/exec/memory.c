@@ -1074,7 +1074,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
  * Our chunks remember from which pool they came, so we don't need a pointer to pool
  * header here. This will save us from headaches in future FreeMem() implementation.
  */
-void InternalFreePooled(APTR memory, IPTR memSize, struct TraceLocation *loc, struct ExecBase *SysBase)
+void InternalFreePooled(APTR poolHeader, APTR memory, IPTR memSize, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
     struct MemHeader *mh;
     APTR freeStart;
@@ -1115,6 +1115,15 @@ void InternalFreePooled(APTR memory, IPTR memSize, struct TraceLocation *loc, st
     {
         struct ProtectedPool *pool = (struct ProtectedPool *)mhac_PoolMemHeaderGetPool(mh);
         IPTR size;
+        APTR poolHeaderMH = (APTR)((IPTR)pool - MEMHEADER_TOTAL);
+
+        if (poolHeaderMH != poolHeader)
+        {
+            bug("[MM] Pool manager error\n");
+            bug("[MM] Attempt to free %u bytes at 0x%p\n", memSize, memory);
+            bug("[MM] The chunk belongs to pool 0x%p, but call indicated pool 0x%p\n", poolHeaderMH, poolHeader);
+            Alert(AN_BadFreeAddr);
+        }
 
         if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
         {
