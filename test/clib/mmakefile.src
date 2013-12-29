@@ -51,7 +51,8 @@ FILES := \
         execl2 execl2_vfork execl2_slave \
         argv0_test1 argv0_test2 argv0_slave \
         abort \
-        assert
+        assert \
+        posix_memalign
 
 FILES_NIXC := \
         argv0_test3 argv0_test4 argv0_slave_nixc
