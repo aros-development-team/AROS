@@ -286,8 +286,8 @@ static int relocate
 )
 {
     struct sheader *shrel    = &sh[shrel_idx];
-    struct sheader *shsymtab = &sh[SHINDEX(shrel->link)];
-    struct sheader *toreloc  = &sh[SHINDEX(shrel->info)];
+    struct sheader *shsymtab = &sh[shrel->link];
+    struct sheader *toreloc  = &sh[shrel->info];
 
     struct symbol *symtab   = (struct symbol *)shsymtab->addr;
     struct relo   *rel      = (struct relo *)shrel->addr;
@@ -336,20 +336,20 @@ static int relocate
             shindex = ((ULONG *)symtab_shndx->addr)[ELF_R_SYM(rel->info)];
         }
 
-	DB2(bug("[ELF Loader] Processing symbol %s\n", sh[SHINDEX(shsymtab->link)].addr + sym->name));
+	DB2(bug("[ELF Loader] Processing symbol %s\n", sh[shsymtab->link].addr + sym->name));
 
         switch (shindex)
         {
 
             case SHN_UNDEF:
                 D(bug("[ELF Loader] Undefined symbol '%s'\n",
-		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
+		      (STRPTR)sh[shsymtab->link].addr + sym->name));
                       SetIoErr(ERROR_BAD_HUNK);
                 return 0;
 
             case SHN_COMMON:
                 D(bug("[ELF Loader] COMMON symbol '%s'\n",
-		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
+		      (STRPTR)sh[shsymtab->link].addr + sym->name));
                       SetIoErr(ERROR_BAD_HUNK);
 		      
                 return 0;
@@ -357,7 +357,7 @@ static int relocate
             case SHN_ABS:
 	        if (SysBase_sym == NULL)
 		{
-		    if (strncmp((STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name, "SysBase", 8) == 0)
+		    if (strncmp((STRPTR)sh[shsymtab->link].addr + sym->name, "SysBase", 8) == 0)
 		    {
 		        SysBase_sym = sym;
 			goto SysBase_yes;
@@ -375,7 +375,7 @@ static int relocate
                 break;
 
   	    default:
-		s = (IPTR)sh[SHINDEX(shindex)].addr + sym->value;
+		s = (IPTR)sh[shindex].addr + sym->value;
  	}
 
         switch (ELF_R_TYPE(rel->info))
@@ -613,7 +613,7 @@ BPTR InternalLoadSeg_ELF
     for (i = 0; i < int_shnum; i++)
     {
         /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
-        if ((sh[i].type == AROS_ELF_REL) && sh[SHINDEX(sh[i].info)].addr)
+        if ((sh[i].type == AROS_ELF_REL) && sh[sh[i].info].addr)
         {
 	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
             if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, DOSBase))

@@ -233,13 +233,16 @@ struct relo
     SIPTR addend;   /* Constant addend used to compute value */
 };
 
+/* Note: the conversion below is not in line with ELF specification and is fixed in GNU binutils since 2008
+ * See: https://sourceware.org/bugzilla/show_bug.cgi?id=5900
+ */
 /* convert section header number to array index */
-#define SHINDEX(n) \
-    ((n) < SHN_LORESERVE ? (n) : ((n) <= SHN_HIRESERVE ? 0 : (n) - (SHN_HIRESERVE + 1 - SHN_LORESERVE)))
+/*#define SHINDEX(n) \
+    ((n) < SHN_LORESERVE ? (n) : ((n) <= SHN_HIRESERVE ? 0 : (n) - (SHN_HIRESERVE + 1 - SHN_LORESERVE)))*/
 
 /* convert section header array index to section number */
-#define SHNUM(i) \
-    ((i) < SHN_LORESERVE ? (i) : (i) + (SHN_HIRESERVE + 1 - SHN_LORESERVE))
+/*#define SHNUM(i) \
+    ((i) < SHN_LORESERVE ? (i) : (i) + (SHN_HIRESERVE + 1 - SHN_LORESERVE))*/
 
 /* m68k Machine's native values */
 #define AROS_ELF_CLASS ELFCLASS32
@@ -464,17 +467,17 @@ static int relocate
 )
 {
     struct sheader *shrel    = &sh[shrel_idx];
-    struct sheader *shsymtab = &sh[SHINDEX(shrel->link)];
-    struct sheader *toreloc  = &sh[SHINDEX(shrel->info)];
+    struct sheader *shsymtab = &sh[shrel->link];
+    struct sheader *toreloc  = &sh[shrel->info];
 
-    struct symbol *symtab   = (struct symbol *)hh[SHINDEX(shrel->link)]->data;
-    struct hunkheader *h    = hh[SHINDEX(shrel->info)];
+    struct symbol *symtab   = (struct symbol *)hh[shrel->link]->data;
+    struct hunkheader *h    = hh[shrel->info];
 
     /*
      * Ignore relocs if the target section has no allocation. that can happen
      * eg. with a .debug PROGBITS and a .rel.debug section
      */
-    D(bug("[ELF2HUNK] sh[%d].flags = 0x%x\n", (int)SHINDEX(shrel->info), (int)toreloc->flags));
+    D(bug("[ELF2HUNK] sh[%d].flags = 0x%x\n", (int)(shrel->info), (int)toreloc->flags));
     if (!(toreloc->flags & SHF_ALLOC))
     	return 1;
 
@@ -511,7 +514,7 @@ static int relocate
 	sym = symtab[ELF_R_SYM(rel->info)];
 	sym_fixup(&sym);
 	offset = rel->offset;
-	symname = (const char *)(hh[SHINDEX(shsymtab->link)]->data + sym.name);
+	symname = (const char *)(hh[shsymtab->link]->data + sym.name);
 
         if (sym.shindex != SHN_XINDEX)
             shindex = sym.shindex;
@@ -549,7 +552,7 @@ static int relocate
                 break;
 
   	    default:
-		hunk = SHINDEX(shindex);
+		hunk = shindex;
 		value = sym.value;
 		break;
  	}
@@ -613,7 +616,7 @@ int sym_dump(int hunk_fd, struct sheader *sh, struct hunkheader **hh, int shid, 
 {
     int i, err, syms;
     struct symbol *sym = hh[symtabndx]->data;
-    struct sheader *symtab = &sh[SHINDEX(symtabndx)];
+    struct sheader *symtab = &sh[symtabndx];
 
     syms = symtab->size / sizeof(struct symbol);
 
@@ -632,10 +635,10 @@ int sym_dump(int hunk_fd, struct sheader *sh, struct hunkheader **hh, int shid, 
     	s = sym[i];
     	sym_fixup(&s);
 
-    	if (SHINDEX(s.shindex) != shid)
+    	if (s.shindex != shid)
     	    continue;
 
-	name = (const char *)(hh[SHINDEX(symtab->link)]->data + s.name);
+	name = (const char *)(hh[symtab->link]->data + s.name);
     	D(bug("\t0x%08x: %s\n", (int)s.value, name));
     	lsize = (strlen(name) + 4) / 4;
     	wlong(hunk_fd, lsize);
@@ -835,8 +838,8 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
     {
         /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
         if ((sh[i].type == AROS_ELF_REL)
-        	&& hh[SHINDEX(sh[i].info)]
-        	&& hh[SHINDEX(sh[i].info)]->data)
+        	&& hh[sh[i].info]
+        	&& hh[sh[i].info]->data)
         {
 	    void *reloc = load_block(file, sh[i].offset, sh[i].size);
 	    

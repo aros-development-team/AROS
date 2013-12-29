@@ -112,8 +112,8 @@ static void *copy_data(void *src, void *addr, uintptr_t len)
 static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, elf_uintptr_t DefSysBase)
 {
     struct sheader *shrel    = &sh[shrel_idx];
-    struct sheader *shsymtab = &sh[SHINDEX(shrel->link)];
-    struct sheader *toreloc  = &sh[SHINDEX(shrel->info)];
+    struct sheader *shsymtab = &sh[shrel->link];
+    struct sheader *toreloc  = &sh[shrel->info];
 
     struct symbol *symtab   = (struct symbol *)(uintptr_t)shsymtab->addr;
     struct relo   *rel      = (struct relo *)(uintptr_t)shrel->addr;
