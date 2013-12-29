@@ -177,13 +177,6 @@ arch-clean: clean
 dist-clean: arch-clean
 	@$(NOP)
 
-# Dependencies don't work with .DEFAULT :-(
-docs : tools
-	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.docs
-
-all-docs : tools
-	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.all-docs
-
 # Don't try to generate $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts
 $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)/gen/config/make.opts:
 	@$(NOP)
