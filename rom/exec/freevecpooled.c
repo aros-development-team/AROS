@@ -53,7 +53,7 @@
     
     struct MemHeaderExt *mhe = (struct MemHeaderExt *)poolHeader;
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED)
+    if (IsManagedMem(mhe))
     {
         if (mhe->mhe_FreeVec)
             mhe->mhe_FreeVec(mhe, memory);

@@ -138,7 +138,7 @@
 	 * If the pool is in managed memory, don't bother any further setup. The
 	 * pool should do the rest self.
 	 */
-	if (firstPuddle->mh_Attributes & MEMF_MANAGED)
+	if (IsManagedMem(firstPuddle))
 	{
 	    D(bug("Managed pool\n"));
 	    /*

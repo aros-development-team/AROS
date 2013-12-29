@@ -58,10 +58,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    if ((freeList->mh_Node.ln_Type == NT_MEMORY) &&
-        (freeList->mh_Attributes & MEMF_MANAGED) &&
-        (((struct MemHeaderExt *)freeList)->mhe_Magic == MEMHEADER_EXT_MAGIC)
-    )
+    if ((freeList->mh_Node.ln_Type == NT_MEMORY) && IsManagedMem(freeList))
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)freeList;
 

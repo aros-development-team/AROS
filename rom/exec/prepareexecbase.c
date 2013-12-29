@@ -115,7 +115,7 @@ static APTR allocmem(struct MemHeader *mh, ULONG size, ULONG attributes)
 {
     APTR ret;
 
-    if (mh->mh_Attributes & MEMF_MANAGED)
+    if (IsManagedMem(mh))
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
