@@ -77,7 +77,7 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
 void FreeMemHeader(APTR addr, struct TraceLocation *loc, struct ExecBase *SysBase);
 
 APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct TraceLocation *loc, struct ExecBase *SysBase);
-void InternalFreePooled(APTR memory, IPTR memSize, struct TraceLocation *loc, struct ExecBase *SysBase);
+void InternalFreePooled(APTR poolHeader, APTR memory, IPTR memSize, struct TraceLocation *loc, struct ExecBase *SysBase);
 
 ULONG checkMemHandlers(struct checkMemHandlersState *cmhs, struct ExecBase *SysBase);
 
