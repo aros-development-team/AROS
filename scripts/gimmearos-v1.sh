@@ -14,7 +14,7 @@ curdir="`pwd`"
 srcdir="aros-src"
 portsdir="$HOME/aros-ports-src"
 tooldir="$HOME/aros-toolchain"
-cpucoresforcompile="2"
+makeopts="-j2 -s"
 
 install_pkg()
 {
@@ -208,7 +208,6 @@ do
 
     echo -e "\nStep 3: Configuring Toolchain"
     echo -e   "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo -e   "-------+----------------"
     echo -e   "  1    | i386   (32-bit)"
     echo -e   "  2    | x86_64 (64-bit)"
     echo -e "\n9 .. Leave loop, goto next step"
@@ -220,14 +219,14 @@ do
     case "$input" in
         1 ) echo -e "\nConfiguring i386 Toolchain...\n"
             mkdir -p "$portsdir"
-            mkdir -p aros-linux-i386-toolchain
-            cd aros-linux-i386-toolchain
+            mkdir -p aros-i386-toolchain-builddir
+            cd aros-i386-toolchain-builddir
             "../$srcdir/configure" --target=linux-i386 --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir"
             ;;
         2 ) echo -e "\nConfiguring x86_64 Toolchain...\n"
             mkdir -p "$portsdir"
-            mkdir -p aros-linux-x86_64-toolchain
-            cd aros-linux-x86_64-toolchain
+            mkdir -p aros-x86_64-toolchain-builddir
+            cd aros-x86_64-toolchain-builddir
             "../$srcdir/configure" --target=linux-x86_64 --with-portssources="$portsdir" --with-aros-toolchain-install="$tooldir"
             ;;
 
@@ -246,9 +245,8 @@ do
     echo -e "\nStep 4: Building Toolchain"
     echo -e   "~~~~~~~~~~~~~~~~~~~~~~~~~~"
     echo -e "\nYou can only build what you've already configured."
-    echo -e   "-------+----------------------"
     echo -e   "   1   | i386   (32-bit)"
-    echo -e   "   3   | x86_64 (64-bit)"
+    echo -e   "   2   | x86_64 (64-bit)"
     echo -e "\n9 .. Leave loop, goto next step"
     echo -e   "0 .. Exit"
     echo -e "\nEnter number and press <Enter>:"
@@ -256,12 +254,16 @@ do
     read input
     case "$input" in
         1 ) echo -e "\nBuilding i386 Toolchain...\n"
-            cd aros-linux-i386-toolchain
-            make -j$cpucoresforcompile crosstools
+            cd aros-i386-toolchain-builddir
+            make $makeopts crosstools
+            cd "$curdir"
+            rm -rf aros-i386-toolchain-builddir
             ;;
         2 ) echo -e "\nBuilding x86_64 Toolchain...\n"
-            cd aros-linux-x86_64-toolchain
-            make -j$cpucoresforcompile crosstools
+            cd aros-x86_64-toolchain-builddir
+            make $makeopts crosstools
+            cd "$curdir"
+            rm -rf aros-x86_64-toolchain-builddir
             ;;
 
         0 ) exit 0
@@ -279,8 +281,7 @@ do
 
     echo -e "\nStep 5: Configuring"
     echo -e   "~~~~~~~~~~~~~~~~~~~"
-    echo -e   "-------+----------------------------"
-    echo -e   "  1    | linux-i386   (32-bit) debug"
+    echo -e "\n  1    | linux-i386   (32-bit) debug"
     echo -e   "  2    | linux-i386   (32-bit)"
     echo -e   "  3    | linux-x86_64 (64-bit) debug"
     echo -e   "  4    | linux-x86_64 (64-bit)"
@@ -345,8 +346,7 @@ do
     echo -e "\nStep 6: Building"
     echo -e   "~~~~~~~~~~~~~~~~"
     echo -e "\nYou can only build what you've already configured."
-    echo -e   "-------+----------------------------"
-    echo -e   "   1   | linux-i386   (32-bit) debug"
+    echo -e "\n   1   | linux-i386   (32-bit) debug"
     echo -e   "   2   | linux-i386   (32-bit)"
     echo -e   "   3   | linux-x86_64 (64-bit) debug"
     echo -e   "   4   | linux-x86_64 (64-bit)"
@@ -360,43 +360,43 @@ do
     case "$input" in
         1 ) echo -e "\nBuilding linux-i386 V1 with full debug...\n"
             cd aros-linux-i386-dbg
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
+            #make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-dbg/bin/<target>/AROS"
             ;;
         2 ) echo -e "\nBuilding linux-i386 V1 without debug...\n"
             cd aros-linux-i386
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
+            #make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386/bin/<target>/AROS"
             ;;
         3 ) echo -e "\nBuilding linux-x86_64 V1 with full debug...\n"
             cd aros-linux-x86_64-dbg
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
+            #make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64-dbg/bin/<target>/AROS"
             ;;
         4 ) echo -e "\nBuilding linux-x86_64 V1 without debug...\n"
             cd aros-linux-x86_64
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
+            #make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64/bin/<target>/AROS"
             ;;
         5 ) echo -e "\nBuilding pc-i386 V1...\n"
             cd aros-pc-i386
-            make -j$cpucoresforcompile
-            make -j$cpucoresforcompile bootiso
+            make $makeopts
+            make $makeopts bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-i386/bin/<target>/AROS"
             ;;
         6 ) echo -e "\nBuilding pc-x86_64 V1...\n"
             cd aros-pc-x86_64
-            make -j$cpucoresforcompile
-            make -j$cpucoresforcompile bootiso
+            make $makeopts
+            make $makeopts bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-x86_64/bin/<target>/AROS"
             ;;
