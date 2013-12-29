@@ -71,7 +71,7 @@
 
     struct MemHeaderExt *mhe = (struct MemHeaderExt *)poolHeader;
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED)
+    if (IsManagedMem(mhe))
     {
         ULONG attributes = (ULONG)(IPTR)mhe->mhe_MemHeader.mh_First;
 

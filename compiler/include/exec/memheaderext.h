@@ -52,4 +52,8 @@ struct MemHeaderExt
    functions whose pointers are in the extended mem header.  */
 #define MEMF_MANAGED  (1L << 15)
 
+#define IsManagedMem(mh) \
+    ((((struct MemHeader *)mh)->mh_Attributes & MEMF_MANAGED) && \
+     (((struct MemHeaderExt *)mh)->mhe_Magic == MEMHEADER_EXT_MAGIC))
+
 #endif

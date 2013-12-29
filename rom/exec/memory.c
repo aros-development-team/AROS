@@ -34,7 +34,7 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
 
     while (mh->mh_Node.ln_Succ != NULL)
     {
-        if (mh->mh_Attributes & MEMF_MANAGED)
+        if (IsManagedMem(mh))
         {
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
@@ -487,9 +487,7 @@ APTR stdAlloc(struct MemHeader *mh, struct MemHeaderAllocatorCtx *mhac, IPTR siz
      * The check has to be done for the second time. Exec uses stdAlloc on memheader
      * passed upon startup. This is bad, very bad. So here a temporary hack :)
      */
-    if ((mh->mh_Node.ln_Type == NT_MEMORY) &&
-        (mh->mh_Attributes & MEMF_MANAGED) &&
-        (((struct MemHeaderExt *)mh)->mhe_Magic == MEMHEADER_EXT_MAGIC))
+    if ((mh->mh_Node.ln_Type == NT_MEMORY) && IsManagedMem(mh))
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
@@ -626,9 +624,7 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
     struct MemChunk *p1, *p2, *p3;
     UBYTE *p4;
 
-    if ((freeList->mh_Node.ln_Type == NT_MEMORY) &&
-        (freeList->mh_Attributes & MEMF_MANAGED) &&
-        (((struct MemHeaderExt *)freeList)->mhe_Magic == MEMHEADER_EXT_MAGIC))
+    if ((freeList->mh_Node.ln_Type == NT_MEMORY) && IsManagedMem(freeList))
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)freeList;
         
@@ -800,7 +796,7 @@ APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct Ex
     {
         struct MemHeader *orig = FindMem(mh, SysBase);
 
-        if (orig->mh_Attributes & MEMF_MANAGED)
+        if (IsManagedMem(orig))
         {
             struct MemHeaderExt *mhe_orig = (struct MemHeaderExt *)orig;
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
@@ -873,7 +869,7 @@ void FreeMemHeader(APTR addr, struct TraceLocation *loc, struct ExecBase *SysBas
 
     IPTR size = (IPTR)mhe->mhe_MemHeader.mh_Upper - (IPTR)addr;
 
-    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_MANAGED)
+    if (IsManagedMem(mhe))
     {
         if (mhe->mhe_DestroyPool)
             mhe->mhe_DestroyPool(mhe);

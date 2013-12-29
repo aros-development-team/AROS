@@ -40,7 +40,7 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struc
                 || mh->mh_Free < byteSize)
             continue;
 
-        if (mh->mh_Attributes & MEMF_MANAGED)
+        if (IsManagedMem(mh))
         {
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
@@ -72,7 +72,7 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
     /* Loop over MemHeader structures */
     ForeachNode(&SysBase->MemList, mh)
     {
-        if (mh->mh_Attributes & MEMF_MANAGED)
+        if (IsManagedMem(mh))
         {
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
             if (mhe->mhe_InBounds(mhe, location, endlocation))
@@ -211,7 +211,7 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, s
 
     ForeachNode(&SysBase->MemList, mh)
     {
-        if (mh->mh_Attributes & MEMF_MANAGED)
+        if (IsManagedMem(mh))
         {
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
@@ -278,7 +278,7 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
             continue;
         }
 
-        if (mh->mh_Attributes & MEMF_MANAGED)
+        if (IsManagedMem(mh))
         {
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
