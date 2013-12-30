@@ -37,12 +37,12 @@ enum
 
 enum
 {
-    aoHidd_Compositor_GfxHidd = 0, 	/* [I..] Gfx driver object connected with this compositor object  */
-    aoHidd_Compositor_DisplayID, 	/* [I.G] Card ID part of Display mode ID                          */
-    aoHidd_Compositor_Capabilities,	/* [..G] Composition capabilities of this implementation	  */
-    aoHidd_Compositor_State,	        /* [ISG] Currently used capabilities                              */
-    aoHidd_Compositor_BackFillHook,	/* [ISG] Rendering hook for void space                            */
-    aoHidd_Compositor_FrameBuffer,	/* [I..] Driver's framebuffer bitmap				  */
+    aoHidd_Compositor_GfxHidd = 0,  /* [I..] Gfx driver object connected with this compositor object  */
+    aoHidd_Compositor_DisplayID,    /* [I.G] Card ID part of Display mode ID                          */
+    aoHidd_Compositor_Capabilities, /* [..G] Composition capabilities of this implementation          */
+    aoHidd_Compositor_State,        /* [ISG] Currently used capabilities                              */
+    aoHidd_Compositor_BackFillHook, /* [ISG] Rendering hook for void space                            */
+    aoHidd_Compositor_FrameBuffer,  /* [I..] Driver's framebuffer bitmap                              */
 
     num_Hidd_Compositor_Attrs
 };
@@ -61,7 +61,7 @@ struct pHidd_Compositor_BitMapStackChanged
 {
     OOP_MethodID                mID;
     struct HIDD_ViewPortData    *data;
-    BOOL			*active;
+    BOOL                        *active;
 };
 
 struct pHidd_Compositor_BitMapRectChanged
@@ -85,13 +85,13 @@ struct pHidd_Compositor_BitMapPositionChange
 struct pHidd_Compositor_BitMapValidate
 {
     OOP_MethodID    mID;
-    struct BitMap     *bm;
+    struct BitMap   *bm;
 };
 
 struct pHidd_Compositor_BitMapEnable
 {
     OOP_MethodID    mID;
-    struct BitMap     *bm;
+    struct BitMap   *bm;
 };
 
 struct HIDD_BackFillHookMsg
