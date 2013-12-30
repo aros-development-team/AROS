@@ -103,7 +103,7 @@ struct Screen *HIDDCompositorFindBitMapScreen(struct HIDDCompositorData *compdat
     for (curScreen = IntuitionBase->FirstScreen; curScreen != NULL; curScreen = curScreen->NextScreen)
     {
         if (bm == HIDD_BM_OBJ(curScreen->RastPort.BitMap))
-        return curScreen;
+            return curScreen;
     }
     
     return (struct Screen *)NULL;
@@ -120,13 +120,13 @@ static VOID HIDDCompositorValidateBitMapPositionChange(OOP_Object * bm, SIPTR *n
     /* Check x position */
     if (width > displayedwidth)
     {
-    	neglimit = displayedwidth - width;
-    	poslimit = 0;
+            neglimit = displayedwidth - width;
+            poslimit = 0;
     }
     else
     {
-    	neglimit = 0;
-    	poslimit = displayedwidth - width;
+            neglimit = 0;
+            poslimit = displayedwidth - width;
     }
 
     if (*(newxoffset) > poslimit)
@@ -136,9 +136,9 @@ static VOID HIDDCompositorValidateBitMapPositionChange(OOP_Object * bm, SIPTR *n
 
     /* Check y position */
     if (height > displayedheight)
-    	neglimit = displayedheight - height; /* Limit for scroll */
+            neglimit = displayedheight - height; /* Limit for scroll */
     else
-    	neglimit = 0;
+            neglimit = 0;
     poslimit = displayedheight - 15; /* Limit for drag */
 
     if (*(newyoffset) > poslimit)
@@ -299,67 +299,67 @@ static HIDDT_ModeID FindBestHiddMode(struct HIDDCompositorData *compdata, ULONG 
 
     while ((mode = HIDD_Gfx_NextModeID(compdata->gfx, mode, &sync, &pf)) != vHidd_ModeID_Invalid)
     {
-    	BOOL match;
+        BOOL match;
 
-    	DMODE(bug("[%s] Checking mode 0x%08X... ", __PRETTY_FUNCTION__, mode));
-	if (OOP_GET(pf, aHidd_PixFmt_ColorModel) != vHidd_ColorModel_TrueColor)
-	{
-	    DMODE(bug("Skipped (not truecolor)\n"));
-	    continue;
-	}
+            DMODE(bug("[%s] Checking mode 0x%08X... ", __PRETTY_FUNCTION__, mode));
+        if (OOP_GET(pf, aHidd_PixFmt_ColorModel) != vHidd_ColorModel_TrueColor)
+        {
+            DMODE(bug("Skipped (not truecolor)\n"));
+            continue;
+        }
 
-	OOP_GetAttr(sync, aHidd_Sync_HDisp, &w);
-	OOP_GetAttr(sync, aHidd_Sync_VDisp, &h);
-	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &d);
+        OOP_GetAttr(sync, aHidd_Sync_HDisp, &w);
+        OOP_GetAttr(sync, aHidd_Sync_VDisp, &h);
+        OOP_GetAttr(pf, aHidd_PixFmt_Depth, &d);
 
-	dw = w > width  ? w - width  : w < width  ? width  - w : 1;
-	dh = h > height ? h - height : h < height ? height - h : 1;
-	delta = dw * dh;
+        dw = w > width  ? w - width  : w < width  ? width  - w : 1;
+        dh = h > height ? h - height : h < height ? height - h : 1;
+        delta = dw * dh;
 
-	match = FALSE;
-	if (delta < found_delta)
-	{
-	    /* If mode resolution is closer to the needed one, we've got a better match */
-	    found_delta  = delta;
-	    found_width  = w;
-	    found_height = h;
+        match = FALSE;
+        if (delta < found_delta)
+        {
+            /* If mode resolution is closer to the needed one, we've got a better match */
+            found_delta  = delta;
+            found_width  = w;
+            found_height = h;
 
-	    match = TRUE;
-	}
-	else if (delta == found_delta)
-	{
-	    /* If resolution is the same as that of current candidate mode, we can look at depth. */
-	    if (found_depth > depth)
-	    {
-	    	/*
-	    	 * Candidate mode if deeper than requested. We can supersede it with another mode
-	    	 * of smaller depth, but which still matches our request.
-	    	 */
-	    	if ((d < found_depth) && (d >= depth))
-	    	    match = TRUE;
-	    }
-	    else if (found_depth < depth)
-	    {
-	    	/*
-	    	 * We want better depth than current candidate.
-	    	 * In this case anything deeper will do.
-	    	 */
-	    	if (d > found_depth)
-	    	    match = TRUE;
-	    }
-	}
+            match = TRUE;
+        }
+        else if (delta == found_delta)
+        {
+            /* If resolution is the same as that of current candidate mode, we can look at depth. */
+            if (found_depth > depth)
+            {
+                /*
+                 * Candidate mode if deeper than requested. We can supersede it with another mode
+                 * of smaller depth, but which still matches our request.
+                 */
+                if ((d < found_depth) && (d >= depth))
+                    match = TRUE;
+            }
+            else if (found_depth < depth)
+            {
+                /*
+                 * We want better depth than current candidate.
+                 * In this case anything deeper will do.
+                 */
+                if (d > found_depth)
+                    match = TRUE;
+            }
+        }
 
-	if (match)
-	{
-	    /*
-	     * Mode with the same delta, but larger depth, may supersede
-	     * previous mode, if we prefer deeper ones.
-	     */
-	    DMODE(bug("Selected (%ldx%ldx%ld, delta = %u)", w, h, d, delta));
-	    found_depth = d;
-	    found_mode  = mode;
-	}
-	DMODE(bug("\n"));
+        if (match)
+        {
+            /*
+             * Mode with the same delta, but larger depth, may supersede
+             * previous mode, if we prefer deeper ones.
+             */
+            DMODE(bug("Selected (%ldx%ldx%ld, delta = %u)", w, h, d, delta));
+            found_depth = d;
+            found_mode  = mode;
+        }
+        DMODE(bug("\n"));
     }
 
     /* Store mode information */ 
@@ -396,7 +396,7 @@ static void UpdateDisplayMode(struct HIDDCompositorData *compdata)
      * Size of our composited mode needs to be as close as possible to that one.
      */
     for (n = (struct StackBitMapNode *)compdata->bitmapstack.mlh_TailPred;
-    	 n->n.mln_Pred; n = (struct StackBitMapNode *)n->n.mln_Pred)
+             n->n.mln_Pred; n = (struct StackBitMapNode *)n->n.mln_Pred)
     {
         if ((!(n->sbmflags & COMPF_ALPHA)) && (n->sbmflags & STACKNODEF_DISPLAYABLE))
         {
@@ -467,11 +467,11 @@ static void UpdateDisplayMode(struct HIDDCompositorData *compdata)
 
     if (modeid != compdata->displaymode)
     {
-    	/* The mode is different. Need to prepare information needed for compositing */
+            /* The mode is different. Need to prepare information needed for compositing */
         struct TagItem gctags[] =
         {
             { aHidd_GC_Foreground, 0x99999999 }, 
-            { TAG_DONE		 , 0	      }
+            { TAG_DONE                 , 0              }
         };
 
         /* Signal mode change */ 
@@ -494,7 +494,7 @@ static inline void HIDDCompositorRedrawBitmap(struct HIDDCompositorData *compdat
     ULONG blitheight = rect->MaxY - rect->MinY + 1;
 
     DREDRAWBM(bug("[Compositor:%s] Redraw HiddBitMap 0x%p, Rect[%d, %d - %d, %d]\n", __PRETTY_FUNCTION__, n->bm,
-    		  rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
+                      rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
 
     if (!(n->sbmflags & COMPF_ALPHA))
     {
@@ -532,10 +532,10 @@ static inline void HIDDCompositorRedrawBitmap(struct HIDDCompositorData *compdat
 static inline void HIDDCompositorFillRect(struct HIDDCompositorData *compdata, OOP_Object *renderTarget, ULONG MinX, ULONG MinY, ULONG MaxX, ULONG MaxY)
 {
     DREDRAWSCR(bug("[Compositor:%s] Filling [%d, %d - %d, %d]\n", __PRETTY_FUNCTION__,
-		   MinX, MinY, MaxX, MaxY));
+                   MinX, MinY, MaxX, MaxY));
 
     HIDD_BM_FillRect(renderTarget, compdata->gc,
-		     MinX, MinY, MaxX, MaxY);
+                     MinX, MinY, MaxX, MaxY);
 }
 
 
@@ -808,8 +808,8 @@ Additional rule:
 (e) if (oldsb!=sb) modeswitch(sb)
 
 02.09.2011: we don't remember sb any more because we don't handle it in any way. Instead
-	    we either have or don't have displaybitmap. If we have it, composition
-	    is on (sb = cb). If we don't have it, composition is off (sb = ntb).
+            we either have or don't have displaybitmap. If we have it, composition
+            is on (sb = cb). If we don't have it, composition is off (sb = ntb).
 */
 static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata, BOOL newtop)
 {
@@ -830,7 +830,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     /* (a) If mode change is needed, enforce opening a new screen */
     if (compdata->modeschanged)
     {
-    	DTOGGLE(bug("[Compositor:%s] Display Mode changed\n", __PRETTY_FUNCTION__));
+            DTOGGLE(bug("[Compositor:%s] Display Mode changed\n", __PRETTY_FUNCTION__));
         compdata->displaybitmap = NULL;
     }
 
@@ -852,43 +852,43 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
             /*
              * displaybitmap == NULL means we were in passthrough mode before,
              * or have just changed display mode - set up screen for composition.
-	     */
+             */
             DTOGGLE(bug("[Compositor:%s] Initialising Display-Compositor..\n", __PRETTY_FUNCTION__));
 
-	    if (compdata->fb)
-	    {
-	    	/*
-	    	 * If our display driver uses a framebuffer, we can reuse it.
-	    	 * Copy its original contents back into the bitmap which it replaced,
-	    	 * then change framebuffer's video mode.
-	    	 * Framebuffer is the only bitmap which can change its ModeID on the fly.
-	    	 */
-	    	DTOGGLE(bug("[Compositor:%s] Using Display Famebuffer HiddBitMap @ 0x%p\n", __PRETTY_FUNCTION__, compdata->fb));
+            if (compdata->fb)
+            {
+                /*
+                 * If our display driver uses a framebuffer, we can reuse it.
+                 * Copy its original contents back into the bitmap which it replaced,
+                 * then change framebuffer's video mode.
+                 * Framebuffer is the only bitmap which can change its ModeID on the fly.
+                 */
+                DTOGGLE(bug("[Compositor:%s] Using Display Famebuffer HiddBitMap @ 0x%p\n", __PRETTY_FUNCTION__, compdata->fb));
 
-	    	 /* Do this comparison in order not to show the framebuffer twice */
-	    	if (olddisplaybitmap != compdata->fb)
-	    	{
-	    	    /*
-	    	     * 1. It's legal to show the framebuffer itself. This causes copying
-	    	     *	  back old bitmap contents and detaching from it.
-	    	     * 2. The result of this will always match compdata->fb.
-	    	     * 3. Internally this is a simple blit operation, it can't fail.
-	    	     */
-                    DTOGGLE(bug("[Compositor:%s] Copying old Famebuffer BitMap\n", __PRETTY_FUNCTION__));
-	    	    compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, compdata->fb, fHidd_Gfx_Show_CopyBack);
-	    	}
+                 /* Do this comparison in order not to show the framebuffer twice */
+                if (olddisplaybitmap != compdata->fb)
+                {
+                    /*
+                     * 1. It's legal to show the framebuffer itself. This causes copying
+                     *          back old bitmap contents and detaching from it.
+                     * 2. The result of this will always match compdata->fb.
+                     * 3. Internally this is a simple blit operation, it can't fail.
+                     */
+                DTOGGLE(bug("[Compositor:%s] Copying old Famebuffer BitMap\n", __PRETTY_FUNCTION__));
+                    compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, compdata->fb, fHidd_Gfx_Show_CopyBack);
+                }
 
-		/* Switch display mode on the framebuffer. */
-	    	OOP_SetAttrsTags(compdata->fb, aHidd_BitMap_ModeID, compdata->displaymode, TAG_DONE);
-		/* We are now compositing on the framebuffer */
-	    	compdata->displaybitmap = compdata->fb;
-	    }
-	    else
-	    {
-	        /*
-	         * There's no framebuffer.
-	         * Create a new bitmap that will be used for compositing.
-	         */
+                /* Switch display mode on the framebuffer. */
+                    OOP_SetAttrsTags(compdata->fb, aHidd_BitMap_ModeID, compdata->displaymode, TAG_DONE);
+                /* We are now compositing on the framebuffer */
+                    compdata->displaybitmap = compdata->fb;
+            }
+            else
+            {
+                /*
+                 * There's no framebuffer.
+                 * Create a new bitmap that will be used for compositing.
+                 */
                 
                 tmpBM = AllocBitMap(compdata->displayrect.MaxX - compdata->displayrect.MinX + 1,
                                              compdata->displayrect.MaxY - compdata->displayrect.MinY + 1,
@@ -961,13 +961,13 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
      */
     if (newsdispbitmap)
     {
-    	IPTR w, h;
+        IPTR w, h;
 
-    	compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, newsdispbitmap, fHidd_Gfx_Show_CopyBack);
-    	DTOGGLE(bug("[Compositor:%s] Displayed HiddBitMap 0x%p, Show returned 0x%p\n", __PRETTY_FUNCTION__, newsdispbitmap, compdata->screenbitmap));
+        compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, newsdispbitmap, fHidd_Gfx_Show_CopyBack);
+        DTOGGLE(bug("[Compositor:%s] Displayed HiddBitMap 0x%p, Show returned 0x%p\n", __PRETTY_FUNCTION__, newsdispbitmap, compdata->screenbitmap));
 
-	/* After Show we need Update for mirroring drivers */
-	if (compdata->screenbitmap)
+        /* After Show we need Update for mirroring drivers */
+        if (compdata->screenbitmap)
         {
             OOP_GetAttr(compdata->screenbitmap, aHidd_BitMap_Width, &w);
             OOP_GetAttr(compdata->screenbitmap, aHidd_BitMap_Height, &h);
@@ -983,7 +983,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     {
         struct BitMap *freebm;
 
-    	DTOGGLE(bug("[Compositor:%s] Disposing old alpha-intermediate bitmap 0x%p\n", __PRETTY_FUNCTION__, oldintermedbitmap));
+        DTOGGLE(bug("[Compositor:%s] Disposing old alpha-intermediate bitmap 0x%p\n", __PRETTY_FUNCTION__, oldintermedbitmap));
 
         OOP_GetAttr(oldintermedbitmap, aHidd_BitMap_BMStruct, (IPTR *)&freebm);
         if (freebm)
@@ -998,7 +998,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     {
         struct BitMap *freebm;
 
-    	DTOGGLE(bug("[Compositor:%s] Disposing old display bitmap 0x%p\n", __PRETTY_FUNCTION__, olddisplaybitmap));
+        DTOGGLE(bug("[Compositor:%s] Disposing old display bitmap 0x%p\n", __PRETTY_FUNCTION__, olddisplaybitmap));
 
         OOP_GetAttr(olddisplaybitmap, aHidd_BitMap_BMStruct, (IPTR *)&freebm);
         if (freebm)
@@ -1037,12 +1037,12 @@ static void HIDDCompositorShowSingle(struct HIDDCompositorData *compdata, OOP_Ob
     /* Dispose working bitmap (if any) */
     if (compdata->displaybitmap)
     {
-    	/* Be careful with the framebuffer */
-    	if (compdata->displaybitmap != compdata->fb)
-    	    HIDD_Gfx_DisposeBitMap(compdata->gfx, compdata->displaybitmap);
+        /* Be careful with the framebuffer */
+        if (compdata->displaybitmap != compdata->fb)
+            HIDD_Gfx_DisposeBitMap(compdata->gfx, compdata->displaybitmap);
 
-	/* This will deactivate us */
-	compdata->displaybitmap = NULL;
+        /* This will deactivate us */
+        compdata->displaybitmap = NULL;
     }
 }
 
@@ -1172,7 +1172,7 @@ OOP_Object *METHOD(Compositor, Root, New)
         GfxBase = (APTR)OpenLibrary("graphics.library", 41);
         IntuitionBase = (APTR)OpenLibrary("intuition.library", 50);
 
-	/* GfxHidd is mandatory */
+        /* GfxHidd is mandatory */
         if ((compdata->GraphicsBase) && (compdata->gfx != NULL))
         {
             /* Create GC object that will be used for drawing operations */
@@ -1181,7 +1181,7 @@ OOP_Object *METHOD(Compositor, Root, New)
             D(bug("[%s] Compositor GC @ %p\n", __PRETTY_FUNCTION__, compdata->gc));
 
             if ((compdata->gfx) && (compdata->gc))
-            	return o;
+                    return o;
         }
 
         /* Creation failed */
@@ -1211,8 +1211,8 @@ VOID METHOD(Compositor, Root, Get)
 
     if (IS_COMPOSITOR_ATTR(msg->attrID, idx))
     {
-	switch (idx)
-	{
+        switch (idx)
+        {
             case aoHidd_Compositor_Capabilities:
             {
                 *msg->storage = (IPTR)CAPABILITY_FLAGS;
@@ -1231,7 +1231,7 @@ VOID METHOD(Compositor, Root, Get)
                 *msg->storage = (IPTR)compdata->backfillhook;
                 return;
             }
-	}
+        }
     }
     OOP_DoSuperMethod(cl, o, &msg->mID);
 }
@@ -1301,11 +1301,11 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
 
         DSTACK(bug("[Compositor] %s: No ViewPort specified\n", __PRETTY_FUNCTION__));
 
-	/* Blank screen */
-	HIDDCompositorShowSingle(compdata, NULL);
+        /* Blank screen */
+        HIDDCompositorShowSingle(compdata, NULL);
 
-	/* We know we are inactive after this */
-	*msg->active = FALSE;
+        /* We know we are inactive after this */
+        *msg->active = FALSE;
         /* This can return NULL, it's okay */
         return compdata->screenbitmap;
     }
@@ -1314,20 +1314,20 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
     for (vpdata = msg->data; vpdata; vpdata = vpdata->Next)
     {
         n = AllocMem(sizeof(struct StackBitMapNode), MEMF_ANY | MEMF_CLEAR);
-	if (!n)
-	{
-	    /*
-	     * Error happened.
-	     * We need to reset own state and return NULL. graphics.library
-	     * falls back to no composition in this case.
-	     */
-	    DSTACK(bug("[Compositor] %s: Error allocating StackBitMapNode!!!\n", __PRETTY_FUNCTION__));
+        if (!n)
+        {
+            /*
+             * Error happened.
+             * We need to reset own state and return NULL. graphics.library
+             * falls back to no composition in this case.
+             */
+            DSTACK(bug("[Compositor] %s: Error allocating StackBitMapNode!!!\n", __PRETTY_FUNCTION__));
 
-	    ok = FALSE;
-	    break;
-	}
+            ok = FALSE;
+            break;
+        }
 
-	DSTACK(bug("[Compositor] %s: ViewPort 0x%p, offset (%d, %d)\n", __PRETTY_FUNCTION__, vpdata->vpe->ViewPort, vpdata->vpe->ViewPort->DxOffset, vpdata->vpe->ViewPort->DyOffset));
+        DSTACK(bug("[Compositor] %s: ViewPort 0x%p, offset (%d, %d)\n", __PRETTY_FUNCTION__, vpdata->vpe->ViewPort, vpdata->vpe->ViewPort->DxOffset, vpdata->vpe->ViewPort->DyOffset));
 
         n->bm                   = vpdata->Bitmap;
         n->sbmflags             = STACKNODEF_DISPLAYABLE;
@@ -1388,35 +1388,35 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
 
     if (msg->data->Bitmap != compdata->topbitmap)
     {
-    	/* Set the new pointer to top bitmap */
-    	compdata->topbitmap = msg->data->Bitmap;
-    	newtop = TRUE;
+            /* Set the new pointer to top bitmap */
+            compdata->topbitmap = msg->data->Bitmap;
+            newtop = TRUE;
     }
 
     if (ok)
     {
-    	/*
-    	 * Validate bitmap offsets - they might not match the compositing rules taking
-       	 * new displayedwidth/displayedheight values
-       	 */
-	ForeachNode(&compdata->bitmapstack, n)
-    	{
+            /*
+             * Validate bitmap offsets - they might not match the compositing rules taking
+                * new displayedwidth/displayedheight values
+                */
+        ForeachNode(&compdata->bitmapstack, n)
+        {
             HIDDCompositorValidateBitMapPositionChange(n->bm, &n->leftedge, &n->topedge, 
-            						compdata->displayrect.MaxX - compdata->displayrect.MinX + 1, compdata->displayrect.MaxY - compdata->displayrect.MinY + 1);
+                                                            compdata->displayrect.MaxX - compdata->displayrect.MinX + 1, compdata->displayrect.MaxY - compdata->displayrect.MinY + 1);
             DSTACK(bug("[Compositor] %s: Bitmap 0x%p, display size %d x %d, validated position (%ld, %ld)\n", __PRETTY_FUNCTION__,
-            	       n->bm, compdata->displayrect.MaxX - compdata->displayrect.MinX + 1, compdata->displayrect.MaxY - compdata->displayrect.MinY + 1,
-            	       n->leftedge, n->topedge));
-    	}
+                           n->bm, compdata->displayrect.MaxX - compdata->displayrect.MinX + 1, compdata->displayrect.MaxY - compdata->displayrect.MinY + 1,
+                           n->leftedge, n->topedge));
+        }
 
-    	/* Toogle compositing based on screen positions */
-    	ok = HIDDCompositorToggleCompositing(compdata, newtop);
+        /* Toogle compositing based on screen positions */
+        ok = HIDDCompositorToggleCompositing(compdata, newtop);
     }
 
     /* Handle error */
     if (!ok)
     {
-    	HIDDCompositorReset(compdata);
-    	HIDDCompositorShowSingle(compdata, msg->data->Bitmap);
+        HIDDCompositorReset(compdata);
+        HIDDCompositorShowSingle(compdata, msg->data->Bitmap);
     }
 
     UNLOCK_COMPOSITOR
@@ -1436,29 +1436,29 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
 
     if (compdata->displaybitmap)
     {
-	/* Composition is active, handle redraw if the bitmap is on screen */
-    	struct StackBitMapNode *n;
+        /* Composition is active, handle redraw if the bitmap is on screen */
+        struct StackBitMapNode *n;
 
-	DUPDATE(bug("[%s] Bitmap 0x%p\n", __PRETTY_FUNCTION__, msg->bm));
+        DUPDATE(bug("[%s] Bitmap 0x%p\n", __PRETTY_FUNCTION__, msg->bm));
 
-    	LOCK_COMPOSITOR_READ
+        LOCK_COMPOSITOR_READ
 
         if (compdata->intermedbitmap)
             renderTarget = compdata->intermedbitmap;
 
-	n = HIDDCompositorFindBitMapStackNode(compdata, msg->bm);
-	if (n && (n->sbmflags & STACKNODEF_VISIBLE))
-	{
+        n = HIDDCompositorFindBitMapStackNode(compdata, msg->bm);
+        if (n && (n->sbmflags & STACKNODEF_VISIBLE))
+        {
             struct Rectangle dstandvisrect;
-    	    struct Rectangle srcrect;
+                struct Rectangle srcrect;
 
-	    srcrect.MinX = n->leftedge + msg->x;
-	    srcrect.MinY = n->topedge + msg->y;
-	    srcrect.MaxX = srcrect.MinX + msg->width - 1; 
-	    srcrect.MaxY = srcrect.MinY + msg->height - 1;
-    	    DUPDATE(bug("[%s] Bitmap rect [%d, %d -> %d, %d]\n", __PRETTY_FUNCTION__, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1));
+            srcrect.MinX = n->leftedge + msg->x;
+            srcrect.MinY = n->topedge + msg->y;
+            srcrect.MaxX = srcrect.MinX + msg->width - 1; 
+            srcrect.MaxY = srcrect.MinY + msg->height - 1;
+                DUPDATE(bug("[%s] Bitmap rect [%d, %d -> %d, %d]\n", __PRETTY_FUNCTION__, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1));
 
-	    DUPDATE(bug("[%s] Screen-relative rect [%d, %d -> %d, %d]\n", __PRETTY_FUNCTION__, _RECT(srcrect)));
+            DUPDATE(bug("[%s] Screen-relative rect [%d, %d -> %d, %d]\n", __PRETTY_FUNCTION__, _RECT(srcrect)));
 
             struct RegionRectangle * srrect = n->screenregion->RegionRectangle;
             while (srrect)
@@ -1509,16 +1509,16 @@ VOID METHOD(Compositor, Hidd_Compositor, BitMapRectChanged)
                    srcrect.MinX, srcrect.MinY,
                    srcrect.MaxX - srcrect.MinX + 1,
                    srcrect.MaxY - srcrect.MinY + 1);
-     	}
+         }
 
-    	UNLOCK_COMPOSITOR
-    	
-    	DUPDATE(bug("[%s] Done\n", __PRETTY_FUNCTION__));
+        UNLOCK_COMPOSITOR
+
+        DUPDATE(bug("[%s] Done\n", __PRETTY_FUNCTION__));
     }
     else
     {
-	/* In order to speed things up, we handle passthrough ourselves here. */
-    	HIDD_BM_UpdateRect(msg->bm, msg->x, msg->y, msg->width, msg->height);
+        /* In order to speed things up, we handle passthrough ourselves here. */
+        HIDD_BM_UpdateRect(msg->bm, msg->x, msg->y, msg->width, msg->height);
     }
 }
 
@@ -1533,19 +1533,19 @@ IPTR METHOD(Compositor, Hidd_Compositor, BitMapPositionChange)
     n = HIDDCompositorFindBitMapStackNode(compdata, msg->bm);
     if (n)
     {
-    	/* The bitmap is on display. Validate against screen size */
+        /* The bitmap is on display. Validate against screen size */
         disp_width  = compdata->displayrect.MaxX + 1;
         disp_height = compdata->displayrect.MaxY + 1;
     }
     else
     {
-	/* The bitmap is not displayed yet. Validate against its own ModeID size. */
-    	HIDDT_ModeID modeid = vHidd_ModeID_Invalid;
-    	OOP_Object *bmfriend, *sync, *pf;
+        /* The bitmap is not displayed yet. Validate against its own ModeID size. */
+        HIDDT_ModeID modeid = vHidd_ModeID_Invalid;
+        OOP_Object *bmfriend, *sync, *pf;
 
-    	OOP_GetAttr(msg->bm, aHidd_BitMap_ModeID, &modeid);
+        OOP_GetAttr(msg->bm, aHidd_BitMap_ModeID, &modeid);
 
-    	if ((modeid == vHidd_ModeID_Invalid) && (OOP_GET(msg->bm, aHidd_BitMap_Compositable)))
+        if ((modeid == vHidd_ModeID_Invalid) && (OOP_GET(msg->bm, aHidd_BitMap_Compositable)))
         {
             OOP_GetAttr(msg->bm, aHidd_BitMap_Friend, (IPTR *)&bmfriend);
             if (bmfriend)
@@ -1555,44 +1555,44 @@ IPTR METHOD(Compositor, Hidd_Compositor, BitMapPositionChange)
         if (modeid == vHidd_ModeID_Invalid)
         {
             /*
-                * Nondisplayable bitmaps don't scroll.
-                * In fact they simply can't get in here because MakeVPort() performs the validation.
-                * But who knows what bug can slip into someone's software...
-                */
+            * Nondisplayable bitmaps don't scroll.
+            * In fact they simply can't get in here because MakeVPort() performs the validation.
+            * But who knows what bug can slip into someone's software...
+            */
             UNLOCK_COMPOSITOR
             return FALSE;
         }
 
-    	HIDD_Gfx_GetMode(compdata->gfx, modeid, &sync, &pf);
-    	OOP_GetAttr(sync, aHidd_Sync_HDisp, &disp_width);
-    	OOP_GetAttr(sync, aHidd_Sync_VDisp, &disp_height);
+        HIDD_Gfx_GetMode(compdata->gfx, modeid, &sync, &pf);
+        OOP_GetAttr(sync, aHidd_Sync_HDisp, &disp_width);
+        OOP_GetAttr(sync, aHidd_Sync_VDisp, &disp_height);
     }
 
     DMOVE(bug("[%s] Validating bitmap 0x%p, position (%ld, %ld), limits %ld x %ld\n", __PRETTY_FUNCTION__,
-    	  msg->bm, *msg->newxoffset, *msg->newyoffset, disp_width, disp_height));
+              msg->bm, *msg->newxoffset, *msg->newyoffset, disp_width, disp_height));
 
     HIDDCompositorValidateBitMapPositionChange(msg->bm, msg->newxoffset, msg->newyoffset,
-    						disp_width, disp_height);
+                                                    disp_width, disp_height);
 
     DMOVE(bug("[%s] Validated position (%ld, %ld)\n", __PRETTY_FUNCTION__, *msg->newxoffset, *msg->newyoffset));
 
     if (n && ((*msg->newxoffset != n->leftedge) || (*msg->newyoffset != n->topedge)))
     {
-    	DMOVE(bug("[%s] Old position (%ld, %ld)\n", __PRETTY_FUNCTION__, n->leftedge, n->topedge));
+        DMOVE(bug("[%s] Old position (%ld, %ld)\n", __PRETTY_FUNCTION__, n->leftedge, n->topedge));
 
-	/* Reflect the change if it happened */
-    	n->leftedge = *msg->newxoffset;
-    	n->topedge  = *msg->newyoffset;
+        /* Reflect the change if it happened */
+        n->leftedge = *msg->newxoffset;
+        n->topedge  = *msg->newyoffset;
 
-    	if (compdata->topbitmap == msg->bm)
-    	{
-    	    /*
-    	     * If this is the frontmost bitmap, we may want to toggle compositing,
-    	     * if it starts/stops covering the whole screen at one point.
-    	     * We don't need to call HIDDCompositorRedrawVisibleRegions() here because
-    	     * HIDDCompositorToggleCompositing() does this itself, for improved
-    	     * visual appearance.
-    	     */
+        if (compdata->topbitmap == msg->bm)
+        {
+            /*
+             * If this is the frontmost bitmap, we may want to toggle compositing,
+             * if it starts/stops covering the whole screen at one point.
+             * We don't need to call HIDDCompositorRedrawVisibleRegions() here because
+             * HIDDCompositorToggleCompositing() does this itself, for improved
+             * visual appearance.
+             */
             HIDDCompositorToggleCompositing(compdata, FALSE);    
         }
         else
@@ -1621,7 +1621,7 @@ IPTR METHOD(Compositor, Hidd_Compositor, BitMapEnable)
         {
             struct TagItem composittags[] = {
                 {aHidd_BitMap_Compositable, TRUE},
-                {TAG_DONE	     , 0    }
+                {TAG_DONE             , 0    }
             };
 
             D(bug("[%s] Marking BitMap 0x%lx as Compositable\n", __PRETTY_FUNCTION__, msg->bm));

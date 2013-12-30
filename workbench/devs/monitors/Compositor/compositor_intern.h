@@ -15,13 +15,13 @@
 
 struct StackBitMapNode
 {
-    struct MinNode              n;
-    OOP_Object	                *bm;
-    struct Region               *screenregion;
-    SIPTR	                leftedge;		/* Offset */
-    SIPTR	                topedge;
-    IPTR                        sbmflags;
-    struct Hook                 *prealphacomphook;
+    struct MinNode  n;
+    OOP_Object      *bm;
+    struct Region   *screenregion;
+    SIPTR           leftedge;        /* Offset */
+    SIPTR           topedge;
+    IPTR            sbmflags;
+    struct Hook     *prealphacomphook;
 };
 
 // sbmflags bits 0 to 3 are reserved for the normal compositing flags.
@@ -32,7 +32,7 @@ struct StackBitMapNode
 
 struct HIDDCompositorData
 {
-    struct GfxBase	        *GraphicsBase;
+    struct GfxBase              *GraphicsBase;
     struct IntuitionBase        *IntuitionBase;
 
     ULONG                       capabilities;
@@ -58,8 +58,8 @@ struct HIDDCompositorData
 
     struct Hook                 *backfillhook;
 
-    OOP_Object                  *gfx;           /* GFX driver object			        */
-    OOP_Object		        *fb;		/* Framebuffer bitmap (if present)	        */
+    OOP_Object                  *gfx;           /* GFX driver object                    */
+    OOP_Object                  *fb;            /* Framebuffer bitmap (if present)            */
     OOP_Object                  *gc;            /* GC object used for drawing operations        */
 
     ULONG                       displayid;
