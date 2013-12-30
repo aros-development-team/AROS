@@ -17,7 +17,6 @@
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <proto/exec.h>
 #include <aros/symbolsets.h>
 
 #include <string.h>
@@ -205,7 +204,7 @@ static struct random_state *get_random_state(void)
 static void free_random_state(struct PosixCIntBase *PosixCIntBase)
 {
     if (PosixCIntBase->rs) {
-        FreeMem(PosixCIntBase->rs, sizeof(struct random_state));
+        free(PosixCIntBase->rs);
         PosixCIntBase->rs = NULL;
     }
 }
