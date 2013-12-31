@@ -1,7 +1,7 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Write the functionlist to a FD file for identify.library.
 */
 
@@ -77,7 +77,7 @@ void writefd(struct config *cfg)
     else
     {
         fprintf(out, "##base _%s\n", cfg->libbase);
-        
+
         /*
          * This is correct even for devices. cfg->firstlvo holds LVO number for
          * the first user function.
@@ -92,7 +92,7 @@ void writefd(struct config *cfg)
         );
 
         fprintf(out, "##public\n");
-        
+
         for (lvo = cfg->firstlvo - 1;
              funclistit != NULL;
              funclistit = funclistit->next
@@ -122,7 +122,7 @@ void writefd(struct config *cfg)
 
                 lvo = funclistit->lvo;
                 break;
-            
+
             case STACK:
                 write_fd_func(out, funclistit, lvo);
                 fprintf(out, "sysv");

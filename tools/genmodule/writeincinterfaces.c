@@ -49,7 +49,7 @@ static void writeincinterface(struct config *cfg, struct interfaceinfo *in)
             , in->interfaceid
     );
     freeBanner(banner);
-    
+
     /* Emit the get-the-methodbase stub */
     fprintf(out,
             "#if !defined(%s) && !defined(__OOP_NOMETHODBASES__) && !defined(__%s_NOMETHODBASE__)\n"
@@ -148,7 +148,7 @@ static void writeincinterface(struct config *cfg, struct interfaceinfo *in)
             , in->attributebase
             , in->interfacename
     );
-    
+
     if (!in->methodlist)
         goto done;
 
@@ -305,7 +305,7 @@ done:
 
     fclose(out);
 }
- 
+
 void writeincinterfaces(struct config *cfg)
 {
     struct interfaceinfo *in;

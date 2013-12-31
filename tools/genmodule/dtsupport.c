@@ -1,7 +1,7 @@
 /*
     Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Functions to support datatypes. Part of genmodule.
 */
 #include <stdio.h>

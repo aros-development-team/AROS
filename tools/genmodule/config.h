@@ -15,14 +15,14 @@
 
 enum command { CMD_UNSPECIFIED, FILES, LIBDEFS, INCLUDES, MAKEFILE, WRITEFUNCLIST, WRITEFD, WRITESKEL };
 enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE, IMAGE, GADGET,
-	       DATATYPE, CLASS, HIDD, USBCLASS, HANDLER
+               DATATYPE, CLASS, HIDD, USBCLASS, HANDLER
 };
 
 enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE, BIT_NORESIDENT,
-	         BIT_DUPBASE, BIT_PERTASKBASE, BIT_INCLUDES, BIT_NOINCLUDES,
+                 BIT_DUPBASE, BIT_PERTASKBASE, BIT_INCLUDES, BIT_NOINCLUDES,
                  BIT_STUBS, BIT_NOSTUBS, BIT_AUTOINIT, BIT_NOAUTOINIT,
-		 BIT_RESAUTOINIT, BIT_NOOPENCLOSE, BIT_SELFINIT,
-		 BIT_STACKCALL
+                 BIT_RESAUTOINIT, BIT_NOOPENCLOSE, BIT_SELFINIT,
+                 BIT_STACKCALL
 };
 enum optionflags
 {
@@ -67,13 +67,13 @@ struct classinfo
 
     /* Additional options for the class */
     enum coptionflags options;
-    
+
     const char **boopsimprefix;
     char *classid, *superclass, *superclass_field, *classptr_field, *classptr_var;
     char *dispatcher; /* == NULL when the generated dispatcher is used,
-		       * otherwise it is the function name of the dispatcher */;
+                       * otherwise it is the function name of the dispatcher */;
     char *classdatatype; /* The type of the data for every object */
-    
+
     struct functionhead *methlist;
 
     /* Interfaces used in this class (only for HIDD classes) */
@@ -92,7 +92,7 @@ struct interfaceinfo
     char *methodstub;
     char *methodbase;
     char *attributebase;
-    
+
     struct functionhead *methodlist;
     struct functionhead *attributelist;
 };
@@ -127,10 +127,10 @@ struct config
     enum modtype modtype;
     char *modtypestr;
     char *suffix;
-    
+
     /* Extra string to include in version */
     char *versionextra;
-    
+
     /* firstlvo is the LVO number of the first user definable function
      * in the module
      */
@@ -145,7 +145,7 @@ struct config
 
     /* The default path to put the module relative to SYS: */
     char *moddir;
-    
+
     /* The names of the fields in the custom library base for storing internal
      * information
      */
@@ -162,7 +162,7 @@ struct config
     int residentpri;
     unsigned int majorversion, minorversion;
     char *addromtag;
-    
+
     /* In forcelist a list of basenames is present that need to be present in the
      * static link library so that certain libraries are opened by a program
      */
@@ -176,7 +176,7 @@ struct config
 
     /* The functions of this module */
     struct functionhead *funclist;
-    
+
     /* The classes defined in this module */
     struct classinfo *classlist;
 

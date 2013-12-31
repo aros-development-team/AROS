@@ -1,7 +1,7 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Support functions for MUI classes. Part of genmodule.
 */
 #include "genmodule.h"
@@ -22,7 +22,7 @@ void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *
     struct functionhead *methlistit;
     struct functionarg *arglistit;
     unsigned int lvo;
-    
+
     fprintf
     (
         out,
@@ -30,19 +30,19 @@ void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *
         "/* =======================================*/\n"
         "\n"
     );
-        
+
     if (cl->classdatatype == NULL)
-	fprintf(out, "#   define %s_DATA_SIZE (0)\n", cl->basename);
+        fprintf(out, "#   define %s_DATA_SIZE (0)\n", cl->basename);
     else
-	fprintf
+        fprintf
         (
-	     out,
-	     "#   define %s_DATA_SIZE (sizeof(%s))\n",
-	     cl->basename, cl->classdatatype
-	);
-    
+             out,
+             "#   define %s_DATA_SIZE (sizeof(%s))\n",
+             cl->basename, cl->classdatatype
+        );
+
     writeboopsidispatcher(cfg, out, cl);
-    
+
     fprintf
     (
         out,
@@ -53,93 +53,93 @@ void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *
         "{\n",
         cl->basename
     );
-    
+
     /* When classid is specified MakeClass will be used to make the class
      * otherwise MUI_CreateCustomClass. The former use is only needed for internal
      * muimaster use. Other use is deprecated.
      */
     if (cl->classid == NULL)
     {
-	char *base, disp[256];
-	
-	/* Has the class a provided dispatcher function ? */
-	if (cl->dispatcher == NULL)
-	    snprintf(disp, 256, "%s_Dispatcher", cl->basename);
-	else
-	    strncpy(disp, cl->dispatcher, 256);
+        char *base, disp[256];
 
-	/* Is this class the main class then pass the libbase to MUI_CreateCustomClass
-	 * otherwise pass NULL
-	 */
-	if (!inclass)
-	    base = "(struct Library *)LIBBASE";
-	else
-	    base = "NULL";
+        /* Has the class a provided dispatcher function ? */
+        if (cl->dispatcher == NULL)
+            snprintf(disp, 256, "%s_Dispatcher", cl->basename);
+        else
+            strncpy(disp, cl->dispatcher, 256);
 
-	if (cl->superclass != NULL)
-	    fprintf
-	    (
-	        out,
-	        "    %s_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass(%s, %s, NULL, %s_DATA_SIZE, %s);\n",
-	        cl->basename, base, cl->superclass, cl->basename, disp
-	    );
-	else if (cl->superclass_field != NULL)
-	    fprintf
-	    (
-	        out,
-	        "    %s_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass(%s, NULL, LIBBASE->%s, %s_DATA_SIZE, %s);\n",
-	        cl->basename, base, cl->superclass_field, cl->basename, disp
-	    );
-	else
-	{
-	    fprintf(out, "Internal error: both superclass and superclass_field are NULL\n");
-	    exit(20);
-	}
+        /* Is this class the main class then pass the libbase to MUI_CreateCustomClass
+         * otherwise pass NULL
+         */
+        if (!inclass)
+            base = "(struct Library *)LIBBASE";
+        else
+            base = "NULL";
+
+        if (cl->superclass != NULL)
+            fprintf
+            (
+                out,
+                "    %s_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass(%s, %s, NULL, %s_DATA_SIZE, %s);\n",
+                cl->basename, base, cl->superclass, cl->basename, disp
+            );
+        else if (cl->superclass_field != NULL)
+            fprintf
+            (
+                out,
+                "    %s_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass(%s, NULL, LIBBASE->%s, %s_DATA_SIZE, %s);\n",
+                cl->basename, base, cl->superclass_field, cl->basename, disp
+            );
+        else
+        {
+            fprintf(out, "Internal error: both superclass and superclass_field are NULL\n");
+            exit(20);
+        }
     }
     else
     {
-	char disp[256];
+        char disp[256];
 
-	/* Has the class a provided dispatcher function ? */
-	if (cl->dispatcher == NULL)
-	    snprintf(disp, 256, "%s_Dispatcher", cl->basename);
-	else
-	    strncpy(disp, cl->dispatcher, 256);
+        /* Has the class a provided dispatcher function ? */
+        if (cl->dispatcher == NULL)
+            snprintf(disp, 256, "%s_Dispatcher", cl->basename);
+        else
+            strncpy(disp, cl->dispatcher, 256);
 
-	if (cl->superclass != NULL)
-	    fprintf
-	    (
-	        out,
-	        "    Class *superclass = MUI_GetClass(%s),\n",
-	        cl->superclass
-	    );
-	else if (cl->superclass_field != NULL)
-	    fprintf
-	    (
-	        out,
-	        "    Class *superclass = LIBBASE->%s,\n",
-	        cl->superclass_field
-	    );
-	else
-	{
-	    fprintf(stderr, "Internal error: both superclass and superclass_field are NULL\n");
-	    exit(20);
-	}
-	
-	fprintf
-	(
-	    out,
-	    "          *cl = NULL;\n"
-	    "\n"
-	    "    if (superclass)\n"
-	    "        cl = MakeClass(%s, NULL, superclass, %s_DATA_SIZE, 0);\n"   
-	    "    if (cl)\n"
-	    "        cl->cl_Dispatcher.h_Entry = %s;\n"
-	    "    %s_CLASSPTR_FIELD(LIBBASE) = cl;\n",
-	    cl->classid, cl->basename,
-	    disp,
-	    cl->basename
-	);
+        if (cl->superclass != NULL)
+            fprintf
+            (
+                out,
+                "    Class *superclass = MUI_GetClass(%s),\n",
+                cl->superclass
+            );
+        else if (cl->superclass_field != NULL)
+            fprintf
+            (
+                out,
+                "    Class *superclass = LIBBASE->%s,\n",
+                cl->superclass_field
+            );
+        else
+        {
+            fprintf(stderr, "Internal error: both superclass and superclass_field are NULL\n");
+            exit(20);
+        }
+
+        fprintf
+        (
+            out,
+            "          *cl = NULL;\n"
+            "\n"
+            "    if (superclass)\n"
+            "        cl = MakeClass(%s, NULL, superclass, %s_DATA_SIZE, 0);\n"
+            "    if (cl)\n"
+            "        cl->cl_Dispatcher.h_Entry = %s;\n"
+            "    %s_CLASSPTR_FIELD(LIBBASE) = cl;\n",
+            cl->classid, cl->basename,
+            disp,
+            cl->basename
+        );
     }
 
     fprintf
@@ -156,27 +156,27 @@ void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *
     );
     if (cl->classid == NULL)
     {
-	fprintf
-	(
-	     out,
-	     "    MUI_DeleteCustomClass(%s_CLASSPTR_FIELD(LIBBASE));\n",
-	     cl->basename
-	);
+        fprintf
+        (
+             out,
+             "    MUI_DeleteCustomClass(%s_CLASSPTR_FIELD(LIBBASE));\n",
+             cl->basename
+        );
     }
     else
     {
-	fprintf
-	(
-	    out,
-	    "    Class *cl = %s_CLASSPTR_FIELD(LIBBASE);\n"
-	    "\n"
-	    "    if (cl != NULL)\n"
-	    "    {\n"
-	    "        MUI_FreeClass(cl->cl_Super);\n"
-	    "        FreeClass(cl);\n"
-	    "    }\n",
-	    cl->basename
-	);
+        fprintf
+        (
+            out,
+            "    Class *cl = %s_CLASSPTR_FIELD(LIBBASE);\n"
+            "\n"
+            "    if (cl != NULL)\n"
+            "    {\n"
+            "        MUI_FreeClass(cl->cl_Super);\n"
+            "        FreeClass(cl);\n"
+            "    }\n",
+            cl->basename
+        );
     }
     fprintf
     (
@@ -217,7 +217,7 @@ void writemccquery(FILE *out, struct config *cfg)
         "    {\n",
         cfg->basename
     );
-    
+
     switch(cfg->modtype)
     {
     case MCC:
@@ -228,10 +228,10 @@ void writemccquery(FILE *out, struct config *cfg)
         fprintf(out, "        case MCC_PREFS_CLASS:    return (IPTR)GM_CLASSPTR_FIELD(LIBBASE);\n");
         break;
     }
-    
+
     /* FIXME: handle MCC_PREFS_IMAGE somehow */
     /* FIXME: handle "ONLY_GLOBAL" ?? */
-    
+
     fprintf
     (
         out,

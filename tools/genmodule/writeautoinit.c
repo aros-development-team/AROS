@@ -1,7 +1,7 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Function to write module_autoinit.c. Part of genmodule.
 */
 
@@ -53,7 +53,7 @@ void writeautoinit(struct config *cfg, int is_rel)
     if (cfg->forcelist!=NULL)
     {
         struct stringlist * forcelistit;
-        
+
         fprintf(out, "\n");
         for (forcelistit = cfg->forcelist;
              forcelistit!=NULL;

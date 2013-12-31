@@ -1,7 +1,7 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Function to write libdefs.h. Part of genmodule.
 */
 #include "genmodule.h"
@@ -19,34 +19,34 @@ void writeinclibdefs(struct config *cfg)
     char sep;
 
     if (funclistit == NULL)
-	funccount = cfg->firstlvo-1;
+        funccount = cfg->firstlvo-1;
     else
     {
-	while (funclistit->next != NULL)
-	    funclistit = funclistit->next;
-	    
-	funccount = funclistit->lvo;
+        while (funclistit->next != NULL)
+            funclistit = funclistit->next;
+
+        funccount = funclistit->lvo;
     }
 
     residentflags[0] = 0;
-	
+
     if (cfg->residentpri >= 105)
-	strcpy(residentflags, "RTF_SINGLETASK");
+        strcpy(residentflags, "RTF_SINGLETASK");
     else if (cfg->residentpri >= -60)
-	strcpy(residentflags, "RTF_COLDSTART");
+        strcpy(residentflags, "RTF_COLDSTART");
     else if (cfg->residentpri < -120)
-	strcpy(residentflags, "RTF_AFTERDOS");
+        strcpy(residentflags, "RTF_AFTERDOS");
 
     if (cfg->options & OPTION_RESAUTOINIT)
     {
-	if(strlen(residentflags) > 0)
-	    strcat(residentflags, "|");
-	strcat(residentflags, "RTF_AUTOINIT");
+        if(strlen(residentflags) > 0)
+            strcat(residentflags, "|");
+        strcat(residentflags, "RTF_AUTOINIT");
     }
 
     if (strlen(residentflags) == 0)
-	strcpy(residentflags, "0");
-    
+        strcpy(residentflags, "0");
+
     snprintf(line, 1023, "%s/%s_libdefs.h", cfg->gendir, cfg->modulename);
 
     out = fopen(line, "w");
@@ -54,9 +54,9 @@ void writeinclibdefs(struct config *cfg)
     if (out == NULL)
     {
         perror(line);
-    	exit(20);
+        exit(20);
     }
-    
+
     fprintf
     (
         out,
@@ -83,7 +83,7 @@ void writeinclibdefs(struct config *cfg)
         "#define REVISION_NUMBER  %u\n"
         "#define MINOR_VERSION    %u\n"
         "#define VERSION_STRING   \"$VER: %s.%s ",
-	cfg->basename,
+        cfg->basename,
         cfg->libbase, _libbasetype, _libbasetype,
         cfg->modulename, sep, cfg->suffix,
         cfg->majorversion, cfg->majorversion,
@@ -91,7 +91,7 @@ void writeinclibdefs(struct config *cfg)
         cfg->modulename, cfg->suffix
     );
     if (cfg->versionextra)
-    	fprintf(out, "%s ", cfg->versionextra);
+        fprintf(out, "%s ", cfg->versionextra);
     fprintf(out,
         "%u.%u (%s)%s%s\\r\\n\"\n"
         "#define COPYRIGHT_STRING \"%s\"\n"
@@ -109,59 +109,59 @@ void writeinclibdefs(struct config *cfg)
     );
 
     for (linelistit = cfg->cdefprivatelines; linelistit!=NULL; linelistit = linelistit->next)
-	fprintf(out, "%s\n", linelistit->s);
+        fprintf(out, "%s\n", linelistit->s);
 
     /* Following code assumes that the input was checked to be consistent during the
      * parsing of the .conf file in config.c, no checks are done here
      */
     if (cfg->sysbase_field != NULL)
-	fprintf(out,
-		"#define GM_SYSBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
-		cfg->sysbase_field
-	);
+        fprintf(out,
+                "#define GM_SYSBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
+                cfg->sysbase_field
+        );
     if (cfg->oopbase_field != NULL)
-	fprintf(out,
-		"#define GM_OOPBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
-		cfg->oopbase_field
-	);
+        fprintf(out,
+                "#define GM_OOPBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
+                cfg->oopbase_field
+        );
     if (cfg->seglist_field != NULL)
-	fprintf(out,
-		"#define GM_SEGLIST_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
-		cfg->seglist_field
-	);
+        fprintf(out,
+                "#define GM_SEGLIST_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
+                cfg->seglist_field
+        );
     for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
     {
-	int storeptr;
-	    
-	if (classlistit->classptr_field != NULL)
-	{
-	    storeptr = 1;
-	    snprintf(line, 1023, "((LIBBASETYPEPTR)lh)->%s", classlistit->classptr_field);
-	}
-	else if ((classlistit->classid != NULL) && !(classlistit->options & COPTION_PRIVATE))
-	{
-	    storeptr = 0;
-	    snprintf(line, 1023, "FindClass(%s)", classlistit->classid);
-	}
-	else
-	    /* Don't write anything */
-	    continue;
+        int storeptr;
 
-	fprintf(out,
-		"#define %s_STORE_CLASSPTR %d\n",
-		classlistit->basename, storeptr
-	);
-	    
-	/* When class is the main class also define GM_CLASSPTR_FIELD for legacy */
-	if (strcmp(classlistit->basename, cfg->basename) == 0)
-	    fprintf(out, "#define GM_CLASSPTR_FIELD(lh) (%s)\n", line);
+        if (classlistit->classptr_field != NULL)
+        {
+            storeptr = 1;
+            snprintf(line, 1023, "((LIBBASETYPEPTR)lh)->%s", classlistit->classptr_field);
+        }
+        else if ((classlistit->classid != NULL) && !(classlistit->options & COPTION_PRIVATE))
+        {
+            storeptr = 0;
+            snprintf(line, 1023, "FindClass(%s)", classlistit->classid);
+        }
+        else
+            /* Don't write anything */
+            continue;
 
-	fprintf(out,
-		"#define %s_CLASSPTR_FIELD(lh) (%s)\n",
-		classlistit->basename, line
-	);
+        fprintf(out,
+                "#define %s_STORE_CLASSPTR %d\n",
+                classlistit->basename, storeptr
+        );
+
+        /* When class is the main class also define GM_CLASSPTR_FIELD for legacy */
+        if (strcmp(classlistit->basename, cfg->basename) == 0)
+            fprintf(out, "#define GM_CLASSPTR_FIELD(lh) (%s)\n", line);
+
+        fprintf(out,
+                "#define %s_CLASSPTR_FIELD(lh) (%s)\n",
+                classlistit->basename, line
+        );
     }
-	
+
     if (cfg->options & OPTION_DUPBASE)
     {
         if (cfg->rootbase_field != NULL)
@@ -196,13 +196,13 @@ void writeinclibdefs(struct config *cfg)
         "#endif /* _%s_LIBDEFS_H */\n",
         cfg->modulenameupper
     );
-    
+
     if (ferror(out))
     {
-	perror("Error writing libdefs.h");
-	fclose(out);
-	exit(20);
+        perror("Error writing libdefs.h");
+        fclose(out);
+        exit(20);
     }
-    
+
     fclose(out);
 }

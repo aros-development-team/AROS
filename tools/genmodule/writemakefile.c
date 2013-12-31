@@ -1,7 +1,7 @@
 /*
     Copyright © 2005-2011, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Code to write a Makefile with variables that provides the files
     and configuration for building the module
 */
@@ -29,24 +29,24 @@ void writemakefile(struct config *cfg)
     FILE *out;
     char name[512];
     struct stringlist *s;
-    
+
     snprintf(name, sizeof(name), "%s/Makefile.%s%s", cfg->gendir, cfg->modulename, cfg->modtypestr);
-    
+
     out = fopen(name, "w");
-    
+
     if (out == NULL)
     {
-	perror(name);
-	exit(20);
+        perror(name);
+        exit(20);
     }
 
     fprintf(out,
-	    "%s_STARTFILES += %s_start\n"
-	    "%s_ENDFILES += %s_end\n"
-	    "%s_MODDIR += %s\n",
-	    cfg->modulename, cfg->modulename,
-	    cfg->modulename, cfg->modulename,
-	    cfg->modulename, cfg->moddir
+            "%s_STARTFILES += %s_start\n"
+            "%s_ENDFILES += %s_end\n"
+            "%s_MODDIR += %s\n",
+            cfg->modulename, cfg->modulename,
+            cfg->modulename, cfg->modulename,
+            cfg->modulename, cfg->moddir
     );
 
     fprintf(out, "%s_LINKLIBFILES +=", cfg->modulename);
@@ -73,10 +73,10 @@ void writemakefile(struct config *cfg)
     fprintf(out, "%s_INCLUDES += ", cfg->modulename);
     if (cfg->options & OPTION_INCLUDES)
     {
-	fprintf(out,
-		"clib/%s_protos.h inline/%s.h defines/%s.h proto/%s.h",
-		cfg->modulename, cfg->modulename, cfg->modulename, cfg->modulename
-	);
+        fprintf(out,
+                "clib/%s_protos.h inline/%s.h defines/%s.h proto/%s.h",
+                cfg->modulename, cfg->modulename, cfg->modulename, cfg->modulename
+        );
     }
     if (cfg->interfacelist)
     {
@@ -109,10 +109,10 @@ void writemakefile(struct config *cfg)
 
     if (ferror(out))
     {
-	perror("Error writing Makefile");
-	fclose(out);
-	exit(20);
+        perror("Error writing Makefile");
+        fclose(out);
+        exit(20);
     }
-    
+
     fclose(out);
 }
