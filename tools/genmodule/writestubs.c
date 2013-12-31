@@ -1,7 +1,7 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Function to write module_stubs.c. Part of genmodule.
 */
 
@@ -67,22 +67,22 @@ void writestubs(struct config *cfg, int is_rel)
     }
     else
     {
-	fprintf(out,
-	    "#include <exec/types.h>\n"
-	    "#include <aros/system.h>\n\n"
-	);
+        fprintf(out,
+            "#include <exec/types.h>\n"
+            "#include <aros/system.h>\n\n"
+        );
 
-	for (linelistit = cfg->cdefprivatelines; linelistit!=NULL; linelistit = linelistit->next)
-	    fprintf(out, "%s\n", linelistit->s);
+        for (linelistit = cfg->cdefprivatelines; linelistit!=NULL; linelistit = linelistit->next)
+            fprintf(out, "%s\n", linelistit->s);
 
         fprintf(out,
-	    "\n"
-	    "%s__aros_getbase_%s(void);\n"
-	    "\n",
-	    cfg->libbasetypeptrextern, cfg->libbase
+            "\n"
+            "%s__aros_getbase_%s(void);\n"
+            "\n",
+            cfg->libbasetypeptrextern, cfg->libbase
         );
     }
-    
+
     fprintf
     (
         out,
@@ -93,7 +93,7 @@ void writestubs(struct config *cfg, int is_rel)
         "#include <aros/libcall.h>\n"
         "\n"
     );
-    
+
     for (funclistit = cfg->funclist;
          funclistit!=NULL;
          funclistit = funclistit->next
@@ -147,7 +147,7 @@ void writestubs(struct config *cfg, int is_rel)
                         type = getargtype(arglistit);
                         name = getargname(arglistit);
                         assert(type != NULL && name != NULL);
-                            
+
                         fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
                                 type, name, arglistit->reg
                         );
@@ -185,7 +185,7 @@ void writestubs(struct config *cfg, int is_rel)
                         type = getargtype(arglistit);
                         name = getargname(arglistit);
                         assert(type != NULL && name != NULL);
-                
+
                         if (quad2) {
                             *quad2 = 0;
                             fprintf(out,
@@ -205,7 +205,7 @@ void writestubs(struct config *cfg, int is_rel)
                         free(name);
                     }
                 }
- 
+
                 fprintf(out, "                    %s, __aros_getbase_%s(), %u, %s);\n}\n",
                         cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename
                 );
@@ -217,7 +217,7 @@ void writestubs(struct config *cfg, int is_rel)
                         funclistit->name, cfg->libbase, funclistit->lvo
                 );
             }
-        
+
             for (aliasesit = funclistit->aliases;
                  aliasesit != NULL;
                  aliasesit = aliasesit->next

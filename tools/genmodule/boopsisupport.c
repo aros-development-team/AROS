@@ -1,7 +1,7 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Support function for generating code for BOOPSI classes. Part of genmodule.
 */
 #include "config.h"
@@ -33,15 +33,15 @@ void writeboopsidispatcher(struct config *cfg, FILE *out, struct classinfo *cl)
 
     if (cl->dispatcher == NULL)
     {
-	fprintf
-	(
-	    out,
-	    "\n"
+        fprintf
+        (
+            out,
+            "\n"
             "\n"
             "/*** Prototypes *************************************************************/\n"
-	);
+        );
 
-	writefuncdefs(out, NULL, cl->methlist);
+        writefuncdefs(out, NULL, cl->methlist);
 
         fprintf
         (
@@ -63,71 +63,71 @@ void writeboopsidispatcher(struct config *cfg, FILE *out, struct classinfo *cl)
             "    switch (message->MethodID)\n"
             "    {\n"
         );
-        
-        for 
+
+        for
         (
-            methlistit = cl->methlist; 
-            methlistit != NULL; 
+            methlistit = cl->methlist;
+            methlistit != NULL;
             methlistit = methlistit->next
-	)
+        )
         {
-	    char *type;
-	    
+            char *type;
+
             fprintf(out, "        ");
-	    for
-	    (
-	        aliasit = methlistit->aliases;
-	        aliasit != NULL;
-	        aliasit = aliasit->next
-	    )
-	    {
-		fprintf(out, "case %s: ", aliasit->s);
-	    }
-	    if (strcmp(methlistit->type, "void") != 0)
-		fprintf(out, "return (IPTR)");
-	    fprintf(out,"%s(", methlistit->internalname);
-            
+            for
+            (
+                aliasit = methlistit->aliases;
+                aliasit != NULL;
+                aliasit = aliasit->next
+            )
+            {
+                fprintf(out, "case %s: ", aliasit->s);
+            }
+            if (strcmp(methlistit->type, "void") != 0)
+                fprintf(out, "return (IPTR)");
+            fprintf(out,"%s(", methlistit->internalname);
+
             if (methlistit->argcount != 3)
             {
                 fprintf(stderr, "Method \"%s\" has wrong number of arguments\n", methlistit->name);
                 exit(20);
             }
-            
+
             arglistit = methlistit->arguments;
             fprintf(out, "CLASS, ");
 
             arglistit = arglistit->next;
-	    type = getargtype(arglistit);
-	    if (type == NULL)
-	    {
-		fprintf(stderr,
-			"Argument \"%s\" not understood for function %s\n",
-			arglistit->arg, methlistit->name
-		);
-		exit(20);
-	    }
+            type = getargtype(arglistit);
+            if (type == NULL)
+            {
+                fprintf(stderr,
+                        "Argument \"%s\" not understood for function %s\n",
+                        arglistit->arg, methlistit->name
+                );
+                exit(20);
+            }
             fprintf(out, "(%s)self, ", type);
-	    free(type);
-	    
-            arglistit = arglistit->next;
-	    type = getargtype(arglistit);
-	    if (type == NULL)
-	    {
-		fprintf(stderr,
-			"Argument \"%s\" not understood for function %s\n",
-			arglistit->arg, methlistit->name
-		);
-		exit(20);
-	    }
-	    fprintf(out, "(%s) message);", type);
-	    free(type);
-		
-	    if (strcmp(methlistit->type, "void") == 0)
-		fprintf(out, " break;");
+            free(type);
 
-	    fprintf(out, "\n");
+            arglistit = arglistit->next;
+            type = getargtype(arglistit);
+            if (type == NULL)
+            {
+                fprintf(stderr,
+                        "Argument \"%s\" not understood for function %s\n",
+                        arglistit->arg, methlistit->name
+                );
+                exit(20);
+            }
+            fprintf(out, "(%s) message);", type);
+            free(type);
+
+            if (strcmp(methlistit->type, "void") == 0)
+                fprintf(out, " break;");
+
+            fprintf(out, "\n");
         }
-        
+
         fprintf
         (
             out,
@@ -158,7 +158,7 @@ void writeclassinit(struct config *cfg, FILE *out, struct classinfo *cl)
     struct functionhead *methlistit;
     struct functionarg *arglistit;
     unsigned int lvo;
-    
+
     fprintf
     (
         out,
@@ -166,17 +166,17 @@ void writeclassinit(struct config *cfg, FILE *out, struct classinfo *cl)
         "/* ===========================================*/\n"
         "\n"
     );
-        
+
     writeboopsidispatcher(cfg, out, cl);
 
     if (cl->classdatatype == NULL)
-	fprintf(out, "#define %s_DATA_SIZE (0)\n", cl->basename);
+        fprintf(out, "#define %s_DATA_SIZE (0)\n", cl->basename);
     else
-	fprintf(out,
-		"#define %s_DATA_SIZE (sizeof(%s))\n",
-		cl->basename, cl->classdatatype
-	);
-    
+        fprintf(out,
+                "#define %s_DATA_SIZE (sizeof(%s))\n",
+                cl->basename, cl->classdatatype
+        );
+
     fprintf
     (
         out,
@@ -190,19 +190,19 @@ void writeclassinit(struct config *cfg, FILE *out, struct classinfo *cl)
         cl->basename
     );
     if (cl->superclass != NULL)
-	fprintf(out,
-		"    cl = MakeClass(%s, %s, NULL, %s_DATA_SIZE, 0);\n",
-		cl->classid, cl->superclass, cl->basename
-	);
+        fprintf(out,
+                "    cl = MakeClass(%s, %s, NULL, %s_DATA_SIZE, 0);\n",
+                cl->classid, cl->superclass, cl->basename
+        );
     else if (cl->superclass_field != NULL)
-	fprintf(out,
-		"    cl = MakeClass(%s, NULL, LIBBASE->%s, %s_DATA_SIZE, 0);\n",
-		cl->classid, cl->superclass_field, cl->basename
-	);
+        fprintf(out,
+                "    cl = MakeClass(%s, NULL, LIBBASE->%s, %s_DATA_SIZE, 0);\n",
+                cl->classid, cl->superclass_field, cl->basename
+        );
     else
     {
-	fprintf(stderr, "Internal error: both superclass and superclass_field are NULL\n");
-	exit(20);
+        fprintf(stderr, "Internal error: both superclass and superclass_field are NULL\n");
+        exit(20);
     }
     fprintf
     (
@@ -217,31 +217,31 @@ void writeclassinit(struct config *cfg, FILE *out, struct classinfo *cl)
     );
 
     if (cl->dispatcher == NULL)
-	fprintf(out,
-		"        cl->cl_Dispatcher.h_Entry = (APTR)%s_Dispatcher;\n",
-		cl->basename
-	);
+        fprintf(out,
+                "        cl->cl_Dispatcher.h_Entry = (APTR)%s_Dispatcher;\n",
+                cl->basename
+        );
     else
-	fprintf(out,
-		"        cl->cl_Dispatcher.h_Entry = (APTR)%s;\n",
-		cl->dispatcher
-	);
+        fprintf(out,
+                "        cl->cl_Dispatcher.h_Entry = (APTR)%s;\n",
+                cl->dispatcher
+        );
 
     fprintf
     (
         out,
-	"        cl->cl_Dispatcher.h_SubEntry = NULL;\n"
+        "        cl->cl_Dispatcher.h_SubEntry = NULL;\n"
         "        cl->cl_UserData = (IPTR)LIBBASE\n;"
     );
-    
+
     if (!(cl->options & COPTION_PRIVATE))
-	fprintf
-	(
-	    out,
-	    "\n"
-	    "        AddClass(cl);\n"
-	);
-    
+        fprintf
+        (
+            out,
+            "\n"
+            "        AddClass(cl);\n"
+        );
+
     fprintf
     (
         out,
@@ -261,7 +261,7 @@ void writeclassinit(struct config *cfg, FILE *out, struct classinfo *cl)
         cl->basename, cl->basename
     );
     if (!(cl->options & COPTION_PRIVATE))
-	fprintf(out, "        RemoveClass(cl);\n");
+        fprintf(out, "        RemoveClass(cl);\n");
     fprintf
     (
         out,

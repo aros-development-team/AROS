@@ -1,7 +1,7 @@
 /*
     Copyright © 2005-2006, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Desc: Support functions for oop.library classes. Part of genmodule.
 */
 #include "genmodule.h"
@@ -34,15 +34,15 @@ void writeoopinit(FILE *out, struct classinfo *cl)
     );
 
     if (cl->classdatatype == NULL)
-	fprintf(out, "#   define %s_DATA_SIZE (0)\n", cl->basename);
+        fprintf(out, "#   define %s_DATA_SIZE (0)\n", cl->basename);
     else
-	fprintf
+        fprintf
         (
-	     out,
-	     "#   define %s_DATA_SIZE (sizeof(%s))\n",
-	     cl->basename, cl->classdatatype
-	);
-    
+             out,
+             "#   define %s_DATA_SIZE (sizeof(%s))\n",
+             cl->basename, cl->classdatatype
+        );
+
     /* Write defines of methods */
     writefuncdefs(out, NULL, cl->methlist);
 
@@ -62,40 +62,40 @@ void writeoopinit(FILE *out, struct classinfo *cl)
         "\n",
         cl->basename
     );
-     
+
     /* Write variables initialization */
     for (methlistit = cl->methlist, interface = NULL, methods = 0;
-	 methlistit != NULL;
-	 methlistit = methlistit->next
+         methlistit != NULL;
+         methlistit = methlistit->next
     )
     {
-	if (interface != methlistit->interface)
-	{
-	    if (interface != NULL)
-	    {
-		/* Close the previous declaration */
-		fprintf(out,
-			"        {NULL, 0}\n"
-			"    };\n"
-			"#define NUM_%s_%s_METHODS %d\n"
-			"\n",
-			cl->basename, interface->s, methods
-		);
-	    }
+        if (interface != methlistit->interface)
+        {
+            if (interface != NULL)
+            {
+                /* Close the previous declaration */
+                fprintf(out,
+                        "        {NULL, 0}\n"
+                        "    };\n"
+                        "#define NUM_%s_%s_METHODS %d\n"
+                        "\n",
+                        cl->basename, interface->s, methods
+                );
+            }
 
-	    /* Start new MethodDescr declaration */
-	    fprintf(out, "    struct OOP_MethodDescr %s_%s_descr[] =\n    {\n",
-		    cl->basename, methlistit->interface->s
-	    );
-	    methods = 1;
-	    interface = methlistit->interface;
-	}
-	else
-	    methods++;
+            /* Start new MethodDescr declaration */
+            fprintf(out, "    struct OOP_MethodDescr %s_%s_descr[] =\n    {\n",
+                    cl->basename, methlistit->interface->s
+            );
+            methods = 1;
+            interface = methlistit->interface;
+        }
+        else
+            methods++;
 
-	fprintf(out, "        {(OOP_MethodFunc)%s, %s},\n",
-		methlistit->internalname, methlistit->method
-	);
+        fprintf(out, "        {(OOP_MethodFunc)%s, %s},\n",
+                methlistit->internalname, methlistit->method
+        );
     }
     if (methods) {
         /* Close the last declaration */
@@ -112,52 +112,52 @@ void writeoopinit(FILE *out, struct classinfo *cl)
     fprintf(out, "    struct OOP_InterfaceDescr %s_ifdescr[] =\n    {\n", cl->basename);
     for (interface = cl->interfaces; interface != NULL; interface = interface->next)
     {
-	fprintf(out,
-		"        {%s_%s_descr, IID_%s, NUM_%s_%s_METHODS},\n",
-		cl->basename, interface->s,
-		interface->s,
-		cl->basename, interface->s
-	);
+        fprintf(out,
+                "        {%s_%s_descr, IID_%s, NUM_%s_%s_METHODS},\n",
+                cl->basename, interface->s,
+                interface->s,
+                cl->basename, interface->s
+        );
     }
     fprintf(out,
-	    "        {NULL, NULL}\n"
-	    "    };\n"
-	    "\n"
+            "        {NULL, NULL}\n"
+            "    };\n"
+            "\n"
     );
-    
+
     /* Write the class creation TagList */
     fprintf(out,
-	    "    struct TagItem %s_tags[] =\n"
-	    "    {\n",
-	    cl->basename
+            "    struct TagItem %s_tags[] =\n"
+            "    {\n",
+            cl->basename
     );
     if (cl->superclass != NULL)
-	fprintf(out,
-		"        {aMeta_SuperID, (IPTR)%s},\n",
-		cl->superclass
-	);
+        fprintf(out,
+                "        {aMeta_SuperID, (IPTR)%s},\n",
+                cl->superclass
+        );
     else if (cl->superclass_field != NULL)
-	fprintf(out,
-		"        {aMeta_SuperPtr, (IPTR)LIBBASE->%s},\n",
-		cl->superclass_field
-	);
+        fprintf(out,
+                "        {aMeta_SuperPtr, (IPTR)LIBBASE->%s},\n",
+                cl->superclass_field
+        );
     else
     {
-	fprintf(stderr, "Internal error: both superclass and superclass_field are NULL\n");
-	exit(20);
+        fprintf(stderr, "Internal error: both superclass and superclass_field are NULL\n");
+        exit(20);
     }
-	
+
     fprintf(out,
-	    "        {aMeta_InterfaceDescr, (IPTR)%s_ifdescr},\n"
-	    "        {aMeta_InstSize, (IPTR)%s_DATA_SIZE},\n",
-	    cl->basename,
-	    cl->basename
+            "        {aMeta_InterfaceDescr, (IPTR)%s_ifdescr},\n"
+            "        {aMeta_InstSize, (IPTR)%s_DATA_SIZE},\n",
+            cl->basename,
+            cl->basename
     );
     if (cl->classid != NULL)
-	fprintf(out,
-		"        {aMeta_ID, (IPTR)%s},\n",
-		cl->classid
-	);
+        fprintf(out,
+                "        {aMeta_ID, (IPTR)%s},\n",
+                cl->classid
+        );
     fprintf(out, "        {TAG_DONE, (IPTR)0}\n    };\n");
 
     /* Write class constructor */
@@ -205,7 +205,7 @@ void writeoopinit(FILE *out, struct classinfo *cl)
         cl->basename,
         cl->basename
     );
-    
+
     fprintf
     (
         out,

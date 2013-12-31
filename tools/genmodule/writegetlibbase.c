@@ -1,7 +1,7 @@
 /*
     Copyright © 2012, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Function to write module_getlibbase.c. Part of genmodule.
 */
 
@@ -33,7 +33,7 @@ void writegetlibbase(struct config *cfg, int is_rel)
                 "extern %s%s;\n"
                 "\n"
                 "%s__aros_getbase_%s(void);\n"
-		"\n"
+                "\n"
                 "%s__aros_getbase_%s(void)\n"
                 "{\n"
                 "    return %s;\n"

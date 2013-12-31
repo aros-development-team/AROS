@@ -1,7 +1,7 @@
 /*
     Copyright © 1995-2010, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Function to write clib/modulename_protos.h. Part of genmodule.
 */
 #include "genmodule.h"
@@ -13,7 +13,7 @@ void writeincclib(struct config *cfg)
     struct functionhead *funclistit;
     struct functionarg *arglistit;
     struct stringlist *linelistit;
-    
+
     snprintf(line, 255, "%s/clib/%s_protos.h", cfg->gendir, cfg->modulename);
 
     out = fopen(line, "w");
@@ -26,32 +26,32 @@ void writeincclib(struct config *cfg)
 
     banner = getBanner(cfg);
     fprintf(out,
-	    "#ifndef CLIB_%s_PROTOS_H\n"
-	    "#define CLIB_%s_PROTOS_H\n"
-	    "\n"
-	    "%s"
-	    "\n"
-	    "#include <aros/libcall.h>\n"
-	    "\n",
-	    cfg->modulenameupper, cfg->modulenameupper, banner
+            "#ifndef CLIB_%s_PROTOS_H\n"
+            "#define CLIB_%s_PROTOS_H\n"
+            "\n"
+            "%s"
+            "\n"
+            "#include <aros/libcall.h>\n"
+            "\n",
+            cfg->modulenameupper, cfg->modulenameupper, banner
     );
     freeBanner(banner);
 
     for (linelistit = cfg->cdeflines; linelistit!=NULL; linelistit = linelistit->next)
-	fprintf(out, "%s\n", linelistit->s);
+        fprintf(out, "%s\n", linelistit->s);
 
     fprintf(out,
-	    "\n"
-	    "__BEGIN_DECLS\n"
-	    "\n"
+            "\n"
+            "__BEGIN_DECLS\n"
+            "\n"
     );
 
     writefuncprotos(out, cfg, cfg->funclist);
 
     fprintf(out,
-	    "\n"
-	    "__END_DECLS\n"
-	    "\n"
-	    "#endif /* CLIB_%s_PROTOS_H */\n",
-	    cfg->modulenameupper);
+            "\n"
+            "__END_DECLS\n"
+            "\n"
+            "#endif /* CLIB_%s_PROTOS_H */\n",
+            cfg->modulenameupper);
 }

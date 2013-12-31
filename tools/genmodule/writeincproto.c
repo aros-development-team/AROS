@@ -10,7 +10,7 @@ void writeincproto(struct config *cfg)
     FILE *out;
     char line[256], define[256], *banner;
     struct linelist *linelistit;
-    
+
     snprintf(line, 255, "%s/proto/%s.h",
              cfg->gendir, cfg->modulename
     );
@@ -19,29 +19,29 @@ void writeincproto(struct config *cfg)
     if (out == NULL)
     {
         perror(line);
-    	exit(20);
+        exit(20);
     }
 
     banner = getBanner(cfg);
     fprintf(out,
-	    "#ifndef PROTO_%s_H\n"
-	    "#define PROTO_%s_H\n"
-	    "\n"
+            "#ifndef PROTO_%s_H\n"
+            "#define PROTO_%s_H\n"
+            "\n"
             "%s"
-	    "\n"
-	    , cfg->modulenameupper
+            "\n"
+            , cfg->modulenameupper
             , cfg->modulenameupper
             , banner
     );
     fprintf(out,
-	    "#include <exec/types.h>\n"
-	    "%s"
-	    "#include <aros/system.h>\n"
-	    "\n"
-	    "#include <clib/%s_protos.h>\n"
-	    "\n",
-	    (cfg->modtype == DEVICE) ? "#include <exec/devices.h>\n" : "",
-	    cfg->modulename
+            "#include <exec/types.h>\n"
+            "%s"
+            "#include <aros/system.h>\n"
+            "\n"
+            "#include <clib/%s_protos.h>\n"
+            "\n",
+            (cfg->modtype == DEVICE) ? "#include <exec/devices.h>\n" : "",
+            cfg->modulename
     );
     freeBanner(banner);
     if (!(cfg->options & OPTION_DUPBASE))
@@ -113,24 +113,24 @@ void writeincproto(struct config *cfg)
     // this solves a problem with proto/8svx.h
     if (isdigit(cfg->modulenameupper[0]))
     {
-	snprintf(define, sizeof define, "X%s", cfg->modulenameupper);
+        snprintf(define, sizeof define, "X%s", cfg->modulenameupper);
     }
     else
     {
-	strncpy(define, cfg->modulenameupper, sizeof define);
+        strncpy(define, cfg->modulenameupper, sizeof define);
     }
 
     fprintf(out,
             "#if !defined(NOLIBINLINE) && !defined(%s_NOLIBINLINE) && !defined(__%s_RELLIBBASE__)\n"
             "#   include <inline/%s.h>\n"
-	    "#elif !defined(NOLIBDEFINES) && !defined(%s_NOLIBDEFINES)\n"
-	    "#   include <defines/%s.h>\n"
-	    "#endif\n"
-	    "\n"
-	    "#endif /* PROTO_%s_H */\n",
+            "#elif !defined(NOLIBDEFINES) && !defined(%s_NOLIBDEFINES)\n"
+            "#   include <defines/%s.h>\n"
+            "#endif\n"
+            "\n"
+            "#endif /* PROTO_%s_H */\n",
             define, cfg->modulenameupper,
             cfg->modulename,
-	    define,
+            define,
             cfg->modulename,
             cfg->modulenameupper
     );
