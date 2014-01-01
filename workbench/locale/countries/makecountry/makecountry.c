@@ -52,6 +52,7 @@ extern struct IntCountryPrefs
     irelandPrefs,
     italyPrefs,
     japanPrefs,
+    latviaPrefs,
     liechtensteinPrefs,
     lithuaniaPrefs,
     luxembourgPrefs,
@@ -115,6 +116,7 @@ struct CountryEntry CountryArray[] =
     { "ireland"		 , &irelandPrefs	},
     { "italy"	    	 , &italyPrefs    	},
     { "japan"	    	 , &japanPrefs	    	},
+    { "latvia"		 , &latviaPrefs		},
     { "liechtenstein"	 , &liechtensteinPrefs	},
     { "lithuania"	 , &lithuaniaPrefs	},
     { "luxembourg"	 , &luxembourgPrefs	},
@@ -198,20 +200,20 @@ int writeChunk(FILE *fp, char *header, void *buffer, int len,
     {
 	printf("%s: Error writing chunk header for %s.\n", progname, filename);
 	fclose(fp);
-	return(20);
+	return 20;
     }
 
     if(fwrite(buffer, len, 1, fp) < 1)
     {
 	printf("%s: Error writing chunk data for %s.\n", progname, filename);
 	fclose(fp);
-	return(20);
+	return 20;
     }
     if ((len & 1) && (fwrite(iffpad, 1, 1, fp) < 1))
     {
         printf("%s: Error padding chunk for %s.\n", progname, filename);
         fclose(fp);
-        return(20);
+        return 20;
     }
     return 0;
 }
@@ -226,7 +228,7 @@ int doCountry(struct IntCountryPrefs *cp, char *progname, char *filename)
     if(fp == NULL)
     {
 	printf("%s: Could not open file %s\n", progname, filename);
-	return (20);
+	return 20;
     }
 
     /* Adjust the size of the IFF file if necessary ... */
@@ -256,7 +258,7 @@ int doCountry(struct IntCountryPrefs *cp, char *progname, char *filename)
     {
 	printf("%s: Error writing IFF header for %s.\n", progname, filename);
 	fclose(fp);
-	return(20);
+	return 20;
     }
 
     /* Write out the main Country Prefs Chunk ... */
@@ -265,7 +267,7 @@ int doCountry(struct IntCountryPrefs *cp, char *progname, char *filename)
     if(writeChunk(fp, ctryheader, cp, getCountryPrefsSize(), progname, filename))
     {
 	printf("%s: Error writing country data chunk %s.\n", progname, filename);
-	return(20);
+	return 20;
     }
 
     /* Write out the Version String Chunk if appropriate ... */
@@ -274,7 +276,7 @@ int doCountry(struct IntCountryPrefs *cp, char *progname, char *filename)
         if(writeChunk(fp, versheader, cpVers, strlen(cpVers) + 1, progname, filename))
         {
             printf("%s: Error writing country version string chunk %s.\n", progname, filename);
-            return(20);
+            return 20;
         }
     }
 
@@ -284,7 +286,7 @@ int doCountry(struct IntCountryPrefs *cp, char *progname, char *filename)
         if(writeChunk(fp, nnameheader, cpNames, strlen(cpNames) + 1, progname, filename))
         {
             printf("%s: Error writing country native-names string chunk %s.\n", progname, filename);
-            return(20);
+            return 20;
         }
     }
     
@@ -294,7 +296,7 @@ int doCountry(struct IntCountryPrefs *cp, char *progname, char *filename)
         if(writeChunk(fp, flagheader, cpFlag, strlen(cpFlag) + 1, progname, filename))
         {
             printf("%s: Error writing country flag string chunk %s.\n", progname, filename);
-            return(20);
+            return 20;
         }
     }
 
@@ -313,7 +315,7 @@ int main(int argc, char **argv)
     if(argc < 3)
     {
 	printf("%s: Wrong number of arguments\n", argv[0]);
-	return(20);
+	return 20;
     }
 
     do_specific = strcmp("--all", argv[2]);
@@ -329,7 +331,7 @@ int main(int argc, char **argv)
 	if (cd == (iconv_t)(-1))
 	{
 	    printf("%s: Error converting character sets\n", argv[0]);
-	    return(20);
+	    return 20;
 	}
     }
 
