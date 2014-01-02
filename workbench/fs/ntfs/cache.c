@@ -1,6 +1,6 @@
 /*
     Copyright © 2010, The AROS Development Team. All rights reserved.
-    $Id: cache.c 33098 2010-04-26 16:58:12Z neil $
+    $Id$
 
     Disk cache.
  */

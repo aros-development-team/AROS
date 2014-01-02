@@ -3,7 +3,7 @@
 
 /*
     Copyright © 2003, The AROS Development Team. All rights reserved.
-    $Id: locale.h 41348 2011-09-14 20:21:00Z sonic $
+    $Id$
 */
 
 #include <exec/types.h>

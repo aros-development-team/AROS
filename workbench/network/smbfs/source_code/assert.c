@@ -1,5 +1,5 @@
 /*
- * $Id: assert.c,v 1.3 2009/04/14 11:32:51 obarthel Exp $
+ * $Id$
  *
  * :ts=8
  *

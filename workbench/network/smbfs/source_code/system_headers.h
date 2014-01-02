@@ -1,5 +1,5 @@
 /*
- * $Id: system_headers.h,v 1.2 2009/04/14 11:32:51 obarthel Exp $
+ * $Id$
  *
  * :ts=4
  *

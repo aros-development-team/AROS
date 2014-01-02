@@ -1,5 +1,5 @@
 /*
- * $Id: smb_fs_sb.h,v 1.1.1.1 2005/05/24 13:22:14 obarthel Exp $
+ * $Id$
  *
  * :ts=8
  *

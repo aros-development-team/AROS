@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: kernel.h 37932 2011-03-30 13:19:37Z sonic $
+    $Id$
 
     Desc: Structures and TagItem for debug.library
     Lang: english

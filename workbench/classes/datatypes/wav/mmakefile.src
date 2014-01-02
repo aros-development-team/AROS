@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src 30792 2009-03-07 22:40:04Z neil $
+#   $Id$
 include $(TOP)/config/make.cfg
 
 G72XFILES := \

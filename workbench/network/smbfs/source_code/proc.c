@@ -1,5 +1,5 @@
 /*
- * $Id: proc.c,v 1.9 2009/07/22 07:52:59 obarthel Exp $
+ * $Id$
  *
  * :ts=8
  *

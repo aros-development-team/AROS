@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: locale.c 41348 2011-09-14 20:21:00Z sonic $
+    $Id$
 */
 
 #include <exec/types.h>

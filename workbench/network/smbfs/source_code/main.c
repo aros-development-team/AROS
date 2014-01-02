@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.9 2009/04/14 12:16:11 obarthel Exp $
+ * $Id$
  *
  * :ts=4
  *
