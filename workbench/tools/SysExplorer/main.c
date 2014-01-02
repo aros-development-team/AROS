@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2013, The AROS Development Team.
-    $Id: main.c 41537 2011-09-22 08:33:28Z sonic $
+    $Id$
 */
 
 #define MUIMASTER_YES_INLINE_STDARG

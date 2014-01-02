@@ -1,6 +1,6 @@
 #ifndef INETD_H
 #define INETD_H \
- 	"$Id: inetd.h,v 1.1.1.1 2005/03/15 16:00:49 laire Exp $"
+ 	"$Id$"
 /*
  *      Internet daemon interface definitions
  *

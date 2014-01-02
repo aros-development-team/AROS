@@ -1,5 +1,5 @@
 /*
- * $Id: crypt.c,v 1.2 2009/07/22 07:52:59 obarthel Exp $
+ * $Id$
  *
  * :ts=8
  *
