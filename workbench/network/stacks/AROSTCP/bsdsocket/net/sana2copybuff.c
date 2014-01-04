@@ -45,6 +45,7 @@
 
 #include <net/if_sana.h>
 #include <api/amiga_raf.h>
+#define bcopy(a,b,c) CopyMem((APTR)(a),b,c)
 
 /*
  * allocate mbufs for the size MTU at free_chain for read request
