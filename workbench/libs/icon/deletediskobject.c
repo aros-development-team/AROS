@@ -48,9 +48,10 @@
     UBYTE * infofilename;
     BOOL    success = FALSE;
     BPTR lock, parent;
+    LONG ioerr;
 
     if (!(infofilename = (UBYTE*)AllocVec (strlen(name) + 6,
-	MEMF_ANY | MEMF_CLEAR)
+        MEMF_ANY | MEMF_CLEAR)
     ) )
        return (FALSE);
 
@@ -61,14 +62,16 @@
     lock = Lock(infofilename, SHARED_LOCK);
     if (lock) {
         parent = ParentDir(lock);
+        UnLock(lock); // DeleteFile() fails on locked files
         if (parent) {
             success = DeleteFile (infofilename);
             if (success && WorkbenchBase) {
                 UpdateWorkbench(FilePart(name), parent, UPDATEWB_ObjectRemoved);
             }
+            ioerr = IoErr(); // UnLock() resets error
             UnLock(parent);
+            SetIoErr(ioerr);
         }
-        UnLock(lock);
     }
 
     FreeVec (infofilename);
