@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-devs-monitors: devs-monitors-compositor
 
-FILES   := compositorclass startup
+FILES   := compositorclass startup displaymode
 EXEDIR  := $(AROSDIR)/Devs/Monitors
 EXENAME := Compositor
 
