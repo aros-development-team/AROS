@@ -85,4 +85,6 @@ struct HIDDCompositorData
 extern OOP_AttrBase HiddCompositorAttrBase;
 extern const struct OOP_InterfaceDescr Compositor_ifdescr[];
 
+void UpdateDisplayMode(struct HIDDCompositorData *compdata);
+
 #endif /* _COMPOSITOR_INTERN_H */
