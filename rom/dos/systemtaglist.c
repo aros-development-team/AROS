@@ -346,7 +346,7 @@
             { NP_CloseOutput, FALSE                         }, /* 6  */
             { NP_CloseError , (isAsynch || ses_opened)
                                       ? TRUE : FALSE,       }, /* 7  */
-            { NP_Cli        , (cliType == CLI_NEWCLI)
+            { NP_Cli        , ((cliType == CLI_NEWCLI) || (cliType == CLI_ASYSTEM))
                                       ?  TRUE : FALSE       }, /* 8  */
             { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
                               (IPTR)me->pr_WindowPtr        }, /* 9  */
