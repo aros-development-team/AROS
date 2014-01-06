@@ -2,7 +2,7 @@
 #define DOS_DOSTAGS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tags for DOS routines
@@ -133,8 +133,8 @@
      used. If the shell is in background mode, when the EOF is reached on
      SYS_ScriptInput the shell will immediately exit, without trying to read from
      SYS_Input. By default it's set to TRUE. */
-
 #define SYS_Background  (SYS_Dummy + 12)
+
    /* (LONG *) ti_Data points to a memory location in which SystemTagList will store the
       Cli number of the newly created cli process */
 #define SYS_CliNumPtr   (SYS_Dummy + 13)
@@ -146,7 +146,7 @@
    * CLI_ASYSTEM    TRUE        TRUE
    * CLI_NEWCLI     ---         FALSE
    */
-#define SYS_CliType		(SYS_Dummy + 13)
+#define SYS_CliType     (SYS_Dummy + 14)
 
 /* This is a *TAG VALUE*, not a tag. Use this together with SYS_Input, SYS_Output and
    SYS_Error, to tell SystemTagList to *duplicate* the respective caller's streams.
@@ -159,7 +159,6 @@
    handle of the shell.
 
    The duplicated file handle is automatically closed. */
-  
 #define SYS_DupStream   1
 
 /**********************************************************************
