@@ -550,7 +550,6 @@
 #include <hidd/parallel.h>
 #include <hidd/pci.h>
 #include <hidd/serial.h>
-#include <hidd/unixio_inline.h>
 #include <hidd/unixio.h>
 
 #include <inetd.h>

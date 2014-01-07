@@ -6,7 +6,6 @@
 #include "oss_intern.h"
 
 #include <hidd/unixio.h>
-#include <hidd/unixio_inline.h>
 
 #include <unistd.h>
 #include <errno.h>

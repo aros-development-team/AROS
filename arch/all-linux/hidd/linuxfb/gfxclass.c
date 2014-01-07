@@ -30,7 +30,7 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
-#include <hidd/unixio_inline.h>
+#include <hidd/unixio.h>
 
 #include "linuxfb_intern.h"
 #include "bitmap.h"

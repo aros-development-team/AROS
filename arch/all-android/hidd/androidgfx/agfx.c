@@ -22,7 +22,6 @@
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <hidd/unixio.h>
-#include <hidd/unixio_inline.h>
 #include <oop/oop.h>
 #include <proto/exec.h>
 #include <proto/hostlib.h>

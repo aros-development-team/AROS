@@ -7,7 +7,7 @@
  * under the same terms as AROS itself.
  */
 
-#include <hidd/unixio_inline.h>
+#include <hidd/unixio.h>
 #include <proto/alib.h>
 #include <proto/oop.h>
 

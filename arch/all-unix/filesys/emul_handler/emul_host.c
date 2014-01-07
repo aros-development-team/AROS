@@ -32,7 +32,7 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <dos/dosasl.h>
-#include <hidd/unixio_inline.h>
+#include <hidd/unixio.h>
 #include <utility/date.h>
 #include <proto/dos.h>
 #include <proto/exec.h>

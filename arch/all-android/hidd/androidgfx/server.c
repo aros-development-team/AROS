@@ -5,7 +5,6 @@
 #include <devices/inputevent.h>
 #include <hidd/mouse.h>
 #include <hidd/unixio.h>
-#include <hidd/unixio_inline.h>
 
 #include <proto/exec.h>
 

@@ -17,7 +17,6 @@
 #include <oop/oop.h>
 #include <hidd/mouse.h>
 #include <hidd/unixio.h>
-#include <hidd/unixio_inline.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
