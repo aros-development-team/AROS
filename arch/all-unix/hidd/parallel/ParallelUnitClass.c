@@ -29,7 +29,6 @@
 #include <utility/tagitem.h>
 #include <hidd/parallel.h>
 #include <hidd/unixio.h>
-#include <hidd/unixio_inline.h>
 
 #include <aros/symbolsets.h>
 

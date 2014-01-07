@@ -29,7 +29,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
-#include <hidd/unixio_inline.h>
+#include <hidd/unixio.h>
 
 #include LC_LIBDEFS_FILE
 

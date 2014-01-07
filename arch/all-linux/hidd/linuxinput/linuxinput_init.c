@@ -20,7 +20,6 @@
 #include <hidd/mouse.h>
 #include <hidd/keyboard.h>
 #include <hidd/unixio.h>
-#include <hidd/unixio_inline.h>
 
 #include LC_LIBDEFS_FILE
 

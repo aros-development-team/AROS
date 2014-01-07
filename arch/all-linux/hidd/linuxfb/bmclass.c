@@ -11,7 +11,7 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <hidd/graphics.h>
-#include <hidd/unixio_inline.h>
+#include <hidd/unixio.h>
 #include <oop/oop.h>
 #include <proto/oop.h>
 #include <proto/utility.h>

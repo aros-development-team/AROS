@@ -29,7 +29,6 @@ debugdriver.o: debugdriver.c makefile
 #include <exec/types.h>
 #include <midi/camddevices.h>
 #include <hidd/unixio.h>
-#include <hidd/unixio_inline.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <libcore/compiler.h>
