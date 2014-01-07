@@ -1104,6 +1104,10 @@ static const char *libc_symbols[] =
 #endif
     "mmap",
     "munmap",
+    "socket",
+    "sendto",
+    "recvfrom",
+    "bind",
     NULL
 };
 
