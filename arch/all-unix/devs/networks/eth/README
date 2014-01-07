@@ -1,0 +1,63 @@
+README for tap.device
+---------------------
+
+eth.device is a SANA-II-compliant network driver that allows AROS running in
+hosted environments to access the network via the host operating system
+(currently Linux only).
+
+This driver is early alpha. Its unfinished in places, and there are probably
+several groovy bugs about. 
+
+REQUIREMENTS
+
+ - AROS hosted running as the root user
+ - A free ethernet device (ie eth0) which the driver will open in
+   promiscuous mode
+
+INSTALLATION
+
+ - Build AROS as normal
+ 
+ - As root, start AROS
+ 
+    # linux/AROSBootstrap
+
+ - Edit SYS:System/Network/AROSTCP/db/interfaces and add the
+   following line:
+
+   eth0 DEV=DEVS:networks/eth.device UNIT=0
+ 
+ - Start AROSTCP
+
+   > execute SYS:System/Network/AROSTCP/S/startnet
+
+Thats it. AROS can now reach the Linux host's network device on ethN.
+
+
+NOTES
+
+The driver is extremely verbose. I'm leaving the debug output in place until I
+consider the code to be stable. If you want to disable it, edit
+arch/all-unix/devs/networks/tap/tap.h and redefine DEBUG to be 0, then
+recompile.
+
+The unit number and Linux interface name are linked such that opening unit #0
+on the Amiga side will result in attachment to interface eth0 on the Linux
+side, unit #1 -> eth1, etc. By default, the driver can handle up to 32 
+units; this can be increased by changing MAX_ETH_UNITS in eth.h.
+
+BUG REPORTING
+
+You'll undoubtedly have problems; this is very new code. Please send reports,
+feedback and other comments to me at jason.mcmullan@gmail.com
+
+If you are having a problem, I'm probably going to ask for debug output, and
+possibly steps to reproduce the problem.
+
+COPYRIGHT & LICENSE
+
+Copyright (c) 2013 Jason McMullan. All rights reserved.
+Copyright (c) 2007 Robert Norris. All rights reserved.
+
+This program is free software; you can redistribute it and/or modify it under
+the same terms as AROS itself.
