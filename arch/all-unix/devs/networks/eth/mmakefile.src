@@ -1,0 +1,11 @@
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -DHOST_OS_$(ARCH) -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
+	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
+%build_module mmake=workbench-devs-eth-unix \
+    modname=eth modtype=device version=$(AROS_TARGET_PLATFORM) \
+    moduledir=Devs/Networks \
+    files="init command iotask" uselibs=stdc
+
+%common
