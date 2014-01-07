@@ -9,6 +9,7 @@ include $(TOP)/config/make.cfg
 #MM- workbench-linux-$(CPU) : \
 #MM      workbench-unix \
 #MM      workbench-devs-tap-unix \
+#MM      workbench-devs-eth-unix \
 #MM	 kernel-hidd-pci \
 #MM	 $(PCI_HIDD_TARGET)
 
