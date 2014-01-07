@@ -11,6 +11,7 @@
 #define timeval sys_timeval
 
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <poll.h>
 
 #undef timeval
@@ -60,6 +61,10 @@ struct LibCInterface
     int	   *(*__error)(void);
     void    *(*mmap)(void *addr, size_t len, int prot, int flags, int fd, __off_t offset);
     int     (*munmap)(void *addr, size_t len);
+    int     (*socket)(int domain, int type, int protocol);
+    ssize_t (*sendto)(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
+    ssize_t (*recvfrom)(int sockfd, void *buf, size_t len, int flags,struct sockaddr *src_addr, socklen_t *addrlen);
+    int     (*bind)(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 };
 
 /* For simplicity, our library base is our static data */
