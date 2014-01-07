@@ -21,7 +21,7 @@
 /* #define DEBUG 1 */
 #include <aros/debug.h>
 
-#define VERSION "$VER: IControl 1.3 (11.09.2010) AROS Dev Team"
+#define VERSION "$VER: IControl 1.4 (7.1.2014) AROS Dev Team"
 
 /*********************************************************************************************/
 

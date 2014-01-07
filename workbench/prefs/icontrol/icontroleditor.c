@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2014, The AROS Development Team. All rights reserved.
    $Id$
 
 Desc:
@@ -497,7 +497,7 @@ IPTR IControlEditor__OM_NEW
 
     DoMethod
     (
-        menutitlepullobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+        menutitlepullobj, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
         (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
     );
 
