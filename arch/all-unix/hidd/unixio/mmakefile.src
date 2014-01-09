@@ -13,6 +13,8 @@ USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT) \
 ## complaints with -O1 or higher optimizations enabled.
 USER_CFLAGS += -Wno-attributes
 
+#MM- includes-generate: kernel-unixio-includes
+
 %build_module mmake=kernel-unixio \
     modname=unixio modtype=hidd version=$(AROS_TARGET_PLATFORM) \
     files="unixio_class unixpkt_class" archspecific=yes
@@ -21,15 +23,8 @@ MY_INCLS := $(call WILDCARD, include/*.h)
 DEST_INC := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))
 GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 
-#MM
-includes-copy : $(DEST_INC) $(GEN_INC)
+INCLUDE_FILES    := $(call WILDCARD, include/*.h)
 
-$(AROS_INCLUDES)/hidd/%.h : include/%.h
-	$(CP) $< $@
+%copy_includes path=hidd dir=include
 
-$(GENINCDIR)/hidd/%.h : include/%.h
-	$(CP) $< $@
-
-#MM
-setup-includes :
-	%mkdirs_q $(GENINCDIR) $(AROS_INCLUDES) $(GENINCDIR)/hidd $(AROS_INCLUDES)/hidd
+%common
