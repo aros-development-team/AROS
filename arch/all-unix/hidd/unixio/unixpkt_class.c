@@ -324,6 +324,7 @@ IPTR UXIO__Hidd_UnixIO__RecvPacket(OOP_Class *cl, OOP_Object *o, struct pHidd_Un
         if (user)
             HostLib_Lock();
 
+#ifdef HOST_OS_linux
         do
         {
             retval = data->SysIFace->recvfrom(pd->fd, (void *)msg->Buffer, (size_t)msg->Length, MSG_DONTWAIT, NULL, NULL);
@@ -336,6 +337,7 @@ IPTR UXIO__Hidd_UnixIO__RecvPacket(OOP_Class *cl, OOP_Object *o, struct pHidd_Un
                 break;
 
         } while((err == EINTR) || (err == EAGAIN));
+#endif /* HOST_OS_linux */
 
         if (user)
             HostLib_Unlock();
@@ -400,20 +402,22 @@ IPTR UXIO__Hidd_UnixIO__SendPacket(OOP_Class *cl, OOP_Object *o, struct pHidd_Un
     struct unixio_base *data = UD(cl);
     int retval = -1;
     volatile int err = EINVAL;
-    struct sockaddr_ll device = {};
 
     if (msg->PD)
     {
         struct uioPacket *pd = msg->PD;
         int user = !KrnIsSuper();
 
+        if (user)
+            HostLib_Lock();
+
+#ifdef HOST_OS_linux
+        struct sockaddr_ll device = {};
+
         device.sll_ifindex = pd->ifindex;
         device.sll_family = AF_PACKET;
         memcpy(device.sll_addr, pd->ifaddr.sa_data, 6);
         device.sll_halen = htons(6);
-
-        if (user)
-            HostLib_Lock();
 
         do
         {
@@ -427,6 +431,7 @@ IPTR UXIO__Hidd_UnixIO__SendPacket(OOP_Class *cl, OOP_Object *o, struct pHidd_Un
                 break;
 
         } while((retval < 1) && ((err == EINTR) || (err == EAGAIN) || (err == 0)));
+#endif /* HOST_OS_linux */
 
         if (user)
             HostLib_Unlock();
