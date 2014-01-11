@@ -1,7 +1,5 @@
 include $(TOP)/config/make.cfg
 
-#MM network-dhcp-libiminires : arostcp-includes
-
 USER_CFLAGS :=	-I$(SRCDIR)/$(CURDIR)/../includes -DHMAC_MD5 -DMINIRES_LIB \
         -D__BSD_VISIBLE=1
 

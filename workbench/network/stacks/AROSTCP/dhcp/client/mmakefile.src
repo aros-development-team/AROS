@@ -2,8 +2,7 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-network : network-dhcp-client
 
-#MM network-dhcp-client : arostcp-includes \
-#MM                       network-dhcp-client-quick
+#MM network-dhcp-client : network-dhcp-client-quick
 
 #MM network-dhcp-client-quick : network-dhcp-libdhcp   \
 #MM				network-dhcp-libdst    \
