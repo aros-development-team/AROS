@@ -14,20 +14,18 @@ DIRS          := $(AROS_INCLUDES) \
                  $(AROS_INCLUDES)/proto \
                  $(AROS_INCLUDES)/sys
 
-#MM- arostcp-includes : arostcp-includes-setup includes-copy
+#MM- includes : network-includes
+#MM- network-includes : network-includes-setup network-includes-copy
 
-#MM includes-copy : arostcp-includes
-includes-copy : setup $(DEST_INCLUDES)
+#MM network-includes-copy : network-includes
+network-includes-copy : setup $(DEST_INCLUDES)
 	@$(NOP)
 
 #MM
-arostcp-includes-setup : $(DIRS)
+network-includes-setup : $(DIRS)
 
 $(DIRS):
 	$(IF) $(TEST) ! -d "$@" ; then $(MKDIR) "$@" ; else $(NOP) ; fi
 
 $(AROS_INCLUDES)/%.h : %.h
-	@$(CP) $< $@
-
-$(AROS_INCLUDES)/%.def : %.def
 	@$(CP) $< $@
