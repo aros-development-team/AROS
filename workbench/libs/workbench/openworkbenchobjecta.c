@@ -722,7 +722,7 @@ static BOOL HandleProject
          */
         {
             STRPTR iconname;
-            if ((iconname = AllocVec(strlen(name) + 5, MEMF_ANY)) == NULL)
+            if ((iconname = AllocVec(strlen(name) + 6, MEMF_ANY)) == NULL)
                 return success;
             iconname[0] = '\0';
             strcat(iconname, name);
