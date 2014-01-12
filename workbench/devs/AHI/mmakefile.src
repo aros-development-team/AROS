@@ -11,6 +11,6 @@ include $(TOP)/config/make.cfg
 
 EXEDIR := $(AROSDIR)
 
-
 %build_with_configure mmake=workbench-devs-AHI prefix=$(EXEDIR) \
-    extraoptions="--with-os-includedir=$(AROS_INCLUDES)"
+    extraoptions="--with-os-includedir=$(AROS_INCLUDES)" \
+    extracflags="-Wno-pointer-sign"
