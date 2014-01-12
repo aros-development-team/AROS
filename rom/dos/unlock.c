@@ -52,6 +52,14 @@
     struct FileLock *fl = BADDR(lock);
 
     ASSERT_VALID_PTR_OR_NULL(fl);
+
+    /* Special case for NIL: */
+    if (fl && fl->fl_Task == NULL)
+    {
+        FreeMem(fl, sizeof(struct FileLock));
+        return 0;
+    }
+
     ASSERT_VALID_FILELOCK(lock);
 
     D(bug("UnLock(%x)\n", fl));
