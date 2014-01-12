@@ -75,7 +75,7 @@ static const ULONG FrequencyBits[ FREQUENCIES ] =
 
 
 
-#define INPUTS 5
+#define INPUTS 4
 
 static const STRPTR Inputs[ INPUTS ] =
 {
@@ -87,7 +87,7 @@ static const STRPTR Inputs[ INPUTS ] =
 };
 
 
-#define INPUTS_2496 2
+#define INPUTS_2496 1
 
 static const STRPTR Inputs_2496[ INPUTS ] =
 {
@@ -95,7 +95,7 @@ static const STRPTR Inputs_2496[ INPUTS ] =
   "S/PDIF",
 };
 
-#define OUTPUTS 5
+#define OUTPUTS 4
 
 static const STRPTR Outputs[ OUTPUTS ] =
 {
@@ -106,7 +106,7 @@ static const STRPTR Outputs[ OUTPUTS ] =
   "S/PDIF",
 };
 
-#define OUTPUTS_2496 2
+#define OUTPUTS_2496 1
 
 static const STRPTR Outputs_2496[ OUTPUTS ] =
 {
@@ -131,7 +131,7 @@ static const STRPTR Outputs_Delta44[ OUTPUTS_DELTA44 ] =
 };
 
 
-#define INPUTS_DELTA66 3
+#define INPUTS_DELTA66 2
 
 static const STRPTR Inputs_Delta66[ INPUTS_DELTA66 ] =
 {
