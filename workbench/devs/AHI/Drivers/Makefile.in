@@ -43,6 +43,7 @@ SUBDIRS		+= SB128
 SUBDIRS		+= HDAudio
 SUBDIRS		+= EMU10kx
 SUBDIRS		+= Envy24HT
+SUBDIRS		+= Envy24
 endif
 
 ifneq ($(strip $(HAVE_OSS)),)
