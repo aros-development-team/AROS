@@ -1,6 +1,6 @@
 /*
     Copyright © 2005-2013, Davy Wentzler. All rights reserved.
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -63,6 +63,11 @@ static const unsigned long IO_SGD = 0xdc00;
 static const unsigned long IO_FM = 0xe000;
 static const unsigned long IO_MIDI = 0xe400;
 
+#ifdef __AROS__
+INTGW(static, void,  playbackinterrupt, PlaybackInterrupt);
+INTGW(static, void,  recordinterrupt,   RecordInterrupt);
+INTGW(static, ULONG, cardinterrupt,  CardInterrupt);
+#endif
 
 
 void MicroDelay(unsigned int val)
@@ -140,19 +145,31 @@ AllocDriverData( struct PCIDevice *    dev,
   dd->interrupt.is_Node.ln_Type = IRQTYPE;
   dd->interrupt.is_Node.ln_Pri  = 0;
   dd->interrupt.is_Node.ln_Name = (STRPTR) LibName;
+#ifdef __AROS__
+  dd->interrupt.is_Code         = (void(*)(void)) cardinterrupt;
+#else
   dd->interrupt.is_Code         = (void(*)(void)) CardInterrupt;
+#endif
   dd->interrupt.is_Data         = (APTR) dd;
 
   dd->playback_interrupt.is_Node.ln_Type = IRQTYPE;
   dd->playback_interrupt.is_Node.ln_Pri  = 0;
   dd->playback_interrupt.is_Node.ln_Name = (STRPTR) LibName;
+#ifdef __AROS__
+  dd->playback_interrupt.is_Code         = playbackinterrupt;
+#else
   dd->playback_interrupt.is_Code         = PlaybackInterrupt;
+#endif
   dd->playback_interrupt.is_Data         = (APTR) dd;
 
   dd->record_interrupt.is_Node.ln_Type = IRQTYPE;
   dd->record_interrupt.is_Node.ln_Pri  = 0;
   dd->record_interrupt.is_Node.ln_Name = (STRPTR) LibName;
+#ifdef __AROS__
+  dd->record_interrupt.is_Code         = recordinterrupt;
+#else
   dd->record_interrupt.is_Code         = RecordInterrupt;
+#endif
   dd->record_interrupt.is_Data         = (APTR) dd;
 
   dd->pci_dev = dev;
