@@ -46,10 +46,6 @@
 #include <net/if.h>
 #endif /* _NET_IF_H_ */
 
-#ifndef _SYS_MBUF_H_
-#include <sys/mbuf.h>
-#endif /* _SYS_MBUF_H_ */
-
 /****************************************************************************/
 
 #ifdef __cplusplus
@@ -969,6 +965,9 @@ struct DomainNameServerNode
  */
 #define IFMD_Incoming 0	/* Packet was received */
 #define IFMD_Outgoing 1	/* Packet is about to be sent */
+
+/* The full definition of 'struct mbuf' is in <sys/mbuf.h> */
+struct mbuf;
 
 /* The packet filter hook is invoked with a message of
  * this type:
