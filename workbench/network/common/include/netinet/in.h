@@ -153,7 +153,9 @@
 #define	IPPROTO_UDP		17		/* user datagram protocol */
 #define	IPPROTO_IDP		22		/* xns idp */
 #define	IPPROTO_TP		29 		/* tp-4 w/ class negotiation */
+#define	IPPROTO_IPV6		41		/* IPv6 protocol */
 #define	IPPROTO_EON		80		/* ISO cnlp */
+#define	IPPROTO_UDPLITE		136		/* UDP Lite */
 
 #define	IPPROTO_RAW		255		/* raw IP packet */
 #define	IPPROTO_MAX		256
@@ -254,5 +256,30 @@ struct in_addr in_makeaddr(u_long net,
 u_long in_netof(struct in_addr in);
 u_long in_lnaof(struct in_addr in);
 #endif
+
+/* IPv6 structures */
+struct in6_addr {
+    union {
+        uint8_t         u8_addr[16];
+        uint16_t        u16_addr[8];
+        uint32_t        u32_addr[4];
+    } un;
+#define s6_addr un.u8_addr
+};
+
+#define IN6ADDR_ANY_INIT {{{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}}}          /* :: */
+#define IN6ADDR_LOOPBACK_INIT {{{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}}}     /* ::1 */
+
+struct sockaddr_in6 {
+    uint8_t     sin6_len;
+    uint8_t     sin6_family;
+    uint16_t    sin6_port;
+    uint32_t    sin6_flowinfo;
+    struct in6_addr sin6_addr;
+    uint32_t    sin6_scope_id;
+};
+
+/* IPv6 socket options */
+#define IPV6_V6ONLY     26      /* Restrict AF_INET6 sockets to IPv6 only. */
 
 #endif /* !IN_H */
