@@ -54,6 +54,8 @@
 #define SO_RCVTIMEO	0x1006		/* receive timeout */
 #define	SO_ERROR	0x1007		/* get error status and clear */
 #define	SO_TYPE		0x1008		/* get socket type */
+#define SO_CONTIMEO     0x1009          /* connection timeout */
+#define SO_NO_CHECK     0x1009          /* don't create UDP checksum */
 
 #define SO_EVENTMASK	0x2001
 
@@ -249,6 +251,7 @@ struct msghdr {
 #define	MSG_WAITALL	0x40		/* wait for full request or error */
 #define	MSG_DONTWAIT	0x80		/* this message should be nonblocking */
 #define	MSG_EOF		0x100		/* data completes connection */
+#define MSG_MORE        0x200           /* sender will send more */
 #define MSG_COMPAT      0x8000		/* used in sendit() */
 
 /*

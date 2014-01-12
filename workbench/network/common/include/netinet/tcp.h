@@ -116,7 +116,11 @@ struct tcphdr {
  */
 #define	TCP_NODELAY	0x01	/* don't delay send to coalesce packets */
 #define	TCP_MAXSEG	0x02	/* set maximum segment size */
+#define TCP_KEEPALIVE   0x03    /* Send KEEPALIVE probe when idle (in ms) */
 #define TCP_NOPUSH	0x04	/* don't push last block of write */
+#define TCP_KEEPIDLE    0x05    /* Send KEEPALIVE probe when idle (in sec) */
+#define TCP_KEEPINTVL   0x06    /* Interval between keepalives */
+#define TCP_KEEPCNT     0x07    /* Number of keepalives before death */
 #define TCP_NOOPT	0x08	/* don't use TCP options */
 
 #endif
