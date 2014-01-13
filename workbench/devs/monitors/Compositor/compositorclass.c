@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1138,8 +1138,8 @@ OOP_Object *METHOD(Compositor, Hidd_Compositor, BitMapStackChanged)
             n->sbmflags |= STACKNODEF_DISPLAYABLE;
             if (n->sbmflags & COMPF_ALPHA)
             {
-                GetAttr(SA_AlphaPreCompositHook, (Object *)bmScreen, (IPTR *)&n->prealphacomphook);
-                DSTACK(bug("[Compositor] %s: Pre-AlphaComposit Hook @ 0x%p\n", __PRETTY_FUNCTION__, n->prealphacomphook));
+                GetAttr(SA_AlphaPreCompositingHook, (Object *)bmScreen, (IPTR *)&n->prealphacomphook);
+                DSTACK(bug("[Compositor] %s: Pre-AlphaCompositing Hook @ 0x%p\n", __PRETTY_FUNCTION__, n->prealphacomphook));
             }
         }
 
