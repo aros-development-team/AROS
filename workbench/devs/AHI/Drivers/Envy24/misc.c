@@ -633,28 +633,27 @@ void pci_free_consistent(void* addr, struct DriverBase* AHIsubBase)
 }
 
 
-#ifdef __AMIGAOS4__
-static ULONG ResetHandler(struct ExceptionContext *ctx, struct ExecBase *pExecBase, struct CardData *card)
+static AROS_INTH1(ResetHandler, struct CardData *, card)
 {
+    AROS_INTFUNC_INIT
+
     ClearMask8(card, MT_DMA_CONTROL, MT_PLAY_START | MT_REC_START);
     WriteMask8(card, MT_INTR_MASK_STATUS, MT_PLAY_MASK | MT_REC_MASK);
 
-
     return 0UL;
+
+    AROS_INTFUNC_EXIT
 }
-#endif
 
 void AddResetHandler(struct CardData *card)
 {
-#ifdef __AMIGAOS4__
     static struct Interrupt interrupt;
 
     interrupt.is_Code = (void (*)())ResetHandler;
     interrupt.is_Data = (APTR) card;
     interrupt.is_Node.ln_Pri  = 0;
-    interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
-    interrupt.is_Node.ln_Name = "reset handler";
+    interrupt.is_Node.ln_Type = NT_INTERRUPT;
+    interrupt.is_Node.ln_Name = "envy24.audio";
 
     AddResetCallback( &interrupt );
-#endif
 }
