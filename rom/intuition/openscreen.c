@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -485,9 +485,9 @@ static const char THIS_FILE[] = __FILE__;
                 compflags = tag->ti_Data;
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_CompositingFlags 0x%p\n", compflags));
                 break;
-            case SA_AlphaPreCompositHook:
+            case SA_AlphaPreCompositingHook:
                 compalphahook = (struct Hook *)tag->ti_Data;
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_AlphaPreCompositHook 0x%p\n", compalphahook));
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_AlphaPreCompositingHook 0x%p\n", compalphahook));
                 break;
             case SA_Left:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Left %ld\n",tag->ti_Data));

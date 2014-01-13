@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -869,7 +869,7 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         *msg->opg_Storage = (IPTR)(screen->SpecialFlags >> 8);
         break;
 
-    case SA_AlphaPreCompositHook:
+    case SA_AlphaPreCompositingHook:
         *msg->opg_Storage = (IPTR)screen->preAlphaCompHook;
         break;
 
@@ -946,7 +946,7 @@ IPTR ScreenClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
             }
             break;
 
-        case SA_AlphaPreCompositHook:
+        case SA_AlphaPreCompositingHook:
             {
                 screen->preAlphaCompHook = (struct Hook *)tag->ti_Data;
             }
