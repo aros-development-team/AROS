@@ -161,6 +161,7 @@ struct sockproto {
 #define PF_RTIP		pseudo_AF_FTIP	/* same format as AF_INET */
 #define PF_PIP		pseudo_AF_PIP
 #define	PF_ISDN		AF_ISDN
+#define PF_INET6    AF_INET6
 
 #define	PF_MAX		AF_MAX
 
