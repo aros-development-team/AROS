@@ -102,6 +102,7 @@ __END_DECLS
 #define	SIOCDELRT	_IOW('r', 11, struct ortentry)       /* delete route */
 
 #define	SIOCSIFADDR	_IOW ('i',12, struct ifreq)     /* set ifnet address */
+#define SIOCGIFNAME     _IOWR('i',31, struct ifreq)     /* get IF name by index */
 #define SIOCGIFINDEX    _IOWR('i',32, struct ifreq)     /* get IF index */
 #define	SIOCGIFADDR	_IOWR('i',33, struct ifreq)     /* get ifnet address */
 #define	SIOCSIFDSTADDR	_IOW ('i',14, struct ifreq)       /* set p-p address */
