@@ -9,8 +9,6 @@
  
 #include "ahci_aros.h"
 
-#define BUS_DMA_MAX_SEGMENTS    64
-
 struct bus_dma_tag_slab {
     TAILQ_ENTRY(bus_dma_tag_slab) sl_node;
     APTR sl_memory;
