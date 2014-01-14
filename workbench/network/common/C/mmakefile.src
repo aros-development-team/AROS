@@ -1,0 +1,15 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -D__BSD_VISIBLE=1
+
+#MM- workbench-network-common : workbench-network-common-c
+
+#MM- workbench-network-common-c: network-includes
+
+%build_progs mmake=workbench-network-common-c \
+    files="ifconfig route ping resolve arp logger hostname" \
+    targetdir=$(AROS_C)
+
+#%common
+
