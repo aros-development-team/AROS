@@ -133,6 +133,10 @@ struct IOSana2Req
    VOID *ios2_BufferManagement;
 };
 
+#define ios2_Command    ios2_Req.io_Command
+#define ios2_Flags      ios2_Req.io_Flags
+#define ios2_Error      ios2_Req.io_Error
+
 struct Sana2DeviceQuery
 {
    ULONG SizeAvailable;
