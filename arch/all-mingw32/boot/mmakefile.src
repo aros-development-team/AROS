@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-EXEDIR := $(AROSDIR)/boot
+EXEDIR := $(AROSARCHDIR)
 
 # Board support package (basic drivers set)
 MINGW32_DEVS	 := timer
