@@ -236,7 +236,7 @@ struct bus_dma_tag;
 typedef struct bus_dma_tag *bus_dma_tag_t;
 
 #define BUS_DMA_MAX_SLABS       16
-#define BUS_DMA_MAX_SEGMENTS    64
+#define BUS_DMA_MAX_SEGMENTS    1024
 
 typedef IPTR bus_space_tag_t;
 typedef APTR bus_dmamap_t;
