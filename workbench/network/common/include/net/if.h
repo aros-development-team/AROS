@@ -312,6 +312,7 @@ struct	ifreq {
 #define	ifr_mtu		ifr_ifru.ifru_mtu	/* mtu */
 #define	ifr_data	ifr_ifru.ifru_data	/* for use by interface */
 #define ifr_index	ifr_ifru.ifru_index	/* interface index */
+#define ifr_ifindex	ifr_ifru.ifru_index	/* interface index (alias) */
 };
 
 struct ifaliasreq {
