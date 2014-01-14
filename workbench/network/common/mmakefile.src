@@ -1,0 +1,6 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM- workbench-network: workbench-network-common
+
+%common
