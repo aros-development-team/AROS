@@ -208,6 +208,7 @@ struct in_addr {
 
 #define	INADDR_ANY		(u_long)0x00000000
 #define	INADDR_BROADCAST	(u_long)0xffffffff	/* must be masked */
+#define	INADDR_LOOPBACK		(u_long)0x7f000001	/* loopback address */
 #if !defined(KERNEL) || defined(AMITCP)
 #define	INADDR_NONE		0xffffffff		/* -1 return */
 #endif

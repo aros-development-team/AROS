@@ -75,7 +75,9 @@
 #endif
 
 #define SOCKLEN_T LONG
+#ifndef INADDR_LOOPBACK
 #define INADDR_LOOPBACK 0x7f000001
+#endif
 
 #ifndef AROSTCP_DB
 /* this is the default path, overridable with ENV:AROTCP/Config */
