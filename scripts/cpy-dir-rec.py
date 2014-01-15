@@ -27,7 +27,12 @@ def in_ignore_list(name, ignore):
 
 
 def copy_tree(src, dst, ignore):
-    names = os.listdir(src)
+    # Conversion to Unicode is needed in order to yield Unicode file names.
+    # This can be important on Windows. Without this the script fails to access
+    # directories like Locale/Help/Español on non-western systems, where locale
+    # is different from Latin-1 (e. g. russian).
+    # See http://docs.python.org/2/howto/unicode.html#unicode-filenames
+    names = os.listdir(unicode(src))
 
     if not os.path.exists(dst):
         os.makedirs(dst)
