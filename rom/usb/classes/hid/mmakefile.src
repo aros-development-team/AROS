@@ -9,7 +9,7 @@ FILES :=    hid.class hid.gui hidctrl.gui numtostr debug
 
 USER_CFLAGS := -DUSE_NLIST -DMUIMASTER_YES_INLINE_STDARG
 
-%build_module mmake=kernel-usb-classes-hid \
+%build_module_library mmake=kernel-usb-classes-hid \
     modname=hid modtype=usbclass modsuffix="class" \
     files="$(FILES)"
 

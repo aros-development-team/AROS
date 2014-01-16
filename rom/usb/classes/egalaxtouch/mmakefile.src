@@ -7,7 +7,7 @@ FILES :=    egalaxtouch.class debug
 
 #MM- kernel-usb-classes-egalaxtouch : kernel-usb-usbclass kernel-usb-poseidon-includes
 
-%build_module mmake=kernel-usb-classes-egalaxtouch \
+%build_module_library mmake=kernel-usb-classes-egalaxtouch \
     modname=egalaxtouch modtype=usbclass modsuffix="class" \
     files="$(FILES)"
 

@@ -7,7 +7,7 @@ FILES :=    ptp.class numtostr debug
 
 #MM- kernel-usb-classes-ptp : kernel-usb-usbclass kernel-usb-poseidon-includes
 
-%build_module mmake=kernel-usb-classes-ptp \
+%build_module_library mmake=kernel-usb-classes-ptp \
     modname=ptp modtype=usbclass modsuffix="class" \
     files="$(FILES)"
 

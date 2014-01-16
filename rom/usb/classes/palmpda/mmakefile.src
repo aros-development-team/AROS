@@ -7,7 +7,7 @@ FILES :=    palmpda.class dev debug
 
 #MM- kernel-usb-classes-palmpda : kernel-usb-usbclass kernel-usb-poseidon-includes
 
-%build_module mmake=kernel-usb-classes-palmpda \
+%build_module_library mmake=kernel-usb-classes-palmpda \
     modname=palmpda modtype=usbclass modsuffix="class" \
     files="$(FILES)"
 

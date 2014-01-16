@@ -7,7 +7,7 @@ FILES :=    dfu.class debug
 
 #MM- kernel-usb-classes-dfu : kernel-usb-usbclass kernel-usb-poseidon-includes
 
-%build_module mmake=kernel-usb-classes-dfu \
+%build_module_library mmake=kernel-usb-classes-dfu \
     modname=dfu modtype=usbclass modsuffix="class" \
     files="$(FILES)"
 
