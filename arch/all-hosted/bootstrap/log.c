@@ -1,5 +1,10 @@
 #include <fcntl.h>
+#include <stdio.h> /* Needed for STDERR_FILENO on Windows */
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 
 #include "log.h"
 

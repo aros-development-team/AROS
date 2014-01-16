@@ -1,22 +1,10 @@
 #include <elfloader.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-/*
- * On MinGW32CE we:
- * 1. Don't have 'errno'
- * 2. Have a problem with errno.h (it tries to #include_next <errno.h>, which does not exist.
- */
-#ifdef __COREDLL__
-#include <windows.h>
-#define errno GetLastError()
-#else
-#include <errno.h>
-#endif
-
 #include "elf_io.h"
-#include "filesystem.h"
 #include "support.h"
 
 #include <aros/config.h>
@@ -70,7 +58,7 @@ void *open_file(struct ELFNode *n, unsigned int *err)
 {
     FILE *f;
 
-    f = file_open(((struct ExtELFNode *)n)->FullName, "rb");
+    f = fopen(((struct ExtELFNode *)n)->FullName, "rb");
     *err = f ? 0 : errno;
     
     return f;
