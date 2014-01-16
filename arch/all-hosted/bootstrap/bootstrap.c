@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <limits.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,9 +10,6 @@
 
 #ifndef _WIN32
 #include <unistd.h>
-#endif
-#ifndef UNDER_CE
-#include <locale.h>
 #endif
 
 /* These macros are defined in both UNIX and AROS headers. Get rid of warnings. */
@@ -154,7 +152,6 @@ int bootstrap(int argc, char ** argv)
 
     D(fprintf(stderr, "[Bootstrap] Started\n"));
 
-#ifndef UNDER_CE
     /*
      * This makes national characters to be output properly into
      * the debug log under Windows
@@ -165,7 +162,6 @@ int bootstrap(int argc, char ** argv)
         DisplayError("Failed to get current working directory!");
         return -1;
     }
-#endif
     SaveArgs(argv);
 
     while (i < argc) {
@@ -210,7 +206,7 @@ int bootstrap(int argc, char ** argv)
         return -1;
     }
 
-    file = file_open(config, "r");
+    file = fopen(config, "r");
     if (!file)
     {
         DisplayError("Failed to load configuration file %s!", config);

@@ -11,15 +11,6 @@
 char *bootstrapname;
 static LPTSTR cmdline;
 
-#ifdef UNDER_CE
-/*
- * Windows CE has no notion of "current directory". In fact we could
- * leave it as it is, but this redefinition prevents pointer type mismatch warning
- * (Windows CE has only Unicode API).
- */
-#define bootstrapdir NULL
-#endif
-
 /* Remember our launch context (bootstrap name and command line) */
 void SaveArgs(char **argv)
 {
@@ -33,7 +24,6 @@ void __aros Host_Shutdown(unsigned char warm)
     BOOL res;
     STARTUPINFO runinfo;
     PROCESS_INFORMATION ProcInfo;
-#ifndef UNDER_CE
     char var[SHARED_RAM_LEN];
 
     if (warm)
@@ -44,7 +34,6 @@ void __aros Host_Shutdown(unsigned char warm)
     D(printf("[Shutdown] Dir: %s, Name: %s, RAM: %s, Command line: %s\n", bootstrapdir, bootstrapname, var, cmdline));
     putenv(var);
     SetCurrentDirectory(bootstrapdir);
-#endif
     FillMemory(&runinfo, sizeof(runinfo), 0);
     runinfo.cb = sizeof(runinfo);
 
