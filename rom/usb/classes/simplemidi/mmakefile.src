@@ -7,7 +7,7 @@ FILES :=    simplemidi.class debug
 
 #MM- kernel-usb-classes-simplemidi : kernel-usb-usbclass kernel-usb-poseidon-includes
 
-%build_module mmake=kernel-usb-classes-simplemidi \
+%build_module_library mmake=kernel-usb-classes-simplemidi \
     modname=simplemidi modtype=usbclass modsuffix="class" \
     files="$(FILES)"
 

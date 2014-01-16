@@ -7,7 +7,7 @@ FILES :=    moschipeth.class dev debug
 
 #MM- kernel-usb-classes-moschipeth : kernel-usb-usbclass kernel-usb-poseidon-includes
 
-%build_module mmake=kernel-usb-classes-moschipeth \
+%build_module_library mmake=kernel-usb-classes-moschipeth \
     modname=moschipeth modtype=usbclass modsuffix="class" \
     files="$(FILES)"
 

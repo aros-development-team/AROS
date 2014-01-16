@@ -1575,40 +1575,76 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 
 
 #------------------------------------------------------------------------------
-# Build a module
+# Build a module - core routine
 # Explanation of this macro is done in the developer's manual
-%define build_module mmake=/A modname=/A modtype=/A modsuffix= version= conffile= \
+%define build_module_core mmake=/A modname=/A modtype=/A modsuffix= version= conffile= \
   files="$(basename $(call WILDCARD, *.c))" \
   cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
   linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
-  compiler=target nostartup=yes archspecific=no
+  compiler=target nostartup=yes archspecific=no \
+  build_abi= build_library=
+
+# We will employ a terrifying, but unavoidable, hack here.
+# genmf has no concept of conditionals (ie %ifeq), and MetaMake
+# ignores GNU Make ifeq() statements, but will process any #MM
+# headed lines in the file.
+# 
+# So, to make the following #MM lines conditional on whether we want
+# to build the ABI, Library, or both, we define build_abi= and 
+# build_library as 'M' to enable, or '' to disable, which allows genmf
+# to do the following conversions:
+# 
+#  #%(build_abi)M includes-foo: foo-include
+#    becomes, when build_abi=M
+#  #MM includes-foo: foo-include   <= Processed by MetaMake
+#    but, when build_abi= ...
+#  #M includes-foo: foo-includes   <= ignored by MetaMake! Yes!
+# 
+# Taking full blame for this: Jason S. McMullan <jason.mcmullan@gmail.com>
 
 # Define metamake targets and their dependencies
-#MM- includes-all : %(mmake)-includes
-#MM- linklibs-%(modname): %(mmake)-linklib
-#MM- linklibs-%(modname)_rel : %(mmake)-linklib
-#MM- includes-%(modname): %(mmake)-includes
-#MM- includes-%(modname)_rel : %(mmake)-includes
-#MM %(mmake) : %(mmake)-includes core-linklibs linklibs-%(uselibs)
-#MM %(mmake)-kobj : %(mmake)-includes core-linklibs linklibs-%(uselibs)
-#MM %(mmake)-kobj-quick : %(mmake)-includes-quick
-#MM %(mmake)-linklib : %(mmake)-includes includes-%(uselibs)
-#MM %(mmake)-quick : %(mmake)-includes-quick
-#MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
-#MM     includes-generate-deps %(mmake)-fd
-#MM %(mmake)-includes-quick
-#MM %(mmake)-includes-dirs
-#MM %(mmake)-fd
+#MM %(mmake)
+#MM %(mmake)-quick
 #MM %(mmake)-makefile
 #MM %(mmake)-clean
 
+# ABI targets:
+#M%(build_abi)- includes-all : %(mmake)-includes
+#M%(build_abi)- linklibs-%(modname): %(mmake)-linklib
+#M%(build_abi)- linklibs-%(modname)_rel : %(mmake)-linklib
+#M%(build_abi)- includes-%(modname): %(mmake)-includes
+#M%(build_abi)- includes-%(modname)_rel : %(mmake)-includes
+#M%(build_abi)- %(mmake) : %(mmake)-includes core-linklibs linklibs-%(uselibs)
+#M%(build_abi) %(mmake)-linklib : %(mmake)-includes includes-%(uselibs)
+#M%(build_abi)- %(mmake)-quick : %(mmake)-includes-quick
+#M%(build_abi) %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
+#M%(build_abi)     includes-generate-deps %(mmake)-fd
+#M%(build_abi) %(mmake)-includes-quick
+#M%(build_abi) %(mmake)-includes-dirs
+#M%(build_abi) %(mmake)-fd
+
+# Library targets
+#%(build_library)M %(mmake)-kobj : core-linklibs linklibs-%(uselibs)
+#%(build_library)M %(mmake)-kobj-quick : 
+
+# Library with ABI targets:
+#%(build_library)%(build_abi) %(mmake)-kobj : %(mmake)-includes core-linklibs linklibs-%(uselibs)
+#%(build_library)%(build_abi) %(mmake)-kobj-quick : %(mmake)-includes-quick
+
 # All MetaMake targets defined by this macro
-BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
-    %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
-    %(mmake)-kobj %(mmake)-kobj-quick \
-    %(mmake)-linklib %(mmake)-fd
+BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-clean
+
+ifeq (%(build_library),M)
+BD_ALLTARGETS += %(mmake)-kobj %(mmake)-kobj-quick
+endif
+
+ifeq (%(build_abi),M)
+BD_ALLTARGETS += %(mmake)-includes \
+                 %(mmake)-includes-quick %(mmake)-includes-dirs  \
+                 %(mmake)-linklib %(mmake)-fd
+endif
 
 .PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
 
@@ -1654,6 +1690,7 @@ BD_INCDIR    := %(prefix)/$(AROS_DIR_INCLUDE)
 BD_LIBDEFSINC := %(objdir)/include/%(modname)_libdefs.h
 BD_DEFLIBDEFSINC := %(objdir)/include/%(modname)_deflibdefs.h
 
+ifeq (%(build_abi),M)
 %(mmake)-includes-quick : %(mmake)-includes
 %(mmake)-includes : $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
     $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
@@ -1682,6 +1719,8 @@ TMP%(modname)_INCDIRS := \
 
 endif
 
+endif
+
 %rule_genmodule_genlibdefs modname=%(modname) modtype=%(modtype) \
 		 	   modsuffix=%(modsuffix) targetdir=%(objdir)/include \
 		 	   conffile=%(conffile) version=%(version)
@@ -1701,6 +1740,7 @@ GLOB_MKDIRS += %(objdir)/include
 		      conffile=%(conffile)
 
 
+ifeq (%(build_abi),M)
 ## Create FD file
 BD_FDDIR := %(prefix)/$(AROS_DIR_DEVELOPMENT)/fd
 %(mmake)-fd : $(BD_FDDIR)/%(modname)_lib.fd
@@ -1711,7 +1751,7 @@ BD_FDDIR := %(prefix)/$(AROS_DIR_DEVELOPMENT)/fd
 $(BD_FDDIR)/%(modname)_lib.fd : | $(BD_FDDIR)
 
 GLOB_MKDIRS += $(BD_FDDIR)
-
+endif
 
 ## Compilation
 ##
@@ -1736,6 +1776,7 @@ else
     BD_LIBSUFFIX := .%(modtype)
 endif
 
+ifeq (%(build_abi),M)
 BD_LINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBFILES))
 BD_LINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBAFILES))
 ifeq ($(strip $(%(modname)_LINKLIBFILES) $(%(modname)_LINKLIBAFILES) %(linklibfiles)),)
@@ -1748,12 +1789,6 @@ else
 endif
 BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
 
-ifneq ($(BD_CXXFILES),)
-BD_LINKCMD=$(AROS_CXX)
-else
-BD_LINKCMD=$(AROS_CC)
-endif
-
 BD_RELLINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_RELLINKLIBFILES))
 BD_RELLINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_RELLINKLIBAFILES))
 ifeq ($(strip $(%(modname)_RELLINKLIBFILES) $(%(modname)_RELLINKLIBAFILES) %(linklibfiles)),)
@@ -1765,6 +1800,13 @@ else
     endif
 endif
 BD_RELLINKLIBFILES := $(BD_RELLINKLIBCFILES) $(BD_RELLINKLIBAFILES)
+endif
+
+ifneq ($(BD_CXXFILES),)
+BD_LINKCMD=$(AROS_CXX)
+else
+BD_LINKCMD=$(AROS_CC)
+endif
 
 BD_CCFILES := $(BD_NARCHFILES) %(linklibfiles)
 BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES) $(BD_LINKLIBCFILES) \
@@ -1796,6 +1838,7 @@ else
 BD_SUFFIX := %(modsuffix)
 endif
 
+ifeq (%(build_library),M)
 # Handlers use dash instead of dot in their names
 ifeq ($(BD_SUFFIX),handler)
 BD_MODULE := %(prefix)/%(moduledir)/%(modname)-$(BD_SUFFIX)
@@ -1803,12 +1846,20 @@ else
 BD_MODULE := %(prefix)/%(moduledir)/%(modname).$(BD_SUFFIX)
 endif
 BD_KOBJ   := $(KOBJSDIR)/%(modname)_$(BD_SUFFIX).o
+else
+BD_MODULE :=
+BD_KOBJ   :=
+endif
 
 %(mmake)-quick      : %(mmake)
 %(mmake)            : $(BD_MODULE) $(BD_LINKLIB) $(BD_RELLINKLIB)
+ifeq (%(build_library),M)
 %(mmake)-kobj       : $(BD_KOBJ) $(BD_LINKLIB) $(BD_RELLINKLIB)
 %(mmake)-kobj-quick : $(BD_KOBJ) $(BD_LINKLIB) $(BD_RELLINKLIB)
+endif
+ifeq (%(build_abi),M)
 %(mmake)-linklib    : $(BD_LINKLIB) $(BD_RELLINKLIB)
+endif
 
 BD_OBJS := $(addsuffix .o,$(BD_STARTFILES)) $(BD_ARCHOBJS) \
            $(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES:=.o) $(BD_CXXFILES:=.o)))
@@ -1835,12 +1886,15 @@ else
     BD_ERR := %(modname).err
 endif
 
+ifeq (%(build_library),M)
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(BD_MODULE) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
 		 endobj=$(BD_ENDOBJS) err=$(BD_ERR) objdir=%(objdir) \
 		 cmd=$(BD_LINKCMD) ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
+endif
 
+ifeq (%(build_abi),M)
 # Link static lib
 BD_LINKLIBNAME := $(shell echo %(linklibname) | tr A-Z a-z)
 BD_MODNAME     := $(shell echo %(modname) | tr A-Z a-z)
@@ -1863,7 +1917,9 @@ endif
 $(BD_RELLINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
 GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
 endif
+endif
 
+ifeq (%(build_library),M)
 # Link kernel object file
 BD_KAUTOLIB := dos intuition layers graphics oop utility expansion keymap
 
@@ -1882,6 +1938,7 @@ $(BD_KOBJ) : $(BD_OBJS) $(USER_OBJS) $(BD_ENDOBJS)
 	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)"
 	@$(AROS_LD) -Ur -o $@ $^ $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS))
 	@$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^__aros_lib.*\r?$$/) {print "-L " $$3;}'`
+endif
 
 ## Dependency fine-tuning
 ##
@@ -1921,138 +1978,80 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 %end
 #------------------------------------------------------------------------------
 
-
 #------------------------------------------------------------------------------
-# Build a module skeleton
-# This is a stripped-down version of build_module, it only creates include files,
-# but no actual object. This is used when for plugins or classes with the same
-# API, but no actual implementation here.
-%define build_module_skeleton mmake=/A modname=/A modtype=/A modsuffix= \
-  conffile= \
-  objdir=$(OBJDIR) prefix=$(AROSDIR)
+# Build a module - ABI and library
+# Explanation of this macro is done in the developer's manual
+%define build_module mmake=/A modname=/A modtype=/A modsuffix= version= conffile= \
+  files="$(basename $(call WILDCARD, *.c))" \
+  cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
+  linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
+  objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
+  linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
+  compiler=target nostartup=yes archspecific=no
 
-# Define metamake targets and their dependencies
-#MM- includes-all : %(mmake)-includes
-#MM %(mmake) : %(mmake)-includes core-linklibs
-#MM %(mmake)-kobj : %(mmake)-includes core-linklibs
-#MM %(mmake)-linklib : %(mmake)-includes
-#MM %(mmake)-quick : %(mmake)-includes-quick
-#MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
-#MM     includes-generate-deps
-#MM %(mmake)-includes-quick
-#MM %(mmake)-includes-dirs
-#MM %(mmake)-makefile
-#MM %(mmake)-clean
+%build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
+   modsuffix="%(modsuffix)" version="%(version)" conffile="%(conffile)" \
+   files="%(files)" cxxfiles="%(cxxfiles)" \
+   linklibname="%(linklibname)" \
+   linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
+   cflags="%(cflags)" dflags="%(dflags)" \
+   objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
+   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
+   nostartup="%(nostartup)" archspecific="%(archspecific)" \
+   build_abi=M build_library=M
 
-# All MetaMake targets defined by this macro
-BD_ALLTARGETS := %(mmake) %(mmake)-quick %(mmake)-includes \
-    %(mmake)-includes-quick %(mmake)-includes-dirs %(mmake)-clean \
-    %(mmake)-kobj
-
-.PHONY : $(BD_ALLTARGETS) %(mmake)-makefile
-
-ifeq (%(modname),)
-$(error using %build_module_skeleton: modname may not be empty)
-endif
-ifeq (%(modtype),)
-$(error using %build_module_skeleton: $(MODTYPE) has to be defined with the type of the module)
-endif
-
-# Default values for variables and arguments
-BD_DEFLINKLIBNAME := %(modname)
-BD_DEFDFLAGS := %(cflags)
-OBJDIR ?= $(GENDIR)/$(CURDIR)
-
-## Create genmodule include Makefile for the module
-##
-%(mmake)-makefile : %(objdir)/Makefile.%(modname)%(modtype)
-
-%rule_genmodule_makefile \
-    modname=%(modname) modtype=%(modtype) \
-    modsuffix=%(modsuffix) targetdir=%(objdir) \
-    conffile=%(conffile)
-
-%(objdir)/Makefile.%(modname)%(modtype) : | %(objdir)
-
-GLOB_MKDIRS += %(objdir)
-
-# Do not parse these statements if metatarget is not appropriate
-ifneq ($(filter $(TARGET),$(BD_ALLTARGETS)),)
-
-include %(objdir)/Makefile.%(modname)%(modtype)
-
-BD_DEFMODDIR := $(%(modname)_MODDIR)
-
-
-## include files generation
-##
-BD_INCDIR    := %(prefix)/$(AROS_DIR_INCLUDE)
-BD_LIBDEFSINC := %(objdir)/include/%(modname)_libdefs.h
-BD_DEFLIBDEFSINC := %(objdir)/include/%(modname)_deflibdefs.h
-
-%(mmake)-includes-quick : %(mmake)-includes
-%(mmake)-includes : $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
-    $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
-    $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC)
-
-ifneq ($(%(modname)_INCLUDES),)
-%rule_genmodule_includes modname=%(modname) modtype=%(modtype) \
-		      	 modsuffix=%(modsuffix) targetdir=%(objdir)/include \
-		      	 conffile=%(conffile)
-
-%rule_copy_diff_multi \
-    files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(GENINCDIR) \
-    stampfile=%(objdir)/%(modname)_geninc
-
-%rule_copy_diff_multi \
-    files=$(%(modname)_INCLUDES) srcdir=%(objdir)/include targetdir=$(BD_INCDIR) \
-    stampfile=%(objdir)/%(modname)_incs
-
-BD_INCDIRS := $(filter-out ./,$(sort $(dir $(%(modname)_INCLUDES))))
-
-TMP%(modname)_INCDIRS := \
-    %(objdir)/include $(addprefix %(objdir)/include/,$(BD_INCDIRS)) \
-    $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(BD_INCDIRS)) \
-    $(BD_INCDIR) $(addprefix $(BD_INCDIR)/,$(BD_INCDIRS))
-%rule_makedirs dirs=$(TMP%(modname)_INCDIRS) setuptarget=%(mmake)-includes-dirs
-
-endif
-
-%rule_genmodule_genlibdefs modname=%(modname) modtype=%(modtype) \
-		 	   modsuffix=%(modsuffix) targetdir=%(objdir)/include \
-		 	   conffile=%(conffile)
-
-$(BD_DEFLIBDEFSINC) : FILENAME := $(BD_LIBDEFSINC)
-$(BD_DEFLIBDEFSINC) :
-	@$(ECHO) "generating $@"
-	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
-
-$(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) : | %(objdir)/include
-GLOB_MKDIRS += %(objdir)/include
-
-## Extra genmodule src files generation
-## 
-%rule_genmodule_files modname=%(modname) modtype=%(modtype) \
-		      modsuffix=%(modsuffix) targetdir=%(objdir) \
-		      conffile=%(conffile)
-
-BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) \
-    $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
-    %(objdir)/Makefile.%(modname)%(modtype) \
-    $(addprefix %(objdir)/include/,$(%(modname)_INCLUDES)) \
-    $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
-    $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
-    %(objdir)/%(modname)_geninc %(objdir)/%(modname)_incs \
-    $(addsuffix .c,$(BD_LINKLIBFILES)) $(BD_LINKLIBOBJS) $(BD_LIBDEFSINC) \
-    $(BD_DEFLIBDEFSINC)
-%(mmake)-clean : FILES := $(BD_TOCLEAN)
-%(mmake)-clean ::
-	@$(ECHO) "Cleaning up for module %(modname)"
-	@$(RM) $(FILES)
-
-endif # $(TARGET) in $(BD_ALLTARGETS)
 %end
 #------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Build a module skeleton ABI
+# This is a stripped-down version of build_module, it only creates include
+# files and the linklibs.
+# This is used when for plugins or classes with the same API, but no actual
+# implementation here.
+%define build_module_abi mmake=/A modname=/A modtype=/A modsuffix= version= conffile= \
+  linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
+  objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
+  linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
+  compiler=target nostartup=yes archspecific=no
+
+%build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
+  modsuffix="%(modsuffix)" version="%(version)" conffile="%(conffile)" \
+  linklibname="%(linklibname)" \
+  linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
+  cflags="%(cflags)" dflags="%(dflags)" \
+  objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
+  uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
+  nostartup="%(nostartup)" archspecific="%(archspecific)" \
+  build_abi=M build_library=
+
+%end
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Build a module library - no includes nor linklibs
+# Explanation of this macro is done in the developer's manual
+%define build_module_library mmake=/A modname=/A modtype=/A modsuffix= version= conffile= \
+  files="$(basename $(call WILDCARD, *.c))" \
+  cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
+  cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
+  objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
+  uselibs= usehostlibs= \
+  compiler=target nostartup=yes archspecific=no
+
+%build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
+   modsuffix="%(modsuffix)" version="%(version)" conffile="%(conffile)" \
+   files="%(files)" cxxfiles="%(cxxfiles)" \
+   cflags="%(cflags)" dflags="%(dflags)" \
+   objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
+   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" \
+   nostartup="%(nostartup)" archspecific="%(archspecific)" \
+   build_abi= build_library=M
+
+%end
+#------------------------------------------------------------------------------
+
 
 
 #------------------------------------------------------------------------------

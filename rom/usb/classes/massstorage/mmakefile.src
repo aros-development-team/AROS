@@ -7,7 +7,7 @@ FILES :=    massstorage.class dev debug partitions
 
 #MM- kernel-usb-classes-massstorage : kernel-usb-usbclass kernel-usb-poseidon-includes
 
-%build_module mmake=kernel-usb-classes-massstorage \
+%build_module_library mmake=kernel-usb-classes-massstorage \
     modname=massstorage modtype=usbclass modsuffix="class" \
     files="$(FILES)"
 

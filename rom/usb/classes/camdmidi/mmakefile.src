@@ -7,7 +7,7 @@ FILES :=    camdusbmidi.class debug
 
 #MM- kernel-usb-classes-camdusbmidi : kernel-usb-usbclass kernel-usb-poseidon-includes
 
-%build_module mmake=kernel-usb-classes-camdusbmidi \
+%build_module_library mmake=kernel-usb-classes-camdusbmidi \
     modname=camdusbmidi modtype=usbclass modsuffix="class" \
     files="$(FILES)"
 

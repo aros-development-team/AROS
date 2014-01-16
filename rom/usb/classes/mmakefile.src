@@ -77,7 +77,7 @@ include $(TOP)/config/make.cfg
 .PHONY: kernel-usb-classes-kobj
 .PHONY: kernel-usb-classes-clean
 
-%build_module_skeleton mmake=kernel-usb-usbclass \
+%build_module_abi mmake=kernel-usb-usbclass \
     modname=usbclass modtype=library
 
 %common

@@ -53,7 +53,7 @@ FUNCS := \
 
 FILES := bsdsocket_init bsdsocket_open bsdsocket_util netdb_util
     
-%build_module mmake=workbench-libs-bsdsocket-mingw32 \
+%build_module_library mmake=workbench-libs-bsdsocket-mingw32 \
     modname=bsdsocket modtype=library \
     files="$(FILES) $(FUNCS)"
 

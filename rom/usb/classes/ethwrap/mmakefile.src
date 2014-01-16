@@ -7,7 +7,7 @@ FILES :=    ethwrap.class dev debug
 
 #MM- kernel-usb-classes-ethwrap : kernel-usb-usbclass kernel-usb-poseidon-includes
 
-%build_module mmake=kernel-usb-classes-ethwrap \
+%build_module_library mmake=kernel-usb-classes-ethwrap \
     modname=ethwrap modtype=usbclass modsuffix="class" \
     files="$(FILES)"
 

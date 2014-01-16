@@ -5,7 +5,7 @@ FILES :=    hub.class debug
 
 #MM- kernel-usb-classes-hub : kernel-usb-usbclass kernel-usb-poseidon-includes
 
-%build_module mmake=kernel-usb-classes-hub \
+%build_module_library mmake=kernel-usb-classes-hub \
     modname=hub modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
     uselibs="debug"
