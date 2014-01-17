@@ -4,12 +4,12 @@ delay 5
 default 0
 
 title AROS on Sam4x0
-    kernel Arch/sam440/kernel
+    kernel boot/sam440/kernel
     module L/afs-handler
     module L/ram-handler
     module Libs/aros.library
     module Devs/ata.device
-    module Arch/sam440/Devs/battclock.resource
+    module boot/sam440/Devs/battclock.resource
     module Classes/USB/bootkeyboard.class
     module Devs/bootloader.resource
     module Classes/USB/bootmouse.class
@@ -20,7 +20,7 @@ title AROS on Sam4x0
     module Devs/dosboot.resource
     module Libs/dos.library
     module L/econsole-handler
-    module Arch/sam440/Libs/expansion.library
+    module boot/sam440/Libs/expansion.library
     module L/fat-handler
     module Devs/FileSystem.resource
     module Devs/gameport.device
@@ -48,23 +48,23 @@ title AROS on Sam4x0
     module Devs/Drivers/pci.hidd
     module Devs/USBHardware/pciusb.device
     module Libs/poseidon.library
-    module Arch/sam440/Devs/processor.resource
+    module boot/sam440/Devs/processor.resource
     module L/sfs-handler
     module Devs/shell.resource
     module Devs/shellcommands.resource
     module Devs/Drivers/sm502.hidd
-    module Arch/sam440/Devs/timer.device
+    module boot/sam440/Devs/timer.device
     module Devs/usbromstartup.resource
     module Libs/utility.library
     module Libs/workbench.library
 
 title AROS on Sam4x0 Debug
-    kernel Arch/sam440/kernel sysdebug=all econsole
+    kernel boot/sam440/kernel sysdebug=all econsole
     module L/afs-handler
     module L/ram-handler
     module Libs/aros.library
     module Devs/ata.device
-    module Arch/sam440/Devs/battclock.resource
+    module boot/sam440/Devs/battclock.resource
     module Classes/USB/bootkeyboard.class
     module Devs/bootloader.resource
     module Classes/USB/bootmouse.class
@@ -75,7 +75,7 @@ title AROS on Sam4x0 Debug
     module Devs/dosboot.resource
     module Libs/dos.library
     module L/econsole-handler
-    module Arch/sam440/Libs/expansion.library
+    module boot/sam440/Libs/expansion.library
     module L/fat-handler
     module Devs/FileSystem.resource
     module Devs/gameport.device
@@ -103,23 +103,23 @@ title AROS on Sam4x0 Debug
     module Devs/Drivers/pci.hidd
     module Devs/USBHardware/pciusb.device
     module Libs/poseidon.library
-    module Arch/sam440/Devs/processor.resource
+    module boot/sam440/Devs/processor.resource
     module L/sfs-handler
     module Devs/shell.resource
     module Devs/shellcommands.resource
     module Devs/Drivers/sm502.hidd
-    module Arch/sam440/Devs/timer.device
+    module boot/sam440/Devs/timer.device
     module Devs/usbromstartup.resource
     module Libs/utility.library
     module Libs/workbench.library
 
 title AROS on Sam4x0 Test Alternative Usb
-    kernel Arch/sam440/kernel
+    kernel boot/sam440/kernel
     module L/afs-handler
     module L/ram-handler
     module Libs/aros.library
     module Devs/ata.device
-    module Arch/sam440/Devs/battclock.resource
+    module boot/sam440/Devs/battclock.resource
     module Devs/bootloader.resource
     module L/cdrom-handler
     module L/con-handler
@@ -128,7 +128,7 @@ title AROS on Sam4x0 Test Alternative Usb
     module Devs/dosboot.resource
     module Libs/dos.library
     module L/econsole-handler
-    module Arch/sam440/Libs/expansion.library
+    module boot/sam440/Libs/expansion.library
     module L/fat-handler
     module Devs/FileSystem.resource
     module Devs/gameport.device
@@ -153,10 +153,10 @@ title AROS on Sam4x0 Test Alternative Usb
     module Devs/Drivers/pci-amcc440.hidd
     module Devs/Drivers/pci-amcc460.hidd
     module Devs/Drivers/pci.hidd
-    module Arch/sam440/Devs/processor.resource
+    module boot/sam440/Devs/processor.resource
     module L/sfs-handler
     module Devs/Drivers/sm502.hidd
-    module Arch/sam440/Devs/timer.device
+    module boot/sam440/Devs/timer.device
     module Devs/Drivers/usb.hidd
     module Libs/utility.library
     module Libs/workbench.library
