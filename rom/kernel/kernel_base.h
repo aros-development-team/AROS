@@ -19,6 +19,11 @@ struct KernelBase;
 #include <kernel_arch.h>
 #include <kernel_cpu.h>
 
+/* Declare global variable at absolute address */
+#define IMPORT_GLOBAL(var, addr) \
+    asm(".globl " # var "\n"     \
+        ".set " # var ", " # addr )
+
 /* Platform-specific stuff. Black box here. */
 struct PlatformData;
 

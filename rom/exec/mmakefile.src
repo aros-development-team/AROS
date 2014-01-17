@@ -45,6 +45,10 @@ FILES	   := alertextra alert_cpu systemalert initkicktags intservers \
 # platform.h can be overriden in arch-specific directory
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES) -DAROS_ARCH_$(ARCH)
 
+# Use customized entry code which declares SysBase suitable
+# for load-time linking by the bootstrap.
+RESIDENT_BEGIN := $(KICKSTART_BEGIN)
+
 %build_module mmake=kernel-exec \
   modname=exec modtype=library version=$(AROS_TARGET_PLATFORM) archspecific=yes \
   linklibfiles=exec_autoinit files="$(INIT_FILES) $(ALL_FUNCTIONS) $(FILES)"

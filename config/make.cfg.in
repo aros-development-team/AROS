@@ -140,6 +140,7 @@ SETREV          := $(TOOLDIR)/setrev$(HOST_EXE_SUFFIX)
 MKSUNXIBOOT     := $(TOOLDIR)/mksunxiboot$(HOST_EXE_SUFFIX)
 
 RESIDENT_BEGIN  := compiler/libinit/libentry
+KICKSTART_BEGIN := compiler/libinit/kickentry
 
 AROS_CC         := $(TARGET_CC)
 ifneq ($(TARGET_CXX),)
