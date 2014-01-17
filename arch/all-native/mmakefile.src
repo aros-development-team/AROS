@@ -13,7 +13,7 @@ include $(TOP)/config/make.cfg
 FS_LIBS     := partition
 FS_HANDLERS := afs cdrom sfs fat
 
-%make_package mmake=kernel-package-fs file=$(AROSDIR)/Arch/aros-fs.pkg \
+%make_package mmake=kernel-package-fs file=$(AROS_BOOT)/aros-fs.pkg \
 	      handlers=$(FS_HANDLERS) libs=$(FS_LIBS)
 
 %common

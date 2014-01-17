@@ -124,12 +124,6 @@ include $(TOP)/config/make.cfg
 #MM     kernel-oop \
 #MM     kernel-layers
 
-BASE_DEVICES  := console input gameport keyboard
-BASE_HANDLERS := ram con
-BASE_HIDD     := hiddclass graphics keyboard mouse
-BASE_LIBS     := aros debug dos graphics intuition keymap layers oop utility
-BASE_RSRCS    := bootloader dosboot FileSystem lddemon
-
 # This is what kickstart base package consists of.
 # These modules are architecture-independent and can work on both hosted and native systems.
 
@@ -139,7 +133,7 @@ BASE_HIDD     := hiddclass graphics keyboard mouse
 BASE_LIBS     := aros debug dos graphics intuition keymap layers oop utility
 BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 
-%make_package mmake=kernel-package-base file=$(AROSDIR)/Arch/aros-base.pkg \
+%make_package mmake=kernel-package-base file=$(AROS_BOOT)/aros-base.pkg \
 	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) res=$(BASE_RSRCS)
 
 %common

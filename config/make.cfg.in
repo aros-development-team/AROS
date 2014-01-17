@@ -52,6 +52,7 @@ SPECS                := $(GENDIR)/config/specs
 AROSDIR	             := $(TARGETDIR)/AROS
 
 # Relative paths for standard directories
+AROS_DIR_BOOT        := boot
 AROS_DIR_C           := C
 AROS_DIR_CLASSES     := Classes
 AROS_DIR_DATATYPES   := $(AROS_DIR_CLASSES)/Datatypes
@@ -70,6 +71,7 @@ AROS_DIR_ARCH        := boot/$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
 
 # Absolute paths for standard directories
 AROSARCHDIR          := $(AROSDIR)/$(AROS_DIR_ARCH)
+AROS_BOOT            := $(AROSDIR)/$(AROS_DIR_BOOT)
 AROS_C	             := $(AROSDIR)/$(AROS_DIR_C)
 AROS_CLASSES	     := $(AROSDIR)/$(AROS_DIR_CLASSES)
 AROS_CLASSES_ARCH    := $(AROSDIR)/$(AROS_DIR_ARCH)/$(AROS_DIR_CLASSES)
