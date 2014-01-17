@@ -2,58 +2,58 @@ timeout 5
 default 3
 
 title AROS (native graphics)
-    multiboot /dh0/Arch/pc/bootstrap.gz ATA=32bit
-    module /dh0/Arch/pc/kernel.gz
-    module /dh0/Arch/pc/aros-bsp.pkg.gz
-    module /dh0/Arch/aros-base.pkg.gz
-    module /dh0/Arch/aros-fs.pkg.gz
-    module /dh0/Arch/poseidon.pkg.gz
+    multiboot /dh0/boot/pc/bootstrap.gz ATA=32bit
+    module /dh0/boot/pc/kernel.gz
+    module /dh0/boot/pc/aros-bsp.pkg.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 
 title AROS (true colour VESA graphics)
-    multiboot /dh0/Arch/pc/bootstrap.gz vesa=32bit ATA=32bit nomonitors
-    module /dh0/Arch/pc/kernel.gz
-    module /dh0/Arch/pc/aros-bsp.pkg.gz
-    module /dh0/Arch/aros-base.pkg.gz
-    module /dh0/Arch/aros-fs.pkg.gz
-    module /dh0/Arch/poseidon.pkg.gz
+    multiboot /dh0/boot/pc/bootstrap.gz vesa=32bit ATA=32bit nomonitors
+    module /dh0/boot/pc/kernel.gz
+    module /dh0/boot/pc/aros-bsp.pkg.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 	
 title AROS (high colour VESA graphics)
-    multiboot /dh0/Arch/pc/bootstrap.gz vesa=16bit ATA=32bit nomonitors
-    module /dh0/Arch/pc/kernel.gz
-    module /dh0/Arch/pc/aros-bsp.pkg.gz
-    module /dh0/Arch/aros-base.pkg.gz
-    module /dh0/Arch/aros-fs.pkg.gz
-    module /dh0/Arch/poseidon.pkg.gz
+    multiboot /dh0/boot/pc/bootstrap.gz vesa=16bit ATA=32bit nomonitors
+    module /dh0/boot/pc/kernel.gz
+    module /dh0/boot/pc/aros-bsp.pkg.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 
 title AROS (true colour VESA graphics, legacy drivers)
-    multiboot /dh0/Arch/pc/bootstrap.gz vesa=32bit ATA=32bit nomonitors
-    module /dh0/Arch/pc/kernel.gz
-    module /dh0/Arch/pc/aros-bsp.pkg.gz
-    module /dh0/Arch/pc/aros-legacy.pkg.gz
-    module /dh0/Arch/aros-base.pkg.gz
-    module /dh0/Arch/aros-fs.pkg.gz
-    module /dh0/Arch/poseidon.pkg.gz
+    multiboot /dh0/boot/pc/bootstrap.gz vesa=32bit ATA=32bit nomonitors
+    module /dh0/boot/pc/kernel.gz
+    module /dh0/boot/pc/aros-bsp.pkg.gz
+    module /dh0/boot/pc/aros-legacy.pkg.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 
 title AROS (true colour VESA graphics: 1024x768)
-    multiboot /dh0/Arch/pc/bootstrap.gz vesa=1024x768 ATA=32bit nomonitors
-    module /dh0/Arch/pc/kernel.gz
-    module /dh0/Arch/pc/aros-bsp.pkg.gz
-    module /dh0/Arch/aros-base.pkg.gz
-    module /dh0/Arch/aros-fs.pkg.gz
-    module /dh0/Arch/poseidon.pkg.gz
+    multiboot /dh0/boot/pc/bootstrap.gz vesa=1024x768 ATA=32bit nomonitors
+    module /dh0/boot/pc/kernel.gz
+    module /dh0/boot/pc/aros-bsp.pkg.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 
 title AROS (true colour VESA graphics: 1280x1024)
-    multiboot /dh0/Arch/pc/bootstrap.gz vesa=1280x1024 ATA=32bit nomonitors
-    module /dh0/Arch/pc/kernel.gz
-    module /dh0/Arch/pc/aros-bsp.pkg.gz
-    module /dh0/Arch/aros-base.pkg.gz
-    module /dh0/Arch/aros-fs.pkg.gz
-    module /dh0/Arch/poseidon.pkg.gz
+    multiboot /dh0/boot/pc/bootstrap.gz vesa=1280x1024 ATA=32bit nomonitors
+    module /dh0/boot/pc/kernel.gz
+    module /dh0/boot/pc/aros-bsp.pkg.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 
 title AROS (VGA graphics, safe mode)
-    multiboot /dh0/Arch/pc/bootstrap.gz ATA=nodma debug=memory nomonitors
-    module /dh0/Arch/pc/kernel.gz
-    module /dh0/Arch/pc/aros-bsp.pkg.gz
-    module /dh0/Arch/aros-base.pkg.gz
-    module /dh0/Arch/aros-fs.pkg.gz
-    module /dh0/Arch/poseidon.pkg.gz
+    multiboot /dh0/boot/pc/bootstrap.gz ATA=nodma debug=memory nomonitors
+    module /dh0/boot/pc/kernel.gz
+    module /dh0/boot/pc/aros-bsp.pkg.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
