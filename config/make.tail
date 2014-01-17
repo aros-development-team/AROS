@@ -17,6 +17,11 @@ $(GENMODULE) : $(GENMODULE_DEPS)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/genmodule TOP=$(TOP) SRCDIR=$(SRCDIR) $(GENMODULE)
 
 # Disk-based module header
-$(GENDIR)/$(RESIDENT_BEGIN).o : $(SRCDIR)/$(RESIDENT_BEGIN).c
+$(GENDIR)/compiler/libinit/libentry.o : $(SRCDIR)/compiler/libinit/libentry.c
+	@$(ECHO) "Compiling  $<"
+	@$(TARGET_CC) -c $(CFLAGS) $< -o $@
+
+# Special kickstart module header
+$(GENDIR)/$(KICKSTART_BEGIN).o : $(SRCDIR)/$(KICKSTART_BEGIN).c
 	@$(ECHO) "Compiling  $<"
 	@$(TARGET_CC) -c $(CFLAGS) $< -o $@
