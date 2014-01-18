@@ -20,7 +20,7 @@ VOID AROSMesaSelectRastPort(AROSMesaContext amesa, struct TagItem * tagList)
 
     if (amesa->Screen)
     {
-        D(bug("[AROSMESA] AROSMesaSelectRastPort: Screen @ %x\n", amesa->ScreenInfo.Screen));
+        D(bug("[AROSMESA] AROSMesaSelectRastPort: Screen @ %x\n", amesa->Screen));
         if (amesa->window)
         {
             D(bug("[AROSMESA] AROSMesaSelectRastPort: Window @ %x\n", amesa->window));
@@ -49,7 +49,7 @@ VOID AROSMesaSelectRastPort(AROSMesaContext amesa, struct TagItem * tagList)
             D(bug("[AROSMESA] AROSMesaSelectRastPort: Window @ %x\n", amesa->window));
             /* Use the windows Screen */
             amesa->Screen = amesa->window->WScreen;
-            D(bug("[AROSMESA] AROSMesaSelectRastPort: Windows Screen @ %x\n", amesa->ScreenInfo.Screen));
+            D(bug("[AROSMESA] AROSMesaSelectRastPort: Windows Screen @ %x\n", amesa->Screen));
 
             if (!(amesa->visible_rp))
             {
