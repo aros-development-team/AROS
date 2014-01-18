@@ -485,6 +485,15 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
     APTR mem = block->buffer;
     UBYTE status;
 
+    /*
+     * For Identify commands, use polling instead of waiting for an IRQ.
+     * This is because some bad drives make us think that there are two
+     * devices on the bus when there is really only one, so when we send an
+     * Identify command to the phantom drive, we can't rely on getting an IRQ
+     */
+    BOOL use_irq = block->command != ATA_IDENTIFY_DEVICE
+        && block->command != ATA_IDENTIFY_ATAPI;
+
     if (FALSE == ata_SelectUnit(unit))
         return IOERR_UNITBUSY;
 
@@ -652,7 +661,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
     /*
      * wait for drive to complete what it has to do
      */
-    if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, TRUE, NULL))
+    if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, use_irq, NULL))
     {
         DERROR(bug("[ATA%02ld] ata_exec_cmd: Device is late - no response\n", unit->au_UnitNum));
         err = IOERR_UNITBUSY;
