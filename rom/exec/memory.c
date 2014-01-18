@@ -1131,7 +1131,7 @@ void InternalFreePooled(APTR poolHeader, APTR memory, IPTR memSize, struct Trace
         D(bug("[FreePooled] Deallocated chunk, %u free bytes in the puddle\n", mh->mh_Free));
 
         /* Is this MemHeader completely free now? */
-        if (mh->mh_Free == size)
+        if ((mh->mh_Free + mhac_GetCtxSize()) == size)
         {
             D(bug("[FreePooled] Puddle is empty, giving back to the system\n"));
 
