@@ -2200,23 +2200,20 @@ static void ata_ResetBus(struct ata_Bus *bus)
         }
         DINIT(bug("[ATA  ] ata_ResetBus: DEV1 1/2 Wait left after %d ms\n", 1000 - TimeOut));
 
-        if (DEV_NONE != bus->ab_Dev[1])
+        DINIT(bug("[ATA  ] ata_ResetBus: Wait for slave to clear BSY\n"));
+        TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
+        while ( 1 )
         {
-            DINIT(bug("[ATA  ] ata_ResetBus: Wait for slave to clear BSY\n"));
-            TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
-            while ( 1 )
-            {
-                if ((ata_ReadStatus(bus) & ATAF_BUSY) == 0)
-                    break;
-                ata_WaitTO(bus->ab_Timer, 0, 1000, 0);
-                if (!(--TimeOut)) {
-                    DINIT(bug("[ATA  ] ata_ResetBus: Slave device Timed Out!\n"));
-                    bus->ab_Dev[1] = DEV_NONE;
-                    break;
-                }
+            if ((ata_ReadStatus(bus) & ATAF_BUSY) == 0)
+                break;
+            ata_WaitTO(bus->ab_Timer, 0, 1000, 0);
+            if (!(--TimeOut)) {
+                DINIT(bug("[ATA  ] ata_ResetBus: Slave device Timed Out!\n"));
+                bus->ab_Dev[1] = DEV_NONE;
+                break;
             }
-            DINIT(bug("[ATA  ] ata_ResetBus: Wait left after %d ms\n", 1000 - TimeOut));
         }
+        DINIT(bug("[ATA  ] ata_ResetBus: Wait left after %d ms\n", 1000 - TimeOut));
     }
 
     if (DEV_NONE != bus->ab_Dev[0])
