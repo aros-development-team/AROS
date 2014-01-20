@@ -26,12 +26,7 @@
  * $FreeBSD: src/lib/msun/amd64/fenv.c,v 1.4 2007/01/05 07:15:26 das Exp $
  */
 
-#include <sys/cdefs.h>
-#include <sys/types.h>
-#ifndef __AROS__
-#include <machine/fpu.h>
-#endif
-#include <fenv.h>
+#include "fenv.h"
 
 const fenv_t __fe_dfl_env = {
 	{ 0xffff0000 | __INITIAL_FPUCW__,
@@ -114,7 +109,7 @@ feupdateenv(const fenv_t *envp)
 }
 
 int
-__feenableexcept(int mask)
+feenableexcept(int mask)
 {
 	int mxcsr, control, omask;
 
@@ -130,7 +125,7 @@ __feenableexcept(int mask)
 }
 
 int
-__fedisableexcept(int mask)
+fedisableexcept(int mask)
 {
 	int mxcsr, control, omask;
 
@@ -144,6 +139,3 @@ __fedisableexcept(int mask)
 	__ldmxcsr(mxcsr);
 	return (~omask);
 }
-
-__weak_reference(__feenableexcept, feenableexcept);
-__weak_reference(__fedisableexcept, fedisableexcept);
