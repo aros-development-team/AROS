@@ -15,10 +15,10 @@ DIRS          := $(AROS_INCLUDES) \
                  $(AROS_INCLUDES)/sys
 
 #MM- includes : network-includes
-#MM- network-includes : network-includes-setup network-includes-copy
+#MM- network-includes : network-includes-copy
 
-#MM network-includes-copy : network-includes
-network-includes-copy : setup $(DEST_INCLUDES)
+#MM network-includes-copy : network-includes-setup
+network-includes-copy :
 	@$(NOP)
 
 #MM
