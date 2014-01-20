@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -64,7 +64,7 @@
 #define inputFile_path          "Prefs/Input\""
 #define prefssrc_path           "ENV:SYS"
 #define prefs_path              "Prefs/Env-Archive/SYS"
-#define ARCH_PATH               "Arch/pc"
+#define ARCH_PATH               "boot/pc"
 #define GRUB_PATH               "grub"
 
 #define locale_prfs_file        "locale.prefs"  /* please note the suffixed \" */
@@ -794,7 +794,7 @@ IPTR Install__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                     tmp_grub = AllocVec(100, MEMF_CLEAR | MEMF_PUBLIC);
 
                     GET(dest_volume, MUIA_String_Contents, &option);
-                    sprintf(tmp_grub, "%s:Arch/pc/grub",
+                    sprintf(tmp_grub, "%s:boot/pc/grub",
                         (CONST_STRPTR) option);
 
                     /* Guess the best disk to install GRUB's bootblock to */
@@ -2008,7 +2008,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         TEXT tmp[100];
         BOOL success = FALSE;
         CONST_STRPTR core_dirs[] = {
-            "Arch", "Arch",
+            "boot", "boot",
             "C", "C",
             "Classes", "Classes",
             "Devs", "Devs",
