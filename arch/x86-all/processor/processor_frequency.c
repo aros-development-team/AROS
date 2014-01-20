@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -44,17 +44,13 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
     ssp = SuperState();
 
     /* Procedure for Pentium 4 family (NetBurst) */
-    if (info->Family == CPUFAMILY_INTEL_PENTIUM4)
+    if ((info->Family == CPUFAMILY_INTEL_PENTIUM4) && (info->Model >= 2))
     {
         ULONG eax, edx;
         UQUAD fsb = 0;
         ULONG mult = 0;
 
-        /* Works only on model >= 2 */
-        if (info->Model < 2)
-            return;
-
-        /* This procesure calculates the maximum frequency */
+        /* This procedure calculates the maximum frequency */
 
         rdmsr(MSR_P4_EBC_FREQUENCY_ID, &eax, &edx);
 
@@ -87,7 +83,7 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
     /* Procedure for Pentium M (part of Pentium Pro) family */
     if ((info->Family == CPUFAMILY_INTEL_PENTIUM_PRO) &&
         (
-        (info->Model == 0x09) | /* Pentium M */ 
+        (info->Model == 0x09) || /* Pentium M */ 
         (info->Model == 0x0D)   /* Pentium M */
         )
         )
@@ -111,10 +107,10 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
     /* Procedure for Core (part of Pentium Pro) family (ATOM, Core, Core Duo) */
     if ((info->Family == CPUFAMILY_INTEL_PENTIUM_PRO) &&
         (
-        (info->Model == 0x0E) | /* Core Duo */ 
-        (info->Model == 0x0F) | /* Core 2 Duo */
-        (info->Model == 0x16) | /* Core Celeron */
-        (info->Model == 0x17) | /* Core 2 Extreeme */
+        (info->Model == 0x0E) || /* Core Duo */ 
+        (info->Model == 0x0F) || /* Core 2 Duo */
+        (info->Model == 0x16) || /* Core Celeron */
+        (info->Model == 0x17) || /* Core 2 Extreme */
         (info->Model == 0x1C)   /* ATOM */
         )
         )
@@ -123,7 +119,7 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
         UQUAD fsb = 0;
         ULONG mult = 0;
 
-        /* This procesure calculates the maximum frequency */
+        /* This procedure calculates the maximum frequency */
 
         rdmsr(MSR_CORE_FSB_FREQ, &eax, &edx);
 
@@ -154,9 +150,9 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
     /* Procedure for Nahalem (part of Pentium Pro) family (i7, i5, i3) */
     if ((info->Family == CPUFAMILY_INTEL_PENTIUM_PRO) &&
         (
-        (info->Model == 0x1A) | /* Core i7 */ 
-        (info->Model == 0x1E) | /* ? */
-        (info->Model == 0x1F) | /* ? */
+        (info->Model == 0x1A) || /* Core i7 */ 
+        (info->Model == 0x1E) || /* ? */
+        (info->Model == 0x1F) || /* ? */
         (info->Model == 0x2E)   /* ? */
         )
         )
@@ -164,7 +160,7 @@ static VOID ReadIntelMaxFrequencyInformation(struct X86ProcessorInformation * in
         ULONG eax, edx;
         ULONG mult = 0;
 
-        /* This procesure calculates the maximum frequency */
+        /* This procedure calculates the maximum frequency */
 
         rdmsr(MSR_NAHALEM_PLATFORM_INFO, &eax, &edx);
 
@@ -206,34 +202,42 @@ static VOID ReadAMDMaxFrequencyInformation(struct X86ProcessorInformation * info
         info->MaxFSBFrequency = 0;
     }
     
-    if ((info->Family == CPUFAMILY_AMD_K9) || (info->Family == CPUFAMILY_AMD_K8))
+    if ((info->Family == CPUFAMILY_AMD_K9)
+        || (info->Family == CPUFAMILY_AMD_K8))
     {
         ULONG eax, ebx, ecx, edx;
         ULONG cpufid = 0;
+        BOOL success = TRUE;
         
         /* BIOS and Kernel Developer's Guide for the AMD AthlonTM 64 and
             AMD OpteronTM Processors, page 382 */
 
         /* Check for power management features */
         if (info->CPUIDHighestExtendedFunction < 0x80000007)
-            return;
+            success = FALSE;
 
-        cpuid(0x80000007);
-        
-        /* Check avalability of FID */
-        if ((edx & 0x02) == 0)
-            return;
+        if (success)
+        {
+            cpuid(0x80000007);
 
-        /* It should be safe to read MSR_K8_FIDVID_STATUS */
-        rdmsr(MSR_K8_FIDVID_STATUS, &eax, &edx);
+            /* Check avalability of FID */
+            if ((edx & 0x02) == 0)
+                success = FALSE;
+        }
 
-        cpufid = (eax >> 16) & 0x3F;
+        if (success)
+        {
+            /* It should be safe to read MSR_K8_FIDVID_STATUS */
+            rdmsr(MSR_K8_FIDVID_STATUS, &eax, &edx);
 
-        /* Note: K8 has only even multipliers, but they match K9 ones */
-        info->MaxCPUFrequency = FSB_200 * (4 * 2 + cpufid) / 2;
+            cpufid = (eax >> 16) & 0x3F;
 
-        /* Note: FSB is not a valid concept with K8, K9 processors */
-        info->MaxFSBFrequency = 0;        
+            /* Note: K8 has only even multipliers, but they match K9 ones */
+            info->MaxCPUFrequency = FSB_200 * (4 * 2 + cpufid) / 2;
+
+            /* Note: FSB is not a valid concept with K8, K9 processors */
+            info->MaxFSBFrequency = 0;        
+        }
     }
 
     UserState(ssp);
@@ -322,7 +326,7 @@ UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info)
     }
     else
     {
-	/* use PStates ?*/
+	/* use PStates? */
     }
 
 #endif
