@@ -2,30 +2,8 @@
 include $(TOP)/config/make.cfg
 
 INCLUDES      := $(call WILDCARD, *.h arpa/*.h bsdsocket/*.h clib/*.h defines/*.h libraries/*.h net/*.h netinet/*.h proto/*.h sys/*.h)
-DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
-DIRS          := $(AROS_INCLUDES) \
-                 $(AROS_INCLUDES)/arpa \
-                 $(AROS_INCLUDES)/bsdsocket \
-                 $(AROS_INCLUDES)/clib \
-                 $(AROS_INCLUDES)/defines \
-                 $(AROS_INCLUDES)/libraries \
-                 $(AROS_INCLUDES)/net \
-                 $(AROS_INCLUDES)/netinet \
-                 $(AROS_INCLUDES)/proto \
-                 $(AROS_INCLUDES)/sys
 
-#MM- includes : network-includes
-#MM- network-includes : network-includes-copy
+#MM- includes-copy : network-includes
 
-#MM network-includes-copy : network-includes-setup
-network-includes-copy :
-	@$(NOP)
-
-#MM
-network-includes-setup : $(DIRS)
-
-$(DIRS):
-	$(IF) $(TEST) ! -d "$@" ; then $(MKDIR) "$@" ; else $(NOP) ; fi
-
-$(AROS_INCLUDES)/%.h : %.h
-	@$(CP) $< $@
+%copy_includes mmake=network-includes \
+    includes=$(INCLUDES)
