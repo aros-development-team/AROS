@@ -15,7 +15,7 @@
 
     NAME */
 
-	AROS_LH1(ULONG, ShutdownA,
+	AROS_NTLH1(ULONG, ShutdownA,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, action, D0),
