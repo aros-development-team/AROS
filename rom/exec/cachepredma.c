@@ -17,7 +17,7 @@
     NAME */
 #include <proto/exec.h>
 
-	AROS_LH3(APTR, CachePreDMA,
+	AROS_NTLH3(APTR, CachePreDMA,
 
 /*  SYNOPSIS */
 	AROS_LHA(APTR,    address, A0),
