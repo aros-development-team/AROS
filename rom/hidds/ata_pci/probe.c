@@ -482,7 +482,11 @@ static int ata_pci_Scan(struct ataBase *base)
                     if (strstr(cmdline, "off"))
                     {
                         D(bug("[PCI-ATA] Disabling all ATA devices\n"));
-                        scanpci = scanlegacy = FALSE;
+#ifdef SUPPORT_LEGACY
+                        scanlegacy =
+#endif
+                        scanpci = FALSE;
+
                     }
                 }
             }
