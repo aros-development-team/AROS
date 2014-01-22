@@ -686,6 +686,7 @@ aros_config_aflags
 aros_config_cflags
 aros_arch_libs
 aros_compiler_libs
+spec_obj_format
 aros_object_format
 aros_shared_ld
 aros_shared_default
@@ -778,6 +779,7 @@ aros_kernel_ld
 aros_kernel_cxx
 aros_kernel_cc
 aros_kernel_cpp
+target_gcc_version
 ant
 android_tool
 CCACHE
@@ -890,7 +892,6 @@ enable_debug
 enable_distcc
 enable_ccache
 with_kernel_gcc_version
-with_gcc_version
 with_optimization
 with_paranoia
 enable_target_variant
@@ -906,6 +907,7 @@ with_elf_toolchain_prefix
 with_aros_toolchain
 enable_crosstools
 with_aros_toolchain_install
+with_use_gcc_version
 enable_objc
 with_cpu
 with_fpu
@@ -1603,8 +1605,6 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-kernel-gcc-version=VERSION
                           Use gcc-VERSION for building bootstrap
-  --with-gcc-version=VERSION
-                          Use gcc-VERSION for building AROS
   --with-optimization=FLAGS
                           Use optimization flags FLAGS (default=-O2).
   --with-paranoia=FLAGS   CC flags to enable paranoia
@@ -1633,6 +1633,8 @@ Optional Packages:
                           Specify prebuilt AROS toolchain
   --with-aros-toolchain-install=DIR
                           Where to install or search for cross tools binaries
+  --with-gcc-version=VERSION
+                          Use gcc-VERSION for building AROS
   --with-cpu=<spec>       Specify minumum CPU (default=$gcc_default_cpu).
   --with-fpu=<spec>       Specify minumum FPU (default=$gcc_default_fpu).
   --with-float=<spec>     Specify floating point ABI
@@ -7575,20 +7577,6 @@ fi
 $as_echo "$kernel_tool_version" >&6; }
 
 #-----------------------------------------------------------------------------
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific target gcc version to use" >&5
-$as_echo_n "checking what specific target gcc version to use... " >&6; }
-
-# Check whether --with-gcc-version was given.
-if test "${with_gcc_version+set}" = set; then :
-  withval=$with_gcc_version; target_tool_version="$withval"
-else
-  target_tool_version=""
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_tool_version" >&5
-$as_echo "$target_tool_version" >&6; }
-
-#-----------------------------------------------------------------------------
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking what optimization flags to use" >&5
 $as_echo_n "checking what optimization flags to use... " >&6; }
 
@@ -8588,6 +8576,55 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $AROS_CROSSTOOLSDIR" >&5
 $as_echo "$AROS_CROSSTOOLSDIR" >&6; }
 
+# Helper to identify gcc version
+
+
+#-----------------------------------------------------------------------------
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific target gcc version to use" >&5
+$as_echo_n "checking what specific target gcc version to use... " >&6; }
+
+# Check whether --with-use_gcc_version was given.
+if test "${with_use_gcc_version+set}" = set; then :
+  withval=$with_use_gcc_version; use_gcc_version="$withval"
+else
+  use_gcc_version=""
+fi
+
+if test "$use_gcc_version" = ""; then
+    if test "${crosstools}" = "no"; then
+      if test "x$aros_toolchain_install" != "x"; then
+
+  target_gcc_version=""
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking gcc version" >&5
+$as_echo_n "checking gcc version... " >&6; }
+if ${ax_cv_gcc_version+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}cpp -dumpversion`"
+    if test "x$ax_cv_gcc_version" = "x"; then :
+
+      ax_cv_gcc_version=""
+
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_gcc_version" >&5
+$as_echo "$ax_cv_gcc_version" >&6; }
+  target_gcc_version=$ax_cv_gcc_version
+
+
+      fi
+    fi
+    if test "$use_gcc_version" = ""; then
+        target_gcc_version="4.6.4"
+    fi
+else
+    target_gcc_version="$use_gcc_version"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_gcc_version" >&5
+$as_echo "$target_gcc_version" >&6; }
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to include Objective-C suppport" >&5
 $as_echo_n "checking whether to include Objective-C suppport... " >&6; }
 # Check whether --enable-objc was given.
@@ -8605,10 +8642,14 @@ else
     objc_target="no-objc"
 fi
 
+spec_obj_format="-m $aros_object_format"
 # Now process extra architecture-specific options.
 # Currently this is implemented only for ARM. We can specify which minimum CPU and FPU to use,\
 # as well as floating-point ABI.
 case "$aros_target_cpu" in
+*x86_64*)
+        spec_obj_format="%{!m32:-m elf_x86_64} %{m32:-m elf_i386}"
+    ;;
 arm)
         if test "$gcc_default_cpu" = ""; then
         gcc_default_cpu="armv6"
@@ -8664,8 +8705,7 @@ $as_echo "$aros_gcc_float_abi" >&6; }
     ;;
 esac
 
-# Some formats need custom ELF specs.
-# For example for x86_64 it is needed in order for -m32 switch to work correctly.
+# Some architectures may need custom ELF specs.
 if test -f $SRCDIR/config/${aros_object_format}-specs.in; then
     elf_specs_in=config/${aros_object_format}-specs.in
 else
@@ -8785,8 +8825,8 @@ fi
 if test "$kernel_tool_version" != ""; then
     kernel_tool_version="-$kernel_tool_version"
 fi
-if test "$target_tool_version" != ""; then
-    target_tool_version="-$target_tool_version"
+if test "$use_gcc_version" != ""; then
+    target_tool_version="-$target_gcc_version"
 fi
 
 #######################################################################
@@ -10812,7 +10852,7 @@ $as_echo_n "checking which target tools to use... " >&6; }
 if test "$crosstools" = "yes"; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_tool_prefix" >&5
 $as_echo "$target_tool_prefix" >&6; }
-    # We are are building AROS crosstools
+    # We are building AROS crosstools
     tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
     orig_target_cc="${tmp_tool_prefix}gcc${target_tool_version}"
     orig_target_cxx="${tmp_tool_prefix}g++${target_tool_version}"
@@ -14452,6 +14492,7 @@ fi
 
 
 
+
 # Delinting target compiler flags
 
 
@@ -14524,6 +14565,7 @@ fi
 
 
 # C compiler related
+
 
 
 #ObjC compiler related

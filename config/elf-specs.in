@@ -5,16 +5,18 @@
 
 
 *aros_include:
-%{!nostdinc:%{!nostdc:%{!noposixc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include/aros/posixc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include/aros/stdc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include}
+%{!nostdinc:%{!nostdc:%{!noposixc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include/aros/posixc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include  -isystem @AROS_CROSSTOOLSDIR@/lib/gcc/@aros_target_cpu@-aros/@target_gcc_version@/include}
 
 *endfile:
 
 
 *link:
--m @aros_object_format@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib
+@spec_obj_format@ -L@AROS_CROSSTOOLSDIR@/lib/gcc/@aros_target_cpu@-aros/@target_gcc_version@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib
+
+%include_noerr <@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib/auto>
 
 *lib:
--lmui -lamiga -larossupport -lamiga %{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -llibinit -lautoinit %{nostdc:-lstdc.static}
+%(autolib) %{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc} %{!nosysbase:-lexec} %{nostdc:-lstdc.static}
 
 *libgcc:
 @aros_arch_libs@ -lgcc

@@ -1,4 +1,4 @@
-#   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+#   Copyright © 1995-2014, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: target.cfg - an autoconf output file for make variables.
@@ -14,6 +14,7 @@ SHARED_MOD	:= @aros_shared_default@
 TARGET_CPP	:= @aros_target_cpp@
 KERNEL_CPP	:= @aros_kernel_cpp@
 TARGET_CC	:= @aros_cc_pre@ @aros_target_cc@
+TARGET_GCC_VER  := @target_gcc_version@
 KERNEL_CC	:= @aros_kernel_cc@
 TARGET_CXX	:= @aros_target_cxx@
 TARGET_AS	:= @aros_target_as@
