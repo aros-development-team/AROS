@@ -4,11 +4,15 @@
 #
 include $(TOP)/config/make.cfg
 
+# list of automatically linked libs - included by the gcc spec file.
+AUTOFILE := \
+	auto
+
 # libraries_nolibs must come BEFORE libraries
 LIBHANDLINGFILES := \
 	functions \
 	libraries_nolibs \
-	libraries \
+	libraries
 
 STARTUPFILES := \
 	__showerror \
@@ -29,9 +33,11 @@ FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(STARTUPFILES) $(MISCFILES)
 
 #MM- core-linklibs : linklibs-autoinit
 #MM- linklibs: linklibs-autoinit
-#MM linklibs-autoinit : includes includes-copy kernel-expansion-includes
+#MM linklibs-autoinit : includes includes-copy kernel-expansion-includes linklibs-autoinit-autofile
 
 %copy_includes includes="autoinit.h detach.h" path=aros
+
+%copy_files_q mmake=linklibs-autoinit-autofile files=$(AUTOFILE) dst=$(AROS_LIB)
 
 %build_linklib mmake=linklibs-autoinit libname=autoinit files=$(FILES)
 
