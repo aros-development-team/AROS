@@ -479,7 +479,7 @@ int GetKernelSize(struct ELFNode *FirstELF, unsigned long *ro_size, unsigned lon
  * (elf_ptr_t)(uintptr_t) double-casting is needed because in some cases elf_ptr_t is an UQUAD,
  * while in most cases it's a pointer (see dos/elf.h).
  */
-int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *tracker, uintptr_t DefSysBase,
+int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, char *tracker_p, uintptr_t DefSysBase,
                void **kick_end, kernel_entry_fun_t *kernel_entry, struct ELF_ModuleInfo **kernel_debug)
 {
     struct ELFNode *n;
@@ -487,6 +487,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
     unsigned char need_entry = 1;
     struct ELF_ModuleInfo_t *mod;
     struct ELF_ModuleInfo_t *prev_mod = NULL;
+    struct KernelBSS_t *tracker = (struct KernelBSS_t *)tracker_p;
 
     kprintf("[ELF Loader] Loading kickstart...\n");
 
@@ -518,7 +519,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
 
                 if (sh[i].flags & SHF_WRITE)
                 {
-                    ptr_rw = load_hunk(file, &sh[i], (void *)ptr_rw, (struct KernelBSS_t **)&tracker);
+                    ptr_rw = load_hunk(file, &sh[i], (void *)ptr_rw, &tracker);
                     if (!ptr_rw)
                     {
                         DisplayError("%s: Error loading hunk %u!\n", n->Name, i);
@@ -527,7 +528,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
                 }
                 else
                 {
-                    ptr_ro = load_hunk(file, &sh[i], (void *)ptr_ro, (struct KernelBSS_t **)&tracker);
+                    ptr_ro = load_hunk(file, &sh[i], (void *)ptr_ro, &tracker);
                     if (!ptr_ro)
                     {
                         DisplayError("%s: Error loading hunk %u!\n", n->Name, i);
@@ -610,8 +611,8 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
     }
 
     /* Terminate the array of BSS sections */
-    ((struct KernelBSS_t *)tracker)->addr = 0;
-    ((struct KernelBSS_t *)tracker)->len  = 0;
+    tracker->addr = 0;
+    tracker->len  = 0;
 
     /* Return end of kickstart read-only area if requested */
     if (kick_end)
