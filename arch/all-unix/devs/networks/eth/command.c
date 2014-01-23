@@ -236,8 +236,9 @@ static BOOL eth_get_global_stats(struct IOSana2Req *req, struct eth_unit *unit) 
 
 static BOOL eth_broadcast(struct IOSana2Req *req, struct eth_unit *unit) {
     /* just fill in the broadcast address as the dest, and write as normal */
-    *((ULONG *) req->ios2_DstAddr) = 0xffffffff;
-    *((UWORD *) (req->ios2_DstAddr + 4)) = 0xffff;
+    char *addr = req->ios2_DstAddr;
+    *((ULONG *) addr) = 0xffffffff;
+    *((UWORD *) (addr + 4)) = 0xffff;
 
     return eth_write(req, unit);
 }

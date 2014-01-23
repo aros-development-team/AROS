@@ -19,6 +19,7 @@ static void eth_receive(struct eth_base *ETHBase, struct eth_unit *unit)
     unsigned char buf[ETH_FRAME_LEN], *packet;
     int nread, ioerr;
     struct ethhdr *eth;
+    char *dest;
     WORD packet_type;
     struct eth_opener *opener, *opener_next;
     struct IOSana2Req *req, *req_next;
@@ -56,8 +57,9 @@ static void eth_receive(struct eth_base *ETHBase, struct eth_unit *unit)
     D(bug("[eth] [io:%d] packet type: 0x%04x\n", unit->num, packet_type));
 
     /* broadcast packets have the top 40 bits (5 bytes) set */
-    if ((*((ULONG *) (eth->h_dest)) == 0xffffffff) &&
-        (*((UWORD *) (eth->h_dest + 4)) == 0xffff)) {
+    dest = eth->h_dest;
+    if ((*((ULONG *) (dest)) == 0xffffffff) &&
+        (*((UWORD *) (dest + 4)) == 0xffff)) {
         D(bug("[eth] [io:%d] broadcast packet\n"));
         bcast = TRUE;
     }
