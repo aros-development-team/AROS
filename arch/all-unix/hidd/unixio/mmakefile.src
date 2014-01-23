@@ -8,6 +8,10 @@ USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT) \
 	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
+ifeq ($(ARCH),darwin)
+USER_CFLAGS += -D_FORTIFY_SOURCE=0
+endif
+
 ## The '-Wno-attributes' is here due to a gcc 4.5.x bug
 ## where its strcmp() builtin generates a number of spurious
 ## complaints with -O1 or higher optimizations enabled.
