@@ -20,6 +20,7 @@ static void tap_receive(struct tap_base *TAPBase, struct tap_unit *unit)
     int nread, ioerr;
     struct ethhdr *eth;
     WORD packet_type;
+    char *dest;
     struct tap_opener *opener, *opener_next;
     struct IOSana2Req *req, *req_next;
     BOOL bcast = FALSE, mcast = FALSE;
@@ -56,8 +57,9 @@ static void tap_receive(struct tap_base *TAPBase, struct tap_unit *unit)
     D(bug("[tap] [io:%d] packet type: 0x%04x\n", unit->num, packet_type));
 
     /* broadcast packets have the top 40 bits (5 bytes) set */
-    if ((*((ULONG *) (eth->h_dest)) == 0xffffffff) &&
-        (*((UWORD *) (eth->h_dest + 4)) == 0xffff)) {
+    dest = eth->h_dest;
+    if ((*((ULONG *) (dest)) == 0xffffffff) &&
+        (*((UWORD *) (dest + 4)) == 0xffff)) {
         D(bug("[tap] [io:%d] broadcast packet\n"));
         bcast = TRUE;
     }
