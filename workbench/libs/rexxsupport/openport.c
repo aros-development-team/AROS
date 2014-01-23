@@ -31,7 +31,7 @@ LONG rxsupp_openport(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
     if (data == NULL)
     {
         struct MsgPort *replyport, *rexxport, *port;
-        struct RexxMsg *msg2, *msg3;
+        struct RexxMsg *msg2 = NULL, *msg3;
         if (FindPort(ARG1(msg)) != NULL)
         {
 	    *argstring = CreateArgstring("0", 1);
