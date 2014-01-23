@@ -1143,7 +1143,7 @@ LONG DoExamineAll(struct emulbase *emulbase, struct filehandle *fh, struct ExAll
     struct ExAllData *last=NULL;
     STRPTR end=(STRPTR)ead+size;
     struct dirent *dir;
-    LONG error;
+    LONG error = 0;
 #ifndef HOST_OS_android
     SIPTR oldpos;
 #endif
