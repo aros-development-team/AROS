@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -31,6 +31,7 @@ struct MUI_ListviewData
     struct Hook selfnotify_hook;
     BOOL noforward;
     BOOL read_only;
+    BOOL select_change;
     IPTR multiselect;
     IPTR scroller_pos;
     struct MUI_EventHandlerNode ehn;
@@ -274,8 +275,13 @@ void Listview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Listview_DoubleClick:
             data->doubleclick = tag->ti_Data != 0;
             break;
+        case MUIA_Listview_SelectChange:
+            data->select_change = tag->ti_Data != 0;
+            break;
         }
     }
+
+    DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
 /**************************************************************************
@@ -311,6 +317,9 @@ IPTR Listview__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         return 1;
     case MUIA_Listview_List:
         STORE = (IPTR) data->list;
+        return 1;
+    case MUIA_Listview_SelectChange:
+        STORE = data->select_change;
         return 1;
     }
 
@@ -593,6 +602,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     }
 
     /* Change selected and active entries */
+    set(obj, MUIA_Listview_SelectChange, TRUE);
     if (clear)
     {
         DoMethod(list, MUIM_List_Select, MUIV_List_Select_All,
@@ -613,6 +623,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     if (select)
         DoMethod(list, MUIM_List_Select, MUIV_List_Select_Active, seltype,
             NULL);
+    set(obj, MUIA_Listview_SelectChange, FALSE);
 
     return result;
 }
