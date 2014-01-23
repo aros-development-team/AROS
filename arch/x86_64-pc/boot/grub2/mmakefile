@@ -6,13 +6,15 @@ include $(TOP)/config/make.cfg
 
 #MM- grub2-pc-x86_64: arch-common-grub2 grub2-iso-setup 
 
+MODULES_DEFAULT:=$(SRCDIR)/$(CURDIR)/../modules.default
+
 bootloader-grub2-pc-x86_64: $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
 bootloader-grub2gfx-pc-x86_64: $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
 
 $(AROSARCHDIR)/grub/grub.cfg: grub.cfg
-	@$(ECHO) Copying $@...
-	@$(CP) $< $@
+	@$(ECHO) Generating $@...
+	@$(SED) 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' $< > $@
 
 $(AROSDIR)/EFI/BOOT/grub/grub.cfg: grub-efi.cfg
-	@$(ECHO) Copying $@...
-	@$(CP) $< $@
+	@$(ECHO) Generating $@...
+	@$(SED) 's#@modules.default@#sed "s\#^\#    module2 \#g" $(MODULES_DEFAULT)#e' $< > $@
