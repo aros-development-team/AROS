@@ -5,10 +5,14 @@ include $(TOP)/config/make.cfg
 
 #MM grub-pc-x86_64: grub-quick grub-copy-stages
 
+MODULES_DEFAULT:=$(SRCDIR)/$(CURDIR)/../modules.default
+
 grub-pc-x86_64: $(AROSARCHDIR)/grub/menu.lst $(AROSARCHDIR)/grub/menu.lst.DH0
 
-$(AROSARCHDIR)/grub/menu.lst:
-		$(CP) menu.lst $(AROSARCHDIR)/grub/
+$(AROSARCHDIR)/grub/menu.lst: menu.lst
+	@$(ECHO) Generating $@...
+	@$(SED) 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' $< > $@
 
-$(AROSARCHDIR)/grub/menu.lst.DH0:
-		$(CP) menu.lst.DH0 $(AROSARCHDIR)/grub/
+$(AROSARCHDIR)/grub/menu.lst.DH0: menu.lst.DH0
+	@$(ECHO) Generating $@...
+	@$(SED) 's#@modules.default@#sed "s\#^\#    module /dh0\#g" $(MODULES_DEFAULT)#e' $< > $@
