@@ -132,7 +132,7 @@ struct uioPacket *linux_OpenPacket(struct LibCInterface *SysIFace, const char *i
             D(bug("%s: sd=%d\n", __func__, sd));
             if (sd >= 0) {
 
-                snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", interface);
+                strncpy(ifr.ifr_name, interface, sizeof(ifr.ifr_name));
                 ifr.ifr_name[sizeof(ifr.ifr_name)-1]=0;
 
                 if (SysIFace->ioctl(sd, SIOCGIFFLAGS, &ifr) >= 0) {
