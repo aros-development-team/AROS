@@ -64,6 +64,7 @@ USER_INCLUDES := \
             -I$(GENDIR)/$(CURDIR) \
 
 USER_CFLAGS := -ffast-math -DMAPI_ABI_HEADER=\"vgapi_tmp.h\" -DVEGA_VERSION_STRING=\"\"
+USER_CFLAGS += -Wno-strict-aliasing
 
 #MM
 workbench-libs-vega-generated : $(GENDIR)/$(CURDIR)/api_tmp.h $(GENDIR)/$(CURDIR)/vgapi_tmp.h
