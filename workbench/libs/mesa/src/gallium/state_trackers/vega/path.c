@@ -363,7 +363,7 @@ static struct polygon_array * path_get_fill_polygons(struct path *p, struct matr
    struct polygon *current = 0;
    VGfloat sx, sy, px, py, ox, oy;
    VGfloat x0, y0, x1, y1, x2, y2, x3, y3;
-   VGfloat data[8];
+   VGfloat data[8] = {};
    void *coords = (VGfloat *)p->control_points->data;
    struct array *array;
 
@@ -1230,7 +1230,7 @@ struct path * path_create_stroke(struct path *p,
    VGint i;
    VGfloat sx, sy, px, py, ox, oy;
    VGfloat x0, y0, x1, y1, x2, y2, x3, y3;
-   VGfloat data[8];
+   VGfloat data[8] = {};
    void *coords = (VGfloat *)p->control_points->data;
    int dashed = (p->base.ctx->state.vg.stroke.dash_pattern_num ? 1 : 0);
    struct dash_stroker stroker;
