@@ -11,7 +11,7 @@ struct Calendar_DATA
     struct MUI_EventHandlerNode ehn;
     struct ClockData	    	clockdata;
     CONST_STRPTR  	    	*daylabels;
-    CONST_STRPTR  	    	defdaylabels[12];
+    CONST_STRPTR  	    	defdaylabels[7];
     WORD    	    	    	cellwidth, base_cellwidth;
     WORD    	    	    	cellheight, base_cellheight;
     WORD    	    	    	mwday; /* weekday of 1st of month */

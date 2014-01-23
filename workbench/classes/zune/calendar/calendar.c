@@ -58,7 +58,7 @@ IPTR Calendar__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 	locale = LocaleBase ? OpenLocale(NULL) : NULL;
 	
     	data->daylabels = data->defdaylabels;
-	for(i = 0; i < 12; i++)
+	for(i = 0; i < 7; i++)
 	{
 	    if (locale)
 	    {
