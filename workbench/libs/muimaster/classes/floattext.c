@@ -69,7 +69,7 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
 {
     WORD width;
     struct Window *window;
-    UWORD i, count, pos, line_size, space_count = 0, extra_space_count,
+    UWORD i, count, pos, line_size = 0, space_count = 0, extra_space_count,
         space_width, space_multiple = 0, bonus_space_count, line_len,
         bonus_space_mod = 1, space_no_in = 0, space_no_out, stripped_pos,
         stripped_count, stripped_size = 0, control_count, old_control_count,
