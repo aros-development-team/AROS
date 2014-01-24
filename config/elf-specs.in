@@ -5,13 +5,13 @@
 
 
 *aros_include:
-%{!nostdinc:%{!nostdc:%{!noposixc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include/aros/posixc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include  -isystem @AROS_CROSSTOOLSDIR@/lib/gcc/@aros_target_cpu@-aros/@target_gcc_version@/include}
+%{!nostdinc:%{!nostdc:%{!noposixc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include/aros/posixc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/include}
 
 *endfile:
 
 
 *link:
-@spec_obj_format@ -L@AROS_CROSSTOOLSDIR@/lib/gcc/@aros_target_cpu@-aros/@target_gcc_version@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib
+@spec_obj_format@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib
 
 %include_noerr <@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Development/lib/auto>
 
