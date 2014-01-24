@@ -7,17 +7,16 @@ include $(TOP)/config/make.cfg
 #MM- grub2-pc-i386: arch-common-grub2 grub2-iso-setup
 
 MODULES_DEFAULT:=$(SRCDIR)/$(CURDIR)/../modules.default
+MODULE_BOOTSTRAP:=/$(AROS_DIR_ARCH)/bootstrap.gz
 
-bootloader-grub2-pc-i386: \
- $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
-bootloader-grub2gfx-pc-i386: \
- $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
+bootloader-grub2-pc-i386: $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
+bootloader-grub2gfx-pc-i386: $(AROSARCHDIR)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
 
 $(AROSARCHDIR)/grub/grub.cfg: grub.cfg
 	@$(ECHO) Generating $@...
-	@$(SED) 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' $< > $@
+	@$(SED) -e 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' $< > $@
 
 $(AROSDIR)/EFI/BOOT/grub/grub.cfg: grub-efi.cfg
 	@$(ECHO) Generating $@...
-	@$(SED) 's#@modules.default@#sed "s\#^\#    module2 \#g" $(MODULES_DEFAULT)#e' $< > $@
+	@$(SED) -e 's#@modules.default@#sed "s\#^\#    module2 \#g" $(MODULES_DEFAULT)#e' -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' $< > $@
 
