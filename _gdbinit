@@ -375,11 +375,11 @@ define loadmod
     end_log
     shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
     log_to_file loadseg.tmp on
-    printf "add-symbol-file "
+    printf "add-symbol-file \""
     end_log
     shell head -n1 segname.tmp >>loadseg.tmp
     log_to_file loadseg.tmp off
-    printf " %s", $this_mod->m_seggdbhlp
+    printf "\" %s", $this_mod->m_seggdbhlp
     end_log
 
     source loadseg.tmp
