@@ -32,10 +32,11 @@ ifeq ($(AROS_TARGET_BOOTLOADER),grub2gfx)
 BOOTLOADER_ELTORITO_REL := $(AROS_DIR_ARCH)/grub/i386-pc/grub2_eltorito
 endif
 
-PC_BOOT_FILES  := bootstrap.gz kernel.gz aros-bsp.pkg.gz aros-legacy.pkg.gz
-ARCH_BOOT_FILE := aros-base.pkg.gz aros-fs.pkg.gz poseidon.pkg.gz
-ISO_DEPS := $(addprefix $(AROSARCHDIR)/, $(PC_BOOT_FILES)) \
-    $(addprefix $(AROSDIR)/Arch,$(ARCH_BOOT_FILES))
+MODULES_DEFAULT := $(SRCDIR)/$(CURDIR)/../modules.default
+BOOTSTRAP_BOOT_FILES := bootstrap.gz
+DEFAULT_BOOT_FILES := $(shell cat $(MODULES_DEFAULT))
+ISO_DEPS := $(addprefix $(AROSARCHDIR)/, $(BOOTSTRAP_BOOT_FILES)) \
+    $(addprefix $(AROSDIR),$(DEFAULT_BOOT_FILES))
 
 $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
 $(warning LANG = $(LANG))
