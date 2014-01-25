@@ -26,9 +26,15 @@ ifeq ($(AROS_TARGET_BOOTLOADER),grub2gfx)
 BOOTLOADER_ELTORITO_REL := $(AROS_DIR_ARCH)/grub/i386-pc/grub2_eltorito
 endif
 
+MODULES_DEFAULT := $(SRCDIR)/$(CURDIR)/../modules.default
+BOOTSTRAP_BOOT_FILES := bootstrap.gz
+DEFAULT_BOOT_FILES := $(shell cat $(MODULES_DEFAULT))
+ISO_DEPS := $(addprefix $(AROSARCHDIR)/, $(BOOTSTRAP_BOOT_FILES)) \
+    $(addprefix $(AROSDIR),$(DEFAULT_BOOT_FILES))
+
 $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
 
-$(TARGET_ISO):
+$(TARGET_ISO): $(ISO_DEPS)
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(DISTDIR)"
