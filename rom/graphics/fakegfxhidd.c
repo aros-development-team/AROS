@@ -1393,7 +1393,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     }
 
     w2end = data->fb_width - width;
-    h2end = data->fb_height - width;
+    h2end = data->fb_height - height;
 
     if (x > w2end)
     {
