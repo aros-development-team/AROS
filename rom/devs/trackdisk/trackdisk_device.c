@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Amigastyle device for trackdisk
+    Desc: Amiga-style device for trackdisk
     Lang: English
 */
 
@@ -56,7 +56,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     struct ExpansionBase *ExpansionBase = NULL;
     struct DeviceNode *devnode;
     IPTR *pp;
-    TEXT dosdevname[4] = "DF0", *handler = "afs.handler";
+    TEXT dosdevname[4] = "DF0", *handler = "afs-handler";
     UWORD len;
 
     /* Try to get memory for structure */
@@ -137,7 +137,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
                         AROS_BSTR_MEMSIZE4LEN(len), MEMF_PUBLIC | MEMF_CLEAR)
                     );
 
-		    if (devnode->dn_Name != NULL)
+		    if (devnode->dn_Handler != BNULL)
 		    {
                         CopyMem(handler, AROS_BSTR_ADDR(devnode->dn_Handler),
                             len);
@@ -259,10 +259,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
 
     for (i=0;i<TD_NUMUNITS;i++)
     {
-	/* We only want 3.5" 1.44Mb drives */
+	/* We only want 3.5" 1.44MB drives */
 	if (((drives >> (4*i))&0x0f) == 4)
 	{
-	    kprintf("[Floppy] Unit %d is a 1.44Mb drive\n",i);
+	    kprintf("[Floppy] Unit %d is a 1.44MB drive\n",i);
 	    TD_InitUnit(i,TDBase);
 	}
     }
