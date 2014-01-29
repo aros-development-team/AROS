@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -62,7 +62,6 @@ static long internalBootCliHandler(void);
         struct DosLibrary *, DOSBase, 154, Dos)
 
 /*  FUNCTION
-
         Set up the first shell process.
 
         Currently, no DOS Packet arguments are used by this
@@ -74,15 +73,12 @@ static long internalBootCliHandler(void);
         has started.
     
     INPUTS
-
-        dp -- startup arguments specified as a packet
+        dp - startup arguments specified as a packet
 
     RESULT
-
         RETURN_OK on success, ERROR_* (from dp_Res2) on failure.
 
     NOTES
-
         This function is internal to AROS, and should never be
         called by user space.
 
@@ -332,11 +328,11 @@ static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResour
     if (AddDosEntry((struct DosList *)dn) != DOSFALSE)
     {
         /*
-         * Do not check for ANDF_STARTPROC because:
+         * Do not check for ADNF_STARTPROC because:
          * a) On the Amiga ADNF_STARTPROC was not present in KS 1.3 and earlier, there was no deferred mount.
          * b) In fact if we have something in ExpansionBase, we for sure want it to be mounted.
          */
-        D(bug("Dos/CliInit: Added to DOS list, starting up handler... "));
+        D(bug("Dos/CliInit: Added to DOS list, starting up handler...\n"));
 
         if (RunHandler(dn, NULL, DOSBase))
         {
