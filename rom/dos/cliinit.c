@@ -176,15 +176,35 @@ static long internalBootCliHandler(void);
     AROS_LIBFUNC_EXIT
 } /* CliInit */
 
-/* Find the most recent version of the matching filesystem */
-static struct FileSysEntry *internalMatchFileSystemResourceHandler(struct FileSysResource *fsr, ULONG DosType)
+/* Find the most recent version of the matching filesystem
+ * We are assured from the calling function that either
+ * DosType != 0, or Handler != BNULL.
+ * We attempt to match first on DosType, then on Handler.
+ */
+static struct FileSysEntry *internalMatchFileSystemResourceHandler(struct FileSysResource *fsr, ULONG DosType, BPTR Handler)
 {
     struct FileSysEntry *fse, *best_fse = NULL;
 
     ForeachNode(&fsr->fsr_FileSysEntries, fse)
     {
-        if (fse->fse_DosType == DosType)
+        BOOL try_patch = FALSE;
+
+        if (DosType == 0)
         {
+            if (fse->fse_Handler != BNULL &&
+                (fse->fse_PatchFlags & FSEF_HANDLER))
+            {
+                try_patch = (strcmp(AROS_BSTR_ADDR(Handler),
+                                    AROS_BSTR_ADDR(fse->fse_Handler)) == 0)
+                            ? TRUE : FALSE;
+            }
+        }
+        else if (fse->fse_DosType == DosType)
+        {
+            try_patch = TRUE;
+        }
+
+        if (try_patch) {
             if (fse->fse_PatchFlags & (FSEF_HANDLER | FSEF_SEGLIST | FSEF_TASK))
             {
                 if (best_fse == NULL || fse->fse_Version > best_fse->fse_Version)
@@ -250,7 +270,7 @@ static void internalPatchBootNode(struct FileSysResource *fsr, struct DeviceNode
     /*
      * internalMatchFileSystemResourceHandler looks up the filesystem
      */
-    fse = internalMatchFileSystemResourceHandler(fsr, de->de_DosType);
+    fse = internalMatchFileSystemResourceHandler(fsr, de->de_DosType, dn->dn_Handler);
     if (fse != NULL)
     {
         D(bug("Dos/CliInit: found 0x%p in FileSystem.resource\n", fse));
