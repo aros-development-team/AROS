@@ -58,7 +58,7 @@ extern struct IntuitionBase * IntuitionBase;
     SEE ALSO
 	NewObject(), SetAttrs(),
 	"Basic Object-Oriented Programming System for Intuition" and
-	"boopsi Class Reference" Dokument.
+	"boopsi Class Reference" documentation.
 
     INTERNALS
 
