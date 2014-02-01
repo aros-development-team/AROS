@@ -44,8 +44,6 @@
 
     SEE ALSO
 
-    cxintern.h
-
     INTERNALS
 
     Private function.

@@ -37,7 +37,7 @@ extern struct Library * ArosBase;
     BUGS
 
     SEE ALSO
-	aros.library/ArosInquire()
+	aros.library/ArosInquireA()
 
     INTERNALS
 

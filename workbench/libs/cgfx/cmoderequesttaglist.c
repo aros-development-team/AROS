@@ -64,7 +64,7 @@
         This function is not implemented.
 
     SEE ALSO
-        graphics.library/AslRequest()
+        asl.library/AslRequest()
 
     INTERNALS
 

@@ -47,8 +47,8 @@
     BUGS
 
     SEE ALSO
-	boopsi.library/NewObject(), boopsi.library/SetAttrs(), boopsi.library/GetAttr(),
-	boopsi.library/DisposeObject(), DoMethodA(),
+	intuition.library/NewObjectA(), intuition.library/SetAttrsA(), intuition.library/GetAttr(),
+	intuition.library/DisposeObject(), DoMethodA(),
 	DoSuperMethodA(), "Basic Object-Oriented Programming System for
 	Intuition" and the "boopsi Class Reference" Dokument.
 
@@ -152,8 +152,8 @@
     BUGS
 
     SEE ALSO
-	boopsi.library/NewObject(), boopsi.library/SetAttrs(), boopsi.library/GetAttr(),
-	boopsi.library/DisposeObject(), DoMethodA(),
+	intuition.library/NewObjectA(), intuition.library/SetAttrsA(), intuition.library/GetAttr(),
+	intuition.library/DisposeObject(), DoMethodA(),
 	DoSuperMethodA(), "Basic Object-Oriented Programming System for
 	Intuition" and the "boopsi Class Reference" Dokument.
 
