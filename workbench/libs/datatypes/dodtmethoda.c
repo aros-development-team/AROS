@@ -51,7 +51,7 @@
 
     SEE ALSO
 
-    intuition.library/DoGadgetMethod()
+    intuition.library/DoGadgetMethodA()
 
     INTERNALS
 

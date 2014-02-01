@@ -55,7 +55,7 @@ struct FreeLevel
     BUGS
 
     SEE ALSO
-	exec.library/Open(), exec.library/Close(), ReadByte(), ReadWord(),
+	dos.library/Open(), dos.library/Close(), ReadByte(), ReadWord(),
 	ReadLong(), ReadFloat(),
 	ReadString(), ReadStruct(), WriteByte(), WriteWord(), WriteLong(),
 	WriteFloat(), WriteDouble(), WriteString(), WriteStruct()

@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	exec.library/Abort(), exec.library/SendIO(), exec.library/DoIO()
+	exec.library/AbortIO(), exec.library/SendIO(), exec.library/DoIO()
 
     INTERNALS
 
