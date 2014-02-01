@@ -50,7 +50,7 @@
 	intuition.library/NewObjectA(), intuition.library/SetAttrsA(), intuition.library/GetAttr(),
 	intuition.library/DisposeObject(), DoMethodA(),
 	DoSuperMethodA(), "Basic Object-Oriented Programming System for
-	Intuition" and the "boopsi Class Reference" Dokument.
+	Intuition" and the "boopsi Class Reference" documentation.
 
     INTERNALS
 	HPPA: Allocate a structure which can contain all IPTRs between
@@ -155,7 +155,7 @@
 	intuition.library/NewObjectA(), intuition.library/SetAttrsA(), intuition.library/GetAttr(),
 	intuition.library/DisposeObject(), DoMethodA(),
 	DoSuperMethodA(), "Basic Object-Oriented Programming System for
-	Intuition" and the "boopsi Class Reference" Dokument.
+	Intuition" and the "boopsi Class Reference" documentation.
 
     INTERNALS
 	Allocate a structure which can contain all tags until the first

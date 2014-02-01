@@ -56,7 +56,7 @@
 	intuition.library/NewObjectA(), intuition.library/DisposeObject(),
 	intuition.library/GetAttr(), intuition.library/MakeClass(),
 	"Basic Object-Oriented Programming System for Intuition" and
-	"boopsi Class Reference" Dokument.
+	"boopsi Class Reference" documentation.
 
     INTERNALS
 
