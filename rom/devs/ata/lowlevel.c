@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -2135,7 +2135,7 @@ static void ata_ResetBus(struct ata_Bus *bus)
 
     /*
      * Set and then reset the soft reset bit in the Device Control
-     * register.  This causes device 0 be selected.
+     * register. This causes device 0 to be selected.
      */
     DINIT(bug("[ATA  ] ata_ResetBus()\n"));
 
@@ -2232,7 +2232,7 @@ void ata_InitBus(struct ata_Bus *bus)
      */
     bus->ab_Timer = ata_OpenTimer(bus->ab_Base);
 
-    DINIT(bug("[ATA  ] ata_InitBus(%d)\n", bus->ab_BusNum));
+    DINIT(bug("[ATA  ] ata_InitBus(%p)\n", bus));
 
     bus->ab_Dev[0] = DEV_NONE;
     bus->ab_Dev[1] = DEV_NONE;
