@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <devices/trackdisk.h>
 #include <dos/dos.h>
 #include <prefs/trackdisk.h>
@@ -48,18 +53,20 @@ void ReadTDPrefs(void)
 {
     int i;
     struct TDU_PublicUnit *tdu;
-    
-    for (i = 0; i < TD_NUMUNITS; i++) {
-	TDPrefs[i].PubFlags = 0;
-	TDPrefs[i].RetryCnt = 3;
-    }
-    LoadPrefs();
-    for (i = 0; i < TD_NUMUNITS; i++) {
-	if (!OpenDevice("trackdisk.device", i, &TDIO, 0)) {
-	    tdu = (struct TDU_PublicUnit *)TDIO.io_Unit;
-	    tdu->tdu_PubFlags = TDPrefs[i].PubFlags;
-	    tdu->tdu_RetryCnt = TDPrefs[i].RetryCnt;
-	    CloseDevice(&TDIO);
-	}
+
+    if (FindResident(TD_NAME)) {
+        for (i = 0; i < TD_NUMUNITS; i++) {
+            TDPrefs[i].PubFlags = 0;
+            TDPrefs[i].RetryCnt = 3;
+        }
+        LoadPrefs();
+        for (i = 0; i < TD_NUMUNITS; i++) {
+            if (!OpenDevice(TD_NAME, i, &TDIO, 0)) {
+                tdu = (struct TDU_PublicUnit *)TDIO.io_Unit;
+                tdu->tdu_PubFlags = TDPrefs[i].PubFlags;
+                tdu->tdu_RetryCnt = TDPrefs[i].RetryCnt;
+                CloseDevice(&TDIO);
+            }
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -8,6 +8,6 @@
 
 
 #define VERSION 	1
-#define REVISION 	2
-#define DATESTR 	"5.4.2001"
-#define VERSIONSTR	"$VER: IPrefs 1.2 (" DATESTR ")"
+#define REVISION 	3
+#define DATESTR 	"2.2.2014"
+#define VERSIONSTR	"$VER: IPrefs 1.3 (" DATESTR ")"
