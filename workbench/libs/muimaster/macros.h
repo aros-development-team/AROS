@@ -2,7 +2,7 @@
 #define _MUI_MACROS_H
 
 /*
-    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Macros available in original MUI and also some additional ones.
@@ -364,7 +364,7 @@
     attr, (IPTR)(value), TAG_DONE)
 #define nnfset(obj, attr, value) SetAttrs(obj, MUIA_Group_Forward, FALSE, \
     MUIA_NoNotify, TRUE, attr, (IPTR)(value), TAG_DONE)
-#define superset(obj, attr, value) SetSuperAttrs(OCLASS(obj), obj, \
+#define superset(cl, obj, attr, value) SetSuperAttrs(cl, obj, \
     attr, (IPTR)(value), TAG_DONE)
 
 /* Some aliases... */

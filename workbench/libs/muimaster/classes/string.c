@@ -1,5 +1,5 @@
 /* 
-    Copyright © 2003-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1640,8 +1640,8 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 set(obj, MUIA_String_Acknowledge, buf);
 
                 /* Notify listeners of new integer value (if any) */
-                StrToLong(buf, &val);
-                superset(obj, MUIA_String_Integer, val);
+                if (StrToLong(buf, &val) >= 0)
+                    superset(cl, obj, MUIA_String_Integer, val);
             }
             break;
 
