@@ -168,10 +168,15 @@ int retval = 0;
 
   fd1 = fopen(file1,"rb");
   if(!fd1)
+  {
     return -1;
+  }
   fd2 = fopen(file2,"rb");
   if(!fd2)
+  {
+    fclose(fd1);
     return -2;
+  }
   do
   {
     cnt1 = fread(buffer1,1,1,fd1);
@@ -197,12 +202,16 @@ char *bakname;
   {
     /* Couldn't stat old file -- assume non-existent */
     rename(new,old);
+    free(statold);
+    free(statnew);
     return;
   }
   if(stat(new,statnew))
   {
     /* Couldn't stat new file -- this shouldn't happen */
     fprintf( stderr, "Couldn't stat() file %s!\n", new );
+    free(statold);
+    free(statnew);
     exit(-1);
   }
   bakname = malloc( (strlen(old)+5) * sizeof(char) );
@@ -218,8 +227,12 @@ char *bakname;
     rename(new,old);
   }
   else
+  {
     remove(new);
+  }
   free(bakname);
+  free(statold);
+  free(statnew);
 }
 
 enum libtype
@@ -265,7 +278,7 @@ FILE *fd;
 int num, len, i;
 char *line, *word;
 char **words = NULL;
-struct libconf * lc = calloc (1, sizeof (struct libconf));
+struct libconf * lc;
 
   fd = fopen((file?file:"lib.conf"),"rb");
   if(!fd)
@@ -273,6 +286,7 @@ struct libconf * lc = calloc (1, sizeof (struct libconf));
     fprintf( stderr, "Couldn't open %s!\n", (file?file:"lib.conf") );
     return NULL;
   }
+  lc = calloc (1, sizeof (struct libconf));
   while( (line = get_line(fd)) )
   {
     num = get_words(line,&words);
@@ -400,6 +414,7 @@ struct libconf * lc = calloc (1, sizeof (struct libconf));
     }
     free(line);
   }
+  fclose(fd);
 
   if( lc->libname == NULL )
   {
@@ -432,7 +447,7 @@ struct libconf * lc = calloc (1, sizeof (struct libconf));
   if( lc->type == 0 )
     lc->type = t_library;
 
-    return lc;
+  return lc;
 }
 
 /*
@@ -522,10 +537,15 @@ int i;
   if(!fd)
   {
     fprintf( stderr, "Couldn't open file %s!\n", "libdefs.h.new" );
+    free(date);
     return -1;
   }
   if(!(lc = parse_libconf(conffile)) )
+  {
+    fclose(fd);
+    free(date);
     return(-1);
+  }
   if( lc->copyright == NULL )
   {
     lc->copyright = strdup("");
@@ -612,6 +632,7 @@ int i;
   fprintf( fd, "#define COPYRIGHT_STRING \"%s\"\n", lc->copyright );
   fprintf( fd, "#endif /* %s */\n", lc->define );
 
+  free(date);
   fclose(fd);
 
 return 0;
@@ -1053,11 +1074,11 @@ struct pragma_description * parse_pragmas(char * filename)
 					
 					if (substr[0] == '(') {
 						struct pragma_description * pd = calloc(1,sizeof(struct pragma_description));
-						pd->offset = 0xffff; // sign for user function
 						substr += 1;
 						substr = skipstr(substr,' ',1);
 						if (NULL != pd) {
 							char * lastchar;
+							pd->offset = 0xffff; // sign for user function
 							pd->next = base_pd;
 							base_pd = pd;
 							/*
