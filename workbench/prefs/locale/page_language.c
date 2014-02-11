@@ -1,5 +1,5 @@
 /*
-   Copyright © 2003-2013, The AROS Development Team. All rights reserved.
+   Copyright © 2003-2014, The AROS Development Team. All rights reserved.
    $Id$
  */
 
@@ -588,13 +588,8 @@ Object *Language__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     /* changed hooks */
     DoMethod
     (
-        data->preferred, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime, (IPTR) data->prefs,
-        3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-    );
-    DoMethod
-    (
-        data->available, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime, (IPTR) data->prefs,
-        3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        pref_list, MUIM_Notify, MUIA_List_Entries, MUIV_EveryTime,
+        (IPTR) data->prefs, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
     );
 
     return obj;

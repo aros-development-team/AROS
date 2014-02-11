@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2014, The AROS Development Team. All rights reserved.
    $Id$
  */
 
@@ -24,7 +24,7 @@
 #include "args.h"
 #include "prefs.h"
 
-#define VERSION "$VER: Locale 2.3 (16.12.2013) AROS Dev Team"
+#define VERSION "$VER: Locale 2.4 (11.2.2014) AROS Dev Team"
 
 /*********************************************************************************************/
 
