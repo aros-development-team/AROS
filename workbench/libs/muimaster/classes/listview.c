@@ -240,7 +240,7 @@ IPTR Listview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-void Listview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Listview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tag, *tags;
     IPTR no_notify = GetTagData(MUIA_NoNotify, FALSE, msg->ops_AttrList);
@@ -248,8 +248,7 @@ void Listview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (data->noforward)
     {
-        DoSuperMethodA(cl, obj, (Msg) msg);
-        return;
+        return DoSuperMethodA(cl, obj, (Msg) msg);
     }
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
@@ -281,7 +280,7 @@ void Listview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         }
     }
 
-    DoSuperMethodA(cl, obj, (Msg) msg);
+    return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
 /**************************************************************************
@@ -660,8 +659,7 @@ BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
     switch (msg->MethodID)
     {
     case OM_SET:
-        Listview__OM_SET(cl, obj, (struct opSet *)msg);
-        break;
+        return Listview__OM_SET(cl, obj, (struct opSet *)msg);
     case OM_GET:
         return Listview__OM_GET(cl, obj, (struct opGet *)msg);
     case OM_NEW:
