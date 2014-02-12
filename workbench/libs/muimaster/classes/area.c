@@ -938,7 +938,7 @@ void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo)
 {
     struct MUI_AreaData *data = muiAreaData(obj);
 
-    if ((_flags(obj) & MADF_FIXHEIGHT) && data->mad_HardHeight)
+    if ((_flags(obj) & MADF_FIXHEIGHT) && (data->mad_HardHeight > 0))
     {
         int h = data->mad_HardHeight + data->mad_subheight;
 
@@ -974,7 +974,7 @@ void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo)
             MinMaxInfo->MinHeight, MinMaxInfo->MaxHeight);
     }
 
-    if ((_flags(obj) & MADF_FIXWIDTH) && data->mad_HardWidth)
+    if ((_flags(obj) & MADF_FIXWIDTH) && (data->mad_HardWidth > 0))
     {
         int w = data->mad_HardWidth + data->mad_subwidth;
 
