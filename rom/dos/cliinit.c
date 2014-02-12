@@ -17,6 +17,7 @@
 #include <ctype.h>
 
 #include "dos_intern.h"
+#include "../expansion/expansion_intern.h"
 
 #ifdef DEBUG_DOSTYPE
 
@@ -110,17 +111,15 @@ static long internalBootCliHandler(void);
         dp = my_dp;
     }
 
-    if (dp == NULL)
-        return ERROR_NO_FREE_STORE;
-    
     reply_mp = CreateMsgPort();
-    if (reply_mp == NULL) {
+    seg = CreateSegList(internalBootCliHandler);
+    if (dp == NULL || reply_mp == NULL || seg == NULL) {
         if (my_dp)
             FreeDosObject(DOS_STDPKT, my_dp);
+        DeleteMsgPort(reply_mp);
+        UnLoadSeg(seg);
         return ERROR_NO_FREE_STORE;
     }
-
-    seg = CreateSegList(internalBootCliHandler);
 
     mp = CreateProc("Boot Mount", 0, seg, AROS_STACKSIZE);
     if (mp == NULL) {
@@ -145,7 +144,7 @@ static long internalBootCliHandler(void);
 
     /* We know that if we've received a reply packet,
      * that we've been able to execute the handler,
-     * therefore we can dispense with the 'CreateSegment'
+     * therefore we can dispense with the 'CreateSegList()'
      * stub.
      */
     UnLoadSeg(seg);
@@ -158,7 +157,7 @@ static long internalBootCliHandler(void);
 
     DeleteMsgPort(reply_mp);
 
-    D(bug("Dos/CliInit: Task returned Res1=%ld, Res2=%ld\n", Res1, Res2));
+    D(bug("Dos/CliInit: Process returned Res1=%ld, Res2=%ld\n", Res1, Res2));
 
     /* Did we succeed? */
     if (Res1 == DOSTRUE)
@@ -313,6 +312,7 @@ static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResour
     /* Found in DOS list? Do nothing. */
     if (dl)
     {
+        D(bug("Dos/CliInit: Found in DOS list, nothing to do\n"));
         return dl->dol_Task;
     }
 
@@ -322,6 +322,7 @@ static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResour
     if (!dn->dn_Handler && !dn->dn_SegList)
     {
         /* Don't know how to mount? Error... */
+        D(bug("Dos/CliInit: Don't know how to mount\n"));
         return NULL;
     }
 
@@ -343,6 +344,7 @@ static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResour
         D(bug("Failed\n"));
         RemDosEntry((struct DosList *)dn);
     }
+    D(else bug("Dos/CliInit: AddDosEntry() failed\n"));
 
     /*
      * TODO: AddDosEntry() can fail in case of duplicate name. In this case it would be useful
@@ -372,6 +374,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
      * then dosboot.resource will handle checking the
      * next device in the list.
      */
+    ObtainSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
     bn = (struct BootNode *)GetHead(&ExpansionBase->MountList);
     D(bug("Dos/CliInit: MountList head: 0x%p\n", bn));
 
@@ -410,6 +413,8 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
                 lock = BNULL;
                 err = ERROR_OBJECT_WRONG_TYPE; /* Something to more or less reflect "This disk is not bootable" */
             }
+            else
+                ExpansionBase->Flags |= EBF_DOSFLAG;
         }
         else
         {
@@ -445,6 +450,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
 
         FreeVec(name);
     }
+    ReleaseSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
 
     return lock;
 }
@@ -511,7 +517,7 @@ static long internalBootCliHandler(void)
         CloseLibrary(&ExpansionBase->LibNode);
         CloseLibrary(&DOSBase->dl_lib);
 
-        /* Immediately after ReplyPkt() DOSBase can be freed. So Forbid() until we really quit. */
+        /* Immediately after ReplyPkt() DOSBase can be freed. */
         internal_ReplyPkt(dp, mp, DOSFALSE, err);
         return err;
     }
