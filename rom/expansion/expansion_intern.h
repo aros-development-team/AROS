@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal data structures for expansion.library
@@ -22,7 +22,7 @@
 #define Z2SLOTS         240
 #define SLOTSPERBYTE    8
 
-/* I got this info from the 1.3 include file libraries/expansionbase.h */
+/* The following layout is compatible with the AOS 1.3 include files */
 
 struct IntExpansionBase
 {
@@ -35,10 +35,12 @@ struct IntExpansionBase
     struct List             eb_BoardList;
     struct List             eb_MountList;
 
-    struct SignalSemaphore  eb_BindSemaphore;
-
     UBYTE                   eb_z2Slots[Z2SLOTS/SLOTSPERBYTE];
     UWORD                   eb_z3Slot;
+    UBYTE                   eb_pad2[224];
+
+    struct SignalSemaphore  eb_BindSemaphore;
+    struct SignalSemaphore  eb_BootSemaphore;
 };
 
 #define IntExpBase(eb)	((struct IntExpansionBase*)(eb))

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a bootable device into the system.
@@ -116,19 +116,26 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct BootNode *bn;
+    struct BootNode *bn = NULL;
     APTR DOSBase;
     BOOL ok = FALSE;
 
-    if(deviceNode == NULL)
+    if (deviceNode == NULL)
         return ok;
 
     D(bug("[AddBootNode] Adding %b from Task %s\n", deviceNode->dn_Name, FindTask(NULL)->tc_Node.ln_Name));
 
+    ObtainSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+
     /* See if DOS is up and running... */
     DOSBase = OpenLibrary("dos.library", 0);
-    if (DOSBase == NULL)
+
+    /* See if DOS has chosen a boot device yet */
+    if (!(ExpansionBase->Flags & EBF_DOSFLAG))
     {
+        /* If DOS isn't up yet, that's fine */
+        ok = TRUE;
+
         /* Don't add the same node twice */
         ForeachNode(&ExpansionBase->MountList, bn)
         {
@@ -138,11 +145,14 @@
             {
                 /* so there was already an entry with that DOS name */
                 D(bug("[AddBootNode] Rejecting attempt to add duplicate device\n"));
-                return FALSE;
+                ok = FALSE;
             }
         }
 
-        if ((bn = AllocMem(sizeof(struct BootNode), MEMF_CLEAR | MEMF_PUBLIC)))
+        if (ok)
+            bn = AllocMem(sizeof(struct BootNode), MEMF_CLEAR | MEMF_PUBLIC);
+
+        if (bn != NULL)
         {
             bn->bn_Node.ln_Name = (STRPTR)configDev;
             bn->bn_Node.ln_Type = NT_BOOTNODE;
@@ -155,14 +165,9 @@
             Permit();
         }
         else
-        {
-            return FALSE;
-        }
-
-        /* If DOS isn't up yet, that's fine */
-        ok = TRUE;
+            ok = FALSE;
     }
-    else
+    else if (DOSBase != NULL)
     {
         /* We should add the filesystem to the DOS device list. It will
          * be usable from this point onwards.
@@ -201,8 +206,13 @@
             }
         }
 
-        CloseLibrary((struct Library *)DOSBase);
     }
+    else
+        Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
+
+    ReleaseSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+    if (DOSBase != NULL)
+        CloseLibrary((struct Library *)DOSBase);
 
     return ok;
 
