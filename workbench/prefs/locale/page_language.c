@@ -42,7 +42,7 @@ struct Language_DATA
     char  **strings_preferred;
     STRPTR *strings_charsets;
 
-    char  *result[10]; /* result array for Gadget2Prefs */
+    char  *langpreferred[10]; /* result array for MUIA_Language_Preferred */
 };
 
 struct MUI_CustomClass     *Language_CLASS;
@@ -606,6 +606,7 @@ static IPTR Language__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     switch (msg->opg_AttrID)
     {
         case MUIA_Language_Preferred: /* return array of preferred language strings */
+            memset(data->langpreferred, 0, sizeof(data->langpreferred));
             for (i = 0; i < 10; i++)
             {
                 struct LanguageEntry *entry;
@@ -617,13 +618,13 @@ static IPTR Language__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
                 {
                     if(Stricmp(langNative, entry->lve.node.ln_Name) == 0)
                     {
-                        data->result[i] = entry->lve.realname;
-                        D(bug("[LocalePrefs-LanguageClass] Get:                   BaseName = '%s'\n", i, data->result[i]));
+                        data->langpreferred[i] = entry->lve.realname;
+                        D(bug("[LocalePrefs-LanguageClass] Get:                   BaseName = '%s'\n", data->langpreferred[i]));
                         break;
                     }
                  }
             }
-            rc = (IPTR) data->result;
+            rc = (IPTR) data->langpreferred;
             break;
         case MUIA_Language_Characterset:
             GetAttr(MUIA_List_Active, data->cslist, (IPTR *)&i);
