@@ -116,7 +116,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct BootNode *bn = NULL;
+    struct BootNode *bn;
     APTR DOSBase;
     BOOL ok = FALSE;
 
@@ -150,9 +150,13 @@
         }
 
         if (ok)
+        {
             bn = AllocMem(sizeof(struct BootNode), MEMF_CLEAR | MEMF_PUBLIC);
+            if (bn == NULL)
+                ok = FALSE;
+        }
 
-        if (bn != NULL)
+        if (ok)
         {
             bn->bn_Node.ln_Name = (STRPTR)configDev;
             bn->bn_Node.ln_Type = NT_BOOTNODE;
