@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Install default reset handlers
@@ -76,16 +76,19 @@ AROS_INTH1(static ShutdownHandler, struct Interrupt *, handler)
 int Exec_ResetInit(struct IntExecBase *SysBase)
 {
     SysBase->ColdResetHandler.is_Node.ln_Pri = -64;
+    SysBase->ColdResetHandler.is_Node.ln_Name = "keyboard controller reset";
     SysBase->ColdResetHandler.is_Code = (VOID_FUNC)ColdResetHandler;
     SysBase->ColdResetHandler.is_Data = &SysBase->ColdResetHandler;
     AddResetCallback(&SysBase->ColdResetHandler);
 
     SysBase->WarmResetHandler.is_Node.ln_Pri = -64;
+    SysBase->WarmResetHandler.is_Node.ln_Name = "kernel reset";
     SysBase->WarmResetHandler.is_Code = (VOID_FUNC)WarmResetHandler;
     SysBase->WarmResetHandler.is_Data = &SysBase->WarmResetHandler;
     AddResetCallback(&SysBase->WarmResetHandler);
 
     SysBase->ShutdownHandler.is_Node.ln_Pri = -128;
+    SysBase->ShutdownHandler.is_Node.ln_Name = "HLT shutdown";
     SysBase->ShutdownHandler.is_Code = (VOID_FUNC)ShutdownHandler;
     SysBase->ShutdownHandler.is_Data = &SysBase->ShutdownHandler;
     AddResetCallback(&SysBase->ShutdownHandler);

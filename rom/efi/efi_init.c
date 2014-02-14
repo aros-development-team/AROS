@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -91,6 +91,7 @@ static int efi_Init(struct EFIBase *EFIBase)
 
         /* Install EFI reset/power-off mechanism */
         EFIBase->reset_handler.is_Node.ln_Pri = -56;
+        EFIBase->reset_handler.is_Node.ln_Name = "EFI reset";
         EFIBase->reset_handler.is_Code = (VOID_FUNC)ResetHandler;
         EFIBase->reset_handler.is_Data = EFIBase;
         AddResetCallback(&EFIBase->reset_handler);

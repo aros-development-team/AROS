@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Execute installed reset handlers.
@@ -31,6 +31,8 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
     for (i = (struct Interrupt *)IntSysBase->ResetHandlers.lh_Head; i->is_Node.ln_Succ;
          i = (struct Interrupt *)i->is_Node.ln_Succ)
     {
+        D(bug("[DoResetCallbacks] Calling handler: '%s'\n",
+            i->is_Node.ln_Name));
         i->is_Node.ln_Type = action;
         AROS_INTC1(i->is_Code, i->is_Data);
     }
