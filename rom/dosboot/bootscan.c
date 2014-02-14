@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Discover all mountable partitions
@@ -35,6 +35,7 @@
 #include LC_LIBDEFS_FILE
 
 #include "dosboot_intern.h"
+#include "../expansion/expansion_intern.h"
 
 #define uppercase(x) ((x >= 'a' && x <= 'z') ? (x & 0xdf) : x)
 
@@ -206,6 +207,8 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
     {
         struct BootNode *bn;
         changed = FALSE;
+
+        /* Note that we already have the mount list semaphore */
         ForeachNode(&ExpansionBase->MountList, bn)
         {
             if (stricmp(AROS_BSTR_ADDR(((struct DeviceNode*)bn->bn_DeviceNode)->dn_Name), name) == 0)
@@ -291,39 +294,26 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
         }
     }
 
-    if (!res)    
-        /* If no partitions were found for the DeviceNode, put it back */
-        Enqueue(&ExpansionBase->MountList, &bn->bn_Node);
+    if (res)
+        /* If any partitions were found for the DeviceNode, remove it */
+        Remove(&bn->bn_Node);
 }
 
 /* Scan all partitions manually for additional volumes that can be mounted. */
 void dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
 {
     APTR PartitionBase;
+    struct BootNode *bootNode, *temp;
 
     /* If we have partition.library, we can look for partitions */
     PartitionBase = OpenLibrary("partition.library", 2);
     if (PartitionBase)
     {
-    	/*
-    	 * Remove the whole chain of BootNodes from the list and re-initialize it.
-    	 * We will insert new nodes into it, based on old ones.
-    	 * What is done here is safe as long as we don't move the list itself.
-    	 * ln_Succ of the last node in chain points to the lh_Tail of our list
-    	 * which always contains NULL.
-    	 */
-	struct BootNode *bootNode = (struct BootNode *)LIBBASE->bm_ExpansionBase->MountList.lh_Head;
-
-	NEWLIST(&LIBBASE->bm_ExpansionBase->MountList);
-
-	while (bootNode->bn_Node.ln_Succ)
-	{
-	    /* Keep ln_Succ because it can be clobbered by reinsertion */
-	    struct BootNode *nextNode = (struct BootNode *)bootNode->bn_Node.ln_Succ;
-
-	    CheckPartitions(LIBBASE->bm_ExpansionBase, PartitionBase, SysBase, bootNode);
-	    bootNode = nextNode;
-	}
+        ObtainSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+        ForeachNodeSafe (&LIBBASE->bm_ExpansionBase->MountList, bootNode, temp)
+            CheckPartitions(LIBBASE->bm_ExpansionBase, PartitionBase, SysBase,
+                bootNode);
+        ReleaseSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
 
 	CloseLibrary(PartitionBase);
     }

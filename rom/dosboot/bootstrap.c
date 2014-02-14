@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot AROS
@@ -36,6 +36,7 @@
 #include LC_LIBDEFS_FILE
 
 #include "dosboot_intern.h"
+#include "../expansion/expansion_intern.h"
 
 #ifdef __mc68000
 
@@ -244,7 +245,7 @@ static inline void dosboot_BootDos(void)
 {
     struct Resident *DOSResident;
 
-    /* Initialize dos.library manually. This is what Workbench floppy bootblock do. */
+    /* Initialize dos.library manually. This is what Workbench floppy bootblocks do. */
     DOSResident = FindResident( "dos.library" );
 
     if( DOSResident == NULL )
@@ -279,8 +280,10 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
             bn->bn_DeviceNode == NULL)
         {
             D(bug("%s: Ignoring %p, not a bootable node\n", __func__, bn));
+            ObtainSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
             REMOVE(bn);
             ADDTAIL(&LIBBASE->bm_ExpansionBase->MountList, bn);
+            ReleaseSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
             continue;
         }
 
@@ -312,8 +315,10 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
                     ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name,
                     bn->bn_Node.ln_Pri));
 
+        ObtainSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
         REMOVE(bn);
         ADDTAIL(&LIBBASE->bm_ExpansionBase->MountList, bn);
+        ReleaseSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
     }
 
     D(bug("%s: No BootBlock, BootPoint, or BootDos nodes found\n",__func__));
