@@ -2,7 +2,7 @@
 #define LIBRARIES_EXPANSIONBASE_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Publicly visible ExpansionBase data.
@@ -19,6 +19,10 @@
 
 #ifndef EXEC_LISTS_H
 #include <exec/lists.h>
+#endif
+
+#ifndef LIBRARIES_CONVIGVARS_H
+#include <libraries/configvars.h>
 #endif
 
 /*
@@ -50,18 +54,13 @@ struct ExpansionBase
 {
     struct Library      LibNode;
     UBYTE               Flags;          /* Flags, read only */
-    UBYTE               eb_Private1;
-    IPTR                eb_Private2[5];
-    IPTR                eb_BootFlags;   /* Boot Menu flags */
+    UBYTE               eb_Private01;
+    IPTR                eb_Private02;
+    IPTR                eb_Private03;
+    struct CurrentBinding eb_Private04;
     struct List         BoardList;      /* BoardList - private */
-    struct List         MountList;      /* BootNode entries - public */
+    struct List         MountList;      /* BootNode entries - public */
 };
-
-/* Boot flags. PRIVATE AND AROS SPECIFIC! Subject to change!!! */
-#define BF_NO_STARTUP_SEQUENCE 0x0001
-#define BF_NO_DISPLAY_DRIVERS  0x0002
-#define BF_NO_COMPOSITION      0x0004
-#define BF_EMERGENCY_CONSOLE   0x0008    /* Use emergency console */
 
 /*  The error codes from expansion boards */
 #define EE_OK           0   /* no error */

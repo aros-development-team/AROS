@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot AROS
@@ -35,6 +35,7 @@
 #include LC_LIBDEFS_FILE
 
 #include "dosboot_intern.h"
+#include "../expansion/expansion_intern.h"
 #include "menu.h"
 
 /* Delay just like Dos/Delay(), ticks are
@@ -145,7 +146,8 @@ static void setBootDevice(LIBBASETYPEPTR DOSBootBase)
         AddHead(&DOSBootBase->bm_ExpansionBase->MountList, (struct Node *)bn);
     }
 
-    DOSBootBase->bm_ExpansionBase->eb_BootFlags = DOSBootBase->db_BootFlags;
+    IntExpBase(DOSBootBase->bm_ExpansionBase)->eb_BootFlags =
+        DOSBootBase->db_BootFlags;
 }
 
 int dosboot_Init(LIBBASETYPEPTR LIBBASE)
@@ -222,7 +224,7 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
                     D(bug("[Boot] Emergency console selected\n"));
                 }
             }
-            ExpansionBase->eb_BootFlags = LIBBASE->db_BootFlags;
+            IntExpBase(ExpansionBase)->eb_BootFlags = LIBBASE->db_BootFlags;
         }
     }
 

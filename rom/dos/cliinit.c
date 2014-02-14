@@ -477,7 +477,7 @@ static long internalBootCliHandler(void)
     struct MsgPort *mp = &((struct Process *)FindTask(NULL))->pr_MsgPort;
     BPTR lock;
     struct DosPacket *dp;
-    IPTR BootFlags;
+    ULONG BootFlags;
     UBYTE Flags;
     struct BootNode *bn, *tmpbn;
     struct FileSysResource *fsr;
@@ -570,9 +570,9 @@ static long internalBootCliHandler(void)
      */
     D(bug("Dos/CliInit: Assigns done, mount remaining handlers...\n"));
 
-    BootFlags = ExpansionBase->eb_BootFlags;
+    BootFlags = IntExpBase(ExpansionBase)->eb_BootFlags;
     Flags = ExpansionBase->Flags;
-    D(bug("Dos/CliInit: BootFlags 0x%x Flags 0x%x\n", BootFlags, Flags));
+    D(bug("Dos/CliInit: BootFlags 0x%lx Flags 0x%x\n", BootFlags, Flags));
 
     ForeachNodeSafe(&ExpansionBase->MountList, bn, tmpbn)
     {
@@ -594,7 +594,7 @@ static long internalBootCliHandler(void)
     InitCode(RTF_AFTERDOS, 0);
 
     /* Call the platform-overridable portions */
-    D(bug("Dos/CliInit: Calling __dos_Boot(%p, 0x%x, 0x%x)\n", DOSBase, BootFlags, Flags));
+    D(bug("Dos/CliInit: Calling __dos_Boot(%p, 0x%lx, 0x%x)\n", DOSBase, BootFlags, Flags));
     __dos_Boot(DOSBase, BootFlags, Flags);
 
     D(bug("Dos/CliInit: Boot sequence exited\n"));
