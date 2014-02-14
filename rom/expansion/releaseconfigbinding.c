@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Release the lock on the CurrentBinding data.
@@ -43,15 +43,11 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    ReleaseSemaphore(&IntExpBase(ExpansionBase)->eb_BindSemaphore);
+    ReleaseSemaphore(&IntExpBase(ExpansionBase)->BindSemaphore);
 
     AROS_LIBFUNC_EXIT
 } /* ReleaseConfigBinding */

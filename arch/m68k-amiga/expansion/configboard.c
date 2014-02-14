@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -58,19 +58,19 @@ AROS_LH2(BOOL, ConfigBoard,
 		UWORD prevslot, newslot;
 		UWORD endslot = 255;
 		UWORD slotsize = (size + 0x00ffffff) / Z3SLOT;
-		if (IntExpBase(ExpansionBase)->eb_z3Slot == 0)
-			IntExpBase(ExpansionBase)->eb_z3Slot = 0x40000000 / Z3SLOT;
-		prevslot = IntExpBase(ExpansionBase)->eb_z3Slot;
+		if (IntExpBase(ExpansionBase)->z3Slot == 0)
+			IntExpBase(ExpansionBase)->z3Slot = 0x40000000 / Z3SLOT;
+		prevslot = IntExpBase(ExpansionBase)->z3Slot;
 		// handle alignment
 		newslot = (prevslot + slotsize - 1) & ~(slotsize - 1);
 		D(bug("size=%d prev=%d new=%d end=%d\n", slotsize, prevslot, newslot, endslot));
 		if (newslot + slotsize <= endslot) {
 			ULONG startaddr = newslot * Z3SLOT;
 			configDev->cd_BoardAddr = (APTR)startaddr;
-			configDev->cd_SlotAddr = IntExpBase(ExpansionBase)->eb_z3Slot;
+			configDev->cd_SlotAddr = IntExpBase(ExpansionBase)->z3Slot;
 			configDev->cd_SlotSize = slotsize;
 			configDev->cd_Flags |= CDF_CONFIGME;
-			IntExpBase(ExpansionBase)->eb_z3Slot = newslot + slotsize;
+			IntExpBase(ExpansionBase)->z3Slot = newslot + slotsize;
 			AROS_UFC5NR(void, writeexpansion,
 				AROS_UFCA(APTR,  board, A0),
 				AROS_UFCA(APTR,  configDev, A3),
@@ -98,7 +98,7 @@ AROS_LH2(BOOL, ConfigBoard,
 				start = 0x00200000;
 				end   = 0x009FFFFF;
 			}
-			space = IntExpBase(ExpansionBase)->eb_z2Slots;
+			space = IntExpBase(ExpansionBase)->z2Slots;
 			step = 0x00010000;
 			for (addr = start; addr < end; addr += step) {
 				ULONG startaddr = addr;

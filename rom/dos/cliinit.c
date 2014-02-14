@@ -374,7 +374,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
      * then dosboot.resource will handle checking the
      * next device in the list.
      */
-    ObtainSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+    ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
     bn = (struct BootNode *)GetHead(&ExpansionBase->MountList);
     D(bug("Dos/CliInit: MountList head: 0x%p\n", bn));
 
@@ -450,7 +450,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
 
         FreeVec(name);
     }
-    ReleaseSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+    ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
 
     return lock;
 }
@@ -570,7 +570,7 @@ static long internalBootCliHandler(void)
      */
     D(bug("Dos/CliInit: Assigns done, mount remaining handlers...\n"));
 
-    BootFlags = IntExpBase(ExpansionBase)->eb_BootFlags;
+    BootFlags = IntExpBase(ExpansionBase)->BootFlags;
     Flags = ExpansionBase->Flags;
     D(bug("Dos/CliInit: BootFlags 0x%lx Flags 0x%x\n", BootFlags, Flags));
 

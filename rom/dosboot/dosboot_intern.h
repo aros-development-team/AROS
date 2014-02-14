@@ -35,7 +35,7 @@ struct BootConfig
 struct DOSBootBase
 {
     struct Node           db_Node;		/* Node for linking into the list */
-    ULONG                 db_BootFlags;         /* Bootup flags (identical to IntExpansionBase->eb_BootFlags) */
+    ULONG                 db_BootFlags;         /* Bootup flags (identical to IntExpansionBase->BootFlags) */
 
     struct BootNode      *db_BootNode;		/* Device to boot up from	  */
 

@@ -280,10 +280,10 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
             bn->bn_DeviceNode == NULL)
         {
             D(bug("%s: Ignoring %p, not a bootable node\n", __func__, bn));
-            ObtainSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+            ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
             REMOVE(bn);
             ADDTAIL(&LIBBASE->bm_ExpansionBase->MountList, bn);
-            ReleaseSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+            ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
             continue;
         }
 
@@ -315,10 +315,10 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
                     ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name,
                     bn->bn_Node.ln_Pri));
 
-        ObtainSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+        ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
         REMOVE(bn);
         ADDTAIL(&LIBBASE->bm_ExpansionBase->MountList, bn);
-        ReleaseSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+        ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
     }
 
     D(bug("%s: No BootBlock, BootPoint, or BootDos nodes found\n",__func__));

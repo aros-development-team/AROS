@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a ConfigDev struct to the system.
@@ -55,7 +55,8 @@
     if(configDev)
     {
 	ObtainConfigBinding();
-	AddTail(&IntExpBase(ExpansionBase)->eb_BoardList, (struct Node *)configDev);
+	AddTail(&IntExpBase(ExpansionBase)->BoardList,
+            (struct Node *)configDev);
 	ReleaseConfigBinding();
     }
 

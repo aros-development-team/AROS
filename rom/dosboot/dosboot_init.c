@@ -146,7 +146,7 @@ static void setBootDevice(LIBBASETYPEPTR DOSBootBase)
         AddHead(&DOSBootBase->bm_ExpansionBase->MountList, (struct Node *)bn);
     }
 
-    IntExpBase(DOSBootBase->bm_ExpansionBase)->eb_BootFlags =
+    IntExpBase(DOSBootBase->bm_ExpansionBase)->BootFlags =
         DOSBootBase->db_BootFlags;
 }
 
@@ -224,7 +224,7 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
                     D(bug("[Boot] Emergency console selected\n"));
                 }
             }
-            IntExpBase(ExpansionBase)->eb_BootFlags = LIBBASE->db_BootFlags;
+            IntExpBase(ExpansionBase)->BootFlags = LIBBASE->db_BootFlags;
         }
     }
 

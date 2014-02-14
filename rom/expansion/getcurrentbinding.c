@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Get the CurrentBinding structure.
@@ -68,7 +68,7 @@
     if( bindingSize > sizeof(struct CurrentBinding) )
 	bindingSize = sizeof(struct CurrentBinding);
 
-    CopyMem(&IntExpBase(ExpansionBase)->eb_CurrentBinding,
+    CopyMem(&IntExpBase(ExpansionBase)->CurrentBinding,
 	    currentBinding,
 	    bindingSize);
 

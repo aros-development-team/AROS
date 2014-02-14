@@ -25,11 +25,11 @@ static int ExpansionInit(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("expansion init\n"));
 
-    NEWLIST(&LIBBASE->eb_MountList);
-    NEWLIST(&LIBBASE->eb_BoardList);
+    NEWLIST(&LIBBASE->MountList);
+    NEWLIST(&LIBBASE->BoardList);
 
-    InitSemaphore(&LIBBASE->eb_BindSemaphore);
-    InitSemaphore(&LIBBASE->eb_BootSemaphore);
+    InitSemaphore(&LIBBASE->BindSemaphore);
+    InitSemaphore(&LIBBASE->BootSemaphore);
 
     /* See what expansion hardware we can detect. */
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)

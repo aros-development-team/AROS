@@ -54,7 +54,7 @@
 	OS they may wish to boot from.
 
 	The bootstrap will attempt to boot from the highest priority device
-	on the Expansion eb_BootNode list, and if that fails continue
+	on the Expansion BootNode list, and if that fails continue
 	through the list until it can succeed.
 
 	Floppy disk devices should always be given the highest priority, to
@@ -125,7 +125,7 @@
 
     D(bug("[AddBootNode] Adding %b from Task %s\n", deviceNode->dn_Name, FindTask(NULL)->tc_Node.ln_Name));
 
-    ObtainSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+    ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
 
     /* See if DOS is up and running... */
     DOSBase = OpenLibrary("dos.library", 0);
@@ -214,7 +214,7 @@
     else
         Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
 
-    ReleaseSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+    ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
     if (DOSBase != NULL)
         CloseLibrary((struct Library *)DOSBase);
 
