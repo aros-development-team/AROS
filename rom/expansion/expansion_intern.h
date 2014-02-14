@@ -41,6 +41,7 @@ struct IntExpansionBase
 
     struct SignalSemaphore  eb_BindSemaphore;
     struct SignalSemaphore  eb_BootSemaphore;
+    ULONG                   eb_BootFlags;
 };
 
 #define IntExpBase(eb)	((struct IntExpansionBase*)(eb))

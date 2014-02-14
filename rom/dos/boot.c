@@ -22,6 +22,7 @@
 #include <proto/dos.h>
 
 #include "dos_intern.h"
+#include "../dosboot/dosboot_intern.h"
 
 #ifdef __mc68000
 /*

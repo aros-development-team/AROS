@@ -2,7 +2,7 @@
 #define DOSBOOT_INTERN_H
 
 /*
-   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2014, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Internal definitions for dosboot
@@ -26,11 +26,17 @@ struct BootConfig
     BOOL bootmode;
 };
 
+/* Boot flags. PRIVATE AND AROS SPECIFIC! Subject to change! */
+#define BF_NO_STARTUP_SEQUENCE 0x0001
+#define BF_NO_DISPLAY_DRIVERS  0x0002
+#define BF_NO_COMPOSITION      0x0004
+#define BF_EMERGENCY_CONSOLE   0x0008    /* Use emergency console */
+
 struct DOSBootBase
 {
     struct Node           db_Node;		/* Node for linking into the list */
-    IPTR 		  db_BootFlags;		/* Bootup flags (identical to ExpansionBase->eb_BootFlags) */
-    
+    ULONG                 db_BootFlags;         /* Bootup flags (identical to IntExpansionBase->eb_BootFlags) */
+
     struct BootNode      *db_BootNode;		/* Device to boot up from	  */
 
     struct GfxBase       *bm_GfxBase;		/* Library bases	  	  */
