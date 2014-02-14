@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for VGA and compatible cards.
@@ -38,12 +38,15 @@ static AROS_INTH1(ResetHandler, struct vga_staticdata *, xsd)
 {
     AROS_INTFUNC_INIT
 
+    struct bitmap_data *data = NULL;
+
 /* On my machine this fills the screen with colorful vertical stripes
    instead of blanking. So for now we use software method.
 	Pavel Fedin.
     vgaBlankScreen(0); */
 
-    struct bitmap_data *data = OOP_INST_DATA(xsd->bmclass, xsd->visible);
+    if (xsd->visible)
+        data = OOP_INST_DATA(xsd->bmclass, xsd->visible);
 
     if (data)
     {
@@ -187,6 +190,7 @@ OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     if (o) {
         struct Vga_Data *data = OOP_INST_DATA(cl, o);
 
+	data->ResetInterrupt.is_Node.ln_Name = cl->ClassNode.ln_Name;
 	data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
 	data->ResetInterrupt.is_Data = XSD(cl);
 	AddResetCallback(&data->ResetInterrupt);
