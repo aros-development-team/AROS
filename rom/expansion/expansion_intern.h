@@ -26,22 +26,22 @@
 
 struct IntExpansionBase
 {
-    struct Library          eb_LibNode;
-    UBYTE                   eb_Flags;
-    UBYTE                   eb_pad;
-    struct ExecBase        *eb_SysBase;
-    IPTR                    eb_SegList;
-    struct CurrentBinding   eb_CurrentBinding;
-    struct List             eb_BoardList;
-    struct List             eb_MountList;
+    struct Library          LibNode;
+    UBYTE                   Flags;
+    UBYTE                   pad;
+    struct ExecBase        *ExecBase;
+    IPTR                    SegList;
+    struct CurrentBinding   CurrentBinding;
+    struct List             BoardList;
+    struct List             MountList;
 
-    UBYTE                   eb_z2Slots[Z2SLOTS/SLOTSPERBYTE];
-    UWORD                   eb_z3Slot;
-    UBYTE                   eb_pad2[224];
+    UBYTE                   z2Slots[Z2SLOTS/SLOTSPERBYTE];
+    UWORD                   z3Slot;
+    UBYTE                   pad2[224];
 
-    struct SignalSemaphore  eb_BindSemaphore;
-    struct SignalSemaphore  eb_BootSemaphore;
-    ULONG                   eb_BootFlags;
+    struct SignalSemaphore  BindSemaphore;
+    struct SignalSemaphore  BootSemaphore;
+    ULONG                   BootFlags;
 };
 
 #define IntExpBase(eb)	((struct IntExpansionBase*)(eb))

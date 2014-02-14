@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 
@@ -11,7 +15,7 @@
 #include <libraries/configregs.h>
 
 /* This is first RTF_COLDSTART resident.
- * Update eb_SysBase, call DAC_CONFIGTIME.
+ * Update ExpansionBase->ExecBase, call DAC_CONFIGTIME.
  */
 
 #define _STR(A) #A
@@ -181,7 +185,7 @@ static AROS_UFH3 (APTR, Init,
    if (!eb)
 	Alert(AT_DeadEnd | AO_ExpansionLib);
 
-   eb->eb_Private2[0] = (IPTR)SysBase;
+   eb->eb_Private02 = (IPTR)SysBase;
 
    callroms(eb);
 

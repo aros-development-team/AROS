@@ -309,11 +309,11 @@ void dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
     PartitionBase = OpenLibrary("partition.library", 2);
     if (PartitionBase)
     {
-        ObtainSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+        ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
         ForeachNodeSafe (&LIBBASE->bm_ExpansionBase->MountList, bootNode, temp)
             CheckPartitions(LIBBASE->bm_ExpansionBase, PartitionBase, SysBase,
                 bootNode);
-        ReleaseSemaphore(&IntExpBase(ExpansionBase)->eb_BootSemaphore);
+        ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
 
 	CloseLibrary(PartitionBase);
     }

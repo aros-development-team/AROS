@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: FindConfigDev() - Find a specific configurable device.
@@ -77,7 +77,7 @@
 
     if( oldConfigDev == NULL )
 	cd = (struct ConfigDev *)
-	   ((struct IntExpansionBase *)ExpansionBase)->eb_BoardList.lh_Head;
+	   ((struct IntExpansionBase *)ExpansionBase)->BoardList.lh_Head;
     else
 	cd = (struct ConfigDev *)(oldConfigDev->cd_Node.ln_Succ);
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a DOS device to the system.
@@ -76,7 +76,7 @@
     /*
      * Before V36 Kickstart, no public function existed to add BOOTNODES.
      * If an older expansion.library is in use, driver code would needed 
-     * to manually construct a BootNode and Enqueue() it to eb_Mountlist.
+     * to manually construct a BootNode and Enqueue() it to the mount list.
      *
      * This maps to the pre v36 hidden function, that was identical
      * to AddBootNode(bootPri, flags, deviceNode, NULL);

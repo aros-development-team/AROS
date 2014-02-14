@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -57,10 +57,6 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -71,12 +67,12 @@
 	size = sizeof(struct CurrentBinding);
 
     CopyMem(currentBinding,
-	    &IntExpBase(ExpansionBase)->eb_CurrentBinding,
+	    &IntExpBase(ExpansionBase)->CurrentBinding,
 	    size);
 
     /* NULL pad the rest */
     while(size < sizeof(struct CurrentBinding))
-	((UBYTE *)&IntExpBase(ExpansionBase)->eb_CurrentBinding)[size++] = 0;
+        ((UBYTE *)&IntExpBase(ExpansionBase)->CurrentBinding)[size++] = 0;
 
     AROS_LIBFUNC_EXIT
 } /* SetCurrentBinding */
