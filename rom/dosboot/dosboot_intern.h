@@ -15,6 +15,7 @@
 #include <graphics/gfxbase.h>
 
 #include "gadgets.h"
+#include "bootflags.h"
 
 #define BUFSIZE 100
 
@@ -25,12 +26,6 @@ struct BootConfig
     STRPTR gfxhidd;
     BOOL bootmode;
 };
-
-/* Boot flags. PRIVATE AND AROS SPECIFIC! Subject to change! */
-#define BF_NO_STARTUP_SEQUENCE 0x0001
-#define BF_NO_DISPLAY_DRIVERS  0x0002
-#define BF_NO_COMPOSITION      0x0004
-#define BF_EMERGENCY_CONSOLE   0x0008    /* Use emergency console */
 
 struct DOSBootBase
 {
