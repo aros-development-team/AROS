@@ -460,7 +460,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     /*
      * release old junk
      */
-    SetSignal(0, sigs);
+    SetSignal(0, 1 << bus->ab_SleepySignal | SIGBREAKF_CTRL_C);
 
     /*
      * and say it went fine (i mean it)
@@ -1274,6 +1274,7 @@ static BYTE ata_Identify(struct ata_Unit *unit)
         CM_PIORead,
         CT_NoBlock
     };
+    UWORD n = 0, *p, *limit;
 
     /* If the right command fails, try the wrong one. If both fail, abort */
     DINIT(bug("[ATA%02ld] ata_Identify: Executing ATA_IDENTIFY_%s command\n",
@@ -1303,8 +1304,6 @@ static BYTE ata_Identify(struct ata_Unit *unit)
      */
     if (unit->au_Bus->ab_Base->ata_32bit)
     {
-        UWORD n = 0, *p, *limit;
-
         for (p = (UWORD *)unit->au_Drive, limit = p + 256; p < limit; p++)
             n |= *++p;
 
@@ -1318,6 +1317,20 @@ static BYTE ata_Identify(struct ata_Unit *unit)
             if (ata_exec_cmd(unit, &acb))
                 return IOERR_OPENFAIL;
         }
+    }
+
+    /*
+     * If entire identify data consists of zeroes, there isn't really a drive
+     * there
+     */
+    for (n = 0, p = (UWORD *)unit->au_Drive, limit = p + 256; p < limit; p++)
+        n |= *p;
+
+    if (n == 0)
+    {
+        DINIT(bug("[ATA%02ld] Identify data is invalid (all zeroes)."
+            " Discarding drive.\n", unit->au_UnitNum));
+        return IOERR_OPENFAIL;
     }
 
 #if (AROS_BIG_ENDIAN != 0)
@@ -1335,6 +1348,7 @@ static BYTE ata_Identify(struct ata_Unit *unit)
     SWAP_LE_WORD(unit->au_Drive->id_OldLHeads);
     SWAP_LE_WORD(unit->au_Drive->id_OldLSectors);
     SWAP_LE_WORD(unit->au_Drive->id_RWMultipleTrans);
+    SWAP_LE_WORD(unit->au_Drive->id_DMADir);
     SWAP_LE_WORD(unit->au_Drive->id_MWDMASupport);
     SWAP_LE_WORD(unit->au_Drive->id_PIOSupport);
     SWAP_LE_WORD(unit->au_Drive->id_MWDMA_MinCycleTime);
