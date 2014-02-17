@@ -6,6 +6,8 @@ NEW_YEAR=2014
 SUB=s/$START_YEAR-$OLD_YEAR/$START_YEAR-$NEW_YEAR/g
 echo "$SUB"
 
+sed -i "$SUB" AROS/arch/m68k-amiga/boot/ext_entry.S
+sed -i "$SUB" AROS/arch/m68k-amiga/boot/rom_entry.S
 sed -i "$SUB" AROS/rom/dos/boot.c
 sed -i "$SUB" AROS/workbench/system/AboutAROS/catalogs/aboutaros.cd
 sed -i "$SUB" AROS/workbench/system/AboutAROS/catalogs/croatian.ct
