@@ -302,6 +302,7 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
 /* Scan all partitions manually for additional volumes that can be mounted. */
 void dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
 {
+    struct ExpansionBase *ExpansionBase = LIBBASE->bm_ExpansionBase;
     APTR PartitionBase;
     struct BootNode *bootNode, *temp;
 
@@ -310,8 +311,8 @@ void dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
     if (PartitionBase)
     {
         ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
-        ForeachNodeSafe (&LIBBASE->bm_ExpansionBase->MountList, bootNode, temp)
-            CheckPartitions(LIBBASE->bm_ExpansionBase, PartitionBase, SysBase,
+        ForeachNodeSafe (&ExpansionBase->MountList, bootNode, temp)
+            CheckPartitions(ExpansionBase, PartitionBase, SysBase,
                 bootNode);
         ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
 
