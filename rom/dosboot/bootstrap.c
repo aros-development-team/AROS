@@ -263,6 +263,7 @@ static inline void dosboot_BootDos(void)
  */
 LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
 {
+    struct ExpansionBase *ExpansionBase = LIBBASE->bm_ExpansionBase;
     struct BootNode *bn;
     int i, nodes;
 
@@ -270,10 +271,10 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
      * Try to boot from any device in the boot list,
      * highest priority first.
      */
-    ListLength(&LIBBASE->bm_ExpansionBase->MountList, nodes);
+    ListLength(&ExpansionBase->MountList, nodes);
     for (i = 0; i < nodes; i++)
     {
-        bn = (struct BootNode *)GetHead(&LIBBASE->bm_ExpansionBase->MountList);
+        bn = (struct BootNode *)GetHead(&ExpansionBase->MountList);
 
         if (bn->bn_Node.ln_Type != NT_BOOTNODE ||
             bn->bn_Node.ln_Pri <= -128 ||
@@ -282,7 +283,7 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
             D(bug("%s: Ignoring %p, not a bootable node\n", __func__, bn));
             ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
             REMOVE(bn);
-            ADDTAIL(&LIBBASE->bm_ExpansionBase->MountList, bn);
+            ADDTAIL(&ExpansionBase->MountList, bn);
             ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
             continue;
         }
@@ -300,7 +301,7 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
          * was successful.
          */
         D(bug("%s: Attempting %b as BootBlock\n",__func__, ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name));
-        if (!dosboot_BootBlock(bn, LIBBASE->bm_ExpansionBase)) {
+        if (!dosboot_BootBlock(bn, ExpansionBase)) {
             /* Then as a BootPoint node */
             D(bug("%s: Attempting %b as BootPoint\n", __func__, ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name));
             dosboot_BootPoint(bn);
@@ -317,7 +318,7 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
 
         ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
         REMOVE(bn);
-        ADDTAIL(&LIBBASE->bm_ExpansionBase->MountList, bn);
+        ADDTAIL(&ExpansionBase->MountList, bn);
         ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
     }
 
