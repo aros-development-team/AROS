@@ -1,5 +1,5 @@
 Version = 46
-Revision= 10
+Revision= 11
 
 	.text
 
@@ -20,7 +20,7 @@ ext_entry:
     .word 0xffff
     .word 0xffff
     .asciz "AROS EXT Extension Libraries"
-    .asciz "Copyright \251 2011 "
+    .asciz "Copyright \251 2014 "
     .asciz "The AROS Development Team, "
     .asciz "All Rights Reserved."
     .asciz ADATE
