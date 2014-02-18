@@ -859,9 +859,20 @@ static void HIDDCompositorReset(struct HIDDCompositorData *compdata)
 VOID CompositorParseConfig(struct HIDDCompositorData *compdata)
 {
     struct RDArgs *rdargs;
+    struct Process *me;
     IPTR CompArgs[NOOFARGS] = { 0 };
     TEXT CompConfig[1024];
+    APTR old_windowptr;
+    
+    /* Disable DOS Requesters (GetVar() -> "Please insert volume ENV:"),
+       because this can hang boot process if WB screen is not open
+       yet. Opening of WB screen (when requester tries to open) would
+       hang because display database semaphore is locked in AddDisplayDriverA(). */
 
+    me = (struct Process *)FindTask(NULL);
+    old_windowptr = me->pr_WindowPtr;
+    me->pr_WindowPtr = (APTR)-1;
+    
     /* use default amiga-like capabailities */
     compdata->capabilities = COMPF_ABOVE;
 
@@ -910,6 +921,8 @@ VOID CompositorParseConfig(struct HIDDCompositorData *compdata)
         }
         FreeDosObject(DOS_RDARGS, rdargs);
     }
+    
+    me->pr_WindowPtr = old_windowptr;    
 }
 
 AROS_UFH3(void, CompositorDefaultBackFillFunc,
