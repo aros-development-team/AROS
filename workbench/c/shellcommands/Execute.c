@@ -77,6 +77,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
     if (!cli)
         return RETURN_ERROR;
 
+    /* pr_CES can be NULL, so use pr_COS */
     if(! (ces=me->pr_CES))
         ces=me->pr_COS;
 
@@ -111,7 +112,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
     if (!from)
     {
         IPTR data[] = { (IPTR)SHArg(NAME) };
-        VFPrintf(me->pr_CES, "EXECUTE: can't open %s\n", data);
+        VFPrintf(ces, "EXECUTE: can't open %s\n", data);
         PrintFault(IoErr(), NULL);
         if (extraargs)
             FreeVec(extraargs);
@@ -166,8 +167,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 
             if (c)
             {
-                FPuts(me->pr_CES,
-                      "EXECUTE: error while creating temporary file\n");
+                FPuts(ces, "EXECUTE: error while creating temporary file\n");
                 PrintFault(c, NULL);
                 Close(tmpfile);
                 DeleteFile(tmpname);
@@ -188,7 +188,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 
             if (c)
             {
-                FPuts(me->pr_CES, "EXECUTE: error while creating temporary file\n");
+                FPuts(ces, "EXECUTE: error while creating temporary file\n");
                 PrintFault(c, NULL);
                 Close(tmpfile);
                 DeleteFile(tmpname);
@@ -218,7 +218,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
               is not handled correctly yet, we just give up
             */
             LONG c = IoErr();
-            FPuts(me->pr_CES, "EXECUTE: error while creating temporary file\n");
+            FPuts(ces, "EXECUTE: error while creating temporary file\n");
             PrintFault(c, NULL);
             Close(from);
             if (extraargs)
@@ -256,7 +256,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
             /* Prevent RunCommand() from flushing cli_StandardInput */
             SelectInput(BNULL);
         } else {
-            VFPrintf(me->pr_CES, "EXECUTE: Can't inject command line\n", NULL);
+            VFPrintf(ces, "EXECUTE: Can't inject command line\n", NULL);
             return RETURN_FAIL;
         }
     }
