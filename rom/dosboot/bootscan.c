@@ -31,6 +31,7 @@
 #include <proto/expansion.h>
 #include <proto/partition.h>
 #include <proto/bootloader.h>
+#include <clib/alib_protos.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -268,7 +269,7 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
     struct DeviceNode *dn = bn->bn_DeviceNode;
     BOOL res = FALSE;
 
-    D(bug("CheckPartition('%b') handler seglist = %x, handler = %s\n", dn->dn_Name,
+    D(bug("CheckPartitions('%b') handler seglist = %x, handler = %s\n", dn->dn_Name,
             dn->dn_SegList, AROS_BSTR_ADDR(dn->dn_Handler)));
 
     /* Examples:
@@ -294,9 +295,12 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
         }
     }
 
-    if (res)
-        /* If any partitions were found for the DeviceNode, remove it */
+    if (!res)
+    {
+        /* If no partitions were found for the DeviceNode, put it back */
         Remove(&bn->bn_Node);
+        Enqueue(&ExpansionBase->MountList, &bn->bn_Node);
+    }
 }
 
 /* Scan all partitions manually for additional volumes that can be mounted. */
@@ -305,15 +309,26 @@ void dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
     struct ExpansionBase *ExpansionBase = LIBBASE->bm_ExpansionBase;
     APTR PartitionBase;
     struct BootNode *bootNode, *temp;
+    struct List rootList;
 
     /* If we have partition.library, we can look for partitions */
     PartitionBase = OpenLibrary("partition.library", 2);
     if (PartitionBase)
     {
         ObtainSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
-        ForeachNodeSafe (&ExpansionBase->MountList, bootNode, temp)
+
+        /* Transfer all bootnodes in the mountlist into a temporary list.
+           The assumption is that all bootnodes created before now represent
+           entire disks */
+        NewList(&rootList);
+        while ((temp = (struct BootNode *)RemHead(&ExpansionBase->MountList))
+            != NULL)
+            AddTail(&rootList, (struct Node *) temp);
+
+        ForeachNodeSafe (&rootList, bootNode, temp)
             CheckPartitions(ExpansionBase, PartitionBase, SysBase,
                 bootNode);
+
         ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
 
 	CloseLibrary(PartitionBase);
