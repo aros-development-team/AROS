@@ -41,5 +41,5 @@ ULONG ata_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
 
     SetSignal(0, sig);
 
-    return sigs &~ sig;
+    return sigs & ~sig;
 }
