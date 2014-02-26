@@ -61,7 +61,8 @@ static BYTE ata_WriteDMA32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static BYTE ata_WriteDMA64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
 static void ata_ResetBus(struct ata_Bus *bus);
 static BYTE ata_Eject(struct ata_Unit *);
-static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout);
+static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
+    BOOL fake_irq, UBYTE *stout);
 
 static BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data,
     LONG datalen, BOOL *dma, BOOL write);
@@ -75,7 +76,7 @@ static BYTE atapi_EndCmd(struct ata_Unit *unit);
 
 static void common_SetBestXferMode(struct ata_Unit* unit);
 
-#define DEVHEAD_VAL 0x40
+#define DEVHEAD_VAL 0xe0
 
 #if DEBUG
 static void dump(APTR mem, ULONG len)
@@ -193,22 +194,27 @@ static void ata_IRQPIORead(struct ata_Unit *unit, UBYTE status)
 {
     if (status & ATAF_DATAREQ)
     {
-	DIRQ(bug("[ATA  ] IRQ: PIOReadData - DRQ.\n"));
+	DIRQ(bug("[ATA%02ld] IRQ: PIOReadData - DRQ.\n", unit->au_UnitNum));
 
         Unit_InS(unit, unit->au_cmd_data, unit->au_cmd_length);
 
 	/*
-	 * indicate it's all done here
+	 * Adjust data pointer and counter. If there's more data left for
+	 * this transfer, keep same handler and wait for next interrupt
 	 */
 	unit->au_cmd_data += unit->au_cmd_length;
 	unit->au_cmd_total -= unit->au_cmd_length;
-	if (unit->au_cmd_total) {
+	if (unit->au_cmd_total != 0)
+	{
 	    if (unit->au_cmd_length > unit->au_cmd_total)
 		unit->au_cmd_length = unit->au_cmd_total;
 	    return;
 	}
-	DIRQ(bug("[ATA  ] IRQ: PIOReadData - transfer completed.\n"));
+	DIRQ(bug("[ATA%02ld] IRQ: PIOReadData - transfer completed.\n",
+            unit->au_UnitNum));
     }
+    else
+        unit->au_cmd_error = HFERR_BadStatus;
     ata_IRQNoData(unit, status);
 }
 
@@ -217,7 +223,7 @@ static void ata_PIOWriteBlk(struct ata_Unit *unit)
     Unit_OutS(unit, unit->au_cmd_data, unit->au_cmd_length);
 
     /*
-     * indicate it's all done here
+     * Adjust data pointer and counter
      */
     unit->au_cmd_data += unit->au_cmd_length;
     unit->au_cmd_total -= unit->au_cmd_length;
@@ -227,12 +233,18 @@ static void ata_PIOWriteBlk(struct ata_Unit *unit)
 
 static void ata_IRQPIOWrite(struct ata_Unit *unit, UBYTE status)
 {
+    /*
+     * If there's more data left for this transfer, write it, keep same
+     * handler and wait for next interrupt
+     */
     if (status & ATAF_DATAREQ) {
-	DIRQ(bug("[ATA  ] IRQ: PIOWriteData - DRQ.\n"));
+	DIRQ(bug("[ATA%02ld] IRQ: PIOWriteData - DRQ.\n", unit->au_UnitNum));
 	ata_PIOWriteBlk(unit);
 	return;
     }
-    DIRQ(bug("[ATA  ] IRQ: PIOWriteData - done.\n"));
+    else if (unit->au_cmd_total != 0)
+        unit->au_cmd_error = HFERR_BadStatus;
+    DIRQ(bug("[ATA%02ld] IRQ: PIOWriteData - done.\n", unit->au_UnitNum));
     ata_IRQNoData(unit, status);
 }
 
@@ -248,14 +260,14 @@ static void ata_IRQDMAReadWrite(struct ata_Unit *unit, UBYTE status)
         /* This is turned on in order to help Phantom - Pavel Fedin <sonic_amiga@rambler.ru> */
         DERROR(bug("[ATA%02ld] IRQ: IO status %02lx, DMA status %d\n", unit->au_UnitNum, status, stat));
         DERROR(bug("[ATA%02ld] IRQ: ERROR %02lx\n", unit->au_UnitNum, PIO_In(bus, atapi_Error)));
-        DERROR(bug("[ATA  ] IRQ: DMA Failed.\n"));
+        DERROR(bug("[ATA%02ld] IRQ: DMA Failed.\n", unit->au_UnitNum));
 
         unit->au_cmd_error = stat;
         ata_IRQNoData(unit, status);
     }
     else if (0 == (status & (ATAF_BUSY | ATAF_DATAREQ)))
     {
-        DIRQ(bug("[ATA  ] IRQ: DMA Done.\n"));
+        DIRQ(bug("[ATA%02ld] IRQ: DMA Done.\n", unit->au_UnitNum));
         ata_IRQNoData(unit, status);
     }
 }
@@ -266,7 +278,7 @@ static void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
     ULONG size = 0;
     LONG remainder = 0;
     UBYTE reason = PIO_In(bus, atapi_Reason);
-    DIRQ(bug("[DSCSI] Current status: %ld during READ\n", reason));
+    DIRQ(bug("[ATAPI] Current status: %ld during READ\n", reason));
 
     /* have we failed yet? */
     if (0 == (status & (ATAF_BUSY | ATAF_DATAREQ)))
@@ -356,54 +368,47 @@ static void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
  * wait for timeout or drive ready
  */
 static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
-    UBYTE *stout)
+    BOOL fake_irq, UBYTE *stout)
 {
     struct ata_Bus *bus = unit->au_Bus;
     UBYTE status;
-    ULONG sigs = SIGBREAKF_CTRL_C;
     ULONG step = 0;
     BOOL res = TRUE;
 
     if (bus->ab_Base->ata_Poll)
         irq = FALSE;
 
-    /* FIXME: This shouldn't happen but it could explain reported random -6 (IOERR_UNITBUSY) problem */
-    if (SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
-    	DERROR(bug("[ATA%02ld] SIGBREAKF_CTRL_C was already set!?\n", unit->au_UnitNum));
- 
-    /*
-     * set up bus timeout
-     */
-    bus->ab_Timeout = tout;
-
-    sigs |= (irq ? (1 << bus->ab_SleepySignal) : 0);
     status = PIO_InAlt(bus, ata_AltStatus);
 
     if (irq)
     {
         /*
-         * wait for either IRQ or TIMEOUT (unless device seems to be a
-         * phantom SATAPI drive, in which case we fake a timeout)
+         * wait for either IRQ or timeout
          */
         DIRQ(bug("[ATA%02ld] Waiting (Current status: %02lx)...\n",
             unit->au_UnitNum, status));
-        if (status != 0)
-            step = Wait(sigs);
-        else
-            step = SIGBREAKF_CTRL_C;
+        step = ata_WaitTO(unit->au_Bus->ab_Timer, tout, 0,
+            1 << bus->ab_SleepySignal);
 
-        /*
-         * now if we did reach timeout, then there's no point in going ahead.
-         */
-        if (SIGBREAKF_CTRL_C & step)
+        if (step == 0)
         {
             DERROR(bug("[ATA%02ld] Timeout while waiting for device to complete"
                 " operation\n", unit->au_UnitNum));
-            res = FALSE;
 
-            /* do nothing if the interrupt eventually arrives */
             Disable();
-            ata_IRQSetHandler(unit, NULL, NULL, 0, 0);
+            if (fake_irq)
+            {
+                /* fake the interrupt we expected */
+                status = PIO_In(bus, ata_Status);
+                while (unit->au_Bus->ab_HandleIRQ != NULL)
+                    unit->au_Bus->ab_HandleIRQ(unit, status);
+            }
+            else
+            {
+                /* do nothing if the interrupt eventually arrives */
+                ata_IRQSetHandler(unit, NULL, NULL, 0, 0);
+                res = FALSE;
+            }
             Enable();
         }
     }
@@ -421,7 +426,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
                 /*
                  * huhm. so it's been 16n rounds already. any timeout yet?
                  */
-                if (SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+                if (step >> 4 > tout * 1000)
                 {
                     DERROR(bug("[ATA%02ld] Device still busy after timeout."
                         " Aborting\n", unit->au_UnitNum));
@@ -433,17 +438,12 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
                  * no timeout just yet, but it's not a good idea to keep
                  * spinning like that. let's give the system some time.
                  */
-                ata_WaitNano(400, bus->ab_Base);
+                ata_WaitNano(1000000, bus->ab_Base);
             }
 
             status = PIO_InAlt(bus, ata_AltStatus);
         }
     }
-
-    /*
-     * clear up all our expectations
-     */
-    bus->ab_Timeout = -1;
 
     /*
      * get final status and clear any interrupt (may be neccessary if we
@@ -460,7 +460,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
     /*
      * release old junk
      */
-    SetSignal(0, 1 << bus->ab_SleepySignal | SIGBREAKF_CTRL_C);
+    SetSignal(0, 1 << bus->ab_SleepySignal);
 
     /*
      * and say it went fine (i mean it)
@@ -486,13 +486,16 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
     UBYTE status;
 
     /*
-     * For Identify commands, use polling instead of waiting for an IRQ.
-     * This is because some bad drives make us think that there are two
-     * devices on the bus when there is really only one, so when we send an
-     * Identify command to the phantom drive, we can't rely on getting an IRQ
+     * Use a short timeout for Identify commands. This is because some bad
+     * drives make us think that there are two devices on the bus when there
+     * is really only one, so when we send an Identify command to the phantom
+     * drive, we can't rely on getting an IRQ. Additionally, some real drives
+     * don't produce an IRQ when the Identify command is complete, so we call
+     * the interrupt handler "manually" if we time out while waiting for it.
      */
-    BOOL use_irq = block->command != ATA_IDENTIFY_DEVICE
-        && block->command != ATA_IDENTIFY_ATAPI;
+    BOOL fake_irq = block->command == ATA_IDENTIFY_DEVICE
+        || block->command == ATA_IDENTIFY_ATAPI;
+    UWORD timeout = fake_irq? 1 : TIMEOUT;
 
     if (FALSE == ata_SelectUnit(unit))
         return IOERR_UNITBUSY;
@@ -573,7 +576,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
         case CT_LBA48:
             DATA(bug("[ATA%02ld] ata_exec_cmd: Command uses 48bit LBA addressing (NEW)\n", unit->au_UnitNum));
 
-            PIO_Out(bus, 0x40 | unit->au_DevMask, ata_DevHead);
+            PIO_Out(bus, DEVHEAD_VAL | unit->au_DevMask, ata_DevHead);
             PIO_Out(bus, block->blk >> 40, ata_LBAHigh);
             PIO_Out(bus, block->blk >> 32, ata_LBAMid);
             PIO_Out(bus, block->blk >> 24, ata_LBALow);
@@ -643,7 +646,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
      */
     if (block->method == CM_PIOWrite)
     {
-	if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, FALSE, &status)) {
+	if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, FALSE, FALSE, &status)) {
 	    DERROR(bug("[ATA%02ld] ata_exec_cmd: PIOWrite - no response from device. Status %02X\n", unit->au_UnitNum, status));
 	    return IOERR_UNITBUSY;
 	}
@@ -661,7 +664,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
     /*
      * wait for drive to complete what it has to do
      */
-    if (FALSE == ata_WaitBusyTO(unit, TIMEOUT, use_irq, NULL))
+    if (FALSE == ata_WaitBusyTO(unit, timeout, TRUE, fake_irq, &status))
     {
         DERROR(bug("[ATA%02ld] ata_exec_cmd: Device is late - no response\n", unit->au_UnitNum));
         err = IOERR_UNITBUSY;
@@ -779,7 +782,7 @@ static BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data,
     //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
 
     ata_WaitBusyTO(unit, TIMEOUT, (unit->au_Drive->id_General & 0x60) == 0x20,
-        NULL);
+        FALSE, NULL);
     if (0 == (ata_ReadStatus(bus) & ATAF_DATAREQ))
         return HFERR_BadStatus;
 
@@ -933,7 +936,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, struct ata_Unit *unit)
     DINIT(bug("[ATA  ] ata_setup_unit(%d)\n", unit->au_UnitNum));
     ata_SelectUnit(unit);
 
-    if (FALSE == ata_WaitBusyTO(unit, 1, FALSE, NULL))
+    if (FALSE == ata_WaitBusyTO(unit, 1, FALSE, FALSE, NULL))
     {
         DINIT(bug("[ATA%02ld] ata_setup_unit: ERROR: Drive not ready for use. Keeping functions stubbed\n", unit->au_UnitNum));
         return FALSE;
@@ -1040,7 +1043,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
             ata_IRQSetHandler(unit, ata_IRQNoData, NULL, 0, 0);
             PIO_Out(bus, unit->au_Drive->id_RWMultipleSize & 0xFF, ata_Count);
             PIO_Out(bus, ATA_SET_MULTIPLE, ata_Command);
-            ata_WaitBusyTO(unit, -1, TRUE, NULL);
+            ata_WaitBusyTO(unit, -1, TRUE, FALSE, NULL);
 
             unit->au_UseModes |= AF_XFER_RWMULTI;
             unit->au_Read32    = ata_ReadMultiple32;
@@ -1286,7 +1289,8 @@ static BYTE ata_Identify(struct ata_Unit *unit)
             " instead\n", unit->au_UnitNum, atapi ? "DEVICE" : "ATAPI"));
         if (ata_exec_cmd(unit, &acb))
         {
-            DINIT(bug("[ATA%02ld] ata_Identify: Both command variants failed\n",
+            DINIT(bug("[ATA%02ld] ata_Identify: Both command variants failed."
+                " Discarding drive.\n",
                 unit->au_UnitNum));
             return IOERR_OPENFAIL;
         }
@@ -1317,20 +1321,6 @@ static BYTE ata_Identify(struct ata_Unit *unit)
             if (ata_exec_cmd(unit, &acb))
                 return IOERR_OPENFAIL;
         }
-    }
-
-    /*
-     * If entire identify data consists of zeroes, there isn't really a drive
-     * there
-     */
-    for (n = 0, p = (UWORD *)unit->au_Drive, limit = p + 256; p < limit; p++)
-        n |= *p;
-
-    if (n == 0)
-    {
-        DINIT(bug("[ATA%02ld] Identify data is invalid (all zeroes)."
-            " Discarding drive.\n", unit->au_UnitNum));
-        return IOERR_OPENFAIL;
     }
 
 #if (AROS_BIG_ENDIAN != 0)
@@ -2102,6 +2092,7 @@ static ULONG ata_ReadSignature(struct ata_Bus *bus, int unit,
                 DINIT(bug("[ATA  ] ata_ReadSignature: Found NONE\n"));
                 return DEV_NONE;
             }
+
             /* ATA_EXECUTE_DIAG is executed by both devices, do it only once */
             if (!*DiagExecuted)
             {
@@ -2255,7 +2246,7 @@ void ata_InitBus(struct ata_Bus *bus)
     {
         /* Select device and disable IRQs */
         PIO_Out(bus, DEVHEAD_VAL | (i << 4), ata_DevHead);
-        ata_WaitTO(bus->ab_Timer, 0, 100, 0);
+        ata_WaitTO(bus->ab_Timer, 0, 400, 0);
         PIO_OutAlt(bus, ATACTLF_INT_DISABLE, ata_AltControl);
 
         /* Write some pattern to registers */

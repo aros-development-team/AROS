@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ata.device main private include file
@@ -127,7 +127,6 @@ struct ata_Bus
    BYTE                    ab_SleepySignal; /* Signal used to wake the task up, when it's waiting */
    /* for data requests/DMA */
    UBYTE                   ab_BusNum;  /* bus id - used to calculate device id */
-   volatile LONG           ab_Timeout; /* in seconds; please note that resolution is low (1sec) */
 
    struct ata_Unit         *ab_Units[MAX_BUSUNITS];    /* Units on the bus */
    struct ata_Unit         *ab_SelectedUnit;    /* Currently selected unit */
@@ -345,10 +344,6 @@ AROS_UFP3(BOOL, Hidd_ATABus_Open,
           AROS_UFPA(struct Hook *, h, A0),
           AROS_UFPA(OOP_Object *, obj, A2),
           AROS_UFPA(IPTR, reqUnit, A1));
-AROS_UFP3(BOOL, Hidd_ATABus_Tick,
-          AROS_UFPA(struct Hook *, h, A0),
-          AROS_UFPA(OOP_Object *, obj, A2),
-          AROS_UFPA(struct ataBase *, ATABase, A1));
 
 void ata_InitBus(struct ata_Bus *);
 int atapi_TestUnitOK(struct ata_Unit *);

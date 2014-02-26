@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2013, The AROS Development Team. All rights reserved
+    Copyright © 2004-2014, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -745,11 +745,6 @@ AROS_LH1(ULONG, GetBlkSize,
     AROS_LIBFUNC_EXIT
 }
 
-static const struct Hook tickHook =
-{
-    .h_Entry = Hidd_ATABus_Tick,
-};
-
 /*
  * The daemon of ata.device first opens all ATAPI devices and then enters
  * endless loop. Every 2 seconds it tells ATAPI units to check the media
@@ -831,10 +826,6 @@ void DaemonCode(struct ataBase *ATABase)
 
             ReleaseSemaphore(&ATABase->DaemonSem);
         }
-
-        /* check / trigger all buses waiting for an irq */
-        DB2(bug("[ATA++] Checking timeouts...\n"));
-        HW_EnumDrivers(ATABase->ataObj, (struct Hook *)&tickHook, ATABase);
 
         /*
          * And then hide and wait for 1 second

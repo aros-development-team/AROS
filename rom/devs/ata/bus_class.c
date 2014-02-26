@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1074,34 +1074,6 @@ AROS_UFH3(BOOL, Hidd_ATABus_Open,
         return TRUE;
     }
     
-    return FALSE;
-
-    AROS_USERFUNC_EXIT
-}
-
-AROS_UFH3(BOOL, Hidd_ATABus_Tick,
-          AROS_UFHA(struct Hook *, h, A0),
-          AROS_UFHA(OOP_Object *, obj, A2),
-          AROS_UFHA(struct ataBase *, ATABase, A1))
-{
-    AROS_USERFUNC_INIT
-
-    struct ata_Bus *bus = (struct ata_Bus *)OOP_INST_DATA(ATABase->busClass, obj);
-    LONG timeout = 0;
-
-    /*
-     * This compare-decrement-fetch should be atomic, so we
-     * use Forbid() here.
-     * Not a good design, can anybody invent better one ?
-     */
-    Forbid();
-    if (bus->ab_Timeout >= 0)
-        timeout = --bus->ab_Timeout;
-    Permit();
-
-    if (timeout < 0)
-        Signal(bus->ab_Task, SIGBREAKF_CTRL_C);
-
     return FALSE;
 
     AROS_USERFUNC_EXIT
