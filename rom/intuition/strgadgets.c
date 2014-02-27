@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -417,27 +417,6 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
 
     }
     pens[CURSORPEN] = dri->dri_Pens[FILLPEN];
-
-    /* do some protection against stupid apps so we don't get into white text on white background pb */
-    if (pens[STRTEXTPEN] == pens[STRBACKPEN])
-    {
-        if (pens[STRTEXTPEN] != 0)
-        {
-            pens[STRBACKPEN] = 0;
-            if (pens[STRTEXTPEN] != 3) docursor = TRUE;
-        }
-	else
-	{
-            pens[STRTEXTPEN] = 1;
-            pens[STRBACKPEN] = 0;
-            docursor = TRUE;
-        }
-    }
-
-    if ((pens[CURSORPEN] == pens[STRTEXTPEN]) || (pens[CURSORPEN] == pens[STRBACKPEN]))
-    {
-        pens[CURSORPEN] = (docursor ? 3 : ((pens[STRTEXTPEN] == 2) ? 2 : 1));
-    }
 
     FreeScreenDrawInfo(win->WScreen, dri);
 
