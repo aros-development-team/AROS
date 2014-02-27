@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include <exec/types.h>
 #include <exec/io.h>
@@ -158,6 +162,7 @@ ULONG ASM SAVEDS GetString (
 /* #define CLEARSIZE	(28+sizeof(struct NewWindow)+sizeof(struct IntuiText)+\
 				 sizeof(struct NewGadget)+2*sizeof(struct FmtBuff)) */
 				 
+// FIXME: obsolete comment?
     /* keep these vars together and just BEFORE NewWindow struct! */
     /*-------------------------------------------------*/
     int 		reqpos = REQPOS_DEFAULT;
@@ -169,6 +174,7 @@ ULONG ASM SAVEDS GetString (
     struct NewGadget 	ng;
     struct Image 	*img;
     /**/
+// FIXME: obsolete comment?
     /* KEEP MIN AND MAX IN THIS ORDER !!!! */
     int 		max = MAXINT, min = MININT;
     /**/
@@ -600,6 +606,8 @@ ULONG ASM SAVEDS GetString (
 	    if (invisible) {
 	        glob->strinfo->Extension->Pens[0] = 0;
 	        glob->strinfo->Extension->Pens[1] = 0;
+	        glob->strinfo->Extension->ActivePens[0] = 0;
+	        glob->strinfo->Extension->ActivePens[1] = 0;
 	    }
 	}
 	
