@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -273,6 +273,7 @@ IPTR StrGClass__OM_NEW(Class *cl, Object * o, struct opSet *msg)
 
         /* Set some defaults */
         data->StrInfo.MaxChars = 80;
+        data->StrExtend.Pens[0] = data->StrExtend.ActivePens[0] = 1;
 
         strg_set(cl, g, msg);
 
