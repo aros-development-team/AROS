@@ -374,9 +374,9 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
     Object *list = data->list;
     struct MUI_List_TestPos_Result pos;
-    LONG seltype, old_active, new_active, visible;
+    LONG seltype, old_active, new_active, visible, first, last, i;
     IPTR result = 0;
-    BOOL select = FALSE, clear = FALSE;
+    BOOL select = FALSE, clear = FALSE, range_select = FALSE;
     WORD delta;
     typeof(msg->muikey) muikey = msg->muikey;
 
@@ -494,7 +494,7 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                 {
                     data->mouse_click = MOUSE_CLICK_ENTRY;
 
-                    if (!data->read_only)
+                    if (!data->read_only && pos.entry != -1)
                     {
                         new_active = pos.entry;
 
@@ -568,8 +568,11 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
             select = new_active != old_active
                 && data->multiselect != MUIV_Listview_MultiSelect_None;
             if (select)
+            {
                 DoMethod(list, MUIM_List_Select, MUIV_List_Select_Active,
                     MUIV_List_Select_Ask, &seltype);
+                range_select = new_active >= 0;
+            }
 
             break;
 
@@ -620,8 +623,20 @@ IPTR Listview__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         set(list, MUIA_List_Active, new_active);
 
     if (select)
-        DoMethod(list, MUIM_List_Select, MUIV_List_Select_Active, seltype,
-            NULL);
+    {
+        if (range_select)
+        {
+            if (old_active < new_active)
+                first = old_active + 1, last = new_active;
+            else
+                first = new_active, last = old_active - 1;
+            for (i = first; i <= last; i++)
+                DoMethod(list, MUIM_List_Select, i, seltype, NULL);
+        }
+        else
+            DoMethod(list, MUIM_List_Select, MUIV_List_Select_Active, seltype,
+                NULL);
+    }
     set(obj, MUIA_Listview_SelectChange, FALSE);
 
     return result;
