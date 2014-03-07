@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -295,7 +295,7 @@ void installStageFiles(struct Volume *volume) {
 int retval;
 unsigned int block;
 
-	retval=findFile(volume, "/boot/grub/stage2", stage2_firstblock);
+	retval=findFile(volume, "/boot/pc/grub/stage2", stage2_firstblock);
 	if ( retval == 0 )
 	{
 		block = AROS_BE2LONG(stage2_firstblock[1]);
@@ -327,7 +327,7 @@ unsigned int block;
 				)
 			)
 		{
-			if (findFile(volume, "/boot/grub/stage1", volume->blockbuffer) == 0)
+			if (findFile(volume, "/boot/pc/grub/stage1", volume->blockbuffer) == 0)
 			{
 				/* read first data block of stage1 */
 				retval = readwriteBlock
