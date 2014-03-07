@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -117,10 +117,12 @@ void emit_sets(setnode *setlist, FILE *out)
 
 /*
     Notes on sections:
-    .ctors/.dtors - up to GCC 4.6 this was the defafult section where static C++ constructurs
-    were placed for majority of targers
-   .init_array/.fini_array - ARM EABI is using these sections to place static C++ constructors.
-    As of GCC 4.6 the constructors can be placed in .init_array/.fini_array for any target
+    .ctors/.dtors - up to GCC 4.6 this was the default section where static
+    C++ constructors were placed for majority of targets.
+    .init_array/.fini_array - ARM EABI uses these sections to place static
+    C++ constructors.
+    As of GCC 4.6 the constructors can be placed in .init_array/.fini_array
+    for any target
  */
 
 void parse_secname(const char *secname, setnode **setlist_ptr)
