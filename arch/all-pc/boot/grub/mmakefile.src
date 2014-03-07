@@ -1,4 +1,4 @@
-# Copyright © 2004-2013, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2014, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -19,7 +19,7 @@ grub-copy-stages : $(AROSARCHDIR)/grub/stage1 $(AROSARCHDIR)/grub/stage2 $(AROSA
 # OR MAKE SURE -fno-stack-protector IS DETECTED IF COMPILER SUPPORTS IT
 
 %build_with_configure mmake=grub compiler=kernel install_target= \
-    extraoptions="$(GRUBOPTS)" 
+    extraoptions="$(GRUBOPTS)" extracflags="-Wl,--build-id=none"
     
 $(AROSARCHDIR)/grub/stage1: $(GENDIR)/$(CURDIR)/stage1/stage1
 	%mkdirs_q $(dir $@)
