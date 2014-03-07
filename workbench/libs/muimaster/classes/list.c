@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -134,7 +134,8 @@ struct MUI_ListData
 
     /* Titlestuff */
     int title_height;           /* The complete height of the title */
-    STRPTR title;       /* On single comlums this is the title, otherwise 1 */
+    STRPTR title;               /* On single column lists this is the title,
+                                 * otherwise 1. NULL for no title(s) */
 
     /* Cursor images */
     struct MUI_ImageSpec_intern *list_cursor;
@@ -257,9 +258,9 @@ static void FreeListEntry(struct MUI_ListData *data,
 }
 
 /**************************************************************************
- Ensures that we there can be at least the given amount of entries within
+ Ensures that there can be at least the given amount of entries within
  the list. Returns 0 if not. It also allocates the space for the title.
- It can be accesses with data->entries[ENTRY_TITLE]
+ It can be accessed with data->entries[ENTRY_TITLE]
 **************************************************************************/
 static int SetListSize(struct MUI_ListData *data, LONG size)
 {
@@ -894,6 +895,11 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             }
             break;
 
+        case MUIA_List_Title:
+            data->title = (STRPTR) tag->ti_Data;
+            DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
+            break;
+
         case MUIA_List_VertProp_First:
             data->vertprop_first = tag->ti_Data;
             if (data->entries_first != tag->ti_Data)
@@ -1091,7 +1097,7 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         STORE = data->insert_position;
         return 1;
     case MUIA_List_Title:
-        STORE = (unsigned long)data->title;
+        STORE = (IPTR) data->title;
         return 1;
     case MUIA_List_VertProp_Entries:
         STORE = data->vertprop_entries;
@@ -1142,15 +1148,6 @@ IPTR List__MUIM_Setup(struct IClass *cl, Object *obj,
     data->prefs_smoothval = muiGlobalInfo(obj)->mgi_Prefs->list_smoothval;
 
     CalcWidths(cl, obj);
-
-    if (data->title)
-    {
-        data->title_height = data->entries[ENTRY_TITLE]->height + 2;
-    }
-    else
-    {
-        data->title_height = 0;
-    }
 
     data->list_cursor =
         zune_imspec_setup(MUII_ListCursor, muiRenderInfo(obj));
@@ -1372,14 +1369,20 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     DoSuperMethodA(cl, obj, (Msg) msg);
 
-    if (msg->flags & MADF_DRAWUPDATE)
+    /* Calculate the title height */
+    if (data->title)
     {
-        if (data->update == 1)
-            DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
-                _mwidth(obj), _mheight(obj),
-                0, data->entries_first * data->entry_maxheight, 0);
+        data->title_height = data->entries[ENTRY_TITLE]->height + 2;
     }
     else
+    {
+        data->title_height = 0;
+    }
+
+    /* Calc the numbers of entries visible */
+    CalcVertVisible(cl, obj);
+
+    if ((msg->flags & MADF_DRAWUPDATE) == 0 || data->update == 1)
     {
         DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
             _mwidth(obj), _mheight(obj),
@@ -1389,8 +1392,7 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
         _mwidth(obj), _mheight(obj));
 
-    if (!(msg->flags & MADF_DRAWUPDATE)
-        || ((msg->flags & MADF_DRAWUPDATE) && data->update == 1))
+    if ((msg->flags & MADF_DRAWUPDATE) == 0 || data->update == 1)
     {
         y = _mtop(obj);
         /* Draw Title
@@ -2584,7 +2586,7 @@ IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
 
     if (mx < 0)
         flags |= MUI_LPR_LEFT;
-    if (mx >= _width(obj))
+    else if (mx >= _width(obj))
         flags |= MUI_LPR_RIGHT;
     else
     {
