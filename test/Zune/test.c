@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2013, The AROS Development Team.
+    Copyright © 2002-2014, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -37,9 +37,12 @@
 #endif
 
 #define LIST_COUNT 5
+#define MULTI_LIST_COUNT 2
 
 #define NUMERIC_MIN 0
 #define NUMERIC_MAX 100
+
+static const TEXT list_format[] = "BAR,BAR,";
 
 enum
 {
@@ -375,6 +378,9 @@ int main(void)
     Object *list_add_button, *list_remove_button, *list_clear_button;
     Object *dragsortable_check, *showdropmarks_check, *quiet_check;
     Object *sort_button, *clear_button, *fill_button;
+    Object *multi_lists[MULTI_LIST_COUNT];
+    Object *format_string;
+    Object *showheadings_check;
     Object *numerics[NUMERIC_COUNT];
     Object *min_string, *max_string;
     Object *slider_button;
@@ -385,7 +391,7 @@ int main(void)
         {"Groups", "Colorwheel", "Virtual Group", "Edit", "List", "Gauges",
             "Numeric", "Radio", "Icon List", "Balancing", NULL};
     static char *list_pages[] =
-        {"Single Column (1)", "Single Column (2)", NULL};
+        {"Single Column (1)", "Single Column (2)", "Multicolumn", NULL};
     static char **radio_entries1 = pages;
     static char *radio_entries2[] =
         {"Paris", "Pataya", "London", "New York", "Reykjavik", NULL};
@@ -667,6 +673,7 @@ int main(void)
                                         MUIA_Listview_List,
                                             lists[0] = ListObject,
                                             InputListFrame,
+                                            MUIA_List_Title, "Fruits",
                                             MUIA_List_SourceArray, fruits,
                                             End,
                                         MUIA_Listview_MultiSelect,
@@ -779,6 +786,59 @@ int main(void)
                                     MUI_MakeObject(MUIO_Button,"_Remove"),
                                 Child, list_clear_button =
                                     MUI_MakeObject(MUIO_Button,"_Clear"),
+                                End,
+                            End,
+                        Child, VGroup,
+                            Child, ColGroup(LIST_COUNT / 2),
+                                Child, VGroup, GroupFrameT("Standard Format"),
+                                    Child, ListviewObject,
+                                        MUIA_Listview_List,
+                                            multi_lists[0] = ListObject,
+                                            InputListFrame,
+                                            MUIA_List_DisplayHook,
+                                                &hook_display,
+                                            MUIA_List_Format, list_format,
+                                            MUIA_List_SourceArray, entries,
+                                            MUIA_List_Title, TRUE,
+                                            End,
+                                        MUIA_Listview_MultiSelect,
+                                            MUIV_Listview_MultiSelect_None,
+                                        MUIA_CycleChain, 1,
+                                        End,
+                                    End,
+                                Child, VGroup, GroupFrameT("Custom Format"),
+                                    Child, ListviewObject,
+                                        MUIA_Listview_List,
+                                            multi_lists[1] = ListObject,
+                                            InputListFrame,
+                                            MUIA_List_DisplayHook,
+                                                &hook_display,
+                                            MUIA_List_Format, list_format,
+                                            MUIA_List_SourceArray, entries,
+                                            MUIA_List_Title, TRUE,
+                                            End,
+                                        MUIA_Listview_MultiSelect,
+                                            MUIV_Listview_MultiSelect_None,
+                                        MUIA_CycleChain, 1,
+                                        End,
+                                    End,
+                                End,
+                            Child, RectangleObject,
+                                MUIA_VertWeight, 0,
+                                MUIA_Rectangle_HBar, TRUE,
+                                MUIA_Rectangle_BarTitle, "List Controls",
+                                End,
+                            Child, HGroup,
+                                Child, MUI_MakeObject(MUIO_Label, "Format:", 0),
+                                Child, format_string = StringObject,
+                                    StringFrame,
+                                    MUIA_String_Contents, list_format,
+                                    MUIA_CycleChain, 1,
+                                    End,
+                                Child, showheadings_check =
+                                    MUI_MakeObject(MUIO_Checkmark, NULL),
+                                Child, MUI_MakeObject(MUIO_Label,
+                                    "Show column headings", 0),
                                 End,
                             End,
                         End,
@@ -1139,6 +1199,17 @@ int main(void)
             DoMethod(quiet_check, MUIM_Notify, MUIA_Selected,
                 MUIV_EveryTime, lists[i], 3, MUIM_Set, MUIA_List_Quiet,
                 MUIV_TriggerValue);
+        }
+
+        set(showheadings_check, MUIA_Selected, TRUE);
+        DoMethod(format_string, MUIM_Notify, MUIA_String_Acknowledge,
+            MUIV_EveryTime, multi_lists[1], 3, MUIM_Set, MUIA_List_Format,
+            MUIV_TriggerValue);
+        for (i = 0; i < MULTI_LIST_COUNT; i++)
+        {
+            DoMethod(showheadings_check, MUIM_Notify, MUIA_Selected,
+                MUIV_EveryTime, multi_lists[i], 3, MUIM_Set,
+                MUIA_List_Title, MUIV_TriggerValue);
         }
 
         DoMethod(listview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
