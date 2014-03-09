@@ -210,7 +210,7 @@ AROS_UFH0(void, save_function)
 {
     AROS_USERFUNC_INIT
 
-    char *text = (char *)XGET(editor_text, MUIA_Text_Contents);
+    char *text = (char *)XGET(editor_text, MUIA_String_Contents);
     char *filename = (char *)XGET(filename_string, MUIA_String_Contents);
     BPTR fh;
 
