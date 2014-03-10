@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -199,7 +199,7 @@ IPTR Radio__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
 }
 
 /**************************************************************************
- MUIM_Export - to export an objects "contents" to a dataspace object.
+ MUIM_Export - to export an object's "contents" to a dataspace object.
 **************************************************************************/
 IPTR Radio__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
@@ -217,7 +217,7 @@ IPTR Radio__MUIM_Export(struct IClass *cl, Object *obj,
 }
 
 /**************************************************************************
- MUIM_Import - to import an objects "contents" from a dataspace object.
+ MUIM_Import - to import an object's "contents" from a dataspace object.
 **************************************************************************/
 IPTR Radio__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)

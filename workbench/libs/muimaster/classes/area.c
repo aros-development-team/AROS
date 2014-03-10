@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2013, The AROS Development Team.
+    Copyright © 2002-2014, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -2242,7 +2242,7 @@ static IPTR Area__MUIM_ContextMenuChoice(struct IClass *cl, Object *obj,
 
 
 /**************************************************************************
-MUIM_Export : to export an objects "contents" to a dataspace object.
+MUIM_Export : to export an object's "contents" to a dataspace object.
 **************************************************************************/
 static IPTR Area__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
