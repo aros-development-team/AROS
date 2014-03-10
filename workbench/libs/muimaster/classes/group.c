@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2013, The AROS Development Team.
+    Copyright  2002-2014, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -3175,7 +3175,7 @@ IPTR Group__MUIM_FindAreaObject(struct IClass *cl, Object *obj,
 }
 
 /**************************************************************************
-MUIM_Export : to export an objects "contents" to a dataspace object.
+MUIM_Export : to export an object's "contents" to a dataspace object.
 **************************************************************************/
 static IPTR Group__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
@@ -3200,7 +3200,7 @@ static IPTR Group__MUIM_Export(struct IClass *cl, Object *obj,
 
 
 /**************************************************************************
-MUIM_Import : to import an objects "contents" from a dataspace object.
+MUIM_Import : to import an object's "contents" from a dataspace object.
 **************************************************************************/
 static IPTR Group__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)

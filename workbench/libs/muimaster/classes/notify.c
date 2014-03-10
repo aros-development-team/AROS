@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -66,11 +66,11 @@ MUIA_UserData [ISG]            done
 MUIA_Version [..G]             done
 
 MUIM_CallHook                  done
-MUIM_Export                    dummy & redefine in subclasses w/ childs
-MUIM_FindUData                 redefine in subclasses w/ childs
+MUIM_Export                    dummy & redefine in subclasses w/ children
+MUIM_FindUData                 redefine in subclasses w/ children
 MUIM_GetConfigItem
-MUIM_GetUData                  redefine in subclasses w/ childs
-MUIM_Import                    dummy & redefine in subclasses w/ childs
+MUIM_GetUData                  redefine in subclasses w/ children
+MUIM_Import                    dummy & redefine in subclasses w/ children
 MUIM_KillNotify                done
 MUIM_KillNotifyObj             done (semantic ?)
 MUIM_MultiSet                  done
@@ -78,8 +78,8 @@ MUIM_NoNotifySet               done
 MUIM_Notify                    done
 MUIM_Set                       done
 MUIM_SetAsString               done
-MUIM_SetUData                  redefine in subclasses w/ childs
-MUIM_SetUDataOnce              redefine in subclasses w/ childs
+MUIM_SetUData                  redefine in subclasses w/ children
+MUIM_SetUDataOnce              redefine in subclasses w/ children
 MUIM_WriteLong                 done
 MUIM_WriteString               done
 */
@@ -530,7 +530,7 @@ IPTR Notify__MUIM_CallHook(struct IClass *cl, Object *obj,
 
 
 /*
- * MUIM_Export : to export an objects "contents" to a dataspace object.
+ * MUIM_Export : to export an object's "contents" to a dataspace object.
  */
 /* nothing to export */
 
@@ -571,7 +571,7 @@ IPTR Notify__MUIM_GetUData(struct IClass *cl, Object *obj,
 
 
 /*
- * MUIM_Import : to import an objects "contents" from a dataspace object.
+ * MUIM_Import : to import an object's "contents" from a dataspace object.
  */
 /* nothing to import */
 
