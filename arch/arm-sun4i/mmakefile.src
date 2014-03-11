@@ -1,0 +1,7 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- includes-sun4i : sun4i-platform-includes-$(AROS_TARGET_VARIANT)
+
+%common

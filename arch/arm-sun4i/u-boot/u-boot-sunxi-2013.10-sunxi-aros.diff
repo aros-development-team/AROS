@@ -1,0 +1,44 @@
+--- u-boot/Makefile	2013-11-26 00:20:38.000000000 +0200
++++ u-boot/Makefile	2014-03-11 12:11:28.843649123 +0200
+@@ -4,6 +4,12 @@
+ #
+ # SPDX-License-Identifier:	GPL-2.0+
+ #
++include $(TOP)/config/make.cfg
++
++UBOOTDIR := $(GENDIR)/$(CURDIR)
++export UBOOTDIR
++
++CROSS_COMPILE := arm-aros-
+ 
+ VERSION = 2013
+ PATCHLEVEL = 10
+@@ -100,10 +106,10 @@
+ $(if $(BUILD_DIR),,$(error output directory "$(saved-output)" does not exist))
+ endif # ifneq ($(BUILD_DIR),)
+ 
+-OBJTREE		:= $(if $(BUILD_DIR),$(BUILD_DIR),$(CURDIR))
++OBJTREE		:= $(if $(BUILD_DIR),$(BUILD_DIR),$(UBOOTDIR))
+ SPLTREE		:= $(OBJTREE)/spl
+ TPLTREE		:= $(OBJTREE)/tpl
+-SRCTREE		:= $(CURDIR)
++SRCTREE		:= $(UBOOTDIR)
+ TOPDIR		:= $(SRCTREE)
+ LNDIR		:= $(OBJTREE)
+ export	TOPDIR SRCTREE OBJTREE SPLTREE TPLTREE
+--- u-boot-sunxi-2013.10-sunxi-aros/config.mk	2013-11-26 00:20:38.000000000 +0200
++++ u-boot-sunxi-2013.10-sunxi/config.mk	2014-03-11 12:12:37.168988000 +0200
+@@ -19,10 +19,10 @@
+ SPL_BIN := u-boot-spl
+ endif
+ 
+-ifeq ($(CURDIR),$(SRCTREE))
++ifeq ($(shell pwd),$(SRCTREE))
+ dir :=
+ else
+-dir := $(subst $(SRCTREE)/,,$(CURDIR))
++dir := $(subst $(SRCTREE)/,,$(shell pwd))
+ endif
+ 
+ ifneq ($(OBJTREE),$(SRCTREE))
+
