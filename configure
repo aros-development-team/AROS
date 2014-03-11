@@ -8347,6 +8347,29 @@ case "$target_os" in
         aros_target_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
         ;;
 
+    sun4i)
+        aros_flavour="standalone"
+        aros_target_arch="sun4i"
+        aros_target_cpu="arm"
+        aros_object_format="armelf_aros"
+        aros_shared_default="no"
+        aros_arch_libs="-laeabi"
+
+		gcc_default_cpu="armv7-a"
+        gcc_default_cpu_tune="cortex-a8"
+		gcc_default_float_abi="hard"
+
+		if test "$target_variant" = ""; then
+			as_fn_error $? "\"Please provide the target platform for sun4i with--enable-target-variant={platform}\"" "$LINENO" 5
+		fi
+
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm"
+        aros_config_cflags="$aros_config_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_config_aflags="$aros_config_aflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_kernel_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        aros_target_cflags="$aros_kernel_cflags -marm -Wno-error -fno-asynchronous-unwind-tables -fno-exceptions"
+        ;;
+
     amiga*)
         aros_target_arch="amiga"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
