@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2013, The AROS Development Team.
+    Copyright  2002-2014, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -860,7 +860,7 @@ static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
 
     if (((data->wd_XStore >= 0) && (data->wd_YStore >= 0)) || prefssnap)
     {
-        DoMethod(obj, MUIM_Window_Snapshot, 0);
+        DoMethod(obj, MUIM_Window_Snapshot, 1);
     }
 
     data->wd_RenderInfo.mri_Window = NULL;
@@ -4307,6 +4307,7 @@ IPTR Window__MUIM_Snapshot(struct IClass *cl, Object *obj,
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct windowpos winp;
     struct Window *w;
+
     winp.id = data->wd_ID;
     w = data->wd_RenderInfo.mri_Window;
     if (w)
@@ -4377,7 +4378,7 @@ IPTR Window__MUIM_UpdateMenu(struct IClass *cl, Object *obj, Msg msg)
 }
 
 /**************************************************************************
-MUIM_Export : to export an objects "contents" to a dataspace object.
+MUIM_Export : to export an object's "contents" to a dataspace object.
 **************************************************************************/
 static IPTR Window__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
@@ -4389,7 +4390,7 @@ static IPTR Window__MUIM_Export(struct IClass *cl, Object *obj,
 
 
 /**************************************************************************
-MUIM_Import : to import an objects "contents" from a dataspace object.
+MUIM_Import : to import an object's "contents" from a dataspace object.
 **************************************************************************/
 static IPTR Window__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)
