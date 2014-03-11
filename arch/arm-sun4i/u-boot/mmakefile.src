@@ -1,0 +1,21 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- sun4i-bootloader :  sun4i-bootloader-fetch sun4i-bootloader-build
+
+# %fetch doesn't work here, so do it manually. Some problem with redirection?
+#MM
+sun4i-bootloader-fetch:
+	wget -nc https://github.com/linux-sunxi/u-boot-sunxi/archive/v2013.10-sunxi.tar.gz -P $(PORTSSOURCEDIR)
+	mkdir -p $(GENDIR)/$(CURDIR)
+	cd $(GENDIR)/$(CURDIR) && \
+	tar --strip-components=1 -zxf  $(PORTSSOURCEDIR)/v2013.10-sunxi.tar.gz && \
+	patch < $(SRCDIR)/$(CURDIR)/u-boot-sunxi-2013.10-sunxi-aros.diff
+
+#MM
+sun4i-bootloader-build:
+	cd $(GENDIR)/$(CURDIR) && \
+	make $(AROS_TARGET_VARIANT)_config && make $(AROS_TARGET_VARIANT)
+	cp $(GENDIR)/$(CURDIR)/u-boot-sunxi-with-spl.bin $(AROSDIR)
+%common
