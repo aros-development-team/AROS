@@ -1,7 +1,6 @@
 /*
-    Copyright  2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
+
     $Id$
 */
 #include <stdlib.h>
@@ -707,7 +706,7 @@ static LONG windowpos_endian(IPTR data, BOOL isNative)
                 if (isNative)
                     D(bug("V%d: %d\n", j, *((WORD *) (p + cnt))));
                 *((WORD *) (p + cnt)) =
-                    AROS_SWAP_BYTES_LONG(*((WORD *) (p + cnt)));
+                    AROS_SWAP_BYTES_WORD(*((WORD *) (p + cnt)));
                 if (!isNative)
                     D(bug("V%d: %d\n", j, *((WORD *) (p + cnt))));
             }
