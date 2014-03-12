@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2013, The AROS Development Team.
+    Copyright (C) 2003-2014, The AROS Development Team.
     $Id$
 */
 
@@ -28,9 +28,10 @@
 #include "saveinfo.h"
 
 #define APPNAME "PCITool"
-#define VERSION "PCITool 0.6 (9.8.2010)"
+#define VERSION "PCITool 0.7 (12.3.2014)"
 #define IDB_SAVE 10001
 #define IDB_SAVEALL 10002
+#define MAX_STRING_LENGTH 200
 const char version[] = "$VER: " VERSION "\n";
 
 struct Library *OOPBase = NULL;
@@ -250,7 +251,7 @@ AROS_UFH3(void, select_function,
     if (active != MUIV_List_Active_Off)
     {
         IPTR val, val2, val3;
-        static char buf[80];
+        static char buf[MAX_STRING_LENGTH + 1];
 
         static char ranges[6][60];
         DoMethod(object, MUIM_List_GetEntry, active, (IPTR)&obj);
@@ -271,31 +272,38 @@ AROS_UFH3(void, select_function,
         OOP_GetAttr(obj, aHidd_PCIDevice_ClassDesc, (APTR)&class);
         OOP_GetAttr(obj, aHidd_PCIDevice_SubClassDesc, (APTR)&subclass);
         OOP_GetAttr(obj, aHidd_PCIDevice_InterfaceDesc, (APTR)&interface);
-        snprintf(buf, 79, "%s %s %s", class, subclass, interface);
+        snprintf(buf, MAX_STRING_LENGTH, "%s %s %s", class, subclass,
+            interface);
         set(StrDescription, MUIA_Text_Contents, buf);
         strcpy(SaveDeviceInfo.Description, buf); //Save Debug Info
         OOP_GetAttr(obj, aHidd_PCIDevice_VendorID, (APTR)&val);
-        snprintf(buf, 79, "0x%04lx", val);
+        snprintf(buf, MAX_STRING_LENGTH, "0x%04lx", val);
         set(VendorID, MUIA_Text_Contents, buf);
         strcpy(SaveDeviceInfo.VendorID, buf);
-        set(VendorName, MUIA_Text_Contents, pciids_GetVendorName(val, buf, 79));
+        set(VendorName, MUIA_Text_Contents, pciids_GetVendorName(val, buf,
+            MAX_STRING_LENGTH));
         vendor = val;
-        strcpy(SaveDeviceInfo.Vendor_name, pciids_GetVendorName(val, buf, 79)); //Save Debug Info
+        strcpy(SaveDeviceInfo.Vendor_name,
+            pciids_GetVendorName(val, buf, MAX_STRING_LENGTH)); //Save Debug Info
         OOP_GetAttr(obj, aHidd_PCIDevice_ProductID, (APTR)&val);
-        snprintf(buf, 79, "0x%04lx", val);
+        snprintf(buf, MAX_STRING_LENGTH, "0x%04lx", val);
         set(ProductID, MUIA_Text_Contents, buf);
         strcpy(SaveDeviceInfo.ProductID, buf); //Save Debug Info
-        set(ProductName, MUIA_Text_Contents, pciids_GetDeviceName(vendor, val, buf, 79));
+        set(ProductName, MUIA_Text_Contents,
+            pciids_GetDeviceName(vendor, val, buf, MAX_STRING_LENGTH));
         product = val;
-        strcpy(SaveDeviceInfo.Product_name, pciids_GetDeviceName(vendor, val, buf, 79)); 
+        strcpy(SaveDeviceInfo.Product_name,
+            pciids_GetDeviceName(vendor, val, buf, MAX_STRING_LENGTH)); 
 
         OOP_GetAttr(obj, aHidd_PCIDevice_SubsystemVendorID, (APTR)&val);
         subvendor = val;
         OOP_GetAttr(obj, aHidd_PCIDevice_SubsystemID, (APTR)&val);
         subdevice = val;
         set(SubsystemName, MUIA_Text_Contents,
-            pciids_GetSubDeviceName(vendor, product, subvendor, subdevice, buf, 79));
-        strcpy(SaveDeviceInfo.Subsystem, pciids_GetSubDeviceName(vendor, product, subvendor, subdevice, buf, 79));
+            pciids_GetSubDeviceName(vendor, product, subvendor, subdevice,
+                buf, MAX_STRING_LENGTH));
+        strcpy(SaveDeviceInfo.Subsystem, pciids_GetSubDeviceName(vendor,
+            product, subvendor, subdevice, buf, MAX_STRING_LENGTH));
  
         OOP_GetAttr(obj, aHidd_PCIDevice_Owner, (IPTR *)&owner);
         if (owner)
@@ -310,22 +318,22 @@ AROS_UFH3(void, select_function,
         }
 
         OOP_GetAttr(obj, aHidd_PCIDevice_RevisionID, (APTR)&val);
-        snprintf(buf, 79, "0x%02lx", val);
+        snprintf(buf, MAX_STRING_LENGTH, "0x%02lx", val);
         set(RevisionID, MUIA_Text_Contents, buf);
         strcpy(SaveDeviceInfo.RevisionID, buf); //Save Debug Info
 
         OOP_GetAttr(obj, aHidd_PCIDevice_Interface, (APTR)&val);
-        snprintf(buf, 79, "0x%02lx", val);
+        snprintf(buf, MAX_STRING_LENGTH, "0x%02lx", val);
         set(Interface, MUIA_Text_Contents, buf);
         strcpy(SaveDeviceInfo.Interface, buf); //Save Debug Info
 
         OOP_GetAttr(obj, aHidd_PCIDevice_Class, (APTR)&val);
-        snprintf(buf, 79, "0x%02lx", val);
+        snprintf(buf, MAX_STRING_LENGTH, "0x%02lx", val);
         set(_Class, MUIA_Text_Contents, buf);
         strcpy(SaveDeviceInfo.Class, buf); //Save Debug Info
 
         OOP_GetAttr(obj, aHidd_PCIDevice_SubClass, (APTR)&val);
-        snprintf(buf, 79, "0x%02lx", val);
+        snprintf(buf, MAX_STRING_LENGTH, "0x%02lx", val);
         set(SubClass, MUIA_Text_Contents, buf);
         strcpy(SaveDeviceInfo.Subclass, buf); //Save Debug Info
 
@@ -333,23 +341,24 @@ AROS_UFH3(void, select_function,
         OOP_GetAttr(obj, aHidd_PCIDevice_INTLine, (APTR)&val2);
         if (val)
         {
-            snprintf(buf, 79, "%ld (%c)", val2, (int)val + 'A' - 1);
+            snprintf(buf, MAX_STRING_LENGTH, "%ld (%c)", val2,
+                (int)val + 'A' - 1);
         }
-        else strncpy(buf, _(MSG_NA), 79);
-        buf[79] = 0;
+        else strncpy(buf, _(MSG_NA), MAX_STRING_LENGTH);
+        buf[MAX_STRING_LENGTH] = 0;
         set(IRQLine, MUIA_Text_Contents, buf);
         strcpy(SaveDeviceInfo.IRQ, buf); //Save Debug Info
 
         OOP_GetAttr(obj, aHidd_PCIDevice_RomBase, (APTR)&val);
         OOP_GetAttr(obj, aHidd_PCIDevice_RomSize, (APTR)&val2);
-        snprintf(buf, 79, "0x%08lx", val2);
+        snprintf(buf, MAX_STRING_LENGTH, "0x%08lx", val2);
         if (val2)
         {
             set(ROMSize, MUIA_Text_Contents, buf);
             strcpy(SaveDeviceInfo.ROM_Size, buf); //Save Debug Info
             if (val)
             {
-                snprintf(buf, 79, "0x%08lx", val);
+                snprintf(buf, MAX_STRING_LENGTH, "0x%08lx", val);
                 set(ROMBase, MUIA_Text_Contents, buf);
                 strcpy(SaveDeviceInfo.ROM_Base, buf); //Save Debug Info
             }
@@ -474,7 +483,7 @@ AROS_UFH3(void, select_function,
             OOP_GetAttr(obj, aHidd_PCIDevice_paletteSnoop, (APTR)&snoop);
             OOP_GetAttr(obj, aHidd_PCIDevice_is66MHz, (APTR)&is66);
 
-            snprintf(buf, 79, _(MSG_IO_MSG),
+            snprintf(buf, MAX_STRING_LENGTH, _(MSG_IO_MSG),
                 io ? _(MSG_YES):_(MSG_NO),
                 mem ? _(MSG_YES):_(MSG_NO),
                 master ? _(MSG_YES):_(MSG_NO),
@@ -495,7 +504,7 @@ BOOL GUIinit()
     app = ApplicationObject,
             MUIA_Application_Title,         (IPTR)APPNAME,
             MUIA_Application_Version,       (IPTR)VERSION,
-            MUIA_Application_Copyright,     (IPTR)"(C) 2004-2010, The AROS Development Team",
+            MUIA_Application_Copyright,     (IPTR)"(C) 2004-2014, The AROS Development Team",
             MUIA_Application_Author,        (IPTR)"Michal Schulz",
             MUIA_Application_Base,          (IPTR)APPNAME,
             MUIA_Application_Description,   __(MSG_DESCRIPTION),
@@ -514,6 +523,7 @@ BOOL GUIinit()
                             MUIA_List_AdjustWidth, TRUE,
                             MUIA_List_DisplayHook, &display_hook,
                         End, // List
+                        MUIA_CycleChain, 1,
                     End, // ListView
                     Child, VGroup,
                         Child, VGroup, GroupFrameT(_(MSG_DRIVER_INFO)),
@@ -724,6 +734,8 @@ int main(void)
                 HIDD_PCI_EnumDevices(pci, &pci_hook, NULL);
             }
 
+            set(DriverList, MUIA_List_Active, MUIV_List_Active_Top);
+            set(MainWindow, MUIA_Window_ActiveObject, DriverList);
             set(MainWindow, MUIA_Window_Open, TRUE);
             
             if(xget(MainWindow, MUIA_Window_Open))
