@@ -2,6 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- includes-sun4i : sun4i-platform-includes-$(AROS_TARGET_VARIANT)
+#MM- includes-sun4i : sun4i-includes sun4i-platform-includes-$(AROS_TARGET_VARIANT)
+#MM- AROS-sun4i-arm : includes-sun4i sun4i-bootloader sun4i-bootfiles
 
 %common

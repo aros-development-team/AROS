@@ -18,4 +18,5 @@ sun4i-bootloader-build:
 	cd $(GENDIR)/$(CURDIR) && \
 	make $(AROS_TARGET_VARIANT)_config && make $(AROS_TARGET_VARIANT)
 	cp $(GENDIR)/$(CURDIR)/u-boot-sunxi-with-spl.bin $(AROSDIR)
+
 %common

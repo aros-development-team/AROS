@@ -1,0 +1,5 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(call WILDCARD, hardware/*.h)
+%copy_includes mmake=sun4i-includes path=hardware/sun4i dir=hardware

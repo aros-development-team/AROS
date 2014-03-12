@@ -1,0 +1,67 @@
+# $Id $
+
+include $(TOP)/config/make.cfg
+
+TARGETDIR       := $(GENDIR)/$(CURDIR)
+FILES           := boot serialdebug elf support
+USER_CFLAGS     := -DUSE_UBOOT -ffixed-r8 -Wall -fno-builtin -O2
+
+#MM sun4i-bootfiles: \
+#MM	   kernel-sun4i-arm \
+#MM    kernel-image-sun4i-arm
+
+#MM kernel-image-sun4i-arm: \
+#MM     kernel-package-sun4i-arm
+
+#MM kernel-package-sun4i-arm: \
+#MM     kernel-oop \
+#MM     kernel-utility \
+#MM     hidd-i2c
+
+PKG_LIBS     := oop utility
+PKG_RSRC     := 
+PKG_DEVS     := 
+PKG_HANDLERS := 
+PKG_HIDDS    := i2c
+PKG_CLASSES  :=
+
+%make_package mmake=kernel-package-sun4i-arm file=$(AROSDIR)/boot/kernel.pkg \
+    libs=$(PKG_LIBS) res=$(PKG_RSRC) devs=$(PKG_DEVS) handlers=$(PKG_HANDLERS) \
+    hidds=$(PKD_HIDDS) classes=$(PKG_CLASSES)
+
+kernel-image-sun4i-arm:
+	mkimage -A arm -O linux -T ramdisk -C none -n "AROS rom" -d $(AROSDIR)/boot/kernel.pkg $(AROSDIR)/boot/uInitrd-aros
+
+sun4i-bootfiles: $(AROSDIR)/boot/arosboot
+
+$(AROSDIR)/boot/arosboot: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/kernel.bin.o
+	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/kernel.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $@
+	$(OBJCOPY) -O binary $@ $@.bin
+	gzip $@.bin
+	mv $@.bin.gz $@.bin
+	mkimage -A arm -O linux -T kernel -C gzip -a 0x75f00000 -e 0x75f00000 -n "AROS Boot" -d $@.bin $(AROSDIR)/boot/uImage-aros
+
+$(TARGETDIR)/kernel.bin.o: $(AROSDIR)/boot/aros-sun4imx
+	cp $(AROSDIR)/boot/aros-sun4imx $(TARGETDIR)/kernel.bin
+	cp $(SRCDIR)/$(CURDIR)/uEnv.txt $(AROSDIR)
+	cd $(TARGETDIR) && $(KERNEL_LD)  -r --format binary --oformat elf32-littlearm kernel.bin -o $@
+
+
+#MM
+clean ::
+		-$(RM) $(TESTS)
+
+$(TARGETDIR)/%.o : %.c
+		%compile_q 
+
+$(TARGETDIR)/%.o : %.S
+		%compile_q 
+
+$(TARGETDIR)/%.d : %.c
+		%mkdepend_q
+
+DEPS            := $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+
+-include $(DEPS)
+
+%common
