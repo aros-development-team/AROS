@@ -1,0 +1,28 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := kernel_startup kernel_debug maygetchar issuper
+
+#MM kernel-sun4i-arm: \
+#MM     setup-sun4i-arm \
+#MM     kernel-kernel-kobj
+
+kernel-sun4i-arm: $(AROSDIR)/boot/aros-sun4imx
+
+$(AROSDIR)/boot/aros-sun4imx: $(KOBJSDIR)/kernel_resource.o 
+		%mkdirs_q $(OSGENDIR)/boot
+		%mkdirs_q $(AROSDIR)/boot
+		$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static -laeabi
+		$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
+	
+
+#MM kernel-kernel-sun4i-arm : includes
+#MM kernel-kernel-sun4i-arm-kobj : includes
+
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+                 -I$(GENINCDIR) -I$(AROSDIR)/Development/include
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=rom/kernel arch=sun4i-arm \
+  files="$(FILES)" compiler=kernel
+  
