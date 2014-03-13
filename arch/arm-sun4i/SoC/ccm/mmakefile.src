@@ -1,0 +1,11 @@
+# $Id $
+include $(TOP)/config/make.cfg
+
+FILES	:= ccm
+
+#MM- sun4i-linklibs : sun4i-linklibs-ccm
+#MM sun4i-linklibs-ccm : sun4i-includes
+
+%build_linklib mmake=sun4i-linklibs-ccm libname=sun4i_ccm files="$(FILES)"
+
+%common

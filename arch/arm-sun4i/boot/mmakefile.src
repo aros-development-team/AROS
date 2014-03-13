@@ -41,8 +41,8 @@ $(AROSDIR)/boot/arosboot: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR
 	mv $@.bin.gz $@.bin
 	mkimage -A arm -O linux -T kernel -C gzip -a 0x75f00000 -e 0x75f00000 -n "AROS Boot" -d $@.bin $(AROSDIR)/boot/uImage-aros
 
-$(TARGETDIR)/kernel.bin.o: $(AROSDIR)/boot/aros-sun4imx
-	cp $(AROSDIR)/boot/aros-sun4imx $(TARGETDIR)/kernel.bin
+$(TARGETDIR)/kernel.bin.o: $(AROSDIR)/boot/aros-sun4i
+	cp $(AROSDIR)/boot/aros-sun4i $(TARGETDIR)/kernel.bin
 	cp $(SRCDIR)/$(CURDIR)/uEnv.txt $(AROSDIR)
 	cd $(TARGETDIR) && $(KERNEL_LD)  -r --format binary --oformat elf32-littlearm kernel.bin -o $@
 

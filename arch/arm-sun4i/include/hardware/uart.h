@@ -2,7 +2,7 @@
     Copyright © 2014, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: sun4i uart definitions
+    Desc: sun4i uart definitions (NS16550)
     Lang: english
 */
 
@@ -24,7 +24,7 @@
 #define SUN4I_PS2_0_BASE		0x01c2a000
 #define SUN4I_PS2_1_BASE		0x01c2a400
 
-struct NS16550 {
+struct UART {
 	uint32_t rbrthrdlb;
 	uint32_t ierdmb;
 	uint32_t iirfcrafr;
