@@ -13,19 +13,19 @@
 #include <hardware/sun4i/uart.h>
 
 static inline void waitBusy() {
-	volatile struct NS16550 *NS16550;
-	NS16550 = SUN4I_UARTDEBUG_BASE;
+	volatile struct UART *UARTDEBUG;
+	UARTDEBUG = SUN4I_UARTDEBUG_BASE;
 
-	while ((NS16550->lsr & LSR_THRE) == 0);
+	while ((UARTDEBUG->lsr & LSR_THRE) == 0);
 }
 
 static inline void putByte(uint8_t chr) {
-	volatile struct NS16550 *NS16550;
-	NS16550 = SUN4I_UARTDEBUG_BASE;
+	volatile struct UART *UARTDEBUG;
+	UARTDEBUG = SUN4I_UARTDEBUG_BASE;
 
-	NS16550->thr = (uint32_t) chr;
+	UARTDEBUG->thr = (uint32_t) chr;
 //	if (chr == '\n') {
-//		NS16550->thr = (uint32_t) '\r';
+//		UARTDEBUG->thr = (uint32_t) '\r';
 //	}
 }
 void putBytes(const char *str) {
