@@ -2,30 +2,30 @@ timeout 5
 default 3
 
 title AROS (native graphics)
-    multiboot @module.bootstrap@ ATA=32bit
+    kernel @module.bootstrap@ ATA=32bit
 @modules.default@
 
 title AROS (true colour VESA graphics)
-    multiboot @module.bootstrap@ vesa=32bit ATA=32bit nomonitors
+    kernel @module.bootstrap@ vesa=32bit ATA=32bit nomonitors
 @modules.default@
 	
 title AROS (high colour VESA graphics)
-    multiboot @module.bootstrap@ vesa=16bit ATA=32bit nomonitors
+    kernel @module.bootstrap@ vesa=16bit ATA=32bit nomonitors
 @modules.default@
 
 title AROS (true colour VESA graphics, legacy drivers)
-    multiboot @module.bootstrap@ vesa=32bit ATA=32bit nomonitors
+    kernel @module.bootstrap@ vesa=32bit ATA=32bit nomonitors
 @modules.default@
     module /dh0/boot/pc/aros-legacy.pkg.gz
 
 title AROS (true colour VESA graphics: 1024x768)
-    multiboot @module.bootstrap@ vesa=1024x768 ATA=32bit nomonitors
+    kernel @module.bootstrap@ vesa=1024x768 ATA=32bit nomonitors
 @modules.default@
 
 title AROS (true colour VESA graphics: 1280x1024)
-    multiboot @module.bootstrap@ vesa=1280x1024 ATA=32bit nomonitors
+    kernel @module.bootstrap@ vesa=1280x1024 ATA=32bit nomonitors
 @modules.default@
 
 title AROS (VGA graphics, safe mode)
-    multiboot @module.bootstrap@ ATA=nodma debug=memory nomonitors
+    kernel @module.bootstrap@ ATA=nodma debug=memory nomonitors
 @modules.default@
