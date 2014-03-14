@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 #MM bootdisk-pc-i386 : AROS		\
 #MM			bootdisk-setup-pc-i386 \
-#MM			kernel-package-pc-i386		\
+#MM			kernel-link-pc-i386 \
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 #MM systemdisk-pc-i386 : AROS		\
@@ -18,6 +18,10 @@ SYSTEM_FILES := \
     Libs/locale.library \
     Libs/iffparse.library \
     AROS.boot
+
+MODULES_DEFAULT := $(SRCDIR)/$(CURDIR)/../modules.default
+MODULE_BOOTSTRAP:=/$(AROS_DIR_ARCH)/bootstrap.gz
+BOOT_FILES := $(MODULE_BOOTSTRAP) $(shell cat $(MODULES_DEFAULT))
 
 BOOT_EXTRA_FILES :=
 
@@ -133,7 +137,12 @@ bootdisk-setup-pc-i386 :
 	-$(RM) $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub
-	@$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub/
+	@$(ECHO) Generating $(SRCDIR)/$(CURDIR)/menu.lst...
+	@$(SED) -e \
+	 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' \
+	 -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' \
+	 $(SRCDIR)/$(CURDIR)/menu.lst \
+	 > $(BOOT_DEST_DIR)/$(AROS_DIR_ARCH)/grub/menu.lst
 
 #MM
 systemdisk-setup-pc-i386 :
