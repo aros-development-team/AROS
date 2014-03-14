@@ -1,26 +1,37 @@
 timeout 5
-default 4
+default 3
 
-title AROS (ATI graphics)
-    kernel /boot/aros-pc-i386.gz gfx=RadeonDriver lib=DRIVERS:radeon.hidd ATA=32bit
-
-title AROS (VMWare SVGA graphics)
-    kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vmwaresvga lib=vmwaresvga.hidd ATA=32bit
+title AROS (native graphics)
+    kernel @module.bootstrap@ ATA=32bit
+@modules.default@
+    module /boot/pc/aros-legacy.pkg.gz
 
 title AROS (true colour VESA graphics)
-    kernel /boot/aros-pc-i386.gz vesa=32bit ATA=32bit
-
+    kernel @module.bootstrap@ vesa=32bit ATA=32bit nomonitors
+@modules.default@
+    module /boot/pc/aros-legacy.pkg.gz
+	
 title AROS (high colour VESA graphics)
-    kernel /boot/aros-pc-i386.gz vesa=16bit ATA=32bit
+    kernel @module.bootstrap@ vesa=16bit ATA=32bit nomonitors
+@modules.default@
+    module /boot/pc/aros-legacy.pkg.gz
 
-title AROS (true colour VESA graphics: 800x600)
-    kernel /boot/aros-pc-i386.gz vesa=800x600 ATA=32bit
+title AROS (true colour VESA graphics, legacy drivers)
+    kernel @module.bootstrap@ vesa=32bit ATA=32bit nomonitors
+@modules.default@
+    module /boot/pc/aros-legacy.pkg.gz
 
 title AROS (true colour VESA graphics: 1024x768)
-    kernel /boot/aros-pc-i386.gz vesa=1024x768 ATA=32bit
+    kernel @module.bootstrap@ vesa=1024x768 ATA=32bit nomonitors
+@modules.default@
+    module /boot/pc/aros-legacy.pkg.gz
 
 title AROS (true colour VESA graphics: 1280x1024)
-    kernel /boot/aros-pc-i386.gz vesa=1280x1024 ATA=32bit
+    kernel @module.bootstrap@ vesa=1280x1024 ATA=32bit nomonitors
+@modules.default@
+    module /boot/pc/aros-legacy.pkg.gz
 
-title AROS (safe mode)
-    kernel /boot/aros-pc-i386.gz ATA=nodma debug=memory
+title AROS (VGA graphics, safe mode)
+    kernel @module.bootstrap@ ATA=nodma debug=memory nomonitors
+@modules.default@
+    module /boot/pc/aros-legacy.pkg.gz
