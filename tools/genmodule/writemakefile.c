@@ -1,5 +1,5 @@
 /*
-    Copyright © 2005-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2005-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Code to write a Makefile with variables that provides the files
@@ -22,6 +22,11 @@ static inline const char *upname(const char *s)
     name[i] = 0;
 
     return &name[0];
+}
+
+static inline void writemakefilestubs(struct config *cfg, int is_rel, FILE *out)
+{
+    fprintf(out, " %s_%sstubs", cfg->modulename, is_rel ? "rel" : "");
 }
 
 void writemakefile(struct config *cfg)
@@ -51,7 +56,7 @@ void writemakefile(struct config *cfg)
 
     fprintf(out, "%s_LINKLIBFILES +=", cfg->modulename);
     if (cfg->options & OPTION_STUBS)
-        fprintf(out, " %s_stubs", cfg->modulename);
+        writemakefilestubs(cfg, 0, out);
     if (cfg->options & OPTION_AUTOINIT)
         fprintf(out, " %s_autoinit", cfg->modulename);
     if (cfg->modtype == LIBRARY)
@@ -59,7 +64,7 @@ void writemakefile(struct config *cfg)
     fprintf(out, "\n");
     fprintf(out, "%s_RELLINKLIBFILES +=", cfg->modulename);
     if (cfg->options & OPTION_STUBS)
-        fprintf(out, " %s_relstubs", cfg->modulename);
+        writemakefilestubs(cfg, 1, out);
     if (cfg->options & OPTION_AUTOINIT)
         fprintf(out, " %s_relautoinit", cfg->modulename);
     if (cfg->modtype == LIBRARY)
