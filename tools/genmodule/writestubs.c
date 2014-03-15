@@ -2,7 +2,20 @@
     Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
-    Function to write module_stubs.c. Part of genmodule.
+    Function to write module stubs. Part of genmodule.
+
+    Stubs are agregated differently into objects files based on STACK vs REG
+    convention.
+
+    Linker will always put a whole object file from archive into
+    executable. If all stubs are in one object file, all stubs are present
+    in executable, inflating its size, even if they are not used.
+
+    In majority of cases REG call function stubs will be handled be inlines
+    or defines while STACK call function stubs will be linked from linklib.
+
+    Based on above paragraphs, putting stubs of STACK functions into separate
+    object files will allow for linker to only include required function stubs.
 */
 
 #include "genmodule.h"
@@ -16,7 +29,33 @@ void writestubs(struct config *cfg, int is_rel)
     char line[256];
     struct functionhead *funclistit;
 
-    snprintf(line, 255, "%s/%s_%sstubs.c", cfg->gendir, cfg->modulename, is_rel ? "rel" : "");
+    /* Build STACKCALL - each stub in separate object file */
+    for (funclistit = cfg->funclist;
+         funclistit!=NULL;
+         funclistit = funclistit->next
+    )
+    {
+        if (funclistit->lvo >= cfg->firstlvo && funclistit->libcall == STACK)
+        {
+
+            snprintf(line, 255, "%s/%s_%s_%sstub.c", cfg->gendir, cfg->modulename, funclistit->name, is_rel ? "rel" : "");
+            out = fopen(line, "w");
+
+            if (out == NULL)
+            {
+                perror(line);
+                exit(20);
+            }
+
+            writeheader(cfg, is_rel, out);
+            writefuncstub(cfg, is_rel, out, funclistit);
+
+            fclose(out);
+        }
+    }
+
+    /* Build REGCALL - all stusb in one object file */
+    snprintf(line, 255, "%s/%s_regcall_%sstubs.c", cfg->gendir, cfg->modulename, is_rel ? "rel" : "");
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -32,12 +71,13 @@ void writestubs(struct config *cfg, int is_rel)
          funclistit = funclistit->next
     )
     {
-        if (funclistit->lvo >= cfg->firstlvo)
+        if (funclistit->lvo >= cfg->firstlvo && funclistit->libcall != STACK)
         {
             writefuncstub(cfg, is_rel, out, funclistit);
         }
     }
     fclose(out);
+
 }
 
 static void writeheader(struct config *cfg, int is_rel, FILE *out)
