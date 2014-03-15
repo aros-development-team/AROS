@@ -26,7 +26,20 @@ static inline const char *upname(const char *s)
 
 static inline void writemakefilestubs(struct config *cfg, int is_rel, FILE *out)
 {
-    fprintf(out, " %s_%sstubs", cfg->modulename, is_rel ? "rel" : "");
+    struct functionhead *funclistit;
+
+    for (funclistit = cfg->funclist;
+         funclistit!=NULL;
+         funclistit = funclistit->next
+    )
+    {
+        if (funclistit->lvo >= cfg->firstlvo && funclistit->libcall == STACK)
+        {
+            fprintf(out, " %s_%s_%sstub\\\n", cfg->modulename, funclistit->name, is_rel ? "rel" : "");
+        }
+    }
+
+   fprintf(out, " %s_regcall_%sstubs", cfg->modulename, is_rel ? "rel" : "");
 }
 
 void writemakefile(struct config *cfg)
