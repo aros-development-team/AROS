@@ -1,9 +1,8 @@
 FORCE_COMMON_ALLOCATION
-
+ENTRY(bootstrap)
 SECTIONS
 {
-    . = 0x75f00000;
-    
+    . = 0x40010000;    
     __bootstrap_start = . ;
     
     .text ALIGN(4096) :

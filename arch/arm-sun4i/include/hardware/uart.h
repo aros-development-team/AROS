@@ -21,31 +21,29 @@
 #define SUN4I_UART5_BASE		0x01c29400
 #define SUN4I_UART6_BASE		0x01c29800
 #define SUN4I_UART7_BASE		0x01c29c00
-#define SUN4I_PS2_0_BASE		0x01c2a000
-#define SUN4I_PS2_1_BASE		0x01c2a400
 
 struct UART {
-	uint32_t rbrthrdlb;
-	uint32_t ierdmb;
-	uint32_t iirfcrafr;
-	uint32_t lcr;
-	uint32_t mcr;
-	uint32_t lsr;
-	uint32_t msr;
-	uint32_t scr;
-	uint32_t reserved[2];
-	uint32_t dsr;
-	uint32_t dcr;
+	uint32_t RBRTHRDLB;
+	uint32_t IERDMB;
+	uint32_t IIRFCRAFR;
+	uint32_t LCR;
+	uint32_t MCR;
+	uint32_t LSR;
+	uint32_t MSR;
+	uint32_t SCR;
+	uint32_t UART_RESERVED_1[2];
+	uint32_t DSR;
+	uint32_t DCR;
 }__attribute__((__packed__));
 
-#define rbr rbrthrdlb
-#define thr rbrthrdlb
-#define dll rbrthrdlb
-#define ier ierdmb
-#define dlm ierdmb
-#define iir iirfcrafr
-#define fcr iirfcrafr
-#define afr iirfcrafr
+#define RBR RBRTHRDLB
+#define THR RBRTHRDLB
+#define DLL RBRTHRDLB
+#define IER IERDMB
+#define DLM IERDMB
+#define IIR IIRFCRAFR
+#define FCR IIRFCRAFR
+#define AFR IIRFCRAFR
 
 #define LSR_DR      0x01
 #define LSR_OE      0x02

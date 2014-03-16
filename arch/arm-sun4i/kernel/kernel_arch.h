@@ -9,6 +9,6 @@
 #ifndef KERNEL_ARCH_H_
 #define KERNEL_ARCH_H_
 
-#define IRQ_COUNT	120
+#define IRQ_COUNT	95
 
 #endif /* KERNEL_ARCH_H_ */
