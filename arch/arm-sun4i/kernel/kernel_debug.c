@@ -20,16 +20,16 @@ static inline void waitBusy() {
 	volatile struct UART *UARTDEBUG;
 	UARTDEBUG = SUN4I_UARTDEBUG_BASE;
 
-	while ((UARTDEBUG->lsr & LSR_THRE) == 0);
+	while ((UARTDEBUG->LSR & LSR_THRE) == 0);
 }
 
 static inline void putByte(uint8_t chr) {
 	volatile struct UART *UARTDEBUG;
 	UARTDEBUG = SUN4I_UARTDEBUG_BASE;
 
-	UARTDEBUG->thr = (uint32_t) chr;
+	UARTDEBUG->THR = (uint32_t) chr;
 //	if (chr == '\n') {
-//		UARTDEBUG->thr = (uint32_t) '\r';
+//		UARTDEBUG->THR = (uint32_t) '\r';
 //	}
 }
 

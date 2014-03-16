@@ -194,11 +194,21 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags) {
     kprintf("[BOOT] Bootstrap @ %08x-%08x\n", &__bootstrap_start, &__bootstrap_end);
     kprintf("[BOOT] Topmost address for kernel: %p\n", *mem_upper);
 
+	if(*mem_upper){
+		if((*mem_upper &0x0000ffff)==0x0000ffff) {
+			*mem_upper = (*mem_upper & 0xffff0000);
+		}else{
+			*mem_upper = (*mem_upper & 0xffff0000) - 0x10000;
+		}
+	}
+
+    kprintf("[BOOT] Topmost address for kernel: %p\n", *mem_upper);
+
+
     if (*mem_upper) {
     	*mem_upper = *mem_upper & ~4095;
 
     	unsigned long kernel_phys = *mem_upper;
-//    	unsigned long kernel_phys = *mem_lower;
     	unsigned long kernel_virt = kernel_phys;
 
     	unsigned long total_size_ro, total_size_rw;
@@ -259,12 +269,10 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags) {
     	}
 
     	kernel_phys = *mem_upper - total_size_ro - total_size_rw;
-//    	kernel_phys = *mem_lower;
     	kernel_virt = 0xffff0000 - total_size_ro - total_size_rw;
 
     	/* Adjust "top of memory" pointer */
     	*mem_upper = kernel_phys;
-//		*mem_lower = kernel_phys + total_size_ro + total_size_rw;
 
     	kprintf("[BOOT] Physical address of kernel: %p\n", kernel_phys);
     	kprintf("[BOOT] Virtual address of kernel: %p\n", kernel_virt);

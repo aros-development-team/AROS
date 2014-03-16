@@ -176,16 +176,11 @@ static int load_hunk(void *file, struct sheader *sh)
 	sh->addr = ptr;
 
 	/* copy block of memory from ELF file if it exists */
-	if (sh->type != SHT_NOBITS)
-	{
-		read_block(file, sh->offset, (void *)((unsigned long)sh->addr),
-				sh->size);
-	}
-	else
-	{
+	if (sh->type != SHT_NOBITS) {
+		read_block(file, sh->offset, (void *)((unsigned long)sh->addr), sh->size);
+	} else {
 		bzero(ptr, sh->size);
-		bss_tracker->addr =
-				(void *)((unsigned long)ptr + virtoffset);
+		bss_tracker->addr = (void *)((unsigned long)ptr + virtoffset);
 		bss_tracker->length = sh->size;
 		bss_tracker++;
 		/*
@@ -358,18 +353,15 @@ int loadElf(void *elf_file)
 			else if (sh[i].flags & SHF_ALLOC)
 			{
 				/* Yup, it does. Load the hunk */
-				if (!load_hunk(elf_file, &sh[i]))
-				{
+				if (!load_hunk(elf_file, &sh[i])) {
 					return 0;
-				}
-				else
-				{
-					if (sh[i].size)
-					{
-						kprintf("[BOOT] ELF: %s section loaded at %p (Virtual addr: %p)\n",
-								sh[i].flags & SHF_WRITE ? "RW":"RO",
-										sh[i].addr,
-										sh[i].addr + virtoffset);
+				} else {
+					if (sh[i].size) {
+						kprintf("[BOOT] ELF: %s section loaded at %p (Virtual addr: %p-%p)\n",
+							sh[i].flags & SHF_WRITE ? "RW":"RO",
+							sh[i].addr,
+							sh[i].addr + virtoffset,
+							sh[i].addr + sh[i].size + virtoffset);
 					}
 				}
 			}
