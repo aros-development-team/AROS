@@ -20,8 +20,10 @@ SYSTEM_FILES := \
     AROS.boot
 
 MODULES_DEFAULT := $(SRCDIR)/$(CURDIR)/../modules.default
-MODULE_BOOTSTRAP:=/$(AROS_DIR_ARCH)/bootstrap.gz
-BOOT_FILES := $(MODULE_BOOTSTRAP) $(shell cat $(MODULES_DEFAULT))
+MODULE_BOOTSTRAP := /$(AROS_DIR_ARCH)/bootstrap.gz
+MODULE_LEGACY := /$(AROS_DIR_ARCH)/aros-legacy.pkg.gz
+BOOT_FILES := $(MODULE_BOOTSTRAP) $(shell cat $(MODULES_DEFAULT)) \
+ $(MODULE_LEGACY)
 
 BOOT_EXTRA_FILES :=
 
