@@ -1344,6 +1344,7 @@ case "$target_os" in
         aros_arch_libs="-laeabi"
 
 		gcc_default_cpu="armv7-a"
+        gcc_default_fpu="neon"
         gcc_default_cpu_tune="cortex-a8"
 		gcc_default_float_abi="hard"
 
