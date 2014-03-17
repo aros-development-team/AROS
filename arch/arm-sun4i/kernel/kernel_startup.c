@@ -103,6 +103,13 @@ void startup(struct TagItem *tags) {
     bug("[KRN] Kernel entry @ %08x\n", start);
     bug("[KRN] Early MMU @ %08x\n", early_mmu);
 
+	uint32_t *vectortest;
+	vectortest = 0x7fff0000;
+    bug("[BOOT] vectortest %x(%x)\n", vectortest, *vectortest);
+
+	vectortest = 0xffff0000;
+    bug("[BOOT] vectortest %x(%x)\n", vectortest, *vectortest);
+
     /* Check if the taglist is copied into safe place */
     if (tags != temporary.tags) {
         /* Nope, copy taglist... */
