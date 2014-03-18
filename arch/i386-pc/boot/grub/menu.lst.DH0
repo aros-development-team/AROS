@@ -1,5 +1,5 @@
 timeout 5
-default 3
+default 4
 
 title AROS (native graphics)
     kernel @module.bootstrap@ ATA=32bit
