@@ -16,11 +16,6 @@ title AROS (high colour VESA graphics)
 @modules.default@
     module /boot/pc/aros-legacy.pkg.gz
 
-title AROS (true colour VESA graphics, legacy drivers)
-    kernel @module.bootstrap@ vesa=32bit ATA=32bit nomonitors
-@modules.default@
-    module /boot/pc/aros-legacy.pkg.gz
-
 title AROS (true colour VESA graphics: 1024x768)
     kernel @module.bootstrap@ vesa=1024x768 ATA=32bit nomonitors
 @modules.default@
