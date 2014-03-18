@@ -112,7 +112,7 @@ if test "x$ac_cv_prog_gcc" = xyes; then
     if test "x$no_stack_protector_flag" = xyes; then
       STAGE2_CFLAGS="$STAGE2_CFLAGS -fno-stack-protector"
     fi
-    STAGE2_CFLAGS="$STAGE2_CFLAGS -fno-strict-aliasing"
+    STAGE2_CFLAGS="$STAGE2_CFLAGS -fno-strict-aliasing -fno-reorder-functions"
   fi
 fi
 
