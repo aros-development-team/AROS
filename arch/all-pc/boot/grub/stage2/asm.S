@@ -98,10 +98,10 @@ VARIABLE(version_string)
 	.string VERSION
 VARIABLE(config_file)
 #ifndef STAGE1_5
-	.string "/boot/grub/menu.lst"
+	.string "/boot/pc/grub/menu.lst"
 #else   /* STAGE1_5 */
 	.long	0xffffffff
-	.string "/boot/grub/stage2"
+	.string "/boot/pc/grub/stage2"
 #endif  /* STAGE1_5 */
 
 	/*
