@@ -28,30 +28,47 @@ asm("	.section .aros.startup				\n"
 "		.type bootstrap,%function			\n"
 "											\n"
 "bootstrap:									\n"
+"		mov		r0, #0						\n"
+"		mov		r4, r0						\n"
+"		mov		sp, r0						\n"
+"											\n"
 "		mov		r0, r2						\n"
 "											\n"
 "		mov		r3, #0x0002					\n"		/* ATAG_MEM */
 "		movt	r3, #0x5441					\n"
-"											\n"
 "		b		.get_tag					\n"
 "											\n"
 ".tag_compare:								\n"
 "		ldr		ip, [r0, #4]				\n"
 "		cmp		ip, r3						\n"
-"		beq		.atag_mem_found				\n"
+"		bne		.get_tag					\n"
+"											\n"
+"		cmp		sp, #0						\n"		/* Allow only one ATAG_MEM tag, else we get confused  */
+"		bne		.fancy_error_loop			\n"
+"											\n"
+"		ldr		sp, [r0, #12]				\n"		/* Set initial stackpointer to end of DRAM */
+"		ldr		r5, [r0, #8]				\n"
+"		add		sp, sp, r5					\n"
 "											\n"
 ".get_tag:									\n"
 "		ldr		ip, [r0]					\n"
 "		cmp		ip, #0						\n"
 "		add		r0, r0, ip, lsl #2			\n"
+"		add		r4, r4, ip					\n"
 "		bne		.tag_compare				\n"
 "											\n"
-"		b		.fancy_error_loop			\n"
+"		cmp		sp, #0						\n"
+"		beq		.fancy_error_loop			\n"
 "											\n"
-".atag_mem_found:							\n"		/* Set initial stackpointer to end of DRAM */
-"		ldr		sp, [r0, #12]				\n"
-"		ldr		r0, [r0, #8]				\n"
-"		add		sp, sp, r0					\n"
+"		sub		sp, sp, r4, lsl #2			\n"		/* Copy ATAGs in the stack */
+"		mov		r0, sp						\n"
+".atag_copy:								\n"
+"		ldr		r3, [r2], #4				\n"
+"		str		r3, [r0], #4				\n"
+"		subs	r4, r4, #1					\n"
+"		bne		.atag_copy					\n"
+"											\n"
+"		mov		r2, sp						\n"
 "											\n"
 "		mrc		p15, 0, r0, c1, c0, 2		\n"		/* Enable NEON and VFP */
 "		orr		r0, r0, #(0xf << 20)		\n"
@@ -139,10 +156,10 @@ static uint32_t pkg_size;
 static void parse_atags(struct tag *tags) {
 	struct tag *t = NULL;
 
-	kprintf("[BOOT] Parsing ATAGS\n");
+	kprintf("[BOOT] Parsing ATAGS %x\n", tags);
 
 	for_each_tag(t, tags) {
-		kprintf("[BOOT]   %08x (%04x): ", t->hdr.tag, t->hdr.size);
+		kprintf("[BOOT]   (%x-%x) tag %08x (%d): ", t, (uint32_t)t+(t->hdr.size<<2)-1, t->hdr.tag, t->hdr.size);
 
 		switch (t->hdr.tag) {
 
@@ -191,9 +208,6 @@ void setup_mmu(uintptr_t kernel_phys, uintptr_t kernel_virt, uintptr_t length) {
 
     uint32_t i;
 
-    uintptr_t first_1M_page = kernel_virt & 0xfff00000;
-    uintptr_t last_1M_page = ((kernel_virt + length + 0x000fffff) & 0xfff00000) - 1;
-
     kprintf("[BOOT] Preparing initial MMU map\n");
 
     /* Use memory right below kernel for page dir */
@@ -240,15 +254,17 @@ void setup_mmu(uintptr_t kernel_phys, uintptr_t kernel_virt, uintptr_t length) {
 void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags) {
 	uint32_t tmp;
 
-	uint32_t r0,sp;
-	READ_ARM_REGISTER(r0);
+	uint32_t r0, sp, r7;
+	READ_ARM_REGISTER(r7);
+	kprintf("[BOOT] r7 = %x\n", r7);
+
 	READ_ARM_REGISTER(sp);
+	kprintf("[BOOT] sp = %x\n\n", sp);
 
 	void (*entry)(struct TagItem *tags) = NULL;
 
     kprintf("[BOOT] AROS for sun4i (" SUN4I_PLATFORM_NAME ") bootstrap\n");
-	kprintf("[BOOT] r0 = %x\n", r0);
-	kprintf("[BOOT] sp = %x\n\n", sp);
+
 
 	debug_control_register();
 
