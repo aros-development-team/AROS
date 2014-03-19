@@ -30,36 +30,27 @@
 
 extern void start();
 
-asm(".section .aros.init,\"ax\"\n\t"
-    ".globl start\n\t"
-    ".type start,%function\n"
-    "start: ldr r1, early_mmu_ptr   \n"     // Get early mmu map pointer
-    "       ldr r2, [r1]            \n"     // Load pointer to MMU map
-    "       cmp r2, #0              \n"     // Is the pointer set?
-    "       mcrne p15, 0, r2, c2, c0, 0\n"  // Yes, load the mmu map
-    "       mrceq p15, 0, r2, c2, c0, 0\n"  // No, read address of currently used mmu ap
-    "       streq r2, [r1]          \n"     // and conditionally store it in early map pointer
-    "       ldr sp, tmp_stack_end   \n"     // Load address of top of stack pointer
-    "       mov r4, r0              \n"
-    "       bl  clear_bss           \n"     // clear bss regions
-    "       mov r0, r4              \n"     // restore boot msg parameter
-    "       cps #" STR(CPUMODE_SYSTEM) "\n"     // Enter System mode
-    "       ldr sp, sys_stack_end   \n"     // Load system mode stack
-    "       cps #" STR(CPUMODE_IRQ) "\n"
-    "       ldr sp, irq_stack_end   \n"
-    "       cps #" STR(CPUMODE_ABORT) "\n"
-    "       ldr sp, abt_stack_end   \n"
-    "       cps #" STR(CPUMODE_SUPERVISOR) "\n"
-    "       ldr sp, svc_stack_end   \n"
-    "       ldr pc, 2f              \n"     // jump to the kernel
-    "1:     b   1b                  \n"     // we never return from here
-    "2:     .word startup           \n"
-    "tmp_stack_end: .word temporary + " STR(127*4) "\n"
-    "sys_stack_end: .word sys_stack + " STR((SYS_STACK_SIZE - 4)) "\n"
-    "svc_stack_end: .word svc_stack + " STR((SYS_STACK_SIZE - 4)) "\n"
-    "irq_stack_end: .word irq_stack + " STR((SYS_STACK_SIZE - 4)) "\n"
-    "abt_stack_end: .word abt_stack + " STR((SYS_STACK_SIZE - 4)) "\n"
-    "early_mmu_ptr: .word early_mmu\n"
+asm("	.section .aros.init,\"ax\"								\n"
+"		.globl start											\n"
+"		.type start,%function									\n"
+"																\n"
+"start:															\n"
+"		cps		#"STR(CPUMODE_SYSTEM)"							\n"     // Enter System mode
+"       ldr		sp, sys_stack_end								\n"     // Load system mode stack
+"       cps		#"STR(CPUMODE_IRQ)"								\n"
+"       ldr		sp, irq_stack_end								\n"
+"       cps		#"STR(CPUMODE_ABORT)"							\n"
+"       ldr		sp, abt_stack_end								\n"
+"       cps		#"STR(CPUMODE_SUPERVISOR)"						\n"
+"       ldr		sp, svc_stack_end								\n"
+"       ldr		pc, 2f											\n"     // jump to the kernel
+"		b		.												\n"     // we never return from here
+"2:     .word startup											\n"
+"tmp_stack_end: .word temporary + " STR(127*4)"					\n"
+"sys_stack_end: .word sys_stack + " STR((SYS_STACK_SIZE - 4))"	\n"
+"svc_stack_end: .word svc_stack + " STR((SYS_STACK_SIZE - 4))"	\n"
+"irq_stack_end: .word irq_stack + " STR((SYS_STACK_SIZE - 4))"	\n"
+"abt_stack_end: .word abt_stack + " STR((SYS_STACK_SIZE - 4))"	\n"
 );
 
 static uintptr_t    early_mmu __attribute__((used, section(".data"))) = 0;
@@ -101,14 +92,8 @@ void startup(struct TagItem *tags) {
     bug("\n[KRN] AROS for sun4i (" SUN4I_PLATFORM_NAME ") built on %s starting...\n", __DATE__);
     bug("[KRN] BootMsg @ %08x\n", tags);
     bug("[KRN] Kernel entry @ %08x\n", start);
+    bug("[KRN] Kernel entry @ %08x\n", startup);
     bug("[KRN] Early MMU @ %08x\n", early_mmu);
-
-	uint32_t *vectortest;
-	vectortest = 0x7fff0000;
-    bug("[BOOT] vectortest %x(%x)\n", vectortest, *vectortest);
-
-	vectortest = 0xffff0000;
-    bug("[BOOT] vectortest %x(%x)\n", vectortest, *vectortest);
 
     /* Check if the taglist is copied into safe place */
     if (tags != temporary.tags) {
