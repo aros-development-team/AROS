@@ -28,6 +28,7 @@ static inline void putByte(uint8_t chr) {
 //		UARTDEBUG->THR = (uint32_t) '\r';
 //	}
 }
+
 void putBytes(const char *str) {
 	while(*str) {
 		waitBusy();
@@ -35,9 +36,10 @@ void putBytes(const char *str) {
 	}
 }
 
-static char tmpbuf[512];
 void kprintf(const char *format, ...) {
+	char tmpbuf[512];
 	char *out = tmpbuf;
+
 	va_list vp;
 
 	va_start(vp, format);
