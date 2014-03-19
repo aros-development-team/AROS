@@ -23,131 +23,86 @@
 #define READ_ARM_REGISTER(var) \
 __asm volatile("mov %[" #var "], " #var "\n\t" : [var] "=r" (var))
 
-asm("	.section .aros.startup				\n"
-"		.globl bootstrap					\n"
-"		.type bootstrap,%function			\n"
-"											\n"
-"bootstrap:									\n"
-"		mov		r0, #0						\n"
-"		mov		r4, r0						\n"
-"		mov		sp, r0						\n"
-"											\n"
-"		mov		r0, r2						\n"
-"											\n"
-"		mov		r3, #0x0002					\n"		/* ATAG_MEM */
-"		movt	r3, #0x5441					\n"
-"		b		.get_tag					\n"
-"											\n"
-".tag_compare:								\n"
-"		ldr		ip, [r0, #4]				\n"
-"		cmp		ip, r3						\n"
-"		bne		.get_tag					\n"
-"											\n"
-"		cmp		sp, #0						\n"		/* Allow only one ATAG_MEM tag, else we get confused  */
-"		bne		.fancy_error_loop			\n"
-"											\n"
-"		ldr		sp, [r0, #12]				\n"		/* Set initial stackpointer to end of DRAM */
-"		ldr		r5, [r0, #8]				\n"
-"		add		sp, sp, r5					\n"
-"											\n"
-".get_tag:									\n"
-"		ldr		ip, [r0]					\n"
-"		cmp		ip, #0						\n"
-"		add		r0, r0, ip, lsl #2			\n"
-"		add		r4, r4, ip					\n"
-"		bne		.tag_compare				\n"
-"											\n"
-"		cmp		sp, #0						\n"
-"		beq		.fancy_error_loop			\n"
-"											\n"
-"		sub		sp, sp, r4, lsl #2			\n"		/* Copy ATAGs in the stack */
-"		mov		r0, sp						\n"
-".atag_copy:								\n"
-"		ldr		r3, [r2], #4				\n"
-"		str		r3, [r0], #4				\n"
-"		subs	r4, r4, #1					\n"
-"		bne		.atag_copy					\n"
-"											\n"
-"		mov		r2, sp						\n"
-"											\n"
-"		mrc		p15, 0, r0, c1, c0, 2		\n"		/* Enable NEON and VFP */
-"		orr		r0, r0, #(0xf << 20)		\n"
-"		mcr		p15, 0, r0, c1, c0, 2		\n"
-"		isb									\n"
-"		mov		r0, #0x40000000				\n"
-"		vmsr	fpexc, r0					\n"
-"											\n"
-"		mrc		p15, 0, r0, c1, c0, 0		\n"
-"		bic		r0, r0, #0x7				\n"		/* Disable MMU, level one data cache and strict alignment fault checking */
-"		orr		r0, r0, #(1 << 13)			\n"		/* High exception vectors selected, address range = 0xFFFF0000-0xFFFF001C */
-"		mcr		p15, 0, r0, c1, c0, 0		\n"
-"											\n"
-"		mov		r0, #0						\n"
-"		b		boot						\n"
-"											\n"
-".fancy_error_loop:							\n"
-"		b		.							\n"
-"											\n"
+asm("	.section .aros.startup					\n"
+"		.globl bootstrap						\n"
+"		.type bootstrap,%function				\n"
+"												\n"
+"bootstrap:										\n"
+"		mov		r0, #0							\n"
+"		mov		r4, #2							\n"		/* Size of ATAGS + ATAG_NONE */
+"		mov		sp, r0							\n"
+"												\n"
+"		mov		r0, r2							\n"
+"												\n"
+"		mov		r3, #0x0002						\n"		/* ATAG_MEM */
+"		movt	r3, #0x5441						\n"
+"		b		.get_tag						\n"
+"												\n"
+".tag_compare:									\n"
+"		ldr		ip, [r0, #4]					\n"
+"		cmp		ip, r3							\n"
+"		bne		.get_tag						\n"
+"												\n"
+"		cmp		sp, #0							\n"		/* Allow only one ATAG_MEM tag, else we get confused  */
+"		bne		.fancy_error_loop				\n"
+"												\n"
+"		ldr		sp, [r0, #12]					\n"		/* Initial stackpointer is end of DRAM minus (space for vectors + initial stack size) */
+"		ldr		r5, [r0, #8]					\n"
+"		add		sp, sp, r5						\n"
+"		mov		r5, sp							\n"
+"		lsr		sp, sp, #16						\n"
+"		lsl		sp, sp, #16						\n"
+"		sub		sp, sp, #0x10000				\n"
+"		mov		r6, sp							\n"
+"		sub		r6, r6, #"STR(BOOT_STACK_SIZE)"	\n"
+"		sub		r6, r5, r6						\n"
+"		ldr		r5, [r0, #8]					\n"
+"		sub		r5, r5, r6						\n"
+"		str		r5, [r0, #8]					\n"		/* In future clean the above mess, uses now too many registers */
+"												\n"
+".get_tag:										\n"
+"		ldr		ip, [r0]						\n"
+"		cmp		ip, #0							\n"
+"		add		r0, r0, ip, lsl #2				\n"
+"		add		r4, r4, ip						\n"
+"		bne		.tag_compare					\n"
+"												\n"
+"		cmp		sp, #0							\n"
+"		beq		.fancy_error_loop				\n"
+"												\n"
+"		sub		sp, sp, r4, lsl #2				\n"		/* Copy ATAGs in the stack */
+"		mov		r0, sp							\n"
+".atag_copy:									\n"
+"		ldr		r3, [r2], #4					\n"
+"		str		r3, [r0], #4					\n"
+"		subs	r4, r4, #1						\n"
+"		bne		.atag_copy						\n"
+"												\n"
+"		mov		r2, sp							\n"
+"												\n"
+"		mrc		p15, 0, r0, c1, c0, 2			\n"		/* Enable NEON and VFP */
+"		orr		r0, r0, #(0xf << 20)			\n"
+"		mcr		p15, 0, r0, c1, c0, 2			\n"
+"		isb										\n"
+"		mov		r0, #0x40000000					\n"
+"		vmsr	fpexc, r0						\n"
+"												\n"
+"		mrc		p15, 0, r0, c1, c0, 0			\n"
+"		bic		r0, r0, #0x7					\n"		/* Disable MMU, level one data cache and strict alignment fault checking */
+"		orr		r0, r0, #(1 << 13)				\n"		/* High exception vectors selected, address range = 0xFFFF0000-0xFFFF001C */
+"		mcr		p15, 0, r0, c1, c0, 0			\n"
+"												\n"
+"		mov		r0, #0							\n"
+"		b		boot							\n"
+"												\n"
+".fancy_error_loop:								\n"
+"		b		.								\n"
+"												\n"
 );
-
-void debug_control_register(void) {
-
-	uint32_t tmp;
-
-	asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
-	kprintf("[BOOT] c1 control register\n");
-
-	kprintf("    MMU ");
-	if(tmp & (1<<0)){
-		kprintf("enabled\n");
-	}else{
-		kprintf("disabled\n");
-	}
-
-	kprintf("    Strict alignment fault checking ");
-	if(tmp & (1<<1)){
-		kprintf("enabled\n");
-	}else{
-		kprintf("disabled\n");
-	}
-
-	kprintf("    Data caching  ");
-	if(tmp & (1<<2)){
-		kprintf("enabled\n");
-	}else{
-		kprintf("disabled\n");
-	}  
-
-	kprintf("    Program flow prediction ");
-	if(tmp & (1<<11)){
-		kprintf("enabled\n");
-	}else{
-		kprintf("disabled\n");
-	}
-
-	kprintf("    Instruction caching ");
-	if(tmp & (1<<12)){
-		kprintf("enabled\n");
-	}else{
-		kprintf("disabled\n");
-	}
-
-	kprintf("    Exception vectors ");
-	if(tmp & (1<<13)){
-		kprintf("0xFFFF0000-0xFFFF001C\n");
-	}else{
-		kprintf("0x00000000-0x0000001C\n");
-	}
-
-	kprintf("\n");
-
-}
-
-static __used unsigned char __stack[BOOT_STACK_SIZE];
-static __used void * tmp_stack_ptr = &__stack[BOOT_STACK_SIZE-16];
 
 static struct TagItem tags[128];
 static struct TagItem *tag = &tags[0];
+
 static unsigned long *mem_upper = NULL;
 static unsigned long *mem_lower = NULL;
 static void *pkg_image;
@@ -178,12 +133,9 @@ static void parse_atags(struct tag *tags) {
 			break;
 
 			case ATAG_CMDLINE: {
-				char *cmdline = malloc(strlen(t->u.cmdline.cmdline) + 1);
-				strcpy(cmdline, t->u.cmdline.cmdline);
-				kprintf("CMDLine: \"%s\"\n", cmdline);
-
+				kprintf("CMDLine: \"%s\"\n", t->u.cmdline.cmdline);
 				tag->ti_Tag = KRN_CmdLine;
-	        	tag->ti_Data = (intptr_t)cmdline;
+	        	tag->ti_Data = (intptr_t)t->u.cmdline.cmdline;
 	        	tag++;
 			}
 			break;
@@ -201,6 +153,10 @@ static void parse_atags(struct tag *tags) {
 			break;
 
 		}
+	}
+
+	if(t->hdr.size == NULL) {
+		kprintf("[BOOT]   (%x-%x) tag %08x (%d): ATAG_NONE\n", t, (uint32_t)t+(2<<2)-1, t->hdr.tag, 2);
 	}
 }
 
@@ -232,12 +188,13 @@ void setup_mmu(uintptr_t kernel_phys, uintptr_t kernel_virt, uintptr_t length) {
 
     /* v:p memory mapping */
     for (i=(kernel_virt >> 20); i <= (0xffffffff >> 20); i++) {
+    	kprintf("[BOOT] Kernel mapping page %d\n", i);
         //page_dir[i].raw = 0;
         page_dir[i].section.type = PDE_TYPE_SECTION;
         page_dir[i].section.b = 0;
         page_dir[i].section.c = 1;      /* Cacheable */
         page_dir[i].section.ap = 3;     /* All can read&write */
-        page_dir[i].section.base_address = (kernel_phys >> 20);
+        page_dir[i].section.base_address = (kernel_phys >> 20); // Fixme
     }
 
     pte_t *current_pte = (pte_t *)page_dir;
@@ -251,22 +208,12 @@ void setup_mmu(uintptr_t kernel_phys, uintptr_t kernel_virt, uintptr_t length) {
 }
 
 
-void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags) {
+void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
 	uint32_t tmp;
-
-	uint32_t r0, sp, r7;
-	READ_ARM_REGISTER(r7);
-	kprintf("[BOOT] r7 = %x\n", r7);
-
-	READ_ARM_REGISTER(sp);
-	kprintf("[BOOT] sp = %x\n\n", sp);
 
 	void (*entry)(struct TagItem *tags) = NULL;
 
     kprintf("[BOOT] AROS for sun4i (" SUN4I_PLATFORM_NAME ") bootstrap\n");
-
-
-	debug_control_register();
 
     tag->ti_Tag = KRN_BootLoader;
     tag->ti_Data = (IPTR)"Bootstrap/sun4i (" SUN4I_PLATFORM_NAME ") ARM";
@@ -277,27 +224,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags) {
     kprintf("[BOOT] Bootstrap @ %08x-%08x\n", &__bootstrap_start, &__bootstrap_end);
     kprintf("[BOOT] Topmost address for kernel: %p\n", *mem_upper);
 
-	if(*mem_upper){
-		if((*mem_upper & 0x0000ffff) == 0x0000ffff) {
-			*mem_upper = (*mem_upper & 0xffff0000);
-		}else{
-			*mem_upper = (*mem_upper & 0xffff0000) - 0x10000;
-		}
-	}
-
-    kprintf("[BOOT] Topmost address for kernel: %p\n", *mem_upper);
-
-	uint32_t *vectortest;
-	vectortest = 0x7fff0000;
-	*vectortest = 0xdeadbeef;
-    kprintf("[BOOT] vectortest %x(%x)\n", vectortest, *vectortest);
-
-	vectortest = 0xffff0000;
-    kprintf("[BOOT] vectortest %x(%x)\n", vectortest, *vectortest);
-
-
     if (*mem_upper) {
-    	*mem_upper = *mem_upper & ~4095;
 
     	unsigned long kernel_phys = *mem_upper;
     	unsigned long kernel_virt = kernel_phys;
@@ -360,7 +287,34 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags) {
     	}
 
     	kernel_phys = *mem_upper - total_size_ro - total_size_rw;
-    	kernel_virt = 0xffff0000 - total_size_ro - total_size_rw;
+    	kernel_virt = 0xffff0000 - total_size_ro - total_size_rw - BOOT_STACK_SIZE;
+
+		/*
+			ffff ffff	(free) Top of the world
+			ffff fffb	(free) ~4
+				|		(free)
+			ffff 003c	routine address FIQ
+			ffff 0038	routine address IRQ
+			ffff 0034	routine address Reserved
+			ffff 0030	routine address Data Abort
+			ffff 002c	routine address Prefetch Abort
+			ffff 0028	routine address Software interrupt
+			ffff 0024	routine address Undefined instruction 
+			ffff 0020	routine address Reset
+			ffff 001c	FIQ
+			ffff 0018	IRQ
+			ffff 0014	Reserved
+			ffff 0010	Data Abort
+			ffff 000c	Prefetch Abort
+			ffff 0008	Software interrupt
+			ffff 0004	Undefined instruction
+			ffff 0000	Reset
+			fffe ffff	U-Boot ATAGS end
+				|		Stack
+			fffe 0000	End of stack
+			fffe ffff	End of kernel
+				|
+		*/
 
     	/* Adjust "top of memory" pointer */
     	*mem_upper = kernel_phys;
@@ -445,11 +399,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags) {
         kprintf("[BOOT] Domain access control register: %08x\n", tmp);
         asm volatile ("mcr p15, 0, %0, c3, c0, 0"::"r"(0x00000001));
 
-		debug_control_register();
         asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
         tmp |= 1;          /* Enable MMU */
         asm volatile ("mcr p15, 0, %0, c1, c0, 0"::"r"(tmp));
-		debug_control_register();
 
         kprintf("[BOOT] Heading over to AROS kernel @ %08x\n", entry);
 
@@ -461,4 +413,5 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags) {
     }
 
     while(1);
-}
+} __attribute__ ((noreturn));
+
