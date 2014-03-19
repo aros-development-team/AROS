@@ -1,4 +1,4 @@
-bootargs=console=ttyO0,115200n8 root=/dev/mmcblk0p0 rootwait
+bootargs=debug=serial0
 bootcmd=mmc rescan; fatload mmc 0 0x48000000 boot/uImage-aros; fatload mmc 0 0x49000000 boot/uInitrd-aros; bootm 0x48000000 0x49000000
 uenvcmd=boot
 
