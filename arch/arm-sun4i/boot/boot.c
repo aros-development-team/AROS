@@ -9,6 +9,7 @@
 #include <inttypes.h>
 #include <asm/cpu.h>
 #include <asm/arm/mmu.h>
+#include <asm/arm/cp15.h>
 #include <utility/tagitem.h>
 #include <aros/macros.h>
 #include <string.h>
@@ -87,11 +88,6 @@ asm("	.section .aros.startup					\n"
 "		mov		r0, #0x40000000					\n"
 "		vmsr	fpexc, r0						\n"
 "												\n"
-"		mrc		p15, 0, r0, c1, c0, 0			\n"
-"		bic		r0, r0, #0x7					\n"		/* Disable MMU, level one data cache and strict alignment fault checking */
-"		orr		r0, r0, #(1 << 13)				\n"		/* High exception vectors selected, address range = 0xFFFF0000-0xFFFF001C */
-"		mcr		p15, 0, r0, c1, c0, 0			\n"
-"												\n"
 "		mov		r0, #0							\n"
 "		b		boot							\n"
 "												\n"
@@ -103,10 +99,10 @@ asm("	.section .aros.startup					\n"
 static struct TagItem tags[128];
 static struct TagItem *tag = &tags[0];
 
-static unsigned long *mem_upper = NULL;
-static unsigned long *mem_lower = NULL;
-static void *pkg_image;
-static uint32_t pkg_size;
+unsigned long *mem_upper = NULL;
+unsigned long *mem_lower = NULL;
+void *pkg_image;
+uint32_t pkg_size;
 
 static void parse_atags(struct tag *tags) {
 	struct tag *t = NULL;
@@ -211,6 +207,11 @@ void setup_mmu(uintptr_t kernel_phys, uintptr_t kernel_virt, uintptr_t length) {
 void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
 	uint32_t tmp;
 
+	/* Disable MMU, level one data cache and strict alignment fault checking */
+	CP15_CR1_Clear(C1F_C|C1F_A|C1F_M);
+	/* High exception vectors selected, address range = 0xFFFF0000-0xFFFF001C */
+	CP15_CR1_Set(C1F_V);
+
 	void (*entry)(struct TagItem *tags) = NULL;
 
     kprintf("[BOOT] AROS for sun4i (" SUN4I_PLATFORM_NAME ") bootstrap\n");
@@ -312,7 +313,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
 			fffe ffff	U-Boot ATAGS end
 				|		Stack
 			fffe 0000	End of stack
-			fffe ffff	End of kernel
+			fffd ffff	End of kernel
 				|
 		*/
 
@@ -399,9 +400,8 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
         kprintf("[BOOT] Domain access control register: %08x\n", tmp);
         asm volatile ("mcr p15, 0, %0, c3, c0, 0"::"r"(0x00000001));
 
-        asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(tmp));
-        tmp |= 1;          /* Enable MMU */
-        asm volatile ("mcr p15, 0, %0, c1, c0, 0"::"r"(tmp));
+		/* Enable MMU */
+		CP15_CR1_Set(C1F_M);
 
         kprintf("[BOOT] Heading over to AROS kernel @ %08x\n", entry);
 
