@@ -14,27 +14,38 @@
 
 #ifdef __ARM_ARCH_7A__
 /* c1, (C)ontrol (R)egister */
-#define	C1_CR_M			(1<<0)
-#define	C1_CR_A			(1<<1)
-#define	C1_CR_C			(1<<2)
-#define	C1_CR_Z			(1<<11)
-#define	C1_CR_I			(1<<12)
-#define	C1_CR_V			(1<<13)
-#define	C1_CR_EE		(1<<25)
-#define	C1_CR_NMFI		(1<<27)
-#define	C1_CR_TRE		(1<<28)
-#define	C1_CR_AFE		(1<<29)
-#define	C1_CR_TE		(1<<30)
+#define	C1B_M		0
+#define	C1B_A		1
+#define	C1B_C		2
+#define	C1B_Z		11
+#define	C1B_I		12
+#define	C1B_V		13
+#define	C1B_EE		25
+#define	C1B_NMFI	27
+#define	C1B_TRE		28
+#define	C1B_AFE		29
+#define	C1B_TE		30
+#define	C1F_M		(1UL<<C1B_M)
+#define	C1F_A		(1UL<<C1B_A)
+#define	C1F_C		(1UL<<C1B_C)
+#define	C1F_Z		(1UL<<C1B_Z)
+#define	C1F_I		(1UL<<C1B_I)
+#define	C1F_V		(1UL<<C1B_V)
+#define	C1F_EE		(1UL<<C1B_EE)
+#define	C1F_NMFI	(1UL<<C1B_NMFI)
+#define	C1F_TRE		(1UL<<C1B_TRE)
+#define	C1F_AFE		(1UL<<C1B_AFE)
+#define	C1F_TE		(1UL<<C1B_TE)
 #endif /* __ARM_ARCH_7A__ */
 
-static inline void CP15_CR_Set(uint32_t val) {
+static inline void CP15_CR1_Set(uint32_t val) {
 	uint32_t __v;
     asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(__v));
     __v |= val;
     asm volatile ("mcr p15, 0, %0, c1, c0, 0"::"r"(__v));
 }
 
-static inline void CP15_CR_Clear(uint32_t val) {
+static inline void CP15_CR1_Clear(uint32_t val) {
 	uint32_t __v;
     asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(__v));
     __v &= ~val;
