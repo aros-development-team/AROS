@@ -37,8 +37,8 @@
 #define	C1CRF_AFE	(1UL<<C1CRB_AFE)
 #define	C1CRF_TE	(1UL<<C1CRB_TE)
 /* C1 (C)oprocessor (A)ccess (C)ontrol (R)egister */
-#define C1CACRF_CPAP 0b00000011111111111111111111111111
-#define C1CACRV_CPAP(cp) ((0b11)<<(cp*2))
+#define C1CACRF_CPAP		0b00000011111111111111111111111111
+#define C1CACRV_CPAP(cp)	(((0b11)<<(cp*2)) & C1CACRF_CPAP)
 #endif /* __ARM_ARCH_7A__ */
 
 /* C1 (C)ontrol (R)egister SET */
@@ -58,19 +58,19 @@ static inline void CP15_C1CR_Clear(uint32_t val) {
 }
 
 /* C1 (C)oprocessor (A)ccess (C)ontrol (R)egister SET ALL */
-static inline void CP15_C1CACR_SetAll(uint32_t val) {
+static inline void CP15_C1CACR_All(uint32_t val) {
 	uint32_t __v;
     asm volatile ("mrc p15, 0, %0, c1, c0, 2":"=r"(__v));
-    __v |= (C1CACRF_CPAP & val);
+    __v |= val;
     asm volatile ("mcr p15, 0, %0, c1, c0, 2"::"r"(__v));
 	asm volatile ("isb");
 }
 
 /* C1 (C)oprocessor (A)ccess (C)ontrol (R)egister SET NONE */
-static inline void CP15_C1CACR_SetNone(uint32_t val) {
+static inline void CP15_C1CACR_None(uint32_t val) {
 	uint32_t __v;
     asm volatile ("mrc p15, 0, %0, c1, c0, 2":"=r"(__v));
-	__v &= (C1CACRF_CPAP & ~val);
+	__v &= ~val;
     asm volatile ("mcr p15, 0, %0, c1, c0, 2"::"r"(__v));
 	asm volatile ("isb");
 }
