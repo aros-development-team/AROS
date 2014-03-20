@@ -13,43 +13,66 @@
 #include <inttypes.h>
 
 #ifdef __ARM_ARCH_7A__
-/* c1, (C)ontrol (R)egister */
-#define	C1B_M		0
-#define	C1B_A		1
-#define	C1B_C		2
-#define	C1B_Z		11
-#define	C1B_I		12
-#define	C1B_V		13
-#define	C1B_EE		25
-#define	C1B_NMFI	27
-#define	C1B_TRE		28
-#define	C1B_AFE		29
-#define	C1B_TE		30
-#define	C1F_M		(1UL<<C1B_M)
-#define	C1F_A		(1UL<<C1B_A)
-#define	C1F_C		(1UL<<C1B_C)
-#define	C1F_Z		(1UL<<C1B_Z)
-#define	C1F_I		(1UL<<C1B_I)
-#define	C1F_V		(1UL<<C1B_V)
-#define	C1F_EE		(1UL<<C1B_EE)
-#define	C1F_NMFI	(1UL<<C1B_NMFI)
-#define	C1F_TRE		(1UL<<C1B_TRE)
-#define	C1F_AFE		(1UL<<C1B_AFE)
-#define	C1F_TE		(1UL<<C1B_TE)
+/* C1, (C)ontrol (R)egister */
+#define	C1CRB_M		0
+#define	C1CRB_A		1
+#define	C1CRB_C		2
+#define	C1CRB_Z		11
+#define	C1CRB_I		12
+#define	C1CRB_V		13
+#define	C1CRB_EE	25
+#define	C1CRB_NMFI	27
+#define	C1CRB_TRE	28
+#define	C1CRB_AFE	29
+#define	C1CRB_TE	30
+#define	C1CRF_M		(1UL<<C1CRB_M)
+#define	C1CRF_A		(1UL<<C1CRB_A)
+#define	C1CRF_C		(1UL<<C1CRB_C)
+#define	C1CRF_Z		(1UL<<C1CRB_Z)
+#define	C1CRF_I		(1UL<<C1CRB_I)
+#define	C1CRF_V		(1UL<<C1CRB_V)
+#define	C1CRF_EE	(1UL<<C1CRB_EE)
+#define	C1CRF_NMFI	(1UL<<C1CRB_NMFI)
+#define	C1CRF_TRE	(1UL<<C1CRB_TRE)
+#define	C1CRF_AFE	(1UL<<C1CRB_AFE)
+#define	C1CRF_TE	(1UL<<C1CRB_TE)
+/* C1 (C)oprocessor (A)ccess (C)ontrol (R)egister */
+#define C1CACRF_CPAP 0b00000011111111111111111111111111
+#define C1CACRV_CPAP(cp) ((0b11)<<(cp*2))
 #endif /* __ARM_ARCH_7A__ */
 
-static inline void CP15_CR1_Set(uint32_t val) {
+/* C1 (C)ontrol (R)egister SET */
+static inline void CP15_C1CR_Set(uint32_t val) {
 	uint32_t __v;
     asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(__v));
     __v |= val;
     asm volatile ("mcr p15, 0, %0, c1, c0, 0"::"r"(__v));
 }
 
-static inline void CP15_CR1_Clear(uint32_t val) {
+/* C1 (C)ontrol (R)egister CLEAR */
+static inline void CP15_C1CR_Clear(uint32_t val) {
 	uint32_t __v;
     asm volatile ("mrc p15, 0, %0, c1, c0, 0":"=r"(__v));
     __v &= ~val;
     asm volatile ("mcr p15, 0, %0, c1, c0, 0"::"r"(__v));
+}
+
+/* C1 (C)oprocessor (A)ccess (C)ontrol (R)egister SET ALL */
+static inline void CP15_C1CACR_SetAll(uint32_t val) {
+	uint32_t __v;
+    asm volatile ("mrc p15, 0, %0, c1, c0, 2":"=r"(__v));
+    __v |= (C1CACRF_CPAP & val);
+    asm volatile ("mcr p15, 0, %0, c1, c0, 2"::"r"(__v));
+	asm volatile ("isb");
+}
+
+/* C1 (C)oprocessor (A)ccess (C)ontrol (R)egister SET NONE */
+static inline void CP15_C1CACR_SetNone(uint32_t val) {
+	uint32_t __v;
+    asm volatile ("mrc p15, 0, %0, c1, c0, 2":"=r"(__v));
+	__v &= (C1CACRF_CPAP & ~val);
+    asm volatile ("mcr p15, 0, %0, c1, c0, 2"::"r"(__v));
+	asm volatile ("isb");
 }
 
 #endif /* ASM_ARM_CP15_H */
