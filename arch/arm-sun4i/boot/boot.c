@@ -21,9 +21,6 @@
 
 #include <hardware/sun4i/platform.h>
 
-#define READ_ARM_REGISTER(var) \
-__asm volatile("mov %[" #var "], " #var "\n\t" : [var] "=r" (var))
-
 asm("	.section .aros.startup					\n"
 "		.globl bootstrap						\n"
 "		.type bootstrap,%function				\n"
@@ -80,14 +77,6 @@ asm("	.section .aros.startup					\n"
 "		bne		.atag_copy						\n"
 "												\n"
 "		mov		r2, sp							\n"
-"												\n"
-"		mrc		p15, 0, r0, c1, c0, 2			\n"		/* Enable NEON and VFP */
-"		orr		r0, r0, #(0xf << 20)			\n"
-"		mcr		p15, 0, r0, c1, c0, 2			\n"
-"		isb										\n"
-"		mov		r0, #0x40000000					\n"
-"		vmsr	fpexc, r0						\n"
-"												\n"
 "		mov		r0, #0							\n"
 "		b		boot							\n"
 "												\n"
@@ -96,20 +85,94 @@ asm("	.section .aros.startup					\n"
 "												\n"
 );
 
-static struct TagItem tags[128];
-static struct TagItem *tag = &tags[0];
+void setup_mmu(uint32_t kernel_phys, uint32_t kernel_virt, uint32_t mem_lower, uint32_t mem_upper) {
 
-unsigned long *mem_upper = NULL;
-unsigned long *mem_lower = NULL;
-void *pkg_image;
-uint32_t pkg_size;
+    uint32_t i;
 
-static void parse_atags(struct tag *tags) {
+    kprintf("[BOOT] MMU kernel_phys %08x\n", kernel_phys);
+    kprintf("[BOOT] MMU kernel_virt %08x\n", kernel_virt);
+    kprintf("[BOOT] MMU mem_lower   %08x\n", mem_lower);
+    kprintf("[BOOT] MMU mem_upper   %08x\n", mem_upper);
+
+    /* Use memory right below kernel for page dir */
+    pde_t *page_dir = (pde_t *)(((uintptr_t)kernel_phys - 16384) & ~ 16383);
+
+    kprintf("[BOOT] First level MMU page at %08x\n", page_dir);
+
+    /* Clear page dir */
+    for (i=0; i < 4096; i++) {
+        page_dir[i].raw = 0;
+	}
+
+    /* 1:1 memory mapping */
+    for (i=(mem_lower >> 20); i < (mem_upper >> 20); i++) {
+    	//kprintf("[BOOT] Memory mapping page %d\n", i);
+        //page_dir[i].raw = 0;
+        page_dir[i].section.type = PDE_TYPE_SECTION;
+        page_dir[i].section.b = 0;
+        page_dir[i].section.c = 1;      /* Cacheable */
+        page_dir[i].section.ap = 3;     /* All can read&write */
+        page_dir[i].section.base_address = i;
+    }
+
+    /* v:p memory mapping */
+    for (i=(kernel_virt >> 20); i <= (0xffffffff >> 20); i++) {
+    	kprintf("[BOOT] Kernel mapping page %d\n", i);
+        //page_dir[i].raw = 0;
+        page_dir[i].section.type = PDE_TYPE_SECTION;
+        page_dir[i].section.b = 0;
+        page_dir[i].section.c = 1;      /* Cacheable */
+        page_dir[i].section.ap = 3;     /* All can read&write */
+        page_dir[i].section.base_address = (kernel_phys >> 20); // Fixme
+    }
+
+    pte_t *current_pte = (pte_t *)page_dir;
+
+    /* Write page_dir address to ttbr0 */
+    asm volatile ("mcr p15, 0, %0, c2, c0, 0"::"r"(page_dir));
+    /* Write ttbr control N = 0 (use only ttbr0) */
+    asm volatile ("mcr p15, 0, %0, c2, c0, 2"::"r"(0));
+
+    mem_upper = (intptr_t)current_pte;
+}
+
+void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
+
 	struct tag *t = NULL;
+	struct TagItem tags[128];
+	struct TagItem *tag = &tags[0];
+
+	uint32_t mem_upper = 0;
+	uint32_t mem_lower = 0;
+
+	void *pkg_image;
+	uint32_t pkg_size;
+
+	uint32_t tmp;
+
+	/* Disable MMU, level one data cache and strict alignment fault checking */
+	CP15_C1CR_Clear(C1CRF_C|C1CRF_A|C1CRF_M);
+
+	/* High exception vectors selected, address range = 0xFFFF0000-0xFFFF001C */
+	CP15_C1CR_Set(C1CRF_V);
+
+	/* Set cp10 and cp11 for Privileged and User mode access */
+	CP15_C1CACR_All(C1CACRV_CPAP(10)|C1CACRV_CPAP(11));
+
+	/* Enable VFP (NEON in our case) */
+    fmxr(cr8, fmrx(cr8) | 1 << 30);
+
+	void (*entry)(struct TagItem *tags) = NULL;
+
+    kprintf("[BOOT] AROS for sun4i (" SUN4I_PLATFORM_NAME ") bootstrap\n");
+
+    tag->ti_Tag = KRN_BootLoader;
+    tag->ti_Data = (IPTR)"Bootstrap/sun4i (" SUN4I_PLATFORM_NAME ") ARM";
+    tag++;
 
 	kprintf("[BOOT] Parsing ATAGS %x\n", tags);
 
-	for_each_tag(t, tags) {
+	for_each_tag(t, atags) {
 		kprintf("[BOOT]   (%x-%x) tag %08x (%d): ", t, (uint32_t)t+(t->hdr.size<<2)-1, t->hdr.tag, t->hdr.size);
 
 		switch (t->hdr.tag) {
@@ -118,12 +181,12 @@ static void parse_atags(struct tag *tags) {
 				kprintf("Memory (%08x-%08x)\n", t->u.mem.start, t->u.mem.size + t->u.mem.start - 1);
 	        	tag->ti_Tag = KRN_MEMLower;
 	        	tag->ti_Data = t->u.mem.start;
-	        	mem_lower = &tag->ti_Data;
+	        	mem_lower = tag->ti_Data;
 	        	tag++;
 
 	        	tag->ti_Tag = KRN_MEMUpper;
 	        	tag->ti_Data = t->u.mem.start + t->u.mem.size;
-	        	mem_upper = &tag->ti_Data;
+	        	mem_upper = tag->ti_Data;
 	        	tag++;
 			}
 			break;
@@ -151,87 +214,22 @@ static void parse_atags(struct tag *tags) {
 		}
 	}
 
-	if(t->hdr.size == NULL) {
+	if(t->hdr.size == 0) {
 		kprintf("[BOOT]   (%x-%x) tag %08x (%d): ATAG_NONE\n", t, (uint32_t)t+(2<<2)-1, t->hdr.tag, 2);
 	}
-}
-
-void setup_mmu(uintptr_t kernel_phys, uintptr_t kernel_virt, uintptr_t length) {
-
-    uint32_t i;
-
-    kprintf("[BOOT] Preparing initial MMU map\n");
-
-    /* Use memory right below kernel for page dir */
-    pde_t *page_dir = (pde_t *)(((uintptr_t)kernel_phys - 16384) & ~ 16383);
-
-    kprintf("[BOOT] First level MMU page at %08x\n", page_dir);
-
-    /* Clear page dir */
-    for (i=0; i < 4096; i++) {
-        page_dir[i].raw = 0;
-	}
-
-    /* 1:1 memory mapping */
-    for (i=(*mem_lower >> 20); i < (*mem_upper >> 20); i++) {
-        //page_dir[i].raw = 0;
-        page_dir[i].section.type = PDE_TYPE_SECTION;
-        page_dir[i].section.b = 0;
-        page_dir[i].section.c = 1;      /* Cacheable */
-        page_dir[i].section.ap = 3;     /* All can read&write */
-        page_dir[i].section.base_address = i;
-    }
-
-    /* v:p memory mapping */
-    for (i=(kernel_virt >> 20); i <= (0xffffffff >> 20); i++) {
-    	kprintf("[BOOT] Kernel mapping page %d\n", i);
-        //page_dir[i].raw = 0;
-        page_dir[i].section.type = PDE_TYPE_SECTION;
-        page_dir[i].section.b = 0;
-        page_dir[i].section.c = 1;      /* Cacheable */
-        page_dir[i].section.ap = 3;     /* All can read&write */
-        page_dir[i].section.base_address = (kernel_phys >> 20); // Fixme
-    }
-
-    pte_t *current_pte = (pte_t *)page_dir;
-
-    /* Write page_dir address to ttbr0 */
-    asm volatile ("mcr p15, 0, %0, c2, c0, 0"::"r"(page_dir));
-    /* Write ttbr control N = 0 (use only ttbr0) */
-    asm volatile ("mcr p15, 0, %0, c2, c0, 2"::"r"(0));
-
-    *mem_upper = (intptr_t)current_pte;
-}
-
-
-void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
-	uint32_t tmp;
-
-	/* Disable MMU, level one data cache and strict alignment fault checking */
-	CP15_CR1_Clear(C1F_C|C1F_A|C1F_M);
-	/* High exception vectors selected, address range = 0xFFFF0000-0xFFFF001C */
-	CP15_CR1_Set(C1F_V);
-
-	void (*entry)(struct TagItem *tags) = NULL;
-
-    kprintf("[BOOT] AROS for sun4i (" SUN4I_PLATFORM_NAME ") bootstrap\n");
-
-    tag->ti_Tag = KRN_BootLoader;
-    tag->ti_Data = (IPTR)"Bootstrap/sun4i (" SUN4I_PLATFORM_NAME ") ARM";
-    tag++;
-
-    parse_atags(atags);
 
     kprintf("[BOOT] Bootstrap @ %08x-%08x\n", &__bootstrap_start, &__bootstrap_end);
-    kprintf("[BOOT] Topmost address for kernel: %p\n", *mem_upper);
+    kprintf("[BOOT] Topmost address for kernel: %p\n", mem_upper);
 
-    if (*mem_upper) {
+    if (mem_upper) {
 
-    	unsigned long kernel_phys = *mem_upper;
-    	unsigned long kernel_virt = kernel_phys;
+    	uint32_t kernel_phys = mem_upper;
+    	uint32_t kernel_virt = kernel_phys;
 
-    	unsigned long total_size_ro, total_size_rw;
-    	uint32_t size_ro, size_rw;
+    	uint32_t total_size_ro;
+		uint32_t total_size_rw;
+    	uint32_t size_ro;
+		uint32_t size_rw;
 
     	/* Calculate total size of kernel and modules */
 
@@ -287,7 +285,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
     		}
     	}
 
-    	kernel_phys = *mem_upper - total_size_ro - total_size_rw;
+    	kernel_phys = mem_upper - total_size_ro - total_size_rw;
     	kernel_virt = 0xffff0000 - total_size_ro - total_size_rw - BOOT_STACK_SIZE;
 
 		/*
@@ -318,7 +316,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
 		*/
 
     	/* Adjust "top of memory" pointer */
-    	*mem_upper = kernel_phys;
+    	mem_upper = kernel_phys;
 
     	kprintf("[BOOT] Physical address of kernel: %p\n", kernel_phys);
     	kprintf("[BOOT] Virtual address of kernel: %p\n", kernel_virt);
@@ -328,11 +326,11 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
         initAllocator(kernel_phys, kernel_phys  + total_size_ro, kernel_virt - kernel_phys);
 
     	tag->ti_Tag = KRN_KernelLowest;
-    	tag->ti_Data = kernel_phys;
+    	tag->ti_Data = kernel_virt;
     	tag++;
 
     	tag->ti_Tag = KRN_KernelHighest;
-    	tag->ti_Data = kernel_phys + ((total_size_ro + 4095) & ~4095) + ((total_size_rw + 4095) & ~4095);
+    	tag->ti_Data = kernel_virt + ((total_size_ro + 4095) & ~4095) + ((total_size_rw + 4095) & ~4095);
     	tag++;
 
      	loadElf(&_binary_kernel_bin_start);
@@ -385,14 +383,14 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
         tag->ti_Data = (IPTR)tracker;
         tag++;
 
-      setup_mmu(kernel_phys, kernel_virt, total_size_ro + total_size_rw);
+		setup_mmu(kernel_phys, kernel_virt, mem_lower, mem_upper);
     }
 
     tag->ti_Tag = TAG_DONE;
     tag->ti_Data = 0;
 
     kprintf("[BOOT] Kernel taglist contains %d entries\n", ((intptr_t)tag - (intptr_t)tags)/sizeof(struct TagItem));
-    kprintf("[BOOT] Bootstrap wasted %d bytes of memory for kernels use\n", mem_used()   );
+    kprintf("[BOOT] Topmost address for kernel: %p\n", mem_upper);
 
     if (entry) {
         /* Set domains - Dom0 is usable, rest is disabled */
@@ -401,7 +399,7 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
         asm volatile ("mcr p15, 0, %0, c3, c0, 0"::"r"(0x00000001));
 
 		/* Enable MMU */
-		CP15_CR1_Set(C1F_M);
+		CP15_C1CR_Set(C1CRF_M);
 
         kprintf("[BOOT] Heading over to AROS kernel @ %08x\n", entry);
 
@@ -413,5 +411,5 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag *atags) {
     }
 
     while(1);
-} __attribute__ ((noreturn));
+};
 

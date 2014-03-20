@@ -99,7 +99,7 @@ void startup(struct TagItem *tags) {
     bug("\n[KRN] AROS for sun4i (" SUN4I_PLATFORM_NAME ") built on %s starting...\n", __DATE__);
     bug("[KRN] BootMsg @ %08x\n", tags);
     bug("[KRN] Kernel entry @ %08x\n", start);
-    bug("[KRN] Kernel entry @ %08x\n", startup);
+    bug("[KRN] Kernel c entry @ %08x\n", startup);
     bug("[KRN] Early MMU @ %08x\n", early_mmu);
 
     /* Check if the taglist is copied into safe place */
