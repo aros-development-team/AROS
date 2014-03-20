@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -275,6 +275,7 @@
     /* Load the shell */
     if (!isCustom) {
         /* Seglist of default shell is stored in RootNode when loaded */
+        D(bug("[SystemTagList] Loading standard %s\n", isCLI? "CLI" : "shell"));
         if (isCLI)
             shellseg = findseg_cli(isBoot, DOSBase);
         else
@@ -290,6 +291,7 @@
         struct Segment *seg;
 
         /* Get the custom shell from the DOS resident list */
+        D(bug("[SystemTagList] Loading custom shell\n"));
         Forbid();
         seg = FindSegment(resShell, NULL, TRUE);
         if (seg)
@@ -303,6 +305,7 @@
         /* We wanted the CLI shell, but it's not available.
          * Let's try to use the Shell instead.
          */
+        D(bug("[SystemTagList] No CLI. Attempting to use shell instead\n"));
         shellseg = findseg_shell(isBoot, DOSBase);
         isCLI = FALSE;
     }
