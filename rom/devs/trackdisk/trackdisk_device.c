@@ -56,7 +56,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     struct ExpansionBase *ExpansionBase = NULL;
     struct DeviceNode *devnode;
     IPTR *pp;
-    TEXT dosdevname[4] = "DF0", *handler = "afs-handler";
+    TEXT dosdevname[4] = "DF0", *handler = "FastFileSystem";
     UWORD len;
 
     /* Try to get memory for structure */
