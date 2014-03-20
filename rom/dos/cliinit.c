@@ -46,7 +46,7 @@ static void PRINT_DOSTYPE(ULONG dt)
 
 #endif
 
-static long internalBootCliHandler(void);
+static LONG internalBootCliHandler(void);
 
 /*****************************************************************************
 
@@ -379,12 +379,18 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
     D(bug("Dos/CliInit: MountList head: 0x%p\n", bn));
 
     if (bn == NULL)
+    {
+        ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
         return BNULL;
+    }
 
     dn = bn->bn_DeviceNode;
     mp = mountBootNode(dn, fsr, DOSBase);
     if (!mp)
+    {
+        ReleaseSemaphore(&IntExpBase(ExpansionBase)->BootSemaphore);
         return BNULL;
+    }
 
     D(bug("Dos/CliInit: %b (%d) appears usable\n", dn->dn_Name, bn->bn_Node.ln_Pri));
 
@@ -414,6 +420,7 @@ static BPTR internalBootLock(struct DosLibrary *DOSBase, struct ExpansionBase *E
                 err = ERROR_OBJECT_WRONG_TYPE; /* Something to more or less reflect "This disk is not bootable" */
             }
             else
+                /* Let everyone know a boot volume has been chosen */
                 ExpansionBase->Flags |= EBF_DOSFLAG;
         }
         else
@@ -470,7 +477,7 @@ static void AddBootAssign(CONST_STRPTR path, CONST_STRPTR assign, APTR DOSBase)
  * sets up the boot assigns, and starts the
  * startup sequence.
  */
-static long internalBootCliHandler(void)
+static LONG internalBootCliHandler(void)
 {
     struct ExpansionBase *ExpansionBase;
     struct DosLibrary *DOSBase;
@@ -481,6 +488,7 @@ static long internalBootCliHandler(void)
     UBYTE Flags;
     struct BootNode *bn, *tmpbn;
     struct FileSysResource *fsr;
+    LONG err = 0;
 
     /* Ah. A DOS Process context. At last! */
     WaitPort(mp);
@@ -494,16 +502,21 @@ static long internalBootCliHandler(void)
 
     ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
     if (!ExpansionBase)
-        return ERROR_INVALID_RESIDENT_LIBRARY;
+        err = ERROR_INVALID_RESIDENT_LIBRARY;
 
-    /* It's perfectly fine if this fails. */
-    fsr = OpenResource("FileSystem.resource");
+    if (err == 0)
+    {
+        /* It's perfectly fine if this fails. */
+        fsr = OpenResource("FileSystem.resource");
 
-    /* Find and Lock the proposed boot device */
-    lock = internalBootLock(DOSBase, ExpansionBase, fsr);
-    D(bug("Dos/CliInit: Proposed SYS: lock is: %p\n", BADDR(lock)));
+        /* Find and Lock the proposed boot device */
+        lock = internalBootLock(DOSBase, ExpansionBase, fsr);
+        D(bug("Dos/CliInit: Proposed SYS: lock is: %p\n", BADDR(lock)));
+        if (lock == BNULL)
+            err = IoErr();
+    }
 
-    if (lock == BNULL)
+    if (err != 0)
     {
         /*
          * We've failed. Inform our parent and exit.
@@ -512,9 +525,9 @@ static long internalBootCliHandler(void)
          * invalid).
          * Alternatively we could Forbid() before ReplyPkt(), but... Forbid() is so unpolite...
          */
-        IPTR err = IoErr();
 
-        CloseLibrary(&ExpansionBase->LibNode);
+        if (ExpansionBase != NULL)
+            CloseLibrary(&ExpansionBase->LibNode);
         CloseLibrary(&DOSBase->dl_lib);
 
         /* Immediately after ReplyPkt() DOSBase can be freed. */
