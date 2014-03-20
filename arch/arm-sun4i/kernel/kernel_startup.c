@@ -34,6 +34,13 @@ asm("	.section .aros.init,\"ax\"								\n"
 "		.globl start											\n"
 "		.type start,%function									\n"
 "																\n"
+/*
+	Allocate enough stack space at bootstrap to last a life time
+	Divide the stack evenly for each system mode (aligned to 4kb)
+	Swap physical stack pointers to virtual address range
+	Protect each stack with two level MMU according to system mode (when and if possible)
+	- Atleast some of the stacks are then protected
+*/
 "start:															\n"
 "		cps		#"STR(CPUMODE_SYSTEM)"							\n"     // Enter System mode
 "       ldr		sp, sys_stack_end								\n"     // Load system mode stack
