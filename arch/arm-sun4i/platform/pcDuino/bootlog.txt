@@ -1,0 +1,109 @@
+U-Boot SPL 2013.10 (Mar 11 2014 - 13:47:49)
+Board: pcDuin
+o
+DRAM: 1024 MiB
+CPU: 1008000000Hz, AXI/AHB/APB: 3/2/2
+spl: not an uImage at 1600
+
+
+U-Boot 2013.10 (Mar 11 2014 - 13:47:49) Allwinner Technology
+
+CPU:   Allwinner A10 (SUN4I)
+Board: pcDuino
+I2C:   ready
+DRAM:  1 GiB
+MMC:   SUNXI SD/MMC: 0
+*** Warning - bad CRC, using default environment
+
+In:    serial
+Out:   serial
+Err:   serial
+Net:   emac
+Hit any key to stop autoboot:  3 
+\0x08\0x08\0x08 2 
+\0x08\0x08\0x08 1 
+\0x08\0x08\0x08 0 
+reading uEnv.txt
+172 bytes read in 5 ms (33.2 KiB/s
+)
+Loaded environment from uEnv.txt
+Running uenvcmd ...
+reading boot/uImage-aros
+18956 bytes read in 11 ms (1.6 MiB/s)
+reading boot/uInitrd-aros
+36128 bytes read in 13 ms (2.7 MiB/s)
+## Booting kernel from Legacy Image at 48000000 ...
+   Image Name:   AROS Boot
+   Created:      2014-03-20  17:17:14 UTC
+   Image Type:   ARM Linux Kernel Image (gzip compressed)
+   Data Size:    18892 Bytes = 18.4 KiB
+   Load Address: 40010000
+   Entry Point:  40010000
+   Verifying Checksum ... OK
+## Loading init Ramdisk from Legacy Image at 49000000 ...
+   Image Name:   AROS rom
+   Created:      2014-03-20  17:17:14 UTC
+   Image Type:   ARM Linux RAMDisk Image (uncompressed)
+   Data Size:    36064 Bytes = 35.2 KiB
+   Load Address: 00000000
+   Entry Point:  00000000
+   Verifying Checksum ... OK
+   Uncompressing Kernel Image ... OK
+
+Starting kernel ...
+
+[BOOT] AROS for sun4i (pcDuino) bootstrap
+[BOOT] Parsing ATAGS 7ffefb84
+[BOOT]   (7ffeffac-7ffeffbf) tag 54410001 (5): IGN...
+[BOOT]   (7ffeffc0-7ffeffd7) tag 54410009 (6): CMDLine: "debug=serial0"
+[BOOT]   (7ffeffd8-7ffeffe7) tag 54410002 (4): Memory (40000000-7ffdffff)
+[BOOT]   (7ffeffe8-7ffefff7) tag 54420005 (4): RAMDISK: (49000040-49008d1f)
+[BOOT]   (7ffefff8-7ffeffff) tag 00000000 (2): ATAG_NONE
+[BOOT] Bootstrap @ 40010000-4001b814
+[BOOT] Topmost address for kernel: 7ffe0000
+[BOOT] Kernel image is a package:
+[BOOT] Package size: 35KB
+[BOOT]    oop.library 
+[BOOT]    utility.library 
+[BOOT] Physical address of kernel: 7ffc2000
+[BOOT] Virtual address of kernel: fffc2000
+[BOOT] loadElf(40014004)
+[BOOT] ELF: RO section loaded at 7ffc2000 (Virtual addr: fffc2000-fffc64cc)
+[BOOT] ELF: RO section loaded at 7ffc64cc (Virtual addr: fffc64cc-fffc6dcc)
+[BOOT] ELF: RW section loaded at 7ffcd000 (Virtual addr: fffcd000-fffcd300)
+[BOOT] ELF: RW section loaded at 7ffcd300 (Virtual addr: fffcd300-fffcd304)
+[BOOT] ELF: RW section loaded at 7ffcd310 (Virtual addr: fffcd310-fffdd724)
+[BOOT] Kernel image is a package:
+[BOOT] Package size: 35KB
+[BOOT]    oop.library [BOOT] loadElf(49000094)
+[BOOT] ELF: RO section loaded at 7ffc6dcc (Virtual addr: fffc6dcc-fffca228)
+[BOOT] ELF: RO section loaded at 7ffca228 (Virtual addr: fffca228-fffca654)
+[BOOT] ELF: RW section loaded at 7ffdd724 (Virtual addr: fffdd724-fffdd728)
+[BOOT] ELF: RW section loaded at 7ffdd728 (Virtual addr: fffdd728-fffdd72c)
+[BOOT]    utility.library [BOOT] loadElf(49005834)
+[BOOT] ELF: RO section loaded at 7ffca654 (Virtual addr: fffca654-fffcc184)
+[BOOT] ELF: RO section loaded at 7ffcc184 (Virtual addr: fffcc184-fffcc404)
+[BOOT] ELF: RW section loaded at 7ffdd72c (Virtual addr: fffdd72c-fffdd730)
+[BOOT] ELF: RW section loaded at 7ffdd730 (Virtual addr: fffdd730-fffdd734)
+[BOOT] MMU kernel_phys 7ffc2000
+[BOOT] MMU kernel_virt fffc2000
+[BOOT] MMU mem_lower   40000000
+[BOOT] MMU mem_upper   7ffc2000
+[BOOT] First level MMU page at 7ffbc000
+[BOOT] Kernel mapping page 4095
+[BOOT] Kernel taglist contains 7 entries
+[BOOT] Topmost address for kernel: 7ffc2000
+[BOOT] Domain access control register: ffffffff
+[BOOT] Heading over to AROS kernel @ fffc2000
+
+[KRN] AROS for sun4i (pcDuino) built on Mar 20 2014 starting...
+[KRN] BootMsg @ 7ffefb84
+[KRN] Kernel entry @ fffc2000
+[KRN] Kernel c entry @ fffc215c
+[KRN] CmdLine: debug=serial0
+[KRN] MemLower: 40000000
+[KRN] MemUpper: 7ffe0000
+[KRN] KernelLowest: fffc2000
+[KRN] KernelHighest: fffe0000
+[KRN] kernelBSS: 4001b014
+
