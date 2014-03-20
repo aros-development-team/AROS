@@ -13,11 +13,11 @@ include $(TOP)/config/make.cfg
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 SYSTEM_FILES := \
-    C/NewShell \
+    AROS.boot \
     C/Unpack \
-    Libs/locale.library \
+    L/UserShell-Seg \
     Libs/iffparse.library \
-    AROS.boot
+    Libs/locale.library
 
 MODULES_DEFAULT := $(SRCDIR)/$(CURDIR)/../modules.default
 MODULE_BOOTSTRAP := /$(AROS_DIR_ARCH)/bootstrap.gz
@@ -52,11 +52,12 @@ BOOT_TAR_EXECUTABLES := \
     Classes/Zune/PrefsEditor.mcc Classes/Zune/SystemPrefsWindow.mcc \
     Devs/clipboard.device \
     L/pipe-handler \
-    Libs/stdc.library Libs/stdcio.library \
+    Libs/stdc.library Libs/stdcio.library Libs/posixc.library \
+    Libs/png_au.library Libs/z_au.library Libs/uuid.library \
     Libs/asl.library Libs/commodities.library \
     Libs/cybergraphics.library \
     Libs/datatypes.library Libs/diskfont.library Libs/gadtools.library \
-    Libs/icon.library Libs/workbench.library \
+    Libs/icon.library Libs/kms.library Libs/workbench.library \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
     Prefs/Font \
     Prefs/Time \
@@ -96,7 +97,7 @@ BOOT_TAR_MISC := \
     Devs/DataTypes/FTXT Devs/DOSDrivers/PIPE \
     Devs/Keymaps Devs/Mountlist \
     Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/14 \
-    Locale/Countries Locale/Help \
+    Locale/Countries \
     Prefs/Env-Archive/hdtoolbox.prefs \
     Prefs/Env-Archive/SYS/font.prefs Prefs/Env-Archive/SYS/theme.var \
     Prefs/Env-Archive/SYS/def_Disk.info \
@@ -104,9 +105,9 @@ BOOT_TAR_MISC := \
     Prefs/Env-Archive/SYS/def_Project.info \
     Prefs/Env-Archive/SYS/def_RAM.info \
     Prefs/Env-Archive/SYS/def_Tool.info \
-    S/Shell-Startup S/Startup-Sequence \
     Prefs/Presets/Themes/Mason \
-    Prefs/Presets/Themes/$(AROS_GUI_THEME)
+    Prefs/Presets/Themes/$(AROS_GUI_THEME) \
+    S
 
 
 BOOT_SRC_DIR    := $(AROSDIR)
@@ -152,6 +153,7 @@ systemdisk-setup-pc-i386 :
 	-$(RM) $(SYSTEM_DEST_DIR)
 	%mkdirs_q $(SYSTEM_DEST_DIR)
 	%mkdirs_q $(SYSTEM_DEST_DIR)/C
+	%mkdirs_q $(SYSTEM_DEST_DIR)/L
 	%mkdirs_q $(SYSTEM_DEST_DIR)/Libs
 	%mkdirs_q $(SYSTEM_DEST_DIR)/S
 
