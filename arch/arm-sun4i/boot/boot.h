@@ -13,12 +13,8 @@
 #include <sys/types.h>
 #include <aros/kernel.h>
 
-// Create some temporary storage in .bss for both stack and local allocations.
-#define BOOT_STACK_SIZE		65536
-#define BOOT_TMP_SIZE		524288
+#define BOOT_STACK_SIZE		4*10*(4*1024)	/* Minimum stack is 4kb (MMU chosen page size) and we need four stacks */
 
-size_t mem_avail();
-size_t mem_used();
 const char *remove_path(const char *in);
 void arm_dcache_invalidate(uint32_t addr, uint32_t length);
 void arm_icache_invalidate(uint32_t addr, uint32_t length);

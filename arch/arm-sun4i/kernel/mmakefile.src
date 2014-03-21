@@ -7,14 +7,12 @@ CFILES := kernel_startup kernel_debug maygetchar issuper
 #MM     setup-sun4i-arm \
 #MM     kernel-kernel-kobj
 
-kernel-sun4i-arm: $(AROSDIR)/boot/aros-sun4i
+kernel-sun4i-arm: $(OSGENDIR)/boot/aros-sun4i.elf
 
-$(AROSDIR)/boot/aros-sun4i: $(KOBJSDIR)/kernel_resource.o 
+$(OSGENDIR)/boot/aros-sun4i.elf: $(KOBJSDIR)/kernel_resource.o 
 		%mkdirs_q $(OSGENDIR)/boot
-		%mkdirs_q $(AROSDIR)/boot
 		$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o -L$(AROS_LIB) -larossupport -lautoinit -llibinit -lstdc.static -laeabi
 		$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
-	
 
 #MM kernel-kernel-sun4i-arm : includes
 #MM kernel-kernel-sun4i-arm-kobj : includes
