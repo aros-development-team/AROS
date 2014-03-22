@@ -1,7 +1,7 @@
 CFG_PACKAGES=(hosted.svn.linux-armhf sdk.svn.linux-armhf contrib.svn.linux-armhf)
 
 CFG_MAIL_ENABLE=yes
-CFG_MAIL_CC=deadwood@wp.pl
+CFG_MAIL_CC=aros@vps38387.ovh.net
 
 CFG_UPLOAD_ENABLE=yes
 CFG_DS_USER=deadwood_pl,aros
