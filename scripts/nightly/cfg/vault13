@@ -1,4 +1,4 @@
-CFG_PACKAGES=(hosted.svn.linux-armhf)
+CFG_PACKAGES=(hosted.svn.linux-armhf sdk.svn.linux-armhf contrib.svn.linux-armhf)
 
 CFG_MAIL_ENABLE=yes
 CFG_MAIL_CC=deadwood@wp.pl
