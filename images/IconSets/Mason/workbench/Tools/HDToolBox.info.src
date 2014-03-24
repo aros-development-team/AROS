@@ -1,1 +1,7 @@
 TYPE = TOOL
+STACK = 8192
+TOOLTYPE = "DEVICE=scsi.device:32"
+TOOLTYPE = "DEVICE=ata.device:32"
+TOOLTYPE = "DEVICE=ahci.device:32"
+TOOLTYPE = "DEVICE=usbscsi.device:32"
+TOOLTYPE = "DEVICE=usbmss.device:32"
