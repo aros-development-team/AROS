@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <dos/datetime.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
@@ -60,8 +65,9 @@ int main(void)
 	    days++;
     	    seconds += 86400;
 	    
-	} while (days < 365 * 300); /* around 300 years */
-	
+	} while (days < 36525 /* 2078-01-01: same as 1978 in FORMAT_DOS */
+	    && (SetSignal(0, 0) & SIGBREAKF_CTRL_C) == 0);
+
 	CloseLibrary((struct Library *)UtilityBase);
     }
 
