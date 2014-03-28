@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/debug.h>
 
 #include <stdio.h>
@@ -28,8 +33,8 @@ void arrgh(TYPE a, TYPE b, TYPE shouldbe_a, TYPE shouldbe_b)
 int main(void)
 {
     TYPE a, b;
-    
-    for(;;)
+
+    while((SetSignal(0, 0) & SIGBREAKF_CTRL_C) == 0)
     {
 	a = VAL1; b = VAL1;
 	if (!(a == b)) arrgh(a,b,VAL1,VAL1);
@@ -40,6 +45,6 @@ int main(void)
 	if (a == b) arrgh(a,b,VAL2,VAL1);
 	if (a <= b) arrgh(a,b,VAL2,VAL1);
     }
-    
+
     return 0;
 }
