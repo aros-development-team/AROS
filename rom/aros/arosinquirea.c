@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -34,7 +34,7 @@
 #define AROS_RELEASE_DATE       7560    /* in days since 1978-01-01 */
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-/* Native AROS support functions */
+/* Amiga hardware support functions */
 IPTR kicksize(void);
 IPTR kickbase(void);
 #endif
@@ -44,68 +44,67 @@ IPTR kickbase(void);
     NAME */
 #include <aros/inquire.h>
 
-    AROS_LH1(ULONG, ArosInquireA,
+        AROS_LH1(ULONG, ArosInquireA,
 
 /*  SYNOPSIS */
-
-    AROS_LHA(struct TagItem *, taglist, A0),
+        AROS_LHA(struct TagItem *, taglist, A0),
 
 /*  LOCATION */
-
-    struct ArosBase *, ArosBase, 5, Aros)
+        struct ArosBase *, ArosBase, 5, Aros)
 
 /*  FUNCTION
-    This function is used to query system characteristics not easily
-    queried with another function.
+        This function is used to query system characteristics not easily
+        queried with another function. All queries understood by this call
+        will have appropriate values assigned to the location the query tag's
+        ti_Data field points to.
 
     INPUTS
-    tags -- taglist with appropriate queries. The tag's ti_Data field
-        should point to the location where the result of the query
-        is stored. Do not forget to clear the location before, as
-        queries not understood will be left untouched.
+        tags - a tag list with appropriate queries. Each tag's ti_Data field
+            should point to the location where the result of the query
+            is to be stored. Do not forget to clear the location before, as
+            queries not understood will be left untouched.
 
-    AI_KickstartBase APTR
-    AI_KickstartSize ULONG
-    AI_KickstartVersion UWORD
-    AI_KickstartRevision UWORD
-        Only support these tags if we are on the native machine. On other machines this
-        call will not touch the storage space. Set the storage space to 0 if you want to
-        see if this call touches it.
+    TAGS
+        AI_KickstartBase APTR
+        AI_KickstartSize ULONG
+        AI_KickstartVersion UWORD
+        AI_KickstartRevision UWORD
+            Only support these tags if we are on the native machine. On other
+            machines this call will not touch the storage space. Set the
+            storage space to 0 beforehand if you want to see if this call
+            touches it.
 
-    AI_ArosVersion IPTR
-        aros.library version masquerades as AROS version. This means
-        that all aros modules must have the same major version number.
+        AI_ArosVersion IPTR
+            aros.library version masquerades as AROS version. This means
+            that all AROS modules must have the same major version number.
 
-    AI_ArosReleaseMajor IPTR
-        Update this whenever a new AROS is released.
+        AI_ArosReleaseMajor IPTR
+            Update this whenever a new AROS is released.
 
-    AI_ArosReleaseMinor IPTR
-        Update this whenever a new AROS is released.
+        AI_ArosReleaseMinor IPTR
+            Update this whenever a new AROS is released.
 
-    AI_ArosReleaseDate IPTR
-        Update this whenever a new AROS is released.
+        AI_ArosReleaseDate IPTR
+            Update this whenever a new AROS is released.
 
-    AI_ArosBuildDate IPTR
-        Given in the format: <d>.<m>.<y>
+        AI_ArosBuildDate IPTR
+            Given in the format: <d>.<m>.<y>
 
-    AI_ArosVariant IPTR
-        Distribution name.
+        AI_ArosVariant IPTR
+            Distribution name.
 
-    AI_ArosArchitecture IPTR
-        Return the target architecture.
+        AI_ArosArchitecture IPTR
+            Return the target architecture.
 
-    AI_ArosABIMajor IPTR
-        Update this whenever a new ABI is introduced in AROS. Special value of
-        -1 means that the ABI is under development and subject to change.
-
+        AI_ArosABIMajor IPTR
+            Update this whenever a new ABI is introduced in AROS. Special
+            value of -1 means that the ABI is under development and subject
+            to change.
 
     RESULT
-    All queries understood by this call will have appropriate values
-    assigned to the location a tag's ti_Data pointed to.
-
-    This function will return 0 on success, or the index of the
-    first tag that could not be processed. (Ie 1 for Tag[0], 2 for
-    Tag[1], etc)
+        index - the index of the first tag that could not be processed, plus
+            one (e.g. 1 for taglist[0], 2 for taglist[1] etc.). Zero if all
+            tags were handled.
 
     NOTES
 
@@ -114,7 +113,7 @@ IPTR kickbase(void);
     BUGS
 
     SEE ALSO
-    aros/arosbase.h
+        aros/arosbase.h
 
     INTERNALS
 
@@ -243,7 +242,6 @@ IPTR kickbase(void);
             break;
         
         default:
-            SetData (tag, IPTR, 0);
             if (ret == 0)
                 ret = i;
             break;
