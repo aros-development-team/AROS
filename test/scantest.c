@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <dos/dosasl.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
@@ -15,7 +20,10 @@ void ReadAll(BPTR lock)
   int count = 1;
 
   success = Examine(lock, FIB);
-  success = ExNext(lock,FIB);
+  if (FIB->fib_DirEntryType < 0)
+    success = FALSE;
+  if (success)
+    success = ExNext(lock, FIB);
   while (success)
   {
     printf("%s",FIB->fib_FileName);
