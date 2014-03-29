@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <dos/datetime.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
@@ -33,7 +38,8 @@ int main(void)
 	
 	days++;
 	
-    } while (!CheckSignal(SIGBREAKF_CTRL_C) && (days < 365 * 300)); /* around 300 years */
+    } while (!CheckSignal(SIGBREAKF_CTRL_C)
+        && (days < 36525)); /* 2078-01-01: same as 1978 in FORMAT_DOS */
 
     return 0;
 }
