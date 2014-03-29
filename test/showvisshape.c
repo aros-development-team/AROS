@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/exec.h>
 #include <dos/dos.h>
 #include <intuition/intuition.h>
@@ -9,20 +14,11 @@
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
+#include <clib/arossupport_protos.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-#ifndef CreateLayerTagList
-
-int main(void)
-{
-    printf("showvisregion only works with hyperlayers.library!\n");
-    return 0;
-}
-
-#else
 
 #define ARG_TEMPLATE "FAST=F/S,NUMBERS=N/S"
 
@@ -186,4 +182,3 @@ int main(void)
     return 0;
 }
 
-#endif
