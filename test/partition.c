@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #define DEBUG 0
 
 #include <aros/debug.h>
@@ -187,7 +192,7 @@ int main(int argc, char **argv)
             CloseRootPartition(root);
         }
         else
-            printf("No root handle\n");
+            printf("No root handle for %s unit %d\n", device, (int)unit);
         CloseLibrary((struct Library *)PartitionBase);
     }
     else
