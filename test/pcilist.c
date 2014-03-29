@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team
+ * Copyright (C) 2012-2014, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -18,7 +18,6 @@
 
 #include <aros/shcommands.h>
 
-struct Library *DOSBase;
 struct Library *OOPBase;
 OOP_AttrBase HiddPCIDeviceAttrBase;
 
