@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <dos/dos.h>
@@ -17,6 +22,7 @@ BPTR lock;
 struct FileInfoBlock fib;
 char dpath[512];
 int size;
+LONG error;
 
 	if (dnum<1)
 		dnum = 1;
@@ -38,44 +44,50 @@ int size;
 	lock = Lock(startpath, SHARED_LOCK);
 	if (lock == BNULL)
 	{
+		error = IoErr();
 		FreeVec(ead);
 		FreeDosObject(DOS_EXALLCONTROL, eac);
 		printf("\nFailed to lock %s!\n", startpath);
-		printf("I/O Error is %ld\n", (long)IoErr());
-		PrintFault(IoErr(), NULL);
+		printf("I/O Error is %ld\n", (long)error);
+		PrintFault(error, NULL);
 		return 1;
 	}
 	Examine(lock, &fib);
 	if (fib.fib_DirEntryType != ST_USERDIR)
 	{
+		error = IoErr();
 		UnLock(lock);
 		FreeVec(ead);
 		FreeDosObject(DOS_EXALLCONTROL, eac);
 		printf("\nEntry %s is not directory!\n", startpath);
-		printf("I/O Error is %ld\n", (long)IoErr());
-		PrintFault(IoErr(), NULL);
+		printf("I/O Error is %ld\n", (long)error);
+		PrintFault(error, NULL);
 		return 1;
 	}
 	if (ExAll(lock, ead, size, ED_TYPE, eac) != 0)
 	{
+		error = IoErr();
 kprintf("entries = %ld\n", eac->eac_Entries);
 		ExAllEnd(lock, ead, size, ED_TYPE, eac);
 		UnLock(lock);
 		FreeVec(ead);
 		FreeDosObject(DOS_EXALLCONTROL, eac);
 		printf("\nNot enough memory for %s when doing ExamineAll()!\n", startpath);
-		printf("I/O Error is %ld\n", (long)IoErr());
-		PrintFault(IoErr(), NULL);
+		printf("I/O Error is %ld\n", (long)error);
+		PrintFault(error, NULL);
 		return 1;
 	}
+	error = IoErr();
 	UnLock(lock);
-	if (IoErr() != ERROR_NO_MORE_ENTRIES)
+	if (error == ERROR_NO_MORE_ENTRIES)
+		error = 0;
+	else
 	{
 		FreeDosObject(DOS_EXALLCONTROL, eac);
 		FreeVec(ead);
 		printf("\nExAll() returned error on %s!\n", startpath);
-		printf("I/O Error is %ld\n", (long)IoErr());
-		PrintFault(IoErr(), NULL);
+		printf("I/O Error is %ld\n", (long)error);
+		PrintFault(error, NULL);
 		return 1;
 	}
 	if (eac->eac_Entries == 0)
@@ -89,13 +101,14 @@ kprintf("entries = %ld\n", eac->eac_Entries);
 		if (next->ed_Type == ST_FILE)
 		{
 #if REAL_DELETE
-			if (DeleteFile(dpath) == 0)
+			if (!DeleteFile(dpath))
 			{
+				error = IoErr();
 				FreeDosObject(DOS_EXALLCONTROL, eac);
 				FreeVec(ead);
 				printf("\nFailed to delete file %s\n", dpath);
-				printf("I/O Error is %ld\n", (long)IoErr());
-				PrintFault(IoErr(), NULL);
+				printf("I/O Error is %ld\n", (long)error);
+				PrintFault(error, NULL);
 				return 1;
 			}
 #endif
@@ -121,11 +134,12 @@ kprintf("entries = %ld\n", eac->eac_Entries);
 	FreeDosObject(DOS_EXALLCONTROL, eac);
 	FreeVec(ead);
 #if REAL_DELETE
-	if (DeleteFile(startpath) == 0)
+	if (!DeleteFile(startpath))
 	{
+		error = IoErr();
 		printf("\nFailed to delete directory %s\n", startpath);
-		printf("I/O Error is %ld\n", (long)IoErr());
-		PrintFault(IoErr(), NULL);
+		printf("I/O Error is %ld\n", (long)error);
+		PrintFault(error, NULL);
 		return 1;
 	}
 #endif
@@ -150,13 +164,15 @@ char path[512];
 
 int specificParentCheck(BPTR lock, BPTR dlock, char *path) {
 BPTR plock;
+LONG error;
 
 	plock = ParentDir(dlock);
 	if (plock == BNULL)
 	{
+		error = IoErr();
 		printf("\nFailed to get parent of %s!\n", path);
-		printf("I/O Error is %ld\n", (long)IoErr());
-		PrintFault(IoErr(), NULL);
+		printf("I/O Error is %ld\n", (long)error);
+		PrintFault(error, NULL);
 		return 1;
 	}
 	if (!SameLock(lock, plock))
@@ -177,15 +193,17 @@ char name[32];
 char path[512];
 char fpath[512];
 int i,j;
+LONG error;
 
 	if (dnum<1)
 		dnum = 1;
 	lock = Lock(startpath, SHARED_LOCK);
 	if (lock == BNULL)
 	{
+		error = IoErr();
 		printf("\nFailed to get lock on %s!\n", startpath);
-		printf("I/O Error is %ld\n", (long)IoErr());
-		PrintFault(IoErr(), NULL);
+		printf("I/O Error is %ld\n", (long)error);
+		PrintFault(error, NULL);
 		return 1;
 	}
 	for (i=0; i<dnum; i++)
@@ -196,10 +214,11 @@ int i,j;
 		dlock = Lock(path, SHARED_LOCK);
 		if (dlock == BNULL)
 		{
+			error = IoErr();
 			UnLock(lock);
 			printf("\nFailed to get lock on %s!\n", path);
-			printf("I/O Error is %ld\n", (long)IoErr());
-			PrintFault(IoErr(), NULL);
+			printf("I/O Error is %ld\n", (long)error);
+			PrintFault(error, NULL);
 			return 1;
 		}
 		if (specificParentCheck(lock, dlock, path) != 0)
@@ -216,11 +235,12 @@ int i,j;
 			flock = Lock(fpath, SHARED_LOCK);
 			if (flock == BNULL)
 			{
+				error = IoErr();
 				UnLock(lock);
 				UnLock(dlock);
 				printf("\nFailed to get lock on %s!\n", fpath);
-				printf("I/O Error is %ld\n", (long)IoErr());
-				PrintFault(IoErr(), NULL);
+				printf("I/O Error is %ld\n", (long)error);
+				PrintFault(error, NULL);
 				return 1;
 			}
 			if (specificParentCheck(dlock, flock, fpath) != 0)
@@ -244,22 +264,25 @@ int checkFile(char *path, int depth, int dnum, int fnum, int size) {
 BPTR fh;
 unsigned int buffer[512];
 int i,j;
+LONG error;
 
 	fh = Open(path, MODE_OLDFILE);
 	if (fh == BNULL)
 	{
+		error = IoErr();
 		printf("\nFailed to open file %s!\n", path);
-		printf("I/O Error is %ld\n", (long)IoErr());
-		PrintFault(IoErr(), NULL);
+		printf("I/O Error is %ld\n", (long)error);
+		PrintFault(error, NULL);
 		return 1;
 	}
 	for (i=0;i<(size/512);i++)
 	{
 		if (Read(fh, buffer, 512) != 512)
 		{
+			error = IoErr();
 			printf("\nFailed to read from file %s\n", path);
-			printf("I/O Error is %ld\n", (long)IoErr());
-			PrintFault(IoErr(), NULL);
+			printf("I/O Error is %ld\n", (long)error);
+			PrintFault(error, NULL);
 			return 1;
 		}
 		for (j=0;j<(512>>4); j+=4)
@@ -314,13 +337,15 @@ int writeFile(char *path, int size, int depth, int dnum, int fnum) {
 BPTR fh;
 unsigned int buffer[512];
 int i;
+LONG error;
 
 	fh = Open(path, MODE_NEWFILE);
 	if (fh == BNULL)
 	{
+		error = IoErr();
 		printf("\nFailed to create file %s!\n", path);
-		printf("I/O Error is %ld\n", (long)IoErr());
-		PrintFault(IoErr(), NULL);
+		printf("I/O Error is %ld\n", (long)error);
+		PrintFault(error, NULL);
 		return 1;
 	}
 	for (i=0;i<(512>>4); i+=4)
@@ -334,10 +359,11 @@ int i;
 	{
 		if (Write(fh, buffer, 512) != 512)
 		{
+			error = IoErr();
 			Close(fh);
 			printf("Failed to write to file %s\n", path);
-			printf("I/O Error is %ld\n", (long)IoErr());
-			PrintFault(IoErr(), NULL);
+			printf("I/O Error is %ld\n", (long)error);
+			PrintFault(error, NULL);
 			return 1;
 		}
 	}
@@ -382,6 +408,7 @@ BPTR dir;
 int i;
 char name[32];
 char path[512];
+LONG error;
 
 	if (num<1)
 		num = 1;
@@ -393,9 +420,10 @@ char path[512];
 		dir = Lock(path, SHARED_LOCK);
 		if (dir == BNULL)
 		{
+			error = IoErr();
 			printf("\nFailed locking %s!\n",path);
-			printf("I/O Error is %ld\n", (long)IoErr());
-			PrintFault(IoErr(), NULL);
+			printf("I/O Error is %ld\n", (long)error);
+			PrintFault(error, NULL);
 			return 1;
 		}
 		UnLock(dir);
@@ -411,6 +439,7 @@ BPTR dir;
 int i;
 char name[32];
 char path[512];
+LONG error;
 
 	if (num<1)
 		num = 1;
@@ -422,9 +451,10 @@ char path[512];
 		dir = CreateDir(path);
 		if (dir == BNULL)
 		{
+			error = IoErr();
 			printf("\nFailed to create %s!\n", path);
-			printf("I/O Error is %ld\n", (long)IoErr());
-			PrintFault(IoErr(), NULL);
+			printf("I/O Error is %ld\n", (long)error);
+			PrintFault(error, NULL);
 			return 1;
 		}
 		UnLock(dir);
