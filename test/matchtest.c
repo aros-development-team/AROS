@@ -1,5 +1,9 @@
-/* Test of the DOS functions MatchFirst MatchNext and MatchEnd.
- */
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Test of the DOS functions MatchFirst, MatchNext and MatchEnd.
+*/
 
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -46,7 +50,7 @@ int main (void)
   AP->ap_Flags  = 0;//APF_DODIR;
   AP->ap_Strlen = strlength;
 
-  printf("Give me a pattern to serach for: ");
+  printf("Give me a pattern to search for: ");
   /* the following line breaks AROS in MatchEnd() when calling FreeVec() 
      the second time the program is run. I have no idea why, though. */
   scanf("%s",Pattern);
