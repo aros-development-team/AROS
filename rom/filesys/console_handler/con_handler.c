@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <proto/exec.h>
 #include <exec/libraries.h>
 #include <exec/resident.h>
@@ -595,13 +600,16 @@ LONG CONMain(struct ExecBase *SysBase)
                 else
                 {
                     LONG timeout = dp->dp_Arg1;
-                    LONG sec = timeout / 1000000;
-                    LONG usec = timeout % 1000000;
+                    if (timeout != 0)
+                    {
+                        LONG sec = timeout / 1000000;
+                        LONG usec = timeout % 1000000;
 
-                    fh->timerreq->tr_node.io_Command = TR_ADDREQUEST;
-                    fh->timerreq->tr_time.tv_secs = sec;
-                    fh->timerreq->tr_time.tv_micro = usec;
-                    SendIO((struct IORequest *) fh->timerreq);
+                        fh->timerreq->tr_node.io_Command = TR_ADDREQUEST;
+                        fh->timerreq->tr_time.tv_secs = sec;
+                        fh->timerreq->tr_time.tv_micro = usec;
+                        SendIO((struct IORequest *) fh->timerreq);
+                    }
                     waitingdp = dp;
                 }
                 startread(fh);
