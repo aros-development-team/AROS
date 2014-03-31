@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/types.h>
 #include <proto/dos.h>
 #include <string.h>
@@ -26,11 +31,12 @@ int main( void )
         PutChar( ch );
         PutString( "< " );
 
-        if( ch == 'x' )
+        if( ch == 'x' || ch == 3 )
             break;
     }
 
     SetConsoleMode( MODE_CON );
+    PutChar( '\n' );
 
     return 0;
 }
