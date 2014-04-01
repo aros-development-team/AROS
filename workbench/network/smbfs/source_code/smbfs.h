@@ -96,7 +96,7 @@ extern struct Library * FAR AbsExecBase;
 /****************************************************************************/
 
 extern struct Library * SocketBase;
-extern struct Library * SysBase;
+extern struct ExecBase * SysBase;
 extern struct Library * DOSBase;
 
 /****************************************************************************/
