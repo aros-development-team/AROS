@@ -68,6 +68,9 @@
 
 #if defined(__AROS__)
 #include <bsdsocket/socketbasetags.h>
+#include <aros/debug.h>
+#undef D
+#undef DEBUG
 #endif
 
 #include <utility/date.h>

@@ -6,6 +6,7 @@
  * SMB file system wrapper for AmigaOS, using the AmiTCP V3 API
  *
  * Copyright (C) 2000-2009 by Olaf `Olsen' Barthel <obarthel -at- gmx -dot- net>
+ * Copyright (C) 2011-2014, The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,8 +64,12 @@
 
 /****************************************************************************/
 
+#if !defined(__AROS__)
 #include "smbfs_rev.h"
 STRPTR Version = VERSTAG;
+#endif /* __AROS__ */
+
+CONST TEXT HandlerName[] = "smb-handler";
 
 /****************************************************************************/
 
@@ -142,9 +147,7 @@ VOID ASM AsmFreePooled(REG(a0,APTR poolHeader),REG(a1,APTR memory),REG(d0,ULONG 
 /****************************************************************************/
 
 /* Forward declarations for local routines. */
-#if !defined(__AROS__)
 LONG _start(VOID);
-#endif
 LONG VARARGS68K LocalPrintf(STRPTR format, ...);
 STRPTR amitcp_strerror(int error);
 STRPTR host_strerror(int error);
@@ -171,9 +174,6 @@ INLINE STATIC LONG BuildFullName(STRPTR parent_name, STRPTR name, STRPTR *result
 INLINE STATIC VOID TranslateCName(UBYTE *name, UBYTE *map);
 INLINE STATIC VOID ConvertCString(LONG max_len, APTR bstring, STRPTR cstring);
 STATIC VOID DisplayErrorList(VOID);
-STATIC VOID AddError(STRPTR fmt, APTR args);
-STATIC LONG CVSPrintf(STRPTR format_string, APTR args);
-STATIC VOID VSPrintf(STRPTR buffer, STRPTR formatString, APTR args);
 STATIC VOID SendDiskChange(ULONG class);
 STATIC struct FileNode *FindFileNode(STRPTR name, struct FileNode *skip);
 STATIC struct LockNode *FindLockNode(STRPTR name, struct LockNode *skip);
@@ -183,8 +183,10 @@ STATIC BOOL IsReservedName(STRPTR name);
 STATIC LONG MapErrnoToIoErr(int error);
 STATIC VOID TranslateBName(UBYTE *name, UBYTE *map);
 STATIC VOID Cleanup(VOID);
-STATIC BOOL Setup(STRPTR program_name, STRPTR service, STRPTR workgroup, STRPTR username, STRPTR opt_password, BOOL opt_changecase, STRPTR opt_clientname, STRPTR opt_servername, int opt_cachesize, LONG *opt_time_zone_offset, LONG *opt_dst_offset, STRPTR device_name, STRPTR volume_name, STRPTR translation_file);
+STATIC BOOL Setup(STRPTR opt_password, BOOL opt_changecase, LONG *opt_time_zone_offset, LONG *opt_dst_offset, STRPTR translation_file);
+STATIC BOOL AddVolume(STRPTR service, STRPTR workgroup, STRPTR username, STRPTR opt_password, STRPTR opt_clientname, STRPTR opt_servername, int opt_cachesize, STRPTR device_name, STRPTR volume_name);
 STATIC VOID ConvertBString(LONG max_len, STRPTR cstring, APTR bstring);
+STATIC BOOL Action_Startup(struct FileSysStartupMsg *fssm, struct DosList *device_node, SIPTR *error_ptr);
 STATIC BPTR Action_Parent(struct FileLock *parent, SIPTR *error_ptr);
 STATIC LONG Action_DeleteObject(struct FileLock *parent, APTR bcpl_name, SIPTR *error_ptr);
 STATIC BPTR Action_CreateDir(struct FileLock *parent, APTR bcpl_name, SIPTR *error_ptr);
@@ -218,7 +220,8 @@ STATIC LONG Action_MoreCache(LONG buffer_delta, SIPTR *error_ptr);
 STATIC LONG Action_SetComment(struct FileLock *parent, APTR bcpl_name, APTR bcpl_comment, SIPTR *error_ptr);
 STATIC LONG Action_LockRecord(struct FileNode *fn, LONG offset, LONG length, LONG mode, ULONG timeout, SIPTR *error_ptr);
 STATIC LONG Action_FreeRecord(struct FileNode *fn, LONG offset, LONG length, SIPTR *error_ptr);
-STATIC VOID HandleFileSystem(STRPTR device_name, STRPTR volume_name, STRPTR service_name);
+STATIC VOID StartReconnectTimer(VOID);
+STATIC VOID HandleFileSystem(VOID);
 
 /****************************************************************************/
 
@@ -254,7 +257,8 @@ struct IconIFace *			IIcon;
 
 /****************************************************************************/
 
-struct timerequest			TimerRequest;
+STATIC struct timerequest	TimerRequest;
+STATIC BOOL					TimerActive;
 
 /****************************************************************************/
 
@@ -262,6 +266,9 @@ struct Locale *				Locale;
 
 /****************************************************************************/
 
+#if !defined(__AROS__)
+int							errno;
+#endif
 #ifndef h_errno
 int							h_errno;
 #endif
@@ -269,7 +276,6 @@ int							h_errno;
 /****************************************************************************/
 
 STATIC struct DosList *		DeviceNode;
-STATIC BOOL					DeviceNodeAdded;
 STATIC struct DosList *		VolumeNode;
 STATIC BOOL					VolumeNodeAdded;
 STATIC struct MsgPort *		FileSystemPort;
@@ -300,69 +306,55 @@ STATIC struct WBStartup * 	WBStartup;
 
 STATIC struct MinList		ErrorList;
 
-STATIC STRPTR				NewProgramName;
-
 STATIC BOOL					TranslateNames;
 STATIC UBYTE				A2M[256];
 STATIC UBYTE				M2A[256];
 
+struct
+{
+	KEY		Workgroup;
+	KEY		UserName;
+	KEY		Password;
+	SWITCH	ChangeCase;
+	SWITCH	CaseSensitive;
+	SWITCH	OmitHidden;
+	SWITCH	Quiet;
+	KEY		ClientName;
+	KEY		ServerName;
+	KEY		DeviceName;
+	KEY		VolumeName;
+	NUMBER	CacheSize;
+	NUMBER	DebugLevel;
+	NUMBER	TimeZoneOffset;
+	NUMBER	DSTOffset;
+	KEY		TranslationFile;
+	KEY		Service;
+} args;
+
+CONST TEXT control_template[] =
+	"DOMAIN=WORKGROUP/K,"
+	"USER=USERNAME/K,"
+	"PASSWORD/K,"
+	"CHANGECASE/S,"
+	"CASE=CASESENSITIVE/S,"
+	"OMITHIDDEN/S,"
+	"QUIET/S,"
+	"CLIENT=CLIENTNAME/K,"
+	"SERVER=SERVERNAME/K,"
+	"DEVICE=DEVICENAME/K,"
+	"VOLUME=VOLUMENAME/K,"
+	"CACHE=CACHESIZE/N/K,"
+	"DEBUGLEVEL=DEBUG/N/K,"
+	"TZ=TIMEZONEOFFSET/N/K,"
+	"DST=DSTOFFSET/N/K,"
+	"TRANSLATE=TRANSLATIONFILE/K,"
+	"SERVICE/A";
+
 /****************************************************************************/
 
-#if !defined(__AROS__)
 LONG _start(VOID)
-#else
-int main(void)
-#endif
 {
-	struct
-	{
-		KEY		Workgroup;
-		KEY		UserName;
-		KEY		Password;
-		SWITCH	ChangeCase;
-		SWITCH	CaseSensitive;
-		SWITCH	OmitHidden;
-		SWITCH	Quiet;
-		KEY		ClientName;
-		KEY		ServerName;
-		KEY		DeviceName;
-		KEY		VolumeName;
-		NUMBER	CacheSize;
-		NUMBER	DebugLevel;
-		NUMBER	TimeZoneOffset;
-		NUMBER	DSTOffset;
-		KEY		TranslationFile;
-		KEY		Service;
-	} args;
-
-	STRPTR cmd_template =
-		"DOMAIN=WORKGROUP/K,"
-		"USER=USERNAME/K,"
-		"PASSWORD/K,"
-		"CHANGECASE/S,"
-		"CASE=CASESENSITIVE/S,"
-		"OMITHIDDEN/S,"
-		"QUIET/S,"
-		"CLIENT=CLIENTNAME/K,"
-		"SERVER=SERVERNAME/K,"
-		"DEVICE=DEVICENAME/K,"
-		"VOLUME=VOLUMENAME/K,"
-		"CACHE=CACHESIZE/N/K,"
-		"DEBUGLEVEL=DEBUG/N/K,"
-		"TZ=TIMEZONEOFFSET/N/K,"
-		"DST=DSTOFFSET/N/K,"
-		"TRANSLATE=TRANSLATIONFILE/K,"
-		"SERVICE/A";
-
-	struct Process * this_process;
-	UBYTE program_name[MAX_FILENAME_LEN];
-	LONG result = RETURN_FAIL;
-	LONG number;
-	LONG other_number;
-	LONG cache_size = 0;
-	char env_workgroup_name[17];
-	char env_user_name[64];
-	char env_password[64];
+	LONG result = RETURN_OK;
 
 #if !defined(__AROS__)
 	SysBase = (struct Library *)AbsExecBase;
@@ -373,19 +365,8 @@ int main(void)
 	}
 	#endif /* __amigaos4__ */
 #endif
-	/* Pick up the Workbench startup message, if
-	 * there is one.
-	 */
-	this_process = (struct Process *)FindTask(NULL);
-	if(this_process->pr_CLI == ZERO)
-	{
-		WaitPort(&this_process->pr_MsgPort);
-		WBStartup = (struct WBStartup *)GetMsg(&this_process->pr_MsgPort);
-	}
-	else
-	{
-		WBStartup = NULL;
-	}
+
+	FileSystemPort = &((*(struct Process *)FindTask(NULL)).pr_MsgPort);
 
 	/* Don't emit any debugging output before we are ready. */
 	SETDEBUGLEVEL(0);
@@ -426,381 +407,17 @@ int main(void)
 	#endif /* __amigaos4__ */
 
 	if(UtilityBase == NULL || DOSBase == NULL || DOSBase->lib_Version < MINIMUM_OS_VERSION)
-	{
-		/* Complain loudly if this is not the operating
-		 * system version we expected.
-		 */
-		if(DOSBase != NULL && this_process->pr_CLI != ZERO)
-		{
-			STRPTR msg;
-
-			#if (MINIMUM_OS_VERSION < 39)
-			{
-				msg = "AmigaOS 2.04 or higher required.\n";
-			}
-			#else
-			{
-				msg = "AmigaOS 3.0 or higher required.\n";
-			}
-			#endif /* MINIMUM_OS_VERSION */
-
-			Write(Output(),msg,strlen(msg));
-		}
-
 		goto out;
-	}
 
 	/* This needs to be set up properly for ReportError()
 	 * to work.
 	 */
 	NewList((struct List *)&ErrorList);
 
-	memset(&args,0,sizeof(args));
-
-	/* If this program was launched from Workbench,
-	 * parameter passing will have to be handled
-	 * differently.
-	 */
-	if(WBStartup != NULL)
-	{
-		STRPTR str;
-		BPTR old_dir;
-		LONG n;
-
-		if(WBStartup->sm_NumArgs > 1)
-			n = 1;
-		else
-			n = 0;
-
-		/* Get the name of the program, as it was launched
-		 * from Workbench. We actually prefer the name of
-		 * the first project file, if there is one.
-		 */
-		strlcpy(program_name,WBStartup->sm_ArgList[n].wa_Name,sizeof(program_name));
-
-		/* Now open icon.library and read that icon. */
-		IconBase = OpenLibrary("icon.library",0);
-
-		#if defined(__amigaos4__)
-		{
-			if(IconBase != NULL)
-			{
-				IIcon = (struct IconIFace *)GetInterface(IconBase, "main", 1, 0);
-				if(IIcon == NULL)
-				{
-					CloseLibrary(IconBase);
-					IconBase = NULL;
-				}
-			}
-		}
-		#endif /* __amigaos4__ */
-
-		if(IconBase == NULL)
-		{
-			ReportError("Could not open 'icon.library'.");
-			goto out;
-		}
-
-		old_dir = CurrentDir(WBStartup->sm_ArgList[n].wa_Lock);
-		Icon = GetDiskObject(WBStartup->sm_ArgList[n].wa_Name);
-		CurrentDir(old_dir);
-
-		if(Icon == NULL)
-		{
-			ReportError("Icon not found.");
-			goto out;
-		}
-
-		/* Only input validation errors are reported below. */
-		result = RETURN_ERROR;
-
-		/* Examine the icon's tool types and use the
-		 * information to fill the startup parameter
-		 * data structure.
-		 */
-		str = FindToolType(Icon->do_ToolTypes,"DOMAIN");
-		if(str == NULL)
-			str = FindToolType(Icon->do_ToolTypes,"WORKGROUP");
-
-		if(str == NULL)
-		{
-			if(GetVar("smbfs_domain",env_workgroup_name,sizeof(env_workgroup_name),0) > 0 ||
-			   GetVar("smbfs_workgroup",env_workgroup_name,sizeof(env_workgroup_name),0) > 0)
-			{
-				str = env_workgroup_name;
-			}
-			else
-			{
-				ReportError("Required 'WORKGROUP' parameter was not provided.");
-				goto out;
-			}
-		}
-
-		args.Workgroup = str;
-
-		str = FindToolType(Icon->do_ToolTypes,"USER");
-		if(str == NULL)
-			str = FindToolType(Icon->do_ToolTypes,"USERNAME");
-
-		if(str == NULL)
-		{
-			if(GetVar("smbfs_user",env_user_name,sizeof(env_user_name),0) > 0 ||
-			   GetVar("smbfs_username",env_user_name,sizeof(env_user_name),0) > 0)
-			{
-				str = env_user_name;
-			}
-		}
-
-		args.UserName = str;
-
-		str = FindToolType(Icon->do_ToolTypes,"PASSWORD");
-		if(str == NULL)
-		{
-			if(GetVar("smbfs_password",env_password,sizeof(env_password),0) > 0)
-				str = env_password;
-		}
-
-		args.Password = str;
-
-		if(FindToolType(Icon->do_ToolTypes,"CHANGECASE") != NULL)
-			args.ChangeCase = TRUE;
-
-		if(FindToolType(Icon->do_ToolTypes,"OMITHIDDEN") != NULL)
-			args.OmitHidden = TRUE;
-
-		if(FindToolType(Icon->do_ToolTypes,"QUIET") != NULL)
-			args.Quiet = TRUE;
-
-		if(FindToolType(Icon->do_ToolTypes,"CASE") != NULL ||
-		   FindToolType(Icon->do_ToolTypes,"CASESENSITIVE") != NULL)
-		{
-			args.CaseSensitive = TRUE;
-		}
-
-		str = FindToolType(Icon->do_ToolTypes,"CLIENT");
-		if(str == NULL)
-			str = FindToolType(Icon->do_ToolTypes,"CLIENTNAME");
-
-		args.ClientName = str;
-
-		str = FindToolType(Icon->do_ToolTypes,"SERVER");
-		if(str == NULL)
-			str = FindToolType(Icon->do_ToolTypes,"SERVERNAME");
-
-		args.ServerName = str;
-
-		str = FindToolType(Icon->do_ToolTypes,"DEVICE");
-		if(str == NULL)
-			str = FindToolType(Icon->do_ToolTypes,"DEVICENAME");
-
-		args.DeviceName = str;
-
-		str = FindToolType(Icon->do_ToolTypes,"VOLUME");
-		if(str == NULL)
-			str = FindToolType(Icon->do_ToolTypes,"VOLUMENAME");
-
-		args.VolumeName = str;
-
-		str = FindToolType(Icon->do_ToolTypes,"TRANSLATE");
-		if(str == NULL)
-			str = FindToolType(Icon->do_ToolTypes,"TRANSLATIONFILE");
-
-		args.TranslationFile = str;
-
-		str = FindToolType(Icon->do_ToolTypes,"SERVICE");
-		args.Service = str;
-
-		if(str != NULL)
-		{
-			/* Set up the name of the program, as it will be
-			 * displayed in error requesters.
-			 */
-			NewProgramName = AllocVec(strlen(WBStartup->sm_ArgList[0].wa_Name) + strlen(" ''") + strlen(str)+1,MEMF_ANY|MEMF_PUBLIC);
-			if(NewProgramName != NULL)
-				SPrintf(NewProgramName,"%s '%s'",WBStartup->sm_ArgList[0].wa_Name,str);
-		}
-
-		str = FindToolType(Icon->do_ToolTypes,"DEBUG");
-		if(str == NULL)
-			str = FindToolType(Icon->do_ToolTypes,"DEBUGLEVEL");
-
-		if(str != NULL)
-		{
-			if(StrToLong(str,&number) == -1)
-			{
-				ReportError("Invalid number '%s' for 'DEBUG' parameter.",str);
-				goto out;
-			}
-
-			args.DebugLevel = &number;
-		}
-
-		str = FindToolType(Icon->do_ToolTypes,"TZ");
-		if(str == NULL)
-			str = FindToolType(Icon->do_ToolTypes,"TIMEZONEOFFSET");
-
-		if(str != NULL)
-		{
-			if(StrToLong(str,&other_number) == -1)
-			{
-				ReportError("Invalid number '%s' for 'TIMEZONEOFFSET' parameter.",str);
-				goto out;
-			}
-
-			args.TimeZoneOffset = &other_number;
-		}
-
-		str = FindToolType(Icon->do_ToolTypes,"DST");
-		if(str == NULL)
-			str = FindToolType(Icon->do_ToolTypes,"DSTOFFSET");
-
-		if(str != NULL)
-		{
-			if(StrToLong(str,&other_number) == -1)
-			{
-				ReportError("Invalid number '%s' for 'DSTOFFSET' parameter.",str);
-				goto out;
-			}
-
-			args.DSTOffset = &other_number;
-		}
-
-		str = FindToolType(Icon->do_ToolTypes,"CACHE");
-		if(str == NULL)
-			str = FindToolType(Icon->do_ToolTypes,"CACHESIZE");
-
-		if(str != NULL)
-		{
-			if(StrToLong(str,&number) == -1)
-			{
-				ReportError("Invalid number '%s' for 'CACHE' parameter.",str);
-				goto out;
-			}
-
-			cache_size = number;
-		}
-
-		if(args.Workgroup == NULL)
-		{
-			ReportError("Required 'WORKGROUP' parameter was not provided.");
-			goto out;
-		}
-
-		if(args.Service == NULL)
-		{
-			ReportError("'SERVICE' parameter needs an argument.");
-			goto out;
-		}
-	}
-	else
-	{
-		/* Only input validation errors are reported below. */
-		result = RETURN_ERROR;
-
-		GetProgramName(program_name,sizeof(program_name));
-
-		Parameters = ReadArgs(cmd_template,(IPTR *)&args,NULL);
-		if(Parameters == NULL)
-		{
-			PrintFault(IoErr(),FilePart(program_name));
-			goto out;
-		}
-
-		if(args.Workgroup == NULL)
-		{
-			if(GetVar("smbfs_domain",env_workgroup_name,sizeof(env_workgroup_name),0) > 0 ||
-			   GetVar("smbfs_workgroup",env_workgroup_name,sizeof(env_workgroup_name),0) > 0)
-			{
-				args.Workgroup = env_workgroup_name;
-			}
-			else
-			{
-				ReportError("Required 'WORKGROUP' parameter was not provided.");
-				goto out;
-			}
-		}
-
-		if(args.UserName == NULL)
-		{
-			if(GetVar("smbfs_user",env_user_name,sizeof(env_user_name),0) > 0 ||
-			   GetVar("smbfs_username",env_user_name,sizeof(env_user_name),0) > 0)
-			{
-				args.UserName = env_user_name;
-			}
-		}
-
-		if(args.Password == NULL)
-		{
-			if(GetVar("smbfs_password",env_password,sizeof(env_password),0) > 0)
-				args.Password = env_password;
-		}
-
-		if(args.Service != NULL)
-		{
-			STRPTR name = FilePart(program_name);
-
-			/* Set up the name of the program, as it will be
-			 * displayed in the proces status list.
-			 */
-			NewProgramName = AllocVec(strlen(name) + strlen(" ''") + strlen(args.Service)+1,MEMF_ANY|MEMF_PUBLIC);
-			if(NewProgramName != NULL)
-				SPrintf(NewProgramName,"%s '%s'",name,args.Service);
-		}
-
-		if(args.CacheSize != NULL)
-			cache_size = (*args.CacheSize);
-	}
-
-	/* Use the default if no user name is given. */
-	if(args.UserName == NULL)
-		args.UserName = "GUEST";
-
-	/* Use the default if no device or volume name is given. */
-	if(args.DeviceName == NULL && args.VolumeName == NULL)
-		args.DeviceName = "SMBFS";
-
-	CaseSensitive = (BOOL)args.CaseSensitive;
-	OmitHidden = (BOOL)args.OmitHidden;
-
-	/* Configure the debugging options. */
-	SETPROGRAMNAME(FilePart(program_name));
-
-	if(args.DebugLevel != NULL)
-		SETDEBUGLEVEL(*args.DebugLevel);
-	else
-		SETDEBUGLEVEL(0);
-
-	D(("%s (%s)",VERS,DATE));
-
-	if(Setup(
-		FilePart(program_name),
-		args.Service,
-		args.Workgroup,
-		args.UserName,
-		args.Password,
-		args.ChangeCase,
-		args.ClientName,
-		args.ServerName,
-		cache_size,
-		args.TimeZoneOffset,
-		args.DSTOffset,
-		args.DeviceName,
-		args.VolumeName,
-		args.TranslationFile))
-	{
-		Quiet = args.Quiet;
-
 		if(Locale != NULL)
 			SHOWVALUE(Locale->loc_GMTOffset);
 
-		HandleFileSystem(args.DeviceName,args.VolumeName,args.Service);
-
-		result = RETURN_WARN;
-	}
-	else
-	{
-		result = RETURN_ERROR;
-	}
+	HandleFileSystem();
 
  out:
 
@@ -999,17 +616,11 @@ DisplayErrorList(VOID)
 		if(IntuitionBase != NULL)
 		{
 			struct EasyStruct es;
-			STRPTR title;
 
 			memset(&es,0,sizeof(es));
 
-			if(NewProgramName == NULL)
-				title = WBStartup->sm_ArgList[0].wa_Name;
-			else
-				title = NewProgramName;
-
 			es.es_StructSize	= sizeof(es);
-			es.es_Title			= title;
+			es.es_Title			= "SMB";
 			es.es_TextFormat	= str;
 			es.es_GadgetFormat	= "Ok";
 
@@ -1033,112 +644,19 @@ DisplayErrorList(VOID)
 	IntuitionBase = NULL;
 }
 
-/* Add another error message to the list; the messages are
- * collected so that they may be displayed together when
- * necessary.
- */
-STATIC VOID
-AddError(STRPTR fmt,APTR args)
-{
-	LONG len;
-
-	len = CVSPrintf(fmt,args);
-	if(len > 0)
-	{
-		struct MinNode * mn;
-
-		mn = AllocVec(sizeof(*mn) + len,MEMF_ANY|MEMF_PUBLIC);
-		if(mn != NULL)
-		{
-			STRPTR msg = (STRPTR)(mn + 1);
-
-			VSPrintf(msg,fmt,args);
-
-			AddTail((struct List *)&ErrorList,(struct Node *)mn);
-		}
-	}
-}
-
 /****************************************************************************/
 
-/* Report an error that has occured; if the program was not launched
- * from Shell, error messages will be accumulated for later display.
+/* Report an error that has occured
  */
-#ifdef __AROS__
 VOID VReportError(STRPTR fmt, IPTR *args)
 {
 	if(NOT Quiet)
 	{
-		if(WBStartup != NULL)
-		{
-			AddError(fmt,args);
-		}
-		else
-		{
-			UBYTE program_name[MAX_FILENAME_LEN];
-
-			GetProgramName(program_name,sizeof(program_name));
-
-			LocalPrintf("%s: ",FilePart(program_name));
-
-			VPrintf(fmt,args);
-
-			LocalPrintf("\n");
-		}
+		kprintf("[SMB] ");
+		vkprintf(fmt,(va_list)args);
+		kprintf("\n");
 	}
 }
-#else
-VOID VARARGS68K
-ReportError(STRPTR fmt,...)
-{
-	if(NOT Quiet)
-	{
-		va_list args;
-
-		if(WBStartup != NULL)
-		{
-			#if defined(__amigaos4__)
-			{
-				va_startlinear(args,fmt);
-				AddError(fmt,va_getlinearva(args,APTR));
-				va_end(args);
-			}
-			#else
-			{
-				va_start(args,fmt);
-				AddError(fmt,args);
-				va_end(args);
-			}
-			#endif /* __amigaos4__ */
-		}
-		else
-		{
-			UBYTE program_name[MAX_FILENAME_LEN];
-
-			GetProgramName(program_name,sizeof(program_name));
-
-			LocalPrintf("%s: ",FilePart(program_name));
-
-			#if defined(__amigaos4__)
-			{
-				va_startlinear(args,fmt);
-				VPrintf(fmt,va_getlinearva(args,APTR));
-				va_end(args);
-			}
-			#else
-			{
-				va_start(args,fmt);
-				VPrintf(fmt,args);
-				va_end(args);
-			}
-			#endif /* __amigaos4__ */
-
-			LocalPrintf("\n");
-		}
-	}
-}
-#endif
-
 /****************************************************************************/
 
 /* Release memory allocated from the global pool. */
@@ -1288,86 +806,6 @@ MakeTime(const struct tm * const tm)
 
 	return(seconds);
 }
-
-/****************************************************************************/
-
-struct FormatContext
-{
-	UBYTE *	fc_Buffer;
-	LONG	fc_Size;
-};
-
-/****************************************************************************/
-
-#if !defined(__AROS__)
-STATIC VOID ASM
-CountChar(REG(a3,struct FormatContext * fc))
-#else
-STATIC VOID CountChar(struct FormatContext * fc)
-#endif
-{
-	fc->fc_Size++;
-}
-
-/* Count the number of characters SPrintf() would put into a string. */
-STATIC LONG
-CVSPrintf(STRPTR format_string,APTR args)
-{
-	struct FormatContext fc;
-
-	fc.fc_Size = 0;
-
-	RawDoFmt((STRPTR)format_string,args,(VOID (*)())CountChar,&fc);
-
-	return(fc.fc_Size);
-}
-
-/****************************************************************************/
-
-#if !defined(__AROS__)
-STATIC VOID ASM
-StuffChar(REG(d0,UBYTE c),REG(a3,struct FormatContext * fc))
-#else
-STATIC VOID StuffChar(UBYTE c, struct FormatContext * fc)
-#endif
-{
-	(*fc->fc_Buffer++) = c;
-}
-
-STATIC VOID
-VSPrintf(STRPTR buffer, STRPTR formatString, APTR args)
-{
-	struct FormatContext fc;
-
-	fc.fc_Buffer = buffer;
-
-	RawDoFmt(formatString,args,(VOID (*)())StuffChar,&fc);
-}
-
-/****************************************************************************/
-
-#if !defined(__AROS__)
-/* Format a string for output. */
-VOID VARARGS68K
-SPrintf(STRPTR buffer, STRPTR formatString,...)
-{
-	va_list varArgs;
-
-	#if defined(__amigaos4__)
-	{
-		va_startlinear(varArgs,formatString);
-		VSPrintf(buffer,formatString,va_getlinearva(varArgs,APTR));
-		va_end(varArgs);
-	}
-	#else
-	{
-		va_start(varArgs,formatString);
-		VSPrintf(buffer,formatString,varArgs);
-		va_end(varArgs);
-	}
-	#endif /* __amigaos4__ */
-}
-#endif
 
 /****************************************************************************/
 
@@ -1936,7 +1374,7 @@ TranslateBName(UBYTE * name,UBYTE * map)
 		LONG len;
 		UBYTE c;
 
-#if !defined(__AROS__)
+#if !defined(N__AROS__)
 		len = (*name++);
 #else
 		len = AROS_BSTR_strlen(name);
@@ -2026,15 +1464,10 @@ Cleanup(VOID)
 	 */
 	DisplayErrorList();
 
-	if(NewProgramName != NULL)
-	{
-		FreeVec(NewProgramName);
-		NewProgramName = NULL;
-	}
-
 	if(Parameters != NULL)
 	{
 		FreeArgs(Parameters);
+		FreeDosObject(DOS_RDARGS, Parameters);
 		Parameters = NULL;
 	}
 
@@ -2052,16 +1485,8 @@ Cleanup(VOID)
 
 	if(DeviceNode != NULL)
 	{
-		if(DeviceNodeAdded)
-		{
-			if(ReallyRemoveDosEntry(DeviceNode))
-				FreeDosEntry(DeviceNode);
-		}
-		else
-		{
+		if(ReallyRemoveDosEntry(DeviceNode))
 			FreeDosEntry(DeviceNode);
-		}
-
 		DeviceNode = NULL;
 	}
 
@@ -2089,9 +1514,6 @@ Cleanup(VOID)
 		/* Return all queued packets; there should be none, though. */
 		while((mn = GetMsg(FileSystemPort)) != NULL)
 			ReplyPkt((struct DosPacket *)mn->mn_Node.ln_Name,DOSFALSE,ERROR_ACTION_NOT_KNOWN);
-
-		DeleteMsgPort(FileSystemPort);
-		FileSystemPort = NULL;
 	}
 
 	if(WBStartup == NULL && send_disk_change)
@@ -2109,6 +1531,11 @@ Cleanup(VOID)
 
 	if(TimerBase != NULL)
 	{
+		if(TimerActive)
+		{
+			AbortIO((struct IORequest *)&TimerRequest);
+			WaitIO((struct IORequest *)&TimerRequest);
+		}
 		CloseDevice((struct IORequest *)&TimerRequest);
 		TimerBase = NULL;
 	}
@@ -2214,32 +1641,20 @@ Cleanup(VOID)
 	LEAVE();
 }
 
+/****************************************************************************/
+
 /* Allocate all the necessary resources to get going. */
 STATIC BOOL
 Setup(
-	STRPTR	program_name,
-	STRPTR	service,
-	STRPTR	workgroup,
-	STRPTR 	username,
 	STRPTR	opt_password,
 	BOOL	opt_changecase,
-	STRPTR	opt_clientname,
-	STRPTR	opt_servername,
-	int		opt_cachesize,
 	LONG *	opt_time_zone_offset,
 	LONG *	opt_dst_offset,
-	STRPTR	device_name,
-	STRPTR	volume_name,
 	STRPTR	translation_file)
 {
 	BOOL result = FALSE;
-	struct DosList * dl;
-	int error;
-	STRPTR actual_volume_name;
-	LONG actual_volume_name_len;
-	UBYTE name[MAX_FILENAME_LEN];
-	BOOL device_exists = FALSE;
-	LONG len,i;
+	int error = OK;
+	LONG i;
 
 	ENTER();
 
@@ -2282,6 +1697,7 @@ Setup(
 		DSTOffset = -60 * (*opt_dst_offset);
 
 	memset(&TimerRequest,0,sizeof(TimerRequest));
+	TimerActive = FALSE;
 
 	if(OpenDevice(TIMERNAME,UNIT_VBLANK,(struct IORequest *)&TimerRequest,0) != OK)
 	{
@@ -2330,7 +1746,7 @@ Setup(
 	error = SocketBaseTags(
 		SBTM_SETVAL(SBTC_ERRNOPTR(sizeof(errno))),	&errno,
 		SBTM_SETVAL(SBTC_HERRNOLONGPTR),			&h_errno,
-		SBTM_SETVAL(SBTC_LOGTAGPTR),				program_name,
+		SBTM_SETVAL(SBTC_LOGTAGPTR),				HandlerName,
 		SBTM_SETVAL(SBTC_BREAKMASK),				SIGBREAKF_CTRL_C,
 	TAG_END);
 	if(error != OK)
@@ -2393,93 +1809,45 @@ Setup(
 		}
 	}
 
+	result = TRUE;
+
+ out:
+
+	RETURN(result);
+	return(result);
+}
+
+/****************************************************************************/
+
+
+/* Make connection to server and make a volume for it. */
+STATIC BOOL
+AddVolume(
+	STRPTR	service,
+	STRPTR	workgroup,
+	STRPTR 	username,
+	STRPTR	opt_password,
+	STRPTR	opt_clientname,
+	STRPTR	opt_servername,
+	int		opt_cachesize,
+	STRPTR	device_name,
+	STRPTR	volume_name)
+{
+	BOOL result = FALSE;
+	int error = OK;
+	STRPTR actual_volume_name;
+	LONG actual_volume_name_len;
+	UBYTE name[MAX_FILENAME_LEN];
+	LONG i;
+
+	ENTER();
+
 	error = smba_start(service,workgroup,username,opt_password,opt_clientname,opt_servername,opt_cachesize,&ServerData);
 	if(error < 0)
-		goto out;
-
-	FileSystemPort = CreateMsgPort();
-	if(FileSystemPort == NULL)
 	{
-		ReportError("Could not create filesystem port.");
+		StartReconnectTimer();
 		goto out;
 	}
-
-	/* If a device name was provided, check whether it is
-	 * well-formed.
-	 */
-	if(device_name != NULL)
-	{
-		len = strlen(device_name);
-		if(len > 255)
-			len = 255;
-
-		for(i = 0 ; i < len ; i++)
-		{
-			if(device_name[i] == '/')
-			{
-				ReportError("Device name '%s' cannot be used with AmigaDOS.",device_name);
-				goto out;
-			}
-		}
-
-		/* Lose any trailing colon characters. */
-		for(i = len-1 ; i >= 0 ; i--)
-		{
-			if(device_name[i] == ':')
-				len = i;
-		}
-
-		if(len == 0)
-		{
-			ReportError("Device name '%s' cannot be used with AmigaDOS.",device_name);
-			goto out;
-		}
-
-		memcpy(name,device_name,len);
-		name[len] = '\0';
-
-		dl = LockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
-
-		if(FindDosEntry(dl,name,LDF_DEVICES) != NULL)
-			device_exists = TRUE;
-	}
-	else
-	{
-		dl = LockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
-
-		/* Find a unique device name. */
-		for(i = 0 ; i < 100 ; i++)
-		{
-			SPrintf(name,"SMBFS%ld",i);
-
-			device_exists = (BOOL)(FindDosEntry(dl,name,LDF_DEVICES) != NULL);
-			if(NOT device_exists)
-			{
-				device_name = name;
-				break;
-			}
-		}
-	}
-
-	if(device_exists)
-	{
-		UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
-
-		ReportError("Device name '%s:' is already taken.",device_name);
-		goto out;
-	}
-
-	/* Finally, create the device node. */
-	DeviceNode = MakeDosEntry(name,DLT_DEVICE);
-	if(DeviceNode == NULL)
-	{
-		UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
-
-		ReportError("Could not create device node.");
-		goto out;
-	}
-
-	DeviceNode->dol_Task = FileSystemPort;
 
 	/* Examine the volume name; make sure that it is
 	 * well-formed.
@@ -2497,8 +1865,6 @@ Setup(
 	{
 		if(actual_volume_name[i] == '/')
 		{
-			UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
-
 			ReportError("Volume name '%s' cannot be used with AmigaDOS.",actual_volume_name);
 			goto out;
 		}
@@ -2513,8 +1879,6 @@ Setup(
 
 	if(actual_volume_name_len == 0)
 	{
-		UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
-
 		ReportError("Volume name '%s' cannot be used with AmigaDOS.",actual_volume_name);
 		goto out;
 	}
@@ -2526,8 +1890,6 @@ Setup(
 	VolumeNode = MakeDosEntry(name,DLT_VOLUME);
 	if(VolumeNode == NULL)
 	{
-		UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
-
 		ReportError("Could not create volume node.");
 		goto out;
 	}
@@ -2536,13 +1898,6 @@ Setup(
 	DateStamp(&VolumeNode->dol_misc.dol_volume.dol_VolumeDate);
 	VolumeNode->dol_misc.dol_volume.dol_DiskType = ID_DOS_DISK;
 
-	if(DeviceNode != NULL)
-	{
-		AddDosEntry(DeviceNode);
-
-		DeviceNodeAdded = TRUE;
-	}
-
 	/* Note: we always need the volume node to make some file
 	 *       system operations safe (e.g. Lock()), but we may
 	 *       not always need to make it visible.
@@ -2550,18 +1905,12 @@ Setup(
 	if(volume_name != NULL && VolumeNode != NULL)
 	{
  		AddDosEntry(VolumeNode);
-
 		VolumeNodeAdded = TRUE;
 	}
-
-	/* And that concludes the mounting operation. */
-	UnLockDosList(LDF_WRITE|LDF_VOLUMES|LDF_DEVICES);
 
 	/* Tell Workbench and friends to update their volume lists. */
 	if(VolumeNodeAdded)
 		SendDiskChange(IECLASS_DISKINSERTED);
-
-	SetProgramName(NewProgramName);
 
 	result = TRUE;
 
@@ -2575,10 +1924,12 @@ Setup(
 
 
 /* Convert a BCPL string into a standard NUL terminated 'C' string. */
-#if !defined(__AROS__)
 INLINE STATIC VOID
 ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
 {
+#ifdef AROS_FAST_BSTR
+	strncpy(cstring, bstring, max_len);
+#else
 	STRPTR from = bstring;
 	LONG len = from[0];
 
@@ -2589,26 +1940,10 @@ ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
 		memcpy(cstring,from+1,len);
 
 	cstring[len] = '\0';
-}
-#else
-INLINE STATIC VOID
-ConvertBString(LONG max_len,STRPTR cstring,APTR bstring)
-{
-        UWORD _i = 0;
-	UWORD _len = AROS_BSTR_strlen(bstring);
-
-        while((_i < _len) && (_i < max_len))
-        {
-            cstring[_i] = AROS_BSTR_getchar(bstring, _i);
-            _i++;
-        }
-
-	cstring[_i] = '\0';
-}
 #endif
+}
 
 /* Convert a NUL terminated 'C' string into a BCPL string. */
-#if !defined(__AROS__)
 INLINE STATIC VOID
 ConvertCString(LONG max_len, APTR bstring, STRPTR cstring)
 {
@@ -2621,19 +1956,6 @@ ConvertCString(LONG max_len, APTR bstring, STRPTR cstring)
 	(*to++) = len;
 	memcpy(to,cstring,len);
 }
-#else
-INLINE STATIC VOID
-ConvertCString(LONG max_len, APTR bstring, STRPTR cstring)
-{
-        UWORD _i = 0;
-        while((cstring[_i] != '\0') && (_i < max_len))
-        {
-            AROS_BSTR_putchar(bstring, _i, cstring[_i]);
-            _i++;
-        }
-        AROS_BSTR_setstrlen(bstring, _i);
-}
-#endif
 
 /****************************************************************************/
 
@@ -2829,6 +2151,143 @@ BuildFullName(
 
 	RETURN(error);
 	return(error);
+}
+
+/****************************************************************************/
+
+STATIC BOOL
+Action_Startup(
+	struct FileSysStartupMsg *	fssm,
+	struct DosList *			device_node,
+	SIPTR *						error_ptr)
+{
+	UBYTE *control;
+	LONG cache_size = 0;
+	char env_workgroup_name[17];
+	char env_service_name[17];
+	char env_user_name[64];
+	char env_password[64];
+
+	BOOL result = DOSTRUE;
+	LONG error = 0;
+
+	ENTER();
+
+	DeviceNode = device_node;
+	device_node->dol_Task = FileSystemPort;
+
+	memset(&args,0,sizeof(args));
+
+	Parameters = AllocDosObject(DOS_RDARGS, NULL);
+	if(Parameters == NULL)
+		goto out;
+	control = (UBYTE *)
+		((struct DosEnvec *)BADDR(fssm->fssm_Environ))->de_Control;
+	Parameters->RDA_Source.CS_Buffer = control;
+	Parameters->RDA_Source.CS_Length = strlen(control);
+	Parameters = ReadArgs(control_template,(IPTR *)&args,Parameters);
+	if(Parameters == NULL)
+	{
+		goto out;
+	}
+
+	if(args.Workgroup == NULL)
+	{
+		if(GetVar("smbfs_domain",env_workgroup_name,sizeof(env_workgroup_name),0) > 0 ||
+		   GetVar("smbfs_workgroup",env_workgroup_name,sizeof(env_workgroup_name),0) > 0)
+		{
+			args.Workgroup = env_workgroup_name;
+		}
+		else
+		{
+			args.Workgroup = "WORKGROUP";
+		}
+	}
+
+	if(args.UserName == NULL)
+	{
+		if(GetVar("smbfs_user",env_user_name,sizeof(env_user_name),0) > 0 ||
+		   GetVar("smbfs_username",env_user_name,sizeof(env_user_name),0) > 0)
+		{
+			args.UserName = env_user_name;
+		}
+	}
+
+	if(args.Password == NULL)
+	{
+		if(GetVar("smbfs_password",env_password,sizeof(env_password),0) > 0)
+			args.Password = env_password;
+	}
+
+	if(args.Service == NULL)
+	{
+		if(GetVar("smbfs_service",env_service_name,sizeof(env_service_name),0) > 0 ||
+		   GetVar("smbfs_share",env_service_name,sizeof(env_service_name),0) > 0)
+		{
+			args.Service = env_service_name;
+		}
+		else
+		{
+			ReportError("Required 'SERVICE' parameter was not provided.");
+			goto out;
+		}
+	}
+
+	if(args.CacheSize != NULL)
+		cache_size = (*args.CacheSize);
+
+	/* Use the default if no user name is given. */
+	if(args.UserName == NULL)
+		args.UserName = "GUEST";
+
+	/* Volume name defaults to share name. */
+	if(args.VolumeName == NULL)
+		args.VolumeName = FilePart(args.Service);
+
+	/* Use the default if no device or volume name is given. */
+	if(args.DeviceName == NULL && args.VolumeName == NULL)
+		args.DeviceName = "SMBFS";
+
+	CaseSensitive = (BOOL)args.CaseSensitive;
+	OmitHidden = (BOOL)args.OmitHidden;
+
+	/* Configure the debugging options. */
+	if(args.DebugLevel != NULL)
+		SETDEBUGLEVEL(*args.DebugLevel);
+	else
+		SETDEBUGLEVEL(0);
+
+	D(("%s (%s)",VERS,DATE));
+
+	if(Setup(
+		args.Password,
+		args.ChangeCase,
+		args.TimeZoneOffset,
+		args.DSTOffset,
+		args.TranslationFile))
+	{
+		AddVolume(
+		args.Service,
+		args.Workgroup,
+		args.UserName,
+		args.Password,
+		args.ClientName,
+		args.ServerName,
+		cache_size,
+		args.DeviceName,
+		args.VolumeName);
+	}
+	else
+	{
+		result = FALSE;
+	}
+
+out:
+
+	(*error_ptr) = error;
+
+	RETURN(result);
+	return(result);
 }
 
 /****************************************************************************/
@@ -3311,7 +2770,10 @@ Action_LocateObject(
 	 * My pleasure.
 	 */
 	if(full_name == NULL)
+	{
+		error = ERROR_OBJECT_NOT_FOUND;
 		goto out;
+	}
 
 	ln = AllocateMemory(sizeof(*ln));
 	if(ln == NULL)
@@ -3903,7 +3365,8 @@ Action_ExamineObject(
 		STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
 		LONG len = AROS_BSTR_strlen(VolumeNode->dol_Name);
 
-		memcpy(fib->fib_FileName, volume_name, len);
+		memcpy(fib->fib_FileName + 1, volume_name, len);
+		fib->fib_FileName[0] = len;
 #endif
 		SHOWMSG("ZERO root lock");
 
@@ -3952,7 +3415,8 @@ Action_ExamineObject(
 			STRPTR volume_name = AROS_BSTR_ADDR(VolumeNode->dol_Name);
 			LONG len = AROS_BSTR_strlen(VolumeNode->dol_Name);
 
-			memcpy(fib->fib_FileName, volume_name, len);
+			memcpy(fib->fib_FileName + 1, volume_name, len);
+			fib->fib_FileName[0] = len;
 #endif
 			SHOWMSG("root lock");
 
@@ -4621,7 +4085,10 @@ Action_Find(
 	struct FileNode * fn = NULL;
 	STRPTR parent_name;
 	UBYTE name[MAX_FILENAME_LEN];
+	BOOL file_exists = FALSE;
 	BOOL create_new_file;
+	smba_file_t * file = NULL;
+	smba_stat_t st;
 	LONG error;
 
 	ENTER();
@@ -4693,6 +4160,19 @@ Action_Find(
 
 	SHOWSTRING(full_name);
 
+	if(smba_open(ServerData,full_name,full_name_size,&file) == OK &&
+	   smba_getattr(file,&st) == OK)
+	{
+		file_exists = TRUE;
+		if(st.is_dir)
+		{
+			error = ERROR_OBJECT_WRONG_TYPE;
+			goto out;
+		}
+	}
+	if(file != NULL)
+		smba_close(file);
+
 	if(action == ACTION_FINDOUTPUT)
 	{
 		/* Definitely create a new file. */
@@ -4705,11 +4185,7 @@ Action_Find(
 	}
 	else if (action == ACTION_FINDUPDATE)
 	{
-		smba_file_t * file = NULL;
-		smba_stat_t st;
-
-		if(smba_open(ServerData,full_name,full_name_size,&file) == OK &&
-		   smba_getattr(file,&st) == OK)
+		if(file_exists)
 		{
 			/* File apparently opens Ok and information on it
 			 * is available, don't try to replace it.
@@ -4726,9 +4202,6 @@ Action_Find(
 			 */
 			create_new_file = TRUE;
 		}
-
-		if(file != NULL)
-			smba_close(file);
 	}
 	else
 	{
@@ -4740,7 +4213,6 @@ Action_Find(
 	/* Create a new file? */
 	if(create_new_file)
 	{
-		smba_stat_t st;
 		smba_file_t * dir;
 		STRPTR base_name;
 		LONG i;
@@ -6030,7 +5502,21 @@ Action_FreeRecord (
 /****************************************************************************/
 
 STATIC VOID
-HandleFileSystem(STRPTR device_name,STRPTR volume_name,STRPTR service_name)
+StartReconnectTimer(VOID)
+{
+	/* Set up delay for next try */
+	TimerRequest.tr_node.io_Command = TR_ADDREQUEST;
+	TimerRequest.tr_node.io_Message.mn_ReplyPort = FileSystemPort;
+	TimerRequest.tr_time.tv_secs = 2;
+	TimerRequest.tr_time.tv_micro = 0;
+	SendIO((struct IORequest *)&TimerRequest);
+	TimerActive = TRUE;
+}
+
+/****************************************************************************/
+
+STATIC VOID
+HandleFileSystem(VOID)
 {
 	BOOL sign_off = FALSE;
 	ULONG signals;
@@ -6039,61 +5525,7 @@ HandleFileSystem(STRPTR device_name,STRPTR volume_name,STRPTR service_name)
 	ENTER();
 
 	DisplayErrorList();
-
-	if(NOT Quiet && WBStartup == NULL)
-	{
-		struct CommandLineInterface * cli;
-
-		cli = Cli();
-		if(NOT cli->cli_Background)
-		{
-			struct Process * this_process;
-			UBYTE name[MAX_FILENAME_LEN];
-			LONG max_cli;
-			LONG which;
-			LONG i;
-
-			this_process = (struct Process *)FindTask(NULL);
-
-			Forbid();
-
-			which = max_cli = MaxCli();
-
-			for(i = 1 ; i <= max_cli ; i++)
-			{
-				if(FindCliProc(i) == this_process)
-				{
-					which = i;
-					break;
-				}
-			}
-
-			Permit();
-
-			if(volume_name == NULL)
-				strlcpy(name,device_name,sizeof(name));
-			else
-				strlcpy(name,volume_name,sizeof(name));
-
-			for(i = strlen(name)-1 ; i >= 0 ; i--)
-			{
-				if(name[i] == ':')
-					name[i] = '\0';
-				else
-					break;
-			}
-
-			LocalPrintf("Connected '%s' to '%s:'; \"Break %ld\" or [Ctrl-C] to stop... ",
-			service_name,name,which);
-
-			Flush(Output());
-
-			sign_off = TRUE;
-		}
-	}
-
 	Quiet = TRUE;
-
 	done = FALSE;
 
 	do
@@ -6104,18 +5536,51 @@ HandleFileSystem(STRPTR device_name,STRPTR volume_name,STRPTR service_name)
 		{
 			struct DosPacket * dp;
 			struct Message * mn;
-			IPTR res1,res2;
+			SIPTR res1,res2;
 
 			while((mn = GetMsg(FileSystemPort)) != NULL)
 			{
 				dp = (struct DosPacket *)mn->mn_Node.ln_Name;
 
-				D(("got packet; sender '%s'",((struct Node *)dp->dp_Port->mp_SigTask)->ln_Name));
+				D(("got packet (%ld); sender '%s'\n",dp->dp_Action,((struct Node *)dp->dp_Port->mp_SigTask)->ln_Name));
 
 				res2 = 0;
 
+
+				if (mn->mn_Node.ln_Type == NT_REPLYMSG)
+				{
+					TimerActive = FALSE;
+					AddVolume(
+						args.Service,
+						args.Workgroup,
+						args.UserName,
+						args.Password,
+						args.ClientName,
+						args.ServerName,
+						(args.CacheSize != NULL) ? *args.CacheSize : 0,
+						args.DeviceName,
+						args.VolumeName);
+					continue;
+				}
+				if(!VolumeNodeAdded && dp->dp_Action != ACTION_STARTUP)
+				{
+					res1 = DOSFALSE;
+					res2 = ERROR_NO_DISK;
+					ReplyPkt(dp,res1,res2);
+					continue;
+				}
 				switch(dp->dp_Action)
 				{
+					case ACTION_STARTUP:
+						/* FSSM,DeviceNode -> Bool */
+
+						res1 = (IPTR)Action_Startup(
+							(struct FileSysStartupMsg *)BADDR(dp->dp_Arg2),
+							(struct DosList *)BADDR(dp->dp_Arg3),&res2);
+						if(!res1)
+							Quit = TRUE;
+						break;
+
 					case ACTION_DIE:
 
 						SHOWMSG("ACTION_DIE");

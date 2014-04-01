@@ -4,18 +4,20 @@
 
 include $(TOP)/config/make.cfg
 
-SMBFSFILES = main \
+FILES = \
+    main \
     proc \
     smb_abstraction \
     sock \
-    crypt
+    crypt \
+    errno
 
-USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -I$(AROS_DEVELOPMENT)/netinclude -I$(SRCDIR)/$(CURDIR)/include
+USER_CFLAGS := -Wno-uninitialized -Wno-parentheses \
+ -I$(AROS_DEVELOPMENT)/netinclude -I$(SRCDIR)/$(CURDIR)/include
 
-#MM workbench-network-smbfs-client : aros-tcpip workbench-network-smbfs-setup includes linklibs
+#MM workbench-network-smbfs-client : aros-tcpip workbench-network-smbfs-setup includes
 
-%build_prog mmake=workbench-network-smbfs-client \
-    progname=SMBFS targetdir=$(AROS_C) \
-    files="$(SMBFSFILES)"
+%build_module mmake=workbench-network-smbfs-client \
+    modname=smb modtype=handler files="$(FILES)"
 
 %common
