@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AddBuffers CLI command
@@ -25,8 +25,8 @@
 
         Add buffers to the list of available buffers for a specific
 	drive. Adding buffers speeds disk access but has the drawback
-	of using up system memory (512 bytes per buffer). Specifying
-	a negative number subtracts buffers from the drive.
+	of using up system memory (typically 512 bytes per buffer).
+	Specifying a negative number subtracts buffers from the drive.
 	    If only the DRIVE argument is specified, the number of 
 	buffers for that drive are displayed without changing the buffer
 	allocation.
@@ -57,7 +57,7 @@
 #include <dos/dos.h>
 
 
-const TEXT version[] = "$VER: AddBuffers 41.1 (18.2.1997)\n";
+const TEXT version[] = "$VER: AddBuffers 41.2 (2.4.2014)\n";
 
 #define ARG_TEMPLATE "DRIVE/A,BUFFERS/N"
 
@@ -76,9 +76,9 @@ int main(void)
     IPTR           args[NOOFARGS] = { (IPTR)NULL, (IPTR)0 };
     struct RDArgs *rda;
 
-    int    result;
-    int    error = RETURN_OK;
-    ULONG  buffers = 0;
+    LONG return_code = RETURN_OK;
+    LONG error = 0;
+    ULONG buffers = 0;
 
     rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 
@@ -92,29 +92,25 @@ int main(void)
 	    buffers = *bufsptr;
 	}
 
-	result = AddBuffers(drive, buffers);
-
-	if (result == -1)
+	if(AddBuffers(drive, buffers))
 	{
 	    Printf("%s has %ld buffers\n", drive, IoErr());
 	}
-	else if (result > 0)
-	{
-	    Printf("%s has %ld buffers\n", drive, (LONG)result);
-	}
 	else
 	{
-	    PrintFault(IoErr(), "AddBuffers");
-	    error = RETURN_FAIL;
+	    error = IoErr();
+	    return_code = RETURN_FAIL;
 	}
 	
 	FreeArgs(rda);
     }
     else
     {
-	PrintFault(IoErr(), "AddBuffers");
-	error = RETURN_FAIL;
+	error = IoErr();
+	return_code = RETURN_FAIL;
     }
     
-    return error;
+    if (error != 0)
+	PrintFault(IoErr(), "AddBuffers");
+    return return_code;
 }
