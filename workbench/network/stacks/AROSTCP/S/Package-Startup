@@ -1,4 +1,4 @@
-; $VER: AROSTCP-PackageStartup 1.3 (17.9.2011)
+; $VER: AROSTCP-PackageStartup 1.5 (3.4.2014)
 ; AROSTCP-PackageStartup (c) The AROS Dev Team.
 ;
 Path "C" "S" ADD QUIET
@@ -8,13 +8,17 @@ Protect S/stopnet s add quiet
 
 if ${AROSTCP/AutoRun} eq "True"
 
-if ${AROSTCP/WirelessAutoRun} eq "True"
-  Run >NIL: QUIET C:WirelessManager ${AROSTCP/WirelessDevice}
-EndIf
+  if ${AROSTCP/WirelessAutoRun} eq "True"
+    Run >NIL: QUIET C:WirelessManager ${AROSTCP/WirelessDevice}
+  EndIf
 
-if ${AROSTCP/MobileAutorun} eq "True"
-  Run >NIL: QUIET C:ModemManager
-EndIf
+  if ${AROSTCP/MobileAutorun} eq "True"
+    Run >NIL: QUIET C:ModemManager
+  EndIf
 
   C:Execute S/startnet
+
+  if EXISTS ENV:AROSTCP/ServerAutoMounts
+    Mount ${AROSTCP/ServerAutoMounts} 
+  EndIf
 EndIf
