@@ -104,6 +104,8 @@ enum
     DO_UNKNOWN,
 };
 
+#define SECRET_CHAR '*'
+
 
 /**************************************************************************
  Buffer_Alloc
@@ -164,7 +166,7 @@ static BOOL Buffer_SetNewContents(struct MUI_StringData *data,
             data->SecBuffer[data->BufferSize - 1] = 0;
             int i;
             for (i = 0; i < data->NumChars; i++)
-                data->Buffer[i] = 0x78;
+                data->Buffer[i] = SECRET_CHAR;
             data->Buffer[data->NumChars] = 0;
         }
         else
@@ -204,7 +206,7 @@ static BOOL Buffer_AddChar(struct MUI_StringData *data, unsigned char code)
         memmove(dst, &data->SecBuffer[data->BufferPos],
             data->NumChars - data->BufferPos);
 
-        data->Buffer[data->NumChars] = 0x78;
+        data->Buffer[data->NumChars] = SECRET_CHAR;
         data->Buffer[data->NumChars + 1] = 0;
     }
     else
@@ -1440,6 +1442,7 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     BOOL edited = FALSE;
     LONG muikey = msg->muikey;
     BOOL cursor_kills_marking = FALSE;
+    STRPTR buf;
 
     if ((data->msd_Flags & MSDF_MARKING)
         && !(data->msd_Flags & MSDF_KEYMARKING))
@@ -1931,8 +1934,16 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         }
     }
 
+    /* Trigger notification */
     if (edited)
-        set(obj, MUIA_String_Contents, data->Buffer);   // trigger notification
+    {
+        if (data->msd_useSecret)
+            buf = data->SecBuffer;
+        else
+            buf = data->Buffer;
+
+        superset(cl, obj, MUIA_String_Contents, buf);
+    }
 
     if (update)
     {
