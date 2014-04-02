@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add or remove cache memory from a filesystem.
@@ -34,20 +34,16 @@
     RESULT
         DOSTRUE on success (IoErr() gives the actual number of buffers).
         DOSFALSE on error (IoErr() gives the error code).
-        Some old filesystems return the actual buffer size. See the example
-        for a workaround for that case.
 
     NOTES
+        Although some old filesystems return the new buffer count instead of
+        a success indication, a work-around for that case is built into the
+        AROS implementation of this function.
 
     EXAMPLE
         LONG res1, res2;
-        res1 = AddBuffers("df0:", 10);
+        res1 = AddBuffers("DF0:", 10);
         res2 = IoErr();
-        if (res1 != DOSFALSE && res1 != DOSTRUE)
-        {
-            res2 = res1;
-            res1 = DOSTRUE;
-        }
 
     BUGS
 
@@ -56,16 +52,13 @@
 
     INTERNALS
 
-    The error value in case of a filesystem error will be reported in
-    the io_MORE_CACHE.io_NumBuffers field.
-
 *****************************************************************************/
 
 {
     AROS_LIBFUNC_INIT
     
     struct DevProc *dvp;
-    LONG ret;
+    LONG ret, error;
 
     /* get the device */
     if ((dvp = GetDeviceProc(devicename, NULL)) == NULL)
@@ -81,7 +74,17 @@
 
     ret = dopacket1(DOSBase, NULL, dvp->dvp_Port, ACTION_MORE_CACHE, numbuffers);
 
+    if (ret > 0)
+    {
+        error = ret;
+        ret = DOSTRUE;
+    }
+    else
+        error = IoErr();
+
     FreeDeviceProc(dvp);
+
+    SetIoErr(error);
 
     return ret;
 
