@@ -1,3 +1,8 @@
+/*
+    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/tasks.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -22,6 +27,6 @@
 int main(void)
 {
     ShutdownA(SD_ACTION_POWEROFF);
-    PutStr("Software power off is not supported\n");
-    return 20;
+    PutStr("Shutdown failed\n");
+    return RETURN_FAIL;
 }

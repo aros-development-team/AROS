@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: SetLocale CLI command
@@ -15,15 +15,17 @@
 
 int main(int argc, char **av)
 {
+    LONG error;
     struct Locale *new;
 
     if(argc != 2)
     {
 	PrintFault(ERROR_REQUIRED_ARG_MISSING, "SetLocale");
-	return 20;
+	return RETURN_FAIL;
     }
 
     new = OpenLocale(av[1]);
+    error = IoErr();
     FPuts(Output(), "Locale opened\n");
     if(new)
     {
@@ -35,8 +37,8 @@ int main(int argc, char **av)
     }
     else
     {
-	PrintFault(IoErr(), "SetLocale");
-	return 20;
+	PrintFault(error, "SetLocale");
+	return RETURN_FAIL;
     }
 
     return 0;

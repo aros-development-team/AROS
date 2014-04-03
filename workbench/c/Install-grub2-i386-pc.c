@@ -1218,6 +1218,7 @@ VOID flushFS(CONST_STRPTR path)
 BOOL writeCoreIMG(BPTR fh, UBYTE *buffer, struct Volume *volume)
 {
     BOOL retval = FALSE;
+    LONG error;
 
     D(bug("[install] writeCoreIMG(%x)\n", volume));
 
@@ -1265,8 +1266,9 @@ BOOL writeCoreIMG(BPTR fh, UBYTE *buffer, struct Volume *volume)
 	}
 	else
     {
+		error = IoErr();
         Printf("Seek Error\n");
-		PrintFault(IoErr(), NULL);
+		PrintFault(error, NULL);
     }
 	return retval;
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     List the contents of a directory.
@@ -120,7 +120,7 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 
-const TEXT version[] = "$VER: List 41.11 (11.7.2013)\n";
+const TEXT version[] = "$VER: List 41.12 (3.4.2014)\n";
 
 #define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
 
@@ -1000,8 +1000,9 @@ int main(void)
 
             if (subStrWithPat == NULL)
             {
+                error = IoErr();
                 FreeArgs(rda);
-                PrintFault(IoErr(), "List");
+                PrintFault(error, "List");
 
                 return RETURN_FAIL;
             }
@@ -1015,9 +1016,10 @@ int main(void)
             if (subpatternStr == NULL || 
                 ParsePatternNoCase(subStrWithPat, subpatternStr, length) == -1)
             {
+                error = IoErr();
                 FreeVec(subStrWithPat);
                 FreeArgs(rda);
-                PrintFault(IoErr(), "List");
+                PrintFault(error, "List");
                 
                 return RETURN_FAIL;		
             }
@@ -1048,10 +1050,11 @@ int main(void)
 
             if (file == BNULL)
             {
+                error = IoErr();
                 FreeVec(subpatternStr);
                 FreeVec(parsedPattern);
                 FreeArgs(rda);
-                PrintFault(IoErr(), "List");
+                PrintFault(error, "List");
 
                 return RETURN_FAIL;
             }

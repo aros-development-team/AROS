@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Rename CLI command.
@@ -100,7 +100,7 @@ enum
 
 #define MAX_PATH_LEN	2048
 
-const TEXT version[] = "$VER: Rename 41.2 (23.11.2000)\n";
+const TEXT version[] = "$VER: Rename 41.3 (3.4.2014)\n";
 
 
 int doRename(STRPTR *from, STRPTR to, BOOL quiet);
@@ -195,11 +195,13 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 		}
 
 		i = Examine(tolock, fib);
+		ioerr = IoErr();
 		entrytype = fib->fib_EntryType;
 		FreeDosObject(DOS_FIB, fib);
 
 		if (i)
 		{
+			ioerr = 0;
 			if (entrytype >= 0)
 			{
 				destIsDir = TRUE;
@@ -207,7 +209,8 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 		}
 		else
 		{
-			PrintFault(IoErr(), APPNAME);
+			PrintFault(ioerr, APPNAME);
+			ioerr = 0;
 
 			ERROR(RETURN_FAIL);
 		}
@@ -343,7 +346,6 @@ cleanup:
 	{
 		//MatchEnd(ap);
 		PrintFault(ioerr, NULL);
-		SetIoErr(ioerr);
 		//retval = ERROR_FAIL;
 	}
 

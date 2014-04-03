@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -265,6 +265,7 @@ AROS_SHA(STRPTR, ,DIR,/K, "SYS:Expansion"))
     struct BindDriverNode *node, *tmp;
     struct Library *ExpansionBase;
     struct Library *IconBase;
+    LONG error;
 
     if (!(ExpansionBase = OpenLibrary("expansion.library", 33)))
         return RETURN_FAIL;
@@ -299,10 +300,12 @@ AROS_SHA(STRPTR, ,DIR,/K, "SYS:Expansion"))
 
     lock = Lock(SHArg(DIR), SHARED_LOCK);
     if (lock == BNULL) {
+        error = IoErr();
         Printf("BindDrivers: Can't open %s\n", SHArg(DIR));
         CloseLibrary(IconBase);
         CloseLibrary(ExpansionBase);
-        return IoErr();
+        SetIoErr(error);
+        return RETURN_FAIL;
     }
 
     olddir = CurrentDir(lock);
