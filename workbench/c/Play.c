@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -77,10 +77,9 @@ AROS_SHAH(STRPTR, ,FILE   ,  ,NULL ,  "File to play\n") )
 {
     AROS_SHCOMMAND_INIT
 
+    LONG result = RETURN_FAIL;
     struct Library *DataTypesBase;
     STRPTR file = SHArg(FILE);
-  
-    SetIoErr(RETURN_FAIL);
 
     if (file != NULL) {
         if ((DataTypesBase = OpenLibrary("datatypes.library", 0))) {
@@ -93,14 +92,14 @@ AROS_SHAH(STRPTR, ,FILE   ,  ,NULL ,  "File to play\n") )
                     msg.dtt_Function      = STM_PLAY;
                     msg.dtt_Data          = NULL;
                     if (0 == DoDTMethodA(o, NULL, NULL, (Msg)&msg)) {
-                        SetIoErr(0);
+                        result = RETURN_OK;
                     } else {
                         Printf("Can't play \"%s\"\n", file);
-                        SetIoErr(RETURN_FAIL);
+                        result = RETURN_FAIL;
                     }
                 } else {
                     Printf("\"%s\" is not a DataType playable sound file\n", file);
-                    SetIoErr(RETURN_FAIL);
+                    result = RETURN_FAIL;
                 }
                 DisposeDTObject(o);
             } else {
@@ -112,10 +111,10 @@ AROS_SHAH(STRPTR, ,FILE   ,  ,NULL ,  "File to play\n") )
         }
     } else {
         /* No file supplied - quiet success */
-        SetIoErr(0);
+        result = RETURN_OK;
     }
 
-    return IoErr();
+    return result;
 
     AROS_SHCOMMAND_EXIT
 }
