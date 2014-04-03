@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: SetDate CLI command
@@ -83,7 +83,7 @@
 
 #define MAX_PATH_LEN    512
 
-const TEXT version[] = "$VER: SetDate 1.0 (10.11.2011)\n";
+const TEXT version[] = "$VER: SetDate 1.1 (3.4.2014)\n";
 
 enum { ARG_FILE = 0, ARG_WEEKDAY, ARG_DATE, ARG_TIME, ARG_ALL };
 
@@ -193,7 +193,7 @@ int main(void)
             retval = RETURN_FAIL;
         }
         
-        PrintFault(IoErr(), "SetDate");
+        PrintFault(error, "SetDate");
     }
     
     return retval;

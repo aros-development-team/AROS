@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     RequestFile CLI command.
@@ -87,7 +87,7 @@ enum { ARG_DRAWER = 0, ARG_FILE, ARG_PATTERN, ARG_TITLE, ARG_POSITIVE,
        ARG_MULTISELECT, ARG_DRAWERSONLY, ARG_NOICONS, ARG_PUBSCREEN,
        ARG_INITIALVOLUMES, TOTAL_ARGS };
 
-const TEXT version[] = "$VER: RequestFile 42.3 (30.8.2012)\n";
+const TEXT version[] = "$VER: RequestFile 42.4 (3.4.2014)\n";
 
 struct TagItem FileTags[] =
 {
@@ -238,7 +238,6 @@ int main(void)
     }
     else
     {
-	SetIoErr(ERROR_NO_FREE_STORE);
 	PrintFault(IoErr(), NULL);
 	Return_Value = RETURN_FAIL;
     }

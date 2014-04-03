@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     MakeDir CLI command.
@@ -12,7 +12,7 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-const TEXT version[] = "$VER: MakeDir 42.5 (15.12.2007)\n";
+const TEXT version[] = "$VER: MakeDir 42.6 (3.4.2014)\n";
 
 /******************************************************************************
 
@@ -70,7 +70,8 @@ int main(void)
     IPTR           args[NOOFARGS] = { (IPTR) NULL };
     struct RDArgs *rda;
     
-    LONG   error = RETURN_OK;
+    LONG   result = RETURN_OK;
+    LONG   error = 0;
     BPTR   lock;
     
     rda = ReadArgs("NAME/M/A,ALL/S", args, NULL);
@@ -82,8 +83,8 @@ int main(void)
 
 	if((name == NULL) || (*name == NULL))
 	{
-	    SetIoErr(ERROR_REQUIRED_ARG_MISSING);
-	    error = RETURN_FAIL;
+	    error = ERROR_REQUIRED_ARG_MISSING;
+	    result = RETURN_FAIL;
 	}
 	else
 	{
@@ -101,16 +102,15 @@ int main(void)
 		if(lock != BNULL)
 		{
 		    UnLock(lock);
-		    error = RETURN_OK;
+		    result = RETURN_OK;
 		}
 		else
 		{
-		    LONG lasterr = IoErr(); // We don't want error from PutStr()
+		    error = IoErr();
 		    PutStr("Cannot create directory ");
 		    PutStr(name[i]);
 		    PutStr("\n");
-		    SetIoErr(lasterr);
-		    error = RETURN_ERROR;
+		    result = RETURN_ERROR;
 		}
 	    }
 	}
@@ -118,12 +118,12 @@ int main(void)
 	FreeArgs(rda);
     }
     else
-	error = RETURN_FAIL;
+	result = RETURN_FAIL;
 
-    if(error != RETURN_OK)
-	PrintFault(IoErr(), "MakeDir");
+    if(result != RETURN_OK)
+	PrintFault(error, "MakeDir");
 
-    return error;
+    return result;
 }
 
 /* CreateDirAll
@@ -143,6 +143,7 @@ BPTR CreateDirAll(STRPTR name)
     int skip = 0;
     UBYTE _fib[sizeof(struct FileInfoBlock) + 3];
     struct FileInfoBlock *fib = (APTR) ((((IPTR) _fib) + 3) & ~3);
+    LONG error = 0;
 
     CurrentDir(oldcurdir = CurrentDir(0));
 
@@ -158,7 +159,7 @@ BPTR CreateDirAll(STRPTR name)
 
                 if (!first)
                 {
-                    SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+                    error = ERROR_DEVICE_NOT_MOUNTED;
                     break;
                 }
                 first = FALSE;
@@ -210,7 +211,7 @@ BPTR CreateDirAll(STRPTR name)
                         UnLock(l);
                         if (res)
                         {
-                            SetIoErr(c == '\0' ? ERROR_OBJECT_EXISTS : ERROR_OBJECT_WRONG_TYPE);
+                            error = (c == '\0' ? ERROR_OBJECT_EXISTS : ERROR_OBJECT_WRONG_TYPE);
                         }
                         break;
                     }
@@ -250,5 +251,6 @@ BPTR CreateDirAll(STRPTR name)
     }
 
     //Printf("return error\n");
+    SetIoErr(error);
     return BNULL;
 }

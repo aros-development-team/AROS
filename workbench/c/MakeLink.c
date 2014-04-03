@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -60,7 +60,7 @@
 #include <proto/exec.h>
 #include <aros/debug.h>
 
-const TEXT version[] = "$VER: MakeLink 41.1 (2.6.2000)\n";
+const TEXT version[] = "$VER: MakeLink 41.2 (3.4.2014)\n";
 
 enum { ARG_FROM = 0, ARG_TO, ARG_HARD, ARG_FORCE };
 
@@ -69,6 +69,7 @@ int __nocommandline;
 int main(void)
 {
     int  retval = RETURN_FAIL;
+    LONG error = 0;
     IPTR args[] = { (IPTR)NULL, (IPTR)NULL, (IPTR)FALSE, (IPTR)FALSE };
     struct RDArgs *rda;
 
@@ -103,7 +104,10 @@ int main(void)
                             if(MakeLink((STRPTR)args[ARG_FROM], (SIPTR)lock, FALSE))
                                 retval = RETURN_OK;
                             else
-                                PrintFault(IoErr(), "MakeLink");
+                            {
+                                error = IoErr();
+                                PrintFault(error, "MakeLink");
+                            }
                         }
                     }
 
@@ -114,8 +118,9 @@ int main(void)
             }
             else
             {
+                error = IoErr();
                 PutStr((STRPTR)args[ARG_TO]);
-                PrintFault(IoErr(), "");
+                PrintFault(error, "");
             }
         }
         else
@@ -126,11 +131,13 @@ int main(void)
     }
     else
     {
-        PrintFault(IoErr(), "MakeLink");
+        error = IoErr();
+        PrintFault(error, "MakeLink");
         retval = RETURN_FAIL;
     }
 
     FreeArgs(rda);
 
+    SetIoErr(error);
     return retval;
 }

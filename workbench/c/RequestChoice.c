@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RequestChoice CLI command
@@ -98,7 +98,7 @@
 #define ARG_PUBSCREEN   3
 #define TOTAL_ARGS      4
 
-const TEXT version[] = "$VER: RequestChoice 41.2 (01.05.2011)\n";
+const TEXT version[] = "$VER: RequestChoice 41.3 (3.4.2014)\n";
 
 static char ERROR_HEADER[] = "RequestChoice";
 
@@ -187,16 +187,14 @@ int Do_RequestChoice(STRPTR   Title,
         else
         {
             Return_Value = RETURN_FAIL;
-            SetIoErr(ERROR_NO_FREE_STORE);
-            PrintFault(IoErr(), ERROR_HEADER);
+            PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
         }
         UnlockPubScreen(NULL, Scr);
     }
     else
     {
         Return_Value = RETURN_FAIL;
-        SetIoErr(ERROR_NO_FREE_STORE);
-        PrintFault(IoErr(), ERROR_HEADER);
+        PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
     }
 
     FreeVec(GadgetText);
@@ -239,8 +237,7 @@ static STRPTR ComposeGadgetText(STRPTR * Gadgets)
     GadgetText = AllocVec(GadgetLength, MEMF_ANY);
     if (!GadgetText)
     {
-        SetIoErr(ERROR_NO_FREE_STORE);
-        PrintFault(IoErr(), ERROR_HEADER);
+        PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
         return NULL;
     }
 
@@ -307,7 +304,6 @@ static STRPTR FilterBodyText(STRPTR Body)
     GadgetText = AllocVec(GadgetLength, MEMF_ANY);
     if (!GadgetText)
     {
-        SetIoErr(ERROR_NO_FREE_STORE);
         PrintFault(IoErr(), ERROR_HEADER);
         return NULL;
     }

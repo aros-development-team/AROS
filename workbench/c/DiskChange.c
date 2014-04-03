@@ -1,5 +1,5 @@
 /*
-    Copyright © 2007, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DiskChange CLI command
@@ -57,7 +57,7 @@
 #include <dos/dos.h>
 #include <exec/types.h>
 
-const TEXT __version__[] = "\0$VER: DiskChange 41.1 (8.12.2007)";
+const TEXT __version__[] = "\0$VER: DiskChange 41.2 (2.4.2014)";
 int __nocommandline;
 
 int main(void)
@@ -65,14 +65,16 @@ int main(void)
     struct RDArgs *ra;
     STRPTR dev;
     int rc = RETURN_FAIL;
+    LONG error = 0;
 
     ra = ReadArgs("DEVICE/A", (IPTR *)&dev, NULL);
     if (ra) {
 	if (Inhibit(dev, DOSTRUE) && Inhibit(dev, DOSFALSE))
 	    rc = RETURN_OK;
+	error = IoErr();
 	FreeArgs(ra);
     }
     if (rc != RETURN_OK);
-	PrintFault(IoErr(), "DiskChange");
+	PrintFault(error, "DiskChange");
     return rc;
 }

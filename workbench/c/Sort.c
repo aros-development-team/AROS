@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sorts the contents of a file
@@ -72,7 +72,7 @@
 
 #define ARG_NUM		5
 
-const TEXT version[] = "$VER: Sort 41.1 (7.9.1999)";
+const TEXT version[] = "$VER: Sort 41.2 (3.4.2014)";
 
 struct sorted_data
 {
@@ -94,7 +94,7 @@ int compare(struct sorted_data * sd1,
 #if 1
   LONG retval = 0;
   
-  if (TRUE == case_on)
+  if (case_on)
   {
     int i = col;
     
@@ -273,33 +273,33 @@ struct sorted_data * sort(UBYTE * data,
 }
 
 
-ULONG write_data(struct sorted_data * start, BPTR file_out)
+LONG write_data(struct sorted_data * start, BPTR file_out)
 {
   BOOL write = TRUE;
-  ULONG error = 0;
+  LONG error = 0;
+  LONG count;
   
   while (start)
   {
     struct sorted_data * next = start->next;
 
-    if (TRUE == write)
+    if (write)
     {
-      error = Write(file_out, start->data, start->len);
-      if (-1 != error && start->data[start->len-1] != 0x0a)
-        error = Write(file_out, "\n", 1);
+      count = Write(file_out, start->data, start->len);
+      if (count != -1 && start->data[start->len-1] != 0x0a)
+        count = Write(file_out, "\n", 1);
+      if (count == -1)
+      {
+        error = IoErr();
+        write = FALSE;
+      }
     }
-
-    if (-1 == error)
-      write = FALSE;
 
     FreeMem(start, sizeof(struct sorted_data));
     start = next;
   }
 
-  if (FALSE == write)
-    return error;
-
-  return 0;
+  return error;
 }
 
 int __nocommandline;
@@ -308,13 +308,14 @@ int main (void)
 {
   IPTR args[ARG_NUM] = { (IPTR) NULL, (IPTR) NULL, (IPTR) NULL, FALSE, FALSE};
   struct RDArgs *rda;
-  ULONG error = 0;
+  LONG result = RETURN_OK;
+  LONG error = 0;
 
   locale = OpenLocale(NULL);
   if (!locale)
   {
     PutStr("Could not open locale!\n");
-    return -1;
+    return RETURN_FAIL;
   }
 
   rda = ReadArgs(TEMPLATE, args, NULL);
@@ -326,15 +327,19 @@ int main (void)
     if (lock_in)
     {
        BPTR file_out = Open((STRPTR)args[ARG_TO], MODE_NEWFILE);
+       if (file_out == BNULL)
+         error = IoErr();
        struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+       if (fib == NULL)
+         error = IoErr();
 
-       if (BNULL != file_out && fib)
+       if (error == 0)
        {
           UBYTE * data = NULL;
           BOOL success = Examine(lock_in, fib);
 
           /*
-          ** Read  the input file into memory
+          ** Read the input file into memory
           */
           if (fib->fib_Size && success)
             data = AllocVec(fib->fib_Size, MEMF_ANY);
@@ -360,21 +365,28 @@ int main (void)
                 lock_in = BNULL;
             }
             FreeVec(data);
-          }/*  if (data) */
+          }
+          else
+            error = IoErr();
 
           Close(file_out);  
-       } /* if (file_out) */
+       }
        FreeDosObject(DOS_FIB, fib);
        if (lock_in)
            UnLock(lock_in);
-    } /* if (lock_in) */
+    }
+    else
+      error = IoErr();
     FreeArgs(rda);
   }
   else
-    error=RETURN_FAIL;
-    
+    error = IoErr();
+
   if (error)
-    PrintFault(IoErr(), "Sort");
-  
-  return error; 
+  {
+    PrintFault(error, "Sort");
+    result = RETURN_FAIL;
+  }
+
+  return result;
 }

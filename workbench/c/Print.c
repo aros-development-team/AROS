@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -109,23 +109,22 @@ ULONG doPrinting(struct ExecBase *SysBase, struct Library *DataTypesBase, Object
 }
 
 
-AROS_SH2H(Print , 44.0,               "Print a file using DataTypes\n",
+AROS_SH2H(Print , 44.1,               "Print a file using DataTypes\n",
 AROS_SHAH(LONG *  , ,PRTUNIT,/K/N,   0 ,  "Printer unit\n"),
 AROS_SHAH(STRPTR *, ,FILES  ,/M,  NULL ,  "File(s) to print\n"))
 {
     AROS_SHCOMMAND_INIT
 
+    LONG result = RETURN_FAIL;
     struct Library *DataTypesBase;
     STRPTR *files = SHArg(FILES);
     LONG unit = SHArg(PRTUNIT) ? *SHArg(PRTUNIT) : 0;
     LONG err;
   
-    SetIoErr(RETURN_FAIL);
-
     if (files != NULL) {
         if ((DataTypesBase = OpenLibrary("datatypes.library", 0))) {
             Object *o;
-            SetIoErr(RETURN_OK);
+            result = RETURN_OK;
             for (; *files; files++) {
                 STRPTR file = *files;
                 if ((o = NewDTObject(file, PDTA_Remap, FALSE, TAG_END))) {
@@ -133,11 +132,11 @@ AROS_SHAH(STRPTR *, ,FILES  ,/M,  NULL ,  "File(s) to print\n"))
                         err = doPrinting(SysBase, DataTypesBase, o, unit);
                         if (err) {
                             Printf("Can't print \"%s\": Printer Error %d\n", file, err);
-                            SetIoErr(RETURN_FAIL);
+                            result = RETURN_FAIL;
                         }
                     } else {
                         Printf("\"%s\" is not a DataType printable file\n", file);
-                        SetIoErr(RETURN_FAIL);
+                        result = RETURN_FAIL;
                     }
                     DisposeDTObject(o);
                 } else {
@@ -150,10 +149,10 @@ AROS_SHAH(STRPTR *, ,FILES  ,/M,  NULL ,  "File(s) to print\n"))
         }
     } else {
         /* No file supplied - quiet success */
-        SetIoErr(0);
+        result = RETURN_OK;
     }
 
-    return IoErr();
+    return result;
 
     AROS_SHCOMMAND_EXIT
 }
