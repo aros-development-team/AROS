@@ -29,22 +29,22 @@ int i = 0, j = 0, inc = -1;
 
     while (j < numusrprocs && inc != incarnation)
     {
-	if (strcmp(name, usrprocs[j].procname) == 0)
-	{
-	    inc++;
-	}
-	j++;
+        if (strcmp(name, usrprocs[j].procname) == 0)
+        {
+            inc++;
+        }
+        j++;
     }
     j--;
 
     if (i == numactiveusrprocs)
     {
-	numactiveusrprocs++;
-	activeusrprocs = ReAllocVec(activeusrprocs, sizeof(struct ProcedureList *) * numactiveusrprocs, MEMF_PUBLIC);
-	if (activeusrprocs == NULL)
-	{
-	    end_alloc();
-	}
+        numactiveusrprocs++;
+        activeusrprocs = ReAllocVec(activeusrprocs, sizeof(struct ProcedureList *) * numactiveusrprocs, MEMF_PUBLIC);
+        if (activeusrprocs == NULL)
+        {
+            end_alloc();
+        }
     }
     activeusrprocs[i] = &((usrprocs[j]));
 }
@@ -61,9 +61,9 @@ int i;
     for ( i = 0 ; i < numactiveusrprocs && strcmp(name, activeusrprocs[i]->procname) != 0 ; i++ );
     if (i == numactiveusrprocs)
     {
-	/* Not in list */
-	fprintf(stderr, "<%s> - Procedure not found!\n", name);
-	return NULL;
+        /* Not in list */
+        fprintf(stderr, "<%s> - Procedure not found!\n", name);
+        return NULL;
     }
 
 return activeusrprocs[i];
@@ -84,18 +84,18 @@ long int incarnation = 0;
     for ( i = 0 ; i < _MAXCOMMAND && strcmp(name, internal_commands[i].cmdsymbol) != 0 ; i++ );
     if (i < _MAXCOMMAND)
     {
-	fprintf(stderr, "Procedure name <%s> already defined for internal function!\n", name);
-	cleanup();
-	exit(-1);
+        fprintf(stderr, "Procedure name <%s> already defined for internal function!\n", name);
+        cleanup();
+        exit(-1);
     }
 
     /* Check if name is in list */
     for ( i = 0 ; i < numusrprocs ; i++)
     {
-	if (strcmp(name, usrprocs[i].procname) == 0)
-	{
-	    incarnation++;
-	}
+        if (strcmp(name, usrprocs[i].procname) == 0)
+        {
+            incarnation++;
+        }
     }
 
     /* Enlarge list for one additional element */
@@ -103,7 +103,7 @@ long int incarnation = 0;
     usrprocs = ReAllocVec(usrprocs, sizeof(struct ProcedureList) * numusrprocs, MEMF_PUBLIC);
     if (usrprocs == NULL)
     {
-	end_alloc();
+        end_alloc();
     }
     usrprocs[i].procbody = cmd;
     usrprocs[i].procname = name;
@@ -123,7 +123,7 @@ int i;
 
     for ( i = 0 ; i < numusrprocs ; i++)
     {
-	FreeVec(usrprocs[i].procname);
+        FreeVec(usrprocs[i].procname);
     }
     FreeVec(usrprocs);
 }

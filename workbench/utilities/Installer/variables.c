@@ -33,11 +33,11 @@ int i;
     for ( i = 0 ; i < numvariables && strcmp(name, variables[i].varsymbol) != 0 ; i++ );
     if (i == numvariables)
     {
-	return NULL;
+        return NULL;
     }
     else
     {
-	return &(variables[i]);
+        return &(variables[i]);
     }
 }
 
@@ -56,18 +56,18 @@ struct VariableList *entry;
     /* Return Pointer to value */
     if (entry != NULL)
     {
-	if (entry->vartext == NULL)
-	{
-	    return (void *)(entry->varinteger);
-	}
-	else
-	{
-	    return (void *)entry->vartext;
-	}
+        if (entry->vartext == NULL)
+        {
+            return (void *)(entry->varinteger);
+        }
+        else
+        {
+            return (void *)entry->vartext;
+        }
     }
     else
     {
-	return NULL;
+        return NULL;
     }
 }
 
@@ -84,11 +84,11 @@ struct VariableList *entry;
 
     if (entry != NULL)
     {
-	return entry->vartext;
+        return entry->vartext;
     }
     else
     {
-	return NULL;
+        return NULL;
     }
 }
 
@@ -105,11 +105,11 @@ struct VariableList *entry;
 
     if (entry != NULL)
     {
-	return entry->varinteger;
+        return entry->varinteger;
     }
     else
     {
-	return 0;
+        return 0;
     }
 }
 
@@ -126,18 +126,18 @@ int i;
     for ( i = 0 ; i < numvariables && strcmp(name, variables[i].varsymbol) != 0 ; i++ );
     if (i == numvariables)
     {
-	/* Enlarge list for one additional element */
-	numvariables++;
-	variables = ReAllocVec(variables, sizeof(struct VariableList) * numvariables, MEMF_PUBLIC);
-	outofmem(variables);
-	variables[i].varsymbol = NULL;
-	variables[i].vartext = NULL;
+        /* Enlarge list for one additional element */
+        numvariables++;
+        variables = ReAllocVec(variables, sizeof(struct VariableList) * numvariables, MEMF_PUBLIC);
+        outofmem(variables);
+        variables[i].varsymbol = NULL;
+        variables[i].vartext = NULL;
     }
     else
     {
-	/* Free space for strings to be replaced in dynamic list */
-	FreeVec(variables[i].vartext);
-	variables[i].vartext = NULL;
+        /* Free space for strings to be replaced in dynamic list */
+        FreeVec(variables[i].vartext);
+        variables[i].vartext = NULL;
     }
 
     /* Change values in list */
@@ -146,15 +146,15 @@ int i;
   
     if (variables[i].varsymbol == NULL)
     {
-	variables[i].varsymbol = StrDup(name);
-	outofmem(variables[i].varsymbol);
+        variables[i].varsymbol = StrDup(name);
+        outofmem(variables[i].varsymbol);
     }
 
     /* Duplicate variable text if existent */
     if (text != NULL)
     {
-	variables[i].vartext = StrDup(text);
-	outofmem(variables[i].vartext);
+        variables[i].vartext = StrDup(text);
+        outofmem(variables[i].vartext);
     }
 
     /* Set integer value */
@@ -172,36 +172,36 @@ char *ttemp;
 
     if (argc)
     { /* Started from Shell */
-	if (args[ARG_APPNAME])
-	{
-	    set_variable("@app-name", (STRPTR)args[ARG_APPNAME], 0);
-	}
-	else
-	{
-	    set_variable("@app-name", "DemoApp", 0);
-	}
+        if (args[ARG_APPNAME])
+        {
+            set_variable("@app-name", (STRPTR)args[ARG_APPNAME], 0);
+        }
+        else
+        {
+            set_variable("@app-name", "DemoApp", 0);
+        }
 
-	if (args[ARG_LANGUAGE])
-	{
-	    set_variable("@language", (char *)args[ARG_LANGUAGE], 0);
-	}
-	else
-	{
-	    set_variable("@language", "english", 0);
-	}
+        if (args[ARG_LANGUAGE])
+        {
+            set_variable("@language", (char *)args[ARG_LANGUAGE], 0);
+        }
+        else
+        {
+            set_variable("@language", "english", 0);
+        }
     }
     else
     { /* Started from Workbench */
-	ttemp = ArgString(tooltypes, "APPNAME", NULL);
-	if (ttemp)
-	{
-	    set_variable("@app-name", ttemp, 0);
-	}
-	else
-	{
-	    set_variable("@app-name", "DemoApp", 0);
-	}
-	set_variable("@language", ArgString(tooltypes, "LANGUAGE", "english"), 0);
+        ttemp = ArgString(tooltypes, "APPNAME", NULL);
+        if (ttemp)
+        {
+            set_variable("@app-name", ttemp, 0);
+        }
+        else
+        {
+            set_variable("@app-name", "DemoApp", 0);
+        }
+        set_variable("@language", ArgString(tooltypes, "LANGUAGE", "english"), 0);
     }
 
     set_variable("@abort-button", ABORT_BUTTON, 0);
@@ -245,7 +245,7 @@ int i;
     printf("DUMP of all %d variables:\n", numvariables);
     for ( i = 0 ; i < numvariables ; i++ )
     {
-	printf("%s = %s | %ld\n", variables[i].varsymbol, variables[i].vartext, variables[i].varinteger);
+        printf("%s = %s | %ld\n", variables[i].varsymbol, variables[i].vartext, variables[i].varinteger);
     }
 
 }
@@ -261,8 +261,8 @@ int i;
 
     for ( i = 0 ; i < numvariables ; i++ )
     {
-	FreeVec(variables[i].varsymbol);
-	FreeVec(variables[i].vartext);
+        FreeVec(variables[i].varsymbol);
+        FreeVec(variables[i].vartext);
     }
     FreeVec(variables);
 }

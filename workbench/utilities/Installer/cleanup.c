@@ -23,10 +23,10 @@ void free_script(ScriptArg *first)
 {
     if (first != NULL)
     {
-	free_script(first->cmd);
-	free_script(first->next);
-	FreeVec(first->arg);
-	FreeVec(first);
+        free_script(first->cmd);
+        free_script(first->next);
+        FreeVec(first->arg);
+        FreeVec(first);
     }
 }
 
@@ -34,7 +34,7 @@ void cleanup()
 {
     if (preferences.transcriptstream != BNULL)
     {
-	Close(preferences.transcriptstream);
+        Close(preferences.transcriptstream);
     }
 
     free_script(script.cmd);
@@ -61,8 +61,8 @@ void outofmem(void * ptr)
 {
     if (ptr == NULL)
     {
-	error = OUTOFMEMORY;
-	traperr("Out of memory!\n", NULL);
+        error = OUTOFMEMORY;
+        traperr("Out of memory!\n", NULL);
     }
 }
 
