@@ -43,11 +43,6 @@ void cleanup()
     Locale_Deinitialize();
 }
 
-void end_malloc()
-{
-    end_alloc();
-}
-
 void end_alloc()
 {
 #ifdef DEBUG

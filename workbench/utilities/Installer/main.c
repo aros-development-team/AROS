@@ -40,7 +40,6 @@ UBYTE **tooltypes;
 int main(int argc, char *argv[])
 {
     struct RDArgs *rda = NULL;
-    char *ttemp, *tstring;
 
     ScriptArg *currentarg, *dummy;
     int nextarg, endoffile, count;
@@ -76,7 +75,10 @@ int main(int argc, char *argv[])
         }
     }
     else
-    { /* Invoked from Workbench */
+    {
+        STRPTR ttemp;
+
+        /* Invoked from Workbench */
         preferences.fromcli = FALSE;
         tooltypes = ArgArrayInit(argc, (UBYTE **)argv);
 
@@ -169,6 +171,8 @@ int main(int argc, char *argv[])
     }
     else
     {
+        STRPTR ttemp, tstring;
+
         preferences.debug = TRUE;
 
         /* Create a log file in Novice mode? (TRUE) */
@@ -186,21 +190,17 @@ int main(int argc, char *argv[])
         /* Is PRETEND possible? */
         preferences.nopretend = (strcmp("TRUE", ArgString(tooltypes, "PRETEND", "TRUE")) != 0);
         ttemp = ArgString(tooltypes, "MINUSER", "NOVICE");
-        tstring = NULL;
+        tstring = "NOVICE";
         preferences.minusrlevel = _NOVICE;
         if (strcasecmp("average", ttemp) == 0)
         {
             preferences.minusrlevel = _AVERAGE;
-            tstring = StrDup("AVERAGE");
+            tstring = "AVERAGE";
         }
         else if (strcasecmp("expert", ttemp) == 0)
         {
             preferences.minusrlevel = _EXPERT;
-            tstring = StrDup("EXPERT");
-        }
-        if (tstring == NULL)
-        {
-            tstring = StrDup("NOVICE");
+            tstring = "EXPERT";
         }
 
         ttemp = ArgString(tooltypes, "DEFUSER", tstring);
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
         {
             preferences.defusrlevel = preferences.minusrlevel;
         }
-        FreeVec(tstring);
+
         if (preferences.defusrlevel < preferences.minusrlevel)
         {
             preferences.defusrlevel = preferences.minusrlevel;
