@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: New Exec pendant of ANSI C function realloc() using AllocVec()
@@ -68,8 +68,8 @@
     if (!oldmem)
 	return AllocVec (newsize, requirements);
 
-    mem = (UBYTE *)oldmem - AROS_ALIGN(sizeof(ULONG));
-    oldsize = *((ULONG *)mem) - sizeof(ULONG);
+    mem = (UBYTE *)oldmem - AROS_ALIGN(sizeof(IPTR));
+    oldsize = *((ULONG *)mem) - AROS_ALIGN(sizeof(IPTR));
 
     /* Reduce or enlarge the memory ? */
     if (newsize < oldsize)
