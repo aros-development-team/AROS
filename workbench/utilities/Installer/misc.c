@@ -20,23 +20,23 @@ char **out = *outarr;
 
     while (*in)
     {
-	i++;
-	/* allocate space for next string */
-	out = ReAllocVec(out, (i+1) * sizeof(char *), MEMF_PUBLIC);
-	outofmem(out);
-	for ( j = 0 ; in[j] && in[j]!=LINEFEED ; j++ );
-	out[i-1] = AllocVec((j+1) * sizeof(char), MEMF_PUBLIC);
-	outofmem(out[i-1]);
-	for ( k = 0 ; k < j ; k++ )
-	{
-	    /* save char to string */
-	    out[i-1][k] = *in;
-	    in++;
-	}
-	/* NULL-terminate string */
-	out[i-1][j] = 0;
-	if (*in)
-	    in++;
+        i++;
+        /* allocate space for next string */
+        out = ReAllocVec(out, (i+1) * sizeof(char *), MEMF_PUBLIC);
+        outofmem(out);
+        for ( j = 0 ; in[j] && in[j]!=LINEFEED ; j++ );
+        out[i-1] = AllocVec((j+1) * sizeof(char), MEMF_PUBLIC);
+        outofmem(out[i-1]);
+        for ( k = 0 ; k < j ; k++ )
+        {
+            /* save char to string */
+            out[i-1][k] = *in;
+            in++;
+        }
+        /* NULL-terminate string */
+        out[i-1][j] = 0;
+        if (*in)
+            in++;
     }
     /* NULL-terminate array */
     out[i] = NULL;
@@ -55,27 +55,27 @@ int len = 0, i, j, k;
 
     for ( i = 0 ; i < n ; i++ )
     {
-	/* Add length of line to total length of text,
-	   plus additional LINEFEED (NULL for last item) */
-	len += strlen(instrs[i]) + 1;
+        /* Add length of line to total length of text,
+           plus additional LINEFEED (NULL for last item) */
+        len += strlen(instrs[i]) + 1;
     }
     retval = AllocVec(sizeof(char) * len, MEMF_PUBLIC);
     if (retval != NULL)
     {
-	j = 0;
-	for ( i = 0 ; i < n ; i++ )
-	{
-	    k = 0;
-	    for ( len = strlen(instrs[i]) ; len > 0 ; len-- )
-	    {
-		retval[j] = instrs[i][k];
-		j++;
-		k++;
-	    }
-	    retval[j] = LINEFEED;
-	    j++;
-	}
-	retval[j-1] = 0;
+        j = 0;
+        for ( i = 0 ; i < n ; i++ )
+        {
+            k = 0;
+            for ( len = strlen(instrs[i]) ; len > 0 ; len-- )
+            {
+                retval[j] = instrs[i][k];
+                j++;
+                k++;
+            }
+            retval[j] = LINEFEED;
+            j++;
+        }
+        retval[j-1] = 0;
     }
 
 return retval;
@@ -111,8 +111,8 @@ int i=0;
 
     while (array[i])
     {
-	FreeVec(array[i]);
-	i++;
+        FreeVec(array[i]);
+        i++;
     }
     FreeVec(array);
 }
