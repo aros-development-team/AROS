@@ -168,7 +168,7 @@ int i;
  */
 void set_preset_variables(int argc)
 {
-char *ttemp;
+    STRPTR ttemp;
 
     if (argc)
     { /* Started from Shell */
