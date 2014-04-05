@@ -1,4 +1,4 @@
-## version $VER: networkprefs.catalog 3.0 ($TODAY)
+## version $VER: networkprefs.catalog 4.0 ($TODAY)
 ## language français
 ## codeset 0
 ;
@@ -51,6 +51,10 @@ DNS secondaire
 MSG_HOST_NAME
 Nom d'hôte
 ; Host Name
+;
+MSG_HOST_NAMES
+Noms des hôtes
+; Host Names
 ;
 MSG_DOMAIN_NAME
 Nom de domaine
@@ -107,15 +111,18 @@ MSG_TAB_IP_CONFIGURATION
 Configuration IP
 ; IP Configuration
 ;
-MSG_TAB_COMPUTER_NAME
-Nom de l'ordinateur
-; Computer Name
+MSG_TAB_COMPUTER_NAMES
+Noms des ordinateurs
+; Computer Names
 ;
 MSG_TAB_WIRELESS
-Sans fil
+Reseaux sans fil
 ;
 MSG_TAB_MOBILE
 Mobile
+;
+MSG_TAB_SERVERS
+Serveurs de fichiers
 ;
 MSG_AUTOSTART_STACK
 Démarrage automatique
@@ -179,9 +186,15 @@ Les préférences ont été sauvées vers %s. \nRedémarrer AROS pour que les modifica
 MSG_IFWINDOW_TITLE
 Interface
 ;
+MSG_HOSTWINDOW_TITLE
+Hôte
+;
 MSG_NETWINDOW_TITLE
 Réseau sans fil
 ;Wireless Network
+;
+MSG_SERVERWINDOW_TITLE
+Serveur de fichiers
 ;
 MSG_USERNAME
 Nom d'utilisateur
@@ -190,4 +203,12 @@ Nom d'utilisateur
 MSG_PASSWORD
 Mot de passe
 ;Password
+;
+MSG_WORKGROUP
+Groupe de travail
+;Workgroup
+;
+MSG_SERVICE
+Service
+;Service
 ;

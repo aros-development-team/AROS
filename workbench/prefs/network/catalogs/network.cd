@@ -37,8 +37,11 @@ Secondary DNS
 MSG_HOST_NAME (//)
 Host Name
 ;
+MSG_HOST_NAMES (//)
+Host Name and Aliases
+;
 MSG_DOMAIN_NAME (//)
-Domain Name
+Domain/Workgroup
 ;
 MSG_SERIAL_DEVICE (//)
 Serial Device
@@ -88,14 +91,17 @@ Ad-hoc
 MSG_TAB_IP_CONFIGURATION (//)
 IPv4 Configuration
 ;
-MSG_TAB_COMPUTER_NAME (//)
-Computer Name
+MSG_TAB_COMPUTER_NAMES (//)
+Local Host Entries
 ;
 MSG_TAB_WIRELESS (//)
-Wireless
+Wireless Networks
 ;
 MSG_TAB_MOBILE (//)
 Mobile Broadband
+;
+MSG_TAB_SERVERS (//)
+Mounted Shares
 ;
 MSG_AUTOSTART_STACK (//)
 Start networking during system boot
@@ -154,12 +160,30 @@ Preferences have been saved to %s.\nRestart AROS for them to take effect.
 MSG_IFWINDOW_TITLE (//)
 Interface
 ;
+MSG_HOSTWINDOW_TITLE (//)
+Host Name(s)
+;
 MSG_NETWINDOW_TITLE (//)
 Wireless Network
+;
+MSG_SERVERWINDOW_TITLE (//)
+Mount Share
 ;
 MSG_USERNAME (//)
 Username
 ;
 MSG_PASSWORD (//)
 Password
+;
+MSG_WORKGROUP (//)
+Domain/Workgroup
+;
+MSG_SERVICE (//)
+Share Name
+;
+MSG_SERVICE_TYPES (//)
+Service Type
+;
+MSG_SERVICETYPE_CIFS (//)
+CIFS/SMB
 ;
