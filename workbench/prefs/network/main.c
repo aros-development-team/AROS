@@ -1,14 +1,13 @@
 /*
-    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2014, The AROS Development Team. All rights reserved.
     $Id$
- */
+*/
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
-
+#include <clib/alib_protos.h>
 #include <libraries/mui.h>
 #include <zune/systemprefswindow.h>
 
@@ -17,7 +16,7 @@
 #include "netpeditor.h"
 #include "prefsdata.h"
 
-#define VERSION "$VER: Network 1.14 (3.3.2012) AROS Dev Team"
+#define VERSION "$VER: Network 1.21 (5.4.2014) AROS Dev Team"
 
 int main(int argc, char **argv)
 {

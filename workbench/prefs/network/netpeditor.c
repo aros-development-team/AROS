@@ -1,7 +1,7 @@
 /*
     Copyright © 2009-2012, The AROS Development Team. All rights reserved.
     $Id$
- */
+*/
 
 #define MUIMASTER_YES_INLINE_STDARG
 
@@ -32,18 +32,25 @@
 #include <proto/alib.h>
 #include <utility/hooks.h>
 
-static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL};
+static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL, NULL, NULL};
 static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL };
 static CONST_STRPTR EncCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR KeyCycle[] = { NULL, NULL, NULL };
+static CONST_STRPTR ServiceTypeCycle[] = { NULL, NULL };
 static const TEXT max_ip_str[] = "255.255.255.255 ";
 
 static struct Hook  netpeditor_displayHook,
                     netpeditor_constructHook,
                     netpeditor_destructHook;
+static struct Hook  hosts_displayHook,
+                    hosts_constructHook,
+                    hosts_destructHook;
 static struct Hook  wireless_displayHook,
                     wireless_constructHook,
                     wireless_destructHook;
+static struct Hook  server_displayHook,
+                    server_constructHook,
+                    server_destructHook;
 
 /*** Instance Data **********************************************************/
 struct NetPEditor_DATA
@@ -60,6 +67,10 @@ struct NetPEditor_DATA
             *netped_editButton,
             *netped_removeButton,
             *netped_inputGroup,
+            *netped_hostList,
+            *netped_hostAddButton,
+            *netped_hostEditButton,
+            *netped_hostRemoveButton,
             *netped_networkList,
             *netped_netAddButton,
             *netped_netEditButton,
@@ -68,7 +79,11 @@ struct NetPEditor_DATA
             *netped_MBBDeviceString,
             *netped_MBBUnit,
             *netped_MBBUsername,
-            *netped_MBBPassword;
+            *netped_MBBPassword,
+            *netped_serverList,
+            *netped_serverAddButton,
+            *netped_serverEditButton,
+            *netped_serverRemoveButton;
 
     // Interface window
     Object  *netped_ifWindow,
@@ -82,7 +97,14 @@ struct NetPEditor_DATA
             *netped_applyButton,
             *netped_closeButton;
 
-    // SSID window
+    // Host window
+    Object  *netped_hostWindow,
+            *netped_hostNamesString,
+            *netped_hostAddressString,
+            *netped_hostApplyButton,
+            *netped_hostCloseButton;
+
+    // Wireless network window
     Object  *netped_netWindow,
             *netped_sSIDString,
             *netped_encType,
@@ -92,6 +114,19 @@ struct NetPEditor_DATA
             *netped_adHocState,
             *netped_netApplyButton,
             *netped_netCloseButton;
+
+    // File-server window
+    Object  *netped_serverWindow,
+            *netped_serverServiceType,
+            *netped_serverDevice,
+            *netped_serverActive,
+            *netped_serverHost,
+            *netped_serverService,
+            *netped_serverUser,
+            *netped_serverPass,
+            *netped_serverGroup,
+            *netped_serverApplyButton,
+            *netped_serverCloseButton;
 };
 
 AROS_UFH3S(APTR, constructFunc,
@@ -136,19 +171,69 @@ AROS_UFHA(struct Interface *, entry, A1))
         sprintf(unitbuffer, "%d", (int)entry->unit);
         *array++ = entry->name;
         *array++ = entry->up ? "*" : "";
-        *array++ = entry->ifDHCP ? (STRPTR)"DHCP" : entry->IP;
-        *array++ = entry->ifDHCP ? (STRPTR)"DHCP" : entry->mask;
         *array++ = FilePart(entry->device);
-        *array   = unitbuffer;
+        *array++ = unitbuffer;
+        *array = entry->ifDHCP ? (STRPTR)_(MSG_IP_MODE_DHCP) : entry->IP;
     }
     else
     {
         *array++ = (STRPTR)_(MSG_IFNAME);
         *array++ = (STRPTR)_(MSG_UP);
-        *array++ = (STRPTR)_(MSG_IP);
-        *array++ = (STRPTR)_(MSG_MASK);
         *array++ = (STRPTR)_(MSG_DEVICE);
-        *array   = (STRPTR)_(MSG_UNIT);
+        *array++ = (STRPTR)_(MSG_UNIT);
+        *array = (STRPTR)_(MSG_IP);
+    }
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(APTR, hostsConstructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Host *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct Host *new;
+
+    if ((new = AllocPooled(pool, sizeof(*new))))
+    {
+        *new = *entry;
+    }
+    return new;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, hostsDestructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Host *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    FreePooled(pool, entry, sizeof(struct Host));
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(LONG, hostsDisplayFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(char **, array, A2),
+AROS_UFHA(struct Host *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+    if (entry)
+    {
+        *array++ = entry->address;
+        *array++ = entry->names;
+    }
+    else
+    {
+        *array++ = (STRPTR)_(MSG_IP);
+        *array++ = (STRPTR)_(MSG_HOST_NAMES);
     }
 
     return 0;
@@ -222,6 +307,66 @@ AROS_UFHA(struct Network *, entry, A1))
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH3S(APTR, serverConstructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Server *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct Server *new;
+
+    if ((new = AllocPooled(pool, sizeof(*new))))
+    {
+        *new = *entry;
+    }
+    return new;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, serverDestructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Server *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    FreePooled(pool, entry, sizeof(struct Server));
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(LONG, serverDisplayFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(char **, array, A2),
+AROS_UFHA(struct Server *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+    if (entry)
+    {
+        *array++ = entry->device;
+        *array++ = entry->active ? "*" : "";
+        *array++ = entry->host;
+        *array++ = entry->group;
+        *array++ = entry->service;
+        *array++ = entry->user;
+    }
+    else
+    {
+        *array++ = (STRPTR)_(MSG_DEVICE);
+        *array++ = (STRPTR)_(MSG_UP);
+        *array++ = (STRPTR)_(MSG_HOST_NAME);
+        *array++ = (STRPTR)_(MSG_WORKGROUP);
+        *array++ = (STRPTR)_(MSG_SERVICE);
+        *array++ = (STRPTR)_(MSG_USERNAME);
+    }
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
 BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
 {
     STRPTR str = NULL;
@@ -255,13 +400,28 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
     GET(data->netped_DNSString[1], MUIA_String_Contents, &str);
     SetDNS(1, str);
     GET(data->netped_hostString, MUIA_String_Contents, &str);
-    SetHost(str);
+    SetHostname(str);
     GET(data->netped_domainString, MUIA_String_Contents, &str);
     SetDomain(str);
     GET(data->netped_Autostart, MUIA_Selected, &lng);
     SetAutostart(lng);
     GET(data->netped_DHCPState, MUIA_Cycle_Active, &lng);
     SetDHCP(lng);
+
+    entries = XGET(data->netped_hostList, MUIA_List_Entries);
+    for(i = 0; i < entries; i++)
+    {
+        struct Host *host = GetHost(i);
+        struct Host *hostentry;
+        DoMethod
+        (
+            data->netped_hostList,
+            MUIM_List_GetEntry, i, &hostentry
+        );
+        SetHostAddress(host, hostentry->address);
+        SetHostNames(host, hostentry->names);
+    }
+    SetHostCount(entries);
 
     entries = XGET(data->netped_networkList, MUIA_List_Entries);
     for(i = 0; i < entries; i++)
@@ -297,6 +457,26 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
     SetMobile_username(str);
     GET(data->netped_MBBPassword, MUIA_String_Contents, &str);
     SetMobile_password(str);
+
+    entries = XGET(data->netped_serverList, MUIA_List_Entries);
+    for(i = 0; i < entries; i++)
+    {
+        struct Server *server = GetServer(i);
+        struct Server *serverentry;
+        DoMethod
+        (
+            data->netped_serverList,
+            MUIM_List_GetEntry, i, &serverentry
+        );
+        SetServerDevice(server, serverentry->device);
+        SetServerHost(server, serverentry->host);
+        SetServerService(server, serverentry->service);
+        SetServerUser(server, serverentry->user);
+        SetServerGroup(server, serverentry->group);
+        SetServerPass(server, serverentry->pass);
+        SetServerActive(server, serverentry->active);
+    }
+    SetServerCount(entries);
 
     return TRUE;
 }
@@ -340,10 +520,34 @@ BOOL NetworkPrefs2Gadgets
     NNSET(data->netped_gateString, MUIA_String_Contents, (IPTR)GetGate());
     NNSET(data->netped_DNSString[0], MUIA_String_Contents, (IPTR)GetDNS(0));
     NNSET(data->netped_DNSString[1], MUIA_String_Contents, (IPTR)GetDNS(1));
-    NNSET(data->netped_hostString, MUIA_String_Contents, (IPTR)GetHost());
+    NNSET(data->netped_hostString, MUIA_String_Contents, (IPTR)GetHostname());
     NNSET(data->netped_domainString, MUIA_String_Contents, (IPTR)GetDomain());
     NNSET(data->netped_Autostart, MUIA_Selected, (IPTR)GetAutostart());
     NNSET(data->netped_DHCPState, MUIA_Cycle_Active, (IPTR)GetDHCP() ? 1 : 0);
+
+    entries = GetHostCount();
+
+    SET(data->netped_hostList, MUIA_List_Quiet, TRUE);
+    DoMethod(data->netped_hostList, MUIM_List_Clear);
+    for(i = 0; i < entries; i++)
+    {
+        struct Host *host = GetHost(i);
+        struct Host hostentry;
+
+        SetHost
+        (
+            &hostentry,
+            GetHostNames(host),
+            GetHostAddress(host)
+        );
+
+        DoMethod
+        (
+            data->netped_hostList,
+            MUIM_List_InsertSingle, &hostentry, MUIV_List_Insert_Bottom
+        );
+    }
+    SET(data->netped_hostList, MUIA_List_Quiet, FALSE);
 
     SET(data->netped_networkList, MUIA_List_Quiet, TRUE);
     DoMethod(data->netped_networkList, MUIM_List_Clear);
@@ -386,6 +590,35 @@ BOOL NetworkPrefs2Gadgets
     NNSET((data->netped_MBBUnit), MUIA_Numeric_Value, GetMobile_unit());
     NNSET((data->netped_MBBUsername), MUIA_String_Contents, GetMobile_username());
     NNSET((data->netped_MBBPassword), MUIA_String_Contents, GetMobile_password());
+
+    SET(data->netped_serverList, MUIA_List_Quiet, TRUE);
+    DoMethod(data->netped_serverList, MUIM_List_Clear);
+    entries = GetServerCount();
+    for(i = 0; i < entries; i++)
+    {
+        struct Server *server = GetServer(i);
+        struct Server serverentry;
+
+        SetServer
+        (
+            &serverentry,
+            GetServerDevice(server),
+            GetServerHost(server),
+            GetServerService(server),
+            GetServerUser(server),
+            GetServerGroup(server),
+            GetServerPass(server),
+            GetServerActive(server)
+        );
+
+        DoMethod
+        (
+            data->netped_serverList,
+            MUIM_List_InsertSingle, &serverentry, MUIV_List_Insert_Bottom
+        );
+    }
+
+    SET(data->netped_serverList, MUIA_List_Quiet, FALSE);
 
     return TRUE;
 }
@@ -450,7 +683,9 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object  *gateString, *DNSString[2], *hostString, *domainString,
             *autostart, *interfaceList, *DHCPState,
             *addButton, *editButton, *removeButton, *inputGroup,
+            *hostList, *hostAddButton, *hostEditButton, *hostRemoveButton,
             *networkList, *netAddButton, *netEditButton, *netRemoveButton,
+            *serverList, *serverAddButton, *serverEditButton, *serverRemoveButton,
             *MBBInitString[MAXATCOMMANDS], *MBBDeviceString, *MBBUnit,
             *MBBUsername, *MBBPassword;
 
@@ -459,9 +694,18 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *ifDHCPState, *unitString, *nameString, *upState,
             *ifWindow, *applyButton, *closeButton;
 
+    // host window
+    Object  *hostNamesString, *hostAddressString, *hostWindow,
+            *hostApplyButton, *hostCloseButton;
+
     // network window
     Object  *sSIDString, *keyString, *encType, *keyType, *hiddenState,
             *adHocState, *netWindow, *netApplyButton, *netCloseButton;
+
+    // file-server window
+    Object  *serverWindow, *serverServiceType, *serverDevice, *serverActive, *serverHost,
+            *serverService, *serverUser, *serverGroup, *serverPass,
+            *serverApplyButton, *serverCloseButton;
 
     DHCPCycle[0] = _(MSG_IP_MODE_MANUAL);
     DHCPCycle[1] = _(MSG_IP_MODE_DHCP);
@@ -473,17 +717,29 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     KeyCycle[0] = _(MSG_KEY_TEXT);
     KeyCycle[1] = _(MSG_KEY_HEX);
 
+    ServiceTypeCycle[0] = _(MSG_SERVICETYPE_CIFS);
+
     NetworkTabs[0] = _(MSG_TAB_IP_CONFIGURATION);
-    NetworkTabs[1] = _(MSG_TAB_WIRELESS);
-    NetworkTabs[2] = _(MSG_TAB_MOBILE);
+    NetworkTabs[1] = _(MSG_TAB_COMPUTER_NAMES);
+    NetworkTabs[2] = _(MSG_TAB_WIRELESS);
+    NetworkTabs[3] = _(MSG_TAB_MOBILE);
+    NetworkTabs[4] = _(MSG_TAB_SERVERS);
 
     netpeditor_constructHook.h_Entry = (HOOKFUNC)constructFunc;
     netpeditor_destructHook.h_Entry = (HOOKFUNC)destructFunc;
     netpeditor_displayHook.h_Entry = (HOOKFUNC)displayFunc;
 
+    hosts_constructHook.h_Entry = (HOOKFUNC)hostsConstructFunc;
+    hosts_destructHook.h_Entry = (HOOKFUNC)hostsDestructFunc;
+    hosts_displayHook.h_Entry = (HOOKFUNC)hostsDisplayFunc;
+
     wireless_constructHook.h_Entry = (HOOKFUNC)netConstructFunc;
     wireless_destructHook.h_Entry = (HOOKFUNC)netDestructFunc;
     wireless_displayHook.h_Entry = (HOOKFUNC)netDisplayFunc;
+
+    server_constructHook.h_Entry = (HOOKFUNC)serverConstructFunc;
+    server_destructHook.h_Entry = (HOOKFUNC)serverDestructFunc;
+    server_displayHook.h_Entry = (HOOKFUNC)serverDisplayFunc;
 
     self = (Object *)DoSuperNewTags
     (
@@ -493,6 +749,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_PrefsEditor_Path, (IPTR)"AROSTCP/arostcp.prefs",
 
         Child, RegisterGroup((IPTR)NetworkTabs),
+
             Child, (IPTR)VGroup,
                 Child, (IPTR)(HGroup,
                     GroupFrame,
@@ -500,7 +757,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Listview_List, (IPTR)(interfaceList = (Object *)ListObject,
                             ReadListFrame,
                             MUIA_List_Title, TRUE,
-                            MUIA_List_Format, (IPTR)"BAR,P=\33c BAR,BAR,BAR,BAR,",
+                            MUIA_List_Format, (IPTR)"BAR,P=\33c BAR,BAR,BAR,",
                             MUIA_List_ConstructHook, (IPTR)&netpeditor_constructHook,
                             MUIA_List_DestructHook, (IPTR)&netpeditor_destructHook,
                             MUIA_List_DisplayHook, (IPTR)&netpeditor_displayHook,
@@ -514,14 +771,14 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         Child, (IPTR)HVSpace,
                     End),
                 End),
-                Child, (IPTR)(inputGroup = (Object *)ColGroup(6),
+                Child, (IPTR)(inputGroup = (Object *)ColGroup(4),
                     GroupFrame,
                     Child, (IPTR)Label2(__(MSG_IP_MODE)),
                     Child, (IPTR)(DHCPState = (Object *)CycleObject,
                         MUIA_Cycle_Entries, (IPTR)DHCPCycle,
                     End),
-                    Child, (IPTR)Label2(__(MSG_DNS1)),
-                    Child, (IPTR)(DNSString[0] = (Object *)StringObject,
+                    Child, (IPTR)Label2(__(MSG_GATE)),
+                    Child, (IPTR)(gateString = (Object *)StringObject,
                         StringFrame,
                         MUIA_String_Accept, (IPTR)IPCHARS,
                         MUIA_CycleChain, 1,
@@ -533,15 +790,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_String_Accept, (IPTR)NAMECHARS,
                         MUIA_CycleChain, 1,
                     End),
-                    Child, (IPTR)Label2(__(MSG_GATE)),
-                    Child, (IPTR)(gateString = (Object *)StringObject,
-                        StringFrame,
-                        MUIA_String_Accept, (IPTR)IPCHARS,
-                        MUIA_CycleChain, 1,
-                        MUIA_FixWidthTxt, (IPTR)max_ip_str,
-                    End),
-                    Child, (IPTR)Label2(__(MSG_DNS2)),
-                    Child, (IPTR)(DNSString[1] = (Object *)StringObject,
+                    Child, (IPTR)Label2(__(MSG_DNS1)),
+                    Child, (IPTR)(DNSString[0] = (Object *)StringObject,
                         StringFrame,
                         MUIA_String_Accept, (IPTR)IPCHARS,
                         MUIA_CycleChain, 1,
@@ -553,6 +803,13 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_String_Accept, (IPTR)NAMECHARS,
                         MUIA_CycleChain, 1,
                     End),
+                    Child, (IPTR)Label2(__(MSG_DNS2)),
+                    Child, (IPTR)(DNSString[1] = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_String_Accept, (IPTR)IPCHARS,
+                        MUIA_CycleChain, 1,
+                        MUIA_FixWidthTxt, (IPTR)max_ip_str,
+                    End),
                 End),
                 Child, (IPTR)ColGroup(2),
                     Child, (IPTR)(autostart = MUI_MakeObject(MUIO_Checkmark, NULL)),
@@ -561,6 +818,29 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         Child, (IPTR)HVSpace,
                     End,
                 End,
+            End,
+
+            Child, (IPTR)VGroup,
+                Child, (IPTR)(HGroup,
+                    GroupFrame,
+                    Child, (IPTR)ListviewObject,
+                        MUIA_Listview_List, (IPTR)(hostList = (Object *)ListObject,
+                            ReadListFrame,
+                            MUIA_List_Title, TRUE,
+                            MUIA_List_Format, (IPTR)"BAR,",
+                            MUIA_List_ConstructHook, (IPTR)&hosts_constructHook,
+                            MUIA_List_DestructHook, (IPTR)&hosts_destructHook,
+                            MUIA_List_DisplayHook, (IPTR)&hosts_displayHook,
+                        End),
+                    End,
+                    Child, (IPTR)(VGroup,
+                        MUIA_HorizWeight, 0,
+                        Child, (IPTR)(hostAddButton = SimpleButton(_(MSG_BUTTON_ADD))),
+                        Child, (IPTR)(hostEditButton = SimpleButton(_(MSG_BUTTON_EDIT))),
+                        Child, (IPTR)(hostRemoveButton = SimpleButton(_(MSG_BUTTON_REMOVE))),
+                        Child, (IPTR)HVSpace,
+                    End),
+                End),
             End,
 
             Child, (IPTR)VGroup,
@@ -617,6 +897,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         Child, (IPTR)Label2(_(MSG_PASSWORD)),
                         Child, (IPTR)(MBBPassword = (Object *)StringObject,
                             StringFrame,
+                            MUIA_String_Secret, TRUE,
                             MUIA_CycleChain, 1,
                         End),
                     End,
@@ -655,6 +936,29 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     End),
                 End,
 
+            End,
+
+            Child, (IPTR)VGroup,
+                Child, (IPTR)(HGroup,
+                    GroupFrame,
+                    Child, (IPTR)ListviewObject,
+                        MUIA_Listview_List, (IPTR)(serverList = (Object *)ListObject,
+                            ReadListFrame,
+                            MUIA_List_Title, TRUE,
+                            MUIA_List_Format, (IPTR)"BAR,P=\33c BAR,BAR,BAR,BAR,",
+                            MUIA_List_ConstructHook, (IPTR)&server_constructHook,
+                            MUIA_List_DestructHook, (IPTR)&server_destructHook,
+                            MUIA_List_DisplayHook, (IPTR)&server_displayHook,
+                        End),
+                    End,
+                    Child, (IPTR)(VGroup,
+                        MUIA_HorizWeight, 0,
+                        Child, (IPTR)(serverAddButton = SimpleButton(_(MSG_BUTTON_ADD))),
+                        Child, (IPTR)(serverEditButton = SimpleButton(_(MSG_BUTTON_EDIT))),
+                        Child, (IPTR)(serverRemoveButton = SimpleButton(_(MSG_BUTTON_REMOVE))),
+                        Child, (IPTR)HVSpace,
+                    End),
+                End),
             End,
 
         End, // register
@@ -742,6 +1046,42 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         End,
     End;
 
+    hostWindow = (Object *)WindowObject,
+        MUIA_Window_Title, __(MSG_HOST_NAMES),
+        MUIA_Window_ID, MAKE_ID('H', 'O', 'S', 'T'),
+        MUIA_Window_CloseGadget, FALSE,
+        MUIA_Window_SizeGadget, TRUE,
+        WindowContents, (IPTR)VGroup,
+            GroupFrame,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)ImageObject,
+                    MUIA_Image_Spec, (IPTR)"3:Images:host",
+                    MUIA_FixWidth, 26,
+                    MUIA_FixHeight, 50,
+                End,
+                Child, (IPTR)HVSpace,
+            End,
+            Child, (IPTR)ColGroup(2),
+                GroupFrame,
+                Child, (IPTR)Label2(__(MSG_IP)),
+                Child, (IPTR)(hostAddressString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(_(MSG_HOSTWINDOW_TITLE)),
+                Child, (IPTR)(hostNamesString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
+            End,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)(hostApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
+                Child, (IPTR)(hostCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
+            End,
+        End,
+    End;
+
     netWindow = (Object *)WindowObject,
         MUIA_Window_Title, __(MSG_NETWINDOW_TITLE),
         MUIA_Window_ID, MAKE_ID('W', 'I', 'F', 'I'),
@@ -777,6 +1117,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, (IPTR)Label2(__(MSG_KEY)),
                 Child, (IPTR)(keyString = (Object *)StringObject,
                     StringFrame,
+                    MUIA_String_Secret, TRUE,
                     MUIA_CycleChain, 1,
                 End),
                 Child, (IPTR)HGroup,
@@ -797,7 +1138,75 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         End,
     End;
 
-    if (self != NULL && ifWindow != NULL && netWindow != NULL)
+    serverWindow = (Object *)WindowObject,
+        MUIA_Window_Title, __(MSG_SERVERWINDOW_TITLE),
+        MUIA_Window_ID, MAKE_ID('S', 'H', 'R', 'E'),
+        MUIA_Window_CloseGadget, FALSE,
+        MUIA_Window_SizeGadget, TRUE,
+        WindowContents, (IPTR)VGroup,
+            GroupFrame,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)ImageObject,
+                    MUIA_Image_Spec, (IPTR)"3:Images:host",
+                    MUIA_FixWidth, 26,
+                    MUIA_FixHeight, 50,
+                End,
+                Child, (IPTR)HVSpace,
+            End,
+            Child, (IPTR)ColGroup(2),
+                GroupFrame,
+                Child, (IPTR)Label2(_(MSG_SERVICE_TYPES)),
+                Child, (IPTR)(serverServiceType = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)ServiceTypeCycle,
+                End),
+                Child, (IPTR)Label2(_(MSG_DEVICE)),
+                Child, (IPTR)(serverDevice = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(serverActive = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                    Child, (IPTR)Label2(_(MSG_UP)),
+                    Child, (IPTR)HVSpace,
+                End,
+                Child, (IPTR)Label2(_(MSG_HOST_NAME)),
+                Child, (IPTR)(serverHost = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(__(MSG_WORKGROUP)),
+                Child, (IPTR)(serverGroup = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(__(MSG_SERVICE)),
+                Child, (IPTR)(serverService = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(__(MSG_USERNAME)),
+                Child, (IPTR)(serverUser = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(__(MSG_PASSWORD)),
+                Child, (IPTR)(serverPass = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Secret, TRUE,
+                    MUIA_CycleChain, 1,
+                End),
+            End,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)(serverApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
+                Child, (IPTR)(serverCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
+            End,
+        End,
+    End;
+
+    if (self != NULL && ifWindow != NULL && hostWindow != NULL
+        && netWindow != NULL && serverWindow != NULL)
     {
         struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
@@ -814,10 +1223,18 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_addButton = addButton;
         data->netped_editButton = editButton;
         data->netped_removeButton = removeButton;
+        data->netped_hostList = hostList;
+        data->netped_hostAddButton = hostAddButton;
+        data->netped_hostEditButton = hostEditButton;
+        data->netped_hostRemoveButton = hostRemoveButton;
         data->netped_networkList = networkList;
         data->netped_netAddButton = netAddButton;
         data->netped_netEditButton = netEditButton;
         data->netped_netRemoveButton = netRemoveButton;
+        data->netped_serverList = serverList;
+        data->netped_serverAddButton = serverAddButton;
+        data->netped_serverEditButton = serverEditButton;
+        data->netped_serverRemoveButton = serverRemoveButton;
 
         data->netped_MBBInitString[0] = MBBInitString[0];
         data->netped_MBBInitString[1] = MBBInitString[1];
@@ -841,6 +1258,13 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_applyButton = applyButton;
         data->netped_closeButton = closeButton;
 
+        // host window
+        data->netped_hostWindow = hostWindow;
+        data->netped_hostAddressString = hostAddressString;
+        data->netped_hostNamesString = hostNamesString;
+        data->netped_hostApplyButton = hostApplyButton;
+        data->netped_hostCloseButton = hostCloseButton;
+
         // wireless window
         data->netped_netWindow = netWindow;
         data->netped_hiddenState = hiddenState;
@@ -852,11 +1276,30 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_netApplyButton = netApplyButton;
         data->netped_netCloseButton = netCloseButton;
 
+        // file-server window
+        data->netped_serverWindow = serverWindow;
+        data->netped_serverServiceType = serverServiceType;
+        data->netped_serverDevice = serverDevice;
+        data->netped_serverActive = serverActive;
+        data->netped_serverHost = serverHost;
+        data->netped_serverService = serverService;
+        data->netped_serverUser = serverUser;
+        data->netped_serverGroup = serverGroup;
+        data->netped_serverPass = serverPass;
+        data->netped_serverApplyButton = serverApplyButton;
+        data->netped_serverCloseButton = serverCloseButton;
+
         SET(removeButton, MUIA_Disabled, TRUE);
         SET(editButton, MUIA_Disabled, TRUE);
 
+        SET(hostRemoveButton, MUIA_Disabled, TRUE);
+        SET(hostEditButton, MUIA_Disabled, TRUE);
+
         SET(netRemoveButton, MUIA_Disabled, TRUE);
         SET(netEditButton, MUIA_Disabled, TRUE);
+
+        SET(serverRemoveButton, MUIA_Disabled, TRUE);
+        SET(serverEditButton, MUIA_Disabled, TRUE);
 
         /*-- Set up notifications ------------------------------------------*/
 
@@ -926,6 +1369,33 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         DoMethod
         (
+            hostList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_ShowHostEntry
+        );
+        DoMethod
+        (
+            hostList, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_NetPEditor_EditHostEntry, FALSE
+        );
+
+        DoMethod
+        (
+            hostAddButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 2, MUIM_NetPEditor_EditHostEntry, TRUE
+        );
+        DoMethod
+        (
+            hostEditButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_EditHostEntry, FALSE
+        );
+        DoMethod
+        (
+            hostRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)hostList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
+        );
+
+        DoMethod
+        (
             networkList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
             (IPTR)self, 1, MUIM_NetPEditor_ShowNetEntry
         );
@@ -980,6 +1450,33 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
             );
 
+        DoMethod
+        (
+            serverList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_ShowServerEntry
+        );
+        DoMethod
+        (
+            serverList, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_NetPEditor_EditServerEntry, FALSE
+        );
+
+        DoMethod
+        (
+            serverAddButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 2, MUIM_NetPEditor_EditServerEntry, TRUE
+        );
+        DoMethod
+        (
+            serverEditButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_EditServerEntry, FALSE
+        );
+        DoMethod
+        (
+            serverRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)serverList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
+        );
+
         // interface window
         DoMethod
         (
@@ -1003,6 +1500,18 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             (IPTR)ifWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
         );
 
+        // host window
+        DoMethod
+        (
+            hostApplyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ApplyHostEntry
+        );
+        DoMethod
+        (
+            hostCloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)hostWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
+        );
+
         // network window
         DoMethod
         (
@@ -1013,6 +1522,18 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             netCloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)netWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
+        );
+
+        // server window
+        DoMethod
+        (
+            serverApplyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ApplyServerEntry
+        );
+        DoMethod
+        (
+            serverCloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)serverWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
         );
     }
 
@@ -1029,7 +1550,9 @@ IPTR NetPEditor__MUIM_Setup
     if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
 
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_ifWindow);
+    DoMethod(_app(self), OM_ADDMEMBER, data->netped_hostWindow);
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_netWindow);
+    DoMethod(_app(self), OM_ADDMEMBER, data->netped_serverWindow);
 
     return TRUE;
 }
@@ -1042,7 +1565,9 @@ IPTR NetPEditor__MUIM_Cleanup
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
     DoMethod(_app(self), OM_REMMEMBER, data->netped_ifWindow);
+    DoMethod(_app(self), OM_REMMEMBER, data->netped_hostWindow);
     DoMethod(_app(self), OM_REMMEMBER, data->netped_netWindow);
+    DoMethod(_app(self), OM_REMMEMBER, data->netped_serverWindow);
 
     return DoSuperMethodA(CLASS, self, message);
 }
@@ -1361,6 +1886,107 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyEntry
 }
 
 /*
+    Shows content of current list entry in the host window.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ShowHostEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    struct Host *host;
+
+    DoMethod
+    (
+        data->netped_hostList,
+        MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &host
+    );
+    if (host)
+    {
+        SET(data->netped_hostRemoveButton, MUIA_Disabled, FALSE);
+        SET(data->netped_hostEditButton, MUIA_Disabled, FALSE);
+
+        SET(data->netped_hostAddressString, MUIA_String_Contents, GetHostAddress(host));
+        SET(data->netped_hostNamesString, MUIA_String_Contents, GetHostNames(host));
+    }
+    else
+    {
+        SET(data->netped_hostRemoveButton, MUIA_Disabled, TRUE);
+        SET(data->netped_hostEditButton, MUIA_Disabled, TRUE);
+        SET(data->netped_hostWindow, MUIA_Window_Open, FALSE);
+    }
+    return 0;
+}
+
+IPTR NetPEditor__MUIM_NetPEditor_EditHostEntry
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_EditEntry *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    if (message->addEntry)
+    {
+        /*
+            Create a new entry and make it the current one
+        */
+        LONG entries = XGET(data->netped_hostList, MUIA_List_Entries);
+        if (entries < MAXHOSTS)
+        {
+            struct Host host;
+            InitHost(&host);
+            DoMethod
+            (
+                data->netped_hostList,
+                MUIM_List_InsertSingle, &host, MUIV_List_Insert_Bottom
+            );
+        }
+        SET(data->netped_hostList, MUIA_List_Active, entries + 1);
+    }
+
+    LONG active = XGET(data->netped_hostList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        SET(data->netped_hostWindow, MUIA_Window_Open, TRUE);
+    }
+
+    return 0;
+}
+
+/*
+    Store data from host window back in current list entry
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ApplyHostEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    LONG active = XGET(data->netped_hostList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        struct Host host;
+        SetHost
+        (
+            &host,
+            (STRPTR)XGET(data->netped_hostNamesString, MUIA_String_Contents),
+            (STRPTR)XGET(data->netped_hostAddressString, MUIA_String_Contents)
+        );
+        DoMethod(data->netped_hostList, MUIM_List_Remove, active);
+        DoMethod(data->netped_hostList, MUIM_List_InsertSingle, &host, active);
+        SET(data->netped_hostList, MUIA_List_Active, active);
+        SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    }
+
+    return 0;
+}
+
+/*
     Shows content of current list entry in the network window.
 */
 IPTR NetPEditor__MUIM_NetPEditor_ShowNetEntry
@@ -1469,8 +2095,121 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyNetEntry
     return 0;
 }
 
+/*
+    Shows content of current list entry in the file-server window.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ShowServerEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    struct Server *server;
+
+    DoMethod
+    (
+        data->netped_serverList,
+        MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &server
+    );
+    if (server)
+    {
+        SET(data->netped_serverRemoveButton, MUIA_Disabled, FALSE);
+        SET(data->netped_serverEditButton, MUIA_Disabled, FALSE);
+
+        SET(data->netped_serverDevice, MUIA_String_Contents, GetServerDevice(server));
+        SET(data->netped_serverActive, MUIA_Selected, GetServerActive(server) ? 1 : 0);
+        SET(data->netped_serverHost, MUIA_String_Contents, GetServerHost(server));
+        SET(data->netped_serverService, MUIA_String_Contents, GetServerService(server));
+        SET(data->netped_serverUser, MUIA_String_Contents, GetServerUser(server));
+        SET(data->netped_serverGroup, MUIA_String_Contents, GetServerGroup(server));
+        SET(data->netped_serverPass, MUIA_String_Contents, GetServerPass(server));
+    }
+    else
+    {
+        SET(data->netped_serverRemoveButton, MUIA_Disabled, TRUE);
+        SET(data->netped_serverEditButton, MUIA_Disabled, TRUE);
+        SET(data->netped_serverWindow, MUIA_Window_Open, FALSE);
+    }
+    return 0;
+}
+
+IPTR NetPEditor__MUIM_NetPEditor_EditServerEntry
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_EditEntry *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    if (message->addEntry)
+    {
+        /*
+            Create a new entry and make it the current one
+        */
+        LONG entries = XGET(data->netped_serverList, MUIA_List_Entries);
+        if (entries < MAXSERVERS)
+        {
+            struct Server server;
+            InitServer(&server,
+                (STRPTR)XGET(data->netped_domainString, MUIA_String_Contents));
+            server.device[strlen(server.device) - 1] += entries;
+            DoMethod
+            (
+                data->netped_serverList,
+                MUIM_List_InsertSingle, &server, MUIV_List_Insert_Bottom
+            );
+        }
+        SET(data->netped_serverList, MUIA_List_Active, entries + 1);
+    }
+
+    LONG active = XGET(data->netped_serverList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        SET(data->netped_serverWindow, MUIA_Window_Open, TRUE);
+    }
+
+    return 0;
+}
+
+/*
+    Store data from file-server window back in current list entry
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ApplyServerEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    LONG active = XGET(data->netped_serverList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        struct Server server;
+        SetServer
+        (
+            &server,
+            (STRPTR)XGET(data->netped_serverDevice, MUIA_String_Contents),
+            (STRPTR)XGET(data->netped_serverHost, MUIA_String_Contents),
+            (STRPTR)XGET(data->netped_serverService, MUIA_String_Contents),
+            (STRPTR)XGET(data->netped_serverUser, MUIA_String_Contents),
+            (STRPTR)XGET(data->netped_serverGroup, MUIA_String_Contents),
+            (STRPTR)XGET(data->netped_serverPass, MUIA_String_Contents),
+            XGET(data->netped_serverActive, MUIA_Selected)
+        );
+        DoMethod(data->netped_serverList, MUIM_List_Remove, active);
+        DoMethod(data->netped_serverList, MUIM_List_InsertSingle, &server, active);
+        SET(data->netped_serverList, MUIA_List_Active, active);
+        SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    }
+
+    return 0;
+}
+
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_14
+ZUNE_CUSTOMCLASS_20
 (
     NetPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                         struct opSet *,
@@ -1484,7 +2223,13 @@ ZUNE_CUSTOMCLASS_14
     MUIM_NetPEditor_ShowEntry,      Msg,
     MUIM_NetPEditor_EditEntry,      struct MUIP_NetPEditor_EditEntry *,
     MUIM_NetPEditor_ApplyEntry,     Msg,
+    MUIM_NetPEditor_ShowHostEntry,  Msg,
+    MUIM_NetPEditor_EditHostEntry,  struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyHostEntry, Msg,
     MUIM_NetPEditor_ShowNetEntry,   Msg,
     MUIM_NetPEditor_EditNetEntry,   struct MUIP_NetPEditor_EditEntry *,
-    MUIM_NetPEditor_ApplyNetEntry,  Msg
+    MUIM_NetPEditor_ApplyNetEntry,  Msg,
+    MUIM_NetPEditor_ShowServerEntry,   Msg,
+    MUIM_NetPEditor_EditServerEntry,   struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyServerEntry,  Msg
 );

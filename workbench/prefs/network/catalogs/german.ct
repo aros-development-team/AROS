@@ -1,4 +1,4 @@
-## version $VER: networkprefs.catalog 3.0 (17.11.2010)
+## version $VER: networkprefs.catalog 4.0 (22.3.2012)
 ## language deutsch
 ## codeset 0
 ;
@@ -52,6 +52,10 @@ Sekundärer DNS
 ;
 MSG_HOST_NAME
 Hostname
+; Host Name
+;
+MSG_HOST_NAMES
+Hostnamen
 ; Host Name
 ;
 MSG_DOMAIN_NAME
@@ -114,12 +118,12 @@ MSG_TAB_IP_CONFIGURATION
 IPv4-Konfiguration
 ; IPv4 Configuration
 ;
-MSG_TAB_COMPUTER_NAME
-Computername
+MSG_TAB_COMPUTER_NAMES
+Computernamen
 ; Computer Name
 ;
 MSG_TAB_WIRELESS
-Drahtlos
+Drahtlosnetzwerks
 ; Wireless
 ;
 MSG_AUTOSTART_STACK
@@ -193,6 +197,10 @@ Drahtloses Netzwerk
 MSG_TAB_MOBILE
 Mobiles Breitband-Netzwerk
 ; Mobile Broadband
+;
+MSG_TAB_SERVERS
+
+; File Servers
 ;
 MSG_SERIAL_DEVICE
 Serielles Gerät

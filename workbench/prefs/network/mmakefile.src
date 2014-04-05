@@ -16,6 +16,7 @@ EXEDIR      := $(AROSDIR)/Prefs
     progname=Network targetdir=$(EXEDIR) \
     files=$(FILES)
 
-%copy_files_q mmake=workbench-prefs-network-cpy files="interface wireless" src=. dst=$(AROS_IMAGES)
+%copy_files_q mmake=workbench-prefs-network-cpy \
+    files="interface host wireless" src=. dst=$(AROS_IMAGES)
 
 %common

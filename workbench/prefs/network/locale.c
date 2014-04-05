@@ -1,7 +1,7 @@
 /*
     Copyright © 2009-2010, The AROS Development Team. All rights reserved.
     $Id$
- */
+*/
 
 #include <exec/types.h>
 #include <proto/locale.h>
