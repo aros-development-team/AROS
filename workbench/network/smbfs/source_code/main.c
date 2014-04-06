@@ -646,19 +646,6 @@ DisplayErrorList(VOID)
 
 /****************************************************************************/
 
-/* Report an error that has occured
- */
-VOID VReportError(STRPTR fmt, IPTR *args)
-{
-	if(NOT Quiet)
-	{
-		kprintf("[SMB] ");
-		vkprintf(fmt,(va_list)args);
-		kprintf("\n");
-	}
-}
-/****************************************************************************/
-
 /* Release memory allocated from the global pool. */
 VOID
 FreeMemory(APTR address)

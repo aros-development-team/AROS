@@ -130,10 +130,10 @@ extern time_t MakeTime(const struct tm * const tm);
 extern ULONG GetCurrentTime(VOID);
 extern VOID GMTime(time_t seconds,struct tm * tm);
 #ifdef __AROS__
-extern VOID VReportError(STRPTR fmt, IPTR *args);
-#define ReportError(fmt, ...) do { \
-    IPTR vargs[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
-    VReportError(fmt, vargs); } while (0)
+#define ReportError(...) do { \
+    kprintf("[SMB] "); \
+    kprintf(__VA_ARGS__); \
+    kprintf("\n"); } while (0)
 #define SPrintf(buf, fmt, ...) do { \
     IPTR vargs[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
     VSPrintf(buf, fmt, vargs); } while (0)
