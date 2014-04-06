@@ -1178,21 +1178,6 @@ diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*
  
     return ret;
  }
-diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/api.h ./mesa/src/gallium/state_trackers/vega/api.h
---- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/api.h	2011-01-23 03:05:41.000000000 +0100
-+++ ./mesa/src/gallium/state_trackers/vega/api.h	2013-01-04 19:25:40.000000000 +0100
-@@ -33,6 +33,11 @@
- #include "VG/vgext.h"
- #include "vg_manager.h"
- 
-+#if defined(PIPE_OS_AROS)
-+#include "vega/vgapim.h"
-+#include "vega/vg_mangle.h"
-+#endif
-+
- #include "api_tmp.h"
- 
- struct mapi_table;
 diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/mask.c ./mesa/src/gallium/state_trackers/vega/mask.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/mask.c	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/state_trackers/vega/mask.c	2011-09-05 20:03:01.000000000 +0200
@@ -1222,20 +1207,6 @@ diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*
        pd->ox = x3;
        pd->oy = y3;
        pd->px = x2;
-diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/vgu.c ./mesa/src/gallium/state_trackers/vega/vgu.c
---- /data/deadwood/source/Mesa-7.11-staging/src/gallium/state_trackers/vega/vgu.c	2011-05-13 01:47:18.000000000 +0200
-+++ ./mesa/src/gallium/state_trackers/vega/vgu.c	2011-09-03 13:11:05.000000000 +0200
-@@ -37,6 +37,10 @@
- #include <math.h>
- #include <assert.h>
- 
-+#if defined(PIPE_OS_AROS)
-+#include "vega/vgapim.h"
-+#include "vega/vg_mangle.h"
-+#endif
- 
- static void vgu_append_float_coords(VGPath path,
-                                     const VGubyte *cmds,
 diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/targets/egl-static/egl.c ./mesa/src/gallium/targets/egl-static/egl.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/targets/egl-static/egl.c	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/targets/egl-static/egl.c	2011-09-05 20:03:01.000000000 +0200
