@@ -112,13 +112,11 @@ LIBRARY_SOURCES = \
             $(addprefix ../../, $(LIBUTIL_SOURCES)) \
             $(addprefix ../../, $(LIBTESS_SOURCES)) \
             $(addprefix ../../, $(SHARED_LIB_SOURCES)) \
-            glu_library_api \
 
 USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../../glu/sgi/include \
             -I$(SRCDIR)/$(CURDIR)/../../glu/sgi/libnurbs/internals \
             -I$(SRCDIR)/$(CURDIR)/../../glu/sgi/libnurbs/nurbtess \
-            -I$(SRCDIR)/$(CURDIR)/../../aros \
 
 USER_CFLAGS := -DLIBRARYBUILD -fno-asynchronous-unwind-tables -fno-exceptions 
 

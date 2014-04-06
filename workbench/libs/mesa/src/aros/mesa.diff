@@ -1400,23 +1400,6 @@ diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*
  s_symbol::s_symbol(const char *tmp, size_t n)
  {
     this->str = ralloc_strndup (this, tmp, n);
-diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glu/sgi/include/gluos.h ./mesa/src/glu/sgi/include/gluos.h
---- /data/deadwood/source/Mesa-7.11-staging/src/glu/sgi/include/gluos.h	2011-07-09 03:37:10.000000000 +0200
-+++ ./mesa/src/glu/sgi/include/gluos.h	2011-09-05 20:03:01.000000000 +0200
-@@ -2,6 +2,13 @@
- ** gluos.h - operating system dependencies for GLU
- **
- */
-+
-+#if defined(__AROS__)
-+#include <GL/glu.h>
-+#include "glu/gluapim.h"
-+#include "glu/glu_mangle.h"
-+#endif
-+
- #ifdef __VMS
- #ifdef __cplusplus
- #pragma message disable nocordel
 diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/glu/sgi/libutil/mipmap.c ./mesa/src/glu/sgi/libutil/mipmap.c
 --- /data/deadwood/source/Mesa-7.11-staging/src/glu/sgi/libutil/mipmap.c	2011-07-09 03:37:10.000000000 +0200
 +++ ./mesa/src/glu/sgi/libutil/mipmap.c	2011-09-05 20:03:01.000000000 +0200
