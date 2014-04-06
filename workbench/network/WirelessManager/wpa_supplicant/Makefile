@@ -63,8 +63,10 @@ endif
 endif
 
 ifeq ($(CONFIG_OS), amiga)
-CFLAGS += -D__USE_INLINE__ -D__USE_BASETYPE__
+CFLAGS += -D__USE_INLINE__ -D__USE_BASETYPE__ -Wno-pointer-sign -DMUI_GUI
+LIBS += -lmui
 #LIBS += -lauto
+OBJS += wpa_gui_$(CONFIG_OS).o
 endif
 
 ifeq ($(CONFIG_OS), internal)

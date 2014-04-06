@@ -41,6 +41,10 @@
 #include "mlme.h"
 #include "scan.h"
 
+#ifdef MUI_GUI
+void wpa_gui_amiga_inspect_scan_results(struct wpa_supplicant *wpa_s,
+        struct wpa_scan_results *scan_res);
+#endif
 
 static int wpa_supplicant_select_config(struct wpa_supplicant *wpa_s)
 {
@@ -913,6 +917,9 @@ static void wpa_supplicant_event_scan_results(struct wpa_supplicant *wpa_s,
 	wpa_printf(MSG_DEBUG, "New scan results available");
 	wpa_msg_ctrl(wpa_s, MSG_INFO, WPA_EVENT_SCAN_RESULTS);
 	wpas_notify_scan_results(wpa_s);
+#if MUI_GUI
+        wpa_gui_amiga_inspect_scan_results(wpa_s, scan_res);
+#endif
 
 	wpas_notify_scan_done(wpa_s, 1);
 
