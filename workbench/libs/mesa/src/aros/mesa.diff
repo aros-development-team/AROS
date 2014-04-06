@@ -104,7 +104,11 @@ diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*
 +
 +static VOID _egl_FreeTSD_fn()
 +{
-+    _EGLThreadInfo *t = _eglGetTSD();
++    _EGLThreadInfo *t = NULL;
++
++    if (!tls) return;
++
++    t = _eglGetTSD();
 +
 +    if (t && _egl_FreeTSD)
 +        _egl_FreeTSD((void *) t);

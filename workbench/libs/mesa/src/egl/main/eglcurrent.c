@@ -149,7 +149,11 @@ static INLINE EGLBoolean _eglInitTSD(void (*dtor)(_EGLThreadInfo *))
 
 static VOID _egl_FreeTSD_fn()
 {
-    _EGLThreadInfo *t = _eglGetTSD();
+    _EGLThreadInfo *t = NULL;
+
+    if (!tls) return;
+
+    t = _eglGetTSD();
 
     if (t && _egl_FreeTSD)
         _egl_FreeTSD((void *) t);
