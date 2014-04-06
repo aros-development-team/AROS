@@ -376,3 +376,5 @@
 - implemented (tackon)
 - implemented (expandpath)
 
+0061
+- use malloc/calloc/free/realloc instead of system memory calls

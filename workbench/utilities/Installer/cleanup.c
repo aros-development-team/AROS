@@ -25,8 +25,8 @@ void free_script(ScriptArg *first)
     {
         free_script(first->cmd);
         free_script(first->next);
-        FreeVec(first->arg);
-        FreeVec(first);
+        free(first->arg);
+        free(first);
     }
 }
 
