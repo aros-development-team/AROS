@@ -1,16 +1,13 @@
-#include "vega/vega_intern.h"
+#include <exec/types.h>
 #include "vg_api.h"
 
 /*****************************************************************************
 
     NAME */
 
-      AROS_LH0(APTR, GetOpenVGStateTrackerApi,
+      APTR GetOpenVGStateTrackerApi()
 
 /*  SYNOPSIS */ 
-
-/*  LOCATION */
-      struct Library *, VegaBase, 5, Vega)
 
 /*  FUNCTION
         This is a PRIVATE function used by egl.library to receive pointer to
@@ -29,9 +26,5 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-
     return (APTR)vg_api_get();
-
-    AROS_LIBFUNC_EXIT
 }

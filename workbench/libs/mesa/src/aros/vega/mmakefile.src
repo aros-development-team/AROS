@@ -50,13 +50,11 @@ OPENVG_SOURCES = \
 LIBRARY_SOURCES = \
             $(addprefix ../../, $(OPENVG_SOURCES)) \
             $(addprefix ../../, $(SHARED_LIB_SOURCES)) \
-            vega_library_api \
             getopenvgstatetrackerapi \
 
 
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
-            -I$(SRCDIR)/$(CURDIR)/../../aros \
             -I$(SRCDIR)/$(CURDIR)/../../mapi \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/include \
             -I$(SRCDIR)/$(CURDIR)/../.. \
