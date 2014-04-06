@@ -377,22 +377,6 @@ diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*
  #else
  
  typedef int _EGLMutex;
-diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egltypedefs.h ./mesa/src/egl/main/egltypedefs.h
---- /data/deadwood/source/Mesa-7.11-staging/src/egl/main/egltypedefs.h	2011-07-09 03:37:09.000000000 +0200
-+++ ./mesa/src/egl/main/egltypedefs.h	2011-09-05 20:03:01.000000000 +0200
-@@ -38,6 +38,12 @@
- 
- #include "eglcompiler.h"
- 
-+#if defined(_EGL_OS_AROS)
-+#include <stddef.h> /* for size_t */
-+#include "egl/eglapim.h"
-+#include "egl/egl_mangle.h"
-+#endif
-+
- typedef struct _egl_api _EGLAPI;
- 
- typedef struct _egl_array _EGLArray;
 diff -ur '--exclude-from=./mesa/src/aros/mesa.diff.excluded' -I '^.*\bRevision.*Date.*\b.*$' /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/os/os_thread.h ./mesa/src/gallium/auxiliary/os/os_thread.h
 --- /data/deadwood/source/Mesa-7.11-staging/src/gallium/auxiliary/os/os_thread.h	2011-07-09 03:37:09.000000000 +0200
 +++ ./mesa/src/gallium/auxiliary/os/os_thread.h	2011-09-05 20:03:01.000000000 +0200
