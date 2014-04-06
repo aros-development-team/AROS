@@ -95,7 +95,6 @@ FILES	:= \
     openwindowtags \
     openworkbenchobject \
     rangerand \
-    reallocvec \
     refreshdtobject \
     refreshdtobjects \
     releaseinfo \

@@ -64,7 +64,6 @@ LONG TimeDelay (LONG unit, ULONG secs, ULONG microsecs);
 void waitbeam (LONG pos);
 void __sprintf(UBYTE *buffer, const UBYTE *format, ...);
 STRPTR StrDup(CONST_STRPTR str);
-APTR ReAllocVec(APTR oldmem, ULONG size, ULONG requirements);
 
 void MergeSortList(struct MinList *l, int (*compare)(struct MinNode *n1, struct MinNode *n2, void *data), void *data);
 
