@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
         {
             preferences.novicelog = TRUE;
         }
-        preferences.transcriptfile = StrDup((args[ARG_LOGFILE]) ? (char *)args[ARG_LOGFILE] : "install_log_file");
+        preferences.transcriptfile = strdup((args[ARG_LOGFILE]) ? (char *)args[ARG_LOGFILE] : "install_log_file");
         preferences.nopretend = (int)args[ARG_NOPRETEND];
         if (args[ARG_MINUSER])
         {
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
         }
 
         /* Write to which LOGFILE? */
-        preferences.transcriptfile = StrDup(ArgString(tooltypes, "LOGFILE", "install_log_file"));
+        preferences.transcriptfile = strdup(ArgString(tooltypes, "LOGFILE", "install_log_file"));
         /* Is PRETEND possible? */
         preferences.nopretend = (strcmp("TRUE", ArgString(tooltypes, "PRETEND", "TRUE")) != 0);
         ttemp = ArgString(tooltypes, "MINUSER", "NOVICE");
@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
         /* Allocate space for script cmd and save first one to scriptroot */
         if (script.cmd == NULL)
         {
-            script.cmd = (ScriptArg *)AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+            script.cmd = (ScriptArg *)malloc(sizeof(ScriptArg));
             if (script.cmd == NULL)
             {
                 end_alloc();
@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-            currentarg->next = (ScriptArg *)AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+            currentarg->next = (ScriptArg *)malloc(sizeof(ScriptArg));
             if (currentarg->next == NULL)
             {
                 end_alloc();
@@ -311,7 +311,7 @@ int main(int argc, char *argv[])
                         break;
 
                     case LBRACK: /* A command (...) , parse the content of braces */
-                        currentarg->cmd = (ScriptArg *)AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+                        currentarg->cmd = (ScriptArg *)malloc(sizeof(ScriptArg));
                         if (currentarg->cmd == NULL)
                         {
                             end_alloc();
@@ -353,7 +353,7 @@ int main(int argc, char *argv[])
         {
             currentarg = currentarg->next;
         }
-        FreeVec(currentarg->next);
+        free(currentarg->next);
         currentarg->next = NULL;
     }
 

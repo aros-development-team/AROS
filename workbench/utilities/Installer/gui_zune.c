@@ -116,7 +116,7 @@ void DelContents(Object *obj)
         {                                                        \
             len += strlen(GetPL(pl, _PROMPT).arg[i]) + 2;        \
         }                                                        \
-        out = AllocVec((len+2)*sizeof(char), MEMF_PUBLIC);        \
+        out = malloc((len+2)*sizeof(char));        \
         outofmem(out);                                                \
         out[0] = 0;                                                \
         for ( i = 0 ; i < m ; i ++ )                                \
@@ -126,7 +126,7 @@ void DelContents(Object *obj)
             strcat(out,"\n");                                        \
         }                                                        \
         Write(preferences.transcriptstream, out, len);                \
-        FreeVec(out);                                                \
+        free(out);                                                \
     }
 
 /*
@@ -230,7 +230,7 @@ char *text;
     if ( text != NULL )
     {
         helpwin(title, text);
-        FreeVec(text);
+        free(text);
     }
 }
 
@@ -388,14 +388,14 @@ void show_complete(long int percent)
 {
 char *text;
 
-  text = AllocVec(strlen(GuiWinTitle) + 13, MEMF_PUBLIC);
+  text = malloc(strlen(GuiWinTitle) + 13);
   if ( text == NULL )
   {
     end_alloc();
   }
   sprintf(text, "%s (Done %3ld%%)", GuiWinTitle, percent);
   set(wnd, MUIA_Window_Title, text);
-  FreeVec(text);
+  free(text);
 }
 
 
@@ -409,7 +409,7 @@ ULONG sigs = 0;
 Object *wc;
 char *msg2;
 
-    msg2 = AllocVec((strlen(msg)+strlen(DONE_TEXT))*sizeof(char), MEMF_PUBLIC);
+    msg2 = malloc((strlen(msg)+strlen(DONE_TEXT))*sizeof(char));
     msg2[0] = 0;
     strcat(msg2,msg);
     strcat(msg2,DONE_TEXT);
@@ -564,18 +564,18 @@ char **mxlabels;
 
     if ( msg != NULL )
     {
-        welcome = StrDup(msg);
+        welcome = strdup(msg);
     }
     else
     {
-        welcome = AllocVec(sizeof(char *)*(strlen(WELCOME_TEMPLATE)+strlen(get_var_arg("@app-name"))), MEMF_PUBLIC);
+        welcome = malloc(sizeof(char *)*(strlen(WELCOME_TEMPLATE)+strlen(get_var_arg("@app-name"))));
         outofmem(welcome);
         sprintf(welcome, WELCOME_TEMPLATE, get_var_arg("@app-name"));
     }
-    mxlabels = AllocVec(4*sizeof(STRPTR), MEMF_PUBLIC);
-    mxlabels[0] = StrDup(NOVICE_NAME);
-    mxlabels[1] = StrDup(ADVANCED_NAME);
-    mxlabels[2] = StrDup(EXPERT_NAME);
+    mxlabels = malloc(4*sizeof(STRPTR));
+    mxlabels[0] = strdup(NOVICE_NAME);
+    mxlabels[1] = strdup(ADVANCED_NAME);
+    mxlabels[2] = strdup(EXPERT_NAME);
     mxlabels[3] = NULL;
 
 
@@ -618,10 +618,10 @@ char **mxlabels;
                     char *helptext;
 
 /* TODO: help/about for Installer */
-                        helptext = AllocVec(512 * sizeof(char), MEMF_PUBLIC);
+                        helptext = malloc(512 * sizeof(char));
                         sprintf(helptext, ABOUT_INSTALLER, INSTALLER_VERSION, INSTALLER_REVISION);
                         helpwin(ABOUT_ON_INSTALLER, helptext);
-                        FreeVec(helptext);
+                        free(helptext);
                     }
                     break;
                 default:
@@ -634,17 +634,17 @@ char **mxlabels;
 
         DelContents(wc);
     }
-    FreeVec(welcome);
-    FreeVec(mxlabels[0]);
-    FreeVec(mxlabels[1]);
-    FreeVec(mxlabels[2]);
+    free(welcome);
+    free(mxlabels[0]);
+    free(mxlabels[1]);
+    free(mxlabels[2]);
 
 /* Ask for Logfile creation */
     if ( usrlevel > 0 )
     {
-        mxlabels[0] = StrDup(LOG_FILE_TEXT);
-        mxlabels[1] = StrDup(LOG_PRINT_TEXT);
-        mxlabels[2] = StrDup(LOG_NOLOG_TEXT);
+        mxlabels[0] = strdup(LOG_FILE_TEXT);
+        mxlabels[1] = strdup(LOG_PRINT_TEXT);
+        mxlabels[2] = strdup(LOG_NOLOG_TEXT);
 
         wc = VGroup,
             Child, levelmx = RadioObject,
@@ -673,10 +673,10 @@ char **mxlabels;
                         char *helptext;
 
 /* TODO: help for logfile-requester */
-                          helptext = AllocVec(512 * sizeof(char), MEMF_PUBLIC);
+                          helptext = malloc(512 * sizeof(char));
                           sprintf(helptext, LOG_HELP, preferences.transcriptfile);
                           helpwin(HELP_ON_LOGFILES, helptext);
-                            FreeVec(helptext);
+                            free(helptext);
                         }
                         break;
                     default:
@@ -691,25 +691,25 @@ char **mxlabels;
 /* TODO: Handle Logging output selection */
                     break;
                 case 1: /* Log to printer */
-                    FreeVec(preferences.transcriptfile);
-                    preferences.transcriptfile = StrDup("PRT:");
+                    free(preferences.transcriptfile);
+                    preferences.transcriptfile = strdup("PRT:");
                     break;
                 case 2: /* No Log */
-                    FreeVec(preferences.transcriptfile);
+                    free(preferences.transcriptfile);
                     preferences.transcriptfile = NULL;
                     break;
             }
 
             DelContents(wc);
         }
-        FreeVec(mxlabels[0]);
-        FreeVec(mxlabels[1]);
-        FreeVec(mxlabels[2]);
+        free(mxlabels[0]);
+        free(mxlabels[1]);
+        free(mxlabels[2]);
 
         if (!preferences.nopretend)
         {
-            mxlabels[0] = StrDup(NOPRETEND_TEXT);
-            mxlabels[1] = StrDup(PRETEND_TEXT);
+            mxlabels[0] = strdup(NOPRETEND_TEXT);
+            mxlabels[1] = strdup(PRETEND_TEXT);
             mxlabels[2] = NULL;
 
             wc = VGroup,
@@ -756,12 +756,12 @@ char **mxlabels;
                 DelContents(wc);
             }
 
-            FreeVec(mxlabels[0]);
-            FreeVec(mxlabels[1]);
+            free(mxlabels[0]);
+            free(mxlabels[1]);
         }
     }
 
-    FreeVec(mxlabels);
+    free(mxlabels);
     disable_skip(FALSE);
 }
 
@@ -782,30 +782,30 @@ int i, m;
 
     retval = ( GetPL(pl, _DEFAULT).intval != 0 );
 
-    mxlabels = AllocVec(3*sizeof(STRPTR), MEMF_PUBLIC);
+    mxlabels = malloc(3*sizeof(STRPTR));
     outofmem(mxlabels);
     if ( GetPL(pl, _CHOICES).used == 1 )
     {
         if (GetPL(pl, _CHOICES).intval >= 2)
         {
-            mxlabels[0] = StrDup(GetPL(pl, _CHOICES).arg[0]);
-            mxlabels[1] = StrDup(GetPL(pl, _CHOICES).arg[1]);
+            mxlabels[0] = strdup(GetPL(pl, _CHOICES).arg[0]);
+            mxlabels[1] = strdup(GetPL(pl, _CHOICES).arg[1]);
         }
         else if (GetPL(pl, _CHOICES).intval == 1)
         {
-            mxlabels[0] = StrDup(GetPL(pl, _CHOICES).arg[0]);
-            mxlabels[1] = StrDup(_(MSG_NO));
+            mxlabels[0] = strdup(GetPL(pl, _CHOICES).arg[0]);
+            mxlabels[1] = strdup(_(MSG_NO));
         }
         else
         {
-            mxlabels[0] = StrDup(_(MSG_YES));
-            mxlabels[1] = StrDup(_(MSG_NO));
+            mxlabels[0] = strdup(_(MSG_YES));
+            mxlabels[1] = strdup(_(MSG_NO));
         }
     }
     else
     {
-        mxlabels[0] = StrDup(_(MSG_YES));
-        mxlabels[1] = StrDup(_(MSG_NO));
+        mxlabels[0] = strdup(_(MSG_YES));
+        mxlabels[1] = strdup(_(MSG_NO));
     }
     mxlabels[2] = NULL;
 
@@ -866,7 +866,7 @@ int i, m;
 
             DelContents(wc);
         }
-        FreeVec(out);
+        free(out);
         disable_skip(FALSE);
     }
     if ( preferences.transcriptstream != BNULL )
@@ -875,9 +875,9 @@ int i, m;
         Write(preferences.transcriptstream, mxlabels[retval], strlen(mxlabels[retval]));
         Write(preferences.transcriptstream, "\".\n\n", 4);
     }
-    FreeVec(mxlabels[0]);
-    FreeVec(mxlabels[1]);
-    FreeVec(mxlabels);
+    free(mxlabels[0]);
+    free(mxlabels[1]);
+    free(mxlabels);
 
 return retval;
 }
@@ -982,7 +982,7 @@ char minmax[MAXARGSIZE];
 
             DelContents(wc);
         }
-        FreeVec(out);
+        free(out);
         disable_skip(FALSE);
     }
     if ( preferences.transcriptstream != BNULL )
@@ -1008,11 +1008,11 @@ int i;
 
     if ( GetPL(pl, _DEFAULT).used == 1 )
     {
-        string = StrDup(GetPL(pl, _DEFAULT).arg[0]);
+        string = strdup(GetPL(pl, _DEFAULT).arg[0]);
     }
     else
     {
-        string = StrDup(EMPTY_STRING);
+        string = strdup(EMPTY_STRING);
     }
     TRANSSCRIPT();
     if ( get_var_int( "@user-level" ) > _NOVICE )
@@ -1071,17 +1071,17 @@ int i;
                 }
                 WaitCTRL(sigs);
             }
-            FreeVec(string);
+            free(string);
             get(st, MUIA_String_Contents, &str);
-            string = StrDup(str);
+            string = strdup(str);
 
             DelContents(wc);
         }
-        FreeVec(out);
+        free(out);
         disable_skip(FALSE);
     }
     retval = addquotes(string);
-    FreeVec(string);
+    free(string);
     if ( preferences.transcriptstream != BNULL )
     {
         Write(preferences.transcriptstream, "Ask String: Result was ", 23);
@@ -1115,12 +1115,12 @@ int i, max = 0;
             traperr("More than 32 choices given!\n", NULL);
         }
 
-        mxlabels = AllocVec((max+1)*sizeof(STRPTR), MEMF_PUBLIC);
+        mxlabels = malloc((max+1)*sizeof(STRPTR));
         outofmem(mxlabels);
 
         for ( i = 0 ; i < max ; i++ )
         {
-            mxlabels[i] = StrDup(GetPL(pl, _CHOICES).arg[i]);
+            mxlabels[i] = strdup(GetPL(pl, _CHOICES).arg[i]);
         }
         mxlabels[i] = NULL;
     }
@@ -1187,7 +1187,7 @@ int i, max = 0;
 
             DelContents(wc);
         }
-        FreeVec(out);
+        free(out);
         disable_skip(FALSE);
     }
     if ( preferences.transcriptstream != BNULL )
@@ -1198,9 +1198,9 @@ int i, max = 0;
     }
     for ( i = 0 ; i < max ; i++ )
     {
-        FreeVec(mxlabels[i]);
+        free(mxlabels[i]);
     }
-    FreeVec(mxlabels);
+    free(mxlabels);
 
 return retval;
 }
@@ -1299,12 +1299,12 @@ BOOL j;
             traperr("More than 32 choices given!\n", NULL);
         }
 
-        mxlabels = AllocVec((max+1)*sizeof(STRPTR), MEMF_PUBLIC);
+        mxlabels = malloc((max+1)*sizeof(STRPTR));
         outofmem(mxlabels);
 
         for ( i = 0 ; i < max ; i++ )
         {
-            mxlabels[i] = StrDup(GetPL(pl, _CHOICES).arg[i]);
+            mxlabels[i] = strdup(GetPL(pl, _CHOICES).arg[i]);
             marks[i] = MUI_MakeObject(MUIO_Checkmark, (IPTR)mxlabels[i]);
             labels[i] = LLabel(mxlabels[i]);
 
@@ -1391,7 +1391,7 @@ BOOL j;
 
             DelContents(wc);
         }
-        FreeVec(out);
+        free(out);
         disable_skip(FALSE);
     }
     if ( preferences.transcriptstream != BNULL )
@@ -1414,9 +1414,9 @@ BOOL j;
     }
     for ( i = 0 ; i < max ; i++ )
     {
-        FreeVec(mxlabels[i]);
+        free(mxlabels[i]);
     }
-    FreeVec(mxlabels);
+    free(mxlabels);
 
 return retval;
 }
@@ -1477,7 +1477,7 @@ char *out;
 
             DelContents(wc);
         }
-        FreeVec(out);
+        free(out);
     }
 
 return retval;

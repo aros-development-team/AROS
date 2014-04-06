@@ -11,12 +11,6 @@ abort in abort causes some problems. Is this allowed, btw?
 Anyway: an aborted askbool with trap->askbool hangs the system
 (circular dependancy in gadgets)
 
-BUG00004 fixed
-Get rid of malloc/realloc/free and use AllocMem/FreeMem instead.
-SOLUTION: Use AllocVec()/FreeVec()
-	  realloc is fixed by a new function in alib: ReAllocVec()
-	-> missing on original AmigaOS
-
 BUG00005
 FileRequester crashes AROS when in expert mode.  Does not happen if any
 program has successfully opened a FileRequester before.

@@ -73,7 +73,7 @@ char **mclip;
                     break;
 
                 case LBRACK: /* Open bracket: recurse into next level */
-                    current->cmd = AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+                    current->cmd = malloc(sizeof(ScriptArg));
                     if (current->cmd == NULL)
                     {
                         end_alloc();
@@ -86,7 +86,7 @@ char **mclip;
                     current->cmd->intval = 0;
                     current->cmd->ignore = 0;
                     parse_file(current->cmd);
-                    current->next = AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+                    current->next = malloc(sizeof(ScriptArg));
                     if (current->next == NULL)
                     {
                         end_alloc();
@@ -110,7 +110,7 @@ char **mclip;
                         {
                             current = current->next;
                         }
-                        FreeVec(current->next);
+                        free(current->next);
                         current->next = NULL;
                     }
                     else
@@ -179,7 +179,7 @@ char **mclip;
                             }
                             count = Read(inputfile, &buffer[i], 1);
                         } while (masquerade || (buffer[i] != buffer[0] && count != 0));
-                        current->arg = AllocVec(sizeof(char)*(i+2), MEMF_PUBLIC);
+                        current->arg = malloc(sizeof(char)*(i+2));
                         if (current->arg == NULL)
                         {
                             end_alloc();
@@ -232,7 +232,7 @@ char **mclip;
                                 }
                                 else
                                 {
-                                    current->arg = AllocVec(sizeof(char)*(i+1), MEMF_PUBLIC);
+                                    current->arg = malloc(sizeof(char)*(i+1));
                                     if (current->arg == NULL)
                                     {
                                         end_alloc();
@@ -244,7 +244,7 @@ char **mclip;
                                 ScriptArg *proc, *uproc;
                                 int finish;
                                     /* Save procedure in ProcedureList */
-                                    proc = AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+                                    proc = malloc(sizeof(ScriptArg));
                                     if (proc == NULL)
                                     {
                                         end_alloc();
@@ -255,7 +255,7 @@ char **mclip;
                                     proc->arg = NULL;
                                     proc->intval = 0;
                                     proc->ignore = 0;
-                                    proc->cmd = AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+                                    proc->cmd = malloc(sizeof(ScriptArg));
                                     if (proc->cmd == NULL)
                                     {
                                         end_alloc();
@@ -266,7 +266,7 @@ char **mclip;
                                     proc->cmd->intval = 0;
                                     proc->cmd->ignore = 0;
                                     proc = proc->cmd;
-                                    proc->cmd = AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+                                    proc->cmd = malloc(sizeof(ScriptArg));
                                     if (proc->cmd == NULL)
                                     {
                                         end_alloc();
@@ -345,12 +345,12 @@ char **mclip;
                                             }
                                             buffer[i] = 0;
                                             j++;
-                                            mclip = ReAllocVec(mclip, sizeof(char *) * j, MEMF_PUBLIC);
+                                            mclip = realloc(mclip, sizeof(char *) * j);
                                             if (mclip == NULL)
                                             {
                                                 end_alloc();
                                             }
-                                            mclip[j-1] = StrDup(buffer);
+                                            mclip[j-1] = strdup(buffer);
                                             if (mclip[j-1] == NULL)
                                             {
                                                 end_alloc();
@@ -392,7 +392,7 @@ char **mclip;
                                         }
                                         else if (buffer[0] == LBRACK)
                                         {
-                                            proc->next = AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+                                            proc->next = malloc(sizeof(ScriptArg));
                                             if (proc->next == NULL)
                                             {
                                                 end_alloc();
@@ -403,7 +403,7 @@ char **mclip;
                                             proc->next->intval = 0;
                                             proc->next->ignore = 0;
                                             proc = proc->next;
-                                            proc->cmd = AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+                                            proc->cmd = malloc(sizeof(ScriptArg));
                                             if (proc->cmd == NULL)
                                             {
                                                 end_alloc();
@@ -427,7 +427,7 @@ char **mclip;
                                             exit(-1);
                                         }
                                     } while (!finish);
-                                    current->next = AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+                                    current->next = malloc(sizeof(ScriptArg));
                                     if (current->next == NULL)
                                     {
                                         end_alloc();
@@ -453,7 +453,7 @@ char **mclip;
                                 break;
                         }
                     }
-                    current->next = AllocVec(sizeof(ScriptArg), MEMF_PUBLIC);
+                    current->next = malloc(sizeof(ScriptArg));
                     if (current->next == NULL)
                     {
                         end_alloc();

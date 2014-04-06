@@ -40,7 +40,7 @@ int i = 0, j = 0, inc = -1;
     if (i == numactiveusrprocs)
     {
         numactiveusrprocs++;
-        activeusrprocs = ReAllocVec(activeusrprocs, sizeof(struct ProcedureList *) * numactiveusrprocs, MEMF_PUBLIC);
+        activeusrprocs = realloc(activeusrprocs, sizeof(struct ProcedureList *) * numactiveusrprocs);
         if (activeusrprocs == NULL)
         {
             end_alloc();
@@ -100,7 +100,7 @@ long int incarnation = 0;
 
     /* Enlarge list for one additional element */
     numusrprocs++;
-    usrprocs = ReAllocVec(usrprocs, sizeof(struct ProcedureList) * numusrprocs, MEMF_PUBLIC);
+    usrprocs = realloc(usrprocs, sizeof(struct ProcedureList) * numusrprocs);
     if (usrprocs == NULL)
     {
         end_alloc();
@@ -123,8 +123,8 @@ int i;
 
     for ( i = 0 ; i < numusrprocs ; i++)
     {
-        FreeVec(usrprocs[i].procname);
+        free(usrprocs[i].procname);
     }
-    FreeVec(usrprocs);
+    free(usrprocs);
 }
 

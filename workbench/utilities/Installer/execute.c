@@ -50,7 +50,7 @@ static void callback(char, char **);
         char *clip;                                        \
         if((clip = get_var_arg(arg)) == NULL)                \
         {                                                \
-            string = StrDup(arg);                        \
+            string = strdup(arg);                        \
         }                                                \
         else                                                \
         {                                                \
@@ -98,19 +98,19 @@ void *params;
                 traperr("Argument in list of commands!\n", NULL);
             }
         }
-        FreeVec(current->parent->arg);
+        free(current->parent->arg);
         current->parent->arg = NULL;
         current->parent->intval = current->intval;
         if (current->arg != NULL)
         {
-            current->parent->arg = StrDup(current->arg);
+            current->parent->arg = strdup(current->arg);
             outofmem(current->parent->arg);
         }
     }
     else
     {
         cmd_type = eval_cmd(current->arg);
-        FreeVec(current->parent->arg);
+        free(current->parent->arg);
         current->parent->arg = NULL;
         current->parent->intval = 0;
         switch (cmd_type)
@@ -123,7 +123,7 @@ void *params;
             case _ABORT: /* Output all strings, execute onerrors and exit abnormally */
                 string = collect_strings(current->next, LINEFEED, level);
                 show_abort(string);
-                FreeVec(string);
+                free(string);
                 if (preferences.transcriptstream != BNULL)
                 {
                     Write(preferences.transcriptstream, "Aborting script.\n", 17);
@@ -223,7 +223,7 @@ void *params;
             case _CAT: /* Return concatenated strings */
                 string = collect_strings(current->next, 0, level);
                 current->parent->arg = addquotes(string);
-                FreeVec(string);
+                free(string);
                 break;
 
             case _COMPLETE: /* Display how much we have done in percent */
@@ -249,7 +249,7 @@ void *params;
                 }
                 /* Set return value */
                 current->parent->arg = addquotes(string);
-                FreeVec(string);
+                free(string);
                 break;
 
             case _EXIT: /* Output all strings and exit */
@@ -261,7 +261,7 @@ void *params;
                 {
                     final_report();
                 }
-                FreeVec(string);
+                free(string);
                 free_parameterlist(parameter);
 #ifdef DEBUG
                 dump_varlist();
@@ -289,13 +289,13 @@ void *params;
                         current->parent->intval = current->intval;
                         if (current->arg != NULL)
                         {
-                            current->parent->arg = StrDup(current->arg);
+                            current->parent->arg = strdup(current->arg);
                             outofmem(current->parent->arg);
                         }
                     }
                     else if (stringarg)
                     {
-                        current->parent->arg = StrDup("\"\"");
+                        current->parent->arg = strdup("\"\"");
                         outofmem(current->parent->arg);
                     }
                 }
@@ -379,7 +379,7 @@ void *params;
                             current->parent->intval = current->intval;
                             if (current->arg != NULL)
                             {
-                                current->parent->arg = StrDup(current->arg);
+                                current->parent->arg = strdup(current->arg);
                                 outofmem(current->parent->arg);
                             }
                         }
@@ -426,7 +426,7 @@ void *params;
                                 error = BADPARAMETER;
                                 traperr("Variable name to <%s> is not a string!\n", current->parent->cmd->arg);
                             }
-                            string = StrDup(clip2);
+                            string = strdup(clip2);
                             outofmem(string);
                         }
                         ExecuteNextCommand();
@@ -448,15 +448,15 @@ void *params;
                                 }
                                 else
                                 {
-                                    clip = StrDup(clip2);
+                                    clip = strdup(clip2);
                                     outofmem(clip);
                                 }
                                 i = get_var_int(current->next->arg);
                             }
                         }
                         set_variable(string, clip, i);
-                        FreeVec(string);
-                        FreeVec(clip);
+                        free(string);
+                        free(clip);
                         dummy = current;
                         current = current->next->next;
                     }
@@ -466,7 +466,7 @@ void *params;
                 {
                     if ((dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE)
                     {
-                        dummy->parent->arg = StrDup(dummy->next->arg);
+                        dummy->parent->arg = strdup(dummy->next->arg);
                         outofmem(dummy->parent->arg);
                     }
                     else
@@ -506,7 +506,7 @@ void *params;
                         string = strip_quotes(current->arg);
                         current->parent->arg = get_var_arg(string);
                         current->parent->intval = get_var_int(string);
-                        FreeVec(string);
+                        free(string);
                     }
                     else
                     {
@@ -555,7 +555,7 @@ void *params;
                                 /* Strip off quotes */
                                 clip = strip_quotes(current->next->arg);
                                 set_variable(current->arg, clip, current->next->intval);
-                                FreeVec(clip);
+                                free(clip);
                             }
                             else
                             {
@@ -576,7 +576,7 @@ void *params;
                 {
                     if ((dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE)
                     {
-                        dummy->parent->arg = StrDup(dummy->next->arg);
+                        dummy->parent->arg = strdup(dummy->next->arg);
                         outofmem(dummy->parent->arg);
                     }
                     else
@@ -629,7 +629,7 @@ void *params;
                 clip = strip_quotes(current->arg);
 
                 /* Now get arguments into typeless array (void *params) */
-                params = AllocVec(sizeof(IPTR), MEMF_PUBLIC);
+                params = malloc(sizeof(IPTR));
                 outofmem(params);
                 ((char **)params)[0] = NULL;
                 mclip = NULL;
@@ -644,7 +644,7 @@ void *params;
                         if ((current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE)
                         {
                             /* Strip off quotes */
-                            mclip = ReAllocVec(mclip, sizeof(char *) * (j+1), MEMF_PUBLIC);
+                            mclip = realloc(mclip, sizeof(char *) * (j+1));
                             outofmem(mclip);
                             mclip[j] = strip_quotes(current->arg);
                             ((char **)params)[i] = mclip[j];
@@ -660,30 +660,30 @@ void *params;
                         ((char **)params)[i] = (char *)(current->intval);
                     }
                     i++;
-                    params = ReAllocVec(params, sizeof(IPTR)*(i+1), MEMF_PUBLIC);
+                    params = realloc(params, sizeof(IPTR)*(i+1));
                     outofmem(params);
                 }
                 /* Call RawDoFmt() with parameter list */
                 /* Store that produced string as return value */
-                string = AllocVec(MAXARGSIZE, MEMF_PUBLIC);
+                string = malloc(MAXARGSIZE);
                 outofmem(string);
                 callbackstring = string;
                 globalstring = callbackstring;
                 RawDoFmt(clip, params, (VOID_FUNC)&callback, &globalstring);
                 string = callbackstring;
                 /* Free temporary space */
-                FreeVec(clip);
+                free(clip);
                 if (mclip)
                 {
                     while (j > 0)
                     {
-                        FreeVec(mclip[--j]);
+                        free(mclip[--j]);
                     }
-                    FreeVec(mclip);
+                    free(mclip);
                 }
                 /* Add surrounding quotes to string */
                 current->parent->arg = addquotes(string);
-                FreeVec(string);
+                free(string);
                 break;
 
             case _SUBSTR: /* Return the substring of arg1 starting with arg2+1 character up to arg3 or end if !arg3 */
@@ -704,12 +704,12 @@ void *params;
                             clip = get_var_arg(current->arg);
                             if (clip != NULL)
                             {
-                                string = StrDup(clip);
+                                string = strdup(clip);
                                 outofmem(string);
                             }
                             else
                             {
-                                string = AllocVec(MAXARGSIZE, MEMF_PUBLIC);
+                                string = malloc(MAXARGSIZE);
                                 outofmem(string);
                                 sprintf(string, "%ld", get_var_int(current->arg));
                             }
@@ -717,7 +717,7 @@ void *params;
                     }
                     else
                     {
-                        string = AllocVec(MAXARGSIZE, MEMF_PUBLIC);
+                        string = malloc(MAXARGSIZE);
                         outofmem(string);
                         sprintf(string, "%ld", current->intval);
                     }
@@ -727,7 +727,7 @@ void *params;
                     slen = strlen(string) - i;
                     if (i < 0)
                     {
-                        FreeVec(string);
+                        free(string);
                         error = BADPARAMETER;
                         traperr("Negative argument to <%s>!\n", current->parent->cmd->arg);
                     }
@@ -747,11 +747,11 @@ void *params;
                     {
                         j = slen;
                     }
-                    clip = AllocVec(slen + 1, MEMF_PUBLIC);
+                    clip = malloc(slen + 1);
                     outofmem(clip);
                     strncpy(clip, (string + i), j);
                     clip[j] = 0;
-                    FreeVec(string);
+                    free(string);
                     current->parent->arg = clip;
                 }
                 else
@@ -786,7 +786,7 @@ void *params;
                 }
                 /* Add surrounding quotes to string */
                 current->parent->arg = addquotes(string);
-                FreeVec(string);
+                free(string);
                 break;
 
             case _UNTIL: /* execute 2nd cmd until 1st arg != 0 */
@@ -815,7 +815,7 @@ void *params;
                             current->parent->intval = current->next->intval;
                             if (current->next->arg != NULL)
                             {
-                                current->parent->arg = StrDup(current->next->arg);
+                                current->parent->arg = strdup(current->next->arg);
                                 outofmem(current->parent->arg);
                             }
                         }
@@ -855,7 +855,7 @@ void *params;
                                 i = _AVERAGE;
                             if (strcasecmp(clip, "expert") == 0)
                                 i = _EXPERT;
-                            FreeVec(string);
+                            free(string);
                         }
                         else
                         {
@@ -891,7 +891,7 @@ void *params;
                 /* Set return value */
                 /* Add surrounding quotes to string */
                 current->parent->arg = addquotes(string);
-                FreeVec(string);
+                free(string);
                 break;
 
             case _WHILE: /* while 1st arg != 0 execute 2nd cmd */
@@ -920,7 +920,7 @@ void *params;
                             current->parent->intval = current->next->intval;
                             if (current->next->arg != NULL)
                             {
-                                current->parent->arg = StrDup(current->next->arg);
+                                current->parent->arg = strdup(current->next->arg);
                                 outofmem(current->parent->arg);
                             }
                         }
@@ -941,7 +941,7 @@ void *params;
                 /* Set return value */
                 /* Add surrounding quotes to string */
                 current->parent->arg = addquotes(string);
-                FreeVec(string);
+                free(string);
                 free_parameterlist(parameter);
                 break;
 
@@ -952,7 +952,7 @@ void *params;
                 /* Set return value */
                 /* Add surrounding quotes to string */
                 current->parent->arg = addquotes(string);
-                FreeVec(string);
+                free(string);
                 break;
 
             case _DATABASE: /* Return information on the hardware Installer is running on */
@@ -961,17 +961,17 @@ void *params;
                     current = current->next;
                     clip = strip_quotes(current->arg);
                     i = database_keyword(clip);
-                    FreeVec(clip);
+                    free(clip);
 /* TODO: compute return values for "database" */
                     switch (i)
                     {
                         case _VBLANK :
-                            clip = AllocVec(MAXARGSIZE, MEMF_PUBLIC);
+                            clip = malloc(MAXARGSIZE);
                             outofmem(clip);
                             sprintf(clip, "%c%d%c", DQUOTE, SysBase->VBlankFrequency, DQUOTE);
-                            current->parent->arg = StrDup(clip);
+                            current->parent->arg = strdup(clip);
                             outofmem(current->parent->arg);
-                            FreeVec(clip);
+                            free(clip);
                             break;
 
                         case _CPU:
@@ -1164,8 +1164,8 @@ void *params;
                         current->parent->intval = 0;
                         set_variable("@ioerr", NULL, IoErr());
                     }
-                    FreeVec(string);
-                    FreeVec(clip);
+                    free(string);
+                    free(clip);
                 }
                 else
                 {
@@ -1228,7 +1228,7 @@ void *params;
                         current->parent->intval = 0;
                         set_variable("@ioerr", NULL, IoErr());
                     }
-                    FreeVec(string);
+                    free(string);
                 }
                 else
                 {
@@ -1288,7 +1288,7 @@ void *params;
                             set_variable("@ioerr", NULL, IoErr());
                             UnLoadSeg(seg);
                         }
-                        FreeVec(string);
+                        free(string);
                     }
                 }
                 else
@@ -1309,7 +1309,7 @@ void *params;
                         modify_userstartup(string, parameter);
                     }
                     free_parameterlist(parameter);
-                    FreeVec(string);
+                    free(string);
                 }
                 else
                 {
@@ -1366,7 +1366,7 @@ void *params;
                         current->parent->intval = 0;
                         set_variable("@ioerr", NULL, IoErr());
                     }
-                    FreeVec(string);
+                    free(string);
                 }
                 else
                 {
@@ -1426,7 +1426,7 @@ void *params;
                         current->parent->intval = 0;
                         set_variable("@ioerr", NULL, IoErr());
                     }
-                    FreeVec(string);
+                    free(string);
                 }
                 else
                 {
@@ -1483,7 +1483,7 @@ void *params;
                             current->parent->intval = 0;
                         }
                     }
-                    FreeVec(string);
+                    free(string);
                 }
                 else
                 {
@@ -1503,13 +1503,13 @@ void *params;
                         GetString(current->arg);
                         tempnam = FilePart(string);
                         i = strlen(tempnam);
-                        clip = AllocVec(sizeof(char) * i + 3, MEMF_PUBLIC);
+                        clip = malloc(sizeof(char) * i + 3);
                         clip[0] = '"';
                         strcpy(&clip[1], tempnam);
                         clip[ i + 1 ] = '"';
                         clip[ i + 2 ] = 0;
                         current->parent->arg = clip;
-                        FreeVec(string);
+                        free(string);
                     }
                 }
                 break;
@@ -1525,13 +1525,13 @@ void *params;
                     {
                         GetString(current->arg);
                         tempnam = PathPart(string);
-                        clip = AllocVec(sizeof(char) * (tempnam - string + 3), MEMF_PUBLIC);
+                        clip = malloc(sizeof(char) * (tempnam - string + 3));
                         clip[0] = '"';
                         strncpy(&clip[1], string, tempnam - string);
                         clip[ tempnam - string + 1 ] = '"';
                         clip[ tempnam - string + 2 ] = 0;
                         current->parent->arg = clip;
-                        FreeVec(string);
+                        free(string);
                     }
                 }
                 break;
@@ -1621,8 +1621,8 @@ void *params;
                     FreeDosObject(DOS_FIB, fib1);
                     UnLock(lock2);
                     UnLock(lock1);
-                    FreeVec(file1);
-                    FreeVec(file2);
+                    free(file1);
+                    free(file2);
                 }
                 else
                 {
@@ -1651,7 +1651,7 @@ void *params;
                             }
                             UnLock(lock);
                         }
-                        FreeVec(string);
+                        free(string);
                     }
                 }
                 break;
@@ -1681,7 +1681,7 @@ void *params;
                     {
                         current->parent->intval = sb.st_size;
                     }
-                    FreeVec(string);
+                    free(string);
                 }
                 else
                 {
@@ -1704,11 +1704,11 @@ void *params;
 /* FIXME: flag must be one of GVF_GLOBAL_ONLY or GVF_LOCAL_ONLY??? */
                         i = GetVar(string, buffer, 1023, 0);
 
-                        FreeVec(string);
+                        free(string);
 
                         if(i != -1)
                         {
-                            current->parent->arg = StrDup(buffer);
+                            current->parent->arg = strdup(buffer);
                         }
                     }
                     else
@@ -1785,7 +1785,7 @@ void *params;
                                 }
                             }
                         }
-                        FreeVec(string);
+                        free(string);
                     }
                     else
                     {
@@ -1796,7 +1796,7 @@ void *params;
                             current->parent->intval = 1;
                         }
                     }
-                    FreeVec(assign);
+                    free(assign);
                 }
                 else
                 {
@@ -1852,7 +1852,7 @@ void *params;
                                 traperr("Invalid option <%s> to getassign!\n", string);
                             }
                         }
-                        FreeVec(string);
+                        free(string);
                     }
                     /* get the assign */
 
@@ -1864,7 +1864,7 @@ void *params;
                         {
                             case LDF_VOLUMES:
 DMSG("VOLUME(%b:)\n",tdl->dol_Name);
-                                ret = AllocVec(AROS_BSTR_strlen(tdl->dol_Name)+2, MEMF_ANY);
+                                ret = malloc(AROS_BSTR_strlen(tdl->dol_Name)+2);
                                 outofmem(ret);
                                 sprintf(ret,"%s:",AROS_BSTR_ADDR(tdl->dol_Name));
                                 break;
@@ -1876,7 +1876,7 @@ DMSG("ASSIGN(%b:):\n",tdl->dol_Name);
                                     case DLT_LATE:
                                     case DLT_NONBINDING:
 DMSG("   %s\n",tdl->dol_misc.dol_assign.dol_AssignName);
-                                        ret = StrDup(tdl->dol_misc.dol_assign.dol_AssignName);
+                                        ret = strdup(tdl->dol_misc.dol_assign.dol_AssignName);
                                         break;
 
                                     default:
@@ -1897,16 +1897,16 @@ DMSG("  +%s\n", dirName);
                                                     if (ret)
                                                     {
                                                         char *sum;
-                                                        sum = AllocVec(strlen(ret) + strlen(dirName) + 2, MEMF_ANY);
+                                                        sum = malloc(strlen(ret) + strlen(dirName) + 2);
                                                         sprintf(sum, "%s %s", ret, dirName);
-                                                        FreeVec(ret);
+                                                        free(ret);
                                                         ret = sum;
                                                     }
                                                     else
                                                     {
-                                                        ret = StrDup(dirName);
+                                                        ret = strdup(dirName);
                                                     }
-                                                    FreeVec(dirName);
+                                                    free(dirName);
                                                 }
                                                 nextAssign = nextAssign->al_Next;
                                             }
@@ -1921,13 +1921,13 @@ DMSG("  +%s\n", dirName);
                                     char *lname;
 
 DMSG("DEV(%b:):\n",(char *)tdl->dol_Name);
-                                    lname = AllocVec(AROS_BSTR_strlen(tdl->dol_Name) + 2, MEMF_ANY);
+                                    lname = malloc(AROS_BSTR_strlen(tdl->dol_Name) + 2);
                                     outofmem(lname);
                                     sprintf(lname,"%s:",AROS_BSTR_ADDR(tdl->dol_Name));
                                     lockdev = Lock(lname, SHARED_LOCK);
                                     if (lockdev)
                                     {
-                                        FreeVec(lname);
+                                        free(lname);
                                         ret = DynNameFromLock(lockdev);
 DMSG("   %s\n",ret);
                                         UnLock(lockdev);
@@ -1944,14 +1944,14 @@ DMSG("   %s\n",ret);
                     if (ret)
                     {
                         current->parent->arg = addquotes(ret);
-                        FreeVec(ret);
+                        free(ret);
                     }
                     else
                     {
                         current->parent->arg = addquotes("");
                     }
 
-                    FreeVec(assign);
+                    free(assign);
                 }
                 else
                 {
@@ -1980,7 +1980,7 @@ DMSG("   %s\n",ret);
                     }
 
                     lockdev = Lock(string, SHARED_LOCK);
-                    FreeVec(string);
+                    free(string);
                     if (lockdev)
                     {
                         char *send;
@@ -1994,7 +1994,7 @@ DMSG("   %s\n",ret);
                     if (ret)
                     {
                         current->parent->arg = addquotes(ret);
-                        FreeVec(ret);
+                        free(ret);
                     }
                     else
                     {
@@ -2047,13 +2047,13 @@ DMSG("   %s\n",ret);
                         error = DOSERROR;
                         traperr("AddPart(%s) failed!\n", clip);
                     }
-                    FreeVec(clip);
+                    free(clip);
                     if (AddPart(ret, string, MAXFILENAMELENGTH) == 0)
                     {
                         error = DOSERROR;
                         traperr("AddPart(%s) failed!\n", string);
                     }
-                    FreeVec(string);
+                    free(string);
                     current->parent->arg = addquotes(ret);
                 }
                 else
@@ -2083,7 +2083,7 @@ DMSG("   %s\n",ret);
                     }
 
                     lockdev = Lock(string, SHARED_LOCK);
-                    FreeVec(string);
+                    free(string);
                     if (lockdev)
                     {
                         ret = DynNameFromLock(lockdev);
@@ -2092,7 +2092,7 @@ DMSG("   %s\n",ret);
                     if (ret)
                     {
                         current->parent->arg = addquotes(ret);
-                        FreeVec(ret);
+                        free(ret);
                     }
                     else
                     {
@@ -2137,7 +2137,7 @@ DMSG("   %s\n",ret);
                             /* Strip off quotes */
                             clip = strip_quotes(current->arg);
                             set_variable(usrproc->arglist[i], clip, 0);
-                            FreeVec(clip);
+                            free(clip);
                         }
                         else
                         {
@@ -2157,7 +2157,7 @@ DMSG("   %s\n",ret);
                 current->parent->intval = dummy->intval;
                 if (dummy->arg != NULL)
                 {
-                    current->parent->arg = StrDup(dummy->arg);
+                    current->parent->arg = strdup(dummy->arg);
                     outofmem(current->parent->arg);
                 }
                 break;
@@ -2169,7 +2169,7 @@ DMSG("   %s\n",ret);
                 if (current->parent->ignore == 0)
                 {
                     /* Read in strings */
-                    parameter = AllocVec(sizeof(struct ParameterList), MEMF_PUBLIC);
+                    parameter = malloc(sizeof(struct ParameterList));
                     outofmem(parameter);
                     collect_stringargs(current, level, parameter);
                     /* Store data in preferences */
@@ -2208,7 +2208,7 @@ DMSG("   %s\n",ret);
                 if (current->parent->ignore == 0)
                 {
                     /* Read in strings */
-                    parameter = AllocVec(sizeof(struct ParameterList), MEMF_PUBLIC);
+                    parameter = malloc(sizeof(struct ParameterList));
                     outofmem(parameter);
                     collect_stringargs(current, level, parameter);
                     /* Store data in preferences */
@@ -2350,7 +2350,7 @@ static char * string = NULL;
     {
         j++;
         i = 1;
-        callbackstring = ReAllocVec(callbackstring, MAXARGSIZE * j, MEMF_PUBLIC);
+        callbackstring = realloc(callbackstring, MAXARGSIZE * j);
         outofmem(callbackstring);
         globalstring += (callbackstring - string);
         string = callbackstring;
@@ -2370,7 +2370,7 @@ char *clip;
 
     /* Strip off quotes */
     slen = strlen(string);
-    clip = (char *)AllocVec(slen - 1, MEMF_PUBLIC);
+    clip = (char *)malloc(slen - 1);
     outofmem(clip);
     strncpy(clip, string+1, slen-2);
     clip[slen-2] = 0;
@@ -2395,7 +2395,7 @@ char * clip;
             /* Strip off quotes */
             clip = strip_quotes(argument->arg);
             i = atol(clip);
-            FreeVec(clip);
+            free(clip);
         }
         else
         {
@@ -2470,12 +2470,12 @@ int i;
                     dummy = get_var_arg(current->arg);
                     if (dummy != NULL)
                     {
-                        clip = StrDup(dummy);
+                        clip = strdup(dummy);
                         outofmem(clip);
                     }
                     else
                     {
-                        clip = AllocVec(MAXARGSIZE, MEMF_PUBLIC);
+                        clip = malloc(MAXARGSIZE);
                         outofmem(clip);
                         sprintf(clip, "%ld", get_var_int(current->arg));
                     }
@@ -2483,12 +2483,12 @@ int i;
             }
             else
             {
-                clip = AllocVec(MAXARGSIZE, MEMF_PUBLIC);
+                clip = malloc(MAXARGSIZE);
                 outofmem(clip);
                 sprintf(clip, "%ld", current->intval);
             }
             i = (string == NULL) ? 0 : strlen(string);
-            string = ReAllocVec(string, i + strlen(clip) + 2, MEMF_PUBLIC);
+            string = realloc(string, i + strlen(clip) + 2);
             outofmem(string);
             if (i == 0)
             {
@@ -2500,7 +2500,7 @@ int i;
                 string[i+1] = 0;
             }
             strcat(string, clip);
-            FreeVec(clip);
+            free(clip);
         }
         current = current->next;
     }
@@ -2520,9 +2520,9 @@ int j;
     {
         for (j = 0 ; j < pl.intval ; j++)
         {
-            FreeVec(pl.arg[j]);
+            free(pl.arg[j]);
         }
-        FreeVec(pl.arg);
+        free(pl.arg);
         pl.arg = NULL;
     }
 }
@@ -2541,7 +2541,7 @@ int i;
         {
             free_parameter(pl[i]);
         }
-        FreeVec(pl);
+        free(pl);
     }
 }
 
@@ -2559,7 +2559,7 @@ long int i;
 int cmd;
 char *string, *clip;
 
-    pl = AllocVec(NUMPARAMS * sizeof(struct ParameterList), MEMF_PUBLIC|MEMF_CLEAR);
+    pl = calloc(NUMPARAMS, sizeof(struct ParameterList));
     outofmem(pl);
     while (script != NULL)
     {
@@ -2637,7 +2637,7 @@ char *string, *clip;
                                             {
                                                 i = _EXPERT;
                                             }
-                                            FreeVec(string);
+                                            free(string);
                                         }
                                         else
                                         {
@@ -2675,7 +2675,7 @@ char *string, *clip;
                                             clip = get_var_arg(current->arg);
                                             if (clip != NULL)
                                             {
-                                                string = StrDup(clip);
+                                                string = strdup(clip);
                                                 outofmem(string);
                                             }
                                             else
@@ -2695,11 +2695,11 @@ char *string, *clip;
                                         /* take last (this) one as true and clear previous        */
                                         if (GetPL(pl, cmd).arg != NULL)
                                         {
-                                            FreeVec(GetPL(pl, cmd).arg[0]);
+                                            free(GetPL(pl, cmd).arg[0]);
                                         }
                                         else
                                         {
-                                            GetPL(pl, cmd).arg = AllocVec(sizeof(char *), MEMF_PUBLIC);
+                                            GetPL(pl, cmd).arg = malloc(sizeof(char *));
                                             outofmem(GetPL(pl, cmd).arg);
                                         }
                                         GetPL(pl, cmd).arg[0] = string;
@@ -2742,7 +2742,7 @@ char *string, *clip;
                                             /* Strip off quotes */
                                             string = strip_quotes(current->arg);
                                             i = atol(string);
-                                            FreeVec(string);
+                                            free(string);
                                         }
                                         else
                                         {
@@ -2849,7 +2849,7 @@ int j = 0;
     while (current != NULL)
     {
         ExecuteCommand();
-        mclip = ReAllocVec(mclip, sizeof(char *) * (j+1), MEMF_PUBLIC);
+        mclip = realloc(mclip, sizeof(char *) * (j+1));
         outofmem(mclip);
         if (current->arg != NULL)
         {
@@ -2863,28 +2863,28 @@ int j = 0;
                 clip = get_var_arg(current->arg);
                 if (clip != NULL)
                 {
-                    string = StrDup(clip);
+                    string = strdup(clip);
                     outofmem(string);
                 }
                 else
                 {
-                    clip = AllocVec(MAXARGSIZE, MEMF_PUBLIC);
+                    clip = malloc(MAXARGSIZE);
                     outofmem(clip);
                     sprintf(clip, "%ld", get_var_int(current->arg));
-                    string = StrDup(clip);
+                    string = strdup(clip);
                     outofmem(string);
-                    FreeVec(clip);
+                    free(clip);
                 }
             }
         }
         else
         {
-            clip = AllocVec(MAXARGSIZE, MEMF_PUBLIC);
+            clip = malloc(MAXARGSIZE);
             outofmem(clip);
             sprintf(clip, "%ld", current->intval);
-            string = StrDup(clip);
+            string = strdup(clip);
             outofmem(string);
-            FreeVec(clip);
+            free(clip);
         }
         mclip[j] = string;
         j++;
@@ -2914,7 +2914,7 @@ int i=0, cnt;
         return NULL;
     }
     Seek(file, -i, OFFSET_CURRENT);
-    out = AllocVec(i * sizeof(char), MEMF_PUBLIC);
+    out = malloc(i * sizeof(char));
     outofmem(out);
     Read(file, out, i);
     out[i-1] = 0;
@@ -2957,7 +2957,7 @@ int i, changed = 0, cont = 0;
                 Write(tmpuserstartup, line, strlen(line));
                 Write(tmpuserstartup, "\n", 1);
             }
-            FreeVec(line);
+            free(line);
         }
     }
 
@@ -2991,7 +2991,7 @@ int i, changed = 0, cont = 0;
                 Write(tmpuserstartup, line, strlen(line));
                 Write(tmpuserstartup, "\n", 1);
             }
-            FreeVec(line);
+            free(line);
         }
     }
 
@@ -3026,7 +3026,7 @@ int i, j;
 
         i = (msg != NULL) ? strlen(msg) : 0 ;
         j = (name != NULL) ? strlen(name) : 0 ;
-        outmsg = AllocVec(i + j + 1, MEMF_PUBLIC);
+        outmsg = malloc(i + j + 1);
         sprintf(outmsg, msg, name);
         display_text(outmsg);
 
@@ -3068,7 +3068,7 @@ char *DynNameFromLock(BPTR lock)
 
     for (size = 512 ; ; size += 512)
     {
-        dirName = AllocVec(size, MEMF_ANY);
+        dirName = malloc(size);
         if (dirName == NULL)
         {
             break;
@@ -3077,7 +3077,7 @@ char *DynNameFromLock(BPTR lock)
         {
             break;
         }
-        FreeVec(dirName);
+        free(dirName);
         dirName = NULL;
         if (IoErr() != ERROR_LINE_TOO_LONG)
         {
