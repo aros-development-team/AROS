@@ -560,9 +560,22 @@ namespace glstubgenerator
 			
 		}
 	}
-	
+
+	enum CallType
+	{
+		RegCall,
+		StackCall
+	}
+
 	class ConfFileWriter : ArosFileWriter
 	{
+		private CallType calltype;
+
+		public ConfFileWriter(CallType calltype)
+		{
+			this.calltype = calltype;
+		}
+
 		public override void Write (string path, FunctionList functions)
 		{
 			StreamWriter swConf = new StreamWriter(path, false);
@@ -577,16 +590,21 @@ namespace glstubgenerator
 						swConf.Write("{0} {1}, ", f.Arguments[i].Type, f.Arguments[i].Name);
 					swConf.Write("{0} {1}", f.Arguments[i].Type, f.Arguments[i].Name);
 				}
-				swConf.Write(") (");
 
-				if (f.Arguments.Count > 0)
+				if (calltype == CallType.RegCall)
 				{
-					int i = 0;
-					for (i = 0; i < f.Arguments.Count - 1; i++)
-						swConf.Write("{0}, ", f.Arguments[i].Register);
-					swConf.Write("{0}", f.Arguments[i].Register);
+					/* Extend with register specification */
+					swConf.Write(") (");
+
+					if (f.Arguments.Count > 0)
+					{
+						int i = 0;
+						for (i = 0; i < f.Arguments.Count - 1; i++)
+							swConf.Write("{0}, ", f.Arguments[i].Register);
+						swConf.Write("{0}", f.Arguments[i].Register);
+					}
 				}
-				
+
 				swConf.WriteLine(")");
 
 			}
@@ -759,7 +777,13 @@ namespace glstubgenerator
 	{
 		public static void Main(string[] args)
 		{
-			string PATH_TO_MESA = @"/data/deadwood/gitV0AROS/AROS/workbench/libs/mesa/";
+			string PATH_TO_MESA = @"/ssd/deadwood/repo-gitorious-aros/AROS/AROS/workbench/libs/mesa/";
+			string OUTPUT_PATH = @"/ssd/deadwood/temp/";
+			CallType eglCallType = CallType.StackCall;
+			CallType vgCallType = CallType.StackCall;
+			CallType gluCallType = CallType.StackCall;
+
+
 			GLApiTempParser apiParser = new GLApiTempParser();
 			FunctionNameDictionary implementedFunctions = 
 				apiParser.Parse(PATH_TO_MESA + @"/src/mapi/glapi/glapitemp.h");
@@ -812,22 +836,22 @@ namespace glstubgenerator
 			
 			
 			StubsFileWriter sfw = new StubsFileWriter(false, "Mesa", 35);
-			sfw.Write(@"/data/deadwood/temp/arosmesa_library_api.c", functionsfinal);
+			sfw.Write(OUTPUT_PATH + @"arosmesa_library_api.c", functionsfinal);
 			
-			ConfFileWriter cfw = new ConfFileWriter();
-			cfw.Write(@"/data/deadwood/temp/arosmesa.conf", functionsfinal);
+			ConfFileWriter cfw = new ConfFileWriter(CallType.RegCall);
+			cfw.Write(OUTPUT_PATH + @"arosmesa.conf", functionsfinal);
 			
 			MangleFileWriter glmfw = new MangleFileWriter();
-			glmfw.Write(@"/data/deadwood/temp/arosmesa_mangle.h", functionsfinal);
+			glmfw.Write(OUTPUT_PATH + @"/arosmesa_mangle.h", functionsfinal);
 
 			MangledHeaderFileWriter glmhfw = new MangledHeaderFileWriter();
-			glmhfw.Write(@"/data/deadwood/temp/arosmesaapim.h", functionsfinal);
+			glmhfw.Write(OUTPUT_PATH + @"arosmesaapim.h", functionsfinal);
 			
 			MangledImplementationFileWriter glmifw = new MangledImplementationFileWriter();
-			glmifw.Write(@"/data/deadwood/temp/hostgl_gl_api.c", functionsfinal);
+			glmifw.Write(OUTPUT_PATH + @"hostgl_gl_api.c", functionsfinal);
 
 			GLFUNCFileWriter glfuncfw = new GLFUNCFileWriter();
-			glfuncfw.Write(@"/data/deadwood/temp/gl_func.ch", functionsfinal);
+			glfuncfw.Write(OUTPUT_PATH + @"gl_func.ch", functionsfinal);
 			
 			/* EGL */
 			FunctionList functionseglh = p.Parse(PATH_TO_MESA + @"/include/EGL/egl.h", APIHeaderParser.EGLAPI, APIHeaderParser.EGLAPIENTRY);
@@ -846,17 +870,20 @@ namespace glstubgenerator
 			functionsfinal.CalculateRegisters();
 			functionsfinal.ReorderToMatch(orderedExistingFunctionsEGL);			
 
-			MangleFileWriter eglmfw = new MangleFileWriter();
-			eglmfw.Write(@"/data/deadwood/temp/egl_mangle.h", functionsfinal);
+			if (eglCallType == CallType.RegCall)
+			{
+				MangleFileWriter eglmfw = new MangleFileWriter();
+				eglmfw.Write(OUTPUT_PATH + @"egl_mangle.h", functionsfinal);
 
-			MangledHeaderFileWriter eglmhfw = new MangledHeaderFileWriter();
-			eglmhfw.Write(@"/data/deadwood/temp/eglapim.h", functionsfinal);
+				MangledHeaderFileWriter eglmhfw = new MangledHeaderFileWriter();
+				eglmhfw.Write(OUTPUT_PATH + @"eglapim.h", functionsfinal);
 
-			StubsFileWriter eglsfw = new StubsFileWriter(false, "EGL", 35);
-			eglsfw.Write(@"/data/deadwood/temp/egl_library_api.c", functionsfinal);
-			
-			ConfFileWriter eglcfw = new ConfFileWriter();
-			eglcfw.Write(@"/data/deadwood/temp/egl.conf", functionsfinal);
+				StubsFileWriter eglsfw = new StubsFileWriter(false, "EGL", 35);
+				eglsfw.Write(OUTPUT_PATH + @"egl_library_api.c", functionsfinal);
+			}
+
+			ConfFileWriter eglcfw = new ConfFileWriter(eglCallType);
+			eglcfw.Write(OUTPUT_PATH + @"egl.conf", functionsfinal);
 
 
 			/* VG */
@@ -868,7 +895,6 @@ namespace glstubgenerator
 			FunctionList functionsVG = new FunctionList();
 			functionsVG.AddRange(functionsopenvgh);
 			functionsVG.AddRange(functionsvguh);
-			functionsVG.RemoveFunctionByName("vguComputeWarpQuadToQuad"); /* Too many parameters */
 			
 			Console.WriteLine("After merging VG {0}", functionsVG.Count);
 			
@@ -876,20 +902,25 @@ namespace glstubgenerator
 			functionsfinal.AddRange(functionsVG);
 			
 			functionsfinal.CorrectionForArrayArguments();
-			functionsfinal.CalculateRegisters();
 			functionsfinal.ReorderToMatch(orderedExistingFunctionsVG);			
 
-			MangleFileWriter vgmfw = new MangleFileWriter();
-			vgmfw.Write(@"/data/deadwood/temp/vg_mangle.h", functionsfinal);
+			if (vgCallType == CallType.RegCall)
+			{
+				functionsVG.RemoveFunctionByName("vguComputeWarpQuadToQuad"); /* Too many parameters */
+				functionsfinal.CalculateRegisters();
 
-			MangledHeaderFileWriter vgmhfw = new MangledHeaderFileWriter();
-			vgmhfw.Write(@"/data/deadwood/temp/vgapim.h", functionsfinal);
+				MangleFileWriter vgmfw = new MangleFileWriter();
+				vgmfw.Write(OUTPUT_PATH + @"vg_mangle.h", functionsfinal);
 
-			StubsFileWriter vgsfw = new StubsFileWriter(false, "Vega", 35);
-			vgsfw.Write(@"/data/deadwood/temp/vega_library_api.c", functionsfinal);
-			
-			ConfFileWriter vgcfw = new ConfFileWriter();
-			vgcfw.Write(@"/data/deadwood/temp/vega.conf", functionsfinal);
+				MangledHeaderFileWriter vgmhfw = new MangledHeaderFileWriter();
+				vgmhfw.Write(OUTPUT_PATH + @"vgapim.h", functionsfinal);
+
+				StubsFileWriter vgsfw = new StubsFileWriter(false, "Vega", 35);
+				vgsfw.Write(OUTPUT_PATH + @"vega_library_api.c", functionsfinal);
+			}
+
+			ConfFileWriter vgcfw = new ConfFileWriter(vgCallType);
+			vgcfw.Write(OUTPUT_PATH + @"vega.conf", functionsfinal);
 
 
 			/* GLU */
@@ -899,7 +930,6 @@ namespace glstubgenerator
 			
 			FunctionList functionsGLU = new FunctionList();
 			functionsGLU.AddRange(functionsgluh);
-			functionsGLU.RemoveFunctionByName("gluUnProject4"); /* Too many parameters */
 			
 			Console.WriteLine("After merging GLU {0}", functionsGLU.Count);
 			
@@ -907,20 +937,25 @@ namespace glstubgenerator
 			functionsfinal.AddRange(functionsGLU);
 			
 			functionsfinal.CorrectionForArrayArguments();
-			functionsfinal.CalculateRegisters();
 			functionsfinal.ReorderToMatch(orderedExistingFunctionsGLU);			
 
-			MangleFileWriter glumfw = new MangleFileWriter();
-			glumfw.Write(@"/data/deadwood/temp/glu_mangle.h", functionsfinal);
+			if (gluCallType == CallType.RegCall)
+			{
+				functionsGLU.RemoveFunctionByName("gluUnProject4"); /* Too many parameters */
+				functionsfinal.CalculateRegisters();
 
-			MangledHeaderFileWriter glumhfw = new MangledHeaderFileWriter();
-			glumhfw.Write(@"/data/deadwood/temp/gluapim.h", functionsfinal);
+				MangleFileWriter glumfw = new MangleFileWriter();
+				glumfw.Write(OUTPUT_PATH + @"glu_mangle.h", functionsfinal);
 
-			StubsFileWriter glusfw = new StubsFileWriter(false, "GLU", 35);
-			glusfw.Write(@"/data/deadwood/temp/glu_library_api.c", functionsfinal);
+				MangledHeaderFileWriter glumhfw = new MangledHeaderFileWriter();
+				glumhfw.Write(OUTPUT_PATH + @"gluapim.h", functionsfinal);
+
+				StubsFileWriter glusfw = new StubsFileWriter(false, "GLU", 35);
+				glusfw.Write(OUTPUT_PATH + @"glu_library_api.c", functionsfinal);
+			}
 			
-			ConfFileWriter glucfw = new ConfFileWriter();
-			glucfw.Write(@"/data/deadwood/temp/glu.conf", functionsfinal);
+			ConfFileWriter glucfw = new ConfFileWriter(gluCallType);
+			glucfw.Write(OUTPUT_PATH + @"glu.conf", functionsfinal);
 
 		}
 	}
