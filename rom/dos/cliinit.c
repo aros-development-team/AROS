@@ -113,7 +113,7 @@ static LONG internalBootCliHandler(void);
 
     reply_mp = CreateMsgPort();
     seg = CreateSegList(internalBootCliHandler);
-    if (dp == NULL || reply_mp == NULL || seg == NULL) {
+    if (dp == NULL || reply_mp == NULL || seg == BNULL) {
         if (my_dp)
             FreeDosObject(DOS_STDPKT, my_dp);
         DeleteMsgPort(reply_mp);
