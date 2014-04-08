@@ -355,7 +355,6 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
 
     struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct DrawInfo *dri = GetScreenDrawInfo(win->WScreen);
-    BOOL    	     docursor = FALSE;
 
     SetFont(rp, dri->dri_Font);
 
