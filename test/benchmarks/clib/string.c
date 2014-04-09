@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,8 +9,11 @@
 int main() 
 {
     #define BUFSIZE 1000000UL
-    char src[BUFSIZE];
-    char dst[BUFSIZE];
+    char *src = malloc(BUFSIZE);
+    char *dst = malloc(BUFSIZE);
+
+    if (src == NULL || dst == NULL)
+        return 1;
     
     #define BENCHMARK(z, n, c) memcpy(dst, src, BUFSIZE);
     BENCHMARK_BUFFER(memcpy,1000, BUFSIZE);
