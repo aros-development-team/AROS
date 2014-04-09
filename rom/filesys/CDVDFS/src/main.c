@@ -51,6 +51,8 @@
 extern struct Library *SysBase, *DOSBase;
 #endif
 
+#undef DOSBase
+
 #define STD_BUFFERS 20
 
 #ifdef DEBUG_SECTORS
