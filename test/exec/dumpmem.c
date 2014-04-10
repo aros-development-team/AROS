@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011 The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014 The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Memory Dump util functions.
@@ -72,7 +72,7 @@ static int HexDump(const UBYTE *data, ULONG count)
     return RETURN_OK;
 } /* hexdump */
 
-static const char version[] = "$VER: dumpmem.c 45.0 (10.2.2004)\n";
+static const char version[] = "$VER: dumpmem 45.1 (10.4.2014)\n";
 
 #define ARG_TEMPLATE "ADDRESS/A,SIZE/N/A,SERIAL/S,QUIET/S"
 
@@ -141,7 +141,8 @@ int main(int argc, char **argv)
                     
                     printf( "\n" );
                     
-                    if ( ( strncmp( szInput, "n", 1) )||( strncmp( szInput, "N", 1) ) )
+                    if ( ( strncmp( szInput, "n", 1) == 0 )
+                        || ( strncmp( szInput, "N", 1) == 0 ) )
                     {
                         ERROR_TEXT = "User canceled..\n";
                         PROGRAM_ERROR = RETURN_FAIL;
