@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Demo showing gfx hidd
@@ -27,6 +27,8 @@ struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
 struct Library *LayersBase;
 struct DosLibrary *DOSBase;
+
+static BOOL quit = FALSE;
 
 struct Screen * openscreen(void);
 struct Window *openwindow(struct Screen *screen, const char *title, LONG x, LONG y, LONG w, LONG h);
@@ -87,7 +89,7 @@ int main(int argc, char **argv)
 			test_blttemplate(w1);
 */
 			test_linedrawing(w1, w2);
-			handleevents(w1, 0);
+/*			handleevents(w1, 0);*/
 
 #ifdef USE_TWO_WINDOWS		
 			CloseWindow(w2);
@@ -331,7 +333,7 @@ VOID test_linedrawing(struct Window *w1, struct Window *w2)
     
     innerwidth = W1_WIDTH - w1->BorderLeft - w1->BorderRight;
      
-    for (x = 0; x < innerwidth; x ++) {
+    for (x = 0; x < innerwidth && !quit; x ++) {
     	Move(rp, x + w1->BorderLeft, w1->BorderTop);
 	Draw(rp, w1->BorderLeft + innerwidth - x  - 1, W1_HEIGHT - w1->BorderBottom - 1);
 	
@@ -388,7 +390,7 @@ ULONG handleevents(struct Window *win, ULONG idcmp)
 	    	break;
 	    	
 	    case IDCMP_CLOSEWINDOW:
-	    	terminated = TRUE;
+	    	quit = terminated = TRUE;
 	    	break;
 		
 	    default:
