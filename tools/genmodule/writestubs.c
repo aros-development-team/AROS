@@ -151,6 +151,7 @@ static void writeheader(struct config *cfg, int is_rel, FILE *out)
         "#include <aros/cpu.h>\n"
         "#include <aros/genmodule.h>\n"
         "#include <aros/libcall.h>\n"
+        "#include <aros/symbolsets.h>\n"
         "\n"
     );
 }
@@ -272,6 +273,16 @@ static void writefuncstub(struct config *cfg, int is_rel, FILE *out, struct func
     }
     else /* libcall==STACK */
     {
+        /* Library version requirement added only for stack call functions
+         * since each function is in separate compilation unit. Reg call
+         * functions are all in one compilation unit. In such case highest
+         * version would alway be required even if function for that version
+         * is not used.
+         */
+        fprintf(out, "void __%s_%s_libreq(){ AROS_LIBREQ(%s,%d); }\n",
+                funclistit->name, cfg->libbase, cfg->libbase, funclistit->version
+        );
+
         fprintf(out, "AROS_GM_%sLIBFUNCSTUB(%s, %s, %d)\n",
                 is_rel ? "REL" : "",
                 funclistit->name, cfg->libbase, funclistit->lvo
