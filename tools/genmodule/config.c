@@ -326,6 +326,26 @@ struct config *initconfig(int argc, char **argv)
         }
     }
 
+    /* Provide default version for functions that didnt have it */
+    if (cfg->funclist) {
+        struct functionhead *funchead;
+        int defversion = cfg->majorversion; /* Assume library version is default */
+
+        for (funchead = cfg->funclist; funchead; funchead = funchead->next) {
+            if (funchead->version > -1) {
+                /* There was at least one .version tag. Assume 0 is default */
+                defversion = 0;
+                break;
+            }
+        }
+
+        for (funchead = cfg->funclist; funchead; funchead = funchead->next) {
+            if (funchead->version == -1) {
+                funchead->version = defversion;
+            }
+        }
+    }
+
     /* Verify that a handler has a handler */
     if (cfg->modtype == HANDLER) {
         if (cfg->handlerfunc == NULL) {
@@ -1431,7 +1451,7 @@ static void readsectionfunctionlist(const char *type, struct functionhead **func
     int atend = 0, i;
     char *line, *s, *s2;
     unsigned int lvo = firstlvo;
-    int minversion = 0;
+    int minversion = -1;
 
     while (!atend)
     {
