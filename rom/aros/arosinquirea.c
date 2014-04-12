@@ -201,21 +201,24 @@ IPTR kickbase(void);
             SetData (tag, IPTR, (IPTR)__DATE__);
             break;
 
-#ifdef VARIANT
-	/*
-	 * Reserved for distribution maintainers.
-	 * DO NOT set this to configure-time variant name. That name is used to identify
-	 * sub-architecture name, and changing it may break compatibility between
-	 * different AROS modules, especially on hosted. Full complete platform name
-	 * (including variant, if appropriate) is available via KATTR_Architecture
-	 * kernel's attribute.
-	 * Add one more configure option, or, better, provide some another way
-	 * (env variable, whatever).
-	 */
+        /*
+         * Reserved for distribution maintainers.
+         * DO NOT set this to configure-time variant name. That name is used to identify
+         * sub-architecture name, and changing it may break compatibility between
+         * different AROS modules, especially on hosted. Full complete platform name
+         * (including variant, if appropriate) is available via KATTR_Architecture
+         * kernel's attribute.
+         * Add one more configure option, or, better, provide some another way
+         * (env variable, whatever).
+         */
         case AI_ArosVariant:
+#ifdef VARIANT
             SetData (tag, IPTR, (IPTR) VARIANT);
-            break;
+#else
+            SetData (tag, IPTR, (IPTR) NULL);
 #endif
+            break;
+
 
         case AI_ArosABIMajor:
             SetData (tag, IPTR, AROS_ABI_VERSION_MAJOR);
