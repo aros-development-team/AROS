@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -51,13 +51,12 @@
     BOOL    success               = FALSE;
     LONG    defaultType           = -1;
     STRPTR  defaultName           = NULL;
+    LONG error = 0;
     LONG   *errorCode             = NULL;
     
     BOOL    notifyWorkbench       = FALSE;
     BOOL    onlyUpdatePosition    = FALSE;
     
-#   define SET_ERRORCODE(value) (errorCode != NULL ? *errorCode = (value) : (value))
-
     /* Check input parameters ----------------------------------------------*/
     D(bug("[%s] Icon %p\n", __func__, icon));
     if (icon == NULL) return FALSE;
@@ -81,7 +80,6 @@
             
             case ICONA_ErrorCode:
                 errorCode = (LONG *) tag->ti_Data;
-                SET_ERRORCODE(0);
                 break;
             
             case ICONPUTA_NotifyWorkbench:
@@ -108,6 +106,8 @@
                 ICONPUTA_PutDefaultName, (IPTR) defaultIconName,
                 TAG_MORE,                (IPTR) tags
             );
+            if (!success)
+                error = IoErr();
         }
     }
     else if (defaultName != NULL)
@@ -117,6 +117,8 @@
         if (file != BNULL)
         {
             success = WriteIcon(file, icon, tags);
+            if (!success)
+                error = IoErr();
             CloseDefaultIcon(file);
         }
     }
@@ -126,6 +128,8 @@
         if (file != BNULL)
         {
             success = WriteIcon(file, icon, tags);
+            if (!success)
+                error = IoErr();
             CloseIcon(file);
         }
     }
@@ -146,10 +150,11 @@
         }
     }
 
+    SetIoErr(error);
+    if (errorCode != NULL)
+        *errorCode = error;
     return success;
 
-#   undef SET_ERRORCODE
-    
     AROS_LIBFUNC_EXIT
 } /* PutIconTagList() */
 

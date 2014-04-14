@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Miscellaneous support functions.
@@ -328,6 +328,7 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
     struct NativeIcon *ni;
     struct DiskObject *itmp, *oldicon = NULL;
     BOOL success;
+    LONG error = 0;
 
     D(bug("[%s] icon=%p\n", __func__, icon));
 
@@ -403,12 +404,15 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
     	D(bug("[%s] Write as AOS 3.5\n", __func__));
     	success = WriteStruct(&(LB(IconBase)->dsh), (APTR) itmp, (APTR) file, IconDesc);
     }
+    if (!success)
+        error = IoErr();
 
     if (oldicon)
         FreeDiskObject(oldicon);
 
     FreeDiskObject(itmp);
 
+    SetIoErr(error);
     return success;
 }
 
