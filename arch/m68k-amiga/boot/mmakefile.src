@@ -82,7 +82,9 @@ Q ?= @
 #MM     workbench-libs-nvdisk-kobj \
 #MM     workbench-libs-workbench-kobj \
 #MM     linklibs-loadseg \
-#MM     linklibs-stdc-static
+#MM     compiler-stdc \
+#MM     compiler-stdcio \
+#MM     compiler-posixc
 
 #MM- kernel-workbench-devs-amiga-m68k : workbench-devs-amiga-m68k
 
