@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -20,14 +20,14 @@
 
 /*  FUNCTION
 	Tries to open the supplied info file via GetDiskObject(). If this
-	not succeeds it will try to read the default info file for
+	does not succeed it will try to read the default info file for
 	that type of file.
 
     INPUTS
 	name - name of the file to read an icon for.
 
     RESULT
-	DiskObject - pointer ta diskobject struct.
+	DiskObject - pointer to diskobject struct.
 
     NOTES
 
