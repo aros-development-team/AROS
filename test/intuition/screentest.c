@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Screen opening test
@@ -44,7 +44,7 @@ ULONG handleevents(struct Window *win, struct Screen *screen, WORD x, WORD y);
 #define W1_LEFT		100
 #define W1_TOP		100
 #define W1_WIDTH	350
-#define W1_HEIGHT	220
+#define W1_HEIGHT	210
 
 WORD drawtext(struct Window *win, WORD x, WORD y, char *fmt, ...)
 {
@@ -190,8 +190,8 @@ struct Window *openwindow(struct Screen *screen, const char *title, LONG x, LONG
 			  WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_INTUITICKS,
 			  WA_Left,	x,
 			  WA_Top,	y,
-                          WA_Width, 	w,
-                          WA_Height, 	h,
+                          WA_InnerWidth, 	w,
+                          WA_InnerHeight, 	h,
 			  WA_CustomScreen, screen,
 			  WA_Activate,		TRUE,
 			  WA_DepthGadget, 	TRUE,
@@ -234,7 +234,8 @@ ULONG handleevents(struct Window *win, struct Screen *screen, WORD x, WORD y)
 		y1 = drawtext(win, x, y1, "ViewPort position: (%d, %d)               ", screen->ViewPort.DxOffset, screen->ViewPort.DyOffset);
 		y1 = drawtext(win, x, y1, "RasInfo position: (%d, %d)               ", screen->ViewPort.RasInfo->RxOffset, screen->ViewPort.RasInfo->RyOffset);
 		y1 = drawtext(win, x, y1, "Window position: (%d, %d)               ", win->LeftEdge, win->TopEdge);
-		drawtext(win, x, y1, "Window mouse position: (%d, %d)               ", win->MouseY, win->MouseX);
+		drawtext(win, x, y1, "Window mouse position: (%d, %d)       ",
+                    win->MouseX, win->MouseY);
 		break;
 
 	    } /* switch (imsg->Class) */
