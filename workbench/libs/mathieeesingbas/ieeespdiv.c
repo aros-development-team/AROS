@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -95,6 +95,8 @@
     /* normalize the mantisse */
     while (Res > 0)
     {
+        if (Res >= 0x40000000)
+            Res = Res - 0x80000000;
         Res += Res;
         Exponent -=0x00800000;
     }
