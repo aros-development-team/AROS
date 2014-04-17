@@ -2590,10 +2590,10 @@ static void SetActiveObject(struct MUI_WindowData *data, Object *obj,
         {
             old_activenode =
                 FindObjNode(&data->wd_CycleChain, data->wd_ActiveObject);
-            //if (_flags(data->wd_ActiveObject) & MADF_CANDRAW)
-            if (data->wd_Flags & MUIWF_OBJECTGOACTIVESENT)
+            if ((data->wd_Flags & MUIWF_OBJECTGOACTIVESENT)
+                && (_flags(data->wd_ActiveObject) & MADF_SETUP))
             {
-                D(bug("Inactivate=%p\n", data->wd_ActiveObject));
+                D(bug("Deactivate=%p\n", data->wd_ActiveObject));
                 DoMethod(data->wd_ActiveObject, MUIM_GoInactive);
             }
         }
