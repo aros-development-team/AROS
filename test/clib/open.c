@@ -32,7 +32,7 @@ int main()
     f2filedesc[0] = open(FIFO2, O_RDONLY);
 
     TEST((f2filedesc[1] >= 0));
-    TEST((f2filedesc[0] >= 0)); /* This is currently failing under AROS posixc.library */
+    TEST((f2filedesc[0] >= 0));
 
     cleanup();
 
