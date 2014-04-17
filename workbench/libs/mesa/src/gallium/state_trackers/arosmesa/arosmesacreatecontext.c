@@ -197,7 +197,7 @@
     return amesa;
 
 error_out:
-    if (amesa->stmanager) AROSMesaDestroyStManager(amesa->stmanager);
-    if (amesa) AROSMesaDestroyContext(amesa);
+    if (amesa->stmanager) AROSMesaFreeStManager(amesa->stmanager);
+    if (amesa) AROSMesaFreeContext(amesa);
     return NULL;
 }

@@ -210,7 +210,7 @@ VOID AROSMesaRecalculateBufferWidthHeight(AROSMesaContext amesa)
     }
 }
 
-VOID AROSMesaDestroyContext(AROSMesaContext amesa)
+VOID AROSMesaFreeContext(AROSMesaContext amesa)
 {
     if (amesa)
     {

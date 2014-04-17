@@ -60,10 +60,10 @@
             }
 
             amesa->st->destroy(amesa->st);
-            AROSMesaDestroyFrameBuffer(amesa->framebuffer);
-            AROSMesaDestroyStManager(amesa->stmanager);
+            AROSMesaFreeFrameBuffer(amesa->framebuffer);
+            AROSMesaFreeStManager(amesa->stmanager);
             glstapi->destroy(glstapi);
-            AROSMesaDestroyContext(amesa);
+            AROSMesaFreeContext(amesa);
         }
     }
     
