@@ -94,12 +94,6 @@ _GLAPI_EXPORT extern const void *_glapi_Context;
 
 #elif defined(__AROS__)
 
-#if !defined(AROSMESA_NO_MANGLING)
-#include <GL/gl.h>
-#include "arosmesa/arosmesaapim.h"
-#include "arosmesa/arosmesa_mangle.h"
-#endif
-
 #define GET_DISPATCH() _glapi_get_dispatch()
 #define GET_CURRENT_CONTEXT(C)  struct gl_context *C = (struct gl_context *) _glapi_get_context()
 
