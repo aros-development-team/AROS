@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -31,13 +31,13 @@
           overflow : result is out of range
 
     BUGS
-        The parameters are swapped !
+        The parameters are swapped!
 
     INTERNALS
         ALGORITHM:
         Check if fnum2 == 0: result = 0;
         Check if fnum1 == 0: result = overflow;
-        The further algorithm comes down to a pen &amp; paper division
+        The further algorithm comes down to a pen & paper division
 
 *****************************************************************************/
 {
@@ -94,6 +94,8 @@
     /* normalize the mantisse */
     while (Res > 0)
     {
+        if (Res >= 0x40000000)
+            Res = Res - 0x80000000;
         Res += Res;
         Exponent --;
     }
