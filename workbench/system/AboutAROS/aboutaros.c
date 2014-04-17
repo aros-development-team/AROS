@@ -186,9 +186,9 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                           *acknowledgementsList;
 
     STRPTR                 pages[4]       = { NULL };
-    STRPTR                 str_builddate;
-    STRPTR                 str_variant;
-    STRPTR                 str_arosarch;
+    STRPTR                 str_builddate  = NULL;
+    STRPTR                 str_variant    = NULL;
+    STRPTR                 str_arosarch   = NULL;
     STRPTR                 str_buildtype;
     IPTR                   abiversion;
     STRPTR                 str_abi;
