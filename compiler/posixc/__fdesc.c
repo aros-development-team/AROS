@@ -158,7 +158,7 @@ LONG __oflags2amode(int flags)
     if (flags & O_RDWR)     openmode = MODE_OLDFILE;
     if (flags & O_READ)     openmode = MODE_OLDFILE;
     if (flags & O_WRITE)    openmode = MODE_READWRITE;
-    if (flags & O_CREAT)    openmode = MODE_NEWFILE;
+    if (flags & O_CREAT)    /* Handled later */;
     if (flags & O_APPEND)   /* Handled later */;
     if (flags & O_TRUNC)    /* Handled later */;
     if (flags & O_EXEC)     /* Ignored */;
@@ -292,8 +292,20 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 
     if (lock)
     {
-	UnLock(lock);
-	lock = BNULL;
+        UnLock(lock);
+        lock = BNULL;
+    }
+    else
+    {
+        /* Handle O_CREAT (creates the file only if it does not exit) */
+        if (flags & O_CREAT)
+        {
+            BPTR tmp = Open((char *)pathname, MODE_NEWFILE);
+            if (tmp != BNULL) Close(tmp);
+            /* File is closed as O_CREAT does not define access
+             * mode. This is handled by R/W modes.
+             */
+        }
     }
 
     if (!(fh = Open ((char *)pathname, openmode)) )
