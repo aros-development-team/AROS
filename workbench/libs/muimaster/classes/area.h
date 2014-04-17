@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002 - 2012, The AROS Development Team.
+    Copyright © 2002 - 2014, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -245,7 +245,7 @@ struct MUIP_GoActive
     STACKED ULONG MethodID;
 };
 
-struct MUIP_GoInacrive
+struct MUIP_GoInactive
 {
     STACKED ULONG MethodID;
 };
