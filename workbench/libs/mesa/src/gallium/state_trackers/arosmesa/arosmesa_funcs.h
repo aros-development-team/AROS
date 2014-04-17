@@ -11,5 +11,5 @@
 VOID AROSMesaSelectRastPort(AROSMesaContext amesa, struct TagItem * tagList);
 BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList);
 VOID AROSMesaRecalculateBufferWidthHeight(AROSMesaContext amesa);
-VOID AROSMesaDestroyContext(AROSMesaContext amesa);
+VOID AROSMesaFreeContext(AROSMesaContext amesa);
 #endif

@@ -236,7 +236,7 @@ struct arosmesa_framebuffer * AROSMesaNewFrameBuffer(AROSMesaContext amesa, stru
     return framebuffer;
 }
 
-VOID AROSMesaDestroyFrameBuffer(struct arosmesa_framebuffer * framebuffer)
+VOID AROSMesaFreeFrameBuffer(struct arosmesa_framebuffer * framebuffer)
 {
     if (framebuffer)
     {
@@ -279,7 +279,7 @@ struct st_manager * AROSMesaNewStManager(struct pipe_screen * pscreen)
     return stmanager;
 }
 
-VOID AROSMesaDestroyStManager(struct st_manager * stmanager)
+VOID AROSMesaFreeStManager(struct st_manager * stmanager)
 {
     if (stmanager)
     {
