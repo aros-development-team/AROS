@@ -105,6 +105,10 @@
         (struct StdCIntBase *)__aros_getbase_StdCBase();
     D(bug("[__stdc_program_end]\n"));
 
+    struct ETask *etask = GetETask(FindTask(NULL));
+    if (etask)
+        etask->et_Result1 = *StdCBase->startup_errorptr;
+
     if (!(StdCBase->flags & ABNORMAL_EXIT))
         __callexitfuncs();
 }
