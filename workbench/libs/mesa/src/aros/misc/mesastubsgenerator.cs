@@ -525,12 +525,12 @@ namespace glstubgenerator
 				}
 				if (!f.ReturnsVoid())
 				{
-					swStubs.Write("    {0} _return = m{1}(", f.ReturnType, f.Name);
+					swStubs.Write("    {0} _return = {1}(", f.ReturnType, f.Name);
 				}
 				else
 				{
 					
-					swStubs.Write("    m{0}(", f.Name);
+					swStubs.Write("    {0}(", f.Name);
 				}
 				if (f.Arguments.Count > 0)
 				{
@@ -841,12 +841,6 @@ namespace glstubgenerator
 			ConfFileWriter cfw = new ConfFileWriter(CallType.RegCall);
 			cfw.Write(OUTPUT_PATH + @"arosmesa.conf", functionsfinal);
 			
-			MangleFileWriter glmfw = new MangleFileWriter();
-			glmfw.Write(OUTPUT_PATH + @"/arosmesa_mangle.h", functionsfinal);
-
-			MangledHeaderFileWriter glmhfw = new MangledHeaderFileWriter();
-			glmhfw.Write(OUTPUT_PATH + @"arosmesaapim.h", functionsfinal);
-			
 			MangledImplementationFileWriter glmifw = new MangledImplementationFileWriter();
 			glmifw.Write(OUTPUT_PATH + @"hostgl_gl_api.c", functionsfinal);
 
@@ -872,12 +866,6 @@ namespace glstubgenerator
 
 			if (eglCallType == CallType.RegCall)
 			{
-				MangleFileWriter eglmfw = new MangleFileWriter();
-				eglmfw.Write(OUTPUT_PATH + @"egl_mangle.h", functionsfinal);
-
-				MangledHeaderFileWriter eglmhfw = new MangledHeaderFileWriter();
-				eglmhfw.Write(OUTPUT_PATH + @"eglapim.h", functionsfinal);
-
 				StubsFileWriter eglsfw = new StubsFileWriter(false, "EGL", 35);
 				eglsfw.Write(OUTPUT_PATH + @"egl_library_api.c", functionsfinal);
 			}
@@ -909,12 +897,6 @@ namespace glstubgenerator
 				functionsVG.RemoveFunctionByName("vguComputeWarpQuadToQuad"); /* Too many parameters */
 				functionsfinal.CalculateRegisters();
 
-				MangleFileWriter vgmfw = new MangleFileWriter();
-				vgmfw.Write(OUTPUT_PATH + @"vg_mangle.h", functionsfinal);
-
-				MangledHeaderFileWriter vgmhfw = new MangledHeaderFileWriter();
-				vgmhfw.Write(OUTPUT_PATH + @"vgapim.h", functionsfinal);
-
 				StubsFileWriter vgsfw = new StubsFileWriter(false, "Vega", 35);
 				vgsfw.Write(OUTPUT_PATH + @"vega_library_api.c", functionsfinal);
 			}
@@ -943,12 +925,6 @@ namespace glstubgenerator
 			{
 				functionsGLU.RemoveFunctionByName("gluUnProject4"); /* Too many parameters */
 				functionsfinal.CalculateRegisters();
-
-				MangleFileWriter glumfw = new MangleFileWriter();
-				glumfw.Write(OUTPUT_PATH + @"glu_mangle.h", functionsfinal);
-
-				MangledHeaderFileWriter glumhfw = new MangledHeaderFileWriter();
-				glumhfw.Write(OUTPUT_PATH + @"gluapim.h", functionsfinal);
 
 				StubsFileWriter glusfw = new StubsFileWriter(false, "GLU", 35);
 				glusfw.Write(OUTPUT_PATH + @"glu_library_api.c", functionsfinal);

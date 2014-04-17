@@ -4,7 +4,6 @@
 */
 
 #define GL_GLEXT_PROTOTYPES
-#define AROSMESA_NO_MANGLING
 #include <GL/arosmesa.h>
 #include "glapi/glapi.h"
 #define NEED_FUNCTION_POINTER

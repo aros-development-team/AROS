@@ -7,9 +7,8 @@
 
 #include <GL/gl.h>
 #include <GL/glext.h>
-#include "arosmesaapim.h"
-#include "arosmesa_intern.h"
-
+#include <exec/libraries.h>
+#include <aros/libcall.h>
 
 AROS_LH1(void, glClearIndex,
     AROS_LHA(GLfloat, c, D0),
@@ -17,7 +16,7 @@ AROS_LH1(void, glClearIndex,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearIndex(c);
+    glClearIndex(c);
 
     AROS_LIBFUNC_EXIT
 }
@@ -31,7 +30,7 @@ AROS_LH4(void, glClearColor,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearColor(red, green, blue, alpha);
+    glClearColor(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -42,7 +41,7 @@ AROS_LH1(void, glClear,
 {
     AROS_LIBFUNC_INIT
 
-    mglClear(mask);
+    glClear(mask);
 
     AROS_LIBFUNC_EXIT
 }
@@ -53,7 +52,7 @@ AROS_LH1(void, glIndexMask,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexMask(mask);
+    glIndexMask(mask);
 
     AROS_LIBFUNC_EXIT
 }
@@ -67,7 +66,7 @@ AROS_LH4(void, glColorMask,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorMask(red, green, blue, alpha);
+    glColorMask(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -79,7 +78,7 @@ AROS_LH2(void, glAlphaFunc,
 {
     AROS_LIBFUNC_INIT
 
-    mglAlphaFunc(func, ref);
+    glAlphaFunc(func, ref);
 
     AROS_LIBFUNC_EXIT
 }
@@ -91,7 +90,7 @@ AROS_LH2(void, glBlendFunc,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendFunc(sfactor, dfactor);
+    glBlendFunc(sfactor, dfactor);
 
     AROS_LIBFUNC_EXIT
 }
@@ -102,7 +101,7 @@ AROS_LH1(void, glLogicOp,
 {
     AROS_LIBFUNC_INIT
 
-    mglLogicOp(opcode);
+    glLogicOp(opcode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -113,7 +112,7 @@ AROS_LH1(void, glCullFace,
 {
     AROS_LIBFUNC_INIT
 
-    mglCullFace(mode);
+    glCullFace(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -124,7 +123,7 @@ AROS_LH1(void, glFrontFace,
 {
     AROS_LIBFUNC_INIT
 
-    mglFrontFace(mode);
+    glFrontFace(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -135,7 +134,7 @@ AROS_LH1(void, glPointSize,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointSize(size);
+    glPointSize(size);
 
     AROS_LIBFUNC_EXIT
 }
@@ -146,7 +145,7 @@ AROS_LH1(void, glLineWidth,
 {
     AROS_LIBFUNC_INIT
 
-    mglLineWidth(width);
+    glLineWidth(width);
 
     AROS_LIBFUNC_EXIT
 }
@@ -158,7 +157,7 @@ AROS_LH2(void, glLineStipple,
 {
     AROS_LIBFUNC_INIT
 
-    mglLineStipple(factor, pattern);
+    glLineStipple(factor, pattern);
 
     AROS_LIBFUNC_EXIT
 }
@@ -170,7 +169,7 @@ AROS_LH2(void, glPolygonMode,
 {
     AROS_LIBFUNC_INIT
 
-    mglPolygonMode(face, mode);
+    glPolygonMode(face, mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -182,7 +181,7 @@ AROS_LH2(void, glPolygonOffset,
 {
     AROS_LIBFUNC_INIT
 
-    mglPolygonOffset(factor, units);
+    glPolygonOffset(factor, units);
 
     AROS_LIBFUNC_EXIT
 }
@@ -193,7 +192,7 @@ AROS_LH1(void, glPolygonStipple,
 {
     AROS_LIBFUNC_INIT
 
-    mglPolygonStipple(mask);
+    glPolygonStipple(mask);
 
     AROS_LIBFUNC_EXIT
 }
@@ -204,7 +203,7 @@ AROS_LH1(void, glGetPolygonStipple,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetPolygonStipple(mask);
+    glGetPolygonStipple(mask);
 
     AROS_LIBFUNC_EXIT
 }
@@ -215,7 +214,7 @@ AROS_LH1(void, glEdgeFlag,
 {
     AROS_LIBFUNC_INIT
 
-    mglEdgeFlag(flag);
+    glEdgeFlag(flag);
 
     AROS_LIBFUNC_EXIT
 }
@@ -226,7 +225,7 @@ AROS_LH1(void, glEdgeFlagv,
 {
     AROS_LIBFUNC_INIT
 
-    mglEdgeFlagv(flag);
+    glEdgeFlagv(flag);
 
     AROS_LIBFUNC_EXIT
 }
@@ -240,7 +239,7 @@ AROS_LH4(void, glScissor,
 {
     AROS_LIBFUNC_INIT
 
-    mglScissor(x, y, width, height);
+    glScissor(x, y, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -252,7 +251,7 @@ AROS_LH2(void, glClipPlane,
 {
     AROS_LIBFUNC_INIT
 
-    mglClipPlane(plane, equation);
+    glClipPlane(plane, equation);
 
     AROS_LIBFUNC_EXIT
 }
@@ -264,7 +263,7 @@ AROS_LH2(void, glGetClipPlane,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetClipPlane(plane, equation);
+    glGetClipPlane(plane, equation);
 
     AROS_LIBFUNC_EXIT
 }
@@ -275,7 +274,7 @@ AROS_LH1(void, glDrawBuffer,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawBuffer(mode);
+    glDrawBuffer(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -286,7 +285,7 @@ AROS_LH1(void, glReadBuffer,
 {
     AROS_LIBFUNC_INIT
 
-    mglReadBuffer(mode);
+    glReadBuffer(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -297,7 +296,7 @@ AROS_LH1(void, glEnable,
 {
     AROS_LIBFUNC_INIT
 
-    mglEnable(cap);
+    glEnable(cap);
 
     AROS_LIBFUNC_EXIT
 }
@@ -308,7 +307,7 @@ AROS_LH1(void, glDisable,
 {
     AROS_LIBFUNC_INIT
 
-    mglDisable(cap);
+    glDisable(cap);
 
     AROS_LIBFUNC_EXIT
 }
@@ -319,7 +318,7 @@ AROS_LH1(GLboolean, glIsEnabled,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsEnabled(cap);
+    GLboolean _return = glIsEnabled(cap);
 
     return _return;
 
@@ -332,7 +331,7 @@ AROS_LH1(void, glEnableClientState,
 {
     AROS_LIBFUNC_INIT
 
-    mglEnableClientState(cap);
+    glEnableClientState(cap);
 
     AROS_LIBFUNC_EXIT
 }
@@ -343,7 +342,7 @@ AROS_LH1(void, glDisableClientState,
 {
     AROS_LIBFUNC_INIT
 
-    mglDisableClientState(cap);
+    glDisableClientState(cap);
 
     AROS_LIBFUNC_EXIT
 }
@@ -355,7 +354,7 @@ AROS_LH2(void, glGetBooleanv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetBooleanv(pname, params);
+    glGetBooleanv(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -367,7 +366,7 @@ AROS_LH2(void, glGetDoublev,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetDoublev(pname, params);
+    glGetDoublev(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -379,7 +378,7 @@ AROS_LH2(void, glGetFloatv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetFloatv(pname, params);
+    glGetFloatv(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -391,7 +390,7 @@ AROS_LH2(void, glGetIntegerv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetIntegerv(pname, params);
+    glGetIntegerv(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -402,7 +401,7 @@ AROS_LH1(void, glPushAttrib,
 {
     AROS_LIBFUNC_INIT
 
-    mglPushAttrib(mask);
+    glPushAttrib(mask);
 
     AROS_LIBFUNC_EXIT
 }
@@ -412,7 +411,7 @@ AROS_LH0(void, glPopAttrib,
 {
     AROS_LIBFUNC_INIT
 
-    mglPopAttrib();
+    glPopAttrib();
 
     AROS_LIBFUNC_EXIT
 }
@@ -423,7 +422,7 @@ AROS_LH1(void, glPushClientAttrib,
 {
     AROS_LIBFUNC_INIT
 
-    mglPushClientAttrib(mask);
+    glPushClientAttrib(mask);
 
     AROS_LIBFUNC_EXIT
 }
@@ -433,7 +432,7 @@ AROS_LH0(void, glPopClientAttrib,
 {
     AROS_LIBFUNC_INIT
 
-    mglPopClientAttrib();
+    glPopClientAttrib();
 
     AROS_LIBFUNC_EXIT
 }
@@ -444,7 +443,7 @@ AROS_LH1(GLint, glRenderMode,
 {
     AROS_LIBFUNC_INIT
 
-    GLint _return = mglRenderMode(mode);
+    GLint _return = glRenderMode(mode);
 
     return _return;
 
@@ -456,7 +455,7 @@ AROS_LH0(GLenum, glGetError,
 {
     AROS_LIBFUNC_INIT
 
-    GLenum _return = mglGetError();
+    GLenum _return = glGetError();
 
     return _return;
 
@@ -469,7 +468,7 @@ AROS_LH1(const GLubyte *, glGetString,
 {
     AROS_LIBFUNC_INIT
 
-    const GLubyte * _return = mglGetString(name);
+    const GLubyte * _return = glGetString(name);
 
     return _return;
 
@@ -481,7 +480,7 @@ AROS_LH0(void, glFinish,
 {
     AROS_LIBFUNC_INIT
 
-    mglFinish();
+    glFinish();
 
     AROS_LIBFUNC_EXIT
 }
@@ -491,7 +490,7 @@ AROS_LH0(void, glFlush,
 {
     AROS_LIBFUNC_INIT
 
-    mglFlush();
+    glFlush();
 
     AROS_LIBFUNC_EXIT
 }
@@ -503,7 +502,7 @@ AROS_LH2(void, glHint,
 {
     AROS_LIBFUNC_INIT
 
-    mglHint(target, mode);
+    glHint(target, mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -514,7 +513,7 @@ AROS_LH1(void, glClearDepth,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearDepth(depth);
+    glClearDepth(depth);
 
     AROS_LIBFUNC_EXIT
 }
@@ -525,7 +524,7 @@ AROS_LH1(void, glDepthFunc,
 {
     AROS_LIBFUNC_INIT
 
-    mglDepthFunc(func);
+    glDepthFunc(func);
 
     AROS_LIBFUNC_EXIT
 }
@@ -536,7 +535,7 @@ AROS_LH1(void, glDepthMask,
 {
     AROS_LIBFUNC_INIT
 
-    mglDepthMask(flag);
+    glDepthMask(flag);
 
     AROS_LIBFUNC_EXIT
 }
@@ -548,7 +547,7 @@ AROS_LH2(void, glDepthRange,
 {
     AROS_LIBFUNC_INIT
 
-    mglDepthRange(near_val, far_val);
+    glDepthRange(near_val, far_val);
 
     AROS_LIBFUNC_EXIT
 }
@@ -562,7 +561,7 @@ AROS_LH4(void, glClearAccum,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearAccum(red, green, blue, alpha);
+    glClearAccum(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -574,7 +573,7 @@ AROS_LH2(void, glAccum,
 {
     AROS_LIBFUNC_INIT
 
-    mglAccum(op, value);
+    glAccum(op, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -585,7 +584,7 @@ AROS_LH1(void, glMatrixMode,
 {
     AROS_LIBFUNC_INIT
 
-    mglMatrixMode(mode);
+    glMatrixMode(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -601,7 +600,7 @@ AROS_LH6(void, glOrtho,
 {
     AROS_LIBFUNC_INIT
 
-    mglOrtho(left, right, bottom, top, near_val, far_val);
+    glOrtho(left, right, bottom, top, near_val, far_val);
 
     AROS_LIBFUNC_EXIT
 }
@@ -617,7 +616,7 @@ AROS_LH6(void, glFrustum,
 {
     AROS_LIBFUNC_INIT
 
-    mglFrustum(left, right, bottom, top, near_val, far_val);
+    glFrustum(left, right, bottom, top, near_val, far_val);
 
     AROS_LIBFUNC_EXIT
 }
@@ -631,7 +630,7 @@ AROS_LH4(void, glViewport,
 {
     AROS_LIBFUNC_INIT
 
-    mglViewport(x, y, width, height);
+    glViewport(x, y, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -641,7 +640,7 @@ AROS_LH0(void, glPushMatrix,
 {
     AROS_LIBFUNC_INIT
 
-    mglPushMatrix();
+    glPushMatrix();
 
     AROS_LIBFUNC_EXIT
 }
@@ -651,7 +650,7 @@ AROS_LH0(void, glPopMatrix,
 {
     AROS_LIBFUNC_INIT
 
-    mglPopMatrix();
+    glPopMatrix();
 
     AROS_LIBFUNC_EXIT
 }
@@ -661,7 +660,7 @@ AROS_LH0(void, glLoadIdentity,
 {
     AROS_LIBFUNC_INIT
 
-    mglLoadIdentity();
+    glLoadIdentity();
 
     AROS_LIBFUNC_EXIT
 }
@@ -672,7 +671,7 @@ AROS_LH1(void, glLoadMatrixd,
 {
     AROS_LIBFUNC_INIT
 
-    mglLoadMatrixd(m);
+    glLoadMatrixd(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -683,7 +682,7 @@ AROS_LH1(void, glLoadMatrixf,
 {
     AROS_LIBFUNC_INIT
 
-    mglLoadMatrixf(m);
+    glLoadMatrixf(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -694,7 +693,7 @@ AROS_LH1(void, glMultMatrixd,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultMatrixd(m);
+    glMultMatrixd(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -705,7 +704,7 @@ AROS_LH1(void, glMultMatrixf,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultMatrixf(m);
+    glMultMatrixf(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -719,7 +718,7 @@ AROS_LH4(void, glRotated,
 {
     AROS_LIBFUNC_INIT
 
-    mglRotated(angle, x, y, z);
+    glRotated(angle, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -733,7 +732,7 @@ AROS_LH4(void, glRotatef,
 {
     AROS_LIBFUNC_INIT
 
-    mglRotatef(angle, x, y, z);
+    glRotatef(angle, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -746,7 +745,7 @@ AROS_LH3(void, glScaled,
 {
     AROS_LIBFUNC_INIT
 
-    mglScaled(x, y, z);
+    glScaled(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -759,7 +758,7 @@ AROS_LH3(void, glScalef,
 {
     AROS_LIBFUNC_INIT
 
-    mglScalef(x, y, z);
+    glScalef(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -772,7 +771,7 @@ AROS_LH3(void, glTranslated,
 {
     AROS_LIBFUNC_INIT
 
-    mglTranslated(x, y, z);
+    glTranslated(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -785,7 +784,7 @@ AROS_LH3(void, glTranslatef,
 {
     AROS_LIBFUNC_INIT
 
-    mglTranslatef(x, y, z);
+    glTranslatef(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -796,7 +795,7 @@ AROS_LH1(GLboolean, glIsList,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsList(list);
+    GLboolean _return = glIsList(list);
 
     return _return;
 
@@ -810,7 +809,7 @@ AROS_LH2(void, glDeleteLists,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteLists(list, range);
+    glDeleteLists(list, range);
 
     AROS_LIBFUNC_EXIT
 }
@@ -821,7 +820,7 @@ AROS_LH1(GLuint, glGenLists,
 {
     AROS_LIBFUNC_INIT
 
-    GLuint _return = mglGenLists(range);
+    GLuint _return = glGenLists(range);
 
     return _return;
 
@@ -835,7 +834,7 @@ AROS_LH2(void, glNewList,
 {
     AROS_LIBFUNC_INIT
 
-    mglNewList(list, mode);
+    glNewList(list, mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -845,7 +844,7 @@ AROS_LH0(void, glEndList,
 {
     AROS_LIBFUNC_INIT
 
-    mglEndList();
+    glEndList();
 
     AROS_LIBFUNC_EXIT
 }
@@ -856,7 +855,7 @@ AROS_LH1(void, glCallList,
 {
     AROS_LIBFUNC_INIT
 
-    mglCallList(list);
+    glCallList(list);
 
     AROS_LIBFUNC_EXIT
 }
@@ -869,7 +868,7 @@ AROS_LH3(void, glCallLists,
 {
     AROS_LIBFUNC_INIT
 
-    mglCallLists(n, type, lists);
+    glCallLists(n, type, lists);
 
     AROS_LIBFUNC_EXIT
 }
@@ -880,7 +879,7 @@ AROS_LH1(void, glListBase,
 {
     AROS_LIBFUNC_INIT
 
-    mglListBase(base);
+    glListBase(base);
 
     AROS_LIBFUNC_EXIT
 }
@@ -891,7 +890,7 @@ AROS_LH1(void, glBegin,
 {
     AROS_LIBFUNC_INIT
 
-    mglBegin(mode);
+    glBegin(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -901,7 +900,7 @@ AROS_LH0(void, glEnd,
 {
     AROS_LIBFUNC_INIT
 
-    mglEnd();
+    glEnd();
 
     AROS_LIBFUNC_EXIT
 }
@@ -913,7 +912,7 @@ AROS_LH2(void, glVertex2d,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex2d(x, y);
+    glVertex2d(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -925,7 +924,7 @@ AROS_LH2(void, glVertex2f,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex2f(x, y);
+    glVertex2f(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -937,7 +936,7 @@ AROS_LH2(void, glVertex2i,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex2i(x, y);
+    glVertex2i(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -949,7 +948,7 @@ AROS_LH2(void, glVertex2s,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex2s(x, y);
+    glVertex2s(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -962,7 +961,7 @@ AROS_LH3(void, glVertex3d,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex3d(x, y, z);
+    glVertex3d(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -975,7 +974,7 @@ AROS_LH3(void, glVertex3f,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex3f(x, y, z);
+    glVertex3f(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -988,7 +987,7 @@ AROS_LH3(void, glVertex3i,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex3i(x, y, z);
+    glVertex3i(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1001,7 +1000,7 @@ AROS_LH3(void, glVertex3s,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex3s(x, y, z);
+    glVertex3s(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1015,7 +1014,7 @@ AROS_LH4(void, glVertex4d,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex4d(x, y, z, w);
+    glVertex4d(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1029,7 +1028,7 @@ AROS_LH4(void, glVertex4f,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex4f(x, y, z, w);
+    glVertex4f(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1043,7 +1042,7 @@ AROS_LH4(void, glVertex4i,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex4i(x, y, z, w);
+    glVertex4i(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1057,7 +1056,7 @@ AROS_LH4(void, glVertex4s,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex4s(x, y, z, w);
+    glVertex4s(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1068,7 +1067,7 @@ AROS_LH1(void, glVertex2dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex2dv(v);
+    glVertex2dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1079,7 +1078,7 @@ AROS_LH1(void, glVertex2fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex2fv(v);
+    glVertex2fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1090,7 +1089,7 @@ AROS_LH1(void, glVertex2iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex2iv(v);
+    glVertex2iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1101,7 +1100,7 @@ AROS_LH1(void, glVertex2sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex2sv(v);
+    glVertex2sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1112,7 +1111,7 @@ AROS_LH1(void, glVertex3dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex3dv(v);
+    glVertex3dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1123,7 +1122,7 @@ AROS_LH1(void, glVertex3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex3fv(v);
+    glVertex3fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1134,7 +1133,7 @@ AROS_LH1(void, glVertex3iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex3iv(v);
+    glVertex3iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1145,7 +1144,7 @@ AROS_LH1(void, glVertex3sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex3sv(v);
+    glVertex3sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1156,7 +1155,7 @@ AROS_LH1(void, glVertex4dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex4dv(v);
+    glVertex4dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1167,7 +1166,7 @@ AROS_LH1(void, glVertex4fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex4fv(v);
+    glVertex4fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1178,7 +1177,7 @@ AROS_LH1(void, glVertex4iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex4iv(v);
+    glVertex4iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1189,7 +1188,7 @@ AROS_LH1(void, glVertex4sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertex4sv(v);
+    glVertex4sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1202,7 +1201,7 @@ AROS_LH3(void, glNormal3b,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormal3b(nx, ny, nz);
+    glNormal3b(nx, ny, nz);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1215,7 +1214,7 @@ AROS_LH3(void, glNormal3d,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormal3d(nx, ny, nz);
+    glNormal3d(nx, ny, nz);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1228,7 +1227,7 @@ AROS_LH3(void, glNormal3f,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormal3f(nx, ny, nz);
+    glNormal3f(nx, ny, nz);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1241,7 +1240,7 @@ AROS_LH3(void, glNormal3i,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormal3i(nx, ny, nz);
+    glNormal3i(nx, ny, nz);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1254,7 +1253,7 @@ AROS_LH3(void, glNormal3s,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormal3s(nx, ny, nz);
+    glNormal3s(nx, ny, nz);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1265,7 +1264,7 @@ AROS_LH1(void, glNormal3bv,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormal3bv(v);
+    glNormal3bv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1276,7 +1275,7 @@ AROS_LH1(void, glNormal3dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormal3dv(v);
+    glNormal3dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1287,7 +1286,7 @@ AROS_LH1(void, glNormal3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormal3fv(v);
+    glNormal3fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1298,7 +1297,7 @@ AROS_LH1(void, glNormal3iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormal3iv(v);
+    glNormal3iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1309,7 +1308,7 @@ AROS_LH1(void, glNormal3sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormal3sv(v);
+    glNormal3sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1320,7 +1319,7 @@ AROS_LH1(void, glIndexd,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexd(c);
+    glIndexd(c);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1331,7 +1330,7 @@ AROS_LH1(void, glIndexf,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexf(c);
+    glIndexf(c);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1342,7 +1341,7 @@ AROS_LH1(void, glIndexi,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexi(c);
+    glIndexi(c);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1353,7 +1352,7 @@ AROS_LH1(void, glIndexs,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexs(c);
+    glIndexs(c);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1364,7 +1363,7 @@ AROS_LH1(void, glIndexub,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexub(c);
+    glIndexub(c);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1375,7 +1374,7 @@ AROS_LH1(void, glIndexdv,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexdv(c);
+    glIndexdv(c);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1386,7 +1385,7 @@ AROS_LH1(void, glIndexfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexfv(c);
+    glIndexfv(c);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1397,7 +1396,7 @@ AROS_LH1(void, glIndexiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexiv(c);
+    glIndexiv(c);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1408,7 +1407,7 @@ AROS_LH1(void, glIndexsv,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexsv(c);
+    glIndexsv(c);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1419,7 +1418,7 @@ AROS_LH1(void, glIndexubv,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexubv(c);
+    glIndexubv(c);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1432,7 +1431,7 @@ AROS_LH3(void, glColor3b,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3b(red, green, blue);
+    glColor3b(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1445,7 +1444,7 @@ AROS_LH3(void, glColor3d,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3d(red, green, blue);
+    glColor3d(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1458,7 +1457,7 @@ AROS_LH3(void, glColor3f,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3f(red, green, blue);
+    glColor3f(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1471,7 +1470,7 @@ AROS_LH3(void, glColor3i,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3i(red, green, blue);
+    glColor3i(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1484,7 +1483,7 @@ AROS_LH3(void, glColor3s,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3s(red, green, blue);
+    glColor3s(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1497,7 +1496,7 @@ AROS_LH3(void, glColor3ub,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3ub(red, green, blue);
+    glColor3ub(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1510,7 +1509,7 @@ AROS_LH3(void, glColor3ui,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3ui(red, green, blue);
+    glColor3ui(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1523,7 +1522,7 @@ AROS_LH3(void, glColor3us,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3us(red, green, blue);
+    glColor3us(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1537,7 +1536,7 @@ AROS_LH4(void, glColor4b,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4b(red, green, blue, alpha);
+    glColor4b(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1551,7 +1550,7 @@ AROS_LH4(void, glColor4d,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4d(red, green, blue, alpha);
+    glColor4d(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1565,7 +1564,7 @@ AROS_LH4(void, glColor4f,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4f(red, green, blue, alpha);
+    glColor4f(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1579,7 +1578,7 @@ AROS_LH4(void, glColor4i,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4i(red, green, blue, alpha);
+    glColor4i(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1593,7 +1592,7 @@ AROS_LH4(void, glColor4s,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4s(red, green, blue, alpha);
+    glColor4s(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1607,7 +1606,7 @@ AROS_LH4(void, glColor4ub,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4ub(red, green, blue, alpha);
+    glColor4ub(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1621,7 +1620,7 @@ AROS_LH4(void, glColor4ui,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4ui(red, green, blue, alpha);
+    glColor4ui(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1635,7 +1634,7 @@ AROS_LH4(void, glColor4us,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4us(red, green, blue, alpha);
+    glColor4us(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1646,7 +1645,7 @@ AROS_LH1(void, glColor3bv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3bv(v);
+    glColor3bv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1657,7 +1656,7 @@ AROS_LH1(void, glColor3dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3dv(v);
+    glColor3dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1668,7 +1667,7 @@ AROS_LH1(void, glColor3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3fv(v);
+    glColor3fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1679,7 +1678,7 @@ AROS_LH1(void, glColor3iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3iv(v);
+    glColor3iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1690,7 +1689,7 @@ AROS_LH1(void, glColor3sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3sv(v);
+    glColor3sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1701,7 +1700,7 @@ AROS_LH1(void, glColor3ubv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3ubv(v);
+    glColor3ubv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1712,7 +1711,7 @@ AROS_LH1(void, glColor3uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3uiv(v);
+    glColor3uiv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1723,7 +1722,7 @@ AROS_LH1(void, glColor3usv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor3usv(v);
+    glColor3usv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1734,7 +1733,7 @@ AROS_LH1(void, glColor4bv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4bv(v);
+    glColor4bv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1745,7 +1744,7 @@ AROS_LH1(void, glColor4dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4dv(v);
+    glColor4dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1756,7 +1755,7 @@ AROS_LH1(void, glColor4fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4fv(v);
+    glColor4fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1767,7 +1766,7 @@ AROS_LH1(void, glColor4iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4iv(v);
+    glColor4iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1778,7 +1777,7 @@ AROS_LH1(void, glColor4sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4sv(v);
+    glColor4sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1789,7 +1788,7 @@ AROS_LH1(void, glColor4ubv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4ubv(v);
+    glColor4ubv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1800,7 +1799,7 @@ AROS_LH1(void, glColor4uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4uiv(v);
+    glColor4uiv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1811,7 +1810,7 @@ AROS_LH1(void, glColor4usv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColor4usv(v);
+    glColor4usv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1822,7 +1821,7 @@ AROS_LH1(void, glTexCoord1d,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord1d(s);
+    glTexCoord1d(s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1833,7 +1832,7 @@ AROS_LH1(void, glTexCoord1f,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord1f(s);
+    glTexCoord1f(s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1844,7 +1843,7 @@ AROS_LH1(void, glTexCoord1i,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord1i(s);
+    glTexCoord1i(s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1855,7 +1854,7 @@ AROS_LH1(void, glTexCoord1s,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord1s(s);
+    glTexCoord1s(s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1867,7 +1866,7 @@ AROS_LH2(void, glTexCoord2d,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord2d(s, t);
+    glTexCoord2d(s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1879,7 +1878,7 @@ AROS_LH2(void, glTexCoord2f,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord2f(s, t);
+    glTexCoord2f(s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1891,7 +1890,7 @@ AROS_LH2(void, glTexCoord2i,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord2i(s, t);
+    glTexCoord2i(s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1903,7 +1902,7 @@ AROS_LH2(void, glTexCoord2s,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord2s(s, t);
+    glTexCoord2s(s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1916,7 +1915,7 @@ AROS_LH3(void, glTexCoord3d,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord3d(s, t, r);
+    glTexCoord3d(s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1929,7 +1928,7 @@ AROS_LH3(void, glTexCoord3f,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord3f(s, t, r);
+    glTexCoord3f(s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1942,7 +1941,7 @@ AROS_LH3(void, glTexCoord3i,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord3i(s, t, r);
+    glTexCoord3i(s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1955,7 +1954,7 @@ AROS_LH3(void, glTexCoord3s,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord3s(s, t, r);
+    glTexCoord3s(s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1969,7 +1968,7 @@ AROS_LH4(void, glTexCoord4d,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord4d(s, t, r, q);
+    glTexCoord4d(s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1983,7 +1982,7 @@ AROS_LH4(void, glTexCoord4f,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord4f(s, t, r, q);
+    glTexCoord4f(s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -1997,7 +1996,7 @@ AROS_LH4(void, glTexCoord4i,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord4i(s, t, r, q);
+    glTexCoord4i(s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2011,7 +2010,7 @@ AROS_LH4(void, glTexCoord4s,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord4s(s, t, r, q);
+    glTexCoord4s(s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2022,7 +2021,7 @@ AROS_LH1(void, glTexCoord1dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord1dv(v);
+    glTexCoord1dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2033,7 +2032,7 @@ AROS_LH1(void, glTexCoord1fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord1fv(v);
+    glTexCoord1fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2044,7 +2043,7 @@ AROS_LH1(void, glTexCoord1iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord1iv(v);
+    glTexCoord1iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2055,7 +2054,7 @@ AROS_LH1(void, glTexCoord1sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord1sv(v);
+    glTexCoord1sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2066,7 +2065,7 @@ AROS_LH1(void, glTexCoord2dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord2dv(v);
+    glTexCoord2dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2077,7 +2076,7 @@ AROS_LH1(void, glTexCoord2fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord2fv(v);
+    glTexCoord2fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2088,7 +2087,7 @@ AROS_LH1(void, glTexCoord2iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord2iv(v);
+    glTexCoord2iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2099,7 +2098,7 @@ AROS_LH1(void, glTexCoord2sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord2sv(v);
+    glTexCoord2sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2110,7 +2109,7 @@ AROS_LH1(void, glTexCoord3dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord3dv(v);
+    glTexCoord3dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2121,7 +2120,7 @@ AROS_LH1(void, glTexCoord3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord3fv(v);
+    glTexCoord3fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2132,7 +2131,7 @@ AROS_LH1(void, glTexCoord3iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord3iv(v);
+    glTexCoord3iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2143,7 +2142,7 @@ AROS_LH1(void, glTexCoord3sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord3sv(v);
+    glTexCoord3sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2154,7 +2153,7 @@ AROS_LH1(void, glTexCoord4dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord4dv(v);
+    glTexCoord4dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2165,7 +2164,7 @@ AROS_LH1(void, glTexCoord4fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord4fv(v);
+    glTexCoord4fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2176,7 +2175,7 @@ AROS_LH1(void, glTexCoord4iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord4iv(v);
+    glTexCoord4iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2187,7 +2186,7 @@ AROS_LH1(void, glTexCoord4sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoord4sv(v);
+    glTexCoord4sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2199,7 +2198,7 @@ AROS_LH2(void, glRasterPos2d,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos2d(x, y);
+    glRasterPos2d(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2211,7 +2210,7 @@ AROS_LH2(void, glRasterPos2f,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos2f(x, y);
+    glRasterPos2f(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2223,7 +2222,7 @@ AROS_LH2(void, glRasterPos2i,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos2i(x, y);
+    glRasterPos2i(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2235,7 +2234,7 @@ AROS_LH2(void, glRasterPos2s,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos2s(x, y);
+    glRasterPos2s(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2248,7 +2247,7 @@ AROS_LH3(void, glRasterPos3d,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos3d(x, y, z);
+    glRasterPos3d(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2261,7 +2260,7 @@ AROS_LH3(void, glRasterPos3f,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos3f(x, y, z);
+    glRasterPos3f(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2274,7 +2273,7 @@ AROS_LH3(void, glRasterPos3i,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos3i(x, y, z);
+    glRasterPos3i(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2287,7 +2286,7 @@ AROS_LH3(void, glRasterPos3s,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos3s(x, y, z);
+    glRasterPos3s(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2301,7 +2300,7 @@ AROS_LH4(void, glRasterPos4d,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos4d(x, y, z, w);
+    glRasterPos4d(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2315,7 +2314,7 @@ AROS_LH4(void, glRasterPos4f,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos4f(x, y, z, w);
+    glRasterPos4f(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2329,7 +2328,7 @@ AROS_LH4(void, glRasterPos4i,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos4i(x, y, z, w);
+    glRasterPos4i(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2343,7 +2342,7 @@ AROS_LH4(void, glRasterPos4s,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos4s(x, y, z, w);
+    glRasterPos4s(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2354,7 +2353,7 @@ AROS_LH1(void, glRasterPos2dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos2dv(v);
+    glRasterPos2dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2365,7 +2364,7 @@ AROS_LH1(void, glRasterPos2fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos2fv(v);
+    glRasterPos2fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2376,7 +2375,7 @@ AROS_LH1(void, glRasterPos2iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos2iv(v);
+    glRasterPos2iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2387,7 +2386,7 @@ AROS_LH1(void, glRasterPos2sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos2sv(v);
+    glRasterPos2sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2398,7 +2397,7 @@ AROS_LH1(void, glRasterPos3dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos3dv(v);
+    glRasterPos3dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2409,7 +2408,7 @@ AROS_LH1(void, glRasterPos3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos3fv(v);
+    glRasterPos3fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2420,7 +2419,7 @@ AROS_LH1(void, glRasterPos3iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos3iv(v);
+    glRasterPos3iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2431,7 +2430,7 @@ AROS_LH1(void, glRasterPos3sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos3sv(v);
+    glRasterPos3sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2442,7 +2441,7 @@ AROS_LH1(void, glRasterPos4dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos4dv(v);
+    glRasterPos4dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2453,7 +2452,7 @@ AROS_LH1(void, glRasterPos4fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos4fv(v);
+    glRasterPos4fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2464,7 +2463,7 @@ AROS_LH1(void, glRasterPos4iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos4iv(v);
+    glRasterPos4iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2475,7 +2474,7 @@ AROS_LH1(void, glRasterPos4sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRasterPos4sv(v);
+    glRasterPos4sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2489,7 +2488,7 @@ AROS_LH4(void, glRectd,
 {
     AROS_LIBFUNC_INIT
 
-    mglRectd(x1, y1, x2, y2);
+    glRectd(x1, y1, x2, y2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2503,7 +2502,7 @@ AROS_LH4(void, glRectf,
 {
     AROS_LIBFUNC_INIT
 
-    mglRectf(x1, y1, x2, y2);
+    glRectf(x1, y1, x2, y2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2517,7 +2516,7 @@ AROS_LH4(void, glRecti,
 {
     AROS_LIBFUNC_INIT
 
-    mglRecti(x1, y1, x2, y2);
+    glRecti(x1, y1, x2, y2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2531,7 +2530,7 @@ AROS_LH4(void, glRects,
 {
     AROS_LIBFUNC_INIT
 
-    mglRects(x1, y1, x2, y2);
+    glRects(x1, y1, x2, y2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2543,7 +2542,7 @@ AROS_LH2(void, glRectdv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRectdv(v1, v2);
+    glRectdv(v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2555,7 +2554,7 @@ AROS_LH2(void, glRectfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRectfv(v1, v2);
+    glRectfv(v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2567,7 +2566,7 @@ AROS_LH2(void, glRectiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRectiv(v1, v2);
+    glRectiv(v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2579,7 +2578,7 @@ AROS_LH2(void, glRectsv,
 {
     AROS_LIBFUNC_INIT
 
-    mglRectsv(v1, v2);
+    glRectsv(v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2593,7 +2592,7 @@ AROS_LH4(void, glVertexPointer,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexPointer(size, type, stride, ptr);
+    glVertexPointer(size, type, stride, ptr);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2606,7 +2605,7 @@ AROS_LH3(void, glNormalPointer,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormalPointer(type, stride, ptr);
+    glNormalPointer(type, stride, ptr);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2620,7 +2619,7 @@ AROS_LH4(void, glColorPointer,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorPointer(size, type, stride, ptr);
+    glColorPointer(size, type, stride, ptr);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2633,7 +2632,7 @@ AROS_LH3(void, glIndexPointer,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexPointer(type, stride, ptr);
+    glIndexPointer(type, stride, ptr);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2647,7 +2646,7 @@ AROS_LH4(void, glTexCoordPointer,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoordPointer(size, type, stride, ptr);
+    glTexCoordPointer(size, type, stride, ptr);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2659,7 +2658,7 @@ AROS_LH2(void, glEdgeFlagPointer,
 {
     AROS_LIBFUNC_INIT
 
-    mglEdgeFlagPointer(stride, ptr);
+    glEdgeFlagPointer(stride, ptr);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2671,7 +2670,7 @@ AROS_LH2(void, glGetPointerv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetPointerv(pname, params);
+    glGetPointerv(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2682,7 +2681,7 @@ AROS_LH1(void, glArrayElement,
 {
     AROS_LIBFUNC_INIT
 
-    mglArrayElement(i);
+    glArrayElement(i);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2695,7 +2694,7 @@ AROS_LH3(void, glDrawArrays,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawArrays(mode, first, count);
+    glDrawArrays(mode, first, count);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2709,7 +2708,7 @@ AROS_LH4(void, glDrawElements,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawElements(mode, count, type, indices);
+    glDrawElements(mode, count, type, indices);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2722,7 +2721,7 @@ AROS_LH3(void, glInterleavedArrays,
 {
     AROS_LIBFUNC_INIT
 
-    mglInterleavedArrays(format, stride, pointer);
+    glInterleavedArrays(format, stride, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2733,7 +2732,7 @@ AROS_LH1(void, glShadeModel,
 {
     AROS_LIBFUNC_INIT
 
-    mglShadeModel(mode);
+    glShadeModel(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2746,7 +2745,7 @@ AROS_LH3(void, glLightf,
 {
     AROS_LIBFUNC_INIT
 
-    mglLightf(light, pname, param);
+    glLightf(light, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2759,7 +2758,7 @@ AROS_LH3(void, glLighti,
 {
     AROS_LIBFUNC_INIT
 
-    mglLighti(light, pname, param);
+    glLighti(light, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2772,7 +2771,7 @@ AROS_LH3(void, glLightfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglLightfv(light, pname, params);
+    glLightfv(light, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2785,7 +2784,7 @@ AROS_LH3(void, glLightiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglLightiv(light, pname, params);
+    glLightiv(light, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2798,7 +2797,7 @@ AROS_LH3(void, glGetLightfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetLightfv(light, pname, params);
+    glGetLightfv(light, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2811,7 +2810,7 @@ AROS_LH3(void, glGetLightiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetLightiv(light, pname, params);
+    glGetLightiv(light, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2823,7 +2822,7 @@ AROS_LH2(void, glLightModelf,
 {
     AROS_LIBFUNC_INIT
 
-    mglLightModelf(pname, param);
+    glLightModelf(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2835,7 +2834,7 @@ AROS_LH2(void, glLightModeli,
 {
     AROS_LIBFUNC_INIT
 
-    mglLightModeli(pname, param);
+    glLightModeli(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2847,7 +2846,7 @@ AROS_LH2(void, glLightModelfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglLightModelfv(pname, params);
+    glLightModelfv(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2859,7 +2858,7 @@ AROS_LH2(void, glLightModeliv,
 {
     AROS_LIBFUNC_INIT
 
-    mglLightModeliv(pname, params);
+    glLightModeliv(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2872,7 +2871,7 @@ AROS_LH3(void, glMaterialf,
 {
     AROS_LIBFUNC_INIT
 
-    mglMaterialf(face, pname, param);
+    glMaterialf(face, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2885,7 +2884,7 @@ AROS_LH3(void, glMateriali,
 {
     AROS_LIBFUNC_INIT
 
-    mglMateriali(face, pname, param);
+    glMateriali(face, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2898,7 +2897,7 @@ AROS_LH3(void, glMaterialfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMaterialfv(face, pname, params);
+    glMaterialfv(face, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2911,7 +2910,7 @@ AROS_LH3(void, glMaterialiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMaterialiv(face, pname, params);
+    glMaterialiv(face, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2924,7 +2923,7 @@ AROS_LH3(void, glGetMaterialfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetMaterialfv(face, pname, params);
+    glGetMaterialfv(face, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2937,7 +2936,7 @@ AROS_LH3(void, glGetMaterialiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetMaterialiv(face, pname, params);
+    glGetMaterialiv(face, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2949,7 +2948,7 @@ AROS_LH2(void, glColorMaterial,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorMaterial(face, mode);
+    glColorMaterial(face, mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2961,7 +2960,7 @@ AROS_LH2(void, glPixelZoom,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelZoom(xfactor, yfactor);
+    glPixelZoom(xfactor, yfactor);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2973,7 +2972,7 @@ AROS_LH2(void, glPixelStoref,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelStoref(pname, param);
+    glPixelStoref(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2985,7 +2984,7 @@ AROS_LH2(void, glPixelStorei,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelStorei(pname, param);
+    glPixelStorei(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -2997,7 +2996,7 @@ AROS_LH2(void, glPixelTransferf,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelTransferf(pname, param);
+    glPixelTransferf(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3009,7 +3008,7 @@ AROS_LH2(void, glPixelTransferi,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelTransferi(pname, param);
+    glPixelTransferi(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3022,7 +3021,7 @@ AROS_LH3(void, glPixelMapfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelMapfv(map, mapsize, values);
+    glPixelMapfv(map, mapsize, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3035,7 +3034,7 @@ AROS_LH3(void, glPixelMapuiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelMapuiv(map, mapsize, values);
+    glPixelMapuiv(map, mapsize, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3048,7 +3047,7 @@ AROS_LH3(void, glPixelMapusv,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelMapusv(map, mapsize, values);
+    glPixelMapusv(map, mapsize, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3060,7 +3059,7 @@ AROS_LH2(void, glGetPixelMapfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetPixelMapfv(map, values);
+    glGetPixelMapfv(map, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3072,7 +3071,7 @@ AROS_LH2(void, glGetPixelMapuiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetPixelMapuiv(map, values);
+    glGetPixelMapuiv(map, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3084,7 +3083,7 @@ AROS_LH2(void, glGetPixelMapusv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetPixelMapusv(map, values);
+    glGetPixelMapusv(map, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3101,7 +3100,7 @@ AROS_LH7(void, glBitmap,
 {
     AROS_LIBFUNC_INIT
 
-    mglBitmap(width, height, xorig, yorig, xmove, ymove, bitmap);
+    glBitmap(width, height, xorig, yorig, xmove, ymove, bitmap);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3118,7 +3117,7 @@ AROS_LH7(void, glReadPixels,
 {
     AROS_LIBFUNC_INIT
 
-    mglReadPixels(x, y, width, height, format, type, pixels);
+    glReadPixels(x, y, width, height, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3133,7 +3132,7 @@ AROS_LH5(void, glDrawPixels,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawPixels(width, height, format, type, pixels);
+    glDrawPixels(width, height, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3148,7 +3147,7 @@ AROS_LH5(void, glCopyPixels,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyPixels(x, y, width, height, type);
+    glCopyPixels(x, y, width, height, type);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3161,7 +3160,7 @@ AROS_LH3(void, glStencilFunc,
 {
     AROS_LIBFUNC_INIT
 
-    mglStencilFunc(func, ref, mask);
+    glStencilFunc(func, ref, mask);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3172,7 +3171,7 @@ AROS_LH1(void, glStencilMask,
 {
     AROS_LIBFUNC_INIT
 
-    mglStencilMask(mask);
+    glStencilMask(mask);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3185,7 +3184,7 @@ AROS_LH3(void, glStencilOp,
 {
     AROS_LIBFUNC_INIT
 
-    mglStencilOp(fail, zfail, zpass);
+    glStencilOp(fail, zfail, zpass);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3196,7 +3195,7 @@ AROS_LH1(void, glClearStencil,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearStencil(s);
+    glClearStencil(s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3209,7 +3208,7 @@ AROS_LH3(void, glTexGend,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexGend(coord, pname, param);
+    glTexGend(coord, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3222,7 +3221,7 @@ AROS_LH3(void, glTexGenf,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexGenf(coord, pname, param);
+    glTexGenf(coord, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3235,7 +3234,7 @@ AROS_LH3(void, glTexGeni,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexGeni(coord, pname, param);
+    glTexGeni(coord, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3248,7 +3247,7 @@ AROS_LH3(void, glTexGendv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexGendv(coord, pname, params);
+    glTexGendv(coord, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3261,7 +3260,7 @@ AROS_LH3(void, glTexGenfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexGenfv(coord, pname, params);
+    glTexGenfv(coord, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3274,7 +3273,7 @@ AROS_LH3(void, glTexGeniv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexGeniv(coord, pname, params);
+    glTexGeniv(coord, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3287,7 +3286,7 @@ AROS_LH3(void, glGetTexGendv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexGendv(coord, pname, params);
+    glGetTexGendv(coord, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3300,7 +3299,7 @@ AROS_LH3(void, glGetTexGenfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexGenfv(coord, pname, params);
+    glGetTexGenfv(coord, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3313,7 +3312,7 @@ AROS_LH3(void, glGetTexGeniv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexGeniv(coord, pname, params);
+    glGetTexGeniv(coord, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3326,7 +3325,7 @@ AROS_LH3(void, glTexEnvf,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexEnvf(target, pname, param);
+    glTexEnvf(target, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3339,7 +3338,7 @@ AROS_LH3(void, glTexEnvi,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexEnvi(target, pname, param);
+    glTexEnvi(target, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3352,7 +3351,7 @@ AROS_LH3(void, glTexEnvfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexEnvfv(target, pname, params);
+    glTexEnvfv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3365,7 +3364,7 @@ AROS_LH3(void, glTexEnviv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexEnviv(target, pname, params);
+    glTexEnviv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3378,7 +3377,7 @@ AROS_LH3(void, glGetTexEnvfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexEnvfv(target, pname, params);
+    glGetTexEnvfv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3391,7 +3390,7 @@ AROS_LH3(void, glGetTexEnviv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexEnviv(target, pname, params);
+    glGetTexEnviv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3404,7 +3403,7 @@ AROS_LH3(void, glTexParameterf,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexParameterf(target, pname, param);
+    glTexParameterf(target, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3417,7 +3416,7 @@ AROS_LH3(void, glTexParameteri,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexParameteri(target, pname, param);
+    glTexParameteri(target, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3430,7 +3429,7 @@ AROS_LH3(void, glTexParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexParameterfv(target, pname, params);
+    glTexParameterfv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3443,7 +3442,7 @@ AROS_LH3(void, glTexParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexParameteriv(target, pname, params);
+    glTexParameteriv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3456,7 +3455,7 @@ AROS_LH3(void, glGetTexParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexParameterfv(target, pname, params);
+    glGetTexParameterfv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3469,7 +3468,7 @@ AROS_LH3(void, glGetTexParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexParameteriv(target, pname, params);
+    glGetTexParameteriv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3483,7 +3482,7 @@ AROS_LH4(void, glGetTexLevelParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexLevelParameterfv(target, level, pname, params);
+    glGetTexLevelParameterfv(target, level, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3497,7 +3496,7 @@ AROS_LH4(void, glGetTexLevelParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexLevelParameteriv(target, level, pname, params);
+    glGetTexLevelParameteriv(target, level, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3515,7 +3514,7 @@ AROS_LH8(void, glTexImage1D,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexImage1D(target, level, internalFormat, width, border, format, type, pixels);
+    glTexImage1D(target, level, internalFormat, width, border, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3534,7 +3533,7 @@ AROS_LH9(void, glTexImage2D,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexImage2D(target, level, internalFormat, width, height, border, format, type, pixels);
+    glTexImage2D(target, level, internalFormat, width, height, border, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3549,7 +3548,7 @@ AROS_LH5(void, glGetTexImage,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexImage(target, level, format, type, pixels);
+    glGetTexImage(target, level, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3561,7 +3560,7 @@ AROS_LH2(void, glGenTextures,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenTextures(n, textures);
+    glGenTextures(n, textures);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3573,7 +3572,7 @@ AROS_LH2(void, glDeleteTextures,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteTextures(n, textures);
+    glDeleteTextures(n, textures);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3585,7 +3584,7 @@ AROS_LH2(void, glBindTexture,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindTexture(target, texture);
+    glBindTexture(target, texture);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3598,7 +3597,7 @@ AROS_LH3(void, glPrioritizeTextures,
 {
     AROS_LIBFUNC_INIT
 
-    mglPrioritizeTextures(n, textures, priorities);
+    glPrioritizeTextures(n, textures, priorities);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3611,7 +3610,7 @@ AROS_LH3(GLboolean, glAreTexturesResident,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglAreTexturesResident(n, textures, residences);
+    GLboolean _return = glAreTexturesResident(n, textures, residences);
 
     return _return;
 
@@ -3624,7 +3623,7 @@ AROS_LH1(GLboolean, glIsTexture,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsTexture(texture);
+    GLboolean _return = glIsTexture(texture);
 
     return _return;
 
@@ -3643,7 +3642,7 @@ AROS_LH7(void, glTexSubImage1D,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexSubImage1D(target, level, xoffset, width, format, type, pixels);
+    glTexSubImage1D(target, level, xoffset, width, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3662,7 +3661,7 @@ AROS_LH9(void, glTexSubImage2D,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3679,7 +3678,7 @@ AROS_LH7(void, glCopyTexImage1D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyTexImage1D(target, level, internalformat, x, y, width, border);
+    glCopyTexImage1D(target, level, internalformat, x, y, width, border);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3697,7 +3696,7 @@ AROS_LH8(void, glCopyTexImage2D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
+    glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3713,7 +3712,7 @@ AROS_LH6(void, glCopyTexSubImage1D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyTexSubImage1D(target, level, xoffset, x, y, width);
+    glCopyTexSubImage1D(target, level, xoffset, x, y, width);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3731,7 +3730,7 @@ AROS_LH8(void, glCopyTexSubImage2D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height);
+    glCopyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3747,7 +3746,7 @@ AROS_LH6(void, glMap1d,
 {
     AROS_LIBFUNC_INIT
 
-    mglMap1d(target, u1, u2, stride, order, points);
+    glMap1d(target, u1, u2, stride, order, points);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3763,7 +3762,7 @@ AROS_LH6(void, glMap1f,
 {
     AROS_LIBFUNC_INIT
 
-    mglMap1f(target, u1, u2, stride, order, points);
+    glMap1f(target, u1, u2, stride, order, points);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3783,7 +3782,7 @@ AROS_LH10(void, glMap2d,
 {
     AROS_LIBFUNC_INIT
 
-    mglMap2d(target, u1, u2, ustride, uorder, v1, v2, vstride, vorder, points);
+    glMap2d(target, u1, u2, ustride, uorder, v1, v2, vstride, vorder, points);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3803,7 +3802,7 @@ AROS_LH10(void, glMap2f,
 {
     AROS_LIBFUNC_INIT
 
-    mglMap2f(target, u1, u2, ustride, uorder, v1, v2, vstride, vorder, points);
+    glMap2f(target, u1, u2, ustride, uorder, v1, v2, vstride, vorder, points);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3816,7 +3815,7 @@ AROS_LH3(void, glGetMapdv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetMapdv(target, query, v);
+    glGetMapdv(target, query, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3829,7 +3828,7 @@ AROS_LH3(void, glGetMapfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetMapfv(target, query, v);
+    glGetMapfv(target, query, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3842,7 +3841,7 @@ AROS_LH3(void, glGetMapiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetMapiv(target, query, v);
+    glGetMapiv(target, query, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3853,7 +3852,7 @@ AROS_LH1(void, glEvalCoord1d,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalCoord1d(u);
+    glEvalCoord1d(u);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3864,7 +3863,7 @@ AROS_LH1(void, glEvalCoord1f,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalCoord1f(u);
+    glEvalCoord1f(u);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3875,7 +3874,7 @@ AROS_LH1(void, glEvalCoord1dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalCoord1dv(u);
+    glEvalCoord1dv(u);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3886,7 +3885,7 @@ AROS_LH1(void, glEvalCoord1fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalCoord1fv(u);
+    glEvalCoord1fv(u);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3898,7 +3897,7 @@ AROS_LH2(void, glEvalCoord2d,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalCoord2d(u, v);
+    glEvalCoord2d(u, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3910,7 +3909,7 @@ AROS_LH2(void, glEvalCoord2f,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalCoord2f(u, v);
+    glEvalCoord2f(u, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3921,7 +3920,7 @@ AROS_LH1(void, glEvalCoord2dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalCoord2dv(u);
+    glEvalCoord2dv(u);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3932,7 +3931,7 @@ AROS_LH1(void, glEvalCoord2fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalCoord2fv(u);
+    glEvalCoord2fv(u);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3945,7 +3944,7 @@ AROS_LH3(void, glMapGrid1d,
 {
     AROS_LIBFUNC_INIT
 
-    mglMapGrid1d(un, u1, u2);
+    glMapGrid1d(un, u1, u2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3958,7 +3957,7 @@ AROS_LH3(void, glMapGrid1f,
 {
     AROS_LIBFUNC_INIT
 
-    mglMapGrid1f(un, u1, u2);
+    glMapGrid1f(un, u1, u2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3974,7 +3973,7 @@ AROS_LH6(void, glMapGrid2d,
 {
     AROS_LIBFUNC_INIT
 
-    mglMapGrid2d(un, u1, u2, vn, v1, v2);
+    glMapGrid2d(un, u1, u2, vn, v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -3990,7 +3989,7 @@ AROS_LH6(void, glMapGrid2f,
 {
     AROS_LIBFUNC_INIT
 
-    mglMapGrid2f(un, u1, u2, vn, v1, v2);
+    glMapGrid2f(un, u1, u2, vn, v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4001,7 +4000,7 @@ AROS_LH1(void, glEvalPoint1,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalPoint1(i);
+    glEvalPoint1(i);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4013,7 +4012,7 @@ AROS_LH2(void, glEvalPoint2,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalPoint2(i, j);
+    glEvalPoint2(i, j);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4026,7 +4025,7 @@ AROS_LH3(void, glEvalMesh1,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalMesh1(mode, i1, i2);
+    glEvalMesh1(mode, i1, i2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4041,7 +4040,7 @@ AROS_LH5(void, glEvalMesh2,
 {
     AROS_LIBFUNC_INIT
 
-    mglEvalMesh2(mode, i1, i2, j1, j2);
+    glEvalMesh2(mode, i1, i2, j1, j2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4053,7 +4052,7 @@ AROS_LH2(void, glFogf,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogf(pname, param);
+    glFogf(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4065,7 +4064,7 @@ AROS_LH2(void, glFogi,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogi(pname, param);
+    glFogi(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4077,7 +4076,7 @@ AROS_LH2(void, glFogfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogfv(pname, params);
+    glFogfv(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4089,7 +4088,7 @@ AROS_LH2(void, glFogiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogiv(pname, params);
+    glFogiv(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4102,7 +4101,7 @@ AROS_LH3(void, glFeedbackBuffer,
 {
     AROS_LIBFUNC_INIT
 
-    mglFeedbackBuffer(size, type, buffer);
+    glFeedbackBuffer(size, type, buffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4113,7 +4112,7 @@ AROS_LH1(void, glPassThrough,
 {
     AROS_LIBFUNC_INIT
 
-    mglPassThrough(token);
+    glPassThrough(token);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4125,7 +4124,7 @@ AROS_LH2(void, glSelectBuffer,
 {
     AROS_LIBFUNC_INIT
 
-    mglSelectBuffer(size, buffer);
+    glSelectBuffer(size, buffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4135,7 +4134,7 @@ AROS_LH0(void, glInitNames,
 {
     AROS_LIBFUNC_INIT
 
-    mglInitNames();
+    glInitNames();
 
     AROS_LIBFUNC_EXIT
 }
@@ -4146,7 +4145,7 @@ AROS_LH1(void, glLoadName,
 {
     AROS_LIBFUNC_INIT
 
-    mglLoadName(name);
+    glLoadName(name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4157,7 +4156,7 @@ AROS_LH1(void, glPushName,
 {
     AROS_LIBFUNC_INIT
 
-    mglPushName(name);
+    glPushName(name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4167,7 +4166,7 @@ AROS_LH0(void, glPopName,
 {
     AROS_LIBFUNC_INIT
 
-    mglPopName();
+    glPopName();
 
     AROS_LIBFUNC_EXIT
 }
@@ -4183,7 +4182,7 @@ AROS_LH6(void, glDrawRangeElements,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawRangeElements(mode, start, end, count, type, indices);
+    glDrawRangeElements(mode, start, end, count, type, indices);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4203,7 +4202,7 @@ AROS_LH10(void, glTexImage3D,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexImage3D(target, level, internalFormat, width, height, depth, border, format, type, pixels);
+    glTexImage3D(target, level, internalFormat, width, height, depth, border, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4224,7 +4223,7 @@ AROS_LH11(void, glTexSubImage3D,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+    glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4243,7 +4242,7 @@ AROS_LH9(void, glCopyTexSubImage3D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyTexSubImage3D(target, level, xoffset, yoffset, zoffset, x, y, width, height);
+    glCopyTexSubImage3D(target, level, xoffset, yoffset, zoffset, x, y, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4259,7 +4258,7 @@ AROS_LH6(void, glColorTable,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorTable(target, internalformat, width, format, type, table);
+    glColorTable(target, internalformat, width, format, type, table);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4275,7 +4274,7 @@ AROS_LH6(void, glColorSubTable,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorSubTable(target, start, count, format, type, data);
+    glColorSubTable(target, start, count, format, type, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4288,7 +4287,7 @@ AROS_LH3(void, glColorTableParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorTableParameteriv(target, pname, params);
+    glColorTableParameteriv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4301,7 +4300,7 @@ AROS_LH3(void, glColorTableParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorTableParameterfv(target, pname, params);
+    glColorTableParameterfv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4316,7 +4315,7 @@ AROS_LH5(void, glCopyColorSubTable,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyColorSubTable(target, start, x, y, width);
+    glCopyColorSubTable(target, start, x, y, width);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4331,7 +4330,7 @@ AROS_LH5(void, glCopyColorTable,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyColorTable(target, internalformat, x, y, width);
+    glCopyColorTable(target, internalformat, x, y, width);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4345,7 +4344,7 @@ AROS_LH4(void, glGetColorTable,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetColorTable(target, format, type, table);
+    glGetColorTable(target, format, type, table);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4358,7 +4357,7 @@ AROS_LH3(void, glGetColorTableParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetColorTableParameterfv(target, pname, params);
+    glGetColorTableParameterfv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4371,7 +4370,7 @@ AROS_LH3(void, glGetColorTableParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetColorTableParameteriv(target, pname, params);
+    glGetColorTableParameteriv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4382,7 +4381,7 @@ AROS_LH1(void, glBlendEquation,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendEquation(mode);
+    glBlendEquation(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4396,7 +4395,7 @@ AROS_LH4(void, glBlendColor,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendColor(red, green, blue, alpha);
+    glBlendColor(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4410,7 +4409,7 @@ AROS_LH4(void, glHistogram,
 {
     AROS_LIBFUNC_INIT
 
-    mglHistogram(target, width, internalformat, sink);
+    glHistogram(target, width, internalformat, sink);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4421,7 +4420,7 @@ AROS_LH1(void, glResetHistogram,
 {
     AROS_LIBFUNC_INIT
 
-    mglResetHistogram(target);
+    glResetHistogram(target);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4436,7 +4435,7 @@ AROS_LH5(void, glGetHistogram,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetHistogram(target, reset, format, type, values);
+    glGetHistogram(target, reset, format, type, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4449,7 +4448,7 @@ AROS_LH3(void, glGetHistogramParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetHistogramParameterfv(target, pname, params);
+    glGetHistogramParameterfv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4462,7 +4461,7 @@ AROS_LH3(void, glGetHistogramParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetHistogramParameteriv(target, pname, params);
+    glGetHistogramParameteriv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4475,7 +4474,7 @@ AROS_LH3(void, glMinmax,
 {
     AROS_LIBFUNC_INIT
 
-    mglMinmax(target, internalformat, sink);
+    glMinmax(target, internalformat, sink);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4486,7 +4485,7 @@ AROS_LH1(void, glResetMinmax,
 {
     AROS_LIBFUNC_INIT
 
-    mglResetMinmax(target);
+    glResetMinmax(target);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4501,7 +4500,7 @@ AROS_LH5(void, glGetMinmax,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetMinmax(target, reset, format, types, values);
+    glGetMinmax(target, reset, format, types, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4514,7 +4513,7 @@ AROS_LH3(void, glGetMinmaxParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetMinmaxParameterfv(target, pname, params);
+    glGetMinmaxParameterfv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4527,7 +4526,7 @@ AROS_LH3(void, glGetMinmaxParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetMinmaxParameteriv(target, pname, params);
+    glGetMinmaxParameteriv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4543,7 +4542,7 @@ AROS_LH6(void, glConvolutionFilter1D,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionFilter1D(target, internalformat, width, format, type, image);
+    glConvolutionFilter1D(target, internalformat, width, format, type, image);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4560,7 +4559,7 @@ AROS_LH7(void, glConvolutionFilter2D,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionFilter2D(target, internalformat, width, height, format, type, image);
+    glConvolutionFilter2D(target, internalformat, width, height, format, type, image);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4573,7 +4572,7 @@ AROS_LH3(void, glConvolutionParameterf,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionParameterf(target, pname, params);
+    glConvolutionParameterf(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4586,7 +4585,7 @@ AROS_LH3(void, glConvolutionParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionParameterfv(target, pname, params);
+    glConvolutionParameterfv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4599,7 +4598,7 @@ AROS_LH3(void, glConvolutionParameteri,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionParameteri(target, pname, params);
+    glConvolutionParameteri(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4612,7 +4611,7 @@ AROS_LH3(void, glConvolutionParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionParameteriv(target, pname, params);
+    glConvolutionParameteriv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4627,7 +4626,7 @@ AROS_LH5(void, glCopyConvolutionFilter1D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyConvolutionFilter1D(target, internalformat, x, y, width);
+    glCopyConvolutionFilter1D(target, internalformat, x, y, width);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4643,7 +4642,7 @@ AROS_LH6(void, glCopyConvolutionFilter2D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyConvolutionFilter2D(target, internalformat, x, y, width, height);
+    glCopyConvolutionFilter2D(target, internalformat, x, y, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4657,7 +4656,7 @@ AROS_LH4(void, glGetConvolutionFilter,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetConvolutionFilter(target, format, type, image);
+    glGetConvolutionFilter(target, format, type, image);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4670,7 +4669,7 @@ AROS_LH3(void, glGetConvolutionParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetConvolutionParameterfv(target, pname, params);
+    glGetConvolutionParameterfv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4683,7 +4682,7 @@ AROS_LH3(void, glGetConvolutionParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetConvolutionParameteriv(target, pname, params);
+    glGetConvolutionParameteriv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4701,7 +4700,7 @@ AROS_LH8(void, glSeparableFilter2D,
 {
     AROS_LIBFUNC_INIT
 
-    mglSeparableFilter2D(target, internalformat, width, height, format, type, row, column);
+    glSeparableFilter2D(target, internalformat, width, height, format, type, row, column);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4717,7 +4716,7 @@ AROS_LH6(void, glGetSeparableFilter,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetSeparableFilter(target, format, type, row, column, span);
+    glGetSeparableFilter(target, format, type, row, column, span);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4728,7 +4727,7 @@ AROS_LH1(void, glActiveTexture,
 {
     AROS_LIBFUNC_INIT
 
-    mglActiveTexture(texture);
+    glActiveTexture(texture);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4739,7 +4738,7 @@ AROS_LH1(void, glClientActiveTexture,
 {
     AROS_LIBFUNC_INIT
 
-    mglClientActiveTexture(texture);
+    glClientActiveTexture(texture);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4756,7 +4755,7 @@ AROS_LH7(void, glCompressedTexImage1D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexImage1D(target, level, internalformat, width, border, imageSize, data);
+    glCompressedTexImage1D(target, level, internalformat, width, border, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4774,7 +4773,7 @@ AROS_LH8(void, glCompressedTexImage2D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
+    glCompressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4793,7 +4792,7 @@ AROS_LH9(void, glCompressedTexImage3D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexImage3D(target, level, internalformat, width, height, depth, border, imageSize, data);
+    glCompressedTexImage3D(target, level, internalformat, width, height, depth, border, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4810,7 +4809,7 @@ AROS_LH7(void, glCompressedTexSubImage1D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexSubImage1D(target, level, xoffset, width, format, imageSize, data);
+    glCompressedTexSubImage1D(target, level, xoffset, width, format, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4829,7 +4828,7 @@ AROS_LH9(void, glCompressedTexSubImage2D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
+    glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4850,7 +4849,7 @@ AROS_LH11(void, glCompressedTexSubImage3D,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+    glCompressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4863,7 +4862,7 @@ AROS_LH3(void, glGetCompressedTexImage,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetCompressedTexImage(target, lod, img);
+    glGetCompressedTexImage(target, lod, img);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4875,7 +4874,7 @@ AROS_LH2(void, glMultiTexCoord1d,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1d(target, s);
+    glMultiTexCoord1d(target, s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4887,7 +4886,7 @@ AROS_LH2(void, glMultiTexCoord1dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1dv(target, v);
+    glMultiTexCoord1dv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4899,7 +4898,7 @@ AROS_LH2(void, glMultiTexCoord1f,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1f(target, s);
+    glMultiTexCoord1f(target, s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4911,7 +4910,7 @@ AROS_LH2(void, glMultiTexCoord1fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1fv(target, v);
+    glMultiTexCoord1fv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4923,7 +4922,7 @@ AROS_LH2(void, glMultiTexCoord1i,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1i(target, s);
+    glMultiTexCoord1i(target, s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4935,7 +4934,7 @@ AROS_LH2(void, glMultiTexCoord1iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1iv(target, v);
+    glMultiTexCoord1iv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4947,7 +4946,7 @@ AROS_LH2(void, glMultiTexCoord1s,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1s(target, s);
+    glMultiTexCoord1s(target, s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4959,7 +4958,7 @@ AROS_LH2(void, glMultiTexCoord1sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1sv(target, v);
+    glMultiTexCoord1sv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4972,7 +4971,7 @@ AROS_LH3(void, glMultiTexCoord2d,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2d(target, s, t);
+    glMultiTexCoord2d(target, s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4984,7 +4983,7 @@ AROS_LH2(void, glMultiTexCoord2dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2dv(target, v);
+    glMultiTexCoord2dv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -4997,7 +4996,7 @@ AROS_LH3(void, glMultiTexCoord2f,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2f(target, s, t);
+    glMultiTexCoord2f(target, s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5009,7 +5008,7 @@ AROS_LH2(void, glMultiTexCoord2fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2fv(target, v);
+    glMultiTexCoord2fv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5022,7 +5021,7 @@ AROS_LH3(void, glMultiTexCoord2i,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2i(target, s, t);
+    glMultiTexCoord2i(target, s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5034,7 +5033,7 @@ AROS_LH2(void, glMultiTexCoord2iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2iv(target, v);
+    glMultiTexCoord2iv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5047,7 +5046,7 @@ AROS_LH3(void, glMultiTexCoord2s,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2s(target, s, t);
+    glMultiTexCoord2s(target, s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5059,7 +5058,7 @@ AROS_LH2(void, glMultiTexCoord2sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2sv(target, v);
+    glMultiTexCoord2sv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5073,7 +5072,7 @@ AROS_LH4(void, glMultiTexCoord3d,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3d(target, s, t, r);
+    glMultiTexCoord3d(target, s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5085,7 +5084,7 @@ AROS_LH2(void, glMultiTexCoord3dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3dv(target, v);
+    glMultiTexCoord3dv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5099,7 +5098,7 @@ AROS_LH4(void, glMultiTexCoord3f,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3f(target, s, t, r);
+    glMultiTexCoord3f(target, s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5111,7 +5110,7 @@ AROS_LH2(void, glMultiTexCoord3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3fv(target, v);
+    glMultiTexCoord3fv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5125,7 +5124,7 @@ AROS_LH4(void, glMultiTexCoord3i,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3i(target, s, t, r);
+    glMultiTexCoord3i(target, s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5137,7 +5136,7 @@ AROS_LH2(void, glMultiTexCoord3iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3iv(target, v);
+    glMultiTexCoord3iv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5151,7 +5150,7 @@ AROS_LH4(void, glMultiTexCoord3s,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3s(target, s, t, r);
+    glMultiTexCoord3s(target, s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5163,7 +5162,7 @@ AROS_LH2(void, glMultiTexCoord3sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3sv(target, v);
+    glMultiTexCoord3sv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5178,7 +5177,7 @@ AROS_LH5(void, glMultiTexCoord4d,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4d(target, s, t, r, q);
+    glMultiTexCoord4d(target, s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5190,7 +5189,7 @@ AROS_LH2(void, glMultiTexCoord4dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4dv(target, v);
+    glMultiTexCoord4dv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5205,7 +5204,7 @@ AROS_LH5(void, glMultiTexCoord4f,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4f(target, s, t, r, q);
+    glMultiTexCoord4f(target, s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5217,7 +5216,7 @@ AROS_LH2(void, glMultiTexCoord4fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4fv(target, v);
+    glMultiTexCoord4fv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5232,7 +5231,7 @@ AROS_LH5(void, glMultiTexCoord4i,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4i(target, s, t, r, q);
+    glMultiTexCoord4i(target, s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5244,7 +5243,7 @@ AROS_LH2(void, glMultiTexCoord4iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4iv(target, v);
+    glMultiTexCoord4iv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5259,7 +5258,7 @@ AROS_LH5(void, glMultiTexCoord4s,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4s(target, s, t, r, q);
+    glMultiTexCoord4s(target, s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5271,7 +5270,7 @@ AROS_LH2(void, glMultiTexCoord4sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4sv(target, v);
+    glMultiTexCoord4sv(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5282,7 +5281,7 @@ AROS_LH1(void, glLoadTransposeMatrixd,
 {
     AROS_LIBFUNC_INIT
 
-    mglLoadTransposeMatrixd(m);
+    glLoadTransposeMatrixd(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5293,7 +5292,7 @@ AROS_LH1(void, glLoadTransposeMatrixf,
 {
     AROS_LIBFUNC_INIT
 
-    mglLoadTransposeMatrixf(m);
+    glLoadTransposeMatrixf(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5304,7 +5303,7 @@ AROS_LH1(void, glMultTransposeMatrixd,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultTransposeMatrixd(m);
+    glMultTransposeMatrixd(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5315,7 +5314,7 @@ AROS_LH1(void, glMultTransposeMatrixf,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultTransposeMatrixf(m);
+    glMultTransposeMatrixf(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5327,7 +5326,7 @@ AROS_LH2(void, glSampleCoverage,
 {
     AROS_LIBFUNC_INIT
 
-    mglSampleCoverage(value, invert);
+    glSampleCoverage(value, invert);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5338,7 +5337,7 @@ AROS_LH1(void, glActiveTextureARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglActiveTextureARB(texture);
+    glActiveTextureARB(texture);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5349,7 +5348,7 @@ AROS_LH1(void, glClientActiveTextureARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglClientActiveTextureARB(texture);
+    glClientActiveTextureARB(texture);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5361,7 +5360,7 @@ AROS_LH2(void, glMultiTexCoord1dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1dARB(target, s);
+    glMultiTexCoord1dARB(target, s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5373,7 +5372,7 @@ AROS_LH2(void, glMultiTexCoord1dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1dvARB(target, v);
+    glMultiTexCoord1dvARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5385,7 +5384,7 @@ AROS_LH2(void, glMultiTexCoord1fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1fARB(target, s);
+    glMultiTexCoord1fARB(target, s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5397,7 +5396,7 @@ AROS_LH2(void, glMultiTexCoord1fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1fvARB(target, v);
+    glMultiTexCoord1fvARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5409,7 +5408,7 @@ AROS_LH2(void, glMultiTexCoord1iARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1iARB(target, s);
+    glMultiTexCoord1iARB(target, s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5421,7 +5420,7 @@ AROS_LH2(void, glMultiTexCoord1ivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1ivARB(target, v);
+    glMultiTexCoord1ivARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5433,7 +5432,7 @@ AROS_LH2(void, glMultiTexCoord1sARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1sARB(target, s);
+    glMultiTexCoord1sARB(target, s);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5445,7 +5444,7 @@ AROS_LH2(void, glMultiTexCoord1svARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord1svARB(target, v);
+    glMultiTexCoord1svARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5458,7 +5457,7 @@ AROS_LH3(void, glMultiTexCoord2dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2dARB(target, s, t);
+    glMultiTexCoord2dARB(target, s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5470,7 +5469,7 @@ AROS_LH2(void, glMultiTexCoord2dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2dvARB(target, v);
+    glMultiTexCoord2dvARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5483,7 +5482,7 @@ AROS_LH3(void, glMultiTexCoord2fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2fARB(target, s, t);
+    glMultiTexCoord2fARB(target, s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5495,7 +5494,7 @@ AROS_LH2(void, glMultiTexCoord2fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2fvARB(target, v);
+    glMultiTexCoord2fvARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5508,7 +5507,7 @@ AROS_LH3(void, glMultiTexCoord2iARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2iARB(target, s, t);
+    glMultiTexCoord2iARB(target, s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5520,7 +5519,7 @@ AROS_LH2(void, glMultiTexCoord2ivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2ivARB(target, v);
+    glMultiTexCoord2ivARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5533,7 +5532,7 @@ AROS_LH3(void, glMultiTexCoord2sARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2sARB(target, s, t);
+    glMultiTexCoord2sARB(target, s, t);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5545,7 +5544,7 @@ AROS_LH2(void, glMultiTexCoord2svARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord2svARB(target, v);
+    glMultiTexCoord2svARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5559,7 +5558,7 @@ AROS_LH4(void, glMultiTexCoord3dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3dARB(target, s, t, r);
+    glMultiTexCoord3dARB(target, s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5571,7 +5570,7 @@ AROS_LH2(void, glMultiTexCoord3dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3dvARB(target, v);
+    glMultiTexCoord3dvARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5585,7 +5584,7 @@ AROS_LH4(void, glMultiTexCoord3fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3fARB(target, s, t, r);
+    glMultiTexCoord3fARB(target, s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5597,7 +5596,7 @@ AROS_LH2(void, glMultiTexCoord3fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3fvARB(target, v);
+    glMultiTexCoord3fvARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5611,7 +5610,7 @@ AROS_LH4(void, glMultiTexCoord3iARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3iARB(target, s, t, r);
+    glMultiTexCoord3iARB(target, s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5623,7 +5622,7 @@ AROS_LH2(void, glMultiTexCoord3ivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3ivARB(target, v);
+    glMultiTexCoord3ivARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5637,7 +5636,7 @@ AROS_LH4(void, glMultiTexCoord3sARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3sARB(target, s, t, r);
+    glMultiTexCoord3sARB(target, s, t, r);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5649,7 +5648,7 @@ AROS_LH2(void, glMultiTexCoord3svARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord3svARB(target, v);
+    glMultiTexCoord3svARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5664,7 +5663,7 @@ AROS_LH5(void, glMultiTexCoord4dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4dARB(target, s, t, r, q);
+    glMultiTexCoord4dARB(target, s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5676,7 +5675,7 @@ AROS_LH2(void, glMultiTexCoord4dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4dvARB(target, v);
+    glMultiTexCoord4dvARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5691,7 +5690,7 @@ AROS_LH5(void, glMultiTexCoord4fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4fARB(target, s, t, r, q);
+    glMultiTexCoord4fARB(target, s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5703,7 +5702,7 @@ AROS_LH2(void, glMultiTexCoord4fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4fvARB(target, v);
+    glMultiTexCoord4fvARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5718,7 +5717,7 @@ AROS_LH5(void, glMultiTexCoord4iARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4iARB(target, s, t, r, q);
+    glMultiTexCoord4iARB(target, s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5730,7 +5729,7 @@ AROS_LH2(void, glMultiTexCoord4ivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4ivARB(target, v);
+    glMultiTexCoord4ivARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5745,7 +5744,7 @@ AROS_LH5(void, glMultiTexCoord4sARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4sARB(target, s, t, r, q);
+    glMultiTexCoord4sARB(target, s, t, r, q);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5757,7 +5756,7 @@ AROS_LH2(void, glMultiTexCoord4svARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiTexCoord4svARB(target, v);
+    glMultiTexCoord4svARB(target, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5771,7 +5770,7 @@ AROS_LH4(void, glBlendFuncSeparate,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendFuncSeparate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
+    glBlendFuncSeparate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5782,7 +5781,7 @@ AROS_LH1(void, glFogCoordf,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogCoordf(coord);
+    glFogCoordf(coord);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5793,7 +5792,7 @@ AROS_LH1(void, glFogCoordfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogCoordfv(coord);
+    glFogCoordfv(coord);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5804,7 +5803,7 @@ AROS_LH1(void, glFogCoordd,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogCoordd(coord);
+    glFogCoordd(coord);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5815,7 +5814,7 @@ AROS_LH1(void, glFogCoorddv,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogCoorddv(coord);
+    glFogCoorddv(coord);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5828,7 +5827,7 @@ AROS_LH3(void, glFogCoordPointer,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogCoordPointer(type, stride, pointer);
+    glFogCoordPointer(type, stride, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5842,7 +5841,7 @@ AROS_LH4(void, glMultiDrawArrays,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiDrawArrays(mode, first, count, primcount);
+    glMultiDrawArrays(mode, first, count, primcount);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5857,7 +5856,7 @@ AROS_LH5(void, glMultiDrawElements,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiDrawElements(mode, count, type, indices, primcount);
+    glMultiDrawElements(mode, count, type, indices, primcount);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5869,7 +5868,7 @@ AROS_LH2(void, glPointParameterf,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameterf(pname, param);
+    glPointParameterf(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5881,7 +5880,7 @@ AROS_LH2(void, glPointParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameterfv(pname, params);
+    glPointParameterfv(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5893,7 +5892,7 @@ AROS_LH2(void, glPointParameteri,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameteri(pname, param);
+    glPointParameteri(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5905,7 +5904,7 @@ AROS_LH2(void, glPointParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameteriv(pname, params);
+    glPointParameteriv(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5918,7 +5917,7 @@ AROS_LH3(void, glSecondaryColor3b,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3b(red, green, blue);
+    glSecondaryColor3b(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5929,7 +5928,7 @@ AROS_LH1(void, glSecondaryColor3bv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3bv(v);
+    glSecondaryColor3bv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5942,7 +5941,7 @@ AROS_LH3(void, glSecondaryColor3d,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3d(red, green, blue);
+    glSecondaryColor3d(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5953,7 +5952,7 @@ AROS_LH1(void, glSecondaryColor3dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3dv(v);
+    glSecondaryColor3dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5966,7 +5965,7 @@ AROS_LH3(void, glSecondaryColor3f,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3f(red, green, blue);
+    glSecondaryColor3f(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5977,7 +5976,7 @@ AROS_LH1(void, glSecondaryColor3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3fv(v);
+    glSecondaryColor3fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -5990,7 +5989,7 @@ AROS_LH3(void, glSecondaryColor3i,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3i(red, green, blue);
+    glSecondaryColor3i(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6001,7 +6000,7 @@ AROS_LH1(void, glSecondaryColor3iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3iv(v);
+    glSecondaryColor3iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6014,7 +6013,7 @@ AROS_LH3(void, glSecondaryColor3s,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3s(red, green, blue);
+    glSecondaryColor3s(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6025,7 +6024,7 @@ AROS_LH1(void, glSecondaryColor3sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3sv(v);
+    glSecondaryColor3sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6038,7 +6037,7 @@ AROS_LH3(void, glSecondaryColor3ub,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3ub(red, green, blue);
+    glSecondaryColor3ub(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6049,7 +6048,7 @@ AROS_LH1(void, glSecondaryColor3ubv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3ubv(v);
+    glSecondaryColor3ubv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6062,7 +6061,7 @@ AROS_LH3(void, glSecondaryColor3ui,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3ui(red, green, blue);
+    glSecondaryColor3ui(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6073,7 +6072,7 @@ AROS_LH1(void, glSecondaryColor3uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3uiv(v);
+    glSecondaryColor3uiv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6086,7 +6085,7 @@ AROS_LH3(void, glSecondaryColor3us,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3us(red, green, blue);
+    glSecondaryColor3us(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6097,7 +6096,7 @@ AROS_LH1(void, glSecondaryColor3usv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3usv(v);
+    glSecondaryColor3usv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6111,7 +6110,7 @@ AROS_LH4(void, glSecondaryColorPointer,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColorPointer(size, type, stride, pointer);
+    glSecondaryColorPointer(size, type, stride, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6123,7 +6122,7 @@ AROS_LH2(void, glWindowPos2d,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2d(x, y);
+    glWindowPos2d(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6134,7 +6133,7 @@ AROS_LH1(void, glWindowPos2dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2dv(v);
+    glWindowPos2dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6146,7 +6145,7 @@ AROS_LH2(void, glWindowPos2f,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2f(x, y);
+    glWindowPos2f(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6157,7 +6156,7 @@ AROS_LH1(void, glWindowPos2fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2fv(v);
+    glWindowPos2fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6169,7 +6168,7 @@ AROS_LH2(void, glWindowPos2i,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2i(x, y);
+    glWindowPos2i(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6180,7 +6179,7 @@ AROS_LH1(void, glWindowPos2iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2iv(v);
+    glWindowPos2iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6192,7 +6191,7 @@ AROS_LH2(void, glWindowPos2s,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2s(x, y);
+    glWindowPos2s(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6203,7 +6202,7 @@ AROS_LH1(void, glWindowPos2sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2sv(v);
+    glWindowPos2sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6216,7 +6215,7 @@ AROS_LH3(void, glWindowPos3d,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3d(x, y, z);
+    glWindowPos3d(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6227,7 +6226,7 @@ AROS_LH1(void, glWindowPos3dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3dv(v);
+    glWindowPos3dv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6240,7 +6239,7 @@ AROS_LH3(void, glWindowPos3f,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3f(x, y, z);
+    glWindowPos3f(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6251,7 +6250,7 @@ AROS_LH1(void, glWindowPos3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3fv(v);
+    glWindowPos3fv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6264,7 +6263,7 @@ AROS_LH3(void, glWindowPos3i,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3i(x, y, z);
+    glWindowPos3i(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6275,7 +6274,7 @@ AROS_LH1(void, glWindowPos3iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3iv(v);
+    glWindowPos3iv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6288,7 +6287,7 @@ AROS_LH3(void, glWindowPos3s,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3s(x, y, z);
+    glWindowPos3s(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6299,7 +6298,7 @@ AROS_LH1(void, glWindowPos3sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3sv(v);
+    glWindowPos3sv(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6311,7 +6310,7 @@ AROS_LH2(void, glGenQueries,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenQueries(n, ids);
+    glGenQueries(n, ids);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6323,7 +6322,7 @@ AROS_LH2(void, glDeleteQueries,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteQueries(n, ids);
+    glDeleteQueries(n, ids);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6334,7 +6333,7 @@ AROS_LH1(GLboolean, glIsQuery,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsQuery(id);
+    GLboolean _return = glIsQuery(id);
 
     return _return;
 
@@ -6348,7 +6347,7 @@ AROS_LH2(void, glBeginQuery,
 {
     AROS_LIBFUNC_INIT
 
-    mglBeginQuery(target, id);
+    glBeginQuery(target, id);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6359,7 +6358,7 @@ AROS_LH1(void, glEndQuery,
 {
     AROS_LIBFUNC_INIT
 
-    mglEndQuery(target);
+    glEndQuery(target);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6372,7 +6371,7 @@ AROS_LH3(void, glGetQueryiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetQueryiv(target, pname, params);
+    glGetQueryiv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6385,7 +6384,7 @@ AROS_LH3(void, glGetQueryObjectiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetQueryObjectiv(id, pname, params);
+    glGetQueryObjectiv(id, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6398,7 +6397,7 @@ AROS_LH3(void, glGetQueryObjectuiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetQueryObjectuiv(id, pname, params);
+    glGetQueryObjectuiv(id, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6410,7 +6409,7 @@ AROS_LH2(void, glBindBuffer,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindBuffer(target, buffer);
+    glBindBuffer(target, buffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6422,7 +6421,7 @@ AROS_LH2(void, glDeleteBuffers,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteBuffers(n, buffers);
+    glDeleteBuffers(n, buffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6434,7 +6433,7 @@ AROS_LH2(void, glGenBuffers,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenBuffers(n, buffers);
+    glGenBuffers(n, buffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6445,7 +6444,7 @@ AROS_LH1(GLboolean, glIsBuffer,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsBuffer(buffer);
+    GLboolean _return = glIsBuffer(buffer);
 
     return _return;
 
@@ -6461,7 +6460,7 @@ AROS_LH4(void, glBufferData,
 {
     AROS_LIBFUNC_INIT
 
-    mglBufferData(target, size, data, usage);
+    glBufferData(target, size, data, usage);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6475,7 +6474,7 @@ AROS_LH4(void, glBufferSubData,
 {
     AROS_LIBFUNC_INIT
 
-    mglBufferSubData(target, offset, size, data);
+    glBufferSubData(target, offset, size, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6489,7 +6488,7 @@ AROS_LH4(void, glGetBufferSubData,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetBufferSubData(target, offset, size, data);
+    glGetBufferSubData(target, offset, size, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6501,7 +6500,7 @@ AROS_LH2(GLvoid*, glMapBuffer,
 {
     AROS_LIBFUNC_INIT
 
-    GLvoid* _return = mglMapBuffer(target, access);
+    GLvoid* _return = glMapBuffer(target, access);
 
     return _return;
 
@@ -6514,7 +6513,7 @@ AROS_LH1(GLboolean, glUnmapBuffer,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglUnmapBuffer(target);
+    GLboolean _return = glUnmapBuffer(target);
 
     return _return;
 
@@ -6529,7 +6528,7 @@ AROS_LH3(void, glGetBufferParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetBufferParameteriv(target, pname, params);
+    glGetBufferParameteriv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6542,7 +6541,7 @@ AROS_LH3(void, glGetBufferPointerv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetBufferPointerv(target, pname, params);
+    glGetBufferPointerv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6554,7 +6553,7 @@ AROS_LH2(void, glBlendEquationSeparate,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendEquationSeparate(modeRGB, modeAlpha);
+    glBlendEquationSeparate(modeRGB, modeAlpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6566,7 +6565,7 @@ AROS_LH2(void, glDrawBuffers,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawBuffers(n, bufs);
+    glDrawBuffers(n, bufs);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6580,7 +6579,7 @@ AROS_LH4(void, glStencilOpSeparate,
 {
     AROS_LIBFUNC_INIT
 
-    mglStencilOpSeparate(face, sfail, dpfail, dppass);
+    glStencilOpSeparate(face, sfail, dpfail, dppass);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6594,7 +6593,7 @@ AROS_LH4(void, glStencilFuncSeparate,
 {
     AROS_LIBFUNC_INIT
 
-    mglStencilFuncSeparate(face, func, ref, mask);
+    glStencilFuncSeparate(face, func, ref, mask);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6606,7 +6605,7 @@ AROS_LH2(void, glStencilMaskSeparate,
 {
     AROS_LIBFUNC_INIT
 
-    mglStencilMaskSeparate(face, mask);
+    glStencilMaskSeparate(face, mask);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6618,7 +6617,7 @@ AROS_LH2(void, glAttachShader,
 {
     AROS_LIBFUNC_INIT
 
-    mglAttachShader(program, shader);
+    glAttachShader(program, shader);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6631,7 +6630,7 @@ AROS_LH3(void, glBindAttribLocation,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindAttribLocation(program, index, name);
+    glBindAttribLocation(program, index, name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6642,7 +6641,7 @@ AROS_LH1(void, glCompileShader,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompileShader(shader);
+    glCompileShader(shader);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6652,7 +6651,7 @@ AROS_LH0(GLuint, glCreateProgram,
 {
     AROS_LIBFUNC_INIT
 
-    GLuint _return = mglCreateProgram();
+    GLuint _return = glCreateProgram();
 
     return _return;
 
@@ -6665,7 +6664,7 @@ AROS_LH1(GLuint, glCreateShader,
 {
     AROS_LIBFUNC_INIT
 
-    GLuint _return = mglCreateShader(type);
+    GLuint _return = glCreateShader(type);
 
     return _return;
 
@@ -6678,7 +6677,7 @@ AROS_LH1(void, glDeleteProgram,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteProgram(program);
+    glDeleteProgram(program);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6689,7 +6688,7 @@ AROS_LH1(void, glDeleteShader,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteShader(shader);
+    glDeleteShader(shader);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6701,7 +6700,7 @@ AROS_LH2(void, glDetachShader,
 {
     AROS_LIBFUNC_INIT
 
-    mglDetachShader(program, shader);
+    glDetachShader(program, shader);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6712,7 +6711,7 @@ AROS_LH1(void, glDisableVertexAttribArray,
 {
     AROS_LIBFUNC_INIT
 
-    mglDisableVertexAttribArray(index);
+    glDisableVertexAttribArray(index);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6723,7 +6722,7 @@ AROS_LH1(void, glEnableVertexAttribArray,
 {
     AROS_LIBFUNC_INIT
 
-    mglEnableVertexAttribArray(index);
+    glEnableVertexAttribArray(index);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6740,7 +6739,7 @@ AROS_LH7(void, glGetActiveAttrib,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetActiveAttrib(program, index, bufSize, length, size, type, name);
+    glGetActiveAttrib(program, index, bufSize, length, size, type, name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6757,7 +6756,7 @@ AROS_LH7(void, glGetActiveUniform,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetActiveUniform(program, index, bufSize, length, size, type, name);
+    glGetActiveUniform(program, index, bufSize, length, size, type, name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6771,7 +6770,7 @@ AROS_LH4(void, glGetAttachedShaders,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetAttachedShaders(program, maxCount, count, obj);
+    glGetAttachedShaders(program, maxCount, count, obj);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6783,7 +6782,7 @@ AROS_LH2(GLint, glGetAttribLocation,
 {
     AROS_LIBFUNC_INIT
 
-    GLint _return = mglGetAttribLocation(program, name);
+    GLint _return = glGetAttribLocation(program, name);
 
     return _return;
 
@@ -6798,7 +6797,7 @@ AROS_LH3(void, glGetProgramiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramiv(program, pname, params);
+    glGetProgramiv(program, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6812,7 +6811,7 @@ AROS_LH4(void, glGetProgramInfoLog,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramInfoLog(program, bufSize, length, infoLog);
+    glGetProgramInfoLog(program, bufSize, length, infoLog);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6825,7 +6824,7 @@ AROS_LH3(void, glGetShaderiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetShaderiv(shader, pname, params);
+    glGetShaderiv(shader, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6839,7 +6838,7 @@ AROS_LH4(void, glGetShaderInfoLog,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetShaderInfoLog(shader, bufSize, length, infoLog);
+    glGetShaderInfoLog(shader, bufSize, length, infoLog);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6853,7 +6852,7 @@ AROS_LH4(void, glGetShaderSource,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetShaderSource(shader, bufSize, length, source);
+    glGetShaderSource(shader, bufSize, length, source);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6865,7 +6864,7 @@ AROS_LH2(GLint, glGetUniformLocation,
 {
     AROS_LIBFUNC_INIT
 
-    GLint _return = mglGetUniformLocation(program, name);
+    GLint _return = glGetUniformLocation(program, name);
 
     return _return;
 
@@ -6880,7 +6879,7 @@ AROS_LH3(void, glGetUniformfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetUniformfv(program, location, params);
+    glGetUniformfv(program, location, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6893,7 +6892,7 @@ AROS_LH3(void, glGetUniformiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetUniformiv(program, location, params);
+    glGetUniformiv(program, location, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6906,7 +6905,7 @@ AROS_LH3(void, glGetVertexAttribdv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribdv(index, pname, params);
+    glGetVertexAttribdv(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6919,7 +6918,7 @@ AROS_LH3(void, glGetVertexAttribfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribfv(index, pname, params);
+    glGetVertexAttribfv(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6932,7 +6931,7 @@ AROS_LH3(void, glGetVertexAttribiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribiv(index, pname, params);
+    glGetVertexAttribiv(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6945,7 +6944,7 @@ AROS_LH3(void, glGetVertexAttribPointerv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribPointerv(index, pname, pointer);
+    glGetVertexAttribPointerv(index, pname, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6956,7 +6955,7 @@ AROS_LH1(GLboolean, glIsProgram,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsProgram(program);
+    GLboolean _return = glIsProgram(program);
 
     return _return;
 
@@ -6969,7 +6968,7 @@ AROS_LH1(GLboolean, glIsShader,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsShader(shader);
+    GLboolean _return = glIsShader(shader);
 
     return _return;
 
@@ -6982,7 +6981,7 @@ AROS_LH1(void, glLinkProgram,
 {
     AROS_LIBFUNC_INIT
 
-    mglLinkProgram(program);
+    glLinkProgram(program);
 
     AROS_LIBFUNC_EXIT
 }
@@ -6996,7 +6995,7 @@ AROS_LH4(void, glShaderSource,
 {
     AROS_LIBFUNC_INIT
 
-    mglShaderSource(shader, count, string, length);
+    glShaderSource(shader, count, string, length);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7007,7 +7006,7 @@ AROS_LH1(void, glUseProgram,
 {
     AROS_LIBFUNC_INIT
 
-    mglUseProgram(program);
+    glUseProgram(program);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7019,7 +7018,7 @@ AROS_LH2(void, glUniform1f,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1f(location, v0);
+    glUniform1f(location, v0);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7032,7 +7031,7 @@ AROS_LH3(void, glUniform2f,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2f(location, v0, v1);
+    glUniform2f(location, v0, v1);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7046,7 +7045,7 @@ AROS_LH4(void, glUniform3f,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3f(location, v0, v1, v2);
+    glUniform3f(location, v0, v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7061,7 +7060,7 @@ AROS_LH5(void, glUniform4f,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4f(location, v0, v1, v2, v3);
+    glUniform4f(location, v0, v1, v2, v3);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7073,7 +7072,7 @@ AROS_LH2(void, glUniform1i,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1i(location, v0);
+    glUniform1i(location, v0);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7086,7 +7085,7 @@ AROS_LH3(void, glUniform2i,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2i(location, v0, v1);
+    glUniform2i(location, v0, v1);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7100,7 +7099,7 @@ AROS_LH4(void, glUniform3i,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3i(location, v0, v1, v2);
+    glUniform3i(location, v0, v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7115,7 +7114,7 @@ AROS_LH5(void, glUniform4i,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4i(location, v0, v1, v2, v3);
+    glUniform4i(location, v0, v1, v2, v3);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7128,7 +7127,7 @@ AROS_LH3(void, glUniform1fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1fv(location, count, value);
+    glUniform1fv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7141,7 +7140,7 @@ AROS_LH3(void, glUniform2fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2fv(location, count, value);
+    glUniform2fv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7154,7 +7153,7 @@ AROS_LH3(void, glUniform3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3fv(location, count, value);
+    glUniform3fv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7167,7 +7166,7 @@ AROS_LH3(void, glUniform4fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4fv(location, count, value);
+    glUniform4fv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7180,7 +7179,7 @@ AROS_LH3(void, glUniform1iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1iv(location, count, value);
+    glUniform1iv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7193,7 +7192,7 @@ AROS_LH3(void, glUniform2iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2iv(location, count, value);
+    glUniform2iv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7206,7 +7205,7 @@ AROS_LH3(void, glUniform3iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3iv(location, count, value);
+    glUniform3iv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7219,7 +7218,7 @@ AROS_LH3(void, glUniform4iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4iv(location, count, value);
+    glUniform4iv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7233,7 +7232,7 @@ AROS_LH4(void, glUniformMatrix2fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix2fv(location, count, transpose, value);
+    glUniformMatrix2fv(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7247,7 +7246,7 @@ AROS_LH4(void, glUniformMatrix3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix3fv(location, count, transpose, value);
+    glUniformMatrix3fv(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7261,7 +7260,7 @@ AROS_LH4(void, glUniformMatrix4fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix4fv(location, count, transpose, value);
+    glUniformMatrix4fv(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7272,7 +7271,7 @@ AROS_LH1(void, glValidateProgram,
 {
     AROS_LIBFUNC_INIT
 
-    mglValidateProgram(program);
+    glValidateProgram(program);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7284,7 +7283,7 @@ AROS_LH2(void, glVertexAttrib1d,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1d(index, x);
+    glVertexAttrib1d(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7296,7 +7295,7 @@ AROS_LH2(void, glVertexAttrib1dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1dv(index, v);
+    glVertexAttrib1dv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7308,7 +7307,7 @@ AROS_LH2(void, glVertexAttrib1f,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1f(index, x);
+    glVertexAttrib1f(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7320,7 +7319,7 @@ AROS_LH2(void, glVertexAttrib1fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1fv(index, v);
+    glVertexAttrib1fv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7332,7 +7331,7 @@ AROS_LH2(void, glVertexAttrib1s,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1s(index, x);
+    glVertexAttrib1s(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7344,7 +7343,7 @@ AROS_LH2(void, glVertexAttrib1sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1sv(index, v);
+    glVertexAttrib1sv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7357,7 +7356,7 @@ AROS_LH3(void, glVertexAttrib2d,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2d(index, x, y);
+    glVertexAttrib2d(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7369,7 +7368,7 @@ AROS_LH2(void, glVertexAttrib2dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2dv(index, v);
+    glVertexAttrib2dv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7382,7 +7381,7 @@ AROS_LH3(void, glVertexAttrib2f,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2f(index, x, y);
+    glVertexAttrib2f(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7394,7 +7393,7 @@ AROS_LH2(void, glVertexAttrib2fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2fv(index, v);
+    glVertexAttrib2fv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7407,7 +7406,7 @@ AROS_LH3(void, glVertexAttrib2s,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2s(index, x, y);
+    glVertexAttrib2s(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7419,7 +7418,7 @@ AROS_LH2(void, glVertexAttrib2sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2sv(index, v);
+    glVertexAttrib2sv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7433,7 +7432,7 @@ AROS_LH4(void, glVertexAttrib3d,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3d(index, x, y, z);
+    glVertexAttrib3d(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7445,7 +7444,7 @@ AROS_LH2(void, glVertexAttrib3dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3dv(index, v);
+    glVertexAttrib3dv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7459,7 +7458,7 @@ AROS_LH4(void, glVertexAttrib3f,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3f(index, x, y, z);
+    glVertexAttrib3f(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7471,7 +7470,7 @@ AROS_LH2(void, glVertexAttrib3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3fv(index, v);
+    glVertexAttrib3fv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7485,7 +7484,7 @@ AROS_LH4(void, glVertexAttrib3s,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3s(index, x, y, z);
+    glVertexAttrib3s(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7497,7 +7496,7 @@ AROS_LH2(void, glVertexAttrib3sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3sv(index, v);
+    glVertexAttrib3sv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7509,7 +7508,7 @@ AROS_LH2(void, glVertexAttrib4Nbv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4Nbv(index, v);
+    glVertexAttrib4Nbv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7521,7 +7520,7 @@ AROS_LH2(void, glVertexAttrib4Niv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4Niv(index, v);
+    glVertexAttrib4Niv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7533,7 +7532,7 @@ AROS_LH2(void, glVertexAttrib4Nsv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4Nsv(index, v);
+    glVertexAttrib4Nsv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7548,7 +7547,7 @@ AROS_LH5(void, glVertexAttrib4Nub,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4Nub(index, x, y, z, w);
+    glVertexAttrib4Nub(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7560,7 +7559,7 @@ AROS_LH2(void, glVertexAttrib4Nubv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4Nubv(index, v);
+    glVertexAttrib4Nubv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7572,7 +7571,7 @@ AROS_LH2(void, glVertexAttrib4Nuiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4Nuiv(index, v);
+    glVertexAttrib4Nuiv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7584,7 +7583,7 @@ AROS_LH2(void, glVertexAttrib4Nusv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4Nusv(index, v);
+    glVertexAttrib4Nusv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7596,7 +7595,7 @@ AROS_LH2(void, glVertexAttrib4bv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4bv(index, v);
+    glVertexAttrib4bv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7611,7 +7610,7 @@ AROS_LH5(void, glVertexAttrib4d,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4d(index, x, y, z, w);
+    glVertexAttrib4d(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7623,7 +7622,7 @@ AROS_LH2(void, glVertexAttrib4dv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4dv(index, v);
+    glVertexAttrib4dv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7638,7 +7637,7 @@ AROS_LH5(void, glVertexAttrib4f,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4f(index, x, y, z, w);
+    glVertexAttrib4f(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7650,7 +7649,7 @@ AROS_LH2(void, glVertexAttrib4fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4fv(index, v);
+    glVertexAttrib4fv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7662,7 +7661,7 @@ AROS_LH2(void, glVertexAttrib4iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4iv(index, v);
+    glVertexAttrib4iv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7677,7 +7676,7 @@ AROS_LH5(void, glVertexAttrib4s,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4s(index, x, y, z, w);
+    glVertexAttrib4s(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7689,7 +7688,7 @@ AROS_LH2(void, glVertexAttrib4sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4sv(index, v);
+    glVertexAttrib4sv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7701,7 +7700,7 @@ AROS_LH2(void, glVertexAttrib4ubv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4ubv(index, v);
+    glVertexAttrib4ubv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7713,7 +7712,7 @@ AROS_LH2(void, glVertexAttrib4uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4uiv(index, v);
+    glVertexAttrib4uiv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7725,7 +7724,7 @@ AROS_LH2(void, glVertexAttrib4usv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4usv(index, v);
+    glVertexAttrib4usv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7741,7 +7740,7 @@ AROS_LH6(void, glVertexAttribPointer,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribPointer(index, size, type, normalized, stride, pointer);
+    glVertexAttribPointer(index, size, type, normalized, stride, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7755,7 +7754,7 @@ AROS_LH4(void, glUniformMatrix2x3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix2x3fv(location, count, transpose, value);
+    glUniformMatrix2x3fv(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7769,7 +7768,7 @@ AROS_LH4(void, glUniformMatrix3x2fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix3x2fv(location, count, transpose, value);
+    glUniformMatrix3x2fv(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7783,7 +7782,7 @@ AROS_LH4(void, glUniformMatrix2x4fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix2x4fv(location, count, transpose, value);
+    glUniformMatrix2x4fv(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7797,7 +7796,7 @@ AROS_LH4(void, glUniformMatrix4x2fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix4x2fv(location, count, transpose, value);
+    glUniformMatrix4x2fv(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7811,7 +7810,7 @@ AROS_LH4(void, glUniformMatrix3x4fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix3x4fv(location, count, transpose, value);
+    glUniformMatrix3x4fv(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7825,7 +7824,7 @@ AROS_LH4(void, glUniformMatrix4x3fv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix4x3fv(location, count, transpose, value);
+    glUniformMatrix4x3fv(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7836,7 +7835,7 @@ AROS_LH1(void, glLoadTransposeMatrixfARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglLoadTransposeMatrixfARB(m);
+    glLoadTransposeMatrixfARB(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7847,7 +7846,7 @@ AROS_LH1(void, glLoadTransposeMatrixdARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglLoadTransposeMatrixdARB(m);
+    glLoadTransposeMatrixdARB(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7858,7 +7857,7 @@ AROS_LH1(void, glMultTransposeMatrixfARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultTransposeMatrixfARB(m);
+    glMultTransposeMatrixfARB(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7869,7 +7868,7 @@ AROS_LH1(void, glMultTransposeMatrixdARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultTransposeMatrixdARB(m);
+    glMultTransposeMatrixdARB(m);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7881,7 +7880,7 @@ AROS_LH2(void, glSampleCoverageARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglSampleCoverageARB(value, invert);
+    glSampleCoverageARB(value, invert);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7900,7 +7899,7 @@ AROS_LH9(void, glCompressedTexImage3DARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexImage3DARB(target, level, internalformat, width, height, depth, border, imageSize, data);
+    glCompressedTexImage3DARB(target, level, internalformat, width, height, depth, border, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7918,7 +7917,7 @@ AROS_LH8(void, glCompressedTexImage2DARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexImage2DARB(target, level, internalformat, width, height, border, imageSize, data);
+    glCompressedTexImage2DARB(target, level, internalformat, width, height, border, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7935,7 +7934,7 @@ AROS_LH7(void, glCompressedTexImage1DARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexImage1DARB(target, level, internalformat, width, border, imageSize, data);
+    glCompressedTexImage1DARB(target, level, internalformat, width, border, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7956,7 +7955,7 @@ AROS_LH11(void, glCompressedTexSubImage3DARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexSubImage3DARB(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+    glCompressedTexSubImage3DARB(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7975,7 +7974,7 @@ AROS_LH9(void, glCompressedTexSubImage2DARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexSubImage2DARB(target, level, xoffset, yoffset, width, height, format, imageSize, data);
+    glCompressedTexSubImage2DARB(target, level, xoffset, yoffset, width, height, format, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -7992,7 +7991,7 @@ AROS_LH7(void, glCompressedTexSubImage1DARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompressedTexSubImage1DARB(target, level, xoffset, width, format, imageSize, data);
+    glCompressedTexSubImage1DARB(target, level, xoffset, width, format, imageSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8005,7 +8004,7 @@ AROS_LH3(void, glGetCompressedTexImageARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetCompressedTexImageARB(target, level, img);
+    glGetCompressedTexImageARB(target, level, img);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8017,7 +8016,7 @@ AROS_LH2(void, glPointParameterfARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameterfARB(pname, param);
+    glPointParameterfARB(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8029,7 +8028,7 @@ AROS_LH2(void, glPointParameterfvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameterfvARB(pname, params);
+    glPointParameterfvARB(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8041,7 +8040,7 @@ AROS_LH2(void, glWindowPos2dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2dARB(x, y);
+    glWindowPos2dARB(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8052,7 +8051,7 @@ AROS_LH1(void, glWindowPos2dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2dvARB(v);
+    glWindowPos2dvARB(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8064,7 +8063,7 @@ AROS_LH2(void, glWindowPos2fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2fARB(x, y);
+    glWindowPos2fARB(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8075,7 +8074,7 @@ AROS_LH1(void, glWindowPos2fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2fvARB(v);
+    glWindowPos2fvARB(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8087,7 +8086,7 @@ AROS_LH2(void, glWindowPos2iARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2iARB(x, y);
+    glWindowPos2iARB(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8098,7 +8097,7 @@ AROS_LH1(void, glWindowPos2ivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2ivARB(v);
+    glWindowPos2ivARB(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8110,7 +8109,7 @@ AROS_LH2(void, glWindowPos2sARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2sARB(x, y);
+    glWindowPos2sARB(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8121,7 +8120,7 @@ AROS_LH1(void, glWindowPos2svARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2svARB(v);
+    glWindowPos2svARB(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8134,7 +8133,7 @@ AROS_LH3(void, glWindowPos3dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3dARB(x, y, z);
+    glWindowPos3dARB(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8145,7 +8144,7 @@ AROS_LH1(void, glWindowPos3dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3dvARB(v);
+    glWindowPos3dvARB(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8158,7 +8157,7 @@ AROS_LH3(void, glWindowPos3fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3fARB(x, y, z);
+    glWindowPos3fARB(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8169,7 +8168,7 @@ AROS_LH1(void, glWindowPos3fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3fvARB(v);
+    glWindowPos3fvARB(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8182,7 +8181,7 @@ AROS_LH3(void, glWindowPos3iARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3iARB(x, y, z);
+    glWindowPos3iARB(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8193,7 +8192,7 @@ AROS_LH1(void, glWindowPos3ivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3ivARB(v);
+    glWindowPos3ivARB(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8206,7 +8205,7 @@ AROS_LH3(void, glWindowPos3sARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3sARB(x, y, z);
+    glWindowPos3sARB(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8217,7 +8216,7 @@ AROS_LH1(void, glWindowPos3svARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3svARB(v);
+    glWindowPos3svARB(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8229,7 +8228,7 @@ AROS_LH2(void, glVertexAttrib1dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1dARB(index, x);
+    glVertexAttrib1dARB(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8241,7 +8240,7 @@ AROS_LH2(void, glVertexAttrib1dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1dvARB(index, v);
+    glVertexAttrib1dvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8253,7 +8252,7 @@ AROS_LH2(void, glVertexAttrib1fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1fARB(index, x);
+    glVertexAttrib1fARB(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8265,7 +8264,7 @@ AROS_LH2(void, glVertexAttrib1fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1fvARB(index, v);
+    glVertexAttrib1fvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8277,7 +8276,7 @@ AROS_LH2(void, glVertexAttrib1sARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1sARB(index, x);
+    glVertexAttrib1sARB(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8289,7 +8288,7 @@ AROS_LH2(void, glVertexAttrib1svARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1svARB(index, v);
+    glVertexAttrib1svARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8302,7 +8301,7 @@ AROS_LH3(void, glVertexAttrib2dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2dARB(index, x, y);
+    glVertexAttrib2dARB(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8314,7 +8313,7 @@ AROS_LH2(void, glVertexAttrib2dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2dvARB(index, v);
+    glVertexAttrib2dvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8327,7 +8326,7 @@ AROS_LH3(void, glVertexAttrib2fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2fARB(index, x, y);
+    glVertexAttrib2fARB(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8339,7 +8338,7 @@ AROS_LH2(void, glVertexAttrib2fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2fvARB(index, v);
+    glVertexAttrib2fvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8352,7 +8351,7 @@ AROS_LH3(void, glVertexAttrib2sARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2sARB(index, x, y);
+    glVertexAttrib2sARB(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8364,7 +8363,7 @@ AROS_LH2(void, glVertexAttrib2svARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2svARB(index, v);
+    glVertexAttrib2svARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8378,7 +8377,7 @@ AROS_LH4(void, glVertexAttrib3dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3dARB(index, x, y, z);
+    glVertexAttrib3dARB(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8390,7 +8389,7 @@ AROS_LH2(void, glVertexAttrib3dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3dvARB(index, v);
+    glVertexAttrib3dvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8404,7 +8403,7 @@ AROS_LH4(void, glVertexAttrib3fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3fARB(index, x, y, z);
+    glVertexAttrib3fARB(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8416,7 +8415,7 @@ AROS_LH2(void, glVertexAttrib3fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3fvARB(index, v);
+    glVertexAttrib3fvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8430,7 +8429,7 @@ AROS_LH4(void, glVertexAttrib3sARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3sARB(index, x, y, z);
+    glVertexAttrib3sARB(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8442,7 +8441,7 @@ AROS_LH2(void, glVertexAttrib3svARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3svARB(index, v);
+    glVertexAttrib3svARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8454,7 +8453,7 @@ AROS_LH2(void, glVertexAttrib4NbvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4NbvARB(index, v);
+    glVertexAttrib4NbvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8466,7 +8465,7 @@ AROS_LH2(void, glVertexAttrib4NivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4NivARB(index, v);
+    glVertexAttrib4NivARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8478,7 +8477,7 @@ AROS_LH2(void, glVertexAttrib4NsvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4NsvARB(index, v);
+    glVertexAttrib4NsvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8493,7 +8492,7 @@ AROS_LH5(void, glVertexAttrib4NubARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4NubARB(index, x, y, z, w);
+    glVertexAttrib4NubARB(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8505,7 +8504,7 @@ AROS_LH2(void, glVertexAttrib4NubvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4NubvARB(index, v);
+    glVertexAttrib4NubvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8517,7 +8516,7 @@ AROS_LH2(void, glVertexAttrib4NuivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4NuivARB(index, v);
+    glVertexAttrib4NuivARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8529,7 +8528,7 @@ AROS_LH2(void, glVertexAttrib4NusvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4NusvARB(index, v);
+    glVertexAttrib4NusvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8541,7 +8540,7 @@ AROS_LH2(void, glVertexAttrib4bvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4bvARB(index, v);
+    glVertexAttrib4bvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8556,7 +8555,7 @@ AROS_LH5(void, glVertexAttrib4dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4dARB(index, x, y, z, w);
+    glVertexAttrib4dARB(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8568,7 +8567,7 @@ AROS_LH2(void, glVertexAttrib4dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4dvARB(index, v);
+    glVertexAttrib4dvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8583,7 +8582,7 @@ AROS_LH5(void, glVertexAttrib4fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4fARB(index, x, y, z, w);
+    glVertexAttrib4fARB(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8595,7 +8594,7 @@ AROS_LH2(void, glVertexAttrib4fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4fvARB(index, v);
+    glVertexAttrib4fvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8607,7 +8606,7 @@ AROS_LH2(void, glVertexAttrib4ivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4ivARB(index, v);
+    glVertexAttrib4ivARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8622,7 +8621,7 @@ AROS_LH5(void, glVertexAttrib4sARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4sARB(index, x, y, z, w);
+    glVertexAttrib4sARB(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8634,7 +8633,7 @@ AROS_LH2(void, glVertexAttrib4svARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4svARB(index, v);
+    glVertexAttrib4svARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8646,7 +8645,7 @@ AROS_LH2(void, glVertexAttrib4ubvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4ubvARB(index, v);
+    glVertexAttrib4ubvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8658,7 +8657,7 @@ AROS_LH2(void, glVertexAttrib4uivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4uivARB(index, v);
+    glVertexAttrib4uivARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8670,7 +8669,7 @@ AROS_LH2(void, glVertexAttrib4usvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4usvARB(index, v);
+    glVertexAttrib4usvARB(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8686,7 +8685,7 @@ AROS_LH6(void, glVertexAttribPointerARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribPointerARB(index, size, type, normalized, stride, pointer);
+    glVertexAttribPointerARB(index, size, type, normalized, stride, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8697,7 +8696,7 @@ AROS_LH1(void, glEnableVertexAttribArrayARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglEnableVertexAttribArrayARB(index);
+    glEnableVertexAttribArrayARB(index);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8708,7 +8707,7 @@ AROS_LH1(void, glDisableVertexAttribArrayARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglDisableVertexAttribArrayARB(index);
+    glDisableVertexAttribArrayARB(index);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8722,7 +8721,7 @@ AROS_LH4(void, glProgramStringARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramStringARB(target, format, len, string);
+    glProgramStringARB(target, format, len, string);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8734,7 +8733,7 @@ AROS_LH2(void, glBindProgramARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindProgramARB(target, program);
+    glBindProgramARB(target, program);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8746,7 +8745,7 @@ AROS_LH2(void, glDeleteProgramsARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteProgramsARB(n, programs);
+    glDeleteProgramsARB(n, programs);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8758,7 +8757,7 @@ AROS_LH2(void, glGenProgramsARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenProgramsARB(n, programs);
+    glGenProgramsARB(n, programs);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8774,7 +8773,7 @@ AROS_LH6(void, glProgramEnvParameter4dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramEnvParameter4dARB(target, index, x, y, z, w);
+    glProgramEnvParameter4dARB(target, index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8787,7 +8786,7 @@ AROS_LH3(void, glProgramEnvParameter4dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramEnvParameter4dvARB(target, index, params);
+    glProgramEnvParameter4dvARB(target, index, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8803,7 +8802,7 @@ AROS_LH6(void, glProgramEnvParameter4fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramEnvParameter4fARB(target, index, x, y, z, w);
+    glProgramEnvParameter4fARB(target, index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8816,7 +8815,7 @@ AROS_LH3(void, glProgramEnvParameter4fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramEnvParameter4fvARB(target, index, params);
+    glProgramEnvParameter4fvARB(target, index, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8832,7 +8831,7 @@ AROS_LH6(void, glProgramLocalParameter4dARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramLocalParameter4dARB(target, index, x, y, z, w);
+    glProgramLocalParameter4dARB(target, index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8845,7 +8844,7 @@ AROS_LH3(void, glProgramLocalParameter4dvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramLocalParameter4dvARB(target, index, params);
+    glProgramLocalParameter4dvARB(target, index, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8861,7 +8860,7 @@ AROS_LH6(void, glProgramLocalParameter4fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramLocalParameter4fARB(target, index, x, y, z, w);
+    glProgramLocalParameter4fARB(target, index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8874,7 +8873,7 @@ AROS_LH3(void, glProgramLocalParameter4fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramLocalParameter4fvARB(target, index, params);
+    glProgramLocalParameter4fvARB(target, index, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8887,7 +8886,7 @@ AROS_LH3(void, glGetProgramEnvParameterdvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramEnvParameterdvARB(target, index, params);
+    glGetProgramEnvParameterdvARB(target, index, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8900,7 +8899,7 @@ AROS_LH3(void, glGetProgramEnvParameterfvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramEnvParameterfvARB(target, index, params);
+    glGetProgramEnvParameterfvARB(target, index, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8913,7 +8912,7 @@ AROS_LH3(void, glGetProgramLocalParameterdvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramLocalParameterdvARB(target, index, params);
+    glGetProgramLocalParameterdvARB(target, index, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8926,7 +8925,7 @@ AROS_LH3(void, glGetProgramLocalParameterfvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramLocalParameterfvARB(target, index, params);
+    glGetProgramLocalParameterfvARB(target, index, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8939,7 +8938,7 @@ AROS_LH3(void, glGetProgramivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramivARB(target, pname, params);
+    glGetProgramivARB(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8952,7 +8951,7 @@ AROS_LH3(void, glGetProgramStringARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramStringARB(target, pname, string);
+    glGetProgramStringARB(target, pname, string);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8965,7 +8964,7 @@ AROS_LH3(void, glGetVertexAttribdvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribdvARB(index, pname, params);
+    glGetVertexAttribdvARB(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8978,7 +8977,7 @@ AROS_LH3(void, glGetVertexAttribfvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribfvARB(index, pname, params);
+    glGetVertexAttribfvARB(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -8991,7 +8990,7 @@ AROS_LH3(void, glGetVertexAttribivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribivARB(index, pname, params);
+    glGetVertexAttribivARB(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9004,7 +9003,7 @@ AROS_LH3(void, glGetVertexAttribPointervARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribPointervARB(index, pname, pointer);
+    glGetVertexAttribPointervARB(index, pname, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9015,7 +9014,7 @@ AROS_LH1(GLboolean, glIsProgramARB,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsProgramARB(program);
+    GLboolean _return = glIsProgramARB(program);
 
     return _return;
 
@@ -9029,7 +9028,7 @@ AROS_LH2(void, glBindBufferARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindBufferARB(target, buffer);
+    glBindBufferARB(target, buffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9041,7 +9040,7 @@ AROS_LH2(void, glDeleteBuffersARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteBuffersARB(n, buffers);
+    glDeleteBuffersARB(n, buffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9053,7 +9052,7 @@ AROS_LH2(void, glGenBuffersARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenBuffersARB(n, buffers);
+    glGenBuffersARB(n, buffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9064,7 +9063,7 @@ AROS_LH1(GLboolean, glIsBufferARB,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsBufferARB(buffer);
+    GLboolean _return = glIsBufferARB(buffer);
 
     return _return;
 
@@ -9080,7 +9079,7 @@ AROS_LH4(void, glBufferDataARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglBufferDataARB(target, size, data, usage);
+    glBufferDataARB(target, size, data, usage);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9094,7 +9093,7 @@ AROS_LH4(void, glBufferSubDataARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglBufferSubDataARB(target, offset, size, data);
+    glBufferSubDataARB(target, offset, size, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9108,7 +9107,7 @@ AROS_LH4(void, glGetBufferSubDataARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetBufferSubDataARB(target, offset, size, data);
+    glGetBufferSubDataARB(target, offset, size, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9120,7 +9119,7 @@ AROS_LH2(GLvoid*, glMapBufferARB,
 {
     AROS_LIBFUNC_INIT
 
-    GLvoid* _return = mglMapBufferARB(target, access);
+    GLvoid* _return = glMapBufferARB(target, access);
 
     return _return;
 
@@ -9133,7 +9132,7 @@ AROS_LH1(GLboolean, glUnmapBufferARB,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglUnmapBufferARB(target);
+    GLboolean _return = glUnmapBufferARB(target);
 
     return _return;
 
@@ -9148,7 +9147,7 @@ AROS_LH3(void, glGetBufferParameterivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetBufferParameterivARB(target, pname, params);
+    glGetBufferParameterivARB(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9161,7 +9160,7 @@ AROS_LH3(void, glGetBufferPointervARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetBufferPointervARB(target, pname, params);
+    glGetBufferPointervARB(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9173,7 +9172,7 @@ AROS_LH2(void, glGenQueriesARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenQueriesARB(n, ids);
+    glGenQueriesARB(n, ids);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9185,7 +9184,7 @@ AROS_LH2(void, glDeleteQueriesARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteQueriesARB(n, ids);
+    glDeleteQueriesARB(n, ids);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9196,7 +9195,7 @@ AROS_LH1(GLboolean, glIsQueryARB,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsQueryARB(id);
+    GLboolean _return = glIsQueryARB(id);
 
     return _return;
 
@@ -9210,7 +9209,7 @@ AROS_LH2(void, glBeginQueryARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglBeginQueryARB(target, id);
+    glBeginQueryARB(target, id);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9221,7 +9220,7 @@ AROS_LH1(void, glEndQueryARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglEndQueryARB(target);
+    glEndQueryARB(target);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9234,7 +9233,7 @@ AROS_LH3(void, glGetQueryivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetQueryivARB(target, pname, params);
+    glGetQueryivARB(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9247,7 +9246,7 @@ AROS_LH3(void, glGetQueryObjectivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetQueryObjectivARB(id, pname, params);
+    glGetQueryObjectivARB(id, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9260,7 +9259,7 @@ AROS_LH3(void, glGetQueryObjectuivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetQueryObjectuivARB(id, pname, params);
+    glGetQueryObjectuivARB(id, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9271,7 +9270,7 @@ AROS_LH1(void, glDeleteObjectARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteObjectARB(obj);
+    glDeleteObjectARB(obj);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9282,7 +9281,7 @@ AROS_LH1(GLhandleARB, glGetHandleARB,
 {
     AROS_LIBFUNC_INIT
 
-    GLhandleARB _return = mglGetHandleARB(pname);
+    GLhandleARB _return = glGetHandleARB(pname);
 
     return _return;
 
@@ -9296,7 +9295,7 @@ AROS_LH2(void, glDetachObjectARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglDetachObjectARB(containerObj, attachedObj);
+    glDetachObjectARB(containerObj, attachedObj);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9307,7 +9306,7 @@ AROS_LH1(GLhandleARB, glCreateShaderObjectARB,
 {
     AROS_LIBFUNC_INIT
 
-    GLhandleARB _return = mglCreateShaderObjectARB(shaderType);
+    GLhandleARB _return = glCreateShaderObjectARB(shaderType);
 
     return _return;
 
@@ -9323,7 +9322,7 @@ AROS_LH4(void, glShaderSourceARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglShaderSourceARB(shaderObj, count, string, length);
+    glShaderSourceARB(shaderObj, count, string, length);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9334,7 +9333,7 @@ AROS_LH1(void, glCompileShaderARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglCompileShaderARB(shaderObj);
+    glCompileShaderARB(shaderObj);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9344,7 +9343,7 @@ AROS_LH0(GLhandleARB, glCreateProgramObjectARB,
 {
     AROS_LIBFUNC_INIT
 
-    GLhandleARB _return = mglCreateProgramObjectARB();
+    GLhandleARB _return = glCreateProgramObjectARB();
 
     return _return;
 
@@ -9358,7 +9357,7 @@ AROS_LH2(void, glAttachObjectARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglAttachObjectARB(containerObj, obj);
+    glAttachObjectARB(containerObj, obj);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9369,7 +9368,7 @@ AROS_LH1(void, glLinkProgramARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglLinkProgramARB(programObj);
+    glLinkProgramARB(programObj);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9380,7 +9379,7 @@ AROS_LH1(void, glUseProgramObjectARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUseProgramObjectARB(programObj);
+    glUseProgramObjectARB(programObj);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9391,7 +9390,7 @@ AROS_LH1(void, glValidateProgramARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglValidateProgramARB(programObj);
+    glValidateProgramARB(programObj);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9403,7 +9402,7 @@ AROS_LH2(void, glUniform1fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1fARB(location, v0);
+    glUniform1fARB(location, v0);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9416,7 +9415,7 @@ AROS_LH3(void, glUniform2fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2fARB(location, v0, v1);
+    glUniform2fARB(location, v0, v1);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9430,7 +9429,7 @@ AROS_LH4(void, glUniform3fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3fARB(location, v0, v1, v2);
+    glUniform3fARB(location, v0, v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9445,7 +9444,7 @@ AROS_LH5(void, glUniform4fARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4fARB(location, v0, v1, v2, v3);
+    glUniform4fARB(location, v0, v1, v2, v3);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9457,7 +9456,7 @@ AROS_LH2(void, glUniform1iARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1iARB(location, v0);
+    glUniform1iARB(location, v0);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9470,7 +9469,7 @@ AROS_LH3(void, glUniform2iARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2iARB(location, v0, v1);
+    glUniform2iARB(location, v0, v1);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9484,7 +9483,7 @@ AROS_LH4(void, glUniform3iARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3iARB(location, v0, v1, v2);
+    glUniform3iARB(location, v0, v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9499,7 +9498,7 @@ AROS_LH5(void, glUniform4iARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4iARB(location, v0, v1, v2, v3);
+    glUniform4iARB(location, v0, v1, v2, v3);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9512,7 +9511,7 @@ AROS_LH3(void, glUniform1fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1fvARB(location, count, value);
+    glUniform1fvARB(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9525,7 +9524,7 @@ AROS_LH3(void, glUniform2fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2fvARB(location, count, value);
+    glUniform2fvARB(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9538,7 +9537,7 @@ AROS_LH3(void, glUniform3fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3fvARB(location, count, value);
+    glUniform3fvARB(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9551,7 +9550,7 @@ AROS_LH3(void, glUniform4fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4fvARB(location, count, value);
+    glUniform4fvARB(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9564,7 +9563,7 @@ AROS_LH3(void, glUniform1ivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1ivARB(location, count, value);
+    glUniform1ivARB(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9577,7 +9576,7 @@ AROS_LH3(void, glUniform2ivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2ivARB(location, count, value);
+    glUniform2ivARB(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9590,7 +9589,7 @@ AROS_LH3(void, glUniform3ivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3ivARB(location, count, value);
+    glUniform3ivARB(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9603,7 +9602,7 @@ AROS_LH3(void, glUniform4ivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4ivARB(location, count, value);
+    glUniform4ivARB(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9617,7 +9616,7 @@ AROS_LH4(void, glUniformMatrix2fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix2fvARB(location, count, transpose, value);
+    glUniformMatrix2fvARB(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9631,7 +9630,7 @@ AROS_LH4(void, glUniformMatrix3fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix3fvARB(location, count, transpose, value);
+    glUniformMatrix3fvARB(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9645,7 +9644,7 @@ AROS_LH4(void, glUniformMatrix4fvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniformMatrix4fvARB(location, count, transpose, value);
+    glUniformMatrix4fvARB(location, count, transpose, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9658,7 +9657,7 @@ AROS_LH3(void, glGetObjectParameterfvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetObjectParameterfvARB(obj, pname, params);
+    glGetObjectParameterfvARB(obj, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9671,7 +9670,7 @@ AROS_LH3(void, glGetObjectParameterivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetObjectParameterivARB(obj, pname, params);
+    glGetObjectParameterivARB(obj, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9685,7 +9684,7 @@ AROS_LH4(void, glGetInfoLogARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetInfoLogARB(obj, maxLength, length, infoLog);
+    glGetInfoLogARB(obj, maxLength, length, infoLog);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9699,7 +9698,7 @@ AROS_LH4(void, glGetAttachedObjectsARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetAttachedObjectsARB(containerObj, maxCount, count, obj);
+    glGetAttachedObjectsARB(containerObj, maxCount, count, obj);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9711,7 +9710,7 @@ AROS_LH2(GLint, glGetUniformLocationARB,
 {
     AROS_LIBFUNC_INIT
 
-    GLint _return = mglGetUniformLocationARB(programObj, name);
+    GLint _return = glGetUniformLocationARB(programObj, name);
 
     return _return;
 
@@ -9730,7 +9729,7 @@ AROS_LH7(void, glGetActiveUniformARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetActiveUniformARB(programObj, index, maxLength, length, size, type, name);
+    glGetActiveUniformARB(programObj, index, maxLength, length, size, type, name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9743,7 +9742,7 @@ AROS_LH3(void, glGetUniformfvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetUniformfvARB(programObj, location, params);
+    glGetUniformfvARB(programObj, location, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9756,7 +9755,7 @@ AROS_LH3(void, glGetUniformivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetUniformivARB(programObj, location, params);
+    glGetUniformivARB(programObj, location, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9770,7 +9769,7 @@ AROS_LH4(void, glGetShaderSourceARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetShaderSourceARB(obj, maxLength, length, source);
+    glGetShaderSourceARB(obj, maxLength, length, source);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9783,7 +9782,7 @@ AROS_LH3(void, glBindAttribLocationARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindAttribLocationARB(programObj, index, name);
+    glBindAttribLocationARB(programObj, index, name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9800,7 +9799,7 @@ AROS_LH7(void, glGetActiveAttribARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetActiveAttribARB(programObj, index, maxLength, length, size, type, name);
+    glGetActiveAttribARB(programObj, index, maxLength, length, size, type, name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9812,7 +9811,7 @@ AROS_LH2(GLint, glGetAttribLocationARB,
 {
     AROS_LIBFUNC_INIT
 
-    GLint _return = mglGetAttribLocationARB(programObj, name);
+    GLint _return = glGetAttribLocationARB(programObj, name);
 
     return _return;
 
@@ -9826,7 +9825,7 @@ AROS_LH2(void, glDrawBuffersARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawBuffersARB(n, bufs);
+    glDrawBuffersARB(n, bufs);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9837,7 +9836,7 @@ AROS_LH1(GLboolean, glIsRenderbuffer,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsRenderbuffer(renderbuffer);
+    GLboolean _return = glIsRenderbuffer(renderbuffer);
 
     return _return;
 
@@ -9851,7 +9850,7 @@ AROS_LH2(void, glBindRenderbuffer,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindRenderbuffer(target, renderbuffer);
+    glBindRenderbuffer(target, renderbuffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9863,7 +9862,7 @@ AROS_LH2(void, glDeleteRenderbuffers,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteRenderbuffers(n, renderbuffers);
+    glDeleteRenderbuffers(n, renderbuffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9875,7 +9874,7 @@ AROS_LH2(void, glGenRenderbuffers,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenRenderbuffers(n, renderbuffers);
+    glGenRenderbuffers(n, renderbuffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9889,7 +9888,7 @@ AROS_LH4(void, glRenderbufferStorage,
 {
     AROS_LIBFUNC_INIT
 
-    mglRenderbufferStorage(target, internalformat, width, height);
+    glRenderbufferStorage(target, internalformat, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9902,7 +9901,7 @@ AROS_LH3(void, glGetRenderbufferParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetRenderbufferParameteriv(target, pname, params);
+    glGetRenderbufferParameteriv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9913,7 +9912,7 @@ AROS_LH1(GLboolean, glIsFramebuffer,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsFramebuffer(framebuffer);
+    GLboolean _return = glIsFramebuffer(framebuffer);
 
     return _return;
 
@@ -9927,7 +9926,7 @@ AROS_LH2(void, glBindFramebuffer,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindFramebuffer(target, framebuffer);
+    glBindFramebuffer(target, framebuffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9939,7 +9938,7 @@ AROS_LH2(void, glDeleteFramebuffers,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteFramebuffers(n, framebuffers);
+    glDeleteFramebuffers(n, framebuffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9951,7 +9950,7 @@ AROS_LH2(void, glGenFramebuffers,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenFramebuffers(n, framebuffers);
+    glGenFramebuffers(n, framebuffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9962,7 +9961,7 @@ AROS_LH1(GLenum, glCheckFramebufferStatus,
 {
     AROS_LIBFUNC_INIT
 
-    GLenum _return = mglCheckFramebufferStatus(target);
+    GLenum _return = glCheckFramebufferStatus(target);
 
     return _return;
 
@@ -9979,7 +9978,7 @@ AROS_LH5(void, glFramebufferTexture1D,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTexture1D(target, attachment, textarget, texture, level);
+    glFramebufferTexture1D(target, attachment, textarget, texture, level);
 
     AROS_LIBFUNC_EXIT
 }
@@ -9994,7 +9993,7 @@ AROS_LH5(void, glFramebufferTexture2D,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTexture2D(target, attachment, textarget, texture, level);
+    glFramebufferTexture2D(target, attachment, textarget, texture, level);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10010,7 +10009,7 @@ AROS_LH6(void, glFramebufferTexture3D,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTexture3D(target, attachment, textarget, texture, level, zoffset);
+    glFramebufferTexture3D(target, attachment, textarget, texture, level, zoffset);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10024,7 +10023,7 @@ AROS_LH4(void, glFramebufferRenderbuffer,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
+    glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10038,7 +10037,7 @@ AROS_LH4(void, glGetFramebufferAttachmentParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetFramebufferAttachmentParameteriv(target, attachment, pname, params);
+    glGetFramebufferAttachmentParameteriv(target, attachment, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10049,7 +10048,7 @@ AROS_LH1(void, glGenerateMipmap,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenerateMipmap(target);
+    glGenerateMipmap(target);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10069,7 +10068,7 @@ AROS_LH10(void, glBlitFramebuffer,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+    glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10084,7 +10083,7 @@ AROS_LH5(void, glRenderbufferStorageMultisample,
 {
     AROS_LIBFUNC_INIT
 
-    mglRenderbufferStorageMultisample(target, samples, internalformat, width, height);
+    glRenderbufferStorageMultisample(target, samples, internalformat, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10099,7 +10098,7 @@ AROS_LH5(void, glFramebufferTextureLayer,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTextureLayer(target, attachment, texture, level, layer);
+    glFramebufferTextureLayer(target, attachment, texture, level, layer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10113,7 +10112,7 @@ AROS_LH4(void, glBlendColorEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendColorEXT(red, green, blue, alpha);
+    glBlendColorEXT(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10125,7 +10124,7 @@ AROS_LH2(void, glPolygonOffsetEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglPolygonOffsetEXT(factor, bias);
+    glPolygonOffsetEXT(factor, bias);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10145,7 +10144,7 @@ AROS_LH10(void, glTexImage3DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexImage3DEXT(target, level, internalformat, width, height, depth, border, format, type, pixels);
+    glTexImage3DEXT(target, level, internalformat, width, height, depth, border, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10166,7 +10165,7 @@ AROS_LH11(void, glTexSubImage3DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexSubImage3DEXT(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+    glTexSubImage3DEXT(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10183,7 +10182,7 @@ AROS_LH7(void, glTexSubImage1DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexSubImage1DEXT(target, level, xoffset, width, format, type, pixels);
+    glTexSubImage1DEXT(target, level, xoffset, width, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10202,7 +10201,7 @@ AROS_LH9(void, glTexSubImage2DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexSubImage2DEXT(target, level, xoffset, yoffset, width, height, format, type, pixels);
+    glTexSubImage2DEXT(target, level, xoffset, yoffset, width, height, format, type, pixels);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10219,7 +10218,7 @@ AROS_LH7(void, glCopyTexImage1DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyTexImage1DEXT(target, level, internalformat, x, y, width, border);
+    glCopyTexImage1DEXT(target, level, internalformat, x, y, width, border);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10237,7 +10236,7 @@ AROS_LH8(void, glCopyTexImage2DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyTexImage2DEXT(target, level, internalformat, x, y, width, height, border);
+    glCopyTexImage2DEXT(target, level, internalformat, x, y, width, height, border);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10253,7 +10252,7 @@ AROS_LH6(void, glCopyTexSubImage1DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyTexSubImage1DEXT(target, level, xoffset, x, y, width);
+    glCopyTexSubImage1DEXT(target, level, xoffset, x, y, width);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10271,7 +10270,7 @@ AROS_LH8(void, glCopyTexSubImage2DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyTexSubImage2DEXT(target, level, xoffset, yoffset, x, y, width, height);
+    glCopyTexSubImage2DEXT(target, level, xoffset, yoffset, x, y, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10290,7 +10289,7 @@ AROS_LH9(void, glCopyTexSubImage3DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyTexSubImage3DEXT(target, level, xoffset, yoffset, zoffset, x, y, width, height);
+    glCopyTexSubImage3DEXT(target, level, xoffset, yoffset, zoffset, x, y, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10303,7 +10302,7 @@ AROS_LH3(GLboolean, glAreTexturesResidentEXT,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglAreTexturesResidentEXT(n, textures, residences);
+    GLboolean _return = glAreTexturesResidentEXT(n, textures, residences);
 
     return _return;
 
@@ -10317,7 +10316,7 @@ AROS_LH2(void, glBindTextureEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindTextureEXT(target, texture);
+    glBindTextureEXT(target, texture);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10329,7 +10328,7 @@ AROS_LH2(void, glDeleteTexturesEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteTexturesEXT(n, textures);
+    glDeleteTexturesEXT(n, textures);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10341,7 +10340,7 @@ AROS_LH2(void, glGenTexturesEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenTexturesEXT(n, textures);
+    glGenTexturesEXT(n, textures);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10352,7 +10351,7 @@ AROS_LH1(GLboolean, glIsTextureEXT,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsTextureEXT(texture);
+    GLboolean _return = glIsTextureEXT(texture);
 
     return _return;
 
@@ -10367,7 +10366,7 @@ AROS_LH3(void, glPrioritizeTexturesEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglPrioritizeTexturesEXT(n, textures, priorities);
+    glPrioritizeTexturesEXT(n, textures, priorities);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10378,7 +10377,7 @@ AROS_LH1(void, glArrayElementEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglArrayElementEXT(i);
+    glArrayElementEXT(i);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10393,7 +10392,7 @@ AROS_LH5(void, glColorPointerEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorPointerEXT(size, type, stride, count, pointer);
+    glColorPointerEXT(size, type, stride, count, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10406,7 +10405,7 @@ AROS_LH3(void, glDrawArraysEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawArraysEXT(mode, first, count);
+    glDrawArraysEXT(mode, first, count);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10419,7 +10418,7 @@ AROS_LH3(void, glEdgeFlagPointerEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglEdgeFlagPointerEXT(stride, count, pointer);
+    glEdgeFlagPointerEXT(stride, count, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10431,7 +10430,7 @@ AROS_LH2(void, glGetPointervEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetPointervEXT(pname, params);
+    glGetPointervEXT(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10445,7 +10444,7 @@ AROS_LH4(void, glIndexPointerEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglIndexPointerEXT(type, stride, count, pointer);
+    glIndexPointerEXT(type, stride, count, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10459,7 +10458,7 @@ AROS_LH4(void, glNormalPointerEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglNormalPointerEXT(type, stride, count, pointer);
+    glNormalPointerEXT(type, stride, count, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10474,7 +10473,7 @@ AROS_LH5(void, glTexCoordPointerEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexCoordPointerEXT(size, type, stride, count, pointer);
+    glTexCoordPointerEXT(size, type, stride, count, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10489,7 +10488,7 @@ AROS_LH5(void, glVertexPointerEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexPointerEXT(size, type, stride, count, pointer);
+    glVertexPointerEXT(size, type, stride, count, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10500,7 +10499,7 @@ AROS_LH1(void, glBlendEquationEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendEquationEXT(mode);
+    glBlendEquationEXT(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10512,7 +10511,7 @@ AROS_LH2(void, glPointParameterfEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameterfEXT(pname, param);
+    glPointParameterfEXT(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10524,7 +10523,7 @@ AROS_LH2(void, glPointParameterfvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameterfvEXT(pname, params);
+    glPointParameterfvEXT(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10540,7 +10539,7 @@ AROS_LH6(void, glColorTableEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorTableEXT(target, internalFormat, width, format, type, table);
+    glColorTableEXT(target, internalFormat, width, format, type, table);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10554,7 +10553,7 @@ AROS_LH4(void, glGetColorTableEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetColorTableEXT(target, format, type, data);
+    glGetColorTableEXT(target, format, type, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10567,7 +10566,7 @@ AROS_LH3(void, glGetColorTableParameterivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetColorTableParameterivEXT(target, pname, params);
+    glGetColorTableParameterivEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10580,7 +10579,7 @@ AROS_LH3(void, glGetColorTableParameterfvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetColorTableParameterfvEXT(target, pname, params);
+    glGetColorTableParameterfvEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10592,7 +10591,7 @@ AROS_LH2(void, glLockArraysEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglLockArraysEXT(first, count);
+    glLockArraysEXT(first, count);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10602,7 +10601,7 @@ AROS_LH0(void, glUnlockArraysEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglUnlockArraysEXT();
+    glUnlockArraysEXT();
 
     AROS_LIBFUNC_EXIT
 }
@@ -10618,7 +10617,7 @@ AROS_LH6(void, glDrawRangeElementsEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawRangeElementsEXT(mode, start, end, count, type, indices);
+    glDrawRangeElementsEXT(mode, start, end, count, type, indices);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10631,7 +10630,7 @@ AROS_LH3(void, glSecondaryColor3bEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3bEXT(red, green, blue);
+    glSecondaryColor3bEXT(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10642,7 +10641,7 @@ AROS_LH1(void, glSecondaryColor3bvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3bvEXT(v);
+    glSecondaryColor3bvEXT(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10655,7 +10654,7 @@ AROS_LH3(void, glSecondaryColor3dEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3dEXT(red, green, blue);
+    glSecondaryColor3dEXT(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10666,7 +10665,7 @@ AROS_LH1(void, glSecondaryColor3dvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3dvEXT(v);
+    glSecondaryColor3dvEXT(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10679,7 +10678,7 @@ AROS_LH3(void, glSecondaryColor3fEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3fEXT(red, green, blue);
+    glSecondaryColor3fEXT(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10690,7 +10689,7 @@ AROS_LH1(void, glSecondaryColor3fvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3fvEXT(v);
+    glSecondaryColor3fvEXT(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10703,7 +10702,7 @@ AROS_LH3(void, glSecondaryColor3iEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3iEXT(red, green, blue);
+    glSecondaryColor3iEXT(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10714,7 +10713,7 @@ AROS_LH1(void, glSecondaryColor3ivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3ivEXT(v);
+    glSecondaryColor3ivEXT(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10727,7 +10726,7 @@ AROS_LH3(void, glSecondaryColor3sEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3sEXT(red, green, blue);
+    glSecondaryColor3sEXT(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10738,7 +10737,7 @@ AROS_LH1(void, glSecondaryColor3svEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3svEXT(v);
+    glSecondaryColor3svEXT(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10751,7 +10750,7 @@ AROS_LH3(void, glSecondaryColor3ubEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3ubEXT(red, green, blue);
+    glSecondaryColor3ubEXT(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10762,7 +10761,7 @@ AROS_LH1(void, glSecondaryColor3ubvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3ubvEXT(v);
+    glSecondaryColor3ubvEXT(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10775,7 +10774,7 @@ AROS_LH3(void, glSecondaryColor3uiEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3uiEXT(red, green, blue);
+    glSecondaryColor3uiEXT(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10786,7 +10785,7 @@ AROS_LH1(void, glSecondaryColor3uivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3uivEXT(v);
+    glSecondaryColor3uivEXT(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10799,7 +10798,7 @@ AROS_LH3(void, glSecondaryColor3usEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3usEXT(red, green, blue);
+    glSecondaryColor3usEXT(red, green, blue);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10810,7 +10809,7 @@ AROS_LH1(void, glSecondaryColor3usvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColor3usvEXT(v);
+    glSecondaryColor3usvEXT(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10824,7 +10823,7 @@ AROS_LH4(void, glSecondaryColorPointerEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSecondaryColorPointerEXT(size, type, stride, pointer);
+    glSecondaryColorPointerEXT(size, type, stride, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10838,7 +10837,7 @@ AROS_LH4(void, glMultiDrawArraysEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiDrawArraysEXT(mode, first, count, primcount);
+    glMultiDrawArraysEXT(mode, first, count, primcount);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10853,7 +10852,7 @@ AROS_LH5(void, glMultiDrawElementsEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiDrawElementsEXT(mode, count, type, indices, primcount);
+    glMultiDrawElementsEXT(mode, count, type, indices, primcount);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10864,7 +10863,7 @@ AROS_LH1(void, glFogCoordfEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogCoordfEXT(coord);
+    glFogCoordfEXT(coord);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10875,7 +10874,7 @@ AROS_LH1(void, glFogCoordfvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogCoordfvEXT(coord);
+    glFogCoordfvEXT(coord);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10886,7 +10885,7 @@ AROS_LH1(void, glFogCoorddEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogCoorddEXT(coord);
+    glFogCoorddEXT(coord);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10897,7 +10896,7 @@ AROS_LH1(void, glFogCoorddvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogCoorddvEXT(coord);
+    glFogCoorddvEXT(coord);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10910,7 +10909,7 @@ AROS_LH3(void, glFogCoordPointerEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglFogCoordPointerEXT(type, stride, pointer);
+    glFogCoordPointerEXT(type, stride, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10924,7 +10923,7 @@ AROS_LH4(void, glBlendFuncSeparateEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendFuncSeparateEXT(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
+    glBlendFuncSeparateEXT(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10934,7 +10933,7 @@ AROS_LH0(void, glFlushVertexArrayRangeNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglFlushVertexArrayRangeNV();
+    glFlushVertexArrayRangeNV();
 
     AROS_LIBFUNC_EXIT
 }
@@ -10946,7 +10945,7 @@ AROS_LH2(void, glVertexArrayRangeNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexArrayRangeNV(length, pointer);
+    glVertexArrayRangeNV(length, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10958,7 +10957,7 @@ AROS_LH2(void, glCombinerParameterfvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglCombinerParameterfvNV(pname, params);
+    glCombinerParameterfvNV(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10970,7 +10969,7 @@ AROS_LH2(void, glCombinerParameterfNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglCombinerParameterfNV(pname, param);
+    glCombinerParameterfNV(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10982,7 +10981,7 @@ AROS_LH2(void, glCombinerParameterivNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglCombinerParameterivNV(pname, params);
+    glCombinerParameterivNV(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -10994,7 +10993,7 @@ AROS_LH2(void, glCombinerParameteriNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglCombinerParameteriNV(pname, param);
+    glCombinerParameteriNV(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11010,7 +11009,7 @@ AROS_LH6(void, glCombinerInputNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglCombinerInputNV(stage, portion, variable, input, mapping, componentUsage);
+    glCombinerInputNV(stage, portion, variable, input, mapping, componentUsage);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11030,7 +11029,7 @@ AROS_LH10(void, glCombinerOutputNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglCombinerOutputNV(stage, portion, abOutput, cdOutput, sumOutput, scale, bias, abDotProduct, cdDotProduct, muxSum);
+    glCombinerOutputNV(stage, portion, abOutput, cdOutput, sumOutput, scale, bias, abDotProduct, cdDotProduct, muxSum);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11044,7 +11043,7 @@ AROS_LH4(void, glFinalCombinerInputNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglFinalCombinerInputNV(variable, input, mapping, componentUsage);
+    glFinalCombinerInputNV(variable, input, mapping, componentUsage);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11059,7 +11058,7 @@ AROS_LH5(void, glGetCombinerInputParameterfvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetCombinerInputParameterfvNV(stage, portion, variable, pname, params);
+    glGetCombinerInputParameterfvNV(stage, portion, variable, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11074,7 +11073,7 @@ AROS_LH5(void, glGetCombinerInputParameterivNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetCombinerInputParameterivNV(stage, portion, variable, pname, params);
+    glGetCombinerInputParameterivNV(stage, portion, variable, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11088,7 +11087,7 @@ AROS_LH4(void, glGetCombinerOutputParameterfvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetCombinerOutputParameterfvNV(stage, portion, pname, params);
+    glGetCombinerOutputParameterfvNV(stage, portion, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11102,7 +11101,7 @@ AROS_LH4(void, glGetCombinerOutputParameterivNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetCombinerOutputParameterivNV(stage, portion, pname, params);
+    glGetCombinerOutputParameterivNV(stage, portion, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11115,7 +11114,7 @@ AROS_LH3(void, glGetFinalCombinerInputParameterfvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetFinalCombinerInputParameterfvNV(variable, pname, params);
+    glGetFinalCombinerInputParameterfvNV(variable, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11128,7 +11127,7 @@ AROS_LH3(void, glGetFinalCombinerInputParameterivNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetFinalCombinerInputParameterivNV(variable, pname, params);
+    glGetFinalCombinerInputParameterivNV(variable, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11138,7 +11137,7 @@ AROS_LH0(void, glResizeBuffersMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglResizeBuffersMESA();
+    glResizeBuffersMESA();
 
     AROS_LIBFUNC_EXIT
 }
@@ -11150,7 +11149,7 @@ AROS_LH2(void, glWindowPos2dMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2dMESA(x, y);
+    glWindowPos2dMESA(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11161,7 +11160,7 @@ AROS_LH1(void, glWindowPos2dvMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2dvMESA(v);
+    glWindowPos2dvMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11173,7 +11172,7 @@ AROS_LH2(void, glWindowPos2fMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2fMESA(x, y);
+    glWindowPos2fMESA(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11184,7 +11183,7 @@ AROS_LH1(void, glWindowPos2fvMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2fvMESA(v);
+    glWindowPos2fvMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11196,7 +11195,7 @@ AROS_LH2(void, glWindowPos2iMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2iMESA(x, y);
+    glWindowPos2iMESA(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11207,7 +11206,7 @@ AROS_LH1(void, glWindowPos2ivMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2ivMESA(v);
+    glWindowPos2ivMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11219,7 +11218,7 @@ AROS_LH2(void, glWindowPos2sMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2sMESA(x, y);
+    glWindowPos2sMESA(x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11230,7 +11229,7 @@ AROS_LH1(void, glWindowPos2svMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos2svMESA(v);
+    glWindowPos2svMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11243,7 +11242,7 @@ AROS_LH3(void, glWindowPos3dMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3dMESA(x, y, z);
+    glWindowPos3dMESA(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11254,7 +11253,7 @@ AROS_LH1(void, glWindowPos3dvMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3dvMESA(v);
+    glWindowPos3dvMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11267,7 +11266,7 @@ AROS_LH3(void, glWindowPos3fMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3fMESA(x, y, z);
+    glWindowPos3fMESA(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11278,7 +11277,7 @@ AROS_LH1(void, glWindowPos3fvMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3fvMESA(v);
+    glWindowPos3fvMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11291,7 +11290,7 @@ AROS_LH3(void, glWindowPos3iMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3iMESA(x, y, z);
+    glWindowPos3iMESA(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11302,7 +11301,7 @@ AROS_LH1(void, glWindowPos3ivMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3ivMESA(v);
+    glWindowPos3ivMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11315,7 +11314,7 @@ AROS_LH3(void, glWindowPos3sMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3sMESA(x, y, z);
+    glWindowPos3sMESA(x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11326,7 +11325,7 @@ AROS_LH1(void, glWindowPos3svMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos3svMESA(v);
+    glWindowPos3svMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11340,7 +11339,7 @@ AROS_LH4(void, glWindowPos4dMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos4dMESA(x, y, z, w);
+    glWindowPos4dMESA(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11351,7 +11350,7 @@ AROS_LH1(void, glWindowPos4dvMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos4dvMESA(v);
+    glWindowPos4dvMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11365,7 +11364,7 @@ AROS_LH4(void, glWindowPos4fMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos4fMESA(x, y, z, w);
+    glWindowPos4fMESA(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11376,7 +11375,7 @@ AROS_LH1(void, glWindowPos4fvMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos4fvMESA(v);
+    glWindowPos4fvMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11390,7 +11389,7 @@ AROS_LH4(void, glWindowPos4iMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos4iMESA(x, y, z, w);
+    glWindowPos4iMESA(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11401,7 +11400,7 @@ AROS_LH1(void, glWindowPos4ivMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos4ivMESA(v);
+    glWindowPos4ivMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11415,7 +11414,7 @@ AROS_LH4(void, glWindowPos4sMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos4sMESA(x, y, z, w);
+    glWindowPos4sMESA(x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11426,7 +11425,7 @@ AROS_LH1(void, glWindowPos4svMESA,
 {
     AROS_LIBFUNC_INIT
 
-    mglWindowPos4svMESA(v);
+    glWindowPos4svMESA(v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11439,7 +11438,7 @@ AROS_LH3(GLboolean, glAreProgramsResidentNV,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglAreProgramsResidentNV(n, programs, residences);
+    GLboolean _return = glAreProgramsResidentNV(n, programs, residences);
 
     return _return;
 
@@ -11453,7 +11452,7 @@ AROS_LH2(void, glBindProgramNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindProgramNV(target, id);
+    glBindProgramNV(target, id);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11465,7 +11464,7 @@ AROS_LH2(void, glDeleteProgramsNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteProgramsNV(n, programs);
+    glDeleteProgramsNV(n, programs);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11478,7 +11477,7 @@ AROS_LH3(void, glExecuteProgramNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglExecuteProgramNV(target, id, params);
+    glExecuteProgramNV(target, id, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11490,7 +11489,7 @@ AROS_LH2(void, glGenProgramsNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenProgramsNV(n, programs);
+    glGenProgramsNV(n, programs);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11504,7 +11503,7 @@ AROS_LH4(void, glGetProgramParameterdvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramParameterdvNV(target, index, pname, params);
+    glGetProgramParameterdvNV(target, index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11518,7 +11517,7 @@ AROS_LH4(void, glGetProgramParameterfvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramParameterfvNV(target, index, pname, params);
+    glGetProgramParameterfvNV(target, index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11531,7 +11530,7 @@ AROS_LH3(void, glGetProgramivNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramivNV(id, pname, params);
+    glGetProgramivNV(id, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11544,7 +11543,7 @@ AROS_LH3(void, glGetProgramStringNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramStringNV(id, pname, program);
+    glGetProgramStringNV(id, pname, program);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11558,7 +11557,7 @@ AROS_LH4(void, glGetTrackMatrixivNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTrackMatrixivNV(target, address, pname, params);
+    glGetTrackMatrixivNV(target, address, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11571,7 +11570,7 @@ AROS_LH3(void, glGetVertexAttribdvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribdvNV(index, pname, params);
+    glGetVertexAttribdvNV(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11584,7 +11583,7 @@ AROS_LH3(void, glGetVertexAttribfvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribfvNV(index, pname, params);
+    glGetVertexAttribfvNV(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11597,7 +11596,7 @@ AROS_LH3(void, glGetVertexAttribivNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribivNV(index, pname, params);
+    glGetVertexAttribivNV(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11610,7 +11609,7 @@ AROS_LH3(void, glGetVertexAttribPointervNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribPointervNV(index, pname, pointer);
+    glGetVertexAttribPointervNV(index, pname, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11621,7 +11620,7 @@ AROS_LH1(GLboolean, glIsProgramNV,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsProgramNV(id);
+    GLboolean _return = glIsProgramNV(id);
 
     return _return;
 
@@ -11637,7 +11636,7 @@ AROS_LH4(void, glLoadProgramNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglLoadProgramNV(target, id, len, program);
+    glLoadProgramNV(target, id, len, program);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11653,7 +11652,7 @@ AROS_LH6(void, glProgramParameter4dNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramParameter4dNV(target, index, x, y, z, w);
+    glProgramParameter4dNV(target, index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11666,7 +11665,7 @@ AROS_LH3(void, glProgramParameter4dvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramParameter4dvNV(target, index, v);
+    glProgramParameter4dvNV(target, index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11682,7 +11681,7 @@ AROS_LH6(void, glProgramParameter4fNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramParameter4fNV(target, index, x, y, z, w);
+    glProgramParameter4fNV(target, index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11695,7 +11694,7 @@ AROS_LH3(void, glProgramParameter4fvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramParameter4fvNV(target, index, v);
+    glProgramParameter4fvNV(target, index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11709,7 +11708,7 @@ AROS_LH4(void, glProgramParameters4dvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramParameters4dvNV(target, index, count, v);
+    glProgramParameters4dvNV(target, index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11723,7 +11722,7 @@ AROS_LH4(void, glProgramParameters4fvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramParameters4fvNV(target, index, count, v);
+    glProgramParameters4fvNV(target, index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11735,7 +11734,7 @@ AROS_LH2(void, glRequestResidentProgramsNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglRequestResidentProgramsNV(n, programs);
+    glRequestResidentProgramsNV(n, programs);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11749,7 +11748,7 @@ AROS_LH4(void, glTrackMatrixNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglTrackMatrixNV(target, address, matrix, transform);
+    glTrackMatrixNV(target, address, matrix, transform);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11764,7 +11763,7 @@ AROS_LH5(void, glVertexAttribPointerNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribPointerNV(index, fsize, type, stride, pointer);
+    glVertexAttribPointerNV(index, fsize, type, stride, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11776,7 +11775,7 @@ AROS_LH2(void, glVertexAttrib1dNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1dNV(index, x);
+    glVertexAttrib1dNV(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11788,7 +11787,7 @@ AROS_LH2(void, glVertexAttrib1dvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1dvNV(index, v);
+    glVertexAttrib1dvNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11800,7 +11799,7 @@ AROS_LH2(void, glVertexAttrib1fNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1fNV(index, x);
+    glVertexAttrib1fNV(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11812,7 +11811,7 @@ AROS_LH2(void, glVertexAttrib1fvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1fvNV(index, v);
+    glVertexAttrib1fvNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11824,7 +11823,7 @@ AROS_LH2(void, glVertexAttrib1sNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1sNV(index, x);
+    glVertexAttrib1sNV(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11836,7 +11835,7 @@ AROS_LH2(void, glVertexAttrib1svNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib1svNV(index, v);
+    glVertexAttrib1svNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11849,7 +11848,7 @@ AROS_LH3(void, glVertexAttrib2dNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2dNV(index, x, y);
+    glVertexAttrib2dNV(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11861,7 +11860,7 @@ AROS_LH2(void, glVertexAttrib2dvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2dvNV(index, v);
+    glVertexAttrib2dvNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11874,7 +11873,7 @@ AROS_LH3(void, glVertexAttrib2fNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2fNV(index, x, y);
+    glVertexAttrib2fNV(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11886,7 +11885,7 @@ AROS_LH2(void, glVertexAttrib2fvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2fvNV(index, v);
+    glVertexAttrib2fvNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11899,7 +11898,7 @@ AROS_LH3(void, glVertexAttrib2sNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2sNV(index, x, y);
+    glVertexAttrib2sNV(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11911,7 +11910,7 @@ AROS_LH2(void, glVertexAttrib2svNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib2svNV(index, v);
+    glVertexAttrib2svNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11925,7 +11924,7 @@ AROS_LH4(void, glVertexAttrib3dNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3dNV(index, x, y, z);
+    glVertexAttrib3dNV(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11937,7 +11936,7 @@ AROS_LH2(void, glVertexAttrib3dvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3dvNV(index, v);
+    glVertexAttrib3dvNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11951,7 +11950,7 @@ AROS_LH4(void, glVertexAttrib3fNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3fNV(index, x, y, z);
+    glVertexAttrib3fNV(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11963,7 +11962,7 @@ AROS_LH2(void, glVertexAttrib3fvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3fvNV(index, v);
+    glVertexAttrib3fvNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11977,7 +11976,7 @@ AROS_LH4(void, glVertexAttrib3sNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3sNV(index, x, y, z);
+    glVertexAttrib3sNV(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -11989,7 +11988,7 @@ AROS_LH2(void, glVertexAttrib3svNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib3svNV(index, v);
+    glVertexAttrib3svNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12004,7 +12003,7 @@ AROS_LH5(void, glVertexAttrib4dNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4dNV(index, x, y, z, w);
+    glVertexAttrib4dNV(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12016,7 +12015,7 @@ AROS_LH2(void, glVertexAttrib4dvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4dvNV(index, v);
+    glVertexAttrib4dvNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12031,7 +12030,7 @@ AROS_LH5(void, glVertexAttrib4fNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4fNV(index, x, y, z, w);
+    glVertexAttrib4fNV(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12043,7 +12042,7 @@ AROS_LH2(void, glVertexAttrib4fvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4fvNV(index, v);
+    glVertexAttrib4fvNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12058,7 +12057,7 @@ AROS_LH5(void, glVertexAttrib4sNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4sNV(index, x, y, z, w);
+    glVertexAttrib4sNV(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12070,7 +12069,7 @@ AROS_LH2(void, glVertexAttrib4svNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4svNV(index, v);
+    glVertexAttrib4svNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12085,7 +12084,7 @@ AROS_LH5(void, glVertexAttrib4ubNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4ubNV(index, x, y, z, w);
+    glVertexAttrib4ubNV(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12097,7 +12096,7 @@ AROS_LH2(void, glVertexAttrib4ubvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttrib4ubvNV(index, v);
+    glVertexAttrib4ubvNV(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12110,7 +12109,7 @@ AROS_LH3(void, glVertexAttribs1dvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs1dvNV(index, count, v);
+    glVertexAttribs1dvNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12123,7 +12122,7 @@ AROS_LH3(void, glVertexAttribs1fvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs1fvNV(index, count, v);
+    glVertexAttribs1fvNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12136,7 +12135,7 @@ AROS_LH3(void, glVertexAttribs1svNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs1svNV(index, count, v);
+    glVertexAttribs1svNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12149,7 +12148,7 @@ AROS_LH3(void, glVertexAttribs2dvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs2dvNV(index, count, v);
+    glVertexAttribs2dvNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12162,7 +12161,7 @@ AROS_LH3(void, glVertexAttribs2fvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs2fvNV(index, count, v);
+    glVertexAttribs2fvNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12175,7 +12174,7 @@ AROS_LH3(void, glVertexAttribs2svNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs2svNV(index, count, v);
+    glVertexAttribs2svNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12188,7 +12187,7 @@ AROS_LH3(void, glVertexAttribs3dvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs3dvNV(index, count, v);
+    glVertexAttribs3dvNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12201,7 +12200,7 @@ AROS_LH3(void, glVertexAttribs3fvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs3fvNV(index, count, v);
+    glVertexAttribs3fvNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12214,7 +12213,7 @@ AROS_LH3(void, glVertexAttribs3svNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs3svNV(index, count, v);
+    glVertexAttribs3svNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12227,7 +12226,7 @@ AROS_LH3(void, glVertexAttribs4dvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs4dvNV(index, count, v);
+    glVertexAttribs4dvNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12240,7 +12239,7 @@ AROS_LH3(void, glVertexAttribs4fvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs4fvNV(index, count, v);
+    glVertexAttribs4fvNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12253,7 +12252,7 @@ AROS_LH3(void, glVertexAttribs4svNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs4svNV(index, count, v);
+    glVertexAttribs4svNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12266,7 +12265,7 @@ AROS_LH3(void, glVertexAttribs4ubvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribs4ubvNV(index, count, v);
+    glVertexAttribs4ubvNV(index, count, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12278,7 +12277,7 @@ AROS_LH2(void, glTexBumpParameterivATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexBumpParameterivATI(pname, param);
+    glTexBumpParameterivATI(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12290,7 +12289,7 @@ AROS_LH2(void, glTexBumpParameterfvATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexBumpParameterfvATI(pname, param);
+    glTexBumpParameterfvATI(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12302,7 +12301,7 @@ AROS_LH2(void, glGetTexBumpParameterivATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexBumpParameterivATI(pname, param);
+    glGetTexBumpParameterivATI(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12314,7 +12313,7 @@ AROS_LH2(void, glGetTexBumpParameterfvATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexBumpParameterfvATI(pname, param);
+    glGetTexBumpParameterfvATI(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12325,7 +12324,7 @@ AROS_LH1(GLuint, glGenFragmentShadersATI,
 {
     AROS_LIBFUNC_INIT
 
-    GLuint _return = mglGenFragmentShadersATI(range);
+    GLuint _return = glGenFragmentShadersATI(range);
 
     return _return;
 
@@ -12338,7 +12337,7 @@ AROS_LH1(void, glBindFragmentShaderATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindFragmentShaderATI(id);
+    glBindFragmentShaderATI(id);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12349,7 +12348,7 @@ AROS_LH1(void, glDeleteFragmentShaderATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteFragmentShaderATI(id);
+    glDeleteFragmentShaderATI(id);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12359,7 +12358,7 @@ AROS_LH0(void, glBeginFragmentShaderATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglBeginFragmentShaderATI();
+    glBeginFragmentShaderATI();
 
     AROS_LIBFUNC_EXIT
 }
@@ -12369,7 +12368,7 @@ AROS_LH0(void, glEndFragmentShaderATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglEndFragmentShaderATI();
+    glEndFragmentShaderATI();
 
     AROS_LIBFUNC_EXIT
 }
@@ -12382,7 +12381,7 @@ AROS_LH3(void, glPassTexCoordATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglPassTexCoordATI(dst, coord, swizzle);
+    glPassTexCoordATI(dst, coord, swizzle);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12395,7 +12394,7 @@ AROS_LH3(void, glSampleMapATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglSampleMapATI(dst, interp, swizzle);
+    glSampleMapATI(dst, interp, swizzle);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12412,7 +12411,7 @@ AROS_LH7(void, glColorFragmentOp1ATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorFragmentOp1ATI(op, dst, dstMask, dstMod, arg1, arg1Rep, arg1Mod);
+    glColorFragmentOp1ATI(op, dst, dstMask, dstMod, arg1, arg1Rep, arg1Mod);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12432,7 +12431,7 @@ AROS_LH10(void, glColorFragmentOp2ATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorFragmentOp2ATI(op, dst, dstMask, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod);
+    glColorFragmentOp2ATI(op, dst, dstMask, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12455,7 +12454,7 @@ AROS_LH13(void, glColorFragmentOp3ATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorFragmentOp3ATI(op, dst, dstMask, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod, arg3, arg3Rep, arg3Mod);
+    glColorFragmentOp3ATI(op, dst, dstMask, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod, arg3, arg3Rep, arg3Mod);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12471,7 +12470,7 @@ AROS_LH6(void, glAlphaFragmentOp1ATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglAlphaFragmentOp1ATI(op, dst, dstMod, arg1, arg1Rep, arg1Mod);
+    glAlphaFragmentOp1ATI(op, dst, dstMod, arg1, arg1Rep, arg1Mod);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12490,7 +12489,7 @@ AROS_LH9(void, glAlphaFragmentOp2ATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglAlphaFragmentOp2ATI(op, dst, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod);
+    glAlphaFragmentOp2ATI(op, dst, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12512,7 +12511,7 @@ AROS_LH12(void, glAlphaFragmentOp3ATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglAlphaFragmentOp3ATI(op, dst, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod, arg3, arg3Rep, arg3Mod);
+    glAlphaFragmentOp3ATI(op, dst, dstMod, arg1, arg1Rep, arg1Mod, arg2, arg2Rep, arg2Mod, arg3, arg3Rep, arg3Mod);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12524,7 +12523,7 @@ AROS_LH2(void, glSetFragmentShaderConstantATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglSetFragmentShaderConstantATI(dst, value);
+    glSetFragmentShaderConstantATI(dst, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12536,7 +12535,7 @@ AROS_LH2(void, glPointParameteriNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameteriNV(pname, param);
+    glPointParameteriNV(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12548,7 +12547,7 @@ AROS_LH2(void, glPointParameterivNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameterivNV(pname, params);
+    glPointParameterivNV(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12560,7 +12559,7 @@ AROS_LH2(void, glDrawBuffersATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawBuffersATI(n, bufs);
+    glDrawBuffersATI(n, bufs);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12577,7 +12576,7 @@ AROS_LH7(void, glProgramNamedParameter4fNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramNamedParameter4fNV(id, len, name, x, y, z, w);
+    glProgramNamedParameter4fNV(id, len, name, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12594,7 +12593,7 @@ AROS_LH7(void, glProgramNamedParameter4dNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramNamedParameter4dNV(id, len, name, x, y, z, w);
+    glProgramNamedParameter4dNV(id, len, name, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12608,7 +12607,7 @@ AROS_LH4(void, glProgramNamedParameter4fvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramNamedParameter4fvNV(id, len, name, v);
+    glProgramNamedParameter4fvNV(id, len, name, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12622,7 +12621,7 @@ AROS_LH4(void, glProgramNamedParameter4dvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramNamedParameter4dvNV(id, len, name, v);
+    glProgramNamedParameter4dvNV(id, len, name, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12636,7 +12635,7 @@ AROS_LH4(void, glGetProgramNamedParameterfvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramNamedParameterfvNV(id, len, name, params);
+    glGetProgramNamedParameterfvNV(id, len, name, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12650,7 +12649,7 @@ AROS_LH4(void, glGetProgramNamedParameterdvNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetProgramNamedParameterdvNV(id, len, name, params);
+    glGetProgramNamedParameterdvNV(id, len, name, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12661,7 +12660,7 @@ AROS_LH1(GLboolean, glIsRenderbufferEXT,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsRenderbufferEXT(renderbuffer);
+    GLboolean _return = glIsRenderbufferEXT(renderbuffer);
 
     return _return;
 
@@ -12675,7 +12674,7 @@ AROS_LH2(void, glBindRenderbufferEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindRenderbufferEXT(target, renderbuffer);
+    glBindRenderbufferEXT(target, renderbuffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12687,7 +12686,7 @@ AROS_LH2(void, glDeleteRenderbuffersEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteRenderbuffersEXT(n, renderbuffers);
+    glDeleteRenderbuffersEXT(n, renderbuffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12699,7 +12698,7 @@ AROS_LH2(void, glGenRenderbuffersEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenRenderbuffersEXT(n, renderbuffers);
+    glGenRenderbuffersEXT(n, renderbuffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12713,7 +12712,7 @@ AROS_LH4(void, glRenderbufferStorageEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglRenderbufferStorageEXT(target, internalformat, width, height);
+    glRenderbufferStorageEXT(target, internalformat, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12726,7 +12725,7 @@ AROS_LH3(void, glGetRenderbufferParameterivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetRenderbufferParameterivEXT(target, pname, params);
+    glGetRenderbufferParameterivEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12737,7 +12736,7 @@ AROS_LH1(GLboolean, glIsFramebufferEXT,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsFramebufferEXT(framebuffer);
+    GLboolean _return = glIsFramebufferEXT(framebuffer);
 
     return _return;
 
@@ -12751,7 +12750,7 @@ AROS_LH2(void, glBindFramebufferEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindFramebufferEXT(target, framebuffer);
+    glBindFramebufferEXT(target, framebuffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12763,7 +12762,7 @@ AROS_LH2(void, glDeleteFramebuffersEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteFramebuffersEXT(n, framebuffers);
+    glDeleteFramebuffersEXT(n, framebuffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12775,7 +12774,7 @@ AROS_LH2(void, glGenFramebuffersEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenFramebuffersEXT(n, framebuffers);
+    glGenFramebuffersEXT(n, framebuffers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12786,7 +12785,7 @@ AROS_LH1(GLenum, glCheckFramebufferStatusEXT,
 {
     AROS_LIBFUNC_INIT
 
-    GLenum _return = mglCheckFramebufferStatusEXT(target);
+    GLenum _return = glCheckFramebufferStatusEXT(target);
 
     return _return;
 
@@ -12803,7 +12802,7 @@ AROS_LH5(void, glFramebufferTexture1DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTexture1DEXT(target, attachment, textarget, texture, level);
+    glFramebufferTexture1DEXT(target, attachment, textarget, texture, level);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12818,7 +12817,7 @@ AROS_LH5(void, glFramebufferTexture2DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTexture2DEXT(target, attachment, textarget, texture, level);
+    glFramebufferTexture2DEXT(target, attachment, textarget, texture, level);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12834,7 +12833,7 @@ AROS_LH6(void, glFramebufferTexture3DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTexture3DEXT(target, attachment, textarget, texture, level, zoffset);
+    glFramebufferTexture3DEXT(target, attachment, textarget, texture, level, zoffset);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12848,7 +12847,7 @@ AROS_LH4(void, glFramebufferRenderbufferEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferRenderbufferEXT(target, attachment, renderbuffertarget, renderbuffer);
+    glFramebufferRenderbufferEXT(target, attachment, renderbuffertarget, renderbuffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12862,7 +12861,7 @@ AROS_LH4(void, glGetFramebufferAttachmentParameterivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetFramebufferAttachmentParameterivEXT(target, attachment, pname, params);
+    glGetFramebufferAttachmentParameterivEXT(target, attachment, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12873,7 +12872,7 @@ AROS_LH1(void, glGenerateMipmapEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenerateMipmapEXT(target);
+    glGenerateMipmapEXT(target);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12888,7 +12887,7 @@ AROS_LH5(void, glFramebufferTextureLayerEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTextureLayerEXT(target, attachment, texture, level, layer);
+    glFramebufferTextureLayerEXT(target, attachment, texture, level, layer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12902,7 +12901,7 @@ AROS_LH4(GLvoid*, glMapBufferRange,
 {
     AROS_LIBFUNC_INIT
 
-    GLvoid* _return = mglMapBufferRange(target, offset, length, access);
+    GLvoid* _return = glMapBufferRange(target, offset, length, access);
 
     return _return;
 
@@ -12917,7 +12916,7 @@ AROS_LH3(void, glFlushMappedBufferRange,
 {
     AROS_LIBFUNC_INIT
 
-    mglFlushMappedBufferRange(target, offset, length);
+    glFlushMappedBufferRange(target, offset, length);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12928,7 +12927,7 @@ AROS_LH1(void, glBindVertexArray,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindVertexArray(array);
+    glBindVertexArray(array);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12940,7 +12939,7 @@ AROS_LH2(void, glDeleteVertexArrays,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteVertexArrays(n, arrays);
+    glDeleteVertexArrays(n, arrays);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12952,7 +12951,7 @@ AROS_LH2(void, glGenVertexArrays,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenVertexArrays(n, arrays);
+    glGenVertexArrays(n, arrays);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12963,7 +12962,7 @@ AROS_LH1(GLboolean, glIsVertexArray,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsVertexArray(array);
+    GLboolean _return = glIsVertexArray(array);
 
     return _return;
 
@@ -12980,7 +12979,7 @@ AROS_LH5(void, glCopyBufferSubData,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
+    glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
 
     AROS_LIBFUNC_EXIT
 }
@@ -12992,7 +12991,7 @@ AROS_LH2(GLsync, glFenceSync,
 {
     AROS_LIBFUNC_INIT
 
-    GLsync _return = mglFenceSync(condition, flags);
+    GLsync _return = glFenceSync(condition, flags);
 
     return _return;
 
@@ -13005,7 +13004,7 @@ AROS_LH1(GLboolean, glIsSync,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsSync(sync);
+    GLboolean _return = glIsSync(sync);
 
     return _return;
 
@@ -13018,7 +13017,7 @@ AROS_LH1(void, glDeleteSync,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteSync(sync);
+    glDeleteSync(sync);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13031,7 +13030,7 @@ AROS_LH3(GLenum, glClientWaitSync,
 {
     AROS_LIBFUNC_INIT
 
-    GLenum _return = mglClientWaitSync(sync, flags, timeout);
+    GLenum _return = glClientWaitSync(sync, flags, timeout);
 
     return _return;
 
@@ -13046,7 +13045,7 @@ AROS_LH3(void, glWaitSync,
 {
     AROS_LIBFUNC_INIT
 
-    mglWaitSync(sync, flags, timeout);
+    glWaitSync(sync, flags, timeout);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13058,7 +13057,7 @@ AROS_LH2(void, glGetInteger64v,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetInteger64v(pname, params);
+    glGetInteger64v(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13073,7 +13072,7 @@ AROS_LH5(void, glGetSynciv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetSynciv(sync, pname, bufSize, length, values);
+    glGetSynciv(sync, pname, bufSize, length, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13084,7 +13083,7 @@ AROS_LH1(void, glProvokingVertexEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglProvokingVertexEXT(mode);
+    glProvokingVertexEXT(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13099,7 +13098,7 @@ AROS_LH5(void, glDrawElementsBaseVertex,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawElementsBaseVertex(mode, count, type, indices, basevertex);
+    glDrawElementsBaseVertex(mode, count, type, indices, basevertex);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13116,7 +13115,7 @@ AROS_LH7(void, glDrawRangeElementsBaseVertex,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawRangeElementsBaseVertex(mode, start, end, count, type, indices, basevertex);
+    glDrawRangeElementsBaseVertex(mode, start, end, count, type, indices, basevertex);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13132,7 +13131,7 @@ AROS_LH6(void, glMultiDrawElementsBaseVertex,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiDrawElementsBaseVertex(mode, count, type, indices, primcount, basevertex);
+    glMultiDrawElementsBaseVertex(mode, count, type, indices, primcount, basevertex);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13143,7 +13142,7 @@ AROS_LH1(void, glProvokingVertex,
 {
     AROS_LIBFUNC_INIT
 
-    mglProvokingVertex(mode);
+    glProvokingVertex(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13158,7 +13157,7 @@ AROS_LH5(void, glRenderbufferStorageMultisampleEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglRenderbufferStorageMultisampleEXT(target, samples, internalformat, width, height);
+    glRenderbufferStorageMultisampleEXT(target, samples, internalformat, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13173,7 +13172,7 @@ AROS_LH5(void, glColorMaskIndexedEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorMaskIndexedEXT(index, r, g, b, a);
+    glColorMaskIndexedEXT(index, r, g, b, a);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13186,7 +13185,7 @@ AROS_LH3(void, glGetBooleanIndexedvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetBooleanIndexedvEXT(target, index, data);
+    glGetBooleanIndexedvEXT(target, index, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13199,7 +13198,7 @@ AROS_LH3(void, glGetIntegerIndexedvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetIntegerIndexedvEXT(target, index, data);
+    glGetIntegerIndexedvEXT(target, index, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13211,7 +13210,7 @@ AROS_LH2(void, glEnableIndexedEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglEnableIndexedEXT(target, index);
+    glEnableIndexedEXT(target, index);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13223,7 +13222,7 @@ AROS_LH2(void, glDisableIndexedEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglDisableIndexedEXT(target, index);
+    glDisableIndexedEXT(target, index);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13235,7 +13234,7 @@ AROS_LH2(GLboolean, glIsEnabledIndexedEXT,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsEnabledIndexedEXT(target, index);
+    GLboolean _return = glIsEnabledIndexedEXT(target, index);
 
     return _return;
 
@@ -13249,7 +13248,7 @@ AROS_LH2(void, glBeginConditionalRenderNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglBeginConditionalRenderNV(id, mode);
+    glBeginConditionalRenderNV(id, mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13259,7 +13258,7 @@ AROS_LH0(void, glEndConditionalRenderNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglEndConditionalRenderNV();
+    glEndConditionalRenderNV();
 
     AROS_LIBFUNC_EXIT
 }
@@ -13272,7 +13271,7 @@ AROS_LH3(GLenum, glObjectPurgeableAPPLE,
 {
     AROS_LIBFUNC_INIT
 
-    GLenum _return = mglObjectPurgeableAPPLE(objectType, name, option);
+    GLenum _return = glObjectPurgeableAPPLE(objectType, name, option);
 
     return _return;
 
@@ -13287,7 +13286,7 @@ AROS_LH3(GLenum, glObjectUnpurgeableAPPLE,
 {
     AROS_LIBFUNC_INIT
 
-    GLenum _return = mglObjectUnpurgeableAPPLE(objectType, name, option);
+    GLenum _return = glObjectUnpurgeableAPPLE(objectType, name, option);
 
     return _return;
 
@@ -13303,7 +13302,7 @@ AROS_LH4(void, glGetObjectParameterivAPPLE,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetObjectParameterivAPPLE(objectType, name, pname, params);
+    glGetObjectParameterivAPPLE(objectType, name, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13314,7 +13313,7 @@ AROS_LH1(void, glBeginTransformFeedback,
 {
     AROS_LIBFUNC_INIT
 
-    mglBeginTransformFeedback(primitiveMode);
+    glBeginTransformFeedback(primitiveMode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13324,7 +13323,7 @@ AROS_LH0(void, glEndTransformFeedback,
 {
     AROS_LIBFUNC_INIT
 
-    mglEndTransformFeedback();
+    glEndTransformFeedback();
 
     AROS_LIBFUNC_EXIT
 }
@@ -13339,7 +13338,7 @@ AROS_LH5(void, glBindBufferRange,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindBufferRange(target, index, buffer, offset, size);
+    glBindBufferRange(target, index, buffer, offset, size);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13352,7 +13351,7 @@ AROS_LH3(void, glBindBufferBase,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindBufferBase(target, index, buffer);
+    glBindBufferBase(target, index, buffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13366,7 +13365,7 @@ AROS_LH4(void, glTransformFeedbackVaryings,
 {
     AROS_LIBFUNC_INIT
 
-    mglTransformFeedbackVaryings(program, count, varyings, bufferMode);
+    glTransformFeedbackVaryings(program, count, varyings, bufferMode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13383,7 +13382,7 @@ AROS_LH7(void, glGetTransformFeedbackVarying,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTransformFeedbackVarying(program, index, bufSize, length, size, type, name);
+    glGetTransformFeedbackVarying(program, index, bufSize, length, size, type, name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13397,7 +13396,7 @@ AROS_LH4(void, glDrawArraysInstanced,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawArraysInstanced(mode, first, count, primcount);
+    glDrawArraysInstanced(mode, first, count, primcount);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13412,7 +13411,7 @@ AROS_LH5(void, glDrawElementsInstanced,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawElementsInstanced(mode, count, type, indices, primcount);
+    glDrawElementsInstanced(mode, count, type, indices, primcount);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13426,7 +13425,7 @@ AROS_LH4(void, glDrawArraysInstancedARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawArraysInstancedARB(mode, first, count, primcount);
+    glDrawArraysInstancedARB(mode, first, count, primcount);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13441,7 +13440,7 @@ AROS_LH5(void, glDrawElementsInstancedARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawElementsInstancedARB(mode, count, type, indices, primcount);
+    glDrawElementsInstancedARB(mode, count, type, indices, primcount);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13454,7 +13453,7 @@ AROS_LH3(void, glProgramParameteriARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramParameteriARB(program, pname, value);
+    glProgramParameteriARB(program, pname, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13468,7 +13467,7 @@ AROS_LH4(void, glFramebufferTextureARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTextureARB(target, attachment, texture, level);
+    glFramebufferTextureARB(target, attachment, texture, level);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13483,7 +13482,7 @@ AROS_LH5(void, glFramebufferTextureFaceARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTextureFaceARB(target, attachment, texture, level, face);
+    glFramebufferTextureFaceARB(target, attachment, texture, level, face);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13495,7 +13494,7 @@ AROS_LH2(void, glBindTransformFeedback,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindTransformFeedback(target, id);
+    glBindTransformFeedback(target, id);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13507,7 +13506,7 @@ AROS_LH2(void, glDeleteTransformFeedbacks,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteTransformFeedbacks(n, ids);
+    glDeleteTransformFeedbacks(n, ids);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13519,7 +13518,7 @@ AROS_LH2(void, glGenTransformFeedbacks,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenTransformFeedbacks(n, ids);
+    glGenTransformFeedbacks(n, ids);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13530,7 +13529,7 @@ AROS_LH1(GLboolean, glIsTransformFeedback,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsTransformFeedback(id);
+    GLboolean _return = glIsTransformFeedback(id);
 
     return _return;
 
@@ -13542,7 +13541,7 @@ AROS_LH0(void, glPauseTransformFeedback,
 {
     AROS_LIBFUNC_INIT
 
-    mglPauseTransformFeedback();
+    glPauseTransformFeedback();
 
     AROS_LIBFUNC_EXIT
 }
@@ -13552,7 +13551,7 @@ AROS_LH0(void, glResumeTransformFeedback,
 {
     AROS_LIBFUNC_INIT
 
-    mglResumeTransformFeedback();
+    glResumeTransformFeedback();
 
     AROS_LIBFUNC_EXIT
 }
@@ -13564,7 +13563,7 @@ AROS_LH2(void, glDrawTransformFeedback,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawTransformFeedback(mode, id);
+    glDrawTransformFeedback(mode, id);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13578,7 +13577,7 @@ AROS_LH4(void, glDrawArraysInstancedEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawArraysInstancedEXT(mode, start, count, primcount);
+    glDrawArraysInstancedEXT(mode, start, count, primcount);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13593,7 +13592,7 @@ AROS_LH5(void, glDrawElementsInstancedEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawElementsInstancedEXT(mode, count, type, indices, primcount);
+    glDrawElementsInstancedEXT(mode, count, type, indices, primcount);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13604,7 +13603,7 @@ AROS_LH1(void, glBeginTransformFeedbackEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBeginTransformFeedbackEXT(primitiveMode);
+    glBeginTransformFeedbackEXT(primitiveMode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13614,7 +13613,7 @@ AROS_LH0(void, glEndTransformFeedbackEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglEndTransformFeedbackEXT();
+    glEndTransformFeedbackEXT();
 
     AROS_LIBFUNC_EXIT
 }
@@ -13629,7 +13628,7 @@ AROS_LH5(void, glBindBufferRangeEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindBufferRangeEXT(target, index, buffer, offset, size);
+    glBindBufferRangeEXT(target, index, buffer, offset, size);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13643,7 +13642,7 @@ AROS_LH4(void, glBindBufferOffsetEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindBufferOffsetEXT(target, index, buffer, offset);
+    glBindBufferOffsetEXT(target, index, buffer, offset);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13656,7 +13655,7 @@ AROS_LH3(void, glBindBufferBaseEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindBufferBaseEXT(target, index, buffer);
+    glBindBufferBaseEXT(target, index, buffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13670,7 +13669,7 @@ AROS_LH4(void, glTransformFeedbackVaryingsEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglTransformFeedbackVaryingsEXT(program, count, varyings, bufferMode);
+    glTransformFeedbackVaryingsEXT(program, count, varyings, bufferMode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13687,7 +13686,7 @@ AROS_LH7(void, glGetTransformFeedbackVaryingEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTransformFeedbackVaryingEXT(program, index, bufSize, length, size, type, name);
+    glGetTransformFeedbackVaryingEXT(program, index, bufSize, length, size, type, name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13699,7 +13698,7 @@ AROS_LH2(void, glEGLImageTargetTexture2DOES,
 {
     AROS_LIBFUNC_INIT
 
-    mglEGLImageTargetTexture2DOES(target, image);
+    glEGLImageTargetTexture2DOES(target, image);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13711,7 +13710,7 @@ AROS_LH2(void, glEGLImageTargetRenderbufferStorageOES,
 {
     AROS_LIBFUNC_INIT
 
-    mglEGLImageTargetRenderbufferStorageOES(target, image);
+    glEGLImageTargetRenderbufferStorageOES(target, image);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13726,7 +13725,7 @@ AROS_LH5(void, glColorMaski,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorMaski(index, r, g, b, a);
+    glColorMaski(index, r, g, b, a);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13739,7 +13738,7 @@ AROS_LH3(void, glGetBooleani_v,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetBooleani_v(target, index, data);
+    glGetBooleani_v(target, index, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13752,7 +13751,7 @@ AROS_LH3(void, glGetIntegeri_v,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetIntegeri_v(target, index, data);
+    glGetIntegeri_v(target, index, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13764,7 +13763,7 @@ AROS_LH2(void, glEnablei,
 {
     AROS_LIBFUNC_INIT
 
-    mglEnablei(target, index);
+    glEnablei(target, index);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13776,7 +13775,7 @@ AROS_LH2(void, glDisablei,
 {
     AROS_LIBFUNC_INIT
 
-    mglDisablei(target, index);
+    glDisablei(target, index);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13788,7 +13787,7 @@ AROS_LH2(GLboolean, glIsEnabledi,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsEnabledi(target, index);
+    GLboolean _return = glIsEnabledi(target, index);
 
     return _return;
 
@@ -13802,7 +13801,7 @@ AROS_LH2(void, glClampColor,
 {
     AROS_LIBFUNC_INIT
 
-    mglClampColor(target, clamp);
+    glClampColor(target, clamp);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13814,7 +13813,7 @@ AROS_LH2(void, glBeginConditionalRender,
 {
     AROS_LIBFUNC_INIT
 
-    mglBeginConditionalRender(id, mode);
+    glBeginConditionalRender(id, mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13824,7 +13823,7 @@ AROS_LH0(void, glEndConditionalRender,
 {
     AROS_LIBFUNC_INIT
 
-    mglEndConditionalRender();
+    glEndConditionalRender();
 
     AROS_LIBFUNC_EXIT
 }
@@ -13839,7 +13838,7 @@ AROS_LH5(void, glVertexAttribIPointer,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribIPointer(index, size, type, stride, pointer);
+    glVertexAttribIPointer(index, size, type, stride, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13852,7 +13851,7 @@ AROS_LH3(void, glGetVertexAttribIiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribIiv(index, pname, params);
+    glGetVertexAttribIiv(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13865,7 +13864,7 @@ AROS_LH3(void, glGetVertexAttribIuiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribIuiv(index, pname, params);
+    glGetVertexAttribIuiv(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13877,7 +13876,7 @@ AROS_LH2(void, glVertexAttribI1i,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI1i(index, x);
+    glVertexAttribI1i(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13890,7 +13889,7 @@ AROS_LH3(void, glVertexAttribI2i,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI2i(index, x, y);
+    glVertexAttribI2i(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13904,7 +13903,7 @@ AROS_LH4(void, glVertexAttribI3i,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI3i(index, x, y, z);
+    glVertexAttribI3i(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13919,7 +13918,7 @@ AROS_LH5(void, glVertexAttribI4i,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4i(index, x, y, z, w);
+    glVertexAttribI4i(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13931,7 +13930,7 @@ AROS_LH2(void, glVertexAttribI1ui,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI1ui(index, x);
+    glVertexAttribI1ui(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13944,7 +13943,7 @@ AROS_LH3(void, glVertexAttribI2ui,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI2ui(index, x, y);
+    glVertexAttribI2ui(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13958,7 +13957,7 @@ AROS_LH4(void, glVertexAttribI3ui,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI3ui(index, x, y, z);
+    glVertexAttribI3ui(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13973,7 +13972,7 @@ AROS_LH5(void, glVertexAttribI4ui,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4ui(index, x, y, z, w);
+    glVertexAttribI4ui(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13985,7 +13984,7 @@ AROS_LH2(void, glVertexAttribI1iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI1iv(index, v);
+    glVertexAttribI1iv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -13997,7 +13996,7 @@ AROS_LH2(void, glVertexAttribI2iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI2iv(index, v);
+    glVertexAttribI2iv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14009,7 +14008,7 @@ AROS_LH2(void, glVertexAttribI3iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI3iv(index, v);
+    glVertexAttribI3iv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14021,7 +14020,7 @@ AROS_LH2(void, glVertexAttribI4iv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4iv(index, v);
+    glVertexAttribI4iv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14033,7 +14032,7 @@ AROS_LH2(void, glVertexAttribI1uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI1uiv(index, v);
+    glVertexAttribI1uiv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14045,7 +14044,7 @@ AROS_LH2(void, glVertexAttribI2uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI2uiv(index, v);
+    glVertexAttribI2uiv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14057,7 +14056,7 @@ AROS_LH2(void, glVertexAttribI3uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI3uiv(index, v);
+    glVertexAttribI3uiv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14069,7 +14068,7 @@ AROS_LH2(void, glVertexAttribI4uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4uiv(index, v);
+    glVertexAttribI4uiv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14081,7 +14080,7 @@ AROS_LH2(void, glVertexAttribI4bv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4bv(index, v);
+    glVertexAttribI4bv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14093,7 +14092,7 @@ AROS_LH2(void, glVertexAttribI4sv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4sv(index, v);
+    glVertexAttribI4sv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14105,7 +14104,7 @@ AROS_LH2(void, glVertexAttribI4ubv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4ubv(index, v);
+    glVertexAttribI4ubv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14117,7 +14116,7 @@ AROS_LH2(void, glVertexAttribI4usv,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4usv(index, v);
+    glVertexAttribI4usv(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14130,7 +14129,7 @@ AROS_LH3(void, glGetUniformuiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetUniformuiv(program, location, params);
+    glGetUniformuiv(program, location, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14143,7 +14142,7 @@ AROS_LH3(void, glBindFragDataLocation,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindFragDataLocation(program, color, name);
+    glBindFragDataLocation(program, color, name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14155,7 +14154,7 @@ AROS_LH2(GLint, glGetFragDataLocation,
 {
     AROS_LIBFUNC_INIT
 
-    GLint _return = mglGetFragDataLocation(program, name);
+    GLint _return = glGetFragDataLocation(program, name);
 
     return _return;
 
@@ -14169,7 +14168,7 @@ AROS_LH2(void, glUniform1ui,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1ui(location, v0);
+    glUniform1ui(location, v0);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14182,7 +14181,7 @@ AROS_LH3(void, glUniform2ui,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2ui(location, v0, v1);
+    glUniform2ui(location, v0, v1);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14196,7 +14195,7 @@ AROS_LH4(void, glUniform3ui,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3ui(location, v0, v1, v2);
+    glUniform3ui(location, v0, v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14211,7 +14210,7 @@ AROS_LH5(void, glUniform4ui,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4ui(location, v0, v1, v2, v3);
+    glUniform4ui(location, v0, v1, v2, v3);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14224,7 +14223,7 @@ AROS_LH3(void, glUniform1uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1uiv(location, count, value);
+    glUniform1uiv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14237,7 +14236,7 @@ AROS_LH3(void, glUniform2uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2uiv(location, count, value);
+    glUniform2uiv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14250,7 +14249,7 @@ AROS_LH3(void, glUniform3uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3uiv(location, count, value);
+    glUniform3uiv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14263,7 +14262,7 @@ AROS_LH3(void, glUniform4uiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4uiv(location, count, value);
+    glUniform4uiv(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14276,7 +14275,7 @@ AROS_LH3(void, glTexParameterIiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexParameterIiv(target, pname, params);
+    glTexParameterIiv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14289,7 +14288,7 @@ AROS_LH3(void, glTexParameterIuiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexParameterIuiv(target, pname, params);
+    glTexParameterIuiv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14302,7 +14301,7 @@ AROS_LH3(void, glGetTexParameterIiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexParameterIiv(target, pname, params);
+    glGetTexParameterIiv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14315,7 +14314,7 @@ AROS_LH3(void, glGetTexParameterIuiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexParameterIuiv(target, pname, params);
+    glGetTexParameterIuiv(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14328,7 +14327,7 @@ AROS_LH3(void, glClearBufferiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearBufferiv(buffer, drawbuffer, value);
+    glClearBufferiv(buffer, drawbuffer, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14341,7 +14340,7 @@ AROS_LH3(void, glClearBufferuiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearBufferuiv(buffer, drawbuffer, value);
+    glClearBufferuiv(buffer, drawbuffer, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14354,7 +14353,7 @@ AROS_LH3(void, glClearBufferfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearBufferfv(buffer, drawbuffer, value);
+    glClearBufferfv(buffer, drawbuffer, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14368,7 +14367,7 @@ AROS_LH4(void, glClearBufferfi,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearBufferfi(buffer, drawbuffer, depth, stencil);
+    glClearBufferfi(buffer, drawbuffer, depth, stencil);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14380,7 +14379,7 @@ AROS_LH2(const GLubyte *, glGetStringi,
 {
     AROS_LIBFUNC_INIT
 
-    const GLubyte * _return = mglGetStringi(name, index);
+    const GLubyte * _return = glGetStringi(name, index);
 
     return _return;
 
@@ -14395,7 +14394,7 @@ AROS_LH3(void, glTexBuffer,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexBuffer(target, internalformat, buffer);
+    glTexBuffer(target, internalformat, buffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14406,7 +14405,7 @@ AROS_LH1(void, glPrimitiveRestartIndex,
 {
     AROS_LIBFUNC_INIT
 
-    mglPrimitiveRestartIndex(index);
+    glPrimitiveRestartIndex(index);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14419,7 +14418,7 @@ AROS_LH3(void, glGetInteger64i_v,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetInteger64i_v(target, index, data);
+    glGetInteger64i_v(target, index, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14432,7 +14431,7 @@ AROS_LH3(void, glGetBufferParameteri64v,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetBufferParameteri64v(target, pname, params);
+    glGetBufferParameteri64v(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14446,7 +14445,7 @@ AROS_LH4(void, glFramebufferTexture,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTexture(target, attachment, texture, level);
+    glFramebufferTexture(target, attachment, texture, level);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14458,7 +14457,7 @@ AROS_LH2(void, glVertexAttribDivisor,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribDivisor(index, divisor);
+    glVertexAttribDivisor(index, divisor);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14468,7 +14467,7 @@ AROS_LH0(void, glPrimitiveRestartNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglPrimitiveRestartNV();
+    glPrimitiveRestartNV();
 
     AROS_LIBFUNC_EXIT
 }
@@ -14479,7 +14478,7 @@ AROS_LH1(void, glPrimitiveRestartIndexNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglPrimitiveRestartIndexNV(index);
+    glPrimitiveRestartIndexNV(index);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14491,7 +14490,7 @@ AROS_LH2(void, glVertexAttribI1iEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI1iEXT(index, x);
+    glVertexAttribI1iEXT(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14504,7 +14503,7 @@ AROS_LH3(void, glVertexAttribI2iEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI2iEXT(index, x, y);
+    glVertexAttribI2iEXT(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14518,7 +14517,7 @@ AROS_LH4(void, glVertexAttribI3iEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI3iEXT(index, x, y, z);
+    glVertexAttribI3iEXT(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14533,7 +14532,7 @@ AROS_LH5(void, glVertexAttribI4iEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4iEXT(index, x, y, z, w);
+    glVertexAttribI4iEXT(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14545,7 +14544,7 @@ AROS_LH2(void, glVertexAttribI1uiEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI1uiEXT(index, x);
+    glVertexAttribI1uiEXT(index, x);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14558,7 +14557,7 @@ AROS_LH3(void, glVertexAttribI2uiEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI2uiEXT(index, x, y);
+    glVertexAttribI2uiEXT(index, x, y);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14572,7 +14571,7 @@ AROS_LH4(void, glVertexAttribI3uiEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI3uiEXT(index, x, y, z);
+    glVertexAttribI3uiEXT(index, x, y, z);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14587,7 +14586,7 @@ AROS_LH5(void, glVertexAttribI4uiEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4uiEXT(index, x, y, z, w);
+    glVertexAttribI4uiEXT(index, x, y, z, w);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14599,7 +14598,7 @@ AROS_LH2(void, glVertexAttribI1ivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI1ivEXT(index, v);
+    glVertexAttribI1ivEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14611,7 +14610,7 @@ AROS_LH2(void, glVertexAttribI2ivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI2ivEXT(index, v);
+    glVertexAttribI2ivEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14623,7 +14622,7 @@ AROS_LH2(void, glVertexAttribI3ivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI3ivEXT(index, v);
+    glVertexAttribI3ivEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14635,7 +14634,7 @@ AROS_LH2(void, glVertexAttribI4ivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4ivEXT(index, v);
+    glVertexAttribI4ivEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14647,7 +14646,7 @@ AROS_LH2(void, glVertexAttribI1uivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI1uivEXT(index, v);
+    glVertexAttribI1uivEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14659,7 +14658,7 @@ AROS_LH2(void, glVertexAttribI2uivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI2uivEXT(index, v);
+    glVertexAttribI2uivEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14671,7 +14670,7 @@ AROS_LH2(void, glVertexAttribI3uivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI3uivEXT(index, v);
+    glVertexAttribI3uivEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14683,7 +14682,7 @@ AROS_LH2(void, glVertexAttribI4uivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4uivEXT(index, v);
+    glVertexAttribI4uivEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14695,7 +14694,7 @@ AROS_LH2(void, glVertexAttribI4bvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4bvEXT(index, v);
+    glVertexAttribI4bvEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14707,7 +14706,7 @@ AROS_LH2(void, glVertexAttribI4svEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4svEXT(index, v);
+    glVertexAttribI4svEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14719,7 +14718,7 @@ AROS_LH2(void, glVertexAttribI4ubvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4ubvEXT(index, v);
+    glVertexAttribI4ubvEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14731,7 +14730,7 @@ AROS_LH2(void, glVertexAttribI4usvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribI4usvEXT(index, v);
+    glVertexAttribI4usvEXT(index, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14746,7 +14745,7 @@ AROS_LH5(void, glVertexAttribIPointerEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribIPointerEXT(index, size, type, stride, pointer);
+    glVertexAttribIPointerEXT(index, size, type, stride, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14759,7 +14758,7 @@ AROS_LH3(void, glGetVertexAttribIivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribIivEXT(index, pname, params);
+    glGetVertexAttribIivEXT(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14772,7 +14771,7 @@ AROS_LH3(void, glGetVertexAttribIuivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetVertexAttribIuivEXT(index, pname, params);
+    glGetVertexAttribIuivEXT(index, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14785,7 +14784,7 @@ AROS_LH3(void, glGetUniformuivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetUniformuivEXT(program, location, params);
+    glGetUniformuivEXT(program, location, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14798,7 +14797,7 @@ AROS_LH3(void, glBindFragDataLocationEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindFragDataLocationEXT(program, color, name);
+    glBindFragDataLocationEXT(program, color, name);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14810,7 +14809,7 @@ AROS_LH2(GLint, glGetFragDataLocationEXT,
 {
     AROS_LIBFUNC_INIT
 
-    GLint _return = mglGetFragDataLocationEXT(program, name);
+    GLint _return = glGetFragDataLocationEXT(program, name);
 
     return _return;
 
@@ -14824,7 +14823,7 @@ AROS_LH2(void, glUniform1uiEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1uiEXT(location, v0);
+    glUniform1uiEXT(location, v0);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14837,7 +14836,7 @@ AROS_LH3(void, glUniform2uiEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2uiEXT(location, v0, v1);
+    glUniform2uiEXT(location, v0, v1);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14851,7 +14850,7 @@ AROS_LH4(void, glUniform3uiEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3uiEXT(location, v0, v1, v2);
+    glUniform3uiEXT(location, v0, v1, v2);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14866,7 +14865,7 @@ AROS_LH5(void, glUniform4uiEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4uiEXT(location, v0, v1, v2, v3);
+    glUniform4uiEXT(location, v0, v1, v2, v3);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14879,7 +14878,7 @@ AROS_LH3(void, glUniform1uivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform1uivEXT(location, count, value);
+    glUniform1uivEXT(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14892,7 +14891,7 @@ AROS_LH3(void, glUniform2uivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform2uivEXT(location, count, value);
+    glUniform2uivEXT(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14905,7 +14904,7 @@ AROS_LH3(void, glUniform3uivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform3uivEXT(location, count, value);
+    glUniform3uivEXT(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14918,7 +14917,7 @@ AROS_LH3(void, glUniform4uivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglUniform4uivEXT(location, count, value);
+    glUniform4uivEXT(location, count, value);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14931,7 +14930,7 @@ AROS_LH3(void, glTexParameterIivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexParameterIivEXT(target, pname, params);
+    glTexParameterIivEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14944,7 +14943,7 @@ AROS_LH3(void, glTexParameterIuivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexParameterIuivEXT(target, pname, params);
+    glTexParameterIuivEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14957,7 +14956,7 @@ AROS_LH3(void, glGetTexParameterIivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexParameterIivEXT(target, pname, params);
+    glGetTexParameterIivEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14970,7 +14969,7 @@ AROS_LH3(void, glGetTexParameterIuivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexParameterIuivEXT(target, pname, params);
+    glGetTexParameterIuivEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14984,7 +14983,7 @@ AROS_LH4(void, glClearColorIiEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearColorIiEXT(red, green, blue, alpha);
+    glClearColorIiEXT(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -14998,7 +14997,7 @@ AROS_LH4(void, glClearColorIuiEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearColorIuiEXT(red, green, blue, alpha);
+    glClearColorIuiEXT(red, green, blue, alpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15010,7 +15009,7 @@ AROS_LH2(void, glUseShaderProgramEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglUseShaderProgramEXT(type, program);
+    glUseShaderProgramEXT(type, program);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15021,7 +15020,7 @@ AROS_LH1(void, glActiveProgramEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglActiveProgramEXT(program);
+    glActiveProgramEXT(program);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15033,7 +15032,7 @@ AROS_LH2(GLuint, glCreateShaderProgramEXT,
 {
     AROS_LIBFUNC_INIT
 
-    GLuint _return = mglCreateShaderProgramEXT(type, string);
+    GLuint _return = glCreateShaderProgramEXT(type, string);
 
     return _return;
 
@@ -15049,7 +15048,7 @@ AROS_LH4(void, glProgramEnvParameters4fvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramEnvParameters4fvEXT(target, index, count, params);
+    glProgramEnvParameters4fvEXT(target, index, count, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15063,7 +15062,7 @@ AROS_LH4(void, glProgramLocalParameters4fvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglProgramLocalParameters4fvEXT(target, index, count, params);
+    glProgramLocalParameters4fvEXT(target, index, count, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15075,7 +15074,7 @@ AROS_LH2(void, glBlendEquationSeparateATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendEquationSeparateATI(modeRGB, modeA);
+    glBlendEquationSeparateATI(modeRGB, modeA);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15090,7 +15089,7 @@ AROS_LH5(void, glGetHistogramEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetHistogramEXT(target, reset, format, type, values);
+    glGetHistogramEXT(target, reset, format, type, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15103,7 +15102,7 @@ AROS_LH3(void, glGetHistogramParameterfvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetHistogramParameterfvEXT(target, pname, params);
+    glGetHistogramParameterfvEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15116,7 +15115,7 @@ AROS_LH3(void, glGetHistogramParameterivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetHistogramParameterivEXT(target, pname, params);
+    glGetHistogramParameterivEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15131,7 +15130,7 @@ AROS_LH5(void, glGetMinmaxEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetMinmaxEXT(target, reset, format, type, values);
+    glGetMinmaxEXT(target, reset, format, type, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15144,7 +15143,7 @@ AROS_LH3(void, glGetMinmaxParameterfvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetMinmaxParameterfvEXT(target, pname, params);
+    glGetMinmaxParameterfvEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15157,7 +15156,7 @@ AROS_LH3(void, glGetMinmaxParameterivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetMinmaxParameterivEXT(target, pname, params);
+    glGetMinmaxParameterivEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15171,7 +15170,7 @@ AROS_LH4(void, glHistogramEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglHistogramEXT(target, width, internalformat, sink);
+    glHistogramEXT(target, width, internalformat, sink);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15184,7 +15183,7 @@ AROS_LH3(void, glMinmaxEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglMinmaxEXT(target, internalformat, sink);
+    glMinmaxEXT(target, internalformat, sink);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15195,7 +15194,7 @@ AROS_LH1(void, glResetHistogramEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglResetHistogramEXT(target);
+    glResetHistogramEXT(target);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15206,7 +15205,7 @@ AROS_LH1(void, glResetMinmaxEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglResetMinmaxEXT(target);
+    glResetMinmaxEXT(target);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15222,7 +15221,7 @@ AROS_LH6(void, glConvolutionFilter1DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionFilter1DEXT(target, internalformat, width, format, type, image);
+    glConvolutionFilter1DEXT(target, internalformat, width, format, type, image);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15239,7 +15238,7 @@ AROS_LH7(void, glConvolutionFilter2DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionFilter2DEXT(target, internalformat, width, height, format, type, image);
+    glConvolutionFilter2DEXT(target, internalformat, width, height, format, type, image);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15252,7 +15251,7 @@ AROS_LH3(void, glConvolutionParameterfEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionParameterfEXT(target, pname, params);
+    glConvolutionParameterfEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15265,7 +15264,7 @@ AROS_LH3(void, glConvolutionParameterfvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionParameterfvEXT(target, pname, params);
+    glConvolutionParameterfvEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15278,7 +15277,7 @@ AROS_LH3(void, glConvolutionParameteriEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionParameteriEXT(target, pname, params);
+    glConvolutionParameteriEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15291,7 +15290,7 @@ AROS_LH3(void, glConvolutionParameterivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglConvolutionParameterivEXT(target, pname, params);
+    glConvolutionParameterivEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15306,7 +15305,7 @@ AROS_LH5(void, glCopyConvolutionFilter1DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyConvolutionFilter1DEXT(target, internalformat, x, y, width);
+    glCopyConvolutionFilter1DEXT(target, internalformat, x, y, width);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15322,7 +15321,7 @@ AROS_LH6(void, glCopyConvolutionFilter2DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyConvolutionFilter2DEXT(target, internalformat, x, y, width, height);
+    glCopyConvolutionFilter2DEXT(target, internalformat, x, y, width, height);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15336,7 +15335,7 @@ AROS_LH4(void, glGetConvolutionFilterEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetConvolutionFilterEXT(target, format, type, image);
+    glGetConvolutionFilterEXT(target, format, type, image);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15349,7 +15348,7 @@ AROS_LH3(void, glGetConvolutionParameterfvEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetConvolutionParameterfvEXT(target, pname, params);
+    glGetConvolutionParameterfvEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15362,7 +15361,7 @@ AROS_LH3(void, glGetConvolutionParameterivEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetConvolutionParameterivEXT(target, pname, params);
+    glGetConvolutionParameterivEXT(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15378,7 +15377,7 @@ AROS_LH6(void, glGetSeparableFilterEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetSeparableFilterEXT(target, format, type, row, column, span);
+    glGetSeparableFilterEXT(target, format, type, row, column, span);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15396,7 +15395,7 @@ AROS_LH8(void, glSeparableFilter2DEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSeparableFilter2DEXT(target, internalformat, width, height, format, type, row, column);
+    glSeparableFilter2DEXT(target, internalformat, width, height, format, type, row, column);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15412,7 +15411,7 @@ AROS_LH6(void, glColorTableSGI,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorTableSGI(target, internalformat, width, format, type, table);
+    glColorTableSGI(target, internalformat, width, format, type, table);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15425,7 +15424,7 @@ AROS_LH3(void, glColorTableParameterfvSGI,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorTableParameterfvSGI(target, pname, params);
+    glColorTableParameterfvSGI(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15438,7 +15437,7 @@ AROS_LH3(void, glColorTableParameterivSGI,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorTableParameterivSGI(target, pname, params);
+    glColorTableParameterivSGI(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15453,7 +15452,7 @@ AROS_LH5(void, glCopyColorTableSGI,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyColorTableSGI(target, internalformat, x, y, width);
+    glCopyColorTableSGI(target, internalformat, x, y, width);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15467,7 +15466,7 @@ AROS_LH4(void, glGetColorTableSGI,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetColorTableSGI(target, format, type, table);
+    glGetColorTableSGI(target, format, type, table);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15480,7 +15479,7 @@ AROS_LH3(void, glGetColorTableParameterfvSGI,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetColorTableParameterfvSGI(target, pname, params);
+    glGetColorTableParameterfvSGI(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15493,7 +15492,7 @@ AROS_LH3(void, glGetColorTableParameterivSGI,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetColorTableParameterivSGI(target, pname, params);
+    glGetColorTableParameterivSGI(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15504,7 +15503,7 @@ AROS_LH1(void, glPixelTexGenSGIX,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelTexGenSGIX(mode);
+    glPixelTexGenSGIX(mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15516,7 +15515,7 @@ AROS_LH2(void, glPixelTexGenParameteriSGIS,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelTexGenParameteriSGIS(pname, param);
+    glPixelTexGenParameteriSGIS(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15528,7 +15527,7 @@ AROS_LH2(void, glPixelTexGenParameterivSGIS,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelTexGenParameterivSGIS(pname, params);
+    glPixelTexGenParameterivSGIS(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15540,7 +15539,7 @@ AROS_LH2(void, glPixelTexGenParameterfSGIS,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelTexGenParameterfSGIS(pname, param);
+    glPixelTexGenParameterfSGIS(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15552,7 +15551,7 @@ AROS_LH2(void, glPixelTexGenParameterfvSGIS,
 {
     AROS_LIBFUNC_INIT
 
-    mglPixelTexGenParameterfvSGIS(pname, params);
+    glPixelTexGenParameterfvSGIS(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15564,7 +15563,7 @@ AROS_LH2(void, glGetPixelTexGenParameterivSGIS,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetPixelTexGenParameterivSGIS(pname, params);
+    glGetPixelTexGenParameterivSGIS(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15576,7 +15575,7 @@ AROS_LH2(void, glGetPixelTexGenParameterfvSGIS,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetPixelTexGenParameterfvSGIS(pname, params);
+    glGetPixelTexGenParameterfvSGIS(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15588,7 +15587,7 @@ AROS_LH2(void, glSampleMaskSGIS,
 {
     AROS_LIBFUNC_INIT
 
-    mglSampleMaskSGIS(value, invert);
+    glSampleMaskSGIS(value, invert);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15599,7 +15598,7 @@ AROS_LH1(void, glSamplePatternSGIS,
 {
     AROS_LIBFUNC_INIT
 
-    mglSamplePatternSGIS(pattern);
+    glSamplePatternSGIS(pattern);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15611,7 +15610,7 @@ AROS_LH2(void, glPointParameterfSGIS,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameterfSGIS(pname, param);
+    glPointParameterfSGIS(pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15623,7 +15622,7 @@ AROS_LH2(void, glPointParameterfvSGIS,
 {
     AROS_LIBFUNC_INIT
 
-    mglPointParameterfvSGIS(pname, params);
+    glPointParameterfvSGIS(pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15639,7 +15638,7 @@ AROS_LH6(void, glColorSubTableEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglColorSubTableEXT(target, start, count, format, type, data);
+    glColorSubTableEXT(target, start, count, format, type, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15654,7 +15653,7 @@ AROS_LH5(void, glCopyColorSubTableEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglCopyColorSubTableEXT(target, start, x, y, width);
+    glCopyColorSubTableEXT(target, start, x, y, width);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15668,7 +15667,7 @@ AROS_LH4(void, glBlendFuncSeparateINGR,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendFuncSeparateINGR(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
+    glBlendFuncSeparateINGR(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15683,7 +15682,7 @@ AROS_LH5(void, glMultiModeDrawArraysIBM,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiModeDrawArraysIBM(mode, first, count, primcount, modestride);
+    glMultiModeDrawArraysIBM(mode, first, count, primcount, modestride);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15699,7 +15698,7 @@ AROS_LH6(void, glMultiModeDrawElementsIBM,
 {
     AROS_LIBFUNC_INIT
 
-    mglMultiModeDrawElementsIBM(mode, count, type, indices, primcount, modestride);
+    glMultiModeDrawElementsIBM(mode, count, type, indices, primcount, modestride);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15711,7 +15710,7 @@ AROS_LH2(void, glSampleMaskEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSampleMaskEXT(value, invert);
+    glSampleMaskEXT(value, invert);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15722,7 +15721,7 @@ AROS_LH1(void, glSamplePatternEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglSamplePatternEXT(pattern);
+    glSamplePatternEXT(pattern);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15734,7 +15733,7 @@ AROS_LH2(void, glDeleteFencesNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteFencesNV(n, fences);
+    glDeleteFencesNV(n, fences);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15746,7 +15745,7 @@ AROS_LH2(void, glGenFencesNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenFencesNV(n, fences);
+    glGenFencesNV(n, fences);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15757,7 +15756,7 @@ AROS_LH1(GLboolean, glIsFenceNV,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsFenceNV(fence);
+    GLboolean _return = glIsFenceNV(fence);
 
     return _return;
 
@@ -15770,7 +15769,7 @@ AROS_LH1(GLboolean, glTestFenceNV,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglTestFenceNV(fence);
+    GLboolean _return = glTestFenceNV(fence);
 
     return _return;
 
@@ -15785,7 +15784,7 @@ AROS_LH3(void, glGetFenceivNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetFenceivNV(fence, pname, params);
+    glGetFenceivNV(fence, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15796,7 +15795,7 @@ AROS_LH1(void, glFinishFenceNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglFinishFenceNV(fence);
+    glFinishFenceNV(fence);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15808,7 +15807,7 @@ AROS_LH2(void, glSetFenceNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglSetFenceNV(fence, condition);
+    glSetFenceNV(fence, condition);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15819,7 +15818,7 @@ AROS_LH1(void, glActiveStencilFaceEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglActiveStencilFaceEXT(face);
+    glActiveStencilFaceEXT(face);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15830,7 +15829,7 @@ AROS_LH1(void, glBindVertexArrayAPPLE,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindVertexArrayAPPLE(array);
+    glBindVertexArrayAPPLE(array);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15842,7 +15841,7 @@ AROS_LH2(void, glDeleteVertexArraysAPPLE,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteVertexArraysAPPLE(n, arrays);
+    glDeleteVertexArraysAPPLE(n, arrays);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15854,7 +15853,7 @@ AROS_LH2(void, glGenVertexArraysAPPLE,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenVertexArraysAPPLE(n, arrays);
+    glGenVertexArraysAPPLE(n, arrays);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15865,7 +15864,7 @@ AROS_LH1(GLboolean, glIsVertexArrayAPPLE,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsVertexArrayAPPLE(array);
+    GLboolean _return = glIsVertexArrayAPPLE(array);
 
     return _return;
 
@@ -15881,7 +15880,7 @@ AROS_LH4(void, glStencilOpSeparateATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglStencilOpSeparateATI(face, sfail, dpfail, dppass);
+    glStencilOpSeparateATI(face, sfail, dpfail, dppass);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15895,7 +15894,7 @@ AROS_LH4(void, glStencilFuncSeparateATI,
 {
     AROS_LIBFUNC_INIT
 
-    mglStencilFuncSeparateATI(frontfunc, backfunc, ref, mask);
+    glStencilFuncSeparateATI(frontfunc, backfunc, ref, mask);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15907,7 +15906,7 @@ AROS_LH2(void, glDepthBoundsEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglDepthBoundsEXT(zmin, zmax);
+    glDepthBoundsEXT(zmin, zmax);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15919,7 +15918,7 @@ AROS_LH2(void, glBlendEquationSeparateEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendEquationSeparateEXT(modeRGB, modeAlpha);
+    glBlendEquationSeparateEXT(modeRGB, modeAlpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15939,7 +15938,7 @@ AROS_LH10(void, glBlitFramebufferEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlitFramebufferEXT(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+    glBlitFramebufferEXT(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15952,7 +15951,7 @@ AROS_LH3(void, glGetQueryObjecti64vEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetQueryObjecti64vEXT(id, pname, params);
+    glGetQueryObjecti64vEXT(id, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15965,7 +15964,7 @@ AROS_LH3(void, glGetQueryObjectui64vEXT,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetQueryObjectui64vEXT(id, pname, params);
+    glGetQueryObjectui64vEXT(id, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15978,7 +15977,7 @@ AROS_LH3(void, glBufferParameteriAPPLE,
 {
     AROS_LIBFUNC_INIT
 
-    mglBufferParameteriAPPLE(target, pname, param);
+    glBufferParameteriAPPLE(target, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -15991,7 +15990,7 @@ AROS_LH3(void, glFlushMappedBufferRangeAPPLE,
 {
     AROS_LIBFUNC_INIT
 
-    mglFlushMappedBufferRangeAPPLE(target, offset, size);
+    glFlushMappedBufferRangeAPPLE(target, offset, size);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16004,7 +16003,7 @@ AROS_LH3(void, glTextureRangeAPPLE,
 {
     AROS_LIBFUNC_INIT
 
-    mglTextureRangeAPPLE(target, length, pointer);
+    glTextureRangeAPPLE(target, length, pointer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16017,7 +16016,7 @@ AROS_LH3(void, glGetTexParameterPointervAPPLE,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetTexParameterPointervAPPLE(target, pname, params);
+    glGetTexParameterPointervAPPLE(target, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16029,7 +16028,7 @@ AROS_LH2(void, glClampColorARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglClampColorARB(target, clamp);
+    glClampColorARB(target, clamp);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16044,7 +16043,7 @@ AROS_LH5(void, glFramebufferTextureLayerARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglFramebufferTextureLayerARB(target, attachment, texture, level, layer);
+    glFramebufferTextureLayerARB(target, attachment, texture, level, layer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16056,7 +16055,7 @@ AROS_LH2(void, glVertexAttribDivisorARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglVertexAttribDivisorARB(index, divisor);
+    glVertexAttribDivisorARB(index, divisor);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16069,7 +16068,7 @@ AROS_LH3(void, glTexBufferARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglTexBufferARB(target, internalformat, buffer);
+    glTexBufferARB(target, internalformat, buffer);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16085,7 +16084,7 @@ AROS_LH6(void, glDrawElementsInstancedBaseVertex,
 {
     AROS_LIBFUNC_INIT
 
-    mglDrawElementsInstancedBaseVertex(mode, count, type, indices, primcount, basevertex);
+    glDrawElementsInstancedBaseVertex(mode, count, type, indices, primcount, basevertex);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16097,7 +16096,7 @@ AROS_LH2(void, glBlendEquationiARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendEquationiARB(buf, mode);
+    glBlendEquationiARB(buf, mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16110,7 +16109,7 @@ AROS_LH3(void, glBlendEquationSeparateiARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendEquationSeparateiARB(buf, modeRGB, modeAlpha);
+    glBlendEquationSeparateiARB(buf, modeRGB, modeAlpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16123,7 +16122,7 @@ AROS_LH3(void, glBlendFunciARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendFunciARB(buf, src, dst);
+    glBlendFunciARB(buf, src, dst);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16138,7 +16137,7 @@ AROS_LH5(void, glBlendFuncSeparateiARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendFuncSeparateiARB(buf, srcRGB, dstRGB, srcAlpha, dstAlpha);
+    glBlendFuncSeparateiARB(buf, srcRGB, dstRGB, srcAlpha, dstAlpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16150,7 +16149,7 @@ AROS_LH2(void, glGenSamplers,
 {
     AROS_LIBFUNC_INIT
 
-    mglGenSamplers(count, samplers);
+    glGenSamplers(count, samplers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16162,7 +16161,7 @@ AROS_LH2(void, glDeleteSamplers,
 {
     AROS_LIBFUNC_INIT
 
-    mglDeleteSamplers(count, samplers);
+    glDeleteSamplers(count, samplers);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16173,7 +16172,7 @@ AROS_LH1(GLboolean, glIsSampler,
 {
     AROS_LIBFUNC_INIT
 
-    GLboolean _return = mglIsSampler(sampler);
+    GLboolean _return = glIsSampler(sampler);
 
     return _return;
 
@@ -16187,7 +16186,7 @@ AROS_LH2(void, glBindSampler,
 {
     AROS_LIBFUNC_INIT
 
-    mglBindSampler(unit, sampler);
+    glBindSampler(unit, sampler);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16200,7 +16199,7 @@ AROS_LH3(void, glSamplerParameteri,
 {
     AROS_LIBFUNC_INIT
 
-    mglSamplerParameteri(sampler, pname, param);
+    glSamplerParameteri(sampler, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16213,7 +16212,7 @@ AROS_LH3(void, glSamplerParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSamplerParameteriv(sampler, pname, param);
+    glSamplerParameteriv(sampler, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16226,7 +16225,7 @@ AROS_LH3(void, glSamplerParameterf,
 {
     AROS_LIBFUNC_INIT
 
-    mglSamplerParameterf(sampler, pname, param);
+    glSamplerParameterf(sampler, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16239,7 +16238,7 @@ AROS_LH3(void, glSamplerParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSamplerParameterfv(sampler, pname, param);
+    glSamplerParameterfv(sampler, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16252,7 +16251,7 @@ AROS_LH3(void, glSamplerParameterIiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSamplerParameterIiv(sampler, pname, param);
+    glSamplerParameterIiv(sampler, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16265,7 +16264,7 @@ AROS_LH3(void, glSamplerParameterIuiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglSamplerParameterIuiv(sampler, pname, param);
+    glSamplerParameterIuiv(sampler, pname, param);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16278,7 +16277,7 @@ AROS_LH3(void, glGetSamplerParameteriv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetSamplerParameteriv(sampler, pname, params);
+    glGetSamplerParameteriv(sampler, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16291,7 +16290,7 @@ AROS_LH3(void, glGetSamplerParameterIiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetSamplerParameterIiv(sampler, pname, params);
+    glGetSamplerParameterIiv(sampler, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16304,7 +16303,7 @@ AROS_LH3(void, glGetSamplerParameterfv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetSamplerParameterfv(sampler, pname, params);
+    glGetSamplerParameterfv(sampler, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16317,7 +16316,7 @@ AROS_LH3(void, glGetSamplerParameterIuiv,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetSamplerParameterIuiv(sampler, pname, params);
+    glGetSamplerParameterIuiv(sampler, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16327,7 +16326,7 @@ AROS_LH0(void, glReleaseShaderCompiler,
 {
     AROS_LIBFUNC_INIT
 
-    mglReleaseShaderCompiler();
+    glReleaseShaderCompiler();
 
     AROS_LIBFUNC_EXIT
 }
@@ -16342,7 +16341,7 @@ AROS_LH5(void, glShaderBinary,
 {
     AROS_LIBFUNC_INIT
 
-    mglShaderBinary(count, shaders, binaryformat, binary, length);
+    glShaderBinary(count, shaders, binaryformat, binary, length);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16356,7 +16355,7 @@ AROS_LH4(void, glGetShaderPrecisionFormat,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetShaderPrecisionFormat(shadertype, precisiontype, range, precision);
+    glGetShaderPrecisionFormat(shadertype, precisiontype, range, precision);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16368,7 +16367,7 @@ AROS_LH2(void, glDepthRangef,
 {
     AROS_LIBFUNC_INIT
 
-    mglDepthRangef(n, f);
+    glDepthRangef(n, f);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16379,7 +16378,7 @@ AROS_LH1(void, glClearDepthf,
 {
     AROS_LIBFUNC_INIT
 
-    mglClearDepthf(d);
+    glClearDepthf(d);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16389,7 +16388,7 @@ AROS_LH0(GLenum, glGetGraphicsResetStatusARB,
 {
     AROS_LIBFUNC_INIT
 
-    GLenum _return = mglGetGraphicsResetStatusARB();
+    GLenum _return = glGetGraphicsResetStatusARB();
 
     return _return;
 
@@ -16405,7 +16404,7 @@ AROS_LH4(void, glGetnMapdvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnMapdvARB(target, query, bufSize, v);
+    glGetnMapdvARB(target, query, bufSize, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16419,7 +16418,7 @@ AROS_LH4(void, glGetnMapfvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnMapfvARB(target, query, bufSize, v);
+    glGetnMapfvARB(target, query, bufSize, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16433,7 +16432,7 @@ AROS_LH4(void, glGetnMapivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnMapivARB(target, query, bufSize, v);
+    glGetnMapivARB(target, query, bufSize, v);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16446,7 +16445,7 @@ AROS_LH3(void, glGetnPixelMapfvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnPixelMapfvARB(map, bufSize, values);
+    glGetnPixelMapfvARB(map, bufSize, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16459,7 +16458,7 @@ AROS_LH3(void, glGetnPixelMapuivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnPixelMapuivARB(map, bufSize, values);
+    glGetnPixelMapuivARB(map, bufSize, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16472,7 +16471,7 @@ AROS_LH3(void, glGetnPixelMapusvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnPixelMapusvARB(map, bufSize, values);
+    glGetnPixelMapusvARB(map, bufSize, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16484,7 +16483,7 @@ AROS_LH2(void, glGetnPolygonStippleARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnPolygonStippleARB(bufSize, pattern);
+    glGetnPolygonStippleARB(bufSize, pattern);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16499,7 +16498,7 @@ AROS_LH5(void, glGetnColorTableARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnColorTableARB(target, format, type, bufSize, table);
+    glGetnColorTableARB(target, format, type, bufSize, table);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16514,7 +16513,7 @@ AROS_LH5(void, glGetnConvolutionFilterARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnConvolutionFilterARB(target, format, type, bufSize, image);
+    glGetnConvolutionFilterARB(target, format, type, bufSize, image);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16532,7 +16531,7 @@ AROS_LH8(void, glGetnSeparableFilterARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnSeparableFilterARB(target, format, type, rowBufSize, row, columnBufSize, column, span);
+    glGetnSeparableFilterARB(target, format, type, rowBufSize, row, columnBufSize, column, span);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16548,7 +16547,7 @@ AROS_LH6(void, glGetnHistogramARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnHistogramARB(target, reset, format, type, bufSize, values);
+    glGetnHistogramARB(target, reset, format, type, bufSize, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16564,7 +16563,7 @@ AROS_LH6(void, glGetnMinmaxARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnMinmaxARB(target, reset, format, type, bufSize, values);
+    glGetnMinmaxARB(target, reset, format, type, bufSize, values);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16580,7 +16579,7 @@ AROS_LH6(void, glGetnTexImageARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnTexImageARB(target, level, format, type, bufSize, img);
+    glGetnTexImageARB(target, level, format, type, bufSize, img);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16598,7 +16597,7 @@ AROS_LH8(void, glReadnPixelsARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglReadnPixelsARB(x, y, width, height, format, type, bufSize, data);
+    glReadnPixelsARB(x, y, width, height, format, type, bufSize, data);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16612,7 +16611,7 @@ AROS_LH4(void, glGetnCompressedTexImageARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnCompressedTexImageARB(target, lod, bufSize, img);
+    glGetnCompressedTexImageARB(target, lod, bufSize, img);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16626,7 +16625,7 @@ AROS_LH4(void, glGetnUniformfvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnUniformfvARB(program, location, bufSize, params);
+    glGetnUniformfvARB(program, location, bufSize, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16640,7 +16639,7 @@ AROS_LH4(void, glGetnUniformivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnUniformivARB(program, location, bufSize, params);
+    glGetnUniformivARB(program, location, bufSize, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16654,7 +16653,7 @@ AROS_LH4(void, glGetnUniformuivARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnUniformuivARB(program, location, bufSize, params);
+    glGetnUniformuivARB(program, location, bufSize, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16668,7 +16667,7 @@ AROS_LH4(void, glGetnUniformdvARB,
 {
     AROS_LIBFUNC_INIT
 
-    mglGetnUniformdvARB(program, location, bufSize, params);
+    glGetnUniformdvARB(program, location, bufSize, params);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16681,7 +16680,7 @@ AROS_LH3(void, glBlendFuncIndexedAMD,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendFuncIndexedAMD(buf, src, dst);
+    glBlendFuncIndexedAMD(buf, src, dst);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16696,7 +16695,7 @@ AROS_LH5(void, glBlendFuncSeparateIndexedAMD,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendFuncSeparateIndexedAMD(buf, srcRGB, dstRGB, srcAlpha, dstAlpha);
+    glBlendFuncSeparateIndexedAMD(buf, srcRGB, dstRGB, srcAlpha, dstAlpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16708,7 +16707,7 @@ AROS_LH2(void, glBlendEquationIndexedAMD,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendEquationIndexedAMD(buf, mode);
+    glBlendEquationIndexedAMD(buf, mode);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16721,7 +16720,7 @@ AROS_LH3(void, glBlendEquationSeparateIndexedAMD,
 {
     AROS_LIBFUNC_INIT
 
-    mglBlendEquationSeparateIndexedAMD(buf, modeRGB, modeAlpha);
+    glBlendEquationSeparateIndexedAMD(buf, modeRGB, modeAlpha);
 
     AROS_LIBFUNC_EXIT
 }
@@ -16731,7 +16730,7 @@ AROS_LH0(void, glTextureBarrierNV,
 {
     AROS_LIBFUNC_INIT
 
-    mglTextureBarrierNV();
+    glTextureBarrierNV();
 
     AROS_LIBFUNC_EXIT
 }
