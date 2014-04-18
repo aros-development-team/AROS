@@ -10,7 +10,7 @@
 #include <proto/graphics.h>
 #include <aros/debug.h>
 
-void AROSMesaSetRast(AROSMesaContext amesa, struct TagItem * tagList);
+void glASetRast(GLAContext ctx, struct TagItem * tagList);
 
 /*****************************************************************************
 
@@ -19,7 +19,7 @@ void AROSMesaSetRast(AROSMesaContext amesa, struct TagItem * tagList);
       AROS_LH2(void, AROSMesaSetRast,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(AROSMesaContext, amesa, A0),
+      AROS_LHA(APTR, amesa, A0),
       AROS_LHA(struct TagItem *, tagList, A1),
 
 /*  LOCATION */
@@ -35,7 +35,7 @@ void AROSMesaSetRast(AROSMesaContext amesa, struct TagItem * tagList);
  
     TAGS
 
-        AMA_Window - pointer to Window onto which scene is to be rendered. Must
+        GLA_Window - pointer to Window onto which scene is to be rendered. Must
                      be provided.
 
     RESULT
@@ -52,19 +52,54 @@ void AROSMesaSetRast(AROSMesaContext amesa, struct TagItem * tagList);
 {
     AROS_LIBFUNC_INIT
 
-    AROSMesaSetRast(amesa, tagList);
+    glASetRast(amesa, tagList);
 
     AROS_LIBFUNC_EXIT
 }
 
-void AROSMesaSetRast(AROSMesaContext amesa, struct TagItem * tagList)
+/*****************************************************************************
+
+    NAME */
+
+      void glASetRast(
+
+/*  SYNOPSIS */
+      GLAContext ctx,
+      struct TagItem * tagList)
+
+/*  FUNCTION
+
+        Sets a new rendering target for an existing context
+
+    INPUTS
+
+        tagList - a pointer to tags to be used during creation.
+
+    TAGS
+
+        GLA_Window - pointer to Window onto which scene is to be rendered. Must
+                     be provided.
+
+    RESULT
+
+        None
+
+    BUGS
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
 {
+    struct arosmesa_context * amesa = (struct arosmesa_context *)ctx;
+
     if (amesa)
     {
         /* Check if at least one of window, rastport or screen have been passed */
-        if ((GetTagData(AMA_Screen, 0, tagList) != 0) || 
-            (GetTagData(AMA_Window, 0, tagList) != 0) ||
-            (GetTagData(AMA_RastPort, 0, tagList) != 0))
+        if ((GetTagData(GLA_Screen, 0, tagList) != 0) ||
+            (GetTagData(GLA_Window, 0, tagList) != 0) ||
+            (GetTagData(GLA_RastPort, 0, tagList) != 0))
         {
             /* If there already is visible_rp, free it */
             if (amesa->visible_rp)

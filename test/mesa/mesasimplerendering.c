@@ -12,11 +12,11 @@
 #include <devices/timer.h>
 #include <proto/cybergraphics.h>
 
-#include <GL/arosmesa.h>
+#include <GL/gla.h>
 
 #include <stdio.h>
 
-AROSMesaContext     glcont=NULL;
+GLAContext          glcont=NULL;
 double              angle = 0.0;
 double              angle_inc = 0.0;
 BOOL                finished = FALSE;
@@ -203,7 +203,7 @@ void render()
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
 
-    AROSMesaSwapBuffers(glcont);
+    glASwapBuffers(glcont);
 }    
 
 #define VISIBLE_WIDTH 300
@@ -211,20 +211,20 @@ void render()
 
 static void initextensions()
 {
-    glCreateShader          = (PFNGLCREATESHADERPROC)AROSMesaGetProcAddress("glCreateShader");
-    glShaderSource          = (PFNGLSHADERSOURCEPROC)AROSMesaGetProcAddress("glShaderSource");
-    glCompileShader         = (PFNGLCOMPILESHADERPROC)AROSMesaGetProcAddress("glCompileShader");
-    glGetShaderInfoLog      = (PFNGLGETSHADERINFOLOGPROC)AROSMesaGetProcAddress("glGetShaderInfoLog");
-    glCreateProgram         = (PFNGLCREATEPROGRAMPROC)AROSMesaGetProcAddress("glCreateProgram");
-    glAttachShader          = (PFNGLATTACHSHADERPROC)AROSMesaGetProcAddress("glAttachShader");
-    glLinkProgram           = (PFNGLLINKPROGRAMPROC)AROSMesaGetProcAddress("glLinkProgram");
-    glGetProgramInfoLog     = (PFNGLGETPROGRAMINFOLOGPROC)AROSMesaGetProcAddress("glGetProgramInfoLog");
-    glUseProgram            = (PFNGLUSEPROGRAMPROC)AROSMesaGetProcAddress("glUseProgram");
-    glDetachShader          = (PFNGLDETACHSHADERPROC)AROSMesaGetProcAddress("glDetachShader");
-    glDeleteShader          = (PFNGLDELETESHADERPROC)AROSMesaGetProcAddress("glDeleteShader");
-    glDeleteProgram         = (PFNGLDELETEPROGRAMPROC)AROSMesaGetProcAddress("glDeleteProgram");
-    glUniform1f             = (PFNGLUNIFORM1FPROC)AROSMesaGetProcAddress("glUniform1f");
-    glGetUniformLocation    = (PFNGLGETUNIFORMLOCATIONPROC)AROSMesaGetProcAddress("glGetUniformLocation");
+    glCreateShader          = (PFNGLCREATESHADERPROC)glAGetProcAddress("glCreateShader");
+    glShaderSource          = (PFNGLSHADERSOURCEPROC)glAGetProcAddress("glShaderSource");
+    glCompileShader         = (PFNGLCOMPILESHADERPROC)glAGetProcAddress("glCompileShader");
+    glGetShaderInfoLog      = (PFNGLGETSHADERINFOLOGPROC)glAGetProcAddress("glGetShaderInfoLog");
+    glCreateProgram         = (PFNGLCREATEPROGRAMPROC)glAGetProcAddress("glCreateProgram");
+    glAttachShader          = (PFNGLATTACHSHADERPROC)glAGetProcAddress("glAttachShader");
+    glLinkProgram           = (PFNGLLINKPROGRAMPROC)glAGetProcAddress("glLinkProgram");
+    glGetProgramInfoLog     = (PFNGLGETPROGRAMINFOLOGPROC)glAGetProcAddress("glGetProgramInfoLog");
+    glUseProgram            = (PFNGLUSEPROGRAMPROC)glAGetProcAddress("glUseProgram");
+    glDetachShader          = (PFNGLDETACHSHADERPROC)glAGetProcAddress("glDetachShader");
+    glDeleteShader          = (PFNGLDELETESHADERPROC)glAGetProcAddress("glDeleteShader");
+    glDeleteProgram         = (PFNGLDELETEPROGRAMPROC)glAGetProcAddress("glDeleteProgram");
+    glUniform1f             = (PFNGLUNIFORM1FPROC)glAGetProcAddress("glUniform1f");
+    glGetUniformLocation    = (PFNGLGETUNIFORMLOCATIONPROC)glAGetProcAddress("glGetUniformLocation");
 }
 
 void initmesa()
@@ -233,29 +233,29 @@ void initmesa()
     int i = 0;
     GLfloat h = 0.0f;
     
-    attributes[i].ti_Tag = AMA_Window;      attributes[i++].ti_Data = (IPTR)win;
-    attributes[i].ti_Tag = AMA_Left;        attributes[i++].ti_Data = win->BorderLeft;
-    attributes[i].ti_Tag = AMA_Top;         attributes[i++].ti_Data = win->BorderTop;
-    attributes[i].ti_Tag = AMA_Bottom;      attributes[i++].ti_Data = win->BorderBottom;
-    attributes[i].ti_Tag = AMA_Right;       attributes[i++].ti_Data = win->BorderRight;
+    attributes[i].ti_Tag = GLA_Window;      attributes[i++].ti_Data = (IPTR)win;
+    attributes[i].ti_Tag = GLA_Left;        attributes[i++].ti_Data = win->BorderLeft;
+    attributes[i].ti_Tag = GLA_Top;         attributes[i++].ti_Data = win->BorderTop;
+    attributes[i].ti_Tag = GLA_Bottom;      attributes[i++].ti_Data = win->BorderBottom;
+    attributes[i].ti_Tag = GLA_Right;       attributes[i++].ti_Data = win->BorderRight;
 
     // double buffer ?
-    attributes[i].ti_Tag = AMA_DoubleBuf;   attributes[i++].ti_Data = GL_TRUE;
+    attributes[i].ti_Tag = GLA_DoubleBuf;   attributes[i++].ti_Data = GL_TRUE;
 
     // RGB(A) Mode ?
-    attributes[i].ti_Tag = AMA_RGBMode;     attributes[i++].ti_Data = GL_TRUE;
+    attributes[i].ti_Tag = GLA_RGBMode;     attributes[i++].ti_Data = GL_TRUE;
     
     /* Stencil/Accum */
-    attributes[i].ti_Tag = AMA_NoStencil;   attributes[i++].ti_Data = GL_TRUE;
-    attributes[i].ti_Tag = AMA_NoAccum;     attributes[i++].ti_Data = GL_TRUE;
+    attributes[i].ti_Tag = GLA_NoStencil;   attributes[i++].ti_Data = GL_TRUE;
+    attributes[i].ti_Tag = GLA_NoAccum;     attributes[i++].ti_Data = GL_TRUE;
     
     // done...
     attributes[i].ti_Tag    = TAG_DONE;
 
-    glcont = AROSMesaCreateContext(attributes);
+    glcont = glACreateContext(attributes);
     if (glcont)
     {
-        AROSMesaMakeCurrent(glcont);
+        glAMakeCurrent(glcont);
         h = (GLfloat)VISIBLE_HEIGHT / (GLfloat)VISIBLE_WIDTH ;
 
         glViewport(0, 0, (GLint) VISIBLE_WIDTH, (GLint) VISIBLE_HEIGHT);
@@ -279,7 +279,7 @@ void deinitmesa()
     if (glcont) 
     {
         cleanup_shader_program();
-        AROSMesaDestroyContext(glcont);
+        glADestroyContext(glcont);
     }
 }
 

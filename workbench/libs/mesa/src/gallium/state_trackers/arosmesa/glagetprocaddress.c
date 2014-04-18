@@ -6,7 +6,7 @@
 #include "arosmesa_types.h"
 #include <proto/exec.h>
 
-AROSMesaProc AROSMesaGetProcAddress(const GLubyte * procname);
+GLAProc glAGetProcAddress(const GLubyte * procname);
 
 /*****************************************************************************
 
@@ -42,12 +42,35 @@ AROSMesaProc AROSMesaGetProcAddress(const GLubyte * procname);
 {
     AROS_LIBFUNC_INIT
 
-    return AROSMesaGetProcAddress(procname);
+    return glAGetProcAddress(procname);
 
     AROS_LIBFUNC_EXIT
 }
 
-AROSMesaProc AROSMesaGetProcAddress(const GLubyte * procname)
+/*****************************************************************************
+
+    NAME */
+
+      GLAProc glAGetProcAddress(
+
+/*  SYNOPSIS */
+      const GLubyte * procname)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+      Pointer to procname function or NULL if function is not supported
+
+
+    BUGS
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
 {
     return glstapi->get_proc_address(glstapi, procname);
 }

@@ -6,7 +6,7 @@
 #ifndef AROSMESA_TYPES_H
 #define AROSMESA_TYPES_H
 
-#include <GL/arosmesa.h>
+#include <GL/gla.h>
 #include "main/mtypes.h"
 #include "state_tracker/st_api.h"
 

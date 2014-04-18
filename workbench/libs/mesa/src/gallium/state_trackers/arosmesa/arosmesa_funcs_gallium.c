@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright 2009-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -93,9 +93,9 @@ BOOL AROSMesaFillVisual(struct st_visual * stvis, struct pipe_screen * screen, i
     
     D(bug("[AROSMESA] AROSMesaFillVisual\n"));
     
-    noStencil   = GetTagData(AMA_NoStencil, GL_FALSE, tagList);
-    noAccum     = GetTagData(AMA_NoAccum, GL_FALSE, tagList);
-    noDepth     = GetTagData(AMA_NoDepth, GL_FALSE, tagList);
+    noStencil   = GetTagData(GLA_NoStencil, GL_FALSE, tagList);
+    noAccum     = GetTagData(GLA_NoAccum, GL_FALSE, tagList);
+    noDepth     = GetTagData(GLA_NoDepth, GL_FALSE, tagList);
 
     stvis->color_format = PIPE_FORMAT_NONE;
     stvis->depth_stencil_format = PIPE_FORMAT_NONE;
@@ -219,7 +219,7 @@ static boolean AROSMesaFrameBufferFlushFront(struct st_framebuffer_iface *stfbi,
     return TRUE;
 }
 
-struct arosmesa_framebuffer * AROSMesaNewFrameBuffer(AROSMesaContext amesa, struct st_visual * stvis)
+struct arosmesa_framebuffer * AROSMesaNewFrameBuffer(struct arosmesa_context * amesa, struct st_visual * stvis)
 {
     struct arosmesa_framebuffer * framebuffer = 
         AllocVec(sizeof(struct arosmesa_framebuffer), MEMF_PUBLIC | MEMF_CLEAR);
@@ -251,7 +251,7 @@ VOID AROSMesaFreeFrameBuffer(struct arosmesa_framebuffer * framebuffer)
     }
 }
 
-VOID AROSMesaCheckAndUpdateBufferSize(AROSMesaContext amesa)
+VOID AROSMesaCheckAndUpdateBufferSize(struct arosmesa_context * amesa)
 {
     AROSMesaRecalculateBufferWidthHeight(amesa);
     if (amesa->framebuffer->resized)

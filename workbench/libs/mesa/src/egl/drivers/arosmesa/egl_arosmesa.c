@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-#include <GL/arosmesa.h>
+#include <GL/gla.h>
 
 extern struct Library * GLBase;
 
@@ -27,7 +27,7 @@ struct egl_arosmesa
 struct egl_arosmesa_context
 {
     _EGLContext base;
-    AROSMesaContext amesactx;
+    GLAContext amesactx;
 };
 
 static inline struct egl_arosmesa_context * egl_arosmesa_context(_EGLContext * ctx)
@@ -45,7 +45,7 @@ static _EGLProc egl_arosmesa_getprocaddress(_EGLDriver *drv, const char *procnam
 {
     (void) drv;
 
-    return AROSMesaGetProcAddress(procname);
+    return glAGetProcAddress(procname);
 }
 
 static EGLBoolean egl_arosmesa_terminate(_EGLDriver *drv, _EGLDisplay *disp)
@@ -65,9 +65,9 @@ static EGLBoolean egl_arosmesa_destroycontext(_EGLDriver *drv, _EGLDisplay *dpy,
     if (_eglPutContext(ctx))
     {
         struct egl_arosmesa_context * eglctx = egl_arosmesa_context(ctx);
-        AROSMesaMakeCurrent(NULL);
+        glAMakeCurrent(NULL);
         if (eglctx->amesactx)
-            AROSMesaDestroyContext(eglctx->amesactx);
+            glADestroyContext(eglctx->amesactx);
         free(eglctx);
     }
 
@@ -88,7 +88,7 @@ static EGLBoolean egl_arosmesa_destroysurface(_EGLDriver *drv, _EGLDisplay *disp
 
 static EGLBoolean egl_arosmesa_swapbuffers(_EGLDriver *drv, _EGLDisplay *disp, _EGLSurface *draw)
 {
-    AROSMesaSwapBuffers(disp->DriverData);
+    glASwapBuffers(disp->DriverData);
     return EGL_TRUE;
 }
 
@@ -110,7 +110,7 @@ static EGLBoolean egl_arosmesa_makecurrent(_EGLDriver *drv, _EGLDisplay *disp, _
     /* Unbind the current context */
     if ((ctx == NULL) && (old_ctx != NULL))
     {
-        AROSMesaMakeCurrent(NULL);
+        glAMakeCurrent(NULL);
         _eglPutSurface(old_dsurf);
         _eglPutSurface(old_rsurf);
         _eglPutContext(old_ctx);
@@ -137,27 +137,27 @@ static EGLBoolean egl_arosmesa_makecurrent(_EGLDriver *drv, _EGLDisplay *disp, _
             struct Window * win = ((struct egl_arosmesa_surface *)dsurf)->win;
             int i = 0;
 
-            attributes[i].ti_Tag = AMA_Window;      attributes[i++].ti_Data = (IPTR)win;
-            attributes[i].ti_Tag = AMA_Left;        attributes[i++].ti_Data = win->BorderLeft;
-            attributes[i].ti_Tag = AMA_Top;         attributes[i++].ti_Data = win->BorderTop;
-            attributes[i].ti_Tag = AMA_Bottom;      attributes[i++].ti_Data = win->BorderBottom;
-            attributes[i].ti_Tag = AMA_Right;       attributes[i++].ti_Data = win->BorderRight;
+            attributes[i].ti_Tag = GLA_Window;      attributes[i++].ti_Data = (IPTR)win;
+            attributes[i].ti_Tag = GLA_Left;        attributes[i++].ti_Data = win->BorderLeft;
+            attributes[i].ti_Tag = GLA_Top;         attributes[i++].ti_Data = win->BorderTop;
+            attributes[i].ti_Tag = GLA_Bottom;      attributes[i++].ti_Data = win->BorderBottom;
+            attributes[i].ti_Tag = GLA_Right;       attributes[i++].ti_Data = win->BorderRight;
 
-            attributes[i].ti_Tag = AMA_DoubleBuf;   attributes[i++].ti_Data = GL_TRUE;
+            attributes[i].ti_Tag = GLA_DoubleBuf;   attributes[i++].ti_Data = GL_TRUE;
 
-            attributes[i].ti_Tag = AMA_RGBMode;     attributes[i++].ti_Data = GL_TRUE;
+            attributes[i].ti_Tag = GLA_RGBMode;     attributes[i++].ti_Data = GL_TRUE;
 
-            attributes[i].ti_Tag = AMA_NoStencil;   attributes[i++].ti_Data = GL_TRUE;
-            attributes[i].ti_Tag = AMA_NoAccum;     attributes[i++].ti_Data = GL_TRUE;
+            attributes[i].ti_Tag = GLA_NoStencil;   attributes[i++].ti_Data = GL_TRUE;
+            attributes[i].ti_Tag = GLA_NoAccum;     attributes[i++].ti_Data = GL_TRUE;
 
             attributes[i].ti_Tag = TAG_DONE;
 
-            eglctx->amesactx = AROSMesaCreateContext(attributes);
+            eglctx->amesactx = glACreateContext(attributes);
         }
 
         if (eglctx->amesactx != NULL)
         {
-            AROSMesaMakeCurrent(eglctx->amesactx);
+            glAMakeCurrent(eglctx->amesactx);
             disp->DriverData = eglctx->amesactx;
             return EGL_TRUE;
         }

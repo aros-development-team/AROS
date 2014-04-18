@@ -19,18 +19,18 @@ SHARED_LIB_SOURCES = \
             aros/tls \
 
 AROSMESA_SOURCES = \
-            gallium/state_trackers/arosmesa/arosmesacreatecontext \
-            gallium/state_trackers/arosmesa/arosmesadestroycontext \
-            gallium/state_trackers/arosmesa/arosmesamakecurrent \
-            gallium/state_trackers/arosmesa/arosmesaswapbuffers \
-            gallium/state_trackers/arosmesa/arosmesagetcurrentcontext \
             gallium/state_trackers/arosmesa/arosmesa_funcs \
             gallium/state_trackers/arosmesa/arosmesa_funcs_gallium \
             gallium/state_trackers/arosmesa/arosmesa_init \
-            gallium/state_trackers/arosmesa/arosmesagetopenglstatetrackerapi \
-            gallium/state_trackers/arosmesa/arosmesasetrast \
-            gallium/state_trackers/arosmesa/arosmesagetconfig \
-            gallium/state_trackers/arosmesa/arosmesagetprocaddressinternal \
+            gallium/state_trackers/arosmesa/getopenglstatetrackerapi \
+            gallium/state_trackers/arosmesa/glacreatecontext \
+            gallium/state_trackers/arosmesa/gladestroycontext \
+            gallium/state_trackers/arosmesa/glagetconfig \
+            gallium/state_trackers/arosmesa/glagetcurrentcontext \
+            gallium/state_trackers/arosmesa/glagetprocaddress \
+            gallium/state_trackers/arosmesa/glamakecurrent \
+            gallium/state_trackers/arosmesa/glasetrast \
+            gallium/state_trackers/arosmesa/glaswapbuffers \
 
 GLSL_LIBGLCPP_SOURCES = \
             glcpp/glcpp-lex.c \
@@ -153,7 +153,7 @@ LIBRARY_SOURCES = \
     uselibs="galliumauxiliary gallium stdcio stdc"
 
 %build_module mmake=workbench-libs-mesa \
-    modname=gl modtype=library linklibname=GL \
+    modname=gl modtype=library linklibname=GL linklibfiles="varargfuncs" \
     files="$(LIBRARY_SOURCES)" cxxfiles="$(CXX_SOURCES)" \
     uselibs="galliumauxiliary gallium stdcio stdc"
 
