@@ -6,13 +6,13 @@
 #include "arosmesa_funcs.h"
 #include <proto/exec.h>
 
-AROSMesaContext AROSMesaGetCurrentContext();
+GLAContext glAGetCurrentContext();
 
 /*****************************************************************************
 
     NAME */
 
-      AROS_LH0(AROSMesaContext, AROSMesaGetCurrentContext,
+      AROS_LH0(APTR, AROSMesaGetCurrentContext,
 
 /*  SYNOPSIS */ 
 
@@ -37,15 +37,39 @@ AROSMesaContext AROSMesaGetCurrentContext();
 {
     AROS_LIBFUNC_INIT
 
-    return AROSMesaGetCurrentContext();
+    return glAGetCurrentContext();
 
     AROS_LIBFUNC_EXIT
 }
 
-AROSMesaContext AROSMesaGetCurrentContext()
+
+/*****************************************************************************
+
+    NAME */
+
+      GLAContext glAGetCurrentContext(
+
+/*  SYNOPSIS */
+      )
+
+/*  FUNCTION
+        Returns the currently selected GL rendering context.
+
+    INPUTS
+
+    RESULT
+        The GL rendering context which is currently active.
+
+    BUGS
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
 {
     GET_CURRENT_CONTEXT(ctx);
 
-    return (AROSMesaContext)ctx;
+    return (GLAContext)ctx;
 }
 

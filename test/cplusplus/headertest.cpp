@@ -495,7 +495,7 @@
 
 #include <getopt.h>
 
-#include <GL/arosmesa.h>
+#include <GL/gla.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <GL/glu.h>

@@ -9,7 +9,7 @@
 #include <proto/gallium.h>
 #include <aros/debug.h>
 
-void AROSMesaDestroyContext(AROSMesaContext amesa);
+void glADestroyContext(GLAContext ctx);
 
 /*****************************************************************************
 
@@ -18,7 +18,7 @@ void AROSMesaDestroyContext(AROSMesaContext amesa);
       AROS_LH1(void, AROSMesaDestroyContext,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(AROSMesaContext, amesa, A0),
+      AROS_LHA(APTR, amesa, A0),
 
 /*  LOCATION */
       struct Library *, MesaBase, 7, Mesa)
@@ -43,13 +43,41 @@ void AROSMesaDestroyContext(AROSMesaContext amesa);
 {
     AROS_LIBFUNC_INIT
 
-    AROSMesaDestroyContext(amesa);
+    glADestroyContext(amesa);
 
     AROS_LIBFUNC_EXIT
 }
 
-void AROSMesaDestroyContext(AROSMesaContext amesa)
+
+/*****************************************************************************
+
+    NAME */
+
+      void glADestroyContext(
+
+/*  SYNOPSIS */
+      GLAContext ctx)
+
+/*  FUNCTION
+        Destroys the GL rendering context and frees all resoureces.
+
+    INPUTS
+        amesa - pointer to GL rendering context. A NULL pointer will be
+                ignored.
+
+    RESULT
+        The GL context is destroyed. Do no use it anymore.
+
+    BUGS
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
 {
+    struct arosmesa_context * amesa = (struct arosmesa_context *)ctx;
+
     /* Destroy a AROSMesa context */
     D(bug("[AROSMESA] AROSMesaDestroyContext(amesa @ %x)\n", amesa));
 

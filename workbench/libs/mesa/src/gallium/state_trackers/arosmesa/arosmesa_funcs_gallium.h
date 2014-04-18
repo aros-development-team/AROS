@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright 2009-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,9 +9,9 @@
 #include "arosmesa_types.h"
 
 BOOL AROSMesaFillVisual(struct st_visual * stvis, struct pipe_screen * screen, GLint bpp, struct TagItem *tagList);
-struct arosmesa_framebuffer * AROSMesaNewFrameBuffer(AROSMesaContext amesa, struct st_visual * stvis);
+struct arosmesa_framebuffer * AROSMesaNewFrameBuffer(struct arosmesa_context * amesa, struct st_visual * stvis);
 VOID AROSMesaFreeFrameBuffer(struct arosmesa_framebuffer * framebuffer);
-VOID AROSMesaCheckAndUpdateBufferSize(AROSMesaContext amesa);
+VOID AROSMesaCheckAndUpdateBufferSize(struct arosmesa_context * amesa);
 struct st_manager * AROSMesaNewStManager();
 VOID AROSMesaFreeStManager(struct st_manager * stmanager);
 #endif

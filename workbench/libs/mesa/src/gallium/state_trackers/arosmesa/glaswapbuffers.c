@@ -10,7 +10,7 @@
 #include <gallium/pipe/p_screen.h>
 #include <gallium/util/u_inlines.h>
 
-void AROSMesaSwapBuffers(AROSMesaContext amesa);
+void glASwapBuffers(GLAContext ctx);
 
 /*****************************************************************************
 
@@ -19,7 +19,7 @@ void AROSMesaSwapBuffers(AROSMesaContext amesa);
       AROS_LH1(void, AROSMesaSwapBuffers,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(AROSMesaContext, amesa, A0),
+      AROS_LHA(APTR, amesa, A0),
 
 /*  LOCATION */
       struct Library *, MesaBase, 9, Mesa)
@@ -44,13 +44,40 @@ void AROSMesaSwapBuffers(AROSMesaContext amesa);
 {
     AROS_LIBFUNC_INIT
 
-    AROSMesaSwapBuffers(amesa);
+    glASwapBuffers(amesa);
 
     AROS_LIBFUNC_EXIT
 }
 
-void AROSMesaSwapBuffers(AROSMesaContext amesa)
+/*****************************************************************************
+
+    NAME */
+
+      void glASwapBuffers(
+
+/*  SYNOPSIS */
+      GLAContext ctx)
+
+/*  FUNCTION
+        Swaps the back with front buffers. MUST BE used to display the effect
+        of rendering onto the target RastPort, since GLA always work in
+        double buffer mode.
+
+    INPUTS
+        amesa - GL rendering context on which swap is to be performed.
+
+    RESULT
+
+    BUGS
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
 {
+    struct arosmesa_context * amesa = (struct arosmesa_context *)ctx;
+
     if (amesa->framebuffer->render_resource) 
     {
         /* Flush rendering cache before blitting */

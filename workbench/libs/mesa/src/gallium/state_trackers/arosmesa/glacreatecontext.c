@@ -12,11 +12,13 @@
 #include <gallium/pipe/p_context.h>
 #include <gallium/pipe/p_screen.h>
 
+GLAContext glACreateContext(struct TagItem *tagList);
+
 /*****************************************************************************
 
     NAME */
 
-    AROSMesaContext AROSMesaCreateContextTags(
+    APTR AROSMesaCreateContextTags(
 
 /*  SYNOPSIS */
 	long Tag1,
@@ -45,27 +47,30 @@
 
 *****************************************************************************/
 {
-  AROS_SLOWSTACKTAGS_PRE_AS(Tag1, AROSMesaContext)
-  retval = AROSMesaCreateContext(AROS_SLOWSTACKTAGS_ARG(Tag1));
+  AROS_SLOWSTACKTAGS_PRE_AS(Tag1, GLAContext)
+  retval = glACreateContext(AROS_SLOWSTACKTAGS_ARG(Tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 
+APTR AROSMesaCreateContext(struct TagItem *tagList)
+{
+    return glACreateContext(tagList);
+}
 
 
 /*****************************************************************************
 
     NAME */
 
-      AROSMesaContext AROSMesaCreateContext(
+      GLAContext glACreateContext(
 
 /*  SYNOPSIS */ 
       struct TagItem *tagList)
 
 /*  FUNCTION
 
-        Crates a GL rendering context. Whether the rendering will be software
-        or hardware based depends on the gallium.library returning a module
-        best suited.
+        Crates a GL rendering context that can be later used in subsequent
+        calls.
  
     INPUTS
 
@@ -73,54 +78,54 @@
  
     TAGS
 
-        AMA_Left   - specifies the left rendering offset on the rastport. 
+        GLA_Left   - specifies the left rendering offset on the rastport.
                      Typically equals to window->BorderLeft.
 
-        AMA_Top    - specifies the top rendering offset on the rastport. 
+        GLA_Top    - specifies the top rendering offset on the rastport.
                      Typically equals to window->BorderTop.
 
-        AMA_Right  - specifies the right rendering offset on the rastport. 
+        GLA_Right  - specifies the right rendering offset on the rastport.
                      Typically equals to window->BorderRight.
 
-        AMA_Bottom - specifies the bottom rendering offset on the rastport. 
+        GLA_Bottom - specifies the bottom rendering offset on the rastport.
                      Typically equals to window->BorderBottom.
     
-        AMA_Width  - specifies the width of the rendering area. 
-                     AMA_Width + AMA_Left + AMA_Right should equal the width of
-                     the rastport. The AMA_Width is interchangable at cration 
-                     time with AMA_Right. Later durring window resizing, width 
+        GLA_Width  - specifies the width of the rendering area.
+                     GLA_Width + GLA_Left + GLA_Right should equal the width of
+                     the rastport. The GLA_Width is interchangable at cration
+                     time with GLA_Right. Later durring window resizing, width
                      is calculated from scalled left, righ and window width.
 
-        AMA_Height - specifies the height of the rendering area. 
-                     AMA_Height + AMA_Top + AMA_Bottom should equal the height 
-                     of the rastport. The AMA_Height is interchangable at 
-                     cration time with AMA_Bottom. Later durring window resizing
+        GLA_Height - specifies the height of the rendering area.
+                     GLA_Height + GLA_Top + GLA_Bottom should equal the height
+                     of the rastport. The GLA_Height is interchangable at
+                     cration time with GLA_Bottom. Later durring window resizing
                      , height is calculated from scalled top, bottom and window 
                      height.
 
-        AMA_Screen - pointer to Screen onto which scene is to be rendered. When
-                     selecting RastPort has lower priority than AMA_Window.
+        GLA_Screen - pointer to Screen onto which scene is to be rendered. When
+                     selecting RastPort has lower priority than GLA_Window.
 
-        AMA_Window - pointer to Window onto which scene is to be rendered. Must
+        GLA_Window - pointer to Window onto which scene is to be rendered. Must
                      be provided.
 
-        AMA_RastPort - ignored. Use AMA_Window.
+        GLA_RastPort - ignored. Use GLA_Window.
 
-        AMA_DoubleBuf - ignored. All rendering is always double buffered.
+        GLA_DoubleBuf - ignored. All rendering is always double buffered.
 
-        AMA_RGBMode - ignored. All rendering is done in RGB. Indexed modes are 
+        GLA_RGBMode - ignored. All rendering is done in RGB. Indexed modes are
                       not supported.
 
-        AMA_AlphaFlag - ignored. All rendering is done with alpha channel.
+        GLA_AlphaFlag - ignored. All rendering is done with alpha channel.
 
-        AMA_NoDepth - disables the depth/Z buffer. Depth buffer is enabled by
+        GLA_NoDepth - disables the depth/Z buffer. Depth buffer is enabled by
                       default and is 16 or 24 bit based on rendering 
                       capabilities.
 
-        AMA_NoStencil - disables the stencil buffer. Stencil buffer is enabled
+        GLA_NoStencil - disables the stencil buffer. Stencil buffer is enabled
                         by default.
 
-        AMA_NoAccum - disables the accumulation buffer. Accumulation buffer is
+        GLA_NoAccum - disables the accumulation buffer. Accumulation buffer is
                       enabled by default.
 
     RESULT
@@ -135,12 +140,12 @@
 
 *****************************************************************************/
 {
-    AROSMesaContext amesa = NULL;
+    struct arosmesa_context * amesa = NULL;
     struct pipe_screen * pscreen = NULL;
     struct st_context_attribs attribs = {0};
 
     /* Allocate arosmesa_context struct initialized to zeros */
-    if (!(amesa = (AROSMesaContext)AllocVec(sizeof(struct arosmesa_context), MEMF_PUBLIC | MEMF_CLEAR)))
+    if (!(amesa = (struct arosmesa_context *)AllocVec(sizeof(struct arosmesa_context), MEMF_PUBLIC | MEMF_CLEAR)))
     {
         D(bug("[AROSMESA] AROSMesaCreateContext: ERROR - failed to allocate AROSMesaContext\n"));
         return NULL;

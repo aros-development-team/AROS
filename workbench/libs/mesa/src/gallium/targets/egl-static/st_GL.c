@@ -15,7 +15,7 @@ PUBLIC struct st_api * st_gl_api_create(void)
         GLBase = OpenLibrary("gl.library", 20L);
 
     if (GLBase)
-        return (struct st_api *) AROSMesaGetOpenGLStateTrackerApi();
+        return (struct st_api *) GetOpenGLStateTrackerApi();
     else
 #endif
         return NULL;

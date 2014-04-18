@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright 2009-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,11 +12,11 @@
 #include <graphics/rpattr.h>
 #include <aros/debug.h>
 
-VOID AROSMesaSelectRastPort(AROSMesaContext amesa, struct TagItem * tagList)
+VOID AROSMesaSelectRastPort(struct arosmesa_context * amesa, struct TagItem * tagList)
 {
-    amesa->Screen = (struct Screen *)GetTagData(AMA_Screen, 0, tagList);
-    amesa->window = (struct Window *)GetTagData(AMA_Window, 0, tagList);
-    amesa->visible_rp = (struct RastPort *)GetTagData(AMA_RastPort, 0, tagList);
+    amesa->Screen = (struct Screen *)GetTagData(GLA_Screen, 0, tagList);
+    amesa->window = (struct Window *)GetTagData(GLA_Window, 0, tagList);
+    amesa->visible_rp = (struct RastPort *)GetTagData(GLA_RastPort, 0, tagList);
 
     if (amesa->Screen)
     {
@@ -68,7 +68,7 @@ VOID AROSMesaSelectRastPort(AROSMesaContext amesa, struct TagItem * tagList)
     D(bug("[AROSMESA] AROSMesaSelectRastPort: Using RastPort @ %x\n", amesa->visible_rp));
 }
 
-BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList)
+BOOL AROSMesaStandardInit(struct arosmesa_context * amesa, struct TagItem *tagList)
 {
     LONG requestedwidth = 0, requestedheight = 0;
     LONG requestedright = 0, requestedbottom = 0;
@@ -96,13 +96,13 @@ BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList)
 
     /* We assume left and top are given or if there is a window, set to border left/top 
        or if there is no window set to 0 */
-    amesa->left = GetTagData(AMA_Left, defaultleft, tagList);
-    amesa->top = GetTagData(AMA_Top, defaulttop, tagList);
+    amesa->left = GetTagData(GLA_Left, defaultleft, tagList);
+    amesa->top = GetTagData(GLA_Top, defaulttop, tagList);
     
-    requestedright = GetTagData(AMA_Right, -1, tagList);
-    requestedbottom = GetTagData(AMA_Bottom, -1, tagList);
-    requestedwidth = GetTagData(AMA_Width, -1 , tagList);
-    requestedheight = GetTagData(AMA_Height, -1 , tagList);
+    requestedright = GetTagData(GLA_Right, -1, tagList);
+    requestedbottom = GetTagData(GLA_Bottom, -1, tagList);
+    requestedwidth = GetTagData(GLA_Width, -1 , tagList);
+    requestedheight = GetTagData(GLA_Height, -1 , tagList);
 
     /* Calculate rastport dimensions */
     amesa->visible_rp_width = 
@@ -154,7 +154,7 @@ BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList)
     return TRUE;
 }
 
-VOID AROSMesaRecalculateBufferWidthHeight(AROSMesaContext amesa)
+VOID AROSMesaRecalculateBufferWidthHeight(struct arosmesa_context * amesa)
 {
     ULONG newwidth = 0;
     ULONG newheight = 0;
@@ -210,7 +210,7 @@ VOID AROSMesaRecalculateBufferWidthHeight(AROSMesaContext amesa)
     }
 }
 
-VOID AROSMesaFreeContext(AROSMesaContext amesa)
+VOID AROSMesaFreeContext(struct arosmesa_context * amesa)
 {
     if (amesa)
     {

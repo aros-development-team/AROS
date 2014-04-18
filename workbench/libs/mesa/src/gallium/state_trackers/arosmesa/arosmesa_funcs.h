@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright 2009-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,8 +8,8 @@
 
 #include AROSMESA_TYPES
 
-VOID AROSMesaSelectRastPort(AROSMesaContext amesa, struct TagItem * tagList);
-BOOL AROSMesaStandardInit(AROSMesaContext amesa, struct TagItem *tagList);
-VOID AROSMesaRecalculateBufferWidthHeight(AROSMesaContext amesa);
-VOID AROSMesaFreeContext(AROSMesaContext amesa);
+VOID AROSMesaSelectRastPort(struct arosmesa_context * amesa, struct TagItem * tagList);
+BOOL AROSMesaStandardInit(struct arosmesa_context * amesa, struct TagItem *tagList);
+VOID AROSMesaRecalculateBufferWidthHeight(struct arosmesa_context * amesa);
+VOID AROSMesaFreeContext(struct arosmesa_context * amesa);
 #endif

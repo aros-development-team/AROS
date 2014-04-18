@@ -6,7 +6,7 @@
 #include "arosmesa_funcs.h"
 #include <proto/exec.h>
 
-void AROSMesaGetConfig(AROSMesaContext amesa, GLenum pname, GLint * params);
+void glAGetConfig(GLAContext ctx, GLenum pname, GLint * params);
 
 /*****************************************************************************
 
@@ -15,7 +15,7 @@ void AROSMesaGetConfig(AROSMesaContext amesa, GLenum pname, GLint * params);
       AROS_LH3(void, AROSMesaGetConfig,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(AROSMesaContext, amesa, A0),
+      AROS_LHA(APTR, amesa, A0),
       AROS_LHA(GLenum, pname, D0),
       AROS_LHA(GLint *, params, A1),
 
@@ -46,15 +46,47 @@ void AROSMesaGetConfig(AROSMesaContext amesa, GLenum pname, GLint * params);
 {
     AROS_LIBFUNC_INIT
 
-    AROSMesaGetConfig(amesa, pname, params);
+    glAGetConfig(amesa, pname, params);
 
     AROS_LIBFUNC_EXIT
 }
 
-void AROSMesaGetConfig(AROSMesaContext amesa, GLenum pname, GLint * params)
+/*****************************************************************************
+
+    NAME */
+
+      void glAGetConfig(
+
+/*  SYNOPSIS */
+      GLAContext ctx,
+      GLenum pname,
+      GLint * params)
+
+/*  FUNCTION
+
+        Gets value of selected parameter
+
+    INPUTS
+
+        pname - enum value of parameter
+
+        params - pointer to integer where the value is to be put
+
+    RESULT
+
+        None
+
+    BUGS
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
 {
     LONG depthbits, stencilbits, accumbits, rbbits, gbits, abits;
-    
+    struct arosmesa_context * amesa = (struct arosmesa_context *)ctx;
+
     switch(amesa->stvis.depth_stencil_format)
     {
         case(PIPE_FORMAT_S8_USCALED_Z24_UNORM): depthbits = 24; stencilbits = 8; break;

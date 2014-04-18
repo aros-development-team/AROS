@@ -6,7 +6,7 @@
 #include "arosmesa_funcs.h"
 #include <proto/exec.h>
 
-void AROSMesaMakeCurrent(AROSMesaContext amesa);
+void glAMakeCurrent(GLAContext ctx);
 
 /*****************************************************************************
 
@@ -15,7 +15,7 @@ void AROSMesaMakeCurrent(AROSMesaContext amesa);
       AROS_LH1(void, AROSMesaMakeCurrent,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(AROSMesaContext, amesa, A0),
+      AROS_LHA(APTR, amesa, A0),
 
 /*  LOCATION */
       struct Library *, MesaBase, 8, Mesa)
@@ -39,13 +39,39 @@ void AROSMesaMakeCurrent(AROSMesaContext amesa);
 {
     AROS_LIBFUNC_INIT
 
-    AROSMesaMakeCurrent(amesa);
+    glAMakeCurrent(amesa);
 
     AROS_LIBFUNC_EXIT
 }
 
-void AROSMesaMakeCurrent(AROSMesaContext amesa)
+/*****************************************************************************
+
+    NAME */
+
+      void glAMakeCurrent(
+
+/*  SYNOPSIS */
+      GLAContext ctx)
+
+/*  FUNCTION
+        Make the selected GL rendering context active.
+
+    INPUTS
+        amesa - GL rendering context to be made active for all following GL
+                calls.
+
+    RESULT
+
+    BUGS
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
 {
+    struct arosmesa_context * amesa = (struct arosmesa_context *)ctx;
+
     if (amesa)
     {
         struct st_context_iface * cur_ctx = glstapi->get_current(glstapi);
