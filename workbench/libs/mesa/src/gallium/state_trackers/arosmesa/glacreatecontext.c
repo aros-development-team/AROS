@@ -12,52 +12,6 @@
 #include <gallium/pipe/p_context.h>
 #include <gallium/pipe/p_screen.h>
 
-GLAContext glACreateContext(struct TagItem *tagList);
-
-/*****************************************************************************
-
-    NAME */
-
-    APTR AROSMesaCreateContextTags(
-
-/*  SYNOPSIS */
-	long Tag1,
-	...)
-
-/*  FUNCTION
-        This is the varargs version of mesa.library/AROSMesaCreateContext().
-        For information see mesa.library/AROSMesaCreateContext().
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        mesa.library/AROSMesaCreateContext()
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
-{
-  AROS_SLOWSTACKTAGS_PRE_AS(Tag1, GLAContext)
-  retval = glACreateContext(AROS_SLOWSTACKTAGS_ARG(Tag1));
-  AROS_SLOWSTACKTAGS_POST
-}
-
-APTR AROSMesaCreateContext(struct TagItem *tagList)
-{
-    return glACreateContext(tagList);
-}
-
-
 /*****************************************************************************
 
     NAME */

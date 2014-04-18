@@ -149,8 +149,8 @@ LIBRARY_SOURCES = \
 
 %build_module mmake=workbench-libs-mesa-legacy \
     modname=mesa modtype=library conffile=arosmesa.conf \
-    files="$(LIBRARY_SOURCES) arosmesa_library_api" cxxfiles="$(CXX_SOURCES)" \
-    uselibs="galliumauxiliary gallium stdcio stdc"
+    files="arosmesa_library_api arosmesa_init" \
+    uselibs="GL"
 
 %build_module mmake=workbench-libs-mesa \
     modname=gl modtype=library linklibname=GL linklibfiles="varargfuncs" \
