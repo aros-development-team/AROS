@@ -93,7 +93,7 @@
 
 
 /**************************************************************************
- Zune/MUI's differnt frame types. Use one per object
+ Zune/MUI's different frame types. Use one per object
 **************************************************************************/
 #define NoFrame          MUIA_Frame, MUIV_Frame_None
 #define ButtonFrame      MUIA_Frame, MUIV_Frame_Button

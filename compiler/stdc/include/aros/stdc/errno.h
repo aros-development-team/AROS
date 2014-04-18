@@ -88,7 +88,7 @@ int *__stdc_geterrnoptr(void);
 
 /* AROS specific functions to translate DOS error numbers to errno.
    ioerrno2errno() will always call the function for the selected C
-   linklib, __arosc_ioerr2errno() is always the arosc.library version.
+   linklib, __stdc_ioerr2errno() is always the stdc.library version.
  */
 int ioerr2errno(int ioerr);
 int __stdc_ioerr2errno(int ioerr); 

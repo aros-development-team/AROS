@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
-    File descriptors handling internals.
+    File descriptor handling internals.
 */
 
 #include LC_LIBDEFS_FILE
@@ -297,7 +297,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     }
     else
     {
-        /* Handle O_CREAT (creates the file only if it does not exit) */
+        /* Handle O_CREAT (creates the file only if it does not exist) */
         if (flags & O_CREAT)
         {
             BPTR tmp = Open((char *)pathname, MODE_NEWFILE);

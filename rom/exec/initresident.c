@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Build a library or device from a resident structure.
@@ -86,7 +86,7 @@
 	};
 	struct init *init = (struct init *)resident->rt_Init;
 
-        DINITRESIDENT("Initresident RTF_AUTOINIT");
+        DINITRESIDENT("InitResident RTF_AUTOINIT");
 
 	/*
 	    Make the library. Don't call the Init routine yet, but delay
@@ -160,7 +160,7 @@
     }
     else
     {
-        DINITRESIDENT("Initresident !RTF_AUTOINIT");
+        DINITRESIDENT("InitResident !RTF_AUTOINIT");
 
 	/* ...or let the library do it. */
 	if (resident->rt_Init) {

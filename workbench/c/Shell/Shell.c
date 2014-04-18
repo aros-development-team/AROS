@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     The shell program.
@@ -51,7 +51,7 @@
 
     INTERNALS
 
-    The prompt support is not using SetCurrentDirName() as this function
+    The prompt support does not use SetCurrentDirName() as this function
     has improper limitations. More or less the same goes for GetProgramName().
 
 ******************************************************************************/
