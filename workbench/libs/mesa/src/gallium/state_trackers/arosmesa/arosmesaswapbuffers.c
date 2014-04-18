@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2010, The AROS Development Team. All rights reserved.
+    Copyright 2009-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,6 +9,8 @@
 #include <proto/gallium.h>
 #include <gallium/pipe/p_screen.h>
 #include <gallium/util/u_inlines.h>
+
+void AROSMesaSwapBuffers(AROSMesaContext amesa);
 
 /*****************************************************************************
 
@@ -42,6 +44,13 @@
 {
     AROS_LIBFUNC_INIT
 
+    AROSMesaSwapBuffers(amesa);
+
+    AROS_LIBFUNC_EXIT
+}
+
+void AROSMesaSwapBuffers(AROSMesaContext amesa)
+{
     if (amesa->framebuffer->render_resource) 
     {
         /* Flush rendering cache before blitting */
@@ -53,8 +62,4 @@
     }
 
     AROSMesaCheckAndUpdateBufferSize(amesa);
-
-    AROS_LIBFUNC_EXIT
 }
-
-

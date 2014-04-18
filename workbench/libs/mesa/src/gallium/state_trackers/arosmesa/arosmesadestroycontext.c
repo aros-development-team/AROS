@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2010, The AROS Development Team. All rights reserved.
+    Copyright 2009-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,6 +8,8 @@
 #include <proto/exec.h>
 #include <proto/gallium.h>
 #include <aros/debug.h>
+
+void AROSMesaDestroyContext(AROSMesaContext amesa);
 
 /*****************************************************************************
 
@@ -41,6 +43,13 @@
 {
     AROS_LIBFUNC_INIT
 
+    AROSMesaDestroyContext(amesa);
+
+    AROS_LIBFUNC_EXIT
+}
+
+void AROSMesaDestroyContext(AROSMesaContext amesa)
+{
     /* Destroy a AROSMesa context */
     D(bug("[AROSMESA] AROSMesaDestroyContext(amesa @ %x)\n", amesa));
 
@@ -66,7 +75,4 @@
             AROSMesaFreeContext(amesa);
         }
     }
-    
-    AROS_LIBFUNC_EXIT
 }
-

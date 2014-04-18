@@ -1,5 +1,5 @@
 /*
-    Copyright 2011, The AROS Development Team. All rights reserved.
+    Copyright 2011-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,6 +9,8 @@
 #include <proto/utility.h>
 #include <proto/graphics.h>
 #include <aros/debug.h>
+
+void AROSMesaSetRast(AROSMesaContext amesa, struct TagItem * tagList);
 
 /*****************************************************************************
 
@@ -49,7 +51,14 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
+    AROSMesaSetRast(amesa, tagList);
+
+    AROS_LIBFUNC_EXIT
+}
+
+void AROSMesaSetRast(AROSMesaContext amesa, struct TagItem * tagList)
+{
     if (amesa)
     {
         /* Check if at least one of window, rastport or screen have been passed */
@@ -72,6 +81,4 @@
             AROSMesaCheckAndUpdateBufferSize(amesa);
         }
     }
-
-    AROS_LIBFUNC_EXIT
 }

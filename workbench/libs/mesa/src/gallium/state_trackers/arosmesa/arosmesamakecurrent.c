@@ -1,10 +1,12 @@
 /*
-    Copyright 2009-2010, The AROS Development Team. All rights reserved.
+    Copyright 2009-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include "arosmesa_funcs.h"
 #include <proto/exec.h>
+
+void AROSMesaMakeCurrent(AROSMesaContext amesa);
 
 /*****************************************************************************
 
@@ -37,6 +39,13 @@
 {
     AROS_LIBFUNC_INIT
 
+    AROSMesaMakeCurrent(amesa);
+
+    AROS_LIBFUNC_EXIT
+}
+
+void AROSMesaMakeCurrent(AROSMesaContext amesa)
+{
     if (amesa)
     {
         struct st_context_iface * cur_ctx = glstapi->get_current(glstapi);
@@ -56,7 +65,4 @@
         /* Detach */
         glstapi->make_current(glstapi, NULL, NULL, NULL);
     }
-
-    AROS_LIBFUNC_EXIT
 }
-

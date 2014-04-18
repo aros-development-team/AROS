@@ -1,5 +1,12 @@
+/*
+    Copyright 2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include "state_tracker/st_gl_api.h"
 #include <proto/exec.h>
+
+APTR AROSMesaGetOpenGLStateTrackerApi();
 
 /*****************************************************************************
 
@@ -30,7 +37,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    return (APTR)st_gl_api_create();
+    return AROSMesaGetOpenGLStateTrackerApi();
 
     AROS_LIBFUNC_EXIT
+}
+
+APTR AROSMesaGetOpenGLStateTrackerApi()
+{
+    return (APTR)st_gl_api_create();
 }

@@ -1,0 +1,22 @@
+Description of OpenGL ABI for AROS
+
+1. Library
+
+Library shall be named gl.library. The initial version of the library is 20.
+The library base variable shall be called GLBase.
+
+2. Vector table
+
+Library exposes OpenGL 1.3 + ARB_multitexture extension in its vector table.
+Native API (glA) is exposed in first 30 free LVOs. The exact placement of each
+function can be referenced in gl.conf in arosmesa.
+
+All exposed library functions shall use stack call calling convention.
+
+3. Library base
+
+Implementation should assume that the library base WILL NOT be passed to the
+library functions during the call. This is due to a fact that extension
+functions retrieved via glAGetProcAddress will not follow the standard AROS
+shared library function calling ABI. They will be called via function pointer
+according to C calling convention.

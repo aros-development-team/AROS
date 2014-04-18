@@ -1,5 +1,12 @@
+/*
+    Copyright 2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include "arosmesa_types.h"
 #include <proto/exec.h>
+
+AROSMesaProc AROSMesaGetProcAddress(const GLubyte * procname);
 
 /*****************************************************************************
 
@@ -35,7 +42,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    return glstapi->get_proc_address(glstapi, procname);
+    return AROSMesaGetProcAddress(procname);
 
     AROS_LIBFUNC_EXIT
+}
+
+AROSMesaProc AROSMesaGetProcAddress(const GLubyte * procname)
+{
+    return glstapi->get_proc_address(glstapi, procname);
 }

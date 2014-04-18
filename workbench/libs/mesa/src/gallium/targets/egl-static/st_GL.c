@@ -1,20 +1,20 @@
 #include <proto/exec.h>
 #if !defined(__mc68000)
-#include <proto/mesa.h>
+#include <proto/gl.h>
 #endif
 #include <aros/symbolsets.h>
 
 #include "egl_st.h"
 
-struct Library * MesaBase = NULL;
+struct Library * GLBase = NULL;
 
 PUBLIC struct st_api * st_gl_api_create(void)
 {
 #if !defined(__mc68000)
-    if (!MesaBase)
-        MesaBase = OpenLibrary("mesa.library", 0L);
+    if (!GLBase)
+        GLBase = OpenLibrary("gl.library", 20L);
 
-    if (MesaBase)
+    if (GLBase)
         return (struct st_api *) AROSMesaGetOpenGLStateTrackerApi();
     else
 #endif
@@ -23,10 +23,10 @@ PUBLIC struct st_api * st_gl_api_create(void)
 
 static VOID CloseMesa()
 {
-    if (MesaBase)
+    if (GLBase)
     {
-        CloseLibrary(MesaBase);
-        MesaBase = NULL;
+        CloseLibrary(GLBase);
+        GLBase = NULL;
     }
 }
 

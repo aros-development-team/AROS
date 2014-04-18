@@ -13,7 +13,7 @@
 
 #include <GL/arosmesa.h>
 
-extern struct Library * MesaBase;
+extern struct Library * GLBase;
 
 /* General note: due to fact that AROSMesa API is not symmetric with EGL api,
  * AROSMesa context is not created in EGL create context, but in EGL MakeCurrent
@@ -260,10 +260,10 @@ _eglBuiltInDriverAROSMesa(const char *args)
 {
     struct egl_arosmesa * drv = calloc(1, sizeof(struct egl_arosmesa));
 
-    if (!MesaBase)
-        MesaBase = OpenLibrary("mesa.library", 0L);
+    if (!GLBase)
+        GLBase = OpenLibrary("gl.library", 20L);
 
-    if (MesaBase)
+    if (GLBase)
     {
         egl_arosmesa_init_driver_api(&drv->base);
         drv->base.Name = "AROSMesa";
@@ -277,10 +277,10 @@ _eglBuiltInDriverAROSMesa(const char *args)
 
 static VOID CloseMesa()
 {
-    if (MesaBase)
+    if (GLBase)
     {
-        CloseLibrary(MesaBase);
-        MesaBase = NULL;
+        CloseLibrary(GLBase);
+        GLBase = NULL;
     }
 }
 
