@@ -1027,7 +1027,7 @@ void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo)
 *  ==============  <-- "bgbottom" and "frame_bottom" (frame overwrites bg (1))
 *
 * (1) : needed for phantom frame objects, where no frame overwrites bg, thus bg
-* must go as far as theorical bottom frame border.
+* must go as far as theoretical bottom frame border.
 */
 
 /*

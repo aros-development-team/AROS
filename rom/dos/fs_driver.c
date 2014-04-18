@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Low-level filesystem access functions, packet version
@@ -42,7 +42,7 @@ LONG fs_Open(struct FileHandle *handle, struct MsgPort *port, BPTR lock, LONG mo
      * MODE_OLDFILE   = ACTION_FINDINPUT  = 1005
      * MODE_NEWFILE   = ACTION_FINDOUTPUT = 1006
      *
-     * Even so, we don't want bad data propogaing
+     * Even so, we don't want bad data propagating
      * down, so check that the mode is valid.
      */
     if ((mode == MODE_READWRITE) ||

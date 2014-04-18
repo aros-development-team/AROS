@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function getenv().
@@ -57,7 +57,7 @@
 
     /*
       This will always return 0 if the var exists and EOF if it doesn't,
-      then we'll be able to retrieve the var lenght with IoErr()
+      then we'll be able to retrieve the var length with IoErr()
     */
     if (!GetVar((char *)name, &c, 1, GVF_BINARY_VAR))
     {
@@ -80,7 +80,7 @@
             StdCIOBase->varsize = len + 1;
 	}
 
-        /* This should not fail, unless someone stealt our variable*/
+        /* This should not fail, unless someone stole our variable */
         /* FIXME: maybe this function should be atomic */
         GetVar((char *)name, StdCIOBase->envvar, StdCIOBase->varsize, GVF_BINARY_VAR);
 

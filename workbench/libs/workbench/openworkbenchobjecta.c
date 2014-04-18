@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Open a drawer or launch a program.
@@ -718,7 +718,7 @@ static BOOL HandleProject
         else
         /* 
          *  A project icon (without a project file) is actually enough for
-         *  original Workbench (ie to launch the supplied tool)
+         *  original Workbench (i.e. to launch the supplied tool)
          */
         {
             STRPTR iconname;

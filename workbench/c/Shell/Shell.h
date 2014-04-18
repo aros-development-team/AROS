@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -177,7 +177,7 @@ LONG Redirection_init(ShellState *ss);
  * Input:    BPTR lock  --  a lock on the directory
  *
  * Notes:    This will set the current directory name via
- *           SetCurrentDirName() eventhough this is not used later.
+ *           SetCurrentDirName() even though this is not used later.
  *
  * Output:   --
  */

@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2013, The AROS Development Team.
+    Copyright  2002-2014, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -691,7 +691,7 @@ void save_prefs(CONST_STRPTR name, BOOL envarc)
 
 
 /****************************************************************
- SaveAS the done prefs from menue
+ SaveAS the done prefs from menu
 *****************************************************************/
 
 void main_saveas_menu(void)

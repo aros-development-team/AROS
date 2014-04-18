@@ -6574,7 +6574,7 @@ LONG step(void) {
    - Removing a VolumeNode from the DosList (synchronously)
      data = VolumeNode
 
-   All messages send to the DosList handler are freed by
+   All messages sent to the DosList handler are freed by
    the DosList handler itself.  This is to avoid having to
    wait for the reply and then free the message yourself.
 */

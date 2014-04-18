@@ -312,7 +312,7 @@ APTR PCIATA__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_Msg 
 
         /* Ensure table does not cross a 4kB boundary (required by VirtualBox,
            if not by real hardware) */
-        if(0x1000 - ((ULONG)(IPTR)dma->ab_PRD & 0xfff) <
+        if (0x1000 - ((ULONG)(IPTR)dma->ab_PRD & 0xfff) <
             PRD_MAX * sizeof(struct PRDEntry))
         {
             dma->ab_PRD = (APTR)((((IPTR)dma->ab_PRD) + 0xfff) & ~0xfff);

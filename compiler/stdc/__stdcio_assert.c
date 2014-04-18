@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 function assert() autodoc and stdcio.library support function
@@ -23,13 +23,13 @@
 
     INPUTS
 	expr - The expression to evaluate. The type of the expression does
-		not matter, only if its zero/NULL or not.
+		not matter, only if it's zero/NULL or not.
 
     RESULT
 	The function doesn't return.
 
     NOTES
-        Normally the output is send to stderr and thus this code should
+        Normally the output is sent to stderr and thus this code should
         only be called from processes with the context of the process
         available.
         In low level modules it is advised to use the ASSERT() macro for
