@@ -782,6 +782,7 @@ namespace glstubgenerator
 			CallType eglCallType = CallType.StackCall;
 			CallType vgCallType = CallType.StackCall;
 			CallType gluCallType = CallType.StackCall;
+			CallType glCallType = CallType.StackCall;
 
 
 			GLApiTempParser apiParser = new GLApiTempParser();
@@ -797,17 +798,18 @@ namespace glstubgenerator
 			FunctionList functionsglh = p.Parse(PATH_TO_MESA + @"/include/GL/gl.h", APIHeaderParser.GLAPI, APIHeaderParser.GLAPIENTRY);
 			FunctionList functionsglhquirk = p.Parse(PATH_TO_MESA + @"/include/GL/gl.h", APIHeaderParser.GLAPI, APIHeaderParser.APIENTRY);
 			functionsglh.AddRange(functionsglhquirk);
-			
+
 			FunctionList functionsglexth = p.Parse(PATH_TO_MESA + @"/include/GL/glext.h", APIHeaderParser.GLAPI, APIHeaderParser.APIENTRY);
 			
 
 			ConfParser confParser = new ConfParser();
-			FunctionList orderedExistingFunctions = confParser.Parse(PATH_TO_MESA + @"/src/aros/arosmesa/arosmesa.conf");
+			FunctionList orderedExistingFunctions = confParser.Parse(PATH_TO_MESA + @"/src/aros/arosmesa/gl.conf");
 			
 			Console.WriteLine("Initial parse results: GL: {0} GLEXT: {1}", functionsglh.Count, functionsglexth.Count);
 			
 			functionsglexth.RemoveFunctionsExceptFor(implementedFunctions);
 			functionsglh.RemoveFunctionsExceptFor(implementedFunctions);
+			functionsglexth.RemoveFunctions(functionsglh);
 			
 			implementedFunctions.WriteUnmatched();
 			
@@ -818,11 +820,13 @@ namespace glstubgenerator
 			/* GL */
 			FunctionList functionsGL = new FunctionList();
 			
-			functionsglexth.RemoveFunctions(functionsglh);
-			
 			Console.WriteLine("After duplicates removal GL: {0}, GLEXT: {1}", functionsglh.Count, functionsglexth.Count);
 			functionsGL.AddRange(functionsglh);
-			functionsGL.AddRange(functionsglexth);
+
+			functionsGL.RemoveFunctionByName("glBlendEquationSeparateATI"); /* Extension found in gl.h instead of glext.h */
+			functionsGL.RemoveFunctionByName("glFramebufferTextureLayerEXT"); /* Extension found in gl.h instead of glext.h */
+			functionsGL.RemoveFunctionByName("glEGLImageTargetTexture2DOES"); /* Extension found in gl.h instead of glext.h */
+			functionsGL.RemoveFunctionByName("glEGLImageTargetRenderbufferStorageOES"); /* Extension found in gl.h instead of glext.h */
 
 			Console.WriteLine("After merging GL {0}", functionsGL.Count);
 
@@ -831,21 +835,24 @@ namespace glstubgenerator
 			functionsfinal.AddRange(functionsGL);
 			
 			functionsfinal.CorrectionForArrayArguments();
-			functionsfinal.CalculateRegisters();
 			functionsfinal.ReorderToMatch(orderedExistingFunctions);
 			
+			if (glCallType == CallType.RegCall)
+			{
+				functionsfinal.CalculateRegisters();
+
+				StubsFileWriter sfw = new StubsFileWriter(false, "Mesa", 35);
+				sfw.Write(OUTPUT_PATH + @"arosmesa_library_api.c", functionsfinal);
+			}
 			
-			StubsFileWriter sfw = new StubsFileWriter(false, "Mesa", 35);
-			sfw.Write(OUTPUT_PATH + @"arosmesa_library_api.c", functionsfinal);
+			ConfFileWriter cfw = new ConfFileWriter(glCallType);
+			cfw.Write(OUTPUT_PATH + @"gl.conf", functionsfinal);
 			
-			ConfFileWriter cfw = new ConfFileWriter(CallType.RegCall);
-			cfw.Write(OUTPUT_PATH + @"arosmesa.conf", functionsfinal);
-			
-			MangledImplementationFileWriter glmifw = new MangledImplementationFileWriter();
+			/*MangledImplementationFileWriter glmifw = new MangledImplementationFileWriter();
 			glmifw.Write(OUTPUT_PATH + @"hostgl_gl_api.c", functionsfinal);
 
 			GLFUNCFileWriter glfuncfw = new GLFUNCFileWriter();
-			glfuncfw.Write(OUTPUT_PATH + @"gl_func.ch", functionsfinal);
+			glfuncfw.Write(OUTPUT_PATH + @"gl_func.ch", functionsfinal);*/
 			
 			/* EGL */
 			FunctionList functionseglh = p.Parse(PATH_TO_MESA + @"/include/EGL/egl.h", APIHeaderParser.EGLAPI, APIHeaderParser.EGLAPIENTRY);
@@ -861,11 +868,13 @@ namespace glstubgenerator
 			functionsfinal.AddRange(functionsEGL);
 			
 			functionsfinal.CorrectionForArrayArguments();
-			functionsfinal.CalculateRegisters();
+
 			functionsfinal.ReorderToMatch(orderedExistingFunctionsEGL);			
 
 			if (eglCallType == CallType.RegCall)
 			{
+				functionsfinal.CalculateRegisters();
+
 				StubsFileWriter eglsfw = new StubsFileWriter(false, "EGL", 35);
 				eglsfw.Write(OUTPUT_PATH + @"egl_library_api.c", functionsfinal);
 			}

@@ -144,12 +144,16 @@ LIBRARY_SOURCES = \
             $(addprefix ../../, $(LIB_MESA_SOURCES)) \
             $(addprefix ../../, $(AROSMESA_SOURCES)) \
             $(addprefix ../../, $(SHARED_LIB_SOURCES)) \
-            arosmesa_library_api \
 
 #MM- core-linklibs : linklibs-mesa
 
+%build_module mmake=workbench-libs-mesa-legacy \
+    modname=mesa modtype=library conffile=arosmesa.conf \
+    files="$(LIBRARY_SOURCES) arosmesa_library_api" cxxfiles="$(CXX_SOURCES)" \
+    uselibs="galliumauxiliary gallium stdcio stdc"
+
 %build_module mmake=workbench-libs-mesa \
-    modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="arosmesa_getprocaddress" \
+    modname=gl modtype=library linklibname=GL \
     files="$(LIBRARY_SOURCES)" cxxfiles="$(CXX_SOURCES)" \
     uselibs="galliumauxiliary gallium stdcio stdc"
 

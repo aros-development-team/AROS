@@ -12,7 +12,6 @@
 #include <devices/timer.h>
 #include <proto/cybergraphics.h>
 
-#define GL_GLEXT_PROTOTYPES
 #include <GL/arosmesa.h>
 
 #include <stdio.h>
@@ -34,6 +33,21 @@ GLuint              shaderProgram = 0;
 GLint               angleLocation = 0;
 
 
+PFNGLCREATESHADERPROC       glCreateShader          = NULL;
+PFNGLSHADERSOURCEPROC       glShaderSource          = NULL;
+PFNGLCOMPILESHADERPROC      glCompileShader         = NULL;
+PFNGLGETSHADERINFOLOGPROC   glGetShaderInfoLog      = NULL;
+PFNGLCREATEPROGRAMPROC      glCreateProgram         = NULL;
+PFNGLATTACHSHADERPROC       glAttachShader          = NULL;
+PFNGLLINKPROGRAMPROC        glLinkProgram           = NULL;
+PFNGLGETPROGRAMINFOLOGPROC  glGetProgramInfoLog     = NULL;
+PFNGLUSEPROGRAMPROC         glUseProgram            = NULL;
+PFNGLDETACHSHADERPROC       glDetachShader          = NULL;
+PFNGLDELETESHADERPROC       glDeleteShader          = NULL;
+PFNGLDELETEPROGRAMPROC      glDeleteProgram         = NULL;
+PFNGLUNIFORM1FPROC          glUniform1f             = NULL;
+PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation    = NULL;
+
 const GLchar * fragmentShaderSource =
 "uniform float angle;"
 "void main()"
@@ -42,14 +56,14 @@ const GLchar * fragmentShaderSource =
 "   float intensity = abs(1.0f - (mod(angle, 1440.0f) / 720.0f));"
 "   v.b = v.b * intensity;"
 "   v.g = v.g * (1.0f - intensity);"
-"	gl_FragColor = v;"
+"   gl_FragColor = v;"
 "}";
 
 const GLchar * vertexShaderSource =
 "void main()"
-"{	"
+"{  "
 "   gl_FrontColor = gl_Color;"
-"	gl_Position = ftransform();"
+"   gl_Position = ftransform();"
 "}";
 
 
@@ -195,6 +209,24 @@ void render()
 #define VISIBLE_WIDTH 300
 #define VISIBLE_HEIGHT 300
 
+static void initextensions()
+{
+    glCreateShader          = (PFNGLCREATESHADERPROC)AROSMesaGetProcAddress("glCreateShader");
+    glShaderSource          = (PFNGLSHADERSOURCEPROC)AROSMesaGetProcAddress("glShaderSource");
+    glCompileShader         = (PFNGLCOMPILESHADERPROC)AROSMesaGetProcAddress("glCompileShader");
+    glGetShaderInfoLog      = (PFNGLGETSHADERINFOLOGPROC)AROSMesaGetProcAddress("glGetShaderInfoLog");
+    glCreateProgram         = (PFNGLCREATEPROGRAMPROC)AROSMesaGetProcAddress("glCreateProgram");
+    glAttachShader          = (PFNGLATTACHSHADERPROC)AROSMesaGetProcAddress("glAttachShader");
+    glLinkProgram           = (PFNGLLINKPROGRAMPROC)AROSMesaGetProcAddress("glLinkProgram");
+    glGetProgramInfoLog     = (PFNGLGETPROGRAMINFOLOGPROC)AROSMesaGetProcAddress("glGetProgramInfoLog");
+    glUseProgram            = (PFNGLUSEPROGRAMPROC)AROSMesaGetProcAddress("glUseProgram");
+    glDetachShader          = (PFNGLDETACHSHADERPROC)AROSMesaGetProcAddress("glDetachShader");
+    glDeleteShader          = (PFNGLDELETESHADERPROC)AROSMesaGetProcAddress("glDeleteShader");
+    glDeleteProgram         = (PFNGLDELETEPROGRAMPROC)AROSMesaGetProcAddress("glDeleteProgram");
+    glUniform1f             = (PFNGLUNIFORM1FPROC)AROSMesaGetProcAddress("glUniform1f");
+    glGetUniformLocation    = (PFNGLGETUNIFORMLOCATIONPROC)AROSMesaGetProcAddress("glGetUniformLocation");
+}
+
 void initmesa()
 {
     struct TagItem attributes [ 14 ]; /* 14 should be more than enough :) */
@@ -233,6 +265,7 @@ void initmesa()
         glFrustum(-1.0, 1.0, -h, h, 5.0, 200.0);
         glMatrixMode(GL_MODELVIEW);
 #endif
+        initextensions();
         prepare_shader_program();
         glUseProgram(shaderProgram);
         angleLocation = glGetUniformLocation(shaderProgram, "angle");

@@ -1,10 +1,12 @@
 /*
-    Copyright 2011, The AROS Development Team. All rights reserved.
+    Copyright 2011-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include "arosmesa_funcs.h"
 #include <proto/exec.h>
+
+void AROSMesaGetConfig(AROSMesaContext amesa, GLenum pname, GLint * params);
 
 /*****************************************************************************
 
@@ -44,6 +46,13 @@
 {
     AROS_LIBFUNC_INIT
 
+    AROSMesaGetConfig(amesa, pname, params);
+
+    AROS_LIBFUNC_EXIT
+}
+
+void AROSMesaGetConfig(AROSMesaContext amesa, GLenum pname, GLint * params)
+{
     LONG depthbits, stencilbits, accumbits, rbbits, gbits, abits;
     
     switch(amesa->stvis.depth_stencil_format)
@@ -112,8 +121,5 @@
                 *params = -1;
         }
     }
-
-    AROS_LIBFUNC_EXIT
 }
-
 
