@@ -149,7 +149,7 @@ LIBRARY_SOURCES = \
 
 %build_module mmake=workbench-libs-mesa-legacy \
     modname=mesa modtype=library conffile=arosmesa.conf \
-    files="arosmesa_library_api arosmesa_init" \
+    files="arosmesa_library_api arosmesa_extensions" \
     uselibs="GL"
 
 %build_module mmake=workbench-libs-mesa \
