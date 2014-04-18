@@ -10,53 +10,6 @@
 #include <proto/graphics.h>
 #include <aros/debug.h>
 
-void glASetRast(GLAContext ctx, struct TagItem * tagList);
-
-/*****************************************************************************
-
-    NAME */
-
-      AROS_LH2(void, AROSMesaSetRast,
-
-/*  SYNOPSIS */ 
-      AROS_LHA(APTR, amesa, A0),
-      AROS_LHA(struct TagItem *, tagList, A1),
-
-/*  LOCATION */
-      struct Library *, MesaBase, 12, Mesa)
-
-/*  FUNCTION
-
-        Sets a new rendering target for an existing context
- 
-    INPUTS
-
-        tagList - a pointer to tags to be used during creation.
- 
-    TAGS
-
-        GLA_Window - pointer to Window onto which scene is to be rendered. Must
-                     be provided.
-
-    RESULT
-
-        None
- 
-    BUGS
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
-{
-    AROS_LIBFUNC_INIT
-
-    glASetRast(amesa, tagList);
-
-    AROS_LIBFUNC_EXIT
-}
-
 /*****************************************************************************
 
     NAME */

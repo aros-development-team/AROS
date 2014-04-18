@@ -6,51 +6,6 @@
 #include "arosmesa_funcs.h"
 #include <proto/exec.h>
 
-void glAGetConfig(GLAContext ctx, GLenum pname, GLint * params);
-
-/*****************************************************************************
-
-    NAME */
-
-      AROS_LH3(void, AROSMesaGetConfig,
-
-/*  SYNOPSIS */ 
-      AROS_LHA(APTR, amesa, A0),
-      AROS_LHA(GLenum, pname, D0),
-      AROS_LHA(GLint *, params, A1),
-
-/*  LOCATION */
-      struct Library *, MesaBase, 13, Mesa)
-
-/*  FUNCTION
-
-        Gets value of selected parameter
- 
-    INPUTS
-
-        pname - enum value of parameter
-
-        params - pointer to integer where the value is to be put
-
-    RESULT
-
-        None
- 
-    BUGS
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
-{
-    AROS_LIBFUNC_INIT
-
-    glAGetConfig(amesa, pname, params);
-
-    AROS_LIBFUNC_EXIT
-}
-
 /*****************************************************************************
 
     NAME */

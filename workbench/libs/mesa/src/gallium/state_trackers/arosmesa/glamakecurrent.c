@@ -6,44 +6,6 @@
 #include "arosmesa_funcs.h"
 #include <proto/exec.h>
 
-void glAMakeCurrent(GLAContext ctx);
-
-/*****************************************************************************
-
-    NAME */
-
-      AROS_LH1(void, AROSMesaMakeCurrent,
-
-/*  SYNOPSIS */ 
-      AROS_LHA(APTR, amesa, A0),
-
-/*  LOCATION */
-      struct Library *, MesaBase, 8, Mesa)
-
-/*  FUNCTION
-        Make the selected GL rendering context active.
- 
-    INPUTS
-        amesa - GL rendering context to be made active for all following GL
-                calls.
- 
-    RESULT
- 
-    BUGS
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
-{
-    AROS_LIBFUNC_INIT
-
-    glAMakeCurrent(amesa);
-
-    AROS_LIBFUNC_EXIT
-}
-
 /*****************************************************************************
 
     NAME */

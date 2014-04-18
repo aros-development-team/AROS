@@ -10,45 +10,6 @@
 #include <gallium/pipe/p_screen.h>
 #include <gallium/util/u_inlines.h>
 
-void glASwapBuffers(GLAContext ctx);
-
-/*****************************************************************************
-
-    NAME */
-
-      AROS_LH1(void, AROSMesaSwapBuffers,
-
-/*  SYNOPSIS */ 
-      AROS_LHA(APTR, amesa, A0),
-
-/*  LOCATION */
-      struct Library *, MesaBase, 9, Mesa)
-
-/*  FUNCTION
-        Swaps the back with front buffers. MUST BE used to display the effect
-        of rendering onto the target RastPort, since AROSMesa always work in
-        double buffer mode.
- 
-    INPUTS
-        amesa - GL rendering context on which swap is to be performed.
- 
-    RESULT
- 
-    BUGS
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
-{
-    AROS_LIBFUNC_INIT
-
-    glASwapBuffers(amesa);
-
-    AROS_LIBFUNC_EXIT
-}
-
 /*****************************************************************************
 
     NAME */
