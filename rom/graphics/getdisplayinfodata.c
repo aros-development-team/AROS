@@ -256,7 +256,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 	     * If number of colors is too large, PaletteRange is set to 65535.
 	     * This is the behavior of original AmigaOS(tm).
 	     */
-	    val = di->RedBits * di->GreenBits * di->BlueBits;
+	    val = 1 << (di->RedBits + di->GreenBits + di->BlueBits);
 	    di->PaletteRange = (val > 65535) ? 65535 : val;
 
 	    /* Display resolution in ticks */
