@@ -59,6 +59,14 @@
     AROS_LIBFUNC_EXIT
 }
 
+static SIPTR handleNIL(LONG action)
+{
+    switch(action)
+    {
+    case(ACTION_PARENT_FH): return (SIPTR)BNULL;
+    default: return TRUE;
+    }
+}
 /*
  * All Amiga kickstart versions accept most dos packet dos calls without dosbase in A6.
  * So we have this internal routine here for compatibility purposes.
@@ -75,8 +83,8 @@ SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR
     if (port == NULL)
     {
         /* NIL: */
-        D(bug("null port\n"));
-        return TRUE;
+        D(bug("NULL port => handling NIL:\n"));
+        return handleNIL(action);
     }
 
     /* First I create a regular dos packet */
