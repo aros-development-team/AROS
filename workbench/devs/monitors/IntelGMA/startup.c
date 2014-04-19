@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,6 +24,8 @@
 
 struct Library *OOPBase;
 struct Library *UtilityBase;
+struct Library *StdCBase;
+struct Library *StdCIOBase;
 
 OOP_AttrBase HiddPCIDeviceAttrBase;
 OOP_AttrBase HiddGMABitMapAttrBase;
@@ -67,7 +69,7 @@ static const struct OOP_ABDescr attrbases[] =
     {NULL, NULL }
 };
 
-const TEXT version_string[] = "$VER: IntelGMA 3.7 (18.07.2012)\n";
+const TEXT version_string[] = "$VER: IntelGMA 3.8 (19.4.2014)\n";
 
 extern struct WBStartup *WBenchMsg;
 int __nocommandline = 1;
@@ -80,89 +82,101 @@ int main(void)
     struct RDArgs *rdargs = NULL;
     IPTR args[3] = {0};
     int ret = RETURN_FAIL;
-
-    memset(&sd, 0, sizeof(sd));
+    BOOL success = TRUE;
 
     /* 
      * Open libraries manually, otherwise they will be closed
      * when this subroutine exits. Driver needs them.
      */
     OOPBase = OpenLibrary("oop.library", 42);
-    if (!OOPBase)
-	return RETURN_FAIL;
+    if (OOPBase == NULL)
+        success = FALSE;
 
     /*
      * If our class is already registered, the user attempts to run us twice.
      * Just ignore this.
      */
-    if (OOP_FindClass(CLID_Hidd_Gfx_IntelG45))
+    if (success)
     {
-	CloseLibrary(OOPBase);
-        return RETURN_OK;
+        if (OOP_FindClass(CLID_Hidd_Gfx_IntelG45))
+        {
+            success = FALSE;
+            ret = RETURN_OK;
+        }
     }
 
     UtilityBase = OpenLibrary("utility.library", 36);
-    if (!UtilityBase)
+    StdCBase = OpenLibrary("stdc.library", 0);
+    StdCIOBase = OpenLibrary("stdcio.library", 0);
+    if (UtilityBase == NULL || StdCBase == NULL || StdCIOBase == NULL)
+        success = FALSE;
+
+    if (success)
     {
-	CloseLibrary(OOPBase);
-	return RETURN_FAIL;
+        memset(&sd, 0, sizeof(sd));
+
+        /* We don't open dos.library and icon.library manually because only startup code
+           needs them and these libraries can be closed even upon successful exit */
+        if (WBenchMsg)
+        {
+            olddir = CurrentDir(WBenchMsg->sm_ArgList[0].wa_Lock);
+	    myname = WBenchMsg->sm_ArgList[0].wa_Name;
+        }
+        else
+        {
+	    struct Process *me = (struct Process *)FindTask(NULL);
+
+	    if (me->pr_CLI)
+	    {
+                struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+
+                myname = AROS_BSTR_ADDR(cli->cli_CommandName);
+            }
+            else
+                myname = me->pr_Task.tc_Node.ln_Name;
+        }
+
+        icon = GetDiskObject(myname);
+
+        if (icon)
+        {
+            STRPTR str;
+
+            str = FindToolType(icon->do_ToolTypes, "FORCEGMA");
+            args[0] = str ? TRUE : FALSE;
+
+            str = FindToolType(icon->do_ToolTypes, "GMA_MEM=");
+            if (str)
+                sd.memsize = atoi(str);
+
+            str = FindToolType(icon->do_ToolTypes, "FORCEGALLIUM");
+            args[2] = str ? TRUE : FALSE;
+        }
+
+        if (!WBenchMsg)
+            rdargs = ReadArgs("FORCEGMA/S,GMA_MEM/N,FORCEGALLIUM/S", args, NULL);
+
+        sd.forced  = args[0];
+        if (args[1])
+            sd.memsize = *((ULONG *)args[1]);
+        sd.force_gallium  = args[2];
+
+        if (rdargs)
+            FreeArgs(rdargs);
+        if (icon)
+            FreeDiskObject(icon);
+        if (olddir)
+            CurrentDir(olddir);
     }
-
-    /* We don't open dos.library and icon.library manually because only startup code
-       needs them and these libraries can be closed even upon successful exit */
-    if (WBenchMsg)
-    {
-        olddir = CurrentDir(WBenchMsg->sm_ArgList[0].wa_Lock);
-	myname = WBenchMsg->sm_ArgList[0].wa_Name;
-    }
-    else
-    {
-	struct Process *me = (struct Process *)FindTask(NULL);
-
-	if (me->pr_CLI)
-	{
-            struct CommandLineInterface *cli = BADDR(me->pr_CLI);
-	
-	    myname = AROS_BSTR_ADDR(cli->cli_CommandName);
-	}
-	else
-	    myname = me->pr_Task.tc_Node.ln_Name;
-    }
-
-    icon = GetDiskObject(myname);
-
-    if (icon)
-    {
-        STRPTR str;
-        
-        str = FindToolType(icon->do_ToolTypes, "FORCEGMA");
-        args[0] = str ? TRUE : FALSE;
-        
-        str = FindToolType(icon->do_ToolTypes, "GMA_MEM=");
-        if (str)
-            sd.memsize = atoi(str);
-        
-        str = FindToolType(icon->do_ToolTypes, "FORCEGALLIUM");
-        args[2] = str ? TRUE : FALSE;
-    }
-
-    if (!WBenchMsg)
-        rdargs = ReadArgs("FORCEGMA/S,GMA_MEM/N,FORCEGALLIUM/S", args, NULL);
-
-    sd.forced  = args[0];
-    if (args[1])
-        sd.memsize = *((ULONG *)args[1]);
-    sd.force_gallium  = args[2];
-
-    if (rdargs)
-        FreeArgs(rdargs);
-    if (icon)
-        FreeDiskObject(icon);
-    if (olddir)
-        CurrentDir(olddir);
 
     /* Obtain attribute bases first */
-    if (OOP_ObtainAttrBases(attrbases))
+    if (success)
+    {
+        if (!OOP_ObtainAttrBases(attrbases))
+            success = FALSE;
+    }
+
+    if (success)
     {
 	struct TagItem INTELG45_tags[] =
 	{
@@ -265,8 +279,14 @@ int main(void)
 	OOP_ReleaseAttrBases(attrbases);
     }
 
-    CloseLibrary(UtilityBase);
-    CloseLibrary(OOPBase);
+    if (StdCIOBase != NULL)
+        CloseLibrary(StdCIOBase);
+    if (StdCBase != NULL)
+        CloseLibrary(StdCBase);
+    if (UtilityBase != NULL)
+        CloseLibrary(UtilityBase);
+    if (OOPBase != NULL)
+        CloseLibrary(OOPBase);
 
     return ret;
 }
