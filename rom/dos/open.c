@@ -179,7 +179,7 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
         error = fs_Open(handle, me->pr_ConsoleTask, ast, accessMode, name, DOSBase);
     else if (!Stricmp(name, "NIL:"))
     {
-        error = fs_Open(handle, NULL, NULL, accessMode, name, DOSBase);
+        error = fs_Open(handle, BNULL, BNULL, accessMode, name, DOSBase);
         SetIoErr(0);
     }
     else
