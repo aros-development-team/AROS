@@ -54,12 +54,6 @@
     if (handle == BNULL)
         return BNULL;
 
-    /* Special case for NIL: */
-    if (fh->fh_Type == BNULL) {
-        struct FileLock *fl = AllocMem(sizeof(struct FileLock), MEMF_PUBLIC | MEMF_CLEAR);
-        return MKBADDR(fl);
-    }
-
     ret = (BPTR)dopacket1(DOSBase, NULL, fh->fh_Type, ACTION_COPY_DIR_FH, fh->fh_Arg1);
     D(bug("[DupLockFromFH] %x -> %x\n", fh, BADDR(ret)));
     return ret;

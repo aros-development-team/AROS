@@ -57,13 +57,7 @@
     struct FileLock *fl = (struct FileLock *)BADDR(lock);
     LONG status;
 
-    if (fl && fl->fl_Task == NULL)
-    {
-        /* Special case for NIL: */
-        status = 0;
-    }
-    else
-        status = dopacket2(DOSBase, NULL, fl ? fl->fl_Task : GetFileSysTask(), ACTION_INFO, lock, MKBADDR(parameterBlock));
+    status = dopacket2(DOSBase, NULL, fl ? fl->fl_Task : GetFileSysTask(), ACTION_INFO, lock, MKBADDR(parameterBlock));
     return status;
 
     AROS_LIBFUNC_EXIT
