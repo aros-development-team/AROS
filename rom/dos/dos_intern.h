@@ -105,6 +105,7 @@ SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR
 void internal_SendPkt(struct DosPacket *dp, struct MsgPort *port, struct MsgPort *replyport);
 struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort);
 void internal_ReplyPkt(struct DosPacket *dp, struct MsgPort *replyPort, SIPTR res1, LONG res2);
+SIPTR handleNIL(LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3);
 
 #define dopacket5(base, res2, port, action, arg1, arg2, arg3, arg4, arg5) dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), (SIPTR)(arg4), (SIPTR)(arg5), 0, 0)
 #define dopacket4(base, res2, port, action, arg1, arg2, arg3, arg4)       dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), (SIPTR)(arg4), 0, 0, 0)

@@ -894,9 +894,7 @@ static BPTR OpenNIL(struct DosLibrary *DOSBase)
     struct FileHandle *fh;
 
     if ((fh = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL))) {
-        fh->fh_Type = BNULL;
-        fh->fh_Interactive = DOSFALSE;
-        return MKBADDR(fh);
+        return (BPTR)handleNIL(ACTION_FINDINPUT, (SIPTR)MKBADDR(fh), (SIPTR)NULL, (SIPTR)NULL);
     }
 
     return BNULL;

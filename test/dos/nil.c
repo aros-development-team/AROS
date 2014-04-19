@@ -17,6 +17,7 @@ int main()
 {
     TEXT buffer[20];
     LONG result = 0;
+    BPTR bresult = BNULL;
 
     /* Open */
     nilfh = Open("NIL:", MODE_OLDFILE);
@@ -50,8 +51,7 @@ int main()
 
     /* OpenFromLock */
     nilfh = OpenFromLock(nillock);
-//    UnLock(nillock); /* TODO: causes memory freed twice. Invastigate! */
-    nillock = BNULL;
+    nillock = BNULL; /* Lock was consumed when opening */
     TEST((nilfh != BNULL));
     closehandles();
 
@@ -66,6 +66,12 @@ int main()
     nillock = DupLockFromFH(nilfh);
     result = Info(nillock, NULL);
     TEST((result == 0));
+    closehandles();
+
+    /* ParentOfFH */
+    nilfh = Open("NIL:", MODE_OLDFILE);
+    bresult = ParentOfFH(nilfh);
+    TEST((bresult == BNULL));
     closehandles();
 
     cleanup();

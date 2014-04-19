@@ -107,18 +107,10 @@ static LONG dupHandle(struct FileHandle *fh, BPTR lock, struct DosLibrary *DOSBa
     if (lock == BNULL)
         return DOSFALSE;
 
-    /* NIL: ? */
-
     fl = BADDR(lock);
     port = fl->fl_Task;
 
-    if (port) {
-        err = dopacket2(DOSBase, NULL, port, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
-    } else {
-        /* NIL: device */
-        fh->fh_Interactive = DOSFALSE;
-        err = DOSTRUE;
-    }
+    err = dopacket2(DOSBase, NULL, port, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
 
     if (err != DOSFALSE) {
         fh->fh_Type = port;
@@ -163,20 +155,6 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
         return dupHandle(handle, ast, DOSBase);
     }
 
-    /*
-     * Special case for NIL:, since it has no
-     * device task attached to it.
-     */
-    if (!Stricmp(name, "NIL:"))
-    {
-        SetIoErr(0);
-
-        handle->fh_Type = BNULL;
-        /* NIL: is not considered interactive */
-        handle->fh_Interactive = DOSFALSE;
-        return DOSTRUE;
-    }
-
     switch(accessMode)
     {
         case MODE_NEWFILE:
@@ -199,6 +177,11 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
         error = fs_Open(handle, me->pr_ConsoleTask, con, accessMode, name, DOSBase);
     else if (!Stricmp(name, "*"))
         error = fs_Open(handle, me->pr_ConsoleTask, ast, accessMode, name, DOSBase);
+    else if (!Stricmp(name, "NIL:"))
+    {
+        error = fs_Open(handle, NULL, NULL, accessMode, name, DOSBase);
+        SetIoErr(0);
+    }
     else
     {
         BPTR cur = BNULL;

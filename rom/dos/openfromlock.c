@@ -61,15 +61,7 @@
     if (fh) {
         struct MsgPort *port = fl->fl_Task;
 
-        if (port == BNULL) {
-            /* Special case for NIL: */
-            fh->fh_Interactive = DOSFALSE;
-            FreeMem(fl, sizeof(*fl));
-            err = DOSTRUE;
-        } else {
-            /* Normal case */
-            err = dopacket2(DOSBase, NULL, port, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
-        }
+        err = dopacket2(DOSBase, NULL, port, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
 
         if (err == DOSFALSE) {
             FreeDosObject(DOS_FILEHANDLE, fh);

@@ -52,16 +52,6 @@ LONG fs_Open(struct FileHandle *handle, struct MsgPort *port, BPTR lock, LONG mo
     else
         return ERROR_NOT_IMPLEMENTED;
 
-    if (!port)
-    {
-        /* handler pointer not set, return NIL: handle */
-        SetIoErr(0);
-        handle->fh_Type = BNULL;
-        /* NIL: is not considered interactive */
-        handle->fh_Interactive = DOSFALSE;
-        return 0;
-    }
-
     bstrname = C2BSTR(name);
     if (!bstrname)
         return ERROR_NO_FREE_STORE;

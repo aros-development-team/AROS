@@ -34,7 +34,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     internalunloadseg ioerr isfilesystem \
 	     isinteractive loadseg lock lockdoslist lockrecord lockrecords \
 	     makedosentry makelink matchend matchfirst matchnext matchpattern \
-	     matchpatternnocase maxcli namefromfh namefromlock newloadseg nextdosentry \
+	     matchpatternnocase maxcli namefromfh namefromlock newloadseg nextdosentry nil \
 	     open openfromlock output parentdir parentoffh parsepattern \
 	     parsepatternnocase pathpart printfault putstr read readargs \
 	     readitem relabel readlink remassignlist remdosentry remsegment rename \
