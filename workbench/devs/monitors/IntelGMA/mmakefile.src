@@ -48,7 +48,7 @@ EXEDIR := $(AROSDIR)/Devs/Monitors
 
 %build_prog mmake=devs-monitors-intelgma \
            progname=IntelGMA targetdir=$(EXEDIR) \
-           files=$(FILES) uselibs="hiddstubs galliumauxiliary"
+           files=$(FILES) uselibs="hiddstubs galliumauxiliary stdcio stdc"
 
 
 %common
