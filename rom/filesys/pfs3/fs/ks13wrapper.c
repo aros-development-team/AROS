@@ -32,78 +32,9 @@
 
 #define MIN_STACKSIZE 8000
 
-static struct DosLibrary *DOSBase = (APTR)-1;
-static struct Library *IntuitionBase = (APTR)-1;
-struct ExecBase *SysBase = (APTR)-1;
-
-#define wrapper_init() do { \
-    DOSBase = (struct DosLibrary *)OpenLibrary ("dos.library", MIN_LIB_VERSION); \
-    IntuitionBase = OpenLibrary ("intuition.library", MIN_LIB_VERSION); \
-    if (!DOSBase || !IntuitionBase) \
-        Alert(AT_DeadEnd | AG_OpenLib); \
-} while (0)
-
-#define wrapper_free() do { \
-    CloseLibrary(DOSBase); \
-    CloseLibrary(IntuitionBase); \
-} while (0)
-
 AROS_UFP2(void, StackSwap,
     AROS_UFPA(struct StackSwapStruct*, stack, A0),
     AROS_UFPA(struct ExecBase*, SysBase, A6));
-
-LONG wrapper_stackswap(LONG (*func)(struct ExecBase *), struct ExecBase *sysBase)
-{
-    ULONG stacksize;
-    APTR stackptr;
-    struct Task *tc;
-    struct StackSwapStruct *stack;
-    LONG ret;
-
-    SysBase = sysBase;
-
-    wrapper_init();
-    tc = FindTask(NULL);
-    stacksize = (UBYTE *)tc->tc_SPUpper - (UBYTE *)tc->tc_SPLower;
-    if (stacksize >= MIN_STACKSIZE) {
-        ret = func(SysBase);
-        wrapper_free();
-        return ret;
-    }
-
-    stack = AllocMem(sizeof(struct StackSwapStruct) + MIN_STACKSIZE, MEMF_CLEAR | MEMF_PUBLIC);
-    if (!stack) {
-        Alert(AT_DeadEnd | AG_NoMemory);
-        return RETURN_FAIL;
-    }
-    stackptr = stack + 1;
-    stack->stk_Lower = stackptr;
-    stack->stk_Upper = (APTR)((IPTR)stack->stk_Lower + MIN_STACKSIZE);
-    stack->stk_Pointer = (APTR)stack->stk_Upper;
-
-    if (ISKS20) {
-        AROS_LVO_CALL1(void,
-            AROS_LCA(struct StackSwapStruct*, stack, A0),
-            struct ExecBase*, SysBase, 122, );
-        ret = func(SysBase);
-        AROS_LVO_CALL1(void,
-            AROS_LCA(struct StackSwapStruct*, stack, A0),
-            struct ExecBase*, SysBase, 122, );
-    } else {
-        AROS_UFC2(void, StackSwap,
-            AROS_UFCA(struct StackSwapStruct*, stack, A0),
-            AROS_UFCA(struct ExecBase*, SysBase, A6));
-        ret = func(SysBase);
-        AROS_UFC2(void, StackSwap,
-            AROS_UFCA(struct StackSwapStruct*, stack, A0),
-            AROS_UFCA(struct ExecBase*, SysBase, A6));
-    }
-    
-    FreeMem(stack, sizeof(struct StackSwapStruct) + MIN_STACKSIZE);
-    wrapper_free();
-
-    return ret;
-}
 
 #if KS13WRAPPER_DEBUG
 
@@ -182,7 +113,7 @@ void DebugPutHexVal(ULONG val)
 
 #endif
 
-APTR AllocVec(ULONG size, ULONG flags)
+APTR W_AllocVec(ULONG size, ULONG flags, struct globaldata *g)
 {
     ULONG *mem;
     
@@ -196,7 +127,7 @@ APTR AllocVec(ULONG size, ULONG flags)
     mem++;
     return mem;
 }
-void FreeVec(APTR mem)
+void W_FreeVec(APTR mem, struct globaldata *g)
 {
     ULONG *p = mem;
     if (!p)
@@ -205,7 +136,7 @@ void FreeVec(APTR mem)
     FreeMem(p, p[0]);
 }
 
-APTR CreateIORequest(struct MsgPort *ioReplyPort, ULONG size)
+APTR W_CreateIORequest(struct MsgPort *ioReplyPort, ULONG size, struct globaldata *g)
 {
     struct IORequest *ret=NULL;
     if(ioReplyPort==NULL)
@@ -219,13 +150,13 @@ APTR CreateIORequest(struct MsgPort *ioReplyPort, ULONG size)
     return ret;
 }
 
-void DeleteIORequest(APTR iorequest)
+void W_DeleteIORequest(APTR iorequest, struct globaldata *g)
 {
     if(iorequest != NULL)
 	FreeMem(iorequest, ((struct Message *)iorequest)->mn_Length);
 }
 
-struct MsgPort *CreateMsgPort(void)
+struct MsgPort *W_CreateMsgPort(struct globaldata *g)
 {
     struct MsgPort *ret;
     ret=(struct MsgPort *)AllocMem(sizeof(struct MsgPort),MEMF_PUBLIC|MEMF_CLEAR);
@@ -247,7 +178,7 @@ struct MsgPort *CreateMsgPort(void)
     return NULL;
 }
 
-void DeleteMsgPort(struct MsgPort *port)
+void W_DeleteMsgPort(struct MsgPort *port, struct globaldata *g)
 {
     if(port!=NULL)
     {
@@ -256,7 +187,7 @@ void DeleteMsgPort(struct MsgPort *port)
     }
 }
 
-BOOL MatchPatternNoCase(CONST_STRPTR pat, CONST_STRPTR str)
+BOOL W_MatchPatternNoCase(CONST_STRPTR pat, CONST_STRPTR str, struct globaldata *g)
 {
     if (ISKS20)
 	return AROS_LVO_CALL2(BOOL,
@@ -314,7 +245,7 @@ static BOOL CMPBSTR(BSTR s1, BSTR s2)
     UBYTE *ss2 = BADDR(s2);
     return memcmp(ss1, ss2, ss1[0] + 1);
 }
-static struct DosList *getdoslist(struct ExecBase *SysBase)
+static struct DosList *getdoslist(struct globaldata *g)
 {
     struct DosInfo *di;
     
@@ -322,12 +253,12 @@ static struct DosList *getdoslist(struct ExecBase *SysBase)
     Forbid();
     return (struct DosList *)&di->di_DevInfo;
 }
-static void freedoslist(struct ExecBase *SysBase)
+static void freedoslist(struct globaldata *g)
 {
     Permit();
 }
 
-struct DosList *MakeDosEntry(CONST_STRPTR name, LONG type)
+struct DosList *W_MakeDosEntry(CONST_STRPTR name, LONG type, struct globaldata *g)
 {
     ULONG len;
     STRPTR s2;
@@ -365,7 +296,7 @@ struct DosList *MakeDosEntry(CONST_STRPTR name, LONG type)
     return NULL;
 }
 
-LONG RemDosEntry(struct DosList *dlist)
+LONG W_RemDosEntry(struct DosList *dlist, struct globaldata *g)
 {
     struct DosList *dl;
 
@@ -377,7 +308,7 @@ LONG RemDosEntry(struct DosList *dlist)
     if(dlist == NULL)
 	return 0;
 
-    dl = getdoslist(SysBase);
+    dl = getdoslist(g);
 
     while(dl->dol_Next)
     {
@@ -392,12 +323,12 @@ LONG RemDosEntry(struct DosList *dlist)
 	dl = dl2;
     }
 
-    freedoslist(SysBase);
+    freedoslist(g);
 
     return 1;
 }
 
-void FreeDosEntry(struct DosList *dlist)
+void W_FreeDosEntry(struct DosList *dlist, struct globaldata *g)
 {
     if (ISKS20) {
 	AROS_LVO_CALL1(void,
@@ -411,7 +342,7 @@ void FreeDosEntry(struct DosList *dlist)
     FreeVec(dlist);
 }
 
-LONG AddDosEntry(struct DosList *dlist)
+LONG W_AddDosEntry(struct DosList *dlist, struct globaldata *g)
 {
     LONG success = DOSTRUE;
     struct DosList *dl;
@@ -428,7 +359,7 @@ LONG AddDosEntry(struct DosList *dlist)
         dlist->dol_Name, dlist->dol_Type, dlist,
         FindTask(NULL)->tc_Node.ln_Name));
 
-    dl = getdoslist(SysBase);
+    dl = getdoslist(g);
 
     if(dlist->dol_Type != DLT_VOLUME)
     {
@@ -456,7 +387,7 @@ LONG AddDosEntry(struct DosList *dlist)
 	dinf->di_DevInfo = MKBADDR(dlist);
     }
 
-    freedoslist(SysBase);
+    freedoslist(g);
 
     return success;    
 }
@@ -466,7 +397,7 @@ IPTR CallHookPkt(struct Hook *hook, APTR object, APTR paramPacket)
     return CALLHOOKPKT(hook, object, paramPacket);
 }
 
-BOOL ErrorReport(LONG code, LONG type, IPTR arg1, struct MsgPort *device)
+BOOL W_ErrorReport(LONG code, LONG type, IPTR arg1, struct MsgPort *device, struct globaldata *g)
 {
     if (ISKS20)
 	return AROS_LVO_CALL4(BOOL,
@@ -479,7 +410,7 @@ BOOL ErrorReport(LONG code, LONG type, IPTR arg1, struct MsgPort *device)
     return FALSE;
 }
 
-LONG EasyRequestArgs(struct Window *window, struct EasyStruct *easyStruct, ULONG *IDCMP_ptr, APTR argList)
+LONG W_EasyRequestArgs(struct Window *window, struct EasyStruct *easyStruct, ULONG *IDCMP_ptr, APTR argList, struct globaldata *g)
 {
     if (ISKS20)
 	return AROS_LVO_CALL4(LONG,
@@ -491,7 +422,7 @@ LONG EasyRequestArgs(struct Window *window, struct EasyStruct *easyStruct, ULONG
     return 1;
 }
 
-struct Window *BuildEasyRequestArgs(struct Window *RefWindow, struct EasyStruct *easyStruct, ULONG IDCMP, APTR Args)
+struct Window *W_BuildEasyRequestArgs(struct Window *RefWindow, struct EasyStruct *easyStruct, ULONG IDCMP, APTR Args, struct globaldata *g)
 {
     if (ISKS20)
 	return AROS_LVO_CALL4(struct Window*,
@@ -503,7 +434,7 @@ struct Window *BuildEasyRequestArgs(struct Window *RefWindow, struct EasyStruct 
     return NULL;
 }    
 
-LONG SysReqHandler(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL WaitInput)
+LONG W_SysReqHandler(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL WaitInput, struct globaldata *g)
 {
     if (ISKS20)
 	return AROS_LVO_CALL3(LONG,
@@ -514,12 +445,15 @@ LONG SysReqHandler(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL WaitInput)
     return 0;
 }
 
-void FixStartupPacket(struct DosPacket *pkt)
+#undef SysBase
+#undef DOSBase
+
+void FixStartupPacket(struct DosPacket *pkt, struct globaldata *g)
 {
 	if (pkt->dp_Arg3)
 		return;
 	/* Fix 1.3 bad boot time ACTION_STARTUP: dp_Arg3 = NULL, dp_Arg1 = uninitialized data */
-	struct DosList *dl = getdoslist(SysBase);
+	struct DosList *dl = getdoslist(g);
 	while(dl->dol_Next)
 	{
 		dl = BADDR(dl->dol_Next);
@@ -532,7 +466,71 @@ void FixStartupPacket(struct DosPacket *pkt)
 			break;
 		}
 	}
-	freedoslist(SysBase);
+	freedoslist(g);
+}
+
+LONG wrapper_stackswap(LONG (*func)(struct ExecBase *), struct ExecBase *SysBase)
+{
+	struct DosLibrary *DOSBase;
+    ULONG stacksize;
+    APTR stackptr;
+    struct Task *tc;
+    struct StackSwapStruct *stack;
+    LONG ret;
+
+    tc = FindTask(NULL);
+    stacksize = (UBYTE *)tc->tc_SPUpper - (UBYTE *)tc->tc_SPLower;
+    if (stacksize >= MIN_STACKSIZE) {
+        ret = func(SysBase);
+        return ret;
+    }
+
+    stack = AllocMem(sizeof(struct StackSwapStruct) + MIN_STACKSIZE, MEMF_CLEAR | MEMF_PUBLIC);
+    if (!stack) {
+        Alert(AT_DeadEnd | AG_NoMemory);
+        return RETURN_FAIL;
+    }
+    stackptr = stack + 1;
+    stack->stk_Lower = stackptr;
+    stack->stk_Upper = (APTR)((IPTR)stack->stk_Lower + MIN_STACKSIZE);
+    stack->stk_Pointer = (APTR)stack->stk_Upper;
+
+	DOSBase = (struct DosLibrary *)OpenLibrary ("dos.library", MIN_LIB_VERSION);
+    if (ISKS20) {
+        AROS_LVO_CALL1(void,
+            AROS_LCA(struct StackSwapStruct*, stack, A0),
+            struct ExecBase*, SysBase, 122, );
+        ret = func(SysBase);
+        AROS_LVO_CALL1(void,
+            AROS_LCA(struct StackSwapStruct*, stack, A0),
+            struct ExecBase*, SysBase, 122, );
+    } else {
+        AROS_UFC2(void, StackSwap,
+            AROS_UFCA(struct StackSwapStruct*, stack, A0),
+            AROS_UFCA(struct ExecBase*, SysBase, A6));
+        ret = func(SysBase);
+        AROS_UFC2(void, StackSwap,
+            AROS_UFCA(struct StackSwapStruct*, stack, A0),
+            AROS_UFCA(struct ExecBase*, SysBase, A6));
+    }
+    FreeMem(stack, sizeof(struct StackSwapStruct) + MIN_STACKSIZE);
+    CloseLibrary((struct Library*)DOSBase);
+
+    return ret;
 }
 
 #endif
+
+size_t strcspn (const char * str, const char * reject)
+{
+    size_t n = 0; /* Must set this to zero */
+
+    while (*str && !strchr (reject, *str))
+    {
+	str ++;
+	n ++;
+    }
+
+    return n;
+}
+

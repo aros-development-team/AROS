@@ -819,12 +819,12 @@
 **	   1.0: Initial release
 **
 *********************************************************************************/
-#define REVISION "18.4"
+#define REVISION "18.5"
 #define REVDATE  "11.09.99"
 #define REVTIME  "18:02:53"
 #define AUTHOR   "Michiel Pelt"
 #define VERNUM   18
-#define REVNUM   4
+#define REVNUM   5
 
 #define RELNUM  "5.0"
 

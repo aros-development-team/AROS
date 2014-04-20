@@ -68,7 +68,9 @@ UBYTE AFS_ERROR_LOAD_DIRBLOCK_FAIL[]    = "Couldn't load dirblock!!";
 UBYTE AFS_ERROR_LRU_UPDATE_FAIL[]       = "LRU update failed";
 UBYTE AFS_ERROR_UPDATE_FAIL[]           = "Disk update failed";
 UBYTE AFS_ERROR_UNSLEEP[]               = "Unsleep error";
+#if TD64 == 0 && NSD == 0 && SCSIDIRECT == 0
 UBYTE AFS_ERROR_DISK_TOO_LARGE[]		= "Disk too large for this version of PFS3.\nPlease install TD64 or direct-scsi version";
+#endif
 UBYTE AFS_ERROR_ANODE_ERROR[]			= "Anode index invalid";
 UBYTE AFS_ERROR_ANODE_INIT[]            = "Anode initialisation failure";
 UBYTE AFS_ERROR_32BIT_ACCESS_ERROR[]    = "TD32 and Direct SCSI access modes failed!\nCan't read block %ld (<4G)\n%s:%ld";

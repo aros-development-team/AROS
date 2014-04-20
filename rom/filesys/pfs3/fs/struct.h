@@ -548,6 +548,7 @@ struct globaldata
 	UBYTE supermode;					/* flag: supermode? (104 bmi blocks)	*/
 	UBYTE tdmode;						/* ACCESS_x mode                        */
 	UBYTE pad;
+	ULONG blocksize;                    /* g->dosenvec->de_SizeBlock << 2       */
 	UWORD blockshift;                   /* 2 log van block size                 */
 	UWORD fnsize;						/* filename size (18+)					*/
 	ULONG directsize;                   /* number of blocks after which direct  */
@@ -978,7 +979,7 @@ typedef struct lockentry
 #define LastReserved    (g->currentvolume->rootblk->lastreserved)
 #define FirstReserved   (g->currentvolume->rootblk->firstreserved)
 #define InPartition(blk)  ((blk)>=g->firstblock && (blk)<=g->lastblock)
-#define BLOCKSIZE (g->dosenvec->de_SizeBlock << 2)
+#define BLOCKSIZE (g->blocksize)
 #define BLOCKSHIFT (g->blockshift)
 #define DIRECTSIZE (g->directsize)
 

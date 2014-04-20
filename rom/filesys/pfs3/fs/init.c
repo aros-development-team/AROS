@@ -150,7 +150,7 @@ static void InstallDiskChangeHandler(globaldata *);
 static void InstallResetHandler(struct globaldata *);
 #if !defined(__MORPHOS__) || defined(DISK_BASED_FILESYSTEM)
 /* MorphOS ROM build uses other means to add the filesystem.resource entry */
-static BOOL AddToFSResource(ULONG, BPTR, globaldata *);
+static BOOL AddToFSResource(ULONG, BPTR, struct globaldata *);
 #endif
 #if VERSION23
 static void DoPostponed (struct volumedata *volume, globaldata *g);
@@ -243,6 +243,7 @@ Removed because of problems with Phase 5 boards
 		return FALSE;
 	}
 
+    g->blocksize = g->dosenvec->de_SizeBlock << 2;
 	t = BLOCKSIZE;
 	for (i=-1; t; i++)
 		t >>= 1;
@@ -603,7 +604,11 @@ static BOOL init_device_unit_sema(struct FileSysStartupMsg *startup, globaldata 
 			sema->ss.ss_Link.ln_Name = sema->name;
 			sema->ss.ss_Link.ln_Pri  = -128;
 			sema->ss.ss_Link.ln_Type = NT_SIGNALSEM;
-			AddSemaphore(&sema->ss);
+			if (g->g_SysBase->LibNode.lib_Version < 36) {
+				Enqueue(&g->g_SysBase->SemaphoreList, &sema->ss);
+			}  else {
+				AddSemaphore(&sema->ss);
+			}
 			g->device_unit_lock_sema = &sema->ss;
 		}
 		Permit();
@@ -651,7 +656,7 @@ static BOOL OpenTimerDevice(struct MsgPort **port, struct timerequest **request,
 **
 ** function supplied by Nicola Salmoria
 */
-static BOOL AddToFSResource(ULONG dostype, BPTR seglist, globaldata *g)
+static BOOL AddToFSResource(ULONG dostype, BPTR seglist, struct globaldata *g)
 {
   struct FileSysResource *FileSysResBase;
 
