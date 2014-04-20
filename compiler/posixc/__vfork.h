@@ -36,6 +36,7 @@ struct vfork_data
     int parent_numslots;
     fdesc **parent_fd_array;
     int parent_flags;
+    char *parent_upathbuf;
 
     struct Task *child;
     int child_executed;
