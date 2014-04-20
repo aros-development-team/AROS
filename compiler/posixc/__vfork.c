@@ -483,6 +483,10 @@ static void parent_enterpretendchild(struct vfork_data *udata)
     PosixCBase->cd_lock = udata->child_posixcbase->cd_lock;
     udata->parent_curdir = CurrentDir(((struct Process *)udata->child)->pr_CurrentDir);
 
+    /* Remember and switch upathbuf */
+    udata->parent_upathbuf = PosixCBase->upathbuf;
+    PosixCBase->upathbuf = udata->child_posixcbase->upathbuf;
+
     /* Pretend to be running as the child created by vfork */
     udata->parent_flags = PosixCBase->flags;
     PosixCBase->flags |= PRETEND_CHILD;
@@ -524,6 +528,9 @@ static void parent_leavepretendchild(struct vfork_data *udata)
     PosixCBase->cd_changed = udata->parent_cd_changed;
     PosixCBase->cd_lock = udata->parent_cd_lock;
     CurrentDir(udata->parent_curdir);
+
+    /* Restore parent's upathbuf */
+    PosixCBase->upathbuf = udata->parent_upathbuf;
 
     /* Switch to previous vfork_data */
     PosixCBase->vfork_data = udata->prev;
