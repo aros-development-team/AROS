@@ -706,8 +706,7 @@ static SIPTR dd_Open(struct DosPacket *pkt, globaldata * g)
 				return DOSFALSE;
 			}
 
-			/* version 18.5 fix issue 3286818 */
-			type.flags.access = ET_SHAREDWRITE;
+			type.flags.access = ET_EXCLWRITE;
 			break;
 
 		default:
