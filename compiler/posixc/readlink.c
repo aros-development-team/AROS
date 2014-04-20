@@ -59,6 +59,8 @@
     if (path == NULL)
         return res;
 
+    dvp = GetDeviceProc(path, NULL);
+
     res = ReadLink(dvp->dvp_Port, dvp->dvp_Lock, path, buf, bufsize);
     if (res == -1) {
         error = IoErr();
