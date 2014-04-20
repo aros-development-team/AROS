@@ -419,7 +419,7 @@ static BOOL IsEmptyABlk(struct canodeblock *ablk, globaldata *g)
 static BOOL IsEmptyIBlk(struct cindexblock *blk, globaldata *g)
 {
   ULONG *index, i;
-  BOOL found;
+  BOOL found = 0;
 
 	index = blk->blk.index;
 	for(i=0; i<andata.indexperblock; i++)

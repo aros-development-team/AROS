@@ -28,9 +28,11 @@ const struct EmulLibEntry DiskChangeHandler __READONLY__ =
 
 #elif __AROS__
 
+#undef SysBase
+
 AROS_UFH2(ULONG, DiskChangeHandler,
 	AROS_UFHA(struct globaldata *, g, A1),
-	AROS_UFHA(struct ExecBase *, mySysBase, A6))
+	AROS_UFHA(struct ExecBase *, SysBase, A6))
 { 
 	AROS_USERFUNC_INIT
 

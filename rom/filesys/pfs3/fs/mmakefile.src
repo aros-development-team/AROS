@@ -71,7 +71,7 @@ USER_CFLAGS := \
     modname=pfs3ds modtype=handler \
     files="$(FILES)" objdir=$(OBJDIR)/pfs3ds
 
-USER_LDFLAGS += -nosysbase
+USER_LDFLAGS += -nosysbase -Wl,--defsym -Wl,SysBase=0x4
 
 KS13STUFF := \
     -DKS13WRAPPER \
@@ -84,6 +84,7 @@ KS13STUFF := \
 	-DDISK_BASED_FILESYSTEM=1
 
 USER_CFLAGS := \
+	-DAROS_NOLIBREQ \
     -DAROS_KERNEL $(PFS3_CFLAGS) $(KS13STUFF) \
 	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
 USER_AFLAGS := \

@@ -230,7 +230,7 @@ LONG EntryPoint(struct ExecBase *SysBase)
 	ULONG signal, dossig, timesig, notifysig, sleepsig, waitmask;
 
 	/* init globaldata */
-	g = AllocVec (sizeof(struct globaldata), MEMF_CLEAR);
+	g = AllocMem (sizeof(struct globaldata), MEMF_CLEAR);
 	if (!g)
 	{
 		Alert (AG_NoMemory);
@@ -273,7 +273,7 @@ LONG EntryPoint(struct ExecBase *SysBase)
 	 * ARG3 = BPTR to DeviceNode
 	 */
 #ifdef KS13WRAPPER
-	FixStartupPacket(pkt);
+	FixStartupPacket(pkt, g);
 #endif
 	mountname = (UBYTE *)BADDR(pkt->dp_Arg1);
 	fssm = (struct FileSysStartupMsg *)BADDR(pkt->dp_Arg2);
@@ -679,7 +679,7 @@ static void Quit (globaldata *g)
 
 	EXIT("dd_Quit");
 
-	FreeVec (g);
+	FreeMem (g, sizeof(struct globaldata));
 	AfsDie ();
 }
 
