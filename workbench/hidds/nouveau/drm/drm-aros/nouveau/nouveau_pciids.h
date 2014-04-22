@@ -300,7 +300,9 @@ struct drm_pciid nouveau_pciids [] =
     { 0x10de, 0x0428 }, /* G86 [GeForce 8400M G] */
     { 0x10de, 0x0429 }, /* G84M [Quadro NVS 140M] */
     { 0x10de, 0x042a }, /* G86M [Quadro NVS 130M] */
+#if 0
     { 0x10de, 0x042b }, /* G86M [Quadro NVS 135M] */
+#endif
     { 0x10de, 0x042c }, /* G86 [GeForce 9400 GT] */
     { 0x10de, 0x042d }, /* G86M [Quadro FX 360M] */
     { 0x10de, 0x042e }, /* G86 [GeForce 9300M G] */
