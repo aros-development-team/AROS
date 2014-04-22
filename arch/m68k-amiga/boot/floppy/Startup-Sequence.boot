@@ -1,4 +1,4 @@
-Arch/amiga/AROSBootstrap ROM Arch/amiga/aros.hunk.gz
+boot/amiga/AROSBootstrap ROM boot/amiga/aros.hunk.gz
 
 MakeDir RAM:ENV
 MakeDir RAM:T
