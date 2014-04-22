@@ -59,32 +59,24 @@ sv:
 ss:
 	move.l	#0xde1000,%a0       /* Gayle ID register */
 	move.l	#0xdff000,%a1
-	/* NOTE: We must check for custom chip mirroring.
-	 */
+	/* NOTE: We must check for custom chip mirroring. */
 	/* Can we turn off interrupts? */
-	move.w	0x1c(%a1),%d0		/* INTENAR */
-	move.w	#0x7fff,0x9a(%a0)	/* INTENA */
-	tst.w	0x1c(%a1)
-	bne.s	0f					/* If non-zero, not INTENAR */
-	move.w	#0x8001,0x9a(%a0)
-	tst.w	0x1c(%a1)
-	beq.s	0f					/* If still zero, not INTENAR */
-	/* Restore interrupts. */
+	move.w	0x1c(%a1),%sp@-		/* INTENAR */
 	move.w	#0x7fff,0x9a(%a1)	/* INTENA */
-	or.w	#0x8000,%d0
-	move.w	%d0,0x9a(%a1)		/* INTENA */
-	/* It was a custom chip mirror. Can't be Gayle*/
-	clr.l	%d0
-	bra.s	1f
-0:
-
-	tst.b	%a0@(-0x1000)		/* clear possible Fat Gary Timeout register
-								 * to prevent bogus 0x80 Gayle ID on an A3000 */
+	tst.w	0x1c(%a0)
+	bne.s	0f					/* If non-zero, not INTENAR */
+	move.w	#0xc000,0x9a(%a1)
+	move.w	0x1c(%a0),%d0
+	move.w	#0x7fff,0x9a(%a1)	/* INTENA */
+	cmp.w	#0x4000,%d0
+	beq.s	3f					/* If 0x4000, was INTENAR */
 
 	/* Now, finally, we can check for a Gayle */
 	clr.l	%d0                 /* ID we will return */
 	moveq	#8-1,%d1            /* Gayle bit index */
-	move.b	#0,%a0@             /* Reset ID register */
+	move.b	%d0,%a0@            /* Reset ID register. Gary based systems have
+								 * timeout register in this address, it can be
+								 * safely cleared */
 0:	move.b	%a0@,%d0            /* Put reg into lower byte of %d0 */
 	lsl.w	#1,%d0              /* Shift lower 16 bits of %d0 left by 1 */
 	dbf		%d1,0b
@@ -92,8 +84,15 @@ ss:
 
 	cmp.b	#0xff,%d0
 	bne.s	1f
+3:
 	clr.b	%d0
 1:
+
+	/* Restore interrupts. */
+	move.w	%sp@+,%d1
+	or.w	#0x8000,%d1
+	move.w	%d1,0x9a(%a1)		/* INTENA */
+
 	move.l	%a6,%d1
 	beq.s	2f
 	rte
