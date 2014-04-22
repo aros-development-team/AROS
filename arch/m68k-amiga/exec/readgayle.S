@@ -64,23 +64,27 @@ ss:
 	move.w	0x1c(%a1),%sp@-		/* INTENAR */
 	move.w	#0x7fff,0x9a(%a1)	/* INTENA */
 	tst.w	0x1c(%a0)
-	bne.s	0f					/* If non-zero, not INTENAR */
+	bne.s	4f					/* If non-zero, not INTENAR */
 	move.w	#0xc000,0x9a(%a1)
 	move.w	0x1c(%a0),%d0
 	move.w	#0x7fff,0x9a(%a1)	/* INTENA */
 	cmp.w	#0x4000,%d0
 	beq.s	3f					/* If 0x4000, was INTENAR */
-
+4:
 	/* Now, finally, we can check for a Gayle */
 	clr.l	%d0                 /* ID we will return */
 	moveq	#8-1,%d1            /* Gayle bit index */
-	move.b	%d0,%a0@            /* Reset ID register. Gary based systems have
-								 * timeout register in this address, it can be
-								 * safely cleared */
+
+	move.b	%a0@,%sp@-			/* It could be Gary timeout register, not Gayle ID. */
+
+	move.b	%d0,%a0@            /* Reset ID register */
+
 0:	move.b	%a0@,%d0            /* Put reg into lower byte of %d0 */
 	lsl.w	#1,%d0              /* Shift lower 16 bits of %d0 left by 1 */
 	dbf		%d1,0b
 	lsr.w	#8,%d0              /* Move ID to lower 8 bits of %d0 */
+
+	move.b	%sp@+,%a0@			/* Restore possible Gary timeout register */
 
 	cmp.b	#0xff,%d0
 	bne.s	1f
