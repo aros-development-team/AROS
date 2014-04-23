@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <string.h>
 
 #include <aros/asmcall.h>
@@ -107,11 +112,15 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
 #define CHECK(func, args, cres)                                                          \
     float_res = func args;                                                               \
+    tested++; \
     if (*float_resptr != cres)                                                           \
 	Printf ("FAIL: " #func " " #args " in line %ld (got=0x%08lx expected=0x%08lx)\n", \
                  __LINE__, (unsigned long)*float_resptr, (unsigned long)cres);                                         \
     else                                                                                 \
-	Printf ("OK  : " #func " " #args "\n");
+    {                                                                                              \
+	passed++;                                                                                    \
+	Printf ("OK  : " #func " " #args "\n"); \
+    }
 
 /*
   When using doubles or QUADs it is important to pay attention to the Endianess of the processor,
@@ -139,7 +148,10 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
       }                                                                                            \
     }                                                                                              \
     else                                                                                           \
-      Printf ("OK  : " #func " " #arg1 "\n");                                                      
+    {                                                                                              \
+      passed++;                                                                                    \
+      Printf ("OK  : " #func " " #arg1 "\n");                                                      \
+    }
 
 #define CHECK_DOUBLE1AF(func, cres)                                                                \
     tested++;                                                                                      \
@@ -247,6 +259,8 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     CHECK(SPCmp, (SPFlt(-10),SPFlt(-15)), 1);
     CHECK(SPCmp, (SPFlt(-15),SPFlt(-10)), -1);
     CHECK(SPCmp, (SPFlt(10),SPFlt(10)), 0);
+    CHECK(SPCmp, (SPFlt(-100), SPFlt(-7)), -1);
+    CHECK(SPCmp, (SPFlt(100), SPFlt(7)), 1);
     CHECK(SPTst, (SPFlt(-1)), -1);
     CHECK(SPTst, (SPFlt(0)), 0);
     CHECK(SPTst, (SPFlt(1)), 1);
