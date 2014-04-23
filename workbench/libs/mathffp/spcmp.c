@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,7 +19,7 @@
         struct LibHeader *, MathBase, 7, Mathffp)
 
 /*  FUNCTION
-        Compares two ffp numbers
+        Compares two FFP numbers.
 
     INPUTS
 
@@ -37,83 +37,43 @@
     BUGS
 
     INTERNALS
-        ALGORITHM:
-        1st case:
-          fnum1 is negative and fnum2 is positive
-            or
-          ( exponent(fnum1) < exponent(fnum2) and signs are equal )
-          -> fnum1 < fnum2
-
-        2nd case:
-          fnum1 is positive and fnum2 is negative
-            or
-          ( exponent(fnum1) > exponent(fnum2) and signs are equal )
-          -> fnum2 > fnum1
-
-        now the signs and exponents must be equal
-
-        3rd case:
-          fnum1 == fnum2
-
-        4th case:
-          mantisse(fnum1) < mantisse(fnum2)
-          -> fnum1 < fnum2
-
-        final case:
-          fnum1 > fnum2
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
+    LONG result;
+    ULONG i1 = fnum1, i2 = fnum2, cc;
+
     D(kprintf("SPCmp(%08x,%08x)=", fnum1, fnum2));
 
-    /* fnum1 is negative and fnum2 is positive
-    **  or
-    ** exponent of fnum1 is less than the exponent of fnum2
-    ** => fnum1 < fnum2
-    */
-    if ( (char)fnum1 < (char)fnum2 )
+    /* Convert numbers into a format that can be compared as if integers */
+    fnum1 = i1 << 24 | i1 >> 8;
+    if (fnum1 < 0)
+        fnum1 ^= 0x7fffffff;
+    fnum2 = i2 << 24 | i2 >> 8;
+    if (fnum2 < 0)
+        fnum2 ^= 0x7fffffff;
+
+    if (fnum1 > fnum2)
     {
-        D(kprintf("-1\n"));
-        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-        return -1;
+        result = 1;
+        cc = 0;
+    }
+    else if (fnum1 == fnum2)
+    {
+        result = 0;
+        cc = Zero_Bit;
+    }
+    else
+    {
+        result = -1;
+        cc = Negative_Bit;
     }
 
-    /* fnum1 is positive and fnum2 is negative
-    **  or
-    ** exponent of fnum1 is greater tban the exponent if fnum2
-    ** => fnum1 > fnum2
-    */
-    if ((char) fnum1 > (char) fnum2 )
-    {
-        D(kprintf("1\n"));
-        SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
-        return 1;
-    }
-
-    /*the signs and exponents of fnum1 and fnum2 must now be equal
-    **fnum1 == fnum2
-    */
-    if (fnum1 == fnum2)
-    {
-        D(kprintf("0\n"));
-        SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
-        return 0;
-    }
-
-    /* mantisse(fnum1) < mantisse(fnum2) */
-    if (fnum1 < fnum2)
-    {
-        D(kprintf("-1\n"));
-        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-        return -1;
-    }
-    
-    /* Mantisse(fnum1) > mantisse(fnum2) */
-    D(kprintf("1\n"));
-    SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 1;
+    D(kprintf("%ld\n", result));
+    SetSR(cc, Zero_Bit | Negative_Bit | Overflow_Bit);
+    return result;
 
     AROS_LIBFUNC_EXIT
 }
