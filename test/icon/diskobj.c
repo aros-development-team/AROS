@@ -199,12 +199,12 @@ int main(int argc, char **argv)
         BPTR file;
         struct DiskObject *itmp;
 
-        DeleteDiskObject("RAM:diskobj.tmp");
-        DeleteFile("RAM:diskobj.tmp");
-        file = Open("RAM:diskobj.tmp", MODE_NEWFILE);
+        DeleteDiskObject("T:diskobj.tmp");
+        DeleteFile("T:diskobj.tmp");
+        file = Open("T:diskobj.tmp", MODE_NEWFILE);
         Write(file, "Hello World\n", 12);
         Close(file);
-        itmp = GetDiskObjectNew("RAM:diskobj.tmp");
+        itmp = GetDiskObjectNew("T:diskobj.tmp");
         VERIFY_NEQ(itmp, NULL);
         VERIFY_EQ(itmp->do_Type, WBPROJECT);
         FreeDiskObject(itmp);
@@ -212,7 +212,8 @@ int main(int argc, char **argv)
 
     /* Negative test saving to disk (no imagery data) */
     TEST_START("PutDiskObject(..., icon)");
-        VERIFY_RET(PutDiskObject("RAM:diskobj.tmp", icon), 0, ERROR_OBJECT_WRONG_TYPE);
+        VERIFY_RET(PutDiskObject("T:diskobj.tmp", icon), 0,
+            ERROR_OBJECT_WRONG_TYPE);
     TEST_END();
 
     /* Test saving to disk */
@@ -228,7 +229,7 @@ int main(int argc, char **argv)
         FreeDiskObject(isrc);
         FreeDiskObject(icon);
         icon = itmp;
-        VERIFY_RET(PutDiskObject("RAM:diskobj.tmp", icon), 1, 0);
+        VERIFY_RET(PutDiskObject("T:diskobj.tmp", icon), 1, 0);
     TEST_END();
 
     TEST_START("FreeDiskObject()");
