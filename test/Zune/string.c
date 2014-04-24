@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,7 +26,7 @@
 	DoMethod(root, MUIM_Group_InitChange);	\
 	DoMethod(root, OM_REMMEMBER, (IPTR)obj);\
 	DoMethod(root, MUIM_Group_ExitChange);	\
-	MUI_DisposeObject(wc);
+	MUI_DisposeObject(obj);
 
 Object *app;
 Object *wnd;
@@ -45,7 +45,7 @@ Push_Abort,
 /* ######################################################################## */
 
 
-const char GuiWinTitle[] ="AROS - Installer V43.3";
+const char GuiWinTitle[] ="String Test";
 struct Screen *scr;
 
 
@@ -55,7 +55,7 @@ void init_gui()
     scr = LockPubScreen(NULL);
 
     app = ApplicationObject,
-	MUIA_Application_Title, "AROS - Installer",
+	MUIA_Application_Title, "String Test",
 
    	SubWindow, wnd = WindowObject,
 	    MUIA_Window_Title,	GuiWinTitle,
@@ -63,7 +63,7 @@ void init_gui()
 	    MUIA_Window_Height,	300,
 	    MUIA_Window_CloseGadget,	FALSE,
 	    MUIA_Window_NoMenus,	TRUE,
-	    MUIA_Window_ID,	MAKE_ID('A','I','N','S'),
+	    MUIA_Window_ID,	MAKE_ID('T','E','S','T'),
 	    WindowContents,
 	    VGroup,
 		Child, root = VGroup, End,
