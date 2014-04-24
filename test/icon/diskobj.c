@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2011, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2014, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  *
- * Tests for icon.library that do no involve rendering to the screen.
+ * Tests for icon.library that do not involve rendering to the screen.
  *
  * All 'draw' tests will be directed to a fake 3-bit planar bitmap
  */
@@ -195,7 +195,7 @@ int main(int argc, char **argv)
     TEST_END();
 
     /* Test getting the default object for a non-existent icon */
-    TEST_START("Get Defaul Object");
+    TEST_START("Get Default Object");
         BPTR file;
         struct DiskObject *itmp;
 
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
         Close(file);
         itmp = GetDiskObjectNew("RAM:diskobj.tmp");
         VERIFY_NEQ(itmp, NULL);
-        VERIFY_EQ(itmp->do_Type, WBTOOL);
+        VERIFY_EQ(itmp->do_Type, WBPROJECT);
         FreeDiskObject(itmp);
     TEST_END();
 
