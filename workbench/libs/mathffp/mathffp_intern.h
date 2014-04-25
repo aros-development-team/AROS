@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 #ifndef __MATHFFP_INTERN_H__
@@ -35,6 +35,8 @@
 #   include <dos/dos.h>
 #endif
 
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 
 /* Replace obsolete struct LibHeader with struct Library */
@@ -52,7 +54,7 @@
 #define Negative_Bit 0x00000008  
 #define Overflow_Bit 0x00000002  
 
-/* some Motorla fast floting point format constants  */
+/* some Motorola fast floating point format constants */
 #define SP_zero   0x00000000
 #define SP_pinfty 0xffffff7f
 
@@ -61,8 +63,6 @@
 #define minusone 0x800000c1 /* -1.00000000000000000000e+00 */
 #define two      0x80000042 /*  2.0                        */
 #define onehalf  0x80000040 /*  0.5                        */
-
-#define D(x) ;
 
 #ifdef __mc68000
 #include <aros/m68k/libcall_cc.h>
