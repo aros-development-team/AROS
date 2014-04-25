@@ -1,5 +1,11 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include "test.h"
 
 int main(void)
@@ -23,7 +29,8 @@ int main(void)
     TEST((strtol("-0377", NULL, 0) == -255UL))
     TEST((strtol("-377", NULL, 8) == -255UL))
     TEST((strtol("0x7FFFFFFE", NULL, 16) == 0x7FFFFFFE))
-    TEST((strtol("0xFFFFFFFE", NULL, 16) == 0xFFFFFFFE))
+    errno = 0;
+    TEST((strtol("0xFFFFFFFE", NULL, 16) == 0xFFFFFFFE || errno == ERANGE))
     return OK;
 }
 
