@@ -907,7 +907,7 @@ with_elf_toolchain_prefix
 with_aros_toolchain
 enable_crosstools
 with_aros_toolchain_install
-with_use_gcc_version
+with_gcc_version
 enable_objc
 with_cpu
 with_fpu
@@ -8608,9 +8608,9 @@ $as_echo "$AROS_CROSSTOOLSDIR" >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific target gcc version to use" >&5
 $as_echo_n "checking what specific target gcc version to use... " >&6; }
 
-# Check whether --with-use_gcc_version was given.
-if test "${with_use_gcc_version+set}" = set; then :
-  withval=$with_use_gcc_version; use_gcc_version="$withval"
+# Check whether --with-gcc-version was given.
+if test "${with_gcc_version+set}" = set; then :
+  withval=$with_gcc_version; use_gcc_version="$withval"
 else
   use_gcc_version=""
 fi

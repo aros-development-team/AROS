@@ -1564,7 +1564,7 @@ AC_DEFUN([CROSS_GCC_VERSION], [
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what specific target gcc version to use])
-AC_ARG_WITH(use_gcc_version,AC_HELP_STRING([--with-gcc-version=VERSION],[Use gcc-VERSION for building AROS]),use_gcc_version="$withval",use_gcc_version="")
+AC_ARG_WITH(gcc-version,AC_HELP_STRING([--with-gcc-version=VERSION],[Use gcc-VERSION for building AROS]),use_gcc_version="$withval",use_gcc_version="")
 if test "$use_gcc_version" = ""; then
     if test "${crosstools}" = "no"; then
       if test "x$aros_toolchain_install" != "x"; then
