@@ -1,3 +1,8 @@
+/*
+    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -16,7 +21,7 @@ int main()
     /* First something simple */
     TEST((chdir("SYS:") != -1));
     TEST((getcwd(path1, sizeof(path1)) != (char*) -1));
-    TEST(((fd = open("SYS:", 0)) != -1));
+    TEST(((fd = open("SYS:", O_READ)) != -1));
     TEST((fchdir(fd) != -1));
     close(fd); fd = -1;
     TEST((getcwd(path2, sizeof(path2)) != (char*) -1));
@@ -28,7 +33,7 @@ int main()
 
     TEST((chdir("T:__TEST__") != -1));
     TEST((getcwd(path1, sizeof(path1)) != (char*) -1));
-    TEST(((fd = open("T:__TEST__", 0)) != -1));
+    TEST(((fd = open("T:__TEST__", O_READ)) != -1));
     TEST((fchdir(fd) != -1));
     close(fd); fd = -1;
     TEST((getcwd(path2, sizeof(path2)) != (char*) -1));
