@@ -269,6 +269,7 @@ typedef struct FileHandle* FileHandlePtr;
 void vbuf_free(FileHandlePtr fh);
 APTR vbuf_alloc(FileHandlePtr fh, STRPTR buf, ULONG size);
 BOOL vbuf_inject(BPTR fh, CONST_STRPTR argptr, ULONG argsize, struct DosLibrary *DOSBase);
+LONG vbuf_fetch(BPTR file, UBYTE * buffer, LONG fetchsize, struct DosLibrary *DOSBase);
 
 LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOSBase);
 
