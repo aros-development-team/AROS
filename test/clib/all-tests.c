@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -52,7 +57,8 @@ int main()
 	    
     }
     
-    printf( "\n\nA total of %d tests run: %d succeded, %d failed.\n", total, total - failed, failed );  
+    printf( "\n\nA total of %d tests run: %d succeeded, %d failed.\n",
+        total, total - failed, failed );  
     
     if( failed > 0 ) 
     {

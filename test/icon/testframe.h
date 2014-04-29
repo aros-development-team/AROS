@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2014, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -45,7 +45,7 @@ VOID SPrintf( char *target, const char *format, ...)
         int tests = 0, tests_failed = 0;
 
 #define TESTING_ENDS() \
-        if (tests_failed == 0) Printf("All %ld test passed\n", (LONG)tests); \
+        if (tests_failed == 0) Printf("All %ld tests passed\n", (LONG)tests); \
         else Printf("%ld of %ld tests failed\n", (LONG)tests_failed, (LONG)tests); \
         Flush(Output()); \
         return (tests_failed == 0) ? RETURN_OK : RETURN_FAIL; \

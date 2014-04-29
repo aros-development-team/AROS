@@ -1,8 +1,13 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 /* Prototypes for mandatory functions */
 void cleanup( void );
 
 /* Return values */
-#define OK   0	/* All tests succeded */
+#define OK   0	/* All tests succeeded */
 #define FAIL 5  /* Some of the tests failed */
 
 /* Testing macro */
