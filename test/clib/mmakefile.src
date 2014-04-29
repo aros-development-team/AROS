@@ -62,6 +62,7 @@ EXEDIR := $(AROS_TESTS)/clib
 
 #MM test-clib : includes includes-copy linklibs kernel
 
+USER_CFLAGS = -ffloat-store
 %build_progs mmake=test-clib \
     files=$(FILES) targetdir=$(EXEDIR)
 
