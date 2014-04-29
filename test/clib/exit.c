@@ -1,3 +1,8 @@
+/*
+    Copyright © 2013-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,8 +17,10 @@ int main(void)
     if (level < 20)
     	main();
 
+    bug("About to call exit()...\n");
+
     exit(0);
 
-    bug("Exit() did not work!\n");
+    bug("exit() did not work!\n");
     return 20;
 }

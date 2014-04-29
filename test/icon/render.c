@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2014, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
             for (x = 0; x < test_width; x++, pixel++, pp++) {
                 *pixel = i2p[*pixel];
                 if (*pp != *pixel) {
-                    Printf("%ldx%ld: != %ld, got %ld\n", x, y, *pixel, *pp);
+                    Printf("(%ld,%ld): != %ld, got %ld\n", x, y, *pixel, *pp);
                     VERIFY_EQ(*pp, *pixel);
                 }
             }

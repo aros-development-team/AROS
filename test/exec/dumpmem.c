@@ -70,7 +70,7 @@ static int HexDump(const UBYTE *data, ULONG count)
 	}
     }
     return RETURN_OK;
-} /* hexdump */
+} /* HexDump */
 
 static const char version[] = "$VER: dumpmem 45.1 (10.4.2014)\n";
 
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
                     if ( ( strncmp( szInput, "n", 1) == 0 )
                         || ( strncmp( szInput, "N", 1) == 0 ) )
                     {
-                        ERROR_TEXT = "User canceled..\n";
+                        ERROR_TEXT = "User canceled...\n";
                         PROGRAM_ERROR = RETURN_FAIL;
                     }
                 }
@@ -153,7 +153,11 @@ int main(int argc, char **argv)
 		
                 if ( PROGRAM_ERROR != RETURN_FAIL )
                 {
-                    outfunc("dumpmem - Memory Dump tool.\n© Copyright the AROS Dev Team.\n-----------------------------\n\nDumping From [%p] for %d bytes..\n\n", (void *)start_address, dump_size);
+                    outfunc("dumpmem - Memory Dump tool.\n"
+                        "© Copyright the AROS Dev Team.\n"
+                         "-----------------------------\n\n"
+                         "Dumping From [%p] for %d bytes...\n\n",
+                         (void *)start_address, dump_size);
 
 		    PROGRAM_ERROR = HexDump((const UBYTE *)start_address, dump_size);
 
