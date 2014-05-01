@@ -259,7 +259,8 @@ static int GM_UNIQUENAME(Close)
 
 D(bug("[pcnet32] init.CloseDevice\n"));
 
-    unit->stop(unit);
+    if((unit->pcnu_flags & IFF_UP) != 0)
+        unit->stop(unit);
 
     opener = (APTR)req->ios2_BufferManagement;
     if (opener != NULL)
@@ -269,6 +270,9 @@ D(bug("[pcnet32] init.CloseDevice\n"));
         Enable();
         FreeVec(opener);
     }
+
+    /* Without this, DHCP doesn't work the second time the device is used */
+    RemDevice((struct Device *)LIBBASE);
 
     return TRUE;
 }

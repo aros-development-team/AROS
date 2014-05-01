@@ -987,7 +987,7 @@ D(bug("[pcnet32] PCN32_Schedular: entering forever loop ... \n"));
                 for(;;)
                 {	
                     ULONG recvd = Wait(sigset);
-                    if (recvd & dev->pcnu_signal_0)
+                    if (recvd & 1 << dev->pcnu_signal_0)
                     {
                         /*
                          * Shutdown process. Driver should close everything 
@@ -1346,7 +1346,10 @@ void DeleteUnit(struct PCN32Base *PCNet32Base, struct PCN32Unit *Unit)
     {
         if (Unit->pcnu_Process)
         {
-            Signal(&Unit->pcnu_Process->pr_Task, Unit->pcnu_signal_0);
+            /* Tell our process to quit, and wait until it does so */
+            Signal(&Unit->pcnu_Process->pr_Task, 1 << Unit->pcnu_signal_0);
+            while (FindTask(PCNET32_TASK_NAME) != NULL)
+                Delay(5);
         }
 
         for (i=0; i < REQUEST_QUEUE_COUNT; i++)
