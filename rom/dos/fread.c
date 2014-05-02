@@ -57,13 +57,16 @@
     AROS_LIBFUNC_INIT
 
     UBYTE  *ptr;
-    LONG    res;
+    LONG    res = FETCHERR;
     LONG    fetchsize = number * blocklen;
     LONG    readsize;
 
     ptr = block;
 
     SetIoErr(0);
+
+    if (fetchsize == 0)
+        return 0;
 
     while(fetchsize > 0)
     {
