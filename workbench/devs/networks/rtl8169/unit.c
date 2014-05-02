@@ -848,12 +848,12 @@ AROS_UFH3(void, RTL8169_Schedular,
                                 for(;;)
                                 {       
                                         ULONG recvd = Wait(sigset);
-                                    if (recvd & unit->rtl8169u_signal_0)
+                                    if (recvd & 1 << unit->rtl8169u_signal_0)
                                     {
                                                 /*
                                                  * Shutdown process. Driver should close everything 
                                                  * already and waits for our process to complete. Free
-                                                 * memory allocared here and kindly return.
+                                                 * memory allocated here and kindly return.
                                                  */
                                                 unit->deinitialize(unit);
                                                 CloseDevice((struct IORequest *) unit->rtl8169u_TimerSlowReq);
@@ -1292,12 +1292,19 @@ struct RTL8169Unit *CreateUnit(struct RTL8169Base *RTL8169DeviceBase, OOP_Object
  */
 void DeleteUnit(struct RTL8169Base *RTL8169DeviceBase, struct RTL8169Unit *Unit)
 {
+    UBYTE tmpbuff[100];
     int i;
+
     if (Unit)
     {
         if (Unit->rtl8169u_Process)
         {
-            Signal(&Unit->rtl8169u_Process->pr_Task, Unit->rtl8169u_signal_0);
+            /* Tell our process to quit, and wait until it does so */
+            Signal(&Unit->rtl8169u_Process->pr_Task,
+                1 << Unit->rtl8169u_signal_0);
+            sprintf((char *) tmpbuff, RTL8169_TASK_NAME, Unit->rtl8169u_name);
+            while (FindTask(tmpbuff) != NULL)
+                Delay(5);
         }
 
         for (i=0; i < REQUEST_QUEUE_COUNT; i++)

@@ -347,7 +347,8 @@ static int GM_UNIQUENAME(Close)
     {
         RTLD(bug("[rtl8169] CloseDevice(unit @ %p, unitno %d)\n", unit, unit->rtl8169u_UnitNum))
 
-        unit->stop(unit);
+        if((unit->rtl8169u_flags & IFF_UP) != 0)
+            unit->stop(unit);
 
         opener = (APTR)req->ios2_BufferManagement;
         if (opener != NULL)
