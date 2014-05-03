@@ -164,7 +164,7 @@ static inline __attribute__((always_inline)) void MAPPING_SEARCH(IPTR *r, int *f
         *fl = MS(tr);
         *sl = (int)(((IPTR)tr >> (*fl - MAX_LOG2_SLI)) - MAX_SLI);
         *fl -= FLI_OFFSET;
-        //*r = tr & ~tmp;
+        *r = tr & ~tmp;
     }
 }
 
