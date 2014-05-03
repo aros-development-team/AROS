@@ -57,15 +57,15 @@
     AROS_LIBFUNC_INIT
 
     UBYTE  *ptr;
-    LONG    res = FETCHERR;
-    LONG    fetchsize = number * blocklen;
-    LONG    readsize;
+    LONG    res = 0;
+    ULONG   fetchsize = number * blocklen;
+    ULONG   readsize;
 
     ptr = block;
 
     SetIoErr(0);
 
-    if (fetchsize == 0)
+    if((fetchsize == 0) || (fh == BNULL))
         return 0;
 
     while(fetchsize > 0)
@@ -82,10 +82,10 @@
         return EOF;
     }
 
-    readsize = (LONG)(ptr - (UBYTE *)block);
+    readsize = (ULONG)(ptr - (UBYTE *)block);
 
 
-    return readsize / blocklen;
+    return (LONG)(readsize / blocklen);
 
     AROS_LIBFUNC_EXIT
 } /* FRead */
@@ -127,7 +127,7 @@ static LONG handle_write_mode(BPTR file, struct DosLibrary * DOSBase)
  *  (EOF) on EOF
  *  (>0) on sucesfull fetch
  */
-LONG vbuf_fetch(BPTR file, UBYTE * buffer, LONG fetchsize, struct DosLibrary *DOSBase)
+LONG vbuf_fetch(BPTR file, UBYTE * buffer, ULONG fetchsize, struct DosLibrary *DOSBase)
 {
     /* Get pointer to filehandle */
     struct FileHandle *fh = (struct FileHandle *)BADDR(file);

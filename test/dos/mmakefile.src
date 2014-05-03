@@ -8,7 +8,7 @@ FILES           := getenv namefromfh examinefh examinelock \
 		   notify setfiledate output setenv inhibit doslist \
 		   readargs readitem readitemloop runcommand \
                    openfromlock r addpart systemtags systemtags_slave \
-                   nil
+                   nil fread
 
 PURE_FILES	:= exit
 EXEDIR          := $(AROS_TESTS)/dos
