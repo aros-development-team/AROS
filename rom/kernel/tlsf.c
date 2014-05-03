@@ -16,6 +16,7 @@
 /*
  * Minimal alignment as required by AROS. In contrary to the default
  * TLSF implementation, we do not allow smaller blocks here.
+ * Size needs to be aligned to at least 8, see THIS_FREE_MASK comment.
  */
 #define SIZE_ALIGN  AROS_WORSTALIGN
 
@@ -48,6 +49,9 @@
 
 #define likely(x)   __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
+
+/* Size of additional memory needed to manage new block */
+#define HEADERS_SIZE (((3 * ROUNDUP(sizeof(hdr_t))) + ROUNDUP(sizeof(tlsf_area_t))))
 
 /* free node links together all free blocks if similar size */
 typedef struct free_node_s {
@@ -356,14 +360,14 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
         /* Do we have the autogrow feature? */
         if (tlsf->autogrow_get_fn)
         {
-            /* increase the size of requested block so that we can fit the headers too */
-            IPTR sz = size + 3 * ROUNDUP(sizeof(hdr_t));
+            /* Increase the size of requested block so that we can fit the headers too */
+            IPTR sz = size + HEADERS_SIZE;
 
             /* Requested size less than puddle size? Get puddle size then */
             if (sz < tlsf->autogrow_puddle_size)
                 sz = tlsf->autogrow_puddle_size;
 
-            D(nbug("querying for %d bytes\n"));
+            D(nbug("querying for %d bytes\n", sz));
 
             /* Try to get some memory */
             void * ptr = tlsf->autogrow_get_fn(tlsf->autogrow_data, &sz);
@@ -796,6 +800,16 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
     return NULL;
 }
 
+/* Allocation of headers in memory:
+ * hdr
+ *  header      (ROUNDUP(sizeof(hdr_t))
+ *  mem         (ROUNDUP(sizeof(tlst_area_t))
+ * b
+ *  header      (ROUNDUP(sizeof(hdr_t))
+ *  free space  (size - HEADERS_SIZE)
+ * bend
+ *  header      (ROUNDUP(sizeof(hdr_t))
+ */
 tlsf_area_t * init_memory_area(void * memory, IPTR size)
 {
     bhdr_t * hdr = (bhdr_t *)memory;
@@ -812,7 +826,7 @@ tlsf_area_t * init_memory_area(void * memory, IPTR size)
 
     b = GET_NEXT_BHDR(hdr, ROUNDUP(sizeof(tlsf_area_t)));
     b->header.prev = hdr;
-    b->header.length = (size - 3*ROUNDUP(sizeof(hdr_t)) - ROUNDUP(sizeof(tlsf_area_t))) | PREV_BUSY | THIS_BUSY;
+    b->header.length = (size - HEADERS_SIZE) | PREV_BUSY | THIS_BUSY;
 
     bend = GET_NEXT_BHDR(b, GET_SIZE(b));
     bend->header.length = 0 | THIS_BUSY | PREV_BUSY;
@@ -830,7 +844,7 @@ void tlsf_add_memory(struct MemHeaderExt *mhe, void *memory, IPTR size)
 
     D(nbug("tlsf_add_memory(%p, %p, %d)\n", tlsf, memory, size));
 
-    if (memory && size > 3*ROUNDUP(sizeof(bhdr_t)))
+    if (memory && size > HEADERS_SIZE)
     {
         tlsf_area_t *area = init_memory_area(memory, size);
         bhdr_t *b;
@@ -850,6 +864,7 @@ void tlsf_add_memory(struct MemHeaderExt *mhe, void *memory, IPTR size)
 
         D(nbug("  total_size=%08x\n", tlsf->total_size));
 
+        /* Add the initialized memory */
         tlsf_freevec(mhe, b->mem);
     }
 }
