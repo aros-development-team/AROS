@@ -209,6 +209,44 @@ static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR val
     mod->m_symcnt++;
 }
 
+/* quick sort */
+#define SWAPIDX(a, b)                           \
+    do                                          \
+    {                                           \
+        struct segment * tmp    = segments[b];  \
+        segments[b]             = segments[a];  \
+        segments[a]             = tmp;          \
+    }                                           \
+    while(0);                                   \
+
+static LONG partition(struct segment  **segments, LONG left, LONG right, LONG pivotidx)
+{
+    void * pivotval = segments[pivotidx]->s_lowest;
+    LONG storeidx = left;
+    LONG i;
+    SWAPIDX(right, pivotidx)
+
+    for (i = left; i < right; i++)
+        if (segments[i]->s_lowest < pivotval)
+        {
+            SWAPIDX(i, storeidx);
+            storeidx++;
+        }
+    SWAPIDX(storeidx, right);
+    return storeidx;
+}
+
+static VOID qsort(struct segment **segments, LONG left, LONG right)
+{
+    if (left > right)
+        return;
+
+    LONG pivotidx = (right + left) / 2;
+    pivotidx = partition(segments, left, right, pivotidx);
+    qsort(segments, left, pivotidx - 1);
+    qsort(segments, pivotidx + 1, right);
+}
+
 static void HandleModuleSegments(module_t *mod, struct MinList * list)
 {
     struct segment *seg;
@@ -261,18 +299,9 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list)
 #endif
     }
 
+
     /* Sort the symbols by their address so that searching can be faster */
-    while(i < mod->m_segcnt - 1)
-    {
-        if (mod->m_segments[i]->s_lowest > mod->m_segments[i + 1]->s_lowest)
-        {
-            struct segment *temp = mod->m_segments[i + 1];
-            mod->m_segments[i + 1] = mod->m_segments[i];
-            mod->m_segments[i] = temp;
-            if (i > 0) i -= 1; /* Repeat the check on previous element */
-        }
-        else i++;
-    }
+    qsort(mod->m_segments, 0, mod->m_segcnt - 1);
 
     /* Set module address range information */
     mod->m_lowest = mod->m_segments[0]->s_lowest;
