@@ -32,27 +32,27 @@
 #include <exec/memheaderext.h>
 #include <proto/exec.h>
 
-	AROS_LH2(APTR, AllocPooled,
+        AROS_LH2(APTR, AllocPooled,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR,  poolHeader, A0),
-	AROS_LHA(IPTR,  memSize,    D0),
+        AROS_LHA(APTR,  poolHeader, A0),
+        AROS_LHA(IPTR,  memSize,    D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 118, Exec)
+        struct ExecBase *, SysBase, 118, Exec)
 
 /*  FUNCTION
-	Allocate memory out of a private memory pool. The memory must be
-	freed with FreePooled(), or by deallocating the entire pool with
-	DeletePool().
+        Allocate memory out of a private memory pool. The memory must be
+        freed with FreePooled(), or by deallocating the entire pool with
+        DeletePool().
 
     INPUTS
-	poolHeader - Handle of the memory pool
-	memSize    - Number of bytes you want to get
+        poolHeader - Handle of the memory pool
+        memSize    - Number of bytes you want to get
 
     RESULT
-	A pointer to the number of bytes you wanted or NULL if the memory
-	couldn't be allocated
+        A pointer to the number of bytes you wanted or NULL if the memory
+        couldn't be allocated
 
     NOTES
 
@@ -61,7 +61,7 @@
     BUGS
 
     SEE ALSO
-	CreatePool(), DeletePool(), FreePooled()
+        CreatePool(), DeletePool(), FreePooled()
 
     INTERNALS
 

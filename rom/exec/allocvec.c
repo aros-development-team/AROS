@@ -14,27 +14,27 @@
 
     NAME */
 
-	AROS_LH2(APTR, AllocVec,
+        AROS_LH2(APTR, AllocVec,
 
 /*  SYNOPSIS */
-	AROS_LHA(IPTR,  byteSize,     D0),
-	AROS_LHA(ULONG, requirements, D1),
+        AROS_LHA(IPTR,  byteSize,     D0),
+        AROS_LHA(ULONG, requirements, D1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 114, Exec)
+        struct ExecBase *, SysBase, 114, Exec)
 
 /*  FUNCTION
-	Allocate some memory from the sytem memory pool with the given
-	requirements and without the need to memorize the actual size
-	of the block.
+        Allocate some memory from the sytem memory pool with the given
+        requirements and without the need to memorize the actual size
+        of the block.
 
     INPUTS
-	byteSize     - Number of bytes you want to get
-	requirements - Type of memory
+        byteSize     - Number of bytes you want to get
+        requirements - Type of memory
 
     RESULT
-	A pointer to the number of bytes you wanted or NULL if the memory
-	couldn't be allocated
+        A pointer to the number of bytes you wanted or NULL if the memory
+        couldn't be allocated
 
     NOTES
 
@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-	FreeVec()
+        FreeVec()
 
     INTERNALS
 
@@ -61,7 +61,7 @@
 
     /* If there's not enough memory left return immediately. */
     if(ret==NULL)
-	return NULL;
+        return NULL;
 
     /* Store size */
     *(IPTR *)ret=byteSize;

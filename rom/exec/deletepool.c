@@ -20,19 +20,19 @@
 
     NAME */
 
-	AROS_LH1(void, DeletePool,
+        AROS_LH1(void, DeletePool,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, poolHeader, A0),
+        AROS_LHA(APTR, poolHeader, A0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 117, Exec)
+        struct ExecBase *, SysBase, 117, Exec)
 
 /*  FUNCTION
-	Delete a pool including all its memory.
+        Delete a pool including all its memory.
 
     INPUTS
-	poolHeader - The pool allocated with CreatePool() or NULL.
+        poolHeader - The pool allocated with CreatePool() or NULL.
 
     RESULT
 
@@ -43,8 +43,8 @@
     BUGS
 
     SEE ALSO
-	CreatePool(), AllocPooled(), FreePooled(), AllocVecPooled(),
-	FreeVecPooled()
+        CreatePool(), AllocPooled(), FreePooled(), AllocVecPooled(),
+        FreeVecPooled()
 
     INTERNALS
 

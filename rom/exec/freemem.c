@@ -21,27 +21,27 @@
 #include "memory.h"
 #include "mungwall.h"
 
-#undef FreeMem	/* If we're debugging, AROS Clib will try to remap this */
+#undef FreeMem    /* If we're debugging, AROS Clib will try to remap this */
 
 /*****************************************************************************
 
     NAME */
 
-	AROS_LH2(void, FreeMem,
+        AROS_LH2(void, FreeMem,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR,  memoryBlock, A1),
-	AROS_LHA(IPTR,  byteSize,    D0),
+       AROS_LHA(APTR,  memoryBlock, A1),
+       AROS_LHA(IPTR,  byteSize,    D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 35, Exec)
+        struct ExecBase *, SysBase, 35, Exec)
 
 /*  FUNCTION
-	Give a block of memory back to the system pool.
+        Give a block of memory back to the system pool.
 
     INPUTS
-	memoryBlock - Pointer to the memory to be freed
-	byteSize    - Size of the block
+        memoryBlock - Pointer to the memory to be freed
+        byteSize    - Size of the block
 
     RESULT
 
@@ -52,7 +52,7 @@
     BUGS
 
     SEE ALSO
-	AllocMem()
+        AllocMem()
 
     INTERNALS
 
@@ -66,7 +66,7 @@
 
     /* If there is no memory free nothing */
     if(!byteSize || !memoryBlock)
-	ReturnVoid ("FreeMem");
+        ReturnVoid ("FreeMem");
 
     RT_Free (RTT_MEMORY, memoryBlock, byteSize);
 

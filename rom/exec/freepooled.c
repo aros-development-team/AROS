@@ -19,24 +19,24 @@
 
     NAME */
 
-	AROS_LH3(void,FreePooled,
+        AROS_LH3(void,FreePooled,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, poolHeader,A0),
-	AROS_LHA(APTR, memory,    A1),
-	AROS_LHA(IPTR, memSize,   D0),
+        AROS_LHA(APTR, poolHeader,A0),
+        AROS_LHA(APTR, memory,    A1),
+        AROS_LHA(IPTR, memSize,   D0),
 
 /* LOCATION */
-	struct ExecBase *, SysBase, 119, Exec)
+        struct ExecBase *, SysBase, 119, Exec)
 
 /*  FUNCTION
-	Free memory that was allocated out of a private memory pool by
+        Free memory that was allocated out of a private memory pool by
         AllocPooled().
 
     INPUTS
-	poolHeader - Handle of the memory pool
-	memory	   - Pointer to the memory
-	memSize    - Size of the memory chunk
+        poolHeader - Handle of the memory pool
+        memory       - Pointer to the memory
+        memSize    - Size of the memory chunk
 
     RESULT
 
@@ -47,7 +47,7 @@
     BUGS
 
     SEE ALSO
-	CreatePool(), DeletePool(), AllocPooled()
+        CreatePool(), DeletePool(), AllocPooled()
 
     INTERNALS
 

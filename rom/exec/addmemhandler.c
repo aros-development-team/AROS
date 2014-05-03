@@ -17,20 +17,20 @@
 
     NAME */
 
-	AROS_LH1(void, AddMemHandler,
+        AROS_LH1(void, AddMemHandler,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Interrupt *, memHandler, A1),
+        AROS_LHA(struct Interrupt *, memHandler, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 129, Exec)
+        struct ExecBase *, SysBase, 129, Exec)
 
 /*  FUNCTION
-	Add some function to be called if the system is low on memory.
+        Add some function to be called if the system is low on memory.
 
     INPUTS
-	memHandler - An Interrupt structure to add to the low memory
-		     handler list.
+        memHandler - An Interrupt structure to add to the low memory
+             handler list.
 
     RESULT
 

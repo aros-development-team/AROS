@@ -21,13 +21,13 @@
  * Many m68k programs assume forbid state won't get broken.
  */
 #ifndef __mc68000
-#define MEM_LOCK	ObtainSemaphore(&PrivExecBase(SysBase)->MemListSem)
+#define MEM_LOCK        ObtainSemaphore(&PrivExecBase(SysBase)->MemListSem)
 #define MEM_LOCK_SHARED ObtainSemaphoreShared(&PrivExecBase(SysBase)->MemListSem)
-#define MEM_UNLOCK	ReleaseSemaphore(&PrivExecBase(SysBase)->MemListSem)
+#define MEM_UNLOCK      ReleaseSemaphore(&PrivExecBase(SysBase)->MemListSem)
 #else
-#define MEM_LOCK	Forbid()
+#define MEM_LOCK        Forbid()
 #define MEM_LOCK_SHARED Forbid()
-#define MEM_UNLOCK	Permit()
+#define MEM_UNLOCK      Permit()
 #endif
 
 #define POOL_MAGIC AROS_MAKE_ID('P','o','O','l')
@@ -43,7 +43,7 @@ struct Pool
 
 struct ProtectedPool
 {
-    struct Pool     	   pool;
+    struct Pool            pool;
     struct SignalSemaphore sem;
 };
 
