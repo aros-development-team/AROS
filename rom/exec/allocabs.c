@@ -22,25 +22,25 @@
 
     NAME */
 
-	AROS_LH2(APTR, AllocAbs,
+        AROS_LH2(APTR, AllocAbs,
 
 /*  SYNOPSIS */
-	AROS_LHA(IPTR,  byteSize, D0),
-	AROS_LHA(APTR,  location, A1),
+        AROS_LHA(IPTR,  byteSize, D0),
+        AROS_LHA(APTR,  location, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 34, Exec)
+        struct ExecBase *, SysBase, 34, Exec)
 
 /*  FUNCTION
-	Allocate some memory from the system memory pool at a given address.
+        Allocate some memory from the system memory pool at a given address.
 
     INPUTS
-	byteSize - Number of bytes you want to get
-	location - Where you want to get the memory
+        byteSize - Number of bytes you want to get
+        location - Where you want to get the memory
 
     RESULT
-	A pointer to some memory including the requested bytes or NULL if
-	the memory couldn't be allocated
+        A pointer to some memory including the requested bytes or NULL if
+        the memory couldn't be allocated
 
     NOTES
 
@@ -49,18 +49,18 @@
     BUGS
 
     SEE ALSO
-	FreeMem()
+        FreeMem()
 
     INTERNALS
-       	This function may trash memory right after the allocation if it builds
-    	a new MemChunk there. Additionally it will trash additional area before
-    	and after the allocated space if mungwall is turned on. The additional
-    	space will be used for mungwall service data.
+        This function may trash memory right after the allocation if it builds
+        a new MemChunk there. Additionally it will trash additional area before
+        and after the allocated space if mungwall is turned on. The additional
+        space will be used for mungwall service data.
 
-	We can't just disable mungwalling for this function because in this case
-	FreeMem() on AllocAbs()ed region will crash (FreeMem() will expect mungwall
-	header attached to the chunk and there's no way to tell which function was
-	used to allocate it.
+        We can't just disable mungwalling for this function because in this case
+        FreeMem() on AllocAbs()ed region will crash (FreeMem() will expect mungwall
+        header attached to the chunk and there's no way to tell which function was
+        used to allocate it.
 
 ******************************************************************************/
 {
@@ -72,12 +72,12 @@
 
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
-	return NULL;
+        return NULL;
 
     /* Make room for mungwall if needed */
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
-    	location -= MUNGWALL_BLOCK_SHIFT;
+        location -= MUNGWALL_BLOCK_SHIFT;
         byteSize += MUNGWALL_TOTAL_SIZE;
     }
 

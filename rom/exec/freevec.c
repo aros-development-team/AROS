@@ -14,19 +14,19 @@
 
     NAME */
 
-	AROS_LH1(void, FreeVec,
+        AROS_LH1(void, FreeVec,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, memoryBlock, A1),
+        AROS_LHA(APTR, memoryBlock, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 115, Exec)
+        struct ExecBase *, SysBase, 115, Exec)
 
 /*  FUNCTION
-	Free some memory previously allocated with AllocVec().
+        Free some memory previously allocated with AllocVec().
 
     INPUTS
-	memoryBlock - The memory to be freed. It is safe to try to free a NULL
+        memoryBlock - The memory to be freed. It is safe to try to free a NULL
                       pointer.
 
     RESULT
@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-	AllocVec()
+        AllocVec()
 
     INTERNALS
 

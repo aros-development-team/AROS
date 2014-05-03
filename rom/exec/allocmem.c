@@ -39,38 +39,38 @@
 
     NAME */
 
-	AROS_LH2(APTR, AllocMem,
+        AROS_LH2(APTR, AllocMem,
 
 /*  SYNOPSIS */
-	AROS_LHA(IPTR,  byteSize,     D0),
-	AROS_LHA(ULONG, requirements, D1),
+        AROS_LHA(IPTR,  byteSize,     D0),
+        AROS_LHA(ULONG, requirements, D1),
 
 /* LOCATION */
-	struct ExecBase *, SysBase, 33, Exec)
+        struct ExecBase *, SysBase, 33, Exec)
 
 /*  FUNCTION
-	Allocate some memory from the sytem memory pool with the given
-	requirements.
+        Allocate some memory from the sytem memory pool with the given
+        requirements.
 
     INPUTS
-	byteSize     - Number of bytes you want to get
-	requirements - Type of memory
+        byteSize     - Number of bytes you want to get
+        requirements - Type of memory
 
     RESULT
-	A pointer to the number of bytes you wanted or NULL if the memory
-	couldn't be allocated
+        A pointer to the number of bytes you wanted or NULL if the memory
+        couldn't be allocated
 
     NOTES
-	The memory is aligned to sizeof(struct MemChunk). All requests
-	are rounded up to a multiple of that size.
+        The memory is aligned to sizeof(struct MemChunk). All requests
+        are rounded up to a multiple of that size.
 
     EXAMPLE
-	mytask=(struct Task *)AllocMem(sizeof(struct Task),MEMF_PUBLIC|MEMF_CLEAR);
+        mytask=(struct Task *)AllocMem(sizeof(struct Task),MEMF_PUBLIC|MEMF_CLEAR);
 
     BUGS
 
     SEE ALSO
-	FreeMem()
+        FreeMem()
 
     INTERNALS
 
@@ -88,7 +88,7 @@
 
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
-	return NULL;
+        return NULL;
 
     /* Make room for safety walls around allocated block and an some more extra space
        for other interesting things, actually --> the size.
@@ -111,7 +111,7 @@
 
     do
     {
-	res = nommu_AllocMem(byteSize, requirements, &loc, SysBase);
+        res = nommu_AllocMem(byteSize, requirements, &loc, SysBase);
     } while (res == NULL && checkMemHandlers(&cmhs, SysBase) == MEM_TRY_AGAIN);
 
 #if ENABLE_RT
@@ -130,7 +130,7 @@
 
 #if DEBUG
     if (SysBase->DebugAROSBase)
-	bug("AllocMem result: 0x%p\n", res);
+    bug("AllocMem result: 0x%p\n", res);
 #endif
     return res;
     

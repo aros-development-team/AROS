@@ -26,57 +26,57 @@
         AROS_LH2(APTR, Allocate,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MemHeader *, freeList, A0),
-	AROS_LHA(IPTR,               byteSize, D0),
+        AROS_LHA(struct MemHeader *, freeList, A0),
+        AROS_LHA(IPTR,               byteSize, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 31, Exec)
+        struct ExecBase *, SysBase, 31, Exec)
 
 /*  FUNCTION
-	Allocate memory out of a private region handled by the MemHeader
-	structure.
+        Allocate memory out of a private region handled by the MemHeader
+        structure.
 
     INPUTS
-	freeList - Pointer to the MemHeader structure which holds the memory
-	byteSize - Number of bytes you want to get
+        freeList - Pointer to the MemHeader structure which holds the memory
+        byteSize - Number of bytes you want to get
 
     RESULT
-	A pointer to the number of bytes you wanted or NULL if the memory
-	couldn't be allocated
+        A pointer to the number of bytes you wanted or NULL if the memory
+        couldn't be allocated
 
     NOTES
-	The memory is aligned to sizeof(struct MemChunk). All requests
-	are rounded up to a multiple of that size.
+        The memory is aligned to sizeof(struct MemChunk). All requests
+        are rounded up to a multiple of that size.
 
     EXAMPLE
-	#define POOLSIZE 4096
-	\* Get a MemHeader structure and some private memory *\
-	mh=(struct MemHeader *)
-	    AllocMem(sizeof(struct MemHeader)+POOLSIZE,MEMF_ANY);
-	if(mh!=NULL)
-	{
-	    \* Build a private pool *\
-	    mh->mh_First=(struct MemChunk *)(mh+1);
-	    mh->mh_First->mc_Next=NULL;
-	    mh->mh_First->mc_Bytes=POOLSIZE;
-	    mh->mh_Free=POOLSIZE;
-	    {
-		\* Use the pool *\
-		UBYTE *mem1,*mem2;
-		mem1=Allocate(mh,1000);
-		mem2=Allocate(mh,2000);
-		\* Do something with memory... *\
-	    }
-	    \* Free everything at once *\
-	    FreeMem(mh,sizeof(struct MemHeader)+POOLSIZE);
-	}
+        #define POOLSIZE 4096
+        \* Get a MemHeader structure and some private memory *\
+        mh=(struct MemHeader *)
+            AllocMem(sizeof(struct MemHeader)+POOLSIZE,MEMF_ANY);
+        if(mh!=NULL)
+        {
+            \* Build a private pool *\
+            mh->mh_First=(struct MemChunk *)(mh+1);
+            mh->mh_First->mc_Next=NULL;
+            mh->mh_First->mc_Bytes=POOLSIZE;
+            mh->mh_Free=POOLSIZE;
+            {
+            \* Use the pool *\
+            UBYTE *mem1,*mem2;
+            mem1=Allocate(mh,1000);
+            mem2=Allocate(mh,2000);
+            \* Do something with memory... *\
+            }
+            \* Free everything at once *\
+            FreeMem(mh,sizeof(struct MemHeader)+POOLSIZE);
+        }
 
     BUGS
-	Does not work with managed memory blocks because of backwards
-	compatibility issues
+        Does not work with managed memory blocks because of backwards
+        compatibility issues
 
     SEE ALSO
-	Deallocate()
+        Deallocate()
 
     INTERNALS
 
