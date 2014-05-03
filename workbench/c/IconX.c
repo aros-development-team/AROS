@@ -319,7 +319,6 @@ int main(int argc, char **argv)
         struct TagItem tags[] =
         {
             { SYS_Asynch,      FALSE        },
-            { SYS_Background,  TRUE         },
             { SYS_Input,       (IPTR)window },
             { SYS_Output,      (IPTR)NULL   },
             { SYS_Error,       (IPTR)NULL   },

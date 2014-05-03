@@ -581,7 +581,6 @@ D(bug("[WBInfo/Getversion] Can't create tmpfile\n"));
     sprintf(commandline, "c:version \"%s\" full", name);
 D(bug("[WBInfo/GetVersion] Commandline %s\n", commandline));
     if (SystemTags(commandline,
-                SYS_Asynch,          FALSE,
                 SYS_Output,   (IPTR) output,
                 //SYS_Error,    (IPTR) NULL,
                 NP_StackSize,        16000,
