@@ -144,8 +144,10 @@ LONG interact(ShellState *ss)
 
 	    if (!cli->cli_Interactive)
 	    {
-		if (cli->cli_ReturnCode >= cli->cli_FailLevel)
+		if (cli->cli_ReturnCode >= cli->cli_FailLevel) {
 		    moreLeft = FALSE;
+		    D(bug("Shell: cli_ReturnCode (%d) >= cli->cli_FailLevel (%ld)\n", cli->cli_ReturnCode, cli->cli_FailLevel));
+		}
 
 		if (CheckSignal(SIGBREAKF_CTRL_D))
 		{
@@ -243,8 +245,7 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
 
     if (result)
     {
-        D(bug("convertLine: error = %ld\n", result));
-	cli->cli_ReturnCode = RETURN_ERROR;
+        D(bug("convertLine: error = %ld faillevel=%ld\n", result, cli->cli_FailLevel));
 	cli->cli_Result2 = result;
     }
 
