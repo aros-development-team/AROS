@@ -76,6 +76,12 @@
 	return -1;
     }
 
+    if (fdesc->fcb->privflags & _FCB_FLUSHONREAD)
+    {
+        fdesc->fcb->privflags &= ~_FCB_FLUSHONREAD;
+        Flush(fdesc->fcb->handle);
+    }
+
     switch (whence)
     {
     	case SEEK_SET: whence = OFFSET_BEGINNING; break;
