@@ -76,11 +76,7 @@
 	return -1;
     }
 
-    if (fdesc->fcb->privflags & _FCB_FLUSHONREAD)
-    {
-        fdesc->fcb->privflags &= ~_FCB_FLUSHONREAD;
-        Flush(fdesc->fcb->handle);
-    }
+    FLUSHONREADCHECK
 
     switch (whence)
     {

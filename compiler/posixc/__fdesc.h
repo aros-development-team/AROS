@@ -26,6 +26,12 @@ typedef struct _fcb
 #define _FCB_DONTCLOSE_FH ((unsigned int)1<<1)
 #define _FCB_FLUSHONREAD  ((unsigned int)1<<2)
 
+#define FLUSHONREADCHECK                            \
+    if (fdesc->fcb->privflags & _FCB_FLUSHONREAD)   \
+    {                                               \
+        fdesc->fcb->privflags &= ~_FCB_FLUSHONREAD; \
+        Flush(fdesc->fcb->handle);                  \
+    }
 
 /* file descriptor structure - one per descriptor */
 typedef struct _fdesc
