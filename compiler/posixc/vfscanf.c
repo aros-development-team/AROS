@@ -136,15 +136,12 @@ static int __ungetc(int c, void *_h)
 static int __getc(void *_h)
 {
     struct __vfscanf_handle *h = _h;
+    fdesc *fdesc = h->fdesc;
     int c;
 
     /* Note: changes here might require changes in fgetc.c!! */
 
-    if (h->fdesc->fcb->privflags & _FCB_FLUSHONREAD)
-    {
-        h->fdesc->fcb->privflags &= ~_FCB_FLUSHONREAD;
-        Flush(h->fdesc->fcb->handle);
-    }
+    FLUSHONREADCHECK
 
     c = FGetC(h->fdesc->fcb->handle);
     
