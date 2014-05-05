@@ -1101,6 +1101,10 @@ void coldcapturecode(void)
 	"sub.l %a0@(-0x14),%a0\n"
 	"move.l %a0@(4),%a0\n"
 	"subq.l #2,%a0\n"
+	/* Force ULONG alignment of 'reset' */
+	"bra 0f\n"
+	".balign 4,0xff\n"
+	"0:\n"
 	"reset\n"
 	"jmp (%a0)\n"
 
@@ -1174,6 +1178,10 @@ static void doreboot(void)
 	"sub.l %a0@(-0x14),%a0\n"
 	"move.l %a0@(4),%a0\n"
 	"subq.l #2,%a0\n"
+	/* Force ULONG alignment of 'reset' */
+	"bra 0f\n"
+	".balign 4,0xff\n"
+	"0:\n"
 	"reset\n"
 	"jmp (%a0)\n"
     );
