@@ -59,7 +59,7 @@ static VOID RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
     AROS_LIBFUNC_INIT
 
     module_t *mod = NULL;
-    LONG i, rangestart = -1;
+    LONG i = 0, rangestart = -1;
 
     D(bug("[Debug] UnregisterModule(0x%p)\n", segList));
     ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
