@@ -503,11 +503,50 @@ static inline __attribute__((always_inline)) bhdr_t * MERGE_NEXT(tlsf_t *tlsf, b
     return block;
 }
 
+static void tlsf_release_memory_area(struct MemHeaderExt * mhe, tlsf_area_t * area)
+{
+    tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
+    tlsf_area_t *p = (tlsf_area_t *)(&tlsf->memory_area - offsetof(tlsf_area_t, next));
+    bhdr_t *b;
+    void *begin;
+    void *end;
+    IPTR size;
+
+    /* get the begin of this area */
+    begin = MEM_TO_BHDR(area);
+
+    /* get sentinel block */
+    b = area->end;
+
+    /* end of this area is end of sentinel block */
+    end = GET_NEXT_BHDR(b, 0);
+
+    /* calculate the size of area */
+    size = (IPTR)end - (IPTR)begin;
+
+    /* update counters */
+    tlsf->total_size -= size;
+    tlsf->free_size  -= GET_SIZE(area->end->header.prev);
+
+    /* remove area from list */
+    for (;p->next != NULL; p = p->next)
+        if (p->next == area)
+        {
+            p->next = area->next;
+            break;
+        }
+
+    /* release */
+    if (tlsf->autogrow_release_fn)
+        tlsf->autogrow_release_fn(tlsf->autogrow_data, begin, size);
+}
+
 void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
 {
     tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
     bhdr_t *fb = MEM_TO_BHDR(ptr);
     bhdr_t *next;
+    tlsf_area_t * area;
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
         ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
@@ -527,8 +566,13 @@ void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
     SET_FREE_PREV_BLOCK(next);
     next->header.prev = fb;
 
-    /* Insert free block into the proper list */
-    INSERT_FREE_BLOCK(tlsf, fb);
+    /* Check if this was the last used block of an autogrown area */
+    area = fb->header.prev->header.prev == NULL ? (tlsf_area_t *)fb->header.prev->mem : NULL;
+    if (area != NULL && area->end == next && area->autogrown == 1)
+        tlsf_release_memory_area(mhe, area);
+    else
+        /* Insert free block into the proper list */
+        INSERT_FREE_BLOCK(tlsf, fb);
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
         ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
@@ -961,32 +1005,13 @@ void tlsf_destroy(struct MemHeaderExt * mhe)
             while(area)
             {
                 tlsf_area_t *next = area->next;
-                bhdr_t *b;
-                void *begin;
-                void *end;
-                IPTR size;
 
                 /*
                  Autogrown area? Release it here.
                  Otherwise it's the responsibility of add_memory_area caller
                  */
                 if (area->autogrown)
-                {
-                    /* get the begin of this area */
-                    begin = MEM_TO_BHDR(area);
-
-                    /* get sentinel block */
-                    b = area->end;
-
-                    /* end of this area is end of sentinel block */
-                    end = GET_NEXT_BHDR(b, 0);
-
-                    /* calculate the size of area */
-                    size = (IPTR)end - (IPTR)begin;
-
-                    if (tlsf->autogrow_release_fn)
-                        tlsf->autogrow_release_fn(tlsf->autogrow_data, begin, size);
-                }
+                    tlsf_release_memory_area(mhe, area);
 
                 area = next;
             }
