@@ -392,6 +392,23 @@ void __free_fdesc(fdesc *desc)
     FreePooled(PosixCBase->internalpool, desc, sizeof(fdesc));
 }
 
+static void stderrlogic(struct Process *me, fcb *fcb)
+{
+    if ((fcb->handle != BNULL) && !(fcb->privflags & _FCB_DONTCLOSE_FH))
+        Close(fcb->handle);
+    if (me->pr_CES != BNULL)
+    {
+        fcb->handle = me->pr_CES;
+        fcb->privflags |= _FCB_DONTCLOSE_FH;
+    }
+    else
+    {
+        fcb->handle = Open("NIL:", MODE_OLDFILE);
+        fcb->privflags &= ~_FCB_DONTCLOSE_FH;
+    }
+    /* stderr is expected to be unbuffered for POSIX. */
+    SetVBuf(fcb->handle, NULL, BUF_NONE, -1);
+}
 
 /* FIXME: perhaps this has to be handled in a different way...  */
 int __init_stdfiles(struct PosixCIntBase *PosixCBase)
@@ -449,32 +466,8 @@ int __init_stdfiles(struct PosixCIntBase *PosixCBase)
           BADDR(Output()), BADDR(outfcb->handle)
     ));
 
-    /* Normally stderr is expected to be unbuffered for POSIX.
-       We only do this if we can duplicate the handle otherwise
-       we obey the buffering of the error stream as originally set.
-    */
-    if (me->pr_CES != BNULL)
-    {
-        errfcb->handle = OpenFromLock(DupLockFromFH(me->pr_CES));
-        if (errfcb->handle != BNULL)
-            SetVBuf(errfcb->handle, NULL, BUF_NONE, -1);
-        else /* File handle could not be duplicated; use original */
-        {
-            errfcb->handle = me->pr_CES;
-            errfcb->privflags |= _FCB_DONTCLOSE_FH;
-        }
-    }
-    else
-    {
-        errfcb->handle = OpenFromLock(DupLockFromFH(Output()));
-        if (errfcb->handle != BNULL)
-            SetVBuf((BPTR) errfcb->handle, NULL, BUF_NONE, -1);
-        else /* File handle could not be duplicated; use original */
-        {
-            errfcb->handle = outfcb->handle;
-            errfcb->privflags = _FCB_DONTCLOSE_FH;
-        }
-    }
+    errfcb->privflags = 0;
+    stderrlogic(me, errfcb);
     errfcb->flags = O_WRONLY | O_APPEND;
     errfcb->opencount = 1;
     errdesc->fcb = errfcb;
@@ -583,18 +576,7 @@ void __updatestdio(void)
     fcb->handle = Output();
 
     fcb = PosixCBase->fd_array[STDERR_FILENO]->fcb;
-    if (!(fcb->privflags & _FCB_DONTCLOSE_FH))
-        Close(fcb->handle);
-    if (me->pr_CES != BNULL)
-    {
-        fcb->handle = OpenFromLock(DupLockFromFH(me->pr_CES));
-        fcb->privflags &= ~_FCB_DONTCLOSE_FH;
-    }
-    else
-    {
-        fcb->handle = PosixCBase->fd_array[STDOUT_FILENO]->fcb->handle;
-        fcb->privflags |= _FCB_DONTCLOSE_FH;
-    }
+    stderrlogic(me, fcb);
 }
 
 ADD2OPENLIB(__init_fd, 2);
