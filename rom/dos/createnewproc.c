@@ -857,6 +857,14 @@ static void DosEntry(void)
     D(bug("Unlocking home dir\n"));
     UnLock(me->pr_HomeDir);
 
+    D(bug("Closing cli_StandardError\n"));
+
+    if (me->pr_Flags & PRF_CLOSECLIERROR)
+    {
+        struct CommandLineInterface *cli = (struct CommandLineInterface *)(BADDR(me->pr_CLI));
+        Close(cli->cli_StandardError); /* See newcliproc.c */
+    }
+
     D(bug("Freeing cli structure\n"));
 
     if (me->pr_Flags & PRF_FREECLI)

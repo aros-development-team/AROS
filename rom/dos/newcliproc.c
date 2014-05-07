@@ -24,8 +24,9 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
     LONG Type;
     struct CommandLineInterface *oldcli, *cli;
     struct Process *me = (struct Process *)FindTask(NULL);
-    BPTR cis, cos, cas, olddir, newdir;
-    BOOL inter_in = FALSE, inter_out = FALSE;
+    BPTR cis, cos, cas, ces, olddir, newdir;
+    BOOL inter_in = FALSE, inter_out = FALSE, inter_err = FALSE;
+    struct ExtArg *ea = NULL;
 
     ASSERT_VALID_PROCESS(me);
 
@@ -133,6 +134,10 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
     /* dp_Arg3 is the COS override */
     cos = (BPTR)dp->dp_Arg3;
 
+    /* dp_Arg7 is AROS extension information)*/
+    ea = (struct ExtArg *)dp->dp_Arg7;
+    ces = ea->ea_CES;
+
     /* dp_Arg4 contains the CurrentInput */
     cas = (BPTR)dp->dp_Arg4;
 
@@ -171,16 +176,34 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
         flags |= FNF_RUNOUTPUT;
     }
 
+    if (!ces) {
+        D(bug("%s: No StandardError provided. Synthesize one.\n", __func__));
+        if (GetConsoleTask()) {
+            D(bug("%s: StandardError based on current console\n", __func__));
+            ces = Open("*", MODE_NEWFILE);
+        } else {
+            D(bug("%s: StandardError is NIL:\n", __func__));
+            ces = Open("NIL:", MODE_NEWFILE);
+        }
+        if (ces == BNULL) {
+            SetIoErr((SIPTR)me);
+            goto exit;
+        }
+        me->pr_Flags |= PRF_CLOSECLIERROR;
+    }
+
+    if (ea->ea_Flags & EAF_CLOSECES)
+        me->pr_Flags |= PRF_CLOSECLIERROR;
+
     cli->cli_CurrentInput   = cas ? cas : cis;
     cli->cli_StandardInput  = cis;
 
     cli->cli_StandardOutput =
-    cli->cli_CurrentOutput  =
-    cli->cli_StandardError  = cos;
-    
-    /* AROS specific */
-    if (me->pr_CES)
-        cli->cli_StandardError = me->pr_CES;
+    cli->cli_CurrentOutput  = cos;
+
+    cli->cli_StandardError  = ces;
+    /* Compatibility with Amiga Shells which are not aware of cli_StandardError */
+    me->pr_CES = cli->cli_StandardError;
 
     if (IsInteractive(cli->cli_StandardInput)) {
         D(bug("%s: cli_StandardInput is interactive\n", __func__));
@@ -193,6 +216,12 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
         fs_ChangeSignal(cli->cli_StandardOutput, me, DOSBase);
         SetVBuf(cli->cli_StandardOutput, NULL, BUF_LINE, -1);
         inter_out = TRUE;
+    }
+    if (IsInteractive(cli->cli_StandardError)) {
+        D(bug("%s: cli_StandardError is interactive\n", __func__));
+        fs_ChangeSignal(cli->cli_StandardError, me, DOSBase);
+        SetVBuf(cli->cli_StandardError, NULL, BUF_LINE, -1);
+        inter_err = TRUE;
     }
 
     if (oldcli) {
@@ -213,7 +242,7 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
     cli->cli_FailLevel = 10;
     cli->cli_Module = BNULL;
 
-    cli->cli_Background = (inter_out && inter_in) ? DOSFALSE : DOSTRUE;
+    cli->cli_Background = (inter_out && inter_in && inter_err) ? DOSFALSE : DOSTRUE;
 
     D(bug("%s: cli_CurrentInput   = %p\n", __func__, cli->cli_CurrentInput));
     D(bug("%s: cli_StandardInput  = %p\n", __func__, cli->cli_StandardInput));
@@ -225,7 +254,7 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
     SetIoErr(0);
 
     D(bug("+ flags:%p\n", flags));
-    if (dp->dp_Res1 == 0 || !(inter_in & inter_out))
+    if (dp->dp_Res1 == 0 || !(inter_in && inter_out && inter_err))
         flags |= FNF_VALIDFLAGS;
 
     D(bug("- flags:%p\n", flags));
@@ -248,6 +277,7 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
 exit:
     if (!(flags & FNF_VALIDFLAGS))
         PutMsg(dp->dp_Port, dp->dp_Link);
+    FreeMem(ea, sizeof(struct ExtArg));
 
     D(bug("%s: Flags = 0x%08x\n", __func__, flags));
 
