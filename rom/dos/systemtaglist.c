@@ -77,7 +77,9 @@
         If you want them to be the same CON: window, set SYS_Input to a
         filehandle on the CON: window and set SYS_Output to NULL. Then the
         shell will automatically set the output by opening CONSOLE: on that
-        handler.
+        handler. Note that SYS_Error also follows this rule, so passing it
+        set to NULL will automatically set the error by opening CONSOLE: on
+        that handler.
 
         If you specified SYS_Asynch, both the input and the output filehandles
         will be closed when the command is finished (even if this was your
@@ -338,17 +340,20 @@
     {
         struct Process *cliproc;
 
+        /* Note: SystemTagList + CliInitNewcli/CliInitRun + AROS_CLI macro manage
+         * the creation and destruction of pr_CIS/pr_COS/pr_CES. CrateNewProc
+         * logic is not used in such case.
+         */
         struct TagItem proctags[] =
         {
             { NP_Priority   , me->pr_Task.tc_Node.ln_Pri    }, /* 0  */
             { NP_Name       , (IPTR)shellName               }, /* 1  */
             { NP_Input      , (IPTR)BNULL                   }, /* 2  */
             { NP_Output     , (IPTR)BNULL                   }, /* 3  */
-            { NP_Error      , (IPTR)ses                     }, /* 4  */
+            { NP_Error      , (IPTR)BNULL                   }, /* 4  */
             { NP_CloseInput , FALSE                         }, /* 5  */
             { NP_CloseOutput, FALSE                         }, /* 6  */
-            { NP_CloseError , (isAsynch || ses_opened)
-                                      ? TRUE : FALSE,       }, /* 7  */
+            { NP_CloseError , FALSE                         }, /* 7  */
             { NP_Cli        , ((cliType == CLI_NEWCLI) || (cliType == CLI_ASYSTEM))
                                       ?  TRUE : FALSE       }, /* 8  */
             { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
@@ -395,6 +400,11 @@
             {
                 SIPTR oldSignal = 0;
                 struct FileHandle *fh = NULL;
+                struct ExtArg *ea = AllocMem(sizeof(struct ExtArg), MEMF_PUBLIC | MEMF_CLEAR);
+
+                ea->ea_CES = ses;
+                if (isAsynch || ses_opened)
+                    ea->ea_Flags |= EAF_CLOSECES;
 
                 D(bug("[SystemTagList] cliType = %d (background=%d, asynch=%d)\n", cliType, isBackground, isAsynch));
 #ifdef __mc68000
@@ -425,6 +435,7 @@
                 dp->dp_Res2 = 0;
                 dp->dp_Arg2 = (IPTR)sis;        /* Input */
                 dp->dp_Arg3 = (IPTR)sos;        /* Output */
+                dp->dp_Arg7 = (IPTR)ea;         /* AROS extension information*/
                 dp->dp_Arg4 = (IPTR)cis;        /* Arguments & Script*/
 
                 /* The rest of the packet depends on the cliType. */
