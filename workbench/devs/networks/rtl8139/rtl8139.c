@@ -294,7 +294,19 @@ RTLD(bug("[%s] rtl8139nic_set_multicast()\n", unit->rtl8139u_name))
 
 static void rtl8139nic_deinitialize(struct net_device *unit)
 {
+	int i;
+	UBYTE *base = get_hwbase(unit);
 
+	WORDOUT(base + RTLr_IntrMask, 0);
+	BYTEOUT(base + RTLr_ChipCmd,  (BYTEIN(base + RTLr_ChipCmd) & CmdClear) | CmdReset);
+	udelay(100);
+	for (i = 1000; i > 0; i--)
+	{
+		if ((BYTEIN(base + RTLr_ChipCmd) & CmdReset) == 0)
+		{
+			break;
+		}
+	}
 }
 
 static void rtl8139nic_get_mac(struct net_device *unit, char * addr, BOOL fromROM)

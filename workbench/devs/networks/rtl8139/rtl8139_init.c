@@ -379,6 +379,9 @@ RTLD(bug("[rtl8139] CloseDevice(unit @ %p, unitno %d)\n", unit, unit->rtl8139u_U
 	if (--unit->rtl8139u_open_count == 0)
 		unit->stop(unit);
 
+	/* Without this, DHCP doesn't work the second time the device is used */
+	((struct Library *)LIBBASE)->lib_Flags |= LIBF_DELEXP;
+
 	return TRUE;
 }
 
