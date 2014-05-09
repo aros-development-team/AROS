@@ -797,7 +797,7 @@ RTLD(bug("[%s] RTL8139_Schedular: entering forever loop ... \n", taskSelf->tc_No
 				for(;;)
 				{	
 					ULONG recvd = Wait(sigset);
-					if (recvd & unit->rtl8139u_signal_0)
+					if (recvd & 1 << unit->rtl8139u_signal_0)
 					{
 						/*
 						 * Shutdown process. Driver should close everything 
@@ -1037,12 +1037,18 @@ RTLD(bug("[rtl8139] PANIC! Couldn't get MMIO area. Aborting\n"))
 
 void DeleteUnit(struct RTL8139Base *RTL8139DeviceBase, struct RTL8139Unit *Unit)
 {
+	UBYTE tmpbuff[100];
 	int i;
+
 	if (Unit)
 	{
 		if (Unit->rtl8139u_Process)
 		{
-			Signal(&Unit->rtl8139u_Process->pr_Task, Unit->rtl8139u_signal_0);
+			 /* Tell our process to quit, and wait until it does so */
+			Signal(&Unit->rtl8139u_Process->pr_Task, 1 << Unit->rtl8139u_signal_0);
+			sprintf((char *)tmpbuff, RTL8139_TASK_NAME, Unit->rtl8139u_name);
+			while (FindTask(tmpbuff) != NULL)
+				Delay(5);
 		}
 
 		for (i=0; i < REQUEST_QUEUE_COUNT; i++)
