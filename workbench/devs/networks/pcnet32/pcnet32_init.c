@@ -272,7 +272,7 @@ D(bug("[pcnet32] init.CloseDevice\n"));
     }
 
     /* Without this, DHCP doesn't work the second time the device is used */
-    RemDevice((struct Device *)LIBBASE);
+    ((struct Library *)LIBBASE)->lib_Flags |= LIBF_DELEXP;
 
     return TRUE;
 }
