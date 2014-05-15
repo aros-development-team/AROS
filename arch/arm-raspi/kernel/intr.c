@@ -25,6 +25,7 @@
 #define IRQBANK_POINTER(bank)   ((bank == 0) ? GPUIRQ_ENBL0 : (bank == 1) ? GPUIRQ_ENBL1 : ARMIRQ_ENBL)
 
 #define DREGS(x)
+#define DIRQ(x)
 #define D(x)
 
 void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
@@ -34,7 +35,7 @@ void ictl_enable_irq(uint8_t irq, struct KernelBase *KernelBase)
 
     reg = IRQBANK_POINTER(bank);
 
-    D(bug("[KRN] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
+    DIRQ(bug("[KRN] Enabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
     val = *((volatile unsigned int *)reg);
     val |= IRQ_MASK(irq);
@@ -48,7 +49,7 @@ void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
 
     reg = IRQBANK_POINTER(bank);
 
-    D(bug("[KRN] Dissabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
+    DIRQ(bug("[KRN] Dissabling irq %d [bank %d, reg 0x%p]\n", irq, bank, reg));
 
     val = *((volatile unsigned int *)reg);
     val |= IRQ_MASK(irq);
@@ -149,12 +150,12 @@ void handle_irq(regs_t *regs)
 {
     unsigned int pending, processed, irq;
 
-    D(bug("[KRN] ## IRQ ##\n"));
+    DIRQ(bug("[KRN] ## IRQ ##\n"));
 
     DREGS(cpu_DumpRegs(regs));
 
     pending = *((volatile unsigned int *)(ARMIRQ_PEND));
-    D(bug("[KRN] PendingARM %08x\n", pending));
+    DIRQ(bug("[KRN] PendingARM %08x\n", pending));
     if (!(pending & IRQ_BANK1))
     {
         processed = 0;
@@ -162,7 +163,7 @@ void handle_irq(regs_t *regs)
         {
             if (pending & (1 << (irq - (2 << 5))))
             {
-                D(bug("[KRN] Handling IRQ %d ..\n", irq));
+                DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
                 krnRunIRQHandlers(KernelBase, irq);
                 processed |= (1 << (irq - (2 << 5)));
             }
@@ -175,7 +176,7 @@ void handle_irq(regs_t *regs)
     if (processed) *((volatile unsigned int *)(ARMIRQ_PEND)) = (pending & ~processed);
 
     pending = *((volatile unsigned int *)(GPUIRQ_PEND0));
-    D(bug("[KRN] Pending0 %08x\n", pending));
+    DIRQ(bug("[KRN] Pending0 %08x\n", pending));
     if (!(pending & IRQ_BANK2))
     {
         processed = 0;
@@ -183,7 +184,7 @@ void handle_irq(regs_t *regs)
         {
             if (pending & (1 << (irq - (0 << 5))))
             {
-                D(bug("[KRN] Handling IRQ %d ..\n", irq));
+                DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
                 krnRunIRQHandlers(KernelBase, irq);
                 processed |= (1 << (irq - (0 << 5)));
             }
@@ -196,20 +197,20 @@ void handle_irq(regs_t *regs)
     if (processed) *((volatile unsigned int *)(GPUIRQ_PEND0)) = (pending & ~processed);
 
     pending = *((volatile unsigned int *)(GPUIRQ_PEND1));
-    D(bug("[KRN] Pending1 %08x\n", pending));
+    DIRQ(bug("[KRN] Pending1 %08x\n", pending));
     processed = 0;
     for (irq = (1 << 5); irq < ((1 << 5) + 32); irq++)
     {
             if (pending & (1 << (irq - (1 << 5))))
         {
-            D(bug("[KRN] Handling IRQ %d ..\n", irq));
+            DIRQ(bug("[KRN] Handling IRQ %d ..\n", irq));
             krnRunIRQHandlers(KernelBase, irq);
             processed |= (1 << (irq - (1 << 5)));
         }
     }
     if (processed) *((volatile unsigned int *)(GPUIRQ_PEND1)) = (pending & ~processed);
 
-    D(bug("[KRN] IRQ processing finished\n"));
+    DIRQ(bug("[KRN] IRQ processing finished\n"));
 
     return;
 }
@@ -218,13 +219,9 @@ void handle_irq(regs_t *regs)
 
 __attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
 {
-    *(volatile unsigned int *)GPSET0 = 1<<16; // LED OFF
+    DIRQ(bug("[KRN] ## FIQ ##\n"));
 
-    D(bug("[KRN] ## FIQ ##\n"));
-    while(1)
-    {
-        asm("mov r0,r0\n\t");
-    }
+    return;
 }
 
 
