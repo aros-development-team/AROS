@@ -36,6 +36,7 @@
 #define SPI0_BASE               (ARM_PERIIOBASE + 0x204000)
 #define BSC0_BASE               (ARM_PERIIOBASE + 0x205000)
 #define GPIO_PWM                (ARM_PERIIOBASE + 0x20C000)
+#define V3D_BASE                (ARM_PERIIOBASE + 0xc00000)
 
 #define SYSTIMER_CS             (SYSTIMER_BASE + 0x00)
 #define SYSTIMER_CLO            (SYSTIMER_BASE + 0x04)
