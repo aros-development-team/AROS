@@ -39,7 +39,10 @@ int vcfb_init(void)
             return 0;
 
         if (((fb_width = vcmb_msg[5]) == 0) || ((fb_height = vcmb_msg[6]) == 0))
-            return 0;
+        {
+            fb_width = 1024;
+            fb_height = 768;
+        }
     }
 
     /* fill in our framebuffer configuration/allocation request */
