@@ -324,6 +324,12 @@ int main(int argc, char **argv)
     name = setlocale(LC_CTYPE, "");
     D(printf("System locale: %s\n", name));
 
+    if (!name)
+    {
+      printf("%s: System locale is invalid\n",argv[0]);
+      return 20;
+    }
+
     /* Use strstr() because for example on Linux this will be "en_US.UTF-8" while on MacOS it's just "UTF-8" */
     if ((strstr(name, "UTF-8")) || (strstr(name, "utf8")))
     {
