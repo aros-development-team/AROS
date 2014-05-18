@@ -3,6 +3,7 @@
 #include <proto/exec.h>
 
 extern void AROS_SLIB_ENTRY(CopyMem_SSE, Exec, 104)();
+extern void AROS_SLIB_ENTRY(CopyMemQuick_SSE, Exec, 105)();
 
 static int cpu_Init(struct ExecBase *SysBase)
 {
@@ -23,9 +24,9 @@ static int cpu_Init(struct ExecBase *SysBase)
     {
         D(bug("[exec] SSE detected\n"));
 
-	/* Use SSE version of CopyMem() and CopyMemQuick() */
-	SetFunction(&SysBase->LibNode, -104*LIB_VECTSIZE, AROS_SLIB_ENTRY(CopyMem_SSE, Exec, 104));
-	SetFunction(&SysBase->LibNode, -105*LIB_VECTSIZE, AROS_SLIB_ENTRY(CopyMem_SSE, Exec, 104));
+        /* Use SSE version of CopyMem() and CopyMemQuick() */
+        SetFunction(&SysBase->LibNode, -104*LIB_VECTSIZE, AROS_SLIB_ENTRY(CopyMem_SSE, Exec, 104));
+        SetFunction(&SysBase->LibNode, -105*LIB_VECTSIZE, AROS_SLIB_ENTRY(CopyMemQuick_SSE, Exec, 105));
     }
 
     return TRUE;
