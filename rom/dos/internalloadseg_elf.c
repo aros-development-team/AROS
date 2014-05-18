@@ -38,6 +38,22 @@ struct hunk
 #define BPTR2HUNK(bptr) ((struct hunk *)((void *)bptr - offsetof(struct hunk, next)))
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
 
+#define LOADSEG_SMALL_READ  2048 /* Size adjusted by profiling in Callgrind */
+
+/* [S]mall [R]eads [Buffer]
+ *
+ * Due to a fact that Seek flushes buffers, FRead that is used to do small reads
+ * cannot use the buffer. The problem is visible with C++ executables that
+ * have a big number of small sections and thus do many (in tens of thousands
+ * for Odyssey) very small reads.
+ *
+ * */
+struct SRBuffer
+{
+    ULONG   srb_FileOffset;
+    APTR    srb_Buffer;
+};
+
 static int elf_read_block
 (
     BPTR               file,
@@ -45,13 +61,41 @@ static int elf_read_block
     APTR               buffer,
     ULONG              size,
     SIPTR              *funcarray,
-    struct DosLibrary *DOSBase
+    struct SRBuffer    *srb,
+    struct DosLibrary  *DOSBase
 )
 {
-    if (ilsSeek(file, offset, OFFSET_BEGINNING) < 0)
-        return 1;
+    D(bug("[ELF Loader] elf_read_block (offset=%d, size=%d)\n", offset, size));
 
-    return read_block(file, buffer, size, funcarray, DOSBase);
+    if (size <= LOADSEG_SMALL_READ && (offset >= srb->srb_FileOffset) &&
+            ((offset + size) <= (srb->srb_FileOffset + LOADSEG_SMALL_READ)) &&
+            srb->srb_Buffer != NULL)
+    {
+        CopyMem(srb->srb_Buffer + (offset - srb->srb_FileOffset), buffer, size);
+        return 0;
+    }
+    else
+    {
+        if (ilsSeek(file, offset, OFFSET_BEGINNING) < 0)
+            return 1;
+
+        if (size <= LOADSEG_SMALL_READ)
+        {
+            if (srb->srb_Buffer == NULL)
+                srb->srb_Buffer = AllocMem(LOADSEG_SMALL_READ, MEMF_ANY);
+
+            srb->srb_FileOffset = offset;
+
+            /* Fill the buffer */
+            read_block(file, srb->srb_Buffer, LOADSEG_SMALL_READ, funcarray, DOSBase);
+            /* Re-read, now srb will be used */
+            return elf_read_block(file, offset, buffer, size, funcarray, srb, DOSBase);
+        }
+        else
+        {
+            return read_block(file, buffer, size, funcarray, DOSBase);
+        }
+    }
 }
 
 static void *load_block
@@ -60,6 +104,7 @@ static void *load_block
     ULONG              offset,
     ULONG              size,
     SIPTR             *funcarray,
+    struct SRBuffer   *srb,
     struct DosLibrary *DOSBase
 )
 {
@@ -70,7 +115,7 @@ static void *load_block
     void *block = ilsAllocMem(size, MEMF_ANY);
     if (block)
     {
-        if (!elf_read_block(file, offset, block, size, funcarray, DOSBase))
+        if (!elf_read_block(file, offset, block, size, funcarray, srb, DOSBase))
             return block;
 
         ilsFreeMem(block, size);
@@ -81,7 +126,7 @@ static void *load_block
     return NULL;
 }
 
-static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase)
+static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct SRBuffer *srb, struct DosLibrary *DOSBase)
 {
     ULONG shnum = eh->shnum;
 
@@ -105,7 +150,7 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, struc
             return 0;
         }
 
-        if (elf_read_block(file, eh->shoff, &sh, sizeof(sh), funcarray, DOSBase))
+        if (elf_read_block(file, eh->shoff, &sh, sizeof(sh), funcarray, srb, DOSBase))
             return 0;
 
         /* wider section header count is in the size field */
@@ -121,9 +166,9 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, struc
     return shnum;
 }
 
-static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase)
+static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct SRBuffer *srb, struct DosLibrary *DOSBase)
 {
-    if (elf_read_block(file, 0, eh, sizeof(struct elfheader), funcarray, DOSBase))
+    if (elf_read_block(file, 0, eh, sizeof(struct elfheader), funcarray, srb, DOSBase))
         return 0;
 
     if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
@@ -163,6 +208,7 @@ static int load_hunk
     CONST_STRPTR         strtab,
     SIPTR               *funcarray,
     BOOL                 do_align,
+    struct SRBuffer     *srb,
     struct DosLibrary   *DOSBase
 )
 {
@@ -240,7 +286,7 @@ static int load_hunk
         *next_hunk_ptr = &hunk->next;
 
         if (sh->type != SHT_NOBITS)
-            return !elf_read_block(file, sh->offset, sh->addr, sh->size, funcarray, DOSBase);
+            return !elf_read_block(file, sh->offset, sh->addr, sh->size, funcarray, srb, DOSBase);
 
         return 1;
 
@@ -822,17 +868,19 @@ BPTR InternalLoadSeg_ELF
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
     ULONG  int_shnum;
+    struct SRBuffer srb;
+    srb.srb_Buffer = NULL;
 
     /* load and validate ELF header */
-    if (!load_header(file, &eh, funcarray, DOSBase))
+    if (!load_header(file, &eh, funcarray, &srb, DOSBase))
         return 0;
-    
-    int_shnum = read_shnum(file, &eh, funcarray, DOSBase);
+
+    int_shnum = read_shnum(file, &eh, funcarray, &srb, DOSBase);
     if (!int_shnum)
         return 0;
 
     /* load section headers */
-    if (!(sh = load_block(file, eh.shoff, int_shnum * eh.shentsize, funcarray, DOSBase)))
+    if (!(sh = load_block(file, eh.shoff, int_shnum * eh.shentsize, funcarray, &srb, DOSBase)))
         return 0;
 
 #ifdef __arm__
@@ -872,7 +920,7 @@ BPTR InternalLoadSeg_ELF
         */
         if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB || sh[i].type == SHT_SYMTAB_SHNDX)
         {
-            sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
+            sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, &srb, DOSBase);
             if (!sh[i].addr)
                 goto error;
 
@@ -915,7 +963,7 @@ BPTR InternalLoadSeg_ELF
                 if (sh[i].flags & SHF_EXECINSTR)
                     exec_hunk_seen = TRUE;
 
-                if (!load_hunk(file, &next_hunk_ptr, &sh[i], strtab ? strtab->addr : NULL, funcarray, exec_hunk_seen, DOSBase))
+                if (!load_hunk(file, &next_hunk_ptr, &sh[i], strtab ? strtab->addr : NULL, funcarray, exec_hunk_seen, &srb, DOSBase))
                     goto error;
             }
         }
@@ -927,7 +975,7 @@ BPTR InternalLoadSeg_ELF
         /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
         if ((sh[i].type == AROS_ELF_REL) && sh[sh[i].info].addr)
         {
-            sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
+            sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, &srb, DOSBase);
             if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, DOSBase))
                 goto error;
 
@@ -978,6 +1026,8 @@ end:
 
     /* Free the section headers */
     ilsFreeMem(sh, int_shnum * eh.shentsize);
+
+    if (srb.srb_Buffer) FreeMem(srb.srb_Buffer, LOADSEG_SMALL_READ);
 
     return hunks;
 }
