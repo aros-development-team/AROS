@@ -14,7 +14,6 @@ typedef VOID (*autogrow_release)(APTR, APTR, IPTR);
 
 /* Initialization and memory management */
 APTR tlsf_init(struct MemHeaderExt * mhe);
-APTR tlsf_init_autogrow(struct MemHeaderExt * mhe, IPTR puddle_size, autogrow_get grow_function, autogrow_release release_function, APTR autogrow_data);
 VOID tlsf_destroy(struct MemHeaderExt * mhe);
 VOID tlsf_add_memory(struct MemHeaderExt * mhe, APTR memory, IPTR size);
 VOID tlsf_add_memory_and_merge(struct MemHeaderExt * mhe, APTR memory, IPTR size);
