@@ -49,8 +49,18 @@
 AROS_SLIB_ENTRY(CopyMem_SSE,Exec,104):
     movl        12(%esp),%eax
     cmpl        $4096,%eax
-    jl          AROS_SLIB_ENTRY(CopyMem,Exec,104)    /* non-SSE version is faster for small copies */
+    jge         .begin
+    jmp         AROS_SLIB_ENTRY(CopyMem,Exec,104)    /* non-SSE version is faster for small copies */
 
+    .globl  AROS_SLIB_ENTRY(CopyMemQuick_SSE,Exec,105)
+    _FUNCTION(AROS_SLIB_ENTRY(CopyMemQuick_SSE,Exec,105))
+AROS_SLIB_ENTRY(CopyMemQuick_SSE,Exec,105):
+    movl        12(%esp),%eax
+    cmpl        $4096,%eax
+    jge         .begin
+    jmp         AROS_SLIB_ENTRY(CopyMemQuick,Exec,105)    /* non-SSE version is faster for small copies */
+
+.begin:
     pushl       %edi
     pushl       %esi
     pushl       %ecx
