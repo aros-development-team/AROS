@@ -186,12 +186,22 @@
 
 #define INV16(x)     AROS_SWAP_BYTES_WORD(x)
 
-#define CONVERTFUNC(a,b) static ULONG convert_ ## a ## _ ## b \
+#define ARCHCONVERTFUNCP(arch, a, b) \
+static ULONG convert_ ## a ## _ ## b ## _ ## arch \
+    (APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt, \
+    APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt, \
+    UWORD width, UWORD height);
+
+#define ARCHCONVERTFUNCH(arch, a, b) \
+static ULONG convert_ ## a ## _ ## b ## _ ## arch \
     (APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt, \
     APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt, \
     UWORD width, UWORD height) \
 {
-        
+
+#define CONVERTFUNC(a,b) ARCHCONVERTFUNCH(generic, a, b)
+
+
 #define CONVERTFUNC_INIT
 
 #define CONVERTFUNC_EXIT }
