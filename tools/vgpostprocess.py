@@ -33,6 +33,10 @@ def loadsymbolinformation():
                     modules.append(module)
                     lastmodname = modname
 
+                # Correction of end
+                if (symbolname != "" and start > 0x1000 and end == 0):
+                    end = start
+
                 # Flags entries with no name
                 if (symbolname == ""):
                     symbolname = "<no name>"
