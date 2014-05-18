@@ -9,7 +9,7 @@
 #include "colorconv/rgbconv_macros.h"
 #include "colorconv/rgbconv_rgbswap.h"
 
-#define UNUSED(a,b) static ULONG __attribute__((unused)) convert_ ## a ## _ ## b \
+#define UNUSED(a,b) static ULONG __attribute__((unused)) convert_ ## a ## _ ## b ## _generic \
     (APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt, \
     APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt, \
     UWORD width, UWORD height);
@@ -37,7 +37,7 @@ UNUSED(ARGB32,XBGR32)
 #include "colorconv/rgbconv_rgb16.h"
 
 #define SCCF(SRCPIXFMT, DSTPIXFMT) \
-    rgbconvertfuncs[FMT_##SRCPIXFMT - FIRST_RGB_STDPIXFMT][FMT_##DSTPIXFMT - FIRST_RGB_STDPIXFMT] = convert_##SRCPIXFMT##_##DSTPIXFMT;
+    rgbconvertfuncs[FMT_##SRCPIXFMT - FIRST_RGB_STDPIXFMT][FMT_##DSTPIXFMT - FIRST_RGB_STDPIXFMT] = convert_##SRCPIXFMT##_##DSTPIXFMT##_generic;
 
 void SetRGBConversionFunctions(HIDDT_RGBConversionFunction rgbconvertfuncs[NUM_RGB_STDPIXFMT][NUM_RGB_STDPIXFMT])
 {
