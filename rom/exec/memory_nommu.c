@@ -215,16 +215,13 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, s
         {
             struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
 
-            if (mhe->mhe_InBounds(mhe, memoryBlock, blockEnd))
-            {
-                if (mhe->mhe_Free)
-                {
-                    mhe->mhe_Free(mhe, memoryBlock, byteSize);
+            /* Test if the memory belongs to this MemHeader. */
+            if (!mhe->mhe_InBounds(mhe, memoryBlock, blockEnd))
+                continue;
 
-                    MEM_UNLOCK;
-                    return;
-                }
-            }
+            if (mhe->mhe_Free)
+                mhe->mhe_Free(mhe, memoryBlock, byteSize);
+
         }
         else
         {
@@ -234,6 +231,7 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, s
 
             stdDealloc(mh, mhac_GetSysCtx(mh, SysBase), memoryBlock, byteSize, loc, SysBase);
         }
+
         MEM_UNLOCK;
         ReturnVoid ("nommu_FreeMem");
     }
