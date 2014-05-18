@@ -14,6 +14,8 @@
 #include <aros/debug.h>
 #include "dos_intern.h"
 
+#define LOADSEG_BIG_READ    8192
+
 static AROS_UFH4(LONG, ReadFunc,
         AROS_UFHA(BPTR, file,   D1),
         AROS_UFHA(APTR, buffer, D2),
@@ -23,7 +25,10 @@ static AROS_UFH4(LONG, ReadFunc,
 {
     AROS_USERFUNC_INIT
 
-    return FRead(file, buffer, 1, length);
+    if (length > LOADSEG_BIG_READ)
+        return Read(file, buffer, length);
+    else
+        return FRead(file, buffer, 1, length);
 
     AROS_USERFUNC_EXIT
 }
