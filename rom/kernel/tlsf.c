@@ -99,6 +99,7 @@ typedef struct {
     ULONG               slbitmap[REAL_FLI];
 
     IPTR                autogrow_puddle_size;
+    ULONG               autogrow_requirements;
     APTR                autogrow_data;
     autogrow_get        autogrow_get_fn;
     autogrow_release    autogrow_release_fn;
@@ -972,7 +973,7 @@ void * tlsf_init(struct MemHeaderExt * mhe)
     return tlsf;
 }
 
-void * tlsf_init_autogrow(struct MemHeaderExt * mhe, IPTR puddle_size, autogrow_get grow_function, autogrow_release release_function, APTR autogrow_data)
+static void * tlsf_init_autogrow(struct MemHeaderExt * mhe, IPTR puddle_size, ULONG requirements, autogrow_get grow_function, autogrow_release release_function, APTR autogrow_data)
 {
     tlsf_t *tlsf = tlsf_init(mhe);
 
@@ -982,6 +983,7 @@ void * tlsf_init_autogrow(struct MemHeaderExt * mhe, IPTR puddle_size, autogrow_
             puddle_size = 4096;
 
         tlsf->autogrow_puddle_size = puddle_size;
+        tlsf->autogrow_requirements = requirements;
         tlsf->autogrow_data = autogrow_data;
         tlsf->autogrow_get_fn = grow_function;
         tlsf->autogrow_release_fn = release_function;
@@ -1108,10 +1110,11 @@ static void destroy_Pool(struct MemHeaderExt *mhe)
 static APTR fetch_more_ram(void * data, IPTR *size)
 {
     struct MemHeaderExt *mhe = (struct MemHeaderExt *)data;
+    tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
 
     D(nbug("[TLSF] fetch_more_ram(%p, %d)\n", mhe, *size));
 
-    APTR ptr = AllocMem(*size, mhe->mhe_MemHeader.mh_Attributes);
+    APTR ptr = AllocMem(*size, tlsf->autogrow_requirements);
     return ptr;
 }
 
@@ -1124,7 +1127,7 @@ static VOID release_ram(void * data, APTR ptr, IPTR size)
 
 static void * init_Pool(struct MemHeaderExt *mhe, IPTR puddleSize, IPTR initialSize)
 {
-    return tlsf_init_autogrow(mhe, puddleSize, fetch_more_ram, release_ram, mhe);
+    return tlsf_init_autogrow(mhe, puddleSize, (ULONG)mhe->mhe_MemHeader.mh_First, fetch_more_ram, release_ram, mhe);
 }
 
 void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags)
