@@ -1,5 +1,5 @@
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2014, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: 
@@ -23,7 +23,7 @@
 
     FUNCTION
 
-         Dumps debug symbols to the file "System:symbols.out" to be used with
+         Dumps debug symbols to the file "SYS:symbols.out" to be used with
          Callgrind. See "Debugging manual" at www.aros.org.
 
     INPUTS
@@ -50,7 +50,7 @@
 #include <proto/dos.h>
 #include <proto/debug.h>
 
-const TEXT version[] = "$VER: SymbolDump 1.0 (7.03.2013)\n";
+const TEXT version[] = "$VER: SymbolDump 1.1 (18.5.2014)\n";
 
 struct Library * DebugBase = NULL;
 
@@ -84,7 +84,7 @@ int main(void)
 
     OpenLibraries();
 
-    output = Open("System:symbols.out", MODE_NEWFILE);
+    output = Open("SYS:symbols.out", MODE_NEWFILE);
 
     if (output != BNULL)
     {
