@@ -139,7 +139,6 @@
 #include <proto/utility.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #include "debug.h"
 #include "device.h"
@@ -1059,18 +1058,6 @@ openbreak:
 		{
 			if (error)
 			{
-				if(error == ERROR_DISK_WRITE_PROTECTED)
-				{
-#if defined(__AROS__) && !defined(__mc68000)
-					UBYTE  tn[MAX_NAME_LEN], n[26+MAX_NAME_LEN];
-					//StrCpyFromBstr(global->g_vol_name, tn);
-					CopyMem(global->g_vol_name+1, tn, global->g_vol_name[0]);
-					tn[(ULONG)global->g_vol_name[0]] = 0;
-					BUG(dbprintf(global, "Volume %s is write protected\n", tn);)
-					sprintf (n, "Volume\n%s\n is write protected", tn);
-					Display_Error_Tags(global, n, NULL);
-#endif
-				}
 				BUG(dbprintf(global, "ERR=%ld\n", error);)
 				packet->dp_Res1 = DOSFALSE;
 				packet->dp_Res2 = error;
