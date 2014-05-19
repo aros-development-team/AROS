@@ -1457,7 +1457,10 @@ static BOOL ReadServer(struct Server *server, BPTR file, LONG size)
     /* Check if this is a server mount */
     if (success)
     {
-        if (strcasecmp((char *)mount_args[ARG_EHANDLER], SERVER_HANDLER) != 0)
+        if ((char *)mount_args[ARG_EHANDLER] == NULL)
+            success = FALSE;
+        else if (strcasecmp((char *)mount_args[ARG_EHANDLER],
+            SERVER_HANDLER) != 0)
             success = FALSE;
     }
 
