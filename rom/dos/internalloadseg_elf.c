@@ -38,7 +38,7 @@ struct hunk
 #define BPTR2HUNK(bptr) ((struct hunk *)((void *)bptr - offsetof(struct hunk, next)))
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
 
-#define LOADSEG_SMALL_READ  2048 /* Size adjusted by profiling in Callgrind */
+#define LOADSEG_SMALL_READ  4096 /* Size adjusted by profiling in Callgrind */
 
 /* [S]mall [R]eads [Buffer]
  *
