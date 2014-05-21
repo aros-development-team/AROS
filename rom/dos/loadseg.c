@@ -21,7 +21,7 @@ static AROS_UFH4(LONG, ReadFunc,
 {
     AROS_USERFUNC_INIT
 
-    return FRead(file, buffer, 1, length);
+    return Read(file, buffer, length);
 
     AROS_USERFUNC_EXIT
 }
