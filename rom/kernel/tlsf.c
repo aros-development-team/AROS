@@ -340,6 +340,8 @@ void * tlsf_malloc(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 
     size = ROUNDUP(size);
 
+    if (unlikely(!size)) return NULL;
+
     D(nbug("tlsf_malloc(%p, %ld)\n", tlsf, size));
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
@@ -545,9 +547,14 @@ static void tlsf_release_memory_area(struct MemHeaderExt * mhe, tlsf_area_t * ar
 void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
 {
     tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
-    bhdr_t *fb = MEM_TO_BHDR(ptr);
+    bhdr_t *fb;
     bhdr_t *next;
     tlsf_area_t * area;
+
+    if (unlikely(!ptr))
+        return;
+
+    fb = MEM_TO_BHDR(ptr);
 
     if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
         ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
