@@ -72,8 +72,8 @@ static inline BOOL isPlayable(struct Library *DataTypesBase, Object *obj)
     return FALSE;
 }
 
-AROS_SH1H(Play , 44.0,              "Play a sound file using DataTypes\n",
-AROS_SHAH(STRPTR, ,FILE   ,  ,NULL ,  "File to play\n") )
+AROS_SH1H(Play, 44.1, "Play a sound file using DataTypes\n",
+AROS_SHAH(STRPTR, , FILE, /A, NULL, "File to play\n"))
 {
     AROS_SHCOMMAND_INIT
 
@@ -81,10 +81,10 @@ AROS_SHAH(STRPTR, ,FILE   ,  ,NULL ,  "File to play\n") )
     struct Library *DataTypesBase;
     STRPTR file = SHArg(FILE);
 
-    if (file != NULL) {
         if ((DataTypesBase = OpenLibrary("datatypes.library", 0))) {
             Object *o;
-            if ((o = NewDTObject(file, TAG_END))) {
+            if ((o = NewDTObject(file, SDTA_SignalTask, FindTask(NULL),
+                SDTA_SignalBitNumber, SIGB_SINGLE, TAG_END))) {
                 if (isPlayable(DataTypesBase, o)) {
                     struct dtTrigger msg;
                     msg.MethodID          = DTM_TRIGGER;
@@ -92,6 +92,7 @@ AROS_SHAH(STRPTR, ,FILE   ,  ,NULL ,  "File to play\n") )
                     msg.dtt_Function      = STM_PLAY;
                     msg.dtt_Data          = NULL;
                     if (0 == DoDTMethodA(o, NULL, NULL, (Msg)&msg)) {
+                        Wait(SIGF_SINGLE | SIGBREAKF_CTRL_C);
                         result = RETURN_OK;
                     } else {
                         Printf("Can't play \"%s\"\n", file);
@@ -109,10 +110,6 @@ AROS_SHAH(STRPTR, ,FILE   ,  ,NULL ,  "File to play\n") )
         } else {
             Printf("Can't open datatypes.library\n");
         }
-    } else {
-        /* No file supplied - quiet success */
-        result = RETURN_OK;
-    }
 
     return result;
 
