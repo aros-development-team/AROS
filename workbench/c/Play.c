@@ -81,35 +81,35 @@ AROS_SHAH(STRPTR, , FILE, /A, NULL, "File to play\n"))
     struct Library *DataTypesBase;
     STRPTR file = SHArg(FILE);
 
-        if ((DataTypesBase = OpenLibrary("datatypes.library", 0))) {
-            Object *o;
-            if ((o = NewDTObject(file, SDTA_SignalTask, FindTask(NULL),
-                SDTA_SignalBitNumber, SIGB_SINGLE, TAG_END))) {
-                if (isPlayable(DataTypesBase, o)) {
-                    struct dtTrigger msg;
-                    msg.MethodID          = DTM_TRIGGER;
-                    msg.dtt_GInfo         = NULL;
-                    msg.dtt_Function      = STM_PLAY;
-                    msg.dtt_Data          = NULL;
-                    if (0 == DoDTMethodA(o, NULL, NULL, (Msg)&msg)) {
-                        Wait(SIGF_SINGLE | SIGBREAKF_CTRL_C);
-                        result = RETURN_OK;
-                    } else {
-                        Printf("Can't play \"%s\"\n", file);
-                        result = RETURN_FAIL;
-                    }
+    if ((DataTypesBase = OpenLibrary("datatypes.library", 0))) {
+        Object *o;
+        if ((o = NewDTObject(file, SDTA_SignalTask, FindTask(NULL),
+            SDTA_SignalBitNumber, SIGB_SINGLE, TAG_END))) {
+            if (isPlayable(DataTypesBase, o)) {
+                struct dtTrigger msg;
+                msg.MethodID          = DTM_TRIGGER;
+                msg.dtt_GInfo         = NULL;
+                msg.dtt_Function      = STM_PLAY;
+                msg.dtt_Data          = NULL;
+                if (0 == DoDTMethodA(o, NULL, NULL, (Msg)&msg)) {
+                    Wait(SIGF_SINGLE | SIGBREAKF_CTRL_C);
+                    result = RETURN_OK;
                 } else {
-                    Printf("\"%s\" is not a DataType playable sound file\n", file);
+                    Printf("Can't play \"%s\"\n", file);
                     result = RETURN_FAIL;
                 }
-                DisposeDTObject(o);
             } else {
-                Printf("Can't open %s as a DataType object\n", file);
+                Printf("\"%s\" is not a DataType playable sound file\n", file);
+                result = RETURN_FAIL;
             }
-            CloseLibrary(DataTypesBase);
+            DisposeDTObject(o);
         } else {
-            Printf("Can't open datatypes.library\n");
+            Printf("Can't open %s as a DataType object\n", file);
         }
+        CloseLibrary(DataTypesBase);
+    } else {
+        Printf("Can't open datatypes.library\n");
+    }
 
     return result;
 
