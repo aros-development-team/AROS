@@ -17,14 +17,30 @@ BOOL ata_Calibrate(struct IORequest* tmr, struct ataBase *base)
     return TRUE;
 }
 
-/* Single CIA access = 1 E-clock */
-void ata_WaitNano(register ULONG ns, struct ataBase *base)
+static void busywait(UWORD cnt)
 {
-    volatile struct CIA *cia = (struct CIA*)0xbfe001;
-    for (;;) {
-        cia->ciapra; /* dummy CIA read */
-        if (ns < 700)
-            break;
-        ns -= 700;
+    asm volatile (
+    	"move.w %0,%%d0\n"
+        "lea 0xbfe001,%%a0\n"
+        "0:\n"
+        "tst.b (%%a0)\n"
+        "tst.b (%%a0)\n"
+        "tst.b (%%a0)\n"
+        "tst.b (%%a0)\n"
+        "dbf %%d0,0b\n"
+    : : "m" (cnt) : "d0", "a0");
+}
+
+/* Single CIA access = 1 E-clock */
+void ata_WaitNano(ULONG ns, struct ataBase *base)
+{
+    ns /= 2;
+    if (!(SysBase->AttnFlags & AFF_68020))
+    	ns /= 2;
+    while (ns >= 65536 * 4) {
+        busywait(65535);
+        ns -= 65536 * 4;
     }
+    if (ns >= 4)
+        busywait(ns / 4);
 }
