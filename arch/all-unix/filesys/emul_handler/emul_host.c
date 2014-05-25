@@ -435,7 +435,7 @@ static inline int nocase_utime(struct emulbase *emulbase, char *path, const stru
 
 /*-------------------------------------------------------------------------------------------*/
 
-LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG protect, BOOL AllowDir)
+LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG access, LONG mode, LONG protect, BOOL AllowDir)
 {
     struct stat st;
     LONG ret = ERROR_OBJECT_WRONG_TYPE;
@@ -458,18 +458,20 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
 
     if (S_ISREG(st.st_mode))
     {
-	/* Object is a plain file */
-    	int flags = O_RDWR;
+        /* Object is a plain file */
+        int flags = O_RDONLY;
+        if (access != ACCESS_READ)
+            flags = O_RDWR;
 
-	switch (mode)
-    	{
-    	case MODE_NEWFILE:
-    	    flags |= O_TRUNC;
-    	    /* Fallthrough */
+        switch (mode)
+        {
+        case MODE_NEWFILE:
+            flags |= O_TRUNC;
+            /* Fallthrough */
 
-	case MODE_READWRITE:
-    	    flags |= O_CREAT;
-	}
+        case MODE_READWRITE:
+            flags |= O_CREAT;
+        }
 
 	r = emulbase->pdata.SysIFace->open(fh->hostname, flags, 0770);
 	AROS_HOST_BARRIER
