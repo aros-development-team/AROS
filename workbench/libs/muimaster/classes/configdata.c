@@ -670,14 +670,6 @@ static LONG windowpos_endian(IPTR data, BOOL isNative)
     cnt = sizeof(LONG);
     items = (size - sizeof(LONG)) / sizeof(struct windowpos);
     D(bug("size=%d items=%d\n", size, items));
-    if (size > 100 || items > 100)
-    {
-        bug("%s crashed...\n", FindTask(NULL)->tc_Node.ln_Name);
-        {
-            volatile int dead = 1;
-            while (dead);
-        }
-    }
 
     for (i = 0; i < items; i++)
     {
