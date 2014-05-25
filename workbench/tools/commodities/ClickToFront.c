@@ -410,9 +410,11 @@ static void clicktoFront(CxMsg *cxm, CxObj *co)
                 screen = IntuitionBase->ActiveScreen;
             }
 
+            LockLayerInfo(&screen->LayerInfo);
             layer = WhichLayer(&screen->LayerInfo,
 	                               screen->MouseX,
                                    screen->MouseY);
+            UnlockLayerInfo(&screen->LayerInfo);
 
             if (layer == NULL)
             {

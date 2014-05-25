@@ -698,7 +698,9 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
 
         /* get wanderers screen struct and the layer located at cursor position afterwards */
         get( obj, MUIA_Window_Screen, &wscreen);
+        LockLayerInfo(&wscreen->LayerInfo);
         layer = WhichLayer(&wscreen->LayerInfo,wscreen->MouseX,wscreen->MouseY);
+        UnlockLayerInfo(&wscreen->LayerInfo);
 
         if (layer)
         {

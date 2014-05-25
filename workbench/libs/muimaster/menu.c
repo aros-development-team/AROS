@@ -213,9 +213,11 @@ static void HandleMouseMove(struct MenuHandlerData *mhd)
     mhd->scrmousex = mhd->scr->MouseX;
     mhd->scrmousey = mhd->scr->MouseY;
 
-    if ((lay =
-            WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex,
-                mhd->scrmousey)))
+    LockLayerInfo(&mhd->scr->LayerInfo);
+    lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey);
+    UnlockLayerInfo(&mhd->scr->LayerInfo);
+
+    if (lay)
     {
         win = (struct Window *)lay->Window;
 
@@ -330,9 +332,11 @@ static void HandleMouseClick(struct MenuHandlerData *mhd, int menuup)
 {
     struct Layer *lay;
 
-    if ((lay =
-            WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex,
-                mhd->scrmousey)))
+    LockLayerInfo(&mhd->scr->LayerInfo);
+    lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey);
+    UnlockLayerInfo(&mhd->scr->LayerInfo);
+
+    if (lay)
     {
         struct Window *win = (struct Window *)lay->Window;
         struct MenuItem *item = NULL;

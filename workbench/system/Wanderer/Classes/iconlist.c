@@ -7554,7 +7554,9 @@ IPTR IconList__MUIM_DragReport(struct IClass *CLASS, Object *obj, struct MUIP_Dr
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
+    LockLayerInfo(&wnd->WScreen->LayerInfo);
     l = WhichLayer(&wnd->WScreen->LayerInfo, wnd->LeftEdge + message->x, wnd->TopEdge + message->y);
+    UnlockLayerInfo(&wnd->WScreen->LayerInfo);
 
     if (l != wnd->WLayer) return MUIV_DragReport_Abort;
 

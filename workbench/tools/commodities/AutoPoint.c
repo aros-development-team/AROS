@@ -351,7 +351,14 @@ static void autoActivateLag(CxMsg *msg, CxObj *co)
 	    screen = IntuitionBase->ActiveScreen;
 	}
 
-	layer = screen ? WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY) : NULL;
+	if (!screen)
+	    layer = NULL;
+	else
+	{
+	    LockLayerInfo(&screen->LayerInfo);
+	    layer = WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY);
+	    UnlockLayerInfo(&screen->LayerInfo);
+	}
 
 	apInfo.ai_thisWindow = (layer != NULL) ?
 	    (struct Window *)layer->Window : NULL;
@@ -472,7 +479,14 @@ static void autoActivate(CxMsg *msg, CxObj *co)
 	    screen = IntuitionBase->ActiveScreen;
 	}
 
-	layer = screen ? WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY) : NULL;
+	if (!screen)
+	    layer = NULL;
+	else
+	{
+	    LockLayerInfo(&screen->LayerInfo);
+	    layer = WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY);
+	    UnlockLayerInfo(&screen->LayerInfo);
+	}
 
 	apInfo.ai_thisWindow = (layer != NULL) ?
 	    (struct Window *)layer->Window : NULL;
