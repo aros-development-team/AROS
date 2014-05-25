@@ -163,7 +163,7 @@ static void free_lock(struct emulbase *emulbase, struct filehandle *current)
 
 /*********************************************************************************************/
 
-static LONG open_(struct emulbase *emulbase, struct filehandle *fhv, struct filehandle **handle, const char *name, LONG mode, LONG protect, BOOL AllowDir)
+static LONG open_(struct emulbase *emulbase, struct filehandle *fhv, struct filehandle **handle, const char *name, LONG access, LONG mode, LONG protect, BOOL AllowDir)
 {
     LONG ret = 0;
     struct filehandle *fh;
@@ -208,7 +208,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle *fhv, struct file
                 return 0;
             }
 
-            ret = DoOpen(emulbase, fh, mode, protect, AllowDir);
+            ret = DoOpen(emulbase, fh, access, mode, protect, AllowDir);
             if (!ret)
             {
             	*handle = fh;
@@ -539,7 +539,7 @@ static SIPTR parent_dir(struct emulbase *emulbase,
     SIPTR err;
 
     DCHDIR(bug("[emul] Original directory: \"%s\"\n", (*fhp)->name));
-    err = open_(emulbase, fhv, fhp, "/", MODE_OLDFILE, 0, TRUE);
+    err = open_(emulbase, fhv, fhp, "/", ACCESS_READ, MODE_OLDFILE, 0, TRUE);
     DCHDIR(bug("[emul] Parent directory: \"%s\"\n", err ? NULL : (*fhp)->name));
 
     return err;
@@ -674,7 +674,7 @@ static struct filehandle *new_volume(struct emulbase *emulbase, const char *path
         fhv->name       = unixpath + strlen(unixpath);
         fhv->type       = FHD_DIRECTORY;
         fhv->volumename = volname;
-        if (!DoOpen(emulbase, fhv, MODE_OLDFILE, 0, TRUE)) {
+        if (!DoOpen(emulbase, fhv, ACCESS_READ, MODE_OLDFILE, 0, TRUE)) {
             DMOUNT(bug("[emul] Making volume node %s\n", volname));
 
             doslist = MakeDosEntry(volname, DLT_VOLUME);
@@ -734,7 +734,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
     	fh2 = FH_FROM_LOCK(dp->dp_Arg2);
 
         DCMD(bug("[emul] %p ACTION_FIND%s: %p, %p, %b\n", fhv, (dp->dp_Type == ACTION_FINDINPUT) ? "INPUT" : ((dp->dp_Type == ACTION_FINDOUTPUT) ? "OUTPUT" : "UPDATE"), fh, fh2, dp->dp_Arg3));
-        Res2 = open_(emulbase, fhv, &fh2, AROS_BSTR_ADDR(dp->dp_Arg3), dp->dp_Type, 0, FALSE);
+        Res2 = open_(emulbase, fhv, &fh2, AROS_BSTR_ADDR(dp->dp_Arg3), ACCESS_WRITE, dp->dp_Type, 0, FALSE);
 
         if (Res2 == 0)
         {
@@ -903,7 +903,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
             break;
         }
 
-        Res2 = open_(emulbase, fhv, &fh, AROS_BSTR_ADDR(dp->dp_Arg2), (dp->dp_Arg3 == ACCESS_READ) ? MODE_OLDFILE : MODE_NEWFILE, 0755, TRUE);
+        Res2 = open_(emulbase, fhv, &fh, AROS_BSTR_ADDR(dp->dp_Arg2), dp->dp_Arg3, MODE_OLDFILE, 0755, TRUE);
         if (Res2) {
             Res1 = DOSFALSE;
             FreeMem(fl, sizeof(*fl));

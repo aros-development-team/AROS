@@ -70,7 +70,7 @@ extern const ULONG sizes[];
  * don't know about them. A nice example is Darwin, where off_t is 64-bit wide even
  * on 32-bit machines. On AROS size off_t is 32-bit wide.
  */
-LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG protect, BOOL AllowDir);
+LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG access, LONG mode, LONG protect, BOOL AllowDir);
 void DoClose(struct emulbase *emulbase, struct filehandle *fh);
 LONG DoRewindDir(struct emulbase *emulbase, struct filehandle *fh);
 LONG DoRead(struct emulbase *emulbase, struct filehandle *fh, APTR buff, ULONG len, SIPTR *err);

@@ -214,7 +214,7 @@ void DoClose(struct emulbase *emulbase, struct filehandle *current)
 
 /*********************************************************************************************/
 
-LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG protect, BOOL AllowDir)
+LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG access, LONG mode, LONG protect, BOOL AllowDir)
 {
     ULONG kind;
 
