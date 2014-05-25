@@ -354,7 +354,9 @@ static void handleMenuDown(CxMsg *cxm)
     dmdata.selected = -1;
     lockIBaseSave();
     screen = IntuitionBase->FirstScreen; // frontmost screen
+    LockLayerInfo(&screen->LayerInfo);
     layer = WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY);
+    UnlockLayerInfo(&screen->LayerInfo);
 
     if (layer)
     {

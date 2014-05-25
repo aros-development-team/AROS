@@ -428,8 +428,12 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 
 		if (!opaque_active && scr)
 		{
-		    struct Layer *lay = WhichLayer(&scr->LayerInfo, scr->MouseX, scr->MouseY);
+		    struct Layer *lay = NULL;
 		    struct Window *win = NULL;
+
+		    LockLayerInfo(&scr->LayerInfo);
+		    lay = WhichLayer(&scr->LayerInfo, scr->MouseX, scr->MouseY);
+		    UnlockLayerInfo(&scr->LayerInfo);
 
 		    if (lay) win = (struct Window *)lay->Window;
 

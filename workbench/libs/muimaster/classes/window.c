@@ -1384,9 +1384,11 @@ static BOOL HandleDragging(Object *oWin, struct MUI_WindowData *data,
     if (imsg->Class == IDCMP_MOUSEMOVE)
     {
         struct Layer *layer;
-        layer =
-            WhichLayer(&iWin->WScreen->LayerInfo,
-            iWin->LeftEdge + imsg->MouseX, iWin->TopEdge + imsg->MouseY);
+
+        LockLayerInfo(&iWin->WScreen->LayerInfo);
+        layer = WhichLayer(&iWin->WScreen->LayerInfo, iWin->LeftEdge + imsg->MouseX,
+                iWin->TopEdge + imsg->MouseY);
+        UnlockLayerInfo(&iWin->WScreen->LayerInfo);
 
         if (data->wd_DropObject)
         {

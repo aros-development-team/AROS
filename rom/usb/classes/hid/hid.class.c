@@ -7055,7 +7055,10 @@ void nLastActionHero(struct NepHidBase *nh)
                             UnlockIBase(intlock);
                             if(actscreen)
                             {
+                                LockLayerInfo(&actscreen->LayerInfo);
                                 toplayer =  WhichLayer(&actscreen->LayerInfo, (LONG) actscreen->MouseX, (LONG) actscreen->MouseY);
+                                UnlockLayerInfo(&actscreen->LayerInfo);
+
                                 if(toplayer)
                                 {
                                     if(toplayer->Window && (actwindow != toplayer->Window))

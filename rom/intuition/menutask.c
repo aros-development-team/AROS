@@ -272,7 +272,11 @@ static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *I
     mhd->scrmousex = mhd->scr->MouseX;
     mhd->scrmousey = mhd->scr->MouseY;
 
-    if ((lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey)))
+    LockLayerInfo(&mhd->scr->LayerInfo);
+    lay = WhichLayer(&mhd->scr->LayerInfo, mhd->scrmousex, mhd->scrmousey);
+    UnlockLayerInfo(&mhd->scr->LayerInfo);
+
+    if (lay)
     {
         win = (struct Window *)lay->Window;
 

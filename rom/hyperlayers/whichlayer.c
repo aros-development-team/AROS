@@ -42,6 +42,9 @@
     RESULT
 
     NOTES
+        The function does not lock Layer_Info structure. It is
+        the responsibility of the caller to issue the lock via
+        LockLayerInfo()/UnlockLayerInfo()
 
     EXAMPLE
 
@@ -63,16 +66,12 @@
 
     D(bug("WhichLayer(li @ $%lx, x %ld, y %ld)\n", li, x, y));
 
-    LockLayerInfo(li);
-
     for
     (
         l = li->top_layer;
         l != NULL && !(IS_VISIBLE(l) && IsPointInRegion(l->visibleshape, x, y));
         l = l->back
     );
-
-    UnlockLayerInfo(li);
 
     return l;
 
