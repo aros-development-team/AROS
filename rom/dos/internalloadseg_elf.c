@@ -889,7 +889,7 @@ BPTR InternalLoadSeg_ELF
         if (sh[i].type == SHT_ARM_ATTRIBUTES)
         {
             ULONG len = sh[i].size;
-            UBYTE *data = load_block(file, sh[i].offset, len, funcarray, DOSBase);
+            UBYTE *data = load_block(file, sh[i].offset, len, funcarray, &srb, DOSBase);
 
             if (data)
             {
