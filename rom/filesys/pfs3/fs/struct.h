@@ -532,7 +532,6 @@ struct globaldata
 										/* ~0 als protected wegens error		*/
 	UWORD timeout;                      /* DosToHandlerInterface timeout value  */
 	BOOL dirty;                         /* Global dirty flag                    */
-	UWORD blocks_dirty;                 /* number of reserved blocks dirty      */
 	BOOL timeron;                       /* change is being timed                */
 	BOOL postpone;                      /* repeat timer when finished           */
 	BOOL removable;                     /* Is volume removable?                 */

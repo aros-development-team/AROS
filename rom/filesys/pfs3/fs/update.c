@@ -142,6 +142,20 @@ static BOOL UpdateList (struct cachedblock *blk, globaldata *g);
 static void CommitReservedToBeFreed (globaldata *g);
 static BOOL UpdateDirtyBlock (struct cachedblock *blk, globaldata *g);
 
+static void UpdateBlocknr(struct cachedblock *blk, ULONG newblocknr, globaldata *g);
+static void UpdateABLK(struct cachedblock *, ULONG, globaldata *);
+static void UpdateDBLK(struct cachedblock *, ULONG, globaldata *);
+static void UpdateIBLK(struct cachedblock *, ULONG, globaldata *);
+static void UpdateSBLK(struct cachedblock *, ULONG, globaldata *);
+static void UpdateBMBLK(struct cachedblock *blk, ULONG newblocknr, globaldata *g);
+static void UpdateBMIBLK(struct cachedblock *blk, ULONG newblocknr, globaldata *g);
+#if VERSION23
+static void UpdateRBlkExtension (struct cachedblock *blk, ULONG newblocknr, globaldata *g);
+#endif
+#if DELDIR
+static void UpdateDELDIR (struct cachedblock *blk, ULONG newblocknr, globaldata *g);
+#endif
+
 /**********************************************************************/
 /*                             UPDATEDISK                             */
 /*                             UPDATEDISK                             */
@@ -274,7 +288,6 @@ BOOL UpdateDisk (globaldata *g)
 	}
 
 	g->dirty = FALSE;
-	g->blocks_dirty = 0;
 
 	EXIT("UpdateDisk");
 	return success;
@@ -343,8 +356,7 @@ static void RemoveEmptyIBlocks(struct volumedata *volume, globaldata *g)
 	{
 		if (blk->changeflag && !IsFirstIBlk(blk) && IsEmptyIBlk(blk,g) && !ISLOCKED(blk) )
 		{
-			volume->rootblk->idx.small.indexblocks[blk->blk.seqnr] = 0;
-			volume->rootblockchangeflag = TRUE;
+			UpdateIBLK((struct cachedblock *)blk, 0, g); 
 			MinRemove(blk);
 			FreeReservedBlock(blk->blocknr, g);
 			ResToBeFreed(blk->oldblocknr, g);
@@ -531,20 +543,6 @@ void CheckUpdate (ULONG rtbf_threshold, globaldata *g)
 /*                            MAKEBLOCKDIRTY                          */
 /**********************************************************************/
 
-static void UpdateBlocknr(struct cachedblock *blk, ULONG newblocknr, globaldata *g);
-static void UpdateABLK(struct cachedblock *, ULONG, globaldata *);
-static void UpdateDBLK(struct cachedblock *, ULONG, globaldata *);
-static void UpdateIBLK(struct cachedblock *, ULONG, globaldata *);
-static void UpdateSBLK(struct cachedblock *, ULONG, globaldata *);
-static void UpdateBMBLK(struct cachedblock *blk, ULONG newblocknr, globaldata *g);
-static void UpdateBMIBLK(struct cachedblock *blk, ULONG newblocknr, globaldata *g);
-#if VERSION23
-static void UpdateRBlkExtension (struct cachedblock *blk, ULONG newblocknr, globaldata *g);
-#endif
-#if DELDIR
-static void UpdateDELDIR (struct cachedblock *blk, ULONG newblocknr, globaldata *g);
-#endif
-
 /* --> part of update
  * marks a directory or anodeblock dirty. Nothing happens if it already
  * was dirty. If it wasn't, the block will be reallocated and marked dirty.
@@ -579,7 +577,6 @@ BOOL MakeBlockDirty (struct cachedblock *blk, globaldata *g)
 			ErrorMsg(AFS_BETA_WARNING_2, NULL, g);
 #endif
 			blk->changeflag = TRUE;
-			g->blocks_dirty++;
 		}
 
 		blk->used = oldlock;    // unlock block
@@ -659,7 +656,6 @@ static void UpdateDBLK (struct cachedblock *blk, ULONG newblocknr, globaldata *g
 	 * causing trouble (invalid checkpoint: dirblock uptodate, anode not)
 	 */
 	blk->changeflag = TRUE;
-	g->blocks_dirty++;
 	anode.blocknr = newblocknr;
 	SaveAnode(&anode, anode.nr, g);
 
@@ -672,7 +668,6 @@ static void UpdateABLK (struct cachedblock *blk, ULONG newblocknr, globaldata *g
   ULONG indexblknr, indexoffset, temp;
 
 	blk->changeflag = TRUE;
-	g->blocks_dirty++;
 
 	temp = ((struct canodeblock *)blk)->blk.seqnr;
 	indexblknr  = temp / andata.indexperblock;
@@ -691,7 +686,6 @@ static void UpdateIBLK(struct cachedblock *blk, ULONG newblocknr, globaldata *g)
   ULONG temp;
 
 	blk->changeflag = TRUE;
-	g->blocks_dirty++;
 	if (g->supermode)
 	{
 		temp = divide (((struct cindexblock *)blk)->blk.seqnr, andata.indexperblock);
@@ -709,7 +703,6 @@ static void UpdateIBLK(struct cachedblock *blk, ULONG newblocknr, globaldata *g)
 static void UpdateSBLK(struct cachedblock *blk, ULONG newblocknr, globaldata *g)
 {
 	blk->changeflag = TRUE;
-	g->blocks_dirty++;
 	blk->volume->rblkextension->blk.superindex[((struct cindexblock *)blk)->blk.seqnr] = newblocknr;
 }
 
@@ -720,7 +713,6 @@ static void UpdateBMBLK (struct cachedblock *blk, ULONG newblocknr, globaldata *
   ULONG temp;
 
 	blk->changeflag = TRUE;
-	g->blocks_dirty++;
 	temp = divide (bmb->blk.seqnr, andata.indexperblock);
 	indexblock = GetBitmapIndex (temp /* & 0xffff */, g);
 	indexblock->blk.index[temp >> 16] = newblocknr;
@@ -731,7 +723,6 @@ static void UpdateBMBLK (struct cachedblock *blk, ULONG newblocknr, globaldata *
 static void UpdateBMIBLK (struct cachedblock *blk, ULONG newblocknr, globaldata *g)
 {
 	blk->changeflag = TRUE;
-	g->blocks_dirty++;
 	
 	blk->volume->rootblk->idx.large.bitmapindex[((struct cindexblock *)blk)->blk.seqnr] = newblocknr;
 	blk->volume->rootblockchangeflag = TRUE;
@@ -741,7 +732,6 @@ static void UpdateBMIBLK (struct cachedblock *blk, ULONG newblocknr, globaldata 
 static void UpdateRBlkExtension (struct cachedblock *blk, ULONG newblocknr, globaldata *g)
 {
 	blk->changeflag = TRUE;
-	g->blocks_dirty++;      /* correct? (extension not in LRU) */
 	blk->volume->rootblk->extension = newblocknr;
 	blk->volume->rootblockchangeflag = TRUE;
 }
@@ -751,7 +741,6 @@ static void UpdateRBlkExtension (struct cachedblock *blk, ULONG newblocknr, glob
 static void UpdateDELDIR (struct cachedblock *blk, ULONG newblocknr, globaldata *g)
 {
 	blk->changeflag = TRUE;
-	g->blocks_dirty++;      /* correct? (deldir not in LRU) */
 	blk->volume->rblkextension->blk.deldir[((struct cdeldirblock *)blk)->blk.seqnr] = newblocknr;
 	MakeBlockDirty((struct cachedblock *)blk->volume->rblkextension, g);
 }
