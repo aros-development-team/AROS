@@ -1,6 +1,7 @@
 
 #define DEBUG 1
-#define DEBUG2 0
+#define IDE_DEBUG 0
+#define PCMCIA_DEBUG 0
 
 #include <aros/debug.h>
 #include <exec/types.h>
@@ -47,7 +48,6 @@ struct amiga_pcmcia_driverdata
     struct Interrupt removalint;
     struct CardResource *CardResource;
     BOOL intena;
-    BOOL poststatus;
     ULONG configbase, configmask;
     struct DeviceTData dtd;
     struct CardMemoryMap *cmm;
@@ -65,10 +65,10 @@ struct amiga_busdata
 static void ata_insw(APTR address, UWORD port, ULONG count, void *data)
 {
     struct amiga_busdata *bdata = data;
-    volatile UWORD *addr = (UWORD*)(bdata->port + (port & ~3));
-    UWORD *dst = address;
+    volatile ULONG *addr = (ULONG*)(bdata->port + (port & ~3));
+    ULONG *dst = address;
 
-    count /= 2;
+    count /= 4;
     while (count-- != 0)
         *dst++ = *addr;
 }
@@ -76,10 +76,10 @@ static void ata_insw(APTR address, UWORD port, ULONG count, void *data)
 static void ata_outsw(APTR address, UWORD port, ULONG count, APTR data)
 {
     struct amiga_busdata *bdata = data;
-    volatile UWORD *addr = (UWORD*)(bdata->port + (port & ~3));
-    UWORD *dst = address;
+    volatile ULONG *addr = (ULONG*)(bdata->port + (port & ~3));
+    ULONG *dst = address;
 
-    count /= 2;
+    count /= 4;
     while (count-- != 0)
         *addr = *dst++;
 }
@@ -87,7 +87,7 @@ static void ata_outsw(APTR address, UWORD port, ULONG count, APTR data)
 static void ata_pcmcia_insw(APTR address, UWORD port, ULONG count, void *data)
 {
     struct amiga_busdata *bdata = data;
-    volatile UWORD *addr = (UWORD*)(bdata->port + 8);
+    volatile UWORD *addr = (UWORD*)(bdata->port + port);
     UWORD *dst = address;
 
     count /= 2;
@@ -98,7 +98,7 @@ static void ata_pcmcia_insw(APTR address, UWORD port, ULONG count, void *data)
 static void ata_pcmcia_outsw(APTR address, UWORD port, ULONG count, APTR data)
 {
     struct amiga_busdata *bdata = data;
-    volatile UWORD *addr = (UWORD*)(bdata->port + 8);
+    volatile UWORD *addr = (UWORD*)(bdata->port + port);
     UWORD *dst = address;
 
     count /= 2;
@@ -116,7 +116,7 @@ static void ata_out(UBYTE val, UWORD offset, IPTR port, APTR data)
     struct amiga_busdata *bdata = data;
     volatile UBYTE *addr;
 
-#if DEBUG2
+#if IDE_DEBUG
     bug("ata_out(%x,%x)=%x:%x\n", offset, port, (UBYTE*)(bdata->port + port) + offset * 4, val);
 #endif
     /* IDE doubler hides Alternate Status/Device Control register */
@@ -139,7 +139,7 @@ static UBYTE ata_in(UWORD offset, IPTR port, APTR data)
     volatile UBYTE *addr;
     UBYTE v;
 
-#if DEBUG2
+#if IDE_DEBUG
     bug("ata_in(%x,%x)=%x\n", offset, port, (UBYTE*)(bdata->port + port) + offset * 4);
 #endif
     if (port == -1) {
@@ -148,32 +148,66 @@ static UBYTE ata_in(UWORD offset, IPTR port, APTR data)
     }
     addr = (UBYTE*)(bdata->port + port);
     v = addr[offset * 4];
-#if DEBUG2
+#if IDE_DEBUG
     bug("=%x\n", v);
 #endif
     return v;
+}
+
+static void gayledebug(void)
+{
+#if 0
+    volatile UBYTE *g = (UBYTE*)0xa00200;
+    volatile UBYTE *gstatus = (UBYTE*)0xda8000;
+    volatile UBYTE *gintreq = (UBYTE*)0xda9000;
+    volatile UBYTE *gintena = (UBYTE*)0xdaa000;
+    volatile UBYTE *gconfig = (UBYTE*)0xdab000;
+    bug ("%02x %02x %02x %02x %02x\n",
+        *g, *gstatus, *gintreq, *gintena, *gconfig);
+#endif
 }
 
 static void ata_pcmcia_out(UBYTE val, UWORD offset, IPTR port, APTR data)
 {
     volatile UBYTE *addr;
 
-    if (offset == ata_Feature)
-        offset = 13;
-
     addr = (UBYTE*)port;
+    if (offset == 1) {
+        /* Error / Feature not available when using Amiga PCMCIA */
+        return;
+    } else if (offset & 1) {
+        addr += 0x10000;
+    }
     addr[offset] = val;
+
+#if PCMCIA_DEBUG
+    bug("pcmcia_ata_out(%x,%x)=%p=%x\n", offset, port, &addr[offset], val);
+#endif
 }
 
 static UBYTE ata_pcmcia_in(UWORD offset, IPTR port, APTR data)
 {
     volatile UBYTE *addr;
+    UBYTE v;
 
-    if (offset == ata_Feature)
-        offset = 13;
+    gayledebug();
 
     addr = (UBYTE*)port;
-    return addr[offset];
+    if (offset == 1) {
+        /* Error / Feature not available when using Amiga PCMCIA */
+        return 1;
+    } else if (offset & 1) {
+        addr += 0x10000;
+    }
+    v = addr[offset];
+
+#if PCMCIA_DEBUG
+    bug("pcmcia_ata_in(%x,%x)=%p=%x (%02X)\n", offset, port, &addr[offset], v);
+#endif
+
+    gayledebug();
+    
+    return v;
 }
 
 
@@ -228,12 +262,12 @@ static UBYTE *getport(struct amiga_driverdata *ddata)
 
     altport = port + 0x1010;
     Disable();
-    port[atapi_DevSel * 4] = ATAF_ERROR;
+    port[ata_DevHead * 4] = ATAF_ERROR;
     /* If nothing connected, we get back what we wrote, ATAF_ERROR set */
     status1 = port[ata_Status * 4];
-    port[atapi_DevSel * 4] = ATAF_DATAREQ;
+    port[ata_DevHead * 4] = ATAF_DATAREQ;
     status2 = port[ata_Status * 4];
-    port[atapi_DevSel * 4] = 0;
+    port[ata_DevHead * 4] = 0;
     Enable();
     D(bug("[ATA] Status=%02x,%02x\n", status1, status2));
     // BUSY and DRDY both active or ERROR/DATAREQ = no drive(s) = do not install driver
@@ -252,13 +286,13 @@ static UBYTE *getport(struct amiga_driverdata *ddata)
     	 */
     	Disable();
 	altport[ata_AltControl * 4] = 0;
-    	port[atapi_DevSel * 4] = 1;
+    	port[ata_DevHead * 4] = 1;
 	v1 = altport[ata_AltControl * 4];
 	altport[ata_AltControl * 4] = 2;
-    	port[atapi_DevSel * 4] = 4;
+    	port[ata_DevHead * 4] = 4;
 	v2 = altport[ata_AltControl * 4];
 	altport[ata_AltControl * 4] = 0;
-    	port[atapi_DevSel * 4] = 0;
+    	port[ata_DevHead * 4] = 0;
 	Enable();
 	if ((v1 == 0 && v2 == 2) || (v1 == 1 && v2 == 4) || (v1 == 0xff && v2 == 0xff)) {
     	    ddata->doubler = 2;
@@ -339,13 +373,10 @@ static AROS_CARDH(IDE_PCMCIA_Handler, void *, data, status)
     AROS_CARDFUNC_INIT
 
     struct amiga_pcmcia_driverdata *ddata = data;
-    if (ddata->poststatus) {
+    if (!status) {
         if (ddata->intena)
             ata_HandleIRQ(ddata->bus[0]->bus);
-    } else if (status & CARD_INTF_IRQ) {
-        ddata->poststatus = TRUE;
     }
-
     return status;
 
     AROS_CARDFUNC_EXIT
@@ -483,11 +514,9 @@ static BOOL detectcard(struct amiga_pcmcia_driverdata *ddata)
     ch = &ddata->cardhandle;
     CardResource = ddata->CardResource;
 
-    ddata->configmask = 1;
-    ddata->configbase = 0x0200;
-
     CardResetCard(ch);
-    CardMiscControl(ch, CARD_ENABLEF_DIGAUDIO | CARD_DISABLEF_WP);
+    /* Some cards refuse to work if CARD_ENABLEF_DIGAUDIO is enabled at this point */
+    CardMiscControl(ch, CARD_DISABLEF_WP);
 
     got = FALSE;
     for (;;) {
@@ -526,7 +555,7 @@ static BOOL detectcard(struct amiga_pcmcia_driverdata *ddata)
             tp++;
         }
         cnt2 = ((tuple[2] >> 3) & 15) + 1;
-        for (cnt1 = 0; cnt1 < cnt2; cnt1++) {
+        for (cnt1 = 0; cnt1 < cnt2 && cnt1 < 4; cnt1++) {
             ddata->configmask |= (*tp) << (cnt1 * 8);
             tp++;
         }
@@ -535,13 +564,48 @@ static BOOL detectcard(struct amiga_pcmcia_driverdata *ddata)
     return FALSE;
 }
 
-static void initializecard(struct amiga_pcmcia_driverdata *ddata)
+static void pcmcia_config_write(struct amiga_pcmcia_driverdata *ddata, UBYTE reg, UBYTE data)
+{
+    volatile UBYTE *attrbase = ddata->cmm->cmm_AttributeMemory;
+    volatile UBYTE *gstatus = (UBYTE*)0xda8000;
+    APTR CardResource;
+    struct CardHandle *ch;
+
+    CardResource = ddata->CardResource;
+    ch = &ddata->cardhandle;
+    if (!(ddata->configmask & (1 << reg)))
+        return;
+    bug("%02x -> %p\n", data, &attrbase[ddata->configbase + 2 * reg]);
+    gayledebug();
+    gayledebug();
+    gayledebug();
+    for(;;) {
+        UBYTE status = *gstatus;
+        if (!(status & CARD_STATUSF_BSY) || !(status & CARD_STATUSF_CCDET))
+            break;
+    }
+    CardMiscControl(ch, CARD_DISABLEF_WP);
+    attrbase[ddata->configbase + 2 * reg] = data;
+    CardMiscControl(ch, 0);
+    for(;;) {
+        UBYTE status = *gstatus;
+        if (!(status & CARD_STATUSF_BSY) || !(status & CARD_STATUSF_CCDET))
+            break;
+    }
+    data = attrbase[ddata->configbase + 2 * reg];
+    bug("=%02X\n", data);
+    gayledebug();
+    gayledebug();
+    gayledebug();
+}
+
+static void initializecard(struct ataBase *LIBBASE, struct amiga_pcmcia_driverdata *ddata)
 {
     struct CardHandle *ch;
     UBYTE tuple[256 + 2];
     UBYTE *tp;
     APTR CardResource;
-    volatile UBYTE *attrbase;
+    struct IORequest *req;
 
     ch = &ddata->cardhandle;
     CardResource = ddata->CardResource;
@@ -558,13 +622,36 @@ static void initializecard(struct amiga_pcmcia_driverdata *ddata)
             D(bug("\n"));
         }
     });
+    req = ata_OpenTimer(LIBBASE);
     CardAccessSpeed(ch, ddata->dtd.dtd_DTspeed);
-    attrbase = ddata->cmm->cmm_AttributeMemory;
-    attrbase[ddata->configbase + 2 * 3] = 0; /* Socket and copy. Must be written first. */
-    attrbase[ddata->configbase + 2 * 2] = 0x0f; /* Pin replacement. */
-    attrbase[ddata->configbase + 2 * 1] = 0; /* Configuration and Status. */
-    attrbase[ddata->configbase + 2 * 0] = 0x41; /* Configure option. Configure as IO linear mode. */
-    /* Now we have IDE registers at iobase */
+#if 0
+    pcmcia_config_write(ddata, 3, 0); /* Socket and copy. Must be written first. */
+    pcmcia_config_write(ddata, 0, 0x80);
+    if (req)
+        ata_WaitTO(req, 0, 20000, 0);
+    pcmcia_config_write(ddata, 0, 0x00);
+    if (req)
+        ata_WaitTO(req, 0, 20000, 0);
+    for(;;) {
+        UBYTE status = ReadCardStatus();
+        if (!(status & CARD_STATUSF_BSY) || !(status & CARD_STATUSF_CCDET))
+            break;
+    }
+#endif
+    Disable();
+    pcmcia_config_write(ddata, 3, 0); /* Socket and copy. Must be written first. */
+    pcmcia_config_write(ddata, 2, 0); /* Pin replacement. */
+    pcmcia_config_write(ddata, 1, 0); /* Configuration and Status. */
+    /* NOTE: We must use index #2 because some buggy cards won't work properly if using config index #1 */
+    pcmcia_config_write(ddata, 0, 0x42); /* Configure option. Level interrupt (0x40) + config index (2). */
+    Enable();
+    if (req)
+        ata_WaitTO(req, 0, 50000, 0);
+    pcmcia_config_write(ddata, 1, 0); /* Configuration and Status. */
+    CardMiscControl(ch, CARD_ENABLEF_DIGAUDIO | CARD_DISABLEF_WP);
+    ata_CloseTimer(req);
+    /* Now we have IDE registers at iobase + 0x1f0 to 0x1f7 and 0x3f6 to 0x3f7 */
+    /* CARD_ENABLEF_DIGAUDIO must be enabled now */
 }
 
 static BOOL ata_amiga_pcmcia_init(struct ataBase *LIBBASE)
@@ -607,11 +694,12 @@ static BOOL ata_amiga_pcmcia_init(struct ataBase *LIBBASE)
         BeginCardAccess(ch);
 
         if (detectcard(ddata)) {
-            initializecard(ddata);
+            initializecard(LIBBASE, ddata);
             bdata->ddata = ddata;
             bdata->port = (UBYTE*)ddata->cmm->cmm_IOMemory;
+            
             LIBBASE->ata_NoDMA = TRUE;
-            ata_RegisterBus((IPTR)ddata->cmm->cmm_IOMemory, (IPTR)(ddata->cmm->cmm_IOMemory + 14 - ata_AltControl), 2, 0, ARBF_EarlyInterrupt, &amiga_driver_pcmcia, bdata, LIBBASE);
+            ata_RegisterBus((IPTR)ddata->cmm->cmm_IOMemory + 0x1f0, (IPTR)(ddata->cmm->cmm_IOMemory + 0x3f6 - ata_AltControl), 2, 0, ARBF_EarlyInterrupt, &amiga_driver_pcmcia, bdata, LIBBASE);
             return TRUE;
         }
 
