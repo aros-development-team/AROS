@@ -438,7 +438,7 @@ static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq,
                  * no timeout just yet, but it's not a good idea to keep
                  * spinning like that. let's give the system some time.
                  */
-                ata_WaitNano(1000000, bus->ab_Base);
+                ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1000, 0);
             }
 
             status = PIO_InAlt(bus, ata_AltStatus);
