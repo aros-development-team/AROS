@@ -35,9 +35,9 @@ LIBBASETYPE
 #define METHOD(base, id, name) \
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
 
-#define BASE(lib)                   ((LIBBASETYPEPTR)(lib))
+#define MBASE(lib)                   ((LIBBASETYPEPTR)(lib))
 
-#define SD(cl)                      (&BASE(cl->UserData)->sd)
+#define SD(cl)                      (&MBASE(cl->UserData)->sd)
 
 #define ADD_DEVICE(sd, dev, class)                                              \
         sd->mockHardwareBus0[dev] = OOP_NewObject(NULL, class, NULL);   \

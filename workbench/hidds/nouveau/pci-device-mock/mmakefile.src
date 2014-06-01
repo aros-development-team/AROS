@@ -2,7 +2,6 @@
 include $(TOP)/config/make.cfg
 
 FILES	:= \
-    irqmockclass \
     pcimockdriverclass \
     pcimockhardwareclass \
     NV44A \
@@ -11,7 +10,7 @@ FILES	:= \
     NVGF100 \
     SIS661FX \
 
-USER_INCLUDES := -I$(SRCDIR)/rom/hidds/hidd.pci/
+USER_INCLUDES := -I$(SRCDIR)/rom/hidds/pci/
 
 %build_module mmake=hidd-pci-mock modname=pcimock modtype=hidd \
     files=$(FILES)
