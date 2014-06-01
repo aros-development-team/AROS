@@ -23,11 +23,16 @@
 /*
  * Settings for TLSF allocator:
  * MAX_LOG2_SLI - amount of bits used for the second level list
- * MAX_FLI      - maximal allowable allocation size - 2^32 should be enough
+ * MAX_FLI      - maximal allowable allocation size - 2^32 should be enough on 32bit systems
+ *                64bit systems use 128GB limit.
  */
 #define MAX_LOG2_SLI    (5)
 #define MAX_SLI         (1 << MAX_LOG2_SLI)
+#if __WORDSIZE == 64
+#define MAX_FLI         (32+5)
+#else
 #define MAX_FLI         (32)
+#endif
 #define FLI_OFFSET      (6)
 #define SMALL_BLOCK     (2 << FLI_OFFSET)
 
@@ -543,6 +548,104 @@ static void tlsf_release_memory_area(struct MemHeaderExt * mhe, tlsf_area_t * ar
     if (tlsf->autogrow_release_fn)
         tlsf->autogrow_release_fn(tlsf->autogrow_data, begin, size);
 }
+
+void * tlsf_malloc_aligned(struct MemHeaderExt *mhe, IPTR size, IPTR align, ULONG *flags)
+{
+    tlsf_t *tlsf = (tlsf_t *)mhe->mhe_UserData;
+    void * ptr;
+    bhdr_t *b;
+
+    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+        ObtainSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
+
+    size = ROUNDUP(size);
+
+    D(nbug("[TLSF] tlsf_malloc_aligned(%p, %lx, %d)\n", mhe, size, align));
+
+    /* Adjust align to the top nearest power of two */
+    align = 1 << MS(align);
+
+    D(nbug("[TLSF] adjusted align = %d\n", align));
+
+    ptr = tlsf_malloc(mhe, size+align, flags);
+    b = MEM_TO_BHDR(ptr);
+
+    D(nbug("[TLSF] allocated region @%p\n", ptr));
+
+    if (align > SIZE_ALIGN)
+    {
+        void *aligned_ptr = (void *)(((IPTR)ptr + align - 1) & ~(align - 1));
+        bhdr_t *aligned_bhdr = MEM_TO_BHDR(aligned_ptr);
+        IPTR diff_begin = (IPTR)aligned_bhdr - (IPTR)b;
+        IPTR diff_end = (IPTR)GET_NEXT_BHDR(b, GET_SIZE(b)) - (IPTR)GET_NEXT_BHDR(aligned_bhdr, size);
+
+        SET_SIZE(aligned_bhdr, size);
+
+        if (aligned_ptr != ptr)
+        {
+            D(nbug("[TLSF] aligned ptr: %p\n", aligned_ptr));
+            D(nbug("[TLSF] difference begin: %d\n", diff_begin));
+            D(nbug("[TLSF] difference end: %d\n", diff_end));
+
+            if (diff_begin > 0)
+            {
+                SET_SIZE(b, diff_begin - ROUNDUP(sizeof(hdr_t)));
+
+                tlsf->free_size += GET_SIZE(b);
+
+                aligned_bhdr->header.prev = b;
+                SET_FREE_PREV_BLOCK(aligned_bhdr);
+                SET_FREE_BLOCK(b);
+
+                b = MERGE_PREV(tlsf, b);
+
+                D(nbug("[TLSF] block @%p, b->next %p\n", b, GET_NEXT_BHDR(b, GET_SIZE(b))));
+
+                /* Insert free block into the proper list */
+                INSERT_FREE_BLOCK(tlsf, b);
+            }
+
+            ptr = &aligned_bhdr->mem[0];
+        }
+
+        if (diff_end > 0)
+        {
+            bhdr_t *b1 = GET_NEXT_BHDR(aligned_bhdr, GET_SIZE(aligned_bhdr));
+            bhdr_t *next;
+
+            b1->header.prev = aligned_bhdr;
+
+            SET_SIZE(b1, diff_end - ROUNDUP(sizeof(hdr_t)));
+            SET_BUSY_PREV_BLOCK(b1);
+            SET_FREE_BLOCK(b1);
+
+            next = GET_NEXT_BHDR(b1, GET_SIZE(b1));
+            next->header.prev = b1;
+            SET_FREE_PREV_BLOCK(next);
+
+            b1 = MERGE_NEXT(tlsf, b1);
+
+            INSERT_FREE_BLOCK(tlsf, b1);
+        }
+    }
+
+    D({
+        bhdr_t *b2 = b;
+        while(b2 && GET_SIZE(b2))
+        {
+            nbug("[TLSF] bhdr %p, mem %p, size=%08x, flags=%x, prev=%p\n",
+                    b2, &b2->mem[0], GET_SIZE(b2), GET_FLAGS(b2), b2->header.prev);
+
+            b2 = GET_NEXT_BHDR(b2, GET_SIZE(b2));
+        }
+    });
+
+    if (mhe->mhe_MemHeader.mh_Attributes & MEMF_SEM_PROTECTED)
+        ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
+
+    return ptr;
+}
+
 
 void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
 {
@@ -1156,6 +1259,8 @@ void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, 
 
     mhe->mhe_Alloc         = tlsf_malloc;
     mhe->mhe_AllocVec      = tlsf_malloc;
+    mhe->mhe_AllocAligned  = tlsf_malloc_aligned;
+    mhe->mhe_AllocVecAligned=tlsf_malloc_aligned;
     mhe->mhe_Free          = tlsf_freemem;
     mhe->mhe_FreeVec       = tlsf_freevec;
     mhe->mhe_AllocAbs      = tlsf_allocabs;
