@@ -55,6 +55,7 @@ OOP_Object * METHOD(NVGF100MockHardware, Root, New)
     SET_ASR_DWORD(hwdata, PCI_BAR0, 0x0050a608, 0x00000003); /* GPC 1 */
     SET_ASR_DWORD(hwdata, PCI_BAR0, 0x00512608, 0x00000004); /* GPC 2 */
     SET_ASR_DWORD(hwdata, PCI_BAR0, 0x0051a608, 0x00000004); /* GPC 3 */
+    SET_ASR_DWORD(hwdata, PCI_BAR0, 0x00409804, 0x000037f0); /* GRCTX size */
 
     return o;
 }

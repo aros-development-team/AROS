@@ -6,11 +6,11 @@
 #include <aros/debug.h>
 #include <proto/oop.h>
 
+#include "pci.h" /* From hidd.pci */
+
 #include "pcimockhardware.h"
 #include "pcimockhardware_intern.h"
 #include "pcimock_intern.h"
-
-#include "pci_registers.h" /* From hidd.pci */
 
 #undef HiddPCIMockHardwareAttrBase
 #define HiddPCIMockHardwareAttrBase (SD(cl)->hiddPCIMockHardwareAB)
