@@ -33,8 +33,10 @@ struct MemHeaderExt
 
     /* Memory allocation functions */
     APTR  (* mhe_Alloc)   (struct MemHeaderExt *, IPTR  size,  ULONG *flags);
+    APTR  (* mhe_AllocAligned) (struct MemHeaderExt *, IPTR size, IPTR align, ULONG *flags);
     VOID  (* mhe_Free)    (struct MemHeaderExt *, APTR  mem,   IPTR   size);
     APTR  (* mhe_AllocVec)(struct MemHeaderExt *, IPTR  size,  ULONG *flags);
+    APTR  (* mhe_AllocVecAligned) (struct MemHeaderExt *, IPTR size, IPTR align, ULONG *flags);
     VOID  (* mhe_FreeVec) (struct MemHeaderExt *, APTR  mem);
     APTR  (* mhe_AllocAbs)(struct MemHeaderExt *, IPTR  size,  APTR   addr);
     APTR  (* mhe_ReAlloc) (struct MemHeaderExt *, APTR  old,   IPTR   size);
