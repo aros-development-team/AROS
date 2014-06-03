@@ -64,7 +64,7 @@
 
     D(bug("Call FreeMem (%08lx, %ld)\n", memoryBlock, byteSize));
 
-    /* If there is no memory free nothing */
+    /* If there is nothing to free do nothing. */
     if(!byteSize || !memoryBlock)
         ReturnVoid ("FreeMem");
 

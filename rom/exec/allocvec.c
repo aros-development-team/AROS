@@ -53,6 +53,10 @@
 
     UBYTE *ret;
 
+    /* 0-sized allocation results in returning NULL (API guarantee) */
+    if(!byteSize)
+        return NULL;
+
     /* Add room for stored size. */
     byteSize+=AROS_ALIGN(sizeof(IPTR));
 
