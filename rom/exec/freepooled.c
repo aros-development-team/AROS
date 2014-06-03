@@ -57,6 +57,10 @@
 
     struct MemHeaderExt *mhe = (struct MemHeaderExt *)poolHeader;
 
+    /* If there is nothing to free do nothing. */
+    if(!memSize || !memory)
+        return;
+
     if (IsManagedMem(mhe))
     {
         if (mhe->mhe_Free)

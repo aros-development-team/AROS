@@ -52,7 +52,11 @@
     AROS_LIBFUNC_INIT
     
     struct MemHeaderExt *mhe = (struct MemHeaderExt *)poolHeader;
-    
+
+    /* 0-sized allocation results in returning NULL (API guarantee) */
+    if(!memSize)
+        return NULL;
+
     if (IsManagedMem(mhe))
     {
         ULONG attributes = (ULONG)(IPTR)mhe->mhe_MemHeader.mh_First;

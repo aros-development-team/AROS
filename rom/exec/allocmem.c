@@ -86,7 +86,7 @@
     D(if (SysBase->DebugAROSBase))
     D(bug("Call AllocMem (%d, %08x)\n", byteSize, requirements));
 
-    /* Zero bytes requested? May return everything ;-). */
+    /* 0-sized allocation results in returning NULL (API guarantee) */
     if(!byteSize)
         return NULL;
 

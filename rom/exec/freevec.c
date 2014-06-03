@@ -46,11 +46,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* If there's nothing to free do nothing. */
-    if (memoryBlock != NULL)
-    {
-        memoryBlock -= AROS_ALIGN(sizeof(IPTR));
-        FreeMem(memoryBlock, *((IPTR *)memoryBlock));
-    }
+    /* If there is nothing to free do nothing. */
+    if(!memoryBlock)
+        return;
+
+    memoryBlock -= AROS_ALIGN(sizeof(IPTR));
+    FreeMem(memoryBlock, *((IPTR *)memoryBlock));
+
     AROS_LIBFUNC_EXIT
 } /* FreeVec */
