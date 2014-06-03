@@ -45,6 +45,8 @@ struct HostInterface *HostIFace;
 THIS_PROGRAM_HANDLES_SYMBOLSET(STARTUP)
 DEFINESET(STARTUP);
 
+#define CHIPMEMSIZE    (16 * 1024 * 1024)
+
 /*
  * Kickstart entry point. Note that our code area is already made read-only by the bootstrap.
  */
@@ -54,8 +56,8 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     void *hostlib;
     char *errstr;
     char *cmdline = NULL;
-    unsigned int mm_PageSize;
-    struct MemHeader *bootmh;
+    unsigned int mm_PageSize, memsize;
+    struct MemHeader *bootmh = NULL, *chipmh = NULL, *fastmh = NULL;
     struct TagItem *tag, *tstate = msg;
     struct HostInterface *hif = NULL;
     struct mb_mmap *mmap = NULL;
@@ -150,14 +152,27 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     	return -1;
     }
 
-    /* We know that memory map has only one RAM element */
-    bootmh = (struct MemHeader *)(IPTR)mmap->addr;
+    /* We know that memory map has only one memory range */
+    chipmh = (struct MemHeader *)(IPTR)mmap->addr;
+    memsize = mmap->len > CHIPMEMSIZE ? CHIPMEMSIZE : mmap->len;
 
-    /* Prepare the first mem header */
-    D(nbug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len));
-    krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
+    /* Prepare the simulated mem headers */
+    /* NOTE: two mem headers are created to cover more cases of memory system */
+    krnCreateMemHeader("CHIP RAM", -5, chipmh, memsize, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
     if (!(cmdline && strstr(cmdline, "notlsf")))
-        bootmh = krnConvertMemHeaderToTLSF(bootmh);
+        chipmh = krnConvertMemHeaderToTLSF(chipmh);
+    bootmh = chipmh;
+
+    if (mmap->len > memsize)
+    {
+        fastmh = (struct MemHeader *)(mmap->addr + memsize);
+        memsize = mmap->len - memsize;
+        krnCreateMemHeader("Fast RAM", 0, fastmh , memsize, MEMF_FAST|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
+        if (!(cmdline && strstr(cmdline, "notlsf")))
+            fastmh = krnConvertMemHeaderToTLSF(fastmh);
+        if (memsize > (1024 * 1024))
+            bootmh = fastmh;
+    }
 
     /*
      * SysBase pre-validation after a warm restart.
@@ -177,6 +192,12 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     }
 
     D(nbug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First));
+
+    if (bootmh != chipmh && chipmh)
+        Enqueue(&SysBase->MemList, &chipmh->mh_Node);
+
+    if (bootmh != fastmh && fastmh)
+        Enqueue(&SysBase->MemList, &fastmh->mh_Node);
 
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections
