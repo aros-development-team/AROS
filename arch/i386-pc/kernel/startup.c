@@ -163,6 +163,8 @@ void kernel_cstart(const struct TagItem *msg)
     struct MemHeader *mh, *mh2;
     UWORD *ranges[3];
     struct mb_mmap *region;
+    char *cmdline = NULL;
+    ULONG allocator = ALLOCATOR_TLSF;
 
     D(bug("[Kernel] Transient kickstart end 0x%p, BootMsg 0x%p\n", kick_end, BootMsg));
     D(bug("[Kernel] Boot stack: 0x%p - 0x%p\n", boot_stack, boot_stack + STACK_SIZE));
@@ -170,7 +172,6 @@ void kernel_cstart(const struct TagItem *msg)
     if (!kick_end)
     {
         struct vbe_mode *vmode = NULL;
-        char *cmdline = NULL;
 
     	/* If kick_end is not set, this is our first start. */
 	tag = LibFindTagItem(KRN_KernelHighest, msg);
@@ -257,6 +258,10 @@ void kernel_cstart(const struct TagItem *msg)
         case KRN_MMAPLength:
             mmap_len = tag->ti_Data;
             break;
+
+        case KRN_CmdLine:
+            cmdline = (char *)tag->ti_Data;
+            break;
         }
     }
 
@@ -268,6 +273,10 @@ void kernel_cstart(const struct TagItem *msg)
 		 "Memory map address: 0x%P, length %ld\n",
 		 kick_start, mmap, mmap_len);
     }
+
+    if (cmdline && strstr(cmdline, "notlsf"))
+        allocator = ALLOCATOR_STD;
+
 
     /* Create global descriptor table */
     krnCopyMem(GDT_Table, GDT, sizeof(GDT_Table));
@@ -299,7 +308,9 @@ void kernel_cstart(const struct TagItem *msg)
      * 4KB at address 0 are reserved for our needs.
      */
     NEWLIST(&memList);
-    mmap_InitMemory(mmap, mmap_len, &memList, kick_start, kick_end, 0x00001000, PC_Memory);
+    mmap_InitMemory(mmap, mmap_len, &memList, kick_start, kick_end, 0x00001000, PC_Memory, allocator);
+
+
 
     /*
      * mmap_InitMemory() adds MemHeaders to the list in the order they were created.
@@ -307,6 +318,8 @@ void kernel_cstart(const struct TagItem *msg)
      * Take highest region in order to create SysBase in it.
      */
     mh = (struct MemHeader *)REMTAIL(&memList);
+
+
     D(bug("[Kernel] Initial MemHeader: 0x%p - 0x%p (%s)\n", mh->mh_Lower, mh->mh_Upper, mh->mh_Node.ln_Name));
 
     if (SysBase)

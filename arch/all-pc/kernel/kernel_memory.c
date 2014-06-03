@@ -96,7 +96,7 @@ static struct MemChunk *krnAddMemChunk(struct MemHeader **mhPtr, struct MemChunk
  * This effectively sorts memory map entries in ascending order and merges adjacent chunks into single MemHeaders.
  */
 void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct MinList *memList,
-                     IPTR klo, IPTR khi, IPTR reserve, const struct MemRegion *reg)
+                     IPTR klo, IPTR khi, IPTR reserve, const struct MemRegion *reg, ULONG allocator)
 {
     while (reg->name)
     {
@@ -182,6 +182,9 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
                      */
                     D(nbug("[MMAP] Physical gap   0x%p - 0x%p\n", cur_start, chunk_start));
 
+                    if (allocator == ALLOCATOR_TLSF)
+                        mh = krnConvertMemHeaderToTLSF(mh);
+
                     ADDTAIL(memList, mh);
                     mh = NULL;
                     phys_start = ~0;
@@ -240,7 +243,12 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
 
         /* Add the last MemHeader if exists */
         if (mh)
+        {
+            if (allocator == ALLOCATOR_TLSF)
+                mh = krnConvertMemHeaderToTLSF(mh);
+
             ADDTAIL(memList, mh);
+        }
 
         reg++;
     }

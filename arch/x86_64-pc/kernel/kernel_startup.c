@@ -365,7 +365,7 @@ void kernel_cstart(const struct TagItem *start_msg)
      * We reserve one page (PAGE_SIZE) at zero address. We will protect it.
      */
     NEWLIST(&memList);
-    mmap_InitMemory(mmap, mmap_len, &memList, klo, kick_highest, PAGE_SIZE, PC_Memory);
+    mmap_InitMemory(mmap, mmap_len, &memList, klo, kick_highest, PAGE_SIZE, PC_Memory, ALLOCATOR_STD);
 
     D(bug("[Kernel] kernel_cstart: Booting exec.library...\n"));
 

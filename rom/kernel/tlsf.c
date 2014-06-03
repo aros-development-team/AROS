@@ -1289,3 +1289,29 @@ void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, 
 
     tlsf_init(mhe);
 }
+
+struct MemHeader * krnConvertMemHeaderToTLSF(struct MemHeader * source)
+{
+    struct MemChunk * mc = source->mh_First->mc_Next;
+    APTR mh = source->mh_First;
+    IPTR fsize = source->mh_First->mc_Bytes;
+
+    if (source->mh_Attributes & MEMF_MANAGED)
+        return NULL;
+
+    /* First chunk will host the mem header */
+    krnCreateTLSFMemHeader(source->mh_Node.ln_Name, source->mh_Node.ln_Pri, mh, fsize,
+            source->mh_Attributes);
+    /* source->mh_First is destroyed beyond this point */
+
+    /* Add remaining chunks */
+    while (mc)
+    {
+        APTR p = mc->mc_Next;
+        tlsf_add_memory(mh, mc, mc->mc_Bytes);
+        /* mc is destroyed beyond this point */
+        mc = p;
+    }
+
+    return mh;
+}
