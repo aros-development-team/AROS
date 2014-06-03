@@ -2375,6 +2375,7 @@ diff -ur /data/deadwood/source/drm-orig/nouveau/nouveau_ttm.c drm/nouveau/nouvea
 +#if defined(__AROS__)
 +struct ttm_mem_global
 +{
++    ULONG dummy;
 +};
 +#endif
 +

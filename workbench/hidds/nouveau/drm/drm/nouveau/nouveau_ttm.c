@@ -64,6 +64,7 @@ nouveau_ttm_mem_global_release(struct drm_global_reference *ref)
 #if defined(__AROS__)
 struct ttm_mem_global
 {
+    ULONG dummy;
 };
 #endif
 
