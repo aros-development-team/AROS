@@ -155,10 +155,9 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     /* Prepare the first mem header */
     D(nbug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len));
-    if (cmdline && strstr(cmdline, "use-tlsf"))
-        krnCreateTLSFMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT|MEMF_MANAGED);
-    else
-        krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
+    krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
+    if (!(cmdline && strstr(cmdline, "notlsf")))
+        bootmh = krnConvertMemHeaderToTLSF(bootmh);
 
     /*
      * SysBase pre-validation after a warm restart.
