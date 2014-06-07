@@ -61,6 +61,7 @@ alias    move='execute mv -f'
 
 export CC=$CFG_CC
 export PYTHON=$CFG_PYTHON
+MAKE_JOBS=$CFG_MAKE_JOBS
 
 # Initial setup, if requested
 if [[ $1 == "initial" ]]; then

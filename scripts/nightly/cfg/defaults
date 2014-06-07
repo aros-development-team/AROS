@@ -71,3 +71,6 @@ CFG_BS_KEY=.ssh/id_dsa.aros-nightly-backup
 
 # Destination directory
 CFG_BS_DIRECTORY=nightly/
+
+#-- Parallel execution -------------------------------------------------------
+CFG_MAKE_JOBS=1

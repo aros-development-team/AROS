@@ -15,7 +15,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 
 cd      $BUILD_BASE/AROS
 execute ./configure --target=$BUILDTARGET --enable-build-type=nightly --enable-debug=symbols --with-optimization="-O2"
-make    sdk
+make    -j $MAKE_JOBS sdk
 
 PACKAGE=$BASENAME-$BUILDTARGET-sdk
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2

@@ -20,8 +20,8 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 
 cd      $BUILD_BASE/AROS
 execute ./configure --target=$BUILDTARGET $BUILDEXTRAOPTS --enable-ccache --enable-build-type=nightly
-make
-make    default-x11keymaptable
+make    -j $MAKE_JOBS
+make    -j $MAKE_JOBS default-x11keymaptable
 
 cd      $BUILD_BASE/AROS/bin/$BUILDTARGETDIR
 move    AROS $PACKAGE
