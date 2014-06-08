@@ -175,40 +175,10 @@ diff -urN gcc-4.8.1/gcc/config/arm/t-aros gcc-4.8.1.new/gcc/config/arm/t-aros
 +
 +MULTILIB_OPTIONS     = marm mfloat-abi=hard
 +MULTILIB_DIRNAMES    = arm fpu
-diff -urN gcc-4.8.1/gcc/config/arm/unwind-arm.c gcc-4.8.1.new/gcc/config/arm/unwind-arm.c
---- gcc-4.8.1/gcc/config/arm/unwind-arm.c	2009-10-30 10:55:10.000000000 -0400
-+++ gcc-4.8.1.new/gcc/config/arm/unwind-arm.c	2013-12-02 20:22:15.908776146 -0500
-@@ -40,8 +40,10 @@
- 					    bool is_reference,
- 					    void **matched_object);
- 
-+#if !defined(__AROS__)
- _Unwind_Ptr __attribute__((weak))
- __gnu_Unwind_Find_exidx (_Unwind_Ptr, int *);
-+#endif
- 
- /* Misc constants.  */
- #define R_IP	12
-@@ -598,6 +600,7 @@
-      instruction itself.  */
-   return_address -= 2;
- 
-+#if !defined(__AROS__)
-   if (__gnu_Unwind_Find_exidx)
-     {
-       eitp = (const __EIT_entry *) __gnu_Unwind_Find_exidx (return_address,
-@@ -609,6 +612,7 @@
- 	}
-     }
-   else
-+#endif
-     {
-       eitp = &__exidx_start;
-       nrec = &__exidx_end - &__exidx_start;
 diff -urN gcc-4.8.1/gcc/config/aros.h gcc-4.8.1.new/gcc/config/aros.h
 --- gcc-4.8.1/gcc/config/aros.h	1969-12-31 19:00:00.000000000 -0500
 +++ gcc-4.8.1.new/gcc/config/aros.h	2013-12-02 20:22:15.908776146 -0500
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,108 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -288,7 +258,6 @@ diff -urN gcc-4.8.1/gcc/config/aros.h gcc-4.8.1.new/gcc/config/aros.h
 +    { GPLUSPLUS_TOOL_INCLUDE_DIR, "G++", 1, 1, 0, 1 }, \
 +    { GPLUSPLUS_BACKWARD_INCLUDE_DIR, "G++", 1, 1, 0, 0 }, \
 +    { "/local/include", 0, 0, 1, 1, 0 }, \
-+    { "/include", STANDARD_INCLUDE_COMPONENT, 0, 0, 1, 0 }, \
 +    { GCC_INCLUDE_DIR, "GCC", 0, 0, 0, 0 }, \
 +    { 0, 0, 0, 0, 0, 0 } \
 +}; \
@@ -365,7 +334,7 @@ diff -urN gcc-4.8.1/gcc/config/i386/aros64.h gcc-4.8.1.new/gcc/config/i386/aros6
 diff -urN gcc-4.8.1/gcc/config/i386/aros.h gcc-4.8.1.new/gcc/config/i386/aros.h
 --- gcc-4.8.1/gcc/config/i386/aros.h	1969-12-31 19:00:00.000000000 -0500
 +++ gcc-4.8.1.new/gcc/config/i386/aros.h	2013-12-02 20:22:15.908776146 -0500
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,25 @@
 +/* Definitions for Intel 386 running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
 +   Free Software Foundation, Inc.
@@ -388,9 +357,6 @@ diff -urN gcc-4.8.1/gcc/config/i386/aros.h gcc-4.8.1.new/gcc/config/i386/aros.h
 +along with GNU CC; see the file COPYING.  If not, write to
 +the Free Software Foundation, 59 Temple Place - Suite 330,
 +Boston, MA 02111-1307, USA.  */
-+
-+#undef TARGET_VERSION
-+#define TARGET_VERSION fprintf (stderr, " (i386 AROS/ELF)");
 +
 +#undef	LINK_SPEC
 +#define LINK_SPEC "-m elf_i386 -L%R/lib"
@@ -626,15 +592,21 @@ diff -urN gcc-4.8.1/gcc/config/rs6000/aros.h gcc-4.8.1.new/gcc/config/rs6000/aro
 diff -urN gcc-4.8.1/gcc/config/rs6000/rs6000.c gcc-4.8.1.new/gcc/config/rs6000/rs6000.c
 --- gcc-4.8.1/gcc/config/rs6000/rs6000.c	2013-02-08 10:07:55.000000000 -0500
 +++ gcc-4.8.1.new/gcc/config/rs6000/rs6000.c	2013-12-02 20:22:15.916776186 -0500
-@@ -1308,6 +1308,7 @@
-   { "altivec",   1, 1, false, true,  false, rs6000_handle_altivec_attribute },
-   { "longcall",  0, 0, false, true,  true,  rs6000_handle_longcall_attribute },
-   { "shortcall", 0, 0, false, true,  true,  rs6000_handle_longcall_attribute },
-+  { "stackparm", 0, 0, false, true,  true,  rs6000_handle_longcall_attribute },
-   { "ms_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute },
-   { "gcc_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute },
+@@ -1110,10 +1111,12 @@
+   { "altivec",   1, 1, false, true,  false, rs6000_handle_altivec_attribute,
+     false },
+   { "longcall",  0, 0, false, true,  true,  rs6000_handle_longcall_attribute,
+     false },
+   { "shortcall", 0, 0, false, true,  true,  rs6000_handle_longcall_attribute,
+     false },
++  { "stackparm", 0, 0, false, true,  true,  rs6000_handle_longcall_attribute,
++    false },
+   { "ms_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute,
+     false },
+   { "gcc_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute,
+     false },
  #ifdef SUBTARGET_ATTRIBUTE_TABLE
-@@ -8070,6 +8071,9 @@
+@@ -7588,6 +7589,9 @@
  	  && !lookup_attribute ("shortcall", TYPE_ATTRIBUTES (fntype))))
      cum->call_cookie |= CALL_LONG;
  
@@ -644,8 +616,8 @@ diff -urN gcc-4.8.1/gcc/config/rs6000/rs6000.c gcc-4.8.1.new/gcc/config/rs6000/r
    if (TARGET_DEBUG_ARG)
      {
        fprintf (stderr, "\ninit_cumulative_args:");
-@@ -9045,6 +9049,9 @@
-       return GEN_INT (cum->call_cookie);
+@@ -8568,6 +8569,9 @@
+       return GEN_INT (cum->call_cookie & ~CALL_LIBCALL);
      }
  
 +  if (cum->stackparm)
@@ -773,10 +745,10 @@ diff -urN gcc-4.8.1/gcc/config.gcc gcc-4.8.1.new/gcc/config.gcc
  i[34567]86-pc-msdosdjgpp*)
  	xm_file=i386/xm-djgpp.h
  	tm_file="dbxcoff.h ${tm_file} i386/unix.h i386/bsd.h i386/gas.h i386/djgpp.h i386/djgpp-stdint.h"
-@@ -1724,6 +1752,16 @@
- 	extra_options="${extra_options} m68hc11/m68hc11.opt"
- 	use_gcc_stdint=wrap
-         ;;
+@@ -1678,6 +1706,16 @@
+ 		thread_file='posix'
+ 	fi
+ 	;;
 +m68k-*-aros*)
 +	default_m68k_cpu=68000
 +	default_cf_cpu=5206
@@ -23800,18 +23772,6 @@ diff -urN gcc-4.8.1/gcc/doc/invoke.texi.rej.old gcc-4.8.1.new/gcc/doc/invoke.tex
 + @opindex fdump-rtl-pro_and_epilogue
 + Dump after generating the function pro and epilogues.
 + 
-diff -urN gcc-4.8.1/gcc/doc/sourcebuild.texi gcc-4.8.1.new/gcc/doc/sourcebuild.texi
---- gcc-4.8.1/gcc/doc/sourcebuild.texi	2011-02-11 05:01:29.000000000 -0500
-+++ gcc-4.8.1.new/gcc/doc/sourcebuild.texi	2013-12-02 20:22:15.936776290 -0500
-@@ -676,7 +676,7 @@
- @code{lang_checks}.
- 
- @table @code
--@itemx all.cross
-+@item all.cross
- @itemx start.encap
- @itemx rest.encap
- FIXME: exactly what goes in each of these targets?
 diff -urN gcc-4.8.1/gcc/gengtype.c.old gcc-4.8.1.new/gcc/gengtype.c.old
 --- gcc-4.8.1/gcc/gengtype.c.old	1969-12-31 19:00:00.000000000 -0500
 +++ gcc-4.8.1.new/gcc/gengtype.c.old	2012-02-14 18:31:42.000000000 -0500
@@ -28879,7 +28839,7 @@ diff -urN gcc-4.8.1/gcc/ginclude/aros/types/wint_t.h gcc-4.8.1.new/gcc/ginclude/
 diff -urN gcc-4.8.1/gcc/ginclude/stddef.h gcc-4.8.1.new/gcc/ginclude/stddef.h
 --- gcc-4.8.1/gcc/ginclude/stddef.h	2011-01-29 17:15:52.000000000 -0500
 +++ gcc-4.8.1.new/gcc/ginclude/stddef.h	2013-12-02 20:22:15.936776290 -0500
-@@ -134,6 +134,7 @@
+@@ -131,6 +131,7 @@
  #ifndef __PTRDIFF_T
  #ifndef _PTRDIFF_T_
  #ifndef _BSD_PTRDIFF_T_
@@ -28887,7 +28847,7 @@ diff -urN gcc-4.8.1/gcc/ginclude/stddef.h gcc-4.8.1.new/gcc/ginclude/stddef.h
  #ifndef ___int_ptrdiff_t_h
  #ifndef _GCC_PTRDIFF_T
  #define _PTRDIFF_T
-@@ -142,6 +143,7 @@
+@@ -140,6 +141,7 @@
  #define __PTRDIFF_T
  #define _PTRDIFF_T_
  #define _BSD_PTRDIFF_T_
@@ -28895,7 +28855,7 @@ diff -urN gcc-4.8.1/gcc/ginclude/stddef.h gcc-4.8.1.new/gcc/ginclude/stddef.h
  #define ___int_ptrdiff_t_h
  #define _GCC_PTRDIFF_T
  #ifndef __PTRDIFF_TYPE__
-@@ -150,6 +152,7 @@
+@@ -149,6 +151,7 @@
  typedef __PTRDIFF_TYPE__ ptrdiff_t;
  #endif /* _GCC_PTRDIFF_T */
  #endif /* ___int_ptrdiff_t_h */
@@ -28911,7 +28871,7 @@ diff -urN gcc-4.8.1/gcc/ginclude/stddef.h gcc-4.8.1.new/gcc/ginclude/stddef.h
  #ifndef _SIZE_T_DEFINED_
  #ifndef _SIZE_T_DEFINED
  #ifndef _BSD_SIZE_T_DEFINED_	/* Darwin */
-@@ -193,6 +197,7 @@
+@@ -194,6 +198,7 @@
  #define __SIZE_T
  #define _SIZE_T_
  #define _BSD_SIZE_T_
@@ -28978,11 +28938,13 @@ diff -urN gcc-4.8.1/libgcc/config.host gcc-4.8.1.new/libgcc/config.host
 diff -urN gcc-4.8.1/libiberty/filename_cmp.c gcc-4.8.1.new/libiberty/filename_cmp.c
 --- gcc-4.8.1/libiberty/filename_cmp.c	2011-02-28 13:23:25.000000000 -0500
 +++ gcc-4.8.1.new/libiberty/filename_cmp.c	2013-12-02 20:22:15.940776306 -0500
-@@ -51,7 +51,11 @@
+@@ -51,8 +51,11 @@
  filename_cmp (const char *s1, const char *s2)
  {
- #ifndef HAVE_DOS_BASED_FILE_SYSTEM
-+#ifdef HAVE_CASE_INSENSITIVE_FILE_SYSTEM
+-#if !defined(HAVE_DOS_BASED_FILE_SYSTEM) \
+-    && !defined(HAVE_CASE_INSENSITIVE_FILE_SYSTEM)
++#if !defined(HAVE_DOS_BASED_FILE_SYSTEM)
++#if defined(HAVE_CASE_INSENSITIVE_FILE_SYSTEM)
 +  return strcasecmp(s1, s2);
 +#else
    return strcmp(s1, s2);
@@ -29503,10 +29465,10 @@ diff -urN gcc-4.8.1/libstdc++-v3/config/os/aros/os_defines.h gcc-4.8.1.new/libst
 diff -urN gcc-4.8.1/libstdc++-v3/configure gcc-4.8.1.new/libstdc++-v3/configure
 --- gcc-4.8.1/libstdc++-v3/configure	2012-07-22 12:46:02.000000000 -0400
 +++ gcc-4.8.1.new/libstdc++-v3/configure	2013-12-02 20:22:15.956776384 -0500
-@@ -5267,12 +5267,9 @@
+@@ -5288,12 +5288,12 @@
  
  
- 
+ # Libtool setup.
 -if test "x${with_newlib}" != "xyes"; then
 -  enable_dlopen=yes
 -
@@ -29515,6 +29477,9 @@ diff -urN gcc-4.8.1/libstdc++-v3/configure gcc-4.8.1.new/libstdc++-v3/configure
 -fi
 +#if test "x${with_newlib}" != "xyes"; then
 +#  AC_LIBTOOL_DLOPEN
++#
++#
++#
 +#fi
  case `pwd` in
    *\ * | *\	*)
@@ -29606,10 +29571,11 @@ diff -urN gcc-4.8.1/libstdc++-v3/configure gcc-4.8.1.new/libstdc++-v3/configure
 diff -urN gcc-4.8.1/libstdc++-v3/configure.ac gcc-4.8.1.new/libstdc++-v3/configure.ac
 --- gcc-4.8.1/libstdc++-v3/configure.ac	2012-07-22 12:46:02.000000000 -0400
 +++ gcc-4.8.1.new/libstdc++-v3/configure.ac	2013-12-02 20:22:15.956776384 -0500
-@@ -88,9 +88,9 @@
+@@ -88,10 +88,10 @@
  # up critical shell variables.
  GLIBCXX_CONFIGURE
  
+ # Libtool setup.
 -if test "x${with_newlib}" != "xyes"; then
 -  AC_LIBTOOL_DLOPEN
 -fi
