@@ -77,7 +77,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 	NEWLIST(&unit->tdu_Listeners);
 
 	/* Alloc memory for track buffering */
-	unit->td_DMABuffer=AllocMem(DP_SECTORS*512,MEMF_CLEAR | MEMF_CHIP | MEMF_24BITDMA);
+	unit->td_DMABuffer = AllocMem(DP_SECTORS * 512, MEMF_CLEAR | MEMF_24BITDMA);
 
 	if (!unit->td_DMABuffer)
 	{
@@ -85,12 +85,15 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 	}
 
 	/* If buffer doesn't fit into DMA page realloc it */
+	/* FIXME: we should ensure that the buffer is suitable the first time,
+	   either by using an aligned memory allocation function or by
+	   allocating twice as much as needed and manually aligning */
 	if (( (((ULONG)(IPTR)unit->td_DMABuffer + DP_SECTORS*512) & 0xffff0000) -
 		    ((ULONG)(IPTR)unit->td_DMABuffer&0xffff0000) ) != 0)
 	{
 	    APTR buffer;
 
-	    buffer = AllocMem(DP_SECTORS*512, MEMF_CLEAR | MEMF_CHIP | MEMF_24BITDMA);
+	    buffer = AllocMem(DP_SECTORS * 512, MEMF_CLEAR | MEMF_24BITDMA);
 	    if (!buffer)
 	    {
 		Alert(AT_DeadEnd | AO_TrackDiskDev | AG_NoMemory);
@@ -122,7 +125,7 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 		pp[DE_LOWCYL + 4] = 0;
 		pp[DE_HIGHCYL + 4] = 79;
 		pp[DE_NUMBUFFERS + 4] = 10;
-		pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_CHIP;
+		pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_24BITDMA;
 		pp[DE_MAXTRANSFER + 4] = 0x00200000;
 		pp[DE_MASK + 4] = 0x7FFFFFFE;
 		pp[DE_BOOTPRI + 4] = 5;
