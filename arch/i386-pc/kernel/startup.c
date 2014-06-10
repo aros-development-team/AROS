@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: i386-pc kernel startup code
@@ -110,14 +110,12 @@ static const struct MemRegion PC_Memory[] =
     {0x00000000, 0x000a0000, "Low memory"    , -6, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
     {0x00100000, 0x01000000, "ISA DMA memory", -5, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
     /*
-     * FIXME: The following should also be CHIP. trackdisk.device fix is needed
-     * (use MEMF_24BITDMA instead of MEMF_CHIP for 24-bit ISA DMA-capable area.
      * EXPERIMENTAL: Some (or all?) 64-bit machines expose RAM at addresses up to
      * 0xD0000000 (giving 3.5 GB total). All MMIO sits beyond this border. We
      * intentionally specify 4GB as limit, just in case if some machine exhibits
      * even more RAM in this space. We want all the RAM to be usable.
      */
-    {0x01000000, 0xFFFFFFFF, "High memory"   ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_FAST|MEMF_31BIT	      },
+    {0x01000000, 0xFFFFFFFF, "High memory"   ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT	      },
     {0         , 0         , NULL            ,  0, 0                                                                  }
 };
 
