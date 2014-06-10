@@ -1,4 +1,4 @@
-CFG_PACKAGES=(sources.svn.all sdk.svn.pc-i386 hosted.svn.linux-i386 hosted.svn.mingw32-i386 contrib.svn.pc-i386 bootiso-grub2.svn.pc-i386 bootfloppy.svn.pc-i386)
+CFG_PACKAGES=(sources.svn.all documentation.svn.all sdk.svn.pc-i386 hosted.svn.linux-i386 hosted.svn.mingw32-i386 contrib.svn.pc-i386 bootiso-grub2.svn.pc-i386 bootfloppy.svn.pc-i386)
 
 CFG_MAIL_ENABLE=yes
 CFG_MAIL_CC=caffer@cs.ucc.ie
