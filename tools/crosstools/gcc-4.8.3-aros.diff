@@ -178,7 +178,7 @@ diff -urN gcc-4.8.3/gcc/config/arm/t-aros gcc-4.8.3.new/gcc/config/arm/t-aros
 diff -urN gcc-4.8.3/gcc/config/aros.h gcc-4.8.3.new/gcc/config/aros.h
 --- gcc-4.8.3/gcc/config/aros.h	1969-12-31 19:00:00.000000000 -0500
 +++ gcc-4.8.3.new/gcc/config/aros.h	2013-12-02 20:22:15.908776146 -0500
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,109 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -259,6 +259,7 @@ diff -urN gcc-4.8.3/gcc/config/aros.h gcc-4.8.3.new/gcc/config/aros.h
 +    { GPLUSPLUS_BACKWARD_INCLUDE_DIR, "G++", 1, 1, 0, 0 }, \
 +    { "/local/include", 0, 0, 1, 1, 0 }, \
 +    { GCC_INCLUDE_DIR, "GCC", 0, 0, 0, 0 }, \
++    { NATIVE_SYSTEM_HEADER_DIR, NATIVE_SYSTEM_HEADER_COMPONENT, 0, 0, 0, 0 }, \
 +    { 0, 0, 0, 0, 0, 0 } \
 +}; \
 +
@@ -592,7 +593,7 @@ diff -urN gcc-4.8.3/gcc/config/rs6000/aros.h gcc-4.8.3.new/gcc/config/rs6000/aro
 diff -urN gcc-4.8.3/gcc/config/rs6000/rs6000.c gcc-4.8.3.new/gcc/config/rs6000/rs6000.c
 --- gcc-4.8.3/gcc/config/rs6000/rs6000.c	2013-02-08 10:07:55.000000000 -0500
 +++ gcc-4.8.3.new/gcc/config/rs6000/rs6000.c	2013-12-02 20:22:15.916776186 -0500
-@@ -1110,10 +1111,12 @@
+@@ -1243,11 +1243,13 @@
    { "altivec",   1, 1, false, true,  false, rs6000_handle_altivec_attribute,
      false },
    { "longcall",  0, 0, false, true,  true,  rs6000_handle_longcall_attribute,
@@ -639,7 +640,7 @@ diff -urN gcc-4.8.3/gcc/config/rs6000/rs6000.c gcc-4.8.3.new/gcc/config/rs6000/r
 diff -urN gcc-4.8.3/gcc/config/rs6000/rs6000.h gcc-4.8.3.new/gcc/config/rs6000/rs6000.h
 --- gcc-4.8.3/gcc/config/rs6000/rs6000.h	2012-04-13 17:55:15.000000000 -0400
 +++ gcc-4.8.3.new/gcc/config/rs6000/rs6000.h	2013-12-02 20:22:15.916776186 -0500
-@@ -1564,6 +1564,7 @@
+@@ -1717,6 +1717,7 @@
    int nargs_prototype;		/* # args left in the current prototype */
    int prototype;		/* Whether a prototype was defined */
    int stdarg;			/* Whether function is a stdarg function.  */
@@ -683,7 +684,7 @@ diff -urN gcc-4.8.3/gcc/config/t-aros gcc-4.8.3.new/gcc/config/t-aros
 diff -urN gcc-4.8.3/gcc/config.build gcc-4.8.3.new/gcc/config.build
 --- gcc-4.8.3/gcc/config.build	2010-04-12 14:36:30.000000000 -0400
 +++ gcc-4.8.3.new/gcc/config.build	2013-12-02 20:22:15.920776210 -0500
-@@ -124,6 +124,9 @@
+@@ -102,6 +102,9 @@
      # HP 9000 series 300
      build_install_headers_dir=install-headers-cpio
      ;;
@@ -696,7 +697,7 @@ diff -urN gcc-4.8.3/gcc/config.build gcc-4.8.3.new/gcc/config.build
 diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
 --- gcc-4.8.3/gcc/config.gcc	2013-03-06 12:40:07.000000000 -0500
 +++ gcc-4.8.3.new/gcc/config.gcc	2013-12-02 20:22:15.920776210 -0500
-@@ -656,6 +656,14 @@
+@@ -713,6 +713,14 @@
        ;;
    esac
    ;;
@@ -709,11 +710,11 @@ diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
 +  ;;
 +
  *-*-openbsd*)
-   tmake_file="t-libc-ok t-openbsd t-libgcc-pic"
+   tmake_file="t-openbsd"
    case ${enable_threads} in
-@@ -793,6 +801,16 @@
- 	tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file}"
- 	extra_parts="crtinit.o crtfini.o"
+@@ -860,6 +860,16 @@
+ 	tm_file="${tm_file} vms/vms.h alpha/vms.h"
+ 	tmake_file="${tmake_file} alpha/t-vms"
  	;;
 +arm*-*-aros*)
 +	tm_file="dbxelf.h elfos.h arm/elf.h arm/bpabi.h aros.h arm/aros.h arm/aout.h arm/arm.h"
@@ -728,9 +729,9 @@ diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
  arm-wrs-vxworks)
  	tm_file="elfos.h arm/elf.h arm/aout.h ${tm_file} vx-common.h vxworks.h arm/vxworks.h"
  	extra_options="${extra_options} arm/vxworks.opt"
-@@ -1316,6 +1334,16 @@
- 	esac
- 	tmake_file="${tmake_file} i386/t-linux64 i386/t-crtstuff i386/t-crtpc i386/t-crtfm t-dfprules"
+@@ -1361,6 +1361,16 @@
+ 	done
+ 	TM_MULTILIB_CONFIG=`echo $TM_MULTILIB_CONFIG | sed 's/^,//'`
  	;;
 +i[34567]86-*-aros*)
 +	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h aros.h i386/aros.h"
@@ -745,7 +746,7 @@ diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
  i[34567]86-pc-msdosdjgpp*)
  	xm_file=i386/xm-djgpp.h
  	tm_file="dbxcoff.h ${tm_file} i386/unix.h i386/bsd.h i386/gas.h i386/djgpp.h i386/djgpp-stdint.h"
-@@ -1678,6 +1706,16 @@
+@@ -1651,6 +1651,16 @@
  		thread_file='posix'
  	fi
  	;;
@@ -762,9 +763,9 @@ diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
  m68k-*-elf* | fido-*-elf*)
  	case ${target} in
  	fido-*-elf*)
-@@ -2075,6 +2113,13 @@
+@@ -2075,6 +2075,13 @@
  	extra_options="${extra_options} rs6000/sysv4.opt"
- 	tmake_file="rs6000/t-fprules rs6000/t-fprules-fpbit rs6000/t-rtems t-rtems rs6000/t-ppccomm"
+ 	tmake_file="rs6000/t-fprules rs6000/t-rtems t-rtems rs6000/t-ppccomm"
  	;;
 +powerpc-*-aros*)
 + 	tm_file="${tm_file} dbxelf.h elfos.h freebsd-spec.h rs6000/sysv4.h aros.h"
@@ -779,7 +780,7 @@ diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
 diff -urN gcc-4.8.3/gcc/config.host gcc-4.8.3.new/gcc/config.host
 --- gcc-4.8.3/gcc/config.host	2011-02-15 04:49:14.000000000 -0500
 +++ gcc-4.8.3.new/gcc/config.host	2013-12-02 20:22:15.920776210 -0500
-@@ -277,4 +277,8 @@
+@@ -276,4 +276,8 @@
      out_host_hook_obj=host-hpux.o
      host_xmake_file="${host_xmake_file} x-hpux"
      ;;
@@ -787,7 +788,7 @@ diff -urN gcc-4.8.3/gcc/config.host gcc-4.8.3.new/gcc/config.host
 +    host_can_use_collect2=no
 +    host_xm_file=xm-aros.h
 +    ;;
- esac
+   *-*-*vms*)
 diff -urN gcc-4.8.3/gcc/ginclude/aros/types/null.h gcc-4.8.3.new/gcc/ginclude/aros/types/null.h
 --- gcc-4.8.3/gcc/ginclude/aros/types/null.h	1969-12-31 19:00:00.000000000 -0500
 +++ gcc-4.8.3.new/gcc/ginclude/aros/types/null.h	2013-12-02 20:22:15.936776290 -0500
@@ -834,7 +835,7 @@ diff -urN gcc-4.8.3/gcc/ginclude/stddef.h gcc-4.8.3.new/gcc/ginclude/stddef.h
  #ifndef ___int_ptrdiff_t_h
  #ifndef _GCC_PTRDIFF_T
  #define _PTRDIFF_T
-@@ -140,6 +140,7 @@
+@@ -139,6 +139,7 @@
  #define __PTRDIFF_T
  #define _PTRDIFF_T_
  #define _BSD_PTRDIFF_T_
@@ -842,7 +843,7 @@ diff -urN gcc-4.8.3/gcc/ginclude/stddef.h gcc-4.8.3.new/gcc/ginclude/stddef.h
  #define ___int_ptrdiff_t_h
  #define _GCC_PTRDIFF_T
  #ifndef __PTRDIFF_TYPE__
-@@ -149,6 +149,7 @@
+@@ -147,6 +147,7 @@
  typedef __PTRDIFF_TYPE__ ptrdiff_t;
  #endif /* _GCC_PTRDIFF_T */
  #endif /* ___int_ptrdiff_t_h */
@@ -850,7 +851,7 @@ diff -urN gcc-4.8.3/gcc/ginclude/stddef.h gcc-4.8.3.new/gcc/ginclude/stddef.h
  #endif /* _BSD_PTRDIFF_T_ */
  #endif /* _PTRDIFF_T_ */
  #endif /* __PTRDIFF_T */
-@@ -176,6 +176,7 @@
+@@ -173,6 +173,7 @@
  #ifndef __SIZE_T
  #ifndef _SIZE_T_
  #ifndef _BSD_SIZE_T_
@@ -858,7 +859,7 @@ diff -urN gcc-4.8.3/gcc/ginclude/stddef.h gcc-4.8.3.new/gcc/ginclude/stddef.h
  #ifndef _SIZE_T_DEFINED_
  #ifndef _SIZE_T_DEFINED
  #ifndef _BSD_SIZE_T_DEFINED_	/* Darwin */
-@@ -194,6 +194,7 @@
+@@ -190,6 +190,7 @@
  #define __SIZE_T
  #define _SIZE_T_
  #define _BSD_SIZE_T_
@@ -877,7 +878,7 @@ diff -urN gcc-4.8.3/gcc/ginclude/stddef.h gcc-4.8.3.new/gcc/ginclude/stddef.h
 diff -urN gcc-4.8.3/include/filenames.h gcc-4.8.3.new/include/filenames.h
 --- gcc-4.8.3/include/filenames.h	2011-02-28 13:23:25.000000000 -0500
 +++ gcc-4.8.3.new/include/filenames.h	2013-12-02 20:22:15.936776290 -0500
-@@ -37,6 +37,10 @@
+@@ -42,6 +42,10 @@
  #  define HAS_DRIVE_SPEC(f) HAS_DOS_DRIVE_SPEC (f)
  #  define IS_DIR_SEPARATOR(c) IS_DOS_DIR_SEPARATOR (c)
  #  define IS_ABSOLUTE_PATH(f) IS_DOS_ABSOLUTE_PATH (f)
@@ -886,14 +887,14 @@ diff -urN gcc-4.8.3/include/filenames.h gcc-4.8.3.new/include/filenames.h
 +#  define IS_ABSOLUTE_PATH(f)	(IS_DIR_SEPARATOR((f)[0]) || (strchr((f), ':')))
 +#  define HAVE_CASE_INSENSITIVE_FILE_SYSTEM
  #else /* not DOSish */
- #  define HAS_DRIVE_SPEC(f) (0)
- #  define IS_DIR_SEPARATOR(c) IS_UNIX_DIR_SEPARATOR (c)
+ #  if defined(__APPLE__)
+ #    ifndef HAVE_CASE_INSENSITIVE_FILE_SYSTEM
 diff -urN gcc-4.8.3/libcpp/configure gcc-4.8.3.new/libcpp/configure
 --- gcc-4.8.3/libcpp/configure	2013-04-12 05:58:00.000000000 -0400
 +++ gcc-4.8.3.new/libcpp/configure	2013-12-02 20:22:15.940776306 -0500
-@@ -7092,6 +7092,7 @@
+@@ -7155,6 +7155,7 @@
  	arm*-*-*eabi* | \
- 	arm*-*-rtems[.0-9]* | \
+ 	arm*-*-rtems* | \
  	arm*-*-symbianelf* | \
 +	arm*-*-aros | \
  	x86_64-*-* | \
@@ -902,9 +903,9 @@ diff -urN gcc-4.8.3/libcpp/configure gcc-4.8.3.new/libcpp/configure
 diff -urN gcc-4.8.3/libcpp/configure.ac gcc-4.8.3.new/libcpp/configure.ac
 --- gcc-4.8.3/libcpp/configure.ac	2013-04-03 11:45:53.000000000 -0400
 +++ gcc-4.8.3.new/libcpp/configure.ac	2013-12-02 20:22:15.940776306 -0500
-@@ -142,6 +142,7 @@
+@@ -187,6 +187,7 @@
  	arm*-*-*eabi* | \
- 	arm*-*-rtems[.0-9]* | \
+ 	arm*-*-rtems* | \
  	arm*-*-symbianelf* | \
 +	arm*-*-aros | \
  	x86_64-*-* | \
@@ -913,9 +914,9 @@ diff -urN gcc-4.8.3/libcpp/configure.ac gcc-4.8.3.new/libcpp/configure.ac
 diff -urN gcc-4.8.3/libgcc/config.host gcc-4.8.3.new/libgcc/config.host
 --- gcc-4.8.3/libgcc/config.host	2011-11-23 17:15:54.000000000 -0500
 +++ gcc-4.8.3.new/libgcc/config.host	2013-12-02 20:22:15.940776306 -0500
-@@ -590,6 +590,8 @@
-  	;;
- mep*-*-*)
+@@ -1117,6 +1117,8 @@
+ 	tmake_file="mep/t-mep t-fdpbit"
+ 	extra_parts="crtbegin.o crtend.o"
  	;;
 +*-*-aros*)
 +	;;
@@ -942,9 +943,10 @@ diff -urN gcc-4.8.3/libiberty/filename_cmp.c gcc-4.8.3.new/libiberty/filename_cm
 diff -urN gcc-4.8.3/libobjc/configure gcc-4.8.3.new/libobjc/configure
 --- gcc-4.8.3/libobjc/configure	2011-11-20 16:24:07.000000000 -0500
 +++ gcc-4.8.3.new/libobjc/configure	2013-12-02 20:22:15.944776326 -0500
-@@ -11249,215 +11249,7 @@
- 
- fi
+@@ -11254,216 +11254,8 @@
+ # -----------
+ # Miscellanea
+ # -----------
  
 -# Check if we have thread-local storage
 -
