@@ -602,7 +602,7 @@ diff -urN gcc-4.8.3/gcc/config/rs6000/rs6000.c gcc-4.8.3.new/gcc/config/rs6000/r
    { "ms_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute,
      false },
    { "gcc_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute,
-@@ -7588,6 +7589,9 @@
+@@ -9026,6 +9028,9 @@
  	  && !lookup_attribute ("shortcall", TYPE_ATTRIBUTES (fntype))))
      cum->call_cookie |= CALL_LONG;
  
@@ -612,9 +612,9 @@ diff -urN gcc-4.8.3/gcc/config/rs6000/rs6000.c gcc-4.8.3.new/gcc/config/rs6000/r
    if (TARGET_DEBUG_ARG)
      {
        fprintf (stderr, "\ninit_cumulative_args:");
-@@ -8568,6 +8569,9 @@
-       return GEN_INT (cum->call_cookie & ~CALL_LIBCALL);
-     }
+@@ -10104,6 +10109,9 @@
+ 
+   rs6000_discover_homogeneous_aggregate (mode, type, &elt_mode, &n_elts);
  
 +  if (cum->stackparm)
 +    return NULL_RTX;
@@ -622,7 +622,7 @@ diff -urN gcc-4.8.3/gcc/config/rs6000/rs6000.c gcc-4.8.3.new/gcc/config/rs6000/r
    if (TARGET_MACHO && rs6000_darwin64_struct_check_p (mode, type))
      {
        rtx rslt = rs6000_darwin64_record_arg (cum, type, named, /*retval= */false);
-@@ -9460,6 +9467,9 @@
+@@ -10619,6 +10627,9 @@
    int first_reg_offset;
    alias_set_type set;
  
@@ -630,7 +630,7 @@ diff -urN gcc-4.8.3/gcc/config/rs6000/rs6000.c gcc-4.8.3.new/gcc/config/rs6000/r
 +    return;
 +
    /* Skip the last named argument.  */
-   next_cum = *cum;
+   next_cum = *get_cumulative_args (cum);
    rs6000_function_arg_advance_1 (&next_cum, mode, type, true, 0);
 diff -urN gcc-4.8.3/gcc/config/rs6000/rs6000.h gcc-4.8.3.new/gcc/config/rs6000/rs6000.h
 --- gcc-4.8.3/gcc/config/rs6000/rs6000.h	2012-04-13 17:55:15.000000000 -0400
@@ -1470,7 +1470,7 @@ diff -urN gcc-4.8.3/libstdc++-v3/configure gcc-4.8.3.new/libstdc++-v3/configure
  case `pwd` in
    *\ * | *\	*)
      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Libtool does not cope well with whitespace in \`pwd\`" >&5
-@@ -7990,6 +7987,8 @@
+@@ -8024,6 +8024,8 @@
  
  
  
@@ -1479,7 +1479,7 @@ diff -urN gcc-4.8.3/libstdc++-v3/configure gcc-4.8.3.new/libstdc++-v3/configure
  
    enable_win32_dll=no
  
-@@ -18131,6 +18130,7 @@
+@@ -18572,6 +18574,7 @@
  {
  struct iovec iov[2];
         writev(0, iov, 0);
@@ -1487,7 +1487,7 @@ diff -urN gcc-4.8.3/libstdc++-v3/configure gcc-4.8.3.new/libstdc++-v3/configure
    ;
    return 0;
  }
-@@ -18153,6 +18153,7 @@
+@@ -18594,6 +18597,7 @@
  {
  struct iovec iov[2];
         writev(0, iov, 0);
@@ -1495,7 +1495,7 @@ diff -urN gcc-4.8.3/libstdc++-v3/configure gcc-4.8.3.new/libstdc++-v3/configure
    ;
    return 0;
  }
-@@ -26562,6 +26563,58 @@
+@@ -27615,6 +27619,58 @@
  
  # Base decisions on target environment.
  case "${host}" in
@@ -1557,8 +1557,7 @@ diff -urN gcc-4.8.3/libstdc++-v3/configure gcc-4.8.3.new/libstdc++-v3/configure
 diff -urN gcc-4.8.3/libstdc++-v3/configure.ac gcc-4.8.3.new/libstdc++-v3/configure.ac
 --- gcc-4.8.3/libstdc++-v3/configure.ac	2012-07-22 12:46:02.000000000 -0400
 +++ gcc-4.8.3.new/libstdc++-v3/configure.ac	2013-12-02 20:22:15.956776384 -0500
-@@ -88,10 +88,10 @@
- # up critical shell variables.
+@@ -89,9 +89,9 @@
  GLIBCXX_CONFIGURE
  
  # Libtool setup.
@@ -1574,7 +1573,7 @@ diff -urN gcc-4.8.3/libstdc++-v3/configure.ac gcc-4.8.3.new/libstdc++-v3/configu
 diff -urN gcc-4.8.3/libstdc++-v3/configure.host gcc-4.8.3.new/libstdc++-v3/configure.host
 --- gcc-4.8.3/libstdc++-v3/configure.host	2010-12-05 19:50:04.000000000 -0500
 +++ gcc-4.8.3.new/libstdc++-v3/configure.host	2013-12-02 20:22:15.956776384 -0500
-@@ -203,6 +203,9 @@
+@@ -230,6 +230,9 @@
      os_include_dir="os/generic"
      atomicity_dir="cpu/generic"
      ;;
