@@ -301,6 +301,7 @@ STDC_STATIC := \
     stcl_o \
     stco_l \
     stcu_d \
+    stpcpy \
     strchr \
     strcmp \
     strcpy \
