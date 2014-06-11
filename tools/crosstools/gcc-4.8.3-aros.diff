@@ -11,7 +11,7 @@ diff -urN gcc-4.8.3/configure gcc-4.8.3.new/configure
    powerpc-*-beos*)
      noconfigdirs="$noconfigdirs gdb"
      ;;
-@@ -3852,6 +3852,8 @@
+@@ -3852,6 +3855,8 @@
    rs6000-*-aix*)
      host_makefile_frag="config/mh-ppc-aix"
      ;;
@@ -33,7 +33,7 @@ diff -urN gcc-4.8.3/configure.ac gcc-4.8.3.new/configure.ac
    powerpc-*-beos*)
      noconfigdirs="$noconfigdirs gdb"
      ;;
-@@ -1172,6 +1172,8 @@
+@@ -1172,6 +1175,8 @@
    rs6000-*-aix*)
      host_makefile_frag="config/mh-ppc-aix"
      ;;
@@ -593,10 +593,7 @@ diff -urN gcc-4.8.3/gcc/config/rs6000/aros.h gcc-4.8.3.new/gcc/config/rs6000/aro
 diff -urN gcc-4.8.3/gcc/config/rs6000/rs6000.c gcc-4.8.3.new/gcc/config/rs6000/rs6000.c
 --- gcc-4.8.3/gcc/config/rs6000/rs6000.c	2013-02-08 10:07:55.000000000 -0500
 +++ gcc-4.8.3.new/gcc/config/rs6000/rs6000.c	2013-12-02 20:22:15.916776186 -0500
-@@ -1243,11 +1243,13 @@
-   { "altivec",   1, 1, false, true,  false, rs6000_handle_altivec_attribute,
-     false },
-   { "longcall",  0, 0, false, true,  true,  rs6000_handle_longcall_attribute,
+@@ -1246,6 +1246,8 @@
      false },
    { "shortcall", 0, 0, false, true,  true,  rs6000_handle_longcall_attribute,
      false },
@@ -605,8 +602,6 @@ diff -urN gcc-4.8.3/gcc/config/rs6000/rs6000.c gcc-4.8.3.new/gcc/config/rs6000/r
    { "ms_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute,
      false },
    { "gcc_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute,
-     false },
- #ifdef SUBTARGET_ATTRIBUTE_TABLE
 @@ -7588,6 +7589,9 @@
  	  && !lookup_attribute ("shortcall", TYPE_ATTRIBUTES (fntype))))
      cum->call_cookie |= CALL_LONG;
@@ -653,7 +648,7 @@ diff -urN gcc-4.8.3/gcc/config/t-aros gcc-4.8.3.new/gcc/config/t-aros
 +++ gcc-4.8.3.new/gcc/config/t-aros	2013-12-02 20:22:15.920776210 -0500
 @@ -0,0 +1,29 @@
 +# In AROS, "/usr" is a four-letter word.
-+# Must match STANDARD_INCLUDE_DIR in aros.h !
++# Must match NATIVE_SYSTEM_HEADER_COMPONENT in aros.h !
 +NATIVE_SYSTEM_HEADER_DIR = /include
 +
 +# Don't add AROS target include path when compiling host compiler
@@ -712,7 +707,7 @@ diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
  *-*-openbsd*)
    tmake_file="t-openbsd"
    case ${enable_threads} in
-@@ -860,6 +860,16 @@
+@@ -860,6 +868,16 @@
  	tm_file="${tm_file} vms/vms.h alpha/vms.h"
  	tmake_file="${tmake_file} alpha/t-vms"
  	;;
@@ -729,7 +724,7 @@ diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
  arm-wrs-vxworks)
  	tm_file="elfos.h arm/elf.h arm/aout.h ${tm_file} vx-common.h vxworks.h arm/vxworks.h"
  	extra_options="${extra_options} arm/vxworks.opt"
-@@ -1361,6 +1361,16 @@
+@@ -1361,6 +1379,16 @@
  	done
  	TM_MULTILIB_CONFIG=`echo $TM_MULTILIB_CONFIG | sed 's/^,//'`
  	;;
@@ -746,7 +741,7 @@ diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
  i[34567]86-pc-msdosdjgpp*)
  	xm_file=i386/xm-djgpp.h
  	tm_file="dbxcoff.h ${tm_file} i386/unix.h i386/bsd.h i386/gas.h i386/djgpp.h i386/djgpp-stdint.h"
-@@ -1651,6 +1651,16 @@
+@@ -1651,6 +1679,16 @@
  		thread_file='posix'
  	fi
  	;;
@@ -763,7 +758,7 @@ diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
  m68k-*-elf* | fido-*-elf*)
  	case ${target} in
  	fido-*-elf*)
-@@ -2075,6 +2075,13 @@
+@@ -2075,6 +2113,13 @@
  	extra_options="${extra_options} rs6000/sysv4.opt"
  	tmake_file="rs6000/t-fprules rs6000/t-rtems t-rtems rs6000/t-ppccomm"
  	;;
@@ -780,7 +775,7 @@ diff -urN gcc-4.8.3/gcc/config.gcc gcc-4.8.3.new/gcc/config.gcc
 diff -urN gcc-4.8.3/gcc/config.host gcc-4.8.3.new/gcc/config.host
 --- gcc-4.8.3/gcc/config.host	2011-02-15 04:49:14.000000000 -0500
 +++ gcc-4.8.3.new/gcc/config.host	2013-12-02 20:22:15.920776210 -0500
-@@ -276,4 +276,8 @@
+@@ -276,6 +276,10 @@
      out_host_hook_obj=host-hpux.o
      host_xmake_file="${host_xmake_file} x-hpux"
      ;;
@@ -789,6 +784,8 @@ diff -urN gcc-4.8.3/gcc/config.host gcc-4.8.3.new/gcc/config.host
 +    host_xm_file=xm-aros.h
 +    ;;
    *-*-*vms*)
+     host_xm_file="vms/xm-vms.h"
+     host_xmake_file=vms/x-vms
 diff -urN gcc-4.8.3/gcc/ginclude/aros/types/null.h gcc-4.8.3.new/gcc/ginclude/aros/types/null.h
 --- gcc-4.8.3/gcc/ginclude/aros/types/null.h	1969-12-31 19:00:00.000000000 -0500
 +++ gcc-4.8.3.new/gcc/ginclude/aros/types/null.h	2013-12-02 20:22:15.936776290 -0500
@@ -835,7 +832,7 @@ diff -urN gcc-4.8.3/gcc/ginclude/stddef.h gcc-4.8.3.new/gcc/ginclude/stddef.h
  #ifndef ___int_ptrdiff_t_h
  #ifndef _GCC_PTRDIFF_T
  #define _PTRDIFF_T
-@@ -139,6 +139,7 @@
+@@ -139,6 +140,7 @@
  #define __PTRDIFF_T
  #define _PTRDIFF_T_
  #define _BSD_PTRDIFF_T_
@@ -843,7 +840,7 @@ diff -urN gcc-4.8.3/gcc/ginclude/stddef.h gcc-4.8.3.new/gcc/ginclude/stddef.h
  #define ___int_ptrdiff_t_h
  #define _GCC_PTRDIFF_T
  #ifndef __PTRDIFF_TYPE__
-@@ -147,6 +147,7 @@
+@@ -147,6 +149,7 @@
  typedef __PTRDIFF_TYPE__ ptrdiff_t;
  #endif /* _GCC_PTRDIFF_T */
  #endif /* ___int_ptrdiff_t_h */
@@ -851,7 +848,7 @@ diff -urN gcc-4.8.3/gcc/ginclude/stddef.h gcc-4.8.3.new/gcc/ginclude/stddef.h
  #endif /* _BSD_PTRDIFF_T_ */
  #endif /* _PTRDIFF_T_ */
  #endif /* __PTRDIFF_T */
-@@ -173,6 +173,7 @@
+@@ -173,6 +176,7 @@
  #ifndef __SIZE_T
  #ifndef _SIZE_T_
  #ifndef _BSD_SIZE_T_
@@ -859,7 +856,7 @@ diff -urN gcc-4.8.3/gcc/ginclude/stddef.h gcc-4.8.3.new/gcc/ginclude/stddef.h
  #ifndef _SIZE_T_DEFINED_
  #ifndef _SIZE_T_DEFINED
  #ifndef _BSD_SIZE_T_DEFINED_	/* Darwin */
-@@ -190,6 +190,7 @@
+@@ -190,6 +194,7 @@
  #define __SIZE_T
  #define _SIZE_T_
  #define _BSD_SIZE_T_
@@ -867,7 +864,7 @@ diff -urN gcc-4.8.3/gcc/ginclude/stddef.h gcc-4.8.3.new/gcc/ginclude/stddef.h
  #define _SIZE_T_DEFINED_
  #define _SIZE_T_DEFINED
  #define _BSD_SIZE_T_DEFINED_	/* Darwin */
-@@ -222,6 +222,7 @@
+@@ -222,6 +227,7 @@
  #endif /* _BSD_SIZE_T_DEFINED_ */
  #endif /* _SIZE_T_DEFINED */
  #endif /* _SIZE_T_DEFINED_ */
@@ -914,11 +911,12 @@ diff -urN gcc-4.8.3/libcpp/configure.ac gcc-4.8.3.new/libcpp/configure.ac
 diff -urN gcc-4.8.3/libgcc/config.host gcc-4.8.3.new/libgcc/config.host
 --- gcc-4.8.3/libgcc/config.host	2011-11-23 17:15:54.000000000 -0500
 +++ gcc-4.8.3.new/libgcc/config.host	2013-12-02 20:22:15.940776306 -0500
-@@ -1117,6 +1117,8 @@
+@@ -1117,6 +1117,9 @@
  	tmake_file="mep/t-mep t-fdpbit"
  	extra_parts="crtbegin.o crtend.o"
  	;;
 +*-*-aros*)
++	tmake_file="t-aros"
 +	;;
  *)
  	echo "*** Configuration ${host} not supported" 1>&2
@@ -926,7 +924,8 @@ diff -urN gcc-4.8.3/libgcc/config.host gcc-4.8.3.new/libgcc/config.host
 diff -urN gcc-4.8.3/libiberty/filename_cmp.c gcc-4.8.3.new/libiberty/filename_cmp.c
 --- gcc-4.8.3/libiberty/filename_cmp.c	2011-02-28 13:23:25.000000000 -0500
 +++ gcc-4.8.3.new/libiberty/filename_cmp.c	2013-12-02 20:22:15.940776306 -0500
-@@ -51,8 +51,11 @@
+@@ -50,9 +50,12 @@
+ int
  filename_cmp (const char *s1, const char *s2)
  {
 -#if !defined(HAVE_DOS_BASED_FILE_SYSTEM) \
@@ -943,12 +942,10 @@ diff -urN gcc-4.8.3/libiberty/filename_cmp.c gcc-4.8.3.new/libiberty/filename_cm
 diff -urN gcc-4.8.3/libobjc/configure gcc-4.8.3.new/libobjc/configure
 --- gcc-4.8.3/libobjc/configure	2011-11-20 16:24:07.000000000 -0500
 +++ gcc-4.8.3.new/libobjc/configure	2013-12-02 20:22:15.944776326 -0500
-@@ -11254,216 +11254,8 @@
- # -----------
- # Miscellanea
+@@ -11256,214 +11256,7 @@
  # -----------
  
--# Check if we have thread-local storage
+ # Check if we have thread-local storage
 -
 -
 -   # Check whether --enable-tls was given.
@@ -1164,8 +1161,8 @@ diff -urN gcc-4.8.3/libobjc/configure gcc-4.8.3.new/libobjc/configure
 diff -urN gcc-4.8.3/libobjc/configure.ac gcc-4.8.3.new/libobjc/configure.ac
 --- gcc-4.8.3/libobjc/configure.ac	2010-12-05 19:50:04.000000000 -0500
 +++ gcc-4.8.3.new/libobjc/configure.ac	2013-12-02 20:22:15.944776326 -0500
-@@ -217,7 +217,7 @@
- fi 
+@@ -210,7 +210,7 @@
+ # -----------
  
  # Check if we have thread-local storage
 -GCC_CHECK_TLS
