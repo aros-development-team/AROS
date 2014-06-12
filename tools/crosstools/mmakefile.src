@@ -19,6 +19,7 @@ ICU_EXTRA_OPTS= \
         --disable-extras \
         --with-data-packaging=static
 
+GCC_VERSION     = $(TARGET_GCC_VER)
 GCC_LANGUAGES = c,c++,objc
 
 # ARM requires additional flags to determine CPU type and FP model
@@ -33,9 +34,7 @@ GCC_EXTRA_OPTS = \
   --enable-long-long --enable-version-specific-runtime-libs
 endif
 
-GCC_VERSION     = $(TARGET_GCC_VER)
-GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT) --with-build-sysroot=$(AROS_DEVELOPMENT)
-GCC_EXTRA_OPTS += --with-native-system-header-dir=$(AROS_DEVELOPMENT)/include
+GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
 GCC_EXTRA_OPTS += --disable-bootstrap 
 GCC_EXTRA_OPTS += --enable-sjlj-exceptions=no --enable-tls=no
 GCC_EXTRA_OPTS += --with-dwarf2
