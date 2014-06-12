@@ -135,7 +135,7 @@ diff -urN gcc-4.8.3/gcc/config/arm/aros.h gcc-4.8.3.new/gcc/config/arm/aros.h
 +#endif
 +
 +#undef SUBTARGET_CPP_SPEC
-+#define SUBTARGET_CPP_SPEC "-D__ELF__ %{!nostdinc:%{!nostdc:%{!noposixc:-isystem %R/include/aros/posixc} -isystem %R/include/aros/stdc}}"
++#define SUBTARGET_CPP_SPEC "-D__ELF__ %{!nostdinc:-isystem %R/include%{!nostdc:%{!noposixc: -isystem %R/include/aros/posixc} -isystem %R/include/aros/stdc}}"
 +
 +#undef  SUBTARGET_EXTRA_LINK_SPEC
 +#define SUBTARGET_EXTRA_LINK_SPEC " -m " TARGET_LINKER_EMULATION
@@ -264,7 +264,7 @@ diff -urN gcc-4.8.3/gcc/config/aros.h gcc-4.8.3.new/gcc/config/aros.h
 +}; \
 +
 +#undef CPP_SPEC
-+#define CPP_SPEC "%{!nostdinc:%{!nostdc:%{!noposixc:-isystem %R/include/aros/posixc} -isystem %R/include/aros/stdc}}"
++#define CPP_SPEC "%{!nostdinc:-isystem %R/include%{!nostdc:%{!noposixc: -isystem %R/include/aros/posixc} -isystem %R/include/aros/stdc}}"
 +
 +/* This is for -profile to use -lc_p instead of -lc.  */
 +#ifndef CC1_SPEC
@@ -916,7 +916,7 @@ diff -urN gcc-4.8.3/libgcc/config.host gcc-4.8.3.new/libgcc/config.host
  	extra_parts="crtbegin.o crtend.o"
  	;;
 +*-*-aros*)
-+	tmake_file="t-aros"
++	tmake_file=
 +	;;
  *)
  	echo "*** Configuration ${host} not supported" 1>&2
