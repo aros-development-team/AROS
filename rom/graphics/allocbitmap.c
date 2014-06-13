@@ -247,6 +247,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
     */
     if ((depth > 8) || (hiddmode != vHidd_ModeID_Invalid) ||
         (friend_bitmap && (friend_bitmap->Flags & BMF_SPECIALFMT)) ||
+        (friend_bitmap && (friend_bitmap->pad == HIDD_BM_PAD_MAGIC)) ||
         (flags & BMF_SPECIALFMT) ||
         (flags & BMF_DISPLAYABLE))
     {
