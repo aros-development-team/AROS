@@ -174,12 +174,10 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         if (displayable)
             data->bitmap->Flags |= BMF_DISPLAYABLE;
 
-        /* Allocate memory for all the planes.
-         * Use chip memory only if BMF_DISPLAYABLE.
-         */
+        /* Allocate memory for all the planes. Use chip memory. */
         for (i = 0; i < depth; i++)
         {
-            data->bitmap->Planes[i] = AllocMem(height * bytesperrow, MEMF_PUBLIC | (displayable ? MEMF_CHIP : 0) | MEMF_CLEAR);
+            data->bitmap->Planes[i] = AllocMem(height * bytesperrow, MEMF_CHIP | MEMF_CLEAR);
 
             if (NULL == data->bitmap->Planes[i])
             {
