@@ -2242,6 +2242,9 @@ void ata_InitBus(struct ata_Bus *bus)
     bus->ab_Dev[0] = DEV_NONE;
     bus->ab_Dev[1] = DEV_NONE;
 
+    /* Check if device 0 and/or 1 is present on this bus. It may happen that
+       a single drive answers for both device addresses, but the phantom
+       drive will be filtered out later */
     for (i = 0; i < MAX_BUSUNITS; i++)
     {
         /* Select device and disable IRQs */
@@ -2249,16 +2252,19 @@ void ata_InitBus(struct ata_Bus *bus)
         ata_WaitTO(bus->ab_Timer, 0, 400, 0);
         PIO_OutAlt(bus, ATACTLF_INT_DISABLE, ata_AltControl);
 
-        /* Write some pattern to registers */
-        PIO_Out(bus, 0x55, ata_Count);
-        PIO_Out(bus, 0xaa, ata_LBALow);
-        PIO_Out(bus, 0xaa, ata_Count);
+        /* Write some pattern to registers. This is a variant of a more
+           common technique, with the difference that we don't use the
+           sector count register because some bad ATAPI drives disallow
+           writing to it */
         PIO_Out(bus, 0x55, ata_LBALow);
-        PIO_Out(bus, 0x55, ata_Count);
+        PIO_Out(bus, 0xaa, ata_LBAMid);
         PIO_Out(bus, 0xaa, ata_LBALow);
+        PIO_Out(bus, 0x55, ata_LBAMid);
+        PIO_Out(bus, 0x55, ata_LBALow);
+        PIO_Out(bus, 0xaa, ata_LBAMid);
 
-        tmp1 = PIO_In(bus, ata_Count);
-        tmp2 = PIO_In(bus, ata_LBALow);
+        tmp1 = PIO_In(bus, ata_LBALow);
+        tmp2 = PIO_In(bus, ata_LBAMid);
         DB2(bug("[ATA  ] ata_InitBus: Reply 0x%02X 0x%02X\n", tmp1, tmp2));
 
         if ((tmp1 == 0x55) && (tmp2 == 0xaa))
