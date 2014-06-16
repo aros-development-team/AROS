@@ -23,6 +23,25 @@
 #define NANBC  0x02
 #define NANBNC 0x01
 
+// Safety check for fast ram bitmaps
+static BOOL canblit(struct BitMap *bm)
+{
+	WORD i;
+	for (i = 0; i < bm->Depth; i++) {
+		UBYTE *p = bm->Planes[i];
+    	if (p == (UBYTE*)0x00000000 || p == (UBYTE*)0xffffffff)
+			continue;
+		// Lower 2M is guaranteed to be Chip RAM
+		if (p < (UBYTE)0x00200000)
+			break;
+		// Re-implementations and UAE may have more Chip RAM.
+		if (TypeOfMem(p) & MEMF_CHIP)
+			break;
+		return FALSE;
+	}
+	return USE_BLITTER != 0;
+}
+
 static void startblitter(struct amigavideo_staticdata *data, UWORD w, UWORD h)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -71,7 +90,7 @@ static const UBYTE copy_minterm[] = { 0xff, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 
 // 14:
 // 15: one (->fillrect)
 
-BOOL blit_copybox(struct amigavideo_staticdata *data, struct amigabm_data *srcbm, struct amigabm_data *dstbm,
+BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, struct BitMap *dstbm,
     WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -86,7 +105,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct amigabm_data *srcbm
     BOOL reverse = FALSE;
     BOOL intersect = FALSE;
 
-    if (USE_BLITTER == 0)
+    if (!canblit(srcbm) || !canblit(dstbm))
     	return FALSE;
 
     srcx2 = srcx + w - 1;
@@ -103,8 +122,8 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct amigabm_data *srcbm
 	intersect = !(srcx > dstx2 || srcx2 < dstx || srcy > dsty + h - 1 || srcy + h - 1 < dsty);
     }
  
-    srcoffset = srcbm->bytesperrow * srcy + (srcx / 16) * 2;
-    dstoffset = dstbm->bytesperrow * dsty + (dstx / 16) * 2;
+    srcoffset = srcbm->BytesPerRow * srcy + (srcx / 16) * 2;
+    dstoffset = dstbm->BytesPerRow * dsty + (dstx / 16) * 2;
     shift = (dstx & 15) - (srcx & 15);
 
     if (intersect) {
@@ -143,8 +162,8 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct amigabm_data *srcbm
      	   alwm = leftmask[srcx];
     	   afwm = rightmask[srcx2];
     	}
-    	srcoffset += srcbm->bytesperrow * (h - 1) + (width - 1) * 2;
-    	dstoffset += dstbm->bytesperrow * (h - 1) + (width - 1) * 2;
+    	srcoffset += srcbm->BytesPerRow * (h - 1) + (width - 1) * 2;
+    	dstoffset += dstbm->BytesPerRow * (h - 1) + (width - 1) * 2;
     } else {
      	if (dstwidth >= srcwidth) {
     	    width = dstwidth;
@@ -168,30 +187,30 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct amigabm_data *srcbm
 
     custom->bltafwm = afwm;
     custom->bltalwm = alwm;
-    custom->bltbmod = srcbm->bytesperrow - width * 2;
-    custom->bltcmod = dstbm->bytesperrow - width * 2;
-    custom->bltdmod = dstbm->bytesperrow - width * 2;
+    custom->bltbmod = srcbm->BytesPerRow - width * 2;
+    custom->bltcmod = dstbm->BytesPerRow - width * 2;
+    custom->bltdmod = dstbm->BytesPerRow - width * 2;
     custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftb;
     bltcon0 = 0x0700 | copy_minterm[mode] | shifta;
     custom->bltadat = 0xffff;
     
-    for (i = 0; i < dstbm->depth; i++) {
+    for (i = 0; i < dstbm->Depth; i++) {
     	UWORD bltcon0b = bltcon0;
-    	if (dstbm->planes[i] == (UBYTE*)0x00000000 || dstbm->planes[i] == (UBYTE*)0xffffffff)
+    	if (dstbm->Planes[i] == (UBYTE*)0x00000000 || dstbm->Planes[i] == (UBYTE*)0xffffffff)
   	    continue;
     	WaitBlit();
-    	if (i >= srcbm->depth || srcbm->planes[i] == (UBYTE*)0x00000000) {
+    	if (i >= srcbm->Depth || srcbm->Planes[i] == (UBYTE*)0x00000000) {
     	    bltcon0b &= ~0x0400;
     	    custom->bltbdat = 0x0000;
-    	} else if (srcbm->planes[i] == (UBYTE*)0xffffffff) {
+    	} else if (srcbm->Planes[i] == (UBYTE*)0xffffffff) {
     	    bltcon0b &= ~0x0400;
     	    custom->bltbdat = 0xffff;
     	} else {
-     	    custom->bltbpt = (APTR)(srcbm->planes[i] + srcoffset);
+     	    custom->bltbpt = (APTR)(srcbm->Planes[i] + srcoffset);
      	}
     	custom->bltcon0 = bltcon0b;
-    	custom->bltcpt = (APTR)(dstbm->planes[i] + dstoffset);
-    	custom->bltdpt = (APTR)(dstbm->planes[i] + dstoffset);
+    	custom->bltcpt = (APTR)(dstbm->Planes[i] + dstoffset);
+    	custom->bltdpt = (APTR)(dstbm->Planes[i] + dstoffset);
     	startblitter(data, width, h);
     }
 
@@ -201,7 +220,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct amigabm_data *srcbm
     return TRUE;
 }
 
-BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *srcbm, struct amigabm_data *dstbm,
+BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm, struct BitMap *dstbm,
     WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode, APTR maskplane)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -216,7 +235,7 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *
     BOOL reverse = FALSE;
     BOOL intersect = FALSE;
 
-    if (USE_BLITTER == 0)
+    if (!canblit(srcbm) || !canblit(dstbm))
     	return FALSE;
 
     srcx2 = srcx + w - 1;
@@ -228,8 +247,8 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *
 	intersect = !(srcx > dstx2 || srcx2 < dstx || srcy > dsty + h - 1 || srcy + h - 1 < dsty);
     }
  
-    srcoffset = srcbm->bytesperrow * srcy + (srcx / 16) * 2;
-    dstoffset = dstbm->bytesperrow * dsty + (dstx / 16) * 2;
+    srcoffset = srcbm->BytesPerRow * srcy + (srcx / 16) * 2;
+    dstoffset = dstbm->BytesPerRow * dsty + (dstx / 16) * 2;
     shift = (dstx & 15) - (srcx & 15);
 
     if (intersect) {
@@ -262,11 +281,11 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *
     	    afwm = 0x0000;
     	} else {
     	    width = srcwidth;
-     	    alwm = 0xffff;
+     	    alwm = leftmask[shift];
     	    afwm = 0xffff;
     	}
-    	srcoffset += srcbm->bytesperrow * (h - 1) + (width - 1) * 2;
-    	dstoffset += dstbm->bytesperrow * (h - 1) + (width - 1) * 2;
+    	srcoffset += srcbm->BytesPerRow * (h - 1) + (width - 1) * 2;
+    	dstoffset += dstbm->BytesPerRow * (h - 1) + (width - 1) * 2;
     } else {
      	if (dstwidth > srcwidth) {
     	    width = dstwidth;
@@ -275,42 +294,42 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *
     	} else {
     	    width = srcwidth;
      	    afwm = 0xffff;
-    	    alwm = 0xffff;
+    	    alwm = rightmask[15 - shift];
     	}
     }
 
-    D(bug("shift=%d rev=%d sw=%d dw=%d sbpr=%d %04x %04x\n", shift, reverse, srcwidth, dstwidth, srcbm->bytesperrow, afwm, alwm));
+    D(bug("shift=%d rev=%d sw=%d dw=%d sbpr=%d %04x %04x\n", shift, reverse, srcwidth, dstwidth, srcbm->BytesPerRow, afwm, alwm));
 
     OwnBlitter();
     WaitBlit();
 
     custom->bltafwm = afwm;
     custom->bltalwm = alwm;
-    custom->bltamod = srcbm->bytesperrow - width * 2;
-    custom->bltbmod = srcbm->bytesperrow - width * 2;
-    custom->bltcmod = dstbm->bytesperrow - width * 2;
-    custom->bltdmod = dstbm->bytesperrow - width * 2;
+    custom->bltamod = srcbm->BytesPerRow - width * 2;
+    custom->bltbmod = srcbm->BytesPerRow - width * 2;
+    custom->bltcmod = dstbm->BytesPerRow - width * 2;
+    custom->bltdmod = dstbm->BytesPerRow - width * 2;
     custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | bltshift;
     bltcon0 = 0x0f00 | 0x00ca | bltshift;
     
-    for (i = 0; i < dstbm->depth; i++) {
+    for (i = 0; i < dstbm->Depth; i++) {
     	UWORD bltcon0b = bltcon0;
-    	if (dstbm->planes[i] == (UBYTE*)0x00000000 || dstbm->planes[i] == (UBYTE*)0xffffffff)
+    	if (dstbm->Planes[i] == (UBYTE*)0x00000000 || dstbm->Planes[i] == (UBYTE*)0xffffffff)
   	    continue;
     	WaitBlit();
-    	if (i >= srcbm->depth || srcbm->planes[i] == (UBYTE*)0x00000000) {
+    	if (i >= srcbm->Depth || srcbm->Planes[i] == (UBYTE*)0x00000000) {
     	    bltcon0b &= ~0x0400;
     	    custom->bltbdat = 0x0000;
-    	} else if (srcbm->planes[i] == (UBYTE*)0xffffffff) {
+    	} else if (srcbm->Planes[i] == (UBYTE*)0xffffffff) {
     	    bltcon0b &= ~0x0400;
     	    custom->bltbdat = 0xffff;
     	} else {
-     	    custom->bltbpt = (APTR)(srcbm->planes[i] + srcoffset);
+     	    custom->bltbpt = (APTR)(srcbm->Planes[i] + srcoffset);
      	}
     	custom->bltcon0 = bltcon0b;
     	custom->bltapt = (APTR)(maskplane + srcoffset);
-    	custom->bltcpt = (APTR)(dstbm->planes[i] + dstoffset);
-    	custom->bltdpt = (APTR)(dstbm->planes[i] + dstoffset);
+    	custom->bltcpt = (APTR)(dstbm->Planes[i] + dstoffset);
+    	custom->bltdpt = (APTR)(dstbm->Planes[i] + dstoffset);
     	startblitter(data, width, h);
     }
 
@@ -320,7 +339,7 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *
     return TRUE;
 }
 
-static const UBYTE fill_minterm[] = { 0xca, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5a, 0x00, 0x00, 0x00, 0x00, 0xca };
+static const UBYTE fill_minterm[] = { 0xca, 0x00, 0x00, 0xca, 0x00, 0x00, 0x5a, 0x00, 0x00, 0x00, 0x5a, 0x00, 0x00, 0x00, 0x00, 0xca };
 
 // copy: /AC + AB = (NABC | NANBC) | (ABNC | ABC) = 0xCA
 // invert: /AC + A/C = (NABC | NANBC) | (ABNC | ANBNC) = 0x5A
@@ -330,7 +349,7 @@ static const UBYTE fill_minterm[] = { 0xca, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 
 // C     = source
 // D     = destination
 
-BOOL blit_fillrect(struct amigavideo_staticdata *data, struct amigabm_data *bm, WORD x1,WORD y1,WORD x2,WORD y2, HIDDT_Pixel pixel, HIDDT_DrawMode mode)
+BOOL blit_fillrect(struct amigavideo_staticdata *data, struct BitMap *bm, WORD x1,WORD y1,WORD x2,WORD y2, HIDDT_Pixel pixel, HIDDT_DrawMode mode)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
@@ -338,16 +357,16 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct amigabm_data *bm, 
     WORD width, height;
     UBYTE i;
     
-    if (USE_BLITTER == 0)
+    if (!canblit(bm))
     	return FALSE;
     
     D(bug("fillrect(%dx%d,%dx%d,%d,%d)\n", x1, y1, x2, y2, pixel, mode));
-    D(bug("bm = %dx%dx%d bpr=%d\n", bm->width, bm->height, bm->depth, bm->bytesperrow));
+    D(bug("bm = %dx%dx%d bpr=%d\n", bm->BytesPerRow * 8, bm->Rows, bm->Depth, bm->BytesPerRow));
 
     if (fill_minterm[mode] == 0)
     	return FALSE;
 
-    offset = bm->bytesperrow * y1 + (x1 / 16) * 2;
+    offset = bm->BytesPerRow * y1 + (x1 / 16) * 2;
     width = x2 / 16 - x1 / 16 + 1;
     height = y2 - y1 + 1;
 
@@ -356,23 +375,23 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct amigabm_data *bm, 
 
     custom->bltafwm = leftmask[x1 & 15];
     custom->bltalwm = rightmask[x2 & 15];
-    custom->bltcmod = bm->bytesperrow - width * 2;
-    custom->bltdmod = bm->bytesperrow - width * 2;
+    custom->bltcmod = bm->BytesPerRow - width * 2;
+    custom->bltdmod = bm->BytesPerRow - width * 2;
     custom->bltcon1 = 0x0000;
     custom->bltcon0 = 0x0300 | fill_minterm[mode];
     custom->bltadat = 0xffff;
     
     if (mode == vHidd_GC_DrawMode_Clear)
     	pixel = 0x00;
-    else if (mode == vHidd_GC_DrawMode_Set)
+    else if (mode == vHidd_GC_DrawMode_Set || mode == vHidd_GC_DrawMode_Invert)
     	pixel = 0xff;
 
-    for (i = 0; i < bm->depth; i++) {
-    	if (bm->planes[i] != (UBYTE*)0x00000000 && bm->planes[i] != (UBYTE*)0xffffffff) {
+    for (i = 0; i < bm->Depth; i++) {
+    	if (bm->Planes[i] != (UBYTE*)0x00000000 && bm->Planes[i] != (UBYTE*)0xffffffff) {
 	    WaitBlit();
 	    custom->bltbdat = (pixel & 1) ? 0xffff : 0x0000;
-	    custom->bltcpt = (APTR)(bm->planes[i] + offset);
-	    custom->bltdpt = (APTR)(bm->planes[i] + offset);
+	    custom->bltcpt = (APTR)(bm->Planes[i] + offset);
+	    custom->bltdpt = (APTR)(bm->Planes[i] + offset);
 	    startblitter(data, width, height);
 	}
 	pixel >>= 1;
@@ -403,7 +422,7 @@ struct pHidd_BitMap_PutTemplate
 // C     = destination
 // D     = destination
 
-BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *bm, struct pHidd_BitMap_PutTemplate *tmpl)
+BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, struct pHidd_BitMap_PutTemplate *tmpl)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
@@ -425,8 +444,8 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
     WORD srcx = tmpl->srcx;
     WORD srcx2 = srcx + tmpl->width - 1;
 
-    if (USE_BLITTER == 0)
-    	return FALSE;
+    if (!canblit(bm))
+	   	return FALSE;
 
     if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
     	type = 0;
@@ -441,7 +460,7 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
 	tmpl->masktemplate, tmpl->srcx, tmpl->x, tmpl->y, tmpl->width, tmpl->height, type, fgpen, bgpen));
 
     srcoffset = (srcx / 16) * 2;
-    dstoffset = bm->bytesperrow * dsty + (dstx / 16) * 2;
+    dstoffset = bm->BytesPerRow * dsty + (dstx / 16) * 2;
 
     srcwidth = srcx2 / 16 - srcx / 16 + 1;
     dstwidth = dstx2 / 16 - dstx / 16 + 1;
@@ -472,7 +491,7 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
     	    afwm = rightmask[srcx2];
     	}
     	srcoffset += tmpl->modulo * (height - 1) + (width - 1) * 2;
-    	dstoffset += bm->bytesperrow * (height - 1) + (width - 1) * 2;
+    	dstoffset += bm->BytesPerRow * (height - 1) + (width - 1) * 2;
     } else {
     	reverse = FALSE;
      	if (dstwidth >= srcwidth) {
@@ -496,11 +515,11 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
     custom->bltafwm = afwm;
     custom->bltalwm = alwm;
     custom->bltbmod = tmpl->modulo - width * 2;
-    custom->bltcmod = bm->bytesperrow - width * 2;
-    custom->bltdmod = bm->bytesperrow - width * 2;
+    custom->bltcmod = bm->BytesPerRow - width * 2;
+    custom->bltdmod = bm->BytesPerRow - width * 2;
     custom->bltadat = 0xffff;
     
-    for (i = 0; i < bm->depth; i++) {
+    for (i = 0; i < bm->Depth; i++) {
     	UBYTE minterm;
     	UWORD chmask, shiftbv;
     	UBYTE fg, bg, tg;
@@ -510,7 +529,7 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
   	fgpen >>= 1;
   	bgpen >>= 1;
 
-    	if (bm->planes[i] == (UBYTE*)0x00000000 || bm->planes[i] == (UBYTE*)0xffffffff)
+    	if (bm->Planes[i] == (UBYTE*)0x00000000 || bm->Planes[i] == (UBYTE*)0xffffffff)
   	    continue;
 
   	chmask = 0x0700;
@@ -559,8 +578,8 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
 	custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftbv;
 	custom->bltbdat = 0xffff;
 	custom->bltbpt = (APTR)(tmpl->masktemplate + srcoffset);
-    	custom->bltcpt = (APTR)(bm->planes[i] + dstoffset);
-    	custom->bltdpt = (APTR)(bm->planes[i] + dstoffset);
+    	custom->bltcpt = (APTR)(bm->Planes[i] + dstoffset);
+    	custom->bltdpt = (APTR)(bm->Planes[i] + dstoffset);
     	startblitter(data, width, height);
     }
 
@@ -606,7 +625,7 @@ static UBYTE getminterm(UBYTE type, UBYTE fg, UBYTE bg)
   	return minterm;
 }
 
-BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struct pHidd_BitMap_PutPattern *pat)
+BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struct pHidd_BitMap_PutPattern *pat)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
@@ -629,7 +648,7 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
     
     WORD patternymask =  pat->patternheight - 1;
 
-    if (USE_BLITTER == 0)
+    if (!canblit(bm))
     	return FALSE;
 
     if (pat->mask)
@@ -651,7 +670,7 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
 	pat->mask, pat->maskmodulo, pat->masksrcx,
 	pat->pattern, pat->patternsrcx, pat->patternsrcy, pat->patternheight, type));
 
-    dstoffset = bm->bytesperrow * dsty + (dstx / 16) * 2;
+    dstoffset = bm->BytesPerRow * dsty + (dstx / 16) * 2;
     dstwidth = dstx2 / 16 - dstx / 16 + 1;
 
     dstx &= 15;
@@ -667,17 +686,17 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
 
     custom->bltafwm = afwm;
     custom->bltalwm = alwm;
-    custom->bltcmod = (bm->bytesperrow - dstwidth * 2) + bm->bytesperrow * (pat->patternheight - 1);
-    custom->bltdmod = (bm->bytesperrow - dstwidth * 2) + bm->bytesperrow * (pat->patternheight - 1);
+    custom->bltcmod = (bm->BytesPerRow - dstwidth * 2) + bm->BytesPerRow * (pat->patternheight - 1);
+    custom->bltdmod = (bm->BytesPerRow - dstwidth * 2) + bm->BytesPerRow * (pat->patternheight - 1);
     custom->bltadat = 0xffff;
     
-    for (i = 0; i < bm->depth; i++, fgpen >>= 1, bgpen >>= 1) {
+    for (i = 0; i < bm->Depth; i++, fgpen >>= 1, bgpen >>= 1) {
     	ULONG dstoffset2;
     	UBYTE minterm;
     	UWORD chmask;
     	UBYTE fg, bg;
 
-    	if (bm->planes[i] == (UBYTE*)0x00000000 || bm->planes[i] == (UBYTE*)0xffffffff)
+    	if (bm->Planes[i] == (UBYTE*)0x00000000 || bm->Planes[i] == (UBYTE*)0xffffffff)
   	    continue;
 
   	fg = fgpen & 1;
@@ -691,14 +710,14 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
    	custom->bltcon0 = shifta | chmask | minterm;
 	custom->bltcon1 = shiftb;
 
-	for(patcnt = 0, dstoffset2 = 0; patcnt < pat->patternheight; patcnt++, dstoffset2 += bm->bytesperrow) {
+	for(patcnt = 0, dstoffset2 = 0; patcnt < pat->patternheight; patcnt++, dstoffset2 += bm->BytesPerRow) {
     	    UWORD blitheight = (height - patcnt + 1) / pat->patternheight;
     	    UWORD pattern = ((UWORD*)pat->pattern)[(pat->patternsrcy + patcnt) & patternymask];
     	    if (blitheight && pattern) {
    		WaitBlit();
 	    	custom->bltbdat = pattern;
-    	    	custom->bltcpt = (APTR)(bm->planes[i] + dstoffset + dstoffset2);
-    	    	custom->bltdpt = (APTR)(bm->planes[i] + dstoffset + dstoffset2);
+    	    	custom->bltcpt = (APTR)(bm->Planes[i] + dstoffset + dstoffset2);
+    	    	custom->bltdpt = (APTR)(bm->Planes[i] + dstoffset + dstoffset2);
     	    	startblitter(csd, dstwidth, blitheight);
     	    }
     	}

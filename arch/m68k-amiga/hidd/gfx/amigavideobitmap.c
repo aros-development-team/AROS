@@ -91,12 +91,7 @@ OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data->height = height;
     data->depth = depth;
     data->pixelcacheoffset = -1;
-
-    if (ok && pbm) {
-        int i;
-        for (i = 0; i < pbm->Depth; i++)
-            data->planes[i] = pbm->Planes[i];
-    }
+    data->pbm = pbm;
       
     if (!ok) {
         OOP_MethodID dispose_mid;
@@ -273,13 +268,14 @@ static void flushpixelcache(struct amigabm_data *data)
 {
     UBYTE i, x;
     ULONG offset = data->pixelcacheoffset;
-    UBYTE **plane = data->planes; 
+    struct BitMap *bm = data->pbm;
+    UBYTE **plane = bm->Planes;
 
     if (data->writemask) {
 	ULONG tmpplanes[8];
     	ULONG pixel, notpixel, wmask;
     	if (~data->writemask) {
-   	    for (i = 0; i < data->depth; i++) {
+   	    for (i = 0; i < bm->Depth; i++) {
  	    	if (plane[i] == (UBYTE*)-1)
  	            tmpplanes[i] = 0xffffffff;
  	    	else if (plane[i] == NULL)
@@ -350,7 +346,7 @@ ULONG AmigaVideoBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
     if ((offset & ~3) != data->pixelcacheoffset) {
  	ULONG tmpplanes[8], mask;
  	UBYTE x;
-	UBYTE **plane = data->planes;
+	UBYTE **plane = data->pbm->Planes;
 
         CLEARCACHE;
  	data->pixelcacheoffset = offset & ~3;
@@ -418,7 +414,7 @@ VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
     	    x2 = data->width - 1;
     	if (y2 >= data->height)
     	    y2 = data->height - 1;
-	if (!blit_fillrect(csd, data, x1, y1, x2, y2, fg, mode))
+	if (!blit_fillrect(csd, data->pbm, x1, y1, x2, y2, fg, mode))
     	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     } else {
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -441,7 +437,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 	msg->pattern, msg->patternsrcx, msg->patternsrcy, msg->patternheight, msg->patterndepth, msg->patternlut, msg->invertpattern,
 	GC_FG(msg->gc), GC_BG(msg->gc), GC_COLEXP(msg->gc), GC_DRMD(msg->gc)));
 
-    if (!blit_putpattern(csd, data, msg))
+    if (!blit_putpattern(csd, data->pbm, msg))
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -468,7 +464,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
     {
     	UBYTE *src = pixarray;
 	
-    	plane = data->planes;
+    	plane = data->pbm->Planes;
 	
     	for(d = 0; d < data->depth; d++)
 	{
@@ -535,7 +531,7 @@ VOID AmigaVideoBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
     prefill = 0;
     for (d = 0; d < data->depth; d++)
     {
-    	if (data->planes[d] == (UBYTE *)-1)
+    	if (data->pbm->Planes[d] == (UBYTE *)-1)
 	{
 	    prefill |= (1L << d);
 	}
@@ -545,7 +541,7 @@ VOID AmigaVideoBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
     {
     	UBYTE *dest = pixarray;
 
-    	plane = data->planes;
+    	plane = data->pbm->Planes;
 	for(x = 0; x < msg->width; x++)
 	{
 	    dest[x] = prefill;
@@ -629,7 +625,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 	    {
 	     	UBYTE *src = pixarray;
 	
-    		plane = data->planes;
+    		plane = data->pbm->Planes;
 
     		for(d = 0; d < data->depth; d++)
 		{
@@ -678,7 +674,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 	    {
 	     	HIDDT_Pixel *src = (HIDDT_Pixel *)pixarray;
 	
-    		plane = data->planes;
+    		plane = data->pbm->Planes;
 
     		for(d = 0; d < data->depth; d++)
 		{
@@ -739,7 +735,7 @@ VOID AmigaVideoBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
     CLEARCACHE;
-    if (!blit_fillrect(csd, data, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode)) {
+    if (!blit_fillrect(csd, data->pbm, msg->minX, msg->minY, msg->maxX, msg->maxY, fg, mode)) {
  	CMDDEBUGUNIMP(bug("FillRect\n"));
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
@@ -753,7 +749,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
 
     CLEARCACHE;
-    if (!blit_puttemplate(csd, data, msg)) {
+    if (!blit_puttemplate(csd, data->pbm, msg)) {
 	CMDDEBUGUNIMP(bug("PutTemplate: %x x=%d y=%d w=%d h=%d srcx=%d modulo=%d invert=%d\n",
     	    msg->masktemplate, msg->x, msg->y, msg->width, msg->height, msg->srcx, msg->inverttemplate));
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
