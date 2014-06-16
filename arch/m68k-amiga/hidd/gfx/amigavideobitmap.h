@@ -26,7 +26,7 @@ enum
 struct amigabm_data
 {
     struct MinNode node;
-    UBYTE *planes[8];
+    struct BitMap *pbm;
     WORD width;
     WORD height;
     WORD bytesperrow;

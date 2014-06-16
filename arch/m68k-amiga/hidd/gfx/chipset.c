@@ -239,7 +239,7 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
 
     copbpl = c2d->copper2_bpl;
     for (i = 0; i < bm->depth; i++) {
-	ULONG pptr = (ULONG)(bm->planes[data->bploffsets[i]]);
+	ULONG pptr = (ULONG)(bm->pbm->Planes[data->bploffsets[i]]);
 	if (data->interlace && odd)
 	    pptr += bm->bytesperrow;
 	pptr += offset;
@@ -330,7 +330,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
 
     c2d->copper2_bpl = c;
     for (i = 0; i < bm->depth; i++) {
-	pptr = (ULONG)(bm->planes[data->bploffsets[i]]);
+	pptr = (ULONG)(bm->pbm->Planes[data->bploffsets[i]]);
 	if (lace)
 	    pptr += bm->bytesperrow;
 	*c++ = 0xe0 + i * 4;
