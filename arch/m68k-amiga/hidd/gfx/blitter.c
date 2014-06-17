@@ -143,6 +143,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
 
     srcwidth = srcx2 / 16 - srcx / 16 + 1;
     dstwidth = dstx2 / 16 - dstx / 16 + 1;
+
     srcx &= 15;
     dstx &= 15;
     dstx2 &= 15;
@@ -268,37 +269,56 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
 
     srcwidth = srcx2 / 16 - srcx / 16 + 1;
     dstwidth = dstx2 / 16 - dstx / 16 + 1;
+
     srcx &= 15;
     dstx &= 15;
     dstx2 &= 15;
     srcx2 &= 15;
 
+	if (dstwidth > srcwidth && ((srcx + w - 1) & ~15) != ((dstx + w - 1) & ~15)) {
+		// >16 bit edge mask needed?
+		D(bug("unsupported %d,%d %d,%d %d %d,%d\n", srcwidth, dstwidth, srcx, dstx, w, srcx + w, dstx + w));
+		return FALSE;
+	}
+
     bltshift = shift << 12;
     if (reverse) {
      	if (dstwidth > srcwidth) {
     	    width = dstwidth;
-     	    alwm = 0xffff;
-    	    afwm = 0x0000;
+    	    alwm = leftmask[srcx];
+    	    if (srcwidth == 1 && srcx2 > srcx) {
+    	    	// source is single word
+    	    	alwm &= rightmask[srcx2];
+    	    	afwm = 0xffff;
+    	    } else {
+    	    	afwm = rightmask[srcx2];
+    	    }
     	} else {
     	    width = srcwidth;
-     	    alwm = leftmask[shift];
-    	    afwm = 0xffff;
+     	    alwm = leftmask[srcx];
+    	    afwm = rightmask[srcx2];
     	}
     	srcoffset += srcbm->BytesPerRow * (h - 1) + (width - 1) * 2;
     	dstoffset += dstbm->BytesPerRow * (h - 1) + (width - 1) * 2;
     } else {
      	if (dstwidth > srcwidth) {
     	    width = dstwidth;
-    	    afwm = 0xffff;
-    	    alwm = 0x0000;
+    	    afwm = leftmask[srcx];
+    	    if (srcwidth == 1 && srcx2 > srcx) {
+    	    	// source is single word
+    	    	afwm &= rightmask[srcx2];
+    	    	alwm = 0xffff;
+    	    } else {
+    	    	alwm = rightmask[srcx2];
+    	    }
     	} else {
     	    width = srcwidth;
-     	    afwm = 0xffff;
-    	    alwm = rightmask[15 - shift];
+     	    afwm = leftmask[srcx];
+    	    alwm = rightmask[srcx2];
     	}
     }
 
-    D(bug("shift=%d rev=%d sw=%d dw=%d sbpr=%d %04x %04x\n", shift, reverse, srcwidth, dstwidth, srcbm->BytesPerRow, afwm, alwm));
+    D(bug("shift=%d rev=%d sw=%d dw=%d sbpr=%d srcx=%d/%d %04x %04x\n", shift, reverse, srcwidth, dstwidth, srcbm->BytesPerRow, srcx, srcx2, afwm, alwm));
 
     OwnBlitter();
     WaitBlit();
