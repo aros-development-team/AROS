@@ -181,7 +181,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
     	}
     }
 
-    //D(bug("shift=%d rev=%d sw=%d dw=%d %04x %04x\n", shift, reverse, srcwidth, dstwidth, afwm, alwm));
+    D(bug("shift=%d rev=%d sw=%d dw=%d %04x %04x\n", shift, reverse, srcwidth, dstwidth, afwm, alwm));
 
     OwnBlitter();
     WaitBlit();
@@ -232,9 +232,11 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
     WORD srcx2, dstx2;
     UWORD bltshift;
     UWORD afwm, alwm;
-    UWORD bltcon0;
+    UWORD bltcon0, maskmod;
     BOOL reverse = FALSE;
     BOOL intersect = FALSE;
+    UWORD *tempmask = NULL;
+    BOOL needtempmask = FALSE;
 
     if (!canblit(srcbm) || !canblit(dstbm))
     	return FALSE;
@@ -278,7 +280,7 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
 	if (dstwidth > srcwidth && ((srcx + w - 1) & ~15) != ((dstx + w - 1) & ~15)) {
 		// >16 bit edge mask needed?
 		D(bug("unsupported %d,%d %d,%d %d %d,%d\n", srcwidth, dstwidth, srcx, dstx, w, srcx + w, dstx + w));
-		return FALSE;
+		needtempmask = TRUE;
 	}
 
     bltshift = shift << 12;
@@ -318,14 +320,56 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
     	}
     }
 
-    D(bug("shift=%d rev=%d sw=%d dw=%d sbpr=%d srcx=%d/%d %04x %04x\n", shift, reverse, srcwidth, dstwidth, srcbm->BytesPerRow, srcx, srcx2, afwm, alwm));
+	if (needtempmask) {
+		UWORD *oldmask = maskplane + srcoffset, *newmask, *mask2;
+		WORD ww;
+		tempmask = AllocVec((srcwidth + 1) * 2 * (h + 1), MEMF_CHIP);
+		if (!tempmask)
+			return FALSE;
+		mask2 = tempmask;
+		newmask = tempmask + (srcwidth + 1);
+
+		// create temp mask generation mask
+		for (ww = 0; ww < srcwidth - 1; ww++)
+			mask2[ww] = 0xffff;
+		// we need to mask out part of second to last word which
+		// is not directly supported by the blitter.
+		mask2[srcwidth - 1] = reverse ? afwm : alwm;
+		mask2[srcwidth] = 0x0000;
+
+		// create temp mask
+		OwnBlitter();
+		WaitBlit();
+		custom->bltapt = mask2;
+		custom->bltbdat = 0x0000;
+		custom->bltcpt = oldmask;
+		custom->bltdpt = newmask;
+		custom->bltamod = -(srcwidth + 1) * 2;
+		custom->bltcmod = srcbm->BytesPerRow - (srcwidth + 1) * 2;
+		custom->bltdmod = 0;
+		custom->bltafwm = 0xffff;
+		custom->bltalwm = 0xffff;
+		// AC+/AB
+		custom->bltcon0 = 0x0bac;
+		custom->bltcon1 = 0x0000;
+		startblitter(data, srcwidth + 1, h);
+		DisownBlitter();
+
+		maskplane = newmask;
+		maskmod = 0;
+	} else {
+		maskplane += srcoffset;
+		maskmod = srcbm->BytesPerRow - width * 2;
+	}
+
+    D(bug("shift=%d rev=%d sw=%d dw=%d sbpr=%d srcx=%d/%d %04x %04x %p\n", shift, reverse, srcwidth, dstwidth, srcbm->BytesPerRow, srcx, srcx2, afwm, alwm, maskplane));
 
     OwnBlitter();
     WaitBlit();
 
     custom->bltafwm = afwm;
     custom->bltalwm = alwm;
-    custom->bltamod = srcbm->BytesPerRow - width * 2;
+    custom->bltamod = maskmod;
     custom->bltbmod = srcbm->BytesPerRow - width * 2;
     custom->bltcmod = dstbm->BytesPerRow - width * 2;
     custom->bltdmod = dstbm->BytesPerRow - width * 2;
@@ -347,7 +391,7 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
      	    custom->bltbpt = (APTR)(srcbm->Planes[i] + srcoffset);
      	}
     	custom->bltcon0 = bltcon0b;
-    	custom->bltapt = (APTR)(maskplane + srcoffset);
+    	custom->bltapt = (APTR)maskplane;
     	custom->bltcpt = (APTR)(dstbm->Planes[i] + dstoffset);
     	custom->bltdpt = (APTR)(dstbm->Planes[i] + dstoffset);
     	startblitter(data, width, h);
@@ -355,6 +399,9 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
 
     WaitBlit();
     DisownBlitter();
+
+	if (tempmask)
+		FreeVec(tempmask);
 
     return TRUE;
 }
