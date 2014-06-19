@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -126,7 +126,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
         TEXT cmd[FILE_MAX];
         LONG error;
 
-        D(bug("Handling alias %s\n", command));
+        D(bug("Handling alias '%s'\n", command));
         switch (bufferReadItem(cmd, FILE_MAX, &a, DOSBase))
         {
         case ITEM_QUOTED:
@@ -142,7 +142,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
                 return ERROR_LINE_TOO_LONG; /* alias loop */
         }
 
-        D(bug("[Shell] found alias: %s\n", buf));
+        D(bug("[Shell] found alias: '%s'\n", buf));
         anode.ln_Name = cmd;
         AddTail(aliased, &anode);
         a.cur = 0;
@@ -159,20 +159,24 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
         bufferReset(&a);
         bufferCopy(&b, &a, i, SysBase);
 
-        if (NULL == strchr(buf, ' '))
+        if ((TEXT *)strrchr(buf, ' ') != buf + strlen(buf) - 1
+            && in->len > in->cur && i == b.len)
             /*
              * We need a separator here, between the command
              * and its first argument
              */
             bufferAppend(" ", 1, &a, SysBase);
 
-        bufferCopy(in, &a, in->len - in->cur, SysBase);
+        if (in->cur < in->len)
+            bufferCopy(in, &a, in->len - in->cur - 1, SysBase);
 
         if (i < b.len)
         {
             b.cur += 2; /* skip [] */
             bufferCopy(&b, &a, b.len - b.cur, SysBase);
         }
+
+        bufferAppend("\n", 1, &a, SysBase);
 
         error = readCommandR(ss, &a, out, aliased);
 
@@ -182,7 +186,8 @@ endReadAlias:
         return error;
     }
 
-    D(bug("[readCommandR] Copying buffer %s, len %d, pos %d\n", in->buf, in->len, in->cur));
+    D(bug("[readCommandR] Copying buffer '%s', len %d, pos %d\n",
+        in->buf, in->len, in->cur));
 
     return bufferCopy(in, out, in->len - in->cur, SysBase);
 }
