@@ -89,17 +89,23 @@
 
 BOOL setInteractive(struct CommandLineInterface *cli, ShellState *ss)
 {
-    D(bug("Shell %d: Flags = 0x%x\n", ss->cliNumber, ss->flags));
-    D(bug("Shell %d: cli_Interactive = %d\n", ss->cliNumber, cli->cli_Interactive));
-    D(bug("Shell %d: cli_Background = %d\n", ss->cliNumber, cli->cli_Background));
-    D(bug("Shell %d: cli_CurrentInput = %p\n", ss->cliNumber, cli->cli_CurrentInput));
-    D(bug("Shell %d: cli_StandardInput = %p\n", ss->cliNumber, cli->cli_StandardInput));
+    D(bug("Shell %ld: Flags = 0x%lx\n", ss->cliNumber, ss->flags));
+    D(bug("Shell %ld: cli_Interactive = %ld\n", ss->cliNumber,
+        cli->cli_Interactive));
+    D(bug("Shell %ld: cli_Background = %ld\n", ss->cliNumber,
+        cli->cli_Background));
+    D(bug("Shell %ld: cli_CurrentInput = %p\n", ss->cliNumber,
+        cli->cli_CurrentInput));
+    D(bug("Shell %ld: cli_StandardInput = %p\n", ss->cliNumber,
+        cli->cli_StandardInput));
     if (!cli->cli_Background && IS_SCRIPT)
     	cli->cli_Background = DOSTRUE;
 
     cli->cli_Interactive = (cli->cli_Background || IS_SCRIPT || IS_SYSTEM) ? DOSFALSE : DOSTRUE;
-    D(bug("Shell %d: cli_Interactive => %d\n", ss->cliNumber, cli->cli_Interactive));
-    D(bug("Shell %d: cli_Background => %d\n", ss->cliNumber, cli->cli_Background));
+    D(bug("Shell %ld: cli_Interactive => %ld\n", ss->cliNumber,
+        cli->cli_Interactive));
+    D(bug("Shell %ld: cli_Background => %ld\n", ss->cliNumber,
+        cli->cli_Background));
 
     return cli->cli_Interactive;
 }
@@ -126,9 +132,12 @@ LONG interact(ShellState *ss)
 	    bufferReset(&in); /* reuse allocated buffers */
 	    bufferReset(&out);
 
-	    D(bug("Shell %d: Reading in a line of input...\n", ss->cliNumber));
+	    D(bug("Shell %ld: Reading in a line of input...\n",
+                ss->cliNumber));
 	    error = readLine(ss, cli, &in, &moreLeft);
-	    D(bug("Shell %d: moreLeft=%ld, error=%ld, Line is: %ld bytes (%s)\n", ss->cliNumber, moreLeft, error, in.len, in.buf));
+	    D(bug("Shell %ld: moreLeft=%d, error=%ld, Line is: "
+                "%ld bytes (%s)\n",
+                ss->cliNumber, moreLeft, error, in.len, in.buf));
 
 	    if (error == 0 && in.len > 0)
 		error = checkLine(ss, &in, &out, TRUE);
@@ -146,7 +155,7 @@ LONG interact(ShellState *ss)
 	    {
 		if (cli->cli_ReturnCode >= cli->cli_FailLevel) {
 		    moreLeft = FALSE;
-		    D(bug("Shell: cli_ReturnCode (%d) >= cli->cli_FailLevel (%ld)\n", cli->cli_ReturnCode, cli->cli_FailLevel));
+		    D(bug("Shell: cli_ReturnCode (%ld) >= cli->cli_FailLevel (%ld)\n", cli->cli_ReturnCode, cli->cli_FailLevel));
 		}
 
 		if (CheckSignal(SIGBREAKF_CTRL_D))
@@ -172,7 +181,8 @@ LONG interact(ShellState *ss)
 	}
 
 	if (IS_SCRIPT) {
-	    D(bug("Shell %d: Closing CLI input 0x%08lx\n", ss->cliNumber, cli->cli_CurrentInput));
+	    D(bug("Shell %ld: Closing CLI input 0x%08lx\n", ss->cliNumber,
+                cli->cli_CurrentInput));
 	    Close(cli->cli_CurrentInput);
 
 	    /* Now that we've closed CurrentInput, we can delete
@@ -197,7 +207,8 @@ LONG interact(ShellState *ss)
 	moreLeft = cli->cli_Interactive;
 
         if (cli->cli_Interactive) {
-            D(bug("Shell %d: Flushing output 0x%lx, error 0x%lx\n", ss->cliNumber, Output(), ErrorOutput()));
+            D(bug("Shell %ld: Flushing output 0x%lx, error 0x%lx\n",
+                ss->cliNumber, Output(), ErrorOutput()));
             Flush(Output());
             Flush(ErrorOutput());
         }
@@ -221,7 +232,8 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
 
     if (result == 0)
     {
-        D(bug("convertLine: haveCommand = %ld, out->buf=%s\n", haveCommand, out->buf));
+        D(bug("convertLine: haveCommand = %d, out->buf=%s\n", haveCommand,
+            out->buf));
 	/* Only a comment or dot command ? */
 	if (haveCommand == FALSE)
 	    goto exit;
@@ -245,7 +257,8 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
 
     if (result)
     {
-        D(bug("convertLine: error = %ld faillevel=%ld\n", result, cli->cli_FailLevel));
+        D(bug("convertLine: error = %ld faillevel=%ld\n", result,
+            cli->cli_FailLevel));
 	cli->cli_Result2 = result;
     }
 
@@ -695,7 +708,7 @@ __startup AROS_CLI(ShellStart)
 
     error = interact(ss);
 
-    D(bug("Shell %d: exiting, error = %ld\n", ss->cliNumber, error));
+    D(bug("Shell %ld: exiting, error = %ld\n", ss->cliNumber, error));
 
     if (ss->arg_rd)
         FreeDosObject(DOS_RDARGS, ss->arg_rd);
