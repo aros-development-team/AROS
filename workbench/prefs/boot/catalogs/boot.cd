@@ -1,0 +1,141 @@
+MSG_NAME (//)
+Boot Preferences
+;
+MSG_DESCRIPTION (//)
+Boot preferences
+;
+MSG_GFX (//)
+Graphics
+;
+MSG_GFX_COMPOSITION (//)
+Enable composition
+;
+MSG_GFX_TYPE (//)
+Type:
+;
+MSG_GFX_TYPE_AUTO (//)
+Automatic
+;
+MSG_GFX_TYPE_NATIVE (//)
+Native
+;
+MSG_GFX_TYPE_VESA (//)
+VESA
+;
+MSG_GFX_TYPE_VGA (//)
+VGA
+;
+MSG_GFX_VESAMODE (//)
+VESA Mode
+;
+MSG_GFX_WIDTH (//)
+Width:
+;
+MSG_GFX_HEIGHT (//)
+Height:
+;
+MSG_GFX_DEPTH (//)
+Colour Depth:
+;
+MSG_GFX_DEPTH_TRUE (//)
+True Colour
+;
+MSG_GFX_DEPTH_HIGH (//)
+High Colour
+;
+MSG_GFX_DEPTH_LOW (//)
+256 Colours
+;
+MSG_GFX_REFRESH (//)
+Refresh Rate:
+;
+MSG_GFX_HERTZ (//)
+Hz
+;
+MSG_GFX_DEFAULTREFRESH (//)
+Use Default Refresh Rate
+;
+MSG_GFX_BESTRES (//)
+Use Highest Available Resolution
+;
+MSG_ATA (//)
+ATA
+;
+MSG_ATA_BUSES (//)
+Enabled Buses:
+;
+MSG_ATA_BUS_PCI (//)
+PCI
+;
+MSG_ATA_BUS_LEGACY (//)
+Legacy
+;
+MSG_ATA_BUS_ALL (//)
+All
+;
+MSG_ATA_BUS_NONE (//)
+None
+;
+MSG_ATA_DMA (//)
+Enable DMA Data Transfers
+;
+MSG_ATA_32BIT (//)
+Enable 32-bit Data Transfers
+;
+MSG_ATA_POLL (//)
+Use Polling to Detect End of Busy State
+;
+MSG_ATA_MULTI (//)
+Enable Multisector Data Transfers
+;
+MSG_ATA_AHCI (//)
+Enable Native AHCI
+;
+MSG_DEBUG (//)
+Debugging
+;
+MSG_DEBUG_OUTPUT (//)
+Output:
+;
+MSG_DEBUG_OUTPUT_NONE (//)
+None
+;
+MSG_DEBUG_OUTPUT_MEMORY (//)
+Memory Buffer
+;
+MSG_DEBUG_OUTPUT_SERIAL (//)
+Serial Port
+;
+MSG_DEBUG_MUNGWALL (//)
+Enable Mungwall
+;
+MSG_DEBUG_USB (//)
+Debug USB
+;
+MSG_MISC (//)
+Miscellaneous
+;
+MSG_USB_ENABLE (//)
+Enable USB
+;
+MSG_ACPI_ENABLE (//)
+Enable ACPI
+;
+MSG_FLOPPY_ENABLE (//)
+Enable Floppy Disk Drive
+;
+MSG_DEVICE (//)
+Boot Device
+;
+MSG_DEVICE_NAME (//)
+DOS Device:
+;
+MSG_DEVICE_DELAY (//)
+Boot Delay:
+;
+MSG_DEVICE_SECONDS (//)
+seconds
+;
+MSG_DEVICE_DEFAULTDELAY (//)
+Use Default Boot Delay
+;

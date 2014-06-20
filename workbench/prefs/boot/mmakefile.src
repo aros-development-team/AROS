@@ -1,0 +1,20 @@
+#   $Id$
+#
+#   Makefile to make Boot prefs program.
+
+include $(TOP)/config/make.cfg
+
+FILES := main args booteditor locale
+EXEDIR := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : \
+#MM workbench-prefs-boot-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM- workbench-prefs-boot-pc-i386 : workbench-prefs-boot
+
+#MM workbench-prefs-boot : includes linklibs workbench-prefs-boot-catalogs
+
+%build_prog mmake=workbench-prefs-boot progname=Boot targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common
