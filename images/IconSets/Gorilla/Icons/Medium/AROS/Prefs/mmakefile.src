@@ -1,11 +1,11 @@
-# Copyright © 2004, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2014, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
 
-ICONS := AHI Appearance Time Locale Serial Presets Input IControl Font ReqTools Wanderer \
-         Zune ScreenMode Editor Trackdisk PSI Network Trident OpenURL \
-		 Pointer Printer BoingIconBar
+ICONS := AHI Appearance Boot Time Locale Serial Presets Input IControl Font \
+ ReqTools Wanderer Zune ScreenMode Editor Trackdisk PSI Network Trident \
+ OpenURL Pointer Printer BoingIconBar
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-prefs-clean
 #MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-prefs
