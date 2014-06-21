@@ -1263,6 +1263,7 @@ static void common_DetectXferModes(struct ata_Unit* unit)
 static BYTE ata_Identify(struct ata_Unit *unit)
 {
     BOOL atapi = unit->au_Bus->ab_Dev[unit->au_UnitNum & 1] & 0x80;
+    BOOL supportLBA, supportLBA48;
     ata_CommandBlock acb =
     {
         atapi ? ATA_IDENTIFY_ATAPI : ATA_IDENTIFY_DEVICE,
@@ -1415,9 +1416,18 @@ static BYTE ata_Identify(struct ata_Unit *unit)
         unit->au_Flags |= AF_Removable;
     }
 
-    unit->au_Capacity   = unit->au_Drive->id_LBASectors;
-    unit->au_Capacity48 = unit->au_Drive->id_LBA48Sectors;
-    DINIT(bug("[ATA%02ld] ata_Identify: Unit LBA: %07lx 28bit / %04lx:%08lx 48bit addressable blocks\n", unit->au_UnitNum, unit->au_Capacity, (ULONG)(unit->au_Capacity48 >> 32), (ULONG)(unit->au_Capacity48 & 0xfffffffful)));
+    supportLBA = (unit->au_Drive->id_Capabilities & (1 << 9)) != 0;
+    supportLBA48 = supportLBA && (unit->au_Drive->id_Commands5 & (1 << 10)) != 0;
+
+    unit->au_Capacity = unit->au_Drive->id_LBASectors;
+    if (supportLBA48)
+        unit->au_Capacity48 = unit->au_Drive->id_LBA48Sectors;
+    else
+        unit->au_Capacity48 = unit->au_Capacity;
+
+    DINIT(bug("[ATA%02ld] ata_Identify: Unit LBA%d: %07lx 28bit / %04lx:%08lx 48bit addressable blocks\n",
+        unit->au_UnitNum, supportLBA48 ? 48 : (supportLBA ? 28 : 0),
+        unit->au_Capacity, (ULONG)(unit->au_Capacity48 >> 32), (ULONG)(unit->au_Capacity48 & 0xfffffffful)));
 
     if (atapi)
     {
@@ -1463,8 +1473,8 @@ static BYTE ata_Identify(struct ata_Unit *unit)
            i guess this just solves that weirdo div-by-zero crash, if nothing
            else...
            */
-        if ((unit->au_Drive->id_LBA48Sectors > (63 * 255 * 1024)) ||
-            (unit->au_Drive->id_LBASectors > (63 * 255 * 1024)))
+        if (supportLBA && ((unit->au_Drive->id_LBA48Sectors > (63 * 255 * 1024)) ||
+            (unit->au_Drive->id_LBASectors > (63 * 255 * 1024))))
         {
             ULONG div = 1;
             /*
@@ -1511,7 +1521,10 @@ static BYTE ata_Identify(struct ata_Unit *unit)
             unit->au_Cylinders  = unit->au_Drive->id_OldLCylinders;
             unit->au_Heads      = unit->au_Drive->id_OldLHeads;
             unit->au_Sectors    = unit->au_Drive->id_OldLSectors;
-            unit->au_Capacity   = unit->au_Cylinders * unit->au_Heads * unit->au_Sectors;
+            if (!supportLBA) {
+                unit->au_Capacity   = unit->au_Cylinders * unit->au_Heads * unit->au_Sectors;
+                unit->au_Capacity48 = unit->au_Capacity;
+            }
         }
     }
 
