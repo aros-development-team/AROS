@@ -1368,8 +1368,16 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
     tmp.MinHeight = 0;
     tmp.DefHeight = 0;
     tmp.MaxHeight = MUI_MAXMAX;
-    tmp.MinWidth = tmp.DefWidth = tmp.MaxWidth =
-        (data->num_visible_children - 1) * data->horiz_spacing;
+    if (data->num_visible_children > 0)
+    {
+        tmp.MinWidth = tmp.DefWidth = tmp.MaxWidth =
+            (data->num_visible_children - 1) * data->horiz_spacing;
+    }
+    else
+    {
+        tmp.MinWidth = tmp.DefWidth = 0;
+        tmp.MaxWidth = MUI_MAXMAX;
+    }
 
     if (data->flags & GROUP_SAME_WIDTH)
     {
@@ -1449,8 +1457,16 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
     tmp.MinWidth = 0;
     tmp.DefWidth = 0;
     tmp.MaxWidth = MUI_MAXMAX;
-    tmp.MinHeight = tmp.DefHeight = tmp.MaxHeight =
-        (data->num_visible_children - 1) * data->vert_spacing;
+    if (data->num_visible_children > 0)
+    {
+        tmp.MinHeight = tmp.DefHeight = tmp.MaxHeight =
+            (data->num_visible_children - 1) * data->vert_spacing;
+    }
+    else
+    {
+        tmp.MinHeight = tmp.DefHeight = 0;
+        tmp.MaxHeight = MUI_MAXMAX;
+    }
 
     if (data->flags & GROUP_SAME_HEIGHT)
     {
@@ -1895,6 +1911,7 @@ IPTR Group__MUIM_AskMinMax(struct IClass *cl, Object *obj,
         //    msg->MinMaxInfo->MaxHeight);
 
     }
+
     return 0;
 }
 
