@@ -75,7 +75,7 @@ struct MinList
 	( (((struct List *)l)->lh_TailPred) == (struct Node *)(l) )
 
 #define IsMinListEmpty(l) \
-	( (((struct MinList *)l)->mlh_TailPred) == (struct MinList *)(l) )
+	( (((struct MinList *)l)->mlh_TailPred) == (struct MinNode *)(l) )
 
 #define IsMsgPortEmpty(mp) \
       ( (((struct MsgPort *)(mp))->mp_MsgList.lh_TailPred) \
