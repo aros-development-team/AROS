@@ -5,6 +5,7 @@
 #include <proto/exec.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "ks13wrapper.h"
 
@@ -109,6 +110,19 @@ void DebugPutHexVal(ULONG val)
 		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
 	}
 	DebugPutChar(' ');
+}
+
+void Trace(ULONG id, const UBYTE *title, const UBYTE *format, ...)
+{
+	UBYTE buffer[256];
+	va_list parms;
+	va_start(parms, format);
+	vsnprintf(buffer, sizeof buffer - 1, format, parms);
+	DebugPutStr(title);
+	DebugPutStr(":");
+	DebugPutStr(buffer);
+	DebugPutStr("\n");
+	va_end(parms);
 }
 
 #endif

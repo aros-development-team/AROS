@@ -540,8 +540,11 @@ static struct canodeblock *big_GetAnodeBlock (UWORD seqnr, globaldata *g)
 	/* check it */
 	if (ablock->blk.id != ABLKID)
 	{
+		ULONG args[2];
+		args[0] = ablock->blk.id;
+		args[1] = blocknr;
 		FreeLRU ((struct cachedblock *)ablock);
-		ErrorMsg (AFS_ERROR_DNV_WRONG_ANID, NULL, g);
+		ErrorMsg (AFS_ERROR_DNV_WRONG_ANID, args, g);
 		return NULL;
 	}
 
@@ -671,8 +674,9 @@ struct cindexblock *GetIndexBlock (UWORD nr, globaldata *g)
 	}
 	else
 	{
+		ULONG args[5] = { indexblk->blk.id, IBLKID, blocknr, nr, andata.indexperblock };
 		FreeLRU ((struct cachedblock *)indexblk);
-		ErrorMsg (AFS_ERROR_DNV_WRONG_INDID, NULL, g);
+		ErrorMsg (AFS_ERROR_DNV_WRONG_INDID, args, g);
 		return NULL;
 	}
 
@@ -780,8 +784,9 @@ struct cindexblock *GetSuperBlock (UWORD nr, globaldata *g)
 	}
 	else
 	{
+		ULONG args[5] = { superblk->blk.id, SBLKID, blocknr, nr, 0 };
 		FreeLRU ((struct cachedblock *)superblk);
-		ErrorMsg (AFS_ERROR_DNV_WRONG_INDID, NULL, g);
+		ErrorMsg (AFS_ERROR_DNV_WRONG_INDID, args, g);
 		return NULL;
 	}
 
@@ -874,12 +879,12 @@ void InitAnodes (struct volumedata *volume, BOOL formatting, globaldata *g)
 
 		andata.curranseqnr = volume->rblkextension ?
 							 volume->rblkextension->blk.curranseqnr : 0;
-		andata.anodesperblock = (SIZEOF_RESBLOCK - sizeof(anodeblock_t)) /
+		andata.anodesperblock = (volume->rootblk->reserved_blksize - sizeof(anodeblock_t)) /
 								sizeof(anode_t);
-		andata.indexperblock = (SIZEOF_RESBLOCK - sizeof(indexblock_t)) /
+		andata.indexperblock = (volume->rootblk->reserved_blksize - sizeof(indexblock_t)) /
 							   sizeof(LONG);
 		andata.maxanodeseqnr = g->supermode ?
-				(MAXSUPER * andata.indexperblock * andata.indexperblock - 1) :
+				((MAXSUPER+1) * andata.indexperblock * andata.indexperblock * andata.anodesperblock - 1) :
 				(MAXSMALLINDEXNR * andata.indexperblock - 1);
 		andata.reserved = andata.anodesperblock - RESERVEDANODES;
 		MakeAnodeBitmap (formatting, g);
@@ -928,7 +933,7 @@ static void MakeAnodeBitmap (BOOL formatting, globaldata *g)
 		}
 		else
 		{
-			for (s=0, i=98; i >=0 && !g->rootblock->idx.small.indexblocks[i]; i--);
+			for (s=0, i=98; i >= 0 && !g->rootblock->idx.small.indexblocks[i]; i--);
 		}
 
 		if (i < 0)

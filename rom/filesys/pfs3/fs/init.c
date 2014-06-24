@@ -711,16 +711,17 @@ void InitModules (struct volumedata *volume, BOOL formatting, globaldata *g)
 
 	g->rootblock = rootblock;
 	g->uip = 0;
-	g->harddiskmode = rootblock->options & MODE_HARDDISK;
-	g->anodesplitmode = rootblock->options & MODE_SPLITTED_ANODES;
-	g->dirextension = rootblock->options & MODE_DIR_EXTENSION;
+	g->harddiskmode = (rootblock->options & MODE_HARDDISK) != 0;
+	g->anodesplitmode = (rootblock->options & MODE_SPLITTED_ANODES) != 0;
+	g->dirextension = (rootblock->options & MODE_DIR_EXTENSION) != 0;
 #if DELDIR
 	g->deldirenabled = (rootblock->options & MODE_DELDIR) && 
 		g->dirextension && (volume->rblkextension->blk.deldirsize > 0);
 #endif
-	g->supermode = rootblock->options & MODE_SUPERINDEX;
+	g->supermode = (rootblock->options & MODE_SUPERINDEX) != 0;
 	g->fnsize = (volume->rblkextension) ? (volume->rblkextension->blk.fnsize) : 32;
 	if (!g->fnsize) g->fnsize = 32;
+	g->largefile = (rootblock->options & MODE_LARGEFILE) && g->dirextension && LARGE_FILE_SIZE;
 
 	InitAnodes (volume, formatting, g);
 	InitAllocation (volume, g);

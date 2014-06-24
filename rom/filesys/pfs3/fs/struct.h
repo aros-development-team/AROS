@@ -388,12 +388,12 @@ struct anode_data_s
 {
   UWORD curranseqnr;        /* current anode seqnr for anode allocation */
   UWORD indexperblock;      /* ALSO used by allocation (for bitmapindex blocks) */
-  ULONG maxanodeseqnr;
+  ULONG maxanodeseqnr;		/* max anode seqnr */
   UWORD anodesperblock;     /* number of anodes that fit in one block */
   UWORD reserved;           /* offset of first reserved anode within an anodeblock */
   ULONG *anblkbitmap;       /* anodeblock full-flag bitmap */
   ULONG anblkbitmapsize;    /* size of anblkbitmap */
-  ULONG maxanseqnr;         /* maximum anodeblock seqnr */
+  ULONG maxanseqnr;         /* current maximum anodeblock seqnr */
 };
 
 
@@ -546,7 +546,7 @@ struct globaldata
 	UBYTE sleepmode;                    /* flag: sleepmode?                     */
 	UBYTE supermode;					/* flag: supermode? (104 bmi blocks)	*/
 	UBYTE tdmode;						/* ACCESS_x mode                        */
-	UBYTE pad;
+	UBYTE largefile;					/* >4G file size support                */
 	ULONG blocksize;                    /* g->dosenvec->de_SizeBlock << 2       */
 	UWORD blockshift;                   /* 2 log van block size                 */
 	UWORD fnsize;						/* filename size (18+)					*/
@@ -794,6 +794,18 @@ struct idlehandle
 /*                        File administration                         */
 /**********************************************************************/
 
+#if LARGE_FILE_SIZE
+/* >4G file size support */
+typedef QUAD FSIZE;
+typedef QUAD SFSIZE;
+/* Limit to useful sane size, not real max for now */
+#define MAX_FILE_SIZE 0x7fffffffff
+#else
+typedef ULONG FSIZE;
+typedef LONG SFSIZE;
+#define MAX_FILE_SIZE 0xffffffff
+#endif
+
 /* FileInfo
 **
 ** Fileinfo wordt door FindFile opgeleverd. Bevat pointers die wijzen naar
@@ -940,8 +952,8 @@ typedef struct
 	struct anodechainnode *currnode;    // anode behorende bij offset in file
 	ULONG   anodeoffset;        // blocknr binnen currentanode
 	ULONG   blockoffset;        // byteoffset binnen huidig block
-	ULONG   offset;             // offset tov start of file
-	ULONG   originalsize;       // size of file at time of opening
+	FSIZE   offset;             // offset tov start of file
+	FSIZE   originalsize;       // size of file at time of opening
 	BOOL    checknotify;        // set if a notify is necessary at ACTION_END time > ALSO touch flag <
 } fileentry_t;
 
@@ -981,6 +993,48 @@ typedef struct lockentry
 #define BLOCKSIZE (g->blocksize)
 #define BLOCKSHIFT (g->blockshift)
 #define DIRECTSIZE (g->directsize)
+
+#ifndef ACTION_CHANGE_FILE_POSITION64
+/* OS4 64-bit filesize packets */
+#define ACTION_CHANGE_FILE_POSITION64  8001
+#define ACTION_GET_FILE_POSITION64     8002
+#define ACTION_CHANGE_FILE_SIZE64      8003
+#define ACTION_GET_FILE_SIZE64         8004
+#endif
+
+#ifndef ACTION_SEEK64
+/* MOS 64-bit filesize packets */
+#define ACTION_SEEK64			26400
+#define ACTION_SET_FILE_SIZE64	26401
+#define ACTION_LOCK_RECORD64	26402
+#define ACTION_FREE_RECORD64	26403
+#define ACTION_QUERY_ATTR		26407
+#define ACTION_EXAMINE_OBJECT64	26408
+#define ACTION_EXAMINE_NEXT64	26409
+#define ACTION_EXAMINE_FH64		26410
+#endif
+
+struct ExAllDataEXT
+{
+    struct ExAllDataEXT *ed_Next;
+    UBYTE *ed_Name;
+    LONG ed_Type;
+    ULONG ed_Size;
+    ULONG ed_Prot;
+    ULONG ed_Days;
+    ULONG ed_Mins;
+    ULONG ed_Ticks;
+    UBYTE *ed_Comment;
+    UWORD ed_OwnerUID;
+    UWORD ed_OwnerGID;
+#if EXTENDED_PACKETS_MORPHOS
+    QUAD ed_Size64;
+#endif
+};
+
+#ifndef ED_SIZE64
+#define ED_SIZE64 (ED_OWNER + 1)
+#endif
 
 /*
  * TD64 support

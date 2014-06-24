@@ -88,3 +88,13 @@ ULONG SetDeldir(int nbr, globaldata *g);
 #endif
 void UpdateLinks(struct direntry *object, globaldata *g);
 void FreeAnodesInChain(ULONG anodenr, globaldata *g);
+
+FSIZE GetDEFileSize(struct direntry *direntry, globaldata *g);
+ULONG GetDEFileSize32(struct direntry *direntry, globaldata *g);
+void SetDEFileSize(struct direntry *direntry, FSIZE size, globaldata *g);
+
+#if DELDIR
+FSIZE GetDDFileSize(struct deldirentry *dde, globaldata *g);
+ULONG GetDDFileSize32(struct deldirentry *dde, globaldata *g);
+void SetDDFileSize(struct deldirentry *dde, FSIZE size, globaldata *g);
+#endif
