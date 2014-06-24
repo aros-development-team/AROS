@@ -303,7 +303,22 @@ void NormalCommands(struct DosPacket *action, globaldata *g)
 			action->dp_Res1 = dd_SetFileSize(action, g);
 			break;
 
-#if defined(__MORPHOS__)
+#if EXTENDED_PACKETS_OS4
+		case ACTION_CHANGE_FILE_POSITION64:
+			dd_ChangeFilePosition64(action, g);
+			break;
+		case ACTION_GET_FILE_POSITION64:
+			dd_GetFilePosition64(action, g);
+			break;
+		case ACTION_CHANGE_FILE_SIZE64:
+			dd_ChangeFileSize64(action, g);
+			break;
+		case ACTION_GET_FILE_SIZE64:
+			dd_GetFileSize64(action, g);
+			break;
+#endif
+
+#if EXTENDED_PACKETS_MORPHOS
 		/*
 		 * Note: If we ever support file sizes between 2^31 to 2^32-2 then SEEK64 needs
 		 * to be implemented. - Piru
@@ -318,6 +333,7 @@ void NormalCommands(struct DosPacket *action, globaldata *g)
 			action->dp_Res1 = NotKnown(action, g);
 			break;
 
+#if defined(__MORPHOS__)
 		case ACTION_NEW_READ_LINK:
 			/*
 			 * This really ought to be implemented at some point.
@@ -330,6 +346,7 @@ void NormalCommands(struct DosPacket *action, globaldata *g)
 		case ACTION_QUERY_ATTR:
 			action->dp_Res1 = dd_MorphOSQueryAttr(action, g);
 			break;
+#endif
 #endif
 		case ACTION_SERIALIZE_DISK: // Inhibited only
 		default:
@@ -426,6 +443,14 @@ void InhibitedCommands(struct DosPacket *action, globaldata *g)
 		case ACTION_WRITE_PROTECT:  // <sendpkt only>
 		case ACTION_END:            // Close(..)
 		case ACTION_CREATE_ROLLOVER:
+
+#if EXTENDED_PACKETS_OS4
+		case ACTION_CHANGE_FILE_POSITION64:
+		case ACTION_GET_FILE_POSITION64:
+		case ACTION_CHANGE_FILE_SIZE64:
+		case ACTION_GET_FILE_SIZE64:
+#endif
+
 			action->dp_Res2 = ERROR_NOT_A_DOS_DISK;
 			action->dp_Res1 = DOSFALSE;
 			break;
@@ -436,7 +461,7 @@ void InhibitedCommands(struct DosPacket *action, globaldata *g)
 			action->dp_Res1 = -1;
 			break;
 
-#if defined(__MORPHOS__)
+#if EXTENDED_PACKETS_MORPHOS
 		case ACTION_SEEK64:
 		case ACTION_SET_FILE_SIZE64:
 		case ACTION_LOCK_RECORD64:
@@ -444,6 +469,7 @@ void InhibitedCommands(struct DosPacket *action, globaldata *g)
 		case ACTION_EXAMINE_OBJECT64:
 		case ACTION_EXAMINE_NEXT64:
 		case ACTION_EXAMINE_FH64:
+#if defined(__MORPHOS__)
 		case ACTION_NEW_READ_LINK:
 			action->dp_Res2 = ERROR_NOT_A_DOS_DISK;
 			action->dp_Res1 = DOSFALSE;
@@ -451,6 +477,7 @@ void InhibitedCommands(struct DosPacket *action, globaldata *g)
 		case ACTION_QUERY_ATTR:
 			action->dp_Res1 = dd_MorphOSQueryAttr(action, g);
 			break;
+#endif
 #endif
 
 		default:

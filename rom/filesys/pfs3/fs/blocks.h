@@ -110,7 +110,7 @@ typedef struct rootblock
     ULONG lastreserved;     /* reserved area. blocknumbers      */
     ULONG firstreserved;
     ULONG reserved_free;    /* number of reserved blocks (blksize blocks) free  */
-    UWORD blksize;          /* size of reserved blocks in bytes */
+    UWORD reserved_blksize;          /* size of reserved blocks in bytes */
     UWORD rblkcluster;      /* number of blocks in rootblock, including bitmap  */
     ULONG blocksfree;       /* blocks free                      */
     ULONG alwaysfree;       /* minimum number of blocks free    */
@@ -296,7 +296,7 @@ struct direntry
     UBYTE next;             /* sizeof direntry                  */
     BYTE  type;             /* dir, file, link etc              */
     ULONG anode;            /* anode number                     */
-    ULONG size;             /* sizeof file                      */
+    ULONG fsize;            /* sizeof file                      */
     UWORD creationday;      /* days since Jan. 1, 1978 (like ADOS; WORD instead of LONG) */
     UWORD creationminute;   /* minutes past modnight            */
     UWORD creationtick;     /* ticks past minute                */
@@ -312,11 +312,11 @@ struct extrafields
 	UWORD uid;				/* user id							*/
 	UWORD gid;				/* group id							*/
 	ULONG prot;				/* byte 1-3 of protection			*/
-#if ROLLOVER
 	// rollover fields
 	ULONG virtualsize;		/* virtual rollover filesize in bytes (as shown by Examine()) */
 	ULONG rollpointer;		/* current start of file AND end of file pointer */
-#endif
+	// extended file size
+	UWORD fsizex;           /* extended bits 32-47 of direntry.fsize */
 };
 
 #if defined(__GNUC__) || defined(__VBCC__)
@@ -335,11 +335,14 @@ struct extrafields
 struct deldirentry
 {
 	ULONG anodenr;			/* anodenr							*/
-	ULONG size;				/* size of file						*/
+	ULONG fsize;			/* size of file						*/
 	UWORD creationday;		/* datestamp						*/
 	UWORD creationminute;
 	UWORD creationtick;
-	UBYTE filename[18];		/* filename; filling up to 32 chars	*/
+	UBYTE filename[16];		/* filename; filling up to 30 chars	*/
+	// was previously filename[18]
+	// now last two bytes used for extended file size
+	UWORD fsizex;			/* extended bits 32-47 of fsize		*/
 };
 
 struct deldirblock
@@ -484,14 +487,27 @@ struct lru_cachedblock
 /* limits */
 #define MAXSMALLBITMAPINDEX 4
 #define MAXBITMAPINDEX 103
-// was 28576. Nu max clustersize 22 (4000+10*1024*8)
-#define MAXNUMRESERVED 119837
+// was 28576. was 119837. Nu max reserved bitmap 256K.
+#define MAXNUMRESERVED (4096 + 255*1024*8)
 #define MAXSUPER 15
 #define MAXSMALLINDEXNR 98
+#if LARGE_FILE_SIZE
+// last two bytes used for extended file size
+#define DELENTRYFNSIZE 16
+#else
 #define DELENTRYFNSIZE 18
-/* maximum disksize in block, limited by number of bitmapindexblocks */
+#endif
+/* maximum disksize in sectors, limited by number of bitmapindexblocks
+ * smalldisk = 10.241.440 blocks of 512 byte = 5G
+ * normaldisk = 213.021.952 blocks of 512 byte = 104G
+ * 2k reserved blocks = 104*509*509*32 blocks of 512 byte = 411G
+ * 4k reserved blocks = 1,6T
+ *  */
 #define MAXSMALLDISK (5*253*253*32)
-#define MAXDISKSIZE (104*253*253*32)
+#define MAXDISKSIZE1K (104*253*253*32)
+#define MAXDISKSIZE2K (104*509*509*32)
+#define MAXDISKSIZE4K ((ULONG)104*1021*1021*32)
+#define MAXDISKSIZE MAXDISKSIZE4K
 
 /* disk id 'PFS\1'  */
 //#ifdef BETAVERSION
@@ -529,7 +545,7 @@ struct lru_cachedblock
 /* size of reserved blocks in bytes and blocks
  * place you can find rootblock
  */
-#define SIZEOF_RESBLOCK 1024
+#define SIZEOF_RESBLOCK (g->rootblock->reserved_blksize)
 #define SIZEOF_CACHEDBLOCK (sizeof(struct cachedblock) + SIZEOF_RESBLOCK)
 #define SIZEOF_LRUBLOCK (sizeof(struct lru_cachedblock) + SIZEOF_RESBLOCK)
 #define RESCLUSTER (g->currentvolume->rescluster)
@@ -537,8 +553,8 @@ struct lru_cachedblock
 #define BOOTBLOCK2 1
 #define ROOTBLOCK 2
 
-/* Longs per bitmapblock, assuming 1024 byte blocks */
-#define LONGS_PER_BMB 253
+/* Longs per bitmapblock */
+#define LONGS_PER_BMB ((g->rootblock->reserved_blksize/4)-3)
 
 /* get filenote from directory entry */
 #define FILENOTE(de) ((UBYTE*)(&((de)->startofname) + (de)->nlength))
@@ -562,6 +578,7 @@ struct lru_cachedblock
 #define MODE_SUPERDELDIR 256
 #define MODE_EXTROVING 512
 #define MODE_LONGFN 1024
+#define MODE_LARGEFILE 2048
 
 /* direntry macros */
 // comment: de is struct direntry *
@@ -596,5 +613,8 @@ struct lru_cachedblock
 #define ANODE_BADBLOCKS		4	// not used yet
 #define ANODE_ROOTDIR		5
 #define ANODE_USERFIRST		6
+
+/* Max size reported in DOS ULONG size fields */
+#define MAXFILESIZE32 0x7fffffff
 
 #endif /* _BLOCKS_H */

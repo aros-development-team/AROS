@@ -129,6 +129,7 @@
 #include "disk_protos.h"
 #include "lru_protos.h"
 #include "volume_protos.h"
+#include "directory_protos.h"
 
 /*
  * Contents
@@ -222,7 +223,8 @@ BOOL AllocateBlocksAC (struct anodechain *achain, ULONG size,
 	struct fileinfo *ref, globaldata *g)
 {
   ULONG nr, field, i, j, blocknr, blocksdone = 0;
-  ULONG extra, oldfilesize = 0;
+  ULONG extra;
+  FSIZE oldfilesize = 0;
   UWORD bmseqnr, bmoffset, oldlocknr;
   cbitmapblock_t *bitmap;
   struct anodechainnode *chnode;
@@ -245,7 +247,7 @@ BOOL AllocateBlocksAC (struct anodechain *achain, ULONG size,
 #if VERSION23
 	/* remember filesize in order to be able to cancel */
 	if (ref)
-		oldfilesize = ref->direntry->size;
+		oldfilesize = GetDEFileSize(ref->direntry, g);
 #endif
 
 	/* count number of fragments and decide on fileextend preallocation
@@ -343,7 +345,7 @@ BOOL AllocateBlocksAC (struct anodechain *achain, ULONG size,
 #if VERSION23
 									if (ref)
 									{
-										ref->direntry->size = oldfilesize;
+										SetDEFileSize(ref->direntry, oldfilesize, g);
 										MakeBlockDirty ((struct cachedblock *)ref->dirblock, g);
 									}
 #endif
@@ -374,7 +376,7 @@ BOOL AllocateBlocksAC (struct anodechain *achain, ULONG size,
 							/* update reference */
 							if (ref)
 							{
-								ref->direntry->size += BLOCKSIZE;
+								SetDEFileSize(ref->direntry, GetDEFileSize(ref->direntry, g) + BLOCKSIZE, g);
 								if (IsUpdateNeeded(RTBF_POSTPONED_TH))
 								{
 									/* make state valid and update disk */
@@ -386,7 +388,7 @@ BOOL AllocateBlocksAC (struct anodechain *achain, ULONG size,
 									if (g->rootblock->reserved_free <= RESFREE_THRESHOLD)
 									{
 #if VERSION23
-										ref->direntry->size = oldfilesize;
+										SetDEFileSize(ref->direntry, oldfilesize, g);
 										MakeBlockDirty ((struct cachedblock *)ref->dirblock, g);
 #endif
 										FreeBlocksAC (achain, blocksdone, freeanodes, g);
@@ -825,8 +827,11 @@ struct cbitmapblock *GetBitmapBlock(UWORD seqnr, globaldata *g)
 	/* check it */
 	if (bmb->blk.id != BMBLKID)
 	{
+		ULONG args[2];
+		args[0] = bmb->blk.id;
+		args[1] = blocknr;
 		FreeLRU ((struct cachedblock *)bmb);
-		ErrorMsg (AFS_ERROR_DNV_WRONG_BMID, NULL, g);
+		ErrorMsg (AFS_ERROR_DNV_WRONG_BMID, args, g);
 		return NULL;
 	}
 	
@@ -879,8 +884,9 @@ cindexblock_t *GetBitmapIndex (UWORD nr, globaldata *g)
 	}
 	else
 	{
+		ULONG args[5] = { indexblk->blk.id, BMIBLKID, blocknr, nr, 0 };
 		FreeLRU ((struct cachedblock *)indexblk);
-		ErrorMsg (AFS_ERROR_DNV_WRONG_INDID, NULL, g);
+		ErrorMsg (AFS_ERROR_DNV_WRONG_INDID, args, g);
 		return NULL;
 	}
 

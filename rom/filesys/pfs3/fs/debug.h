@@ -8,8 +8,9 @@
 
 #if KS13WRAPPER_DEBUG
 
-#define DB(x)
-#define Trace(x)
+extern void Trace(ULONG id, const UBYTE *title, const UBYTE *format, ...);
+
+#define DB(x) x
 #define ENTER(x) do { DebugPutStr("ENTER: "); DebugPutStr(x); DebugPutStr("\n"); } while(0);
 #define EXIT(x) do { DebugPutStr("EXIT: "); DebugPutStr(x); DebugPutStr("\n"); } while(0);
 
@@ -18,7 +19,6 @@
 #define DebugPutStr(x)
 #define DebugPutHex(x,y)
 #define DB(x)
-#define Trace(x)
 #define ENTER(x)
 #define EXIT(x)
 
@@ -29,7 +29,6 @@
 #define DebugPutStr(x)
 #define DebugPutHex(x,y)
 #define DB(x)
-#define Trace(x)
 #define ENTER(x)
 #define EXIT(x)
 
@@ -41,7 +40,6 @@
 #include <debug/debug.h>
 #else
 #define DB(x)
-#define Trace(x)
 #define ENTER(x)
 #define EXIT(x)
 #endif

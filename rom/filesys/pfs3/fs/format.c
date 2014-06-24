@@ -145,7 +145,7 @@ static ULONG MakeBootBlock(globaldata *g);
 static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g);
 static void MakeBitmap (globaldata *g);
 static void MakeRootDir (globaldata *g);
-static ULONG CalcNumReserved (globaldata *g);
+static ULONG CalcNumReserved (globaldata *g, ULONG resblocksize);
 static void MakeReservedBitmap (struct rootblock **rbl, ULONG numreserved, globaldata *g);
 static crootblockextension_t *MakeFormatRBlkExtension (struct rootblock *rbl, globaldata *g);
 
@@ -303,7 +303,7 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
   struct rootblock *rbl;
   struct DateStamp time;
   ULONG numreserved;
-  ULONG rescluster = SIZEOF_RESBLOCK/g->geom->dg_SectorSize;
+  ULONG rescluster;
 
 	/* allocate max size possible */
 	if (!(rbl = AllocBufmem (BLOCKSIZE, g)))
@@ -322,22 +322,38 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
 	rbl->options = MODE_HARDDISK | MODE_SPLITTED_ANODES | MODE_DIR_EXTENSION |
 				   MODE_DATESTAMP | MODE_EXTROVING | MODE_LONGFN;
 #endif
+
+	// determine reserved blocksize
+	ULONG resblocksize = 1024;
 	if (g->geom->dg_TotalSectors > MAXSMALLDISK)
 	{
 		rbl->options |= MODE_SUPERINDEX;
 		g->supermode = 1;
+		if (g->geom->dg_TotalSectors > MAXDISKSIZE1K) {
+			rbl->disktype = ID_PFS2_DISK;
+			resblocksize = 2048;
+			if (g->geom->dg_TotalSectors > MAXDISKSIZE2K) {
+				resblocksize = 4096;
+			}
+		}
 	}
+	rbl->reserved_blksize = resblocksize;
+	rescluster = resblocksize/g->geom->dg_SectorSize;
+
+#if LARGE_FILE_SIZE
+	rbl->options |= MODE_LARGEFILE;
+	rbl->disktype = ID_PFS2_DISK;
+#endif
 
 	rbl->datestamp = 1;
 	rbl->creationday = (UWORD)time.ds_Days;
 	rbl->creationminute = (UWORD)time.ds_Minute;
 	rbl->creationtick = (UWORD)time.ds_Tick;
 	rbl->protection	= 0xf0;
-	numreserved = CalcNumReserved (g);
+	numreserved = CalcNumReserved (g, resblocksize);
 	rbl->firstreserved = 2;
 	rbl->lastreserved = rescluster*numreserved + rbl->firstreserved - 1;
 	rbl->reserved_free = numreserved;
-	rbl->blksize = SIZEOF_RESBLOCK;
 	rbl->blocksfree = g->geom->dg_TotalSectors - rescluster*numreserved - rbl->firstreserved;
 	rbl->alwaysfree = rbl->blocksfree/20;
 	// rbl->roving_ptr = 0;
@@ -372,10 +388,10 @@ static crootblockextension_t *MakeFormatRBlkExtension (struct rootblock *rbl, gl
 {
   crootblockextension_t *rext;
 
-	if (!(rext = AllocBufmem (sizeof(struct cachedblock) + SIZEOF_RESBLOCK, g)))
+	if (!(rext = AllocBufmem (sizeof(struct cachedblock) + rbl->reserved_blksize, g)))
 		return FALSE;
 
-	memset (rext, 0, sizeof(struct cachedblock) + SIZEOF_RESBLOCK);
+	memset (rext, 0, sizeof(struct cachedblock) + rbl->reserved_blksize);
 
 	rext->volume				= g->currentvolume;
 	rext->blocknr				= rbl->extension;
@@ -424,15 +440,19 @@ static const ULONG schijf[][2] =
 	{51200,30},
 	{512000,40},
 	{1048567,50},
-	{99999999,70}
+	{10000000,70},
+	{0xffffffff,80}
 };
 
-static ULONG CalcNumReserved (globaldata *g)
+// returns number of reserved blocks needed
+static ULONG CalcNumReserved (globaldata *g, ULONG resblocksize)
 {
   ULONG temp, taken, i;
 
-	temp = g->geom->dg_TotalSectors * (g->geom->dg_SectorSize/128);
-	temp /= (SIZEOF_RESBLOCK/128);
+  	// temp is the number of reserved blocks if the whole disk is
+  	// taken. taken is the actual number of reserved blocks we take.
+	temp = g->geom->dg_TotalSectors * (g->geom->dg_SectorSize/512);
+	temp /= (resblocksize/512);
 	taken = 0;
 
 	for (i=0; temp > schijf[i][0]; i++)
@@ -461,7 +481,7 @@ static void MakeReservedBitmap (struct rootblock **rbl, ULONG numreserved, globa
 		numblocks++;
 
 	cluster = (*rbl)->rblkcluster = (1024*numblocks+BLOCKSIZE-1)/(BLOCKSIZE);
-	(*rbl)->reserved_free -= (1024*numblocks+(*rbl)->blksize-1)/((*rbl)->blksize);
+	(*rbl)->reserved_free -= (1024*numblocks+(*rbl)->reserved_blksize-1)/((*rbl)->reserved_blksize);
 
 	/* reallocate rootblock */
 	newrootblock = AllocBufmemR(cluster << BLOCKSHIFT, g);

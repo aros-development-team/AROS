@@ -36,6 +36,9 @@ PFS3_CFLAGS := \
 	-DSCSIDIRECT=1 \
 	-DTRACKDISK=1 \
 	-DUNSAFEQUIT=1 \
+	-DLARGE_FILE_SIZE=1 \
+	-DEXTENDED_PACKETS_MORPHOS=1 \
+	-DEXTENDED_PACKETS_OS4=1 \
 	-DLIMIT_MAXTRANSFER=0x1fe00
 
 PFS3DS_CFLAGS := \
@@ -53,11 +56,15 @@ PFS3DS_CFLAGS := \
 	-DSCSIDIRECT=1 \
 	-DTRACKDISK=1 \
 	-DUNSAFEQUIT=1 \
+	-DLARGE_FILE_SIZE=1 \
+	-DEXTENDED_PACKETS_MORPHOS=1 \
+	-DEXTENDED_PACKETS_OS4=1 \
 	-DLIMIT_MAXTRANSFER=0x1fe00
 
 USER_CFLAGS := \
     -DAROS_KERNEL $(PFS3_CFLAGS) -DMIN_LIB_VERSION=36 \
-	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
+	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs \
+	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module mmake=kernel-fs-pfs3 \
     modname=pfs3 modtype=handler \
@@ -65,7 +72,8 @@ USER_CFLAGS := \
 
 USER_CFLAGS := \
     -DAROS_KERNEL $(PFS3DS_CFLAGS) -DMIN_LIB_VERSION=36 \
-	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
+	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs \
+	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module mmake=kernel-fs-pfs3ds \
     modname=pfs3ds modtype=handler \
@@ -86,7 +94,9 @@ KS13STUFF := \
 USER_CFLAGS := \
 	-DAROS_NOLIBREQ \
     -DAROS_KERNEL $(PFS3_CFLAGS) $(KS13STUFF) \
-	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
+	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs \
+	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
+
 USER_AFLAGS := \
 	-I$(GENDIR)/include
 

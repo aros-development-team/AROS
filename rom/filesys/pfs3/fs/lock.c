@@ -238,8 +238,8 @@ struct listentry *MakeListEntry (union objectinfo *info, listtype type, SIPTR *e
 			listentry->lock.fl_Key = listentry->anodenr;
 			// listentry->lock.fl_Volume = MKBADDR(MKBADDR(newinfo.file.dirblock->volume->devlist);
 			// listentry->volume = newinfo.file.dirblock->volume;
-			fe->originalsize = IsDelFile(newinfo) ? dde->size :
-					newinfo.file.direntry->size;
+			fe->originalsize = IsDelFile(newinfo) ? GetDDFileSize(dde, g) :
+					GetDEFileSize(newinfo.file.direntry, g);
 
 			/* Get anodechain. If it fails anodechain will become NULL. This has to be
 			 * taken into account by functions that use the chain

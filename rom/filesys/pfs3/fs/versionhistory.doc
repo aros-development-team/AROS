@@ -12,6 +12,25 @@
 ** -------
 **     A filesystem for the C= Amiga.
 **
+**
+** Revision V19.0
+** --------------
+** Added support for larger files and volumes
+**
+** Revision V18.6
+** --------------
+** The first open source release based on 18.4 sources and updated by
+** the open source development team
+**   - updated to 18.5 specs
+**   - compiles on gcc
+**   - bugfix for large disks
+**   - MorphOs compatibility
+**   - various bugfixes 
+**
+** Revision V18.5
+** --------------
+** The last commercial release, PFS V5.3
+**
 ** Revision V18.4 bugfix
 ** --------------
 ** created on Saturday, 11.09.99 18:02:53  by  Michiel Pelt.   LogMessage :
@@ -819,14 +838,12 @@
 **	   1.0: Initial release
 **
 *********************************************************************************/
-#define REVISION "18.5"
-#define REVDATE  "11.09.99"
-#define REVTIME  "18:02:53"
+#define REVISION "19.0"
 #define AUTHOR   "Michiel Pelt"
-#define VERNUM   18
-#define REVNUM   5
+#define VERNUM   19
+#define REVNUM   0
 
-#define RELNUM  "5.0"
+#define RELNUM  "5.5"
 
 #if MULTIUSER
 #define E1 "mu"

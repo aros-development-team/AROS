@@ -40,11 +40,11 @@ UBYTE AFS_WARNING_MEMORY_MASK[]         = "WARNING:\nAllocated memory doesn't ma
 
 UBYTE AFS_ERROR_DNV_ALLOC_INFO[]        = "ALERT:\nAllocation info not found";
 UBYTE AFS_ERROR_DNV_ALLOC_BLOCK[]       = "ALERT:\nAllocation block not found";
-UBYTE AFS_ERROR_DNV_WRONG_ANID[]        = "ALERT:\nWrong ablock id";
-UBYTE AFS_ERROR_DNV_WRONG_DIRID[]       = "ALERT:\nWrong dirblock id";
+UBYTE AFS_ERROR_DNV_WRONG_ANID[]        = "ALERT:\nWrong ablock id %08lX block %ld";
+UBYTE AFS_ERROR_DNV_WRONG_DIRID[]       = "ALERT:\nWrong dirblock id %08lX block %ld";
 UBYTE AFS_ERROR_DNV_LOAD_DIRBLOCK[]     = "ALERT:\nCould not read directoryblock";
-UBYTE AFS_ERROR_DNV_WRONG_BMID[]        = "ALERT:\nWrong bitmap block id";
-UBYTE AFS_ERROR_DNV_WRONG_INDID[]       = "ALERT:\nWrong index block id";
+UBYTE AFS_ERROR_DNV_WRONG_BMID[]        = "ALERT:\nWrong bitmap block id %08lX block %ld";
+UBYTE AFS_ERROR_DNV_WRONG_INDID[]       = "ALERT:\nWrong index block id %08lX, expected %08lX, block %ld, %ld, %ld";
 UBYTE AFS_ERROR_CACHE_INCONSISTENCY[]   = "Cache inconsistency detected\nFinish all disk activity";
 UBYTE AFS_ERROR_OUT_OF_BUFFERS[]        = "Out of buffers";
 UBYTE AFS_ERROR_MEMORY_POOL[]           = "Couldn't allocate memorypool";
@@ -65,7 +65,7 @@ UBYTE AFS_ERROR_DOSLIST_ADD[]           = "DosList add error.\nPlease remove vol
 UBYTE AFS_ERROR_EX_NEXT_FAIL[]          = "ExamineNext failed";
 UBYTE AFS_ERROR_NEWDIR_ADDLISTENTRY[]   = "Newdir addlistentry failure";
 UBYTE AFS_ERROR_LOAD_DIRBLOCK_FAIL[]    = "Couldn't load dirblock!!";
-UBYTE AFS_ERROR_LRU_UPDATE_FAIL[]       = "LRU update failed";
+UBYTE AFS_ERROR_LRU_UPDATE_FAIL[]       = "LRU update failed block %ld, err %ld";
 UBYTE AFS_ERROR_UPDATE_FAIL[]           = "Disk update failed";
 UBYTE AFS_ERROR_UNSLEEP[]               = "Unsleep error";
 #if TD64 == 0 && NSD == 0 && SCSIDIRECT == 0

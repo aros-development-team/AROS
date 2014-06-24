@@ -584,14 +584,14 @@ struct volumedata *MakeVolumeData (struct rootblock *rootblock, globaldata *g)
 	/* these could be put in rootblock @@ see also HD version */
 	volume->numblocks       = g->geom->dg_TotalSectors;
 	volume->bytesperblock   = g->geom->dg_SectorSize;
-	volume->rescluster      = SIZEOF_RESBLOCK/volume->bytesperblock;
+	volume->rescluster      = rootblock->reserved_blksize / volume->bytesperblock;
 
 	/* load rootblock extension (if it is present) */
 	if (rootblock->extension && (rootblock->options & MODE_EXTENSION))
 	{
 		struct crootblockextension *rext;
 
-		rext = AllocBufmemR (sizeof(struct cachedblock) + SIZEOF_RESBLOCK, g); 
+		rext = AllocBufmemR (SIZEOF_CACHEDBLOCK, g);
 		memset (rext, 0, sizeof(struct cachedblock));
 		if (RawRead ((UBYTE *)&rext->blk, volume->rescluster, rootblock->extension, g) != 0)
 		{
@@ -1004,7 +1004,7 @@ BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 
 	if (!error)
 	{
-		if ((*rootblock)->disktype == ID_PFS_DISK)
+		if ((*rootblock)->disktype == ID_PFS_DISK || (*rootblock)->disktype == ID_PFS2_DISK)
 		{
 			g->disktype = ID_PFS_DISK;
 			error = RawRead((UBYTE *)*rootblock, 1, ROOTBLOCK, g);

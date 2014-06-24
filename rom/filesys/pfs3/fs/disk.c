@@ -214,8 +214,8 @@ static void ValidateCache(ULONG blocknr, ULONG numblocks, enum vctype, globaldat
 static void UpdateSlot(int slotnr, globaldata *g);
 static ULONG ReadFromRollover(fileentry_t *file, UBYTE *buffer, ULONG size, SIPTR *error, globaldata *g);
 static ULONG WriteToRollover(fileentry_t *file, UBYTE *buffer, ULONG size, SIPTR *error, globaldata *g);
-static LONG SeekInRollover(fileentry_t *file, LONG offset, LONG mode, SIPTR *error, globaldata *g);
-static LONG ChangeRolloverSize(fileentry_t *file, LONG releof, LONG mode, SIPTR *error, globaldata *g);
+static SFSIZE SeekInRollover(fileentry_t *file, SFSIZE offset, LONG mode, SIPTR *error, globaldata *g);
+static SFSIZE ChangeRolloverSize(fileentry_t *file, SFSIZE releof, LONG mode, SIPTR *error, globaldata *g);
 static ULONG ReadFromFile(fileentry_t *file, UBYTE *buffer, ULONG size, SIPTR *error, globaldata *g);
 static ULONG WriteToFile(fileentry_t *file, UBYTE *buffer, ULONG size, SIPTR *error, globaldata *g);
 
@@ -279,7 +279,7 @@ ULONG WriteToObject(fileentry_t *file, UBYTE *buffer, ULONG size,
 		return WriteToFile(file,buffer,size,error,g);
 }
 
-LONG SeekInObject(fileentry_t *file, LONG offset, LONG mode, SIPTR *error,
+SFSIZE SeekInObject(fileentry_t *file, SFSIZE offset, LONG mode, SIPTR *error,
 	globaldata *g)
 {
 	/* check access */
@@ -304,7 +304,7 @@ LONG SeekInObject(fileentry_t *file, LONG offset, LONG mode, SIPTR *error,
 		return SeekInFile(file,offset,mode,error,g);
 }
 
-LONG ChangeObjectSize(fileentry_t *file, LONG releof, LONG mode,
+SFSIZE ChangeObjectSize(fileentry_t *file, SFSIZE releof, LONG mode,
 	SIPTR *error, globaldata *g)
 {
 	/* check access */
@@ -348,7 +348,7 @@ static ULONG ReadFromRollover(fileentry_t *file, UBYTE *buffer, ULONG size,
 	SIPTR *error, globaldata *g)
 {
 #define direntry_m file->le.info.file.direntry
-#define filesize_m file->le.info.file.direntry->size
+#define filesize_m GetDEFileSize(file->le.info.file.direntry, g)
 
 	struct extrafields extrafields;
 	ULONG read = 0;
@@ -398,7 +398,7 @@ static ULONG WriteToRollover(fileentry_t *file, UBYTE *buffer, ULONG size,
 	SIPTR *error, globaldata *g)
 {
 #define direntry_m file->le.info.file.direntry
-#define filesize_m file->le.info.file.direntry->size
+#define filesize_m GetDEFileSize(file->le.info.file.direntry, g)
 
 	struct extrafields extrafields;
 	struct direntry *destentry;
@@ -462,9 +462,9 @@ static ULONG WriteToRollover(fileentry_t *file, UBYTE *buffer, ULONG size,
 #undef filesize_m
 }
 
-static LONG SeekInRollover(fileentry_t *file, LONG offset, LONG mode, SIPTR *error, globaldata *g)
+static SFSIZE SeekInRollover(fileentry_t *file, SFSIZE offset, LONG mode, SIPTR *error, globaldata *g)
 {
-#define filesize_m file->le.info.file.direntry->size
+#define filesize_m GetDEFileSize(file->le.info.file.direntry, g)
 #define direntry_m file->le.info.file.direntry
 
 	struct extrafields extrafields;
@@ -524,14 +524,14 @@ static LONG SeekInRollover(fileentry_t *file, LONG offset, LONG mode, SIPTR *err
 }
 
 
-static LONG ChangeRolloverSize(fileentry_t *file, LONG releof, LONG mode,
+static SFSIZE ChangeRolloverSize(fileentry_t *file, SFSIZE releof, LONG mode,
 	SIPTR *error, globaldata *g)
 {
-#define filesize_m file->le.info.file.direntry->size
+#define filesize_m GetDEFileSize(file->le.info.file.direntry, g)
 #define direntry_m file->le.info.file.direntry
 
 	struct extrafields extrafields;
-	LONG virtualeof, virtualoffset;
+	SFSIZE virtualeof, virtualoffset;
 	union objectinfo directory;
 	struct fileinfo fi;
 	struct direntry *destentry;
@@ -598,14 +598,15 @@ static LONG ChangeRolloverSize(fileentry_t *file, LONG releof, LONG mode,
 ** Specification:
 **
 ** Reads 'size' bytes from file to buffer (if not readprotected)
-** result: #butes read; -1 = error; 0 = eof
+** result: #bytes read; -1 = error; 0 = eof
 */
 static ULONG ReadFromFile(fileentry_t *file, UBYTE *buffer, ULONG size,
 				SIPTR *error, globaldata *g)
 {
 	ULONG anodeoffset, blockoffset, blockstoread;
 	ULONG fullblks, bytesleft;
-	ULONG register t;
+	ULONG t;
+	FSIZE tfs;
 	UBYTE *data = NULL, *dataptr;
 	BOOL directread =  FALSE;
 	struct anodechainnode *chnode;
@@ -622,13 +623,13 @@ static ULONG ReadFromFile(fileentry_t *file, UBYTE *buffer, ULONG size,
 	if (IsDelFile(file->le.info)) {
 		if (!(dde = GetDeldirEntryQuick(file->le.info.delfile.slotnr, g)))
 			return -1;
-		t = dde->size - file->offset;
+		tfs = GetDDFileSize(dde, g) - file->offset;
 	}
 	else
 #endif
-		t = file->le.info.file.direntry->size - file->offset;
+		tfs = GetDEFileSize(file->le.info.file.direntry, g) - file->offset;
 
-	if (!(size = min(t, size)))
+	if (!(size = min(tfs, size)))
 		return 0;
 
 	/* initialize */
@@ -768,7 +769,8 @@ static ULONG WriteToFile(fileentry_t *file, UBYTE *buffer, ULONG size,
 			SIPTR *error, globaldata *g)
 {
 	ULONG maskok, t;
-	ULONG totalblocks, oldblocksinfile, oldfilesize, newfileoffset;
+	ULONG totalblocks, oldblocksinfile;
+	FSIZE oldfilesize, newfileoffset;
 	ULONG newblocksinfile, bytestowrite, blockstofill;
 	ULONG anodeoffset, blockoffset;
 	UBYTE *data = NULL, *dataptr;
@@ -786,8 +788,15 @@ static ULONG WriteToFile(fileentry_t *file, UBYTE *buffer, ULONG size,
 		return 0;
 
 	/* filesize extend */
-	oldfilesize = file->le.info.file.direntry->size;
+	oldfilesize = GetDEFileSize(file->le.info.file.direntry, g);
 	newfileoffset = file->offset + size;
+
+	/* Check if too large (QUAD) or overflowed (ULONG)? */
+	if (newfileoffset > MAX_FILE_SIZE || newfileoffset < file->offset) {
+		*error = ERROR_DISK_FULL;
+		return -1;
+	}
+
 	oldblocksinfile = (oldfilesize + BLOCKSIZE-1)>>BLOCKSHIFT;
 	newblocksinfile = (newfileoffset + BLOCKSIZE-1)>>BLOCKSHIFT;
 	if (newblocksinfile > oldblocksinfile)
@@ -795,7 +804,7 @@ static ULONG WriteToFile(fileentry_t *file, UBYTE *buffer, ULONG size,
 		t = newblocksinfile - oldblocksinfile;
 		if (!AllocateBlocksAC(file->anodechain, t, &file->le.info.file, g))
 		{
-			file->le.info.file.direntry->size = oldfilesize;
+			SetDEFileSize(file->le.info.file.direntry, oldfilesize, g);
 			*error = ERROR_DISK_FULL;
 			return -1;
 		}
@@ -926,7 +935,7 @@ static ULONG WriteToFile(fileentry_t *file, UBYTE *buffer, ULONG size,
 		file->blockoffset  = (blockoffset + size)&(BLOCKSIZE-1);
 		CorrectAnodeAC(&file->currnode, &file->anodeoffset, g);
 		file->offset      += size;
-		file->le.info.file.direntry->size = max(oldfilesize, file->offset);
+		SetDEFileSize(file->le.info.file.direntry, max(oldfilesize, file->offset), g);
 		MakeBlockDirty((struct cachedblock *)file->le.info.file.dirblock, g);
 		return size;
 	}
@@ -936,12 +945,12 @@ wtf_error:
 	{
 		/* restore old state of file */
 #if VERSION23
-		file->le.info.file.direntry->size = oldfilesize;
+		SetDEFileSize(file->le.info.file.direntry, oldfilesize, g);
 		MakeBlockDirty((struct cachedblock *)file->le.info.file.dirblock, g);
 		FreeBlocksAC(file->anodechain, newblocksinfile-oldblocksinfile, freeanodes, g);
 #else
 		FreeBlocksAC(file->anodechain, newblocksinfile-oldblocksinfile, freeanodes, g);
-		file->le.info.file.direntry->size = oldfilesize;
+		SetDEFileSize(file->le.info.file.direntry, oldfilesize, g);
 		MakeBlockDirty((struct cachedblock *)file->le.info.file.dirblock, g);
 #endif
 	}
@@ -960,10 +969,11 @@ wtf_error:
 ** - result = old position to start of file, -1 = error
 **
 ** - the end of the file is 0 from end
+**
 */
-LONG SeekInFile(fileentry_t *file, LONG offset, LONG mode, SIPTR *error, globaldata *g)
+SFSIZE SeekInFile(fileentry_t *file, SFSIZE offset, LONG mode, SIPTR *error, globaldata *g)
 {
-	LONG oldoffset, newoffset;
+	SFSIZE oldoffset, newoffset;
 	ULONG anodeoffset, blockoffset;
 #if DELDIR
 	struct deldirentry *delfile = NULL;
@@ -976,6 +986,10 @@ LONG SeekInFile(fileentry_t *file, LONG offset, LONG mode, SIPTR *error, globald
 
 	/* do the seeking */
 	oldoffset = file->offset;
+	newoffset = -1;
+
+	/* TODO: 32-bit wraparound checks */
+
 	switch (mode)
 	{
 		case OFFSET_BEGINNING:
@@ -985,10 +999,10 @@ LONG SeekInFile(fileentry_t *file, LONG offset, LONG mode, SIPTR *error, globald
 		case OFFSET_END:
 #if DELDIR
 			if (delfile)
-				newoffset = delfile->size + offset;
+				newoffset = GetDDFileSize(delfile, g) + offset;
 			else
 #endif
-				newoffset = file->le.info.file.direntry->size + offset;
+				newoffset = GetDEFileSize(file->le.info.file.direntry, g) + offset;
 			break;
 		
 		case OFFSET_CURRENT:
@@ -1001,10 +1015,10 @@ LONG SeekInFile(fileentry_t *file, LONG offset, LONG mode, SIPTR *error, globald
 	}
 
 #if DELDIR
-	if ((newoffset > (delfile ? delfile->size :
-		file->le.info.file.direntry->size)) || (newoffset < 0))
+	if ((newoffset > (delfile ? GetDDFileSize(delfile, g) :
+		GetDEFileSize(file->le.info.file.direntry, g))) || (newoffset < 0))
 #else
-	if ((newoffset > file->le.info.file.direntry->size) || (newoffset < 0))
+	if ((newoffset > GetDEFileSize(file->le.info.file.direntry)) || (newoffset < 0))
 #endif
 	{
 		*error = ERROR_SEEK_ERROR;
@@ -1033,12 +1047,14 @@ LONG SeekInFile(fileentry_t *file, LONG offset, LONG mode, SIPTR *error, globald
 ** change other locks
 ** change direntry
 */
-LONG ChangeFileSize(fileentry_t *file, LONG releof, LONG mode, SIPTR *error,
+SFSIZE ChangeFileSize(fileentry_t *file, SFSIZE releof, LONG mode, SIPTR *error,
 	globaldata *g)
 {
 	listentry_t *fe;
-	LONG abseof, t;
-	ULONG myanode, oldblocksinfile, newblocksinfile, oldfilesize;
+	SFSIZE abseof;
+	LONG t;
+	ULONG myanode, oldblocksinfile, newblocksinfile;
+	FSIZE oldfilesize;
 
 	/* check access */
 	DB(Trace(1,"ChangeFileSize","offset = %ld mode=%ld\n",releof,mode));
@@ -1049,6 +1065,8 @@ LONG ChangeFileSize(fileentry_t *file, LONG releof, LONG mode, SIPTR *error,
 	file->checknotify = 1;
 	*error = 0;
 
+	/* TODO: 32-bit wraparound checks */
+
 	/* calculate new eof (ala 'Seek') */
 	switch (mode)
 	{
@@ -1057,7 +1075,7 @@ LONG ChangeFileSize(fileentry_t *file, LONG releof, LONG mode, SIPTR *error,
 			break;
 		
 		case OFFSET_END:
-			abseof = file->le.info.file.direntry->size + releof;
+			abseof = GetDEFileSize(file->le.info.file.direntry, g) + releof;
 			break;
 		
 		case OFFSET_CURRENT:
@@ -1069,15 +1087,16 @@ LONG ChangeFileSize(fileentry_t *file, LONG releof, LONG mode, SIPTR *error,
 			return DOSFALSE;
 	}
 
-	if (abseof < 0)
+	/* < 0 check still needed because QUAD is signed */
+	if (abseof < 0 || abseof > MAX_FILE_SIZE)
 	{
 		*error = ERROR_SEEK_ERROR;
 		return -1;
 	}
 
 	/* change allocation (ala WriteToFile) */
-	oldfilesize = file->le.info.file.direntry->size;
-	oldblocksinfile = (file->le.info.file.direntry->size + BLOCKSIZE-1)>>BLOCKSHIFT;
+	oldfilesize = GetDEFileSize(file->le.info.file.direntry, g);
+	oldblocksinfile = (GetDEFileSize(file->le.info.file.direntry, g) + BLOCKSIZE-1)>>BLOCKSHIFT;
 	newblocksinfile = (abseof+BLOCKSIZE-1)>>BLOCKSHIFT;
 
 	if (newblocksinfile > oldblocksinfile)
@@ -1086,7 +1105,7 @@ LONG ChangeFileSize(fileentry_t *file, LONG releof, LONG mode, SIPTR *error,
 		t = newblocksinfile - oldblocksinfile; 
 		if (!AllocateBlocksAC(file->anodechain, t, &file->le.info.file, g))
 		{
-			file->le.info.file.direntry->size = oldfilesize;
+			SetDEFileSize(file->le.info.file.direntry, oldfilesize, g);
 			*error = ERROR_DISK_FULL;
 			return -1;
 		}
@@ -1094,7 +1113,7 @@ LONG ChangeFileSize(fileentry_t *file, LONG releof, LONG mode, SIPTR *error,
 		/* change directory: in case of allocate this has to be done
 		 * afterwards
 		 */
-		file->le.info.file.direntry->size = abseof;
+		SetDEFileSize(file->le.info.file.direntry, abseof, g);
 		MakeBlockDirty((struct cachedblock *)file->le.info.file.dirblock, g);
 	}
 	else if (oldblocksinfile > newblocksinfile)
@@ -1102,7 +1121,7 @@ LONG ChangeFileSize(fileentry_t *file, LONG releof, LONG mode, SIPTR *error,
 		/* change directoryentry beforehand (needed for postponed delete but not
 		 * allowed for online updating allocate).
 		 */
-		file->le.info.file.direntry->size = abseof;
+		SetDEFileSize(file->le.info.file.direntry, abseof, g);
 		MakeBlockDirty((struct cachedblock *)file->le.info.file.dirblock, g);
 
 		t = oldblocksinfile - newblocksinfile;
@@ -1115,7 +1134,7 @@ LONG ChangeFileSize(fileentry_t *file, LONG releof, LONG mode, SIPTR *error,
 	else
 	{
 		/* no change in number of blocks, just change directory entry */
-		file->le.info.file.direntry->size = abseof;
+		SetDEFileSize(file->le.info.file.direntry, abseof, g);
 		MakeBlockDirty((struct cachedblock *)file->le.info.file.dirblock, g);
 	}
 
@@ -1760,7 +1779,7 @@ retry_write:
 
 #endif /* TD64 */
 
-ULONG RawRead(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+ULONG RawRead2(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
 {
 #if (TRACKDISK || TD64 || NSD) && SCSIDIRECT
 	if (g->tdmode == ACCESS_DS)
@@ -1768,13 +1787,23 @@ ULONG RawRead(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
 	else
 		return RawRead_TD(buffer, blocks, blocknr, g);
 #elif SCSIDIRECT
-	return RawRead_DS(buffer,r blocks, blocknr, g);
+	return RawRead_DS(buffer, blocks, blocknr, g);
 #else
-	return RawRead_TD(buffer,r blocks, blocknr, g);
+	return RawRead_TD(buffer, blocks, blocknr, g);
 #endif
 }
 
-ULONG RawWrite(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+ULONG RawRead(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+{
+	ULONG err = RawRead2(buffer, blocks, blocknr, g);
+	if (err) {
+		ULONG args[4] = { (ULONG)buffer, blocks, blocknr, err };
+		ErrorMsg ("RawRead(%lX, %ld, %ld) failed with error %ld", args, g);
+	}
+	return err;
+}
+
+ULONG RawWrite2(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
 {
 #if (TRACKDISK || TD64 || NSD) && SCSIDIRECT
 	if (g->tdmode == ACCESS_DS)
@@ -1782,10 +1811,20 @@ ULONG RawWrite(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
 	else
 		return RawWrite_TD(buffer, blocks, blocknr, g);
 #elif SCSIDIRECT
-	return RawWrite_DS(buffer,r blocks, blocknr, g);
+	return RawWrite_DS(buffer, blocks, blocknr, g);
 #else
-	return RawWrite_TD(buffer,r blocks, blocknr, g);
+	return RawWrite_TD(buffer, blocks, blocknr, g);
 #endif
+}
+
+ULONG RawWrite(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
+{
+	ULONG err = RawWrite2(buffer, blocks, blocknr, g);
+	if (err) {
+		ULONG args[4] = { (ULONG)buffer, blocks, blocknr, err };
+		ErrorMsg ("RawWrite(%lX, %ld, %ld) failed with error %ld", args, g);
+	}
+	return err;
 }
 
 #if ACCESS_DETECT
@@ -2000,7 +2039,7 @@ BOOL detectaccessmode(UBYTE *buffer, globaldata *g)
 #endif
 
 #if SCSIDIRECT
-	/* if dostype = PDSx, test Direct SCSI first and always use if test succeeded */
+	/* if dostype = PDSx, test Direct SCSI first and always use it if test succeeded */
 	if ((g->dosenvec->de_DosType & 0xffffff00) == 0x50445300) {
 		g->tdmode = ACCESS_DS;
 		if (testread_ds(buffer, g))
