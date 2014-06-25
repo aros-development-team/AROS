@@ -56,7 +56,11 @@ void ictl_disable_irq(uint8_t irq, struct KernelBase *KernelBase)
     *((volatile unsigned int *)reg) = val;
 } 
 
-/* ** UNDEF INSTRUCTION EXCEPTION ** */
+/*
+    ** UNDEF INSTRUCTION EXCEPTION
+    return addr = lr
+    entered in UND mode.
+*/
 
 asm (
     ".set	MODE_SYSTEM, 0x1f              \n"
@@ -94,7 +98,11 @@ void handle_undef(regs_t *regs)
         asm volatile ("mov r0, r0\n");
 }
 
-/* ** RESET HANDLER ** */
+/*
+    ** RESET HANDLER
+    no return address,
+    entered in SVC mode.
+*/
 
 asm (
     ".globl __vectorhand_reset                          \n"
@@ -117,7 +125,11 @@ asm (
 
 /** SWI handled in syscall.c */
 
-/* ** IRQ HANDLER ** */
+/*
+    ** IRQ HANDLER
+    return address = lr - 4
+    entered in IRQ mode.
+*/
 
 asm (
     ".set	MODE_IRQ, 0x12                 \n"
@@ -215,7 +227,11 @@ void handle_irq(regs_t *regs)
     return;
 }
 
-/* ** FIQ HANDLER ** */
+/*
+    ** FIQ HANDLER
+    return address = lr -4
+    entered in FIQ mode.
+*/
 
 __attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
 {
@@ -225,7 +241,11 @@ __attribute__ ((interrupt ("FIQ"))) void __vectorhand_fiq(void)
 }
 
 
-/* ** DATA ABORT EXCEPTION ** */
+/*
+    ** DATA ABORT EXCEPTION
+    return address = lr - 8
+    entered in ABT mode.
+*/
 
 asm (
     ".set	MODE_SYSTEM, 0x1f              \n"
@@ -233,6 +253,7 @@ asm (
     ".globl __vectorhand_dataabort             \n"
     ".type __vectorhand_dataabort,%function    \n"
     "__vectorhand_dataabort:                   \n"
+    "           sub     lr, lr, #8             \n" // adjust lr_irq
     VECTCOMMON_START
     "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
     "           str     sp, [r0, #13*4]        \n"
@@ -269,7 +290,11 @@ void handle_dataabort(regs_t *regs)
         asm volatile ("mov r0, r0\n");
 }
 
-/* ** PREFETCH ABORT EXCEPTION ** */
+/*
+    ** PREFETCH ABORT EXCEPTION
+    return address = lr - 4
+    entered in ABT mode.
+*/
 
 asm (
     ".set	MODE_SYSTEM, 0x1f              \n"
@@ -277,6 +302,7 @@ asm (
     ".globl __vectorhand_prefetchabort         \n"
     ".type __vectorhand_prefetchabort,%function \n"
     "__vectorhand_prefetchabort:               \n"
+    "           sub     lr, lr, #4             \n" // adjust lr_irq
     VECTCOMMON_START
     "           cpsid   i, #MODE_SYSTEM        \n" // switch to system mode, with interrupts disabled..
     "           str     sp, [r0, #13*4]        \n"
