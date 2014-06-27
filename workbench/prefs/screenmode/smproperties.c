@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -76,6 +76,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
                 MUIA_String_Accept, (IPTR)"0123456789",
                 MUIA_String_MaxLen, 6,
                 MUIA_CycleChain, TRUE,
+                MUIA_FixWidthTxt, (IPTR)"00000",
             End),
             Child, (IPTR)(def_width = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
             Child, (IPTR)Label1(__(MSG_DEFAULT)),
@@ -86,6 +87,7 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
                 MUIA_String_Accept, (IPTR)"0123456789",
                 MUIA_String_MaxLen, 6,
                 MUIA_CycleChain, TRUE,
+                MUIA_FixWidthTxt, (IPTR)"00000",
             End),
             Child, HLeft(def_height = (Object *)CheckMarkObject, MUIA_CycleChain, TRUE, End),
             Child, (IPTR)Label1(__(MSG_DEFAULT)),
