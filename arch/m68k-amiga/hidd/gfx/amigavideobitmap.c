@@ -393,63 +393,61 @@ VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         return;
     }    
-    if (doclip)
-    {
-        WORD x1, y1, x2, y2;
-        if (msg->x1 > msg->x2) {
-            x1 = msg->x2; x2 = msg->x1;
-        } else {
-            x1 = msg->x1; x2 = msg->x2;
-        }
-        if (msg->y1 > msg->y2) {
-            y1 = msg->y2; y2 = msg->y1;
-        } else {
-            y1 = msg->y1; y2 = msg->y2;
-        }
-        if (    x1 > GC_CLIPX2(gc)
-             || x2 < GC_CLIPX1(gc)
-             || y1 > GC_CLIPY2(gc)
-             || y2 < GC_CLIPY1(gc))
-            return;
-        // TODO: blitter clipping support
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-        return;
-    }
-
     if (msg->x1 == msg->x2 || msg->y1 == msg->y2) {
-    	WORD x1 = msg->x1, x2 = msg->x2;
-    	WORD y1 = msg->y1, y2 = msg->y2;
-    	if (x1 > x2) {
-    	    WORD tmp = x1;
-    	    x1 = x2;
-    	    x2 = tmp;
-    	}
-    	if (y1 > y2) {
-    	    WORD tmp = y1;
-    	    y1 = y2;
-    	    y2 = tmp;
-    	}
-    	if (x2 < 0)
-    	    return;
-    	if (y2 < 0)
-    	    return;
-    	if (x1 >= data->width)
-    	    return;
-    	if (y1 >= data->height)
-    	    return;
-    	if (x1 < 0)
-    	    x1 = 0;
-    	if (y1 < 0)
-    	    y1 = 0;
-    	if (x2 >= data->width)
-    	    x2 = data->width - 1;
-    	if (y2 >= data->height)
-    	    y2 = data->height - 1;
-      if (!blit_fillrect(csd, data->pbm, x1, y1, x2, y2, fg, mode))
-         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        WORD x1 = msg->x1, x2 = msg->x2;
+        WORD y1 = msg->y1, y2 = msg->y2;
+        if (x1 > x2) {
+            WORD tmp = x1;
+            x1 = x2;
+            x2 = tmp;
+        }
+        if (y1 > y2) {
+            WORD tmp = y1;
+            y1 = y2;
+            y2 = tmp;
+        }
+        if (doclip && (x1 > GC_CLIPX2(gc)
+            || x2 < GC_CLIPX1(gc)
+            || y1 > GC_CLIPY2(gc)
+            || y2 < GC_CLIPY1(gc)))
+            return;
+
+        if (x2 < 0)
+            return;
+        if (y2 < 0)
+           return;
+        if (x1 >= data->width)
+           return;
+        if (y1 >= data->height)
+           return;
+        if (x1 < 0)
+           x1 = 0;
+        if (y1 < 0)
+           y1 = 0;
+        if (x2 >= data->width)
+            x2 = data->width - 1;
+        if (y2 >= data->height)
+           y2 = data->height - 1;
+
+        if (doclip) {
+            if (x1 == x2) {
+                if (y1 < GC_CLIPY1(gc))
+                    y1 = GC_CLIPY1(gc);
+                if (y2 > GC_CLIPY2(gc))
+                    y2 = GC_CLIPY2(gc);
+            } else {
+                if (x1 < GC_CLIPX1(gc))
+                    x1 = GC_CLIPX1(gc);
+                else if (x2 > GC_CLIPX2(gc))
+                    x2 = GC_CLIPX2(gc);
+            }
+        }
+
+        if (!blit_fillrect(csd, data->pbm, x1, y1, x2, y2, fg, mode))
+            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     } else {
-         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-         CMDDEBUGUNIMP(bug("DrawLine\n"));
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        CMDDEBUGUNIMP(bug("DrawLine\n"));
     }
 }
 
