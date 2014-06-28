@@ -379,12 +379,43 @@ ULONG AmigaVideoBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_DrawLine *msg)
 {
-    HIDDT_Pixel fg = GC_FG(msg->gc);
-    HIDDT_DrawMode mode = GC_DRMD(msg->gc);
+    OOP_Object  *gc = msg->gc;
+    HIDDT_Pixel fg = GC_FG(gc);
+    HIDDT_DrawMode mode = GC_DRMD(gc);
     struct amigavideo_staticdata *csd = CSD(cl);
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
+    APTR doclip = GC_DOCLIP(gc);
+    WORD linepatmask = (1 << GC_LINEPATCNT(gc)) - 1;
 
     CLEARCACHE;
+    if ((linepatmask & GC_LINEPAT(gc)) != linepatmask) {
+        // TODO: blitter pattern support
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }    
+    if (doclip)
+    {
+        WORD x1, y1, x2, y2;
+        if (msg->x1 > msg->x2) {
+            x1 = msg->x2; x2 = msg->x1;
+        } else {
+            x1 = msg->x1; x2 = msg->x2;
+        }
+        if (msg->y1 > msg->y2) {
+            y1 = msg->y2; y2 = msg->y1;
+        } else {
+            y1 = msg->y1; y2 = msg->y2;
+        }
+        if (    x1 > GC_CLIPX2(gc)
+             || x2 < GC_CLIPX1(gc)
+             || y1 > GC_CLIPY2(gc)
+             || y2 < GC_CLIPY1(gc))
+            return;
+        // TODO: blitter clipping support
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+
     if (msg->x1 == msg->x2 || msg->y1 == msg->y2) {
     	WORD x1 = msg->x1, x2 = msg->x2;
     	WORD y1 = msg->y1, y2 = msg->y2;
@@ -414,11 +445,11 @@ VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
     	    x2 = data->width - 1;
     	if (y2 >= data->height)
     	    y2 = data->height - 1;
-	if (!blit_fillrect(csd, data->pbm, x1, y1, x2, y2, fg, mode))
-    	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+      if (!blit_fillrect(csd, data->pbm, x1, y1, x2, y2, fg, mode))
+         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     } else {
-	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-	CMDDEBUGUNIMP(bug("DrawLine\n"));
+         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+         CMDDEBUGUNIMP(bug("DrawLine\n"));
     }
 }
 
