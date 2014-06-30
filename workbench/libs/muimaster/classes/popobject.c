@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,6 +25,7 @@ struct Popobject_DATA
     int light;
     int vol;
     int follow;
+    BOOL popped;
     struct Hook *strobj_hook;
     struct Hook *objstr_hook;
     struct Hook *window_hook;
@@ -84,6 +85,7 @@ AROS_UFH3(ULONG, Popobject_Open_Function,
         MUIA_Window_LeftEdge, _left(obj) + _window(obj)->LeftEdge,
         MUIA_Window_TopEdge, _bottom(obj) + 1 + _window(obj)->TopEdge,
         MUIA_Window_Width, _width(obj), MUIA_Window_Open, TRUE, TAG_DONE);
+    data->popped = TRUE;
 
     if (!(data->ehn.ehn_Events & IDCMP_CHANGEWINDOW))
     {
@@ -112,6 +114,7 @@ AROS_UFH3(ULONG, Popobject_Close_Function,
     if (data->wnd)
     {
         set(data->wnd, MUIA_Window_Open, FALSE);
+        data->popped = FALSE;
 
         if (data->objstr_hook && suc)
             CallHookPkt(data->objstr_hook, data->object, string);
@@ -305,7 +308,21 @@ IPTR Popobject__MUIM_Cleanup(struct IClass *cl, Object *obj,
 IPTR Popobject__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg)
 {
+    struct Popobject_DATA *data = INST_DATA(cl, obj);
+
     IPTR rc = DoSuperMethodA(cl, obj, (Msg) msg);
+
+    /* If the pop-up window was shown when we were hidden, we reopen it, but
+       keep it inactive to prevent objects in the parent window missing
+       events (e.g. mouse up on a Listview) */
+    if (data->popped)
+    {
+        if (!XGET(data->wnd, MUIA_Window_Open))
+        {
+            set(data->wnd, MUIA_Window_Activate, FALSE);
+            set(data->wnd, MUIA_Window_Open, TRUE);
+        }
+    }
     if (!rc)
         return 0;
     return rc;
@@ -314,6 +331,12 @@ IPTR Popobject__MUIM_Show(struct IClass *cl, Object *obj,
 IPTR Popobject__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg)
 {
+    struct Popobject_DATA *data = INST_DATA(cl, obj);
+
+    /* Hide pop-up window too */
+    if (data->popped)
+        set(data->wnd, MUIA_Window_Open, FALSE);
+
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
