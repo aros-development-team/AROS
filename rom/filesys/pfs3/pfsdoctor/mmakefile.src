@@ -1,0 +1,25 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := \
+	access \
+	device \
+	fullscan \
+	standardscan \
+	stats \
+	console
+
+USER_CFLAGS := \
+	-DLARGE_FILE_SIZE=1 \
+	-DNO_GUI=1 \
+	-DREVISION=19 \
+	-DREVDATE="\"$(shell date '+%d.%m.%Y')\"" \
+	-DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+EXEDIR = $(AROSDIR)/C
+
+%build_prog mmake=workbench-devs-pfs3-c-pfsdoctor \
+    progname=PFSDoctor targetdir=$(EXEDIR) files=$(FILES) 
+
+%common
