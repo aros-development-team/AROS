@@ -107,11 +107,11 @@ typedef struct rootblock
     UWORD creationtick;     /* ticks past minute                */
     UWORD protection;       /* protection bits (ala ADOS)       */
     UBYTE diskname[32];     /* disk label (pascal string)       */
-    ULONG lastreserved;     /* reserved area. blocknumbers      */
-    ULONG firstreserved;
+    ULONG lastreserved;     /* reserved area. sector number of last reserved block */
+    ULONG firstreserved;	/* sector number of first reserved block */
     ULONG reserved_free;    /* number of reserved blocks (blksize blocks) free  */
     UWORD reserved_blksize;          /* size of reserved blocks in bytes */
-    UWORD rblkcluster;      /* number of blocks in rootblock, including bitmap  */
+    UWORD rblkcluster;      /* number of sectors in rootblock, including bitmap  */
     ULONG blocksfree;       /* blocks free                      */
     ULONG alwaysfree;       /* minimum number of blocks free    */
     ULONG roving_ptr;       /* current LONG bitmapfield nr for allocation       */

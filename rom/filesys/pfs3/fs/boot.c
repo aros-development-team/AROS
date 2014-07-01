@@ -155,6 +155,7 @@ BOOL debug=FALSE;
 #include "update_protos.h"
 #include "ass_protos.h"
 #include "lock_protos.h"
+#include "lru_protos.h"
 
 /* protos */
 // extern void __saveds EntryWithNewStack(void);
@@ -620,7 +621,7 @@ static void Quit (globaldata *g)
 	FreeMemP (g->geom, g);
 	FreeVec (g->dc.ref);
 	FreeVec (g->dc.data);
-	FreeVec (g->glob_lrudata.LRUarray);
+	DeallocLRU(g);
 	if (alloc_data.reservedtobefreed)
 		FreeMem (alloc_data.reservedtobefreed, sizeof(*alloc_data.reservedtobefreed) * alloc_data.rtbf_size);
 

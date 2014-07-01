@@ -297,9 +297,6 @@ Removed because of problems with Phase 5 boards
 	if (((IPTR)g->dc.data) & ~g->dosenvec->de_Mask)
 		ErrorMsg (AFS_WARNING_MEMORY_MASK, NULL, g);
 
-	if (!InitLRU(g))
-		return FALSE;
-
 	if (!OpenTimerDevice(&g->timeport, &g->trequest, UNIT_VBLANK, g) )
 		return FALSE;
 

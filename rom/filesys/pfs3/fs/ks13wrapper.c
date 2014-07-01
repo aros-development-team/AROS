@@ -70,6 +70,8 @@ void DebugPutStr(register const char *buff)
 void DebugPutDec(const char *what, ULONG val)
 {
 	int i, num;
+	BOOL leadingzero = TRUE;
+
 	DebugPutStr(what);
 	DebugPutStr(": ");
 	if (val == 0) {
@@ -85,8 +87,9 @@ void DebugPutDec(const char *what, ULONG val)
 	    }
 
 	    num = val / i;
-	    if (num == 0)
+	    if (num == 0 && leadingzero)
 	    	continue;
+	    leadingzero = FALSE;
 
 	    DebugPutChar("0123456789"[num]);
 	    val -= num * i;

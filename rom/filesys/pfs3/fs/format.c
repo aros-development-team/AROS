@@ -135,6 +135,7 @@
 #include "anodes_protos.h"
 #include "init_protos.h"
 #include "update_protos.h"
+#include "lru_protos.h"
 #include "versionhistory.doc"
 
 /*
@@ -337,6 +338,12 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
 			}
 		}
 	}
+
+	if (!InitLRU(g, resblocksize)) {
+		FreeBufmem(rbl, g);
+		return NULL;
+	}
+
 	rbl->reserved_blksize = resblocksize;
 	rescluster = resblocksize/g->geom->dg_SectorSize;
 
@@ -473,15 +480,20 @@ static void MakeReservedBitmap (struct rootblock **rbl, ULONG numreserved, globa
 {
   struct bitmapblock *bmb;
   struct rootblock *newrootblock;
-  ULONG *bitmap, numblocks, i, last, cluster;
+  ULONG *bitmap, numblocks, i, last, cluster, rescluster;
 
 	/* calculate number of 1024 byte blocks */
 	numblocks = 1;
 	for(i=125; i<numreserved/32; i+=256)
 		numblocks++;
 
-	cluster = (*rbl)->rblkcluster = (1024*numblocks+BLOCKSIZE-1)/(BLOCKSIZE);
-	(*rbl)->reserved_free -= (1024*numblocks+(*rbl)->reserved_blksize-1)/((*rbl)->reserved_blksize);
+	// convert to number of reserved blocks and allocate
+	numblocks = (1024*numblocks + (*rbl)->reserved_blksize - 1) / ((*rbl)->reserved_blksize);
+	(*rbl)->reserved_free -= numblocks;
+
+	// convert to number of sectors
+	rescluster = ((*rbl)->reserved_blksize) / BLOCKSIZE;
+	cluster = (*rbl)->rblkcluster = rescluster * numblocks;
 
 	/* reallocate rootblock */
 	newrootblock = AllocBufmemR(cluster << BLOCKSHIFT, g);
@@ -506,7 +518,10 @@ static void MakeReservedBitmap (struct rootblock **rbl, ULONG numreserved, globa
 		last |= 0x80000000>>i;
 	*bitmap = last;
 
-	/* allocate taken blocks + rootblock extension (de + 1)*/
+	/* allocate taken blocks + rootblock extension (de + 1)
+	 * The reserved area starts with the rootblock.
+	 * Convert numblocks from 1K blocks to actual reserved area blocks
+	 * */
 	for (i=0; i < numblocks + 1; i++)
 		bmb->bitmap[i/32] ^= 0x80000000>>(i%32);
 

@@ -591,8 +591,8 @@ struct volumedata *MakeVolumeData (struct rootblock *rootblock, globaldata *g)
 	{
 		struct crootblockextension *rext;
 
-		rext = AllocBufmemR (SIZEOF_CACHEDBLOCK, g);
-		memset (rext, 0, sizeof(struct cachedblock));
+		rext = AllocBufmemR (sizeof(struct cachedblock) + rootblock->reserved_blksize, g);
+		memset (rext, 0, sizeof(struct cachedblock) + rootblock->reserved_blksize);
 		if (RawRead ((UBYTE *)&rext->blk, volume->rescluster, rootblock->extension, g) != 0)
 		{
 			ErrorMsg (AFS_ERROR_READ_EXTENSION, NULL, g);
@@ -1013,7 +1013,10 @@ BOOL GetCurrentRoot(struct rootblock **rootblock, globaldata *g)
 				/* check size and read all rootblock blocks */
 				// 17.10: with 1024 byte blocks rblsize can be 1!
 				rblsize = (*rootblock)->rblkcluster;
-				if (rblsize < 1 || rblsize > 64)
+				if (rblsize < 1 || rblsize > 512)
+					goto nrd_error;
+
+				if (!InitLRU(g, (*rootblock)->reserved_blksize))
 					goto nrd_error;
 
 				FreeBufmem(*rootblock, g);
