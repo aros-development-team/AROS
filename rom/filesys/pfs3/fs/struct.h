@@ -428,6 +428,7 @@ struct lru_data_s
 	struct MinList LRUpool;
 	ULONG poolsize;
 	struct lru_cachedblock *LRUarray;
+	UWORD reserved_blksize;
 };
 
 

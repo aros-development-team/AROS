@@ -933,7 +933,7 @@ static void MakeAnodeBitmap (BOOL formatting, globaldata *g)
 		}
 		else
 		{
-			for (s=0, i=98; i >= 0 && !g->rootblock->idx.small.indexblocks[i]; i--);
+			for (s=0, i=MAXSMALLINDEXNR; i >= 0 && !g->rootblock->idx.small.indexblocks[i]; i--);
 		}
 
 		if (i < 0)

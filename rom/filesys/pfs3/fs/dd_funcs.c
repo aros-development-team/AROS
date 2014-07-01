@@ -1006,12 +1006,12 @@ static SIPTR dd_AddBuffers(struct DosPacket *pkt, globaldata * g)
 		MinRemove(lrunode);
 	}
 
-	FreeVec(g->glob_lrudata.LRUarray);
+	DeallocLRU(g);
 	numbuffers = g->dosenvec->de_NumBuffers;
 	numbuffers = max(0, numbuffers + (LONG)pkt->dp_Arg1);
 	g->dosenvec->de_NumBuffers = numbuffers;
 
-	while (!InitLRU(g))
+	while (!InitLRU(g, SIZEOF_RESBLOCK))
 		g->dosenvec->de_NumBuffers--;
 
 	pkt->dp_Res2 = g->dosenvec->de_NumBuffers;

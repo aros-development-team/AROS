@@ -2,7 +2,8 @@
 lru.c
  */
 
-BOOL InitLRU(globaldata * );
+BOOL InitLRU(globaldata *, UWORD);
+void DeallocLRU(globaldata *);
 
 struct cachedblock * AllocLRU(globaldata * );
 

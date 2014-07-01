@@ -95,12 +95,19 @@
 
 /* Allocate LRU queue
 */
-BOOL InitLRU (globaldata *g)
+BOOL InitLRU (globaldata *g, UWORD reserved_blksize)
 {
   int i;
   UBYTE *array;
 
 	ENTER("InitLRU");
+
+	if (g->glob_lrudata.LRUarray && g->glob_lrudata.reserved_blksize == reserved_blksize)
+		return TRUE;
+
+	DeallocLRU(g);
+
+	g->glob_lrudata.reserved_blksize = reserved_blksize;
 
 	NewList((struct List *)&g->glob_lrudata.LRUqueue);
 	NewList((struct List *)&g->glob_lrudata.LRUpool);
@@ -117,7 +124,7 @@ BOOL InitLRU (globaldata *g)
 	g->uip = FALSE;
 	g->locknr = 1;
 
-	if (!(g->glob_lrudata.LRUarray = AllocVec(SIZEOF_LRUBLOCK * g->glob_lrudata.poolsize,
+	if (!(g->glob_lrudata.LRUarray = AllocVec((sizeof(struct lru_cachedblock) + reserved_blksize) * g->glob_lrudata.poolsize,
 		g->dosenvec->de_BufMemType | MEMF_CLEAR)))
 		return FALSE;
 
@@ -127,11 +134,16 @@ BOOL InitLRU (globaldata *g)
 
 	array = (UBYTE *)g->glob_lrudata.LRUarray;
 	for(i=0;i<g->glob_lrudata.poolsize;i++)
-		MinAddHead(&g->glob_lrudata.LRUpool, array + i*SIZEOF_LRUBLOCK);
+		MinAddHead(&g->glob_lrudata.LRUpool, array + i * (sizeof(struct lru_cachedblock) + reserved_blksize));
 
 	return TRUE;
 }
 
+void DeallocLRU(globaldata *g)
+{
+	FreeVec (g->glob_lrudata.LRUarray);
+	g->glob_lrudata.LRUarray = NULL;
+}
 
 
 /* Allocate a block from the LRU chain and make
@@ -144,6 +156,9 @@ struct cachedblock *AllocLRU (globaldata *g)
   ULONG error;
 
 	ENTER("AllocLRU");
+
+	if (g->glob_lrudata.LRUarray == NULL)
+		return NULL;
 
 	/* Use free block from pool or flush lru unused
 	** block (there MUST be one!)
