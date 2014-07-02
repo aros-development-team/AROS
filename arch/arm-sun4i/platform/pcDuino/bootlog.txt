@@ -1,4 +1,4 @@
-U-Boot SPL 2013.10 (Mar 11 2014 - 13:47:49)
+U-Boot SPL 2013.10 (Jul 02 2014 - 17:24:53)
 Board: pcDuin
 o
 DRAM: 1024 MiB
@@ -6,7 +6,7 @@ CPU: 1008000000Hz, AXI/AHB/APB: 3/2/2
 spl: not an uImage at 1600
 
 
-U-Boot 2013.10 (Mar 11 2014 - 13:47:49) Allwinner Technology
+U-Boot 2013.10 (Jul 02 2014 - 17:24:53) Allwinner Technology
 
 CPU:   Allwinner A10 (SUN4I)
 Board: pcDuino
@@ -24,27 +24,27 @@ Hit any key to stop autoboot:  3
 \0x08\0x08\0x08 1 
 \0x08\0x08\0x08 0 
 reading uEnv.txt
-172 bytes read in 5 ms (33.2 KiB/s
+175 bytes read in 6 ms (28.3 KiB/s
 )
 Loaded environment from uEnv.txt
 Running uenvcmd ...
 reading boot/uImage-aros
-18956 bytes read in 11 ms (1.6 MiB/s)
+20110 bytes read in 11 ms (1.7 MiB/s)
 reading boot/uInitrd-aros
-36128 bytes read in 13 ms (2.7 MiB/s)
+58092 bytes read in 14 ms (4 MiB/s)
 ## Booting kernel from Legacy Image at 48000000 ...
    Image Name:   AROS Boot
-   Created:      2014-03-20  17:17:14 UTC
+   Created:      2014-07-02  18:29:01 UTC
    Image Type:   ARM Linux Kernel Image (gzip compressed)
-   Data Size:    18892 Bytes = 18.4 KiB
+   Data Size:    20046 Bytes = 19.6 KiB
    Load Address: 40010000
    Entry Point:  40010000
    Verifying Checksum ... OK
 ## Loading init Ramdisk from Legacy Image at 49000000 ...
    Image Name:   AROS rom
-   Created:      2014-03-20  17:17:14 UTC
+   Created:      2014-07-02  18:29:01 UTC
    Image Type:   ARM Linux RAMDisk Image (uncompressed)
-   Data Size:    36064 Bytes = 35.2 KiB
+   Data Size:    58028 Bytes = 56.7 KiB
    Load Address: 00000000
    Entry Point:  00000000
    Verifying Checksum ... OK
@@ -53,57 +53,68 @@ reading boot/uInitrd-aros
 Starting kernel ...
 
 [BOOT] AROS for sun4i (pcDuino) bootstrap
-[BOOT] Parsing ATAGS 7ffefb84
-[BOOT]   (7ffeffac-7ffeffbf) tag 54410001 (5): IGN...
-[BOOT]   (7ffeffc0-7ffeffd7) tag 54410009 (6): CMDLine: "debug=serial0"
-[BOOT]   (7ffeffd8-7ffeffe7) tag 54410002 (4): Memory (40000000-7ffdffff)
-[BOOT]   (7ffeffe8-7ffefff7) tag 54420005 (4): RAMDISK: (49000040-49008d1f)
-[BOOT]   (7ffefff8-7ffeffff) tag 00000000 (2): ATAG_NONE
-[BOOT] Bootstrap @ 40010000-4001b814
-[BOOT] Topmost address for kernel: 7ffe0000
+[BOOT] Stack @ 7ffffb60
+[BOOT] Parsing ATAGS 7ffffb80
+[BOOT]   (7fffffa8-7fffffbb) tag 54410001 (5): IGN...
+[BOOT]   (7fffffbc-7fffffd7) tag 54410009 (7): CMDLine: "debug = serial 0"
+[BOOT]   (7fffffd8-7fffffe7) tag 54410002 (4): Memory (40000000-7fffffff)
+[BOOT]   (7fffffe8-7ffffff7) tag 54420005 (4): RAMDISK: (49000040-4900e2eb)
+[BOOT]   (7ffffff8-7fffffff) tag 00000000 (2): ATAG_NONE
+[BOOT] Bootstrap @ 40010000-4001c814
+[BOOT] Vectors @7fff0000
+[BOOT] MMU1 @7ffec000
+
 [BOOT] Kernel image is a package:
-[BOOT] Package size: 35KB
+[BOOT] Package size: 56KB
+[BOOT]    i2c.hidd 
 [BOOT]    oop.library 
 [BOOT]    utility.library 
-[BOOT] Physical address of kernel: 7ffc2000
-[BOOT] Virtual address of kernel: fffc2000
+[BOOT] Physical address of kernel: 7ffc8000
+[BOOT] Virtual address of kernel: fffc8000
 [BOOT] loadElf(40014004)
-[BOOT] ELF: RO section loaded at 7ffc2000 (Virtual addr: fffc2000-fffc64cc)
-[BOOT] ELF: RO section loaded at 7ffc64cc (Virtual addr: fffc64cc-fffc6dcc)
-[BOOT] ELF: RW section loaded at 7ffcd000 (Virtual addr: fffcd000-fffcd300)
-[BOOT] ELF: RW section loaded at 7ffcd300 (Virtual addr: fffcd300-fffcd304)
-[BOOT] ELF: RW section loaded at 7ffcd310 (Virtual addr: fffcd310-fffdd724)
+[BOOT] ELF: RO section loaded at 7ffc8000 (Virtual addr: fffc8000-fffcca68)
+[BOOT] ELF: RO section loaded at 7ffcca68 (Virtual addr: fffcca68-fffcd378)
+[BOOT] ELF: RW section loaded at 7ffd8000 (Virtual addr: fffd8000-fffd8320)
+[BOOT] ELF: RW section loaded at 7ffd8320 (Virtual addr: fffd8320-fffd8324)
+[BOOT] ELF: RW section loaded at 7ffd8330 (Virtual addr: fffd8330-fffe8744)
+
 [BOOT] Kernel image is a package:
-[BOOT] Package size: 35KB
-[BOOT]    oop.library [BOOT] loadElf(49000094)
-[BOOT] ELF: RO section loaded at 7ffc6dcc (Virtual addr: fffc6dcc-fffca228)
-[BOOT] ELF: RO section loaded at 7ffca228 (Virtual addr: fffca228-fffca654)
-[BOOT] ELF: RW section loaded at 7ffdd724 (Virtual addr: fffdd724-fffdd728)
-[BOOT] ELF: RW section loaded at 7ffdd728 (Virtual addr: fffdd728-fffdd72c)
-[BOOT]    utility.library [BOOT] loadElf(49005834)
-[BOOT] ELF: RO section loaded at 7ffca654 (Virtual addr: fffca654-fffcc184)
-[BOOT] ELF: RO section loaded at 7ffcc184 (Virtual addr: fffcc184-fffcc404)
-[BOOT] ELF: RW section loaded at 7ffdd72c (Virtual addr: fffdd72c-fffdd730)
-[BOOT] ELF: RW section loaded at 7ffdd730 (Virtual addr: fffdd730-fffdd734)
-[BOOT] MMU kernel_phys 7ffc2000
-[BOOT] MMU kernel_virt fffc2000
+
+[BOOT] Package size: 56KB
+[BOOT]    i2c.hidd [BOOT] loadElf(4900009c)
+[BOOT] ELF: RO section loaded at 7ffcd378 (Virtual addr: fffcd378-fffd0828)
+[BOOT] ELF: RO section loaded at 7ffd0828 (Virtual addr: fffd0828-fffd0ca8)
+[BOOT] ELF: RW section loaded at 7ffe8744 (Virtual addr: fffe8744-fffe8748)
+[BOOT] ELF: RW section loaded at 7ffe8748 (Virtual addr: fffe8748-fffe8758)
+[BOOT]    oop.library [BOOT] loadElf(49005660)
+[BOOT] ELF: RO section loaded at 7ffd0ca8 (Virtual addr: fffd0ca8-fffd4104)
+[BOOT] ELF: RO section loaded at 7ffd4104 (Virtual addr: fffd4104-fffd4530)
+[BOOT] ELF: RW section loaded at 7ffe8758 (Virtual addr: fffe8758-fffe875c)
+[BOOT] ELF: RW section loaded at 7ffe875c (Virtual addr: fffe875c-fffe8760)
+[BOOT]    utility.library [BOOT] loadElf(4900ae00)
+[BOOT] ELF: RO section loaded at 7ffd4530 (Virtual addr: fffd4530-fffd6060)
+[BOOT] ELF: RO section loaded at 7ffd6060 (Virtual addr: fffd6060-fffd62e0)
+[BOOT] ELF: RW section loaded at 7ffe8760 (Virtual addr: fffe8760-fffe8764)
+[BOOT] ELF: RW section loaded at 7ffe8764 (Virtual addr: fffe8764-fffe8768)
+[BOOT] MMU kernel_phys 7ffc8000
+[BOOT] MMU kernel_virt fffc8000
 [BOOT] MMU mem_lower   40000000
-[BOOT] MMU mem_upper   7ffc2000
-[BOOT] First level MMU page at 7ffbc000
-[BOOT] Kernel mapping page 4095
+[BOOT] MMU mem_upper   7fefffff
+[BOOT] First level MMU page at 7ffec000
+[BOOT] Kernel mapping page 4095 phys 7ff00000 -> virt fff00000
 [BOOT] Kernel taglist contains 7 entries
-[BOOT] Topmost address for kernel: 7ffc2000
+[BOOT] mem_upper: 7ff00000
 [BOOT] Domain access control register: ffffffff
-[BOOT] Heading over to AROS kernel @ fffc2000
+[BOOT] Heading over to AROS kernel @ fffc8000
 
-[KRN] AROS for sun4i (pcDuino) built on Mar 20 2014 starting...
-[KRN] BootMsg @ 7ffefb84
-[KRN] Kernel entry @ fffc2000
-[KRN] Kernel c entry @ fffc215c
-[KRN] CmdLine: debug=serial0
+[KRN] AROS for sun4i (pcDuino) built on Jul  2 2014 starting...
+[KRN] BootMsg @ 7ffffb80
+[KRN] Kernel entry @ fffc8000
+[KRN] Kernel c entry @ fffc815c
+[KRN] Early MMU @ 00000000
+[KRN] CmdLine: debug = serial 0
 [KRN] MemLower: 40000000
-[KRN] MemUpper: 7ffe0000
-[KRN] KernelLowest: fffc2000
-[KRN] KernelHighest: fffe0000
-[KRN] kernelBSS: 4001b014
-
+[KRN] MemUpper: 7ff00000
+[KRN] KernelLowest: fffc8000
+[KRN] KernelHighest: fffec000
+[KRN] kernelBSS: 4001c014
