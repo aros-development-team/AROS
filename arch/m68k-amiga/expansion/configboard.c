@@ -47,13 +47,11 @@ AROS_LH2(BOOL, ConfigBoard,
     AROS_LIBFUNC_INIT
 
 	UBYTE type = configDev->cd_Rom.er_Type & ERT_TYPEMASK;
-	BOOL memorydevice;
 	ULONG size = configDev->cd_BoardSize;
 	
 	D(bug("Configuring board: cd=%p mfg=%d prod=%d size=%08x type=%02x\n",
 	    configDev, configDev->cd_Rom.er_Manufacturer, configDev->cd_Rom.er_Product, size, configDev->cd_Rom.er_Type));
 
-	memorydevice = (configDev->cd_Rom.er_Type & ERTF_MEMLIST) != 0;
 	if (type == ERT_ZORROIII) {
 		UWORD prevslot, newslot;
 		UWORD endslot = 255;
@@ -88,7 +86,7 @@ AROS_LH2(BOOL, ConfigBoard,
 		
 		for (area = 0; area < 2; area++) {
 			
-			if (area == 0 && (size >= 8 * E_SLOTSIZE || memorydevice))
+			if (area == 0 && size >= 8 * E_SLOTSIZE)
 				continue;
 			
 			if (area == 0) {
