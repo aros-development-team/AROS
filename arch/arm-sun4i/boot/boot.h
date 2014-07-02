@@ -12,8 +12,13 @@
 #include <inttypes.h>
 #include <sys/types.h>
 #include <aros/kernel.h>
+#include <aros/macros.h>
 
-#define BOOT_STACK_SIZE		4*10*(4*1024)	/* Minimum stack is 4kb (MMU chosen page size) and we need four stacks */
+#define MEM_OFFSET_VECTOR	0x10000
+#define MMU_L1_SIZE			(4*4096)
+#define MEM_OFFSET_MMU1		(4*4096)
+#define MEM_OFFSET_MMU2		(4*256*4096)
+#define MEM_OFFSET_STACKS	4*10*1024
 
 const char *remove_path(const char *in);
 void arm_dcache_invalidate(uint32_t addr, uint32_t length);
