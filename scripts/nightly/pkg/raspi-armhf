@@ -41,7 +41,7 @@ else
 fi
 
 cd      $BUILD_BASE/AROS
-make    arosboot-raspi
+make    distfiles
 copy    $BUILD_BASE/AROS/distfiles/$DISTFILE $ARCHIVE
 
 cd      $ROOT
