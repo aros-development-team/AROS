@@ -81,7 +81,7 @@ struct stat st;
 					if (error == ERROR_NO_FREE_STORE)
 						printf("No more space left on device!\nNeed %ld more bytes to write file.\n", st.st_size-written);
 					else
-						printf("%s: error %ld\n", filename, error);
+						printf("%s: error %ld\n", filename, (long int)error);
 				}
 				else
 				{
@@ -91,7 +91,7 @@ struct stat st;
 				closef(NULL, fah);
 			}
 			else
-				printf("error %ld\n", error);
+				printf("error %ld\n", (long int)error);
 			close(fd);
 		}
 		else
@@ -99,7 +99,7 @@ struct stat st;
 		closef(NULL, ah);
 	}
 	else
-		printf("%s: error %ld\n", dstpath, error);
+		printf("%s: error %ld\n", dstpath, (long int)error);
 	return retval;
 }
 
