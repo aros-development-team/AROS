@@ -650,7 +650,7 @@ static void __bootstrap(unsigned int magic, void *mb)
 
     kprintf("[BOOT] Loading kickstart, data 0x%p, code 0x%p...\n", kstart, kbase);
 
-    if (!LoadKernel(firstMod, (void *)kbase, (void *)kstart, (struct KernelBSS *)__bss_track, DEF_SYSBASE, &kend, &kentry, &kdebug))
+    if (!LoadKernel(firstMod, (void *)kbase, (void *)kstart, (char *)__bss_track, DEF_SYSBASE, &kend, &kentry, &kdebug))
     {
         panic("Failed to load the kickstart");
     }
