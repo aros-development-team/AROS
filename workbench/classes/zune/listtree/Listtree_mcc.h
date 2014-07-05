@@ -9,16 +9,16 @@
 /*** Identifier base ********************************************************/
 
 /*** Attributes *************************************************************/
-#define MUIA_Listtree_Active               (MUIB_MUI|0x00020020)
-#define MUIA_Listtree_Quiet                (MUIB_MUI|0x0002000a)
-#define MUIA_Listtree_DoubleClick          (MUIB_MUI|0x0002000d)
-#define MUIA_Listtree_ConstructHook        (MUIB_MUI|0x00020016)
-#define MUIA_Listtree_DestructHook         (MUIB_MUI|0x00020017)
-#define MUIA_Listtree_DisplayHook          (MUIB_MUI|0x00020018)
-#define MUIA_Listtree_Title                (MUIB_MUI|0x00020015)
-#define MUIA_Listtree_Format               (MUIB_MUI|0x00020014)
-#define MUIA_Listtree_DragDropSort         (MUIB_MUI|0x00020031)
-#define MUIA_Listtree_SortHook             (MUIB_MUI|0x00020010)
+#define MUIA_Listtree_Active               (MUIB_MUI|0x00020020) /* [.SG]  APTR          */
+#define MUIA_Listtree_Quiet                (MUIB_MUI|0x0002000a) /* [.SG]  BOOL          */
+#define MUIA_Listtree_DoubleClick          (MUIB_MUI|0x0002000d) /* [.SG]  BOOL          */
+#define MUIA_Listtree_ConstructHook        (MUIB_MUI|0x00020016) /* [I..]  struct Hook * */
+#define MUIA_Listtree_DestructHook         (MUIB_MUI|0x00020017) /* [I..]  struct Hook * */
+#define MUIA_Listtree_DisplayHook          (MUIB_MUI|0x00020018) /* [I..]  struct Hook * */
+#define MUIA_Listtree_Title                (MUIB_MUI|0x00020015) /* [I..]  BOOL          */
+#define MUIA_Listtree_Format               (MUIB_MUI|0x00020014) /* [I..]  STRPTR        */
+#define MUIA_Listtree_DragDropSort         (MUIB_MUI|0x00020031) /* [I..]  BOOL          */
+#define MUIA_Listtree_SortHook             (MUIB_MUI|0x00020010) /* [I..]  struct Hook * */
 
 #define MUIV_Listtree_GetEntry_Position_Tail        -1
 #define MUIV_Listtree_GetEntry_Position_Active      -2
@@ -88,7 +88,13 @@ struct MUIS_Listtree_TestPos_Result
 };
 
 struct MUIP_Listtree_Insert {STACKED ULONG MethodID;STACKED STRPTR Name;STACKED APTR User;STACKED APTR ListNode;STACKED APTR PrevNode;STACKED ULONG Flags;};
-struct MUIP_Listtree_GetEntry {STACKED ULONG MethodID; STACKED APTR Node;STACKED LONG Position;STACKED ULONG Flags; };
-struct MUIP_Listtree_GetNr {STACKED ULONG MethodID;STACKED APTR TreeNode;STACKED ULONG Flags; };
+struct MUIP_Listtree_GetEntry {STACKED ULONG MethodID; STACKED APTR Node;STACKED LONG Position;STACKED ULONG Flags;};
+struct MUIP_Listtree_GetNr {STACKED ULONG MethodID;STACKED APTR TreeNode;STACKED ULONG Flags;};
+struct MUIP_Listtree_Remove {STACKED ULONG MethodID;STACKED APTR ListNode;STACKED APTR TreeNode;STACKED ULONG Flags;};
+struct MUIP_Listtree_Rename {STACKED ULONG MethodID;STACKED APTR TreeNode;STACKED STRPTR NewName;STACKED ULONG Flags;};
+struct MUIP_Listtree_Open {STACKED ULONG MethodID;STACKED APTR ListNode;STACKED APTR TreeNode;STACKED ULONG Flags;};
+struct MUIP_Listtree_Close {STACKED ULONG MethodID;STACKED APTR ListNode;STACKED APTR TreeNode;STACKED ULONG Flags;};
+struct MUIP_Listtree_TestPos {STACKED ULONG MethodID;STACKED LONG X;STACKED LONG Y;STACKED APTR Result;};
+struct MUIP_Listtree_SetDropMark {STACKED ULONG MethodID;STACKED LONG Entry;STACKED ULONG Values;};
 
 #endif /* ZUNE_LISTTREE_MCC_H */
