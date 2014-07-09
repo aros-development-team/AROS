@@ -21,7 +21,6 @@ extern struct Library *MUIMasterBase;
 
 struct Popobject_DATA
 {
-    struct MUI_EventHandlerNode ehn;
     int light;
     int vol;
     int follow;
@@ -87,13 +86,6 @@ AROS_UFH3(ULONG, Popobject_Open_Function,
         MUIA_Window_Width, _width(obj), MUIA_Window_Open, TRUE, TAG_DONE);
     data->popped = TRUE;
 
-    if (!(data->ehn.ehn_Events & IDCMP_CHANGEWINDOW))
-    {
-        data->ehn.ehn_Events |= IDCMP_CHANGEWINDOW;
-        DoMethod(_win(obj), MUIM_Window_AddEventHandler,
-            (IPTR) & data->ehn);
-    }
-
     return 1;
 
     AROS_USERFUNC_EXIT
@@ -118,14 +110,6 @@ AROS_UFH3(ULONG, Popobject_Close_Function,
 
         if (data->objstr_hook && suc)
             CallHookPkt(data->objstr_hook, data->object, string);
-
-        if (data->ehn.ehn_Events & IDCMP_CHANGEWINDOW)
-        {
-            DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-                (IPTR) & data->ehn);
-            data->ehn.ehn_Events &= ~IDCMP_CHANGEWINDOW;
-        }
-
     }
     return 0;
 
@@ -146,12 +130,6 @@ IPTR Popobject__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->follow = 1;
     data->vol = 1;
     data->light = 1;
-
-    data->ehn.ehn_Events = 0;
-    data->ehn.ehn_Priority = 0;
-    data->ehn.ehn_Flags = 0;
-    data->ehn.ehn_Object = obj;
-    data->ehn.ehn_Class = cl;
 
     data->open_hook.h_Entry = (HOOKFUNC) Popobject_Open_Function;
     data->open_hook.h_Data = data;
@@ -289,22 +267,6 @@ IPTR Popobject__MUIM_Get(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
-
-IPTR Popobject__MUIM_Cleanup(struct IClass *cl, Object *obj,
-    struct MUIP_Cleanup *msg)
-{
-    struct Popobject_DATA *data = INST_DATA(cl, obj);
-
-    if (data->ehn.ehn_Events & IDCMP_CHANGEWINDOW)
-    {
-        DoMethod(_win(obj), MUIM_Window_RemEventHandler,
-            (IPTR) & data->ehn);
-        data->ehn.ehn_Events &= ~IDCMP_CHANGEWINDOW;
-    }
-
-    return DoSuperMethodA(cl, obj, (Msg) msg);
-}
-
 IPTR Popobject__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg)
 {
@@ -340,30 +302,25 @@ IPTR Popobject__MUIM_Hide(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
-IPTR Popobject__MUIM_HandleEvent(struct IClass *cl, Object *obj,
-    struct MUIP_HandleEvent *msg)
+IPTR Popobject__MUIM_Draw(struct IClass *cl, Object *obj,
+   struct MUIP_Draw *msg)
 {
     struct Popobject_DATA *data = INST_DATA(cl, obj);
+    struct Window *popwin = NULL;
+    struct Window *parentwin = _window(obj);
 
-    if (data->follow && msg->imsg && data->wnd)
+    DoSuperMethodA(cl, obj, (Msg) msg);
+
+    get(data->wnd, MUIA_Window_Window, &popwin);
+
+    if (data->follow && popwin && parentwin)
     {
-        if (msg->imsg->Class == IDCMP_CHANGEWINDOW)
-        {
-            struct Window *popwin = NULL;
-            struct Window *parentwin = _window(obj);
-
-            get(data->wnd, MUIA_Window_Window, &popwin);
-
-            if (popwin && parentwin)
-            {
-                ChangeWindowBox(popwin, _left(obj) + parentwin->LeftEdge,
-                    _bottom(obj) + parentwin->TopEdge + 1,
-                    popwin->Width, popwin->Height);
-            }
-        }
+        ChangeWindowBox(popwin, _left(obj) + parentwin->LeftEdge,
+            _bottom(obj) + parentwin->TopEdge + 1,
+            _width(obj), popwin->Height);
     }
 
-    return DoSuperMethodA(cl, obj, (Msg) msg);
+    return 0;
 }
 
 BOOPSI_DISPATCHER(IPTR, Popobject_Dispatcher, cl, obj, msg)
@@ -378,15 +335,12 @@ BOOPSI_DISPATCHER(IPTR, Popobject_Dispatcher, cl, obj, msg)
         return Popobject__OM_SET(cl, obj, (struct opSet *)msg);
     case OM_GET:
         return Popobject__MUIM_Get(cl, obj, (struct opGet *)msg);
-    case MUIM_Cleanup:
-        return Popobject__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
     case MUIM_Show:
         return Popobject__MUIM_Show(cl, obj, (struct MUIP_Show *)msg);
     case MUIM_Hide:
         return Popobject__MUIM_Hide(cl, obj, (struct MUIP_Hide *)msg);
-    case MUIM_HandleEvent:
-        return Popobject__MUIM_HandleEvent(cl, obj,
-            (struct MUIP_HandleEvent *)msg);
+    case MUIM_Draw:
+        return Popobject__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
