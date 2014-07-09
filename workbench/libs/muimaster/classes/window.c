@@ -156,8 +156,7 @@ struct MUI_WindowData
 #define MUIWF_OPENED            (1<<0)  /* window currently opened */
 #define MUIWF_HIDDEN            (1<<1)  /* window currently iconified */
 #define MUIWF_ACTIVE            (1<<2)  /* window currently active */
-#define MUIWF_RESIZING          (1<<4)  /* window currently resizing,
-                                         * for simple refresh */
+#define MUIWF_RESIZING          (1<<4)  /* window currently resizing */
 #define MUIWF_DONTACTIVATE      (1<<7)  /* do not activate the window when
                                          * opening */
 #define MUIWF_USERIGHTSCROLLER  (1<<8)  /* should have right scroller */
@@ -188,6 +187,7 @@ struct __dummyXFC3__
 
 #define muiWindowData(obj)   (&(((struct __dummyXFC3__ *)(obj))->mwd))
 
+static void ActivateObject(struct MUI_WindowData *data);
 static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
     struct IntuiMessage *event);
 
@@ -614,7 +614,7 @@ static void HideRenderInfo(struct MUI_RenderInfo *mri)
 
 static ULONG GetDefaultEvents(void)
 {
-    return IDCMP_NEWSIZE | IDCMP_REFRESHWINDOW
+    return IDCMP_NEWSIZE | IDCMP_CHANGEWINDOW | IDCMP_REFRESHWINDOW
         | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_MENUPICK
         | IDCMP_CLOSEWINDOW | IDCMP_RAWKEY | IDCMP_INTUITICKS
         | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_GADGETUP;
@@ -934,6 +934,67 @@ static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
     DISPOSEGADGET(data->wd_LeftButton);
     DISPOSEGADGET(data->wd_RightButton);
 #undef DISPOSEGADGET
+}
+
+
+static VOID RefreshWindow(Object *oWin, struct MUI_WindowData *data)
+{
+    if (data->wd_Flags & MUIWF_RESIZING)
+    {
+        //LONG left,top,right,bottom;
+        if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
+        {
+            MUI_EndRefresh(&data->wd_RenderInfo, 0);
+        }
+        RefreshWindowFrame(data->wd_RenderInfo.mri_Window);
+
+        data->wd_Flags &= ~MUIWF_RESIZING;
+        _width(data->wd_RootObject) = data->wd_Width;
+        _height(data->wd_RootObject) = data->wd_Height;
+        DoMethod(data->wd_RootObject, MUIM_Layout);
+        DoShowMethod(data->wd_RootObject);
+
+        if (muiGlobalInfo(oWin)->mgi_Prefs->window_redraw ==
+            WINDOW_REDRAW_WITH_CLEAR)
+        {
+            LONG left, top, width, height;
+
+            left = data->wd_RenderInfo.mri_Window->BorderLeft;
+            top = data->wd_RenderInfo.mri_Window->BorderTop;
+            width =
+                data->wd_RenderInfo.mri_Window->Width -
+                data->wd_RenderInfo.mri_Window->BorderRight - left;
+            height =
+                data->wd_RenderInfo.mri_Window->Height -
+                data->wd_RenderInfo.mri_Window->BorderBottom - top;
+
+            if (data->wd_Flags & MUIWF_ERASEAREA)
+            {
+                //D(bug("%d:zune_imspec_draw(%p) "
+                //    "l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
+                //    __LINE__, data->wd_Background, left, top, width,
+                //    height, left, top));
+                zune_imspec_draw(data->wd_Background,
+                    &data->wd_RenderInfo, left, top, width, height,
+                    left, top, 0);
+            }
+            MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+        }
+        else
+            MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
+        // but should only draw focus without using MUIM_GoActive !
+        ActivateObject(data);
+    }
+    else
+    {
+        if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
+        {
+            MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+            // but should only draw focus without using MUIM_GoActive !
+            ActivateObject(data);
+            MUI_EndRefresh(&data->wd_RenderInfo, 0);
+        }
+    }
 }
 
 
@@ -1592,6 +1653,7 @@ BOOL HandleWindowEvent(Object *oWin, struct MUI_WindowData *data,
         break;
 
     case IDCMP_NEWSIZE:
+    case IDCMP_CHANGEWINDOW:
         ReplyMsg((struct Message *)imsg);
         replied = TRUE;
 
@@ -1615,108 +1677,15 @@ BOOL HandleWindowEvent(Object *oWin, struct MUI_WindowData *data,
             data->wd_Height = iWin->GZZHeight;
             DoHideMethod(data->wd_RootObject);
 
-            if (1)
-                // why only simple refresh? was: if (
-                // data->wd_RenderInfo.mri_Window->Flags & WFLG_SIMPLE_REFRESH)
-            {
-                data->wd_Flags |= MUIWF_RESIZING;
-            }
-            else
-            {
-                _width(data->wd_RootObject) = data->wd_Width;
-                _height(data->wd_RootObject) = data->wd_Height;
-                DoMethod(data->wd_RootObject, MUIM_Layout);
-                DoShowMethod(data->wd_RootObject);
-                {
-                    LONG left, top, width, height;
-
-                    left = data->wd_RenderInfo.mri_Window->BorderLeft;
-                    top = data->wd_RenderInfo.mri_Window->BorderTop,
-                        width = data->wd_RenderInfo.mri_Window->Width
-                        - data->wd_RenderInfo.mri_Window->BorderRight -
-                        left;
-                    height =
-                        data->wd_RenderInfo.mri_Window->Height -
-                        data->wd_RenderInfo.mri_Window->BorderBottom - top;
-
-                    //D(bug("%d:zune_imspec_draw(%p) "
-                    //    "l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
-                    //    __LINE__, data->wd_Background, left, top, width,
-                    //    height, left, top));
-                    zune_imspec_draw(data->wd_Background,
-                        &data->wd_RenderInfo, left, top, width, height,
-                        left, top, 0);
-                }
-                if (muiGlobalInfo(oWin)->mgi_Prefs->window_redraw ==
-                    WINDOW_REDRAW_WITHOUT_CLEAR)
-                    MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
-                else
-                    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-                // but should only draw focus without using MUIM_GoActive !
-                ActivateObject(data);
-            }
+            data->wd_Flags |= MUIWF_RESIZING;
+            RefreshWindow(oWin, data);
         }
         break;
 
     case IDCMP_REFRESHWINDOW:
         ReplyMsg((struct Message *)imsg);
         replied = TRUE;
-        if (data->wd_Flags & MUIWF_RESIZING)
-        {
-            //LONG left,top,right,bottom;
-            if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
-            {
-                MUI_EndRefresh(&data->wd_RenderInfo, 0);
-            }
-            RefreshWindowFrame(data->wd_RenderInfo.mri_Window);
-
-            data->wd_Flags &= ~MUIWF_RESIZING;
-            _width(data->wd_RootObject) = data->wd_Width;
-            _height(data->wd_RootObject) = data->wd_Height;
-            DoMethod(data->wd_RootObject, MUIM_Layout);
-            DoShowMethod(data->wd_RootObject);
-
-            if (muiGlobalInfo(oWin)->mgi_Prefs->window_redraw ==
-                WINDOW_REDRAW_WITH_CLEAR)
-            {
-                LONG left, top, width, height;
-
-                left = data->wd_RenderInfo.mri_Window->BorderLeft;
-                top = data->wd_RenderInfo.mri_Window->BorderTop;
-                width =
-                    data->wd_RenderInfo.mri_Window->Width -
-                    data->wd_RenderInfo.mri_Window->BorderRight - left;
-                height =
-                    data->wd_RenderInfo.mri_Window->Height -
-                    data->wd_RenderInfo.mri_Window->BorderBottom - top;
-
-                if (data->wd_Flags & MUIWF_ERASEAREA)
-                {
-                    //D(bug("%d:zune_imspec_draw(%p) "
-                    //    "l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
-                    //    __LINE__, data->wd_Background, left, top, width,
-                    //    height, left, top));
-                    zune_imspec_draw(data->wd_Background,
-                        &data->wd_RenderInfo, left, top, width, height,
-                        left, top, 0);
-                }
-                MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-            }
-            else
-                MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
-            // but should only draw focus without using MUIM_GoActive !
-            ActivateObject(data);
-        }
-        else
-        {
-            if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
-            {
-                MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-                // but should only draw focus without using MUIM_GoActive !
-                ActivateObject(data);
-                MUI_EndRefresh(&data->wd_RenderInfo, 0);
-            }
-        }
+        RefreshWindow(oWin, data);
         break;
 
     case IDCMP_CLOSEWINDOW:
@@ -3607,7 +3576,7 @@ static void WindowShow(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct Window *win = data->wd_RenderInfo.mri_Window;
-/*      D(bug("window_show %s %d\n", __FILE__, __LINE__)); */
+/*      D(bug("WindowShow %s %d\n", __FILE__, __LINE__)); */
 
     _left(data->wd_RootObject) = win->BorderLeft;
     _top(data->wd_RootObject) = win->BorderTop;
