@@ -418,7 +418,7 @@ IPTR Popobject__MUIM_Hide(struct IClass *cl, Object *obj,
     struct Popobject_DATA *data = INST_DATA(cl, obj);
 
     /* Hide pop-up window too */
-    if (data->popped)
+    if (data->popped && data->vol)
         set(data->wnd, MUIA_Window_Open, FALSE);
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
