@@ -21,9 +21,9 @@ extern struct Library *MUIMasterBase;
 
 struct Popobject_DATA
 {
-    int light;
-    int vol;
-    int follow;
+    BOOL light;
+    BOOL vol;
+    BOOL follow;
     BOOL popped;
     struct Hook *strobj_hook;
     struct Hook *objstr_hook;
@@ -33,6 +33,128 @@ struct Popobject_DATA
     Object *object;
     Object *wnd;
 };
+
+/****** Popobject.mui/MUIA_Popobject_Follow **********************************
+*
+*   NAME
+*       MUIA_Popobject_Follow -- (V7) [ISG], BOOL
+*
+*   FUNCTION
+*       Specifies whether the pop-up window should update its position and
+*       width to match the position and width of its string gadget when the
+*       parent window is moved or resized, i.e. if it should look like it is
+*       attached to the string gadget, or should be more like a floating
+*       object. Defaults to TRUE.
+*
+******************************************************************************
+*
+*/
+
+/****** Popobject.mui/MUIA_Popobject_Light ***********************************
+*
+*   NAME
+*       MUIA_Popobject_Light -- (V7) [ISG], BOOL
+*
+*   FUNCTION
+*       Specifies whether the pop-up window should be drawn without a border.
+*       Defaults to TRUE.
+*
+******************************************************************************
+*
+*/
+
+/****** Popobject.mui/MUIA_Popobject_Object **********************************
+*
+*   NAME
+*       MUIA_Popobject_Object -- (V7) [I.G], Object *
+*
+*   FUNCTION
+*       The object to pop up.
+*
+******************************************************************************
+*
+*/
+
+/****** Popobject.mui/MUIA_Popobject_ObjStrHook ******************************
+*
+*   NAME
+*       MUIA_Popobject_ObjStrHook -- (V7) [ISG], struct Hook *
+*
+*   FUNCTION
+*       This hook is called to update the string gadget when the pop-up is
+*       closed with a TRUE success value. For example, it can set the string
+*       to the name of the item selected from a Listview pop-up.
+*
+*       The hook receives pointers to the pop-up object and the string gadget
+*       as its second and third arguments respectively.
+*
+*   SEE ALSO
+*       MUIA_Popobject_StrObjHook
+*
+******************************************************************************
+*
+*/
+
+/****** Popobject.mui/MUIA_Popobject_StrObjHook ******************************
+*
+*   NAME
+*       MUIA_Popobject_StrObjHook -- (V7) [ISG], struct Hook *
+*
+*   FUNCTION
+*       This hook is called whenever the pop-up object is opened to initialise
+*       or update the pop-up object according to the contents of the string
+*       gadget. For example, it can pre-select an item in a Listview pop-up
+*       that matches the current string.
+*
+*       The hook receives pointers to the pop-up object and the string gadget
+*       as its second and third arguments respectively.
+*
+*   SEE ALSO
+*       MUIA_Popobject_ObjStrHook
+*
+******************************************************************************
+*
+*/
+
+/****** Popobject.mui/MUIA_Popobject_Volatile ********************************
+*
+*   NAME
+*       MUIA_Popobject_Volatile -- (V7) [ISG], BOOL
+*
+*   FUNCTION
+*       Specifies whether the pop-up window should be hidden when the portion 
+*       of the Popobject residing in the parent window is hidden. This would
+*       normally be desirable if the Popobject is in a page group for 
+*       example. If the pop-up window is on display when the Popobject is 
+*       hidden, it will reappear as soon as the Popobject is reshown. 
+*       Defaults to TRUE.
+*
+******************************************************************************
+*
+*/
+
+/****** Popobject.mui/MUIA_Popobject_WindowHook ******************************
+*
+*   NAME
+*       MUIA_Popobject_WindowHook -- (V9) [ISG], struct Hook *
+*
+*   FUNCTION
+*       This hook is called just before the pop-up window is opened.
+*
+*       The hook receives pointers to the pop-up object and the window object
+*       as its second and third arguments respectively.
+*
+*   SEE ALSO
+*       MUIA_Popobject_ObjStrHook
+*
+*   INTERNALS
+*       It is unclear whether this hook should be called every time the window
+*       is opened or only the first time.
+*
+******************************************************************************
+*
+*/
+
 
 AROS_UFH3(ULONG, Popobject_Open_Function,
     AROS_UFHA(struct Hook *, hook, A0),
@@ -127,9 +249,9 @@ IPTR Popobject__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         return FALSE;
 
     data = INST_DATA(cl, obj);
-    data->follow = 1;
-    data->vol = 1;
-    data->light = 1;
+    data->follow = TRUE;
+    data->vol = TRUE;
+    data->light = TRUE;
 
     data->open_hook.h_Entry = (HOOKFUNC) Popobject_Open_Function;
     data->open_hook.h_Data = data;
