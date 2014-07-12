@@ -171,7 +171,7 @@ int bootstrap(int argc, char ** argv)
                     "Available options:\n"
                     " -h                 show this page\n"
                     " -m <size>          allocate <size> Megabytes of memory for AROS\n"
-                    "                    (default is 64M)\n"
+                    "                    (default is 64Mb)\n"
                     " -c <file>          read configuration from <file>\n"
                     "                    (default is %s)\n"
                     " --help             same as '-h'\n"
@@ -190,7 +190,7 @@ int bootstrap(int argc, char ** argv)
         } else
             break;
     }
-    D(fprintf(stderr, "[Bootstrap] %u arguments processed\n", i));
+    D(fprintf(stderr, "[Bootstrap] %u argument%s processed\n", i, i==1 ? "" : "s"));
 
     if (i < argc) {
         KernelArgs = join_string(argc - i, &argv[i]);
@@ -206,6 +206,7 @@ int bootstrap(int argc, char ** argv)
         return -1;
     }
 
+    D(fprintf(stderr, "[Bootstrap] Opening configuration file %s\n", config));
     file = fopen(config, "r");
     if (!file)
     {
@@ -321,13 +322,13 @@ int bootstrap(int argc, char ** argv)
         return -1;
     }
 
-    D(fprintf(stderr, "[Bootstrap] allocating working mem: %iMb\n",memSize));
+    D(fprintf(stderr, "[Bootstrap] Allocating %iMb of RAM for AROS\n",memSize));
 
     MemoryMap.len = memSize << 20;
     MemoryMap.addr = (IPTR)AllocateRAM(MemoryMap.len);
 
     if (!MemoryMap.addr) {
-        DisplayError("[Bootstrap] Failed to allocate %i Mb of RAM for AROS!\n", memSize);
+        DisplayError("[Bootstrap] Failed to allocate %iMb of RAM for AROS!\n", memSize);
         return -1;
     }
     D(fprintf(stderr, "[Bootstrap] RAM memory allocated: %p - %p (%u bytes)\n",
