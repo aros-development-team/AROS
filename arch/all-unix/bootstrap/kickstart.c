@@ -43,43 +43,43 @@ int kick(int (*addr)(), struct TagItem *msg)
     
     do
     {
-    	pid_t child = fork();
+        pid_t child = fork();
 
-    	switch (child)
-    	{
-    	case -1:
-    	    DisplayError("Failed to run kickstart!");
-    	    return -1;
+        switch (child)
+        {
+        case -1:
+            DisplayError("Failed to run kickstart!");
+            return -1;
 
-    	case 0:
+        case 0:
             fprintf(stderr, "[Bootstrap] Entering kernel at %p...\n", addr);
-    	    i = addr(msg, AROS_BOOT_MAGIC);
-    	    exit(i);
-    	}
+            i = addr(msg, AROS_BOOT_MAGIC);
+            exit(i);
+        }
 
-	/* Wait until AROS process exits */
-	waitpid(child, &i, 0);
+        /* Wait until AROS process exits */
+        waitpid(child, &i, 0);
 
-	if (!WIFEXITED(i))
-    	{
-	    D(fprintf(stderr, "AROS process died with error\n"));
-	    return -1;
-    	}
-    	
-    	D(fprintf(stderr, "AROS exited with status 0x%08X\n", WEXITSTATUS(i)));
-    	
-    	/* ColdReboot() returns 0x8F */
+        if (!WIFEXITED(i))
+        {
+            D(fprintf(stderr, "AROS process died with error\n"));
+            return -1;
+        }
+
+        D(fprintf(stderr, "AROS exited with status 0x%08X\n", WEXITSTATUS(i)));
+
+        /* ColdReboot() returns 0x8F */
     } while (WEXITSTATUS(i) == 0x8F);
 
     if (WEXITSTATUS(i) == 0x81)
     {
-	/*
-	 * Perform cold boot if requested.
-	 * Before rebooting, we clean up. Otherwise execvp()'ed process will
-	 * inherit what we allocated here, then again... This will cause memory leak.
-	 */
-    	Host_FreeMem();
-    	Host_ColdBoot();
+        /*
+         * Perform cold boot if requested.
+         * Before rebooting, we clean up. Otherwise execvp()'ed process will
+         * inherit what we allocated here, then again... This will cause memory leak.
+         */
+        Host_FreeMem();
+        Host_ColdBoot();
     }
 
     return WEXITSTATUS(i);
