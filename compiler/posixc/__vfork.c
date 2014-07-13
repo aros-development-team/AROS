@@ -304,7 +304,7 @@ pid_t __vfork(jmp_buf env)
         /* Couldn't allocate the signal, return -1 */
         FreeMem(udata, sizeof(struct vfork_data));
         errno = ENOMEM;
-        vfork_longjmp(env, -1);
+        vfork_longjmp(udata->vfork_jmp, -1);
     }
 
     PosixCBase->flags |= VFORK_PARENT;
@@ -318,7 +318,7 @@ pid_t __vfork(jmp_buf env)
         /* Something went wrong, return -1 */
         FreeMem(udata, sizeof(struct vfork_data));
         errno = ENOMEM; /* Most likely */
-        vfork_longjmp(env, -1);
+        vfork_longjmp(udata->vfork_jmp, -1);
     }
     D(bug("__vfork: Parent: Child created %p, waiting to finish setup\n", udata->child));
 
@@ -330,7 +330,7 @@ pid_t __vfork(jmp_buf env)
         /* An error occured during child setup */
         D(bug("__vfork: Child returned an error (%d)\n", udata->child_errno));
         errno = udata->child_errno;
-        vfork_longjmp(env, -1);
+        vfork_longjmp(udata->vfork_jmp, -1);
     }
 
     PosixCBase->flags &= ~VFORK_PARENT;
