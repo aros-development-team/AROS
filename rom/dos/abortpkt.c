@@ -26,7 +26,7 @@
         struct DosLibrary *, DOSBase, 44, Dos)
 
 /*  FUNCTION
-        This function does currently nothing. You can use WaitForChar()
+        This function currently does nothing. You can use WaitForChar()
         to poll for characters from an interactive handler.
 
         The planned purpose of this function is:
