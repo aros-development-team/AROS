@@ -27,9 +27,9 @@
         Deletes a local or environment variable.
 
         The default is to delete a local variable if one was found,
-        or to delete a global environmental variable otherwise.
+        or to delete a global environment variable otherwise.
 
-        A global environmental variable will only be deleted for the
+        A global environment variable will only be deleted for the
         type LV_VAR.
 
     INPUTS
@@ -42,7 +42,7 @@
                 Currently defined flags:
 
                 GVF_LOCAL_ONLY  - delete a local variable.
-                GVF_GLOBAL_ONLY - delete a global environmental variable.
+                GVF_GLOBAL_ONLY - delete a global environment variable.
 
     RESULT
         If non-zero, the variable was deleted successfully,
