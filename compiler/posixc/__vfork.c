@@ -307,8 +307,8 @@ pid_t __vfork(jmp_buf env)
 
         parent_enterpretendchild(udata);
 
-        D(bug("__vfork: Child(%p) jumping to jmp_buf %p\n",
-              udata->child, &udata->vfork_jmp
+        D(bug("__vfork: ParentPretendingChild(%p) jumping to jmp_buf %p\n",
+              udata->parent, &udata->vfork_jmp
         ));
         D(bug("__vfork: ip: %p, stack: %p alt: %p\n",
               udata->vfork_jmp[0].retaddr, udata->vfork_jmp[0].regs[SP],
@@ -319,9 +319,9 @@ pid_t __vfork(jmp_buf env)
         assert(0); /* not reached */
         return (pid_t) 0;
     }
-    else /* setjmp() != 0; so child has exited() */
+    else /* setjmp() != 0; _exit() was called */
     {
-        D(bug("__vfork: Child: child exiting\n or executed\n"));
+        D(bug("__vfork: ParentPretendingChild: exiting or executed\n"));
 
         /* Stack may have been overwritten when we return here,
          * we jump to here from a function lower in the call chain
@@ -329,11 +329,11 @@ pid_t __vfork(jmp_buf env)
         PosixCBase = (struct PosixCIntBase *)__aros_getbase_PosixCBase();
         udata = PosixCBase->vfork_data;
 
-        D(bug("__vfork: Child: acb_vfork_data = %x\n", udata));
+        D(bug("__vfork: ParentPretendingChild: vfork_data = %x\n", udata));
 
         if (!udata->child_executed)
         {
-            D(bug("__vfork: Child: not executed\n"));
+            D(bug("__vfork: ParentPretendingChild: not executed\n"));
 
             /* et_Result is normally set in startup code but no exec was performed
                so we have to mimic the startup code
@@ -342,19 +342,19 @@ pid_t __vfork(jmp_buf env)
             if (etask)
                 etask->et_Result1 = udata->child_error;
 
-            D(bug("__vfork: Child: Signaling child %p, signal %d\n", udata->child, udata->child_signal));
+            D(bug("__vfork: ParentPretendingChild: Signaling child %p, signal %d\n", udata->child, udata->child_signal));
             SETPARENTSTATE(PARENT_STATE_EXIT_CALLED);
             Signal(udata->child, 1 << udata->child_signal);
         }
 
-        D(bug("__vfork: Parent: Waiting for child to finish using udata, me=%p, signal %d\n", FindTask(NULL),
+        D(bug("__vfork: ParentPretendingChild: Waiting for child to finish using udata, me=%p, signal %d\n", FindTask(NULL),
                 udata->parent_signal));
         /* Wait for child to finish using udata */
         Wait(1 << udata->parent_signal);
         ASSERTCHILDSTATE(CHILD_STATE_UDATA_NOT_USED);
         PRINTSTATE;
 
-        D(bug("__vfork: Parent: fflushing\n"));
+        D(bug("__vfork: ParentPretendingChild: fflushing\n"));
         fflush(NULL);
 
         __vfork_exit_controlled_stack(udata);
@@ -381,7 +381,7 @@ static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork
     jmp_buf dummy;
     jmp_buf env;
 
-    D(bug("__vfork: Parent: freeing parent signal\n"));
+    D(bug("__vfork: ParentPretendingChild: freeing parent signal\n"));
     FreeSignal(udata->parent_signal);
 
     errno = udata->child_errno;
