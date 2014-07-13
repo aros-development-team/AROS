@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2013, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Support functions for POSIX exec*() functions.
@@ -37,6 +37,11 @@ static void __exec_cleanup(struct PosixCIntBase *PosixCBase);
 
 static void __exec_do_regular(struct PosixCIntBase *PosixCBase);
 static void __exec_do_pretend_child(struct PosixCIntBase *PosixCBase);
+static char * assign_filename(const char *filename, int searchpath, char **environ, struct PosixCIntBase *PosixCBase);
+static APTR __exec_prepare_pretend_child(char *filename2, char *const argv[], char *const envp[],
+        struct PosixCIntBase *PosixCBase);
+static APTR __exec_prepare_regular(char * filename2, char *const argv[], char *const envp[],
+        char **environ, struct PosixCIntBase *PosixCBase);
 
 /* Public functions */
 /********************/
@@ -58,7 +63,7 @@ void __exec_do(APTR id)
     }
     else
     {
-        /* exec* without fork or forked child executing exec */
+        /* exec* without fork or forked child executing exec* */
         __exec_do_regular(PosixCBase);
     }
 }
@@ -68,9 +73,6 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
     char *filename2 = NULL;
-    const char *filename2_dos = NULL;
-    int argssize = 512;
-    struct Process *me;
     char ***environptr = __posixc_get_environptr();
     char **environ = (environptr != NULL) ? *environptr : NULL;
 
@@ -98,13 +100,37 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     /* Remember current stdcbase, child may overwrite it and mess up exiting */
     PosixCBase->exec_oldstdcbase = PosixCBase->PosixCBase.StdCBase;
 
+    filename2 = assign_filename(filename, searchpath, environ, PosixCBase);
+    if (!filename2)
+        goto error;
+
+    if (PosixCBase->flags & PRETEND_CHILD)
+    {
+        /* forking parent executing child code prior to child taking over */
+        return __exec_prepare_pretend_child(filename2, argv, envp, PosixCBase);
+    }
+    else
+    {
+        /* exec* without fork or forked child executing exec* */
+        return __exec_prepare_regular(filename2, argv, envp, environ, PosixCBase);
+    }
+
+error:
+    __exec_cleanup(PosixCBase);
+
+    return (APTR)NULL;
+}
+
+static char * assign_filename(const char *filename, int searchpath, char **environ, struct PosixCIntBase *PosixCBase)
+{
     /* Search path if asked and no directory separator is present in the file */
     if (searchpath && index(filename, '/') == NULL && index(filename, ':') == NULL)
     {
         int i, len, size;
-        char *path = NULL, *path_ptr, *path_item;
+        char *path = NULL, *path_ptr, *path_item, *filename2;
+        const char * filename2_dos;
         BPTR lock;
-        
+
         if (environ)
         {
             for (i=0; environ[i]; i++)
@@ -116,33 +142,33 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
                 }
             }
         }
-        
+
         if (!path)
             path = getenv("PATH");
 
         if (!path)
             path = ":/bin:/usr/bin";
 
-        D(bug("__exec_prepare: PATH('%s')\n", path));
+        D(bug("assign_filename: PATH('%s')\n", path));
 
         path_ptr = AllocPooled(PosixCBase->exec_pool, strlen(path) + 1);
         strcpy(path_ptr, path);
         path = path_ptr;
 
-        D(bug("__exec_prepare: PATH('%s')\n", path));
+        D(bug("assign_filename: PATH('%s')\n", path));
 
         size = 128;
         filename2 = AllocPooled(PosixCBase->exec_pool, size);
         if (!filename2)
         {
             errno = ENOMEM;
-            goto error;
+            return NULL;
         }
 
         for(path_ptr = path, lock = (BPTR)NULL, path_item = strsep(&path_ptr, ",:");
             lock == (BPTR)NULL && path_item != NULL;
             path_item = strsep(&path_ptr, ",:")
-        ) 
+        )
         {
             if(path_item[0] == '\0')
                 path_item = ".";
@@ -157,7 +183,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
                 if (!filename2)
                 {
                     errno = ENOMEM;
-                    goto error;
+                    return NULL;
                 }
             }
 
@@ -166,7 +192,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
             strcat(filename2, filename);
             filename2_dos = __path_u2a(filename2);
             lock = Lock(filename2_dos, SHARED_LOCK);
-            D(bug("__exec_prepare: Lock(\"%s\") == %x\n", filename2, (APTR)lock));
+            D(bug("assign_filename: Lock(\"%s\") == %x\n", filename2, (APTR)lock));
         }
 
         if(lock != (BPTR)NULL)
@@ -174,50 +200,59 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         else
         {
             errno = ENOENT;
-            goto error;
-        }
-    }
-    else
-    {
-        filename2 = (char *)filename;
-        filename2_dos = __path_u2a(filename2);
-    }
-    
-    if (PosixCBase->flags & PRETEND_CHILD)
-    {
-        struct vfork_data *udata = PosixCBase->vfork_data;
-            
-        udata->exec_filename = filename2;
-        udata->exec_argv = argv;
-        udata->exec_envp = envp;
-            
-        /* Set this so the child knows that __exec_prepare was called */
-        udata->child_executed = 1;
-
-        D(bug("__exec_prepare: Calling child\n"));
-        /* Now call child process, so it will call __exec_prepare */
-        Signal(udata->child, 1 << udata->child_signal);	    
-
-        D(bug("__exec_prepare: Waiting for child to finish __exec_prepare\n"));
-        /* __exec_prepare should be finished now on child */
-        Wait(1 << udata->parent_signal);
-
-        if (!udata->exec_id)
-        {
-            D(bug("__exec_prepare: Continue child immediately on error\n"));
-            Signal(udata->child, 1 << udata->child_signal);
-
             return NULL;
         }
-        
-        D(bug("__exec_prepare: Exiting from forked __exec_prepare id=%x, errno=%d\n",
-              udata->exec_id, udata->child_errno
-        ));
-        
-        return (APTR)PosixCBase;
+
+        return filename2;
+    }
+    else
+        return (char *)filename;
+}
+
+static APTR __exec_prepare_pretend_child(char *filename2, char *const argv[], char *const envp[],
+        struct PosixCIntBase *PosixCBase)
+{
+    struct vfork_data *udata = PosixCBase->vfork_data;
+
+    udata->exec_filename = filename2;
+    udata->exec_argv = argv;
+    udata->exec_envp = envp;
+
+    /* Set this so the child knows that __exec_prepare was called */
+    udata->child_executed = 1;
+
+    D(bug("[__exec_prepare_pretend_child] Calling child\n"));
+    /* Now call child process, so it will call __exec_prepare */
+    Signal(udata->child, 1 << udata->child_signal);
+
+    D(bug("[__exec_prepare_pretend_child] Waiting for child to finish __exec_prepare\n"));
+    /* __exec_prepare should be finished now on child */
+    Wait(1 << udata->parent_signal);
+
+    if (!udata->exec_id)
+    {
+        D(bug("[__exec_prepare_pretend_child] Continue child immediately on error\n"));
+        Signal(udata->child, 1 << udata->child_signal);
+
+        return NULL;
     }
 
-    D(bug("__exec_prepare: Not running as PRETEND_CHILD\n"));
+    D(bug("[__exec_prepare_pretend_child] Exiting from forked __exec_prepare id=%x, errno=%d\n",
+          udata->exec_id, udata->child_errno
+    ));
+
+    return (APTR)PosixCBase;
+}
+
+static APTR __exec_prepare_regular(char * filename2, char *const argv[], char *const envp[],
+        char **environ, struct PosixCIntBase *PosixCBase)
+{
+    const char *filename2_dos = NULL;
+    int argssize = 512;
+    struct Process *me;
+
+    filename2_dos = __path_u2a(filename2);
+
     PosixCBase->exec_args = AllocPooled(PosixCBase->exec_pool, argssize);
     PosixCBase->exec_args[0] = '\0';
 
@@ -225,10 +260,10 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     BPTR fh = Open((CONST_STRPTR)filename2_dos, MODE_OLDFILE);
     if(fh)
     {
-    	if(FGetC(fh) == '#' && FGetC(fh) == '!')
-    	{
+        if(FGetC(fh) == '#' && FGetC(fh) == '!')
+        {
            char firstline[128], *linebuf, *inter, *interargs = NULL;
-            
+
             /* It is a script, let's read the first line */
             if(FGets(fh, (STRPTR)firstline, sizeof(firstline) - 1))
             {
@@ -248,7 +283,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
                         while(isblank(*linebuf)) linebuf++;
                         if(*linebuf != '\0')
                             /* Interpreter arguments are here */
-                            interargs = linebuf;   		    		
+                            interargs = linebuf;
                     }
 
                     /* Add interpeter args and the script name to command line args */
@@ -278,7 +313,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
                 }
             }
         }
-    	Close(fh);
+        Close(fh);
     }
     else
     {
@@ -305,23 +340,23 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     struct stat st;
     if(stat(filename2, &st) == 0)
     {
-	if(!(st.st_mode & S_IXUSR) && !(st.st_mode & S_IXGRP) && !(st.st_mode & S_IXOTH))
-	{
-	    /* file is not executable */
-	    errno = EACCES;
-	    goto error;
-	}
-	if(st.st_mode & S_IFDIR)
-	{
-	    /* it's a directory */
-	    errno = EACCES;
-	    goto error;	
-	}
+        if(!(st.st_mode & S_IXUSR) && !(st.st_mode & S_IXGRP) && !(st.st_mode & S_IXOTH))
+        {
+            /* file is not executable */
+            errno = EACCES;
+            goto error;
+        }
+        if(st.st_mode & S_IFDIR)
+        {
+            /* it's a directory */
+            errno = EACCES;
+            goto error;
+        }
     }
     else
     {
-	/* couldn't stat file */
-	goto error;
+        /* couldn't stat file */
+        goto error;
     }
 
     /* Set taskname */
@@ -332,7 +367,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         goto error;
     }
     strcpy(PosixCBase->exec_taskname, filename2_dos);
-    
+
     /* Load file to execute */
     PosixCBase->exec_seglist = LoadSeg((CONST_STRPTR)filename2_dos);
     if (!PosixCBase->exec_seglist)
@@ -349,7 +384,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         struct LocalVar *lv, *lv2;
         char *const *envit;
         int env_ok = 1;
-        
+
         /* Remember previous environment variables so they can be put back
          * if something goes wrong
          */
@@ -359,13 +394,13 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
             Remove((struct Node *)lv);
             AddTail((struct List *)&tempenv, (struct Node *)lv);
         }
-        
+
         NEWLIST(&me->pr_LocalVars);
         environ = NULL;
 
         for (envit = envp; *envit && env_ok; envit++)
             env_ok = putenv(*envit) == 0;
-        
+
         if (env_ok)
             /* Old vars may be freed */
             ForeachNodeSafe(&tempenv, lv, lv2)
@@ -390,20 +425,20 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
                 Remove((struct Node *)lv);
                 AddTail((struct List *)&me->pr_LocalVars, (struct Node *)lv);
             }
-            
+
             errno = ENOMEM;
             goto error;
         }
     }
 
-    D(bug("__exec_prepare: Done, returning %p\n", PosixCBase));
+    D(bug("[__exec_prepare_regular] Done, returning %p\n", PosixCBase));
 
     /* Everything OK */
     return (APTR)PosixCBase;
 
 error:
     __exec_cleanup(PosixCBase);
-    
+
     return (APTR)NULL;
 }
 
@@ -684,7 +719,7 @@ static char *appendargs(char *argptr, int *argssizeptr, char *const args[], APTR
 
 static void __exec_cleanup(struct PosixCIntBase *PosixCBase)
 {
-    D(bug("__exec_cleanup: me(%x)\n", FindTask(NULL)));
+    D(bug("[__exec_cleanup] me(%x)\n", FindTask(NULL)));
 
     if (PosixCBase->exec_pool)
     {
