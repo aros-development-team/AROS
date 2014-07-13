@@ -43,7 +43,6 @@ struct vfork_data
     int child_error, child_errno;
     BYTE child_signal;
     struct PosixCIntBase *child_posixcbase;
-    jmp_buf child_exitjmp;
 
     const char *exec_filename;
     char *const *exec_argv;
