@@ -127,6 +127,7 @@ LONG launcher()
     {
         /* Lie */
         udata->child_errno = ENOMEM;
+        SETCHILDSTATE(CHILD_STATE_SETUP_FAILED);
         Signal(udata->parent, 1 << udata->parent_signal);
         return -1;
     }
@@ -147,6 +148,7 @@ LONG launcher()
         D(bug("launcher:Failed to open libraries!\n"));
         FreeSignal(child_signal);
         udata->child_errno = ENOMEM;
+        SETCHILDSTATE(CHILD_STATE_SETUP_FAILED);
         Signal(udata->parent, 1 << udata->parent_signal);
         return -1;
     }
@@ -160,10 +162,13 @@ LONG launcher()
     {
         /* Setup complete, signal parent */
         D(bug("launcher: Signaling parent that we finished setup\n"));
+        SETCHILDSTATE(CHILD_STATE_SETUP_FINISHED);
         Signal(udata->parent, 1 << udata->parent_signal);
 
         D(bug("launcher: Child waiting for exec or exit\n"));
         Wait(1 << udata->child_signal);
+        ASSERTPARENTSTATE(PARENT_STATE_EXEC_CALLED | PARENT_STATE_EXIT_CALLED);
+        PRINTSTATE;
 
         if (udata->child_executed)
         {
@@ -174,7 +179,7 @@ LONG launcher()
             child_takeover(udata);
 
             /* Filenames passed from parent obey parent's doupath */
-	    
+
             PosixCBase->doupath = udata->parent_posixcbase->doupath;
             D(bug("launcher: doupath == %d for __exec_prepare()\n", PosixCBase->doupath));
             
@@ -191,18 +196,24 @@ LONG launcher()
 
             D(bug("launcher: informing parent that we have run __exec_prepare\n"));
             /* Inform parent that we have run __exec_prepare */
+            SETCHILDSTATE(CHILD_STATE_EXEC_PREPARE_FINISHED);
             Signal(udata->parent, 1 << udata->parent_signal);
 
             /* Wait 'till __exec_do() is called on parent process */
             D(bug("launcher: Waiting parent to get the result\n"));
             Wait(1 << udata->child_signal);
+            ASSERTPARENTSTATE(PARENT_STATE_EXEC_DO_FINISHED);
+            PRINTSTATE;
 
             D(bug("launcher: informing parent that we won't use udata anymore\n"));
             /* Inform parent that we won't use udata anymore */
+            SETCHILDSTATE(CHILD_STATE_UDATA_NOT_USED);
             Signal(udata->parent, 1 << udata->parent_signal);
 
             D(bug("launcher: waiting for parent to be after _exit()\n"));
             Wait(1 << udata->child_signal);
+            ASSERTPARENTSTATE(PARENT_STATE_STOPPED_PRETENDING);
+            PRINTSTATE;
 
             if (exec_id)
             {
@@ -226,6 +237,7 @@ LONG launcher()
 
             D(bug("launcher: informing parent that we won't use udata anymore\n"));
             /* Inform parent that we won't use udata anymore */
+            SETCHILDSTATE(CHILD_STATE_UDATA_NOT_USED);
             Signal(udata->parent, 1 << udata->parent_signal);
         }
     }
@@ -331,6 +343,7 @@ pid_t __vfork(jmp_buf env)
                 etask->et_Result1 = udata->child_error;
 
             D(bug("__vfork: Child: Signaling child %p, signal %d\n", udata->child, udata->child_signal));
+            SETPARENTSTATE(PARENT_STATE_EXIT_CALLED);
             Signal(udata->child, 1 << udata->child_signal);
         }
 
@@ -338,6 +351,8 @@ pid_t __vfork(jmp_buf env)
                 udata->parent_signal));
         /* Wait for child to finish using udata */
         Wait(1 << udata->parent_signal);
+        ASSERTCHILDSTATE(CHILD_STATE_UDATA_NOT_USED);
+        PRINTSTATE;
 
         D(bug("__vfork: Parent: fflushing\n"));
         fflush(NULL);
@@ -381,6 +396,7 @@ static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork
     if(udata->child_executed)
     {
         D(bug("__vfork: Inform child that we are after _exit()\n"));
+        SETPARENTSTATE(PARENT_STATE_STOPPED_PRETENDING);
         Signal(udata->child, 1 << udata->child_signal);
     }
 
@@ -446,6 +462,8 @@ static void parent_createchild(struct vfork_data *udata)
 
     /* Wait for child to finish setup */
     Wait(1 << udata->parent_signal);
+    ASSERTCHILDSTATE(CHILD_STATE_SETUP_FAILED | CHILD_STATE_SETUP_FINISHED);
+    PRINTSTATE;
 
     if (udata->child_errno)
     {
