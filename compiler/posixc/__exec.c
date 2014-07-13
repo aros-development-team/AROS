@@ -223,15 +223,19 @@ static APTR __exec_prepare_pretend_child(char *filename2, char *const argv[], ch
 
     D(bug("[__exec_prepare_pretend_child] Calling child\n"));
     /* Now call child process, so it will call __exec_prepare */
+    SETPARENTSTATE(PARENT_STATE_EXEC_CALLED);
     Signal(udata->child, 1 << udata->child_signal);
 
     D(bug("[__exec_prepare_pretend_child] Waiting for child to finish __exec_prepare\n"));
     /* __exec_prepare should be finished now on child */
     Wait(1 << udata->parent_signal);
+    ASSERTCHILDSTATE(CHILD_STATE_EXEC_PREPARE_FINISHED);
+    PRINTSTATE;
 
     if (!udata->exec_id)
     {
         D(bug("[__exec_prepare_pretend_child] Continue child immediately on error\n"));
+        SETPARENTSTATE(PARENT_STATE_EXEC_DO_FINISHED);
         Signal(udata->child, 1 << udata->child_signal);
 
         return NULL;
@@ -457,6 +461,7 @@ static void __exec_do_pretend_child(struct PosixCIntBase *PosixCBase)
     D(bug("[__exec_do_pretend_child] Notify child to call __exec_do\n"));
 
     /* Signal child that __exec_do is called */
+    SETPARENTSTATE(PARENT_STATE_EXEC_DO_FINISHED);
     Signal(udata->child, 1 << udata->child_signal);
 
     /* Clean up in parent */

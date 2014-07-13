@@ -27,6 +27,7 @@ struct vfork_data
     jmp_buf parent_oldexitjmp;
     jmp_buf parent_newexitjmp;
     BYTE parent_signal;
+    BYTE parent_state;
     struct PosixCIntBase *parent_posixcbase;
     struct StdCBase *parent_stdcbase;
     int parent_cd_changed;
@@ -43,6 +44,7 @@ struct vfork_data
     int child_executed;
     int child_error, child_errno;
     BYTE child_signal;
+    BYTE child_state;
     struct PosixCIntBase *child_posixcbase;
 
     const char *exec_filename;
@@ -53,5 +55,38 @@ struct vfork_data
 
 pid_t __vfork(jmp_buf env);
 void vfork_longjmp (jmp_buf env, int val);
+
+#define PARENT_STATE_EXIT_CALLED            (1L << 0)
+#define PARENT_STATE_EXEC_CALLED            (1L << 1)
+#define PARENT_STATE_EXEC_DO_FINISHED       (1L << 2)
+#define PARENT_STATE_STOPPED_PRETENDING     (1L << 3)
+
+#define CHILD_STATE_SETUP_FAILED            (1L << 0)
+#define CHILD_STATE_SETUP_FINISHED          (1L << 1)
+#define CHILD_STATE_EXEC_PREPARE_FINISHED   (1L << 2)
+#define CHILD_STATE_UDATA_NOT_USED          (1L << 3)
+
+#define DSTATE(x)   //x
+
+#define PRINTSTATE  \
+    DSTATE(bug("[PrintState]: Parent = %d, Child = %d, Line %d\n", udata->parent_state, udata->child_state, __LINE__));
+
+#define SETPARENTSTATE(a) \
+    udata->parent_state = a
+
+#define ASSERTPARENTSTATE(a) \
+    DSTATE({                                \
+        if (!(udata->parent_state & (a)))   \
+            bug("Parent state assertion failed, was %d, expected %d\n", udata->parent_state, (a));\
+    })
+
+#define SETCHILDSTATE(a) \
+    udata->child_state = a
+
+#define ASSERTCHILDSTATE(a) \
+    DSTATE({                                \
+        if (!(udata->child_state & (a)))    \
+            bug("Child state assertion failed, was %d, expected %d\n", udata->parent_state, (a));\
+    })
 
 #endif /* __VFORK_H */
