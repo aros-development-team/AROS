@@ -35,8 +35,33 @@ static char *appendarg(char *argptr, int *argptrsize, const char *arg, APTR pool
 static char *appendargs(char *argptr, int *argptrsize, char *const args[], APTR pool);
 static void __exec_cleanup(struct PosixCIntBase *PosixCBase);
 
+static void __exec_do_regular(struct PosixCIntBase *PosixCBase);
+static void __exec_do_pretend_child(struct PosixCIntBase *PosixCBase);
+
 /* Public functions */
 /********************/
+
+void __exec_do(APTR id)
+{
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
+    D(bug("[__exec_do] Entering, id(%x)\n", id));
+
+    /* id is unused */
+    (void)id;
+
+    if (PosixCBase->flags & PRETEND_CHILD)
+    {
+        /* forking parent executing child code prior to child taking over */
+        __exec_do_pretend_child(PosixCBase);
+    }
+    else
+    {
+        /* exec* without fork or forked child executing exec */
+        __exec_do_regular(PosixCBase);
+    }
+}
 
 APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], char *const envp[])
 {
@@ -371,7 +396,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         }
     }
 
-    D(bug("__exec_prepare: Done, returning %p\n", aroscbase));
+    D(bug("__exec_prepare: Done, returning %p\n", PosixCBase));
 
     /* Everything OK */
     return (APTR)PosixCBase;
@@ -382,50 +407,40 @@ error:
     return (APTR)NULL;
 }
 
-
-void __exec_do(APTR id)
+static void __exec_do_pretend_child(struct PosixCIntBase *PosixCBase)
 {
-    struct PosixCIntBase *PosixCBase =
-        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    /* When exec is called under vfork condition, the PRETEND_CHILD flag is set
+       and we need to signal child that exec is called.
+    */
+
+    struct vfork_data *udata = PosixCBase->vfork_data;
+
+    D(bug("[__exec_do_pretend_child] PRETEND_CHILD\n"));
+
+    __close_on_exec_fdescs();
+
+    D(bug("[__exec_do_pretend_child] Notify child to call __exec_do\n"));
+
+    /* Signal child that __exec_do is called */
+    Signal(udata->child, 1 << udata->child_signal);
+
+    /* Clean up in parent */
+    D(bug("[__exec_do_pretend_child] Cleaning up parent\n"));
+    __exec_cleanup(PosixCBase);
+
+    /* Continue as parent process */
+    D(bug("[__exec_do_pretend_child] Stop running as PRETEND_CHILD\n"));
+    _exit(0);
+
+    assert(0); /* Should not be reached */
+}
+
+static void __exec_do_regular(struct PosixCIntBase *PosixCBase)
+{
     char *oldtaskname;
     struct CommandLineInterface *cli = Cli();
     struct Task *self = FindTask(NULL);
     LONG returncode;
-
-    D(bug("[__exec_do] Entering, id(%x)\n", id));
-
-    /* id is unused */
-    (void)id;
-
-    /* When exec is called under vfork condition, the PRETEND_CHILD flag is set
-       and we need to signal child that exec is called.
-    */
-    if (PosixCBase->flags & PRETEND_CHILD)
-    {
-        struct vfork_data *udata = PosixCBase->vfork_data;
-
-        D(bug("[__exec_do] PRETEND_CHILD\n"));
-
-        __close_on_exec_fdescs();
-
-	D(bug("[__exec_do] Notify child to call __exec_do\n"));
-
-        /* Signal child that __exec_do is called */
-        Signal(udata->child, 1 << udata->child_signal);
-
-        /* Clean up in parent */
-	D(bug("[__exec_do] Cleaning up parent\n"));
-        __exec_cleanup(PosixCBase);
-        
-        /* Continue as parent process */
-	D(bug("[__exec_do] Stop running as PRETEND_CHILD\n"));
-        _exit(0);
-        
-        assert(0); /* Should not be reached */
-        return;
-    }
-
-    D(bug("[__exec_do] !PRETEND_CHILD\n"));
 
     PosixCBase->flags |= EXEC_PARENT;
 
@@ -471,7 +486,7 @@ void __exec_do(APTR id)
         }
     }
 
-    D(bug("[__exec_do] Running program, PosixCBase=%x\n", PosixCBase));
+    D(bug("[__exec_do_regular] Running program, PosixCBase=%x\n", PosixCBase));
     returncode = RunCommand(
         PosixCBase->exec_seglist,
         cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
@@ -492,7 +507,7 @@ void __exec_do(APTR id)
     if(errchanged)
         me->pr_CES = olderr;
 
-    D(bug("[__exec_do] Program ran, PosixCBase=%x, __aros_getbase_PosixCBase()=%x\n",
+    D(bug("[__exec_do_regular] Program ran, PosixCBase=%x, __aros_getbase_PosixCBase()=%x\n",
           PosixCBase, __aros_getbase_PosixCBase()
       )
     );
@@ -502,7 +517,7 @@ void __exec_do(APTR id)
 
     __exec_cleanup(PosixCBase);
     
-    D(bug("[__exec_do] exiting from non-forked __exec()\n"));
+    D(bug("[__exec_do_regular] exiting from __exec()\n"));
     _Exit(returncode);
 }
 
