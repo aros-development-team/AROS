@@ -20,11 +20,12 @@ struct PosixCIntBase;
 struct vfork_data
 {
     struct vfork_data *prev;
-    jmp_buf vfork_jmp;
+    jmp_buf vfork_jmp;                      /* jmp to place where vfork was called */
 
     struct Task *parent;
     int *parent_olderrorptr;
-    jmp_buf parent_oldexitjmp, parent_newexitjmp;
+    jmp_buf parent_oldexitjmp;
+    jmp_buf parent_newexitjmp;
     BYTE parent_signal;
     struct PosixCIntBase *parent_posixcbase;
     struct StdCBase *parent_stdcbase;
