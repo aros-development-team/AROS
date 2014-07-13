@@ -420,6 +420,9 @@ static void parent_createchild(struct vfork_data *udata)
 {
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    jmp_buf vfork_jmp;
+
+    *vfork_jmp = *udata->vfork_jmp;
 
     struct TagItem tags[] =
     {
@@ -442,7 +445,7 @@ static void parent_createchild(struct vfork_data *udata)
         /* Couldn't allocate the signal, return -1 */
         FreeMem(udata, sizeof(struct vfork_data));
         errno = ENOMEM;
-        vfork_longjmp(udata->vfork_jmp, -1);
+        vfork_longjmp(vfork_jmp, -1);
     }
 
     PosixCBase->flags |= VFORK_PARENT;
@@ -456,7 +459,7 @@ static void parent_createchild(struct vfork_data *udata)
         /* Something went wrong, return -1 */
         FreeMem(udata, sizeof(struct vfork_data));
         errno = ENOMEM; /* Most likely */
-        vfork_longjmp(udata->vfork_jmp, -1);
+        vfork_longjmp(vfork_jmp, -1);
     }
     D(bug("__vfork: Parent: Child created %p, waiting to finish setup\n", udata->child));
 
@@ -470,7 +473,7 @@ static void parent_createchild(struct vfork_data *udata)
         /* An error occured during child setup */
         D(bug("__vfork: Child returned an error (%d)\n", udata->child_errno));
         errno = udata->child_errno;
-        vfork_longjmp(udata->vfork_jmp, -1);
+        vfork_longjmp(vfork_jmp, -1);
     }
 
     PosixCBase->flags &= ~VFORK_PARENT;
