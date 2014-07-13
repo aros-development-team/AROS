@@ -104,6 +104,7 @@
 static void parent_enterpretendchild(struct vfork_data *udata);
 static void child_takeover(struct vfork_data *udata);
 static void parent_leavepretendchild(struct vfork_data *udata);
+static void parent_createchild(struct vfork_data *udata);
 
 static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork_data *udata);
 
@@ -272,19 +273,6 @@ pid_t __vfork(jmp_buf env)
     D(bug("__vfork: Parent: allocated udata %p, jmp_buf %p\n", udata, udata->vfork_jmp));
     *udata->vfork_jmp = *env;
 
-    struct TagItem tags[] =
-    {
-        { NP_Entry,         (IPTR) launcher },
-        { NP_CloseInput,    (IPTR) FALSE },
-        { NP_CloseOutput,   (IPTR) FALSE },
-        { NP_CloseError,    (IPTR) FALSE },
-        { NP_Cli,           (IPTR) TRUE },
-        { NP_Name,          (IPTR) "vfork()" },
-        { NP_UserData,      (IPTR) udata },
-        { NP_NotifyOnDeath, (IPTR) TRUE },
-        { TAG_DONE, 0 }
-    };
-
     D(bug("__vfork: Parent: initial jmp_buf %p\n", env));
     D(bug("__vfork: Parent: ip: %p, stack: %p, alt: 0x%p\n", env->retaddr, env->regs[SP], env->regs[ALT]));
     D(bug("__vfork: Parent: Current altstack 0x%p\n", *((void **) this->tc_SPLower)));
@@ -296,44 +284,7 @@ pid_t __vfork(jmp_buf env)
     D(bug("__vfork: Parent: Saved old parent's vfork_data: %p\n", udata->prev));
     udata->parent_posixcbase = PosixCBase;
 
-    D(bug("__vfork: Parent: Allocating parent signal\n"));
-    /* Allocate signal for child->parent communication */
-    udata->parent_signal = AllocSignal(-1);
-    if (udata->parent_signal == -1)
-    {
-        /* Couldn't allocate the signal, return -1 */
-        FreeMem(udata, sizeof(struct vfork_data));
-        errno = ENOMEM;
-        vfork_longjmp(udata->vfork_jmp, -1);
-    }
-
-    PosixCBase->flags |= VFORK_PARENT;
-
-    D(bug("__vfork: Parent: Creating child\n"));
-    udata->child = (struct Task*) CreateNewProc(tags);
-
-    if (udata->child == NULL)
-    {
-        D(bug("__vfork: Child could not be created\n"));
-        /* Something went wrong, return -1 */
-        FreeMem(udata, sizeof(struct vfork_data));
-        errno = ENOMEM; /* Most likely */
-        vfork_longjmp(udata->vfork_jmp, -1);
-    }
-    D(bug("__vfork: Parent: Child created %p, waiting to finish setup\n", udata->child));
-
-    /* Wait for child to finish setup */
-    Wait(1 << udata->parent_signal);
-
-    if (udata->child_errno)
-    {
-        /* An error occured during child setup */
-        D(bug("__vfork: Child returned an error (%d)\n", udata->child_errno));
-        errno = udata->child_errno;
-        vfork_longjmp(udata->vfork_jmp, -1);
-    }
-
-    PosixCBase->flags &= ~VFORK_PARENT;
+    parent_createchild(udata);
 
     D(bug("__vfork: Parent: Setting jmp_buf at %p\n", udata->parent_newexitjmp));
     if (setjmp(udata->parent_newexitjmp) == 0)
@@ -447,6 +398,64 @@ static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork
     D(bug("__vfork: Parent jumping to jmp_buf %p\n", env));
     D(bug("__vfork: ip: %p, stack: %p\n", env->retaddr, env->regs[SP]));
     vfork_longjmp(env, GetETaskID(udata->child));
+}
+
+static void parent_createchild(struct vfork_data *udata)
+{
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+
+    struct TagItem tags[] =
+    {
+        { NP_Entry,         (IPTR) launcher },
+        { NP_CloseInput,    (IPTR) FALSE },
+        { NP_CloseOutput,   (IPTR) FALSE },
+        { NP_CloseError,    (IPTR) FALSE },
+        { NP_Cli,           (IPTR) TRUE },
+        { NP_Name,          (IPTR) "vfork()" },
+        { NP_UserData,      (IPTR) udata },
+        { NP_NotifyOnDeath, (IPTR) TRUE },
+        { TAG_DONE, 0 }
+    };
+
+    D(bug("__vfork: Parent: Allocating parent signal\n"));
+    /* Allocate signal for child->parent communication */
+    udata->parent_signal = AllocSignal(-1);
+    if (udata->parent_signal == -1)
+    {
+        /* Couldn't allocate the signal, return -1 */
+        FreeMem(udata, sizeof(struct vfork_data));
+        errno = ENOMEM;
+        vfork_longjmp(udata->vfork_jmp, -1);
+    }
+
+    PosixCBase->flags |= VFORK_PARENT;
+
+    D(bug("__vfork: Parent: Creating child\n"));
+    udata->child = (struct Task*) CreateNewProc(tags);
+
+    if (udata->child == NULL)
+    {
+        D(bug("__vfork: Child could not be created\n"));
+        /* Something went wrong, return -1 */
+        FreeMem(udata, sizeof(struct vfork_data));
+        errno = ENOMEM; /* Most likely */
+        vfork_longjmp(udata->vfork_jmp, -1);
+    }
+    D(bug("__vfork: Parent: Child created %p, waiting to finish setup\n", udata->child));
+
+    /* Wait for child to finish setup */
+    Wait(1 << udata->parent_signal);
+
+    if (udata->child_errno)
+    {
+        /* An error occured during child setup */
+        D(bug("__vfork: Child returned an error (%d)\n", udata->child_errno));
+        errno = udata->child_errno;
+        vfork_longjmp(udata->vfork_jmp, -1);
+    }
+
+    PosixCBase->flags &= ~VFORK_PARENT;
 }
 
 static void parent_enterpretendchild(struct vfork_data *udata)
