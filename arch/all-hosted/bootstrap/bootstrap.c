@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <ctype.h>
 #include <dirent.h>
 #include <limits.h>
@@ -171,7 +176,7 @@ int bootstrap(int argc, char ** argv)
                     "Available options:\n"
                     " -h                 show this page\n"
                     " -m <size>          allocate <size> Megabytes of memory for AROS\n"
-                    "                    (default is 64Mb)\n"
+                    "                    (default is 64MB)\n"
                     " -c <file>          read configuration from <file>\n"
                     "                    (default is %s)\n"
                     " --help             same as '-h'\n"
@@ -322,13 +327,13 @@ int bootstrap(int argc, char ** argv)
         return -1;
     }
 
-    D(fprintf(stderr, "[Bootstrap] Allocating %iMb of RAM for AROS\n",memSize));
+    D(fprintf(stderr, "[Bootstrap] Allocating %iMB of RAM for AROS\n",memSize));
 
     MemoryMap.len = memSize << 20;
     MemoryMap.addr = (IPTR)AllocateRAM(MemoryMap.len);
 
     if (!MemoryMap.addr) {
-        DisplayError("[Bootstrap] Failed to allocate %iMb of RAM for AROS!\n", memSize);
+        DisplayError("[Bootstrap] Failed to allocate %iMB of RAM for AROS!\n", memSize);
         return -1;
     }
     D(fprintf(stderr, "[Bootstrap] RAM memory allocated: %p - %p (%u bytes)\n",
