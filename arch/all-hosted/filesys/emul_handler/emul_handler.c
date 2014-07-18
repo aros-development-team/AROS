@@ -1,5 +1,5 @@
 /*
- Copyright  1995-2011, The AROS Development Team. All rights reserved.
+ Copyright  1995-2014, The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: Filesystem that accesses an underlying host OS filesystem.
@@ -985,13 +985,6 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         fh = FH_FROM_LOCK(dp->dp_Arg1);
         fl = BADDR(dp->dp_Arg1);
         DCMD(bug("[emul] %p ACTION_FREE_LOCK: %p\n", fhv, fh));
-
-        /* Don't free the volume's filehandle */
-        if (fh == fhv) {
-            Res2 = 0;
-            Res1 = DOSTRUE;
-            break;
-        }
 
         FreeMem(fl, sizeof(*fl));
         if (fh != fhv) {
