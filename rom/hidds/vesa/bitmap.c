@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for Vesa hidd.
@@ -111,14 +111,6 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	case aoHidd_BitMap_Visible:
 	    *msg->storage = data->disp;
 	    return;
-
-	case aoHidd_BitMap_LeftEdge:
-	    *msg->storage = data->xoffset;
-	    return;
-
-	case aoHidd_BitMap_TopEdge:
-	    *msg->storage = data->yoffset;
-	    return;
 	}
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -131,9 +123,8 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
-    LONG xoffset = data->xoffset;
-    LONG yoffset = data->yoffset;
-    LONG limit;
+    IPTR xoffset = data->xoffset;
+    IPTR yoffset = data->yoffset;
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
@@ -150,30 +141,15 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 			DACLoad(XSD(cl), data->DAC, 0, 256);
 		}
 		break;
-	    case aoHidd_BitMap_LeftEdge:
-	        xoffset = tag->ti_Data;
-		/* Our bitmap can not be smaller than display size
-		   because of fakegfx.hidd limitations (it can't place
-		   cursor beyond bitmap edges). Otherwize Intuition
-		   will provide strange user experience (mouse cursor will
-		   disappear) */
-    		limit = data->disp_width - data->width;
-    		if (xoffset > 0)
-		    xoffset = 0;
-		else if (xoffset < limit)
-		    xoffset = limit;
-		break;
-	    case aoHidd_BitMap_TopEdge:
-	        yoffset = tag->ti_Data;
-		limit = data->disp_height - data->height;
-		if (yoffset > 0)
-		    yoffset = 0;
-		else if (yoffset < limit)
-		    yoffset = limit;
-		break;
 	    }
 	}
     }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    /* Bring local X/Y offsets back into sync with validated values */
+    OOP_GetAttr(o, aHidd_BitMap_LeftEdge, &xoffset);
+    OOP_GetAttr(o, aHidd_BitMap_TopEdge, &yoffset);
 
     if ((xoffset != data->xoffset) || (yoffset != data->yoffset))
     {
@@ -188,8 +164,6 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 	    UNLOCK_FRAMEBUFFER(XSD(cl));
 	}
     }
-
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /*** BitMap::SetColors() *************************************/
