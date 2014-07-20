@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: vesa "hardware" functions
@@ -108,8 +108,7 @@ void vesaDoRefreshArea(struct HWData *hwdata, struct BitmapData *data,
 {
     UBYTE *src, *dst;
     ULONG srcmod, dstmod;
-    LONG  y, w, h;
-    LONG sx, sy;
+    LONG y, w, h, sx, sy;
 
     x1 += data->xoffset;
     y1 += data->yoffset;
@@ -132,7 +131,8 @@ void vesaDoRefreshArea(struct HWData *hwdata, struct BitmapData *data,
     /* Calculate width and height */
     w = x2 - x1;
     h = y2 - y1;
-    /* Jump back to bitmap coordinatess (adjusted) */
+
+    /* Jump back to bitmap coordinates (adjusted) */
     sx = x1 - data->xoffset;
     sy = y1 - data->yoffset;
 
