@@ -8,13 +8,13 @@
 
 # This script is public domain. Use it at your own risk.
 
-# $VER: gimmearos.sh 1.11 (28.12.2013) WIP
+# $VER: gimmearos.sh 1.11 (20.07.2014) WIP
 
 curdir="`pwd`"
 srcdir="aros-src"
 srcdir_v0="aros-src-v0"
 portsdir="$HOME/aros-ports-src"
-cpucoresforcompile="2"
+cpucoresforcompile="4"
 
 install_pkg()
 {
@@ -46,6 +46,9 @@ echo -e "2 .. As 1) but with additional packages for building 32-bit AROS"
 echo -e "     on 64-bit Linux"
 echo -e "3 .. Get packages with yum for Fedora"
 echo -e "4 .. Get packages with pacman for Arch"
+echo -e "5 .. Get packages with zypper for openSuse"
+echo -e "6 .. As 5) but with additional packages for building 32-bit AROS"
+echo -e "     on 64-bit Linux"
 echo -e "9 .. Skip this step"
 echo -e "0 .. Exit"
 
@@ -137,7 +140,72 @@ case "$input" in
         install_pkg "pacman --needed --noconfirm -S" automake
         #it appears as though the libx11-dev,libc6-dev,liblzo2-dev is not needed on arch
         ;;
-         
+
+    5 ) echo -e "\nInstalling prerequisites with zypper..."
+        # tools
+        install_pkg "zypper --non-interactive install" subversion
+        install_pkg "zypper --non-interactive install" git-core
+        install_pkg "zypper --non-interactive install" gcc
+        install_pkg "zypper --non-interactive install" gcc-c++
+        install_pkg "zypper --non-interactive install" make
+        install_pkg "zypper --non-interactive install" gawk
+        install_pkg "zypper --non-interactive install" bison
+        install_pkg "zypper --non-interactive install" flex
+        install_pkg "zypper --non-interactive install" bzip2
+        install_pkg "zypper --non-interactive install" netpbm
+        install_pkg "zypper --non-interactive install" autoconf
+        install_pkg "zypper --non-interactive install" automake
+        install_pkg "zypper --non-interactive install" patch
+        install_pkg "zypper --non-interactive install" cmake
+        install_pkg "zypper --non-interactive install" gperf
+        install_pkg "zypper --non-interactive install" perl-Switch
+        install_pkg "zypper --non-interactive install" byacc
+
+        # libs
+        install_pkg "zypper --non-interactive install" libXxf86vm1
+
+        #devel
+        install_pkg "zypper --non-interactive install" libX11-devel
+        install_pkg "zypper --non-interactive install" glibc-devel
+        install_pkg "zypper --non-interactive install" libpng12-devel
+        ;;
+
+    6 ) echo -e "\nInstalling prerequisites with zypper..."
+        # tools
+        install_pkg "zypper --non-interactive install" subversion
+        install_pkg "zypper --non-interactive install" git-core
+        install_pkg "zypper --non-interactive install" gcc
+        install_pkg "zypper --non-interactive install" gcc-c++
+        install_pkg "zypper --non-interactive install" make
+        install_pkg "zypper --non-interactive install" gawk
+        install_pkg "zypper --non-interactive install" bison
+        install_pkg "zypper --non-interactive install" flex
+        install_pkg "zypper --non-interactive install" bzip2
+        install_pkg "zypper --non-interactive install" netpbm
+        install_pkg "zypper --non-interactive install" autoconf
+        install_pkg "zypper --non-interactive install" automake
+        install_pkg "zypper --non-interactive install" patch
+        install_pkg "zypper --non-interactive install" cmake
+        install_pkg "zypper --non-interactive install" gperf
+        install_pkg "zypper --non-interactive install" perl-Switch
+        install_pkg "zypper --non-interactive install" byacc
+
+        # libs
+        install_pkg "zypper --non-interactive install" libXxf86vm1
+
+        #devel
+        install_pkg "zypper --non-interactive install" libX11-devel
+        install_pkg "zypper --non-interactive install" glibc-devel
+        install_pkg "zypper --non-interactive install" libpng12-devel
+
+        # 32-bit support
+        install_pkg "zypper --non-interactive install" gcc-32bit
+        install_pkg "zypper --non-interactive install" gcc-c++-32bit
+        install_pkg "zypper --non-interactive install" glibc-devel-32bit
+        install_pkg "zypper --non-interactive install" libXxf86vm1-32bit
+        #install_pkg "zypper --non-interactive install" libgmp10-32bit
+        ;;
+
     0 ) exit 0
         ;;
 esac
