@@ -39,6 +39,7 @@ GCC_EXTRA_OPTS += --disable-bootstrap
 GCC_EXTRA_OPTS += --enable-sjlj-exceptions=no --enable-tls=no
 GCC_EXTRA_OPTS += --with-dwarf2
 GCC_EXTRA_OPTS += --enable-frame-pointer
+GCC_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
 GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 GCC_UNUSED_BUT_SET_VARIABLE := -Wno-unused-but-set-variable
 GCC_ARRAY_BOUNDS            := -Wno-array-bounds
@@ -93,7 +94,7 @@ tools-crosstools-gmp :
 	package_repo="$(GNU_REPOSITORY)/gmp" \
 	patch=no \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="--bindir=$(CROSSTOOLSDIR) --disable-shared"
+	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
 
 #MM
 tools-crosstools-mpfr :
@@ -110,7 +111,7 @@ tools-crosstools-mpfr :
 	package_repo="$(GNU_REPOSITORY)/mpfr" \
 	patch=no \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="--bindir=$(CROSSTOOLSDIR) --disable-shared"
+	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
 
 #MM
 tools-crosstools-mpc :
@@ -127,7 +128,7 @@ tools-crosstools-mpc :
 	package_repo="$(MPC_REPOSITORY)" suffixes="tar.gz" \
 	patch=no \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="--bindir=$(CROSSTOOLSDIR) --disable-shared"
+	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
 
 #MM
 tools-crosstools-binutils :
@@ -144,7 +145,7 @@ tools-crosstools-binutils :
 	package_repo="$(GNU_REPOSITORY)/binutils" \
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="--target=$(AROS_TARGET_CPU)-aros -bindir=$(CROSSTOOLSDIR) --with-sysroot=$(AROS_DEVELOPMENT) --disable-werror"
+	extraoptions="--target=$(AROS_TARGET_CPU)-aros -bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --with-sysroot=$(AROS_DEVELOPMENT) --disable-werror"
 
 HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 
