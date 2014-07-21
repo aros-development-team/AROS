@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function ScrollVPort()
@@ -95,9 +95,9 @@
     	    {
 	    	/*
 	     	 * Composition is active.
-	     	 * Uninstall the framebuffer from the frontmost bitmap,
+	     	 * Uninstall the framebuffer from the frontmost bitmap
 	     	 */
-    	    	UninstallFB(mdd);
+    	    	UninstallFB(mdd, GfxBase);
     	    }
     	    else if (!mdd->bm_bak)
     	    {

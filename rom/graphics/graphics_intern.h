@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_INTERN_H
 #define GRAPHICS_INTERN_H
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header file for graphics.library
@@ -289,7 +289,7 @@ extern void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBa
 extern struct HIDD_ViewPortData *driver_FindViewPorts(struct View *view, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
 extern ULONG DoViewFunction(struct View *view, VIEW_FUNC fn, struct GfxBase *GfxBase);
 extern void InstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
-extern void UninstallFB(struct monitor_driverdata *mdd);
+extern void UninstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
 
 /* functions in support.c */
 extern BOOL pattern_pen(struct RastPort *rp
