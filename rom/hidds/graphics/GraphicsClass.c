@@ -4146,7 +4146,7 @@ VOID GFX__Hidd_Gfx__DisposeOverlay(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 
     INPUTS
 	gfxHidd - A display driver object.
-	data    - a pointer to a HIDD_ViewPortDats structure.
+	data    - a pointer to a HIDD_ViewPortData structure.
 
     RESULT
 	The same code as used as return value for graphics.library/MakeVPort().

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics bitmap class implementation.
@@ -713,7 +713,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
     NOTES
         Implementing screen scrolling does not enforce to implement screen composition, despite
         the composition is really based on scrolling (in case of composition scrolling a bitmap
-        off-display is expected to reveal another bitmap behing it instead of empty space).
+        off-display is expected to reveal another bitmap behind it instead of empty space).
 
     EXAMPLE
 
@@ -751,7 +751,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
         of this attribute represents an offset from the physical edge of the display to the
         logical edge of the bitmap. This means that if a large bitmap scrolls upwards in
         order to reveal its bottom part, the offset will be negative. If the bitmap scrolls
-        downdards (possibly revealing another bitmap behind it), the offset will be positive.
+        downwards (possibly revealing another bitmap behind it), the offset will be positive.
 
         It's up to the display driver to set scroll limits. If the value of the attribute
         becomes unacceptable for any reason, the driver should adjust it and provide the real
@@ -760,7 +760,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
     NOTES
         Implementing screen scrolling does not enforce to implement screen composition, despite
         the composition is really based on scrolling (in case of composition scrolling a bitmap
-        off-display is expected to reveal another bitmap behing it instead of empty space).
+        off-display is expected to reveal another bitmap behind it instead of empty space).
 
     EXAMPLE
 
@@ -4393,7 +4393,7 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
     struct TagItem *tag, *tstate;
     ULONG idx;
-    WORD xoffset, yoffset, limit;
+    WORD xoffset, yoffset;
 
     if (data->framebuffer)
     {
@@ -4401,7 +4401,7 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
          * If this is a framebuffer, we can process ModeID change.
          * We do it before parsing the rest of tags, because here we retrieve
          * defaults for new bitmap parameters (size and pixelformat).
-         * They can be overriden by other tags. For example we can imagine
+         * They can be overridden by other tags. For example we can imagine
          * a hardware scrollable framebuffer whose width and height are larger
          * than visible part.
          */
@@ -4459,28 +4459,30 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
             Hidd_BitMap_Switch(tag->ti_Tag, idx)
             {
 	    case aoHidd_BitMap_LeftEdge:
-                xoffset = -tag->ti_Data;
+                xoffset = tag->ti_Data;
                 /*
                  * FIXME: 
-                 * Our bitmap can not be smaller than display size because of fakegfx.hidd
-                 * limitations (it can't place cursor beyond bitmap edges). Otherwize Intuition
+                 * Our bitmap cannot be smaller than display size because of fakegfx.hidd
+                 * limitations (it can't place cursor beyond bitmap edges). Otherwise Intuition
                  * will provide strange user experience (mouse cursor will disappear)
                  */
-                limit = data->width - data->displayWidth;
-                if (xoffset < 0)
-                    xoffset = 0;
-                else if (xoffset > limit)
-                    xoffset = limit;
+                if (xoffset >= data->displayWidth)
+                    xoffset = data->displayWidth - 1;
+                else if (xoffset <= -data->width)
+                    xoffset = -(data->width - 1);
+                xoffset = -xoffset;
                 D(bug("[BitMap] xoffset requested %ld, got %d\n", -tag->ti_Data, xoffset));
                 break;
 
             case aoHidd_BitMap_TopEdge:
-                yoffset = -tag->ti_Data;
-                limit = data->height - data->displayHeight;
-                if (yoffset < 0)
-                    yoffset = 0;
-                else if (yoffset > limit)
-                    yoffset = limit;
+                /* Only offsets that ensure at least some of the bitmap is
+                   seen are valid */
+                yoffset = tag->ti_Data;
+                if (yoffset >= data->displayHeight)
+                    yoffset = data->displayHeight - 1;
+                else if (yoffset <= -data->height)
+                    yoffset = -(data->height - 1);
+                yoffset = -yoffset;
                 D(bug("[BitMap] yoffset requested %ld, got %d\n", -tag->ti_Data, yoffset));
                 break;
 	    }
