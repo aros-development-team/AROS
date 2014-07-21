@@ -102,7 +102,7 @@
 	/*
 	 * MakeVPort() can be called repeatedly on the same ViewPort.
 	 * However, each time we are called, the frontmost RastInfo
-	 * BitMap may be differnt.
+	 * BitMap may be different.
 	 *
 	 * Updated the cached frontmost BitMap object here.
 	 * We don't need to use OBTAIN_HIDD_BM(), since we can

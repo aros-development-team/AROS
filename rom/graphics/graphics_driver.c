@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Driver for using gfxhidd for gfx output
@@ -484,7 +484,7 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
         IPTR width, height;
 
 	/* Uninstall the framebuffer from old frontmost BitMap (if present) */
-	UninstallFB(mdd);
+	UninstallFB(mdd, GfxBase);
 
     	/*
      	 * We need to always remember our new frontmost bitmap, even if we do not work
@@ -558,7 +558,7 @@ void InstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
     }
 }
 
-void UninstallFB(struct monitor_driverdata *mdd)
+void UninstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     if (mdd->bm_bak)
     {
