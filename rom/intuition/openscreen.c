@@ -1149,8 +1149,10 @@ static const char THIS_FILE[] = __FILE__;
         else if (ns.Height > dimensions.MaxRasterHeight)
             ns.Height = dimensions.MaxRasterHeight;
 
+#ifndef __AROS__
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Monitor 0x%lx Width %ld Height %ld\n",
                      screen->Monitor, ns.Width, ns.Height));
+#endif
 
         if (ns.Type & CUSTOMBITMAP)
         {
@@ -1492,7 +1494,7 @@ static const char THIS_FILE[] = __FILE__;
             screen->Screen.ViewPort.DHeight  = dclip->MaxY - dclip->MinY + 1;
 #else
             /* using vpe data for vesamode/modecontrol is not a good idea since the mode
-            is changed all the fly and the actual data might not be what we'll use */
+            is changed on the fly and the actual data might not be what we'll use */
 
             if (screen->VESAMode)
             {
