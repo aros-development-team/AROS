@@ -737,7 +737,7 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
 			       if the disk is not in drive. We can perform this test only once
 			       inside TD_CHANGESTATE command which is invoked by DISKCHANGE
 			       CLI command. This means that we'll have to issue DISKCHANGE command
-			       manually after wi insert the disk, but this is probably better
+			       manually after we insert the disk, but this is probably better
 			       than those clicks.
 			    */
 			    if (tdu->pub.tdu_PubFlags & TDPF_NOCLICK) {

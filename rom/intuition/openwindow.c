@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -1463,7 +1463,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             layertags[3].ti_Data = (IPTR)shape;
         }
 
-        D(dprintf("CreateUpfontLayerTagList(taglist 0x%lx)\n",&layertags));
+        D(dprintf("CreateUpfrontLayerTagList(taglist 0x%lx)\n", &layertags));
 
         w->WLayer = CreateUpfrontLayerTagList(      &w->WScreen->LayerInfo,
                                 w->WScreen->RastPort.BitMap,

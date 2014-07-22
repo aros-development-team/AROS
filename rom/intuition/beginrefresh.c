@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -41,12 +41,12 @@
         BeginRefresh() and EndRefresh().
 
         BeginRefresh()/EndRefresh() should always be called when an
-        IDCMP_REFRESHWINDWOW message happens.
+        IDCMP_REFRESHWINDOW message happens.
 
     EXAMPLE
         Somewhere in your window's event handling loop:
 
-        case IDCMP_REFRESHWINDWOW:
+        case IDCMP_REFRESHWINDOW:
             BeginRefresh(mywindow);
             EndRefresh(mywindow, TRUE);
             break;

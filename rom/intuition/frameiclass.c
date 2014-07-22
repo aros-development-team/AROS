@@ -66,7 +66,7 @@ static void DrawFrame(Class * cl, struct RastPort *rport, UWORD shine, UWORD sha
     It should be futher noted, on the native Amiga chipset, rendering
     bevels via serious of RectFill()'s is potentially as much as two
     times faster. However, in the case of AROS the implementation
-    of the graphics drivers would ofcourse be the determining factor.
+    of the graphics drivers would of course be the determining factor.
     Just as on the native OS, 3rd party gfx boards would be a factor.
 
     Additionally, if the frame metrics are changed here for whatever
