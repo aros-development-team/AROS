@@ -1630,7 +1630,8 @@ Optional Packages:
                           Specify crosscompile toolchain prefix to wrap for
                           AROS objects
   --with-aros-toolchain=PREFIX
-                          Specify prebuilt AROS toolchain
+                          Specify prebuilt AROS toolchain. Use yes for default
+                          name
   --with-aros-toolchain-install=DIR
                           Where to install or search for cross tools binaries
   --with-gcc-version=VERSION
@@ -14403,10 +14404,10 @@ if test "$use_kernel_cc_wrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc"
 fi
 
-if test "${crosstools}" != "yes" ; then
-    aros_target_toolchain=no
-else
+if test "${crosstools}" = "yes" || test "${crosstools_guess}" = "no"; then
     aros_target_toolchain=yes
+else
+    aros_target_toolchain=no
 fi
 
 
