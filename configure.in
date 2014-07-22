@@ -1520,7 +1520,7 @@ AC_ARG_WITH(elf-toolchain-prefix,AC_HELP_STRING([--with-elf-toolchain-prefix=...
 AC_MSG_RESULT($elf_tool_prefix)
 
 AC_MSG_CHECKING([AROS toolchain prefix])
-AC_ARG_WITH(aros-toolchain,AC_HELP_STRING([--with-aros-toolchain=PREFIX],[Specify prebuilt AROS toolchain]),[aros_tool_prefix="$withval"
+AC_ARG_WITH(aros-toolchain,AC_HELP_STRING([--with-aros-toolchain=PREFIX],[Specify prebuilt AROS toolchain. Use yes for default name]),[aros_tool_prefix="$withval"
                 crosstools_guess=no])
 if test "$aros_tool_prefix" = "yes" ; then
     aros_tool_prefix=$aros_target_cpu-aros-
@@ -2568,10 +2568,10 @@ if test "$use_kernel_cc_wrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc"
 fi
 
-if test "${crosstools}" != "yes" ; then
-    aros_target_toolchain=no
-else
+if test "${crosstools}" = "yes" || test "${crosstools_guess}" = "no"; then
     aros_target_toolchain=yes
+else
+    aros_target_toolchain=no
 fi
 
 dnl --------------------------------------------------------------------
