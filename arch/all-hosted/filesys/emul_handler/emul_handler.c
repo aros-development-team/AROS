@@ -199,6 +199,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle *fhv, struct file
              * volume's handle.
              */
             if (fh->name[0] == 0) {
+                FreeVecPooled(emulbase->mempool, fh->hostname);
                 FreeMem(fh, sizeof(*fh));
                 if (!AllowDir) {
                     *handle = 0;
@@ -349,30 +350,6 @@ static SIPTR examine(struct emulbase *emulbase, struct filehandle *fh,
     fib->fib_OwnerGID = ead->ed_OwnerGID;
     
     return 0; 
-}
-
-/*********************************************************************************************/
-
-/* Returns an allocated buffer, containing a pathname, stripped by the filename. */
-char *pathname_from_name (struct emulbase *emulbase, char *name)
-{
-    long len = strlen(name);
-    long i;
-    char *result = NULL;
-
-    /* look for the first '\' in the filename starting at the end */
-    i = startpos(name, len);
-  
-    if (0 != i)
-    {
-    	result = AllocVecPooled(emulbase->mempool, i + 1);
-    	if (!result)
-      	    return NULL;
-
-        copyname(result, name, i);
-        result[i]=0x0;
-    }
-    return result;
 }
 
 /*********************************************************************************************/
@@ -1068,7 +1045,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
             break;
         }
 
-       /* Make a lock */
+        /* Make a lock */
         fl->fl_Link   = BNULL;
         fl->fl_Key    = (IPTR)fh;
         fl->fl_Access = ACCESS_READ;
@@ -1117,6 +1094,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
         Res1 = (SIPTR)MKBADDR(fl);
         Res2 = 0;
         break;
+
     case ACTION_IS_FILESYSTEM:
         DCMD(bug("[emul] %p ACTION_IS_FILESYSTEM:\n", fhv));
         Res2 = 0;
