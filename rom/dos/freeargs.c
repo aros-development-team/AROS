@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-        ReadArgs()
+        ReadArgs(), FreeArgs(), AllocDosObject(), FreeDosObject()
 
     INTERNALS
 
