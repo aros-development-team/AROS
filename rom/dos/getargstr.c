@@ -38,6 +38,7 @@
     BUGS
 
     SEE ALSO
+        SetArgStr(), RunCommand()
 
     INTERNALS
 
