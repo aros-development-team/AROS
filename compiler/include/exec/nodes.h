@@ -28,7 +28,7 @@
 	       Structures
 **************************************/
 
-struct Node __mayalias;
+struct __mayalias Node;
 struct Node
 {
     struct Node * ln_Succ,
@@ -38,7 +38,7 @@ struct Node
     char	* ln_Name;
 };
 
-struct MinNode __mayalias;
+struct __mayalias MinNode;
 struct MinNode
 {
     struct MinNode * mln_Succ,
