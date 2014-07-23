@@ -40,7 +40,7 @@ struct MinList
 };
 #else
 /* Normal list */
-struct List __mayalias;
+struct __mayalias List;
 struct List
 {
     struct Node * lh_Head,
@@ -55,7 +55,7 @@ struct List
 };
 
 /* Minimal list */
-struct MinList __mayalias;
+struct __mayalias MinList;
 struct MinList
 {
     struct MinNode * mlh_Head,
