@@ -30,8 +30,14 @@
         struct DosLibrary *, DOSBase, 52, Dos)
 
 /*  FUNCTION
-        Write a character to a file.
-        
+        Write a character to a file handle. 
+
+        The write is buffered.
+
+        If the file handle is an interactive stream,
+        the buffer is automatically flushed on a linefeed,
+        carriage return or ASCII NUL.
+
     INPUTS
         file      - Filehandle to write to.
         character - Character to write.
@@ -41,13 +47,15 @@
         IoErr() gives additional information in that case.
 
     NOTES
+        You should use Flush() when switching between
+        buffered and unbuffered IO.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-        FGetC(), IoErr()
+        FGetC(), IoErr(), Flush(), FWrite()
 
     INTERNALS
 
