@@ -29,6 +29,7 @@
 
 /*  FUNCTION
         Read a number of blocks from a file.
+        The read is buffered.
 
     INPUTS
         fh - Read from this file
