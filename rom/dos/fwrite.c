@@ -27,7 +27,8 @@
         struct DosLibrary *, DOSBase, 55, Dos)
 
 /*  FUNCTION
-        Write a number of blocks to a file.
+        Buffered write of a number of blocks to a stream. 
+        May write fewer blocks than requested.
 
     INPUTS
         fh        - Write to this file
@@ -38,6 +39,16 @@
     RESULT
         The number of blocks written to the file or EOF on error. IoErr()
         gives additional information in case of an error.
+
+    NOTES
+        Some releases of AmigaOS may not clear IoErr(), while AROS
+        does. For full backwards compatibility, you may want to call
+        SetIoErr(0L) before FWrite() if you need to be able to check
+        the error code.
+
+    EXAMPLE
+
+    BUGS
 
     SEE ALSO
         Open(), FRead(), FPutc(), Close()
