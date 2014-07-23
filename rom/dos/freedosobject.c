@@ -41,6 +41,7 @@
     BUGS
 
     SEE ALSO
+        AllocDosObject()
 
     INTERNALS
 
