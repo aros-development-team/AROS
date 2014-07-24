@@ -149,32 +149,35 @@ BOOL clone_vars(struct MinList *old_vars)
        be a public function for this?  */
     ForeachNode(&me->pr_LocalVars, lv)
     {
-        size_t copyLength;
-	
-        if (lv->lv_Len == 0)
-	    continue;
-	
-        copyLength = strlen(lv->lv_Node.ln_Name) + 1 + sizeof(struct LocalVar);
+        size_t copyLength = strlen(lv->lv_Node.ln_Name) + 1 + sizeof(struct LocalVar);
 
         newVar = (struct LocalVar *)AllocVec(copyLength, MEMF_PUBLIC);
         if (newVar == NULL)
-	{
-	    free_vars(&l);
-	    return FALSE;
-	}
-
-	memcpy(newVar, lv, copyLength);
-	newVar->lv_Node.ln_Name = (char *)newVar + sizeof(struct LocalVar);
-        newVar->lv_Value        = AllocMem(lv->lv_Len, MEMF_PUBLIC);
-
-        if (newVar->lv_Value == NULL)
         {
-	    FreeVec(newVar);
-	    free_vars(&l);
-	    return FALSE;
-	}
+            free_vars(&l);
+            return FALSE;
+        }
 
-        memcpy(newVar->lv_Value, lv->lv_Value, lv->lv_Len);
+        memcpy(newVar, lv, copyLength);
+        newVar->lv_Node.ln_Name = (char *)newVar + sizeof(struct LocalVar);
+        if (lv->lv_Len)
+        {
+            newVar->lv_Value = AllocMem(lv->lv_Len, MEMF_PUBLIC);
+
+            if (newVar->lv_Value == NULL)
+            {
+                FreeVec(newVar);
+                free_vars(&l);
+                return FALSE;
+            }
+
+            memcpy(newVar->lv_Value, lv->lv_Value, lv->lv_Len);
+        }
+        else
+        {
+            /* lv_Len of 0 is a valid case for empty string, lv_Value is NULL */
+            newVar->lv_Value = NULL;
+        }
 
         ADDTAIL(&l, newVar);
     }
