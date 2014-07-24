@@ -190,7 +190,7 @@
                 lv->lv_Len = size;
             }
             
-            /* now get some memory for the value */
+            /* now get some memory for the value, this will implicitly set NULL if lv_Len is 0 */
             lv->lv_Value = AllocMem(lv->lv_Len, MEMF_PUBLIC);
             
             CopyMem(buffer, lv->lv_Value, lv->lv_Len);
