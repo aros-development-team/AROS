@@ -36,7 +36,7 @@ CREATEDTDESC ?= $(TOOLDIR)/createdtdesc
 all: $(OBJDIR) $(CREATEDTDESC) $(TOOLDIR)/examinedtdesc
 
 $(CREATEDTDESC): $(OBJDIR)/createdtdesc.o $(CIFFLIBDIR)/libc_iff.a
-	@$(HOST_CC) -o $(CREATEDTDESC) $(OBJDIR)/createdtdesc.o -L$(CIFFLIBDIR)/ -lc_iff
+	@$(HOST_CC) $(HOST_LDFLAGS) -o $(CREATEDTDESC) $(OBJDIR)/createdtdesc.o -L$(CIFFLIBDIR)/ -lc_iff
 
 $(TOOLDIR)/examinedtdesc: $(OBJDIR)/examinedtdesc.o $(CIFFLIBDIR)/libc_iff.a
 	@$(HOST_CC) -o $(TOOLDIR)/examinedtdesc $(OBJDIR)/examinedtdesc.o -L$(CIFFLIBDIR)/ -lc_iff
