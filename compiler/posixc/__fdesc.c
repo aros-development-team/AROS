@@ -518,7 +518,16 @@ int __init_fd(struct PosixCIntBase *PosixCBase)
     ));
 
     if (pPosixCBase && (pPosixCBase->flags & (VFORK_PARENT | EXEC_PARENT)))
-        return __copy_fdarray(pPosixCBase->fd_array, pPosixCBase->fd_slots);
+    {
+        /* VFORK_PARENT use case - child manipulates file descriptors prior to calling exec* */
+        int res = __copy_fdarray(pPosixCBase->fd_array, pPosixCBase->fd_slots);
+
+        if (pPosixCBase->flags & EXEC_PARENT)
+            /* EXEC_PARENT called through RunCommand which injected parameters to Input() */
+            PosixCBase->fd_array[STDIN_FILENO]->fcb->privflags |= _FCB_FLUSHONREAD;
+
+        return res;
+    }
     else
         return __init_stdfiles(PosixCBase);
 }
