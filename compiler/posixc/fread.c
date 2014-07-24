@@ -63,6 +63,8 @@
 	return 0;
     }
 
+    FLUSHONREADCHECK
+
     cnt = FRead (fdesc->fcb->handle, buf, size, nblocks);
 
     if (cnt == -1)
