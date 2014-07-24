@@ -2,52 +2,65 @@
 #include <stdio.h>
 #include <proto/dos.h>
 
+static void testvalue(CONST_STRPTR var, STRPTR expval, ULONG explen, BOOL expnull, LONG cnt)
+{
+    TEXT buffer[10];
+    LONG len;
+    struct LocalVar * lv;
+
+    if ((len = GetVar(var, buffer, sizeof(buffer), 0)) < 0)
+        printf("test %d ERROR getvar %d\n", cnt, (int)len);
+    else
+        printf("test %d getvar '%s'\n", cnt, buffer);
+    if ((lv = FindVar(var, 0)) == NULL)
+        printf("test %d ERROR findvar\n", cnt);
+    else
+        printf("test %d findvar lv_Value=%p, lv_Len=%d\n", cnt, lv->lv_Value, lv->lv_Len);
+    if (lv->lv_Len != explen)
+        printf("test %d ERROR lv_Len, expected %d, found %d\n", cnt, explen, lv->lv_Len);
+    if (expnull && lv->lv_Value != NULL)
+        printf("test %d ERROR lv_Value expected NULL, found %p\n", cnt, lv->lv_Value);
+
+    if (!expnull && lv->lv_Value == NULL)
+        printf("test %d ERROR lv_Value expected not NULL, found %p\n", cnt, lv->lv_Value);
+}
+
 int main(void)
 {
-       char* var="abc";
-       char* val="cde";
+       CONST_STRPTR var="abc";
+       STRPTR val="cde";
+       LONG cnt = 1;
 
-       char buffer[10];
-       LONG len;
+       /* Behavior validated with OS3.x */
 
-       printf("test setvar '%s'\n", val);
+       printf("test %d setvar '%s'\n", cnt, val);
        if (SetVar(var, val, strlen(val), 0) == DOSFALSE)
                printf("error setvar\n");
-       if ((len = GetVar(var, buffer, sizeof(buffer), 0)) < 0)
-               printf("error getvar %d\n", (int)len);
-       printf("test getvar '%s'\n", buffer);
+       testvalue(var, val, 3, FALSE, cnt++);
 
        val="";
-       printf("test1 setvar '%s'\n", val);
+       printf("test %d setvar '%s'\n", cnt, val);
        if (SetVar(var, val, strlen(val), 0) == DOSFALSE)
                printf("error setvar\n");
-       if ((len = GetVar(var, buffer, sizeof(buffer), 0)) < 0)
-               printf("error getvar %d\n", (int)len);
-       printf("test1 getvar '%s'\n", buffer);
+       testvalue(var, val, 0, TRUE, cnt++);
 
-       val="abc";
-       printf("test2 setvar '%s'\n", val);
+       val="abcd";
+       printf("test %d setvar '%s'\n", cnt, val);
        if (SetVar(var, val, strlen(val), 0) == DOSFALSE)
                printf("error setvar\n");
-       if ((len = GetVar(var, buffer, sizeof(buffer), 0)) < 0)
-               printf("error getvar %d\n", (int)len);
-       printf("test2 getvar '%s'\n", buffer);
+       testvalue(var, val, 4, FALSE, cnt++);
 
        val="";
-       printf("test3 setvar '%s'\n", val);
+       printf("test %d setvar '%s'\n", cnt, val);
        if (SetVar(var, val, strlen(val), 0) == DOSFALSE)
                printf("error setvar\n");
-       if ((len = GetVar(var, buffer, sizeof(buffer), 0)) < 0)
-               printf("error getvar %d\n", (int)len);
-       printf("test3 getvar '%s'\n", buffer);
+       testvalue(var, val, 0, TRUE, cnt++);
 
        val="";
-       printf("test4 setvar '%s'\n", val);
+       printf("test %d setvar '%s'\n", cnt, val);
        if (SetVar(var, val, strlen(val), 0) == DOSFALSE)
                printf("error setvar\n");
-       if ((len = GetVar(var, buffer, sizeof(buffer), 0)) < 0)
-               printf("error getvar %d\n", (int)len);
-       printf("test4 getvar '%s'\n", buffer);
+       testvalue(var, val, 0, TRUE, cnt++);
 
        return 0;
 }
