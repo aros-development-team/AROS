@@ -6,6 +6,7 @@
 */
 
 #include <errno.h>
+#include <string.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/exec.h>
@@ -84,6 +85,12 @@
         {
             stream->flags |= __POSIXC_STDIO_EOF;
         }
+    }
+    else
+    {
+        int bsize = strlen(buffer);
+        if ((bsize + 1 < size) && (buffer[bsize - 1] != '\n'))
+            stream->flags |= __POSIXC_STDIO_EOF;
     }
 
     return buffer;
