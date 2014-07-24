@@ -72,6 +72,8 @@
         return NULL;
     }
 
+    FLUSHONREADCHECK
+
     buffer = FGets (fdesc->fcb->handle, buffer, size);
 
     if (!buffer)
