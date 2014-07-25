@@ -109,8 +109,8 @@
             *pos = '\0';
         }
         else
-            *pos++ = '\0';
-        
+            *(++pos) = '\0'; /* Keep slashes in name, to support a/b//c => a/c case */
+
         lock = Lock(buf2, SHARED_LOCK);
         if (lock)
         {
