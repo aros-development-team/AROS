@@ -6,6 +6,7 @@
 */
 
 #include <stdio.h>
+#include "__upath.h"
 
 /*****************************************************************************
 
@@ -40,5 +41,5 @@
 ******************************************************************************/
 {
     /* FIXME: Shouldn't we check if pathname is actually a directory ? */
-    return remove(pathname);
+    return remove(__path_u2a(pathname));
 } /* rmdir() */
