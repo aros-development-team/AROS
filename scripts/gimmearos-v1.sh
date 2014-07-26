@@ -8,7 +8,7 @@
 
 # This script is public domain. Use it at your own risk.
 
-# $VER: gimmearos-v1.sh 1.11 (28.12.2013) WIP
+# $VER: gimmearos-v1.sh 1.11 (26.07.2014) WIP
 
 curdir="`pwd`"
 srcdir="aros-src"
@@ -33,11 +33,14 @@ install_pkg()
 }
 
 
-
-echo -e "\n\nScript for downloading and building of AROS"
-echo -e "============================================"
-echo -e "\nStep 1: install prerequisites"
-echo -e "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo -e "\n\n\n\n\n"
+echo -e "***********************************************"
+echo -e "* Script for downloading and building of AROS *"
+echo -e "***********************************************"
+echo -e "\n\n"
+echo -e "*********************************"
+echo -e "* Step 1: install prerequisites *"
+echo -e "*********************************"
 echo -e "The build system needs some packages to do its job."
 echo -e "If you are asked for a password enter you admin password."
 echo -e "\n1 .. Get packages with apt-get for Debian and similar (e.g. Ubuntu)"
@@ -46,6 +49,9 @@ echo -e "2 .. As 1) but with additional packages for building 32-bit AROS"
 echo -e "     on 64-bit Linux"
 echo -e "3 .. Get packages with yum for Fedora"
 echo -e "4 .. Get packages with pacman for Arch"
+echo -e "5 .. Get packages with zypper for openSuse"
+echo -e "6 .. As 5) but with additional packages for building 32-bit AROS"
+echo -e "     on 64-bit Linux"
 echo -e "9 .. Skip this step"
 echo -e "0 .. Exit"
 
@@ -137,7 +143,71 @@ case "$input" in
         install_pkg "pacman --needed --noconfirm -S" automake
         #it appears as though the libx11-dev,libc6-dev,liblzo2-dev is not needed on arch
         ;;
-         
+
+    5 ) echo -e "\nInstalling prerequisites with zypper..."
+        # tools
+        install_pkg "zypper --non-interactive install" subversion
+        install_pkg "zypper --non-interactive install" git-core
+        install_pkg "zypper --non-interactive install" gcc
+        install_pkg "zypper --non-interactive install" gcc-c++
+        install_pkg "zypper --non-interactive install" make
+        install_pkg "zypper --non-interactive install" gawk
+        install_pkg "zypper --non-interactive install" bison
+        install_pkg "zypper --non-interactive install" flex
+        install_pkg "zypper --non-interactive install" bzip2
+        install_pkg "zypper --non-interactive install" netpbm
+        install_pkg "zypper --non-interactive install" autoconf
+        install_pkg "zypper --non-interactive install" automake
+        install_pkg "zypper --non-interactive install" patch
+        install_pkg "zypper --non-interactive install" cmake
+        install_pkg "zypper --non-interactive install" gperf
+        install_pkg "zypper --non-interactive install" perl-Switch
+        install_pkg "zypper --non-interactive install" byacc
+
+        # libs
+        install_pkg "zypper --non-interactive install" libXxf86vm1
+
+        #devel
+        install_pkg "zypper --non-interactive install" libX11-devel
+        install_pkg "zypper --non-interactive install" glibc-devel
+        install_pkg "zypper --non-interactive install" libpng12-devel
+        ;;
+
+    6 ) echo -e "\nInstalling prerequisites with zypper..."
+        # tools
+        install_pkg "zypper --non-interactive install" subversion
+        install_pkg "zypper --non-interactive install" git-core
+        install_pkg "zypper --non-interactive install" gcc
+        install_pkg "zypper --non-interactive install" gcc-c++
+        install_pkg "zypper --non-interactive install" make
+        install_pkg "zypper --non-interactive install" gawk
+        install_pkg "zypper --non-interactive install" bison
+        install_pkg "zypper --non-interactive install" flex
+        install_pkg "zypper --non-interactive install" bzip2
+        install_pkg "zypper --non-interactive install" netpbm
+        install_pkg "zypper --non-interactive install" autoconf
+        install_pkg "zypper --non-interactive install" automake
+        install_pkg "zypper --non-interactive install" patch
+        install_pkg "zypper --non-interactive install" cmake
+        install_pkg "zypper --non-interactive install" gperf
+        install_pkg "zypper --non-interactive install" perl-Switch
+        install_pkg "zypper --non-interactive install" byacc
+
+        # libs
+        install_pkg "zypper --non-interactive install" libXxf86vm1
+
+        #devel
+        install_pkg "zypper --non-interactive install" libX11-devel
+        install_pkg "zypper --non-interactive install" glibc-devel
+        install_pkg "zypper --non-interactive install" libpng12-devel
+
+        # 32-bit support
+        install_pkg "zypper --non-interactive install" gcc-32bit
+        install_pkg "zypper --non-interactive install" gcc-c++-32bit
+        install_pkg "zypper --non-interactive install" glibc-devel-32bit
+        install_pkg "zypper --non-interactive install" libXxf86vm1-32bit
+        ;;
+
     0 ) exit 0
         ;;
 esac
@@ -147,8 +217,10 @@ cd "$curdir"
 input=""
 until [ "$input" = "9" ]
 do
-    echo -e "\nStep 2: Get the sources from the repository"
-    echo -e "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+	echo -e "\n\n\n\n\n"
+    echo -e "***********************************************"
+    echo -e "* Step 2: get the sources from the repository *"
+    echo -e "***********************************************"
     echo -e "\nYou can either use Subversion or Git. Git doesn't require"
     echo -e   "a password, but you'll get only read-only access."
     echo -e   "The repositories will be checked out into the current directory."
@@ -160,7 +232,7 @@ do
     echo -e "\n     3      |    23    | Get ports source (optional, needs contrib)"
     echo -e "\n     4      |    ---   | Get documentation source (optional)"
     echo -e   "     5      |    ---   | Get binaries (wallpapers, logos etc.) (optional)"
-    echo -e "\n9 .. Leave loop, goto next step"
+    echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
 
     echo -e "\nEnter number and press <Enter>:"
@@ -198,7 +270,6 @@ do
     esac
 done
 
-
 cd "$curdir"
 
 input=""
@@ -206,11 +277,13 @@ until [ "$input" = "9" ]
 do
     cd "$curdir"
 
-    echo -e "\nStep 3: Configuring Toolchain"
-    echo -e   "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo -e   "  1    | i386   (32-bit)"
+	echo -e "\n\n\n\n\n"
+    echo -e "*******************************"
+    echo -e "* Step 3: configure toolchain *"
+    echo -e "*******************************"
+    echo -e "\n  1    | i386   (32-bit)"
     echo -e   "  2    | x86_64 (64-bit)"
-    echo -e "\n9 .. Leave loop, goto next step"
+    echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
 
     echo -e "\nEnter number and press <Enter>:"
@@ -242,12 +315,15 @@ input=""
 until [ "$input" = "9" ]
 do
     cd "$curdir"
-    echo -e "\nStep 4: Building Toolchain"
-    echo -e   "~~~~~~~~~~~~~~~~~~~~~~~~~~"
+
+	echo -e "\n\n\n\n\n"
+    echo -e "***************************"
+    echo -e "* Step 4: build toolchain *"
+    echo -e "***************************"
     echo -e "\nYou can only build what you've already configured."
-    echo -e   "   1   | i386   (32-bit)"
+    echo -e "\n   1   | i386   (32-bit)"
     echo -e   "   2   | x86_64 (64-bit)"
-    echo -e "\n9 .. Leave loop, goto next step"
+    echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
     echo -e "\nEnter number and press <Enter>:"
 
@@ -279,15 +355,17 @@ until [ "$input" = "9" ]
 do
     cd "$curdir"
 
-    echo -e "\nStep 5: Configuring"
-    echo -e   "~~~~~~~~~~~~~~~~~~~"
+	echo -e "\n\n\n\n\n"
+    echo -e "**************************"
+    echo -e "* Step 5: configure AROS *"
+    echo -e "**************************"
     echo -e "\n  1    | linux-i386   (32-bit) debug"
     echo -e   "  2    | linux-i386   (32-bit)"
     echo -e   "  3    | linux-x86_64 (64-bit) debug"
     echo -e   "  4    | linux-x86_64 (64-bit)"
     echo -e   "  5    | pc-i386      (32-bit)"
     echo -e   "  6    | pc-x86_64    (64-bit)"
-    echo -e "\n9 .. Leave loop, goto next step"
+    echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
 
     echo -e "\nEnter number and press <Enter>:"
@@ -343,8 +421,11 @@ input=""
 until [ "$input" = "9" ]
 do
     cd "$curdir"
-    echo -e "\nStep 6: Building"
-    echo -e   "~~~~~~~~~~~~~~~~"
+
+	echo -e "\n\n\n\n\n"
+    echo -e "*****************"
+    echo -e "* Step 6: build *"
+    echo -e "*****************"
     echo -e "\nYou can only build what you've already configured."
     echo -e "\n   1   | linux-i386   (32-bit) debug"
     echo -e   "   2   | linux-i386   (32-bit)"
@@ -352,7 +433,7 @@ do
     echo -e   "   4   | linux-x86_64 (64-bit)"
     echo -e   "   5   | pc-i386      (32-bit)"
     echo -e   "   6   | pc-x86_64    (64-bit)"
-    echo -e "\n9 .. Leave loop, goto next step"
+    echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
     echo -e "\nEnter number and press <Enter>:"
 
@@ -361,28 +442,24 @@ do
         1 ) echo -e "\nBuilding linux-i386 V1 with full debug...\n"
             cd aros-linux-i386-dbg
             make $makeopts
-            #make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-dbg/bin/<target>/AROS"
             ;;
         2 ) echo -e "\nBuilding linux-i386 V1 without debug...\n"
             cd aros-linux-i386
             make $makeopts
-            #make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386/bin/<target>/AROS"
             ;;
         3 ) echo -e "\nBuilding linux-x86_64 V1 with full debug...\n"
             cd aros-linux-x86_64-dbg
             make $makeopts
-            #make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64-dbg/bin/<target>/AROS"
             ;;
         4 ) echo -e "\nBuilding linux-x86_64 V1 without debug...\n"
             cd aros-linux-x86_64
             make $makeopts
-            #make default-x11keymaptable
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64/bin/<target>/AROS"
             ;;
