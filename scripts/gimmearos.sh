@@ -8,13 +8,13 @@
 
 # This script is public domain. Use it at your own risk.
 
-# $VER: gimmearos.sh 1.11 (20.07.2014) WIP
+# $VER: gimmearos.sh 1.11 (26.07.2014) WIP
 
 curdir="`pwd`"
 srcdir="aros-src"
 srcdir_v0="aros-src-v0"
 portsdir="$HOME/aros-ports-src"
-cpucoresforcompile="4"
+makeopts="-j2 -s"
 
 install_pkg()
 {
@@ -33,11 +33,14 @@ install_pkg()
 }
 
 
-
-echo -e "\n\nScript for downloading and building of AROS"
-echo -e "============================================"
-echo -e "\nStep 1: install prerequisites"
-echo -e "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo -e "\n\n\n\n\n"
+echo -e "***********************************************"
+echo -e "* Script for downloading and building of AROS *"
+echo -e "***********************************************"
+echo -e "\n\n"
+echo -e "*********************************"
+echo -e "* Step 1: install prerequisites *"
+echo -e "*********************************"
 echo -e "The build system needs some packages to do its job."
 echo -e "If you are asked for a password enter you admin password."
 echo -e "\n1 .. Get packages with apt-get for Debian and similar (e.g. Ubuntu)"
@@ -203,7 +206,6 @@ case "$input" in
         install_pkg "zypper --non-interactive install" gcc-c++-32bit
         install_pkg "zypper --non-interactive install" glibc-devel-32bit
         install_pkg "zypper --non-interactive install" libXxf86vm1-32bit
-        #install_pkg "zypper --non-interactive install" libgmp10-32bit
         ;;
 
     0 ) exit 0
@@ -215,8 +217,10 @@ cd "$curdir"
 input=""
 until [ "$input" = "9" ]
 do
-    echo -e "\nStep 2: Get the sources from the repository"
-    echo -e "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+	echo -e "\n\n\n\n\n"
+    echo -e "***********************************************"
+    echo -e "* Step 2: get the sources from the repository *"
+    echo -e "***********************************************"
     echo -e "\nYou can either use Subversion or Git. Git doesn't require"
     echo -e   "a password, but you'll get only read-only access."
     echo -e   "The repositories will be checked out into the current directory."
@@ -230,7 +234,7 @@ do
     echo -e "\n     3      |      13     |    23    | Get ports source (optional, needs contrib)"
     echo -e "\n     4      |      14     |    ---   | Get documentation source (optional)"
     echo -e   "     5      |      15     |    ---   | Get binaries (wallpapers, logos etc.) (optional)"
-    echo -e "\n9 .. Leave loop, goto next step"
+    echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
 
     echo -e "\nEnter number and press <Enter>:"
@@ -292,8 +296,10 @@ until [ "$input" = "9" ]
 do
     cd "$curdir"
 
-    echo -e "\nStep 3: Configuring"
-    echo -e   "~~~~~~~~~~~~~~~~~~~"
+	echo -e "\n\n\n\n\n"
+    echo -e "*********************"
+    echo -e "* Step 3: configure *"
+    echo -e "*********************"
     echo -e "\nABI V1 | ABI V0 |"
     echo -e   "-------+--------+----------------------------"
     echo -e   "  1    |   11   | linux-i386   (32-bit) debug"
@@ -302,7 +308,7 @@ do
     echo -e   "  4    |   14   | linux-x86_64 (64-bit)"
     echo -e   "  5    |   15   | pc-i386      (32-bit)"
     echo -e   "  6    |   16   | pc-x86_64    (64-bit)"
-    echo -e "\n9 .. Leave loop, goto next step"
+    echo -e "\n9 .. Go to next step"
     echo -e   "0 .. Exit"
 
     echo -e "\nEnter number and press <Enter>:"
@@ -389,15 +395,17 @@ do
 done
 
 
-
 cd "$curdir"
 
 input=""
 until [ "$input" = "9" ]
 do
     cd "$curdir"
-    echo -e "\nStep 4: Building"
-    echo -e   "~~~~~~~~~~~~~~~~"
+
+	echo -e "\n\n\n\n\n"
+    echo -e "*****************"
+    echo -e "* Step 4: build *"
+    echo -e "*****************"
     echo -e "\nYou can only build what you've already configured."
     echo -e "\nABI V1 | ABI V0 |"
     echo -e   "-------+--------+----------------------------"
@@ -407,51 +415,47 @@ do
     echo -e   "   4   |   14   | linux-x86_64 (64-bit)"
     echo -e   "   5   |   15   | pc-i386      (32-bit)"
     echo -e   "   6   |   16   | pc-x86_64    (64-bit)"
-    echo -e "\n9 .. Leave loop, exit"
-
+    echo -e "\n9 .. Go to next step"
+    echo -e   "0 .. Exit"
     echo -e "\nEnter number and press <Enter>:"
 
     read input
     case "$input" in
         1 ) echo -e "\nBuilding linux-i386 V1 with full debug...\n"
             cd aros-linux-i386-dbg
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-dbg/bin/<target>/AROS"
             ;;
         2 ) echo -e "\nBuilding linux-i386 V1 without debug...\n"
             cd aros-linux-i386
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386/bin/<target>/AROS"
             ;;
         3 ) echo -e "\nBuilding linux-x86_64 V1 with full debug...\n"
             cd aros-linux-x86_64-dbg
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64-dbg/bin/<target>/AROS"
             ;;
         4 ) echo -e "\nBuilding linux-x86_64 V1 without debug...\n"
             cd aros-linux-x86_64
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64/bin/<target>/AROS"
             ;;
         5 ) echo -e "\nBuilding pc-i386 V1...\n"
             cd aros-pc-i386
-            make -j$cpucoresforcompile
-            make -j$cpucoresforcompile bootiso
+            make $makeopts
+            make $makeopts bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-i386/bin/<target>/AROS"
             ;;
         6 ) echo -e "\nBuilding pc-x86_64 V1...\n"
             cd aros-pc-x86_64
-            make -j$cpucoresforcompile
-            make -j$cpucoresforcompile bootiso
+            make $makeopts
+            make $makeopts bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-x86_64/bin/<target>/AROS"
             ;;
@@ -459,43 +463,39 @@ do
 
         11 ) echo -e "\nBuilding linux-i386 V0 with full debug...\n"
             cd aros-linux-i386-v0-dbg
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-v0-dbg/bin/<target>/AROS"
             ;;
         12 ) echo -e "\nBuilding linux-i386 V0 without debug...\n"
             cd aros-linux-i386-v0
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-i386-v0/bin/<target>/AROS"
             ;;
         13 ) echo -e "\nBuilding linux-x86_64 V0 with full debug...\n"
             cd aros-linux-x86_64-v0-dbg
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64-dbg/bin/<target>/AROS"
             ;;
         14 ) echo -e "\nBuilding linux-x86_64 V0 without debug...\n"
             cd aros-linux-x86_64-v0
-            make -j$cpucoresforcompile
-            make default-x11keymaptable
+            make $makeopts
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-linux-x86_64-v0/bin/<target>/AROS"
             ;;
         15 ) echo -e "\nBuilding pc-i386 V0...\n"
             cd aros-pc-i386-v0
-            make -j$cpucoresforcompile
-            make -j$cpucoresforcompile bootiso
+            make $makeopts
+            make $makeopts bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-i386-v0/bin/<target>/AROS"
             ;;
         16 ) echo -e "\nBuilding pc-x86_64 V0...\n"
             cd aros-pc-x86_64-v0
-            make -j$cpucoresforcompile
-            make -j$cpucoresforcompile bootiso
+            make $makeopts
+            make $makeopts bootiso
             echo -e "\nIf everything went well AROS will be available"
             echo -e "in the directory aros-pc-x86_64-v0/bin/<target>/AROS"
             ;;
@@ -504,7 +504,6 @@ do
             ;;
     esac
 done
-
 
 cd "$curdir"
 
