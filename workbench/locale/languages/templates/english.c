@@ -888,7 +888,7 @@ const UWORD __eng_ctype_array[256] =
 	/* 'ß' */  iGraph | iPrint | iPunct,
 	/* 'Ä' */  iGraph | iPrint | iPunct,
 	/* '∂' */  iGraph | iPrint | iPunct,
-	/* 'ﬂ' */  iGraph | iPrint | iPunct | iLower,
+	/* 'ﬂ' */  iAlpha | iGraph | iPrint | iLower,
 	/* 'Æ' */  iGraph | iPrint | iPunct,
 	/* '©' */  iGraph | iPrint | iPunct,
 	/* 'Å' */  iGraph | iPrint | iPunct,
