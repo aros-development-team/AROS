@@ -169,6 +169,7 @@ done
 # For LD_NAME we can't use $aros_sdk_path/bin/${cc_cpu}-aros-ld because
 # it would cause a recursion which creates error "Argument list too long".
 # TODO: add a check if /usr/bin/ld really exists
+echo -e Patching env.h...
 sed -i -e "35 c \#define LD_NAME \"/usr/bin/ld\"" tools/collect-aros/env.h
 sed -i -e "36 c \#define STRIP_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-strip\"" tools/collect-aros/env.h
 sed -i -e "37 c \#define NM_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-nm -C -ul\"" tools/collect-aros/env.h

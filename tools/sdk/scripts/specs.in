@@ -1,5 +1,8 @@
 *cpp:
-%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %(predefines) -nostdinc %{!nostdinc:-isystem @aros_sdk_path@/@cc_cpu@-aros/include -isystem @cc_include@}
+%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__} %(aros_predefines) %(aros_include)
+
+*aros_include:
+%{!nostdinc:%{!nostdc:%{!noposixc:-isystem @aros_sdk_path@/@cc_cpu@-aros/include/aros/posixc} -isystem @aros_sdk_path@/@cc_cpu@-aros/include/aros/stdc} -isystem @aros_sdk_path@/@cc_cpu@-aros/include -isystem @cc_include@}
 
 *endfile:
 -lautoinit
@@ -8,16 +11,16 @@
 -m @ld_emu@ -L@aros_sdk_path@/@cc_cpu@-aros/lib
 
 *lib:
--lamiga -larossupport %{!noarosc:-larosc} -lm
+-lmui -lamiga -larossupport -lamiga %{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc} -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -loop %{!nosysbase:-lexec} -llibinit -lautoinit %{nostdc:-lstdc.static}
 
 *startfile:
-%{detach:@aros_sdk_path@/@cc_cpu@-aros/lib/detach.o} @aros_sdk_path@/@cc_cpu@-aros/lib/startup.o %{nix:@aros_sdk_path@/@cc_cpu@-aros/lib/nixmain.o}
+@aros_sdk_path@/@cc_cpu@-aros/lib/startup.o %{detach:@aros_sdk_path@/@cc_cpu@-aros/lib/detach.o} %{nix:@aros_sdk_path@/@cc_cpu@-aros/lib/nixmain.o}
 
 *aros_predefines:
--D__AROS__
+-D__AROS__ -DAMIGA -D_AMIGA
 
 *predefines:
-+ %(aros_predefines)
+%(aros_predefines)
 
 *cross_compile:
 1
