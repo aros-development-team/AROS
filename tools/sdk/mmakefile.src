@@ -12,6 +12,7 @@ SDKTOOLDIR := $(AROSDIR)/../AROS-SDK/tools
 sdk:
 	$(CP) -a $(AROS_INCLUDES)/* $(SDKINCDIR)
 	$(CP) -a $(AROS_LIB)/* $(SDKLIBDIR)
+	$(CP) -a $(SRCDIR)/tools/collect-aros/* $(SDKTOOLDIR)/collect-aros
 	$(CP) -a $(TOP)/tools/collect-aros/* $(SDKTOOLDIR)/collect-aros
 	$(CP) -a $(SRCDIR)/$(CURDIR)/scripts $(SDKDIR)
 	$(CP) $(SRCDIR)/$(CURDIR)/AROS-SDK-Install $(SRCDIR)/LICENSE $(SRCDIR)/ACKNOWLEDGEMENTS $(SDKDIR)
