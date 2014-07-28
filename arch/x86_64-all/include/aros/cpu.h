@@ -23,7 +23,7 @@
 #define AROS_PTRALIGN              8 /* Alignment for PTR */
 #define AROS_IPTRALIGN             8 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN           8 /* Alignment for double */
-#define AROS_WORSTALIGN            8 /* Worst case alignment */
+#define AROS_WORSTALIGN           16 /* Worst case alignment */
 #define AROS_STACKALIGN           16 /* Clean stack alignment */
 
 /* define this if we have no support for linear varargs in the compiler */
