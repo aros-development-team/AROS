@@ -115,7 +115,8 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
     case ITEM_NOTHING:
         return 0;
     default:
-        return ERROR_LINE_TOO_LONG; /* invalid argument */
+        PutStr("Error in command name\n");
+        return ERROR_OBJECT_NOT_FOUND;
     }
 
     /* Is this command an alias ? */
@@ -231,7 +232,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand)
        signs subtitution.
        <$$> and Variables and BackTicks need to be handled only once per
        line, but in right order: Commodore's DPAT script builds an
-       environment variable per script used, by including the current CLi's
+       environment variable per script used, by including the current CLI's
        number in the variable name: $qw{$$} so we must first handle CLI
        number substitution, then extract variables, and then handle
        BackTicks nested commands.
@@ -265,7 +266,8 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand)
     D(bug("[convertLine] Pass 4: on (%s)\n", out->buf));
     if ((error = readCommand(ss, out, in)))
     {
-        D(bug("[convertLine] Pass 4: Error %lu parsing aliases\n", error));
+        D(bug("[convertLine] Pass 4: Error %lu parsing command/aliases\n",
+            error));
         return error;
     }
 
