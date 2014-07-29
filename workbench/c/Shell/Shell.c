@@ -57,7 +57,6 @@
 ******************************************************************************/
 
 /* TODO:
-   Alias [] support
    Break support (and +(0L) before execution) -- CreateNewProc()?
  */
 
@@ -86,6 +85,8 @@
 
 #define IS_SYSTEM ((ss->flags & (FNF_VALIDFLAGS | FNF_SYSTEM)) == (FNF_VALIDFLAGS | FNF_SYSTEM))
 #define IS_SCRIPT (cli->cli_CurrentInput != cli->cli_StandardInput)
+
+static LONG executeLine(ShellState *ss, STRPTR commandArgs);
 
 BOOL setInteractive(struct CommandLineInterface *cli, ShellState *ss)
 {
@@ -454,8 +455,16 @@ static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
     return commandSeg;
 }
 
-/* Execute one command */
-LONG executeLine(ShellState *ss, STRPTR commandArgs)
+/* Function: executeLine
+ *
+ * Action:   Execute one line of commands
+ *
+ * Input:    ShellState         *ss           --  this state
+ *           STRPTR              commandArgs  --  arguments of the 'command'
+ *
+ * Output:   LONG  --  error code or 0 if everything went OK
+ */
+static LONG executeLine(ShellState *ss, STRPTR commandArgs)
 {
     struct CommandLineInterface *cli = Cli();
     STRPTR command = ss->command + 2;
