@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -585,7 +585,9 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
             }
             else if (it == ITEM_ERROR)
             {
-                ERROR(me->pr_Result2);
+                /* ReadItem() never sets an error code, so we use the same
+                   error code as AOS */
+                ERROR(ERROR_LINE_TOO_LONG);
             }
             else if (it == ITEM_NOTHING)
             {
