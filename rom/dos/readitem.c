@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -44,11 +44,10 @@
                ITEM_QUOTED   - Quoted string read.
                ITEM_NOTHING  - End of line found. Nothing read.
                ITEM_EQUAL    - '=' read. Buffer is empty.
-               ITEM_ERROR    - An error happened. IoErr() gives additional
-                               information in that case.
+               ITEM_ERROR    - An error happened.
 
     NOTES
-        This function handles conversion of '**', '*"', etc inside quotes.
+        This function handles conversion of '**', '*"', etc. inside quotes.
 
         This function has well known bugs, and should be avoided
         in new applications.
@@ -59,14 +58,14 @@
         1. Forgets to unread a separator character (equal sign, whitespace or
            tabulation).
         2. Tries to unread an end-of-line, which actually causes unreading the
-           last read character of CSource is supplied. Even if it's not a separator,
-           but belongs to last read item.
+           last read character of CSource if supplied. Even if it's not a
+           separator, but belongs to the last read item.
         3. IoErr() is never modified by this function.
 
         As AOS programs that use ReadItem() depend on this broken behaviour,
         it will not be fixed.
 
-        4. If maxchars == 0, buff[0] is set to 0 anyway.
+        4. If maxchars == 0, buffer[0] is set to NUL anyway.
 
     SEE ALSO
 
