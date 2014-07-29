@@ -87,17 +87,6 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand);
 
 LONG convertLineDot(ShellState *ss, Buffer *in);
 
-/* Function: executeLine
- *
- * Action:   Execute one line of commands
- *
- * Input:    ShellState         *ss           --  this state
- *           STRPTR              commandArgs  --  arguments of the 'command'
- *
- * Output:   LONG  --  error code or 0 if everything went OK
- */
-LONG executeLine(ShellState *ss, STRPTR commandArgs);
-
 /* Function: readLine
  *
  * Action:   Read one line of a stream into a buffer.
