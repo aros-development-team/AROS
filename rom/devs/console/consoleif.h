@@ -1,7 +1,7 @@
 #ifndef CONSOLEIF_H
 #define CONSOLEIF_H
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the console class
@@ -17,10 +17,10 @@
 
 enum
 {
-   A_Console_Window = TAG_USER + 1
+    A_Console_Window = TAG_USER + 1
 };
 
-enum 
+enum
 {
     M_Console_Write = TAG_USER + 1,
     M_Console_Scroll,
@@ -42,23 +42,23 @@ enum
 struct P_Console_ScrollDown
 {
     ULONG MethodID;
-    WORD  LinePos;	/* Lines including this one will be scrolled */
+    WORD LinePos;               /* Lines including this one will be scrolled */
 
 };
 
 struct P_Console_ScrollUp
 {
     ULONG MethodID;
-    WORD  LinePos;	/* Lines including this one will be scrolled */
+    WORD LinePos;               /* Lines including this one will be scrolled */
 
 };
 
 struct P_Console_DoCommand
 {
     ULONG MethodID;
-    BYTE Command;	/* Erase in display, scroll, next line etc.. */
+    BYTE Command;               /* Erase in display, scroll, next line etc.. */
     UBYTE NumParams;
-    IPTR *Params; /* The command's parameters */
+    IPTR *Params;               /* The command's parameters */
 };
 
 struct P_Console_Left
@@ -96,8 +96,8 @@ struct P_Console_UnRenderCursor
 struct P_Console_ClearCell
 {
     ULONG MethodID;
-    WORD  X;
-    WORD  Y;
+    WORD X;
+    WORD Y;
 };
 
 struct P_Console_NewWindowSize
@@ -117,8 +117,8 @@ struct P_Console_Paste
 
 struct P_Console_HandleGadgets
 {
-  ULONG MethodID;
-  struct InputEvent * Event;
+    ULONG MethodID;
+    struct InputEvent *Event;
 };
 
 struct P_Console_GetDefaultParams

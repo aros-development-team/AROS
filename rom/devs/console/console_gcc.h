@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -39,11 +39,11 @@ struct ConsoleBase;
 #define CHAR_YMAX(o) (CU(o)->cu_YMax)
 
 
-#define XCP (CU(o)->cu_XCP) /* Character X pos */
-#define YCP (CU(o)->cu_YCP) /* Character Y pos */
+#define XCP (CU(o)->cu_XCP)     /* Character X pos */
+#define YCP (CU(o)->cu_YCP)     /* Character Y pos */
 
-#define XCCP (CU(o)->cu_XCCP) /* Cursor X pos */
-#define YCCP (CU(o)->cu_YCCP) /* Cusror Y pos */
+#define XCCP (CU(o)->cu_XCCP)   /* Cursor X pos */
+#define YCCP (CU(o)->cu_YCCP)   /* Cusror Y pos */
 
 #define XRSIZE (CU(o)->cu_XRSize)
 #define YRSIZE (CU(o)->cu_YRSize)
@@ -81,7 +81,7 @@ struct ConsoleBase;
 
 #define ICU(x) ((struct intConUnit *)x)
 
-#define WINDOW(o)	CU(o)->cu_Window 
+#define WINDOW(o)	CU(o)->cu_Window
 #define RASTPORT(o)	WINDOW(o)->RPort
 
 
@@ -97,9 +97,9 @@ struct ConsoleBase;
 #define CON_TXTFLAGS_CONCEALED 0x10
 
 /* Console write commands */
-enum 
+enum
 {
-	C_NIL = 0,
+    C_NIL = 0,
 
     C_ASCII,
     C_ESC,
@@ -170,14 +170,14 @@ enum
 struct coTaskParams
 {
     struct ConsoleBase *consoleDevice;
-    struct Task	*parentTask;
+    struct Task *parentTask;
     ULONG initSignal;
 };
 
 struct intPasteData
 {
     struct MinNode node;
-    struct intConUnit * unit;
+    struct intConUnit *unit;
     STRPTR pasteBuffer;
     ULONG pasteBufferSize;
 };
@@ -190,12 +190,12 @@ struct intConUnit
 
     /* Buffer where characters received from the console input handler
        will be stored
-    */
+     */
     UBYTE inputBuf[CON_INPUTBUF_SIZE];
     /* Number of charcters currently stored in the buffer */
     ULONG numStoredChars;
 
-    /* Data to be copied into the inputBuf for processing */ 
+    /* Data to be copied into the inputBuf for processing */
     struct MinList pasteData;
 
     /* Position in the first pasteData element */
@@ -215,31 +215,29 @@ struct cdihMessage
 {
     struct Message msg;
     /* The unit that the user input should go to */
-    Object	*unit;
+    Object *unit;
 
     struct InputEvent ie;
 };
 
 /* Data passed to the console device input handler */
 
-struct cdihData 
+struct cdihData
 {
-    struct ConsoleBase	*consoleDevice;
+    struct ConsoleBase *consoleDevice;
     /* Port to which we send input to the console device
        from the console device input handler.
-    */
-    struct MsgPort	*inputPort;
-    
+     */
+    struct MsgPort *inputPort;
+
     /* The port the console.device task replies to telling
        the console.device input handler that it is finished
        with the output.
-    */
-    struct MsgPort	*cdihReplyPort;
-    
+     */
+    struct MsgPort *cdihReplyPort;
+
     /* The message struct used to pass user input to the console device */
-    struct cdihMessage	*cdihMsg;
-    
-    
+    struct cdihMessage *cdihMsg;
 };
 
 
@@ -249,60 +247,65 @@ struct cdihData
 *****************/
 
 struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice);
-VOID cleanupCDIH(struct Interrupt *cdihandler, struct ConsoleBase *ConsoleDevice);
+VOID cleanupCDIH(struct Interrupt *cdihandler,
+    struct ConsoleBase *ConsoleDevice);
 
 VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice);
 
-struct Task *createConsoleTask(APTR taskparams, struct ConsoleBase *ConsoleDevice);
+struct Task *createConsoleTask(APTR taskparams,
+    struct ConsoleBase *ConsoleDevice);
 
 /* Prototypes */
-ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite
-	, struct ConsoleBase *ConsoleDevice);
+ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite,
+    struct ConsoleBase *ConsoleDevice);
 
 Class *makeConsoleClass(struct ConsoleBase *ConsoleDevice);
 Class *makeStdConClass(struct ConsoleBase *ConsoleDevice);
 Class *makeCharMapConClass(struct ConsoleBase *ConsoleDevice);
 Class *makeSnipMapConClass(struct ConsoleBase *ConsoleDevice);
 
-VOID con_inject(struct ConsoleBase *ConsoleDevice, struct ConUnit *cu, const UBYTE *data, LONG size);
+VOID con_inject(struct ConsoleBase *ConsoleDevice, struct ConUnit *cu,
+    const UBYTE *data, LONG size);
 
-VOID printstring(STRPTR string, ULONG len, struct ConsoleBase *ConsoleDevice);
+VOID printstring(STRPTR string, ULONG len,
+    struct ConsoleBase *ConsoleDevice);
 
-VOID setabpen(struct Library *GfxBase, struct RastPort *rp, UBYTE tflags, UBYTE FgPen, UBYTE BgPen);
+VOID setabpen(struct Library *GfxBase, struct RastPort *rp, UBYTE tflags,
+    UBYTE FgPen, UBYTE BgPen);
 
 struct ConsoleBase
 {
     struct Device device;
-    
+
     struct MinList unitList;
     struct SignalSemaphore unitListLock;
     struct SignalSemaphore consoleTaskLock;
-    
-    struct Interrupt	*inputHandler;
-    struct Task		*consoleTask;
-    struct MsgPort	*commandPort;
+
+    struct Interrupt *inputHandler;
+    struct Task *consoleTask;
+    struct MsgPort *commandPort;
 
     /* Queued read requests */
-    struct MinList	readRequests;
-    
+    struct MinList readRequests;
+
     Class *consoleClass;
     Class *stdConClass;
     Class *charMapClass;
     Class *snipMapClass;
 
-  /* Copy buffer
-     
-     This buffer is shared across all console units. It is used by
-     conunits of type CONU_SNIPMAP to provide built in copy/paste.
-     
-     If ConClip is running, this buffer is passed to ConClip on copy,
-     and is not used on Paste. Instead, <CSI> 0 v (Hex 9B 30 20 76)
-     is put into the console units input buffer to signal to the app
-     (console handler or otherwise) to paste.
+    /* Copy buffer
 
-     Access to the copyBuffer is protected by a semaphore.
-  */
-    const char * copyBuffer;
+       This buffer is shared across all console units. It is used by
+       conunits of type CONU_SNIPMAP to provide built in copy/paste.
+
+       If ConClip is running, this buffer is passed to ConClip on copy,
+       and is not used on Paste. Instead, <CSI> 0 v (Hex 9B 30 20 76)
+       is put into the console units input buffer to signal to the app
+       (console handler or otherwise) to paste.
+
+       Access to the copyBuffer is protected by a semaphore.
+     */
+    const char *copyBuffer;
     ULONG copyBufferSize;
     struct SignalSemaphore copyBufferLock;
     struct MinList sniphooks;
@@ -321,4 +324,3 @@ struct ConsoleBase
 #define KeymapBase (((const struct ConsoleBase *)ConsoleDevice)->cb_KeymapBase)
 
 #endif /* CONSOLE_GCC_H */
-
