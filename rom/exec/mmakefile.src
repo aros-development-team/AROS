@@ -35,7 +35,8 @@ ALL_FUNCTIONS := \
 	newaddtask newminlist avl vnewrawdofmt shutdowna useralert \
 	addresetcallback remresetcallback doresetcallbacks newcreatetaska \
         alloctaskstorageslot freetaskstorageslot savetaskstorage \
-        restoretaskstorage settaskstorageslot gettaskstorageslot
+        restoretaskstorage settaskstorageslot gettaskstorageslot \
+        getparenttaskstorageslot
 
 INIT_FILES := exec_init prepareexecbase
 FILES	   := alertextra alert_cpu systemalert initkicktags intservers \
