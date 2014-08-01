@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,24 +48,29 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct ETask *et = GetETask(FindTask(NULL));
+    return TaskGetStorageSlot(FindTask(NULL), id);
+
+    AROS_LIBFUNC_EXIT
+}
+
+IPTR TaskGetStorageSlot(struct Task * t, LONG id)
+{
+    struct ETask *et = GetETask(t);
     IPTR *ts;
 
-    D(bug("GetTaskStorage: %p: Get TaskStorageSlot %d\n", et, id));
+    D(bug("TaskGetStorageSlot: %p: Get TaskGetStorageSlot %d\n", et, id));
 
     if (!et) {
         /* Only ETasks can do this */
-        D(bug("GetTaskStorage: Not an ETask!\n"));
+        D(bug("TaskGetStorageSlot: Not an ETask!\n"));
         return (IPTR)NULL;
     }
 
     ts = et->et_TaskStorage;
     if (ts == NULL || ts[__TS_FIRSTSLOT] <= id) {
-        D(bug("GetTaskStorage: ID %d was not set!\n", id));
+        D(bug("TaskGetStorageSlot: ID %d was not set!\n", id));
         return (IPTR)NULL;
     }
 
     return ts[id];
-
-    AROS_LIBFUNC_EXIT
 }

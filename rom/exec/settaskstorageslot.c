@@ -78,6 +78,7 @@
 
         ts[__TS_FIRSTSLOT] = slots;
 
+        /* Replacing of the pointer needs to be atomic due to GetParentTaskStorageSlot() */
         et->et_TaskStorage = ts;
     } else if (ts[__TS_FIRSTSLOT] <= id) {
         IPTR *newts;
@@ -96,6 +97,7 @@
                 (oldslots-1) * sizeof(ts[0]));
         memset(&newts[oldslots], 0, (newslots - oldslots) * sizeof(ts[0]));
 
+        /* Replacing of the pointer needs to be atomic due to GetParentTaskStorageSlot() */
         et->et_TaskStorage = newts;
         FreeMem(ts, oldslots * sizeof(ts[0]));
     }

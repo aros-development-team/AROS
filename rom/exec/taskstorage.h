@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2014, The AROS Development Team. All rights reserved.
     $Id$
 */
 #ifndef TASKSTORAGE_H
@@ -15,5 +15,7 @@ struct TaskStorageFreeSlot
 };
 
 #define __TS_FIRSTSLOT 0
+
+IPTR TaskGetStorageSlot(struct Task * t, LONG id);
 
 #endif /* TASKSTORAGE_H */
