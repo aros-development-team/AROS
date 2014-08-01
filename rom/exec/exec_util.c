@@ -95,25 +95,6 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
         return FALSE;
     task->tc_Flags |= TF_ETASK;
 
-    if (thistask != NULL)
-    {
-        /* Clone parent's TaskStorage */
-        struct ETask *thiset = GetETask(thistask);
-        if (thiset) {
-            IPTR *thists = thiset->et_TaskStorage;
-
-            if (thists) {
-                IPTR *ts = AllocMem(thists[__TS_FIRSTSLOT] * sizeof(thists[0]), MEMF_ANY);
-                if (!ts) {
-                    FreeMem(et, sizeof(struct IntETask));
-                    return FALSE;
-                }
-                CopyMem(thists, ts, thists[__TS_FIRSTSLOT] * sizeof(thists[0]));
-                et->et_TaskStorage = ts;
-            }
-        }
-    }
-
     et->et_Parent = thistask;
     NEWLIST(&et->et_Children);
 
