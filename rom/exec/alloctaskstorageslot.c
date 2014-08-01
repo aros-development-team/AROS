@@ -30,9 +30,7 @@
 
     NOTES
         After this function SetTaskStorageSlot(slot) may be used to store
-        values with each slot. Data stored in a slot will be duplicated when
-        a Task creates another Task. It is left up to the caller to implement
-        a mechanism to check if this copied value is invalid.
+        values with each slot.
 
     EXAMPLE
 
