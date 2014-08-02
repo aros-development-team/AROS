@@ -39,6 +39,10 @@
 
 #include "debug.h"
 
+#ifdef AROS_USB30_CODE
+#undef AROS_USB30_CODE
+#endif
+
 /* Reply the iorequest with success */
 #define RC_OK	      0
 
