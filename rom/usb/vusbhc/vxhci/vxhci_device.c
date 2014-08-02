@@ -49,84 +49,84 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum);
 
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
-	bug("[VXHCI] Init: Entering function\n");
+    bug("[VXHCI] Init: Entering function\n");
 
-	struct VXHCIUnit *unit;
+    struct VXHCIUnit *unit;
     ULONG i;
 
-	NEWLIST(&VXHCIBase->units);
+    NEWLIST(&VXHCIBase->units);
 
     for (i=0; i<VXHCI_NUMUNITS; i++) {
-		unit = VXHCI_AddNewUnit(i);
-		if(unit == NULL) {
-			/*
-				Free previous units if any exists
-			*/
-			ForeachNode(&VXHCIBase->units, unit) {
-				bug("[VXHCI] Init: Removing unit structure %s at %p\n", unit->unit_node.ln_Name, unit);
-				REMOVE(unit);
-				FreeVec(unit);
-			}
-			return FALSE;
-		} else {
-			AddTail(&VXHCIBase->units,(struct Node *)unit);
-		}
-	}
+        unit = VXHCI_AddNewUnit(i);
+        if(unit == NULL) {
+            /*
+                Free previous units if any exists
+            */
+            ForeachNode(&VXHCIBase->units, unit) {
+                bug("[VXHCI] Init: Removing unit structure %s at %p\n", unit->unit_node.ln_Name, unit);
+                REMOVE(unit);
+                FreeVec(unit);
+            }
+            return FALSE;
+        } else {
+            AddTail(&VXHCIBase->units,(struct Node *)unit);
+        }
+    }
 
     return TRUE;
 }
 
 static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VXHCIBase, struct IOUsbHWReq *ioreq, ULONG unitnum, ULONG flags) {
-	bug("[VXHCI] Open: Entering function\n");
+    bug("[VXHCI] Open: Entering function\n");
 
-	struct VXHCIUnit *unit;
+    struct VXHCIUnit *unit;
 
-	/* Default to open failure. */
-	ioreq->iouh_Req.io_Error = IOERR_OPENFAIL;
+    /* Default to open failure. */
+    ioreq->iouh_Req.io_Error = IOERR_OPENFAIL;
 
-	/*
-		Number of units eg. virtual xhci controllers. Fail when unit number exceeds the limit.
-	*/
-	if(unitnum<VXHCI_NUMUNITS) {
+    /*
+        Number of units eg. virtual xhci controllers. Fail when unit number exceeds the limit.
+    */
+    if(unitnum<VXHCI_NUMUNITS) {
 
-		if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
-			bug("[VXHCI] Open: Invalid MN_LENGTH!\n");
-			ioreq->iouh_Req.io_Error = IOERR_BADLENGTH;
-		}
+        if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
+            bug("[VXHCI] Open: Invalid MN_LENGTH!\n");
+            ioreq->iouh_Req.io_Error = IOERR_BADLENGTH;
+        }
 
-		ioreq->iouh_Req.io_Unit = NULL;
+        ioreq->iouh_Req.io_Unit = NULL;
 
-		ForeachNode(&VXHCIBase->units, unit) {
-			bug("[VXHCI] Open: Opening unit number %d\n", unitnum);
-			if(unit->unit_number == unitnum) {
-				bug("        Found unit from node list\n");
-				ioreq->iouh_Req.io_Unit = (struct Unit *) unit;
-				break;
-			}
-		}
+        ForeachNode(&VXHCIBase->units, unit) {
+            bug("[VXHCI] Open: Opening unit number %d\n", unitnum);
+            if(unit->unit_number == unitnum) {
+                bug("        Found unit from node list\n");
+                ioreq->iouh_Req.io_Unit = (struct Unit *) unit;
+                break;
+            }
+        }
 
-		if(ioreq->iouh_Req.io_Unit != NULL) {
+        if(ioreq->iouh_Req.io_Unit != NULL) {
 
-			/* Opended ok! */
-			ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-			ioreq->iouh_Req.io_Error				   = 0;
+            /* Opened ok! */
+            ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+            ioreq->iouh_Req.io_Error				   = 0;
 
-			return TRUE;
-		} else {
-			return FALSE;
-		}
-	}
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
 
-	return FALSE;
+    return FALSE;
 }
 
 static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR VXHCIBase, struct IOUsbHWReq *ioreq) {
-	bug("[VXHCI] Close: Entering function\n");
+    bug("[VXHCI] Close: Entering function\n");
 
-	ioreq->iouh_Req.io_Unit   = (APTR) -1;
-	ioreq->iouh_Req.io_Device = (APTR) -1;
+    ioreq->iouh_Req.io_Unit   = (APTR) -1;
+    ioreq->iouh_Req.io_Device = (APTR) -1;
 
-	return TRUE;
+    return TRUE;
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
@@ -135,140 +135,140 @@ ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBase *, VXHCIBase, 5, VXHCI) {
     AROS_LIBFUNC_INIT
-	bug("[VXHCI] BeginIO: Entering function\n");
+    bug("[VXHCI] BeginIO: Entering function\n");
 
-	WORD ret = RC_OK;
+    WORD ret = RC_OK;
 
-	ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
-	ioreq->iouh_Req.io_Error				   = UHIOERR_NO_ERROR;
+    ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
+    ioreq->iouh_Req.io_Error				   = UHIOERR_NO_ERROR;
 
-	switch (ioreq->iouh_Req.io_Command) {
-		case CMD_RESET:
-			bug("[VXHCI] BeginIO: CMD_RESET\n");
-			break;
-		case CMD_FLUSH:
-			bug("[VXHCI] BeginIO: CMD_FLUSH\n");
-			break;
-		case UHCMD_QUERYDEVICE:
-			bug("[VXHCI] BeginIO: UHCMD_QUERYDEVICE\n");
-			ret = cmdQueryDevice(ioreq);
-			break;
-		case UHCMD_USBRESET:
-			bug("[VXHCI] BeginIO: UHCMD_USBRESET\n");
-			break;
-		case UHCMD_USBRESUME:
-			bug("[VXHCI] BeginIO: UHCMD_USBRESUME\n");
-			break;
-		case UHCMD_USBSUSPEND:
-			bug("[VXHCI] BeginIO: UHCMD_USBSUSPEND\n");
-			break;
-		case UHCMD_USBOPER:
-			bug("[VXHCI] BeginIO: UHCMD_USBOPER\n");
-			//ret = cmdUsbOper(ioreq);
-			break;
-		case UHCMD_CONTROLXFER:
-			bug("[VXHCI] BeginIO: UHCMD_CONTROLXFER\n");
-			break;
-		case UHCMD_BULKXFER:
-			bug("[VXHCI] BeginIO: UHCMD_BULKXFER\n");
-			break;
-		case UHCMD_INTXFER:
-			bug("[VXHCI] BeginIO: UHCMD_INTXFER\n");
-			break;
-		case UHCMD_ISOXFER:
-			bug("[VXHCI] BeginIO: UHCMD_ISOXFER\n");
-			break;
+    switch (ioreq->iouh_Req.io_Command) {
+        case CMD_RESET:
+            bug("[VXHCI] BeginIO: CMD_RESET\n");
+            break;
+        case CMD_FLUSH:
+            bug("[VXHCI] BeginIO: CMD_FLUSH\n");
+            break;
+        case UHCMD_QUERYDEVICE:
+            bug("[VXHCI] BeginIO: UHCMD_QUERYDEVICE\n");
+            ret = cmdQueryDevice(ioreq);
+            break;
+        case UHCMD_USBRESET:
+            bug("[VXHCI] BeginIO: UHCMD_USBRESET\n");
+            break;
+        case UHCMD_USBRESUME:
+            bug("[VXHCI] BeginIO: UHCMD_USBRESUME\n");
+            break;
+        case UHCMD_USBSUSPEND:
+            bug("[VXHCI] BeginIO: UHCMD_USBSUSPEND\n");
+            break;
+        case UHCMD_USBOPER:
+            bug("[VXHCI] BeginIO: UHCMD_USBOPER\n");
+            //ret = cmdUsbOper(ioreq);
+            break;
+        case UHCMD_CONTROLXFER:
+            bug("[VXHCI] BeginIO: UHCMD_CONTROLXFER\n");
+            break;
+        case UHCMD_BULKXFER:
+            bug("[VXHCI] BeginIO: UHCMD_BULKXFER\n");
+            break;
+        case UHCMD_INTXFER:
+            bug("[VXHCI] BeginIO: UHCMD_INTXFER\n");
+            break;
+        case UHCMD_ISOXFER:
+            bug("[VXHCI] BeginIO: UHCMD_ISOXFER\n");
+            break;
 
-		/* Poseidon doesn't actually check this, ever... */
-		case NSCMD_DEVICEQUERY:
-			bug("[VXHCI] BeginIO: NSCMD_DEVICEQUERY\n");
+        /* Poseidon doesn't actually check this, ever... */
+        case NSCMD_DEVICEQUERY:
+            bug("[VXHCI] BeginIO: NSCMD_DEVICEQUERY\n");
 
-			static const UWORD NSDSupported[] = {
-				CMD_FLUSH, CMD_RESET,
-				UHCMD_QUERYDEVICE,
-				UHCMD_USBRESET,
-				UHCMD_USBRESUME,
-				UHCMD_USBSUSPEND,
-				UHCMD_USBOPER,
-				UHCMD_CONTROLXFER ,
-				UHCMD_ISOXFER,
-				UHCMD_INTXFER,
-				UHCMD_BULKXFER,
-				NSCMD_DEVICEQUERY,
-				0
-			};
+            static const UWORD NSDSupported[] = {
+                CMD_FLUSH, CMD_RESET,
+                UHCMD_QUERYDEVICE,
+                UHCMD_USBRESET,
+                UHCMD_USBRESUME,
+                UHCMD_USBSUSPEND,
+                UHCMD_USBOPER,
+                UHCMD_CONTROLXFER ,
+                UHCMD_ISOXFER,
+                UHCMD_INTXFER,
+                UHCMD_BULKXFER,
+                NSCMD_DEVICEQUERY,
+                0
+            };
 
-			struct NSDeviceQueryResult *nsdq = (struct NSDeviceQueryResult *)((struct IOStdReq *)(ioreq))->io_Data;
-			nsdq->DevQueryFormat    = 0;
-			nsdq->SizeAvailable     = sizeof(struct NSDeviceQueryResult);
-			nsdq->DeviceType        = NSDEVTYPE_USBHARDWARE;
-			nsdq->DeviceSubType     = 0;
-			nsdq->SupportedCommands = (UWORD *)NSDSupported;
-			ret = RC_OK;
-			break;
-		default:
-			bug("[VXHCI] BeginIO: IOERR_NOCMD\n");
-			ret = IOERR_NOCMD;
-			break;
-	}
+            struct NSDeviceQueryResult *nsdq = (struct NSDeviceQueryResult *)((struct IOStdReq *)(ioreq))->io_Data;
+            nsdq->DevQueryFormat    = 0;
+            nsdq->SizeAvailable     = sizeof(struct NSDeviceQueryResult);
+            nsdq->DeviceType        = NSDEVTYPE_USBHARDWARE;
+            nsdq->DeviceSubType     = 0;
+            nsdq->SupportedCommands = (UWORD *)NSDSupported;
+            ret = RC_OK;
+            break;
+        default:
+            bug("[VXHCI] BeginIO: IOERR_NOCMD\n");
+            ret = IOERR_NOCMD;
+            break;
+    }
 
-	if(ret != RC_DONTREPLY) {
-		/* Set error codes */
-		if (ret != RC_OK) {
-			ioreq->iouh_Req.io_Error = ret & 0xff;
-		}
-		/* Terminate the iorequest */
-		ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
-		/* If not quick I/O, reply the message */
-		if(!(ioreq->iouh_Req.io_Flags & IOF_QUICK)) {
-			ReplyMsg(&ioreq->iouh_Req.io_Message);
-		}
-	}
+    if(ret != RC_DONTREPLY) {
+        /* Set error codes */
+        if (ret != RC_OK) {
+            ioreq->iouh_Req.io_Error = ret & 0xff;
+        }
+        /* Terminate the iorequest */
+        ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+        /* If not quick I/O, reply the message */
+        if(!(ioreq->iouh_Req.io_Flags & IOF_QUICK)) {
+            ReplyMsg(&ioreq->iouh_Req.io_Message);
+        }
+    }
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBase *, VXHCIBase, 6, VXHCI) {
-	AROS_LIBFUNC_INIT
-	bug("[VXHCI] AbortIO: Entering function\n");
+    AROS_LIBFUNC_INIT
+    bug("[VXHCI] AbortIO: Entering function\n");
 
     return TRUE;
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum) {
 
-	struct VXHCIUnit *unit;
+    struct VXHCIUnit *unit;
 
-	unit = AllocVec(sizeof(struct VXHCIUnit), MEMF_ANY|MEMF_CLEAR);
-	if(unit == NULL) {
-		bug("[VXHCI] VXHCI_AddNewUnit: Failed to create new unit structure\n");
-		return NULL;
-	} else {
-		unit->unit_node.ln_Type = NT_USER;
-		sprintf(unit->unit_name, "VXHCI%x", unitnum);
-		unit->unit_node.ln_Name = (STRPTR)&unit->unit_name;
+    unit = AllocVec(sizeof(struct VXHCIUnit), MEMF_ANY|MEMF_CLEAR);
+    if(unit == NULL) {
+        bug("[VXHCI] VXHCI_AddNewUnit: Failed to create new unit structure\n");
+        return NULL;
+    } else {
+        unit->unit_node.ln_Type = NT_USER;
+        sprintf(unit->unit_name, "VXHCI%x", unitnum);
+        unit->unit_node.ln_Name = (STRPTR)&unit->unit_name;
 
-		unit->unit_number = unitnum;
+        unit->unit_number = unitnum;
 
-		unit->unit_state = UHSF_SUSPENDED;
+        unit->unit_state = UHSF_SUSPENDED;
 
-		bug("[VXHCI] VXHCI_AddNewUnit:\n");
-		bug("        Created new unit numbered %d at %p\n",unit->unit_number, unit);
-		bug("        Unit node name %s\n", unit->unit_node.ln_Name);
-		D(switch(unit->unit_state) {
-			case UHSF_SUSPENDED:
-				bug("        Unit state: UHSF_SUSPENDED\n");
-				break;
-			case UHSF_OPERATIONAL:
-				bug("        Unit state: UHSF_OPERATIONAL\n");
-				break;
-			default:
-				bug("        Unit state: %lx (Error?)\n", unit->unit_state);
-				break;
-		});
+        bug("[VXHCI] VXHCI_AddNewUnit:\n");
+        bug("        Created new unit numbered %d at %p\n",unit->unit_number, unit);
+        bug("        Unit node name %s\n", unit->unit_node.ln_Name);
+        D(switch(unit->unit_state) {
+            case UHSF_SUSPENDED:
+                bug("        Unit state: UHSF_SUSPENDED\n");
+                break;
+            case UHSF_OPERATIONAL:
+                bug("        Unit state: UHSF_OPERATIONAL\n");
+                break;
+            default:
+                bug("        Unit state: %lx (Error?)\n", unit->unit_state);
+                break;
+        });
 
-		return unit;
-	}
+        return unit;
+    }
 }
 
