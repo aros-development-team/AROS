@@ -40,7 +40,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_Capabilities:
-                *((ULONG *) tag->ti_Data) = (ULONG) UHCF_USB30;
+                *((ULONG *) tag->ti_Data) = (ULONG) (UHCF_USB20|UHCF_USB30);
                 count++;
                 break;
             default:
