@@ -32,21 +32,21 @@
 /* Maximum number of units */
 #define VXHCI_NUMUNITS 2
 
-#define RC_OK		   0
-#define RC_DONTREPLY  -1
+#define RC_OK         0
+#define RC_DONTREPLY -1
 
 struct VXHCIUnit {
-	struct Node		unit_node;
-	char			unit_name[256];
-	ULONG			unit_number;
-	ULONG			unit_state;
+    struct Node     unit_node;
+    char            unit_name[256];
+    ULONG           unit_number;
+    ULONG           unit_state;
 };
 
 struct VXHCIBase {
 
-	struct Device				device;
-	/* UNIT refers to one of the virtual xhci controllers. */
-	struct List					units;
+    struct Device   device;
+    /* UNIT refers to one of the virtual xhci controllers. */
+    struct List     units;
 
 };
 
