@@ -32,7 +32,7 @@
         
         Tooltypes for script icon:
             WINDOW            -- Specification of the shell window
-                                 default: con:0/50//80/IconX/Auto
+                                 default: con:0/50//120/IconX/AUTO/WAIT/CLOSE
             STACK=n           -- default: 40960
             USERSHELL=YES|NO  -- default: YES
             WAIT=n            -- Wait n seconds before closing window (default 2)
@@ -72,14 +72,14 @@
 #include <stdio.h>
 
 /* some default values */
-#define DEFWINDOW "con:0/50//80/IconX/Auto"
+#define DEFWINDOW "con:0/50//120/IconX/AUTO/WAIT/CLOSE"
 #define DEFSTACK  (40960)
 #define DEFWAIT   (2 * 50) // two seconds
 #define DEFUSHELL (TRUE)
 
 #define BASECOMMAND "EXECUTE "
 
-const TEXT version[] = "\0$VER: IconX 41.3 (23.1.2012)";
+const TEXT version[] = "\0$VER: IconX 41.4 (2.8.2014)";
 int __forceerrorrequester = 1;
 static TEXT errbuffer[255];
 
