@@ -44,7 +44,7 @@
 #include <aros/debug.h>
 
 WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
-cmdQueryDevice(struct IOUsbHWReq *ioreq);
+WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);
 struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum);
 
 
