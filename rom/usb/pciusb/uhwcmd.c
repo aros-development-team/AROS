@@ -11,6 +11,10 @@
 #include "uhwcmd.h"
 #include "ohciproto.h"
 
+#ifdef AROS_USB30_CODE
+#undef AROS_USB30_CODE
+#endif
+
 #define NewList NEWLIST
 
 /* we cannot use AROS_WORD2LE in struct initializer */

@@ -26,6 +26,9 @@
 struct Library *ACPICABase = NULL;
 #endif
 
+#ifdef AROS_USB30_CODE
+#undef AROS_USB30_CODE
+#endif
 
 #define NewList NEWLIST
 
