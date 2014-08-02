@@ -1,0 +1,10 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := vxhci_device vxhci_commands
+
+%build_module mmake=kernel-usb-virtual-xhci \
+	modname=vxhci modtype=device \
+	moduledir=Devs/USBHardware \
+	files="$(FILES)" \
+	uselibs="stdc arossupport"
