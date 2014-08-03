@@ -45,8 +45,10 @@
 
 WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);
-struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum);
+WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
 
+struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum);
+struct VXHCIPort *VXHCI_AddNewPort(ULONG unitnum, ULONG portnum);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
     bug("[VXHCI] Init: Entering function\n");
@@ -54,7 +56,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
     struct VXHCIUnit *unit;
     ULONG i;
 
-    NEWLIST(&VXHCIBase->units);
+    NEWLIST(&VXHCIBase->unit_list);
 
     for (i=0; i<VXHCI_NUMUNITS; i++) {
         unit = VXHCI_AddNewUnit(i);
@@ -62,14 +64,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
             /*
                 Free previous units if any exists
             */
-            ForeachNode(&VXHCIBase->units, unit) {
+            ForeachNode(&VXHCIBase->unit_list, unit) {
                 bug("[VXHCI] Init: Removing unit structure %s at %p\n", unit->unit_node.ln_Name, unit);
                 REMOVE(unit);
                 FreeVec(unit);
             }
             return FALSE;
         } else {
-            AddTail(&VXHCIBase->units,(struct Node *)unit);
+            AddTail(&VXHCIBase->unit_list,(struct Node *)unit);
         }
     }
 
@@ -96,7 +98,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VXHCIBase, struct IOUsbHWReq *iore
 
         ioreq->iouh_Req.io_Unit = NULL;
 
-        ForeachNode(&VXHCIBase->units, unit) {
+        ForeachNode(&VXHCIBase->unit_list, unit) {
             bug("[VXHCI] Open: Opening unit number %d\n", unitnum);
             if(unit->unit_number == unitnum) {
                 bug("        Found unit from node list\n");
@@ -168,6 +170,7 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
             break;
         case UHCMD_CONTROLXFER:
             bug("[VXHCI] BeginIO: UHCMD_CONTROLXFER\n");
+            ret = cmdControlXFer(ioreq);
             break;
         case UHCMD_BULKXFER:
             bug("[VXHCI] BeginIO: UHCMD_BULKXFER\n");
@@ -239,6 +242,9 @@ AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
 struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum) {
 
     struct VXHCIUnit *unit;
+    struct VXHCIPort *port;
+
+    ULONG i;
 
     unit = AllocVec(sizeof(struct VXHCIUnit), MEMF_ANY|MEMF_CLEAR);
     if(unit == NULL) {
@@ -246,12 +252,32 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum) {
         return NULL;
     } else {
         unit->unit_node.ln_Type = NT_USER;
-        sprintf(unit->unit_name, "VXHCI%x", unitnum);
+        unit->unit_number = unitnum;
+        sprintf(unit->unit_name, "VXHCI%x", unit->unit_number);
         unit->unit_node.ln_Name = (STRPTR)&unit->unit_name;
 
-        unit->unit_number = unitnum;
-
         unit->unit_state = UHSF_SUSPENDED;
+
+        NEWLIST(&unit->unit_roothub.port_list);
+        for (i=0; i<VXHCI_NUMPORTS*2; i++) {
+
+            port = VXHCI_AddNewPort(unitnum, i);
+            if(port == NULL) {
+                /*
+                    Free previous ports if any exists and delete this unit
+                */
+                bug("[VXHCI] VXHCI_AddNewUnit: Failed to create new port structure\n");
+                ForeachNode(&unit->unit_roothub.port_list, port) {
+                    bug("[VXHCI] VXHCI_AddNewUnit: Removing port structure %s at %p\n", port->port_node.ln_Name, port);
+                    REMOVE(port);
+                    FreeVec(port);
+                }
+                FreeVec(unit);
+                return FALSE;
+            } else {
+                AddTail(&unit->unit_roothub.port_list,(struct Node *)port);
+            }
+        }
 
         bug("[VXHCI] VXHCI_AddNewUnit:\n");
         bug("        Created new unit numbered %d at %p\n",unit->unit_number, unit);
@@ -270,5 +296,44 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum) {
 
         return unit;
     }
+}
+
+struct VXHCIPort *VXHCI_AddNewPort(ULONG unitnum, ULONG portnum) {
+    struct VXHCIPort *port;
+
+    port = AllocVec(sizeof(struct VXHCIPort), MEMF_ANY|MEMF_CLEAR);
+    if(port == NULL) {
+        bug("[VXHCI] VXHCI_AddNewPort: Failed to create new port structure\n");
+        return NULL;
+    } else {
+        port->port_node.ln_Type = NT_USER;
+        /* Poseidon treats port number 0 as roothub */
+        port->port_number = portnum+1;
+        sprintf(port->port_name, "VXHCI%x:%x", unitnum, port->port_number);
+        port->port_node.ln_Name = (STRPTR)&port->port_name;
+
+        if(portnum<VXHCI_NUMPORTS) {
+            port->port_type = 2;
+        } else {
+            port->port_type = 3;
+        }
+    }
+
+    bug("[VXHCI] VXHCI_AddNewPort:\n");
+    bug("        Created new port numbered %d at %p\n",port->port_number, port);
+    bug("        Port node name %s\n", port->port_node.ln_Name);
+    D(switch(port->port_type) {
+        case 2:
+            bug("        Port type: USB2.0\n");
+            break;
+        case 3:
+            bug("        Port type: USB3.0\n");
+            break;
+        default:
+            bug("        Port type: %lx (Error?)\n", port->port_type);
+            break;
+    });
+
+    return port;
 }
 
