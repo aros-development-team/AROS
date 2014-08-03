@@ -52,3 +52,35 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
     return RC_OK;
 }
 
+WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
+    bug("[VXHCI] cmdControlXFer: Entering function\n");
+
+    struct VXHCIUnit *unit;
+
+    bug("[VXHCI] cmdControlXFer: ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr);
+
+    /* Check the status of the controller */
+    unit = ioreq->iouh_Req.io_Unit;
+    if(unit != NULL) {
+        switch(unit->unit_state) {
+            default:
+            case UHSF_SUSPENDED:
+                bug("[VXHCI] cmdControlXFer: Unit state: UHSF_SUSPENDED\n");
+                return UHIOERR_USBOFFLINE;
+                break;
+            case UHSF_OPERATIONAL:
+                bug("[VXHCI] cmdControlXFer: Unit state: UHSF_OPERATIONAL\n");
+                break;
+        }
+    } else {
+        /* CHECKME: Is this correct? */
+        return UHIOERR_BADPARAMS;
+    }
+
+    /* Assuming when iouh_DevAddr is 0 it addresses hub... */
+
+    return RC_DONTREPLY;
+}
+
+
+
