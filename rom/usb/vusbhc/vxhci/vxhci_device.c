@@ -43,10 +43,6 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
-WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);
-WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
-
 struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum);
 struct VXHCIPort *VXHCI_AddNewPort(ULONG unitnum, ULONG portnum);
 
@@ -157,6 +153,7 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
             break;
         case UHCMD_USBRESET:
             bug("[VXHCI] BeginIO: UHCMD_USBRESET\n");
+            ret = cmdUsbReset(ioreq);
             break;
         case UHCMD_USBRESUME:
             bug("[VXHCI] BeginIO: UHCMD_USBRESUME\n");

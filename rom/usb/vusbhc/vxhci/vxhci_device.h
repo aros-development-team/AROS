@@ -39,6 +39,12 @@
 #define RC_OK         0
 #define RC_DONTREPLY -1
 
+WORD cmdUsbReset(struct IOUsbHWReq *ioreq);
+WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
+WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);
+WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
+WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq);
+
 struct VXHCIPort {
     struct Node         port_node;
     char                port_name[256];
