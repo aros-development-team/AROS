@@ -33,8 +33,8 @@
 #define VXHCI_NUMCONTROLLERS 1
 
 /* Maximum number of ports per protocol (USB2.0/USB3.0) */
-#define VXHCI_NUMPORTS20 2
-#define VXHCI_NUMPORTS30 4
+#define VXHCI_NUMPORTS20 1
+#define VXHCI_NUMPORTS30 1
 
 #define RC_OK         0
 #define RC_DONTREPLY -1
@@ -64,12 +64,13 @@ struct VXHCIUnit {
     ULONG               unit_type;
     ULONG               unit_state;
     struct VXHCIRootHub unit_roothub;
+    UWORD               unit_roothubaddr;
 };
 
 struct VXHCIBase {
 
     struct Device       device;
-    /* UNIT refers to one of the virtual xhci controllers. */
+    /* UNIT refers to one of the virtual xhci controllers per port protocol. */
     struct List         unit_list;
     ULONG               unit_count;
 
