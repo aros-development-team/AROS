@@ -43,7 +43,7 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum);
+struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, ULONG unittype);
 struct VXHCIPort *VXHCI_AddNewPort(ULONG unitnum, ULONG portnum);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
@@ -53,9 +53,12 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
     ULONG i;
 
     NEWLIST(&VXHCIBase->unit_list);
+    VXHCIBase->unit_count = 0;
 
-    for (i=0; i<VXHCI_NUMUNITS; i++) {
-        unit = VXHCI_AddNewUnit(i);
+    for (i=0; i<VXHCI_NUMCONTROLLERS; i++) {
+
+        #ifdef VXHCI_NUMPORTS20
+        unit = VXHCI_AddNewUnit(i, 2);
         if(unit == NULL) {
             /*
                 Free previous units if any exists
@@ -68,7 +71,26 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
             return FALSE;
         } else {
             AddTail(&VXHCIBase->unit_list,(struct Node *)unit);
+            VXHCIBase->unit_count++;
         }
+        #endif
+
+        unit = VXHCI_AddNewUnit(i, 3);
+        if(unit == NULL) {
+            /*
+                Free previous units if any exists
+            */
+            ForeachNode(&VXHCIBase->unit_list, unit) {
+                bug("[VXHCI] Init: Removing unit structure %s at %p\n", unit->unit_node.ln_Name, unit);
+                REMOVE(unit);
+                FreeVec(unit);
+            }
+            return FALSE;
+        } else {
+            AddTail(&VXHCIBase->unit_list,(struct Node *)unit);
+            VXHCIBase->unit_count++;
+        }
+
     }
 
     return TRUE;
@@ -83,9 +105,10 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VXHCIBase, struct IOUsbHWReq *iore
     ioreq->iouh_Req.io_Error = IOERR_OPENFAIL;
 
     /*
-        Number of units eg. virtual xhci controllers. Fail when unit number exceeds the limit.
+        Number of units eg. virtual xhci controllers.
+        Host controller is divided into individual units if it has both usb2.0 and usb3.0 ports
     */
-    if(unitnum<VXHCI_NUMUNITS) {
+    if(unitnum<VXHCIBase->unit_count) {
 
         if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
             bug("[VXHCI] Open: Invalid MN_LENGTH!\n");
@@ -236,12 +259,12 @@ AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
     AROS_LIBFUNC_EXIT
 }
 
-struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum) {
+struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, ULONG unittype) {
 
     struct VXHCIUnit *unit;
     struct VXHCIPort *port;
 
-    ULONG i;
+    ULONG i, imax;
 
     unit = AllocVec(sizeof(struct VXHCIUnit), MEMF_ANY|MEMF_CLEAR);
     if(unit == NULL) {
@@ -252,11 +275,22 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum) {
         unit->unit_number = unitnum;
         sprintf(unit->unit_name, "VXHCI%x", unit->unit_number);
         unit->unit_node.ln_Name = (STRPTR)&unit->unit_name;
-
+        unit->unit_type = unittype;
         unit->unit_state = UHSF_SUSPENDED;
 
         NEWLIST(&unit->unit_roothub.port_list);
-        for (i=0; i<VXHCI_NUMPORTS*2; i++) {
+
+        #ifdef VXHCI_NUMPORTS20
+        if(unittype == 2) {
+            imax = VXHCI_NUMPORTS20;
+        } else {
+            imax = VXHCI_NUMPORTS30;
+        }
+        #else
+        imax = VXHCI_NUMPORTS30;
+        #endif
+
+        for (i=0; i<imax; i++) {
 
             port = VXHCI_AddNewPort(unitnum, i);
             if(port == NULL) {
@@ -273,12 +307,26 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum) {
                 return FALSE;
             } else {
                 AddTail(&unit->unit_roothub.port_list,(struct Node *)port);
+                unit->unit_roothub.port_count++;
             }
         }
 
         bug("[VXHCI] VXHCI_AddNewUnit:\n");
         bug("        Created new unit numbered %d at %p\n",unit->unit_number, unit);
         bug("        Unit node name %s\n", unit->unit_node.ln_Name);
+
+        D(switch(unit->unit_type) {
+            case 2:
+                bug("        Unit type: USB2.0\n");
+                break;
+            case 3:
+                bug("        Unit type: USB3.0\n");
+                break;
+            default:
+                bug("        Unit type: %lx (Error?)\n", unit->unit_type);
+                break;
+        });
+
         D(switch(unit->unit_state) {
             case UHSF_SUSPENDED:
                 bug("        Unit state: UHSF_SUSPENDED\n");
@@ -308,28 +356,12 @@ struct VXHCIPort *VXHCI_AddNewPort(ULONG unitnum, ULONG portnum) {
         port->port_number = portnum+1;
         sprintf(port->port_name, "VXHCI%x:%x", unitnum, port->port_number);
         port->port_node.ln_Name = (STRPTR)&port->port_name;
-
-        if(portnum<VXHCI_NUMPORTS) {
-            port->port_type = 2;
-        } else {
-            port->port_type = 3;
-        }
     }
 
     bug("[VXHCI] VXHCI_AddNewPort:\n");
     bug("        Created new port numbered %d at %p\n",port->port_number, port);
     bug("        Port node name %s\n", port->port_node.ln_Name);
-    D(switch(port->port_type) {
-        case 2:
-            bug("        Port type: USB2.0\n");
-            break;
-        case 3:
-            bug("        Port type: USB3.0\n");
-            break;
-        default:
-            bug("        Port type: %lx (Error?)\n", port->port_type);
-            break;
-    });
+
 
     return port;
 }

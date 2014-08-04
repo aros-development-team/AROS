@@ -30,11 +30,11 @@
 #include <devices/newstyle.h>
 
 /* Maximum number of units */
-#define VXHCI_NUMUNITS 1
+#define VXHCI_NUMCONTROLLERS 1
 
 /* Maximum number of ports per protocol (USB2.0/USB3.0) */
-/* FIXME: Allow any arbitrary port count per protocol */
-#define VXHCI_NUMPORTS 2
+#define VXHCI_NUMPORTS20 2
+#define VXHCI_NUMPORTS30 4
 
 #define RC_OK         0
 #define RC_DONTREPLY -1
@@ -50,17 +50,18 @@ struct VXHCIPort {
     char                port_name[256];
     ULONG               port_number;
     ULONG               port_state;
-    ULONG               port_type;
 };
 
 struct VXHCIRootHub {
     struct List         port_list;
+    ULONG               port_count;
 };
 
 struct VXHCIUnit {
     struct Node         unit_node;
     char                unit_name[256];
     ULONG               unit_number;
+    ULONG               unit_type;
     ULONG               unit_state;
     struct VXHCIRootHub unit_roothub;
 };
@@ -70,6 +71,7 @@ struct VXHCIBase {
     struct Device       device;
     /* UNIT refers to one of the virtual xhci controllers. */
     struct List         unit_list;
+    ULONG               unit_count;
 
 };
 

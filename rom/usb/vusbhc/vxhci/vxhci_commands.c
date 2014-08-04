@@ -138,58 +138,159 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
 WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     bug("[VXHCI] cmdControlXFerRootHub: Entering function\n");
 
-    UWORD rt = ioreq->iouh_SetupData.bmRequestType;
-    UWORD req = ioreq->iouh_SetupData.bRequest;
-    UWORD idx = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    UWORD val = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    UWORD len = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+    //UWORD rt = ioreq->iouh_SetupData.bmRequestType;
+    //UWORD req = ioreq->iouh_SetupData.bRequest;
+    //UWORD idx = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
+    //UWORD val = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+    //UWORD len = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
-    bug("[VXHCI] cmdControlXFerRootHub: Endpoint number is %ld and request type is %lx\n", ioreq->iouh_Endpoint, rt);
+    UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType) & (URTF_STANDARD | URTF_CLASS | URTF_VENDOR);
+    UWORD bmRequestDirection = (ioreq->iouh_SetupData.bmRequestType) & (URTF_IN | URTF_OUT);
+    UWORD bmRequestRecipient = (ioreq->iouh_SetupData.bmRequestType) & (URTF_DEVICE | URTF_INTERFACE | URTF_ENDPOINT | URTF_OTHER);
+
+    UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
+    UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+
+    bug("[VXHCI] cmdControlXFerRootHub: Endpoint number is %ld \n", ioreq->iouh_Endpoint);
 
     /* Endpoint 0 is used for control transfers only and can not be assigned to any other function. */
     if(ioreq->iouh_Endpoint != 0) {
         return UHIOERR_BADPARAMS;
     }
 
-    /* Check the request type */
-    if(rt&&URTF_IN) {
+    /* Check the request */
+    if(bmRequestDirection) {
         bug("[VXHCI] cmdControlXFerRootHub: Request direction is device to host\n");
-    } else {
-        bug("[VXHCI] cmdControlXFerRootHub: Request direction is host to device\n");
-    }
 
-/*
-    switch(rt) {
-        case (URTF_STANDARD|URTF_DEVICE):
-            bug("[VXHCI] cmdControlXFerRootHub: switch(rt) (URTF_STANDARD|URTF_DEVICE)\n");
-            switch(req) {
-                case USR_SET_ADDRESS:
-                    bug("[VXHCI] cmdControlXFerRootHub: switch(req) (USR_SET_ADDRESS) SetAddress = %ld\n", val);
-                    //unit->hu_RootHubAddr = val;
-                    ioreq->iouh_Actual = len;
-                    return(0);
-                case USR_SET_CONFIGURATION:
-                    bug("[VXHCI] cmdControlXFerRootHub: switch(req) (USR_SET_CONFIGURATION) SetConfiguration = %ld\n", val);
-                    ioreq->iouh_Actual = len;
-                    return(0);
-            }
-            break;
-        case (URTF_IN|URTF_STANDARD|URTF_DEVICE):
-            bug("[VXHCI] cmdControlXFerRootHub: switch(rt) (URTF_IN|URTF_STANDARD|URTF_DEVICE)\n");
-            break;
-        case (URTF_CLASS|URTF_OTHER):
-            bug("[VXHCI] cmdControlXFerRootHub: switch(rt) (URTF_CLASS|URTF_OTHER)\n");
-            break;
-        case (URTF_IN|URTF_CLASS|URTF_OTHER):
-            bug("[VXHCI] cmdControlXFerRootHub: switch(rt) (URTF_IN|URTF_CLASS|URTF_OTHER)\n");
-            break;
-        case (URTF_IN|URTF_CLASS|URTF_DEVICE):
-            bug("[VXHCI] cmdControlXFerRootHub: switch(rt) (URTF_IN|URTF_CLASS|URTF_DEVICE)\n");
-            break;
-        default:
-            bug("[VXHCI] cmdControlXFerRootHub: switch(rt) DEFAULT\n");
-            break;
-    } /* switch(rt) */
+        switch(bmRequestType) {
+            case URTF_STANDARD:
+                bug("[VXHCI] cmdControlXFerRootHub: URTF_STANDARD\n");
+
+                switch(bmRequestRecipient) {
+                    case URTF_DEVICE:
+                        bug("[VXHCI] cmdControlXFerRootHub: URTF_DEVICE\n");
+
+                        switch(bRequest) {
+                            case USR_GET_DESCRIPTOR:
+                                bug("[VXHCI] cmdControlXFerRootHub: USR_GET_DESCRIPTOR\n");
+
+                                switch( (wValue>>8) ) {
+                                    case UDT_DEVICE:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_DEVICE\n");
+
+    
+
+                                        break;
+
+                                    case UDT_CONFIGURATION:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_CONFIGURATION\n");
+                                        break;
+
+                                    case UDT_STRING:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_STRING\n");
+                                        break;
+
+                                    case UDT_INTERFACE:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_INTERFACE\n");
+                                        break;
+
+                                    case UDT_ENDPOINT:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_ENDPOINT\n");
+                                        break;
+
+                                    case UDT_DEVICE_QUALIFIER:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_DEVICE_QUALIFIER\n");
+                                        break;
+
+                                    case UDT_OTHERSPEED_QUALIFIER:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_OTHERSPEED_QUALIFIER\n");
+                                        break;
+
+                                    case UDT_INTERFACE_POWER:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_INTERFACE_POWER\n");
+                                        break;
+
+                                    case UDT_OTG:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_OTG\n");
+                                        break;
+
+                                    case UDT_DEBUG:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_DEBUG\n");
+                                        break;
+
+                                    case UDT_INTERFACE_ASSOCIATION:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_INTERFACE_ASSOCIATION\n");
+                                        break;
+
+                                    case UDT_SECURITY:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_SECURITY\n");
+                                        break;
+
+                                    case UDT_ENCRYPTION_TYPE:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_ENCRYPTION_TYPE\n");
+                                        break;
+
+                                    case UDT_BOS:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_BOS\n");
+                                        break;
+
+                                    case UDT_DEVICE_CAPABILITY:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_DEVICE_CAPABILITY\n");
+                                        break;
+
+                                    case UDT_WIRELESS_EP_COMP:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_WIRELESS_EP_COMP\n");
+                                        break;
+
+                                } /* switch( (wValue>>8) ) */
+                                break;
+
+                        } /* switch(bRequest) */
+                        break; /* case URTF_DEVICE: */
+
+                    case URTF_INTERFACE:
+                        bug("[VXHCI] cmdControlXFerRootHub: URTF_INTERFACE\n");
+                        break;
+
+                    case URTF_ENDPOINT:
+                        bug("[VXHCI] cmdControlXFerRootHub: URTF_ENDPOINT\n");
+                        break;
+
+                    case URTF_OTHER:
+                        bug("[VXHCI] cmdControlXFerRootHub: URTF_OTHER\n");
+                        break;
+
+                } /* switch(bmRequestRecipient) */
+                break;
+
+            case URTF_CLASS:
+                bug("[VXHCI] cmdControlXFerRootHub: URTF_CLASS\n");
+                break;
+
+            case URTF_VENDOR:
+                bug("[VXHCI] cmdControlXFerRootHub: URTF_VENDOR\n");
+                break;
+        } /* switch(bmRequestType) */
+
+    } else { /* if(bmRequestDirection) */
+        bug("[VXHCI] cmdControlXFerRootHub: Request direction is host to device\n");
+
+        switch(bmRequestType) {
+            case URTF_STANDARD:
+                bug("[VXHCI] cmdControlXFerRootHub: URTF_STANDARD\n");
+                break;
+
+            case URTF_CLASS:
+                bug("[VXHCI] cmdControlXFerRootHub: URTF_CLASS\n");
+                break;
+
+            case URTF_VENDOR:
+                bug("[VXHCI] cmdControlXFerRootHub: URTF_VENDOR\n");
+                break;
+
+        } /* switch(bmRequestType) */
+
+    } /* if(bmRequestDirection) */
 
     return UHIOERR_BADPARAMS;
 }
