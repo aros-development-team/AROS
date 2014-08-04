@@ -56,7 +56,8 @@
 
     Forbid(); /* Accessing other task's et_TaskStorage */
 
-    result = TaskGetStorageSlot(et->et_Parent, id);
+    if (et->et_Parent)
+        result = TaskGetStorageSlot(et->et_Parent, id);
 
     Permit();
 
