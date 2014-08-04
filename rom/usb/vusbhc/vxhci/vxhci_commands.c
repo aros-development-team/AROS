@@ -26,8 +26,6 @@
 #define WORD2LE(w) (w)
 #endif
 
-const struct UsbStdDevDesc RHDevDesc = { sizeof(struct UsbStdDevDesc), UDT_DEVICE, WORD2LE(0x0110), HUB_CLASSCODE, 0, 0, 8, WORD2LE(0x0000), WORD2LE(0x0000), WORD2LE(0x0100), 1, 2, 0, 1 };
-
 const struct UsbSSHubDesc  RHSSHubDesc = { 12,                                           // 0 Number of bytes in this descriptor, including this byte. (12 bytes)
                                            UDT_SSHUB,                                    // 1 Descriptor Type, value: 2AH for SuperSpeed hub descriptor
                                            0,                                            // 2 Number of downstream facing ports that this hub supports. The maximum number of ports a hub can support is 15
@@ -38,6 +36,8 @@ const struct UsbSSHubDesc  RHSSHubDesc = { 12,                                  
                                            0,                                            // 8 wHubDelay
                                            0                                             // 10 DeviceRemovable
                                          };
+
+CONST_STRPTR root_hub_strings[] = { "The AROS Development Team.", "Virtual Root Hub Unit %d", "Standard Config", "Hub interface" };
 
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
     struct TagItem *taglist = (struct TagItem *) ioreq->iouh_Data;
@@ -97,8 +97,6 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
 
     bug("[VXHCI] cmdControlXFer: ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr);
 
-
-
     /*
         Check the status of the controller
         We might encounter these states:
@@ -114,10 +112,10 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
         return UHIOERR_USBOFFLINE;
     }
 
-    /* Assuming when iouh_DevAddr is 0 it addresses hub... */
-    if(ioreq->iouh_DevAddr == 0) {
+    /* Assuming when iouh_DevAddr is 0 it addresses hub... no no, all wrong... */
+//    if(ioreq->iouh_DevAddr == 0) {
         return(cmdControlXFerRootHub(ioreq));
-    }
+//    }
 
     return RC_DONTREPLY;
 }
@@ -137,6 +135,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
     UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
     UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+    UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
@@ -166,17 +165,84 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 switch( (wValue>>8) ) {
                                     case UDT_DEVICE:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_DEVICE\n");
+                                        bug("[VXHCI] cmdControlXFerRootHub: GetDeviceDescriptor (%ld)\n", wLength);
 
-    
+                                        struct UsbStdDevDesc *usdd = (struct UsbStdDevDesc *) ioreq->iouh_Data;
 
+                                        usdd->bLength            = sizeof(struct UsbStdDevDesc);
+                                        usdd->bDescriptorType    = UDT_DEVICE;
+                                        //usdd->bcdUSB             = WORD2LE(0x0110);
+                                        usdd->bDeviceClass       = HUB_CLASSCODE;
+                                        usdd->bDeviceSubClass    = 0;
+                                        usdd->bDeviceProtocol    = 0;
+                                        usdd->bMaxPacketSize0    = 8;
+                                        usdd->idVendor           = WORD2LE(0x0000);
+                                        usdd->idProduct          = WORD2LE(0x0000);
+                                        usdd->bcdDevice          = WORD2LE(0x0100);
+                                        usdd->iManufacturer      = 0; //1 strings not yeat implemented
+                                        usdd->iProduct           = 0; //2 strings not yeat implemented
+                                        usdd->iSerialNumber      = 0;
+                                        usdd->bNumConfigurations = 1;
+
+                                        if(unit->unit_type == 2) {
+                                            bug("[VXHCI] cmdControlXFerRootHub: USB2.0 unit\n");
+                                            usdd->bcdUSB = AROS_WORD2LE(0x0200); // signal a highspeed root hub
+                                        } else {
+                                            bug("[VXHCI] cmdControlXFerRootHub: USB3.0 unit\n");
+                                            usdd->bcdUSB = AROS_WORD2LE(0x0300); // signal a superspeed root hub
+                                        }
+
+                                        ioreq->iouh_Actual = wLength;
+                                        return(0);
                                         break;
 
                                     case UDT_CONFIGURATION:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_CONFIGURATION\n");
+
+                                        typedef struct RHConfig{
+                                            struct UsbStdCfgDesc rhcfgdesc;
+                                            struct UsbStdIfDesc  rhifdesc;
+                                            struct UsbStdEPDesc  rhepdesc;
+                                        } RHConfig;
+
+                                        struct RHConfig *rhconfig = (struct RHConfig *) ioreq->iouh_Data;
+
+                                        rhconfig->rhcfgdesc.bLength             = sizeof(struct UsbStdCfgDesc);
+                                        rhconfig->rhcfgdesc.bDescriptorType     = UDT_CONFIGURATION;
+                                        rhconfig->rhcfgdesc.wTotalLength        = AROS_WORD2LE(sizeof(RHConfig));
+                                        rhconfig->rhcfgdesc.bNumInterfaces      = 1;
+                                        rhconfig->rhcfgdesc.bConfigurationValue = 1;
+                                        rhconfig->rhcfgdesc.iConfiguration      = 0; // 3 strings not yeat implemented
+                                        rhconfig->rhcfgdesc.bmAttributes        = (USCAF_ONE|USCAF_SELF_POWERED);
+                                        rhconfig->rhcfgdesc.bMaxPower           = 0;
+
+                                        rhconfig->rhifdesc.bLength              = sizeof(struct UsbStdIfDesc);
+                                        rhconfig->rhifdesc.bDescriptorType      = UDT_INTERFACE;
+                                        rhconfig->rhifdesc.bInterfaceNumber     = 0;
+                                        rhconfig->rhifdesc.bAlternateSetting    = 0;
+                                        rhconfig->rhifdesc.bNumEndpoints        = 1;
+                                        rhconfig->rhifdesc.bInterfaceClass      = HUB_CLASSCODE;
+                                        rhconfig->rhifdesc.bInterfaceSubClass   = 0;
+                                        rhconfig->rhifdesc.bInterfaceProtocol   = 0;
+                                        rhconfig->rhifdesc.iInterface           = 0; //4 strings not yeat implemented
+
+                                        rhconfig->rhepdesc.bLength              = sizeof(struct UsbStdEPDesc);
+                                        rhconfig->rhepdesc.bDescriptorType      = UDT_ENDPOINT;
+                                        rhconfig->rhepdesc.bEndpointAddress     = (URTF_IN|1);
+                                        rhconfig->rhepdesc.bmAttributes         = USEAF_INTERRUPT;
+                                        rhconfig->rhepdesc.wMaxPacketSize       = WORD2LE(8);
+                                        rhconfig->rhepdesc.bInterval            = 12;
+
+                                        bug("sizeof(RHConfig) = %ld (should be 25)\n", sizeof(RHConfig));
+                                        ioreq->iouh_Actual = sizeof(RHConfig);
+                                        return(0);
+
                                         break;
 
                                     case UDT_STRING:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_STRING\n");
+
+
                                         break;
 
                                     case UDT_INTERFACE:
@@ -267,6 +333,42 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
         switch(bmRequestType) {
             case URTF_STANDARD:
                 bug("[VXHCI] cmdControlXFerRootHub: URTF_STANDARD\n");
+
+                switch(bmRequestRecipient) {
+                    case URTF_DEVICE:
+                        bug("[VXHCI] cmdControlXFerRootHub: URTF_DEVICE\n");
+
+                        switch(bRequest) {
+                            case USR_SET_ADDRESS:
+                                bug("[VXHCI] cmdControlXFerRootHub: USR_SET_ADDRESS\n");
+                                unit->unit_roothubaddr = wValue;
+                                ioreq->iouh_Actual = wLength;
+                                return(0);
+                                break;
+
+                            case USR_SET_CONFIGURATION:
+                                /* We do not have alternative configuration */
+                                bug("[VXHCI] cmdControlXFerRootHub: USR_SET_CONFIGURATION\n");
+                                ioreq->iouh_Actual = wLength;
+                                return(0);
+                                break;
+
+                        } /* switch(bRequest) */
+                        break;
+
+                    case URTF_INTERFACE:
+                        bug("[VXHCI] cmdControlXFerRootHub: URTF_INTERFACE\n");
+                        break;
+
+                    case URTF_ENDPOINT:
+                        bug("[VXHCI] cmdControlXFerRootHub: URTF_ENDPOINT\n");
+                        break;
+
+                    case URTF_OTHER:
+                        bug("[VXHCI] cmdControlXFerRootHub: URTF_OTHER\n");
+                        break;
+
+                } /* switch(bmRequestRecipient) */
                 break;
 
             case URTF_CLASS:
