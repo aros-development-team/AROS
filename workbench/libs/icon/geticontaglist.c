@@ -198,6 +198,13 @@
                     UnLockObject(lock);
                 }
             }
+
+            /*
+             * If everything else fails, just lie. Not having do_Type set
+             * causes problems.
+             */
+            if (icon != NULL && icon->do_Type == 0)
+                icon->do_Type = WBPROJECT;
         }
     } else {
     	/* NULL name = return empty DiskObject */
