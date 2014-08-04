@@ -157,7 +157,7 @@ ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBase *, VXHCIBase, 5, VXHCI) {
     AROS_LIBFUNC_INIT
-    bug("[VXHCI] BeginIO: Entering function\n");
+    //bug("[VXHCI] BeginIO: Entering function\n");
 
     WORD ret = RC_OK;
 
@@ -201,7 +201,7 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
                 bug("[VXHCI] BeginIO: UHCMD_BULKXFER\n");
                 break;
             case UHCMD_INTXFER:
-                bug("[VXHCI] BeginIO: UHCMD_INTXFER\n");
+                //bug("[VXHCI] BeginIO: UHCMD_INTXFER\n");
                 break;
             case UHCMD_ISOXFER:
                 bug("[VXHCI] BeginIO: UHCMD_ISOXFER\n");

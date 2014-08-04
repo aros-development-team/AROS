@@ -19,24 +19,6 @@
 
 #include LC_LIBDEFS_FILE
 
-/* we cannot use AROS_WORD2LE in struct initializer */
-#if AROS_BIG_ENDIAN
-#define WORD2LE(w) (UWORD)(((w) >> 8) & 0x00FF) | (((w) << 8) & 0xFF00)
-#else
-#define WORD2LE(w) (w)
-#endif
-
-const struct UsbSSHubDesc  RHSSHubDesc = { 12,                                           // 0 Number of bytes in this descriptor, including this byte. (12 bytes)
-                                           UDT_SSHUB,                                    // 1 Descriptor Type, value: 2AH for SuperSpeed hub descriptor
-                                           0,                                            // 2 Number of downstream facing ports that this hub supports. The maximum number of ports a hub can support is 15
-                                           WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP), // 3 wHubCharacteristics
-                                           0,                                            // 5 bPwrOn2PwrGood
-                                           10,                                           // 6 bHubContrCurrent
-                                           0,                                            // 7 bHubHdrDecLat
-                                           0,                                            // 8 wHubDelay
-                                           0                                             // 10 DeviceRemovable
-                                         };
-
 CONST_STRPTR root_hub_strings[] = { "The AROS Development Team.", "Virtual Root Hub Unit %d", "Standard Config", "Hub interface" };
 
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
@@ -255,9 +237,9 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         usdd->bDeviceSubClass    = 0;
                                         usdd->bDeviceProtocol    = 0;
                                         usdd->bMaxPacketSize0    = 8;
-                                        usdd->idVendor           = WORD2LE(0x0000);
-                                        usdd->idProduct          = WORD2LE(0x0000);
-                                        usdd->bcdDevice          = WORD2LE(0x0100);
+                                        usdd->idVendor           = AROS_WORD2LE(0x0000);
+                                        usdd->idProduct          = AROS_WORD2LE(0x0000);
+                                        usdd->bcdDevice          = AROS_WORD2LE(0x0100);
                                         usdd->iManufacturer      = 0; //1 strings not yeat implemented
                                         usdd->iProduct           = 0; //2 strings not yeat implemented
                                         usdd->iSerialNumber      = 0;
@@ -310,7 +292,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         rhconfig->rhepdesc.bDescriptorType      = UDT_ENDPOINT;
                                         rhconfig->rhepdesc.bEndpointAddress     = (URTF_IN|1);
                                         rhconfig->rhepdesc.bmAttributes         = USEAF_INTERRUPT;
-                                        rhconfig->rhepdesc.wMaxPacketSize       = WORD2LE(8);
+                                        rhconfig->rhepdesc.wMaxPacketSize       = AROS_WORD2LE(8);
                                         rhconfig->rhepdesc.bInterval            = 12;
 
                                         bug("sizeof(struct RHConfig) = %ld (should be 25)\n", sizeof(struct RHConfig));
@@ -383,10 +365,9 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 } /* switch( (wValue>>8) ) */
                                 break; /* case USR_GET_DESCRIPTOR */
 
-                            case USR_GET_CONFIGURATION:
-                                bug("[VXHCI] cmdControlXFerRootHub: USR_GET_CONFIGURATION\n");
-
-                                ((UBYTE *) ioreq->iouh_Data)[0] = 1;
+                            case USR_GET_STATUS:
+                                bug("[VXHCI] cmdControlXFerRootHub: USR_GET_STATUS\n");
+                                ((UWORD *) ioreq->iouh_Data)[0] = AROS_WORD2LE(U_GSF_SELF_POWERED);
                                 ioreq->iouh_Actual = wLength;
                                 bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                 return(0);
@@ -416,6 +397,120 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
             case URTF_CLASS:
                 bug("[VXHCI] cmdControlXFerRootHub: URTF_CLASS\n");
+
+                switch(bmRequestRecipient) {
+                    case URTF_DEVICE:
+                        bug("[VXHCI] cmdControlXFerRootHub: URTF_DEVICE\n");
+
+                        switch(bRequest) {
+                            case USR_GET_STATUS:
+                                bug("[VXHCI] cmdControlXFerRootHub: USR_GET_STATUS\n");
+                                UWORD *mptr = ioreq->iouh_Data;
+                                if(wLength < sizeof(struct UsbHubStatus)) {
+                                    return(UHIOERR_STALL);
+                                }
+                                *mptr++ = 0;
+                                *mptr++ = 0;
+                                ioreq->iouh_Actual = 4;
+                                bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                return(0);
+                                break;
+
+
+                            case USR_GET_DESCRIPTOR:
+                                bug("[VXHCI] cmdControlXFerRootHub: USR_GET_DESCRIPTOR\n");
+
+                                switch( (wValue>>8) ) {
+                                    case UDT_HUB:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_HUB\n");
+
+                                        ioreq->iouh_Actual = sizeof(struct UsbHubDesc);
+                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                        return(0);
+                                        break;
+
+                                    case UDT_SSHUB:
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_SSHUB\n");
+
+                                        ioreq->iouh_Actual = sizeof(struct UsbSSHubDesc);
+                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                        return(0);
+                                        break;
+
+                                }
+
+
+
+
+/*
+                                if(unit->unit_type == 2) {
+                                    bug("[VXHCI] cmdControlXFerRootHub: USB2.0 unit\n");
+
+                                    struct UsbHubDesc *uhd = (struct UsbHubDesc *) ioreq->iouh_Data;
+                                    ioreq->iouh_Actual = sizeof(struct UsbHubDesc);
+
+                                } else {
+                                    bug("[VXHCI] cmdControlXFerRootHub: USB3.0 unit\n");
+
+                                    struct UsbSSHubDesc *uhd = (struct UsbSSHubDesc *) ioreq->iouh_Data;
+                                    ioreq->iouh_Actual = sizeof(struct UsbSSHubDesc);
+
+                                }
+const struct UsbHubDesc    RHHubDesc = { 9,                                              // 0 Number of bytes in this descriptor, including this byte
+                                         UDT_HUB,                                        // 1 Descriptor Type, value: 29H for hub descriptor
+                                         0,                                              // 2 Number of downstream facing ports that this hub supports
+                                         WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP),   // 3 wHubCharacteristics
+                                         0,                                              // 5 bPwrOn2PwrGood
+                                         1,                                              // 6 bHubContrCurrent
+                                         1,                                              // 7 DeviceRemovable (size is variable)
+                                         0                                               // x PortPwrCtrlMask (size is variable)
+                                       };
+
+const struct UsbSSHubDesc  RHSSHubDesc = { 12,                                           // 0 Number of bytes in this descriptor, including this byte. (12 bytes)
+                                           UDT_SSHUB,                                    // 1 Descriptor Type, value: 2AH for SuperSpeed hub descriptor
+                                           0,                                            // 2 Number of downstream facing ports that this hub supports. The maximum number of ports of ports a hub can support is 15
+                                           WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP), // 3 wHubCharacteristics
+                                           0,                                            // 5 bPwrOn2PwrGood
+                                           10,                                           // 6 bHubContrCurrent
+                                           0,                                            // 7 bHubHdrDecLat
+                                           0,                                            // 8 wHubDelay
+                                           0                                             // 10 DeviceRemovable
+                                         };
+
+struct  UsbHubDesc
+{
+    UBYTE bLength;
+    UBYTE bDescriptorType;
+    UBYTE bNbrPorts;
+    UWORD wHubCharacteristics;
+    UBYTE bPwrOn2PwrGood;
+    UBYTE bHubContrCurrent;
+    UBYTE DeviceRemovable;
+    UBYTE PortPwrCtrlMask;
+};
+
+struct  UsbSSHubDesc
+{
+    UBYTE bLength;
+    UBYTE bDescriptorType;
+    UBYTE bNbrPorts;
+    UWORD wHubCharacteristics;
+    UBYTE bPwrOn2PwrGood;
+    UBYTE bHubContrCurrent;
+    UBYTE bHubHdrDecLat;
+    UWORD wHubDelay;
+    UWORD DeviceRemovable;
+};
+
+*/
+
+                                bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                return(0);
+                                break;
+                        }
+                        break;
+
+                } /* case URTF_CLASS */
                 break;
 
             case URTF_VENDOR:
