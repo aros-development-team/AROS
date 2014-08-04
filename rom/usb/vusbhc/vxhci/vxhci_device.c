@@ -58,7 +58,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
     for (i=0; i<VXHCI_NUMCONTROLLERS; i++) {
 
         #ifdef VXHCI_NUMPORTS20
-        unit = VXHCI_AddNewUnit(i, 2);
+        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 2);
         if(unit == NULL) {
             /*
                 Free previous units if any exists
@@ -75,7 +75,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
         }
         #endif
 
-        unit = VXHCI_AddNewUnit(i, 3);
+        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 3);
         if(unit == NULL) {
             /*
                 Free previous units if any exists
