@@ -1,4 +1,4 @@
-# Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2014, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -15,7 +15,7 @@ ICONS := \
     def_Country def_Home def_MP3ID3 def_MP3 def_SFS def_Lua def_AmiLua \
     def_Archive def_Python def_REXX def_NetworkHost def_UserHome def_Trashcan \
     def_PLS def_M3U def_DT64 def_Pref def_FAT def_MSD def_USB def_MSI def_CDXL def_FLAC \
-    def_ELF_EXE_Linux def_ANIM def_PFS def_KickDisk def_KickROM def_Wireless
+    def_ELF_EXE_Linux def_ANIM def_PFS def_KickDisk def_KickROM def_Wireless def_LHA
 
 IMGS := def_AppIcon1.png def_AppIcon2.png
 APPI := def_AppIcon
