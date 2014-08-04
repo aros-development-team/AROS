@@ -86,7 +86,7 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
 
     /* We should do a proper reset sequence with a real driver */
     unit->unit_state = UHSF_OPERATIONAL;
-
+    bug("[VXHCI] cmdUsbReset: Done\n\n");
     return RC_OK;
 }
 
@@ -106,7 +106,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
         UHSB_RESET       USB is just inside a reset phase
     */
     if(unit->unit_state == UHSF_OPERATIONAL) {
-        bug("[VXHCI] cmdControlXFer: Unit state is operational\n");
+        bug("[VXHCI] cmdControlXFer: Unit state: UHSF_OPERATIONAL\n");
     } else {
         bug("[VXHCI] cmdControlXFer: Unit state: UHSF_SUSPENDED\n");
         return UHIOERR_USBOFFLINE;
@@ -140,6 +140,85 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
     bug("[VXHCI] cmdControlXFerRootHub: Endpoint number is %ld \n", ioreq->iouh_Endpoint);
+
+    bug("[VXHCI] cmdControlXFerRootHub: bmRequestDirection ");
+    switch (bmRequestDirection) {
+        case URTF_IN:
+            bug("URTF_IN\n");
+            break;
+        case URTF_OUT:
+            bug("URTF_OUT\n");
+            break;
+    }
+
+    bug("[VXHCI] cmdControlXFerRootHub: bmRequestType ");
+    switch(bmRequestType) {
+        case URTF_STANDARD:
+            bug("URTF_STANDARD\n");
+            break;
+        case URTF_CLASS:
+            bug("URTF_CLASS\n");
+            break;
+        case URTF_VENDOR:
+            bug("URTF_VENDOR\n");
+            break;
+    }
+
+    bug("[VXHCI] cmdControlXFerRootHub: bmRequestRecipient ");
+    switch (bmRequestRecipient) {
+        case URTF_DEVICE:
+            bug("URTF_DEVICE\n");
+            break;
+        case URTF_INTERFACE:
+            bug("URTF_INTERFACE\n");
+            break;
+        case URTF_ENDPOINT:
+            bug("URTF_ENDPOINT\n");
+            break;
+        case URTF_OTHER:
+            bug("URTF_OTHER\n");
+            break;
+    }
+
+    bug("[VXHCI] cmdControlXFerRootHub: bRequest ");
+    switch(bRequest) {
+        case USR_GET_STATUS:
+            bug("USR_GET_STATUS\n");
+            break;
+        case USR_CLEAR_FEATURE:
+            bug("USR_CLEAR_FEATURE\n");
+            break;
+        case USR_SET_FEATURE:
+            bug("USR_SET_FEATURE\n");
+            break;
+        case USR_SET_ADDRESS:
+            bug("USR_SET_ADDRESS\n");
+            break;
+        case USR_GET_DESCRIPTOR:
+            bug("USR_GET_DESCRIPTOR\n");
+            break;
+        case USR_SET_DESCRIPTOR:
+            bug("USR_SET_DESCRIPTOR\n");
+            break;
+        case USR_GET_CONFIGURATION:
+            bug("USR_GET_CONFIGURATION\n");
+            break;
+        case USR_SET_CONFIGURATION:
+            bug("USR_SET_CONFIGURATION\n");
+            break;
+        case USR_GET_INTERFACE:
+            bug("USR_GET_INTERFACE\n");
+            break;
+        case USR_SET_INTERFACE:
+            bug("USR_SET_INTERFACE\n");
+            break;
+        case USR_SYNCH_FRAME:
+            bug("USR_SYNCH_FRAME\n");
+            break;
+    }
+
+    bug("[VXHCI] cmdControlXFerRootHub: wValue %x\n", wValue);
+    bug("[VXHCI] cmdControlXFerRootHub: wLength %d\n", wLength);
 
     /* Endpoint 0 is used for control transfers only and can not be assigned to any other function. */
     if(ioreq->iouh_Endpoint != 0) {
@@ -193,6 +272,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         }
 
                                         ioreq->iouh_Actual = wLength;
+                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                         return(0);
                                         break;
 
@@ -209,7 +289,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                                         rhconfig->rhcfgdesc.bLength             = sizeof(struct UsbStdCfgDesc);
                                         rhconfig->rhcfgdesc.bDescriptorType     = UDT_CONFIGURATION;
-                                        rhconfig->rhcfgdesc.wTotalLength        = AROS_WORD2LE(sizeof(RHConfig));
+                                        rhconfig->rhcfgdesc.wTotalLength        = AROS_WORD2LE(sizeof(struct RHConfig));
                                         rhconfig->rhcfgdesc.bNumInterfaces      = 1;
                                         rhconfig->rhcfgdesc.bConfigurationValue = 1;
                                         rhconfig->rhcfgdesc.iConfiguration      = 0; // 3 strings not yeat implemented
@@ -233,16 +313,15 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         rhconfig->rhepdesc.wMaxPacketSize       = WORD2LE(8);
                                         rhconfig->rhepdesc.bInterval            = 12;
 
-                                        bug("sizeof(RHConfig) = %ld (should be 25)\n", sizeof(RHConfig));
-                                        ioreq->iouh_Actual = sizeof(RHConfig);
+                                        bug("sizeof(struct RHConfig) = %ld (should be 25)\n", sizeof(struct RHConfig));
+                                        ioreq->iouh_Actual = sizeof(struct RHConfig);
+                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                         return(0);
 
                                         break;
 
                                     case UDT_STRING:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_STRING\n");
-
-
                                         break;
 
                                     case UDT_INTERFACE:
@@ -297,7 +376,20 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_WIRELESS_EP_COMP\n");
                                         break;
 
+                                    default:
+                                        bug("[VXHCI] cmdControlXFerRootHub: switch( (wValue>>8) ) %ld\n", (wValue>>8));
+                                        break;
+
                                 } /* switch( (wValue>>8) ) */
+                                break; /* case USR_GET_DESCRIPTOR */
+
+                            case USR_GET_CONFIGURATION:
+                                bug("[VXHCI] cmdControlXFerRootHub: USR_GET_CONFIGURATION\n");
+
+                                ((UBYTE *) ioreq->iouh_Data)[0] = 1;
+                                ioreq->iouh_Actual = wLength;
+                                bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                return(0);
                                 break;
 
                         } /* switch(bRequest) */
@@ -313,6 +405,10 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                     case URTF_OTHER:
                         bug("[VXHCI] cmdControlXFerRootHub: URTF_OTHER\n");
+                        break;
+
+                    default:
+                        bug("[VXHCI] cmdControlXFerRootHub: %ld\n", bRequest);
                         break;
 
                 } /* switch(bmRequestRecipient) */
@@ -343,6 +439,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 bug("[VXHCI] cmdControlXFerRootHub: USR_SET_ADDRESS\n");
                                 unit->unit_roothubaddr = wValue;
                                 ioreq->iouh_Actual = wLength;
+                                bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                 return(0);
                                 break;
 
@@ -350,6 +447,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 /* We do not have alternative configuration */
                                 bug("[VXHCI] cmdControlXFerRootHub: USR_SET_CONFIGURATION\n");
                                 ioreq->iouh_Actual = wLength;
+                                bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                 return(0);
                                 break;
 
