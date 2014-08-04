@@ -30,10 +30,10 @@
 #include <devices/newstyle.h>
 
 /* Maximum number of units */
-#define VXHCI_NUMCONTROLLERS 1
+#define VXHCI_NUMCONTROLLERS 2
 
 /* Maximum number of ports per protocol (USB2.0/USB3.0) */
-#define VXHCI_NUMPORTS20 1
+//#define VXHCI_NUMPORTS20 1
 #define VXHCI_NUMPORTS30 1
 
 #define RC_OK         0
