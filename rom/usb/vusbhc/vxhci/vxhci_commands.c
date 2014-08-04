@@ -82,16 +82,10 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     bug("[VXHCI] cmdUsbReset: Entering function\n");
 
-    struct VXHCIUnit *unit;
+    struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
     /* We should do a proper reset sequence with a real driver */
-    unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
-    if(unit != NULL) {
-        unit->unit_state = UHSF_OPERATIONAL;
-    } else {
-        /* FIXME: Move unit checks somewhere else... */
-        return UHIOERR_BADPARAMS;
-    }
+    unit->unit_state = UHSF_OPERATIONAL;
 
     return RC_OK;
 }
@@ -99,38 +93,31 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
 WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
     bug("[VXHCI] cmdControlXFer: Entering function\n");
 
-    struct VXHCIUnit *unit;
+    struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
     bug("[VXHCI] cmdControlXFer: ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr);
 
-    /* Check the status of the controller */
-    unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
-    if(unit != NULL) {
-        /*
-            We might encounter these states:
-            UHSB_OPERATIONAL USB can be used for transfers
-            UHSB_RESUMING    USB is currently resuming
-            UHSB_SUSPENDED   USB is in suspended state
-            UHSB_RESET       USB is just inside a reset phase
-        */
-        if(unit->unit_state == UHSF_OPERATIONAL) {
-            bug("[VXHCI] cmdControlXFer: Unit state is operational\n");
-        } else {
-            bug("[VXHCI] cmdControlXFer: Unit state: UHSF_SUSPENDED\n");
-            return UHIOERR_USBOFFLINE;
-        }
 
-        /* Assuming when iouh_DevAddr is 0 it addresses hub... */
-        if(ioreq->iouh_DevAddr == 0) {
-            return(cmdControlXFerRootHub(ioreq));
-        }
 
+    /*
+        Check the status of the controller
+        We might encounter these states:
+        UHSB_OPERATIONAL USB can be used for transfers
+        UHSB_RESUMING    USB is currently resuming
+        UHSB_SUSPENDED   USB is in suspended state
+        UHSB_RESET       USB is just inside a reset phase
+    */
+    if(unit->unit_state == UHSF_OPERATIONAL) {
+        bug("[VXHCI] cmdControlXFer: Unit state is operational\n");
     } else {
-        /* CHECKME: Is this correct? */
-        return UHIOERR_BADPARAMS;
+        bug("[VXHCI] cmdControlXFer: Unit state: UHSF_SUSPENDED\n");
+        return UHIOERR_USBOFFLINE;
     }
 
-
+    /* Assuming when iouh_DevAddr is 0 it addresses hub... */
+    if(ioreq->iouh_DevAddr == 0) {
+        return(cmdControlXFerRootHub(ioreq));
+    }
 
     return RC_DONTREPLY;
 }
@@ -150,6 +137,8 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
     UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
     UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+
+    struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
     bug("[VXHCI] cmdControlXFerRootHub: Endpoint number is %ld \n", ioreq->iouh_Endpoint);
 

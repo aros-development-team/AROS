@@ -103,6 +103,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VXHCIBase, struct IOUsbHWReq *iore
 
     /* Default to open failure. */
     ioreq->iouh_Req.io_Error = IOERR_OPENFAIL;
+    ioreq->iouh_Req.io_Unit = NULL;
 
     /*
         Number of units eg. virtual xhci controllers.
@@ -163,76 +164,84 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     ioreq->iouh_Req.io_Error				   = UHIOERR_NO_ERROR;
 
-    switch (ioreq->iouh_Req.io_Command) {
-        case CMD_RESET:
-            bug("[VXHCI] BeginIO: CMD_RESET\n");
-            break;
-        case CMD_FLUSH:
-            bug("[VXHCI] BeginIO: CMD_FLUSH\n");
-            break;
-        case UHCMD_QUERYDEVICE:
-            bug("[VXHCI] BeginIO: UHCMD_QUERYDEVICE\n");
-            ret = cmdQueryDevice(ioreq);
-            break;
-        case UHCMD_USBRESET:
-            bug("[VXHCI] BeginIO: UHCMD_USBRESET\n");
-            ret = cmdUsbReset(ioreq);
-            break;
-        case UHCMD_USBRESUME:
-            bug("[VXHCI] BeginIO: UHCMD_USBRESUME\n");
-            break;
-        case UHCMD_USBSUSPEND:
-            bug("[VXHCI] BeginIO: UHCMD_USBSUSPEND\n");
-            break;
-        case UHCMD_USBOPER:
-            bug("[VXHCI] BeginIO: UHCMD_USBOPER\n");
-            //ret = cmdUsbOper(ioreq);
-            break;
-        case UHCMD_CONTROLXFER:
-            bug("[VXHCI] BeginIO: UHCMD_CONTROLXFER\n");
-            ret = cmdControlXFer(ioreq);
-            break;
-        case UHCMD_BULKXFER:
-            bug("[VXHCI] BeginIO: UHCMD_BULKXFER\n");
-            break;
-        case UHCMD_INTXFER:
-            bug("[VXHCI] BeginIO: UHCMD_INTXFER\n");
-            break;
-        case UHCMD_ISOXFER:
-            bug("[VXHCI] BeginIO: UHCMD_ISOXFER\n");
-            break;
+    struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-        /* Poseidon doesn't actually check this, ever... */
-        case NSCMD_DEVICEQUERY:
-            bug("[VXHCI] BeginIO: NSCMD_DEVICEQUERY\n");
+    if(unit != NULL) {
 
-            static const UWORD NSDSupported[] = {
-                CMD_FLUSH, CMD_RESET,
-                UHCMD_QUERYDEVICE,
-                UHCMD_USBRESET,
-                UHCMD_USBRESUME,
-                UHCMD_USBSUSPEND,
-                UHCMD_USBOPER,
-                UHCMD_CONTROLXFER ,
-                UHCMD_ISOXFER,
-                UHCMD_INTXFER,
-                UHCMD_BULKXFER,
-                NSCMD_DEVICEQUERY,
-                0
-            };
+        switch (ioreq->iouh_Req.io_Command) {
+            case CMD_RESET:
+                bug("[VXHCI] BeginIO: CMD_RESET\n");
+                break;
+            case CMD_FLUSH:
+                bug("[VXHCI] BeginIO: CMD_FLUSH\n");
+                break;
+            case UHCMD_QUERYDEVICE:
+                bug("[VXHCI] BeginIO: UHCMD_QUERYDEVICE\n");
+                ret = cmdQueryDevice(ioreq);
+                break;
+            case UHCMD_USBRESET:
+                bug("[VXHCI] BeginIO: UHCMD_USBRESET\n");
+                ret = cmdUsbReset(ioreq);
+                break;
+            case UHCMD_USBRESUME:
+                bug("[VXHCI] BeginIO: UHCMD_USBRESUME\n");
+                break;
+            case UHCMD_USBSUSPEND:
+                bug("[VXHCI] BeginIO: UHCMD_USBSUSPEND\n");
+                break;
+            case UHCMD_USBOPER:
+                bug("[VXHCI] BeginIO: UHCMD_USBOPER\n");
+                //ret = cmdUsbOper(ioreq);
+                break;
+            case UHCMD_CONTROLXFER:
+                bug("[VXHCI] BeginIO: UHCMD_CONTROLXFER\n");
+                ret = cmdControlXFer(ioreq);
+                break;
+            case UHCMD_BULKXFER:
+                bug("[VXHCI] BeginIO: UHCMD_BULKXFER\n");
+                break;
+            case UHCMD_INTXFER:
+                bug("[VXHCI] BeginIO: UHCMD_INTXFER\n");
+                break;
+            case UHCMD_ISOXFER:
+                bug("[VXHCI] BeginIO: UHCMD_ISOXFER\n");
+                break;
 
-            struct NSDeviceQueryResult *nsdq = (struct NSDeviceQueryResult *)((struct IOStdReq *)(ioreq))->io_Data;
-            nsdq->DevQueryFormat    = 0;
-            nsdq->SizeAvailable     = sizeof(struct NSDeviceQueryResult);
-            nsdq->DeviceType        = NSDEVTYPE_USBHARDWARE;
-            nsdq->DeviceSubType     = 0;
-            nsdq->SupportedCommands = (UWORD *)NSDSupported;
-            ret = RC_OK;
-            break;
-        default:
-            bug("[VXHCI] BeginIO: IOERR_NOCMD\n");
-            ret = IOERR_NOCMD;
-            break;
+            /* Poseidon doesn't actually check this, ever... */
+            case NSCMD_DEVICEQUERY:
+                bug("[VXHCI] BeginIO: NSCMD_DEVICEQUERY\n");
+
+                static const UWORD NSDSupported[] = {
+                    CMD_FLUSH, CMD_RESET,
+                    UHCMD_QUERYDEVICE,
+                    UHCMD_USBRESET,
+                    UHCMD_USBRESUME,
+                    UHCMD_USBSUSPEND,
+                    UHCMD_USBOPER,
+                    UHCMD_CONTROLXFER ,
+                    UHCMD_ISOXFER,
+                    UHCMD_INTXFER,
+                    UHCMD_BULKXFER,
+                    NSCMD_DEVICEQUERY,
+                    0
+                };
+
+                struct NSDeviceQueryResult *nsdq = (struct NSDeviceQueryResult *)((struct IOStdReq *)(ioreq))->io_Data;
+                nsdq->DevQueryFormat    = 0;
+                nsdq->SizeAvailable     = sizeof(struct NSDeviceQueryResult);
+                nsdq->DeviceType        = NSDEVTYPE_USBHARDWARE;
+                nsdq->DeviceSubType     = 0;
+                nsdq->SupportedCommands = (UWORD *)NSDSupported;
+                ret = RC_OK;
+                break;
+            default:
+                bug("[VXHCI] BeginIO: IOERR_NOCMD\n");
+                ret = IOERR_NOCMD;
+                break;
+        }
+    } else {
+        /* We have aborted the request as unit is invalid */
+        ret = IOERR_ABORTED;
     }
 
     if(ret != RC_DONTREPLY) {
