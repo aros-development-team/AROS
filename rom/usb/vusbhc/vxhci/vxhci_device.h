@@ -34,7 +34,7 @@
 #define VXHCI_NUMCONTROLLERS 2
 
 /* Maximum number of ports per protocol (USB2.0/USB3.0) */
-//#define VXHCI_NUMPORTS20 2
+#define VXHCI_NUMPORTS20 2
 #define VXHCI_NUMPORTS30 2
 
 #define RC_OK         0
@@ -67,7 +67,6 @@ struct VXHCIUnit {
     struct Node             node;
     char                    name[256];
     ULONG                   number;
-    ULONG                   type;
     ULONG                   state;
     struct VXHCIRootHub     roothub;
 };
