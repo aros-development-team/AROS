@@ -44,7 +44,7 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, ULONG unittype);
+struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb);
 struct VXHCIPort *VXHCI_AddNewPort(struct VXHCIUnit *unit, ULONG portnum);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
@@ -59,7 +59,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
     for (i=0; i<VXHCI_NUMCONTROLLERS; i++) {
 
         #ifdef VXHCI_NUMPORTS20
-        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 2);
+        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 0x200);
         if(unit == NULL) {
             /*
                 Free previous units if any exists
@@ -278,7 +278,7 @@ AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
     AROS_LIBFUNC_EXIT
 }
 
-struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, ULONG unittype) {
+struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
 
     struct VXHCIUnit *unit;
     struct VXHCIPort *port;
@@ -293,13 +293,15 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, ULONG unittype) {
         unit->node.ln_Type = NT_USER;
         unit->number = unitnum;
         unit->node.ln_Name = (STRPTR)&unit->name;
-        unit->type = unittype;
         unit->state = UHSF_SUSPENDED;
 
         NEWLIST(&unit->roothub.port_list);
 
+        /* Set correct bcdUSB for the hub device descriptor */
+        unit->roothub.usbstddevdesc.bcdUSB = AROS_WORD2LE(bcdusb);
+
         #ifdef VXHCI_NUMPORTS20
-        if(unit->type == 2) {
+        if(bcdusb == 0x200) {
             sprintf(unit->name, "VXHCI_USB20[%x]", unit->number);
             imax = VXHCI_NUMPORTS20;
         } else {
@@ -332,6 +334,7 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, ULONG unittype) {
             }
         }
 
+        /* This is our root hub device descriptor */
         unit->roothub.usbstddevdesc.bLength            = sizeof(struct UsbStdDevDesc);
         unit->roothub.usbstddevdesc.bDescriptorType    = UDT_DEVICE;
         unit->roothub.usbstddevdesc.bDeviceClass       = HUB_CLASSCODE;
@@ -346,28 +349,25 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, ULONG unittype) {
         unit->roothub.usbstddevdesc.iSerialNumber      = 0;
         unit->roothub.usbstddevdesc.bNumConfigurations = 1;
 
-        if(unit->type == 2) {
+        if(bcdusb == 0x200) {
             bug("[VXHCI] cmdControlXFerRootHub: USB2.0 unit\n");
-            unit->roothub.usbstddevdesc.bcdUSB = AROS_WORD2LE(0x0200); // signal a highspeed root hub
         } else {
             bug("[VXHCI] cmdControlXFerRootHub: USB3.0 unit\n");
-            unit->roothub.usbstddevdesc.bcdUSB = AROS_WORD2LE(0x0300); // signal a superspeed root hub
         }
-
 
         D(bug("[VXHCI] VXHCI_AddNewUnit:\n");
         bug("        Created new unit numbered %d at %p\n",unit->number, unit);
         bug("        Unit node name %s\n", unit->node.ln_Name));
 
-        D(switch(unit->type) {
-            case 2:
+        D(switch(bcdusb) {
+            case 0x200:
                 bug("        Unit type: USB2.0\n");
                 break;
-            case 3:
+            case 0x300:
                 bug("        Unit type: USB3.0\n");
                 break;
             default:
-                bug("        Unit type: %lx (Error?)\n", unit->type);
+                bug("        Unit type: %lx (Error?)\n", bcdusb);
                 break;
         });
 
@@ -399,7 +399,7 @@ struct VXHCIPort *VXHCI_AddNewPort(struct VXHCIUnit *unit, ULONG portnum) {
         port->node.ln_Type = NT_USER;
         /* Poseidon treats port number 0 as roothub */
         port->number = portnum+1;
-        if(unit->type == 2) {
+        if(unit->roothub.usbstddevdesc.bcdUSB == 0x200) {
             sprintf(port->name, "VXHCI_USB20[%d:%d]", unit->number, port->number);
         } else {
             sprintf(port->name, "VXHCI_USB30[%d:%d]", unit->number, port->number);

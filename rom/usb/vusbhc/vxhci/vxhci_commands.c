@@ -255,7 +255,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         usdd->iSerialNumber      = 0;
                                         usdd->bNumConfigurations = 1;
 
-                                        if(unit->type == 2) {
+                                        if(unit->roothub.usbstddevdesc.bcdUSB == 0x200) {
                                             bug("[VXHCI] cmdControlXFerRootHub: USB2.0 unit\n");
                                             usdd->bcdUSB = AROS_WORD2LE(0x0200); // signal a highspeed root hub
                                         } else {
