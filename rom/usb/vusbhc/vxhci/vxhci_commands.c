@@ -379,72 +379,26 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 switch( (wValue>>8) ) {
                                     case UDT_HUB:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_HUB\n");
-                                        struct UsbHubDesc *usbhubdesc = (struct UsbHubDesc *) ioreq->iouh_Data;
+                                        bug("[VXHCI] cmdControlXFerRootHub: GetRootHubDescriptor (%ld)\n", wLength);
 
-                                        usbhubdesc->bLength             = sizeof(struct UsbHubDesc);
-                                        usbhubdesc->bDescriptorType     = UDT_HUB;
-                                        usbhubdesc->bNbrPorts           = (UBYTE) unit->roothub.port_count;
-                                        usbhubdesc->wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
-                                        usbhubdesc->bPwrOn2PwrGood      = 0;
-                                        usbhubdesc->bHubContrCurrent    = 1;
-                                        usbhubdesc->DeviceRemovable     = 1;
-                                        usbhubdesc->PortPwrCtrlMask     = 0;
+                                        ioreq->iouh_Actual = (wLength > sizeof(struct UsbHubDesc)) ? sizeof(struct UsbHubDesc) : wLength;
+                                        CopyMem((APTR) &unit->roothub.hubdesc.usb20, ioreq->iouh_Data, ioreq->iouh_Actual);
 
-                                        ioreq->iouh_Actual = sizeof(struct UsbHubDesc);
                                         bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                         return(0);
                                         break;
 
                                     case UDT_SSHUB:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_SSHUB\n");
-                                        struct UsbSSHubDesc *usbsshubdesc = (struct UsbSSHubDesc *) ioreq->iouh_Data;
+                                        bug("[VXHCI] cmdControlXFerRootHub: GetRootHubDescriptor (%ld)\n", wLength);
 
-                                        usbsshubdesc->bLength             = sizeof(struct UsbSSHubDesc);
-                                        usbsshubdesc->bDescriptorType     = UDT_SSHUB;
-                                        usbsshubdesc->bNbrPorts           = (UBYTE) unit->roothub.port_count;;
-                                        usbsshubdesc->wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
-                                        usbsshubdesc->bPwrOn2PwrGood      = 0;
-                                        usbsshubdesc->bHubContrCurrent    = 10;
-                                        usbsshubdesc->bHubHdrDecLat       = 0;
-                                        usbsshubdesc->wHubDelay           = 0;
-                                        usbsshubdesc->DeviceRemovable     = 0;
+                                        ioreq->iouh_Actual = (wLength > sizeof(struct UsbSSHubDesc)) ? sizeof(struct UsbSSHubDesc) : wLength;
+                                        CopyMem((APTR) &unit->roothub.hubdesc.usb30, ioreq->iouh_Data, ioreq->iouh_Actual);
 
-                                        ioreq->iouh_Actual = sizeof(struct UsbSSHubDesc);
                                         bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                         return(0);
                                         break;
-
                                 }
-
-
-
-
-/*
-struct  UsbHubDesc
-{
-    UBYTE bLength;
-    UBYTE bDescriptorType;
-    UBYTE bNbrPorts;
-    UWORD wHubCharacteristics;
-    UBYTE bPwrOn2PwrGood;
-    UBYTE bHubContrCurrent;
-    UBYTE DeviceRemovable;
-    UBYTE PortPwrCtrlMask;
-};
-
-struct  UsbSSHubDesc
-{
-    UBYTE bLength;
-    UBYTE bDescriptorType;
-    UBYTE bNbrPorts;
-    UWORD wHubCharacteristics;
-    UBYTE bPwrOn2PwrGood;
-    UBYTE bHubContrCurrent;
-    UBYTE bHubHdrDecLat;
-    UWORD wHubDelay;
-    UWORD DeviceRemovable;
-};
-*/
 
                                 bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                 return(0);
