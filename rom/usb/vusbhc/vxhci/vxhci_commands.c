@@ -236,77 +236,23 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                             with 8 byte transfer size. It will then set the address with psdPipeSetup(URTF_STANDARD|URTF_DEVICE, USR_SET_ADDRESS)
                                             After that Poseidon does again psdPipeSetup(URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE) with
                                             8 byte transfer size to get the bMaxPacketSize0 for transfer sizes.
+                                            Only after that will it read the whole descriptor.
                                         */
+                                        ioreq->iouh_Actual = (wLength > sizeof(struct UsbStdDevDesc)) ? sizeof(struct UsbStdDevDesc) : wLength;
+                                        CopyMem((APTR) &unit->roothub.devdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
-                                        struct UsbStdDevDesc *usdd = (struct UsbStdDevDesc *) ioreq->iouh_Data;
-
-                                        usdd->bLength            = sizeof(struct UsbStdDevDesc);
-                                        usdd->bDescriptorType    = UDT_DEVICE;
-                                        //usdd->bcdUSB             = WORD2LE(0x0110);
-                                        usdd->bDeviceClass       = HUB_CLASSCODE;
-                                        usdd->bDeviceSubClass    = 0;
-                                        usdd->bDeviceProtocol    = 0;
-                                        usdd->bMaxPacketSize0    = 64; // Valid values are 8, 16, 32, 64
-                                        usdd->idVendor           = AROS_WORD2LE(0x0000);
-                                        usdd->idProduct          = AROS_WORD2LE(0x0000);
-                                        usdd->bcdDevice          = AROS_WORD2LE(0x0100);
-                                        usdd->iManufacturer      = 0; //1 strings not yeat implemented
-                                        usdd->iProduct           = 0; //2 strings not yeat implemented
-                                        usdd->iSerialNumber      = 0;
-                                        usdd->bNumConfigurations = 1;
-
-                                        if(unit->roothub.usbstddevdesc.bcdUSB == 0x200) {
-                                            bug("[VXHCI] cmdControlXFerRootHub: USB2.0 unit\n");
-                                            usdd->bcdUSB = AROS_WORD2LE(0x0200); // signal a highspeed root hub
-                                        } else {
-                                            bug("[VXHCI] cmdControlXFerRootHub: USB3.0 unit\n");
-                                            usdd->bcdUSB = AROS_WORD2LE(0x0300); // signal a superspeed root hub
-                                        }
-
-                                        ioreq->iouh_Actual = wLength;
                                         bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                         return(0);
                                         break;
 
                                     case UDT_CONFIGURATION:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_CONFIGURATION\n");
+                                        bug("[VXHCI] cmdControlXFerRootHub: GetConfigDescriptor (%ld)\n", wLength);
 
-                                        typedef struct RHConfig{
-                                            struct UsbStdCfgDesc rhcfgdesc;
-                                            struct UsbStdIfDesc  rhifdesc;
-                                            struct UsbStdEPDesc  rhepdesc;
-                                        } RHConfig;
+                                        ioreq->iouh_Actual = (wLength > sizeof(struct RHConfig)) ? sizeof(struct RHConfig) : wLength;
+                                        CopyMem((APTR) &unit->roothub.config, ioreq->iouh_Data, ioreq->iouh_Actual);
 
-                                        struct RHConfig *rhconfig = (struct RHConfig *) ioreq->iouh_Data;
-
-                                        rhconfig->rhcfgdesc.bLength             = sizeof(struct UsbStdCfgDesc);
-                                        rhconfig->rhcfgdesc.bDescriptorType     = UDT_CONFIGURATION;
-                                        rhconfig->rhcfgdesc.wTotalLength        = AROS_WORD2LE(sizeof(struct RHConfig));
-                                        rhconfig->rhcfgdesc.bNumInterfaces      = 1;
-                                        rhconfig->rhcfgdesc.bConfigurationValue = 1;
-                                        rhconfig->rhcfgdesc.iConfiguration      = 0; // 3 strings not yeat implemented
-                                        rhconfig->rhcfgdesc.bmAttributes        = (USCAF_ONE|USCAF_SELF_POWERED);
-                                        rhconfig->rhcfgdesc.bMaxPower           = 0;
-
-                                        rhconfig->rhifdesc.bLength              = sizeof(struct UsbStdIfDesc);
-                                        rhconfig->rhifdesc.bDescriptorType      = UDT_INTERFACE;
-                                        rhconfig->rhifdesc.bInterfaceNumber     = 0;
-                                        rhconfig->rhifdesc.bAlternateSetting    = 0;
-                                        rhconfig->rhifdesc.bNumEndpoints        = 1;
-                                        rhconfig->rhifdesc.bInterfaceClass      = HUB_CLASSCODE;
-                                        rhconfig->rhifdesc.bInterfaceSubClass   = 0;
-                                        rhconfig->rhifdesc.bInterfaceProtocol   = 0;
-                                        rhconfig->rhifdesc.iInterface           = 0; //4 strings not yeat implemented
-
-                                        rhconfig->rhepdesc.bLength              = sizeof(struct UsbStdEPDesc);
-                                        rhconfig->rhepdesc.bDescriptorType      = UDT_ENDPOINT;
-                                        rhconfig->rhepdesc.bEndpointAddress     = (URTF_IN|1);
-                                        rhconfig->rhepdesc.bmAttributes         = USEAF_INTERRUPT;
-                                        rhconfig->rhepdesc.wMaxPacketSize       = AROS_WORD2LE(8);
-                                        rhconfig->rhepdesc.bInterval            = 12;
-
-                                        bug("sizeof(struct RHConfig) = %ld (should be 25)\n", sizeof(struct RHConfig));
-                                        ioreq->iouh_Actual = sizeof(struct RHConfig);
+                                        //bug("sizeof(struct RHConfig) = %ld (should be 25)\n", sizeof(struct RHConfig));
                                         bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                         return(0);
 

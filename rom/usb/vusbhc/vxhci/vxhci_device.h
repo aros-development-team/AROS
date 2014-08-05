@@ -56,11 +56,16 @@ struct VXHCIPort {
 };
 
 struct VXHCIRootHub {
-    struct List             port_list;
-    ULONG                   port_count;
+    struct List              port_list;
+    ULONG                    port_count;
 
-    UWORD                   addr;
-    struct UsbStdDevDesc    usbstddevdesc;
+    UWORD                    addr;
+    struct UsbStdDevDesc     devdesc;
+    struct RHConfig {
+        struct UsbStdCfgDesc cfgdesc;
+        struct UsbStdIfDesc  ifdesc;
+        struct UsbStdEPDesc  epdesc;
+    }                        config;
 };
 
 struct VXHCIUnit {
