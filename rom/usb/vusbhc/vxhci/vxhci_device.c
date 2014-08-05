@@ -297,8 +297,8 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
 
         NEWLIST(&unit->roothub.port_list);
 
-        /* Set correct bcdUSB for the hub device descriptor */
-        unit->roothub.usbstddevdesc.bcdUSB = AROS_WORD2LE(bcdusb);
+        /* Set the correct bcdUSB for the hub device descriptor */
+        unit->roothub.devdesc.bcdUSB = AROS_WORD2LE(bcdusb);
 
         #ifdef VXHCI_NUMPORTS20
         if(bcdusb == 0x200) {
@@ -335,25 +335,46 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
         }
 
         /* This is our root hub device descriptor */
-        unit->roothub.usbstddevdesc.bLength            = sizeof(struct UsbStdDevDesc);
-        unit->roothub.usbstddevdesc.bDescriptorType    = UDT_DEVICE;
-        unit->roothub.usbstddevdesc.bDeviceClass       = HUB_CLASSCODE;
-        unit->roothub.usbstddevdesc.bDeviceSubClass    = 0;
-        unit->roothub.usbstddevdesc.bDeviceProtocol    = 0;
-        unit->roothub.usbstddevdesc.bMaxPacketSize0    = 64; // Valid values are 8, 16, 32, 64
-        unit->roothub.usbstddevdesc.idVendor           = AROS_WORD2LE(0x0000);
-        unit->roothub.usbstddevdesc.idProduct          = AROS_WORD2LE(0x0000);
-        unit->roothub.usbstddevdesc.bcdDevice          = AROS_WORD2LE(0x0100);
-        unit->roothub.usbstddevdesc.iManufacturer      = 0; //1 strings not yeat implemented
-        unit->roothub.usbstddevdesc.iProduct           = 0; //2 strings not yeat implemented
-        unit->roothub.usbstddevdesc.iSerialNumber      = 0;
-        unit->roothub.usbstddevdesc.bNumConfigurations = 1;
+        unit->roothub.devdesc.bLength            = sizeof(struct UsbStdDevDesc);
+        unit->roothub.devdesc.bDescriptorType    = UDT_DEVICE;
+        unit->roothub.devdesc.bDeviceClass       = HUB_CLASSCODE;
+        unit->roothub.devdesc.bDeviceSubClass    = 0;
+        unit->roothub.devdesc.bDeviceProtocol    = 0;
+        unit->roothub.devdesc.bMaxPacketSize0    = 8; // Valid values are 8, 16, 32, 64
+        unit->roothub.devdesc.idVendor           = AROS_WORD2LE(0x0000);
+        unit->roothub.devdesc.idProduct          = AROS_WORD2LE(0x0000);
+        unit->roothub.devdesc.bcdDevice          = AROS_WORD2LE(0x0100);
+        unit->roothub.devdesc.iManufacturer      = 0; //1 strings not yeat implemented
+        unit->roothub.devdesc.iProduct           = 0; //2 strings not yeat implemented
+        unit->roothub.devdesc.iSerialNumber      = 0;
+        unit->roothub.devdesc.bNumConfigurations = 1;
 
-        if(bcdusb == 0x200) {
-            bug("[VXHCI] cmdControlXFerRootHub: USB2.0 unit\n");
-        } else {
-            bug("[VXHCI] cmdControlXFerRootHub: USB3.0 unit\n");
-        }
+        unit->roothub.config.cfgdesc.bLength      = sizeof(struct UsbStdCfgDesc);
+        unit->roothub.config.cfgdesc.bLength             = sizeof(struct UsbStdCfgDesc);
+        unit->roothub.config.cfgdesc.bDescriptorType     = UDT_CONFIGURATION;
+        unit->roothub.config.cfgdesc.wTotalLength        = AROS_WORD2LE(sizeof(struct RHConfig));
+        unit->roothub.config.cfgdesc.bNumInterfaces      = 1;
+        unit->roothub.config.cfgdesc.bConfigurationValue = 1;
+        unit->roothub.config.cfgdesc.iConfiguration      = 0; // 3 strings not yeat implemented
+        unit->roothub.config.cfgdesc.bmAttributes        = (USCAF_ONE|USCAF_SELF_POWERED);
+        unit->roothub.config.cfgdesc.bMaxPower           = 0;
+
+        unit->roothub.config.ifdesc.bLength              = sizeof(struct UsbStdIfDesc);
+        unit->roothub.config.ifdesc.bDescriptorType      = UDT_INTERFACE;
+        unit->roothub.config.ifdesc.bInterfaceNumber     = 0;
+        unit->roothub.config.ifdesc.bAlternateSetting    = 0;
+        unit->roothub.config.ifdesc.bNumEndpoints        = 1;
+        unit->roothub.config.ifdesc.bInterfaceClass      = HUB_CLASSCODE;
+        unit->roothub.config.ifdesc.bInterfaceSubClass   = 0;
+        unit->roothub.config.ifdesc.bInterfaceProtocol   = 0;
+        unit->roothub.config.ifdesc.iInterface           = 0; //4 strings not yeat implemented
+
+        unit->roothub.config.epdesc.bLength              = sizeof(struct UsbStdEPDesc);
+        unit->roothub.config.epdesc.bDescriptorType      = UDT_ENDPOINT;
+        unit->roothub.config.epdesc.bEndpointAddress     = (URTF_IN|1);
+        unit->roothub.config.epdesc.bmAttributes         = USEAF_INTERRUPT;
+        unit->roothub.config.epdesc.wMaxPacketSize       = AROS_WORD2LE(8);
+        unit->roothub.config.epdesc.bInterval            = 12;
 
         D(bug("[VXHCI] VXHCI_AddNewUnit:\n");
         bug("        Created new unit numbered %d at %p\n",unit->number, unit);
@@ -399,7 +420,7 @@ struct VXHCIPort *VXHCI_AddNewPort(struct VXHCIUnit *unit, ULONG portnum) {
         port->node.ln_Type = NT_USER;
         /* Poseidon treats port number 0 as roothub */
         port->number = portnum+1;
-        if(unit->roothub.usbstddevdesc.bcdUSB == 0x200) {
+        if(unit->roothub.devdesc.bcdUSB == 0x200) {
             sprintf(port->name, "VXHCI_USB20[%d:%d]", unit->number, port->number);
         } else {
             sprintf(port->name, "VXHCI_USB30[%d:%d]", unit->number, port->number);
