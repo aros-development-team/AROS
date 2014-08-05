@@ -67,7 +67,10 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
     /* We should do a proper reset sequence with a real driver */
-    unit->unit_state = UHSF_OPERATIONAL;
+    unit->state = UHSF_RESET;
+    unit->roothub.addr = 0;
+    unit->state = UHSF_RESUMING;
+    unit->state = UHSF_OPERATIONAL;
     bug("[VXHCI] cmdUsbReset: Done\n\n");
     return RC_OK;
 }
@@ -78,6 +81,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
     struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
     bug("[VXHCI] cmdControlXFer: ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr);
+    bug("[VXHCI] cmdControlXFer: unit->roothub.addr %lx\n", unit->roothub.addr);
 
     /*
         Check the status of the controller
@@ -87,17 +91,16 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
         UHSB_SUSPENDED   USB is in suspended state
         UHSB_RESET       USB is just inside a reset phase
     */
-    if(unit->unit_state == UHSF_OPERATIONAL) {
+    if(unit->state == UHSF_OPERATIONAL) {
         bug("[VXHCI] cmdControlXFer: Unit state: UHSF_OPERATIONAL\n");
     } else {
         bug("[VXHCI] cmdControlXFer: Unit state: UHSF_SUSPENDED\n");
         return UHIOERR_USBOFFLINE;
     }
 
-    /* Assuming when iouh_DevAddr is 0 it addresses hub... no no, all wrong... */
-//    if(ioreq->iouh_DevAddr == 0) {
+    if(ioreq->iouh_DevAddr == unit->roothub.addr) {
         return(cmdControlXFerRootHub(ioreq));
-//    }
+    }
 
     return RC_DONTREPLY;
 }
@@ -228,6 +231,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_DEVICE\n");
                                         bug("[VXHCI] cmdControlXFerRootHub: GetDeviceDescriptor (%ld)\n", wLength);
 
+                                        /*
+                                            Poseidon first does a dummy psdPipeSetup(URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE)
+                                            with 8 byte transfer size. It will then set the address with psdPipeSetup(URTF_STANDARD|URTF_DEVICE, USR_SET_ADDRESS)
+                                            After that Poseidon does again psdPipeSetup(URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE) with
+                                            8 byte transfer size to get the bMaxPacketSize0 for transfer sizes.
+                                        */
+
                                         struct UsbStdDevDesc *usdd = (struct UsbStdDevDesc *) ioreq->iouh_Data;
 
                                         usdd->bLength            = sizeof(struct UsbStdDevDesc);
@@ -236,7 +246,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         usdd->bDeviceClass       = HUB_CLASSCODE;
                                         usdd->bDeviceSubClass    = 0;
                                         usdd->bDeviceProtocol    = 0;
-                                        usdd->bMaxPacketSize0    = 8;
+                                        usdd->bMaxPacketSize0    = 64; // Valid values are 8, 16, 32, 64
                                         usdd->idVendor           = AROS_WORD2LE(0x0000);
                                         usdd->idProduct          = AROS_WORD2LE(0x0000);
                                         usdd->bcdDevice          = AROS_WORD2LE(0x0100);
@@ -245,7 +255,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         usdd->iSerialNumber      = 0;
                                         usdd->bNumConfigurations = 1;
 
-                                        if(unit->unit_type == 2) {
+                                        if(unit->type == 2) {
                                             bug("[VXHCI] cmdControlXFerRootHub: USB2.0 unit\n");
                                             usdd->bcdUSB = AROS_WORD2LE(0x0200); // signal a highspeed root hub
                                         } else {
@@ -423,6 +433,16 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 switch( (wValue>>8) ) {
                                     case UDT_HUB:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_HUB\n");
+                                        struct UsbHubDesc *usbhubdesc = (struct UsbHubDesc *) ioreq->iouh_Data;
+
+                                        usbhubdesc->bLength             = sizeof(struct UsbHubDesc);
+                                        usbhubdesc->bDescriptorType     = UDT_HUB;
+                                        usbhubdesc->bNbrPorts           = (UBYTE) unit->roothub.port_count;
+                                        usbhubdesc->wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
+                                        usbhubdesc->bPwrOn2PwrGood      = 0;
+                                        usbhubdesc->bHubContrCurrent    = 1;
+                                        usbhubdesc->DeviceRemovable     = 1;
+                                        usbhubdesc->PortPwrCtrlMask     = 0;
 
                                         ioreq->iouh_Actual = sizeof(struct UsbHubDesc);
                                         bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
@@ -431,6 +451,17 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                                     case UDT_SSHUB:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_SSHUB\n");
+                                        struct UsbSSHubDesc *usbsshubdesc = (struct UsbSSHubDesc *) ioreq->iouh_Data;
+
+                                        usbsshubdesc->bLength             = sizeof(struct UsbSSHubDesc);
+                                        usbsshubdesc->bDescriptorType     = UDT_SSHUB;
+                                        usbsshubdesc->bNbrPorts           = (UBYTE) unit->roothub.port_count;;
+                                        usbsshubdesc->wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
+                                        usbsshubdesc->bPwrOn2PwrGood      = 0;
+                                        usbsshubdesc->bHubContrCurrent    = 10;
+                                        usbsshubdesc->bHubHdrDecLat       = 0;
+                                        usbsshubdesc->wHubDelay           = 0;
+                                        usbsshubdesc->DeviceRemovable     = 0;
 
                                         ioreq->iouh_Actual = sizeof(struct UsbSSHubDesc);
                                         bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
@@ -443,40 +474,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
 
 /*
-                                if(unit->unit_type == 2) {
-                                    bug("[VXHCI] cmdControlXFerRootHub: USB2.0 unit\n");
-
-                                    struct UsbHubDesc *uhd = (struct UsbHubDesc *) ioreq->iouh_Data;
-                                    ioreq->iouh_Actual = sizeof(struct UsbHubDesc);
-
-                                } else {
-                                    bug("[VXHCI] cmdControlXFerRootHub: USB3.0 unit\n");
-
-                                    struct UsbSSHubDesc *uhd = (struct UsbSSHubDesc *) ioreq->iouh_Data;
-                                    ioreq->iouh_Actual = sizeof(struct UsbSSHubDesc);
-
-                                }
-const struct UsbHubDesc    RHHubDesc = { 9,                                              // 0 Number of bytes in this descriptor, including this byte
-                                         UDT_HUB,                                        // 1 Descriptor Type, value: 29H for hub descriptor
-                                         0,                                              // 2 Number of downstream facing ports that this hub supports
-                                         WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP),   // 3 wHubCharacteristics
-                                         0,                                              // 5 bPwrOn2PwrGood
-                                         1,                                              // 6 bHubContrCurrent
-                                         1,                                              // 7 DeviceRemovable (size is variable)
-                                         0                                               // x PortPwrCtrlMask (size is variable)
-                                       };
-
-const struct UsbSSHubDesc  RHSSHubDesc = { 12,                                           // 0 Number of bytes in this descriptor, including this byte. (12 bytes)
-                                           UDT_SSHUB,                                    // 1 Descriptor Type, value: 2AH for SuperSpeed hub descriptor
-                                           0,                                            // 2 Number of downstream facing ports that this hub supports. The maximum number of ports of ports a hub can support is 15
-                                           WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP), // 3 wHubCharacteristics
-                                           0,                                            // 5 bPwrOn2PwrGood
-                                           10,                                           // 6 bHubContrCurrent
-                                           0,                                            // 7 bHubHdrDecLat
-                                           0,                                            // 8 wHubDelay
-                                           0                                             // 10 DeviceRemovable
-                                         };
-
 struct  UsbHubDesc
 {
     UBYTE bLength;
@@ -501,7 +498,6 @@ struct  UsbSSHubDesc
     UWORD wHubDelay;
     UWORD DeviceRemovable;
 };
-
 */
 
                                 bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
@@ -532,7 +528,7 @@ struct  UsbSSHubDesc
                         switch(bRequest) {
                             case USR_SET_ADDRESS:
                                 bug("[VXHCI] cmdControlXFerRootHub: USR_SET_ADDRESS\n");
-                                unit->unit_roothubaddr = wValue;
+                                unit->roothub.addr = wValue;
                                 ioreq->iouh_Actual = wLength;
                                 bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                 return(0);
@@ -579,4 +575,39 @@ struct  UsbSSHubDesc
     return UHIOERR_BADPARAMS;
 }
 
+WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
+    bug("[VXHCI] cmdIntXFer: Entering function\n");
+
+    struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    bug("[VXHCI] cmdIntXFer: ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr);
+    bug("[VXHCI] cmdIntXFer: unit->roothub.addr %lx\n", unit->roothub.addr);
+
+    /*
+        Check the status of the controller
+        We might encounter these states:
+        UHSB_OPERATIONAL USB can be used for transfers
+        UHSB_RESUMING    USB is currently resuming
+        UHSB_SUSPENDED   USB is in suspended state
+        UHSB_RESET       USB is just inside a reset phase
+    */
+    if(unit->state == UHSF_OPERATIONAL) {
+        bug("[VXHCI] cmdControlXFer: Unit state: UHSF_OPERATIONAL\n");
+    } else {
+        bug("[VXHCI] cmdControlXFer: Unit state: UHSF_SUSPENDED\n");
+        return UHIOERR_USBOFFLINE;
+    }
+
+    if(ioreq->iouh_DevAddr == unit->roothub.addr) {
+        return(cmdIntXFerRootHub(ioreq));
+    }
+
+    return RC_DONTREPLY;
+}
+
+WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
+    bug("[VXHCI] cmdIntXFerRootHub: Entering function\n");
+
+    return RC_DONTREPLY;
+}
 
