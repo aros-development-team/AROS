@@ -76,7 +76,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
         }
         #endif
 
-        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 3);
+        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 0x300);
         if(unit == NULL) {
             /*
                 Free previous units if any exists
@@ -349,6 +349,7 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
         unit->roothub.devdesc.iSerialNumber      = 0;
         unit->roothub.devdesc.bNumConfigurations = 1;
 
+        /* This is our root hub config descriptor */
         unit->roothub.config.cfgdesc.bLength      = sizeof(struct UsbStdCfgDesc);
         unit->roothub.config.cfgdesc.bLength             = sizeof(struct UsbStdCfgDesc);
         unit->roothub.config.cfgdesc.bDescriptorType     = UDT_CONFIGURATION;
@@ -375,6 +376,28 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
         unit->roothub.config.epdesc.bmAttributes         = USEAF_INTERRUPT;
         unit->roothub.config.epdesc.wMaxPacketSize       = AROS_WORD2LE(8);
         unit->roothub.config.epdesc.bInterval            = 12;
+
+        /* This is our root hub hub descriptor */
+        if(bcdusb == 0x200) {
+            unit->roothub.hubdesc.usb20.bLength             = sizeof(struct UsbHubDesc);
+            unit->roothub.hubdesc.usb20.bDescriptorType     = UDT_HUB;
+            unit->roothub.hubdesc.usb20.bNbrPorts           = (UBYTE) unit->roothub.port_count;
+            unit->roothub.hubdesc.usb20.wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
+            unit->roothub.hubdesc.usb20.bPwrOn2PwrGood      = 0;
+            unit->roothub.hubdesc.usb20.bHubContrCurrent    = 1;
+            unit->roothub.hubdesc.usb20.DeviceRemovable     = 1;
+            unit->roothub.hubdesc.usb20.PortPwrCtrlMask     = 0;
+        } else {
+            unit->roothub.hubdesc.usb30.bLength             = sizeof(struct UsbSSHubDesc);
+            unit->roothub.hubdesc.usb30.bDescriptorType     = UDT_SSHUB;
+            unit->roothub.hubdesc.usb30.bNbrPorts           = (UBYTE) unit->roothub.port_count;;
+            unit->roothub.hubdesc.usb30.wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
+            unit->roothub.hubdesc.usb30.bPwrOn2PwrGood      = 0;
+            unit->roothub.hubdesc.usb30.bHubContrCurrent    = 10;
+            unit->roothub.hubdesc.usb30.bHubHdrDecLat       = 0;
+            unit->roothub.hubdesc.usb30.wHubDelay           = 0;
+            unit->roothub.hubdesc.usb30.DeviceRemovable     = 0;
+        }
 
         D(bug("[VXHCI] VXHCI_AddNewUnit:\n");
         bug("        Created new unit numbered %d at %p\n",unit->number, unit);
