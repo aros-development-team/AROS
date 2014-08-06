@@ -9,13 +9,15 @@
 #include <aros/macros.h>
 
 #include <proto/exec.h>
+#include <proto/stdc.h>
 #include <proto/arossupport.h>
 
 #include <devices/usb.h>
 #include <devices/usb_hub.h>
+#include <devices/newstyle.h>
 #include <devices/usbhardware.h>
 
-#include <stdio.h>
+#include "vxhci_device.h"
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -56,7 +58,15 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_Capabilities:
+#if(0)
+                if(unit->roothub.devdesc.bcdUSB == 0x200) {
+                    *((ULONG *) tag->ti_Data) = (UHCF_USB20);
+                } else {
+                    *((ULONG *) tag->ti_Data) = (UHCF_USB30);
+                }
+#else
                 *((ULONG *) tag->ti_Data) = (UHCF_USB20|UHCF_USB30);
+#endif
                 count++;
                 break;
             default:

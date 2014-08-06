@@ -6,36 +6,16 @@
     Lang: English
 */
 
+#include <aros/macros.h>
 
-#include <exec/resident.h>
-#include <exec/errors.h>
-#include <exec/memory.h>
-#include <exec/lists.h>
-#include <exec/alerts.h>
-#include <exec/tasks.h>
-#include <libraries/expansion.h>
-#include <libraries/expansionbase.h>
-#include <libraries/configvars.h>
-#include <dos/filehandler.h>
-#include <dos/dosextens.h>
-#include <dos/dostags.h>
-#include <clib/alib_protos.h>
-#include <aros/symbolsets.h>
-#include <aros/bootloader.h>
-#include <oop/oop.h>
-
-#include <proto/oop.h>
 #include <proto/exec.h>
-#include <proto/expansion.h>
-#include <proto/utility.h>
-#include <proto/bootloader.h>
-#include <proto/dos.h>
-#include <asm/io.h>
+#include <proto/stdc.h>
+#include <proto/arossupport.h>
 
 #include <devices/usb.h>
+#include <devices/usb_hub.h>
+#include <devices/newstyle.h>
 #include <devices/usbhardware.h>
-
-#include <stdio.h>
 
 #include "vxhci_device.h"
 
@@ -98,7 +78,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
         bug("[VXHCI] Init: Created unit %d at %p %s\n", unit->number, unit, unit->name);
         struct VXHCIPort *port;
         ForeachNode(&unit->roothub.port_list, port) {
-        bug("                      port %d at %p %s\n", port->number, port, port->name);
+            bug("                      port %d at %p %s\n", port->number, port, port->name);
         }
     });
 
