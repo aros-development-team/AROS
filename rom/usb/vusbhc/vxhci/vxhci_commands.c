@@ -23,6 +23,8 @@
 #include LC_LIBDEFS_FILE
 
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
+    struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
+
     struct TagItem *taglist = (struct TagItem *) ioreq->iouh_Data;
     struct TagItem *tag;
     ULONG count = 0;
@@ -46,7 +48,11 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_ProductName:
-                *((STRPTR *) tag->ti_Data) = "VXHCI";
+                if(unit->roothub.devdesc.bcdUSB == 0x200) {
+                    *((STRPTR *) tag->ti_Data) = "VXHCI (USB2.0 ports)";
+                } else {
+                    *((STRPTR *) tag->ti_Data) = "VXHCI (USB3.0 ports)";
+                }
                 count++;
                 break;
             case UHA_Capabilities:
