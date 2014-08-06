@@ -269,17 +269,18 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                                 case 0:
                                                     bug("[VXHCI] cmdControlXFerRootHub: GetStringDescriptor (%ld)\n", wLength);
 
+                                                    /* This is our root hub string descriptor */
                                                     struct UsbStdStrDesc *strdesc = (struct UsbStdStrDesc *) ioreq->iouh_Data;
 
-                                                    /* This is our root hub string descriptor */
+                                                    strdesc->bLength         = sizeof(struct UsbStdStrDesc);
+                                                    strdesc->bDescriptorType = UDT_STRING;
+
                                                     if(wLength > 3) {
                                                         strdesc->bString[1] = AROS_WORD2LE(0x0409); // English (Yankee)
                                                         ioreq->iouh_Actual = sizeof(struct UsbStdStrDesc);
                                                         bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                                         return(0);
                                                     } else {
-                                                        strdesc->bLength         = sizeof(struct UsbStdStrDesc);
-                                                        strdesc->bDescriptorType = UDT_STRING;
                                                         ioreq->iouh_Actual = wLength;
                                                         bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
                                                         return(0);
