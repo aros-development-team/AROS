@@ -328,7 +328,7 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
                     FreeVec(port);
                 }
                 FreeVec(unit);
-                return FALSE;
+                return NULL;
             } else {
                 AddTail(&unit->roothub.port_list,(struct Node *)port);
                 unit->roothub.port_count++;
