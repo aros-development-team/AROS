@@ -32,11 +32,11 @@
 #include <devices/newstyle.h>
 
 /* Maximum number of units */
-#define VXHCI_NUMCONTROLLERS 2
+#define VXHCI_NUMCONTROLLERS 1
 
 /* Maximum number of ports per protocol (USB2.0/USB3.0) */
-//#define VXHCI_NUMPORTS20 2
-#define VXHCI_NUMPORTS30 2
+#define VXHCI_NUMPORTS20 2
+#define VXHCI_NUMPORTS30 4
 
 #define RC_OK         0
 #define RC_DONTREPLY -1
@@ -48,49 +48,49 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
 WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq);
 WORD cmdIntXFer(struct IOUsbHWReq *ioreq);
 WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq);
+WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring);
 
 struct VXHCIPort {
-    struct Node          node;
-    char                 name[256];
-    ULONG                number;
-    ULONG                state;
-};
-
-struct VXHCIRootHub {
-    struct List          port_list;
-    ULONG                port_count;
-
-    UWORD                addr;
-
-    struct UsbStdDevDesc devdesc;
-
-    struct RHConfig {
-        struct UsbStdCfgDesc cfgdesc;
-        struct UsbStdIfDesc  ifdesc;
-        struct UsbStdEPDesc  epdesc;
-    } config;
-
-    union {
-        struct UsbHubDesc   usb20;
-        struct UsbSSHubDesc usb30;
-    } hubdesc;
-
+    struct Node                  node;
+    char                         name[256];
+    ULONG                        number;
+    ULONG                        state;
 };
 
 struct VXHCIUnit {
-    struct Node          node;
-    char                 name[256];
-    ULONG                number;
-    ULONG                state;
-    struct VXHCIRootHub  roothub;
+    struct Node                  node;
+    char                         name[256];
+    ULONG                        number;
+    ULONG                        state;
+
+    struct VXHCIRootHub {
+        struct List              port_list;
+        ULONG                    port_count;
+
+        UWORD                    addr;
+
+        struct UsbStdDevDesc     devdesc;
+
+        struct RHConfig {
+            struct UsbStdCfgDesc cfgdesc;
+            struct UsbStdIfDesc  ifdesc;
+            struct UsbStdEPDesc  epdesc;
+        }                        config;
+
+        union {
+            struct UsbHubDesc    usb20;
+            struct UsbSSHubDesc  usb30;
+        }                        hubdesc;
+
+    }                            roothub;
+
 };
 
 struct VXHCIBase {
 
-    struct Device        device;
-    /* UNIT refers to one of the virtual xhci controllers per port protocol. */
-    struct List          unit_list;
-    ULONG                unit_count;
+    struct Device                device;
+    struct List                  unit_list;
+    ULONG                        unit_count;
 
 };
 

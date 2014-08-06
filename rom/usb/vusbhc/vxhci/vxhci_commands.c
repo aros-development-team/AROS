@@ -11,15 +11,16 @@
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 
+#include <devices/usb.h>
 #include <devices/usb_hub.h>
 #include <devices/usbhardware.h>
+
+#include <stdio.h>
 
 #define DEBUG 1
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
-
-CONST_STRPTR root_hub_strings[] = { "The AROS Development Team.", "Virtual Root Hub Unit %d", "Standard Config", "Hub interface" };
 
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
     struct TagItem *taglist = (struct TagItem *) ioreq->iouh_Data;
@@ -119,6 +120,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     UWORD bmRequestRecipient = (ioreq->iouh_SetupData.bmRequestType) & (URTF_DEVICE | URTF_INTERFACE | URTF_ENDPOINT | URTF_OTHER);
 
     UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
+    UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
     UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
@@ -202,6 +204,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
             break;
     }
 
+    bug("[VXHCI] cmdControlXFerRootHub: wIndex %x\n", wIndex);
     bug("[VXHCI] cmdControlXFerRootHub: wValue %x\n", wValue);
     bug("[VXHCI] cmdControlXFerRootHub: wLength %d\n", wLength);
 
@@ -259,7 +262,55 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         break;
 
                                     case UDT_STRING:
-                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_STRING\n");
+                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_STRING id %d\n", (wValue & 0xff));
+
+                                        if(wLength > 1) {
+                                            switch( (wValue & 0xff) ) {
+                                                case 0:
+                                                    bug("[VXHCI] cmdControlXFerRootHub: GetStringDescriptor (%ld)\n", wLength);
+
+                                                    struct UsbStdStrDesc *strdesc = (struct UsbStdStrDesc *) ioreq->iouh_Data;
+
+                                                    /* This is our root hub string descriptor */
+                                                    if(wLength > 3) {
+                                                        strdesc->bString[1] = AROS_WORD2LE(0x0409); // English (Yankee)
+                                                        ioreq->iouh_Actual = sizeof(struct UsbStdStrDesc);
+                                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                                        return(0);
+                                                    } else {
+                                                        strdesc->bLength         = sizeof(struct UsbStdStrDesc);
+                                                        strdesc->bDescriptorType = UDT_STRING;
+                                                        ioreq->iouh_Actual = wLength;
+                                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                                        return(0);
+                                                    }
+
+                                                    break;
+
+                                                case 1:
+                                                    return cmdGetString(ioreq, "The AROS Development Team.");
+                                                    break;
+
+                                                case 2: {
+                                                    char roothubname[100];
+                                                    sprintf(roothubname, "VXHCI USB%d.0 Root Hub", (unit->roothub.devdesc.bcdUSB == 0x200) ? 2 : 3);
+                                                    return cmdGetString(ioreq, roothubname);
+                                                    break;
+                                                    }
+
+                                                case 3:
+                                                    return cmdGetString(ioreq, "Standard Config");
+                                                    break;
+
+                                                case 4:
+                                                    return cmdGetString(ioreq, "Hub interface");
+                                                    break;
+
+                                                default:
+                                                    break;
+                                            }
+                                        }
+
                                         break;
 
                                     case UDT_INTERFACE:
@@ -379,7 +430,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 switch( (wValue>>8) ) {
                                     case UDT_HUB:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_HUB\n");
-                                        bug("[VXHCI] cmdControlXFerRootHub: GetRootHubDescriptor (%ld)\n", wLength);
+                                        bug("[VXHCI] cmdControlXFerRootHub: GetRootHubDescriptor USB2.0 (%ld)\n", wLength);
 
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbHubDesc)) ? sizeof(struct UsbHubDesc) : wLength;
                                         CopyMem((APTR) &unit->roothub.hubdesc.usb20, ioreq->iouh_Data, ioreq->iouh_Actual);
@@ -390,7 +441,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                                     case UDT_SSHUB:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_SSHUB\n");
-                                        bug("[VXHCI] cmdControlXFerRootHub: GetRootHubDescriptor (%ld)\n", wLength);
+                                        bug("[VXHCI] cmdControlXFerRootHub: GetRootHubDescriptor USB3.0 (%ld)\n", wLength);
 
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbSSHubDesc)) ? sizeof(struct UsbSSHubDesc) : wLength;
                                         CopyMem((APTR) &unit->roothub.hubdesc.usb30, ioreq->iouh_Data, ioreq->iouh_Actual);
@@ -511,3 +562,32 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
     return RC_DONTREPLY;
 }
 
+WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring) {
+    bug("[VXHCI] cmdGetString: Entering function\n");
+
+    UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+
+    struct UsbStdStrDesc *strdesc = (struct UsbStdStrDesc *) ioreq->iouh_Data;
+    strdesc->bDescriptorType = UDT_STRING;
+    strdesc->bLength = (strlen(cstring)*sizeof(strdesc->bString))+sizeof(strdesc->bLength) + sizeof(strdesc->bDescriptorType);
+
+    if(wLength > 2) {
+        ioreq->iouh_Actual = 2;
+        while(ioreq->iouh_Actual<wLength) {
+            strdesc->bString[(ioreq->iouh_Actual-2)/sizeof(strdesc->bString)] = AROS_WORD2LE(*cstring);
+            ioreq->iouh_Actual += sizeof(strdesc->bString);
+            cstring++;
+            if(*cstring == 0) {
+                bug("[VXHCI] cmdGetString: Done\n\n");
+                return(0);
+            }
+        }
+
+    } else {
+        ioreq->iouh_Actual = wLength;
+        bug("[VXHCI] cmdGetString: Done\n\n");
+        return(0);
+    }
+
+    return UHIOERR_BADPARAMS;
+}
