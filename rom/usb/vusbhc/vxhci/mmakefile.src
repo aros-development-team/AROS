@@ -7,4 +7,4 @@ FILES := vxhci_device vxhci_commands
     modname=vxhci modtype=device \
     moduledir=Devs/USBHardware \
     files="$(FILES)" \
-    uselibs="stdc arossupport"
+    uselibs="stdc.static arossupport"

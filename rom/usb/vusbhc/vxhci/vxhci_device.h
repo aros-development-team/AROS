@@ -8,31 +8,19 @@
 #ifndef VXHCI_DEVICE_H
 #define VXHCI_DEVICE_H
 
-#include <aros/libcall.h>
-#include <aros/asmcall.h>
-#include <aros/symbolsets.h>
+#include <aros/macros.h>
 
-#include <exec/types.h>
-#include <exec/lists.h>
-#include <exec/memory.h>
-#include <exec/libraries.h>
-#include <exec/interrupts.h>
-#include <exec/semaphores.h>
-#include <exec/execbase.h>
-#include <exec/devices.h>
-#include <exec/io.h>
-#include <exec/ports.h>
-#include <exec/errors.h>
-#include <exec/resident.h>
-#include <exec/initializers.h>
+#include <proto/exec.h>
+#include <proto/stdc.h>
+#include <proto/arossupport.h>
 
 #include <devices/usb.h>
 #include <devices/usb_hub.h>
-#include <devices/usbhardware.h>
 #include <devices/newstyle.h>
+#include <devices/usbhardware.h>
 
 /* Maximum number of units */
-#define VXHCI_NUMCONTROLLERS 1
+#define VXHCI_NUMCONTROLLERS 2
 
 /* Maximum number of ports per protocol (USB2.0/USB3.0) */
 #define VXHCI_NUMPORTS20 2
