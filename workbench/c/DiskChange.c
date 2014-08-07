@@ -74,7 +74,6 @@ int main(void)
 	error = IoErr();
 	FreeArgs(ra);
     }
-    if (rc != RETURN_OK);
-	PrintFault(error, "DiskChange");
+    PrintFault(error, "DiskChange");
     return rc;
 }
