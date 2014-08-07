@@ -856,7 +856,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                             {
                                 ioerr = psdDoPipe(nch->nch_EP0Pipe, uhd, len);
 #ifdef AROS_USB30_CODE
-                                if(buf[1]<0x300) {
+                                if(buf[1]!=UDT_SSHUB) {
 #endif
                                 if(!ioerr)
                                 {
