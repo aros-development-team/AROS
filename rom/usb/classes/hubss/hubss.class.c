@@ -8,6 +8,8 @@
 
 #include "debug.h"
 
+#include <aros/debug.h>
+
 #include "hubss.class.h"
 
 /* /// "Lib Stuff" */
@@ -58,11 +60,9 @@ struct NepClassHub * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubBase *n
     KPRINTF(1, ("nepHubAttemptDeviceBinding(%p)\n", pd));
 
     if((ps = OpenLibrary("poseidon.library", 4))) {
-        psdGetAttrs(PGA_DEVICE, pd,
-                    DA_Class, &devclass,
-                    DA_IsSuperspeed, &issuperspeed,
-                    TAG_DONE);
+        psdGetAttrs(PGA_DEVICE, pd, DA_Class, &devclass, DA_IsSuperspeed, &issuperspeed, TAG_DONE);
         CloseLibrary(ps);
+
         if((devclass == HUB_CLASSCODE) && (issuperspeed)) {
             return(GM_UNIQUENAME(usbForceDeviceBinding)(nh, pd));
         }
@@ -734,7 +734,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
 
 /* /// "nAllocHub()" */
 struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
-    struct UsbHubDesc *uhd;
+    struct UsbSSHubDesc *usshd;
     struct Task *thistask;
     struct NepClassHub *nch;
     struct UsbHubStatus uhhs;
@@ -742,207 +742,205 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
     LONG ioerr;
     ULONG len;
     UWORD num;
-    UBYTE buf;
-    IPTR ishighspeed = 0;
+    UBYTE buf[2];
+    IPTR issuperspeed = 0;
     IPTR prodid;
     IPTR vendid;
     BOOL overcurrent = FALSE;
 
     thistask = FindTask(NULL);
     nch = thistask->tc_UserData;
-    do
-    {
-        if(!(nch->nch_Base = OpenLibrary("poseidon.library", 4)))
-        {
+
+    do {
+        if(!(nch->nch_Base = OpenLibrary("poseidon.library", 4))) {
             Alert(AG_OpenLib);
             break;
         }
 
         psdGetAttrs(PGA_DEVICE, nch->nch_Device,
                     DA_Hardware, &nch->nch_Hardware,
-                    DA_IsHighspeed, &ishighspeed,
+                    DA_IsSuperspeed, &issuperspeed,
                     DA_ProductID, &prodid,
                     DA_VendorID, &vendid,
                     DA_HubDevice, &parenthub,
                     TAG_END);
 
         nch->nch_IsRootHub = (parenthub ? FALSE : TRUE);
-        nch->nch_IsUSB20 = ishighspeed;
+        nch->nch_IsUSB30 = issuperspeed;
+
         // try to select multi TT interface first
         nch->nch_Interface = psdFindInterface(nch->nch_Device, NULL,
                                               IFA_Class, HUB_CLASSCODE,
                                               IFA_Protocol, 2,
                                               IFA_AlternateNum, 0xffffffff,
                                               TAG_END);
-        if(!nch->nch_Interface)
-        {
+
+        if(!nch->nch_Interface) {
             // any will do
             nch->nch_Interface = psdFindInterface(nch->nch_Device, NULL,
                                                   IFA_Class, HUB_CLASSCODE,
                                                   TAG_END);
         }
-        if((vendid == 0x05E3) && ishighspeed)
-        {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Genesys Logic hubs are broken and will cause failures with USB 2.0 devices.");
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "If you encounter problems, try the device without the hub.");
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "If this solves the problem, you need to buy a different USB 2.0 hub.");
-        }
 
-        if(!nch->nch_Interface)
-        {
+        if(!nch->nch_Interface) {
             KPRINTF(1, ("Ooops!?! No interfaces defined?\n"));
             break;
         }
+
         nch->nch_EP1 = psdFindEndpoint(nch->nch_Interface, NULL,
                                        EA_IsIn, TRUE,
                                        EA_TransferType, USEAF_INTERRUPT,
                                        TAG_END);
 
-        if(!nch->nch_EP1)
-        {
+        if(!nch->nch_EP1) {
             psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname, "Ooops!?! No endpoints defined?");
             KPRINTF(1, ("Ooops!?! No Endpoints defined?\n"));
             break;
         }
-        if((nch->nch_CtrlMsgPort = CreateMsgPort()))
-        {
-            if((nch->nch_TaskMsgPort = CreateMsgPort()))
-            {
-                if((nch->nch_EP0Pipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, NULL)))
-                {
+
+        if((nch->nch_CtrlMsgPort = CreateMsgPort())) {
+            if((nch->nch_TaskMsgPort = CreateMsgPort())) {
+                if((nch->nch_EP0Pipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, NULL))) {
+
                     psdSetAttrs(PGA_PIPE, nch->nch_EP0Pipe,
                                 PPA_NakTimeout, TRUE,
                                 PPA_NakTimeoutTime, 1000,
                                 TAG_END);
+
                     psdSetAltInterface(nch->nch_EP0Pipe, nch->nch_Interface);
-                    if((nch->nch_EP1Pipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, nch->nch_EP1)))
-                    {
-                        psdSetAttrs(PGA_PIPE, nch->nch_EP1Pipe,
-                                    PPA_AllowRuntPackets, TRUE,
-                                    TAG_END);
-                        psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_DEVICE,
-                                     USR_GET_DESCRIPTOR, UDT_HUB<<8, 0);
-                        ioerr = psdDoPipe(nch->nch_EP0Pipe, &buf, 1);
-                        if((!ioerr) || (ioerr == UHIOERR_OVERFLOW))
-                        {
-                            len = buf;
-                            if((uhd = psdAllocVec(len)))
-                            {
-                                ioerr = psdDoPipe(nch->nch_EP0Pipe, uhd, len);
-                                if(!ioerr)
-                                {
-                                    nch->nch_NumPorts = uhd->bNbrPorts;
-                                    nch->nch_HubAttr = AROS_WORD2LE(uhd->wHubCharacteristics);
-                                    nch->nch_PwrGoodTime = uhd->bPwrOn2PwrGood<<1;
-                                    nch->nch_HubCurrent = uhd->bHubContrCurrent;
-                                    nch->nch_Removable = 0;
-                                    if(nch->nch_HubAttr & UHCM_THINK_TIME)
-                                    {
-                                        psdSetAttrs(PGA_DEVICE, nch->nch_Device,
-                                                    DA_HubThinkTime, (nch->nch_HubAttr & UHCM_THINK_TIME)>>UHCS_THINK_TIME,
-                                                    TAG_END);
-                                    }
 
-                                    for(num = 0; num < ((nch->nch_NumPorts + 7)>>3); num++)
-                                    {
-                                        nch->nch_Removable |= ((&uhd->DeviceRemovable)[num])<<(num<<3);
-                                    }
-                                    KPRINTF(2, ("Hub with %ld ports\n"
-                                    	   "  Characteristics 0x%04lx\n"
-                                           "  PowerGood after %ld ms\n"
-                                           "  Power consumption %ld mA\n",
-                                           nch->nch_NumPorts,
-                                           nch->nch_HubAttr,
-                                           nch->nch_PwrGoodTime, nch->nch_HubCurrent));
-                                    psdFreeVec(uhd);
+                    if((nch->nch_EP1Pipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, nch->nch_EP1))) {
 
-                                    psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_DEVICE,
-                                                 USR_GET_STATUS, 0, 0);
-                                    ioerr = psdDoPipe(nch->nch_EP0Pipe, &uhhs, sizeof(struct UsbHubStatus));
-                                    uhhs.wHubStatus = AROS_WORD2LE(uhhs.wHubStatus);
-                                    uhhs.wHubChange = AROS_WORD2LE(uhhs.wHubChange);
-                                    if(!ioerr)
-                                    {
-                                        struct PsdConfig *pc = NULL;
-                                        struct PsdHardware *phw = NULL;
-                                        if(uhhs.wHubStatus & UHSF_OVER_CURRENT)
-                                        {
-                                            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                                                           "Hub over-current situation detected! Resolve this first!");
-                                            //overcurrent = TRUE;
+                        psdSetAttrs(PGA_PIPE, nch->nch_EP1Pipe, PPA_AllowRuntPackets, TRUE, TAG_END);
+                        psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_SSHUB<<8, 0);
+
+                        ioerr = psdDoPipe(nch->nch_EP0Pipe, &buf, 2);
+
+                        if(buf[1] == UDT_SSHUB) {
+
+                            if((!ioerr) || (ioerr == UHIOERR_OVERFLOW)) {
+                                len = buf[0];
+
+                                if((usshd = psdAllocVec(len))) {
+                                    ioerr = psdDoPipe(nch->nch_EP0Pipe, usshd, len);
+
+                                    if(!ioerr) {
+                                        nch->nch_NumPorts     = usshd->bNbrPorts;
+                                        nch->nch_HubAttr      = AROS_WORD2LE(usshd->wHubCharacteristics);
+                                        nch->nch_PwrGoodTime  = usshd->bPwrOn2PwrGood<<1;
+                                        nch->nch_HubCurrent   = usshd->bHubContrCurrent;
+                                        nch->nch_HubHdrDecLat = usshd->bHubHdrDecLat;
+                                        nch->nch_HubDelay     = usshd->wHubDelay;
+                                        nch->nch_Removable    = 0; //usshd->DeviceRemovable;
+
+                                        if(nch->nch_HubAttr & UHCM_THINK_TIME) {
+                                            psdSetAttrs(PGA_DEVICE, nch->nch_Device, DA_HubThinkTime, (nch->nch_HubAttr & UHCM_THINK_TIME)>>UHCS_THINK_TIME, TAG_END);
                                         }
 
-                                        psdGetAttrs(PGA_DEVICE, nch->nch_Device,
-                                                    DA_Config, &pc,
-                                                    DA_Hardware, &phw,
-                                                    TAG_END);
-                                        if(uhhs.wHubStatus & UHSF_LOCAL_POWER_LOST)
-                                        {
-                                            if(pc && phw)
-                                            {
-                                                psdSetAttrs(PGA_CONFIG, pc, CA_SelfPowered, FALSE, TAG_END);
-                                                psdCalculatePower(phw);
-                                            }
-                                        } else {
-                                            if(pc && phw)
-                                            {
-                                                psdSetAttrs(PGA_CONFIG, pc, CA_SelfPowered, TRUE, TAG_END);
-                                                psdCalculatePower(phw);
-                                            }
+                                        for(num = 0; num < ((nch->nch_NumPorts + 7)>>3); num++) {
+                                            nch->nch_Removable |= ((&usshd->DeviceRemovable)[num])<<(num<<3);
                                         }
-                                    }
-                                    if(!overcurrent)
-                                    {
-                                        if((nch->nch_Downstream = psdAllocVec((ULONG) nch->nch_NumPorts*sizeof(APTR))))
+                                        KPRINTF(2, ("Hub with %ld ports\n"
+                                        	   "  Characteristics 0x%04lx\n"
+                                               "  PowerGood after %ld ms\n"
+                                               "  Power consumption %ld mA\n",
+                                               nch->nch_NumPorts,
+                                               nch->nch_HubAttr,
+                                               nch->nch_PwrGoodTime, nch->nch_HubCurrent));
+
+                                        psdFreeVec(usshd);
+
+                                        psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_DEVICE,
+                                                     USR_GET_STATUS, 0, 0);
+                                        ioerr = psdDoPipe(nch->nch_EP0Pipe, &uhhs, sizeof(struct UsbHubStatus));
+                                        uhhs.wHubStatus = AROS_WORD2LE(uhhs.wHubStatus);
+                                        uhhs.wHubChange = AROS_WORD2LE(uhhs.wHubChange);
+                                        if(!ioerr)
                                         {
-                                            /*for(num = 1; num <= nch->nch_NumPorts; num++)
+                                            struct PsdConfig *pc = NULL;
+                                            struct PsdHardware *phw = NULL;
+                                            if(uhhs.wHubStatus & UHSF_OVER_CURRENT)
                                             {
-                                                GM_UNIQUENAME(nClearPortStatus)(nch, num);
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                                               "Hub over-current situation detected! Resolve this first!");
+                                                //overcurrent = TRUE;
                                             }
-                                            psdDelayMS(20);*/
-                                            KPRINTF(2, ("Powering up ports...\n"));
-                                            for(num = 1; num <= nch->nch_NumPorts; num++)
+
+                                            psdGetAttrs(PGA_DEVICE, nch->nch_Device,
+                                                        DA_Config, &pc,
+                                                        DA_Hardware, &phw,
+                                                        TAG_END);
+                                            if(uhhs.wHubStatus & UHSF_LOCAL_POWER_LOST)
                                             {
-                                                psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
-                                                             USR_SET_FEATURE, UFS_PORT_POWER, (ULONG) num);
-                                                ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
-                                                if(ioerr)
+                                                if(pc && phw)
                                                 {
-                                                    psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                                                                   "PORT_POWER for port %ld failed: %s (%ld)",
-                                                                   num, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                                                    KPRINTF(1, ("PORT_POWER for port %ld failed %ld!\n", num, ioerr));
+                                                    psdSetAttrs(PGA_CONFIG, pc, CA_SelfPowered, FALSE, TAG_END);
+                                                    psdCalculatePower(phw);
+                                                }
+                                            } else {
+                                                if(pc && phw)
+                                                {
+                                                    psdSetAttrs(PGA_CONFIG, pc, CA_SelfPowered, TRUE, TAG_END);
+                                                    psdCalculatePower(phw);
                                                 }
                                             }
-                                            psdDelayMS((ULONG) nch->nch_PwrGoodTime + 15);
-
-                                            psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
-                                                           "Hub with %ld ports successfully configured.",
-                                                           nch->nch_NumPorts);
-
-                                            KPRINTF(10, ("%s ready!\n", thistask->tc_Node.ln_Name));
-                                            nch->nch_Task = thistask;
-                                            return(nch);
-                                        } else {
-                                            KPRINTF(1, ("No downstream port array memory!\n"));
                                         }
+                                        if(!overcurrent)
+                                        {
+                                            if((nch->nch_Downstream = psdAllocVec((ULONG) nch->nch_NumPorts*sizeof(APTR))))
+                                            {
+                                                /*for(num = 1; num <= nch->nch_NumPorts; num++)
+                                                {
+                                                    GM_UNIQUENAME(nClearPortStatus)(nch, num);
+                                                }
+                                                psdDelayMS(20);*/
+                                                KPRINTF(2, ("Powering up ports...\n"));
+                                                for(num = 1; num <= nch->nch_NumPorts; num++)
+                                                {
+                                                    psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                                                                 USR_SET_FEATURE, UFS_PORT_POWER, (ULONG) num);
+                                                    ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
+                                                    if(ioerr)
+                                                    {
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                                                       "PORT_POWER for port %ld failed: %s (%ld)",
+                                                                       num, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                                                        KPRINTF(1, ("PORT_POWER for port %ld failed %ld!\n", num, ioerr));
+                                                    }
+                                                }
+                                                psdDelayMS((ULONG) nch->nch_PwrGoodTime + 15);
+
+                                                psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                                                               "Hub with %ld ports successfully configured.",
+                                                               nch->nch_NumPorts);
+
+                                                KPRINTF(10, ("%s ready!\n", thistask->tc_Node.ln_Name));
+                                                nch->nch_Task = thistask;
+                                                return(nch);
+                                            } else {
+                                                KPRINTF(1, ("No downstream port array memory!\n"));
+                                            }
+                                        }
+                                    } else {
+                                        psdFreeVec(usshd);
+                                        psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
+                                                       "GET_HUB_DESCRIPTOR (%ld) failed: %s (%ld)",
+                                                       len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                                        KPRINTF(1, ("GET_HUB_DESCRIPTOR (%ld) failed %ld!\n", len, ioerr));
                                     }
+
                                 } else {
-                                    psdFreeVec(uhd);
-                                    psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
-                                                   "GET_HUB_DESCRIPTOR (%ld) failed: %s (%ld)",
-                                                   len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                                    KPRINTF(1, ("GET_HUB_DESCRIPTOR (%ld) failed %ld!\n", len, ioerr));
+                                    KPRINTF(1, ("No Hub Descriptor memory!\n"));
                                 }
                             } else {
-                                KPRINTF(1, ("No Hub Descriptor memory!\n"));
+                                psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
+                                               "GET_HUB_DESCRIPTOR (%ld) failed: %s (%ld)",
+                                               1, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                                KPRINTF(1, ("GET_HUB_DESCRIPTOR (1) failed %ld!\n", ioerr));
                             }
-                        } else {
-                            psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
-                                           "GET_HUB_DESCRIPTOR (%ld) failed: %s (%ld)",
-                                           1, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                            KPRINTF(1, ("GET_HUB_DESCRIPTOR (1) failed %ld!\n", ioerr));
+
                         }
+
                         psdFreePipe(nch->nch_EP1Pipe);
                     }
                     psdFreePipe(nch->nch_EP0Pipe);
@@ -952,13 +950,16 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
             DeleteMsgPort(nch->nch_CtrlMsgPort);
         }
     } while(FALSE);
+
     CloseLibrary(nch->nch_Base);
+
     Forbid();
     nch->nch_Task = NULL;
-    if(nch->nch_ReadySigTask)
-    {
+
+    if(nch->nch_ReadySigTask) {
         Signal(nch->nch_ReadySigTask, 1L<<nch->nch_ReadySignal);
     }
+
     return(NULL);
 }
 /* \\\ */
@@ -1227,11 +1228,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
                                 // inherit needs split from hub
                                 psdGetAttrs(PGA_DEVICE, nch->nch_Device, DA_NeedsSplitTrans, &needssplit, TAG_END);
                                 KPRINTF(2, ("    Needs split transfers: %ld\n", needssplit));
-                                if(nch->nch_IsUSB20) /* this is a low/full speed device connected to a 2.0 hub! */
-                                {
-				    KPRINTF(2, ("    Enforcing split transfers\n"));
-                                    needssplit = TRUE;
-                                }
+
                                 psdSetAttrs(PGA_DEVICE, pd, DA_NeedsSplitTrans, needssplit, TAG_END);
                             }
                             GM_UNIQUENAME(nClearPortStatus)(nch, port);
