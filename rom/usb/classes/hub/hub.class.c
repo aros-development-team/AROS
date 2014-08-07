@@ -56,16 +56,25 @@ struct NepClassHub * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubBase *n
 {
     struct Library *ps;
     IPTR devclass;
-
+#ifdef AROS_USB30_CODE
+    IPTR issuperspeed = 0;
+#endif
     KPRINTF(1, ("nepHubAttemptDeviceBinding(%p)\n", pd));
 
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
         psdGetAttrs(PGA_DEVICE, pd,
                     DA_Class, &devclass,
+#ifdef AROS_USB30_CODE
+                    DA_IsSuperspeed, &issuperspeed,
+#endif
                     TAG_DONE);
         CloseLibrary(ps);
+#ifdef AROS_USB30_CODE
+        if((devclass == HUB_CLASSCODE) && (!issuperspeed))
+#else
         if(devclass == HUB_CLASSCODE)
+#endif
         {
             return(GM_UNIQUENAME(usbForceDeviceBinding)(nh, pd));
         }
@@ -747,7 +756,11 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
     LONG ioerr;
     ULONG len;
     UWORD num;
+#ifdef AROS_USB30_CODE
+    UBYTE buf[2];
+#else
     UBYTE buf;
+#endif
     IPTR ishighspeed = 0;
     IPTR prodid;
     IPTR vendid;
@@ -827,13 +840,24 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                     TAG_END);
                         psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_DEVICE,
                                      USR_GET_DESCRIPTOR, UDT_HUB<<8, 0);
+#ifdef AROS_USB30_CODE
+                        ioerr = psdDoPipe(nch->nch_EP0Pipe, &buf, 2);
+#else
                         ioerr = psdDoPipe(nch->nch_EP0Pipe, &buf, 1);
+#endif
                         if((!ioerr) || (ioerr == UHIOERR_OVERFLOW))
                         {
+#ifdef AROS_USB30_CODE
+                            len = buf[0];
+#else
                             len = buf;
+#endif
                             if((uhd = psdAllocVec(len)))
                             {
                                 ioerr = psdDoPipe(nch->nch_EP0Pipe, uhd, len);
+#ifdef AROS_USB30_CODE
+                                if(buf[1]<0x300) {
+#endif
                                 if(!ioerr)
                                 {
                                     nch->nch_NumPorts = uhd->bNbrPorts;
@@ -939,6 +963,12 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                                    len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                                     KPRINTF(1, ("GET_HUB_DESCRIPTOR (%ld) failed %ld!\n", len, ioerr));
                                 }
+#ifdef AROS_USB30_CODE
+                                } else {
+                                    psdFreeVec(uhd);
+                                    KPRINTF(1, ("GET_HUB_DESCRIPTOR (%ld) failed! Descriptor is wrong type\n", len));
+                                }
+#endif
                             } else {
                                 KPRINTF(1, ("No Hub Descriptor memory!\n"));
                             }
