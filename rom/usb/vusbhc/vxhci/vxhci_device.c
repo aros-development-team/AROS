@@ -61,7 +61,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
         }
         #endif
 
-        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 0x300);
+        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 0x310);
         if(unit == NULL) {
             mybug(-1, ("[VXHCI] Init: Failed to create new unit!\n"));
 
@@ -292,7 +292,12 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
         NEWLIST(&unit->roothub.port_list);
 
         /* Set the correct bcdUSB and bcdDevice for the hub device descriptor */
-        unit->roothub.devdesc.bcdUSB    = AROS_WORD2LE(bcdusb);
+        if(bcdusb>=0x0300) {
+            unit->roothub.devdesc.bcdUSB    = AROS_WORD2LE(0x0300);
+        } else {
+            unit->roothub.devdesc.bcdUSB    = AROS_WORD2LE(0x0200);
+        }
+
         unit->roothub.devdesc.bcdDevice = AROS_WORD2LE(bcdusb);
 
         sprintf(unit->name, "VXHCI_USB%x%x[%d]", (bcdusb>>8)&0xf, (bcdusb>>4)&0xf, unit->number);
@@ -437,7 +442,7 @@ struct VXHCIPort *VXHCI_AddNewPort(struct VXHCIUnit *unit, ULONG portnum) {
         /* Poseidon treats port number 0 as roothub */
         port->number = portnum+1;
 
-        sprintf(port->name, "VXHCI_USB%x%x[%d:%d]", (AROS_WORD2LE(unit->roothub.devdesc.bcdUSB)>>8)&0xf, (AROS_WORD2LE(unit->roothub.devdesc.bcdUSB)>>4)&0xf, unit->number, port->number);
+        sprintf(port->name, "VXHCI_USB%x%x[%d:%d]", (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>8)&0xf, (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>4)&0xf, unit->number, port->number);
         port->node.ln_Name = (STRPTR)&port->name;
     }
 
