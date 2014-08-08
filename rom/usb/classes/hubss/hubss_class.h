@@ -14,6 +14,9 @@
 
 #include <devices/usb_hub.h>
 
+#define MYBUG_LEVEL 0
+#define KPRINTF(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug x; } } while (0); } )
+
 struct NepHubBase {
     struct Library      nh_Library;       /* standard */
     UWORD               nh_Flags;         /* various flags */

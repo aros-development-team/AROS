@@ -6,6 +6,11 @@
     Lang: english
 */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 1
+
 #include <aros/debug.h>
 #include <proto/arossupport.h>
 
@@ -17,9 +22,6 @@
 #include "hubss_class.h"
 
 #include LC_LIBDEFS_FILE
-
-#define KPRINTF(l, x) ((void) 0)
-#define DB(x)
 
 struct NepClassHub * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubBase *nh, struct PsdDevice *pd);
 struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh, struct PsdDevice *pd);
@@ -38,12 +40,10 @@ AROS_UFP0(void, GM_UNIQUENAME(nHubTask));
 static const STRPTR libname = MOD_NAME_STRING;
 
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh) {
-    KPRINTF(10, ("libInit nh: 0x%p SysBase: 0x%p\n", nh, SysBase));
 
     NEWLIST(&nh->nh_Bindings);
     InitSemaphore(&nh->nh_Adr0Sema);
 
-    KPRINTF(10, ("libInit: Ok\n"));
     return TRUE;
 }
 
@@ -63,7 +63,7 @@ struct NepClassHub * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubBase *n
     IPTR devclass;
     IPTR issuperspeed = 0;
 
-    KPRINTF(1, ("nepHubAttemptDeviceBinding(%p)\n", pd));
+    KPRINTF(0, ("usbAttemptDeviceBinding(%p)\n", pd));
 
     if((ps = OpenLibrary("poseidon.library", 4))) {
         psdGetAttrs(PGA_DEVICE, pd, DA_Class, &devclass, DA_IsSuperspeed, &issuperspeed, TAG_DONE);
@@ -85,7 +85,7 @@ struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh
     char buf[64];
     struct Task *tmptask;
 
-    KPRINTF(1, ("nepHubAttemptDeviceBinding(%p)\n", pd));
+    KPRINTF(0, ("usbForceDeviceBinding(%p)\n", pd));
 
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
@@ -96,7 +96,7 @@ struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh
         {
             nch->nch_HubBase = nh;
             nch->nch_Device = pd;
-            psdSafeRawDoFmt(buf, 64, "hub.class<%p>", nch);
+            psdSafeRawDoFmt(buf, 64, "hubss.class<%p>", nch);
             nch->nch_ReadySignal = SIGB_SINGLE;
             nch->nch_ReadySigTask = FindTask(NULL);
             SetSignal(0, SIGF_SINGLE);
@@ -107,9 +107,7 @@ struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh
                 {
                     nch->nch_ReadySigTask = NULL;
                     //FreeSignal(nch->nch_ReadySignal);
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
-                                   "I'm in love with hub '%s'.",
-                                   devname);
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "I'm in love with hub '%s'.", devname);
 
                     Forbid();
                     AddTail(&nh->nh_Bindings, &nch->nch_Node);
