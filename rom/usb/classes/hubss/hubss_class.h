@@ -1,5 +1,5 @@
-#ifndef HUB_CLASS_H
-#define HUB_CLASS_H
+#ifndef HUBSS_CLASS_H
+#define HUBSS_CLASS_H
 
 /*
  *----------------------------------------------------------------------------
@@ -30,4 +30,4 @@ void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHub *nch, struct NepHubMsg *
 
 AROS_UFP0(void, GM_UNIQUENAME(nHubTask));
 
-#endif /* HUB_CLASS_H */
+#endif /* HUBSS_CLASS_H */

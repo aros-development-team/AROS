@@ -11,7 +11,7 @@
 #include <aros/debug.h>
 #include <proto/arossupport.h>
 
-#include "hubss.class.h"
+#include "hubss_class.h"
 
 /* /// "Lib Stuff" */
 static const STRPTR libname = MOD_NAME_STRING;
