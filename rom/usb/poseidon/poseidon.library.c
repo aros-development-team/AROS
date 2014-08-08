@@ -2936,9 +2936,13 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                         pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = usdd.bMaxPacketSize0;
                         break;
                     default:
-                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                                       "Illegal MaxPktSize0=%ld for endpoint 0",
-                                       (ULONG) usdd.bMaxPacketSize0);
+#ifdef AROS_USB30_CODE
+                        if(usdd.bcdUSB == AROS_WORD2LE(0x300)) {
+                            pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = usdd.bMaxPacketSize0;
+                            break;
+                        }
+#endif
+                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Illegal MaxPktSize0=%ld for endpoint 0", (ULONG) usdd.bMaxPacketSize0);
                         KPRINTF(2, ("Illegal MaxPktSize0=%ld!\n", usdd.bMaxPacketSize0));
                         //pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = 8;
                         ioerr = UHIOERR_CRCERROR;
