@@ -297,11 +297,15 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
 
         #ifdef VXHCI_NUMPORTS20
         if(bcdusb == 0x200) {
-            unit->roothub.devdesc.bMaxPacketSize0 = 8;
+            unit->roothub.devdesc.bMaxPacketSize0      = 8;
+            unit->roothub.devdesc.bDeviceProtocol      = 1;
+            unit->roothub.config.epdesc.wMaxPacketSize = AROS_WORD2LE(8);
             sprintf(unit->name, "VXHCI_USB20[%x]", unit->number);
             imax = VXHCI_NUMPORTS20;
         } else {
-            unit->roothub.devdesc.bMaxPacketSize0 = 9;
+            unit->roothub.devdesc.bMaxPacketSize0      = 9;
+            unit->roothub.devdesc.bDeviceProtocol      = 3;
+            unit->roothub.config.epdesc.wMaxPacketSize = AROS_WORD2LE(1024);
             sprintf(unit->name, "VXHCI_USB30[%x]", unit->number);
             imax = VXHCI_NUMPORTS30;
         }
@@ -374,7 +378,7 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
         unit->roothub.config.epdesc.bDescriptorType         = UDT_ENDPOINT;
         unit->roothub.config.epdesc.bEndpointAddress        = (URTF_IN|1);
         unit->roothub.config.epdesc.bmAttributes            = USEAF_INTERRUPT;
-        unit->roothub.config.epdesc.wMaxPacketSize          = AROS_WORD2LE(8);
+        //unit->roothub.config.epdesc.wMaxPacketSize          = AROS_WORD2LE(8);
         unit->roothub.config.epdesc.bInterval               = 12;
 
         /* This is our root hub hub descriptor */
