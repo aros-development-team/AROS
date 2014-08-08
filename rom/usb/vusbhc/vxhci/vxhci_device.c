@@ -30,7 +30,7 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb);
 struct VXHCIPort *VXHCI_AddNewPort(struct VXHCIUnit *unit, ULONG portnum);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
-    bug("[VXHCI] Init: Entering function\n");
+    mybug(0,("[VXHCI] Init: Entering function\n"));
 
     struct VXHCIUnit *unit;
     ULONG i;
@@ -43,11 +43,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
         #ifdef VXHCI_NUMPORTS20
         unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 0x200);
         if(unit == NULL) {
+            mybug(-1, ("[VXHCI] Init: Failed to create new unit!\n"));
+
             /*
                 Free previous units if any exists
             */
+
             ForeachNode(&VXHCIBase->unit_list, unit) {
-                bug("[VXHCI] Init: Removing unit structure %s at %p\n", unit->node.ln_Name, unit);
+                mybug(-1,("[VXHCI] Init: Removing unit structure %s at %p\n", unit->node.ln_Name, unit));
                 REMOVE(unit);
                 FreeVec(unit);
             }
@@ -60,11 +63,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
 
         unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 0x300);
         if(unit == NULL) {
+            mybug(-1, ("[VXHCI] Init: Failed to create new unit!\n"));
+
             /*
                 Free previous units if any exists
             */
+
             ForeachNode(&VXHCIBase->unit_list, unit) {
-                bug("[VXHCI] Init: Removing unit structure %s at %p\n", unit->node.ln_Name, unit);
+                mybug(-1,("[VXHCI] Init: Removing unit structure %s at %p\n", unit->node.ln_Name, unit));
                 REMOVE(unit);
                 FreeVec(unit);
             }
@@ -77,19 +83,20 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
     }
 
     D(ForeachNode(&VXHCIBase->unit_list, unit) {
-        bug("[VXHCI] Init: Created unit %d at %p %s\n", unit->number, unit, unit->name);
+        mybug(-1, ("[VXHCI] Init: Created unit %d at %p %s\n", unit->number, unit, unit->name));
         struct VXHCIPort *port;
         ForeachNode(&unit->roothub.port_list, port) {
-            bug("                      port %d at %p %s\n", port->number, port, port->name);
+            mybug(-1, ("                      port %d at %p %s\n", port->number, port, port->name));
         }
+        mybug(-1,("\n"));
     });
 
     return TRUE;
 }
 
 static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VXHCIBase, struct IOUsbHWReq *ioreq, ULONG unitnum, ULONG flags) {
-    bug("[VXHCI] Open: Entering function\n");
-    bug("[VXHCI] Open: Unit %d\n", unitnum);
+    mybug(0, ("[VXHCI] Open: Entering function\n"));
+    mybug(0, ("[VXHCI] Open: Unit %d\n", unitnum));
 
     struct VXHCIUnit *unit;
 
@@ -104,16 +111,16 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VXHCIBase, struct IOUsbHWReq *iore
     if(unitnum<VXHCIBase->unit_count) {
 
         if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
-            bug("[VXHCI] Open: Invalid MN_LENGTH!\n");
+            mybug(-1, ("[VXHCI] Open: Invalid MN_LENGTH!\n"));
             ioreq->iouh_Req.io_Error = IOERR_BADLENGTH;
         }
 
         ioreq->iouh_Req.io_Unit = NULL;
 
         ForeachNode(&VXHCIBase->unit_list, unit) {
-            bug("[VXHCI] Open: Opening unit number %d\n", unitnum);
+            mybug(0, ("[VXHCI] Open: Opening unit number %d\n", unitnum));
             if(unit->number == unitnum) {
-                bug("        Found unit from node list %p %s\n\n", unit, unit->name);
+                mybug(0, ("        Found unit from node list %s %p\n\n", unit->name, unit));
                 ioreq->iouh_Req.io_Unit = (struct Unit *) unit;
                 break;
             }
@@ -135,7 +142,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VXHCIBase, struct IOUsbHWReq *iore
 }
 
 static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR VXHCIBase, struct IOUsbHWReq *ioreq) {
-    bug("[VXHCI] Close: Entering function\n");
+    mybug(0, ("[VXHCI] Close: Entering function\n"));
 
     ioreq->iouh_Req.io_Unit   = (APTR) -1;
     ioreq->iouh_Req.io_Device = (APTR) -1;
@@ -149,7 +156,7 @@ ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBase *, VXHCIBase, 5, VXHCI) {
     AROS_LIBFUNC_INIT
-    //bug("[VXHCI] BeginIO: Entering function\n");
+    mybug(0, ("[VXHCI] BeginIO: Entering function\n"));
 
     WORD ret = RC_OK;
 
@@ -255,7 +262,11 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
 
 AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBase *, VXHCIBase, 6, VXHCI) {
     AROS_LIBFUNC_INIT
-    bug("[VXHCI] AbortIO: Entering function\n");
+    mybug(-1, ("[VXHCI] AbortIO: Entering function\n"));
+
+    struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Nothing done!\n\n"));
 
     return TRUE;
     AROS_LIBFUNC_EXIT
@@ -270,7 +281,7 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
 
     unit = AllocVec(sizeof(struct VXHCIUnit), MEMF_ANY|MEMF_CLEAR);
     if(unit == NULL) {
-        bug("[VXHCI] VXHCI_AddNewUnit: Failed to create new unit structure\n");
+        mybug(-1, ("[VXHCI] VXHCI_AddNewUnit: Failed to create new unit structure\n"));
         return NULL;
     } else {
         unit->node.ln_Type = NT_USER;
@@ -301,12 +312,14 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
 
             port = VXHCI_AddNewPort(unit, i);
             if(port == NULL) {
+                mybug(-1, ("[VXHCI] VXHCI_AddNewUnit: Failed to create new port structure\n"));
+
                 /*
                     Free previous ports if any exists and delete this unit
                 */
-                bug("[VXHCI] VXHCI_AddNewUnit: Failed to create new port structure\n");
+
                 ForeachNode(&unit->roothub.port_list, port) {
-                    bug("[VXHCI] VXHCI_AddNewUnit: Removing port structure %s at %p\n", port->node.ln_Name, port);
+                    mybug(-1, ("[VXHCI] VXHCI_AddNewUnit: Removing port structure %s at %p\n", port->node.ln_Name, port));
                     REMOVE(port);
                     FreeVec(port);
                 }
@@ -384,34 +397,33 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
             //unit->roothub.hubdesc.usb30.DeviceRemovable     = 0;
         }
 
-        D(bug("[VXHCI] VXHCI_AddNewUnit:\n");
-        bug("        Created new unit numbered %d at %p\n",unit->number, unit);
-        bug("        Unit node name %s\n", unit->node.ln_Name));
+        D( mybug(0, ("[VXHCI] VXHCI_AddNewUnit:\n"));
+        mybug(0, ("        Created new unit numbered %d at %p\n",unit->number, unit));
+        mybug(0, ("        Unit node name %s\n", unit->node.ln_Name));
 
-        D(switch(bcdusb) {
+        switch(bcdusb) {
             case 0x200:
-                bug("        Unit type: USB2.0\n");
+                mybug(0, ("        Unit type: USB2.0\n"));
                 break;
             case 0x300:
-                bug("        Unit type: USB3.0\n");
+                mybug(0, ("        Unit type: USB3.0\n"));
                 break;
             default:
-                bug("        Unit type: %lx (Error?)\n", bcdusb);
+                mybug(0, ("        Unit type: %lx (Error?)\n", bcdusb));
                 break;
         });
 
         D(switch(unit->state) {
             case UHSF_SUSPENDED:
-                bug("        Unit state: UHSF_SUSPENDED\n");
+                mybug(0, ("        Unit state: UHSF_SUSPENDED\n"));
                 break;
             case UHSF_OPERATIONAL:
-                bug("        Unit state: UHSF_OPERATIONAL\n");
+                mybug(0, ("        Unit state: UHSF_OPERATIONAL\n"));
                 break;
             default:
-                bug("        Unit state: %lx (Error?)\n", unit->state);
+                mybug(0, ("        Unit state: %lx (Error?)\n", unit->state));
                 break;
-        });
-
+        } );
 
         return unit;
     }
@@ -422,7 +434,7 @@ struct VXHCIPort *VXHCI_AddNewPort(struct VXHCIUnit *unit, ULONG portnum) {
 
     port = AllocVec(sizeof(struct VXHCIPort), MEMF_ANY|MEMF_CLEAR);
     if(port == NULL) {
-        bug("[VXHCI] VXHCI_AddNewPort: Failed to create new port structure\n");
+        mybug(-1, ("[VXHCI] VXHCI_AddNewPort: Failed to create new port structure\n"));
         return NULL;
     } else {
         port->node.ln_Type = NT_USER;
@@ -436,11 +448,9 @@ struct VXHCIPort *VXHCI_AddNewPort(struct VXHCIUnit *unit, ULONG portnum) {
         port->node.ln_Name = (STRPTR)&port->name;
     }
 
-
-    D(bug("[VXHCI] VXHCI_AddNewPort:\n");
-    bug("        Created new port numbered %d at %p\n",port->number, port);
-    bug("        Port node name %s\n", port->node.ln_Name));
-
+    mybug(0, ("[VXHCI] VXHCI_AddNewPort:\n"));
+    mybug(0, ("        Created new port numbered %d at %p\n",port->number, port));
+    mybug(0, ("        Port node name %s\n", port->node.ln_Name));
 
     return port;
 }

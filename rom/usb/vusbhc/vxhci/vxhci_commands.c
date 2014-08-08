@@ -145,7 +145,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     UWORD bmRequestRecipient = (ioreq->iouh_SetupData.bmRequestType) & (URTF_DEVICE | URTF_INTERFACE | URTF_ENDPOINT | URTF_OTHER);
 
     UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
-    UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
+    D(UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex));
     UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
@@ -559,8 +559,8 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
 
     struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    mybug_unit(-1, ("[VXHCI] cmdIntXFer: ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
-    mybug_unit(-1, ("[VXHCI] cmdIntXFer: unit->roothub.addr %lx\n", unit->roothub.addr));
+    mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
 
     /*
         Check the status of the controller
@@ -579,16 +579,17 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
     }
 
     if(ioreq->iouh_DevAddr == unit->roothub.addr) {
+        mybug_unit(-1, ("Entering cmdIntXFerRootHub\n"));
         return(cmdIntXFerRootHub(ioreq));
     }
 
+    mybug_unit(-1, ("Nothing done!\n\n"));
     return RC_DONTREPLY;
 }
 
 WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
     mybug(-1, ("[VXHCI] cmdIntXFerRootHub: Entering function\n"));
-
-    struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
+    D(struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit);
 
     mybug_unit(-1, ("Nothing done!\n\n"));
     return RC_DONTREPLY;
