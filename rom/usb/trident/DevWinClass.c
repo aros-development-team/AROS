@@ -27,8 +27,8 @@ extern struct ExecBase *SysBase;
 extern struct Library *ps;
 extern struct IntuitionBase *IntuitionBase;
 extern struct Library *UtilityBase;
-/*extern struct IntuitionBase *IntuitionBase;
-extern struct DosLibrary *DOSBase;*/
+/* extern struct IntuitionBase *IntuitionBase; */
+extern struct DosLibrary *DOSBase;
 
 #define NewList(list) NEWLIST(list)
 
@@ -352,14 +352,16 @@ AROS_UFH3(IPTR, DevWinDispatcher,
 
                 if( (devclass == HUB_CLASSCODE) && (devhubport == NULL)) {
 
+                    STRPTR cmpdevicename = "";
                     STRPTR devicename = "";
                     IPTR deviceunit = 0;
 
                     if(phw != NULL) {
-                        psdGetAttrs(PGA_HARDWARE, phw, HA_DeviceName, &devicename, HA_DeviceUnit, &deviceunit, TAG_END);
+                        psdGetAttrs(PGA_HARDWARE, phw, HA_DeviceName, &cmpdevicename, HA_DeviceUnit, &deviceunit, TAG_END);
+                        devicename = FilePart(cmpdevicename);
                     }
 
-                    psdSafeRawDoFmt(textbuf2, 1024, "%s%s\n%s\n%ld\nRoot hub of %s %ld\n%ld (%s)\n%ld\n%ld\n%04lx",
+                    psdSafeRawDoFmt(textbuf2, 1024, "%s%s\n%s\n%ld\nRoot hub of %s unit %ld\n%ld (%s)\n%ld\n%ld\n%04lx",
                                     devstate, (devlowpower ? " (Lowpower)" : ""),
                                     #ifdef AROS_USB30_CODE
                                     (devislowspeed ? "Lowspeed" : (devissuperspeed ? "Superspeed" : (devishighspeed ? "Highspeed" : "Fullspeed"))),
