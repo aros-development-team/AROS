@@ -6,12 +6,20 @@
     Lang: english
 */
 
-#include "debug.h"
-
 #include <aros/debug.h>
 #include <proto/arossupport.h>
 
+#include <devices/usb.h>
+#include <devices/usbhardware.h>
+#include <libraries/usbclass.h>
+#include <proto/poseidon.h>
+
 #include "hubss_class.h"
+
+#include LC_LIBDEFS_FILE
+
+#define KPRINTF(l, x) ((void) 0)
+#define DB(x)
 
 struct NepClassHub * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubBase *nh, struct PsdDevice *pd);
 struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh, struct PsdDevice *pd);
@@ -24,6 +32,7 @@ LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHub *nch, UWORD port);
 BOOL GM_UNIQUENAME(nHubSuspendDevice)(struct NepClassHub *nch, struct PsdDevice *pd);
 BOOL GM_UNIQUENAME(nHubResumeDevice)(struct NepClassHub *nch, struct PsdDevice *pd);
 void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHub *nch, struct NepHubMsg *nhm);
+AROS_UFP0(void, GM_UNIQUENAME(nHubTask));
 
 /* /// "Lib Stuff" */
 static const STRPTR libname = MOD_NAME_STRING;
@@ -31,7 +40,7 @@ static const STRPTR libname = MOD_NAME_STRING;
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh) {
     KPRINTF(10, ("libInit nh: 0x%p SysBase: 0x%p\n", nh, SysBase));
 
-    NewList(&nh->nh_Bindings);
+    NEWLIST(&nh->nh_Bindings);
     InitSemaphore(&nh->nh_Adr0Sema);
 
     KPRINTF(10, ("libInit: Ok\n"));

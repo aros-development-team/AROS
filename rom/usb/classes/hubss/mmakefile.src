@@ -1,13 +1,13 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES :=    hubss_class debug
+FILES :=    hubss_class
 
 #MM- kernel-usb-classes-hubss : kernel-usb-usbclass kernel-usb-poseidon-includes
 
 %build_module_library mmake=kernel-usb-classes-hubss \
     modname=hubss modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
-    uselibs="arossupport debug"
+    uselibs="arossupport"
 
 %common

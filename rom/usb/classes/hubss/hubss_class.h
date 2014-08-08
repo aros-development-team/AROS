@@ -9,15 +9,10 @@
 #ifndef HUBSS_CLASS_H
 #define HUBSS_CLASS_H
 
-#include "common.h"
-
-#include <exec/types.h>
-#include <exec/lists.h>
+#include <exec/exec.h>
 #include <libraries/poseidon.h>
 
 #include <devices/usb_hub.h>
-
-AROS_UFP0(void, GM_UNIQUENAME(nHubTask));
 
 struct NepHubBase {
     struct Library      nh_Library;       /* standard */
