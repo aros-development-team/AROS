@@ -54,24 +54,24 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_ProductName:
-                if(unit->roothub.devdesc.bcdUSB == 0x200) {
-                    *((STRPTR *) tag->ti_Data) = "VXHCI (USB2.0 ports)";
-                } else {
-                    *((STRPTR *) tag->ti_Data) = "VXHCI (USB3.0 ports)";
+                {
+                    static char productname[100];
+                    sprintf(productname, "VXHCI (USB%x.%x ports)", AROS_WORD2LE(unit->roothub.devdesc.bcdUSB>>8)&0xf, AROS_WORD2LE(unit->roothub.devdesc.bcdUSB>>4)&0xf);
+                    *((STRPTR *) tag->ti_Data) = productname;
+                    count++;
                 }
-                count++;
                 break;
             case UHA_Description:
-                if(unit->roothub.devdesc.bcdUSB == 0x200) {
-                    *((STRPTR *) tag->ti_Data) = "Virtual XHCI (USB2.0 ports)";
-                } else {
-                    *((STRPTR *) tag->ti_Data) = "Virtual XHCI (USB3.0 ports)";
+                {
+                    static char description[100];
+                    sprintf(description, "Virtual XHCI (USB%x.%x ports)", AROS_WORD2LE(unit->roothub.devdesc.bcdUSB>>8)&0xf, AROS_WORD2LE(unit->roothub.devdesc.bcdUSB>>4)&0xf);
+                    *((STRPTR *) tag->ti_Data) = description;
                 }
                 count++;
                 break;
             case UHA_Capabilities:
 #if(1)
-                if(unit->roothub.devdesc.bcdUSB == 0x200) {
+                if( (AROS_WORD2LE(unit->roothub.devdesc.bcdUSB) >= 0x200) && (AROS_WORD2LE(unit->roothub.devdesc.bcdUSB) < 0x300)) {
                     *((ULONG *) tag->ti_Data) = (UHCF_USB20);
                 } else {
                     *((ULONG *) tag->ti_Data) = (UHCF_USB30);
@@ -238,7 +238,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                                                 case 2: {
                                                     char roothubname[100];
-                                                    sprintf(roothubname, "VXHCI USB%d.0 Root Hub", (unit->roothub.devdesc.bcdUSB == 0x200) ? 2 : 3);
+                                                    sprintf(roothubname, "VXHCI USB%x%x", AROS_WORD2LE(unit->roothub.devdesc.bcdUSB>>8)&0xf, AROS_WORD2LE(unit->roothub.devdesc.bcdUSB>>4)&0xf);
                                                     return cmdGetString(ioreq, roothubname);
                                                     break;
                                                     }
