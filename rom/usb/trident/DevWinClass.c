@@ -229,6 +229,8 @@ AROS_UFH3(IPTR, DevWinDispatcher,
             struct Node *devhub = NULL;
             STRPTR devhubname = "";
 
+            struct Node *phw = NULL;
+
             struct List *cfgs;
             struct Node *pc;
             IPTR cfgselfpow;
@@ -304,6 +306,7 @@ AROS_UFH3(IPTR, DevWinDispatcher,
                             DA_PowerDrained, &devpowerdrain,
                             DA_AtHubPortNumber, &devhubport,
                             DA_HubDevice, &devhub,
+                            DA_Hardware, &phw,
                             TAG_END);
                 if(devhub)
                 {
@@ -347,20 +350,45 @@ AROS_UFH3(IPTR, DevWinDispatcher,
                     devstate = "Dead";
                 }
 
-                psdSafeRawDoFmt(textbuf2, 1024, "%s%s\n%s\n%ld\nPort %ld at %s\n%ld (%s)\n%ld\n%ld\n%04lx",
-                                devstate, (devlowpower ? " (Lowpower)" : ""),
-                                #ifdef AROS_USB30_CODE
-                                (devislowspeed ? "Lowspeed" : (devissuperspeed ? "Superspeed" : (devishighspeed ? "Highspeed" : "Fullspeed"))),
-                                #else
-                                (devislowspeed ? "Lowspeed" : (devishighspeed ? "Highspeed" : "Fullspeed")),
-                                #endif
-                                devadr,
-                                devhubport, devhubname,
-                                devclass,
-                                psdNumToStr(NTS_COMBOCLASS,
-                                        (devclass<<NTSCCS_CLASS)|(devsubclass<<NTSCCS_SUBCLASS)|(devproto<<NTSCCS_PROTO)|
-                                        NTSCCF_CLASS|NTSCCF_SUBCLASS|NTSCCF_PROTO, "None"),
-                                devsubclass, devproto, devusbvers);
+                if( (devclass == HUB_CLASSCODE) && (devhubport == NULL)) {
+
+                    STRPTR devicename = "";
+                    IPTR deviceunit = 0;
+
+                    if(phw != NULL) {
+                        psdGetAttrs(PGA_HARDWARE, phw, HA_DeviceName, &devicename, HA_DeviceUnit, &deviceunit, TAG_END);
+                    }
+
+                    psdSafeRawDoFmt(textbuf2, 1024, "%s%s\n%s\n%ld\nRoot hub of %s %ld\n%ld (%s)\n%ld\n%ld\n%04lx",
+                                    devstate, (devlowpower ? " (Lowpower)" : ""),
+                                    #ifdef AROS_USB30_CODE
+                                    (devislowspeed ? "Lowspeed" : (devissuperspeed ? "Superspeed" : (devishighspeed ? "Highspeed" : "Fullspeed"))),
+                                    #else
+                                    (devislowspeed ? "Lowspeed" : (devishighspeed ? "Highspeed" : "Fullspeed")),
+                                    #endif
+                                    devadr,
+                                    devicename, deviceunit,
+                                    devclass,
+                                    psdNumToStr(NTS_COMBOCLASS,
+                                                (devclass<<NTSCCS_CLASS)|(devsubclass<<NTSCCS_SUBCLASS)|(devproto<<NTSCCS_PROTO)|
+                                                NTSCCF_CLASS|NTSCCF_SUBCLASS|NTSCCF_PROTO, "None"),
+                                                devsubclass, devproto, devusbvers);
+                } else {
+                    psdSafeRawDoFmt(textbuf2, 1024, "%s%s\n%s\n%ld\nPort %ld at %s\n%ld (%s)\n%ld\n%ld\n%04lx",
+                                    devstate, (devlowpower ? " (Lowpower)" : ""),
+                                    #ifdef AROS_USB30_CODE
+                                    (devislowspeed ? "Lowspeed" : (devissuperspeed ? "Superspeed" : (devishighspeed ? "Highspeed" : "Fullspeed"))),
+                                    #else
+                                    (devislowspeed ? "Lowspeed" : (devishighspeed ? "Highspeed" : "Fullspeed")),
+                                    #endif
+                                    devadr,
+                                    devhubport, devhubname,
+                                    devclass,
+                                    psdNumToStr(NTS_COMBOCLASS,
+                                                (devclass<<NTSCCS_CLASS)|(devsubclass<<NTSCCS_SUBCLASS)|(devproto<<NTSCCS_PROTO)|
+                                                NTSCCF_CLASS|NTSCCF_SUBCLASS|NTSCCF_PROTO, "None"),
+                                                devsubclass, devproto, devusbvers);
+                }
 
                 pc = cfgs->lh_Head;
                 textbuf3[0] = 0;
