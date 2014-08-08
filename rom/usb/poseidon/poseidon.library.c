@@ -2937,7 +2937,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                         break;
                     default:
 #ifdef AROS_USB30_CODE
-                        if( (usdd.bcdUSB >= AROS_WORD2LE(0x0300)) && (usdd.bMaxPacketSize0 == 9) ) {
+                        if( (AROS_LE2WORD(usdd.bcdUSB) >= 0x0300) && (usdd.bMaxPacketSize0 == 9) ) {
                             pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = usdd.bMaxPacketSize0;
                             break;
                         }
