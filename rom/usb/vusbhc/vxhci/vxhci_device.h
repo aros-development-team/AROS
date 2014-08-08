@@ -8,6 +8,7 @@
 #ifndef VXHCI_DEVICE_H
 #define VXHCI_DEVICE_H
 
+#include <aros/debug.h>
 #include <aros/macros.h>
 
 #include <proto/exec.h>
@@ -20,14 +21,18 @@
 #include <devices/usbhardware.h>
 
 /* Maximum number of units */
-#define VXHCI_NUMCONTROLLERS 2
+#define VXHCI_NUMCONTROLLERS 1
 
 /* Maximum number of ports per protocol (USB2.0/USB3.0) */
-#define VXHCI_NUMPORTS20 2
-#define VXHCI_NUMPORTS30 4
+#define VXHCI_NUMPORTS20 1
+#define VXHCI_NUMPORTS30 1
 
 #define RC_OK         0
 #define RC_DONTREPLY -1
+
+#define MYBUG_LEVEL 200
+#define mybug(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug x; } } while (0); } )
+#define mybug_unit(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug("%s %s: ", unit->name, __FUNCTION__); bug x; } } while (0); } )
 
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq);
 WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
