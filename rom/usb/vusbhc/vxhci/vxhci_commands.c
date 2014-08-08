@@ -92,6 +92,18 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
     return RC_OK;
 }
 
+BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
+    ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+    ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
+
+    /* If not quick I/O, reply the message */
+    if (!(ioreq->iouh_Req.io_Flags & IOF_QUICK)) {
+        ReplyMsg(&ioreq->iouh_Req.io_Message);
+    }
+
+    return (TRUE);
+}
+
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     mybug(0, ("[VXHCI] cmdUsbReset: Entering function\n"));
 

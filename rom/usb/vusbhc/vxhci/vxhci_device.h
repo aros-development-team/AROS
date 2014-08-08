@@ -34,6 +34,7 @@
 #define mybug(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug x; } } while (0); } )
 #define mybug_unit(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug("%s %s: ", unit->name, __FUNCTION__); bug x; } } while (0); } )
 
+BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq);
 WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);

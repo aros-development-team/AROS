@@ -61,7 +61,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
         }
         #endif
 
-        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 0x310);
+        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 0x311);
         if(unit == NULL) {
             mybug(-1, ("[VXHCI] Init: Failed to create new unit!\n"));
 
@@ -264,11 +264,13 @@ AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
     AROS_LIBFUNC_INIT
     mybug(-1, ("[VXHCI] AbortIO: Entering function\n"));
 
-    struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
+    if(ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE) {
+        if(cmdAbortIO(ioreq)) {
+            return(0);
+        }
+    }
 
-    mybug_unit(-1, ("Nothing done!\n\n"));
-
-    return TRUE;
+    return(-1);
     AROS_LIBFUNC_EXIT
 }
 
