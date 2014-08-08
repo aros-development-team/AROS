@@ -41,7 +41,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
     for (i=0; i<VXHCI_NUMCONTROLLERS; i++) {
 
         #ifdef VXHCI_NUMPORTS20
-        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 0x200);
+        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count, 0x210);
         if(unit == NULL) {
             mybug(-1, ("[VXHCI] Init: Failed to create new unit!\n"));
 
@@ -295,22 +295,24 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
         unit->roothub.devdesc.bcdUSB    = AROS_WORD2LE(bcdusb);
         unit->roothub.devdesc.bcdDevice = AROS_WORD2LE(bcdusb);
 
+        sprintf(unit->name, "VXHCI_USB%x%x[%d]", (bcdusb>>8)&0xf, (bcdusb>>4)&0xf, unit->number);
+
         #ifdef VXHCI_NUMPORTS20
-        if(bcdusb == 0x200) {
+        if( (bcdusb >= 0x0200) && (bcdusb < 0x0300) ) {
             unit->roothub.devdesc.bMaxPacketSize0      = 8;
             unit->roothub.devdesc.bDeviceProtocol      = 1;
             unit->roothub.config.epdesc.wMaxPacketSize = AROS_WORD2LE(8);
-            sprintf(unit->name, "VXHCI_USB20[%x]", unit->number);
             imax = VXHCI_NUMPORTS20;
         } else {
             unit->roothub.devdesc.bMaxPacketSize0      = 9;
             unit->roothub.devdesc.bDeviceProtocol      = 3;
             unit->roothub.config.epdesc.wMaxPacketSize = AROS_WORD2LE(1024);
-            sprintf(unit->name, "VXHCI_USB30[%x]", unit->number);
             imax = VXHCI_NUMPORTS30;
         }
         #else
-        sprintf(unit->name, "VXHCI_USB30[%x]", unit->number);
+        unit->roothub.devdesc.bMaxPacketSize0      = 9;
+        unit->roothub.devdesc.bDeviceProtocol      = 3;
+        unit->roothub.config.epdesc.wMaxPacketSize = AROS_WORD2LE(1024);
         imax = VXHCI_NUMPORTS30;
         #endif
 
@@ -382,7 +384,7 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
         unit->roothub.config.epdesc.bInterval               = 12;
 
         /* This is our root hub hub descriptor */
-        if(bcdusb == 0x200) {
+        if( (bcdusb >= 0x0200) && (bcdusb < 0x0300) ) {
             unit->roothub.hubdesc.usb20.bLength             = sizeof(struct UsbHubDesc);
             unit->roothub.hubdesc.usb20.bDescriptorType     = UDT_HUB;
             unit->roothub.hubdesc.usb20.bNbrPorts           = (UBYTE) unit->roothub.port_count;
@@ -403,23 +405,11 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
             //unit->roothub.hubdesc.usb30.DeviceRemovable     = 0;
         }
 
-        D( mybug(0, ("[VXHCI] VXHCI_AddNewUnit:\n"));
-        mybug(0, ("        Created new unit numbered %d at %p\n",unit->number, unit));
-        mybug(0, ("        Unit node name %s\n", unit->node.ln_Name));
+        D( mybug(-1, ("[VXHCI] VXHCI_AddNewUnit:\n"));
+        mybug(-1, ("        Created new unit numbered %d at %p\n",unit->number, unit));
+        mybug(-1, ("        Unit node name %s\n", unit->node.ln_Name));
 
-        switch(bcdusb) {
-            case 0x200:
-                mybug(0, ("        Unit type: USB2.0\n"));
-                break;
-            case 0x300:
-                mybug(0, ("        Unit type: USB3.0\n"));
-                break;
-            default:
-                mybug(0, ("        Unit type: %lx (Error?)\n", bcdusb));
-                break;
-        });
-
-        D(switch(unit->state) {
+        switch(unit->state) {
             case UHSF_SUSPENDED:
                 mybug(0, ("        Unit state: UHSF_SUSPENDED\n"));
                 break;
@@ -446,17 +436,14 @@ struct VXHCIPort *VXHCI_AddNewPort(struct VXHCIUnit *unit, ULONG portnum) {
         port->node.ln_Type = NT_USER;
         /* Poseidon treats port number 0 as roothub */
         port->number = portnum+1;
-        if(unit->roothub.devdesc.bcdUSB == 0x200) {
-            sprintf(port->name, "VXHCI_USB20[%d:%d]", unit->number, port->number);
-        } else {
-            sprintf(port->name, "VXHCI_USB30[%d:%d]", unit->number, port->number);
-        }
+
+        sprintf(port->name, "VXHCI_USB%x%x[%d:%d]", (AROS_WORD2LE(unit->roothub.devdesc.bcdUSB)>>8)&0xf, (AROS_WORD2LE(unit->roothub.devdesc.bcdUSB)>>4)&0xf, unit->number, port->number);
         port->node.ln_Name = (STRPTR)&port->name;
     }
 
-    mybug(0, ("[VXHCI] VXHCI_AddNewPort:\n"));
-    mybug(0, ("        Created new port numbered %d at %p\n",port->number, port));
-    mybug(0, ("        Port node name %s\n", port->node.ln_Name));
+    mybug(-1, ("[VXHCI] VXHCI_AddNewPort:\n"));
+    mybug(-1, ("        Created new port numbered %d at %p\n",port->number, port));
+    mybug(-1, ("        Port node name %s\n", port->node.ln_Name));
 
     return port;
 }
