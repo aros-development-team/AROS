@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES :=    hubss.class debug
+FILES :=    hubss_class debug
 
 #MM- kernel-usb-classes-hubss : kernel-usb-usbclass kernel-usb-poseidon-includes
 

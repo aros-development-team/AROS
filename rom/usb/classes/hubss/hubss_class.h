@@ -1,33 +1,79 @@
+/*
+    Copyright © 2014, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: SuperSpeed USB3.0 hub for Poseidon (based upon hub.h by Chris Hodges <chrisly@platon42.de>)
+    Lang: English
+*/
+
 #ifndef HUBSS_CLASS_H
 #define HUBSS_CLASS_H
 
-/*
- *----------------------------------------------------------------------------
- *                         Includes for hub class
- *----------------------------------------------------------------------------
- *                   By Chris Hodges <chrisly@platon42.de>
- */
-
 #include "common.h"
+
+#include <exec/types.h>
+#include <exec/lists.h>
+#include <libraries/poseidon.h>
 
 #include <devices/usb_hub.h>
 
-#include "hubss.h"
-
-/* Protos */
-
-struct NepClassHub * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubBase *nh, struct PsdDevice *pd);
-struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh, struct PsdDevice *pd);
-void GM_UNIQUENAME(usbReleaseDeviceBinding)(struct NepHubBase *nh, struct NepClassHub *nch);
-
-struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void);
-void GM_UNIQUENAME(nFreeHub)(struct NepClassHub *nch);
-struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD port);
-LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHub *nch, UWORD port);
-BOOL GM_UNIQUENAME(nHubSuspendDevice)(struct NepClassHub *nch, struct PsdDevice *pd);
-BOOL GM_UNIQUENAME(nHubResumeDevice)(struct NepClassHub *nch, struct PsdDevice *pd);
-void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHub *nch, struct NepHubMsg *nhm);
-
 AROS_UFP0(void, GM_UNIQUENAME(nHubTask));
+
+struct NepHubBase {
+    struct Library      nh_Library;       /* standard */
+    UWORD               nh_Flags;         /* various flags */
+
+    struct Library     *nh_UtilityBase;   /* utility base */
+    struct List         nh_Bindings;
+    struct SignalSemaphore nh_Adr0Sema;   /* Address 0 Semaphore */
+};
+
+struct NepClassHub {
+    struct Node         nch_Node;         /* Node linkage */
+    struct NepHubBase  *nch_HubBase;      /* hub.class base */
+    struct Library     *nch_Base;         /* Poseidon base */
+    struct PsdHardware *nch_Hardware;     /* Up linkage */
+    struct PsdDevice   *nch_Device;       /* Up linkage */
+    struct PsdConfig   *nch_Config;       /* Up linkage */
+    struct PsdInterface *nch_Interface;   /* Up linkage */
+
+    struct PsdEndpoint *nch_EP1;          /* Endpoint 1 */
+    struct PsdPipe     *nch_EP0Pipe;      /* Endpoint 0 pipe */
+    struct PsdPipe     *nch_EP1Pipe;      /* Endpoint 1 pipe */
+
+    BOOL                nch_IOStarted;    /* IO Running */
+    BOOL                nch_Running;      /* Not suspended */
+    struct Task        *nch_ReadySigTask; /* Task to send ready signal to */
+    LONG                nch_ReadySignal;  /* Signal to send when ready */
+    struct Task        *nch_Task;         /* Subtask */
+    struct MsgPort     *nch_TaskMsgPort;  /* Message Port of Subtask */
+    struct MsgPort     *nch_CtrlMsgPort;  /* Message Port for control messages */
+
+    BOOL                nch_IsUSB30;      /* Is this a superspeed hub? */
+    UWORD               nch_NumPorts;     /* Number of ports at this hub */
+    UWORD               nch_HubAttr;      /* Hub Characteristics (see UHCF flags) */
+    UWORD               nch_PwrGoodTime;  /* Time in ms for power to become good */
+    UWORD               nch_HubCurrent;   /* Max hub current in mA */
+    UWORD               nch_HubHdrDecLat;
+    UWORD               nch_HubDelay;
+    ULONG               nch_Removable;    /* Bitmask for device removable */
+
+    ULONG               nch_PowerCycle;   /* Bitmask of devices to powercycle */
+    ULONG               nch_DisablePort;  /* Bitmask of devices to disable */
+
+    BOOL                nch_ClassScan;    /* Flag to cause class scan */
+    BOOL                nch_IsRootHub;    /* Is this a Root Hub? */
+
+    UBYTE               nch_PortChanges[4]; /* Buffer for port changes */
+    struct PsdDevice  **nch_Downstream;   /* Pointer to array of down stream device pointers */
+};
+
+struct NepHubMsg {
+    struct Message      nhm_Msg;          /* Message body */
+    ULONG               nhm_MethodID;     /* The method ID (see usbclass.h) */
+    IPTR               *nhm_Params;       /* Pointer to parameters of the method (all of them!) */
+    IPTR                nhm_Result;       /* Result of call */
+};
+
 
 #endif /* HUBSS_CLASS_H */
