@@ -54,7 +54,7 @@ struct NepClassHub {
     UWORD               nch_HubCurrent;   /* Max hub current in mA */
     UWORD               nch_HubHdrDecLat;
     UWORD               nch_HubDelay;
-    ULONG               nch_Removable;    /* Bitmask for device removable */
+    UWORD               nch_Removable;    /* Bitmask for device removable */
 
     ULONG               nch_PowerCycle;   /* Bitmask of devices to powercycle */
     ULONG               nch_DisablePort;  /* Bitmask of devices to disable */
