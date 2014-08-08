@@ -6,6 +6,11 @@
     Lang: english
 */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 1
+
 #include <aros/macros.h>
 
 #include <proto/exec.h>
@@ -19,12 +24,11 @@
 
 #include "vxhci_device.h"
 
-#define DEBUG 1
-#include <aros/debug.h>
-
 #include LC_LIBDEFS_FILE
 
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
+    mybug(0, ("[VXHCI] cmdQueryDevice: Entering function\n"));
+
     struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
     struct TagItem *taglist = (struct TagItem *) ioreq->iouh_Data;
@@ -57,8 +61,16 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 }
                 count++;
                 break;
+            case UHA_Description:
+                if(unit->roothub.devdesc.bcdUSB == 0x200) {
+                    *((STRPTR *) tag->ti_Data) = "Virtual XHCI (USB2.0 ports)";
+                } else {
+                    *((STRPTR *) tag->ti_Data) = "Virtual XHCI (USB3.0 ports)";
+                }
+                count++;
+                break;
             case UHA_Capabilities:
-#if(0)
+#if(1)
                 if(unit->roothub.devdesc.bcdUSB == 0x200) {
                     *((ULONG *) tag->ti_Data) = (UHCF_USB20);
                 } else {
@@ -74,12 +86,14 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
         }
     }
 
+    mybug_unit(0, ("Done\n\n"));
+
     ioreq->iouh_Actual = count;
     return RC_OK;
 }
 
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
-    bug("[VXHCI] cmdUsbReset: Entering function\n");
+    mybug(0, ("[VXHCI] cmdUsbReset: Entering function\n"));
 
     struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
@@ -88,17 +102,17 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     unit->roothub.addr = 0;
     unit->state = UHSF_RESUMING;
     unit->state = UHSF_OPERATIONAL;
-    bug("[VXHCI] cmdUsbReset: Done\n\n");
+    mybug_unit(0, ("Done\n\n"));
     return RC_OK;
 }
 
 WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
-    bug("[VXHCI] cmdControlXFer: Entering function\n");
+    mybug(0, ("[VXHCI] cmdControlXFer: Entering function\n"));
 
     struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    bug("[VXHCI] cmdControlXFer: ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr);
-    bug("[VXHCI] cmdControlXFer: unit->roothub.addr %lx\n", unit->roothub.addr);
+    mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
 
     /*
         Check the status of the controller
@@ -108,10 +122,11 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
         UHSB_SUSPENDED   USB is in suspended state
         UHSB_RESET       USB is just inside a reset phase
     */
+
     if(unit->state == UHSF_OPERATIONAL) {
-        bug("[VXHCI] cmdControlXFer: Unit state: UHSF_OPERATIONAL\n");
+        mybug_unit(0, ("Unit state is operational\n"));
     } else {
-        bug("[VXHCI] cmdControlXFer: Unit state: UHSF_SUSPENDED\n");
+        mybug_unit(-1, ("Unit state is not operational!\n"));
         return UHIOERR_USBOFFLINE;
     }
 
@@ -123,13 +138,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
 }
 
 WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
-    bug("[VXHCI] cmdControlXFerRootHub: Entering function\n");
-
-    //UWORD rt = ioreq->iouh_SetupData.bmRequestType;
-    //UWORD req = ioreq->iouh_SetupData.bRequest;
-    //UWORD idx = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    //UWORD val = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    //UWORD len = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+    mybug(0, ("[VXHCI] cmdControlXFerRootHub: Entering function\n"));
 
     UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType) & (URTF_STANDARD | URTF_CLASS | URTF_VENDOR);
     UWORD bmRequestDirection = (ioreq->iouh_SetupData.bmRequestType) & (URTF_IN | URTF_OUT);
@@ -142,113 +151,32 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
     struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    bug("[VXHCI] cmdControlXFerRootHub: Endpoint number is %ld \n", ioreq->iouh_Endpoint);
-
-    bug("[VXHCI] cmdControlXFerRootHub: bmRequestDirection ");
-    switch (bmRequestDirection) {
-        case URTF_IN:
-            bug("URTF_IN\n");
-            break;
-        case URTF_OUT:
-            bug("URTF_OUT\n");
-            break;
-    }
-
-    bug("[VXHCI] cmdControlXFerRootHub: bmRequestType ");
-    switch(bmRequestType) {
-        case URTF_STANDARD:
-            bug("URTF_STANDARD\n");
-            break;
-        case URTF_CLASS:
-            bug("URTF_CLASS\n");
-            break;
-        case URTF_VENDOR:
-            bug("URTF_VENDOR\n");
-            break;
-    }
-
-    bug("[VXHCI] cmdControlXFerRootHub: bmRequestRecipient ");
-    switch (bmRequestRecipient) {
-        case URTF_DEVICE:
-            bug("URTF_DEVICE\n");
-            break;
-        case URTF_INTERFACE:
-            bug("URTF_INTERFACE\n");
-            break;
-        case URTF_ENDPOINT:
-            bug("URTF_ENDPOINT\n");
-            break;
-        case URTF_OTHER:
-            bug("URTF_OTHER\n");
-            break;
-    }
-
-    bug("[VXHCI] cmdControlXFerRootHub: bRequest ");
-    switch(bRequest) {
-        case USR_GET_STATUS:
-            bug("USR_GET_STATUS\n");
-            break;
-        case USR_CLEAR_FEATURE:
-            bug("USR_CLEAR_FEATURE\n");
-            break;
-        case USR_SET_FEATURE:
-            bug("USR_SET_FEATURE\n");
-            break;
-        case USR_SET_ADDRESS:
-            bug("USR_SET_ADDRESS\n");
-            break;
-        case USR_GET_DESCRIPTOR:
-            bug("USR_GET_DESCRIPTOR\n");
-            break;
-        case USR_SET_DESCRIPTOR:
-            bug("USR_SET_DESCRIPTOR\n");
-            break;
-        case USR_GET_CONFIGURATION:
-            bug("USR_GET_CONFIGURATION\n");
-            break;
-        case USR_SET_CONFIGURATION:
-            bug("USR_SET_CONFIGURATION\n");
-            break;
-        case USR_GET_INTERFACE:
-            bug("USR_GET_INTERFACE\n");
-            break;
-        case USR_SET_INTERFACE:
-            bug("USR_SET_INTERFACE\n");
-            break;
-        case USR_SYNCH_FRAME:
-            bug("USR_SYNCH_FRAME\n");
-            break;
-    }
-
-    bug("[VXHCI] cmdControlXFerRootHub: wIndex %x\n", wIndex);
-    bug("[VXHCI] cmdControlXFerRootHub: wValue %x\n", wValue);
-    bug("[VXHCI] cmdControlXFerRootHub: wLength %d\n", wLength);
-
     /* Endpoint 0 is used for control transfers only and can not be assigned to any other function. */
     if(ioreq->iouh_Endpoint != 0) {
+        mybug_unit(-1, ("Wrong endpoint number! %ld\n", ioreq->iouh_Endpoint));
         return UHIOERR_BADPARAMS;
     }
 
     /* Check the request */
     if(bmRequestDirection) {
-        bug("[VXHCI] cmdControlXFerRootHub: Request direction is device to host\n");
+        mybug_unit(0, ("Request direction is device to host\n"));
 
         switch(bmRequestType) {
             case URTF_STANDARD:
-                bug("[VXHCI] cmdControlXFerRootHub: URTF_STANDARD\n");
+                mybug_unit(0, ("URTF_STANDARD\n"));
 
                 switch(bmRequestRecipient) {
                     case URTF_DEVICE:
-                        bug("[VXHCI] cmdControlXFerRootHub: URTF_DEVICE\n");
+                        mybug_unit(0, ("URTF_DEVICE\n"));
 
                         switch(bRequest) {
                             case USR_GET_DESCRIPTOR:
-                                bug("[VXHCI] cmdControlXFerRootHub: USR_GET_DESCRIPTOR\n");
+                                mybug_unit(0, ("USR_GET_DESCRIPTOR\n"));
 
                                 switch( (wValue>>8) ) {
                                     case UDT_DEVICE:
-                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_DEVICE\n");
-                                        bug("[VXHCI] cmdControlXFerRootHub: GetDeviceDescriptor (%ld)\n", wLength);
+                                        mybug_unit(0, ("UDT_DEVICE\n"));
+                                        mybug_unit(0, ("GetDeviceDescriptor (%ld)\n", wLength));
 
                                         /*
                                             Poseidon first does a dummy psdPipeSetup(URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE)
@@ -260,30 +188,30 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbStdDevDesc)) ? sizeof(struct UsbStdDevDesc) : wLength;
                                         CopyMem((APTR) &unit->roothub.devdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
-                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                        mybug_unit(0, ("Done\n\n"));
                                         return(0);
                                         break;
 
                                     case UDT_CONFIGURATION:
-                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_CONFIGURATION\n");
-                                        bug("[VXHCI] cmdControlXFerRootHub: GetConfigDescriptor (%ld)\n", wLength);
+                                        mybug_unit(0, ("UDT_CONFIGURATION\n"));
+                                        mybug_unit(0, ("GetConfigDescriptor (%ld)\n", wLength));
 
                                         ioreq->iouh_Actual = (wLength > sizeof(struct RHConfig)) ? sizeof(struct RHConfig) : wLength;
                                         CopyMem((APTR) &unit->roothub.config, ioreq->iouh_Data, ioreq->iouh_Actual);
 
                                         //bug("sizeof(struct RHConfig) = %ld (should be 25)\n", sizeof(struct RHConfig));
-                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                        mybug_unit(0, ("Done\n\n"));
                                         return(0);
 
                                         break;
 
                                     case UDT_STRING:
-                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_STRING id %d\n", (wValue & 0xff));
+                                        mybug_unit(0, ("UDT_STRING id %d\n", (wValue & 0xff)));
 
                                         if(wLength > 1) {
                                             switch( (wValue & 0xff) ) {
                                                 case 0:
-                                                    bug("[VXHCI] cmdControlXFerRootHub: GetStringDescriptor (%ld)\n", wLength);
+                                                    mybug_unit(0, ("GetStringDescriptor (%ld)\n", wLength));
 
                                                     /* This is our root hub string descriptor */
                                                     struct UsbStdStrDesc *strdesc = (struct UsbStdStrDesc *) ioreq->iouh_Data;
@@ -294,11 +222,11 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                                     if(wLength > 3) {
                                                         strdesc->bString[1] = AROS_WORD2LE(0x0409); // English (Yankee)
                                                         ioreq->iouh_Actual = sizeof(struct UsbStdStrDesc);
-                                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                                        mybug_unit(0, ("Done\n\n"));
                                                         return(0);
                                                     } else {
                                                         ioreq->iouh_Actual = wLength;
-                                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                                        mybug_unit(0, ("Done\n\n"));
                                                         return(0);
                                                     }
 
@@ -390,10 +318,10 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 break; /* case USR_GET_DESCRIPTOR */
 
                             case USR_GET_STATUS:
-                                bug("[VXHCI] cmdControlXFerRootHub: USR_GET_STATUS\n");
+                                mybug_unit(0, ("USR_GET_STATUS\n"));
                                 ((UWORD *) ioreq->iouh_Data)[0] = AROS_WORD2LE(U_GSF_SELF_POWERED);
                                 ioreq->iouh_Actual = wLength;
-                                bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                mybug_unit(0, ("Done\n\n"));
                                 return(0);
                                 break;
 
@@ -401,34 +329,34 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                         break; /* case URTF_DEVICE: */
 
                     case URTF_INTERFACE:
-                        bug("[VXHCI] cmdControlXFerRootHub: URTF_INTERFACE\n");
+                        mybug_unit(0, ("URTF_INTERFACE\n"));
                         break;
 
                     case URTF_ENDPOINT:
-                        bug("[VXHCI] cmdControlXFerRootHub: URTF_ENDPOINT\n");
+                        mybug_unit(0, ("URTF_ENDPOINT\n"));
                         break;
 
                     case URTF_OTHER:
-                        bug("[VXHCI] cmdControlXFerRootHub: URTF_OTHER\n");
+                        mybug_unit(0, ("URTF_OTHER\n"));
                         break;
 
                     default:
-                        bug("[VXHCI] cmdControlXFerRootHub: %ld\n", bRequest);
+                        mybug_unit(0, ("Request defaulting %ld\n", bRequest));
                         break;
 
                 } /* switch(bmRequestRecipient) */
                 break;
 
             case URTF_CLASS:
-                bug("[VXHCI] cmdControlXFerRootHub: URTF_CLASS\n");
+                mybug_unit(0, ("URTF_CLASS\n"));
 
                 switch(bmRequestRecipient) {
                     case URTF_DEVICE:
-                        bug("[VXHCI] cmdControlXFerRootHub: URTF_DEVICE\n");
+                        mybug_unit(0, ("URTF_DEVICE\n"));
 
                         switch(bRequest) {
                             case USR_GET_STATUS:
-                                bug("[VXHCI] cmdControlXFerRootHub: USR_GET_STATUS\n");
+                                mybug_unit(-1, ("USR_GET_STATUS\n"));
                                 UWORD *mptr = ioreq->iouh_Data;
                                 if(wLength < sizeof(struct UsbHubStatus)) {
                                     return(UHIOERR_STALL);
@@ -436,39 +364,39 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 *mptr++ = 0;
                                 *mptr++ = 0;
                                 ioreq->iouh_Actual = 4;
-                                bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                mybug_unit(-1, ("Something done, check me...\n\n"));
                                 return(0);
                                 break;
 
 
                             case USR_GET_DESCRIPTOR:
-                                bug("[VXHCI] cmdControlXFerRootHub: USR_GET_DESCRIPTOR\n");
+                                mybug_unit(0, ("[VXHCI] cmdControlXFerRootHub: USR_GET_DESCRIPTOR\n"));
 
                                 switch( (wValue>>8) ) {
                                     case UDT_HUB:
-                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_HUB\n");
-                                        bug("[VXHCI] cmdControlXFerRootHub: GetRootHubDescriptor USB2.0 (%ld)\n", wLength);
+                                        mybug_unit(0, ("UDT_HUB\n"));
+                                        mybug_unit(0, ("GetRootHubDescriptor USB2.0 (%ld)\n", wLength));
 
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbHubDesc)) ? sizeof(struct UsbHubDesc) : wLength;
                                         CopyMem((APTR) &unit->roothub.hubdesc.usb20, ioreq->iouh_Data, ioreq->iouh_Actual);
 
-                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                        mybug_unit(0, ("Done\n\n"));
                                         return(0);
                                         break;
 
                                     case UDT_SSHUB:
-                                        bug("[VXHCI] cmdControlXFerRootHub: UDT_SSHUB\n");
-                                        bug("[VXHCI] cmdControlXFerRootHub: GetRootHubDescriptor USB3.0 (%ld)\n", wLength);
+                                        mybug_unit(0, ("UDT_SSHUB\n"));
+                                        mybug_unit(0, ("GetRootHubDescriptor USB3.0 (%ld)\n", wLength));
 
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbSSHubDesc)) ? sizeof(struct UsbSSHubDesc) : wLength;
                                         CopyMem((APTR) &unit->roothub.hubdesc.usb30, ioreq->iouh_Data, ioreq->iouh_Actual);
 
-                                        bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                        mybug_unit(0, ("Done\n\n"));
                                         return(0);
                                         break;
                                 }
 
-                                bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                mybug_unit(0, ("Done\n\n"));
                                 return(0);
                                 break;
                         }
@@ -478,35 +406,35 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                 break;
 
             case URTF_VENDOR:
-                bug("[VXHCI] cmdControlXFerRootHub: URTF_VENDOR\n");
+                mybug_unit(0, ("URTF_VENDOR\n"));
                 break;
         } /* switch(bmRequestType) */
 
     } else { /* if(bmRequestDirection) */
-        bug("[VXHCI] cmdControlXFerRootHub: Request direction is host to device\n");
+        mybug_unit(0, ("Request direction is host to device\n"));
 
         switch(bmRequestType) {
             case URTF_STANDARD:
-                bug("[VXHCI] cmdControlXFerRootHub: URTF_STANDARD\n");
+                mybug_unit(0, ("[VXHCI] cmdControlXFerRootHub: URTF_STANDARD\n"));
 
                 switch(bmRequestRecipient) {
                     case URTF_DEVICE:
-                        bug("[VXHCI] cmdControlXFerRootHub: URTF_DEVICE\n");
+                        mybug_unit(0, ("[VXHCI] cmdControlXFerRootHub: URTF_DEVICE\n"));
 
                         switch(bRequest) {
                             case USR_SET_ADDRESS:
-                                bug("[VXHCI] cmdControlXFerRootHub: USR_SET_ADDRESS\n");
+                                mybug_unit(0, ("USR_SET_ADDRESS\n"));
                                 unit->roothub.addr = wValue;
                                 ioreq->iouh_Actual = wLength;
-                                bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                mybug_unit(0, ("Done\n\n"));
                                 return(0);
                                 break;
 
                             case USR_SET_CONFIGURATION:
                                 /* We do not have alternative configuration */
-                                bug("[VXHCI] cmdControlXFerRootHub: USR_SET_CONFIGURATION\n");
+                                mybug_unit(0, ("USR_SET_CONFIGURATION\n"));
                                 ioreq->iouh_Actual = wLength;
-                                bug("[VXHCI] cmdControlXFerRootHub: Done\n\n");
+                                mybug_unit(0, ("Done\n\n"));
                                 return(0);
                                 break;
 
@@ -514,42 +442,125 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                         break;
 
                     case URTF_INTERFACE:
-                        bug("[VXHCI] cmdControlXFerRootHub: URTF_INTERFACE\n");
+                        mybug_unit(0, ("URTF_INTERFACE\n"));
                         break;
 
                     case URTF_ENDPOINT:
-                        bug("[VXHCI] cmdControlXFerRootHub: URTF_ENDPOINT\n");
+                        mybug_unit(0, ("URTF_ENDPOINT\n"));
                         break;
 
                     case URTF_OTHER:
-                        bug("[VXHCI] cmdControlXFerRootHub: URTF_OTHER\n");
+                        mybug_unit(0, ("URTF_OTHER\n"));
                         break;
 
                 } /* switch(bmRequestRecipient) */
                 break;
 
             case URTF_CLASS:
-                bug("[VXHCI] cmdControlXFerRootHub: URTF_CLASS\n");
+                mybug_unit(0, ("URTF_CLASS\n"));
                 break;
 
             case URTF_VENDOR:
-                bug("[VXHCI] cmdControlXFerRootHub: URTF_VENDOR\n");
+                mybug_unit(0, ("URTF_VENDOR\n"));
                 break;
 
         } /* switch(bmRequestType) */
 
     } /* if(bmRequestDirection) */
 
+    D( mybug_unit(-1, ("bmRequestDirection "));
+    switch (bmRequestDirection) {
+        case URTF_IN:
+            mybug(-1, ("URTF_IN\n"));
+            break;
+        case URTF_OUT:
+            mybug(-1, ("URTF_OUT\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("bmRequestType "));
+    switch(bmRequestType) {
+        case URTF_STANDARD:
+            mybug(-1, ("URTF_STANDARD\n"));
+            break;
+        case URTF_CLASS:
+            mybug(-1, ("URTF_CLASS\n"));
+            break;
+        case URTF_VENDOR:
+            mybug(-1, ("URTF_VENDOR\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("bmRequestRecipient "));
+    switch (bmRequestRecipient) {
+        case URTF_DEVICE:
+            mybug(-1, ("URTF_DEVICE\n"));
+            break;
+        case URTF_INTERFACE:
+            mybug(-1, ("URTF_INTERFACE\n"));
+            break;
+        case URTF_ENDPOINT:
+            mybug(-1, ("URTF_ENDPOINT\n"));
+            break;
+        case URTF_OTHER:
+            mybug(-1, ("URTF_OTHER\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("bRequest "));
+    switch(bRequest) {
+        case USR_GET_STATUS:
+            bug("USR_GET_STATUS\n");
+            break;
+        case USR_CLEAR_FEATURE:
+            mybug(-1, ("USR_CLEAR_FEATURE\n"));
+            break;
+        case USR_SET_FEATURE:
+            mybug(-1, ("USR_SET_FEATURE\n"));
+            break;
+        case USR_SET_ADDRESS:
+            mybug(-1, ("USR_SET_ADDRESS\n"));
+            break;
+        case USR_GET_DESCRIPTOR:
+            mybug(-1, ("USR_GET_DESCRIPTOR\n"));
+            break;
+        case USR_SET_DESCRIPTOR:
+            mybug(-1, ("USR_SET_DESCRIPTOR\n"));
+            break;
+        case USR_GET_CONFIGURATION:
+            mybug(-1, ("USR_GET_CONFIGURATION\n"););
+            break;
+        case USR_SET_CONFIGURATION:
+            mybug(-1, ("USR_SET_CONFIGURATION\n"));
+            break;
+        case USR_GET_INTERFACE:
+            mybug(-1, ("USR_GET_INTERFACE\n"));
+            break;
+        case USR_SET_INTERFACE:
+            mybug(-1, ("USR_SET_INTERFACE\n"));
+            break;
+        case USR_SYNCH_FRAME:
+            mybug(-1, ("USR_SYNCH_FRAME\n"));
+            break;
+    }
+
+    mybug_unit(-1, ("wIndex %x\n", wIndex));
+    mybug_unit(-1, ("wValue %x\n", wValue));
+    mybug_unit(-1, ("wLength %d\n", wLength));
+
+    mybug_unit(-1, ("Nothing done!\n\n")) );
+
+
     return UHIOERR_BADPARAMS;
 }
 
 WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
-    bug("[VXHCI] cmdIntXFer: Entering function\n");
+    mybug(-1, ("[VXHCI] cmdIntXFer: Entering function\n"));
 
     struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    bug("[VXHCI] cmdIntXFer: ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr);
-    bug("[VXHCI] cmdIntXFer: unit->roothub.addr %lx\n", unit->roothub.addr);
+    mybug_unit(-1, ("[VXHCI] cmdIntXFer: ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
+    mybug_unit(-1, ("[VXHCI] cmdIntXFer: unit->roothub.addr %lx\n", unit->roothub.addr));
 
     /*
         Check the status of the controller
@@ -559,10 +570,11 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
         UHSB_SUSPENDED   USB is in suspended state
         UHSB_RESET       USB is just inside a reset phase
     */
+
     if(unit->state == UHSF_OPERATIONAL) {
-        bug("[VXHCI] cmdControlXFer: Unit state: UHSF_OPERATIONAL\n");
+        mybug_unit(0, ("Unit state is operational\n"));
     } else {
-        bug("[VXHCI] cmdControlXFer: Unit state: UHSF_SUSPENDED\n");
+        mybug_unit(-1, ("Unit state is not operational!\n"));
         return UHIOERR_USBOFFLINE;
     }
 
@@ -574,13 +586,16 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
 }
 
 WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
-    bug("[VXHCI] cmdIntXFerRootHub: Entering function\n");
+    mybug(-1, ("[VXHCI] cmdIntXFerRootHub: Entering function\n"));
 
+    struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Nothing done!\n\n"));
     return RC_DONTREPLY;
 }
 
 WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring) {
-    bug("[VXHCI] cmdGetString: Entering function\n");
+    mybug(0, ("[VXHCI] cmdGetString: Entering function\n"));
 
     UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
@@ -595,14 +610,14 @@ WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring) {
             ioreq->iouh_Actual += sizeof(strdesc->bString);
             cstring++;
             if(*cstring == 0) {
-                bug("[VXHCI] cmdGetString: Done\n\n");
+                mybug(0, ("[VXHCI] cmdGetString: Done\n\n"));
                 return(0);
             }
         }
 
     } else {
         ioreq->iouh_Actual = wLength;
-        bug("[VXHCI] cmdGetString: Done\n\n");
+        mybug(0, ("[VXHCI] cmdGetString: Done\n\n"));
         return(0);
     }
 

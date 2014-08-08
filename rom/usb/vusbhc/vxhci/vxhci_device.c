@@ -6,6 +6,11 @@
     Lang: English
 */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 1
+
 #include <aros/macros.h>
 
 #include <proto/exec.h>
@@ -20,9 +25,6 @@
 #include "vxhci_device.h"
 
 #include LC_LIBDEFS_FILE
-
-#define DEBUG 1
-#include <aros/debug.h>
 
 struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb);
 struct VXHCIPort *VXHCI_AddNewPort(struct VXHCIUnit *unit, ULONG portnum);
@@ -111,7 +113,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VXHCIBase, struct IOUsbHWReq *iore
         ForeachNode(&VXHCIBase->unit_list, unit) {
             bug("[VXHCI] Open: Opening unit number %d\n", unitnum);
             if(unit->number == unitnum) {
-                bug("        Found unit from node list %p %s\n", unit, unit->name);
+                bug("        Found unit from node list %p %s\n\n", unit, unit->name);
                 ioreq->iouh_Req.io_Unit = (struct Unit *) unit;
                 break;
             }
@@ -160,47 +162,47 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
 
         switch (ioreq->iouh_Req.io_Command) {
             case CMD_RESET:
-                bug("[VXHCI] BeginIO: CMD_RESET\n");
+                mybug_unit(0, ("CMD_RESET\n"));
                 break;
             case CMD_FLUSH:
-                bug("[VXHCI] BeginIO: CMD_FLUSH\n");
+                mybug_unit(0, ("CMD_FLUSH\n"));
                 break;
             case UHCMD_QUERYDEVICE:
-                bug("[VXHCI] BeginIO: UHCMD_QUERYDEVICE\n");
+                mybug_unit(0, ("UHCMD_QUERYDEVICE\n"));
                 ret = cmdQueryDevice(ioreq);
                 break;
             case UHCMD_USBRESET:
-                bug("[VXHCI] BeginIO: UHCMD_USBRESET\n");
+                mybug_unit(0, ("UHCMD_USBRESET\n"));
                 ret = cmdUsbReset(ioreq);
                 break;
             case UHCMD_USBRESUME:
-                bug("[VXHCI] BeginIO: UHCMD_USBRESUME\n");
+                mybug_unit(0, ("UHCMD_USBRESUME\n"));
                 break;
             case UHCMD_USBSUSPEND:
-                bug("[VXHCI] BeginIO: UHCMD_USBSUSPEND\n");
+                mybug_unit(0, ("UHCMD_USBSUSPEND\n"));
                 break;
             case UHCMD_USBOPER:
-                bug("[VXHCI] BeginIO: UHCMD_USBOPER\n");
+                mybug_unit(0, ("UHCMD_USBOPER\n"));
                 //ret = cmdUsbOper(ioreq);
                 break;
             case UHCMD_CONTROLXFER:
-                bug("[VXHCI] BeginIO: UHCMD_CONTROLXFER unit %p %s\n", unit, unit->name);
+                mybug_unit(0, ("UHCMD_CONTROLXFER unit %p %s\n", unit, unit->name));
                 ret = cmdControlXFer(ioreq);
                 break;
             case UHCMD_BULKXFER:
-                bug("[VXHCI] BeginIO: UHCMD_BULKXFER\n");
+                mybug_unit(0, ("UHCMD_BULKXFER\n"));
                 break;
             case UHCMD_INTXFER:
-                bug("[VXHCI] BeginIO: UHCMD_INTXFER unit %p %s\n", unit, unit->name);
+                mybug_unit(0, ("UHCMD_INTXFER unit %p %s\n", unit, unit->name));
                 ret = cmdIntXFer(ioreq);
                 break;
             case UHCMD_ISOXFER:
-                bug("[VXHCI] BeginIO: UHCMD_ISOXFER\n");
+                mybug_unit(0, ("UHCMD_ISOXFER\n"));
                 break;
 
             /* Poseidon doesn't actually check this, ever... */
             case NSCMD_DEVICEQUERY:
-                bug("[VXHCI] BeginIO: NSCMD_DEVICEQUERY\n");
+                mybug_unit(0, ("NSCMD_DEVICEQUERY\n"));
 
                 static const UWORD NSDSupported[] = {
                     CMD_FLUSH, CMD_RESET,
@@ -226,7 +228,7 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
                 ret = RC_OK;
                 break;
             default:
-                bug("[VXHCI] BeginIO: IOERR_NOCMD\n");
+                mybug_unit(-1, ("IOERR_NOCMD\n"));
                 ret = IOERR_NOCMD;
                 break;
         }
@@ -278,8 +280,9 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
 
         NEWLIST(&unit->roothub.port_list);
 
-        /* Set the correct bcdUSB for the hub device descriptor */
-        unit->roothub.devdesc.bcdUSB = AROS_WORD2LE(bcdusb);
+        /* Set the correct bcdUSB and bcdDevice for the hub device descriptor */
+        unit->roothub.devdesc.bcdUSB    = AROS_WORD2LE(bcdusb);
+        unit->roothub.devdesc.bcdDevice = AROS_WORD2LE(bcdusb);
 
         #ifdef VXHCI_NUMPORTS20
         if(bcdusb == 0x200) {
@@ -318,16 +321,17 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
         /* This is our root hub device descriptor */
         unit->roothub.devdesc.bLength                       = sizeof(struct UsbStdDevDesc);
         unit->roothub.devdesc.bDescriptorType               = UDT_DEVICE;
+        //unit->roothub.devdesc.bcdUSB                        = AROS_WORD2LE(0xJJMN);
         unit->roothub.devdesc.bDeviceClass                  = HUB_CLASSCODE;
-        unit->roothub.devdesc.bDeviceSubClass               = 0;
-        unit->roothub.devdesc.bDeviceProtocol               = 0;
+        //unit->roothub.devdesc.bDeviceSubClass               = 0;
+        //unit->roothub.devdesc.bDeviceProtocol               = 0;
         unit->roothub.devdesc.bMaxPacketSize0               = 8; // Valid values are 8, 16, 32, 64
-        unit->roothub.devdesc.idVendor                      = AROS_WORD2LE(0x0000);
-        unit->roothub.devdesc.idProduct                     = AROS_WORD2LE(0x0000);
-        unit->roothub.devdesc.bcdDevice                     = AROS_WORD2LE(0x0100);
+        //unit->roothub.devdesc.idVendor                      = AROS_WORD2LE(0x0000);
+        //unit->roothub.devdesc.idProduct                     = AROS_WORD2LE(0x0000);
+        //unit->roothub.devdesc.bcdDevice                     = AROS_WORD2LE(0xJJMN);
         unit->roothub.devdesc.iManufacturer                 = 1;
         unit->roothub.devdesc.iProduct                      = 2;
-        unit->roothub.devdesc.iSerialNumber                 = 0;
+        //unit->roothub.devdesc.iSerialNumber                 = 0;
         unit->roothub.devdesc.bNumConfigurations            = 1;
 
         /* This is our root hub config descriptor */
@@ -339,16 +343,16 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
         unit->roothub.config.cfgdesc.bConfigurationValue    = 1;
         unit->roothub.config.cfgdesc.iConfiguration         = 3;
         unit->roothub.config.cfgdesc.bmAttributes           = (USCAF_ONE|USCAF_SELF_POWERED);
-        unit->roothub.config.cfgdesc.bMaxPower              = 0;
+        //unit->roothub.config.cfgdesc.bMaxPower              = 0;
 
         unit->roothub.config.ifdesc.bLength                 = sizeof(struct UsbStdIfDesc);
         unit->roothub.config.ifdesc.bDescriptorType         = UDT_INTERFACE;
-        unit->roothub.config.ifdesc.bInterfaceNumber        = 0;
-        unit->roothub.config.ifdesc.bAlternateSetting       = 0;
+        //unit->roothub.config.ifdesc.bInterfaceNumber        = 0;
+        //unit->roothub.config.ifdesc.bAlternateSetting       = 0;
         unit->roothub.config.ifdesc.bNumEndpoints           = 1;
         unit->roothub.config.ifdesc.bInterfaceClass         = HUB_CLASSCODE;
-        unit->roothub.config.ifdesc.bInterfaceSubClass      = 0;
-        unit->roothub.config.ifdesc.bInterfaceProtocol      = 0;
+        //unit->roothub.config.ifdesc.bInterfaceSubClass      = 0;
+        //unit->roothub.config.ifdesc.bInterfaceProtocol      = 0;
         unit->roothub.config.ifdesc.iInterface              = 4;
 
         unit->roothub.config.epdesc.bLength                 = sizeof(struct UsbStdEPDesc);
@@ -364,20 +368,20 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
             unit->roothub.hubdesc.usb20.bDescriptorType     = UDT_HUB;
             unit->roothub.hubdesc.usb20.bNbrPorts           = (UBYTE) unit->roothub.port_count;
             unit->roothub.hubdesc.usb20.wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
-            unit->roothub.hubdesc.usb20.bPwrOn2PwrGood      = 0;
+            //unit->roothub.hubdesc.usb20.bPwrOn2PwrGood      = 0;
             unit->roothub.hubdesc.usb20.bHubContrCurrent    = 1;
             unit->roothub.hubdesc.usb20.DeviceRemovable     = 1;
-            unit->roothub.hubdesc.usb20.PortPwrCtrlMask     = 0;
+            //unit->roothub.hubdesc.usb20.PortPwrCtrlMask     = 0;
         } else {
             unit->roothub.hubdesc.usb30.bLength             = sizeof(struct UsbSSHubDesc);
             unit->roothub.hubdesc.usb30.bDescriptorType     = UDT_SSHUB;
             unit->roothub.hubdesc.usb30.bNbrPorts           = (UBYTE) unit->roothub.port_count;;
             unit->roothub.hubdesc.usb30.wHubCharacteristics = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
-            unit->roothub.hubdesc.usb30.bPwrOn2PwrGood      = 0;
+            //unit->roothub.hubdesc.usb30.bPwrOn2PwrGood      = 0;
             unit->roothub.hubdesc.usb30.bHubContrCurrent    = 10;
-            unit->roothub.hubdesc.usb30.bHubHdrDecLat       = 0;
-            unit->roothub.hubdesc.usb30.wHubDelay           = 0;
-            unit->roothub.hubdesc.usb30.DeviceRemovable     = 0;
+            //unit->roothub.hubdesc.usb30.bHubHdrDecLat       = 0;
+            //unit->roothub.hubdesc.usb30.wHubDelay           = 0;
+            //unit->roothub.hubdesc.usb30.DeviceRemovable     = 0;
         }
 
         D(bug("[VXHCI] VXHCI_AddNewUnit:\n");
