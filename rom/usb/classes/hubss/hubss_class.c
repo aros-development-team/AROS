@@ -780,28 +780,33 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
                                     ioerr = psdDoPipe(nch->nch_EP0Pipe, usshd, len);
 
                                     if(!ioerr) {
-                                        nch->nch_NumPorts     = usshd->bNbrPorts;
-                                        nch->nch_HubAttr      = AROS_WORD2LE(usshd->wHubCharacteristics);
-                                        nch->nch_PwrGoodTime  = usshd->bPwrOn2PwrGood<<1;
-                                        nch->nch_HubCurrent   = usshd->bHubContrCurrent;
-                                        nch->nch_HubHdrDecLat = usshd->bHubHdrDecLat;
-                                        nch->nch_HubDelay     = usshd->wHubDelay;
-                                        nch->nch_Removable    = 0; //usshd->DeviceRemovable;
+                                        nch->nch_NumPorts     = (UWORD)usshd->bNbrPorts;
+                                        nch->nch_HubAttr      = (UWORD)AROS_WORD2LE(usshd->wHubCharacteristics);
+                                        nch->nch_PwrGoodTime  = (UWORD)usshd->bPwrOn2PwrGood<<1;
+                                        nch->nch_HubCurrent   = (UWORD)usshd->bHubContrCurrent;
+                                        nch->nch_HubHdrDecLat = (UWORD)usshd->bHubHdrDecLat;
+                                        nch->nch_HubDelay     = (UWORD)usshd->wHubDelay;
+                                        nch->nch_Removable    = (UWORD)usshd->DeviceRemovable;
 
                                         if(nch->nch_HubAttr & UHCM_THINK_TIME) {
                                             psdSetAttrs(PGA_DEVICE, nch->nch_Device, DA_HubThinkTime, (nch->nch_HubAttr & UHCM_THINK_TIME)>>UHCS_THINK_TIME, TAG_END);
                                         }
 
-                                        for(num = 0; num < ((nch->nch_NumPorts + 7)>>3); num++) {
-                                            nch->nch_Removable |= ((&usshd->DeviceRemovable)[num])<<(num<<3);
-                                        }
-                                        KPRINTF(2, ("Hub with %ld ports\n"
-                                        	   "  Characteristics 0x%04lx\n"
-                                               "  PowerGood after %ld ms\n"
-                                               "  Power consumption %ld mA\n",
-                                               nch->nch_NumPorts,
-                                               nch->nch_HubAttr,
-                                               nch->nch_PwrGoodTime, nch->nch_HubCurrent));
+                                        KPRINTF(2, ("Parsed SSHub descriptor\n"
+                                                    "  nch_NumPorts     = %d\n"
+                                                    "  nch_HubAttr      = 0x%04x\n"
+                                                    "  nch_PwrGoodTime  = %d\n"
+                                                    "  nch_HubCurrent   = %d\n"
+                                                    "  nch_HubHdrDecLat = %d\n"
+                                                    "  nch_HubDelay     = %d\n"
+                                                    "  nch_Removable    = 0x%04x\n\n",
+                                                    (ULONG)nch->nch_NumPorts,
+                                                    (ULONG)nch->nch_HubAttr,
+                                                    (ULONG)nch->nch_PwrGoodTime,
+                                                    (ULONG)nch->nch_HubCurrent,
+                                                    (ULONG)nch->nch_HubHdrDecLat,
+                                                    (ULONG)nch->nch_HubDelay,
+                                                    (ULONG)nch->nch_Removable));
 
                                         psdFreeVec(usshd);
 
