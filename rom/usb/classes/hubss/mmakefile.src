@@ -8,6 +8,6 @@ FILES :=    hubss.class debug
 %build_module_library mmake=kernel-usb-classes-hubss \
     modname=hubss modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
-    uselibs="debug"
+    uselibs="arossupport debug"
 
 %common

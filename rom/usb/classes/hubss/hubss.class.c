@@ -9,6 +9,7 @@
 #include "debug.h"
 
 #include <aros/debug.h>
+#include <proto/arossupport.h>
 
 #include "hubss.class.h"
 
@@ -18,31 +19,15 @@ static const STRPTR libname = MOD_NAME_STRING;
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh) {
     KPRINTF(10, ("libInit nh: 0x%p SysBase: 0x%p\n", nh, SysBase));
 
-    nh->nh_UtilityBase = OpenLibrary("utility.library", 39);
-
-#define UtilityBase nh->nh_UtilityBase
-
-    if(UtilityBase) {
-        NewList(&nh->nh_Bindings);
-        InitSemaphore(&nh->nh_Adr0Sema);
-    } else {
-        KPRINTF(20, ("libInit: OpenLibrary(\"utility.library\", 39) failed!\n"));
-        return FALSE;
-    }
+    NewList(&nh->nh_Bindings);
+    InitSemaphore(&nh->nh_Adr0Sema);
 
     KPRINTF(10, ("libInit: Ok\n"));
     return TRUE;
 }
 
-static int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR nh) {
-    KPRINTF(10, ("libExpunge nh: 0x%p SysBase: 0x%p\n", nh, SysBase));
-    CloseLibrary(UtilityBase);
-    nh->nh_UtilityBase = NULL;
-    return TRUE;
-}
-
 ADD2INITLIB(GM_UNIQUENAME(libInit), 0)
-ADD2EXPUNGELIB(GM_UNIQUENAME(libExpunge), 0)
+
 /* \\\ */
 
 /*
@@ -161,61 +146,52 @@ void GM_UNIQUENAME(usbReleaseDeviceBinding)(struct NepHubBase *nh, struct NepCla
 /* \\\ */
 
 /* /// "usbGetAttrsA()" */
-AROS_LH3(LONG, usbGetAttrsA,
-         AROS_LHA(ULONG, type, D0),
-         AROS_LHA(APTR, usbstruct, A0),
-         AROS_LHA(struct TagItem *, tags, A1),
-         LIBBASETYPEPTR, nh, 5, hub)
-{
+AROS_LH3(LONG, usbGetAttrsA, AROS_LHA(ULONG, type, D0), AROS_LHA(APTR, usbstruct, A0), AROS_LHA(struct TagItem *, taglist, A1), LIBBASETYPEPTR, nh, 5, hub) {
     AROS_LIBFUNC_INIT
 
     struct TagItem *ti;
     LONG count = 0;
 
-    KPRINTF(1, ("nepHubGetAttrsA(%ld, %p, %p)\n", type, usbstruct, tags));
-    switch(type)
-    {
+    KPRINTF(1, ("nepHubGetAttrsA(%ld, %p, %p)\n", type, usbstruct, taglist));
+
+    switch(type) {
         case UGA_CLASS:
-             if((ti = FindTagItem(UCCA_Priority, tags)))
-             {
-                 *((SIPTR *) ti->ti_Data) = 0;
-                 count++;
-             }
-             if((ti = FindTagItem(UCCA_Description, tags)))
-             {
-                 *((STRPTR *) ti->ti_Data) = "Root/external hub base class";
-                 count++;
-             }
-             if((ti = FindTagItem(UCCA_HasClassCfgGUI, tags)))
-             {
-                 *((IPTR *) ti->ti_Data) = FALSE;
-                 count++;
-             }
-             if((ti = FindTagItem(UCCA_HasBindingCfgGUI, tags)))
-             {
-                 *((IPTR *) ti->ti_Data) = FALSE;
-                 count++;
-             }
-             if((ti = FindTagItem(UCCA_AfterDOSRestart, tags)))
-             {
-                 *((IPTR *) ti->ti_Data) = FALSE;
-                 count++;
-             }
-             if((ti = FindTagItem(UCCA_UsingDefaultCfg, tags)))
-             {
-                 *((IPTR *) ti->ti_Data) = TRUE;
-                 count++;
-             }
-             if((ti = FindTagItem(UCCA_SupportsSuspend, tags)))
-             {
-                 *((IPTR *) ti->ti_Data) = TRUE;
-                 count++;
-             }
-             break;
+            while((ti = LibNextTagItem(&taglist)) != NULL) {
+                switch (ti->ti_Tag) {
+                    case UCCA_Priority:
+                        *((SIPTR *) ti->ti_Data) = 0;
+                        count++;
+                        break;
+                    case UCCA_Description:
+                        *((STRPTR *) ti->ti_Data) = "Root/external SuperSpeed hub base class";
+                        count++;
+                        break;
+                    case UCCA_HasClassCfgGUI:
+                        *((IPTR *) ti->ti_Data) = FALSE;
+                        count++;
+                        break;
+                    case UCCA_HasBindingCfgGUI:
+                        *((IPTR *) ti->ti_Data) = FALSE;
+                        count++;
+                        break;
+                    case UCCA_AfterDOSRestart:
+                        *((IPTR *) ti->ti_Data) = FALSE;
+                        count++;
+                        break;
+                    case UCCA_UsingDefaultCfg:
+                        *((IPTR *) ti->ti_Data) = TRUE;
+                        count++;
+                        break;
+                    case UCCA_SupportsSuspend:
+                        *((IPTR *) ti->ti_Data) = TRUE;
+                        count++;
+                        break;
+                } /* switch (ti->ti_Tag) */
+            }; /* while((ti = LibNextTagItem(&taglist)) != NULL) */
+            break;
 
          case UGA_BINDING:
-             if((ti = FindTagItem(UCBA_UsingDefaultCfg, tags)))
-             {
+             if((ti = LibFindTagItem(UCBA_UsingDefaultCfg, taglist))) {
                  *((IPTR *) ti->ti_Data) = TRUE;
                  count++;
              }
@@ -850,9 +826,9 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
 
                                         psdFreeVec(usshd);
 
-                                        psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_DEVICE,
-                                                     USR_GET_STATUS, 0, 0);
+                                        psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_DEVICE, USR_GET_STATUS, 0, 0);
                                         ioerr = psdDoPipe(nch->nch_EP0Pipe, &uhhs, sizeof(struct UsbHubStatus));
+
                                         uhhs.wHubStatus = AROS_WORD2LE(uhhs.wHubStatus);
                                         uhhs.wHubChange = AROS_WORD2LE(uhhs.wHubChange);
                                         if(!ioerr)
