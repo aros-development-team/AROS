@@ -100,7 +100,6 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     /* We should do a proper reset sequence with a real driver */
     unit->state = UHSF_RESET;
     unit->roothub.addr = 0;
-    unit->state = UHSF_RESUMING;
     unit->state = UHSF_OPERATIONAL;
     mybug_unit(0, ("Done\n\n"));
     return RC_OK;
@@ -145,7 +144,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     UWORD bmRequestRecipient = (ioreq->iouh_SetupData.bmRequestType) & (URTF_DEVICE | URTF_INTERFACE | URTF_ENDPOINT | URTF_OTHER);
 
     UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
-    D(UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex));
+    D(UWORD wIndex           = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex));
     UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
@@ -178,13 +177,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         mybug_unit(0, ("UDT_DEVICE\n"));
                                         mybug_unit(0, ("GetDeviceDescriptor (%ld)\n", wLength));
 
-                                        /*
-                                            Poseidon first does a dummy psdPipeSetup(URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE)
-                                            with 8 byte transfer size. It will then set the address with psdPipeSetup(URTF_STANDARD|URTF_DEVICE, USR_SET_ADDRESS)
-                                            After that Poseidon does again psdPipeSetup(URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE) with
-                                            8 byte transfer size to get the bMaxPacketSize0 for transfer sizes.
-                                            Only after that will it read the whole descriptor.
-                                        */
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbStdDevDesc)) ? sizeof(struct UsbStdDevDesc) : wLength;
                                         CopyMem((APTR) &unit->roothub.devdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
@@ -220,7 +212,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                                     strdesc->bDescriptorType = UDT_STRING;
 
                                                     if(wLength > 3) {
-                                                        strdesc->bString[1] = AROS_WORD2LE(0x0409); // English (Yankee)
+                                                        strdesc->bString[0] = AROS_WORD2LE(0x0409); // English (Yankee)
                                                         ioreq->iouh_Actual = sizeof(struct UsbStdStrDesc);
                                                         mybug_unit(0, ("Done\n\n"));
                                                         return(0);
@@ -238,7 +230,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                                                 case 2: {
                                                     char roothubname[100];
-                                                    sprintf(roothubname, "VXHCI USB%x%x", AROS_LE2WORD(unit->roothub.devdesc.bcdUSB>>8)&0xf, AROS_LE2WORD(unit->roothub.devdesc.bcdUSB>>4)&0xf);
+                                                    sprintf(roothubname, "VXHCI root hub (USB%x.%x)", AROS_LE2WORD(unit->roothub.devdesc.bcdUSB>>8)&0xf, AROS_LE2WORD(unit->roothub.devdesc.bcdUSB>>4)&0xf);
                                                     return cmdGetString(ioreq, roothubname);
                                                     break;
                                                     }
