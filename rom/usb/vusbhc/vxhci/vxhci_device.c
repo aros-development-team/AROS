@@ -300,7 +300,7 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
 
         unit->roothub.devdesc.bcdDevice = AROS_WORD2LE(bcdusb);
 
-        sprintf(unit->name, "VXHCI_USB%x%x[%d]", (bcdusb>>8)&0xf, (bcdusb>>4)&0xf, unit->number);
+        sprintf(unit->name, "VXHCI_USB%x%x[%d]", (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>8)&0xf, (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>4)&0xf, unit->number);
 
         #ifdef VXHCI_NUMPORTS20
         if( (bcdusb >= 0x0200) && (bcdusb < 0x0300) ) {
@@ -410,9 +410,9 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
             //unit->roothub.hubdesc.usb30.DeviceRemovable     = 0;
         }
 
-        D( mybug(-1, ("[VXHCI] VXHCI_AddNewUnit:\n"));
-        mybug(-1, ("        Created new unit numbered %d at %p\n",unit->number, unit));
-        mybug(-1, ("        Unit node name %s\n", unit->node.ln_Name));
+        D( mybug(0, ("[VXHCI] VXHCI_AddNewUnit:\n"));
+        mybug(0, ("        Created new unit numbered %d at %p\n",unit->number, unit));
+        mybug(0, ("        Unit node name %s\n", unit->node.ln_Name));
 
         switch(unit->state) {
             case UHSF_SUSPENDED:
@@ -446,9 +446,9 @@ struct VXHCIPort *VXHCI_AddNewPort(struct VXHCIUnit *unit, ULONG portnum) {
         port->node.ln_Name = (STRPTR)&port->name;
     }
 
-    mybug(-1, ("[VXHCI] VXHCI_AddNewPort:\n"));
-    mybug(-1, ("        Created new port numbered %d at %p\n",port->number, port));
-    mybug(-1, ("        Port node name %s\n", port->node.ln_Name));
+    mybug(0, ("[VXHCI] VXHCI_AddNewPort:\n"));
+    mybug(0, ("        Created new port numbered %d at %p\n",port->number, port));
+    mybug(0, ("        Port node name %s\n", port->node.ln_Name));
 
     return port;
 }
