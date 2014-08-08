@@ -297,9 +297,11 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
 
         #ifdef VXHCI_NUMPORTS20
         if(bcdusb == 0x200) {
+            unit->roothub.devdesc.bMaxPacketSize0 = 8;
             sprintf(unit->name, "VXHCI_USB20[%x]", unit->number);
             imax = VXHCI_NUMPORTS20;
         } else {
+            unit->roothub.devdesc.bMaxPacketSize0 = 9;
             sprintf(unit->name, "VXHCI_USB30[%x]", unit->number);
             imax = VXHCI_NUMPORTS30;
         }
@@ -338,7 +340,7 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {
         unit->roothub.devdesc.bDeviceClass                  = HUB_CLASSCODE;
         //unit->roothub.devdesc.bDeviceSubClass               = 0;
         //unit->roothub.devdesc.bDeviceProtocol               = 0;
-        unit->roothub.devdesc.bMaxPacketSize0               = 8; // Valid values are 8, 16, 32, 64
+        //unit->roothub.devdesc.bMaxPacketSize0               = 9; // Valid values are 8, 9(SuperSpeed), 16, 32, 64
         //unit->roothub.devdesc.idVendor                      = AROS_WORD2LE(0x0000);
         //unit->roothub.devdesc.idProduct                     = AROS_WORD2LE(0x0000);
         //unit->roothub.devdesc.bcdDevice                     = AROS_WORD2LE(0xJJMN);

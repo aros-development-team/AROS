@@ -20,12 +20,12 @@
 #include <devices/newstyle.h>
 #include <devices/usbhardware.h>
 
-/* Maximum number of units */
+/* Number of host controllers */
 #define VXHCI_NUMCONTROLLERS 1
 
-/* Maximum number of ports per protocol (USB2.0/USB3.0) */
-#define VXHCI_NUMPORTS20 1
-#define VXHCI_NUMPORTS30 1
+/* Number of ports per host controller (USB2.0/USB3.0) */
+#define VXHCI_NUMPORTS20 2
+#define VXHCI_NUMPORTS30 4
 
 #define RC_OK         0
 #define RC_DONTREPLY -1
