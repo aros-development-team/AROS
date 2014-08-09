@@ -207,6 +207,12 @@ struct IOUsbHWBufferReq
 #   define UHCF_QUICKIO       (1<<UHCB_QUICKIO)
 #endif
 
+#ifdef AROS_USB2OTG_CODE
+#   define UHCB_USB2OTG       5 /* Host controller supports USB2OTG (Controller can be a host or a device) */
+
+#   define UHCF_USB2OTG       (1<<UHCB_USB2OTG)
+#endif
+
 /* Definitions for UHA_State/iouh_State */
 
 #define UHSB_OPERATIONAL 0 /* USB can be used for transfers */
