@@ -45,15 +45,9 @@
 #define mybug(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug x; } } while (0); } )
 #define mybug_unit(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug("%s %s: ", unit->name, __FUNCTION__); bug x; } } while (0); } )
 
-BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
-WORD cmdUsbReset(struct IOUsbHWReq *ioreq);
-WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
-WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);
-WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
-WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq);
-WORD cmdIntXFer(struct IOUsbHWReq *ioreq);
-WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq);
-WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring);
+#define PCI_BASE_CLASS_SERIAL 0x0c
+#define PCI_SUB_CLASS_USB     0x03
+#define PCI_INTERFACE_XHCI    0x30
 
 struct PCIXHCIPort {
     struct Node                  node;
@@ -99,6 +93,29 @@ struct PCIXHCIBase {
 
     OOP_Object                  *pci;
 
+    OOP_AttrBase                 HiddPCIDeviceAB;
+    OOP_AttrBase                 HiddAB;
+
 };
+
+#undef HiddPCIDeviceAttrBase
+#define HiddPCIDeviceAttrBase (PCIXHCIBase->HiddPCIDeviceAB)
+
+#undef HiddAttrBase
+#define HiddAttrBase (PCIXHCIBase->HiddAB)
+
+BOOL PCIXHCI_Discover(struct PCIXHCIBase *PCIXHCIBase);
+struct PCIXHCIUnit *PCIXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb);
+struct PCIXHCIPort *PCIXHCI_AddNewPort(struct PCIXHCIUnit *unit, ULONG portnum);
+
+BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
+WORD cmdUsbReset(struct IOUsbHWReq *ioreq);
+WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
+WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);
+WORD cmdControlXFer(struct IOUsbHWReq *ioreq);
+WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq);
+WORD cmdIntXFer(struct IOUsbHWReq *ioreq);
+WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq);
+WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring);
 
 #endif /* PCIXHCI_DEVICE_H */

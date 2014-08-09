@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := pcixhci_device pcixhci_commands
+FILES := pcixhci_device pcixhci_discover pcixhci_commands
 
 WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware
 
