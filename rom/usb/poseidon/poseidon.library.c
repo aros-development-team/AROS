@@ -2880,6 +2880,22 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
 
     KPRINTF(2, ("psdEnumerateDevice(%p)\n", pp));
 
+#ifdef AROS_USB2OTG_CODE
+    struct PsdHardware *phw = pp->pp_Device->pd_Hardware;
+
+    if( !(phw->phw_Capabilities & UHCF_USB2OTG) ) {
+        /*
+            Driver informs us that it is not USB2OTG device
+            - Follow regular code path
+        */
+    } else {
+        /*
+            Driver informs us that it is USB2OTG device
+            - Follow USB2OTG code path
+        */
+    }
+#endif
+
     psdLockWriteDevice(pd);
     if(pAllocDevAddr(pd))
     {
