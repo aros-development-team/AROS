@@ -101,7 +101,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
         ReplyMsg(&ioreq->iouh_Req.io_Message);
     }
 
-    return (TRUE);
+    return TRUE;
 }
 
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
@@ -161,6 +161,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
     struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
+    struct VXHCIPort *port = NULL;
 
     /* Endpoint 0 is used for control transfers only and can not be assigned to any other function. */
     if(ioreq->iouh_Endpoint != 0) {
@@ -193,7 +194,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         CopyMem((APTR) &unit->roothub.devdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
                                         mybug_unit(0, ("Done\n\n"));
-                                        return(0);
+                                        return UHIOERR_NO_ERROR;
                                         break;
 
                                     case UDT_CONFIGURATION:
@@ -205,7 +206,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                                         //bug("sizeof(struct RHConfig) = %ld (should be 25)\n", sizeof(struct RHConfig));
                                         mybug_unit(0, ("Done\n\n"));
-                                        return(0);
+                                        return UHIOERR_NO_ERROR;
 
                                         break;
 
@@ -227,11 +228,11 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                                         strdesc->bString[0] = AROS_WORD2LE(0x0409); // English (Yankee)
                                                         ioreq->iouh_Actual = sizeof(struct UsbStdStrDesc);
                                                         mybug_unit(0, ("Done\n\n"));
-                                                        return(0);
+                                                        return UHIOERR_NO_ERROR;
                                                     } else {
                                                         ioreq->iouh_Actual = wLength;
                                                         mybug_unit(0, ("Done\n\n"));
-                                                        return(0);
+                                                        return UHIOERR_NO_ERROR;
                                                     }
 
                                                     break;
@@ -326,7 +327,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 ((UWORD *) ioreq->iouh_Data)[0] = AROS_WORD2LE(U_GSF_SELF_POWERED);
                                 ioreq->iouh_Actual = wLength;
                                 mybug_unit(0, ("Done\n\n"));
-                                return(0);
+                                return UHIOERR_NO_ERROR;
                                 break;
 
                         } /* switch(bRequest) */
@@ -363,13 +364,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 mybug_unit(-1, ("USR_GET_STATUS\n"));
                                 UWORD *mptr = ioreq->iouh_Data;
                                 if(wLength < sizeof(struct UsbHubStatus)) {
-                                    return(UHIOERR_STALL);
+                                    return UHIOERR_STALL;
                                 }
                                 *mptr++ = 0;
                                 *mptr++ = 0;
                                 ioreq->iouh_Actual = 4;
                                 mybug_unit(-1, ("Something done, check me...\n\n"));
-                                return(0);
+                                return UHIOERR_NO_ERROR;
                                 break;
 
 
@@ -385,7 +386,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         CopyMem((APTR) &unit->roothub.hubdesc.usb20, ioreq->iouh_Data, ioreq->iouh_Actual);
 
                                         mybug_unit(0, ("Done\n\n"));
-                                        return(0);
+                                        return UHIOERR_NO_ERROR;
                                         break;
 
                                     case UDT_SSHUB:
@@ -396,12 +397,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         CopyMem((APTR) &unit->roothub.hubdesc.usb30, ioreq->iouh_Data, ioreq->iouh_Actual);
 
                                         mybug_unit(0, ("Done\n\n"));
-                                        return(0);
+                                        return UHIOERR_NO_ERROR;
                                         break;
                                 }
 
                                 mybug_unit(0, ("Done\n\n"));
-                                return(0);
+                                return UHIOERR_NO_ERROR;
                                 break;
                         }
                         break;
@@ -424,14 +425,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                 switch(bmRequestRecipient) {
                     case URTF_DEVICE:
                         mybug_unit(0, ("[VXHCI] cmdControlXFerRootHub: URTF_DEVICE\n"));
-
                         switch(bRequest) {
                             case USR_SET_ADDRESS:
                                 mybug_unit(0, ("USR_SET_ADDRESS\n"));
                                 unit->roothub.addr = wValue;
                                 ioreq->iouh_Actual = wLength;
                                 mybug_unit(0, ("Done\n\n"));
-                                return(0);
+                                return UHIOERR_NO_ERROR;
                                 break;
 
                             case USR_SET_CONFIGURATION:
@@ -439,7 +439,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 mybug_unit(0, ("USR_SET_CONFIGURATION\n"));
                                 ioreq->iouh_Actual = wLength;
                                 mybug_unit(0, ("Done\n\n"));
-                                return(0);
+                                return UHIOERR_NO_ERROR;
                                 break;
 
                         } /* switch(bRequest) */
@@ -462,6 +462,46 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
             case URTF_CLASS:
                 mybug_unit(0, ("URTF_CLASS\n"));
+                switch(bmRequestRecipient) {
+                    case URTF_OTHER:
+                        mybug_unit(0, ("URTF_OTHER\n"));
+
+                        switch(bRequest) {
+                            case USR_SET_FEATURE:
+                                mybug_unit(0, ("USR_SET_FEATURE\n"));
+
+                                switch(wValue) {
+                                    case UFS_PORT_POWER:
+                                        mybug_unit(0, ("UFS_PORT_POWER\n"));
+
+                                        ForeachNode(&unit->roothub.port_list, port) {
+                                            if(port->number == wIndex) {
+                                                mybug_unit(0, ("Found port %d named %s\n", port->number, port->name));
+                                                mybug_unit(0, ("Done\n\n"));
+                                                return UHIOERR_NO_ERROR;
+                                            }
+                                        }
+
+                                        mybug_unit(0, ("Port not found!\n\n"));
+                                        break;
+
+                                    case UFS_PORT_CONNECTION:
+                                    case UFS_PORT_ENABLE:
+                                    case UFS_PORT_SUSPEND:
+                                    case UFS_PORT_OVER_CURRENT:
+                                    case UFS_PORT_RESET:
+                                    case UFS_PORT_LOW_SPEED:
+                                    case UFS_C_PORT_CONNECTION:
+                                    case UFS_C_PORT_ENABLE:
+                                    case UFS_C_PORT_SUSPEND:
+                                    case UFS_C_PORT_OVER_CURRENT:
+                                    case UFS_C_PORT_RESET:
+                                        break;
+                                } /* switch(wValue) */
+                                break;
+                        } /* switch(bRequest) */
+                        break;
+                } /* switch(bmRequestRecipient) */
                 break;
 
             case URTF_VENDOR:
@@ -616,14 +656,14 @@ WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring) {
             cstring++;
             if(*cstring == 0) {
                 mybug(0, ("[VXHCI] cmdGetString: Done\n\n"));
-                return(0);
+                return UHIOERR_NO_ERROR;
             }
         }
 
     } else {
         ioreq->iouh_Actual = wLength;
         mybug(0, ("[VXHCI] cmdGetString: Done\n\n"));
-        return(0);
+        return UHIOERR_NO_ERROR;
     }
 
     return UHIOERR_BADPARAMS;

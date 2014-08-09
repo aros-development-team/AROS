@@ -24,13 +24,13 @@
 #define VXHCI_NUMCONTROLLERS 1
 
 /* Number of ports per host controller (USB2.0/USB3.0) */
-#define VXHCI_NUMPORTS20 2
+//#define VXHCI_NUMPORTS20 2
 #define VXHCI_NUMPORTS30 4
 
 #define RC_OK         0
 #define RC_DONTREPLY -1
 
-#define MYBUG_LEVEL 200
+#define MYBUG_LEVEL 0
 #define mybug(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug x; } } while (0); } )
 #define mybug_unit(l, x) D(if ((l>=MYBUG_LEVEL)||(l==-1)) { do { { bug("%s %s: ", unit->name, __FUNCTION__); bug x; } } while (0); } )
 
