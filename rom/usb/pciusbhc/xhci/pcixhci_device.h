@@ -85,10 +85,25 @@ struct PCIXHCIUnit {
 
 };
 
+struct PCIXHCIHost {
+    struct Node                  node;
+    char                         name[256];
+
+    OOP_Object                  *pcidevice;
+    OOP_Object                  *pcidriver;
+
+    IPTR bus;
+    IPTR dev;
+    IPTR sub;
+    IPTR intline;
+
+};
+
 struct PCIXHCIBase {
 
     struct Library               library;
     struct List                  unit_list;
+    struct List                  host_list;
     ULONG                        unit_count;
 
     OOP_Object                  *pci;
