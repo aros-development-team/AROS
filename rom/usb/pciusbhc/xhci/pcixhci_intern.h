@@ -5,8 +5,8 @@
     Desc:
     Lang: English
 */
-#ifndef PCIXHCI_DEVICE_H
-#define PCIXHCI_DEVICE_H
+#ifndef PCIXHCI_INTERN_H
+#define PCIXHCI_INTERN_H
 
 #include <aros/debug.h>
 #include <aros/macros.h>
@@ -133,4 +133,4 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq);
 WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq);
 WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring);
 
-#endif /* PCIXHCI_DEVICE_H */
+#endif /* PCIXHCI_INTERN_H */

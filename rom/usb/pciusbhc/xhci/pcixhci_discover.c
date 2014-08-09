@@ -32,7 +32,7 @@
 #include <hidd/pci.h>
 #include <hidd/hidd.h>
 
-#include "pcixhci_device.h"
+#include "pcixhci_intern.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -55,11 +55,6 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
 
         host->pcidevice = pciDevice;
 
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Bus,             &host->bus);
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev,             &host->dev);
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Sub,             &host->sub);
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine,         &host->intline);
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver,  (IPTR *)&host->pcidriver);
         AddTail(&LIBBASE->host_list, (struct Node *)host);
     } else {
         mybug(-1, ("\n[PCIXHCI] Enumerator: Failed to allocate host controller structure!\n\n"));
@@ -100,6 +95,12 @@ BOOL PCIXHCI_Discover(LIBBASETYPEPTR LIBBASE) {
         CONST_STRPTR owner;
 
         ForeachNode(&LIBBASE->host_list, host) {
+            OOP_GetAttr(host->pcidevice, aHidd_PCIDevice_Bus,             &host->bus);
+            OOP_GetAttr(host->pcidevice, aHidd_PCIDevice_Dev,             &host->dev);
+            OOP_GetAttr(host->pcidevice, aHidd_PCIDevice_Sub,             &host->sub);
+            OOP_GetAttr(host->pcidevice, aHidd_PCIDevice_INTLine,         &host->intline);
+            OOP_GetAttr(host->pcidevice, aHidd_PCIDevice_Driver,  (IPTR *)&host->pcidriver);
+
             mybug(-1, ("[PCIXHCI] *pcidevice = %p\n",   host->pcidevice));
             mybug(-1, ("[PCIXHCI] *pcidriver = %p\n",   host->pcidriver));
             mybug(-1, ("[PCIXHCI]  bus       = %x\n",   host->bus));
@@ -109,9 +110,17 @@ BOOL PCIXHCI_Discover(LIBBASETYPEPTR LIBBASE) {
 
             /* Try to obtain the host controller */
             owner = HIDD_PCIDevice_Obtain(host->pcidevice, LIBBASE->library.lib_Node.ln_Name);
-            if (owner) {
+            if(owner) {
                 mybug(-1, ("[PCIXHCI] Host controller already reserved for %s\n", owner));
                 REMOVE(host);
+                FreeVec(host);
+            } else if(host->intline == 255) {
+                mybug(-1, ("[PCIXHCI] Host controller has bogus intline!\n"));
+                REMOVE(host);
+                FreeVec(host);
+            } else{
+                /* We obtained the host controller so we name it in the list just for the fun of it */
+                sprintf(host->name, "PCIXHCI[%x.%x.%x]", host->bus, host->dev, host->sub);
             }
         }
 
@@ -119,67 +128,20 @@ BOOL PCIXHCI_Discover(LIBBASETYPEPTR LIBBASE) {
 
             /* Examine host controller(s) and interrogate for ports */
 
-            struct PCIXHCIUnit *unit;
-            ULONG i;
 
-            LIBBASE->unit_count = 0;
-
-            for (i=0; i<PCIXHCI_NUMCONTROLLERS; i++) {
-
-                #ifdef PCIXHCI_NUMPORTS20
-                unit = PCIXHCI_AddNewUnit(LIBBASE->unit_count, 0x210);
-                if(unit == NULL) {
-                    mybug(-1, ("[PCIXHCI] Init: Failed to create new unit!\n"));
-
-                    /*
-                        Free previous units if any exists
-                    */
-
-                    ForeachNode(&LIBBASE->unit_list, unit) {
-                        mybug(-1,("[PCIXHCI] Init: Removing unit structure %s at %p\n", unit->node.ln_Name, unit));
-                        REMOVE(unit);
-                        FreeVec(unit);
-                    }
-                    return FALSE;
-                } else {
-                    AddTail(&LIBBASE->unit_list,(struct Node *)unit);
-                    LIBBASE->unit_count++;
-                }
-                #endif
-
-                unit = PCIXHCI_AddNewUnit(LIBBASE->unit_count, 0x311);
-                if(unit == NULL) {
-                    mybug(-1, ("[PCIXHCI] Init: Failed to create new unit!\n"));
-
-                    /*
-                        Free previous units if any exists
-                    */
-
-                    ForeachNode(&LIBBASE->unit_list, unit) {
-                        mybug(-1,("[PCIXHCI] Init: Removing unit structure %s at %p\n", unit->node.ln_Name, unit));
-                        REMOVE(unit);
-                        FreeVec(unit);
-                    }
-                    return FALSE;
-                } else {
-                    AddTail(&LIBBASE->unit_list,(struct Node *)unit);
-                    LIBBASE->unit_count++;
-                }
-
-            }
-
-            D(ForeachNode(&LIBBASE->unit_list, unit) {
-                mybug(-1, ("[PCIXHCI] Init: Created unit %d at %p %s\n", unit->number, unit, unit->name));
-                struct PCIXHCIPort *port;
-                ForeachNode(&unit->roothub.port_list, port) {
-                    mybug(-1, ("                      port %d at %p %s\n", port->number, port, port->name));
-                }
-                mybug(-1,("\n"));
-            });
 
             return TRUE;
         }
+
+        ForeachNode(&LIBBASE->host_list, host) {
+            HIDD_PCIDevice_Release(host->pcidevice);
+            REMOVE(host);
+            FreeVec(host);
+        }
+
     }
+
+    OOP_ReleaseAttrBases(attrbases);
 
     return FALSE;
 }
