@@ -32,7 +32,7 @@
 #include <hidd/pci.h>
 #include <hidd/hidd.h>
 
-#include "pcixhci_device.h"
+#include "pcixhci_intern.h"
 
 #include LC_LIBDEFS_FILE
 

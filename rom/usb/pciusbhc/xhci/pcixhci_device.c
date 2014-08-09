@@ -32,7 +32,7 @@
 #include <hidd/pci.h>
 #include <hidd/hidd.h>
 
-#include "pcixhci_device.h"
+#include "pcixhci_intern.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -54,10 +54,9 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq,
     ioreq->iouh_Req.io_Unit = NULL;
 
     /*
-        Number of units eg. virtual xhci controllers.
         Host controller is divided into individual units if it has both usb2.0 and usb3.0 ports
     */
-    if(unitnum<PCIXHCIBase->unit_count) {
+    if(unitnum<LIBBASE->unit_count) {
 
         if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
             mybug(-1, ("[PCIXHCI] Open: Invalid MN_LENGTH!\n"));
@@ -66,7 +65,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq,
 
         ioreq->iouh_Req.io_Unit = NULL;
 
-        ForeachNode(&PCIXHCIBase->unit_list, unit) {
+        ForeachNode(&LIBBASE->unit_list, unit) {
             mybug(0, ("[PCIXHCI] Open: Opening unit number %d\n", unitnum));
             if(unit->number == unitnum) {
                 mybug(0, ("        Found unit from node list %s %p\n\n", unit->name, unit));
@@ -103,7 +102,7 @@ ADD2INITLIB(GM_UNIQUENAME(Init), 0)
 ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
-AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct PCIXHCIBase *, PCIXHCIBase, 5, PCIXHCI) {
+AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR, LIBBASE, 5, PCIXHCI) {
     AROS_LIBFUNC_INIT
     mybug(0, ("[PCIXHCI] BeginIO: Entering function\n"));
 
@@ -209,7 +208,7 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct PCIXHCI
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct PCIXHCIBase *, PCIXHCIBase, 6, PCIXHCI) {
+AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR, LIBBASE, 6, PCIXHCI) {
     AROS_LIBFUNC_INIT
     mybug(-1, ("[PCIXHCI] AbortIO: Entering function\n"));
 
