@@ -1,0 +1,18 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := pcixhci_device pcixhci_commands
+
+WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware
+
+#MM
+kernel-usb-pcixhci-directories ::
+    %mkdirs_q $(WBUSBHARDWAREDIRS)
+
+#MM- kernel-usb-pcixhci : kernel-usb-pcixhci-directories
+
+%build_module mmake=kernel-usb-pcixhci \
+    modname=pcixhci modtype=device \
+    moduledir=Devs/USBHardware \
+    files="$(FILES)" \
+    uselibs="stdc.static arossupport hiddstubs"
