@@ -333,18 +333,22 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                         } /* switch(bRequest) */
                         break; /* case URTF_DEVICE: */
 
+                    /* switch(bmRequestRecipient) */
                     case URTF_INTERFACE:
                         mybug_unit(0, ("URTF_INTERFACE\n"));
                         break;
 
+                    /* switch(bmRequestRecipient) */
                     case URTF_ENDPOINT:
                         mybug_unit(0, ("URTF_ENDPOINT\n"));
                         break;
 
+                    /* switch(bmRequestRecipient) */
                     case URTF_OTHER:
                         mybug_unit(0, ("URTF_OTHER\n"));
                         break;
 
+                    /* switch(bmRequestRecipient) */
                     default:
                         mybug_unit(0, ("Request defaulting %ld\n", bRequest));
                         break;
@@ -352,6 +356,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                 } /* switch(bmRequestRecipient) */
                 break;
 
+            /* switch(bmRequestType) */
             case URTF_CLASS:
                 mybug_unit(0, ("URTF_CLASS\n"));
 
@@ -364,7 +369,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 mybug_unit(-1, ("USR_GET_STATUS\n"));
                                 UWORD *mptr = ioreq->iouh_Data;
                                 if(wLength < sizeof(struct UsbHubStatus)) {
-                                    return UHIOERR_STALL;
+                                    break;
                                 }
                                 *mptr++ = 0;
                                 *mptr++ = 0;
@@ -373,7 +378,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 return UHIOERR_NO_ERROR;
                                 break;
 
-
+                            /* switch(bRequest) */
                             case USR_GET_DESCRIPTOR:
                                 mybug_unit(0, ("[VXHCI] cmdControlXFerRootHub: USR_GET_DESCRIPTOR\n"));
 
@@ -389,6 +394,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         return UHIOERR_NO_ERROR;
                                         break;
 
+                                    /* switch( (wValue>>8) ) */
                                     case UDT_SSHUB:
                                         mybug_unit(0, ("UDT_SSHUB\n"));
                                         mybug_unit(0, ("GetRootHubDescriptor USB3.0 (%ld)\n", wLength));
@@ -399,20 +405,56 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         mybug_unit(0, ("Done\n\n"));
                                         return UHIOERR_NO_ERROR;
                                         break;
-                                }
+
+                                } /* switch( (wValue>>8) ) */
 
                                 mybug_unit(0, ("Done\n\n"));
                                 return UHIOERR_NO_ERROR;
                                 break;
-                        }
+
+                        } /* switch(bRequest) */
+                        break;
+
+                    /* switch(bmRequestRecipient) */
+                    case URTF_OTHER:
+                        mybug_unit(0, ("URTF_OTHER\n"));
+
+                        switch(bRequest) {
+                            case USR_GET_STATUS:
+                                mybug_unit(0, ("USR_GET_STATUS\n"));
+                                if(wLength != sizeof(struct UsbPortStatus)) {
+                                    mybug_unit(-1, ("Invalid port status structure!\n\n"));
+                                    break;
+                                }
+
+                                ForeachNode(&unit->roothub.port_list, port) {
+                                    if(port->number == wIndex) {
+                                        mybug_unit(0, ("Found port %d named %s\n", port->number, port->name));
+
+                                        struct UsbPortStatus *usbportstatus = (struct UsbPortStatus *) ioreq->iouh_Data;
+
+                                        usbportstatus->wPortStatus = 0;
+                                        usbportstatus->wPortChange = 0;
+
+                                        mybug_unit(0, ("Done\n\n"));
+                                        return UHIOERR_NO_ERROR;
+                                    }
+                                }
+
+                                mybug_unit(-1, ("Port not found!\n\n"));
+                                break;
+
+                        } /* switch(bRequest) */
                         break;
 
                 } /* case URTF_CLASS */
                 break;
 
+            /* switch(bmRequestType) */
             case URTF_VENDOR:
                 mybug_unit(0, ("URTF_VENDOR\n"));
                 break;
+
         } /* switch(bmRequestType) */
 
     } else { /* if(bmRequestDirection) */
@@ -482,7 +524,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                             }
                                         }
 
-                                        mybug_unit(0, ("Port not found!\n\n"));
+                                        mybug_unit(-1, ("Port not found!\n\n"));
                                         break;
 
                                     case UFS_PORT_CONNECTION:
