@@ -39,8 +39,24 @@
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE) {
     mybug(0,("[PCIXHCI] Init: Entering function\n"));
 
-    /* Try to find a usable host controller, if not found then we are done. */
-    return(PCIXHCI_Discover(LIBBASE));
+    struct OOP_ABDescr attrbases[] = {
+            { (STRPTR)IID_Hidd,           &LIBBASE->HiddAB },
+            { (STRPTR)IID_Hidd_PCIDevice, &LIBBASE->HiddPCIDeviceAB },
+            { NULL, NULL }
+    };
+
+    if ((LIBBASE->pci = OOP_NewObject(NULL, (STRPTR)CLID_Hidd_PCI, NULL))) {
+        if(OOP_ObtainAttrBases(attrbases)) {
+            return(PCIXHCI_Discover(LIBBASE));
+        }
+    }
+
+    /* Someone here failed... */
+    OOP_ReleaseAttrBases(attrbases);
+    OOP_DisposeObject(LIBBASE->pci);
+
+    mybug(0,("[PCIXHCI] Init: Failing...\n"));
+    return FALSE;
 }
 
 static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq, ULONG unitnum, ULONG flags) {
@@ -49,40 +65,24 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq,
 
     struct PCIXHCIUnit *unit;
 
-    /* Default to open failure. */
+    ioreq->iouh_Req.io_Unit  = NULL;
     ioreq->iouh_Req.io_Error = IOERR_OPENFAIL;
-    ioreq->iouh_Req.io_Unit = NULL;
 
-    /*
-        Host controller is divided into individual units if it has both usb2.0 and usb3.0 ports
-    */
-    if(unitnum<LIBBASE->unit_count) {
+    ForeachNode(&LIBBASE->unit_list, unit) {
+        if(unit->number == unitnum) {
+            mybug(0, ("          Found unit from node list %s %p\n\n", unit->name, unit));
 
-        if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
-            mybug(-1, ("[PCIXHCI] Open: Invalid MN_LENGTH!\n"));
-            ioreq->iouh_Req.io_Error = IOERR_BADLENGTH;
-        }
-
-        ioreq->iouh_Req.io_Unit = NULL;
-
-        ForeachNode(&LIBBASE->unit_list, unit) {
-            mybug(0, ("[PCIXHCI] Open: Opening unit number %d\n", unitnum));
-            if(unit->number == unitnum) {
-                mybug(0, ("        Found unit from node list %s %p\n\n", unit->name, unit));
-                ioreq->iouh_Req.io_Unit = (struct Unit *) unit;
-                break;
+            if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
+                mybug(-1, ("[PCIXHCI] Open: Invalid MN_LENGTH!\n"));
+                ioreq->iouh_Req.io_Error = IOERR_BADLENGTH;
+                return FALSE;
             }
-        }
 
-        if(ioreq->iouh_Req.io_Unit != NULL) {
-
-            /* Opened ok! */
+            ioreq->iouh_Req.io_Unit                    = (struct Unit *) unit;
             ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
             ioreq->iouh_Req.io_Error				   = 0;
 
             return TRUE;
-        } else {
-            return FALSE;
         }
     }
 
@@ -98,9 +98,32 @@ static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq
     return TRUE;
 }
 
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE) {
+
+    struct PCIXHCIUnit *unit;
+
+    ForeachNode(&LIBBASE->unit_list, unit) {
+        HIDD_PCIDevice_Release(unit->hc.pcidevice);
+        REMOVE(unit);
+        FreeVec(unit);
+    }
+
+    struct OOP_ABDescr attrbases[] = {
+            { (STRPTR)IID_Hidd,           &LIBBASE->HiddAB },
+            { (STRPTR)IID_Hidd_PCIDevice, &LIBBASE->HiddPCIDeviceAB },
+            { NULL, NULL }
+    };
+
+    OOP_ReleaseAttrBases(attrbases);
+    OOP_DisposeObject(LIBBASE->pci);
+
+    return TRUE;
+}
+
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
 ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
+ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
 
 AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR, LIBBASE, 5, PCIXHCI) {
     AROS_LIBFUNC_INIT
