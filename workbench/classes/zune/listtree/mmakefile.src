@@ -8,6 +8,8 @@ USER_CFLAGS := $(PARANOIA_CFLAGS)
 FILES         := listtree
 INCLUDE_FILES := Listtree_mcc.h
 
+#MM- workbench-classes-zune : workbench-classes-zune-listtree
+
 #MM workbench-classes-zune-listtree : includes
 
 %build_module \
