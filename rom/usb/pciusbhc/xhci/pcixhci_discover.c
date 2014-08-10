@@ -37,7 +37,7 @@
 #include LC_LIBDEFS_FILE
 
 /*
-    Keep this one short and simple
+    Keep this one short and simple...
 */
 static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook, A0), AROS_UFHA(OOP_Object *, pciDevice, A2), AROS_UFHA(APTR, message, A1)) {
     AROS_USERFUNC_INIT
@@ -46,18 +46,33 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
 
     mybug(-1, ("\n[PCIXHCI] Enumerator: Found PCI XHCI host controller\n"));
 
-    struct PCIXHCIHost *host;
+    struct PCIXHCIUnit *unit;
 
-    host = AllocVec(sizeof(struct PCIXHCIHost), MEMF_ANY|MEMF_CLEAR);
-    if(host != NULL) {
-        host->node.ln_Type = NT_USER;
-        host->node.ln_Name = (STRPTR)&host->name;
-
-        host->pcidevice = pciDevice;
-
-        AddTail(&LIBBASE->host_list, (struct Node *)host);
+    unit = AllocVec(sizeof(struct PCIXHCIUnit), MEMF_ANY|MEMF_CLEAR);
+    if(unit != NULL) {
+        /* PCI device is useless for us if we can't obtain it */
+        if(HIDD_PCIDevice_Obtain(pciDevice, LIBBASE->library.lib_Node.ln_Name) == NULL) {
+            mybug(-1, ("[PCIXHCI] Enumerator: Host controller free\n"));
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &unit->hc.intline);
+            if(unit->hc.intline != 255) {
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Bus,             &unit->hc.bus);
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev,             &unit->hc.dev);
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Sub,             &unit->hc.sub);
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver,  (IPTR *)&unit->hc.pcidriver);
+                unit->hc.pcidevice = pciDevice;
+                AddTail(&LIBBASE->unit_list, (struct Node *)unit);
+                mybug(-1, ("[PCIXHCI] Enumerator: Host controller obtained\n"));
+            } else {
+                mybug(-1, ("[PCIXHCI] Enumerator: Host controller has bogus intline!\n"));
+                HIDD_PCIDevice_Release(pciDevice);
+                FreeVec(unit);
+            }
+        } else {
+            mybug(-1, ("[PCIXHCI] Enumerator: Host controller could not be obtained\n"));
+            FreeVec(unit);
+        }
     } else {
-        mybug(-1, ("\n[PCIXHCI] Enumerator: Failed to allocate host controller structure!\n\n"));
+        mybug(-1, ("\n[PCIXHCI] Enumerator: Failed to allocate unit controller structure!\n\n"));
     }
 
     AROS_USERFUNC_EXIT
@@ -67,83 +82,40 @@ BOOL PCIXHCI_Discover(LIBBASETYPEPTR LIBBASE) {
     mybug(0, ("[PCIXHCI] PCIXHCI_Discover: Entering function\n"));
 
     NEWLIST(&LIBBASE->unit_list);
-    NEWLIST(&LIBBASE->host_list);
 
-    if ( (LIBBASE->pci = OOP_NewObject(NULL, (STRPTR)CLID_Hidd_PCI, NULL)) ) {
-        struct TagItem tags[] = {
-                { tHidd_PCI_Class,     PCI_BASE_CLASS_SERIAL },
-                { tHidd_PCI_SubClass,  PCI_SUB_CLASS_USB },
-                { tHidd_PCI_Interface, PCI_INTERFACE_XHCI },
-                { TAG_DONE, 0UL }
-        };
+    static struct TagItem tags[] = {
+            { tHidd_PCI_Class,     PCI_BASE_CLASS_SERIAL },
+            { tHidd_PCI_SubClass,  PCI_SUB_CLASS_USB },
+            { tHidd_PCI_Interface, PCI_INTERFACE_XHCI },
+            { TAG_DONE, 0UL }
+    };
 
-        struct OOP_ABDescr attrbases[] = {
-                { (STRPTR)IID_Hidd,           &HiddAttrBase },
-                { (STRPTR)IID_Hidd_PCIDevice, &HiddPCIDeviceAttrBase },
-                { NULL, NULL }
-        };
+    struct Hook FindHook = {
+            h_Entry: (IPTR (*)())GM_UNIQUENAME(Enumerator),
+            h_Data:  LIBBASE,
+    };
 
-        struct Hook FindHook = {
-                h_Entry: (IPTR (*)())GM_UNIQUENAME(Enumerator),
-                h_Data:  LIBBASE,
-        };
+    HIDD_PCI_EnumDevices(LIBBASE->pci, &FindHook, (struct TagItem *)&tags);
 
-        OOP_ObtainAttrBases(attrbases);
-        HIDD_PCI_EnumDevices(LIBBASE->pci, &FindHook, (struct TagItem *)&tags);
+    struct PCIXHCIUnit *unit;
 
-        struct PCIXHCIHost *host;
-        CONST_STRPTR owner;
-
-        ForeachNode(&LIBBASE->host_list, host) {
-            OOP_GetAttr(host->pcidevice, aHidd_PCIDevice_Bus,             &host->bus);
-            OOP_GetAttr(host->pcidevice, aHidd_PCIDevice_Dev,             &host->dev);
-            OOP_GetAttr(host->pcidevice, aHidd_PCIDevice_Sub,             &host->sub);
-            OOP_GetAttr(host->pcidevice, aHidd_PCIDevice_INTLine,         &host->intline);
-            OOP_GetAttr(host->pcidevice, aHidd_PCIDevice_Driver,  (IPTR *)&host->pcidriver);
-
-            mybug(-1, ("[PCIXHCI] *pcidevice = %p\n",   host->pcidevice));
-            mybug(-1, ("[PCIXHCI] *pcidriver = %p\n",   host->pcidriver));
-            mybug(-1, ("[PCIXHCI]  bus       = %x\n",   host->bus));
-            mybug(-1, ("[PCIXHCI]  dev       = %x\n",   host->dev));
-            mybug(-1, ("[PCIXHCI]  sub       = %x\n",   host->sub));
-            mybug(-1, ("[PCIXHCI]  intline   = %d\n\n", host->intline));
-
-            /* Try to obtain the host controller */
-            owner = HIDD_PCIDevice_Obtain(host->pcidevice, LIBBASE->library.lib_Node.ln_Name);
-            if(owner) {
-                mybug(-1, ("[PCIXHCI] Host controller already reserved for %s\n", owner));
-                REMOVE(host);
-                FreeVec(host);
-            } else if(host->intline == 255) {
-                mybug(-1, ("[PCIXHCI] Host controller has bogus intline!\n"));
-                REMOVE(host);
-                FreeVec(host);
-            } else{
-                /* We obtained the host controller so we name it in the list just for the fun of it */
-                sprintf(host->name, "PCIXHCI[%x.%x.%x]", host->bus, host->dev, host->sub);
-            }
-        }
-
-        if(!IsListEmpty(&LIBBASE->host_list)) {
-
-            /* Examine host controller(s) and interrogate for ports */
-
-
-
-            return TRUE;
-        }
-
-        ForeachNode(&LIBBASE->host_list, host) {
-            HIDD_PCIDevice_Release(host->pcidevice);
-            REMOVE(host);
-            FreeVec(host);
-        }
-
+    ForeachNode(&LIBBASE->unit_list, unit) {
+        mybug(-1, ("[PCIXHCI] *pcidevice = %p\n", unit->hc.pcidevice));
+        mybug(-1, ("[PCIXHCI] *pcidriver = %p\n", unit->hc.pcidriver));
+        mybug(-1, ("[PCIXHCI]  bus       = %x\n", unit->hc.bus));
+        mybug(-1, ("[PCIXHCI]  dev       = %x\n", unit->hc.dev));
+        mybug(-1, ("[PCIXHCI]  sub       = %x\n", unit->hc.sub));
+        mybug(-1, ("[PCIXHCI]  intline   = %d\n", unit->hc.intline));
     }
 
-    OOP_ReleaseAttrBases(attrbases);
+    if(!IsListEmpty(&LIBBASE->unit_list)) {
+        mybug(-1, ("[PCIXHCI] Unit list is not empty\n"));
+    } else {
+        mybug(-1, ("[PCIXHCI] Unit list is empty\n"));
+        return FALSE;
+    }
 
-    return FALSE;
+    return TRUE;
 }
 
 struct PCIXHCIUnit *PCIXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb) {

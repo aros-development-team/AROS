@@ -83,19 +83,16 @@ struct PCIXHCIUnit {
 
     }                            roothub;
 
-};
+    struct PCIXHCIHostController {
+        OOP_Object                  *pcidevice;
+        OOP_Object                  *pcidriver;
 
-struct PCIXHCIHost {
-    struct Node                  node;
-    char                         name[256];
+        IPTR bus;
+        IPTR dev;
+        IPTR sub;
+        IPTR intline;
 
-    OOP_Object                  *pcidevice;
-    OOP_Object                  *pcidriver;
-
-    IPTR bus;
-    IPTR dev;
-    IPTR sub;
-    IPTR intline;
+    }                                hc;
 
 };
 
@@ -103,21 +100,17 @@ struct PCIXHCIBase {
 
     struct Library               library;
     struct List                  unit_list;
-    struct List                  host_list;
-    ULONG                        unit_count;
 
     OOP_Object                  *pci;
-
-    OOP_AttrBase                 HiddPCIDeviceAB;
     OOP_AttrBase                 HiddAB;
+    OOP_AttrBase                 HiddPCIDeviceAB;
 
 };
 
-#undef HiddPCIDeviceAttrBase
-#define HiddPCIDeviceAttrBase (PCIXHCIBase->HiddPCIDeviceAB)
-
 #undef HiddAttrBase
-#define HiddAttrBase (PCIXHCIBase->HiddAB)
+#undef HiddPCIDeviceAttrBase
+#define HiddAttrBase (LIBBASE->HiddAB)
+#define HiddPCIDeviceAttrBase (LIBBASE->HiddPCIDeviceAB)
 
 BOOL PCIXHCI_Discover(struct PCIXHCIBase *PCIXHCIBase);
 struct PCIXHCIUnit *PCIXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb);
