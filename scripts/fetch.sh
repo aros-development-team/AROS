@@ -180,6 +180,9 @@ unpack()
         *.zip)
 	    if ! unzip "$archivepath/$archive"; then ret=false; fi
 	    ;;
+        *.tar.xz)
+	    if ! tar xfJ "$archivepath/$archive"; then ret=false; fi
+	    ;;
 	*)
 	    echo "Unknown archive format for \`$archive'."
 	    ret=false
