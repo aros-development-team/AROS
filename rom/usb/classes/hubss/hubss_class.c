@@ -36,7 +36,7 @@ LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHub *nch, UWORD port);
 BOOL GM_UNIQUENAME(nHubSuspendDevice)(struct NepClassHub *nch, struct PsdDevice *pd);
 BOOL GM_UNIQUENAME(nHubResumeDevice)(struct NepClassHub *nch, struct PsdDevice *pd);
 void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHub *nch, struct NepHubMsg *nhm);
-AROS_UFP0(void, GM_UNIQUENAME(nHubTask));
+AROS_UFP0(void, GM_UNIQUENAME(nHubssTask));
 
 /* /// "Lib Stuff" */
 static const STRPTR libname = MOD_NAME_STRING;
@@ -65,7 +65,7 @@ struct NepClassHub * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubBase *n
     IPTR devclass;
     IPTR issuperspeed = 0;
 
-    KPRINTF(0, ("usbAttemptDeviceBinding(%p)\n", pd));
+    //KPRINTF(0, ("usbAttemptDeviceBinding(%p)\n", pd));
 
     if((ps = OpenLibrary("poseidon.library", 4))) {
         psdGetAttrs(PGA_DEVICE, pd, DA_Class, &devclass, DA_IsSuperspeed, &issuperspeed, TAG_DONE);
@@ -86,7 +86,7 @@ struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh
     char buf[64];
     struct Task *tmptask;
 
-    KPRINTF(0, ("usbForceDeviceBinding(%p)\n", pd));
+    //KPRINTF(0, ("usbForceDeviceBinding(%p)\n", pd));
 
     if((ps = OpenLibrary("poseidon.library", 4))) {
         psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_DONE);
@@ -99,13 +99,13 @@ struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh
             nch->nch_ReadySigTask = FindTask(NULL);
             SetSignal(0, SIGF_SINGLE);
 
-            if((tmptask = psdSpawnSubTask(buf, GM_UNIQUENAME(nHubTask), nch))) {
+            if((tmptask = psdSpawnSubTask(buf, GM_UNIQUENAME(nHubssTask), nch))) {
                 psdBorrowLocksWait(tmptask, 1UL<<nch->nch_ReadySignal);
 
                 if(nch->nch_Task) {
                     nch->nch_ReadySigTask = NULL;
                     //FreeSignal(nch->nch_ReadySignal);
-                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "I'm in love with hub '%s'.", devname);
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "I'm in love with superspeed hub '%s'.", devname);
 
                     Forbid();
                     AddTail(&nh->nh_Bindings, &nch->nch_Node);
@@ -180,7 +180,7 @@ AROS_LH3(LONG, usbGetAttrsA, AROS_LHA(ULONG, type, D0), AROS_LHA(APTR, usbstruct
                         count++;
                         break;
                     case UCCA_Description:
-                        *((STRPTR *) ti->ti_Data) = "Root/external SuperSpeed hub base class";
+                        *((STRPTR *) ti->ti_Data) = "Root/external superspeed hub base class";
                         count++;
                         break;
                     case UCCA_HasClassCfgGUI:
@@ -345,8 +345,8 @@ AROS_LH2(IPTR, usbDoMethodA, AROS_LHA(ULONG, methodid, D0), AROS_LHA(IPTR *, met
 #undef ps
 #define ps nch->nch_Base
 
-/* /// "nHubTask()" */
-AROS_UFH0(void, GM_UNIQUENAME(nHubTask)) {
+/* /// "nHubssTask()" */
+AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
     AROS_USERFUNC_INIT
 
     struct NepClassHub *nch;
@@ -690,6 +690,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask)) {
 /* /// "nAllocHub()" */
 struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
     struct UsbSSHubDesc *usshd;
+    struct UsbStdBOSDesc *usbosd;
     struct Task *thistask;
     struct NepClassHub *nch;
     struct UsbHubStatus uhhs;
@@ -723,18 +724,8 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
         nch->nch_IsRootHub = (parenthub ? FALSE : TRUE);
         nch->nch_IsUSB30 = issuperspeed;
 
-        // try to select multi TT interface first
-        nch->nch_Interface = psdFindInterface(nch->nch_Device, NULL,
-                                              IFA_Class, HUB_CLASSCODE,
-                                              IFA_Protocol, 2,
-                                              IFA_AlternateNum, 0xffffffff,
-                                              TAG_END);
-
         if(!nch->nch_Interface) {
-            // any will do
-            nch->nch_Interface = psdFindInterface(nch->nch_Device, NULL,
-                                                  IFA_Class, HUB_CLASSCODE,
-                                                  TAG_END);
+            nch->nch_Interface = psdFindInterface(nch->nch_Device, NULL, IFA_Class, HUB_CLASSCODE, TAG_END);
         }
 
         if(!nch->nch_Interface) {
@@ -742,10 +733,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
             break;
         }
 
-        nch->nch_EP1 = psdFindEndpoint(nch->nch_Interface, NULL,
-                                       EA_IsIn, TRUE,
-                                       EA_TransferType, USEAF_INTERRUPT,
-                                       TAG_END);
+        nch->nch_EP1 = psdFindEndpoint(nch->nch_Interface, NULL, EA_IsIn, TRUE, EA_TransferType, USEAF_INTERRUPT, TAG_END);
 
         if(!nch->nch_EP1) {
             psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname, "Ooops!?! No endpoints defined?");
@@ -753,15 +741,39 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
             break;
         }
 
+        /*
+            Device descriptor tree:
+
+            Device descriptor
+            Config descriptor 
+            ...String descriptor
+            BOS descriptor
+            ...SS capability descriptor
+            ......USB2.0 LPM descriptor
+            Interface descriptor
+            Endpoint descriptor 0
+            ...Endpoint descriptor 1
+            ......Endpoint descriptor n
+
+            USB 3.0 enumeration:
+
+            Set address
+            Get device descriptor
+            Get BOS descriptor
+            Get config descriptor
+                .
+                .
+                .
+
+            see: http://youtu.be/5ChWxMLKzOs
+        */
+
+
         if((nch->nch_CtrlMsgPort = CreateMsgPort())) {
             if((nch->nch_TaskMsgPort = CreateMsgPort())) {
                 if((nch->nch_EP0Pipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, NULL))) {
 
-                    psdSetAttrs(PGA_PIPE, nch->nch_EP0Pipe,
-                                PPA_NakTimeout, TRUE,
-                                PPA_NakTimeoutTime, 1000,
-                                TAG_END);
-
+                    psdSetAttrs(PGA_PIPE, nch->nch_EP0Pipe, PPA_NakTimeout, TRUE, PPA_NakTimeoutTime, 1000, TAG_END);
                     psdSetAltInterface(nch->nch_EP0Pipe, nch->nch_Interface);
 
                     if((nch->nch_EP1Pipe = psdAllocPipe(nch->nch_Device, nch->nch_TaskMsgPort, nch->nch_EP1))) {
@@ -845,37 +857,32 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
                                                 }
                                             }
                                         }
-                                        if(!overcurrent)
-                                        {
-                                            if((nch->nch_Downstream = psdAllocVec((ULONG) nch->nch_NumPorts*sizeof(APTR))))
-                                            {
+                                        if(!overcurrent) {
+                                            if((nch->nch_Downstream = psdAllocVec((ULONG) nch->nch_NumPorts*sizeof(APTR)))) {
                                                 /*for(num = 1; num <= nch->nch_NumPorts; num++)
                                                 {
                                                     GM_UNIQUENAME(nClearPortStatus)(nch, num);
                                                 }
                                                 psdDelayMS(20);*/
-                                                KPRINTF(2, ("Powering up ports...\n"));
-                                                for(num = 1; num <= nch->nch_NumPorts; num++)
-                                                {
-                                                    psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
-                                                                 USR_SET_FEATURE, UFS_PORT_POWER, (ULONG) num);
+
+                                                KPRINTF(2, ("Powering up ports...\n\n"));
+
+                                                for(num = 1; num <= nch->nch_NumPorts; num++) {
+                                                    psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER, USR_SET_FEATURE, UFS_PORT_POWER, (ULONG) num);
                                                     ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
-                                                    if(ioerr)
-                                                    {
-                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
-                                                                       "PORT_POWER for port %ld failed: %s (%ld)",
-                                                                       num, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+
+                                                    if(ioerr) {
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "PORT_POWER for port %ld failed: %s (%ld)", num, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                                                         KPRINTF(1, ("PORT_POWER for port %ld failed %ld!\n", num, ioerr));
                                                     }
                                                 }
                                                 psdDelayMS((ULONG) nch->nch_PwrGoodTime + 15);
 
-                                                psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
-                                                               "Hub with %ld ports successfully configured.",
-                                                               nch->nch_NumPorts);
+                                                psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Hub with %ld ports successfully configured.", nch->nch_NumPorts);
 
                                                 KPRINTF(10, ("%s ready!\n", thistask->tc_Node.ln_Name));
                                                 nch->nch_Task = thistask;
+
                                                 return(nch);
                                             } else {
                                                 KPRINTF(1, ("No downstream port array memory!\n"));
@@ -883,9 +890,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
                                         }
                                     } else {
                                         psdFreeVec(usshd);
-                                        psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
-                                                       "GET_HUB_DESCRIPTOR (%ld) failed: %s (%ld)",
-                                                       len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                                        psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname, "GET_HUB_DESCRIPTOR (%ld) failed: %s (%ld)", len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                                         KPRINTF(1, ("GET_HUB_DESCRIPTOR (%ld) failed %ld!\n", len, ioerr));
                                     }
 
@@ -893,9 +898,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
                                     KPRINTF(1, ("No Hub Descriptor memory!\n"));
                                 }
                             } else {
-                                psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname,
-                                               "GET_HUB_DESCRIPTOR (%ld) failed: %s (%ld)",
-                                               1, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                                psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname, "GET_HUB_DESCRIPTOR (%ld) failed: %s (%ld)", 1, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                                 KPRINTF(1, ("GET_HUB_DESCRIPTOR (1) failed %ld!\n", ioerr));
                             }
 
@@ -1040,7 +1043,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
     BOOL washighspeed = FALSE;
     BOOL islowspeed = FALSE;
 
-    KPRINTF(2, ("Configuring port %ld of hub 0x%p\n", port, nch));
+    KPRINTF(2, ("\nConfiguring port %ld of hub 0x%p\n", port, nch));
 
     uhps.wPortStatus = 0xDEAD;
     uhps.wPortChange = 0xDA1A;
@@ -1222,7 +1225,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
         }
     } else {
         psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname, "GET_PORT_CONNECTION failed: %s (%ld)", psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-        KPRINTF(1, ("GET_PORT_CONNECTION failed %ld.\n", ioerr));
+        KPRINTF(1, ("GET_PORT_CONNECTION for port %d failed %ld.\n", port, ioerr));
     }
     return(NULL);
 }
