@@ -2878,6 +2878,10 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     ULONG *chnk;
     UBYTE dummybuf[8];
 
+#ifdef AROS_USB30_CODE
+    struct UsbStdBOSDesc *usbosd;
+#endif
+
     KPRINTF(2, ("psdEnumerateDevice(%p)\n", pp));
 
 #ifdef AROS_USB2OTG_CODE
@@ -2951,13 +2955,15 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     case 64:
                         pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = usdd.bMaxPacketSize0;
                         break;
-                    default:
 #ifdef AROS_USB30_CODE
-                        if( (AROS_LE2WORD(usdd.bcdUSB) >= 0x0300) && (usdd.bMaxPacketSize0 == 9) ) {
-                            pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = usdd.bMaxPacketSize0;
+                    case 9:
+                        if((AROS_LE2WORD(usdd.bcdUSB) >= 0x0300)) {
+                            /* 9 is the only valid value for superspeed mode and it is the exponent of 2 =512 bytes */
+                            pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = (1<<usdd.bMaxPacketSize0);
                             break;
                         }
 #endif
+                    default:
                         psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Illegal MaxPktSize0=%ld for endpoint 0", (ULONG) usdd.bMaxPacketSize0);
                         KPRINTF(2, ("Illegal MaxPktSize0=%ld!\n", usdd.bMaxPacketSize0));
                         //pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = 8;
@@ -2989,9 +2995,18 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                         pd->pd_Flags |= PDFF_HIGHSPEED;
                     }
                     #ifdef AROS_USB30_CODE
-                    if((!pd->pd_Hub) && (pd->pd_USBVers >= 0x300))
-                    {
-                        pd->pd_Flags |= PDFF_SUPERSPEED;
+                    if((pd->pd_USBVers >= 0x300)) {
+                        if((!pd->pd_Hub)) {
+                            pd->pd_Flags |= PDFF_SUPERSPEED;
+                        }
+
+                        psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_BOS<<8, 0);
+                        ioerr = psdDoPipe(pp, &usdd, sizeof(struct UsbStdBOSDesc));
+                        if(!ioerr) {
+                            XPRINTF(1, ("BOS descriptor received...\n"));
+                        } else {
+                            XPRINTF(1, ("GET_DESCRIPTOR (5) failed %ld!\n", ioerr));
+                        }
                     }
                     #endif
 
