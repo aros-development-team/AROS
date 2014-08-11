@@ -171,6 +171,15 @@ struct UsbStdStrDesc
     UWORD bString[1];          /* UNICODE encoded string */
 };
 
+/* Usb Standard Binary Device Object Store (BOS) */
+struct UsbStdBOSDesc
+{
+    UBYTE bLength;
+    UBYTE bDescriptorType;
+    UWORD wTotalLength;
+    UBYTE bNumDeviceCaps;
+};
+
 /* Flags for bmAttributes */
 #define USEAF_CONTROL         0x00
 #define USEAF_ISOCHRONOUS     0x01
