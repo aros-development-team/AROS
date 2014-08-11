@@ -8,5 +8,4 @@ CFG_DS_USER=ncafferkey,aros
 CFG_DS_DIRECTORY=uploads/nightly2/
 CFG_BACKUP_ENABLE=no
 
-CFG_PYTHON=/usr/bin/python26
 CFG_M68K_CROSSTOOLS=/home/aros/m68k-elf/bin/
