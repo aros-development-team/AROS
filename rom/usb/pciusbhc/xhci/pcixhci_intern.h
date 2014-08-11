@@ -56,44 +56,47 @@ struct PCIXHCIPort {
     ULONG                        state;
 };
 
+struct PCIXHCIRootHub {
+    struct List                  port_list;
+    ULONG                        port_count;
+
+    UWORD                        addr;
+
+    struct UsbStdDevDesc         devdesc;
+
+    struct RHConfig {
+        struct UsbStdCfgDesc     cfgdesc;
+        struct UsbStdIfDesc      ifdesc;
+        struct UsbStdEPDesc      epdesc;
+    }                            config;
+
+    union {
+        struct UsbHubDesc        usb20;
+        struct UsbSSHubDesc      usb30;
+    }                            hubdesc;
+};
+
+struct PCIXHCIHostController {
+    OOP_Object                  *pcidevice;
+    OOP_Object                  *pcidriver;
+
+    volatile APTR                pcibase0;
+
+    IPTR bus;
+    IPTR dev;
+    IPTR sub;
+    IPTR intline;
+};                                
+
 struct PCIXHCIUnit {
     struct Node                  node;
     char                         name[256];
     ULONG                        number;
     ULONG                        state;
 
-    struct PCIXHCIRootHub {
-        struct List              port_list;
-        ULONG                    port_count;
-
-        UWORD                    addr;
-
-        struct UsbStdDevDesc     devdesc;
-
-        struct RHConfig {
-            struct UsbStdCfgDesc cfgdesc;
-            struct UsbStdIfDesc  ifdesc;
-            struct UsbStdEPDesc  epdesc;
-        }                        config;
-
-        union {
-            struct UsbHubDesc    usb20;
-            struct UsbSSHubDesc  usb30;
-        }                        hubdesc;
-
-    }                            roothub;
-
-    struct PCIXHCIHostController {
-        OOP_Object                  *pcidevice;
-        OOP_Object                  *pcidriver;
-
-        IPTR bus;
-        IPTR dev;
-        IPTR sub;
-        IPTR intline;
-
-    }                                hc;
-
+    struct PCIXHCIBase          *pcixhcibase;
+    struct PCIXHCIRootHub        roothub;
+    struct PCIXHCIHostController hc;
 };
 
 struct PCIXHCIBase {
@@ -113,8 +116,7 @@ struct PCIXHCIBase {
 #define HiddPCIDeviceAttrBase (LIBBASE->HiddPCIDeviceAB)
 
 BOOL PCIXHCI_Discover(struct PCIXHCIBase *PCIXHCIBase);
-struct PCIXHCIUnit *PCIXHCI_AddNewUnit(ULONG unitnum, UWORD bcdusb);
-struct PCIXHCIPort *PCIXHCI_AddNewPort(struct PCIXHCIUnit *unit, ULONG portnum);
+BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit);
 
 BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq);
