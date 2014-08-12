@@ -83,7 +83,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
 #define UHCB_USB2OTG 5
 #define UHCF_USB2OTG (1<<UHCB_USB2OTG)
                 if(unit->usb2otg) {
-                    *((ULONG *) tag->ti_Data) = (UHCF_USB2OTG);
+                    *((ULONG *) tag->ti_Data) = (UHCF_USB20|UHCF_USB2OTG);
                 } else {
                     *((ULONG *) tag->ti_Data) = (UHCF_USB20);
                 }
@@ -313,16 +313,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                         break;
 
                                     case UDT_BOS:
-                                        bug("[VUSB2OTG] cmdControlXFerRootHub: UDT_BOS\n");
-                                        /* TODO: Arbitrary, set real values according to the host controller */
-                                        unit->roothub.bosdesc.wTotalLength    = 16;
-                                        unit->roothub.bosdesc.bNumDeviceCaps  = 2;
-
-                                        ioreq->iouh_Actual = (wLength > sizeof(struct UsbStdBOSDesc)) ? sizeof(struct UsbStdBOSDesc) : wLength;
-                                        CopyMem((APTR) &unit->roothub.bosdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
-
-                                        mybug_unit(0, ("Done\n\n"));
-                                        return UHIOERR_NO_ERROR;
                                         break;
 
                                     case UDT_DEVICE_CAPABILITY:
