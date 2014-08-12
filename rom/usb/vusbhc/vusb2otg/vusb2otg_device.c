@@ -292,7 +292,7 @@ struct VUSB2OTGUnit *VUSB2OTG_AddNewUnit(ULONG unitnum, BOOL usb2otg) {
 
         sprintf(unit->name, "VUSB2OTG_USB%x%x[%d]", (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>8)&0xf, (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB)>>4)&0xf, unit->number);
 
-        port = VUSB2OTG_AddNewPort(unit, 1);
+        port = VUSB2OTG_AddNewPort(unit, 0);
         if(port == NULL) {
             mybug(-1, ("[VUSB2OTG] VUSB2OTG_AddNewUnit: Failed to create new port structure\n"));
 
