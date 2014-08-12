@@ -180,6 +180,28 @@ struct UsbStdBOSDesc
     UBYTE bNumDeviceCaps;
 };
 
+/*
+    The OTG supplement introduces the OTG Descriptor. This descriptor is sent by the B-Device
+    after a Get_Descriptor(config) request (for example inserted between the configuration and the
+    first interface descriptors).
+*/
+struct UsbStdOTGDesc
+{
+    UBYTE bLength;
+    UBYTE bDescriptorType;
+    UBYTE bInterfaceNumber;
+};
+
+/*
+    The HNP Support bit is set if the device supports HNP. (Host Negotiation Protocol)
+    The SRP Support bit is set if the device supports SRP. (Session Request Protocol)
+*/
+#define OTGB_SRP_SUPPORT 0
+#define OTGB_HNP_SUPPORT 1
+
+#define OTGF_SRP_SUPPORT (1<<OTGB_SRP_SUPPORT)
+#define OTGF_HNP_SUPPORT (1<<OTGB_HNP_SUPPORT)
+
 /* Flags for bmAttributes */
 #define USEAF_CONTROL         0x00
 #define USEAF_ISOCHRONOUS     0x01
