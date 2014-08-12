@@ -61,14 +61,12 @@ struct VUSB2OTGUnit {
 
         struct UsbStdDevDesc     devdesc;
 
-        struct UsbStdBOSDesc     bosdesc;
-
+        /* FIXME: add OTG descriptor if host controller supports USB2OTG */
         struct RHConfig {
             struct UsbStdCfgDesc cfgdesc;
             struct UsbStdIfDesc  ifdesc;
             struct UsbStdEPDesc  epdesc;
         }                        config;
-
 
         struct UsbHubDesc        hubdesc;
 
