@@ -48,6 +48,13 @@
 #define UFS_DEVICE_REMOTE_WAKEUP  0x01 /* Recipient: Device */
 #define UFS_ENDPOINT_HALT         0x00 /* Recipient: Endpoint */
 #define UFS_TEST_MODE             0x02 /* Recipient: Device */
+/* OTG Set Feature */
+#define UFS_B_HNP_ENABLE          0x03 /* Setting this feature indicates to the B-device that it has been enabled to perform HNP. */
+#define UFS_A_HNP_SUPPORT         0x04 /* Setting this feature indicates to the B-device that it is directly connected to an A-device port that supports HNP. */ 
+#define UFS_A_ALT_HNP_SUPPORT     0x05 /*
+                                          Setting this feature indicates to the B-device that it is connected to an A-device port that is not capable of HNP,
+                                          but that the A-device does have an alternate port that is capable of HNP.
+                                       */ 
 
 /* Usb GetStatus() data bits (LE-UWORD) */
 #define U_GSB_SELF_POWERED        8
