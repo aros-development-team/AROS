@@ -1,10 +1,17 @@
 include $(TOP)/config/make.cfg
 
-#MM- build-tools : linklibs build-tools-dtdesc
+#MM- contrib-development : tools-dtdesc
+#MM tools-dtdesc : includes linklibs
 
-%build_progs mmake=build-tools-dtdesc \
-    files="createdtdesc examinedtdesc" \
-    targetdir=$(AROSDIR)/Build/Tools uselibs="c_iff"
+FILES  := createdtdesc examinedtdesc
+EXEDIR := $(AROS_CONTRIB)/Development/Build
+USER_CFLAGS :=
+
+%build_progs mmake=tools-dtdesc \
+    files=$(FILES) \
+    targetdir=$(EXEDIR) uselibs="c_iff"
+
+FILES := FORMAT
+%copy_files_q mmake=tools-dtdesc dst=$(EXEDIR)/Docs
 
 %common
-

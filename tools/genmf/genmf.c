@@ -834,7 +834,7 @@ int main (int argc, char ** argv)
     }
     if (listfile)
     {
-        for (t = 0; line = getline (listfile); t++)
+        for (t = 0; (line = getline (listfile)); t++)
         {
             infilename = strtok (line->value, " \t"); 
             if (!infilename)

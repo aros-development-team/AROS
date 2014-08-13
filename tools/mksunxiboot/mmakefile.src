@@ -1,9 +1,13 @@
 include $(TOP)/config/make.cfg
 
-#MM- build-tools : build-tools-mksunxiboot
+#MM- contrib-development : tools-mksunxiboot
+#MM tools-mksunxiboot : includes linklibs
 
-%build_prog mmake=build-tools-mksunxiboot \
-    progname=mksunxiboot targetdir=$(AROSDIR)/Build/Tools \
+FILES := mksunxiboot
+EXEDIR := $(AROS_CONTRIB)/Development/Build
+
+%build_prog mmake=tools-mksunxiboot \
+    progname=mksunxiboot targetdir=$(EXEDIR) \
     files=mksunxiboot
 
 %common

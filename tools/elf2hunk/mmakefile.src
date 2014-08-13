@@ -2,9 +2,14 @@ include $(TOP)/config/make.cfg
 
 #MM- build-tools : build-tools-elf2hunk
 
+#MM- contrib-development : tools-elf2hunk
+#MM tools-elf2hunk : includes linklibs
+
+FILES  := elf2hunk
+EXEDIR := $(AROS_CONTRIB)/Development/Build
 USER_CFLAGS := -DDEBUG=0
 
-%build_prog mmake=build-tools-elf2hunk \
-    progname=elf2hunk targetdir=$(AROSDIR)/Build/Tools
+%build_prog mmake=tools-elf2hunk \
+    progname=elf2hunk targetdir=$(EXEDIR)
 
 %common
