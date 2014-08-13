@@ -1,8 +1,12 @@
 include $(TOP)/config/make.cfg
 
-#MM- build-tools : build-tools-genmf
+#MM- contrib-development : tools-genmf
+#MM tools-genmf : includes linklibs
 
-%build_prog mmake=build-tools-genmf \
-    progname=genmf targetdir=$(AROSDIR)/Build/Tools
+FILES  := genmf
+EXEDIR := $(AROS_CONTRIB)/Development/Build
+
+%build_prog mmake=tools-genmf files=$(FILES) \
+    progname=genmf targetdir=$(EXEDIR)
 
 %common

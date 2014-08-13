@@ -1,9 +1,16 @@
 include $(TOP)/config/make.cfg
 
-#MM- build-tools : build-tools-archtool
+#MM- contrib-development : tools-archtool
+#MM tools-archtool : includes linklibs
 
-%build_prog mmake=build-tools-archtool \
-    progname=archtool targetdir=$(AROSDIR)/Build/Tools \
-    files=archtool
+FILES  := archtool
+EXEDIR := $(AROS_CONTRIB)/Development/Build
+
+%build_prog mmake=tools-archtool \
+    progname=archtool targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+FILES := archtool.doc
+%copy_files_q mmake=tools-archtool dst=$(EXEDIR)/Docs
 
 %common

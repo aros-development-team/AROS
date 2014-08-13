@@ -1,14 +1,19 @@
 include $(TOP)/config/make.cfg
 
-#MM- build-tools : build-tools-ilbmtoicon build-tools-infoinfo
+#MM- contrib-development : tools-ilbmtoicon
+#MM tools-ilbmtoicon : includes linklibs tools-ilbmtoicon-docs
 
-%build_prog mmake=build-tools-ilbmtoicon \
-    progname=ilbmtoicon targetdir=$(AROSDIR)/Build/Tools \
-    files=ilbmtoicon uselibs="png z"
+FILES := ilbmtoicon infoinfo
+EXEDIR := $(AROS_CONTRIB)/Development/Build
 
-%build_prog mmake=build-tools-infoinfo \
-    progname=infoinfo targetdir=$(AROSDIR)/Build/Tools \
-    files=infoinfo uselibs="png z"
+%build_progs mmake=tools-ilbmtoicon \
+    targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="png z"
+
+#MM
+tools-ilbmtoicon-docs : $(EXEDIR)/Docs/ilbmtoicon.readme
+
+$(EXEDIR)/Docs/ilbmtoicon.readme : $(SRCDIR)/$(CURDIR)/README
+	$(CP) $< $@
 
 %common
-
