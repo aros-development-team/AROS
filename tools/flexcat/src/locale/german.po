@@ -1,0 +1,317 @@
+# Translation catalog description file (pot-style)
+# $Id: german.po 290 2014-04-04 07:25:33Z thboeckel $
+#
+# version 3
+# Translators:
+# tboeckel <tboeckel@gmx.de>, 2014
+# tboeckel <tboeckel@gmx.de>, 2014
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexCat\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/flexcat\n"
+"POT-Creation-Date: 2014-02-18 11:52+0100\n"
+"PO-Revision-Date: 2014-04-04 07:24+0000\n"
+"Last-Translator: tboeckel <tboeckel@gmx.de>\n"
+"Language-Team: German (http://www.transifex.com/projects/p/flexcat/language/de/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: FlexCat\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "MSG_USAGE_HEAD (0//)"
+msgid "Usage:"
+msgstr "Benutzung:"
+
+msgctxt "MSG_USAGE (1//)"
+msgid ""
+"  CDFILE         Catalog description file to scan\n"
+"  CTFILE         Catalog translation file to scan\n"
+"  POFILE         Catalog translation in PO-style format\n"
+"  CATALOG        Catalog file to create\n"
+"  NEWCTFILE      Catalog translation file to create\n"
+"  SOURCES        Sources to create; must be something like SFILE=SDFILE,\n"
+"                 where SFILE is a source file and SDFILE is a source\n"
+"                 description file\n"
+"  WARNCTGAPS     Warn about identifiers missing in translation\n"
+"  NOOPTIM        Do not skip unchanged strings in translation/description\n"
+"  FILL           Fill missing identifiers with original text\n"
+"  FLUSH          Flush memory after the catalog is created\n"
+"  NOBEEP         No DisplayBeep() on errors and warnings\n"
+"  QUIET          No warnings\n"
+"  NOLANGTOLOWER  Prevent #language name from being lowercased\n"
+"  NOBUFFEREDIO   Disable I/O buffers\n"
+"  MODIFIED       Create catalog only if description/translation have changed\n"
+"  COPYMSGNEW     Copy ***NEW*** markers over from old translation\n"
+"  OLDMSGNEW      Custom marker in old translation\n"
+"  CODESET        Codeset to force in output file (e.g. 'UTF-8')\n"
+"  NOAUTODATE     no operation - kept for compatibility\n"
+"  NOSPACES       no operation - kept for compatibility"
+msgstr "  CDFILE         Einzulesende Katalogbeschreibung\n  CTFILE         Einzulesende Katalogübersetzung\n  POFILE         Einzulesende Katalogübersetzung im PO-Format\n  CATALOG        Zu erzeugender Katalog\n  NEWCTFILE      Zu erzeugende Katalogübersetzung\n  SOURCES        Zu erzeugende Quelltexte; in der Form SFILE=SDFILE,\n                 wobei SFILE die zu erzeugende Quelltextdatei und SDFILE\n                 die zu verwendende Quelltextbeschreibung ist.\n  WARNCTGAPS     Bei fehlenden Bezeichnern in der Katalogübersetzung warnen\n  NOOPTIM        Unveränderte Texte in Übersetzung/Beschreibung nicht überspringen\n  FILL           Text aus #?.cd verwenden falls die Übersetzung fehlt\n  FLUSH          Katalog aus dem Speicher entfernen\n  NOBEEP         DisplayBeep() bei Warnungen und Fehlern unterdrücken\n  QUIET          Warnungen unterdrücken\n  NOLANGTOLOWER  Parameter bei #language nicht in Kleinschrift wandeln\n  NOBUFFEREDIO   IO Puffer nicht verwenden\n  MODIFIED       Katalog nur erzeugen wenn Übersetzung/Beschreibung geändert wurden\n  COPYMSGNEW     ***NEW*** Markierung beim Erneuern von #?.ct Dateien kopieren\n  OLDMSGNEW      Wenn die #?.ct Datei einen anderen Marker benutzt, diesen hier angeben\n  CODESET        Zeichenkodierung in der Ausgabedatei erzwingen (z.B. 'UTF-8')\n  NOAUTODATE     keine Funktion - nur zur Kompatibilität\n  NOSPACES       keine Funktion - nur zur Kompatibilität"
+
+msgctxt "MSG_FILEUPTODATE (2//)"
+msgid "File '%s' is up to date"
+msgstr "Datei '%s' ist auf dem neusten Stand"
+
+msgctxt "MSG_ERR_WARNING (100//)"
+msgid "%s, line %d - warning:"
+msgstr "%s, Zeile %d - Warnung:"
+
+msgctxt "MSG_ERR_ERROR (101//)"
+msgid "%s, line %d - ERROR:"
+msgstr "%s, Zeile %d - FEHLER:"
+
+msgctxt "MSG_ERR_EXPECTEDHEX (102//)"
+msgid "expected hex character (one of [0-9a-fA-F])"
+msgstr "Hex-Zeichen (eines von [0-9a-fA-F]) erwartet"
+
+msgctxt "MSG_ERR_EXPECTEDOCTAL (103//)"
+msgid "expected octal character (one of [0-7])"
+msgstr "Oktal-Zeichen (eines von [0-7]) erwartet"
+
+msgctxt "MSG_ERR_NOLENGTHBYTES (104//)"
+msgid "lengthbytes cannot be larger than %d (sizeof long)"
+msgstr "LengthBytes > %d (Größe einer 32-Bit-Integer) nicht möglich"
+
+msgctxt "MSG_ERR_UNKNOWNCDCOMMAND (105//)"
+msgid "unknown catalog description command"
+msgstr "unbekanntes Katalogbeschreibungskommando"
+
+msgctxt "MSG_ERR_UNEXPECTEDBLANKS (106//)"
+msgid "unexpected blanks"
+msgstr "Leerzeichen nicht erwartet"
+
+msgctxt "MSG_ERR_NOIDENTIFIER (107//)"
+msgid "missing identifier"
+msgstr "Bezeichner erwartet"
+
+msgctxt "MSG_ERR_MISSINGSTRING (115//)"
+msgid "unexpected end of file (missing catalog strings)"
+msgstr "unerwartetes Dateiende (fehlender Katalogstring)"
+
+msgctxt "MSG_ERR_UNKNOWNCTCOMMAND (118//)"
+msgid "unknown command in translation"
+msgstr "unbekanntes Katalogübersetzungskommando"
+
+msgctxt "MSG_ERR_UNKNOWNIDENTIFIER (119//)"
+msgid "'%s' missing in catalog description"
+msgstr "%s fehlt in Katalogbeschreibung"
+
+msgctxt "MSG_ERR_UNKNOWNSTRINGTYPE (120//)"
+msgid "unknown string type"
+msgstr "unbekannter Stringtyp"
+
+msgctxt "MSG_ERR_NOTERMINATEBRACKET (121//)"
+msgid "unexpected end of line (missing ')')"
+msgstr "unerwartetes Zeilenende (')' fehlt)"
+
+msgctxt "MSG_ERR_NOBINCHARS (122//)"
+msgid "binary characters in string type None"
+msgstr "Binärzeichen beim Stringtyp None nicht erlaubt"
+
+msgctxt "MSG_ERR_CTGAP (123//)"
+msgid "'%s' missing in catalog translation"
+msgstr "Bezeichner '%s' fehlt in der Katalogübersetzung"
+
+msgctxt "MSG_ERR_DOUBLECTLANGUAGE (124//)"
+msgid "catalog language declared twice"
+msgstr "Katalogsprache mehrfach deklariert"
+
+msgctxt "MSG_ERR_DOUBLECTVERSION (125//)"
+msgid "catalog version declared twice"
+msgstr "Katalogversion mehrfach deklariert"
+
+msgctxt "MSG_ERR_WRONGRCSID (126//)"
+msgid "incorrect RCS Id"
+msgstr "inkorrekte RCS ID"
+
+msgctxt "MSG_ERR_NOMEMORY (127//)"
+msgid "out of memory!"
+msgstr "zu wenig Speicher!"
+
+msgctxt "MSG_ERR_NOCATALOGDESCRIPTION (128//)"
+msgid "cannot open catalog description '%s'"
+msgstr "kann Katalogbeschreibung '%s' nicht öffnen"
+
+msgctxt "MSG_ERR_NOCATALOGTRANSLATION (129//)"
+msgid "cannot open catalog translation '%s'"
+msgstr "kann Katalogübersetzung '%s' nicht öffnen"
+
+msgctxt "MSG_ERR_NOCTVERSION (130//)"
+msgid ""
+"missing catalog translation version\n"
+"Use either '## version' or '## rcsid' and '## name'"
+msgstr "Versionsangabe fehlt in der Katalogübersetzung\nEs sollte entweder ##version oder ##rcsid und ##name benutzt werden"
+
+msgctxt "MSG_ERR_NOCATALOG (131//)"
+msgid "cannot open catalog file '%s'"
+msgstr "kann Katalog '%s' nicht erzeugen"
+
+msgctxt "MSG_ERR_NONEWCTFILE (132//)"
+msgid "cannot create catalog translation '%s'"
+msgstr "kann Katalogübersetzung '%s' nicht erzeugen"
+
+msgctxt "MSG_ERR_NOCTLANGUAGE (133//)"
+msgid "missing catalog translation language"
+msgstr "Sprachangabe fehlt in der Katalogübersetzung"
+
+msgctxt "MSG_ERR_NOSOURCE (134//)"
+msgid "cannot open source file '%s'"
+msgstr "kann Quelltext '%s' nicht erzeugen"
+
+msgctxt "MSG_ERR_NOSOURCEDESCRIPTION (135//)"
+msgid "cannot open source description file '%s'"
+msgstr "kann Quelltextbeschreibung '%s' nicht öffnen"
+
+msgctxt "MSG_ERR_NOCTARGUMENT (136//)"
+msgid "creating a catalog requires a translation file"
+msgstr "zur Erzeugung eines Katalogs wird eine Katalogübersetzung benötigt"
+
+msgctxt "MSG_ERR_CANTCHECKDATE (137//)"
+msgid "cannot get datestamp of '%s'"
+msgstr "kann das Datum von '%s' nicht lesen"
+
+msgctxt "MSG_ERR_NOCTFILENAME (140//)"
+msgid ""
+"Catalog translation file name not specified at command line or as basename "
+"in description"
+msgstr "keine Katalogübersetzung in der Kommandozeile angegeben oder als Basisname der Beschreibung"
+
+msgctxt "MSG_ERR_NOCATFILENAME (141//)"
+msgid ""
+"catalog file name not specified at command line or as basename in "
+"description"
+msgstr "kein Katalogname in der Kommandozeile angegeben oder als Basisname der Beschreibung"
+
+msgctxt "MSG_ERR_BADPREFS (142//)"
+msgid ""
+"error processing 'FlexCat.prefs' variable, falling back to defaults\n"
+"Template:"
+msgstr "Fehler beim Bearbeiten der FlexCat.prefs Variable, Standardwerte werden benutzt\nMuster:"
+
+msgctxt "MSG_ERR_BADCTLANGUAGE (144//)"
+msgid ""
+"invalid language in catalog translation file\n"
+"Language MUST be a string with alphabetical characters and no inlined or trailing spaces"
+msgstr "ungültige Sprachangabe in der Katalogübersetzungsdatei\nDie Sprachangabe MUSS eine Zeichenkette ohne Leerzeichen in der Mitte oder am Ende sein"
+
+msgctxt "MSG_ERR_DOUBLECTCODESET (146//)"
+msgid "catalog codeset declared twice"
+msgstr "Katalogcodeset doppelt deklariert"
+
+msgctxt "MSG_ERR_BADCTCODESET (147//)"
+msgid ""
+"invalid codeset in catalog translation file\n"
+"Codeset MUST be a decimal number without any trailing spaces"
+msgstr "ungültiger Codeset in der Katalogübersetzungsdatei\nDer Codeset MUSS eine Dezimalzahl sein und darf keine Leerzeichen am Ende haben"
+
+msgctxt "MSG_ERR_NOCTCODESET (148//)"
+msgid "missing catalog translation codeset"
+msgstr "fehlender Codeset in der Katalogübersetzungsdatei"
+
+msgctxt "MSG_ERR_ERROR_QUICK (149//)"
+msgid "%s - ERROR:"
+msgstr "%s - FEHLER:"
+
+msgctxt "MSG_ERR_BADCTVERSION (150//)"
+msgid ""
+"invalid version string in catalog translation file\n"
+"Version should be something like\n"
+"## version $VER: name version.revision (date)\n"
+"without any spaces in the name"
+msgstr "ungültiger Versionsstring in der Katalogübersetzungsdatei\nDie Version sollte folgendermaßen aussehen\n## version $VER: name version.revision (datum)\nohne Leerzeichen im Namen"
+
+msgctxt "MSG_ERR_WARNING_QUICK (154//)"
+msgid "%s - Warning:"
+msgstr "%s - Warnung:"
+
+msgctxt "MSG_ERR_MISSINGTRANSLATION (155//)"
+msgid "missing translation for identifier '%s'"
+msgstr "fehlende Übersetzung für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_EMPTYTRANSLATION (156//)"
+msgid "empty translation for identifier '%s'"
+msgstr "leere Übersetzung für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_MISMATCHINGCONTROLCHARACTERS (157//)"
+msgid "mismatching trailing control characters"
+msgstr "unterschiedliche Kontrollzeichen am Zeilenende"
+
+msgctxt "MSG_ERR_DOUBLE_IDENTIFIER (159//)"
+msgid "identifier '%s' declared twice"
+msgstr "Bezeichner kommt zweimal vor für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_STRING_TOO_SHORT (160//)"
+msgid "string too short for identifier '%s'"
+msgstr "String kürzer als in Katalogbeschreibung erlaubt für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_STRING_TOO_LONG (161//)"
+msgid "string too long for identifier '%s'"
+msgstr "String länger als in Katalogbeschreibung erlaubtfür Bezeichner '%s'"
+
+msgctxt "MSG_ERR_TRAILING_ELLIPSIS (162//)"
+msgid "original string has a trailing ellipsis ('...') for identifier '%s'"
+msgstr "Originalstring hat eine Ellipse (...) am Zeilenende für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_NO_TRAILING_ELLIPSIS (163//)"
+msgid ""
+"original string doesn't have a trailing ellipsis ('...') for identifier '%s'"
+msgstr "Originalstring hat keine Ellipse (...) am Zeilenende für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_TRAILING_BLANKS (164//)"
+msgid "original string has trailing blanks for identifier '%s'"
+msgstr "Originalstring hat Leerzeichen am Zeilenende für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_NO_TRAILING_BLANKS (165//)"
+msgid "original string doesn't have trailing blanks for identifier '%s'"
+msgstr "Originalstring hat keine Leerzeichen am Zeilenende für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_MISMATCHING_PLACEHOLDERS (166//)"
+msgid "mismatching placeholders for identifier '%s'"
+msgstr "unterschiedliche Platzhalter bei Bezeichner '%s'"
+
+msgctxt "MSG_ERR_MISSING_PLACEHOLDERS (167//)"
+msgid "missing placeholders for identifier '%s'"
+msgstr "fehlende Platzhalter bei Bezeichner '%s'"
+
+msgctxt "MSG_ERR_EXCESSIVE_PLACEHOLDERS (168//)"
+msgid "excessive placeholders for identifier '%s'"
+msgstr "überzählige Platzhalter bei Bezeichner '%s'"
+
+msgctxt "MSG_ERR_NO_LEADING_BRACKET (169//)"
+msgid "missing '(' for identifier '%s'"
+msgstr "'(' erwartet für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_NO_TRAILING_BRACKET (170//)"
+msgid "missing ')' for identifier '%s'"
+msgstr "')' erwartet für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_DOUBLE_ID (171//)"
+msgid "ID number used twice for identifier '%s'"
+msgstr "Bezeichnernummer kommt zweimal vor für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_NO_MIN_LEN (172//)"
+msgid "expected MinLen (character '/') for identifier '%s'"
+msgstr "MinLen (Zeichen '/') erwartet für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_NO_MAX_LEN (173//)"
+msgid "expected MaxLen (character '/') for identifier '%s'"
+msgstr "MaxLen (Zeichen '/') erwartet für Bezeichner '%s'"
+
+msgctxt "MSG_ERR_EXTRA_CHARACTERS (174//)"
+msgid "extra characters at the end of the line"
+msgstr "zusätzliche Zeichen am Zeilenende"
+
+msgctxt "MSG_ERR_EXTRA_CHARACTERS_ID (175//)"
+msgid "extra characters at the end of the line for identifier '%s'"
+msgstr "zusätzliche Zeichen am Zeilenende bei Bezeichner '%s'"
+
+msgctxt "MSG_ERR_NON_ASCII_CHARACTER (176//)"
+msgid ""
+"non-ASCII character 0x%02x found in original string for identifier '%s'"
+msgstr "nicht-ASCII-Zeichen 0x%02x im Originalstring für Bezeichner '%s' gefunden"
+
+msgctxt "MSG_ERR_NO_CAT_REVISION (177//)"
+msgid "no catalog revision information found, using revision 0"
+msgstr "keine Revisionsinformation gefunden, benutze Revision 0"

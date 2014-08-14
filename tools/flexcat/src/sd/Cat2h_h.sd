@@ -1,0 +1,20 @@
+##rem $Id: Cat2h_h.sd 253 2014-02-18 11:15:58Z damato $
+##stringtype C
+
+/****************************************************************
+
+   This file was created automatically by `%fv'
+   from "%f0"
+
+   using Cat2h_h.sd 1.0 (23.05.97)
+
+   Do NOT edit by hand!
+
+****************************************************************/
+
+#ifndef MSG_FLEXCAT_H
+#define MSG_FLEXCAT_H
+
+#define %i "%2a" %s
+
+#endif /* MSG_FLEXCAT_H */

@@ -1,0 +1,36 @@
+These scripts will help you to integrate FlexCat into StormC environment.
+Based on work by Christian Hattemer <chris@mail.riednet.wh.tu-darmstadt.de>
+found on Aminet.
+
+Installation
+
+Copy FlexCat.srx and FlexCatCatalog.srx to StormC:Rexx.
+
+The Makescripts assume that FlexCat is installed in your default search path.
+
+NoAutoC_c.sd and NoAutoC_h.sd source description files are used.
+If you want to use other Files you need to change the names in FlexCat.srx.
+
+Usage
+
+If not done yet add your .cd File and the .ct Files to the StormC
+Projectwindow.
+
+Select the .cd File in the Projectwindow and set the Script
+FlexCat.srx with Compile/Select Makescript from the Menu.
+
+Set FlexCatCatalog.srx as Makescript for every .ct File you have.
+
+Now compile the Project. There may be same Problems when compiling with
+the Scripts for the first time, then compile again and everything should
+work fine.
+
+
+Notes on the included Files C_c.sd and C_h.sd
+
+These Files are modified Versions from those included with FlexCat.
+I've changed them for my needs.
+
+A complete example Source is available in the ML-Support Archive which you
+can get from Aminet or Christian's Homepage: http://www.riednet.wh.tu-darmstadt.de/~chris/
+
