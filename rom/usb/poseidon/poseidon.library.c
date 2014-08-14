@@ -2860,26 +2860,36 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
          LIBBASETYPEPTR, ps, 20, psd)
 {
     AROS_LIBFUNC_INIT
+
     struct PsdDevice *pd = pp->pp_Device;
     struct PsdDevice *itpd = pp->pp_Device;
     struct PsdConfig *pc;
     struct PsdInterface *pif;
     struct UsbStdDevDesc usdd;
+
     UWORD oldflags;
     ULONG oldnaktimeout;
+
     LONG ioerr;
+
     STRPTR classname;
     STRPTR vendorname;
+
     ULONG devclass;
+
     BOOL hasprodname;
     BOOL haspopupinhibit;
+
     UWORD cfgnum;
+
     struct PsdIFFContext *pic;
+
     ULONG *chnk;
     UBYTE dummybuf[8];
 
 #ifdef AROS_USB30_CODE
-    struct UsbStdBOSDesc *usbosd;
+    struct UsbStdBOSDesc usbosd;
+    LONG ioerr_bos;
 #endif
 
     KPRINTF(2, ("psdEnumerateDevice(%p)\n", pp));
@@ -2901,52 +2911,47 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
 #endif
 
     psdLockWriteDevice(pd);
-    if(pAllocDevAddr(pd))
-    {
+    if(pAllocDevAddr(pd)) {
+
         oldflags = pp->pp_IOReq.iouh_Flags;
         oldnaktimeout = pp->pp_IOReq.iouh_NakTimeout;
         pp->pp_IOReq.iouh_Flags |= UHFF_NAKTIMEOUT;
         pp->pp_IOReq.iouh_NakTimeout = 1000;
         pp->pp_IOReq.iouh_DevAddr = 0;
 
-        psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE,
-                     USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
+        psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
         ioerr = psdDoPipe(pp, dummybuf, 8);
-        if(ioerr && (ioerr != UHIOERR_RUNTPACKET))
-        {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "GET_DESCRIPTOR (len %ld) failed: %s (%ld)",
-                           8, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+        if(ioerr && (ioerr != UHIOERR_RUNTPACKET)) {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "GET_DESCRIPTOR (len %ld) failed: %s (%ld)", 8, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
             KPRINTF(15, ("GET_DESCRIPTOR (8) failed %ld!\n", ioerr));
         }
+
         KPRINTF(1, ("Setting DevAddr %ld...\n", pd->pd_DevAddr));
-        psdPipeSetup(pp, URTF_STANDARD|URTF_DEVICE,
-                     USR_SET_ADDRESS, pd->pd_DevAddr, 0);
+        psdPipeSetup(pp, URTF_STANDARD|URTF_DEVICE, USR_SET_ADDRESS, pd->pd_DevAddr, 0);
         ioerr = psdDoPipe(pp, NULL, 0);
-        /* This is tricky: Maybe the device has accepted the command,
-           but failed to send an ACK. Now, every resend trial will
-           go to the wrong address! */
-        if((ioerr == UHIOERR_TIMEOUT) || (ioerr == UHIOERR_STALL))
-        {
+        /*
+            This is tricky: Maybe the device has accepted the command,
+            but failed to send an ACK. Now, every resend trial will
+            go to the wrong address!
+        */
+        if((ioerr == UHIOERR_TIMEOUT) || (ioerr == UHIOERR_STALL)) {
             KPRINTF(1, ("First attempt failed, retrying new address\n"));
             /*pp->pp_IOReq.iouh_DevAddr = pd->pd_DevAddr;*/
             psdDelayMS(250);
             ioerr = psdDoPipe(pp, NULL, 0);
             /*pp->pp_IOReq.iouh_DevAddr = 0;*/
         }
-        if(!ioerr)
-        {
+
+        if(!ioerr) {
             pd->pd_Flags |= PDFF_HASDEVADDR|PDFF_CONNECTED;
             pp->pp_IOReq.iouh_DevAddr = pd->pd_DevAddr;
 
             psdDelayMS(50); /* Allowed time to settle */
 
             KPRINTF(1, ("Getting MaxPktSize0...\n"));
-            psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE,
-                         USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
+            psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
             ioerr = psdDoPipe(pp, &usdd, 8);
-            if(!ioerr)
-            {
+            if(!ioerr) {
                 switch(usdd.bMaxPacketSize0)
                 {
                     case 8:
@@ -2959,7 +2964,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     case 9:
                         if((AROS_LE2WORD(usdd.bcdUSB) >= 0x0300)) {
                             /* 9 is the only valid value for superspeed mode and it is the exponent of 2 =512 bytes */
-                            pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = (1<<usdd.bMaxPacketSize0);
+                            pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = (1<<9);
                             break;
                         }
 #endif
@@ -2971,6 +2976,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                         break;
                 }
             }
+
             if(!ioerr)
             {
                 KPRINTF(1, ("  MaxPktSize0 = %ld\n", pd->pd_MaxPktSize0));
@@ -2990,59 +2996,75 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     vendorname = psdNumToStr(NTS_VENDORID, (LONG) pd->pd_VendorID, NULL);
 
                     // patch to early determine highspeed roothubs
-                    if((!pd->pd_Hub) && (pd->pd_USBVers >= 0x200) && (pd->pd_USBVers < 0x300))
-                    {
+                    if((!pd->pd_Hub) && (pd->pd_USBVers >= 0x200) && (pd->pd_USBVers < 0x300)) {
                         pd->pd_Flags |= PDFF_HIGHSPEED;
                     }
-                    #ifdef AROS_USB30_CODE
-                    if((pd->pd_USBVers >= 0x300)) {
-                        if((!pd->pd_Hub)) {
-                            pd->pd_Flags |= PDFF_SUPERSPEED;
-                        }
 
+                    #ifdef AROS_USB30_CODE
+                    if(((!pd->pd_Hub) && pd->pd_USBVers >= 0x300)) {
+                        pd->pd_Flags |= PDFF_SUPERSPEED;
+                    }
+
+                    /*
+                        The USB 3.0 and USB 2.0 LPM specifications define a new USB descriptor called the Binary Device Object Store (BOS)
+                        for a USB device, which reports a bcdUSB value greater than 0x0200 in their device descriptor
+                    */
+                    if((pd->pd_USBVers > 0x200)) {
                         psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_BOS<<8, 0);
-                        ioerr = psdDoPipe(pp, &usdd, sizeof(struct UsbStdBOSDesc));
-                        if(!ioerr) {
+                        ioerr_bos = psdDoPipe(pp, &usbosd, sizeof(struct UsbStdBOSDesc));
+                        if(!ioerr_bos) {
                             XPRINTF(1, ("BOS descriptor received...\n"));
+
+                            /*
+                                BOS descriptor bLength = sizeof(struct UsbStdBOSDesc)
+                                BOS descriptor bNumDeviceCaps != 0
+                                BOS descriptor wTotalLength >= bLength + (bNumDeviceCaps * sizeof(protocol specific capability descriptor))
+                            */
+                            if(usbosd.bLength != sizeof(struct UsbStdBOSDesc)) {
+                                XPRINTF(1, ("Invalid BOS descriptor bLength!\n"));
+                            }
+
+                            if(usbosd.bNumDeviceCaps == 0) {
+                                XPRINTF(1, ("Invalid BOS descriptor bNumDeviceCaps!\n"));
+                            }else if(usbosd.wTotalLength < (usbosd.bLength + (usbosd.bNumDeviceCaps * 2))) {
+                                XPRINTF(1, ("Invalid BOS descriptor wTotalLength!\n"));
+                            }
+
                         } else {
-                            XPRINTF(1, ("GET_DESCRIPTOR (5) failed %ld!\n", ioerr));
+                            XPRINTF(1, ("GET_DESCRIPTOR (5) failed %ld!\n", ioerr_bos));
                         }
                     }
                     #endif
 
-                    if(usdd.iManufacturer)
-                    {
+                    if(usdd.iManufacturer) {
                         pd->pd_MnfctrStr = psdGetStringDescriptor(pp, usdd.iManufacturer);
                     }
-                    if(usdd.iProduct)
-                    {
+
+                    if(usdd.iProduct) {
                         pd->pd_ProductStr = psdGetStringDescriptor(pp, usdd.iProduct);
                     }
-                    if(usdd.iSerialNumber)
-                    {
+
+                    if(usdd.iSerialNumber) {
                         pd->pd_SerNumStr = psdGetStringDescriptor(pp, usdd.iSerialNumber);
                     }
-                    if(!pd->pd_MnfctrStr)
-                    {
+
+                    if(!pd->pd_MnfctrStr) {
                         pd->pd_MnfctrStr = psdCopyStr(vendorname ? vendorname : (STRPTR) "n/a");
                     }
-                    if(!pd->pd_ProductStr)
-                    {
+
+                    if(!pd->pd_ProductStr) {
                         hasprodname = FALSE;
                         classname = psdNumToStr(NTS_CLASSCODE, (LONG) pd->pd_DevClass, NULL);
-                        if(classname)
-                        {
-                            pd->pd_ProductStr = psdCopyStrFmt("%s: Vdr=%04lx/PID=%04lx",
-                                            classname, pd->pd_VendorID, pd->pd_ProductID);
+                        if(classname) {
+                            pd->pd_ProductStr = psdCopyStrFmt("%s: Vdr=%04lx/PID=%04lx", classname, pd->pd_VendorID, pd->pd_ProductID);
                         } else {
-                            pd->pd_ProductStr = psdCopyStrFmt("Cls=%ld/Vdr=%04lx/PID=%04lx",
-                                            pd->pd_DevClass, pd->pd_VendorID, pd->pd_ProductID);
+                            pd->pd_ProductStr = psdCopyStrFmt("Cls=%ld/Vdr=%04lx/PID=%04lx", pd->pd_DevClass, pd->pd_VendorID, pd->pd_ProductID);
                         }
                     } else {
                         hasprodname = TRUE;
                     }
-                    if(!pd->pd_SerNumStr)
-                    {
+
+                    if(!pd->pd_SerNumStr) {
                         pd->pd_SerNumStr = psdCopyStr("n/a");
                     }
 
