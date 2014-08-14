@@ -187,6 +187,28 @@ struct UsbStdBOSDesc
     UBYTE bNumDeviceCaps;
 };
 
+/* Usb 2.0 Extension Descriptor */
+struct Usb20ExtDesc
+{
+    UBYTE bLength;
+    UBYTE bDescriptorType;
+    UBYTE bDevCapabilityType;
+    ULONG bmAttributes;
+};
+
+/* Usb SuperSpeed Device Capability Descriptor */
+struct UsbSSDevCapDesc
+{
+    UBYTE bLength;
+    UBYTE bDescriptorType;
+    UBYTE bDevCapabilityType;
+    UBYTE bmAttributes;
+    UWORD wSpeedSupported;
+    UBYTE bFunctionalitySupport;
+    UBYTE bU1DevExitLat;
+    UWORD bU2DevExitLat;
+};
+
 /*
     The OTG supplement introduces the OTG Descriptor. This descriptor is sent by the B-Device
     after a Get_Descriptor(config) request (for example inserted between the configuration and the
