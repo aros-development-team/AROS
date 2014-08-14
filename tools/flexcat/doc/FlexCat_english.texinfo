@@ -1,0 +1,1713 @@
+\input amigatexinfo
+\input texinfo
+
+@c
+@c $Id: FlexCat_english.texinfo 73 2007-01-01 02:48:17Z tactica $
+@c
+
+@c **** TODO ****
+@c
+@c - Fix FIXMEs.
+@c - Complete the index
+@c - Check all styles for consistency. Can't avoid the feeling that they
+@c   are all mixed up at the moment...
+@c 
+@c -------------------------------------------------------------------------
+@c
+@c %**start of header
+@setfilename FlexCat_english
+@settitle Documentation for FlexCat 2.6.7
+@setchapternewpage off
+@iftex
+@parskip=0.75em
+@end iftex
+@c %**end of header
+
+@titlepage
+@title{FlexCat}
+@subtitle{The flexible catalog generator}
+@subtitle{}
+@subtitle{Version 2.6.7}
+@author Jochen Wiedmann and Marcin Orlowski
+@vskip 0pt plus 1filll
+@tex
+@halign{@hfil#&#@hfil@cr
+       As of 2.6.3, FlexCat is developed by:@cr
+@cr
+       & Ondrej Zima@cr
+       & amiandrew@@volny.cz@cr
+@ct
+       Releases 2.5 - 2.6.2 were developed by:@cr
+@cr
+       & Stefan Kost@cr
+       & ensonic@@sonicpulse.de@cr
+@cr
+       Releases 1.8 - 2.4 were developed by:@cr
+@cr
+       & Marcin Orlowski@cr
+       & ul. Radomska 38@cr
+       & 71-002 Szczecin@cr
+       & Poland@cr
+@cr
+       & carlos@@amiga.com.pl@cr
+@cr
+       Originally created by:@cr
+@cr
+       & Jochen Wiedmann@cr
+       & Am Eisteich 9@cr
+       & 72555 Metzingen@cr
+       % Deutschland
+}
+@end tex
+
+Permission is granted to make and distribute verbatim copies of this manual
+and the program FlexCat.
+
+@ignore
+Permission is granted to process this file by TeX and print the results,
+provided the printed document carries a copying permission notice identical to
+this one except for the removal of this paragraph (this paragraph not being
+relevant to the printed manual).
+@end ignore
+
+The author gives @strong{absolutely no} warranty that the program described
+in this documentation and the results produced by it are correct. The
+author cannot be held responsible for @strong{any} damage resulting from
+the use of this software.
+@end titlepage
+
+@iftex
+@headings double
+@end iftex
+
+@ifinfo
+@c -------------------------------------------------------------------------
+@node Top
+@top Documentation for FlexCat 2.6.7
+This file describes the usage of FlexCat 2.6.7, a program that generates
+catalogs and the source to handle them. FlexCat works in a similar fashion
+to @code{CatComp} and @code{KitCat}, but differs in that it generates any
+sources you want. This is done by using the so called @dfn{Source descriptions},
+a set of templates that tell how the code is to be generated. They can be
+edited and hence adapted to any programming language and individual needs
+(hopefully!).
+
+@menu
+General
+
+* Disclaimer::            Copyrights, (NO) warranty
+* Overview::              What is FlexCat?
+* Installation::          How can I get it working?
+
+Using FlexCat
+
+* Program start::         Calling FlexCat from the CLI
+* Preferences::           Changing the default behaviour
+* Catalog description::   Catalog description files (@key{.cd} files)
+* Catalog translation::   Catalog translation files (@key{.ct} files)
+* Source description::    Source description (@key{.sd} files)
+* Using FlexCat source::  Using FlexCat source in your own programs
+
+Other
+
+* Future::                The future of FlexCat
+* Support::               Where to look for updates
+* History::               History of development
+* Credits::               What I always wanted to say@dots{}
+* Index::                 Where can you find what you are looking for
+
+@end menu
+@end ifinfo
+
+@ifinfo
+@c -------------------------------------------------------------------------
+@node Disclaimer
+@chapter Copyright and other legal stuff
+@cindex Copyright
+@cindex Distribution
+@cindex Permissions
+@cindex Prohibitions
+@cindex Author
+@cindex Adress
+@cindex Internet
+@cindex Mail
+FlexCat is Copyright @copyright{} 1993-1999 Jochen Wiedmann and Marcin Orlowski
+
+@example
+            Jochen Wiedmann
+            Am Eisteich 9
+            72555 Metzingen
+            Germany
+
+
+            Releases 1.8 - 2.4 were developed by
+
+            Marcin Orlowski
+            ul. Radomska 38
+            71-002 Szczecin
+            Poland
+
+            carlos@@amiga.com.pl
+
+
+            Releases 2.5 - 2.6.2 were developed by
+
+            Stefan Kost
+            ensonic@@sonicpulse.de
+
+
+            As of 2.6.3, FlexCat is maintained by
+
+            Ondrew Zima
+            amiandrew@@volny.cz
+
+@end example
+
+Permission is granted to make and distribute verbatim copies of this manual
+and the program FlexCat.
+
+@ignore
+Permission is granted to process this file by TeX and print the results,
+provided the printed document carries a copying permission notice identical to
+this one except for the removal of this paragraph (this paragraph not being
+relevant to the printed manual).
+@end ignore
+
+The author gives @strong{absolutely no} warranty that the program described
+in this documentation and the results produced by it are correct. The
+author cannot be held responsible for @strong{any} damage resulting from
+the use of this software.
+@end ifinfo
+
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Overview
+@chapter Overview
+@cindex Overview
+Since Workbench 2.1, AmigaOS offers a rather pleasant system for using
+programs in different languages: @code{locale.library}. This library made
+@dfn{localization} easy on the Amiga.
+
+The idea is simple: you simply write your program using your native language
+(English in most cases) in the same manner as you used to do before
+localization was available, except that static strings are replaced by
+certain function calls. Another function call enables the user to select
+another language when the program starts by loading an external file:
+the so called @code{catalog}, from which the strings are loaded instead
+of using the predefined strings.
+
+Catalogs are independent from the program - all you need to do to add
+another language is create a new catalog file, and this is always possible
+without changing the program.
+
+But there's additional work for the programmer: he/she needs to create the
+catalogs, the predefined strings and some source to handle them all, i.e.
+the functions we mentioned above. There you go: FlexCat is designed to make
+this for you in a straighforward manner, without sacrificing any flexibility
+when you write your source. Let us give you an example to make this more
+clear.
+
+Suppose that we want to write @file{HelloLocalWorld.c}. Our final program
+will look like this:
+
+@example
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <HelloLocalWorld_Cat.h>  /*  You @strong{must} include this! */
+
+    void main(int argc, char *argv[])
+    @{
+      printf("%s\\n", msgHello);
+    @}
+@end example
+
+@noindent
+Note that this is very similar to the well known @file{HelloWorld.c}, except
+for replacing the string "Hello, world!" with a @code{msgHello} constant.
+
+These constants and the related strings are defined in a so called
+@ref{Catalog description} file. You always start by creating a file
+named @file{HelloLocalWorld.cd}, which could look like this:
+
+@example
+    ;   Comments are allowed, of course! Each line beginning with a
+    ;   semicolon is assumed to be a comment
+    ;
+    ;   Language used by the built-in strings.
+    #language english
+    ;
+    ;   The catalog version, used for a call to Locale/OpenCatalog().
+    ;   This is different to Exec/OpenLibrary(): 0 means any catalog
+    ;   version is accepted, but other numbers shall match exactly!
+    #version 0
+    ;
+    ;   This defines a string and the ID referring to it.
+    ;   Here, number 4 means that this string shall not be shorter
+    ;   than 4 characters.
+    msgHello (/4/)
+    Hello, world!
+@end example
+
+By using FlexCat you create another two files from the catalog description:
+the include file @file{HelloLocalWorld_Cat.h} defines the constants, whereas
+@file{HelloLocalWorld_Cat.c} contains an array of strings and some
+init functions.
+
+You don't need to know what they do, just use them! You don't need to know
+anything about @file{locale.library}, either.
+
+However, you might be interested into knowing how these files look, and
+most important, you might want to modify them. This is the difference
+between FlexCat and other catalog generators: with FlexCat, you are not
+limited to a certain format here.
+
+Instead, FlexCat uses external template files, the so called
+@ref{Source description} files. This makes it possible, for example,
+to use catalogs with AmigaDOS 2.0, where locale.library is not
+available. Using the source descriptions distributed with FlexCat,
+you can create the source files with the following commands:
+
+@example
+    @samp{FlexCat  HelloLocalWorld.cd  HelloLocalWorld_Cat.c=C_c.sd}
+    @samp{FlexCat  HelloLocalWorld.cd  HelloLocalWorld_Cat.h=C_h.sd}
+@end example
+
+When your program is ready, use FlexCat again to create the
+@ref{Catalog translation} files, one for each language you would like to
+support with them. For example, let's create a catalog translation for German:
+
+@example
+    @samp{FlexCat  HelloLocalWorld.cd  NEWCTFILE  Deutsch.ct}
+@end example
+
+@noindent
+This file would now look as follow:
+
+@example
+    ## version
+    ## language
+    ## codeset 0
+    ;   Comments ar allowed, of course! Each line beginning with a
+    ;   semicolon is assumed to be a comment
+    ;
+    ;   Language used by the built-in strings:
+    ;
+    ;   The catalog version, used for a call to Locale/OpenCatalog().
+    ;   This is different to Exec/OpenLibrary(): 0 means any catalog
+    ;   version is accepted, but other numbers shall match exactly!
+    ;
+    ;   This defines a string and the ID referring to it.
+    ;   Here, number 4 means that this string shall not be shorter
+    ;   than 4 characters.
+    msgHello
+
+    ; Hello, world!
+@end example
+
+@noindent
+As you can see, this looks much like typical catalog description files.
+FlexCat includes the comments from the catalog description, even when
+this is meaningless: note the comment on the string length, which doesn't
+appear here as this information must be in the catalog description only.
+All you have to do now is fill in the information on the version (a typical
+version string like @samp{$VER: Deutsch.catalog 1.2 (06.03.03)} is expected),
+the language of the catalog translation (here @samp{Deutsch} for German),
+the codeset (which should usually be 0; see Locale/OpenCatalog() for
+details) and of course the strings themselves. FlexCat includes the
+original strings as comments, so you always know what to fill in.
+
+Ultimately you create the catalogs with a command like
+
+@example
+    @samp{FlexCat  HelloLocalWorld.cd  Deutsch.ct  CATALOG  Deutsch.catalog}
+@end example
+
+@noindent
+Note that you don't need the program itself or the source files created
+with FlexCat for the catalogs! You can create new catalogs at any time.
+It is usually a good idea to supply a @file{FlexCat.cd} file in your
+software distributions for users to be able to create their own catalogs.
+
+What if you change the program later? Well, you simply edit the catalog
+description and use FlexCat to update the catalog translations:
+
+@example
+    @samp{FlexCat  HelloLocalWorld.cd  Deutsch.ct  NEWCTFILE  Deutsch.ct}
+@end example
+
+@noindent
+Now all you have to do is to enter any new strings you may need.
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Installation
+@chapter Installation
+@cindex Installation
+@cindex Requirements
+Since FlexCat is written in pure Ansi-C (except for localization),
+a simple recompile is all you should need to get it running on any Amiga
+and hopefully on other machines, too. In the latter case however,
+localization of FlexCat itself is not available.
+
+This holds true also for the programs created: FlexCat is compiled using 
+itself. All distributed source descriptions should create programs that
+will run on any Amiga, and even any machine; for the latter however, you
+must ensure that the LocaleBase variable is @samp{NULL}. Localization is
+only possible as of Workbench 2.1 because @code{locale.library} is not
+available in older releases.
+
+That said, it is not impossible to offer localization even when
+@code{locale.library} is unavailable: see the source description files
+@file{C_c_V20.sd} and @file{C_h_V20.sd} for an example on how to use
+@code{iffparse.library} when @code{locale.library} is not available.
+This makes localization possible in Workbench 2.0.
+
+Installing FlexCat is a pretty simple job: just copy the program to a
+directory in your search path and select a place for the source descriptions
+you need (the @file{xx_yy.sd} files, where @file{xx} is the programming
+language). You probably want to set the environment variables @var{FLEXCAT.PREFS}
+or @var{FLEXCAT_SDDIR}. See also @ref{Program start}.
+
+On AmigaOS, if you want to use FlexCat in a language other than English,
+you need to copy the respective catalog file, too. For instance, if you
+speak German, copy @file{Catalogs/Deutsch/FlexCat.catalog} to
+@file{Locale:Catalogs/Deutsch/} or @file{PROGDIR:Catalogs/Deutsch/}, where
+@file{PROGDIR:} is the directory where FlexCat is installed. See also
+@ref{Using FlexCat source}.
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Program start
+@chapter Calling FlexCat from the CLI
+@cindex CLI
+@cindex Workbench
+@cindex Shell
+FlexCat is a CLI only program. The template is
+@example
+
+FlexCat CDFILE/A,CTFILE,CATALOG/K,NEWCTFILE/K,SOURCES/M,
+        WARNCTGAPS/S,NOOPTIM/S,FILL/S,FLUSH/S,NOBEEP/S,
+        QUIET/S,NOLANGTOLOWER/S,NOBUFFEREDIO/S,MODIFIED/S,
+        COPYMSGNEW/S,OLDMSGNEW/K,AUTODATE/S
+
+@end example
+@noindent
+
+Please note that in order to keep FlexCat portable, the argument parsing is
+not quite standard. Most notably, the only keywords you can (and must) specify
+are CATALOG and NEWCTFILE (those of type "/K"). Others should be ommited,
+since they might end up being misused as arguments. This might change in
+a future release.
+
+As of 1.9, FlexCat implements a simple preferences mechanism which allows
+you to change the default behaviour - see @ref{Preferences}.
+
+And now, let's look at the meaning of those parameters:
+
+@table @strong
+@cindex CDFILE
+@item CDFILE
+Name of the catalog description file to be read. This is always needed.
+
+Please note that the basename of the source description is taken from
+this file, which means that case is significant. @xref{Source description}.
+
+@cindex CTFILE
+@item CTFILE
+Name of a catalog translation file to be read. This is required to
+create catalogs or to update old translations using NEWCTFILE: FlexCat
+reads both the catalog description file and the old translation, and then
+creates a new catalog translation file containing the old strings and
+possibly some empty lines for the new strings appearing in the catalog
+description that were not available in the old translation.
+
+@cindex CATALOG
+@item CATALOG
+Name of a catalog file to be created. This requires both a catalog
+description file and a translation.
+
+@cindex NEWCTFILE
+@item NEWCTFILE
+The new catalog translation file to be created. FlexCat reads strings
+from CTFILE (if provided), and strings missing in the catalog translation
+are inserted as empty lines together with a new string marker as comment,
+usually "***NEW***". If CTFILE is ommited, the new catalog translation
+will only contain empty strings, assuming that the user is about to write
+a new translation from scratch; in this case, markers aren't used.
+
+@cindex SOURCES
+@item SOURCES
+Source files to be created. These should be specified in the form
+@samp{SOURCE=TEMPLATE}, where @file{SOURCE} is the file to be created and
+@samp{TEMPLATE} is the name of a source description file that is going
+to be scanned.
+
+If the specified source description file cannot be found, FlexCat will try
+to open a file with the same name in @file{PROGDIR:lib}, i.e. the @file{lib}
+subdirectory in the directory where FlexCat lives. You can override this
+default with the @var{FLEXCAT_SDDIR} environment variable. For example,
+
+@example
+    @samp{FlexCat  FlexCat.cd  FlexCat_Cat.c=Templates/C_c_V20.sd}
+@end example
+
+@noindent
+would first look for @file{Templates/C_c_V20.sd} in the current
+directory; if it cannot be found and no variable @var{FLEXCAT_SDDIR}
+exists, FlexCat will resort to @file{PROGDIR:lib/Templates/C_c_V20.sd}.
+Should @var{FLEXCAT_SDDIR} actually exist and point to e.g. @samp{Work:Flexcat},
+FlexCat would try with @file{Work:FlexCat/Templates/C_c_V20.sd}.
+
+@cindex WARNCTGAPS
+@item WARNCTGAPS
+Usually FlexCat doesn't warn about string identifiers missing in the
+catalog translation. This option enables these warnings.
+
+@cindex NOOPTIM
+@item NOOPTIM
+If a translated string remains unchanged with respect to the original,
+FlexCat assumes that there's no need to write it to the catalog file as
+it will be available in its original form. However, if for any reason
+those strings should still be written to the catalog, use this switch.
+
+@cindex FILL
+@item FILL
+Very useful for translators.
+
+While working on a large translation where many strings are still
+empty, you may want to check how the already translated strings will
+look like, but compiling the catalog at this stage will probably
+give you a half working program, since a lot of strings are empty.
+In the worst scenario, the program you are translating can even crash!
+
+This switch will force FlexCat to fill the catalog with all the missing
+strings taken from the description file, thus allowing you to check the
+strings already translated. Note, however, that the final translation
+should NOT be created using this switch!
+
+@cindex FLUSH
+@item FLUSH
+If you are still making changes to your translation and checking how
+does it look at the same time, most likely you will have to keep using
+the @file{AVAIL FLUSH} command to expunge the old catalog from memory,
+because AmigaOS treats catalogs just like libraries, fonts, device
+handlers, etc.: they remain loaded until memory gets too low or a
+memory flush is forced.
+
+If you specify this switch while creating the catalog, FlexCat will
+automatically flush all unused resources from memory just like
+@file{AVAIL FLUSH} would. Bear in mind however, that this will only
+help if the program you are translating is not currently running,
+otherwise chances are that the catalog is locked and cannot be expunged
+from memory.
+
+Example:
+
+@example
+    @samp{FlexCat  Test.cd  Test.ct  CATALOG  Test.catalo g FLUSH}
+@end example
+
+@cindex NOBEEP
+@item NOBEEP
+Since version 1.9, FlexCat will call DisplayBeep() to notice you about
+any problem. This is very useful when you call FlexCat from an environment
+without an standard output (e.g. with an AmigaDOS script, using a button
+in DOpus, etc). While FlexCat is smart enough to beep only once even if
+20 warnings are reported in a row, you may still want to disable this
+feature completely by using this switch.
+
+@cindex NOLANGTOLOWER
+@item NOLANGTOLOWER
+Normally FlexCat will switch the #language entry argument taken from the
+translation to lowercase using utility.library, which in turn calls
+locale.library if it is available. However, it has been reported that the
+conversion tables available with some languages (e.g. Czech) are buggy,
+and lead to an incorrect conversion. As a workaround, this switch
+provides the means to avoid this procedure to happen at all, but then
+you will have to keep the #language name lowercase manually.
+
+If your locale has this problem, you're highly encouraged to report it
+to the AmigaOS maintainers, or to someone that may pass the report on
+to them. Bear in mind that other tools will also produce wrong results
+if this is the case, possibly with a far more undesirable effect.
+
+@cindex NOBUFFEREDIO
+@item NOBUFFEREDIO
+Buffered I/O gives better performance for most applications doing intensive
+input/output, and this is also the case with FlexCat especially on
+systems where polling devices are involved, like (E)IDE drives, though
+even users of DMA based systems (SCSI) will benefit. FlexCat uses two
+2kB buffers, but if for some reason you want do disable this feature
+completely, just use this switch.
+
+@cindex MODIFIED
+@item MODIFIED
+Makes FlexCat to compile a catalog ONLY if the description or translation
+file have changed since the last time: if the catalog file datestamp is
+newer than any of the description or translation, FlexCat will simply
+quit without doing anything.
+
+This option comes in handy when using FlexCat in a makefile, possibly
+compiling several catalogs at once when changes are done to the sources.
+
+Example:
+
+@example
+    @samp{FlexCat File.cd File.ct CATALOG File.catalog MODIFIED}
+@end example
+
+@cindex QUIET
+@item QUIET
+Prevents FlexCat from giving warning messages, i.e. only errors will be
+reported. Example:
+
+@example
+    @samp{FlexCat File.cd File.ct QUIET}
+@end example
+
+@cindex COPYMSGNEW
+@item COPYMSGNEW
+When updating an old translation using an updated description file,
+FlexCat will mark all newly added strings with a @var{***NEW***} string
+(see the @ref{Preferences} chapter for how to customize this string),
+which is very useful to quickly find later the new things added since
+the last update. Unfortunately, previous versions of FlexCat (pre 2.2)
+didn't copy those markers over from the old translation, which forced
+translators to either update only complete translations where no markers
+were left, or to somehow copy them by themselves.
+
+Since 2.2 however, FlexCat pays attention to these markers and will copy
+them to the new translation file if this switch is used. Example:
+
+@example
+    @samp{FlexCat New.cd Old.ct NEWCTFILE Updated.ct COPYMSGNEW}
+@end example
+
+By default, COPYMSGNEW searches for the @var{***NEW***} string and treats
+it as the new string marker. If you were using a different string, you
+will need to specify it using the OLDMSGNEW keyword explained below.
+
+@cindex OLDMSGNEW
+@item OLDMSGNEW
+This parameter only makes sense when combined with COPYMSGNEW. By default,
+COPYMSGNEW searches for the @var{***NEW***} string and treats it as the
+new string marker, copying it to the updated translation; however, if you
+were using a different string, you need to specify it using OLDMSGNEW,
+otherwise FlexCat won't find it. Example:
+
+@example
+    @samp{FlexCat New.cd Old.ct NEWCTFILE Updated.ct COPYMSGNEW OLDMSGNEW=**Neu**}
+@end example
+
+@cindex NOSPACE
+@item NOSPACE
+*FIXME* To be documented...
+
+@cindex AUTODATE
+@item AUTODATE
+*FIXME* to be verified...
+
+This switch was formerly known as NOAUTODATE, and since it was disabled
+by default, FlexCat would always ignore the date in the translation
+and use the current date when compiling a catalog, which in turn could
+break havoc for people tracking changes done to a large number of
+translations.
+
+This is not the case anymore - if you really want to use the current date,
+use this switch, otherwise the date specified in the translation will be
+respected.
+
+@end table
+
+
+For more examples on how to use FlexCat, see the @ref{Overview}.
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Preferences
+@chapter Changing the default behaviour
+@cindex Preferences
+@cindex flexcat.prefs
+@cindex NEW_MSG
+@cindex SDDIR
+As of 1.9, FlexCat implements a simple preferences mechanism - by
+using the @var{FLEXCAT.PREFS} environment variable, you can change
+the default behaviour.
+
+The @var{FLEXCAT.PREFS} variable is parsed using the ReadArgs() call
+in dos.library, so all switches should be typed in one line with a space
+as separator. Here's the template:
+
+@example
+SDDIR/K,NEW_MSG/K,WARNCTGAPS/S,NOOPTIM/S,FILL/S,FLUSH/S,NOBEEP/S,QUIET/S,
+COPYMSGNEW/S,OLDMSGNEW/K,AUTODATE/S
+@end example
+
+@strong{NEW_MSG} can be used to customize the text that FlexCat uses to
+mark new strings appearing while updating an old translation using a
+new description. The default string is @var{***NEW***}.
+
+Note concerning SDDIR: when creating source files, FlexCat checks the
+following places (in this order):
+
+@enumerate
+@item the current directory
+@item the directory set in the preferences
+@item the directory set by the @var{FLEXCAT_SDDIR} variable
+@item the @file{PROGDIR:lib} directory
+@end enumerate
+
+Therefore, using both the variable and @var{FLEXCAT_SDDIR} you can use
+two custom descriptors directories simultaneously.
+
+For detailed information about the other keywords ands switches, read the
+@ref{Program start} chapter.
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Catalog description
+@chapter Catalog description files
+@cindex Catalog description
+@cindex .cd
+A catalog description file contains four kinds of lines:
+
+@table @strong
+@item Comments
+Any line where a semicolon (';') exists in the first column is assumed
+to be a comment, and therefore ignored.
+
+@item Command lines
+Lines beginning with a hash character ('#') are taken as commands. Commands
+are case insensitive, here's the list of commands supported by FlexCat:
+
+@table @code
+@item #language <string>
+Specifies the default language used by the program, which should match
+the language used in the catalog description file. Default is
+@code{#language english}.
+
+@item #version <number>
+Specifies the version number of catalogs that will be opened and used
+by the program. Note that this number must match @strong{exactly} and not
+differ from the version number opened by @cite{Exec/OpenLibrary()}.
+Number 0 is special: it means that any catalog version will be accepted.
+It is also the default value. See @file{Locale/OpenCatalog} for further
+information on catalog languages and versions.
+
+@item #lengthbytes <number>
+Instructs FlexCat to put the given number of bytes before a string containing
+its length. The length is the number of bytes in the string without length
+bytes plus a trailing @samp{NUL} byte (catalog files and therefore catalog
+strings will have a trailing @samp{NUL} byte - this is not always true for
+the default strings, depending on the source description file).
+
+@samp{<number>} must be between 0 and @math{sizeof(long)=4}. Default is @samp{#lengthbytes 0}.
+
+@item #basename <string>
+Sets the basename of the @ref{Source description}, overriding the basename
+specified with CDFILE at the command line. @xref{Program start}.
+@end table
+
+@item Description lines
+They declare a string. They look like @samp{IDSTR (ID/MinLen/MaxLen)} where
+
+@itemize @minus
+@item @samp{IDSTR} is an identifier using the characters a-z, A-Z and 0-9
+@item @samp{ID} is an unique number, whereas @samp{MinLen} and @samp{MaxLen}
+are the minimum and maximum lengths acceptable for the translated string,
+respectively. All three are optional, in which case @cite{(//)} shall be
+there; in this case, FlexCat chooses a number and assumes that there are
+no restrictions on the string length. As a general rule, if you don't need
+the ID's when creating the description file, don't use them!
+@end itemize
+
+@item String lines
+@cindex Control characters
+@cindex Ascii-Code
+They contain the string itself and nothing else. Certain control characters
+can be used here, introduced with a backslash:
+
+@itemize @minus
+@item @samp{\\b} for the backspace character (ASCII 8)
+@item @samp{\\c} for the Control Sequence Introducer (ASCII 155)
+@item @samp{\\e} for Escape (ASCII 27)
+@item @samp{\\f} for the formfeed character (ASCII 12)
+@item @samp{\\g} for the displaybeep character (ASCII 7)
+@item @samp{\\n} for the linefeed (newline) character (ASCII 10)
+@item @samp{\\r} for the carriage return (ASCII 13)
+@item @samp{\\t} for TAB (ASCII 9)
+@item @samp{\\v} for the vertical TAB (ASCII 11)
+@item @samp{\\)} for the closing parenthesis which is possibly needed
+as part of a @samp{(..)} sequence, see @ref{Source description}
+@item @samp{\\\\} for the backslash itself
+@item @samp{\\xHH} to get the character corresponding to ASCII code @samp{HH},
+where @samp{HH} is an hex code
+@item @samp{\\OOO} for the character corresponding to ASCII code @samp{OOO},
+where @samp{OOO} is an octal code
+@end itemize
+
+Lastly, a single backslash at the end of a line forces a concatenation with
+the following line, making it possible to use very long strings without
+sacrificing readability. FlexCat makes no assumptions on string length.
+@end table
+
+A string is therefore declared with an identifier and a line containing
+the string itself. For example,
+
+@example
+    msgHello (/4/)
+    Hello, this is English!\\n
+@end example
+
+@noindent
+@cindex FlexCat.cd
+The ID is missing here, so FlexCat chooses a suitable number. Number 4
+tells FlexCat that the string must not have less than four characters.
+See the @file{FlexCat.cd} file for some real examples.
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Catalog translation
+@chapter Catalog translation files
+@cindex Catalog translation
+@cindex .ct
+Catalog translation files are very similar to catalog descriptions, but
+they use different commands and contain no information on IDs and lengths,
+as this data is taken from the catalog description file. All strings
+declared in the description should be present in the translation, and
+no other strings should appear.
+
+These are the commands allowed in catalog translations:
+
+@table @code
+@item ## version <string>
+Contains the catalog version as an AmigaDOS version string. Example:
+
+@example
+    ## version $VER: FlexCat.catalog 8.3 (06.03.2003)
+@end example
+
+The version number of this catalog is 8, therefore the catalog description
+file shall be either version 0 or 8 for the translation to be usable.
+
+You can replace the date part (06.03.2003 in this example) with the
+special keyword @samp{$TODAY}; when the catalog is compiled, @samp{$TODAY}
+will be automatically replaced by the current date (note however that ONLY
+the first instance of @samp{$TODAY} in the version string will be replaced).
+Example:
+
+@example
+    ## version $VER: FlexCat.catalog 8.3 ($TODAY)
+@end example
+
+Note that versions 2.6 - 2.6.6 of FlexCat used to completely ignore the
+date in the translation and use the current date. This is no longer the
+case with 2.6.7 onwards, unless you use the AUTODATE switch.
+
+In addition, FlexCat automatically converts a "program.ct" instance in
+the version string to "program.catalog" in the compiled catalog.
+
+@c FIXME: The following line *is* an outrageous hack to prevent
+@c        CVS from doing its thing, but will do until I find a
+@c        better solution.
+@c FIXME: The template doesn't match the description! You suck!
+
+@item ## rcsid @dmn{$}Date@dmn{$} @dmn{$}Revision@dmn{$} @dmn{$}Id@dmn{$}
+This can be used in conjunction with a revision control system instead
+of @code{## version}. @samp{Date} becomes the date in the format @samp{yy/mm/dd},
+while @samp{time} is the time (ignored) and @samp{rev} is the revision.
+
+@item ## name <name>
+This one is supported mainly for compatibility with CatComp. It replaces
+the @samp{name} argument in the @code{## rcsid} command.
+
+@item ## language <string>
+The language used in the translation, which of course should be different
+to the one used in the description. The @samp{## language} and @samp{## version}
+commands must always be present in a catalog translation.
+
+@item ## codeset <number>
+Should be 0 unless the translation is targetted at V50, in which case
+it should be set to the code set used in the translation, e.g. 5 for
+ISO-8859-5. Defaults to 0.
+
+@item ## chunk <ID> <string>
+Adds a chunk ID to the catalog consisting on the given string.
+Usually one uses this to add comments to the catalog, as in
+
+@example
+    ## chunk AUTH German catalog translation by Jochen Wiedmann
+    ## chunk ANNO Generated by FlexCat
+@end example
+
+@end table
+
+@cindex german.ct
+The string given as example in the @ref{Catalog description} chapter
+could turn into this in the catalog translation:
+
+@example
+    msgHello
+    Hallo, dies ist deutsch!\\n
+@end example
+
+@noindent
+See @file{german.ct} for an actual catalog translation.
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Source description
+@chapter Source description files
+@cindex Source description
+@cindex .sd
+This is the special part of FlexCat. If you have read this manual from
+the beginning, surely you haven't yet seen anything that CatComp, KitCat
+and others don't offer already.
+
+The source created should be easy to use without losing flexibility.
+Any programming language should be supportable, and so should any special
+requirements you may have. This may seem like a contradiction, but FlexCat's
+proposition to this are the @dfn{source description files} containing a
+template of the source to be created. These files are just as editable as
+catalog description and catalog translation files are; therefore, FlexCat
+can potentially create the code required to fit your particular needs.
+
+Source description files are searched for certain symbols, which then will
+be replaced with certain values. Possible symbols are the backslash
+characters we have already seen, as well as sequences beginning with
+a @samp{%} character, which surely rings a bell for C programmers.
+
+@table @samp
+@item %b
+Basename of the catalog description - see @ref{Program start}.
+
+@item %v
+Version number of the catalog description. Careful here - do not mix
+this up with the version used in the catalog translation.
+
+@item %l
+Language used in the catalog description file. Note that this is inserted
+as a string - see @samp{%s} below.
+
+@item %n
+Number of strings in the catalog description.
+
+@item %%
+The @samp{%} character itself.
+@end table
+
+However, the most important sequences are listed below. These sequences
+represent the catalog strings in different ways. Lines containing one or
+more of these symbols are repeated for any string.
+
+@table @samp
+
+@item %i
+Identifier taken from the catalog description.
+
+@item %nd
+@itemx %nx
+@itemx %nc
+String ID in decimal, hexadecimal and octal characters, respectively.
+The @samp{n} number tells FlexCat how many characters the ID should use
+(the string will be padded with zeros at the left).
+
+You may omit @samp{n} if you want - in this case, the ID will just take
+the number of characters it needs.
+
+@item %e
+Number of this string. The counter begins at 0.
+
+@item %s
+The string itself. How it will be inserted depends on the programming
+language, and can be controlled using the commands @samp{##stringtype}
+and @samp{##shortstrings} (see below).
+
+@item %na
+The string ID. The difference between @samp{%na} and e.g. @samp{%nx} is that
+@samp{%na} produces string IDs @strong{parted} to single bytes. For
+example, @samp{%2a} in a source descriptor will produce @samp{\\x00\\0x20}.
+
+You may omit @samp{n}, in which case the ID will take exactly 4 bytes.
+
+@item %nt
+Length of the string. Please note that the result value is always @strong{even}.
+
+@item %z
+Should be used together with @samp{%nt}. Since @samp{%nt} always returns
+an even value, having a descriptor line like
+
+@example 
+    static const char Block[] =
+    @{
+         "%2a" "%2t" %s "%z"
+    @};
+@end example
+
+might lead to problems especially while parsing such a table, since @samp{%2t}
+might be even whereas the length of the real string @samp{%s} could be odd!
+This would mean that while parsing you would read or skip one byte too much,
+and you know the consequences of that, don't you?
+
+To avoid such problems, @samp{%z} was introduced: FlexCat will replace it
+with as many bytes (@samp{\\x00}) are needed to make the string length even.
+For instance, if a string is 3 bytes long, @samp{%nt} will return @samp{4}
+and @samp{%z} will add one @samp{\\x00}
+
+@item %(...)
+Inserts the text between the parenthesis for any string except the last one.
+This is probably needed in arrays, where the array entries have to be separated
+with commas, but the last entry must not be followed by a comma; in this
+case, you could simply use @samp{%(,)}.
+
+Note that no substitution of @samp{%} sequences happens within the parenthesis.
+Backslash sequences, however, are still allowed.
+
+@end table
+
+The control sequences @samp{%l} and @samp{%s} create strings, but how strings
+look in the end will depend on the language used in the program - this is why
+the source description files allow command lines similar to those used in
+catalog translation files. These must begin at the first column of the
+line, with one command per line.
+
+Possible commands are:
+
+@table @code
+@item ##shortstrings
+Splits long strings over separate lines. This is probably not always possible
+or even not properly implemented into FlexCat, and thus the default is to
+create a single, probably very long string.
+
+@item ##stringtype <type>
+Tells FlexCat how strings should look like. Possible types are:
+
+@table @strong
+@item None
+No additional characters are created. An image of the string is inserted
+and nothing else. No output of binary characters (the backslash sequences)
+is possible.
+
+@item C
+Creates strings according to the @ref{C} language syntax: they will be preceded
+and followed by the double quote character (@samp{"}). Strings are split
+using the @samp{\\} sequence at the end of the line and @samp{"} at the
+beginning of the new line (the backslash is needed in macros). Binary
+characters are inserted using @samp{\\OOO}.
+
+@item @ref{Oberon}
+It's like string type C, except for the trailing backslash at the end of the
+line. This string type is also recommended for Modula-2.
+
+@item @ref{Assembler}
+Strings are created using @samp{dc.b}. Readable ASCII characters are preceded
+and followed by the single quote character (@samp{'}), whereas binary
+characters are inserted as @samp{$XX}.
+
+@item E
+Strings are preceded and followed by the single quote character (@samp{'}).
+A @samp{+} (plus) character concatenates strings which are split over
+separate lines. Binary characters are inserted like in C.
+@end table
+@end table
+
+Let's look now at an excerpt from the file @file{C_h.sd} creating an include
+file for C.
+
+@example
+##stringtype C
+##shortstrings
+
+#ifndef %b_CAT_H    /*  Assure that this is read only once. */
+#define %b_CAT_H
+
+
+/*  Get other include files     */
+#include <exec/types.h>
+#include <libraries/locale.h>
+
+
+/*  Prototypes  */
+extern void Open%bCatalog(struct Locale *, STRPTR);
+extern void Close%bCatalog(void);
+extern STRPTR Get%bString(LONG);
+
+/*  Definitions of the identifiers and their ID's           */
+/*  This line will be repeated for any string.              */
+#define %i %d
+
+#endif
+@end example
+
+For the search path used for source descriptions, see @ref{Program start}.
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Using FlexCat source
+@chapter Including FlexCat source in your own programs
+@cindex Using FlexCat source
+@cindex FlexCat source
+Of course this depends on what source is created and hence on the source
+description. What we are talking here about are the source description
+files distributed with FlexCat (see @ref{Source description}).
+
+All source descriptions should allow using your program without
+@code{locale.library}. However, a global variable called @samp{LocaleBase}
+(@samp{_LocaleBase} for assembler) must be present and initialized with
+NULL or with a call to @cite{Exec/OpenLibrary}. No localization is possible
+in the former case except when using the source description @file{C_c_V20.sd}.
+This allows localization on 2.0 by replacing calls to @code{locale.library}
+with calls to @code{iffparse.library} (an @samp{IFFParseBase} variable has
+to be present for this, and initialized like @samp{LocaleBase}). @xref{C}.
+Programmers don't need to know these libraries except when creating their
+own source description files.
+
+There are three functions, and calling them is pretty simple:
+
+@table @code
+@item OpenCatalog (locale, language)
+This function possibly opens a catalog. The @code{locale} argument is a
+pointer to a Locale structure, whereas @code{language} is a string containing
+the name of the language that should be opened. In most cases these should
+both be @samp{NULL} or @samp{NIL} respectively, because the user defaults
+are overriden otherwise. See @cite{Locale/OpenCatalog} for details.
+
+Non object orientated languages (C, Assembler, Modula) usually call this
+function @code{OpenXXXCatalog}, where XXX is the basename of the application:
+this makes it possible to use different catalogs in the same program.
+
+If the user has @samp{Deutsch} and then @samp{Français} selected as
+preferred languages and the program's basename is @samp{XXX}, this will
+look for the following files in sequence:
+
+@example
+    @file{PROGDIR:Catalogs/Deutsch/XXX.catalog}
+    @file{LOCALE:Catalogs/Deutsch/XXX.catalog}
+    @file{PROGDIR:Catalogs/Français/XXX.catalog}
+    @file{LOCALE:Catalogs/Français/XXX.catalog}
+@end example
+
+where @file{PROGDIR:} is the program's current directory (the order of
+@file{PROGDIR:} and @file{LOCALE:} can get changed in order to suppress the
+typical @samp{Insert volume YYY} requester).
+
+OpenCatalog is of type @code{void} (a procedure for Pascal programmers),
+and therefore gives no result.
+
+@item GetString (ID)
+Gives a pointer to the string with the given ID from the catalog description.
+Of course these strings are owned by @code{locale.library} and must not be
+modified.
+
+An example might be useful. Take the string from the catalog description
+example, which was called @code{msgHello}. The source descriptions
+declare a constant @samp{msgHello} representing the ID. This could be
+printed in C using e.g.
+
+@example
+    printf("%s\\n", GetString(msgHello));
+@end example
+
+@item CloseCatalog (void)
+This function frees the catalog (i.e. the RAM allocated for it) before
+terminating the program. You can call this function at any time, even
+before OpenCatalog is called.
+
+@end table
+
+@menu
+* C::          FlexCat source in C programs
+* C++::        FlexCat source in C++ programs
+* Oberon::     FlexCat source in Oberon programs
+* Modula-2::   FlexCat source in Modula-2 programs
+* Assembler::  FlexCat source in Assembler programs
+* E::          FlexCat source in E programs
+* Appendix::   Multiple catalogs support
+@end menu
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node C
+@section FlexCat source in C programs
+@cindex C
+@cindex C_c_V20.sd
+@cindex C_h.sd
+@cindex C_c_V21.sd
+@cindex AutoC_c.sd
+@cindex AutoC_h.sd
+@cindex CatComp_h.sd
+@cindex Cat2h_c.sd
+@cindex Cat2h_h.sd
+C source consists on two parts: a @file{.c} file which should be simply
+compiled and linked, and an include file which should be included from any
+source part using catalog strings to define the IDs as macros.
+
+C compilers like SAS/C, DICE and GCC allow automatic opening of libraries
+and initialization of the catalogs; therefore, you don't need to call
+neither @code{OpenCatalog} or @code{CloseCatalog}, as your compiler
+does that for you already. Similarly, they call the @code{GetString}
+functions for all catalog strings from within @code{OpenCatalog}, which
+allows you to simply write @samp{msgHello} instead of @samp{GetString(msgHello)}.
+
+If you define a preprocessor symbol @code{LOCALIZE_V20} for the compiler
+(option @samp{-D LOCALIZE_V20} with GCC and DICE, or @samp{DEF LOCALIZE_V20}
+with SAS/C), you get a program which can use catalogs under OS 2.0:
+calls to @code{locale.library} will simply be replaced by calls to
+@code{iffparse.library} instead. In this case however, your program will
+need an option like @samp{LANGUAGE Deutsch}: a function @code{InitXXXCatalog}
+(@samp{XXX} being the basename of the application) should be called if
+this option is present, receiving the language name as parameter.
+This option is ignored, of course, if @code{locale.library} is available.
+
+Even OS 1.3 could be supported in this fashion, but then again it would
+be pointless to do it at this day and age.
+
+Bear in mind that you lose some functionality with this source description;
+for example, you cannot supply a @code{Locale} structure to @code{OpenCatalog}.
+However, 95% of applications won't miss anything, while others need to modify
+the source description.
+
+For a sample program using these source descriptions, see the @ref{Overview}.
+
+@noindent
+@samp{NOTES}
+
+As of 1.9, the FlexCat distribution archive contains a @file{CatComp_h.sd}
+source descriptor, which can be used with programs utilizing more than
+one catalog at the same time. Give it a look to see how to update other
+source descriptors.
+
+There's also another new source descriptor contributed by Magnus Holmgren
+<lear@@algonet.se>. The @file{Cat2h_c.sd} and @file{Cat2h_h.sd} files contain
+source descriptors that generate code similar to the one generated by Cat2h
+by Nico François (and also Cat2Inc by Magnus Holmgren ;) using a somewhat
+different approach to string handling, which is both small and fast.
+
+Rather than storing all strings in an array and scan that one each time
+(like CatComp normally does; there are ways around that though), the first
+two bytes of a string contain the ID. Then, the GetString() function,
+which takes a string as argument, reads these two bytes into a long
+word, and the string ID and default string are then known.
+
+In addition, FlexCat 1.9+ is capable of generating that kind of output,
+using the %a command. Actually, the files included use %2a, and thus only
+two ID bytes per string are generated, like Cat2h does. This should be
+enough for most applications. If you change the length, remember that the
+GetString() function needs to be changed accordingly.
+
+The generated header file defines all strings, and the source file contains
+code to open/close the catalog (with autoinit code for SAS/C and DICE), and
+a suitable GetString function.  A quick look at the generated code should
+probably be enough to gather all the details.
+
+The code does not currently support multiple catalogs, nor changes to the
+version number and built-in language. This is easy to add though, for
+example using %b for all names and references that need to be unique,
+like Get%bString().
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node C++
+@section FlexCat source in C++ programs
+@cindex C++
+@cindex C++_cc.sd
+@cindex C++_h.sd
+@cindex C++_CatalogF.cc
+@cindex C++_CatalogF.h
+Using FlexCat source in C++ programs is extremely comfortable: almost
+everything is done by a special class implemented in the @file{C++_CatalogF.cc}
+and @file{C++_CatalogF.h} files. All you have to do is rename these files
+as @file{CatalogF.cc} and @file{CatalogF.h}, compile them and create and
+compile two additional files using the source descriptions @file{C++_cc.sd}
+and @file{C++_h.sd}; the former will create a file with the strings (which
+must also be compiled, of course), whereas the latter will be included into
+your own program. A C++ program which uses FlexCat source will look like this:
+
+@example
+    #include <iostream.h>
+    extern "C"
+    @{
+    #include <clib/exec_protos.h>
+    @}
+    #include "CatalogF.h"
+    #include "HelloLocalWorld_Cat.h"
+
+    struct LocaleBase *LocaleBase = 0;
+
+    int main()
+    @{ //  You must open the library here, even if your compiler supports
+      //  Auto-Opening: This will usually break if the locale.library
+      //  is not present. This is not what we want here as we just use
+      //  the builtin strings in that case.
+      LocaleBase = (struct LocaleBase *) OpenLibrary("locale.library", 38);
+
+      const CatalogF cat(0, 0, HelloLocalWorld_ARGS);
+
+      cout >> cat.GetString(msgHelloLocalWorld);
+
+      if (LocaleBase)
+          CloseLibrary(LocaleBase);
+    @}
+@end example
+
+A modified @file{libauto.a} for GCC is available which will even allow
+you to remove the lines concerning the @code{LocaleBase} variable.
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Oberon
+@section FlexCat source in Oberon programs
+@cindex Oberon
+@cindex Oberon_V38.sd
+@cindex Oberon_V39.sd
+@cindex AmigaOberon
+@cindex Oberon-A
+Several source descriptions are available:
+
+@itemize @minus
+@item @file{AmigaOberon.sd} is designed for the current version of the
+@code{AmigaOberon} compiler
+
+@item @file{Oberon_V39.sd} is for older versions
+
+@item @file{Oberon_V38.sd} uses @file{Locale.mod} from Hartmut Goebel.
+
+@item @file{Oberon-A.sd} is of course targetted at @code{Oberon-A}
+@end itemize
+
+The function prototypes are:
+
+@example
+    XXX.OpenCatalog(loc: Locale.LocalePtr; language : ARRAY OF CHAR);
+    XXX.GetString(num: LONGINT): Exec.StrPtr;
+    XXX.CloseCatalog();
+@end example
+
+where @samp{XXX} is the basename from the @ref{Source description}.
+
+Finally, let's see a sample program using FlexCat source:
+
+@example
+    MODULE HelloLocalWorld;
+
+    IMPORT  x:=HelloLocalWorld_Cat; Dos;
+
+    BEGIN
+      x.OpenCatalog(NIL, "");
+
+      Dos.PrintF("%s\\n", x.GetString(x.msgHello));
+
+      (* Catalog will be closed automatically       *)
+      (* when program exits.                        *)
+    END Anything;
+@end example
+
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Modula-2
+@section Flexcat source in Modula-2 programs
+@cindex Modula-2
+@cindex Modula2Def.sd
+@cindex Modula2Mod.sd
+Modula-2 supports a module concept similar to Oberon, whereby function
+names are always the same. Unlike Oberon, however, Modula-2 needs an
+implementation and a definition module, that's why you have to create
+two files using the source descriptions @file{Modula2Def.sd} and
+@file{Modula2Mod.sd}. These are adapted for the M2Amiga compiler.
+Note that you need the @file{OptLocaleL.def} file from version 4.3
+of the M2Amiga compiler, too.
+
+The function prototypes are:
+
+@example
+    PROCEDURE OpenCatalog(loc : ld.LocalePtr;
+                          language : ARRAY OF CHAR);
+    PROCEDURE CloseCatalog();
+    PROCEDURE GetString(num : LONGINT) : ld.StrPtr;
+@end example
+
+where @samp{XXX} is the basename from the source description (see
+@ref{Source description}).
+
+Finally, let's see a sample program using FlexCat source:
+
+@example
+    MODULE HelloLocalWorld;
+
+    IMPORT hl: HelloLocalWorldLocale,
+           io: InOut;
+
+    BEGIN
+      hl.OpenCatalog(NIL, "");
+
+      io.WriteString(hl.GetString(hl.msgHello)); io.WriteLn;
+
+      hl.CloseCatalog;
+    END HelloLocalWorld.
+@end example
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Assembler
+@section FlexCat source in Assembler programs
+@cindex Assembler
+@cindex AztecAs_asm.sd
+@cindex AztecAs_i.sd
+Assembler source is created for use with the Aztec Assembler. This should
+not be very different to other assemblers, and you should be able to
+implement your own source descriptions. The source consists on two parts:
+an @file{.asm} file which should be simply assembled and linked, and an
+@file{.i} include file which defines the string IDs and has to be included
+by your program.
+
+FlexCat's function names are slightly modified to allow using different
+catalogs in a single file: they are @samp{OpenXXXCatalog}, @samp{CloseXXXCatalog}
+and @samp{GetXXXString}, where @samp{XXX} is the basename from the source
+description. The concept is taken from GadToolsBox and so far it has
+proved good (see also @ref{Source description}).
+
+As usual, the function result is given in d0 and the functions save registers
+d2-d7 and a2-a7. OpenCatalog() expects its arguments in a0 (pointer to
+Locale structure) and a1 (Pointer to language string), which should be NULL
+in most cases. GetString() expects a pointer in a0. You should not care about
+where it points to.
+
+Finally, here's a sample program using FlexCat source:
+
+@example
+*   HelloLocalWorld.asm
+        include "XXX.i" ; Opening this is a must. This
+                        ; contains "xref OpenHelloLocalWorldCatalog", ...
+
+        xref    _LVOOpenLibrary
+        xref    _LVOCloseLibrary
+        xref    _AbsExecBase
+
+        dseg
+LocNam: dc.b    "locale.library",0
+        dc.l    _LocaleBase,4       ; Must be present under this name
+
+        cseg
+
+main:   move.l  #38,d0              ; Open locale.library
+        lea     LocName,a1
+        move.l  _AbsExecBase.a6
+        jsr     _LVOOpenLibrary(a6)
+*   NO exit, if OpenLibrary fails
+
+        sub.l   a0,a0               ; Open catalog
+        sub.l   a1,a1
+        jsr     OpenHelloLocalWorldCatalog
+
+        lea.l   msgHello,a0         ; Get pointer to string
+        jsr     GetHelloLocalWorldString
+        jsr     PrintD0             ; and print it
+
+Ende:
+        jsr     CloseHelloLocalWorldCatalog ; Close Catalog
+        move.l  _LocaleBase,a1      ; Close locale.library
+        move.l  a1,d0               ; this test is a must for 1.3
+        beq     Ende1
+        jsr     CloseLibrary
+Ende1:
+        rts
+        end
+@end example
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node E
+@section FlexCat source in E programs
+@cindex E
+@cindex E21b.sd
+@cindex E30b.sd
+@c FIXME: The end of this paragraph could be worded better.
+As of 3.0, E allows programs to be split over separate modules. The
+following describes the usage of @file{E30b.sd}, which works with E 3.0b
+and later. Please note that 3.0a had significant bugs, whereas previous
+versions might use @file{E21b.sd} instead, which requires inserting the
+created source into the own source manually.
+
+@file{E30b.sd} creates a module called @file{Locale} which contains a
+@code{cat} variable of type @samp{catalog_XXX}, where @samp{XXX} is the
+basename from the source description (see @ref{Source description}).
+
+A theorethical @file{HelloLocalWorld.e} might look like this:
+
+@example
+    MODULE '*Locale'
+        -> Use this module
+
+    DEF cat : PTR TO catalog_HelloLocalWorld
+        -> This variable contains all the catalog strings and some
+        -> methods. You must declare it in any module using
+        -> Localization, but initialize it in the main module only.
+
+    PROC main()
+
+        localebase := OpenLibrary('locale.library', 0)
+            -> Open locale.library; @strong{No} exit, if it cannot
+            -> be opened: We use the builtin strings in that case.
+
+        NEW cat.create()
+        cat.open()
+            -> As already mentioned, this is needed in the main
+            -> module only.
+
+        WriteF('\\s\\n', cat.msg_Hello_world.getstr())
+            -> cat.msg_Hello_world one of the strings contained in
+            -> cat. This string declares a method getstr() which
+            -> reads the catalog and returns a pointer to the
+            -> localized string.
+
+        cat.close()
+        IF localebase THEN CloseLibrary(localebase)
+    ENDPROC
+@end example
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Appendix
+@section Multiple catalogs support
+
+Most of currently available source descriptors cannot be used
+for programs opening more than one catalog. This will probably
+change in future releases, and corrected source descriptors will
+be available as part of the FlexCat distribution archive.
+
+For the time being, an example of such source descriptor file
+is supplied: take a look at @file{CatComp_h.sd} for how should
+the descriptor be defined to avoid multiple symbols, etc.
+
+In short: use @samp{%b} as prefix, suffix or other part of any name
+that is the vital part of your sources. If your table of strings is
+named @samp{STRING}, replace it with @samp{%b_STRINGS} and you won't
+get duplicated labels anymore.
+
+@file{CatComp_h.sd} produces sources similar to those generated by
+CatComp, and can be used by those who wish to use FlexCat but don't
+want or simply can't afford to do significant changes to their sources.
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Future
+@unnumbered Further development of FlexCat
+@cindex Future
+@cindex FlexCat
+@cindex Contributions
+In short, the future of FlexCat depends entirely on you! Marcin dropped
+the development as the program fulfilled all his needs, and his TODO
+list was mostly empty. Suggestions, tips, bug reports and constructive
+criticisement are welcome, and we would like to include any new string
+types you may want to contribute, since this is possible with only a
+few minor changes.
+
+New source descriptions and extensions to support additional programming
+languages are especially welcome, as long as they have been proven good
+by testing them with an existing program. See @ref{Support} for contact
+info.
+
+@c -------------------------------------------------------------------------
+
+@node Support
+@unnumbered FlexCat support site
+@cindex Support
+
+The @uref{http://sourceforge.net/projects/flexcat/,Flexcat homepage} is
+the way to go to know about updates, file bug reports and post your
+enhancement requests.
+
+The current FlexCat maintainer is Ondrej Zima <amiandrew@@volny.cz>
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node Credits
+@unnumbered Credits
+@cindex Credits
+
+The original FlexCat author, @samp{Jochen Wiedmann}, would like to thank:
+
+@table @samp
+@item Albert Weinert
+For KitCat, the predecessor of FlexCat which was so valuable to me even
+if finally wasn't flexible enough, and for the Oberon source descriptions.
+
+@item Reinhard Spisser and Sebastiano Vigna
+For the Amiga version of texinfo. This documentation is written using it.
+
+@item The Free Software Foundation
+For the original version of texinfo and many other excellent software.
+
+@item Matt Dillon
+For DICE, and especially for DME.
+
+@item Alessandro Galassi
+For the original Italian catalog.
+
+@item Lionel Vintenat
+For the E source description and its documentation, the original French
+catalog and the bug reports.
+
+@item Antonio Joaquín Gómez González <u0868551@@oboe.etsiig.uniovi.es>
+For the C++ source descripton, the original Spanish translation of this
+manual, the original Spanish catalog and the very good hint on speeding
+up the GetString() function.
+
+@item Olaf Peters <op@@hb2.maus.de>
+Gor the Modula-2 source description.
+
+@item Russ Steffen <steffen@@uwstout.edu>
+For the suggestion of the FLEXCAT_SDDIR variable.
+
+@item Lauri Aalto <kilroy@@tolsun.oulu.fi>
+For the original Finnish catalog.
+
+@item Marcin Orlowski <carlos@@amiga.com.pl>
+For the original Polish catalog and for maintaining the Polish locale
+package.
+
+@item Udo Schuermann <walrus@@wam.umd.edu>
+For suggesting the WARNCTGAPS option and the ## chunk command.
+
+@item Christian Hoj <cbh@@vision.auc.dk>
+For the original Danish catalog.
+
+@item The people of #AmigaGer
+For answering many stupid questions and lots of fun, for example
+stefanb (@samp{Stefan Becker}), PowerStat (@samp{Kai Hoffmann}),
+ill (@samp{Markus Illenseer}), Quarvon (@samp{Jürgen Lang}),
+ZZA (@samp{Bernhard Möllemann}), Tron (@samp{Mathias Scheler}),
+mungo (@samp{Ignatios Souvlatzis}), jow (@samp{Jürgen Weinelt}) and
+Stargazer (@samp{Petra Zeidler}).
+
+@item Commodore
+For the Amiga and Kickstart 2.0. Keep on developing it and I'll be an
+Amiga user for the next 8 years too. ;-)
+@end table
+
+
+@samp{Marcin Orlowski}'s acknowledgements go to:
+
+@table @samp
+
+@item Jochen Wiedmann
+For creating FlexCat in the first place.
+
+@item Magnus Holmgren <lear@@algonet.se>
+For the additional source descriptor Cat2h.
+
+@item Members of the Amiga Translators' Organization <http://ato.vapor.com/ato/>
+For creating additional translations and updating those already existing:
+
+@itemize @minus
+@item Serbian catalog file by Ljubomir Jankovic <lurch@@afrodita.rcub.bg.ac.yu>
+@item Czech translation by Vit Sindlar <xsindl00@@stud.fee.vutbr.cz>
+@item Svedish translation by Magnus Holmgren <lear@@algonet.se> and Hjalmar Wikholm <hjalle@@canit.se>
+@item Finnish translation updated by Mika Lundell <c71829@@uwasa.fi>
+@item Italian translation reworked by Luca Nora <ln546991@@silab.dsi.unimi.it> and Giovanni Addabbo <gaddabbo@@imar.net>
+@item Slovenian translation by Damir Arh <damir.arh@@guest.arnes.si>
+@item Dutch translation updated by Leon Woestenberg <leon@@stack.nl>
+@end itemize
+
+@item Christian Hattemer <chris@@heaven.riednet.wh.tu-darmstadt.de>
+For the StormC source descriptors and for updating the German catalog.
+
+@item Sven Steiniger <ss37@@irz301.inf.tu-dresden.de>
+For the new source descriptor for E programmers (E32e.sd).
+@end table
+
+@iftex
+@vfill@eject
+@end iftex
+
+@c -------------------------------------------------------------------------
+
+@node History
+@chapter History of development
+@cindex History
+@cindex Changes
+
+The history of FlexCat development is logged in the @file{FlexCat.history}
+file which is an integral part of the official distribution archive.
+
+@headings off
+
+@c -------------------------------------------------------------------------
+
+@node Index
+@unnumbered Index
+@printindex cp
+
+@contents
+
+@bye

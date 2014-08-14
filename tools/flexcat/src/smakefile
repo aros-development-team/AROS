@@ -1,0 +1,134 @@
+# Generates FlexCat
+#
+# just enter smake to rebuild the current binary
+# use smake 68k to build all 68k-version including the creation of the patches
+# use smake docs to rebuild the guides
+#
+
+# ppc-amigaos-ld -r -o flexcat.elf lib:c_ppc.o flexcat.o flexcat_cat.o lib:scppc.a lib:end.o
+
+LINKERLIBS  =	lib:sc.lib lib:amiga.lib
+LINKERFLAGS =	NOICONS BATCH
+CFLAGS      =	NoStackCheck NoStackExt UnsignedChars \
+				CommentNest ErrorRexx NoMultipleIncludes \
+				NoIcons GenProtoParameters NoLink \
+				MultipleCharacterConstants \
+				Optimize OptTime OptSched
+
+MAIN     = FlexCat
+CATALOG  = FlexCat_cat.h
+SRC      = FlexCat.c FlexCat_cat.c
+OBJ      = FlexCat.o FlexCat_cat.o
+MAKEINFO = MakeInfo
+
+all: $(CATALOG) $(MAIN)
+
+clean:
+	@echo "*e[32mRemoving .(o|lnk)...*e[0m"
+	@-delete *.o
+	@-delete *.lnk
+	@-delete *_cat.h
+
+68k:
+	@echo "*e[32mMaking $@ 68000*e[0m"
+	@sc $(SRC) $(CFLAGS) CPU=000
+	@slink to FlexCat from lib:c.o $(OBJ) lib $(LINKERLIBS) $(LINKERFLAGS)
+	@echo "*e[32mMaking $@ 68020*e[0m"
+	@sc $(SRC) $(CFLAGS) CPU=020
+	@slink to FlexCat.020 from lib:c.o $(OBJ) lib $(LINKERLIBS) $(LINKERFLAGS)
+	@scompare -oFlexCat.020.pch FlexCat FlexCat.020
+	@echo "*e[32mMaking $@ 68040*e[0m"
+	@sc $(SRC) $(CFLAGS) CPU=040
+	@slink to FlexCat.040 from lib:c.o $(OBJ) lib $(LINKERLIBS) $(LINKERFLAGS)
+	@scompare -oFlexCat.040.pch FlexCat FlexCat.040
+	@echo "*e[32mMaking $@ 68060*e[0m"
+	@sc $(SRC) $(CFLAGS) CPU=060
+	@slink to FlexCat.060 from lib:c.o $(OBJ) lib $(LINKERLIBS) $(LINKERFLAGS)
+	@scompare -oFlexCat.060.pch FlexCat FlexCat.060
+
+ppc:
+	@echo "*e[32mMaking $@ PPC*e[0m"
+	@scppc $(SRC) ResOpt
+	@ppc-amigaos-ld -r -o flexcat.elf lib:c_ppc.o FlexCat.o FlexCat_cat.o lib:scppc.a lib:end.o
+
+
+FlexCat_cat.h: Catalogs_Src/FlexCat.cd
+	@echo "*e[32mProcessing $@*e[0m"
+	@FlexCat Catalogs_Src/FlexCat.cd flexcat_cat.c=lib/C_c.sd
+	@FlexCat Catalogs_Src/FlexCat.cd flexcat_cat.h=lib/C_h.sd
+	@FlexCat Catalogs_Src/FlexCat.cd flexcat_cat.h.unix=lib/Hardcode_h.sd
+
+FlexCat: FlexCat.c FlexCat_cat.h
+	@echo "*e[32mMaking $@*e[0m"
+	@sc $(SRC) $(CFLAGS) CPU=000
+	@slink to $@ from lib:c.o $(OBJ) lib $(LINKERLIBS) $(LINKERFLAGS)
+
+cats:
+	@C:list FILES Catalogs_Src/#?.ct lformat "FlexCat Catalogs_Src/FlexCat.cd %p%n catalog Catalogs/%m/FlexCat.catalog FLUSH" >T:dik
+	@execute T:dik
+	@delete >nil: T:dik
+
+doc:
+	@$(MAKEINFO) Catalogs_Src/FlexCat_deutsch.texinfo --amiga-39 --fill-column 76 --output Docs/FlexCat_deutsch.guide
+	@$(MAKEINFO) Catalogs_Src/FlexCat_english.texinfo --amiga-39 --fill-column 76 --output Docs/FlexCat_english.guide
+	@$(MAKEINFO) Catalogs_Src/FlexCat_español.texinfo --amiga-39 --fill-column 76 --output Docs/FlexCat_español.guide
+	@$(MAKEINFO) Catalogs_Src/FlexCat_svenska.texinfo --amiga-39 --fill-column 76 --output Docs/FlexCat_svenska.guide
+
+lha:
+	@echo Main archive...
+	@lha >nil: u -2xer RAM:FlexCat.lha Catalogs Docs/FlexCat_english.guid* Lib Contribution
+	@lha >nil: u -2xer RAM:FlexCat.lha FlexCat FlexCat.history Docs.info FlexCat.readme
+	@copy FlexCat.readme RAM:
+	@echo FlexCat_ExDocs...
+	@lha >nil: u -2xer RAM:FlexCat_ExDocs.lha Docs Docs.info
+	@lha >nil: d RAM:FlexCat_ExDocs.lha Docs/FlexCat_english.guid*
+	@copy FlexCat_ExDocs.readme RAM:
+	@echo FlexCat_CatSrc...
+	@lha >nil: u -2xer RAM:FlexCat_CatSrc.lha Catalogs_Src
+	@lha >nil: d ram:FlexCat_CatSrc.lha Catalogs_Src/OLD* Catalogs_Src/*,v
+	@copy FlexCat_CatSrc.readme RAM:
+	@echo FlexCat_0x0...
+	@lha >nil: u -2 RAM:FlexCat_0x0.lha FlexCat.*.pch FlexCat_0x0.readme
+	@lha >nil: u -2 RAM:FlexCat_0x0.lha SC:C/spatch
+	@copy FlexCat_0x0.readme RAM:
+	@echo FlexCat_Src...
+	@lha >nil: u -2xer RAM:FlexCat_Src.lha FlexCat.c FlexCat.history developer.readme FlexCat.announce FlexCat_cat.h.unix TODO smakefile in 
+	@copy FlexCat_Src.readme RAM:
+	@echo FlexCat_Demos...
+	@lha >nil: u -2xer RAM:FlexCat_Demos.lha FlexCat_Demos 
+	@copy FlexCat_Demos.readme RAM:
+
+lzx:
+	@echo Main archive...
+	@lzx >nil: u -3 -x -e -r RAM:FlexCat.lzx Catalogs Docs/FlexCat_english.guid* Lib Contribution
+	@lzx >nil: u -3 -x -e -r RAM:FlexCat.lzx FlexCat FlexCat.history Docs.info FlexCat.readme
+	@copy FlexCat.readme RAM:
+	@echo FlexCat_ExDocs...
+	@lzx >nil: u -3 -x -e -r RAM:FlexCat_ExDocs.lzx Docs Docs.info
+	@lzx >nil: d RAM:FlexCat_ExDocs.lzx Docs/FlexCat_english.guid*
+	@copy FlexCat_ExDocs.readme RAM:
+	@echo FlexCat_CatSrc...
+	@lzx >nil: u -3 -x -e -r RAM:FlexCat_CatSrc.lzx Catalogs_Src
+	@lzx >nil: d ram:FlexCat_CatSrc.lzx Catalogs_Src/OLD* Catalogs_Src/*,v
+	@copy FlexCat_CatSrc.readme RAM:
+	@echo FlexCat_0x0...
+	@lzx >nil: u -3 RAM:FlexCat_0x0.lzx FlexCat.*.pch FlexCat_0x0.readme
+	@lzx >nil: u -3 RAM:FlexCat_0x0.lzx SC:C/spatch
+	@copy FlexCat_0x0.readme RAM:
+	@echo FlexCat_Src...
+	@lzx >nil: u -3 -x -e -r RAM:FlexCat_Src.lzx FlexCat.c FlexCat.history Developer.readme FlexCat.announce TODO smakefile in 
+	@copy FlexCat_Src.readme RAM:
+	@echo FlexCat_Demos...
+	@lha >nil: u -3 -x -e -r RAM:FlexCat_Demos.lzx FlexCat_Demos 
+	@copy FlexCat_Demos.readme RAM:
+
+beta:
+	@lzx >nil: u -3 -x -e -r RAM:FlexCat_beta_bin.lzx FlexCat FlexCat.history
+
+patch:
+	@sc:c/scompare -oFlexCat.020.pch FlexCat FlexCat.020
+	@sc:c/scompare -oFlexCat.040.pch FlexCat FlexCat.040
+	@sc:c/scompare -oFlexCat.060.pch FlexCat FlexCat.060
+#	@runelf sc:c/scompare -oFlexCat.020.pch -s FlexCat FlexCat.020
+#	@runelf sc:c/scompare -oFlexCat.040.pch -s FlexCat FlexCat.040
+#	@runelf sc:c/scompare -oFlexCat.060.pch -s FlexCat FlexCat.060

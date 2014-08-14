@@ -1,0 +1,117 @@
+##rem $Id: Modula2Mod.sd 253 2014-02-18 11:15:58Z damato $
+##shortstrings
+##stringtype Oberon
+IMPLEMENTATION MODULE %bLocale ;
+
+(****************************************************
+
+   This file was created automatically by '%fv'
+   from "%f0".
+
+   Do NOT edit by hand!
+
+****************************************************)
+
+FROM SYSTEM   IMPORT  ADR, ADDRESS, TAG ;
+FROM UtilityD IMPORT  tagDone ;
+
+IMPORT  ll  : OptLocaleL,
+        ld  : LocaleD ;
+
+CONST
+  builtinlanguage = %l ;
+  version = %v ;
+
+VAR
+  catalog    : ld.CatalogPtr ;
+
+TYPE
+  AppString = RECORD
+     id  : LONGINT ;
+     str : ld.StrPtr ;
+  END ;
+
+  AppStringArray = ARRAY [0..%n-1] OF AppString ;
+
+CONST
+  AppStrings = AppStringArray  {
+    AppString{id : %i, str : ADR(%iStr)}%(,)
+  } ;
+
+(*/// "CloseCatalog()" *)
+
+PROCEDURE CloseCatalog() ;
+
+BEGIN
+  IF catalog # NIL THEN
+    ll.CloseCatalog(catalog) ;
+    catalog := NIL
+  END;
+END CloseCatalog ;
+
+(*\\\*)
+
+(*/// "OpenCatalog(loc : ld.LocalePtr ; language : ARRAY OF CHAR) ;" *)
+
+PROCEDURE OpenCatalog(loc : ld.LocalePtr ; language : ARRAY OF CHAR) ;
+
+VAR
+   tagPtr : ADDRESS ;
+   tags   : ARRAY [0..7] OF LONGINT ;
+
+BEGIN
+  CloseCatalog() ;
+  IF (catalog = NIL) & (ll.localeBase # NIL) THEN
+    IF language[0] # "\o" THEN
+      tagPtr := TAG(tags, ld.ocBuiltInLanguage, ADR(builtinlanguage),
+                          ld.ocLanguage,        ADR(language),
+                          ld.ocVersion,         version,
+                          tagDone) ;
+     ELSE
+      tagPtr := TAG(tags, ld.ocBuiltInLanguage, ADR(builtinlanguage),
+                          ld.ocVersion,         version,
+                          tagDone) ;
+    END (* IF *) ;
+    catalog := ll.OpenCatalogA(loc, ADR("%b.catalog"), tagPtr) ;
+  END (* IF *) ;
+END OpenCatalog ;
+
+(*\\\*)
+
+(*/// "GetString(num : LONGINT) : ld.StrPtr" *)
+
+PROCEDURE GetString(num : LONGINT) : ld.StrPtr ;
+
+VAR
+  i       : LONGINT ;
+  default : ld.StrPtr ;
+
+BEGIN
+  i := 0 ;
+
+  WHILE (i < %n) AND (AppStrings[i].id # num) DO
+    INC(i)
+  END (* WHILE *) ;
+
+  IF i # %n THEN
+    default := AppStrings[i].str ;
+   ELSE
+    default := NIL ;
+  END (* IF *) ;
+
+  IF catalog # NIL THEN
+    RETURN ll.GetCatalogStr(catalog, num, default) ;
+   ELSE
+    RETURN default ;
+  END (* IF *) ;
+END GetString ;
+
+(*\\\*)
+
+BEGIN
+
+CLOSE
+
+  CloseCatalog() ;
+
+END %bLocale .
