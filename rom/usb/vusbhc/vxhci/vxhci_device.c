@@ -39,10 +39,9 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
     ULONG i;
 
     NEWLIST(&VXHCIBase->unit_list);
-    VXHCIBase->unit_count = 0;
 
     for (i=0; i<VXHCI_NUMCONTROLLERS; i++) {
-        unit = VXHCI_AddNewUnit(VXHCIBase->unit_count);
+        unit = VXHCI_AddNewUnit(i);
         if(unit == NULL) {
             mybug(-1, ("[VXHCI] Init: Failed to create new unit!\n"));
 
@@ -58,7 +57,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR VXHCIBase) {
             return FALSE;
         } else {
             AddTail(&VXHCIBase->unit_list,(struct Node *)unit);
-            VXHCIBase->unit_count++;
         }
 
     }
@@ -81,41 +79,24 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR VXHCIBase, struct IOUsbHWReq *iore
 
     struct VXHCIUnit *unit;
 
-    /* Default to open failure. */
+    ioreq->iouh_Req.io_Unit  = NULL;
     ioreq->iouh_Req.io_Error = IOERR_OPENFAIL;
-    ioreq->iouh_Req.io_Unit = NULL;
 
-    /*
-        Number of units eg. virtual xhci controllers.
-        Host controller is divided into individual units if it has both usb2.0 and usb3.0 ports
-    */
-    if(unitnum<VXHCIBase->unit_count) {
+    ForeachNode(&LIBBASE->unit_list, unit) {
+        if(unit->number == unitnum) {
+            mybug(0, ("          Found unit from node list %s %p\n\n", unit->name, unit));
 
-        if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
-            mybug(-1, ("[VXHCI] Open: Invalid MN_LENGTH!\n"));
-            ioreq->iouh_Req.io_Error = IOERR_BADLENGTH;
-        }
-
-        ioreq->iouh_Req.io_Unit = NULL;
-
-        ForeachNode(&VXHCIBase->unit_list, unit) {
-            mybug(0, ("[VXHCI] Open: Opening unit number %d\n", unitnum));
-            if(unit->number == unitnum) {
-                mybug(0, ("        Found unit from node list %s %p\n\n", unit->name, unit));
-                ioreq->iouh_Req.io_Unit = (struct Unit *) unit;
-                break;
+            if(ioreq->iouh_Req.io_Message.mn_Length < sizeof(struct IOUsbHWReq)) {
+                mybug(-1, ("[VXHCI] Open: Invalid MN_LENGTH!\n"));
+                ioreq->iouh_Req.io_Error = IOERR_BADLENGTH;
+                return FALSE;
             }
-        }
 
-        if(ioreq->iouh_Req.io_Unit != NULL) {
-
-            /* Opened ok! */
+            ioreq->iouh_Req.io_Unit                    = (struct Unit *) unit;
             ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
             ioreq->iouh_Req.io_Error				   = 0;
 
             return TRUE;
-        } else {
-            return FALSE;
         }
     }
 

@@ -84,7 +84,6 @@ struct VXHCIBase {
 
     struct Device                device;
     struct List                  unit_list;
-    ULONG                        unit_count;
 
 };
 
