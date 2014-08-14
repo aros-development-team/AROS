@@ -2,8 +2,8 @@
     Copyright © 2014, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc:
-    Lang: english
+    Desc: Virtual XHCI USB host controller
+    Lang: English
 */
 
 #ifdef DEBUG
@@ -11,7 +11,10 @@
 #endif
 #define DEBUG 1
 
+#include <aros/debug.h>
 #include <aros/macros.h>
+#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 
 #include <proto/exec.h>
 #include <proto/stdc.h>
@@ -156,7 +159,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     UWORD bmRequestRecipient = (ioreq->iouh_SetupData.bmRequestType) & (URTF_DEVICE | URTF_INTERFACE | URTF_ENDPOINT | URTF_OTHER);
 
     UWORD bRequest           = (ioreq->iouh_SetupData.bRequest);
-    D(UWORD wIndex           = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex));
+    UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
     UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
@@ -305,6 +308,15 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                                     case UDT_BOS:
                                         bug("[VXHCI] cmdControlXFerRootHub: UDT_BOS\n");
+                                        /* TODO: Arbitrary, set real values according to the host controller */
+                                        unit->roothub.bosdesc.wTotalLength    = 16;
+                                        unit->roothub.bosdesc.bNumDeviceCaps  = 2;
+
+                                        ioreq->iouh_Actual = (wLength > sizeof(struct UsbStdBOSDesc)) ? sizeof(struct UsbStdBOSDesc) : wLength;
+                                        CopyMem((APTR) &unit->roothub.bosdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+
+                                        mybug_unit(0, ("Done\n\n"));
+                                        return UHIOERR_NO_ERROR;
                                         break;
 
                                     case UDT_DEVICE_CAPABILITY:
@@ -329,6 +341,8 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 mybug_unit(0, ("Done\n\n"));
                                 return UHIOERR_NO_ERROR;
                                 break;
+
+                            //case USR_GET_INTERFACE: //Undefined. Hubs are allowed to support only one interface.
 
                         } /* switch(bRequest) */
                         break; /* case URTF_DEVICE: */
@@ -383,24 +397,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 mybug_unit(0, ("[VXHCI] cmdControlXFerRootHub: USR_GET_DESCRIPTOR\n"));
 
                                 switch( (wValue>>8) ) {
-                                    case UDT_HUB:
-                                        mybug_unit(0, ("UDT_HUB\n"));
-                                        mybug_unit(0, ("GetRootHubDescriptor USB2.0 (%ld)\n", wLength));
-
-                                        ioreq->iouh_Actual = (wLength > sizeof(struct UsbHubDesc)) ? sizeof(struct UsbHubDesc) : wLength;
-                                        CopyMem((APTR) &unit->roothub.hubdesc.usb20, ioreq->iouh_Data, ioreq->iouh_Actual);
-
-                                        mybug_unit(0, ("Done\n\n"));
-                                        return UHIOERR_NO_ERROR;
-                                        break;
-
-                                    /* switch( (wValue>>8) ) */
                                     case UDT_SSHUB:
                                         mybug_unit(0, ("UDT_SSHUB\n"));
                                         mybug_unit(0, ("GetRootHubDescriptor USB3.0 (%ld)\n", wLength));
 
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbSSHubDesc)) ? sizeof(struct UsbSSHubDesc) : wLength;
-                                        CopyMem((APTR) &unit->roothub.hubdesc.usb30, ioreq->iouh_Data, ioreq->iouh_Actual);
+                                        CopyMem((APTR) &unit->roothub.hubdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
                                         mybug_unit(0, ("Done\n\n"));
                                         return UHIOERR_NO_ERROR;
@@ -467,6 +469,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                 switch(bmRequestRecipient) {
                     case URTF_DEVICE:
                         mybug_unit(0, ("[VXHCI] cmdControlXFerRootHub: URTF_DEVICE\n"));
+
                         switch(bRequest) {
                             case USR_SET_ADDRESS:
                                 mybug_unit(0, ("USR_SET_ADDRESS\n"));
@@ -483,6 +486,8 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 mybug_unit(0, ("Done\n\n"));
                                 return UHIOERR_NO_ERROR;
                                 break;
+
+                            //case USR_SET_INTERFACE: //Undefined. Hubs are allowed to support only one interface.
 
                         } /* switch(bRequest) */
                         break;
@@ -635,8 +640,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     mybug_unit(-1, ("wLength %d\n", wLength));
 
     mybug_unit(-1, ("Nothing done!\n\n")) );
-
-
     return UHIOERR_BADPARAMS;
 }
 
