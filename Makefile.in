@@ -73,7 +73,7 @@ $(ARCHTOOL) : $(SRCDIR)/tools/archtools/archtool.c
 
 $(FLEXCAT) : $(SRCDIR)/tools/flexcat/flexcat.c
 	@$(ECHO) Building flexcat...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/FlexCat SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/flexcat SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(CREATEDTDESC) : $(wildcard $(SRCDIR)/tools/dtdesc/*.[ch]) $(wildcard $(SRCDIR)/tools/dtdesc/c_iff/*.[ch])
 	@$(ECHO) Building createdtdesc...
