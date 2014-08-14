@@ -24,8 +24,8 @@
 #define VXHCI_NUMCONTROLLERS 1
 
 /* Number of ports per host controller (USB2.0/USB3.0) */
-//#define VXHCI_NUMPORTS20 2
-#define VXHCI_NUMPORTS30 4
+#define VXHCI_NUMPORTS20 2
+#define VXHCI_NUMPORTS30 2
 
 #define RC_OK         0
 #define RC_DONTREPLY -1
@@ -49,6 +49,7 @@ struct VXHCIPort {
     char                         name[256];
     ULONG                        number;
     ULONG                        state;
+    UWORD                        usbbcd;
 };
 
 struct VXHCIUnit {
@@ -65,16 +66,15 @@ struct VXHCIUnit {
 
         struct UsbStdDevDesc     devdesc;
 
+        struct UsbStdBOSDesc     bosdesc;
+
         struct RHConfig {
             struct UsbStdCfgDesc cfgdesc;
             struct UsbStdIfDesc  ifdesc;
             struct UsbStdEPDesc  epdesc;
         }                        config;
 
-        union {
-            struct UsbHubDesc    usb20;
-            struct UsbSSHubDesc  usb30;
-        }                        hubdesc;
+        struct UsbSSHubDesc      hubdesc;
 
     }                            roothub;
 
