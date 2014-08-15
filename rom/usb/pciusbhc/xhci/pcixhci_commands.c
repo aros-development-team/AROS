@@ -123,6 +123,21 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
     return TRUE;
 }
 
+
+/*
+    Perform a hardware reset on the controller.
+*/
+WORD cmdReset(struct IOUsbHWReq *ioreq) {
+    mybug(-1, ("[PCIXHCI] cmdReset: Entering function\n"));
+
+    struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    return RC_OK;
+}
+
+/*
+    Resets the USB tree?
+*/
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     mybug(0, ("[PCIXHCI] cmdUsbReset: Entering function\n"));
 
@@ -402,24 +417,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                                 mybug_unit(0, ("[PCIXHCI] cmdControlXFerRootHub: USR_GET_DESCRIPTOR\n"));
 
                                 switch( (wValue>>8) ) {
-                                    case UDT_HUB:
-                                        mybug_unit(0, ("UDT_HUB\n"));
-                                        mybug_unit(0, ("GetRootHubDescriptor USB2.0 (%ld)\n", wLength));
-
-                                        ioreq->iouh_Actual = (wLength > sizeof(struct UsbHubDesc)) ? sizeof(struct UsbHubDesc) : wLength;
-                                        CopyMem((APTR) &unit->roothub.hubdesc.usb20, ioreq->iouh_Data, ioreq->iouh_Actual);
-
-                                        mybug_unit(0, ("Done\n\n"));
-                                        return UHIOERR_NO_ERROR;
-                                        break;
-
-                                    /* switch( (wValue>>8) ) */
                                     case UDT_SSHUB:
                                         mybug_unit(0, ("UDT_SSHUB\n"));
                                         mybug_unit(0, ("GetRootHubDescriptor USB3.0 (%ld)\n", wLength));
 
                                         ioreq->iouh_Actual = (wLength > sizeof(struct UsbSSHubDesc)) ? sizeof(struct UsbSSHubDesc) : wLength;
-                                        CopyMem((APTR) &unit->roothub.hubdesc.usb30, ioreq->iouh_Data, ioreq->iouh_Actual);
+                                        CopyMem((APTR) &unit->roothub.hubdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
                                         mybug_unit(0, ("Done\n\n"));
                                         return UHIOERR_NO_ERROR;

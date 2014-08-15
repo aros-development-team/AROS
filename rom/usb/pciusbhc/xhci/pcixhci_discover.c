@@ -69,6 +69,8 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&unit->hc.pcidriver);
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0,  (APTR)&unit->hc.pcibase0);
 
+                snprintf(unit->name, 255, "PCIXHCI[%02x:%02x.%01x]", unit->hc.bus, unit->hc.dev, unit->hc.sub);
+                unit->node.ln_Name = (STRPTR)&unit->name;
                 unit->hc.pcidevice = pciDevice;
                 unit->pcixhcibase = LIBBASE;
 
