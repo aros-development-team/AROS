@@ -101,12 +101,12 @@ MSG_TIMEZONE_HOURS
 MSG_TIMEZONE_HOURSMINS
 Временная зона: %ld часов %ld минут от UTC
 ;
-MSG_CHARACTER_SET (//)
+MSG_CHARACTER_SET
 Кодировка по умолчанию
 ;
-MSG_NOT_SPECIFIED (//)
+MSG_NOT_SPECIFIED
 Не определена
 ;
-MSG_GMT_CLOCK (//)
+MSG_GMT_CLOCK
 Аппаратные часы установлены на UTC
 ;

@@ -49,7 +49,7 @@ MSG_FORMAT_REQUEST_TEXT
 Все данные будут утеряны!\n\
 (%s)
 ;
-MSG_UNITS (/6/6)
+MSG_UNITS
 KMGTPE
 ; Kilo, Mega ...
 ;

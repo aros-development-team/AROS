@@ -20,12 +20,12 @@ MSG_DEPTH
 MSG_AUTOSCROLL
 \33lАвтопрокрутка
 ;
-MSG_DISPLAY_MODE (//)
+MSG_DISPLAY_MODE
 Видеорежим
 ;
-MSG_MODE_ID (//)
+MSG_MODE_ID
 ID режима
 ;
-MSG_DESCRIPTION (//)
+MSG_DESCRIPTION
 Описание
 ;

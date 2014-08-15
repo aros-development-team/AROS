@@ -99,10 +99,10 @@ MSG_MISC
 miscellanea
 ;
 MSG_BUBBLESCREENTITLE 
-%pc = Chip Ram\n
-%pf = Fast Ram\n
-%os = Versione di AROS\n
-%wb = Versione di Wanderer\n
-%ov = Versione esatta di AROS\n
+%pc = Chip Ram\n\
+%pf = Fast Ram\n\
+%os = Versione di AROS\n\
+%wb = Versione di Wanderer\n\
+%ov = Versione esatta di AROS\n\
 %wv = Versione di workbench.library 
 ;

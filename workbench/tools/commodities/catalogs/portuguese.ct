@@ -262,7 +262,7 @@ Parâmetros do comando
 ;
 MSG_FKEY_CMD_CYCLE_WIN
 Circula ventanas
-Alternar janelas
+; Alternar janelas
 ; Cycle Windows
 ;
 MSG_FKEY_CMD_CYCLE_SCR
