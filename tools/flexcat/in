@@ -1,9 +1,0 @@
-.key FLAGS/F
-
-IF EXISTS FlexCat.c THEN
-	ci -l <FLAGS> FlexCat.c
-ENDIF
-
-IF EXISTS Catalogs_Src/FlexCat_english.texinfo THEN
-	ci -l <FLAGS> Catalogs_Src/FlexCat_english.texinfo
-ENDIF
