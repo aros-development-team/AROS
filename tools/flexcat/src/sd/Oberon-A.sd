@@ -1,0 +1,97 @@
+##rem $Id: Oberon-A.sd 253 2014-02-18 11:15:58Z damato $
+##stringtype Oberon
+##shortstrings
+MODULE %o3;
+
+(****************************************************************
+
+   This file was created automatically by `%fv'
+
+   Do NOT edit by hand!
+
+   Oberon-A source description (C) 1994 by Albert Weinert
+   Using with Oberon-A Interfaces for AmigaOS Release 3.1
+
+   Application: %b
+   Language   : %l
+   Version    : %v
+   Description: %f0
+
+****************************************************************)
+
+(* $P- *)
+
+IMPORT
+  lo := Locale, e := Exec, u := Utility, y := SYSTEM;
+
+CONST
+  builtinlanguage = %l;
+  version = %v;
+
+CONST
+  %i* = %d;
+
+TYPE
+  AppString = RECORD;
+     id  : LONGINT;
+     str : e.STRPTR;
+  END;
+  AppStringArray = ARRAY %n OF AppString;
+
+VAR
+  AppStrings : AppStringArray;
+  catalog : lo.CatalogPtr;
+
+  PROCEDURE SetStrings;
+    BEGIN
+      AppStrings[%e].id := %i; AppStrings[%e].str := y.ADR( %s );
+    END SetStrings;
+
+  PROCEDURE CloseCatalog*();
+    BEGIN
+      IF catalog # NIL THEN lo.base.CloseCatalog (catalog); catalog:=NIL END;
+   END CloseCatalog;
+
+  PROCEDURE OpenCatalog*(loc:lo.LocalePtr; language:ARRAY OF CHAR);
+    VAR Tag : ARRAY 4 OF u.TagItem;
+    BEGIN
+      CloseCatalog();
+      IF (catalog = NIL) & (lo.base # NIL) THEN
+        Tag[0].tag := lo.ocBuiltInLanguage; Tag[0].data := y.ADR( builtinlanguage );
+        Tag[1].tag := u.tagSkip;          Tag[1].data := y.ADR( language );
+        Tag[2].tag := lo.ocVersion;         Tag[2].data := version;
+        Tag[3].tag := u.tagDone;
+
+        IF language # "" THEN
+          Tag[1].tag:= lo.ocLanguage;
+        END;
+        catalog := lo.base.OpenCatalogA (loc, "%b.catalog", Tag);
+      END;
+    END OpenCatalog;
+
+  PROCEDURE GetString* (num: LONGINT): e.STRPTR;
+    VAR
+      i: LONGINT;
+      default: e.STRPTR;
+    BEGIN
+      i := 0; WHILE (i < %n) & (AppStrings[i].id # num) DO INC (i) END;
+
+      IF i # %n THEN
+        default := AppStrings[i].str;
+      ELSE
+        default := NIL;
+      END;
+
+      IF catalog # NIL THEN
+        RETURN lo.base.GetCatalogStr (catalog, num, default^);
+      ELSE
+        RETURN default;
+      END;
+    END GetString;
+
+BEGIN
+  catalog := NIL;
+  lo.OpenLib( FALSE );
+  SetStrings;
+END %o3.
+

@@ -1,0 +1,30 @@
+/* 
+	FlexCatCatalog.srx
+        created by Christian Hattemer
+        chris@mail.riednet.wh.tu-darmstadt.de
+	
+	Compile a catalog description file to a catalog translation
+        and a catalog file.
+		
+	$VER FlexCatCatalog.srx 1.2 (26.01.99)
+*/
+
+/* Don't forget the point '.' at the end      \/        */
+PARSE ARG '"' Filename '"' '"' Projectname '"' .
+
+Projname = SUBSTR(Projectname,LASTPOS('/',Projectname)+1)
+Projname = LEFT(Projname,LASTPOS('.¶',Projname)-1)
+Lang     = LEFT(Filename,LASTPOS('/',Filename)-1)
+Dir      = LEFT(Lang,LASTPOS('/',Lang)-1)
+
+CdFile   = Dir||"/"||Projname||".cd"
+Catalog  = Lang||"/"||Projname||".catalog"
+
+/* set object file of catalog file */
+OBJECTS Filename Catalog Filename
+DEPENDENCIES Filename CdFile
+
+/* compile */
+ADDRESS COMMAND "FlexCat "||CdFile||" "||Filename||" NEWCTFILE "||Filename
+ADDRESS COMMAND "FlexCat "||CdFile||" "||Filename||" CATALOG "||Catalog||" FLUSH"
+

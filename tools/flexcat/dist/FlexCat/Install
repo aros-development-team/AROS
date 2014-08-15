@@ -1,0 +1,715 @@
+;
+; $VER: Install 1.1 (30.06.2010)
+;
+; $Id: Install 228 2012-12-20 14:51:09Z damato $
+;
+; History:
+;
+;   1.0   29.06.2010: initial release
+;   1.1   30.06.2010: ask the user whether the *.sd files should be installed
+;   1.2   20.12.2012: added 3.x to MorphOS install decription
+
+;----------------------------------------------------------------------------
+; /// language bit definition, do not change these!!
+(set #lang_english             0)
+(set #lang_german              1)
+(set #lang_french              2)
+(set #lang_spanish             3)
+(set #lang_danish              4)
+(set #lang_italian             5)
+(set #lang_dutch               6)
+(set #lang_norwegian           7)
+(set #lang_swedish             8)
+(set #lang_polish              9)
+(set #lang_finnish             10)
+(set #lang_hungarian           11)
+(set #lang_greek               12)
+(set #lang_turkish             13)
+(set #lang_russian             14)
+(set #lang_czech               15)
+(set #lang_croatian            16)
+(set #lang_portuguese          17)
+(set #lang_serbian             18)
+(set #lang_slovenian           19)
+(set #lang_english_british     20)
+(set #lang_maximum             21)
+; ///
+;----------------------------------------------------------------------------
+; /// default language detection
+(set #i 0)
+(while (<> @language (select #i "deutsch" @language))
+    (set #i (+ #i 1))
+)
+(if (= #i 2) ; LANGUAGE
+    (set #language "english")
+    (set #language @language)
+)
+
+(set #i 0)
+(set #defaultLanguages %10000000000000000000)
+(while (<> #language (select #i "slovensko" "srpski" "português" "hrvatski" "czech" "russian" "türkçe" "greek" "magyar" "suomi" "polski" "svenska" "norsk" "nederlands" "italiano" "dansk" "español" "français" "deutsch" #language))
+    (
+        (set #i (+ #i 1))
+        (set #defaultLanguages (shiftright #defaultLanguages 1))
+    )
+)
+; always add english as default language
+(set #defaultLanguages (bitor #defaultLanguages (shiftleft 1 #lang_english)))
+
+; scan the Locale/Catalogs directory for supported languages
+(set #supportedLanguages %00000000000000000000)
+(foreach "Locale/Catalogs" "#?"
+    (set #i 0)
+    (while (<> @each-name (select #i "english" "german" "french" "spanish" "danish" "italian" "dutch" "norwegian" "swedish" "polish" "finnish" "hungarian" "greek" "turkish" "russian" "czech" "croatian" "portuguese" "serbian" "slovenian" @each-name))
+        (set #i (+ #i 1))
+    )
+    (if (<> #lang_maximum #i)
+        (set #supportedLanguages (bitor #supportedLanguages (shiftleft 1 #i)))
+    )
+)
+; always add english as default supported language
+(set #supportedLanguages (bitor #supportedLanguages (shiftleft 1 #lang_english)))
+; ///
+;----------------------------------------------------------------------------
+; /// ***** English
+(if (= #language "english")
+    (
+        (set #acknowledgeOS (cat "Please acknowledge the automatic\n"
+                                 "detection of your operating system:"))
+        (set #FlexCat_dir  (cat "Please select a directory for FlexCat\n"
+                                "(NO extra drawer will be created!)"))
+        (set #installSDFiles (cat "Do you want to install the #?.sd files?\n"
+                                  "\n"
+                                  "These are only required if you want to\n"
+                                  "use FlexCat to generate source code.\n"
+                                  "\n"
+                                  "Translators usually don't need these files."))
+        (set #done          (cat "\n"
+                                 @app-name " has been successfully installed."))
+    )
+)
+
+; ///
+; /// ***** Deutsch
+(if (= #language "deutsch")
+    (
+        (set #acknowledgeOS (cat "Bitte bestätigen Sie die automatische\n"
+                                 "Ermittlung Ihres Betriebssystems:"))
+        (set #FlexCat_dir  (cat "Wählen Sie ein Verzeichnis für FlexCat\n"
+                                "(es wird KEIN eigenes Verzeichnis erstellt!)"))
+        (set #installSDFiles (cat "Wollen Sie die #?.sd Dateien installieren?\n"
+                                  "\n"
+                                  "Diese werden nur benötigt, wenn Sie FlexCat\n"
+                                  "zum Erstellen von Quellcode benutzen wollen.\n"
+                                  "\n"
+                                  "Übersetzer benötigen diese Dateien\n"
+                                  "üblicherweise nicht."))
+        (set #done          (cat "\n"
+                                 @app-name " wurde erfolgreich installiert."))
+    )
+)
+; ///
+;----------------------------------------------------------------------------
+; /// Checking environment
+(set EXEC_ver (getversion "exec.library" (resident)))
+(set NEWLIB_ver (getversion "newlib.library" (resident)))
+(set AROS_ver (getversion "aros.library" (resident)))
+
+; we use newlib.library to check whether we are running on AmigaOS 4.x
+(if (>= NEWLIB_ver (* 4 65536))
+    (set #detectedSystem 1)
+    (
+        ; we are not running on AmigaOS 4.x
+        (if (>= AROS_ver (* 40 65536))
+            (set #detectedSystem 3)
+            (
+                ; we are not running on AROS
+                ; now check if we are running on MorphOS (exec.library V50+) or on AmigaOS 3.x
+                (if (>= EXEC_ver (* 50 65536))
+                    (set #detectedSystem 2)
+                    (set #detectedSystem 0)
+                )
+            )
+        )
+    )
+)
+
+(set #detectedSystem
+    (askchoice
+        (prompt #acknowledgeOS)
+        (help @askchoice-help)
+        (choices "AmigaOS 3.x"
+                 "AmigaOS 4.x"
+                 "MorphOS 1.x/2.x/3.x"
+                 "AROS i386"
+                 "AROS PPC"
+                 "AROS x86_64"
+        )
+        (default #detectedSystem)
+    )
+)
+; finally convert the system number into a string for easier understanding
+(set #detectedSystem
+    (select #detectedSystem "os3" "os4" "mos" "aros-i386" "aros-ppc" "aros-x86_64")
+)
+
+(if (= #detectedSystem "os4")
+    ; AmigaOS 4.x uses english locale names only
+    (
+        (set #cat_name_english               "english")
+        (set #cat_name_german                "german")
+        (set #cat_name_french                "french")
+        (set #cat_name_spanish               "spanish")
+        (set #cat_name_danish                "danish")
+        (set #cat_name_italian               "italian")
+        (set #cat_name_dutch                 "dutch")
+        (set #cat_name_norwegian             "norwegian")
+        (set #cat_name_swedish               "swedish")
+        (set #cat_name_polish                "polish")
+        (set #cat_name_finnish               "finnish")
+        (set #cat_name_hungarian             "hungarian")
+        (set #cat_name_greek                 "greek")
+        (set #cat_name_turkish               "turkish")
+        (set #cat_name_russian               "russian")
+        (set #cat_name_czech                 "czech")
+        (set #cat_name_croatian              "croatian")
+        (set #cat_name_portuguese            "portuguese")
+        (set #cat_name_serbian               "serbian")
+        (set #cat_name_slovenian             "slovenian")
+        (set #cat_name_english_british       "english-british")
+    )
+    ; all other systems use localized locale names
+    (
+        (set #cat_name_english               "english")
+        (set #cat_name_german                "deutsch")
+        (set #cat_name_french                "français")
+        (set #cat_name_spanish               "español")
+        (set #cat_name_danish                "dansk")
+        (set #cat_name_italian               "italiano")
+        (set #cat_name_dutch                 "nederlands")
+        (set #cat_name_norwegian             "norsk")
+        (set #cat_name_swedish               "svenska")
+        (set #cat_name_polish                "polski")
+        (set #cat_name_finnish               "suomio")
+        (set #cat_name_hungarian             "magyar")
+        (set #cat_name_greek                 "greek")
+        (set #cat_name_turkish               "türkçe")
+        (set #cat_name_russian               "russian")
+        (set #cat_name_czech                 "czech")
+        (set #cat_name_croatian              "hrvatski")
+        (set #cat_name_portuguese            "português")
+        (set #cat_name_serbian               "srpski")
+        (set #cat_name_slovenian             "slovensko")
+        (set #cat_name_english_british       "english-british")
+    )
+)
+
+; set up the source and destination path
+(if (= #detectedSystem "os3")
+    (set #EXE_source "AmigaOS3")
+)
+(if (= #detectedSystem "os4")
+    (set #EXE_source "AmigaOS4")
+)
+(if (= #detectedSystem "mos")
+    (set #EXE_source "MorphOS")
+)
+(if (= #detectedSystem "aros-i386")
+    (set #EXE_source "AROS-i386")
+)
+(if (= #detectedSystem "aros-ppc")
+    (set #EXE_source "AROS-ppc")
+)
+(if (= #detectedSystem "aros-x86_64")
+    (set #EXE_source "AROS-x86_64")
+)
+
+; ///
+; /// Let's ask user for anything
+(complete 10)
+
+(set #FlexCat_dest
+    (askdir
+        (prompt  #FlexCat_dir)
+        (default "SYS:")
+        (help    @askdir-help)
+    )
+)
+
+(set #installSD
+    (askbool
+        (prompt  #installSDFiles)
+        (default 0)
+        (help    #installSDFiles)
+    )
+)
+
+(set catalog_lang
+    (askoptions
+        (prompt #lang_catalog)
+        (help @askoptions-help)
+        (choices
+            (if (in #supportedLanguages #lang_english)
+                (cat #prop "English")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_german)
+                (cat #prop "Deutsch")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_french)
+                (cat #prop "Français")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_spanish)
+                (cat #prop "Español")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_danish)
+                (cat #prop "Dansk")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_italian)
+                (cat #prop "Italiano")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_dutch)
+                (cat #prop "Nederlands")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_norwegian)
+                (cat #prop "Norsk")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_swedish)
+                (cat #prop "Svenska")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_polish)
+                (cat #prop "Polski")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_finnish)
+                (cat #prop "Suomi")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_hungarian)
+                (cat #prop "Magyar")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_greek)
+                (cat #prop "ÅëëçíéêÜ")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_turkish)
+                (cat #prop "Türkçe")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_russian)
+                (cat #prop "Russian")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_czech)
+                (cat #prop "Czech")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_croatian)
+                (cat #prop "Hrvatski")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_portuguese)
+                (cat #prop "Português")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_serbian)
+                (cat #prop "Srpski")
+                ("")
+            )
+            (if (in #supportedLanguages #lang_slovenian)
+                (cat #prop "Slovensko")
+                ("")
+            )
+            (if (and (in #supportedLanguages #lang_english_british) (= #detectedSystem "os4"))
+                (cat #prop "English (british)")
+                ("")
+            )
+        )
+        (default #defaultLanguages)
+    )
+)
+
+; ///
+; /// Here we go!
+(complete 33)
+
+; copy the executable files
+(foreach #EXE_source "#?"
+    (copyfiles
+        (prompt @each-name)
+        (source (tackon #EXE_source @each-name))
+        (dest #FlexCat_dest)
+        (confirm)
+        (help @copyfiles-help)
+    )
+)
+
+; copy the docs
+(if (not (exists (tackon #FlexCat_dest "Docs")))
+    (
+        (makedir (tackon #FlexCat_dest "Docs"))
+        (copyfiles
+            (prompt "Docs.info")
+            (source "Docs.info")
+            (dest (tackon #FlexCat_dest "Docs.info"))
+            (help @copyfiles-help)
+        )
+
+        (foreach "Docs" "#?.guide"
+            (copyfiles
+                (prompt @each-name)
+                (source (tackon "Docs" @each-name))
+                (dest (tackon #FlexCat_dest "Docs"))
+                (help @copyfiles-help)
+            )
+        )
+    )
+)
+
+; copy the .sd files
+(if (<> 0 #installSD)
+    (
+        (makedir (tackon #FlexCat_dest "Lib"))
+        (foreach "Lib" "#?.sd"
+            (copyfiles
+                (prompt @each-name)
+                (source (tackon "Lib" @each-name))
+                (dest (tackon #FlexCat_dest "Lib"))
+                (help @copyfiles-help)
+            )
+        )
+    )
+)
+
+(complete 66)
+
+; check if there were any catalogs selected at all
+(if (<> 0 catalog_lang)
+    (
+        ; copy the .cd files for people wanting to translate
+        (foreach "Locale" "#?.cd"
+            (copyfiles
+                (source (tackon "Locale" @each-name))
+                (dest "LOCALE:Catalogs")
+                (help @copyfiles-help)
+            )
+        )
+
+        ; german catalog file
+        (if (in catalog_lang #lang_german)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_german))
+
+                (foreach "Locale/Catalogs/german" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/german" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_german))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; french catalog file
+        (if (in catalog_lang #lang_french)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_french))
+
+                (foreach "Locale/Catalogs/french" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/french" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_french))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; spanish catalog file
+        (if (in catalog_lang #lang_spanish)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_spanish))
+
+                (foreach "Locale/Catalogs/spanish" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/spanish" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_spanish))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; danish catalog file
+        (if (in catalog_lang #lang_danish)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_danish))
+
+                (foreach "Locale/Catalogs/danish" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/danish" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_danish))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; italian catalog file
+        (if (in catalog_lang #lang_italian)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_italian))
+
+                (foreach "Locale/Catalogs/italian" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/italian" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_italian))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; dutch catalog file
+        (if (in catalog_lang #lang_dutch)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_dutch))
+
+                (foreach "Locale/Catalogs/dutch" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/dutch" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_dutch))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; norwegian catalog file
+        (if (in catalog_lang #lang_norwegian)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_norwegian))
+
+                (foreach "Locale/Catalogs/norwegian" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/norwegian" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_norwegian))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; swedish catalog file
+        (if (in catalog_lang #lang_swedish)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_swedish))
+
+                (foreach "Locale/Catalogs/swedish" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/swedish" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_swedish))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; polish catalog file
+        (if (in catalog_lang #lang_polish)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_polish))
+
+                (foreach "Locale/Catalogs/polish" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/polish" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_polish))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; finnish catalog file
+        (if (in catalog_lang #lang_finnish)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_finnish))
+
+                (foreach "Locale/Catalogs/finnish" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/finnish" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_finnish))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; hungarian catalog file
+        (if (in catalog_lang #lang_hungarian)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_hungarian))
+
+                (foreach "Locale/Catalogs/hungarian" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/hungarian" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_hungarian))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; greek catalog file
+        (if (in catalog_lang #lang_greek)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_greek))
+
+                (foreach "Locale/Catalogs/greek" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/greek" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_greek))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; turkish catalog file
+        (if (in catalog_lang #lang_turkish)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_turkish))
+
+                (foreach "Locale/Catalogs/turkish" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/turkish" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_turkish))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; russian catalog file
+        (if (in catalog_lang #lang_russian)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_russian))
+
+                (foreach "Locale/Catalogs/russian" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/russian" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_russian))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; czech catalog file
+        (if (in catalog_lang #lang_czech)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_czech))
+
+                (foreach "Locale/Catalogs/czech" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/czech" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_czech))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; croatian catalog file
+        (if (in catalog_lang #lang_croatian)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_croatian))
+
+                (foreach "Locale/Catalogs/croatian" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/croatian" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_croatian))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; portuguese catalog file
+        (if (in catalog_lang #lang_portuguese)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_portuguese))
+
+                (foreach "Locale/Catalogs/portuguese" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/portuguese" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_portuguese))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; serbian catalog file
+        (if (in catalog_lang #lang_serbian)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_serbian))
+
+                (foreach "Locale/Catalogs/serbian" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/serbian" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_serbian))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; slovenian catalog file
+        (if (in catalog_lang #lang_slovenian)
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_slovenian))
+
+                (foreach "Locale/Catalogs/slovenian" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/slovenian" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_slovenian))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+
+        ; english-british catalog file, only AmigaOS4.x can handle this
+        (if (and (in catalog_lang #lang_english_british) (= #detectedSystem "os4"))
+            (
+                (makedir (tackon "LOCALE:Catalogs" #cat_name_english_british))
+
+                (foreach "Locale/Catalogs/english-british" "#?.catalog"
+                    (copyfiles
+                        (source (tackon "Locale/Catalogs/english-british" @each-name))
+                        (dest (tackon "LOCALE:Catalogs" #cat_name_english_british))
+                        (help @copyfiles-help)
+                    )
+                )
+            )
+        )
+     )
+)
+
+(complete 100)
+
+(message #done)
+
+; /// ********************
+;----------------------------------------------------------------------------
+(exit (QUIET))

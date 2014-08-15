@@ -1,0 +1,122 @@
+##rem $Id: E30b.sd 253 2014-02-18 11:15:58Z damato $
+##stringtype E
+##shortstrings
+
+/****************************************************************
+
+   This file was created automatically by `%fv'
+   from "%f0".
+
+   Do NOT edit by hand!
+
+****************************************************************/
+
+OPT MODULE
+
+
+->*****
+->** External modules
+->*****
+MODULE 'locale' , 'libraries/locale'
+MODULE 'utility/tagitem'
+
+
+->*****
+->** Object definitions
+->*****
+EXPORT OBJECT fc_type
+        PRIVATE
+                id      :       LONG
+                str     :       LONG
+ENDOBJECT
+
+EXPORT OBJECT catalog_%b
+        PUBLIC
+                %i              :       PTR TO fc_type
+ENDOBJECT
+
+
+->*****
+->** Global variables
+->*****
+DEF cat_%b : PTR TO catalog
+
+
+->*****
+->** Creation procedure for fc_type object
+->*****
+PROC create( id , str : PTR TO CHAR ) OF fc_type
+
+        self.id := id
+        self.str := str
+
+ENDPROC
+
+
+->*****
+->** Procedure which returns the correct string according to the catalog
+->*****
+PROC getstr() OF fc_type RETURN ( IF cat_%b THEN GetCatalogStr( cat_%b , self.id , self.str ) ELSE self.str )
+
+
+->*****
+->** Creation procedure for catalog_%b object
+->*****
+PROC create() OF catalog_%b
+
+        DEF fct : PTR TO fc_type
+
+        cat_%b := NIL
+
+        self.%i := NEW fct.create( %d , %s )
+
+ENDPROC
+
+
+->*****
+->** Opening catalog procedure (exported)
+->*****
+PROC open( loc = NIL : PTR TO locale , language = NIL : PTR TO CHAR ) OF catalog_%b
+
+        DEF tag , tagarg
+
+        self.close()
+
+        IF ( localebase AND ( cat_%b = NIL ) )
+
+                IF language
+
+                        tag := OC_LANGUAGE
+                        tagarg := language
+
+                ELSE
+
+                        tag:= TAG_IGNORE
+
+                ENDIF
+
+                cat_%b := OpenCatalogA( loc , '%b.catalog' ,
+                                                                [       OC_BUILTINLANGUAGE , %l ,
+                                                                        tag , tagarg ,
+                                                                        OC_VERSION , %v ,
+                                                                        TAG_DONE        ] )
+
+        ENDIF
+
+ENDPROC
+
+
+->*****
+->** Closing catalog procedure
+->*****
+PROC close() OF catalog_%b
+
+        IF localebase THEN CloseCatalog( cat_%b )
+        cat_%b := NIL
+
+ENDPROC
+
+
+/****************************************************************
+   End of the automatically created part!
+****************************************************************/
