@@ -3474,7 +3474,15 @@ IPTR Action_HW_Online(struct IClass *cl, Object *obj, Msg msg)
         psdGetAttrs(PGA_HARDWARE, hlnode->phw,
                     HA_ProductName, &hlnode->prodname,
                     TAG_END);
+#ifdef AROS_USB30_CODE
+        if(psdEnumerateHardware(hlnode->phw) == NULL) {
+            psdRemHardware(hlnode->phw);
+            hlnode->phw = NULL;
+            hlnode->prodname = NULL;
+        }
+#else
         psdEnumerateHardware(hlnode->phw);
+#endif
     }
 
     DoMethod(obj, MUIM_Action_HW_Activate);
