@@ -32,7 +32,7 @@ all : $(FLEXCAT) $(SD_OUT)
 
 $(FLEXCAT) : $(SRC)
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $(SRC) -o $@
+	@$(HOST_CC) -DNOERRORONWARN $(HOST_CFLAGS) $(HOST_LDFLAGS) $(SRC) -o $@
 #	@$(HOST_STRIP) $@
 
 $(TOOLDIR)/%.sd : sd/%.sd

@@ -206,7 +206,7 @@ AHI preferences
 ;
 ;You can use something like "%s%s\nCopyright ©%s\nEnglish translation by Your Name" here...
 msgTextCopyright (//)
-%s%s\nCopyright ©%s
+%s%s\nCopyright (C)%s
 ;
 msgTextNoWindow (//)
 Unable to open window.
@@ -218,7 +218,7 @@ msgTextNoFind (//)
 Unable to find `%s'!
 ;
 msgTextNoOpen (//)
-Unable to open `%s´ version %ld.
+Unable to open '%s' version %ld.
 ;
 ; *** Additions
 ;

@@ -51,6 +51,10 @@ void MyExit(int Code)
 #endif
   CloseFlexCatCatalog();
   CloseLibs();
+#ifdef NOERRORONWARN
+  if (Code < 10)
+    Code = 0;
+#endif
   exit(Code);
 }
 
