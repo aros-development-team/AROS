@@ -67,7 +67,7 @@ Ok
 MSG_ABOUT_REQ (//)
 %s version %ld.%ld\n\
 %s version %ld.%ld\n\n\
-Copyright © 2007-2010 Fredrik Wikstrom\n\
+Copyright (C) 2007-2010 Fredrik Wikstrom\n\
 Website: http://a500.org\n\
 E-mail: fredrik@a500.org
 ;
