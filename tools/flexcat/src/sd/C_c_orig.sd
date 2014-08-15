@@ -1,0 +1,54 @@
+##rem $Id: C_c_orig.sd 42838 2011-12-11 07:57:18Z jmcmullan $
+##stringtype C
+##shortstrings
+
+#include <exec/types.h>
+#include <exec/libraries.h>
+#include <proto/locale.h>
+#include <libraries/locale.h>
+
+#define CATCOMP_NUMBERS 1
+
+#include "%b_strings.h"
+
+struct StringCollection
+{
+  LONG	  id;
+  STRPTR  string;
+};
+
+static struct StringCollection _sc[] =
+{
+  {%i, %s},
+  {-1,(STRPTR)NULL}
+};
+
+
+char * GetString(struct LocaleInfo * li,
+                 LONG stringNum)
+{
+  char *builtIn = NULL;
+  char *string;
+
+  struct Library * LocaleBase = (struct Library *)li->li_LocaleBase;
+    
+  struct StringCollection * sc = _sc;
+  while (NULL != sc->string)
+  {
+    if (sc->id == stringNum)
+    {
+      builtIn = sc->string;
+      break;
+    }
+    sc = &sc[1];
+  }
+
+  if (NULL != li->li_Catalog)
+    string = (char *)GetCatalogStr((struct Catalog *)li->li_Catalog,
+                           stringNum,
+                           builtIn);
+  else
+    string = builtIn;
+
+  return string;
+}
