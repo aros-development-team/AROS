@@ -1,0 +1,144 @@
+
+TITLE
+
+    FlexCat - Flexible and portable catalog and source tool
+
+VERSION
+
+    2.6.5
+
+AUTHOR
+
+    Ondrej Zima <amiandrew@volny.cz>
+    SourceForge project: http://www.sourceforge.net/projects/flexcat
+
+    Original authors:
+    Jochen Wiedmann and Marcin Orlowski
+    e-mail: carlos@amiga.com.pl or marcin@orlowski.com
+    WWW   : http://wfmh.org.pl/~carlos/
+
+
+DESCRIPTION
+
+    FlexCat creates catalogs and the source to handle them.  The difference
+    between FlexCat and KitCat, CatComp and some others is, that FlexCat is
+    designed to produce any source you want:  any programming language, any
+    individual needs should be satisfied.  However, FlexCat is not more
+    difficult to use.
+
+    This sounds like a contradiction.  FlexCat's solution is to use
+    template files, the so called "source descriptions".  Ready to use examples
+    for Assembler, C, C++, E, Oberon and Modula-2 are distributed, additionally
+    an example for supporting catalogs on Workbench 2.0.  Any other examples
+    are welcome.
+
+
+FEATURES
+
+    FlexCat features include:
+
+    * Runs on any computer (I hope)
+    * Localized of course ;-) (Amiga OS versions only)
+    * Can produce catalog handling source code for any language
+      (templates for Assembler, C, C++, E, Oberon and Modula-2 included)
+    * Written by the people who use it daily (so it should cover all
+      your needs)
+
+SPECIAL REQUIREMENTS
+
+    FlexCat works on any Amiga, however you need OS2.04 or higher
+    to make it using the localization for own purposes. Also processor
+    better or equal to 68020.
+
+AVAILABILITY
+
+    FlexCat is available on SourceForge project page:
+
+    http://www.sourceforge.net/projects/flexcat/
+
+
+ARCHIVES
+
+    Since release 2.0, the FlexCat distribiution is splitted into the
+    smaller archives. They are (in order of importance):
+
+    FlexCat.lha          - Latest FlexCat with licence and history file
+
+PRICE
+
+    Freeware
+
+CHANGES
+  * v2.6.5 (23.01.03)
+                    - Added support for #version and #basename (see history file)
+                    - Added support for automatic codeset fetching if locale is
+                      v47 and more
+                    - Added #header as not faulty directive
+                    - Added #lengthbytes support
+                    - Added support for hexa numbering as stringID
+     catalog change : added two new strings
+
+  * v2.6.4 (07.01.03)
+                    - Fixed creating all files: all files now not have a execute bit
+		      (on Amiga only)
+		    - If .cd description have some #ifdef/#endif directives, are
+		      inserted to .ct as comment
+
+  * v2.6.3 (28.11.02)
+                    - Now ignoring lines in .cd which starts with #ifdef and #endif
+                      which are used for creating C headers and sources from .cd file.
+
+  * v2.6.2 (20.11.02)
+                    - Added new parameter NOAUTODATE which prevent FlexCat
+                      to use a current date in $VER: for catalog. The date
+                      specified in .ct is used.
+
+  * v2.6.1 (18.11.02)
+                    - FlexCat now recognize the 'codeset' parameter in .ct
+		      which is needed for Amiga OS4 translating process.
+					    
+  * v2.6.x          - Moved to SourceForge
+
+  * v2.5b (19.03.02)- Added GG patchfile, thanks to Martin Blom <martin@blom.org>
+
+  * v2.5 (14.02.02) - Fixed the problem, if using $TODAY, that the date was
+                      one day ahead (tomorrow ;). Replaced gmtime() with
+                      localtime() (DMX).
+
+  * v2.4 (28.11.99) - FlexCat is now portable! Thanks to Hardcode.sd{tm}
+                      unique technology you can now try to compile FlexCat
+                      under any OS (both Big and Little Endians are
+                      supported). Read developer.readme for details.
+
+                    - sometimes garbage could be written instead of
+                      $VER: string (when $TODAY feature was used) due
+                      to memory block being free'd before write.
+
+                    - added ##rem command to .sd file handling. As you
+                      have probably guessed, it's just remark. The goal
+                      (at least for me) is that ##rem lines won't appear
+                      in result source code, creaded out of the .sd file.
+
+                    - added manual catalog open/close for compilers that
+                      do not handle autoinit/exit functions
+
+                    - Updated french translation (Herve Dupont
+                      <herve.dupont@nordnet.fr>)
+
+                    - Added NOSPACE switch, to avoid extra space char
+                      usually used by FlexCat to separate comment
+                      mark ';' from the main comment text
+
+                    - Source descriptor for HSPascal by Artur Karpunin
+                      <woody8@kki.net.pl> is now available.
+
+                    - New archive "FlexCat_Demos" full ;-) of example
+                      source codes for various programming languages
+                      C, HSPascal and ARexx examples are recently
+                      available.
+
+                    - Content of "Contribution" drawer is now moved to
+                      "FlexCat_Demos" archive.
+
+                    - Added detailed tutoral (in polish for now) about
+                      the whole localization process (incl. examples)

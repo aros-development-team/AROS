@@ -1,0 +1,36 @@
+##rem $Id: NoAutoC_h.sd 253 2014-02-18 11:15:58Z damato $
+##stringtype C
+##shortstrings
+
+/****************************************************************
+
+   This file was created automatically by `%fv'
+   from "%f0".
+
+   Do NOT edit by hand!
+
+****************************************************************/
+
+#ifndef %b_CAT_H
+#define %b_CAT_H
+
+
+#ifndef EXEC_TYPES_H
+#include <exec/types.h>
+#endif
+
+void LocalizeStringArray(STRPTR *Array);
+void Open%bCatalog();
+void Close%bCatalog();
+
+struct FC_String
+{
+   const char *Str;
+   const LONG Id;
+};
+
+extern struct FC_String %b_Strings[];
+
+#define %i (%b_Strings[%e].Str)\n#define _%i %e
+
+#endif

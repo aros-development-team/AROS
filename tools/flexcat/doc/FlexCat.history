@@ -1,0 +1,544 @@
+
+                               F L E X C A T
+
+  ========================================================================
+
+            The ultimate catalog processor and source generator
+
+            (C) 1993-1999 by Jochen Wiedmann and Marcin Orlowski
+               (C) 2002-2006 by the FlexCat Open Source Team
+ 
+  ========================================================================
+
+
+
+  * FlexCat 2.7 (DD.MM.2006)
+
+    - Improved source code portability.  <Pavel>
+
+    - Makefile improved to work on every system, both Amiga and non-Amiga.
+      <Pavel>
+
+    - Added MorphOS compatibility.  <Pavel>
+
+    - Added Greek and Turkish localizations.  <Pavel>
+
+    - Added Storm C compatibility.  <Pavel>
+
+    - Localization files revised and brought up to date.  <Pavel>
+
+    - Added "Hardcode_c.sd" template.  <Pavel>
+
+    - Fixed bug: "Extra characters" was always reported at "#language"
+      line when using the NOLANGTOLOWER option.  <Pavel>
+
+    - Fixed bug: missing preferences file led to incorrect settings due
+      to a bug in the preferences loading routine.  <Pavel>
+
+
+  * FlexCat 2.6.6 (15.2.2003)
+
+    - Revised the compatibility for non-Amiga systems.  <Ondrej>
+
+    - Cleaned up sources and made them sexier.  <Ondrej>
+
+    - Removed some obsolete code.  <Ondrej>
+
+    - If FlexCat is used to generate any source, the basename is needed
+      but sometimes is not defined.  Now it is determined only for this
+      sort of operation.  <Ondrej>
+
+    - More binaries: Amiga m68k, Amiga ppc, Linux i386, Linux m68k,
+      Linux ppc, Windows.  <Ondrej>
+
+    - Changed behaviour of #version in catalog description.  Only the
+      version number can be specified, no revision or other numbers are
+      allowed anymore.  <Ondrej>
+
+    - Fixed compatibility with GCC on non-Amiga systems.  Sources are
+      compilable now.  <Ondrej>
+
+    - If language environment is not specified (like on Un*x systems),
+      the "nolanguage" string is taken as language.  <Ondrej>
+
+    - Changed compare function (stricmp, strnicmp) to Stricmp and Strnicmp,
+      and implemented from GCC project libiberty.  <Ondrej>
+
+    - Changed default localization to macro which is defined in flexcat.h.
+
+    - Fixed nasty bug for compatibility with CatComp when using the syntax
+      "FlexCat test.cd test.ct CATALOG test.catalog".  <Ondrej>
+
+
+  * FlexCat 2.6.5 (23.1.2003)
+
+    - Static definition of string inside the function createct() totally
+      damaged some other strings.  <Ondrej>
+
+    - Added support for #version and #basename directives.  This means
+      that if the .cd file contains the #basename, both the .ct and .catalog
+      files can be generated automatically by just omitting any reference
+      to them at the command line.  #basename is the base name of the
+      catalog; for example, if basename is defined as "MyProg1", the
+      translation "MyProg1.ct" can be easily created, with "MyProg1.catalog"
+      as resulting catalog.  In other words, if #basename is defined in a
+      .cd file,
+
+         -> "FlexCat test.cd NEWCTFILE" will generate the file as
+            <#basename>_<$language>.ct, with the name of the catalog
+            inserted in the ## version tag ("$VER: <#basename>.ct")
+
+         -> "FlexCat test.cd test.ct CATALOG" will generate the file
+            <#basename>.catalog
+
+      #version is a string representing the version number which is
+      inserted in the .ct file.  If #version is defined in a .ct file
+      and a new .ct file is created, the #version is inserted in the
+      ## version tag as version string.
+
+    - Added support for AmigaOS 4.0 codeset fetching from locale structure
+      of the default locale.  It's triggered automatically when
+      locale.library > V47.
+
+    - Added #header in catalog description as not faulty directive.
+
+    - Added support for the #lengthbytes directive.
+
+    - Added support for hexadecimal numbering of string IDs.
+
+    - Added two new strings to catalog.
+
+
+  * FlexCat 2.6.4 (7.1.2003)
+
+    - All the generated files now have the execute ("e") bit cleared
+      (Amiga only).
+
+    - #ifdef/#endif directives found in the .cd files are now inserted
+      as comments in the .ct file.
+
+    - Added Magyar translation, thanks to Marton Dosa.  <Ondrej>
+
+
+  * FlexCat 2.6.3 (28.11.2002)
+
+    - Now ignores all lines in .cd file that start with "#ifdef" or "#endif",
+      which are used for creating C headers and sources from .cd file.
+
+
+  * FlexCat 2.6.2 (20.11.2002)
+
+    - Added new parameter NOAUTODATE which prevents FlexCat from inserting
+      the current date in the $VER: string of the catalog; the date
+      specified in the .ct file will be used instead.
+
+
+  * FlexCat 2.6.1 (18.11.2002)
+
+    - FlexCat now recognizes the 'codeset' parameter in .ct files, which
+      is needed for the AmigaOS 4 translation process.  <Ondrej>
+
+
+  * FlexCat 2.6 (6.8.2002)
+
+    - FlexCat now updates the date when creating the .catalog file from
+      the .ct, no need for $TODAY anymore.
+
+    - FlexCat now even corrects the filename in the version string:
+      '<file>.ct' becomes '<file>.catalog'.
+
+    - Some fixes to the English docs.
+
+    - Docs can now be compiled from the makefile.
+
+    - When creating a blank .ct from a .cd file, the version gets copied
+      from the .cd file and the wrong warning is removed.  <Stefan>
+
+
+  * FlexCat 2.5b (19.3.2002)
+
+    - Added GG patchfile, thanks to Martin Blom <martin@blom.org>.
+
+
+  * FlexCat 2.5 (14.2.2002)
+
+    - When using $TODAY, the date was one day ahead (tomorrow ;).
+      Fixed by replacing gmtime() with localtime().  <DMX>
+
+
+  * FlexCat 2.4 (28.11.1999)
+
+    - FlexCat is now portable!  Thanks to the Hardcode.sd{tm} unique
+      technology, you can now try to compile FlexCat under any OS
+      (both big and little endians are supported).  Read "developer.readme"
+      for details.
+
+    - When $TODAY was used, sometimes garbage could be written instead of
+      the $VER: string due to a memory block being freed before being
+      written to.
+
+    - Added ##rem command to .sd file handling.  As you have probably
+      guessed, it's just a remark.  The goal (at least for me) is that
+      ##rem lines won't appear in source code created from the .sd file.
+
+    - Added manual catalog open/close for compilers that lack autoinit/
+      exit functions.
+
+    - Updated French translation, thanks to Hervé Dupont
+      <herve.dupont@nordnet.fr>.
+
+    - Added new NOSPACE switch to avoid the extra space char usually
+      inserted by FlexCat to separate the comment introducer ';' from
+      the comment itself.
+
+    - Source descriptor for HSPascal by Artur Karpunin <woody8@kki.net.pl>
+      is now available.
+
+    - New archive "FlexCat_Demos", full ;-) of example source code for
+      various programming languages; C, HSPascal and ARexx examples are
+      recently available.
+
+    - Contents of "Contribution" drawer moved to "FlexCat_Demos" archive.
+
+    - Added detailed tutorial (in Polish for now) about the whole
+      localization process (incl. examples).
+
+
+  * FlexCat 2.3 (19.5.1999)
+
+    - The trailing ellipsis detector was broken (reported by Marco De Vitis
+      <marco.dvv@flashnet.it>).
+
+    - Seems that I updated the English manual for 2.2, but forgot to create
+      a .guide file out of the texinfo source.
+
+    - Fixed manual to say "1999" instead of "1998", and fixed .cd file to
+      show proper arguments when help ("FlexCat ?") is requested (thanks
+      to Hervé Dupont <herve.dupont@nordnet.fr>).
+
+    - Added Spanish translation by Sergio Martín Rodríguez <smartin@kaos.es>
+      and Tomás J. Cantó <tjcanto@redestb.es>.
+
+
+  * FlexCat 2.2 (14.4.1999)
+
+    - FlexCat can now copy the "***NEW***" markers (or whatever replacement
+      has been defined by the user) from the old .ct file to the new one
+      while upgrading an already existing translation ("FlexCat CD cd_file
+      CT old_translation NEWCTFILE new_translation"); upgrading an unfinished
+      translation should be now a much smoother process.  To complement this
+      new feature, two new options have been added (and made available in
+      the preferences as well): COPYMSGNEW/S (not used by default to avoid
+      possible problems) and OLDMSGNEW/K, that sets the string that marked
+      new strings in the old .ct file (defaults to "***NEW***", so you
+      don't need to specify it unless you used a different marker than the
+      default).  NOTE: FlexCat automatically appends "; " to the string!
+      Thanks to Christian Hattemer <Chris@heaven.riednet.wh.tu-darmstadt.de>
+      for the suggestion.
+
+    - The long awaited check for trailing ellipsis is now implemented.
+
+    - FlexCat now expands the above feature, and checks for trailing spaces,
+      as it appears to be the most commonly overlooked trailing character
+      ever...
+
+    - Added missing #endif in source code, that disallowed easy StormC or
+      non-Amiga compilations (reported by Christian Hattemer).
+
+    - Every line of original string that FlexCat puts in the created .ct
+      file is now prefixed by "; ".  Previously, only the first line had
+      a space between the semicolon and the main text (reported by
+      Christian Hattemer).
+
+    - Source descriptors and other FlexCat related goodies for StormC
+      by Christian Hattemer are now available from any Aminet mirror
+      (dev/c/Storm_FlexCat.lha) or from his homepage:
+      http://www.riednet.wh.tu-darmstadt.de/~chris/
+
+    - New Slovenian translation, by Damir Arh <damir.arh@guest.arnes.si>.
+
+    - Updated catalogs:
+
+         -> Swedish, by Magnus Holmgren <lear@algonet.se>
+         -> Serbian, by Ljubomir Jankovic <lurch@beotel.yu>
+         -> Dutch, by Leon Woestenberg <leon@stack.nl>
+         -> German, by Christian Hattemer
+            <Chris@heaven.riednet.wh.tu-darmstadt.de>
+
+    - English manual updated to match the latest changes.
+
+
+  * FlexCat 2.1 (11.10.1998)
+
+    - New source descriptor for E programmers (E32e.sd) by Sven Steiniger
+      <ss37@irz301.inf.tu-dresden.de>.
+
+    - Fixed the problem that C:Version had with FlexCat (because of the many
+      internal $VERsion strings, the one that mattered to c:Version wasn't
+      the first one in the executable file).
+
+    - The SDDIR path defined in FlexCat.prefs was always ignored.  Fixed.
+      (Reported by Magnus Holmgren).
+
+    - Improved FLUSH function, which now flushes catalogs only.  (Suggested
+      by Magnus Holmgren).
+
+    - FlexCat now adds one space character while writing "old" strings in the
+      .ct file, as CatComp does.
+
+    - Source code released.  See source readme file for more details.
+
+
+  * FlexCat 2.0 (25.2.1998)
+
+    - Unfortunately, 2.0 does not mean any new groundbreaking technology
+      has been implemented; it is just the next version number FlexCat
+      should have...
+
+    - Added a workaround for problems some people may encounter while
+      creating catalogs for languages with a corrupted conversion table
+      (which is part of the .language driver).  FlexCat uses utility.library
+      to convert ##language names to lowercase, which leads to wrong strings
+      with e.g. the Czech language.  Use NOLANGTOLOWER (either at the CLI
+      or the prefs) to tell FlexCat not to lowercase the name.  But remember
+      to keep it lowercased manually!
+
+    - FlexCat now operates with buffered I/O.  This may increase the overall
+      performance; however, it's not a must, so you can use the NOBUFFEREDIO
+      switch to fall back to the old polling mode.  Please test the overall
+      performance and tell me the results!  The I/O buffer is now 2048 bytes
+      long.
+
+    - While creating a new .ct file, FlexCat takes the contents of the
+      $language system variable as the #language parameter, if possible.
+
+    - Fixed bug that caused writes to random memory under some very rare
+      circumstances.
+
+    - Added ARexx.sd source descriptor, thanks to Kai Norhausen
+      <kn@tribal.line.org>.
+
+    - Added stuff contributed by users.  Look at the contents of the
+      "Contribution" drawer!
+
+    - Renumbered the version of catalog files.  The most recent catalog
+      version is 2.0, 1.x is now outdated.
+
+    - Updated the French catalog, thanks to Julien `GiZmO' Wilk
+      <wilkj@esiee.fr>.
+
+    - Finnish translation updated by Mika Lundell <c71829@uwasa.fi>.
+
+    - Dutch translation by Leon Woestenberg <leon@stack.nl>.
+
+    - Norwegian translation thanks to Eivind Olsen <eivindo@bgnett.no>.
+
+    - Italian catalog updated by Luca Nora <ln546991@silab.dsi.unimi.it>
+      and Giovanni Addabbo <gaddabbo@imar.it>.
+
+    - Portuguese translation updated by Frederico Borges
+      <famb@mail.telepac.pt> and Alexandre Gabriel <chryse@mail.telepac.pt>.
+
+    - New Spanish translation by Marcos Broc <amiga187@arrakis.es> and
+      Samuel Aguilera <slyguy@mx2.redestb.es>.
+
+    - Croatian translation by Mladen Ili¹inoviæ <milisino@jagor.srce.hr>.
+
+
+  * FlexCat 1.9 (1.8.1997)
+
+    - Now you can use special $TODAY attribute in your $VER string - when
+      the catalog is created, $TODAY will be replaced by the current date
+      (note, however, that only the first occurance will be replaced,
+      and the string is CASE SENSITIVE!).  If you want your version
+      strings to always get a recent date, use something like
+      "$VER: test.catalog 3.0 ($TODAY)"
+
+    - Added FlexCat preferences.  To define your own defaults, set the
+      environment variable "flexcat.prefs" with the contents matching
+      the following template:
+
+         SDDIR/K,MSG_NEW/K,WARNCTGAPS/S,NOOPTIM/S,FILL/S,FLUSH/S,NOBEEP/S,
+           QUIET/S
+
+      Please note that FlexCat uses ReadArgs() to parse the preferences, so
+      you must place all the items in one line.
+
+    - If you use FlexCat to update old translations, you probably were
+      missing some sort of marker to let you easily spot the new strings.
+      This is now implemented - by default "***NEW***" is used, but you
+      can change it by using the FlexCat preferences.
+
+    - The QUIET switch used to suppress error messages.  Fixed.
+
+    - New C source descriptor Cat2h_?.sd.  Read the manual or
+      Lib/Cat2h.readme for more information.
+
+    - Version of updated catalogs bumped to 2.5.
+
+    - Portugese catalog, thanks to Frederico Borges <famb@mail.telepac.pt>
+      and Alexandre Gabriel <chryse@mail.telepac.pt>.
+
+    - Swedish translation of the FlexCat manual, thanks to Magnus Holmgren
+      <lear@algonet.se>.
+
+    - Spanish translation reworked by Marcos Broc <amiga187@arrakis.es> and
+      Samuel Aguilera <slyguy92@arrakis.es>.
+
+    - Now FlexCat calls DisplayBeep() when any error or warning happens
+      (but don't worry, it's smart enough, so you won't experience any
+      Beep() bombing ;).  You can shut it up with the NOBEEP switch if you
+      want.
+
+    - Previous releases had problems with comment lines ending with \'s,
+      which made FlexCat think it was a multiline string.  It isn't that
+      dumb now.
+
+    - You can now use octal, decimal and hexadecimal (e.g. "0x20") numbers
+      for all the FlexCat numeric arguments (like ##version) as well as
+      for (ID/MIN/MAX), ##codeset and others.
+
+    - New FLUSH switch added.  If enabled, all unused catalogs (but also
+      libraries, fonts, device drivers, etc.) will be flushed from memory
+      whenever a new catalog is written to disk.  This means that FLUSH
+      only works when the CATALOG keyword is used as well.
+
+    - New C source descriptors. catcomp_h.sd creates sources (almost)
+      identical to CatComp's, but expanded for multi-catalog support.
+      With this descriptor you can easily handle more than one catalog
+      in your program.  NOTE:  for compatibility reasons, other descriptors
+      remain unchanged (however, additional multicatalog versions may appear
+      in the next release).
+
+    - FlexCat does not accept an empty ##language argument any more.
+
+    - New FILL switch.  This feature is highly useful for translators,
+      and probably for them only.  Normally, when you're working on a
+      new translation, some of the strings remain untranslated because of
+      the very nature of a "work in progress".  Unfortunately all catalog
+      tools write all these empty strings into the catalog file, which will
+      cause empty buttons, menus or simmilar things to appear whenever you
+      check your unfinished translation with the program, which isn't very
+      nice and may even lead to crashes and other unexpected results.
+      Using FILL you can force FlexCat to fill all the empty slots
+      (strings from .ct file) with the original string taken from the
+      catalog description, avoiding empty GUIs, etc.  NOTE: this option is
+      only for testing purposes.  Final catalogs should of course always
+      be created without using this switch!
+
+    - English manual is now up to date.
+
+    - Added %a, %t and %z operands for source descriptors.  See (probably
+      English and Swedish only, for now) the manual for detailed information.
+
+
+  * FlexCat 1.8 (17.2.1997)
+
+    - Fixed bug causing bad handling of octal numbers.  Now FlexCat can
+      tell \0333 apart from \333 and treats it as [ESC][3].  It will also
+      correctly handle octal numbers shorter than 3 digits, e.g. \33
+      will be taken as \033.  Be careful, as \333 will not be taken
+      as [ESC][3] as it's a valid single octal number!
+
+    - Added new NOOPTIM switch.
+
+    - Now FlexCat is able to handle and parse texts like "This is a test\\"
+      without any problems, which was previously taken as multiline
+      text due to the trailing '\'.  Now FlexCat is smart enough
+      (CatComp isn't yet ;-) to cope with it.
+
+    - Added support for string ID incrementors, defined as (+VALUE//).
+
+    - Now allows you to create a translation file even if the .cd contains
+      neither ##version nor ##rcsid.  In this case it will create a default
+      header as CatComp does (the "Missing catalog translation version... "
+      message should now be taken as a warning, not as an error).
+
+    - Added the new QUIET switch.
+
+    - Additional catalogs from members of the Amiga Translators' Organization
+      <http://ato.vapor.com/>:
+
+         -> Serbian translation by Ljubomir Jankovic
+            <lurch@afrodita.rcub.bg.ac.yu>
+         -> Czech translation by Vit Sindlar <xsindl00@stud.fee.vutbr.cz>
+         -> Svedish translation by Magnus Holmgren <lear@algonet.se> and
+            Hjalmar Wikholm <hjalle@canit.se>
+         -> Finnish translation updated by Mika Lundell <c71829@uwasa.fi>
+         -> Italian translation reworked by Luca Nora
+            <ln546991@silab.dsi.unimi.it> and Giovanni Addabbo
+            <gaddabbo@imar.net>
+
+
+  * FlexCat 1.7 (??.??.????)
+
+    - Added "#rcsid" and "#name".
+
+    - Fixed two Enforcer hits which appeared when the .ct file had gaps.
+
+
+  * FlexCat 1.6 (??.??.????)
+
+    - Removed GetString() calls due to the new C source descriptions.
+
+
+  * FlexCat 1.5 (??.??.????)
+
+    - Added new WARNCTGAPS option.
+
+    - Added #chunk to catalog translations.
+
+
+  * FlexCat 1.4 (??.??.????)
+
+    - Added the environment variable FLEXCAT_SDDIR.  It uses AutoC_c.sd
+      and AutoC_h.sd now and is thus compilable with DICE and SAS/C only.
+
+    - Fixed a problem in stringtype Oberon: binary characters should be
+      like \000 and not \0.
+
+    - Fixed a problem in stringtype E: \e was written as \033.
+
+    - Added %f* (source description filename) and %o* (source filename)
+      to source descriptions.
+
+
+  * FlexCat 1.3 (??.??.????)
+
+    - Fixed a bug that caused FlexCat to hang if a catalog translation
+      was updated and a string was missing in the catalog description.
+
+    - Fixed a bug that caused FlexCat to create invalid catalogs,
+      probably.  Looks like locale.library expects a completely different
+      behaviour when padding version and language strings and the real
+      catalog strings.
+
+    - Added %e to source descriptions.
+
+
+  * FlexCat 1.2 (??.??.????)
+
+    - Fixed a bug in the E source generator: " was converted into \" and '
+      was not converted.
+
+
+  * FlexCat 1.1 (??.??.????)
+
+    - Fixed two bugs: FlexCat didn't notice if an ID was defined twice
+      (the C compiler did later...) and using language strings like
+      "français" did not work because of the cedilla.
+
+    - Introduced E support, thanks to Lionel Vintenat.
+
+
+  * FlexCat 1.01 (??.??.????)
+
+    - Fixed a bug: the length of the source string was used to check for
+      the stringlen instead of the real stringlen.
+
+
+  * FlexCat 1.0 (31.6.1993)
+
+    Initial release.
+
+                         ------------------------

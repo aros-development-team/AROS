@@ -1,0 +1,101 @@
+##rem $Id: Cat2h_c.sd 253 2014-02-18 11:15:58Z damato $
+##stringtype C
+
+/****************************************************************
+
+   This file was created automatically by `%fv'
+   from "%f0"
+
+   using Cat2h_c.sd 1.0 (23.05.97)
+
+   Do NOT edit by hand!
+
+****************************************************************/
+
+#ifdef __SASC
+#define __USE_SYSBASE 1
+#include <proto/exec.h>
+#include <proto/locale.h>
+#else
+#include <clib/exec_protos.h>
+#include <clib/locale_protos.h>
+#endif
+
+
+struct Library          *LocaleBase;
+static struct Catalog   *Catalog;
+
+
+/* No support for version number or other built-in language for now.
+ * Not often used (in my experience), and easy to add if you should
+ * need it.
+ *
+ * We open it at a high priority during autoinit (for SAS/C), to allow
+ * the use of GetString() in lower priority autoinit code.
+ */
+
+#ifdef _DCC
+__autoinit
+#endif
+VOID
+#ifdef __GNUC__
+__attribute__ ((constructor))
+#endif
+#ifdef __SASC
+_STI_19000_GetCatalog( VOID )
+#else
+GetCatalog( VOID )
+#endif
+{
+        if( LocaleBase = OpenLibrary( "locale.library", 0 ) )
+        {
+                Catalog = OpenCatalogA( NULL, "%b.catalog", NULL );
+        }
+}
+
+
+#ifdef _DCC
+__autoexit
+#endif
+VOID
+#ifdef __GNUC__
+__attribute__ ((destructor))
+#endif
+#ifdef __SASC
+_STD_19000_FreeCatalog( VOID )
+#else
+FreeCatalog( VOID )
+#endif
+{
+        if( LocaleBase )
+        {
+                CloseCatalog( Catalog );
+                CloseLibrary( LocaleBase );
+        }
+
+        Catalog = NULL;
+        LocaleBase = NULL;
+}
+
+
+STRPTR
+GetString( STRPTR str )
+{
+        ULONG   id;
+
+        if( !str )
+        {
+                /* Avoid Enforcer hits... */
+                return( NULL );
+        }
+
+        /* Avoid any problems regarding char not being unsigned */
+        id = ( ( ( UBYTE ) *str++ ) << 8 ) | ( ( UBYTE ) *str++ );
+
+        if( Catalog )
+        {
+                str = GetCatalogStr( Catalog, id, str );
+        }
+
+        return( str );
+}

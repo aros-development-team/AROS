@@ -1,0 +1,110 @@
+
+
+used %: bvlnidxc
+mine %: a - string id in byte form 
+        t - string len (long aligned) in byte form - move both to %n[xdo]!
+        z - fill with zeros up to length t
+
+ TODO
+ ----
+
+1. Add SAS/C support. I mainly mean using SAS messager. Would be handy a lot.
+
+--> Do we really want to keep support for SAS/C?
+
+
+2. Add trailing elipses check (...) in #?.cd and #?.ct (as CatComp does)
+
+    WARNING: original string for token '%s' had a trailing ellipsis (...)
+             file '%s' line %lu
+
+--> Definitely.
+
+
+3. Seems FlexCat read "\n\Polska wersja" but wrote "\npolska wersja"?
+
+--> To be investigated.
+
+
+4.  On 29-Wrz-97, Jorg-Cyril Hohle wrote:
+
+    I already reported a problem with reading large (e.g. bit 31 set, also
+    locale prototype says ULONG is accepted) string_ids with FlexCat
+    earlier today (not translated).  As FlexCat reports identical ids for
+    every such large number I guess it uses atol() and gets 0 :-(
+
+    I thought I could work around the bug by using hexadecimal numbers
+    introduced by $ as mentioned in CatComp.doc.  However it turns out
+    that FlexCat does not recognize $, only 0x is recognized since 1.9:
+    franc,ais.cd, Zeile 11; Warnung: Erwartete MinLen (Zeichen '/').
+    I recommend parsing $ for compatibility with CatComp.
+
+--> To be investigated.
+
+
+5.  * From	"Vit Sindlar" <sindlarv@hotmail.com>
+
+    In the end I'd like to make a suggestion to improve
+    FlexCat tool. After updating an old .ct file by a new
+    one (which is great function itself) would be handy
+    to have even changed strings marked (just like these
+    newly added).
+
+--> Would be handy to have...
+
+
+6.  Update the list of translators in the documentation.
+
+--> To be done for 2.7.
+
+
+7.  * CTINFO - generates the following in #?.ct files - ID: %ld   MIN: %ld  MAX: %ld
+    or graphically:
+
+    ID_XXX
+
+    ;    |      |
+    ;   MIN    MAX
+
+--> Hm, what for?
+
+
+8.  Kai Norhausen   Kn@tribal.line.org
+
+    Hi!
+
+    Here are some suggestions/bugs in flexcat 1.9
+
+    SUGG:  User defineable way to describe non-ascii chars like CR LF BEEP
+           NULL etc. to make flexcat more programming-language
+           independent. (e.g. '0A'x in Arexx) [yeah, I'm mad enough to
+           localise my ARexx scripts ;-) ]
+
+    NICE:  I wrote a little script file to create catalogs/sources more
+           easyly. Add it or delete it :)))
+
+--> To be considered for a future release...
+
+
+9. On 07-Jun-97, Marcin Orlowski wrote:
+
+   >>        Here is the first one B). I'm not joking, I'm sending you
+   >>        updated serbian translation of XPK.
+
+   >Thanks.
+
+   It was nothing...
+
+   >>        Also I have found a bug in $TODAY routine: for example
+   >>        it's 18:59:30 now (date 6.6.97) and FlexCat puts the
+   >>        date in the catalog to be *7.6.97*. Could you please
+   >>        check it.
+
+   >Hopefuly it's a minor bug. That may be happen by using gmtime()
+   >in the FlexCat for that. What offset from GMT do you have set?
+
+   The offset is -1.
+
+   DMX says: Replacing gmtime() with localtime() fixed it, hopefully :)
+
+--> To be verified.
