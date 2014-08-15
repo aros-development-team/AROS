@@ -24,7 +24,7 @@ SRC	:=  main.c \
        utils.c \
        locale_other.c
 
-SDFILES	:=  C_h_aros.sd
+SDFILES	:=  C_h_aros.sd C_c_orig.sd C_h_orig.sd gcccatcomp.sd
 
 SD_OUT	:=  $(foreach f,$(SDFILES),$(TOOLDIR)/$(f))
 
