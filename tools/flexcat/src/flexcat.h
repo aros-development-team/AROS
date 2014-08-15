@@ -64,7 +64,7 @@
  #define tolower ToLower
 #endif
 
-#if defined(__MORPHOS__) || defined(__AROS__) || defined(WIN32)
+#if defined(__MORPHOS__) || defined(__AROS__) || defined(WIN32) || defined(unix)
 #include <stdarg.h>
 int asprintf(char **ptr, const char * format, ...);
 int vasprintf(char **ptr, const char * format, va_list ap);
