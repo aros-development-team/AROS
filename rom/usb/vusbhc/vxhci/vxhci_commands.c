@@ -96,6 +96,19 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
     return TRUE;
 }
 
+WORD cmdReset(struct IOUsbHWReq *ioreq) {
+    mybug(-1, ("[VXHCI] cmdReset: Entering function\n"));
+
+    struct VXHCIUnit *unit = (struct VXHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    /*
+        Return UHIOERR_HOSTERROR if HARDWARE RESET of host controller wasn't succesfull.
+    */
+    //return UHIOERR_HOSTERROR;
+
+    return RC_OK;
+}
+
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     mybug(0, ("[VXHCI] cmdUsbReset: Entering function\n"));
 
@@ -503,6 +516,39 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                         mybug_unit(0, ("URTF_OTHER\n"));
 
                         switch(bRequest) {
+                            case USR_CLEAR_FEATURE:
+                                mybug_unit(0, ("USR_CLEAR_FEATURE\n"));
+
+                                switch(wValue) {
+                                    case UFS_PORT_POWER:
+                                        mybug_unit(0, ("UFS_PORT_POWER\n"));
+
+                                        ForeachNode(&unit->roothub.port_list, port) {
+                                            if(port->number == wIndex) {
+                                                mybug_unit(0, ("Found port %d named %s\n", port->number, port->name));
+                                                mybug_unit(0, ("Done\n\n"));
+                                                return UHIOERR_NO_ERROR;
+                                            }
+                                        }
+
+                                        mybug_unit(-1, ("Port not found!\n\n"));
+                                        break;
+
+                                    case UFS_PORT_CONNECTION:
+                                    case UFS_PORT_ENABLE:
+                                    case UFS_PORT_SUSPEND:
+                                    case UFS_PORT_OVER_CURRENT:
+                                    case UFS_PORT_RESET:
+                                    case UFS_PORT_LOW_SPEED:
+                                    case UFS_C_PORT_CONNECTION:
+                                    case UFS_C_PORT_ENABLE:
+                                    case UFS_C_PORT_SUSPEND:
+                                    case UFS_C_PORT_OVER_CURRENT:
+                                    case UFS_C_PORT_RESET:
+                                        break;
+                                } /* switch(wValue) */
+                                break;
+
                             case USR_SET_FEATURE:
                                 mybug_unit(0, ("USR_SET_FEATURE\n"));
 

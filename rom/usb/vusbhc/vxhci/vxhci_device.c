@@ -132,6 +132,7 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), struct VXHCIBa
         switch (ioreq->iouh_Req.io_Command) {
             case CMD_RESET:
                 mybug_unit(0, ("CMD_RESET\n"));
+                ret = cmdReset(ioreq);
                 break;
             case CMD_FLUSH:
                 mybug_unit(0, ("CMD_FLUSH\n"));
@@ -311,7 +312,6 @@ struct VXHCIUnit *VXHCI_AddNewUnit(ULONG unitnum) {
         unit->roothub.devdesc.bNumConfigurations            = 1;
 
         /* This is our root hub config descriptor */
-        unit->roothub.config.cfgdesc.bLength                = sizeof(struct UsbStdCfgDesc);
         unit->roothub.config.cfgdesc.bLength                = sizeof(struct UsbStdCfgDesc);
         unit->roothub.config.cfgdesc.bDescriptorType        = UDT_CONFIGURATION;
         unit->roothub.config.cfgdesc.wTotalLength           = AROS_WORD2LE(sizeof(struct RHConfig));
