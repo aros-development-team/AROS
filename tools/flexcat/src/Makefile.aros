@@ -1,0 +1,47 @@
+#   Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+#   $Id: Makefile 44507 2012-04-03 16:09:41Z mazze $
+#
+#   Desc: Makefile for FlexCat
+#
+
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -Wall -Werror -Wunused -O2
+
+SRC	:=  main.c \
+        asprintf.c \
+       strptime.c \
+       createcat.c \
+       createcatsrc.c \
+       createct.c \
+       globals.c \
+       readprefs.c \
+       scancd.c \
+       scanct.c \
+       scanpo.c \
+       showfuncs.c \
+       swapfuncs.c \
+       utils.c \
+       locale_other.c
+
+SDFILES	:=  C_c.sd C_h.sd
+
+SD_OUT	:=  $(foreach f,$(SDFILES),$(TOOLDIR)/$(f))
+
+all : $(FLEXCAT) $(SD_OUT)
+
+$(FLEXCAT) : $(SRC)
+	@$(MECHO) "Compiling $(notdir $@)..."
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $(SRC) -o $@
+#	@$(HOST_STRIP) $@
+
+$(TOOLDIR)/%.sd : sd/%.sd
+	@$(CP) $< $@
+
+
+
+$(OBJDIR) :
+	@$(MKDIR) -p $(OBJDIR)
+
+clean:
+	@$(RM) -f $(FLEXCAT)
