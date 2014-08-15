@@ -71,7 +71,7 @@ $(ARCHTOOL) : $(SRCDIR)/tools/archtools/archtool.c
 	@$(ECHO) Building archtool...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/archtools SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(FLEXCAT) : $(SRCDIR)/tools/flexcat/flexcat.c
+$(FLEXCAT) : $(wildcard $(SRCDIR)/tools/flexcat/src/*.[ch]) $(wildcard $(SRCDIR)/tools/flexcat/src/sd/*.sd)
 	@$(ECHO) Building flexcat...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/flexcat/src -f Makefile.aros SRCDIR=$(SRCDIR) TOP=$(TOP)
 

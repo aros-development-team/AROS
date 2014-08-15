@@ -1,0 +1,85 @@
+##rem $Id: C_h_orig.sd 39849 2011-07-06 07:48:37Z sonic $
+##stringtype C
+##shortstrings
+/****************************************************************
+   This file was created automatically by `%fv'
+   from "%f0".
+
+   Do NOT edit by hand!
+****************************************************************/
+
+#ifndef %b_H
+#define %b_H
+
+
+#ifndef EXEC_TYPES_H
+#include <exec/types.h>
+#endif
+
+
+#ifdef CATCOMP_ARRAY
+#undef CATCOMP_NUMBERS
+#undef CATCOMP_STRINGS
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#endif
+
+#ifdef CATCOMP_BLOCK
+#undef CATCOMP_STRINGS
+#define CATCOMP_STRINGS
+#endif
+
+/***************************************************************/
+
+#ifdef CATCOMP_NUMBERS
+
+#define %i %d
+
+#endif /* CATCOMP_NUMBERS */
+
+/***************************************************************/
+
+#ifdef CATCOMP_STRINGS
+
+#define %i_STR %s
+
+#endif /* CATCOMP_STRINGS */
+
+/***************************************************************/
+
+#ifdef CATCOMP_ARRAY
+
+struct CatCompArrayType
+{
+  LONG   cca_ID;
+  STRPTR cca_Str;
+};
+
+static const struct CatCompArrayType CatCompArray[] =
+{
+  {%i,(STRPTR)%i_STR},
+  {0,NULL}
+};
+
+#endif /* CATCOMP_ARRAY */
+
+/***************************************************************/
+
+#ifdef CATCOMP_BLOCK
+
+#error CATCOMP_BLOCK not supported by this SD
+
+#endif /* CATCOMP_BLOCK */
+
+/***************************************************************/
+
+#ifdef CATCOMP_CODE
+
+#error CATCOMP_CODE not supported by this SD
+
+#endif /* CATCOMP_CODE */
+
+/***************************************************************/
+
+
+#endif
