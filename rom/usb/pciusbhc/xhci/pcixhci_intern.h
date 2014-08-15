@@ -70,10 +70,8 @@ struct PCIXHCIRootHub {
         struct UsbStdEPDesc      epdesc;
     }                            config;
 
-    union {
-        struct UsbHubDesc        usb20;
-        struct UsbSSHubDesc      usb30;
-    }                            hubdesc;
+    struct UsbSSHubDesc          hubdesc;
+
 };
 
 struct PCIXHCIHostController {
@@ -116,9 +114,11 @@ struct PCIXHCIBase {
 #define HiddPCIDeviceAttrBase (LIBBASE->HiddPCIDeviceAB)
 
 BOOL PCIXHCI_Discover(struct PCIXHCIBase *PCIXHCIBase);
+BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit);
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit);
 
 BOOL cmdAbortIO(struct IOUsbHWReq *ioreq);
+WORD cmdReset(struct IOUsbHWReq *ioreq);
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq);
 WORD cmdNSDeviceQuery(struct IOStdReq *ioreq);
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq);

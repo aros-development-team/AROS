@@ -36,6 +36,12 @@
 
 #include LC_LIBDEFS_FILE
 
+BOOL PCIXHCI_HCReset(struct PCIXHCIUnit *unit) {
+    mybug_unit(-1, ("Resetting the host controller\n"));
+
+    return TRUE;
+}
+
 BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     mybug(-1, ("[PCIXHCI] PCIXHCI_Examine: pcidevice = %p\n", unit->hc.pcidevice));
     mybug(-1, ("[PCIXHCI] PCIXHCI_Examine: pcidriver = %p\n", unit->hc.pcidriver));
