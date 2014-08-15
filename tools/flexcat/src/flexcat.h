@@ -116,18 +116,19 @@ int vasprintf(char **ptr, const char * format, va_list ap);
 // the OS4 SDK and we bring them onto all the
 // other OSs as well....
 #if !defined(__amigaos4__)
-typedef unsigned char uint8;
-typedef   signed char  int8;
+#include <stdint.h>
+typedef uint8_t uint8;
+typedef  int8_t  int8;
 
-typedef unsigned short uint16;
-typedef   signed short  int16;
+typedef uint16_t uint16;
+typedef  int16_t  int16;
 
-typedef unsigned long uint32;
-typedef   signed long  int32;
+typedef uint32_t uint32;
+typedef  int32_t  int32;
 
 #if !defined(__SASC) && ((__GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95)) || defined(__VBCC__))
-typedef unsigned long long uint64;
-typedef   signed long long  int64;
+typedef uint64_t uint64;
+typedef  int64_t  int64;
 #else
 typedef struct { unsigned long hi,lo; } uint64; /* Not exactly scalar data
                                                  * types, but the right size.
