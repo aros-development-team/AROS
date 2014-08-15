@@ -3715,6 +3715,9 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
     struct PsdDevice *pd = NULL;
     struct PsdPipe *pp;
     struct MsgPort *mp;
+#ifdef AROS_USB30_CODE
+    LONG ioerr;
+#endif
     KPRINTF(2, ("psdEnumerateHardware(%p)\n", phw));
 
     if((mp = CreateMsgPort()))
@@ -3728,8 +3731,36 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
                 //pp->pp_IOReq.iouh_Flags |= UHFF_NAKTIMEOUT;
                 //pp->pp_IOReq.iouh_NakTimeout = 1000;
                 pd->pd_Flags |= PDFF_CONNECTED;
+#ifdef AROS_USB30_CODE
+                pp->pp_IOReq.iouh_Req.io_Command = CMD_RESET;
+#else
                 pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
+#endif
+
+#ifdef AROS_USB30_CODE
+                ioerr = psdDoPipe(pp, NULL, 0);
+                if(ioerr == UHIOERR_HOSTERROR) {
+                    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "CMD_RESET failed.");
+                    psdFreePipe(pp);
+                    pFreeBindings(ps, pd);
+                    pFreeDevice(ps, pd);
+                    DeleteMsgPort(mp);
+                    return(NULL);
+                } else {
+                    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
+                    ioerr = psdDoPipe(pp, NULL, 0);
+                    if(ioerr == UHIOERR_HOSTERROR) {
+                        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "UHCMD_USBRESET reset failed.");
+                        psdFreePipe(pp);
+                        pFreeBindings(ps, pd);
+                        pFreeDevice(ps, pd);
+                        DeleteMsgPort(mp);
+                        return(NULL);
+                    }
+                }
+#else
                 psdDoPipe(pp, NULL, 0);
+#endif
                 pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
                 psdDelayMS(100); // wait for root hub to settle
                 if(psdEnumerateDevice(pp))
@@ -6907,7 +6938,13 @@ AROS_LH0(void, psdParseCfg,
                     phw = psdAddHardware(name, unit);
                     if(phw)
                     {
+#ifdef AROS_USB30_CODE
+                        if(psdEnumerateHardware(phw) == NULL) {
+                            psdRemHardware(phw);
+                        }
+#else
                         psdEnumerateHardware(phw);
+#endif
                     }
                 }
             }
