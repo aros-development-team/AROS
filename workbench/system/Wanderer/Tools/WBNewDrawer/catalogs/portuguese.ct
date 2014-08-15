@@ -43,8 +43,8 @@ Mudar nome
 ;Rename_Me
 ;
 MSG_ERROR_TITLE
-;WBNuevoCajón: Error
-WBNewDrawer: Erro
+WBNuevoCajón: Error
+;WBNewDrawer: Erro
 ;
 MSG_ALREADY_EXIST
 ¡'%s' já existe!

@@ -1,5 +1,6 @@
 ;## chunk AUTH Janne Peräaho
 ## language finnish
+## codeset 0
 ## version $VER: diskimagedevice.ct 52.38 (24.4.2008)
 MSG_OK_GAD
 _Ok
