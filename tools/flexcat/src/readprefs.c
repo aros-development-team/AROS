@@ -91,7 +91,7 @@ char ReadPrefs(void)
   };
 
   const char template[] = "SDDIR/K,MSG_NEW/K,CODESET/K,WARNCTGAPS/S,NOOPTIM/S,FILL/S,FLUSH/S,NOBEEP/S,QUIET/S,NOLANGTOLOWER/S,NOBUFFEREDIO/S,MODIFIED/S,COPYMSGNEW/S,OLDMSGNEW/K,NOAUTODATE/S,NOSPACES/S";
-  LONG Results[ARGS_COUNT] = { 0 };
+  SIPTR Results[ARGS_COUNT] = { 0 };
   char *prefs;
   struct RDArgs *rda;
   struct RDArgs *rdargs;
