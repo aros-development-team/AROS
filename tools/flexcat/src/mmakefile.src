@@ -1,0 +1,36 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- tools-flexcat : tools-flexcat-bin tools-flexcat-sd
+#MM tools-flexcat-bin : includes linklibs
+
+FILES := \
+    main \
+    createcat \
+    createcatsrc \
+    createct \
+    globals \
+    readprefs \
+    scancd \
+    scanct \
+    scanpo \
+    showfuncs \
+    swapfuncs \
+    utils \
+    locale \
+    getft \
+    asprintf \
+    vasprintf \
+    vastubs \
+    openlibs
+
+EXEDIR := $(AROS_CONTRIB)/Development/FlexCat
+USER_CFLAGS := -DNO_INLINE_STDARG -D__BSD_VISIBLE=1 -DAMIGA
+
+%build_prog mmake=tools-flexcat-bin files=$(FILES) \
+    progname=flexcat targetdir=$(EXEDIR)
+
+%copy_dir_recursive mmake=tools-flexcat-sd src=sd dst=$(EXEDIR)/Lib
+
+%common

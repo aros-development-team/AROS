@@ -4,7 +4,7 @@
 /* Includeheader
 
         Name:           SDI_compiler.h
-        Versionstring:  $VER: SDI_compiler.h 1.33 (03.06.2010)
+        Versionstring:  $VER: SDI_compiler.h 1.35 (03.03.2011)
         Author:         Dirk Stoecker & Jens Langner
         Distribution:   PD
         Project page:   http://www.sf.net/projects/sditools/
@@ -56,6 +56,9 @@
  1.32  28.05.09 : added STACKED definition for non-AROS targets.
  1.33  03.06.10 : added missing SIPTR definition to make SDI_compiler.h more compatible
                   to AROS.
+ 1.34  26.07.10 : adapted IPTR and SIPTR definitions as the latest MorphOS SDK already
+                  contains them. (tboeckel)
+ 1.35  03.03.11 : fixed AROS macros for m68k (Jason McMullan)
 
 */
 
@@ -136,7 +139,7 @@
     #define INLINE static __inline __attribute__((always_inline))
   #endif
   /* we have to distinguish between AmigaOS4 and MorphOS */
-  #if defined(_M68000) || defined(__M68000) || defined(__mc68000)
+  #if (defined(_M68000) || defined(__M68000) || defined(__mc68000)) && !defined(__AROS__)
     #define REG(reg,arg) arg __asm(#reg)
     #define LREG(reg,arg) register REG(reg,arg)
   #else
@@ -223,10 +226,10 @@
 #if !defined(DEPRECATED)
   #define DEPRECATED
 #endif
-#if !defined(__AROS__) && !defined(IPTR)
+#if !defined(__AROS__) && !defined(__MORPHOS__) && !defined(IPTR)
   #define IPTR ULONG
 #endif
-#if !defined(__AROS__) && !defined(SIPTR)
+#if !defined(__AROS__) && !defined(__MORPHOS__) && !defined(SIPTR)
   #define SIPTR LONG
 #endif
 #if !defined(__AROS__) && !defined(STACKED)
