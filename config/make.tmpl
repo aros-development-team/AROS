@@ -2145,7 +2145,7 @@ GLOB_MKDIRS += %(objdir) %(libdir)
 
 %define build_catalogs mmake=/A name=/A subdir=/A \
  catalogs= source="../strings.h" description= dir=$(AROS_CATALOGS) \
- sourcedescription="$(TOOLDIR)/C_h_aros" srcdir="$(SRCDIR)/$(CURDIR)"
+ sourcedescription="$(TOOLDIR)/C_h" srcdir="$(SRCDIR)/$(CURDIR)"
 
 ifeq (%(description),)
 BD_DESC := $(basename $(wildcard %(srcdir)/*.cd))
