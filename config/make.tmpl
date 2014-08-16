@@ -2686,6 +2686,8 @@ ifeq (%(compiler),target)
     CONFIG_ENV := \
         PKG_CONFIG_LIBDIR="$(AROS_DEVELOPMENT)/lib/pkgconfig" \
         PKG_CONFIG_SYSROOT_DIR="$(AROSDIR)" \
+        CFLAGS="$(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" \
+        CXXFLAGS="$(DEBUG_CFLAGS) $(OPTIMIZATION_CFLAGS)" \
         CPP="$(TARGET_CPP)" \
         CXXCPP="$(TARGET_CPP)" \
         CC="$(TARGET_CC) $(TARGET_CFLAGS) -L$(AROS_DEVELOPMENT)/lib -I$(AROS_DEVELOPMENT)/include %(extracflags) $(ISA_FLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)"\
