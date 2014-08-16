@@ -11,6 +11,7 @@
 #endif
 #define DEBUG 1
 
+#include <aros/io.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
 #include <aros/asmcall.h>

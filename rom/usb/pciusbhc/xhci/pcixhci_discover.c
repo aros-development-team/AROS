@@ -11,6 +11,7 @@
 #endif
 #define DEBUG 1
 
+#include <aros/io.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
 #include <aros/asmcall.h>
@@ -75,7 +76,7 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
             FreeVec(unit);
         }
     } else {
-        mybug(-1, ("\n[PCIXHCI] Enumerator: Failed to allocate unit controller structure!\n\n"));
+        mybug(-1, ("\n[PCIXHCI] Enumerator: Failed to allocate unit structure!\n\n"));
     }
 
     AROS_USERFUNC_EXIT
