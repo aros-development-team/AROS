@@ -187,6 +187,11 @@ else
 MECHO	:= $(NOP)
 endif
 
+# Optimization and instruction set architecture flags
+CONFIG_CFLAGS += $(OPTIMIZATION_CFLAGS)
+CONFIG_CFLAGS += $(ISA_FLAGS)
+CONFIG_AFLAGS += $(ISA_FLAGS)
+
 # C and assembly flags are set depending upon the directory
 CFLAGS      = $(USER_INCLUDES) $(CONFIG_CFLAGS) $(USER_CFLAGS)
 AFLAGS	    = $(USER_AFLAGS) $(CONFIG_AFLAGS)

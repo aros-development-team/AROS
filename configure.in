@@ -736,7 +736,7 @@ if test "$optimization" = "unknown"; then
         optimization="-O2"
     fi
 fi
-aros_config_cflags="$aros_config_cflags $optimization"
+aros_optimization_cflags="$optimization"
 AC_MSG_RESULT($optimization)
 
 #-----------------------------------------------------------------------------
@@ -862,10 +862,6 @@ case "$target_os" in
                 aros_object_format="elf_i386"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
-                aros_config_cflags="$aros_config_cflags -m32 -march=i486"
-                aros_kernel_cflags="$aros_kernel_cflags -m32 -march=i486"
-                aros_config_aflags="$aros_config_aflags -m32 -march=i486"
-                aros_config_ldflags="-m32 -march=i486"
                 aros_kernel_ldflags="-Wl,-melf_i386"
                 aros_default_wbdepth=8
                 gcc_target_cpu="i386"
@@ -990,10 +986,6 @@ case "$target_os" in
                 fi
                 aros_flavour="standalone"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-                aros_config_cflags="$aros_config_cflags -m32 -march=i486"
-                aros_kernel_cflags="$aros_kernel_cflags -m32 -march=i486"
-                aros_config_aflags="$aros_config_aflags -m32 -march=i486"
-                aros_config_ldflags="-m32 -march=i486"
                 aros_kernel_ldflags="-Wl,-melf_i386"
                 aros_default_wbwidth=640
                 aros_default_wbheight=480
@@ -1621,8 +1613,13 @@ arm)
     AC_ARG_WITH(float,AC_HELP_STRING([--with-float=<spec>],[Specify floating point ABI (default=$gcc_default_float_abi).]),aros_gcc_float_abi="$withval",aros_gcc_float_abi=$gcc_default_float_abi)
     AC_MSG_RESULT($aros_gcc_float_abi)
 
-    aros_config_cflags="$aros_config_cflags -marm -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi -fno-asynchronous-unwind-tables -fno-exceptions"
-    aros_config_aflags="$aros_config_aflags -marm -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi -fno-asynchronous-unwind-tables -fno-exceptions"
+    aros_isa_flags="-marm -mthumb-interwork -march=$aros_gcc_cpu -mfpu=$aros_gcc_fpu -mfloat-abi=$aros_gcc_float_abi"
+    aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables -fno-exceptions"
+    aros_config_aflags="$aros_config_aflags -fno-asynchronous-unwind-tables -fno-exceptions"
+    ;;
+i386)
+    aros_isa_flags="-m32 -march=i486"
+    aros_kernel_cflags="$aros_kernel_cflags $aros_isa_flags"
     ;;
 esac
 
@@ -2682,6 +2679,8 @@ AC_SUBST(aros_debug_aflags)
 AC_SUBST(aros_debug_ldflags)
 AC_SUBST(aros_target_genmap)
 AC_SUBST(aros_target_strip_flags)
+AC_SUBST(aros_optimization_cflags)
+AC_SUBST(aros_isa_flags)
 
 AC_SUBST(crosstools_target)
 AC_SUBST(crosstools_cxx_target)
