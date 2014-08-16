@@ -77,7 +77,8 @@ void StringToClipboard(STRPTR str, LONG length)
   ENTER();
 
   // lock out other tasks
-  if(AttemptSemaphore(serverLock))
+  if(str != NULL &&
+     AttemptSemaphore(serverLock))
   {
     struct ServerData sd;
 

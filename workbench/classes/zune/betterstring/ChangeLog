@@ -2,8 +2,62 @@
 MUI BetterString MCC class - ChangeLog
 --------------------------------------
 
-$Id: ChangeLog 405 2013-04-25 11:34:28Z damato $
-$URL: svn://svn.code.sf.net/p/bstring-mcc/code/releases/11.25/ChangeLog $
+$Id: ChangeLog 427 2014-04-04 19:48:48Z damato $
+$URL: svn://svn.code.sf.net/p/bstring-mcc/code/releases/11.28/ChangeLog $
+
+#### v11.28 RELEASE ###########################################################
+
+2014-04-04 Jens Maus <mail@jens-maus.de>
+
+  * misc: final 11.28 release preparations
+
+2014-04-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale: added a new header line to the .po files to specify a correct
+    name for the generated .catalog file. This fixes #18.
+
+2014-04-01 Jens Maus <mail@jens-maus.de>
+
+  * tools/mkrelease.sh: fixed a problem where the release script didn't rename
+    the catalog files correctly to "BetterString_mcp.catalog". This fixes #18.
+
+#### v11.27 RELEASE ###########################################################
+
+2014-03-30 Jens Maus <mail@jens-maus.de>
+
+  * misc: final 11.27 release preparations
+  * tools/mkrelease.sh: modified release script to dynamically identify all
+    catalogs to be included in the release archive.
+  * mcc/FileNameCompl.c: added <dos/obsolete.h> which is required for the OS4
+    build with newer SDKs.
+  * mcp/locale/dutch.po: added new dutch translation
+  * mcp/locale/spanish.po: added new spanish translation
+
+2014-02-18 Jens Maus <mail@jens-maus.de>
+
+  * mcp/locale: all catalog translations have now been moved to use the free
+    services of transifex (http://www.transifex.com/projects/p/bstring-mcc/)
+
+2014-01-13 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/danish.ct: updated danish translation kindly provided by Niels
+    Bache.
+
+#### v11.26 RELEASE ###########################################################
+
+2013-12-13 Jens Maus <mail@jens-maus.de>
+
+  * misc: final 11.26 release preparations
+
+2013-07-21 Jens Langner <Jens.Langner@light-speed.de>
+
+  * mcc/ClipboardServer.c: fixed a potential NULL pointer use when str had been
+    NULL and strlen() in StringToClipboard() was called.
+
+2013-04-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/greek.ct: updated greek translation kindly provided by Antonis
+    Iliakis.
 
 #### v11.25 RELEASE ###########################################################
 

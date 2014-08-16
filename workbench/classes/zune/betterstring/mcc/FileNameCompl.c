@@ -30,6 +30,10 @@
 #include <proto/utility.h>
 #include <proto/dos.h>
 
+#if defined(__amigaos4__)
+#include <dos/obsolete.h>
+#endif
+
 #ifdef AROS_ABI_V1
 #include <aros/config.h>
 #endif

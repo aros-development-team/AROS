@@ -16,7 +16,7 @@
 
  BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
 
- $Id: AUTHORS 281 2010-09-08 06:44:26Z mandi78 $
+ $Id: AUTHORS 410 2013-12-13 19:44:26Z damato $
 
 ***************************************************************************/
 
@@ -25,7 +25,7 @@ design provided by the following people:
 
 Allan Odgaard      <duff2@users.sourceforge.net>
 Ilkka Lehtoranta   <ilkleht@isoveli.org>
-Jens Langner       <damato@users.sourceforge.net>
+Jens Maus          <mail@jens-maus.de>
 Thore Böckelmann   <tboeckel@gmx.de>
 
 Translations provided and maintained by following people:

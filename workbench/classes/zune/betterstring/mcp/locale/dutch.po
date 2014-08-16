@@ -1,0 +1,214 @@
+# Translation catalog description file (pot-style)
+# $Id: dutch.po 427 2014-04-04 19:48:48Z damato $
+# 
+# version 2
+# Translators:
+# JohanB <j.banis@banis.info>, 2014
+# JohanB <j.banis@banis.info>, 2014
+msgid ""
+msgstr ""
+"Project-Id-Version: MCC BetterString\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/bstring-mcc/\n"
+"POT-Creation-Date: 2014-02-18 15:35+0100\n"
+"PO-Revision-Date: 2014-04-04 16:05+0000\n"
+"Last-Translator: JohanB <j.banis@banis.info>\n"
+"Language-Team: Dutch (http://www.transifex.com/projects/p/bstring-mcc/language/nl/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: BetterString_mcp\n"
+"Language: nl\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "MSG_Label_Active (0//)"
+msgid "Active:"
+msgstr "Actief:"
+
+msgctxt "MSG_Label_Background (1//)"
+msgid "Background"
+msgstr "Achtergrond"
+
+msgctxt "MSG_Label_Cursor (2//)"
+msgid "Cursor:"
+msgstr "Cursor:"
+
+msgctxt "MSG_Label_Inactive (5//)"
+msgid "Inactive:"
+msgstr "Inactief:"
+
+msgctxt "MSG_Label_Marked (6//)"
+msgid "Marked:"
+msgstr "Gemarkeerd:"
+
+msgctxt "MSG_Label_Text (7//)"
+msgid "Text"
+msgstr "Tekst"
+
+msgctxt "MSG_String_TestString (8//)"
+msgid "Test the power of BetterString here!"
+msgstr "Test hier de kracht van BetterString"
+
+msgctxt "MSG_Help_Copy (9//)"
+msgid "Copy all or marked text"
+msgstr "Kopieer alle of gemarkeerde tekst"
+
+msgctxt "MSG_Help_Copy_Shortcut (10//)"
+msgid "Amiga + c"
+msgstr "Amiga + c"
+
+msgctxt "MSG_Help_Cut (11//)"
+msgid "Cut all or marked text"
+msgstr "Knip alle of gemarkeerde tekst"
+
+msgctxt "MSG_Help_Cut_Shortcut (12//)"
+msgid "Amiga + x"
+msgstr "Amiga + x"
+
+msgctxt "MSG_Help_Paste (13//)"
+msgid "Paste"
+msgstr "Plak"
+
+msgctxt "MSG_Help_Paste_Shortcut (14//)"
+msgid "Amiga + v"
+msgstr "Amiga + v"
+
+msgctxt "MSG_Help_Undo (15//)"
+msgid "Undo last deletion"
+msgstr "Herstel laatste keer wissen"
+
+msgctxt "MSG_Help_Undo_Shortcut (16//)"
+msgid "Amiga + z"
+msgstr "Amiga + z"
+
+msgctxt "MSG_Help_Redo (17//)"
+msgid "Redo last deletion"
+msgstr "Opnieuw laatste keer wissen"
+
+msgctxt "MSG_Help_Redo_Shortcut (18//)"
+msgid "Amiga + Z"
+msgstr "Amiga + Z"
+
+msgctxt "MSG_Help_ToggleBuffer (19//)"
+msgid "Toggle between original and modified buffer"
+msgstr "Wissel tussen originele en gewijzigde buffer"
+
+msgctxt "MSG_Help_ToggleBuffer_Shortcut (20//)"
+msgid "Amiga + q"
+msgstr "Amiga + u"
+
+msgctxt "MSG_Help_ToggleCaseChar (21//)"
+msgid "Toggle case on character"
+msgstr "Wissel tussen onder- en bovenkast van letter"
+
+msgctxt "MSG_Help_ToggleCaseChar_Shortcut (22//)"
+msgid "Amiga + g"
+msgstr "Amiga + g"
+
+msgctxt "MSG_Help_ToggleCaseWord (23//)"
+msgid "Toggle case on word"
+msgstr "Wissel tussen onder- en bovenkast van woord"
+
+msgctxt "MSG_Help_ToggleCaseWord_Shortcut (24//)"
+msgid "Amiga + G"
+msgstr "Amiga + G"
+
+msgctxt "MSG_Help_IncreaseNumber (25//)"
+msgid "Increase number"
+msgstr "Hoger getal"
+
+msgctxt "MSG_Help_IncreaseNumber_Shortcut (26//)"
+msgid "Amiga + i"
+msgstr "Amiga + i"
+
+msgctxt "MSG_Help_DecreaseNumber (27//)"
+msgid "Decrease number"
+msgstr "Lager getal"
+
+msgctxt "MSG_Help_DecreaseNumber_Shortcut (28//)"
+msgid "Amiga + d"
+msgstr "Amiga + d"
+
+msgctxt "MSG_Help_HexToDecimal (29//)"
+msgid "Hex to Decimal"
+msgstr "Hex naar decimaal"
+
+msgctxt "MSG_Help_HexToDecimal_Shortcut (30//)"
+msgid "Amiga + #"
+msgstr "Amiga + #"
+
+msgctxt "MSG_Help_DecimalToHex (31//)"
+msgid "Decimal to Hex"
+msgstr "Decimaal naar hex"
+
+msgctxt "MSG_Help_DecimalToHex_Shortcut (32//)"
+msgid "Amiga + $"
+msgstr "Amiga + $"
+
+msgctxt "MSG_Help_FilenameCompletition (33//)"
+msgid "Filenamecompletion (use SHIFT to cycle back)"
+msgstr "Bestandsnaam aanvullen (gebruik SHIFT om achteruit te gaan)"
+
+msgctxt "MSG_Help_FilenameCompletition_Shortcut (34//)"
+msgid "Amiga + TAB"
+msgstr "Amiga + TAB"
+
+msgctxt "MSG_Help_Mark (35//)"
+msgid "Mark"
+msgstr "Markeer"
+
+msgctxt "MSG_Help_Mark_Shortcut (36//)"
+msgid "CTRL + cursor"
+msgstr "CTRL + cursor"
+
+msgctxt "MSG_Help_GotoToStartEndOfLine (37//)"
+msgid "Goto to start/end of line"
+msgstr "Ga naar begin/eind van regel"
+
+msgctxt "MSG_Help_GotoToStartEndOfLine_Shortcut (38//)"
+msgid "SHIFT + cursor"
+msgstr "SHIFT + cursor"
+
+msgctxt "MSG_Help_DeleteToStartEndOfLine (39//)"
+msgid "Delete to start/end of line"
+msgstr "Wissen tot aan begin/eind van regel"
+
+msgctxt "MSG_Help_DeleteToStartEndOfLine_Shortcut (40//)"
+msgid "SHIFT + BACKSPACE/DELETE"
+msgstr "SHIFT + BACKSPACE/DELETE"
+
+msgctxt "MSG_Help_GotoToPrevNextWord (41//)"
+msgid "Goto to previous/next word"
+msgstr "Ga naar vorig/volgend woord"
+
+msgctxt "MSG_Help_GotoToPrevNextWord_Shortcut (42//)"
+msgid "ALT + cursor"
+msgstr "ALT + cursor"
+
+msgctxt "MSG_Help_DeleteToPrevNextWord (43//)"
+msgid "Delete previous/next word"
+msgstr "Wis vorig/volgend woord"
+
+msgctxt "MSG_Help_DeleteToPrevNextWord_Shortcut (44//)"
+msgid "ALT + BACKSPACE/DELETE"
+msgstr "ALT + BACKSPACE/DELETE"
+
+msgctxt "MSG_SelectOnActive (45//)"
+msgid "Select on Active"
+msgstr "Selecteer op Actief"
+
+msgctxt "MSG_HELP_SelectOnActive (46//)"
+msgid ""
+"Automatically select all text when a\n"
+"BetterString object gets activated\n"
+"via TAB cycling or mouse activation."
+msgstr "Selecteer alle tekst automatisch wanneer\neen BetterString-object geactiveerd wordt\nvia TAB-cyclus of muis-activiteit."
+
+msgctxt "MSG_SelectPointer (47//)"
+msgid "Selection Pointer"
+msgstr "Selectie punt:"
+
+msgctxt "MSG_HELP_SelectPointer (48//)"
+msgid ""
+"If enabled, a custom selection pointer will appear\n"
+"when the mouse pointer is above a betterstring gadget."
+msgstr "Als dit ingeschakeld is komt er een custom selectiepunt\nwanneer de muis boven een BetterString-gadget komt."
