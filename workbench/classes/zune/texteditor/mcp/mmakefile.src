@@ -29,72 +29,27 @@ FILES := library \
   modname=TextEditor modtype=mcp \
   files=$(FILES)
 
+
 #MM includes-copy
 
 INCLUDE_FILES := TextEditor_mcp.h
 %copy_includes path=mui
 
+
 TARGETDIR := $(AROS_CATALOGS)
-
-LOCALE_H := $(TOP)/$(CURDIR)/locale.h
-LOCALE_C := $(TOP)/$(CURDIR)/locale.c
-
-#MM
-workbench-classes-zune-texteditor-mcp-locale : $(LOCALE_C) $(LOCALE_H) \
-    $(TARGETDIR)/german/TextEditor_mcp.catalog \
-    $(TARGETDIR)/czech/TextEditor_mcp.catalog \
-    $(TARGETDIR)/swedish/TextEditor_mcp.catalog \
-    $(TARGETDIR)/french/TextEditor_mcp.catalog \
-    $(TARGETDIR)/danish/TextEditor_mcp.catalog \
-    $(TARGETDIR)/russian/TextEditor_mcp.catalog \
-    $(TARGETDIR)/polish/TextEditor_mcp.catalog \
-    $(TARGETDIR)/greek/TextEditor_mcp.catalog \
-    $(TARGETDIR)/italian/TextEditor_mcp.catalog
-
-$(LOCALE_H): locale/TextEditor_mcp.cd C_h.sd
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $(LOCALE_H)=$(SRCDIR)/$(CURDIR)/C_h.sd
-
-$(LOCALE_C): locale/TextEditor_mcp.cd C_c.sd
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $(LOCALE_C)=$(SRCDIR)/$(CURDIR)/C_c.sd
-
-$(TARGETDIR)/german/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/german.ct
-	@$(MKDIR) $(TARGETDIR)/german
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/czech/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/czech.ct
-	@$(MKDIR) $(TARGETDIR)/czech
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/french/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/french.ct
-	@$(MKDIR) $(TARGETDIR)/french
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/swedish/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/swedish.ct
-	@$(MKDIR) $(TARGETDIR)/swedish
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/danish/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/danish.ct
-	@$(MKDIR) $(TARGETDIR)/danish
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/russian/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/russian.ct
-	@$(MKDIR) $(TARGETDIR)/russian
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/polish/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/polish.ct
-	@$(MKDIR) $(TARGETDIR)/polish
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/greek/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/greek.ct
-	@$(MKDIR) $(TARGETDIR)/greek
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/italian/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/italian.ct
-	@$(MKDIR) $(TARGETDIR)/italian
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
+LANGUAGES := $(basename $(notdir $(call WILDCARD,$(SRCDIR)/$(CURDIR)/locale/*.po)))
+CATALOGS := $(addprefix $(TARGETDIR)/,$(addsuffix /TextEditor_mcp.catalog,$(LANGUAGES)))
 
 #MM
-texteditor-mcp-clean :
-	-$(RM) $(LOCALE_H) $(LOCALE_C)
+workbench-classes-zune-texteditor-mcp-locale : locale.h locale.c $(CATALOGS)
+
+locale.h: locale.c
+locale.c: $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.pot $(SRCDIR)/$(CURDIR)/C_h.sd $(SRCDIR)/$(CURDIR)/C_c.sd
+	$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.pot locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
+
+$(TARGETDIR)/%/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/%.po
+	$(ECHO) "Building catalog $@"
+	$(MKDIR) $(dir $@)
+	$(FLEXCAT) POFILE $< CATALOG $@
 
 %common
