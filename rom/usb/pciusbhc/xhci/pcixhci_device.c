@@ -101,9 +101,15 @@ static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR LIBBASE, struct IOUsbHWReq *ioreq
 
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE) {
 
-    struct PCIXHCIUnit *unit;
+    struct PCIXHCIUnit *unit = NULL;
+    struct PCIXHCIPort *port = NULL;
 
     ForeachNode(&LIBBASE->unit_list, unit) {
+        ForeachNode(&unit->roothub.port_list, port) {
+            mybug_unit(-1, ("Deleting port %d named %s\n", port->number, port->name));
+            REMOVE(port);
+            FreeVec(port);
+        }
         HIDD_PCIDevice_Release(unit->hc.pcidevice);
         REMOVE(unit);
         FreeVec(unit);

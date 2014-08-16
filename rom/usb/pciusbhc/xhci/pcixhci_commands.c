@@ -38,9 +38,10 @@
 #include LC_LIBDEFS_FILE
 
 WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
-    mybug(0, ("[PCIXHCI] cmdQueryDevice: Entering function\n"));
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(0, ("Entering function\n"));
 
     struct TagItem *taglist = (struct TagItem *) ioreq->iouh_Data;
     struct TagItem *tag;
@@ -112,15 +113,16 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq) {
     Perform a hardware reset on the controller.
 */
 WORD cmdReset(struct IOUsbHWReq *ioreq) {
-    mybug(-1, ("[PCIXHCI] cmdReset: Entering function\n"));
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
+    mybug_unit(-1, ("Entering function\n"));
+
     if(PCIXHCI_HCReset(unit)) {
-        mybug_unit(0, ("Done with OK\n\n"));
+        mybug_unit(-1, ("Done with OK\n\n"));
         return RC_OK;
     } else {
-        mybug_unit(0, ("Done with not OK\n\n"));
+        mybug_unit(-1, ("Done with not OK\n\n"));
         return UHIOERR_HOSTERROR;
     }
 }
@@ -129,10 +131,11 @@ WORD cmdReset(struct IOUsbHWReq *ioreq) {
     We get called if the HW reset succeeded
 */
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
-    mybug(0, ("[PCIXHCI] cmdUsbReset: Entering function\n"));
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
     struct PCIXHCIPort *port = NULL;
+
+    mybug_unit(0, ("Entering function\n"));
 
     /* (Re)build descriptors */
     /* This is our root hub device descriptor */
@@ -208,9 +211,9 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
 }
 
 WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
-    mybug(0, ("[PCIXHCI] cmdControlXFer: Entering function\n"));
-
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(0, ("Entering function\n"));
 
     mybug_unit(0, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
     mybug_unit(0, ("unit->roothub.addr %lx\n", unit->roothub.addr));
@@ -239,7 +242,11 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq) {
 }
 
 WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
-    mybug(0, ("[PCIXHCI] cmdControlXFerRootHub: Entering function\n"));
+
+    struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
+    struct PCIXHCIPort *port = NULL;
+
+    mybug_unit(0, ("Entering function\n"));
 
     UWORD bmRequestType      = (ioreq->iouh_SetupData.bmRequestType) & (URTF_STANDARD | URTF_CLASS | URTF_VENDOR);
     UWORD bmRequestDirection = (ioreq->iouh_SetupData.bmRequestType) & (URTF_IN | URTF_OUT);
@@ -249,9 +256,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
     UWORD wIndex             = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
     UWORD wValue             = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
     UWORD wLength            = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
-
-    struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
-    struct PCIXHCIPort *port = NULL;
 
     /* Endpoint 0 is used for control transfers only and can not be assigned to any other function. */
     if(ioreq->iouh_Endpoint != 0) {
@@ -594,6 +598,39 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
                         mybug_unit(0, ("URTF_OTHER\n"));
 
                         switch(bRequest) {
+                            case USR_CLEAR_FEATURE:
+                                mybug_unit(0, ("USR_CLEAR_FEATURE\n"));
+
+                                switch(wValue) {
+                                    case UFS_PORT_POWER:
+                                        mybug_unit(0, ("UFS_PORT_POWER\n"));
+
+                                        ForeachNode(&unit->roothub.port_list, port) {
+                                            if(port->number == wIndex) {
+                                                mybug_unit(0, ("Found port %d named %s\n", port->number, port->name));
+                                                mybug_unit(0, ("Done\n\n"));
+                                                return UHIOERR_NO_ERROR;
+                                            }
+                                        }
+
+                                        mybug_unit(-1, ("Port not found!\n\n"));
+                                        break;
+
+                                    case UFS_PORT_CONNECTION:
+                                    case UFS_PORT_ENABLE:
+                                    case UFS_PORT_SUSPEND:
+                                    case UFS_PORT_OVER_CURRENT:
+                                    case UFS_PORT_RESET:
+                                    case UFS_PORT_LOW_SPEED:
+                                    case UFS_C_PORT_CONNECTION:
+                                    case UFS_C_PORT_ENABLE:
+                                    case UFS_C_PORT_SUSPEND:
+                                    case UFS_C_PORT_OVER_CURRENT:
+                                    case UFS_C_PORT_RESET:
+                                        break;
+                                } /* switch(wValue) */
+                                break;
+
                             case USR_SET_FEATURE:
                                 mybug_unit(0, ("USR_SET_FEATURE\n"));
 
@@ -724,9 +761,10 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 }
 
 WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
-    mybug(-1, ("[PCIXHCI] cmdIntXFer: Entering function\n"));
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Entering function\n"));
 
     mybug_unit(-1, ("ioreq->iouh_DevAddr %lx\n", ioreq->iouh_DevAddr));
     mybug_unit(-1, ("unit->roothub.addr %lx\n", unit->roothub.addr));
@@ -757,15 +795,20 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq) {
 }
 
 WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq) {
-    mybug(-1, ("[PCIXHCI] cmdIntXFerRootHub: Entering function\n"));
-    D(struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit);
+
+    struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Entering function\n"));
 
     mybug_unit(-1, ("Nothing done!\n\n"));
     return RC_DONTREPLY;
 }
 
 WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring) {
-    mybug(0, ("[PCIXHCI] cmdGetString: Entering function\n"));
+
+    struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
+
+    mybug_unit(-1, ("Entering function\n"));
 
     UWORD wLength = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
@@ -780,14 +823,14 @@ WORD cmdGetString(struct IOUsbHWReq *ioreq, char *cstring) {
             ioreq->iouh_Actual += sizeof(strdesc->bString);
             cstring++;
             if(*cstring == 0) {
-                mybug(0, ("[PCIXHCI] cmdGetString: Done\n\n"));
+                mybug_unit(0, ("Done\n\n"));
                 return UHIOERR_NO_ERROR;
             }
         }
 
     } else {
         ioreq->iouh_Actual = wLength;
-        mybug(0, ("[PCIXHCI] cmdGetString: Done\n\n"));
+        mybug_unit(0, ("Done\n\n"));
         return UHIOERR_NO_ERROR;
     }
 
