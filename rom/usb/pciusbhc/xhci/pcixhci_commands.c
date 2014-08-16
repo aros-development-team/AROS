@@ -72,24 +72,15 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_Capabilities:
-/*
-    ISOCHRONOUS:
-        - Guarantees access to bandwidth but a packet or frame maybe dropped now an then
-        - Isochronous transfers occur continuously and periodically.
-        - The maximum data payload size is specified in the endpoint descriptor of an Isochronous Endpoint
-        - Check if alternative interfaces with varying isochronous payload sizes exist.
-        - Data being sent on an isochronous endpoint can be less than the pre-negotiated size and may vary in length from transaction to transaction
-*/
-
-#if(1)
-                if( (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB) >= 0x200) && (AROS_LE2WORD(unit->roothub.devdesc.bcdUSB) < 0x300)) {
-                    *((ULONG *) tag->ti_Data) = (UHCF_USB20|UHCB_ISO);
-                } else {
-                    *((ULONG *) tag->ti_Data) = (UHCF_USB30|UHCB_ISO);
-                }
-#else
-                *((ULONG *) tag->ti_Data) = (UHCF_USB20|UHCF_USB30|UHCB_ISO);
-#endif
+                /*
+                    ISOCHRONOUS:
+                    - Guarantees access to bandwidth but a packet or frame maybe dropped now an then
+                    - Isochronous transfers occur continuously and periodically.
+                    - The maximum data payload size is specified in the endpoint descriptor of an Isochronous Endpoint
+                    - Check if alternative interfaces with varying isochronous payload sizes exist.
+                    - Data being sent on an isochronous endpoint can be less than the pre-negotiated size and may vary in length from transaction to transaction
+                */
+                *((ULONG *) tag->ti_Data) = (UHCF_USB30|UHCB_ISO);
                 count++;
                 break;
             default:
