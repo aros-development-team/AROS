@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2013 by NList Open Source Team
+ Copyright (C) 2001-2014 NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -352,33 +352,44 @@ void NL_UpdateScrollersValues(struct NLData *data)
 {
   Object *obj = data->this;
 
-  if (((data->NList_Quiet > 0) || data->NList_Disabled) && !data->do_draw_all)
+  if((data->NList_Quiet > 0 || data->NList_Disabled) && !data->do_draw_all)
     return;
-  if (WANTED_NOTIFY(NTF_VSB))
+
+  if(WANTED_NOTIFY(NTF_VSB))
   {
     LONG entries = data->NList_Prop_First + data->NList_Prop_Visible;
 
-    if (entries < data->NList_Prop_Entries)
+    if(entries < data->NList_Prop_Entries)
       entries = data->NList_Prop_Entries;
-    if (entries != data->old_prop_entries)
-      set(obj, MUIA_NList_Prop_Entries,entries);
-    if (data->NList_Prop_Visible != data->old_prop_visible)
-      set(obj, MUIA_NList_Prop_Visible,data->NList_Prop_Visible);
-    if (data->NList_Prop_First != data->old_prop_first)
-      set(obj, MUIA_NList_Prop_First,data->NList_Prop_First);
-    if (data->vinc != data->old_prop_delta)
-      set(obj, MUIA_NList_VertDeltaFactor,data->vinc);
+
+    if(entries != data->old_prop_entries ||
+       data->NList_Prop_Visible != data->old_prop_visible ||
+       data->NList_Prop_First != data->old_prop_first ||
+       data->vinc != data->old_prop_delta)
+    {
+      SetAttrs(obj,
+       (entries != data->old_prop_entries)                  ? MUIA_NList_Prop_Entries    : TAG_IGNORE, entries,
+       (data->NList_Prop_Visible != data->old_prop_visible) ? MUIA_NList_Prop_Visible    : TAG_IGNORE, data->NList_Prop_Visible,
+       (data->NList_Prop_First != data->old_prop_first)     ? MUIA_NList_Prop_First      : TAG_IGNORE, data->NList_Prop_First,
+       (data->vinc != data->old_prop_delta)                 ? MUIA_NList_VertDeltaFactor : TAG_IGNORE, data->vinc,
+       TAG_DONE);
+     }
   }
-  if (WANTED_NOTIFY(NTF_HSB))
+  if(WANTED_NOTIFY(NTF_HSB))
   {
-    if (data->NList_Horiz_Entries != data->old_horiz_entries)
-      set(obj, MUIA_NList_Horiz_Entries,data->NList_Horiz_Entries);
-    if (data->NList_Horiz_Visible != data->old_horiz_visible)
-      set(obj, MUIA_NList_Horiz_Visible,data->NList_Horiz_Visible);
-    if (data->NList_Horiz_First != data->old_horiz_first)
-      notdoset(obj, MUIA_NList_Horiz_First,data->NList_Horiz_First);
-    if (data->hinc != data->old_horiz_delta)
-      set(obj, MUIA_NList_HorizDeltaFactor,data->hinc);
+    if(data->NList_Horiz_Entries != data->old_horiz_entries ||
+       data->NList_Horiz_Visible != data->old_horiz_visible ||
+       data->hinc != data->old_horiz_delta)
+    {
+      SetAttrs(obj,
+       (data->NList_Horiz_Entries != data->old_horiz_entries) ? MUIA_NList_Horiz_Entries    : TAG_IGNORE, data->NList_Horiz_Entries,
+       (data->NList_Horiz_Visible != data->old_horiz_visible) ? MUIA_NList_Horiz_Visible    : TAG_IGNORE, data->NList_Horiz_Visible,
+       (data->hinc != data->old_horiz_delta)                  ? MUIA_NList_HorizDeltaFactor : TAG_IGNORE, data->hinc,
+       TAG_DONE);
+    }
+
+    if(data->NList_Horiz_First != data->old_horiz_first)
+      notdoset(obj, MUIA_NList_Horiz_First, data->NList_Horiz_First);
   }
 }
 

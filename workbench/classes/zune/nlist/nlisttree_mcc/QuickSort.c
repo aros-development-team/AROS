@@ -2,7 +2,7 @@
 
  NListtree.mcc - New Listtree MUI Custom Class
  Copyright (C) 1999-2001 by Carsten Scholling
- Copyright (C) 2001-2013 by NList Open Source Team
+ Copyright (C) 2001-2014 NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@
 ** changed and optimized to use a hook instead of a generic
 ** compare function
 **
-** Jens Langner <jens.langner@light-speed.de>, 2003
+** Jens Maus <mail@jens-maus.de>, 2003
 */
 
 #include <clib/alib_protos.h>

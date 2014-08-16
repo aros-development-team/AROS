@@ -5,7 +5,7 @@
  Copyright (C) 1996-2001 by Gilles Masson (NList.mcc)
  Copyright (C) 1999-2001 by Carsten Scholling (NListtree.mcc)
  Copyright (C) 2006      by Daniel Allsopp (NBitmap.mcc)
- Copyright (C) 2001-2010 by NList Open Source Team
+ Copyright (C) 2001-2014 NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
 
  NList classes Support Site:  http://www.sf.net/projects/nlist-classes
 
- $Id: AUTHORS 509 2010-09-08 06:45:38Z mandi78 $
+ $Id: AUTHORS 716 2014-01-26 09:32:35Z damato $
 
 ***************************************************************************/
 
@@ -30,7 +30,7 @@ Carsten Scholling     <cs@aphaso.de>
 Daniel Allsopp        <daniel@the-snakepit.co.uk>
 Gilles Masson
 Gunther Nikl          <gnikl@users.sourceforge.net>
-Jens Langner          <damato@users.sourceforge.net>
+Jens Maus             <mail@jens-maus.de>
 Przemyslaw Grunchala  <sensei@box43.gnet.pl>
 Richard Poser         <whomiga@missingpiece.com>
 Sebastian Bauer       <sba@users.sourceforge.net>

@@ -4,11 +4,13 @@
 /* Includeheader
 
         Name:           SDI_lib.h
-        Versionstring:  $VER: SDI_lib.h 1.9 (15.03.2009)
-        Author:         Jens Langner
+        Versionstring:  $VER: SDI_lib.h 1.12 (01.04.2014)
+        Author:         Jens Maus
         Distribution:   PD
-        Project page:   http://www.sf.net/projects/sditools/
+        Project page:   http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
         Description:    defines to hide OS specific library function definitions
+        Id:             $Id$
+        URL:            $URL: https://svn.code.sf.net/p/adtools/code/trunk/sdi/SDI_lib.h $
 
  1.0   09.05.04 : initial version which allows to hide OS specific shared
                   library function definition like it has been introduced with
@@ -39,7 +41,8 @@
                   LIBSTUBVA() will be used now (Thore Böckelmann)
  1.11  04.05.09 : reverted the faulty LIBPROTOVA() definition to its previous
                   version (Thore Böckelmann)
-
+ 1.12  01.04.14 : removed the necessity of stub functions for AmigaOS4 (Thore
+                  Böckelmann)
 */
 
 /*
@@ -52,9 +55,9 @@
 ** (e.g. add your name or nick name).
 **
 ** Find the latest version of this file at:
-** http://cvs.sourceforge.net/viewcvs.py/sditools/sditools/headers/
+** http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
 **
-** Jens Langner <Jens.Langner@light-speed.de> and
+** Jens Maus <mail@jens-maus.de>
 ** Dirk Stöcker <soft@dstoecker.de>
 */
 
@@ -71,27 +74,30 @@
 ** Defines a library jump function "TestFunc" with a ULONG return value and
 ** which is called by the corresponding library vector of a shared library.
 **
-** LIBFUNC ULONG TestFunc(REG(d0, text))
+** LIBPROTO(TestFunc, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *text))
 ** {
 **   Printf(text);
 **   return 0;
 ** }
 **
-** Please note the use of the LIBFUNC macro which defines this function
+** Please note the use of the LIBPROTO macro which defines this function
 ** automatically as a function which is directly called from within a shared
-** library. Since this macro contains compiler attributes it must be
-** called first, even if some compiler allow attributes and result type
-** mixed, other do not and we want to keep the stuff compiler independent.
+** library. For AmigaOS4 the library interface pointer is passed as a variable
+** named "self" to the function. For all other systems the library base pointer
+** is passed.
+** Since this macro contains compiler attributes it must be called first, even
+** if some compiler allow attributes and result type mixed, other do not and we
+** want to keep the stuff compiler independent.
 **
 ** If you now require to have some OS/compiler independent prototype
 ** definition please use the following statement:
 **
-** LIBPROTO(TestFunc, ULONG, REG(d0, text));
+** LIBPROTO(TestFunc, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, char *text));
 **
 ** This will ensure that you get a proper prototype for the same function
-** where this macro will automatically take care that a libstub_* stub
-** will also automatically defines as required if you are generating a
-** OS4 shared library which should also be backward compatible to OS3.
+** where this macro will automatically take care that a LIBSTUB_* stub
+** function will also automatically defined as required if you are generating
+** a shared library for MorphOS.
 **
 ** So if you then want to add this function to a library interface please
 ** use the LFUNC_* macros to generate your library function vector
@@ -106,19 +112,20 @@
 ** specify each function with surrounded "#ifdef" defines. These macros
 ** will then also take automatically care that the varargs functions
 ** will only be specified on OS versions where these functions are now
-** real functions (like with OS4)
+** real functions, like with AmigaOS4.
 **
-** Such stub functions can then also be easily specified as followed
-** (in analogy to the above example)
+** Stub functions are needed for MorphOS only and usually look like this:
 **
-** LIBPROTO(TestFunc, ULONG, REG(d0, text))
+** LIBSTUB(TestFunc, ULONG)
 ** {
-**   return TestFunc(text);
+**   __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+**   return CALL_LFUNC(TestFunc, (char *)REG_A0);
 ** }
 **
-** On AmigaOS4 using this mechanism for the definition of the library functions
-** will automatically ensure that the "struct Interface *self" pointer is included
-** and can be easily referenced as such in the function.
+** The CALL_LFUNC macro must be used to internally call one of the public
+** library functions without going through the interface/jump table.
+** The CALL_LFUNC_NP macro does the same job for functions without further
+** parameters, except the implicit interface/base pointer.
 **
 ** By using this schema a developer might ensure full source code backward
 ** compatibility to AmigaOS3 without having to introduce dozens of #ifdef
@@ -135,67 +142,54 @@
     (__STDC_VERSION__ >= 199901L || __GNUC__ >= 3 ||                  \
     (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
     #define LIBPROTO(name, ret, ...)                                  \
-      LIBFUNC ret name(__VA_ARGS__);                                  \
-      LIBFUNC ret libstub_##name(struct Interface *self UNUSED,       \
-      ## __VA_ARGS__)
+      LIBFUNC ret LIB_##name(__VA_ARGS__)
     #define LIBPROTOVA(name, ret, ...)                                \
-      /*LIBFUNC ret VARARGS68K name(__VA_ARGS__);*/                   \
-      LIBFUNC ret VARARGS68K                                          \
-      libstub_##name(struct Interface *self UNUSED, ## __VA_ARGS__)
-    #define LIBSTUB(name, ret, ...)                                   \
-      LIBFUNC ret name(__VA_ARGS__);                                  \
-      LIBFUNC ret libstub_##name(struct Interface *self UNUSED,       \
-      ## __VA_ARGS__)
-    #define LIBSTUBVA(name, ret, ...)                                 \
-      LIBFUNC ret VARARGS68K                                          \
-      libstub_##name(struct Interface *self UNUSED, ## __VA_ARGS__)
+      LIBFUNC ret VARARGS68K LIB_##name(__VA_ARGS__)
+    #define LIBSTUB(name, ret, ...)
+    #define CALL_LFUNC_NP(name, ...) LIB_##name(__BASE_OR_IFACE_VAR)
+    #define CALL_LFUNC(name, ...) LIB_##name(__BASE_OR_IFACE_VAR, __VA_ARGS__)
   #endif
-  #define LFUNC_FAS(name) libstub_##name
-  #define LFUNC_VAS(name) libstub_##name
-  #define LFUNC_FA_(name) ,libstub_##name
-  #define LFUNC_VA_(name) ,libstub_##name
-  #define LFUNC(name)     libstub_##name
+  #define LFUNC_FAS(name) LIB_##name
+  #define LFUNC_VAS(name) LIB_##name
+  #define LFUNC_FA_(name) ,LIB_##name
+  #define LFUNC_VA_(name) ,LIB_##name
+  #define LFUNC(name)     LIB_##name
 #elif defined(__MORPHOS__)
   #define LIBFUNC
   #if !defined(__cplusplus) &&                                        \
     (__STDC_VERSION__ >= 199901L || __GNUC__ >= 3 ||                  \
     (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
     #define LIBPROTO(name, ret, ...)                                  \
-      LIBFUNC ret name(__VA_ARGS__);                                  \
-      LIBFUNC ret libstub_##name(void)
-    #define LIBPROTOVA(name, ret, ...)                                \
-      LIBFUNC ret VARARGS68K name(__VA_ARGS__);
+      LIBFUNC ret LIBSTUB_##name(void);                               \
+      LIBFUNC ret LIB_##name(__VA_ARGS__)
+    #define LIBPROTOVA(name, ret, ...)
     #define LIBSTUB(name, ret, ...)                                   \
-      LIBFUNC ret name(__VA_ARGS__);                                  \
-      LIBFUNC ret libstub_##name(void)
-    #define LIBSTUBVA(name, ret, ...)                                 \
-      LIBFUNC UNUSED ret VARARGS68K libstub_##name(void)
+      LIBFUNC ret LIBSTUB_##name(void)
+    #define CALL_LFUNC_NP(name, ...) LIB_##name(__BASE_OR_IFACE_VAR)
+    #define CALL_LFUNC(name, ...) LIB_##name(__BASE_OR_IFACE_VAR, __VA_ARGS__)
   #endif
-  #define LFUNC_FAS(name) libstub_##name
+  #define LFUNC_FAS(name) LIBSTUB_##name
   #define LFUNC_VAS(name)
-  #define LFUNC_FA_(name) ,libstub_##name
+  #define LFUNC_FA_(name) ,LIBSTUB_##name
   #define LFUNC_VA_(name)
-  #define LFUNC(name)     libstub_##name
+  #define LFUNC(name)     LIBSTUB_##name
 #else
   #define LIBFUNC SAVEDS ASM
   #if !defined(__cplusplus) &&                                        \
     (__STDC_VERSION__ >= 199901L || __GNUC__ >= 3 ||                  \
     (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
     #define LIBPROTO(name, ret, ...)                                  \
-      LIBFUNC ret name(__VA_ARGS__)
-    #define LIBPROTOVA(name, ret, ...)                                \
-      LIBFUNC ret STDARGS VARARGS68K name(__VA_ARGS__);
-    #define LIBSTUB(name, ret, ...)                                   \
-      LIBFUNC ret name(__VA_ARGS__);                                  \
-      LIBFUNC ret libstub_##name(__VA_ARGS__)
-    #define LIBSTUBVA(name, ret, ...)                                 \
-      LIBFUNC UNUSED ret STDARGS VARARGS68K libstub_##name(__VA_ARGS__)
+      LIBFUNC ret LIB_##name(__VA_ARGS__)
+    #define LIBPROTOVA(name, ret, ...)
+    #define LIBSTUB(name, ret, ...)
+    #define CALL_LFUNC_NP(name, ...) LIB_##name(__BASE_OR_IFACE_VAR)
+    #define CALL_LFUNC(name, ...) LIB_##name(__BASE_OR_IFACE_VAR, __VA_ARGS__)
   #endif
-  #define LFUNC_FAS(name) name
+  #define LFUNC_FAS(name) LIB_##name
   #define LFUNC_VAS(name)
-  #define LFUNC_FA_(name) ,name
+  #define LFUNC_FA_(name) ,LIB_##name
   #define LFUNC_VA_(name)
-  #define LFUNC(name)     name
+  #define LFUNC(name)     LIB_##name
 #endif
 
 #if !defined(LIBPROTO) || !defined(LIBPROTOVA)

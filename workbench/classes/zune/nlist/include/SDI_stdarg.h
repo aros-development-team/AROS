@@ -5,11 +5,13 @@
 
         Name:           SDI_stdarg.h
         Versionstring:  $VER: SDI_stdarg.h 1.0 (05.07.2004)
-        Author:         Jens Langner
+        Author:         Jens Maus
         Distribution:   PD
-        Project page:   http://www.sf.net/projects/sditools/
+        Project page:   http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
         Description:    defines to hide OS specific variable arguments
                         function definitions
+        Id:             $Id$
+        URL:            $URL: https://svn.code.sf.net/p/adtools/code/trunk/sdi/SDI_stdarg.h $
 
  1.0   05.07.04 : initial version
 
@@ -25,9 +27,9 @@
 ** (e.g. add your name or nick name).
 **
 ** Find the latest version of this file at:
-** http://cvs.sourceforge.net/viewcvs.py/sditools/sditools/headers/
+** http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
 **
-** Jens Langner <Jens.Langner@light-speed.de> and
+** Jens Maus <mail@jens-maus.de>
 ** Dirk Stöcker <soft@dstoecker.de>
 */
 

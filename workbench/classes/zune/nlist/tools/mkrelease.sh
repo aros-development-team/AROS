@@ -7,7 +7,7 @@
 # Copyright (C) 1996-2001 by Gilles Masson (NList.mcc)
 # Copyright (C) 1999-2001 by Carsten Scholling (NListtree.mcc)
 # Copyright (C) 2006      by Daniel Allsopp (NBitmap.mcc)
-# Copyright (C) 2001-2013 by NList Open Source Team
+# Copyright (C) 2001-2014 NList Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -85,14 +85,18 @@ for os in os3 os4 mos aros-i386 aros-ppc aros-x86_64; do
 done
 
 make -C nlisttree_mcp catalogs
-for language in czech english-british french german greek italian polish swedish turkish; do
-	mkdir -p "release/MCC_NList/Locale/Catalogs/$language"
-	cp -a nlisttree_mcp/locale/$language.catalog "release/MCC_NList/Locale/Catalogs/$language/NListtree_mcp.catalog"
+for language in `ls nlisttree_mcp/locale/*.catalog`; do
+  catalog=$(basename "$language")
+  lang="${catalog%.*}"
+  mkdir -p "release/MCC_NList/Locale/Catalogs/${lang}"
+  cp -a ${language} "release/MCC_NList/Locale/Catalogs/${lang}/NListtree_mcp.catalog"
 done
 make -C nlistviews_mcp catalogs
-for language in czech french german greek italian polish swedish turkish; do
-	mkdir -p "release/MCC_NList/Locale/Catalogs/$language"
-	cp -a nlistviews_mcp/locale/$language.catalog "release/MCC_NList/Locale/Catalogs/$language/NListviews_mcp.catalog"
+for language in `ls nlistviews_mcp/locale/*.catalog`; do
+  catalog=$(basename "$language")
+  lang="${catalog%.*}"
+  mkdir -p "release/MCC_NList/Locale/Catalogs/${lang}"
+  cp -a ${language} "release/MCC_NList/Locale/Catalogs/${lang}/NListviews_mcp.catalog"
 done
 
 cp -a -R dist/* "release/"
@@ -107,8 +111,8 @@ cp -a include/mui/NFloattext_mcc.h "release/MCC_NList/Developer/C/include/mui/"
 cp -a include/mui/NList_mcc.h "release/MCC_NList/Developer/C/include/mui/"
 cp -a include/mui/NListtree_mcc.h "release/MCC_NList/Developer/C/include/mui/"
 cp -a include/mui/NListview_mcc.h "release/MCC_NList/Developer/C/include/mui/"
-cp -a nlisttree_mcp/locale/NListtree_mcp.cd "release/MCC_NList/Locale/"
-cp -a nlistviews_mcp/locale/NListviews_mcp.cd "release/MCC_NList/Locale/"
+cp -a nlisttree_mcp/locale/NListtree_mcp.pot "release/MCC_NList/Locale/"
+cp -a nlistviews_mcp/locale/NListviews_mcp.pot "release/MCC_NList/Locale/"
 
 echo "  MK MCC_NList-0.$1.lha"
 find release -nowarn -name ".svn" -exec rm -rf {} \; 2>/dev/null

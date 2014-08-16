@@ -2,7 +2,7 @@
 #
 # NListtree.mcc - New Listtree MUI Custom Class
 # Copyright (C) 1999-2001 by Carsten Scholling
-# Copyright (C) 2001-2005 by NList Open Source Team
+# Copyright (C) 2001-2014 NList Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -184,16 +184,7 @@ COBJS = locale.o \
 TOBJS = NListtree-Prefs.o
 
 # available catalog translations
-CATALOGS = $(LOCALE)/czech.catalog \
-           $(LOCALE)/english-british.catalog \
-           $(LOCALE)/german.catalog \
-           $(LOCALE)/greek.catalog \
-           $(LOCALE)/french.catalog \
-           $(LOCALE)/italian.catalog \
-           $(LOCALE)/polish.catalog \
-           $(LOCALE)/swedish.catalog \
-           $(LOCALE)/turkish.catalog \
-         # $(LOCALE)/russian.catalog
+CATALOGS = $(patsubst %.po,%.catalog,$(wildcard $(LOCALE)/*.po))
 
 MCCOBJS  = $(addprefix $(OBJDIR)/,$(LOBJS)) $(addprefix $(OBJDIR)/,$(COBJS))
 TESTOBJS = $(addprefix $(OBJDIR)/,$(COBJS)) $(addprefix $(OBJDIR)/,$(TOBJS))
@@ -387,15 +378,15 @@ $(TESTTARGET): $(TESTOBJS)
 	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
 
 locale.h: locale.c
-locale.c: $(LOCALE)/NListtree_mcp.cd C_h.sd C_c.sd
+locale.c: $(LOCALE)/NListtree_mcp.pot C_h.sd C_c.sd
 	@echo "  FC $@"
-	@$(FC) $(LOCALE)/NListtree_mcp.cd locale.h=C_h.sd locale.c=C_c.sd
+	@$(FC) $(LOCALE)/NListtree_mcp.pot locale.h=C_h.sd locale.c=C_c.sd
 
 ## CATALOG GENERATION #################
 
-$(LOCALE)/%.catalog: $(LOCALE)/%.ct $(LOCALE)/NListtree_mcp.cd
+$(LOCALE)/%.catalog: $(LOCALE)/%.po $(LOCALE)/NListtree_mcp.pot
 	@echo "  FC $@"
-	@$(FC) $(LOCALE)/NListtree_mcp.cd $< CATALOG $@
+	@$(FC) POFILE $< CATALOG $@
 
 .IGNORE: $(CATALOGS)
 

@@ -4,7 +4,7 @@
  Registered MUI class, Serial Number: 1d51 (0x9d510020 to 0x9d51002F)
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2013 by NList Open Source Team
+ Copyright (C) 2001-2014 NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -54,7 +54,10 @@
 #define MUIV_Listview_ScrollerPos_Right   2
 #define MUIV_Listview_ScrollerPos_None    3
 
-#define MUIM_NListview_QueryBeginning     MUIM_NList_QueryBeginning /* obsolete */
+#define MUIM_NListview_QueryBeginning       MUIM_NList_QueryBeginning /* obsolete */
+#define MUIM_NListview_SetScrollers         0x9d5100A8UL /* private */
+
+struct MUIP_NListview_SetScrollers          { STACKED ULONG MethodID; STACKED ULONG scrollers; };
 
 #define MUIV_NListview_VSB_Always      1
 #define MUIV_NListview_VSB_Auto        2
