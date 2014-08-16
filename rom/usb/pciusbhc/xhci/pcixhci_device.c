@@ -127,7 +127,6 @@ ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
 
 AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR, LIBBASE, 5, PCIXHCI) {
     AROS_LIBFUNC_INIT
-    mybug(0, ("[PCIXHCI] BeginIO: Entering function\n"));
 
     WORD ret = RC_OK;
 
@@ -234,7 +233,6 @@ AROS_LH1(void, BeginIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR
 
 AROS_LH1(LONG, AbortIO, AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR, LIBBASE, 6, PCIXHCI) {
     AROS_LIBFUNC_INIT
-    mybug(-1, ("[PCIXHCI] AbortIO: Entering function\n"));
 
     if(ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE) {
         if(cmdAbortIO(ioreq)) {
