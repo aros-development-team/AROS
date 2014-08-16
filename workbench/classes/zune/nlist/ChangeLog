@@ -3,7 +3,115 @@ MUI NList MCC classes - ChangeLog
 ---------------------------------
 
 $Id$
-$URL: svn://svn.code.sf.net/p/nlist-classes/code/releases/0.116/ChangeLog $
+$URL: svn://svn.code.sf.net/p/nlist-classes/code/releases/0.119/ChangeLog $
+
+#### v0.119 RELEASE ###########################################################
+
+2014-04-05 Jens Maus <mail@jens-maus.de>
+
+  * misc: final v0.119 release preparations
+  * include/SDI*.h: updated SDI headers to latest version available.
+
+2014-04-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale: added a new header line to the .po files to specify a correct
+    name for the generated .catalog file.
+
+2014-02-23 Jens Maus <mail@jens-maus.de>
+
+  * mcp/locale: all catalog translations have now been moved to use the free
+    services of transifex (http://www.transifex.com/projects/p/nlist-classes/)
+
+2014-02-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistview_mcc/NListview.c: propagate the nlist's current disabled state to
+    the readded scrollbars. These might have been removed before while the list
+    was disabled and would become visible with the wrong state in case the list
+    was enabled again in the meantime.
+
+2014-02-05 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlist_mcc/NList_func2.c: MUIM_NList_Clear will reset the amount of visible
+    lines only if the object is not in the "quiet" state, because leaving this
+    state will recalculate that value immediately again. This makes it possible
+    to perform a centered jump to a certain entry while the "quiet" state is
+    active.
+
+#### v0.118 RELEASE ###########################################################
+
+2014-01-26 Jens Maus <mail@jens-maus.de>
+
+  * misc: final v0.118 release preparations
+
+2014-01-13 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlisttree_mcp/locale/danish.ct, nlistviews_mcp/locale/danish.ct: updated
+    danish translation kindly provided by Niels Bache.
+
+2013-12-29 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistview_mcc/NListview.c: added some checks for a valid application object
+    pointer before trying to push a method.
+
+2013-12-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistview_mcc/NListview.c: make the active entry visible again upon adding
+    the horizontal scrollbar, but only if it is the last entry, because this
+    entry will be hidden by the scrollbar otherwise.
+
+#### v0.117 RELEASE ###########################################################
+
+2013-12-13 Jens Maus <mail@jens-maus.de>
+
+  * misc: final v0.117 release preparations
+
+2013-11-25 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlistview_mcc/NListview.c: trigger all affected attributes for the
+    horizontal scrollbar just like for the vertical scrollbar whenever it is
+    made visibile (again).
+  * nlistview_mcc/NListview.c: adding or removing the scrollbars is no longer
+    done immediately, but pushed to the application's method stack to be done
+    when the application is idle again. The reason is that the OM_SET method
+    call which does the actual removing can be done from within an OM_SET method
+    of the NListview's group object. Removing any scrollbar in this situation
+    will cause an access to the just removed object (or better its Exec node
+    structure) which has become invalid due to the removal. This should fix YAM
+    ticket #455.
+
+2013-11-08 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlist/NList_mcc5.c: update the scrollbars by passing all changed attributes
+    with a single SetAttrs() call instead of setting each attribute with a
+    single call.
+
+2013-11-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlisttree_mcc/NListtree.c: call the destructor for the earlier constructed
+    item in case inserting the tree node fails for any reason.
+  * nlisttree_mcc/NListtree.c: fixed a memory leak, a missing destructor call
+    and a possible "use after free" access in the DuplicateNode method.
+
+2013-07-22 Jens Langner <Jens.Langner@light-speed.de>
+
+  * nlisttree_mcc/NListtree.c: fixed a bug in the MUIM_NListtree_Remove function
+    when using the MUIV_NListtree_Remove_TreeNode_Selected flag. This caused
+    a whole list to be removed because NListtree didn't take care of the
+    changing selection change. Now it should take care correctly.
+
+2013-07-21 Jens Langner <Jens.Langner@light-speed.de>
+
+  * nlisttree_mcc/NListtree.c: fixed a bug in the ListNode_Sort() routines which
+    caused crashes for lists with deeper hierarchies and which were not just
+    flat.
+  * nlist_mcc/ClipboardServer.c, nlisttree_mcc/ClipboardServer.c: fixed a bug
+    where a NULL pointer (str) in the StringToClipboard() function caused a
+    crash.
+
+2013-04-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * nlisttree_mcp/locale/greek.ct, nlistviews_mcp/locale/greek.ct: updated greek
+    translation kindly provided by Antonis Iliakis.
 
 #### v0.116 RELEASE ###########################################################
 

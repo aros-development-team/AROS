@@ -4,7 +4,7 @@
 # Registered MUI class, Serial Number: 1d51 (0x9d510020 to 0x9d51002F)
 #
 # Copyright (C) 1996-2001 by Gilles Masson
-# Copyright (C) 2001-2005 by NList Open Source Team
+# Copyright (C) 2001-2014 NList Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -212,14 +212,7 @@ MCCOBJS  = $(addprefix $(OBJDIR)/,$(LOBJS)) $(addprefix $(OBJDIR)/,$(COBJS))
 TESTOBJS = $(addprefix $(OBJDIR)/,$(COBJS)) $(addprefix $(OBJDIR)/,$(TOBJS))
 
 # available catalog translations
-CATALOGS = $(LOCALE)/czech.catalog \
-           $(LOCALE)/french.catalog \
-           $(LOCALE)/german.catalog \
-           $(LOCALE)/greek.catalog \
-           $(LOCALE)/italian.catalog \
-           $(LOCALE)/polish.catalog \
-           $(LOCALE)/swedish.catalog \
-           $(LOCALE)/turkish.catalog
+CATALOGS = $(patsubst %.po,%.catalog,$(wildcard $(LOCALE)/*.po))
 
 # different options per target OS
 ifeq ($(OS), os4)
@@ -410,15 +403,15 @@ $(TESTTARGET): $(TESTOBJS)
 	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
 
 locale.h: locale.c
-locale.c: $(LOCALE)/NListviews_mcp.cd C_h.sd C_c.sd
+locale.c: $(LOCALE)/NListviews_mcp.pot C_h.sd C_c.sd
 	@echo "  FC $@"
-	@$(FC) $(LOCALE)/NListviews_mcp.cd locale.h=C_h.sd locale.c=C_c.sd
+	@$(FC) $(LOCALE)/NListviews_mcp.pot locale.h=C_h.sd locale.c=C_c.sd
 
 ## CATALOG GENERATION #################
 
-$(LOCALE)/%.catalog: $(LOCALE)/%.ct $(LOCALE)/NListviews_mcp.cd
+$(LOCALE)/%.catalog: $(LOCALE)/%.po $(LOCALE)/NListviews_mcp.pot
 	@echo "  FC $@"
-	@$(FC) $(LOCALE)/NListviews_mcp.cd $< CATALOG $@
+	@$(FC) POFILE $< CATALOG $@
 
 .IGNORE: $(CATALOGS)
 

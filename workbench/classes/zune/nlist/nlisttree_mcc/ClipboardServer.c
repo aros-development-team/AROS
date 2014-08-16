@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2013 by NList Open Source Team
+ Copyright (C) 2001-2014 NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -59,6 +59,7 @@ struct ServerData
   ULONG sd_Command;
   ULONG sd_Unit;
   STRPTR sd_String;
+  LONG sd_Result;
 };
 
 #define SERVER_SHUTDOWN   0xdeadf00d
@@ -70,26 +71,30 @@ struct ServerData
 
 /// StringToClipboard
 // copy a string to the clipboard, public callable function
-void StringToClipboard(ULONG unit, STRPTR str)
+LONG StringToClipboard(ULONG unit, STRPTR str)
 {
+  LONG result = MUIV_NLCT_Failed;
+
   // lock out other tasks
   if(AttemptSemaphore(serverLock))
   {
-    struct ServerData sd;
-
-    // set up the data packet
-    sd.sd_Command = SERVER_WRITE;
-    sd.sd_Unit = unit;
-    sd.sd_String = str;
-
-    if(strlen(str) > 0)
+    if(str != NULL && strlen(str) > 0)
     {
+      struct ServerData sd;
+
+      // set up the data packet
+      sd.sd_Command = SERVER_WRITE;
+      sd.sd_Unit = unit;
+      sd.sd_String = str;
+
       // set up the message, send it and wait for a reply
       msg.mn_Node.ln_Name = (STRPTR)&sd;
       replyPort.mp_SigTask = FindTask(NULL);
 
       PutMsg(serverPort, &msg);
       Remove((struct Node *)WaitPort(&replyPort));
+
+      result = sd.sd_Result;
     }
     else
       DisplayBeep(0);
@@ -99,14 +104,17 @@ void StringToClipboard(ULONG unit, STRPTR str)
   }
   else
     DisplayBeep(0);
+
+  return result;
 }
 
 ///
 /// WriteToClipboard
 // write a given string via iffparse.library to the clipboard
 // non-public server side function
-static void WriteToClipboard(ULONG unit, STRPTR str)
+static LONG WriteToClipboard(ULONG unit, STRPTR str)
 {
+  LONG result = MUIV_NLCT_Failed;
   struct IFFHandle *iff;
 
   if((iff = AllocIFF()) != NULL)
@@ -117,9 +125,14 @@ static void WriteToClipboard(ULONG unit, STRPTR str)
 
       if(OpenIFF(iff, IFFF_WRITE) == 0)
       {
+        LONG size = strlen(str);
+
         PushChunk(iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN);
         PushChunk(iff, 0, ID_CHRS, IFFSIZE_UNKNOWN);
-        WriteChunkBytes(iff, str, strlen(str));
+        if(WriteChunkBytes(iff, str, size) == size)
+          result = MUIV_NLCT_Success;
+        else
+          result = MUIV_NLCT_WriteErr;
         PopChunk(iff);
         PopChunk(iff);
 
@@ -131,6 +144,8 @@ static void WriteToClipboard(ULONG unit, STRPTR str)
 
     FreeIFF(iff);
   }
+
+  return result;
 }
 
 ///
@@ -197,7 +212,7 @@ static SAVEDS ASM LONG ClipboardServer(UNUSED REG(a0, STRPTR args), UNUSED REG(d
 
             case SERVER_WRITE:
             {
-              WriteToClipboard(sd->sd_Unit, sd->sd_String);
+              sd->sd_Result = WriteToClipboard(sd->sd_Unit, sd->sd_String);
             }
             break;
           }

@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2013 by NList Open Source Team
+ Copyright (C) 2001-2014 NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -78,15 +78,15 @@ LONG StringToClipboard(ULONG unit, STRPTR str)
   // lock out other tasks
   if(AttemptSemaphore(serverLock))
   {
-    struct ServerData sd;
-
-    // set up the data packet
-    sd.sd_Command = SERVER_WRITE;
-    sd.sd_Unit = unit;
-    sd.sd_String = str;
-
-    if(strlen(str) > 0)
+    if(str != NULL && strlen(str) > 0)
     {
+      struct ServerData sd;
+
+      // set up the data packet
+      sd.sd_Command = SERVER_WRITE;
+      sd.sd_Unit = unit;
+      sd.sd_String = str;
+
       // set up the message, send it and wait for a reply
       msg.mn_Node.ln_Name = (STRPTR)&sd;
       replyPort.mp_SigTask = FindTask(NULL);

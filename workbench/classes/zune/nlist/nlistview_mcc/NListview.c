@@ -4,7 +4,7 @@
  Registered MUI class, Serial Number: 1d51 (0x9d510020 to 0x9d51002F)
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2013 by NList Open Source Team
+ Copyright (C) 2001-2014 NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -145,6 +145,10 @@ static void AddVerticalScroller(Object *obj, struct NLVData *data)
 
     D(DBF_STARTUP, "adding vertical scrollbar");
 
+    // restore the list's current disabled state, because the scrollbar might
+    // have been removed in disabled state and the list has been reactivated
+    // in the meantime
+    set(data->PR_Vert, MUIA_Disabled, xget(data->LI_NList, MUIA_Disabled));
     DoMethod(obj, OM_ADDMEMBER, data->PR_Vert);
 
     // add notifications
@@ -154,14 +158,14 @@ static void AddVerticalScroller(Object *obj, struct NLVData *data)
     DoMethod(data->PR_Vert,  MUIM_Notify, MUIA_Prop_First,            MUIV_EveryTime,  data->LI_NList, 3, MUIM_NoNotifySet, MUIA_NList_Prop_First, MUIV_TriggerValue);
     DoMethod(data->LI_NList, MUIM_Notify, MUIA_NList_VertDeltaFactor, MUIV_EveryTime,  data->PR_Vert,  3, MUIM_NoNotifySet, MUIA_Prop_DeltaFactor, MUIV_TriggerValue);
 
-	// Get and set the attributes we just have installed the notifications for to
-	// immediately trigger them. Otherwise hiding and showing again the scrollbar
-	// while the number of entries changed in the meantime will result in wrong
-	// scrollbar dimensions (i.e. when switching folders in YAM).
-	entries     = xget(data->LI_NList, MUIA_NList_Prop_Entries);
-	visible     = xget(data->LI_NList, MUIA_NList_Prop_Visible);
-	first       = xget(data->LI_NList, MUIA_NList_Prop_First);
-	deltaFactor = xget(data->LI_NList, MUIA_NList_VertDeltaFactor);
+    // Get and set the attributes we just have installed the notifications for to
+    // immediately trigger them. Otherwise hiding and showing again the scrollbar
+    // while the number of entries changed in the meantime will result in wrong
+    // scrollbar dimensions (i.e. when switching folders in YAM).
+    entries     = xget(data->LI_NList, MUIA_NList_Prop_Entries);
+    visible     = xget(data->LI_NList, MUIA_NList_Prop_Visible);
+    first       = xget(data->LI_NList, MUIA_NList_Prop_First);
+    deltaFactor = xget(data->LI_NList, MUIA_NList_VertDeltaFactor);
     SetAttrs(data->LI_NList,
       MUIA_NList_Prop_Entries,    entries,
       MUIA_NList_Prop_Visible,    visible,
@@ -208,8 +212,18 @@ static void AddHorizontalScroller(Object *obj, struct NLVData *data)
 
   if(data->Horiz_Attached == FALSE)
   {
+    ULONG active;
+    ULONG entries;
+    ULONG visible;
+    ULONG first;
+    ULONG deltaFactor;
+
     D(DBF_STARTUP, "adding horizontal scrollbar");
 
+    // restore the list's current disabled state, because the scrollbar might
+    // have been removed in disabled state and the list has been reactivated
+    // in the meantime
+    set(data->PR_Horiz, MUIA_Disabled, xget(data->LI_NList, MUIA_Disabled));
     DoMethod(obj, OM_ADDMEMBER, data->PR_Horiz);
 
     // add notifications
@@ -218,6 +232,37 @@ static void AddHorizontalScroller(Object *obj, struct NLVData *data)
     DoMethod(data->LI_NList, MUIM_Notify, MUIA_NList_Horiz_First,      MUIV_EveryTime, data->PR_Horiz, 3, MUIM_NoNotifySet, MUIA_Prop_First, MUIV_TriggerValue);
     DoMethod(data->PR_Horiz, MUIM_Notify, MUIA_Prop_First,             MUIV_EveryTime, data->LI_NList, 3, MUIM_NoNotifySet, MUIA_NList_Horiz_First, MUIV_TriggerValue);
     DoMethod(data->LI_NList, MUIM_Notify, MUIA_NList_HorizDeltaFactor, MUIV_EveryTime, data->PR_Horiz, 3, MUIM_NoNotifySet, MUIA_Prop_DeltaFactor, MUIV_TriggerValue);
+
+    // Get and set the attributes we just have installed the notifications for to
+    // immediately trigger them. Otherwise hiding and showing again the scrollbar
+    // while the number of entries changed in the meantime will result in wrong
+    // scrollbar dimensions (i.e. when switching folders in YAM).
+    active      = xget(data->LI_NList, MUIA_NList_Active);
+    entries     = xget(data->LI_NList, MUIA_NList_Horiz_Entries);
+    visible     = xget(data->LI_NList, MUIA_NList_Horiz_Visible);
+    first       = xget(data->LI_NList, MUIA_NList_Horiz_First);
+    deltaFactor = xget(data->LI_NList, MUIA_NList_HorizDeltaFactor);
+    SetAttrs(data->LI_NList,
+      MUIA_NList_Horiz_Entries,    entries,
+      MUIA_NList_Horiz_Visible,    visible,
+      MUIA_NList_Horiz_First,      first,
+      MUIA_NList_HorizDeltaFactor, deltaFactor,
+      TAG_DONE);
+
+    // make sure the active entry is still visible after adding the scrollbar
+    // since the scrollbar is added at the bottom we only have to check for the
+    // last visible item
+    entries = xget(data->LI_NList, MUIA_NList_Entries);
+    visible = xget(data->LI_NList, MUIA_NList_Visible);
+    first   = xget(data->LI_NList, MUIA_NList_First);
+    if(active == first+visible-1)
+    {
+      // the method must be pushed because we are currently inside a InitChange/ExitChange pair
+      // and the final height of the list cannot yet be determined correctly
+      // Additionally we must have completed the MUIM_Setup method to have a valid application pointer
+      if(data->SETUP == TRUE)
+        DoMethod(_app(obj), MUIM_Application_PushMethod, data->LI_NList, 2, MUIM_NList_Jump, active);
+    }
 
     data->Horiz_Attached = TRUE;
 
@@ -387,51 +432,19 @@ static void NLV_Scrollers(Object *obj, struct NLVData *data, LONG vert, LONG hor
     scrollers &= ~MUIV_NListview_HSB_On;
   }
 
-  if(scrollers & MUIV_NListview_VSB_On)
+  // Don't do the dirty work of adding/removing the scrollbars here directly,
+  // but delay this until the application is idle again. This is necessary,
+  // because the OM_SET method calling this function can be called from within
+  // an OM_SET method of our group object. Removing any scrollbar in this
+  // situation will cause an access to the just removed object (or better its
+  // Exec node structure) which has become invalid due to the removal.
+  // The AmigaOS4 debug kernel shows this very good, because an access to the
+  // address 0xcccccccc happens which definitely proves the invalid access.
+  if(scrollers & (MUIV_NListview_VSB_On|MUIV_NListview_HSB_On))
   {
-    if(data->SETUP == FALSE || DoMethod(obj, MUIM_Group_InitChange))
-    {
-      if((scrollers & MUIV_NListview_VSB_On) == MUIV_NListview_VSB_On)
-      {
-        AddVerticalScroller(obj, data);
-        if(data->VertSB == MUIV_NListview_VSB_Left)
-          DoMethod(obj, MUIM_Group_Sort, data->PR_Vert, data->Group, NULL);
-      }
-      else
-      {
-        RemoveVerticalScroller(obj, data);
-      }
-
-      if(scrollers & MUIV_NListview_HSB_On)
-      {
-        if(data->SETUP == FALSE || DoMethod(data->Group, MUIM_Group_InitChange))
-        {
-          if((scrollers & MUIV_NListview_HSB_On) == MUIV_NListview_HSB_On)
-            AddHorizontalScroller(data->Group, data);
-          else
-            RemoveHorizontalScroller(data->Group, data);
-
-          if(data->SETUP == TRUE)
-            DoMethod(data->Group, MUIM_Group_ExitChange);
-        }
-      }
-
-      if(data->SETUP == TRUE)
-        DoMethod(obj, MUIM_Group_ExitChange);
-    }
-  }
-  else if(scrollers & MUIV_NListview_HSB_On)
-  {
-    if(data->SETUP == FALSE || DoMethod(data->Group, MUIM_Group_InitChange))
-    {
-      if((scrollers & MUIV_NListview_HSB_On) == MUIV_NListview_HSB_On)
-        AddHorizontalScroller(data->Group, data);
-      else
-        RemoveHorizontalScroller(data->Group, data);
-
-      if(data->SETUP == TRUE)
-        DoMethod(data->Group, MUIM_Group_ExitChange);
-    }
+    // we must have completed the MUIM_Setup method to have a valid application pointer
+    if(data->SETUP == TRUE)
+      DoMethod(_app(obj), MUIM_Application_PushMethod, obj, 2, MUIM_NListview_SetScrollers, scrollers);
   }
 
   LEAVE();
@@ -902,6 +915,60 @@ static IPTR mNLV_GoInactive(struct IClass *cl, Object *obj, Msg msg)
   return DoSuperMethodA(cl, obj, msg);
 }
 
+static IPTR mNLV_SetScrollers(struct IClass *cl, Object *obj, struct MUIP_NListview_SetScrollers *msg)
+{
+  struct NLVData *data = INST_DATA(cl, obj);
+
+  if(msg->scrollers & MUIV_NListview_VSB_On)
+  {
+    if(data->SETUP == FALSE || DoMethod(obj, MUIM_Group_InitChange))
+    {
+      if((msg->scrollers & MUIV_NListview_VSB_On) == MUIV_NListview_VSB_On)
+      {
+        AddVerticalScroller(obj, data);
+        if(data->VertSB == MUIV_NListview_VSB_Left)
+          DoMethod(obj, MUIM_Group_Sort, data->PR_Vert, data->Group, NULL);
+      }
+      else
+      {
+        RemoveVerticalScroller(obj, data);
+      }
+
+      if(msg->scrollers & MUIV_NListview_HSB_On)
+      {
+        if(data->SETUP == FALSE || DoMethod(data->Group, MUIM_Group_InitChange))
+        {
+          if((msg->scrollers & MUIV_NListview_HSB_On) == MUIV_NListview_HSB_On)
+            AddHorizontalScroller(data->Group, data);
+          else
+            RemoveHorizontalScroller(data->Group, data);
+
+          if(data->SETUP == TRUE)
+            DoMethod(data->Group, MUIM_Group_ExitChange);
+        }
+      }
+
+      if(data->SETUP == TRUE)
+        DoMethod(obj, MUIM_Group_ExitChange);
+    }
+  }
+  else if(msg->scrollers & MUIV_NListview_HSB_On)
+  {
+    if(data->SETUP == FALSE || DoMethod(data->Group, MUIM_Group_InitChange))
+    {
+      if((msg->scrollers & MUIV_NListview_HSB_On) == MUIV_NListview_HSB_On)
+        AddHorizontalScroller(data->Group, data);
+      else
+        RemoveHorizontalScroller(data->Group, data);
+
+      if(data->SETUP == TRUE)
+        DoMethod(data->Group, MUIM_Group_ExitChange);
+    }
+  }
+
+  return 0;
+}
+
 DISPATCHER(_Dispatcher)
 {
   switch(msg->MethodID)
@@ -982,6 +1049,8 @@ DISPATCHER(_Dispatcher)
       else
         return 0;
     }
+
+    case MUIM_NListview_SetScrollers: return mNLV_SetScrollers(cl, obj, (APTR)msg);
 
     default: return DoSuperMethodA(cl, obj, msg);
   }

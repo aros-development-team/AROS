@@ -2,7 +2,7 @@
 
  NListtree.mcc - New Listtree MUI Custom Class
  Copyright (C) 1999-2001 by Carsten Scholling
- Copyright (C) 2001-2013 by NList Open Source Team
+ Copyright (C) 2001-2014 NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -1499,7 +1499,7 @@ struct MUI_NListtree_TreeNode *TreeNodeSelectAdd( struct NListtree_Data *data, s
 }
 
 
-VOID TreeNodeSelectRemove( struct NListtree_Data *data, struct MUI_NListtree_TreeNode *tn )
+static void TreeNodeSelectRemove( struct NListtree_Data *data, struct MUI_NListtree_TreeNode *tn )
 {
   NLRemoveFromTable( data, &data->SelectedTable, tn );
 
@@ -2238,6 +2238,8 @@ VOID ActivateTreeNode(struct NListtree_Data *data, struct MUI_NListtree_TreeNode
 
 VOID RemoveNode1( struct NListtree_Data *data, UNUSED struct MUI_NListtree_ListNode *li, struct MUI_NListtree_TreeNode *tn, LONG pos )
 {
+  ENTER();
+
   /*
   **  If deleted entry is active, then activate the next/previous node.
   */
@@ -2271,13 +2273,15 @@ VOID RemoveNode1( struct NListtree_Data *data, UNUSED struct MUI_NListtree_ListN
   **  Remove the node from the selected list.
   */
   if(isFlagSet(tn->tn_Flags, TNF_SELECTED))
-  {
     TreeNodeSelectRemove( data, tn );
-  }
+
+  LEAVE();
 }
 
 VOID RemoveNode2( struct NListtree_Data *data, struct MUI_NListtree_ListNode *li, struct MUI_NListtree_TreeNode *tn )
 {
+  ENTER();
+
   Remove( (struct Node *)&tn->tn_Node );
   NLRemoveFromTable( data, &li->ln_Table, tn );
 
@@ -2309,6 +2313,8 @@ VOID RemoveNode2( struct NListtree_Data *data, struct MUI_NListtree_ListNode *li
   **  Subtract one from the global number of entries.
   */
   data->NumEntries--;
+
+  LEAVE();
 }
 
 
@@ -2316,6 +2322,8 @@ VOID RemoveNode2( struct NListtree_Data *data, struct MUI_NListtree_ListNode *li
 VOID RemoveChildNodes( struct NListtree_Data *data, struct MUI_NListtree_TreeNode *tn, LONG pos )
 {
   struct MUI_NListtree_ListNode *ln = CLN( tn );
+
+  ENTER();
 
   if(isFlagSet(tn->tn_Flags, TNF_LIST))
   {
@@ -2328,17 +2336,24 @@ VOID RemoveChildNodes( struct NListtree_Data *data, struct MUI_NListtree_TreeNod
       RemoveNode2( data, CLN( GetParent( tn ) ), tn );
     }
   }
+
+  LEAVE();
 }
 
 
 
 VOID RemoveNodes( struct NListtree_Data *data, struct MUI_NListtree_ListNode *li, struct MUI_NListtree_TreeNode *tn, LONG pos )
 {
+  ENTER();
+
   RemoveChildNodes( data, tn, pos + 1 );
   RemoveNode1( data, li, tn, pos );
   RemoveNode2( data, li, tn );
 
-  if ( pos > 0 )  DoMethod( data->Obj, MUIM_NList_Redraw, pos - 1 );
+  if(pos > 0)
+    DoMethod(data->Obj, MUIM_NList_Redraw, pos - 1);
+
+  LEAVE();
 }
 
 
@@ -2572,21 +2587,23 @@ struct MUI_NListtree_TreeNode *DuplicateNode( struct NListtree_Data *data, struc
   struct MUI_NListtree_ListNode *new;
   APTR user = NULL;
 
-  if((new = CLN(AllocVecPooled( data->TreePool, isFlagSet(nodetodup->tn_Flags, TNF_LIST) ? sizeof(struct MUI_NListtree_ListNode ) : sizeof(struct MUI_NListtree_TreeNode)))))
+  if((new = CLN(AllocVecPooled(data->TreePool, isFlagSet(nodetodup->tn_Flags, TNF_LIST) ? sizeof(struct MUI_NListtree_ListNode) : sizeof(struct MUI_NListtree_TreeNode)))) != NULL)
   {
     if(isFlagSet(nodetodup->tn_Flags, TNF_LIST))
-      NewList( (struct List *)&new->ln_List );
+      NewList((struct List *)&new->ln_List);
 
     /*
     **  Should we duplicate the supplied node name?
     */
     if(isFlagSet(data->Flags, NLTF_DUPNODENAMES))
     {
-      int len = strlen( nodetodup->tn_Name ) + 1;
+      int len = strlen(nodetodup->tn_Name) + 1;
 
-      new->ln_Name = (STRPTR)AllocVecPooled( data->TreePool, len );
-      strlcpy( new->ln_Name, nodetodup->tn_Name, len );
-      SET_FLAG(new->ln_IFlags, TNIF_ALLOCATED);
+      if((new->ln_Name = (STRPTR)AllocVecPooled(data->TreePool, len)) != NULL)
+      {
+        strlcpy(new->ln_Name, nodetodup->tn_Name, len);
+        SET_FLAG(new->ln_IFlags, TNIF_ALLOCATED);
+      }
     }
     else
       new->ln_Name = nodetodup->tn_Name;
@@ -2594,31 +2611,39 @@ struct MUI_NListtree_TreeNode *DuplicateNode( struct NListtree_Data *data, struc
     /*
     **  Create new user dats
     */
-    user = (APTR)DoMethod(data->Obj, MUIM_NListtree_Construct, nodetodup->tn_Name, nodetodup->tn_User, data->TreePool, MUIV_NListtree_ConstructHook_Flag_AutoCreate);
-
-    if ( !new->ln_Name || !user )
+    if(new->ln_Name != NULL)
     {
-      /*
-      **  Free all previously allocated memory if
-      **  something failed before.
-      */
-      if(new->ln_Name != NULL && isFlagSet(new->ln_IFlags, TNIF_ALLOCATED))
-        FreeVecPooled( data->TreePool, new->ln_Name );
+      user = (APTR)DoMethod(data->Obj, MUIM_NListtree_Construct, nodetodup->tn_Name, nodetodup->tn_User, data->TreePool, MUIV_NListtree_ConstructHook_Flag_AutoCreate);
 
-      DoMethod(data->Obj, MUIM_NListtree_Destruct, new->ln_Name, new->ln_User, data->TreePool, 0);
+      if(user == NULL)
+      {
+        /*
+        **  Free all previously allocated memory if
+        **  something failed before.
+        */
+        if(isFlagSet(new->ln_IFlags, TNIF_ALLOCATED))
+          FreeVecPooled(data->TreePool, new->ln_Name);
 
-      FreeVecPooled( data->TreePool, new );
-      new = NULL;
+        DoMethod(data->Obj, MUIM_NListtree_Destruct, nodetodup->tn_Name, nodetodup->tn_User, data->TreePool, 0);
+
+        FreeVecPooled(data->TreePool, new);
+        new = NULL;
+      }
+      else
+      {
+        new->ln_User  = user;
+        new->ln_Flags = ( nodetodup->tn_Flags & ~TNF_SELECTED );
+
+        /*
+        **  Add one to the global number of entries
+        */
+        data->NumEntries++;
+      }
     }
     else
     {
-      new->ln_User  = user;
-      new->ln_Flags = ( nodetodup->tn_Flags & ~TNF_SELECTED );
-
-      /*
-      **  Add one to the global number of entries
-      */
-      data->NumEntries++;
+      FreeVecPooled(data->TreePool, new);
+      new = NULL;
     }
   }
 
@@ -3027,7 +3052,7 @@ HOOKPROTONHNO(_CompareFunc_LeavesMixed, LONG, struct MUIP_NListtree_CompareMessa
 }
 MakeStaticHook(_CompareHook_LeavesMixed, _CompareFunc_LeavesMixed);
 
-VOID SortList( struct MUI_NListtree_ListNode *ln, struct NListtree_Data *data )
+static void SortList( struct MUI_NListtree_ListNode *ln, struct NListtree_Data *data )
 {
   if ( ln->ln_Table.tb_Entries > 1 )
   {
@@ -3048,7 +3073,6 @@ VOID SortList( struct MUI_NListtree_ListNode *ln, struct NListtree_Data *data )
   }
 }
 
-
 struct MUI_NListtree_ListNode *ListNode_Sort( struct MUI_NListtree_ListNode *ln, struct NListtree_Data *data, ULONG flags )
 {
   if(isFlagSet(flags, MUIV_NListtree_Sort_Flag_RecursiveAll) || isFlagSet(flags, MUIV_NListtree_Sort_Flag_RecursiveOpen))
@@ -3057,10 +3081,12 @@ struct MUI_NListtree_ListNode *ListNode_Sort( struct MUI_NListtree_ListNode *ln,
 
     while((ln2 = CLN(GetSucc((struct Node *)ln2))))
     {
-      if(isFlagSet(ln->ln_Flags, TNF_LIST))
+      if(isFlagSet(ln2->ln_Flags, TNF_LIST))
       {
-        if(isFlagSet(ln->ln_Flags, TNF_OPEN) || isFlagSet(flags, MUIV_NListtree_Sort_Flag_RecursiveAll))
+        if(isFlagSet(ln2->ln_Flags, TNF_OPEN) || isFlagSet(flags, MUIV_NListtree_Sort_Flag_RecursiveAll))
+        {
           ListNode_Sort( ln2, data, flags );
+        }
       }
     }
   }
@@ -7246,6 +7272,8 @@ IPTR _NListtree_Insert(struct IClass *cl, Object *obj, struct MUIP_NListtree_Ins
     }
   }
 
+  DoMethod(obj, MUIM_NListtree_Destruct, msg->Name, user, data->TreePool, 0);
+
   return(0);
 }
 
@@ -7493,6 +7521,8 @@ IPTR _NListtree_Remove(struct IClass *cl, Object *obj, struct MUIP_NListtree_Rem
   struct MUI_NListtree_TreeNode *tn;
   LONG pos;
 
+  ENTER();
+
   D(DBF_LISTTREE, "NList Remove listnode: 0x%lx  treenode: 0x%lx",msg->ListNode,msg->TreeNode);
 
   DeactivateNotify( data );
@@ -7542,34 +7572,60 @@ IPTR _NListtree_Remove(struct IClass *cl, Object *obj, struct MUIP_NListtree_Rem
         break;
 
       case MUIV_NListtree_Remove_TreeNode_All:
-
+      {
         pos = GetVisualPos( data, CTN( GetHead( (struct List *)&li->ln_List ) ) );
 
-        while((tn = CTN( GetHead((struct List *)&li->ln_List))))
-        {
-          //D(bug( "Node: 0x%08lx - %s - pos: %ld", tn, tn->tn_Name, pos ) );
+        // make sure we are quiet, and the selection change
+        // is not propagated
+        DoQuiet( data, TRUE );
+        data->IgnoreSelectionChange = 1;
 
+        while((tn = CTN( GetHead((struct List *)&li->ln_List))))
           RemoveNodes( data, li, tn, pos );
-        }
+
+        // reactive selection list
+        data->IgnoreSelectionChange = 0;
+        DoQuiet(data, FALSE);
 
         tn = NULL;
-        break;
+      }
+      break;
 
       case MUIV_NListtree_Remove_TreeNode_Selected:
-
-        while( data->SelectedTable.tb_Entries )
+      {
+        if(data->SelectedTable.tb_Entries > 0)
         {
-          tn = data->SelectedTable.tb_Table[0];
+          // make sure we are quiet, and the selection change
+          // is not propagated
+          DoQuiet( data, TRUE );
+          data->IgnoreSelectionChange = 1;
 
-          pos = GetVisualPos( data, tn );
+          do
+          {
+            tn = data->SelectedTable.tb_Table[0];
+            pos = GetVisualPos( data, tn );
+            RemoveNodes( data, CLN( tn->tn_Parent ), tn, pos );
+          }
+          while(data->SelectedTable.tb_Entries > 0);
 
-          //D(bug( "Node: 0x%08lx - %s - pos: %ld", tn, tn->tn_Name, pos ) );
+          // reactive selection list
+          data->IgnoreSelectionChange = 0;
 
-          RemoveNodes( data, CLN( tn->tn_Parent ), tn, pos );
+          if(data->TempActiveNode != NULL &&
+             NLFindInTable(&data->SelectedTable, data->TempActiveNode) == -1)
+          {
+            TreeNodeSelectAdd(data, data->TempActiveNode);
+            SET_FLAG(data->TempActiveNode->tn_Flags, TNF_SELECTED);
+
+            MakeNotify(data, MUIA_NListtree_SelectChange, (APTR)TRUE);
+          }
+
+          DoQuiet( data, FALSE );
         }
 
         tn = NULL;
-        break;
+      }
+      break;
 
       default:
         tn = msg->TreeNode;
@@ -7631,6 +7687,8 @@ IPTR _NListtree_Remove(struct IClass *cl, Object *obj, struct MUIP_NListtree_Rem
 
   /* sba: the active note could be changed, but the notify calling was disabled */
   DoMethod(data->Obj, MUIM_NListtree_GetListActive, 0);
+
+  RETURN(0);
   return( 0 );
 }
 

@@ -2,7 +2,7 @@
 
  NListtree.mcc - New Listtree MUI Custom Class
  Copyright (C) 1999-2001 by Carsten Scholling
- Copyright (C) 2001-2013 by NList Open Source Team
+ Copyright (C) 2001-2014 NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -29,9 +29,9 @@
 
 // for setting all necessary version information
 #define LIB_VERSION    18
-#define LIB_REVISION   42
-#define LIB_DATE       "25.04.2013"
-#define LIB_COPYRIGHT  "Copyright (C) 2001-2013 NList Open Source Team"
+#define LIB_REVISION   45
+#define LIB_DATE       "05.04.2014"
+#define LIB_COPYRIGHT  "Copyright (C) 2001-2014 NList Open Source Team"
 
 // set the LIB_REV_STRING
 #define LIB_REV_STRING STR(LIB_VERSION) "." STR(LIB_REVISION)

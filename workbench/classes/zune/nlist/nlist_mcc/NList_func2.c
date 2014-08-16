@@ -5,7 +5,7 @@
                                            0x9d5100C0 to 0x9d5100FF
 
  Copyright (C) 1996-2001 by Gilles Masson
- Copyright (C) 2001-2013 by NList Open Source Team
+ Copyright (C) 2001-2014 NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -1064,7 +1064,12 @@ ULONG NL_List_Clear(struct NLData *data)
 
   set_Active(MUIV_NList_Active_Off);
   data->NList_Horiz_First = 0;
-  data->NList_Visible = 0;
+  // Reset the amount of visible lines only if the list is not "quiet".
+  // It will be recalculated as soon as the "quiet" state ends.
+  // This makes it possible to perform a centered jump to a certain
+  // entry while the "quiet" state is active.
+  if(data->NList_Quiet == 0)
+    data->NList_Visible = 0;
   data->NList_LastInserted = -1;
   data->Title_PixLen = -1;
   data->NList_DropMark = 0;

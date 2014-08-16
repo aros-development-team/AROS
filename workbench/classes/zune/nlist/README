@@ -4,7 +4,7 @@
 
  Copyright (C) 1996-2001 by Gilles Masson (NList.mcc)
  Copyright (C) 1999-2001 by Carsten Scholling (NListtree.mcc)
- Copyright (C) 2001-2005 by NList Open Source Team
+ Copyright (C) 2001-2014 NList Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@
 
  NList classes Support Site:  http://www.sf.net/projects/nlist-classes
 
- $Id: README 98 2005-07-31 16:51:47Z damato $
+ $Id: README 716 2014-01-26 09:32:35Z damato $
 
 ***************************************************************************/
 
@@ -35,5 +35,5 @@ If you want to contribute to the development of the NList classes please registe
 with SourceForge.net and notify one of the project admins of the NList classes
 project available at http://www.sf.net/projects/nlist-classes
 
-Sebastian Bauer & Jens Langner
+Sebastian Bauer & Jens Maus
 June, 2004
