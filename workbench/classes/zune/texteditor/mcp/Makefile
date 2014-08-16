@@ -2,7 +2,7 @@
 #
 # TextEditor.mcc - Textediting MUI Custom Class
 # Copyright (C) 1997-2000 Allan Odgaard
-# Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+# Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -214,16 +214,7 @@ MCPOBJS  = $(addprefix $(OBJDIR)/,$(LOBJS)) $(addprefix $(OBJDIR)/,$(COBJS))
 TESTOBJS = $(addprefix $(OBJDIR)/,$(COBJS)) $(addprefix $(OBJDIR)/,$(TOBJS))
 
 # available catalog translations
-CATALOGS = $(LOCALE)/czech.catalog \
-           $(LOCALE)/danish.catalog \
-           $(LOCALE)/french.catalog \
-           $(LOCALE)/german.catalog \
-           $(LOCALE)/greek.catalog \
-           $(LOCALE)/italian.catalog \
-           $(LOCALE)/polish.catalog \
-           $(LOCALE)/russian.catalog \
-           $(LOCALE)/swedish.catalog
-
+CATALOGS = $(patsubst %.po,%.catalog,$(wildcard $(LOCALE)/*.po))
 
 # different options per target OS
 ifeq ($(OS), os4)
@@ -291,7 +282,7 @@ ifeq ($(OS), mos)
 
   # Compiler/Linker flags
   CPU     = -mcpu=powerpc
-  CFLAGS  += -noixemul -DNO_PPCINLINE_STDARG -DAROS_ALMOST_COMPATIBLE
+  CFLAGS  += -noixemul
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
 
@@ -424,15 +415,15 @@ $(TESTTARGET): $(TESTOBJS)
 	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
 
 locale.h: locale.c
-locale.c: $(LOCALE)/TextEditor_mcp.cd C_h.sd C_c.sd
+locale.c: $(LOCALE)/TextEditor_mcp.pot C_h.sd C_c.sd
 	@echo "  MK $@"
-	@$(FC) $(LOCALE)/TextEditor_mcp.cd locale.h=C_h.sd locale.c=C_c.sd
+	@$(FC) $(LOCALE)/TextEditor_mcp.pot locale.h=C_h.sd locale.c=C_c.sd
 
 ## CATALOG GENERATION #################
 
-$(LOCALE)/%.catalog: $(LOCALE)/%.ct
+$(LOCALE)/%.catalog: $(LOCALE)/%.po
 	@echo "  MK $@"
-	@$(FC) $(LOCALE)/TextEditor_mcp.cd $< CATALOG $@
+	@$(FC) POFILE $< CATALOG $@
 
 .IGNORE: $(CATALOGS)
 

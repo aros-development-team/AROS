@@ -5,7 +5,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -105,6 +105,8 @@ extern "C" {
 #define MUIA_TextEditor_ConvertTabs           (TextEditor_Dummy + 0x3d)
 #define MUIA_TextEditor_WrapWords             (TextEditor_Dummy + 0x3e)
 #define MUIA_TextEditor_TabSize               (TextEditor_Dummy + 0x3f)
+#define MUIA_TextEditor_Keywords              (TextEditor_Dummy + 0x40)
+#define MUIA_TextEditor_MatchedKeyword        (TextEditor_Dummy + 0x41)
 
 #define MUIM_TextEditor_HandleError           (TextEditor_Dummy + 0x1f)
 #define MUIM_TextEditor_AddKeyBindings        (TextEditor_Dummy + 0x22)

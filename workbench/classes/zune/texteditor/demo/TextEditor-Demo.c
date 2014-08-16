@@ -2,7 +2,7 @@
 
  TextEditor-Demo - Textediting MUI Custom Class Demonstration Program
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -46,6 +46,10 @@
 #include <proto/rexxsyslib.h>
 
 #include <mui/TextEditor_mcc.h>
+
+#if defined(__amigaos4__)
+#include <dos/obsolete.h>
+#endif
 
 #include "SDI_hook.h"
 
@@ -453,7 +457,7 @@ int main(VOID)
 
               DoMethod(separator, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_InsertText, "\n\33c\33[s:2]\n");
 
-              DoMethod(config, MUIM_Notify, MUIA_Pressed, FALSE, MUIV_Notify_Application, 2, MUIM_Application_OpenConfigWindow, 1, "TextEditor.mcc");
+              DoMethod(config, MUIM_Notify, MUIA_Pressed, FALSE, MUIV_Notify_Application, 3, MUIM_Application_OpenConfigWindow, 1, "TextEditor.mcc");
 
               DoMethod(clear, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 2, MUIM_TextEditor_ARexxCmd, "Clear");
               DoMethod(clear, MUIM_Notify, MUIA_Pressed, FALSE, editorgad, 3, MUIM_NoNotifySet, MUIA_TextEditor_HasChanged, FALSE);

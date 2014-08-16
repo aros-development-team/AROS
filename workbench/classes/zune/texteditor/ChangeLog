@@ -2,8 +2,101 @@
 MUI TextEditor MCC class - ChangeLog
 ------------------------------------
 
-$Id: ChangeLog 924 2013-04-25 14:50:37Z damato $
-$URL: svn://svn.code.sf.net/p/texteditor-mcc/code/releases/15.41/ChangeLog $
+$Id: ChangeLog 955 2014-04-05 11:46:48Z damato $
+$URL: svn://svn.code.sf.net/p/texteditor-mcc/code/releases/15.45/ChangeLog $
+
+#### v15.45 RELEASE ############################################################
+
+2014-04-05 Jens Maus <mail@jens-maus.de>
+
+  * misc: final v15.45 release preparations
+
+2014-04-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale: added a new header line to the .po files to specify a correct
+    name for the generated .catalog file.
+
+2014-03-31 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/CreatePrefsGroup.c, locale: restored the missing bubble help texts which
+    got lots during the transition to .po files. Please note that I copied over
+    the help texts for all non-slavic languages only. The old help texts are
+    still available in previous .ct files in the SVN repository.
+  * mcc/SpellChecker.c: added missing parameter for a notification to call a
+    hook via MUIM_CallHook. This caused crashes when a spellchecker was about to
+    replace a mispelled word. Thanks to Mikhail Malyshev for the hint.
+
+2014-02-23 Jens Maus <mail@jens-maus.de>
+
+  * mcp/locale: all catalog translations have now been moved to use the free
+    services of transifex (http://www.transifex.com/projects/p/texteditor-mcc/)
+
+#### v15.44 RELEASE ############################################################
+
+2014-01-26 Jens Maus <mail@jens-maus.de>
+
+  * misc: final v15.44 release preparations
+
+2014-01-25 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/ImportText.c: remember the current export hook before doing the actual
+    export with a different hook.
+
+2014-01-13 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/danish.ct: updated danish translation kindly provided by Niels
+    Bache.
+
+2013-12-22 Jens Maus <mail@jens-maus.de>
+
+  * InitConfig.c: commented out a ReimportText() call which caused in YAM to
+    not show text in a write window uncolored while it contains colored
+    sequences. The root cause of the problem still have to be found but it
+    seems that call is definitly misplaced here!
+
+2013-12-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * demo/TextEditor-Demo.c: correct wrong count parameter for
+    MUIM_Application_OpenConfigWindow.
+
+#### v15.43 RELEASE ############################################################
+
+2013-12-18 Jens Maus <mail@jens-maus.de>
+
+  * misc: final v15.43 release preparations
+  * mcc/HandleInput.c: fixed the internal spell checking functionality which was
+    broken since 15.41 because it triggered the Lookup for every entered
+    char instead of word. Now the SpellCheckWord() function should be correctly
+    called. This fixes ticket #108.
+
+#### v15.42 RELEASE ############################################################
+
+2013-12-14 Jens Maus <mail@jens-maus.de>
+
+  * misc: final v15.42 release preparations
+  * mcc/SpellChecker.c: changed the recently added SpellCheck modifications to
+    use AllocVecPooled/FreeVecPooled instead of calloc/free since this causes
+    the build to fail for MorphOS.
+  * Makefile: changed MorphOS build to use our own GetSucc, etc. functions and
+    not rely on the AROS compatibility macros.
+
+2013-11-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/GetSetAttrs.c, mcc/HandleInput, mcc/SpellChecker.c: added a new
+    mechanism to trigger an attribute if the last entered word was found in a
+    list of keywords defined by the application. This feature will be used by
+    YAM's attachment reminder.
+  * mcc/SpellChecker.c: simplified the word extraction process for the keyword
+    check. This makes the extension check work.
+
+2013-10-15 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/TextEditor-Test.c: updated AmigaOS4 build for the latest SDK.
+
+2013-04-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale/greek.ct: updated greek translation kindly provided by Antonis
+    Iliakis.
 
 #### v15.41 RELEASE ############################################################
 

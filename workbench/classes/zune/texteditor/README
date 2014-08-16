@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: README 612 2010-04-21 15:54:05Z damato $
+ $Id: README 945 2014-01-26 09:03:06Z damato $
 
 ***************************************************************************/
 
@@ -34,5 +34,5 @@ If you want to contribute to the development of TextEditor.mcc please register
 with SourceForge.net and notify one of the project admins of the TextEditor.mcc
 project available at http://www.sf.net/projects/texteditor-mcc
 
-Jens Langner
+Jens Maus
 March, 2005

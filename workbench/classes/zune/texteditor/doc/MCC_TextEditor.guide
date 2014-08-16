@@ -1,11 +1,11 @@
 @DataBase TextEditor.guide
-@$VER: TextEditor.guide 15.38 (12.05.2012)
+@$VER: TextEditor.guide 15.44 (26.01.2014)
 
 @Node Main "TextEditor - AmigaGuide(R) documentation"
 
 Welcome to the @{b}TextEditor @{ub}AmigaGuide(R) documentation.
 
-(C) 2005-2012 by the TextEditor.mcc Open Source team
+(C) 2005-2014 TextEditor.mcc Open Source Team
 (C) 1997-2000 by Allan Odgaard
 
 
@@ -342,7 +342,7 @@ sources couldn't be accessed anymore, preventing him from delivering further
 updates beyond 15.9, which somewhat hindered the development of applications
 based around TextEditor.
 
-Decided not to surrender easily, in 2004, Jens Langner of YAMOS fame
+Decided not to surrender easily, in 2004, Jens Maus of YAMOS fame
 contacted Allan asking him to send his hard drive over to Germany.
 Eventually, in March, 2005 the precious hard drive (a very old Seagate
 3660A) arrived and Jens found out that it was actually just the controller

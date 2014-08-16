@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -487,8 +487,16 @@ void Key_Normal(struct InstData *data, char key)
 
   // check if the user wants to do a direct spell checking while
   // writing some text.
-  if(data->TypeAndSpell == TRUE && !IsAlpha(data->mylocale, key) && key != '-')
-    CheckWord(data);
+  if(key != '-' && IsAlpha(data->mylocale, key) == FALSE)
+  {
+    // only perform a spell check if it has been enabled
+    if(data->TypeAndSpell == TRUE)
+      SpellCheckWord(data);
+
+    // do a keyword lookup only if we have a keyword list
+    if(data->Keywords != NULL)
+      KeywordCheck(data);
+  }
 
   // add the pastechar to the undobuffer and paste the current
   // key immediately.
@@ -1318,7 +1326,8 @@ void Key_Tab(struct InstData *data)
 	  data->CPos_X+1
 	};
 
-	CheckWord(data);
+	SpellCheckWord(data);
+	KeywordCheck(data);
 	AddToUndoBuffer(data, ET_PASTEBLOCK, &block);
 	data->CPos_X++;
 	PasteChars(data, data->CPos_X-1, data->actualline, 1, "\t", NULL);
@@ -1334,7 +1343,8 @@ void Key_Tab(struct InstData *data)
 	  data->CPos_X+data->TabSize
 	};
 
-	CheckWord(data);
+	SpellCheckWord(data);
+	KeywordCheck(data);
 	AddToUndoBuffer(data, ET_PASTEBLOCK, &block);
 	data->CPos_X += data->TabSize;
 	PasteChars(data, data->CPos_X-data->TabSize, data->actualline, data->TabSize, "            ", NULL);
@@ -1354,7 +1364,8 @@ void Key_Return(struct InstData *data)
   else
     ScrollIntoDisplay(data);
 
-  CheckWord(data);
+  SpellCheckWord(data);
+  KeywordCheck(data);
   AddToUndoBuffer(data, ET_SPLITLINE, NULL);
   SplitLine(data, data->CPos_X, data->actualline, TRUE, NULL);
 

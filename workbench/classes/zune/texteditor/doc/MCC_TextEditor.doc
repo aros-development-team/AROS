@@ -22,6 +22,8 @@ TextEditor.mcc/MUIA_TextEditor_ImportWrap
 TextEditor.mcc/MUIA_TextEditor_InsertMode         (not yet implemented...)
 TextEditor.mcc/MUIA_TextEditor_InVirtualGroup
 TextEditor.mcc/MUIA_TextEditor_KeyUpFocus
+TextEditor.mcc/MUIA_TextEditor_Keywords
+TextEditor.mcc/MUIA_TextEditor_MatchedKeyword
 TextEditor.mcc/MUIA_TextEditor_PasteColors
 TextEditor.mcc/MUIA_TextEditor_PasteStyles
 TextEditor.mcc/MUIA_TextEditor_Pen
@@ -63,8 +65,8 @@ TextEditor.mcc/MUIM_TextEditor_Search
 TextEditor.mcc/TextEditor.mcc
 
     *******************************************************************
-    Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
-    $Id: MCC_TextEditor.doc 903 2012-11-29 13:27:34Z thboeckel $
+    Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
+    $Id: MCC_TextEditor.doc 945 2014-01-26 09:03:06Z damato $
 
     TextEditor.mcc is a multiline string gadget which holds most of the
     functions of a normal text editor including some special function-
@@ -652,6 +654,37 @@ TextEditor.mcc/MUIM_TextEditor_Search
         Allows to specify a specific object that will be set as the new
         window's default object in case the user pressed the UP cursor key and
         the texteditor was already at the very first line.
+
+TextEditor.mcc/MUIA_TextEditor_Keywords
+
+    NAME
+        MUIA_TextEditor_Keywords -- [IS.], STRPTR *
+
+    FUNCTION
+        Allows to specify a comma separated string of keywords to check for
+        while the user is typing. If one of these keywords is found the
+        attribute MUIA_TextEditor_MatchedKeyword will be triggered with the
+        matched keyword as trigger value. The check will happen after typing
+        either a space or TAB or RETURN after a word.
+
+    EXAMPLE
+        set(editorgad, MUIA_TextEditor_Keywords, "foo,bar,baz");
+
+    SEE ALSO
+        MUIA_TextEditor_MatchedKeyword
+
+TextEditor.mcc/TextEditor.mcc/MUIA_TextEditor_MatchedKeyword
+
+    NAME
+        MUIA_TextEditor_MatchedKeyword -- [..G], STRPTR
+
+    FUNCTION
+        This attribute is used as a notification trigger only. It will be set to
+        the keyword which was found in the list of keywords provided by the
+        attribute MUIA_TextEditor_Keywords.
+
+    SEE ALSO
+        MUIA_TextEditor_Keywords
 
 TextEditor.mcc/MUIA_TextEditor_PasteColors
 

@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -404,7 +404,7 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
             Child, ColGroup(2),
               Child, TxtLabel(tr(MSG_Label_UndoLevel), 0),
               Child, data->undosize = SliderObject,
-                MUIA_ShortHelp, tr(HelpBubble_UndoLevel),
+                MUIA_ShortHelp, tr(MSG_HelpBubble_UndoLevel),
                 MUIA_Numeric_Min, 0,
                 MUIA_Numeric_Max, 2000,
                 MUIA_CycleChain, TRUE,
@@ -419,7 +419,7 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
               End,
               Child, TxtLabel(tr(MSG_Label_Smooth), 0),
               Child, HGroup,
-                MUIA_ShortHelp, tr(HelpBubble_Smooth),
+                MUIA_ShortHelp, tr(MSG_HelpBubble_Smooth),
                 Child, data->smooth = MUI_MakeObject(MUIO_Checkmark, NULL),
                 Child, HSpace(0),
               End,
@@ -768,9 +768,9 @@ Object *CreatePrefsGroup(struct InstData_MCP *data)
 */
     set(editor, MUIA_TextEditor_Slider, slider);
 
-    set(data->blockqual, MUIA_ShortHelp, tr(HelpBubble_BlockQual));
-    set(data->typenspell, MUIA_ShortHelp, tr(HelpBubble_TypeNSpell));
-    set(data->CheckWord, MUIA_ShortHelp, tr(HelpBubble_CheckWord));
+    set(data->blockqual, MUIA_ShortHelp, tr(MSG_HelpBubble_BlockQual));
+    set(data->typenspell, MUIA_ShortHelp, tr(MSG_HelpBubble_TypeNSpell));
+    set(data->CheckWord, MUIA_ShortHelp, tr(MSG_HelpBubble_CheckWord));
     set(defaultkeys, MUIA_ShortHelp, tr(MSG_HELP_BUTTON_DEFAULTKEYS));
     set(defaultkeys, MUIA_CycleChain, TRUE);
     set(data->hotkey, MUIA_ShortHelp, tr(MSG_HELP_BUTTON_SNOOP));

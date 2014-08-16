@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,9 @@
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#if defined(__amigaos4__)
+#include <dos/obsolete.h>
+#endif
 
 #include "private.h"
 #define DEBUG_USE_MALLOC_REDEFINE
@@ -494,9 +497,9 @@ int main(void)
             {
               if((fh = Open((char *)argarray[0], MODE_OLDFILE)))
               {
-                  char  *text = AllocVec(50*1024, 0L);
-                  char  *buffer = text;
-                  int size;
+                char  *text = AllocVec(50*1024, 0L);
+                char  *buffer = text;
+                int size;
 
                 size = Read(fh, text, (50*1024)-2);
                 text[size] = '\0';

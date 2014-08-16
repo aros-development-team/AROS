@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -20,6 +20,7 @@
 
 ***************************************************************************/
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -372,7 +373,7 @@ Object *SuggestWindow(struct InstData *data)
         End;
 
   DoMethod(lvobj, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
-      MUIV_Notify_Self, 3, MUIM_CallHook, &SelectHook);
+      MUIV_Notify_Self, 3, MUIM_CallHook, &SelectHook, data);
 
   DoMethod(window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
       MUIV_Notify_Self, 3, MUIM_Set, MUIA_Window_Open, FALSE);
@@ -390,7 +391,7 @@ Object *SuggestWindow(struct InstData *data)
 /// LookupWord()
 static BOOL LookupWord(struct InstData *data, CONST_STRPTR word)
 {
-  BOOL res;
+  BOOL res = FALSE;
 
   ENTER();
 
@@ -398,32 +399,38 @@ static BOOL LookupWord(struct InstData *data, CONST_STRPTR word)
   SHOWSTRING(DBF_SPELL, word);
   SHOWVALUE(DBF_SPELL, data->LookupSpawn);
 
-  if(data->LookupSpawn == FALSE)
-    res = SendCLI(word, data->LookupCmd);
-  else
-    res = SendRexx(word, data->LookupCmd);
-
-  if(res == TRUE)
+  if(data->LookupCmd[0] != '\0')
   {
-    char buf[4];
+    if(data->LookupSpawn == FALSE)
+      res = SendCLI(word, data->LookupCmd);
+    else
+      res = SendRexx(word, data->LookupCmd);
 
-    buf[0] = '\0';
-    if(GetVar("Found", &buf[0], sizeof(buf), GVF_GLOBAL_ONLY) != -1)
+    if(res == TRUE)
     {
-      if(buf[0] == '0')
-        res = FALSE;
+      char buf[4];
+
+      buf[0] = '\0';
+      if(GetVar("Found", &buf[0], sizeof(buf), GVF_GLOBAL_ONLY) != -1)
+      {
+        if(buf[0] == '0')
+          res = FALSE;
+      }
+      else
+      {
+        D(DBF_SPELL, "cannot read ENV variable 'Found', error code %ld", IoErr());
+
+        // don't treat a missing "Found" variable as a failure, at least this
+        // is what previous releases did.
+      }
     }
     else
     {
-      D(DBF_SPELL, "cannot read ENV variable 'Found', error code %ld", IoErr());
-      // don't treat a missing "Found" variable as a failure, at least this
-      // is what previous releases did.
+      D(DBF_SPELL, "lookup of word '%s' failed", word);
     }
   }
   else
-  {
-    D(DBF_SPELL, "lookup of word '%s' failed", word);
-  }
+    W(DBF_SPELL, "empty lookupcmd found");
 
   RETURN(res);
   return res;
@@ -552,8 +559,8 @@ void SuggestWord(struct InstData *data)
 }
 
 ///
-/// CheckWord()
-void CheckWord(struct InstData *data)
+/// SpellCheckWord()
+void SpellCheckWord(struct InstData *data)
 {
   ENTER();
 
@@ -585,6 +592,164 @@ void CheckWord(struct InstData *data)
     {
       data->actualline = line;
     }
+  }
+
+  LEAVE();
+}
+
+///
+/// ParseKeywords
+void ParseKeywords(struct InstData *data, const char *keywords)
+{
+  ENTER();
+
+  FreeKeywords(data);
+
+  if(keywords != NULL)
+  {
+    char *copy;
+    size_t keywordslen = strlen(keywords);
+
+    if((copy = AllocVecPooled(data->mypool, (keywordslen+1)*sizeof(char))) != NULL)
+    {
+      char *p = copy;
+      LONG wordCnt;
+
+      strlcpy(copy, keywords, keywordslen+1);
+
+      // count the number of words, we have one at least
+      wordCnt = 1;
+      do
+      {
+        if((p = strchr(p, ',')) != NULL)
+        {
+          wordCnt++;
+          p++;
+        }
+      }
+      while(p != NULL);
+
+      if((data->Keywords = AllocVecPooled(data->mypool, (wordCnt+1)*sizeof(char *))) != NULL)
+      {
+        LONG i = 0;
+        char *word = copy;
+
+        // split the string
+        do
+        {
+          char *e;
+          size_t maxlen;
+
+          if((e = strpbrk(word, ",")) != NULL)
+            *e++ = '\0';
+
+          maxlen = strlen(word)+1;
+          if((data->Keywords[i] = AllocVecPooled(data->mypool, maxlen)) != NULL)
+            strlcpy(data->Keywords[i], word, maxlen);
+          else
+            break;
+
+          i++;
+
+          word = e;
+        }
+        while(word != NULL && i < wordCnt);
+
+        // NUL terminate
+        data->Keywords[i] = NULL;
+      }
+
+      FreeVecPooled(data->mypool, copy);
+    }
+  }
+
+  LEAVE();
+}
+
+///
+/// FreeKeywords
+void FreeKeywords(struct InstData *data)
+{
+  ENTER();
+
+  if(data->Keywords != NULL)
+  {
+    LONG i = 0;
+
+    while(data->Keywords[i] != NULL)
+    {
+      FreeVecPooled(data->mypool, data->Keywords[i]);
+      i++;
+    }
+
+    FreeVecPooled(data->mypool, data->Keywords);
+    data->Keywords = NULL;
+  }
+
+  LEAVE();
+}
+
+///
+/// CheckSingleWordAgainstKeywords
+void CheckSingleWordAgainstKeywords(struct InstData *data, const char *word)
+{
+  ENTER();
+
+  D(DBF_SPELL, "check word '%s' against keywords", word);
+  if(word[0] != '\0')
+  {
+    ULONG i = 0;
+
+    while(data->Keywords[i] != NULL)
+    {
+      if(data->Keywords[i][0] == '.')
+      {
+        // check a file name extension at the end of the word
+        char *p = strchr(word, '.');
+
+        if((p = strchr(word, '.')) != NULL && stricmp(p, data->Keywords[i]) == 0)
+        {
+          D(DBF_SPELL, "matched keyword '%s'", data->Keywords[i]);
+          set(data->object, MUIA_TextEditor_MatchedKeyword, data->Keywords[i]);
+          break;
+        }
+      }
+      else
+      {
+        // check for a complete word
+        if(stricmp(word, data->Keywords[i]) == 0)
+        {
+          D(DBF_SPELL, "matched keyword '%s'", data->Keywords[i]);
+          set(data->object, MUIA_TextEditor_MatchedKeyword, data->Keywords[i]);
+          break;
+        }
+      }
+
+      i++;
+    }
+  }
+
+  LEAVE();
+}
+
+///
+/// KeywordCheck
+void KeywordCheck(struct InstData *data)
+{
+  ENTER();
+
+  if(data->Keywords != NULL)
+  {
+    ULONG start = data->CPos_X;
+    char *contents = data->actualline->line.Contents;
+    char word[256];
+
+    // extract the last entered word
+    while(start > 0 && contents[start-1] != ' ')
+      start--;
+
+    strlcpy(word, &contents[start], MIN(sizeof(word), data->CPos_X-start+1));
+    CheckSingleWordAgainstKeywords(data, word);
   }
 
   LEAVE();

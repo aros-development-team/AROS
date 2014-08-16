@@ -2,7 +2,7 @@
 #
 # TextEditor.mcc - Textediting MUI Custom Class
 # Copyright (C) 1997-2000 Allan Odgaard
-# Copyright (C) 2005-2010 by TextEditor.mcc Open Source Team
+# Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -279,12 +279,16 @@ ifeq ($(OS), mos)
 
   # Compiler/Linker flags
   CPU     = -mcpu=powerpc
-  CFLAGS  += -noixemul -DNO_PPCINLINE_STDARG -DAROS_ALMOST_COMPATIBLE
+  CFLAGS  += -noixemul
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
 
   # additional object files required
-  COBJS += extrasrc/MoveList.o
+  COBJS += extrasrc/MoveList.o \
+           extrasrc/GetHead.o \
+           extrasrc/GetPred.o \
+           extrasrc/GetSucc.o \
+           extrasrc/GetTail.o
 
 else
 ifeq ($(OS), aros-i386)
