@@ -329,7 +329,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                                                 case 2: {
                                                     char roothubname[100];
-                                                    snprintf(roothubname, 99, "PCI Root Hub Unit %d", unit->number) ;
+                                                    snprintf(roothubname, 99, "XHCI Root Hub Unit %d", unit->number) ;
                                                     return cmdGetString(ioreq, roothubname);
                                                     break;
                                                     }
