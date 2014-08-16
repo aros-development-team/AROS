@@ -26,54 +26,19 @@ INCLUDE_FILES := NListviews_mcp.h
 
 
 TARGETDIR := $(AROS_CATALOGS)
+LANGUAGES := $(basename $(notdir $(call WILDCARD,$(SRCDIR)/$(CURDIR)/locale/*.po)))
+CATALOGS := $(addprefix $(TARGETDIR)/,$(addsuffix /NListviews_mcp.catalog,$(LANGUAGES)))
 
 #MM
-classes-zune-nlistviews-mcp-catalogs : locale.h locale.c \
-    $(TARGETDIR)/czech/NListviews_mcp.catalog \
-    $(TARGETDIR)/swedish/NListviews_mcp.catalog \
-    $(TARGETDIR)/french/NListviews_mcp.catalog \
-    $(TARGETDIR)/german/NListviews_mcp.catalog \
-    $(TARGETDIR)/polish/NListviews_mcp.catalog \
-    $(TARGETDIR)/turkish/NListviews_mcp.catalog \
-    $(TARGETDIR)/greek/NListviews_mcp.catalog \
-    $(TARGETDIR)/italian/NListviews_mcp.catalog
+classes-zune-nlistviews-mcp-catalogs : locale.h locale.c $(CATALOGS)
 
-locale.h : locale/NListviews_mcp.cd $(SRCDIR)/$(CURDIR)/C_h.sd
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd
+locale.h: locale.c
+locale.c: $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.pot $(SRCDIR)/$(CURDIR)/C_h.sd $(SRCDIR)/$(CURDIR)/C_c.sd
+	$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.pot locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
 
-locale.c : locale/NListviews_mcp.cd $(SRCDIR)/$(CURDIR)/C_h.sd
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
-
-$(TARGETDIR)/czech/NListviews_mcp.catalog: locale/czech.ct
-	@$(MKDIR) $(TARGETDIR)/czech
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/french/NListviews_mcp.catalog: locale/french.ct
-	@$(MKDIR) $(TARGETDIR)/french
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/swedish/NListviews_mcp.catalog: locale/swedish.ct
-	@$(MKDIR) $(TARGETDIR)/swedish
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/german/NListviews_mcp.catalog: locale/german.ct
-	@$(MKDIR) $(TARGETDIR)/german
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/polish/NListviews_mcp.catalog: locale/polish.ct
-	@$(MKDIR) $(TARGETDIR)/polish
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/turkish/NListviews_mcp.catalog: locale/turkish.ct
-	@$(MKDIR) $(TARGETDIR)/turkish
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/greek/NListviews_mcp.catalog: locale/greek.ct
-	@$(MKDIR) $(TARGETDIR)/greek
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
-
-$(TARGETDIR)/italian/NListviews_mcp.catalog: locale/italian.ct
-	@$(MKDIR) $(TARGETDIR)/italian
-	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListviews_mcp.cd $< CATALOG $@
+$(TARGETDIR)/%/NListviews_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/%.po
+	$(ECHO) "Building catalog $@"
+	$(MKDIR) $(dir $@)
+	$(FLEXCAT) POFILE $< CATALOG $@
 
 %common
