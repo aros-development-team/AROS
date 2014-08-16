@@ -45,6 +45,9 @@
 
 #include "debug.h"
 
+#define __NOLIBBASE__
+#include <proto/codesets.h>
+
 /***********************************************************************/
 
 static const int halfShift = 10;    /* used for shifting by 10 bits */
@@ -59,12 +62,7 @@ static const UTF32 halfMask = 0x3FFUL;
 
 /***********************************************************************/
 
-ULONG LIBFUNC
-CodesetsConvertUTF32toUTF16(REG(a0, const UTF32 ** sourceStart),
-                            REG(a1, const UTF32 * sourceEnd),
-                            REG(a2, UTF16 ** targetStart),
-                            REG(a3, UTF16 * targetEnd),
-                            REG(d0, ULONG flags))
+LIBPROTO(CodesetsConvertUTF32toUTF16, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, const UTF32 **sourceStart), REG(a1, const UTF32 *sourceEnd), REG(a2, UTF16 **targetStart), REG(a3, UTF16 *targetEnd), REG(d0, ULONG flags))
 {
   ULONG result = CSR_ConversionOK;
   const UTF32 *source = *sourceStart;
@@ -140,12 +138,7 @@ CodesetsConvertUTF32toUTF16(REG(a0, const UTF32 ** sourceStart),
 
 /***********************************************************************/
 
-ULONG LIBFUNC
-CodesetsConvertUTF16toUTF32(REG(a0, const UTF16 ** sourceStart),
-                            REG(a1, const UTF16 * sourceEnd),
-                            REG(a2, UTF32 ** targetStart),
-                            REG(a3, UTF32 * targetEnd),
-                            REG(d0, ULONG flags))
+LIBPROTO(CodesetsConvertUTF16toUTF32, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, const UTF16 **sourceStart), REG(a1, const UTF16 *sourceEnd), REG(a2, UTF32 **targetStart), REG(a3, UTF32 *targetEnd), REG(d0, ULONG flags))
 {
   ULONG result = CSR_ConversionOK;
   const UTF16 *source = *sourceStart;
@@ -280,12 +273,7 @@ static const UTF8 firstByteMark[7] = { 0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC 
 
 /***********************************************************************/
 
-ULONG LIBFUNC
-CodesetsConvertUTF16toUTF8(REG(a0, const UTF16 ** sourceStart),
-                           REG(a1, const UTF16 * sourceEnd),
-                           REG(a2, UTF8 ** targetStart),
-                           REG(a3, UTF8 * targetEnd),
-                           REG(d0, ULONG flags))
+LIBPROTO(CodesetsConvertUTF16toUTF8, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, const UTF16 **sourceStart), REG(a1, const UTF16 *sourceEnd) , REG(a2, UTF8 **targetStart), REG(a3, UTF8 *targetEnd), REG(d0, ULONG flags))
 {
   ULONG result = CSR_ConversionOK;
   const UTF16 *source = *sourceStart;
@@ -425,9 +413,7 @@ CodesetsConvertUTF16toUTF8(REG(a0, const UTF16 ** sourceStart),
  * definition of UTF-8 goes up to 4-byte sequences.
  */
 
-BOOL LIBFUNC
-CodesetsIsLegalUTF8(REG(a0, const UTF8 * source),
-                   REG(d0, ULONG length))
+LIBPROTO(CodesetsIsLegalUTF8, BOOL, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, const UTF8 *source), REG(d0, ULONG length))
 {
   UTF8 a;
   const UTF8 *srcptr = source + length;
@@ -530,9 +516,7 @@ CodesetsIsLegalUTF8(REG(a0, const UTF8 * source),
  * This is not used here; it's just exported.
  */
 
-BOOL LIBFUNC
-CodesetsIsLegalUTF8Sequence(REG(a0, const UTF8 * source),
-                            REG(a1, const UTF8 * sourceEnd))
+LIBPROTO(CodesetsIsLegalUTF8Sequence, BOOL, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, const UTF8 *source), REG(a1, const UTF8 *sourceEnd))
 {
   int length = trailingBytesForUTF8[*source] + 1;
   BOOL res = FALSE;
@@ -553,12 +537,7 @@ CodesetsIsLegalUTF8Sequence(REG(a0, const UTF8 * source),
 
 /***********************************************************************/
 
-ULONG LIBFUNC
-CodesetsConvertUTF8toUTF16(REG(a0, const UTF8 ** sourceStart),
-                           REG(a1, const UTF8 * sourceEnd),
-                           REG(a2, UTF16 ** targetStart),
-                           REG(a3, UTF16 * targetEnd),
-                           REG(d0, ULONG flags))
+LIBPROTO(CodesetsConvertUTF8toUTF16, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, const UTF8 **sourceStart), REG(a1, const UTF8 *sourceEnd), REG(a2, UTF16 **targetStart), REG(a3, UTF16 *targetEnd), REG(d0, ULONG flags))
 {
   ULONG result = CSR_ConversionOK;
   const UTF8 *source = *sourceStart;
@@ -687,12 +666,7 @@ CodesetsConvertUTF8toUTF16(REG(a0, const UTF8 ** sourceStart),
 
 /***********************************************************************/
 
-ULONG LIBFUNC
-CodesetsConvertUTF32toUTF8(REG(a0, const UTF32 ** sourceStart),
-                           REG(a1, const UTF32 * sourceEnd),
-                           REG(a2, UTF8 ** targetStart),
-                           REG(a3, UTF8 * targetEnd),
-                           REG(d0, ULONG flags))
+LIBPROTO(CodesetsConvertUTF32toUTF8, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, const UTF32 **sourceStart), REG(a1, const UTF32 *sourceEnd), REG(a2, UTF8 **targetStart), REG(a3, UTF8 *targetEnd), REG(d0, ULONG flags))
 {
   ULONG result = CSR_ConversionOK;
   const UTF32 *source = *sourceStart;
@@ -792,12 +766,7 @@ CodesetsConvertUTF32toUTF8(REG(a0, const UTF32 ** sourceStart),
 
 /***********************************************************************/
 
-ULONG LIBFUNC
-CodesetsConvertUTF8toUTF32(REG(a0, const UTF8 ** sourceStart),
-                           REG(a1, const UTF8 * sourceEnd),
-                           REG(a2, UTF32 ** targetStart),
-                           REG(a3, UTF32 * targetEnd),
-                           REG(d0, ULONG flags))
+LIBPROTO(CodesetsConvertUTF8toUTF32, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, const UTF8 **sourceStart), REG(a1, const UTF8 *sourceEnd), REG(a2, UTF32 **targetStart), REG(a3, UTF32 *targetEnd), REG(d0, ULONG flags))
 {
   ULONG result = CSR_ConversionOK;
   const UTF8 *source = *sourceStart;

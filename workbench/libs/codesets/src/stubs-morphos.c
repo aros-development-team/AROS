@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2013 by codesets.library Open Source Team
+ Copyright (C) 2005-2014 codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -22,162 +22,159 @@
 
 #include "lib.h"
 
-LIBSTUB(CodesetsEncodeB64A, ULONG, REG(a0, struct TagItem *attrs))
+LIBSTUB(CodesetsEncodeB64A, ULONG)
 {
-  return CodesetsEncodeB64A((struct TagItem *)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsEncodeB64A, (struct TagItem *)REG_A0);
 }
 
-LIBSTUB(CodesetsDecodeB64A, ULONG, REG(a0, struct TagItem *attrs))
+LIBSTUB(CodesetsDecodeB64A, ULONG)
 {
-  return CodesetsDecodeB64A((struct TagItem *)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsDecodeB64A, (struct TagItem *)REG_A0);
 }
 
-LIBSTUB(CodesetsSupportedA, STRPTR*, REG(a0, struct TagItem *attrs))
+LIBSTUB(CodesetsSupportedA, STRPTR *)
 {
-  return CodesetsSupportedA((struct TagItem *)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsSupportedA, (struct TagItem *)REG_A0);
 }
 
-LIBSTUB(CodesetsFreeA, void, REG(a0, APTR obj), REG(a1, struct TagItem *attrs))
+LIBSTUB(CodesetsFreeA, void)
 {
-  return CodesetsFreeA((APTR)REG_A0,(struct TagItem *)REG_A1);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsFreeA, (APTR)REG_A0, (struct TagItem *)REG_A1);
 }
 
-LIBSTUB(CodesetsSetDefaultA, struct codeset *, REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
+LIBSTUB(CodesetsSetDefaultA, struct codeset *)
 {
-  return CodesetsSetDefaultA((STRPTR)REG_A0,(struct TagItem *)REG_A1);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsSetDefaultA, (STRPTR)REG_A0, (struct TagItem *)REG_A1);
 }
 
-LIBSTUB(CodesetsFindA, struct codeset *, REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
+LIBSTUB(CodesetsFindA, struct codeset *)
 {
-  return CodesetsFindA((STRPTR)REG_A0,(struct TagItem *)REG_A1);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsFindA, (STRPTR)REG_A0, (struct TagItem *)REG_A1);
 }
 
-LIBSTUB(CodesetsFindBestA, struct codeset *, REG(a0, struct TagItem *attrs))
+LIBSTUB(CodesetsFindBestA, struct codeset *)
 {
-  return CodesetsFindBestA((struct TagItem *)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsFindBestA, (struct TagItem *)REG_A0);
 }
 
-LIBSTUB(CodesetsUTF8Len, ULONG, REG(a0, UTF8 *str))
+LIBSTUB(CodesetsUTF8Len, ULONG)
 {
-  return CodesetsUTF8Len((UTF8 *)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsUTF8Len, (UTF8 *)REG_A0);
 }
 
-LIBSTUB(CodesetsStrLenA, ULONG, REG(a0, STRPTR str),
-                                REG(a1, struct TagItem *attrs))
+LIBSTUB(CodesetsStrLenA, ULONG)
 {
-  return CodesetsStrLenA((STRPTR)REG_A0,(struct TagItem *)REG_A1);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsStrLenA, (STRPTR)REG_A0, (struct TagItem *)REG_A1);
 }
 
-LIBSTUB(CodesetsUTF8ToStrA, STRPTR, REG(a0, struct TagItem *attrs))
+LIBSTUB(CodesetsUTF8ToStrA, STRPTR)
 {
-  return CodesetsUTF8ToStrA((struct TagItem *)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsUTF8ToStrA, (struct TagItem *)REG_A0);
 }
 
-LIBSTUB(CodesetsUTF8CreateA, UTF8*, REG(a0, struct TagItem *attrs))
+LIBSTUB(CodesetsUTF8CreateA, UTF8 *)
 {
-  return CodesetsUTF8CreateA((struct TagItem *)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsUTF8CreateA, (struct TagItem *)REG_A0);
 }
 
-LIBSTUB(CodesetsIsValidUTF8, BOOL, REG(a0, STRPTR s))
+LIBSTUB(CodesetsIsValidUTF8, BOOL)
 {
-  return CodesetsIsValidUTF8((STRPTR)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsIsValidUTF8, (STRPTR)REG_A0);
 }
 
-LIBSTUB(CodesetsConvertStrA, STRPTR, REG(a0, struct TagItem *attrs))
+LIBSTUB(CodesetsConvertStrA, STRPTR)
 {
-  return CodesetsConvertStrA((struct TagItem *)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsConvertStrA, (struct TagItem *)REG_A0);
 }
 
-LIBSTUB(CodesetsFreeVecPooledA, void, REG(a0, APTR pool),
-                                      REG(a1, APTR mem),
-                                      REG(a2, struct TagItem *attrs))
+LIBSTUB(CodesetsFreeVecPooledA, void)
 {
-  return CodesetsFreeVecPooledA((APTR)REG_A0,(APTR)REG_A1,(struct TagItem *)REG_A2);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsFreeVecPooledA, (APTR)REG_A0,(APTR)REG_A1, (struct TagItem *)REG_A2);
 }
 
-LIBSTUB(CodesetsListCreateA, struct codesetList *, REG(a0, struct TagItem *attrs))
+LIBSTUB(CodesetsListCreateA, struct codesetList *)
 {
-  return CodesetsListCreateA((struct TagItem *)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsListCreateA, (struct TagItem *)REG_A0);
 }
 
-LIBSTUB(CodesetsListDeleteA, BOOL, REG(a0, struct TagItem *attrs))
+LIBSTUB(CodesetsListDeleteA, BOOL)
 {
-  return CodesetsListDeleteA((struct TagItem *)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsListDeleteA, (struct TagItem *)REG_A0);
 }
 
-LIBSTUB(CodesetsListAddA, BOOL, REG(a0, struct codesetList *csList), REG(a1, struct TagItem *attrs))
+LIBSTUB(CodesetsListAddA, BOOL)
 {
-  return CodesetsListAddA((struct codesetList *)REG_A0, (struct TagItem *)REG_A1);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsListAddA, (struct codesetList *)REG_A0, (struct TagItem *)REG_A1);
 }
 
-LIBSTUB(CodesetsListRemoveA, BOOL, REG(a0, struct TagItem *attrs))
+LIBSTUB(CodesetsListRemoveA, BOOL)
 {
-  return CodesetsListRemoveA((struct TagItem *)REG_A0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsListRemoveA, (struct TagItem *)REG_A0);
 }
 
-LIBSTUB(CodesetsConvertUTF32toUTF16, ULONG, REG(a0, const UTF32 ** sourceStart),
-                                            REG(a1, const UTF32 * sourceEnd),
-                                            REG(a2, UTF16 ** targetStart),
-                                            REG(a3, UTF16 * targetEnd),
-                                            REG(d0, ULONG flags))
+LIBSTUB(CodesetsConvertUTF32toUTF16, ULONG)
 {
-  return CodesetsConvertUTF32toUTF16((const UTF32 **)REG_A0, (const UTF32 *)REG_A1, (UTF16 **)REG_A2, (UTF16 *)REG_A3, (ULONG)REG_D0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsConvertUTF32toUTF16, (const UTF32 **)REG_A0, (const UTF32 *)REG_A1, (UTF16 **)REG_A2, (UTF16 *)REG_A3, (ULONG)REG_D0);
 }
 
-LIBSTUB(CodesetsConvertUTF16toUTF32, ULONG, REG(a0, const UTF16 ** sourceStart),
-                                            REG(a1, const UTF16 * sourceEnd),
-                                            REG(a2, UTF32 ** targetStart),
-                                            REG(a3, UTF32 * targetEnd),
-                                            REG(d0, ULONG flags))
+LIBSTUB(CodesetsConvertUTF16toUTF32, ULONG)
 {
-  return CodesetsConvertUTF16toUTF32((const UTF16 **)REG_A0, (const UTF16 *)REG_A1, (UTF32 **)REG_A2, (UTF32 *)REG_A3, (ULONG)REG_D0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsConvertUTF16toUTF32, (const UTF16 **)REG_A0, (const UTF16 *)REG_A1, (UTF32 **)REG_A2, (UTF32 *)REG_A3, (ULONG)REG_D0);
 }
 
-LIBSTUB(CodesetsConvertUTF16toUTF8, ULONG, REG(a0, const UTF16 ** sourceStart),
-                                           REG(a1, const UTF16 * sourceEnd),
-                                           REG(a2, UTF8 ** targetStart),
-                                           REG(a3, UTF8 * targetEnd),
-                                           REG(d0, ULONG flags))
+LIBSTUB(CodesetsConvertUTF16toUTF8, ULONG)
 {
-  return CodesetsConvertUTF16toUTF8((const UTF16 **)REG_A0, (const UTF16 *)REG_A1, (UTF8 **)REG_A2, (UTF8 *)REG_A3, (ULONG)REG_D0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsConvertUTF16toUTF8, (const UTF16 **)REG_A0, (const UTF16 *)REG_A1, (UTF8 **)REG_A2, (UTF8 *)REG_A3, (ULONG)REG_D0);
 }
 
 
-LIBSTUB(CodesetsIsLegalUTF8, BOOL, REG(a0, const UTF8 * source),
-                                   REG(d0, ULONG length))
+LIBSTUB(CodesetsIsLegalUTF8, BOOL)
 {
-  return CodesetsIsLegalUTF8((const UTF8 *)REG_A0,(ULONG)REG_D0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsIsLegalUTF8, (const UTF8 *)REG_A0, (ULONG)REG_D0);
 }
 
-LIBSTUB(CodesetsIsLegalUTF8Sequence, BOOL, REG(a0, const UTF8 * source),
-                                            REG(a1, const UTF8 * sourceEnd))
+LIBSTUB(CodesetsIsLegalUTF8Sequence, BOOL)
 {
-  return CodesetsIsLegalUTF8Sequence((const UTF8 *)REG_A0,(const UTF8 *)REG_A1);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsIsLegalUTF8Sequence, (const UTF8 *)REG_A0,(const UTF8 *)REG_A1);
 }
 
-LIBSTUB(CodesetsConvertUTF8toUTF16, ULONG, REG(a0, const UTF8 ** sourceStart),
-                                           REG(a1, const UTF8 * sourceEnd),
-                                           REG(a2, UTF16 ** targetStart),
-                                           REG(a3, UTF16 * targetEnd),
-                                           REG(d0, ULONG flags))
+LIBSTUB(CodesetsConvertUTF8toUTF16, ULONG)
 {
-  return CodesetsConvertUTF8toUTF16((const UTF8 **)REG_A0, (const UTF8 *)REG_A1, (UTF16 **)REG_A2, (UTF16 *)REG_A3, (ULONG)REG_D0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsConvertUTF8toUTF16, (const UTF8 **)REG_A0, (const UTF8 *)REG_A1, (UTF16 **)REG_A2, (UTF16 *)REG_A3, (ULONG)REG_D0);
 }
 
-LIBSTUB(CodesetsConvertUTF32toUTF8, ULONG, REG(a0, const UTF32 ** sourceStart),
-                                           REG(a1, const UTF32 * sourceEnd),
-                                           REG(a2, UTF8 ** targetStart),
-                                           REG(a3, UTF8 * targetEnd),
-                                           REG(d0, ULONG flags))
+LIBSTUB(CodesetsConvertUTF32toUTF8, ULONG)
 {
-  return CodesetsConvertUTF32toUTF8((const UTF32 **)REG_A0, (const UTF32 *)REG_A1, (UTF8 **)REG_A2, (UTF8 *)REG_A3, (ULONG)REG_D0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsConvertUTF32toUTF8, (const UTF32 **)REG_A0, (const UTF32 *)REG_A1, (UTF8 **)REG_A2, (UTF8 *)REG_A3, (ULONG)REG_D0);
 }
 
-LIBSTUB(CodesetsConvertUTF8toUTF32, ULONG, REG(a0, const UTF8 ** sourceStart),
-                                           REG(a1, const UTF8 * sourceEnd),
-                                           REG(a2, UTF32 ** targetStart),
-                                           REG(a3, UTF32 * targetEnd),
-                                           REG(d0, ULONG flags))
+LIBSTUB(CodesetsConvertUTF8toUTF32, ULONG)
 {
-  return CodesetsConvertUTF8toUTF32((const UTF8 **)REG_A0, (const UTF8 *)REG_A1, (UTF32 **)REG_A2, (UTF32 *)REG_A3, (ULONG)REG_D0);
+  __BASE_OR_IFACE = (__BASE_OR_IFACE_TYPE)REG_A6;
+  return CALL_LFUNC(CodesetsConvertUTF8toUTF32, (const UTF8 **)REG_A0, (const UTF8 *)REG_A1, (UTF32 **)REG_A2, (UTF32 *)REG_A3, (ULONG)REG_D0);
 }

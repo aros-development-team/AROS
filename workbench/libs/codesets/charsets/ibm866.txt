@@ -9,7 +9,7 @@ ReadOnly=1
 #    Table version: 2.00
 #    Table format:  Format A
 #    Date:          04/24/96
-#    Authors:       Jens Langner <Jens.Langner@light-speed.de>
+#    Authors:       Jens Maus <mail@jens-maus.de>
 #                   Lori Brownell <loribr@microsoft.com>
 #                   K.D. Chang    <a-kchang@microsoft.com>
 #    General notes: This is an adapted version from the

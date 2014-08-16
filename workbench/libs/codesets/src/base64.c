@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2013 by codesets.library Open Source Team
+ Copyright (C) 2005-2014 codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,7 @@
 ***************************************************************************/
 
 #include "lib.h"
+#include "SDI_stdarg.h"
 #include "debug.h"
 
 /****************************************************************************/
@@ -325,7 +326,7 @@ static int insig(struct b64 *b64)
 
 /****************************************************************************/
 
-ULONG LIBFUNC CodesetsEncodeB64A(REG(a0, struct TagItem *attrs))
+LIBPROTO(CodesetsEncodeB64A, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct TagItem *attrs))
 {
   struct b64     b64;
   struct TagItem *tag;
@@ -519,9 +520,23 @@ ULONG LIBFUNC CodesetsEncodeB64A(REG(a0, struct TagItem *attrs))
   return (ULONG)b64.error;
 }
 
+#if defined(__amigaos4__)
+LIBPROTOVA(CodesetsEncodeB64, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), ...)
+{
+  ULONG res;
+  VA_LIST args;
+
+  VA_START(args, ICodesets);
+  res = CodesetsEncodeB64A(VA_ARG(args, struct TagItem *));
+  VA_END(args);
+
+  return res;
+}
+#endif
+
 /****************************************************************************/
 
-ULONG LIBFUNC CodesetsDecodeB64A(REG(a0, struct TagItem *attrs))
+LIBPROTO(CodesetsDecodeB64A, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), REG(a0, struct TagItem *attrs))
 {
   struct b64              b64;
   struct TagItem *tag;
@@ -711,5 +726,19 @@ end:
   RETURN((ULONG)b64.error);
   return (ULONG)b64.error;
 }
+
+#if defined(__amigaos4__)
+LIBPROTOVA(CodesetsDecodeB64, ULONG, REG(a6, UNUSED __BASE_OR_IFACE), ...)
+{
+  ULONG res;
+  VA_LIST args;
+
+  VA_START(args, ICodesets);
+  res = CodesetsDecodeB64A(VA_ARG(args, struct TagItem *));
+  VA_END(args);
+
+  return res;
+}
+#endif
 
 /****************************************************************************/
