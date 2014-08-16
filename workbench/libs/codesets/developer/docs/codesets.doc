@@ -185,6 +185,11 @@ codesets.library/CodesetsEncodeB64A
         list of available codesets will be searched.
         Default: NONE
 
+     CSA_AllowMultibyteCodesets (BOOL)
+       Include multibyte codesets (UTF8, UTF16, UTF32) in the
+       generated names array.
+       Default: TRUE
+
    RESULT
     array - the names array or NULL on an error.
 

@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2013 by codesets.library Open Source Team
+ Copyright (C) 2005-2014 codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -79,6 +79,9 @@ struct ExecBase *SysBase = NULL;
 #endif
 
 struct LibraryHeader *CodesetsBase = NULL;
+#if defined(__amigaos4__)
+struct CodesetsIFace *ICodesets = NULL;
+#endif
 
 static const char UserLibName[] = "codesets.library";
 static const char UserLibID[]   = "$VER: codesets.library " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT;
@@ -562,6 +565,9 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
 
     // set the CodesetsBase
     CodesetsBase = base;
+    #if defined(__amigaos4__)
+    GETINTERFACE(ICodesets, CodesetsBase);
+    #endif
 
     // If we are not running on AmigaOS4 (no stackswap required) we go and
     // do an explicit StackSwap() in case the user wants to make sure we
@@ -586,6 +592,7 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
     {
       callLibFunction(freeBase, base);
       CodesetsBase = NULL;
+      DROPINTERFACE(ICodesets);
     }
 
     #if defined(__amigaos4__) && defined(__NEWLIB__)
@@ -632,6 +639,12 @@ STATIC BPTR LibDelete(struct LibraryHeader *base)
 
   // unprotect
   ReleaseSemaphore(&base->libSem);
+
+  #if defined(__amigaos4__)
+  DROPINTERFACE(ICodesets);
+  ICodesets = NULL;
+  #endif
+  CodesetsBase = NULL;
 
   #if defined(__amigaos4__) && defined(__NEWLIB__)
   if(NewlibBase)

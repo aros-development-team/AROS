@@ -5,6 +5,45 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+#### 6.18 RELEASE ########################################################
+
+2014-04-04 Jens Maus <mail@jens-maus.de>
+
+  * misc: final 6.18 release preparations.
+
+2014-04-02 Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: updated to the most recent SDI header files. This makes it possible to
+    remove the stub functions for AmigaOS4.
+
+#### 6.17 RELEASE ########################################################
+
+2014-01-26 Jens Maus <mail@jens-maus.de>
+
+  * misc: final 6.17 release preparations.
+
+2014-01-18 Jens Maus <mail@jens-maus.de>
+
+  * codesets_table.h: fixed a bug in the AmigaPL<>UTF8 conversion routines
+    where the 0x00C2 characters wasn't converted to 0x0104 in the ucs4
+    conversion routines.
+
+#### 6.16 RELEASE ########################################################
+
+2013-12-13 Jens Maus <mail@jens-maus.de>
+
+  * misc: final 6.16 release preparations.
+
+2013-10-08 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/codesets.c: added the tag CSA_AllowMultibyteCodesets for the
+    CodesetsSupportedA() function to be able to exclude multibyte codesets
+    (i.e. UTF8) from the generated names array.
+
+2013-05-08 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/codesets.c: removed a duplicate NUL termination.
+
 #### 6.15 RELEASE ########################################################
 
 2013-04-25 Jens Langner <Jens.Langner@light-speed.de>

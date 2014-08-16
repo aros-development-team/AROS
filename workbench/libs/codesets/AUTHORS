@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2009 by codesets.library Open Source Team
+ Copyright (C) 2005-2014 codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@ design provided by the following people:
 Alexandre Balaban  <abalabanb@users.sourceforge.net>
 Alfonso Ranieri    <alforan@tin.it>
 Ilkka Lehtoranta   <ilkleht@isoveli.org>
-Jens Langner       <damato@users.sourceforge.net>
+Jens Maus          <mail@jens-maus.de>
 Matthias Rustler   <mrustler@gmx.de>
 Pavel Fedin        <sonic.amiga@gmail.com>
 Sebastian Bauer    <sba@users.sourceforge.net>

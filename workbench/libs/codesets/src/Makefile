@@ -2,7 +2,7 @@
 #
 # codesets.library - Amiga shared library for handling different codesets
 # Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
-# Copyright (C) 2005-2009 by codesets.library Open Source Team
+# Copyright (C) 2005-2014 codesets.library Open Source Team
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -202,8 +202,7 @@ ifeq ($(OS), os4)
   LDFLAGS  += -mcrt=$(CRT)
 
   # additional object files required
-  OBJS += stubs-amigaos4.o
-  M68KSTUBS = $(OBJDIR)/codesets_68k.o
+  OBJS += codesets_68k.o
 
 else
 ifeq ($(OS), os3)
@@ -243,6 +242,7 @@ ifeq ($(OS), mos)
   LDFLAGS += -noixemul
   LDLIBS  += -ldebug
 
+  # additional object files required
   OBJS += stubs-morphos.o
 
 else
@@ -311,7 +311,7 @@ endif
 .PHONY: all
 ifeq ($(wildcard $(DEPFILE)),$(DEPFILE))
 # great, we have a dependecies file, let's make our target
-all: $(BINDIR) $(OBJDIR) $(M68KSTUBS) $(TARGET)
+all: $(BINDIR) $(OBJDIR) $(TARGET)
 else
 # no dependecies, create it and then call make again
 all: depend
@@ -355,9 +355,9 @@ $(OBJDIR)/%.o: %.c
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 # for linking the target
-$(TARGET): $(M68KSTUBS) $(addprefix $(OBJDIR)/,$(OBJS))
+$(TARGET): $(addprefix $(OBJDIR)/,$(OBJS))
 	@echo "  LD $@.debug"
-	@$(CC) $(LDFLAGS) -o $@.debug $(addprefix $(OBJDIR)/,$(OBJS)) $(M68KSTUBS) $(LDLIBS) -Wl,--cref,-M,-Map=$@.map
+	@$(CC) $(LDFLAGS) -o $@.debug $(addprefix $(OBJDIR)/,$(OBJS)) $(LDLIBS) -Wl,--cref,-M,-Map=$@.map
 	@echo "  LD $@"
 	@$(STRIP) --preserve-dates -R.comment -R.sdata2 -S -o $@ $@.debug
 	@$(CHMOD) $@
@@ -370,7 +370,7 @@ dump:
 # cleanup target
 .PHONY: clean
 clean:
-	-$(RM) $(TARGET) $(TARGET).debug $(TARGET).map $(addprefix $(OBJDIR)/,$(OBJS)) $(M68KSTUBS)
+	-$(RM) $(TARGET) $(TARGET).debug $(TARGET).map $(addprefix $(OBJDIR)/,$(OBJS))
 
 # clean all including .obj directory
 .PHONY: cleanall
@@ -386,12 +386,6 @@ distclean: cleanall
 .PHONY: install
 install: all
 	-$(CP) $(TARGET) LIBS:
-
-## SPECIAL COMPILE RULES ##############
-
-$(OBJDIR)/codesets_68k.o: ../include/codesets_68k.c
-	@echo "  CC $<"
-	@$(CC) $(CFLAGS) -c $< -o $@
 
 ## DEPENDENCY GENERATION ##############
 

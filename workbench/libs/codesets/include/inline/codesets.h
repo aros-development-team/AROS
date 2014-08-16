@@ -5,7 +5,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2013 by codesets.library Open Source Team
+ Copyright (C) 2005-2014 codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -40,35 +40,35 @@
 #endif
 
 #define CodesetsConvertUTF32toUTF16(sourceStart, sourceEnd, targetStart, targetEnd, flags) \
-	LP5(0x24, ULONG, CodesetsConvertUTF32toUTF16, const , sourceStart, a0, const , sourceEnd, a1, UTF16 **, targetStart, a2, UTF16 *, targetEnd, a3, ULONG, flags, d0, \
+	LP5(0x24, ULONG, CodesetsConvertUTF32toUTF16, const UTF32 **, sourceStart, a0, const UTF32 *, sourceEnd, a1, UTF16 **, targetStart, a2, UTF16 *, targetEnd, a3, ULONG, flags, d0, \
 	, CODESETS_BASE_NAME)
 
 #define CodesetsConvertUTF16toUTF32(sourceStart, sourceEnd, targetStart, targetEnd, flags) \
-	LP5(0x2a, ULONG, CodesetsConvertUTF16toUTF32, const , sourceStart, a0, const , sourceEnd, a1, UTF32 **, targetStart, a2, UTF32 *, targetEnd, a3, ULONG, flags, d0, \
+	LP5(0x2a, ULONG, CodesetsConvertUTF16toUTF32, const UTF16 **, sourceStart, a0, const UTF16 *, sourceEnd, a1, UTF32 **, targetStart, a2, UTF32 *, targetEnd, a3, ULONG, flags, d0, \
 	, CODESETS_BASE_NAME)
 
 #define CodesetsConvertUTF16toUTF8(sourceStart, sourceEnd, targetStart, targetEnd, flags) \
-	LP5(0x30, ULONG, CodesetsConvertUTF16toUTF8, const , sourceStart, a0, const , sourceEnd, a1, UTF8 **, targetStart, a2, UTF8 *, targetEnd, a3, ULONG, flags, d0, \
+	LP5(0x30, ULONG, CodesetsConvertUTF16toUTF8, const UTF16 **, sourceStart, a0, const UTF16 *, sourceEnd, a1, UTF8 **, targetStart, a2, UTF8 *, targetEnd, a3, ULONG, flags, d0, \
 	, CODESETS_BASE_NAME)
 
 #define CodesetsIsLegalUTF8(source, length) \
-	LP2(0x36, BOOL, CodesetsIsLegalUTF8, const , source, a0, ULONG, length, d0, \
+	LP2(0x36, BOOL, CodesetsIsLegalUTF8, const UTF8 *, source, a0, ULONG, length, d0, \
 	, CODESETS_BASE_NAME)
 
 #define CodesetsIsLegalUTF8Sequence(source, sourceEnd) \
-	LP2(0x3c, BOOL, CodesetsIsLegalUTF8Sequence, const , source, a0, const , sourceEnd, a1, \
+	LP2(0x3c, BOOL, CodesetsIsLegalUTF8Sequence, const UTF8 *, source, a0, const UTF8 *, sourceEnd, a1, \
 	, CODESETS_BASE_NAME)
 
 #define CodesetsConvertUTF8toUTF16(sourceStart, sourceEnd, targetStart, targetEnd, flags) \
-	LP5(0x42, ULONG, CodesetsConvertUTF8toUTF16, const , sourceStart, a0, const , sourceEnd, a1, UTF16 **, targetStart, a2, UTF16 *, targetEnd, a3, ULONG, flags, d0, \
+	LP5(0x42, ULONG, CodesetsConvertUTF8toUTF16, const UTF8 **, sourceStart, a0, const UTF8 *, sourceEnd, a1, UTF16 **, targetStart, a2, UTF16 *, targetEnd, a3, ULONG, flags, d0, \
 	, CODESETS_BASE_NAME)
 
 #define CodesetsConvertUTF32toUTF8(sourceStart, sourceEnd, targetStart, targetEnd, flags) \
-	LP5(0x48, ULONG, CodesetsConvertUTF32toUTF8, const , sourceStart, a0, const , sourceEnd, a1, UTF8 **, targetStart, a2, UTF8 *, targetEnd, a3, ULONG, flags, d0, \
+	LP5(0x48, ULONG, CodesetsConvertUTF32toUTF8, const UTF32 **, sourceStart, a0, const UTF32 *, sourceEnd, a1, UTF8 **, targetStart, a2, UTF8 *, targetEnd, a3, ULONG, flags, d0, \
 	, CODESETS_BASE_NAME)
 
 #define CodesetsConvertUTF8toUTF32(sourceStart, sourceEnd, targetStart, targetEnd, flags) \
-	LP5(0x4e, ULONG, CodesetsConvertUTF8toUTF32, const , sourceStart, a0, const , sourceEnd, a1, UTF32 **, targetStart, a2, UTF32 *, targetEnd, a3, ULONG, flags, d0, \
+	LP5(0x4e, ULONG, CodesetsConvertUTF8toUTF32, const UTF8 **, sourceStart, a0, const UTF8 *, sourceEnd, a1, UTF32 **, targetStart, a2, UTF32 *, targetEnd, a3, ULONG, flags, d0, \
 	, CODESETS_BASE_NAME)
 
 #define CodesetsSetDefaultA(name, attrs) \
