@@ -8,6 +8,7 @@
 #ifndef PCIXHCI_INTERN_H
 #define PCIXHCI_INTERN_H
 
+#include <aros/io.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
 #include <aros/asmcall.h>
@@ -78,7 +79,8 @@ struct PCIXHCIHostController {
     OOP_Object                  *pcidevice;
     OOP_Object                  *pcidriver;
 
-    volatile APTR                pcibase0;
+    volatile APTR                capregbase;
+    volatile APTR                opregbase;
 
     IPTR bus;
     IPTR dev;

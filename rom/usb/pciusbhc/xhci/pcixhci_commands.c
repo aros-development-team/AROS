@@ -64,19 +64,11 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
                 count++;
                 break;
             case UHA_ProductName:
-                {
-                    static char productname[100];
-                    sprintf(productname, "PCI XHCI (USB%x.%x ports)", AROS_LE2WORD(unit->roothub.devdesc.bcdUSB>>8)&0xf, AROS_LE2WORD(unit->roothub.devdesc.bcdUSB>>4)&0xf);
-                    *((STRPTR *) tag->ti_Data) = productname;
-                    count++;
-                }
+                *((STRPTR *) tag->ti_Data) = "PCI XHCI";
+                count++;
                 break;
             case UHA_Description:
-                {
-                    static char description[100];
-                    sprintf(description, "PCI XHCI (USB%x.%x ports)", AROS_LE2WORD(unit->roothub.devdesc.bcdUSB>>8)&0xf, AROS_LE2WORD(unit->roothub.devdesc.bcdUSB>>4)&0xf);
-                    *((STRPTR *) tag->ti_Data) = description;
-                }
+                *((STRPTR *) tag->ti_Data) = "PCI Extensible Host Controller Interface";
                 count++;
                 break;
             case UHA_Capabilities:
@@ -132,21 +124,31 @@ WORD cmdReset(struct IOUsbHWReq *ioreq) {
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    return RC_OK;
+    if(PCIXHCI_HCReset(unit)) {
+        mybug_unit(0, ("Done with OK\n\n"));
+        return RC_OK;
+    } else {
+        mybug_unit(0, ("Done with not OK\n\n"));
+        return UHIOERR_HOSTERROR;
+    }
 }
 
 /*
-    Resets the USB tree?
+    We get called if the HW reset succeeded
 */
 WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     mybug(0, ("[PCIXHCI] cmdUsbReset: Entering function\n"));
 
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
-    /* We should do a proper reset sequence with a real driver */
-    unit->state = UHSF_RESET;
+    /* (Re)build descriptors */
+
+    /* Reset the address */
     unit->roothub.addr = 0;
+
+    /* our unit is now in operational state */
     unit->state = UHSF_OPERATIONAL;
+
     mybug_unit(0, ("Done\n\n"));
     return RC_OK;
 }

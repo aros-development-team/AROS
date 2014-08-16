@@ -22,6 +22,14 @@
     XHCV_xxx(p)'s return shifted values from p
 */
 
+#define WRITEREG16_LE(rb, offset, value)      *((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_WORD2LE(value)
+#define WRITEREG32_LE(rb, offset, value)      *((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_LONG2LE(value)
+#define WRITEREG64_LE(rb, offset, value)      *((volatile UQUAD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))) = AROS_QUAD2LE(value)
+
+#define READREG16_LE(rb, offset) AROS_WORD2LE(*((volatile UWORD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
+#define READREG32_LE(rb, offset) AROS_LONG2LE(*((volatile ULONG *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
+#define READREG64_LE(rb, offset) AROS_QUAD2LE(*((volatile UQUAD *) (((UBYTE *) (rb)) + ((ULONG) (offset)))))
+
 #define opreg_readl(opreg) READREG32_LE(unit->hc.opregbase, opreg)
 #define opreg_writel(opreg, value) WRITEREG32_LE(unit->hc.opregbase, opreg, value)
 #define opreg_writeq(opreg, value) WRITEREG64_LE(unit->hc.opregbase, opreg, value)

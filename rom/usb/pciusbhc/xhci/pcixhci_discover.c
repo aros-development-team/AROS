@@ -46,13 +46,6 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
 
     mybug(-1, ("\n[PCIXHCI] Enumerator: Found PCI XHCI host controller\n"));
 
-    struct TagItem pciActivateMemAndBusmaster[] = {
-            { aHidd_PCIDevice_isIO,     FALSE },
-            { aHidd_PCIDevice_isMEM,    TRUE },
-            { aHidd_PCIDevice_isMaster, TRUE },
-            { TAG_DONE, 0UL },
-    };
-
     struct PCIXHCIUnit *unit;
 
     unit = AllocVec(sizeof(struct PCIXHCIUnit), MEMF_ANY|MEMF_CLEAR);
@@ -61,16 +54,12 @@ static AROS_UFH3(void, GM_UNIQUENAME(Enumerator), AROS_UFHA(struct Hook *, hook,
         if(HIDD_PCIDevice_Obtain(pciDevice, LIBBASE->library.lib_Node.ln_Name) == NULL) {
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &unit->hc.intline);
             if(unit->hc.intline != 255) {
-                OOP_SetAttrs(pciDevice, (struct TagItem *)pciActivateMemAndBusmaster);
-
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Bus,          &unit->hc.bus);
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Dev,          &unit->hc.dev);
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Sub,          &unit->hc.sub);
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&unit->hc.pcidriver);
-                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0,  (APTR)&unit->hc.pcibase0);
+                OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0,  (APTR)&unit->hc.capregbase);
 
-                snprintf(unit->name, 255, "PCIXHCI[%02x:%02x.%01x]", unit->hc.bus, unit->hc.dev, unit->hc.sub);
-                unit->node.ln_Name = (STRPTR)&unit->name;
                 unit->hc.pcidevice = pciDevice;
                 unit->pcixhcibase = LIBBASE;
 
