@@ -11,6 +11,7 @@
 #endif
 #define DEBUG 1
 
+#include <aros/io.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
 #include <aros/asmcall.h>
@@ -74,6 +75,8 @@ BOOL PCIXHCI_HCInit(struct PCIXHCIUnit *unit) {
     };
 
     OOP_SetAttrs(unit->hc.pcidevice, (struct TagItem *)pciActivateMemAndBusmaster);
+
+    NEWLIST(&unit->roothub.port_list);
 
     return TRUE;
 }

@@ -11,6 +11,7 @@
 #endif
 #define DEBUG 1
 
+#include <aros/io.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
 #include <aros/asmcall.h>
@@ -74,7 +75,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq) {
             case UHA_Capabilities:
                 /*
                     ISOCHRONOUS:
-                    - Guarantees access to bandwidth but a packet or frame maybe dropped now an then
+                    - Guarantees access to bandwidth but a packet or frame maybe dropped now and then
                     - Isochronous transfers occur continuously and periodically.
                     - The maximum data payload size is specified in the endpoint descriptor of an Isochronous Endpoint
                     - Check if alternative interfaces with varying isochronous payload sizes exist.
@@ -133,6 +134,64 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq) {
     struct PCIXHCIUnit *unit = (struct PCIXHCIUnit *) ioreq->iouh_Req.io_Unit;
 
     /* (Re)build descriptors */
+    /* This is our root hub device descriptor */
+    unit->roothub.devdesc.bLength                       = sizeof(struct UsbStdDevDesc);
+    unit->roothub.devdesc.bDescriptorType               = UDT_DEVICE;
+    unit->roothub.devdesc.bcdUSB                        = AROS_WORD2LE(0x0300);
+    unit->roothub.devdesc.bDeviceClass                  = HUB_CLASSCODE;
+    unit->roothub.devdesc.bDeviceSubClass               = 0;
+    unit->roothub.devdesc.bDeviceProtocol               = 0;
+    unit->roothub.devdesc.bMaxPacketSize0               = 9; // Valid values are 8, 9(SuperSpeed), 16, 32, 64
+    unit->roothub.devdesc.idVendor                      = AROS_WORD2LE(0x0000);
+    unit->roothub.devdesc.idProduct                     = AROS_WORD2LE(0x0000);
+    unit->roothub.devdesc.bcdDevice                     = AROS_WORD2LE(0x0300);
+    unit->roothub.devdesc.iManufacturer                 = 1;
+    unit->roothub.devdesc.iProduct                      = 2;
+    unit->roothub.devdesc.iSerialNumber                 = 0;
+    unit->roothub.devdesc.bNumConfigurations            = 1;
+
+    /* This is our root hub config descriptor */
+    unit->roothub.config.cfgdesc.bLength                = sizeof(struct UsbStdCfgDesc);
+    unit->roothub.config.cfgdesc.bDescriptorType        = UDT_CONFIGURATION;
+    unit->roothub.config.cfgdesc.wTotalLength           = AROS_WORD2LE(sizeof(struct RHConfig));
+    unit->roothub.config.cfgdesc.bNumInterfaces         = 1;
+    unit->roothub.config.cfgdesc.bConfigurationValue    = 1;
+    unit->roothub.config.cfgdesc.iConfiguration         = 3;
+    unit->roothub.config.cfgdesc.bmAttributes           = (USCAF_ONE|USCAF_SELF_POWERED);
+    unit->roothub.config.cfgdesc.bMaxPower              = 0;
+
+    unit->roothub.config.ifdesc.bLength                 = sizeof(struct UsbStdIfDesc);
+    unit->roothub.config.ifdesc.bDescriptorType         = UDT_INTERFACE;
+    unit->roothub.config.ifdesc.bInterfaceNumber        = 0;
+    unit->roothub.config.ifdesc.bAlternateSetting       = 0;
+    unit->roothub.config.ifdesc.bNumEndpoints           = 1;
+    unit->roothub.config.ifdesc.bInterfaceClass         = HUB_CLASSCODE;
+    unit->roothub.config.ifdesc.bInterfaceSubClass      = 0;
+    unit->roothub.config.ifdesc.bInterfaceProtocol      = 0;
+    unit->roothub.config.ifdesc.iInterface              = 4;
+
+    unit->roothub.config.epdesc.bLength                 = sizeof(struct UsbStdEPDesc);
+    unit->roothub.config.epdesc.bDescriptorType         = UDT_ENDPOINT;
+    unit->roothub.config.epdesc.bEndpointAddress        = (URTF_IN|1);
+    unit->roothub.config.epdesc.bmAttributes            = USEAF_INTERRUPT;
+    unit->roothub.config.epdesc.wMaxPacketSize          = AROS_WORD2LE(8);
+    unit->roothub.config.epdesc.bInterval               = 12;
+
+    /* This is our root hub hub descriptor */
+    unit->roothub.hubdesc.bLength                       = sizeof(struct UsbSSHubDesc);
+    unit->roothub.hubdesc.bDescriptorType               = UDT_SSHUB;
+    unit->roothub.hubdesc.bNbrPorts                     = (UBYTE) unit->roothub.port_count;;
+    unit->roothub.hubdesc.wHubCharacteristics           = AROS_WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP);
+    unit->roothub.hubdesc.bPwrOn2PwrGood                = 0;
+    unit->roothub.hubdesc.bHubContrCurrent              = 10;
+    unit->roothub.hubdesc.bHubHdrDecLat                 = 0;
+    unit->roothub.hubdesc.wHubDelay                     = 0;
+    unit->roothub.hubdesc.DeviceRemovable               = 0;
+    unit->roothub.bosdesc.bLength                       = sizeof(struct UsbStdBOSDesc);
+    unit->roothub.bosdesc.bDescriptorType               = UDT_BOS;
+    /* TODO: Arbitrary, set real values according to the host controller */
+    unit->roothub.bosdesc.wTotalLength                  = 16;
+    unit->roothub.bosdesc.bNumDeviceCaps                = 2;
 
     /* Reset the address */
     unit->roothub.addr = 0;
@@ -332,6 +391,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq) {
 
                                     case UDT_BOS:
                                         bug("[PCIXHCI] cmdControlXFerRootHub: UDT_BOS\n");
+
+                                        ioreq->iouh_Actual = (wLength > sizeof(struct UsbStdBOSDesc)) ? sizeof(struct UsbStdBOSDesc) : wLength;
+                                        CopyMem((APTR) &unit->roothub.bosdesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+
+                                        mybug_unit(0, ("Done\n\n"));
+                                        return UHIOERR_NO_ERROR;
                                         break;
 
                                     case UDT_DEVICE_CAPABILITY:

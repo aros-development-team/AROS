@@ -65,6 +65,8 @@ struct PCIXHCIRootHub {
 
     struct UsbStdDevDesc         devdesc;
 
+    struct UsbStdBOSDesc         bosdesc;
+
     struct RHConfig {
         struct UsbStdCfgDesc     cfgdesc;
         struct UsbStdIfDesc      ifdesc;
