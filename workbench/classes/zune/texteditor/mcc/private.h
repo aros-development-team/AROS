@@ -2,7 +2,7 @@
 
  TextEditor.mcc - Textediting MUI Custom Class
  Copyright (C) 1997-2000 Allan Odgaard
- Copyright (C) 2005-2013 by TextEditor.mcc Open Source Team
+ Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -432,6 +432,8 @@ struct InstData
   UBYTE   CtrlChar;
 
   enum CursorState currentCursorState;
+
+  char **Keywords;
 };
 
 // AllocBitMap.c
@@ -596,9 +598,13 @@ IPTR mReplace(struct IClass *, Object *, struct MUIP_TextEditor_Replace *);
 IPTR mSetBlock(struct InstData *, struct MUIP_TextEditor_SetBlock *msg);
 
 // SpellChecker.c
-void CheckWord(struct InstData *);
+void SpellCheckWord(struct InstData *);
 void SuggestWord(struct InstData *);
 Object *SuggestWindow(struct InstData *);
+void ParseKeywords(struct InstData *data, const char *keywords);
+void FreeKeywords(struct InstData *data);
+void CheckSingleWordAgainstKeywords(struct InstData *data, const char *word);
+void KeywordCheck(struct InstData *);
 
 // StyleOperators.c
 void UpdateStyles(struct InstData *);

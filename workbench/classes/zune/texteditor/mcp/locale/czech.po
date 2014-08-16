@@ -1,0 +1,743 @@
+# Translation catalog description file (pot-style)
+# $Id: czech.po 954 2014-04-05 11:31:14Z damato $
+# 
+# version 2
+# Translators:
+msgid ""
+msgstr ""
+"Project-Id-Version: MCC TextEditor\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/texteditor-mcc/\n"
+"POT-Creation-Date: 2014-02-23 12:29+0100\n"
+"PO-Revision-Date: 2014-04-02 09:12+0000\n"
+"Last-Translator: damato <mail@jens-maus.de>\n"
+"Language-Team: Czech (http://www.transifex.com/projects/p/texteditor-mcc/language/cs/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: TextEditor_mcp\n"
+"Language: cs\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+
+msgctxt "MSG_HelpBubble_BlockQual (0//)"
+msgid ""
+"Move the cursor key and hold down the qualifier\n"
+"that you set here to mark text."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_CheckWord (1//)"
+msgid ""
+"If enabled, then the editor will lookup the word,\n"
+"and only show suggestions if the word is misspelled."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_Smooth (2//)"
+msgid "This enables pixel smooth scrolling."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_TypeNSpell (3//)"
+msgid ""
+"Enable this to let the editor\n"
+"lookup the words while you type them."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_UndoLevel (4//)"
+msgid ""
+"Each undo level eats up 10 bytes of memory.\n"
+"Cut and copy will take a little more,\n"
+"depending on the size of the block you\n"
+"are cutting or copying."
+msgstr ""
+
+msgctxt "MSG_Button_DefaultKeys (5//)"
+msgid "Default _keys"
+msgstr "Výchozí _klávesy"
+
+msgctxt "MSG_Button_Delete (6//)"
+msgid "_Delete"
+msgstr "Odeb_rat"
+
+msgctxt "MSG_Button_Insert (7//)"
+msgid "_Insert"
+msgstr "Přid_at"
+
+msgctxt "MSG_ConfigMenu_CheckWord (8//)"
+msgid "Check word"
+msgstr "Kontrola textu"
+
+msgctxt "MSG_ConfigMenu_TypeNSpell (9//)"
+msgid "Type'n'spell"
+msgstr "Kontrola při psaní"
+
+msgctxt "MSG_CycleItem_Alt (10//)"
+msgid "Alt"
+msgstr "Alt"
+
+msgctxt "MSG_CycleItem_Ctrl (11//)"
+msgid "Control"
+msgstr "Control"
+
+msgctxt "MSG_CycleItem_Mouse (12//)"
+msgid "(mouse only)"
+msgstr "(jen myší)"
+
+msgctxt "MSG_CycleItem_Shift (13//)"
+msgid "Shift"
+msgstr "Shift"
+
+msgctxt "MSG_Execution_ARexx (14//)"
+msgid "ARexx"
+msgstr "ARexx"
+
+msgctxt "MSG_Execution_CLI (15//)"
+msgid "CLI"
+msgstr "CLI"
+
+msgctxt "MSG_Function_BOL (16//)"
+msgid "Beginning of line"
+msgstr "Začátek řádku"
+
+msgctxt "MSG_Function_Backspace (17//)"
+msgid "Backspace"
+msgstr "Backspace"
+
+msgctxt "MSG_Function_Bottom (18//)"
+msgid "Bottom"
+msgstr "Na konec"
+
+msgctxt "MSG_Function_Copy (19//)"
+msgid "Copy"
+msgstr "Zkopírovat"
+
+msgctxt "MSG_Function_Cut (20//)"
+msgid "Cut"
+msgstr "Vyjmout"
+
+msgctxt "MSG_Function_DelBOL (21//)"
+msgid "Delete to BOL"
+msgstr "Smazat do začátku řádku"
+
+msgctxt "MSG_Function_DelBOW (22//)"
+msgid "Delete to BOW"
+msgstr "Smazat do začátku slova"
+
+msgctxt "MSG_Function_DelEOL (23//)"
+msgid "Delete to EOL"
+msgstr "Smazat do konce řádku"
+
+msgctxt "MSG_Function_DelEOW (24//)"
+msgid "Delete to EOW"
+msgstr "Smazat do konce slova"
+
+msgctxt "MSG_Function_Delete (25//)"
+msgid "Delete"
+msgstr "Smazat"
+
+msgctxt "MSG_Function_Down (26//)"
+msgid "Down"
+msgstr "Dolů"
+
+msgctxt "MSG_Function_EOL (27//)"
+msgid "End of line"
+msgstr "Konec řádku"
+
+msgctxt "MSG_Function_Left (28//)"
+msgid "Left"
+msgstr "Doleva"
+
+msgctxt "MSG_Function_NextGadget (29//)"
+msgid "Next gadget"
+msgstr "Další tlačítko"
+
+msgctxt "MSG_Function_NxtPage (30//)"
+msgid "Next page"
+msgstr "Další strana"
+
+msgctxt "MSG_Function_NxtPara (31//)"
+msgid "Next paragraph"
+msgstr "Další odstavec"
+
+msgctxt "MSG_Function_NxtSent (32//)"
+msgid "Next sentence"
+msgstr "Další věta"
+
+msgctxt "MSG_Function_NxtWord (33//)"
+msgid "Next word"
+msgstr "Další slovo"
+
+msgctxt "MSG_Function_Paste (34//)"
+msgid "Paste"
+msgstr "Vložit"
+
+msgctxt "MSG_Function_PrvPage (35//)"
+msgid "Prev page"
+msgstr "Předchozí strana"
+
+msgctxt "MSG_Function_PrvPara (36//)"
+msgid "Prev paragraph"
+msgstr "Předchozí odstavec"
+
+msgctxt "MSG_Function_PrvSent (37//)"
+msgid "Prev sentence"
+msgstr "Předchozí věta"
+
+msgctxt "MSG_Function_PrvWord (38//)"
+msgid "Prev word"
+msgstr "Předchozí slovo"
+
+msgctxt "MSG_Function_Redo (39//)"
+msgid "Redo"
+msgstr "Odvolat zpět"
+
+msgctxt "MSG_Function_Return (40//)"
+msgid "Return"
+msgstr "Enter"
+
+msgctxt "MSG_Function_Right (41//)"
+msgid "Right"
+msgstr "Doprava"
+
+msgctxt "MSG_Function_SuggestSpelling (42//)"
+msgid "Suggest spelling"
+msgstr "Návrh na opravu slova"
+
+msgctxt "MSG_Function_Tab (43//)"
+msgid "Tab"
+msgstr "Tabulátor"
+
+msgctxt "MSG_Function_Top (44//)"
+msgid "Top"
+msgstr "Na začátek"
+
+msgctxt "MSG_Function_Undo (45//)"
+msgid "Undo"
+msgstr "Vrátit zpět"
+
+msgctxt "MSG_Function_Up (46//)"
+msgid "Up"
+msgstr "Nahoru"
+
+msgctxt "MSG_GroupTitle_Control (47//)"
+msgid "Control"
+msgstr "Základní funkce"
+
+msgctxt "MSG_GroupTitle_Cursor (48//)"
+msgid "Cursor"
+msgstr "Barvy kurzoru a textu"
+
+msgctxt "MSG_GroupTitle_Design (49//)"
+msgid "Design"
+msgstr "Vzhled textového pole"
+
+msgctxt "MSG_GroupTitle_Fonts (50//)"
+msgid "Fonts"
+msgstr "Písma pro text"
+
+msgctxt "MSG_GroupTitle_Separator (51//)"
+msgid "Separator"
+msgstr "Dělicí linka"
+
+msgctxt "MSG_HelpTxt_SpellChecker (52//)"
+msgid ""
+" \\33u Intro \\33n\n"
+"\n"
+"The TextEditor gadget allows for easy integration of external spell checkers, making it possible to have both type'n'spell and also normal word guessing.\n"
+"\n"
+" \\33u Lookup command \\33n\n"
+"\n"
+"For the type'n'spell you'll have to set the lookup command to a script that will lookup the word and set the environment variable \"Found\" to either 0 (for not found) or 1 (for a match). This matches the default behaviour of AlphaSpell.\n"
+"\n"
+"You write %s where you want the word. If you use AlphaSpell, then you can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n"
+"\n"
+"You \\33bmust\\33n remember the quotes, this will let ARexx execute it as a command instead of a script.\n"
+"\n"
+" \\33u Suggest command \\33n\n"
+"\n"
+"If you press <HELP> over a word, then the editor will launch this command, again with %s substituted with the current word.\n"
+"Your script should produce a file in T: named \"Matches\". This file is then read by the gadget, and the contents are listed in a popup listview, from where you can choose a word which will replace the misspelled one. Again, AlphaSpell users can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n"
+"\n"
+"If you use the methods described above, then you must start AlphaSpell with the \"ARexx\" switch.\n"
+"\n"
+"It is advised to keep your dictionary in RAM if you enable the type'n'spell feature."
+msgstr " \\33u Stručný popis \\33n\n\nPrvek TextEditor lze snadno provázat s externími programy pro kontrolu pravopisu. Nabízí možnost sledování správnosti textu při psaní a zároveň i návrhy na opravu napsaných slov.\n\n \\33u Kontrola textu při psaní \\33n\n\nNejprve je nutné nainstalovat některý z programů pro kontrolu pravopisu a poté zadat odpovídající příkaz do pole 'Kontrola při psaní'. Je třeba, aby daný příkaz nebo skript po detekci slova nastavil proměnnou prostředí \"Found\" na 0 (nenalezeno ve slovníku) nebo 1 (nalezeno). Tento způsob používá program AlphaSpell. Namísto slova napište proměnnou %s. Pokud tedy použijete AlphaSpell, bude příkaz vypadat následovně:\n\n\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Czech.ald\"\n\nPozn.: \\33bNezapomeňte\\33n na uvozovky! Bez nich to nebude fungovat.\n\n \\33u Návrh na opravu napsaných slov \\33n\n\nUmístěte kurzor na některé ze slov v textu, stiskněte klávesu HELP (nebo jinou, kterou jste si nadefinovali) a editor spustí příkaz definovaný v poli 'Návrh opravy slova' s vybraným slovem uvedeným namísto parametru %s. V rámci tohoto procesu se vytvoří soubor nazvaný \"Matches\" v adresáři T:. Tento soubor poté načte prvek TextEditor a zobrazí jeho obsah v rolovacím seznamu, ze kterého si vyberete požadované slovo. V případě programu AlphaSpell stačí napsat:\n\n\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Czech.ald\"\n\nPozn.: Vyberete-li si z nabízených možností kontrolu textu při psaní, doporučujeme zkopírovat slovník do paměti. Vhodný je např. \"Ram Disk:\" nebo podobný disk."
+
+msgctxt "MSG_LVLabel_Action (53//)"
+msgid "\\33c\\0333Action:"
+msgstr "\\33c\\0333Akce:"
+
+msgctxt "MSG_LVLabel_Key (54//)"
+msgid "\\33c\\0333Key:"
+msgstr "\\33c\\0333Klávesa:"
+
+msgctxt "MSG_Label_Background (55//)"
+msgid "Background"
+msgstr "Pozadí"
+
+msgctxt "MSG_Label_BlinkSpeed (56//)"
+msgid "Blinkspeed"
+msgstr "Rychlost blikání"
+
+msgctxt "MSG_Label_BlkQual (57//)"
+msgid "Block qualifier"
+msgstr "Označení bloku textu"
+
+msgctxt "MSG_Label_Cursor (58//)"
+msgid "Normal"
+msgstr "Normální"
+
+msgctxt "MSG_Label_Fixed (59//)"
+msgid "Fixed"
+msgstr "Fixní"
+
+msgctxt "MSG_Label_Frame (60//)"
+msgid "Frame"
+msgstr "Rámeček"
+
+msgctxt "MSG_Label_Highlight (61//)"
+msgid "Highlight"
+msgstr "Zvýraznění"
+
+msgctxt "MSG_Label_LookupCmd (62//)"
+msgid "Lookup command"
+msgstr "Kontrola při psaní"
+
+msgctxt "MSG_Label_LookupWords (63//)"
+msgid "Lookup word before suggesting?"
+msgstr "Kontrolovat slova před návrhem"
+
+msgctxt "MSG_Label_Normal (64//)"
+msgid "Normal"
+msgstr "Normální"
+
+msgctxt "MSG_Label_Selected (65//)"
+msgid "Selected"
+msgstr "Vybraný"
+
+msgctxt "MSG_Label_SeparatorShadow (66//)"
+msgid "Shadow"
+msgstr "Tmavá\nhrana"
+
+msgctxt "MSG_Label_SeparatorShine (67//)"
+msgid "Shine"
+msgstr "Světlá\nhrana"
+
+msgctxt "MSG_Label_Smooth (68//)"
+msgid "Smooth"
+msgstr "Plynule posouvat text"
+
+msgctxt "MSG_Label_SpellNType (69//)"
+msgid "Spell check as you type?"
+msgstr "Kontrolovat přímo při psaní"
+
+msgctxt "MSG_Label_SuggestCmd (70//)"
+msgid "Suggest command"
+msgstr "Návrh opravy slova"
+
+msgctxt "MSG_Label_TabSize (71//)"
+msgid "Tab size"
+msgstr "Velikost tabulátoru"
+
+msgctxt "MSG_Label_Text (72//)"
+msgid "Text"
+msgstr "Text"
+
+msgctxt "MSG_Label_UndoLevel (73//)"
+msgid "Undo levels"
+msgstr "Počet kroků zpět"
+
+msgctxt "MSG_Label_Width (74//)"
+msgid "Width"
+msgstr "Šířka"
+
+msgctxt "MSG_MenuItem_Background (75//)"
+msgid "Background"
+msgstr "Pozadí"
+
+msgctxt "MSG_MenuItem_Bold (76//)"
+msgid "Bold"
+msgstr "Tučné"
+
+msgctxt "MSG_MenuItem_Center (77//)"
+msgid "Center"
+msgstr "Na střed"
+
+msgctxt "MSG_MenuItem_Copy (78//)"
+msgid "Copy"
+msgstr "Zkopírovat"
+
+msgctxt "MSG_MenuItem_Cut (79//)"
+msgid "Cut"
+msgstr "Vyjmout"
+
+msgctxt "MSG_MenuItem_Delete (80//)"
+msgid "Delete"
+msgstr "Odstranit"
+
+msgctxt "MSG_MenuItem_Fill (81//)"
+msgid "Fill"
+msgstr "Vyplňovací"
+
+msgctxt "MSG_MenuItem_Halfshadow (82//)"
+msgid "Halfshadow"
+msgstr "Polotmavá"
+
+msgctxt "MSG_MenuItem_Halfshine (83//)"
+msgid "Halfshine"
+msgstr "Polosvětlá"
+
+msgctxt "MSG_MenuItem_Italic (84//)"
+msgid "Italic"
+msgstr "Kurzíva"
+
+msgctxt "MSG_MenuItem_Left (85//)"
+msgid "Left"
+msgstr "Vlevo"
+
+msgctxt "MSG_MenuItem_Mark (86//)"
+msgid "Mark"
+msgstr "Pro výběr"
+
+msgctxt "MSG_MenuItem_Normal (87//)"
+msgid "Normal"
+msgstr "Normální"
+
+msgctxt "MSG_MenuItem_Paste (88//)"
+msgid "Paste"
+msgstr "Vložit"
+
+msgctxt "MSG_MenuItem_Redo (89//)"
+msgid "Redo"
+msgstr "Odvolat zpět"
+
+msgctxt "MSG_MenuItem_Right (90//)"
+msgid "Right"
+msgstr "Vpravo"
+
+msgctxt "MSG_MenuItem_Shadow (91//)"
+msgid "Shadow"
+msgstr "Tmavá"
+
+msgctxt "MSG_MenuItem_Shine (92//)"
+msgid "Shine"
+msgstr "Světlá"
+
+msgctxt "MSG_MenuItem_Text (93//)"
+msgid "Text"
+msgstr "Text"
+
+msgctxt "MSG_MenuItem_Underline (94//)"
+msgid "Underline"
+msgstr "Podtržené"
+
+msgctxt "MSG_MenuItem_Undo (95//)"
+msgid "Undo"
+msgstr "Zpět"
+
+msgctxt "MSG_MenuSubTitle_Alignment (96//)"
+msgid "Alignment"
+msgstr "Zarovnat"
+
+msgctxt "MSG_MenuSubTitle_Color (97//)"
+msgid "Color"
+msgstr "Barva"
+
+msgctxt "MSG_MenuTitle_Edit (98//)"
+msgid "Edit"
+msgstr "Upravit"
+
+msgctxt "MSG_Page_Keybindings (99//)"
+msgid "Keybindings"
+msgstr "Klávesy"
+
+msgctxt "MSG_Page_Sample (100//)"
+msgid "Sample"
+msgstr "Ukázka"
+
+msgctxt "MSG_Page_Settings (101//)"
+msgid "Settings"
+msgstr "Možnosti"
+
+msgctxt "MSG_Page_SpellChecker (102//)"
+msgid "Spell checker"
+msgstr "Kontrola pravopisu"
+
+msgctxt "MSG_PopWinTitle_Background (103//)"
+msgid "Select background"
+msgstr "Vyberte pozadí"
+
+msgctxt "MSG_PopWinTitle_Cursor (104//)"
+msgid "Select cursor color"
+msgstr "Vyberte barvu kurzoru"
+
+msgctxt "MSG_PopWinTitle_Frame (105//)"
+msgid "Adjust frame"
+msgstr "Vyberte druh rámečku pro textové pole"
+
+msgctxt "MSG_PopWinTitle_Highlight (106//)"
+msgid "Select highlight color"
+msgstr "Vyberte barvu pro zvýrazněný text"
+
+msgctxt "MSG_PopWinTitle_Selected (107//)"
+msgid "Select block color"
+msgstr "Vyberte barvu pro vybraný blok textu"
+
+msgctxt "MSG_PopWinTitle_SeparatorShadow (108//)"
+msgid "Select separators shadow color"
+msgstr "Vyberte tmavou barvu dělicí linky"
+
+msgctxt "MSG_PopWinTitle_SeparatorShine (109//)"
+msgid "Select separators shine color"
+msgstr "Vyberte světlou barvu dělicí linky"
+
+msgctxt "MSG_PopWinTitle_Text (110//)"
+msgid "Select text color"
+msgstr "Vyberte barvu textu"
+
+msgctxt "MSG_SliderText_MaxWidth (111//)"
+msgid "Same as char"
+msgstr "Podle znaku"
+
+msgctxt "MSG_SliderText_MinSpeed (112//)"
+msgid "Off"
+msgstr "-vyp-"
+
+msgctxt "MSG_SliderText_MinWidth (113//)"
+msgid "1 pixel"
+msgstr "1 b."
+
+msgctxt "MSG_SliderText_StdSpeed (114//)"
+msgid "\\33r%ld ms"
+msgstr "\\33r%ld ms"
+
+msgctxt "MSG_SliderText_StdWidth (115//)"
+msgid "%ld pixels"
+msgstr "%ld b."
+
+msgctxt "MSG_SliderText_TabSize (116//)"
+msgid "%ld spaces"
+msgstr "%ld mez."
+
+msgctxt "MSG_Function_GotoBookmark1 (117//)"
+msgid "Goto bookmark 1"
+msgstr "Přejít na záložku č.1"
+
+msgctxt "MSG_Function_GotoBookmark2 (118//)"
+msgid "Goto bookmark 2"
+msgstr "Přejít na záložku č.2"
+
+msgctxt "MSG_Function_GotoBookmark3 (119//)"
+msgid "Goto bookmark 3"
+msgstr "Přejít na záložku č.3"
+
+msgctxt "MSG_Function_SetBookmark1 (120//)"
+msgid "Set bookmark 1"
+msgstr "Vytvořit záložku č.1"
+
+msgctxt "MSG_Function_SetBookmark2 (121//)"
+msgid "Set bookmark 2"
+msgstr "Vytvořit záložku č.2"
+
+msgctxt "MSG_Function_SetBookmark3 (122//)"
+msgid "Set bookmark 3"
+msgstr "Vytvořit záložku č.3"
+
+msgctxt "MSG_Button_Snoop (123//)"
+msgid "Snoop"
+msgstr "Zachytit"
+
+msgctxt "MSG_Function_DelLine (124//)"
+msgid "Delete line"
+msgstr "Smazat řádek"
+
+msgctxt "MSG_Function_SelectAll (125//)"
+msgid "Select all"
+msgstr "Vybrat vše"
+
+msgctxt "MSG_Function_SelectNone (126//)"
+msgid "Select none"
+msgstr "Zrušit výběr"
+
+msgctxt "MSG_WarnConfigVersion_Title (127//)"
+msgid "TextEditor.mcp warning"
+msgstr "TextEditor.mcp :: Upozornění"
+
+msgctxt "MSG_WarnConfigVersion (128//)"
+msgid ""
+"Your currently saved keybindings setup is incompatible\n"
+"with the version of TextEditor.mcc you have installed.\n"
+"\n"
+"It is suggested that you reset the current keybindings\n"
+"to their defaults and edit them manually afterwards."
+msgstr "Uložená konfigurace klávesnice není kompatibilní\ns nainstalovanou verzí prvku TextEditor.mcc.\n\nDoporučujeme vám obnovit výchozí stav konfigurace\na následně doplnit předchozí úpravy."
+
+msgctxt "MSG_ResetAbort (129//)"
+msgid "Reset|Abort"
+msgstr "Resetovat|Přerušit"
+
+msgctxt "MSG_WarnHotkeyString_Title (130//)"
+msgid "TextEditor.mcp warning"
+msgstr "TextEditor.mcp :: Upozornění"
+
+msgctxt "MSG_WarnHotkeyString (131//)"
+msgid ""
+"TextEditor.mcp couldn't open the minimum required\n"
+"version of the HotkeyString.mcc custom class and\n"
+"therefore failed during initialization.\n"
+"\n"
+"Please make sure you have the latest Hotkeystring.mcc\n"
+"class from http://www.sf.net/projects/bstring-mcc/\n"
+"installed and try again."
+msgstr "TextEditor.mcp vyžaduje prvek HotkeyString.mcc, který\nje buď zastaralý nebo úplně chybí.\n\nPřejděte prosím na http://www.sf.net/projects/bstring-mcc/,\nstáhněte aktuální verzi tohoto programu, nainstalujte\nho a požadovaný programu spusťte znovu."
+
+msgctxt "MSG_Ok (132//)"
+msgid "Ok"
+msgstr "OK"
+
+msgctxt "MSG_Label_InactiveCursor (133//)"
+msgid "Inactive cursor"
+msgstr "Neaktivní kurzor"
+
+msgctxt "MSG_HELP_InactiveCursor (134//)"
+msgid ""
+"If enabled, a custom cursor will be used\n"
+"whenever the editor doesn't have the focus."
+msgstr "Tímto zapnete zobrazení speciálního druhu kurzoru\nv případě, že textové pole není aktivní."
+
+msgctxt "MSG_Label_SelectPointer (135//)"
+msgid "Selection pointer"
+msgstr "Změnit šipku na kurzor"
+
+msgctxt "MSG_HELP_SelectPointer (136//)"
+msgid ""
+"If enabled, a custom selection pointer will appear\n"
+"when the mouse pointer is above the texteditor gadget."
+msgstr "Tímto zapnete automatickou změnu vzhledu šipky myši\nna kurzor po přesunutí na textové pole."
+
+msgctxt "MSG_Label_InactiveColor (137//)"
+msgid "Inactive"
+msgstr "Neaktivní"
+
+msgctxt "MSG_PopWinTitle_InactiveColor (138//)"
+msgid "Select inactive color"
+msgstr "Vyberte barvu neaktivního kurzoru"
+
+msgctxt "MSG_HELP_TABSIZE (139//)"
+msgid "How many spaces hitting the <TAB> key will jump."
+msgstr "Definuje počet mezer vložených do textu po stisknutí\nklávesy TAB."
+
+msgctxt "MSG_HELP_DESIGN_FRAME (140//)"
+msgid ""
+"This is a button to adjust a frame.\n"
+"Click it to open an adjust window or\n"
+"use the drag&drop facilities to copy\n"
+"from or to another frame adjust button."
+msgstr "Definuje vzhled rámečku textového pole."
+
+msgctxt "MSG_HELP_DESIGN_BACKGROUND (141//)"
+msgid ""
+"This is a button to adjust a background\n"
+"color or pattern. Click it to open an\n"
+"adjust window or use the drag&drop facilities\n"
+"to copy from or to another background adjust button."
+msgstr "Definuje barvu nebo obrázek pozadí textu."
+
+msgctxt "MSG_HELP_DESIGN_TEXT (142//)"
+msgid "This is the color used to print the text."
+msgstr "Definuje barvu standardního textu."
+
+msgctxt "MSG_HELP_DESIGN_HIGHLIGHT (143//)"
+msgid ""
+"This is the color used to\n"
+"print highlighted text."
+msgstr "Definuje barvu zvýrazněného textu."
+
+msgctxt "MSG_HELP_SEPARATOR_SHINE (144//)"
+msgid ""
+"This is the color used to\n"
+"print separator bars."
+msgstr "Definuje světlou složku dělicí linky."
+
+msgctxt "MSG_HELP_SEPARATOR_SHADOW (145//)"
+msgid ""
+"This is the color used to print\n"
+"separator bars in shadow mode."
+msgstr "Definuje tmavou složku dělicí linky."
+
+msgctxt "MSG_HELP_FONTS_NORMAL (146//)"
+msgid "Default font to be used by the editor."
+msgstr "Definuje výchozí písmo pro text."
+
+msgctxt "MSG_HELP_FONTS_FIXED (147//)"
+msgid ""
+"Default font to be used by the editor\n"
+"whenever a fixed width font is requested."
+msgstr "Definuje výchozí fixní písmo pro text."
+
+msgctxt "MSG_HELP_CURSOR_NORMAL (148//)"
+msgid "Default color to be used for the cursor."
+msgstr "Definuje výchozí barvu kurzoru."
+
+msgctxt "MSG_HELP_CURSOR_SELECTED (149//)"
+msgid ""
+"Color to be used for the cursor\n"
+"in selected text."
+msgstr "Definuje barvu pro vybraný text."
+
+msgctxt "MSG_HELP_CURSOR_INACTIVE (150//)"
+msgid ""
+"Color to use to print selected text\n"
+"when the editor doesn't have the focus."
+msgstr "Definuje barvu pro vybraný, ale neaktivní text."
+
+msgctxt "MSG_HELP_CURSOR_WIDTH (151//)"
+msgid "This is the width the cursor should have."
+msgstr "Definuje šířku kurzoru."
+
+msgctxt "MSG_HELP_CURSOR_BLINKSPEED (152//)"
+msgid ""
+"You may want the cursor to blink to make\n"
+"it easier to find. Select 'Off' to disable\n"
+"this feature."
+msgstr "Definuje zda a jak rychle má kurzor blikat."
+
+msgctxt "MSG_HELP_BUTTON_DEFAULTKEYS (153//)"
+msgid ""
+"Restore all keybindings\n"
+"to the built-in defaults."
+msgstr "Umožní obnovit výchozí klávesové zkratky."
+
+msgctxt "MSG_HELP_BUTTON_SNOOP (154//)"
+msgid ""
+"Use this field to set a keybinding for this action.\n"
+"You can either edit the string gadget directly or press\n"
+"the 'Snoop' button to make the gadget monitor keypresses\n"
+"until you press it again to confirm."
+msgstr "Do tohoto pole buď přímo zadejte požadovanou\nklávesovou zkratku anebo využijte tlačítko\n'Zachytit' a nechte si potřebné údaje doplnit\nautomaticky. Postup je snadný:\nLevým tlačítkem myši klikněte na tlačítko Zachytit,\nzmáčkněte potřebnou kombinaci kláves a volbu\npotvrďte druhým kliknutím."
+
+msgctxt "MSG_HELP_BUTTON_INSERT (155//)"
+msgid "Add a new keybinding to the list."
+msgstr "Umožní přidat novou klávesovou zkratku."
+
+msgctxt "MSG_HELP_BUTTON_DELETE (156//)"
+msgid "Delete this keybinding from the list."
+msgstr "Umožní odstranit vybranou klávesovou zkratku."
+
+msgctxt "MSG_HELP_SPELLCHECKER_LOOKUP_CMD (157//)"
+msgid ""
+"Specify here the lookup command you want to use, or\n"
+"leave this empty to disable the type'n'spell feature."
+msgstr "Definuje příkaz pro kontrolu textu přímo během psaní."
+
+msgctxt "MSG_HELP_SPELLCHECKER_SUGGEST_CMD (158//)"
+msgid ""
+"Specify here the command that will be used\n"
+"to suggest an alternate word. As explained above,\n"
+"usually you should specify a script here."
+msgstr "Definuje příkaz pro návrh variant napsaného slova."
+
+msgctxt "MSG_UNDO_SLIDER_FORMAT (159//)"
+msgid "%ld (+/- 5)"
+msgstr "%ld (+/- 5)"
