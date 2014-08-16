@@ -1,0 +1,8 @@
+[main]
+host = https://www.transifex.com
+lang_map = bs: bosnian, cs: czech, da: danish, de: german, el: greek, en_GB: english-british, es: spanish, fi: finnish, fr: french, hu: hungarian, hr: croatian, it: italian, nl: dutch, no: norwegian, pl: polish, pt: portuguese, pt_BR: portuguese-brazil, ru: russian, sl: slovenian, sr: serbian, sv: swedish, tr: turkish
+
+[bstring-mcc.trunk]
+file_filter = mcp/locale/<lang>.po
+source_file = mcp/locale/BetterString_mcp.pot
+source_lang = en

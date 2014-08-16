@@ -29,9 +29,9 @@
 
 // for setting all necessary version information
 #define LIB_VERSION    12
-#define LIB_REVISION   21
-#define LIB_DATE       "25.04.2013"
-#define LIB_COPYRIGHT  "Copyright (C) 2005-2013 BetterString.mcc Open Source Team"
+#define LIB_REVISION   24
+#define LIB_DATE       "04.04.2014"
+#define LIB_COPYRIGHT  "Copyright (C) 2005-2014 BetterString.mcc Open Source Team"
 
 // set the LIB_REV_STRING
 #define LIB_REV_STRING STR(LIB_VERSION) "." STR(LIB_REVISION)

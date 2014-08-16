@@ -1,0 +1,213 @@
+# Translation catalog description file (pot-style)
+# $Id: russian.po 427 2014-04-04 19:48:48Z damato $
+# 
+# version 2
+# Translators:
+# peguser <mobydick@amiga.org.ru>, 2014
+msgid ""
+msgstr ""
+"Project-Id-Version: MCC BetterString\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/bstring-mcc/\n"
+"POT-Creation-Date: 2014-02-18 15:35+0100\n"
+"PO-Revision-Date: 2014-02-22 19:54+0000\n"
+"Last-Translator: peguser <mobydick@amiga.org.ru>\n"
+"Language-Team: Russian (http://www.transifex.com/projects/p/bstring-mcc/language/ru/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: BetterString_mcp\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgctxt "MSG_Label_Active (0//)"
+msgid "Active:"
+msgstr "Активно:"
+
+msgctxt "MSG_Label_Background (1//)"
+msgid "Background"
+msgstr "Фон"
+
+msgctxt "MSG_Label_Cursor (2//)"
+msgid "Cursor:"
+msgstr "Курсор:"
+
+msgctxt "MSG_Label_Inactive (5//)"
+msgid "Inactive:"
+msgstr "Неактивно:"
+
+msgctxt "MSG_Label_Marked (6//)"
+msgid "Marked:"
+msgstr "Выделено:"
+
+msgctxt "MSG_Label_Text (7//)"
+msgid "Text"
+msgstr "Текст"
+
+msgctxt "MSG_String_TestString (8//)"
+msgid "Test the power of BetterString here!"
+msgstr "Здесь можно тестировать настройки BetterString!"
+
+msgctxt "MSG_Help_Copy (9//)"
+msgid "Copy all or marked text"
+msgstr "Копировать весь или выделенный текст"
+
+msgctxt "MSG_Help_Copy_Shortcut (10//)"
+msgid "Amiga + c"
+msgstr "Amiga + c"
+
+msgctxt "MSG_Help_Cut (11//)"
+msgid "Cut all or marked text"
+msgstr "Вырезать весь или выделенный текст"
+
+msgctxt "MSG_Help_Cut_Shortcut (12//)"
+msgid "Amiga + x"
+msgstr "Amiga + x"
+
+msgctxt "MSG_Help_Paste (13//)"
+msgid "Paste"
+msgstr "Вставить"
+
+msgctxt "MSG_Help_Paste_Shortcut (14//)"
+msgid "Amiga + v"
+msgstr "Amiga + v"
+
+msgctxt "MSG_Help_Undo (15//)"
+msgid "Undo last deletion"
+msgstr "Отменить последнее удаление"
+
+msgctxt "MSG_Help_Undo_Shortcut (16//)"
+msgid "Amiga + z"
+msgstr "Amiga + z"
+
+msgctxt "MSG_Help_Redo (17//)"
+msgid "Redo last deletion"
+msgstr "Вернуть последнее удаление"
+
+msgctxt "MSG_Help_Redo_Shortcut (18//)"
+msgid "Amiga + Z"
+msgstr "Amiga + Z"
+
+msgctxt "MSG_Help_ToggleBuffer (19//)"
+msgid "Toggle between original and modified buffer"
+msgstr "Переключить оригинальный и изменённый буфер"
+
+msgctxt "MSG_Help_ToggleBuffer_Shortcut (20//)"
+msgid "Amiga + q"
+msgstr "Amiga + q"
+
+msgctxt "MSG_Help_ToggleCaseChar (21//)"
+msgid "Toggle case on character"
+msgstr "Изменить регистр символа"
+
+msgctxt "MSG_Help_ToggleCaseChar_Shortcut (22//)"
+msgid "Amiga + g"
+msgstr "Amiga + g"
+
+msgctxt "MSG_Help_ToggleCaseWord (23//)"
+msgid "Toggle case on word"
+msgstr "Изменить регистр слова"
+
+msgctxt "MSG_Help_ToggleCaseWord_Shortcut (24//)"
+msgid "Amiga + G"
+msgstr "Amiga + G"
+
+msgctxt "MSG_Help_IncreaseNumber (25//)"
+msgid "Increase number"
+msgstr "Увеличить число"
+
+msgctxt "MSG_Help_IncreaseNumber_Shortcut (26//)"
+msgid "Amiga + i"
+msgstr "Amiga + i"
+
+msgctxt "MSG_Help_DecreaseNumber (27//)"
+msgid "Decrease number"
+msgstr "Уменьшить число"
+
+msgctxt "MSG_Help_DecreaseNumber_Shortcut (28//)"
+msgid "Amiga + d"
+msgstr "Amiga + d"
+
+msgctxt "MSG_Help_HexToDecimal (29//)"
+msgid "Hex to Decimal"
+msgstr "Шестнадцатиричное в десятичное"
+
+msgctxt "MSG_Help_HexToDecimal_Shortcut (30//)"
+msgid "Amiga + #"
+msgstr "Amiga + #"
+
+msgctxt "MSG_Help_DecimalToHex (31//)"
+msgid "Decimal to Hex"
+msgstr "Десятичное в шестнадцатиричное"
+
+msgctxt "MSG_Help_DecimalToHex_Shortcut (32//)"
+msgid "Amiga + $"
+msgstr "Amiga + $"
+
+msgctxt "MSG_Help_FilenameCompletition (33//)"
+msgid "Filenamecompletion (use SHIFT to cycle back)"
+msgstr "Дополнение имени файла (SHIFT для перебора назад)"
+
+msgctxt "MSG_Help_FilenameCompletition_Shortcut (34//)"
+msgid "Amiga + TAB"
+msgstr "Amiga + TAB"
+
+msgctxt "MSG_Help_Mark (35//)"
+msgid "Mark"
+msgstr "Выделить"
+
+msgctxt "MSG_Help_Mark_Shortcut (36//)"
+msgid "CTRL + cursor"
+msgstr "CTRL + курсор"
+
+msgctxt "MSG_Help_GotoToStartEndOfLine (37//)"
+msgid "Goto to start/end of line"
+msgstr "Перейти к началу/концу строки"
+
+msgctxt "MSG_Help_GotoToStartEndOfLine_Shortcut (38//)"
+msgid "SHIFT + cursor"
+msgstr "SHIFT + курсор"
+
+msgctxt "MSG_Help_DeleteToStartEndOfLine (39//)"
+msgid "Delete to start/end of line"
+msgstr "Удалить до начала/конца строки"
+
+msgctxt "MSG_Help_DeleteToStartEndOfLine_Shortcut (40//)"
+msgid "SHIFT + BACKSPACE/DELETE"
+msgstr "SHIFT + ЗАБОЙ/УДАЛИТЬ"
+
+msgctxt "MSG_Help_GotoToPrevNextWord (41//)"
+msgid "Goto to previous/next word"
+msgstr "Перейти к предыдущему/следующему слову"
+
+msgctxt "MSG_Help_GotoToPrevNextWord_Shortcut (42//)"
+msgid "ALT + cursor"
+msgstr "ALT + курсор"
+
+msgctxt "MSG_Help_DeleteToPrevNextWord (43//)"
+msgid "Delete previous/next word"
+msgstr "Удалить предыдущее/следующее слово"
+
+msgctxt "MSG_Help_DeleteToPrevNextWord_Shortcut (44//)"
+msgid "ALT + BACKSPACE/DELETE"
+msgstr "ALT + ЗАБОЙ/УДАЛИТЬ"
+
+msgctxt "MSG_SelectOnActive (45//)"
+msgid "Select on Active"
+msgstr "Выделить в активном"
+
+msgctxt "MSG_HELP_SelectOnActive (46//)"
+msgid ""
+"Automatically select all text when a\n"
+"BetterString object gets activated\n"
+"via TAB cycling or mouse activation."
+msgstr "Автоматически выделяет весь текст,\nкогда объект BetterString активируется\nклавишей TAB или мышью."
+
+msgctxt "MSG_SelectPointer (47//)"
+msgid "Selection Pointer"
+msgstr "Указатель выделения"
+
+msgctxt "MSG_HELP_SelectPointer (48//)"
+msgid ""
+"If enabled, a custom selection pointer will appear\n"
+"when the mouse pointer is above a betterstring gadget."
+msgstr "Если включено, указатель мыши, находящийся\nнад активным элементом, изменяет форму для\nудобства выделения."

@@ -59,9 +59,11 @@ for os in os3 os4 mos aros-i386 aros-ppc aros-x86_64; do
 done
 
 make -C mcp catalogs
-for language in czech danish french german greek italian polish russian swedish; do
-	mkdir -p "release/MCC_BetterString/Locale/Catalogs/$language"
-	cp -a mcp/locale/$language.catalog "release/MCC_BetterString/Locale/Catalogs/$language/BetterString_mcp.catalog"
+for language in `ls mcp/locale/*.catalog`; do
+  catalog=$(basename "$language")
+  lang="${catalog%.*}"
+  mkdir -p "release/MCC_BetterString/Locale/Catalogs/${lang}"
+  cp -a ${language} "release/MCC_BetterString/Locale/Catalogs/${lang}/BetterString_mcp.catalog"
 done
 
 cp -a -R dist/* "release/"
@@ -71,7 +73,7 @@ cp -a doc/MCC_BetterString.doc "release/MCC_BetterString/Developer/Autodocs/MCC/
 cp -a doc/MCC_HotkeyString.doc "release/MCC_BetterString/Developer/Autodocs/MCC/"
 cp -a include/mui/BetterString_mcc.h "release/MCC_BetterString/Developer/C/include/mui/"
 cp -a include/mui/HotkeyString_mcc.h "release/MCC_BetterString/Developer/C/include/mui/"
-cp -a mcp/locale/BetterString_mcp.cd "release/MCC_BetterString/Locale/"
+cp -a mcp/locale/BetterString_mcp.pot "release/MCC_BetterString/Locale/"
 
 releasever=`grep "#define LIB_VERSION" mcc/version.h | awk '{ print $3 }'`
 releaserev=`grep "#define LIB_REVISION" mcc/version.h | awk '{ print $3 }'`
